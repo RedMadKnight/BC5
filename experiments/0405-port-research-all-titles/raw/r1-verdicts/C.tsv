@@ -1,0 +1,274 @@
+lib	sha	subject	class	verdict	our_file_line	anyps5_file_line	effort	risk	cpu_test	gpu	e4now	note
+libSceVideoOut	fbd82632e	feat(libSceVideoOut): declare later callable exports	new-export	missing	unregistered	core/libs/prx/libSceVideoOut/InventoryExports.cpp:1	S	low: declaration only, throwing stubs	y	n	n	declaration-only NIDs that throw; all in r1-anyps5-missing.tsv; nothing beyond the inventory
+libSceVideoOut	185adf162	fix(tests): destroy the pad input before the pad identify test quits SDL	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	9421867f1	test(videoout): register the frame limit flip test as video_out_flip_fps_limit	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	858d2c886	test(videoout): pin that ANYPS5_FPS_LIMIT holds the window's flips	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	97a5564fd	feat(videoout): time the frame-limit wait as its own flip phase	internal	-	-	-	-	-	-	-	-	timing phase of the host frame limiter (ANYPS5_FPS_LIMIT); our flips are our own direct amdgpu path
+libSceVideoOut	66615554c	feat(videoout): hold each flip of the window until its frame-limit deadline	internal	-	-	-	-	-	-	-	-	host window frame limiter (ANYPS5_FPS_LIMIT); not a guest contract; our flip path is our own (bc5LleAgc deferred flip)
+libSceVideoOut	e72ecbaee	feat(videoout): read the SDL clipboard for the IME paste	internal	-	-	-	-	-	-	-	-	SDL clipboard read for the host IME paste feature
+libSceVideoOut	8c15f4921	feat(videoout): paste the clipboard with Ctrl+V or Shift+Insert	internal	-	-	-	-	-	-	-	-	host Ctrl+V/Shift+Insert paste into the IME
+libSceVideoOut	95ab3fe02	feat(videoout): forward SDL text editing events as a preedit	internal	-	-	-	-	-	-	-	-	SDL text-editing events forwarded as IME preedit (host input)
+libSceVideoOut	a568bd9d0	fix(tests): exercise no-Vulkan shutdown during DLL teardown	platform	-	-	-	-	-	-	-	-	Windows DLL teardown test without Vulkan
+libSceVideoOut	a1c1c41ad	fix(libSceVideoOut): set ANYPS5_PAD_IDENTIFY with _putenv_s on Windows	platform	-	-	-	-	-	-	-	-	Windows _putenv_s in a test
+libSceVideoOut	d2278b2e3	fix(libSceVideoOut): set the Windows PATH for the identify pad-input tests	platform	-	-	-	-	-	-	-	-	Windows PATH for tests
+libSceVideoOut	134dfaf41	fix(libSceVideoOut): give the identify pad-input test its own target name	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	a626b6f83	test(libSceVideoOut): cover the identify pulse on a virtual controller	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	ef631376a	feat(libSceVideoOut): pulse each bound controller with its player number	internal	-	-	-	-	-	-	-	-	host identify rumble pulse on SDL controllers; our DualSense stack has its own player handling
+libSceVideoOut	5e1d3c991	fix(libSceVideoOut): give pad_port0 the Windows DLL search path	platform	-	-	-	-	-	-	-	-	Windows DLL search path for a test
+libSceVideoOut	2e2f6b5ee	fix(pad): expire a held injected button when its scripted press ends	internal	-	-	-	-	-	-	-	-	scripted-input harness (input command file); we have our own KYTY_BC5_INPUT_CMD
+libSceVideoOut	672ead67e	test(libSceVideoOut): keep keyboard input out of port 0 while it is withdrawn	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	b0d9058d4	feat(libSceVideoOut): declare configuration mode export	new-export	missing	unregistered	core/libs/prx/libSceVideoOut/InventoryExports.cpp:1	S	low: declaration only, throwing stubs	y	n	n	declares one configuration-mode NID (throws); in r1-anyps5-missing.tsv
+libSceVideoOut	9aa490f58	feat(libSceVideoOut): declare older callable exports	new-export	missing	unregistered	core/libs/prx/libSceVideoOut/InventoryExports.cpp:1	S	low: declaration only, throwing stubs	y	n	n	declares older NIDs (throw); in r1-anyps5-missing.tsv
+libSceVideoOut	57f7b1512	test(videoout): register the nine flip-test modes that never ran	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	156ca9112	test(libSceVideoOut): check the hold halfway through as well as at its edge	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	c2a766ec2	fix(pad): hold injected buttons that answered a dialog until released	internal	-	-	-	-	-	-	-	-	harness-injected buttons that answered a system dialog
+libSceVideoOut	cca2d08bd	test(libSceVideoOut): count the three host volume default bindings	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	df480a504	fix(libSceVideoOut): close the pad status request test before the volume tests	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	b18234a5f	fix(libSceVideoOut): close the pad status conflicts test before the volume tests	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	d09e7a46e	fix(libScePad): resolve the merge with ShowPadStatus in the volume actions	internal	-	-	-	-	-	-	-	-	merge fix in host input mapping, docs and mapper tool
+libSceVideoOut	f865f4894	fix(libSceVideoOut): stop linking libSceAudioOut	test-doc-build	-	-	-	-	-	-	-	-	build/link change only
+libSceVideoOut	737bcb8f6	refactor(libScePad): own the shared host volume state	internal	-	-	-	-	-	-	-	-	moves the host volume state between AnyPS5 modules
+libSceVideoOut	14b0b4b5f	refactor(libScePad): move the host volume headers from libSceAudioOut	internal	-	-	-	-	-	-	-	-	moves host volume headers between AnyPS5 modules
+libSceVideoOut	a9124c157	test(libSceVideoOut): print the line of the pad_sdl check that fails	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	7cd80adfd	feat(libSceVideoOut): read the window's focus once when it first exists	internal	-	-	-	-	-	-	-	-	host volume/focus feature of the SDL window, not a guest contract
+libSceVideoOut	f58d816ad	feat(libSceVideoOut): remember whether the host focus was read once	internal	-	-	-	-	-	-	-	-	host volume/focus feature of the SDL window, not a guest contract
+libSceVideoOut	5bb5ac189	feat(libSceVideoOut): mute the host audio while the window has no focus	internal	-	-	-	-	-	-	-	-	host mutes its audio when the window loses focus (host feature)
+libSceVideoOut	c2bcf8605	feat(libSceVideoOut): run the volume and mute hotkeys and report them on stderr	internal	-	-	-	-	-	-	-	-	host volume and mute hotkeys reported on stderr
+libSceVideoOut	41fd68c00	feat(libSceVideoOut): read the host volume settings when video output starts	internal	-	-	-	-	-	-	-	-	host volume/focus feature of the SDL window, not a guest contract
+libSceVideoOut	cb77b10b3	test(libSceVideoOut): cover the focus rule for the host volume	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	0a93f3ae8	feat(libSceVideoOut): follow the display window's focus for the host volume	internal	-	-	-	-	-	-	-	-	host volume/focus feature of the SDL window, not a guest contract
+libSceVideoOut	addfd6a8e	test(libSceVideoOut): cover turning requests into host volume commands	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	4cdc503ff	feat(libSceVideoOut): turn volume and mute requests into host volume commands	internal	-	-	-	-	-	-	-	-	host volume/focus feature of the SDL window, not a guest contract
+libSceVideoOut	f47834d9e	build(libSceVideoOut): link libSceAudioOut for the host volume	test-doc-build	-	-	-	-	-	-	-	-	build/link change only
+libSceVideoOut	93a613aed	test(libSceVideoOut): cover that the host volume keys collide with nothing	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	562654de6	test(libSceVideoOut): cover the default ToggleMute binding	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	67cc1b288	test(libSceVideoOut): cover the default VolumeUp binding	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	54e10becd	test(libSceVideoOut): cover the default VolumeDown binding	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	8402d91c8	test(libSceVideoOut): cover the ToggleMute input mapping action	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	f57856aee	test(libSceVideoOut): cover the VolumeDown input mapping action	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	30d0a1392	test(libSceVideoOut): cover the VolumeUp input mapping action	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	d8eea5e34	feat(libSceVideoOut): accept ToggleMute as an input mapping action	internal	-	-	-	-	-	-	-	-	host keyboard binding for the volume/mute hotkeys
+libSceVideoOut	93e0a7a39	feat(libSceVideoOut): accept VolumeDown as an input mapping action	internal	-	-	-	-	-	-	-	-	host keyboard binding for the volume/mute hotkeys
+libSceVideoOut	b0614a752	feat(libSceVideoOut): accept VolumeUp as an input mapping action	internal	-	-	-	-	-	-	-	-	host keyboard binding for the volume/mute hotkeys
+libSceVideoOut	50c1d2f4a	test(libSceVideoOut): cover the ToggleMute request from the keyboard	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	b960b79aa	feat(libSceVideoOut): turn a ToggleMute key press into a toggleMute request	internal	-	-	-	-	-	-	-	-	host keyboard binding for the volume/mute hotkeys
+libSceVideoOut	3ccda9b13	test(libSceVideoOut): cover the VolumeDown request from the keyboard	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	1ae491679	feat(libSceVideoOut): turn a VolumeDown key press into a volumeDown request	internal	-	-	-	-	-	-	-	-	host keyboard binding for the volume/mute hotkeys
+libSceVideoOut	114b16ab4	test(libSceVideoOut): cover the VolumeUp request from the keyboard	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	88a0626f7	feat(libSceVideoOut): turn a VolumeUp key press into a volumeUp request	internal	-	-	-	-	-	-	-	-	host keyboard binding for the volume/mute hotkeys
+libSceVideoOut	7f7eaa7d1	feat(libScePad): add the volume and mute input controls	internal	-	-	-	-	-	-	-	-	host keyboard binding for the volume/mute hotkeys
+libSceVideoOut	26d36e964	feat(input): add configurable mouse stick target	internal	-	-	-	-	-	-	-	-	host keyboard/mouse-to-stick mapping option
+libSceVideoOut	0d0db3570	test(libSceVideoOut): check port 0 follows the controller in both modes	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	a621ec06b	feat(libSceVideoOut): drive port 0 connection from the controller on slot 0	internal	-	-	-	-	-	-	-	-	port 0 follows the SDL slot-0 controller (host option); our slot 0 is always connected by design (controller.cpp:797)
+libSceVideoOut	e287eca76	test(libSceVideoOut): cover the port 0 presence rule with an injected clock	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	77e48aabc	feat(libSceVideoOut): add the port 0 presence rule behind ANYPS5_PAD_PORT0_STATE	internal	-	-	-	-	-	-	-	-	ANYPS5_PAD_PORT0_STATE host presence option
+libSceVideoOut	728d7aa34	fix(pad): let harness input answer system dialogs	internal	-	-	-	-	-	-	-	-	harness input answering system dialogs
+libSceVideoOut	f65684505	feat(videoout): build the pad snapshot only while the panel is wanted	internal	-	-	-	-	-	-	-	-	host pad status panel snapshot
+libSceVideoOut	2835df421	fix(videoout): link pad_status_sdl_tests as a host-only test	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	00aa30e5f	test(videoout): present with the pad status panel under the validation layer	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	a25d9e0b7	feat(videoout): report controller status to the pad status panel	internal	-	-	-	-	-	-	-	-	host pad status panel
+libSceVideoOut	4522fa983	test(videoout): pin the SDL to pad status mappings	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	7b8939999	feat(videoout): map SDL controller types and power levels to pad status	internal	-	-	-	-	-	-	-	-	SDL controller type/power mapping for the host pad status panel
+libSceVideoOut	92f9307ab	test(input): pin the ShowPadStatus binding and request	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	9d2beb008	feat(input): add the ShowPadStatus keyboard action	internal	-	-	-	-	-	-	-	-	host ShowPadStatus keyboard action
+libSceVideoOut	a19a8b550	refactor(libSceVideoOut): exclude overlapping export	internal	-	-	-	-	-	-	-	-	AnyPS5 inventory bookkeeping (drops an overlapping export)
+libSceVideoOut	d1c779a8a	refactor(libSceVideoOut): defer mismatched identity	internal	-	-	-	-	-	-	-	-	AnyPS5 inventory bookkeeping (defers a mismatched identity)
+libSceVideoOut	d64e85164	build(libs): let the system libraries compile with Emscripten	platform	-	-	-	-	-	-	-	-	Emscripten/WebAssembly build
+libSceVideoOut	36d205ebf	fix(libSceVideoOut): return INVALID_HANDLE when deleting events on ports that are not open	shared	match	graphics/presentation/videoOut.cpp:478	core/libs/prx/libSceVideoOut/src/Event.cpp:91	-	-	y	n	n	ours already returns INVALID_HANDLE for unopened/closed ports in Delete Flip/Vblank/PreVblankStart; OutputMode/VrrActiveStatus deletes unregistered (inventory)
+libSceVideoOut	38715d561	feat(libSceVideoOut): declare 184 callable exports	new-export	missing	unregistered	core/libs/prx/libSceVideoOut/InventoryExports.cpp:1	S	low: declaration only, throwing stubs	y	n	n	184 declaration-only NIDs (throw); all in r1-anyps5-missing.tsv
+libSceVideoOut	26d7585cf	feat(libSceMouse): implement the absolute position calls as firmware 13.42 does	excluded-provenance	-	-	-	-	-	-	-	-	firmware 13.42 libSceMouse read and run natively (commit message; docs/dev/debt/libSceMouse.md:29)
+libSceVideoOut	f3c29634f	fix(libSceVideoOut): keep the PS4 registration checks in their order	new-export	missing	unregistered	core/libs/prx/libSceVideoOut/src/Buffer.cpp:53	S	low: PS4 call only	y	n	n	PS4 sceVideoOutRegisterBuffers (w3BY+tAEiQY) keeps INVALID_INDEX before SLOT_OCCUPIED; AnyPS5 throws there, unmeasured; see a8661988e
+libSceVideoOut	a8661988e	fix(libSceVideoOut): return SLOT_OCCUPIED for a registration over registered buffers	shared	partial	graphics/presentation/videoOut.cpp:1495	core/libs/prx/libSceVideoOut/src/Buffer.cpp:42	S	low: swaps two error checks	y	n	y	ours checks the set (INVALID_INDEX) before the slots; console answers SLOT_OCCUPIED 0x80290010 re-registering a live set (EVO Player measurement)
+libSceVideoOut	78fb6d804	test(videoout): expect ordered CPU flips in timing log builds	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	e60402001	fix(videoout): report output status flags 0 with HDR output	in-e4	-	-	-	-	-	-	-	-	sceVideoOutGetOutputStatus flags 0 with HDR; GetOutputStatus is in flight
+libSceVideoOut	87d6f4595	fix(build): link SDL2 tests against SDL2 under system deps	test-doc-build	-	-	-	-	-	-	-	-	build/link change only
+libSceVideoOut	1fe0a82e1	test(libSceVideoOut): assert guest mouse button report encoding	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideoOut	486952d8e	fix(libSceVideoOut): preserve guest mouse button report bits	internal	-	-	-	-	-	-	-	-	SDL button to guest bit mapping (reverts 916e3d60b); our MouseRead reports no input (libPad.cpp:383)
+libSceVideoOut	916e3d60b	fix(libSceVideoOut): correct mouse button mapping to match built-in input mapping	internal	-	-	-	-	-	-	-	-	SDL mouse mapping, reverted by 486952d8e
+libSceAudioOut	ea179774d	test(libSceAudioOut): cover null state pointer in sceAudioOutGetPortState	test-doc-build	-	-	-	-	-	-	-	-	test only; pins GetPortState(null)=0x80260004 before the handle check, ours aborts on null (audio.cpp:1445); pre-port-point code, source unclear
+libSceAudioOut	c34ab0258	fix(libSceAudioOut): play the PCM a port was given at the set when an AudioOut2 context advances	in-e4	-	-	-	-	-	-	-	-	AudioOut2 fix in flight elsewhere
+libSceAudioOut	11f217b14	fix(libSceAudioOut): play silence for a regiven AudioOut2 buffer that is not set again	in-e4	-	-	-	-	-	-	-	-	AudioOut2 fix in flight elsewhere
+libSceAudioOut	1c4cfe546	test(libSceAudioOut): keep the queue target check in the default open harness	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudioOut	06c1bee07	fix(libSceAudioOut): give HostGainRamp an implicit default constructor	internal	-	-	-	-	-	-	-	-	host volume/gain feature (hotkeys, focus mute), not a guest contract
+libSceAudioOut	4e06acd31	test(libSceAudioOut): answer the device status query in two harnesses	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudioOut	737bcb8f6	refactor(libScePad): own the shared host volume state	internal	-	-	-	-	-	-	-	-	moves the host volume state between AnyPS5 modules
+libSceAudioOut	14b0b4b5f	refactor(libScePad): move the host volume headers from libSceAudioOut	internal	-	-	-	-	-	-	-	-	moves host volume headers between AnyPS5 modules
+libSceAudioOut	b8f692f88	test(libSceAudioOut): cover rounding and upward ramps of the 16-bit host gain	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudioOut	22cb1123a	refactor(libSceAudioOut): give the host volume helpers C linkage	internal	-	-	-	-	-	-	-	-	host volume/gain feature (hotkeys, focus mute), not a guest contract
+libSceAudioOut	c255f112d	feat(libSceAudioOut): apply the host volume where AudioOut2 hands PCM to the device	internal	-	-	-	-	-	-	-	-	host volume/gain feature (hotkeys, focus mute), not a guest contract
+libSceAudioOut	1e82fc5a7	feat(libSceAudioOut): give each AudioOut2 context a host gain ramp	internal	-	-	-	-	-	-	-	-	host volume/gain feature (hotkeys, focus mute), not a guest contract
+libSceAudioOut	0b8656250	feat(libSceAudioOut): apply the host volume where AudioOut queues PCM to SDL	internal	-	-	-	-	-	-	-	-	host volume/gain feature (hotkeys, focus mute), not a guest contract
+libSceAudioOut	30cca8830	feat(libSceAudioOut): give every AudioOut port its own host gain ramp	internal	-	-	-	-	-	-	-	-	host volume/gain feature (hotkeys, focus mute), not a guest contract
+libSceAudioOut	4957afdb7	build(libSceAudioOut): compile the host volume state into the tests that build AudioOut.cpp	test-doc-build	-	-	-	-	-	-	-	-	build change for tests
+libSceAudioOut	e68a8008b	test(libSceAudioOut): cover the shared host volume, its settings and its focus rule	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudioOut	31c54b6cb	feat(libSceAudioOut): keep one shared host volume for the process	internal	-	-	-	-	-	-	-	-	host volume/gain feature (hotkeys, focus mute), not a guest contract
+libSceAudioOut	49d4cd5d9	test(libSceAudioOut): cover the host volume feedback lines	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudioOut	685ea93a0	feat(libSceAudioOut): word the one-line host volume feedback	internal	-	-	-	-	-	-	-	-	host volume/gain feature (hotkeys, focus mute), not a guest contract
+libSceAudioOut	0034db7a8	test(libSceAudioOut): cover accepting and refusing the host volume settings	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudioOut	2dbb988fa	feat(libSceAudioOut): parse the host volume settings strictly	internal	-	-	-	-	-	-	-	-	host volume/gain feature (hotkeys, focus mute), not a guest contract
+libSceAudioOut	98d5899f4	test(libSceAudioOut): cover the host gain filter's bypass and copy rules	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudioOut	cd606d57a	feat(libSceAudioOut): add a filter that leaves the title's buffer alone	internal	-	-	-	-	-	-	-	-	host volume/gain feature (hotkeys, focus mute), not a guest contract
+libSceAudioOut	049cf7c80	test(libSceAudioOut): cover the float host gain on mono, stereo and 8 channels	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudioOut	eed0017aa	feat(libSceAudioOut): add the gain ramp for 32-bit float host audio	internal	-	-	-	-	-	-	-	-	host volume/gain feature (hotkeys, focus mute), not a guest contract
+libSceAudioOut	fc729b1f4	test(libSceAudioOut): cover the 16-bit host gain on mono, stereo and 8 channels	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudioOut	9ba3f5d80	feat(libSceAudioOut): add a gain ramp for 16-bit host audio	internal	-	-	-	-	-	-	-	-	host volume/gain feature (hotkeys, focus mute), not a guest contract
+libSceAudioOut	0c5e8f4fe	test(libSceAudioOut): cover the gain derived from the host volume	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudioOut	7a95f2cef	feat(libSceAudioOut): derive the output gain from the host volume	internal	-	-	-	-	-	-	-	-	host volume/gain feature (hotkeys, focus mute), not a guest contract
+libSceAudioOut	a0dd35ca5	test(libSceAudioOut): cover the focus mute transitions	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudioOut	4d7b8f018	feat(libSceAudioOut): track window focus in the host volume	internal	-	-	-	-	-	-	-	-	host volume/gain feature (hotkeys, focus mute), not a guest contract
+libSceAudioOut	a42c4ecb0	test(libSceAudioOut): cover setting the host volume directly	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudioOut	dc7fc6b10	feat(libSceAudioOut): let the host volume be set directly	internal	-	-	-	-	-	-	-	-	host volume/gain feature (hotkeys, focus mute), not a guest contract
+libSceAudioOut	e729d8fbf	test(libSceAudioOut): cover volume steps ending a mute	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudioOut	e2962efdb	feat(libSceAudioOut): let a volume step end an explicit mute	internal	-	-	-	-	-	-	-	-	host volume/gain feature (hotkeys, focus mute), not a guest contract
+libSceAudioOut	a5a8a4ba7	test(libSceAudioOut): cover mute and unmute restoring the volume	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudioOut	67cb5a330	feat(libSceAudioOut): add a mute toggle to the host volume	internal	-	-	-	-	-	-	-	-	host volume/gain feature (hotkeys, focus mute), not a guest contract
+libSceAudioOut	2c0f6a817	test(libSceAudioOut): cover the host volume steps and their limits	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudioOut	42a4f6b20	feat(libSceAudioOut): add the host volume state with fixed steps	internal	-	-	-	-	-	-	-	-	host volume/gain feature (hotkeys, focus mute), not a guest contract
+libSceAudioOut	5f55ca31f	test(libSceAudioOut): cover the controller sound card reopen after a host stop	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudioOut	ccaac6602	fix(libSceAudioOut): reopen a controller sound card the host stopped	shared	match	libs/audio.cpp:652	core/libs/prx/libSceAudioOut/src/AudioOut.cpp:201	-	-	n	n	n	ours closes, reopens and moves the controller sound card per pad port (exp 0372 PadRouteStep); any change needs replug check
+libSceAudioOut	503fe9a8c	test(libSceAudioOut): cover the default output reopen after a host stop	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudioOut	b87075aad	fix(libSceAudioOut): reopen the default output after the host stops it	shared	missing	libs/audio.cpp:645	core/libs/prx/libSceAudioOut/src/AudioOut.cpp:201	S	med: SDL device lifecycle on the audio thread	n	n	n	default-sink ports are never reopened after SDL stops their device; PipeWire rarely stops one (audio.cpp:283); host robustness; needs replug check
+libSceAudioOut	e4b274109	feat(libSceAudioOut): declare 33 callable exports	new-export	missing	unregistered	core/libs/prx/libSceAudioOut/src/InventoryExports.cpp:1	S	low: declaration only, throwing stubs	y	n	n	33 declaration-only NIDs (throw); all in r1-anyps5-missing.tsv
+libSceAudioOut	3fc5485e6	test(libSceAudioOut): keep the timing test includes sorted	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudioOut	107e3c5f7	test(libSceAudioOut): run the test-clock push tests before the live-clock one	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudioOut	2aca98954	test(libSceAudioOut): hold a blocking push on a test clock until playback frees a slot	test-doc-build	-	-	-	-	-	-	-	-	test-clock seam and test for in-e4 42beeaa46
+libSceAudioOut	1ed07de32	test(libSceAudioOut): assert the blocking push level, not elapsed time; note destroy during a push is unsupported	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudioOut	bb6d79e52	test(libSceAudioOut): drop the comment above the blocking push test	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudioOut	7a75ea95b	docs(libSceAudioOut): record the blocking push wait as inferred from PPSA02530	test-doc-build	-	-	-	-	-	-	-	-	debt note for in-e4 42beeaa46 (wait inferred from PPSA02530)
+libSceAudioOut	42beeaa46	fix(libSceAudioOut): return from a blocking AudioOut2 push once the queue has room	in-e4	-	-	-	-	-	-	-	-	AudioOut2 blocking push fix in flight elsewhere
+libSceAudioOut	977382426	test(libSceAudioOut): cover speaker array creation and its ambisonics coefficients	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudioOut	87d6f4595	fix(build): link SDL2 tests against SDL2 under system deps	test-doc-build	-	-	-	-	-	-	-	-	build/link change only
+libScePad	b94b3fa32	fix(libScePad): check GetInfoByPortType's output before its port type	excluded-provenance	-	-	-	-	-	-	-	-	BunnyFl 13.42 libScePad disassembly (issue 15087; docs/dev/debt/libScePad.md:60)
+libScePad	de242fcba	test(libScePad): check the thirteen exports' argument checks	test-doc-build	-	-	-	-	-	-	-	-	tests for excluded 3b404f65e
+libScePad	3b404f65e	feat(libScePad): check the arguments of thirteen exports as firmware 13.42 does	excluded-provenance	-	-	-	-	-	-	-	-	BunnyFl 13.42 libScePad disassembly (commit message; docs/dev/debt/libScePad.md:60)
+libScePad	e11a4735a	fix(pad): return error for unsupported port probes	shared	match	libs/controller.cpp:1231	core/libs/prx/libScePad/Export.cpp:315	-	-	y	n	n	ours returns INVALID_ARG 0x80920001 for any port type but 0, 2 and system-user 16 (types 3/4 included)
+libScePad	863529dbf	test(libScePad): cover the identify pulse scheduler	test-doc-build	-	-	-	-	-	-	-	-	test only
+libScePad	057d75a1b	feat(libScePad): schedule the identify pulse around the title's rumble	internal	-	-	-	-	-	-	-	-	host identify-pulse feature (ANYPS5_PAD_IDENTIFY)
+libScePad	22b0b34c4	test(libScePad): cover the identify mode parser	test-doc-build	-	-	-	-	-	-	-	-	test only
+libScePad	d0abb2f21	feat(libScePad): parse ANYPS5_PAD_IDENTIFY as off, connect or always	internal	-	-	-	-	-	-	-	-	host identify-pulse feature (ANYPS5_PAD_IDENTIFY)
+libScePad	3fecdc0e8	test(libScePad): cover the identify pulse pattern	test-doc-build	-	-	-	-	-	-	-	-	test only
+libScePad	1c010ac7b	feat(libScePad): add the identify pulse pattern for players 1 to 4	internal	-	-	-	-	-	-	-	-	host identify-pulse feature (ANYPS5_PAD_IDENTIFY)
+libScePad	2e2f6b5ee	fix(pad): expire a held injected button when its scripted press ends	internal	-	-	-	-	-	-	-	-	scripted-input harness (input command file); we have our own KYTY_BC5_INPUT_CMD
+libScePad	c2a766ec2	fix(pad): hold injected buttons that answered a dialog until released	internal	-	-	-	-	-	-	-	-	harness-injected buttons that answered a system dialog
+libScePad	2f9581050	feat(libScePad): answer the motion, Bluetooth and Leonardo queries	excluded-provenance	-	-	-	-	-	-	-	-	firmware 13.42 checks from disassembly and native run (docs/dev/debt/libScePad.md:47); NIDs unregistered here (inventory)
+libScePad	737bcb8f6	refactor(libScePad): own the shared host volume state	internal	-	-	-	-	-	-	-	-	moves the host volume state between AnyPS5 modules
+libScePad	14b0b4b5f	refactor(libScePad): move the host volume headers from libSceAudioOut	internal	-	-	-	-	-	-	-	-	moves host volume headers between AnyPS5 modules
+libScePad	7defe5daa	feat(libScePad): bind ToggleMute to F8 by default	internal	-	-	-	-	-	-	-	-	host keyboard binding for the volume/mute hotkeys
+libScePad	b4e0bfb5b	feat(libScePad): bind VolumeUp to F6 by default	internal	-	-	-	-	-	-	-	-	host keyboard binding for the volume/mute hotkeys
+libScePad	7baaa4535	feat(libScePad): bind VolumeDown to F5 by default	internal	-	-	-	-	-	-	-	-	host keyboard binding for the volume/mute hotkeys
+libScePad	94a0c3049	feat(libScePad): carry volume and mute requests out of the keyboard handler	internal	-	-	-	-	-	-	-	-	host keyboard binding for the volume/mute hotkeys
+libScePad	7f7eaa7d1	feat(libScePad): add the volume and mute input controls	internal	-	-	-	-	-	-	-	-	host keyboard binding for the volume/mute hotkeys
+libScePad	26d36e964	feat(input): add configurable mouse stick target	internal	-	-	-	-	-	-	-	-	host keyboard/mouse-to-stick mapping option
+libScePad	10194ae5d	fix(libScePad): report a withdrawn port 0 as disconnected in pad queries	shared	match	libs/controller.cpp:1349	core/libs/prx/libScePad/Export.cpp:202	-	-	y	n	n	ours reports the slot real connected state and count; scePadGetInfo (1Odcw19nADw) unregistered (inventory)
+libScePad	e990e8490	fix(libScePad): report port 0 as withdrawn with zeroed data	internal	-	-	-	-	-	-	-	-	zeroed data for AnyPS5 withdrawn-port-0 option; our slots reset on disconnect (controller.cpp:831), slot 0 always connected; source unclear
+libScePad	728d7aa34	fix(pad): let harness input answer system dialogs	internal	-	-	-	-	-	-	-	-	harness input answering system dialogs
+libScePad	ec897f7ff	feat(libScePad): declare 13 callable exports	new-export	missing	unregistered	core/libs/prx/libScePad/InventoryExports.cpp:1	S	low: declaration only, throwing stubs	y	n	n	13 unnamed declaration-only NIDs (throw); in r1-anyps5-missing.tsv
+libScePad	9d2beb008	feat(input): add the ShowPadStatus keyboard action	internal	-	-	-	-	-	-	-	-	host ShowPadStatus keyboard action
+libScePad	a17f645ff	fix(libScePad): make the open handle tables safe for concurrent opens	internal	-	-	-	-	-	-	-	-	race in AnyPS5 handle tables; our PadOpen keeps no table, derives the handle from the user (controller.cpp:1220)
+libScePad	37dbf3df9	feat(libScePad): implement controller audio path and volume gain	new-export	missing	unregistered	core/libs/prx/libScePad/Export.cpp:466	S	low: store-only setters	y	n	n	IsSupportedAudioFunction/SetAudioOutPath/SetVolumeGain; duaLib signatures, codes unmeasured; could feed pad_audio_route (replug check)
+libScePad	67203dbe7	feat(libScePad): implement controller bus, jack, update and container queries	new-export	missing	unregistered	core/libs/prx/libScePad/Export.cpp:270	S	low: query answers	y	n	n	Get/SetParticularMode, BusType, JackState, UpdateRequired, ContainerId; duaLib signatures, answers unmeasured; ours could report the real USB/BT bus
+libSceNgs2.native	f0ed4cb81	fix(libSceNgs2): buffer sampler filter params sent during processing	excluded-provenance	-	-	-	-	-	-	-	-	filter-during-render rule from PS4/PS5 Ngs2 modules run on a PC (debt); our Ngs2 renders silence anyway (audio.cpp:2999)
+libSceNgs2.native	e2103c7f5	fix(libSceNgs2): compute the PitchShift ratio with libc's msun exp2f	platform	-	-	-	-	-	-	-	-	bit-identical PitchShift across host libms (Windows UCRT exp2f ulp); our Ngs2 has no PitchShift
+libSceNgs2.native	164246490	fix(libSceNgs2): follow PS5 for waveform add flags and APPEND blocks	excluded-provenance	-	-	-	-	-	-	-	-	PS5 fw 3.20/4.03 Ngs2 module runs on a PC (debt libSceNgs2.native.md); our Ngs2 renders silence (audio.cpp:2999)
+libSceNgs2.native	7ef0533d0	fix(libSceNgs2): follow the PS4 module for filter sizes, types and the fc clamp	excluded-provenance	-	-	-	-	-	-	-	-	PS4 11.00 Ngs2 module run on a PC; our Ngs2 renders silence (audio.cpp:2999)
+libSceNgs2.native	d44c0739b	fix(libSceNgs2): clamp the PS4 port volume to [-4, 4]	excluded-provenance	-	-	-	-	-	-	-	-	PS4 11.00 Ngs2 module run on a PC; our Ngs2 renders silence (audio.cpp:2999)
+libSceNgs2.native	06a481b20	feat(ngs2): allow the custom Gain module on custom sampler racks	excluded-provenance	-	-	-	-	-	-	-	-	fma-rc 12.70 Ngs2 module reading; our Ngs2 renders silence (audio.cpp:2999)
+libSceNgs2.native	9c009622b	fix(libSceNgs2): reject sampler racks outside 1 to 32 waveform blocks	excluded-provenance	-	-	-	-	-	-	-	-	PS5/PS4 Ngs2 module runs (rack block limit); our Ngs2 renders silence (audio.cpp:2999)
+libSceNgs2.native	97a16f9a0	fix(libSceNgs2): read the PS4 sampler filter param in shadPS4's layout	internal	-	-	-	-	-	-	-	-	PS4-library (APS5_NGS2_PS4_LIBRARY) filter layout from shadPS4, superseded by f8ce8aade; our host runs PS5 titles
+libSceNgs2.native	f8ce8aade	fix(libSceNgs2): keep the PS4 sampler filter layout and name the measurement source	excluded-provenance	-	-	-	-	-	-	-	-	names PC runs of PS4/PS5 Ngs2 modules (ngs2-oracle) as its source; our Ngs2 renders silence (audio.cpp:2999)
+libSceNgs2.native	52be0d5b2	fix(libSceNgs2): read the PS5 sampler and custom filter params and run filter types 1 to 11	excluded-provenance	-	-	-	-	-	-	-	-	SDK layout plus PS5 Ngs2 module runs on a PC; our Ngs2 renders silence (audio.cpp:2999)
+libSceNgs2.native	107954e35	fix(libSceNgs2): use the PS5 default map for 3, 4, 5 and 7 channels	excluded-provenance	-	-	-	-	-	-	-	-	PS5 fw 3.20/4.03 default map rows from module runs; our Ngs2 renders silence (audio.cpp:2999)
+libSceNgs2.native	c3a182199	test(prx): drop the libSceNgs2 exports main implemented from the pending list	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceNgs2.native	f11c93e80	test(libSceNgs2): drop the throw expectations for unmodelled mastering maps	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceNgs2.native	e9c806980	fix(libSceNgs2): use the PS5 default channel map for ports and mastering output	excluded-provenance	-	-	-	-	-	-	-	-	PS5 fw 3.20/4.03 default map rows from module runs; our Ngs2 renders silence (audio.cpp:2999)
+libSceNgs2.native	0a20f9bfa	fix(ngs2): include the library header instead of redeclaring its exports in the test header	test-doc-build	-	-	-	-	-	-	-	-	test header include fix
+libSceNgs2.native	9eb7850e1	fix(ngs2): declare the shared waveform parser in the API header	internal	-	-	-	-	-	-	-	-	header declaration only
+libSceNgs2.native	2efc86f68	feat(ngs2): implement the firmware-recovered utility exports	excluded-provenance	-	-	-	-	-	-	-	-	decrypted firmware 11.00 libSceNgs2 (commit message); our Ngs2 renders silence (audio.cpp:2999)
+libSceNgs2.native	8ae66c36b	fix(libSceNgs2): convert PCM_I16L render output as the PS5 module does	excluded-provenance	-	-	-	-	-	-	-	-	PS5 fw 3.20/4.03 PCM_I16L conversion from module runs; our Ngs2 renders silence (audio.cpp:2999)
+libSceNgs2.native	d4bdd14db	test(libSceNgs2): cover buffered port volume bounds, NaN, signed zero and a non-float command type	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceNgs2.native	662a56c88	test(libSceNgs2): cover a port volume above 32 sent while the system renders	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceNgs2.native	b382f1a45	test(libSceNgs2): expect the sampler startup delay in the port volume clamp test	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceNgs2.native	0dc600e7f	fix(libSceNgs2): clamp the port volume to [0, 32] as the PS5 module does	excluded-provenance	-	-	-	-	-	-	-	-	PS5 fw 3.20/4.03 port volume clamp from module runs; our Ngs2 renders silence (audio.cpp:2999)
+libSceNgs2.native	9e5738a59	test(prx): drop the libSceNgs2.native export main implemented from the pending list	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceNgs2.native	60baf8057	test(prx): look up each pending export by name in the built library	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceNgs2.native	e0f07d7cd	test(libSceNgs2.native): stop requiring the unparsed PCM loop forms to throw	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceNgs2.native	856a0b78d	test(prx): check that the newly built exports are exported, not that they throw	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceNgs2.native	bd97351d0	test(prx): check every stub the newly built Export.cpp files export	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceNgs2.native	022c609f9	feat(ngs2): implement the custom Reverb module	excluded-provenance	-	-	-	-	-	-	-	-	Reverb checked against 3.20/13.60 module DSP and voice graph; our Ngs2 renders silence (audio.cpp:2999)
+libSceNgs2.native	403956973	fix(libSceNgs2.native): follow the module's PCM loop rules	shared	missing	libs/audio.cpp:3068	core/libs/prx/libSceNgs2.native/src/Atrac9.cpp:385	M	low: parser only, renderer silent	y	n	n	PCM loop rules (end past last sample, short smpl throw); see 9d1a9c82e; prosper reading, provenance call
+libSceNgs2.native	9d1a9c82e	feat(libSceNgs2.native): parse looped PCM waveforms	shared	missing	libs/audio.cpp:3068	core/libs/prx/libSceNgs2.native/src/Atrac9.cpp:385	M	low: parser only, renderer silent	y	n	n	looped PCM smpl parsing; source prosper module reading (public emulator, provenance call); our ParseWaveformData is a fixed stub
+libSceNgs2	d44c0739b	fix(libSceNgs2): clamp the PS4 port volume to [-4, 4]	excluded-provenance	-	-	-	-	-	-	-	-	PS4 11.00 Ngs2 module run on a PC; our Ngs2 renders silence (audio.cpp:2999)
+libSceNgs2	107954e35	fix(libSceNgs2): use the PS5 default map for 3, 4, 5 and 7 channels	excluded-provenance	-	-	-	-	-	-	-	-	PS5 fw 3.20/4.03 default map rows from module runs; our Ngs2 renders silence (audio.cpp:2999)
+libSceNgs2	e9c806980	fix(libSceNgs2): use the PS5 default channel map for ports and mastering output	excluded-provenance	-	-	-	-	-	-	-	-	PS5 fw 3.20/4.03 default map rows from module runs; our Ngs2 renders silence (audio.cpp:2999)
+libSceNgs2	9eb7850e1	fix(ngs2): declare the shared waveform parser in the API header	internal	-	-	-	-	-	-	-	-	header declaration only
+libSceNgs2	2efc86f68	feat(ngs2): implement the firmware-recovered utility exports	excluded-provenance	-	-	-	-	-	-	-	-	decrypted firmware 11.00 libSceNgs2 (commit message); our Ngs2 renders silence (audio.cpp:2999)
+libSceAudio3d	f4d2d4446	fix(libSceAudio3d): let open ex check like open in a PS4 process	excluded-provenance	-	-	-	-	-	-	-	-	checks of firmware 13.42 libSceAudio3d.sprx (commit message; docs/dev/debt/libSceAudio3d.md:19)
+libSceAudio3d	96aa06c34	fix(libSceAudio3d): follow the firmware's PS4-process branch	excluded-provenance	-	-	-	-	-	-	-	-	checks of firmware 13.42 libSceAudio3d.sprx (commit message; docs/dev/debt/libSceAudio3d.md:19)
+libSceAudio3d	7f4526471	fix(libSceAudio3d): keep PS4-process answers and read the port id only for reports	excluded-provenance	-	-	-	-	-	-	-	-	checks of firmware 13.42 libSceAudio3d.sprx (commit message; docs/dev/debt/libSceAudio3d.md:19)
+libSceAudio3d	5f25ef8a9	feat(libSceAudio3d): follow firmware 13.42 for the port, report and audio out calls	excluded-provenance	-	-	-	-	-	-	-	-	checks of firmware 13.42 libSceAudio3d.sprx (commit message; docs/dev/debt/libSceAudio3d.md:19)
+libSceAudioIn	486304774	fix(libSceAudioIn): stop discard loop on zero progress	internal	-	-	-	-	-	-	-	-	SDL capture discard loop; our AudioInInput captures nothing, only paces (audio.cpp:1333)
+libSceAjm.native	f88600941	feat(libSceAjm.native): declare 7 callable exports	new-export	missing	unregistered	core/libs/prx/libSceAjm.native/Export.cpp:1	S	low: declaration only, throwing stubs	y	n	n	7 declaration-only NIDs (throw); in r1-anyps5-missing.tsv
+libSceAudiodec	095d23ea9	fix(libSceAudiodec): accept M4AAC surround interleave orders for stereo output	shared	match	libs/libAudio.cpp:921	core/libs/prx/libSceAudiodec/Export.cpp:149	-	-	y	n	n	ours accepts any interleave order; our decoder is a silence stub (libAudio.cpp:1005)
+libSceAudiodec	91999d11d	fix(libSceAudiodec.native): export GetAjmContext and UnregisterCodec from the native module only	excluded-provenance	-	-	-	-	-	-	-	-	13.42 run of libSceAudiodec.native under an emulator (docs/dev/debt/libSceAudiodec.native.md)
+libSceAudiodec	8f941d036	feat(libSceAudiodec): read the Ajm ids with sceAudiodecGetAjmContext	excluded-provenance	-	-	-	-	-	-	-	-	firmware 13.42 run of libSceAudiodec.native under an emulator (commit message, debt)
+libSceAudiodec	1bbec387a	fix(libSceAudiodec): report a decode error when FFmpeg cannot open an M4AAC layout	internal	-	-	-	-	-	-	-	-	AnyPS5 FFmpeg AAC reopen failure path; our Audiodec decodes nothing (libAudio.cpp:1005)
+libSceAudiodec.native	91999d11d	fix(libSceAudiodec.native): export GetAjmContext and UnregisterCodec from the native module only	excluded-provenance	-	-	-	-	-	-	-	-	13.42 run of libSceAudiodec.native under an emulator (docs/dev/debt/libSceAudiodec.native.md)
+libSceAudiodec.native	60baf8057	test(prx): look up each pending export by name in the built library	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAudiodec.native	bd97351d0	test(prx): check every stub the newly built Export.cpp files export	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAvPlayer	0b41d81e2	fix(avplayer): follow the firmware sample aspect ratio fallbacks	excluded-provenance	-	-	-	-	-	-	-	-	BunnyFl 13.42 reading and emulator run (docs/dev/debt/libSceAvPlayer.md)
+libSceAvPlayer	ba526365d	fix(avplayer): keep the stream aspect ratio in double precision	shared	match	libs/avPlayer.cpp:1387	core/libs/prx/libSceAvPlayer/src/Source.cpp:74	-	-	y	n	n	ours computes width/height x SAR in double
+libSceAvPlayer	5fdc6dbd4	fix(avplayer): report the sample aspect ratio in video frame info	shared	missing	libs/avPlayer.cpp:1532	core/libs/prx/libSceAvPlayer/src/Source.cpp:1090	S	med: titles sizing movie quads	y	n	y	frame aspect_ratio should be the sample aspect ratio (shadPS4); a title drew its quad (9/16)^2 too small with W/H
+libSceAvPlayer	290345261	fix(libSceAvPlayer): report the PS5 audio stream type for players made by sceAvPlayerInit	shared	match	libs/avPlayer.cpp:1451	core/libs/prx/libSceAvPlayer/src/Player.cpp:236	-	-	y	n	n	ours reports audio streams as type 2 for every player
+libSceAvPlayer	dbdc41e77	fix(avplayer): preserve private test helper names when patching	internal	-	-	-	-	-	-	-	-	relinker patching of test helper names
+libSceAvPlayer	b27b2a833	fix(avplayer): use native MinGW unwinding for the HTTP probe	platform	-	-	-	-	-	-	-	-	MinGW unwinding for the HTTP probe
+libSceAvPlayer	9a01dddad	test(http): bound patched client module dependencies	test-doc-build	-	-	-	-	-	-	-	-	test module bounds
+libSceAvPlayer	17bb16e97	refactor(http): share AvPlayer client through libSceHttp	internal	-	-	-	-	-	-	-	-	refactor: AvPlayer HTTP client moved into libSceHttp
+libSceAvPlayer	b81104eb5	feat(libSceAvPlayer): stream HTTP file sources with range seeking	shared	missing	libs/avPlayer.cpp:651	core/libs/prx/libSceAvPlayer/src/HttpStream.cpp:1	L	med: host networking	y	n	n	HTTP MP4/WebM sources with range seeking; SharpProspero types and RFCs, unverified on PS5; ours refuses non-file sources
+libSceAvPlayer.native	60baf8057	test(prx): look up each pending export by name in the built library	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceAvPlayer.native	bd97351d0	test(prx): check every stub the newly built Export.cpp files export	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceVideodec2	28f157cc6	feat(libSceVideodec2): implement the HEVC decoder aliases	new-export	missing	unregistered	core/libs/prx/libSceVideodec2/Export.cpp:528	S	low: aliases	y	n	y	pu4kxXkYz3E/krChT8KBUDU forward to CreateDecoder/QueryDecoderMemoryInfo (shadPS4); register onto libVideoDec2.cpp:659-660
+libSceMouse	26d7585cf	feat(libSceMouse): implement the absolute position calls as firmware 13.42 does	excluded-provenance	-	-	-	-	-	-	-	-	firmware 13.42 libSceMouse read and run natively (commit message; docs/dev/debt/libSceMouse.md:29)
+libSceMouse	3bfc1c11d	test(libSceMouse): keep the order around state changes when empty reports are dropped	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceMouse	35ee90267	fix(libSceMouse): drop reports that carry no motion and no state change	internal	-	-	-	-	-	-	-	-	host mouse report coalescing; our MouseRead returns no reports (libPad.cpp:383)
+libSceMouse	014d9de4b	fix(libSceMouse): sum consecutive motion into the newest unread report	internal	-	-	-	-	-	-	-	-	host mouse report coalescing; our MouseRead returns no reports (libPad.cpp:383)
+libSceKeyboard	bb24806df	feat(libSceKeyboard): declare 1 callable exports	new-export	missing	unregistered	core/libs/prx/libSceKeyboard/Export.cpp:1	S	low: declaration only, throwing stubs	y	n	n	1 declaration-only NID (throws); in r1-anyps5-missing.tsv
+libSceIme	6f2f3d776	test(libSceIme): pin the supplied-module constant error of sceImeForTestFunction	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceIme	6eaea115a	feat(libSceIme): carry the composition in the keyboard view	internal	-	-	-	-	-	-	-	-	host preedit/paste input into the IME (SDL text input feature)
+libSceIme	18ce40618	feat(libSceIme): add a host preedit sink beside the text sink	internal	-	-	-	-	-	-	-	-	host preedit/paste input into the IME (SDL text input feature)
+libSceIme	08cb6d294	test(libSceIme): cover pasting into a sceImeOpen session	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceIme	87505beb3	feat(libSceIme): insert pasted text into a sceImeOpen session	internal	-	-	-	-	-	-	-	-	host preedit/paste input into the IME (SDL text input feature)
+libSceIme	5960eab56	test(libSceIme): cover the composition lifecycle in a sceImeOpen session	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceIme	e21707347	feat(libSceIme): keep the composition apart from the session text	internal	-	-	-	-	-	-	-	-	host preedit/paste input into the IME (SDL text input feature)
+libSceIme	14f28225a	test(libSceIme): cover the composition state and its key routing	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceIme	30498bf1e	feat(libSceIme): add the composition state and its key routing	internal	-	-	-	-	-	-	-	-	host preedit/paste input into the IME (SDL text input feature)
+libSceIme	5d372c258	feat(libSceIme): add Preedit and Paste host input kinds	internal	-	-	-	-	-	-	-	-	host preedit/paste input into the IME (SDL text input feature)
+libSceIme	fe6b895f9	test(libSceIme): cover the host text helpers	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceIme	fec30e2dc	feat(libSceIme): add lenient UTF-8 decoding and clipboard sanitising for host text	internal	-	-	-	-	-	-	-	-	host preedit/paste input into the IME (SDL text input feature)
+libSceIme	92db03365	test(libSceIme): cover the PSN notice offer	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceIme	567de2af3	feat(libSceIme): offer a notice when a PSN-only dialog opens	internal	-	-	-	-	-	-	-	-	host notice for PSN-only dialogs
+libSceIme	4b95eb302	test(libSceIme): cover the ANYPS5_PSN_DIALOGS mode parser	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceIme	5349b1300	feat(libSceIme): parse the ANYPS5_PSN_DIALOGS mode	internal	-	-	-	-	-	-	-	-	ANYPS5_PSN_DIALOGS host option
+libSceIme	c71dac4bc	feat(libSceIme): declare 2 callable exports	new-export	missing	unregistered	core/libs/prx/libSceIme/Export.cpp:1	S	low: declaration only, throwing stubs	y	n	n	2 declaration-only NIDs (throw); in r1-anyps5-missing.tsv
+libSceImeDialog	20ebe016f	fix(libSceImeDialog): release mutex before copying out result in sceImeDialogGetResult	internal	-	-	-	-	-	-	-	-	lock scope around AnyPS5 guest copy-out in ImeDialogGetResult
+libSceImeDialog	c67c7ad93	fix(libSceImeDialog): return ErrorNotOpened from sceImeDialogGetResult for unwritable pointers	internal	-	-	-	-	-	-	-	-	AnyPS5 GuestCopyOut probing of unwritable pointers; source unclear; ours has its own error contract (imeDialog.cpp:570)
+libSceImeDialog	b99c62f55	test(videoout): cover SDL composition and clipboard events through the IME	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceImeDialog	cd272d695	test(libSceImeDialog): cover pasting into a dialog	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceImeDialog	45523d4cf	test(libSceImeDialog): cover the composition lifecycle in a dialog	test-doc-build	-	-	-	-	-	-	-	-	test only
+libSceImeDialog	e87f698b1	feat(libSceImeDialog): insert pasted text at the caret	internal	-	-	-	-	-	-	-	-	host preedit/paste input into the IME (SDL text input feature)
+libSceImeDialog	8901360ba	feat(libSceImeDialog): hold the composition apart from the dialog text	internal	-	-	-	-	-	-	-	-	host preedit/paste input into the IME (SDL text input feature)
+libSceImeDialog	5d372c258	feat(libSceIme): add Preedit and Paste host input kinds	internal	-	-	-	-	-	-	-	-	host preedit/paste input into the IME (SDL text input feature)
+libSceCamera	ea4b912b6	fix(libSceCamera): retain export already on main	internal	-	-	-	-	-	-	-	-	AnyPS5 inventory bookkeeping
+libSceCamera	92d5cac11	feat(libSceCamera): declare 4 callable exports	new-export	missing	unregistered	core/libs/prx/libSceCamera/InventoryExports.cpp:1	S	low: declaration only, throwing stubs	y	n	n	declaration-only NIDs (throw); in r1-anyps5-missing.tsv
+libSceCamera	a5113a249	feat(libSceCamera): answer sceCameraDeviceOpen and sceCameraSetAttributeInternal with 0	shared	match	libs/libCamera.cpp:65	core/libs/prx/libSceCamera/Export.cpp:282	-	-	y	n	n	ours already answers 0 for sceCameraDeviceOpen and sceCameraSetAttributeInternal (also libCamera.cpp:250)
+libSceAudioPropagation	5b91c520c	fix(libSceAudioPropagation): declare sceAudioPropagationSourceQueryAudioPaths in the umbrella header	internal	-	-	-	-	-	-	-	-	umbrella header declaration
+libSceAudioPropagation	a94bfe01d	feat(libSceAudioPropagation): declare 8 callable exports	new-export	missing	unregistered	core/libs/prx/libSceAudioPropagation/InventoryExports.cpp:1	S	low: declaration only, throwing stubs	y	n	n	8 declaration-only NIDs (throw); in r1-anyps5-missing.tsv
+libSceVoice	648fba4f7	fix(libSceVoice): validate null arguments after port checks	excluded-provenance	-	-	-	-	-	-	-	-	firmware 13.42 libSceVoice.sprx observations incl. module byte 0x69d20 (docs/dev/debt/libSceVoice.md:16)
+libSceVoice	85647ec86	fix(libSceVoice): return error for null arguments	shared	partial	libs/libAudio.cpp:395	core/libs/prx/libSceVoice/Export.cpp:331	S	low	y	n	n	GetPortInfo null already 0x804E0805; ReadFromOPort accepts null data; codes assumed, not measured (debt): source unclear
+libSceVoice	02bd033cc	test(libSceVoice): check the adjustment, QA recording, customer data and memory size answers	test-doc-build	-	-	-	-	-	-	-	-	tests for excluded 7d1bb9c3d
+libSceVoice	7d1bb9c3d	feat(libSceVoice): answer the adjustment, QA recording, customer data and memory size calls as firmware 13.42 does	excluded-provenance	-	-	-	-	-	-	-	-	firmware 13.42 libSceVoice run under an emulator (docs/dev/debt/libSceVoice.md:11)
+libSceVoice	e50128d91	fix(libSceVoice): report inactive input voice activity	shared	missing	libs/libAudio.cpp:449	core/libs/prx/libSceVoice/Export.cpp:324	S	low	y	n	n	ours answers input voice activity (attr 1001) true with no microphone; AnyPS5 answers 0; source unclear (logical, unmeasured)
+libSceUsbd	9f3799cfa	fix(libSceUsbd): wake event waiters after each pass of event handling	shared	missing	libs/libUsbd.cpp:643	core/libs/prx/libSceUsbd/Export.cpp:203	L	med: needs host libusb pass-through first	y	n	n	FreeBSD 11.4 libusb10_io.c wake rule; ours stubs every Usbd call with 0, no libusb pass-through
+libSceUsbd	dbb27b9ef	feat(libSceUsbd): handle events with FreeBSD libusb's event lock and handler thread	shared	missing	libs/libUsbd.cpp:643	core/libs/prx/libSceUsbd/Export.cpp:109	L	med: needs host libusb pass-through first	y	n	n	event lock/handler thread per FreeBSD 11.4 libusb10_io.c; ours stubs the event calls with 0 (spin risk for event threads)
+libSceVrTracker	19d0401c5	feat(libSceVrTracker): declare 9 callable exports	shared	match	libs/libVrTracker.cpp:720	core/libs/prx/libSceVrTracker/Export.cpp:239	-	-	y	n	n	we already register all 9 NIDs as stubs; AnyPS5 only declares throwing stubs
+libSceVideoRecording.native	8c1a7f338	feat(libSceVideoRecording.native): declare 27 callable exports	new-export	missing	unregistered	core/libs/prx/libSceVideoRecording.native/Export.cpp:1	S	low: declaration only, throwing stubs	y	n	n	27 declaration-only NIDs (throw); in r1-anyps5-missing.tsv
+libSceVideoRecordingP	a344e526e	fix(libSceVideoRecordingP): answer parameter checks and calls without a recorder as a PS5 does	new-export	missing	unregistered	core/libs/prx/libSceVideoRecordingP/Export.cpp:49	S	low: no recorder, error answers	y	n	y	Close/Start/Stop 0x80A80006, GetStatus 0, QueryMemSize/Open checks measured on fw 13.40 in PPSA01317
