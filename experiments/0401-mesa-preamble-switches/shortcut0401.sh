@@ -33,11 +33,11 @@ both)  S=""; WANT_BIN=174e768ec3a68c34be879ad57067819c; WANT_LAUNCHER=c6b2d7fdba
 cp)    S=""; WANT_BIN=174e768ec3a68c34be879ad57067819c; WANT_LAUNCHER=c6b2d7fdba882a1817224c9bf6d07ff2
        NAME="BC5 emulator (test 0401 CP)"; WHAT="CP_COHER_START_DELAY 0x20 only (Mesa's preamble value)"
        ENVS="BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0" ;;
-cpacb) S=e2; WANT_BIN=35ff82ebc8530e4bcc4ea66ccf43accf; WANT_LAUNCHER=fbac41eef200b36c440ddc1ef5322783
+cpacb) S=e2; WANT_BIN=35ff82ebc8530e4bcc4ea66ccf43accf; WANT_LAUNCHER=f23acf2742e7cb7a4c097b0911a08adb
        NAME="BC5 emulator (test 0401 CP+acb)"; WHAT="CP_COHER_START_DELAY 0x20, exp 0381's acb state restore, exp 0403's ACB_INHERIT journal (acb CS prefix off), the table catcher, NpCppWebApi SessionManager V2 and the param.json memory sizing"
        ENVS="BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_ACB_CS_PREFIX=0 BC5_DIRECT_ACB_INHERIT=journal BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0 BC5_DIRECT_TABLE_CATCHER=1 KYTY_BC5_NP_SESSION_V2=1 KYTY_BC5_MEMORY_FROM_PARAM=0"
        OLD="BC5 emulator (test 0401 CP)" ;;
-cpacb-e3) S=e3; WANT_BIN=c059c71fa37c0f81db19310cb1197be4; WANT_LAUNCHER=2995f018116521816780f1aa73d58c38   # built, not installed
+cpacb-e3) S=e3; WANT_BIN=c059c71fa37c0f81db19310cb1197be4; WANT_LAUNCHER=03d29959a729ca79ba831787a03a8122   # built, not installed; the launcher as the top session edited it (log kept per run)
        NAME="BC5 emulator (test 0401 CP+acb)"; WHAT="CP_COHER_START_DELAY 0x20, exp 0381's acb state restore, exp 0403's ACB_INHERIT journal of the queue's own state (queue and skip built, not set; acb CS prefix off), the table catcher, NpCppWebApi SessionManager V2 and the 10-s memory line"
        ENVS="BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_ACB_CS_PREFIX=0 BC5_DIRECT_ACB_INHERIT=journal BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0 BC5_DIRECT_TABLE_CATCHER=1 KYTY_BC5_NP_SESSION_V2=1 KYTY_BC5_MEMORY_FROM_PARAM=0"
        OLD="BC5 emulator (test 0401 CP)" ;;

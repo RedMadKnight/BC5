@@ -20,9 +20,13 @@ WORK = pathlib.Path(sys.argv[2])
 ZUNIT = pathlib.Path(sys.argv[3])
 ETREE = pathlib.Path(sys.argv[4])
 ETREE_FILES = ("src/libs/libNpCppWebApi.cpp", "src/kernel/memory.cpp", "src/kernel/memoryAddressSpace.inc", "src/loader/systemContent.cpp",
-               "src/loader/systemContent.h")
+               "src/loader/systemContent.h", "src/libs/libSaveData.cpp", "src/kernel/pthread.cpp",
+               "src/libs/libAudio2.cpp", "src/libs/audio.cpp", "src/bc5/pad_audio_route.hpp", "src/graphics/presentation/videoOut.cpp",
+               "src/libs/libAmpr.cpp",
+               "src/kernel/eventQueue.cpp", "src/libs/bc5LleAgc.cpp", "src/kernel/semaphore.cpp", "src/kernel/fileSystem.cpp", "src/libs/libKernel.cpp", "src/libs/libNet.cpp", "src/libs/libPad.cpp", "src/libs/libJson2.cpp", "src/libs/libUlt.cpp", "src/libs/libUserService.cpp", "src/libs/libSystemService.cpp", "src/loader/jit.h", "src/loader/runtimeLinker.cpp")
 KIT = ("mkunit0401.py", "check0401.py", "build0401.py", "launcher0401.py", "unit0401.cpp", "env_flag.hpp", "mknp0401.py", "mkmem0401.py",
-       "npgate0401.cpp", "inh0401.cpp")
+       "npgate0401.cpp", "inh0401.cpp", "mksav0401.py", "sav0401.cpp", "mkpth0401.py", "pth0401.cpp", "mkaud0401.py", "aud0401.cpp", "mkvo0401.py", "vo0401.cpp", "mkfl0401.py", "fl0401.cpp", "mkamm0401.py", "amm0401.cpp",
+       "mkeq0405.py", "mkgpu0405.py", "mkthr0405.py", "mkmem0405.py", "mkfs0405.py", "mksvc0405.py", "mklib0405.py", "mkao0405.py", "mktls0405.py", "ao0405.cpp", "eq0405.cpp", "fs0405.cpp", "gpu0405.cpp", "lib0405.cpp", "mem0405.cpp", "svc0405.cpp", "thr0405.cpp", "tls0405.cpp")
 LAUNCHER = """#!/bin/bash
 # the output goes to ~/bc5-work/play-pkg-last.log
 EMU=~/bc5-work/kytyplus-build/src/kyty_emulator
@@ -54,6 +58,7 @@ case "$1" in
       *check0401.py) exec python "$s" python "$1" ;;
       *build0401.py)
         [ -z "${FAKE_BUILD_FAIL:-}" ] || { echo "x.cpp:9:9: error: nope"; echo "== COMPILE FAILED"; exit 2; }
+        printf '%s\n' "$@" > "$BC5_0401_ROOT/build-args.txt"
         printf '\033[1mwarning:\033[0m one\n'
         [ -z "${FAKE_SHARED_CHANGES:-}" ] || echo changed >> "$BC5_0401_ROOT/bc5-work/kytyplus-build/src/kyty_emulator"
         out=$5; { echo '#!/bin/sh'; echo BC5_DIRECT_CP_COHER_START_DELAY; echo 'exp 0401: CP_COHER_START_DELAY %s'; echo 'exp 0401: SPI_SHADER_REQ_CTRL_PS %s'
@@ -72,26 +77,47 @@ case "$1" in
                     [ -n "${FAKE_NO_MEMLINE:-}" ] || echo BC5_DIRECT_MEM_LINE
                     echo "the queue's live program"; echo 'prefixed with the queue'; echo 'never bound in a part of its own'; echo 'exp 0401: memory line %s'; echo 'memory (exp 0401)'
                     echo 'unknown, fallback ring'; echo 'UNSEEN (not observed in this wave mode)'
+                    [ -n "${FAKE_NO_E4:-}" ] || echo KYTY_BC5_SAVEDATA_FIXES
+                    echo BC5_DIRECT_FL_CRUMBS; echo BC5_DIRECT_FL_SKIP_ES; echo 'exp 0404: fl crumbs %s'; echo 'exp 0404: fl skip es'
+                    echo KYTY_BC5_AMM_PRT_CMDS; echo KYTY_BC5_AMM_EXTRA_CMDS; echo KYTY_BC5_AMPR_WAITS; echo 'exp 0401 prt: zero pages'
+                    echo KYTY_BC5_SAVEDATA_EVENT_CB; echo 'exp 0401: savedata event callback'; echo KYTY_BC5_SAVEDATA_SORT; echo 'exp 0401: savedata sort'
+                    echo '[bc5] exp 0401: savedata fixes %s'; echo KYTY_BC5_PTHREAD_FIXES; echo '[bc5] exp 0401: pthread fixes %s'
+                    echo KYTY_BC5_AUDIO_FIXES; echo '[bc5] exp 0401: audio fixes %s'; echo KYTY_BC5_VIDEOOUT_STATUS; echo '[bc5] exp 0401: videoout status %s'
+                    [ -n "${FAKE_NO_E5:-}" ] || for x in KYTY_BC5_EQUEUE_FIXES KYTY_BC5_MMAP_SHIM_FIXES KYTY_BC5_AUDIOOUT_CHECKS KYTY_BC5_AUDIOIN_CHECKS KYTY_BC5_NGS2_RACK_FIX BC5_R3_MPROTECT_GAPS BC5_R3_NULL_ARGS BC5_R3_RELEASE_HOLES BC5_R3_MUNMAP_HOLES BC5_R3_FLEX_HINT BC5_R3_DMQ_END BC5_R3_EXEC_EINVAL BC5_R3_QUERY_SIZE KYTY_BC5_THREAD_SYNC_FIXES KYTY_BC5_SEMA_FIXES KYTY_BC5_SAVEDATA_MEMORY_FIXES KYTY_BC5_SAVEDATA_DELETE_BUSY KYTY_BC5_SAVEDATA_ALIASES KYTY_BC5_HTTP2_FIXES KYTY_BC5_PAD_OPEN_EXT BC5_R3_MEMSEM_SIGNAL BC5_R3_REWIND_CATCH BC5_R3_DROP_CATCH BC5_R3_SUBMIT_EOP_EVENT BC5_R3_COND_WRITE BC5_R3_WAIT_IDLE BC5_R3_TS_100MHZ KYTY_BC5_FS_FIXES KYTY_BC5_POSIX_RET_FIXES KYTY_BC5_JSON2_FIXES KYTY_BC5_ULT_FIXES KYTY_BC5_USERSERVICE_VALUES KYTY_BC5_SYSTEMSERVICE_VALUES KYTY_BC5_SYSTEMSERVICE_PARAMS_7_1000 KYTY_BC5_TLS_FIXES; do echo "$x"; done
                   fi; } > "$out"
         chmod +x "$out"
-        n=0; for a in "$@"; do n=$((n + 1)); [ "$a" = --gate ] && break; done
-        if [ "$n" -lt "$#" ]; then   # the gate program: a stand-in that answers as the real one would
-          g="${@: -1}"; u="${@: -2:1}"; [ -f "$u" ] || { echo "no gate source $u"; exit 2; }
-          { echo '#!/bin/bash'
-            echo 'v=${KYTY_BC5_NP_SESSION_V2:-}; [ -n "$v" ] && [ "$v" != 0 ] && on=on || on=off'
-            echo '[ "$1" = "$on" ] || { echo "npgate0401: the argument says $1 but the switch is ${v:-unset}"; exit 1; }'
-            echo '[ -z "${FAKE_GATE_FAIL:-}" ] || { echo "npgate0401: FAIL eVU3cXIJz0w"; echo "npgate0401: $1 1 failures"; exit 1; }'
-            echo 'if [ "$1" = on ]; then echo "npgate0401: on 10 of 10 registered as their functions in x, 9 of 9 NOT_SIGNED_IN, initialize 1 of 1; end"'
-            echo 'else echo "npgate0401: off 10 of 10 unregistered, 9 of 9 NOT_SIGNED_IN, initialize 1 of 1; end"; fi'; } > "$g"
+        while [ $# -gt 0 ]; do   # each gate program: a stand-in that answers as the real one would
+          [ "$1" = --gate ] || { shift; continue; }
+          u=$2; g=$3; shift 3; [ "${1:-}" != --like ] || shift 2
+          [ -f "$u" ] || { echo "no gate source $u"; exit 2; }
+          case $g in
+            */npgate0401)
+              { echo '#!/bin/bash'
+                echo 'v=${KYTY_BC5_NP_SESSION_V2:-}; [ -n "$v" ] && [ "$v" != 0 ] && on=on || on=off'
+                echo '[ "$1" = "$on" ] || { echo "npgate0401: the argument says $1 but the switch is ${v:-unset}"; exit 1; }'
+                echo '[ -z "${FAKE_GATE_FAIL:-}" ] || { echo "npgate0401: FAIL eVU3cXIJz0w"; echo "npgate0401: $1 1 failures"; exit 1; }'
+                echo 'if [ "$1" = on ]; then echo "npgate0401: on 10 of 10 registered as their functions in x, 9 of 9 NOT_SIGNED_IN, initialize 1 of 1; end"'
+                echo 'else echo "npgate0401: off 10 of 10 unregistered, 9 of 9 NOT_SIGNED_IN, initialize 1 of 1; end"; fi'; } > "$g" ;;
+            *)
+              n=${g##*/}
+              { echo '#!/bin/bash'
+                echo "[ -z \"\${KYTY_BC5_SAVEDATA_DIR:-}\" ] || { echo '$n: FAIL the save directory is set'; exit 1; }"
+                echo "[ -z \"\${FAKE_E4_FAIL:-}\" ] || { echo '$n: FAIL stand-in'; exit 1; }"
+                echo "[ \"$n\" != amm0401 ] || [ \"\$1\" != on ] || [ \"\${KYTY_BC5_AMM_PRT_CMDS:-}\${KYTY_BC5_AMM_EXTRA_CMDS:-}\${KYTY_BC5_AMPR_WAITS:-}\" = 111 ] || { echo '$n: FAIL the three switches are not all on'; exit 1; }"
+                echo "pwd > where.txt; echo \"$n: \$1 3 of 3; end\""; } > "$g" ;;
+          esac
           chmod +x "$g"
-        fi
+        done
         exit 0 ;;
     esac ;;
   env) exec "$@" ;;
+  */fl0401) [ -z "${FAKE_FL_FAIL:-}" ] || { echo "fl0401: FAIL stand-in"; echo "fl0401: 1 of 74 cases failed"; exit 1; }; echo "fl0401: 74 of 74 cases; end"; exit 0 ;;
   */inh0401)   # series e3's CPU test: a stand-in that answers as the real one would
     [ -z "${FAKE_INH_FAIL:-}" ] || { echo "inh0401: FAIL B inherits W32: not bound: state -1 (want -1), 1 dispatches: [at 3 end 6 W32 bound]"; echo "inh0401: 1 of 25 cases failed"; exit 1; }
     echo "inh0401: 25 of 25 cases; end"; exit 0 ;;
-  sh) echo '[]'; exit 0 ;;
+  sh)
+    if [ "${2:-}" = -c ] && [ "${4:-}" = run ]; then shift; exec sh "$@"; fi   # box0401.sh's own script runs the test
+    echo '[]'; exit 0 ;;
 esac
 echo "fakebox: $*"; exit 9
 """
@@ -411,6 +437,80 @@ def t_series_e3():
     assert b.box("release", b.token).stdout.strip() == "released" and b.lock() == ""
 
 
+def t_series_e4():
+    b = Box("sere4", series="e4").up()
+    r = b.box("build", b.token, FAKE_FL_FAIL="1")
+    assert r.returncode == 1 and "the fl test failed" in r.stdout, r.stdout
+    assert md5(b.e / "src/bc5LleAgc.cpp") == "df12bb2de3e90b8c82a234eedf0babb5" and (b.e / "src/fl_scan.inc").is_file()
+    b.send()
+    assert b.box("setup", b.token).returncode == 0
+    r = b.box("build", b.token, FAKE_E4_FAIL="1")
+    assert r.returncode == 1 and "the sav0401 test (on) failed" in r.stdout, r.stdout
+    b.send()
+    assert b.box("setup", b.token).returncode == 0
+    r = b.box("build", b.token, FAKE_NO_E4="1")
+    assert r.returncode == 1 and "lacks [KYTY_BC5_SAVEDATA_FIXES]" in r.stdout, r.stdout
+    b.send()
+    assert b.box("setup", b.token).returncode == 0
+    r = b.box("build", b.token, KYTY_BC5_SAVEDATA_DIR="/must/not/be/used")
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "e4 unit with exp 0404's switches: df12bb2de3e90b8c82a234eedf0babb5; fl test: fl0401: 74 of 74 cases; end" in r.stdout, r.stdout
+    assert "e4 sav mksav0401.py src/libs/libSaveData.cpp:" in r.stdout and "e4 test sav0401: sav0401: on 3 of 3; end" in r.stdout, r.stdout
+    assert md5(b.e / "x-sav/src/libs/libSaveData.cpp") == "04f4c5bb05179b80fd7cf1e41832cdd9"
+    assert md5(b.e / "x-pth/src/kernel/pthread.cpp") == "0363847bd540883467dee22797475031" and "e4 test pth0401: pth0401: on 3 of 3; end / pth0401: off 3 of 3; end / pth0401: off 3 of 3; end" in r.stdout
+    assert md5(b.e / "x-aud/src/libs/libAudio2.cpp") == "7a1914c898e62e1e6ce699807aafbc74" and "e4 test aud0401: aud0401: on 3 of 3; end" in r.stdout
+    assert md5(b.e / "x-amm/src/libs/libAmpr.cpp") == "0a1762f6440f421586b56767d27d0770" and "e4 test amm0401: amm0401: on 3 of 3; end" in r.stdout
+    assert "e4 test savcb0401: sav0401: on 3 of 3; end" in r.stdout and "e4 test savsort0401: sav0401: on 3 of 3; end" in r.stdout, r.stdout
+    assert (b.e / "run-savcb0401-on" / "where.txt").is_file() and not (b.e / "raw/savcb0401").exists()   # one program, run per switch
+    for g in ("on", "off", "unset"):   # each run in its own fresh directory under exp0401e4
+        assert (b.e / f"run-sav0401-{g}" / "where.txt").read_text().strip().endswith(f"run-sav0401-{g}"), g
+    d = (b.e / "play-pkg-0401.sh").read_text()
+    assert "EMU=~/bc5-work/exp0401e4/bin/kyty_emulator" in d and 'mv "$LOG" "${LOG%.log}-$(date -r "$LOG"' in d, d
+    assert b.box("release", b.token).stdout.strip() == "released" and b.lock() == ""
+    b = Box("sere4p", series="e4")
+    (b.root / "src/KytyPlus/src/libs/libSaveData.cpp").write_bytes(b"changed\n")
+    r = b.claim()
+    assert r.returncode == 1 and "the tree's src/libs/libSaveData.cpp is not" in r.stdout, r.stdout
+
+
+def t_series_e5():
+    b = Box("sere5", series="e5").up()
+    r = b.box("build", b.token, FAKE_NO_E5="1")
+    assert r.returncode == 1 and "lacks [" in r.stdout, r.stdout
+    b.send()
+    assert b.box("setup", b.token).returncode == 0
+    r = b.box("build", b.token, KYTY_BC5_SAVEDATA_DIR="/must/not/be/used")
+    assert r.returncode == 0, r.stdout + r.stderr
+    for e in [['eq', 'mkeq0405.py', '-', 'src/kernel/eventQueue.cpp:c45e6a72c8e419d98059c3477a9373cc:d8eaa6d22e3e415ea8331dced30867c0', 'src/libs/bc5LleAgc.cpp:df12bb2de3e90b8c82a234eedf0babb5:09770e46272ed52107f055c6f1af2332'], ['gpu', 'mkgpu0405.py', '--chain', 'src/libs/bc5LleAgc.cpp:09770e46272ed52107f055c6f1af2332:d1cfd9bb1f1b3485bed4207a7f064d4f'], ['thr', 'mkthr0405.py', '-', 'src/kernel/pthread.cpp:0363847bd540883467dee22797475031:81ee12c4fa3e61df4f4b7239356b9f60', 'src/kernel/semaphore.cpp:c9c4aaf56492434eb84dc6e899260ae8:3aa9c8b441438483d124115d3961c9b0'], ['mem', 'mkmem0405.py', '-', 'src/kernel/memory.cpp:43713ef677ec887a8ca273f7ab5cee90:95d9ca880d01db26d51f0ecabcdfa7e1'], ['fs', 'mkfs0405.py', '-', 'src/kernel/fileSystem.cpp:f1b5f5288faddd78deff2dbd1b613e1f:a7201a1ab20dc60d876ad64f0dd4d086', 'src/libs/libKernel.cpp:3bf94a6168d176d591730bac33dff5b1:b353287342a8eb82305a4592a4021e3d'], ['svc', 'mksvc0405.py', '-', 'src/libs/libSaveData.cpp:04f4c5bb05179b80fd7cf1e41832cdd9:0e0c5d409286893e9956df9aeba845f5', 'src/libs/libNet.cpp:f7a26ceb10a4cf669c33ed592eb1e89d:35773d6e769b85be74012a86c0f02e89', 'src/libs/libPad.cpp:dbe268d7dff6134db45ad4328aace716:89a047a4f1ad39847bf76c15fa0d4c14'], ['lib', 'mklib0405.py', '-', 'src/libs/libJson2.cpp:d38d30582b49f57f9ef3fea6d84584be:85144ef10cbfe295d24ab7096710aa10', 'src/libs/libUlt.cpp:9198f40703960fe46e9ba066a6c58ac3:191fe8b19bf663af73f48cfc85535a5d', 'src/libs/libUserService.cpp:4f90ba6b94167d9b857c8efa89f1cf47:e3d34e9896ac5e6568f691f7c9699a06', 'src/libs/libSystemService.cpp:6c2a2925078d2facd4abe9412408dd57:4aa00c539657776620a49e222f3f8fa2'], ['ao', 'mkao0405.py', '-', '+src/bc5/pad_audio_route.hpp:51131854822a629c2b24739e3603ef5d', 'src/libs/audio.cpp:f58ec0105874173a9f84954706a17e96:230f732dbc20b9b196b28cb007ba95ec'], ['tls', 'mktls0405.py', '-', '+src/loader/jit.h:8b5a53504af3ca127c1ab4fe9b55ee45', 'src/loader/runtimeLinker.cpp:e94b25b8b37d36d97a074ea02723b733:aba94c24ad35a1c944ad3bd5843b13ef']]:   # each script's outputs as pinned, and the chain: each unit's last writer is the one built
+        for f in e[3:]:
+            if f.startswith("+"):
+                continue
+            rel, _, out = f.split(":")
+            assert md5(b.e / ("x5-" + e[0]) / rel) == out, (e[0], rel)
+    for n in ['eq0405', 'ao0405', 'mem0405', 'thr0405', 'svc0405', 'gpu0405', 'fs0405', 'lib0405', 'tls0405'] + ["sav0401", "pth0401", "aud0401", "vo0401", "amm0401"]:   # e5's tests and e4's, over e5's objects
+        assert ("test %s: " % n) in r.stdout and ("%s: on 3 of 3; end" % n) in r.stdout, (n, r.stdout)
+    bu = load("build0401")
+    args = (b.root / "build-args.txt").read_text().splitlines()
+    incs, units, gts = bu.parse_rest(args[5:])   # no unit twice (parse_rest asserts it), and each the last writer's
+    last = {}
+    for e in [['eq', 'mkeq0405.py', '-', 'src/kernel/eventQueue.cpp:c45e6a72c8e419d98059c3477a9373cc:d8eaa6d22e3e415ea8331dced30867c0', 'src/libs/bc5LleAgc.cpp:df12bb2de3e90b8c82a234eedf0babb5:09770e46272ed52107f055c6f1af2332'], ['gpu', 'mkgpu0405.py', '--chain', 'src/libs/bc5LleAgc.cpp:09770e46272ed52107f055c6f1af2332:d1cfd9bb1f1b3485bed4207a7f064d4f'], ['thr', 'mkthr0405.py', '-', 'src/kernel/pthread.cpp:0363847bd540883467dee22797475031:81ee12c4fa3e61df4f4b7239356b9f60', 'src/kernel/semaphore.cpp:c9c4aaf56492434eb84dc6e899260ae8:3aa9c8b441438483d124115d3961c9b0'], ['mem', 'mkmem0405.py', '-', 'src/kernel/memory.cpp:43713ef677ec887a8ca273f7ab5cee90:95d9ca880d01db26d51f0ecabcdfa7e1'], ['fs', 'mkfs0405.py', '-', 'src/kernel/fileSystem.cpp:f1b5f5288faddd78deff2dbd1b613e1f:a7201a1ab20dc60d876ad64f0dd4d086', 'src/libs/libKernel.cpp:3bf94a6168d176d591730bac33dff5b1:b353287342a8eb82305a4592a4021e3d'], ['svc', 'mksvc0405.py', '-', 'src/libs/libSaveData.cpp:04f4c5bb05179b80fd7cf1e41832cdd9:0e0c5d409286893e9956df9aeba845f5', 'src/libs/libNet.cpp:f7a26ceb10a4cf669c33ed592eb1e89d:35773d6e769b85be74012a86c0f02e89', 'src/libs/libPad.cpp:dbe268d7dff6134db45ad4328aace716:89a047a4f1ad39847bf76c15fa0d4c14'], ['lib', 'mklib0405.py', '-', 'src/libs/libJson2.cpp:d38d30582b49f57f9ef3fea6d84584be:85144ef10cbfe295d24ab7096710aa10', 'src/libs/libUlt.cpp:9198f40703960fe46e9ba066a6c58ac3:191fe8b19bf663af73f48cfc85535a5d', 'src/libs/libUserService.cpp:4f90ba6b94167d9b857c8efa89f1cf47:e3d34e9896ac5e6568f691f7c9699a06', 'src/libs/libSystemService.cpp:6c2a2925078d2facd4abe9412408dd57:4aa00c539657776620a49e222f3f8fa2'], ['ao', 'mkao0405.py', '-', '+src/bc5/pad_audio_route.hpp:51131854822a629c2b24739e3603ef5d', 'src/libs/audio.cpp:f58ec0105874173a9f84954706a17e96:230f732dbc20b9b196b28cb007ba95ec'], ['tls', 'mktls0405.py', '-', '+src/loader/jit.h:8b5a53504af3ca127c1ab4fe9b55ee45', 'src/loader/runtimeLinker.cpp:e94b25b8b37d36d97a074ea02723b733:aba94c24ad35a1c944ad3bd5843b13ef']]:
+        for f in e[3:]:
+            if not f.startswith("+"):
+                last[f.split(":")[0]] = "x5-" + e[0]
+    for rel, x in last.items():
+        if rel == "src/libs/bc5LleAgc.cpp":
+            assert md5(b.e / "src/bc5LleAgc.cpp") == md5(b.e / x / rel) and (b.e / "src/bc5LleAgc-e4.cpp").is_file()
+            assert md5(b.e / "src/bc5LleAgc-e4.cpp") == "df12bb2de3e90b8c82a234eedf0babb5"
+        else:
+            assert units[rel].replace("\\", "/").endswith("%s/%s" % (x, rel)), (rel, units.get(rel))
+    assert units["src/libs/libAudio2.cpp"].endswith("x-aud/src/libs/libAudio2.cpp")   # e4's units stay where e5 left them alone
+    if "src/kernel/memory.cpp" in last:
+        assert (b.e / last["src/kernel/memory.cpp"] / "src/kernel/memoryAddressSpace.inc").is_file()   # beside the unit
+    assert len(gts) == len(set(g[1] for g in gts)), gts
+    d = (b.e / "play-pkg-0401.sh").read_text()
+    assert "EMU=~/bc5-work/exp0401e5/bin/kyty_emulator" in d and 'mv "$LOG" "${LOG%.log}-$(date -r "$LOG"' in d, d
+    assert b.box("release", b.token).stdout.strip() == "released" and b.lock() == ""
+
 def t_series_unknown():
     b = Box("serx", series="f")
     r = b.claim()
@@ -560,8 +660,11 @@ def t_build_commands():
     assert l2 == ["clang++", "-Wl,-Map=/e/bin/k.map", "--dependency-file=/e/bin/k.d", bu.MAIN, "/e/u.o", "/e/mem.o", "/a/libbc5_backend.a", "-o", "/e/bin/k"], l2
     g = bu.gate_argv(l2, "/e/gate.o", "/e/raw/g")
     assert g == ["clang++", "-Wl,-Map=/e/raw/g.map", "--dependency-file=/e/raw/g.d", "/e/gate.o", "/e/u.o", "/e/mem.o", "/a/libbc5_backend.a", "-o", "/e/raw/g"], g
-    assert bu.parse_rest(["/e/inc", "src/kernel/memory.cpp=/e/m.cpp", "--gate", "/e/g.cpp", "/e/g"]) == ("/e/inc", {"src/kernel/memory.cpp": "/e/m.cpp"}, ("/e/g.cpp", "/e/g"))
-    assert bu.parse_rest(["/e/zinc"]) == ("/e/zinc", {}, None) and bu.parse_rest([]) == (None, {}, None)
+    assert bu.parse_rest(["/e/inc", "src/kernel/memory.cpp=/e/m.cpp", "--gate", "/e/g.cpp", "/e/g"]) == (["/e/inc"], {"src/kernel/memory.cpp": "/e/m.cpp"}, [("/e/g.cpp", "/e/g", bu.GATE_LIKE)])
+    assert bu.parse_rest(["/e/zinc"]) == (["/e/zinc"], {}, []) and bu.parse_rest([]) == ([], {}, [])
+    assert bu.parse_rest(["/e/a", "--inc", "/e/b", "--gate", "/e/g.cpp", "/e/g", "--gate", "/e/p.cpp", "/e/p", "--like", "src/kernel/pthread.cpp"]) == (
+        ["/e/a", "/e/b"], {}, [("/e/g.cpp", "/e/g", bu.GATE_LIKE), ("/e/p.cpp", "/e/p", "src/CMakeFiles/kyty_emulator.dir/kernel/pthread.cpp.o")])
+    assert bu.compile_argv(db, "/e/u.cpp", "/e/u.o", ["/e/a", "/e/b"]) == ["clang++", "-I/e/a", "-I/e/b", "-I/a", "-o", "/e/u.o", "-c", "/e/u.cpp"]
     l = bu.link_argv(db, "/e/u.o", "/e/bin/k")
     assert l == ["clang++", "-Wl,-Map=/e/bin/k.map", "--dependency-file=/e/bin/k.d", "/e/u.o", "other.o", "/a/libbc5_backend.a", "-o", "/e/bin/k"], l
     db[1]["command"] = db[1]["command"].replace(bu.UNIT + " ", bu.UNIT + " " + bu.UNIT + " ")
@@ -574,7 +677,7 @@ def t_build_commands():
 
 def main():
     cases = [v for k, v in sorted(globals().items()) if k.startswith("t_")]
-    assert len(cases) == 26, len(cases)
+    assert len(cases) == 28, len(cases)
     bad = 0
     for c in cases:
         try:

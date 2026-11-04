@@ -115,4 +115,93 @@ How it reads, as an inference, not shown: both registers act inside the GPU, whe
 - *Memory line* (`--memline`, `BC5_DIRECT_MEM_LINE`, on unless 0). Every 10 s a background thread writes `memory (exp 0401): t … s: available … MiB, swap used … MiB, psi some … full … (avg10, %), full total … ms, gtt … of … MiB`. It reads `/proc/meminfo`, `/proc/pressure/memory` and amdgpu's `mem_info_gtt_used`/`_total`, once each, with no smaps walk. The min journal is flushed after each line, so the line before a crash survives. A value whose file, key or number cannot be read is printed as `unknown`, never 0, so a missing file cannot look like memory at its floor (Codex's point 1). The CPU test checks every file read; no meminfo; no MemAvailable key (a decoy `MemAvailableX:`); no SwapFree; no PSI `full` line; no PSI file; no GTT total; a GTT value that is not a number.
 - *Build.* 2026-11-03 18:55–19:0x, claim to release in slot 20261103185545273314, no emulator. Binary `c059c71fa37c0f81db19310cb1197be4` (shared objects of 4d2b1b1d, archive 75e30335; units bc5LleAgc d3b7f9b0, libNpCppWebApi 935fcc7e, memory 43713ef6, systemContent 4e33b30a + header 2b2b21eb), launcher `2995f018116521816780f1aa73d58c38` (`raw/play-pkg-0401e3.diff`), `raw/build-e3.txt`, `raw/check0401-e3.out` 7 of 7, CPU test `raw/inh0401-e3.out` 25 of 25, R32 gate `raw/npgate-e3-{on,off,unset}.out` as in e. The same 11 warnings as e2, none in new code. `test0401.py` 26 of 26. Built only: `shortcut0401.sh cpacb-e3` would install it (ACB_INHERIT=journal, memory switch off), and the shortcut stays on e2. The shared files and every earlier 0401 binary were unchanged at the end.
 
+**Series e4: e3 plus exp 0402's items 3, 9, 2, 7 and 10, where they were missing (2026-11-03 22:3x, the top session's GO on the maintainer's "buduj dodatkowo 3,9,2,7,10 o ile sami tego już nie poprawialiśmy"; built, not installed).** Each item was first compared with our effective code: the box tree, KytyPlus f266548 plus patch 0001. Each missing part is ported on its own script, unit and switch, default off. Four laptop agents did the comparisons and ports, one item each (7 and 10 together); their notes hold the evidence, file:line in our tree. The e4 launcher also keeps each run's log (the top session's line). The same line went into e2's launcher, f23acf27.
+- *Item 3, rwlock/condvar (AnyPS5 4ed0f9f91, 372f0f6c6, 83b1015c4, 45a8b80a5, 16375634e): one ported, four not applicable* (`pth0401-notes.md`). Four of the commits are in AnyPS5's `_umtx_op` (SyncOnAddress.cpp, not Pthread), which this tree does not have.
+  - Waiter-bit races (4ed0f9f91, 372f0f6c6, 83b1015c4): cannot happen here. One mutex per lock guards all of its state (pthread.cpp:2562-2593, 2744-2756), and there is no waiter bit.
+  - An unlock that throws (4ed0f9f91 b): cannot happen. `NativeMutexUnlock` returns codes (1467-1495).
+  - The relock spin (16375634e): cannot happen. Our relock does not spin (1373, 1958).
+  - Missing: 45a8b80a5, `URWLOCK_PREFER_READER`. A thread that holds a read lock on any rwlock reads past waiting writers, as FreeBSD 11.4 libthr's `rdlock_count` does. Ours allowed it only for the same lock (2587-2593, 2680-2685), so two readers, each waiting behind the other lock's writer, could deadlock. Ported in adapted form, without AnyPS5's code, as `KYTY_BC5_PTHREAD_FIXES` (`mkpth0401.py`, pthread.cpp 11cef59e → 0363847b).
+  - CPU stress test `pth0401.cpp`: 10 cases with real threads and a 50 s watchdog, switch on and off.
+  - Note: none of the five explains the 18:04 freeze. A lost wake-up here sleeps in 10 ms polls; it does not spin at 100 % user CPU.
+- *The maintainer's rule change (2026-11-03 23:0x), applied to every item below:* a port is judged for any title, not for our two. The only valid reasons to skip one are "we already match (file:line)" and "licence or provenance not acceptable". The first verdicts on items 7, 9 and 10 said "not applicable" for our titles. Those were reopened, and the missing parts were ported behind switches.
+- *Item 9, SaveData (AnyPS5 0d0abe09c, bc6b4d76f; KytyPS5 4b0282e, dfec14a): three switches* (`sav0401-notes.md`, which records both verdicts).
+  - Missing: dfec14a, mount result left alone on a refused mount. `*mount_result = {}` ran before every refusal (625). Ported as `KYTY_BC5_SAVEDATA_FIXES`.
+  - Event callback (AnyPS5 0d0abe09c, bc6b4d76f). Our host exports neither `sceSaveDataRegisterEventCallback` (`hsKd5c21sQc`) nor `sceSaveDataUnregisterEventCallback` (`v-AK1AxQhS0`). A title that imports them gets the loader's return-0 stub: OK, and never a callback. The two fixes need the feature they fix, so the feature was ported with them: both NIDs, and the delivery thread started at the first successful registration of an initialization. Behind `KYTY_BC5_SAVEDATA_EVENT_CB`, and registered only with it on. The second title polls GetEventResult instead (F188, F189).
+  - Sorted search (4b0282e). The order already matches (F217, libSaveData.cpp:559-582). Of the key definitions, the mtime key, from the files' write times, is ported as `KYTY_BC5_SAVEDATA_SORT`. Free blocks and the missing blocks record are kept: ours matches shadPS4 and AnyPS5.
+  - One script, `mksav0401.py`: libSaveData.cpp d6e9c37f → 04f4c5bb.
+  - CPU test `sav0401.cpp`, one program run once per switch: 20 checks (FIXES, SORT), 33 with EVENT_CB. It runs in a fresh directory under `exp0401e4` with `KYTY_BC5_SAVEDATA_DIR` unset, away from any save.
+- *Item 2, AudioOut2 (AnyPS5 c34ab0258, 11f217b14, 42beeaa46, b87075aad, ccaac6602): three ported, two not needed* (`aud0401-notes.md`).
+  - PCM taken at the set (c34ab0258): missing for the bed ports.
+  - Silence for a buffer not set again (11f217b14): missing.
+  - Blocking push returns once there is room (42beeaa46): missing on the timer path only. The device path already waits (audio.cpp:829-869).
+  - Reopen of the default output (b87075aad): not applicable on the box, which uses SDL 2.33 with PipeWire.
+  - Reopen of the controller card (ccaac6602): already covered by exp 0372's PadRouteStep (audio.cpp:908-945).
+  - The three missing parts are ported as `KYTY_BC5_AUDIO_FIXES`: any value turns all three on, and a list such as `set,room` picks parts (`mkaud0401.py`, libAudio2.cpp fb44443e → 7a1914c8). audio.cpp and pad_audio_route.hpp are unchanged, and the `exp 0372` counts are the same.
+  - CPU test `aud0401.cpp`: 25 checks, no sound device.
+  - **Before the maintainer plays it: exp 0372's replug check.** The title's vibration port is an AudioOut2 port, so "set" and "silence" change what reaches the actuators. Software check: P1 and P2 of `s6n0372.sh`/`replug0372.sh` on the e4 binary. Then the physical replug and a DS4. A `silence` line that names type 0x6 means the haptics are cut; then use `set,room`.
+- *Item 7, AMM PRT and the other AMM/AMPR commands (AnyPS5 4f41f4c3, `Apr.cpp`, PRT commits e3b5192cb, 79fc99774, 37881a5da): ported, 26 NIDs behind three switches* (`amm0401-notes.md`; the first verdict, `prtvo0401-notes.md`, said not applicable because our host registers no PRT command, libAmpr.cpp:3648-3741, and the second title imports none).
+  - `KYTY_BC5_AMM_PRT_CMDS`: MapAsPrt, AllocatePaForPrt (with rollback), RemapIntoPrt, UnmapToPrt and their two measures. Zero pages are read-only on the CPU, after 37881a5da.
+  - `KYTY_BC5_AMM_EXTRA_CMDS`: Remap, MultiMap, ModifyProtect, ModifyMtypeProtect, each with its `WithGpuMaskId` form, and their 8 measures.
+  - `KYTY_BC5_AMPR_WAITS`: `sceAmprCommandBufferWaitOnAddress` and `…WaitOnCounter` with their measures, on real counters.
+  - One script, `mkamm0401.py`: libAmpr.cpp a0e2ff6e → 0a1762f6, memory.cpp unchanged. The NIDs are registered only with their switch on.
+  - Not ported: libkernel's `sceKernelWrite*Command` family. Our host has no executor for byte commands and no indirect-buffer submit for them, so it is a separate decision.
+  - Note: with PRT or EXTRA on, every map goes into the page table, about 60 MB at 12 GiB.
+  - CPU test `amm0401.cpp`, the three switches set together: 317 checks on, 63 off.
+  - Still noted, not built: `scratch_fill` should leave the PRT window out (bc5LleAgc.cpp:2229-2324).
+- *Item 10, VideoOutGetOutputStatus (sharpemu b1ec286 `VideoOutExports.cs:505-562`, AnyPS5): ported as `KYTY_BC5_VIDEOOUT_STATUS`* (`vo0401-notes.md`, which supersedes `prtvo0401-notes.md` for this item). The answer is resolution 2 (UHD) before registration. After registration it follows AnyPS5: the display setting, which is measured. sharpemu derives it from the buffer size, which is not measured. The other fields already match. One script, `mkvo0401.py`: videoOut.cpp f848f5c6 → 3fa490f7. CPU test `vo0401.cpp`: 27 checks. Exp 0291 (F354) had already run the UHD answer on the second title: the same buffers and the same rate.
+- *Exp 0404's two switches (the top session's addition, 2026-11-03 23:4x).* `mkfl0401.py` turns e3's unit d3b7f9b0 into df12bb2d, plus `fl_scan.inc` for the CPU test (`fl0401-notes.md`).
+  - `BC5_DIRECT_FL_CRUMBS=1` is a catcher. Every draw of a fast-launch dcb gets issued/done slots and a 64-entry ring in the GDS shadow at +0x8000. At a fence timeout the probe names the draw that did not finish, with the inputs the CP copied for it. The crumbs add end-of-pipe load, so a clean play with them on is weak evidence.
+  - `BC5_DIRECT_FL_SKIP_ES=<list>` is a diagnostic. It takes `SPI_SHADER_PGM_LO_ES` values (0x11d00f85 is the program at 0x11d00f8500) and drops the draws that are certainly fast-launch with a listed ES.
+  - CPU test `fl0401.cpp`: 74 cases.
+- *Build.* 2026-11-04 00:53–00:5x, claim to release in one slot, no emulator. Binary `d6f11b10df3ba379922730502e576148` (shared objects of 4d2b1b1d, archive 75e30335). Units: bc5LleAgc df12bb2d, libNpCppWebApi 935fcc7e, memory 43713ef6, systemContent 4e33b30a + header 2b2b21eb, libSaveData 04f4c5bb, pthread 0363847b, libAudio2 7a1914c8, videoOut 3fa490f7, libAmpr 0a1762f6. Launcher `69e565be`, which keeps each run's log. Records: `raw/e4/` (build, the function check, every CPU test's output).
+  - Every CPU test passed on the box, each with its switch 1, 0 and unset: fl0401 74/74, inh0401 25/25, sav0401 20/20, savcb 33/33, savsort 20/20, pth0401 10/10, aud0401 25/25, vo0401 27/27, amm0401 317/317 on and 63/63 off. npgate 10/10 on, off and unset; the function check 7 of 7.
+  - 22 warnings, all in code that was already in the tree: the newly compiled units' own lines, such as libAmpr.cpp's format-extra-args and videoOut.cpp's `Bc5VideoOutEventName`. None is in new lines.
+  - `test0401.py` 27 of 27 on stand-ins.
+  - Built only. The shortcut stays on e2, and the maintainer said not to install e4 (2026-11-04 00:0x). e4a (`fe4ea308`, the first e4 without items 7 and 10 and the reopened item 9) stays on the box as `exp0401e4a`, unused.
+- *Night tests of e4 (2026-11-04 00:57–02:14, unattended).* The maintainer approved them at 00:1x: "przetestuj też buildy z portami i przełącznikami z researchu". The top session gave the list.
+  - *How.* Each arm ran under its own atomic lock line, one after another:
+    - `run0401t.sh` (box, md5 1eee506a), driven by `night0401.sh` (laptop), from `raw/night-arms.txt`;
+    - a private copy of input.cfg with RT on and JobArenaFix on;
+    - a derived launcher with its own log, and a private working directory with a fresh snapshot of the live saves (`4b6b1ea5`, LC_ALL=C; the live saves were only compared, and they were unchanged after every arm);
+    - exp 0401e3's freeze watcher and exp 0330's memory sampler;
+    - the kernel log streamed to the laptop.
+  - *The route.* Gated on the journal's frame profile lines: cross at the start screen, then down ×3 and cross for slot 4, then Continue and the load, then G (gameplay). A start check ends at the save-slot list.
+  - *The shortcut's switches.* Every arm had them: `CP_COHER_START_DELAY=1`, `ACB_CS_PREFIX=0`, `ACB_INHERIT=journal`, `ACB_STATE_RESTORE=1`, `SPI_REQ_CTRL_PS=0`, `ARGS_WB=0`, `TABLE_CATCHER=1`, `NP_SESSION_V2=1`, `MEMORY_FROM_PARAM=0`.
+  - *Results.* Text only, in `raw/night/` (`<tag>-summary.txt`, `-switch-lines.txt`, `-probe.txt`, `-memline.txt`, `-kernel-stream.txt`, …).
+
+    | Arm | Binary, switches beyond the shortcut's | End | Flips/s | Seconds with a gap > 100 ms (longest) | Memory floor |
+    |---|---|---|---|---|---|
+    | s0 | e4, none | save-slot list at 93 s | 23.4 | 26 (610 ms) | 425 MiB |
+    | spth | e4, `PTHREAD_FIXES` | list at 93 s | 23.8 | 20 (651) | 488 |
+    | ssavfix | e4, `SAVEDATA_FIXES` | list at 93 s | 23.2 | 22 (600) | 565 |
+    | ssavcb | e4, `SAVEDATA_EVENT_CB` | list at 93 s | 24.2 | 21 (615) | 540 |
+    | ssavsort | e4, `SAVEDATA_SORT` | list at 93 s | 24.3 | 19 (614) | 517 |
+    | saud | e4, `AUDIO_FIXES` | list at 93 s | 23.9 | 18 (698) | 435 |
+    | svo | e4, `VIDEOOUT_STATUS` | list at 93 s | 24.5 | 21 (583) | 533 |
+    | sprt | e4, `AMM_PRT_CMDS` | list at 94 s | 24.2 | 22 (696) | 530 |
+    | sextra | e4, `AMM_EXTRA_CMDS` | list at 93 s | 24.4 | 25 (606) | 539 |
+    | swaits | e4, `AMPR_WAITS` | list at 93 s | 24.4 | 19 (494) | 556 |
+    | scrumbs | e4, `FL_CRUMBS` | list at 93 s | 22.9 | 17 (632) | 587 |
+    | sskipes | e4, `FL_SKIP_ES=0x11d00cde,0x11d00f85,0x11d00f8d` | list at 93 s | 24.1 | 18 (426) | 545 |
+    | sall | e4, all of the above (FL_SKIP_ES off) | list at 93 s | 22.8 | 23 (709) | 515 |
+    | rA | e4, all on, FL_CRUMBS on | clean, G at 113 s, ended at G+900 | 51.2 | 29 (1126) | 487 |
+    | rB | e2 (35ff82eb), the shortcut's own: the control | clean, G+900 | 53.4 | 27 (1096) | 523 |
+    | rC | e4, all on plus FL_SKIP_ES (the three ES) | clean, G+900 | 51.9 | 32 (988) | 470 |
+
+    Every arm had 0 crash lines, 0 kernel lines, 0 freeze dumps and 0 devcoredumps. Flips/s is over the whole run, menus and loads included.
+  - *Each switch's own line* came up in the journal as set. In each single-switch arm only that switch read on (`raw/night/<tag>-switch-lines.txt`). For example:
+    - `pthread fixes on (rwlock: … AnyPS5 45a8b80a5, libthr rdlock_count)`;
+    - `audio fixes on: set silence room`;
+    - `videoout status on: resolution 2 at the first sceVideoOutGetOutputStatus (port size 1280x720, …)`;
+    - `KYTY_BC5_AMM_PRT_CMDS on`;
+    - `fl crumbs on (…)`;
+    - `fl skip es 0x11d00cde,0x11d00f85,0x11d00f8d (…)`.
+  - *FL_CRUMBS.* No fence timed out in any route, so the catcher had nothing to name. In rA it crumbed 32,769 buffers and 1.41 M draws, none of them "maybe fast-launch".
+  - *FL_SKIP_ES (rC).* 194,895 draws were dropped by their ES over 16,385 buffers, with no hang in 15 minutes. That is no evidence of anything while the hang itself did not come back in rA or rB.
+  - *What this shows.*
+    - Every e4 switch starts the title to its save-slot list, alone and all together.
+    - e4 with everything on plays 15 minutes of the route as cleanly as the e2 control, within a few percent in frame rate.
+    - None of the three routes met the 18:04 freeze or exp 0404's 22:54 hang, so nothing here says whether any switch cures them.
+  - *Audio.* exp 0372's software replug check for `KYTY_BC5_AUDIO_FIXES` (`aud0401t.sh`, `replug0401t.sh` and `audn0401.sh`, derived from exp 0391's; see below) runs after the routes.
+
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.

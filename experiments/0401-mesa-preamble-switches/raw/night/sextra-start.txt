@@ -1,0 +1,8 @@
+2026-11-04 01:13:07
+arm sextra, mode start, cap 300 s, play 0 s, binary /home/kjaniszewski/bc5-work/exp0401e4/bin/kyty_emulator md5 d6f11b10df3ba379922730502e576148, launcher /home/kjaniszewski/bc5-work/exp0401t/play-pkg-0401t.sh md5 29b48119
+env: BC5_EMU=/home/kjaniszewski/bc5-work/exp0401e4/bin/kyty_emulator BC5_0401T_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0401t/input-sextra.cfg KYTY_BC5_INPUT_CMD=/home/kjaniszewski/bc5-work/exp0401t/in-sextra.cmd BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_ACB_CS_PREFIX=0 BC5_DIRECT_ACB_INHERIT=journal BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0 BC5_DIRECT_TABLE_CATCHER=1 KYTY_BC5_NP_SESSION_V2=1 KYTY_BC5_MEMORY_FROM_PARAM=0 KYTY_BC5_AMM_EXTRA_CMDS=1
+boot 21dfc2fa, up since 2026-11-03 22:55:16
+emulator pid 264476 exe /home/kjaniszewski/bc5-work/exp0401e4/bin/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0401t/wd
+route: cross (start screen) at 87 s
+route: the save-slot list runs at 93 s
+launcher gone: yes

@@ -1,0 +1,46 @@
+== 2026-11-04 00:59:57 arm spth (start, cap 300 s, play 0 s)
+run rc 0: spth (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 23.8 flips/s over 88 s, 20 seconds with a gap over 100 ms, longest 651 ms; memory floor 488 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: spth (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 23.8 flips/s over 88 s, 20 seconds with a gap over 100 ms, longest 651 ms; memory floor 488 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 01:01:49 arm ssavfix (start, cap 300 s, play 0 s)
+run rc 0: ssavfix (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 23.2 flips/s over 88 s, 22 seconds with a gap over 100 ms, longest 600 ms; memory floor 565 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: ssavfix (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 23.2 flips/s over 88 s, 22 seconds with a gap over 100 ms, longest 600 ms; memory floor 565 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 01:03:41 arm ssavcb (start, cap 300 s, play 0 s)
+run rc 0: ssavcb (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.2 flips/s over 88 s, 21 seconds with a gap over 100 ms, longest 615 ms; memory floor 540 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: ssavcb (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.2 flips/s over 88 s, 21 seconds with a gap over 100 ms, longest 615 ms; memory floor 540 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 01:05:34 arm ssavsort (start, cap 300 s, play 0 s)
+run rc 0: ssavsort (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.3 flips/s over 88 s, 19 seconds with a gap over 100 ms, longest 614 ms; memory floor 517 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: ssavsort (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.3 flips/s over 88 s, 19 seconds with a gap over 100 ms, longest 614 ms; memory floor 517 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 01:07:28 arm saud (start, cap 300 s, play 0 s)
+run rc 0: saud (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 23.9 flips/s over 88 s, 18 seconds with a gap over 100 ms, longest 698 ms; memory floor 435 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: saud (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 23.9 flips/s over 88 s, 18 seconds with a gap over 100 ms, longest 698 ms; memory floor 435 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 01:09:19 arm svo (start, cap 300 s, play 0 s)
+run rc 0: svo (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.5 flips/s over 89 s, 21 seconds with a gap over 100 ms, longest 583 ms; memory floor 533 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: svo (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.5 flips/s over 89 s, 21 seconds with a gap over 100 ms, longest 583 ms; memory floor 533 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 01:11:11 arm sprt (start, cap 300 s, play 0 s)
+run rc 0: sprt (start): START OK: the save-slot list runs at 94 s after 94 s (G none, list 94); 24.2 flips/s over 89 s, 22 seconds with a gap over 100 ms, longest 696 ms; memory floor 530 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: sprt (start): START OK: the save-slot list runs at 94 s after 94 s (G none, list 94); 24.2 flips/s over 89 s, 22 seconds with a gap over 100 ms, longest 696 ms; memory floor 530 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 01:13:03 arm sextra (start, cap 300 s, play 0 s)
+run rc 0: sextra (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.4 flips/s over 89 s, 25 seconds with a gap over 100 ms, longest 606 ms; memory floor 539 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: sextra (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.4 flips/s over 89 s, 25 seconds with a gap over 100 ms, longest 606 ms; memory floor 539 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 01:14:56 arm swaits (start, cap 300 s, play 0 s)
+run rc 0: swaits (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.4 flips/s over 89 s, 19 seconds with a gap over 100 ms, longest 494 ms; memory floor 556 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: swaits (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.4 flips/s over 89 s, 19 seconds with a gap over 100 ms, longest 494 ms; memory floor 556 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 01:16:50 arm scrumbs (start, cap 300 s, play 0 s)
+run rc 0: scrumbs (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 22.9 flips/s over 87 s, 17 seconds with a gap over 100 ms, longest 632 ms; memory floor 587 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: scrumbs (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 22.9 flips/s over 87 s, 17 seconds with a gap over 100 ms, longest 632 ms; memory floor 587 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 01:18:42 arm sskipes (start, cap 300 s, play 0 s)
+run rc 0: sskipes (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.1 flips/s over 88 s, 18 seconds with a gap over 100 ms, longest 426 ms; memory floor 545 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: sskipes (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.1 flips/s over 88 s, 18 seconds with a gap over 100 ms, longest 426 ms; memory floor 545 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 01:20:34 arm sall (start, cap 300 s, play 0 s)
+run rc 0: sall (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 22.8 flips/s over 88 s, 23 seconds with a gap over 100 ms, longest 709 ms; memory floor 515 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: sall (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 22.8 flips/s over 88 s, 23 seconds with a gap over 100 ms, longest 709 ms; memory floor 515 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 01:22:25 arm rA (route, cap 1200 s, play 900 s)
+run rc 0: rA (route): ended at G+900 after 1014 s (G 113, list 93); 51.2 flips/s over 1009 s, 29 seconds with a gap over 100 ms, longest 1126 ms; memory floor 487 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: rA (route): ended at G+900 after 1014 s (G 113, list 93); 51.2 flips/s over 1009 s, 29 seconds with a gap over 100 ms, longest 1126 ms; memory floor 487 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 01:39:38 arm rB (route, cap 1200 s, play 900 s)
+run rc 0: rB (route): ended at G+900 after 1013 s (G 113, list 93); 53.4 flips/s over 1008 s, 27 seconds with a gap over 100 ms, longest 1096 ms; memory floor 523 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: rB (route): ended at G+900 after 1013 s (G 113, list 93); 53.4 flips/s over 1008 s, 27 seconds with a gap over 100 ms, longest 1096 ms; memory floor 523 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 01:56:54 arm rC (route, cap 1200 s, play 900 s)
+run rc 0: rC (route): ended at G+900 after 1013 s (G 113, list 93); 51.9 flips/s over 1008 s, 32 seconds with a gap over 100 ms, longest 988 ms; memory floor 470 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: rC (route): ended at G+900 after 1013 s (G 113, list 93); 51.9 flips/s over 1008 s, 32 seconds with a gap over 100 ms, longest 988 ms; memory floor 470 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 02:14:09 all arms done
