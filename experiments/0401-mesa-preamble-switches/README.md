@@ -303,4 +303,71 @@ How it reads, as an inference, not shown: both registers act inside the GPU, whe
   - Neither night met the 18:04 freeze or the 22:54 hang, so neither tells whether a switch cures them.
   - The ports are behaviour fixes for any title; on the second title they run as cleanly as before.
 
+**Series e6p: e5 plus exp 0405's G7, SET_PREDICATION, alone (2026-11-04 morning, the top session's GO on the maintainer's
+answer 5 to exp 0405: "tak, z przełącznikiem - przetestuj w pierwszej kolejności sam"; built on his "Yes, build and test" in
+this session; not installed).**
+- *Where G7 lives.* In the backend's filter (`policy.cpp`), not in the host unit, so e6p builds a private backend archive:
+  - the shared archive's source (`KYTY_BC5_BACKEND_SRC`, `~/bc5-work/d19/export/backend` on the box) is checked against
+    main 029e0d6b's backend, file by file (`backend0405.md5`, 59 files, none more or less) and copied;
+  - `mkpred0405.py` edits `policy.cpp` (8e22ce87), `policy.hpp` (89f098be) and `tests/policy_test.cpp` (7f81a28a);
+  - the copy is built with the shared archive's build type and compiler, and the emulator links it in place of the shared
+    archive (`build0401.py --archive`, as exp 0400's relink). FilterOptions and FilterStats keep their layout (the host's ABI).
+- *The switch* `BC5_R3_PREDICATION`, read once:
+  - unset: as before, silent;
+  - `0`: as before, and every SET_PREDICATION the filter sees is counted and journaled (a census);
+  - `1`: the gfx9 form (Mesa `ac_cmdbuf_cp.c:281-284`) passes to the GPU on the GFX ring;
+  - `bool`: only CLEAR and the two memory booleans pass.
+  A packet with other bits (outside 0x71100, AnyPS5 `Pm4.cpp:309`, KytyPS5 `CpOpSetPredication`), an operation above 4, a
+  high address over 16 bits, or an unaligned or zero predicate address stays dropped; so does every SET_PREDICATION on a
+  compute ring. The predicate is a memory operand, so an unmapped one is dropped and the host makes its page resident.
+- *Build* (11:22, binary fa66e89f, private archive 244fb811, launcher 9e5ec5d3): all 125 of the backend's Catch2 cases pass
+  (34,886 assertions), then G7's 4 cases (190 assertions), then the switch's reading for unset, empty, 0, 1 and bool. e5's
+  and e4's tests pass as in e5. (`build.txt`'s summary line printed a stderr line instead of the pass line; the raw outputs
+  in `raw/e6p/raw/bk-*.out` hold the pass lines; the summary is fixed in `box0401.sh`.)
+- *First, a read of last night's r5* (e4 + e5 all on, 15-min route): exp 0405's drop catcher (G8) counted only opcode 0x4a,
+  112,152 times, and never 0x20.
+- *Arms* (`raw/night-arms-e6p*.txt`), each as the shortcut's switches with RT on and JobArenaFix on, kernel log streamed,
+  freeze watcher, private wd; 0 crash, kernel, freeze and devcoredump lines in every arm (the kernel stream held only the
+  IPv6 MLD lines that r5 had too), and the live saves unchanged:
+
+  | Arm | Switch | Result |
+  |---|---|---|
+  | p0, start | `=0` (census) | list at 95 s; 22.8 flips/s; floor 485 MiB |
+  | p1, start | `=1` | list at 95 s; 23.7 flips/s; floor 525 MiB |
+  | rp0, 15-min route | `=0` | to G+900; 53.1 flips/s; longest gap 1338 ms; floor 445 MiB |
+  | rp1, 15-min route | `=1` | to G+900; 53.3 flips/s; longest gap 1300 ms; floor 415 MiB |
+
+- *What it shows.* The filter saw no SET_PREDICATION in any of the four arms: only the switch's own line is in the journal.
+  The second title does not use predication on this route, so G7 changes nothing for it, and on and off ran the same. It is
+  safe to keep behind its switch, default off; showing an effect needs a title that sends the packet (ASTRO BOT was not run).
+
+**Series e6: e5 plus exp 0405's decisions 1, 3 and 4's batch 1 (2026-11-04, the top session's GO on the maintainer's answers;
+built on the laptop's stand-ins only so far).** His answers (Polish, relayed by the top): 1 "wdrażamy - to tylko Twoje
+podejrzenie, traktujemy jako opis innej osoby i wdrażamy"; 2 titles' own code stays out; 3 "=> A, ale w taki sposób aby nie
+można było powiązać naszego kodu z IDA"; 4 "=> B => B" (port first, then load, a switch per table); 5 is e6p above; 6 the
+ngs2_pcm.h family stays out. Six laptop agents ported it, one group each (`*0405-notes.md` hold the evidence):
+
+| Group | Switch | Units (input → output) | Test (on / off) |
+|---|---|---|---|
+| fwn: decision 1, net and system | `KYTY_BC5_FW_NET` (rtc, rudp, resolver, param400, npwebapi) | libRtc 719561dd, libRudp af8d0178, network 598cfe80, libSystemService (e5) 252a35f9, libNpCppWebApi (e) e613bc8f | 33 / 33 |
+| fwa: decision 1, audio | `KYTY_BC5_FW_AUDIO` (audio3d, audio3dstrict, pcmloop, avplayer, ngs2) | audio.cpp (e5) 1f90e752, avPlayer 44203af3 | 50 / 28 |
+| jit: decision 3, R3 M31 | `KYTY_BC5_JIT_SHM`; `KYTY_BC5_FW_KERNEL` (notify) | memory.cpp (e5) ee24c888, libKernel (e5) 0a0d4665 | 8 / 3 |
+| tbc: decision 4, Zlib, JpegEnc, Ime | `KYTY_BC5_LOAD_ZLIB`, `_JPEG`, `_IME` | libZlib c7e165b9, libJpeg c5fe947c, libIme 49fa46f1 | 108 / 26 |
+| tbn: decision 4, NpCommon, NpManager, NpTrophy | `KYTY_BC5_LOAD_NPCOMMON`, `_NPMANAGER`, `_NPTROPHY` | libNp 24e77826 | 165 / 34 |
+| tld: decision 4, the loading | the six `KYTY_BC5_LOAD_*` | libs.cpp 903fa699 | 9 / 9 |
+
+- *Tables load first.* With a switch on, its table loads before every live table, so an import's exact key keeps the live
+  function. The loader's NID-only fallback (`FindByNid`) takes the first record, though, so the 9 NIDs that live tables
+  also register (7 Ime, 2 NpManager) are no longer registered by the switched tables (the top session's approval). The other
+  26 dead tables have no such collision (`tld0405-notes.md` lists them all: 1,033 NIDs).
+- *Held, with sizes* (in each group's notes): the Ngs2 renderer (3-5 days) and new Audio3d exports (about 1 day); Rudp's
+  contexts (about 3.5 days), Mouse's absolute-position calls, Pad queries; the Jpeg encode itself (about 0.3 day); 39 Ime
+  functions AnyPS5 leaves unimplemented too; 64 NpTrophy placeholders; `sceKernelJitGetSharedMemoryInfo`.
+- *Held for the maintainer:* Pad b94b3fa32 and 3b404f65e, ImeFilterText and NpTrophy ConfigHasGroupFeature (disassembly
+  with addresses), three libkernel_sys rows ("read from disassembly and not measured on a console"), and `npwebapi` (a
+  title's own module: in the build, default off, out of the all-on route, the top session's call on decision 2).
+- *Kit* (`box0401.sh` series e6): rows chained after e5's (E6_EDITS, E6_GATES, E6_STRS); the stand-in case `t_series_e6`
+  passes. Arms are ready (`raw/night-arms-e6.txt`, `raw/night-arms-e6aud.txt`): the base start, one start per group, all on,
+  a 15-min route with e4, e5 and e6 on, and exp 0372's software replug check for the audio group.
+
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.

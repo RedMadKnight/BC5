@@ -29,6 +29,8 @@ case "${BC5_0401_SERIES:-}" in
     e4) SER=e4; EXPECT_UNIT=d3b7f9b0ab43184ee11de83e9e233ff8; MKFLAG="--acb-restore --catcher --inherit3 --memline" ;; # e3 + exp 0402 items
     e3) SER=e3; EXPECT_UNIT=d3b7f9b0ab43184ee11de83e9e233ff8; MKFLAG="--acb-restore --catcher --inherit3 --memline" ;; # e2 with exp 0403's queue mode (addendum a423f761) + the memory line
     e5) SER=e5; EXPECT_UNIT=d3b7f9b0ab43184ee11de83e9e233ff8; MKFLAG="--acb-restore --catcher --inherit3 --memline" ;; # e4 + exp 0405's ports
+    e6p) SER=e6p; EXPECT_UNIT=d3b7f9b0ab43184ee11de83e9e233ff8; MKFLAG="--acb-restore --catcher --inherit3 --memline" ;; # e5 + exp 0405's G7, private backend
+    e6) SER=e6; EXPECT_UNIT=d3b7f9b0ab43184ee11de83e9e233ff8; MKFLAG="--acb-restore --catcher --inherit3 --memline" ;; # e5 + exp 0405's decisions 1, 3, 4 (batch 1)
     *) echo "0401 STOP: unknown series ${BC5_0401_SERIES}"; exit 2 ;;
 esac
 # Series d (2026-11-03 13:52): series c's edit on exp 0379's zero skip, the unit and header of exp 0388's 902585e2 build
@@ -94,11 +96,44 @@ E5_GATES=(
     "tls0405.cpp src/loader/runtimeLinker.cpp KYTY_BC5_TLS_FIXES tls0405"
 )
 E5_STRS=(KYTY_BC5_EQUEUE_FIXES KYTY_BC5_MMAP_SHIM_FIXES KYTY_BC5_AUDIOOUT_CHECKS KYTY_BC5_AUDIOIN_CHECKS KYTY_BC5_NGS2_RACK_FIX BC5_R3_MPROTECT_GAPS BC5_R3_NULL_ARGS BC5_R3_RELEASE_HOLES BC5_R3_MUNMAP_HOLES BC5_R3_FLEX_HINT BC5_R3_DMQ_END BC5_R3_EXEC_EINVAL BC5_R3_QUERY_SIZE KYTY_BC5_THREAD_SYNC_FIXES KYTY_BC5_SEMA_FIXES KYTY_BC5_SAVEDATA_MEMORY_FIXES KYTY_BC5_SAVEDATA_DELETE_BUSY KYTY_BC5_SAVEDATA_ALIASES KYTY_BC5_HTTP2_FIXES KYTY_BC5_PAD_OPEN_EXT BC5_R3_MEMSEM_SIGNAL BC5_R3_REWIND_CATCH BC5_R3_DROP_CATCH BC5_R3_SUBMIT_EOP_EVENT BC5_R3_COND_WRITE BC5_R3_WAIT_IDLE BC5_R3_TS_100MHZ KYTY_BC5_FS_FIXES KYTY_BC5_POSIX_RET_FIXES KYTY_BC5_JSON2_FIXES KYTY_BC5_ULT_FIXES KYTY_BC5_USERSERVICE_VALUES KYTY_BC5_SYSTEMSERVICE_VALUES KYTY_BC5_SYSTEMSERVICE_PARAMS_7_1000 KYTY_BC5_TLS_FIXES)
+# Series e6p (2026-11-04 morning, the top session's GO on the maintainer's answer 5 to exp 0405: "tak, z przełącznikiem -
+# przetestuj w pierwszej kolejności sam"): e5 and exp 0405 R3 G7 alone (SET_PREDICATION, BC5_R3_PREDICATION, default off), in a
+# private backend archive. The shared archive's source (KYTY_BC5_BACKEND_SRC in the shared normal build's cache) must be main
+# 029e0d6b's backend file for file (backend0405.md5; no file more or less in the directories CMake reads). It is copied,
+# mkpred0405.py edits policy.cpp, policy.hpp and policy_test.cpp, and the copy is built with the shared archive's build type and
+# compiler; every Catch2 test runs, then G7's four cases, then the switch's reading per value. The emulator links that archive
+# in place of the shared one (build0401.py --archive); nothing else in the backend changes, and FilterOptions keeps its layout.
+PRED_OUT=("src/policy.cpp:8e22ce87d7a7491e448e39edc9fad6e6" "include/bc5/policy.hpp:89f098bec587eb630b174bbb002ae482" "tests/policy_test.cpp:7f81a28ad3b171ecbd6389b5257fd6a4")
+BK_DIRS=(CMakeLists.txt src include tests policy experiments)
+E6P_STRS=(BC5_R3_PREDICATION 'exp 0405: set predication %s' 'exp 0405: G7 SET_PREDICATION %s %s')
+# Series e6 (2026-11-04, the top session's GO on the maintainer's answers to exp 0405): e5 plus decisions 1 (values from
+# firmware runs and module readings), 3 (the JIT shared memory, from behaviour only) and 4's batch 1 (six dead tables ported,
+# then loaded by a switch each, before the live tables); no G7. Rows as E5_EDITS, chained after them over the units e5 left.
+E6_EDITS=(
+    "fwn mkfwn0405.py - src/libs/libRtc.cpp:e1689ac69353d76f206bd7bb7736d3b8:719561dd7cc51c965c9ae97a07df01fb src/libs/libRudp.cpp:9fbe2847b2aa61564c9eea80ceb4617a:af8d0178fa63f7e5a2f5bf2d72d9690c src/libs/network.cpp:98d501f4e09322ab8727dd65ff0ea45c:598cfe806da831d5a07a5f506d13a03c src/libs/libSystemService.cpp:4aa00c539657776620a49e222f3f8fa2:252a35f9f9b482e9c9fb74b2c0740a2f src/libs/libNpCppWebApi.cpp:935fcc7e4ab1108f3d2d8b33eaf65bf6:e613bc8fcc3f58fe5b5ff3be47a9cc46"
+    "fwa mkfwa0405.py - src/libs/audio.cpp:230f732dbc20b9b196b28cb007ba95ec:1f90e7520a6641c8ff3affb06993372d src/libs/avPlayer.cpp:966cb8a847467b64ce0486168f052a82:44203af3c14874fee232808fc4aa6568"
+    "jit mkjit0405.py - src/kernel/memory.cpp:95d9ca880d01db26d51f0ecabcdfa7e1:ee24c888f976cc125502cf3a31006349 src/libs/libKernel.cpp:b353287342a8eb82305a4592a4021e3d:0a0d46657d8088b72a9ba67e2fbcc310"
+    "tbc mktbc0405.py - src/libs/libZlib.cpp:f5d3aafebca0d202082365ee609f15b6:c7e165b9b288d71f874d5d6c6dbd363c src/libs/libJpeg.cpp:a85a83b8d541f5e10c14d739ff56457f:c5fe947cc30001c49bd2b1f8af7a0e2c src/libs/libIme.cpp:a572240f789088264b6e13850978b739:49fa46f1d8005245e7f0b266d8b29659"
+    "tbn mktbn0405.py - src/libs/libNp.cpp:a2c5facee2708bed1556383b0f5bbdca:24e778261495abcd5a069396f14b28b4"
+    "tld mktld0405.py - src/libs/libs.cpp:309aecf7c85a5b47217060bb87ec6512:903fa699db7c20b2b3f288ab572bce8d"
+)
+E6_GATES=(
+    "fwn0405.cpp src/libs/libRtc.cpp KYTY_BC5_FW_NET fwn0405"
+    "fwa0405.cpp src/libs/audio.cpp KYTY_BC5_FW_AUDIO fwa0405"
+    "jit0405.cpp src/kernel/memory.cpp KYTY_BC5_JIT_SHM,KYTY_BC5_FW_KERNEL jit0405"
+    "tbc0405.cpp src/libs/libZlib.cpp KYTY_BC5_LOAD_ZLIB,KYTY_BC5_LOAD_JPEG,KYTY_BC5_LOAD_IME tbc0405"
+    "tbn0405.cpp src/libs/libNp.cpp KYTY_BC5_LOAD_NPCOMMON,KYTY_BC5_LOAD_NPMANAGER,KYTY_BC5_LOAD_NPTROPHY tbn0405"
+    "tld0405.cpp src/libs/libs.cpp KYTY_BC5_LOAD_ZLIB,KYTY_BC5_LOAD_JPEG,KYTY_BC5_LOAD_IME,KYTY_BC5_LOAD_NPCOMMON,KYTY_BC5_LOAD_NPMANAGER,KYTY_BC5_LOAD_NPTROPHY tld0405"
+)
+E6_STRS=(KYTY_BC5_FW_NET KYTY_BC5_FW_AUDIO KYTY_BC5_JIT_SHM KYTY_BC5_FW_KERNEL KYTY_BC5_LOAD_ZLIB KYTY_BC5_LOAD_JPEG KYTY_BC5_LOAD_IME KYTY_BC5_LOAD_NPCOMMON KYTY_BC5_LOAD_NPMANAGER KYTY_BC5_LOAD_NPTROPHY)
+E4UP=0; E5UP=0; case $SER in e4) E4UP=1 ;; e5 | e6p | e6) E4UP=1; E5UP=1 ;; esac   # e6p and e6 build everything e5 builds
 E=$W/exp0401$SER; LOCK=$W/BOX-LOCK; QUEUE=$W/BOX-QUEUE; ST=$E/state; BIN=$E/bin/kyty_emulator; B=$W/kytyplus-build; R=$E/raw
 
 BIN_MD5=4d2b1b1dd52eaea6e3195500f604e73e; LEAN_MD5=30d4be3371d7c6376b2b4425698c1c3a; ARCHIVE_MD5=75e303357610fee8d1d205bdc88c031c
 LAUNCHER_MD5=97835f8850cc22ece5c4bcdbbb646912; UNIT_MD5=d18b448299a335aadac75bbd202155fd   # main 029e0d6b's patch 0001 unit
 SERIES_S=2400; GRACE=120; BUILD_S=1500; DISK_MAX=80
+[ "$SER" != e6p ] || SERIES_S=3000   # e6p builds the backend and runs its tests as well
+[ "$SER" != e6 ] || SERIES_S=3000    # e6: six more units' tests
 
 DBX=(distrobox enter ubuntu --); PY=(python3 -I); CXX=clang++
 now() { printf '%(%s)T\n' -1; }
@@ -256,7 +291,7 @@ pins_why() {   # prints the first pin that does not hold
         [ "$(m "$TREE/src/loader/systemContent.cpp")" = "$SC_IN_MD5" ] || { echo "the tree's systemContent.cpp is not $SC_IN_MD5"; return; }
         [ "$(m "$TREE/src/loader/systemContent.h")" = "$SCH_IN_MD5" ] || { echo "the tree's systemContent.h is not $SCH_IN_MD5"; return; }
     fi
-    if [ "$SER" = e4 ] || [ "$SER" = e5 ]; then
+    if [ "$E4UP" = 1 ]; then
         local row f
         for row in "${E4_EDITS[@]}"; do
             for f in ${row#* * }; do
@@ -332,7 +367,7 @@ cmd_build() {
     u=$("${PY[@]}" "$E/mkunit0401.py" "$in" "$E/src/bc5LleAgc.cpp" "$E/src/mesa_preamble_prefix.inc" $MKFLAG) || die "the unit's edit did not apply"
     [ "$u" = "$EXPECT_UNIT" ] || die "the private unit is $u, not $EXPECT_UNIT"
     [ "$(m "$E/src/bc5LleAgc.cpp")" = "$EXPECT_UNIT" ] || die "the private unit on disk is not $EXPECT_UNIT"
-    if [ "$SER" = e4 ] || [ "$SER" = e5 ]; then   # exp 0404's two switches over e3's unit; fl_scan.inc goes beside it for the CPU test
+    if [ "$E4UP" = 1 ]; then   # exp 0404's two switches over e3's unit; fl_scan.inc goes beside it for the CPU test
         mv -f "$E/src/bc5LleAgc.cpp" "$E/src/bc5LleAgc-e3.cpp" || die "cannot keep e3's unit"
         u=$("${PY[@]}" "$E/mkfl0401.py" "$E/src/bc5LleAgc-e3.cpp" "$E/src/bc5LleAgc.cpp" "$E/src") || die "the fl edit did not apply"
         [ "$u" = "$FL_UNIT_MD5" ] && [ "$(m "$E/src/bc5LleAgc.cpp")" = "$FL_UNIT_MD5" ] || die "the fl unit is $u, not $FL_UNIT_MD5"
@@ -349,7 +384,7 @@ cmd_build() {
         inc=("$E/mem/src" "src/libs/libNpCppWebApi.cpp=$E/src/libNpCppWebApi.cpp" "src/kernel/memory.cpp=$E/mem/src/kernel/memory.cpp"
              "src/loader/systemContent.cpp=$E/mem/src/loader/systemContent.cpp" --gate "$E/npgate0401.cpp" "$R/npgate0401")
     fi
-    if [ "$SER" = e4 ] || [ "$SER" = e5 ]; then   # exp 0402's items: their scripts on the tree, their units and their test programs
+    if [ "$E4UP" = 1 ]; then   # exp 0402's items: their scripts on the tree, their units and their test programs
         local row tag script f rel
         for row in "${E4_EDITS[@]}"; do
             tag=${row%% *}; script=$(echo "$row" | cut -d' ' -f2)
@@ -367,13 +402,14 @@ cmd_build() {
             inc+=(--gate "$E/$1" "$R/${5:-$4}" --like "$2"); built="$built${5:-$4} "
         done
     fi
-    if [ "$SER" = e5 ]; then   # exp 0405's ports, chained over the units as e4 left them; then the unit list rebuilt
+    if [ "$E5UP" = 1 ]; then   # exp 0405's ports, chained over the units as e4 left them; then the unit list rebuilt
         local -A CUR=()
         local tag5 script5 opt5 f5 rel5 src5 x5 new5=() a5 d5 h5 k5
         CUR[src/libs/bc5LleAgc.cpp]=$E/src/bc5LleAgc.cpp
         for a5 in "${inc[@]}"; do case "$a5" in src/*=*) CUR[${a5%%=*}]=${a5#*=} ;; esac; done
         CUR[src/loader/systemContent.h]=$E/mem/src/loader/systemContent.h
-        for row in "${E5_EDITS[@]}"; do
+        local rows5=("${E5_EDITS[@]}"); [ "$SER" != e6 ] || rows5+=("${E6_EDITS[@]}")   # e6's rows chain after e5's
+        for row in "${rows5[@]}"; do
             set -- $row; tag5=$1; script5=$2; opt5=$3; shift 3
             rm -rf "$E/r5-$tag5" "$E/x5-$tag5" || die "cannot clear $tag5"
             for f5 in "$@"; do   # "+rel:md5" is a file the script only reads: staged, not written
@@ -417,8 +453,8 @@ cmd_build() {
             [ "$k5" = 1 ] || new5+=("$rel5=${CUR[$rel5]}")
         done
         inc=("${new5[@]}")
-        local built5=" "
-        for row in "${E5_GATES[@]}"; do
+        local built5=" " gates5=("${E5_GATES[@]}"); [ "$SER" != e6 ] || gates5+=("${E6_GATES[@]}")
+        for row in "${gates5[@]}"; do
             set -- $row
             case "$built5" in *" ${5:-$4} "*) continue ;; esac
             inc+=(--gate "$E/$1" "$R/${5:-$4}" --like "$2"); built5="$built5${5:-$4} "
@@ -429,7 +465,7 @@ cmd_build() {
     in_box 120 "$CXX" -std=c++20 -Wall -Wextra -Werror "-I$E/inc" "-I$E/src" "$E/unit0401.cpp" -o "$R/unit0401" > "$R/unit0401.out" 2>&1 || die "the function did not compile: $(grep -m3 'error:' "$R/unit0401.out" | cut -c1-160 | tr '\n' ' ')"
     in_box 60 python3 -I "$E/check0401.py" "$R/unit0401" > "$R/check0401.out" 2>&1 || die "the function's check failed: $(tail -1 "$R/check0401.out" | cut -c1-200)"
     grep -q '^check0401: 7 of 7 .*; end$' "$R/check0401.out" || die "no end marker from the function's check"
-    if [ "$SER" = e3 ] || [ "$SER" = e4 ] || [ "$SER" = e5 ]; then   # series e3: inherit_scan's CPU test, from the text mkunit0401.py put into the unit
+    if [ "$SER" = e3 ] || [ "$E4UP" = 1 ]; then   # series e3: inherit_scan's CPU test, from the text mkunit0401.py put into the unit
         [ -f "$E/src/inherit_scan.inc" ] && [ -f "$E/src/memline_parse.inc" ] && grep -qF -f <(head -1 "$E/src/inherit_scan.inc") "$E/src/bc5LleAgc.cpp" &&
             grep -qF -f <(head -1 "$E/src/memline_parse.inc") "$E/src/bc5LleAgc.cpp" || die "no inherit_scan.inc or memline_parse.inc beside the unit"
         in_box 120 "$CXX" -std=c++20 -Wall -Wextra -Werror "-I$E/src" "$E/inh0401.cpp" -o "$R/inh0401" > "$R/inh0401-build.out" 2>&1 ||
@@ -437,7 +473,7 @@ cmd_build() {
         in_box 60 "$R/inh0401" > "$R/inh0401.out" 2>&1 || die "the inherit test failed: $(grep -m3 'FAIL\|failed' "$R/inh0401.out" | cut -c1-200 | tr '\n' ' ')"
         grep -q '^inh0401: \([0-9]*\) of \1 cases; end$' "$R/inh0401.out" || die "no end marker from the inherit test"
     fi
-    if [ "$SER" = e4 ] || [ "$SER" = e5 ]; then   # exp 0404's CPU test, from fl_scan.inc as mkfl0401.py put it into the unit
+    if [ "$E4UP" = 1 ]; then   # exp 0404's CPU test, from fl_scan.inc as mkfl0401.py put it into the unit
         in_box 120 "$CXX" -std=c++20 -Wall -Wextra -Werror "-I$E/src" "$E/fl0401.cpp" -o "$R/fl0401" > "$R/fl0401-build.out" 2>&1 ||
             die "the fl test did not compile: $(grep -m3 'error:' "$R/fl0401-build.out" | cut -c1-160 | tr '\n' ' ')"
         in_box 60 "$R/fl0401" > "$R/fl0401.out" 2>&1 || die "the fl test failed: $(grep -m3 'FAIL\|failed' "$R/fl0401.out" | cut -c1-200 | tr '\n' ' ')"
@@ -445,6 +481,44 @@ cmd_build() {
     fi
     hook after-check
     own
+    if [ "$SER" = e6p ]; then   # exp 0405 R3 G7 in a private backend archive (PRED_OUT above)
+        local bs bt cxx catch carg="" o pv pw pe
+        bs=$(sed -n 's/^KYTY_BC5_BACKEND_SRC:[A-Z]*=//p' "$B/CMakeCache.txt")
+        [ -n "$bs" ] && [ -f "$bs/CMakeLists.txt" ] || die "the shared backend source [$bs] is not there"
+        (cd "$bs" && md5sum -c --quiet "$E/backend0405.md5") > "$R/bk-check.txt" 2>&1 || die "the shared backend source is not main's: $(head -3 "$R/bk-check.txt" | tr '\n' ' ' | cut -c1-200)"
+        (cd "$bs" && find "${BK_DIRS[@]}" -type f | sort) > "$R/bk-files.txt" || die "cannot list the shared backend source"
+        sed 's/^[0-9a-f]*  //' "$E/backend0405.md5" | sort | cmp -s - "$R/bk-files.txt" ||
+            die "the shared backend source has files more or less than main's: $(sed 's/^[0-9a-f]*  //' "$E/backend0405.md5" | sort | diff - "$R/bk-files.txt" | grep '^[<>]' | head -3 | tr '\n' ' ')"
+        rm -rf "$E/bk" "$E/bk-g7" "$E/bk-build" && mkdir -p "$E/bk" || die "cannot make $E/bk"
+        (cd "$bs" && tar cf - "${BK_DIRS[@]}") | tar xf - -C "$E/bk" || die "cannot copy the backend source"
+        (cd "$E/bk" && md5sum -c --quiet "$E/backend0405.md5") > /dev/null 2>&1 || die "the backend copy does not read back"
+        "${PY[@]}" "$E/mkpred0405.py" "$E/bk" "$E/bk-g7" > "$R/mkpred0405.out" 2>&1 || die "mkpred0405.py did not apply: $(tail -1 "$R/mkpred0405.out" | cut -c1-160)"
+        for o in "${PRED_OUT[@]}"; do
+            [ "$(m "$E/bk-g7/${o%%:*}")" = "${o##*:}" ] || die "mkpred0405.py's ${o%%:*} is $(m "$E/bk-g7/${o%%:*}"), not ${o##*:}"
+            cp "$E/bk-g7/${o%%:*}" "$E/bk/${o%%:*}" || die "cannot place ${o%%:*}"
+        done
+        bt=$(sed -n 's/^CMAKE_BUILD_TYPE:[A-Z]*=//p' "$W/backend-ubuntu/CMakeCache.txt" 2> /dev/null)
+        cxx=$(sed -n 's/^CMAKE_CXX_COMPILER:[A-Z]*=//p' "$W/backend-ubuntu/CMakeCache.txt" 2> /dev/null)
+        [ -n "$bt" ] && [ -n "$cxx" ] || die "cannot read the shared archive's configuration"
+        catch=$(find "$W" -maxdepth 4 -type d -path '*/backend-build/_deps/catch2-src' -print -quit 2> /dev/null)
+        [ -z "$catch" ] || carg="-DFETCHCONTENT_SOURCE_DIR_CATCH2=$catch"
+        in_box "$BUILD_S" sh -c 'nice -n 19 cmake -S "$1" -B "$2" -G Ninja -DCMAKE_BUILD_TYPE="$3" -DCMAKE_CXX_COMPILER="$4" -DBC5_WITH_AMDGPU=ON -DBC5_BUILD_TESTS=ON $5 && nice -n 19 cmake --build "$2" -j8' bkbuild "$E/bk" "$E/bk-build" "$bt" "$cxx" "$carg" > "$R/bk-build.out" 2>&1 ||
+            die "the private backend did not build: $(strip_ansi "$R/bk-build.out" | grep -m3 -E 'error|FAILED' | cut -c1-160 | tr '\n' ' ')"
+        [ -f "$E/bk-build/libbc5_backend.a" ] && [ -x "$E/bk-build/bc5_backend_tests" ] || die "no private archive or test program"
+        own
+        in_box 600 env -u BC5_R3_PREDICATION "$E/bk-build/bc5_backend_tests" > "$R/bk-tests.out" 2>&1 || die "the backend's tests failed: $(grep -m3 -iE 'failed|error' "$R/bk-tests.out" | cut -c1-160 | tr '\n' ' ')"
+        grep -q '^All tests passed' "$R/bk-tests.out" || die "no pass line from the backend's tests"
+        in_box 120 env -u BC5_R3_PREDICATION "$E/bk-build/bc5_backend_tests" '[predication]' > "$R/bk-pred.out" 2>&1 || die "G7's cases failed: $(grep -m2 -iE 'failed' "$R/bk-pred.out" | tr '\n' ' ' | cut -c1-160)"
+        grep -q '^All tests passed (.* in 4 test cases)' "$R/bk-pred.out" || die "G7's cases are not the four: $(tail -1 "$R/bk-pred.out")"
+        for o in unset:off empty:off 0:census 1:all bool:bool; do
+            pv=${o%%:*}; pw=${o#*:}
+            case $pv in unset) pe=(env -u BC5_R3_PREDICATION) ;; empty) pe=(env BC5_R3_PREDICATION=) ;; *) pe=(env "BC5_R3_PREDICATION=$pv") ;; esac
+            in_box 60 "${pe[@]}" "BC5_TEST_EXPECT_PREDICATION=$pw" "$E/bk-build/bc5_backend_tests" 'G7: BC5_R3_PREDICATION is read once from the environment' > "$R/bk-env-$pv.out" 2>&1 &&
+                grep -q '^All tests passed (.* in 1 test case)' "$R/bk-env-$pv.out" || die "the switch reads wrong for $pv: $(tail -2 "$R/bk-env-$pv.out" | tr '\n' ' ' | cut -c1-160)"
+        done
+        inc+=(--archive "$W/backend-ubuntu/libbc5_backend.a" "$E/bk-build/libbc5_backend.a")
+        own
+    fi
 
     # 3. The shared build's own commands. No header changes, so nothing else is compiled (series d: zero_skip.hpp is new
     # and only this unit includes it, from its own include directory, first on the path).
@@ -462,9 +536,10 @@ cmd_build() {
         done
         own
     fi
-    if [ "$SER" = e4 ] || [ "$SER" = e5 ]; then   # exp 0402's CPU tests (e5: and exp 0405's): switch 1, 0 and unset, each in a fresh directory, away from any save
+    if [ "$E4UP" = 1 ]; then   # exp 0402's CPU tests (e5, e6p: and exp 0405's): switch 1, 0 and unset, each in a fresh directory, away from any save
         local row d gates=("${E4_GATES[@]}")
-        [ "$SER" != e5 ] || gates+=("${E5_GATES[@]}")
+        [ "$E5UP" = 0 ] || gates+=("${E5_GATES[@]}")
+        [ "$SER" != e6 ] || gates+=("${E6_GATES[@]}")
         for row in "${gates[@]}"; do
             set -- $row
             for g in on off unset; do
@@ -481,13 +556,15 @@ cmd_build() {
     # 4. What the binary must hold, and what it must still hold.
     local s strs=(BC5_DIRECT_CP_COHER_START_DELAY BC5_DIRECT_SPI_REQ_CTRL_PS 'exp 0401: CP_COHER_START_DELAY %s' 'exp 0401: SPI_SHADER_REQ_CTRL_PS %s' BC5_DIRECT_ARGS_WB BC5_DIRECT_GC_HS_OFFCHIP)
     [ -z "$SER" ] || strs+=(BC5_DIRECT_ACB_CS_PREFIX 'exp 0401: acb CS prefix %s' 'acb cs prefix (exp 0401)' BC5_DIRECT_CS_PREFIX)
-    case $SER in c | d | e | e2 | e3 | e4 | e5) strs+=(BC5_DIRECT_ACB_STATE_RESTORE 'exp 0401: acb state restore (exp 0381) %s' 'acb state restore (exp 0381)') ;; esac
+    case $SER in c | d | e | e2 | e3 | e4 | e5 | e6p | e6) strs+=(BC5_DIRECT_ACB_STATE_RESTORE 'exp 0401: acb state restore (exp 0381) %s' 'acb state restore (exp 0381)') ;; esac
     [ "${SER:0:1}" != e ] || strs+=(BC5_DIRECT_TABLE_CATCHER 'exp 0401: table catcher %s' 'table catcher (exp 0401)' KYTY_BC5_NP_SESSION_V2 KYTY_BC5_MEMORY_FROM_PARAM 'exp 0401: memory from param.json')
-    case $SER in e2 | e3 | e4 | e5) strs+=(BC5_DIRECT_ACB_INHERIT 'exp 0403: acb inherit %s' 'acb inherit (exp 0403)' 'acb inherit census (exp 0403)') ;; esac
-    case $SER in e3 | e4 | e5) ;; *) false ;; esac && strs+=("the queue's live program" 'prefixed with the queue' 'never bound in a part of its own' 'unknown, fallback ring' 'UNSEEN (not observed in this wave mode)' BC5_DIRECT_MEM_LINE 'exp 0401: memory line %s' 'memory (exp 0401)')
+    case $SER in e2 | e3 | e4 | e5 | e6p | e6) strs+=(BC5_DIRECT_ACB_INHERIT 'exp 0403: acb inherit %s' 'acb inherit (exp 0403)' 'acb inherit census (exp 0403)') ;; esac
+    case $SER in e3 | e4 | e5 | e6p | e6) ;; *) false ;; esac && strs+=("the queue's live program" 'prefixed with the queue' 'never bound in a part of its own' 'unknown, fallback ring' 'UNSEEN (not observed in this wave mode)' BC5_DIRECT_MEM_LINE 'exp 0401: memory line %s' 'memory (exp 0401)')
     [ "$SER" != d ] || strs+=(BC5_DIRECT_ZERO_SKIP BC5_DIRECT_ZERO_SLICES 'zero skip: list %s' 'job-arena fix APPLIED')
-    case $SER in e4 | e5) strs+=("${E4_STRS[@]}") ;; esac
-    [ "$SER" != e5 ] || strs+=("${E5_STRS[@]}")
+    [ "$E4UP" = 0 ] || strs+=("${E4_STRS[@]}")
+    [ "$E5UP" = 0 ] || strs+=("${E5_STRS[@]}")
+    [ "$SER" != e6p ] || strs+=("${E6P_STRS[@]}")
+    [ "$SER" != e6 ] || strs+=("${E6_STRS[@]}")
     for s in "${strs[@]}"; do
         grep -aqF -- "$s" "$BIN" || die "the private binary lacks [$s]"
     done
@@ -497,24 +574,37 @@ cmd_build() {
     bash -n "$E/play-pkg-0401.sh" || die "the private launcher does not parse"
     chmod +x "$E/play-pkg-0401.sh" || die "chmod failed"
     diff -u "$W/play-pkg.sh" "$E/play-pkg-0401.sh" > "$E/play-pkg-0401.diff"
-    local dl=8; case $SER in e4 | e5) dl=9 ;; esac   # e4, e5: the line that keeps each run's log
+    local dl=8; [ "$E4UP" = 0 ] || dl=9   # e4, e5: the line that keeps each run's log
     [ "$(grep -c '^[-+][^-+]' "$E/play-pkg-0401.diff")" = "$dl" ] || die "the launcher's diff is not the lines it must change"
 
     why=$(pins_why); [ -z "$why" ] || die "$why"
     put "$E/bin.md5" "$(m "$BIN")"
     put "$E/launcher.md5" "$(m "$E/play-pkg-0401.sh")"
     {
-        echo "binary $(rd "$E/bin.md5"): shared objects of $BIN_MD5, unit $EXPECT_UNIT, archive $ARCHIVE_MD5"
+        if [ "$SER" = e6p ]; then
+            echo "binary $(rd "$E/bin.md5"): shared objects of $BIN_MD5, unit $EXPECT_UNIT, private archive $(m "$E/bk-build/libbc5_backend.a") (the shared $ARCHIVE_MD5's source + mkpred0405.py)"
+        else
+            echo "binary $(rd "$E/bin.md5"): shared objects of $BIN_MD5, unit $EXPECT_UNIT, archive $ARCHIVE_MD5"
+        fi
         echo "launcher $(rd "$E/launcher.md5") from play-pkg.sh $LAUNCHER_MD5"
         echo "warnings in the unit's compile: $(strip_ansi "$R/build.out" | grep -c 'warning:')"
         echo "function check: $(tail -1 "$R/check0401.out")"
-        case $SER in e3 | e4 | e5) echo "inherit test: $(tail -1 "$R/inh0401.out")" ;; esac
-        if [ "$SER" = e4 ] || [ "$SER" = e5 ]; then
+        case $SER in e3 | e4 | e5 | e6p | e6) echo "inherit test: $(tail -1 "$R/inh0401.out")" ;; esac
+        if [ "$E4UP" = 1 ]; then
             echo "e4 unit with exp 0404's switches: $FL_UNIT_MD5; fl test: $(tail -1 "$R/fl0401.out")"
             for row in "${E4_EDITS[@]}"; do echo "e4 $row"; done
             for row in "${E4_GATES[@]}"; do set -- $row; echo "e4 test $4: $(tail -1 "$R/$4-on.out" | cut -c1-100) / $(tail -1 "$R/$4-off.out" | cut -c1-100) / $(tail -1 "$R/$4-unset.out" | cut -c1-100)"; done
         fi
-        if [ "$SER" = e5 ]; then
+        if [ "$SER" = e6p ]; then
+            echo "e6p backend: $(sed -n 's/^KYTY_BC5_BACKEND_SRC:[A-Z]*=//p' "$B/CMakeCache.txt") = main 029e0d6b ($(grep -c . "$E/backend0405.md5") files); mkpred0405.py: $(tr '\n' ' ' < "$R/mkpred0405.out")"
+            echo "e6p backend tests: $(grep -a '^All tests passed' "$R/bk-tests.out" | tail -1); G7: $(grep -a '^All tests passed' "$R/bk-pred.out" | tail -1)"   # stderr lines are mixed in: the pass line, not the last
+            echo "e6p switch: $(for o in unset empty 0 1 bool; do printf '%s %s; ' "$o" "$(grep -a '^All tests passed' "$R/bk-env-$o.out" | tail -1)"; done)"
+        fi
+        if [ "$SER" = e6 ]; then
+            for row in "${E6_EDITS[@]}"; do echo "e6 $row"; done
+            for row in "${E6_GATES[@]}"; do set -- $row; echo "e6 test $4: $(tail -1 "$R/$4-on.out" | cut -c1-100) / $(tail -1 "$R/$4-off.out" | cut -c1-100) / $(tail -1 "$R/$4-unset.out" | cut -c1-100)"; done
+        fi
+        if [ "$E5UP" = 1 ]; then
             echo "e5 unit: $(m "$E/src/bc5LleAgc.cpp") (e4's kept as bc5LleAgc-e4.cpp)"
             for row in "${E5_EDITS[@]}"; do echo "e5 $row"; done
             for row in "${E5_GATES[@]}"; do set -- $row; echo "e5 test $4: $(tail -1 "$R/$4-on.out" | cut -c1-100) / $(tail -1 "$R/$4-off.out" | cut -c1-100) / $(tail -1 "$R/$4-unset.out" | cut -c1-100)"; done

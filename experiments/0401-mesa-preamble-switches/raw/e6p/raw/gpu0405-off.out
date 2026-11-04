@@ -1,0 +1,15 @@
+gpu0405: completion queue asynchronous (BC5_DIRECT_JOURNAL=min): G6's event comes from bc5-cq0, G12 waits for it
+gpu0405: case switches (off): 1 of 1
+[bc5] exp 0405: gpu off
+gpu0405: case G2 MEM_SEMAPHORE signal (BC5_R3_MEMSEM_SIGNAL off): 11 of 11
+gpu0405: case G4 REWIND catcher (BC5_R3_REWIND_CATCH off): 3 of 3
+gpu0405: note: the policy table is linked (KYTY_BC5_DIRECT) in this build
+gpu0405: case G8 drop catcher (BC5_R3_DROP_CATCH off): 11 of 11
+[bc5] exp 0405: equeue fixes off
+gpu0405: note: G6's event came through the completion queue (bc5-cq0)
+gpu0405: case G6 submit-and-write-EOP event (BC5_R3_SUBMIT_EOP_EVENT off): 10 of 10
+gpu0405: case G11 COND_WRITE (BC5_R3_COND_WRITE off): 18 of 18
+bc5 clock: journal t 0 = monotonic 44754.590 s
+gpu0405: case G12 wait idle (BC5_R3_WAIT_IDLE off): 8 of 8
+gpu0405: case G14 timestamps (BC5_R3_TS_100MHZ off): 6 of 6
+gpu0405: off 68 of 68; end

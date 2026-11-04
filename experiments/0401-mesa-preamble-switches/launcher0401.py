@@ -2,15 +2,15 @@
 """BC5 experiment 0401: the private launcher, the shared play-pkg.sh with its binary and its two logs moved. Saves, settings
 and the learned file stay the shared ones: this is for the maintainer's play. There is no private lean build, so the lean
 branch refuses. Each line must occur exactly once. Series b to e (2026-11-03) have their own directories, exp0401b to exp0401e.
-usage: launcher0401.py <play-pkg.sh> <out> [b|c|d|e|e2|e3|e4|e5]"""
+usage: launcher0401.py <play-pkg.sh> <out> [b|c|d|e|e2|e3|e4|e5|e6p|e6]"""
 import sys
 
 
 def edits(series=""):
-    assert series in ("", "b", "c", "d", "e", "e2", "e3", "e4", "e5"), series
+    assert series in ("", "b", "c", "d", "e", "e2", "e3", "e4", "e5", "e6p", "e6"), series
     e = f"~/bc5-work/exp0401{series}"
     log = f"LOG={e}/play-last.log  # exp 0401: own log"
-    if series in ("e4", "e5"):   # the top session's line of 2026-11-03 (exp0401e3, e2): each run's log is kept under its time
+    if series in ("e4", "e5", "e6p", "e6"):   # the top session's line of 2026-11-03 (exp0401e3, e2): each run's log is kept under its time
         log += "\n" + '[ -f "$LOG" ] && mv "$LOG" "${LOG%.log}-$(date -r "$LOG" +%Y%m%d-%H%M%S).log"  # keep each run' + "'" + 's log (Codex 2026-11-03, R46)'
     return (
         ("EMU=~/bc5-work/kytyplus-build/src/kyty_emulator", f"EMU={e}/bin/kyty_emulator  # exp 0401: the private build"),

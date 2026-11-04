@@ -1,0 +1,18 @@
+bc5-direct: exp 0405: G7 SET_PREDICATION bool64 dropped (switch 0), the first at IB dword 0: 4 dwords, dword 1 0x00030000, address 0x100000
+bc5-direct: exp 0405: G7 SET_PREDICATION clear passed, the first at IB dword 0: 4 dwords, dword 1 0x00000100, address 0x0
+bc5-direct: exp 0405: G7 SET_PREDICATION zpass passed, the first at IB dword 0: 4 dwords, dword 1 0x00011100, address 0x123456789a0
+bc5-direct: exp 0405: G7 SET_PREDICATION primcount passed, the first at IB dword 0: 4 dwords, dword 1 0x00020100, address 0x123456789a0
+bc5-direct: exp 0405: G7 SET_PREDICATION bool64 passed, the first at IB dword 0: 4 dwords, dword 1 0x00030100, address 0x123456789a0
+bc5-direct: exp 0405: G7 SET_PREDICATION bool32 passed, the first at IB dword 0: 4 dwords, dword 1 0x00040100, address 0x123456789a0
+bc5-direct: exp 0405: G7 SET_PREDICATION bool64 dropped by the filter after the switch (unmapped predicate address or an extra drop), the first at IB dword 0: 4 dwords, dword 1 0x00030000, address 0x200000
+bc5-direct: exp 0405: G7 SET_PREDICATION bool64 dropped (compute ring), the first at IB dword 0: 4 dwords, dword 1 0x00030000, address 0x200000
+bc5-direct: exp 0405: G7 SET_PREDICATION zpass dropped (ZPASS or PRIMCOUNT, switch bool), the first at IB dword 0: 4 dwords, dword 1 0x00011000, address 0x200000
+bc5-direct: exp 0405: G7 10 SET_PREDICATION packets: passed 6; dropped: switch 0 1, bool 1, compute ring 1, by the filter after the switch 1, not the gfx9 form 0; operations: clear 1, zpass 2, primcount 1, bool64 5, bool32 1, other 0
+bc5-direct: exp 0405: G7 SET_PREDICATION primcount dropped (ZPASS or PRIMCOUNT, switch bool), the first at IB dword 0: 4 dwords, dword 1 0x00021000, address 0x200000
+bc5-direct: exp 0405: G7 SET_PREDICATION clear dropped (not the gfx9 form), the first at IB dword 0: 3 dwords, dword 1 0x00200000, address 0x0
+bc5-direct: exp 0405: G7 SET_PREDICATION bool64 dropped (not the gfx9 form), the first at IB dword 0: 4 dwords, dword 1 0x80030000, address 0x200000
+bc5-direct: exp 0405: G7 SET_PREDICATION op5 dropped (not the gfx9 form), the first at IB dword 0: 4 dwords, dword 1 0x00050000, address 0x200000
+Randomness seeded to: 805318303
+===============================================================================
+All tests passed (34886 assertions in 125 test cases)
+

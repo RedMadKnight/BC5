@@ -108,3 +108,17 @@ run rc 0: a5r (route): ended at G+420 after 536 s (G 113, list 93); 49.8 flips/s
 summary: a5r (route): ended at G+420 after 536 s (G 113, list 93); 49.8 flips/s over 531 s, 30 seconds with a gap over 100 ms, longest 1136 ms; memory floor 543 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
 audio: RESULT a5r runner 0 check 0 CLASS PASS mode pulls pulls 3
 == 2026-11-04 03:40:15 all arms done
+== 2026-11-04 11:24:26 arm p0 (start, cap 300 s, play 0 s)
+run rc 0: p0 (start): START OK: the save-slot list runs at 95 s after 95 s (G none, list 95); 22.8 flips/s over 89 s, 26 seconds with a gap over 100 ms, longest 565 ms; memory floor 485 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: p0 (start): START OK: the save-slot list runs at 95 s after 95 s (G none, list 95); 22.8 flips/s over 89 s, 26 seconds with a gap over 100 ms, longest 565 ms; memory floor 485 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 11:26:27 all arms done
+== 2026-11-04 11:26:54 arm p1 (start, cap 300 s, play 0 s)
+run rc 0: p1 (start): START OK: the save-slot list runs at 95 s after 95 s (G none, list 95); 23.7 flips/s over 90 s, 26 seconds with a gap over 100 ms, longest 672 ms; memory floor 525 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: p1 (start): START OK: the save-slot list runs at 95 s after 95 s (G none, list 95); 23.7 flips/s over 90 s, 26 seconds with a gap over 100 ms, longest 672 ms; memory floor 525 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 11:28:58 arm rp0 (route, cap 1200 s, play 900 s)
+run rc 0: rp0 (route): ended at G+900 after 1014 s (G 113, list 93); 53.1 flips/s over 1010 s, 27 seconds with a gap over 100 ms, longest 1338 ms; memory floor 445 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: rp0 (route): ended at G+900 after 1014 s (G 113, list 93); 53.1 flips/s over 1010 s, 27 seconds with a gap over 100 ms, longest 1338 ms; memory floor 445 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 11:46:21 arm rp1 (route, cap 1200 s, play 900 s)
+run rc 0: rp1 (route): ended at G+900 after 1015 s (G 114, list 94); 53.3 flips/s over 1011 s, 28 seconds with a gap over 100 ms, longest 1300 ms; memory floor 415 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: rp1 (route): ended at G+900 after 1015 s (G 114, list 94); 53.3 flips/s over 1011 s, 28 seconds with a gap over 100 ms, longest 1300 ms; memory floor 415 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 12:03:44 all arms done

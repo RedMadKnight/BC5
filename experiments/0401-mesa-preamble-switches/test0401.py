@@ -23,10 +23,15 @@ ETREE_FILES = ("src/libs/libNpCppWebApi.cpp", "src/kernel/memory.cpp", "src/kern
                "src/loader/systemContent.h", "src/libs/libSaveData.cpp", "src/kernel/pthread.cpp",
                "src/libs/libAudio2.cpp", "src/libs/audio.cpp", "src/bc5/pad_audio_route.hpp", "src/graphics/presentation/videoOut.cpp",
                "src/libs/libAmpr.cpp",
-               "src/kernel/eventQueue.cpp", "src/libs/bc5LleAgc.cpp", "src/kernel/semaphore.cpp", "src/kernel/fileSystem.cpp", "src/libs/libKernel.cpp", "src/libs/libNet.cpp", "src/libs/libPad.cpp", "src/libs/libJson2.cpp", "src/libs/libUlt.cpp", "src/libs/libUserService.cpp", "src/libs/libSystemService.cpp", "src/loader/jit.h", "src/loader/runtimeLinker.cpp")
+               "src/kernel/eventQueue.cpp", "src/libs/bc5LleAgc.cpp", "src/kernel/semaphore.cpp", "src/kernel/fileSystem.cpp", "src/libs/libKernel.cpp", "src/libs/libNet.cpp", "src/libs/libPad.cpp", "src/libs/libJson2.cpp", "src/libs/libUlt.cpp", "src/libs/libUserService.cpp", "src/libs/libSystemService.cpp", "src/loader/jit.h", "src/loader/runtimeLinker.cpp",
+               "src/libs/libRtc.cpp", "src/libs/libRudp.cpp", "src/libs/network.cpp", "src/libs/avPlayer.cpp", "src/libs/libZlib.cpp", "src/libs/libJpeg.cpp", "src/libs/libIme.cpp", "src/libs/libNp.cpp", "src/libs/libs.cpp")
 KIT = ("mkunit0401.py", "check0401.py", "build0401.py", "launcher0401.py", "unit0401.cpp", "env_flag.hpp", "mknp0401.py", "mkmem0401.py",
        "npgate0401.cpp", "inh0401.cpp", "mksav0401.py", "sav0401.cpp", "mkpth0401.py", "pth0401.cpp", "mkaud0401.py", "aud0401.cpp", "mkvo0401.py", "vo0401.cpp", "mkfl0401.py", "fl0401.cpp", "mkamm0401.py", "amm0401.cpp",
-       "mkeq0405.py", "mkgpu0405.py", "mkthr0405.py", "mkmem0405.py", "mkfs0405.py", "mksvc0405.py", "mklib0405.py", "mkao0405.py", "mktls0405.py", "ao0405.cpp", "eq0405.cpp", "fs0405.cpp", "gpu0405.cpp", "lib0405.cpp", "mem0405.cpp", "svc0405.cpp", "thr0405.cpp", "tls0405.cpp")
+       "mkeq0405.py", "mkgpu0405.py", "mkthr0405.py", "mkmem0405.py", "mkfs0405.py", "mksvc0405.py", "mklib0405.py", "mkao0405.py", "mktls0405.py", "ao0405.cpp", "eq0405.cpp", "fs0405.cpp", "gpu0405.cpp", "lib0405.cpp", "mem0405.cpp", "svc0405.cpp", "thr0405.cpp", "tls0405.cpp",
+       "mkpred0405.py", "backend0405.md5",
+       "mkfwn0405.py", "mkfwa0405.py", "mkjit0405.py", "mktbc0405.py", "mktbn0405.py", "mktld0405.py", "fwn0405.cpp", "fwa0405.cpp", "jit0405.cpp", "tbc0405.cpp", "tbn0405.cpp", "tld0405.cpp")
+BACKEND = HERE.parent.parent / "backend"   # main's backend, the stand-in for the shared archive's source (series e6p)
+BK_DIRS = ("CMakeLists.txt", "src", "include", "tests", "policy", "experiments")
 LAUNCHER = """#!/bin/bash
 # the output goes to ~/bc5-work/play-pkg-last.log
 EMU=~/bc5-work/kytyplus-build/src/kyty_emulator
@@ -83,6 +88,8 @@ case "$1" in
                     echo KYTY_BC5_SAVEDATA_EVENT_CB; echo 'exp 0401: savedata event callback'; echo KYTY_BC5_SAVEDATA_SORT; echo 'exp 0401: savedata sort'
                     echo '[bc5] exp 0401: savedata fixes %s'; echo KYTY_BC5_PTHREAD_FIXES; echo '[bc5] exp 0401: pthread fixes %s'
                     echo KYTY_BC5_AUDIO_FIXES; echo '[bc5] exp 0401: audio fixes %s'; echo KYTY_BC5_VIDEOOUT_STATUS; echo '[bc5] exp 0401: videoout status %s'
+                    [ -n "${FAKE_NO_E6:-}" ] || for x in KYTY_BC5_FW_NET KYTY_BC5_FW_AUDIO KYTY_BC5_JIT_SHM KYTY_BC5_FW_KERNEL KYTY_BC5_LOAD_ZLIB KYTY_BC5_LOAD_JPEG KYTY_BC5_LOAD_IME KYTY_BC5_LOAD_NPCOMMON KYTY_BC5_LOAD_NPMANAGER KYTY_BC5_LOAD_NPTROPHY; do echo "$x"; done
+                    [ -n "${FAKE_NO_E6P:-}" ] || { echo BC5_R3_PREDICATION; echo 'exp 0405: set predication %s'; echo 'exp 0405: G7 SET_PREDICATION %s %s'; }
                     [ -n "${FAKE_NO_E5:-}" ] || for x in KYTY_BC5_EQUEUE_FIXES KYTY_BC5_MMAP_SHIM_FIXES KYTY_BC5_AUDIOOUT_CHECKS KYTY_BC5_AUDIOIN_CHECKS KYTY_BC5_NGS2_RACK_FIX BC5_R3_MPROTECT_GAPS BC5_R3_NULL_ARGS BC5_R3_RELEASE_HOLES BC5_R3_MUNMAP_HOLES BC5_R3_FLEX_HINT BC5_R3_DMQ_END BC5_R3_EXEC_EINVAL BC5_R3_QUERY_SIZE KYTY_BC5_THREAD_SYNC_FIXES KYTY_BC5_SEMA_FIXES KYTY_BC5_SAVEDATA_MEMORY_FIXES KYTY_BC5_SAVEDATA_DELETE_BUSY KYTY_BC5_SAVEDATA_ALIASES KYTY_BC5_HTTP2_FIXES KYTY_BC5_PAD_OPEN_EXT BC5_R3_MEMSEM_SIGNAL BC5_R3_REWIND_CATCH BC5_R3_DROP_CATCH BC5_R3_SUBMIT_EOP_EVENT BC5_R3_COND_WRITE BC5_R3_WAIT_IDLE BC5_R3_TS_100MHZ KYTY_BC5_FS_FIXES KYTY_BC5_POSIX_RET_FIXES KYTY_BC5_JSON2_FIXES KYTY_BC5_ULT_FIXES KYTY_BC5_USERSERVICE_VALUES KYTY_BC5_SYSTEMSERVICE_VALUES KYTY_BC5_SYSTEMSERVICE_PARAMS_7_1000 KYTY_BC5_TLS_FIXES; do echo "$x"; done
                   fi; } > "$out"
         chmod +x "$out"
@@ -117,6 +124,23 @@ case "$1" in
     echo "inh0401: 25 of 25 cases; end"; exit 0 ;;
   sh)
     if [ "${2:-}" = -c ] && [ "${4:-}" = run ]; then shift; exec sh "$@"; fi   # box0401.sh's own script runs the test
+    if [ "${2:-}" = -c ] && [ "${4:-}" = bkbuild ]; then   # series e6p: the private backend's configure and build
+      s=$5; b=$6
+      [ "$(md5sum < "$s/src/policy.cpp" | cut -c1-32)" = 8e22ce87d7a7491e448e39edc9fad6e6 ] || { echo "policy.cpp is not mkpred0405.py's"; exit 1; }
+      [ -z "${FAKE_BK_FAIL:-}" ] || { echo "FAILED: src/policy.cpp.o"; echo "policy.cpp:1:1: error: stand-in"; exit 1; }
+      mkdir -p "$b" && echo "private archive" > "$b/libbc5_backend.a"
+      { echo '#!/bin/bash'
+        echo '[ -z "${FAKE_BKTEST_FAIL:-}" ] || { echo "policy_test.cpp:9: FAILED:"; echo "test cases: 160 | 159 passed | 1 failed"; exit 1; }'
+        echo 'case "${1:-}" in'
+        echo '  "") echo "All tests passed (32077 assertions in 160 test cases)" ;;'
+        echo '  "[predication]") echo "All tests passed (190 assertions in ${FAKE_PRED_CASES:-4} test cases)" ;;'
+        echo '  "G7: BC5_R3_PREDICATION is read once from the environment")'
+        echo '    v=${BC5_R3_PREDICATION-unset}; case "$v" in unset | "") got=off ;; 0) got=census ;; bool) got=bool ;; *) got=all ;; esac'
+        echo '    if [ "$got" = "${BC5_TEST_EXPECT_PREDICATION:-}" ]; then echo "All tests passed (3 assertions in 1 test case)"; else echo "test cases: 1 | 1 failed"; exit 1; fi ;;'
+        echo '  *) echo "No test cases matched"; exit 2 ;;'
+        echo 'esac'; } > "$b/bc5_backend_tests"
+      chmod +x "$b/bc5_backend_tests"; exit 0
+    fi
     echo '[]'; exit 0 ;;
 esac
 echo "fakebox: $*"; exit 9
@@ -148,6 +172,16 @@ class Box:
             f = self.root / "src/KytyPlus" / rel
             f.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(ETREE / rel, f)
+        bs = self.root / "src/bc5/backend"   # series e6p: the shared archive's source, named in the shared build's cache
+        for d in BK_DIRS:
+            if (BACKEND / d).is_dir():
+                shutil.copytree(BACKEND / d, bs / d)
+            else:
+                bs.mkdir(parents=True, exist_ok=True)
+                shutil.copy(BACKEND / d, bs / d)
+        (self.w / "kytyplus-build/CMakeCache.txt").write_text(f"KYTY_BC5_BACKEND_SRC:PATH={posix(bs)}\n", newline="\n")
+        (self.w / "backend-ubuntu/CMakeCache.txt").write_text("CMAKE_BUILD_TYPE:STRING=Release\nCMAKE_CXX_COMPILER:FILEPATH=/usr/bin/clang++\n", newline="\n")
+        self.bs = bs
         z = self.w / "exp0388/z/src/src"   # series d's zero-skip unit and a stand-in header
         (z / "libs").mkdir(parents=True)
         (z / "bc5").mkdir()
@@ -178,7 +212,7 @@ ZHDR_MD5={md5(z / 'bc5/zero_skip.hpp')}
         (self.e / "kit.sha256").write_text("\n".join(lines) + "\n", newline="\n")
 
     def box(self, *a, **env):
-        return subprocess.run([BASH, posix(self.e / "box0401.sh"), *a], env=dict(self.env, **env), text=True, capture_output=True, timeout=120)
+        return subprocess.run([BASH, posix(self.e / "box0401.sh"), *a], env=dict(self.env, **env), text=True, capture_output=True, timeout=600)
 
     def up(self):
         r = self.claim()
@@ -511,6 +545,91 @@ def t_series_e5():
     assert "EMU=~/bc5-work/exp0401e5/bin/kyty_emulator" in d and 'mv "$LOG" "${LOG%.log}-$(date -r "$LOG"' in d, d
     assert b.box("release", b.token).stdout.strip() == "released" and b.lock() == ""
 
+def t_series_e6p():
+    b = Box("sere6p", series="e6p").up()
+    r = b.box("build", b.token, FAKE_BKTEST_FAIL="1")
+    assert r.returncode == 1 and "the backend's tests failed" in r.stdout and not (b.e / "bin/kyty_emulator").exists(), r.stdout
+    for env, why in ((dict(FAKE_PRED_CASES="3"), "G7's cases are not the four"), (dict(FAKE_BK_FAIL="1"), "the private backend did not build"),
+                     (dict(FAKE_NO_E6P="1"), "lacks [BC5_R3_PREDICATION]")):
+        b.send()
+        assert b.box("setup", b.token).returncode == 0
+        r = b.box("build", b.token, **env)
+        assert r.returncode == 1 and why in r.stdout, (env, r.stdout)
+    b.send()
+    assert b.box("setup", b.token).returncode == 0
+    r = b.box("build", b.token, KYTY_BC5_SAVEDATA_DIR="/must/not/be/used", BC5_R3_PREDICATION="1")
+    assert r.returncode == 0, r.stdout + r.stderr
+    for rel, want in (("src/policy.cpp", "8e22ce87d7a7491e448e39edc9fad6e6"), ("include/bc5/policy.hpp", "89f098bec587eb630b174bbb002ae482"),
+                      ("tests/policy_test.cpp", "7f81a28ad3b171ecbd6389b5257fd6a4")):
+        assert md5(b.e / "bk" / rel) == want and md5(b.bs / rel) != want, rel   # the copy is edited, the shared source is not
+    assert "e6p backend tests: All tests passed (32077 assertions in 160 test cases); G7: All tests passed (190 assertions in 4 test cases)" in r.stdout, r.stdout
+    assert "e6p switch: unset All tests passed (3 assertions in 1 test case); empty All tests passed" in r.stdout and "bool All tests passed" in r.stdout, r.stdout
+    assert "private archive" in r.stdout and "e5 unit:" in r.stdout and "e4 unit with exp 0404's switches" in r.stdout, r.stdout
+    for n in ["eq0405", "gpu0405", "tls0405", "sav0401", "amm0401"]:   # e5's and e4's tests still run
+        assert ("%s: on 3 of 3; end" % n) in r.stdout, (n, r.stdout)
+    bu = load("build0401")
+    args = (b.root / "build-args.txt").read_text().splitlines()
+    rest, archive = bu.split_archive(args[5:])
+    assert archive is not None and archive[0].endswith("bc5-work/backend-ubuntu/libbc5_backend.a") and archive[1].endswith("exp0401e6p/bk-build/libbc5_backend.a"), archive
+    bu.parse_rest(rest)   # the rest is e5's list, no unit twice
+    d = (b.e / "play-pkg-0401.sh").read_text()
+    assert "EMU=~/bc5-work/exp0401e6p/bin/kyty_emulator" in d, d
+    assert b.box("release", b.token).stdout.strip() == "released" and b.lock() == ""
+    b = Box("sere6pa", series="e6p").up()   # the shared source differs from main's in one file: nothing built
+    (b.bs / "src/pm4.cpp").write_bytes((b.bs / "src/pm4.cpp").read_bytes() + b"// changed\n")
+    r = b.box("build", b.token)
+    assert r.returncode == 1 and "the shared backend source is not main's" in r.stdout and "pm4.cpp" in r.stdout, r.stdout
+    assert b.box("release", b.token).stdout.strip() == "released"
+    b = Box("sere6pb", series="e6p").up()   # one file more than main's
+    (b.bs / "src/extra.cpp").write_bytes(b"// extra\n")
+    r = b.box("build", b.token)
+    assert r.returncode == 1 and "files more or less than main's" in r.stdout and "extra.cpp" in r.stdout, r.stdout
+    assert b.box("release", b.token).stdout.strip() == "released"
+
+
+def t_series_e6():
+    b = Box("sere6", series="e6").up()
+    r = b.box("build", b.token, FAKE_NO_E6="1")
+    assert r.returncode == 1 and "lacks [KYTY_BC5_FW_NET]" in r.stdout, r.stdout
+    b.send()
+    assert b.box("setup", b.token).returncode == 0
+    r = b.box("build", b.token, KYTY_BC5_SAVEDATA_DIR="/must/not/be/used")
+    assert r.returncode == 0, r.stdout + r.stderr
+    for e in [['fwn', 'mkfwn0405.py', '-', 'src/libs/libRtc.cpp:e1689ac69353d76f206bd7bb7736d3b8:719561dd7cc51c965c9ae97a07df01fb', 'src/libs/libRudp.cpp:9fbe2847b2aa61564c9eea80ceb4617a:af8d0178fa63f7e5a2f5bf2d72d9690c', 'src/libs/network.cpp:98d501f4e09322ab8727dd65ff0ea45c:598cfe806da831d5a07a5f506d13a03c', 'src/libs/libSystemService.cpp:4aa00c539657776620a49e222f3f8fa2:252a35f9f9b482e9c9fb74b2c0740a2f', 'src/libs/libNpCppWebApi.cpp:935fcc7e4ab1108f3d2d8b33eaf65bf6:e613bc8fcc3f58fe5b5ff3be47a9cc46'], ['fwa', 'mkfwa0405.py', '-', 'src/libs/audio.cpp:230f732dbc20b9b196b28cb007ba95ec:1f90e7520a6641c8ff3affb06993372d', 'src/libs/avPlayer.cpp:966cb8a847467b64ce0486168f052a82:44203af3c14874fee232808fc4aa6568'], ['jit', 'mkjit0405.py', '-', 'src/kernel/memory.cpp:95d9ca880d01db26d51f0ecabcdfa7e1:ee24c888f976cc125502cf3a31006349', 'src/libs/libKernel.cpp:b353287342a8eb82305a4592a4021e3d:0a0d46657d8088b72a9ba67e2fbcc310'], ['tbc', 'mktbc0405.py', '-', 'src/libs/libZlib.cpp:f5d3aafebca0d202082365ee609f15b6:c7e165b9b288d71f874d5d6c6dbd363c', 'src/libs/libJpeg.cpp:a85a83b8d541f5e10c14d739ff56457f:c5fe947cc30001c49bd2b1f8af7a0e2c', 'src/libs/libIme.cpp:a572240f789088264b6e13850978b739:49fa46f1d8005245e7f0b266d8b29659'], ['tbn', 'mktbn0405.py', '-', 'src/libs/libNp.cpp:a2c5facee2708bed1556383b0f5bbdca:24e778261495abcd5a069396f14b28b4'], ['tld', 'mktld0405.py', '-', 'src/libs/libs.cpp:309aecf7c85a5b47217060bb87ec6512:903fa699db7c20b2b3f288ab572bce8d']]:   # each e6 script's outputs as pinned
+        for f in e[3:]:
+            rel, _, out = f.split(":")
+            assert md5(b.e / ("x5-" + e[0]) / rel) == out, (e[0], rel)
+    for n in ['fwn0405', 'fwa0405', 'jit0405', 'tbc0405', 'tbn0405', 'tld0405'] + ["eq0405", "gpu0405", "tls0405", "sav0401", "amm0401"]:   # e6's tests, e5's and e4's
+        assert ("%s: on 3 of 3; end" % n) in r.stdout, (n, r.stdout)
+    assert "e6 fwn mkfwn0405.py" in r.stdout and "e6 test tld0405: tld0405: on 3 of 3; end" in r.stdout, r.stdout
+    bu = load("build0401")
+    args = (b.root / "build-args.txt").read_text().splitlines()
+    rest, archive = bu.split_archive(args[5:])
+    assert archive is None   # e6 links the shared archive
+    incs, units, gts = bu.parse_rest(rest)   # no unit twice
+    for e in [['fwn', 'mkfwn0405.py', '-', 'src/libs/libRtc.cpp:e1689ac69353d76f206bd7bb7736d3b8:719561dd7cc51c965c9ae97a07df01fb', 'src/libs/libRudp.cpp:9fbe2847b2aa61564c9eea80ceb4617a:af8d0178fa63f7e5a2f5bf2d72d9690c', 'src/libs/network.cpp:98d501f4e09322ab8727dd65ff0ea45c:598cfe806da831d5a07a5f506d13a03c', 'src/libs/libSystemService.cpp:4aa00c539657776620a49e222f3f8fa2:252a35f9f9b482e9c9fb74b2c0740a2f', 'src/libs/libNpCppWebApi.cpp:935fcc7e4ab1108f3d2d8b33eaf65bf6:e613bc8fcc3f58fe5b5ff3be47a9cc46'], ['fwa', 'mkfwa0405.py', '-', 'src/libs/audio.cpp:230f732dbc20b9b196b28cb007ba95ec:1f90e7520a6641c8ff3affb06993372d', 'src/libs/avPlayer.cpp:966cb8a847467b64ce0486168f052a82:44203af3c14874fee232808fc4aa6568'], ['jit', 'mkjit0405.py', '-', 'src/kernel/memory.cpp:95d9ca880d01db26d51f0ecabcdfa7e1:ee24c888f976cc125502cf3a31006349', 'src/libs/libKernel.cpp:b353287342a8eb82305a4592a4021e3d:0a0d46657d8088b72a9ba67e2fbcc310'], ['tbc', 'mktbc0405.py', '-', 'src/libs/libZlib.cpp:f5d3aafebca0d202082365ee609f15b6:c7e165b9b288d71f874d5d6c6dbd363c', 'src/libs/libJpeg.cpp:a85a83b8d541f5e10c14d739ff56457f:c5fe947cc30001c49bd2b1f8af7a0e2c', 'src/libs/libIme.cpp:a572240f789088264b6e13850978b739:49fa46f1d8005245e7f0b266d8b29659'], ['tbn', 'mktbn0405.py', '-', 'src/libs/libNp.cpp:a2c5facee2708bed1556383b0f5bbdca:24e778261495abcd5a069396f14b28b4'], ['tld', 'mktld0405.py', '-', 'src/libs/libs.cpp:309aecf7c85a5b47217060bb87ec6512:903fa699db7c20b2b3f288ab572bce8d']]:   # every unit an e6 script writes is built from e6's output, e5's own outputs included
+        for f in e[3:]:
+            rel = f.split(":")[0]
+            assert units[rel].replace("\\", "/").endswith("x5-%s/%s" % (e[0], rel)), (rel, units.get(rel))
+    assert units["src/libs/libJson2.cpp"].endswith("x5-lib/src/libs/libJson2.cpp")   # e5's units stay where e6 left them alone
+    assert len(gts) == len(set(g[1] for g in gts)) and any(g[1].endswith("tld0405") for g in gts), gts
+    d = (b.e / "play-pkg-0401.sh").read_text()
+    assert "EMU=~/bc5-work/exp0401e6/bin/kyty_emulator" in d, d
+    assert b.box("release", b.token).stdout.strip() == "released" and b.lock() == ""
+
+
+def t_link_archive_swap():
+    bu = load("build0401")
+    db = [{"output": "src/kyty_emulator", "command": "/usr/bin/c++ -O2 src/CMakeFiles/kyty_emulator.dir/libs/bc5LleAgc.cpp.o -o src/kyty_emulator /home/u/bc5-work/backend-ubuntu/libbc5_backend.a -ldrm"}]
+    a = bu.link_argv(db, "/p/unit.o", "/p/out", None, ("/home/u/bc5-work/backend-ubuntu/libbc5_backend.a", "/p/bk/libbc5_backend.a"))
+    assert "/p/bk/libbc5_backend.a" in a and "/home/u/bc5-work/backend-ubuntu/libbc5_backend.a" not in a, a
+    db[0]["command"] = db[0]["command"].replace("/home/u/bc5-work/backend-ubuntu/libbc5_backend.a", "../../backend-ubuntu/libbc5_backend.a")
+    a = bu.link_argv(db, "/p/unit.o", "/p/out", None, ("/home/u/bc5-work/backend-ubuntu/libbc5_backend.a", "/p/bk/libbc5_backend.a"))
+    assert "/p/bk/libbc5_backend.a" in a, a   # by its file name when the line names it relatively
+    assert bu.split_archive(["x", "--archive", "s", "p", "--gate", "g", "o"]) == (["x", "--gate", "g", "o"], ("s", "p"))
+    assert bu.split_archive(["x"]) == (["x"], None)
+
+
 def t_series_unknown():
     b = Box("serx", series="f")
     r = b.claim()
@@ -677,7 +796,7 @@ def t_build_commands():
 
 def main():
     cases = [v for k, v in sorted(globals().items()) if k.startswith("t_")]
-    assert len(cases) == 28, len(cases)
+    assert len(cases) == 31, len(cases)
     bad = 0
     for c in cases:
         try:

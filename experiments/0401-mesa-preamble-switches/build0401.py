@@ -7,9 +7,11 @@ build0389z.py does. Series e also gives more private units (src/<rel>=<file>, ea
 and swapped into the link) and a gate program (--gate <source> <out>): compiled with libNpCppWebApi.cpp's command and
 linked with the emulator's link line, the private objects in, main.cpp.o out (exp 0328's pattern). Series e4 adds more
 include directories (--inc <dir>, after the first, in order) and more gate programs, each compiled with the command of the
-unit --like names (default libNpCppWebApi.cpp's).
+unit --like names (default libNpCppWebApi.cpp's). Series e6p links a private backend archive in place of the shared one
+(--archive <shared> <private>, exp 0400's relink0400.py: the link line names it once, by its path or its file name).
 usage (in the container): build0401.py <compdb.json> <private unit> <obj dir> <shared build dir> <out binary> [include dir]
-                          [--inc <dir> ...] [src/<rel>=<file> ...] [--gate <source> <out> [--like src/<rel>] ...]"""
+                          [--inc <dir> ...] [src/<rel>=<file> ...] [--gate <source> <out> [--like src/<rel>] ...]
+                          [--archive <shared archive> <private archive>]"""
 import json
 import os
 import shlex
@@ -58,8 +60,18 @@ def compile_argv(db, unit_src, obj, inc=None, unit=UNIT):
     return comp
 
 
-def link_argv(db, obj, out, more=None):
-    """obj replaces bc5LleAgc.cpp's object; more maps further emulator objects to their private ones."""
+def split_archive(rest):
+    """rest without its --archive <shared> <private> (once at most) -> (rest, (shared, private) or None)"""
+    if "--archive" not in rest:
+        return list(rest), None
+    k = rest.index("--archive")
+    assert rest.count("--archive") == 1 and k + 2 < len(rest), "--archive takes two paths, once"
+    return list(rest[:k]) + list(rest[k + 3:]), (rest[k + 1], rest[k + 2])
+
+
+def link_argv(db, obj, out, more=None, archive=None):
+    """obj replaces bc5LleAgc.cpp's object; more maps further emulator objects to their private ones; archive is
+    (shared, private): the private backend archive in place of the shared one."""
     swap = dict(more or {})
     swap[UNIT] = obj
     link = next(e["command"] for e in db if e.get("output") == "src/kyty_emulator")
@@ -75,6 +87,11 @@ def link_argv(db, obj, out, more=None):
             argv[k] = "--dependency-file=" + out + ".d"
     for u, n in seen.items():
         assert n == 1, f"{u} appears {n} times in the link command"
+    if archive is not None:
+        shared, private = archive
+        hits = [k for k, a in enumerate(argv) if a == shared or os.path.basename(a) == os.path.basename(shared)]
+        assert len(hits) == 1, f"the archive appears {len(hits)} times in the link command"
+        argv[hits[0]] = private
     argv[argv.index("-o") + 1] = out
     return argv
 
@@ -127,7 +144,8 @@ def parse_rest(rest):
 
 def main():
     db_path, unit_src, obj_dir, build, out = sys.argv[1:6]
-    inc, units, gates = parse_rest(sys.argv[6:])
+    rest, archive = split_archive(sys.argv[6:])
+    inc, units, gates = parse_rest(rest)
     with open(db_path, encoding="utf-8") as f:
         db = json.load(f)
     os.makedirs(obj_dir, exist_ok=True)
@@ -142,7 +160,7 @@ def main():
             print("== COMPILE FAILED", rel, flush=True)
             return 2
         more[unit_obj(rel)] = o
-    link = link_argv(db, obj, out, more)
+    link = link_argv(db, obj, out, more, archive)
     rc = run(link, build)
     for k, (gate_src, gate_out, like) in enumerate(gates):
         if rc != 0:

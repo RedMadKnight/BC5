@@ -1,0 +1,29 @@
+fs0405: KYTY_BC5_FS_FIXES=(unset) KYTY_BC5_POSIX_RET_FIXES=(unset), so off (fs items 0x00, posix items 0x00)
+[bc5] exp 0405: thread sync off
+[bc5] exp 0405: fs fixes off
+[bc5] exp 0405: posix return fixes off
+fs0405: not run [kk04 off] rename of an open file: today's code EXITs when either path is open (fileSystem.cpp:1456-1457)
+fs0405: not run [kk04 off] rename onto an open target: today's code EXITs when either path is open (fileSystem.cpp:1456-1457)
+fs0405: case 1 [kk04 off] rename of a directory: ok (off, today's code: rename of a directory ENOENT (want ENOENT), the directory unchanged yes)
+fs0405: case 2 [kk04 off] rename onto the same file: ok (off, today's code: EIO and the file deleted: rename EIO, the file <missing>)
+fs0405: case 3 [kk04 off] rename of closed and missing files: ok (a closed file 0 (moved yes), a missing one ENOENT, a file onto a directory EIO (want EIO), the file kept yes)
+fs0405: case 4 [kk04 off] unlink of an open file, then a new file of that name: ok (unlink of the open file 0 (gone yes); new file written 5; truncate by name to 2 0: the new file "fresh" (want "fresh", today's code truncates the unlinked file); the unlinked file's descriptor writes 1, size 6)
+fs0405: not run [sk04 off] O_ACCMODE 3: today's code EXITs on it (fileSystem.cpp:469)
+fs0405: not run [sk04 off] a directory opened for writing: today's code EXITs on these (fileSystem.cpp:472-473, 532-533)
+fs0405: case 5 [sk04 off] a directory opened for reading: ok (O_RDONLY 3 (close 0), O_DIRECTORY|O_RDONLY 3 (close 0), the same in both settings)
+fs0405: case 6 [blksize off] st_blksize: ok (directory: stat 0x200, fstat 0x200 (want 0x200); file: stat 0x200, fstat 0x200 (want 0x200))
+fs0405: case 7 [nametoolong off] a path of 1024 bytes: ok (stat ENOENT, open ENOENT, unlink ENOENT, rmdir ENOENT, mkdir ENAMETOOLONG, rename from ENOENT, CheckReachability ENAMETOOLONG; rename to it 0; off, today's code: ENOENT, mkdir and CheckReachability ENAMETOOLONG (over 255), the rename to it moves the file)
+fs0405: case 8 [nametoolong off] a component of 256 bytes: ok (stat ENOENT, open ENOENT, unlink ENOENT, rmdir ENOENT, mkdir ENAMETOOLONG, rename from ENOENT, CheckReachability ENAMETOOLONG; off, today's code: ENOENT, mkdir and CheckReachability ENAMETOOLONG (over 255))
+fs0405: case 9 [nametoolong off] lengths at the limits: ok (1023 bytes: stat ENOENT (want ENOENT); a 255-byte component: mkdir ENAMETOOLONG, stat ENOENT; a 297-byte path of short components: mkdir ENAMETOOLONG, CheckReachability of its 292-byte parent ENAMETOOLONG; off, today's code refuses any mkdir or CheckReachability path over 255 bytes)
+fs0405: case 10 [kk10 off] write on a read-only descriptor: ok (read-only file: write 0, pwrite 0 (want 0); directory: write EISDIR, pwrite EISDIR (want EISDIR); a read-write descriptor writes 1; the file "Zbc" (want "Zbc"))
+fs0405: case 11 [sk05 off] guest path normalisation: ok (/temp0/n16missing/../n16.txt ENOENT, /temp0/./n16.txt 0, /temp0/../outside.txt 0, /temp0/../temp1/g.txt ENOENT, /temp0/sub/h.txt (mounts /temp0 then /temp0/sub) ENOENT, open("/temp0", O_RDONLY) ENOENT, /temp0//n16.txt 0; off, today's code: ENOENT OK OK (out of the mount into this run's directory) ENOENT ENOENT (the first mount) ENOENT OK)
+fs0405: case 12 [sk04 off] O_TRUNC|O_RDONLY: EACCES and the descriptor: ok (100 of 100 opens EACCES; lowest free descriptor 3 before, 103 after (want 103: today's code leaves one descriptor per refusal); the file kept yes)
+fs0405: case 13 [posix off] the seven registrations: ok (VAzswvTOCzI unlink (unlink off): today's function; UqDGjXA5yUM munmap (munmap off): today's function; YQOfxL4QfeU mprotect (mprotect off): today's function; XhWHn6P5R7U pthread_rwlock_trywrlock (trywrlock off): today's function; P41kTWUS3EI scePthreadGetschedparam (schedparam off): today's function; oIRFTjoILbg scePthreadSetschedparam (schedparam off): today's function; 14bOACANTBo scePthreadOnce (once off): today's function)
+fs0405: case 14 [unlink off] posix unlink: ok (an existing file 0 (errno 0, removed yes); a missing one ENOENT, errno 0 (want ENOENT 0x80020002, errno untouched))
+fs0405: case 15 [munmap off] posix munmap: ok (munmap(0x10000, 0) EINVAL, errno 0 (want EINVAL 0x80020016, errno untouched))
+fs0405: case 16 [mprotect off] posix mprotect: ok (mprotect(0x10000, 0, 1) 0; mprotect(0x10000, 0x4000, 0x100) EINVAL, errno 0 (want EINVAL 0x80020016, errno untouched))
+fs0405: case 17 [trywrlock off] posix pthread_rwlock_trywrlock: ok (free 0; held by this thread EDEADLK; held by another EBUSY (want SCE codes EDEADLK, EBUSY); unlock 0)
+fs0405: case 18 [schedparam off] scePthreadGet/Setschedparam: ok (get(NULL) 22, set(NULL) 22 (want 22); get(self) 0 (policy 1), set(self) 0)
+fs0405: case 19 [once off] scePthreadOnce: ok (NULL 22 (want 22); first 0, second 0, routine called 1 time(s))
+fs0405: 4 case(s) not run (switch off, today's code EXITs); 4 ms
+fs0405: off 19 of 19; end
