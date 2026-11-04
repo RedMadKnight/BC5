@@ -116,6 +116,7 @@ E6_EDITS=(
     "tbc mktbc0405.py - src/libs/libZlib.cpp:f5d3aafebca0d202082365ee609f15b6:c7e165b9b288d71f874d5d6c6dbd363c src/libs/libJpeg.cpp:a85a83b8d541f5e10c14d739ff56457f:c5fe947cc30001c49bd2b1f8af7a0e2c src/libs/libIme.cpp:a572240f789088264b6e13850978b739:49fa46f1d8005245e7f0b266d8b29659"
     "tbn mktbn0405.py - src/libs/libNp.cpp:a2c5facee2708bed1556383b0f5bbdca:24e778261495abcd5a069396f14b28b4"
     "tld mktld0405.py - src/libs/libs.cpp:309aecf7c85a5b47217060bb87ec6512:903fa699db7c20b2b3f288ab572bce8d"
+    "pad mkpad0405.py - src/libs/libPad.cpp:89a047a4f1ad39847bf76c15fa0d4c14:b9940ebe905e9ef1e31b117b531632fd"   # the maintainer's "tak, przepisać tak JIT" for two Pad rows, written from behaviour only
 )
 E6_GATES=(
     "fwn0405.cpp src/libs/libRtc.cpp KYTY_BC5_FW_NET fwn0405"
@@ -124,8 +125,9 @@ E6_GATES=(
     "tbc0405.cpp src/libs/libZlib.cpp KYTY_BC5_LOAD_ZLIB,KYTY_BC5_LOAD_JPEG,KYTY_BC5_LOAD_IME tbc0405"
     "tbn0405.cpp src/libs/libNp.cpp KYTY_BC5_LOAD_NPCOMMON,KYTY_BC5_LOAD_NPMANAGER,KYTY_BC5_LOAD_NPTROPHY tbn0405"
     "tld0405.cpp src/libs/libs.cpp KYTY_BC5_LOAD_ZLIB,KYTY_BC5_LOAD_JPEG,KYTY_BC5_LOAD_IME,KYTY_BC5_LOAD_NPCOMMON,KYTY_BC5_LOAD_NPMANAGER,KYTY_BC5_LOAD_NPTROPHY tld0405"
+    "pad0405.cpp src/libs/libPad.cpp KYTY_BC5_FW_PAD pad0405"
 )
-E6_STRS=(KYTY_BC5_FW_NET KYTY_BC5_FW_AUDIO KYTY_BC5_JIT_SHM KYTY_BC5_FW_KERNEL KYTY_BC5_LOAD_ZLIB KYTY_BC5_LOAD_JPEG KYTY_BC5_LOAD_IME KYTY_BC5_LOAD_NPCOMMON KYTY_BC5_LOAD_NPMANAGER KYTY_BC5_LOAD_NPTROPHY)
+E6_STRS=(KYTY_BC5_FW_PAD KYTY_BC5_FW_NET KYTY_BC5_FW_AUDIO KYTY_BC5_JIT_SHM KYTY_BC5_FW_KERNEL KYTY_BC5_LOAD_ZLIB KYTY_BC5_LOAD_JPEG KYTY_BC5_LOAD_IME KYTY_BC5_LOAD_NPCOMMON KYTY_BC5_LOAD_NPMANAGER KYTY_BC5_LOAD_NPTROPHY)
 E4UP=0; E5UP=0; case $SER in e4) E4UP=1 ;; e5 | e6p | e6) E4UP=1; E5UP=1 ;; esac   # e6p and e6 build everything e5 builds
 E=$W/exp0401$SER; LOCK=$W/BOX-LOCK; QUEUE=$W/BOX-QUEUE; ST=$E/state; BIN=$E/bin/kyty_emulator; B=$W/kytyplus-build; R=$E/raw
 

@@ -363,9 +363,12 @@ ngs2_pcm.h family stays out. Six laptop agents ported it, one group each (`*0405
 - *Held, with sizes* (in each group's notes): the Ngs2 renderer (3-5 days) and new Audio3d exports (about 1 day); Rudp's
   contexts (about 3.5 days), Mouse's absolute-position calls, Pad queries; the Jpeg encode itself (about 0.3 day); 39 Ime
   functions AnyPS5 leaves unimplemented too; 64 NpTrophy placeholders; `sceKernelJitGetSharedMemoryInfo`.
-- *Held for the maintainer:* Pad b94b3fa32 and 3b404f65e, ImeFilterText and NpTrophy ConfigHasGroupFeature (disassembly
-  with addresses), three libkernel_sys rows ("read from disassembly and not measured on a console"), and `npwebapi` (a
-  title's own module: in the build, default off, out of the all-on route, the top session's call on decision 2).
+- *Held for the maintainer:* ImeFilterText and NpTrophy ConfigHasGroupFeature (disassembly with addresses), and three
+  libkernel_sys rows ("read from disassembly and not measured on a console").
+- *His answers on two of them (relayed by the top session):* `npwebapi` comes from a module a title ships, and "nie każda gra
+  dostarcza własny, ale nie konieczna posiada - wdrażamy na wszelki wypadek w konfiguracji jeżeli nie ma, to korzystamy z
+  naszych bibliotek": ported, and on in the all-on route (our library is the fallback for a title without its own). Pad
+  b94b3fa32 and 3b404f65e: "tak, przepisać tak JIT", rewritten from behaviour only as a group of their own (tag `pad`).
 - *Kit* (`box0401.sh` series e6): rows chained after e5's (E6_EDITS, E6_GATES, E6_STRS); the stand-in case `t_series_e6`
   passes. Arms are ready (`raw/night-arms-e6.txt`, `raw/night-arms-e6aud.txt`): the base start, one start per group, all on,
   a 15-min route with e4, e5 and e6 on, and exp 0372's software replug check for the audio group.
