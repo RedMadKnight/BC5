@@ -421,6 +421,12 @@ ngs2_pcm.h family stays out. Six laptop agents ported it, one group each (`*0405
   - His physical replug on this shortcut, both pads (relayed by the top session, his words): "Odłączanie i podłączenie
     padów PS4 i ps5 - poprawnie". So unplugging and replugging the DS4 and the DualSense works with e6's audio group on
     and `set,room`.
+- *His first e6 plays* (2026-11-04 evening; relayed by the top session).
+  - 19:47-19:54: a GFX ring timeout at 19:54:56, which `BC5_DIRECT_FL_CRUMBS` caught (the first catch of the draw class).
+    It is analysed in `hang1954-0401.md`.
+  - Once, right after a level load, he fell out of the world and died. He thinks it is a game bug. It is recorded here as
+    **unexplained**, not as a game bug: late or incomplete collision streaming is possible, and e6 changes file-system
+    answers (e5's fs group is on). Nothing so far shows either way.
 
 **Series e7: e6 plus decision 4's batch 2, the 17 library tables (2026-11-04 afternoon, the top session's order; laptop
 only so far).** The top session's order for the 26 tables batch 1 left: the CPU-only library tables first, then the
