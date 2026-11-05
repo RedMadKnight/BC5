@@ -1,0 +1,10 @@
+sav0401: switches KYTY_BC5_SAVEDATA_FIXES=1 KYTY_BC5_SAVEDATA_EVENT_CB=(unset) KYTY_BC5_SAVEDATA_SORT=(unset)
+[bc5] exp 0405: fs fixes off
+[bc5] exp 0401: savedata fixes on
+[bc5] exp 0401: savedata sort off
+[bc5] exp 0401: savedata event callback off
+[bc5] exp 0405: savedata memory fixes off
+[bc5] exp 0405: savedata delete busy off
+[bc5] exp 0405: savedata aliases off
+mkdir(./_SaveData/UNKNOWN/blocked, 1ff) failed: The named file exists
+sav0401: on 20 of 20; end
