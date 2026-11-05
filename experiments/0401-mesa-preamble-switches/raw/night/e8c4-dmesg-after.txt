@@ -1,0 +1,11 @@
+[36448.449566] amdgpu 0000:01:00.0: Dumping IP State
+[36448.451568] amdgpu 0000:01:00.0: Dumping IP State Completed
+[36448.451579] amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+[36448.451581] amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+[36448.451583] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=6695162, emitted seq=6695164
+[36448.451585] amdgpu 0000:01:00.0:  Process kyty_emulator pid 977040 thread bc5-ring pid 977411
+[36448.451587] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+[36448.451678] amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+[36448.451680] amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+[36448.455677] bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=6695162, emitted seq=6695164
+[36448.460645] bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded

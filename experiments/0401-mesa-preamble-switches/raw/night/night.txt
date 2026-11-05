@@ -225,3 +225,16 @@ summary: e8f2 (route): ended at G+600 after 815 s (G 215, list 93); 32.6 flips/s
 run rc 0: e8c2 (route): GPU HANG: ring reset succeeded at 296 s after 321 s (G 215, list 93); 15.5 flips/s over 302 s, 182 seconds with a gap over 100 ms, longest 15067 ms; memory floor 286 MiB available (sampler); crash lines 0, kernel lines 22, freeze dumps 0, devcoredumps 2 
 summary: e8c2 (route): GPU HANG: ring reset succeeded at 296 s after 321 s (G 215, list 93); 15.5 flips/s over 302 s, 182 seconds with a gap over 100 ms, longest 15067 ms; memory floor 286 MiB available (sampler); crash lines 0, kernel lines 22, freeze dumps 0, devcoredumps 2
 == 2026-11-05 15:59:40 all arms done
+== 2026-11-05 16:04:24 arm e8f3 (route, cap 900 s, play 600 s)
+run rc 0: e8f3 (route): ended at G+600 after 747 s (G 147, list 93); 31.3 flips/s over 741 s, 207 seconds with a gap over 100 ms, longest 1626 ms; memory floor 322 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: e8f3 (route): ended at G+600 after 747 s (G 147, list 93); 31.3 flips/s over 741 s, 207 seconds with a gap over 100 ms, longest 1626 ms; memory floor 322 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-05 16:17:55 arm e8c3 (route, cap 900 s, play 600 s)
+run rc 0: e8c3 (route): ended at G+600 after 748 s (G 147, list 94); 31.9 flips/s over 742 s, 199 seconds with a gap over 100 ms, longest 1516 ms; memory floor 370 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: e8c3 (route): ended at G+600 after 748 s (G 147, list 94); 31.9 flips/s over 742 s, 199 seconds with a gap over 100 ms, longest 1516 ms; memory floor 370 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-05 16:31:12 arm e8f4 (route, cap 900 s, play 600 s)
+run rc 0: e8f4 (route): ended at G+600 after 816 s (G 216, list 93); 32.2 flips/s over 810 s, 205 seconds with a gap over 100 ms, longest 1124 ms; memory floor 315 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: e8f4 (route): ended at G+600 after 816 s (G 216, list 93); 32.2 flips/s over 810 s, 205 seconds with a gap over 100 ms, longest 1124 ms; memory floor 315 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-05 16:45:13 arm e8c4 (route, cap 900 s, play 600 s)
+run rc 0: e8c4 (route): GPU HANG: ring reset succeeded at 181 s after 206 s (G 150, list 94); 16.1 flips/s over 187 s, 86 seconds with a gap over 100 ms, longest 14932 ms; memory floor 238 MiB available (sampler); crash lines 0, kernel lines 11, freeze dumps 0, devcoredumps 1 
+summary: e8c4 (route): GPU HANG: ring reset succeeded at 181 s after 206 s (G 150, list 94); 16.1 flips/s over 187 s, 86 seconds with a gap over 100 ms, longest 14932 ms; memory floor 238 MiB available (sampler); crash lines 0, kernel lines 11, freeze dumps 0, devcoredumps 1
+== 2026-11-05 16:48:59 all arms done

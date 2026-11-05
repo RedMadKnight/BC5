@@ -1,0 +1,400 @@
+exp 0404: fl crumbs on (the fast-launch draws of each dcb: issued/done crumbs and their inputs copied by the CP into the GDS shadow +0x8000; read at a fence timeout)
+exp 0404: fl skip es off
+exp 0401 e7 (flx): fl probe state on, fl vgt flush off, fl serial off, fl meshlet probe on, fl crumbs meshlet off
+fl crumbs (exp 0404): issued at 0x100004008000, done at 0x100004008008, 64 ring entries of 128 bytes at 0x100004008100 (the GDS shadow +0x8000)
+fl crumbs (exp 0404): submit #36861 dcb op 24 at 2799 (+2889 in the copy), entry 0: stages 00482030 es 11d00c75, arguments 0x11934d3900, V# bases 0x112252c920 0x0 0x0 (1 draws so far)
+fl crumbs (exp 0404): submit #36861 dcb op 24 at 2866 (+3054 in the copy), entry 1: stages 00482030 es 11d00c75, arguments 0x11934d3920, V# bases 0x112252c920 0x0 0x0 (2 draws so far)
+fl crumbs (exp 0404): submit #36861 dcb op 24 at 4699 (+4985 in the copy), entry 2: stages 00482030 es 11d01345, arguments 0x11934dcb80, V# bases 0x112252c920 0x0 0x0 (3 draws so far)
+fl crumbs (exp 0404): submit #36861 dcb op 24 at 4731 (+5115 in the copy), entry 3: stages 00482030 es 11d01345, arguments 0x11934dcba0, V# bases 0x112252c920 0x0 0x0 (4 draws so far)
+fl crumbs (exp 0404): submit #36861 dcb op 24 at 4763 (+5245 in the copy), entry 4: stages 00482030 es 11d01345, arguments 0x11934dcbc0, V# bases 0x112252c920 0x0 0x0 (5 draws so far)
+fl crumbs (exp 0404): submit #36861 dcb op 24 at 4795 (+5375 in the copy), entry 5: stages 00482030 es 11d01345, arguments 0x11934dcbe0, V# bases 0x112252c920 0x0 0x0 (6 draws so far)
+fl crumbs (exp 0404): submit #36861 dcb op 24 at 4827 (+5505 in the copy), entry 6: stages 00482030 es 11d01345, arguments 0x11934dcc00, V# bases 0x112252c920 0x0 0x0 (7 draws so far)
+fl crumbs (exp 0404): submit #36861 dcb op 24 at 4859 (+5635 in the copy), entry 7: stages 00482030 es 11d01345, arguments 0x11934dcc20, V# bases 0x112252c920 0x0 0x0 (8 draws so far)
+fl crumbs (exp 0404): submit #36861 dcb op 24 at 4891 (+5765 in the copy), entry 8: stages 00482030 es 11d01345, arguments 0x11934dcc40, V# bases 0x112252c920 0x0 0x0 (9 draws so far)
+fl crumbs (exp 0404): submit #36861 dcb op 24 at 4923 (+5895 in the copy), entry 9: stages 00482030 es 11d01345, arguments 0x11934dcc60, V# bases 0x112252c920 0x0 0x0 (10 draws so far)
+fl crumbs (exp 0404): submit #36861 dcb op 24 at 4955 (+6025 in the copy), entry 10: stages 00482030 es 11d01345, arguments 0x11934dcc80, V# bases 0x112252c920 0x0 0x0 (11 draws so far)
+fl crumbs (exp 0404): submit #36861 dcb op 24 at 4987 (+6155 in the copy), entry 11: stages 00482030 es 11d01345, arguments 0x11934dcca0, V# bases 0x112252c920 0x0 0x0 (12 draws so far)
+fl crumbs (exp 0404): submit #36861 dcb op 24 at 5019 (+6285 in the copy), entry 12: stages 00482030 es 11d01345, arguments 0x11934dccc0, V# bases 0x112252c920 0x0 0x0 (13 draws so far)
+fl crumbs (exp 0404): submit #36861 dcb op 24 at 5051 (+6415 in the copy), entry 13: stages 00482030 es 11d01345, arguments 0x11934dcce0, V# bases 0x112252c920 0x0 0x0 (14 draws so far)
+fl crumbs (exp 0404): submit #36861 dcb op 24 at 5083 (+6545 in the copy), entry 14: stages 00482030 es 11d01345, arguments 0x11934dcd00, V# bases 0x112252c920 0x0 0x0 (15 draws so far)
+fl crumbs (exp 0404): submit #36861 dcb op 24 at 5115 (+6675 in the copy), entry 15: stages 00482030 es 11d01345, arguments 0x11934dcd20, V# bases 0x112252c920 0x0 0x0 (16 draws so far)
+fl crumbs (exp 0404): 1 buffers with crumbs, 418 draws (0 of them maybe fast-launch, 0 of unknown state), 0 left without (COND_EXEC full), 0 skipped (es), 0 refused
+fl crumbs (exp 0404): submit #36886 dcb op 24 at 23900 (+70646 in the copy), entry 48: stages 00482030 es 11d00f8d, arguments 0x1193cb1c20, V# bases 0x1122e8bef0 0x1100000000 0x11237e3100 (4097 draws so far)
+fl crumbs (exp 0404): submit #37027 dcb op 24 at 5495 (+10047 in the copy), entry 23: stages 00482030 es 11d01345, arguments 0x11934d3d40, V# bases 0x1122303290 0x1100000000 0x1123979f00 (8193 draws so far)
+fl crumbs (exp 0404): submit #37226 dcb op 24 at 10052 (+11306 in the copy), entry 6: stages 00482030 es 11d01345, arguments 0x11934d3b20, V# bases 0x112245b850 0x1100000000 0x1123a3ae00 (12289 draws so far)
+fl crumbs (exp 0404): submit #37415 dcb op 24 at 10438 (+20524 in the copy), entry 38: stages 00482030 es 11d00f8d, arguments 0x1193b5eb20, V# bases 0x1122e5aad0 0x0 0x0 (16385 draws so far)
+fl crumbs (exp 0404): submit #37603 dcb op 24 at 33959 (+52865 in the copy), entry 0: stages 00482030 es 11d00f8d, arguments 0x1193b0c1c0, V# bases 0x11232fccb0 0x0 0x0 (20481 draws so far)
+fl crumbs (exp 0404): submit #37803 dcb op 24 at 17664 (+31180 in the copy), entry 9: stages 00482030 es 11d01345, arguments 0x1193ad4a20, V# bases 0x112242a0a0 0x0 0x0 (24577 draws so far)
+fl crumbs (exp 0404): submit #37996 dcb op 24 at 7599 (+14255 in the copy), entry 3: stages 00482030 es 11d01345, arguments 0x1193ad4160, V# bases 0x1122582440 0x0 0x0 (28673 draws so far)
+fl crumbs (exp 0404): submit #38197 dcb op 24 at 2200 (+3360 in the copy), entry 7: stages 00482030 es 11d00cbd, arguments 0x11939d3a00, V# bases 0x11e0001a00 0x11230cd520 0x11230cd580 (32769 draws so far)
+fl crumbs (exp 0404): submit #38395 dcb op 24 at 19387 (+51293 in the copy), entry 36: stages 00482030 es 11d01345, arguments 0x11935d44c0, V# bases 0x1122434d50 0x1100000000 0x1123ab6e80 (36865 draws so far)
+fl crumbs (exp 0404): submit #38609 dcb op 24 at 9164 (+14492 in the copy), entry 27: stages 00482030 es 11d01345, arguments 0x11934d4560, V# bases 0x112258bd80 0x1100000000 0x112377c080 (40961 draws so far)
+fl crumbs (exp 0404): submit #38792 dcb op 24 at 36505 (+58351 in the copy), entry 30: stages 00482030 es 11d00f8d, arguments 0x1193b30540, V# bases 0x1122ebb0f0 0x0 0x0 (45057 draws so far)
+fl crumbs (exp 0404): submit #38984 dcb op 24 at 15376 (+37000 in the copy), entry 47: stages 00482030 es 11d01345, arguments 0x11935d3e20, V# bases 0x112240adc0 0x1100000000 0x11238e4f80 (49153 draws so far)
+fl crumbs (exp 0404): submit #39186 dcb op 24 at 10295 (+22219 in the copy), entry 61: stages 00482030 es 11d01345, arguments 0x11934d49a0, V# bases 0x1122560080 0x1100000000 0x11239a9d80 (53249 draws so far)
+fl crumbs (exp 0404): submit #39394 dcb op 24 at 9245 (+16513 in the copy), entry 37: stages 00482030 es 11d01345, arguments 0x11934d46a0, V# bases 0x11226b50c0 0x1100000000 0x1123a6eb80 (57345 draws so far)
+fl crumbs (exp 0404): submit #39593 dcb op 24 at 5029 (+6865 in the copy), entry 9: stages 00482030 es 11d01345, arguments 0x11934d4320, V# bases 0x112240b3d0 0x1100000000 0x1123733d80 (61441 draws so far)
+fl crumbs (exp 0404): submit #39768 dcb op 24 at 39820 (+65194 in the copy), entry 2: stages 00482030 es 11d00f8d, arguments 0x1193b52cc0, V# bases 0x11235a55b0 0x0 0x0 (65537 draws so far)
+fl crumbs (exp 0404): submit #39963 dcb op 24 at 35669 (+56045 in the copy), entry 15: stages 00482030 es 11d00f8d, arguments 0x1193b20860, V# bases 0x1122a64f30 0x0 0x0 (69633 draws so far)
+fl crumbs (exp 0404): submit #40153 dcb op 24 at 14338 (+45080 in the copy), entry 30: stages 00482030 es 11d01345, arguments 0x11935d44a0, V# bases 0x11223d6400 0x1100000000 0x1123961a80 (73729 draws so far)
+fl crumbs (exp 0404): submit #40347 dcb op 24 at 18683 (+53693 in the copy), entry 52: stages 00482030 es 11d01345, arguments 0x11935d4780, V# bases 0x1122524450 0x1100000000 0x1123a26880 (77825 draws so far)
+fl crumbs (exp 0404): submit #40550 dcb op 24 at 10462 (+38972 in the copy), entry 18: stages 00482030 es 11d01345, arguments 0x11935d4280, V# bases 0x1122673840 0x1100000000 0x1123aeb680 (81921 draws so far)
+fl crumbs (exp 0404): submit #40750 dcb op 24 at 7662 (+21332 in the copy), entry 6: stages 00482030 es 11d01345, arguments 0x11935d3960, V# bases 0x11223c2e20 0x1100000000 0x11237b0880 (86017 draws so far)
+fl crumbs (exp 0404): submit #40946 dcb op 24 at 8628 (+10658 in the copy), entry 10: stages 00482030 es 11d01345, arguments 0x11934d4340, V# bases 0x1122511870 0x1100000000 0x1123875680 (90113 draws so far)
+fl crumbs (exp 0404): submit #41137 dcb op 2c at 2397 (+2487 in the copy), entry 0: stages 00482030 es 11d0132d, arguments 0x11235fc310, V# bases 0x11226449f0 0x0 0x0 (94209 draws so far)
+fl crumbs (exp 0404): submit #41322 dcb op 24 at 44979 (+74861 in the copy), entry 48: stages 00482030 es 11d00f85, arguments 0x1193b65c00, V# bases 0x1122a90220 0x0 0x0 (98305 draws so far)
+fl crumbs (exp 0404): submit #41512 dcb op 2c at 35435 (+56301 in the copy), entry 20: stages 00482030 es 11d01345, arguments 0x1122f25b10, V# bases 0x11224c43f0 0x0 0x0 (102401 draws so far)
+fl crumbs (exp 0404): submit #41699 dcb op 24 at 15648 (+26224 in the copy), entry 43: stages 00482030 es 11d01345, arguments 0x1193ad4660, V# bases 0x1122612440 0x0 0x0 (106497 draws so far)
+fl crumbs (exp 0404): submit #41892 dcb op 24 at 4530 (+7168 in the copy), entry 26: stages 00482030 es 11d01345, arguments 0x1193ad3c40, V# bases 0x1122360860 0x0 0x0 (110593 draws so far)
+fl crumbs (exp 0404): submit #42083 dcb op 24 at 29880 (+88752 in the copy), entry 47: stages 00482030 es 11d01345, arguments 0x11935d5660, V# bases 0x11224afa00 0x1100000000 0x11238f3680 (114689 draws so far)
+fl crumbs (exp 0404): submit #42287 dcb op 24 at 5571 (+16621 in the copy), entry 56: stages 00482030 es 11d01345, arguments 0x11935d4f20, V# bases 0x11225fe8f0 0x1100000000 0x11239b8480 (118785 draws so far)
+fl crumbs (exp 0404): submit #42486 dcb op 24 at 15843 (+54635 in the copy), entry 7: stages 00482030 es 11d01345, arguments 0x11935d4980, V# bases 0x112234d010 0x1100000000 0x1123a7d280 (122881 draws so far)
+fl crumbs (exp 0404): submit #42675 dcb op 24 at 35309 (+67023 in the copy), entry 36: stages 00482030 es 11d01345, arguments 0x11935d4500, V# bases 0x11224ddca0 0x1100000000 0x1123790600 (126977 draws so far)
+fl crumbs (exp 0404): submit #42870 dcb op 24 at 13570 (+42760 in the copy), entry 22: stages 00482030 es 11d01345, arguments 0x11935d4320, V# bases 0x112266f080 0x1100000000 0x11238cea80 (131073 draws so far)
+fl crumbs (exp 0404): submit #43071 dcb op 24 at 13690 (+42880 in the copy), entry 22: stages 00482030 es 11d01345, arguments 0x11935d4360, V# bases 0x11223bca60 0x1100000000 0x1123993880 (135169 draws so far)
+fl crumbs (exp 0404): submit #43275 dcb op 24 at 12979 (+31111 in the copy), entry 29: stages 00482030 es 11d01345, arguments 0x11935d3c80, V# bases 0x112250aab0 0x1100000000 0x1123a58680 (139265 draws so far)
+fl crumbs (exp 0404): submit #43474 dcb op 24 at 12175 (+28949 in the copy), entry 22: stages 00482030 es 11d01345, arguments 0x11935d3b60, V# bases 0x1122658b00 0x1100000000 0x112371ed80 (143361 draws so far)
+fl crumbs (exp 0404): submit #43676 dcb op 24 at 9525 (+22419 in the copy), entry 2: stages 00482030 es 11d01345, arguments 0x11934d4a40, V# bases 0x11223a6530 0x1100000000 0x11237e3b80 (147457 draws so far)
+fl crumbs (exp 0404): submit #43874 dcb op 24 at 5389 (+9359 in the copy), entry 20: stages 00482030 es 11d01345, arguments 0x11934d4480, V# bases 0x11224f4cd0 0x1100000000 0x11238a8980 (151553 draws so far)
+fl crumbs (exp 0404): submit #44073 dcb op 24 at 8025 (+11995 in the copy), entry 20: stages 00482030 es 11d01345, arguments 0x11934d4480, V# bases 0x1122643470 0x1100000000 0x112396d780 (155649 draws so far)
+fl crumbs (exp 0404): submit #44270 dcb op 24 at 9251 (+16713 in the copy), entry 38: stages 00482030 es 11d01345, arguments 0x11934d46c0, V# bases 0x1122391580 0x1100000000 0x1123a32580 (159745 draws so far)
+fl crumbs (exp 0404): submit #44462 dcb op 24 at 9221 (+19205 in the copy), entry 51: stages 00482030 es 11d01345, arguments 0x11934d4860, V# bases 0x11224df5d0 0x1100000000 0x1123af7380 (163841 draws so far)
+fl crumbs (exp 0404): submit #44658 dcb op 24 at 7729 (+9759 in the copy), entry 10: stages 00482030 es 11d01345, arguments 0x11934d4340, V# bases 0x112262e4c0 0x1100000000 0x11237bd000 (167937 draws so far)
+fl crumbs (exp 0404): submit #44835 dcb op 24 at 33352 (+51866 in the copy), entry 60: stages 00482030 es 11d00f8d, arguments 0x1193afffe0, V# bases 0x112368fc40 0x0 0x0 (172033 draws so far)
+fl crumbs (exp 0404): submit #45030 dcb op 24 at 18678 (+33664 in the copy), entry 24: stages 00482030 es 11d01345, arguments 0x1193ad4c00, V# bases 0x1122493ce0 0x0 0x0 (176129 draws so far)
+fl crumbs (exp 0404): submit #45219 dcb op 24 at 16860 (+29102 in the copy), entry 60: stages 00482030 es 11d01345, arguments 0x1193ad4880, V# bases 0x11225e1d30 0x0 0x0 (180225 draws so far)
+fl crumbs (exp 0404): submit #45413 dcb op 24 at 6738 (+12316 in the copy), entry 56: stages 00482030 es 11d01345, arguments 0x1193ad4000, V# bases 0x11223338b0 0x0 0x0 (184321 draws so far)
+fl crumbs (exp 0404): submit #45610 dcb op 24 at 4547 (+7283 in the copy), entry 27: stages 00482030 es 11d01345, arguments 0x1193ad3c60, V# bases 0x1122481900 0x0 0x0 (188417 draws so far)
+fl crumbs (exp 0404): submit #45811 dcb op 24 at 14722 (+24024 in the copy), entry 30: stages 00482030 es 11d01345, arguments 0x1193ad44c0, V# bases 0x11225d07f0 0x0 0x0 (192513 draws so far)
+fl crumbs (exp 0404): submit #46012 dcb op 24 at 34140 (+52654 in the copy), entry 60: stages 00482030 es 11d00f8d, arguments 0x1193b083c0, V# bases 0x11231e0600 0x0 0x0 (196609 draws so far)
+fl crumbs (exp 0404): submit #46221 dcb op 24 at 44721 (+73819 in the copy), entry 40: stages 00482030 es 11d00f8d, arguments 0x1193b530e0, V# bases 0x1123665ef0 0x0 0x0 (200705 draws so far)
+fl crumbs (exp 0404): submit #46442 dcb op 24 at 8708 (+11320 in the copy), entry 13: stages 00482030 es 11d01345, arguments 0x11934d43a0, V# bases 0x11225f3130 0x1100000000 0x1123aa9c80 (204801 draws so far)
+fl crumbs (exp 0404): submit #46646 dcb op 24 at 12747 (+30685 in the copy), entry 28: stages 00482030 es 11d01345, arguments 0x11935d3c00, V# bases 0x1122342370 0x1100000000 0x112376ee80 (208897 draws so far)
+fl crumbs (exp 0404): submit #46849 dcb op 24 at 17392 (+49686 in the copy), entry 38: stages 00482030 es 11d01345, arguments 0x11935d4500, V# bases 0x1122490b10 0x1100000000 0x1123833c80 (212993 draws so far)
+fl crumbs (exp 0404): submit #47044 dcb op 24 at 19380 (+54778 in the copy), entry 54: stages 00482030 es 11d01345, arguments 0x11935d4700, V# bases 0x11225dd4e0 0x1100000000 0x11238f8a80 (217089 draws so far)
+fl crumbs (exp 0404): submit #47248 dcb op 24 at 1781 (+3131 in the copy), entry 6: stages 00482030 es 11d01345, arguments 0x11935d48a0, V# bases 0x112232be00 0x1100000000 0x11239bd880 (221185 draws so far)
+fl crumbs (exp 0404): submit #47439 dcb op 24 at 22310 (+61200 in the copy), entry 8: stages 00482030 es 11d01345, arguments 0x11935d49c0, V# bases 0x112247d4f0 0x1100000000 0x1123a82680 (225281 draws so far)
+fl crumbs (exp 0404): submit #47650 dcb op 24 at 2234 (+2814 in the copy), entry 5: stages 00482030 es 11d01345, arguments 0x11939d39a0, V# bases 0x11225cb7c0 0x0 0x0 (229377 draws so far)
+fl crumbs (exp 0404): submit #47855 dcb op 24 at 17867 (+31677 in the copy), entry 12: stages 00482030 es 11d01345, arguments 0x1193ad4a80, V# bases 0x1122319d50 0x0 0x0 (233473 draws so far)
+fl crumbs (exp 0404): submit #48047 dcb op 24 at 40588 (+66158 in the copy), entry 4: stages 00482030 es 11d00f85, arguments 0x1193b4cb80, V# bases 0x1122fe00f0 0x0 0x0 (237569 draws so far)
+fl crumbs (exp 0404): submit #48268 dcb op 24 at 9057 (+18847 in the copy), entry 50: stages 00482030 es 11d01345, arguments 0x11934d4840, V# bases 0x11225edec0 0x1100000000 0x11239b8480 (241665 draws so far)
+fl crumbs (exp 0404): submit #48476 dcb op 24 at 4884 (+14188 in the copy), entry 47: stages 00482030 es 11d01345, arguments 0x11935d4dc0, V# bases 0x112233b7f0 0x1100000000 0x1123a7d280 (245761 draws so far)
+fl crumbs (exp 0404): submit #48686 dcb op 24 at 6382 (+11470 in the copy), entry 51: stages 00482030 es 11d01345, arguments 0x1193ad3f60, V# bases 0x1122489f90 0x0 0x0 (249857 draws so far)
+fl crumbs (exp 0404): submit #48896 dcb op 24 at 34530 (+53338 in the copy), entry 63: stages 00482030 es 11d00f8d, arguments 0x1193b184a0, V# bases 0x1123299980 0x0 0x0 (253953 draws so far)
+fl crumbs (exp 0404): submit #49116 dcb op 24 at 9496 (+18510 in the copy), entry 46: stages 00482030 es 11d01345, arguments 0x11934d47c0, V# bases 0x112235ee10 0x1100000000 0x11238ecd80 (258049 draws so far)
+fl crumbs (exp 0404): submit #49316 dcb op 24 at 18307 (+52347 in the copy), entry 47: stages 00482030 es 11d01345, arguments 0x11935d4680, V# bases 0x11224add00 0x1100000000 0x11239b1b80 (262145 draws so far)
+fl crumbs (exp 0404): submit #49515 dcb op 24 at 30446 (+90676 in the copy), entry 54: stages 00482030 es 11d01345, arguments 0x11935d5760, V# bases 0x11225fbd50 0x1100000000 0x1123a76980 (266241 draws so far)
+fl crumbs (exp 0404): submit #49724 dcb op 24 at 14766 (+24166 in the copy), entry 31: stages 00482030 es 11d01345, arguments 0x1193ad44e0, V# bases 0x112234abf0 0x0 0x0 (270337 draws so far)
+fl crumbs (exp 0404): submit #49919 dcb op 24 at 39415 (+63613 in the copy), entry 54: stages 00482030 es 11d00f85, arguments 0x1193b41f00, V# bases 0x1122a01cb0 0x0 0x0 (274433 draws so far)
+fl crumbs (exp 0404): submit #50141 dcb op 24 at 9488 (+27620 in the copy), entry 29: stages 00482030 es 11d01345, arguments 0x11935d3c80, V# bases 0x112261f4b0 0x1100000000 0x11238e6480 (278529 draws so far)
+fl crumbs (exp 0404): submit #50341 dcb op 24 at 8124 (+25382 in the copy), entry 24: stages 00482030 es 11d01345, arguments 0x11935d52e0, V# bases 0x112236d7b0 0x1100000000 0x11239ab280 (282625 draws so far)
+fl crumbs (exp 0404): submit #50563 dcb op 24 at 4995 (+8221 in the copy), entry 32: stages 00482030 es 11d01345, arguments 0x1193ad3d00, V# bases 0x11224bbf50 0x0 0x0 (286721 draws so far)
+fl crumbs (exp 0404): submit #50765 dcb op 24 at 14263 (+22879 in the copy), entry 23: stages 00482030 es 11d01345, arguments 0x1193ad43e0, V# bases 0x1122609850 0x0 0x0 (290817 draws so far)
+fl crumbs (exp 0404): submit #50954 dcb op 24 at 39008 (+62716 in the copy), entry 49: stages 00482030 es 11d00f8d, arguments 0x1193b418c0, V# bases 0x11231314e0 0x0 0x0 (294913 draws so far)
+fl crumbs (exp 0404): submit #51171 dcb op 24 at 14890 (+39812 in the copy), entry 0: stages 00482030 es 11d01345, arguments 0x11935d40c0, V# bases 0x11224dee80 0x1100000000 0x11238e0600 (299009 draws so far)
+fl crumbs (exp 0404): submit #51364 dcb op 24 at 11480 (+42124 in the copy), entry 29: stages 00482030 es 11d01345, arguments 0x11935d4480, V# bases 0x112262e4c0 0x1100000000 0x11239a5400 (303105 draws so far)
+fl crumbs (exp 0404): submit #51557 dcb op 24 at 6343 (+16133 in the copy), entry 50: stages 00482030 es 11d01345, arguments 0x11934d4840, V# bases 0x112237c020 0x1100000000 0x1123a6a200 (307201 draws so far)
+fl crumbs (exp 0404): submit #51748 dcb op 24 at 26784 (+34830 in the copy), entry 42: stages 00482030 es 11d01345, arguments 0x11934d4700, V# bases 0x112254ea50 0x1100000000 0x11237dc800 (311297 draws so far)
+fl crumbs (exp 0404): submit #51949 dcb op 24 at 4494 (+12828 in the copy), entry 42: stages 00482030 es 11d01345, arguments 0x11935d4d20, V# bases 0x112269c350 0x1100000000 0x11238b9000 (315393 draws so far)
+fl crumbs (exp 0404): submit #52149 dcb op 24 at 6441 (+11725 in the copy), entry 53: stages 00482030 es 11d01345, arguments 0x1193ad3fa0, V# bases 0x11223ea420 0x0 0x0 (319489 draws so far)
+fl crumbs (exp 0404): submit #52349 dcb op 24 at 18205 (+32505 in the copy), entry 17: stages 00482030 es 11d01345, arguments 0x1193ad4b20, V# bases 0x1122539a60 0x0 0x0 (323585 draws so far)
+fl crumbs (exp 0404): submit #52553 dcb op 24 at 34599 (+53701 in the copy), entry 2: stages 00482030 es 11d00f85, arguments 0x1193b09a20, V# bases 0x1122fd5f10 0x0 0x0 (327681 draws so far)
+fl crumbs (exp 0404): submit #52761 dcb op 24 at 37276 (+59808 in the copy), entry 37: stages 00482030 es 11d00f8d, arguments 0x1193b2f520, V# bases 0x1123459d90 0x0 0x0 (331777 draws so far)
+fl crumbs (exp 0404): submit #52992 dcb op 24 at 8483 (+14199 in the copy), entry 29: stages 00482030 es 11d01345, arguments 0x11934d45a0, V# bases 0x112255cf20 0x1100000000 0x11238b3180 (335873 draws so far)
+fl crumbs (exp 0404): submit #53183 dcb op 24 at 18587 (+53791 in the copy), entry 53: stages 00482030 es 11d01345, arguments 0x11935d4720, V# bases 0x11226ac090 0x1100000000 0x1123977f80 (339969 draws so far)
+fl crumbs (exp 0404): submit #53383 dcb op 24 at 9583 (+30527 in the copy), entry 43: stages 00482030 es 11d01345, arguments 0x11935d5540, V# bases 0x11223fa7a0 0x1100000000 0x1123a3cd80 (344065 draws so far)
+fl crumbs (exp 0404): submit #53590 dcb op 24 at 4388 (+6830 in the copy), entry 24: stages 00482030 es 11d01345, arguments 0x1193ad3c00, V# bases 0x11225487f0 0x0 0x0 (348161 draws so far)
+fl crumbs (exp 0404): submit #53787 dcb op 24 at 16843 (+28987 in the copy), entry 59: stages 00482030 es 11d01345, arguments 0x1193ad4860, V# bases 0x11226960f0 0x0 0x0 (352257 draws so far)
+fl crumbs (exp 0404): submit #53992 dcb op 2c at 20253 (+36709 in the copy), entry 39: stages 00482030 es 11d01345, arguments 0x1122fe20c0, V# bases 0x11223e6540 0x0 0x0 (356353 draws so far)
+fl crumbs (exp 0404): submit #54206 dcb op 24 at 7698 (+14648 in the copy), entry 6: stages 00482030 es 11d01345, arguments 0x1193ad41c0, V# bases 0x1122535710 0x0 0x0 (360449 draws so far)
+fl crumbs (exp 0404): submit #54403 dcb op 24 at 5387 (+9201 in the copy), entry 38: stages 00482030 es 11d01345, arguments 0x1193ad3dc0, V# bases 0x1122685500 0x0 0x0 (364545 draws so far)
+fl crumbs (exp 0404): submit #54588 dcb op 24 at 28125 (+90877 in the copy), entry 3: stages 00482030 es 11d01345, arguments 0x11935d58e0, V# bases 0x11223d5030 0x1100000000 0x1123adb000 (368641 draws so far)
+fl crumbs (exp 0404): submit #54789 dcb op 24 at 3824 (+10412 in the copy), entry 33: stages 00482030 es 11d01345, arguments 0x11935d4c20, V# bases 0x1122525570 0x1100000000 0x11237a1700 (372737 draws so far)
+fl crumbs (exp 0404): submit #54992 dcb op 24 at 21851 (+59383 in the copy), entry 1: stages 00482030 es 11d01345, arguments 0x11935d4920, V# bases 0x1122672e40 0x1100000000 0x1123866500 (376833 draws so far)
+fl crumbs (exp 0404): submit #55205 dcb op 24 at 15606 (+40528 in the copy), entry 0: stages 00482030 es 11d01345, arguments 0x11935d4080, V# bases 0x11223c3820 0x1100000000 0x112392b300 (380929 draws so far)
+fl crumbs (exp 0404): submit #55404 dcb op 24 at 8256 (+13390 in the copy), entry 26: stages 00482030 es 11d01345, arguments 0x11934d4540, V# bases 0x1122512ec0 0x1100000000 0x11239f0100 (385025 draws so far)
+fl crumbs (exp 0404): submit #55585 dcb op 24 at 43243 (+72341 in the copy), entry 40: stages 00482030 es 11d00f8d, arguments 0x1193b56b20, V# bases 0x1123389d20 0x0 0x0 (389121 draws so far)
+fl crumbs (exp 0404): submit #55790 dcb op 24 at 38380 (+61990 in the copy), entry 48: stages 00482030 es 11d00f85, arguments 0x1193b37f80, V# bases 0x1122806480 0x0 0x0 (393217 draws so far)
+fl crumbs (exp 0404): submit #55987 dcb op 24 at 2949 (+3627 in the copy), entry 6: stages 00482030 es 11d01345, arguments 0x1193ad39c0, V# bases 0x11224c6ea0 0x0 0x0 (397313 draws so far)
+fl crumbs (exp 0404): submit #56176 dcb op 24 at 13831 (+36425 in the copy), entry 52: stages 00482030 es 11d01345, arguments 0x11935d3ec0, V# bases 0x1122616540 0x1100000000 0x11238e3a80 (401409 draws so far)
+fl crumbs (exp 0404): submit #56346 dcb op 24 at 40296 (+65278 in the copy), entry 62: stages 00482030 es 11d00f8d, arguments 0x1193b32ce0, V# bases 0x11234db420 0x0 0x0 (405505 draws so far)
+fl crumbs (exp 0404): submit #56550 dcb op 24 at 3277 (+4347 in the copy), entry 10: stages 00482030 es 11d01345, arguments 0x1193ad3a40, V# bases 0x112247cb20 0x0 0x0 (409601 draws so far)
+fl crumbs (exp 0404): submit #56751 dcb op 24 at 5328 (+15796 in the copy), entry 53: stages 00482030 es 11d01345, arguments 0x11935d4ea0, V# bases 0x11225cba70 0x1100000000 0x1123712600 (413697 draws so far)
+fl crumbs (exp 0404): submit #56956 dcb op 24 at 2699 (+6377 in the copy), entry 18: stages 00482030 es 11d01345, arguments 0x11935d4a20, V# bases 0x112231bcd0 0x1100000000 0x11237d7400 (417793 draws so far)
+fl crumbs (exp 0404): submit #57153 dcb op 24 at 14311 (+37681 in the copy), entry 56: stages 00482030 es 11d01345, arguments 0x11935d3fc0, V# bases 0x112246c9c0 0x1100000000 0x112389c200 (421889 draws so far)
+fl crumbs (exp 0404): submit #57355 dcb op 24 at 12296 (+31010 in the copy), entry 32: stages 00482030 es 11d01345, arguments 0x11935d3ca0, V# bases 0x11225bc060 0x1100000000 0x1123961000 (425985 draws so far)
+fl crumbs (exp 0404): submit #57552 dcb op 24 at 7984 (+11372 in the copy), entry 17: stages 00482030 es 11d01345, arguments 0x11934d4420, V# bases 0x112230bdf0 0x1100000000 0x1123a25e00 (430081 draws so far)
+fl crumbs (exp 0404): submit #57726 dcb op 24 at 40788 (+67338 in the copy), entry 14: stages 00482030 es 11d00f85, arguments 0x1193b529a0, V# bases 0x11233bcad0 0x0 0x0 (434177 draws so far)
+fl crumbs (exp 0404): submit #57924 dcb op 2c at 36963 (+59103 in the copy), entry 33: stages 00482030 es 11d143a6, arguments 0x1122835020, V# bases 0x1122570540 0x0 0x0 (438273 draws so far)
+fl crumbs (exp 0404): submit #58130 dcb op 2c at 21710 (+39930 in the copy), entry 57: stages 00482030 es 11d01345, arguments 0x1122c577e0, V# bases 0x11226bde10 0x0 0x0 (442369 draws so far)
+fl crumbs (exp 0404): submit #58339 dcb op 24 at 19025 (+34403 in the copy), entry 28: stages 00482030 es 11d01345, arguments 0x1193ad4c80, V# bases 0x112240dd50 0x0 0x0 (446465 draws so far)
+fl crumbs (exp 0404): submit #58545 dcb op 24 at 9165 (+17879 in the copy), entry 24: stages 00482030 es 11d01345, arguments 0x1193ad4400, V# bases 0x1122560000 0x0 0x0 (450561 draws so far)
+fl crumbs (exp 0404): submit #58744 dcb op 24 at 5255 (+8873 in the copy), entry 36: stages 00482030 es 11d01345, arguments 0x1193ad3d80, V# bases 0x11226b5010 0x0 0x0 (454657 draws so far)
+fl crumbs (exp 0404): submit #58934 dcb op 24 at 31491 (+94049 in the copy), entry 2: stages 00482030 es 11d01345, arguments 0x11935d58a0, V# bases 0x1122408ae0 0x1100000000 0x1123769000 (458753 draws so far)
+fl crumbs (exp 0404): submit #59136 dcb op 24 at 5334 (+15802 in the copy), entry 53: stages 00482030 es 11d01345, arguments 0x11935d4e80, V# bases 0x112255b630 0x1100000000 0x112382de00 (462849 draws so far)
+fl crumbs (exp 0404): submit #59335 dcb op 24 at 21138 (+45284 in the copy), entry 60: stages 00482030 es 11d01345, arguments 0x11935d4000, V# bases 0x11226af770 0x1100000000 0x11238f2c00 (466945 draws so far)
+fl crumbs (exp 0404): submit #59537 dcb op 24 at 8836 (+13388 in the copy), entry 23: stages 00482030 es 11d01345, arguments 0x11934d44e0, V# bases 0x1122404700 0x1100000000 0x11239b7a00 (471041 draws so far)
+fl crumbs (exp 0404): submit #59710 dcb op 2c at 46033 (+76503 in the copy), entry 54: stages 00482030 es 11d01345, arguments 0x1123046bd0, V# bases 0x112251ec50 0x0 0x0 (475137 draws so far)
+fl crumbs (exp 0404): submit #59911 dcb op 24 at 38657 (+62855 in the copy), entry 54: stages 00482030 es 11d00f85, arguments 0x1193b360e0, V# bases 0x11234bfb90 0x0 0x0 (479233 draws so far)
+fl crumbs (exp 0404): submit #60114 dcb op 24 at 19958 (+36806 in the copy), entry 43: stages 00482030 es 11d01345, arguments 0x1193ad4e60, V# bases 0x11223c2c70 0x0 0x0 (483329 draws so far)
+fl crumbs (exp 0404): submit #60310 dcb op 24 at 9289 (+29457 in the copy), entry 39: stages 00482030 es 11d01345, arguments 0x11935d54e0, V# bases 0x11225439d0 0x1100000000 0x11238d8800 (487425 draws so far)
+fl crumbs (exp 0404): submit #60520 dcb op 24 at 6487 (+19671 in the copy), entry 3: stages 00482030 es 11d01345, arguments 0x11935d5040, V# bases 0x11226eea30 0x1100000000 0x1123a36f00 (491521 draws so far)
+fl crumbs (exp 0404): submit #60741 dcb op 24 at 4514 (+12848 in the copy), entry 42: stages 00482030 es 11d01345, arguments 0x11935d4d40, V# bases 0x1122443500 0x1100000000 0x1123afbd00 (495617 draws so far)
+fl crumbs (exp 0404): submit #60954 dcb op 24 at 32122 (+80906 in the copy), entry 59: stages 00482030 es 11d01345, arguments 0x11935d5020, V# bases 0x1122596ef0 0x1100000000 0x11237c2400 (499713 draws so far)
+fl crumbs (exp 0404): submit #61169 dcb op 24 at 7827 (+24309 in the copy), entry 20: stages 00482030 es 11d01345, arguments 0x11935d5280, V# bases 0x11226eb030 0x1100000000 0x1123887200 (503809 draws so far)
+fl crumbs (exp 0404): submit #61373 dcb op 24 at 11411 (+37011 in the copy), entry 3: stages 00482030 es 11d01345, arguments 0x11935d5840, V# bases 0x112243ea40 0x1100000000 0x112394c000 (507905 draws so far)
+fl crumbs (exp 0404): submit #61596 dcb op 24 at 8510 (+16342 in the copy), entry 15: stages 00482030 es 11d01345, arguments 0x1193ad42e0, V# bases 0x1122592430 0x0 0x0 (512001 draws so far)
+fl crumbs (exp 0404): submit #61799 dcb op 24 at 31934 (+95656 in the copy), entry 8: stages 00482030 es 11d01345, arguments 0x11935d59a0, V# bases 0x11226e4f80 0x1100000000 0x1123ad5c00 (516097 draws so far)
+fl crumbs (exp 0404): submit #62016 dcb op 24 at 34065 (+87699 in the copy), entry 20: stages 00482030 es 11d01345, arguments 0x11935d5320, V# bases 0x1122438990 0x1100000000 0x112379b880 (520193 draws so far)
+fl crumbs (exp 0404): submit #62241 dcb op 24 at 3359 (+4527 in the copy), entry 11: stages 00482030 es 11d01345, arguments 0x1193ad3a60, V# bases 0x112258bc30 0x0 0x0 (524289 draws so far)
+fl crumbs (exp 0404): submit #62448 dcb op 24 at 8677 (+16705 in the copy), entry 17: stages 00482030 es 11d01345, arguments 0x1193ad4320, V# bases 0x11226deed0 0x0 0x0 (528385 draws so far)
+fl crumbs (exp 0404): submit #62648 dcb op 24 at 15517 (+25897 in the copy), entry 41: stages 00482030 es 11d01345, arguments 0x1193ad4620, V# bases 0x1122432630 0x0 0x0 (532481 draws so far)
+fl crumbs (exp 0404): submit #62853 dcb op 24 at 41952 (+68698 in the copy), entry 16: stages 00482030 es 11d00f85, arguments 0x1193b46ec0, V# bases 0x1122e08240 0x0 0x0 (536577 draws so far)
+fl crumbs (exp 0404): submit #63075 dcb op 24 at 9666 (+18486 in the copy), entry 45: stages 00482030 es 11d01345, arguments 0x11934d47a0, V# bases 0x11223110a0 0x1100000000 0x1123795a00 (540673 draws so far)
+fl crumbs (exp 0404): submit #63281 dcb op 24 at 22578 (+47112 in the copy), entry 62: stages 00482030 es 11d00de5, arguments 0x11935d40a0, V# bases 0x1122464d40 0x1100000000 0x112385a800 (544769 draws so far)
+fl crumbs (exp 0404): submit #63500 dcb op 24 at 16567 (+44399 in the copy), entry 15: stages 00482030 es 11d01345, arguments 0x11935d4260, V# bases 0x11225b8e80 0x1100000000 0x112391f600 (548865 draws so far)
+fl crumbs (exp 0404): submit #63712 dcb op 24 at 18149 (+50249 in the copy), entry 37: stages 00482030 es 11d01345, arguments 0x11935d4500, V# bases 0x112230c320 0x1100000000 0x11239e4400 (552961 draws so far)
+fl crumbs (exp 0404): submit #63918 dcb op 24 at 9471 (+21007 in the copy), entry 59: stages 00482030 es 11d01345, arguments 0x11934d4960, V# bases 0x112245f5c0 0x1100000000 0x1123aa9200 (557057 draws so far)
+fl crumbs (exp 0404): submit #64104 dcb op 2c at 39539 (+64423 in the copy), entry 61: stages 00482030 es 11d01345, arguments 0x1122996c70, V# bases 0x112257aee0 0x0 0x0 (561153 draws so far)
+fl crumbs (exp 0404): submit #64300 dcb op 2c at 21387 (+39117 in the copy), entry 52: stages 00482030 es 11d01345, arguments 0x1122dbc850, V# bases 0x11226ce400 0x0 0x0 (565249 draws so far)
+fl crumbs (exp 0404): submit #64508 dcb op 2c at 20954 (+38194 in the copy), entry 47: stages 00482030 es 11d01345, arguments 0x1123240980, V# bases 0x1122421d70 0x0 0x0 (569345 draws so far)
+fl crumbs (exp 0404): submit #64707 dcb op 24 at 2423 (+3247 in the copy), entry 7: stages 00482030 es 11d00cde, arguments 0x11939d3d40, V# bases 0x0 0x1122576de0 0x11236c0780 (573441 draws so far)
+fl crumbs (exp 0404): submit #64904 dcb op 24 at 14337 (+38289 in the copy), entry 59: stages 00482030 es 11d01345, arguments 0x11935d3fe0, V# bases 0x11226c82b0 0x1100000000 0x1123a60f00 (577537 draws so far)
+fl crumbs (exp 0404): submit #65102 dcb op 24 at 19573 (+39645 in the copy), entry 39: stages 00482030 es 11d01345, arguments 0x11935d3d60, V# bases 0x112241c6f0 0x1100000000 0x1123727600 (581633 draws so far)
+fl crumbs (exp 0404): submit #65308 dcb op 24 at 24637 (+54991 in the copy), entry 28: stages 00482030 es 11d01345, arguments 0x11935d4460, V# bases 0x112256ef90 0x1100000000 0x11237ec400 (585729 draws so far)
+fl crumbs (exp 0404): submit #65506 dcb op 24 at 6841 (+20801 in the copy), entry 7: stages 00482030 es 11d01345, arguments 0x11935d50e0, V# bases 0x11226bfed0 0x1100000000 0x11238b1200 (589825 draws so far)
+fl crumbs (exp 0404): submit #65718 dcb op 24 at 6090 (+10786 in the copy), entry 47: stages 00482030 es 11d01345, arguments 0x1193ad3ee0, V# bases 0x1122411920 0x0 0x0 (593921 draws so far)
+fl crumbs (exp 0404): submit #65910 dcb op 24 at 17917 (+31727 in the copy), entry 12: stages 00482030 es 11d01345, arguments 0x1193ad4a80, V# bases 0x1122561770 0x0 0x0 (598017 draws so far)
+fl crumbs (exp 0404): submit #66103 dcb op 24 at 41637 (+68285 in the copy), entry 15: stages 00482030 es 11d00f85, arguments 0x1193b4aee0, V# bases 0x11236faaf0 0x0 0x0 (602113 draws so far)
+fl crumbs (exp 0404): submit #66314 dcb op 24 at 12502 (+25590 in the copy), entry 3: stages 00482030 es 11d01345, arguments 0x11934d4a60, V# bases 0x112243a4d0 0x1100000000 0x11237e6580 (606209 draws so far)
+fl crumbs (exp 0404): submit #66512 dcb op 24 at 5620 (+16864 in the copy), entry 57: stages 00482030 es 11d01345, arguments 0x11935d4f00, V# bases 0x1122589bd0 0x1100000000 0x11238ab380 (610305 draws so far)
+fl crumbs (exp 0404): submit #66713 dcb op 24 at 4771 (+7703 in the copy), entry 29: stages 00482030 es 11d01345, arguments 0x1193ad3ca0, V# bases 0x11226d9a20 0x0 0x0 (614401 draws so far)
+fl crumbs (exp 0404): submit #66910 dcb op 2c at 34654 (+53854 in the copy), entry 3: stages 00482030 es 11d01345, arguments 0x11229943a0, V# bases 0x11224292f0 0x0 0x0 (618497 draws so far)
+fl crumbs (exp 0404): submit #67130 dcb op 24 at 10510 (+11958 in the copy), entry 7: stages 00482030 es 11d01345, arguments 0x11934d42e0, V# bases 0x11225b1c40 0x1100000000 0x112371ae80 (622593 draws so far)
+fl crumbs (exp 0404): submit #67326 dcb op 2c at 6365 (+7331 in the copy), entry 6: stages 00482030 es 11d0132d, arguments 0x11232b4440, V# bases 0x11226e9800 0x1100000000 0x11237d7e80 (626689 draws so far)
+fl crumbs (exp 0404): submit #67510 dcb op 24 at 47358 (+77730 in the copy), entry 53: stages 00482030 es 11d00f85, arguments 0x1193b50860, V# bases 0x112274cfd0 0x0 0x0 (630785 draws so far)
+fl crumbs (exp 0404): submit #67708 dcb op 24 at 44730 (+73632 in the copy), entry 38: stages 00482030 es 11d00f8d, arguments 0x1193b4ee60, V# bases 0x1122bd11e0 0x0 0x0 (634881 draws so far)
+fl crumbs (exp 0404): submit #67927 dcb op 24 at 12359 (+24865 in the copy), entry 0: stages 00482030 es 11d01345, arguments 0x11934d4a00, V# bases 0x11226f2a90 0x1100000000 0x1123a2e680 (638977 draws so far)
+fl crumbs (exp 0404): submit #68125 dcb op 24 at 14417 (+45547 in the copy), entry 32: stages 00482030 es 11d01345, arguments 0x11935d44a0, V# bases 0x11224430f0 0x1100000000 0x1123af3480 (643073 draws so far)
+fl crumbs (exp 0404): submit #68318 dcb op 24 at 27818 (+75438 in the copy), entry 53: stages 00482030 es 11d01345, arguments 0x11935d4f60, V# bases 0x11225918f0 0x1100000000 0x11237b9100 (647169 draws so far)
+fl crumbs (exp 0404): submit #68532 dcb op 24 at 6017 (+10615 in the copy), entry 46: stages 00482030 es 11d01345, arguments 0x1193ad3ec0, V# bases 0x11226e0f90 0x0 0x0 (651265 draws so far)
+fl crumbs (exp 0404): submit #68741 dcb op 24 at 34017 (+52531 in the copy), entry 60: stages 00482030 es 11d00f85, arguments 0x1193b04760, V# bases 0x11232ed7f0 0x0 0x0 (655361 draws so far)
+fl crumbs (exp 0404): submit #68957 dcb op 24 at 8376 (+9436 in the copy), entry 5: stages 00482030 es 11d01345, arguments 0x11934d42a0, V# bases 0x11225b7220 0x1100000000 0x1123a28800 (659457 draws so far)
+fl crumbs (exp 0404): submit #69155 dcb op 24 at 35485 (+63707 in the copy), entry 18: stages 00482030 es 11d01345, arguments 0x11935d4260, V# bases 0x112231c250 0x1100000000 0x1123af9d80 (663553 draws so far)
+fl crumbs (exp 0404): submit #69347 dcb op 24 at 8486 (+26520 in the copy), entry 28: stages 00482030 es 11d01345, arguments 0x11935d5360, V# bases 0x11224da2b0 0x1100000000 0x1123873700 (667649 draws so far)
+fl crumbs (exp 0404): submit #96494 dcb op 24 at 52436 (+115442 in the copy), entry 2: stages 00482030 es 11d01345, arguments 0x11935e1040, V# bases 0x112232e6e0 0x0 0x0 (671745 draws so far)
+fl crumbs (exp 0404): submit #96525 dcb op 2c at 2137 (+3681 in the copy), entry 7: stages 00482030 es 11d0132d, arguments 0x112314dfa0, V# bases 0x1122387a90 0x1100000000 0x11237a2c00 (675841 draws so far)
+fl crumbs (exp 0404): submit #96660 dcb op 24 at 13291 (+24063 in the copy), entry 45: stages 00482030 es 11d00f85, arguments 0x1193b0b160, V# bases 0x1122bdd9f0 0x0 0x0 (679937 draws so far)
+fl crumbs (exp 0404): submit #96851 dcb op 24 at 2471 (+3345 in the copy), entry 8: stages 00482030 es 11d01345, arguments 0x11939d3a00, V# bases 0x11226545d0 0x0 0x0 (684033 draws so far)
+fl crumbs (exp 0404): submit #97055 dcb op 24 at 18605 (+48183 in the copy), entry 24: stages 00482030 es 11d01345, arguments 0x11935d4440, V# bases 0x11223a7fc0 0x1100000000 0x1123a85080 (688129 draws so far)
+fl crumbs (exp 0404): submit #97403 dcb op 24 at 10567 (+20841 in the copy), entry 52: stages 00482030 es 11d01345, arguments 0x11935d3e60, V# bases 0x1122636190 0x1100000000 0x112380b180 (692225 draws so far)
+fl crumbs (exp 0404): submit #98091 dcb op 24 at 17190 (+24504 in the copy), entry 60: stages 00482030 es 11d00f85, arguments 0x1193af6760, V# bases 0x11228f5870 0x1123abd780 0x0 (696321 draws so far)
+fl crumbs (exp 0404): submit #98438 dcb op 24 at 16004 (+58094 in the copy), entry 24: stages 00482030 es 11d01345, arguments 0x11935d4980, V# bases 0x112241cb70 0x1100000000 0x11237fa080 (700417 draws so far)
+fl crumbs (exp 0404): submit #98616 dcb op 24 at 4671 (+8485 in the copy), entry 38: stages 00482030 es 11d01345, arguments 0x11939d3dc0, V# bases 0x11225073c0 0x0 0x0 (704513 draws so far)
+fl crumbs (exp 0404): submit #98957 dcb op 24 at 14350 (+27438 in the copy), entry 3: stages 00482030 es 11d01345, arguments 0x11935d3d60, V# bases 0x11226d7190 0x1100000000 0x11239d3d80 (708609 draws so far)
+fl crumbs (exp 0404): submit #99336 dcb op 24 at 12087 (+21295 in the copy), entry 47: stages 00482030 es 11d01345, arguments 0x11935d3aa0, V# bases 0x11224c6c80 0x1100000000 0x1123730900 (712705 draws so far)
+fl crumbs (exp 0404): submit #99694 dcb op 24 at 8057 (+25315 in the copy), entry 24: stages 00482030 es 11d01345, arguments 0x11935d53c0, V# bases 0x11226951a0 0x1100000000 0x1123866f80 (716801 draws so far)
+fl crumbs (exp 0404): submit #99946 dcb op 2c at 8923 (+13571 in the copy), entry 23: stages 00482030 es 11d0132d, arguments 0x112307c570, V# bases 0x11223f0630 0x1100000000 0x1123952900 (720897 draws so far)
+fl crumbs (exp 0404): submit #100199 dcb op 24 at 4579 (+8197 in the copy), entry 36: stages 00482030 es 11d01345, arguments 0x1193ad3f00, V# bases 0x1122547da0 0x0 0x0 (724993 draws so far)
+fl crumbs (exp 0404): submit #100463 dcb op 24 at 3792 (+9992 in the copy), entry 31: stages 00482030 es 11d01345, arguments 0x11935d4d20, V# bases 0x11226b5910 0x1100000000 0x112372d480 (729089 draws so far)
+fl crumbs (exp 0404): submit #100723 dcb op 2c at 5483 (+5863 in the copy), entry 1: stages 00482030 es 11d0132d, arguments 0x1122704010, V# bases 0x1122411f80 0x1100000000 0x1123819880 (733185 draws so far)
+fl crumbs (exp 0404): submit #100968 dcb op 24 at 18117 (+45367 in the copy), entry 12: stages 00482030 es 11d01345, arguments 0x11935d4440, V# bases 0x1122575770 0x1100000000 0x1123900880 (737281 draws so far)
+fl crumbs (exp 0404): submit #101220 dcb op 24 at 3730 (+6270 in the copy), entry 25: stages 00482030 es 11d01345, arguments 0x1193ad3d40, V# bases 0x11226c8f40 0x0 0x0 (741377 draws so far)
+fl crumbs (exp 0404): submit #101498 dcb op 24 at 3364 (+5610 in the copy), entry 22: stages 00482030 es 11d01345, arguments 0x1193ad3ce0, V# bases 0x1122444b40 0x0 0x0 (745473 draws so far)
+fl crumbs (exp 0404): submit #101861 dcb op 24 at 13063 (+29257 in the copy), entry 20: stages 00482030 es 11d01345, arguments 0x11935d40c0, V# bases 0x1122664b80 0x1100000000 0x1123835180 (749569 draws so far)
+fl crumbs (exp 0404): submit #102407 dcb op 24 at 3653 (+6193 in the copy), entry 25: stages 00482030 es 11d01345, arguments 0x1193ad3d80, V# bases 0x1122549f30 0x0 0x0 (753665 draws so far)
+fl crumbs (exp 0404): submit #102979 dcb op 24 at 6497 (+19293 in the copy), entry 1: stages 00482030 es 11d01345, arguments 0x11935d3f40, V# bases 0x112247ef30 0x1100000000 0x112387d480 (757761 draws so far)
+fl crumbs (exp 0404): submit #103437 dcb op 24 at 12391 (+41483 in the copy), entry 21: stages 00482030 es 11d01345, arguments 0x11935d8540, V# bases 0x11226dde70 0x1100000000 0x1123a09000 (761857 draws so far)
+fl crumbs (exp 0404): submit #103695 dcb op 24 at 17148 (+23684 in the copy), entry 55: stages 00482030 es 11d00f8d, arguments 0x1193b49720, V# bases 0x11228ca5f0 0x0 0x0 (765953 draws so far)
+fl crumbs (exp 0404): submit #103976 dcb op 24 at 6861 (+13517 in the copy), entry 3: stages 00482030 es 11d01345, arguments 0x11939d4160, V# bases 0x11225ba310 0x0 0x0 (770049 draws so far)
+fl crumbs (exp 0404): submit #104296 dcb op 24 at 21128 (+52936 in the copy), entry 35: stages 00482030 es 11d01345, arguments 0x11935d4960, V# bases 0x112235a880 0x1100000000 0x1123911980 (774145 draws so far)
+fl crumbs (exp 0404): submit #104709 dcb op 2c at 4341 (+5109 in the copy), entry 3: stages 00482030 es 11d0132d, arguments 0x1123365050, V# bases 0x112258f920 0x1100000000 0x1123a92280 (778241 draws so far)
+fl crumbs (exp 0404): submit #105411 dcb op 24 at 13322 (+25536 in the copy), entry 62: stages 00482030 es 11d01345, arguments 0x11935d3d40, V# bases 0x1122548b50 0x1100000000 0x11238fe900 (782337 draws so far)
+fl crumbs (exp 0404): submit #105629 dcb op 24 at 20757 (+53827 in the copy), entry 42: stages 00482030 es 11d01345, arguments 0x11935d4960, V# bases 0x1122674460 0x1100000000 0x11239cbf80 (786433 draws so far)
+fl crumbs (exp 0404): submit #105900 dcb op 24 at 10885 (+33381 in the copy), entry 51: stages 00482030 es 11d01345, arguments 0x11935d43c0, V# bases 0x11223c4100 0x1100000000 0x1123ab2f80 (790529 draws so far)
+fl crumbs (exp 0404): submit #106098 dcb op 24 at 4778 (+8592 in the copy), entry 38: stages 00482030 es 11d01345, arguments 0x11939d3dc0, V# bases 0x11224bde60 0x0 0x0 (794625 draws so far)
+fl crumbs (exp 0404): submit #106360 dcb op 24 at 4094 (+11458 in the copy), entry 37: stages 00482030 es 11d01345, arguments 0x11935d4d60, V# bases 0x1122631750 0x1100000000 0x112384eb00 (798721 draws so far)
+fl crumbs (exp 0404): submit #106597 dcb op 24 at 9654 (+15036 in the copy), entry 54: stages 00482030 es 11d01345, arguments 0x1193ad40e0, V# bases 0x1122375f40 0x0 0x0 (802817 draws so far)
+fl crumbs (exp 0404): submit #106849 dcb op 24 at 3748 (+6288 in the copy), entry 25: stages 00482030 es 11d01345, arguments 0x11939d3c20, V# bases 0x11224e97d0 0x0 0x0 (806913 draws so far)
+fl crumbs (exp 0404): submit #107114 dcb op 24 at 9624 (+25526 in the copy), entry 18: stages 00482030 es 11d01345, arguments 0x11935d3e00, V# bases 0x112265b3e0 0x1100000000 0x1123712600 (811009 draws so far)
+fl crumbs (exp 0404): submit #107385 dcb op 24 at 8727 (+30743 in the copy), entry 51: stages 00482030 es 11d01345, arguments 0x1193532c00, V# bases 0x11223cd6e0 0x1100000000 0x112380bc00 (815105 draws so far)
+fl crumbs (exp 0404): submit #107482 dcb op 2c at 10467 (+20353 in the copy), entry 50: stages 00482030 es 11d0132d, arguments 0x1123371890, V# bases 0x1122439ab0 0x1100000000 0x1123859d80 (819201 draws so far)
+fl crumbs (exp 0404): submit #107618 dcb op 2c at 21102 (+50970 in the copy), entry 25: stages 00482030 es 11d0132d, arguments 0x11236e4010, V# bases 0x11224e4bb0 0x1100000000 0x11238d1480 (823297 draws so far)
+fl crumbs (exp 0404): submit #107740 dcb op 24 at 11778 (+30572 in the copy), entry 8: stages 00482030 es 11d01345, arguments 0x1193ad4b20, V# bases 0x1122586210 0x1100000000 0x0 (827393 draws so far)
+fl crumbs (exp 0404): submit #107859 dcb op 24 at 12683 (+27129 in the copy), entry 10: stages 00482030 es 11d01345, arguments 0x11935d3900, V# bases 0x11226332d0 0x1100000000 0x11239adc80 (831489 draws so far)
+fl crumbs (exp 0404): submit #107965 dcb op 24 at 32873 (+96207 in the copy), entry 6: stages 00482030 es 11d01345, arguments 0x11935d5900, V# bases 0x11226b7d10 0x1100000000 0x1123a09000 (835585 draws so far)
+fl crumbs (exp 0404): submit #108406 dcb op 24 at 24521 (+58853 in the copy), entry 49: stages 00482030 es 11d01345, arguments 0x11935d4a20, V# bases 0x112251f010 0x1100000000 0x1123793a80 (839681 draws so far)
+fl crumbs (exp 0404): submit #108649 dcb op 24 at 3256 (+5306 in the copy), entry 20: stages 00482030 es 11d01345, arguments 0x1193ad3c80, V# bases 0x1122665650 0x0 0x0 (843777 draws so far)
+fl crumbs (exp 0404): submit #108814 dcb op 24 at 8163 (+16485 in the copy), entry 20: stages 00482030 es 11d01345, arguments 0x11939d4380, V# bases 0x1122352960 0x0 0x0 (847873 draws so far)
+fl crumbs (exp 0404): submit #108954 dcb op 24 at 12692 (+33360 in the copy), entry 49: stages 00482030 es 11d01345, arguments 0x11939d3ac0, V# bases 0x11224402f0 0x0 0x0 (851969 draws so far)
+fl crumbs (exp 0404): submit #109116 dcb op 24 at 20241 (+67569 in the copy), entry 51: stages 00482030 es 11d01345, arguments 0x11935d67a0, V# bases 0x1122553520 0x1100000000 0x1123a6eb80 (856065 draws so far)
+fl crumbs (exp 0404): submit #109258 dcb op 24 at 9410 (+29384 in the copy), entry 38: stages 00482030 es 11d01345, arguments 0x11935d91e0, V# bases 0x11225fa1f0 0x1100000000 0x1123ae2380 (860161 draws so far)
+fl crumbs (exp 0404): submit #109422 dcb op 24 at 11371 (+21065 in the copy), entry 50: stages 00482030 es 11d01345, arguments 0x11934d6b20, V# bases 0x11226fb190 0x1100000000 0x112377ea80 (864257 draws so far)
+fl crumbs (exp 0404): submit #109621 dcb op 24 at 17678 (+44638 in the copy), entry 11: stages 00482030 es 11d01345, arguments 0x11935d4240, V# bases 0x11224296f0 0x1100000000 0x112383ef00 (868353 draws so far)
+fl crumbs (exp 0404): submit #109761 dcb op 2c at 63327 (+170403 in the copy), entry 61: stages 00482030 es 11d0132d, arguments 0x1122ae5060, V# bases 0x11224d9100 0x1100000000 0x11238ba500 (872449 draws so far)
+fl crumbs (exp 0404): submit #109878 dcb op 24 at 10732 (+17420 in the copy), entry 59: stages 00482030 es 11d01345, arguments 0x1193ad4160, V# bases 0x11225711a0 0x0 0x8914c34000 (876545 draws so far)
+fl crumbs (exp 0404): submit #110084 dcb op 24 at 18016 (+37012 in the copy), entry 13: stages 00482030 es 11d01345, arguments 0x1193ad4be0, V# bases 0x11226668f0 0x0 0x8914c34000 (880641 draws so far)
+fl crumbs (exp 0404): submit #110240 dcb op 24 at 5487 (+18089 in the copy), entry 0: stages 00482030 es 11d01345, arguments 0x11935d3bc0, V# bases 0x1122338480 0x1100000000 0x1123a5bb00 (884737 draws so far)
+fl crumbs (exp 0404): submit #110439 dcb op 2c at 9962 (+11700 in the copy), entry 8: stages 00482030 es 11d0132d, arguments 0x11232eaa80, V# bases 0x112243a730 0x1100000000 0x1123714580 (888833 draws so far)
+fl crumbs (exp 0404): submit #110747 dcb op 24 at 2389 (+3165 in the copy), entry 7: stages 00482030 es 11d01345, arguments 0x11939d39e0, V# bases 0x11225e8090 0x0 0x0 (892929 draws so far)
+fl crumbs (exp 0404): submit #111142 dcb op 24 at 8864 (+18166 in the copy), entry 30: stages 00482030 es 11d01345, arguments 0x11939d44c0, V# bases 0x11223fc8c0 0x0 0x0 (897025 draws so far)
+fl crumbs (exp 0404): submit #111296 dcb op 24 at 23675 (+61401 in the copy), entry 2: stages 00482030 es 11d01345, arguments 0x11935d49e0, V# bases 0x11224faa60 0x1100000000 0x1123a4fe00 (901121 draws so far)
+fl crumbs (exp 0404): submit #111471 dcb op 24 at 20621 (+66591 in the copy), entry 44: stages 00482030 es 11d01345, arguments 0x11935d6620, V# bases 0x1122604d70 0x1100000000 0x1123af6900 (905217 draws so far)
+fl crumbs (exp 0404): submit #111647 dcb op 24 at 3619 (+6833 in the copy), entry 26: stages 00482030 es 11d01345, arguments 0x1193ad3cc0, V# bases 0x112231e2d0 0x1100000000 0x11237a2c00 (909313 draws so far)
+fl crumbs (exp 0404): submit #111838 dcb op 24 at 2408 (+3184 in the copy), entry 7: stages 00482030 es 11d01345, arguments 0x11939d39e0, V# bases 0x1122461250 0x0 0x0 (913409 draws so far)
+fl crumbs (exp 0404): submit #112118 dcb op 24 at 17844 (+49652 in the copy), entry 35: stages 00482030 es 11d01345, arguments 0x11935d4640, V# bases 0x1122617600 0x1100000000 0x112396ec80 (917505 draws so far)
+fl crumbs (exp 0404): submit #112243 dcb op 24 at 45231 (+140119 in the copy), entry 55: stages 00482030 es 11d01345, arguments 0x11939d3ca0, V# bases 0x11226d4300 0x0 0x0 (921601 draws so far)
+fl crumbs (exp 0404): submit #112382 dcb op 24 at 10230 (+14200 in the copy), entry 20: stages 00482030 es 11d01345, arguments 0x11934d58c0, V# bases 0x112238a930 0x1100000000 0x1123a66300 (925697 draws so far)
+fl crumbs (exp 0404): submit #112550 dcb op 24 at 15677 (+42151 in the copy), entry 8: stages 00482030 es 11d01345, arguments 0x11935d3cc0, V# bases 0x112246af30 0x1100000000 0x1123706900 (929793 draws so far)
+fl crumbs (exp 0404): submit #112721 dcb op 24 at 7853 (+25499 in the copy), entry 26: stages 00482030 es 11d01345, arguments 0x11935d53a0, V# bases 0x112254ab60 0x1100000000 0x11237a5600 (933889 draws so far)
+fl crumbs (exp 0404): submit #112897 dcb op 24 at 9877 (+31791 in the copy), entry 48: stages 00482030 es 11d01345, arguments 0x11935d6b60, V# bases 0x1122629b70 0x1100000000 0x1123844d80 (937985 draws so far)
+fl crumbs (exp 0404): submit #113105 dcb op 24 at 7970 (+11940 in the copy), entry 20: stages 00482030 es 11d01345, arguments 0x11934d58c0, V# bases 0x11223358d0 0x1100000000 0x1123903d00 (942081 draws so far)
+fl crumbs (exp 0404): submit #113283 dcb op 24 at 24668 (+74810 in the copy), entry 2: stages 00482030 es 11d01345, arguments 0x11935d4c20, V# bases 0x11224121d0 0x1100000000 0x11239a2a00 (946177 draws so far)
+fl crumbs (exp 0404): submit #113469 dcb op 24 at 15553 (+44273 in the copy), entry 27: stages 00482030 es 11d01345, arguments 0x11939d3ae0, V# bases 0x11224eed50 0x0 0x0 (950273 draws so far)
+fl crumbs (exp 0404): submit #113559 dcb op 24 at 19102 (+56924 in the copy), entry 2: stages 00482030 es 11d01345, arguments 0x11935d4380, V# bases 0x112257c390 0x1100000000 0x1123aa1400 (954369 draws so far)
+fl crumbs (exp 0404): submit #113728 dcb op 24 at 15012 (+35472 in the copy), entry 41: stages 00482030 es 11d01345, arguments 0x11935d3cc0, V# bases 0x112266d950 0x1100000000 0x1123748d80 (958465 draws so far)
+fl crumbs (exp 0404): submit #113959 dcb op 2c at 5318 (+8996 in the copy), entry 18: stages 00482030 es 11d0132d, arguments 0x1123023e30, V# bases 0x112237e780 0x1100000000 0x1123817900 (962561 draws so far)
+submit #114099 dcb 12308 dwords at 0x7fd3c00deb20: pass 2259 rewrite 237 drop 320 unmapped 0 cc 0 mappings 29260 ... FAILED rc 0 TIMEOUT 2042.30 ms
+submit #114098 acb 25767 dwords at 0x7fd42896a830: pass 6799 rewrite 15 drop 4 unmapped 0 cc 0 mappings 29260 ... FAILED rc 0 TIMEOUT 2050.33 ms
+fl crumbs (exp 0404): at the timeout of submit #114099 dcb: issued #114093 +3493, done #114093 +3493 (submission number's low 32 bits, dword offset); 45 draws with crumbs of 86 (45 fast-launch, 0 maybe, 0 unknown state), 0 skipped (es), 0 without crumbs (COND_EXEC full): issued names no draw with crumbs of this buffer
+fl crumbs (exp 0404):   the first draw with crumbs, not issued: op 2c at 2643 (chain segment 0 +1370; +2829 in the copy), entry 0 overwritten by another draw (the ring wrapped) (head #114093 +3332): stages 00482030, es hi 00000000 lo 11d0132d, 0 COND_EXEC ranges open
+fl crumbs (flx A1):     context: GE_MAX_OUTPUT_PER_SUBGROUP 00000020 VGT_GS_MAX_VERT_OUT 00000020 VGT_GS_OUT_PRIM_TYPE 00000002 VGT_GS_ONCHIP_CNTL 00400801 GE_NGG_SUBGRP_CNTL 00000040 VGT_ESGS_RING_ITEMSIZE 00000004 VGT_GS_MODE 00000000 VGT_GS_INSTANCE_CNT 00000000 PA_CL_NGG_CNTL 00000000 SPI_SHADER_IDX_FORMAT 00000001 SPI_SHADER_POS_FORMAT 00000004 VGT_DRAW_PAYLOAD_CNTL 00000000
+fl crumbs (flx A1):     uconfig: VGT_PRIMITIVE_TYPE 00000001 GE_CNTL 00000201 GE_USER_VGPR_EN 00000000 GE_USER_VGPR1 00000000 GE_PC_ALLOC 00000000
+fl crumbs (flx A1):     SH: SPI_SHADER_PGM_LO_GS 00000000 SPI_SHADER_PGM_HI_GS 00000000 SPI_SHADER_PGM_RSRC1_GS 022c0245 SPI_SHADER_PGM_RSRC2_GS 0009002a SPI_SHADER_PGM_RSRC1_ES ? SPI_SHADER_PGM_RSRC2_ES ?
+fl crumbs (flx A1):     GS user data 0-15: 2335dae0 00100011 00000001 00005204 2242dec0 00100011 00000028 0004dfac 2242e140 00100011 0000004d 0004dfac 2335aae0 00100011 00000001 0004dfac
+fl crumbs (flx A1):     GS user data 16-31: 2388fa80 00100011 000000a8 0004dfac 00000000 00100011 0000000c 0004dfac 2388db00 00100011 000000a8 0004dfac 20010000 00000000 00000000 00000000
+fl crumbs (flx A1):     ES user data 0-15: ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?
+fl crumbs (exp 0404):     arguments at 0x112335daf0: CP before the draw (NOT this draw's: see the entry) 00000006 00000001 00000000 00001000 | CPU at submit 000000fb 00000001 00000000 00001000 | CPU now 000000fb 00000001 00000000 00001000
+fl crumbs (exp 0404):     s[8:9] V# base at 0x112242e140: CP before the draw (NOT this draw's: see the entry) 40155555 4342c703 3d880597 3f800000 3e720ae4 00000000 3f78beeb 000030e8 | CPU at submit 40155555 4342c703 3d880597 3f800000 3e720ae4 00000000 3f78beeb 000030e8 | CPU now 40155555 4342c703 3d880597 3f800000 3e720ae4 00000000 3f78beeb 000030e8
+fl crumbs (exp 0404):     s[20:21] V# base at 0x1100000000: CP before the draw (NOT this draw's: see the entry) 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 | CPU at submit 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 | CPU now 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+fl crumbs (exp 0404):     s[24:25] V# base at 0x112388db00: CP before the draw (NOT this draw's: see the entry) 11d08860 c1600000 000fc01f 90500324 00000000 00700000 00000000 00000000 | CPU at submit 11d08860 c1600000 000fc01f 90500324 00000000 00700000 00000000 00000000 | CPU now 11d08860 c1600000 000fc01f 90500324 00000000 00700000 00000000 00000000
+fl crumbs (flx A1):   the next draw: none with crumbs after the last one issued in this buffer
+timeout probe: acb 31892 dwords dumped to /home/kjaniszewski/bc5-data/captures/play-20261105-1645/gc/ib-timeout-00114098-acb-31892.bin
+timeout probe: TF ring 0x1120000000 +0x3fff8: 28800 non-zero dwords (dword 0..47322), from the first: [0x1120000000] 3fc9982c 3fc6d98b 3fc72ec3 3fc9f0fa 3fc6d98b 3fc72ec3 3fc72ec3 3fc47f76 3fc4c862 3fc77ab8 3fc47f76 3fc4c862 3fc4c862 3fc2285e 3fc265bd 3fc50847 3fc2285e 3fc265bd 3fc265bd 3fbfd4f0 3fc0077c 3fc29a57 3fbfd4f0 3fc0077c 3fc0077c 3fbd85c6 3fbdae2f 3fc03184 3fbd85c6 3fbdae2f 3fbdae2f 3fbb3b6e 3fbb5a5c 3fbdce58 3fbb3b6e 3fbb5a5c 3fbb5a5c 3fb8f663 3fb90c77 3fbb714e 3fb8f663 3fb90c77 3fb90c77 3fb6b713 3fb6c4e7 3fb91ad5 3fb6b713 3fb6c4e7
+timeout probe: wait op 93 at 0: label 0x12004b77c8 function 3 reference 0x0 mask 0xffffffffffffffff me; now 0x0 (met) ran
+timeout probe: write op 49 at 12: 0x1200006ee0 select 2 value 0x907616682 (packet 8 dwords); now 0x907616682 ran
+timeout probe: write op 49 at 20: 0x1200006f00 select 2 value 0x0 (packet 8 dwords); now 0x0 ran
+timeout probe: write op 49 at 41: 0x1200006ec0 select 2 value 0x907516932 (packet 8 dwords); now 0x907516932 ran
+timeout probe: write op 49 at 49: 0x1200006e80 select 2 value 0x9074f6ab5 (packet 8 dwords); now 0x9074f6ab5 ran
+timeout probe: write op 49 at 57: 0x1200006ea0 select 2 value 0x907516932 (packet 8 dwords); now 0x907516932 ran
+timeout probe:   state before op 15 at 107: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 107: program 0x909939400, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 107: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 121: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 121: program 0x909939400, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 121: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 139: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 139: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 139: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 153: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 153: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 153: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 167: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 167: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 167: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 181: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 181: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 181: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 195: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 195: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 195: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 213: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 213: program 0x909939400, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 213: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 231: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 231: program 0x909939400, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 231: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 249: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 249: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 249: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 263: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 263: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 263: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 277: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 277: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 277: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 295: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 295: program 0x909939400, groups 4 x 1 x 1 ran
+timeout probe: op 15 at 295: 00000004 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 313: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 313: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 313: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 327: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 327: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 327: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 341: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 341: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 341: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 355: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 355: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 355: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 369: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 369: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 369: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 383: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 383: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 383: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 401: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 401: program 0x909939400, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 401: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 415: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 415: program 0x909939400, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 415: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 429: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 429: program 0x909939400, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 429: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 447: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 447: program 0x909939400, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 447: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 461: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 461: program 0x909939400, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 461: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 475: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 475: program 0x909939400, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 475: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 493: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 493: program 0x909939400, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 493: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 507: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 507: program 0x909939400, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 507: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 525: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 525: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 525: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 539: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 539: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 539: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 553: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 553: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 553: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 571: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 571: program 0x909939400, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 571: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 589: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 589: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 589: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 603: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 603: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 603: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 617: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 617: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 617: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 635: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 635: program 0x909939400, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 635: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 653: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 653: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 653: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 671: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 671: program 0x909939400, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 671: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 689: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 689: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 689: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 703: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 703: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 703: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 717: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 717: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 717: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 731: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
