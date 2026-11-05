@@ -212,3 +212,16 @@ run rc 255: Read from remote host 100.88.23.35: Connection reset by peer client
 stale lock line of r7all removed
 summary: 
 == 2026-11-05 06:42:25 all arms done
+== 2026-11-05 15:11:50 arm e8f1 (route, cap 900 s, play 600 s)
+run rc 0: e8f1 (route): ended at G+600 after 763 s (G 163, list 94); 32.6 flips/s over 759 s, 203 seconds with a gap over 100 ms, longest 1286 ms; memory floor 291 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: e8f1 (route): ended at G+600 after 763 s (G 163, list 94); 32.6 flips/s over 759 s, 203 seconds with a gap over 100 ms, longest 1286 ms; memory floor 291 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-05 15:25:02 arm e8c1 (route, cap 900 s, play 600 s)
+run rc 0: e8c1 (route): ended at G+600 after 821 s (G 217, list 93); 34.7 flips/s over 815 s, 201 seconds with a gap over 100 ms, longest 1089 ms; memory floor 374 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: e8c1 (route): ended at G+600 after 821 s (G 217, list 93); 34.7 flips/s over 815 s, 201 seconds with a gap over 100 ms, longest 1089 ms; memory floor 374 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-05 15:39:19 arm e8f2 (route, cap 900 s, play 600 s)
+run rc 0: e8f2 (route): ended at G+600 after 815 s (G 215, list 93); 32.6 flips/s over 810 s, 213 seconds with a gap over 100 ms, longest 1123 ms; memory floor 322 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: e8f2 (route): ended at G+600 after 815 s (G 215, list 93); 32.6 flips/s over 810 s, 213 seconds with a gap over 100 ms, longest 1123 ms; memory floor 322 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-05 15:53:33 arm e8c2 (route, cap 900 s, play 600 s)
+run rc 0: e8c2 (route): GPU HANG: ring reset succeeded at 296 s after 321 s (G 215, list 93); 15.5 flips/s over 302 s, 182 seconds with a gap over 100 ms, longest 15067 ms; memory floor 286 MiB available (sampler); crash lines 0, kernel lines 22, freeze dumps 0, devcoredumps 2 
+summary: e8c2 (route): GPU HANG: ring reset succeeded at 296 s after 321 s (G 215, list 93); 15.5 flips/s over 302 s, 182 seconds with a gap over 100 ms, longest 15067 ms; memory floor 286 MiB available (sampler); crash lines 0, kernel lines 22, freeze dumps 0, devcoredumps 2
+== 2026-11-05 15:59:40 all arms done
