@@ -534,4 +534,27 @@ the main unit.
     FL catchers fired; their reading is in `hang1954-0401.md`, section "r7all 06:40 (e7 catchers)". r6c and r7m ran
     900 s at the same save without a hang, so it is intermittent there: one in three route arms.
 
+**Series e8: e7 plus smp, for the F2 series (2026-11-05, the top session's order after the r7all read; laptop only so
+far).** The read (`hang1954-0401.md`, "r7all 06:40") picked F2 (`BC5_DIRECT_FL_SERIAL`, built in e7) as the next test,
+with a control nobody had: A4's per-point walk on draws that completed.
+- *smp* (`mksmp0401.py`, `smp0401.cpp`, `smp0401-notes.md`): `BC5_DIRECT_FL_MESHLET_SAMPLE=<s>`, default off, CPU only.
+  At most once every `<s>` seconds it walks a completed job's pattern draws a few ms after the fence. At a fence
+  timeout it walks the last done draw and every draw issued and not done. Every walk counts two range models: past
+  NUM_RECORDS read as 0 (A4's reading), or read as the memory there; TODO(verify) which one the hardware does. The main
+  unit goes e7's b010db09 → bd1811690b685369194602027b61a2d5. flx's walk keeps its old behaviour by a defaulted
+  parameter.
+- *Laptop checks:*
+  - the script refuses its own output and an unpinned input, and undoes to its input;
+  - the stand-in TU builds clean with clang++ 22 (`-Wall -Wextra -Werror -Wshadow`);
+  - `smp0401` passes on 61 of 61 and off 61 of 61; flx's test on the e8 unit gives on 173 of 173 and off 172 of 172,
+    as in e7;
+  - 12 of 12 mutants are caught;
+  - `test0401.py` (now with `t_series_e8`) passes 33 of 33.
+- *Kit:* `box0401.sh` series e8 (`E7UP`: e8 builds every e7 row, gate and string, then smp's), `go-build0401.sh`
+  (3300 s), `launcher0401.py`.
+- *Arms* (to be staged after the build, `raw/night-arms-e8.txt`): 8 pairs at his slot-4 save.
+  - e8fK: r7m's words + F2 + A1 + A4 + smp every 30 s.
+  - e8cK: the same without F2.
+  - G+600 each, RT on, about 3.5 h in all, F2 first in each pair.
+
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.
