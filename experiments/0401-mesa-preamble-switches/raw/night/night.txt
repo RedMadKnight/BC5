@@ -165,3 +165,50 @@ summary: t6b2 (start): START OK: the save-slot list runs at 93 s after 93 s (G n
 run rc 0: t6fwa3 (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 23.0 flips/s over 89 s, 24 seconds with a gap over 100 ms, longest 717 ms; memory floor 562 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
 summary: t6fwa3 (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 23.0 flips/s over 89 s, 24 seconds with a gap over 100 ms, longest 717 ms; memory floor 562 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
 == 2026-11-04 15:38:13 all arms done
+== 2026-11-05 05:50:02 arm t7 (start, cap 300 s, play 0 s)
+run rc 1: the live saves read 558115f366fb11cb (LC_ALL=C), not 4b6b1ea52cb6a650: not started 
+summary: 
+== 2026-11-05 05:50:11 arm t7tab (start, cap 300 s, play 0 s)
+run rc 1: the live saves read 558115f366fb11cb (LC_ALL=C), not 4b6b1ea52cb6a650: not started 
+summary: 
+== 2026-11-05 05:50:18 arm t7mem (start, cap 300 s, play 0 s)
+run rc 1: the live saves read 558115f366fb11cb (LC_ALL=C), not 4b6b1ea52cb6a650: not started 
+summary: 
+== 2026-11-05 05:50:25 arm t7fl (start, cap 300 s, play 0 s)
+run rc 1: the live saves read 558115f366fb11cb (LC_ALL=C), not 4b6b1ea52cb6a650: not started 
+summary: 
+== 2026-11-05 05:50:33 arm r6c (route, cap 1200 s, play 900 s)
+run rc 1: the live saves read 558115f366fb11cb (LC_ALL=C), not 4b6b1ea52cb6a650: not started 
+summary: 
+== 2026-11-05 05:50:41 arm r7m (route, cap 1200 s, play 900 s)
+run rc 1: the live saves read 558115f366fb11cb (LC_ALL=C), not 4b6b1ea52cb6a650: not started 
+summary: 
+== 2026-11-05 05:50:50 arm r7all (route, cap 1200 s, play 900 s)
+run rc 1: the live saves read 558115f366fb11cb (LC_ALL=C), not 4b6b1ea52cb6a650: not started 
+summary: 
+== 2026-11-05 05:50:59 all arms done
+== 2026-11-05 05:51:24 e7 try 1 stopped: the live saves read 558115f366fb11cb, not 4b6b1ea52cb6a650 (his slot-4 saves of 2026-11-04 20:04-20:11); no arm started; try 2 with 558115f366fb11cb
+== 2026-11-05 05:51:34 arm t7 (start, cap 300 s, play 0 s)
+run rc 0: t7 (start): START OK: the save-slot list runs at 119 s after 119 s (G none, list 119); 18.4 flips/s over 114 s, 30 seconds with a gap over 100 ms, longest 857 ms; memory floor 746 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: t7 (start): START OK: the save-slot list runs at 119 s after 119 s (G none, list 119); 18.4 flips/s over 114 s, 30 seconds with a gap over 100 ms, longest 857 ms; memory floor 746 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-05 05:53:50 arm t7tab (start, cap 300 s, play 0 s)
+run rc 0: t7tab (start): START OK: the save-slot list runs at 122 s after 122 s (G none, list 122); 18.1 flips/s over 117 s, 29 seconds with a gap over 100 ms, longest 2642 ms; memory floor 598 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: t7tab (start): START OK: the save-slot list runs at 122 s after 122 s (G none, list 122); 18.1 flips/s over 117 s, 29 seconds with a gap over 100 ms, longest 2642 ms; memory floor 598 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-05 05:56:10 arm t7mem (start, cap 300 s, play 0 s)
+run rc 0: t7mem (start): START OK: the save-slot list runs at 96 s after 96 s (G none, list 96); 19.2 flips/s over 92 s, 26 seconds with a gap over 100 ms, longest 664 ms; memory floor 1174 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: t7mem (start): START OK: the save-slot list runs at 96 s after 96 s (G none, list 96); 19.2 flips/s over 92 s, 26 seconds with a gap over 100 ms, longest 664 ms; memory floor 1174 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-05 05:58:04 arm t7fl (start, cap 300 s, play 0 s)
+run rc 0: t7fl (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 21.5 flips/s over 88 s, 26 seconds with a gap over 100 ms, longest 630 ms; memory floor 565 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: t7fl (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 21.5 flips/s over 88 s, 26 seconds with a gap over 100 ms, longest 630 ms; memory floor 565 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-05 05:59:54 arm r6c (route, cap 1200 s, play 900 s)
+run rc 0: r6c (route): ended at G+900 after 1056 s (G 152, list 93); 41.3 flips/s over 1051 s, 219 seconds with a gap over 100 ms, longest 3296 ms; memory floor 167 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: r6c (route): ended at G+900 after 1056 s (G 152, list 93); 41.3 flips/s over 1051 s, 219 seconds with a gap over 100 ms, longest 3296 ms; memory floor 167 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-05 06:17:49 arm r7m (route, cap 1200 s, play 900 s)
+run rc 0: r7m (route): ended at G+900 after 1050 s (G 148, list 93); 38.4 flips/s over 1045 s, 181 seconds with a gap over 100 ms, longest 1200 ms; memory floor 273 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: r7m (route): ended at G+900 after 1050 s (G 148, list 93); 38.4 flips/s over 1045 s, 181 seconds with a gap over 100 ms, longest 1200 ms; memory floor 273 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-05 06:35:40 arm r7all (route, cap 1200 s, play 900 s)
+run rc 255: Read from remote host 100.88.23.35: Connection reset by peer client_loop: send disconnect: Connection reset by peer 
+06:41:11 the box does not answer after the arm (a reboot?): waiting
+stale lock line of r7all removed
+summary: 
+== 2026-11-05 06:42:25 all arms done

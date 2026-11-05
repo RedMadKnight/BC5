@@ -429,7 +429,8 @@ ngs2_pcm.h family stays out. Six laptop agents ported it, one group each (`*0405
     answers (e5's fs group is on). Nothing so far shows either way.
 
 **Series e7: e6 plus decision 4's batch 2, the memory fixes and the fast-launch catchers (2026-11-04 afternoon and evening,
-the top session's orders; laptop only so far).** `tb2-0405-sweep.md` sizes the 26 tables batch 1 left (about 21 days by
+the top session's orders; built on the box 2026-11-04 on his "Zgoda na build", tested 2026-11-05 05:51–06:42 on his
+"Tak"; not installed).** `tb2-0405-sweep.md` sizes the 26 tables batch 1 left (about 21 days by
 exp 0405's rule). The top session's order: the CPU-only library tables first, then the hardware ones, then GnmDriver,
 RazorCpu, RageEngine and Ngs2 (not in e7). Its follow-ups the same evening added the rule for held stubs, NpAuth and
 Voice on the live side, libusb, batch 1's held stubs, and, after his "Ram się dusi" and the 19:54 hang, four edits of
@@ -490,5 +491,47 @@ the main unit.
 - *Kit* (`box0401.sh` series e7): rows chain after e6's. The main unit's `.inc` files now come from every script that
   wrote it, not only the last (lzr writes one). The stand-in build of e7 takes about 11 minutes on the laptop, so
   `test0401.py`'s timeout is 1800 s.
+- *Box build* (`raw/e7/`): binary `d5d674566d93673e0aeae1a0ce056bd3`, launcher eced9b50. Every CPU test passes on the
+  box: e7's 15 as on the laptop, and e6's and e5's as before.
+- *Test arms* (`raw/night-arms-e7.txt`; results in `raw/night/`, `t7*`, `r6c*`, `r7*`, the uncut switch lists
+  `*-switch-lines-all.txt`). The base words are his shortcut's 65 (e6's all-on, `KYTY_BC5_AUDIO_FIXES=set,room`). The
+  start arms run to the save-slot list; the route arms take slot 4's Continue and stand still to G+900 (no walking keys).
+  - *Try 1* (05:50) started nothing: the live saves read `558115f366fb11cb`, not `4b6b1ea52cb6a650`. That is his own
+    play of 2026-11-04 20:04–20:11, slot 4 only (autosave, manual-1, a new snapshot 54397 that rotated out 64569) and the
+    prefs. Try 2 ran the same arms with the new sum. So the route loads his newer slot-4 save, written just after the
+    19:54 hang at that spot. The route arms compare with each other, not with earlier r-arms (r6 ran at the old save).
+  - The live saves read `558115f366fb11cb` after every arm and at the end; nothing wrote them. Each arm's snapshot is in
+    `~/bc5-work/exp0401t/saves-<tag>`.
+
+  | Arm | Binary, words added | Result | flips/s | gaps > 100 ms, longest | GTT max | available floor | swap max |
+  |---|---|---|---|---|---|---|---|
+  | t7 | e7 | START OK, list 119 s | 18.4 | 30, 857 ms | 11978 | 732 | 670 |
+  | t7tab | e7, the 19 `KYTY_BC5_LOAD_*` + `KYTY_BC5_VOICE_PORTS` | START OK, list 122 s | 18.1 | 29, 2642 ms | 12010 | 661 | 579 |
+  | t7mem | e7, zsk (exp 0388's list) + lzr `30,dry` + quiet journal | START OK, list 96 s | 19.2 | 26, 664 ms | 11462 | 1137 | 580 |
+  | t7fl | e7, FL probe state + meshlet probe + crumbs meshlet | START OK, list 93 s | 21.5 | 26, 630 ms | 12054 | 566 | 583 |
+  | r6c | e6 (the control) | G+900 (G 152) | 41.3 | 219, 3296 ms | 12867 | 189 | 1705 |
+  | r7m | e7, as t7mem | G+900 (G 148) | 38.4 | 181, 1200 ms | 12427 | 279 | 966 |
+  | r7all | e7, t7tab's + t7mem's + t7fl's | **GPU hang** at t 270 s (G+116); the box rebooted | — | — | 12354 to the hang | 398 | 1034 |
+
+  (MiB, from the memory lines; r7all's from its journal, `raw/night/r7all-memline.txt`. The start arms stop at the
+  list, 90–110 s in, at different points of the load, so their memory columns do not compare; the route arms do.)
+  r7all was not short of memory when it hung: 398–442 MiB available and PSI full under 1.2 % from 200 s to 260 s.
+  - *The tables* (t7tab): every one of the 19 tables, NpAuth and the voice ports prints its port-on line; the USBD
+    allow-list is empty, so libusb was not loaded. No arm printed exp 0327's `stubbed import called`.
+  - *Memory* (r7m vs r6c, the same save): GTT max −440 MiB, swap max −739 MiB, available floor +90, PSI full peak about
+    6 % against 43 % (r6c at 300–360 s). The zero skip skipped 816 MiB at start and 580 of 1,014 MiB placed at the end
+    (42 chunks taken back by CPU writes, 169 by hints, one canary hit of 12 MiB). lzr's dry count at the end: 170 MiB
+    idle under no view, 98 of it never under an eager or zero-list view. So a live lzr would free at most about 0.1–0.17
+    GiB here, as its notes expected. The quiet journal left out 336 MB over 1,042 s (r7m's direct.log 24 MB against
+    r6c's 385 MB).
+  - *Start time:* t7 and t7tab, the first two arms, reached the list at 119–122 s; t7mem and t7fl at 96 and 93 s, and
+    r6c (e6) at 93 s with the same saves. So most likely a cold first start, not e7.
+  - *The r7all hang* (06:40:20): ring gfx timeout, the reset failed, `bc5-gpu-watch` synced and crashed the kernel, and
+    the box came back by itself (boot 9af31fd4); our lock line was removed by the runner. It is the 19:54 class again:
+    submit #167863's dcb, the first draw at dword 1702 (chain segment 0 +429), ES 0x11d01345, fast-launch, 3 draws
+    issued and none done, the same register class (GE/PA/SPI/SX busy on SE0, PH_BUSY, no VM fault). The devcoredump
+    `20261105-064020-devcd1.txt`, the journal and both ib-timeout buffers are copied to laptop scratch, outside git. The
+    FL catchers fired; their reading is in `hang1954-0401.md`, section "r7all 06:40 (e7 catchers)". r6c and r7m ran
+    900 s at the same save without a hang, so it is intermittent there: one in three route arms.
 
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.

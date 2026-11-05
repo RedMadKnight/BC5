@@ -1,0 +1,15 @@
+lis 05 06:36:37.080774 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+lis 05 06:38:42.081770 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+lis 05 06:40:20.178774 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+lis 05 06:40:20.180020 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+lis 05 06:40:20.180297 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+lis 05 06:40:20.180491 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+lis 05 06:40:20.180670 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=4674605, emitted seq=4674607
+lis 05 06:40:20.182866 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 731056 thread bc5-chainwd pid 731476
+lis 05 06:40:20.183442 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+lis 05 06:40:20.366843 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed
+lis 05 06:40:20.367190 bazzite kernel: amdgpu 0000:01:00.0: GPU reset begin!. Source:  1
+lis 05 06:40:20.369784 bazzite bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=4674605, emitted seq=4674607
+lis 05 06:40:20.373778 bazzite bc5-gpu-watch: a ring reset failed [amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed]: crashing before the full reset: syncing and crashing the kernel for a reboot (SysRq s, c)
+lis 05 06:40:20.374783 bazzite kernel: sysrq: Emergency Sync
+lis 05 06:40:20.563778 bazzite kernel: Emergency Sync complete
