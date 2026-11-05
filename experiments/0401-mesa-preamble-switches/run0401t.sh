@@ -19,6 +19,16 @@ shift 6
 SWITCHES=("$@")
 case "$MODE" in start | route) ;; *) echo "MODE is start or route"; exit 1 ;; esac
 case "$TAG" in *[!A-Za-z0-9]* | "") echo "the tag is letters and digits"; exit 1 ;; esac
+# Exp 0401 e9: BC5_0401_LATE_UNSET=<NAME>[,<NAME>...] (upper-case names) unsets words the launcher exports itself; never
+# the frame profile, which the route gates on.
+for w in "${SWITCHES[@]}"; do
+  case "$w" in
+    BC5_0401_LATE_UNSET=*)
+      v=${w#BC5_0401_LATE_UNSET=}
+      [[ "$v" =~ ^[A-Z][A-Z0-9_]*(,[A-Z][A-Z0-9_]*)*$ ]] || { echo "BC5_0401_LATE_UNSET is a comma list of names: not started"; exit 1; }
+      case ",$v," in *,BC5_DIRECT_FRAME_PROFILE,*) echo "the route needs BC5_DIRECT_FRAME_PROFILE: not started"; exit 1 ;; esac ;;
+  esac
+done
 [ "$SECS" -ge 120 ] && [ "$SECS" -le 1200 ] || { echo "the cap is 120-1200 s"; exit 1; }
 W=$HOME/bc5-work; E=$W/exp0401t; R=$E/raw; LOCK=$W/BOX-LOCK; E30=$W/exp0330
 SD=$W/_SaveData/PPSA03671
@@ -78,8 +88,9 @@ sed -i -e 's#^LOG=~/bc5-work/play-pkg-last\.log$#LOG=~/bc5-work/exp0401t/play-la
        -e 's#^export KYTY_BC5_SAVEDATA_DIR=\$HOME/bc5-work/_SaveData-pkg-play$#export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0401t/wd/_SaveData-pkg-play  \# exp 0401t: private#' \
        -e 's#^export BC5_DIRECT_LEARNED=\$HOME/bc5-work/direct-learned-pkg\.txt$#export BC5_DIRECT_LEARNED=$HOME/bc5-work/exp0401t/direct-learned-pkg.txt  \# exp 0401t: a private copy#' "$LAUNCH" || exit 1
 sed -i '/^done < "\$ENVF"$/a [ -n "${BC5_0401T_INPUT_CONFIG:-}" ] \&\& export KYTY_BC5_INPUT_CONFIG=$BC5_0401T_INPUT_CONFIG  # exp 0401t' "$LAUNCH" || exit 1
+sed -i '/^cd ~\/bc5-work\/exp0401t\/wd  /i [ -z "${BC5_0401_LATE_UNSET:-}" ] || unset ${BC5_0401_LATE_UNSET//,/ }  # exp 0401 e9: launcher words an arm takes back' "$LAUNCH" || exit 1
 diff -u "$LAUNCH_SRC" "$LAUNCH" > "$R/play-pkg-0401t.diff"
-[ "$(grep -c '^[-+][^-+]' "$R/play-pkg-0401t.diff")" = 9 ] || { echo "the derived launcher's diff is not 4 lines changed + 1 added: not started"; exit 1; }
+[ "$(grep -c '^[-+][^-+]' "$R/play-pkg-0401t.diff")" = 10 ] || { echo "the derived launcher's diff is not 4 lines changed + 2 added: not started"; exit 1; }
 bash -n "$LAUNCH" || { echo "the derived launcher does not parse: not started"; exit 1; }
 chmod +x "$LAUNCH"
 LOG=$E/play-last.log

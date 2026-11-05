@@ -34,7 +34,7 @@ KIT = ("mkunit0401.py", "check0401.py", "build0401.py", "launcher0401.py", "unit
        "mkfwn0405.py", "mkfwa0405.py", "mkjit0405.py", "mktbc0405.py", "mktbn0405.py", "mktld0405.py", "mkpad0405.py", "pad0405.cpp", "fwn0405.cpp", "fwa0405.cpp", "jit0405.cpp", "tbc0405.cpp", "tbn0405.cpp", "tld0405.cpp",
        "mktbt0405.py", "mktbp0405.py", "mktbv0405.py", "mktbd0405.py", "mktl20405.py", "tbt0405.cpp", "tbp0405.cpp", "tbv0405.cpp", "tbd0405.cpp", "tl20405.cpp",
        "mkthb0405.py", "tbc0405e7.cpp", "tbn0405e7.cpp", "mktcm0405.py", "tcm0405.cpp", "mkthv0405.py", "thv0405.cpp", "mktus0405.py", "tus0405.cpp", "mktl30405.py", "tl30405.cpp",
-       "mkzsk0401.py", "zsk0401.cpp", "mklzr0401.py", "lzr0401.cpp", "mkcap0401.py", "cap0401.cpp", "mkflx0401.py", "flx0401.cpp", "mksmp0401.py", "smp0401.cpp")
+       "mkzsk0401.py", "zsk0401.cpp", "mklzr0401.py", "lzr0401.cpp", "mkcap0401.py", "cap0401.cpp", "mkflx0401.py", "flx0401.cpp", "mksmp0401.py", "smp0401.cpp", "mkzcb0401.py", "zcb0401.cpp", "mkgvw0401.py", "gvw0401.cpp", "mkp4060401.py", "p4060401.cpp")
 BACKEND = HERE.parent.parent / "backend"   # main's backend, the stand-in for the shared archive's source (series e6p)
 BK_DIRS = ("CMakeLists.txt", "src", "include", "tests", "policy", "experiments")
 LAUNCHER = """#!/bin/bash
@@ -45,6 +45,7 @@ MLOG=~/bc5-work/play-pkg-mount.log
 if [ "${BC5_LEAN:-0}" = 1 ]; then
   EMU=~/bc5-work/kytyplus-build-lean/src/kyty_emulator LOG=~/bc5-work/play-pkg-lean-last.log
 fi
+cd ~/bc5-work
 echo "$EMU $LOG $MLOG"
 """
 FAKEUNIT = """import os, sys
@@ -97,6 +98,7 @@ case "$1" in
                     [ -n "${FAKE_NO_E7:-}" ] || for x in KYTY_BC5_LOAD_NPTUS KYTY_BC5_LOAD_NPPARTY KYTY_BC5_LOAD_NPPARTNER KYTY_BC5_LOAD_NPSNSFACEBOOK KYTY_BC5_LOAD_VOICE KYTY_BC5_LOAD_SCREENSHOT KYTY_BC5_LOAD_DISCMAP KYTY_BC5_LOAD_ULOBJMGR KYTY_BC5_LOAD_COMPANIONHTTPD KYTY_BC5_LOAD_COMPANIONUTIL KYTY_BC5_LOAD_INVITATIONDIALOG KYTY_BC5_LOAD_WEBBROWSERDIALOG KYTY_BC5_LOAD_SHAREPLAY KYTY_BC5_LOAD_GAMELIVESTREAMING KYTY_BC5_LOAD_CAMERA KYTY_BC5_LOAD_USBD KYTY_BC5_LOAD_HMD KYTY_BC5_LOAD_VRTRACKER KYTY_BC5_LOAD_MOVE KYTY_BC5_LOAD_NPAUTH KYTY_BC5_NPTUS_FRIENDS_RUN KYTY_BC5_VOICE_PORTS BC5_DIRECT_ZERO_SKIP BC5_DIRECT_LAZY_RELEASE BC5_DIRECT_INHERIT_PROG_CAP BC5_DIRECT_INHERIT_CENSUS_CAP BC5_DIRECT_JOURNAL_QUIET BC5_DIRECT_FL_PROBE_STATE BC5_DIRECT_FL_VGT_FLUSH BC5_DIRECT_FL_SERIAL BC5_DIRECT_FL_MESHLET_PROBE BC5_DIRECT_FL_CRUMBS_MESHLET KYTY_BC5_USBD_ALLOW; do echo "$x"; done
                     [ -n "${FAKE_NO_E7:-}" ] || echo 'zero skip: list %s'
                     [ -n "${FAKE_NO_E8:-}" ] || { echo 'BC5_DIRECT_FL_MESHLET_SAMPLE'; echo 'exp 0401 e8 (smp): fl meshlet sample every %d s'; echo 'exp 0401 e8 (smp): fl meshlet sample off%s'; echo 'fl meshlet sample (exp 0401 e8 smp): %s: submit #%'; }
+                    [ -n "${FAKE_NO_E9:-}${FAKE_NO_E8:-}" ] || { echo 'BC5_DIRECT_ZERO_SKIP_EXCLUDE'; echo 'BC5_DIRECT_ZERO_SKIP_COPYBACK'; echo 'BC5_DIRECT_ZERO_SKIP_PROBE'; echo 'BC5_DIRECT_SCRATCH_WATCH'; echo 'zero skip copy-back (exp 0401 e9 zcb): '; echo 'BC5_DIRECT_WAIT_LATE_PRODUCER_MS'; echo 'BC5_DIRECT_UNWAITED_FL_DROP'; echo 'BC5_DIRECT_GIVEUP_JOURNAL'; echo 'BC5_DIRECT_FL_MESHLET_SAMPLE_UNWAITED'; echo 'gvw (exp 0401 e9): '; echo 'BC5_0406_LEARNED_PRUNE'; echo 'learned prune (exp 0406 p406): '; echo 'BC5_0406_AUDIO_SLEEP'; }
                     [ -n "${FAKE_NO_E6P:-}" ] || { echo BC5_R3_PREDICATION; echo 'exp 0405: set predication %s'; echo 'exp 0405: G7 SET_PREDICATION %s %s'; }
                     [ -n "${FAKE_NO_E5:-}" ] || for x in KYTY_BC5_EQUEUE_FIXES KYTY_BC5_MMAP_SHIM_FIXES KYTY_BC5_AUDIOOUT_CHECKS KYTY_BC5_AUDIOIN_CHECKS KYTY_BC5_NGS2_RACK_FIX BC5_R3_MPROTECT_GAPS BC5_R3_NULL_ARGS BC5_R3_RELEASE_HOLES BC5_R3_MUNMAP_HOLES BC5_R3_FLEX_HINT BC5_R3_DMQ_END BC5_R3_EXEC_EINVAL BC5_R3_QUERY_SIZE KYTY_BC5_THREAD_SYNC_FIXES KYTY_BC5_SEMA_FIXES KYTY_BC5_SAVEDATA_MEMORY_FIXES KYTY_BC5_SAVEDATA_DELETE_BUSY KYTY_BC5_SAVEDATA_ALIASES KYTY_BC5_HTTP2_FIXES KYTY_BC5_PAD_OPEN_EXT BC5_R3_MEMSEM_SIGNAL BC5_R3_REWIND_CATCH BC5_R3_DROP_CATCH BC5_R3_SUBMIT_EOP_EVENT BC5_R3_COND_WRITE BC5_R3_WAIT_IDLE BC5_R3_TS_100MHZ KYTY_BC5_FS_FIXES KYTY_BC5_POSIX_RET_FIXES KYTY_BC5_JSON2_FIXES KYTY_BC5_ULT_FIXES KYTY_BC5_USERSERVICE_VALUES KYTY_BC5_SYSTEMSERVICE_VALUES KYTY_BC5_SYSTEMSERVICE_PARAMS_7_1000 KYTY_BC5_TLS_FIXES; do echo "$x"; done
                   fi; } > "$out"
@@ -700,6 +702,43 @@ def t_series_e8():
     assert "EMU=~/bc5-work/exp0401e8/bin/kyty_emulator" in d, d
     assert b.box("release", b.token).stdout.strip() == "released" and b.lock() == ""
 
+def t_series_e9():
+    b = Box("sere9", series="e9").up()
+    r = b.box("build", b.token, FAKE_NO_E9="1")
+    assert r.returncode == 1 and "lacks [BC5_DIRECT_ZERO_SKIP_EXCLUDE]" in r.stdout, r.stdout
+    b.send()
+    assert b.box("setup", b.token).returncode == 0
+    r = b.box("build", b.token, KYTY_BC5_SAVEDATA_DIR="/must/not/be/used")
+    assert r.returncode == 0, r.stdout + r.stderr
+    for e in [['zsk', 'mkzsk0401.py', '-', 'src/libs/bc5LleAgc.cpp:d1cfd9bb1f1b3485bed4207a7f064d4f:8710207ea5c34ad70e48dfbbff9880fd'], ['lzr', 'mklzr0401.py', '-', 'src/libs/bc5LleAgc.cpp:8710207ea5c34ad70e48dfbbff9880fd:8ddf48f372f7c555c1b3abe609d0905b'], ['cap', 'mkcap0401.py', '-', 'src/libs/bc5LleAgc.cpp:8ddf48f372f7c555c1b3abe609d0905b:bcbdd3082bf5371393989bb69b1f76fa'], ['flx', 'mkflx0401.py', '-', 'src/libs/bc5LleAgc.cpp:bcbdd3082bf5371393989bb69b1f76fa:b010db09b5ab83b36e76e0328671e955'], ['tbt', 'mktbt0405.py', '-', 'src/libs/libNp.cpp:24e778261495abcd5a069396f14b28b4:60ee3101064cad91445f59c60696a40e'], ['tbp', 'mktbp0405.py', '-', 'src/libs/libNp.cpp:60ee3101064cad91445f59c60696a40e:e60a2844e6b607f7bafc019db8e872c2', 'src/libs/libNet.cpp:35773d6e769b85be74012a86c0f02e89:fdbbb28ec3b1529a898a775462d64804'], ['thb', 'mkthb0405.py', '-', 'src/libs/libIme.cpp:49fa46f1d8005245e7f0b266d8b29659:b82113cc80bce4d544c75cec3047e145', 'src/libs/libNp.cpp:e60a2844e6b607f7bafc019db8e872c2:8222b0bc10f137fe99349becb4609034'], ['tbv', 'mktbv0405.py', '-', 'src/libs/libVoice.cpp:5f63709dbf1028ceaf7784d6a070f64e:35b06392f978247489feed9205e21bc7', 'src/libs/libScreenShot.cpp:cb913d120daa27f0d35702edeee71b19:7b7ac871d0d963598109dad8bceef7f6', 'src/libs/libDiscMap.cpp:e4d975b8a55da8aed19281d7c6d17b33:1f965bcda04aeb3cc96ef1a05043595b', 'src/libs/libUlobjmgr.cpp:b85eafd0de28af091302a8aeeeb323c1:d8c73e108a19961fd3b347024faa5a95', 'src/libs/libCompanion.cpp:cf8ad7a647a84ba04964eb0adfe2ab02:2c093c67a7d8efa5aad925d0b4a4fd28', 'src/libs/libAudio.cpp:45ca1ece07c4394d8700f7a57d9f0fbb:a7025bf5ff622645915c4596e095b122'], ['tbd', 'mktbd0405.py', '-', 'src/libs/libInvitationDialog.cpp:204a5daeebb100a131c034edb8e58e87:35e232795b2e575fdfe452583b95657e', 'src/libs/libWebBrowserDialog.cpp:af36a12a0bc234f83e5c85a76d4b283d:e12c7de053bc57dbdfcb869e53cce49a', 'src/libs/libSharePlay.cpp:d6ecb7874b00ee29d9275d78d8087191:6fc65c51edeae57fccabb96ec3084451', 'src/libs/libGameLiveStreaming.cpp:59e46b5d8452101a0f57257703cfa3a4:4c1af2f3ba313347d93d4c1549a5137e'], ['tcm', 'mktcm0405.py', '-', 'src/libs/libCamera.cpp:810fada1b7e1d223502ace667b71eb14:b8544da15dc5ade0a1bab10883847cb2'], ['thv', 'mkthv0405.py', '-', 'src/libs/libHmd.cpp:905036478f8f9336090248a532d0469f:67f2cac30c96faa6bff2009152ceab64', 'src/libs/libVrTracker.cpp:ee30491baadb582db2df7a08cadc4ae9:aba154d965d03dec3fe0cb39eb4bef30', 'src/libs/libMove.cpp:90b0765d8d601d7e7189e0b5064d180f:ba3db48e387fd600764eed1b4c17da46'], ['tus', 'mktus0405.py', '-', 'src/libs/libUsbd.cpp:f15039f248f156341d68cb3cb58a2b0f:eefb0de517c01962086049b816ada621'], ['tl2', 'mktl20405.py', '-', 'src/libs/libs.cpp:903fa699db7c20b2b3f288ab572bce8d:3ba4e3cd08d88a6d063d34a5e9cd813b'], ['tl3', 'mktl30405.py', '-', 'src/libs/libs.cpp:3ba4e3cd08d88a6d063d34a5e9cd813b:0728ab027534903ab50cbda93945b9dd'], ['smp', 'mksmp0401.py', '-', 'src/libs/bc5LleAgc.cpp:b010db09b5ab83b36e76e0328671e955:bd1811690b685369194602027b61a2d5'], ['zcb', 'mkzcb0401.py', '-', 'src/libs/bc5LleAgc.cpp:bd1811690b685369194602027b61a2d5:2fcf42d2d7528e269d821444ee4fbe9e'], ['gvw', 'mkgvw0401.py', '-', 'src/libs/bc5LleAgc.cpp:2fcf42d2d7528e269d821444ee4fbe9e:e8938633a48f1d359c11b690575cd086'], ['p406', 'mkp4060401.py', '-', 'src/libs/bc5LleAgc.cpp:e8938633a48f1d359c11b690575cd086:4761c532868ce1cd5e8dc097050990bb', 'src/libs/audio.cpp:1f90e7520a6641c8ff3affb06993372d:8db6d9cc609c14fe0b55a645cf9803c6']]:
+        for f in e[3:]:
+            rel, _, out = f.split(":")
+            assert md5(b.e / ("x5-" + e[0]) / rel) == out, (e[0], rel)
+    for n in ['zcb0401', 'gvw0401', 'p4060401', 'smp0401', 'zsk0401', 'lzr0401', 'cap0401', 'flx0401', 'tbt0405', 'tbp0405', 'tbv0405', 'tbd0405', 'tcm0405', 'thv0405', 'tus0405', 'tl20405', 'tl30405'] + ['tbc0405', 'tbn0405', 'fwn0405', 'tld0405', 'pad0405'] + ["eq0405", "tls0405", "sav0401", "amm0401"]:   # e7's tests, e6's, e5's and e4's
+        assert ("%s: on 3 of 3; end" % n) in r.stdout, (n, r.stdout)
+    assert "e9 zcb mkzcb0401.py" in r.stdout and "e8 smp mksmp0401.py" in r.stdout and "e8 test smp0401: smp0401: on 3 of 3; end" in r.stdout and "e7 tbt mktbt0405.py" in r.stdout and "e7 test tl30405: tl30405: on 3 of 3; end" in r.stdout and "e6 test tld0405: tld0405: on 3 of 3; end" in r.stdout, r.stdout
+    gl = (b.root / "build-args.txt").read_text()
+    assert "tbc0405e7.cpp" in gl and "tbn0405e7.cpp" in gl and "/tbc0405.cpp" not in gl.replace("\\", "/") and "/tbn0405.cpp" not in gl.replace("\\", "/"), gl   # e7's copies replace e6's two
+    bu = load("build0401")
+    args = gl.splitlines()
+    rest, archive = bu.split_archive(args[5:])
+    assert archive is None   # e8 links the shared archive
+    incs, units, gts = bu.parse_rest(rest)   # no unit twice
+    last = {}
+    for e in [['zsk', 'mkzsk0401.py', '-', 'src/libs/bc5LleAgc.cpp:d1cfd9bb1f1b3485bed4207a7f064d4f:8710207ea5c34ad70e48dfbbff9880fd'], ['lzr', 'mklzr0401.py', '-', 'src/libs/bc5LleAgc.cpp:8710207ea5c34ad70e48dfbbff9880fd:8ddf48f372f7c555c1b3abe609d0905b'], ['cap', 'mkcap0401.py', '-', 'src/libs/bc5LleAgc.cpp:8ddf48f372f7c555c1b3abe609d0905b:bcbdd3082bf5371393989bb69b1f76fa'], ['flx', 'mkflx0401.py', '-', 'src/libs/bc5LleAgc.cpp:bcbdd3082bf5371393989bb69b1f76fa:b010db09b5ab83b36e76e0328671e955'], ['tbt', 'mktbt0405.py', '-', 'src/libs/libNp.cpp:24e778261495abcd5a069396f14b28b4:60ee3101064cad91445f59c60696a40e'], ['tbp', 'mktbp0405.py', '-', 'src/libs/libNp.cpp:60ee3101064cad91445f59c60696a40e:e60a2844e6b607f7bafc019db8e872c2', 'src/libs/libNet.cpp:35773d6e769b85be74012a86c0f02e89:fdbbb28ec3b1529a898a775462d64804'], ['thb', 'mkthb0405.py', '-', 'src/libs/libIme.cpp:49fa46f1d8005245e7f0b266d8b29659:b82113cc80bce4d544c75cec3047e145', 'src/libs/libNp.cpp:e60a2844e6b607f7bafc019db8e872c2:8222b0bc10f137fe99349becb4609034'], ['tbv', 'mktbv0405.py', '-', 'src/libs/libVoice.cpp:5f63709dbf1028ceaf7784d6a070f64e:35b06392f978247489feed9205e21bc7', 'src/libs/libScreenShot.cpp:cb913d120daa27f0d35702edeee71b19:7b7ac871d0d963598109dad8bceef7f6', 'src/libs/libDiscMap.cpp:e4d975b8a55da8aed19281d7c6d17b33:1f965bcda04aeb3cc96ef1a05043595b', 'src/libs/libUlobjmgr.cpp:b85eafd0de28af091302a8aeeeb323c1:d8c73e108a19961fd3b347024faa5a95', 'src/libs/libCompanion.cpp:cf8ad7a647a84ba04964eb0adfe2ab02:2c093c67a7d8efa5aad925d0b4a4fd28', 'src/libs/libAudio.cpp:45ca1ece07c4394d8700f7a57d9f0fbb:a7025bf5ff622645915c4596e095b122'], ['tbd', 'mktbd0405.py', '-', 'src/libs/libInvitationDialog.cpp:204a5daeebb100a131c034edb8e58e87:35e232795b2e575fdfe452583b95657e', 'src/libs/libWebBrowserDialog.cpp:af36a12a0bc234f83e5c85a76d4b283d:e12c7de053bc57dbdfcb869e53cce49a', 'src/libs/libSharePlay.cpp:d6ecb7874b00ee29d9275d78d8087191:6fc65c51edeae57fccabb96ec3084451', 'src/libs/libGameLiveStreaming.cpp:59e46b5d8452101a0f57257703cfa3a4:4c1af2f3ba313347d93d4c1549a5137e'], ['tcm', 'mktcm0405.py', '-', 'src/libs/libCamera.cpp:810fada1b7e1d223502ace667b71eb14:b8544da15dc5ade0a1bab10883847cb2'], ['thv', 'mkthv0405.py', '-', 'src/libs/libHmd.cpp:905036478f8f9336090248a532d0469f:67f2cac30c96faa6bff2009152ceab64', 'src/libs/libVrTracker.cpp:ee30491baadb582db2df7a08cadc4ae9:aba154d965d03dec3fe0cb39eb4bef30', 'src/libs/libMove.cpp:90b0765d8d601d7e7189e0b5064d180f:ba3db48e387fd600764eed1b4c17da46'], ['tus', 'mktus0405.py', '-', 'src/libs/libUsbd.cpp:f15039f248f156341d68cb3cb58a2b0f:eefb0de517c01962086049b816ada621'], ['tl2', 'mktl20405.py', '-', 'src/libs/libs.cpp:903fa699db7c20b2b3f288ab572bce8d:3ba4e3cd08d88a6d063d34a5e9cd813b'], ['tl3', 'mktl30405.py', '-', 'src/libs/libs.cpp:3ba4e3cd08d88a6d063d34a5e9cd813b:0728ab027534903ab50cbda93945b9dd'], ['smp', 'mksmp0401.py', '-', 'src/libs/bc5LleAgc.cpp:b010db09b5ab83b36e76e0328671e955:bd1811690b685369194602027b61a2d5'], ['zcb', 'mkzcb0401.py', '-', 'src/libs/bc5LleAgc.cpp:bd1811690b685369194602027b61a2d5:2fcf42d2d7528e269d821444ee4fbe9e'], ['gvw', 'mkgvw0401.py', '-', 'src/libs/bc5LleAgc.cpp:2fcf42d2d7528e269d821444ee4fbe9e:e8938633a48f1d359c11b690575cd086'], ['p406', 'mkp4060401.py', '-', 'src/libs/bc5LleAgc.cpp:e8938633a48f1d359c11b690575cd086:4761c532868ce1cd5e8dc097050990bb', 'src/libs/audio.cpp:1f90e7520a6641c8ff3affb06993372d:8db6d9cc609c14fe0b55a645cf9803c6']]:
+        for f in e[3:]:
+            last[f.split(":")[0]] = e[0]
+    assert md5(b.e / "src/bc5LleAgc.cpp") == "4761c532868ce1cd5e8dc097050990bb" and (b.e / "src/lzr0401.inc").is_file()   # the main unit and lzr's .inc beside it
+    last.pop("src/libs/bc5LleAgc.cpp")
+    for rel, tag in last.items():
+        assert units[rel].replace("\\", "/").endswith("x5-%s/%s" % (tag, rel)), (rel, units.get(rel))
+    assert last["src/libs/libNp.cpp"] == "thb" and last["src/libs/libs.cpp"] == "tl3" and last["src/libs/libNet.cpp"] == "tbp", last
+    assert units["src/libs/libPad.cpp"].replace("\\", "/").endswith("x5-pad/src/libs/libPad.cpp")   # e6's units stay where e7 left them alone
+    assert len(gts) == len(set(g[1] for g in gts)) and any(g[1].endswith("tl30405") for g in gts) and any(g[1].endswith("smp0401") for g in gts) and any(g[1].endswith("zcb0401") for g in gts) and any(g[1].endswith("gvw0401") for g in gts) and any(g[1].endswith("p4060401") for g in gts) and any(g[1].endswith("tld0405") for g in gts), gts
+    d = (b.e / "play-pkg-0401.sh").read_text()
+    assert "EMU=~/bc5-work/exp0401e9/bin/kyty_emulator" in d, d
+    assert b.box("release", b.token).stdout.strip() == "released" and b.lock() == ""
+
 
 def t_link_archive_swap():
     bu = load("build0401")
@@ -879,7 +918,7 @@ def t_build_commands():
 
 def main():
     cases = [v for k, v in sorted(globals().items()) if k.startswith("t_")]
-    assert len(cases) == 33, len(cases)
+    assert len(cases) == 34, len(cases)
     bad = 0
     for c in cases:
         try:

@@ -33,6 +33,7 @@ case "${BC5_0401_SERIES:-}" in
     e6) SER=e6; EXPECT_UNIT=d3b7f9b0ab43184ee11de83e9e233ff8; MKFLAG="--acb-restore --catcher --inherit3 --memline" ;; # e5 + exp 0405's decisions 1, 3, 4 (batch 1)
     e7) SER=e7; EXPECT_UNIT=d3b7f9b0ab43184ee11de83e9e233ff8; MKFLAG="--acb-restore --catcher --inherit3 --memline" ;; # e6 + exp 0405's decision 4, batch 2 (17 library tables)
     e8) SER=e8; EXPECT_UNIT=d3b7f9b0ab43184ee11de83e9e233ff8; MKFLAG="--acb-restore --catcher --inherit3 --memline" ;; # e7 + smp (BC5_DIRECT_FL_MESHLET_SAMPLE), for the F2 series
+    e9) SER=e9; EXPECT_UNIT=d3b7f9b0ab43184ee11de83e9e233ff8; MKFLAG="--acb-restore --catcher --inherit3 --memline" ;; # e8 + zcb, gvw (the hang fixes and catchers) and exp 0406's switches
     *) echo "0401 STOP: unknown series ${BC5_0401_SERIES}"; exit 2 ;;
 esac
 # Series d (2026-11-03 13:52): series c's edit on exp 0379's zero skip, the unit and header of exp 0388's 902585e2 build
@@ -182,16 +183,32 @@ E8_GATES=(
     "smp0401.cpp src/libs/bc5LleAgc.cpp BC5_DIRECT_FL_MESHLET_SAMPLE smp0401"
 )
 E8_STRS=(BC5_DIRECT_FL_MESHLET_SAMPLE 'exp 0401 e8 (smp): fl meshlet sample every %d s' 'exp 0401 e8 (smp): fl meshlet sample off%s' 'fl meshlet sample (exp 0401 e8 smp): %s: submit #%')
+# Series e9 (2026-11-05, the top session's order after the deep analysis and the box reads; hang1954-0401.md): e8 plus
+# zcb (the zero skip's exclusion, copy-back, probe and the scratch watch), gvw (the given-up waits: the late-producer wait,
+# the unwaited fast-launch drop, the give-up journal and the unwaited meshlet sample) and p406 (exp 0406's switches).
+# Their rows chain after smp's on the main unit, in this order; p406 also writes audio.cpp.
+E9_EDITS=(
+    "zcb mkzcb0401.py - src/libs/bc5LleAgc.cpp:bd1811690b685369194602027b61a2d5:2fcf42d2d7528e269d821444ee4fbe9e"
+    "gvw mkgvw0401.py - src/libs/bc5LleAgc.cpp:2fcf42d2d7528e269d821444ee4fbe9e:e8938633a48f1d359c11b690575cd086"
+    "p406 mkp4060401.py - src/libs/bc5LleAgc.cpp:e8938633a48f1d359c11b690575cd086:4761c532868ce1cd5e8dc097050990bb src/libs/audio.cpp:1f90e7520a6641c8ff3affb06993372d:8db6d9cc609c14fe0b55a645cf9803c6"
+)
+E9_GATES=(
+    "zcb0401.cpp src/libs/bc5LleAgc.cpp BC5_DIRECT_ZERO_SKIP_EXCLUDE,BC5_DIRECT_ZERO_SKIP_COPYBACK,BC5_DIRECT_ZERO_SKIP_PROBE,BC5_DIRECT_SCRATCH_WATCH zcb0401"
+    "gvw0401.cpp src/libs/bc5LleAgc.cpp BC5_DIRECT_WAIT_LATE_PRODUCER_MS,BC5_DIRECT_UNWAITED_FL_DROP,BC5_DIRECT_GIVEUP_JOURNAL,BC5_DIRECT_FL_MESHLET_SAMPLE_UNWAITED gvw0401"
+    "p4060401.cpp src/libs/bc5LleAgc.cpp BC5_0406_LEARNED_PRUNE,BC5_0406_AUDIO_SLEEP p4060401"
+)
+E9_STRS=(BC5_DIRECT_ZERO_SKIP_EXCLUDE BC5_DIRECT_ZERO_SKIP_COPYBACK BC5_DIRECT_ZERO_SKIP_PROBE BC5_DIRECT_SCRATCH_WATCH 'zero skip copy-back (exp 0401 e9 zcb): ' BC5_DIRECT_WAIT_LATE_PRODUCER_MS BC5_DIRECT_UNWAITED_FL_DROP BC5_DIRECT_GIVEUP_JOURNAL BC5_DIRECT_FL_MESHLET_SAMPLE_UNWAITED 'gvw (exp 0401 e9): ' BC5_0406_LEARNED_PRUNE 'learned prune (exp 0406 p406): ' BC5_0406_AUDIO_SLEEP)
 E6G=("${E6_GATES[@]}")   # e6's gate rows; e7 (and e8) build their own copies of the tbc and tbn tests under the same names
-if [ "$SER" = e7 ] || [ "$SER" = e8 ]; then
+if [ "$SER" = e7 ] || [ "$SER" = e8 ] || [ "$SER" = e9 ]; then
     E6G=(); for g6 in "${E6_GATES[@]}"; do
         case "$g6" in "tbc0405.cpp "*) g6="tbc0405e7.cpp ${g6#tbc0405.cpp }" ;; "tbn0405.cpp "*) g6="tbn0405e7.cpp ${g6#tbn0405.cpp }" ;; esac
         E6G+=("$g6")
     done
 fi
-E4UP=0; E5UP=0; case $SER in e4) E4UP=1 ;; e5 | e6p | e6 | e7 | e8) E4UP=1; E5UP=1 ;; esac   # e6p, e6 and e7 build everything e5 builds
-E6UP=0; case $SER in e6 | e7 | e8) E6UP=1 ;; esac   # e7 and e8 build everything e6 builds
-E7UP=0; case $SER in e7 | e8) E7UP=1 ;; esac   # e8 builds everything e7 builds
+E4UP=0; E5UP=0; case $SER in e4) E4UP=1 ;; e5 | e6p | e6 | e7 | e8 | e9) E4UP=1; E5UP=1 ;; esac   # e6p, e6 and e7 build everything e5 builds
+E6UP=0; case $SER in e6 | e7 | e8 | e9) E6UP=1 ;; esac   # e7 and e8 build everything e6 builds
+E7UP=0; case $SER in e7 | e8 | e9) E7UP=1 ;; esac   # e8 and e9 build everything e7 builds
+E8UP=0; case $SER in e8 | e9) E8UP=1 ;; esac   # e9 builds everything e8 builds
 E=$W/exp0401$SER; LOCK=$W/BOX-LOCK; QUEUE=$W/BOX-QUEUE; ST=$E/state; BIN=$E/bin/kyty_emulator; B=$W/kytyplus-build; R=$E/raw
 
 BIN_MD5=4d2b1b1dd52eaea6e3195500f604e73e; LEAN_MD5=30d4be3371d7c6376b2b4425698c1c3a; ARCHIVE_MD5=75e303357610fee8d1d205bdc88c031c
@@ -201,6 +218,7 @@ SERIES_S=2400; GRACE=120; BUILD_S=1500; DISK_MAX=80
 [ "$SER" != e6 ] || SERIES_S=3000    # e6: six more units' tests
 [ "$SER" != e7 ] || SERIES_S=3300    # e7: e6's tests and five more
 [ "$SER" != e8 ] || SERIES_S=3400    # e8: e7's tests and one more
+[ "$SER" != e9 ] || SERIES_S=3600    # e9: e8's tests and three more
 
 DBX=(distrobox enter ubuntu --); PY=(python3 -I); CXX=clang++
 now() { printf '%(%s)T\n' -1; }
@@ -475,7 +493,7 @@ cmd_build() {
         CUR[src/libs/bc5LleAgc.cpp]=$E/src/bc5LleAgc.cpp
         for a5 in "${inc[@]}"; do case "$a5" in src/*=*) CUR[${a5%%=*}]=${a5#*=} ;; esac; done
         CUR[src/loader/systemContent.h]=$E/mem/src/loader/systemContent.h
-        local rows5=("${E5_EDITS[@]}"); [ "$E6UP" = 0 ] || rows5+=("${E6_EDITS[@]}"); [ "$E7UP" = 0 ] || rows5+=("${E7_EDITS[@]}"); [ "$SER" != e8 ] || rows5+=("${E8_EDITS[@]}")   # e6's rows chain after e5's, e7's after e6's, e8's after e7's
+        local rows5=("${E5_EDITS[@]}"); [ "$E6UP" = 0 ] || rows5+=("${E6_EDITS[@]}"); [ "$E7UP" = 0 ] || rows5+=("${E7_EDITS[@]}"); [ "$E8UP" = 0 ] || rows5+=("${E8_EDITS[@]}"); [ "$SER" != e9 ] || rows5+=("${E9_EDITS[@]}")   # e6's rows chain after e5's, e7's after e6's, e8's after e7's
         for row in "${rows5[@]}"; do
             set -- $row; tag5=$1; script5=$2; opt5=$3; shift 3
             rm -rf "$E/r5-$tag5" "$E/x5-$tag5" || die "cannot clear $tag5"
@@ -523,7 +541,7 @@ cmd_build() {
             [ "$k5" = 1 ] || new5+=("$rel5=${CUR[$rel5]}")
         done
         inc=("${new5[@]}")
-        local built5=" " gates5=("${E5_GATES[@]}"); [ "$E6UP" = 0 ] || gates5+=("${E6G[@]}"); [ "$E7UP" = 0 ] || gates5+=("${E7_GATES[@]}"); [ "$SER" != e8 ] || gates5+=("${E8_GATES[@]}")
+        local built5=" " gates5=("${E5_GATES[@]}"); [ "$E6UP" = 0 ] || gates5+=("${E6G[@]}"); [ "$E7UP" = 0 ] || gates5+=("${E7_GATES[@]}"); [ "$E8UP" = 0 ] || gates5+=("${E8_GATES[@]}"); [ "$SER" != e9 ] || gates5+=("${E9_GATES[@]}")
         for row in "${gates5[@]}"; do
             set -- $row
             case "$built5" in *" ${5:-$4} "*) continue ;; esac
@@ -611,7 +629,8 @@ cmd_build() {
         [ "$E5UP" = 0 ] || gates+=("${E5_GATES[@]}")
         [ "$E6UP" = 0 ] || gates+=("${E6G[@]}")
         [ "$E7UP" = 0 ] || gates+=("${E7_GATES[@]}")
-        [ "$SER" != e8 ] || gates+=("${E8_GATES[@]}")
+        [ "$E8UP" = 0 ] || gates+=("${E8_GATES[@]}")
+        [ "$SER" != e9 ] || gates+=("${E9_GATES[@]}")
         for row in "${gates[@]}"; do
             set -- $row
             for g in on off unset; do
@@ -628,17 +647,18 @@ cmd_build() {
     # 4. What the binary must hold, and what it must still hold.
     local s strs=(BC5_DIRECT_CP_COHER_START_DELAY BC5_DIRECT_SPI_REQ_CTRL_PS 'exp 0401: CP_COHER_START_DELAY %s' 'exp 0401: SPI_SHADER_REQ_CTRL_PS %s' BC5_DIRECT_ARGS_WB BC5_DIRECT_GC_HS_OFFCHIP)
     [ -z "$SER" ] || strs+=(BC5_DIRECT_ACB_CS_PREFIX 'exp 0401: acb CS prefix %s' 'acb cs prefix (exp 0401)' BC5_DIRECT_CS_PREFIX)
-    case $SER in c | d | e | e2 | e3 | e4 | e5 | e6p | e6 | e7 | e8) strs+=(BC5_DIRECT_ACB_STATE_RESTORE 'exp 0401: acb state restore (exp 0381) %s' 'acb state restore (exp 0381)') ;; esac
+    case $SER in c | d | e | e2 | e3 | e4 | e5 | e6p | e6 | e7 | e8 | e9) strs+=(BC5_DIRECT_ACB_STATE_RESTORE 'exp 0401: acb state restore (exp 0381) %s' 'acb state restore (exp 0381)') ;; esac
     [ "${SER:0:1}" != e ] || strs+=(BC5_DIRECT_TABLE_CATCHER 'exp 0401: table catcher %s' 'table catcher (exp 0401)' KYTY_BC5_NP_SESSION_V2 KYTY_BC5_MEMORY_FROM_PARAM 'exp 0401: memory from param.json')
-    case $SER in e2 | e3 | e4 | e5 | e6p | e6 | e7 | e8) strs+=(BC5_DIRECT_ACB_INHERIT 'exp 0403: acb inherit %s' 'acb inherit (exp 0403)' 'acb inherit census (exp 0403)') ;; esac
-    case $SER in e3 | e4 | e5 | e6p | e6 | e7 | e8) ;; *) false ;; esac && strs+=("the queue's live program" 'prefixed with the queue' 'never bound in a part of its own' 'unknown, fallback ring' 'UNSEEN (not observed in this wave mode)' BC5_DIRECT_MEM_LINE 'exp 0401: memory line %s' 'memory (exp 0401)')
+    case $SER in e2 | e3 | e4 | e5 | e6p | e6 | e7 | e8 | e9) strs+=(BC5_DIRECT_ACB_INHERIT 'exp 0403: acb inherit %s' 'acb inherit (exp 0403)' 'acb inherit census (exp 0403)') ;; esac
+    case $SER in e3 | e4 | e5 | e6p | e6 | e7 | e8 | e9) ;; *) false ;; esac && strs+=("the queue's live program" 'prefixed with the queue' 'never bound in a part of its own' 'unknown, fallback ring' 'UNSEEN (not observed in this wave mode)' BC5_DIRECT_MEM_LINE 'exp 0401: memory line %s' 'memory (exp 0401)')
     [ "$SER" != d ] || strs+=(BC5_DIRECT_ZERO_SKIP BC5_DIRECT_ZERO_SLICES 'zero skip: list %s' 'job-arena fix APPLIED')
     [ "$E4UP" = 0 ] || strs+=("${E4_STRS[@]}")
     [ "$E5UP" = 0 ] || strs+=("${E5_STRS[@]}")
     [ "$SER" != e6p ] || strs+=("${E6P_STRS[@]}")
     [ "$E6UP" = 0 ] || strs+=("${E6_STRS[@]}")
     [ "$E7UP" = 0 ] || strs+=("${E7_STRS[@]}")
-    [ "$SER" != e8 ] || strs+=("${E8_STRS[@]}")
+    [ "$E8UP" = 0 ] || strs+=("${E8_STRS[@]}")
+    [ "$SER" != e9 ] || strs+=("${E9_STRS[@]}")
     for s in "${strs[@]}"; do
         grep -aqF -- "$s" "$BIN" || die "the private binary lacks [$s]"
     done
@@ -649,6 +669,7 @@ cmd_build() {
     chmod +x "$E/play-pkg-0401.sh" || die "chmod failed"
     diff -u "$W/play-pkg.sh" "$E/play-pkg-0401.sh" > "$E/play-pkg-0401.diff"
     local dl=8; [ "$E4UP" = 0 ] || dl=9   # e4, e5: the line that keeps each run's log
+    [ "$SER" != e9 ] || dl=10   # e9: the line that takes back launcher words (BC5_0401_LATE_UNSET)
     [ "$(grep -c '^[-+][^-+]' "$E/play-pkg-0401.diff")" = "$dl" ] || die "the launcher's diff is not the lines it must change"
 
     why=$(pins_why); [ -z "$why" ] || die "$why"
@@ -663,7 +684,7 @@ cmd_build() {
         echo "launcher $(rd "$E/launcher.md5") from play-pkg.sh $LAUNCHER_MD5"
         echo "warnings in the unit's compile: $(strip_ansi "$R/build.out" | grep -c 'warning:')"
         echo "function check: $(tail -1 "$R/check0401.out")"
-        case $SER in e3 | e4 | e5 | e6p | e6 | e7 | e8) echo "inherit test: $(tail -1 "$R/inh0401.out")" ;; esac
+        case $SER in e3 | e4 | e5 | e6p | e6 | e7 | e8 | e9) echo "inherit test: $(tail -1 "$R/inh0401.out")" ;; esac
         if [ "$E4UP" = 1 ]; then
             echo "e4 unit with exp 0404's switches: $FL_UNIT_MD5; fl test: $(tail -1 "$R/fl0401.out")"
             for row in "${E4_EDITS[@]}"; do echo "e4 $row"; done
@@ -674,7 +695,11 @@ cmd_build() {
             echo "e6p backend tests: $(grep -a '^All tests passed' "$R/bk-tests.out" | tail -1); G7: $(grep -a '^All tests passed' "$R/bk-pred.out" | tail -1)"   # stderr lines are mixed in: the pass line, not the last
             echo "e6p switch: $(for o in unset empty 0 1 bool; do printf '%s %s; ' "$o" "$(grep -a '^All tests passed' "$R/bk-env-$o.out" | tail -1)"; done)"
         fi
-        if [ "$SER" = e8 ]; then
+        if [ "$SER" = e9 ]; then
+            for row in "${E9_EDITS[@]}"; do echo "e9 $row"; done
+            for row in "${E9_GATES[@]}"; do set -- $row; echo "e9 test $4: $(tail -1 "$R/$4-on.out" | cut -c1-100) / $(tail -1 "$R/$4-off.out" | cut -c1-100) / $(tail -1 "$R/$4-unset.out" | cut -c1-100)"; done
+        fi
+        if [ "$E8UP" = 1 ]; then
             for row in "${E8_EDITS[@]}"; do echo "e8 $row"; done
             for row in "${E8_GATES[@]}"; do set -- $row; echo "e8 test $4: $(tail -1 "$R/$4-on.out" | cut -c1-100) / $(tail -1 "$R/$4-off.out" | cut -c1-100) / $(tail -1 "$R/$4-unset.out" | cut -c1-100)"; done
         fi
