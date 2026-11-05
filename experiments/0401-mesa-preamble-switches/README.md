@@ -534,8 +534,7 @@ the main unit.
     FL catchers fired; their reading is in `hang1954-0401.md`, section "r7all 06:40 (e7 catchers)". r6c and r7m ran
     900 s at the same save without a hang, so it is intermittent there: one in three route arms.
 
-**Series e8: e7 plus smp, for the F2 series (2026-11-05, the top session's order after the r7all read; laptop only so
-far).** The read (`hang1954-0401.md`, "r7all 06:40") picked F2 (`BC5_DIRECT_FL_SERIAL`, built in e7) as the next test,
+**Series e8: e7 plus smp, for the F2 series (2026-11-05, the top session's order after the r7all read).** The read (`hang1954-0401.md`, "r7all 06:40") picked F2 (`BC5_DIRECT_FL_SERIAL`, built in e7) as the next test,
 with a control nobody had: A4's per-point walk on draws that completed.
 - *smp* (`mksmp0401.py`, `smp0401.cpp`, `smp0401-notes.md`): `BC5_DIRECT_FL_MESHLET_SAMPLE=<s>`, default off, CPU only.
   At most once every `<s>` seconds it walks a completed job's pattern draws a few ms after the fence. At a fence
@@ -556,5 +555,61 @@ with a control nobody had: A4's per-point walk on draws that completed.
   - e8fK: r7m's words + F2 + A1 + A4 + smp every 30 s.
   - e8cK: the same without F2.
   - G+600 each, RT on, about 3.5 h in all, F2 first in each pair.
+- *Build* (2026-11-05 on the box, `raw/e8/`, `raw/e8-go-build.log`):
+  - binary `exp0401e8/bin/kyty_emulator`, md5 dc7fb4e051f0a2f5db1abe7e5ec43bcf;
+  - every CPU test passes on the box (smp0401 61 of 61);
+  - the shared binaries, archive, tree and launcher are unchanged.
+
+**Series e8 results** (2026-11-05 15:11–19:07):
+- *Setting.* Boot 9af31fd4, his slot-4 save, RT on. The live saves read 558115f366fb11cb before and after every arm.
+- *Arms.* 18 in all: the 16 planned, plus e8c2 and e8c4 run again (e8c2r, e8c4r).
+- *Stops.* The runner stopped twice at an F403-class hang in a control. After each read it resumed from
+  `raw/night-arms-e8b.txt` and then `raw/night-arms-e8c.txt`. For the last 10 arms, the top session's rule was that a
+  successful ring reset does not stop the series.
+- *Records.* `raw/night/night.txt`, `raw/night/e8*-*.txt`, and smp's sums in `raw/night/e8-smp-summary.txt`.
+
+Ring resets in this boot:
+- 15:58:38, e8c2: two ring gfx timeouts, devcd1 and devcd2;
+- 16:48:19, e8c4: devcd3.
+
+Both resets succeeded and the box did not reboot. The column "after a reset" counts the resets earlier in the same boot.
+
+| Arm | F2 | After a reset | End | G (s) | flips/s | Longest gap (ms) | Memory floor (MiB) |
+|---|---|---|---|---|---|---|---|
+| e8f1 | on | no | G+600 | 163 | 32.6 | 1,286 | 291 |
+| e8c1 | off | no | G+600 | 217 | 34.7 | 1,089 | 374 |
+| e8f2 | on | no | G+600 | 215 | 32.6 | 1,123 | 322 |
+| e8c2 | off | no | F403 hang at G+81, reset ok | 215 | 15.5 | 15,067 | 286 |
+| e8f3 | on | yes (1) | G+600 | 147 | 31.3 | 1,626 | 322 |
+| e8c3 | off | yes (1) | G+600 | 147 | 31.9 | 1,516 | 370 |
+| e8f4 | on | yes (1) | G+600 | 216 | 32.2 | 1,124 | 315 |
+| e8c4 | off | yes (1) | F403 hang at G+31, reset ok | 150 | 16.1 | 14,932 | 238 |
+| e8f5 | on | yes (2) | G+600 | 146 | 32.5 | 1,083 | 323 |
+| e8c5 | off | yes (2) | G+600 | 234 | 33.6 | 1,280 | 374 |
+| e8f6 | on | yes (2) | G+600 | 216 | 32.4 | 1,132 | 332 |
+| e8c6 | off | yes (2) | G+600 | 149 | 32.9 | 1,182 | 351 |
+| e8f7 | on | yes (2) | G+600 | 218 | 34.2 | 1,029 | 364 |
+| e8c7 | off | yes (2) | G+600 | 217 | 33.4 | 1,168 | 339 |
+| e8f8 | on | yes (2) | G+600 | 216 | 32.9 | 1,554 | 310 |
+| e8c8 | off | yes (2) | G+600 | 145 | 33.9 | 1,204 | 331 |
+| e8c2r | off | yes (2) | G+600 | 233 | 35.0 | 1,190 | 361 |
+| e8c4r | off | yes (2) | G+600 | 147 | 33.3 | 1,357 | 318 |
+
+- *Draw-class (19:54) hangs: 0 of 18* (0 of 8 with F2, 0 of 10 without).
+  - The class did not come back in e8 at all. In e7 it hung 1 of 3 route arms at this save (r7all, 900 s).
+  - So this series cannot say whether F2 prevents it.
+- *F403 hangs* (the acb's BVH build/refit; F2 does not touch it):
+  - 0 of 8 with F2, 2 of 10 without (Fisher two-sided p ≈ 0.48), so there is no evidence either way;
+  - both arms ran clean when run again.
+- *F2's cost.* The clean arms average 32.6 flips/s with F2 and 33.6 without (8 arms each), about 3 % less. The longest
+  gaps are alike (1.0–1.6 s).
+- *After resets.* Every arm after a ring reset in the same boot ran clean: 3 arms after one reset (e8c4, the 4th, hung)
+  and 10 arms after two.
+- *smp* (scratch `sampstat.py`; the lines themselves stay in laptop scratch):
+  - 15,191 completed pattern draws were sampled in 18 arms, and 14,502 of them were walked (2,065,171 points);
+  - in either range model, no draw had a point with meshlet index ≥ count, a load past NUM_RECORDS at every point, or
+    a header above 32 vertices; r7all's three hung draws had all three at every point;
+  - point 0 landed on the empty record (count 0) in 254 draws in model 0 and 35 in model 1;
+  - smp printed no timeout walk in either hung arm, because both hangs were in the acb.
 
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.
