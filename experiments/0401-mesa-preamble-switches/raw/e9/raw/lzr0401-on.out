@@ -1,0 +1,32 @@
+lzr0401: BC5_DIRECT_LAZY_RELEASE on (1 s)
+ok   parse: off                   5 checks
+ok   parse: on                    10 checks
+ok   parse: not parsing           37 checks
+ok   covers: merged, hits         3 checks
+ok   covers: classes              4 checks
+ok   plan: off                    1 checks
+ok   never: under views           22 checks
+ok   idle: exact                  4 checks
+ok   idle: restart                3 checks
+ok   idle: clock back             2 checks
+ok   idle: due                    3 checks
+ok   never: forced                2 checks
+ok   never: eager word            2 checks
+ok   never: zero list             1 checks
+ok   never: never seen            3 checks
+ok   never: unaligned BO          1 checks
+ok   cuts: split runs             4 checks
+ok   cuts: whole BO               2 checks
+ok   cuts: splits off             1 checks
+ok   cuts: mapping budget         2 checks
+ok   cuts: per pass               1 checks
+ok   cuts: dry                    2 checks
+ok   cuts: apply and undo         12 checks
+ok   cuts: record                 4 checks
+ok   cuts: state pruned           2 checks
+ok   cuts: state across a merge   1 checks
+ok   re-import: reviewed          3 checks
+ok   re-import: runs              3 checks
+ok   re-import: cycle             9 checks
+ok   env: the switch as set       3 checks
+lzr0401: on 30 of 30; end

@@ -1,0 +1,9 @@
+[bc5] exp 0401 e8 (smp): fl meshlet sample every 5 s, at most 64 pattern draws of a completed job, 1024 points per draw and range model
+[bc5] exp 0401 e7 (flx): fl probe state off, fl vgt flush off, fl serial on, fl meshlet probe off, fl crumbs meshlet off
+smp0401: case the switch (on): 3 of 3
+smp0401: case the parse (pure): 14 of 14
+smp0401: case fl_plan_buffer and smp_sample (on): 3 of 3
+smp0401: case the timer (pure): 8 of 8
+smp0401: case both range models (pure): 21 of 21
+smp0401: case one draw's line (pure): 12 of 12
+smp0401: on 61 of 61; end

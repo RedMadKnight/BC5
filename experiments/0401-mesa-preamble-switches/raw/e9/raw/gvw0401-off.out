@@ -1,0 +1,16 @@
+gvw0401: case the switches (off): 3 of 3
+gvw0401: case the parse (pure): 27 of 27
+gvw0401: case the wait's comparison (pure): 7 of 7
+gvw0401: case the late-producer decision (pure): 24 of 24
+[bc5] exp 0401 e9 (gvw): late producer wait off, unwaited fl drop off, give-up journal off, unwaited meshlet sample off
+gvw0401: case the compute-queue scan (pure): 24 of 24
+gvw0401: case the host's decision (pure host): 13 of 13
+gvw0401: case the late-producer wait (off): 6 of 6
+gvw0401: case the drop window (pure): 5 of 5
+gvw0401: case the plan's drop (pure): 4 of 4
+gvw0401: case the unwaited fl drop (off): 8 of 8
+gvw0401: case the give-up journal (off): 3 of 3
+gvw0401: case frames and the timeout line (off): 11 of 11
+gvw0401: case the unwaited sample (off): 14 of 14
+gvw0401: case the quiet filter (off): 24 of 24
+gvw0401: off 173 of 173; end

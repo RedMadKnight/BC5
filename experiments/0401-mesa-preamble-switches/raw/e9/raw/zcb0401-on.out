@@ -1,0 +1,21 @@
+[bc5] exp 0401 e9 (zcb): BC5_DIRECT_ZERO_SKIP_EXCLUDE: a run of the zero list at file 0x5800000 or 0x4200000 is placed as normal memory, not skipped; 3 bad entries ignored: 'xyz' (not a hex number), '0x123' (not 2 MiB aligned), '' (empty)
+[bc5] exp 0401 e9 (zcb): BC5_DIRECT_ZERO_SKIP_COPYBACK on: at a canary hit, after a wait of at most 500 ms a ring for the jobs in flight, the slice's non-zero 4 KiB pages go into each chunk of the run still skipped
+[bc5] exp 0401 e9 (zcb): BC5_DIRECT_ZERO_SKIP_PROBE on: each take-back (a canary hit, CPU writes) journaled; at a fence timeout the last 4 and what the stuck job's own records touch
+[bc5] exp 0401 e9 (zcb): BC5_DIRECT_SCRATCH_WATCH on: the hole scratch BO scanned every 50 ms once it is made
+zcb0401: case the switches (on): 8 of 8
+zcb0401: case the parse (pure): 32 of 32
+zcb0401: case the exclusion (pure): 8 of 8
+zcb0401: case the non-zero summary (pure): 5 of 5
+zcb0401: case the scratch watch's rule (pure): 11 of 11
+zcb0401: case the copy's chunk selection (pure): 11 of 11
+bc5 clock: journal t 0 = monotonic 64159.537 s
+zcb0401: case placement and exclusion (on): 14 of 14
+zcb0401: case CPU write (on): 6 of 6
+zcb0401: case canary hit, run 0 (on): 17 of 17
+zcb0401: case a timeout: the take-backs and the job's records (on): 11 of 11
+zcb0401: case canary hit, run 1, the wait's bound (on): 6 of 6
+zcb0401: case CPU writes, run 2 (on): 6 of 6
+zcb0401: case the scratch watch (on): 10 of 10
+zcb0401: case a later timeout (on): 10 of 10
+zcb0401: case the quiet filter and e8's lines (on): 66 of 66
+zcb0401: on 221 of 221; end

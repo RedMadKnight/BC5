@@ -1,0 +1,45 @@
+tbn0405: switches npcommon 0, npmanager 0, nptrophy 0: off
+[bc5] exp 0405: fs fixes off
+[bc5] exp 0401: memory from param.json off: total 11692 MiB, flexible 1024 MiB, direct 10668 MiB (param.json: flexible 0, cpu table 0, gpu table 0, amm table 0 MiB)
+[bc5] exp 0405: mem off
+[bc5] exp 0405: thread sync off
+[bc5] exp 0405: npcommon port off
+[bc5] exp 0405: npmanager port off
+[bc5] exp 0405: nptrophy port off
+tbn0405: case 1 npcommon off: CmpOnlineId of two different ids: ok (0x00000000, want 0x00000000)
+tbn0405: case 2 npcommon off: CmpNpId of two different NpIds: ok (0x00000000, want 0x00000000)
+tbn0405: case 3 npcommon off: CmpNpIdInOrder writes nothing: ok (0x00000000, want 0x00000000)
+tbn0405: case 4 npcommon off: GetPlatformType(null): ok (0x00000000, want 0x00000000)
+tbn0405: case 5 npcommon off: IntIsValidOnlineId("alpha"): ok (0x00000000, want 0x00000000)
+tbn0405: case 6 npcommon off: GetSystemClockUsec writes nothing: ok (0x00000000, want 0x00000000)
+tbn0405: case 7 npcommon off: GetSdkVersion writes nothing: ok (0x00000000, want 0x00000000)
+tbn0405: case 8 npcommon off: MutexInit creates nothing: ok (0x00000000, want 0x00000000)
+tbn0405: case 9 npcommon off: MutexTryLock: ok (0x00000000, want 0x00000000)
+tbn0405: case 10 npcommon off: CreateThread starts nothing: ok (0x00000000, want 0x00000000)
+tbn0405: case 11 npcommon off: CalloutInitCtx writes nothing: ok (0x00000000, want 0x00000000)
+tbn0405: case 12 npcommon off: CalloutStartOnCtx: ok (0x00000000, want 0x00000000)
+tbn0405: case 13 npmanager off: InitNpManager_1 registers the two shared NIDs as today: ok (NpManager::sceNpUnregisterStateCallback, NpManager::sceNpUnregisterNpReachabilityStateCallback)
+tbn0405: case 14 npmanager off: CheckNpAvailabilityA: ok (0x00000000, want 0x00000000)
+tbn0405: case 15 npmanager off: CheckPlus: ok (0x00000000, want 0x00000000)
+tbn0405: case 16 npmanager off: GetAccountLanguage: ok (0x00000000, want 0x00000000)
+tbn0405: case 17 npmanager off: GetAccountLanguageA: ok (0x00000000, want 0x00000000)
+tbn0405: case 18 npmanager off: GetParentalControlInfoA: ok (0x00000000, want 0x00000000)
+tbn0405: case 19 npmanager off: WaitAsync: ok (0x00000000, want 0x00000000)
+tbn0405: case 20 npmanager off: SetTimeout: ok (0x00000000, want 0x00000000)
+tbn0405: case 21 npmanager off: GetGamePresenceStatus: ok (0x00000000, want 0x00000000)
+tbn0405: case 22 npmanager off: SetGamePresenceOnline: ok (0x80550005, want 0x80550005)
+tbn0405: case 23 npmanager off: SetGamePresenceOnlineA: ok (0x80550005, want 0x80550005)
+tbn0405: case 24 npmanager off: IsPlusMember: ok (0x80550005, want 0x80550005)
+tbn0405: case 25 npmanager off: GetAccountId: ok (0x00000000, want 0x00000000)
+tbn0405: case 26 npmanager off: CheckCallbackForLib: ok (0x00000000, want 0x00000000)
+tbn0405: case 27 npmanager off: UnregisterPlusEventCallback: ok (0x00000000, want 0x00000000)
+tbn0405: case 28 npmanager off: the 4 held NIDs registered as today (Find and FindByNid), each answers today's value: ok (4 of 4)
+tbn0405: case 29 nptrophy off: CreateContext writes nothing: ok (0x00000000, want 0x00000000)
+tbn0405: case 30 nptrophy off: CreateHandle writes nothing: ok (0x00000000, want 0x00000000)
+tbn0405: case 31 nptrophy off: RegisterContext: ok (0x80550005, want 0x80550005)
+tbn0405: case 32 nptrophy off: UnlockTrophy: ok (0x80550005, want 0x80550005)
+tbn0405: case 33 nptrophy off: NumInfoGetTotal: ok (0x00000000, want 0x00000000)
+tbn0405: case 34 nptrophy off: SetInfoGetTrophyFlagArray writes nothing: ok (0x00000000, want 0x00000000)
+tbn0405: case 35 nptrophy off: SystemDbgCtl: ok (0x00000000, want 0x00000000)
+tbn0405: case 36 nptrophy off: the 64 held NIDs registered as today (Find and FindByNid), each answers today's value: ok (64 of 64)
+tbn0405: off 36 of 36; end

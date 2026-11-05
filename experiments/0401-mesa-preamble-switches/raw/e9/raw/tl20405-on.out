@@ -1,0 +1,71 @@
+tl20405: switches nptus 1, npparty 1, nppartner 1, npsnsfacebook 1, voice 1, screenshot 1, discmap 1, ulobjmgr 1, companionhttpd 1, companionutil 1, invitationdialog 1, webbrowserdialog 1, shareplay 1, gamelivestreaming 1; batch 1's six off: on
+tl20405: info stderr: the two InitAll calls' stderr goes to ./tl20405-stderr.txt
+[bc5] exp 0401: NpCppWebApi SessionManager V2 off (the loader's stubs)
+[bc5] exp 0405: zlib port off
+[bc5] exp 0405: jpeg port off
+[bc5] exp 0405: ime port off
+[bc5] exp 0405: npcommon port off
+[bc5] exp 0405: npmanager port off
+[bc5] exp 0405: nptrophy port off
+tl20405: info today's InitAll: 1914 records
+tl20405: info InitAll's stderr: [bc5] exp 0405: tables on (items: nptus,npparty,nppartner,npsnsfacebook,voice,screenshot,discmap,ulobjmgr,companionhttpd,companionutil,invitationdialog,webbrowserdialog,shareplay,gamelivestreaming)
+tl20405: info InitAll's stderr: [bc5] exp 0405: nptus port on (items: context request abort poll wait slots variable data status friends users tss)
+tl20405: info InitAll's stderr: [bc5] exp 0405: nptus friends run off
+tl20405: info InitAll's stderr: [bc5] exp 0405: npparty port on (items: init state members handler message)
+tl20405: info InitAll's stderr: [bc5] exp 0405: nppartner port on (items: init subscription)
+tl20405: info InitAll's stderr: [bc5] exp 0405: npsnsfacebook port on (items: none, UpdateStatus already matches)
+tl20405: info InitAll's stderr: [bc5] exp 0405: voice port on (items: VADSetVersion GetResourceInfo-check; 8 held, not registered)
+tl20405: info InitAll's stderr: [bc5] exp 0405: screenshot port on (items: Disable Enable IsDisabled SetOverlayImage SetOverlayImageWithOrigin)
+tl20405: info InitAll's stderr: [bc5] exp 0405: discmap port on (items: IsRequestOnHDD ioKMruft1ek)
+tl20405: info InitAll's stderr: [bc5] exp 0405: ulobjmgr port on (items: RegisterObject UnregisterObject)
+tl20405: info InitAll's stderr: [bc5] exp 0405: companionhttpd port on (items: OptParamInitialize Initialize Terminate RegisterRequestCallback UnregisterRequestCallback Start Stop GetEvent; Initialize2 adapted; 5 held, not registered)
+tl20405: info InitAll's stderr: [bc5] exp 0405: companionutil port on (items: GetEvent)
+tl20405: info InitAll's stderr: [bc5] exp 0405: invitationdialog port on (items: Initialize Terminate Open Close GetResult; OpenA GetResultA held, not registered)
+tl20405: info InitAll's stderr: [bc5] exp 0405: webbrowserdialog port on (items: Open OpenForPredeterminedContent Close UpdateStatus GetResult SetCookie ResetCookie; NOT_INITIALIZED held: split state; GetEvent Navigate SetZoom F2BE held, not registered)
+tl20405: info InitAll's stderr: [bc5] exp 0405: shareplay port on (items: GetCurrentConnectionInfo GetCurrentConnectionInfoA; NOT_INITIALIZED held: split state; 20 held, not registered)
+tl20405: info InitAll's stderr: [bc5] exp 0405: gamelivestreaming port on (items: GetCurrentStatus2 GetProgramInfo ScreenInitializeSeparateModeParameter and 10 argument checks; NOT_INITIALIZED held: split state; 7 match; 25 held, not registered)
+tl20405: info InitAll's stderr: [bc5] exp 0405: voiceports port off
+tl20405: info InitAll's stderr: [bc5] exp 0401: KYTY_BC5_AMM_PRT_CMDS off
+tl20405: info InitAll's stderr: [bc5] exp 0401: KYTY_BC5_AMM_EXTRA_CMDS off
+tl20405: info InitAll's stderr: [bc5] exp 0401: KYTY_BC5_AMPR_WAITS off
+tl20405: info InitAll's stderr: [bc5] exp 0405: fw kernel off
+tl20405: info InitAll's stderr: [bc5] exp 0405: jit shm off
+tl20405: info InitAll's stderr: [bc5] exp 0405: posix return fixes off
+tl20405: info InitAll's stderr: [bc5] exp 0405: http2 fixes off
+tl20405: info InitAll's stderr: [bc5] exp 0405: npauth port off
+tl20405: info InitAll's stderr: [bc5] exp 0405: json2 off
+tl20405: info InitAll's stderr: [bc5] exp 0401: NpCppWebApi SessionManager V2 off (the loader's stubs)
+tl20405: info InitAll's stderr: [bc5] exp 0405: fw pad off
+tl20405: info InitAll's stderr: [bc5] exp 0405: pad open ext off
+tl20405: info InitAll's stderr: [bc5] exp 0405: fw-net off
+tl20405: info InitAll's stderr: [bc5] exp 0401: savedata fixes off
+tl20405: info InitAll's stderr: [bc5] exp 0401: savedata event callback off
+tl20405: info InitAll's stderr: [bc5] exp 0401: savedata sort off
+tl20405: info InitAll's stderr: [bc5] exp 0405: savedata memory fixes off
+tl20405: info InitAll's stderr: [bc5] exp 0405: savedata delete busy off
+tl20405: info InitAll's stderr: [bc5] exp 0405: savedata aliases off
+tl20405: info InitAll's stderr: [bc5] exp 0405: systemservice off
+tl20405: info InitAll's stderr: [bc5] exp 0405: systemservice-params-7-1000 off
+tl20405: info InitAll's stderr: [bc5] exp 0405: ult off
+tl20405: info InitAll's stderr: [bc5] exp 0405: userservice off
+tl20405: info InitAll's stderr: [bc5] exp 0405: equeue fixes off
+tl20405: info InitAll's stderr: [bc5] exp 0401: NpCppWebApi SessionManager V2 off (the loader's stubs)
+tl20405: case 1 the switches' line: ok (1 "[bc5] exp 0405: tables" line(s) over two InitAll calls, want one: "[bc5] exp 0405: tables on (items: nptus,npparty,nppartner,npsnsfacebook,voice,screenshot,discmap,ulobjmgr,companionhttpd,companionutil,invitationdialog,webbrowserdialog,shareplay,gamelivestreaming)")
+tl20405: case 2 InitAll's record list: ok (2140 records: the switched tables' 226 first (nptus 136, npparty 15, nppartner 3, npsnsfacebook 1, voice 6, screenshot 7, discmap 2, ulobjmgr 2, companionhttpd 12, companionutil 5, invitationdialog 7, webbrowserdialog 8, shareplay 2, gamelivestreaming 20), then today's InitAll's 1914, in order)
+tl20405: case 3 read once: ok (all 20 switches flipped before a second InitAll: the same 2140 records)
+tl20405: case 4 nptus (on): ok (136 NIDs [NpTus_v1][NpTus_v1.1][Func]: 136 new (by key: the table's functions); 0 kept live by key; NID-only lookups: 0 moved; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 5 npparty (on): ok (15 NIDs [NpParty_v1][NpParty_v1.1][Func]: 15 new (by key: the table's functions); 0 kept live by key; NID-only lookups: 0 moved; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 6 nppartner (on): ok (3 NIDs [NpPartner001_v1][NpPartner001_v1.1][Func]: 3 new (by key: the table's functions); 0 kept live by key; NID-only lookups: 0 moved; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 7 npsnsfacebook (on): ok (1 NIDs [NpSnsFacebookDialog_v1][NpSnsFacebookDialog_v1.1][Func]: 1 new (by key: the table's functions); 0 kept live by key; NID-only lookups: 0 moved; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 8 voice (on): ok (6 NIDs [Voice_v1][Voice_v1.1][Func]: 6 new (by key: the table's functions); 0 kept live by key; NID-only lookups: 0 moved; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 9 screenshot (on): ok (7 NIDs [ScreenShot_v1][ScreenShot_v1.1][Func]: 7 new (by key: the table's functions); 0 kept live by key; NID-only lookups: 0 moved; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 10 discmap (on): ok (2 NIDs [DiscMap_v1][DiscMap_v1.1][Func]: 2 new (by key: the table's functions); 0 kept live by key; NID-only lookups: 0 moved; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 11 ulobjmgr (on): ok (2 NIDs [ulobjmgr_v1][ulobjmgr_v1.1][Func]: 2 new (by key: the table's functions); 0 kept live by key; NID-only lookups: 0 moved; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 12 companionhttpd (on): ok (12 NIDs [CompanionHttpd_v1][CompanionHttpd_v1.1][Func]: 12 new (by key: the table's functions); 0 kept live by key; NID-only lookups: 0 moved; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 13 companionutil (on): ok (5 NIDs [CompanionUtil_v1][CompanionUtil_v1.1][Func]: 5 new (by key: the table's functions); 0 kept live by key; NID-only lookups: 0 moved; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 14 invitationdialog (on): ok (7 NIDs [InvitationDialog_v1][InvitationDialog_v1.1][Func]: 7 new (by key: the table's functions); 0 kept live by key; NID-only lookups: 0 moved; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 15 webbrowserdialog (on): ok (8 NIDs [WebBrowserDialog_v1][WebBrowserDialog_v1.1][Func]: 8 new (by key: the table's functions); 0 kept live by key; NID-only lookups: 0 moved; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 16 shareplay (on): ok (2 NIDs [SharePlay_v1][SharePlay_v1.1][Func]: 2 new (by key: the table's functions); 0 kept live by key; NID-only lookups: 0 moved; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 17 gamelivestreaming (on): ok (20 NIDs [GameLiveStreaming_v1][GameLiveStreaming_v1.1][Func]: 20 new (by key: the table's functions); 0 kept live by key; NID-only lookups: 0 moved; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: info batch 2: 226 records in the fourteen tables' own lists (at run time)
+tl20405: on 17 of 17; end

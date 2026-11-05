@@ -1,0 +1,21 @@
+[bc5] exp 0401 e9 (zcb): BC5_DIRECT_ZERO_SKIP_EXCLUDE off
+[bc5] exp 0401 e9 (zcb): BC5_DIRECT_ZERO_SKIP_COPYBACK off
+[bc5] exp 0401 e9 (zcb): BC5_DIRECT_ZERO_SKIP_PROBE off
+[bc5] exp 0401 e9 (zcb): BC5_DIRECT_SCRATCH_WATCH off
+zcb0401: case the switches (off): 25 of 25
+zcb0401: case the parse (pure): 32 of 32
+zcb0401: case the exclusion (pure): 8 of 8
+zcb0401: case the non-zero summary (pure): 5 of 5
+zcb0401: case the scratch watch's rule (pure): 11 of 11
+zcb0401: case the copy's chunk selection (pure): 11 of 11
+bc5 clock: journal t 0 = monotonic 64160.722 s
+zcb0401: case placement and exclusion (off): 14 of 14
+zcb0401: case CPU write (off): 5 of 5
+zcb0401: case canary hit, run 0 (off): 13 of 13
+zcb0401: case a timeout: the take-backs and the job's records (off): 1 of 1
+zcb0401: case canary hit, run 1, the wait's bound (off): 6 of 6
+zcb0401: case CPU writes, run 2 (off): 5 of 5
+zcb0401: case the scratch watch (off): 7 of 7
+zcb0401: case a later timeout (off): 3 of 3
+zcb0401: case the quiet filter and e8's lines (off): 18 of 18
+zcb0401: off 164 of 164; end
