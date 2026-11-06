@@ -10,6 +10,19 @@
 # into the private working directory. The freeze watcher (the top session's exp0401e3/freeze-watch.sh and freeze-dump.sh,
 # read-only gdb) and exp 0330's memory sampler run beside the emulator. BOX-LOCK by an atomic hard-link claim; only our
 # exact line is removed at the end. The kernel log is streamed by the laptop, not here.
+# Series e10 (2026-11-06, exp 0408 sections E and G6): three runner words, read here and passed on unchanged:
+#   BC5_0401T_LEARNED=empty   the arm's learned file starts empty instead of a copy of the live one. Each window the title
+#                             then needs outside the eager heaps is a GPU fault and a ring reset (F88); the first one ends
+#                             the arm under the stop rule below.
+#   BC5_0401T_MOUNT=<a bc5-mount under ~/bc5-work/exp0401*> with BC5_0401T_MOUNT_MD5=<its md5>: the derived launcher starts
+#                             that mount (exp 0381's setup0381r.sh swap) with its own log, exp0401t/mount-<tag>.log. No
+#                             bc5-mount may run at the start (the launcher would reuse its mount); the running mount's md5
+#                             and every BC5_MOUNT_* word of the arm are checked in its environment. A BC5_MOUNT_* word
+#                             without a private mount is refused (the shared mount may not know it).
+#   BC5_0401T_WALK=<s>        route mode only: from G, <s> s of exp 0379's walk (gtt/mk-walk0379.py): the left stick
+#                             forward 15 s, a right-stick turn of 1.2 s that changes side every fourth cycle, 0.3 s pause.
+# Every arm also writes <tag>-io.txt: each minute the mount's and the emulator's rchar and read_bytes (/proc/<pid>/io), to
+# tell whether the arm streamed, and the learned file's line count at the end.
 # usage (on the box): MODE=start|route run0401t.sh <live saves sum, LC_ALL=C> <tag> <cap s> <play s> <binary> <md5> [KEY=VALUE ...]
 set -u
 export LC_ALL=C
@@ -21,14 +34,27 @@ case "$MODE" in start | route) ;; *) echo "MODE is start or route"; exit 1 ;; es
 case "$TAG" in *[!A-Za-z0-9]* | "") echo "the tag is letters and digits"; exit 1 ;; esac
 # Exp 0401 e9: BC5_0401_LATE_UNSET=<NAME>[,<NAME>...] (upper-case names) unsets words the launcher exports itself; never
 # the frame profile, which the route gates on.
+LEARNED_EMPTY=0; MOUNT_BIN=""; MOUNT_MD5=""; WALK=""; MOUNT_WORDS=()  # exp 0401 e10
 for w in "${SWITCHES[@]}"; do
   case "$w" in
     BC5_0401_LATE_UNSET=*)
       v=${w#BC5_0401_LATE_UNSET=}
       [[ "$v" =~ ^[A-Z][A-Z0-9_]*(,[A-Z][A-Z0-9_]*)*$ ]] || { echo "BC5_0401_LATE_UNSET is a comma list of names: not started"; exit 1; }
       case ",$v," in *,BC5_DIRECT_FRAME_PROFILE,*) echo "the route needs BC5_DIRECT_FRAME_PROFILE: not started"; exit 1 ;; esac ;;
+    BC5_0401T_LEARNED=*) [ "${w#*=}" = empty ] || { echo "BC5_0401T_LEARNED takes only empty: not started"; exit 1; }; LEARNED_EMPTY=1 ;;
+    BC5_0401T_MOUNT=*)
+      MOUNT_BIN=${w#*=}
+      case "$MOUNT_BIN" in "$HOME"/bc5-work/exp0401*/bc5-mount) ;; *) echo "BC5_0401T_MOUNT names a bc5-mount under ~/bc5-work/exp0401*: not started"; exit 1 ;; esac
+      case "$MOUNT_BIN" in *..* | *[!A-Za-z0-9/_.-]*) echo "BC5_0401T_MOUNT is a plain path: not started"; exit 1 ;; esac ;;
+    BC5_0401T_MOUNT_MD5=*) MOUNT_MD5=${w#*=}; [[ "$MOUNT_MD5" =~ ^[0-9a-f]{32}$ ]] || { echo "BC5_0401T_MOUNT_MD5 is an md5: not started"; exit 1; } ;;
+    BC5_0401T_WALK=*) WALK=${w#*=}; [[ "$WALK" =~ ^[0-9]+$ ]] && [ "$WALK" -ge 60 ] && [ "$WALK" -le 1200 ] || { echo "BC5_0401T_WALK is 60-1200 s: not started"; exit 1; } ;;
+    BC5_MOUNT_*=*) MOUNT_WORDS+=("$w") ;;
   esac
 done
+{ [ -n "$MOUNT_BIN" ] && [ -n "$MOUNT_MD5" ]; } || { [ -z "$MOUNT_BIN" ] && [ -z "$MOUNT_MD5" ]; } || { echo "BC5_0401T_MOUNT and BC5_0401T_MOUNT_MD5 come together: not started"; exit 1; }
+[ "${#MOUNT_WORDS[@]}" = 0 ] || [ -n "$MOUNT_BIN" ] || { echo "a BC5_MOUNT_* word needs BC5_0401T_MOUNT: not started"; exit 1; }
+[ -z "$WALK" ] || [ "$MODE" = route ] || { echo "BC5_0401T_WALK is for route arms: not started"; exit 1; }
+[ -z "$WALK" ] || [ "$WALK" -le "$PLAY" ] || { echo "the walk is longer than the play: not started"; exit 1; }
 [ "$SECS" -ge 120 ] && [ "$SECS" -le 1200 ] || { echo "the cap is 120-1200 s"; exit 1; }
 W=$HOME/bc5-work; E=$W/exp0401t; R=$E/raw; LOCK=$W/BOX-LOCK; E30=$W/exp0330
 SD=$W/_SaveData/PPSA03671
@@ -38,6 +64,10 @@ mkdir -p "$R"
 pgrep '^kyty_emulator' > /dev/null && { echo "an emulator is running: not started"; exit 1; }
 [ "$(md5sum < "$BIN" | cut -d' ' -f1)" = "$WANT" ] || { echo "$BIN is not md5 $WANT: not started"; exit 1; }
 [ -x "$LAUNCH_SRC" ] && [ -x "$E30/sample0330.sh" ] && [ -f "$LEARN_SRC" ] && [ -f "$FW" ] && [ -f "$FD" ] || { echo "no $LAUNCH_SRC, sample0330.sh, $LEARN_SRC, $FW or $FD"; exit 1; }
+if [ -n "$MOUNT_BIN" ]; then   # exp 0401 e10
+  [ -x "$MOUNT_BIN" ] && [ "$(md5sum < "$MOUNT_BIN" | cut -d' ' -f1)" = "$MOUNT_MD5" ] || { echo "$MOUNT_BIN is not md5 $MOUNT_MD5: not started"; exit 1; }
+  pgrep -x bc5-mount > /dev/null && { echo "a bc5-mount runs, and the launcher would reuse its mount: not started"; exit 1; }
+fi
 saves() { (cd "$W/_SaveData" && find PPSA03671 -type f -exec md5sum {} + | sort -k2 | md5sum | cut -c1-16); }  # exp 0253's ab0253.sh, LC_ALL=C
 LIVE=$(saves)
 [ "$LIVE" = "$EXPECT_SAVES" ] || { echo "the live saves read $LIVE (LC_ALL=C), not $EXPECT_SAVES: not started"; exit 1; }
@@ -72,7 +102,7 @@ trap 'echo "$(date "+%F %T") $TAG aborted" >> "$R/saves.txt"; exit 1' HUP INT TE
 # 1. The private input configuration (RT on, JobArenaFix on) and the private learned file.
 CFG=$E/input-$TAG.cfg
 { grep -v -i "^RayTracing\.PPSA03671=\|^JobArenaFix\.PPSA03671=" "$W/input.cfg"; echo "RayTracing.PPSA03671=on"; echo "JobArenaFix.PPSA03671=on"; } > "$CFG" || exit 1
-cp -p "$LEARN_SRC" "$LEARN" || exit 1
+if [ "$LEARNED_EMPTY" = 1 ]; then : > "$LEARN" || exit 1; else cp -p "$LEARN_SRC" "$LEARN" || exit 1; fi  # exp 0401 e10: BC5_0401T_LEARNED
 # 2. The derived launcher: exp 0382's four changed lines and one added line, checked by anchor and by diff size.
 PLAY_PKG_MD5=${PLAY_PKG_MD5:-97835f8850cc22ece5c4bcdbbb646912}
 [ "$(md5sum < "$LAUNCH_SRC" | cut -d' ' -f1)" = "$PLAY_PKG_MD5" ] || { echo "$LAUNCH_SRC is not $PLAY_PKG_MD5: not started"; exit 1; }
@@ -89,8 +119,16 @@ sed -i -e 's#^LOG=~/bc5-work/play-pkg-last\.log$#LOG=~/bc5-work/exp0401t/play-la
        -e 's#^export BC5_DIRECT_LEARNED=\$HOME/bc5-work/direct-learned-pkg\.txt$#export BC5_DIRECT_LEARNED=$HOME/bc5-work/exp0401t/direct-learned-pkg.txt  \# exp 0401t: a private copy#' "$LAUNCH" || exit 1
 sed -i '/^done < "\$ENVF"$/a [ -n "${BC5_0401T_INPUT_CONFIG:-}" ] \&\& export KYTY_BC5_INPUT_CONFIG=$BC5_0401T_INPUT_CONFIG  # exp 0401t' "$LAUNCH" || exit 1
 sed -i '/^cd ~\/bc5-work\/exp0401t\/wd  /i [ -z "${BC5_0401_LATE_UNSET:-}" ] || unset ${BC5_0401_LATE_UNSET//,/ }  # exp 0401 e9: launcher words an arm takes back' "$LAUNCH" || exit 1
+NL=10
+if [ -n "$MOUNT_BIN" ]; then   # exp 0401 e10: the private mount and its own log (two more lines changed)
+  chk 'BM=~/bc5-work/bc5-tools-ubuntu/release/bc5-mount'
+  chk 'MLOG=~/bc5-work/play-pkg-mount.log'
+  sed -i -e "s#^BM=~/bc5-work/bc5-tools-ubuntu/release/bc5-mount\$#BM=$MOUNT_BIN  \# exp 0401 e10: a private mount#" \
+         -e "s#^MLOG=~/bc5-work/play-pkg-mount\.log\$#MLOG=$E/mount-$TAG.log  \# exp 0401 e10: its own mount log#" "$LAUNCH" || exit 1
+  NL=14
+fi
 diff -u "$LAUNCH_SRC" "$LAUNCH" > "$R/play-pkg-0401t.diff"
-[ "$(grep -c '^[-+][^-+]' "$R/play-pkg-0401t.diff")" = 10 ] || { echo "the derived launcher's diff is not 4 lines changed + 2 added: not started"; exit 1; }
+[ "$(grep -c '^[-+][^-+]' "$R/play-pkg-0401t.diff")" = "$NL" ] || { echo "the derived launcher's diff is not 4 lines changed + 2 added (+ 2 changed with a private mount): not started"; exit 1; }
 bash -n "$LAUNCH" || { echo "the derived launcher does not parse: not started"; exit 1; }
 chmod +x "$LAUNCH"
 LOG=$E/play-last.log
@@ -112,18 +150,39 @@ CMD=$E/in-$TAG.cmd
 printf 'wait 1000\n' > "$CMD"; rm -f "$CMD.done"
 ENVS=(BC5_EMU="$BIN" BC5_0401T_INPUT_CONFIG="$CFG" KYTY_BC5_INPUT_CMD="$CMD" "${SWITCHES[@]}")
 N=$(sudo -n dmesg 2> /dev/null | wc -l)
-{ date '+%F %T'; echo "arm $TAG, mode $MODE, cap $SECS s, play $PLAY s, binary $BIN md5 $WANT, launcher $LAUNCH md5 $(md5sum < "$LAUNCH" | cut -c1-8)"; echo "env: ${ENVS[*]}"; echo "boot $(cut -c1-8 /proc/sys/kernel/random/boot_id), up since $(uptime -s)"; } > "$R/$TAG-start.txt"
+{ date '+%F %T'; echo "arm $TAG, mode $MODE, cap $SECS s, play $PLAY s, binary $BIN md5 $WANT, launcher $LAUNCH md5 $(md5sum < "$LAUNCH" | cut -c1-8)"; echo "env: ${ENVS[*]}"; echo "boot $(cut -c1-8 /proc/sys/kernel/random/boot_id), up since $(uptime -s)"; echo "learned file: $([ "$LEARNED_EMPTY" = 1 ] && echo empty || echo "a copy of $LEARN_SRC"), $(grep -c . "$LEARN") lines; mount: ${MOUNT_BIN:-the shared one}; walk: ${WALK:-none}"; } > "$R/$TAG-start.txt"
 "$E30/sample0330.sh" "$R/$TAG-mem.txt" $((SECS + 60)) < /dev/null > /dev/null 2>&1 & SP=$!
 setsid nohup bash -c 'distrobox enter ubuntu -- env "$@"; echo "launcher exit $?"' _ "${ENVS[@]}" "$LAUNCH" < /dev/null > "$R/$TAG-launch.out" 2>&1 &
 for _ in $(seq 1 120); do EP=$(pgrep -o '^kyty_emulator') && break; sleep 0.5; done
-T0=$(date +%s); ENDED=""
+T0=$(date +%s); ENDED=""; MPID=""; IOT=0; WALKED=0  # exp 0401 e10: MPID, IOT, WALKED
 envof() { tr '\0' '\n' < "/proc/$1/environ" 2> /dev/null; }
+iof() { if [ -n "$1" ] && [ -r "/proc/$1/io" ]; then awk '/^rchar:/ {r = $2} /^read_bytes:/ {b = $2} END {printf "%s %s", r, b}' "/proc/$1/io"; else printf '? ?'; fi; }  # exp 0401 e10
+wk() {   # exp 0401 e10: BC5_0401T_WALK's cycles into the input script, then the sticks centred
+  local c=0 t=0 side
+  while [ $((t + 16500)) -le $((WALK * 1000)) ]; do
+    side=255; [ $(((c / 4) % 2)) = 1 ] && side=0
+    printf 'stick l 128 0 15000\nstick r %d 128 1200\nwait 300\n' "$side" >> "$CMD"
+    c=$((c + 1)); t=$((t + 16500))
+  done
+  printf 'stick l 128 128\nstick r 128 128\n' >> "$CMD"
+  echo "$c"
+}
 if [ -z "$EP" ]; then ENDED="SETUP: no emulator started"
 else
   echo "emulator pid $EP exe $(readlink "/proc/$EP/exe") cwd $(readlink "/proc/$EP/cwd")" >> "$R/$TAG-start.txt"
   [ "$(md5sum < "/proc/$EP/exe" | cut -d' ' -f1)" = "$WANT" ] || ENDED="SETUP: the emulator is not md5 $WANT"
   for w in "${SWITCHES[@]}" "KYTY_BC5_SAVEDATA_DIR=$SDD" "BC5_DIRECT_LEARNED=$LEARN" "KYTY_BC5_INPUT_CONFIG=$CFG"; do envof "$EP" | grep -qxF -- "$w" || { ENDED="SETUP: the emulator's environment lacks $w"; break; }; done
   [ "$(readlink -f "/proc/$EP/cwd")" = "$(readlink -f "$WD")" ] || ENDED="SETUP: the emulator's working directory is not $WD"
+  MPID=$(pgrep -n -x bc5-mount)   # exp 0401 e10
+  if [ -n "$MOUNT_BIN" ] && [ -z "$ENDED" ]; then
+    if [ -z "$MPID" ]; then ENDED="SETUP: no bc5-mount runs"
+    else
+      echo "mount pid $MPID exe $(readlink "/proc/$MPID/exe")" >> "$R/$TAG-start.txt"
+      [ "$(md5sum < "/proc/$MPID/exe" | cut -d' ' -f1)" = "$MOUNT_MD5" ] || ENDED="SETUP: the mount is not md5 $MOUNT_MD5"
+      for w in "${MOUNT_WORDS[@]}"; do envof "$MPID" | grep -qxF -- "$w" || { ENDED="SETUP: the mount's environment lacks $w"; break; }; done
+    fi
+  fi
+  echo "# t mount_rchar mount_read_bytes emu_rchar emu_read_bytes (mount pid ${MPID:-none}, emulator pid $EP)" > "$R/$TAG-io.txt"
   bash "$FW" "$LOG" "$FD" "$R/freeze-$TAG" < /dev/null > "$R/$TAG-freeze-watch.txt" 2>&1 & FP=$!
 fi
 gate() {
@@ -134,6 +193,7 @@ J=""; RS=0; K=0; FASTN=0; PREV=0; LOADT=""; G=""; LISTED=""
 while [ -z "$ENDED" ] && [ $(($(date +%s) - T0)) -lt "$SECS" ]; do
   NOW=$(($(date +%s) - T0))
   [ -d "/proc/$EP" ] || { ENDED="ended by itself at $NOW s"; break; }
+  if [ "$NOW" -ge "$IOT" ]; then echo "$NOW $(iof "$MPID") $(iof "$EP")" >> "$R/$TAG-io.txt"; IOT=$((IOT + 60)); fi   # exp 0401 e10
   if [ -z "$J" ] && [ "$NOW" -ge 60 ]; then
     J=$(ls -td ~/bc5-data/captures/play-*/gc 2> /dev/null | head -1)/direct.log
     if [ ! -f "$J" ] || [ "$(stat -c %Y "$J")" -lt "$T0" ]; then ENDED="SETUP: no journal of this run by $NOW s"; break; fi
@@ -162,6 +222,7 @@ while [ -z "$ENDED" ] && [ $(($(date +%s) - T0)) -lt "$SECS" ]; do
     esac
     [ -n "$ENDED" ] && break
   fi
+  if [ -n "$G" ] && [ -n "$WALK" ] && [ "$WALKED" = 0 ]; then WALKED=1; echo "route: walk of $(wk) cycles ($WALK s) queued at $NOW s" >> "$R/$TAG-start.txt"; fi   # exp 0401 e10
   [ -n "$G" ] && [ "$NOW" -ge $((G + PLAY)) ] && break
   if sudo -n dmesg 2> /dev/null | tail -n +"$((N + 1))" | grep -qi "amdgpu.*\(timeout\|reset\|fault\)"; then
     sleep 25
@@ -182,6 +243,7 @@ sleep 3; [ -n "$SP" ] && kill "$SP" 2> /dev/null; SP=""; [ -n "$FP" ] && kill "$
 LGONE=no; for _ in $(seq 1 60); do pgrep -f "exp0401t/play-pkg-0401t.sh" > /dev/null || { LGONE=yes; break; }; sleep 1; done
 echo "launcher gone: $LGONE" >> "$R/$TAG-start.txt"
 echo "$TAG ${ENDED:-ended at G+$PLAY} (after $DUR s; G ${G:-none}, list ${LISTED:-none})" > "$R/$TAG-end.txt"
+echo "# learned file at the end: $(grep -c . "$LEARN") lines ($([ "$LEARNED_EMPTY" = 1 ] && echo "started empty" || echo "started as a copy of the live one"))" >> "$R/$TAG-io.txt"   # exp 0401 e10
 if [ -f "$LOG" ] && [ "$(stat -c %Y "$LOG")" -ge "$T0" ]; then cp -p "$LOG" "$R/$TAG-play.log"; else echo "no log of this run at $LOG" > "$R/$TAG-play.log"; fi
 grep -a -B2 -A12 "Access violation\|Segmentation\|Aborted\|terminate called\|exception_address\|--- Error ---" "$R/$TAG-play.log" | head -80 > "$R/$TAG-crash.txt" 2> /dev/null
 grep -a "\[bc5\] exp 040[0-9]\|exp 040[0-9]: " "$R/$TAG-play.log" | sort | uniq -c | sort -rn | head -40 > "$R/$TAG-switch-lines.txt"
