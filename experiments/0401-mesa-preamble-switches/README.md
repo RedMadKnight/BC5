@@ -612,4 +612,75 @@ Both resets succeeded and the box did not reboot. The column "after a reset" cou
   - point 0 landed on the empty record (count 0) in 254 draws in model 0 and 35 in model 1;
   - smp printed no timeout walk in either hung arm, because both hangs were in the acb.
 
+**Series e9: e8 plus the hang fixes and catchers and exp 0406's switches (2026-11-05/06, the top session's order after
+the deep analysis and the box reads; his yes in this session).**
+
+*His shortcut.* "BC5 emulator (test 0401 CP+acb)" now runs e8 (dc7fb4e0) without the zero skip, by his choice
+(`shortcut0401.sh` mode cpacb):
+- .desktop md5 844a819f, 65 words: e6's without FL_CRUMBS, plus JOURNAL_QUIET;
+- mode cpacb-e6 is the rollback; it rewrites the old file (cb3fa0a8) byte for byte.
+
+*The build* (`raw/e9/`, binary de6a0ad520cd6ce52682f8d870414abe, launcher 88181f41). The main unit chains bd181169 →
+zcb 2fcf42d2 → gvw e8938633 → p406 4761c532. p406 also writes audio.cpp, 1f90e752 → 8db6d9cc. Every switch is default
+off:
+- zcb (`mkzcb0401.py`, `zcb0401-notes.md`): `BC5_DIRECT_ZERO_SKIP_EXCLUDE`, `_COPYBACK`, `_PROBE` and
+  `BC5_DIRECT_SCRATCH_WATCH`.
+- gvw (`mkgvw0401.py`, `gvw0401-notes.md`): `BC5_DIRECT_WAIT_LATE_PRODUCER_MS`, `_UNWAITED_FL_DROP`, `_GIVEUP_JOURNAL`
+  and `_FL_MESHLET_SAMPLE_UNWAITED`.
+  - The late-producer wait does not wait for an acb that the same thread rings later, because that wait would deadlock.
+  - The e9 journals show that was every case.
+- p406 (`mkp4060401.py`, `p4060401-notes.md`): `BC5_0406_LEARNED_PRUNE` (`eager`: only the skip of windows inside
+  eager views; `1`: also drops 32 junk windows with their zero pages) and `BC5_0406_AUDIO_SLEEP`.
+  - The audio sleep needs exp 0372's replug check before any play with it on.
+  - `BC5_0406_PROBE_LAZY` is left out: at the completion thread's timeout the job owns no copy of its buffer.
+
+*Checks.*
+- Laptop stand-ins on the chained unit: zcb0401 221/164/164, gvw0401 325/173/173, smp0401 61/61, p4060401 492 in every
+  mode.
+- Mutants: 20/20, 21/21 and 28/28.
+- `test0401.py`: 34 of 34.
+- On the box (GCC, the real link): zcb0401 221/164, gvw0401 325/173, p4060401 471/471, and every older gate.
+- The first build stopped at the 80 % disk guard. 172 old gate-test executables were removed from exp0401e4–e9/raw;
+  binaries and launchers were kept.
+
+*Profiles* (`profile0401.sh`, on the box in ~/bc5-work/exp0401e9):
+- `play-e9-normal.sh` (46db819c): his shortcut's 65 words.
+- `play-e9-lean.sh` (ca2df8d7, 62 words):
+  - without exp 0406's six catcher drops (ACB_INHERIT journal, R3_REWIND_CATCH, R3_DROP_CATCH, AMM_PRT_CMDS,
+    AMM_EXTRA_CMDS, TABLE_CATCHER);
+  - with LEARNED_PRUNE=eager and the late-producer wait (250 ms);
+  - and with the launcher's own FRAME_PROFILE, AUDIO_TRACE, MEASURE and GPU_CHECK_PRODUCT taken back. This uses the
+    launcher's new `BC5_0401_LATE_UNSET` line. GPU_CHECK_PRODUCT is unset, not set to 0, because F767 may not be in
+    the shared archive.
+- The route arms keep the frame profile; `run0401t.sh` refuses to take it back.
+
+**Series e9 results** (2026-11-06 00:31–01:50, boot 9af31fd4, his slot-4 save, RT on, G+600, live saves 558115f366fb11cb
+before and after every arm; `raw/night/e9*-*.txt`):
+
+| Arm | Profile | End | G (s) | flips/s | Longest gap (ms) | Memory floor (MiB) |
+|---|---|---|---|---|---|---|
+| e9n1 | normal | G+600 | 159 | 32.5 | 5,932 | 192 |
+| e9l1 | lean | GPU hang at G+163, reset ok | 142 | 17.6 | 1,426 | 118 |
+| e9l2 | lean | G+600 | 140 | 34.8 | 2,047 | 172 |
+| e9n2 | normal | G+600 | 143 | 34.0 | 2,069 | 218 |
+| e9n3 | normal | G+600 | 144 | 34.3 | 2,702 | 110 |
+| e9l3 | lean | the emulator ended at 352 s: a guest write to address 0 | 142 | 15.4 | 2,775 | 189 |
+| e9l4 | lean | G+600 | 139 | 35.4 | 2,022 | 200 |
+
+- **Lean failed in 2 of 4 arms, normal in 0 of 3** (Fisher two-sided p ≈ 0.43). Both failures are null pointers.
+  - e9l1: a shader of the per-frame RT acb read page 0 (TCP, a VM read fault).
+    - It is F686's near-class, not F403: SPI busy, TA/TCP idle, F403's PFP/ME positions.
+    - It came in a frame with given-up waits, at a memory floor of 118 MiB.
+    - `hang1954-0401.md`, section "e9l1 00:49 (e9 lean)".
+  - e9l3: the title's own copy routine wrote to address 0 (`raw/night/e9l3-crash.txt`; the code bytes are kept in
+    laptop scratch only).
+- Which lean change causes them is not known.
+  - The candidates are the six drops, LEARNED_PRUNE=eager, and the launcher's GPU_CHECK_PRODUCT, AUDIO_TRACE and
+    MEASURE taken back.
+  - Ruled out: the "shared map at 0x0" line comes about 2,000 times in every arm, normal too, and the AMM command lines
+    are the same in both profiles.
+- **Frame rate:** clean lean arms 34.8 and 35.4 flips/s against normal's 32.5–34.3 (mean 33.6), about +4 %. The gaps are
+  alike.
+- The series stopped at e9l3's crash, under the stop rule. The arms not run: e9n4, e9g1, e9z1, e9w1, e9x1, e9g2, e9z2.
+
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.

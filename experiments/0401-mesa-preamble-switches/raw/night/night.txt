@@ -276,3 +276,19 @@ summary: e9n1 (route): ended at G+600 after 759 s (G 159, list 109); 32.5 flips/
 run rc 0: e9l1 (route): GPU HANG: ring reset succeeded at 305 s after 330 s (G 142, list 95); 17.6 flips/s over 296 s, 174 seconds with a gap over 100 ms, longest 1426 ms; memory floor 118 MiB available (sampler); crash lines 0, kernel lines 44, freeze dumps 1, devcoredumps 2 
 summary: e9l1 (route): GPU HANG: ring reset succeeded at 305 s after 330 s (G 142, list 95); 17.6 flips/s over 296 s, 174 seconds with a gap over 100 ms, longest 1426 ms; memory floor 118 MiB available (sampler); crash lines 0, kernel lines 44, freeze dumps 1, devcoredumps 2
 == 2026-11-06 00:49:53 all arms done
+== 2026-11-06 00:52:34 arm e9l2 (route, cap 900 s, play 600 s)
+run rc 0: e9l2 (route): ended at G+600 after 743 s (G 140, list 94); 34.8 flips/s over 738 s, 251 seconds with a gap over 100 ms, longest 2047 ms; memory floor 172 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: e9l2 (route): ended at G+600 after 743 s (G 140, list 94); 34.8 flips/s over 738 s, 251 seconds with a gap over 100 ms, longest 2047 ms; memory floor 172 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-06 01:05:24 arm e9n2 (route, cap 900 s, play 600 s)
+run rc 0: e9n2 (route): ended at G+600 after 745 s (G 143, list 94); 34.0 flips/s over 740 s, 245 seconds with a gap over 100 ms, longest 2069 ms; memory floor 218 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: e9n2 (route): ended at G+600 after 745 s (G 143, list 94); 34.0 flips/s over 740 s, 245 seconds with a gap over 100 ms, longest 2069 ms; memory floor 218 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-06 01:18:14 arm e9n3 (route, cap 900 s, play 600 s)
+run rc 0: e9n3 (route): ended at G+600 after 747 s (G 144, list 95); 34.3 flips/s over 742 s, 231 seconds with a gap over 100 ms, longest 2702 ms; memory floor 110 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: e9n3 (route): ended at G+600 after 747 s (G 144, list 95); 34.3 flips/s over 742 s, 231 seconds with a gap over 100 ms, longest 2702 ms; memory floor 110 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-06 01:31:00 arm e9l3 (route, cap 900 s, play 600 s)
+run rc 0: e9l3 (route): ended by itself at 352 s after 353 s (G 142, list 94); 15.4 flips/s over 345 s, 211 seconds with a gap over 100 ms, longest 2775 ms; memory floor 189 MiB available (sampler); crash lines 2, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: e9l3 (route): ended by itself at 352 s after 353 s (G 142, list 94); 15.4 flips/s over 345 s, 211 seconds with a gap over 100 ms, longest 2775 ms; memory floor 189 MiB available (sampler); crash lines 2, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-06 01:37:12 arm e9l4 (route, cap 900 s, play 600 s)
+run rc 0: e9l4 (route): ended at G+600 after 743 s (G 139, list 93); 35.4 flips/s over 738 s, 224 seconds with a gap over 100 ms, longest 2022 ms; memory floor 200 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: e9l4 (route): ended at G+600 after 743 s (G 139, list 93); 35.4 flips/s over 738 s, 224 seconds with a gap over 100 ms, longest 2022 ms; memory floor 200 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-06 01:49:55 all arms done

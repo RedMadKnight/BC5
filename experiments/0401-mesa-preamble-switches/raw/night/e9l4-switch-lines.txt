@@ -1,0 +1,49 @@
+      1 [bc5] exp 0406 (p406): learned prune on, mode eager (BC5_0406_LEARNED_PRUNE=eager): map_window left out for windows inside eager heaps, the junk windows kept and filled as e8; learned_apply calls over 5 ms counted, one line a minute
+      1 [bc5] exp 0406 (p406): audio sleep off (BC5_0406_AUDIO_SLEEP unset): the 500-us poll
+      1 [bc5] exp 0405: zlib port on (items: Initialize Finalize Inflate WaitForDone GetResult)
+      1 [bc5] exp 0405: voiceports port off
+      1 [bc5] exp 0405: userservice on (items: age login name zoom)
+      1 [bc5] exp 0405: ult on (items: join queue)
+      1 [bc5] exp 0405: tls fixes on (items: kl01 kl02)
+      1 [bc5] exp 0405: thread sync on (items: kk06,kk03,signalto,x87,kk07)
+      1 [bc5] exp 0405: tables on (items: zlib,jpeg,ime,npcommon,npmanager,nptrophy)
+      1 [bc5] exp 0405: systemservice-params-7-1000 on (items: 7 1000)
+      1 [bc5] exp 0405: systemservice on (items: int table string)
+      1 [bc5] exp 0405: sema on (items: attr,signal)
+      1 [bc5] exp 0405: savedata memory fixes on (items: sync lock existed)
+      1 [bc5] exp 0405: savedata delete busy on (items: delete)
+      1 [bc5] exp 0405: savedata aliases on (items: initialize)
+      1 [bc5] exp 0405: posix return fixes on (items: unlink munmap mprotect trywrlock schedparam once)
+      1 [bc5] exp 0405: pad open ext on (items: openext)
+      1 [bc5] exp 0405: nptrophy port on (items: context handle register unlock info icon setinfo dbg)
+      1 [bc5] exp 0405: npmanager port on (items: account presence plus request timeout wait callback)
+      1 [bc5] exp 0405: npcommon port on (items: ids mutex cond thread clock sdkversion callout)
+      1 [bc5] exp 0405: npauth port off
+      1 [bc5] exp 0405: ngs2 rack fix on (items: ka03 ka08)
+      1 [bc5] exp 0405: mmap shim fixes on (items: hint prot)
+      1 [bc5] exp 0405: mem on (items: BC5_R3_MPROTECT_GAPS,BC5_R3_NULL_ARGS,BC5_R3_RELEASE_HOLES,BC5_R3_MUNMAP_HOLES,BC5_R3_FLEX_HINT,BC5_R3_DMQ_END,BC5_R3_EXEC_EINVAL,BC5_R3_QUERY_SIZE)
+      1 [bc5] exp 0405: json2 on (items: value string array object)
+      1 [bc5] exp 0405: jpeg port on (items: Create Delete QueryMemorySize Encode-checks; Encode itself held)
+      1 [bc5] exp 0405: jit shm on (items: create,alias,map,close)
+      1 [bc5] exp 0405: ime port on (items: panel test; the 7 NIDs of the live Ime table not registered)
+      1 [bc5] exp 0405: http2 fixes on (items: async ssl agent)
+      1 [bc5] exp 0405: gpu on (items: BC5_R3_MEMSEM_SIGNAL, BC5_R3_SUBMIT_EOP_EVENT, BC5_R3_COND_WRITE, BC5_R3_WAIT_IDLE, BC5_R3_TS_100MHZ)
+      1 [bc5] exp 0405: fw-net on (items: rtc rudp resolver param400 npwebapi)
+      1 [bc5] exp 0405: fw pad on (items: infotype argchecks queries)
+      1 [bc5] exp 0405: fw kernel on (items: notify)
+      1 [bc5] exp 0405: fw audio on (items: pcmloop audio3d audio3dstrict ngs2 avplayer)
+      1 [bc5] exp 0405: fs fixes on (items: kk04 sk04 blksize nametoolong kk10 sk05)
+      1 [bc5] exp 0405: equeue fixes on (items: kk02 sk03 g1 kk01)
+      1 [bc5] exp 0405: audioout checks on (items: ka01 ka02)
+      1 [bc5] exp 0405: audioin checks on (items: ka06 ka07)
+      1 [bc5] exp 0401: videoout status on: resolution 2 at the first sceVideoOutGetOutputStatus (port size 1280x720, 0 buffer sets registered; today's answer 1)
+      1 [bc5] exp 0401: savedata sort on
+      1 exp 0401: CP_COHER_START_DELAY 0x20 in every prefix (SET_UCONFIG_REG 0x7b)
+      1 exp 0401: SPI_SHADER_REQ_CTRL_PS off
+      1 exp 0401: acb CS prefix off
+      1 exp 0401: acb state restore (exp 0381) on (a graphics buffer that dispatches gets the graphics queue's tracked compute registers in front)
+      1 exp 0401: memory line every 10 s (MemAvailable, swap, PSI memory, GTT)
+      1 exp 0401: table catcher off
+      1 exp 0403: acb inherit off
+      1 exp 0404: fl crumbs off
+      1 exp 0404: fl skip es off

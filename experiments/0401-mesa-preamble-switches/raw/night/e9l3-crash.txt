@@ -1,0 +1,22 @@
+kyty_exception_handler: 0000000930003d83
+=== HOST EXCEPTION REGISTER DUMP ===
+exception_address=0x0x930003d83
+native_code=0x0xb
+access_violation_vaddr=0x0x0
+rax=0x0x0 rbx=0x0x10367fb590 rcx=0x0x30e010 rdx=0x0x63
+rsi=0x0x10367fb590 rdi=0x0x0 rbp=0x0x10367fb530 rsp=0x0x10367fb530
+r8 =0x0x1002e00000 r9 =0x0x0 r10=0x0xffdfffff r11=0x0x1002e00100
+r12=0x0x0 r13=0x0x90a1aa6f8 r14=0x0x90a1aa710 r15=0x0x63
+bc5-direct: shared map at 0x0+0x10000: -22
+code-32: (32 bytes of the title's code at the fault, kept in laptop scratch only)
+exception: type=AccessViolation, av_type=Write, av_addr=0000000000000000, native_code=0000000b
+regs: rax=0000000000000000 rbx=00000010367fb590 rcx=000000000030e010 rdx=0000000000000063
+regs: rsi=00000010367fb590 rdi=0000000000000000 rbp=00000010367fb530 rsp=00000010367fb530
+regs: r8 =0000001002e00000 r9 =0000000000000000 r10=00000000ffdfffff r11=0000001002e00100
+--
+Source build f266548-dirty
+--- Stack Trace ---
+--- Error ---
+Access violation: Write [0000000000000000] 
+ in /home/kjaniszewski/bc5-work/exp0401e9/x5-tls/src/loader/runtimeLinker.cpp:1166
+== 2026-11-06 01:36:57 exit 65
