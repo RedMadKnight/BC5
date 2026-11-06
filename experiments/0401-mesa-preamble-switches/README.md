@@ -745,4 +745,17 @@ The series stopped at e9w1's crash, under the stop rule. The arms not run: e9x1,
 - The late-producer wait must stay off. Lean as written on the box (`play-e9-lean.sh`) carries it.
 - The lean bisect should be run again with lean minus the wait.
 
+**Plan change (2026-11-06, the maintainer's words in exp 0408's review session, relayed by the top session).** "przekaż
+sesji nadrzędnej, że ma przebudować wszystko zgodnie z Twoimi rekomendacjami i przekazać innym sesją by odrzuciły swoje
+zmiany - chyba ze ich nie uwzględniłeś jeszcze". What that drops here, with the commits kept as records:
+- Shortcut mode cpacb with `KYTY_BC5_MEMORY_FROM_PARAM=1` (db961af8, dry run 3cdcbf19): **not installed, not to be
+  installed.** His shortcut stays e8 without the zero skip (844a819f). Exp 0408 §B4a: `FROM_PARAM` is worth ~120 MiB
+  pinned, and the "smooth" play it was credited with lasted 155 s.
+- The AMM pool fix (`ammpool0401-notes.md`, 859c8aad: D1 `KYTY_BC5_AMM_SCATTER`, D2, D3): not built. The fatal it fixes
+  comes only with `FROM_PARAM=1`.
+- The late-producer wait (`BC5_DIRECT_WAIT_LATE_PRODUCER_MS`): stays in the binary as a default-off switch, and no
+  profile, arm or shortcut sets it again.
+- The e10 plan "AMM fix + exp 0407's five changes" is cancelled. Series e10 follows exp 0408's §G6
+  (exp/0408-memory-review). Memory A/B arms must walk or use his plays (0408 §A.2, §E, §F).
+
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.
