@@ -215,6 +215,208 @@ released-but-kept memory (≤ 0.35 GiB); the aliases and the PRT window (0).
 - the late-producer wait (2 of 5 crashes, B1);
 - any A/B of memory on the standing route: the route must walk, or the measure must be his play.
 
+### G. What would bring our memory implementation closest to the PS5's (added 2026-11-06 on the maintainer's question)
+
+**Status of this section: written from four finished readers (I/O path, param.json census, disk-vs-RAM, unified
+memory); a fifth pass (a seven-clone survey with two-lens verification of every proposed change) is still running and
+its result will be merged here, so the ordered list at the end is provisional.** The readers' full fact sheets, with
+every file:line, are in the session notes folder (`0408-io-path-facts.md`, `0408-param-json-census.md`,
+`0408-disk-vs-ram-facts.md`, `0408-unified-memory-facts.md`); this section keeps the citations that carry a
+decision. Sources are public clones under `Downloads/bc5/refs/` (shadPS4 60c42b9, KytyPS5 4644c52, AnyPS5 27c88a8,
+RPCSX e8ae148, obliteration 2a53d5c, KytyPlus 3eee96a, Mesa ab2374a, fpPS4 04cefd4, GPCS4 88480de), Epic's public UE
+forum post on PS5 page-table sizes, and our own records. **Nothing below about the real console comes from Sony
+material; every console statement that is not in a public source is marked *inferred*.** The maintainer's word for the
+"old rebuild" was the shared CPU/GPU mapping (ADR 0006, exp 0017/0023), so that comes first.
+
+#### G1. Shared CPU/GPU memory: what the console does, what we do, how far apart they are
+
+*The console model, as the public emulators reconstruct it (PS4 inherited by PS5).*
+- One physical pool, two kinds of memory. Direct memory is allocated by physical address and then mapped at a
+  virtual address; flexible memory is mapped without a physical address (shadPS4 `kernel/memory.cpp:45,198,259,265,350`,
+  `memory.h:67-90`). RPCSX backs the whole pool with one shm file whose offset is the physical address
+  (`iodev/dmem.cpp:406, 71`); AnyPS5 uses a memfd (`DirectMemory.cpp:294, 381`). **That is exactly our memfd (P:24896,
+  24958-24980).** That a unified GDDR6 pool sits behind it on the console: *inferred*.
+- Protection carries separate CPU and GPU rights: `CPU_READ/WRITE/EXEC 0x1/0x2/0x4`, `GPU_READ 0x10`, `GPU_WRITE 0x20`,
+  identical in shadPS4 (`kernel/memory.h:36-43`), KytyPS5 (`memory.cpp:57-62`), RPCSX (`vm.hpp:38-47`), obliteration
+  (`legacy/src/vm/mod.rs:204-211`), AnyPS5 (`DirectMemory.cpp:208`) and our KytyPlus (P:20408-20411); changeable later
+  by `Mprotect`/`Mtypeprotect` and the batched `MAP_OP_*` (shadPS4 `memory.cpp:398,430`; `memory.h:46-52`).
+- **GPU visibility is decided by those bits at map or protect time.** RPCSX maps the GPU only when `prot >> 4 != 0`
+  (`gpu/Device.cpp:586-588`), the GPU view's rights are `prot >> 4` (`:1027, :650`), and unmap is protect-to-0
+  (`:1046-1050`); AnyPS5 records a GPU mapping only with a GPU bit (`DirectMemory.cpp:705, 982, 1058`); KytyPS5 and our
+  KytyPlus decode the bits into `GpuAccessMode` (P:20413, 20456-20470) and count GPU page-table entries only for
+  ranges with a GPU bit (P:20836).
+- Memory types are a property of the physical allocation: `WB_ONION 0`, `WC_GARLIC 3`, `WB_GARLIC 10` (shadPS4
+  `kernel/memory.h:24-28`; fpPS4 `ps4_map_mm.pas:330-332`); RPCSX keeps one dmem file per type and maps the GPU from
+  it (`Device.cpp:326-341, 595-597, 1023-1025`). What Onion and Garlic are on silicon (coherent through the CPU caches
+  against direct to DRAM) is *inferred*; the only in-clone text is the descriptor memory-type tables of GPCS4 and fpPS4
+  (`GnmConstant.h:400-421`; `ps4_shader.pas:180-187`). So coherence is chosen twice there: per allocation and per
+  descriptor.
+- GPU VA == CPU VA in a 2^40 window: every emulator hands the guest address to the GPU unchanged (KytyPS5
+  `memory.cpp:88-106`; RPCSX `Device.cpp:619-631`, F92). KytyPS5 also accepts an "extended" window at
+  0x0800_0000_0000 of 512 GiB (`regionDefinitions.h:15-27`), where our KytyPlus has the stricter
+  `GPU_ADDRESS_LIMIT 1<<40` (P:20430-20433) — our host drops GPU map calls for addresses ≥ 2^40 that KytyPS5 accepts.
+  The 40-bit translation that makes the 0x80 alias harmless (F92/F110) is still in no public source.
+- Page-table budget: `PAGE_TABLE_POOL_SIZE` 4 GiB at 2 MiB granularity, `GetPageTableStats` counts a range toward the
+  GPU total only with a GPU bit (KytyPS5 `memory.cpp:66-69, 495-510, 2690-2712`; ours P:20415-20419, 20825-20850). Two
+  page tables over the same pages: *inferred* from the API shape.
+- Nothing in the API suggests residency or eviction: a direct mapping is physical memory by construction. The only
+  "eviction" in any clone is AnyPS5's host-side import budget with LRU retirement (`GuestBufferMemory.cpp:1486-1500,
+  174-188, 1590-1600`) — an emulator problem, not a console one. Zero on reuse: AnyPS5 `ZeroReusedPhysical`
+  (`DirectMemory.cpp:308-316`); console *inferred*.
+- Unmapped GPU pages: no public source. A PRT aperture ioctl exists (obliteration `DMEMGETPRT 0xc018800c`,
+  `legacy/src/fs/ioctl.rs:139`, unimplemented). "Reads 0, writes dropped" (exp 0102, F257) is inferred from the
+  title's behaviour.
+
+*Ours, item by item.*
+
+| Item | Console | Ours (file:line) | Distance |
+|---|---|---|---|
+| Backing | one physical pool, offset = physical address | one sealed direct memfd + one 1 TiB private memfd, offset = guest address (P:24896-24906, 24958-24980); `MAP_SHARED\|MAP_FIXED` views (ADR 0006) | **same** (RPCSX, AnyPS5 do this) |
+| GPU VA | == CPU VA, 2^40 window | == CPU VA (D:865-884) plus the 0x80 alias of the same BOs (D:911-936; P:29473-29520) | same, plus the alias workaround |
+| What is GPU-visible | mappings with a GPU bit | **every** Direct view that holds data, by name list (`direct_views_build` ignores the protection argument; eager names P:28776-28800, lazy P:28757), plus learned windows and hints; the bits are decoded (P:20456-20470) and counted (P:20836) but never read by the mapper | **the largest semantic gap**: we replace the console's one rule with three heuristics (names, learned windows, zero list) |
+| GPU rights | R, R\|W per mapping | R\|W\|X everywhere (`map_shared` D:870-871; aliases D:922-923; userptrs D:756-760; F257) | gap, 0 RAM |
+| Memory types | per allocation, Onion/Garlic | stored (P:20715-20720, 22503, 23615-23616), never reach the mapper; our only `MTYPE_UC` are the IB scratch slots and the code buffer (D:473-480, 1652) | gap, 0 RAM; RADV itself uses UC only for one-shot command buffers (`radv_amdgpu_bo.c:43-44`, `radv_amdgpu_cs.c:234-236`) |
+| Residency | physical by construction | udmabuf pins at creation (Linux `udmabuf.c`, `memfd_pin_folios`); import unit 2 MiB chunks with data merged into BOs ≤ `udmabuf size_limit_mb` (P:28697-28708, 28989-29060); the BO list per CS must all be resident (D:1478-1495; P:28749-28755: −ENOMEM at 6.8 GiB) | the console has no BO list and no "import"; AnyPS5 imports 64 MiB chunks **refcounted per guest buffer** and frees them when the last buffer dies (`GuestBufferMemory.cpp:624-719`) |
+| Release | `ReleaseDirectMemory` frees the physical pages (shadPS4 `memory.cpp:113, 360-371`) | views are unmapped at the next sync (P:29126-29134) but the BO and its pinned pages stay until merged away or device close (P:29179; D:670-680); nothing is punched (P:25011) | gap; measured small so far (exp 0288 Q2: 74-350 MiB released-but-kept over 29 min, RT off; a level change is unmeasured) |
+| Zero on reuse | fresh allocation is zero (*inferred*; AnyPS5 does it) | the private file is zeroed on re-commit (exp 0023); the direct memfd is not zeroed on re-allocation | gap, 0 RAM |
+| Unmapped pages | *inferred* reads 0 / writes dropped | one 2 MiB zero BO mapped R\|W\|X under every learned-window hole (P:29597-29640, 29715-29735; it stops being zero once written, F257); the AMM window as NULL PRT when `BC5_DIRECT_AMM_PRT=1` (D:886-895), which **is** in the launcher | gap in kind (a writable zero page is not a dropped write) and a GFX10 hazard (Mesa `ac_gpu_info.c:437-442`) |
+| Fault handling | a GPU fault is a crash there (*inferred*) | a fault is a 14-s freeze and a learned window (F88); F339 says `noretry=-1` keeps retry faults on for GC 10.1.3 (TODO(verify)) — the two rows are not reconciled | first-touch faults are not a residency mechanism here either way |
+
+*Answer to the maintainer's first question.* The shared mapping itself — one file, GPU VA = CPU VA, the GPU reading
+the title's pages in place — **is** the console's model and every other open PS5 host's. What is not console-like is
+how we decide *which* pages the GPU may see (names, learned windows, a zero list, all per title) and the fact that a
+page once shown to the GPU is pinned for the run. The changes that close that gap are G6 items 1-4 below.
+
+#### G2. param.json: what the firmware uses, what we honour
+
+The patch's `systemContent.cpp` hunk (P:56941-56990) adds no param.json read, so our host reads exactly KytyPlus
+f266548's keys: `titleId`, `contentId`, `contentVersion`/`appVersion`, `userDefinedParam1..4`,
+`kernel.flexibleMemorySize` (276 MiB for the title, F194), `localizedParameters.defaultLanguage` and `<lang>.titleName`
+(f266548 `src/loader/systemContent.cpp:164-217`). The census found 38 key paths in public parsers and documents
+(KytyPS5, AnyPS5, pcsx5, the two public gists, Epic's forum post; psdevwiki itself answered 403, so only its search
+snippets were used). Of the 29 we do not read, these have a runtime consumer somewhere public:
+
+| Key | Firmware use (P public, I inferred) | Source | Change, switch | Risk | Effort |
+|---|---|---|---|---|---|
+| `kernel.cpuPageTableSize`, `kernel.gpuPageTableSize`, `amm.pagetableMemorySizeInMib` | page-table memory per side, 64 MiB included, more comes off the ~12.5 GiB budget; feeds `sceKernelGetPageTableStats` (P: KytyPS5 09753bf `systemContent.cpp:+183-190`, `memory.cpp:+70-81, +1005-1019, +2668-2673`; Epic: UE raises Cpu/GpuPageTableSize 64 → 96 MB; that pubtools writes it here is I) | KytyPS5, Epic | exp 0401's `KYTY_BC5_MEMORY_FROM_PARAM` ports the budget (B4a: ~120 MiB, and the AMM fatal). **Split a stats-only switch** `KYTY_BC5_PAGE_TABLE_STATS_FROM_PARAM` that changes only `KernelGetPageTableStats` (P:23137-23160, today a fixed 2048 entries per side; AnyPS5 also hard-codes 8192) | high for the total (F394: no start at 12,288 MiB; F353: the title reserves 12,162 of 13,824); low for stats-only | M / S |
+| `attribute` (bit 29 = HDR supported) | `dynamicRange` in the VideoOut status (P: KytyPS5 `systemContent.cpp:167-168`, `videoOut.cpp:1864-1871`; gist) | KytyPS5, KytyPlus HEAD | parse at `:171`; use in `VideoOutGetResolutionStatus` (base `videoOut.cpp:1664` answers 1 always). `KYTY_BC5_PARAM_ATTRIBUTE` | low | S |
+| `attribute3` (bit 6 = 120 Hz, bits 18-20 VRR, bit 22 PS5 Pro, bit 2 resolution detection per KytyPS5) | 120 Hz output mode allowed; `resolution` field (P: KytyPS5 `videoOut.cpp:1862-1868`; AnyPS5 `Output.cpp:275` refuses mode 15 without bit 6) | KytyPS5, AnyPS5 | parse; gate `VideoOutConfigureOutput` mode 15 and `status->resolution`. `KYTY_BC5_PARAM_ATTRIBUTE3` | low-medium (a 120 Hz path is untested here) | S |
+| `downloadDataSize` | the `/download0` quota for `sceAppContentDownloadDataGetAvailableSpaceKb`; 0 = no area (P: AnyPS5 `ParamJsonParser.cpp`, `AppMetadata.cpp:58-66`, `libSceAppContent/Export.cpp:106-115`) | AnyPS5 | answer min(host free, quota) instead of host free space (f266548 `libAppContent.cpp:139-145`). `KYTY_BC5_DOWNLOAD_QUOTA_FROM_PARAM` | low | S |
+| `kernel.flexibleMemorySize` | read already; our no-key default is 1 GiB (P:20419) against 448 MiB upstream (KytyPS5 0a14091; AnyPS5 `DirectMemory/Export.cpp:40-47`); the module-segment charge to flexible (0a14091) was left out by exp 0401 | KytyPS5, AnyPS5 | lower the no-key default; the charge is a runtimeLinker change | low / medium | S / M |
+| `requiredSystemSoftwareVersion`, `sdkVersion` | minimum firmware; SDK version, encoding `0x0700000000000000` (P gist) | KytyPS5 launcher `:561-584`; pcsx5 | journal only: the host takes the SDK version from the ELF already (P:35224), as AnyPS5 does | — | S |
+| `applicationCategoryType`, `addcont.serviceIdForSharing[]`, `localizedParameters` choice by console language | application vs addcont; DLC service labels; display title | KytyPS5 `additionalContent.cpp:87-89`; pcsx5 | none for the second title; port with addcont scanning if ever | — | S |
+
+The rest (`masterVersion`, `conceptId`, `applicationDrmType`, `contentBadgeType`, `attribute2`, `attribute4`,
+`ageLevel.*`, `pubtools.*`, `versionFileUri`, `disc[]`, `asa.*`, `sign`) has no runtime consumer in any public
+emulator; pcsx5 parses and stores them unused. `targetId` and `deviceOrientation` have no public parser or document.
+
+*Answer to the maintainer's second question.* He is right that we expose almost nothing: 9 of 38. But only three of the
+unread keys touch memory, and they only size the budget, which is not a RAM lever on this box (B4a). The ones worth
+honouring for fidelity are `attribute`/`attribute3` (what the title is told about HDR and 120 Hz) and
+`downloadDataSize`, each a small switch.
+
+#### G3. The I/O path: three page-cache copies where the console (inferred) has none
+
+Between the NVMe and the title's memory our APR path holds **three resting page-cache copies and four user buffers**
+(the reader's count, each with its citation): (1) the kernel's page cache of the image file, or of the disk cache's
+`.data` file (`tools/bc5-mount/src/io.rs:144, 185-187`; `diskcache.rs:160`; no `O_DIRECT` anywhere in bc5-mount);
+(2) the `payload` Vec of compressed bytes (`io.rs:42-45`); (3) the decoded block, kept in the 32 MiB block cache
+(`pkg/inner.rs:26, 90-91`); (4) the FUSE reply buffer (`fuse.rs:298-303`); (5) **the kernel's page cache of the mounted
+file** — open replies `FOPEN_KEEP_CACHE` (`fuse.rs:269`), no `direct_io` on main; (6) the emulator's staging: the
+read-ahead reader's `ra_data` (P:39408-39438) or `ReadHostFileToGuest`'s thread-local 4 MiB buffer (KytyPlus
+`libAmpr.cpp:1445-1453`, unchanged by the patch); (7) the `memcpy` into guest memory (P:39182; `libAmpr.cpp:1458`),
+whose pages are shmem and pinned once imported. `sceKernelRead/pread` skip step 6 (P:15026, 15162). No clone opens
+title files with `O_DIRECT` or fadvise for APR (KytyPlus has the hook, `sysLinuxFileIO.cpp:61-80`, unused); AnyPS5 reads
+straight into guest memory on Linux (`Apr.cpp:181`). That the console decodes Kraken in hardware and DMAs into the
+destination pages with no OS file cache is *inferred* (nothing in any clone says it; the command ABI — destination VA,
+offset, size, gather/scatter, KytyPS5 `libAmpr.cpp:654-660, 2075-2147` — is consistent with it).
+
+What has been measured: repeats are 67-88 % of what the mount serves (exp 0381 RR3/RR4), the title asks only
+1.04-1.16× what the mount serves, so the mounted-file page cache (copy 5) spares at most 4-14 %; 76-85 % of repeats
+are 16-256 s old, i.e. plain eviction from a ~900 MiB file LRU (F814); the DROP_BACKING + small-readahead bundle cut
+NVMe bytes 28-37 % but lost 4-6 % of flips (RR4); a 64 GiB disk cache removed 91-96 % of decode time with no flip
+gain (RR5); **the `BC5_MOUNT_DIRECT_IO=1` arm (exp 0381 build 5249deee, `fuse.rs:299-303`) was never run.**
+
+#### G4. Eager heap import and learned windows: the console has one rule, we have three heuristics
+
+The console commits GPU-visible memory at map time, by the GPU bits (G1); there is no eager/lazy distinction and no
+learning, because a GPU access outside a GPU-mapped page is a fault, not a lesson. Our eager list (10,047 MiB, 90 % of
+the pin, F353), lazy list (−242 MiB, F394), 110 learned windows (3.9 GB asked at every start, mostly inside the eager
+heaps, F353/F402) and the zero list (−500 MiB, §A) are all stand-ins for "import iff GPU bit", each tuned to one
+title. The closest generic on-demand scheme on this Linux stack:
+- *fault-driven residency* (shadPS4's `FaultManager` over a BDA table it controls) is not available to us: we run the
+  title's own shaders, and the box cannot fault-and-retry on graphics queues (F88; F339's `noretry` note is the one
+  open doubt);
+- *sparse binding* (RADV's `AMDGPU_VA_OP_REPLACE` over a null BO, `radv_amdgpu_bo.c:144-181, 213-245`) gives a
+  **universal "unbacked reads 0" rule** without per-title lists, which is what our scratch BO and PRT window
+  approximate by hand; it does not make pages resident on demand;
+- *import by the title's GPU bits at map time* (RPCSX `Device.cpp:586-588`; AnyPS5 `DirectMemory.cpp:705`) is the
+  console's own rule and needs no per-title data: GPU_WRITE views imported in full when mapped, GPU_READ-only views
+  by `SEEK_DATA`, CPU-only views never. 0407's P1 census is the measurement that says how much of today's import that
+  rule would keep; nothing says yet whether the second title maps its CPU heaps with GPU bits.
+
+*Answer to the maintainer's third and fourth questions.* Importing a heap in full at map time is what the console
+does for a GPU-mapped heap — the difference is only that there the untouched pages cost nothing extra and here udmabuf
+materialises them (F394's 3.7 GB of zero). The universal replacement for the learned windows is the GPU-bit rule plus
+a null-BO sparse backing for everything else; the learned file then becomes a diagnostic of titles that read GPU-wise
+through CPU-only mappings (which the console would also fault on).
+
+#### G5. Disk instead of RAM: what can move, what cannot
+
+Under udmabuf nothing the GPU has seen can be read on demand: the title's pinned 11.2-11.4 GB (F353) is the elephant
+and is not a candidate. What is left, with the reader's numbers:
+
+| Candidate | RAM today | Change | Gain / cost | Console equivalent |
+|---|---|---|---|---|
+| The journal and play log through the page cache | ~200 MB per 10 min written (exp 0330); the normal build's write-through cost 309 MiB swapped out and 45,700 major faults per 5 min against 30 MiB / 3,000 lean (F353) | carry exp 0330's `BC5_DIRECT_JOURNAL_DONTNEED` (fadvise after each 8 MiB; arm B: pswpout 80,227 → 2,954, flips 36.8 → 36.4) into the patch (~30 lines); `JOURNAL_QUIET` already cut 385 → 24 MB a run | swap traffic and major faults; 0 flips | none |
+| A fresher, larger zero list and shared canary slices | the list skips 583 MiB in play (F631), 1.9 GB on the bench (F541); canaries 104 MiB for 52 runs (F631) | a SCAN play over every eager name and the AMM pool (F625 item 1: ~1.5 GB + 3.1 GB in small pages, unmeasured); one canary slice per heap (F632) → ~4 MiB | 0.6-1.9 GB pinned; cost = canary hits (one per 2.4 min, F631) and the F403 association | none: the console allocates what the title asks and nothing is "imported" |
+| The mount's page-cache copies (G3) | whatever is left after the pin; F394: 9-11.5 M file pages reclaimed per 10 min | `BC5_MOUNT_DIRECT_IO=1` + `CACHE_MIB=512` (one bounded copy), `DROP_BACKING`, FADV_DONTNEED on the `.data` file (~20 lines) | the only lever on the F505/F689 re-read thrash; built, unrun | none (inferred) |
+| The on-disk decoded cache (8 GiB, no eviction, full since 10-25, 196 GiB decoded) | ~6 MiB of map in RAM, plus its `.data` pages in the page cache | eviction (~100-200 lines) or a larger private cache, or the opposite arm (no disk cache: compressed reads move fewer NVMe bytes) | direction unknown (RR5: decode time is not the limit) | none |
+| KytyPlus's staging buffers and the DMA snapshot ring | 96 + 16 + 16 + 16 MiB (P:4850-4862, F47); 64 MiB ring (D:279-296) | `KYTY_BC5_CACHE_MIB=48,16,16,16`; a 32 MiB ring if `dma_snapshot_overflow` (P:34448-34452) stays 0 | ~80 MiB, env/constant | none (host presentation) |
+| bc5-mount's RSS | 695-840 MiB, ~600 of it unattributed (exp 0288 README:146-148) | heap profile first; pooled per-read Vecs, 4 workers | unknown until profiled | none |
+| ASTRO BOT's PFSC block cache | 1,024 MiB (`pfsc.rs:40`; ~850 real, exp 0121) | `BC5_MOUNT_CACHE_MIB=256` for that title, or a PFSC disk cache (the pkg DiskCache is generic) | not the starved title | none |
+
+Not candidates, with the reason: a "JIT cache" — KytyPlus has no recompiler (`src/loader/jit.h` holds thunks only;
+segments are read straight into the mapped segment, `elf.cpp:242-282`), the only per-start work is the TLS pattern scan
+and relocation (`runtimeLinker.cpp:1406-1449, 1533-1551`, unmeasured), and a relocated copy of the title's code on disk
+is material we must never keep; BVH and other GPU-derived data — rebuilt per frame by the title's own dispatches inside
+its heaps (F370, F381), the console does the same (inferred); APR read-ahead data — ≤ 32 MiB, freed at the worker's
+turn, no decoded asset kept beyond what the title asked; the eager heaps' 4 KiB zero holes (~1 GB beyond the 2 MiB
+list, F394) — unreachable without a 512× BO count.
+
+*Answer to the maintainer's fifth question.* Almost nothing we hold in RAM is a cache of something regenerable: the RAM
+is the title's own memory, pinned. The disk already holds the decoded blocks (8 GiB), the zero list and the learned
+file. What is worth doing on disk is bounding the page-cache copies of the mount (G3) and the journal's writes; a code
+or BVH cache would gain nothing and the first is off limits.
+
+#### G6. The ordered change list (provisional until the verification pass is merged)
+
+Order by: console fidelity first where the RAM effect is neutral, then RAM per unit of risk; the three items that
+need a measurement before code come with that measurement.
+
+| # | Change | Console does (source / inferred) | We do | RAM | Frame | Risk on gfx1013 | Effort | 0407 |
+|---|---|---|---|---|---|---|---|---|
+| 1 | **Protection census** (log per view: name, CPU/GPU bits as given, before `ALL_RW` widens them, eager/lazy/data, bytes imported) | the bits are the rule (G1) | bits decoded, never read (P:20456-20470) | 0 | 0 | none | S | = P1, agreed; it gates 2-3 |
+| 2 | **Import by the title's GPU bits**: pass the protection into `direct_views_build`; GPU_WRITE views eager, GPU_READ-only by `SEEK_DATA`, no-GPU-bit views not imported; re-sync on `SetProtection` (the generation already bumps, P:20710); the name lists become an override, the learned windows a safety net with a journal line | RPCSX `Device.cpp:586-588`; AnyPS5 `DirectMemory.cpp:705` | name lists (P:28757, 28776-28800) | what the census says the CPU-only heaps cost (the lazy list's −242 MiB is the lower bound) | fewer BOs in the full list (F125 scale) | a title that reads GPU-wise through a CPU-only mapping faults — the console would too; the learned window catches it once | S after 1 | not proposed; this is the universal mechanism the maintainer asked for |
+| 3 | **Per-mapping GPU rights** (R or R\|W from the bits; X only for the code alias) | RPCSX `prot >> 4` (`Device.cpp:1027`) | R\|W\|X everywhere (D:870-871) | 0 | 0 | writes through a GPU_READ-only mapping would fault; no known case (F257's clears hit unmapped blocks) | S | not proposed |
+| 4 | **Null-BO sparse backing for everything unbacked** (the AMM window and the learned-window holes) instead of NULL PRT and the writable zero BO; `AMDGPU_VA_OP_REPLACE` already handles mappings inside (D:99-105) | reads 0 / writes dropped (*inferred*, F257); RADV's `bind_low_null_prt` is the Linux form | PRT window (D:886-895, live in the launcher) + a writable 2 MiB zero BO (P:29604-29616) | 0 (VA only) | 0 | removes a GFX10 SMEM hang hazard (Mesa `ac_gpu_info.c:437-442`); a real missing import then reads 0 instead of faulting, so keep the learned import first; what a write to a non-writable page does with retry off is TODO(verify), its own arm | S | = N1, agreed, extended to the holes |
+| 5 | **Zero skip on in his shortcut, then a fresher list with shared canary slices** (G5) | nothing to import there (the console pays nothing for untouched pages) | off by his choice | −500 MiB measured now; 0.6-1.9 GB with the fuller list | 0 standing; the walking gain is unmeasured (§E) | F403: 3 in 19 arms with it | 0 / S | 0407's Z2 redesigns it before the plain form's F403 link is characterised: disagree on order |
+| 6 | **Journal `DONTNEED`** carried into the patch (G5) | no OS page cache in the path (*inferred*) | write-through journal | swap traffic | 0 | none (one arm clean) | S | not considered |
+| 7 | **Learned-window trim, mode 1** after an empty-learned-file arm has measured the windows' real cost (§E) | no learning on the console | 110 windows × 96 MiB (P:29546-29548), applied from the submit path (P:33845) | ≤ 0.7 GB (unmeasured) | the 633-ms `learned_apply` stalls (exp 0288) | a needed chunk faults once (14 s) | S | = L1, agreed on the change, not on doing it before the measurement |
+| 8 | **Release on free**: refcount per chunk (`SharedBo::maps`, D:879); when a guest release leaves a BO with no view, `free_shared` after the drain the merge already does; punch the memfd range then | `ReleaseDirectMemory` frees the pages (shadPS4 `memory.cpp:360-371`); AnyPS5 frees chunks on the last buffer | nothing freed (P:25011, 29179) | ≤ 0.35 GiB measured (exp 0288 Q2); a level change unmeasured | 0 | a stale GPU mapping after the free is a fault: unmap first; pin/unpin churn | M | = R1; agreed, ranked lower until a level change is measured |
+| 9 | **Zero on reuse** of direct memory (`memset` in `AllocateDirectMemory` when the range was used before; with 8, a punch instead) | fresh allocation is zero (*inferred*; AnyPS5 `DirectMemory.cpp:308-316`) | private file only (exp 0023) | 0 | a memset per allocation | none | S | not considered |
+| 10 | **Mount page-cache bounding**: run the built `DIRECT_IO` + `CACHE_MIB=512` arm, `DONTNEED` on the `.data` file; then decide on `DROP_BACKING` | no OS file cache (*inferred*) | three copies (G3) | up to the whole page-cache residue | the only lever on F620/F689's re-reads; RR4 says the bundle without `DIRECT_IO` costs 4-6 % | medium (a repeat the backing copy caught hits the NVMe) | 0 (built) | 0407 names it, defers it to a mount experiment: agreed that it is separate, disagree that it waits |
+| 11 | **param.json: stats-only page-table switch, `attribute`/`attribute3`, `downloadDataSize`** (G2) | the firmware reads them (P) | 9 of 38 keys read | 0 | 0 | low | S each | not considered |
+| 12 | **Memory types to the mapper** (`AMDGPU_VM_MTYPE_UC`/NC for WC_GARLIC/UC areas; read which types the titles use from the journal first) | per-allocation Onion/Garlic (*inferred* semantics) | all default MTYPE | 0 | unknown either way (GL2 bypass can lose fps or remove F172-class staleness) | low (a VM flag) | S + M measurement | not considered |
+| 13 | **Accept the extended window** (addresses ≥ 2^40 up to KytyPS5's 0x0800_0000_0000 + 512 GiB) in `IsGpuAddressRange` (P:20430-20433) | KytyPS5 `regionDefinitions.h:15-27` | dropped | 0 | 0 | none known | XS | not considered |
+| — | Not adopted, agreeing with 0407: userptr (F24), KFD SVM, copying into device buffers, unpinned udmabuf. Not adopted, beyond 0407: a GTT-budgeted LRU of imports (AnyPS5's) — a re-import miss is a 14-s fault here; the 4 KiB zero holes; a code cache. |
+
+*Where this list disagrees with 0407's ranked plan:* 0407 ranks by RAM gain over risk and puts L1 first, R1 second
+and Z2 fourth; none of its five changes makes the GPU-visibility rule console-like, which is the maintainer's
+question. Here the GPU-bit rule (1-3) comes first because it replaces three per-title heuristics with the console's
+one rule at zero RAM risk, and the measured lever (the plain skip) comes before any redesign of it. On N1, L1, P1 and
+R1 the two lists agree on the change and differ only in order.
+
 ## Verdict
 
 **Review done; nothing tested.** Of the reviewed claims, the file:line citations, the "host CPU on the render thread"
