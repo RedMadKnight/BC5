@@ -683,4 +683,66 @@ before and after every arm; `raw/night/e9*-*.txt`):
   alike.
 - The series stopped at e9l3's crash, under the stop rule. The arms not run: e9n4, e9g1, e9z1, e9w1, e9x1, e9g2, e9z2.
 
+**Series e9c** (2026-11-06 03:03–03:33, the maintainer's "Tak 1 i 2", the top session's GO): first the 7 fix and catcher
+arms e9 did not reach, word for word (`raw/night-arms-e9c.txt`). Then the lean bisect, 3 variants × 2 arms:
+- e9dK: the six drops only;
+- e9pK: lean with GPU_CHECK_PRODUCT kept;
+- e9uK: lean without LEARNED_PRUNE.
+
+The run used the same binary de6a0ad5, route and stop rule. Boot 9af31fd4, live saves 558115f366fb11cb before and
+after every arm.
+
+| Arm | Words over normal | End | G (s) | flips/s | Longest gap (ms) | Memory floor (MiB) |
+|---|---|---|---|---|---|---|
+| e9n4 | none | GPU hang at G+158, reset ok | 194 | 14.3 | 1,875 | 148 |
+| e9g1 | unwaited meshlet sample, crumbs, give-up journal | G+600 | 151 | 34.6 | 2,122 | 131 |
+| e9z1 | zero skip + copy-back, its probe, scratch watch | GPU hang at G+177, reset ok | 147 | 18.4 | 14,981 | 272 |
+| e9w1 | unwaited fl drop, late-producer wait 250 ms, crumbs, give-up journal | the emulator ended at 238 s | 144 | 15.3 | 2,103 | 246 |
+
+The series stopped at e9w1's crash, under the stop rule. The arms not run: e9x1, e9g2, e9z2 and the whole bisect.
+
+**e9w1 is e9l3's crash, and the late-producer wait is the only word the two share (Medium-High).**
+- The same crash in both:
+  - the same title address, 0x930003d83;
+  - a write to address 0;
+  - the same stack (rsp 0x10367fb530);
+  - rdi 0, and a 90- or 99-byte copy from the stack.
+- The records are `raw/night/e9w1-crash.txt` and `raw/night/e9l3-crash.txt`; the code bytes are in laptop scratch
+  only.
+- This crash comes in no other record of any experiment (a search of all `experiments/*/raw`).
+- It came in 2 of the 5 arms with `BC5_DIRECT_WAIT_LATE_PRODUCER_MS=250` (e9l1–l4, e9w1) and in 0 of the 24 arms
+  without it (e9's 6 and e8's 18). One-sided p ≈ 0.025 (2 crashes among 29 arms, both in the 5).
+- The wait did act in every one of those arms. It served a wait late 2 to 10 times per arm (on the box: e9l1 2, l2 8,
+  l3 8, l4 10, w1 2). Each time a game thread was held on the CPU for up to 250 ms, until bc5-ring's compute job wrote
+  the label.
+- How this leads to the title's copy into a null destination is not known.
+- **Correction to "Series e9 results":** lean also carried this wait, and its list of lean changes left it out. e9l3's
+  crash therefore says nothing against the six drops, LEARNED_PRUNE or the launcher words taken back.
+
+**e9n4: F686's near-class on normal, so e9l1's class is not lean's either (High for the class).**
+- devcd6 (`~/bc5-data/captures/devcoredump/20261106-030939-devcd6.txt`):
+  - GRBM_STATUS 0xa0403028, SE0/SE1 0x08000006;
+  - CP_STALLED_STAT2 0x18000, PFP 0xea1, ME 0x77b;
+  - IB #0 of 78,856 dwords.
+- The faults are at page 0, from the SQC (inst) client, vmid 7, thread bc5-ring: a shader's instruction fetch at
+  address 0. e9l1's fault was a TCP data read.
+- Both are a shader-side null pointer in F443's family.
+
+**e9z1: F403's state register for register, with the zero skip on and no canary hit (High for the class).**
+- devcd7 (`20261106-032837-devcd7.txt`):
+  - GRBM_STATUS 0xa0407028, SE0/SE1 0x0a000016;
+  - PFP 0xea1, ME 0x779;
+  - no fault.
+- The probe's 25 take-backs were all by CPU writes, none by a canary hit. So the copy-back never acted.
+- The last take-back of run 37 was 36 s before the timeout. Both of e8's F403s had followed a canary take-back of run 37
+  within 0.11 s, so that tie does not hold for this F403.
+- The scratch watch saw the hole scratch BO all zero in 6,357 scans.
+- F403 has now come only in arms with the zero skip on. The 10 e9 arms without it had none (e9n1–n4, e9l1–l4, e9g1, e9w1).
+
+**What it means for the profiles.**
+- Normal (his shortcut's 65 words) had 1 failure in 5 arms (e9n1–n4 and e9g1, whose catchers are CPU only): e9n4, the
+  F686 class.
+- The late-producer wait must stay off. Lean as written on the box (`play-e9-lean.sh`) carries it.
+- The lean bisect should be run again with lean minus the wait.
+
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.

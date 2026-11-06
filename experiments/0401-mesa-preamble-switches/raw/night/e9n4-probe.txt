@@ -1,0 +1,400 @@
+exp 0404: fl crumbs off
+exp 0404: fl skip es off
+exp 0401 e7 (flx): fl probe state off, fl vgt flush off, fl serial off, fl meshlet probe off, fl crumbs meshlet off
+submit #239276 dcb 20567 dwords at 0x7fad4c12f4b0: pass 1666 rewrite 71 drop 302 unmapped 0 cc 0 mappings 28604 ... FAILED rc 0 TIMEOUT 2031.59 ms
+submit #239275 acb 12723 dwords at 0x7fadb0c60c20: pass 3889 rewrite 10 drop 1 unmapped 0 cc 0 mappings 28604 ... FAILED rc 0 TIMEOUT 2033.25 ms
+timeout probe: acb 16278 dwords dumped to /home/kjaniszewski/bc5-data/captures/play-20261106-0303/gc/ib-timeout-00239275-acb-16278.bin
+timeout probe: dcb 20567 dwords dumped to /home/kjaniszewski/bc5-data/captures/play-20261106-0303/gc/ib-timeout-00239276-dcb-20567.bin
+timeout probe: TF ring 0x1120000000 +0x3fff8: 28800 non-zero dwords (dword 0..47322), from the first: [0x1120000000] 40800000 40192069 40177236 401a2a8a 40192069 40177236 40177236 4014cd63 401332ac 4015c176 4014cd63 401332ac 401332ac 4010b585 400f2d1a 401195e3 4010b585 400f2d1a 400f2d1a 400cd452 400b5d1a 400da305 400cd452 400b5d1a 400b5d1a 400925ba 4007bead 4009e48c 400925ba 4007bead 4007bead 4005a611 40044e3a 40065694 4005a611 40044e3a 40044e3a 400251fd 4001087a 4002f595 400251fd 4001087a 4001087a 3ffe4cf0 3ffbd4e8 3fff7cb6 3ffe4cf0 3ffbd4e8
+timeout probe: TF ring 0x1120000000 +0x3fff8: 28800 non-zero dwords (dword 0..47322), from the first: [0x1120000000] 40800000 40192069 40177236 401a2a8a 40192069 40177236 40177236 4014cd63 401332ac 4015c176 4014cd63 401332ac 401332ac 4010b585 400f2d1a 401195e3 4010b585 400f2d1a 400f2d1a 400cd452 400b5d1a 400da305 400cd452 400b5d1a 400b5d1a 400925ba 4007bead 4009e48c 400925ba 4007bead 4007bead 4005a611 40044e3a 40065694 4005a611 40044e3a 40044e3a 400251fd 4001087a 4002f595 400251fd 4001087a 4001087a 3ffe4cf0 3ffbd4e8 3fff7cb6 3ffe4cf0 3ffbd4e8
+timeout probe: HS user data address 0x0 at 1046 not mapped
+timeout probe: HS user data address 0x0 at 6485 not mapped
+timeout probe:   state before op 15 at 10: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 10: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 10: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 18: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 18: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 18: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 26: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 26: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 26: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 34: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 34: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 34: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 42: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 42: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 42: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 52: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 52: program not set in this buffer, 0xffffffffff00, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 52: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 62: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 62: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 62: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 72: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 72: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 72: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 80: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 80: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 80: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 90: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 90: program not set in this buffer, 0xffffffffff00, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 90: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 98: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 98: program not set in this buffer, 0xffffffffff00, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 98: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 108: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 108: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 108: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 116: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 116: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 116: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 124: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 124: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 124: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 132: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 132: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 132: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 142: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 142: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 142: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 152: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 152: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 152: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 162: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 162: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 162: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 170: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 170: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 170: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 180: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 180: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 180: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 188: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 188: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 188: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 196: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 196: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 196: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 204: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 204: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 204: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 214: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 214: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 214: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 224: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 224: program not set in this buffer, 0xffffffffff00, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 224: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 234: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 234: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 234: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 242: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 242: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 242: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 252: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 252: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 252: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 262: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 262: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 262: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 272: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 272: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 272: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 282: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 282: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 282: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 290: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 290: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 290: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 298: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 298: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 298: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 306: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 306: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 306: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 314: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 314: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 314: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 322: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 322: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 322: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 330: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 330: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 330: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 340: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 340: program not set in this buffer, 0xffffffffff00, groups 5 x 1 x 1 ran
+timeout probe: op 11 at 1249: 00000001 93ad3900 00000011 ran (mapped -1)
+timeout probe: op 15 at 340: 00000005 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe: op 26 at 1253: 00000000 00000000 00000000 ran (mapped 0)
+timeout probe:   state before op 15 at 350: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: op 13 at 1256: ffffffff 00000000 00000000 ran (mapped -1)
+timeout probe: dispatch op 15 at 350: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 350: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 360: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 360: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 360: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 370: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 370: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 370: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 380: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 380: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 380: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe: op 11 at 1345: 00000001 93ad3900 00000011 ran (mapped -1)
+timeout probe:   state before op 15 at 390: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe:   state before op 24 at 1349: stages 00482030 subgrp 00000040 onchip 00400801 payload 00000000 | prim 00000001 itype 00000400 ninst 00000008 ge_cntl 00000201 stereo 00000000 pc_alloc 00000000 | gs 0000000000000000 es 0000000011d01345 ps 0000000011d54d1d cs 0000000000000000 ls 0000000000000000 hs 0000000000000000
+timeout probe: dispatch op 15 at 390: program not set in this buffer, 0xffffffffff00, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 390: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 400: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 400: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe:   gs user data: 2363ee30 00100011 00000009 00005204 226cf070 00100011 00000028 0004dfac 226cb220 00100011 0000004d 0004dfac 2363eec0 00100011 00000001 0004dfac 23774d00 00100011 000000a8 0004dfac 00000000 00100011 00000002 0004dfac 226cb220 00100011 0000004d 0004dfac e09e3780 00000011 00000000 00000000
+timeout probe: op 15 at 400: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 410: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 410: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 410: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   s[8:11]: base 0x11226cb220 [0x11226cb220] 40155555 43c90d0d 3d7ab387 3f800000 3f1fb34f 00000000 3f481454 00007f2d 43500000 42ea0000 3f800000 00000003 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x11226cb760] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe:   state before op 15 at 420: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 420: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 420: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 428: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 428: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 428: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 438: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 438: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 438: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 448: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe:   s[20:23]: base 0x1100000000 [0x1100000000] 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 | +0x540 [0x1100000540] 00000000 00000000 00000000 00000000 | table 
+timeout probe: dispatch op 15 at 448: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 448: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 458: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 458: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe:   s[24:27]: base 0x11226cb220 [0x11226cb220] 40155555 43c90d0d 3d7ab387 3f800000 3f1fb34f 00000000 3f481454 00007f2d 43500000 42ea0000 3f800000 00000003 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x11226cb760] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe: op 15 at 458: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 468: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: op 24 at 1349: off 0x17a0 base1 0x1193ad3900 index_base 0x0 args [0x1193ad50a0] 00000033 00000001 00000000 00000000 00000000 ran
+timeout probe: dispatch op 15 at 468: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 468: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 476: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 476: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 476: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 484: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: op 11 at 1422: 00000001 93ad3900 00000011 ran (mapped -1)
+timeout probe: dispatch op 15 at 484: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 484: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 492: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 492: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 492: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 24 at 1426: stages 00482030 subgrp 00000040 onchip 00400801 payload 00000000 | prim 00000001 itype 00000400 ninst 00000008 ge_cntl 00000201 stereo 00000000 pc_alloc 00000000 | gs 0000000000000000 es 0000000011d01345 ps 0000000011d54651 cs 0000000000000000 ls 0000000000000000 hs 0000000000000000
+timeout probe:   state before op 15 at 500: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 500: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 500: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   gs user data: 2363eed0 00100011 00000001 00005204 226cf070 00100011 00000028 0004dfac 226cb220 00100011 0000004d 0004dfac 2363eee0 00100011 00000001 0004dfac 23774d00 00100011 000000a8 0004dfac 00000000 00100011 00000002 0004dfac 226cb220 00100011 0000004d 0004dfac e09e3780 00000011 00000000 00000000
+timeout probe:   state before op 15 at 510: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 510: program not set in this buffer, 0xffffffffff00, groups 3 x 1 x 1 ran
+timeout probe:   s[8:11]: base 0x11226cb220 [0x11226cb220] 40155555 43c90d0d 3d7ab387 3f800000 3f1fb34f 00000000 3f481454 00007f2d 43500000 42ea0000 3f800000 00000003 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x11226cb760] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe: op 15 at 510: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 520: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 520: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe:   s[20:23]: base 0x1100000000 [0x1100000000] 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 | +0x540 [0x1100000540] 00000000 00000000 00000000 00000000 | table 
+timeout probe: op 15 at 520: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 530: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe:   s[24:27]: base 0x11226cb220 [0x11226cb220] 40155555 43c90d0d 3d7ab387 3f800000 3f1fb34f 00000000 3f481454 00007f2d 43500000 42ea0000 3f800000 00000003 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x11226cb760] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe: dispatch op 15 at 530: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 530: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe: op 24 at 1426: off 0x17c0 base1 0x1193ad3900 index_base 0x0 args [0x1193ad50c0] 00000011 00000001 00000000 00000000 00000000 ran
+timeout probe:   state before op 15 at 538: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 538: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 538: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 546: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 546: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 546: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe: op 11 at 1499: 00000001 93ad3900 00000011 ran (mapped -1)
+timeout probe:   state before op 15 at 556: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 556: program not set in this buffer, 0xffffffffff00, groups 4 x 1 x 1 ran
+timeout probe: op 15 at 556: 00000004 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 24 at 1503: stages 00482030 subgrp 00000040 onchip 00400801 payload 00000000 | prim 00000001 itype 00000400 ninst 00000008 ge_cntl 00000201 stereo 00000000 pc_alloc 00000000 | gs 0000000000000000 es 0000000011d01345 ps 0000000011d51794 cs 0000000000000000 ls 0000000000000000 hs 0000000000000000
+timeout probe:   state before op 15 at 566: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 566: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 566: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   gs user data: 2363eef0 00100011 00000009 00005204 226cf070 00100011 00000028 0004dfac 226cb220 00100011 0000004d 0004dfac 2363ef80 00100011 00000001 0004dfac 23774d00 00100011 000000a8 0004dfac 00000000 00100011 00000002 0004dfac 226cb220 00100011 0000004d 0004dfac e09e3780 00000011 00000000 00000000
+timeout probe:   state before op 15 at 574: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 574: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 574: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   s[8:11]: base 0x11226cb220 [0x11226cb220] 40155555 43c90d0d 3d7ab387 3f800000 3f1fb34f 00000000 3f481454 00007f2d 43500000 42ea0000 3f800000 00000003 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x11226cb760] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe:   state before op 15 at 582: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 582: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe:   s[20:23]: base 0x1100000000 [0x1100000000] 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 | +0x540 [0x1100000540] 00000000 00000000 00000000 00000000 | table 
+timeout probe: op 15 at 582: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 590: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 590: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 590: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   s[24:27]: base 0x11226cb220 [0x11226cb220] 40155555 43c90d0d 3d7ab387 3f800000 3f1fb34f 00000000 3f481454 00007f2d 43500000 42ea0000 3f800000 00000003 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x11226cb760] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe:   state before op 15 at 598: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 598: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 24 at 1503: off 0x17e0 base1 0x1193ad3900 index_base 0x0 args [0x1193ad50e0] 0000006f 00000001 00000000 00000000 00000000 ran
+timeout probe: op 15 at 598: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 606: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 606: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 606: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe: op 11 at 1572: 00000001 93ad3900 00000011 ran (mapped -1)
+timeout probe:   state before op 15 at 616: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 616: program not set in this buffer, 0xffffffffff00, groups 3 x 1 x 1 ran
+timeout probe:   state before op 24 at 1576: stages 00482030 subgrp 00000040 onchip 00400801 payload 00000000 | prim 00000001 itype 00000400 ninst 00000008 ge_cntl 00000201 stereo 00000000 pc_alloc 00000000 | gs 0000000000000000 es 0000000011d01345 ps 0000000011d55444 cs 0000000000000000 ls 0000000000000000 hs 0000000000000000
+timeout probe: op 15 at 616: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 624: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 624: program not set in this buffer, 0xffffffffff00, groups 3 x 1 x 1 ran
+timeout probe:   gs user data: 2363ef90 00100011 00000004 00005204 226cf070 00100011 00000028 0004dfac 226cb220 00100011 0000004d 0004dfac 2363efd0 00100011 00000001 0004dfac 23774d00 00100011 000000a8 0004dfac 00000000 00100011 00000002 0004dfac 226cb220 00100011 0000004d 0004dfac e09e3780 00000011 00000000 00000000
+timeout probe: op 15 at 624: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 632: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 632: program not set in this buffer, 0xffffffffff00, groups 3 x 1 x 1 ran
+timeout probe:   s[8:11]: base 0x11226cb220 [0x11226cb220] 40155555 43c90d0d 3d7ab387 3f800000 3f1fb34f 00000000 3f481454 00007f2d 43500000 42ea0000 3f800000 00000003 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x11226cb760] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe: op 15 at 632: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   s[20:23]: base 0x1100000000 [0x1100000000] 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 | +0x540 [0x1100000540] 00000000 00000000 00000000 00000000 | table 
+timeout probe:   state before op 15 at 642: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe:   s[24:27]: base 0x11226cb220 [0x11226cb220] 40155555 43c90d0d 3d7ab387 3f800000 3f1fb34f 00000000 3f481454 00007f2d 43500000 42ea0000 3f800000 00000003 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x11226cb760] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe: dispatch op 15 at 642: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 642: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe: op 24 at 1576: off 0x1800 base1 0x1193ad3900 index_base 0x0 args [0x1193ad5100] 0000001d 00000001 00000000 00000000 00000000 ran
+timeout probe:   state before op 15 at 650: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 650: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 650: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe: op 11 at 1645: 00000001 93ad3900 00000011 ran (mapped -1)
+timeout probe:   state before op 15 at 658: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 658: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 658: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 24 at 1649: stages 00482030 subgrp 00000040 onchip 00400801 payload 00000000 | prim 00000001 itype 00000400 ninst 00000008 ge_cntl 00000201 stereo 00000000 pc_alloc 00000000 | gs 0000000000000000 es 0000000011d01345 ps 0000000011d48fd1 cs 0000000000000000 ls 0000000000000000 hs 0000000000000000
+timeout probe:   state before op 15 at 668: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 668: program not set in this buffer, 0xffffffffff00, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 668: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   gs user data: 2363efe0 00100011 00000003 00005204 226cf070 00100011 00000028 0004dfac 226cb220 00100011 0000004d 0004dfac 2363f010 00100011 00000001 0004dfac 23774d00 00100011 000000a8 0004dfac 00000000 00100011 00000002 0004dfac 226cb220 00100011 0000004d 0004dfac e09e3780 00000011 00000000 00000000
+timeout probe:   state before op 15 at 676: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 676: program not set in this buffer, 0xffffffffff00, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 676: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   s[8:11]: base 0x11226cb220 [0x11226cb220] 40155555 43c90d0d 3d7ab387 3f800000 3f1fb34f 00000000 3f481454 00007f2d 43500000 42ea0000 3f800000 00000003 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x11226cb760] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe:   state before op 15 at 686: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 686: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 686: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   s[20:23]: base 0x1100000000 [0x1100000000] 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 | +0x540 [0x1100000540] 00000000 00000000 00000000 00000000 | table 
+timeout probe:   state before op 15 at 694: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 694: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 694: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   s[24:27]: base 0x11226cb220 [0x11226cb220] 40155555 43c90d0d 3d7ab387 3f800000 3f1fb34f 00000000 3f481454 00007f2d 43500000 42ea0000 3f800000 00000003 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x11226cb760] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe: op 24 at 1649: off 0x1820 base1 0x1193ad3900 index_base 0x0 args [0x1193ad5120] 0000001a 00000001 00000000 00000000 00000000 ran
+timeout probe:   state before op 15 at 702: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 702: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 702: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 712: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: op 11 at 1722: 00000001 93ad3900 00000011 ran (mapped -1)
+timeout probe: dispatch op 15 at 712: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 712: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 24 at 1726: stages 00482030 subgrp 00000040 onchip 00400801 payload 00000000 | prim 00000001 itype 00000400 ninst 00000008 ge_cntl 00000201 stereo 00000000 pc_alloc 00000000 | gs 0000000000000000 es 0000000011d01345 ps 0000000011d5509b cs 0000000000000000 ls 0000000000000000 hs 0000000000000000
+timeout probe:   state before op 15 at 722: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 722: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 722: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   gs user data: 2363f020 00100011 00000006 00005204 226cf070 00100011 00000028 0004dfac 226cb220 00100011 0000004d 0004dfac 2363f080 00100011 00000001 0004dfac 23774d00 00100011 000000a8 0004dfac 00000000 00100011 00000002 0004dfac 226cb220 00100011 0000004d 0004dfac e09e3780 00000011 00000000 00000000
+timeout probe:   state before op 15 at 732: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 732: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 732: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   s[8:11]: base 0x11226cb220 [0x11226cb220] 40155555 43c90d0d 3d7ab387 3f800000 3f1fb34f 00000000 3f481454 00007f2d 43500000 42ea0000 3f800000 00000003 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x11226cb760] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe:   state before op 15 at 742: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 742: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe:   s[20:23]: base 0x1100000000 [0x1100000000] 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 | +0x540 [0x1100000540] 00000000 00000000 00000000 00000000 | table 
+timeout probe: op 15 at 742: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 750: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe:   s[24:27]: base 0x11226cb220 [0x11226cb220] 40155555 43c90d0d 3d7ab387 3f800000 3f1fb34f 00000000 3f481454 00007f2d 43500000 42ea0000 3f800000 00000003 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x11226cb760] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe: dispatch op 15 at 750: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 750: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe: op 24 at 1726: off 0x1840 base1 0x1193ad3900 index_base 0x0 args [0x1193ad5140] 00000048 00000001 00000000 00000000 00000000 ran
+timeout probe:   state before op 15 at 758: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 758: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 758: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe: op 11 at 1795: 00000001 93ad3900 00000011 ran (mapped -1)
+timeout probe:   state before op 15 at 766: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 766: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 766: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 24 at 1799: stages 00482030 subgrp 00000040 onchip 00400801 payload 00000000 | prim 00000001 itype 00000400 ninst 00000008 ge_cntl 00000201 stereo 00000000 pc_alloc 00000000 | gs 0000000000000000 es 0000000011d01345 ps 0000000011d48fd1 cs 0000000000000000 ls 0000000000000000 hs 0000000000000000
+timeout probe:   state before op 15 at 774: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 774: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 774: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 784: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 784: program not set in this buffer, 0xffffffffff00, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 784: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   gs user data: 2363f090 00100011 00000009 00005204 226cf070 00100011 00000028 0004dfac 226cb220 00100011 0000004d 0004dfac 2363f120 00100011 00000001 0004dfac 23774d00 00100011 000000a8 0004dfac 00000000 00100011 00000002 0004dfac 226cb220 00100011 0000004d 0004dfac e09e3780 00000011 00000000 00000000
+timeout probe:   state before op 15 at 794: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 794: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 794: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   s[8:11]: base 0x11226cb220 [0x11226cb220] 40155555 43c90d0d 3d7ab387 3f800000 3f1fb34f 00000000 3f481454 00007f2d 43500000 42ea0000 3f800000 00000003 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x11226cb760] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe:   state before op 15 at 804: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 804: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 804: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   s[20:23]: base 0x1100000000 [0x1100000000] 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 | +0x540 [0x1100000540] 00000000 00000000 00000000 00000000 | table 
+timeout probe:   state before op 15 at 812: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 812: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 812: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   s[24:27]: base 0x11226cb220 [0x11226cb220] 40155555 43c90d0d 3d7ab387 3f800000 3f1fb34f 00000000 3f481454 00007f2d 43500000 42ea0000 3f800000 00000003 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x11226cb760] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe: op 24 at 1799: off 0x1860 base1 0x1193ad3900 index_base 0x0 args [0x1193ad5160] 00000047 00000001 00000000 00000000 00000000 ran
+timeout probe:   state before op 15 at 820: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 820: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 820: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe: op 11 at 1872: 00000001 93ad3900 00000011 ran (mapped -1)
+timeout probe:   state before op 15 at 830: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 830: program not set in this buffer, 0xffffffffff00, groups 4 x 1 x 1 ran
+timeout probe: op 15 at 830: 00000004 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 24 at 1876: stages 00482030 subgrp 00000040 onchip 00400801 payload 00000000 | prim 00000001 itype 00000400 ninst 00000008 ge_cntl 00000201 stereo 00000000 pc_alloc 00000000 | gs 0000000000000000 es 0000000011d01345 ps 0000000011d5509b cs 0000000000000000 ls 0000000000000000 hs 0000000000000000
+timeout probe:   state before op 15 at 840: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 840: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 840: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   gs user data: 2363f130 00100011 00000006 00005204 226cf070 00100011 00000028 0004dfac 226cb220 00100011 0000004d 0004dfac 2363f190 00100011 00000001 0004dfac 23774d00 00100011 000000a8 0004dfac 00000000 00100011 00000002 0004dfac 226cb220 00100011 0000004d 0004dfac e09e3780 00000011 00000000 00000000
+timeout probe:   state before op 15 at 848: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 848: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 848: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   s[8:11]: base 0x11226cb220 [0x11226cb220] 40155555 43c90d0d 3d7ab387 3f800000 3f1fb34f 00000000 3f481454 00007f2d 43500000 42ea0000 3f800000 00000003 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x11226cb760] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe:   state before op 15 at 856: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 856: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe:   s[20:23]: base 0x1100000000 [0x1100000000] 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 | +0x540 [0x1100000540] 00000000 00000000 00000000 00000000 | table 
+timeout probe: op 15 at 856: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 864: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe:   s[24:27]: base 0x11226cb220 [0x11226cb220] 40155555 43c90d0d 3d7ab387 3f800000 3f1fb34f 00000000 3f481454 00007f2d 43500000 42ea0000 3f800000 00000003 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x11226cb760] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe: dispatch op 15 at 864: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 864: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe: op 24 at 1876: off 0x1880 base1 0x1193ad3900 index_base 0x0 args [0x1193ad5180] 0000003f 00000001 00000000 00000000 00000000 ran
+timeout probe:   state before op 15 at 872: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 872: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 872: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 880: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: op 11 at 1949: 00000001 93ad3900 00000011 ran (mapped -1)
+timeout probe: dispatch op 15 at 880: program not set in this buffer, 0xffffffffff00, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 880: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 24 at 1953: stages 00482030 subgrp 00000040 onchip 00400801 payload 00000000 | prim 00000001 itype 00000400 ninst 00000008 ge_cntl 00000201 stereo 00000000 pc_alloc 00000000 | gs 0000000000000000 es 0000000011d01345 ps 0000000011d54651 cs 0000000000000000 ls 0000000000000000 hs 0000000000000000
+timeout probe:   state before op 15 at 890: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 890: program not set in this buffer, 0xffffffffff00, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 890: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   gs user data: 2363f1a0 00100011 00000008 00005204 226cf070 00100011 00000028 0004dfac 226cb220 00100011 0000004d 0004dfac 2363f220 00100011 00000001 0004dfac 23774d00 00100011 000000a8 0004dfac 00000000 00100011 00000002 0004dfac 226cb220 00100011 0000004d 0004dfac e09e3780 00000011 00000000 00000000
+timeout probe:   state before op 15 at 898: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 898: program not set in this buffer, 0xffffffffff00, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 898: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   s[8:11]: base 0x11226cb220 [0x11226cb220] 40155555 43c90d0d 3d7ab387 3f800000 3f1fb34f 00000000 3f481454 00007f2d 43500000 42ea0000 3f800000 00000003 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x11226cb760] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe:   state before op 15 at 906: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe:   s[20:23]: base 0x1100000000 [0x1100000000] 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 | +0x540 [0x1100000540] 00000000 00000000 00000000 00000000 | table 
+timeout probe: dispatch op 15 at 906: program not set in this buffer, 0xffffffffff00, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 906: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   s[24:27]: base 0x11226cb220 [0x11226cb220] 40155555 43c90d0d 3d7ab387 3f800000 3f1fb34f 00000000 3f481454 00007f2d 43500000 42ea0000 3f800000 00000003 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x11226cb760] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe:   state before op 15 at 916: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: op 24 at 1953: off 0x18a0 base1 0x1193ad3900 index_base 0x0 args [0x1193ad51a0] 0000008f 00000001 00000000 00000000 00000000 ran
+timeout probe: dispatch op 15 at 916: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 916: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe: write op 49 at 1964: 0x1200006890 select 2 value 0x7f2c0060003a (packet 8 dwords); now 0x7f2c00600039 ran
+timeout probe:   state before op 15 at 924: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 924: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe: write op 49 at 1983: 0x1200006e20 select 2 value 0x9076f702d (packet 8 dwords); now 0x907575148 ran
+timeout probe: op 15 at 924: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe: write op 49 at 1991: 0x1200006de0 select 2 value 0x90755616f (packet 8 dwords); now 0x907656bc8 ran
+timeout probe: write op 49 at 1999: 0x1200006e00 select 2 value 0x9074533d7 (packet 8 dwords); now 0x907575148 ran
+timeout probe:   state before op 15 at 932: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: write op 49 at 2018: 0x1200006e20 select 2 value 0x9074533d7 (packet 8 dwords); now 0x907575148 ran
+timeout probe: dispatch op 15 at 932: program not set in this buffer, 0xffffffffff00, groups 2 x 1 x 1 ran
+timeout probe: write op 49 at 2029: 0x1200006e00 select 2 value 0x907411d4a (packet 8 dwords); now 0x907575148 ran
+timeout probe: op 15 at 932: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe: write op 49 at 2047: 0x1200006e20 select 2 value 0x907411d4a (packet 8 dwords); now 0x907575148 ran
+timeout probe:   state before op 15 at 942: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs ffffffffffffffff ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: write op 49 at 2055: 0x12004b4e80 select 3 value 0x0 (packet 8 dwords); now 0x0 ran
+timeout probe: dispatch op 15 at 942: program not set in this buffer, 0xffffffffff00, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 942: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran

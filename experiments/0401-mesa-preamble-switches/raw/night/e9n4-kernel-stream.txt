@@ -1,0 +1,51 @@
+lis 06 03:05:47.175395 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+lis 06 03:07:52.176537 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+lis 06 03:09:37.029470 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:77)
+lis 06 03:09:37.216620 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 3413059 thread bc5-ring pid 3413564
+lis 06 03:09:37.276051 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x0000000000000000 from client 0x1b (UTCL2)
+lis 06 03:09:37.296763 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00701231
+lis 06 03:09:37.297109 bazzite kernel: amdgpu 0000:01:00.0:          Faulty UTCL2 client ID: SQC (inst) (0x9)
+lis 06 03:09:37.392387 bazzite kernel: amdgpu 0000:01:00.0:          MORE_FAULTS: 0x1
+lis 06 03:09:37.405434 bazzite kernel: amdgpu 0000:01:00.0:          WALKER_ERROR: 0x0
+lis 06 03:09:37.405804 bazzite kernel: amdgpu 0000:01:00.0:          PERMISSION_FAULTS: 0x3
+lis 06 03:09:37.437859 bazzite kernel: amdgpu 0000:01:00.0:          MAPPING_ERROR: 0x0
+lis 06 03:09:37.470264 bazzite kernel: amdgpu 0000:01:00.0:          RW: 0x0
+lis 06 03:09:37.470654 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:77)
+lis 06 03:09:37.508477 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 3413059 thread bc5-ring pid 3413564
+lis 06 03:09:37.543345 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x0000000000000000 from client 0x1b (UTCL2)
+lis 06 03:09:37.543729 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:77)
+lis 06 03:09:37.584710 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 3413059 thread bc5-ring pid 3413564
+lis 06 03:09:37.585170 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x0000000000000000 from client 0x1b (UTCL2)
+lis 06 03:09:37.585512 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:77)
+lis 06 03:09:37.691308 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 3413059 thread bc5-ring pid 3413564
+lis 06 03:09:37.691835 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x0000000000000000 from client 0x1b (UTCL2)
+lis 06 03:09:37.749494 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:77)
+lis 06 03:09:37.773851 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 3413059 thread bc5-ring pid 3413564
+lis 06 03:09:37.774178 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x0000000000000000 from client 0x1b (UTCL2)
+lis 06 03:09:37.800995 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:77)
+lis 06 03:09:37.802660 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 3413059 thread bc5-ring pid 3413564
+lis 06 03:09:37.802863 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x0000000000000000 from client 0x1b (UTCL2)
+lis 06 03:09:37.803020 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:77)
+lis 06 03:09:37.803174 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 3413059 thread bc5-ring pid 3413564
+lis 06 03:09:37.832213 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x0000000000000000 from client 0x1b (UTCL2)
+lis 06 03:09:37.863008 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:77)
+lis 06 03:09:37.863373 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 3413059 thread bc5-ring pid 3413564
+lis 06 03:09:37.863548 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x0000000000000000 from client 0x1b (UTCL2)
+lis 06 03:09:37.863707 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:77)
+lis 06 03:09:37.863862 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 3413059 thread bc5-ring pid 3413564
+lis 06 03:09:37.864019 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x0000000000000000 from client 0x1b (UTCL2)
+lis 06 03:09:37.864165 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:77)
+lis 06 03:09:38.063410 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 3413059 thread bc5-ring pid 3413564
+lis 06 03:09:38.063947 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x0000000000000000 from client 0x1b (UTCL2)
+lis 06 03:09:39.073728 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+lis 06 03:09:39.074218 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+lis 06 03:09:39.074402 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+lis 06 03:09:39.106110 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+lis 06 03:09:39.106494 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=23672920, emitted seq=23672922
+lis 06 03:09:39.106876 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 3413059 thread bc5-chainwd pid 3413585
+lis 06 03:09:39.125719 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+lis 06 03:09:39.126031 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+lis 06 03:09:39.126201 bazzite kernel: amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+lis 06 03:09:39.126380 bazzite bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=23672920, emitted seq=23672922
+lis 06 03:09:39.126454 bazzite bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+lis 06 03:09:57.175389 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
