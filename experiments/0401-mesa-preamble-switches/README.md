@@ -758,4 +758,39 @@ zmiany - chyba ze ich nie uwzględniłeś jeszcze". What that drops here, with t
 - The e10 plan "AMM fix + exp 0407's five changes" is cancelled. Series e10 follows exp 0408's §G6
   (exp/0408-memory-review). Memory A/B arms must walk or use his plays (0408 §A.2, §E, §F).
 
+**Series e10 (laptop, in progress, 2026-11-06): exp 0408 §G6's first items, on the top session's order.** No box access
+yet. Every switch is default off.
+
+*His shortcut, prepared, not installed* (`shortcut0401.sh`, commit 925144a1).
+- Mode `cpacb` is now e8 as installed (844a819f's 65 words) plus exp 0379's zero skip with exp 0388's pinned list, as
+  the e8 shortcut of 24fccd38 had it. This is 0408's first test (§D2, §F).
+- The dry run gives e25c719b. Its Exec line differs from 844a819f's by the one word `BC5_DIRECT_ZERO_SKIP=…`, and its
+  Comment says what it runs.
+- Its risk is F403: 3 in 19 arms with the skip, 0 in 10 without, each followed by a successful ring reset in e8/e9.
+- It installs only on his own yes in this session, after he has stopped playing. Mode `cpacb-e8` is the rollback; its
+  dry run reproduces 844a819f.
+- The FROM_PARAM=1 mode of db961af8 is now `cpacb-fp`. It is kept as a record and refuses to install.
+
+*Runner words* (`run0401t.sh` a830d60f, `night0401.sh` d2e5eefe; stand-in `test0401e10run.sh`, 37 of 37). Each word is
+read by the runner and passed on unchanged:
+- `BC5_0401T_LEARNED=empty`: the arm's learned file starts empty.
+  - Every window the title then needs outside the eager heaps is a GPU fault and a ring reset (F88).
+  - The first such fault ends the arm under the stop rule. So 0408 §E's "empty learned file" arm costs a reset per
+    window.
+  - The prot census's forced-chunk line answers the same question with no fault.
+- `BC5_0401T_MOUNT=<bc5-mount under ~/bc5-work/exp0401*>` with `BC5_0401T_MOUNT_MD5`: the derived launcher starts that
+  mount, as exp 0381's `setup0381r.sh` did, with the arm's own mount log.
+  - No bc5-mount may run at the start, or the launcher would reuse it.
+  - The running mount's md5 and every `BC5_MOUNT_*` word are checked in its environment.
+  - A `BC5_MOUNT_*` word without a private mount is refused.
+  - This is for 0408's `BC5_MOUNT_DIRECT_IO=1 BC5_MOUNT_CACHE_MIB=512` arm. Exp 0381 built that switch (5249deee,
+    `fuse.rs:299-303`, branch exp/0381-mount-reread) and never ran it. Main's mount has neither word.
+- `BC5_0401T_WALK=<s>`: from G, exp 0379's walk cycles (the left stick forward 15 s, a 1.2-s camera turn that changes
+  side every fourth cycle, 0.3 s pause).
+  - Whether the character moves at his slot-4 save is untested. Exp 0379's walk from the S6N save did not stream
+    (F634). Exp 0381's RR3 walk (`walk0381r.cmd`, the same stick cycles, from its sample save f93851b7) did: the mount
+    served 1.2–1.9 GiB a minute from minute 5 (exp 0381 reread README, "First measured arm").
+  - Each route arm now writes `<tag>-io.txt` every minute: the mount's and the emulator's rchar and read_bytes. That
+    file says whether an arm streamed, and the arm is a memory A/B only if it did.
+
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.
