@@ -45,7 +45,7 @@ chmod +x "$H/bc5-work/play-pkg.sh" "$H/bc5-work/exp0330/sample0330.sh"; : > "$H/
 out=$(HOME=$H MODE=route bash "$RUN" s0 t2 900 600 "$RB" "$RBM" "BC5_0401T_MOUNT=$MB" BC5_0401T_MOUNT_MD5=$MD 2>&1 | tail -1)
 case "$out" in *"$MB is not md5 $MD: not started"*) ok "the mount's md5 is checked before the claim" ;; *) bad "mount md5" "[$out]" ;; esac
 out=$(HOME=$H MODE=route bash "$RUN" s0 t3 900 600 "$RB" "$RBM" "BC5_0401T_MOUNT=$MB" BC5_0401T_MOUNT_MD5=$MBM 2>&1 | tail -1)
-case "$out" in *"the live saves read"*) ok "a right mount md5 passes to the saves check" ;; *) bad "mount md5 pass" "[$out]" ;; esac
+case "$out" in *"no named snapshot"*) ok "a right mount md5 passes to the saves check" ;; *) bad "mount md5 pass" "[$out]" ;; esac
 [ ! -e "$H/bc5-work/BOX-LOCK" ] && ok "nothing claimed by the refused starts" || bad "lock" "a BOX-LOCK was made"
 
 # 2. the launcher derivation, as the runner runs it (its own text between chk() and bash -n)
@@ -85,5 +85,42 @@ mkdir -p "$WK/proc/42"; printf 'rchar: 1234\nwchar: 5\nsyscr: 1\nsyscw: 1\nread_
 [ "$(iof 42)" = "1234 4096" ] && ok "iof reads rchar and read_bytes" || bad "iof" "$(iof 42)"
 [ "$(iof 43)" = "? ?" ] && ok "iof: no process gives ? ?" || bad "iof missing" "$(iof 43)"
 [ "$(iof "")" = "? ?" ] && ok "iof: no pid gives ? ?" || bad "iof empty" "$(iof "")"
+# 5. The named snapshot (exp 0401 e10, LESSONS R45): MODE=name, its refusals, and the gate. The live saves directory is a
+# trap here: any read of it shows in the access check at the end.
+LIVE_TRAP=$H/bc5-work/_SaveData/PPSA03671; mkdir -p "$LIVE_TRAP"; printf 'live\n' > "$LIVE_TRAP/trap.bin"; chmod 000 "$LIVE_TRAP" 2> /dev/null
+ET=$H/bc5-work/exp0401t; mkdir -p "$ET/saves-prev"; printf 'slot four\n' > "$ET/saves-prev/sdata.bin"; mkdir -p "$ET/saves-prev/sub"; printf 'x\n' > "$ET/saves-prev/sub/param.sfo"
+WANT=$(cd "$WK" && mkdir -p sumchk/PPSA03671 && cp -a "$ET/saves-prev/." sumchk/PPSA03671/ && cd sumchk && LC_ALL=C find PPSA03671 -type f -exec md5sum {} + | sort -k2 | md5sum | cut -c1-16)
+nm() { HOME=$H MODE=name bash "$RUN" "$@" 2>&1 | tail -1; }
+o=$(nm "$WANT" nosuch); case "$o" in *"no snapshot $ET/saves-nosuch"*) ok "name: no source snapshot" ;; *) bad "name nosrc" "$o" ;; esac
+o=$(nm 0000000000000000 prev); case "$o" in *"not 0000000000000000: removed"*) ok "name: a wrong sum is refused and removed" ;; *) bad "name wrong" "$o" ;; esac
+[ ! -e "$ET/saves-named" ] && ok "name: nothing left after a wrong sum" || bad "name left" "$(ls "$ET")"
+o=$(nm "$WANT" 'pr ev'); case "$o" in *"letters and digits"*) ok "name: the tag is checked" ;; *) bad "name tag" "$o" ;; esac
+o=$(nm "$WANT" prev); case "$o" in *"named snapshot $ET/saves-named/PPSA03671: $WANT"*) ok "name: made, sum $WANT" ;; *) bad "name make" "$o" ;; esac
+o=$(nm "$WANT" prev); case "$o" in *"exists: not made again"*) ok "name: never made twice" ;; *) bad "name twice" "$o" ;; esac
+# the gate: a wrong sum stops before the claim; the right one passes it
+o=$(HOME=$H MODE=route bash "$RUN" 1111111111111111 t6 900 600 "$RB" "$RBM" 2>&1 | tail -1)
+case "$o" in *"the named snapshot reads $WANT (LC_ALL=C), not 1111111111111111: not started"*) ok "gate: a wrong sum is refused" ;; *) bad "gate wrong" "$o" ;; esac
+[ ! -s "$H/bc5-work/BOX-LOCK" ] && ok "gate: nothing claimed" || bad "gate lock" "$(cat "$H/bc5-work/BOX-LOCK")"
+# the right sum: an end-to-end stand-in run with the box's launcher text (97835f88), no emulator ever appearing; shims stand
+# in for pgrep/sudo/setsid/distrobox (none of them on the laptop)
+mkdir -p "$WK/shim"; for t in pgrep sudo distrobox; do printf '#!/bin/sh\nexit 1\n' > "$WK/shim/$t"; done; printf '#!/bin/sh\nexit 0\n' > "$WK/shim/setsid"; chmod +x "$WK/shim/"*
+cp "$PKG" "$H/bc5-work/play-pkg.sh"; mkdir -p "$H/bc5-work/exp0330/wd" "$H/bc5-work/input-dummy"; : > "$H/bc5-work/input.cfg"
+o=$(PATH="$WK/shim:$PATH" HOME=$H MODE=route bash "$RUN" "$WANT" t7 900 600 "$RB" "$RBM" 2>&1 | tail -3 | tr '\n' '|')
+case "$o" in *"t7 (route): SETUP: no emulator started"*) ok "gate: the right sum runs to the arm's end (no emulator here)" ;; *) bad "gate run" "$o" ;; esac
+grep -q "t7 the private copy reset from the named snapshot $WANT" "$ET/raw/saves.txt" && ok "the private copy was reset and hashed" || bad "reset" "$(cat "$ET/raw/saves.txt" 2> /dev/null)"
+grep -q "t7 the private copy after the arm: $WANT (unchanged; the named snapshot $WANT)" "$ET/raw/saves.txt" && ok "the copy is hashed after the arm" || bad "after" "$(cat "$ET/raw/saves.txt" 2> /dev/null)"
+cmp -s "$ET/saves-prev/sdata.bin" "$ET/wd/_SaveData/PPSA03671/sdata.bin" && ok "the wd holds the named snapshot's files" || bad "wd" "$(ls -R "$ET/wd/_SaveData" | head)"
+grep -q "whole run: no fps lines" "$ET/raw/t7-summary.txt" && ok "the summary labels the fps figure whole-run" || bad "label" "$(cat "$ET/raw/t7-summary.txt")"
+[ ! -e "$ET/saves-t7" ] && ok "no per-arm snapshot of the live saves" || bad "snap" "saves-t7 exists"
+[ ! -s "$H/bc5-work/BOX-LOCK" ] && ok "the lock is free again" || bad "lock after" "$(cat "$H/bc5-work/BOX-LOCK")"
+chmod 755 "$LIVE_TRAP" 2> /dev/null
+grep -qF "_SaveData/PPSA03671" "$ET/raw/saves.txt" && bad "live path" "saves.txt names the live saves" || ok "saves.txt never names the live saves"
+grep -n 'W/_SaveData\|LIVE\|saves()' "$RUN" > /dev/null && bad "live code" "$(grep -n 'W/_SaveData\|LIVE\|saves()' "$RUN")" || ok "no live-save read is left in the runner"
+
+# 6. FPSL, on a stand-in play log: whole run, as labelled
+printf 'x [bc5] fps counter: t 10.0 s: 300 flips in 10.0 s, longest gap 50.0 ms\ny [bc5] fps counter: t 20.0 s: 200 flips in 10.0 s, longest gap 150.0 ms\n' > "$WK/fps.log"
+R=$WK; TAG=x; eval "$(sed -n '/^FPSL=\$(grep -a "fps counter"/,/^  awk /p' "$RUN" | sed 's#"\$R/\$TAG-play.log"#"$WK/fps.log"#')"
+[ "$FPSL" = "whole run: 25.0 flips/s over 20 s, 1 seconds with a gap over 100 ms, longest 150 ms" ] && ok "FPSL: whole run, both lines" || bad "FPSL" "$FPSL"
+
 echo "test_run_e10: $pass of $((pass + fail)); $([ "$fail" = 0 ] && echo end || echo FAILED)"
 [ "$fail" = 0 ]

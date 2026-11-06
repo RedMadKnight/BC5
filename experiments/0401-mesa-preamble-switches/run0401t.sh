@@ -6,8 +6,9 @@
 #   MODE=route  the scripted route to slot 4 (cross, down x3, cross, cross), gated on the journal's frame profile lines; then
 #               gameplay until G+<play s> or the cap.
 # The binary is given with its md5; the switches are env words (KEY=VALUE ...). RT on and JobArenaFix on, in a private
-# copy of input.cfg. The live saves are compared only, never written: the route save is a fresh snapshot of them, copied
-# into the private working directory. The freeze watcher (the top session's exp0401e3/freeze-watch.sh and freeze-dump.sh,
+# copy of input.cfg. The live saves are not read, compared or written (exp 0401 e10, LESSONS R45): the route save is ONE
+# named snapshot, $E/saves-named/PPSA03671, made once by MODE=name from an earlier arm's own snapshot; every arm checks its
+# sum, resets the private working directory's copy from it, and hashes that copy before and after. The freeze watcher (the top session's exp0401e3/freeze-watch.sh and freeze-dump.sh,
 # read-only gdb) and exp 0330's memory sampler run beside the emulator. BOX-LOCK by an atomic hard-link claim; only our
 # exact line is removed at the end. The kernel log is streamed by the laptop, not here.
 # Series e10 (2026-11-06, exp 0408 sections E and G6): three runner words, read here and passed on unchanged:
@@ -23,11 +24,25 @@
 #                             forward 15 s, a right-stick turn of 1.2 s that changes side every fourth cycle, 0.3 s pause.
 # Every arm also writes <tag>-io.txt: each minute the mount's and the emulator's rchar and read_bytes (/proc/<pid>/io), to
 # tell whether the arm streamed, and the learned file's line count at the end.
-# usage (on the box): MODE=start|route run0401t.sh <live saves sum, LC_ALL=C> <tag> <cap s> <play s> <binary> <md5> [KEY=VALUE ...]
+# usage (on the box): MODE=start|route run0401t.sh <the named snapshot's sum, LC_ALL=C> <tag> <cap s> <play s> <binary> <md5> [KEY=VALUE ...]
+#                     MODE=name run0401t.sh <its sum> <tag of an earlier arm whose snapshot $E/saves-<tag> becomes the named one>
+# The sum: LC_ALL=C; (cd <dir> && find PPSA03671 -type f -exec md5sum {} + | sort -k2 | md5sum | cut -c1-16) (exp 0253's).
 set -u
 export LC_ALL=C
 MODE=${MODE:-start}
-EXPECT_SAVES=${1:?the live saves sum}; TAG=${2:?a tag}; SECS=${3:?the cap}; PLAY=${4:?the play seconds}; BIN=${5:?a binary}; WANT=${6:?its md5}
+sumof() { (cd "$1" && find PPSA03671 -type f -exec md5sum {} + | sort -k2 | md5sum | cut -c1-16); }  # exp 0253's method, LC_ALL=C, over <dir>/PPSA03671
+if [ "$MODE" = name ]; then   # exp 0401 e10 (LESSONS R45): the one named snapshot, copied from an earlier arm's own; the live saves are not read
+  E=$HOME/bc5-work/exp0401t; NS=$E/saves-named; SUMW=${1:?the snapshot sum}; SRC=${2:?the tag of an earlier arm}
+  case "$SRC" in *[!A-Za-z0-9]* | "") echo "the tag is letters and digits"; exit 1 ;; esac
+  [ ! -e "$NS" ] || { echo "$NS exists: not made again"; exit 1; }
+  [ -d "$E/saves-$SRC" ] && [ ! -L "$E/saves-$SRC" ] || { echo "no snapshot $E/saves-$SRC"; exit 1; }
+  mkdir -p "$NS" && cp -a "$E/saves-$SRC" "$NS/PPSA03671" || { rm -rf "$NS"; echo "the copy failed"; exit 1; }
+  got=$(sumof "$NS")
+  [ "$got" = "$SUMW" ] || { rm -rf "$NS"; echo "the copy reads $got, not $SUMW: removed"; exit 1; }
+  echo "named snapshot $NS/PPSA03671: $got (from $E/saves-$SRC)"
+  exit 0
+fi
+EXPECT_SAVES=${1:?the named snapshot sum}; TAG=${2:?a tag}; SECS=${3:?the cap}; PLAY=${4:?the play seconds}; BIN=${5:?a binary}; WANT=${6:?its md5}
 shift 6
 SWITCHES=("$@")
 case "$MODE" in start | route) ;; *) echo "MODE is start or route"; exit 1 ;; esac
@@ -57,7 +72,7 @@ done
 [ -z "$WALK" ] || [ "$WALK" -le "$PLAY" ] || { echo "the walk is longer than the play: not started"; exit 1; }
 [ "$SECS" -ge 120 ] && [ "$SECS" -le 1200 ] || { echo "the cap is 120-1200 s"; exit 1; }
 W=$HOME/bc5-work; E=$W/exp0401t; R=$E/raw; LOCK=$W/BOX-LOCK; E30=$W/exp0330
-SD=$W/_SaveData/PPSA03671
+NS=$E/saves-named   # exp 0401 e10: the one named snapshot (MODE=name)
 LAUNCH_SRC=$W/play-pkg.sh; LAUNCH=$E/play-pkg-0401t.sh; LEARN_SRC=$W/direct-learned-pkg.txt; LEARN=$E/direct-learned-pkg.txt
 FW=$W/exp0401e3/freeze-watch.sh; FD=$W/exp0401e3/freeze-dump.sh
 mkdir -p "$R"
@@ -68,9 +83,9 @@ if [ -n "$MOUNT_BIN" ]; then   # exp 0401 e10
   [ -x "$MOUNT_BIN" ] && [ "$(md5sum < "$MOUNT_BIN" | cut -d' ' -f1)" = "$MOUNT_MD5" ] || { echo "$MOUNT_BIN is not md5 $MOUNT_MD5: not started"; exit 1; }
   pgrep -x bc5-mount > /dev/null && { echo "a bc5-mount runs, and the launcher would reuse its mount: not started"; exit 1; }
 fi
-saves() { (cd "$W/_SaveData" && find PPSA03671 -type f -exec md5sum {} + | sort -k2 | md5sum | cut -c1-16); }  # exp 0253's ab0253.sh, LC_ALL=C
-LIVE=$(saves)
-[ "$LIVE" = "$EXPECT_SAVES" ] || { echo "the live saves read $LIVE (LC_ALL=C), not $EXPECT_SAVES: not started"; exit 1; }
+[ -d "$NS/PPSA03671" ] && [ ! -L "$NS" ] || { echo "no named snapshot $NS (MODE=name makes it): not started"; exit 1; }
+NSUM=$(sumof "$NS")
+[ "$NSUM" = "$EXPECT_SAVES" ] || { echo "the named snapshot reads $NSUM (LC_ALL=C), not $EXPECT_SAVES: not started"; exit 1; }
 [ -e "$R/$TAG-start.txt" ] && { echo "tag $TAG already used: not started"; exit 1; }
 # The lock: free is an empty BOX-LOCK. The empty file goes aside, our line is hard-linked in (ln fails if anyone
 # recreated it), and a writer who had the old file open shows up in the aside copy (box0401.sh's claim_inner).
@@ -141,11 +156,11 @@ if [ ! -e "$WD" ]; then
   find "$WD30" -mindepth 1 -maxdepth 1 -type l ! -name _SaveData ! -name _SaveData-pkg-play -exec cp -P -t "$WD" {} + || { echo "the wd links could not be copied"; exit 1; }
 fi
 [ -d "$WD/_SaveData" ] && [ ! -L "$WD/_SaveData" ] && [ -d "$SDD" ] && [ ! -L "$SDD" ] || { echo "$WD/_SaveData or $SDD is not a private directory"; exit 1; }
-# 4. The route save: a fresh snapshot of the live saves, checked equal, copied into the wd.
-SNAP=$E/saves-$TAG
-cp -a "$SD" "$SNAP" && diff -rq "$SD" "$SNAP" > /dev/null || { echo "the live saves could not be snapshot"; exit 1; }
-echo "$(date '+%F %T') $TAG live saves $LIVE (LC_ALL=C), snapshot $SNAP" >> "$R/saves.txt"
-rm -rf "$WD/_SaveData/PPSA03671" && cp -a "$SNAP" "$WD/_SaveData/PPSA03671" && diff -rq "$SNAP" "$WD/_SaveData/PPSA03671" > /dev/null || { echo "the route saves could not be put in place"; exit 1; }
+# 4. The route save: the private copy reset from the named snapshot and hashed (exp 0401 e10, LESSONS R45).
+rm -rf "$WD/_SaveData/PPSA03671" && cp -a "$NS/PPSA03671" "$WD/_SaveData/PPSA03671" || { echo "the route saves could not be put in place"; exit 1; }
+WSUM=$(sumof "$WD/_SaveData")
+[ "$WSUM" = "$NSUM" ] || { echo "the private copy reads $WSUM, not the named snapshot's $NSUM: not started"; exit 1; }
+echo "$(date '+%F %T') $TAG the private copy reset from the named snapshot $NSUM" >> "$R/saves.txt"
 CMD=$E/in-$TAG.cmd
 printf 'wait 1000\n' > "$CMD"; rm -f "$CMD.done"
 ENVS=(BC5_EMU="$BIN" BC5_0401T_INPUT_CONFIG="$CFG" KYTY_BC5_INPUT_CMD="$CMD" "${SWITCHES[@]}")
@@ -257,14 +272,14 @@ if [ -f "$J" ] && [ "$(stat -c %Y "$J")" -ge "$T0" ]; then
 else echo "no journal of this run ($J)" > "$R/$TAG-journal.txt"; : > "$R/$TAG-probe.txt"; : > "$R/$TAG-memline.txt"; fi
 sudo -n dmesg 2> /dev/null | tail -n +"$((N + 1))" | grep -i "amdgpu\|gpu\|oom\|hung\|SQC" > "$R/$TAG-dmesg-after.txt"
 find "$HOME/bc5-data/captures/devcoredump" -maxdepth 1 -type f -newermt "@$T0" -printf '%TY-%Tm-%Td %TH:%TM:%.2TS %s %p\n' 2> /dev/null > "$R/$TAG-devcoredump.txt"
-# The play log's fps counter lines: flips per second, and the seconds with a gap over 100 ms; from G when there is a G.
+# The play log's fps counter lines: flips per second, and the seconds with a gap over 100 ms, over the WHOLE run (exp 0401
+# e10, LESSONS R11): the counter's t is the emulator's clock and G is the runner's, so no G window is cut here.
 FPSL=$(grep -a "fps counter" "$R/$TAG-play.log" | sed -E 's/.*t ([0-9.]+) s: ([0-9]+) flips in ([0-9.]+) s, longest gap ([0-9.]+) ms.*/\1 \2 \3 \4/' |
-  awk -v g="${G:-0}" -v t0=0 'NF == 4 {n++; f += $2; s += $3; if ($4 > 100) b++; if ($4 > m) m = $4} END {if (s > 0) printf "%.1f flips/s over %d s, %d seconds with a gap over 100 ms, longest %.0f ms", f / s, s, b, m; else printf "no fps lines"}')
+  awk 'NF == 4 {n++; f += $2; s += $3; if ($4 > 100) b++; if ($4 > m) m = $4} END {if (s > 0) printf "whole run: %.1f flips/s over %d s, %d seconds with a gap over 100 ms, longest %.0f ms", f / s, s, b, m; else printf "whole run: no fps lines"}')
 MFLOOR=$(awk '!/^#/ && NF > 2 {if (min == "" || $2 < min) min = $2} END {print (min == "" ? "?" : min)}' "$R/$TAG-mem.txt" 2> /dev/null)
 NC=$(grep -c "Access violation\|Segmentation\|Aborted\|terminate called\|--- Error ---" "$R/$TAG-crash.txt"); NK=$(grep -c . "$R/$TAG-dmesg-after.txt"); NF=$(ls "$R/freeze-$TAG" 2> /dev/null | wc -l)
 echo "$TAG ($MODE): ${ENDED:-ended at G+$PLAY} after $DUR s (G ${G:-none}, list ${LISTED:-none}); $FPSL; memory floor ${MFLOOR} MiB available (sampler); crash lines $NC, kernel lines $NK, freeze dumps $NF, devcoredumps $(grep -c . "$R/$TAG-devcoredump.txt")" > "$R/$TAG-summary.txt"
 sync
 cat "$R/$TAG-summary.txt"
-S1=$(saves); echo "$(date '+%F %T') $TAG live saves $S1 (want $LIVE)" >> "$R/saves.txt"
-[ "$S1" = "$LIVE" ] || echo "THE LIVE SAVES ARE NOT $LIVE: tell the top session before anything is restored"
+S1=$(sumof "$WD/_SaveData"); echo "$(date '+%F %T') $TAG the private copy after the arm: $S1 ($([ "$S1" = "$NSUM" ] && echo unchanged || echo "the title wrote it"); the named snapshot $NSUM)" >> "$R/saves.txt"
 sync

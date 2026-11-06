@@ -793,4 +793,25 @@ read by the runner and passed on unchanged:
   - Each route arm now writes `<tag>-io.txt` every minute: the mount's and the emulator's rchar and read_bytes. That
     file says whether an arm streamed, and the arm is a memory A/B only if it did.
 
+*The saves and the frame figure, after Codex's round of 2026-11-06* (relayed by the top session; LESSONS R45, R11). The
+runner is now `run0401t.sh` 221e6fa7 and `night0401.sh` 02954728; the stand-in `test0401e10run.sh` passes 55 of 55, and
+14 of its checks fail on the old runner.
+- The old runner kept a live-save gate that LESSONS R45 had retired. It took the live sum as an argument, refused to
+  start on a live mismatch, made a snapshot of the live saves per arm and compared live before and after.
+- **The live saves are no longer read.** There is one named snapshot, `exp0401t/saves-named/PPSA03671`, made once by
+  `MODE=name run0401t.sh <sum> <tag>` from an earlier arm's own snapshot. No live read is needed for that either.
+- Every arm checks the snapshot's sum and resets the private copy from it. It hashes the copy after the reset and
+  again after the arm. The method is `LC_ALL=C; find PPSA03671 -type f -exec md5sum {} + | sort -k2 | md5sum | cut
+  -c1-16`.
+- His further play does not block any run. `night0401.sh`'s first argument is the named snapshot's sum.
+- **flips/s is labelled "whole run".** The fps counter's `t` runs on the emulator's clock and G on the runner's, so
+  the old "from G" comment was never true. Every flips/s figure in the e7–e9c tables is a whole-run figure.
+- **Limits Codex asked to keep in reports (LESSONS R17, R18).**
+  - e8 and e9 differ in binary and in the set of changes, and only clean arms were compared, so the ~500 MiB of GTT is
+    an observation of those configurations, not the zero skip's isolated effect.
+  - 155 s against 681 s does not show that FROM_PARAM had no effect.
+  - 2 of 5 against 0 of 24 is circumstantial evidence against the late-producer wait, not proof that it is the sole
+    cause.
+  - Running without the zero skip does not guarantee there will be no F403.
+
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.

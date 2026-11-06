@@ -5,9 +5,9 @@
 # come back, removes only our own lock line of that arm if the reboot left it (no emulator runs then), and goes on.
 # Results (text only, never the play log or the journal) come to raw/night/.
 # arms file: one arm per line, "MODE TAG CAP PLAY BINARY MD5 [KEY=VALUE ...]"; lines starting with # are skipped.
-# usage (laptop): bash night0401.sh <live saves sum, LC_ALL=C> <arms file>
+# usage (laptop): bash night0401.sh <the named snapshot's sum (run0401t.sh MODE=name), LC_ALL=C> <arms file>
 set -u
-SUM=${1:?the live saves sum}; ARMS=${2:?an arms file}
+SUM=${1:?the named snapshot sum}; ARMS=${2:?an arms file}
 HERE=$(cd "$(dirname "$0")" && pwd); OUT=$HERE/raw/night; mkdir -p "$OUT"
 SSH=(ssh -n -o ConnectTimeout=10 -o BatchMode=yes -o ServerAliveInterval=30 bc250)   # -n: never read the arms file
 SSHI=(ssh -o ConnectTimeout=10 -o BatchMode=yes bc250)   # for a script on stdin
