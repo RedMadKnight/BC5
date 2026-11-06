@@ -45,6 +45,17 @@ Two facts fall out of it that none of the four documents states:
    F620 (r = −0.84 with mount reads), F689 (r = −0.93; slow minutes follow PSI *io*, not PSI mem). Every A/B that
    wants to show a memory gain in frames must walk.
 
+*Caveats (Codex's review rounds of 2026-11-06, 15:08 and 16:49, `coordination/codex-to-claude.md`).* (a) e8 and e9
+are different binaries (dc7fb4e0 against de6a0ad5, the latter with the zcb/gvw/p406 units) and their words differ in
+more than the skip (`LAZY_RELEASE=30,dry`, `FL_CRUMBS`, two default-off 0406 switches), so the 16-against-4
+comparison does not isolate the skip by itself. The within-binary check is e9z1 (e9, skip on): GTT max 12,348 against
+e9 normal's 12,854-12,913, PSI-full 9.3 s, floor 279 MiB — one arm, and it ended in F403 at G+177, so its swap and
+PSI totals cover a shorter run. r6c against r7m (e6 against e7) carries the same binary confound. The −500 MiB is
+therefore "consistent across four pairs of records, isolated in one arm", not an A/B. (b) Picking the clean arms
+drops the two e8 F403 arms, whose memory rows are not different in kind (GTT 12,149-12,397, floor 238-286 at the
+hang). (c) "0 F403 in 10 arms without the skip" is a small sample and no guarantee; F403's rate with the skip, 3 in
+19, is itself low.
+
 Also from the table: the **old save and the new save differ by ~800 MiB of GTT on the same binary** (r6 e6 at the old
 save 4b6b1ea5: GTT max 12,054, PSI 2 s, 51.1 flips/s; r6c e6 at the new save 558115f3: 12,867, 63 s, 41.3). Every
 "e6 against e7" or "normal against lean" number is only valid within one save.
@@ -61,7 +72,7 @@ Scale: **holds** / **weak** (not shown either way, or shown only under a confoun
 | The e6 → e7 drop (41.3 → 38.4, −7 %) is noise | **weak** | The spread argument is sound (e8 "c" arms 31.9–35.0 at one binary). But the confound runs the *other* way: r7m had a tenth of r6c's PSI-full time and 740 MiB less swap, so if memory had any effect r7m should have been faster. "Noise" cannot be told from "a real e7 cost partly hidden by the memory gain". 0406's own proposed check (r6c's and r7m's `pinned … in N BOs` and `timing split` lines, a box read) is the right one and has not been done. The whole-run averages also carry different loads (G 152 vs 148, fine here). Unresolved, not noise. |
 | The ranked drop list | **holds for items 1–3 and 9, weak for 6** | Item 1 (`ACB_INHERIT=journal`): 0 lines in every arm, census empty — a catcher with nothing to catch, drop. Item 2 (R3 catchers): answered. Item 3 (AMM PRT/EXTRA words): the title imports none of the 26 NIDs; the per-page `std::map` and page table are small (~16 + ~60 MiB) but real. Item 6 (`GPU_CHECK_PRODUCT`): ~1 % reasoned, never measured, and it is an RT-on guard — correctly gated on an RT-on A/B. Item 4/5 (probe copy, learned windows): costs cited from exp 0288 (10-24) and never re-measured; medium is fair. |
 | "FL_CRUMBS was the one switch present in every slower all-on arm" | **weak** | sall 22.8 vs s0 23.4, tall 22.9 vs t0 23.6, t6all 22.0 vs t6 22.8: 2–4 % on 90-s start arms whose own spread is 22.9–24.6 (e4) and 22.8–23.9 (e6). Not evidence. |
-| The lean profile (built from 0406) failed 2 of 4; exp 0401 blames the late-producer wait | **holds (medium-high), and lean's gain is unproven** | e9l3 and e9w1: the same title address 0x930003d83, the same stack, a write to 0; 2 of 5 arms with `WAIT_LATE_PRODUCER_MS=250` against 0 of 24 without, in one boot; the wait acted 2–10 times in each of those arms. The wait was not a 0406 item; lean carried it by the top session's addition, and the e9 results section first left it out of lean's list (corrected in "e9w1 is e9l3's crash"). The other lean failure, e9l1 (a shader reading page 0, F686's near-class), came on normal too (e9n4), so it is not lean's. What remains: lean's +4 % (34.8, 35.4 vs 32.5–34.3) is inside the ±5 % 0406 itself defines, and only two clean lean arms exist. Lean minus the wait has not been bisected (the planned e9d/e9p/e9u arms never ran). |
+| The lean profile (built from 0406) failed 2 of 4; exp 0401 blames the late-producer wait | **holds (medium: the 2-of-5 against 0-of-24 count is circumstantial, as Codex notes; the identical address and stack in both crashes is the stronger half, and no mechanism from the wait to a null write is shown), and lean's gain is unproven** | e9l3 and e9w1: the same title address 0x930003d83, the same stack, a write to 0; 2 of 5 arms with `WAIT_LATE_PRODUCER_MS=250` against 0 of 24 without, in one boot; the wait acted 2–10 times in each of those arms. The wait was not a 0406 item; lean carried it by the top session's addition, and the e9 results section first left it out of lean's list (corrected in "e9w1 is e9l3's crash"). The other lean failure, e9l1 (a shader reading page 0, F686's near-class), came on normal too (e9n4), so it is not lean's. What remains: lean's +4 % (34.8, 35.4 vs 32.5–34.3) is inside the ±5 % 0406 itself defines, and only two clean lean arms exist. Lean minus the wait has not been bisected (the planned e9d/e9p/e9u arms never ran). |
 | Lean's page-0 GPU hang is attributable to lean | **wrong** | e9n4, normal words, same class (SQC instruction fetch at 0, vmid 7). Both are F443's family. |
 
 What 0406 missed: (i) the zero skip is the largest memory lever already measured and it is *off* in the shortcut it
@@ -97,7 +108,10 @@ gain (the plain skip, −500 MiB) outside the plan and its first item unmeasured
 
 #### B4. The top session's conclusions
 
-**(a) `KYTY_BC5_MEMORY_FROM_PARAM` made the "very smooth" play, and turning it off brought the choking back: wrong.**
+**(a) `KYTY_BC5_MEMORY_FROM_PARAM` made the "very smooth" play, and turning it off brought the choking back: wrong as
+an inference — the records do not show it; they also do not exclude an effect** (Codex's caveat: a 155-s play against
+a 681-s one proves nothing either way; what is measured is the ~120 MiB pinned difference at 150 s, and the rest is
+confounded as listed below).
 
 - The times in the brief (16:58 on, 17:18 off) do not match the record. The README dates the smooth play 17:55:24–17:58:00
   (e2, `FROM_PARAM=1`) and the off play 18:16 (681 s). No play log is on the laptop (e2's launcher kept only
