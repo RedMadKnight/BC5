@@ -22,7 +22,7 @@
 #                             without a private mount is refused (the shared mount may not know it).
 #   BC5_0401T_WALK=<s>        route mode only: from G, <s> s of exp 0379's walk (gtt/mk-walk0379.py): the left stick
 #                             forward 15 s, a right-stick turn of 1.2 s that changes side every fourth cycle, 0.3 s pause.
-#   BC5_0401T_LAUNCHER=exp0409  the arm's launcher comes from ~/bc5-work/exp0409/play-pkg-0409.sh (fbe1bff7: the
+#   BC5_0401T_LAUNCHER=exp0409  the arm's launcher comes from ~/bc5-work/exp0409/play-pkg-0409.sh (e4253b93: the
 #                             unpacked game through BC5_GAME_DIR, no bc5-mount) instead of play-pkg.sh (exp 0409 arms).
 # Every arm also writes <tag>-io.txt: each minute the mount's and the emulator's rchar and read_bytes (/proc/<pid>/io), to
 # tell whether the arm streamed, and the learned file's line count at the end.
@@ -65,7 +65,7 @@ for w in "${SWITCHES[@]}"; do
       case "$MOUNT_BIN" in *..* | *[!A-Za-z0-9/_.-]*) echo "BC5_0401T_MOUNT is a plain path: not started"; exit 1 ;; esac ;;
     BC5_0401T_MOUNT_MD5=*) MOUNT_MD5=${w#*=}; [[ "$MOUNT_MD5" =~ ^[0-9a-f]{32}$ ]] || { echo "BC5_0401T_MOUNT_MD5 is an md5: not started"; exit 1; } ;;
     BC5_0401T_LAUNCHER=*) [ "${w#*=}" = exp0409 ] || { echo "BC5_0401T_LAUNCHER takes only exp0409: not started"; exit 1; }; L409=1 ;;
-    BC5_0401T_WALK=*) WALK=${w#*=}; [[ "$WALK" =~ ^[0-9]+$ ]] && [ "$WALK" -ge 60 ] && [ "$WALK" -le 1200 ] || { echo "BC5_0401T_WALK is 60-1200 s: not started"; exit 1; } ;;
+    BC5_0401T_WALK=*) WALK=${w#*=}; [[ "$WALK" =~ ^[0-9]+$ ]] && [ "$WALK" -ge 60 ] && [ "$WALK" -le 3000 ] || { echo "BC5_0401T_WALK is 60-3000 s: not started"; exit 1; } ;;
     BC5_MOUNT_*=*) MOUNT_WORDS+=("$w") ;;
   esac
 done
@@ -73,7 +73,7 @@ done
 [ "${#MOUNT_WORDS[@]}" = 0 ] || [ -n "$MOUNT_BIN" ] || { echo "a BC5_MOUNT_* word needs BC5_0401T_MOUNT: not started"; exit 1; }
 [ -z "$WALK" ] || [ "$MODE" = route ] || { echo "BC5_0401T_WALK is for route arms: not started"; exit 1; }
 [ -z "$WALK" ] || [ "$WALK" -le "$PLAY" ] || { echo "the walk is longer than the play: not started"; exit 1; }
-[ "$SECS" -ge 120 ] && [ "$SECS" -le 1200 ] || { echo "the cap is 120-1200 s"; exit 1; }
+[ "$SECS" -ge 120 ] && [ "$SECS" -le 3000 ] || { echo "the cap is 120-3000 s"; exit 1; }   # e11: up to 3000 s for the ~40-min arm
 W=$HOME/bc5-work; E=$W/exp0401t; R=$E/raw; LOCK=$W/BOX-LOCK; E30=$W/exp0330
 NS=$E/saves-named   # exp 0401 e10: the one named snapshot (MODE=name)
 LAUNCH_SRC=$W/play-pkg.sh; [ "$L409" = 0 ] || LAUNCH_SRC=$W/exp0409/play-pkg-0409.sh; LAUNCH=$E/play-pkg-0401t.sh; LEARN_SRC=$W/direct-learned-pkg.txt; LEARN=$E/direct-learned-pkg.txt
@@ -122,7 +122,7 @@ CFG=$E/input-$TAG.cfg
 { grep -v -i "^RayTracing\.PPSA03671=\|^JobArenaFix\.PPSA03671=" "$W/input.cfg"; echo "RayTracing.PPSA03671=on"; echo "JobArenaFix.PPSA03671=on"; } > "$CFG" || exit 1
 if [ "$LEARNED_EMPTY" = 1 ]; then : > "$LEARN" || exit 1; else cp -p "$LEARN_SRC" "$LEARN" || exit 1; fi  # exp 0401 e10: BC5_0401T_LEARNED
 # 2. The derived launcher: exp 0382's four changed lines and one added line, checked by anchor and by diff size.
-PLAY_PKG_MD5=${PLAY_PKG_MD5:-97835f8850cc22ece5c4bcdbbb646912}; [ "$L409" = 0 ] || PLAY_PKG_MD5=fbe1bff751b226486df3a5f7ed18df78
+PLAY_PKG_MD5=${PLAY_PKG_MD5:-97835f8850cc22ece5c4bcdbbb646912}; [ "$L409" = 0 ] || PLAY_PKG_MD5=e4253b93b63fd26ffa41fb49c0705c4d   # exp 0409's launcher with ulimit -c 0 (11-09)
 LOGA='LOG=~/bc5-work/play-pkg-last.log'; [ "$L409" = 0 ] || LOGA='LOG=/home/kjaniszewski/bc5-work/exp0409/play-last.log  # exp 0409: own log'
 [ "$(md5sum < "$LAUNCH_SRC" | cut -d' ' -f1)" = "$PLAY_PKG_MD5" ] || { echo "$LAUNCH_SRC is not $PLAY_PKG_MD5: not started"; exit 1; }
 cp "$LAUNCH_SRC" "$LAUNCH" || exit 1
