@@ -907,4 +907,24 @@ stop it; `stall0409.sh` beside it).
   without rescue never live to t 317 s at 12,800 MiB. To catch it: a SIGTRAP handler that logs the trapping rip and
   thread before the exit, or gdb attached with `catch signal SIGTRAP` from the start of a rescue arm.
 
+**The learned file cleaned** (2026-11-09 23:17, the top's relay of his "Tak" and his "masz zgode na swoje dzialania"
+here; `hang2242-0401.md` §2).
+- *What the file is.* `~/bc5-work/direct-learned-pkg.txt` is the second title's learned-window file: every launcher
+  exports `BC5_DIRECT_LEARNED` to it (`play-pkg.sh:48`, `exp0409/play-pkg-0409.sh:50`). The emulator loads it at
+  start and appends a 96 MiB window around each GPU fault it recovers from.
+- *Before.* aa797aba, 114 windows; the copy is `raw/learned-0411-before.txt`.
+- *The backup on the box:* `~/bc5-work/direct-learned-pkg.txt.before-0411-20261109-231751`.
+- *Removed, 33 windows* (`raw/learned-0411-removed.txt`):
+  - 0x0;
+  - 0x6e000000, learned from the 22:42 hang's garbage fault;
+  - 31 windows at 2^40 or above, among them alias-byte forms of heap addresses such as 0x8011ce000000 and
+    0xc012ca000000. Our host never maps a GPU address there (`GPU_ADDRESS_LIMIT`, P:20430-20433), so none of them can
+    be a fault on a mapped heap. p406's junk rule counts them the same way.
+- *Kept, 81 windows:*
+  - 78 lie on the game's heaps (0x10_0000_0000–0x20_0000_0000) or in the AMM window (0x7f_0000_0000–0x90_0000_0000,
+    which includes 0x7ffe000000's window reaching into it);
+  - 3 lie below 2^40 but outside both ranges (0x5452000000, 0x2672000000, 0xb8a000000). They are kept, because removing
+    a real window costs a 14-s fault at the next start and a junk one costs one scratch map.
+- *After.* cb30371e, 81 lines. Undo: copy the backup back while no emulator runs.
+
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.
