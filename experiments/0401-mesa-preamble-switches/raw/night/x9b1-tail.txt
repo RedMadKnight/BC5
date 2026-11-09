@@ -1,0 +1,30 @@
+audio trace: t 731.911 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+fps counter: t 732.251 s: 46 flips in 1.002 s, longest gap 67.3 ms, gaps over 40 ms 2, over 70 ms 0
+audio trace: t 732.914 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 998.5 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 732.914 s port 1 type 4 1 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 732.914 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+fps counter: t 733.263 s: 48 flips in 1.012 s, longest gap 62.8 ms, gaps over 40 ms 1, over 70 ms 0
+audio trace: t 733.917 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 998.1 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 733.917 s port 1 type 4 1 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 733.917 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+fps counter: t 734.272 s: 46 flips in 1.009 s, longest gap 66.2 ms, gaps over 40 ms 2, over 70 ms 0
+audio trace: t 734.919 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 998.4 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 734.919 s port 1 type 4 1 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 734.919 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+fps counter: t 735.285 s: 48 flips in 1.013 s, longest gap 59.3 ms, gaps over 40 ms 1, over 70 ms 0
+audio trace: t 735.922 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 997.8 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 735.922 s port 1 type 4 1 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 735.922 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+bc5 tiler scratch: 26624 requests, 3 new buffers (96.0 MiB), pool on, 26621 reused, 2 free
+fps counter: t 736.298 s: 48 flips in 1.013 s, longest gap 73.4 ms, gaps over 40 ms 1, over 70 ms 1
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+audio trace: t 736.924 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 998.4 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 736.924 s port 1 type 4 1 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 736.924 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+bc5-direct: experiment 0341 periodic: shadow labels in 182000 jobs: 2277036 labels, 4554072 writes copied, 2277036 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 15820612 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 15847219 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+fps counter: t 737.314 s: 45 flips in 1.016 s, longest gap 67.6 ms, gaps over 40 ms 2, over 70 ms 0
+== 2026-11-09 10:08:13 exit 0

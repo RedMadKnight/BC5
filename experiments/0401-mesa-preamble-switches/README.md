@@ -814,4 +814,37 @@ runner is now `run0401t.sh` 221e6fa7 and `night0401.sh` 02954728; the stand-in `
     cause.
   - Running without the zero skip does not guarantee there will be no F403.
 
+**The exp 0409 arms** (2026-11-09 09:42–10:25, the top session's relay of his "niech water przetestuje na swoim save", his
+"tak - testuj" here; `raw/night-arms-0409.txt`, `series0409.sh`, `raw/night/x9*`).
+- *Setup.* Binary exp0409 092cd87a: e8 plus `KYTY_BC5_AMM_SCATTER` in libAmpr. The unpacked game came through
+  `BC5_GAME_DIR`, with no bc5-mount (runner word `BC5_0401T_LAUNCHER=exp0409`, runner d7d36058).
+- The words were the e8 shortcut's 65, RT on, G+600, standing still.
+- His slot-4 save came from the named snapshot 558115f366fb11cb, made from e9w1's snapshot. The live saves were not
+  read.
+- 12,800 MiB came from `exp0401e8/run-mem12800.env`; the play logs confirm `KYTY_GUEST_MEMORY_MB` in every arm.
+
+| Arm | Guest MiB | Scatter | End | flips/s (whole run) | GTT max | swap max | MemAvailable min | pool lines |
+|---|---|---|---|---|---|---|---|---|
+| x9a1 | 13,824 | unset | G+600 | 36.2 | 12,913 | 922 | 419 | 0 |
+| x9b1 | 13,824 | rescue | G+600 | 36.4 | 12,944 | 959 | 352 | 0 |
+| x9d1 | 12,800 | rescue | G+600 | 36.6 | 12,727 | 922 | 541 | 0 |
+| x9e1 | 12,800 | journal | the emulator ended at 190 s, before G | — | 12,703 | 666 | 545 | 2 |
+| x9c1 | 12,800 | unset | not run: the series stopped at x9e1 | | | | | |
+
+- **x9e1 is the 12,800-MiB failure.** It printed two `exp 0401 pool: journal — contiguous borrow failed, scattered map
+  refused` lines; journal mode refuses as today's code does.
+- Then a host write into the AMM window (0x8947750000, unmapped) ended the run: an access violation in libc, reported
+  at `runtimeLinker.cpp:1166`.
+- The redacted record is `raw/night/x9e1-crash.txt` and `x9e1-tail.txt`. The title's code bytes and the guest memory
+  words are in laptop scratch only.
+- It did not print the 11-03 message ("AMM virtual-memory unmap is unsupported"). Its cause is the same: a refused AMM
+  map.
+- **x9d1 says nothing about rescue yet (LESSONS R18).** It reached G+600 at 12,800 MiB, but no borrow failed in that
+  run (0 pool lines). Rescue never acted, so 0 maps were scattered.
+- The failure is not deterministic: one 12,800 arm hit it during the load and the other did not.
+- **Memory, one arm each, standing route (0408 §E):** at 12,800 MiB, GTT max was ~190–220 MiB lower than at 13,824 and
+  the MemAvailable floor 120–190 MiB higher. That fits the ~120 MiB measured on 11-03. flips/s did not move (36.2–36.6),
+  which a standing route cannot show anyway.
+- What would decide rescue: more 12,800-MiB rescue arms, until one logs a rescued map and goes on.
+
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.

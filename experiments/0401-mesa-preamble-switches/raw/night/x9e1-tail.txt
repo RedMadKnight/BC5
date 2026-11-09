@@ -1,0 +1,30 @@
+guest rsi = 00007efbd40050f0: (guest memory words, kept in laptop scratch only)
+guest rdi = 0000008947750000 (unmapped)
+guest r8  = 0
+guest r9  = 0
+guest r10 = 0
+guest r11 = 0000000000300000 (unmapped)
+guest r12 = 0000000000400000 (unmapped)
+guest r13 = 00007efbd40050f0: (guest memory words, kept in laptop scratch only)
+guest r14 = 0000000001000000 (unmapped)
+guest r15 = 00007efbef7fa7e8: (guest memory words, kept in laptop scratch only)
+bc5-direct: shared map at 0x0+0x10000: -22
+AJM codec=1, name=ATRAC9 decoder
+--- Build ---
+Source build f266548-dirty
+--- Stack Trace ---
+[0] 00005651cce8310e
+[1] 00005651cce44131
+[2] 00005651cce9069b
+[3] 00007f00764b7cb0
+[4] 00007f0076609d41
+[5] 00005651ccbe3e33
+[6] 00005651ccbe014b
+[7] 00005651ccbe222c
+[8] 00007f00767b6ef9
+[9] 00007f0076515dfa
+[10] 00007f00765a95cc
+--- Error ---
+Access violation: Write [0000008947750000] 
+ in /home/kjaniszewski/bc5-work/exp0401e8/x5-tls/src/loader/runtimeLinker.cpp:1166
+== 2026-11-09 10:24:46 exit 65

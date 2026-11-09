@@ -305,3 +305,21 @@ summary: e9z1 (route): GPU HANG: ring reset succeeded at 324 s after 350 s (G 14
 run rc 0: e9w1 (route): ended by itself at 238 s after 238 s (G 144, list 93); 15.3 flips/s over 226 s, 128 seconds with a gap over 100 ms, longest 2103 ms; memory floor 246 MiB available (sampler); crash lines 2, kernel lines 0, freeze dumps 0, devcoredumps 0 
 summary: e9w1 (route): ended by itself at 238 s after 238 s (G 144, list 93); 15.3 flips/s over 226 s, 128 seconds with a gap over 100 ms, longest 2103 ms; memory floor 246 MiB available (sampler); crash lines 2, kernel lines 0, freeze dumps 0, devcoredumps 0
 == 2026-11-06 03:33:31 all arms done
+== 2026-11-09 09:42:54 series 0409 start (his "tak - testuj")
+== 2026-11-09 09:42:55 arm x9a1 (route, cap 900 s, play 600 s)
+run rc 0: x9a1 (route): ended at G+600 after 732 s (G 132, list 93); whole run: 36.2 flips/s over 726 s, 179 seconds with a gap over 100 ms, longest 1628 ms; memory floor 426 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: x9a1 (route): ended at G+600 after 732 s (G 132, list 93); whole run: 36.2 flips/s over 726 s, 179 seconds with a gap over 100 ms, longest 1628 ms; memory floor 426 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-09 09:55:45 all arms done
+== 2026-11-09 09:55:47 arm x9b1 (route, cap 900 s, play 600 s)
+run rc 0: x9b1 (route): ended at G+600 after 737 s (G 133, list 93); whole run: 36.4 flips/s over 732 s, 182 seconds with a gap over 100 ms, longest 1363 ms; memory floor 346 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: x9b1 (route): ended at G+600 after 737 s (G 133, list 93); whole run: 36.4 flips/s over 732 s, 182 seconds with a gap over 100 ms, longest 1363 ms; memory floor 346 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-09 10:08:39 all arms done
+== 2026-11-09 10:08:40 arm x9d1 (route, cap 900 s, play 600 s)
+run rc 0: x9d1 (route): ended at G+600 after 737 s (G 133, list 93); whole run: 36.6 flips/s over 732 s, 174 seconds with a gap over 100 ms, longest 1253 ms; memory floor 541 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: x9d1 (route): ended at G+600 after 737 s (G 133, list 93); whole run: 36.6 flips/s over 732 s, 174 seconds with a gap over 100 ms, longest 1253 ms; memory floor 541 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-09 10:21:29 all arms done
+== 2026-11-09 10:21:30 arm x9e1 (route, cap 900 s, play 600 s)
+run rc 0: x9e1 (route): ended by itself at 190 s after 190 s (G none, list 93); whole run: 18.9 flips/s over 184 s, 96 seconds with a gap over 100 ms, longest 1453 ms; memory floor 534 MiB available (sampler); crash lines 2, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: x9e1 (route): ended by itself at 190 s after 190 s (G none, list 93); whole run: 18.9 flips/s over 184 s, 96 seconds with a gap over 100 ms, longest 1453 ms; memory floor 534 MiB available (sampler); crash lines 2, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-09 10:25:09 all arms done
+== 2026-11-09 10:25:10 series stopped at x9e1: the emulator ended by itself (crash); crash lines in the log
