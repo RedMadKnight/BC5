@@ -847,4 +847,32 @@ runner is now `run0401t.sh` 221e6fa7 and `night0401.sh` 02954728; the stand-in `
   which a standing route cannot show anyway.
 - What would decide rescue: more 12,800-MiB rescue arms, until one logs a rescued map and goes on.
 
+**The second exp 0409 series** (2026-11-09 10:36–11:13, the top's relay of his "zlec", his "Tak, testuj" here;
+`raw/night-arms-0409b.txt`, all at 12,800 MiB, same setup; a crash did not stop it).
+
+| Arm | Scatter | End | flips/s (whole run) | GTT max | MemAvailable min |
+|---|---|---|---|---|---|
+| x9f1 | first | ROUTE: no gameplay within 150 s of the load (258 s) | 15.0 | 12,521 | 730 |
+| x9f2 | first | ROUTE: no gameplay within 150 s of the load (253 s) | 15.4 | 12,531 | 892 |
+| x9r1 | rescue | the last fps line at t 316.6 s, then nothing; exit 133 (SIGTRAP) at 621 s, no crash text, no kernel line | 20.3 | 12,717 | 564 |
+| x9r2 | rescue | G+600 | 35.8 | 12,749 | 689 |
+| x9c1 | unset | the emulator ended at 190 s, before G: the same host write into the AMM window as x9e1 (0x89440e0000, `runtimeLinker.cpp:1166`) | 19.3 | 12,712 | 729 |
+
+- **The 0409 build logs nothing when it scatters.** The only `exp 0401 pool:` line in its edit script is journal mode's
+  refusal (`mkpool0401.py:159`). `rescue` and `first` return OK after `Bc5MapAutoScattered` with no line and no counter.
+- So for every rescue or first arm, the count of scattered maps is unknown and the pieces cannot be checked for
+  overlap or gaps. 0 pool lines in those arms means nothing.
+- **`first` did not reach gameplay in 2 of 2 arms.** The load ran at ~15 flips/s and never turned into gameplay, with
+  no crash and no kernel line.
+- `first` returns OK before the original contiguous path's remaining steps. Whether it skips work the title relies on
+  is not known (the 0409 README says `first` was untested).
+- **Unset at 12,800 died in 2 of 2 arms** (x9e1 in journal mode, which behaves as unset, and x9c1), both at 190 s
+  during the load, the same way.
+- **Rescue at 12,800: 2 of 3 arms reached G+600** (x9d1, x9r2). x9r1 froze silently ~3 min into gameplay and ended by
+  SIGTRAP 5 min later. Whether rescue scattered anything in any of the three is not recorded.
+- `bc5-direct: shared map at 0x0+0x10000: -22` comes 1,300–2,900 times in every arm, the 13,824-MiB control x9a1
+  included, from log line 153 on: it is not the scatter.
+- **To decide rescue, the build needs a log line and a counter in the scatter path** (pieces, va, size, offsets).
+  More arms of this binary cannot say it.
+
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.
