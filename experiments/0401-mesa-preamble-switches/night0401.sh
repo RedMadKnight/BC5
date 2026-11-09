@@ -42,7 +42,7 @@ grep -v "^water exp 0401t | arm $TAG (" "$L" > "$L.0401t-fix"; mv -fT "$L.0401t-
 echo "water exp 0401t | released after a reboot: arm $TAG | $(date '+%F %T')" >> "$HOME/bc5-work/BOX-QUEUE"
 echo "stale lock line of $TAG removed"
 EOS
-  for f in summary end start switch-lines crash probe memline route freeze-watch dmesg-after devcoredump journal io; do   # io: exp 0401 e10
+  for f in summary end start switch-lines crash probe memline route freeze-watch dmesg-after devcoredump journal io pool tail; do   # io: exp 0401 e10; pool, tail: exp 0409 arms
     timeout 30 "${SSH[@]}" "cat ~/bc5-work/exp0401t/raw/$TAG-$f.txt 2> /dev/null | head -c 400000" > "$OUT/$TAG-$f.txt" 2> /dev/null
   done
   timeout 30 "${SSH[@]}" "ls -la ~/bc5-work/exp0401t/raw/freeze-$TAG 2> /dev/null; head -c 200000 ~/bc5-work/exp0401t/raw/freeze-$TAG/* 2> /dev/null" > "$OUT/$TAG-freeze-dumps.txt" 2> /dev/null

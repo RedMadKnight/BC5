@@ -50,7 +50,8 @@ case "$out" in *"no named snapshot"*) ok "a right mount md5 passes to the saves 
 
 # 2. the launcher derivation, as the runner runs it (its own text between chk() and bash -n)
 derive() {   # <mount bin or empty> <tag>
-  local E=$H/bc5-work/exp0401t R=$WK/r LAUNCH_SRC=$PKG LAUNCH=$WK/d.sh MOUNT_BIN=$1 TAG=$2
+  local E=$H/bc5-work/exp0401t R=$WK/r LAUNCH_SRC=${3:-$PKG} LAUNCH=$WK/d.sh MOUNT_BIN=$1 TAG=$2
+  local LOGA=${4:-LOG=~/bc5-work/play-pkg-last.log}
   mkdir -p "$R"; cp "$LAUNCH_SRC" "$LAUNCH"
   eval "$(sed -n '/^chk() {/,/^bash -n "\$LAUNCH"/p' "$RUN")"
   echo "NL $NL $(grep -c '^[-+][^-+]' "$R/play-pkg-0401t.diff")"
@@ -67,6 +68,16 @@ bash -n "$WK/d.sh" && ok "the derived launcher parses" || bad "parse" "d.sh"
 # the derived launcher, run up to the mount line with a fake mount: does it start the private binary?
 grep -n '"$BM" mount' "$WK/d.sh" | grep -q 'MALLOC_ARENA_MAX=2 "$BM" mount "$PKG" "$M"' && ok "the mount line uses \$BM" || bad "mount line" "$(grep -n 'BM' "$WK/d.sh")"
 
+# 2b. exp 0409's launcher (BC5_0401T_LAUNCHER=exp0409): its own LOG line, the same 10-line diff
+P409=${P409:-}
+if [ -n "$P409" ]; then
+  o=$(derive "" t9 "$P409" 'LOG=/home/kjaniszewski/bc5-work/exp0409/play-last.log  # exp 0409: own log')
+  case "$o" in *"NL 10 10"*) ok "exp0409 launcher: the diff is 10 lines" ;; *) bad "derive 0409" "$o" ;; esac
+  grep -qxF 'LOG=~/bc5-work/exp0401t/play-last.log  # exp 0401t: own log' "$WK/d.sh" && ok "exp0409 launcher: the arm's own log" || bad "LOG 0409" "$(grep -n '^LOG=' "$WK/d.sh")"
+  grep -q 'BC5_GAME_DIR' "$WK/d.sh" && bash -n "$WK/d.sh" && ok "exp0409 launcher: BC5_GAME_DIR kept, parses" || bad "0409 parse" "d.sh"
+  o=$(HOME=$H MODE=route bash "$RUN" s0 t10 900 600 /nonexistent/kyty_emulator 0123456789abcdef0123456789abcdef BC5_0401T_LAUNCHER=exp0408 2>&1 | tail -1)
+  case "$o" in *"BC5_0401T_LAUNCHER takes only exp0409"*) ok "exp0409 launcher: other values refused" ;; *) bad "launcher word" "$o" ;; esac
+fi
 # 3. the walk script
 eval "$(sed -n '/^wk() {/,/^}/p' "$RUN")"
 CMD=$WK/in.cmd; : > "$CMD"; WALK=60; n=$(wk)

@@ -22,6 +22,8 @@
 #                             without a private mount is refused (the shared mount may not know it).
 #   BC5_0401T_WALK=<s>        route mode only: from G, <s> s of exp 0379's walk (gtt/mk-walk0379.py): the left stick
 #                             forward 15 s, a right-stick turn of 1.2 s that changes side every fourth cycle, 0.3 s pause.
+#   BC5_0401T_LAUNCHER=exp0409  the arm's launcher comes from ~/bc5-work/exp0409/play-pkg-0409.sh (fbe1bff7: the
+#                             unpacked game through BC5_GAME_DIR, no bc5-mount) instead of play-pkg.sh (exp 0409 arms).
 # Every arm also writes <tag>-io.txt: each minute the mount's and the emulator's rchar and read_bytes (/proc/<pid>/io), to
 # tell whether the arm streamed, and the learned file's line count at the end.
 # usage (on the box): MODE=start|route run0401t.sh <the named snapshot's sum, LC_ALL=C> <tag> <cap s> <play s> <binary> <md5> [KEY=VALUE ...]
@@ -49,7 +51,7 @@ case "$MODE" in start | route) ;; *) echo "MODE is start or route"; exit 1 ;; es
 case "$TAG" in *[!A-Za-z0-9]* | "") echo "the tag is letters and digits"; exit 1 ;; esac
 # Exp 0401 e9: BC5_0401_LATE_UNSET=<NAME>[,<NAME>...] (upper-case names) unsets words the launcher exports itself; never
 # the frame profile, which the route gates on.
-LEARNED_EMPTY=0; MOUNT_BIN=""; MOUNT_MD5=""; WALK=""; MOUNT_WORDS=()  # exp 0401 e10
+LEARNED_EMPTY=0; MOUNT_BIN=""; MOUNT_MD5=""; WALK=""; MOUNT_WORDS=(); L409=0  # exp 0401 e10; L409: exp 0409's launcher
 for w in "${SWITCHES[@]}"; do
   case "$w" in
     BC5_0401_LATE_UNSET=*)
@@ -62,6 +64,7 @@ for w in "${SWITCHES[@]}"; do
       case "$MOUNT_BIN" in "$HOME"/bc5-work/exp0401*/bc5-mount) ;; *) echo "BC5_0401T_MOUNT names a bc5-mount under ~/bc5-work/exp0401*: not started"; exit 1 ;; esac
       case "$MOUNT_BIN" in *..* | *[!A-Za-z0-9/_.-]*) echo "BC5_0401T_MOUNT is a plain path: not started"; exit 1 ;; esac ;;
     BC5_0401T_MOUNT_MD5=*) MOUNT_MD5=${w#*=}; [[ "$MOUNT_MD5" =~ ^[0-9a-f]{32}$ ]] || { echo "BC5_0401T_MOUNT_MD5 is an md5: not started"; exit 1; } ;;
+    BC5_0401T_LAUNCHER=*) [ "${w#*=}" = exp0409 ] || { echo "BC5_0401T_LAUNCHER takes only exp0409: not started"; exit 1; }; L409=1 ;;
     BC5_0401T_WALK=*) WALK=${w#*=}; [[ "$WALK" =~ ^[0-9]+$ ]] && [ "$WALK" -ge 60 ] && [ "$WALK" -le 1200 ] || { echo "BC5_0401T_WALK is 60-1200 s: not started"; exit 1; } ;;
     BC5_MOUNT_*=*) MOUNT_WORDS+=("$w") ;;
   esac
@@ -73,7 +76,7 @@ done
 [ "$SECS" -ge 120 ] && [ "$SECS" -le 1200 ] || { echo "the cap is 120-1200 s"; exit 1; }
 W=$HOME/bc5-work; E=$W/exp0401t; R=$E/raw; LOCK=$W/BOX-LOCK; E30=$W/exp0330
 NS=$E/saves-named   # exp 0401 e10: the one named snapshot (MODE=name)
-LAUNCH_SRC=$W/play-pkg.sh; LAUNCH=$E/play-pkg-0401t.sh; LEARN_SRC=$W/direct-learned-pkg.txt; LEARN=$E/direct-learned-pkg.txt
+LAUNCH_SRC=$W/play-pkg.sh; [ "$L409" = 0 ] || LAUNCH_SRC=$W/exp0409/play-pkg-0409.sh; LAUNCH=$E/play-pkg-0401t.sh; LEARN_SRC=$W/direct-learned-pkg.txt; LEARN=$E/direct-learned-pkg.txt
 FW=$W/exp0401e3/freeze-watch.sh; FD=$W/exp0401e3/freeze-dump.sh
 mkdir -p "$R"
 pgrep '^kyty_emulator' > /dev/null && { echo "an emulator is running: not started"; exit 1; }
@@ -119,16 +122,18 @@ CFG=$E/input-$TAG.cfg
 { grep -v -i "^RayTracing\.PPSA03671=\|^JobArenaFix\.PPSA03671=" "$W/input.cfg"; echo "RayTracing.PPSA03671=on"; echo "JobArenaFix.PPSA03671=on"; } > "$CFG" || exit 1
 if [ "$LEARNED_EMPTY" = 1 ]; then : > "$LEARN" || exit 1; else cp -p "$LEARN_SRC" "$LEARN" || exit 1; fi  # exp 0401 e10: BC5_0401T_LEARNED
 # 2. The derived launcher: exp 0382's four changed lines and one added line, checked by anchor and by diff size.
-PLAY_PKG_MD5=${PLAY_PKG_MD5:-97835f8850cc22ece5c4bcdbbb646912}
+PLAY_PKG_MD5=${PLAY_PKG_MD5:-97835f8850cc22ece5c4bcdbbb646912}; [ "$L409" = 0 ] || PLAY_PKG_MD5=fbe1bff751b226486df3a5f7ed18df78
+LOGA='LOG=~/bc5-work/play-pkg-last.log'; [ "$L409" = 0 ] || LOGA='LOG=/home/kjaniszewski/bc5-work/exp0409/play-last.log  # exp 0409: own log'
 [ "$(md5sum < "$LAUNCH_SRC" | cut -d' ' -f1)" = "$PLAY_PKG_MD5" ] || { echo "$LAUNCH_SRC is not $PLAY_PKG_MD5: not started"; exit 1; }
 cp "$LAUNCH_SRC" "$LAUNCH" || exit 1
 chk() { local c; c=$(grep -cxF -- "$1" "$LAUNCH"); [ "$c" = 1 ] || { echo "anchor [$1] occurs $c times in $LAUNCH_SRC: not started"; rm -f "$LAUNCH"; exit 1; }; }
 chk 'done < "$ENVF"'
-chk 'LOG=~/bc5-work/play-pkg-last.log'
+chk "$LOGA"
 chk 'cd ~/bc5-work'
 chk 'export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/_SaveData-pkg-play'
 chk 'export BC5_DIRECT_LEARNED=$HOME/bc5-work/direct-learned-pkg.txt'
-sed -i -e 's#^LOG=~/bc5-work/play-pkg-last\.log$#LOG=~/bc5-work/exp0401t/play-last.log  \# exp 0401t: own log#' \
+awk -v a="$LOGA" -v b='LOG=~/bc5-work/exp0401t/play-last.log  # exp 0401t: own log' '$0 == a {print b; next} {print}' "$LAUNCH" > "$LAUNCH.t" && mv -f "$LAUNCH.t" "$LAUNCH" || exit 1   # exact text, no sed pattern
+sed -i \
        -e 's#^cd ~/bc5-work$#cd ~/bc5-work/exp0401t/wd  \# exp 0401t: the private working directory (its own _SaveData)#' \
        -e 's#^export KYTY_BC5_SAVEDATA_DIR=\$HOME/bc5-work/_SaveData-pkg-play$#export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0401t/wd/_SaveData-pkg-play  \# exp 0401t: private#' \
        -e 's#^export BC5_DIRECT_LEARNED=\$HOME/bc5-work/direct-learned-pkg\.txt$#export BC5_DIRECT_LEARNED=$HOME/bc5-work/exp0401t/direct-learned-pkg.txt  \# exp 0401t: a private copy#' "$LAUNCH" || exit 1
@@ -260,6 +265,9 @@ echo "launcher gone: $LGONE" >> "$R/$TAG-start.txt"
 echo "$TAG ${ENDED:-ended at G+$PLAY} (after $DUR s; G ${G:-none}, list ${LISTED:-none})" > "$R/$TAG-end.txt"
 echo "# learned file at the end: $(grep -c . "$LEARN") lines ($([ "$LEARNED_EMPTY" = 1 ] && echo "started empty" || echo "started as a copy of the live one"))" >> "$R/$TAG-io.txt"   # exp 0401 e10
 if [ -f "$LOG" ] && [ "$(stat -c %Y "$LOG")" -ge "$T0" ]; then cp -p "$LOG" "$R/$TAG-play.log"; else echo "no log of this run at $LOG" > "$R/$TAG-play.log"; fi
+tail -n 30 "$R/$TAG-play.log" > "$R/$TAG-tail.txt"   # exp 0409 arms: a crash record's last 30 lines
+{ echo "# play log: $(grep -a -c "exp 0401 pool" "$R/$TAG-play.log") pool lines, $(grep -a -c "AMM virtual-memory unmap\|auto pool exhausted" "$R/$TAG-play.log") AMM fatal lines"
+  grep -a "exp 0401 pool\|AMM virtual-memory unmap\|auto pool exhausted\|KYTY_BC5_AMM_SCATTER\|guest memory\|KYTY_GUEST_MEMORY" "$R/$TAG-play.log" | head -300; } > "$R/$TAG-pool.txt"   # exp 0409 arms
 grep -a -B2 -A12 "Access violation\|Segmentation\|Aborted\|terminate called\|exception_address\|--- Error ---" "$R/$TAG-play.log" | head -80 > "$R/$TAG-crash.txt" 2> /dev/null
 grep -a "\[bc5\] exp 040[0-9]\|exp 040[0-9]: " "$R/$TAG-play.log" | sort | uniq -c | sort -rn | head -40 > "$R/$TAG-switch-lines.txt"
 J=$(ls -td ~/bc5-data/captures/play-*/gc 2> /dev/null | head -1)/direct.log
@@ -268,6 +276,7 @@ if [ -f "$J" ] && [ "$(stat -c %Y "$J")" -ge "$T0" ]; then
   nice -n 19 grep -a "^exp 040[0-9]: " "$J" | sort | uniq -c >> "$R/$TAG-switch-lines.txt"
   nice -n 19 grep -a "timeout probe\|TIMEOUT\|fl crumbs\|exp 0404" "$J" | head -400 > "$R/$TAG-probe.txt"
   nice -n 19 grep -a "^memory (exp 0401)" "$J" > "$R/$TAG-memline.txt"
+  { echo "# journal: $(nice -n 19 grep -a -c "exp 0401 pool" "$J") pool lines"; nice -n 19 grep -a "exp 0401 pool" "$J" | head -300; } >> "$R/$TAG-pool.txt"   # exp 0409 arms
   for k in "acb inherit (exp 0403)" "table catcher (exp 0401)" "acb state restore (exp 0381)"; do echo "$k: $(nice -n 19 grep -a -c "$k" "$J")"; done >> "$R/$TAG-journal.txt"
 else echo "no journal of this run ($J)" > "$R/$TAG-journal.txt"; : > "$R/$TAG-probe.txt"; : > "$R/$TAG-memline.txt"; fi
 sudo -n dmesg 2> /dev/null | tail -n +"$((N + 1))" | grep -i "amdgpu\|gpu\|oom\|hung\|SQC" > "$R/$TAG-dmesg-after.txt"
