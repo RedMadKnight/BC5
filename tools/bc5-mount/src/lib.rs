@@ -23,6 +23,7 @@ pub mod container;
 pub mod error;
 pub mod exfat;
 pub mod fixture;
+pub mod install;
 pub mod io;
 pub mod pfs;
 pub mod pfsc;
