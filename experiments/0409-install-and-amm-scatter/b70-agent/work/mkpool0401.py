@@ -47,6 +47,17 @@ extern "C" void Bc5PoolTraceStamp() {
 \tAmmTraceStamp();
 }
 
+// exp 0409: every scattered map is counted and journalled (the first 300, then every 50th; failures always).
+static void Bc5PoolNoteScatter(int mode, uint64_t va, uint64_t size, int np) {
+\tstatic std::atomic<uint64_t> n_ok {0}, n_fail {0}, n_pieces {0};
+\tconst uint64_t k = np > 0 ? n_ok.fetch_add(1) + 1 : n_fail.fetch_add(1) + 1;
+\tif (np > 0) n_pieces.fetch_add(static_cast<uint64_t>(np));
+\tif (np <= 0 || k <= 300 || k % 50 == 0) {
+\t\tAmmTraceStamp(), std::fprintf(stderr, "[bc5] exp 0401 pool: scatter %s mode %d va 0x%016" PRIx64 " size 0x%" PRIx64 " pieces %d (ok %" PRIu64 ", failed %" PRIu64 ", pieces %" PRIu64 ")\\n",
+\t\t                              np > 0 ? "ok" : "FAILED", mode, va, size, np, n_ok.load(), n_fail.load(), n_pieces.load());
+\t}
+}
+
 extern "C" void bc5_watch_surface(uint64_t va); // bc5LleAgc.cpp, experiment 0104 (declared again here, before its first use)
 
 extern "C" void Bc5PoolWatchSurface(uint64_t va) {
@@ -133,6 +144,7 @@ def main():
 \t\t\tif (mode == 3) {
 \t\t\t\t// first: try scattered map before contiguous borrow.
 \t\t\t\tconst int np = Bc5MapAutoScattered(command.va, command.size, command.type, command.prot);
+\t\t\t\tBc5PoolNoteScatter(3, command.va, command.size, np);
 \t\t\t\tif (np > 0) {
 \t\t\t\t\t// Scattered map succeeded — skip the original contiguous path.
 \t\t\t\t\treturn OK;
@@ -145,6 +157,7 @@ def main():
 \t\t\t\t// rescue: try contiguous borrow; if it fails, try scattered map.
 \t\t\t\tif (!AllocateAmmAutoDirectMemory(command.size, command.type, &dmem_offset)) {
 \t\t\t\t\tconst int np = Bc5MapAutoScattered(command.va, command.size, command.type, command.prot);
+\t\t\t\t\tBc5PoolNoteScatter(2, command.va, command.size, np);
 \t\t\t\t\tif (np > 0) {
 \t\t\t\t\t\t// Scattered map succeeded — skip the original contiguous path.
 \t\t\t\t\t\treturn OK;

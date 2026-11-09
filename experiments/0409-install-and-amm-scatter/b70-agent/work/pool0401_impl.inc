@@ -46,6 +46,25 @@ static void Bc5PoolFreeStats(uint64_t* total, uint64_t* holes, uint64_t* largest
 	if (largest) *largest = l;
 }
 
+// Give a range back to the free list, merging with its neighbours (the same merge as the original's AmmAutoFreeLocked;
+// g_amm_auto_pool_mutex must be held).
+static void Bc5PoolGiveBackLocked(uint64_t start, uint64_t size) {
+	auto next = g_amm_auto_free.lower_bound(start);
+	if (next != g_amm_auto_free.begin()) {
+		auto prev = std::prev(next);
+		if (prev->first + prev->second == start) {
+			start = prev->first;
+			size += prev->second;
+			g_amm_auto_free.erase(prev);
+		}
+	}
+	if (next != g_amm_auto_free.end() && start + size == next->first) {
+		size += next->second;
+		g_amm_auto_free.erase(next);
+	}
+	g_amm_auto_free[start] = size;
+}
+
 // Gather free ranges largest-first into [out_dmem, out_size] pairs, total >= want.
 // Returns the number of pieces gathered (0 if not enough).
 // FIX (review point 3): removes gathered pieces from the free list.
@@ -152,6 +171,9 @@ static int Bc5MapAutoScattered(uint64_t va, uint64_t size, int memory_type, int3
 			// Rollback: unmap pieces 0..i-1.
 			for (size_t j = 0; j < i; j++) {
 				Bc5PoolUnmapDirect(mapped[j], pieces[j].second);
+			}
+			{ std::scoped_lock lock(g_amm_auto_pool_mutex); // the gathered pieces go back to the pool
+				for (const auto& pc: pieces) Bc5PoolGiveBackLocked(pc.first, pc.second);
 			}
 			return KERNEL_ERROR_EAGAIN;
 		}
