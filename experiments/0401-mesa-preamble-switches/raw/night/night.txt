@@ -384,3 +384,9 @@ summary: x9j1 (route): ended by itself at 189 s after 189 s (G 133, list 93); wh
 == 2026-11-09 13:51:21 all arms done
 == 2026-11-09 13:51:21 x9j1: the emulator ended by itself (crash); crash lines in the log; the series goes on (CONTINUE_ON_CRASH=1)
 == 2026-11-09 13:51:22 series 0409 done
+== 2026-11-09 23:21:37 e11 control long arm start
+== 2026-11-09 23:21:55 arm x11L0 (route, cap 2700 s, play 2400 s)
+run rc 0: x11L0 (route): ended at G+2400 after 2540 s (G 138, list 94); whole run: 47.1 flips/s over 2533 s, 175 seconds with a gap over 100 ms, longest 1161 ms; memory floor 506 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: x11L0 (route): ended at G+2400 after 2540 s (G 138, list 94); whole run: 47.1 flips/s over 2533 s, 175 seconds with a gap over 100 ms, longest 1161 ms; memory floor 506 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-10 00:04:43 all arms done
+== 2026-11-10 00:04:44 series 0409 done
