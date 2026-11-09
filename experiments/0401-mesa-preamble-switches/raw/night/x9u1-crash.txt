@@ -1,0 +1,6 @@
+[10] 00007f8530f0adfa
+[11] 00007f8530f9e5cc
+--- Error ---
+AMM virtual-memory unmap is unsupported: addr=0x000000894bbf0000
+ in /home/kjaniszewski/bc5-work/exp0401e8/x5-jit/src/kernel/memory.cpp:3940
+== 2026-11-09 13:08:10 exit 65

@@ -1,0 +1,22 @@
+kyty_exception_handler: 00007f7541e51d41
+=== HOST EXCEPTION REGISTER DUMP ===
+exception_address=0x0x7f7541e51d41
+native_code=0x0xb
+access_violation_vaddr=0x0x8943ba0000
+rax=0x0x8943ba0000 rbx=0x0x7f70aaff9d78 rcx=0x0x7ee75c465d20 rdx=0x0x400000
+rsi=0x0x7f70a0005d20 rdi=0x0x8943ba0000 rbp=0x0x7f70aaff9ab0 rsp=0x0x7f70aaff97d8
+r8 =0x0x0 r9 =0x0x0 r10=0x0x0 r11=0x0x300000
+r12=0x0x400000 r13=0x0x7f70a0005d20 r14=0x0x1000000 r15=0x0x7f70aaff97e8
+exception module: /usr/lib/x86_64-linux-gnu/libc.so.6
+code-32: (32 bytes of the title's code at the fault, kept in laptop scratch only)
+exception: type=AccessViolation, av_type=Write, av_addr=0000008943ba0000, native_code=0000000b
+regs: rax=0000008943ba0000 rbx=00007f70aaff9d78 rcx=00007ee75c465d20 rdx=0000000000400000
+regs: rsi=00007f70a0005d20 rdi=0000008943ba0000 rbp=00007f70aaff9ab0 rsp=00007f70aaff97d8
+regs: r8 =0000000000000000 r9 =0000000000000000 r10=0000000000000000 r11=0000000000300000
+--
+[9] 00007f7541d5ddfa
+[10] 00007f7541df15cc
+--- Error ---
+Access violation: Write [0000008943ba0000] 
+ in /home/kjaniszewski/bc5-work/exp0401e8/x5-tls/src/loader/runtimeLinker.cpp:1166
+== 2026-11-09 13:50:59 exit 65

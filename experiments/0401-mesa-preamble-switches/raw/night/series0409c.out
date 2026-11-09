@@ -1,0 +1,34 @@
+== 2026-11-09 12:53:52 arm x9s1 (route, cap 900 s, play 600 s)
+run rc 0: x9s1 (route): ended by itself at 626 s after 626 s (G 202, list 93); whole run: 19.4 flips/s over 317 s, 193 seconds with a gap over 100 ms, longest 1440 ms; memory floor 301 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: x9s1 (route): ended by itself at 626 s after 626 s (G 202, list 93); whole run: 19.4 flips/s over 317 s, 193 seconds with a gap over 100 ms, longest 1440 ms; memory floor 301 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-09 13:04:47 all arms done
+== 2026-11-09 13:04:48 x9s1: the emulator ended by itself (crash); the series goes on (CONTINUE_ON_CRASH=1)
+== 2026-11-09 13:04:49 arm x9u1 (route, cap 900 s, play 600 s)
+run rc 0: x9u1 (route): ended by itself at 195 s after 195 s (G 134, list 93); whole run: 23.9 flips/s over 188 s, 81 seconds with a gap over 100 ms, longest 1354 ms; memory floor 828 MiB available (sampler); crash lines 1, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: x9u1 (route): ended by itself at 195 s after 195 s (G 134, list 93); whole run: 23.9 flips/s over 188 s, 81 seconds with a gap over 100 ms, longest 1354 ms; memory floor 828 MiB available (sampler); crash lines 1, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-09 13:08:29 all arms done
+== 2026-11-09 13:08:29 x9u1: the emulator ended by itself (crash); crash lines in the log; the series goes on (CONTINUE_ON_CRASH=1)
+== 2026-11-09 13:08:30 arm x9s2 (route, cap 900 s, play 600 s)
+run rc 0: x9s2 (route): ended at G+600 after 737 s (G 133, list 93); whole run: 34.0 flips/s over 732 s, 199 seconds with a gap over 100 ms, longest 1761 ms; memory floor 540 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: x9s2 (route): ended at G+600 after 737 s (G 133, list 93); whole run: 34.0 flips/s over 732 s, 199 seconds with a gap over 100 ms, longest 1761 ms; memory floor 540 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-09 13:21:15 all arms done
+== 2026-11-09 13:21:16 arm x9s3 (route, cap 900 s, play 600 s)
+run rc 0: x9s3 (route): ended at G+600 after 732 s (G 132, list 93); whole run: 36.1 flips/s over 727 s, 188 seconds with a gap over 100 ms, longest 1658 ms; memory floor 607 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: x9s3 (route): ended at G+600 after 732 s (G 132, list 93); whole run: 36.1 flips/s over 727 s, 188 seconds with a gap over 100 ms, longest 1658 ms; memory floor 607 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-09 13:33:57 all arms done
+== 2026-11-09 13:33:58 arm x9u2 (route, cap 900 s, play 600 s)
+run rc 0: x9u2 (route): ended by itself at 159 s after 159 s (G 133, list 93); whole run: 21.0 flips/s over 148 s, 64 seconds with a gap over 100 ms, longest 1213 ms; memory floor 655 MiB available (sampler); crash lines 1, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: x9u2 (route): ended by itself at 159 s after 159 s (G 133, list 93); whole run: 21.0 flips/s over 148 s, 64 seconds with a gap over 100 ms, longest 1213 ms; memory floor 655 MiB available (sampler); crash lines 1, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-09 13:37:00 all arms done
+== 2026-11-09 13:37:00 x9u2: the emulator ended by itself (crash); crash lines in the log; the series goes on (CONTINUE_ON_CRASH=1)
+== 2026-11-09 13:37:00 arm x9s4 (route, cap 900 s, play 600 s)
+run rc 0: x9s4 (route): ended by itself at 622 s after 622 s (G 132, list 93); whole run: 19.7 flips/s over 313 s, 192 seconds with a gap over 100 ms, longest 1558 ms; memory floor 321 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: x9s4 (route): ended by itself at 622 s after 622 s (G 132, list 93); whole run: 19.7 flips/s over 313 s, 192 seconds with a gap over 100 ms, longest 1558 ms; memory floor 321 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-09 13:47:48 all arms done
+== 2026-11-09 13:47:48 x9s4: the emulator ended by itself (crash); the series goes on (CONTINUE_ON_CRASH=1)
+== 2026-11-09 13:47:49 arm x9j1 (route, cap 900 s, play 600 s)
+run rc 0: x9j1 (route): ended by itself at 189 s after 189 s (G 133, list 93); whole run: 18.9 flips/s over 181 s, 94 seconds with a gap over 100 ms, longest 1146 ms; memory floor 813 MiB available (sampler); crash lines 2, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: x9j1 (route): ended by itself at 189 s after 189 s (G 133, list 93); whole run: 18.9 flips/s over 181 s, 94 seconds with a gap over 100 ms, longest 1146 ms; memory floor 813 MiB available (sampler); crash lines 2, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-09 13:51:21 all arms done
+== 2026-11-09 13:51:21 x9j1: the emulator ended by itself (crash); crash lines in the log; the series goes on (CONTINUE_ON_CRASH=1)
+== 2026-11-09 13:51:22 series 0409 done

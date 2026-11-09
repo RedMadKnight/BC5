@@ -875,4 +875,36 @@ runner is now `run0401t.sh` 221e6fa7 and `night0401.sh` 02954728; the stand-in `
 - **To decide rescue, the build needs a log line and a counter in the scatter path** (pieces, va, size, offsets).
   More arms of this binary cannot say it.
 
+**The third exp 0409 series** (2026-11-09 12:53–13:51, his "Tak, testuj"; binary 9fd42e25 = exp 0409 2a5c1f52, every
+scatter logged, the free-list leak on a failed piece fixed; `raw/night-arms-0409c.txt`; all at 12,800 MiB; a crash did not
+stop it; `stall0409.sh` beside it).
+
+| Arm | Scatter | End | flips/s (whole run) | GTT max | MemAvailable min | scatter ok / FAILED | pieces per map (count) |
+|---|---|---|---|---|---|---|---|
+| x9s1 | rescue | last fps line at t 321.6 s; exit 133 (SIGTRAP) at 626 s | 19.4 | 12,737 | 697 | 104 / 0 | 2:72, 3:21, 4:8, 5:1, 6:2 |
+| x9u1 | unset | the emulator ended at 195 s (G 134): "AMM virtual-memory unmap is unsupported" | 23.9 | 12,654 | 840 | — | — |
+| x9s2 | rescue | G+600 | 34.0 | 12,729 | 546 | 88 / 0 | 2:54, 3:24, 4:9, 5:1 |
+| x9s3 | rescue | G+600 | 36.1 | 12,739 | 609 | 117 / 0 | 2:79, 3:19, 4:11, 5:6, 6:2 |
+| x9u2 | unset | the emulator ended at 159 s (G 133): "AMM virtual-memory unmap is unsupported" | 21.0 | 12,643 | 640 | — | — |
+| x9s4 | rescue | last fps line at t 317.4 s; exit 133 (SIGTRAP) at 622 s | 19.7 | 12,737 | 692 | 90 / 0 | 2:57, 3:23, 4:8, 5:2 |
+| x9j1 | journal | the emulator ended at 189 s: 2 refused borrows, then a host write into the AMM window (0x8943ba0000) | 18.9 | 12,719 | 812 | 0 refusals logged as scatter | — |
+
+- **Rescue scatters, and no piece failed.** Rescue scattered 88–117 maps in each logged arm, 399 in all, into 2–6 pieces
+  (mostly 2), with 0 FAILED. It removes the 12,800-MiB load fatal.
+- **The tally at 12,800 MiB, all three series:**
+  - without rescue (unset or journal), the emulator ended in 5 of 5 arms at 159–195 s: x9e1, x9c1, x9u1, x9u2, x9j1;
+  - with rescue, 4 of 7 arms reached G+600: x9d1, x9r2, x9s2, x9s3;
+  - the other 3 rescue arms (x9r1, x9s1, x9s4) ended the same way: the frames stopped at emulator t 313–322 s (~3 min
+    after G), with no log line, no kernel line and no crash text, then exit 133 (SIGTRAP) ~5 min later.
+- At 13,824 MiB, 2 of 2 arms reached G+600. Neither scattered anything.
+- **The SIGTRAP freeze has no stack yet.** `stall0409.sh` fired 60 s after the frames stopped in x9s1 and x9s4.
+  - Every emulator thread was already in state I, wchan `do_exit`: the process was dying, not hung. eu-stack could not
+    attach.
+  - coredumpctl has no core for these processes. The exit took ~5 minutes, the teardown of ~12.7 GiB of pinned memory
+    or a core dump.
+  - The dumps (thread names and states only) stay in laptop scratch.
+- What the trap is, a title int3 or a host trap, and whether rescue's scattered maps cause it, is not known. The arms
+  without rescue never live to t 317 s at 12,800 MiB. To catch it: a SIGTRAP handler that logs the trapping rip and
+  thread before the exit, or gdb attached with `catch signal SIGTRAP` from the start of a rescue arm.
+
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.
