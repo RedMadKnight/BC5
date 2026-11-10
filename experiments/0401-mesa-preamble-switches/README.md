@@ -937,4 +937,23 @@ here; `hang2242-0401.md` §2).
 - *Reading.* The 22:42 hang came after 39 minutes of his own play. 40 minutes of the scripted walk did not bring it
   back: one arm, no bound on the hang's rate (LESSONS R18).
 
+**e11's code, stopped (2026-11-10 ~03:1x).**
+- *What happened.* While the coding agent was writing tag m11's edit (the six switches of `hang2242-0401.md` §4), a
+  safety classifier stopped its response and withheld it. Nothing was written and nothing was retried.
+- *Why it stays stopped.* A refused step is reported, not routed around. The maintainer decides how m11 goes ahead,
+  for instance with switch 5 (`BC5_DIRECT_STUCK_AFTER_REOPEN`'s in-process register capture by a signal) split off
+  or replaced by the existing external read-only gdb dump (`freeze-dump.sh`).
+- *What the read-only pass found* (e8's unit bd181169):
+  - **The acbs are replayed after all.** They never enter the chain's soft list, which carries only dcb, hib and cc
+    buffers. But the guest compute ring's own post (unit lines 1666–1709) replays them in full when cq1's failed
+    flag is set, and writes no journal line. So the 22:42 journal could not show it. §3's "neither acb was replayed"
+    is therefore not shown; it is unknown.
+  - **A real gap remains.** An acb head (`acb_ready` → `submit_segment` + `chain_flush(6)`) has a fence but no post.
+    Its marks go to `g_acb_heads`. If the head is lost after the flag was used up, its label writes are not replayed.
+    Whether that happened at 22:42 is not known.
+  - **The learned logic sees only the last fault.** It reads `AMDGPU_INFO_GPUVM_FAULT`, which holds only the last
+    fault (backend `direct.cpp:1622-1628, 1695-1700`); nothing reads dmesg. `BC5_DIRECT_FAULT_PAGES` would need
+    dmesg or the devcoredump.
+- *Not touched.* e11 is not built, and no e11 arm ran.
+
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.
