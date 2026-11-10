@@ -2,6 +2,7 @@
 //! `bc5-mount` command line: inspect, verify, ls, cat and (on Linux) mount a
 //! `.ffpfsc` container or a PS5 package (`.pkg`), told apart by their magic.
 
+use std::fs;
 use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 
@@ -64,18 +65,44 @@ enum Cmd {
         #[arg(long)]
         allow_other: bool,
     },
+    /// Install (unpack) the container or package into a directory.
+    Install {
+        /// Path to the .ffpfsc or .pkg file.
+        container: PathBuf,
+        /// Destination directory.
+        dest: PathBuf,
+        /// Resume: skip files whose size already matches.
+        #[arg(long)]
+        resume: bool,
+        /// Verify: compare sha256 of every written file with the image.
+        #[arg(long)]
+        verify: bool,
+    },
+    /// Adopt an already-unpacked directory: verify sizes and optionally sha256, write .bc5-install.json.
+    Adopt {
+        /// Path to the .ffpfsc or .pkg file.
+        container: PathBuf,
+        /// Destination directory (must already exist).
+        dest: PathBuf,
+        /// Verify: compare sha256 of every file in the directory with the image.
+        #[arg(long)]
+        verify: bool,
+    },
 }
 
-fn main() -> anyhow::Result<()> {
-    match run() {
-        // `ls | head`: the reader closed the pipe; nothing went wrong.
-        Err(e)
-            if e.downcast_ref::<io::Error>()
-                .is_some_and(|e| e.kind() == io::ErrorKind::BrokenPipe) =>
+fn main() {
+    if let Err(e) = run() {
+        if e.downcast_ref::<std::io::Error>()
+            .is_some_and(|e| e.kind() == std::io::ErrorKind::BrokenPipe)
         {
-            Ok(())
+            std::process::exit(0);
         }
-        r => r,
+        if e.to_string().contains("destination") && e.to_string().contains("already exists") {
+            eprintln!("bc5-mount: {} already exists (use --resume)", e.to_string().replace("destination ", "").replace(" (use --resume to skip matching files)", ""));
+            std::process::exit(2);
+        }
+        eprintln!("bc5-mount: {e}");
+        std::process::exit(1);
     }
 }
 
@@ -95,6 +122,17 @@ fn run() -> anyhow::Result<()> {
             mountpoint,
             allow_other,
         } => mount(&container, &mountpoint, allow_other),
+        Cmd::Install {
+            container,
+            dest,
+            resume,
+            verify,
+        } => install(&container, &dest, resume, verify),
+        Cmd::Adopt {
+            container,
+            dest,
+            verify,
+        } => adopt(&container, &dest, verify),
     }
 }
 
@@ -347,4 +385,99 @@ fn mount(path: &PathBuf, mountpoint: &Path, allow_other: bool) -> anyhow::Result
 #[cfg(not(all(feature = "fuse", target_os = "linux")))]
 fn mount(_path: &PathBuf, _mountpoint: &Path, _allow_other: bool) -> anyhow::Result<()> {
     bail!("mount is only available on Linux builds with the `fuse` feature; use ls/cat/verify here")
+}
+
+fn install(
+    path: &PathBuf,
+    dest: &Path,
+    resume: bool,
+    verify: bool,
+) -> anyhow::Result<()> {
+    let info = bc5_mount::install::install(path, dest, resume, verify)
+        .with_context(|| format!("installing {}", path.display()))?;
+    println!(
+        "installed {} files, {} bytes to {}",
+        info.file_count,
+        info.total_bytes,
+        dest.display()
+    );
+    if verify {
+        println!("verification passed");
+        bc5_mount::install::write_install_json(dest, path, &info)
+            .with_context(|| "writing .bc5-install.json")?;
+    }
+    Ok(())
+}
+
+/// Adopt an already-unpacked directory: verify sizes against the image, optionally sha256, write .bc5-install.json.
+fn adopt(path: &PathBuf, dest: &Path, verify: bool) -> anyhow::Result<()> {
+    if !dest.exists() {
+        bail!("destination {} does not exist", dest.display());
+    }
+    let opened = bc5_mount::install::OpenedImage::open(path)?;
+    let tree = opened.tree();
+
+    // Collect files from the image.
+    let mut files: Vec<(usize, String, u64)> = (0..tree.entry_count())
+        .filter_map(|i| {
+            let e = tree.entry(i)?;
+            if e.is_dir {
+                None
+            } else {
+                Some((i, e.path.to_owned(), e.size))
+            }
+        })
+        .collect();
+    files.sort_by(|a, b| a.1.cmp(&b.1));
+
+    // Verify sizes first.
+    let mut size_mismatches = Vec::new();
+    for (_idx, rel_path, img_size) in &files {
+        let file_path = dest.join(rel_path);
+        match fs::metadata(&file_path) {
+            Ok(meta) => {
+                if meta.len() != *img_size {
+                    size_mismatches.push(format!("{}: {} bytes on disk vs {} bytes in image", rel_path, meta.len(), img_size));
+                }
+            }
+            Err(e) => {
+                size_mismatches.push(format!("{}: {}", rel_path, e));
+            }
+        }
+    }
+
+    if !size_mismatches.is_empty() {
+        bail!("size mismatches (use `install` to copy):\n  {}", size_mismatches.join("\n  "));
+    }
+
+    // Optionally verify sha256.
+    if verify {
+        let disk_hashes = bc5_mount::verify::hash_directory(dest)
+            .with_context(|| "hashing directory")?;
+        let image_hashes = bc5_mount::verify::hash_volume(tree, |_| {})
+            .with_context(|| "hashing image")?;
+        let diffs = bc5_mount::verify::diff(&image_hashes, &disk_hashes);
+        if !diffs.is_empty() {
+            bail!("verification failed: {}", diffs.join(", "));
+        }
+        println!("verification passed");
+    }
+
+    // Build InstallInfo from what we have.
+    let file_count = files.len();
+    let total_bytes: u64 = files.iter().map(|f| f.2).sum();
+    let hashes = bc5_mount::verify::hash_directory(dest)
+        .with_context(|| "hashing directory for json")?;
+
+    let info = bc5_mount::install::InstallInfo {
+        file_count,
+        total_bytes,
+        hashes,
+    };
+
+    bc5_mount::install::write_install_json(dest, path, &info)
+        .with_context(|| "writing .bc5-install.json")?;
+
+    println!("adopted {} files, {} bytes from {}", file_count, total_bytes, path.display());
+    Ok(())
 }
