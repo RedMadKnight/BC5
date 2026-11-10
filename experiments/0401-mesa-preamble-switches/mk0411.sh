@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # BC5 exp 0401 series e11 (2026-11-10, his "Tak" relayed by the top session, and his yes in the water session): on the box,
 # build ~/bc5-work/exp0411/bin/kyty_emulator = exp 0409's binary with e11's main unit (e8's bd181169 + mkm110401.py), run the
-# m110401 CPU gate (switches =1, =0, unset), and make play-pkg-0411.sh from exp 0409's launcher (ulimit -c 0 kept). Shared
+# m110401 CPU gate (the four switches =1, =0, unset), and make play-pkg-0411.sh from exp 0409's launcher (ulimit -c 0 kept). Shared
 # files are only read; exp0401e8 and exp0409 are only read. The kit (mkm110401.py, m110401.cpp, link0411.py, kit.sha256) is
 # in $X/kit. BOX-LOCK by an atomic hard-link claim, our exact line removed at the end.
 # usage (on the box): bash mk0411.sh <e11 unit md5>
@@ -9,7 +9,7 @@ set -u
 export LC_ALL=C
 WANT=${1:?the e11 unit md5}
 W=$HOME/bc5-work; X=$W/exp0411; K=$X/kit; E8=$W/exp0401e8; X9=$W/exp0409; LOCK=$W/BOX-LOCK
-SW=(BC5_DIRECT_RESET_REPLAY_ACB BC5_DIRECT_RESET_LABELS BC5_DIRECT_LEARN_GUEST_ONLY BC5_DIRECT_RESET_LABEL_JOURNAL BC5_DIRECT_STUCK_AFTER_REOPEN BC5_DIRECT_FAULT_PAGES)
+SW=(BC5_DIRECT_RESET_REPLAY_ACB BC5_DIRECT_RESET_LABELS BC5_DIRECT_LEARN_GUEST_ONLY BC5_DIRECT_RESET_LABEL_JOURNAL)  # hang2242's switches 5 and 6 are not in e11
 m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }
 die() { echo "STOP: $*"; exit 1; }
 pgrep '^kyty_emulator' > /dev/null && die "an emulator runs"

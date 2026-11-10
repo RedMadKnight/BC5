@@ -956,4 +956,32 @@ here; `hang2242-0401.md` §2).
     dmesg or the devcoredump.
 - *Not touched.* e11 is not built, and no e11 arm ran.
 
+**e11 built without switch 5 (2026-11-10 07:3x, his "Pomiń i kontynuuj").** The blocked part was not retried. Switch 5
+(`STUCK_AFTER_REOPEN`, the in-process register capture) is left out. The runner's external read-only `stall0409.sh`
+dump stands in for it, beside every arm. Switch 6 (`FAULT_PAGES`) needs no code, because the runner already keeps every
+amdgpu fault line of dmesg in `<tag>-dmesg-after.txt`.
+- *The edit.* `mkm110401.py` edits e8's unit bd181169 into f366ff7b. Each anchor occurs once, the balance is kept, and
+  undoing the edit gives the input back. The four switches are default off and read once by `bc5::env_on`:
+  - `BC5_DIRECT_RESET_REPLAY_ACB` (fix): each `AcbHead` records the reopen count it was made at. When the head is used
+    again after a device reopen, its GPU marks are dropped, so the soft CP replays the head's memory side effects
+    (its label writes) on the CPU. This covers the acb-head gap m11 found.
+  - `BC5_DIRECT_RESET_LABELS` (fix): at a timed-out job, the completion thread keeps exp 0055's pending label writes
+    (those of every job in flight) before `forget_label_writes` clears them. At "reopen: ok", the last write of each
+    label goes to guest memory, unless memory already holds it or the label lies in no guest range.
+  - `BC5_DIRECT_LEARN_GUEST_ONLY` (fix): a fault whose 96 MiB learned window holds no guest range
+    (`Bc5GuestRangesIn`) is not learned. One "e11: fault … not learned" line is written instead.
+  - `BC5_DIRECT_RESET_LABEL_JOURNAL` (catcher): the kept writes are journaled at the reopen (at most 64), and again
+    5 s and 30 s later with what memory then holds.
+  - With all four off, the binary does what e8's does, plus a reopen counter and one more `AcbHead` field.
+- *The build* (`mk0411.sh`, BOX-LOCK, no emulator): e8's objects, plus exp 0409's `libAmpr.cpp.o` and `hostMenu.cpp.o`.
+  - Binary 70df5cb1f43cf276011037aaf7793a30. 5 warnings, all e8's, none in new code.
+  - CPU gate `m110401`: on 32 of 32, off 22 of 22, unset 22 of 22. It uses no game and no GPU, and its "guest
+    memory" is a buffer of its own. It checks the switches, the learned decision on 0x706ab000, the head marks, the
+    lost writes (one superseded, one already held, one outside guest memory), the second reopen, and the 5-s and 30-s
+    lines.
+- *The arms* (`raw/night-arms-0411e11.txt`, `series0409.sh` with `CONTINUE_ON_CRASH=1`): e11's binary through exp 0409's
+  launcher (`BC5_EMU`), scatter unset, 13,824 MiB, the named snapshot 558115f3, RT on, the cleaned learned file.
+  - ABBA at G+600, walking: A = the four switches unset, B = all four =1.
+  - Then x11L1: all four =1, G+2400 walking.
+
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.
