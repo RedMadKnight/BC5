@@ -1071,4 +1071,14 @@ they cannot be toggled during a run: the shortcut sets them at launch. `shortcut
     90 s.
   - A catcher started by hand on the host, as in the series, still gets no stacks.
 
+**His first play on the e11 shortcut** (2026-11-10 17:32:39–17:52:16; he closed it, exit 0). The log is
+`~/bc5-work/exp0411/play-last.log` and the journal `~/bc5-data/captures/play-20261110-1732/gc/direct.log` (14 MB).
+- *Nothing caught.* There were no amdgpu lines in dmesg (the last are 11-09 22:42), no devcoredump, no timeout and no
+  "e11:" line in the journal, and no stall dump.
+- *Frame rate.* He saw it as low. It was 12–18 fps per minute through the play (his e10 play of 11-09 22:03 averaged
+  31.7). The series arms ran at 15–23 fps in their first 3 minutes after loading slot 4, then at ~50 once the walk
+  moved on. So the rate follows the scene; the build and the settings are the same as the series' (`input.cfg` matches
+  the arms' copies).
+- *Log volume.* The play log reached 0.8 MB and the journal 14 MB in 20 minutes, so they are not a likely cause.
+
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.
