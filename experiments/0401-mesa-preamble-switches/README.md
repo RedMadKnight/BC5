@@ -1006,4 +1006,42 @@ amdgpu fault line of dmesg in `<tag>-dmesg-after.txt`.
   amdgpu fault line. The stand-in for switch 5 is `stall0409.sh`: eu-stack, read-only, after 60 s without a new fps line.
   It is not a gdb `thread apply all bt` keyed to "reopen".
 
+**e11's menu series** (2026-11-10 13:36–14:27, the top's relay of his "tak" and his "Tak, testuj" here;
+`raw/night-arms-0411menu.txt`). The trigger he saw on 11-09 22:42: a pad button opened the title's in-game menu
+mid-play, and the screen froze on a menu option. The series scripts that during the walk.
+- *Runner* (`run0401t.sh` 069464e37c1c511080dcfa18f286f638; the box's earlier copy is kept as
+  `run0401t.sh.before-menu-bc7a8958`). It adds two words:
+  - `BC5_0401T_MENU=<n>`: after every n walk cycles, one menu cycle of 15 s. The cycle presses options (open), down,
+    down, up, r1, l1, then options (close), each 150 ms with 1.2–3 s between them. It never presses cross, so no option
+    is chosen.
+  - `BC5_0401T_HANG_WATCH=<s>`: after a recovered ring reset, the runner keeps watching for s seconds and records
+    whether new fps lines come.
+- *Series runner.* `series0409.sh` gains `STOP_ON_HANG=1`, which stops the series at any GPU hang.
+- *The arms.* e11's binary 70df5cb1, the 0411e11 arms' words, the named snapshot 558115f3 (slot 4), RT on,
+  13,824 MiB. Each arm walks to G+600 with `MENU=4` (30 walk cycles and 7 menu cycles, 14 options presses) and
+  `HANG_WATCH=180`. The order is ABBA: A = the four switches unset, B = all four =1. `stall0409.sh` watched the whole
+  series (`raw/stall0411m` on the box).
+- *Result.* All four arms reached G+600 clean: 0 crash lines, 0 kernel lines, 0 freeze dumps, 0 devcoredumps and no
+  GPU hang. The stall catcher wrote no dump, and the B arms' journals hold no "e11:" line. Every input script ran all
+  207 of its lines (`in-<tag>.cmd.done` on the box), so the 14 options presses reached the pad.
+
+  | Arm | Switches | flips/s (whole run) | longest gap | MemAvailable min | in menu: fps, longest gap | walking: fps, longest gap |
+  |---|---|---|---|---|---|---|
+  | x11MA1 | unset | 36.8 | 1242 ms | 423 MiB | 46.0, 181 ms | 39.0, 567 ms |
+  | x11MB1 | all =1 | 36.9 | 1225 ms | 433 MiB | 45.8, 179 ms | 39.1, 533 ms |
+  | x11MB2 | all =1 | 37.3 | 1708 ms | 462 MiB | 47.1, 142 ms | 39.3, 782 ms |
+  | x11MA2 | unset | 37.7 | 1072 ms | 421 MiB | 46.8, 317 ms | 40.1, 983 ms |
+
+  - In every arm, the run's longest gap falls in the load before G (G−17 to G−21 s), not in a menu window.
+  - The menu columns come from `menufps0411.py` (`raw/night/menu-fps-0411menu.txt`, from `raw/night/<tag>-fps.txt`).
+    During a menu cycle the sticks are centred, and the frame rate is ~7 fps above the walk.
+- *Reading.* Scripted menu use did not bring back the 22:42 freeze, with the switches on or off: 28 menu cycles (56 options
+  presses) in 40 minutes of walking. The logs cannot show whether the title drew its menu each time. The higher
+  frame rate in the windows fits a menu or a standing player equally well, and no screen capture was taken.
+  The switches still never acted, because no reset came. 22:42's trigger differs from this script in ways a re-run
+  could test:
+  - he pressed by hand, at moments the script does not reach;
+  - he chose options with cross, which the script never presses;
+  - how long he had played before it is not in the record (`hang2242-0401.md`); each arm here played 10 minutes.
+
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.

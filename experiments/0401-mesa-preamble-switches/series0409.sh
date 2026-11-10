@@ -16,6 +16,7 @@ while read -r line; do
   case "$END" in "") why="no end record" ;; *"ended by itself"* ) why="the emulator ended by itself (crash)" ;; *"reset failed"* | *"no reset line"* ) why="GPU hang without a recovered reset" ;; *"SETUP:"* | *"ROUTE:"* ) why="setup/route failure" ;; esac
   echo "$SUMM" | grep -q "crash lines [1-9]" && why="${why:+$why; }crash lines in the log"
   if [ "${CONTINUE_ON_CRASH:-0}" = 1 ]; then case "$why" in *"GPU hang without a recovered reset"* | *rebooted*) ;; *) [ -z "$why" ] || echo "== $(date '+%F %T') $TAG: $why; the series goes on (CONTINUE_ON_CRASH=1)" | tee -a "$OUT/night.txt"; why="" ;; esac; fi
+  if [ "${STOP_ON_HANG:-0}" = 1 ]; then case "$END" in *"GPU HANG"*) why="${why:+$why; }a GPU hang (STOP_ON_HANG=1)" ;; esac; fi   # e11 menu series: any hang stops it
   tail -5 "$OUT/night.txt" | grep -q "does not answer after the arm" && why="${why:+$why; }the box rebooted"
   if [ -n "$why" ]; then echo "== $(date '+%F %T') series stopped at $TAG: $why" | tee -a "$OUT/night.txt"; exit 0; fi
 done < "$ARMS"

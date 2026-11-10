@@ -411,3 +411,20 @@ run rc 0: x11L1 (route): ended at G+2400 after 2541 s (G 138, list 94); whole ru
 summary: x11L1 (route): ended at G+2400 after 2541 s (G 138, list 94); whole run: 46.4 flips/s over 2536 s, 183 seconds with a gap over 100 ms, longest 1202 ms; memory floor 457 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
 == 2026-11-10 10:59:15 all arms done
 == 2026-11-10 10:59:15 series 0409 done
+== 2026-11-10 13:36:11 arm x11MA1 (route, cap 900 s, play 600 s)
+run rc 0: x11MA1 (route): ended at G+600 after 734 s (G 133, list 93); whole run: 36.8 flips/s over 727 s, 166 seconds with a gap over 100 ms, longest 1242 ms; memory floor 423 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: x11MA1 (route): ended at G+600 after 734 s (G 133, list 93); whole run: 36.8 flips/s over 727 s, 166 seconds with a gap over 100 ms, longest 1242 ms; memory floor 423 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-10 13:48:50 all arms done
+== 2026-11-10 13:48:51 arm x11MB1 (route, cap 900 s, play 600 s)
+run rc 0: x11MB1 (route): ended at G+600 after 737 s (G 136, list 93); whole run: 36.9 flips/s over 731 s, 180 seconds with a gap over 100 ms, longest 1225 ms; memory floor 433 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: x11MB1 (route): ended at G+600 after 737 s (G 136, list 93); whole run: 36.9 flips/s over 731 s, 180 seconds with a gap over 100 ms, longest 1225 ms; memory floor 433 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-10 14:01:34 all arms done
+== 2026-11-10 14:01:34 arm x11MB2 (route, cap 900 s, play 600 s)
+run rc 0: x11MB2 (route): ended at G+600 after 742 s (G 138, list 94); whole run: 37.3 flips/s over 735 s, 174 seconds with a gap over 100 ms, longest 1708 ms; memory floor 462 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: x11MB2 (route): ended at G+600 after 742 s (G 138, list 94); whole run: 37.3 flips/s over 735 s, 174 seconds with a gap over 100 ms, longest 1708 ms; memory floor 462 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-10 14:14:20 all arms done
+== 2026-11-10 14:14:20 arm x11MA2 (route, cap 900 s, play 600 s)
+run rc 0: x11MA2 (route): ended at G+600 after 736 s (G 136, list 93); whole run: 37.7 flips/s over 730 s, 175 seconds with a gap over 100 ms, longest 1072 ms; memory floor 421 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: x11MA2 (route): ended at G+600 after 736 s (G 136, list 93); whole run: 37.7 flips/s over 730 s, 175 seconds with a gap over 100 ms, longest 1072 ms; memory floor 421 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-10 14:26:59 all arms done
+== 2026-11-10 14:27:00 series 0409 done

@@ -51,7 +51,7 @@ case "$MODE" in start | route) ;; *) echo "MODE is start or route"; exit 1 ;; es
 case "$TAG" in *[!A-Za-z0-9]* | "") echo "the tag is letters and digits"; exit 1 ;; esac
 # Exp 0401 e9: BC5_0401_LATE_UNSET=<NAME>[,<NAME>...] (upper-case names) unsets words the launcher exports itself; never
 # the frame profile, which the route gates on.
-LEARNED_EMPTY=0; MOUNT_BIN=""; MOUNT_MD5=""; WALK=""; MOUNT_WORDS=(); L409=0  # exp 0401 e10; L409: exp 0409's launcher
+LEARNED_EMPTY=0; MOUNT_BIN=""; MOUNT_MD5=""; WALK=""; MOUNT_WORDS=(); L409=0; MENU=""; HWATCH=""  # exp 0401 e10; L409: exp 0409's launcher; MENU, HWATCH: e11's menu series
 for w in "${SWITCHES[@]}"; do
   case "$w" in
     BC5_0401_LATE_UNSET=*)
@@ -66,6 +66,8 @@ for w in "${SWITCHES[@]}"; do
     BC5_0401T_MOUNT_MD5=*) MOUNT_MD5=${w#*=}; [[ "$MOUNT_MD5" =~ ^[0-9a-f]{32}$ ]] || { echo "BC5_0401T_MOUNT_MD5 is an md5: not started"; exit 1; } ;;
     BC5_0401T_LAUNCHER=*) [ "${w#*=}" = exp0409 ] || { echo "BC5_0401T_LAUNCHER takes only exp0409: not started"; exit 1; }; L409=1 ;;
     BC5_0401T_WALK=*) WALK=${w#*=}; [[ "$WALK" =~ ^[0-9]+$ ]] && [ "$WALK" -ge 60 ] && [ "$WALK" -le 3000 ] || { echo "BC5_0401T_WALK is 60-3000 s: not started"; exit 1; } ;;
+    BC5_0401T_MENU=*) MENU=${w#*=}; [[ "$MENU" =~ ^[0-9]+$ ]] && [ "$MENU" -ge 1 ] && [ "$MENU" -le 20 ] || { echo "BC5_0401T_MENU is 1-20 walk cycles: not started"; exit 1; } ;;   # e11
+    BC5_0401T_HANG_WATCH=*) HWATCH=${w#*=}; [[ "$HWATCH" =~ ^[0-9]+$ ]] && [ "$HWATCH" -ge 30 ] && [ "$HWATCH" -le 600 ] || { echo "BC5_0401T_HANG_WATCH is 30-600 s: not started"; exit 1; } ;;   # e11
     BC5_MOUNT_*=*) MOUNT_WORDS+=("$w") ;;
   esac
 done
@@ -73,6 +75,7 @@ done
 [ "${#MOUNT_WORDS[@]}" = 0 ] || [ -n "$MOUNT_BIN" ] || { echo "a BC5_MOUNT_* word needs BC5_0401T_MOUNT: not started"; exit 1; }
 [ -z "$WALK" ] || [ "$MODE" = route ] || { echo "BC5_0401T_WALK is for route arms: not started"; exit 1; }
 [ -z "$WALK" ] || [ "$WALK" -le "$PLAY" ] || { echo "the walk is longer than the play: not started"; exit 1; }
+[ -z "$MENU" ] || [ -n "$WALK" ] || { echo "BC5_0401T_MENU needs BC5_0401T_WALK: not started"; exit 1; }   # e11
 [ "$SECS" -ge 120 ] && [ "$SECS" -le 3000 ] || { echo "the cap is 120-3000 s"; exit 1; }   # e11: up to 3000 s for the ~40-min arm
 W=$HOME/bc5-work; E=$W/exp0401t; R=$E/raw; LOCK=$W/BOX-LOCK; E30=$W/exp0330
 NS=$E/saves-named   # exp 0401 e10: the one named snapshot (MODE=name)
@@ -177,15 +180,19 @@ for _ in $(seq 1 120); do EP=$(pgrep -o '^kyty_emulator') && break; sleep 0.5; d
 T0=$(date +%s); ENDED=""; MPID=""; IOT=0; WALKED=0  # exp 0401 e10: MPID, IOT, WALKED
 envof() { tr '\0' '\n' < "/proc/$1/environ" 2> /dev/null; }
 iof() { if [ -n "$1" ] && [ -r "/proc/$1/io" ]; then awk '/^rchar:/ {r = $2} /^read_bytes:/ {b = $2} END {printf "%s %s", r, b}' "/proc/$1/io"; else printf '? ?'; fi; }  # exp 0401 e10
-wk() {   # exp 0401 e10: BC5_0401T_WALK's cycles into the input script, then the sticks centred
-  local c=0 t=0 side
+wk() {   # exp 0401 e10: BC5_0401T_WALK's cycles into the input script, then the sticks centred; e11: BC5_0401T_MENU's menu cycles
+  local c=0 t=0 side m=0
   while [ $((t + 16500)) -le $((WALK * 1000)) ]; do
     side=255; [ $(((c / 4) % 2)) = 1 ] && side=0
     printf 'stick l 128 0 15000\nstick r %d 128 1200\nwait 300\n' "$side" >> "$CMD"
     c=$((c + 1)); t=$((t + 16500))
+    if [ -n "${MENU:-}" ] && [ $((c % MENU)) = 0 ] && [ $((t + 15000)) -le $((WALK * 1000)) ]; then   # e11: the title's in-game menu: open, move, change tab, close (no cross)
+      printf 'wait 500\npress options 150\nwait 3000\npress down 150\nwait 1200\npress down 150\nwait 1200\npress up 150\nwait 1200\npress r1 150\nwait 2000\npress l1 150\nwait 2000\npress options 150\nwait 2500\n' >> "$CMD"
+      m=$((m + 1)); t=$((t + 15000))
+    fi
   done
   printf 'stick l 128 128\nstick r 128 128\n' >> "$CMD"
-  echo "$c"
+  if [ -n "${MENU:-}" ]; then echo "$c walk and $m menu"; else echo "$c"; fi
 }
 if [ -z "$EP" ]; then ENDED="SETUP: no emulator started"
 else
@@ -248,6 +255,12 @@ while [ -z "$ENDED" ] && [ $(($(date +%s) - T0)) -lt "$SECS" ]; do
     sleep 25
     if sudo -n dmesg 2> /dev/null | tail -n +"$((N + 1))" | grep -qiE "reset failed|MODE1|mode1"; then ENDED="GPU HANG: reset failed or MODE1"
     elif sudo -n dmesg 2> /dev/null | tail -n +"$((N + 1))" | grep -q "reset succeeded"; then ENDED="GPU HANG: ring reset succeeded at $(($(date +%s) - T0 - 25)) s"
+      if [ -n "$HWATCH" ]; then   # e11: whether the title draws again after the reset (22:42 did not); stall0409.sh dumps a stop meanwhile
+        f0=$(grep -a -c "fps counter" "$LOG" 2> /dev/null); f0=${f0:-0}; w0=$(date +%s)
+        while [ $(($(date +%s) - w0)) -lt "$HWATCH" ] && [ -d "/proc/$EP" ]; do sleep 5; done
+        f1=$(grep -a -c "fps counter" "$LOG" 2> /dev/null); f1=${f1:-0}
+        ENDED="$ENDED, then $((f1 - f0)) fps lines in $(($(date +%s) - w0)) s of watching ($([ $((f1 - f0)) -gt 0 ] && echo "drawing again" || echo "no frames"))"
+      fi
     else ENDED="GPU HANG: kernel amdgpu line at $(($(date +%s) - T0 - 25)) s, no reset line"; fi
     break
   fi
