@@ -1174,5 +1174,11 @@ they cannot be toggled during a run: the shortcut sets them at launch. `shortcut
   quality, RT, resolution) was changed there and kept in the save, that would explain why every play from his saves
   since then needs more memory. The series' snapshot of slot 4 predates it. Live saves are not read here; he can check
   the option in the game.
+  - His answer: "Nie". No option was changed, so that explanation is out.
+  - The "e11 mem 12800" shortcut was moved off his desktop into `~/bc5-work/exp0411/` (own artifact, the cleanup
+    rule). "e11 unpacked" stays.
+- *Still open.* What in the game's state at his current save makes the same area need ~0.5–1 GiB more pinned memory
+  within minutes, where 11-09 22:03 reached it only after ~30 minutes. A play of the area from an older save, from
+  before 11-09 ~22:30, would show whether it is the save's progress.
 
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.
