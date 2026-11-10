@@ -1133,5 +1133,23 @@ they cannot be toggled during a run: the shortcut sets them at launch. `shortcut
   - the box's state: 25 h up, 565–840 MiB in swap before the start, against ~4.5 h up on 11-09.
 
   A play of the same area right after a reboot would tell the two apart.
+- *After a reboot* (he rebooted at 18:35 and played "e11 unpacked" from 18:37:01 until he closed it at 18:39:51: "Brak
+  pamięci", "Dławiło się strasznie"; `play-20261110-1837`; sampler
+  `~/bc5-work/exp0411/sampler/play-20261110-183857-afterboot.txt`). It was worse, not better.
+  - Pinned memory went from 8.4 to 12.0 GiB in 2 minutes.
+  - MemAvailable was 170–330 MiB, with 1.3–1.4 GiB in swap within 2 minutes of the boot.
+  - Swap-ins ran 1,000–7,300 and swap-outs 2,000–7,300 pages/s; the box took 1,100–7,800 major faults/s, and the
+    emulator up to 6,500/s.
+  - PSI memory was 33–73 %.
+  - Frames ran 75–204 ms, the game thread up to 134 ms outside the host.
+  - Nothing else large was running: the biggest other process was plasmashell at 102 MiB. Bazaar (the Flatpak store)
+    peaked at 1.2 GiB after the boot, but it ended at 18:37:01, as the game started.
+  - The memory settings are the same as on 11-09 22:03: `KYTY_GUEST_MEMORY_MB=13824`, the same eager and lazy heaps.
+- *Reading.* The box's state is ruled out; a fresh boot does not help. In this area at his current save, the title's
+  working set no longer fits beside the 12 GiB the direct path pins. That points at the game's state as what changed
+  since 11-09 22:03.
+  - His 11-09 15:30 play with 12,800 MiB of guest memory (`exp0401e8/run-mem12800.env`, c7d3d126, which differs from
+    `bc5-run.env` only in that line) ran 486 s at ~40 fps, but elsewhere.
+  - Whether 12,800 MiB helps here, or brings back the AMM auto-pool fatal of 2026-11-03, is not tested.
 
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.
