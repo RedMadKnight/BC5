@@ -1076,9 +1076,34 @@ they cannot be toggled during a run: the shortcut sets them at launch. `shortcut
 - *Nothing caught.* There were no amdgpu lines in dmesg (the last are 11-09 22:42), no devcoredump, no timeout and no
   "e11:" line in the journal, and no stall dump.
 - *Frame rate.* He saw it as low. It was 12–18 fps per minute through the play (his e10 play of 11-09 22:03 averaged
-  31.7). The series arms ran at 15–23 fps in their first 3 minutes after loading slot 4, then at ~50 once the walk
-  moved on. So the rate follows the scene; the build and the settings are the same as the series' (`input.cfg` matches
-  the arms' copies).
-- *Log volume.* The play log reached 0.8 MB and the journal 14 MB in 20 minutes, so they are not a likely cause.
+  31.7).
+  - A first reading said this was the scene. **It was wrong**: he played the same area as 11-09 22:42, which ran faster.
+  - The settings are the same: `input.cfg` matches the arms' copies, and the two play logs show the same settings lines.
+- *Where the time goes* (the journals' frame profile lines, 2-minute means; `play-20261109-2203` vs `play-20261110-1732`):
+
+  | | frame | GPU busy | game thread inside the host | game thread outside the host |
+  |---|---|---|---|---|
+  | 11-09, minutes 8–26 | 28–31 ms | 19–20 ms | 12–13 ms | 11–13 ms |
+  | 11-09, minutes 36–40, before the 22:42 hang | 69–73 ms | 25–35 ms | 18–22 ms | 37–41 ms |
+  | 11-10, minutes 4–20 | 60–79 ms | 19–26 ms | 17–20 ms | 39–56 ms |
+
+  - The GPU did the same work. The slowdown is the game thread outside the host: the title's own CPU work, or waits
+    the profile does not count.
+  - The whole of his play today sat in the state that preceded the 22:42 hang.
+- *What goes with it.* The direct path's memory churn ran at twice 11-09's good-phase rate. Today it was 1,450–1,750
+  "direct: N views" lines and 220–390 "scratch: window" lines per 2 minutes; on 11-09, minutes 8–26, it was 680–860
+  and 35–100. Pinned memory went from 11.8 to 12.3 GiB; on 11-09 it was 11.8–11.9 GiB in the good phase and
+  12.0–12.3 GiB before the hang.
+  - The series arms had the same churn in their first 4 minutes, then fell to ~200 views and ~7 scratch lines, and ran
+    at 20-ms frames with 12.2 GiB pinned.
+  - So pinned memory alone does not explain it; the churn may. That is a correlation, not yet a cause.
+- *Log volume.* The play log reached 0.8 MB and the journal 14 MB in 20 minutes; on 11-09 the journal was 51 MB in
+  40 minutes. The logs are not a likely cause.
+- *Open.* Which of three it is:
+  - e11's build or switches (the series' B arms ran as fast as the A arms);
+  - the learned file cleaned at 11-09 23:17;
+  - the game's state.
+
+  "e10 unpacked" in the same place would separate the first from the other two.
 
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.
