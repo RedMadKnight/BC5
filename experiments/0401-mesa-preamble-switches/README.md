@@ -1158,6 +1158,21 @@ they cannot be toggled during a run: the shortcut sets them at launch. `shortcut
     (pinned c7d3d126) to the same 70 words.
   - "e11 unpacked" is unchanged.
   - Stand-in on the box: the default mode kept 13824, mem12800 gave 12800, and an unknown mode refused to start.
-  - The sampler waits for his next play.
+- *The 12,800 MiB play crashed* (18:44:01–18:45:48, exit 65, "Gra się wysypała"; sampler
+  `~/bc5-work/exp0411/sampler/play-20261110-184355-mem12800.txt`).
+  - The crash: at t ≈ 106 s, during the load, "Access violation: Write [0000008922600000] in
+    runtimeLinker.cpp:1166". The address lies in the AMM window, and the destination was unmapped.
+  - The record with the guest registers stays in `~/bc5-work/exp0411/play-last.log` on the box: guest memory words,
+    kept out of git. No kernel line, no devcoredump, no stall dump.
+  - Memory had already run out before it: GTT 12.5 GiB, MemAvailable 300–450 MiB, swap-outs up to 8,000 pages/s,
+    PSI memory 21 %.
+  - So a smaller guest pool does not lower what the direct path pins. It only leaves the title's AMM mappings short;
+    this is the class of the 11-03 auto-pool fatal. 12,800 MiB is not a fix.
+- *The box's swap is zram* (zstd, 7.4 GiB, `/dev/zram0`), so swapping costs CPU and RAM rather than disk. The OS is the
+  same deployment as during 11-09's play (45.20261105, booted since then; kernel 7.2.15-ogc1.1).
+- *A question for him.* The 22:42 trigger was the game's own menu, frozen on an option. If a graphics option (texture
+  quality, RT, resolution) was changed there and kept in the save, that would explain why every play from his saves
+  since then needs more memory. The series' snapshot of slot 4 predates it. Live saves are not read here; he can check
+  the option in the game.
 
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.
