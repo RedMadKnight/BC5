@@ -1151,5 +1151,13 @@ they cannot be toggled during a run: the shortcut sets them at launch. `shortcut
   - His 11-09 15:30 play with 12,800 MiB of guest memory (`exp0401e8/run-mem12800.env`, c7d3d126, which differs from
     `bc5-run.env` only in that line) ran 486 s at ~40 fps, but elsewhere.
   - Whether 12,800 MiB helps here, or brings back the AMM auto-pool fatal of 2026-11-03, is not tested.
+- *The 12,800 MiB shortcut* (his "Tak", 18:4x). `shortcut0411.sh mem12800` (45738f6e) wrote "BC5 emulator (e11 mem
+  12800)" (b8277b13).
+  - It runs the wrapper's new mode `play-e11-0411.sh mem12800` (1ae07ce6; the box keeps cca8721e as
+    `play-e11-0411.sh.before-mem12800-cca8721e`). The mode adds `BC5_RUN_ENV=~/bc5-work/exp0401e8/run-mem12800.env`
+    (pinned c7d3d126) to the same 70 words.
+  - "e11 unpacked" is unchanged.
+  - Stand-in on the box: the default mode kept 13824, mem12800 gave 12800, and an unknown mode refused to start.
+  - The sampler waits for his next play.
 
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.

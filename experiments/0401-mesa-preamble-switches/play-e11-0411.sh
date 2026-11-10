@@ -11,6 +11,11 @@
 #   host's eu-stack is refused the container's processes). DEBUGINFOD_URLS is unset for it: the container inherits the
 #   host's Fedora debuginfod server, and eu-stack would send it the build ids it cannot resolve. A long window pause can
 #   also make one dump. When the launcher ends the catcher is told to stop; it finishes a dump it has begun.
+# - Mode mem12800 (his "Tak", 2026-11-10 18:4x, after the after-reboot play ran out of memory): the same, with the
+#   launcher's settings file BC5_RUN_ENV=~/bc5-work/exp0401e8/run-mem12800.env (c7d3d126: bc5-run.env with
+#   KYTY_GUEST_MEMORY_MB=12800 instead of 13824), the "e10 mem 12800" shortcut's file of exp 0409. The shortcut
+#   "BC5 emulator (e11 mem 12800)" runs it.
+# usage: play-e11-0411.sh [mem12800]
 set -u
 E=$HOME/bc5-work/exp0411
 BIN=$E/bin/kyty_emulator; L=$E/play-pkg-0411.sh; C=$HOME/bc5-work/exp0401t/stall0409.sh
@@ -35,6 +40,13 @@ WORDS=(BC5_GAME_DIR=/home/kjaniszewski/bc5-data/games/PPSA03671 BC5_DIRECT_CP_CO
   KYTY_BC5_LOAD_NPTROPHY=1 BC5_DIRECT_JOURNAL_QUIET=1
   BC5_DIRECT_RESET_REPLAY_ACB=1 BC5_DIRECT_RESET_LABELS=1 BC5_DIRECT_LEARN_GUEST_ONLY=1 BC5_DIRECT_RESET_LABEL_JOURNAL=1)
 [ "${#WORDS[@]}" = 70 ] || { say "e11: the shortcut's words are not 70; not started"; exit 1; }
+case "${1:-}" in
+  "") ;;
+  mem12800) RE=$HOME/bc5-work/exp0401e8/run-mem12800.env
+            [ "$(m "$RE")" = c7d3d126c630ac0486d15c10eb0e3e27 ] || { say "e11: $RE is not the pinned 12800 MiB settings file; not started"; exit 1; }
+            WORDS+=("BC5_RUN_ENV=$RE") ;;
+  *) say "e11: unknown mode ${1}; not started"; exit 1 ;;
+esac
 SP=""; STOP=""
 if [ "$(m "$C")" = 49db07c8c84e0332dab1e340c7461ce8 ]; then
   mkdir -p "$E/stall"; STOP=$E/stall/stop-$$; rm -f "$STOP"
