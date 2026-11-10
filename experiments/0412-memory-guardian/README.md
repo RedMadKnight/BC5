@@ -260,9 +260,93 @@ on the box.
   "BC5 emulator (0412 ledger)" ee484779 and "BC5 emulator (0412 low)" 2e5c2e9b. RT in the shared settings: on.
 - In `low`, `BC5_GUARD_MLOCK=pinned` is inert while the memlock limit is 2 GiB (§5); the journal says so.
 
+### 7. The first two plays and the ASTRO BOT kill (2026-11-10 21:47–22:35; read at 22:36, box free, read-only)
+
+Raw: `raw/play-20261110-214740-ledger.txt`, `raw/play-20261110-215006-low.txt` (the sampler), `raw/ledger-2147.txt`,
+`raw/ledger-2150.txt` (the guardian's lines of the two journals), `raw/oom-astro-20261110-223451.txt` (the kernel's
+report). [M] measured, [I] inferred.
+
+**The two plays of the second title** (build 70a3bbee, RT on, his save; ledger 21:47:40–21:50:03, he quit, exit 0;
+low 21:50:06 until the box stopped answering, last journal line 21:52:58, manual reset).
+
+| t (ledger arm) | pinned direct MiB | of it orphans | GTT | available | swap used | emulator RSS / shmem | PSI full % |
+|---|---|---|---|---|---|---|---|
+| 30 s (menu) | 8,438 | 5 | 9,049 | 3,662 | 553 | 2,166 / 1,930 | 0.0 |
+| 60 s (save loaded) | 11,282 | 12 | 12,008 | 871 | 801 | 4,653 / 4,452 | 5.6 |
+| 70 s | 11,284 | 2,145 | 11,938 | 838 | 788 | 3,370 / 3,170 | 2.0 |
+| 100 s | 11,762 | 180 | 12,505 | 375 | 830 | 5,711 / 5,503 | 5.1 |
+| 120 s | 11,988 | 406 | 12,715 | 372 | 1,061 | 63 / 21 | 19.5 |
+| 130 s | 12,070 | 483 | 12,820 | 190 | 1,014 | 507 / 406 | 32.8 |
+
+- **Which heap** [M], at 130 s, pinned/reserved MiB: AMM 2,967/2,967 (eager), RenderGpuWcLarge 2,758/2,758 (eager),
+  CommitIABufferAllocator 2,736/2,736 (eager), AssetHeap Large 650/816 (by data), RenderGpuRwLarge 414, InitAllocator
+  412/652, DynamicHeap 328, AssetHeap Small 280/350, Physics 192, anon 177, RenderGpuWcSmall 110, ComponentHeap 104,
+  24 more 458/592; plus 270 MiB private. The only heap that grows with the save is **AMM: 496 MiB in the menu, 1,418
+  at 40 s, 2,967 at the end** (+2.5 GiB). The two big render heaps are pinned whole from the menu on.
+- **Orphans** [M]: 5 MiB in the menu; 2.1 GiB for some seconds while the views are rebuilt after the load (70 s);
+  then they climb again while he moves: 180 → 310 → 406 → 483 MiB in 30 s. From 100 s on the whole growth of the pin
+  (+308 MiB) is orphans (+303 MiB): memory the title gave back and the host keeps pinned.
+- **Unevictable** [M]: 572–573 MiB all the time, with 12 GiB pinned. So the pinned pages are not on the kernel's
+  unevictable list; they stay on the lists it scans. The emulator's mapped share of them falls from 5,503 MiB to
+  21 MiB in 20 s (100 → 120 s) while the pin does not move, and the process takes 40,000–70,000 minor faults a second
+  to map them again. This is section 2's link 2, now measured on kernel 7.2.15: the kernel unmaps pages it can never
+  free. An mlock of the pinned ranges addresses exactly this; the limit change (memlock, root) is worth making.
+  It frees no memory.
+- **How fast, and what took the box down** [M]: 3.6 GiB available in the menu, under 0.9 GiB 57 s after the start,
+  0.2–0.4 GiB from 100 s. PSI full over 25 % at 122 s (ledger), 86 % at 173 s (low). Swap held only 1.0–1.1 GiB of
+  7.4 GiB at the end: the emulator's own memory outside the pin is about 0.3 GiB, so there was nothing left to swap.
+  The kernel log of that boot has no OOM line and no line at all after 21:45 [M]; the box died in a reclaim storm
+  without a kill [I: the last lines can be lost with the reset]. 12.07 GiB pinned + 0.27 private + the desktop do
+  not fit in 14.84 GiB; the pin was still growing at 10 MiB/s when the play ended.
+- **Did "low" change anything** [M]: before the wall, yes: 204 major faults by 80 s against 11,812, no swap-in until
+  90 s against from 57 s, `learned_apply` ran 355 times against 932 (5,687 put off, no GPU fault in the log), 257
+  files advised, 5 cache drops. The wall itself came at the same second (PSI 16–19 % at 120 s in both) and at the
+  same pin. MLOCK did nothing (memlock limited, journaled). "low" trims the symptoms; it does not move the budget.
+
+**The ASTRO BOT run** (21:58:04–22:34:51). It ran on the **shared build** 4d2b1b1d of 11-02 through
+`play-astro.sh` with the shared `bc5-run.env`, not on exp 0409's binary: the menu script hands a game image to
+`play-astro.sh`, whose `EMU` is the shared build (the play log's head says "emulator 2026-11-02 00:31:24") [M]. So
+its memory words (13,824 MiB guest, eager GpuGarlicMemory/GpuOnionMemory, lazy orbis_user_malloc) are the old shared
+ones, nothing new, and e8's objects, 0409's libAmpr and hostMenu were not in that process.
+
+- Pinned [M, journal]: 8.65 GiB direct 78 s after the start, 8.78 GiB at 26 min, 8.95 GiB at the end; private 284 MiB
+  throughout. The pin did **not** grow. It matches the kernel's shmem total, 9.49 GiB.
+- What filled RAM and swap [M, OOM report]: the emulator's **anonymous** memory, 2.21 GiB resident + 5.09 GiB in
+  swap = 7.3 GiB, and `bc5-mount`, 0.33 GiB resident + 1.14 GiB in swap = 1.5 GiB. The zram store held the 7.4 GiB of
+  swap in 0.69 GiB (about 10:1), so the swapped data is highly repetitive.
+- Rate [I]: no sampler ran beside it, so there is no time series. From about 0.3 GiB of host anon (the second
+  title's figure after 2 min) to 7.3 GiB in 36 min is about 190 MiB/min on average. Steady or stepped is not known.
+- Candidates [I], in the order the facts point: (1) something kept per submit or per journal line in the shared
+  build with `PLAY_CAPTURE=1` (it sets `BC5_DIRECT_TIMING` and `BC5_DIRECT_FRAME_PROFILE`): the journal is 378 MB and
+  3.43 million lines for this run, and 7 GiB / 3.43 M lines is about 2 KiB a line; (2) the mount's cache (1.5 GiB,
+  package image through FUSE); (3) the tiler pool is ruled out (3 buffers, 96 MiB, 116,733 reuses) [M]; learned
+  windows are ruled out (18 windows, pin flat) [M]. In the two 0412 plays the host anon stayed near 0.3 GiB over
+  2 min, which is too short to see 190 MiB/min against the noise.
+
+**Two different problems.** The second title hits a wall of pinned memory within 2 minutes (a budget, not a leak).
+ASTRO BOT's pin is flat and something anonymous in the host grows for half an hour (a leak, in the shared build).
+
+**Next step recommended**: one more private build (fixes first, each behind its switch), on this kit:
+1. **orphan release** (`BC5_GUARD_ORPHANS`): unpin chunks no view covers, after a hold time. Measured prize 0.4–0.5 GiB
+   and rising at the wall, 2.1 GiB during the rebuild.
+2. **the pin cap enforced** (`BC5_GUARD_PIN_CAP` acts: release orphans first, then refuse lazy/learned growth), so
+   the play degrades inside the game and the box stays alive.
+3. **AMM by use** (zero skip limited to the AMM heap): the one heap that grows, 2.97 GiB pinned whole; its untouched
+   share is not measured, and F403's hang risk applies, so default off and the last arm.
+4. the sampler with two more columns: the emulator's and bc5-mount's anonymous + swapped MiB (`RssAnon`, `VmSwap`),
+   and the same sampler beside one ASTRO BOT play with `PLAY_CAPTURE` off and one with it on. That decides the leak.
+Outside the build: raise the memlock limit (root, the maintainer) so `MLOCK=pinned` can be tested. The cgroup words
+(`memory.swap.max`, `memory.low`) and a PSI loop do not help the second title: there is nothing swappable to protect
+or shed (1 GiB of swap in use at the wall). A cgroup `memory.max` on the emulator's scope would have turned ASTRO BOT's
+36-minute fill into an early kill of the emulator alone; it is a safety net, not a fix.
+
 ## Verdict
 
-**Analysis, design and a built, unrun binary; nothing tested in play.**
+**Analysis, design, one build and two short plays (section 7): the ledger answered the split; no arm moved the wall.**
+- After the plays (section 7): at his save the pin is 12.07 GiB and rising, 2.97 GiB of it the AMM heap, 0.48 GiB
+  orphans; pinned pages are not unevictable and get unmapped under pressure [M]. "low" trims faults, not the wall.
+  ASTRO BOT's kill is a separate thing: flat pin, 7.3 GiB of host anon in the shared build. Next: orphan release,
+  an enforced pin cap, AMM by use, and per-process columns in the sampler. The lines below are the state before the plays.
 - The 12 GiB is the title's own GPU heaps and streaming pool, pinned whole. It is not a leak and not duplicate views.
   What is excess against the console: 2.8–3.7 GiB of untouched zero pages [M], released memory that is never
   unpinned (size unmeasured while moving), a page-cache copy of the game's data, and the zram store.

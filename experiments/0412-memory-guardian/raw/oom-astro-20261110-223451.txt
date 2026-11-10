@@ -1,0 +1,187 @@
+Nov 10 22:34:51 bazzite kernel: Draw Extra Geom invoked oom-killer: gfp_mask=0x140cca(GFP_HIGHUSER_MOVABLE|__GFP_COMP), order=0, oom_score_adj=200
+Nov 10 22:34:51 bazzite kernel: CPU: 3 UID: 1000 PID: 5036 Comm: Draw Extra Geom Tainted: G     U  W  OE       7.2.15-ogc1.1.fc45.x86_64 #1 PREEMPT(lazy) 
+Nov 10 22:34:51 bazzite kernel: Tainted: [U]=USER, [W]=WARN, [O]=OOT_MODULE, [E]=UNSIGNED_MODULE
+Nov 10 22:34:51 bazzite kernel: Hardware name: Default string AMD BC-250/AMD BC-250, BIOS P3.00 12/09/2021
+Nov 10 22:34:51 bazzite kernel: Call Trace:
+Nov 10 22:34:51 bazzite kernel:  <TASK>
+Nov 10 22:34:51 bazzite kernel:  dump_stack_lvl+0x5d/0x80
+Nov 10 22:34:51 bazzite kernel:  dump_header+0x43/0x1b3
+Nov 10 22:34:51 bazzite kernel:  oom_kill_process.cold+0xa/0xba
+Nov 10 22:34:51 bazzite kernel:  out_of_memory+0xfd/0x2f0
+Nov 10 22:34:51 bazzite kernel:  __alloc_pages_slowpath.constprop.0+0xa5f/0xca0
+Nov 10 22:34:51 bazzite kernel:  __alloc_frozen_pages_noprof+0x334/0x370
+Nov 10 22:34:51 bazzite kernel:  alloc_pages_mpol+0xb2/0x180
+Nov 10 22:34:51 bazzite kernel:  vma_alloc_folio_noprof+0x6a/0xd0
+Nov 10 22:34:51 bazzite kernel:  __swap_cache_alloc+0xec/0x370
+Nov 10 22:34:51 bazzite kernel:  swap_cache_alloc_folio+0xe9/0x1b0
+Nov 10 22:34:51 bazzite kernel:  swapin_sync+0x42/0xa0
+Nov 10 22:34:51 bazzite kernel:  do_swap_page+0x4c3/0xe80
+Nov 10 22:34:51 bazzite kernel:  ? __pte_offset_map+0x1b/0x100
+Nov 10 22:34:51 bazzite kernel:  ? pte_offset_map_rw_nolock+0x1f/0x90
+Nov 10 22:34:51 bazzite kernel:  ? handle_pte_fault+0x4d/0x210
+Nov 10 22:34:51 bazzite kernel:  __handle_mm_fault+0x47c/0x6c0
+Nov 10 22:34:51 bazzite kernel:  handle_mm_fault+0x114/0x340
+Nov 10 22:34:51 bazzite kernel:  do_user_addr_fault+0x2cd/0x860
+Nov 10 22:34:51 bazzite kernel:  exc_page_fault+0x90/0x1e0
+Nov 10 22:34:51 bazzite kernel:  asm_exc_page_fault+0x26/0x30
+Nov 10 22:34:51 bazzite kernel: RIP: 0033:0x5575aa7ac130
+Nov 10 22:34:51 bazzite kernel: Code: 10 00 c7 43 2c 00 00 00 00 48 c7 43 30 00 00 00 00 66 0f 1f 84 00 00 00 00 00 48 8b 83 80 00 00 00 48 39 83 a0 00 00 00 74 87 <0f> 10 00 0f 10 48 10 41 0f 11 4d 10 41 0f 11 45 00 48 8b 8b 90 00
+Nov 10 22:34:51 bazzite kernel: RSP: 002b:000000031369bad0 EFLAGS: 00010287
+Nov 10 22:34:51 bazzite kernel: RAX: 00007efe87581450 RBX: 00007f0078e8e680 RCX: 00005575aa664d40
+Nov 10 22:34:51 bazzite kernel: RDX: 0000000000000000 RSI: 000000031369baa0 RDI: 00007f0078e8e690
+Nov 10 22:34:51 bazzite kernel: RBP: 000000031369bb30 R08: 00007f041e087000 R09: 00007f041e087010
+Nov 10 22:34:51 bazzite kernel: R10: 000000000044d898 R11: 001be261c6571226 R12: 000000031369bdf0
+Nov 10 22:34:51 bazzite kernel: R13: 00007f0078e8e6a0 R14: 0000000000000000 R15: 00007f0078e8e690
+Nov 10 22:34:51 bazzite kernel:  </TASK>
+Nov 10 22:34:51 bazzite kernel: Mem-Info:
+Nov 10 22:34:51 bazzite kernel: active_anon:1211779 inactive_anon:1995858 isolated_anon:0
+                                 active_file:5565 inactive_file:31606 isolated_file:0
+                                 unevictable:152622 dirty:91 writeback:0
+                                 slab_reclaimable:23833 slab_unreclaimable:69845
+                                 mapped:455039 shmem:2488222 pagetables:14796
+                                 sec_pagetables:0 bounce:0
+                                 kernel_misc_reclaimable:0
+                                 free:33377 free_pcp:126 free_cma:0
+Nov 10 22:34:51 bazzite kernel: Node 0 active_anon:4847116kB inactive_anon:7983432kB active_file:22260kB inactive_file:126424kB unevictable:610488kB isolated(anon):0kB isolated(file):0kB mapped:1820156kB dirty:364kB writeback:0kB shmem:9952888kB shmem_thp:0kB shmem_pmdmapped:0kB anon_thp:0kB kernel_stack:13696kB pagetables:59184kB sec_pagetables:0kB all_unreclaimable? yes Balloon:0kB gpu_active:453140kB gpu_reclaim:0kB
+Nov 10 22:34:51 bazzite kernel: Node 0 DMA free:13312kB boost:0kB min:64kB low:80kB high:96kB reserved_highatomic:0KB free_highatomic:0KB active_anon:0kB inactive_anon:0kB active_file:0kB inactive_file:0kB unevictable:0kB writepending:0kB zspages:0kB present:15996kB managed:15360kB mlocked:0kB bounce:0kB free_pcp:0kB local_pcp:0kB free_cma:0kB
+Nov 10 22:34:51 bazzite kernel: lowmem_reserve[]: 0 1944 15177 15177 15177
+Nov 10 22:34:51 bazzite kernel: Node 0 DMA32 free:60560kB boost:0kB min:7668kB low:9584kB high:11500kB reserved_highatomic:0KB free_highatomic:0KB active_anon:1371116kB inactive_anon:472808kB active_file:568kB inactive_file:15676kB unevictable:0kB writepending:52kB zspages:24628kB present:2056672kB managed:1991068kB mlocked:0kB bounce:0kB free_pcp:520kB local_pcp:0kB free_cma:0kB
+Nov 10 22:34:51 bazzite kernel: lowmem_reserve[]: 0 0 13233 13233 13233
+Nov 10 22:34:51 bazzite kernel: Node 0 Normal free:59960kB boost:0kB min:59844kB low:74804kB high:89764kB reserved_highatomic:0KB free_highatomic:0KB active_anon:3472284kB inactive_anon:7514340kB active_file:21860kB inactive_file:110248kB unevictable:610488kB writepending:312kB zspages:680556kB present:13893632kB managed:13551092kB mlocked:74060kB bounce:0kB free_pcp:4kB local_pcp:0kB free_cma:0kB
+Nov 10 22:34:51 bazzite kernel: lowmem_reserve[]: 0 0 0 0 0
+Nov 10 22:34:51 bazzite kernel: Node 0 DMA: 0*4kB 0*8kB 0*16kB 0*32kB 0*64kB 0*128kB 0*256kB 0*512kB 1*1024kB (U) 2*2048kB (UM) 2*4096kB (M) = 13312kB
+Nov 10 22:34:51 bazzite kernel: Node 0 DMA32: 282*4kB (UME) 263*8kB (UME) 761*16kB (UME) 539*32kB (UME) 250*64kB (UME) 64*128kB (UME) 11*256kB (UM) 2*512kB (M) 0*1024kB 0*2048kB 0*4096kB = 60688kB
+Nov 10 22:34:51 bazzite kernel: Node 0 Normal: 1262*4kB (UME) 690*8kB (UME) 725*16kB (UME) 514*32kB (UME) 168*64kB (UME) 55*128kB (UME) 13*256kB (M) 1*512kB (M) 0*1024kB 0*2048kB 0*4096kB = 60248kB
+Nov 10 22:34:51 bazzite kernel: Node 0 hugepages_total=0 hugepages_free=0 hugepages_surp=0 hugepages_size=1048576kB
+Nov 10 22:34:51 bazzite kernel: Node 0 hugepages_total=0 hugepages_free=0 hugepages_surp=0 hugepages_size=2048kB
+Nov 10 22:34:51 bazzite kernel: 2673863 total pagecache pages
+Nov 10 22:34:51 bazzite kernel: 32 pages in swap cache
+Nov 10 22:34:51 bazzite kernel: Free swap  = 4kB
+Nov 10 22:34:51 bazzite kernel: Total swap = 7778300kB
+Nov 10 22:34:51 bazzite kernel: 3991575 pages RAM
+Nov 10 22:34:51 bazzite kernel: 0 pages HighMem/MovableOnly
+Nov 10 22:34:51 bazzite kernel: 102195 pages reserved
+Nov 10 22:34:51 bazzite kernel: 0 pages cma reserved
+Nov 10 22:34:51 bazzite kernel: 0 pages hwpoisoned
+Nov 10 22:34:51 bazzite kernel: Memory cgroup min protection 256000kB -- low protection 0kB
+Nov 10 22:34:51 bazzite kernel: Tasks state (memory values in pages):
+Nov 10 22:34:51 bazzite kernel: [  pid  ]   uid  tgid total_vm      rss rss_anon rss_file rss_shmem pgtables_bytes swapents oom_score_adj name
+Nov 10 22:34:51 bazzite kernel: [    807]     0   807    11403      931       63      866         2   106496      400          -250 systemd-journal
+Nov 10 22:34:51 bazzite kernel: [    853]   990   853     3752      578       95      483         0    73728      430             0 systemd-resolve
+Nov 10 22:34:51 bazzite kernel: [    857]     0   857     2297      496       28      468         0    53248      121             0 systemd-userdbd
+Nov 10 22:34:51 bazzite kernel: [    860]     0   860     3006      690       36      654         0    57344      351             0 systemd-nsresou
+Nov 10 22:34:51 bazzite kernel: [    861]     0   861    11259      638        0      638         0   110592     1876         -1000 systemd-udevd
+Nov 10 22:34:51 bazzite kernel: [    929]   963   929     2444     1049       47     1002         0    53248      118          -900 systemd-oomd
+Nov 10 22:34:51 bazzite kernel: [   1219]     0  1219     5251      555       33      522         0    69632      185         -1000 auditd
+Nov 10 22:34:51 bazzite kernel: [   2086]    81  2086     2551      690        0      690         0    57344      263          -900 dbus-broker-lau
+Nov 10 22:34:51 bazzite kernel: [   2087]    81  2087     2022      728      146      582         0    57344      571          -900 dbus-broker
+Nov 10 22:34:51 bazzite kernel: [   2088]     0  2088    80233    19340     3973    15367         0   552960        0          -900 python3
+Nov 10 22:34:51 bazzite kernel: [   2091]    70  2091     1812      740       57      683         0    57344       62             0 avahi-daemon
+Nov 10 22:34:51 bazzite kernel: [   2094]     0  2094    58143      632       40      592         0    61440       38             0 bash
+Nov 10 22:34:51 bazzite kernel: [   2098]     0  2098    57729      551       13      538         0    65536       20             0 dmesg
+Nov 10 22:34:51 bazzite kernel: [   2099]     0  2099   380883     1502       46     1456         0   548864     8184             0 cardwired
+Nov 10 22:34:51 bazzite kernel: [   2101]   994  2101    21824      788       33      755         0    77824      180             0 chronyd
+Nov 10 22:34:51 bazzite kernel: [   2102]     0  2102    85968      560       20      540         0    98304      102         -1000 cyan-skillfish-
+Nov 10 22:34:51 bazzite kernel: [   2105]     0  2105     1271      611       19      592         0    53248       43             0 dmemcg-booster
+Nov 10 22:34:51 bazzite kernel: [   2107]     0  2107    63317     2151       51     2100         0   110592     2799             0 ds-inhibit
+Nov 10 22:34:51 bazzite kernel: [   2108]     0  2108    94460     2283       46     2237         0   217088     8415             0 firewalld
+Nov 10 22:34:51 bazzite kernel: [   2111]     0  2111   114966     2285       51     2234         0   233472     8307             0 input-remapper-
+Nov 10 22:34:51 bazzite kernel: [   2117]   999  2117    96067      787       21      766         0   126976      829             0 polkitd
+Nov 10 22:34:51 bazzite kernel: [   2119]   965  2119     5258      583       48      535         0    57344       11             0 rtkit-daemon
+Nov 10 22:34:51 bazzite kernel: [   2121]     0  2121     2637      672       28      644         0    61440      250             0 smartd
+Nov 10 22:34:51 bazzite kernel: [   2125]     0  2125     3915      566       41      525         0    73728      290             0 systemd-homed
+Nov 10 22:34:51 bazzite kernel: [   2127]     0  2127   119659      987      138      849         0   155648      435             0 udisksd
+Nov 10 22:34:51 bazzite kernel: [   2130]     0  2130   136052      995      166      829         0   131072      664             0 upowerd
+Nov 10 22:34:51 bazzite kernel: [   2276]    70  2276     1764      262        5      257         0    53248       76             0 avahi-daemon
+Nov 10 22:34:51 bazzite kernel: [   2280]     0  2280   133497      752       20      732         0   126976      279             0 accounts-daemon
+Nov 10 22:34:51 bazzite kernel: [   2283]     0  2283     3511      594       63      531         0    65536      609             0 systemd-logind
+Nov 10 22:34:51 bazzite kernel: [   2291]     0  2291   140730     1036      266      770         0   172032      612             0 NetworkManager
+Nov 10 22:34:51 bazzite kernel: [   2313]     0  2313    75795      765       10      755         0   188416     8216             0 input-remapper-
+Nov 10 22:34:51 bazzite kernel: [   2345]     0  2345    97696      645       57      588         0   135168      505             0 ModemManager
+Nov 10 22:34:51 bazzite kernel: [   2418]     0  2418    63168      909       43      866         0   102400      413             0 cupsd
+Nov 10 22:34:51 bazzite kernel: [   2422]     0  2422    70772      747       16      731         0   110592      255             0 gssproxy
+Nov 10 22:34:51 bazzite kernel: [   2428]     0  2428     2320      562       20      542         0    57344      253         -1000 sshd
+Nov 10 22:34:51 bazzite kernel: [   2433]     0  2433   323250     2275     1699      576         0   200704     1611             0 tailscaled
+Nov 10 22:34:51 bazzite kernel: [   2439]     0  2439   126703     2405      146     2259         0   212992     6391             0 tuned
+Nov 10 22:34:51 bazzite kernel: [   2470]     4  2470     5688      703        0      703         0    81920      342             0 dbus
+Nov 10 22:34:51 bazzite kernel: [   2472]     4  2472     5688      665        0      665         0    86016      342             0 dbus
+Nov 10 22:34:51 bazzite kernel: [   2764]     0  2764   126108     2323      102     2221         0   188416     5649             0 tuned-ppd
+Nov 10 22:34:51 bazzite kernel: [   2805]     0  2805   102970      885        0      885         0   212992      788             0 plasmalogin
+Nov 10 22:34:51 bazzite kernel: [   2815]     0  2815    85614      897        0      897         0   217088      949             0 plasmalogin-hel
+Nov 10 22:34:51 bazzite kernel: [   2817]     0  2817    76443      565        0      565         0    94208      164             0 uresourced
+Nov 10 22:34:51 bazzite kernel: [   2851]  1000  2851     5544      828       89      739         0    86016      941           100 systemd
+Nov 10 22:34:51 bazzite kernel: [   2858]  1000  2858     4099      272        0      272         0    65536      351           100 (sd-pam)
+Nov 10 22:34:51 bazzite kernel: [   2879]  1000  2879     1704      732       29      703         0    53248       34           200 mpris-proxy
+Nov 10 22:34:51 bazzite kernel: [   2888]  1000  2888     2366      695       77      618         0    69632       12           200 dbus-broker-lau
+Nov 10 22:34:51 bazzite kernel: [   2894]  1000  2894   107904     1006        0     1006         0   208896      847             0 startplasma-way
+Nov 10 22:34:51 bazzite kernel: [   2946]  1000  2946     1737     1130      437      693         0    53248        3           200 dbus-broker
+Nov 10 22:34:51 bazzite kernel: [   2966]  1000  2966   135693      951      268      683         0   126976       20           200 gvfsd
+Nov 10 22:34:51 bazzite kernel: [   3058]  1000  3058     1271      620       26      594         0    57344       36           200 dmemcg-booster
+Nov 10 22:34:51 bazzite kernel: [   3060]  1000  3060    97001     1035      115      920         0   167936      428           200 kwin_wayland_wr
+Nov 10 22:34:51 bazzite kernel: [   3061]  1000  3061    95707      988       38      950         0   118784      281           200 uresourced
+Nov 10 22:34:51 bazzite kernel: [   3070]  1000  3070   622762     9028     2513     6499        16  1458176    15791           200 kwin_wayland
+Nov 10 22:34:51 bazzite kernel: [   3072]  1000  3072   102815     1827      844      983         0   225280        0           200 ksmserver
+Nov 10 22:34:51 bazzite kernel: [   3076]  1000  3076   385078     5028     2473     2555         0   503808     1332           200 kded6
+Nov 10 22:34:51 bazzite kernel: [   3078]  1000  3078    87739     4130     2651     1270       209   159744        0           200 pipewire
+Nov 10 22:34:51 bazzite kernel: [   3079]  1000  3079   257642     3847     1963     1880         4   262144        0           200 wireplumber
+Nov 10 22:34:51 bazzite kernel: [   3094]  1000  3094   636544    35039    25211     9824         4  1769472    27587           200 plasmashell
+Nov 10 22:34:51 bazzite kernel: [   3184]  1000  3184   166904     1746      155     1591         0   315392     1729           200 foreground_boos
+Nov 10 22:34:51 bazzite kernel: [   3196]  1000  3196   481385     6433     1832     4599         2   991232     9215           200 plasma-keyboard
+Nov 10 22:34:51 bazzite kernel: [   3263]  1000  3263   205850     1226       26     1200         0   303104     1719           200 kactivitymanage
+Nov 10 22:34:51 bazzite kernel: [   3309]  1000  3309   116266     1081       58     1023         0   204800      677           200 gmenudbusmenupr
+Nov 10 22:34:51 bazzite kernel: [   3312]  1000  3312   138642     1971       57     1914         0   331776     1722           200 kaccess
+Nov 10 22:34:51 bazzite kernel: [   3313]  1000  3313   195784     1885        5     1880         0   352256     1828           200 polkit-kde-auth
+Nov 10 22:34:51 bazzite kernel: [   3314]  1000  3314   269434     1874      202     1672         0   389120     1696           200 org_kde_powerde
+Nov 10 22:34:51 bazzite kernel: [   3315]  1000  3315   116079     1050       56      994         0   192512      673           200 xembedsniproxy
+Nov 10 22:34:51 bazzite kernel: [   3316]  1000  3316     2240      538       10      528         0    57344      208           200 ssh-agent
+Nov 10 22:34:51 bazzite kernel: [   3323]  1000  3323   232306     2751      257     2492         2   503808     4917           200 Xwayland
+Nov 10 22:34:51 bazzite kernel: [   3413]  1000  3413    95219      617       10      607         0   110592      179           200 at-spi-bus-laun
+Nov 10 22:34:51 bazzite kernel: [   3424]  1000  3424     2366      676       25      650         1    61440       44           200 dbus-broker-lau
+Nov 10 22:34:51 bazzite kernel: [   3431]  1000  3431     1365      671       71      600         0    45056        0           200 dbus-broker
+Nov 10 22:34:51 bazzite kernel: [   3470]  1000  3470    42017      586       40      546         0    86016      121           200 at-spi2-registr
+Nov 10 22:34:51 bazzite kernel: [   3479]  1000  3479    99110     2092      923     1169         0   126976        0           200 pipewire-pulse
+Nov 10 22:34:51 bazzite kernel: [   3574]  1000  3574    41427      561        9      552         0    81920      125           200 dconf-service
+Nov 10 22:34:51 bazzite kernel: [   3664]  1000  3664    92453      857        2      855         0   151552      355           200 kde-inhibit
+Nov 10 22:34:51 bazzite kernel: [   3684]  1000  3684   101022     1090      113      977         0   208896      665           200 kunifiedpush-di
+Nov 10 22:34:51 bazzite kernel: [   3689]  1000  3689    57773      574       14      560         0    61440       14           200 sleep
+Nov 10 22:34:51 bazzite kernel: [   3692]  1000  3692   261855     2512      986     1526         0   217088        0           200 xdg-desktop-por
+Nov 10 22:34:51 bazzite kernel: [   3709]  1000  3709    58176      641        5      636         0    61440       76           200 bash
+Nov 10 22:34:51 bazzite kernel: [   3722]  1000  3722   133266      756       59      697         0   110592       83           200 xdg-permission-
+Nov 10 22:34:51 bazzite kernel: [   3727]  1000  3727    58568      670       32      638         0    73728       46           200 findmnt
+Nov 10 22:34:51 bazzite kernel: [   3728]  1000  3728    58176      211        1      210         0    49152       80           200 bash
+Nov 10 22:34:51 bazzite kernel: [   3736]  1000  3736   191023     1178       64     1114         0   151552      103           200 xdg-document-po
+Nov 10 22:34:51 bazzite kernel: [   3744]  1000  3744      690      489       16      473         0    40960       12           200 fusermount3
+Nov 10 22:34:51 bazzite kernel: [   3748]  1000  3748     2125      714       99      615         0    53248        0           200 xsettingsd
+Nov 10 22:34:51 bazzite kernel: [   3756]  1000  3756    12484      688       61      627         0    77824      104           200 obexd
+Nov 10 22:34:51 bazzite kernel: [   3757]  1000  3757   195406     4840     2391     2449         0   380928        0           200 xdg-desktop-por
+Nov 10 22:34:51 bazzite kernel: [   3803]  1000  3803   179412     1203      202     1001         0   196608     1354           200 xdg-desktop-por
+Nov 10 22:34:51 bazzite kernel: [   3811]  1000  3811   157970     1873        7     1866         0   344064     1847           200 ksecretd
+Nov 10 22:34:51 bazzite kernel: [   3849]  1000  3849   175921     1903       10     1893         0   356352     2636           200 kdeconnectd
+Nov 10 22:34:51 bazzite kernel: [   4213]  1000  4213    58177      561        0      561         0    65536       83           200 distrobox
+Nov 10 22:34:51 bazzite kernel: [   4215]  1000  4215   608139     2771     2004      767         0   385024     2068           200 podman
+Nov 10 22:34:51 bazzite kernel: [   4244]  1000  4244      270        1        0        1         0    40960       14           200 catatonit
+Nov 10 22:34:51 bazzite kernel: [   4299]  1000  4299    58619      333        1      332         0    65536       62           200 conmon
+Nov 10 22:34:51 bazzite kernel: [   4301] 524288  4301      752      112       24       88         0    45056       38           200 entrypoint
+Nov 10 22:34:51 bazzite kernel: [   4674]  1000  4674    58619      333        1      332         0    65536       61           200 conmon
+Nov 10 22:34:51 bazzite kernel: [   4677]  1000  4677     3201       89        0       89         0    57344      112           200 bash
+Nov 10 22:34:51 bazzite kernel: [   4828]  1000  4828     3201       88        0       88         0    65536       91           200 bash
+Nov 10 22:34:51 bazzite kernel: [   4859]  1000  4859   133370     1236       62     1174         0   110592      102           200 flatpak-session
+Nov 10 22:34:51 bazzite kernel: [   4864]  1000  4864     1123      159        0      159         0    49152       59           200 p11-kit-server
+Nov 10 22:34:51 bazzite kernel: [   4897]  1000  4897      723       88        0       88         0    53248       36           200 distrobox-host-
+Nov 10 22:34:51 bazzite kernel: [   4903]  1000  4903   484083    87840    87603      237         0  3211264   298814           200 bc5-mount
+Nov 10 22:34:51 bazzite kernel: [   4926]  1000  4926   306971       47       44        3         0    90112      216           200 host-spawn
+Nov 10 22:34:51 bazzite kernel: [   4931]  1000  4931    58175      878       52      826         0    69632       30           200 bash
+Nov 10 22:34:51 bazzite kernel: [   4988]  1000  4988 271992649  1006344   579985     2750    423609 34856960  1333174           200 kyty_emulator
+Nov 10 22:34:51 bazzite kernel: [   5017]  1000  5017      723       85        0       85         0    49152       28           200 sh
+Nov 10 22:34:51 bazzite kernel: [ 377674]     0 377674     2339      600      150      450         0    57344        0             0 systemd-nsresou
+Nov 10 22:34:51 bazzite kernel: [ 377675]     0 377675     2339      615      150      465         0    53248        0             0 systemd-nsresou
+Nov 10 22:34:51 bazzite kernel: [ 377676]     0 377676     2339      603      151      452         0    57344        0             0 systemd-nsresou
+Nov 10 22:34:51 bazzite kernel: [ 377677]     0 377677     2433      611      159      452         0    61440        0             0 systemd-userwor
+Nov 10 22:34:51 bazzite kernel: [ 377885]     0 377885     2339      601      149      452         0    57344        0             0 systemd-nsresou
+Nov 10 22:34:51 bazzite kernel: [ 377886]     0 377886     2433      604      159      445         0    57344        0             0 systemd-userwor
+Nov 10 22:34:51 bazzite kernel: [ 377887]     0 377887     2433      587      158      429         0    61440        0             0 systemd-userwor
+Nov 10 22:34:51 bazzite kernel: [ 377888]     0 377888     2339      630      150      480         0    61440        0             0 systemd-nsresou
+Nov 10 22:34:51 bazzite kernel: [ 402515] 524288 402515     4028      391      305       86         0    69632        0           200 sleep
+Nov 10 22:34:51 bazzite kernel: [ 403040]  1000 403040    57773      644       28      616         0    65536        0           200 sleep
+Nov 10 22:34:51 bazzite kernel: oom-kill:constraint=CONSTRAINT_NONE,nodemask=(null),cpuset=/,mems_allowed=0,global_oom,task_memcg=/user.slice/user-1000.slice/user@1000.service/user.slice/libpod-cb6100ac41bf8c253e2ff96249193e39ede4b059786051f12ef8012216c14459.scope/container,task=kyty_emulator,pid=4988,uid=1000
+Nov 10 22:34:51 bazzite kernel: Out of memory: Killed process 4988 (kyty_emulator) total-vm:1087970596kB, anon-rss:2319940kB, file-rss:11000kB, shmem-rss:1694436kB, UID:1000 pgtables:34040kB oom_score_adj:200
