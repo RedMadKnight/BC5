@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -85,6 +86,27 @@ int main() {
         CHECK(p.keep.empty() && p.off.empty() && p.hard == 0);
         p = cap_plan(need, {1, 1, 1, 1, 1}, 100 * M, 105 * M, C); // 5 MiB of room holds two chunks, not three
         CHECK(p.keep.size() == 2 && p.off.size() == 3);
+    }
+    { // BC5_GUARD_FORGET
+        const uint64_t C = 2 * M, S = 1'000'000'000ull;
+        Ranges cov;
+        cov.add(0, 4 * C); // chunks 0..3 are under a view
+        std::set<uint64_t>           forced {0, 3 * C, 4 * C, 9 * C};
+        std::map<uint64_t, uint64_t> since;
+        CHECK(forget_step(forced, cov, since, 100 * S, 20 * S, C) == 0 && forced.size() == 4 && since.size() == 2); // first seen now
+        CHECK(forget_step(forced, cov, since, 119 * S, 20 * S, C) == 0 && forced.size() == 4);
+        cov.add(9 * C, 10 * C); // a view is back over chunk 9
+        CHECK(forget_step(forced, cov, since, 120 * S, 20 * S, C) == 1 && forced == std::set<uint64_t>({0, 3 * C, 9 * C}) && since.empty());
+        Ranges none;
+        CHECK(forget_step(forced, none, since, 121 * S, 20 * S, C) == 0 && since.size() == 3);
+        forced.erase(3 * C); // taken out by someone else
+        CHECK(forget_step(forced, none, since, 122 * S, 20 * S, C) == 0 && since.size() == 2);
+        CHECK(forget_step(forced, none, since, 141 * S, 20 * S, C) == 2 && forced.empty() && since.empty());
+        Ranges part;
+        part.add(C + 4096, C + 8192); // one page of a view inside the chunk keeps it
+        std::set<uint64_t> f2 {C};
+        CHECK(forget_step(f2, part, since, 0, 0, C) == 0 && f2.size() == 1);
+        CHECK(forget_step(f2, none, since, 5, 0, C) == 1 && f2.empty()); // idle 0: at once
     }
     { // ranges
         Ranges r;

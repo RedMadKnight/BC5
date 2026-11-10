@@ -84,11 +84,12 @@ struct DState {
     const char*        label;
     std::vector<DBo>   bos;
     std::set<uint64_t> forced;
-    uint64_t           bytes = 0;
+    uint64_t           bytes = 0, forced_seen = 0;
 };
 static DState g_d[2] = {{0, "direct", {}, {}}, {1, "private", {}, {}}};
 constexpr uint64_t kDChunk = 2ull << 20u;
 static uint32_t    scratch_bo() { return 1; }
+static void        aliases_apply(bool) {}
 struct DViews {
     std::vector<DView> v;
     uint64_t           sig = 0;
@@ -109,5 +110,7 @@ int main() {
     guard0412_cap(g_d[0], views->v, need);
     if (guard0412_cap_changed(g_d[0])) guard0412_want(g_d[0], views->v, want);
     guard0412_synced(g_d[0]);
+    guard0412_forget(g_d[0], views->v, views->sig, 0);
+    guard0412_after_cuts(guard0412_split() ? 1 : 0);
     return guard0412_defer_apply() ? 1 : 0;
 }

@@ -20,8 +20,22 @@
 //                                  learned window. Every other chunk is imported as before, cap or not. A put-off chunk is
 //                                  imported as soon as the total allows (each full sync asks again).
 //   BC5_GUARD_CAP_NAMES=a,b        the eager heaps whose chunks are soft; "AMM" when unset. "-" names none.
+//   BC5_GUARD_SPLIT=1              (the third build, g412c) the lazy release (BC5_DIRECT_LAZY_RELEASE, exp 0401 e7) may cut
+//                                  orphan chunks out of a BO that keeps other chunks although BC5_DIRECT_ALIASES is set.
+//                                  Without it such a BO only goes whole, and with BOs merged up to 1 GiB that is almost
+//                                  never (night arm a2orphans: 194 MiB of orphans idle, 0 cut, "3 not split (aliases)").
+//                                  The reason for the rule was that freeing the old BO drops its alias mappings until the
+//                                  next aliases_apply (at most once a second); with this switch the sync that made cuts
+//                                  ends with aliases_apply(true), before any submission can use them.
 //   BC5_GUARD_APPLY_MIN_MS=<ms>    learned_apply runs at most once per <ms> (1..1000) while the layout keeps changing; the
 //                                  first call after a device reopen is never put off.
+//   BC5_GUARD_FORGET=<s>           (the fourth build, g412d) a chunk that a hint or a learned window forced and that has been
+//                                  under no view for <s> seconds (1..3600) leaves the forced set, so the lazy release can
+//                                  cut it. Night arm z1zscan: 264 MiB "forced and under no view" after 300 s and rising,
+//                                  the larger part of the orphans. A chunk under no view has no GPU mapping. A learned
+//                                  window forces its chunks again at the next learned_apply once a view is back; a hint
+//                                  window does not (it is mapped once), so a view of a heap that is not eager, back at the
+//                                  same file range and written only by the GPU, would fault once and be learned.
 // With all of them off nothing here runs: no thread, one config read, one early return per import and per submission.
 // The text between G412_PURE_BEGIN and G412_PURE_END has no system call and is what test0412.cpp runs on the laptop.
 // G412_PURE_BEGIN
@@ -319,6 +333,33 @@ static bool stat_faults(const char* text, unsigned long long* minflt, unsigned l
     return true;
 }
 
+// BC5_GUARD_FORGET: the forced chunks under no view of `cov` for idle_ns leave `forced`; `since` remembers when each was
+// first seen so. Returns how many left.
+static size_t forget_step(std::set<uint64_t>& forced, const Ranges& cov, std::map<uint64_t, uint64_t>& since, uint64_t now, uint64_t idle_ns, uint64_t chunk) {
+    size_t n = 0;
+    for (auto it = forced.begin(); it != forced.end();) {
+        const uint64_t c = *it;
+        if (cov.overlap(c, c + chunk) != 0) {
+            since.erase(c);
+            ++it;
+            continue;
+        }
+        const auto s = since.try_emplace(c, now).first;
+        if (now - s->second >= idle_ns) {
+            since.erase(s);
+            it = forced.erase(it);
+            n++;
+        } else {
+            ++it;
+        }
+    }
+    for (auto it = since.begin(); it != since.end();) { // chunks that left the forced set some other way
+        if (forced.count(it->first) == 0) it = since.erase(it);
+        else ++it;
+    }
+    return n;
+}
+
 // BC5_GUARD_APPLY_MIN_MS: true when this learned_apply call is put off.
 struct Defer {
     uint64_t last_gen = 0, last_ns = 0, last_reopens = 0, deferred = 0;
@@ -592,6 +633,54 @@ static bool guard0412_defer_apply() {
     const bool      put_off = g412::defer(s.d, c.apply_ns, static_cast<uint64_t>(g_layout_gen), g412::mono_ns(), g_m11_reopens.load());
     if (put_off) s.deferred++;
     return put_off;
+}
+
+// BC5_GUARD_SPLIT (g412c).
+static bool guard0412_split() {
+    static const bool on = bc5::env_on(std::getenv("BC5_GUARD_SPLIT"));
+    return on;
+}
+// The end of a sync whose lazy release made cuts: the aliases of the retired BOs are gone (Device::free_shared drops
+// them), so they are mapped again now and not at the next submission's rate-limited aliases_apply.
+static void guard0412_after_cuts(size_t cuts) {
+    if (cuts == 0 || !guard0412_split()) return;
+    aliases_apply(true);
+    static std::atomic<uint64_t> n {0};
+    if (const uint64_t k = n++; k < 8 || (k & 255u) == 0) journal("guard split: %zu BOs cut in this sync; aliases mapped again at once (%" PRIu64 " such syncs)\n", cuts, k + 1);
+}
+
+// BC5_GUARD_FORGET (g412d): at the start of a full sync of the direct file, at most every 2 s.
+static void guard0412_forget(DState& S, const std::vector<DView>& views, uint64_t sig, uint64_t now) {
+    static const uint64_t idle = [] {
+        const char* e = std::getenv("BC5_GUARD_FORGET");
+        if (!bc5::env_on(e)) return uint64_t {0};
+        char*                    end = nullptr;
+        const unsigned long long v = std::strtoull(e, &end, 10);
+        return end != e && *end == 0 && v >= 1 && v <= 3600 ? static_cast<uint64_t>(v) * 1'000'000'000ull : uint64_t {0};
+    }();
+    if (idle == 0 || S.kind != 0 || S.forced.empty()) return;
+    static uint64_t last = 0;
+    if (now - last < 2'000'000'000ull) return;
+    last = now;
+    static g412::Ranges cov;
+    static uint64_t     cov_sig = 0;
+    static bool         cov_ok = false;
+    if (!cov_ok || cov_sig != sig) {
+        cov = g412::Ranges {};
+        for (const auto& v: views) cov.add(v.off, v.off + v.size);
+        cov_sig = sig;
+        cov_ok = true;
+    }
+    static std::map<uint64_t, uint64_t> since;
+    static uint64_t                     total = 0, lines = 0;
+    const size_t                        n = g412::forget_step(S.forced, cov, since, now, idle, kDChunk);
+    if (n == 0) return;
+    S.forced_seen = S.forced.size();
+    total += n;
+    if (lines++ < 16 || (lines & 63u) == 0) {
+        journal("guard forget: %zu forced chunks under no view for %" PRIu64 " s left the forced set (%" PRIu64 " so far, %zu still forced, %zu waiting)\n", n,
+                idle / 1'000'000'000ull, total, S.forced.size(), since.size());
+    }
 }
 
 // BC5_GUARD_CAP_ACT. The chunks of the direct file the cap has put off, sorted; the sync thread's own.

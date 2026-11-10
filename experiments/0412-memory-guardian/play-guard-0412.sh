@@ -53,9 +53,10 @@ WORDS=(BC5_GAME_DIR=$GAME BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_ACB_CS_PR
   BC5_DIRECT_RESET_REPLAY_ACB=1 BC5_DIRECT_RESET_LABELS=1 BC5_DIRECT_LEARN_GUEST_ONLY=1 BC5_DIRECT_RESET_LABEL_JOURNAL=1)
 [ "${#WORDS[@]}" = 70 ] || { say "0412: the shortcut's words are not 70; not started"; exit 1; }
 LOW=(BC5_GUARD_LEDGER=1 BC5_GUARD_FILE=random,dontneed "BC5_GUARD_FILE_ROOT=$GAME" BC5_GUARD_PSI=10 BC5_GUARD_APPLY_MIN_MS=50 BC5_GUARD_PIN_CAP=11600)
-ORPH=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=10,eager)
+ORPH=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=10,eager BC5_GUARD_SPLIT=1)   # SPLIT since the third build (g412c): without it nothing is cut while BC5_DIRECT_ALIASES is set
 CAP=("${ORPH[@]}" BC5_GUARD_PIN_CAP=11600 BC5_GUARD_CAP_ACT=1)
-FUSE=""
+FUSE=""; ZL=$E/zero-list-0412.txt   # the zero list of the z arms (a copy of the night's scan, put in place by hand)
+case "${1:-}" in zsk | zo | zoc) [ -s "$ZL" ] || { say "0412: no zero list at $ZL; not started"; exit 1; } ;; esac
 case "${1:-}" in
   base)    ;;
   ledger)  WORDS+=(BC5_GUARD_LEDGER=1) ;;
@@ -64,16 +65,23 @@ case "${1:-}" in
   orphans) WORDS+=("${ORPH[@]}"); FUSE="12300 2048" ;;
   cap)     WORDS+=("${CAP[@]}"); FUSE="12300 2048" ;;
   amm)     WORDS+=("${CAP[@]}" BC5_GUARD_AMM_BY_USE=1); FUSE="12300 2048" ;;
-  *) say "0412: usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm [dry]; not started"; exit 1 ;;
+  # The night's arms (2026-11-11): exp 0379's zero skip with a list scanned at the maintainer's current save.
+  zscan)   WORDS+=("${ORPH[@]}" BC5_DIRECT_ZEROSCAN_AT=140,170,200,230,260 "BC5_DIRECT_ZEROSCAN_OUT=$E/night/zero-list-scan.txt"); FUSE="12300 2048" ;;
+  zsk)     WORDS+=(BC5_GUARD_LEDGER=1 "BC5_DIRECT_ZERO_SKIP=$ZL"); FUSE="12300 2048" ;;
+  zo)      WORDS+=("${ORPH[@]}" "BC5_DIRECT_ZERO_SKIP=$ZL"); FUSE="12300 2048" ;;
+  zoc)     WORDS+=("${CAP[@]}" "BC5_DIRECT_ZERO_SKIP=$ZL"); FUSE="12300 2048" ;;
+  *) say "0412: usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm|zscan|zsk|zo|zoc [dry]; not started"; exit 1 ;;
 esac
 ARM=$1; DRY=${2:-}
+# "words": the arm's environment words, one per line, for the night runner (run0412n.sh); nothing is started.
+if [ "$DRY" = words ]; then printf '%s\n' "${WORDS[@]}"; exit 0; fi
 [ -z "$DRY" ] || [ "$DRY" = dry ] || { say "0412: unknown second word $DRY; not started"; exit 1; }
 case "${BC5_0412_FUSE-unset}" in unset) ;; 0 | "") FUSE="" ;; *) FUSE=$BC5_0412_FUSE ;; esac
 S=$E/sampler0412b.sh; F=$E/fuse0412.sh; STAMP=$(date +%Y%m%d-%H%M%S); SOUT=$E/sampler/play-$STAMP-$ARM.txt; FLOG=$E/fuse.log
 SOK=0; pinned sampler0412b.sh "$E/tools.md5" && SOK=1
 FOK=0; pinned fuse0412.sh "$E/tools.md5" && FOK=1
 if [ -n "$DRY" ]; then
-  echo "dry: arm $ARM, ${#WORDS[@]} words; the arm's words: $(printf '%s\n' "${WORDS[@]}" | grep -E '^(BC5_GUARD_|BC5_DIRECT_LAZY_RELEASE)' | tr '\n' ' ')"
+  echo "dry: arm $ARM, ${#WORDS[@]} words; the arm's words: $(printf '%s\n' "${WORDS[@]}" | grep -E '^(BC5_GUARD_|BC5_DIRECT_LAZY_RELEASE|BC5_DIRECT_ZERO)' | tr '\n' ' ')"
   echo "dry: RT word in the words: $(printf '%s\n' "${WORDS[@]}" | grep -ci 'KYTY_BC5_RT\|RAYTRAC') (0 = the launcher's settings decide, as in e11 unpacked)"
   echo "dry: sampler $([ "$SOK" = 1 ] && echo "pinned, would write $SOUT" || echo "NOT the installed copy: the play would run without it")"
   echo "dry: fuse $([ -z "$FUSE" ] && echo "none for this arm" || { [ "$FOK" = 1 ] && echo "pinned, would set memory.max and memory.swap.max to $FUSE MiB" || echo "NOT the installed copy: the play would run without it"; })"

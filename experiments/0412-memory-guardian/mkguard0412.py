@@ -35,12 +35,21 @@ def md5(b):
 
 def edits(inc):
     e = []
+    a0 = b"static LzrPass lzr_pass(DState& S, const std::vector<DView>& views, uint64_t sig, int fd, uint64_t now, uint32_t merged, std::vector<uint32_t>& retired, uint32_t merge_remaps,\n"
+    e.append(("the split's declaration", a0, b"static bool guard0412_split(); // exp 0412 (tag g412c): BC5_GUARD_SPLIT\n" + a0))
+    a0b = b"\tconst bool          splits = std::getenv(\"BC5_DIRECT_ALIASES\") == nullptr;\n"
+    e.append(("the split", a0b, b"\tconst bool          splits = std::getenv(\"BC5_DIRECT_ALIASES\") == nullptr || guard0412_split(); // exp 0412 (tag g412c)\n"))
     a1 = b"static void direct_sync_one(DState& S, bool force) {\n"
     e.append(("the declarations", a1, b"static void guard0412_imported(int kind, int fd, uint64_t off, uint64_t size); // exp 0412 (tag g412)\n"
               b"static void guard0412_cap(DState& S, const std::vector<DView>& views, std::vector<uint64_t>& need); // exp 0412 (tag g412b)\n"
               b"static bool guard0412_cap_changed(const DState& S);\n"
               b"static void guard0412_want(const DState& S, const std::vector<DView>& views, std::vector<DMap>& want);\n"
-              b"static void guard0412_synced(const DState& S);\n" + a1))
+              b"static void guard0412_synced(const DState& S);\n"
+              b"static void guard0412_after_cuts(size_t cuts); // exp 0412 (tag g412c)\n"
+              b"static void aliases_apply(bool force);\n"
+              b"static void guard0412_forget(DState& S, const std::vector<DView>& views, uint64_t sig, uint64_t now); // exp 0412 (tag g412d)\n" + a1))
+    a10 = b"\tconst bool zskip_on = S.kind == 0 && !g_zskip.empty();\n"
+    e.append(("the forget", a10, b"\tguard0412_forget(S, views, sig, now); // exp 0412 (tag g412d): BC5_GUARD_FORGET\n" + a10))
     a5 = b"\tneed.erase(std::unique(need.begin(), need.end()), need.end());\n\tuint32_t imported = 0;\n"
     e.append(("the cap", a5, b"\tneed.erase(std::unique(need.begin(), need.end()), need.end());\n"
               b"\tguard0412_cap(S, views, need); // exp 0412 (tag g412b): BC5_GUARD_CAP_ACT puts soft chunks over the cap off\n\tuint32_t imported = 0;\n"))
@@ -53,7 +62,8 @@ def edits(inc):
     a8 = b"\t\tstd::sort(want.begin(), want.end(), [](const DMap& a, const DMap& b) { return a.va < b.va; });\n"
     e.append(("the zero mappings", a8, b"\t\tguard0412_want(S, views, want); // exp 0412 (tag g412b): the zero buffer under the views of put-off chunks\n" + a8))
     a9 = b"\tfor (const uint32_t id: retired) g_dev->free_shared(id);\n\tif (merged != 0 || deferred != 0) {\n"
-    e.append(("the sync's end", a9, b"\tfor (const uint32_t id: retired) g_dev->free_shared(id);\n\tguard0412_synced(S); // exp 0412 (tag g412b): the ledger's view of what is imported\n\tif (merged != 0 || deferred != 0) {\n"))
+    e.append(("the sync's end", a9, b"\tfor (const uint32_t id: retired) g_dev->free_shared(id);\n\tguard0412_after_cuts(lzr.done.size()); // exp 0412 (tag g412c): BC5_GUARD_SPLIT\n"
+              b"\tguard0412_synced(S); // exp 0412 (tag g412b): the ledger's view of what is imported\n\tif (merged != 0 || deferred != 0) {\n"))
     a3 = b"static void learned_apply() {\n"
     e.append(("the guardian", a3, inc + b"\n" + a3))
     a4 = b"\tconst uint64_t t1 = SoftCp::now_ns();\n\tlearned_apply();\n"
@@ -92,6 +102,8 @@ def apply(s, inc):
     assert out.count(b"guard0412_imported(") == 3 and out.count(b"guard0412_defer_apply(") == 2, "the hooks' uses"
     # The second build's hooks: a declaration, a definition and one call each (two calls of guard0412_cap_changed).
     assert [out.count(x) for x in (b"guard0412_cap(", b"guard0412_cap_changed(", b"guard0412_want(", b"guard0412_synced(")] == [3, 4, 3, 3], "the second build's hooks"
+    assert [out.count(x) for x in (b"guard0412_split(", b"guard0412_after_cuts(", b"static void aliases_apply(bool force)")] == [4, 3, 2], "the third build's hooks"
+    assert out.count(b"guard0412_forget(") == 3, "the fourth build's hook"
     assert out.index(b"static uint32_t scratch_bo() {") < out.index(b"// G412_PURE_BEGIN\n"), "the zero buffer is defined before the guardian"
     assert out.count(b"\tlearned_apply();\n") == 0 and out.count(b"learned_apply();") == 1, "learned_apply's one call"
     # The guardian sits after e11's reopen counter, before learned_apply, inside the direct build's #if.
