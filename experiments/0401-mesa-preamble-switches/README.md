@@ -1044,4 +1044,21 @@ mid-play, and the screen froze on a menu option. The series scripts that during 
   - he chose options with cross, which the script never presses;
   - how long he had played before it is not in the record (`hang2242-0401.md`); each arm here played 10 minutes.
 
+**His e11 shortcut** (2026-11-10 16:39, his "zrób mi skrót"). The four switches are read once from the environment, so
+they cannot be toggled during a run: the shortcut sets them at launch. `shortcut0411.sh` (fd7f7a78) wrote
+"BC5 emulator (e11 unpacked)" on his desktop (e85f05a1). Nothing else was changed or removed.
+- It runs `play-e11-0411.sh` (85421e63, at `~/bc5-work/exp0411/`).
+  - The game: exp 0411's launcher `play-pkg-0411.sh` (3e758fdf) in the ubuntu distrobox. This is exp 0409's launcher
+    with only the binary (e11's 70df5cb1) and the log (`~/bc5-work/exp0411/play-last.log`) changed.
+  - The words: "e10 unpacked"'s 66 words plus the four switches =1, the same words as the x11MB arms.
+  - Saves, settings (RT on) and the learned file come from the launcher, as with "e10 unpacked".
+  - Beside the game, `stall0409.sh` runs in the same container and writes its dumps to `~/bc5-work/exp0411/stall/`.
+    It is told to stop when the launcher ends.
+- *Stand-in on the box* (the game replaced by a 12-s shell, then deleted): all four switches reached the environment,
+  `BC5_GAME_DIR` was set, the launcher's exit code came back, and the catcher stopped within 15 s.
+- *The catcher has no stacks.* The host's eu-stack is refused the container's processes ("Brak dostępu", `dwfl_linux_proc_report`;
+  `ptrace_scope` is 0), and the ubuntu container has no eu-stack. Both 11-09 dumps in `raw/stall0409c` on the box end
+  at the `## eu-stack` line. So `stall0409.sh` writes the thread names, states and wchan only, in the arms and in the
+  shortcut alike. Installing elfutils in the container would give the stacks; that is his call.
+
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.
