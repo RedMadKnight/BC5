@@ -1,0 +1,4 @@
+# clang-cl (MSVC's LLVM), compile only of shadow_test.cpp, with -Wall -Wextra -Wshadow -Wconversion -Wsign-conversion, those three as errors. rc below.
+# Not the box's clang 21 on Linux; the object was not linked or run.
+clang-cl rc 0
+warnings in total: 71, __COUNTER__ from Catch2's macros: 48, -Wunsafe-buffer-usage family: 47
