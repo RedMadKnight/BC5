@@ -1,0 +1,22 @@
+42a43
+> export KYTY_BC5_INPUT_CONFIG=$HOME/bc5-work/exp0381/input-rton.cfg
+55,56c56,57
+< export BC5_DIRECT_LEARNED=$HOME/bc5-work/direct-learned-pkg.txt
+< export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/_SaveData-pkg-play
+---
+> export BC5_DIRECT_LEARNED=$HOME/bc5-work/exp0381/direct-learned-pkg.txt
+> export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0381/wd/_SaveData-pkg-play
+191,192c192,193
+< TB2_PRIVATE=()
+< TB2_WD=""
+---
+> TB2_PRIVATE=("KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0381/wd/_SaveData-pkg-play" "BC5_DIRECT_LEARNED=$HOME/bc5-work/exp0381/direct-learned-pkg.txt" "KYTY_BC5_INPUT_CONFIG=$HOME/bc5-work/exp0381/input-rton.cfg" BC5_DIRECT_COMPUTE_RING=-1 BC5_DIRECT_CROSS_RING_WAITS=all BC5_DIRECT_GPU_CHECK=1 BC5_DIRECT_GPU_CHECK_PRODUCT=1 BC5_DIRECT_SHADOW_LABELS=1 BC5_DIRECT_HOST_INDIRECT=learn:1100000000 BC5_DIRECT_SOFT_WAIT_MS=8)
+> TB2_WD=$HOME/bc5-work/exp0381/wd
+239c240
+< SWF=$HOME/bc5-work/exp0381/tb2/switches.env
+---
+> SWF=/dev/null
+294c295
+< cd ~/bc5-work
+---
+> cd ~/bc5-work/exp0381/wd

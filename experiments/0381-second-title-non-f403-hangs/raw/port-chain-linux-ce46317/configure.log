@@ -1,0 +1,22 @@
+-- The CXX compiler identification is Clang 21.1.8
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/clang++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found PkgConfig: /usr/bin/pkg-config (found version "2.5.1")
+-- Checking for module 'libdrm_amdgpu'
+--   Found libdrm_amdgpu, version 2.4.131
+-- Checking for module 'libdrm'
+--   Found libdrm, version 2.4.131
+-- Performing Test HAVE_FLAG__ffile_prefix_map__home_kjaniszewski_bc5_work_exp0381_backend_build__deps_catch2_src__
+-- Performing Test HAVE_FLAG__ffile_prefix_map__home_kjaniszewski_bc5_work_exp0381_backend_build__deps_catch2_src__ - Success
+-- Configuring done (0.7s)
+-- Generating done (0.0s)
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    CMAKE_C_COMPILER
+
+
+-- Build files have been written to: /home/kjaniszewski/bc5-work/exp0381/pc/build

@@ -1,0 +1,162 @@
+#!/usr/bin/env bash
+# BC5 exp 0381: test build 2 ("wszystkie zmiany na raz"): ~/bc5-work/exp0381/tb2/bin/kyty_emulator =
+#   test build 1's parts (the shared objects and archive, the r1 unit with the restore, runtimeLinker.cpp with crash frames)
+#   + acb_restore.hpp at main d6fa368 (the final_value fix)
+#   + libC.cpp and libNpCppWebApi.cpp of exp 0383's patch (PORT-NP, PORT-LIBC), rebuilt from KytyPlus f266548 + that patch and
+#     proved by its src tree. F761's shadow prototype is not in it: it is not runtime code.
+# That is the fallback, pins0381tb2.env. With pins0381tb2r.env (PIN_MODE=rebased) the shared builds already carry main's backend
+# and the NP and libc fixes, so only bc5LleAgc.cpp and runtimeLinker.cpp are private, as in test build 1.
+# Then the private launcher tb2/play-pkg-0381tb2.sh and the smoke variant tb2/play-pkg-0381tb2s.sh.
+# Only private files are written. The shared builds, the archive, play-pkg.sh, patch 0001 and the shortcuts are only read.
+# CPU only, nice 19, no emulator. It runs under the series' exact lock line, claimed by tb2run0381.sh before the tree crossed, and checks it
+# before every step (lock0381tb2.inc). The outcome line comes from the EXIT trap, only under that line, and says done only when every step passed.
+# usage (tb2run0381.sh does this): bash ~/bc5-work/exp0381/in-tb2/experiments/0381-second-title-non-f403-hangs/build0381tb2.sh
+set -u
+export LC_ALL=C
+HERE=$(cd "$(dirname "$0")" && pwd)
+. "${TB2_PINS:-$HERE/pins0381tb2.env}"
+MODE=${PIN_MODE:-fallback}
+TB2_TOKEN=${TB2_TOKEN:?token}
+W=${TB2_ROOT:-$HOME}/bc5-work; E=$W/exp0381; IN=$E/in-tb2; TB=$E/tb2; R=$TB/raw; B=$W/kytyplus-build; K=${TB2_ROOT:-$HOME}/src/KytyPlus
+ARCH=$W/backend-ubuntu/libbc5_backend.a; R1=$W/exp0380r1; BB=$E/backend-build-tb2; T=$TB/tree
+. "$HERE/lock0381tb2.inc"
+m() { md5sum < "$1" | cut -c1-8; }
+tb2_own
+pgrep '^kyty_emulator' > /dev/null && { echo "GUARD: an emulator runs"; exit 3; }
+ok=0
+finish() {
+    if [ "$ok" = 1 ]; then tb2_queue_q "$TB2_LINE: build done: all steps passed, no GPU | $(date '+%F %T')" || echo "TB2: no queue line: the lock is not ours"
+    else
+        tb2_queue_q "$TB2_LINE: build FAILED, see ~/bc5-work/exp0381/tb2; no GPU | $(date '+%F %T')" || echo "TB2: no queue line: the lock is not ours"
+        tb2_release
+    fi
+}
+trap finish EXIT
+fail() { echo "FAIL: $1"; exit 1; }
+grep -q '=FILL$' "${TB2_PINS:-$HERE/pins0381tb2.env}" && fail "these pins are not filled in"
+box() { distrobox enter ubuntu -- sh -c "$1" < /dev/null; }
+pins() { echo "shared normal $(m "$B/src/kyty_emulator") lean $(m "$W/kytyplus-build-lean/src/kyty_emulator") archive $(m "$ARCH") tree unit $(m "$K/src/libs/bc5LleAgc.cpp") play-pkg.sh $(m "$W/play-pkg.sh")"; }
+P0=$(pins); echo "before: $P0"
+[ "$P0" = "shared normal $PIN_SHARED lean $PIN_LEAN archive $PIN_ARCHIVE tree unit $PIN_TREE_UNIT play-pkg.sh $PIN_PLAY_PKG" ] || fail "a shared pin differs"
+[ "$(m "$R1/bin/kyty_emulator")" = "$PIN_R1_BIN" ] || fail "r1's binary"
+[ "$(m "$R1/src/libs/bc5LleAgc.cpp")" = "$PIN_R1_UNIT" ] && [ "$(m "$R1/src/loader/runtimeLinker.cpp")" = "$PIN_R1_LINKER" ] && [ "$(m "$R1/src/libs/bc5/zero_skip.hpp")" = "$PIN_R1_ZERO" ] || fail "r1's sources"
+[ "$(m "$R1/play-pkg-0380r1.sh")" = "$PIN_R1_LAUNCHER" ] || fail "r1's launcher"
+[ "$(m "$IN/backend/include/bc5/acb_restore.hpp")" = "$PIN_HEADER" ] || fail "the header is not main's"
+[ "$(md5sum < "$IN/patch0001-np.patch" | cut -d' ' -f1)" = "$PIN_PATCH" ] || fail "the patch is not the pinned one"
+[ -f "$R1/build0380y.py" ] || fail "no build0380y.py in $R1"
+[ -e "$TB/bin/kyty_emulator" ] && fail "$TB/bin/kyty_emulator exists"
+tb2_hook before-build
+tb2_own
+mkdir -p "$R" "$TB/src/libs/bc5" "$TB/src/loader" "$TB/bin" "$TB/obj" "$TB/play"
+# 1. The backend's Catch2 tests at main, with the final_value fix.
+tb2_own
+CATCH=$(ls -d "$W"/exp03*/backend-build/_deps/catch2-src 2> /dev/null | head -1)
+echo "== $(date +%T) backend tests"
+box "cd '$E' && nice -n 19 cmake -S '$IN/backend' -B '$BB' -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DBC5_WITH_AMDGPU=ON -DBC5_BUILD_TESTS=ON -DFETCHCONTENT_SOURCE_DIR_CATCH2='$CATCH' && nice -n 19 cmake --build '$BB' --target bc5_backend_tests -j8" > "$R/backend-build.out" 2>&1 || { grep -n "error:" "$R/backend-build.out" | head; fail "backend build"; }
+box "cd '$BB' && nice -n 19 ./bc5_backend_tests" > "$R/backend-tests.out" 2>&1 || fail "backend tests"
+grep -q 'All tests passed' "$R/backend-tests.out" || fail "no pass line from the tests"
+tail -2 "$R/backend-tests.out" | head -1
+tb2_own
+if [ "$MODE" = rebased ]; then
+    # The refuted switch must be gone from the archive the pin names (F765).
+    grep -aq 'BC5_DIRECT_REBASE_DISPATCH' "$ARCH" && fail "the archive still holds BC5_DIRECT_REBASE_DISPATCH"
+    # 2. The shared tree already is the patched tree: prove it, and take the two fixes from the shared objects.
+    [ "$(m "$K/src/libs/libC.cpp")" = "$PIN_LIBC" ] && [ "$(m "$K/src/libs/libNpCppWebApi.cpp")" = "$PIN_NP" ] || fail "the shared tree does not hold the NP and libc fixes"
+    n=$(grep -rl 'exp 0372' "$K/src" 2> /dev/null | xargs cat 2> /dev/null | grep -c 'exp 0372'); echo "exp 0372: $n lines, pad_audio_route.hpp $([ -f "$K/src/bc5/pad_audio_route.hpp" ] && echo present || echo MISSING)"
+    [ "$n" = "$PIN_0372_LINES" ] && [ -f "$K/src/bc5/pad_audio_route.hpp" ] || fail "exp 0372's pieces"
+else
+# 2. The patched tree, as exp 0383: f266548 + the patch, proved by its src tree.
+echo "== $(date +%T) tree"
+rm -rf "$T"; mkdir -p "$T"
+git -C "$K" -c core.autocrlf=false archive "$PIN_BASE_COMMIT" | tar -x -C "$T" || fail "archive"
+git -C "$T" init -q; git -C "$T" config core.filemode false; git -C "$T" config core.autocrlf false; git -C "$T" config core.safecrlf false
+git -C "$T" apply --whitespace=nowarn "$IN/patch0001-np.patch" || fail "the patch did not apply"
+git -C "$T" add -A src 2> /dev/null
+TREE=$(git -C "$T" write-tree --prefix=src/); echo "src tree $TREE"
+[ "$TREE" = "$PIN_SRC_TREE" ] || fail "not the pinned src tree"
+n=$(grep -rl 'exp 0372' "$T/src" 2> /dev/null | xargs cat 2> /dev/null | grep -c 'exp 0372'); echo "exp 0372: $n lines, pad_audio_route.hpp $([ -f "$T/src/bc5/pad_audio_route.hpp" ] && echo present || echo MISSING)"
+[ "$n" = "$PIN_0372_LINES" ] && [ -f "$T/src/bc5/pad_audio_route.hpp" ] || fail "exp 0372's pieces"
+diff -rq "$K/src" "$T/src" > "$R/tree-diff.txt" 2>&1
+{ echo "Files $K/src/libs/libC.cpp and $T/src/libs/libC.cpp differ"; echo "Files $K/src/libs/libNpCppWebApi.cpp and $T/src/libs/libNpCppWebApi.cpp differ"; } > "$R/tree-diff-allowed.txt"
+cmp -s "$R/tree-diff.txt" "$R/tree-diff-allowed.txt" || fail "the shared tree differs beyond the two approved files"
+fi
+# 3. The private sources: four units, or two on the rebased shared build.
+tb2_own
+cp "$R1/src/libs/bc5/zero_skip.hpp" "$IN/backend/include/bc5/acb_restore.hpp" "$TB/src/libs/bc5/" || fail copy
+cp "$R1/src/loader/runtimeLinker.cpp" "$TB/src/loader/" || fail copy
+[ "$MODE" = rebased ] || cp "$T/src/libs/libC.cpp" "$T/src/libs/libNpCppWebApi.cpp" "$TB/src/libs/" || fail copy
+python3 -I "$HERE/mkpatch0381.py" "$R1/src/libs/bc5LleAgc.cpp" "$TB/src/libs/bc5LleAgc.cpp" || fail "the restore's edits did not apply"
+[ "$(m "$TB/src/libs/bc5LleAgc.cpp")" = "$PIN_UNIT" ] || fail "the unit is $(m "$TB/src/libs/bc5LleAgc.cpp"), not $PIN_UNIT"
+box "cd '$B' && ninja -t compdb -x" > "$TB/compdb.json" 2> "$R/compdb.err" || fail compdb
+BIN=$TB/bin/kyty_emulator
+tb2_own
+echo "== $(date +%T) compile, link ($MODE)"
+UNITS=("libs/bc5LleAgc.cpp.o=$TB/src/libs/bc5LleAgc.cpp=$K/src/libs" "loader/runtimeLinker.cpp.o=$TB/src/loader/runtimeLinker.cpp=$K/src/loader")
+[ "$MODE" = rebased ] || UNITS+=("libs/libC.cpp.o=$TB/src/libs/libC.cpp=$T/src/libs" "libs/libNpCppWebApi.cpp.o=$TB/src/libs/libNpCppWebApi.cpp=$T/src/libs")
+distrobox enter ubuntu -- python3 -I "$R1/build0380y.py" "$TB/compdb.json" "$B" "$TB/obj" "$BIN" "${UNITS[@]}" < /dev/null > "$R/build.out" 2>&1 || { grep -n "error:\|undefined\|COMPILE FAILED" "$R/build.out" | head -20; fail build; }
+[ -x "$BIN" ] || fail "no binary"
+# The shared flags colour the compiler's lines: strip the codes before counting (exp 0383's lesson).
+sed 's/\x1b\[[0-9;]*m//g' "$R/build.out" > "$R/build-plain.out"
+echo "errors $(grep -c 'error:' "$R/build-plain.out"), warnings $(grep -c 'warning:' "$R/build-plain.out")"
+echo "binary $(md5sum < "$BIN" | cut -d' ' -f1); switch $(strings "$BIN" | grep -c '^BC5_DIRECT_ACB_STATE_RESTORE$'), zero skip $(strings "$BIN" | grep -c '^zero skip: '), rec0380 $(strings "$BIN" | grep -c 'rec0380: '), crash frames $(strings "$BIN" | grep -c 'BC5_CRASH_FRAMES')"
+# 4. The launchers: r1's with its paths moved and the switch set; the smoke variant on private saves, config and learned file.
+L=$TB/play-pkg-0381tb2.sh; S=$TB/play-pkg-0381tb2s.sh
+tb2_own
+sed -e 's#exp0380r1#exp0381/tb2#g' -e 's#exp 0380r1#exp 0381 test build 2#g' "$R1/play-pkg-0380r1.sh" > "$L" || fail launcher
+[ "$(grep -c '^export BC5_CRASH_FRAMES=1 ' "$L")" = 1 ] || fail "the switch line is not there once"
+sed -i 's/^export BC5_CRASH_FRAMES=1 /export BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_CRASH_FRAMES=1 /' "$L"
+# The switches: read after bc5-run.env and bc5-pkg.env, right before the log, with a check right before each emulator start.
+[ "$(grep -c 'no write-back, FORCE_START, copy or rebase' "$L")" = 1 ] || fail "the log line is not there once"
+sed -i 's/no write-back, FORCE_START, copy or rebase/switches:${TB2_SW:- none}/' "$L"
+# The log's first line states the settings as they are, not as r1's text says they should be.
+O='BC5_CRASH_FRAMES=1 BC5_0380_REC=1 BC5_DIRECT_PIECES_NO_CLEAR=1 BC5_DIRECT_ZERO_SKIP=$BC5_DIRECT_ZERO_SKIP ($(md5sum < "$BC5_DIRECT_ZERO_SKIP" | cut -c1-8)); switches:${TB2_SW:- none}; binary'
+[ "$(grep -cF -- "$O" "$L")" = 1 ] || fail "the settings in the log line are not there once"
+N='switches:${TB2_SW:- none}; list $(md5sum < "$BC5_DIRECT_ZERO_SKIP" | cut -c1-8); kept:$TB2_KEPT; binary'
+O="$O" N="$N" perl -i -pe 's/\Q$ENV{O}\E/$ENV{N}/' "$L"
+at() { [ "$(grep -cxF -- "$1" "$L")" = 1 ] || { echo "FAIL: anchor [$1] is not there once" >&2; return 1; }; grep -nxF -- "$1" "$L" | cut -d: -f1; }
+pkg_at=$(at '  done < "$PKG_ENV"') || exit 1
+[ "$(sed -n "$((pkg_at + 1))p" "$L")" = fi ] || fail "the end of the pkg.env loop is not where it should be"
+sed -i "$((pkg_at + 1))r $HERE/force0381tb2.inc" "$L"
+sed -i "$((pkg_at + 1))r $HERE/pathcheck0381tb2.inc" "$L"
+brace=$(at '{') || exit 1
+sed -i "$((brace - 1))r $HERE/switches0381tb2.inc" "$L"
+[ "$(grep -c '^  "$EMU" ' "$L")" = 1 ] || fail "the emulator's line is not there once"
+sed -i 's/^  # shellcheck disable=SC2086$/  tb2_check\n&/' "$L"
+[ "$(grep -c '^TB2_ENV=' "$L")" = 1 ] && [ "$(grep -c '^SWF=' "$L")" = 1 ] || fail "the switches block is not there once"
+# The order, counted on the launcher as built: both settings files, the block, the log at once, and the check right before the emulator.
+env_at=$(at 'done < "$ENVF"') || exit 1; pkg_at=$(at '  done < "$PKG_ENV"') || exit 1; end_at=$(at "# end of exp 0381 test build 2's switches") || exit 1
+brace=$(at '{') || exit 1; check_at=$(at '  tb2_check') || exit 1; emu_at=$(grep -n '^  "$EMU" ' "$L" | cut -d: -f1)
+req_at=$(at 'export "${TB2_REQ[@]}" "${TB2_PRIVATE[@]}"') || exit 1; arr_at=$(grep -n '^TB2_REQ=' "$L" | cut -d: -f1)
+[ "$env_at" -lt "$pkg_at" ] && [ "$pkg_at" -lt "$end_at" ] || fail "the switches block is not after both settings files"
+[ "$((pkg_at + 2))" -lt "$arr_at" ] && [ "$arr_at" -lt "$req_at" ] && [ "$req_at" -lt "$(grep -n '^mkdir -p "$M" ' "$L" | cut -d: -f1)" ] || fail "the required settings are not right after the settings files"
+[ "$brace" = "$((end_at + 1))" ] && sed -n "$((brace + 1))p" "$L" | grep -q '^  echo "== exp 0381 test build 2: .*switches:' || fail "the log does not follow the block"
+[ "$((check_at + 2))" = "$emu_at" ] || fail "the check is not right before the emulator"
+# After the block, nothing may load settings or set anything: the log's reads of the two files are fine, a loop over them is not.
+if tail -n +"$((end_at + 1))" "$L" | grep -E "(^|[;&|[:space:]])(export|unset|declare|typeset|readonly|source|eval|env)[[:space:]]|^[[:space:]]*\.[[:space:]]|done <|$(sed -n 's/^TB2_NAMES="\(.*\)"$/\1/p' "$HERE/switches0381tb2.inc" | tr ' ' '|')"; then fail "settings or a switch are touched after the block"; fi
+[ -e "$TB/switches.env" ] || cp "$HERE/switches0381tb2.env" "$TB/switches.env" || fail "the switches file"
+cp "$R1/zero-list-20261029-120000.txt" "$R1/play-sample0379t.sh" "$TB/" || fail copy
+bash -n "$L" || fail "the launcher does not parse"
+chmod +x "$L"
+diff "$R1/play-pkg-0380r1.sh" "$L" > "$R/launcher-vs-r1.diff"
+echo "launcher $L $(m "$L"); still names r1: $(grep -c 'exp0380r1' "$L")"
+for a in 'cd ~/bc5-work' 'done < "$ENVF"' 'export BC5_DIRECT_LEARNED=$HOME/bc5-work/direct-learned-pkg.txt' 'export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/_SaveData-pkg-play'; do
+    [ "$(grep -cxF -- "$a" "$L")" = 1 ] || fail "anchor [$a] is not there once"
+done
+sed -e 's#^cd ~/bc5-work$#cd ~/bc5-work/exp0381/wd#' \
+    -e 's#^export BC5_DIRECT_LEARNED=.*$#export BC5_DIRECT_LEARNED=$HOME/bc5-work/exp0381/direct-learned-pkg.txt#' \
+    -e 's#^export KYTY_BC5_SAVEDATA_DIR=.*$#export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0381/wd/_SaveData-pkg-play#' \
+    -e 's#^SWF=.*$#SWF=/dev/null#' \
+    -e 's#^TB2_WD=""$#TB2_WD=$HOME/bc5-work/exp0381/wd#' \
+    -e 's#^TB2_PRIVATE=()$#TB2_PRIVATE=("KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0381/wd/_SaveData-pkg-play" "BC5_DIRECT_LEARNED=$HOME/bc5-work/exp0381/direct-learned-pkg.txt" "KYTY_BC5_INPUT_CONFIG=$HOME/bc5-work/exp0381/input-rton.cfg" BC5_DIRECT_COMPUTE_RING=-1 BC5_DIRECT_CROSS_RING_WAITS=all BC5_DIRECT_GPU_CHECK=1 BC5_DIRECT_GPU_CHECK_PRODUCT=1 BC5_DIRECT_SHADOW_LABELS=1 BC5_DIRECT_HOST_INDIRECT=learn:1100000000 BC5_DIRECT_SOFT_WAIT_MS=8)#' \
+    -e '/^done < "\$ENVF"$/a export KYTY_BC5_INPUT_CONFIG=$HOME/bc5-work/exp0381/input-rton.cfg' "$L" > "$S" || fail "smoke launcher"
+bash -n "$S" || fail "the smoke launcher does not parse"
+chmod +x "$S"
+diff "$L" "$S" > "$R/smoke-vs-launcher.diff"
+echo "smoke launcher $(m "$S"), $(grep -c '^>' "$R/smoke-vs-launcher.diff") lines against the launcher"
+# r1's launcher is pinned, so the two built here are known to the byte: these pins are of the text the review read.
+[ "$(m "$L")" = "$PIN_TB2_LAUNCHER" ] && [ "$(m "$S")" = "$PIN_TB2_SMOKE" ] || fail "the launchers are $(m "$L") and $(m "$S"), not the reviewed text"
+P1=$(pins); echo "after: $P1"
+tb2_own
+[ "$P1" = "$P0" ] || fail "A SHARED PIN CHANGED"
+ok=1
+echo "BUILD PASS $(date +%T)"
