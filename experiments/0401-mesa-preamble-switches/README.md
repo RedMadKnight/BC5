@@ -983,5 +983,27 @@ amdgpu fault line of dmesg in `<tag>-dmesg-after.txt`.
   launcher (`BC5_EMU`), scatter unset, 13,824 MiB, the named snapshot 558115f3, RT on, the cleaned learned file.
   - ABBA at G+600, walking: A = the four switches unset, B = all four =1.
   - Then x11L1: all four =1, G+2400 walking.
+- *Result* (2026-11-10 07:34–10:59, `raw/night/x11A1…x11L1*`). Every arm reached its end clean: 0 crash lines,
+  0 kernel lines, 0 freeze dumps and 0 devcoredumps. The stall catcher wrote no dump, and the learned file stayed at
+  81 lines.
+
+  | Arm | Switches | End | flips/s (whole run) | longest gap | MemAvailable min |
+  |---|---|---|---|---|---|
+  | x11A1 | unset | G+600 | 37.8 | 1189 ms | 549 MiB |
+  | x11B1 | all =1 | G+600 | 38.7 | 1313 ms | 431 MiB |
+  | x11B2 | all =1 | G+600 | 37.8 | 1573 ms | 403 MiB |
+  | x11A2 | unset | G+600 | 38.3 | 1240 ms | 519 MiB |
+  | x11L1 | all =1 | G+2400 | 46.4 | 1202 ms | 457 MiB |
+
+  - The journals hold no "e11:" line. No timeout or reopen came, so none of the four switches had anything to act on.
+  - Between x11B2 and x11A2 the laptop's ssh connection dropped. The box released x11B2 at 08:12:55 and did not
+    reboot (same boot id), and the series went on at 10:03.
+- *Reading.* With all four on, the game runs as with them off: flips/s within 1 of each other, and no crash. The B arms'
+  MemAvailable floor is ~100 MiB lower, which is two arms per side and not shown to be the switches (LESSONS R18).
+  Whether the switches help after a hang is not tested: no hang came in 66 minutes of walking.
+- *Not done, as the top asked.* `BC5_DIRECT_FAULT_PAGES` has no in-emulator code: the box has `dmesg_restrict=1`, so
+  the emulator cannot read the kernel log without sudo, and the runner's `<tag>-dmesg-after.txt` already keeps every
+  amdgpu fault line. The stand-in for switch 5 is `stall0409.sh`: eu-stack, read-only, after 60 s without a new fps line.
+  It is not a gdb `thread apply all bt` keyed to "reopen".
 
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.
