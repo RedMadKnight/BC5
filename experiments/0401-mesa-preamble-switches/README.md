@@ -1105,11 +1105,33 @@ they cannot be toggled during a run: the shortcut sets them at launch. `shortcut
   - the game's state.
 
   "e10 unpacked" in the same place would separate the first from the other two.
-- *The A/B attempt* (18:17, "e10 unpacked"). His save had moved on into a new area, so at his word ("Nowy obszar. Dalej
-  nie licz") the run is not counted.
-  - The read-only sampler `sampler0411.sh` (9dfc33ee) was stopped after 7 minutes. Its file stays on the box as
-    `~/bc5-work/exp0411/sampler/play-20261110-181307.txt`.
-  - What it saw, for the record only: no swap-ins and no major faults, PSI memory 0.4–1.4 %, MemAvailable ~620 MiB.
-    The busiest threads were Render_Thread and game-main at ~40 % of a core each, so neither was CPU-bound.
+- *The A/B run* (18:17:29, "e10 unpacked", from his newer save in the same area; `play-20261110-1817`).
+  - Which part counts. At first his words ("Nowy obszar. Dalej nie licz") were read as "do not count the run". He
+    meant: count it up to that moment, minus 2 minutes ("Policz 2 minuty mniej, za późno powiedziałem"). So minutes
+    1–4 of the run count.
+  - The read-only sampler `sampler0411.sh` (9dfc33ee) ran beside it for its first 7 minutes:
+    `~/bc5-work/exp0411/sampler/play-20261110-181307.txt` on the box.
+  - *e10 is as slow as e11 there.* In minutes 1–4: 12–16 fps, frame 62–81 ms, the game thread 41–58 ms outside the
+    host, GPU busy 15–19 ms. Then it improved: 23–32 fps once he moved into the new area. So e11's build and switches
+    are not the cause.
+  - *Not the learned file.* Both 11-09 22:03 and today applied the same 66 learned windows (the identical set), so the
+    11-09 23:17 cleaning did not change what was applied.
+  - *Memory pressure goes with it* (sampler, minutes 1–4; whole box unless the emulator is named):
+    - MemAvailable fell from 3.8 GiB to 640–750 MiB, and GTT used rose to 12.8 GiB;
+    - PSI memory was 3.9–6.8 %;
+    - swap-ins ran 3–305 pages/s, and the emulator took 37,000–45,000 minor faults/s;
+    - the emulator used 360–420 % CPU, with no thread above ~40 % of a core.
+  - In the new area (minutes 6–7) the minor faults fell to 11,000–23,000/s and PSI memory to 0.2–3 %, and the frame
+    rate rose.
+  - The direct path's pinned memory reached 12.05 GiB in 2 minutes today (e10 and e11 alike), with 650–940 "views"
+    lines per minute. On 11-09 in the same area it was 11.7 GiB, with 100–465 lines per minute in the first minutes.
+    11-09 reached today's levels only at minutes 28–36, just before the slowdown and the 22:42 hang.
+- *Reading.* In this area the title's working set now pushes the box into reclaim within 2 minutes, and the game
+  thread stalls outside the host. On 11-09 the same thing came after ~30 minutes and ended in the hang. What differs
+  between the two days is open:
+  - the game's state (his save is further on), or
+  - the box's state: 25 h up, 565–840 MiB in swap before the start, against ~4.5 h up on 11-09.
+
+  A play of the same area right after a reboot would tell the two apart.
 
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.
