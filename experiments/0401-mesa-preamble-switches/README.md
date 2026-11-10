@@ -1058,7 +1058,17 @@ they cannot be toggled during a run: the shortcut sets them at launch. `shortcut
   `BC5_GAME_DIR` was set, the launcher's exit code came back, and the catcher stopped within 15 s.
 - *The catcher has no stacks.* The host's eu-stack is refused the container's processes ("Brak dostępu", `dwfl_linux_proc_report`;
   `ptrace_scope` is 0), and the ubuntu container has no eu-stack. Both 11-09 dumps in `raw/stall0409c` on the box end
-  at the `## eu-stack` line. So `stall0409.sh` writes the thread names, states and wchan only, in the arms and in the
-  shortcut alike. Installing elfutils in the container would give the stacks; that is his call.
+  at the `## eu-stack` line. So `stall0409.sh` wrote the thread names, states and wchan only, in every arm so far.
+- *The stacks, since 16:5x* (his "Tak, zainstaluj").
+  - elfutils 0.194-4 is now installed in the ubuntu container (`apt-get install --no-install-recommends elfutils`).
+    There, eu-stack read a test process's stack in 158 ms.
+  - The container inherits the host's `DEBUGINFOD_URLS` (Fedora's server), so eu-stack would send it the build ids it
+    cannot resolve. The wrapper therefore starts the catcher under `env -u DEBUGINFOD_URLS`. That this reaches the
+    container was checked.
+  - The wrapper is now cca8721e; the box keeps 85421e63 as `play-e11-0411.sh.before-debuginfod-85421e63`. A second
+    stand-in passed.
+  - How long eu-stack takes on the running emulator (~13 GiB, about 100 threads) is not measured. The catcher gives it
+    90 s.
+  - A catcher started by hand on the host, as in the series, still gets no stacks.
 
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.

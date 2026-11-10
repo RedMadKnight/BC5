@@ -7,9 +7,10 @@
 #   and the learned file are the launcher's, as with "e10 unpacked".
 # - Beside it, in the same container, the read-only stall catcher stall0409.sh on that log: once the frames have stopped for
 #   60 s while the emulator lives, one dump of every thread's name, state and wchan into ~/bc5-work/exp0411/stall/, plus
-#   eu-stack's stacks when the container has eu-stack (it has none on 2026-11-10, and the host's eu-stack is refused the
-#   container's processes, so the dump holds the thread states only). A long window pause can also make one dump.
-#   When the launcher ends the catcher is told to stop; it finishes a dump it has begun.
+#   every thread's stack by the container's eu-stack (elfutils 0.194, installed on his "Tak, zainstaluj", 2026-11-10; the
+#   host's eu-stack is refused the container's processes). DEBUGINFOD_URLS is unset for it: the container inherits the
+#   host's Fedora debuginfod server, and eu-stack would send it the build ids it cannot resolve. A long window pause can
+#   also make one dump. When the launcher ends the catcher is told to stop; it finishes a dump it has begun.
 set -u
 E=$HOME/bc5-work/exp0411
 BIN=$E/bin/kyty_emulator; L=$E/play-pkg-0411.sh; C=$HOME/bc5-work/exp0401t/stall0409.sh
@@ -37,7 +38,7 @@ WORDS=(BC5_GAME_DIR=/home/kjaniszewski/bc5-data/games/PPSA03671 BC5_DIRECT_CP_CO
 SP=""; STOP=""
 if [ "$(m "$C")" = 49db07c8c84e0332dab1e340c7461ce8 ]; then
   mkdir -p "$E/stall"; STOP=$E/stall/stop-$$; rm -f "$STOP"
-  nohup /usr/bin/distrobox enter ubuntu -- bash "$C" "$E/play-last.log" "$E/stall" "$(($(date +%s) + 86400))" "$STOP" \
+  nohup /usr/bin/distrobox enter ubuntu -- /usr/bin/env -u DEBUGINFOD_URLS bash "$C" "$E/play-last.log" "$E/stall" "$(($(date +%s) + 86400))" "$STOP" \
     > "$E/stall/catcher-$(date +%Y%m%d-%H%M%S).out" 2>&1 < /dev/null &
   SP=$!
 else
