@@ -1105,5 +1105,11 @@ they cannot be toggled during a run: the shortcut sets them at launch. `shortcut
   - the game's state.
 
   "e10 unpacked" in the same place would separate the first from the other two.
+- *The A/B attempt* (18:17, "e10 unpacked"). His save had moved on into a new area, so at his word ("Nowy obszar. Dalej
+  nie licz") the run is not counted.
+  - The read-only sampler `sampler0411.sh` (9dfc33ee) was stopped after 7 minutes. Its file stays on the box as
+    `~/bc5-work/exp0411/sampler/play-20261110-181307.txt`.
+  - What it saw, for the record only: no swap-ins and no major faults, PSI memory 0.4–1.4 %, MemAvailable ~620 MiB.
+    The busiest threads were Render_Thread and game-main at ~40 % of a core each, so neither was CPU-bound.
 
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.
