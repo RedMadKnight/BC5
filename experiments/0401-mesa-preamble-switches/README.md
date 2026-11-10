@@ -927,4 +927,14 @@ here; `hang2242-0401.md` §2).
     a real window costs a 14-s fault at the next start and a junk one costs one scratch map.
 - *After.* cb30371e, 81 lines. Undo: copy the backup back while no emulator runs.
 
+**e11's long control arm x11L0** (2026-11-09 23:3x–00:1x, his yes; `raw/night-arms-0411L0.txt`).
+- *Setup.* Binary exp0409 9fd42e25 with the scatter unset, 13,824 MiB, the named snapshot 558115f3, RT on, the cleaned
+  learned file. G+2400 with `BC5_0401T_WALK=2400` (145 walk cycles queued at G = 138 s), cap 2700.
+- *Result.* It reached G+2400 clean after 2540 s, at 47.1 flips/s over the whole run (the standing arms ran 36). The
+  longest gap was 1161 ms, the MemAvailable floor 506 MiB. 0 crash lines, 0 kernel lines, 0 devcoredumps.
+- The emulator's rchar grew ~214 MB a minute at the end, so the walk streamed.
+- The learned file was still 81 lines at the end: no new fault.
+- *Reading.* The 22:42 hang came after 39 minutes of his own play. 40 minutes of the scripted walk did not bring it
+  back: one arm, no bound on the hang's rate (LESSONS R18).
+
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.
