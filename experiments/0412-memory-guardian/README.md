@@ -340,6 +340,44 @@ Outside the build: raise the memlock limit (root, the maintainer) so `MLOCK=pinn
 or shed (1 GiB of swap in use at the wall). A cgroup `memory.max` on the emulator's scope would have turned ASTRO BOT's
 36-minute fill into an early kill of the emulator alone; it is a safety net, not a fix.
 
+### 8. The second build, g412b (2026-11-10 night, the top session's order; built and checked by stand-ins, not run in play)
+
+Five items, each behind its own switch, all default off. Files: `guard0412.inc`, `mkguard0412.py`, `test0412.cpp`,
+`syn0412.cpp` (edited), `mk0412b.sh`, `install0412b.sh`, `play-guard-0412.sh` (edited), `play-astro-guard-0412.sh`,
+`sampler0412b.sh`, `fuse0412.sh`, `shortcut0412b.sh`.
+
+| # | Item | Switch | What it is |
+|---|---|---|---|
+| 1 | Orphan release | `BC5_DIRECT_LAZY_RELEASE=10,eager` | **Already in e11's unit**: exp 0401 e7's lazy release (`lzr0401.inc`), which cuts a chunk under no view for the idle time, not forced, out of its BO and imports it again when a view covers it. Exp 0401 only ran it `dry` (170 MiB idle at the save of that day); this is its first live arm. No new code. `eager` is needed because the orphans are AMM chunks, last seen under an eager view. |
+| 2 | The pin cap acts | `BC5_GUARD_PIN_CAP=<MiB>` + `BC5_GUARD_CAP_ACT=1` (+ `BC5_GUARD_CAP_NAMES`, default `AMM`) | New. When a sync's imports would take both files' pinned total over the cap, the **soft** chunks are put off: chunks wanted only for holding data, or by an eager heap named in the list, and not forced by a hint or a learned window. Every view over a put-off chunk gets the 2 MiB zero buffer (the scratch BO of exp 0037), so the GPU reads zeros and never faults. Hard chunks (the render heaps, forced windows) are imported as before. Each full sync asks again, so a put-off chunk comes in when the orphan release has made room. |
+| 3 | AMM by use | `BC5_GUARD_AMM_BY_USE=1` (the launcher) | The launcher takes `AMM` out of `BC5_DIRECT_EAGER_NAMES`, so its chunks are pinned when they hold data, not when mapped. F403's class of risk (a GPU access to an AMM page no CPU wrote faults, 14 s). Arm `amm`, no shortcut. The prize is unknown and likely small: the title maps AMM pages to fill them, and a memfd page once written stays "data". |
+| 4 | Sampler columns | `sampler0412b.sh` | The emulator's `RssAnon`, `RssShmem`, `VmSwap`; the same of `bc5-mount`; `memory.current` and `memory.swap.current` of the emulator's cgroup. The ledger line also has `rss anon` and `cgroup` now. |
+| 5 | The fuse | the wrappers; `BC5_0412_FUSE=0` leaves it out | `fuse0412.sh` sets `memory.max` 12,300 MiB and `memory.swap.max` 2,048 MiB on the container's cgroup (`.../libpod-<id>.scope/container`, whose files the maintainer's user owns) while the emulator runs, and sets both back to `max` when it ends (a marker file covers a helper that died). Past the limit the kernel kills the emulator, with `ulimit -c 0`. Nothing system-wide. The limit covers everything in the container while it stands. |
+
+Two corrections to the first build, found while reading the unit: the ledger counted pinned bytes from its own
+grow-only set, which would be wrong once the lazy release cuts chunks, so it now takes the BO list at the end of each
+full sync (`guard0412_synced`); and the cap's log line uses the same totals.
+
+**What the cap arm will look like** [I]: over 11,600 MiB the title keeps running and newly streamed assets can be
+black or missing until memory comes back. GPU writes into a put-off chunk are lost. Whether the title's renderer
+survives zeros in streamed data (for instance ray-tracing structures) is not known; the fuse covers the box.
+Not covered by the cap: chunks the lazy release imports again under a returning view (a small, bounded path).
+
+**Limits chosen** [I, from section 7's numbers]: the box needs about 2.2 GiB outside the emulator and the emulator
+about 0.3 GiB outside the pin; 11,600 MiB of pin is where 0.8 GiB was still available (60 s), 12,300 MiB in the
+cgroup is where the box began to die (120–130 s). Whether pinned pages are charged to the container's cgroup is
+assumed, not measured: the ledger's `cgroup` field and the sampler's column will show it in the first play, and if
+they are not, the fuse never fires and changes nothing.
+
+**Built and installed** (22:52-22:57, box free, BOX-LOCK ours and released): CPU test 64 of 64 on the laptop and the box;
+unit 52eba0ad (from e11's f366ff7b), 5 warnings as e11; binary `baf16ce2fe4530b09464ba717b7a44e3` (the first build 70a3bbee
+kept beside it); launcher 7899c6dd (0411's + EMU, LOG and the AMM line; 17 eager heaps, 16 with the word). Stand-ins on the
+box: every arm's dry run; the sampler against two renamed `sleep`s (10 groups, the new ones numeric); the fuse against a
+700 MB eater in the container: limit 1,220 MiB with the cgroup at 920, the eater ended with 137, `oom_kill` 1 -> 2, both
+limits back at `max`. The cgroup's `memory.peak` read 12,716 MiB, so the plays' pinned memory **is** charged to the
+container's cgroup [M]. Shortcuts on the desktop: `BC5 emulator (0412 orphans)`, `(0412 cap)`, `BC5 Astro (0412 capture off)`,
+`(0412 capture on)`; `(0412 ledger)` and `(0412 low)` stay and now run the second build. No emulator was started.
+
 ## Verdict
 
 **Analysis, design, one build and two short plays (section 7): the ledger answered the split; no arm moved the wall.**

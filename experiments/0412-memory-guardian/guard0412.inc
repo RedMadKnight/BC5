@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Experiment 0412 (tag g412, mkguard0412.py): the memory guardian's first build. Six switches, default off; unset, empty
+// Experiment 0412 (tag g412, mkguard0412.py): the memory guardian. The first build's six switches and, since the second
+// build (g412b, after the plays of 2026-11-10), BC5_GUARD_CAP_ACT and BC5_GUARD_CAP_NAMES. All default off; unset, empty
 // and "0" are off (bc5::env_on, F767), each read once.
 //   BC5_GUARD_LEDGER=1             log only: every 10 s what is pinned, per heap name, and what no view covers ("orphans").
 //   BC5_GUARD_MLOCK=pinned|guest   pinned: every imported file range is mapped once more, read-only, and mlock()ed, so the
@@ -10,10 +11,18 @@
 //                                  POSIX_FADV_RANDOM (no read-ahead); dontneed drops their page cache under pressure.
 //   BC5_GUARD_PSI=<percent>        the pressure threshold (PSI memory "some", avg10) for dontneed and the pressure line;
 //                                  10 when dontneed is on and this is unset.
-//   BC5_GUARD_PIN_CAP=<MiB>        log only in this build: one line each time the pinned total passes the cap by 64 MiB more.
+//   BC5_GUARD_PIN_CAP=<MiB>        the cap on what both files have pinned. Alone it only logs: one line each time the pinned
+//                                  total passes the cap by 64 MiB more.
+//   BC5_GUARD_CAP_ACT=1            the cap acts (needs BC5_GUARD_PIN_CAP): a chunk a sync would import over the cap is put
+//                                  off when it is "soft", and every view over it gets the 2 MiB zero buffer instead (the GPU
+//                                  reads zeros, its writes are lost), so no access faults. Soft: wanted only for holding data
+//                                  or by an eager view whose name is in BC5_GUARD_CAP_NAMES, and not forced by a hint or a
+//                                  learned window. Every other chunk is imported as before, cap or not. A put-off chunk is
+//                                  imported as soon as the total allows (each full sync asks again).
+//   BC5_GUARD_CAP_NAMES=a,b        the eager heaps whose chunks are soft; "AMM" when unset. "-" names none.
 //   BC5_GUARD_APPLY_MIN_MS=<ms>    learned_apply runs at most once per <ms> (1..1000) while the layout keeps changing; the
 //                                  first call after a device reopen is never put off.
-// With all six off nothing here runs: no thread, one config read, one early return per import and per submission.
+// With all of them off nothing here runs: no thread, one config read, one early return per import and per submission.
 // The text between G412_PURE_BEGIN and G412_PURE_END has no system call and is what test0412.cpp runs on the laptop.
 // G412_PURE_BEGIN
 namespace g412 {
@@ -26,11 +35,14 @@ struct Cfg {
     double      psi = 0.0;      // percent; 0 = off
     uint64_t    cap = 0;        // bytes; 0 = off
     uint64_t    apply_ns = 0;   // 0 = off
+    bool        cap_act = false; // the cap puts soft chunks off
+    std::vector<std::string> cap_names; // eager heaps whose chunks are soft
     std::string bad;            // switches whose value was not understood (they stay off)
     bool worker() const { return ledger || mlock != 0 || f_random || f_dontneed || psi > 0.0 || cap != 0; }
 };
 
-static Cfg parse(const char* ledger, const char* mlock, const char* file, const char* root, const char* psi, const char* cap, const char* apply) {
+static Cfg parse(const char* ledger, const char* mlock, const char* file, const char* root, const char* psi, const char* cap, const char* apply,
+                 const char* cap_act = nullptr, const char* cap_names = nullptr) {
     Cfg c;
     c.ledger = bc5::env_on(ledger);
     if (bc5::env_on(mlock)) {
@@ -79,7 +91,52 @@ static Cfg parse(const char* ledger, const char* mlock, const char* file, const 
         if (end != apply && *end == 0 && v >= 1 && v <= 1000) c.apply_ns = static_cast<uint64_t>(v) * 1'000'000ull;
         else c.bad += " BC5_GUARD_APPLY_MIN_MS";
     }
+    if (bc5::env_on(cap_act)) {
+        if (c.cap != 0 && std::strcmp(cap_act, "1") == 0) c.cap_act = true;
+        else c.bad += " BC5_GUARD_CAP_ACT";
+    }
+    if (c.cap_act) {
+        const std::string v = bc5::env_on(cap_names) ? cap_names : "AMM";
+        size_t            at = 0;
+        while (at <= v.size()) {
+            const size_t      e = std::min(v.find(',', at), v.size());
+            const std::string w = v.substr(at, e - at);
+            if (!w.empty() && w != "-") c.cap_names.push_back(w);
+            at = e + 1;
+        }
+    }
     return c;
+}
+
+static bool cap_name(const Cfg& c, const std::string& name) {
+    return std::find(c.cap_names.begin(), c.cap_names.end(), name) != c.cap_names.end();
+}
+
+// BC5_GUARD_CAP_ACT: which of the chunks a sync wants are imported. need: the chunk offsets, sorted and unique; soft[i]
+// says whether need[i] may be put off; pinned: the bytes both files have pinned now. A hard chunk is always kept. Soft
+// chunks are kept in order while the total, with every hard chunk counted first, stays within the cap.
+struct CapPlan {
+    std::vector<uint64_t> keep, off; // both sorted
+    uint64_t              hard = 0;  // hard chunks kept
+};
+static CapPlan cap_plan(const std::vector<uint64_t>& need, const std::vector<char>& soft, uint64_t pinned, uint64_t cap, uint64_t chunk) {
+    CapPlan  p;
+    uint64_t total = pinned;
+    for (size_t i = 0; i < need.size(); i++) {
+        if (i >= soft.size() || soft[i] == 0) total += chunk, p.hard++;
+    }
+    for (size_t i = 0; i < need.size(); i++) {
+        const bool s = i < soft.size() && soft[i] != 0;
+        if (!s) {
+            p.keep.push_back(need[i]);
+        } else if (total + chunk <= cap) {
+            total += chunk;
+            p.keep.push_back(need[i]);
+        } else {
+            p.off.push_back(need[i]);
+        }
+    }
+    return p;
 }
 
 // A set of disjoint [lo, hi) ranges; touching ranges are joined.
@@ -286,7 +343,8 @@ namespace g412 {
 
 static const Cfg& cfg() {
     static const Cfg c = parse(std::getenv("BC5_GUARD_LEDGER"), std::getenv("BC5_GUARD_MLOCK"), std::getenv("BC5_GUARD_FILE"), std::getenv("BC5_GUARD_FILE_ROOT"),
-                               std::getenv("BC5_GUARD_PSI"), std::getenv("BC5_GUARD_PIN_CAP"), std::getenv("BC5_GUARD_APPLY_MIN_MS"));
+                               std::getenv("BC5_GUARD_PSI"), std::getenv("BC5_GUARD_PIN_CAP"), std::getenv("BC5_GUARD_APPLY_MIN_MS"),
+                               std::getenv("BC5_GUARD_CAP_ACT"), std::getenv("BC5_GUARD_CAP_NAMES"));
     return c;
 }
 
@@ -302,6 +360,12 @@ struct State {
     std::atomic<uint64_t> deferred {0};
     std::mutex            dm; // d
     Defer                 d;
+    // What the last full sync left imported (guard0412_synced): the direct file's BOs, and each file's bytes. The lazy
+    // release (exp 0401 e7) cuts chunks out again, so `pinned` above, which only grows, is not the pinned set.
+    std::vector<std::pair<uint64_t, uint64_t>> bos0; // under m: off and size
+    bool                  bos0_seen = false;         // under m
+    std::atomic<uint64_t> bytes[2] {};
+    std::atomic<uint64_t> cap_off {0}, cap_off_max {0}, cap_changes {0}, cap_hard {0}; // bytes put off now and at most; changes of the set; hard chunks imported over the cap
 };
 static State& st() {
     static State s;
@@ -414,15 +478,21 @@ struct Worker {
         uint64_t pin1 = 0;
         {
             std::lock_guard l(st().m);
-            pin0 = st().pinned[0];
-            pin1 = st().pinned[1].bytes;
+            if (st().bos0_seen) {
+                for (const auto& b: st().bos0) pin0.add(b.first, b.first + b.second);
+                pin1 = st().bytes[1].load();
+            } else {
+                pin0 = st().pinned[0];
+                pin1 = st().pinned[1].bytes;
+            }
         }
         const auto       views = direct_views(g_d[0]);
         std::vector<VIn> in;
         in.reserve(views->v.size());
         for (const auto& v: views->v) in.push_back({v.off, v.size, &v.name, v.eager, v.lazy});
         const Ledger L = ledger(in, pin0);
-        char status[4096], pstat[1024], mem[8192];
+        char status[4096], pstat[1024], mem[8192], cg[64];
+        const bool   cg_ok = slurp("/sys/fs/cgroup/memory.current", cg, sizeof(cg));
         const bool   s_ok = slurp("/proc/self/status", status, sizeof(status));
         const bool   m_ok = slurp("/proc/meminfo", mem, sizeof(mem));
         unsigned long long mn = 0, mj = 0;
@@ -432,13 +502,16 @@ struct Worker {
         const long   swt = m_ok ? kv_mib(mem, "SwapTotal") : -1, swf = m_ok ? kv_mib(mem, "SwapFree") : -1;
         journal("guard: t %.0f s: pinned direct %.1f MiB, private %.1f; under a view %.1f, orphans %.1f; views %zu over %.1f MiB; gtt %.1f; rss %ld shmem %ld swap %ld MiB; "
                 "faults minor %lld major %lld; avail %ld unevictable %ld mlocked %ld swap used %ld MiB; psi some %.1f full %.1f%s; guard locked %.1f MiB, guest views %" PRIu64
-                " (%" PRIu64 " refused); files advised %" PRIu64 ", drops %" PRIu64 "; apply put off %" PRIu64 "\n",
+                " (%" PRIu64 " refused); files advised %" PRIu64 ", drops %" PRIu64 "; apply put off %" PRIu64 "; rss anon %ld; cgroup %ld MiB; cap put off %.1f MiB (max %.1f, %" PRIu64
+                " changes, %" PRIu64 " hard chunks over)\n",
                 static_cast<double>(mono_ns() - t0) / 1e9, static_cast<double>(L.pinned) / mib, static_cast<double>(pin1) / mib, static_cast<double>(L.pinned_under) / mib,
                 static_cast<double>(L.orphans) / mib, L.views, static_cast<double>(L.reserved_union) / mib, static_cast<double>(direct_gtt("mem_info_gtt_used")) / mib,
                 s_ok ? kv_mib(status, "VmRSS") : -1, s_ok ? kv_mib(status, "RssShmem") : -1, s_ok ? kv_mib(status, "VmSwap") : -1,
                 f_ok ? static_cast<long long>(mn - minflt0) : -1ll, f_ok ? static_cast<long long>(mj - majflt0) : -1ll, m_ok ? kv_mib(mem, "MemAvailable") : -1,
                 m_ok ? kv_mib(mem, "Unevictable") : -1, m_ok ? kv_mib(mem, "Mlocked") : -1, swt >= 0 && swf >= 0 ? swt - swf : -1, psi_ok ? some10 : -1.0, psi_ok ? full10 : -1.0,
-                psi_ok ? "" : " (unread)", static_cast<double>(locked) / mib, guest_calls, guest_fail, advised, drops, st().deferred.load());
+                psi_ok ? "" : " (unread)", static_cast<double>(locked) / mib, guest_calls, guest_fail, advised, drops, st().deferred.load(), s_ok ? kv_mib(status, "RssAnon") : -1,
+                cg_ok ? static_cast<long>(std::strtoll(cg, nullptr, 10) >> 20) : -1, static_cast<double>(st().cap_off.load()) / mib, static_cast<double>(st().cap_off_max.load()) / mib,
+                st().cap_changes.load(), st().cap_hard.load());
         journal("guard heaps (pinned/reserved MiB; E eager, L lazy, D by data): %s\n", heaps_text(L, 12, 760).c_str());
     }
 
@@ -448,9 +521,9 @@ struct Worker {
         struct rlimit rl {};
         const bool    rl_ok = ::getrlimit(RLIMIT_MEMLOCK, &rl) == 0;
         lock_ok = rl_ok && rl.rlim_cur == RLIM_INFINITY;
-        journal("guard: switches: LEDGER %s, MLOCK %s, FILE %s%s%s%s, PSI %.1f, PIN_CAP %" PRIu64 " MiB, APPLY_MIN_MS %" PRIu64 "%s%s; memlock limit %s (exp 0412, tag g412)\n",
+        journal("guard: switches: LEDGER %s, MLOCK %s, FILE %s%s%s%s, PSI %.1f, PIN_CAP %" PRIu64 " MiB (%s), APPLY_MIN_MS %" PRIu64 "%s%s; memlock limit %s (exp 0412, tag g412b)\n",
                 c.ledger ? "on" : "off", c.mlock == 2 ? "guest" : c.mlock == 1 ? "pinned" : "off", c.f_random ? "random" : "", c.f_random && c.f_dontneed ? "," : "",
-                c.f_dontneed ? "dontneed" : "", c.f_random || c.f_dontneed ? "" : "off", c.psi, c.cap >> 20u, static_cast<uint64_t>(c.apply_ns / 1'000'000ull), c.bad.empty() ? "" : "; not understood, off:",
+                c.f_dontneed ? "dontneed" : "", c.f_random || c.f_dontneed ? "" : "off", c.psi, c.cap >> 20u, c.cap_act ? "acts" : "log only", static_cast<uint64_t>(c.apply_ns / 1'000'000ull), c.bad.empty() ? "" : "; not understood, off:",
                 c.bad.c_str(), !rl_ok ? "unread" : lock_ok ? "unlimited" : "limited");
         if (c.mlock != 0 && !lock_ok) journal("guard: BC5_GUARD_MLOCK needs \"ulimit -l unlimited\" in the launcher; nothing is locked in this run\n");
         for (uint64_t tick = 1;; tick++) {
@@ -473,13 +546,14 @@ struct Worker {
             lock_guest();
             if (c.ledger) line(psi_ok, some10, full10);
             if (c.cap != 0) {
-                uint64_t pinned = 0;
-                {
+                uint64_t pinned = st().bytes[0].load() + st().bytes[1].load();
+                if (pinned == 0) {
                     std::lock_guard l(st().m);
                     pinned = st().pinned[0].bytes + st().pinned[1].bytes;
                 }
                 const uint64_t step = pinned > c.cap ? (pinned - c.cap) / (64ull << 20u) + 1 : 0;
-                if (step > cap_step) journal("guard: pinned %.1f MiB is over BC5_GUARD_PIN_CAP %" PRIu64 " MiB (log only in this build)\n", static_cast<double>(pinned) / 1048576.0, c.cap >> 20u);
+                if (step > cap_step) journal("guard: pinned %.1f MiB is over BC5_GUARD_PIN_CAP %" PRIu64 " MiB (%s)\n", static_cast<double>(pinned) / 1048576.0, c.cap >> 20u,
+                                             c.cap_act ? "soft chunks are put off; the rest is hard" : "log only");
                 cap_step = step;
             }
         }
@@ -518,5 +592,85 @@ static bool guard0412_defer_apply() {
     const bool      put_off = g412::defer(s.d, c.apply_ns, static_cast<uint64_t>(g_layout_gen), g412::mono_ns(), g_m11_reopens.load());
     if (put_off) s.deferred++;
     return put_off;
+}
+
+// BC5_GUARD_CAP_ACT. The chunks of the direct file the cap has put off, sorted; the sync thread's own.
+static std::vector<uint64_t> g_g412_off;
+static bool                  g_g412_off_changed = false;
+
+// After the import loop's list is made: takes the soft chunks out of `need` that do not fit under the cap.
+static void guard0412_cap(DState& S, const std::vector<DView>& views, std::vector<uint64_t>& need) {
+    const g412::Cfg& c = g412::cfg();
+    if (!c.cap_act || S.kind != 0) return;
+    std::vector<char> soft(need.size(), 1);
+    if (!need.empty()) {
+        for (size_t i = 0; i < need.size(); i++) {
+            if (S.forced.count(need[i]) != 0) soft[i] = 0;
+        }
+        for (const auto& v: views) {
+            if (!v.eager || v.size == 0 || g412::cap_name(c, v.name)) continue; // a hard heap: its chunks are never put off
+            auto it = std::lower_bound(need.begin(), need.end(), v.off & ~(kDChunk - 1));
+            for (; it != need.end() && *it < v.off + v.size; ++it) soft[static_cast<size_t>(it - need.begin())] = 0;
+        }
+    }
+    const uint64_t pinned = g_d[0].bytes + g_d[1].bytes;
+    g412::CapPlan  p = g412::cap_plan(need, soft, pinned, c.cap, kDChunk);
+    g412::State&   s = g412::st();
+    if (p.hard != 0 && pinned + p.hard * kDChunk > c.cap) s.cap_hard += p.hard;
+    if (p.off != g_g412_off) {
+        g_g412_off_changed = true;
+        const uint64_t bytes = p.off.size() * kDChunk, n = s.cap_changes++;
+        s.cap_off = bytes;
+        if (bytes > s.cap_off_max.load()) s.cap_off_max = bytes;
+        if (n < 16 || (n & 63u) == 0) {
+            journal("guard cap: %.1f MiB pinned, cap %" PRIu64 " MiB: %zu chunks (%.1f MiB) put off, the zero buffer under their views; %" PRIu64 " hard chunks imported "
+                    "now (change %" PRIu64 ")\n",
+                    static_cast<double>(pinned) / 1048576.0, c.cap >> 20u, p.off.size(), static_cast<double>(bytes) / 1048576.0, p.hard, n + 1);
+        }
+        g_g412_off.swap(p.off);
+    }
+    need.swap(p.keep);
+}
+
+// True when the put-off set changed since the mappings were last built: the GPU is drained and the mappings rebuilt.
+static bool guard0412_cap_changed(const DState& S) {
+    return S.kind == 0 && g_g412_off_changed;
+}
+
+// The mapping rebuild's hook: every (view, put-off chunk) intersection is one mapping of the zero buffer.
+static void guard0412_want(const DState& S, const std::vector<DView>& views, std::vector<DMap>& want) {
+    if (S.kind != 0) return;
+    g_g412_off_changed = false;
+    if (g_g412_off.empty()) return;
+    const uint32_t id = scratch_bo();
+    if (id == 0) {
+        static bool said = false;
+        if (!said) journal("guard cap: no zero buffer: the put-off chunks have no mapping (an access faults)\n");
+        said = true;
+        return;
+    }
+    for (const auto& v: views) {
+        const uint64_t vend = v.off + v.size;
+        auto           it = std::lower_bound(g_g412_off.begin(), g_g412_off.end(), v.off & ~(kDChunk - 1));
+        for (; it != g_g412_off.end() && *it < vend; ++it) {
+            const uint64_t lo = *it > v.off ? *it : v.off;
+            const uint64_t hi = *it + kDChunk < vend ? *it + kDChunk : vend;
+            if (lo < hi) want.push_back({v.va + (lo - v.off), hi - lo, lo - *it, id});
+        }
+    }
+}
+
+// The end of a full sync: what is imported now, for the ledger and the cap's log line.
+static void guard0412_synced(const DState& S) {
+    const g412::Cfg& c = g412::cfg();
+    if (!c.worker() || S.kind < 0 || S.kind > 1) return;
+    g412::State& s = g412::st();
+    s.bytes[S.kind] = S.bytes;
+    if (S.kind != 0 || !c.ledger) return;
+    std::lock_guard l(s.m);
+    s.bos0.clear();
+    s.bos0.reserve(S.bos.size());
+    for (const auto& b: S.bos) s.bos0.emplace_back(b.off, b.size);
+    s.bos0_seen = true;
 }
 #endif // !GUARD0412_TEST
