@@ -1,0 +1,13 @@
+binary fe4ea308203c22bd70cdecb8c6674905: shared objects of 4d2b1b1dd52eaea6e3195500f604e73e, unit d3b7f9b0ab43184ee11de83e9e233ff8, archive 75e303357610fee8d1d205bdc88c031c
+launcher 69e565beaefc86e2b47fa8ca0baf306f from play-pkg.sh 97835f8850cc22ece5c4bcdbbb646912
+warnings in the unit's compile: 16
+function check: check0401: 7 of 7 settings give the packets and lines they must; end
+inherit test: inh0401: 25 of 25 cases; end
+e4 sav mksav0401.py src/libs/libSaveData.cpp:d6e9c37fa099d576ce4c495dab850271:0723d4bae6a070f51ed5360e4e35a4f8
+e4 pth mkpth0401.py src/kernel/pthread.cpp:11cef59e0ff15f650eba98bb11f91bce:0363847bd540883467dee22797475031
+e4 aud mkaud0401.py src/libs/libAudio2.cpp:fb44443e6f19f5d62c739cb39a7c377c:7a1914c898e62e1e6ce699807aafbc74
+e4 test sav0401: sav0401: on 15 of 15; end / sav0401: off 15 of 15; end / sav0401: off 15 of 15; end
+e4 test pth0401: pth0401: on 10 of 10; end / pth0401: off 10 of 10; end / pth0401: off 10 of 10; end
+e4 test aud0401: aud0401: on 25 of 25; end / aud0401: off 25 of 25; end / aud0401: off 25 of 25; end
+units: libNpCppWebApi.cpp 935fcc7e4ab1108f3d2d8b33eaf65bf6, memory.cpp 43713ef677ec887a8ca273f7ab5cee90, systemContent.cpp 4e33b30a4acf89481942cec435b76c37, systemContent.h 2b2b21eb1faf35c2a538917049aea85e; gate: npgate0401: on 10 of 10 registered as their functions in [NpCppWebApi_v1][NpCppWebApi_v1.1][Func], 9 of 9 NOT_SIGNED_IN, / npgate0401: off 10 of 10 unregistered, 9 of 9 NOT_SIGNED_IN, initialize 1 of 1; end
+kernel 7.2.11-ogc4.1.fc44.x86_64

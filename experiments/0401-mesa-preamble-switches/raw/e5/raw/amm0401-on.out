@@ -1,0 +1,44 @@
+[bc5] exp 0401: memory from param.json off: total 11692 MiB, flexible 1024 MiB, direct 10668 MiB (param.json: flexible 0, cpu table 0, gpu table 0, amm table 0 MiB)
+[bc5] exp 0405: mem off
+[bc5] exp 0401: KYTY_BC5_AMM_PRT_CMDS on
+[bc5] exp 0401: KYTY_BC5_AMM_EXTRA_CMDS on
+[bc5] exp 0401: KYTY_BC5_AMPR_WAITS on
+[bc5] exp 0405: posix return fixes off
+[bc5] exp 0405: http2 fixes off
+[bc5] exp 0405: json2 off
+[bc5] exp 0401: NpCppWebApi SessionManager V2 off (the loader's stubs)
+[bc5] exp 0405: pad open ext off
+[bc5] exp 0401: savedata fixes off
+[bc5] exp 0401: savedata event callback off
+[bc5] exp 0401: savedata sort off
+[bc5] exp 0405: savedata memory fixes off
+[bc5] exp 0405: savedata delete busy off
+[bc5] exp 0405: savedata aliases off
+[bc5] exp 0405: systemservice off
+[bc5] exp 0405: systemservice-params-7-1000 off
+[bc5] exp 0405: ult off
+[bc5] exp 0405: userservice off
+[bc5] exp 0405: equeue fixes off
+[bc5] exp 0401 prt: zero pages #1 va 0x0000008000200000 size 0x10000 (MapAsPrt) -> 0x00000000
+[bc5] exp 0401 prt: backing #1 (AllocatePaForPrt) va 0x0000008000204000 size 0x8000 dmem 0x4000 type 0 prot 0x3 -> 0x00000000
+[bc5] exp 0401 prt: backing #2 (AllocatePaForPrt) va 0x0000008000200000 size 0x4000 dmem 0xc000 type 2 prot 0x33 -> 0x00000000
+[bc5] exp 0401 prt: backing #3 (AllocatePaForPrt) va 0x000000800020c000 size 0x4000 dmem 0x10000 type 2 prot 0x33 -> 0x00000000
+[bc5] exp 0401 prt: zero pages #2 va 0x0000008000204000 size 0x8000 (UnmapToPrt) -> 0x00000000
+[bc5] exp 0401 prt: backing #4 (RemapIntoPrt) va 0x0000008000208000 size 0x4000 dmem 0x0 type 0 prot 0x3 -> 0x00000000
+[bc5] exp 0401 amm: RemapIntoPrt va 0x00000080002c0000 source 0x0000008000200000 size 0x4000 prot 0x3 -> 0x80020016, the buffer stops here (#1)
+[bc5] exp 0401 amm: UnmapToPrt va 0x00000080002c0000 source 0x0000000000000000 size 0x4000 prot 0x0 -> 0x80020016, the buffer stops here (#2)
+[bc5] exp 0401 amm: RemapIntoPrt va 0x0000008000200000 source 0x0000008000200000 size 0x4000 prot 0x3 -> 0x80020016, the buffer stops here (#3)
+[bc5] exp 0401 prt: zero pages #3 va 0x0000008040000000 size 0x300000000 (MapAsPrt) -> 0x00000000
+[bc5] exp 0401 prt: backing #5 (AllocatePaForPrt, no direct memory) va 0x0000008040000000 size 0x300000000 dmem 0x0 type 0 prot 0x3 -> 0x80020023
+[bc5] exp 0401 amm: AllocatePaForPrt va 0x0000008040000000 source 0x0000000000000000 size 0x300000000 prot 0x3 -> 0x80020023, the buffer stops here (#4)
+[bc5] exp 0401 prt: zero pages #4 va 0x0000008000300000 size 0x10000 (MapAsPrt) -> 0x00000000
+[bc5] exp 0401 prt: backing #6 (AllocatePaForPrt) va 0x0000008000304000 size 0x4000 dmem 0x4000 type 0 prot 0x3 -> 0x00000000
+[bc5] exp 0401 prt: backing #7 (AllocatePaForPrt) va 0x0000008000300000 size 0x4000 dmem 0x8000 type 0 prot 0x3 -> 0x00000000
+[bc5] exp 0401 prt: zero pages #5 va 0x0000008000308000 size 0x8000 (AllocatePaForPrt, rolled back) -> 0x00000000
+[bc5] exp 0401 prt: backing #8 (AllocatePaForPrt, failed) va 0x0000008000308000 size 0x8000 dmem 0x14000 type 0 prot 0x3 -> 0x80020023
+[bc5] exp 0401 amm: AllocatePaForPrt va 0x0000008000300000 source 0x0000000000000000 size 0x10000 prot 0x3 -> 0x80020023, the buffer stops here (#5)
+[bc5] exp 0401 amm: AllocatePaForPrt va 0x000000800020c000 source 0x0000000000000000 size 0x4000 prot 0x3 -> 0x80020016, the buffer stops here (#6)
+[bc5] exp 0401 amm: Remap va 0x0000008000500000 source 0x0000008000540000 size 0x4000 prot 0x3 -> 0x80020016, the buffer stops here (#7)
+[bc5] exp 0401 amm: MultiMap va 0x0000008000500000 source 0x0000008000500000 size 0x4000 prot 0x3 -> 0x80020016, the buffer stops here (#8)
+[bc5] exp 0401 amm: ModifyProtect va 0x0000008000540000 source 0x0000000000000000 size 0x4000 prot 0x1 -> 0x80020016, the buffer stops here (#9)
+amm0401: on 317 of 317; end

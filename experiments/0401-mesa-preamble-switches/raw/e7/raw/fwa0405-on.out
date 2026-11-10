@@ -1,0 +1,89 @@
+fwa0405: items on: pcmloop audio3d audio3dstrict ngs2 avplayer
+[bc5] exp 0405: audioout checks off
+[bc5] exp 0405: audioin checks off
+[bc5] exp 0405: ngs2 rack fix off
+[bc5] exp 0405: fw audio on (items: pcmloop audio3d audio3dstrict ngs2 avplayer)
+fwa0405: SDL_AUDIODRIVER=bc5-no-device-0405 (no sound device is opened)
+fwa0405: case 1 switch: the unit reads KYTY_BC5_FW_AUDIO as the test does: ok (unit 0x0000001f, test 0x0000001f)
+fwa0405: case 2 pcm: 16-bit stereo 48 kHz, 100 frames -> type 0x12, one block: ok (0x00000000, type 0x00000012, samples 100, loop 0..0, blocks 1)
+fwa0405: case 3 pcm: smpl loop 10..59 (16-bit) -> blocks 0-10, 10-60 forever, 60-100: ok (0x00000000, type 0x00000012, samples 100, loop 10..60, blocks 3)
+fwa0405: case 4 pcm: smpl loop 10..59 (24-bit, type 0x14) -> the same three blocks: ok (0x00000000, type 0x00000014, samples 100, loop 10..60, blocks 3)
+fwa0405: case 5 pcm: a loop over the whole wave, play count 3 -> one block repeating forever (403956973): ok (0x00000000, type 0x00000012, samples 100, loop 0..100, blocks 1)
+fwa0405: case 6 pcm: a smpl chunk with no loops -> one block, no loop: ok (0x00000000, type 0x00000012, samples 100, loop 0..0, blocks 1)
+fwa0405: case 7 pcm: a loop whose end is not after its start -> one block, the positions as read (50..11): ok (0x00000000, type 0x00000012, samples 100, loop 50..11, blocks 1)
+fwa0405: case 8 pcm: a loop past the last sample -> kept as one block, no loop (AnyPS5 throws; TODO(verify)): ok (0x00000000, type 0x00000012, samples 100, loop 0..0, blocks 1)
+fwa0405: case 9 pcm: a smpl chunk of 20 bytes -> kept as one block (AnyPS5 throws; TODO(verify)): ok (0x00000000, type 0x00000012, samples 100, loop 0..0, blocks 1)
+[bc5] exp 0405 fw audio: pcmloop: a loop ending past the last sample, kept as one block -> 0x00000000
+[bc5] exp 0405 fw audio: pcmloop: a smpl chunk too short for its loop count, kept as one block -> 0x00000000
+fwa0405: case 10 pcm: types 8, 32-bit, float 32 and 64, extensible: ok (8-bit -> 0x11: 0x00000011; 32-bit -> 0x16: 0x00000016; float 32 -> 0x18: 0x00000018; float 64 -> 0x1a: 0x0000001a; extensible PCM 16-bit -> 0x12: 0x00000012; )
+fwa0405: case 11 pcm: 12-bit -> UNKNOWN_WAVEFORM_FORMAT: ok (0x804a8432)
+fwa0405: case 12 pcm: 0 channels, or a block align not channels x bytes -> INVALID_WAVEFORM_FORMAT: ok (0x804a8431, 0x804a8431)
+fwa0405: case 13 pcm: data not in whole frames, or past the buffer -> INVALID_WAVEFORM_DATA: ok (0x804a8430, 0x804a8430)
+fwa0405: case 14 pcm: a non-PCM fmt tag (0x55) and data that is not RIFF get today's stub, on or off: ok (0x00000000, 0x00000000)
+[bc5] exp 0405 fw audio: Ngs2 rack: max_waveform_blocks 0 or above 32 -> 0x804a8053
+[bc5] exp 0405 fw audio: Ngs2 rack: max_waveform_blocks 0 or above 32 -> 0x804a8053
+[bc5] exp 0405 fw audio: Ngs2 rack: max_waveform_blocks 0 or above 32 -> 0x804a8053
+fwa0405: case 15 ngs2: sampler RackQueryBufferSize with 0 and 33 blocks -> 0x804A8053, with 1 and 32 -> 0: ok (0: 0x804a8053; 33: 0x804a8053; 1: 0x00000000; 32: 0x00000000; )
+fwa0405: case 16 ngs2: custom sampler RackQueryBufferSize with 0 blocks -> 0x804A8053: ok (0x804a8053)
+fwa0405: case 17 ngs2: sampler RackQueryBufferSize with the default option (4 blocks) -> 0: ok (0x00000000)
+[bc5] exp 0405 fw audio: Ngs2 rack: max_waveform_blocks 0 or above 32 -> 0x804a8053
+fwa0405: case 18 ngs2: sampler RackCreateWithAllocator with 33 blocks -> 0x804A8053, no rack: ok (0x804a8053)
+fwa0405: case 19 ngs2: sampler RackCreate with 0 blocks -> 0x804A8053: ok (0x804a8053)
+fwa0405: case 20 avplayer: the unit's item state is the test's: ok (on)
+[bc5] exp 0405 fw audio: Ngs2 rack: max_waveform_blocks 0 or above 32 -> 0x804a8053
+fwa0405: case 21 avplayer: the aspect helper: 1:1 -> 1, 4:3 -> 1.333, none -> the fallback 40:33, none at all -> 0, a negative or zero part -> not a ratio: ok (1.000000, 1.333333, 1.212121, 0.000000, 0.000000, 2.000000)
+fwa0405: case 22 a3d: default open parameters are firmware 13.42's {0x20, 256, 0, 512, 2, 2} (we already match): ok (size 32, granularity 256)
+fwa0405: case 23 a3d strict: PortOpen before Audio3dInitialize -> NOT_READY: ok (0x80ea0007)
+[bc5] exp 0405 fw audio: Audio3dPortOpen before Audio3dInitialize -> 0x80ea0007
+[bc5] exp 0405 fw audio: Audio3dInitialize: reserved -> 0x80ea0004
+[bc5] exp 0405 fw audio: Audio3dPortOpen: a null pointer -> 0x80ea0004
+[bc5] exp 0405 fw audio: Audio3dPortOpen: a null pointer -> 0x80ea0004
+fwa0405: case 24 a3d: Audio3dInitialize(1) -> INVALID_PARAMETER: ok (0x80ea0004)
+fwa0405: case 25 a3d: Audio3dInitialize(0) -> 0: ok (0x00000000)
+fwa0405: case 26 a3d: PortOpen with a null parameters or id -> INVALID_PARAMETER: ok (0x80ea0004, 0x80ea0004)
+fwa0405: case 27 a3d: PortOpen with size 0x18 -> INVALID_PARAMETER: ok (0x80ea0004)
+fwa0405: case 28 a3d: PortOpen with queue_depth 0 -> INVALID_PARAMETER (today: a division by 0 later): ok (0x80ea0004)
+[bc5] exp 0405 fw audio: Audio3dPortOpen: size -> 0x80ea0004
+[bc5] exp 0405 fw audio: Audio3dPortOpen: queue_depth or buffer_mode -> 0x80ea0004
+[bc5] exp 0405 fw audio: Audio3dPortOpen: queue_depth or buffer_mode -> 0x80ea0004
+[bc5] exp 0405 fw audio: Audio3dPortOpen: user_id not 255 -> 0x80ea0004
+fwa0405: case 29 a3d: PortOpen with buffer_mode 1 -> INVALID_PARAMETER: ok (0x80ea0004)
+fwa0405: case 30 a3d: PortOpen with user_id 7 -> INVALID_PARAMETER: ok (0x80ea0004)
+fwa0405: case 31 a3d strict: PortOpen with user_id 1 -> INVALID_PARAMETER: ok (0x80ea0004)
+[bc5] exp 0405 fw audio: Audio3dPortOpen: user_id not 255 -> 0x80ea0004
+[bc5] exp 0405 fw audio: Audio3dPortOpen: rate, granularity or max_objects -> 0x80ea0004
+fwa0405: case 32 a3d strict: PortOpen with rate 1 -> INVALID_PARAMETER: ok (0x80ea0004)
+[bc5] exp 0405: sema off
+fwa0405: case 33 a3d: PortOpen with size 0x28 opens a port (today: an exit): ok (0x00000000, id 0)
+fwa0405: case 34 a3d strict: a second PortOpen -> OUT_OF_RESOURCES (firmware 13.42 has one port): ok (0x80ea0006)
+fwa0405: case 35 a3d: SetAttribute late reverb 0.5 -> 0: ok (0x00000000)
+[bc5] exp 0405 fw audio: Audio3dPortOpen: no port left -> 0x80ea0006
+[bc5] exp 0405 fw audio: Audio3dPortSetAttribute: value out of range -> 0x80ea0004
+[bc5] exp 0405 fw audio: Audio3dPortSetAttribute: value out of range -> 0x80ea0004
+[bc5] exp 0405 fw audio: Audio3dPortSetAttribute: value out of range -> 0x80ea0004
+fwa0405: case 36 a3d strict: SetAttribute reverb 2.0, radius 0.05, reverb NaN -> INVALID_PARAMETER each: ok (0x80ea0004, 0x80ea0004, 0x80ea0004)
+fwa0405: case 37 a3d: SetAttribute downmix spread radius 1.0 -> 0: ok (0x00000000)
+fwa0405: case 38 a3d: SetAttribute height aware with size 8 -> 0 (firmware 13.42 checks the pointer only): ok (0x00000000)
+fwa0405: case 39 a3d: SetAttribute reverb with size 8 -> INVALID_PARAMETER: ok (0x80ea0004)
+fwa0405: case 40 a3d: SetAttribute with an unknown id -> INVALID_PARAMETER: ok (0x80ea0004)
+fwa0405: case 41 a3d: SetAttribute with a null attribute -> INVALID_PARAMETER: ok (0x80ea0004)
+fwa0405: case 42 a3d: SetAttribute on port 9 -> INVALID_PORT: ok (0x80ea0002)
+[bc5] exp 0405 fw audio: Audio3dPortSetAttribute: attribute or its size -> 0x80ea0004
+[bc5] exp 0405 fw audio: Audio3dPortSetAttribute: attribute id -> 0x80ea0004
+[bc5] exp 0405 fw audio: Audio3dPortSetAttribute: attribute or its size -> 0x80ea0004
+[bc5] exp 0405 fw audio: Audio3dPortSetAttribute: port -> 0x80ea0002
+[bc5] exp 0405 fw audio: Audio3dPortGetQueueLevel: both outputs null -> 0x80ea0004
+[bc5] exp 0405 fw audio: Audio3dPortGetQueueLevel: port -> 0x80ea0002
+[bc5] exp 0405 fw audio: Audio3dPortAdvance: port -> 0x80ea0002
+[bc5] exp 0405 fw audio: Audio3dPortPush: port -> 0x80ea0002
+fwa0405: case 43 a3d: GetQueueLevel on a new port -> 0, level 0, available 2: ok (0x00000000, 0/2)
+fwa0405: case 44 a3d: GetQueueLevel with both outputs null -> INVALID_PARAMETER; port 9 in GetQueueLevel, Advance and Push -> INVALID_PORT: ok (0x80ea0004, 0x80ea0002, 0x80ea0002, 0x80ea0002)
+fwa0405: case 45 a3d: two PortAdvance -> 0, 0; the queue is full (level 2, available 0): ok (0x00000000, 0x00000000, 2/0)
+fwa0405: case 46 a3d strict: a third PortAdvance on the full queue -> NOT_READY: ok (0x80ea0007)
+[bc5] exp 0405 fw audio: Audio3dPortAdvance: the queue is full -> 0x80ea0007
+fwa0405: case 47 a3d: PortPush(blocking 0) -> 0 at once (today: an exit), under 150 ms: ok (0x00000000, 0 ms)
+fwa0405: case 48 a3d: PortAdvance while the pushed frame plays -> NOT_READY (today: an exit): ok (0x80ea0007)
+[bc5] exp 0405 fw audio: Audio3dPortAdvance: the queue is full -> 0x80ea0007
+fwa0405: case 49 a3d: the playback thread empties the queue (available 2 within 5 s): ok (0/2)
+fwa0405: case 50 a3d: PortAdvance on the emptied queue -> 0: ok (0x00000000)
+fwa0405: on 50 of 50; end

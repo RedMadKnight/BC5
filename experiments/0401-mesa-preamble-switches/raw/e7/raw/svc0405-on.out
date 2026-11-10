@@ -1,0 +1,35 @@
+svc0405: switches KYTY_BC5_SAVEDATA_MEMORY_FIXES=1 KYTY_BC5_SAVEDATA_DELETE_BUSY=1 KYTY_BC5_SAVEDATA_ALIASES=1 KYTY_BC5_HTTP2_FIXES=1 KYTY_BC5_PAD_OPEN_EXT=1; items: sync 1 lock 1 existed 1 delete 1 aliases 1 async 1 ssl 1 agent 1 openext 1
+svc0405: work directory /home/kjaniszewski/bc5-work/exp0401e7/run-svc0405-on/svc0405-work-164381; memory file /home/kjaniszewski/bc5-work/exp0401e7/run-svc0405-on/svc0405-work-164381/_SaveData/UNKNOWN/sce_sdmemory/memory.dat
+[bc5] exp 0405: fs fixes off
+[bc5] exp 0405: savedata memory fixes on (items: sync lock existed)
+[bc5] exp 0401: savedata event callback off
+svc0405: ok 1 a sync before any setup is MEMORY_NOT_READY (sync on)
+svc0405: ok 2 sync's arguments are checked (sync on)
+svc0405: ok 3 a first setup reports existed 0 (existed on)
+svc0405: ok 4 a sync after setup writes the memory and queues MEMORY_SYNC_END (sync on)
+svc0405: ok 5 a sync with option 1 queues no event (both)
+svc0405: ok 6 slot 1 is not ready before its setup, then its event names sce_sdmemory1 (sync on)
+svc0405: ok 7 setup reports the stored file's size (existed on)
+svc0405: ok 8 3000 backups against polls on two threads: every event intact (lock on)
+svc0405: ok 9 Terminate clears the poll queue (both)
+[bc5] exp 0401: savedata fixes off
+[bc5] exp 0405: savedata delete busy on (items: delete)
+svc0405: ok 10 deleting a mounted save is BUSY and keeps it (delete busy on)
+svc0405: ok 11 after Umount2 the delete is OK and the save is gone (both)
+[bc5] exp 0401: savedata sort off
+[bc5] exp 0405: savedata aliases on (items: initialize)
+svc0405: ok 12 Initialize and Initialize2 are Initialize3 in both tables (aliases on)
+svc0405: ok 13 Initialize and Initialize2 return OK through their records (aliases on)
+svc0405: ok 14 SSL options are accepted on a context (ssl on)
+[bc5] exp 0405: http2 fixes on (items: async ssl agent)
+[bc5] exp 0405: equeue fixes off
+svc0405: ok 15 SendRequestAsync triggers the caller's user event (async on)
+svc0405: ok 16 ReadDataAsync on a failed request triggers the caller's user event (async on)
+svc0405: ok 17 a null option and an unknown request trigger nothing (both)
+svc0405: ok 18 sceHttpCreateTemplate takes a NULL user agent (agent on)
+[bc5] exp 0405: fw pad off
+[bc5] exp 0405: pad open ext on (items: openext)
+svc0405: ok 19 scePadOpenExt is registered (pad open ext on)
+svc0405: ok 20 scePadOpenExt opens as scePadOpen, port type 1 too (pad open ext on)
+svc0405: ok 21 scePadOpen still refuses port type 1 and opens player 2's pad (both)
+svc0405: on 21 of 21; end

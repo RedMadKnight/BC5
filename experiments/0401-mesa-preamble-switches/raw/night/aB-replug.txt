@@ -1,0 +1,118 @@
+02:24:02.452 tag aB: DualSense card 44 profile 1 (Direct); default sink 55 muted=0
+02:24:02.465 default sink 55 muted for the run
+02:24:02.502 profile -> 0 (0 off)
+02:24:02.504 late mode: the DualSense's audio is off before the start
+02:26:55.478 == R0 before the first pull (emulator up 170 s)
+stream 92 serial 17518 state running ch ? target.object=- dont-reconnect=- dont-fallback=- -> 55:ThinkPad USB 3.0 Pro Dock Analogowe stereo
+stream 99 serial 17550 state running ch ? target.object=- dont-reconnect=- dont-fallback=- -> 55:ThinkPad USB 3.0 Pro Dock Analogowe stereo
+2 emulator output streams
+sink 55 ThinkPad USB 3.0 Pro Dock Analogowe stereo
+AudioOut (exp 0372): the controller's ports follow SDL's audio device events
+02:26:55.660 profile -> 1 (1 Direct)
+02:27:00.695 == R2 5 s after the late plug (emulator up 175 s)
+stream 92 serial 17518 state running ch ? target.object=- dont-reconnect=- dont-fallback=- -> 55:ThinkPad USB 3.0 Pro Dock Analogowe stereo
+stream 99 serial 17550 state running ch ? target.object=- dont-reconnect=- dont-fallback=- -> 55:ThinkPad USB 3.0 Pro Dock Analogowe stereo
+stream 61 serial 17661 state running ch ? target.object=alsa_output.usb-Sony_Interactive_Entertainment_DualSense_Wireless_Controller-00.Direct__Direct__sink dont-reconnect=True dont-fallback=True -> 82:DualSense wireless controller (PS5) Direct DualSense Wireless Controller
+3 emulator output streams
+sink 55 ThinkPad USB 3.0 Pro Dock Analogowe stereo
+sink 82 DualSense wireless controller (PS5) Direct DualSense Wireless Controller
+AudioOut (exp 0372): t 170.747 s port 2 type 10: opened on DualSense wireless controller (PS5) Direct DualSense Wireless Controller (48000 Hz, 6 ch) after an output device was added; node.dont-reconnect, node.dont-fallback
+audio trace: t 171.454 s port 2 type 10 2 ch 48000 Hz (pad): 70 calls, 35840 frames = 0.747 s of sound in 1.003 s (rate 0.744), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 172.457 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 173.459 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 174.462 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 175.465 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+02:27:30.784 == 35 s after the late plug (emulator up 205 s)
+stream 92 serial 17518 state running ch ? target.object=- dont-reconnect=- dont-fallback=- -> 55:ThinkPad USB 3.0 Pro Dock Analogowe stereo
+stream 99 serial 17550 state running ch ? target.object=- dont-reconnect=- dont-fallback=- -> 55:ThinkPad USB 3.0 Pro Dock Analogowe stereo
+stream 61 serial 17661 state running ch ? target.object=alsa_output.usb-Sony_Interactive_Entertainment_DualSense_Wireless_Controller-00.Direct__Direct__sink dont-reconnect=True dont-fallback=True -> 82:DualSense wireless controller (PS5) Direct DualSense Wireless Controller
+3 emulator output streams
+sink 55 ThinkPad USB 3.0 Pro Dock Analogowe stereo
+sink 82 DualSense wireless controller (PS5) Direct DualSense Wireless Controller
+audio trace: t 176.467 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 177.470 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 178.472 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 179.475 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 180.478 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 181.480 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 182.483 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 183.486 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 184.489 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 185.491 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 186.494 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 187.497 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 188.499 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 189.502 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 190.504 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 191.507 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 192.510 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 193.513 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 194.515 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 195.518 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 196.521 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 197.523 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 198.526 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 199.529 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 200.532 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 201.534 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.001), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 202.536 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 203.539 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 204.542 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 205.545 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+02:27:30.913 profile -> 0 (0 off)
+02:27:32.941 == R1 2 s into a 5-s pull (emulator up 207 s)
+stream 92 serial 17518 state running ch ? target.object=- dont-reconnect=- dont-fallback=- -> 55:ThinkPad USB 3.0 Pro Dock Analogowe stereo
+stream 99 serial 17550 state running ch ? target.object=- dont-reconnect=- dont-fallback=- -> 55:ThinkPad USB 3.0 Pro Dock Analogowe stereo
+2 emulator output streams
+sink 55 ThinkPad USB 3.0 Pro Dock Analogowe stereo
+AudioOut (exp 0372): t 205.857 s port 2 type 10: its stream on the controller closed (an output device was removed); frames dropped until the controller is back
+pad route: t 206.547 s port 2 type 10 (pad): 69 calls dropped, no controller device
+audio trace: t 206.547 s port 2 type 10 2 ch 48000 Hz (pad): 25 calls, 12800 frames = 0.267 s of sound in 1.003 s (rate 0.266), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device none
+pad route: t 207.550 s port 2 type 10 (pad): 94 calls dropped, no controller device
+02:27:36.041 profile -> 1 (1 Direct)
+02:27:41.075 == R2 5 s after the 5-s pull (emulator up 216 s)
+stream 92 serial 17518 state running ch ? target.object=- dont-reconnect=- dont-fallback=- -> 55:ThinkPad USB 3.0 Pro Dock Analogowe stereo
+stream 99 serial 17550 state running ch ? target.object=- dont-reconnect=- dont-fallback=- -> 55:ThinkPad USB 3.0 Pro Dock Analogowe stereo
+stream 53 serial 17772 state running ch ? target.object=alsa_output.usb-Sony_Interactive_Entertainment_DualSense_Wireless_Controller-00.Direct__Direct__sink dont-reconnect=True dont-fallback=True -> 64:DualSense wireless controller (PS5) Direct DualSense Wireless Controller
+3 emulator output streams
+sink 55 ThinkPad USB 3.0 Pro Dock Analogowe stereo
+sink 64 DualSense wireless controller (PS5) Direct DualSense Wireless Controller
+pad route: t 208.553 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 209.556 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 210.558 s port 2 type 10 (pad): 94 calls dropped, no controller device
+AudioOut (exp 0372): t 210.982 s port 2 type 10: opened on DualSense wireless controller (PS5) Direct DualSense Wireless Controller (48000 Hz, 6 ch) after an output device was added; node.dont-reconnect, node.dont-fallback
+pad route: t 211.561 s port 2 type 10 (pad): 36 calls dropped, no controller device
+audio trace: t 211.561 s port 2 type 10 2 ch 48000 Hz (pad): 57 calls, 29184 frames = 0.608 s of sound in 1.002 s (rate 0.606), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 212.564 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 213.566 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 214.569 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 215.571 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+02:28:01.158 == R3 25 s after the 5-s pull (emulator up 236 s)
+stream 92 serial 17518 state running ch ? target.object=- dont-reconnect=- dont-fallback=- -> 55:ThinkPad USB 3.0 Pro Dock Analogowe stereo
+stream 99 serial 17550 state running ch ? target.object=- dont-reconnect=- dont-fallback=- -> 55:ThinkPad USB 3.0 Pro Dock Analogowe stereo
+stream 53 serial 17772 state running ch ? target.object=alsa_output.usb-Sony_Interactive_Entertainment_DualSense_Wireless_Controller-00.Direct__Direct__sink dont-reconnect=True dont-fallback=True -> 64:DualSense wireless controller (PS5) Direct DualSense Wireless Controller
+3 emulator output streams
+sink 55 ThinkPad USB 3.0 Pro Dock Analogowe stereo
+sink 64 DualSense wireless controller (PS5) Direct DualSense Wireless Controller
+audio trace: t 216.574 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 217.577 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 218.580 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 219.582 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 220.585 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 221.587 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 222.590 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 223.593 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 224.596 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 225.598 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 226.601 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 227.604 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 228.606 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 229.609 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 230.612 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 231.614 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 232.617 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 233.620 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 234.622 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 235.625 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+02:28:01.220 sequence done
+02:28:01.358 restored: DualSense profile 1 Direct, default sink 55 Volume: 0.95

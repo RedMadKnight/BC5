@@ -1,0 +1,7 @@
+== 2026-11-06 00:31:04 arm e9n1 (route, cap 900 s, play 600 s)
+run rc 0: e9n1 (route): ended at G+600 after 759 s (G 159, list 109); 32.5 flips/s over 755 s, 251 seconds with a gap over 100 ms, longest 5932 ms; memory floor 192 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: e9n1 (route): ended at G+600 after 759 s (G 159, list 109); 32.5 flips/s over 755 s, 251 seconds with a gap over 100 ms, longest 5932 ms; memory floor 192 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-06 00:44:03 arm e9l1 (route, cap 900 s, play 600 s)
+run rc 0: e9l1 (route): GPU HANG: ring reset succeeded at 305 s after 330 s (G 142, list 95); 17.6 flips/s over 296 s, 174 seconds with a gap over 100 ms, longest 1426 ms; memory floor 118 MiB available (sampler); crash lines 0, kernel lines 44, freeze dumps 1, devcoredumps 2 
+summary: e9l1 (route): GPU HANG: ring reset succeeded at 305 s after 330 s (G 142, list 95); 17.6 flips/s over 296 s, 174 seconds with a gap over 100 ms, longest 1426 ms; memory floor 118 MiB available (sampler); crash lines 0, kernel lines 44, freeze dumps 1, devcoredumps 2
+== 2026-11-06 00:49:53 all arms done

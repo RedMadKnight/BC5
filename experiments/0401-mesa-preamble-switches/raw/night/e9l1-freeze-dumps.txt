@@ -1,0 +1,133 @@
+razem 12
+drwxr-xr-x. 1 kjaniszewski kjaniszewski    34 11-06 00:49 .
+drwxr-xr-x. 1 kjaniszewski kjaniszewski 38242 11-06 00:49 ..
+-rw-r--r--. 1 kjaniszewski kjaniszewski  9573 11-06 00:49 freeze-004933.txt
+# 2026-11-06 00:49:33 emulator 2738977 (/home/kjaniszewski/bc5-work/exp0401e9/bin/kyty_emulator)
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+2739345 kjanisz+  20   0 1029.8g 666080 589776 R  98.9   4.3   0:15.65 bc5-cq1
+2739361 kjanisz+  20   0 1029.8g 666080 589776 R  19.8   4.3   0:58.17 AK::Aud+
+2739315 kjanisz+  20   0 1029.8g 666080 589776 S   4.9   4.3   2:39.24 Render +
+2738977 kjanisz+  20   0 1029.8g 666080 589776 S   0.0   4.3   0:07.68 kyty_em+
+2738978 kjanisz+  20   0 1029.8g 666080 589776 S   0.0   4.3   0:00.46 kyty-th+
+2738979 kjanisz+  20   0 1029.8g 666080 589776 S   0.0   4.3   0:01.73 bc5-inp+
+2739227 kjanisz+  39  19 1029.8g 666080 589776 S   0.0   4.3   0:00.00 kyty_em+
+2739228 kjanisz+  39  19 1029.8g 666080 589776 S   0.0   4.3   0:00.00 kyty_em+
+2739229 kjanisz+  20   0 1029.8g 666080 589776 S   0.0   4.3   0:04.09 mangohu+
+2739240 kjanisz+  20   0 1029.8g 666080 589776 S   0.0   4.3   0:00.00 kyty-cm+
+2739241 kjanisz+  20   0 1029.8g 666080 589776 S   0.0   4.3   0:00.00 kyty-cm+
+2739242 kjanisz+  20   0 1029.8g 666080 589776 S   0.0   4.3   0:09.55 kyty-pr+
+2739243 kjanisz+  20   0 1029.8g 666080 589776 S   0.0   4.3   0:22.14 kyty-gpu
+## sample 1
+### thread 2739345 bc5-cq1
+
+This GDB supports auto-downloading debuginfo from the following URLs:
+  <ima:enforcing>
+  <https://debuginfod.fedoraproject.org/>
+  <ima:ignore>
+Enable debuginfod for this session? (y or [n]) [answered N; input not from terminal]
+Debuginfod has been disabled.
+To make this setting permanent, add 'set debuginfod enabled off' to .gdbinit.
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/usr/lib64/libthread_db.so.1".
+0x00007f1f1b5f8a2b in __GI_sched_yield () at ../sysdeps/unix/syscall-template.S:120
+
+rip            0x7f1f1b5f8a2b      0x7f1f1b5f8a2b <__GI_sched_yield+11>
+rsp            0x7f1b24ff4da8      0x7f1b24ff4da8
+rax            0x0                 0
+rbx            0x3                 3
+rcx            0x7f1f1b5f8a2b      139771579959851
+rdx            0x0                 0
+rsi            0x7f1b24ff4d80      139754561555840
+rdi            0x1                 1
+r8             0x7f1f1bf70000      139771589885952
+r9             0x7f1f1bf70010      139771589885968
+r12            0x12004b63c8        77314352072
+r13            0x3b69d9f37401      65325814215681
+r14            0x11e10000c0        76789317824
+r15            0x560ddce2be4f      94617540410959
+   0x7f1f1b5f8a13 <__GI_sched_setscheduler+35>:	inc    %ebx
+   0x7f1f1b5f8a15:	cs nopw 0x0(%rax,%rax,1)
+   0x7f1f1b5f8a1f:	nop
+   0x7f1f1b5f8a20 <__GI_sched_yield>:	endbr64
+   0x7f1f1b5f8a24 <__GI_sched_yield+4>:	mov    $0x18,%eax
+   0x7f1f1b5f8a29 <__GI_sched_yield+9>:	syscall
+=> 0x7f1f1b5f8a2b <__GI_sched_yield+11>:	cmp    $0xfffffffffffff001,%rax
+   0x7f1f1b5f8a31 <__GI_sched_yield+17>:	jae    0x7f1f1b5f8a34 <__GI_sched_yield+20>
+   0x7f1f1b5f8a33 <__GI_sched_yield+19>:	ret
+   0x7f1f1b5f8a34 <__GI_sched_yield+20>:	mov    0xf73ad(%rip),%rcx        # 0x7f1f1b6efde8
+   0x7f1f1b5f8a3b <__GI_sched_yield+27>:	neg    %eax
+   0x7f1f1b5f8a3d <__GI_sched_yield+29>:	mov    %eax,%fs:(%rcx)
+   0x7f1f1b5f8a40 <__GI_sched_yield+32>:	or     $0xffffffffffffffff,%rax
+   0x7f1f1b5f8a44 <__GI_sched_yield+36>:	ret
+   0x7f1f1b5f8a45:	cs nopw 0x0(%rax,%rax,1)
+   0x7f1f1b5f8a4f:	nop
+#0  0x00007f1f1b5f8a2b in __GI_sched_yield () at ../sysdeps/unix/syscall-template.S:120
+#1  0x0000560ddce2be33 in __gthread_yield () at /usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/gthr-default.h:739
+#2  std::this_thread::yield () at /usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/std_thread.h:377
+#3  Libs::Bc5Gc::SoftCp::wait_reg_mem (p=0x11e10000c0, is64=true) at /home/kjaniszewski/bc5-work/exp0401e9/src/bc5LleAgc.cpp:1269
+#4  0x0000560ddce2b25d in Libs::Bc5Gc::SoftCp::execute (buf=0x11e1000050, num_dwords=398, depth=depth@entry=1) at /home/kjaniszewski/bc5-work/exp0401e9/src/bc5LleAgc.cpp:1447
+#5  0x0000560ddce7c6fe in Libs::Bc5Gc::SoftCp::queue_consumer_thread()::$_0::operator()(bool) (this=0x7f1b64160af0, failed=<optimized out>) at /home/kjaniszewski/bc5-work/exp0401e9/src/bc5LleAgc.cpp:1697
+#6  std::__invoke_impl<void, Libs::Bc5Gc::SoftCp::queue_consumer_thread()::$_0&, bool>(std::__invoke_other, Libs::Bc5Gc::SoftCp::queue_consumer_thread()::$_0&, bool&&) (__f=..., __args=<optimized out>) at /usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/invoke.h:63
+#7  std::__invoke_r<void, Libs::Bc5Gc::SoftCp::queue_consumer_thread()::$_0&, bool>(Libs::Bc5Gc::SoftCp::queue_consumer_thread()::$_0&, bool&&) (__fn=..., __args=<optimized out>) at /usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/invoke.h:113
+#8  std::_Function_handler<void(bool), Libs::Bc5Gc::SoftCp::queue_consumer_thread()::$_0>::_M_invoke (__functor=..., __args=<optimized out>) at /usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/std_function.h:292
+#9  0x0000560ddce3b3fc in std::function<void(bool)>::operator() (__args=true, this=<optimized out>) at /usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/std_function.h:593
+#10 Libs::Bc5Gc::Direct::completion_thread (index=1) at /home/kjaniszewski/bc5-work/exp0401e9/src/bc5LleAgc.cpp:12653
+#11 0x00007f1f1b822ef9 in ?? () from target:/usr/lib/x86_64-linux-gnu/libstdc++.so.6
+[Inferior 1 (process 2739345) detached]
+## sample 2
+### thread 2739345 bc5-cq1
+
+This GDB supports auto-downloading debuginfo from the following URLs:
+  <ima:enforcing>
+  <https://debuginfod.fedoraproject.org/>
+  <ima:ignore>
+Enable debuginfod for this session? (y or [n]) [answered N; input not from terminal]
+Debuginfod has been disabled.
+To make this setting permanent, add 'set debuginfod enabled off' to .gdbinit.
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/usr/lib64/libthread_db.so.1".
+0x00007f1f1b5f8a2b in __GI_sched_yield () at ../sysdeps/unix/syscall-template.S:120
+
+rip            0x7f1f1b5f8a2b      0x7f1f1b5f8a2b <__GI_sched_yield+11>
+rsp            0x7f1b24ff4da8      0x7f1b24ff4da8
+rax            0x0                 0
+rbx            0x3                 3
+rcx            0x7f1f1b5f8a2b      139771579959851
+rdx            0x0                 0
+rsi            0x7f1b24ff4d80      139754561555840
+rdi            0x1                 1
+r8             0x7f1f1bf70000      139771589885952
+r9             0x7f1f1bf70010      139771589885968
+r12            0x12004b73c8        77314356168
+r13            0x3b6a6b8448f5      65328256403701
+r14            0x11e0e600c0        76787613888
+r15            0x560ddce2be4f      94617540410959
+   0x7f1f1b5f8a13 <__GI_sched_setscheduler+35>:	inc    %ebx
+   0x7f1f1b5f8a15:	cs nopw 0x0(%rax,%rax,1)
+   0x7f1f1b5f8a1f:	nop
+   0x7f1f1b5f8a20 <__GI_sched_yield>:	endbr64
+   0x7f1f1b5f8a24 <__GI_sched_yield+4>:	mov    $0x18,%eax
+   0x7f1f1b5f8a29 <__GI_sched_yield+9>:	syscall
+=> 0x7f1f1b5f8a2b <__GI_sched_yield+11>:	cmp    $0xfffffffffffff001,%rax
+   0x7f1f1b5f8a31 <__GI_sched_yield+17>:	jae    0x7f1f1b5f8a34 <__GI_sched_yield+20>
+   0x7f1f1b5f8a33 <__GI_sched_yield+19>:	ret
+   0x7f1f1b5f8a34 <__GI_sched_yield+20>:	mov    0xf73ad(%rip),%rcx        # 0x7f1f1b6efde8
+   0x7f1f1b5f8a3b <__GI_sched_yield+27>:	neg    %eax
+   0x7f1f1b5f8a3d <__GI_sched_yield+29>:	mov    %eax,%fs:(%rcx)
+   0x7f1f1b5f8a40 <__GI_sched_yield+32>:	or     $0xffffffffffffffff,%rax
+   0x7f1f1b5f8a44 <__GI_sched_yield+36>:	ret
+   0x7f1f1b5f8a45:	cs nopw 0x0(%rax,%rax,1)
+   0x7f1f1b5f8a4f:	nop
+#0  0x00007f1f1b5f8a2b in __GI_sched_yield () at ../sysdeps/unix/syscall-template.S:120
+#1  0x0000560ddce2be33 in __gthread_yield () at /usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/gthr-default.h:739
+#2  std::this_thread::yield () at /usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/std_thread.h:377
+#3  Libs::Bc5Gc::SoftCp::wait_reg_mem (p=0x11e0e600c0, is64=true) at /home/kjaniszewski/bc5-work/exp0401e9/src/bc5LleAgc.cpp:1269
+#4  0x0000560ddce2b25d in Libs::Bc5Gc::SoftCp::execute (buf=0x11e0e60050, num_dwords=12322, depth=depth@entry=1) at /home/kjaniszewski/bc5-work/exp0401e9/src/bc5LleAgc.cpp:1447
+#5  0x0000560ddce7c6fe in Libs::Bc5Gc::SoftCp::queue_consumer_thread()::$_0::operator()(bool) (this=0x7f1b64160af0, failed=<optimized out>) at /home/kjaniszewski/bc5-work/exp0401e9/src/bc5LleAgc.cpp:1697
+#6  std::__invoke_impl<void, Libs::Bc5Gc::SoftCp::queue_consumer_thread()::$_0&, bool>(std::__invoke_other, Libs::Bc5Gc::SoftCp::queue_consumer_thread()::$_0&, bool&&) (__f=..., __args=<optimized out>) at /usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/invoke.h:63
+#7  std::__invoke_r<void, Libs::Bc5Gc::SoftCp::queue_consumer_thread()::$_0&, bool>(Libs::Bc5Gc::SoftCp::queue_consumer_thread()::$_0&, bool&&) (__fn=..., __args=<optimized out>) at /usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/invoke.h:113
+#8  std::_Function_handler<void(bool), Libs::Bc5Gc::SoftCp::queue_consumer_thread()::$_0>::_M_invoke (__functor=..., __args=<optimized out>) at /usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/std_function.h:292
+#9  0x0000560ddce3b3fc in std::function<void(bool)>::operator() (__args=true, this=<optimized out>) at /usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/std_function.h:593
+#10 Libs::Bc5Gc::Direct::completion_thread (index=1) at /home/kjaniszewski/bc5-work/exp0401e9/src/bc5LleAgc.cpp:12653
+#11 0x00007f1f1b822ef9 in ?? () from target:/usr/lib/x86_64-linux-gnu/libstdc++.so.6
+[Inferior 1 (process 2739345) detached]

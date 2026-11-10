@@ -1,0 +1,46 @@
+TOKEN=202611060019212586038
+kernel 7.2.11-ogc4.1.fc44.x86_64; until 2026-11-06 01:19:21
+set up
+2026-11-06 00:19:26 building (token 202611060019212586038)
+e7 test thv0405: thv0405: on 44 of 44; end / thv0405: off 44 of 44; end / thv0405: off 44 of 44; end
+e7 test tus0405: tus0405: on 42 of 42; end / tus0405: off 40 of 40; end / tus0405: off 40 of 40; end
+e7 test tl20405: tl20405: on 17 of 17; end / tl20405: off 17 of 17; end / tl20405: off 17 of 17; end
+e7 test tl30405: tl30405: on 8 of 8; end / tl30405: off 8 of 8; end / tl30405: off 8 of 8; end
+e6 fwn mkfwn0405.py - src/libs/libRtc.cpp:e1689ac69353d76f206bd7bb7736d3b8:719561dd7cc51c965c9ae97a07df01fb src/libs/libRudp.cpp:9fbe2847b2aa61564c9eea80ceb4617a:af8d0178fa63f7e5a2f5bf2d72d9690c src/libs/network.cpp:98d501f4e09322ab8727dd65ff0ea45c:598cfe806da831d5a07a5f506d13a03c src/libs/libSystemService.cpp:4aa00c539657776620a49e222f3f8fa2:252a35f9f9b482e9c9fb74b2c0740a2f src/libs/libNpCppWebApi.cpp:935fcc7e4ab1108f3d2d8b33eaf65bf6:e613bc8fcc3f58fe5b5ff3be47a9cc46
+e6 fwa mkfwa0405.py - src/libs/audio.cpp:230f732dbc20b9b196b28cb007ba95ec:1f90e7520a6641c8ff3affb06993372d src/libs/avPlayer.cpp:966cb8a847467b64ce0486168f052a82:44203af3c14874fee232808fc4aa6568
+e6 jit mkjit0405.py - src/kernel/memory.cpp:95d9ca880d01db26d51f0ecabcdfa7e1:ee24c888f976cc125502cf3a31006349 src/libs/libKernel.cpp:b353287342a8eb82305a4592a4021e3d:0a0d46657d8088b72a9ba67e2fbcc310
+e6 tbc mktbc0405.py - src/libs/libZlib.cpp:f5d3aafebca0d202082365ee609f15b6:c7e165b9b288d71f874d5d6c6dbd363c src/libs/libJpeg.cpp:a85a83b8d541f5e10c14d739ff56457f:c5fe947cc30001c49bd2b1f8af7a0e2c src/libs/libIme.cpp:a572240f789088264b6e13850978b739:49fa46f1d8005245e7f0b266d8b29659
+e6 tbn mktbn0405.py - src/libs/libNp.cpp:a2c5facee2708bed1556383b0f5bbdca:24e778261495abcd5a069396f14b28b4
+e6 tld mktld0405.py - src/libs/libs.cpp:309aecf7c85a5b47217060bb87ec6512:903fa699db7c20b2b3f288ab572bce8d
+e6 pad mkpad0405.py - src/libs/libPad.cpp:89a047a4f1ad39847bf76c15fa0d4c14:b9940ebe905e9ef1e31b117b531632fd
+e6 test fwn0405: fwn0405: on 33 of 33; end / fwn0405: off 33 of 33; end / fwn0405: off 33 of 33; end
+e6 test fwa0405: fwa0405: on 50 of 50; end / fwa0405: off 28 of 28; end / fwa0405: off 28 of 28; end
+e6 test jit0405: jit0405: on 8 of 8; end / jit0405: off 3 of 3; end / jit0405: off 3 of 3; end
+e6 test tbc0405: tbc0405: on 108 of 108; end / tbc0405: off 26 of 26; end / tbc0405: off 26 of 26; end
+e6 test tbn0405: tbn0405: on 165 of 165; end / tbn0405: off 36 of 36; end / tbn0405: off 36 of 36; end
+e6 test tld0405: tld0405: on 9 of 9; end / tld0405: off 9 of 9; end / tld0405: off 9 of 9; end
+e6 test pad0405: pad0405: on 71 of 71; end / pad0405: off 4 of 4; end / pad0405: off 4 of 4; end
+e5 unit: 4761c532868ce1cd5e8dc097050990bb (e4's kept as bc5LleAgc-e4.cpp)
+e5 eq mkeq0405.py - src/kernel/eventQueue.cpp:c45e6a72c8e419d98059c3477a9373cc:d8eaa6d22e3e415ea8331dced30867c0 src/libs/bc5LleAgc.cpp:df12bb2de3e90b8c82a234eedf0babb5:09770e46272ed52107f055c6f1af2332
+e5 gpu mkgpu0405.py --chain src/libs/bc5LleAgc.cpp:09770e46272ed52107f055c6f1af2332:d1cfd9bb1f1b3485bed4207a7f064d4f
+e5 thr mkthr0405.py - src/kernel/pthread.cpp:0363847bd540883467dee22797475031:81ee12c4fa3e61df4f4b7239356b9f60 src/kernel/semaphore.cpp:c9c4aaf56492434eb84dc6e899260ae8:3aa9c8b441438483d124115d3961c9b0
+e5 mem mkmem0405.py - src/kernel/memory.cpp:43713ef677ec887a8ca273f7ab5cee90:95d9ca880d01db26d51f0ecabcdfa7e1
+e5 fs mkfs0405.py - src/kernel/fileSystem.cpp:f1b5f5288faddd78deff2dbd1b613e1f:a7201a1ab20dc60d876ad64f0dd4d086 src/libs/libKernel.cpp:3bf94a6168d176d591730bac33dff5b1:b353287342a8eb82305a4592a4021e3d
+e5 svc mksvc0405.py - src/libs/libSaveData.cpp:04f4c5bb05179b80fd7cf1e41832cdd9:0e0c5d409286893e9956df9aeba845f5 src/libs/libNet.cpp:f7a26ceb10a4cf669c33ed592eb1e89d:35773d6e769b85be74012a86c0f02e89 src/libs/libPad.cpp:dbe268d7dff6134db45ad4328aace716:89a047a4f1ad39847bf76c15fa0d4c14
+e5 lib mklib0405.py - src/libs/libJson2.cpp:d38d30582b49f57f9ef3fea6d84584be:85144ef10cbfe295d24ab7096710aa10 src/libs/libUlt.cpp:9198f40703960fe46e9ba066a6c58ac3:191fe8b19bf663af73f48cfc85535a5d src/libs/libUserService.cpp:4f90ba6b94167d9b857c8efa89f1cf47:e3d34e9896ac5e6568f691f7c9699a06 src/libs/libSystemService.cpp:6c2a2925078d2facd4abe9412408dd57:4aa00c539657776620a49e222f3f8fa2
+e5 ao mkao0405.py - +src/bc5/pad_audio_route.hpp:51131854822a629c2b24739e3603ef5d src/libs/audio.cpp:f58ec0105874173a9f84954706a17e96:230f732dbc20b9b196b28cb007ba95ec
+e5 tls mktls0405.py - +src/loader/jit.h:8b5a53504af3ca127c1ab4fe9b55ee45 src/loader/runtimeLinker.cpp:e94b25b8b37d36d97a074ea02723b733:aba94c24ad35a1c944ad3bd5843b13ef
+e5 test eq0405: eq0405: on 21 of 21; end / eq0405: off 18 of 18; end / eq0405: off 18 of 18; end
+e5 test ao0405: ao0405: on 30 of 30; end / ao0405: off 20 of 20; end / ao0405: off 20 of 20; end
+e5 test mem0405: mem0405: on 8 of 8; end / mem0405: off 8 of 8; end / mem0405: off 8 of 8; end
+e5 test thr0405: thr0405: on 9 of 9; end / thr0405: off 9 of 9; end / thr0405: off 9 of 9; end
+e5 test svc0405: svc0405: on 21 of 21; end / svc0405: off 21 of 21; end / svc0405: off 21 of 21; end
+e5 test gpu0405: gpu0405: on 72 of 72; end / gpu0405: off 68 of 68; end / gpu0405: off 68 of 68; end
+e5 test fs0405: fs0405: on 23 of 23; end / fs0405: off 19 of 19; end / fs0405: off 19 of 19; end
+e5 test lib0405: lib0405: on 38 of 38; end / lib0405: off 22 of 22; end / lib0405: off 22 of 22; end
+e5 test tls0405: tls0405: on 19 of 19; end / tls0405: off 19 of 19; end / tls0405: off 19 of 19; end
+units: libNpCppWebApi.cpp 935fcc7e4ab1108f3d2d8b33eaf65bf6, memory.cpp 43713ef677ec887a8ca273f7ab5cee90, systemContent.cpp 4e33b30a4acf89481942cec435b76c37, systemContent.h 2b2b21eb1faf35c2a538917049aea85e; gate: npgate0401: on 10 of 10 registered as their functions in [NpCppWebApi_v1][NpCppWebApi_v1.1][Func], 9 of 9 NOT_SIGNED_IN, / npgate0401: off 10 of 10 unregistered, 9 of 9 NOT_SIGNED_IN, initialize 1 of 1; end
+kernel 7.2.11-ogc4.1.fc44.x86_64
+built: shared binaries, archive, tree and launcher unchanged
+released
+BUILD OK

@@ -1,0 +1,32 @@
+tbp0405: switches npauth 0, nppartner 0, npparty 0, npsnsfacebook 0: off
+tbp0405: info stderr: [bc5] exp 0405: nppartner port off
+tbp0405: info stderr: [bc5] exp 0405: npparty port off
+tbp0405: info stderr: [bc5] exp 0405: npsnsfacebook port off
+tbp0405: info stderr: [bc5] exp 0405: npauth port off
+tbp0405: case 1 journal: one line per table, read once: ok (4 lines; nppartner x1, npparty x1, npsnsfacebook x1, npauth x1)
+tbp0405: case 2 registration: no NID registered twice, the expected number of records: ok (39 records, want 39)
+tbp0405: case 3 npauth: the five are not in the live table (today's): ok (5 NIDs not registered)
+tbp0405: case 4 npauth: the live eight are there (today's): ok (8 NIDs registered)
+tbp0405: case 5 npauth: the live GetAuthorizationCodeV3 (today's: signed out, output cleared, issuer 0): ok (0x80550006, want 0x80550006)
+tbp0405: case 6 npauth: the live PollAsync before the request starts (today's INVALID_ID): ok (0x80550307, want 0x80550307)
+tbp0405: case 7 npauth: the live DeleteRequest of the other 2 requests: ok (0x00000000, want 0x00000000)
+tbp0405: case 8 nppartner: HasEAAccessSubscription before Initialize (today's 0, nothing written): ok (0x00000000, want 0x00000000)
+tbp0405: case 9 nppartner: Terminate before Initialize (today's 0): ok (0x00000000, want 0x00000000)
+tbp0405: case 10 nppartner: Initialize (today's 0): ok (0x00000000, want 0x00000000)
+tbp0405: case 11 nppartner: HasEAAccessSubscription (today's 0, nothing written): ok (0x00000000, want 0x00000000)
+tbp0405: case 12 nppartner: pQfYTZHznMc (registered, today's 0): ok (0x00000000, want 0x00000000)
+tbp0405: case 13 nppartner: Terminate (today's 0): ok (0x00000000, want 0x00000000)
+tbp0405: case 14 npparty: Initialize (today's): ok (0x80550005, want 0x80550005)
+tbp0405: case 15 npparty: CheckCallback (today's): ok (0x80550005, want 0x80550005)
+tbp0405: case 16 npparty: GetState (today's, nothing written): ok (0x80550005, want 0x80550005)
+tbp0405: case 17 npparty: GetStateAsUserA (today's, nothing written): ok (0x80550005, want 0x80550005)
+tbp0405: case 18 npparty: GetId (today's, nothing written): ok (0x80550005, want 0x80550005)
+tbp0405: case 19 npparty: GetMemberInfo / A, GetMembers / A, GetMemberSessionInfo, GetMemberVoiceInfo (today's, nothing written): ok (0x00000006, want 0x00000006)
+tbp0405: case 20 npparty: SendBinaryMessage (today's): ok (0x80550005, want 0x80550005)
+tbp0405: case 21 npparty: RegisterHandler (today's): ok (0x80550005, want 0x80550005)
+tbp0405: case 22 npparty: RegisterHandlerA (today's): ok (0x80550005, want 0x80550005)
+tbp0405: case 23 npparty: the 11 held registered (today's): ok (11 NIDs registered)
+tbp0405: case 24 npparty: the 11 held exports (today's 0x80550005): ok (0x0000000b, want 0x0000000b)
+tbp0405: case 25 npparty: Terminate (today's): ok (0x80550005, want 0x80550005)
+tbp0405: case 26 npsnsfacebook: UpdateStatus (today's 0): ok (0x00000000, want 0x00000000)
+tbp0405: off 26 of 26; end

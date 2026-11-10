@@ -1,0 +1,25 @@
+--- /home/kjaniszewski/bc5-work/play-pkg.sh	2026-11-02 00:30:41.530301476 +0100
++++ /home/kjaniszewski/bc5-work/exp0401/play-pkg-0401.sh	2026-11-02 11:25:13.940355047 +0100
+@@ -8,18 +8,18 @@
+ set -u
+ PKG=${BC5_PKG:-$HOME/bc5-data/pkg/game.pkg}
+ M=~/bc5-data/mnt/pkg-play
+-EMU=~/bc5-work/kytyplus-build/src/kyty_emulator
++EMU=~/bc5-work/exp0401/bin/kyty_emulator  # exp 0401: the private build
+ ENVF=${BC5_RUN_ENV:-$HOME/bc5-work/bc5-run.env}
+-LOG=~/bc5-work/play-pkg-last.log
++LOG=~/bc5-work/exp0401/play-last.log  # exp 0401: own log
+ # Experiment 0177: BC5_LEAN=1 (the "BC5 emulator (lean)" shortcut) runs the emulator built with
+ # KYTY_BC5_LEAN in ~/bc5-work/kytyplus-build-lean: no tracing, journal, counters, recorder or
+ # samplers, inside or outside; its own log file. The title scripts take the same switch.
+ if [ "${BC5_LEAN:-0}" = 1 ]; then
+-  EMU=~/bc5-work/kytyplus-build-lean/src/kyty_emulator LOG=~/bc5-work/play-pkg-lean-last.log
++  echo "exp 0401: there is no private lean build"; exit 1
+ fi
+ # 2026-10-25 (exp 0324, the maintainer): with BC5_LEAN=1 this script writes no log at all; BC5_LOGS=1 keeps
+ # its logs. The normal shortcut logs as before.
+-MLOG=~/bc5-work/play-pkg-mount.log
++MLOG=~/bc5-work/exp0401/play-pkg-mount.log  # exp 0401: own mount log
+ if [ "${BC5_LEAN:-0}" = 1 ] && [ "${BC5_LOGS:-0}" != 1 ]; then LOG=/dev/null MLOG=/dev/null; fi
+ [ -n "${BC5_EMU:-}" ] && EMU=$BC5_EMU  # exp 0177: another binary (A/B against an older build)
+ BM=~/bc5-work/bc5-tools-ubuntu/release/bc5-mount

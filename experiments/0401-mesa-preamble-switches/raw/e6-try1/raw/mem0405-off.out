@@ -1,0 +1,16 @@
+[bc5] exp 0401: memory from param.json off: total 11692 MiB, flexible 1024 MiB, direct 10668 MiB (param.json: flexible 0, cpu table 0, gpu table 0, amm table 0 MiB)
+[bc5] exp 0405: mem off
+mem0405: skip [BC5_R3_MPROTECT_GAPS off]: mprotect/mtypeprotect over [A][gap][B], over the gap alone, from the gap ('not fully mapped'): today's code EXITs the process, not run
+mem0405: skip [BC5_R3_MPROTECT_GAPS off]: mprotect of an overflowing range ('range overflows' / 'not fully mapped'): today's code EXITs the process, not run
+mem0405: skip [BC5_R3_MPROTECT_GAPS off]: mprotect of a reserved range and a batch protect from the gap ('not fully mapped'): today's code EXITs the process, not run
+mem0405: case 1 mprotect over gaps [BC5_R3_MPROTECT_GAPS off]: ok (today's path)
+mem0405: skip [BC5_R3_NULL_ARGS off]: sceKernelQueryMemoryProtection(NULL) (EXIT_NOT_IMPLEMENTED): today's code EXITs the process, not run
+mem0405: skip [BC5_R3_NULL_ARGS off]: sceKernelMapNamedFlexibleMemory(NULL, ...) (EXIT_NOT_IMPLEMENTED): today's code EXITs the process, not run
+mem0405: case 2 NULL arguments [BC5_R3_NULL_ARGS off]: ok (non-NULL paths only)
+mem0405: case 3 unchecked release over free gaps [BC5_R3_RELEASE_HOLES off]: ok (nothing freed, as today)
+mem0405: case 4 munmap over holes [BC5_R3_MUNMAP_HOLES off]: ok (EACCES, as today)
+mem0405: case 5 flexible hint inside a reservation [BC5_R3_FLEX_HINT off]: ok (placed after it, as today)
+mem0405: case 6 DirectMemoryQuery find-next past the last block [BC5_R3_DMQ_END off]: ok (terminal record, as today)
+mem0405: case 7 MapDirectMemory with execute [BC5_R3_EXEC_EINVAL off]: ok (EACCES, as today)
+mem0405: case 8 query info size larger than the struct [BC5_R3_QUERY_SIZE off]: ok (EINVAL, as today)
+mem0405: off 8 of 8; end

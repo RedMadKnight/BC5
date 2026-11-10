@@ -1,0 +1,22 @@
+kyty_exception_handler: 0000000930003d83
+=== HOST EXCEPTION REGISTER DUMP ===
+exception_address=0x0x930003d83
+native_code=0x0xb
+access_violation_vaddr=0x0x0
+rax=0x0x0 rbx=0x0x10367fb590 rcx=0x0x383742 rdx=0x0x5a
+rsi=0x0x10367fb590 rdi=0x0x0 rbp=0x0x10367fb530 rsp=0x0x10367fb530
+r8 =0x0x1002e00000 r9 =0x0x0 r10=0x0xffbfffff r11=0x0x1002e00100
+r12=0x0x0 r13=0x0x90a1aa6f8 r14=0x0x90a1aa710 r15=0x0x5a
+audio trace: t 232.287 s port 0 type 0 8 ch 48000 Hz: 87 calls, 44544 frames = 0.928 s of sound in 1.303 s (rate 0.712), held 836.4 ms, 0 clears, sdl queued 0-65536 bytes (0-42 ms), device playing
+audio trace: t 232.287 s port 1 type 4 1 ch 48000 Hz (pad): 87 calls, 44544 frames = 0.928 s of sound in 1.303 s (rate 0.712), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 232.287 s port 2 type 10 2 ch 48000 Hz (pad): 87 calls, 44544 frames = 0.928 s of sound in 1.303 s (rate 0.712), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+bc5-direct: shared map at 0x0+0x10000: -22
+code-32: (32 bytes of the title's code at the fault, kept in laptop scratch only)
+exception: type=AccessViolation, av_type=Write, av_addr=0000000000000000, native_code=0000000b
+--
+Source build f266548-dirty
+--- Stack Trace ---
+--- Error ---
+Access violation: Write [0000000000000000] 
+ in /home/kjaniszewski/bc5-work/exp0401e9/x5-tls/src/loader/runtimeLinker.cpp:1166
+== 2026-11-06 03:33:16 exit 65

@@ -1,0 +1,32 @@
+ao0405: items on: none
+[bc5] exp 0405: audioout checks off
+[bc5] exp 0405: audioin checks off
+[bc5] exp 0405: ngs2 rack fix off
+ao0405: SDL_AUDIODRIVER=bc5-no-device-0405 (SDL's audio init fails; AudioOut ports open without a device)
+ao0405: case 1 out: a port opens (no device): ok (handle 1)
+ao0405: case 2 ka02 off: AudioOutOpen with freq 0 opens a port (today); closed again, its output (a division by 0) not run: ok (handle 2, close 0)
+ao0405: case - ka01 off: AudioOutOutputs with num 0: skipped with the item off (today's Audio::AudioOutOutputs exits the process on num 0)
+ao0405: case - ka01 off: AudioOutOutputs with num 33 (all valid): skipped with the item off (today's loop writes params[32], past its 32-entry stack array)
+ao0405: case 3 ka01 off: num 33 with an invalid first handle -> AUDIO_OUT_ERROR_INVALID_PORT (today): ok (0x80260003)
+ao0405: case 4 out: AudioOutOutputs with num 1 returns the port's frames, on and off: ok (256)
+ao0405: case 5 out: AudioOutOutputs with num 32 (the limit) returns the port's frames, on and off: ok (256)
+ao0405: case 6 out: the port closes: ok (0)
+ao0405: case 7 in: a type-1 port opens, on and off: ok (handle 1)
+ao0405: case - ka07 off: AudioInOpen with type 0, type 2, index 1: skipped with the item off (today's EXIT_NOT_IMPLEMENTED(type != 1 / index != 0))
+ao0405: case 8 ka07 off: len 0 opens a port (today): ok (handle 2)
+ao0405: case 9 ka07 off: freq 0 opens a port (today; its input, a division by 0, not run): ok (handle 3)
+ao0405: case 10 ka06 off: AudioInInput leaves dest as it was (today): ok (return 256)
+ao0405: case 11 in: AudioInInput with a bad handle -> AUDIO_IN_ERROR_INVALID_HANDLE, on and off: ok (0x80260101)
+ao0405: case - ka06 off: AudioInInput with a null dest: skipped with the item off (today's EXIT_NOT_IMPLEMENTED(dest == nullptr))
+ao0405: case 12 ngs2: a system is made with the test allocator: ok (result 0)
+ao0405: case 13 ngs2: a sampler rack is made with the test allocator, in the block it allocated: ok (result 0, rack size 11592 = 1352 + 256 x 40)
+ao0405: case 14 ka03 off: Ngs2RackDestroy only zeroes *buffer_info; the free handler is not called (today): ok (result 0, frees 0)
+ao0405: case 15 ka03 off: a render after the destroy writes into the destroyed rack's voices (today's use after free): ok (1024 bytes changed)
+ao0405: case - ka03 off: a render with the whole freed buffer as a canary: skipped with the item off (today's walk would follow the canary as the rack's next pointer)
+ao0405: case 16 ka03 off: a second destroy and a destroy of handle 0 return OK (today): ok (0x00000000, 0x00000000)
+ao0405: case 17 ka03 off: *buffer_info comes back zeroed (today): ok (create 0, destroy 0)
+ao0405: case 18 ka08: custom mastering, a 16-byte buffer as configured: 16 bytes written, on and off: ok (0x00000000)
+ao0405: case - ka08 off: custom mastering with a 32- or 8-byte buffer: skipped with the item off (today's EXIT_NOT_IMPLEMENTED(state_size != configured_size))
+ao0405: case 19 ka08 off: custom sampler, a 56-byte buffer gets the sampler layout (envelope 1.0 at byte 8; today): ok (0x00000000)
+ao0405: case 20 ka08 off: custom sampler, a 40-byte buffer: OK, 40 bytes zeroed but the flags (today): ok (0x00000000)
+ao0405: off 20 of 20; end

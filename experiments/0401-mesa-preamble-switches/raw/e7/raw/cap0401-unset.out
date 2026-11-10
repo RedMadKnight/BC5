@@ -1,0 +1,15 @@
+cap0401: case parse (pure): 38 of 38
+cap0401: case slot (pure): 23 of 23
+[bc5] exp 0401 e7: acb inherit caps: programs off, census off per queue
+cap0401:   the unit's caps: programs 0, census 0 (0: off)
+cap0401: case switches (off): 2 of 2
+cap0401:   70000 programs noted, 70000 held, 0 refused
+cap0401: case programs (off): 8 of 8
+cap0401:   5000 SET_SH_REG kinds sent, 5000 held, 0 refused
+cap0401: case census (off): 6 of 6
+cap0401: case quiet kinds (pure): 29 of 29
+cap0401: case quiet ring (pure): 7 of 7
+[bc5] exp 0401 e7: journal quiet off
+cap0401:   the journal mode: min (the play's: one buffered file)
+cap0401: case quiet journal (off): 10 of 10
+cap0401: off 123 of 123; end

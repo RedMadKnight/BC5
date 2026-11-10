@@ -1,0 +1,25 @@
+== 2026-11-09 10:36:33 arm x9f1 (route, cap 900 s, play 600 s)
+run rc 0: x9f1 (route): ROUTE: no gameplay within 150 s of the load after 258 s (G none, list 93); whole run: 15.0 flips/s over 252 s, 153 seconds with a gap over 100 ms, longest 1522 ms; memory floor 757 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: x9f1 (route): ROUTE: no gameplay within 150 s of the load after 258 s (G none, list 93); whole run: 15.0 flips/s over 252 s, 153 seconds with a gap over 100 ms, longest 1522 ms; memory floor 757 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-09 10:41:25 all arms done
+== 2026-11-09 10:41:26 x9f1: setup/route failure; the series goes on (CONTINUE_ON_CRASH=1)
+== 2026-11-09 10:41:27 arm x9f2 (route, cap 900 s, play 600 s)
+run rc 0: x9f2 (route): ROUTE: no gameplay within 150 s of the load after 253 s (G none, list 94); whole run: 15.4 flips/s over 248 s, 154 seconds with a gap over 100 ms, longest 1728 ms; memory floor 872 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: x9f2 (route): ROUTE: no gameplay within 150 s of the load after 253 s (G none, list 94); whole run: 15.4 flips/s over 248 s, 154 seconds with a gap over 100 ms, longest 1728 ms; memory floor 872 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-09 10:46:12 all arms done
+== 2026-11-09 10:46:13 x9f2: setup/route failure; the series goes on (CONTINUE_ON_CRASH=1)
+== 2026-11-09 10:46:14 arm x9r1 (route, cap 900 s, play 600 s)
+run rc 0: x9r1 (route): ended by itself at 621 s after 621 s (G 131, list 93); whole run: 20.3 flips/s over 312 s, 186 seconds with a gap over 100 ms, longest 1285 ms; memory floor 308 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: x9r1 (route): ended by itself at 621 s after 621 s (G 131, list 93); whole run: 20.3 flips/s over 312 s, 186 seconds with a gap over 100 ms, longest 1285 ms; memory floor 308 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-09 10:57:05 all arms done
+== 2026-11-09 10:57:06 x9r1: the emulator ended by itself (crash); the series goes on (CONTINUE_ON_CRASH=1)
+== 2026-11-09 10:57:08 arm x9r2 (route, cap 900 s, play 600 s)
+run rc 0: x9r2 (route): ended at G+600 after 734 s (G 134, list 93); whole run: 35.8 flips/s over 727 s, 187 seconds with a gap over 100 ms, longest 1288 ms; memory floor 686 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: x9r2 (route): ended at G+600 after 734 s (G 134, list 93); whole run: 35.8 flips/s over 727 s, 187 seconds with a gap over 100 ms, longest 1288 ms; memory floor 686 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-09 11:09:53 all arms done
+== 2026-11-09 11:09:54 arm x9c1 (route, cap 900 s, play 600 s)
+run rc 0: x9c1 (route): ended by itself at 190 s after 190 s (G none, list 94); whole run: 19.3 flips/s over 184 s, 94 seconds with a gap over 100 ms, longest 1670 ms; memory floor 713 MiB available (sampler); crash lines 2, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: x9c1 (route): ended by itself at 190 s after 190 s (G none, list 94); whole run: 19.3 flips/s over 184 s, 94 seconds with a gap over 100 ms, longest 1670 ms; memory floor 713 MiB available (sampler); crash lines 2, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-09 11:13:30 all arms done
+== 2026-11-09 11:13:31 x9c1: the emulator ended by itself (crash); crash lines in the log; the series goes on (CONTINUE_ON_CRASH=1)
+== 2026-11-09 11:13:31 series 0409 done

@@ -1,0 +1,400 @@
+exp 0404: fl crumbs off
+exp 0404: fl skip es off
+exp 0401 e7 (flx): fl probe state off, fl vgt flush off, fl serial off, fl meshlet probe off, fl crumbs meshlet off
+submit #191800 dcb 18184 dwords at 0x7f1b140a2320: pass 1375 rewrite 278 drop 439 unmapped 0 cc 0 mappings 28668 ... FAILED rc 0 TIMEOUT 2062.22 ms
+submit #191799 acb 3480 dwords at 0x7f1b640f61f0: pass 854 rewrite 15 drop 4 unmapped 0 cc 0 mappings 28668 ... FAILED rc 0 TIMEOUT 2065.17 ms
+timeout probe: dcb 18184 dwords dumped to /home/kjaniszewski/bc5-data/captures/play-20261106-0044/gc/ib-timeout-00191800-dcb-18184.bin
+timeout probe: acb 4060 dwords dumped to /home/kjaniszewski/bc5-data/captures/play-20261106-0044/gc/ib-timeout-00191799-acb-4060.bin
+timeout probe: TF ring 0x1120000000 +0x3fff8: 28800 non-zero dwords (dword 0..47010), from the first: [0x1120000000] 4034ea00 403249c2 40352183 4037e2ed 403249c2 4034ea00 40352183 40326324 40351f17 4037fec7 40326324 40351f17 40351f17 40324522 4034e2c2 4037dddc 40324522 4034e2c2 4034e2c2 4031f013 40346d33 4037808c 4031f013 40346d33 40346d33 403164df 4033bfb5 4036e7ec 403164df 4033bfb5 4033bfb5 4030a504 4032dc2e 403615b4 4030a504 4032dc2e 4032dc2e 402fb283 4031c508 40350c3c 402fb283 4031c508 4031c508 402e8fd5 40307d26 4033ce5e 402e8fd5 40307d26
+timeout probe: HS user data address 0x0 at 1046 not mapped
+timeout probe: HS user data address 0x0 at 7736 not mapped
+timeout probe: HS user data address 0x0 at 10259 not mapped
+timeout probe: TF ring 0x1120000000 +0x3fff8: 28800 non-zero dwords (dword 0..47010), from the first: [0x1120000000] 4034ea00 403249c2 40352183 4037e2ed 403249c2 4034ea00 40352183 40326324 40351f17 4037fec7 40326324 40351f17 40351f17 40324522 4034e2c2 4037dddc 40324522 4034e2c2 4034e2c2 4031f013 40346d33 4037808c 4031f013 40346d33 40346d33 403164df 4033bfb5 4036e7ec 403164df 4033bfb5 4033bfb5 4030a504 4032dc2e 403615b4 4030a504 4032dc2e 4032dc2e 402fb283 4031c508 40350c3c 402fb283 4031c508 4031c508 402e8fd5 40307d26 4033ce5e 402e8fd5 40307d26
+timeout probe: wait op 93 at 0: label 0x12004b4fc8 function 3 reference 0x0 mask 0xffffffffffffffff me; now 0x0 (met) ran
+timeout probe: write op 49 at 12: 0x1200006ee0 select 2 value 0x907616682 (packet 8 dwords); now 0x907616682 ran
+timeout probe: write op 49 at 20: 0x1200006f00 select 2 value 0x0 (packet 8 dwords); now 0x0 ran
+timeout probe: write op 49 at 40: 0x1200006ec0 select 2 value 0x9076d6b32 (packet 8 dwords); now 0x9076d6b32 ran
+timeout probe: write op 49 at 48: 0x1200006e80 select 2 value 0x9076d6b32 (packet 8 dwords); now 0x9076d6b32 ran
+timeout probe: write op 49 at 56: 0x1200006ea0 select 2 value 0x9076d6b32 (packet 8 dwords); now 0x9076d6b32 ran
+timeout probe:   state before op 15 at 116: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 116: program 0x909939400, groups 2 x 1 x 1 ran
+timeout probe: op 15 at 116: 00000002 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 134: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 134: program 0x909939400, groups 4 x 1 x 1 ran
+timeout probe: op 15 at 134: 00000004 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 152: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 152: program 0x909939400, groups 5 x 1 x 1 ran
+timeout probe: op 15 at 152: 00000005 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 170: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 170: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 170: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 188: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 188: program 0x909939400, groups 5 x 1 x 1 ran
+timeout probe: op 15 at 188: 00000005 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 206: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 206: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 206: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 220: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 220: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 220: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 234: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 234: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 234: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 248: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 248: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 248: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 262: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 262: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 262: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 276: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 276: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 276: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 290: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 290: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 290: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 304: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 304: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 304: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 318: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 318: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 318: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 336: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 336: program 0x909939400, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 336: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 350: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 350: program 0x909939400, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 350: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 368: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 368: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 368: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 382: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 382: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 382: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 400: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 400: program 0x909939400, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 400: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 418: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 418: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 418: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 432: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 432: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 432: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 450: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 450: program 0x909939400, groups 5 x 1 x 1 ran
+timeout probe: op 15 at 450: 00000005 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 468: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 468: program 0x909939400, groups 3 x 1 x 1 ran
+timeout probe: op 15 at 468: 00000003 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 486: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 486: program 0x909939400, groups 4 x 1 x 1 ran
+timeout probe: op 15 at 486: 00000004 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 504: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: op 11 at 1249: 00000001 00000000 00000000 ran (mapped -1)
+timeout probe: dispatch op 15 at 504: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 26 at 1253: 00000000 00000000 00000000 ran (mapped 0)
+timeout probe: op 15 at 504: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe: op 13 at 1256: ffffffff 00000000 00000000 ran (mapped -1)
+timeout probe: op 22 at 1290: e0040060 0000000f 00000000 0000000b base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 518: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 518: program 0x909939400, groups 1 x 1 x 1 ran
+timeout probe: op 15 at 518: 00000001 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 536: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 0000000009099394 ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 15 at 536: program 0x909939400, groups 8 x 1 x 1 ran
+timeout probe: op 15 at 536: 00000008 00000001 00000001 00000061 base1 0x0 index_base 0x0 ran
+timeout probe: op 11 at 585: 00000001 9662e000 00000012 ran (mapped -1)
+timeout probe:   state before op 16 at 591: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 591: program 0x909936c00, groups 1064136030 x 3197333245 x 1024343201 (arguments at 0x129662e220) DROPPED
+timeout probe: op 16 at 591: 00000220 00000061 00000000 00000000 base1 0x129662e000 index_base 0x0 DROPPED
+timeout probe: op 11 at 603: 00000001 9662e000 00000012 DROPPED (mapped -1)
+timeout probe:   state before op 16 at 609: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 609: program 0x909936c00, groups 3200374335 x 1057007290 x 1065449276 (arguments at 0x129662e260) DROPPED
+timeout probe: op 16 at 609: 00000260 00000061 00000000 00000000 base1 0x129662e000 index_base 0x0 DROPPED
+timeout probe: op 11 at 621: 00000001 99c39000 00000012 DROPPED (mapped -1)
+timeout probe:   state before op 16 at 627: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 627: program 0x909936c00, groups 1065585664 x 3171352576 x 1049448448 (arguments at 0x1299c39420) DROPPED
+timeout probe: op 16 at 627: 00000420 00000061 00000000 00000000 base1 0x1299c39000 index_base 0x0 DROPPED
+timeout probe: op 11 at 639: 00000001 99c39000 00000012 DROPPED (mapped -1)
+timeout probe:   state before op 16 at 645: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 645: program 0x909936c00, groups 3190423552 x 1055168512 x 1065614336 (arguments at 0x1299c39460) DROPPED
+timeout probe: op 16 at 645: 00000460 00000061 00000000 00000000 base1 0x1299c39000 index_base 0x0 DROPPED
+timeout probe: op 11 at 657: 00000001 99c39000 00000012 DROPPED (mapped -1)
+timeout probe:   state before op 16 at 663: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: op 26 at 1326: 00000000 00000000 00000000 ran (mapped 0)
+timeout probe: dispatch op 16 at 663: program 0x909936c00, groups 1062275072 x 3185549312 x 1050249216 (arguments at 0x1299c394a0) ran
+timeout probe: op 13 at 1329: ffffffff 00000000 00000000 ran (mapped -1)
+timeout probe: op 16 at 663: 000004a0 00000061 00000000 00000000 base1 0x1299c39000 index_base 0x0 ran
+timeout probe: op 11 at 1331: 00000001 00000000 00000000 ran (mapped -1)
+timeout probe: op 11 at 675: 00000001 99c39000 00000012 DROPPED (mapped -1)
+timeout probe: op 11 at 1335: 00000001 00000000 00000000 ran (mapped -1)
+timeout probe:   state before op 16 at 681: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 681: program 0x909936c00, groups 3189948416 x 1058291265 x 1061492736 (arguments at 0x1299c394e0) DROPPED
+timeout probe: op 16 at 681: 000004e0 00000061 00000000 00000000 base1 0x1299c39000 index_base 0x0 DROPPED
+timeout probe: write op 37 at 1397: 0x11e04d0220 select 2 value 0x0 (packet 5 dwords); now 0x7fffffff00000001 ran
+timeout probe: op 11 at 693: 00000001 97e2d000 00000012 ran (mapped -1)
+timeout probe: write op 49 at 1402: 0x11e04d0220 select 1 value 0x1 (packet 8 dwords); now 0x7fffffff00000001 ran
+timeout probe:   state before op 16 at 699: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 699: program 0x909936c00, groups 1065446400 x 1048641536 x 3204081664 (arguments at 0x1297e2d320) DROPPED
+timeout probe: wait op 3c at 1414: label 0x11e04d0220 function 3 reference 0x1 mask 0xffffffff me; now 0x1 (met) ran
+timeout probe: op 16 at 699: 00000320 00000061 00000000 00000000 base1 0x1297e2d000 index_base 0x0 DROPPED
+timeout probe: op 11 at 711: 00000001 97e2d000 00000012 DROPPED (mapped -1)
+timeout probe:   state before op 16 at 717: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 717: program 0x909936c00, groups 1050744832 x 3197136896 x 1065571328 (arguments at 0x1297e2d360) DROPPED
+timeout probe: op 16 at 717: 00000360 00000061 00000000 00000000 base1 0x1297e2d000 index_base 0x0 DROPPED
+timeout probe: op 11 at 729: 00000001 97e2d000 00000012 DROPPED (mapped -1)
+timeout probe:   state before op 16 at 735: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: write op 49 at 1459: 0x1200006890 select 2 value 0x3cc700600037 (packet 8 dwords); now 0x3cc700600036 ran
+timeout probe: dispatch op 16 at 735: program 0x909936c00, groups 1064976384 x 1035476992 x 3199522816 (arguments at 0x1297e2d3a0) DROPPED
+timeout probe: write op 49 at 1480: 0x1200006e20 select 2 value 0x9074744c2 (packet 8 dwords); now 0x907575170 ran
+timeout probe: op 16 at 735: 000003a0 00000061 00000000 00000000 base1 0x1297e2d000 index_base 0x0 DROPPED
+timeout probe: write op 49 at 1488: 0x1200006de0 select 2 value 0x9074744c2 (packet 8 dwords); now 0x9073f0649 ran
+timeout probe: op 11 at 747: 00000001 97e2d000 00000012 DROPPED (mapped -1)
+timeout probe: write op 49 at 1496: 0x1200006e00 select 2 value 0x9074533d7 (packet 8 dwords); now 0x907575170 ran
+timeout probe: write op 49 at 1515: 0x1200006e20 select 2 value 0x9074533d7 (packet 8 dwords); now 0x907575170 ran
+timeout probe:   state before op 16 at 753: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 753: program 0x909936c00, groups 1033207808 x 993525760 x 1064999936 (arguments at 0x1297e2d3e0) DROPPED
+timeout probe: op 16 at 753: 000003e0 00000061 00000000 00000000 base1 0x1297e2d000 index_base 0x0 DROPPED
+timeout probe: op 11 at 765: 00000001 97e2d000 00000012 DROPPED (mapped -1)
+timeout probe:   state before op 16 at 771: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 771: program 0x909936c00, groups 1064723456 x 1053050880 x 3198547968 (arguments at 0x1297e2d420) DROPPED
+timeout probe: op 16 at 771: 00000420 00000061 00000000 00000000 base1 0x1297e2d000 index_base 0x0 DROPPED
+timeout probe: op 11 at 783: 00000001 9495e000 00000012 DROPPED (mapped -1)
+timeout probe: write op 49 at 1539: 0x1200006890 select 2 value 0x3cc700600038 (packet 8 dwords); now 0x3cc700600036 ran
+timeout probe:   state before op 16 at 789: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: write op 49 at 1560: 0x1200006e20 select 2 value 0x907556159 (packet 8 dwords); now 0x907575170 ran
+timeout probe: write op 49 at 1568: 0x1200006de0 select 2 value 0x9074d545a (packet 8 dwords); now 0x9073f0649 ran
+timeout probe: dispatch op 16 at 789: program 0x909936c00, groups 1064547528 x 1037197721 x 3201417091 (arguments at 0x129495ec20) ran
+timeout probe: write op 49 at 1576: 0x1200006e00 select 2 value 0x9074533d7 (packet 8 dwords); now 0x907575170 ran
+timeout probe: op 16 at 789: 00000c20 00000061 00000000 00000000 base1 0x129495e000 index_base 0x0 ran
+timeout probe: write op 49 at 1595: 0x1200006e20 select 2 value 0x9074533d7 (packet 8 dwords); now 0x907575170 ran
+timeout probe: op 11 at 797: 00000001 8cb38000 00000012 DROPPED (mapped -1)
+timeout probe:   state before op 16 at 803: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 803: program 0x909936c00, groups 1065392448 x 1019334656 x 1057952896 (arguments at 0x128cb38a20) DROPPED
+timeout probe: op 16 at 803: 00000a20 00000061 00000000 00000000 base1 0x128cb38000 index_base 0x0 DROPPED
+timeout probe: op 11 at 815: 00000001 8cb38000 00000012 ran (mapped -1)
+timeout probe:   state before op 16 at 821: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 821: program 0x909936c00, groups 3198555136 x 1061994624 x 1065615616 (arguments at 0x128cb38a60) DROPPED
+timeout probe: op 16 at 821: 00000a60 00000061 00000000 00000000 base1 0x128cb38000 index_base 0x0 DROPPED
+timeout probe: write op 49 at 1616: 0x1200006e00 select 2 value 0x907575148 (packet 8 dwords); now 0x907575170 ran
+timeout probe: write op 49 at 1636: 0x1200006e20 select 2 value 0x907575148 (packet 8 dwords); now 0x907575170 ran
+timeout probe: write op 49 at 1644: 0x12004b4680 select 3 value 0x0 (packet 8 dwords); now 0x0 ran
+timeout probe: write op 49 at 1652: 0x1200006e40 select 2 value 0x9075f4f25 (packet 8 dwords); now 0x907616682 ran
+timeout probe: write op 49 at 1660: 0x1200006e60 select 2 value 0x0 (packet 8 dwords); now 0x0 ran
+timeout probe: op 11 at 833: 00000001 8cb38000 00000012 ran (mapped -1)
+timeout probe: wait op 93 at 1672: label 0x12004b4438 function 3 reference 0x0 mask 0xffffffffffffffff pfp; now 0x0 (met) ran
+timeout probe: write op 49 at 1684: 0x1200006e40 select 2 value 0x907616682 (packet 8 dwords); now 0x907616682 ran
+timeout probe: write op 49 at 1692: 0x1200006e60 select 2 value 0x0 (packet 8 dwords); now 0x0 ran
+timeout probe:   state before op 16 at 839: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 839: program 0x909936c00, groups 1063562368 x 3190263808 x 1054500608 (arguments at 0x128cb38aa0) DROPPED
+timeout probe: op 16 at 839: 00000aa0 00000061 00000000 00000000 base1 0x128cb38000 index_base 0x0 DROPPED
+timeout probe: op 11 at 851: 00000001 8cb38000 00000012 ran (mapped -1)
+timeout probe: write op 37 at 1716: 0x11e04d0718 select 2 value 0x0 (packet 5 dwords); now 0x39c00000000 ran
+timeout probe:   state before op 16 at 857: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: write op 49 at 1721: 0x11e04d0718 select 1 value 0x1 (packet 8 dwords); now 0x39c00000000 ran
+timeout probe: dispatch op 16 at 857: program 0x909936c00, groups 3193013760 x 1059282944 x 1063242112 (arguments at 0x128cb38ae0) DROPPED
+timeout probe: op 16 at 857: 00000ae0 00000061 00000000 00000000 base1 0x128cb38000 index_base 0x0 DROPPED
+timeout probe: op 11 at 869: 00000001 8cb38000 00000012 ran (mapped -1)
+timeout probe:   state before op 16 at 875: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: wait op 3c at 1733: label 0x11e04d0718 function 3 reference 0x1 mask 0xffffffff me; now 0x0 (NOT met) ran
+timeout probe: dispatch op 16 at 875: program 0x909936c00, groups 1062279296 x 3181435904 x 1057678464 (arguments at 0x128cb38b20) DROPPED
+timeout probe: op 16 at 875: 00000b20 00000061 00000000 00000000 base1 0x128cb38000 index_base 0x0 DROPPED
+timeout probe: op 11 at 887: 00000001 8b854000 00000012 ran (mapped -1)
+timeout probe:   state before op 16 at 893: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: op 11 at 1833: 00000001 93ad3900 00000011 ran (mapped -1)
+timeout probe: dispatch op 16 at 893: program 0x909936c00, groups 1063718144 x 3195194880 x 1059719680 (arguments at 0x128b854f20) DROPPED
+timeout probe: op 16 at 893: 00000f20 00000061 00000000 00000000 base1 0x128b854000 index_base 0x0 DROPPED
+timeout probe: op 11 at 901: 00000001 174b8000 00000012 DROPPED (mapped -1)
+timeout probe:   state before op 16 at 907: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe:   state before op 24 at 1837: stages 00482030 subgrp 00000040 onchip 00400801 payload 00000000 | prim 00000001 itype 00000400 ninst 00000001 ge_cntl 00000201 stereo 00000000 pc_alloc 00000000 | gs 0000000000000000 es 0000000011d01345 ps 0000000011d1d10f cs 0000000000000000 ls 0000000000000000 hs 0000000000000000
+timeout probe: dispatch op 16 at 907: program 0x909936c00, groups 1063459584 x 3193465344 x 1058989952 (arguments at 0x12174b8920) DROPPED
+timeout probe: op 16 at 907: 00000920 00000061 00000000 00000000 base1 0x12174b8000 index_base 0x0 DROPPED
+timeout probe: op 11 at 915: 00000001 1738d000 00000012 DROPPED (mapped -1)
+timeout probe:   gs user data: 231f21b0 00100011 00000004 00005204 22665300 00100011 00000028 0004dfac 22661730 00100011 0000004d 0004dfac 231f21f0 00100011 00000001 0004dfac 23892480 00100011 000000a8 0004dfac 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+timeout probe:   state before op 16 at 921: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 921: program 0x909936c00, groups 1064543232 x 3195047424 x 1059036928 (arguments at 0x121738d620) DROPPED
+timeout probe: op 16 at 921: 00000620 00000061 00000000 00000000 base1 0x121738d000 index_base 0x0 DROPPED
+timeout probe:   s[8:11]: base 0x1122661730 [0x1122661730] 40155555 438e4e1f 3d2c4d04 3f800000 3f07e9df 00000000 3f58f0f6 00003cc8 43500000 42ea0000 3f800000 00000001 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x1122661c70] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe: op 11 at 929: 00000001 7d8b7000 00000012 DROPPED (mapped -1)
+timeout probe:   s[20:23]: base 0x0  | +0x540  | table 
+timeout probe:   state before op 16 at 935: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe:   s[24:27]: base 0x0  | +0x540  | table 
+timeout probe: dispatch op 16 at 935: program 0x909936c00, groups 1063935360 x 3195097088 x 1059674368 (arguments at 0x127d8b7320) ran
+timeout probe: op 24 at 1837: off 0x0 base1 0x1193ad3900 index_base 0x0 args [0x1193ad3900] 00000026 00000001 00000000 00000000 00000000 ran
+timeout probe: op 16 at 935: 00000320 00000061 00000000 00000000 base1 0x127d8b7000 index_base 0x0 ran
+timeout probe: op 11 at 943: 00000001 97ebe000 00000012 DROPPED (mapped -1)
+timeout probe:   state before op 16 at 949: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 949: program 0x909936c00, groups 1063345280 x 3188092416 x 1058436480 (arguments at 0x1297ebe520) DROPPED
+timeout probe: op 16 at 949: 00000520 00000061 00000000 00000000 base1 0x1297ebe000 index_base 0x0 DROPPED
+timeout probe: op 11 at 957: 00000001 1623b000 00000012 DROPPED (mapped -1)
+timeout probe: op 11 at 1906: 00000001 93ad3900 00000011 ran (mapped -1)
+timeout probe:   state before op 16 at 963: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe:   state before op 24 at 1910: stages 00482030 subgrp 00000040 onchip 00400801 payload 00000000 | prim 00000001 itype 00000400 ninst 00000001 ge_cntl 00000201 stereo 00000000 pc_alloc 00000000 | gs 0000000000000000 es 0000000011d01345 ps 0000000011d1c2d1 cs 0000000000000000 ls 0000000000000000 hs 0000000000000000
+timeout probe: dispatch op 16 at 963: program 0x909936c00, groups 1063610368 x 3191889408 x 1056985344 (arguments at 0x121623b720) DROPPED
+timeout probe: op 16 at 963: 00000720 00000061 00000000 00000000 base1 0x121623b000 index_base 0x0 DROPPED
+timeout probe: op 11 at 971: 00000001 991ca000 00000012 DROPPED (mapped -1)
+timeout probe:   state before op 16 at 977: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 977: program 0x909936c00, groups 1062966272 x 3197458432 x 1047248896 (arguments at 0x12991ca820) DROPPED
+timeout probe: op 16 at 977: 00000820 00000061 00000000 00000000 base1 0x12991ca000 index_base 0x0 DROPPED
+timeout probe:   gs user data: 231f2200 00100011 00000001 00005204 22665300 00100011 00000028 0004dfac 22661730 00100011 0000004d 0004dfac 231f2210 00100011 00000001 0004dfac 23892480 00100011 000000a8 0004dfac 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+timeout probe: op 11 at 985: 00000001 17983000 00000012 DROPPED (mapped -1)
+timeout probe:   s[8:11]: base 0x1122661730 [0x1122661730] 40155555 438e4e1f 3d2c4d04 3f800000 3f07e9df 00000000 3f58f0f6 00003cc8 43500000 42ea0000 3f800000 00000001 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x1122661c70] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe:   s[20:23]: base 0x0  | +0x540  | table 
+timeout probe:   s[24:27]: base 0x0  | +0x540  | table 
+timeout probe:   state before op 16 at 991: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: op 24 at 1910: off 0x20 base1 0x1193ad3900 index_base 0x0 args [0x1193ad3920] 00000001 00000001 00000000 00000000 00000000 ran
+timeout probe: dispatch op 16 at 991: program 0x909936c00, groups 1062394880 x 1056888832 x 1044635648 (arguments at 0x1217983120) DROPPED
+timeout probe: op 16 at 991: 00000120 00000061 00000000 00000000 base1 0x1217983000 index_base 0x0 DROPPED
+timeout probe: op 11 at 999: 00000001 11ad6000 00000012 DROPPED (mapped -1)
+timeout probe:   state before op 16 at 1005: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: op 11 at 1979: 00000001 93ad3900 00000011 ran (mapped -1)
+timeout probe: dispatch op 16 at 1005: program 0x909936c00, groups 1062506496 x 3198167040 x 3188834304 (arguments at 0x1211ad6520) ran
+timeout probe: op 16 at 1005: 00000520 00000061 00000000 00000000 base1 0x1211ad6000 index_base 0x0 ran
+timeout probe: op 11 at 1013: 00000001 7670d000 00000012 DROPPED (mapped -1)
+timeout probe:   state before op 24 at 1983: stages 00482030 subgrp 00000040 onchip 00400801 payload 00000000 | prim 00000001 itype 00000400 ninst 00000001 ge_cntl 00000201 stereo 00000000 pc_alloc 00000000 | gs 0000000000000000 es 0000000011d01345 ps 0000000011d0c5bf cs 0000000000000000 ls 0000000000000000 hs 0000000000000000
+timeout probe:   state before op 16 at 1019: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 1019: program 0x909936c00, groups 1061237760 x 1029259264 x 1040244736 (arguments at 0x127670d220) DROPPED
+timeout probe:   gs user data: 231f2220 00100011 00000002 00005204 22665300 00100011 00000028 0004dfac 22661730 00100011 0000004d 0004dfac 231f2240 00100011 00000001 0004dfac 23892480 00100011 000000a8 0004dfac 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+timeout probe: op 16 at 1019: 00000220 00000061 00000000 00000000 base1 0x127670d000 index_base 0x0 DROPPED
+timeout probe: op 11 at 1031: 00000001 7670d000 00000012 ran (mapped -1)
+timeout probe:   s[8:11]: base 0x1122661730 [0x1122661730] 40155555 438e4e1f 3d2c4d04 3f800000 3f07e9df 00000000 3f58f0f6 00003cc8 43500000 42ea0000 3f800000 00000001 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x1122661c70] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe:   state before op 16 at 1037: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe:   s[20:23]: base 0x0  | +0x540  | table 
+timeout probe:   s[24:27]: base 0x0  | +0x540  | table 
+timeout probe: op 24 at 1983: off 0x40 base1 0x1193ad3900 index_base 0x0 args [0x1193ad3940] 00000012 00000001 00000000 00000000 00000000 ran
+timeout probe: dispatch op 16 at 1037: program 0x909936c00, groups 1002438656 x 1052634613 x 1061403648 (arguments at 0x127670d260) DROPPED
+timeout probe: op 16 at 1037: 00000260 00000061 00000000 00000000 base1 0x127670d000 index_base 0x0 DROPPED
+timeout probe: op 11 at 1049: 00000001 7670d000 00000012 ran (mapped -1)
+timeout probe: op 11 at 2052: 00000001 93ad3900 00000011 ran (mapped -1)
+timeout probe:   state before op 16 at 1055: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 1055: program 0x909936c00, groups 1061403648 x 1033142272 x 1048834048 (arguments at 0x127670d2a0) DROPPED
+timeout probe: op 16 at 1055: 000002a0 00000061 00000000 00000000 base1 0x127670d000 index_base 0x0 DROPPED
+timeout probe:   state before op 24 at 2056: stages 00482030 subgrp 00000040 onchip 00400801 payload 00000000 | prim 00000001 itype 00000400 ninst 00000001 ge_cntl 00000201 stereo 00000000 pc_alloc 00000000 | gs 0000000000000000 es 0000000011d01345 ps 0000000011d091f2 cs 0000000000000000 ls 0000000000000000 hs 0000000000000000
+timeout probe: op 11 at 1067: 00000001 979d9000 00000012 DROPPED (mapped -1)
+timeout probe:   state before op 16 at 1073: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe:   gs user data: 231f2250 00100011 00000002 00005204 22665300 00100011 00000028 0004dfac 22661730 00100011 0000004d 0004dfac 231f2270 00100011 00000001 0004dfac 23892480 00100011 000000a8 0004dfac 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+timeout probe: dispatch op 16 at 1073: program 0x909936c00, groups 1065730048 x 3168010240 x 1044279296 (arguments at 0x12979d9020) DROPPED
+timeout probe: op 16 at 1073: 00000020 00000061 00000000 00000000 base1 0x12979d9000 index_base 0x0 DROPPED
+timeout probe: op 11 at 1085: 00000001 979d9000 00000012 DROPPED (mapped -1)
+timeout probe:   s[8:11]: base 0x1122661730 [0x1122661730] 40155555 438e4e1f 3d2c4d04 3f800000 3f07e9df 00000000 3f58f0f6 00003cc8 43500000 42ea0000 3f800000 00000001 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x1122661c70] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe:   s[20:23]: base 0x0  | +0x540  | table 
+timeout probe:   s[24:27]: base 0x0  | +0x540  | table 
+timeout probe:   state before op 16 at 1091: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: op 24 at 2056: off 0x60 base1 0x1193ad3900 index_base 0x0 args [0x1193ad3960] 0000005d 00000001 00000000 00000000 00000000 ran
+timeout probe: dispatch op 16 at 1091: program 0x909936c00, groups 1027031040 x 1055225856 x 1064997888 (arguments at 0x12979d9060) DROPPED
+timeout probe: op 16 at 1091: 00000060 00000061 00000000 00000000 base1 0x12979d9000 index_base 0x0 DROPPED
+timeout probe: op 11 at 1103: 00000001 979d9000 00000012 DROPPED (mapped -1)
+timeout probe:   state before op 16 at 1109: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 1109: program 0x909936c00, groups 1064997888 x 1036228974 x 1052518851 (arguments at 0x12979d90a0) DROPPED
+timeout probe: op 16 at 1109: 000000a0 00000061 00000000 00000000 base1 0x12979d9000 index_base 0x0 DROPPED
+timeout probe: op 11 at 1121: 00000001 9900c000 00000012 DROPPED (mapped -1)
+timeout probe: op 11 at 2125: 00000001 93ad3900 00000011 ran (mapped -1)
+timeout probe:   state before op 16 at 1127: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe:   state before op 24 at 2129: stages 00482030 subgrp 00000040 onchip 00400801 payload 00000000 | prim 00000001 itype 00000400 ninst 00000001 ge_cntl 00000201 stereo 00000000 pc_alloc 00000000 | gs 0000000000000000 es 0000000011d01345 ps 0000000011d0cb9b cs 0000000000000000 ls 0000000000000000 hs 0000000000000000
+timeout probe:   gs user data: 231f2280 00100011 00000001 00005204 22665300 00100011 00000028 0004dfac 22661730 00100011 0000004d 0004dfac 231f2290 00100011 00000001 0004dfac 23892480 00100011 000000a8 0004dfac 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+timeout probe: dispatch op 16 at 1127: program 0x909936c00, groups 1069676736 x 1057725824 x 3168546816 (arguments at 0x129900c220) ran
+timeout probe: op 16 at 1127: 00000220 00000061 00000000 00000000 base1 0x129900c000 index_base 0x0 ran
+timeout probe: op 11 at 1135: 00000001 9d044000 00000012 DROPPED (mapped -1)
+timeout probe:   s[8:11]: base 0x1122661730 [0x1122661730] 40155555 438e4e1f 3d2c4d04 3f800000 3f07e9df 00000000 3f58f0f6 00003cc8 43500000 42ea0000 3f800000 00000001 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x1122661c70] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe:   s[20:23]: base 0x0  | +0x540  | table 
+timeout probe:   s[24:27]: base 0x0  | +0x540  | table 
+timeout probe:   state before op 16 at 1141: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: op 24 at 2129: off 0x80 base1 0x1193ad3900 index_base 0x0 args [0x1193ad3980] 000000f2 00000001 00000000 00000000 00000000 ran
+timeout probe: dispatch op 16 at 1141: program 0x909936c00, groups 1069656128 x 1057271040 x 3175692288 (arguments at 0x129d044a20) DROPPED
+timeout probe: op 16 at 1141: 00000a20 00000061 00000000 00000000 base1 0x129d044000 index_base 0x0 DROPPED
+timeout probe: op 11 at 1149: 00000001 9d153000 00000012 DROPPED (mapped -1)
+timeout probe:   state before op 16 at 1155: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 1155: program 0x909936c00, groups 1056907595 x 1048964797 x 3207794688 (arguments at 0x129d153220) DROPPED
+timeout probe: op 16 at 1155: 00000220 00000061 00000000 00000000 base1 0x129d153000 index_base 0x0 DROPPED
+timeout probe: op 11 at 1167: 00000001 9d153000 00000012 DROPPED (mapped -1)
+timeout probe: op 11 at 2198: 00000001 93ad3900 00000011 ran (mapped -1)
+timeout probe:   state before op 16 at 1173: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 1173: program 0x909936c00, groups 3196178052 x 1045705368 x 1065379726 (arguments at 0x129d153260) DROPPED
+timeout probe: op 16 at 1173: 00000260 00000061 00000000 00000000 base1 0x129d153000 index_base 0x0 DROPPED
+timeout probe: op 11 at 1185: 00000001 9d153000 00000012 DROPPED (mapped -1)
+timeout probe:   state before op 16 at 1191: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe:   state before op 24 at 2202: stages 00482030 subgrp 00000040 onchip 00400801 payload 00000000 | prim 00000001 itype 00000400 ninst 00000001 ge_cntl 00000201 stereo 00000000 pc_alloc 00000000 | gs 0000000000000000 es 0000000011d01345 ps 0000000011d501b8 cs 0000000000000000 ls 0000000000000000 hs 0000000000000000
+timeout probe: dispatch op 16 at 1191: program 0x909936c00, groups 1061108702 x 1018607300 x 3192221554 (arguments at 0x129d1532a0) DROPPED
+timeout probe: op 16 at 1191: 000002a0 00000061 00000000 00000000 base1 0x129d153000 index_base 0x0 DROPPED
+timeout probe: op 11 at 1203: 00000001 17c68000 00000012 DROPPED (mapped -1)
+timeout probe:   gs user data: 231f22a0 00100011 00000001 00005204 22665300 00100011 00000028 0004dfac 22661730 00100011 0000004d 0004dfac 231f22b0 00100011 00000001 0004dfac 23892480 00100011 000000a8 0004dfac 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+timeout probe:   state before op 16 at 1209: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 1209: program 0x909936c00, groups 1070219264 x 1053425664 x 3188277248 (arguments at 0x1217c68520) DROPPED
+timeout probe: op 16 at 1209: 00000520 00000061 00000000 00000000 base1 0x1217c68000 index_base 0x0 DROPPED
+timeout probe:   s[8:11]: base 0x1122661730 [0x1122661730] 40155555 438e4e1f 3d2c4d04 3f800000 3f07e9df 00000000 3f58f0f6 00003cc8 43500000 42ea0000 3f800000 00000001 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x1122661c70] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe: op 11 at 1217: 00000001 8918d000 00000012 DROPPED (mapped -1)
+timeout probe:   state before op 16 at 1223: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe:   s[20:23]: base 0x0  | +0x540  | table 
+timeout probe: dispatch op 16 at 1223: program 0x909936c00, groups 1047908352 x 3198343168 x 1030881280 (arguments at 0x128918df20) ran
+timeout probe:   s[24:27]: base 0x0  | +0x540  | table 
+timeout probe: op 16 at 1223: 00000f20 00000061 00000000 00000000 base1 0x128918d000 index_base 0x0 ran
+timeout probe: op 11 at 1231: 00000001 73bf0000 00000012 DROPPED (mapped -1)
+timeout probe: op 24 at 2202: off 0xa0 base1 0x1193ad3900 index_base 0x0 args [0x1193ad39a0] 00000000 00000001 00000000 00000000 00000000 ran
+timeout probe:   state before op 16 at 1237: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 1237: program 0x909936c00, groups 1069096960 x 1056198400 x 3146186752 (arguments at 0x1273bf0920) DROPPED
+timeout probe: op 16 at 1237: 00000920 00000061 00000000 00000000 base1 0x1273bf0000 index_base 0x0 DROPPED
+timeout probe: op 11 at 1249: 00000001 73bf0000 00000012 ran (mapped -1)
+timeout probe: op 11 at 2271: 00000001 93ad3900 00000011 ran (mapped -1)
+timeout probe:   state before op 16 at 1255: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 1255: program 0x909936c00, groups 1055754752 x 1040981504 x 1068894848 (arguments at 0x1273bf0960) DROPPED
+timeout probe: op 16 at 1255: 00000960 00000061 00000000 00000000 base1 0x1273bf0000 index_base 0x0 DROPPED
+timeout probe: op 11 at 1267: 00000001 73bf0000 00000012 DROPPED (mapped -1)
+timeout probe:   state before op 24 at 2275: stages 00482030 subgrp 00000040 onchip 00400801 payload 00000000 | prim 00000001 itype 00000400 ninst 00000001 ge_cntl 00000201 stereo 00000000 pc_alloc 00000000 | gs 0000000000000000 es 0000000011d01345 ps 0000000011d39be8 cs 0000000000000000 ls 0000000000000000 hs 0000000000000000
+timeout probe:   state before op 16 at 1273: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 1273: program 0x909936c00, groups 1068894848 x 1059156480 x 3137699840 (arguments at 0x1273bf09a0) DROPPED
+timeout probe: op 16 at 1273: 000009a0 00000061 00000000 00000000 base1 0x1273bf0000 index_base 0x0 DROPPED
+timeout probe: op 11 at 1285: 00000001 73bf0000 00000012 DROPPED (mapped -1)
+timeout probe:   gs user data: 231f22c0 00100011 00000001 00005204 22665300 00100011 00000028 0004dfac 22661730 00100011 0000004d 0004dfac 231f22d0 00100011 00000001 0004dfac 23892480 00100011 000000a8 0004dfac 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+timeout probe:   state before op 16 at 1291: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe:   s[8:11]: base 0x1122661730 [0x1122661730] 40155555 438e4e1f 3d2c4d04 3f800000 3f07e9df 00000000 3f58f0f6 00003cc8 43500000 42ea0000 3f800000 00000001 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x1122661c70] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe: dispatch op 16 at 1291: program 0x909936c00, groups 1055754752 x 1040981504 x 1068719936 (arguments at 0x1273bf09e0) DROPPED
+timeout probe:   s[20:23]: base 0x0  | +0x540  | table 
+timeout probe: op 16 at 1291: 000009e0 00000061 00000000 00000000 base1 0x1273bf0000 index_base 0x0 DROPPED
+timeout probe:   s[24:27]: base 0x0  | +0x540  | table 
+timeout probe: op 11 at 1303: 00000001 73bf0000 00000012 DROPPED (mapped -1)
+timeout probe: op 24 at 2275: off 0xc0 base1 0x1193ad3900 index_base 0x0 args [0x1193ad39c0] 0000031b 00000001 00000000 00000000 00000000 ran
+timeout probe:   state before op 16 at 1309: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 1309: program 0x909936c00, groups 1068361216 x 1057561728 x 1030961152 (arguments at 0x1273bf0a20) DROPPED
+timeout probe: op 16 at 1309: 00000a20 00000061 00000000 00000000 base1 0x1273bf0000 index_base 0x0 DROPPED
+timeout probe: op 11 at 1321: 00000001 11d7c000 00000012 ran (mapped -1)
+timeout probe: op 11 at 2344: 00000001 93ad3900 00000011 ran (mapped -1)
+timeout probe:   state before op 16 at 1327: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 1327: program 0x909936c00, groups 1066559258 x 1043691785 x 3187675136 (arguments at 0x1211d7c420) DROPPED
+timeout probe: op 16 at 1327: 00000420 00000061 00000000 00000000 base1 0x1211d7c000 index_base 0x0 DROPPED
+timeout probe: op 11 at 1339: 00000001 11d7c000 00000012 DROPPED (mapped -1)
+timeout probe:   state before op 24 at 2348: stages 00482030 subgrp 00000040 onchip 00400801 payload 00000000 | prim 00000001 itype 00000400 ninst 00000001 ge_cntl 00000201 stereo 00000000 pc_alloc 00000000 | gs 0000000000000000 es 0000000011d01345 ps 0000000011d357ce cs 0000000000000000 ls 0000000000000000 hs 0000000000000000
+timeout probe:   state before op 16 at 1345: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 1345: program 0x909936c00, groups 1033740288 x 1046085632 x 1067110400 (arguments at 0x1211d7c460) DROPPED
+timeout probe: op 16 at 1345: 00000460 00000061 00000000 00000000 base1 0x1211d7c000 index_base 0x0 DROPPED
+timeout probe: op 11 at 1357: 00000001 11d7c000 00000012 DROPPED (mapped -1)
+timeout probe:   gs user data: 231f22e0 00100011 00000001 00005204 22665300 00100011 00000028 0004dfac 22661730 00100011 0000004d 0004dfac 231f22f0 00100011 00000001 0004dfac 23892480 00100011 000000a8 0004dfac 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+timeout probe:   state before op 16 at 1363: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 1363: program 0x909936c00, groups 1066884096 x 1045114880 x 1041743872 (arguments at 0x1211d7c4a0) ran
+timeout probe: op 16 at 1363: 000004a0 00000061 00000000 00000000 base1 0x1211d7c000 index_base 0x0 ran
+timeout probe:   s[8:11]: base 0x1122661730 [0x1122661730] 40155555 438e4e1f 3d2c4d04 3f800000 3f07e9df 00000000 3f58f0f6 00003cc8 43500000 42ea0000 3f800000 00000001 3f7fffff 3f800000 3f800000 3ca3d70a | +0x540 [0x1122661c70] 00000000 00000000 3f800000 3f800000 | table 
+timeout probe: op 11 at 1375: 00000001 8d7dd000 00000012 DROPPED (mapped -1)
+timeout probe:   s[20:23]: base 0x0  | +0x540  | table 
+timeout probe:   s[24:27]: base 0x0  | +0x540  | table 
+timeout probe:   state before op 16 at 1381: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: op 24 at 2348: off 0xe0 base1 0x1193ad3900 index_base 0x0 args [0x1193ad39e0] 00000001 00000001 00000000 00000000 00000000 ran
+timeout probe: dispatch op 16 at 1381: program 0x909936c00, groups 1059806721 x 1049642195 x 3206915072 (arguments at 0x128d7dd720) DROPPED
+timeout probe: write op 49 at 2359: 0x1200006890 select 2 value 0x3cc700600039 (packet 8 dwords); now 0x3cc700600036 ran
+timeout probe: op 16 at 1381: 00000720 00000061 00000000 00000000 base1 0x128d7dd000 index_base 0x0 DROPPED
+timeout probe: write op 49 at 2379: 0x1200006e20 select 2 value 0x9076f7019 (packet 8 dwords); now 0x907575170 ran
+timeout probe: op 11 at 1393: 00000001 8d7dd000 00000012 DROPPED (mapped -1)
+timeout probe: write op 49 at 2387: 0x1200006de0 select 2 value 0x907656bc8 (packet 8 dwords); now 0x9073f0649 ran
+timeout probe: write op 49 at 2395: 0x1200006e00 select 2 value 0x9074533d7 (packet 8 dwords); now 0x907575170 ran
+timeout probe:   state before op 16 at 1399: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: dispatch op 16 at 1399: program 0x909936c00, groups 3186448897 x 1061867520 x 1068839936 (arguments at 0x128d7dd760) ran
+timeout probe: op 16 at 1399: 00000760 00000061 00000000 00000000 base1 0x128d7dd000 index_base 0x0 ran
+timeout probe: op 11 at 1411: 00000001 8d7dd000 00000012 DROPPED (mapped -1)
+timeout probe: write op 49 at 2414: 0x1200006e20 select 2 value 0x9074533d7 (packet 8 dwords); now 0x907575170 ran
+timeout probe:   state before op 16 at 1417: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: write op 49 at 2428: 0x1200006890 select 2 value 0x3cc70060003a (packet 8 dwords); now 0x3cc700600036 ran
+timeout probe: dispatch op 16 at 1417: program 0x909936c00, groups 1067129856 x 1048606720 x 1047150592 (arguments at 0x128d7dd7a0) DROPPED
+timeout probe: write op 49 at 2447: 0x1200006e20 select 2 value 0x9076f702d (packet 8 dwords); now 0x907575170 ran
+timeout probe: op 16 at 1417: 000007a0 00000061 00000000 00000000 base1 0x128d7dd000 index_base 0x0 DROPPED
+timeout probe: write op 49 at 2455: 0x1200006de0 select 2 value 0x90755616f (packet 8 dwords); now 0x9073f0649 ran
+timeout probe: op 11 at 1429: 00000001 8d7dd000 00000012 DROPPED (mapped -1)
+timeout probe: write op 49 at 2463: 0x1200006e00 select 2 value 0x9074533d7 (packet 8 dwords); now 0x907575170 ran
+timeout probe: write op 49 at 2482: 0x1200006e20 select 2 value 0x9074533d7 (packet 8 dwords); now 0x907575170 ran
+timeout probe:   state before op 16 at 1435: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffffffffff ps ffffffffffffffff cs 000000000909936c ls ffffffffffffffff hs ffffffffffffffff
+timeout probe: write op 49 at 2493: 0x1200006e00 select 2 value 0x907411d4a (packet 8 dwords); now 0x907575170 ran

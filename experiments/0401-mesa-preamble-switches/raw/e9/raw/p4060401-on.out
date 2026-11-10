@@ -1,0 +1,14 @@
+[bc5] exp 0406 (p406): learned prune on, mode full (BC5_0406_LEARNED_PRUNE=1): windows at junk addresses dropped at load, map_window left out for windows inside eager heaps; learned_apply calls over 5 ms counted, one line a minute
+[bc5] exp 0406 (p406): audio sleep on (BC5_0406_AUDIO_SLEEP=1): the blocking wait sleeps the drain time, 500 us to 2 ms
+p4060401: case the switches (full mode): 5 of 5
+p4060401: case the parse (pure): 32 of 32
+p4060401: case the lines and the quiet filter (pure): 17 of 17
+p4060401: case the junk rule (pure): 121 of 121
+[bc5] learned prune (exp 0406 p406): 107 learned windows loaded, 75 kept, 32 dropped at junk addresses (31 with a bit at 40 or above set, 1 at base 0); the file is unchanged
+p4060401: case the load hook (full mode): 2 of 2
+p4060401: case inside an eager heap (pure): 149 of 149
+p4060401: case the loop's decision (full mode): 109 of 109
+p4060401: case the minute count (full mode): 11 of 11
+p4060401: case the drain sleep (pure): 13 of 13
+p4060401: case the wait (pure): 12 of 12
+p4060401: on 471 of 471; end

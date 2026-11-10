@@ -1,0 +1,13 @@
+sav0401: switches KYTY_BC5_SAVEDATA_FIXES=(unset) KYTY_BC5_SAVEDATA_EVENT_CB=1 KYTY_BC5_SAVEDATA_SORT=(unset)
+[bc5] exp 0405: fs fixes off
+[bc5] exp 0401: memory from param.json off: total 11692 MiB, flexible 1024 MiB, direct 10668 MiB (param.json: flexible 0, cpu table 0, gpu table 0, amm table 0 MiB)
+[bc5] exp 0405: mem off
+[bc5] exp 0405: thread sync off
+[bc5] exp 0401: savedata fixes off
+[bc5] exp 0401: savedata sort off
+[bc5] exp 0401: savedata event callback on
+[bc5] exp 0405: savedata memory fixes off
+[bc5] exp 0405: savedata delete busy off
+[bc5] exp 0405: savedata aliases off
+mkdir(./_SaveData/UNKNOWN/blocked, 1ff) failed: The named file exists
+sav0401: on 33 of 33; end

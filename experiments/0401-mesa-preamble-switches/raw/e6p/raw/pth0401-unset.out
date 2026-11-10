@@ -1,0 +1,14 @@
+[bc5] exp 0405: thread sync off
+pth0401: KYTY_BC5_PTHREAD_FIXES=(unset), so off
+[bc5] exp 0401: pthread fixes off (rwlock: today's rule, only a reader of the same lock reads past waiting writers)
+pth0401: case 1 same-lock recursion past a queued writer: ok (rdlock OK, writer queued yes, the reader's second timed rdlock OK, a thread holding nothing tries EBUSY, unlocks OK OK, writer OK 5 us after the last read unlock)
+pth0401: case 2 a reader holding other read locks past a queued writer: ok (off, today's rule: want EBUSY, ETIMEDOUT, EBUSY, EBUSY; writer queued yes; holding 2 read locks (after an EPERM unlock: EPERM): try EBUSY, timed 50 ms ETIMEDOUT in 50065 us; holding 1: try EBUSY; holding none: try EBUSY; writer OK, then anyone reads OK)
+pth0401: case 3 two readers, each behind the other lock's queued writer: ok (off: want both to time out, as today; writers queued yes yes; reader 1 on B ETIMEDOUT in 300060 us, reader 2 on A ETIMEDOUT in 300059 us; cross-lock cycle seen 1 time(s) (untimed, today's locks would wait for ever: 2 readers and 2 writers stuck); writers OK OK)
+pth0401: case 4 rwlock contention stress: ok (8 threads x 2000 rounds in 32 ms; B writes 4690 (counter 4690), C writes 2000 (counter 2000), try refused 340; overlaps 0, errors 0 (first OK), failsafe time-outs 0; longest lock wait 382 us; free after: OK OK)
+pth0401: case 5 condition variable ring: ok (type 1 untimed: 800 turns; type 1 timed: 800 turns; type 2 untimed: 800 turns; type 2 timed: 800 turns; type 4 untimed: 800 turns; type 4 timed: 800 turns; 31 ms)
+pth0401: case 6 producers and consumers with timed waits: ok (6000 of 6000 items, sum right; overlaps 0, errors 0 (first OK); consumer waits: 1510 woken, 0 timed out (2 ms))
+pth0401: case 7 failed and priority-protected waits leave no waiter: ok (wait without the mutex: timed EPERM, untimed EPERM; priority-protected: ETIMEDOUT, unlock after OK; the real waiter woke with OK after 49 us)
+pth0401: case 8 broadcast wakes every waiter: ok (8 of 8 woke (4 untimed, 4 timed), 0 timed out, 0 errors, all back in 165 us)
+pth0401: case 9 timed waits time out and keep the mutex: ok (30 ms relative: ETIMEDOUT after 30060 us, unlock OK; 0: ETIMEDOUT, unlock OK; absolute now + 30 ms: ETIMEDOUT after 30057 us, unlock OK)
+pth0401: case 10 timed-out writers leave no waiting mark: ok (480 of 480 writer time-outs, 0 acquired, 0 errors; probes read 53, refused 1402419; after: a thread holding nothing reads OK, a writer times out ETIMEDOUT; behind a write owner: reader ETIMEDOUT, reader holding another lock ETIMEDOUT; then a writer gets it OK)
+pth0401: off 10 of 10; end

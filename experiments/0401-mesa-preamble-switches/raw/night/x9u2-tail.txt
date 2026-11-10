@@ -1,0 +1,30 @@
+bc5-direct: shared map at 0x0+0x10000: -22
+fps counter: t 153.235 s: 8 flips in 1.144 s, longest gap 440.2 ms, gaps over 40 ms 8, over 70 ms 8
+bc5-direct: shared map at 0x0+0x10000: -22
+audio trace: t 153.312 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.8 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 153.312 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+AJM codec=1, name=ATRAC9 decoder
+--- Build ---
+Source build f266548-dirty
+--- Stack Trace ---
+[0] 000055af9abf44fe
+[1] 000055af9a83487c
+[2] 000055af9abb36f3
+[3] 000055af9ac01a8b
+[4] 00007fd817ac5cb0
+[5] 00007fd817c17d41
+[6] 000055af9a954e73
+[7] 000055af9a955532
+[8] 00007fd817dc4ef9
+[9] 00007fd817b23dfa
+[10] 00007fd817bb75cc
+--- Error ---
+AMM virtual-memory unmap is unsupported: addr=0x00000080232e0000
+ in /home/kjaniszewski/bc5-work/exp0401e8/x5-jit/src/kernel/memory.cpp:3940
+== 2026-11-09 13:36:37 exit 65

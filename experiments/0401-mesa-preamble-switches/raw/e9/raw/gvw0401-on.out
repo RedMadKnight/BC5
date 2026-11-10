@@ -1,0 +1,19 @@
+[bc5] exp 0401 e7 (flx): fl probe state off, fl vgt flush off, fl serial off, fl meshlet probe off, fl crumbs meshlet off
+[bc5] exp 0401 e8 (smp): fl meshlet sample off
+[bc5] exp 0401 e9 (gvw): late producer wait up to 300 ms in all, unwaited fl drop on, give-up journal on, unwaited meshlet sample on (at most 16 jobs a second, 64 pattern draws each) (needs BC5_DIRECT_FL_CRUMBS=1 and the draws' user data, which fl_plan_buffer tracks with BC5_DIRECT_FL_MESHLET_SAMPLE, _FL_PROBE_STATE, _FL_MESHLET_PROBE or _FL_CRUMBS_MESHLET: no draw walked without them)
+gvw0401: case the switches (on): 3 of 3
+gvw0401: case the parse (pure): 27 of 27
+gvw0401: case the wait's comparison (pure): 7 of 7
+gvw0401: case the late-producer decision (pure): 24 of 24
+gvw0401: case the compute-queue scan (pure): 24 of 24
+gvw0401: case the host's decision (pure host): 13 of 13
+gvw0401: case the late-producer wait (on): 9 of 9
+gvw0401: case the drop window (pure): 5 of 5
+gvw0401: case the plan's drop (pure): 4 of 4
+bc5 clock: journal t 0 = monotonic 64161.714 s
+gvw0401: case the unwaited fl drop (on): 10 of 10
+gvw0401: case the give-up journal (on): 8 of 8
+gvw0401: case frames and the timeout line (on): 12 of 12
+gvw0401: case the unwaited sample (on): 20 of 20
+gvw0401: case the quiet filter (on): 159 of 159
+gvw0401: on 325 of 325; end

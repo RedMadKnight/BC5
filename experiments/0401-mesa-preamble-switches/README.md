@@ -1,0 +1,1184 @@
+# 0401 — Two registers of Mesa's preamble on their own switches
+
+**Status: two plays, both unplayable: both switches (slow from the start) and series c (memory thrash after 3 min); cause not separated. Series b adds the acb CS prefix, series c adds exp 0381's acb state restore, and series d puts series c on exp 0379's zero skip. All three are built. Series e adds exp 0402's NpCppWebApi V2, table catcher and param.json memory sizing, with the acb CS prefix off. Series e2 adds exp 0403's ACB_INHERIT. The shortcut "test 0401 CP+acb" runs series e2 with ACB_INHERIT=journal; it has not been played.** Written on 2026-11-02 on the top session's GO, on the maintainer's yes to a test build; the plays are the maintainer's.
+
+**Question.** A static audit of Mesa's gfx10 start state against 1,347 captured buffers (notes `static-register-audit.md`) found five live registers that neither the title nor the host sets. The direct read needs root, so their values are unknown. Does writing Mesa's value change the hang classes or the frame rate? This experiment only builds the switches for two of the five.
+
+**Setup.** One private normal binary, `~/bc5-work/exp0401/bin/kyty_emulator`: main 029e0d6b's `src/libs/bc5LleAgc.cpp` plus `mesa_preamble_prefix()` (`mkunit0401.py`), compiled with the shared build's own command and linked with the shared objects and archive (`build0401.py`). Shared binaries, archive, tree and launcher are pinned and only read. Private launcher `~/bc5-work/exp0401/play-pkg-0401.sh`: `play-pkg.sh` with its binary and two logs moved (`launcher0401.py`). Saves and settings stay the shared ones.
+
+| Switch, default off | Register | Value | Packet | Source |
+|---|---|---|---|---|
+| `BC5_DIRECT_CP_COHER_START_DELAY=1` | CP_COHER_START_DELAY, uconfig 0x7b | 0x20 | `SET_UCONFIG_REG` `C0017900 0000007B 00000020` | Mesa 0866ae7 `src/amd/common/ac_cmdbuf.c:60`, `src/amd/registers/gfx10.json` |
+| `BC5_DIRECT_SPI_REQ_CTRL_PS=1` | SPI_SHADER_REQ_CTRL_PS, SH 0x30 | 0x7 | `SET_SH_REG` `C0017600 00000030 00000007` | Mesa 0866ae7 `ac_cmdbuf.c:444-446`, `gfx10.json` |
+
+Both go in `prefix_of()` right after `tf_ring_prefix()`, so every drawing job's prefix carries them, in the same packet form as the rings. Unset, empty and `0` are off (`bc5::env_on`). Each writes one journal line at the first prefix, on or off.
+
+**Why the packet is allowed.** `CP_COHER_START_DELAY` sits in the uconfig range, and Mesa's `ac_pm4_set_reg` sends that range as plain `SET_UCONFIG_REG` from a user IB (`src/amd/common/ac_pm4.c:382-383`). It is not in Mesa's privileged list (`ac_pm4.c:34`, `is_privileged_reg`, which uses `COPY_DATA`). This is the same packet the prefix uses for `VGT_HS_OFFCHIP_PARAM` (F785), and `backend/src/dispatch_min.cpp:45` sends this very write. No `COPY_DATA` and no kernel path.
+
+**How it will be read.** One binary takes all three switches by environment, since `BC5_DIRECT_ARGS_WB` is in the shared archive. They are not to run together: `ARGS_WB=all` and `CP_COHER_START_DELAY` may act on the same CP coherency path (for the second, an inference from its name, TODO(verify)), so a clean play would not say which helped; and `SPI_SHADER_REQ_CTRL_PS` changes PS wave scheduling, so it would blur the frame-rate cost of `ARGS_WB=all`. Both registers are global and keep their value until a reboot or a reset (the lesson of F780, R17), so an arm with a switch on must not be followed by an off control without a reboot. Order proposed: the read of the five registers first, since a register that already holds Mesa's value makes its switch a no-op; then `ARGS_WB=all` alone; then `CP_COHER_START_DELAY` alone; `SPI_SHADER_REQ_CTRL_PS` last, for frame rate only.
+
+Journal, `gc/direct.log`, at the first prefix: `exp 0401: CP_COHER_START_DELAY ...` and `exp 0401: SPI_SHADER_REQ_CTRL_PS ...`, each `off` or its value. Log: `~/bc5-work/exp0401/play-last.log`.
+
+**Result.** Built 2026-11-02 11:25, claim to release in slot 2026110211243533705, no emulator. Binary `174e768ec3a68c34be879ad57067819c` (shared objects of 4d2b1b1d, unit 9eec0a38, shared archive 75e30335). Launcher `c6b2d7fd`, 4 lines changed from `play-pkg.sh` 97835f88 (`raw/play-pkg-0401.diff`). The tree's unit equals main's patch 0001 unit (d18b4482). The real function, compiled with clang++ in the container, gave the right packets and lines for 7 of 7 settings (`raw/check0401.out`). 5 compile warnings, none in the new lines (3859-3870): deprecation and format and unused-variable warnings in older code. Shared binaries, archive, tree and launcher were unchanged at the end. `test0401.py` 15 of 15 on stand-ins, laptop. Not shown: that the prefix reaches the chip with these packets on a real run. No game ran.
+
+**Play 1, both switches (2026-11-03 08:54–08:59, the maintainer, RT on).** Shortcut "BC5 emulator (test 0401)" (`shortcut0401.sh`, `BC5_DIRECT_ARGS_WB=0`). The journal `play-20261103-0854/gc/direct.log` shows both `exp 0401` lines on. The maintainer: "Straszne spowolnienie", then "Nie da się grać", from the start of play. The top session's numbers: t 170–256 at 19–30 flips/s; at t 256 a flip took 103 ms, of it GPU busy 3.2 ms, outside the direct path 75 ms, sync 15.9, hints 8.8. The launcher log is kept as `~/bc5-work/exp0401/play-last-20261103-0854-both.log`, since the next play overwrites `play-last.log`.
+
+How it reads, as an inference, not shown: both registers act inside the GPU, where the play spent 3.2 ms of 103. `SPI_SHADER_REQ_CTRL_PS` 0x7 is `SOFT_GROUPING_EN` 1 with `NUMBER_OF_REQUESTS_PER_CU` 3 (field layout from `tools/bc5-agc/regdb/gfx10.json`), the value Mesa writes on every gfx10 context; what the fields do is not in any public AMD text read here (TODO(verify)). `CP_COHER_START_DELAY` holds a 6-bit `START_DELAY_COUNT`. Two confounds fit the time outside the direct path better. First, this build has no zero skip, unlike the morning's plays (exp 0379's bench: GTT 11,992 against 10,080 MiB, MemAvailable 480 against 2,490). Second, it was the first play after the 08:53 machine-down, so it ran with a cold page cache (F620). A slow play with the CP switch alone would not by itself point at the register; a reboot followed by the plain normal shortcut is the control. The registers latch, so after this play the box needs a reboot before any run with the switches off.
+
+**Shortcut 2, `CP_COHER_START_DELAY` alone (2026-11-03 09:06).** On the top session's GO: "BC5 emulator (test 0401 CP)", `shortcut0401.sh cp`, md5 19651ddb4ca5e7a8baa93461124b46d1. Env `BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0`. RT on in the shared settings. Replaced at 09:21 by series b's shortcut, unplayed.
+
+**Series b: the acb CS prefix (2026-11-03, on the top session's GO, under the fixes-first rule).** A third switch, `BC5_DIRECT_ACB_CS_PREFIX=1`, default off. It is built into a second private binary in `~/bc5-work/exp0401b`, so the played 174e768e stays as it was.
+- *Lead.* The 08:49 hang of that morning (exp 0379's zero-skip binary, notes `hangs-20261103-0849-0853.md`) stood in acb #432910. Its first four indirect dispatches launch 19612 × 1 × 1 before the acb sets any program. Its last dispatch sets 0x9098eb200 over the same arguments, so the head most likely expects the program the previous acb on its queue left (an inference). The stall sampler saw a dcb's program, 0x11d0287900, running those 19612 groups. Experiment 0195's CS prefix covers dcbs only.
+- *What it does.* Every acb part the ring thread submits is applied to its guest queue's own tracker (`bc5::full_state`, keyed by `t_queue_idx`). A part that dispatches before it sets `COMPUTE_PGM_LO` (`cs_inherit_at`) gets that queue's tracked compute registers in front (`cs_prefix`: SH 0x204–0x3ff, the same runs as the dcb prefix), in the part's own chain segment. This covers the whole acb, a head that goes ahead of a wait, and a rest after one. Without the chain, the prefix goes as a job of its own just before. A queue with nothing tracked yet gets nothing. With the switch off nothing is tracked.
+- *Journal.* `exp 0401: acb CS prefix on|off` at the first acb. Then `acb cs prefix (exp 0401): … queue Q acb part N dwords dispatches at A before it sets a program; the queue's program 0x…, D dwords in front (K such parts)` for the first 64 parts and every 1024th after.
+- *Build.* 2026-11-03 09:18–09:19, claim to release in slot 2026110309184654684, no emulator. Binary `5b05ce9be5e4a4bf6352e270d28358d7` (shared objects of 4d2b1b1d, unit b1d96c71 = `mkunit0401.py --acb`, archive 75e30335). Launcher `01312b5b` (`raw/play-pkg-0401b.diff`). The same 5 warnings as the first build, none in the new lines. The function check gave 7 of 7 (`raw/check0401-b.out`). `test0401.py` 19 of 19 on stand-ins. The shared files and 174e768e were unchanged at the end. Not shown: that the prefix reaches the chip on a real run, or that it compiles to what the source says beyond the strings checked.
+- *How a wrong program choice would show.* First in the journal: each prefixed part names the program put in front. For the 08:49 kind of acb the expected program is the 0x9098… family (0x9098eb200). A 0x11d0… program there, or 0 dwords, would mean the queue key or the tracking is wrong. On the GPU, a wrong program over thousands of groups gives what 08:49 gave: a dispatch that does not end (F403's CP state), or TCP/SQC faults at junk addresses (F443's family). A stale program address could also give an SQC instruction fetch fault, and a milder mismatch would show as wrong RT data in the reflections. The prefix also changes what a following dcb inherits in registers the acb does not set (F679's class).
+- *Cost (estimates, not measured).* GPU: one `SET_SH_REG` run of the tracked compute registers, about 60 dwords (the dcb prefix's lines show 58), per acb part that inherits. How many such parts arrive per second is unknown; the journal counts them. CPU: with the switch on, the ring thread applies every acb part to its queue's tracker, as `piece_check` does for every dcb; acbs here are hundreds to a few thousand dwords. With the switch off, one static check per part.
+
+**Shortcut 3, "BC5 emulator (test 0401 CP+acb)" (2026-11-03 09:21).** `shortcut0401.sh cpacb`, md5 300afa96869abd832a4703fbe02450bc. Env `BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_ACB_CS_PREFIX=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0`, launcher `exp0401b/play-pkg-0401.sh`, log `~/bc5-work/exp0401b/play-last.log`. It replaced the CP shortcut. The box had run since 08:53:34 when it was installed. `SPI_SHADER_REQ_CTRL_PS` still holds the 0x7 of play 1, and this shortcut does not write it, so a reboot must come before playing it. The 0401 confounds still hold for it (no zero skip, and a cold cache after the reboot). Moved to series c at 09:27, unplayed.
+
+**Series c: series b plus exp 0381's acb state restore (2026-11-03, on the top session's GO, under the fixes-first rule).** A fourth switch, `BC5_DIRECT_ACB_STATE_RESTORE=1`, default off (`mkunit0401.py --acb-restore`, unit 29c88be3). It is built in `~/bc5-work/exp0401c`, so series b's 5b05ce9b stays in `exp0401b` as the rollback (`shortcut0401.sh cpacb-b`).
+- *What it does.* This is exp 0381's restore (F679, F685: 3 of 3 starts clean with it, 3 of 3 faults without it). In front of a dcb that dispatches or calls an IB2 and gets no other prefix, it puts the graphics queue's tracked compute registers (SH 0x204–0x3ff without COMPUTE_VMID) through the CS prefix's path, in the dcb's own chain segment. `backend/include/bc5/acb_restore.hpp` is not on this build's include path, so its `wants()` and `runs()` are copied into the unit with the same behaviour. Two parts of exp 0381 are left out: its acb register census (`Touched`, journal only) and its `Stage::MapOnly` guard, a stage this unit lacks. `piece_check` keeps the graphics tracker current with the switch on.
+- *Journal.* `exp 0401: acb state restore (exp 0381) on|off` once. Then `acb state restore (exp 0381): … dcb N dwords, R registers in D dwords (K such buffers)` for the first 16 dcbs and every 1024th after.
+- *The two acb switches in one queue.* They do not overlap. The acb prefix acts on acb parts only and replays the guest compute queue's own tracker. The restore acts on dcbs only and replays the graphics tracker, which `piece_check` feeds from dcb, cc and hib buffers only. Neither tracker sees the other's buffers or prefixes, and a chain never holds acb and dcb segments together. On a dcb, the full draw prefix or exp 0195's CS prefix comes first, and both already carry the graphics tracker's compute registers. Left open: a register set through a table the tracker cannot read, and a dcb with neither a dispatch nor an IB2, which gets no restore.
+- *Build.* 2026-11-03 09:26–09:27, claim to release in slot 2026110309262657606, no emulator. Binary `505b3ae35ac4510494e03e50fec6a43e` (shared objects of 4d2b1b1d, unit 29c88be3, archive 75e30335), launcher `d17996d3` (`raw/play-pkg-0401c.diff`), `raw/build-c.txt`, `raw/check0401-c.out` 7 of 7. The same 5 warnings as before, none in the new lines. `test0401.py` 20 of 20. The shared files, 174e768e and 5b05ce9b were unchanged at the end.
+
+**Shortcut 3 on series c (2026-11-03 09:28).** `shortcut0401.sh cpacb`, md5 2fdf8e9f484a80f2d11fb3f6a69123d8, the same name "BC5 emulator (test 0401 CP+acb)". Env `BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_ACB_CS_PREFIX=1 BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0`, launcher `exp0401c/play-pkg-0401.sh`, log `~/bc5-work/exp0401c/play-last.log`. Reboot before playing it, as above.
+
+**Play 2, series c (2026-11-03 13:46, the maintainer, RT on).** Unplayable after 3 minutes. The top session's sampler showed the memory thrashing, with no GPU error in the kernel log. Available memory fell to ~250 MiB, swap rose from 0.7 to 2.9 GiB and GTT from 10.6 to 12.6 GiB. PSI memory "full" stalled about 40 % of the time, and the mount took 2.7M major faults. Every 0401 binary lacks exp 0379's zero skip, which exp 0388's memory-test build 902585e2 has.
+
+**Series d: series c on the zero skip (2026-11-03 13:52, the top session's GO on the maintainer's "Tak, przebuduj").** The same three switches and edit (`mkunit0401.py --acb-restore`), applied to the unit of exp 0388's 902585e2 build instead of main's. That unit is main's d18b4482 plus `experiments/0388-job-arena-root/memory/z/patch-z-bc5LleAgc.diff` (`3a77e0acef307865d1cd524951060422`, git blob 321eed4 as the diff's index line says), and it includes `bc5/zero_skip.hpp` (`b29c66c4bc9d5bccb8aac233b3843414`, = `backend/include/bc5/zero_skip.hpp` on exp/0388-job-arena-root). `box0401.sh` (series d) reads both from `~/bc5-work/exp0388/z/src/src` under these pins and copies them into `exp0401d`. `build0401.py` puts the header's private directory first on the include path, as 0388's `build0389z.py` does. The edit adds the same lines to both units (unit 0f18cf30cb85843cdbe9d5df68909e3d). Every switch stays default-off on its own: the zero skip runs only when `BC5_DIRECT_ZERO_SKIP` names a list.
+- *Build.* 2026-11-03 13:57–13:58, claim to release in slot 202611031357133761, no emulator. Binary `1545c4dee54528fc0480faf1b62df45e` (shared objects of 4d2b1b1d, unit 0f18cf30, archive 75e30335), launcher `7e4df66b96b3983b85733606895d2a01` (`raw/play-pkg-0401d.diff`, the same 4 lines), `raw/build-d.txt`, `raw/check0401-d.out` 7 of 7. The binary holds the zero skip's strings (`BC5_DIRECT_ZERO_SKIP`, `BC5_DIRECT_ZERO_SLICES`, `zero skip: list %s`) and `job-arena fix APPLIED`, as 902585e2 does. The same 5 warnings as series c, moved by the zero skip's lines, none in new code. `test0401.py` 22 of 22 on stand-ins (`python test0401.py <main unit> <work dir> <zero-skip unit>`). The shared files, 174e768e, 5b05ce9b, 505b3ae3, 902585e2 and its unit were unchanged at the end.
+
+**Shortcut 3 on series d.** 2026-11-03 13:58, `shortcut0401.sh cpacb`, md5 0a1d81f619cc30596b979fb2fb7a7afd, the same name "BC5 emulator (test 0401 CP+acb)". Env `BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_ACB_CS_PREFIX=1 BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0 BC5_DIRECT_ZERO_SKIP=~/bc5-work/exp0388/m/zero-list-moving.txt`: the skip on as `play0389z.sh on` sets it, with the list pinned at 843f9fbc and `BC5_DIRECT_ZERO_SLICES` unset. RT on in the shared settings. Launcher `exp0401d/play-pkg-0401.sh`, log `~/bc5-work/exp0401d/play-last.log`. Rollback to series c's 505b3ae3 without the skip: `shortcut0401.sh cpacb-c`. The journal should show `zero skip: list …` and `… MiB in … runs skipped` per heap. If it says `not skipped`, the heap spans differ from the list's and the skip gives nothing (exp 0388's README). Reboot before playing, as the maintainer planned.
+
+**Plays on series c and d (2026-11-03, the top session's numbers).** With the acb CS prefix on, three guest CPU crashes: one on 0401c and two on 0401d. The top then hand-edited the shortcut to series c with the prefix off (`desktop-before-e.bak`, md5 78296f80). That play ran 25 min, then hung the GFX ring at 16:32:33: GRBM 0xa2713028, and acb #1264478 dispatched program 0x11d0287900, the 08:49 class. Buffers: `~/bc5-data/captures/play-20261103-1607/gc`; devcoredump `20261103-163233-devcd1.txt`.
+
+**Series e: three switches from exp 0402 (2026-11-03 16:4x, the top session's GO on the maintainer's "Buduj").** Items 1, 4 and 5 of exp 0402's Top 10, each behind its own switch, on series c's unit. Every 0401 switch is kept. The build adds three private units from the same tree, so it no longer touches `bc5LleAgc.cpp` alone.
+- *1. NpCppWebApi SessionManager V2* (`KYTY_BC5_NP_SESSION_V2=1`, `mknp0401.py`, `libNpCppWebApi.cpp` 7c40b784 → 935fcc7e). It adds the ten exports exp 0328's port missed (F809), ported from AnyPS5 `core/libs/prx/libSceNpCppWebApi/Export.cpp` @ 4f41f4c37 (GPL-2.0-only; the note is in the unit).
+  - Nine of them (the four `PlayerSessionsApi` requests and five factories) return 0x80552907 NOT_SIGNED_IN without writing their out-pointers.
+  - `ParameterToJoinPlayerSessionAsPlayer::initialize` returns 0, as our port's other parameter `initialize`s do, and as AnyPS5 did at 27c88a8, where the port came from. AnyPS5 4f41f4c37's `InitializeParameterWithBody` belongs to a parameter-object model our port does not have. Here the same class's constructor and `terminate` are stubs, so that helper would read an uninitialised field. This departs from the GO's wording.
+  - The ten are registered in `InitNpCppWebApi_1` only with the switch on. Off, the loader's stubs answer them, as before. One stderr line either way.
+  - R32: `nid0401.py` (laptop) checks name → NID, 10 of 10. The gate `npgate0401.cpp` runs on the box after the link, linked with the emulator's own objects minus `main.cpp.o`. It runs `Libs::InitAll` into a real `SymbolDatabase`, resolves each NID by NID and by the title's import key to its function, and calls the ten. It runs with the switch on, 0 and unset. Notes: `np0401-notes.md`.
+- *2. Submit-time table catcher* (`BC5_DIRECT_TABLE_CATCHER=1`, `mkunit0401.py --catcher`, unit 0d65c14d). F403 sub-class B: are the dims written after submit, or read too early? The idea is sharpemu 11506fc's; no code was taken from it.
+  - *At submit:* `submit_now`'s walk hashes the arguments of each running DRAW_INDIRECT, DRAW_INDEX_INDIRECT, DISPATCH_INDIRECT (both forms) and multi-draw packet, at the SET_BASE 1 base it tracks, plus the LOAD_*_REG_INDEX (offset, value) tables.
+  - *Later:* at the job's completion, and at a fence timeout before `timeout_probe`, it hashes them again and journals every change with the values then and now.
+  - *Journal lines:* `exp 0401: table catcher on|off`, `table catcher (exp 0401): at completion|the timeout, submit #N kind op XX at Q: … changed since submit: was … now …`, a line per timeout, and a 64k-check summary.
+  - *Not covered:* IB2 contents and the offset-and-size table format.
+- *3. Direct/flexible sizing from param.json* (`KYTY_BC5_MEMORY_FROM_PARAM=1`, `mkmem0401.py`: `memory.cpp` f6154692 → 43713ef6, `systemContent.cpp` 7121c22c → 4e33b30a, `systemContent.h` 8890c158 → 2b2b21eb, first on the include path). This follows KytyPS5 09753bf (GPL-2.0).
+  - Total = 12800 − 64 MiB cache − the page-table memory past 64 MiB each for CPU, GPU and AMM (param.json `kernel.cpuPageTableSize`, `kernel.gpuPageTableSize`, `amm.pagetableMemorySizeInMib`). `KYTY_GUEST_MEMORY_MB` (13824 in `bc5-run.env`) and the host cap are ignored.
+  - Flexible stays param.json's 276 MiB (F194), and direct is the rest. If the title sets no table sizes, that is 12,460 MiB of direct memory against today's 13,548.
+  - Left out: 0a14091's charge of module segments to flexible memory, and the `KernelGetPageTableStats` totals.
+  - Journal: `[bc5] exp 0401: memory from param.json on|off: total …, flexible …, direct … (param.json: …)` on stderr at memory init.
+  - Risk: a title that sizes its heaps from direct memory may fail an allocation, as ASTRO BOT did on AnyPS5's 12 GiB (reverted in 97f1d41a2). Less direct memory lowers pinned GTT only if the pinned heaps shrink with it. Notes: `mem0401-notes.md`.
+- *Build.* 2026-11-03 16:49–17:0x, claim to release in slot 202611031649155497, no emulator. The first build stopped on `memory.cpp`'s same-directory include (`memoryAddressSpace.inc`, now copied beside the private unit under its pin 44586b1e). Binary `852d9b089558d4c845ba7005af888b96` (shared objects of 4d2b1b1d, archive 75e30335; units bc5LleAgc 0d65c14d, libNpCppWebApi 935fcc7e, memory 43713ef6, systemContent 4e33b30a + header 2b2b21eb), launcher `b9774734b4ae9411afb768197d3f59c8` (`raw/play-pkg-0401e.diff`), `raw/build-e.txt`, `raw/check0401-e.out` 7 of 7. R32 gate: `raw/npgate-e-on.out` 10 of 10 registered as their functions, 9 of 9 NOT_SIGNED_IN, initialize 1 of 1; `-off` and `-unset` 10 of 10 unregistered. 11 warnings over the four units, all in old code (deprecations, format, unused names; `libNpCppWebApi.cpp` lines 50 and 62). `test0401.py` 24 of 24 on stand-ins (`python test0401.py <main unit> <work dir> <zero-skip unit> <tree root>`). The shared files and every earlier 0401 binary were unchanged at the end.
+
+**Shortcut 3 on series e.** 2026-11-03 17:0x, `shortcut0401.sh cpacb`, md5 ceb3220b3cff940b031b16e9da7c5340, the same name. Env `BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_ACB_CS_PREFIX=0 BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0 BC5_DIRECT_TABLE_CATCHER=1 KYTY_BC5_NP_SESSION_V2=1 KYTY_BC5_MEMORY_FROM_PARAM=1`, launcher `exp0401e/play-pkg-0401.sh`, log `~/bc5-work/exp0401e/play-last.log`. None of these keys is in `bc5-run.env`, so the launcher does not override them. RT on. Before it, the top's hand edit (series c, prefix 0, md5 78296f80) was kept as `exp0401e/desktop-before-e.bak`; `shortcut0401.sh cpacb-c0` makes it again (the rollback to 505b3ae3).
+
+**Series e2: series e plus exp 0403's ACB_INHERIT (2026-11-03 17:0x, the top session's addition under the fixes-first rule).** A seventh switch, `BC5_DIRECT_ACB_INHERIT=journal|wave|skip`, default off (`mkunit0401.py --inherit`, unit 73e8e4e0), from exp 0403's Verdict and "Proposed switch" (bd3744c5). Series e had stopped on its first build, so it was finished as it was; e2 is a separate build in `exp0401e2`, and e stays as the rollback (`shortcut0401.sh cpacb-e`).
+- *State kept.* Per guest queue (`t_queue_idx`), the compute registers (`cs_prefix`, SH 0x204–0x3ff) and USER_DATA_0..3 at the queue's last wave32 and last wave64 dispatch. The wave mode is the initiator's CS_W32_EN, bit 15 (exp 0403 §2; TODO(verify) in the register database). The initiator is the last dword of each dispatch packet. At most two snapshots are taken per part. Tracking runs where exp 0401 tracks: after each head segment, and after each ring part.
+- *`journal`.* No submission changes. Each part that dispatches before it sets a program gets a journal line (first 64, then every 1024th): `acb inherit (exp 0403): … queue Q head|rest part N dwords from offset F: K inheriting dispatches, the first at A, initiator 0x…, (W32|W64); the queue's last W32 program … ud0-3 …, last W64 … ud0-3 …; previous parts …; <action>, D dwords in front`.
+- *Ring census.* Every non-IB type-3 packet on a guest ring slice is counted per queue: by opcode, and for SET_SH_REG by first register and count. The counts are journaled at the first slice and every 1024th, as `acb inherit census (exp 0403): queue Q after S ring slices, non-IB type-3 packets: op XX xN … sh 0xRRR+C xN`. A `sh 0x20c` entry there would mean the ring sets programs that our GPU never sees (exp 0403's difference 1).
+- *`wave`.* A head (offset 0 in its title buffer) gets the slot with its dispatch's wave mode in front. This uses exp 0401's prefix path, in its own chain segment. With no such slot, it is skipped. A rest or segment is left as it is, since its head is replayed by `state_prefix`.
+- *`skip`.* A head's inheriting dispatches (each dispatch before the part's first packet that may set COMPUTE_PGM_LO, by `cs_inherit_at`'s rule) are recorded by title address. `submit_now`'s filter drops them through `drop_offsets`, as `BC5_DIRECT_SKIP_PGM` drops, so the packet becomes a NOP of the same length. Each drop is journaled.
+- *Exclusion.* With `BC5_DIRECT_ACB_CS_PREFIX` set too, ACB_INHERIT wins. The acb CS prefix stays off, and a line says so.
+- *Build.* 2026-11-03 17:03–17:1x, claim to release in slot 2026110317031110672, no emulator. Binary `35ff82ebc8530e4bcc4ea66ccf43accf` (shared objects of 4d2b1b1d, archive 75e30335; units bc5LleAgc 73e8e4e0, libNpCppWebApi 935fcc7e, memory 43713ef6, systemContent 4e33b30a + header 2b2b21eb), launcher `fbac41eef200b36c440ddc1ef5322783` (`raw/play-pkg-0401e2.diff`), `raw/build-e2.txt`, `raw/check0401-e2.out` 7 of 7, R32 gate `raw/npgate-e2-{on,off,unset}.out` as in e. The 11 warnings are series e's, with their line numbers moved, and none falls in new code. `test0401.py` 25 of 25. The shared files and every earlier 0401 binary (852d9b08 included) were unchanged at the end.
+
+**Review (Codex, 2026-11-03, after 14011b76): the W32 slot can hold an inherited program.** `acb_inherit_track` (`mkunit0401.py:413`) puts a dispatch's state into the W32 or W64 slot by its initiator bit alone. That includes a dispatch that set no program in its own part. Counter-example: part A sets program P and dispatches W64; part B sets only USER_DATA_0 and dispatches W32. The tracker still holds P, so B writes P into the W32 slot. The 08:49-type head is exactly such a part, so every inheriting W32 head fills the W32 slot with the program it inherited. Reading e2's journal: "last W32 program" means the state at the queue's last dispatch that asked for W32. It is not a confirmed wave32 program (inferred from the code, not observed). `wave` would replay such a slot, so it stays unset, as before. Proposed fix (series e3, not built): promote a slot only at a dispatch that comes after the part's first possible program write, by `cs_inherit_at`'s rule, and journal where each slot came from. A CPU case A→B on the box tests it.
+
+**Shortcut 3 on series e2.** 2026-11-03 17:1x, `shortcut0401.sh cpacb`, md5 de0da78ec49da091b69ebb269a44448c, the same name. Env `BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_ACB_CS_PREFIX=0 BC5_DIRECT_ACB_INHERIT=journal BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0 BC5_DIRECT_TABLE_CATCHER=1 KYTY_BC5_NP_SESSION_V2=1 KYTY_BC5_MEMORY_FROM_PARAM=1`, launcher `exp0401e2/play-pkg-0401.sh`, log `~/bc5-work/exp0401e2/play-last.log`. RT on. `wave` and `skip` are built but not set. Rollbacks: `cpacb-e` (series e, 852d9b08) and `cpacb-c0` (505b3ae3, prefix off).
+
+**Play on series e2 (2026-11-03 17:55:24–17:58:00, the maintainer, RT on; read-only analysis on the top session's GO).** The maintainer: "Gra była baaardzo bardzo płynna. Grało się świetnie ale krótko." It ended in the host's own fatal, "AMM virtual-memory unmap is unsupported: addr=0x0000008639a20000" (`exp0401e2/play-last.log:2377`), not a GPU hang.
+- *Thread.* Load base 0x5602f5193000, from the job-arena hook line (log line 21, `bc5_job_arena_owner_help` +0x8ad950). `llvm-symbolizer` on `exp0401e2/bin` gives `AprWorkerThread` (libAmpr.cpp:2299) → `RunOrderedAprCommands` (:1960) → `ReadHostFileToGuest` (:2515, the `memcpy` into the guest) → libc → the signal handler → `KernelHandleReservedRangeAccessViolation` (memory.cpp:3718) → EXIT. This is F206's signature: the APR read worker copies a file into an AMM page with no mapping.
+- *The memory switch, likely implicated (inference).* It gave total 12704 MiB, flexible 276, direct 12428. param.json sets cpu 64, gpu 64 and amm 96 MiB of tables, so the overhead is 32 MiB; 12736 assumed none. Automatic AMM maps take their pages from direct memory [0, `KernelGetDirectMemorySize()`) (`libAmpr.cpp:1642`), and F206 says the pool is the title's 3 GiB plus the host's direct memory. Exp 0288: the title reserves 12,162 MiB of the 13,824 offered. With 1,120 MiB less direct memory, the pool's headroom shrinks by that much. A refused automatic map returns EAGAIN, the rest of its map-only buffer is dropped, and the APR reads that follow hit reserved AMM pages, which is F206's chain. The refusal is traced only with `KYTY_BC5_AMM_TRACE` (stderr), which was off, so this log cannot show it. The AMM window is the title's own reservation, and the switch does not move it. At about 150 s the play had made 21,234 maps against 28,810 in the 16:07 play: consistent with refused maps, or with another route (R21). Check: one play with the switch on and `KYTY_BC5_AMM_TRACE=1`. The trace should show `amm trace: auto pool exhausted` before the fatal.
+- *Smoothness, not from pinning.* Over the first 155 s: 28.8 flips/s and 38 seconds with a gap over 100 ms. The 16:07 play (505b3ae3, prefix 0) had 22.2 flips/s and 61 such seconds over the same span; series d had 17.8 and 75. Pinned memory at about 150 s was 11,588 MiB here against 11,710 at 16:07, so only about 120 MiB less, not 1.1 GiB. The fewer maps may have saved mapping work, possibly because maps were refused, which would also leave content unloaded; the route and the cache differ too. The journal cannot pin the cause.
+- *The other switches.* No `acb inherit (exp 0403)` line, so no part inherited a program in 155 s. The ring census on queue 0 found no non-IB type-3 packets. The table catcher logged about 578k changes, mostly acb op 16 tables (the top session's count).
+
+**Later plays on e2 (2026-11-03, the top session's numbers).**
+- *18:14.* Memory switch on, with `KYTY_BC5_AMM_TRACE=1`. The AMM fatal came at t≈145 s, right after `amm trace: auto pool exhausted: map of 0x4000000 bytes refused, 9653 maps hold the pool, 0xd444000 free`. This confirms the inference above. The top session then set `KYTY_BC5_MEMORY_FROM_PARAM=0` in the shortcut by hand (backup `exp0401e2/desktop-mem1.bak`). `shortcut0401.sh cpacb` now writes it the same way.
+- *18:04.* A freeze at t≈184 s. The GPU was idle with every submission done, while game-main and Render ran at 100 % in user space. There are no stacks.
+- *18:16.* Memory switch off. The maintainer called it better. It ended at t≈681 s in a guest NULL read at eboot+0x3a05f35 (exit 65), after the frame rate collapsed in its last seconds. No memory sampler ran.
+- The maintainer turned JobArenaFix off in the F2 menu. That is in the shared `input.cfg` and is his choice.
+
+**Series e3: e2 with exp 0403's queue mode, plus a memory line (2026-11-03 18:3x–18:5x, the top session's GO; built, not installed).** The shortcut stays on e2 until the maintainer says otherwise.
+- *First draft, set aside.* The first e3 fixed e2's W32/W64 slots (`--inherit2`): only a dispatch after its own part's program write filled a slot. It was built as binary 8b4efb9b (unit 989ca24b, its CPU test 12 of 12, `raw/build-e3w.txt`, `raw/inh0401-e3w.out`). The top session then replaced the design with exp 0403's addendum (a423f761), which withdraws the wave32 claim and the per-wave slots. The draft stays on the box as `exp0401e3w`, unused.
+- *Second build, set aside.* The queue design below, with MISMATCH and dropping on fallback, was built as binary 57de16ee (unit d3869b92, its CPU test 13 of 13, `raw/build-e3q.txt`, `raw/inh0401-e3q.out`). Codex's second review and the top session's fallback decision followed, so it stays on the box as `exp0401e3q`, unused.
+- *ACB_INHERIT, queue design* (`mkunit0401.py --inherit3`; e2's `--inherit` still gives 73e8e4e0). The modes are `off|journal|queue|skip`, and `wave` is gone.
+  - *Tracking, in every mode.* Per guest queue: the live compute state, a `full_state::Tracker` applied over all of the queue's parts.
+  - *Program provenance.* Per program address (COMPUTE_PGM_LO/HI): the wave modes the title used with it, counted only at dispatches after a certain program write in the same part. That is `inherit_scan`, by `cs_inherit_at`'s packets. An unreadable table or an IB2 that comes after the write voids it until the next certain write (Codex's second review, point 3). Each program also records the queue and part that last did so. `inherit_scan` also returns what each part leaves behind: a certain program, a voided one, or nothing that touches the program. That gives the queue a `known` flag.
+  - *Ring.* Per physical ring: the guest queue of its last tracked part. This is exp 0403's difference 3.
+  - *`journal`.* No submission changes. Each inheriting part's line gives: the part's address; its first inheriting dispatch and initiator; the queue's live program and USER_DATA_0..3; that program's provenance ("bound last by queue Q part P" or "never bound in a part of its own") and its own W32/W64 counts; `UNSEEN` when no dispatch of the title's own with that program in this wave mode has been seen (not observed: it is evidence of neither an illegal shader nor a wrong order, Codex's point 2); whether the physical ring's last tracked part came from the same queue; and the previous three parts with their first two dwords (a check that the driver's 2-dword IB is a NOP). The line also gives the running counts: prefixed, fallback ring (no program, voided, unseen), skip-mode heads, and dispatches dropped. The ring census stays.
+  - *`queue`.* A head (offset 0) gets the queue's live state in front, through `cs_prefix` and exp 0401's prefix path, but on heads only. That needs a known state: a tracked program from a certain write that nothing has voided since, seen with the dispatch's wave mode. Otherwise nothing goes in front and the part keeps today's behaviour, the ring's state. The line then says `unknown, fallback ring` with its reason, and fallbacks are counted apart from prefixes. This is the top session's decision of 2026-11-03: queue mode never drops, so a clean play in it cannot come from silent drops.
+  - *`skip`.* As in e2, and the only mode that drops.
+  - *Rests and segments* are left alone in every mode.
+  - *CPU test.* `inherit_scan` and the memory line's parsing are pure, and the same texts go to `inherit_scan.inc` and `memline_parse.inc`. `inh0401.cpp` runs them on the box over 25 cases. Scan cases: Codex's A→B (B's dispatch is not bound), the 08:49 head (4 unbound W32, then its own W64), an 18:16 wave64 head, ranges over and past 0x20c, readable and unreadable pair tables, the offset format, an IB2, and a part cut mid-packet, each with its end state. Point 3's cases: SET_PGM then an IB2 or an unreadable table, then a dispatch (not bound); SET_PGM, IB2, SET_PGM, dispatch (bound); a bound dispatch, an IB2, then an unbound one. Point 1's memory-line cases are listed below.
+- *Memory line* (`--memline`, `BC5_DIRECT_MEM_LINE`, on unless 0). Every 10 s a background thread writes `memory (exp 0401): t … s: available … MiB, swap used … MiB, psi some … full … (avg10, %), full total … ms, gtt … of … MiB`. It reads `/proc/meminfo`, `/proc/pressure/memory` and amdgpu's `mem_info_gtt_used`/`_total`, once each, with no smaps walk. The min journal is flushed after each line, so the line before a crash survives. A value whose file, key or number cannot be read is printed as `unknown`, never 0, so a missing file cannot look like memory at its floor (Codex's point 1). The CPU test checks every file read; no meminfo; no MemAvailable key (a decoy `MemAvailableX:`); no SwapFree; no PSI `full` line; no PSI file; no GTT total; a GTT value that is not a number.
+- *Build.* 2026-11-03 18:55–19:0x, claim to release in slot 20261103185545273314, no emulator. Binary `c059c71fa37c0f81db19310cb1197be4` (shared objects of 4d2b1b1d, archive 75e30335; units bc5LleAgc d3b7f9b0, libNpCppWebApi 935fcc7e, memory 43713ef6, systemContent 4e33b30a + header 2b2b21eb), launcher `2995f018116521816780f1aa73d58c38` (`raw/play-pkg-0401e3.diff`), `raw/build-e3.txt`, `raw/check0401-e3.out` 7 of 7, CPU test `raw/inh0401-e3.out` 25 of 25, R32 gate `raw/npgate-e3-{on,off,unset}.out` as in e. The same 11 warnings as e2, none in new code. `test0401.py` 26 of 26. Built only: `shortcut0401.sh cpacb-e3` would install it (ACB_INHERIT=journal, memory switch off), and the shortcut stays on e2. The shared files and every earlier 0401 binary were unchanged at the end.
+
+**Series e4: e3 plus exp 0402's items 3, 9, 2, 7 and 10, where they were missing (2026-11-03 22:3x, the top session's GO on the maintainer's "buduj dodatkowo 3,9,2,7,10 o ile sami tego już nie poprawialiśmy"; built, not installed).** Each item was first compared with our effective code: the box tree, KytyPlus f266548 plus patch 0001. Each missing part is ported on its own script, unit and switch, default off. Four laptop agents did the comparisons and ports, one item each (7 and 10 together); their notes hold the evidence, file:line in our tree. The e4 launcher also keeps each run's log (the top session's line). The same line went into e2's launcher, f23acf27.
+- *Item 3, rwlock/condvar (AnyPS5 4ed0f9f91, 372f0f6c6, 83b1015c4, 45a8b80a5, 16375634e): one ported, four not applicable* (`pth0401-notes.md`). Four of the commits are in AnyPS5's `_umtx_op` (SyncOnAddress.cpp, not Pthread), which this tree does not have.
+  - Waiter-bit races (4ed0f9f91, 372f0f6c6, 83b1015c4): cannot happen here. One mutex per lock guards all of its state (pthread.cpp:2562-2593, 2744-2756), and there is no waiter bit.
+  - An unlock that throws (4ed0f9f91 b): cannot happen. `NativeMutexUnlock` returns codes (1467-1495).
+  - The relock spin (16375634e): cannot happen. Our relock does not spin (1373, 1958).
+  - Missing: 45a8b80a5, `URWLOCK_PREFER_READER`. A thread that holds a read lock on any rwlock reads past waiting writers, as FreeBSD 11.4 libthr's `rdlock_count` does. Ours allowed it only for the same lock (2587-2593, 2680-2685), so two readers, each waiting behind the other lock's writer, could deadlock. Ported in adapted form, without AnyPS5's code, as `KYTY_BC5_PTHREAD_FIXES` (`mkpth0401.py`, pthread.cpp 11cef59e → 0363847b).
+  - CPU stress test `pth0401.cpp`: 10 cases with real threads and a 50 s watchdog, switch on and off.
+  - Note: none of the five explains the 18:04 freeze. A lost wake-up here sleeps in 10 ms polls; it does not spin at 100 % user CPU.
+- *The maintainer's rule change (2026-11-03 23:0x), applied to every item below:* a port is judged for any title, not for our two. The only valid reasons to skip one are "we already match (file:line)" and "licence or provenance not acceptable". The first verdicts on items 7, 9 and 10 said "not applicable" for our titles. Those were reopened, and the missing parts were ported behind switches.
+- *Item 9, SaveData (AnyPS5 0d0abe09c, bc6b4d76f; KytyPS5 4b0282e, dfec14a): three switches* (`sav0401-notes.md`, which records both verdicts).
+  - Missing: dfec14a, mount result left alone on a refused mount. `*mount_result = {}` ran before every refusal (625). Ported as `KYTY_BC5_SAVEDATA_FIXES`.
+  - Event callback (AnyPS5 0d0abe09c, bc6b4d76f). Our host exports neither `sceSaveDataRegisterEventCallback` (`hsKd5c21sQc`) nor `sceSaveDataUnregisterEventCallback` (`v-AK1AxQhS0`). A title that imports them gets the loader's return-0 stub: OK, and never a callback. The two fixes need the feature they fix, so the feature was ported with them: both NIDs, and the delivery thread started at the first successful registration of an initialization. Behind `KYTY_BC5_SAVEDATA_EVENT_CB`, and registered only with it on. The second title polls GetEventResult instead (F188, F189).
+  - Sorted search (4b0282e). The order already matches (F217, libSaveData.cpp:559-582). Of the key definitions, the mtime key, from the files' write times, is ported as `KYTY_BC5_SAVEDATA_SORT`. Free blocks and the missing blocks record are kept: ours matches shadPS4 and AnyPS5.
+  - One script, `mksav0401.py`: libSaveData.cpp d6e9c37f → 04f4c5bb.
+  - CPU test `sav0401.cpp`, one program run once per switch: 20 checks (FIXES, SORT), 33 with EVENT_CB. It runs in a fresh directory under `exp0401e4` with `KYTY_BC5_SAVEDATA_DIR` unset, away from any save.
+- *Item 2, AudioOut2 (AnyPS5 c34ab0258, 11f217b14, 42beeaa46, b87075aad, ccaac6602): three ported, two not needed* (`aud0401-notes.md`).
+  - PCM taken at the set (c34ab0258): missing for the bed ports.
+  - Silence for a buffer not set again (11f217b14): missing.
+  - Blocking push returns once there is room (42beeaa46): missing on the timer path only. The device path already waits (audio.cpp:829-869).
+  - Reopen of the default output (b87075aad): not applicable on the box, which uses SDL 2.33 with PipeWire.
+  - Reopen of the controller card (ccaac6602): already covered by exp 0372's PadRouteStep (audio.cpp:908-945).
+  - The three missing parts are ported as `KYTY_BC5_AUDIO_FIXES`: any value turns all three on, and a list such as `set,room` picks parts (`mkaud0401.py`, libAudio2.cpp fb44443e → 7a1914c8). audio.cpp and pad_audio_route.hpp are unchanged, and the `exp 0372` counts are the same.
+  - CPU test `aud0401.cpp`: 25 checks, no sound device.
+  - **Before the maintainer plays it: exp 0372's replug check.** The title's vibration port is an AudioOut2 port, so "set" and "silence" change what reaches the actuators. Software check: P1 and P2 of `s6n0372.sh`/`replug0372.sh` on the e4 binary. Then the physical replug and a DS4. A `silence` line that names type 0x6 means the haptics are cut; then use `set,room`.
+- *Item 7, AMM PRT and the other AMM/AMPR commands (AnyPS5 4f41f4c3, `Apr.cpp`, PRT commits e3b5192cb, 79fc99774, 37881a5da): ported, 26 NIDs behind three switches* (`amm0401-notes.md`; the first verdict, `prtvo0401-notes.md`, said not applicable because our host registers no PRT command, libAmpr.cpp:3648-3741, and the second title imports none).
+  - `KYTY_BC5_AMM_PRT_CMDS`: MapAsPrt, AllocatePaForPrt (with rollback), RemapIntoPrt, UnmapToPrt and their two measures. Zero pages are read-only on the CPU, after 37881a5da.
+  - `KYTY_BC5_AMM_EXTRA_CMDS`: Remap, MultiMap, ModifyProtect, ModifyMtypeProtect, each with its `WithGpuMaskId` form, and their 8 measures.
+  - `KYTY_BC5_AMPR_WAITS`: `sceAmprCommandBufferWaitOnAddress` and `…WaitOnCounter` with their measures, on real counters.
+  - One script, `mkamm0401.py`: libAmpr.cpp a0e2ff6e → 0a1762f6, memory.cpp unchanged. The NIDs are registered only with their switch on.
+  - Not ported: libkernel's `sceKernelWrite*Command` family. Our host has no executor for byte commands and no indirect-buffer submit for them, so it is a separate decision.
+  - Note: with PRT or EXTRA on, every map goes into the page table, about 60 MB at 12 GiB.
+  - CPU test `amm0401.cpp`, the three switches set together: 317 checks on, 63 off.
+  - Still noted, not built: `scratch_fill` should leave the PRT window out (bc5LleAgc.cpp:2229-2324).
+- *Item 10, VideoOutGetOutputStatus (sharpemu b1ec286 `VideoOutExports.cs:505-562`, AnyPS5): ported as `KYTY_BC5_VIDEOOUT_STATUS`* (`vo0401-notes.md`, which supersedes `prtvo0401-notes.md` for this item). The answer is resolution 2 (UHD) before registration. After registration it follows AnyPS5: the display setting, which is measured. sharpemu derives it from the buffer size, which is not measured. The other fields already match. One script, `mkvo0401.py`: videoOut.cpp f848f5c6 → 3fa490f7. CPU test `vo0401.cpp`: 27 checks. Exp 0291 (F354) had already run the UHD answer on the second title: the same buffers and the same rate.
+- *Exp 0404's two switches (the top session's addition, 2026-11-03 23:4x).* `mkfl0401.py` turns e3's unit d3b7f9b0 into df12bb2d, plus `fl_scan.inc` for the CPU test (`fl0401-notes.md`).
+  - `BC5_DIRECT_FL_CRUMBS=1` is a catcher. Every draw of a fast-launch dcb gets issued/done slots and a 64-entry ring in the GDS shadow at +0x8000. At a fence timeout the probe names the draw that did not finish, with the inputs the CP copied for it. The crumbs add end-of-pipe load, so a clean play with them on is weak evidence.
+  - `BC5_DIRECT_FL_SKIP_ES=<list>` is a diagnostic. It takes `SPI_SHADER_PGM_LO_ES` values (0x11d00f85 is the program at 0x11d00f8500) and drops the draws that are certainly fast-launch with a listed ES.
+  - CPU test `fl0401.cpp`: 74 cases.
+- *Build.* 2026-11-04 00:53–00:5x, claim to release in one slot, no emulator. Binary `d6f11b10df3ba379922730502e576148` (shared objects of 4d2b1b1d, archive 75e30335). Units: bc5LleAgc df12bb2d, libNpCppWebApi 935fcc7e, memory 43713ef6, systemContent 4e33b30a + header 2b2b21eb, libSaveData 04f4c5bb, pthread 0363847b, libAudio2 7a1914c8, videoOut 3fa490f7, libAmpr 0a1762f6. Launcher `69e565be`, which keeps each run's log. Records: `raw/e4/` (build, the function check, every CPU test's output).
+  - Every CPU test passed on the box, each with its switch 1, 0 and unset: fl0401 74/74, inh0401 25/25, sav0401 20/20, savcb 33/33, savsort 20/20, pth0401 10/10, aud0401 25/25, vo0401 27/27, amm0401 317/317 on and 63/63 off. npgate 10/10 on, off and unset; the function check 7 of 7.
+  - 22 warnings, all in code that was already in the tree: the newly compiled units' own lines, such as libAmpr.cpp's format-extra-args and videoOut.cpp's `Bc5VideoOutEventName`. None is in new lines.
+  - `test0401.py` 27 of 27 on stand-ins.
+  - Built only. The shortcut stays on e2, and the maintainer said not to install e4 (2026-11-04 00:0x). e4a (`fe4ea308`, the first e4 without items 7 and 10 and the reopened item 9) stays on the box as `exp0401e4a`, unused.
+- *Night tests of e4 (2026-11-04 00:57–02:14, unattended).* The maintainer approved them at 00:1x: "przetestuj też buildy z portami i przełącznikami z researchu". The top session gave the list.
+  - *How.* Each arm ran under its own atomic lock line, one after another:
+    - `run0401t.sh` (box, md5 1eee506a), driven by `night0401.sh` (laptop), from `raw/night-arms.txt`;
+    - a private copy of input.cfg with RT on and JobArenaFix on;
+    - a derived launcher with its own log, and a private working directory with a fresh snapshot of the live saves (`4b6b1ea5`, LC_ALL=C; the live saves were only compared, and they were unchanged after every arm);
+    - exp 0401e3's freeze watcher and exp 0330's memory sampler;
+    - the kernel log streamed to the laptop.
+  - *The route.* Gated on the journal's frame profile lines: cross at the start screen, then down ×3 and cross for slot 4, then Continue and the load, then G (gameplay). A start check ends at the save-slot list.
+  - *The shortcut's switches.* Every arm had them: `CP_COHER_START_DELAY=1`, `ACB_CS_PREFIX=0`, `ACB_INHERIT=journal`, `ACB_STATE_RESTORE=1`, `SPI_REQ_CTRL_PS=0`, `ARGS_WB=0`, `TABLE_CATCHER=1`, `NP_SESSION_V2=1`, `MEMORY_FROM_PARAM=0`.
+  - *Results.* Text only, in `raw/night/` (`<tag>-summary.txt`, `-switch-lines.txt`, `-probe.txt`, `-memline.txt`, `-kernel-stream.txt`, …).
+
+    | Arm | Binary, switches beyond the shortcut's | End | Flips/s | Seconds with a gap > 100 ms (longest) | Memory floor |
+    |---|---|---|---|---|---|
+    | s0 | e4, none | save-slot list at 93 s | 23.4 | 26 (610 ms) | 425 MiB |
+    | spth | e4, `PTHREAD_FIXES` | list at 93 s | 23.8 | 20 (651) | 488 |
+    | ssavfix | e4, `SAVEDATA_FIXES` | list at 93 s | 23.2 | 22 (600) | 565 |
+    | ssavcb | e4, `SAVEDATA_EVENT_CB` | list at 93 s | 24.2 | 21 (615) | 540 |
+    | ssavsort | e4, `SAVEDATA_SORT` | list at 93 s | 24.3 | 19 (614) | 517 |
+    | saud | e4, `AUDIO_FIXES` | list at 93 s | 23.9 | 18 (698) | 435 |
+    | svo | e4, `VIDEOOUT_STATUS` | list at 93 s | 24.5 | 21 (583) | 533 |
+    | sprt | e4, `AMM_PRT_CMDS` | list at 94 s | 24.2 | 22 (696) | 530 |
+    | sextra | e4, `AMM_EXTRA_CMDS` | list at 93 s | 24.4 | 25 (606) | 539 |
+    | swaits | e4, `AMPR_WAITS` | list at 93 s | 24.4 | 19 (494) | 556 |
+    | scrumbs | e4, `FL_CRUMBS` | list at 93 s | 22.9 | 17 (632) | 587 |
+    | sskipes | e4, `FL_SKIP_ES=0x11d00cde,0x11d00f85,0x11d00f8d` | list at 93 s | 24.1 | 18 (426) | 545 |
+    | sall | e4, all of the above (FL_SKIP_ES off) | list at 93 s | 22.8 | 23 (709) | 515 |
+    | rA | e4, all on, FL_CRUMBS on | clean, G at 113 s, ended at G+900 | 51.2 | 29 (1126) | 487 |
+    | rB | e2 (35ff82eb), the shortcut's own: the control | clean, G+900 | 53.4 | 27 (1096) | 523 |
+    | rC | e4, all on plus FL_SKIP_ES (the three ES) | clean, G+900 | 51.9 | 32 (988) | 470 |
+
+    Every arm had 0 crash lines, 0 kernel lines, 0 freeze dumps and 0 devcoredumps. Flips/s is over the whole run, menus and loads included.
+  - *Each switch's own line* came up in the journal as set. In each single-switch arm only that switch read on (`raw/night/<tag>-switch-lines.txt`). For example:
+    - `pthread fixes on (rwlock: … AnyPS5 45a8b80a5, libthr rdlock_count)`;
+    - `audio fixes on: set silence room`;
+    - `videoout status on: resolution 2 at the first sceVideoOutGetOutputStatus (port size 1280x720, …)`;
+    - `KYTY_BC5_AMM_PRT_CMDS on`;
+    - `fl crumbs on (…)`;
+    - `fl skip es 0x11d00cde,0x11d00f85,0x11d00f8d (…)`.
+  - *FL_CRUMBS.* No fence timed out in any route, so the catcher had nothing to name. In rA it crumbed 32,769 buffers and 1.41 M draws, none of them "maybe fast-launch".
+  - *FL_SKIP_ES (rC).* 194,895 draws were dropped by their ES over 16,385 buffers, with no hang in 15 minutes. That is no evidence of anything while the hang itself did not come back in rA or rB.
+  - *What this shows.*
+    - Every e4 switch starts the title to its save-slot list, alone and all together.
+    - e4 with everything on plays 15 minutes of the route as cleanly as the e2 control, within a few percent in frame rate.
+    - None of the three routes met the 18:04 freeze or exp 0404's 22:54 hang, so nothing here says whether any switch cures them.
+  - *Audio: exp 0372's software replug check for `KYTY_BC5_AUDIO_FIXES` (2026-11-04 02:14–02:33).*
+    - *How it ran.*
+      - `aud0401t.sh` runs one `run0401t.sh` route: 420 s of play, with exp 0391's traces and the owner word `BC5_0401T_OWNER=<tag>`.
+      - Beside it runs `replug0401t.sh`, which is exp 0391's `replug0391.sh` changed by `mkrep0401t.py`: it finds the run by its lock line and the emulator by the owner word.
+      - Then exp 0391's `check0391.py`, unchanged, classifies the run. `audn0401.sh` drives it from the laptop.
+      - The DualSense was on USB (card 44, profile 1 "Direct").
+    - *Arm aA, pulls: PASS.* Pulls of 5 s, 0.5 s and 30 s. Each time the pad port (type 10) closed and reopened on the DualSense, and no pad stream went to another sink (8 pad-stream reads). No `(pad) … device playing` line fell inside a pull.
+    - *Arm aB, late: PASS.* The profile was off at the start and plugged at about 170 s, then pulled once for 5 s, with the same checks. It logged 70 rumble writes and no rumble failure.
+    - Both arms were clean routes otherwise (50.1 flips/s, memory floor 484 and 597 MiB), and the profile was restored both times.
+    - The physical replug and a DS4 are still the maintainer's.
+
+**Series e5: e4 plus exp 0405's e4-now ports (2026-11-04 01:3x–02:42, the top session's GO on the maintainer's "przetestuj też buildy z portami i przełącznikami z researchu"; built, not installed).**
+- *What went in.* The 0405 top-32 table, and further S items as time allowed: nine port groups, each its own script, CPU test and notes.
+  - One agent did each group, from 0405's specs.
+  - Every group works on the unit as e4 left it, or the tree's, and never on a header.
+  - Default off; a switch value can be a comma list of items.
+  - Held for the maintainer's decisions: SET_PREDICATION, the 32 dead tables, values from firmware modules or titles' libc, IDA-derived signatures, and `ngs2_pcm.h`'s values.
+
+  | Script (tag) | Units (output md5) | Switches | Items |
+  |---|---|---|---|
+  | `mkeq0405.py` (eq) | eventQueue.cpp d8eaa6d2, bc5LleAgc.cpp 09770e46 | `KYTY_BC5_EQUEUE_FIXES`, `KYTY_BC5_MMAP_SHIM_FIXES` | KK02 level events once per wait, SK03 WaitEqueue(NULL), G1 kevent timeout, KK01 periodic timer (+DeleteTimerEvent), M2 mmap hint and prot 0 |
+  | `mkgpu0405.py` (gpu, `--chain` after eq) | bc5LleAgc.cpp d1cfd9bb | `BC5_R3_MEMSEM_SIGNAL`, `_REWIND_CATCH`, `_DROP_CATCH`, `_SUBMIT_EOP_EVENT`, `_COND_WRITE`, `_WAIT_IDLE`, `_TS_100MHZ` | G2, G4 (catcher), G8 (catcher), G6, G11, G12 (narrower), G14. Soft CP and host side only; nothing new is submitted (G6's chain path is a soft-CP replay) |
+  | `mktls0405.py` (tls) | runtimeLinker.cpp aba94c24 (jit.h read only) | `KYTY_BC5_TLS_FIXES` | KL01 stubs keep RFLAGS (lea), KL02 patch at the 0x64 byte with a REX.W call |
+  | `mkthr0405.py` (thr) | pthread.cpp 81ee12c4, semaphore.cpp 3aa9c8b4 | `KYTY_BC5_THREAD_SYNC_FIXES`, `KYTY_BC5_SEMA_FIXES` | KK06 notify under the lock, KK03 static rwlock/cond, Signalto ESRCH/EPERM, x87 0x037f, KK07, semaphore attributes and signal counts |
+  | `mkmem0405.py` (mem) | memory.cpp 95d9ca88 | `BC5_R3_MPROTECT_GAPS`, `_NULL_ARGS`, `_RELEASE_HOLES`, `_MUNMAP_HOLES`, `_FLEX_HINT`, `_DMQ_END`, `_EXEC_EINVAL`, `_QUERY_SIZE` | M1, M21, M3, M7, M6, M20, M26, M30 (M18 held) |
+  | `mkfs0405.py` (fs) | fileSystem.cpp a7201a1a, libKernel.cpp b3532873 | `KYTY_BC5_FS_FIXES`, `KYTY_BC5_POSIX_RET_FIXES` | KK04 rename, SK04 open, st_blksize, ENAMETOOLONG, KK10, SK05; POSIX unlink/munmap/mprotect and 4 more return conventions |
+  | `mksvc0405.py` (svc) | libSaveData.cpp 0e0c5d40, libNet.cpp 35773d6e, libPad.cpp 89a047a4 | `KYTY_BC5_SAVEDATA_MEMORY_FIXES`, `_DELETE_BUSY`, `_ALIASES`, `KYTY_BC5_HTTP2_FIXES`, `KYTY_BC5_PAD_OPEN_EXT` | KS03 sync event and queue lock, KS09 existed size, KS14, Initialize aliases, KS01 Http2 async events, SSL options, NULL agent, scePadOpenExt (KS17 held) |
+  | `mklib0405.py` (lib) | libJson2.cpp 85144ef1, libUlt.cpp 191fe8b1, libUserService.cpp e3d34e98, libSystemService.cpp 4aa00c53 | `KYTY_BC5_JSON2_FIXES`, `_ULT_FIXES`, `_USERSERVICE_VALUES`, `_SYSTEMSERVICE_VALUES`, `_SYSTEMSERVICE_PARAMS_7_1000` | Json2 use-after-free (+KS05), Ult join (own lock design), Ult queue growth, UserService and SystemService values measured on 13.40/13.60 (param 400 held) |
+  | `mkao0405.py` (ao) | audio.cpp 230f732d (`exp 0372` lines unchanged) | `KYTY_BC5_AUDIOOUT_CHECKS`, `KYTY_BC5_AUDIOIN_CHECKS`, `KYTY_BC5_NGS2_RACK_FIX` | KA01, KA02, KA03 rack destroy, KA06, KA07, KA08 (KA04/05 held: other files) |
+- *Integration.* `box0401.sh` series e5 is e4 plus the `E5_EDITS` chain.
+  - Each script runs on a staged root holding the unit as the rows before left it, with its md5 checked, and each output is pinned.
+  - Files a script only reads go in as `+rel:md5`.
+  - e5's unit replaces e4's, which is kept as `bc5LleAgc-e4.cpp`.
+  - The unit list for `build0401.py` is rebuilt so that every unit appears once, with its last writer.
+  - e4's tests run again over e5's objects.
+  - `test0401.py` passes 28 of 28 on stand-ins; `t_series_e5` checks the chain, the unit list and the pins.
+  - `go-build0401.sh` drives the build from the laptop: claim, kit and sha256, setup, build, fetch, release.
+  - First attempt: the kit list carried CRs from Windows Python, so it stopped before the claim. Second attempt: Windows Python could not open a POSIX path after the claim. That claim was resumed with its own token (`GO0401_TOKEN`); nothing else was retried.
+- *Build.* 2026-11-04 02:3x–02:42, claim 202611040234541205456 to release, no emulator.
+  - Binary `ba14f22f8a6de8d4d920df331d050d87`, launcher `6eba5275`; `raw/e5/` holds the build record and every test's output.
+  - Each of the nine e5 tests passed with its switches 1, 0 and unset:
+
+    | Test | On | Off |
+    |---|---|---|
+    | eq0405 | 21/21 | 18/18 |
+    | gpu0405 | 72/72 | 68/68 |
+    | tls0405 | 19/19 | 19/19 |
+    | thr0405 | 9/9 | 9/9 |
+    | mem0405 | 8/8 | 8/8 |
+    | fs0405 | 23/23 | 19/19 |
+    | svc0405 | 21/21 | 21/21 |
+    | lib0405 | 38/38 | 22/22 |
+    | ao0405 | 30/30 | 20/20 |
+
+  - tls0405 ran its 0x66 + REX.W call cases on the box's Zen 2, and the call behaved as a 64-bit call. That settles the agent's TODO(verify) for this CPU.
+  - e4's tests over e5's objects still pass. The function check gives 7/7, inh0401 25/25 and fl0401 74/74.
+  - 40 warnings, all in code that was already there: 29 from `common/stringUtils.h`, which more private units now include, and the rest at known old lines. None is in new code.
+- *Night tests of e5 (2026-11-04 02:42–03:30, unattended, the same method as e4's).* `raw/night-arms-e5.txt` and `raw/night-arms-e5aud.txt`. The shortcut's switches were on in every arm.
+
+  | Arm | e5 groups on | End | Flips/s | Seconds with a gap > 100 ms (longest) | Memory floor |
+  |---|---|---|---|---|---|
+  | t0 | none | save-slot list at 93 s | 23.6 | 23 (594 ms) | 546 MiB |
+  | teq | eq | list at 93 s | 24.1 | 24 (723) | 562 |
+  | tgpu | gpu | list at 93 s | 24.1 | 19 (682) | 575 |
+  | ttls | tls | list at 94 s | 24.3 | 19 (636) | 534 |
+  | tthr | thr | list at 93 s | 24.3 | 17 (633) | 590 |
+  | tmem | mem | list at 93 s | 24.5 | 18 (717) | 506 |
+  | tfs | fs | list at 93 s | 24.0 | 23 (638) | 533 |
+  | tsvc | svc | list at 93 s | 24.6 | 22 (606) | 527 |
+  | tlib | lib | list at 93 s | 24.1 | 20 (655) | 531 |
+  | tao | ao | list at 93 s | 24.5 | 20 (628) | 471 |
+  | tall | all nine, plus e4's all on (FL_CRUMBS on, FL_SKIP_ES off) | list at 93 s | 22.9 | 21 (588) | 481 |
+  | r5 | the same as tall | clean, G at 113 s, ended at G+900 | 50.6 | 32 (964) | 518 |
+  | a5 | ao, plus `KYTY_BC5_AUDIO_FIXES=1`: the replug check, pulls | **PASS**, 3/3, 0 pad streams on another sink | 49.2 | 31 (1008) | 558 |
+
+  Every arm had 0 crash lines, 0 kernel lines, 0 freeze dumps and 0 devcoredumps, and the live saves were unchanged after each.
+  - *The journal lines.* Each group's line read on, with its items, in its own arm (`raw/night/t<group>-switch-lines.txt`) and all of them in tall and r5. For example:
+    - `equeue fixes on (items: kk02 sk03 g1 kk01)`;
+    - `tls fixes on (items: kl01 kl02)`;
+    - `thread sync on (items: kk06,kk03,signalto,x87,kk07)`;
+    - `savedata memory fixes on (items: sync lock existed)`.
+  - *The catchers' own lines* (kevent timeouts, mmap hints that were not free, Ult queue overflow, unknown system parameters) never showed in r5's switch-line record. That record is the play log's `exp 040x` lines, at most 40 of them. The gpu group's journal lines go to `direct.log` on the box and were not collected.
+  - *The TLS patch* (`KYTY_BC5_TLS_FIXES`) rewrote every TLS load of the second title at load time, and the title ran its start and 15 minutes of play with it. The ASTRO BOT title was not run.
+  - *What this shows.* Every e5 group starts the title alone, and all of them together with e4's switches play the route as cleanly as e4 and the e2 control did (50.6 flips/s against 51.2 and 53.4). It shows nothing about the freeze and the hang, which did not come back.
+- *Haptics: a silence line on the vibration port.* In every arm with `KYTY_BC5_AUDIO_FIXES=1`, e4's and e5's alike, the journal has this line once (saud, sall, rA, rC, aA, aB, tall, r5, a5):
+
+  `[bc5] exp 0401: AudioOut2 port 0x4 (type 0x6, format 0x00000200): silence at Advance, no buffer set since its last grain (the port's first)`
+
+  - The line is printed only at the first grain that a port's silence rule takes. It cannot tell one silenced grain from all of them.
+  - The pad port still played 94 calls a second at rate 1.000 through the pulls. That is frames delivered, not their content.
+  - `aud0401-notes.md` says a type-0x6 silence line means the rule is cutting the haptics: report it and use `set,room`. So `KYTY_BC5_AUDIO_FIXES=set,room` is the setting for any play by the maintainer until he has felt the haptics with `=1`.
+  - The replug check was run again with `set,room` on e5 (arm a5r, 03:30–03:40, `raw/night-arms-e5aud-setroom.txt`): **PASS**.
+    - 3 of 3 pulls; 0 pad streams on another sink; 22 rumble writes, 0 failures.
+    - Its journal reads `audio fixes on: set room` and has no silence line.
+    - 49.8 flips/s, memory floor 543 MiB, a clean route otherwise.
+  - Still the maintainer's: the physical replug, a DS4, and whether the haptics can be felt with `=1` against `set,room`.
+- *State at 03:40.*
+  - e4 and e5 are built and night-tested, with every arm clean, and nothing is installed: the shortcut stays on e2.
+  - Neither night met the 18:04 freeze or the 22:54 hang, so neither tells whether a switch cures them.
+  - The ports are behaviour fixes for any title; on the second title they run as cleanly as before.
+
+**Series e6p: e5 plus exp 0405's G7, SET_PREDICATION, alone (2026-11-04 morning, the top session's GO on the maintainer's
+answer 5 to exp 0405: "tak, z przełącznikiem - przetestuj w pierwszej kolejności sam"; built on his "Yes, build and test" in
+this session; not installed).**
+- *Where G7 lives.* In the backend's filter (`policy.cpp`), not in the host unit, so e6p builds a private backend archive:
+  - the shared archive's source (`KYTY_BC5_BACKEND_SRC`, `~/bc5-work/d19/export/backend` on the box) is checked against
+    main 029e0d6b's backend, file by file (`backend0405.md5`, 59 files, none more or less) and copied;
+  - `mkpred0405.py` edits `policy.cpp` (8e22ce87), `policy.hpp` (89f098be) and `tests/policy_test.cpp` (7f81a28a);
+  - the copy is built with the shared archive's build type and compiler, and the emulator links it in place of the shared
+    archive (`build0401.py --archive`, as exp 0400's relink). FilterOptions and FilterStats keep their layout (the host's ABI).
+- *The switch* `BC5_R3_PREDICATION`, read once:
+  - unset: as before, silent;
+  - `0`: as before, and every SET_PREDICATION the filter sees is counted and journaled (a census);
+  - `1`: the gfx9 form (Mesa `ac_cmdbuf_cp.c:281-284`) passes to the GPU on the GFX ring;
+  - `bool`: only CLEAR and the two memory booleans pass.
+  A packet with other bits (outside 0x71100, AnyPS5 `Pm4.cpp:309`, KytyPS5 `CpOpSetPredication`), an operation above 4, a
+  high address over 16 bits, or an unaligned or zero predicate address stays dropped; so does every SET_PREDICATION on a
+  compute ring. The predicate is a memory operand, so an unmapped one is dropped and the host makes its page resident.
+- *Build* (11:22, binary fa66e89f, private archive 244fb811, launcher 9e5ec5d3): all 125 of the backend's Catch2 cases pass
+  (34,886 assertions), then G7's 4 cases (190 assertions), then the switch's reading for unset, empty, 0, 1 and bool. e5's
+  and e4's tests pass as in e5. (`build.txt`'s summary line printed a stderr line instead of the pass line; the raw outputs
+  in `raw/e6p/raw/bk-*.out` hold the pass lines; the summary is fixed in `box0401.sh`.)
+- *First, a read of last night's r5* (e4 + e5 all on, 15-min route): exp 0405's drop catcher (G8) counted only opcode 0x4a,
+  112,152 times, and never 0x20.
+- *Arms* (`raw/night-arms-e6p*.txt`), each as the shortcut's switches with RT on and JobArenaFix on, kernel log streamed,
+  freeze watcher, private wd; 0 crash, kernel, freeze and devcoredump lines in every arm (the kernel stream held only the
+  IPv6 MLD lines that r5 had too), and the live saves unchanged:
+
+  | Arm | Switch | Result |
+  |---|---|---|
+  | p0, start | `=0` (census) | list at 95 s; 22.8 flips/s; floor 485 MiB |
+  | p1, start | `=1` | list at 95 s; 23.7 flips/s; floor 525 MiB |
+  | rp0, 15-min route | `=0` | to G+900; 53.1 flips/s; longest gap 1338 ms; floor 445 MiB |
+  | rp1, 15-min route | `=1` | to G+900; 53.3 flips/s; longest gap 1300 ms; floor 415 MiB |
+
+- *What it shows.* The filter saw no SET_PREDICATION in any of the four arms: only the switch's own line is in the journal.
+  The second title does not use predication on this route, so G7 changes nothing for it, and on and off ran the same. It is
+  safe to keep behind its switch, default off; showing an effect needs a title that sends the packet (ASTRO BOT was not run).
+
+**Series e6: e5 plus exp 0405's decisions 1, 3 and 4's batch 1 (2026-11-04, the top session's GO on the maintainer's answers;
+built and tested on the box 14:18-15:20 on his "Yes, build e6").** His answers (Polish, relayed by the top): 1 "wdrażamy - to tylko Twoje
+podejrzenie, traktujemy jako opis innej osoby i wdrażamy"; 2 titles' own code stays out; 3 "=> A, ale w taki sposób aby nie
+można było powiązać naszego kodu z IDA"; 4 "=> B => B" (port first, then load, a switch per table); 5 is e6p above; 6 the
+ngs2_pcm.h family stays out. Six laptop agents ported it, one group each (`*0405-notes.md` hold the evidence):
+
+| Group | Switch | Units (input → output) | Test (on / off) |
+|---|---|---|---|
+| fwn: decision 1, net and system | `KYTY_BC5_FW_NET` (rtc, rudp, resolver, param400, npwebapi) | libRtc 719561dd, libRudp af8d0178, network 598cfe80, libSystemService (e5) 252a35f9, libNpCppWebApi (e) e613bc8f | 33 / 33 |
+| fwa: decision 1, audio | `KYTY_BC5_FW_AUDIO` (audio3d, audio3dstrict, pcmloop, avplayer, ngs2) | audio.cpp (e5) 1f90e752, avPlayer 44203af3 | 50 / 28 |
+| jit: decision 3, R3 M31 | `KYTY_BC5_JIT_SHM`; `KYTY_BC5_FW_KERNEL` (notify) | memory.cpp (e5) ee24c888, libKernel (e5) 0a0d4665 | 8 / 3 |
+| tbc: decision 4, Zlib, JpegEnc, Ime | `KYTY_BC5_LOAD_ZLIB`, `_JPEG`, `_IME` | libZlib c7e165b9, libJpeg c5fe947c, libIme 49fa46f1 | 108 / 26 |
+| tbn: decision 4, NpCommon, NpManager, NpTrophy | `KYTY_BC5_LOAD_NPCOMMON`, `_NPMANAGER`, `_NPTROPHY` | libNp 24e77826 | 165 / 34 |
+| tld: decision 4, the loading | the six `KYTY_BC5_LOAD_*` | libs.cpp 903fa699 | 9 / 9 |
+| pad: Pad b94b3fa32 and 3b404f65e, from behaviour only | `KYTY_BC5_FW_PAD` (infotype, argchecks, queries) | libPad (e5) b9940ebe | 71 / 4 |
+
+- *Tables load first.* With a switch on, its table loads before every live table, so an import's exact key keeps the live
+  function. The loader's NID-only fallback (`FindByNid`) takes the first record, though, so the 9 NIDs that live tables
+  also register (7 Ime, 2 NpManager) are no longer registered by the switched tables (the top session's approval). The other
+  26 dead tables have no such collision (`tld0405-notes.md` lists them all: 1,033 NIDs).
+- *Held, with sizes* (in each group's notes): the Ngs2 renderer (3-5 days) and new Audio3d exports (about 1 day); Rudp's
+  contexts (about 3.5 days), Mouse's absolute-position calls, Pad queries; the Jpeg encode itself (about 0.3 day); 39 Ime
+  functions AnyPS5 leaves unimplemented too; 64 NpTrophy placeholders; `sceKernelJitGetSharedMemoryInfo`.
+- *Held for the maintainer:* ImeFilterText and NpTrophy ConfigHasGroupFeature (disassembly with addresses), and three
+  libkernel_sys rows ("read from disassembly and not measured on a console").
+- *His answers on two of them (relayed by the top session):* `npwebapi` comes from a module a title ships, and "nie każda gra
+  dostarcza własny, ale nie konieczna posiada - wdrażamy na wszelki wypadek w konfiguracji jeżeli nie ma, to korzystamy z
+  naszych bibliotek": ported, and on in the all-on route (our library is the fallback for a title without its own). Pad
+  b94b3fa32 and 3b404f65e: "tak, przepisać tak JIT", rewritten from behaviour only as a group of their own (tag `pad`).
+- *Kit* (`box0401.sh` series e6): rows chained after e5's (E6_EDITS, E6_GATES, E6_STRS); the stand-in case `t_series_e6`
+  passes. Arms are ready (`raw/night-arms-e6.txt`, `raw/night-arms-e6aud.txt`): the base start, one start per group, all on,
+  a 15-min route with e4, e5 and e6 on, and exp 0372's software replug check for the audio group.
+- *The build* (`raw/e6/`; binary 7252558e78d38b3bf589d8d773676a63, the shared builds unchanged).
+  - Every CPU test passed on the box, both ways: the counts in the table above, and e5's tests as before (`raw/e6/build.txt`).
+  - The first try (`raw/e6-try1/`; its box directory is kept as `exp0401e6-try1`) stopped at fwn0405's case 10 when off.
+    - The test was wrong, not the code. AnyPS5's "distant" tick lies in year 134350, whose 16-bit year is 3278.
+    - Today's code refuses it (past 9999); the test had expected the text both ways.
+    - The case now expects VALUE when off (`fwn0405.cpp`, `fwn0405-notes.md`).
+- *The arms* (`raw/night/t6*`, `r6-*`, `a6-*`; 14:37-15:20). `t6` is the e6 binary with every e4, e5 and e6 switch off; each
+  group's start adds only its group. `t6all` and `r6` have e4's, e5's and e6's all on.
+
+  | Arm | On | Result | Flips/s | Gaps over 100 ms (longest, ms) | Memory floor, MiB |
+  |---|---|---|---|---|---|
+  | t6 | none | list at 94 s | 22.8 | 25 (645) | 564 |
+  | t6fwn | fwn | list at 94 s | 22.2 | 32 (627) | 534 |
+  | t6pad | pad | list at 94 s | 21.0 | 22 (689) | 546 |
+  | t6fwa | fwa | list at 107 s | 19.2 | 21 (499) | 590 |
+  | t6jit | jit (both switches) | list at 95 s | 23.9 | 20 (661) | 495 |
+  | t6tbl | the six loads | list at 94 s | 23.8 | 22 (842) | 510 |
+  | t6all | e4, e5 and e6 all on | list at 93 s | 22.0 | 20 (595) | 503 |
+  | r6 | the same as t6all | clean, G at 113 s, ended at G+900 | 51.1 | 32 (1234) | 668 |
+  | a6 | a5's words plus fwa: the replug check, pulls | **PASS**, 3/3, 0 pad streams on another sink | 47.7 | 33 (1136) | 1276 |
+
+  Every arm had 0 crash lines, 0 kernel lines, 0 freeze dumps and 0 devcoredumps, and the live saves were unchanged after each.
+  - *The journal lines.* Each group's line read on, with its items, in its own arm and all of them in t6all and r6, e.g.:
+    - `fw-net on (items: rtc rudp resolver param400 npwebapi)`;
+    - `fw pad on (items: infotype argchecks queries)`;
+    - `tables on (items: zlib,jpeg,ime,npcommon,npmanager,nptrophy)`;
+    - `ime port on (items: panel test; the 7 NIDs of the live Ime table not registered)`.
+  - *The 40-line record.* r6's `switch-lines.txt` lacks five of e4's and e5's lines (the AMM, AMPR, SessionManager V2 and
+    audio fixes lines). The record keeps only the 40 most frequent lines, and e6 adds 13 more. The play log on the box has
+    every one of them once (`r6-switch-lines-all.txt`, `t6all-switch-lines-all.txt` are the uncut lists).
+  - *No e6 catcher line fired.* None of the items' "once" lines (an RTC refusal, a Rudp or resolver refusal, a pad check)
+    is in r6's play log. So the second title's route never took a path whose answer e6 changes.
+  - *a6 against a5.* The same pass: 3 of 3 pulls, 17 stream lines, 8 pad streams, 0 on another sink, 0 rumble writes, 39
+    'pad route … dropped' lines (a5: 38). With `KYTY_BC5_AUDIO_FIXES=1`, as in a5, the haptics port's silence line is back.
+  - *The start with fwa alone.* t6fwa reached the list at 107 s and a6 at 118 s (G at 142 s; a5: 97 s and 117 s), against
+    93-95 s in every other arm, t6all and r6 included, which have fwa on too.
+    - It was repeated at once (`raw/night-arms-e6fwa-rep.txt`): base, fwa, base, fwa, with the same words.
+    - The list came at 93, 94, 93 and 93 s (23.2 and 23.0 flips/s with fwa; 22.6 and 23.0 without). All four were clean.
+    - So the slow t6fwa start did not come back. a6's slower start is not explained; its route and its check passed.
+- *His shortcut moved to e6* (2026-11-04 18:56; his "Tak" to the top session's "Przełączyć Twój skrót z e2 na e6?" and
+  his "Tak" in this session). `shortcut0401.sh cpacb` wrote "BC5 emulator (test 0401 CP+acb)" (md5 cb3fa0a8):
+  - e6's binary 7252558e and launcher 456e5168;
+  - r6's 65 words, except `KYTY_BC5_AUDIO_FIXES=set,room` (the haptics rule) instead of `=1`; FL_CRUMBS on, FL_SKIP_ES off.
+  - The e2 file it replaced is `exp0401e6/desktop-before-20261104-185642.bak` (aa6ee27d). `shortcut0401.sh cpacb-e2` puts
+    e2 back.
+  - His physical replug on this shortcut, both pads (relayed by the top session, his words): "Odłączanie i podłączenie
+    padów PS4 i ps5 - poprawnie". So unplugging and replugging the DS4 and the DualSense works with e6's audio group on
+    and `set,room`.
+- *His first e6 plays* (2026-11-04 evening; relayed by the top session).
+  - 19:47-19:54: a GFX ring timeout at 19:54:56, which `BC5_DIRECT_FL_CRUMBS` caught (the first catch of the draw class).
+    It is analysed in `hang1954-0401.md`.
+  - Once, right after a level load, he fell out of the world and died. He thinks it is a game bug. It is recorded here as
+    **unexplained**, not as a game bug: late or incomplete collision streaming is possible, and e6 changes file-system
+    answers (e5's fs group is on). Nothing so far shows either way.
+
+**Series e7: e6 plus decision 4's batch 2, the memory fixes and the fast-launch catchers (2026-11-04 afternoon and evening,
+the top session's orders; built on the box 2026-11-04 on his "Zgoda na build", tested 2026-11-05 05:51–06:42 on his
+"Tak"; not installed).** `tb2-0405-sweep.md` sizes the 26 tables batch 1 left (about 21 days by
+exp 0405's rule). The top session's order: the CPU-only library tables first, then the hardware ones, then GnmDriver,
+RazorCpu, RageEngine and Ngs2 (not in e7). Its follow-ups the same evening added the rule for held stubs, NpAuth and
+Voice on the live side, libusb, batch 1's held stubs, and, after his "Ram się dusi" and the 19:54 hang, four edits of
+the main unit.
+
+- *The tables.* One switch per table, `KYTY_BC5_LOAD_<TABLE>`, shared by the port and the loader, as in batch 1. Off is
+  today's stub path, and the table is not loaded. On, the table loads after batch 1's six and before every live table.
+  Each table prints `[bc5] exp 0405: <table> port on (items: …)` or `… port off` at its init.
+
+  | Agent | Tables | Units (input → output) | Ported / match / held | Test (on / off) |
+  |---|---|---|---|---|
+  | tbt | NpTus (+ `KYTY_BC5_NPTUS_FRIENDS_RUN`, the 13.42 run's friends checks, default off) | libNp (e6) 24e77826 → 60ee3101 | 136 / 0 / 6 | 77 / 75 |
+  | tbp | NpPartner001, NpParty, NpSnsFacebookDialog; NpAuth's five in libNet.cpp | libNp → e60a2844; libNet (e5) 35773d6e → fdbbb28e | 23 / 1 / 12 | 77 / 26 |
+  | thb | batch 1's held stubs: Ime 39, NpManager 4, NpTrophy 64 not registered when on | libIme (e6) 49fa46f1 → b82113cc; libNp → 8222b0bc | (107 held) | e7 copies of tbc 108 / 26 and tbn 165 / 36 |
+  | tbv | Voice (+ nine calls in libAudio.cpp, `KYTY_BC5_VOICE_PORTS`), ScreenShot, DiscMap, ulobjmgr, CompanionHttpd, CompanionUtil | libVoice 35b06392, libScreenShot 7b7ac871, libDiscMap 1f965bcd, libUlobjmgr d8c73e10, libCompanion 2c093c67, libAudio a7025bf5 | see tbv0405-notes.md | 94 / 72 |
+  | tbd | InvitationDialog, WebBrowserDialog, SharePlay, GameLiveStreaming | libInvitationDialog 35e23279, libWebBrowserDialog e12c7de0, libSharePlay 6fc65c51, libGameLiveStreaming 4c1af2f3 | 27 / 10 / 51 | 66 / 36 |
+  | tcm | Camera (no device: "not attached") | libCamera 810fada1 → b8544da1 | 50 / 4 / 22 | 169 / 79 |
+  | thv | Hmd, VrTracker, Move (no device) | libHmd 67f2cac3, libVrTracker aba154d9, libMove ba3db48e | 33 / 5 / 149 | 44 / 44 |
+  | tus | Usbd, with libusb (below) | libUsbd f15039f2 → eefb0de5 | 61 / 0 / 4 | 42 / 40 |
+  | tl2, tl3 | the loading: 14 library and 5 hardware rows (count 25) | libs.cpp (e6) 903fa699 → 3ba4e3cd → 0728ab02 | — | 17 / 17, 8 / 8 |
+
+- *Held stubs are not registered* (the top session). With a table's switch on, a function that has no behaviour, ours or
+  upstream, is left unregistered. The runtime linker's unresolved-import thunk then answers 0 as today, and exp 0327's
+  `stubbed import called` line still shows. Off, every NID is registered as today. The same rule applies to batch 1's
+  tables in e7 (thb); e6 stays as built. e7 runs its own copies of batch 1's tbc and tbn tests under their names.
+- *Dropped from loading:* Remoteplay (AnyPS5 implements none of its 39), VideoRecording (its one function is held) and
+  NpAuth's dead table (its five functions now live in libNet.cpp next to the live request state, behind
+  `KYTY_BC5_LOAD_NPAUTH`).
+- *Split state.* Voice's nine calls run in libAudio.cpp against the live port table, behind `KYTY_BC5_VOICE_PORTS`, with
+  console ids 0-127 mapped to live slots 1-128 and tested at both ends. WebBrowserDialog, SharePlay and GameLiveStreaming:
+  the live Initialize/Terminate keep no state, so NOT_INITIALIZED is held. No NID is registered twice in any switch
+  state; tl2's and tl3's tests fail if a port ever adds one.
+- *libusb* (his "Tak", relayed by the top session, and "Libusb - tak" in this session). Usbd loads `libusb-1.0.so.0` at
+  run time (dlopen; own declarations after libusb.h, LGPL-2.1), so no compile or link command and no -dev package changes.
+  - `KYTY_BC5_USBD_ALLOW` (`vvvv:pppp,…`) is empty by default, and empty means libusb is never loaded and no device is
+    touched.
+  - A device with a HID or audio class anywhere, or a DualShock 4 / DualSense id, is refused even if listed.
+  - A real device later needs the runtime library in the container and access to `/dev/bus/usb`: both box writes, his.
+- *Provenance.* shadPS4, firmware runs and module readings (decision 1). Rows with IDA-sourced signatures are ported from
+  behaviour only (decision 3; the top session: such rows are never held). CompanionUtil GetEvent comes from shadPS4,
+  because AnyPS5's note names a disassembly.
+- *The main unit* (`bc5LleAgc.cpp`, e6's d1cfd9bb → 8710207e → 8ddf48f3 → bcbdd308 → b010db09; every switch default off):
+  - **zsk:** exp 0379's zero skip, all 11 hunks re-applied, the header inlined. `BC5_DIRECT_ZERO_SKIP=<list path>`; the
+    arms use exp 0388's list (843f9fbc). The e-series had lost it since series d. Expected −0.35 to −0.6 GiB in play.
+  - **lzr:** `BC5_DIRECT_LAZY_RELEASE=<idle s>[,dry][,eager]`. Viewed idle chunks cannot be released safely by any host
+    code (no per-chunk GPU-use signal; a missing mapping is a VM fault). So it releases only chunks under no view and not
+    forced, after the rings are idle; `,dry` measures how much that is.
+  - **cap:** no catcher and not the journal grows (`cap0401-notes.md`); two insurance caps on the acb-inherit maps, and
+    `BC5_DIRECT_JOURNAL_QUIET`, which drops the per-submission timing lines (at least 13 MB/min of ~30) and replays the
+    last 8,192 of them before a fence-timeout line.
+  - **flx:** for the draw-class hang (`hang1954-0401.md`): `BC5_DIRECT_FL_PROBE_STATE` (NGG state and all user data of
+    the stuck and the last done draw), `BC5_DIRECT_FL_VGT_FLUSH=prefix|transition|all` and `BC5_DIRECT_FL_SERIAL` (fix
+    candidates), `BC5_DIRECT_FL_MESHLET_PROBE` and `BC5_DIRECT_FL_CRUMBS_MESHLET` (the meshlet data A3 points to).
+  - Tests (on / off): zsk 176 / 77, lzr 30 / 30, cap 132 / 123, flx 173 / 172.
+- *Laptop checks.* Every script applies to its chain input with the md5s above, refuses its own output, and undoes to its
+  input. Every test passes on, off, unset and mixed in a stand-in link. Against the unedited inputs every off run passes
+  and every on run fails. VS clang++ 22 syntax checks are clean.
+- *Kit* (`box0401.sh` series e7): rows chain after e6's. The main unit's `.inc` files now come from every script that
+  wrote it, not only the last (lzr writes one). The stand-in build of e7 takes about 11 minutes on the laptop, so
+  `test0401.py`'s timeout is 1800 s.
+- *Box build* (`raw/e7/`): binary `d5d674566d93673e0aeae1a0ce056bd3`, launcher eced9b50. Every CPU test passes on the
+  box: e7's 15 as on the laptop, and e6's and e5's as before.
+- *Test arms* (`raw/night-arms-e7.txt`; results in `raw/night/`, `t7*`, `r6c*`, `r7*`, the uncut switch lists
+  `*-switch-lines-all.txt`). The base words are his shortcut's 65 (e6's all-on, `KYTY_BC5_AUDIO_FIXES=set,room`). The
+  start arms run to the save-slot list; the route arms take slot 4's Continue and stand still to G+900 (no walking keys).
+  - *Try 1* (05:50) started nothing: the live saves read `558115f366fb11cb`, not `4b6b1ea52cb6a650`. That is his own
+    play of 2026-11-04 20:04–20:11, slot 4 only (autosave, manual-1, a new snapshot 54397 that rotated out 64569) and the
+    prefs. Try 2 ran the same arms with the new sum. So the route loads his newer slot-4 save, written just after the
+    19:54 hang at that spot. The route arms compare with each other, not with earlier r-arms (r6 ran at the old save).
+  - The live saves read `558115f366fb11cb` after every arm and at the end; nothing wrote them. Each arm's snapshot is in
+    `~/bc5-work/exp0401t/saves-<tag>`.
+
+  | Arm | Binary, words added | Result | flips/s | gaps > 100 ms, longest | GTT max | available floor | swap max |
+  |---|---|---|---|---|---|---|---|
+  | t7 | e7 | START OK, list 119 s | 18.4 | 30, 857 ms | 11978 | 732 | 670 |
+  | t7tab | e7, the 19 `KYTY_BC5_LOAD_*` + `KYTY_BC5_VOICE_PORTS` | START OK, list 122 s | 18.1 | 29, 2642 ms | 12010 | 661 | 579 |
+  | t7mem | e7, zsk (exp 0388's list) + lzr `30,dry` + quiet journal | START OK, list 96 s | 19.2 | 26, 664 ms | 11462 | 1137 | 580 |
+  | t7fl | e7, FL probe state + meshlet probe + crumbs meshlet | START OK, list 93 s | 21.5 | 26, 630 ms | 12054 | 566 | 583 |
+  | r6c | e6 (the control) | G+900 (G 152) | 41.3 | 219, 3296 ms | 12867 | 189 | 1705 |
+  | r7m | e7, as t7mem | G+900 (G 148) | 38.4 | 181, 1200 ms | 12427 | 279 | 966 |
+  | r7all | e7, t7tab's + t7mem's + t7fl's | **GPU hang** at t 270 s (G+116); the box rebooted | — | — | 12354 to the hang | 398 | 1034 |
+
+  (MiB, from the memory lines; r7all's from its journal, `raw/night/r7all-memline.txt`. The start arms stop at the
+  list, 90–110 s in, at different points of the load, so their memory columns do not compare; the route arms do.)
+  r7all was not short of memory when it hung: 398–442 MiB available and PSI full under 1.2 % from 200 s to 260 s.
+  - *The tables* (t7tab): every one of the 19 tables, NpAuth and the voice ports prints its port-on line; the USBD
+    allow-list is empty, so libusb was not loaded. No arm printed exp 0327's `stubbed import called`.
+  - *Memory* (r7m vs r6c, the same save): GTT max −440 MiB, swap max −739 MiB, available floor +90, PSI full peak about
+    6 % against 43 % (r6c at 300–360 s). The zero skip skipped 816 MiB at start and 580 of 1,014 MiB placed at the end
+    (42 chunks taken back by CPU writes, 169 by hints, one canary hit of 12 MiB). lzr's dry count at the end: 170 MiB
+    idle under no view, 98 of it never under an eager or zero-list view. So a live lzr would free at most about 0.1–0.17
+    GiB here, as its notes expected. The quiet journal left out 336 MB over 1,042 s (r7m's direct.log 24 MB against
+    r6c's 385 MB).
+  - *Start time:* t7 and t7tab, the first two arms, reached the list at 119–122 s; t7mem and t7fl at 96 and 93 s, and
+    r6c (e6) at 93 s with the same saves. So most likely a cold first start, not e7.
+  - *The r7all hang* (06:40:20): ring gfx timeout, the reset failed, `bc5-gpu-watch` synced and crashed the kernel, and
+    the box came back by itself (boot 9af31fd4); our lock line was removed by the runner. It is the 19:54 class again:
+    submit #167863's dcb, the first draw at dword 1702 (chain segment 0 +429), ES 0x11d01345, fast-launch, 3 draws
+    issued and none done, the same register class (GE/PA/SPI/SX busy on SE0, PH_BUSY, no VM fault). The devcoredump
+    `20261105-064020-devcd1.txt`, the journal and both ib-timeout buffers are copied to laptop scratch, outside git. The
+    FL catchers fired; their reading is in `hang1954-0401.md`, section "r7all 06:40 (e7 catchers)". r6c and r7m ran
+    900 s at the same save without a hang, so it is intermittent there: one in three route arms.
+
+**Series e8: e7 plus smp, for the F2 series (2026-11-05, the top session's order after the r7all read).** The read (`hang1954-0401.md`, "r7all 06:40") picked F2 (`BC5_DIRECT_FL_SERIAL`, built in e7) as the next test,
+with a control nobody had: A4's per-point walk on draws that completed.
+- *smp* (`mksmp0401.py`, `smp0401.cpp`, `smp0401-notes.md`): `BC5_DIRECT_FL_MESHLET_SAMPLE=<s>`, default off, CPU only.
+  At most once every `<s>` seconds it walks a completed job's pattern draws a few ms after the fence. At a fence
+  timeout it walks the last done draw and every draw issued and not done. Every walk counts two range models: past
+  NUM_RECORDS read as 0 (A4's reading), or read as the memory there; TODO(verify) which one the hardware does. The main
+  unit goes e7's b010db09 → bd1811690b685369194602027b61a2d5. flx's walk keeps its old behaviour by a defaulted
+  parameter.
+- *Laptop checks:*
+  - the script refuses its own output and an unpinned input, and undoes to its input;
+  - the stand-in TU builds clean with clang++ 22 (`-Wall -Wextra -Werror -Wshadow`);
+  - `smp0401` passes on 61 of 61 and off 61 of 61; flx's test on the e8 unit gives on 173 of 173 and off 172 of 172,
+    as in e7;
+  - 12 of 12 mutants are caught;
+  - `test0401.py` (now with `t_series_e8`) passes 33 of 33.
+- *Kit:* `box0401.sh` series e8 (`E7UP`: e8 builds every e7 row, gate and string, then smp's), `go-build0401.sh`
+  (3300 s), `launcher0401.py`.
+- *Arms* (to be staged after the build, `raw/night-arms-e8.txt`): 8 pairs at his slot-4 save.
+  - e8fK: r7m's words + F2 + A1 + A4 + smp every 30 s.
+  - e8cK: the same without F2.
+  - G+600 each, RT on, about 3.5 h in all, F2 first in each pair.
+- *Build* (2026-11-05 on the box, `raw/e8/`, `raw/e8-go-build.log`):
+  - binary `exp0401e8/bin/kyty_emulator`, md5 dc7fb4e051f0a2f5db1abe7e5ec43bcf;
+  - every CPU test passes on the box (smp0401 61 of 61);
+  - the shared binaries, archive, tree and launcher are unchanged.
+
+**Series e8 results** (2026-11-05 15:11–19:07):
+- *Setting.* Boot 9af31fd4, his slot-4 save, RT on. The live saves read 558115f366fb11cb before and after every arm.
+- *Arms.* 18 in all: the 16 planned, plus e8c2 and e8c4 run again (e8c2r, e8c4r).
+- *Stops.* The runner stopped twice at an F403-class hang in a control. After each read it resumed from
+  `raw/night-arms-e8b.txt` and then `raw/night-arms-e8c.txt`. For the last 10 arms, the top session's rule was that a
+  successful ring reset does not stop the series.
+- *Records.* `raw/night/night.txt`, `raw/night/e8*-*.txt`, and smp's sums in `raw/night/e8-smp-summary.txt`.
+
+Ring resets in this boot:
+- 15:58:38, e8c2: two ring gfx timeouts, devcd1 and devcd2;
+- 16:48:19, e8c4: devcd3.
+
+Both resets succeeded and the box did not reboot. The column "after a reset" counts the resets earlier in the same boot.
+
+| Arm | F2 | After a reset | End | G (s) | flips/s | Longest gap (ms) | Memory floor (MiB) |
+|---|---|---|---|---|---|---|---|
+| e8f1 | on | no | G+600 | 163 | 32.6 | 1,286 | 291 |
+| e8c1 | off | no | G+600 | 217 | 34.7 | 1,089 | 374 |
+| e8f2 | on | no | G+600 | 215 | 32.6 | 1,123 | 322 |
+| e8c2 | off | no | F403 hang at G+81, reset ok | 215 | 15.5 | 15,067 | 286 |
+| e8f3 | on | yes (1) | G+600 | 147 | 31.3 | 1,626 | 322 |
+| e8c3 | off | yes (1) | G+600 | 147 | 31.9 | 1,516 | 370 |
+| e8f4 | on | yes (1) | G+600 | 216 | 32.2 | 1,124 | 315 |
+| e8c4 | off | yes (1) | F403 hang at G+31, reset ok | 150 | 16.1 | 14,932 | 238 |
+| e8f5 | on | yes (2) | G+600 | 146 | 32.5 | 1,083 | 323 |
+| e8c5 | off | yes (2) | G+600 | 234 | 33.6 | 1,280 | 374 |
+| e8f6 | on | yes (2) | G+600 | 216 | 32.4 | 1,132 | 332 |
+| e8c6 | off | yes (2) | G+600 | 149 | 32.9 | 1,182 | 351 |
+| e8f7 | on | yes (2) | G+600 | 218 | 34.2 | 1,029 | 364 |
+| e8c7 | off | yes (2) | G+600 | 217 | 33.4 | 1,168 | 339 |
+| e8f8 | on | yes (2) | G+600 | 216 | 32.9 | 1,554 | 310 |
+| e8c8 | off | yes (2) | G+600 | 145 | 33.9 | 1,204 | 331 |
+| e8c2r | off | yes (2) | G+600 | 233 | 35.0 | 1,190 | 361 |
+| e8c4r | off | yes (2) | G+600 | 147 | 33.3 | 1,357 | 318 |
+
+- *Draw-class (19:54) hangs: 0 of 18* (0 of 8 with F2, 0 of 10 without).
+  - The class did not come back in e8 at all. In e7 it hung 1 of 3 route arms at this save (r7all, 900 s).
+  - So this series cannot say whether F2 prevents it.
+- *F403 hangs* (the acb's BVH build/refit; F2 does not touch it):
+  - 0 of 8 with F2, 2 of 10 without (Fisher two-sided p ≈ 0.48), so there is no evidence either way;
+  - both arms ran clean when run again.
+- *F2's cost.* The clean arms average 32.6 flips/s with F2 and 33.6 without (8 arms each), about 3 % less. The longest
+  gaps are alike (1.0–1.6 s).
+- *After resets.* Every arm after a ring reset in the same boot ran clean: 3 arms after one reset (e8c4, the 4th, hung)
+  and 10 arms after two.
+- *smp* (scratch `sampstat.py`; the lines themselves stay in laptop scratch):
+  - 15,191 completed pattern draws were sampled in 18 arms, and 14,502 of them were walked (2,065,171 points);
+  - in either range model, no draw had a point with meshlet index ≥ count, a load past NUM_RECORDS at every point, or
+    a header above 32 vertices; r7all's three hung draws had all three at every point;
+  - point 0 landed on the empty record (count 0) in 254 draws in model 0 and 35 in model 1;
+  - smp printed no timeout walk in either hung arm, because both hangs were in the acb.
+
+**Series e9: e8 plus the hang fixes and catchers and exp 0406's switches (2026-11-05/06, the top session's order after
+the deep analysis and the box reads; his yes in this session).**
+
+*His shortcut.* "BC5 emulator (test 0401 CP+acb)" now runs e8 (dc7fb4e0) without the zero skip, by his choice
+(`shortcut0401.sh` mode cpacb):
+- .desktop md5 844a819f, 65 words: e6's without FL_CRUMBS, plus JOURNAL_QUIET;
+- mode cpacb-e6 is the rollback; it rewrites the old file (cb3fa0a8) byte for byte.
+
+*The build* (`raw/e9/`, binary de6a0ad520cd6ce52682f8d870414abe, launcher 88181f41). The main unit chains bd181169 →
+zcb 2fcf42d2 → gvw e8938633 → p406 4761c532. p406 also writes audio.cpp, 1f90e752 → 8db6d9cc. Every switch is default
+off:
+- zcb (`mkzcb0401.py`, `zcb0401-notes.md`): `BC5_DIRECT_ZERO_SKIP_EXCLUDE`, `_COPYBACK`, `_PROBE` and
+  `BC5_DIRECT_SCRATCH_WATCH`.
+- gvw (`mkgvw0401.py`, `gvw0401-notes.md`): `BC5_DIRECT_WAIT_LATE_PRODUCER_MS`, `_UNWAITED_FL_DROP`, `_GIVEUP_JOURNAL`
+  and `_FL_MESHLET_SAMPLE_UNWAITED`.
+  - The late-producer wait does not wait for an acb that the same thread rings later, because that wait would deadlock.
+  - The e9 journals show that was every case.
+- p406 (`mkp4060401.py`, `p4060401-notes.md`): `BC5_0406_LEARNED_PRUNE` (`eager`: only the skip of windows inside
+  eager views; `1`: also drops 32 junk windows with their zero pages) and `BC5_0406_AUDIO_SLEEP`.
+  - The audio sleep needs exp 0372's replug check before any play with it on.
+  - `BC5_0406_PROBE_LAZY` is left out: at the completion thread's timeout the job owns no copy of its buffer.
+
+*Checks.*
+- Laptop stand-ins on the chained unit: zcb0401 221/164/164, gvw0401 325/173/173, smp0401 61/61, p4060401 492 in every
+  mode.
+- Mutants: 20/20, 21/21 and 28/28.
+- `test0401.py`: 34 of 34.
+- On the box (GCC, the real link): zcb0401 221/164, gvw0401 325/173, p4060401 471/471, and every older gate.
+- The first build stopped at the 80 % disk guard. 172 old gate-test executables were removed from exp0401e4–e9/raw;
+  binaries and launchers were kept.
+
+*Profiles* (`profile0401.sh`, on the box in ~/bc5-work/exp0401e9):
+- `play-e9-normal.sh` (46db819c): his shortcut's 65 words.
+- `play-e9-lean.sh` (ca2df8d7, 62 words):
+  - without exp 0406's six catcher drops (ACB_INHERIT journal, R3_REWIND_CATCH, R3_DROP_CATCH, AMM_PRT_CMDS,
+    AMM_EXTRA_CMDS, TABLE_CATCHER);
+  - with LEARNED_PRUNE=eager and the late-producer wait (250 ms);
+  - and with the launcher's own FRAME_PROFILE, AUDIO_TRACE, MEASURE and GPU_CHECK_PRODUCT taken back. This uses the
+    launcher's new `BC5_0401_LATE_UNSET` line. GPU_CHECK_PRODUCT is unset, not set to 0, because F767 may not be in
+    the shared archive.
+- The route arms keep the frame profile; `run0401t.sh` refuses to take it back.
+
+**Series e9 results** (2026-11-06 00:31–01:50, boot 9af31fd4, his slot-4 save, RT on, G+600, live saves 558115f366fb11cb
+before and after every arm; `raw/night/e9*-*.txt`):
+
+| Arm | Profile | End | G (s) | flips/s | Longest gap (ms) | Memory floor (MiB) |
+|---|---|---|---|---|---|---|
+| e9n1 | normal | G+600 | 159 | 32.5 | 5,932 | 192 |
+| e9l1 | lean | GPU hang at G+163, reset ok | 142 | 17.6 | 1,426 | 118 |
+| e9l2 | lean | G+600 | 140 | 34.8 | 2,047 | 172 |
+| e9n2 | normal | G+600 | 143 | 34.0 | 2,069 | 218 |
+| e9n3 | normal | G+600 | 144 | 34.3 | 2,702 | 110 |
+| e9l3 | lean | the emulator ended at 352 s: a guest write to address 0 | 142 | 15.4 | 2,775 | 189 |
+| e9l4 | lean | G+600 | 139 | 35.4 | 2,022 | 200 |
+
+- **Lean failed in 2 of 4 arms, normal in 0 of 3** (Fisher two-sided p ≈ 0.43). Both failures are null pointers.
+  - e9l1: a shader of the per-frame RT acb read page 0 (TCP, a VM read fault).
+    - It is F686's near-class, not F403: SPI busy, TA/TCP idle, F403's PFP/ME positions.
+    - It came in a frame with given-up waits, at a memory floor of 118 MiB.
+    - `hang1954-0401.md`, section "e9l1 00:49 (e9 lean)".
+  - e9l3: the title's own copy routine wrote to address 0 (`raw/night/e9l3-crash.txt`; the code bytes are kept in
+    laptop scratch only).
+- Which lean change causes them is not known.
+  - The candidates are the six drops, LEARNED_PRUNE=eager, and the launcher's GPU_CHECK_PRODUCT, AUDIO_TRACE and
+    MEASURE taken back.
+  - Ruled out: the "shared map at 0x0" line comes about 2,000 times in every arm, normal too, and the AMM command lines
+    are the same in both profiles.
+- **Frame rate:** clean lean arms 34.8 and 35.4 flips/s against normal's 32.5–34.3 (mean 33.6), about +4 %. The gaps are
+  alike.
+- The series stopped at e9l3's crash, under the stop rule. The arms not run: e9n4, e9g1, e9z1, e9w1, e9x1, e9g2, e9z2.
+
+**Series e9c** (2026-11-06 03:03–03:33, the maintainer's "Tak 1 i 2", the top session's GO): first the 7 fix and catcher
+arms e9 did not reach, word for word (`raw/night-arms-e9c.txt`). Then the lean bisect, 3 variants × 2 arms:
+- e9dK: the six drops only;
+- e9pK: lean with GPU_CHECK_PRODUCT kept;
+- e9uK: lean without LEARNED_PRUNE.
+
+The run used the same binary de6a0ad5, route and stop rule. Boot 9af31fd4, live saves 558115f366fb11cb before and
+after every arm.
+
+| Arm | Words over normal | End | G (s) | flips/s | Longest gap (ms) | Memory floor (MiB) |
+|---|---|---|---|---|---|---|
+| e9n4 | none | GPU hang at G+158, reset ok | 194 | 14.3 | 1,875 | 148 |
+| e9g1 | unwaited meshlet sample, crumbs, give-up journal | G+600 | 151 | 34.6 | 2,122 | 131 |
+| e9z1 | zero skip + copy-back, its probe, scratch watch | GPU hang at G+177, reset ok | 147 | 18.4 | 14,981 | 272 |
+| e9w1 | unwaited fl drop, late-producer wait 250 ms, crumbs, give-up journal | the emulator ended at 238 s | 144 | 15.3 | 2,103 | 246 |
+
+The series stopped at e9w1's crash, under the stop rule. The arms not run: e9x1, e9g2, e9z2 and the whole bisect.
+
+**e9w1 is e9l3's crash, and the late-producer wait is the only word the two share (Medium-High).**
+- The same crash in both:
+  - the same title address, 0x930003d83;
+  - a write to address 0;
+  - the same stack (rsp 0x10367fb530);
+  - rdi 0, and a 90- or 99-byte copy from the stack.
+- The records are `raw/night/e9w1-crash.txt` and `raw/night/e9l3-crash.txt`; the code bytes are in laptop scratch
+  only.
+- This crash comes in no other record of any experiment (a search of all `experiments/*/raw`).
+- It came in 2 of the 5 arms with `BC5_DIRECT_WAIT_LATE_PRODUCER_MS=250` (e9l1–l4, e9w1) and in 0 of the 24 arms
+  without it (e9's 6 and e8's 18). One-sided p ≈ 0.025 (2 crashes among 29 arms, both in the 5).
+- The wait did act in every one of those arms. It served a wait late 2 to 10 times per arm (on the box: e9l1 2, l2 8,
+  l3 8, l4 10, w1 2). Each time a game thread was held on the CPU for up to 250 ms, until bc5-ring's compute job wrote
+  the label.
+- How this leads to the title's copy into a null destination is not known.
+- **Correction to "Series e9 results":** lean also carried this wait, and its list of lean changes left it out. e9l3's
+  crash therefore says nothing against the six drops, LEARNED_PRUNE or the launcher words taken back.
+
+**e9n4: F686's near-class on normal, so e9l1's class is not lean's either (High for the class).**
+- devcd6 (`~/bc5-data/captures/devcoredump/20261106-030939-devcd6.txt`):
+  - GRBM_STATUS 0xa0403028, SE0/SE1 0x08000006;
+  - CP_STALLED_STAT2 0x18000, PFP 0xea1, ME 0x77b;
+  - IB #0 of 78,856 dwords.
+- The faults are at page 0, from the SQC (inst) client, vmid 7, thread bc5-ring: a shader's instruction fetch at
+  address 0. e9l1's fault was a TCP data read.
+- Both are a shader-side null pointer in F443's family.
+
+**e9z1: F403's state register for register, with the zero skip on and no canary hit (High for the class).**
+- devcd7 (`20261106-032837-devcd7.txt`):
+  - GRBM_STATUS 0xa0407028, SE0/SE1 0x0a000016;
+  - PFP 0xea1, ME 0x779;
+  - no fault.
+- The probe's 25 take-backs were all by CPU writes, none by a canary hit. So the copy-back never acted.
+- The last take-back of run 37 was 36 s before the timeout. Both of e8's F403s had followed a canary take-back of run 37
+  within 0.11 s, so that tie does not hold for this F403.
+- The scratch watch saw the hole scratch BO all zero in 6,357 scans.
+- F403 has now come only in arms with the zero skip on. The 10 e9 arms without it had none (e9n1–n4, e9l1–l4, e9g1, e9w1).
+
+**What it means for the profiles.**
+- Normal (his shortcut's 65 words) had 1 failure in 5 arms (e9n1–n4 and e9g1, whose catchers are CPU only): e9n4, the
+  F686 class.
+- The late-producer wait must stay off. Lean as written on the box (`play-e9-lean.sh`) carries it.
+- The lean bisect should be run again with lean minus the wait.
+
+**Plan change (2026-11-06, the maintainer's words in exp 0408's review session, relayed by the top session).** "przekaż
+sesji nadrzędnej, że ma przebudować wszystko zgodnie z Twoimi rekomendacjami i przekazać innym sesją by odrzuciły swoje
+zmiany - chyba ze ich nie uwzględniłeś jeszcze". What that drops here, with the commits kept as records:
+- Shortcut mode cpacb with `KYTY_BC5_MEMORY_FROM_PARAM=1` (db961af8, dry run 3cdcbf19): **not installed, not to be
+  installed.** His shortcut stays e8 without the zero skip (844a819f). Exp 0408 §B4a: `FROM_PARAM` is worth ~120 MiB
+  pinned, and the "smooth" play it was credited with lasted 155 s.
+- The AMM pool fix (`ammpool0401-notes.md`, 859c8aad: D1 `KYTY_BC5_AMM_SCATTER`, D2, D3): not built. The fatal it fixes
+  comes only with `FROM_PARAM=1`.
+- The late-producer wait (`BC5_DIRECT_WAIT_LATE_PRODUCER_MS`): stays in the binary as a default-off switch, and no
+  profile, arm or shortcut sets it again.
+- The e10 plan "AMM fix + exp 0407's five changes" is cancelled. Series e10 follows exp 0408's §G6
+  (exp/0408-memory-review). Memory A/B arms must walk or use his plays (0408 §A.2, §E, §F).
+
+**Series e10 (laptop, in progress, 2026-11-06): exp 0408 §G6's first items, on the top session's order.** No box access
+yet. Every switch is default off.
+
+*His shortcut, prepared, not installed* (`shortcut0401.sh`, commit 925144a1).
+- Mode `cpacb` is now e8 as installed (844a819f's 65 words) plus exp 0379's zero skip with exp 0388's pinned list, as
+  the e8 shortcut of 24fccd38 had it. This is 0408's first test (§D2, §F).
+- The dry run gives e25c719b. Its Exec line differs from 844a819f's by the one word `BC5_DIRECT_ZERO_SKIP=…`, and its
+  Comment says what it runs.
+- Its risk is F403: 3 in 19 arms with the skip, 0 in 10 without, each followed by a successful ring reset in e8/e9.
+- It installs only on his own yes in this session, after he has stopped playing. Mode `cpacb-e8` is the rollback; its
+  dry run reproduces 844a819f.
+- The FROM_PARAM=1 mode of db961af8 is now `cpacb-fp`. It is kept as a record and refuses to install.
+
+*Runner words* (`run0401t.sh` a830d60f, `night0401.sh` d2e5eefe; stand-in `test0401e10run.sh`, 37 of 37). Each word is
+read by the runner and passed on unchanged:
+- `BC5_0401T_LEARNED=empty`: the arm's learned file starts empty.
+  - Every window the title then needs outside the eager heaps is a GPU fault and a ring reset (F88).
+  - The first such fault ends the arm under the stop rule. So 0408 §E's "empty learned file" arm costs a reset per
+    window.
+  - The prot census's forced-chunk line answers the same question with no fault.
+- `BC5_0401T_MOUNT=<bc5-mount under ~/bc5-work/exp0401*>` with `BC5_0401T_MOUNT_MD5`: the derived launcher starts that
+  mount, as exp 0381's `setup0381r.sh` did, with the arm's own mount log.
+  - No bc5-mount may run at the start, or the launcher would reuse it.
+  - The running mount's md5 and every `BC5_MOUNT_*` word are checked in its environment.
+  - A `BC5_MOUNT_*` word without a private mount is refused.
+  - This is for 0408's `BC5_MOUNT_DIRECT_IO=1 BC5_MOUNT_CACHE_MIB=512` arm. Exp 0381 built that switch (5249deee,
+    `fuse.rs:299-303`, branch exp/0381-mount-reread) and never ran it. Main's mount has neither word.
+- `BC5_0401T_WALK=<s>`: from G, exp 0379's walk cycles (the left stick forward 15 s, a 1.2-s camera turn that changes
+  side every fourth cycle, 0.3 s pause).
+  - Whether the character moves at his slot-4 save is untested. Exp 0379's walk from the S6N save did not stream
+    (F634). Exp 0381's RR3 walk (`walk0381r.cmd`, the same stick cycles, from its sample save f93851b7) did: the mount
+    served 1.2–1.9 GiB a minute from minute 5 (exp 0381 reread README, "First measured arm").
+  - Each route arm now writes `<tag>-io.txt` every minute: the mount's and the emulator's rchar and read_bytes. That
+    file says whether an arm streamed, and the arm is a memory A/B only if it did.
+
+*The saves and the frame figure, after Codex's round of 2026-11-06* (relayed by the top session; LESSONS R45, R11). The
+runner is now `run0401t.sh` 221e6fa7 and `night0401.sh` 02954728; the stand-in `test0401e10run.sh` passes 55 of 55, and
+14 of its checks fail on the old runner.
+- The old runner kept a live-save gate that LESSONS R45 had retired. It took the live sum as an argument, refused to
+  start on a live mismatch, made a snapshot of the live saves per arm and compared live before and after.
+- **The live saves are no longer read.** There is one named snapshot, `exp0401t/saves-named/PPSA03671`, made once by
+  `MODE=name run0401t.sh <sum> <tag>` from an earlier arm's own snapshot. No live read is needed for that either.
+- Every arm checks the snapshot's sum and resets the private copy from it. It hashes the copy after the reset and
+  again after the arm. The method is `LC_ALL=C; find PPSA03671 -type f -exec md5sum {} + | sort -k2 | md5sum | cut
+  -c1-16`.
+- His further play does not block any run. `night0401.sh`'s first argument is the named snapshot's sum.
+- **flips/s is labelled "whole run".** The fps counter's `t` runs on the emulator's clock and G on the runner's, so
+  the old "from G" comment was never true. Every flips/s figure in the e7–e9c tables is a whole-run figure.
+- **Limits Codex asked to keep in reports (LESSONS R17, R18).**
+  - e8 and e9 differ in binary and in the set of changes, and only clean arms were compared, so the ~500 MiB of GTT is
+    an observation of those configurations, not the zero skip's isolated effect.
+  - 155 s against 681 s does not show that FROM_PARAM had no effect.
+  - 2 of 5 against 0 of 24 is circumstantial evidence against the late-producer wait, not proof that it is the sole
+    cause.
+  - Running without the zero skip does not guarantee there will be no F403.
+
+**The exp 0409 arms** (2026-11-09 09:42–10:25, the top session's relay of his "niech water przetestuje na swoim save", his
+"tak - testuj" here; `raw/night-arms-0409.txt`, `series0409.sh`, `raw/night/x9*`).
+- *Setup.* Binary exp0409 092cd87a: e8 plus `KYTY_BC5_AMM_SCATTER` in libAmpr. The unpacked game came through
+  `BC5_GAME_DIR`, with no bc5-mount (runner word `BC5_0401T_LAUNCHER=exp0409`, runner d7d36058).
+- The words were the e8 shortcut's 65, RT on, G+600, standing still.
+- His slot-4 save came from the named snapshot 558115f366fb11cb, made from e9w1's snapshot. The live saves were not
+  read.
+- 12,800 MiB came from `exp0401e8/run-mem12800.env`; the play logs confirm `KYTY_GUEST_MEMORY_MB` in every arm.
+
+| Arm | Guest MiB | Scatter | End | flips/s (whole run) | GTT max | swap max | MemAvailable min | pool lines |
+|---|---|---|---|---|---|---|---|---|
+| x9a1 | 13,824 | unset | G+600 | 36.2 | 12,913 | 922 | 419 | 0 |
+| x9b1 | 13,824 | rescue | G+600 | 36.4 | 12,944 | 959 | 352 | 0 |
+| x9d1 | 12,800 | rescue | G+600 | 36.6 | 12,727 | 922 | 541 | 0 |
+| x9e1 | 12,800 | journal | the emulator ended at 190 s, before G | — | 12,703 | 666 | 545 | 2 |
+| x9c1 | 12,800 | unset | not run: the series stopped at x9e1 | | | | | |
+
+- **x9e1 is the 12,800-MiB failure.** It printed two `exp 0401 pool: journal — contiguous borrow failed, scattered map
+  refused` lines; journal mode refuses as today's code does.
+- Then a host write into the AMM window (0x8947750000, unmapped) ended the run: an access violation in libc, reported
+  at `runtimeLinker.cpp:1166`.
+- The redacted record is `raw/night/x9e1-crash.txt` and `x9e1-tail.txt`. The title's code bytes and the guest memory
+  words are in laptop scratch only.
+- It did not print the 11-03 message ("AMM virtual-memory unmap is unsupported"). Its cause is the same: a refused AMM
+  map.
+- **x9d1 says nothing about rescue yet (LESSONS R18).** It reached G+600 at 12,800 MiB, but no borrow failed in that
+  run (0 pool lines). Rescue never acted, so 0 maps were scattered.
+- The failure is not deterministic: one 12,800 arm hit it during the load and the other did not.
+- **Memory, one arm each, standing route (0408 §E):** at 12,800 MiB, GTT max was ~190–220 MiB lower than at 13,824 and
+  the MemAvailable floor 120–190 MiB higher. That fits the ~120 MiB measured on 11-03. flips/s did not move (36.2–36.6),
+  which a standing route cannot show anyway.
+- What would decide rescue: more 12,800-MiB rescue arms, until one logs a rescued map and goes on.
+
+**The second exp 0409 series** (2026-11-09 10:36–11:13, the top's relay of his "zlec", his "Tak, testuj" here;
+`raw/night-arms-0409b.txt`, all at 12,800 MiB, same setup; a crash did not stop it).
+
+| Arm | Scatter | End | flips/s (whole run) | GTT max | MemAvailable min |
+|---|---|---|---|---|---|
+| x9f1 | first | ROUTE: no gameplay within 150 s of the load (258 s) | 15.0 | 12,521 | 730 |
+| x9f2 | first | ROUTE: no gameplay within 150 s of the load (253 s) | 15.4 | 12,531 | 892 |
+| x9r1 | rescue | the last fps line at t 316.6 s, then nothing; exit 133 (SIGTRAP) at 621 s, no crash text, no kernel line | 20.3 | 12,717 | 564 |
+| x9r2 | rescue | G+600 | 35.8 | 12,749 | 689 |
+| x9c1 | unset | the emulator ended at 190 s, before G: the same host write into the AMM window as x9e1 (0x89440e0000, `runtimeLinker.cpp:1166`) | 19.3 | 12,712 | 729 |
+
+- **The 0409 build logs nothing when it scatters.** The only `exp 0401 pool:` line in its edit script is journal mode's
+  refusal (`mkpool0401.py:159`). `rescue` and `first` return OK after `Bc5MapAutoScattered` with no line and no counter.
+- So for every rescue or first arm, the count of scattered maps is unknown and the pieces cannot be checked for
+  overlap or gaps. 0 pool lines in those arms means nothing.
+- **`first` did not reach gameplay in 2 of 2 arms.** The load ran at ~15 flips/s and never turned into gameplay, with
+  no crash and no kernel line.
+- `first` returns OK before the original contiguous path's remaining steps. Whether it skips work the title relies on
+  is not known (the 0409 README says `first` was untested).
+- **Unset at 12,800 died in 2 of 2 arms** (x9e1 in journal mode, which behaves as unset, and x9c1), both at 190 s
+  during the load, the same way.
+- **Rescue at 12,800: 2 of 3 arms reached G+600** (x9d1, x9r2). x9r1 froze silently ~3 min into gameplay and ended by
+  SIGTRAP 5 min later. Whether rescue scattered anything in any of the three is not recorded.
+- `bc5-direct: shared map at 0x0+0x10000: -22` comes 1,300–2,900 times in every arm, the 13,824-MiB control x9a1
+  included, from log line 153 on: it is not the scatter.
+- **To decide rescue, the build needs a log line and a counter in the scatter path** (pieces, va, size, offsets).
+  More arms of this binary cannot say it.
+
+**The third exp 0409 series** (2026-11-09 12:53–13:51, his "Tak, testuj"; binary 9fd42e25 = exp 0409 2a5c1f52, every
+scatter logged, the free-list leak on a failed piece fixed; `raw/night-arms-0409c.txt`; all at 12,800 MiB; a crash did not
+stop it; `stall0409.sh` beside it).
+
+| Arm | Scatter | End | flips/s (whole run) | GTT max | MemAvailable min | scatter ok / FAILED | pieces per map (count) |
+|---|---|---|---|---|---|---|---|
+| x9s1 | rescue | last fps line at t 321.6 s; exit 133 (SIGTRAP) at 626 s | 19.4 | 12,737 | 697 | 104 / 0 | 2:72, 3:21, 4:8, 5:1, 6:2 |
+| x9u1 | unset | the emulator ended at 195 s (G 134): "AMM virtual-memory unmap is unsupported" | 23.9 | 12,654 | 840 | — | — |
+| x9s2 | rescue | G+600 | 34.0 | 12,729 | 546 | 88 / 0 | 2:54, 3:24, 4:9, 5:1 |
+| x9s3 | rescue | G+600 | 36.1 | 12,739 | 609 | 117 / 0 | 2:79, 3:19, 4:11, 5:6, 6:2 |
+| x9u2 | unset | the emulator ended at 159 s (G 133): "AMM virtual-memory unmap is unsupported" | 21.0 | 12,643 | 640 | — | — |
+| x9s4 | rescue | last fps line at t 317.4 s; exit 133 (SIGTRAP) at 622 s | 19.7 | 12,737 | 692 | 90 / 0 | 2:57, 3:23, 4:8, 5:2 |
+| x9j1 | journal | the emulator ended at 189 s: 2 refused borrows, then a host write into the AMM window (0x8943ba0000) | 18.9 | 12,719 | 812 | 0 refusals logged as scatter | — |
+
+- **Rescue scatters, and no piece failed.** Rescue scattered 88–117 maps in each logged arm, 399 in all, into 2–6 pieces
+  (mostly 2), with 0 FAILED. It removes the 12,800-MiB load fatal.
+- **The tally at 12,800 MiB, all three series:**
+  - without rescue (unset or journal), the emulator ended in 5 of 5 arms at 159–195 s: x9e1, x9c1, x9u1, x9u2, x9j1;
+  - with rescue, 4 of 7 arms reached G+600: x9d1, x9r2, x9s2, x9s3;
+  - the other 3 rescue arms (x9r1, x9s1, x9s4) ended the same way: the frames stopped at emulator t 313–322 s (~3 min
+    after G), with no log line, no kernel line and no crash text, then exit 133 (SIGTRAP) ~5 min later.
+- At 13,824 MiB, 2 of 2 arms reached G+600. Neither scattered anything.
+- **The SIGTRAP freeze has no stack yet.** `stall0409.sh` fired 60 s after the frames stopped in x9s1 and x9s4.
+  - Every emulator thread was already in state I, wchan `do_exit`: the process was dying, not hung. eu-stack could not
+    attach.
+  - coredumpctl has no core for these processes. The exit took ~5 minutes, the teardown of ~12.7 GiB of pinned memory
+    or a core dump.
+  - The dumps (thread names and states only) stay in laptop scratch.
+- What the trap is, a title int3 or a host trap, and whether rescue's scattered maps cause it, is not known. The arms
+  without rescue never live to t 317 s at 12,800 MiB. To catch it: a SIGTRAP handler that logs the trapping rip and
+  thread before the exit, or gdb attached with `catch signal SIGTRAP` from the start of a rescue arm.
+
+**The learned file cleaned** (2026-11-09 23:17, the top's relay of his "Tak" and his "masz zgode na swoje dzialania"
+here; `hang2242-0401.md` §2).
+- *What the file is.* `~/bc5-work/direct-learned-pkg.txt` is the second title's learned-window file: every launcher
+  exports `BC5_DIRECT_LEARNED` to it (`play-pkg.sh:48`, `exp0409/play-pkg-0409.sh:50`). The emulator loads it at
+  start and appends a 96 MiB window around each GPU fault it recovers from.
+- *Before.* aa797aba, 114 windows; the copy is `raw/learned-0411-before.txt`.
+- *The backup on the box:* `~/bc5-work/direct-learned-pkg.txt.before-0411-20261109-231751`.
+- *Removed, 33 windows* (`raw/learned-0411-removed.txt`):
+  - 0x0;
+  - 0x6e000000, learned from the 22:42 hang's garbage fault;
+  - 31 windows at 2^40 or above, among them alias-byte forms of heap addresses such as 0x8011ce000000 and
+    0xc012ca000000. Our host never maps a GPU address there (`GPU_ADDRESS_LIMIT`, P:20430-20433), so none of them can
+    be a fault on a mapped heap. p406's junk rule counts them the same way.
+- *Kept, 81 windows:*
+  - 78 lie on the game's heaps (0x10_0000_0000–0x20_0000_0000) or in the AMM window (0x7f_0000_0000–0x90_0000_0000,
+    which includes 0x7ffe000000's window reaching into it);
+  - 3 lie below 2^40 but outside both ranges (0x5452000000, 0x2672000000, 0xb8a000000). They are kept, because removing
+    a real window costs a 14-s fault at the next start and a junk one costs one scratch map.
+- *After.* cb30371e, 81 lines. Undo: copy the backup back while no emulator runs.
+
+**e11's long control arm x11L0** (2026-11-09 23:3x–00:1x, his yes; `raw/night-arms-0411L0.txt`).
+- *Setup.* Binary exp0409 9fd42e25 with the scatter unset, 13,824 MiB, the named snapshot 558115f3, RT on, the cleaned
+  learned file. G+2400 with `BC5_0401T_WALK=2400` (145 walk cycles queued at G = 138 s), cap 2700.
+- *Result.* It reached G+2400 clean after 2540 s, at 47.1 flips/s over the whole run (the standing arms ran 36). The
+  longest gap was 1161 ms, the MemAvailable floor 506 MiB. 0 crash lines, 0 kernel lines, 0 devcoredumps.
+- The emulator's rchar grew ~214 MB a minute at the end, so the walk streamed.
+- The learned file was still 81 lines at the end: no new fault.
+- *Reading.* The 22:42 hang came after 39 minutes of his own play. 40 minutes of the scripted walk did not bring it
+  back: one arm, no bound on the hang's rate (LESSONS R18).
+
+**e11's code, stopped (2026-11-10 ~03:1x).**
+- *What happened.* While the coding agent was writing tag m11's edit (the six switches of `hang2242-0401.md` §4), a
+  safety classifier stopped its response and withheld it. Nothing was written and nothing was retried.
+- *Why it stays stopped.* A refused step is reported, not routed around. The maintainer decides how m11 goes ahead,
+  for instance with switch 5 (`BC5_DIRECT_STUCK_AFTER_REOPEN`'s in-process register capture by a signal) split off
+  or replaced by the existing external read-only gdb dump (`freeze-dump.sh`).
+- *What the read-only pass found* (e8's unit bd181169):
+  - **The acbs are replayed after all.** They never enter the chain's soft list, which carries only dcb, hib and cc
+    buffers. But the guest compute ring's own post (unit lines 1666–1709) replays them in full when cq1's failed
+    flag is set, and writes no journal line. So the 22:42 journal could not show it. §3's "neither acb was replayed"
+    is therefore not shown; it is unknown.
+  - **A real gap remains.** An acb head (`acb_ready` → `submit_segment` + `chain_flush(6)`) has a fence but no post.
+    Its marks go to `g_acb_heads`. If the head is lost after the flag was used up, its label writes are not replayed.
+    Whether that happened at 22:42 is not known.
+  - **The learned logic sees only the last fault.** It reads `AMDGPU_INFO_GPUVM_FAULT`, which holds only the last
+    fault (backend `direct.cpp:1622-1628, 1695-1700`); nothing reads dmesg. `BC5_DIRECT_FAULT_PAGES` would need
+    dmesg or the devcoredump.
+- *Not touched.* e11 is not built, and no e11 arm ran.
+
+**e11 built without switch 5 (2026-11-10 07:3x, his "Pomiń i kontynuuj").** The blocked part was not retried. Switch 5
+(`STUCK_AFTER_REOPEN`, the in-process register capture) is left out. The runner's external read-only `stall0409.sh`
+dump stands in for it, beside every arm. Switch 6 (`FAULT_PAGES`) needs no code, because the runner already keeps every
+amdgpu fault line of dmesg in `<tag>-dmesg-after.txt`.
+- *The edit.* `mkm110401.py` edits e8's unit bd181169 into f366ff7b. Each anchor occurs once, the balance is kept, and
+  undoing the edit gives the input back. The four switches are default off and read once by `bc5::env_on`:
+  - `BC5_DIRECT_RESET_REPLAY_ACB` (fix): each `AcbHead` records the reopen count it was made at. When the head is used
+    again after a device reopen, its GPU marks are dropped, so the soft CP replays the head's memory side effects
+    (its label writes) on the CPU. This covers the acb-head gap m11 found.
+  - `BC5_DIRECT_RESET_LABELS` (fix): at a timed-out job, the completion thread keeps exp 0055's pending label writes
+    (those of every job in flight) before `forget_label_writes` clears them. At "reopen: ok", the last write of each
+    label goes to guest memory, unless memory already holds it or the label lies in no guest range.
+  - `BC5_DIRECT_LEARN_GUEST_ONLY` (fix): a fault whose 96 MiB learned window holds no guest range
+    (`Bc5GuestRangesIn`) is not learned. One "e11: fault … not learned" line is written instead.
+  - `BC5_DIRECT_RESET_LABEL_JOURNAL` (catcher): the kept writes are journaled at the reopen (at most 64), and again
+    5 s and 30 s later with what memory then holds.
+  - With all four off, the binary does what e8's does, plus a reopen counter and one more `AcbHead` field.
+- *The build* (`mk0411.sh`, BOX-LOCK, no emulator): e8's objects, plus exp 0409's `libAmpr.cpp.o` and `hostMenu.cpp.o`.
+  - Binary 70df5cb1f43cf276011037aaf7793a30. 5 warnings, all e8's, none in new code.
+  - CPU gate `m110401`: on 32 of 32, off 22 of 22, unset 22 of 22. It uses no game and no GPU, and its "guest
+    memory" is a buffer of its own. It checks the switches, the learned decision on 0x706ab000, the head marks, the
+    lost writes (one superseded, one already held, one outside guest memory), the second reopen, and the 5-s and 30-s
+    lines.
+- *The arms* (`raw/night-arms-0411e11.txt`, `series0409.sh` with `CONTINUE_ON_CRASH=1`): e11's binary through exp 0409's
+  launcher (`BC5_EMU`), scatter unset, 13,824 MiB, the named snapshot 558115f3, RT on, the cleaned learned file.
+  - ABBA at G+600, walking: A = the four switches unset, B = all four =1.
+  - Then x11L1: all four =1, G+2400 walking.
+- *Result* (2026-11-10 07:34–10:59, `raw/night/x11A1…x11L1*`). Every arm reached its end clean: 0 crash lines,
+  0 kernel lines, 0 freeze dumps and 0 devcoredumps. The stall catcher wrote no dump, and the learned file stayed at
+  81 lines.
+
+  | Arm | Switches | End | flips/s (whole run) | longest gap | MemAvailable min |
+  |---|---|---|---|---|---|
+  | x11A1 | unset | G+600 | 37.8 | 1189 ms | 549 MiB |
+  | x11B1 | all =1 | G+600 | 38.7 | 1313 ms | 431 MiB |
+  | x11B2 | all =1 | G+600 | 37.8 | 1573 ms | 403 MiB |
+  | x11A2 | unset | G+600 | 38.3 | 1240 ms | 519 MiB |
+  | x11L1 | all =1 | G+2400 | 46.4 | 1202 ms | 457 MiB |
+
+  - The journals hold no "e11:" line. No timeout or reopen came, so none of the four switches had anything to act on.
+  - Between x11B2 and x11A2 the laptop's ssh connection dropped. The box released x11B2 at 08:12:55 and did not
+    reboot (same boot id), and the series went on at 10:03.
+- *Reading.* With all four on, the game runs as with them off: flips/s within 1 of each other, and no crash. The B arms'
+  MemAvailable floor is ~100 MiB lower, which is two arms per side and not shown to be the switches (LESSONS R18).
+  Whether the switches help after a hang is not tested: no hang came in 66 minutes of walking.
+- *Not done, as the top asked.* `BC5_DIRECT_FAULT_PAGES` has no in-emulator code: the box has `dmesg_restrict=1`, so
+  the emulator cannot read the kernel log without sudo, and the runner's `<tag>-dmesg-after.txt` already keeps every
+  amdgpu fault line. The stand-in for switch 5 is `stall0409.sh`: eu-stack, read-only, after 60 s without a new fps line.
+  It is not a gdb `thread apply all bt` keyed to "reopen".
+
+**e11's menu series** (2026-11-10 13:36–14:27, the top's relay of his "tak" and his "Tak, testuj" here;
+`raw/night-arms-0411menu.txt`). The trigger he saw on 11-09 22:42: a pad button opened the title's in-game menu
+mid-play, and the screen froze on a menu option. The series scripts that during the walk.
+- *Runner* (`run0401t.sh` 069464e37c1c511080dcfa18f286f638; the box's earlier copy is kept as
+  `run0401t.sh.before-menu-bc7a8958`). It adds two words:
+  - `BC5_0401T_MENU=<n>`: after every n walk cycles, one menu cycle of 15 s. The cycle presses options (open), down,
+    down, up, r1, l1, then options (close), each 150 ms with 1.2–3 s between them. It never presses cross, so no option
+    is chosen.
+  - `BC5_0401T_HANG_WATCH=<s>`: after a recovered ring reset, the runner keeps watching for s seconds and records
+    whether new fps lines come.
+- *Series runner.* `series0409.sh` gains `STOP_ON_HANG=1`, which stops the series at any GPU hang.
+- *The arms.* e11's binary 70df5cb1, the 0411e11 arms' words, the named snapshot 558115f3 (slot 4), RT on,
+  13,824 MiB. Each arm walks to G+600 with `MENU=4` (30 walk cycles and 7 menu cycles, 14 options presses) and
+  `HANG_WATCH=180`. The order is ABBA: A = the four switches unset, B = all four =1. `stall0409.sh` watched the whole
+  series (`raw/stall0411m` on the box).
+- *Result.* All four arms reached G+600 clean: 0 crash lines, 0 kernel lines, 0 freeze dumps, 0 devcoredumps and no
+  GPU hang. The stall catcher wrote no dump, and the B arms' journals hold no "e11:" line. Every input script ran all
+  207 of its lines (`in-<tag>.cmd.done` on the box), so the 14 options presses reached the pad.
+
+  | Arm | Switches | flips/s (whole run) | longest gap | MemAvailable min | in menu: fps, longest gap | walking: fps, longest gap |
+  |---|---|---|---|---|---|---|
+  | x11MA1 | unset | 36.8 | 1242 ms | 423 MiB | 46.0, 181 ms | 39.0, 567 ms |
+  | x11MB1 | all =1 | 36.9 | 1225 ms | 433 MiB | 45.8, 179 ms | 39.1, 533 ms |
+  | x11MB2 | all =1 | 37.3 | 1708 ms | 462 MiB | 47.1, 142 ms | 39.3, 782 ms |
+  | x11MA2 | unset | 37.7 | 1072 ms | 421 MiB | 46.8, 317 ms | 40.1, 983 ms |
+
+  - In every arm, the run's longest gap falls in the load before G (G−17 to G−21 s), not in a menu window.
+  - The menu columns come from `menufps0411.py` (`raw/night/menu-fps-0411menu.txt`, from `raw/night/<tag>-fps.txt`).
+    During a menu cycle the sticks are centred, and the frame rate is ~7 fps above the walk.
+- *Reading.* Scripted menu use did not bring back the 22:42 freeze, with the switches on or off: 28 menu cycles (56 options
+  presses) in 40 minutes of walking. The logs cannot show whether the title drew its menu each time. The higher
+  frame rate in the windows fits a menu or a standing player equally well, and no screen capture was taken.
+  The switches still never acted, because no reset came. 22:42's trigger differs from this script in ways a re-run
+  could test:
+  - he pressed by hand, at moments the script does not reach;
+  - he chose options with cross, which the script never presses;
+  - how long he had played before it is not in the record (`hang2242-0401.md`); each arm here played 10 minutes.
+
+**His e11 shortcut** (2026-11-10 16:39, his "zrób mi skrót"). The four switches are read once from the environment, so
+they cannot be toggled during a run: the shortcut sets them at launch. `shortcut0411.sh` (fd7f7a78) wrote
+"BC5 emulator (e11 unpacked)" on his desktop (e85f05a1). Nothing else was changed or removed.
+- It runs `play-e11-0411.sh` (85421e63, at `~/bc5-work/exp0411/`).
+  - The game: exp 0411's launcher `play-pkg-0411.sh` (3e758fdf) in the ubuntu distrobox. This is exp 0409's launcher
+    with only the binary (e11's 70df5cb1) and the log (`~/bc5-work/exp0411/play-last.log`) changed.
+  - The words: "e10 unpacked"'s 66 words plus the four switches =1, the same words as the x11MB arms.
+  - Saves, settings (RT on) and the learned file come from the launcher, as with "e10 unpacked".
+  - Beside the game, `stall0409.sh` runs in the same container and writes its dumps to `~/bc5-work/exp0411/stall/`.
+    It is told to stop when the launcher ends.
+- *Stand-in on the box* (the game replaced by a 12-s shell, then deleted): all four switches reached the environment,
+  `BC5_GAME_DIR` was set, the launcher's exit code came back, and the catcher stopped within 15 s.
+- *The catcher has no stacks.* The host's eu-stack is refused the container's processes ("Brak dostępu", `dwfl_linux_proc_report`;
+  `ptrace_scope` is 0), and the ubuntu container has no eu-stack. Both 11-09 dumps in `raw/stall0409c` on the box end
+  at the `## eu-stack` line. So `stall0409.sh` wrote the thread names, states and wchan only, in every arm so far.
+- *The stacks, since 16:5x* (his "Tak, zainstaluj").
+  - elfutils 0.194-4 is now installed in the ubuntu container (`apt-get install --no-install-recommends elfutils`).
+    There, eu-stack read a test process's stack in 158 ms.
+  - The container inherits the host's `DEBUGINFOD_URLS` (Fedora's server), so eu-stack would send it the build ids it
+    cannot resolve. The wrapper therefore starts the catcher under `env -u DEBUGINFOD_URLS`. That this reaches the
+    container was checked.
+  - The wrapper is now cca8721e; the box keeps 85421e63 as `play-e11-0411.sh.before-debuginfod-85421e63`. A second
+    stand-in passed.
+  - How long eu-stack takes on the running emulator (~13 GiB, about 100 threads) is not measured. The catcher gives it
+    90 s.
+  - A catcher started by hand on the host, as in the series, still gets no stacks.
+
+**His first play on the e11 shortcut** (2026-11-10 17:32:39–17:52:16; he closed it, exit 0). The log is
+`~/bc5-work/exp0411/play-last.log` and the journal `~/bc5-data/captures/play-20261110-1732/gc/direct.log` (14 MB).
+- *Nothing caught.* There were no amdgpu lines in dmesg (the last are 11-09 22:42), no devcoredump, no timeout and no
+  "e11:" line in the journal, and no stall dump.
+- *Frame rate.* He saw it as low. It was 12–18 fps per minute through the play (his e10 play of 11-09 22:03 averaged
+  31.7).
+  - A first reading said this was the scene. **It was wrong**: he played the same area as 11-09 22:42, which ran faster.
+  - The settings are the same: `input.cfg` matches the arms' copies, and the two play logs show the same settings lines.
+- *Where the time goes* (the journals' frame profile lines, 2-minute means; `play-20261109-2203` vs `play-20261110-1732`):
+
+  | | frame | GPU busy | game thread inside the host | game thread outside the host |
+  |---|---|---|---|---|
+  | 11-09, minutes 8–26 | 28–31 ms | 19–20 ms | 12–13 ms | 11–13 ms |
+  | 11-09, minutes 36–40, before the 22:42 hang | 69–73 ms | 25–35 ms | 18–22 ms | 37–41 ms |
+  | 11-10, minutes 4–20 | 60–79 ms | 19–26 ms | 17–20 ms | 39–56 ms |
+
+  - The GPU did the same work. The slowdown is the game thread outside the host: the title's own CPU work, or waits
+    the profile does not count.
+  - The whole of his play today sat in the state that preceded the 22:42 hang.
+- *What goes with it.* The direct path's memory churn ran at twice 11-09's good-phase rate. Today it was 1,450–1,750
+  "direct: N views" lines and 220–390 "scratch: window" lines per 2 minutes; on 11-09, minutes 8–26, it was 680–860
+  and 35–100. Pinned memory went from 11.8 to 12.3 GiB; on 11-09 it was 11.8–11.9 GiB in the good phase and
+  12.0–12.3 GiB before the hang.
+  - The series arms had the same churn in their first 4 minutes, then fell to ~200 views and ~7 scratch lines, and ran
+    at 20-ms frames with 12.2 GiB pinned.
+  - So pinned memory alone does not explain it; the churn may. That is a correlation, not yet a cause.
+- *Log volume.* The play log reached 0.8 MB and the journal 14 MB in 20 minutes; on 11-09 the journal was 51 MB in
+  40 minutes. The logs are not a likely cause.
+- *Open.* Which of three it is:
+  - e11's build or switches (the series' B arms ran as fast as the A arms);
+  - the learned file cleaned at 11-09 23:17;
+  - the game's state.
+
+  "e10 unpacked" in the same place would separate the first from the other two.
+- *The A/B run* (18:17:29, "e10 unpacked", from his newer save in the same area; `play-20261110-1817`).
+  - Which part counts. At first his words ("Nowy obszar. Dalej nie licz") were read as "do not count the run". He
+    meant: count it up to that moment, minus 2 minutes ("Policz 2 minuty mniej, za późno powiedziałem"). So minutes
+    1–4 of the run count.
+  - The read-only sampler `sampler0411.sh` (9dfc33ee) ran beside it for its first 7 minutes:
+    `~/bc5-work/exp0411/sampler/play-20261110-181307.txt` on the box.
+  - *e10 is as slow as e11 there.* In minutes 1–4: 12–16 fps, frame 62–81 ms, the game thread 41–58 ms outside the
+    host, GPU busy 15–19 ms. Then it improved: 23–32 fps once he moved into the new area. So e11's build and switches
+    are not the cause.
+  - *Not the learned file.* Both 11-09 22:03 and today applied the same 66 learned windows (the identical set), so the
+    11-09 23:17 cleaning did not change what was applied.
+  - *Memory pressure goes with it* (sampler, minutes 1–4; whole box unless the emulator is named):
+    - MemAvailable fell from 3.8 GiB to 640–750 MiB, and GTT used rose to 12.8 GiB;
+    - PSI memory was 3.9–6.8 %;
+    - swap-ins ran 3–305 pages/s, and the emulator took 37,000–45,000 minor faults/s;
+    - the emulator used 360–420 % CPU, with no thread above ~40 % of a core.
+  - In the new area (minutes 6–7) the minor faults fell to 11,000–23,000/s and PSI memory to 0.2–3 %, and the frame
+    rate rose.
+  - The direct path's pinned memory reached 12.05 GiB in 2 minutes today (e10 and e11 alike), with 650–940 "views"
+    lines per minute. On 11-09 in the same area it was 11.7 GiB, with 100–465 lines per minute in the first minutes.
+    11-09 reached today's levels only at minutes 28–36, just before the slowdown and the 22:42 hang.
+- *Reading.* In this area the title's working set now pushes the box into reclaim within 2 minutes, and the game
+  thread stalls outside the host. On 11-09 the same thing came after ~30 minutes and ended in the hang. What differs
+  between the two days is open:
+  - the game's state (his save is further on), or
+  - the box's state: 25 h up, 565–840 MiB in swap before the start, against ~4.5 h up on 11-09.
+
+  A play of the same area right after a reboot would tell the two apart.
+- *After a reboot* (he rebooted at 18:35 and played "e11 unpacked" from 18:37:01 until he closed it at 18:39:51: "Brak
+  pamięci", "Dławiło się strasznie"; `play-20261110-1837`; sampler
+  `~/bc5-work/exp0411/sampler/play-20261110-183857-afterboot.txt`). It was worse, not better.
+  - Pinned memory went from 8.4 to 12.0 GiB in 2 minutes.
+  - MemAvailable was 170–330 MiB, with 1.3–1.4 GiB in swap within 2 minutes of the boot.
+  - Swap-ins ran 1,000–7,300 and swap-outs 2,000–7,300 pages/s; the box took 1,100–7,800 major faults/s, and the
+    emulator up to 6,500/s.
+  - PSI memory was 33–73 %.
+  - Frames ran 75–204 ms, the game thread up to 134 ms outside the host.
+  - Nothing else large was running: the biggest other process was plasmashell at 102 MiB. Bazaar (the Flatpak store)
+    peaked at 1.2 GiB after the boot, but it ended at 18:37:01, as the game started.
+  - The memory settings are the same as on 11-09 22:03: `KYTY_GUEST_MEMORY_MB=13824`, the same eager and lazy heaps.
+- *Reading.* The box's state is ruled out; a fresh boot does not help. In this area at his current save, the title's
+  working set no longer fits beside the 12 GiB the direct path pins. That points at the game's state as what changed
+  since 11-09 22:03.
+  - His 11-09 15:30 play with 12,800 MiB of guest memory (`exp0401e8/run-mem12800.env`, c7d3d126, which differs from
+    `bc5-run.env` only in that line) ran 486 s at ~40 fps, but elsewhere.
+  - Whether 12,800 MiB helps here, or brings back the AMM auto-pool fatal of 2026-11-03, is not tested.
+- *The 12,800 MiB shortcut* (his "Tak", 18:4x). `shortcut0411.sh mem12800` (45738f6e) wrote "BC5 emulator (e11 mem
+  12800)" (b8277b13).
+  - It runs the wrapper's new mode `play-e11-0411.sh mem12800` (1ae07ce6; the box keeps cca8721e as
+    `play-e11-0411.sh.before-mem12800-cca8721e`). The mode adds `BC5_RUN_ENV=~/bc5-work/exp0401e8/run-mem12800.env`
+    (pinned c7d3d126) to the same 70 words.
+  - "e11 unpacked" is unchanged.
+  - Stand-in on the box: the default mode kept 13824, mem12800 gave 12800, and an unknown mode refused to start.
+- *The 12,800 MiB play crashed* (18:44:01–18:45:48, exit 65, "Gra się wysypała"; sampler
+  `~/bc5-work/exp0411/sampler/play-20261110-184355-mem12800.txt`).
+  - The crash: at t ≈ 106 s, during the load, "Access violation: Write [0000008922600000] in
+    runtimeLinker.cpp:1166". The address lies in the AMM window, and the destination was unmapped.
+  - The record with the guest registers stays in `~/bc5-work/exp0411/play-last.log` on the box: guest memory words,
+    kept out of git. No kernel line, no devcoredump, no stall dump.
+  - Memory had already run out before it: GTT 12.5 GiB, MemAvailable 300–450 MiB, swap-outs up to 8,000 pages/s,
+    PSI memory 21 %.
+  - So a smaller guest pool does not lower what the direct path pins. It only leaves the title's AMM mappings short;
+    this is the class of the 11-03 auto-pool fatal. 12,800 MiB is not a fix.
+- *The box's swap is zram* (zstd, 7.4 GiB, `/dev/zram0`), so swapping costs CPU and RAM rather than disk. The OS is the
+  same deployment as during 11-09's play (45.20261105, booted since then; kernel 7.2.15-ogc1.1).
+- *A question for him.* The 22:42 trigger was the game's own menu, frozen on an option. If a graphics option (texture
+  quality, RT, resolution) was changed there and kept in the save, that would explain why every play from his saves
+  since then needs more memory. The series' snapshot of slot 4 predates it. Live saves are not read here; he can check
+  the option in the game.
+  - His answer: "Nie". No option was changed, so that explanation is out.
+  - The "e11 mem 12800" shortcut was moved off his desktop into `~/bc5-work/exp0411/` (own artifact, the cleanup
+    rule). "e11 unpacked" stays.
+- *Still open.* What in the game's state at his current save makes the same area need ~0.5–1 GiB more pinned memory
+  within minutes, where 11-09 22:03 reached it only after ~30 minutes. A play of the area from an older save, from
+  before 11-09 ~22:30, would show whether it is the save's progress.
+
+**Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.

@@ -1,0 +1,110 @@
+pad0405: KYTY_BC5_FW_PAD items 0x7 (infotype 1, argchecks 2, queries 4): on
+[bc5] exp 0401: memory from param.json off: total 11692 MiB, flexible 1024 MiB, direct 10668 MiB (param.json: flexible 0, cpu table 0, gpu table 0, amm table 0 MiB)
+[bc5] exp 0405: mem off
+[bc5] exp 0405: thread sync off
+[bc5] exp 0405: tables off
+[bc5] exp 0405: voiceports port off
+[bc5] exp 0401: KYTY_BC5_AMM_PRT_CMDS off
+[bc5] exp 0401: KYTY_BC5_AMM_EXTRA_CMDS off
+[bc5] exp 0401: KYTY_BC5_AMPR_WAITS off
+[bc5] exp 0405: fw kernel off
+[bc5] exp 0405: jit shm off
+[bc5] exp 0405: posix return fixes off
+[bc5] exp 0405: http2 fixes off
+[bc5] exp 0405: npauth port off
+[bc5] exp 0405: json2 off
+[bc5] exp 0401: NpCppWebApi SessionManager V2 off (the loader's stubs)
+[bc5] exp 0405: fw pad on (items: infotype argchecks queries)
+[bc5] exp 0405: pad open ext off
+[bc5] exp 0405: fw-net off
+[bc5] exp 0401: savedata fixes off
+[bc5] exp 0401: savedata event callback off
+[bc5] exp 0401: savedata sort off
+[bc5] exp 0405: savedata memory fixes off
+[bc5] exp 0405: savedata delete busy off
+[bc5] exp 0405: savedata aliases off
+[bc5] exp 0405: systemservice off
+[bc5] exp 0405: systemservice-params-7-1000 off
+[bc5] exp 0405: ult off
+[bc5] exp 0405: userservice off
+[bc5] exp 0405: equeue fixes off
+pad0405: case 1 registration infotype: ok (on: 1 of 1 NIDs resolve; want 1)
+pad0405: case 2 registration argchecks: ok (on: 12 of 12 NIDs resolve; want 12)
+pad0405: case 3 registration queries: ok (on: 5 of 5 NIDs resolve; want 5)
+pad0405: case 4 registration scePadInit: ok (scePadInit 0x00005612b3bec830, Controller::PadInit 0x00005612b3a3af70; want the recording wrapper (another address))
+pad0405: case 5 infotype before init, null output (checked first): ok (0x80920001; want 0x80920001)
+pad0405: case 6 infotype before init, type 0: ok (0x80920005; want 0x80920005, output untouched)
+pad0405: case 7 argchecks before init, GetDeviceInfo: ok (0x80920005; want 0x80920005)
+pad0405: case 8 argchecks before init, GetCapability: ok (0x80920005; want 0x80920005, untouched)
+pad0405: case 9 argchecks before init, GetVersionInfo: ok (0x80920005; want 0x80920005)
+pad0405: case 10 argchecks before init, GetIdleCount: ok (0; want 0)
+pad0405: case 11 argchecks before init, GetControllerIdleCount: ok (0x80920005; want 0x80920005, untouched)
+pad0405: case 12 argchecks before init, GetActiveTime: ok (0x80920005; want 0x80920005, untouched)
+pad0405: case 13 argchecks before init, SetPS4BcVibrationMode: ok (0x80920005; want 0x80920005)
+pad0405: case 14 argchecks before init, GetExtensionUnitInfo: ok (0x80920005; want 0x80920005)
+pad0405: case 15 argchecks before init, ReadHistory: ok (0x80920005; want 0x80920005)
+pad0405: case 16 argchecks before init, OpenExt2: ok (0x80920005; want 0x80920005)
+pad0405: case 17 argchecks before init, GetDeviceId: ok (0x80920005; want 0x80920005, untouched)
+pad0405: case 18 argchecks before init, ReadStateExt unknown handle (no init check): ok (0x80920003; want 0x80920003, output untouched)
+pad0405: case 19 queries before init, GetMotionTimerUnit: ok (0x80920005; want 0x80920005, untouched)
+pad0405: case 20 queries before init, GetMotionSensorPosition: ok (0x80920005; want 0x80920005)
+pad0405: case 21 queries before init, GetSphereRadius: ok (0x80920005; want 0x80920005)
+pad0405: case 22 queries before init, GetBluetoothAddress: ok (0x80920005; want 0x80920005, untouched)
+pad0405: case 23 queries before init, ParseUniqueDataLeonardo: ok (0x80920005; want 0x80920005, output untouched)
+pad0405: case 24 infotype null output: ok (0x80920001; want 0x80920001)
+pad0405: case 25 infotype type 1: ok (0x80920001; want 0x80920001, output untouched)
+pad0405: case 26 infotype type 3: ok (0x80920001; want 0x80920001, output untouched)
+pad0405: case 27 infotype type 16: ok (0x80920001; want 0x80920001, output untouched)
+pad0405: case 28 infotype type -1: ok (0x80920001; want 0x80920001, output untouched)
+[bc5] exp 0405: fw pad GetInfoByPortType past its checks -> 0, nothing written (not modelled)
+pad0405: case 29 infotype type 0 (past the checks): ok (0x00000000; want 0x00000000, nothing written)
+[bc5] exp 0405: fw pad GetInfoByPortType past its checks -> 0, nothing written (not modelled)
+pad0405: case 30 infotype type 2 (past the checks): ok (0x00000000; want 0x00000000, nothing written)
+pad0405: case 31 argchecks GetDeviceInfo null: ok (0x80920001; want 0x80920001)
+[bc5] exp 0405: fw pad GetDeviceInfo past its checks -> 0, nothing written (not modelled)
+pad0405: case 32 argchecks GetDeviceInfo: ok (0x00000000; want 0x00000000, nothing written)
+pad0405: case 33 argchecks GetCapability null: ok (0x80920001; want 0x80920001)
+pad0405: case 34 argchecks GetCapability: ok (0x00000000; want 0x00000000, nothing written)
+[bc5] exp 0405: fw pad GetCapability past its checks -> 0, nothing written (not modelled)
+pad0405: case 35 argchecks GetVersionInfo null: ok (0x80920001; want 0x80920001)
+[bc5] exp 0405: fw pad GetVersionInfo past its checks -> 0, nothing written (not modelled)
+pad0405: case 36 argchecks GetVersionInfo: ok (0x00000000; want 0x00000000, nothing written)
+pad0405: case 37 argchecks GetExtensionUnitInfo null: ok (0x80920001; want 0x80920001)
+[bc5] exp 0405: fw pad GetExtensionUnitInfo past its checks -> 0, nothing written (not modelled)
+pad0405: case 38 argchecks GetExtensionUnitInfo: ok (0x00000000; want 0x00000000, nothing written)
+pad0405: case 39 argchecks GetIdleCount: ok (0; want 0)
+[bc5] exp 0405: fw pad GetIdleCount past its checks -> 0, nothing written (not modelled)
+pad0405: case 40 argchecks GetControllerIdleCount handle 0: ok (0x80920001; want 0x80920001, untouched)
+pad0405: case 41 argchecks GetControllerIdleCount null: ok (0x80920001; want 0x80920001)
+pad0405: case 42 argchecks GetControllerIdleCount: ok (0x00000000; want 0x00000000, nothing written)
+[bc5] exp 0405: fw pad GetControllerIdleCount past its checks -> 0, nothing written (not modelled)
+pad0405: case 43 argchecks GetActiveTime null: ok (0x80920001; want 0x80920001)
+pad0405: case 44 argchecks GetActiveTime: ok (0x00000000; want 0x00000000, 0 written)
+pad0405: case 45 argchecks SetPS4BcVibrationMode: ok (0x00000000; want 0x00000000)
+pad0405: case 46 argchecks ReadHistory size 0x95F: ok (0x80920001; want 0x80920001)
+pad0405: case 47 argchecks ReadHistory size 0x960: ok (0x00000000; want 0x00000000, nothing written)
+pad0405: case 48 argchecks ReadHistory null data (not checked): ok (0x00000000; want 0x00000000)
+pad0405: case 49 argchecks OpenExt2 null parameter: ok (0x80920001; want 0x80920001)
+pad0405: case 50 argchecks OpenExt2 size 0x11: ok (0x80920001; want 0x80920001)
+pad0405: case 51 argchecks OpenExt2: ok (0x00000000; want 0x00000000, parameter untouched)
+pad0405: case 52 argchecks ReadStateExt unknown handle: ok (0x80920003; want 0x80920003)
+pad0405: case 53 argchecks ReadStateExt null: ok (0x80920001; want 0x80920001)
+pad0405: case 54 argchecks ReadStateExt: ok (0x00000000; want 0x00000000, nothing written)
+pad0405: case 55 argchecks GetDeviceId null: ok (0x80920001; want 0x80920001)
+pad0405: case 56 argchecks GetDeviceId unknown handle: ok (0x80920003; want 0x80920003, -1 written)
+pad0405: case 57 argchecks GetDeviceId: ok (0x00000000; want 0x00000000, -1 written)
+pad0405: case 58 queries GetMotionTimerUnit null: ok (0x80920001; want 0x80920001)
+pad0405: case 59 queries GetMotionTimerUnit unknown handle: ok (0x80920003; want 0x80920003, 0.0 written)
+pad0405: case 60 queries GetMotionTimerUnit: ok (0x80920007; want 0x80920007, 0.0 written)
+pad0405: case 61 queries GetMotionSensorPosition null: ok (0x80920001; want 0x80920001)
+pad0405: case 62 queries GetMotionSensorPosition unknown handle: ok (0x80920003; want 0x80920003, untouched)
+pad0405: case 63 queries GetMotionSensorPosition: ok (0x80920007; want 0x80920007, untouched)
+pad0405: case 64 queries GetSphereRadius null: ok (0x80920001; want 0x80920001)
+pad0405: case 65 queries GetSphereRadius (no special-port handle here): ok (0x80920003; want 0x80920003, untouched)
+pad0405: case 66 queries GetBluetoothAddress null: ok (0x80920001; want 0x80920001)
+pad0405: case 67 queries GetBluetoothAddress unknown handle: ok (0x80920003; want 0x80920003, untouched)
+pad0405: case 68 queries GetBluetoothAddress: ok (0x80920007; want 0x80920007, untouched)
+pad0405: case 69 queries ParseUniqueDataLeonardo null data: ok (0x80920001; want 0x80920001, untouched)
+pad0405: case 70 queries ParseUniqueDataLeonardo null output: ok (0x80920001; want 0x80920001)
+pad0405: case 71 queries ParseUniqueDataLeonardo: ok (0x80920003; want 0x80920003, 0x18 bytes cleared, the rest untouched)
+pad0405: on 71 of 71; end

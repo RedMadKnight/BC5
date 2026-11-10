@@ -1,0 +1,11 @@
+[bc5] exp 0401: memory from param.json off: total 11692 MiB, flexible 1024 MiB, direct 10668 MiB (param.json: flexible 0, cpu table 0, gpu table 0, amm table 0 MiB)
+[bc5] exp 0405: mem on (items: BC5_R3_MPROTECT_GAPS,BC5_R3_NULL_ARGS,BC5_R3_RELEASE_HOLES,BC5_R3_MUNMAP_HOLES,BC5_R3_FLEX_HINT,BC5_R3_DMQ_END,BC5_R3_EXEC_EINVAL,BC5_R3_QUERY_SIZE)
+mem0405: case 1 mprotect over gaps [BC5_R3_MPROTECT_GAPS on]: ok (gaps skipped, mapped parts changed, EINVAL on overflow)
+mem0405: case 2 NULL arguments [BC5_R3_NULL_ARGS on]: ok (EACCES and EINVAL)
+mem0405: case 3 unchecked release over free gaps [BC5_R3_RELEASE_HOLES on]: ok (both parts and the mapping freed)
+mem0405: case 4 munmap over holes [BC5_R3_MUNMAP_HOLES on]: ok (holes skipped, nothing mapped is 0)
+mem0405: case 5 flexible hint inside a reservation [BC5_R3_FLEX_HINT on]: ok (placed at the hint)
+mem0405: case 6 DirectMemoryQuery find-next past the last block [BC5_R3_DMQ_END on]: ok (EACCES)
+mem0405: case 7 MapDirectMemory with execute [BC5_R3_EXEC_EINVAL on]: ok (EINVAL)
+mem0405: case 8 query info size larger than the struct [BC5_R3_QUERY_SIZE on]: ok (accepted, struct only)
+mem0405: on 8 of 8; end

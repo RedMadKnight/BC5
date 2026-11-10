@@ -1,0 +1,44 @@
+      1 [bc5] exp 0405: userservice on (items: age login name zoom)
+      1 [bc5] exp 0405: ult on (items: join queue)
+      1 [bc5] exp 0405: tls fixes on (items: kl01 kl02)
+      1 [bc5] exp 0405: thread sync on (items: kk06,kk03,signalto,x87,kk07)
+      1 [bc5] exp 0405: systemservice-params-7-1000 on (items: 7 1000)
+      1 [bc5] exp 0405: systemservice on (items: int table string)
+      1 [bc5] exp 0405: sema on (items: attr,signal)
+      1 [bc5] exp 0405: savedata memory fixes on (items: sync lock existed)
+      1 [bc5] exp 0405: savedata delete busy on (items: delete)
+      1 [bc5] exp 0405: savedata aliases on (items: initialize)
+      1 [bc5] exp 0405: posix return fixes on (items: unlink munmap mprotect trywrlock schedparam once)
+      1 [bc5] exp 0405: pad open ext on (items: openext)
+      1 [bc5] exp 0405: ngs2 rack fix on (items: ka03 ka08)
+      1 [bc5] exp 0405: mmap shim fixes on (items: hint prot)
+      1 [bc5] exp 0405: mem on (items: BC5_R3_MPROTECT_GAPS,BC5_R3_NULL_ARGS,BC5_R3_RELEASE_HOLES,BC5_R3_MUNMAP_HOLES,BC5_R3_FLEX_HINT,BC5_R3_DMQ_END,BC5_R3_EXEC_EINVAL,BC5_R3_QUERY_SIZE)
+      1 [bc5] exp 0405: json2 on (items: value string array object)
+      1 [bc5] exp 0405: http2 fixes on (items: async ssl agent)
+      1 [bc5] exp 0405: gpu on (items: BC5_R3_MEMSEM_SIGNAL, BC5_R3_REWIND_CATCH, BC5_R3_DROP_CATCH, BC5_R3_SUBMIT_EOP_EVENT, BC5_R3_COND_WRITE, BC5_R3_WAIT_IDLE, BC5_R3_TS_100MHZ)
+      1 [bc5] exp 0405: fs fixes on (items: kk04 sk04 blksize nametoolong kk10 sk05)
+      1 [bc5] exp 0405: equeue fixes on (items: kk02 sk03 g1 kk01)
+      1 [bc5] exp 0405: audioout checks on (items: ka01 ka02)
+      1 [bc5] exp 0405: audioin checks on (items: ka06 ka07)
+      1 [bc5] exp 0401: videoout status on: resolution 2 at the first sceVideoOutGetOutputStatus (port size 1280x720, 0 buffer sets registered; today's answer 1)
+      1 [bc5] exp 0401: savedata sort on
+      1 [bc5] exp 0401: savedata fixes on
+      1 [bc5] exp 0401: savedata event callback on
+      1 [bc5] exp 0401: pthread fixes on (rwlock: a thread that holds any read lock reads past waiting writers, AnyPS5 45a8b80a5, libthr rdlock_count)
+      1 [bc5] exp 0401: memory from param.json off: total 13824 MiB, flexible 276 MiB, direct 13548 MiB (param.json: flexible 276, cpu table 64, gpu table 64, amm table 96 MiB)
+      1 [bc5] exp 0401: audio fixes on: set silence room
+      1 [bc5] exp 0401: NpCppWebApi SessionManager V2 on (10 exports registered)
+      1 [bc5] exp 0401: KYTY_BC5_AMPR_WAITS on
+      1 [bc5] exp 0401: KYTY_BC5_AMM_PRT_CMDS on
+      1 [bc5] exp 0401: KYTY_BC5_AMM_EXTRA_CMDS on
+      1 [bc5] exp 0401: AudioOut2 port 0x4 (type 0x6, format 0x00000200): silence at Advance, no buffer set since its last grain (the port's first)
+      1 [bc5] exp 0401: AudioOut2 port 0x1 (type 0x0, format 0x00000c00): silence at Advance, no buffer set since its last grain (the port's first)
+      1 exp 0401: CP_COHER_START_DELAY 0x20 in every prefix (SET_UCONFIG_REG 0x7b)
+      1 exp 0401: SPI_SHADER_REQ_CTRL_PS off
+      1 exp 0401: acb CS prefix off
+      1 exp 0401: acb state restore (exp 0381) on (a graphics buffer that dispatches gets the graphics queue's tracked compute registers in front)
+      1 exp 0401: memory line every 10 s (MemAvailable, swap, PSI memory, GTT)
+      1 exp 0401: table catcher on (indirect arguments and LOAD_*_REG_INDEX tables hashed at submit, compared at completion and at a timeout)
+      1 exp 0403: acb inherit journal (no submission changes)
+      1 exp 0404: fl crumbs on (the fast-launch draws of each dcb: issued/done crumbs and their inputs copied by the CP into the GDS shadow +0x8000; read at a fence timeout)
+      1 exp 0404: fl skip es off

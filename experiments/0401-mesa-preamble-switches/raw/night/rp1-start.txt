@@ -1,0 +1,12 @@
+2026-11-04 11:46:26
+arm rp1, mode route, cap 1200 s, play 900 s, binary /home/kjaniszewski/bc5-work/exp0401e6p/bin/kyty_emulator md5 fa66e89f7921b09d59f01658fdabf2b7, launcher /home/kjaniszewski/bc5-work/exp0401t/play-pkg-0401t.sh md5 29b48119
+env: BC5_EMU=/home/kjaniszewski/bc5-work/exp0401e6p/bin/kyty_emulator BC5_0401T_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0401t/input-rp1.cfg KYTY_BC5_INPUT_CMD=/home/kjaniszewski/bc5-work/exp0401t/in-rp1.cmd BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_ACB_CS_PREFIX=0 BC5_DIRECT_ACB_INHERIT=journal BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0 BC5_DIRECT_TABLE_CATCHER=1 KYTY_BC5_NP_SESSION_V2=1 KYTY_BC5_MEMORY_FROM_PARAM=0 BC5_R3_PREDICATION=1
+boot 21dfc2fa, up since 2026-11-03 22:55:16
+emulator pid 2231972 exe /home/kjaniszewski/bc5-work/exp0401e6p/bin/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0401t/wd
+route: cross (start screen) at 87 s
+route: the save-slot list runs at 94 s
+route: down x3, cross (slot 4) at 94 s
+route: cross (Continue) at 100 s
+route: the load seen at 102 s
+route: gameplay G = 114 s (the load at 102 s)
+launcher gone: yes

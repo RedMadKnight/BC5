@@ -1,0 +1,8 @@
+      1 [bc5] exp 0401: memory from param.json off: total 13824 MiB, flexible 276 MiB, direct 13548 MiB (param.json: flexible 276, cpu table 64, gpu table 64, amm table 96 MiB)
+      1 [bc5] exp 0401: NpCppWebApi SessionManager V2 on (10 exports registered)
+      1 exp 0401: CP_COHER_START_DELAY 0x20 in every prefix (SET_UCONFIG_REG 0x7b)
+      1 exp 0401: SPI_SHADER_REQ_CTRL_PS off
+      1 exp 0401: acb CS prefix off
+      1 exp 0401: acb state restore (exp 0381) on (a graphics buffer that dispatches gets the graphics queue's tracked compute registers in front)
+      1 exp 0401: table catcher on (indirect arguments and LOAD_*_REG_INDEX tables hashed at submit, compared at completion and at a timeout)
+      1 exp 0403: acb inherit journal (no submission changes)

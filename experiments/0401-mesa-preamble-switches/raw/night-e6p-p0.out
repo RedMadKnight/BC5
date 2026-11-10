@@ -1,0 +1,4 @@
+== 2026-11-04 11:24:26 arm p0 (start, cap 300 s, play 0 s)
+run rc 0: p0 (start): START OK: the save-slot list runs at 95 s after 95 s (G none, list 95); 22.8 flips/s over 89 s, 26 seconds with a gap over 100 ms, longest 565 ms; memory floor 485 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: p0 (start): START OK: the save-slot list runs at 95 s after 95 s (G none, list 95); 22.8 flips/s over 89 s, 26 seconds with a gap over 100 ms, longest 565 ms; memory floor 485 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 11:26:27 all arms done

@@ -1,0 +1,14 @@
+thr0405: KYTY_BC5_THREAD_SYNC_FIXES=1 (parts 0x1f), KYTY_BC5_SEMA_FIXES=1 (parts 0x3), so on
+[bc5] exp 0405: thread sync on (items: kk06,kk03,signalto,x87,kk07)
+thr0405: case 1 kk06 wake-ups, objects kept until both threads are done: ok (kk06 on; 8000 of 8000 rounds (signal, broadcast, signalto; under the mutex and after its unlock; untimed and timed waits; mutex types 1 and 4) in 9 ms, errors 0 (first OK), longest round 91 us)
+thr0405: case 2 kk06 waiter destroys and frees at once: ok (kk06 on; 12000 of 12000 rounds, each mutex and condition variable destroyed and its memory poisoned and freed as soon as the wait returned, in 11 ms; errors 0 (first OK), longest round 89 us; no crash)
+[bc5] exp 0401: pthread fixes off (rwlock: today's rule, only a reader of the same lock reads past waiting writers)
+thr0405: case 3 kk03 statically initialised rwlock and condition variable: ok (kk03 on; Tryrdlock on a static lock OK; Destroy of a static rwlock OK, still unmade yes; Timedrdlock on a static lock OK (made yes), a writer from another thread ETIMEDOUT, unlock OK, destroy OK, again OK; Timedwrlock on a static lock OK (made yes), a reader ETIMEDOUT, unlock OK, destroy OK; Destroy of a static condition variable OK)
+thr0405: case 4 signalto answers: ok (signalto on, want EINVAL, OK, ESRCH, EPERM, EPERM, ESRCH, ESRCH; null thread EINVAL; a waiting thread OK, woken yes, the other waiter left waiting yes; a handle that is no thread ESRCH; the caller EPERM; a live guest thread EPERM; a finished guest thread ESRCH; a joined guest thread ESRCH (joins OK OK))
+thr0405: case 5 x87 control word of a new guest thread: ok (x87 on; the creator loaded 0x027f and kept 0x027f; the new guest thread started with 0x037f (want 0x037f, FreeBSD's start state), MXCSR 0x1f80 (the creator's 0x1f80); this thread's word 0x037f; join OK)
+thr0405: case 6 kk07 a joined thread: ok (kk07 on; joined thread: Getprio ESRCH, Setprio ESRCH, Cancel ESRCH (want ESRCH); a live guest thread: Getprio OK, 700)
+[bc5] exp 0405: sema on (items: attr,signal)
+thr0405: case 7 sema attributes: ok (attr on; 0x0 OK 0x1 OK 0x2 OK 0x3 EINVAL 0x103 EINVAL 0x104 EINVAL 0x200 EINVAL 0x1000 EINVAL 0xffffffff EINVAL 0x100 OK (poll OK EBUSY, signal 2 OK, poll 2 OK, delete OK) 0x101 OK (poll OK EBUSY, signal 2 OK, poll 2 OK, delete OK) 0x102 OK (poll OK EBUSY, signal 2 OK, poll 2 OK, delete OK))
+thr0405: case 8 sema signal counts: ok (signal on; count 1: signal 0 EINVAL, -1 EINVAL, INT_MAX EINVAL; then poll 1 OK, poll 1 EBUSY; signal 5 OK, 1 more EINVAL, poll 5 OK)
+thr0405: case 9 sema poll and a woken wait: ok (max 3, count 2: poll 0 EINVAL, -1 EINVAL, 4 EINVAL (EINVAL already today), poll 2 OK, poll 1 EBUSY; a wait for 2 woken by signal 2 (OK): OK after 30302 us, back in 35 us; then poll 1 EBUSY)
+thr0405: on 9 of 9; end

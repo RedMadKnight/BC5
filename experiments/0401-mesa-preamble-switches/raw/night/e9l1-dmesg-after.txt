@@ -1,0 +1,44 @@
+[65301.011194] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:64)
+[65301.011204] amdgpu 0000:01:00.0:  Process kyty_emulator pid 2738977 thread bc5-ring pid 2739260
+[65301.011207] amdgpu 0000:01:00.0:   in page starting at address 0x0000000000000000 from client 0x1b (UTCL2)
+[65301.011209] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00601031
+[65301.011211] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[65301.011213] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[65301.011215] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[65301.011216] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[65301.011217] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[65301.011218] amdgpu 0000:01:00.0: 	 RW: 0x0
+[65301.011222] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:64)
+[65301.011223] amdgpu 0000:01:00.0:  Process kyty_emulator pid 2738977 thread bc5-ring pid 2739260
+[65301.011225] amdgpu 0000:01:00.0:   in page starting at address 0x0000000000000000 from client 0x1b (UTCL2)
+[65301.011228] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:64)
+[65301.011230] amdgpu 0000:01:00.0:  Process kyty_emulator pid 2738977 thread bc5-ring pid 2739260
+[65301.011231] amdgpu 0000:01:00.0:   in page starting at address 0x0000000000000000 from client 0x1b (UTCL2)
+[65301.011234] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:64)
+[65301.011236] amdgpu 0000:01:00.0:  Process kyty_emulator pid 2738977 thread bc5-ring pid 2739260
+[65301.011237] amdgpu 0000:01:00.0:   in page starting at address 0x0000000000000000 from client 0x1b (UTCL2)
+[65301.011240] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:64)
+[65301.011242] amdgpu 0000:01:00.0:  Process kyty_emulator pid 2738977 thread bc5-ring pid 2739260
+[65301.011243] amdgpu 0000:01:00.0:   in page starting at address 0x0000000000000000 from client 0x1b (UTCL2)
+[65303.073964] amdgpu 0000:01:00.0: Dumping IP State
+[65303.075922] amdgpu 0000:01:00.0: Dumping IP State Completed
+[65303.075932] amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+[65303.075934] amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+[65303.075936] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=18955845, emitted seq=18955847
+[65303.075938] amdgpu 0000:01:00.0:  Process kyty_emulator pid 2738977 thread bc5-ring pid 2739260
+[65303.075946] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+[65303.076039] amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+[65303.076042] amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+[65303.104757] bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=18955845, emitted seq=18955847
+[65303.109031] bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+[65305.121966] amdgpu 0000:01:00.0: Dumping IP State
+[65305.124011] amdgpu 0000:01:00.0: Dumping IP State Completed
+[65305.124021] amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+[65305.124023] amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+[65305.124025] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=18955849, emitted seq=18955851
+[65305.124028] amdgpu 0000:01:00.0:  Process kyty_emulator pid 2738977 thread bc5-ring pid 2739260
+[65305.124030] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+[65305.124088] amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+[65305.124090] amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+[65305.126794] bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=18955849, emitted seq=18955851
+[65305.130102] bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded

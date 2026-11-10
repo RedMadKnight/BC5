@@ -1,0 +1,49 @@
+      1 [bc5] exp 0405: userservice off
+      1 [bc5] exp 0405: ult off
+      1 [bc5] exp 0405: tls fixes off
+      1 [bc5] exp 0405: thread sync off
+      1 [bc5] exp 0405: tables off
+      1 [bc5] exp 0405: systemservice-params-7-1000 off
+      1 [bc5] exp 0405: systemservice off
+      1 [bc5] exp 0405: sema off
+      1 [bc5] exp 0405: savedata memory fixes off
+      1 [bc5] exp 0405: savedata delete busy off
+      1 [bc5] exp 0405: savedata aliases off
+      1 [bc5] exp 0405: posix return fixes off
+      1 [bc5] exp 0405: pad open ext off
+      1 [bc5] exp 0405: ngs2 rack fix on (items: ka03 ka08)
+      1 [bc5] exp 0405: mmap shim fixes off
+      1 [bc5] exp 0405: mem off
+      1 [bc5] exp 0405: json2 off
+      1 [bc5] exp 0405: jit shm off
+      1 [bc5] exp 0405: http2 fixes off
+      1 [bc5] exp 0405: gpu off
+      1 [bc5] exp 0405: fw-net off
+      1 [bc5] exp 0405: fw pad off
+      1 [bc5] exp 0405: fw kernel off
+      1 [bc5] exp 0405: fw audio on (items: pcmloop audio3d audio3dstrict ngs2 avplayer)
+      1 [bc5] exp 0405: fs fixes off
+      1 [bc5] exp 0405: equeue fixes off
+      1 [bc5] exp 0405: audioout checks on (items: ka01 ka02)
+      1 [bc5] exp 0405: audioin checks on (items: ka06 ka07)
+      1 [bc5] exp 0401: videoout status off: resolution 1 at the first sceVideoOutGetOutputStatus (port size 1280x720, 0 buffer sets registered; today's answer 1)
+      1 [bc5] exp 0401: savedata sort off
+      1 [bc5] exp 0401: savedata fixes off
+      1 [bc5] exp 0401: savedata event callback off
+      1 [bc5] exp 0401: pthread fixes off (rwlock: today's rule, only a reader of the same lock reads past waiting writers)
+      1 [bc5] exp 0401: memory from param.json off: total 13824 MiB, flexible 276 MiB, direct 13548 MiB (param.json: flexible 276, cpu table 64, gpu table 64, amm table 96 MiB)
+      1 [bc5] exp 0401: audio fixes on: set silence room
+      1 [bc5] exp 0401: NpCppWebApi SessionManager V2 on (10 exports registered)
+      1 [bc5] exp 0401: KYTY_BC5_AMPR_WAITS off
+      1 [bc5] exp 0401: KYTY_BC5_AMM_PRT_CMDS off
+      1 [bc5] exp 0401: KYTY_BC5_AMM_EXTRA_CMDS off
+      1 [bc5] exp 0401: AudioOut2 port 0x4 (type 0x6, format 0x00000200): silence at Advance, no buffer set since its last grain (the port's first)
+      1 exp 0401: CP_COHER_START_DELAY 0x20 in every prefix (SET_UCONFIG_REG 0x7b)
+      1 exp 0401: SPI_SHADER_REQ_CTRL_PS off
+      1 exp 0401: acb CS prefix off
+      1 exp 0401: acb state restore (exp 0381) on (a graphics buffer that dispatches gets the graphics queue's tracked compute registers in front)
+      1 exp 0401: memory line every 10 s (MemAvailable, swap, PSI memory, GTT)
+      1 exp 0401: table catcher on (indirect arguments and LOAD_*_REG_INDEX tables hashed at submit, compared at completion and at a timeout)
+      1 exp 0403: acb inherit journal (no submission changes)
+      1 exp 0404: fl crumbs off
+      1 exp 0404: fl skip es off

@@ -1,0 +1,14 @@
+zsk0401: case switch (off): 2 of 2
+zsk0401: case list round trip (off): 5 of 5
+zsk0401: case list parser (off): 3 of 3
+zsk0401: case zero mask (off): 11 of 11
+zsk0401: case all_zero (off): 5 of 5
+zsk0401: case skip set (off): 23 of 23
+[bc5] exp 0401 e9 (zcb): BC5_DIRECT_ZERO_SKIP_EXCLUDE off
+[bc5] exp 0401 e9 (zcb): BC5_DIRECT_ZERO_SKIP_COPYBACK off
+[bc5] exp 0401 e9 (zcb): BC5_DIRECT_ZERO_SKIP_PROBE off
+[bc5] exp 0401 e9 (zcb): BC5_DIRECT_SCRATCH_WATCH off
+zsk0401: case off: nothing placed (off): 12 of 12
+zsk0401: case off: hint, CPU write, reopen (off): 7 of 7
+zsk0401: case canary mappings released (off): 9 of 9
+zsk0401: off 77 of 77; end

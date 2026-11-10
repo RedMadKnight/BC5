@@ -1,0 +1,155 @@
+tus0405: switch usbd 1: on
+[bc5] exp 0405: usbd port on (items: devicelist transfer fill iso cancel events checks, host transport for KYTY_BC5_USBD_ALLOW devices; held: 4 unnamed)
+[bc5] exp 0405: usbd allow-list KYTY_BC5_USBD_ALLOW empty: no host USB access, libusb not loaded
+tus0405: case 1 registration: 61 NIDs by the exact key and by FindByNid, the 4 held absent, no other record: ok (61 found, 4 absent, 61 records)
+[bc5] exp 0405: usbd sceUsbdFreeDeviceList: AnyPS5 has no answer for a list sceUsbdGetDeviceList did not return; today's answer kept
+[bc5] exp 0405: usbd sceUsbdFreeConfigDescriptor: AnyPS5 has no answer for a descriptor this library did not return; today's answer kept
+[bc5] exp 0405: usbd sceUsbdClose: AnyPS5 has no answer for a handle sceUsbdOpen never returned or that was closed; today's answer kept
+[bc5] exp 0405: usbd sceUsbdRefDevice: AnyPS5 has no answer for a device sceUsbdGetDeviceList never returned or that was released; today's answer kept
+[bc5] exp 0405: usbd sceUsbdUnrefDevice: AnyPS5 has no answer for a device sceUsbdGetDeviceList never returned or that was released; today's answer kept
+[bc5] exp 0405: usbd sceUsbdGetDevice: AnyPS5 has no answer for a handle sceUsbdOpen never returned or that was closed; today's answer kept
+[bc5] exp 0405: usbd sceUsbdGetBusNumber: AnyPS5 has no answer for a device sceUsbdGetDeviceList never returned or that was released; today's answer kept
+[bc5] exp 0405: usbd sceUsbdGetDeviceAddress: AnyPS5 has no answer for a device sceUsbdGetDeviceList never returned or that was released; today's answer kept
+[bc5] exp 0405: usbd sceUsbdGetDeviceSpeed: AnyPS5 has no answer for a device sceUsbdGetDeviceList never returned or that was released; today's answer kept
+tus0405: case 2 no allow-list: Init, Exit, FreeDeviceList, FreeConfigDescriptor, Close, Ref/UnrefDevice, GetDevice, GetBusNumber, GetDeviceAddress, GetDeviceSpeed, OpenDeviceWithVidPid: 0, nothing written: ok (25 checks)
+tus0405: case 3 GetDeviceList: null refused (64-bit 0x80240002), else 0 and the same empty list each time; it frees: ok (7 checks)
+[bc5] exp 0405: usbd sceUsbdFreeTransfer: a transfer sceUsbdAllocTransfer did not hand out is not freed (host safety); today's answer kept
+tus0405: case 4 AllocTransfer: -1 null, else zeroed with its packet count; FreeTransfer frees only what it handed out, once: ok (12 checks)
+[bc5] exp 0405: usbd sceUsbdFillInterruptTransfer: AnyPS5 has no answer for a null transfer; today's answer kept
+[bc5] exp 0405: usbd sceUsbdFillBulkTransfer: AnyPS5 has no answer for a null transfer; today's answer kept
+[bc5] exp 0405: usbd sceUsbdFillIsoTransfer: AnyPS5 has no answer for a null transfer; today's answer kept
+[bc5] exp 0405: usbd sceUsbdFillControlTransfer: AnyPS5 has no answer for a null transfer; today's answer kept
+tus0405: case 5 Fill{Interrupt,Bulk,Iso,Control}Transfer and FillControlSetup: the fields at their offsets; null: today's 0: ok (18 checks)
+[bc5] exp 0405: usbd sceUsbdFillControlSetup: AnyPS5 has no answer for a null buffer; today's answer kept
+[bc5] exp 0405: usbd sceUsbdControlTransferGetData: AnyPS5 has no answer for a null transfer; today's answer kept
+[bc5] exp 0405: usbd sceUsbdControlTransferGetSetup: AnyPS5 has no answer for a null transfer; today's answer kept
+tus0405: case 6 ControlTransferGetData/GetSetup, SetIsoPacketLengths, GetIsoPacketBuffer: the buffer arithmetic; null: today's 0: ok (16 checks)
+[bc5] exp 0405: usbd sceUsbdGetIsoPacketBuffer: AnyPS5 has no answer for a null transfer; today's answer kept
+[bc5] exp 0405: usbd sceUsbdSetIsoPacketLengths: AnyPS5 has no answer for a null transfer; today's answer kept
+[bc5] exp 0405: usbd sceUsbdCancelTransfer: AnyPS5 has no answer for a null transfer; today's answer kept
+tus0405: case 7 CancelTransfer: NOT_FOUND (0x80240005); SubmitTransfer: null or no handle INVALID_ARG, else today's 0: ok (7 checks)
+[bc5] exp 0405: usbd sceUsbdSubmitTransfer: AnyPS5 has no answer for a handle sceUsbdOpen never returned or that was closed; today's answer kept
+[bc5] exp 0405: usbd sceUsbdAttachKernelDriver: AnyPS5 has no answer for a handle sceUsbdOpen never returned or that was closed; today's answer kept
+tus0405: case 8 sceUsbdAttachKernelDriver: the argument checks; a handle or device never handed out: today's 0: ok (3 checks)
+tus0405: case 9 sceUsbdClaimInterface: the argument checks; a handle or device never handed out: today's 0: ok (3 checks)
+[bc5] exp 0405: usbd sceUsbdClaimInterface: AnyPS5 has no answer for a handle sceUsbdOpen never returned or that was closed; today's answer kept
+[bc5] exp 0405: usbd sceUsbdDetachKernelDriver: AnyPS5 has no answer for a handle sceUsbdOpen never returned or that was closed; today's answer kept
+tus0405: case 10 sceUsbdDetachKernelDriver: the argument checks; a handle or device never handed out: today's 0: ok (3 checks)
+tus0405: case 11 sceUsbdKernelDriverActive: the argument checks; a handle or device never handed out: today's 0: ok (3 checks)
+[bc5] exp 0405: usbd sceUsbdKernelDriverActive: AnyPS5 has no answer for a handle sceUsbdOpen never returned or that was closed; today's answer kept
+tus0405: case 12 sceUsbdReleaseInterface: the argument checks; a handle or device never handed out: today's 0: ok (3 checks)
+[bc5] exp 0405: usbd sceUsbdReleaseInterface: AnyPS5 has no answer for a handle sceUsbdOpen never returned or that was closed; today's answer kept
+[bc5] exp 0405: usbd sceUsbdSetConfiguration: AnyPS5 has no answer for a handle sceUsbdOpen never returned or that was closed; ttus0405: case 13 sceUsbdSetConfiguration: the argument checks; a handle or device never handed out: today's 0: ok (3 checks)
+oday's answer kept
+[bc5] exp 0405: usbd sceUsbdCheckConnected: AnyPS5 has no answer for a handle sceUsbdOpen never returned or that was closed; today's answer kept
+tus0405: case 14 sceUsbdCheckConnected: the argument checks; a handle or device never handed out: today's 0: ok (3 checks)
+[bc5] exp 0405: usbd sceUsbdResetDevice: AnyPS5 has no answer for a handle sceUsbdOpen never returned or that was closed; today's answer kept
+tus0405: case 15 sceUsbdResetDevice: the argument checks; a handle or device never handed out: today's 0: ok (3 checks)
+tus0405: case 16 sceUsbdSetInterfaceAltSetting: the argument checks; a handle or device never handed out: today's 0: ok (3 checks)
+[bc5] exp 0405: usbd sceUsbdSetInterfaceAltSetting: AnyPS5 has no answer for a handle sceUsbdOpen never returned or that was closed; today's answer kept
+[bc5] exp 0405: usbd sceUsbdControlTransfer: AnyPS5 has no answer for a handle sceUsbdOpen never returned or that was closed; today's answer kept
+tus0405: case 17 sceUsbdControlTransfer: the argument checks; a handle or device never handed out: today's 0: ok (5 checks)
+tus0405: case 18 sceUsbdBulkTransfer: the argument checks; a handle or device never handed out: today's 0: ok (6 checks)
+[bc5] exp 0405: usbd sceUsbdBulkTransfer: AnyPS5 has no answer for a handle sceUsbdOpen never returned or that was closed; today's answer kept
+[bc5] exp 0405: usbd sceUsbdBulkTransfer: AnyPS5 has no answer for a null transferred output; today's answer kept
+[bc5] exp 0405: usbd sceUsbdInterruptTransfer: AnyPS5 has no answer for a handle sceUsbdOpen never returned or that was closed; today's answer kept
+tus0405: case 19 sceUsbdInterruptTransfer: the argument checks; a handle or device never handed out: today's 0: ok (6 checks)
+[bc5] exp 0405: usbd sceUsbdInterruptTransfer: AnyPS5 has no answer for a null transferred output; today's answer kept
+[bc5] exp 0405: usbd sceUsbdGetConfiguration: AnyPS5 has no answer for a handle sceUsbdOpen never returned or that was closed; today's answer kept
+tus0405: case 20 sceUsbdGetConfiguration: the argument checks; a handle or device never handed out: today's 0: ok (4 checks)
+tus0405: case 21 sceUsbdGetDescriptor: the argument checks; a handle or device never handed out: today's 0: ok (5 checks)
+[bc5] exp 0405: usbd sceUsbdGetDescriptor: AnyPS5 has no answer for a handle sceUsbdOpen never returned or that was closed; today's answer kept
+[bc5] exp 0405: usbd sceUsbdGetStringDescriptor: AnyPS5 has no answer for a handle sceUsbdOpen never returned or that was closed; today's answer kept
+tus0405: case 22 sceUsbdGetStringDescriptor: the argument checks; a handle or device never handed out: today's 0: ok (5 checks)
+tus0405: case 23 sceUsbdGetStringDescriptorAscii: the argument checks; a handle or device never handed out: today's 0: ok (5 checks)
+[bc5] exp 0405: usbd sceUsbdGetStringDescriptorAscii: AnyPS5 has no answer for a handle sceUsbdOpen never returned or that was closed; today's answer kept
+[bc5] exp 0405: usbd sceUsbdGetConfigDescriptor: AnyPS5 has no answer for a device sceUsbdGetDeviceList never returned or that wtus0405: case 24 sceUsbdGetConfigDescriptor: the argument checks; a handle or device never handed out: today's 0: ok (4 checks)
+as released; today's answer kept
+[bc5] exp 0405: usbd sceUsbdGetConfigDescriptorByValue: AnyPS5 has no answer for a device sceUsbdGetDeviceList never returned or that was released; today's answer kept
+tus0405: case 25 sceUsbdGetConfigDescriptorByValue: the argument checks; a handle or device never handed out: today's 0: ok (4 checks)
+tus0405: case 26 sceUsbdGetDeviceDescriptor: the argument checks; a handle or device never handed out: today's 0: ok (4 checks)
+[bc5] exp 0405: usbd sceUsbdGetDeviceDescriptor: AnyPS5 has no answer for a device sceUsbdGetDeviceList never returned or that was released; today's answer kept
+[bc5] exp 0405: usbd sceUsbdGetActiveConfigDescriptor: AnyPS5 has no answer for a null device; today's answer kept
+[bc5] exp 0405: usbd sceUsbdGetActiveConfigDescriptor: AnyPS5 has no answer for a device sceUsbdGetDeviceList never returned or that was released; today's answer kept
+tus0405: case 27 sceUsbdGetActiveConfigDescriptor: the argument checks; a handle or device never handed out: today's 0: ok (4 checks)
+[bc5] exp 0405: usbd sceUsbdOpen: AnyPS5 has no answer for a null device; today's answer kept
+[bc5] exp 0405: usbd sceUsbdOpen: AnyPS5 has no answer for a device sceUsbdGetDeviceList never returned or that was released; today's answer kept
+tus0405: case 28 sceUsbdOpen: the argument checks; a handle or device never handed out: today's 0: ok (4 checks)
+tus0405: case 29 sceUsbdGetMaxPacketSize: the argument checks; a handle or device never handed out: today's 0: ok (3 checks)
+[bc5] exp 0405: usbd sceUsbdGetMaxPacketSize: AnyPS5 has no answer for a device sceUsbdGetDeviceList never returned or that was released; today's answer kept
+[bc5] exp 0405: usbd sceUsbdGetMaxIsoPacketSize: AnyPS5 has no answer for a null device; today's answer kept
+[bc5] exp 0405: usbd sceUsbdGetMaxIsoPacketSize: AnyPS5 has no answer for a device sceUsbdGetDeviceList never returned or that was released; today's answer kept
+tus0405: case 30 sceUsbdGetMaxIsoPacketSize: the argument checks; a handle or device never handed out: today's 0: ok (3 checks)
+[bc5] exp 0405: usbd sceUsbdClearHalt: AnyPS5 has no answer for a null handle; today's answer kept
+[bc5] exp 0405: usbd sceUsbdClearHalt: AnyPS5 has no answer for a handle sceUsbdOpen never returned or that was closed; today's answer kept
+tus0405: case 31 sceUsbdClearHalt: the argument checks; a handle or device never handed out: today's 0: ok (3 checks)
+[bc5] exp 0405: usbd sceUsbdLockEvents: AnyPS5 has no answer for a thread that holds the event lock already; today's answer kept
+[bc5] exp 0405: usbd sceUsbdUnlockEvents: AnyPS5 has no answer for a thread that does not hold the event lock; today's answer kept
+[bc5] exp 0405: usbd sceUsbdLockEventWaiters: AnyPS5 has no answer for a thread that holds the event lock already; today's answer kept
+[bc5] exp 0405: usbd sceUsbdUnlockEventWaiters: AnyPS5 has no answer for a thread that does not hold the event lock; today's answer kept
+[bc5] exp 0405: usbd sceUsbdWaitForEvent: AnyPS5 has no answer for a thread that does not hold the event lock; today's answer kept
+[bc5] exp 0405: usbd sceUsbdWaitForEvent: AnyPS5 has no answer for a negative or oversized timeout; today's answer kept
+[bc5] exp 0405: usbd sceUsbdHandleEventsLocked: AnyPS5 has no answer for a thread that does not hold the event lock; today's answer kept
+[bc5] exp 0405: usbd sceUsbdHandleEventsTimeout: AnyPS5 has no answer for a timeout over INT_MAX seconds; today's answer kept
+[bc5] exp 0405: usbd sceUsbdHandleEventsTimeout: AnyPS5 has no answer for a thread that holds the event lock already; today's answer kept
+tus0405: case 32 events, one thread: TryLock/Lock/Unlock, the waiters' lock, the handler role, timeouts (no answer: today's 0): ok (43 checks)
+tus0405: case 33 events, two threads: a waiter wakes at the end of the handler's pass and takes over: ok (10 checks)
+tus0405: case 34 events, two threads: a waiter's WaitForEvent times out (1) while the handler sleeps: ok (8 checks)
+tus0405: case 35 events, two threads: HandleEventsTimeout as a waiter times out with TIMEOUT (0x80240007): ok (5 checks)
+tus0405: case 36 events, two threads: TryLockEvents 1 while another thread holds the lock, 0 after: ok (7 checks)
+tus0405: case 37 the 4 held (unnamed, absent upstream): not registered, the stubbed-import line shows: ok (4 checks)
+tus0405: [child bad] switch usbd 1: on
+[bc5] exp 0405: usbd port on (items: devicelist transfer fill iso cancel events checks, host transport for KYTY_BC5_USBD_ALLOW devices; held: 4 unnamed)
+[bc5] exp 0405: usbd allow-list KYTY_BC5_USBD_ALLOW refused, bad entry "12345:678" (want vvvv:pppp[,vvvv:pppp...]): no host USB access, libusb not loaded
+tus0405: [child bad] case 1 bad: libusb never loaded, no device, Init/Exit 0, nothing opened: ok (8 checks)
+tus0405: [child bad] 1 of 1; end
+tus0405: case 38 child bad (KYTY_BC5_USBD_ALLOW="1234:5678,12345:678"): a malformed list is refused whole: no libusb, no device: ok (its exit 0)
+tus0405: [child sony] switch usbd 1: on
+[bc5] exp 0405: usbd port on (items: devicelist transfer fill iso cancel events checks, host transport for KYTY_BC5_USBD_ALLOW devices; held: 4 unnamed)
+[bc5] exp 0405: usbd allow-list: 054c:0ce6 dropped (a Sony DualShock 4 or DualSense id, never passed through)
+[bc5] exp 0405: usbd allow-list: 054c:05c4 dropped (a Sony DualShock 4 or DualSense id, never passed through)
+[bc5] exp 0405: usbd allow-list: 054c:09cc dropped (a Sony DualShock 4 or DualSense id, never passed through)
+[bc5] exp 0405: usbd allow-list: 054c:0ba0 dropped (a Sony DualShock 4 or DualSense id, never passed through)
+[bc5] exp 0405: usbd allow-list: 054c:0df2 dropped (a Sony DualShock 4 or DualSense id, never passed through)
+[bc5] exp 0405: usbd allow-list KYTY_BC5_USBD_ALLOW empty: no host USB access, libusb not loaded
+tus0405: [child sony] case 1 sony: libusb never loaded, no device, Init/Exit 0, nothing opened: ok (8 checks)
+tus0405: [child sony] 1 of 1; end
+tus0405: case 39 child sony (KYTY_BC5_USBD_ALLOW="054c:0ce6, 054C:05C4,054c:09cc,054c:0ba0,054c:0df2"): Sony's controller ids are dropped: no libusb, no device: ok (its exit 0)
+tus0405: [child fake] switch usbd 1: on
+[bc5] exp 0405: usbd port on (items: devicelist transfer fill iso cancel events checks, host transport for KYTY_BC5_USBD_ALLOW devices; held: 4 unnamed)
+[bc5] exp 0405: usbd allow-list: 054c:0ce6 dropped (a Sony DualShock 4 or DualSense id, never passed through)
+[bc5] exp 0405: usbd allow-list: 054c:05c4 dropped (a Sony DualShock 4 or DualSense id, never passed through)
+[bc5] exp 0405: usbd allow-list: 1234:5678 1234:0003 1234:0001 abcd:ef01 1234:0007 (a device with a HID or audio class is still refused)
+[bc5] exp 0405: usbd libusb-1.0 symbols from the test's stand-in
+tus0405: [child fake] case 1 fake: the first Init loads libusb through the hook (34 symbols) and makes one context: ok (7 checks)
+[bc5] exp 0405: usbd device 1234:0003 refused: an interface of class HID or audio
+[bc5] exp 0405: usbd device 1234:0001 refused: an interface of class HID or audio
+[bc5] exp 0405: usbd device abcd:ef01 refused: a configuration that cannot be read
+[bc5] exp 0405: usbd device 1234:0007 refused: its device class is HID or audio
+tus0405: [child fake] case 2 fake: the list holds only the admitted device (not HID 1234:0003, audio 1234:0001, unreadable abcd:ef01, HID-class 1234:0007, DualSense 054c:0ce6, unlisted 9999:9999): ok (6 checks)
+[bc5] exp 0405: usbd sceUsbdGetDeviceDescriptor: AnyPS5 has no answer for a device sceUsbdGetDeviceList never returned or that was released; today's answer kept
+[bc5] exp 0405: usbd sceUsbdGetBusNumber: AnyPS5 has no answer for a device sceUsbdGetDeviceList never returned or that was released; today's answer kept
+tus0405: [child fake] case 3 fake: descriptor, bus, address, speed (capped at super), packet sizes (iso scaled above full speed); a refused device gets no answer: ok (15 checks)
+[bc5] exp 0405: usbd sceUsbdFreeConfigDescriptor: AnyPS5 has no answer for a descriptor this library did not return; today's answer kept
+tus0405: [child fake] case 4 fake: configuration descriptors handed out and freed once each: ok (15 checks)
+[bc5] exp 0405: usbd sceUsbdGetActiveConfigDescriptor: AnyPS5 has no answer for a device sceUsbdGetDeviceList never returned or that was released; today's answer kept
+[bc5] exp 0405: usbd sceUsbdRefDevice: AnyPS5 has no answer for a device sceUsbdGetDeviceList never returned or that was released; today's answer kept
+[bc5] exp 0405: usbd sceUsbdUnrefDevice: AnyPS5 has no answer for a device sceUsbdGetDeviceList never returned or that was released; today's answer kept
+tus0405: [child fake] case 5 fake: RefDevice and UnrefDevice for the admitted device only: ok (7 checks)
+[bc5] exp 0405: usbd sceUsbdClearHalt: AnyPS5 has no answer for a halt error other than not found; today's answer kept
+tus0405: [child fake] case 6 fake: Open, GetDevice, configuration, CheckConnected, claim/release, alternate setting, kernel driver, halt, reset: ok (27 checks)
+tus0405: [child fake] case 7 fake: ControlTransfer, GetDescriptor, GetStringDescriptor, GetStringDescriptorAscii: ok (10 checks)
+tus0405: [child fake] case 8 fake: BulkTransfer and InterruptTransfer, their counts and codes: ok (4 checks)
+[bc5] exp 0405: usbd sceUsbdFreeTransfer: AnyPS5 has no answer for a transfer still in flight; today's answer kept
+[bc5] exp 0405: usbd sceUsbdSubmitTransfer: AnyPS5 has no answer for transfer flags other than 1 and 8; today's answer kept
+tus0405: [child fake] case 9 fake: submit, busy, cancel, completion through HandleEventsTimeout and HandleEvents with the title's callback, flags, iso packets: ok (32 checks)
+[bc5] exp 0405: usbd sceUsbdGetDevice: AnyPS5 has no answer for a handle sceUsbdOpen never returned or that was closed; today's answer kept
+[bc5] exp 0405: usbd sceUsbdClose: AnyPS5 has no answer for a handle sceUsbdOpen never returned or that was closed; today's answer kept
+tus0405: [child fake] case 10 fake: Close once; OpenDeviceWithVidPid opens the admitted id only, never a refused or unlisted one: ok (14 checks)
+tus0405: [child fake] case 11 fake: FreeDeviceList unrefs; the last Exit closes what is open and ends the context: ok (13 checks)
+tus0405: [child fake] case 12 fake: no refused device was ever opened, claimed or detached; nothing left held: ok (4 checks)
+tus0405: [child fake] 12 of 12; end
+tus0405: case 40 child fake (KYTY_BC5_USBD_ALLOW=" 1234:5678, 1234:0003,1234:0001,ABCD:ef01,1234:0007,054c:0ce6,054C:05C4,,"): the transport over a fake libusb; refused devices never touched: ok (its exit 0)
+tus0405: case 41 no allow-list: libusb never loaded (the stand-in loader hook was asked for no symbol, no device call made): ok (1 checks)
+tus0405: case 42 HandleEvents with no device: the handler waits for a transfer that never completes (no spin): ok (3 checks)
+tus0405: on 42 of 42; end

@@ -1,0 +1,13 @@
+p4060401: case the switches (old path): 5 of 5
+p4060401: case the parse (pure): 32 of 32
+p4060401: case the lines and the quiet filter (pure): 17 of 17
+[bc5] exp 0406 (p406): learned prune off (BC5_0406_LEARNED_PRUNE =0): as e8; learned_apply calls over 5 ms counted, one line a minute
+[bc5] exp 0406 (p406): audio sleep off (BC5_0406_AUDIO_SLEEP =0): the 500-us poll
+p4060401: case the junk rule (pure): 121 of 121
+p4060401: case the load hook (old path): 2 of 2
+p4060401: case inside an eager heap (pure): 149 of 149
+p4060401: case the loop's decision (old path): 109 of 109
+p4060401: case the minute count (old path): 11 of 11
+p4060401: case the drain sleep (pure): 13 of 13
+p4060401: case the wait (pure): 12 of 12
+p4060401: off 471 of 471; end

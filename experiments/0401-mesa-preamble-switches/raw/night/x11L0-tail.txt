@@ -1,0 +1,30 @@
+audio trace: t 2532.871 s port 1 type 4 1 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 2532.871 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+fps counter: t 2533.160 s: 54 flips in 1.013 s, longest gap 58.2 ms, gaps over 40 ms 2, over 70 ms 0
+audio trace: t 2533.874 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 998.4 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 2533.874 s port 1 type 4 1 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 2533.874 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+fps counter: t 2534.161 s: 48 flips in 1.001 s, longest gap 62.4 ms, gaps over 40 ms 1, over 70 ms 0
+bc5-direct: experiment 0341 periodic: shadow labels in 862000 jobs: 7329279 labels, 14658558 writes copied, 7329279 waits redirected, 3 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 62390513 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 62405514 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+audio trace: t 2534.877 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 998.8 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 2534.877 s port 1 type 4 1 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 2534.877 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+game fix: job-arena hook call 360000 (360000 wrapped), thread index -1 -> the window
+fps counter: t 2535.175 s: 46 flips in 1.015 s, longest gap 67.1 ms, gaps over 40 ms 3, over 70 ms 0
+audio trace: t 2535.879 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 998.4 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 2535.879 s port 1 type 4 1 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 2535.879 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+fps counter: t 2536.181 s: 53 flips in 1.006 s, longest gap 57.4 ms, gaps over 40 ms 1, over 70 ms 0
+audio trace: t 2536.882 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 998.8 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 2536.882 s port 1 type 4 1 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 2536.882 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+fps counter: t 2537.194 s: 52 flips in 1.013 s, longest gap 60.5 ms, gaps over 40 ms 2, over 70 ms 0
+audio trace: t 2537.885 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 998.8 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 2537.885 s port 1 type 4 1 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 2537.885 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+fps counter: t 2538.205 s: 54 flips in 1.011 s, longest gap 59.2 ms, gaps over 40 ms 1, over 70 ms 0
+audio trace: t 2538.888 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.1 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 2538.888 s port 1 type 4 1 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 2538.888 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+== 2026-11-10 00:04:23 exit 0

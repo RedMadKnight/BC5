@@ -1,0 +1,59 @@
+[bc5] exp 0401: memory from param.json off: total 11692 MiB, flexible 1024 MiB, direct 10668 MiB (param.json: flexible 0, cpu table 0, gpu table 0, amm table 0 MiB)
+[bc5] exp 0405: mem off
+[bc5] exp 0405: tables off
+[bc5] exp 0401: KYTY_BC5_AMM_PRT_CMDS off
+[bc5] exp 0401: KYTY_BC5_AMM_EXTRA_CMDS off
+[bc5] exp 0401: KYTY_BC5_AMPR_WAITS off
+[bc5] exp 0405: fw kernel off
+[bc5] exp 0405: jit shm off
+[bc5] exp 0405: posix return fixes off
+[bc5] exp 0405: http2 fixes off
+[bc5] exp 0405: json2 off
+[bc5] exp 0401: NpCppWebApi SessionManager V2 off (the loader's stubs)
+[bc5] exp 0405: fw pad off
+[bc5] exp 0405: pad open ext off
+[bc5] exp 0405: fw-net off
+[bc5] exp 0401: savedata fixes off
+[bc5] exp 0401: savedata event callback off
+[bc5] exp 0401: savedata sort off
+[bc5] exp 0405: savedata memory fixes off
+[bc5] exp 0405: savedata delete busy off
+[bc5] exp 0405: savedata aliases off
+[bc5] exp 0405: systemservice off
+[bc5] exp 0405: systemservice-params-7-1000 off
+[bc5] exp 0405: ult off
+[bc5] exp 0405: userservice off
+[bc5] exp 0405: equeue fixes on (items: kk02 sk03 g1 kk01)
+eq0405: KYTY_BC5_EQUEUE_FIXES=1 KYTY_BC5_MMAP_SHIM_FIXES=1, so on (equeue items 0xf, mmap items 0x3)
+[bc5] exp 0405: mmap shim fixes on (items: hint prot)
+eq0405: case 1 grammar: ok (20 rows, 0 wrong; read once: equeue 0xf, mmap 0x3; the environment says 0xf, 0x3)
+eq0405: case 2 kk02 level user event once per wait: ok (on: num 4 -> 1 (want 1), again 1, num 1 -> 1; the slots after the event untouched)
+eq0405: case 3 edge user event unchanged: ok (1st wait OK 1, 2nd ETIMEDOUT 0)
+eq0405: case 4 ampr completions with pending copies unchanged: ok (3 triggers: OK 3 events (data 1 2 3), then ETIMEDOUT)
+eq0405: case 5 graphics EOP-style event (reset func, pending copies) unchanged: ok (3 triggers, num 8: 3 events as today; then ETIMEDOUT; 3 more, num 2: 2 as today, 1 as today, then ETIMEDOUT)
+eq0405: case 6 VideoOut flip-style event (updated in place) unchanged: ok (2 triggers, num 8: 1 event, fflags 2, as today; then ETIMEDOUT)
+eq0405: case 7 renderer user interrupt 0x1800 (edge, ForAll) unchanged: ok (trigger OK, wait OK 1, then ETIMEDOUT)
+eq0405: case 8 EOP-style and level events in one queue: ok (3 events: the 2 EOP ones as today, 1 level copies (want 1, on))
+eq0405: case 9 sk03 sceKernelWaitEqueue with out == NULL: ok (poll with an event OK (event filled), empty poll ETIMEDOUT, untimed wait with an event OK)
+[bc5] exp 0405: kevent eq 9 timeout {0 s, 0 ns} nevents 4 -> 0 (#1)
+eq0405: case 10 g1 kevent with a {0,0} timeout: ok (on, a poll: returned 0 after 0 ms, the late event polled: 1)
+[bc5] exp 0405: kevent eq 9 timeout {0 s, 0 ns} nevents 4 -> 1 (#2)
+[bc5] exp 0405: kevent eq 10 timeout {0 s, 30000000 ns} nevents 4 -> 0 (#3)
+eq0405: case 11 g1 kevent with a {0, 30 ms} timeout: ok (on, a timed wait: returned 0 after 30 ms, the late event polled: 1)
+[bc5] exp 0405: kevent eq 10 timeout {0 s, 0 ns} nevents 4 -> 1 (#4)
+[bc5] exp 0405: kevent eq 11 timeout {0 s, 1000000000 ns} nevents 4 -> -1 (#5)
+eq0405: case 12 g1 kevent with tv_nsec 1e9: ok (on, EINVAL as -1: returned -1 after 0 ms)
+[bc5] exp 0405: kevent eq 11 timeout {0 s, 0 ns} nevents 4 -> 1 (#6)
+[bc5] exp 0405: kevent eq 12 timeout {0 s, 0 ns} nevents 4 -> 1 (#7)
+[bc5] exp 0405: kevent eq 12 timeout {5 s, 0 ns} nevents 4 -> 1 (#8)
+eq0405: case 13 g1 kevent with an event ready ({0,0}, NULL, {5 s, 0}): ok (returned 1, 1, 1)
+eq0405: case 14 kk01 sceKernelAddTimerEvent: periodic EVFILT_TIMER, data = expirations: ok (add OK (usec 20000 with 0xdeadbeef in the upper half); first wait OK after 20 ms, data 1 (clock 0..1); at once ETIMEDOUT, data 0; after 70 ms 1 event, data 3; 4 periods in all, the clock says 4..4)
+eq0405: case 15 kk01 re-add, sceKernelDeleteTimerEvent, a bad queue, a 0 period: ok (YWQFUyXIVdU registered; re-add: 1 event, udata 0x66; delete OK, then wait ETIMEDOUT, delete again ENOENT; bad queue EBADF; 0 period: OK 1 event, data 58, delete OK)
+[bc5] exp 0405: mmap hint 0x200000000 len 0x4000 is not free: mapped at 0x200004000 (#1)
+eq0405: case 16 mmap: an anonymous hint over a live mapping: ok (on, a hint: first at 0x200000000, the hint gave 0x200004000; the first mapping intact)
+eq0405: case 17 mmap: a free hint lands at the hint: ok (hint 0x200008000 -> 0x200008000)
+eq0405: case 18 mmap: MAP_FIXED over a live mapping replaces it (unchanged): ok (0x20000c000 -> 0x20000c000)
+eq0405: case 19 mmap: the driver-style device mappings keep their fixed addresses: ok (0xfe0200000 MAP_SHARED fd 5 -> 0xfe0200000 prot 0x22 writable, cleared; 0xfe0204000 MAP_SHARED|MAP_FIXED -> 0xfe0204000)
+eq0405: case 20 mmap: prot 0: ok (on, no access: 0x200010000 with prot 0x0)
+eq0405: case 21 mmap: prot 1 (read only) is mapped and reads zero: ok (0x200014000 with prot 0x1)
+eq0405: on 21 of 21; end

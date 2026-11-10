@@ -1,0 +1,14 @@
+thr0405: KYTY_BC5_THREAD_SYNC_FIXES=(unset) (parts 0x0), KYTY_BC5_SEMA_FIXES=(unset) (parts 0x0), so off
+[bc5] exp 0405: thread sync off
+thr0405: case 1 kk06 wake-ups, objects kept until both threads are done: ok (kk06 off; 8000 of 8000 rounds (signal, broadcast, signalto; under the mutex and after its unlock; untimed and timed waits; mutex types 1 and 4) in 8 ms, errors 0 (first OK), longest round 134 us)
+thr0405: case 2 kk06 waiter destroys and frees at once: ok (not run, kk06 off: today's signal and broadcast read the condition variable's handle and a mutex unlock notifies after releasing the internal lock; a woken waiter that destroys and frees first makes that a use-after-free (a crash once the handle reads NULL or poison): crash-prone, skipped)
+thr0405: case 3 kk03 statically initialised rwlock and condition variable: ok (kk03 off; Tryrdlock on a static lock OK, created yes, unlock OK, destroy OK; not run: Destroy, Timedrdlock and Timedwrlock of a static rwlock and Destroy of a static condition variable stop the emulator today (EXIT_NOT_IMPLEMENTED))
+[bc5] exp 0401: pthread fixes off (rwlock: today's rule, only a reader of the same lock reads past waiting writers)
+thr0405: case 4 signalto answers: ok (signalto off, want EINVAL, OK, then OK for all (today); null thread EINVAL; a waiting thread OK, woken yes, the other waiter left waiting yes; a handle that is no thread OK; the caller OK; a live guest thread OK; a finished guest thread OK; a joined guest thread OK (joins OK OK))
+thr0405: case 5 x87 control word of a new guest thread: ok (x87 off; the creator loaded 0x027f and kept 0x027f; the new guest thread started with 0x027f (want 0x027f, inherited from the creator, today's), MXCSR 0x1f80 (the creator's 0x1f80); this thread's word 0x037f; join OK)
+thr0405: case 6 kk07 a joined thread: ok (kk07 off; not run on the joined thread: today Getprio, Setprio and Cancel use its reaped host thread (pthread_getschedparam, pthread_cancel; Setprio may renice a reused host thread id); a live guest thread: Getprio OK, 700)
+[bc5] exp 0405: sema off
+thr0405: case 7 sema attributes: ok (attr off; 0x0 OK 0x1 OK 0x2 OK 0x3 EINVAL 0x103 EINVAL 0x104 EINVAL 0x200 EINVAL 0x1000 EINVAL 0xffffffff EINVAL 0x100 EINVAL (today's) 0x101 EINVAL (today's) 0x102 EINVAL (today's))
+thr0405: case 8 sema signal counts: ok (signal off, today's; count 1: signal 0 OK, -1 OK, then poll 1 EBUSY (the count was lowered); signal 5 OK, 1 more EINVAL, poll 5 OK; recorded, not checked: at count 1 signal INT_MAX OK, then poll 1 EBUSY)
+thr0405: case 9 sema poll and a woken wait: ok (max 3, count 2: poll 0 EINVAL, -1 EINVAL, 4 EINVAL (EINVAL already today), poll 2 OK, poll 1 EBUSY; a wait for 2 woken by signal 2 (OK): OK after 30290 us, back in 44 us; then poll 1 EBUSY)
+thr0405: off 9 of 9; end
