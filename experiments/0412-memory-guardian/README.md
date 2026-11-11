@@ -755,9 +755,76 @@ Thread 27–34 % in the submit path and 10–30 % waiting in it.
 grow with the number of mappings, which this title drives to 28,000. The title's own share of the game thread in the
 loads is a quarter to a third; it is not where most of the time goes.
 
+### 16. The wall as arithmetic: the whole box at 165 s (2026-11-11 10:42–10:45, the top session's order)
+
+`snap0412.sh` (read-only): `/proc/meminfo`, every process, every cgroup, the GPU counters and zram at 25, 60, 130 and
+165 s of one scripted load of the copy of his save (run j1ledger: ledger arm on g412f, no zero skip, no orphan
+release, fuse 12,400 MiB). At 165 s 296 MiB were available: the wall. Raw: `raw/prof-20261111/j1ledger-snap.txt`.
+
+**MemTotal 15,193 MiB at 165 s** [M]; the lines sum to it:
+
+| Line | MiB | What it is | Whose |
+|---|---|---|---|
+| Guest memory, pinned | **12,024** | 11,754 direct + 270 private (ledger); of it 320 orphans | the title's pools, except the orphans |
+| Guest memory, not pinned, in RAM | 98 | Shmem 12,122 − pinned | the title's CPU heaps (the rest is in swap) |
+| Kernel and GPU pages meminfo does not class | 893 | of it **583 = GTT 12,607 − imported 12,024**: the driver's own buffers (the emulator's and the desktop's; 465 at 25 s); about 310 more (vmalloc 115, the rest unnamed) | ours and the desktop's |
+| File cache | 874 | Cached − Shmem. **In the container's cgroup: 42** (file 12,162 − shmem 12,120). The rest is the system's and the desktop's mapped files | system |
+| Slab | 460 | 345 not reclaimable | kernel |
+| Anonymous memory | 328 | the emulator 127 (+156 in swap), everything else 216 (+752 in swap; plasmashell alone 70 + 265) | ours 127, desktop 200 |
+| zram's own RAM | 212 | holds 850 MiB of swapped pages | the price of the swap |
+| Free | 167 | the kernel's reserve | – |
+| Page tables | 108 | the emulator 67 | mostly ours |
+| Kernel stacks, per-CPU | 28 | | kernel |
+
+**Non-guest: 3,169 MiB, and it only fits because 986 MiB sit in swap and the game's file cache is gone.** What the
+non-guest side wants when nothing is squeezed (resident + swapped): kernel/GPU 893, slab 460, page tables and stacks
+136, zram 212, the emulator's own anon 283, the desktop and system 968 anon plus about 650 of mapped files: about
+3,600 MiB, against 3,169 left by the guest. **The budget is over by roughly 0.4–0.5 GiB before the title's file
+reads get a single page of cache.** That deficit is the wall; the fuse only decides whether the box or the emulator
+suffers it.
+
+**Ranked, with the fix per line:**
+1. *Guest pinned, 12,024* — legitimate except **320 MiB of orphans** (memory the title released and we still pin; our
+   defect). Fix: the orphan release with the split (g412c, arm `orphans`/`fast`), which needs no zero skip. The night's
+   runs with it held the pin 0.1–0.2 GiB lower; in his play orphans were 440 MiB at 130 s with it on, so it does not
+   yet cut all of them (forced chunks, chunks under partial views).
+2. *Driver buffers outside the guest, 583* (465 before the save loads, so about 400–450 are there from the menu:
+   the desktop's surfaces and the emulator's own swapchain, shadow, scratch and tiler buffers). Not broken down yet;
+   needs the per-client numbers from `fdinfo` (`drm-memory-*`), readable without root. Open.
+3. *Desktop and system, about 970 anon (750 of it in swap) + 650 mapped files.* A session without Plasma's shell
+   (plasmashell 335, kwin 76, the portals and helpers) would return an estimated 400–500 MiB [I, from the per-process
+   lines; not tried]. His decision.
+4. *Slab 460 and the unnamed 310*: kernel; 12 GiB pinned as 3 million 4 KiB pages carries page arrays in the kernel.
+   The guest memfd uses no huge pages (`shmem_enabled` is `never`; ShmemHugePages 0). Page tables are 108 MiB in all,
+   so 2 MiB pages would save at most about 60 MiB there; what they would save in the pin's own bookkeeping and in TLB
+   misses is not measured.
+5. *The emulator's anon, 283* and *zram, 212*: small; zram returns four times what it costs.
+
+**Three of the top session's expectations against these numbers:**
+- *"The page-cache double is a wall item."* Not as resident memory: at the wall the container holds 42 MiB of file
+  cache. The 44.6 GiB read for 19.9 GiB asked (section 15) are traffic and reclaim work, not occupancy. Reading
+  without the cache (O_DIRECT or drop-behind) is a speed and I/O fix; it frees almost nothing at the wall. At 25 s the
+  cache is 4.2 GiB, so it does delay the wall by filling memory early, but the limit already takes it back.
+- *"memory.max is the wrong working limit."* Agreed on the mechanism, and the numbers show why moving it does not
+  help: the cgroup is 12,400 = 12,024 pinned + 111 kernel + 125 anon + 42 file + the rest. The limit sits on the pin.
+  Raised, the cgroup takes the box's last 296 MiB and the box is where it was on 11-10. A far fuse is right as a
+  fuse; protection of the session (`memory.low`) only chooses who is squeezed. Neither creates the missing 0.5 GiB.
+- *"Does the title take more than on the console?"* We offer 13,824 MiB of direct memory; the console's figure in exp
+  0407's model is about 12,800. The title's views cover 11,435 MiB and it pins 11,754 here, under both. Whether it
+  sizes its pools from the offer is not measured: the runs that offered less died in the host (the AMM window fault
+  at 12,800, the TLS deaths at 11,776 and 12,288; section 3). Offering the true smaller budget needs those host bugs
+  fixed first; that is the console-like answer and it is not done.
+
+**What closes the gap** [I], in order of certainty: the orphans (0.3 GiB, ours, measured); a lighter session
+(0.4–0.5 GiB, estimated, his call); the driver buffers once broken down; then the true guest budget. No single line
+is the wall; the sum is.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
+- The wall as arithmetic (section 16) [M]: at 165 s the guest pins 12,024 of 15,193 MiB; the 3,169 left hold the kernel, the
+  GPU driver's buffers, the desktop and the emulator only with 986 MiB in swap and 42 MiB of file cache for the game. Over by
+  about 0.4-0.5 GiB; 320 MiB of the pin are orphans (ours).
 - Where the time goes (section 15) [M]: in the loads the game thread is a quarter to a third inside the host's AMM
   bookkeeping (linear range tables, 28,000 entries); one fixed loop (`KYTY_BC5_RANGES_FAST=1`, build g412f) gives 30 % more
   frames in both load phases. The disk delivers 2.2 times the bytes the title asks for. More of the same class is open.
