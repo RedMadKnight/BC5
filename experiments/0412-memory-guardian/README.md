@@ -1804,9 +1804,42 @@ zero-page scheme can use (section 31: no canary write to expect in those ranges)
 **The arm.** `play-guard-0412.sh fast4` = fast2 + `BC5_GUARD_NOGPU_UNPIN=Physics,ComponentHeap,DynamicHeap,InitAllocator`.
 It is in the wrapper; the desktop shortcut is not changed (it needs the maintainer's word and his eyes on the image).
 
+### 38. His play on fast4 ended in a GPU hang and a reboot of the box (2026-11-11 22:30–22:32)
+
+The maintainer started "BC5 emulator (0412 fast4)" (build g412s `ec8b4594`, RT on, no catchers) at 22:30:35, loaded his
+save and reported "Crash". Data: `~/bc5-data/captures/play-20261111-2230/gc/direct.log` (2.5 MB, on the box), the two
+dumped command buffers beside it (`ib-timeout-00073252-acb-7541.bin`, `ib-timeout-00073248-dcb-2925.bin`; the title's
+buffers, never committed), the panic record in `~/bc5-data/captures/pstore/dmesg-efi_pstore-1794432746*` [M]:
+
+- 22:32:25, about 108 s into the run: `ring gfx_0.0.0 timeout`, thread `bc5-ring`. The host's own journal has two
+  submissions timed out at 2.0 s: #73252, a compute buffer of 7,541 dwords with 269 dispatches (the largest grid
+  61,440 groups, the last one, at dword 7400), and #73248, a draw buffer of 2,925 dwords.
+- `Ring gfx_0.0.0 reset failed` 0.19 s later, the kernel began a full GPU reset, and `bc5-gpu-watch` crashed the
+  kernel for a reboot as it is built to do (SysRq s, c). The box was back at 22:32:55. No devcoredump of this hang was
+  saved (the newest file is of 20:05). Kernel in the panic record: 7.2.15-ogc1.1 (CLAUDE.md records 7.2.11).
+- Memory at the last ledger line (t 100 s): pinned direct 11,048 MiB, available 337 MiB, PSI full 1.2 %, 1,180 MiB in
+  590 chunks left unpinned by the trial. Not at the wall of his earlier plays (11.84–11.93 GiB, 220–275 MiB).
+- The only zero-buffer read-back in the journal is the one at t 1 s (0 non-zero bytes); the 10 s readings of the
+  scripted runs are not there. Why is not known yet.
+
+**Reading [I].** The trial of section 37 is the only thing that differs from his three plays on fast2, none of which
+had a ring timeout, so it is the first suspect: a GPU read from a left-out range returns zeros, and a shader that
+walks a structure there (a traversal, a list) can loop for ever on zeros. That is not shown: the probe prints the
+draw buffer's bindings, not the compute dispatches' buffers, and the journal does not list the addresses of the
+left-out views. The six scripted runs of section 37 did not hit it; his load and his play did, once. One event.
+
+**What it settles.** "No GPU bit in the title's protection" is not enough to conclude "the GPU never reads it", at
+least not for all four heaps on his load. fast4 is not an arm for his shortcut as it stands.
+
+**Next.** Decode the compute buffer's dispatch at dword 7400 and the draw buffer's bindings against the left-out
+ranges (the trial has to journal those ranges; one line per change), then a per-heap repeat on his slot with the
+scripted route (the slot is still to be asked).
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
+- **fast4 hung the GPU in his play (section 38) [M]:** ring timeout at 108 s, the ring reset failed, the box rebooted.
+  The no-GPU-bit unpin is the first suspect [I]; it is not an arm for his shortcut as it stands.
 - **The first change that moves the wall (section 37) [M]:** four heaps the title mapped without a GPU bit are no longer pinned
   (`BC5_GUARD_NOGPU_UNPIN`, arm fast4, build g412s): 1,024 MiB less pinned at the wall, lowest available 428 MiB instead of 283,
   no fault, no timeout, the zero buffer never written, in six scripted runs. Not yet seen: the picture, and his own load.
