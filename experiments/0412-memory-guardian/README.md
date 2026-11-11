@@ -819,6 +819,29 @@ suffers it.
 (0.4–0.5 GiB, estimated, his call); the driver buffers once broken down; then the true guest budget. No single line
 is the wall; the sum is.
 
+### 17. Two short reads: the VRAM carve-out, and whether the mapping table's blocks ever overlap (2026-11-11 10:50–10:56)
+
+**The carve-out** (the top session's question: could a smaller BIOS UMA return the missing 0.5 GiB?) [M]:
+`mem_info_vram_total` 512 MiB (`vis_vram` the same), `mem_info_gtt_total` 13,312 MiB. `vram_used` is 48 MiB with the
+box idle and 398 → 420 → 479 MiB at 25, 60 and 130–165 s of run j1ledger: 93 % full at the wall. Of the 1,191 MiB
+that never reach Linux only 512 are the UMA; the other 679 are firmware and kernel reservations. A smaller UMA would
+push the emulator's 430 MiB of VRAM buffers into GTT, which is system RAM: nothing gained. Which client holds the
+VRAM at the wall was not read (the snapshot script has no `fdinfo` lines yet). Idle, the desktop holds 338 MiB of GTT
+(plasmashell 167, plasma-keyboard 96, Xwayland 22, by `fdinfo`): part of section 16's 583.
+
+**The overlap check, build g412g** (`memfast/mkphys0412.py`, `mk0412g.sh`; binary
+`c8a3fd44bd5d17da69a158a6ab685e6f` in place of g412f, which is kept beside it). `PhysicalMemory::Unmap` takes the first
+matching block in insertion order; a sorted table with a binary search is the same behaviour only if blocks never
+overlap in guest addresses. `KYTY_BC5_PHYSMAP_CHECK=1` (default off, diagnostic, no behaviour change) compares every
+block `Map()` adds with the whole table. Run k1check (the scripted load, 60 s of walking, `KYTY_BC5_RANGES_FAST=1`
+too): **over 32,768 blocks added, none overlapped an existing one**; the table held 12,521 blocks at that point; the
+run ended normally, no kernel line [M]. So for this title and this route a sorted table is valid. One run; the check
+stays in the build for a longer one.
+
+**Not done:** the sorted table itself. With `RANGES_FAST` on, `PhysicalMemory::Unmap` and the name edits are a few
+percent of the game thread (section 15), less than the Render Thread's submit path (27–34 % of that thread), so the
+submit path is the better next target by the numbers; the top session's order has the table first.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
