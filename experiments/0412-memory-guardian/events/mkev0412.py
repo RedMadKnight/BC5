@@ -13,14 +13,15 @@ Every anchor occurs exactly once; the inserted text is ASCII with LF line ends; 
 refused, and so is an input that is not the pinned one (--any-input lifts only the md5 pins). After editing, the script
 undoes its edits and asserts that this gives the inputs back byte for byte. Prints "<relpath> <md5>" per unit.
 CPU test: evcap0412.cpp (event_cap0412.hpp alone).
-usage: mkev0412.py [--any-input] <tree root in> <out dir>"""
+usage: mkev0412.py [--any-input] [--eq <eventQueue.cpp>] <tree root in> <out dir>"""
 import hashlib
 import os
 import sys
 
 EQ = "src/kernel/eventQueue.cpp"
 SY = "src/graphics/host_gpu/renderer/sync.cpp"
-PINS = {EQ: "c45e6a72c8e419d98059c3477a9373cc", SY: "68733b6c5be980f238571723296f7d05"}
+# eventQueue.cpp: the shared source's, or exp 0401 e8's (x5-eq, after mkeq0405.py: the e11-based line, build g412e).
+PINS = {EQ: ("c45e6a72c8e419d98059c3477a9373cc", "d8eaa6d22e3e415ea8331dced30867c0"), SY: ("68733b6c5be980f238571723296f7d05",)}
 MARKS = (b"ev412", b"KernelEventPendingPush", b"KYTY_BC5_EVENT_PENDING", b"event_cap0412")
 
 PUSH = b"\t\tevent->pending_events.push_back(triggered_event);\n"
@@ -120,14 +121,19 @@ def main():
     args = sys.argv[1:]
     any_input = "--any-input" in args
     args = [a for a in args if a != "--any-input"]
+    eq_file = None
+    if "--eq" in args:  # another eventQueue.cpp than <tree root in>'s (the e11-based line: exp0401e8/x5-eq's)
+        k = args.index("--eq")
+        eq_file = args[k + 1]
+        args = args[:k] + args[k + 2:]
     assert len(args) == 2, __doc__
     root, outdir = args
     assert os.path.abspath(root) != os.path.abspath(outdir), "the out dir must not be the tree"
     for rel in (EQ, SY):
-        with open(os.path.join(root, rel), "rb") as f:
+        with open(eq_file if rel == EQ and eq_file else os.path.join(root, rel), "rb") as f:
             s = f.read()
         if not any_input:
-            assert md5(s) == PINS[rel], ("refused: not the pinned input", rel, md5(s))
+            assert md5(s) in PINS[rel], ("refused: not a pinned input", rel, md5(s))
         out = apply(rel, s)
         dst = os.path.join(outdir, rel)
         os.makedirs(os.path.dirname(dst), exist_ok=True)

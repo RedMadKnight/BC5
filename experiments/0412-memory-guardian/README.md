@@ -594,6 +594,32 @@ so the cap did not act and this title's start screen does not have ASTRO BOT's g
 wants the events cap in the e11-based line instead (the build the second title is meant to run on) is his call: the
 two edits apply to that source as well, if its `eventQueue.cpp` and `sync.cpp` still have the two `push_back` lines.
 
+### 13. The events cap in the e11-based line: build g412e (2026-11-11 09:36–09:45; the maintainer's "Tak, przenieś")
+
+`events/mk0412e.sh`, `events/linkev0412.py`; `mkev0412.py` now also takes exp 0401 e8's `eventQueue.cpp`
+(`--eq`, pinned d8eaa6d2: the e-series changed that unit with mkeq0405.py, and its two anchors and the one
+`push_back` are still there). `sync.cpp` is the shared one (68733b6c); no earlier private build had it as its own
+object, g412e does.
+
+- **Build** (box, 09:39, BOX-LOCK ours and released): CPU test 1025 of 1025; edited units 64e176a7 (eventQueue.cpp)
+  and 06c1349c (sync.cpp); 47 private objects (e8's, exp 0409's two, the two edited ones, g412d's main unit 5361c8ba);
+  7 warnings (g412d: 6; the new one not read); binary `5db9b2e9805473ed3a01a96389087904` in place of g412d, which is
+  kept as `bin/kyty_emulator.g412-ca106494`. The launcher is unchanged (7899c6dd). With the two event switches off the
+  two functions do the `push_back` they did.
+- **Arm `zoe`** in `play-guard-0412.sh` (wrapper 3ba549d5): zo + `KYTY_BC5_EVENT_PENDING_CAP=64` +
+  `KYTY_BC5_EVENT_PENDING_LOG=1`. Every other arm runs the same binary without the event words.
+- **Check** [M] (`run0412n.sh g1zoe zoe 120`: the scripted load of the copy of his save, 120 s of walking, sampler,
+  fuse, watchdog): full run, no kernel line, no crash line. Pinned 11,230 MiB at 240 s (zo: 11,236–11,462), available
+  never under 704 MiB, PSI full 1.8 % mean, 24.5 flips/s after the load, median 34 ms, longest frame 454 ms.
+  The play log has the cap's announce line and **no coalesce line**: in this run no event of the second title had 64
+  unread triggers, so the cap did not act. For this title it is a guard that costs nothing measured here, not a fix
+  of something seen.
+- **Shortcut**: `BC5 emulator (0412 zo + events cap)`. `(0412 zo - best of the night)` and the others stay; they now
+  run g412e without the event words.
+
+**Not done:** ASTRO BOT on g412e (the e11-based line was never his ASTRO BOT build; its leak fix is the ev412
+shortcut of section 11). Nobody played or looked at the picture. One run of 4 minutes.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
