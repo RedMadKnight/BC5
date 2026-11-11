@@ -1,0 +1,31 @@
+zero skip: list /home/kjaniszewski/bc5-work/exp0412/zero-list-0412.txt, 2 heaps, 1010.0 MiB listed, 0 bad lines
+zero skip: RenderGpuWcLarge at file 0x156c00000: 740.0 MiB in 30 runs skipped
+zero skip: canary BO 1, 33 slices of 2 MiB
+zero skip: canary +370 mappings (370)
+zero skip: CommitIABufferAllocator at file 0x226200000: 270.0 MiB in 3 runs skipped
+zero skip: canary +135 mappings (505)
+zero skip: canary hit in run 21 (file 0x1cb000000 +30.0 MiB): 30.0 MiB taken back
+zero skip: canary hit in run 5 (file 0x1a0000000 +16.0 MiB): 2.0 MiB taken back
+zero skip: canary hit in run 6 (file 0x1a1600000 +10.0 MiB): 10.0 MiB taken back
+zero skip: canary hit in run 8 (file 0x1ac600000 +26.0 MiB): 26.0 MiB taken back
+zero skip: 762.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 90 by hints, 4 runs by canary hits; 381 canary mappings
+guard split: 11 BOs cut in this sync; aliases mapped again at once (1 such syncs)
+guard split: 23 BOs cut in this sync; aliases mapped again at once (2 such syncs)
+guard split: 32 BOs cut in this sync; aliases mapped again at once (3 such syncs)
+zero skip: 718.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 112 by hints, 4 runs by canary hits; 360 canary mappings
+guard split: 23 BOs cut in this sync; aliases mapped again at once (4 such syncs)
+guard split: 1 BOs cut in this sync; aliases mapped again at once (5 such syncs)
+guard split: 1 BOs cut in this sync; aliases mapped again at once (6 such syncs)
+guard split: 2 BOs cut in this sync; aliases mapped again at once (7 such syncs)
+guard split: 1 BOs cut in this sync; aliases mapped again at once (8 such syncs)
+zero skip: 704.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 119 by hints, 4 runs by canary hits; 352 canary mappings
+zero skip: canary hit in run 28 (file 0x1f2400000 +250.0 MiB): 218.0 MiB taken back
+zero skip: 486.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 119 by hints, 5 runs by canary hits; 243 canary mappings
+zero skip: 486.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 119 by hints, 5 runs by canary hits; 243 canary mappings
+zero skip: 486.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 119 by hints, 5 runs by canary hits; 243 canary mappings
+zero skip: 486.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 119 by hints, 5 runs by canary hits; 243 canary mappings
+zero skip: 486.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 119 by hints, 5 runs by canary hits; 243 canary mappings
+zero skip: 486.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 119 by hints, 5 runs by canary hits; 243 canary mappings
+zero skip: 486.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 119 by hints, 5 runs by canary hits; 243 canary mappings
+zero skip: 486.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 119 by hints, 5 runs by canary hits; 243 canary mappings
+zero skip: 484.0 MiB still skipped of 1010.0 placed; taken back: 1 chunks by CPU writes, 119 by hints, 5 runs by canary hits; 242 canary mappings

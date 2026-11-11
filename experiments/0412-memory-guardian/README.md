@@ -340,9 +340,193 @@ Outside the build: raise the memlock limit (root, the maintainer) so `MLOCK=pinn
 or shed (1 GiB of swap in use at the wall). A cgroup `memory.max` on the emulator's scope would have turned ASTRO BOT's
 36-minute fill into an early kill of the emulator alone; it is a safety net, not a fix.
 
+### 8. The second build, g412b (2026-11-10 night, the top session's order; built and checked by stand-ins, not run in play)
+
+Five items, each behind its own switch, all default off. Files: `guard0412.inc`, `mkguard0412.py`, `test0412.cpp`,
+`syn0412.cpp` (edited), `mk0412b.sh`, `install0412b.sh`, `play-guard-0412.sh` (edited), `play-astro-guard-0412.sh`,
+`sampler0412b.sh`, `fuse0412.sh`, `shortcut0412b.sh`.
+
+| # | Item | Switch | What it is |
+|---|---|---|---|
+| 1 | Orphan release | `BC5_DIRECT_LAZY_RELEASE=10,eager` | **Already in e11's unit**: exp 0401 e7's lazy release (`lzr0401.inc`), which cuts a chunk under no view for the idle time, not forced, out of its BO and imports it again when a view covers it. Exp 0401 only ran it `dry` (170 MiB idle at the save of that day); this is its first live arm. No new code. `eager` is needed because the orphans are AMM chunks, last seen under an eager view. |
+| 2 | The pin cap acts | `BC5_GUARD_PIN_CAP=<MiB>` + `BC5_GUARD_CAP_ACT=1` (+ `BC5_GUARD_CAP_NAMES`, default `AMM`) | New. When a sync's imports would take both files' pinned total over the cap, the **soft** chunks are put off: chunks wanted only for holding data, or by an eager heap named in the list, and not forced by a hint or a learned window. Every view over a put-off chunk gets the 2 MiB zero buffer (the scratch BO of exp 0037), so the GPU reads zeros and never faults. Hard chunks (the render heaps, forced windows) are imported as before. Each full sync asks again, so a put-off chunk comes in when the orphan release has made room. |
+| 3 | AMM by use | `BC5_GUARD_AMM_BY_USE=1` (the launcher) | The launcher takes `AMM` out of `BC5_DIRECT_EAGER_NAMES`, so its chunks are pinned when they hold data, not when mapped. F403's class of risk (a GPU access to an AMM page no CPU wrote faults, 14 s). Arm `amm`, no shortcut. The prize is unknown and likely small: the title maps AMM pages to fill them, and a memfd page once written stays "data". |
+| 4 | Sampler columns | `sampler0412b.sh` | The emulator's `RssAnon`, `RssShmem`, `VmSwap`; the same of `bc5-mount`; `memory.current` and `memory.swap.current` of the emulator's cgroup. The ledger line also has `rss anon` and `cgroup` now. |
+| 5 | The fuse | the wrappers; `BC5_0412_FUSE=0` leaves it out | `fuse0412.sh` sets `memory.max` 12,300 MiB and `memory.swap.max` 2,048 MiB on the container's cgroup (`.../libpod-<id>.scope/container`, whose files the maintainer's user owns) while the emulator runs, and sets both back to `max` when it ends (a marker file covers a helper that died). Past the limit the kernel kills the emulator, with `ulimit -c 0`. Nothing system-wide. The limit covers everything in the container while it stands. |
+
+Two corrections to the first build, found while reading the unit: the ledger counted pinned bytes from its own
+grow-only set, which would be wrong once the lazy release cuts chunks, so it now takes the BO list at the end of each
+full sync (`guard0412_synced`); and the cap's log line uses the same totals.
+
+**What the cap arm will look like** [I]: over 11,600 MiB the title keeps running and newly streamed assets can be
+black or missing until memory comes back. GPU writes into a put-off chunk are lost. Whether the title's renderer
+survives zeros in streamed data (for instance ray-tracing structures) is not known; the fuse covers the box.
+Not covered by the cap: chunks the lazy release imports again under a returning view (a small, bounded path).
+
+**Limits chosen** [I, from section 7's numbers]: the box needs about 2.2 GiB outside the emulator and the emulator
+about 0.3 GiB outside the pin; 11,600 MiB of pin is where 0.8 GiB was still available (60 s), 12,300 MiB in the
+cgroup is where the box began to die (120–130 s). Whether pinned pages are charged to the container's cgroup is
+assumed, not measured: the ledger's `cgroup` field and the sampler's column will show it in the first play, and if
+they are not, the fuse never fires and changes nothing.
+
+**Built and installed** (22:52-22:57, box free, BOX-LOCK ours and released): CPU test 64 of 64 on the laptop and the box;
+unit 52eba0ad (from e11's f366ff7b), 5 warnings as e11; binary `baf16ce2fe4530b09464ba717b7a44e3` (the first build 70a3bbee
+kept beside it); launcher 7899c6dd (0411's + EMU, LOG and the AMM line; 17 eager heaps, 16 with the word). Stand-ins on the
+box: every arm's dry run; the sampler against two renamed `sleep`s (10 groups, the new ones numeric); the fuse against a
+700 MB eater in the container: limit 1,220 MiB with the cgroup at 920, the eater ended with 137, `oom_kill` 1 -> 2, both
+limits back at `max`. The cgroup's `memory.peak` read 12,716 MiB, so the plays' pinned memory **is** charged to the
+container's cgroup [M]. Shortcuts on the desktop: `BC5 emulator (0412 orphans)`, `(0412 cap)`, `BC5 Astro (0412 capture off)`,
+`(0412 capture on)`; `(0412 ledger)` and `(0412 low)` stay and now run the second build. No emulator was started.
+
+### 9. The unattended night (2026-11-10 23:03 – 2026-11-11 01:10; the maintainer's "Przez 3h działasz sam i robisz testy i nowe buildy aż znajdziesz poprawę", relayed by the top session)
+
+**Setup.** `run0412n.sh` (after exp 0401's `run0401t.sh`): the second title on the guardian's build with the "e11
+unpacked" words, RT on, a private copy of his current saves (one named snapshot, sum `1151e79071c72b17`, 131 files;
+the list has one slot, so the route is cross, cross, cross, gated on the journal's frame profile), then exp 0379's walk
+for the play time. Beside every run: `sampler0412b.sh`, the fuse (`memory.max` 12,400 MiB, `memory.swap.max` 1,024 MiB
+on the container's cgroup) and the watchdog `wd0412.sh` (SIGKILL under 300 MiB available or over 60 % PSI full for
+10 s). `series0412n.sh` and `chain0412n.sh` ran the arms on the box under `setsid nohup`; the laptop streamed the kernel
+log. Raw files: `raw/night/<tag>-*` (the play logs are left on the box). `sum0412n.py` makes the lines below.
+The box stayed alive all night; BOX-LOCK was claimed and released per arm.
+
+**Builds of the night** (each from e11's unit f366ff7b by `mkguard0412.py`, CPU test `test0412.cpp` on laptop and box):
+
+| Build | Binary | Adds | Why |
+|---|---|---|---|
+| g412b | baf16ce2 | the acting cap, the ledger's BO snapshot | section 8 |
+| g412c | d32dfa89 | `BC5_GUARD_SPLIT=1`: the lazy release may split a BO although `BC5_DIRECT_ALIASES` is set; the sync that cut ends with `aliases_apply(true)` | a2orphans: 194 MiB of idle orphans, **0 cut**, "3 not split (aliases)". The launcher sets `BC5_DIRECT_ALIASES=1`, so exp 0401 e7's release could only drop whole BOs, and BOs are merged up to 1 GiB. `Device::free_shared` drops the freed BO's aliases; they came back only at the next rate-limited `aliases_apply` |
+| g412d | ca106494 | `BC5_GUARD_FORGET=<s>`: a forced chunk under no view for that long leaves the forced set | z1zscan: 264 MiB "forced and under no view" after 5 min. Test 72 of 72. One more `-Wformat` warning than e11 (a `%lu` given an `unsigned long long`, same size) |
+
+**What the runs showed** [M unless marked]. Times are the ledger's (seconds from the emulator's start); the load is at
+101–103 s in every run. "After the load" is from load + 45 s to the end.
+
+| Run | Arm | Play | Pinned at 240 s | Pinned at the end | Available min | PSI full mean / max | Major faults /s | Flips /s | Longest frame | End |
+|---|---|---|---|---|---|---|---|---|---|---|
+| q1ledger | ledger, fuse **12,000** | – | 11,824 | 11,824 | 680 | 38 / 45 % | 4,189 | **1.0** | 7,108 ms | route gate never passed: the cgroup thrashed inside its limit |
+| a1ledger | ledger | 150 s | 11,966 | 11,966 | 300 | 5.0 / 12 % | 609 | 21.8 | 1,169 ms | full |
+| a2orphans | orphans (g412b) | – | – | 11,940 | 344 | 8.4 / 11 % | 1,375 | 19.4 | 360 ms | the watchdog (then at 400 MiB) killed it at 167 s; nothing had been cut |
+| a3cap | cap 11,600 (g412b) | 150 s | 11,676 | 11,762 | 357 | 2.7 / 8 % | 275 | 21.7 | 449 ms | full; up to 262 MiB put off onto the zero buffer, no GPU fault |
+| z1zscan | orphans + split + zero scan (g412c) | 170 s | 11,948 | 12,016 max | 276 | 3.4 / 12 % | 750 | 21.4 | 746 ms | full; 16 cut passes; the scan listed 1,010 MiB |
+| b1ledger | ledger | 300 s | 11,972 | 12,098 | 324 | 4.8 / 20 % | 554 | 21.9 | 1,144 ms | full |
+| b2zo | zero skip + orphans + split | 300 s | 11,238 | 11,300 | 708 | 0.8 / 4.8 % | 2 | 22.1 | 541 ms | full |
+| b3zo | the same | 300 s | 11,236 | 11,386 | 680 | 0.6 / 8.7 % | 56 | 22.5 | 457 ms | full |
+| b4ledger | ledger | 300 s | 11,970 | 12,084 | 281 | 7.8 / 38 % | 1,249 | 20.6 | 2,006 ms | full |
+| c1zof | zo + forget 20 (g412d) | – | – | – | 938 | – | – | – | – | **GPU ring timeout at 99 s**, on the save list before the load; the ring reset succeeded, the box stayed up |
+| c2zo | zo (g412d) | 600 s | 11,462 | 11,528 | 421 | 0.4 / 6.4 % | 4 | 22.1 | 537 ms | full; pinned flat at 11,52x–11,54x from 360 s to 720 s |
+| d1zof | zo + forget 20 | 600 s | 11,416 | 11,566 | 462 | 0.2 / 6.7 % | 10 | 22.3 | 638 ms | full; 62+ forced chunks forgotten |
+| e1of | orphans + split + forget 20, **no zero skip** | 300 s | 11,838 | 11,884 | 287 | 4.3 / 26 % | 774 | 21.5 | 1,608 ms | full; 0.2 GiB less pinned than the ledger runs, the pressure as theirs |
+
+- **11.5 GiB is pinned on the start screen** (t 60 s), before any key: the title loads the save's scene behind it.
+  What section 7 took for his key press was this.
+- **The cgroup limit alone keeps the box alive.** With `memory.max` 12,400 MiB the unchanged ledger arm ran 7 minutes
+  with 0.3 GiB available and never came near the watchdog's 60 % PSI; without a limit the same arm took the box down at
+  21:47. The window is narrow: at 12,000 the title ran at 1 flip a second, because the cgroup was at its limit from
+  the start screen on and reclaimed its own pages. The limit is a fuse, not headroom.
+- **Zero skip + orphan release (zo) removes the memory pressure**: 0.55–0.75 GiB less pinned, major faults from
+  550–1,250 a second to 2–56, PSI full under 1 %, twice the available memory, the longest frame halved, and the pin
+  flat for the last 6 of 12 minutes (c2zo). The list was scanned in this night at his save (`zero-list-0412.txt`,
+  394055535228641d, 740 MiB of RenderGpuWcLarge and 270 MiB of CommitIABufferAllocator); 670–760 MiB stay skipped
+  after 5 min and 484 MiB after 12 (hints and five canary hits take chunks back).
+- **The frame rate did not move**: 22 flips a second and a 34 ms median in every arm that ran, with the GPU busy
+  27 ms and the game thread 12–14 ms outside the host. In this scripted walk the title is GPU-bound once memory is
+  not short; the base arm's extra cost is in its tail (the longest frames, 2.6–3.1 % of frames over 100 ms against
+  2.1–2.6 %). His own plays of 11-10 (57–79 ms frames, 39–58 ms outside the host) had no cgroup limit; that state was
+  not reproduced here, and whether zo fixes it is for his play to show [I].
+- **The orphan release needs the split switch**, and with it cuts 16–31 times a run without a fault. Its own gain in
+  this walk is small (orphans are 60–350 MiB; z1zscan against the ledger runs shows no clear difference in the pin).
+  **The forget switch adds nothing measurable** (d1zof against c2zo) and is left off.
+- **The cap arm works as designed** (no fault, the pin 290 MiB lower at 240 s, fewer faults); nobody looked at the
+  picture. With zo the pin stays under 11,600 MiB, so the cap would not act.
+- **Risk**: one GPU ring timeout in five runs with the zero skip (c1zof, at 99 s on the save list, no page fault in
+  the kernel log, the reset succeeded), none in seven runs without it. Exp 0401 saw the same class 3 times in 19 arms
+  with the skip. Five against seven runs cannot say whether the skip raises it.
+
+So the lever is the zero skip; the orphan release and the forget switch trim 0.1–0.2 GiB.
+
+**ASTRO BOT, the leak** (`astro0412n.sh`; the shared build 4d2b1b1d through the private launcher copy, no input, the
+title left where it starts, 600 s each, sampler every 5 s) [M]:
+
+| Run | PLAY_CAPTURE | Emulator anon + swap | Rate | bc5-mount | Available | Flips /s |
+|---|---|---|---|---|---|---|
+| ao1off | off (no journal) | 652 MiB at 124 s → 2,256 MiB at 567 s | **217 MiB/min** | 1,491 MiB, flat | 2,841 → 1,200 MiB | see `raw/night/ao1off-fps.txt` |
+| ao2on | on (journal 104 MB) | 625 MiB at 120 s → 2,362 MiB at 599 s | **218 MiB/min** | 1,489 MiB, flat | 2,713 → 1,144 MiB | see `raw/night/ao2on-fps.txt` |
+
+- The leak is **steady** (a straight line, about 3.6 MiB a second), it is there **without any input**, and
+  **PLAY_CAPTURE is not its cause**: the rate is the same with the journal off. Section 7's first candidate is out.
+- `bc5-mount` holds 1.49 GiB from the first sample and does not grow: a cache, not a leak.
+- At 217 MiB/min the 36-minute play of 11-10 comes to 7.8 GiB; the kernel's report had 7.3 GiB. The same thing.
+- The second title on the e11-based builds does not show it: its anonymous memory stays at 130–300 MiB over 12 min.
+- Not found: what allocates. Next step for that (not done tonight): the same idle start under `heaptrack` or with
+  `MALLOC_` tracing in a private copy of the shared build, or a gdb sample of `malloc` callers at two times.
+
+**The state for the morning.** On the desktop: `BC5 emulator (0412 zo - best of the night)` (zero skip with tonight's
+list + orphan release with split + the fuse at 12,400 MiB, build g412d ca106494), beside `(0412 ledger)` (now with
+the fuse), `(0412 orphans)`, `(0412 cap)`, `(0412 low)` and the two `BC5 Astro (0412 capture ...)`. Wrapper 3818e03f.
+The frame profile files (`*-frames.txt`, 2.8 MB) and the play logs stay on the box in `~/bc5-work/exp0412/night/raw`.
+
+**Not done / open.**
+- Nobody has seen a picture of any arm. The cap arm's zeros and the zero skip's canary slices can show as missing or
+  wrong textures; his eyes decide.
+- The walk is not his play. His slow frames (57–79 ms) were not reproduced under the cgroup limit, so the frame-time
+  gain of zo in his area is unmeasured.
+- The GPU ring timeout class with the zero skip: 1 in 5 tonight.
+- The memlock limit is still 2 GiB, so `MLOCK` was not tested.
+- The ASTRO BOT leak's source.
+- The zero list is a file beside the build (`~/bc5-work/exp0412/zero-list-0412.txt`), scanned over 2 minutes of one
+  walk. A longer scan in his own play would list less and be taken back less.
+
+### 10. Where ASTRO BOT's host memory grows (2026-11-11 01:06–01:28, the top session's order; three more runs, read-only tools)
+
+Runs ao3off (510 s), ao4off (300 s), ao5off (240 s): the shared build 4d2b1b1d through the private launcher copy,
+capture off, no input, fuse and watchdog on. Tools: `smaps0412.sh` (reads `/proc/<pid>/smaps` every 30 or 10 s), one
+`eu-stack` snapshot, and `strace -k -e trace=mprotect,mmap` for 25–40 s from the ubuntu container. Raw:
+`raw/night/ao3off-smaps.txt`, `ao4off-*`, `ao5off-*` (the traces gzipped).
+
+- **Which mappings** [M, ao3off]: the growth is all in anonymous private memory, 398 MiB at 60 s → 1,913 MiB at 480 s.
+  `[heap]` stays at 7 MiB. Threads (118) and file descriptors (174) are constant; the mapping count goes 972 → 993.
+  The growing regions are 64 MiB-aligned blocks of 63–128 MiB, one below the other from 0x7efe60000000 down to
+  0x7efe08000000: **glibc malloc arena heaps of one arena**, 8 such blocks at 90 s and 24 at 480 s. So it is `malloc`
+  / `operator new` on a thread that is not the main one, never given back. The guest's memfd mappings do not grow.
+- **Which thread and call path** [M, ao4off and ao5off]: of the heap growth the traces caught, 93–98 % is on one
+  thread, **`bc5-cq0`** (BC5's completion thread of queue 0, `Libs::Bc5Gc::Direct::completion_thread`), by two paths:
+  1. `completion_thread` → `SoftCp::submit` → `SoftCp::execute` → `SoftCp::fire` → the host's end-of-pipe event code
+     in `src/graphics/host_gpu/renderer/sync.cpp` (addresses that resolve to lines 144 and 169, the functions around
+     `TriggerAgcUserInterrupt`) → `operator new`: 6.1 of 10.2 MiB in ao5off, 1.6 of 2.9 MiB in ao4off, in 4 KiB steps;
+  2. `completion_thread` itself → `operator new` (a container growing inside it; the address resolves into
+     `bc5LleAgc.cpp`): 3.9 of 10.2 MiB and 1.1 of 2.9 MiB.
+- **What the code at path 1 does** [M, source read; the link to the leak is I]: an event trigger
+  (`EopEventTriggerFunc` in sync.cpp, the same pattern in `src/kernel/eventQueue.cpp` for user and AMPR events) does
+  `event->pending_events.push_back(triggered_event)` whenever the event is already triggered and not yet read; the
+  queue is a `std::deque` with no bound, and one entry is taken off per read (`eventQueue.cpp:130`). An event the
+  title reads more slowly than the soft CP fires it, or never reads, grows by one entry per fire for ever. A real
+  kqueue keeps one pending state per event, not a list.
+- **Not shown** [open]: the byte rate through each path (the trace slows the title, and it caught 10 MiB where the
+  process grew about 31 MiB); which event's queue it is; what the second site in `completion_thread` appends to.
+  The inlined frames make the exact line uncertain.
+- **The second title does not have it** [M]: its emulator's anonymous + swapped memory moves 1.5–2.2 MiB/min in
+  c2zo, d1zof and b1ledger (g412d and e11-based builds, 4–9 min each), against 217 MiB/min here.
+- **Fix candidate** [I]: in a private build of the shared source, bound `pending_events` (coalesce a trigger into
+  the last pending entry when the queue is longer than a small number, or keep only the latest) behind a default-off
+  switch, journal the longest queue per event, and repeat ao1off: the slope and the journal line name the event. The
+  second site needs the same treatment once named (`addr2line` on a build with the unit's line table, or a counter).
+- **A side effect of mine**: in ao5off I attached `strace` to the emulator's `bc5-*` threads, the ring thread among
+  them. 10 s later the kernel logged a gfx ring timeout; the ring reset succeeded and the box stayed up. The title did
+  not draw again in that run (anonymous memory flat from 131 s). Tracing the ring thread stalls submissions past the
+  2 s fence timeout: do not attach to `bc5-ring`. ao4off's trace of every thread did not trip it.
+
+The box at 01:28: no emulator, no mount, BOX-LOCK empty, the cgroup's limits at `max`, no fuse marker.
+
 ## Verdict
 
-**Analysis, design, one build and two short plays (section 7): the ledger answered the split; no arm moved the wall.**
+**After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
+- Night of 11-10/11 [M]: with `memory.max` 12,400 MiB every arm survived; zero skip + orphan release (arm zo): 0.55-0.75 GiB
+  less pinned, major faults 550-1,250/s -> 2-56/s, PSI full under 1 %, the pin flat for 6 of 12 minutes. One GPU ring
+  timeout in five zero-skip runs. ASTRO BOT's host leak is 217-218 MiB/min, steady, with no input and with PLAY_CAPTURE off.
+- ASTRO BOT's leak (section 10): glibc arena memory of the completion thread `bc5-cq0`, through the soft CP's event
+  fire into an unbounded `pending_events` queue and a second site in `completion_thread`; a bound on that queue is the fix candidate.
+- The earlier lines below are the state before the night.
+
+**Before the night: analysis, design, one build and two short plays (section 7): the ledger answered the split; no arm moved the wall.**
 - After the plays (section 7): at his save the pin is 12.07 GiB and rising, 2.97 GiB of it the AMM heap, 0.48 GiB
   orphans; pinned pages are not unevictable and get unmapped under pressure [M]. "low" trims faults, not the wall.
   ASTRO BOT's kill is a separate thing: flat pin, 7.3 GiB of host anon in the shared build. Next: orphan release,

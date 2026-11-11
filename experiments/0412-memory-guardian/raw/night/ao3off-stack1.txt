@@ -1,0 +1,1265 @@
+PID 1875638 - process
+TID 1875638:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b39c __syscall_cancel
+#2  0x00007f040cea2c0e __poll
+#3  0x000055e88f609c24 SDL_IOReady
+#4  0x000055e88f5fcb48 Wayland_WaitEventTimeout
+#5  0x000055e88f51ced3 SDL_WaitEventTimeout_REAL
+#6  0x000055e88efe7bf8 Libs::Graphics::WindowContext::Run()
+#7  0x000055e88f3dd772 Emulator::Run(Emulator::RunOptions const&)
+#8  0x000055e88ee9f7d9 main
+#9  0x00007f040cda5601 __libc_start_call_main
+#10 0x00007f040cda5718 __libc_start_main@@GLIBC_2.34
+#11 0x000055e88ee9e285 _start
+TID 1875640:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce70af2 clock_nanosleep@GLIBC_2.2.5
+#3  0x00007f040ce7e707 __nanosleep
+#4  0x000055e88f41748b Common::Thread::Sleep(unsigned int)
+#5  0x000055e88f0d6cd2 Libs::LibKernel::FreeDetachedThreads(void*)
+#6  0x00007f040d0bfef9
+#7  0x00007f040ce1edfa start_thread
+#8  0x00007f040ceb25cc __clone3
+TID 1875689:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e0c7 pthread_cond_wait@@GLIBC_2.3.2
+#4  0x00007f009d0447ed
+#5  0x00007f009d00e60c
+#6  0x00007f009d04475c
+#7  0x00007f040ce1edfa start_thread
+#8  0x00007f040ceb25cc __clone3
+TID 1875690:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e0c7 pthread_cond_wait@@GLIBC_2.3.2
+#4  0x00007f009d0447ed
+#5  0x00007f009d00e60c
+#6  0x00007f009d04475c
+#7  0x00007f040ce1edfa start_thread
+#8  0x00007f040ceb25cc __clone3
+TID 1875691:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce70af2 clock_nanosleep@GLIBC_2.2.5
+#3  0x00007f040ce7e707 __nanosleep
+#4  0x00007f040ceb213a usleep
+#5  0x00007f009ab574e7
+#6  0x00007f009ac611d4
+#7  0x00007f040ce1edfa start_thread
+#8  0x00007f040ceb25cc __clone3
+TID 1875702:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e0c7 pthread_cond_wait@@GLIBC_2.3.2
+#4  0x000055e88ef112f2 Libs::Graphics::CommandScheduler::PriorityOperationsThread(std::stop_token)
+#5  0x000055e88ef117ae std::thread::_State_impl<std::thread::_Invoker<std::tuple<Libs::Graphics::CommandScheduler::CommandScheduler(Libs::Graphics::RenderContext&, Libs::Graphics::GraphicContext&)::$_0, std::stop_token> > >::_M_run()
+#6  0x00007f040d0bfef9
+#7  0x00007f040ce1edfa start_thread
+#8  0x00007f040ceb25cc __clone3
+TID 1875703:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e0c7 pthread_cond_wait@@GLIBC_2.3.2
+#4  0x000055e88ef112f2 Libs::Graphics::CommandScheduler::PriorityOperationsThread(std::stop_token)
+#5  0x000055e88ef117ae std::thread::_State_impl<std::thread::_Invoker<std::tuple<Libs::Graphics::CommandScheduler::CommandScheduler(Libs::Graphics::RenderContext&, Libs::Graphics::GraphicContext&)::$_0, std::stop_token> > >::_M_run()
+#6  0x00007f040d0bfef9
+#7  0x00007f040ce1edfa start_thread
+#8  0x00007f040ceb25cc __clone3
+TID 1875704:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce70af2 clock_nanosleep@GLIBC_2.2.5
+#3  0x000055e88f4175e4 SleepHighResolutionNanos(unsigned long)
+#4  0x000055e88efb310a Libs::VideoOut::VideoOutDriver::Impl::PresentThread(std::stop_token)
+#5  0x000055e88efbbacb std::thread::_State_impl<std::thread::_Invoker<std::tuple<Libs::VideoOut::VideoOutDriver::Impl::Impl(unsigned int, unsigned int, Libs::Graphics::Presenter&)::{lambda(std::stop_token)#1}, std::stop_token> > >::_M_run()
+#6  0x00007f040d0bfef9
+#7  0x00007f040ce1edfa start_thread
+#8  0x00007f040ceb25cc __clone3
+TID 1875705:
+#0  0x00007f040ceada7d ioctl
+#1  0x00007f040d273ce0 drmIoctl
+#2  0x00007f040d278547 drmSyncobjReset
+#3  0x00007f009cee93f6
+#4  0x00007f009ceccafa
+#5  0x00007f009b71c149
+#6  0x00007f009b5b5ee4
+#7  0x000055e88ef13532 Libs::Graphics::CommandBuffer::Execute(Libs::Graphics::SubmitInfo const&)
+#8  0x000055e88ef105c0 Libs::Graphics::CommandScheduler::SubmitCurrent(Libs::Graphics::SubmitInfo&)
+#9  0x000055e88ef103fc Libs::Graphics::CommandScheduler::Flush()
+#10 0x000055e88eed1909 Libs::Graphics::CommandProcessor::PrepareCpuFlip(unsigned long)
+#11 0x000055e88eed123e Libs::Graphics::GpuState::Process(Libs::Graphics::GpuState::Submission&)
+#12 0x000055e88eed0c5c Libs::Graphics::GpuState::ThreadRun(void*)
+#13 0x00007f040d0bfef9
+#14 0x00007f040ce1edfa start_thread
+#15 0x00007f040ceb25cc __clone3
+TID 1875706:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e0c7 pthread_cond_wait@@GLIBC_2.3.2
+#4  0x00007f009b9f8b28
+#5  0x00007f009b9fa4bf
+#6  0x00007f040d0bfef9
+#7  0x00007f040ce1edfa start_thread
+#8  0x00007f040ceb25cc __clone3
+TID 1875720:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e0c7 pthread_cond_wait@@GLIBC_2.3.2
+#4  0x00007f009aaf828e
+#5  0x00007f009ac611d4
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875754:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce70af2 clock_nanosleep@GLIBC_2.2.5
+#3  0x000055e88f4175e4 SleepHighResolutionNanos(unsigned long)
+#4  0x000055e88f0e394c Libs::LibKernel::KernelUsleep(unsigned int)
+#5  0x00000009002a4aad
+#6  0x00000009002a37c8
+#7  0x000000090029fe11
+#8  0x00000009000000af
+#9  0x000055e88f3b493d Loader::RuntimeLinker::Execute(std::filesystem::__cxx11::path const&)
+TID 1875755:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce27708 __new_sem_wait_slow64.constprop.0
+#4  0x000055e88f630bc8 SDL_SemWait_REAL
+#5  0x000055e88f616a25 SDL_HIDAPI_RumbleThread
+#6  0x000055e88f56f8fd SDL_RunThread
+#7  0x000055e88f630439 RunThread
+#8  0x00007f040ce1edfa start_thread
+#9  0x00007f040ceb25cc __clone3
+TID 1875775:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce70af2 clock_nanosleep@GLIBC_2.2.5
+#3  0x00007f040ce7e707 __nanosleep
+#4  0x000055e88f15647b Libs::Bc5Gc::SoftCp::queue_consumer_thread()
+#5  0x00007f040d0bfef9
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875776:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x0000000900011981
+#7  0x00000009000117a9
+#8  0x00000009000010bc
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875777:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x00000009000017ae
+#9  0x00000009000015bd
+#10 0x00000009000010d3
+#11 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875778:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x00000009000017ae
+#9  0x0000000901081a9f
+#10 0x00000009000010bc
+#11 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875779:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x00000009000017ae
+#9  0x0000000901081a9f
+#10 0x00000009000010bc
+#11 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875780:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x00000009000017ae
+#9  0x0000000901081a9f
+#10 0x00000009000010bc
+#11 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875781:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x00000009000017ae
+#9  0x0000000901081a9f
+#10 0x00000009000010bc
+#11 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875782:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x00000009000017ae
+#9  0x0000000901081a9f
+#10 0x00000009000010bc
+#11 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875783:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x00000009000017ae
+#9  0x0000000901081a9f
+#10 0x00000009000010bc
+#11 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875784:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x00000009000017ae
+#9  0x0000000901081a9f
+#10 0x00000009000010bc
+#11 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875785:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x00000009000017ae
+#9  0x0000000901081a9f
+#10 0x00000009000010bc
+#11 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875786:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e0c7 pthread_cond_wait@@GLIBC_2.3.2
+#4  0x000055e88f15694c Libs::Bc5Gc::Direct::chainwd_thread()
+#5  0x00007f040d0bfef9
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875787:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x000000090740b47b
+#7  0x000000090740afb9
+#8  0x00000009000010bc
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875788:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x000000090705a0b0
+#7  0x00000009070589e9
+#8  0x00000009000010bc
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875789:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x00000009002a9a7b
+#7  0x00000009002a9869
+#8  0x00000009000010bc
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875790:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x00000009002a9a7b
+#7  0x00000009002a9869
+#8  0x00000009000010bc
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875791:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x00000009002a9a7b
+#7  0x00000009002a9869
+#8  0x00000009000010bc
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875792:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x00000009002a9a7b
+#7  0x00000009002a9869
+#8  0x00000009000010bc
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875793:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x00000009002a9a7b
+#7  0x00000009002a9869
+#8  0x00000009000010bc
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875794:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x00000009002a9a7b
+#7  0x00000009002a9869
+#8  0x00000009000010bc
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875795:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x00000009002a9a7b
+#7  0x00000009002a9869
+#8  0x00000009000010bc
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875796:
+#0  0x000055e88f3df0a7 bc5::policy::memory_operands(unsigned int const*, unsigned int)
+#1  0x000055e88f3e181e bc5::policy::filter(bc5::policy::Policy const&, std::span<unsigned int const, 18446744073709551615ul>, std::span<unsigned int, 18446744073709551615ul>, bc5::policy::FilterOptions const&, bc5::policy::FilterStats&)
+#2  0x000055e88f3ea500 bc5::direct::Device::submit(std::span<unsigned int const, 18446744073709551615ul>, bc5::policy::FilterOptions const&, unsigned long, bool, int)
+#3  0x000055e88f139dff Libs::Bc5Gc::Direct::submit_now(unsigned int const*, unsigned int, char const*, int, Libs::Bc5Gc::Direct::Chain const*)
+#4  0x000055e88f1300dc Libs::Bc5Gc::Direct::chain_submit(Libs::Bc5Gc::Direct::ChainSlot&, int, bool)
+#5  0x000055e88f12666d Libs::Bc5ChainObserveEqueue(long)
+#6  0x000055e88f0a4a72 Libs::LibKernel::EventQueue::KernelWaitEqueue(long, Libs::LibKernel::EventQueue::KernelEvent*, int, int*, unsigned int const*)
+#7  0x00000009004a664c
+#8  0x00000009004a6810
+#9  0x00000009002aa69e
+#10 0x00000009000010bc
+#11 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875798:
+#0  0x00007f040ceada7d ioctl
+#1  0x00007f040d273ce0 drmIoctl
+#2  0x00007f040d289159 amdgpu_cs_query_fence_status
+#3  0x000055e88f3ef806 bc5::direct::Device::finish(unsigned long, unsigned int, unsigned long)
+#4  0x000055e88f14d8ab Libs::Bc5Gc::Direct::completion_thread(int)
+#5  0x00007f040d0bfef9
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875799:
+#0  0x00007f040ceada7d ioctl
+#1  0x00007f040d273ce0 drmIoctl
+#2  0x00007f040d289159 amdgpu_cs_query_fence_status
+#3  0x000055e88f3ef806 bc5::direct::Device::finish(unsigned long, unsigned int, unsigned long)
+#4  0x000055e88f14d8ab Libs::Bc5Gc::Direct::completion_thread(int)
+#5  0x00007f040d0bfef9
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875800:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e0c7 pthread_cond_wait@@GLIBC_2.3.2
+#4  0x000055e88f19cd1e Libs::LibAmpr::Ampr::AprWorkerThread(unsigned long)
+#5  0x00007f040d0bfef9
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875801:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f19e105 Libs::LibAmpr::Ampr::AprReaderThread(unsigned long, unsigned long)
+#5  0x00007f040d0bfef9
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875802:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f19e105 Libs::LibAmpr::Ampr::AprReaderThread(unsigned long, unsigned long)
+#5  0x00007f040d0bfef9
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875803:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f19e105 Libs::LibAmpr::Ampr::AprReaderThread(unsigned long, unsigned long)
+#5  0x00007f040d0bfef9
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875804:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f19e105 Libs::LibAmpr::Ampr::AprReaderThread(unsigned long, unsigned long)
+#5  0x00007f040d0bfef9
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875805:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x00000009002b9659
+#6  0x00000009002ba09f
+#7  0x00000009002b9953
+#8  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875806:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x00000009002b9659
+#6  0x00000009002ba09f
+#7  0x00000009002b9953
+#8  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875807:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x00000009002b9659
+#6  0x00000009002ba09f
+#7  0x00000009002b9953
+#8  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875808:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x00000009002b9659
+#6  0x00000009002ba09f
+#7  0x00000009002b9953
+#8  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875809:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x00000009002b9659
+#6  0x00000009002ba09f
+#7  0x00000009002b9953
+#8  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875810:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x00000009002b9659
+#6  0x00000009002ba09f
+#7  0x00000009002b9953
+#8  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875811:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x00000009002b9659
+#6  0x00000009002ba09f
+#7  0x00000009002b9953
+#8  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875812:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x00000009002b9659
+#6  0x00000009002ba09f
+#7  0x00000009002b9953
+#8  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875813:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x00000009000017ae
+#9  0x00000009010a7679
+#10 0x00000009000010bc
+#11 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875830:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x0000000900410c4c
+#9  0x00000009003ce2b4
+#10 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875831:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x0000000900410c4c
+#9  0x00000009003ce2b4
+#10 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875832:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x0000000900410c4c
+#9  0x00000009003ce2b4
+#10 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875833:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x0000000900410c4c
+#9  0x00000009003ce2b4
+#10 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875834:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x0000000900410c4c
+#9  0x00000009003ce2b4
+#10 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875835:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x0000000900410c4c
+#9  0x00000009003ce2b4
+#10 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875836:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x0000000900410c4c
+#9  0x00000009003ce2b4
+#10 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875837:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x0000000900011981
+#7  0x00000009000117a9
+#8  0x00000009000010bc
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875838:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x0000000900011981
+#7  0x00000009000117a9
+#8  0x00000009000010bc
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875839:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f417ff0 Common::CondVar::Wait(Common::Mutex*)
+#6  0x000055e88f0a20e6 Libs::LibKernel::EventFlag::KernelEventFlagPrivate::Wait(unsigned long, Libs::LibKernel::EventFlag::KernelEventFlagPrivate::WaitMode, Libs::LibKernel::EventFlag::KernelEventFlagPrivate::ClearMode, unsigned long*, unsigned int*)
+#7  0x000055e88f0a288a Libs::LibKernel::EventFlag::KernelWaitEventFlag(Libs::LibKernel::EventFlag::KernelEventFlagPrivate*, unsigned long, unsigned int, unsigned long*, unsigned int*)
+#8  0x0000000900eb1ffd
+#9  0x0000000900e18367
+#10 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875840:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f417ff0 Common::CondVar::Wait(Common::Mutex*)
+#6  0x000055e88f0a20e6 Libs::LibKernel::EventFlag::KernelEventFlagPrivate::Wait(unsigned long, Libs::LibKernel::EventFlag::KernelEventFlagPrivate::WaitMode, Libs::LibKernel::EventFlag::KernelEventFlagPrivate::ClearMode, unsigned long*, unsigned int*)
+#7  0x000055e88f0a288a Libs::LibKernel::EventFlag::KernelWaitEventFlag(Libs::LibKernel::EventFlag::KernelEventFlagPrivate*, unsigned long, unsigned int, unsigned long*, unsigned int*)
+#8  0x0000000900e0d170
+#9  0x0000000900e18367
+#10 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875842:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce70af2 clock_nanosleep@GLIBC_2.2.5
+#3  0x000055e88f4175e4 SleepHighResolutionNanos(unsigned long)
+#4  0x000055e88f10ef8a Libs::Audio::Audio::QueueSdlAudio(Libs::Audio::Audio::PortOut*, void const*, bool)
+#5  0x000055e88f10bb61 Libs::Audio::Audio::AudioOutOutputs(Libs::Audio::Audio::OutputParam*, unsigned int, bool)
+#6  0x000055e88f10b6fe Libs::Audio::AudioInternal::AudioOutOutputs(Libs::Audio::AudioInternal::OutputParam const*, unsigned int, bool)
+#7  0x000055e88f1bb1a5 Libs::Audio::AudioOut2::AudioOut2ContextPush(unsigned long, unsigned int)
+#8  0x0000000900ece49f
+#9  0x0000000900e18367
+#10 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875844:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b39c __syscall_cancel
+#2  0x00007f040ceb28b5 epoll_wait
+#3  0x00007f0098169629
+#4  0x00007f00981539bb
+#5  0x00007f00803f42c1
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875845:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b39c __syscall_cancel
+#2  0x00007f040ceb28b5 epoll_wait
+#3  0x00007f0098169629
+#4  0x00007f00981539bb
+#5  0x00007f00803f42c1
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875846:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b39c __syscall_cancel
+#2  0x00007f040ceb28b5 epoll_wait
+#3  0x00007f0098169629
+#4  0x00007f00981539bb
+#5  0x00007f00803f42c1
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875847:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b39c __syscall_cancel
+#2  0x00007f040ceb28b5 epoll_wait
+#3  0x00007f0098169629
+#4  0x00007f00981539bb
+#5  0x00007f00803f42c1
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875848:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b39c __syscall_cancel
+#2  0x00007f040ceb28b5 epoll_wait
+#3  0x00007f0098169629
+#4  0x00007f00981539bb
+#5  0x00007f00803f42c1
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875850:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b39c __syscall_cancel
+#2  0x00007f040ceb28b5 epoll_wait
+#3  0x00007f0098169629
+#4  0x00007f00981539bb
+#5  0x00007f00803f42c1
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875851:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b39c __syscall_cancel
+#2  0x00007f040ceb28b5 epoll_wait
+#3  0x00007f0098169629
+#4  0x00007f00981539bb
+#5  0x00007f00803f42c1
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875852:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b39c __syscall_cancel
+#2  0x00007f040ceb28b5 epoll_wait
+#3  0x00007f0098169629
+#4  0x00007f00981539bb
+#5  0x00007f00803f42c1
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875854:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x0000000900011981
+#7  0x00000009000117a9
+#8  0x00000009000010bc
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875856:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x0000000900011981
+#7  0x00000009000117a9
+#8  0x00000009000010bc
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875857:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x0000000900dbef8b
+#7  0x0000000900dbeee9
+#8  0x00000009000010bc
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875858:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x00000009010c47db
+#7  0x00000009000010bc
+#8  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875859:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e0c7 pthread_cond_wait@@GLIBC_2.3.2
+#4  0x000055e88f1761cb Libs::Controller::(anonymous namespace)::RumbleThread()
+#5  0x00007f040d0bfef9
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875860:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x0000000900011981
+#7  0x00000009000117a9
+#8  0x00000009000010bc
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875861:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e8510 Libs::Posix::(anonymous namespace)::SemTimedwaitImpl(void*, unsigned int*)
+#7  0x000055e88f0e8280 Libs::Posix::sem_wait(void*)
+#8  0x0000000900aea6c8
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875862:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e8510 Libs::Posix::(anonymous namespace)::SemTimedwaitImpl(void*, unsigned int*)
+#7  0x000055e88f0e8280 Libs::Posix::sem_wait(void*)
+#8  0x0000000900aea6c8
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875863:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e8510 Libs::Posix::(anonymous namespace)::SemTimedwaitImpl(void*, unsigned int*)
+#7  0x000055e88f0e8280 Libs::Posix::sem_wait(void*)
+#8  0x0000000900aea6c8
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875864:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e8510 Libs::Posix::(anonymous namespace)::SemTimedwaitImpl(void*, unsigned int*)
+#7  0x000055e88f0e8280 Libs::Posix::sem_wait(void*)
+#8  0x0000000900aea6c8
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875865:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e8510 Libs::Posix::(anonymous namespace)::SemTimedwaitImpl(void*, unsigned int*)
+#7  0x000055e88f0e8280 Libs::Posix::sem_wait(void*)
+#8  0x0000000900aea6c8
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875866:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e8510 Libs::Posix::(anonymous namespace)::SemTimedwaitImpl(void*, unsigned int*)
+#7  0x000055e88f0e8280 Libs::Posix::sem_wait(void*)
+#8  0x0000000900aea6c8
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875867:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e8510 Libs::Posix::(anonymous namespace)::SemTimedwaitImpl(void*, unsigned int*)
+#7  0x000055e88f0e8280 Libs::Posix::sem_wait(void*)
+#8  0x0000000900aea6c8
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875868:
+#0  0x0000000900aee712
+#1  0x0000000900aeeb73
+#2  0x0000000900ae9949
+#3  0x0000000900aea5cd
+#4  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875869:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e8510 Libs::Posix::(anonymous namespace)::SemTimedwaitImpl(void*, unsigned int*)
+#7  0x000055e88f0e8280 Libs::Posix::sem_wait(void*)
+#8  0x0000000900aea6c8
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875870:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e8510 Libs::Posix::(anonymous namespace)::SemTimedwaitImpl(void*, unsigned int*)
+#7  0x000055e88f0e8280 Libs::Posix::sem_wait(void*)
+#8  0x0000000900aea6c8
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875871:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e8510 Libs::Posix::(anonymous namespace)::SemTimedwaitImpl(void*, unsigned int*)
+#7  0x000055e88f0e8280 Libs::Posix::sem_wait(void*)
+#8  0x0000000900aea6c8
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875872:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e0c7 pthread_cond_wait@@GLIBC_2.3.2
+#4  0x000055e88f16581b std::thread::_State_impl<std::thread::_Invoker<std::tuple<Libs::Bc5LleVideoOut::SubmitEopFlip(int, int, int, long, void*)::$_0::operator()(bool) const::{lambda()#1}::operator()() const::{lambda()#1}> > >::_M_run()
+#5  0x00007f040d0bfef9
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875879:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b39c __syscall_cancel
+#2  0x00007f040ceb28b5 epoll_wait
+#3  0x00007f0098169629
+#4  0x00007f00981539bb
+#5  0x00007f00803f42c1
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875880:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b39c __syscall_cancel
+#2  0x00007f040ceb28b5 epoll_wait
+#3  0x00007f0098169629
+#4  0x00007f00981539bb
+#5  0x00007f00803f42c1
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875881:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b39c __syscall_cancel
+#2  0x00007f040ceb28b5 epoll_wait
+#3  0x00007f0098169629
+#4  0x00007f00981539bb
+#5  0x00007f00803f42c1
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875885:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x0000000900410c4c
+#9  0x00000009003ce2b4
+#10 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875889:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x0000000900410c4c
+#9  0x00000009003ce2b4
+#10 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875890:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x0000000900410c4c
+#9  0x00000009003ce2b4
+#10 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875891:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x0000000900410c4c
+#9  0x00000009003ce2b4
+#10 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875892:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x0000000900410c4c
+#9  0x00000009003ce2b4
+#10 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875893:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x0000000900410c4c
+#9  0x00000009003ce2b4
+#10 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875894:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x0000000900410c4c
+#9  0x00000009003ce2b4
+#10 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875896:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b39c __syscall_cancel
+#2  0x00007f040ceb28b5 epoll_wait
+#3  0x00007f0098169629
+#4  0x00007f00981539bb
+#5  0x00007f00803f42c1
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875897:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b39c __syscall_cancel
+#2  0x00007f040ceb28b5 epoll_wait
+#3  0x00007f0098169629
+#4  0x00007f00981539bb
+#5  0x00007f00803f42c1
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875898:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b39c __syscall_cancel
+#2  0x00007f040ceb28b5 epoll_wait
+#3  0x00007f0098169629
+#4  0x00007f00981539bb
+#5  0x00007f00803f42c1
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1875899:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x0000000900410c4c
+#9  0x00000009003ce2b4
+#10 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875901:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x0000000900410c4c
+#9  0x00000009003ce2b4
+#10 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875902:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x0000000900410c4c
+#9  0x00000009003ce2b4
+#10 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1875903:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f418863 std::cv_status std::_V2::condition_variable_any::wait_until<std::unique_lock<std::recursive_mutex>, std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::unique_lock<std::recursive_mutex>&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&)
+#5  0x000055e88f4183d2 Common::CondVar::WaitFor(Common::Mutex*, unsigned int)
+#6  0x000055e88f0e7010 Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait(int, unsigned int*)
+#7  0x000055e88f0e758e Libs::LibKernel::Semaphore::KernelWaitSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int, unsigned int*)
+#8  0x0000000900410c4c
+#9  0x00000009003ce2b4
+#10 0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1876223:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x0000000900011981
+#7  0x00000009000117a9
+#8  0x00000009000010bc
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1877363:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x0000000900011981
+#7  0x00000009000117a9
+#8  0x00000009000010bc
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1877367:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x0000000900011981
+#7  0x00000009000117a9
+#8  0x00000009000010bc
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1877402:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x0000000900011981
+#7  0x00000009000117a9
+#8  0x00000009000010bc
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1881406:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x0000000900011981
+#7  0x00000009000117a9
+#8  0x00000009000010bc
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1881449:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x0000000900011981
+#7  0x00000009000117a9
+#8  0x00000009000010bc
+#9  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1881453:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f0de606 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x0000000900011dd1
+#6  0x000000090114bdce
+#7  0x00000009000010bc
+#8  0x000055e88f0df6c3 Libs::LibKernel::RunThread(void*)
+TID 1881685:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e0c7 pthread_cond_wait@@GLIBC_2.3.2
+#4  0x000055e88f19cd1e Libs::LibAmpr::Ampr::AprWorkerThread(unsigned long)
+#5  0x00007f040d0bfef9
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1881686:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f19e105 Libs::LibAmpr::Ampr::AprReaderThread(unsigned long, unsigned long)
+#5  0x00007f040d0bfef9
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1881687:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f19e105 Libs::LibAmpr::Ampr::AprReaderThread(unsigned long, unsigned long)
+#5  0x00007f040d0bfef9
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1881688:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f19e105 Libs::LibAmpr::Ampr::AprReaderThread(unsigned long, unsigned long)
+#5  0x00007f040d0bfef9
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3
+TID 1881689:
+#0  0x00007f040ce27802 __syscall_cancel_arch
+#1  0x00007f040ce1b30c __internal_syscall_cancel
+#2  0x00007f040ce1b6e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f040ce1e689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055e88f19e105 Libs::LibAmpr::Ampr::AprReaderThread(unsigned long, unsigned long)
+#5  0x00007f040d0bfef9
+#6  0x00007f040ce1edfa start_thread
+#7  0x00007f040ceb25cc __clone3

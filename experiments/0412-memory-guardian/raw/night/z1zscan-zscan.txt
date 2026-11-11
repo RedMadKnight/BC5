@@ -1,0 +1,43 @@
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+guard split: 2 BOs cut in this sync; aliases mapped again at once (1 such syncs)
+guard split: 12 BOs cut in this sync; aliases mapped again at once (2 such syncs)
+guard split: 26 BOs cut in this sync; aliases mapped again at once (3 such syncs)
+guard split: 32 BOs cut in this sync; aliases mapped again at once (4 such syncs)
+guard split: 26 BOs cut in this sync; aliases mapped again at once (5 such syncs)
+zero scan 1 at t 140.0 s: RenderGpuWcLarge 2758.0 MiB, zero now 1174.0 MiB, zero in all 1 scans 1174.0 MiB, listed 1000.0 MiB in 34 runs of >= 8 MiB (495 ms)
+zero scan 1 at t 140.0 s: CommitIABufferAllocator 2736.0 MiB, zero now 330.0 MiB, zero in all 1 scans 330.0 MiB, listed 328.0 MiB in 3 runs of >= 8 MiB (957 ms)
+zero scan 1: list written to /home/kjaniszewski/bc5-work/exp0412/night/zero-list-scan.txt
+guard split: 1 BOs cut in this sync; aliases mapped again at once (6 such syncs)
+guard split: 1 BOs cut in this sync; aliases mapped again at once (7 such syncs)
+guard split: 2 BOs cut in this sync; aliases mapped again at once (8 such syncs)
+zero scan 2 at t 170.1 s: RenderGpuWcLarge 2758.0 MiB, zero now 1116.0 MiB, zero in all 2 scans 990.0 MiB, listed 838.0 MiB in 32 runs of >= 8 MiB (745 ms)
+zero scan 2 at t 170.1 s: CommitIABufferAllocator 2736.0 MiB, zero now 292.0 MiB, zero in all 2 scans 290.0 MiB, listed 290.0 MiB in 3 runs of >= 8 MiB (1200 ms)
+zero scan 2: list written to /home/kjaniszewski/bc5-work/exp0412/night/zero-list-scan.txt
+zero scan 3 at t 200.2 s: RenderGpuWcLarge 2758.0 MiB, zero now 1112.0 MiB, zero in all 3 scans 936.0 MiB, listed 776.0 MiB in 31 runs of >= 8 MiB (389 ms)
+zero scan 3 at t 200.2 s: CommitIABufferAllocator 2736.0 MiB, zero now 288.0 MiB, zero in all 3 scans 286.0 MiB, listed 286.0 MiB in 3 runs of >= 8 MiB (755 ms)
+zero scan 3: list written to /home/kjaniszewski/bc5-work/exp0412/night/zero-list-scan.txt
+zero scan 4 at t 230.0 s: RenderGpuWcLarge 2758.0 MiB, zero now 1034.0 MiB, zero in all 4 scans 916.0 MiB, listed 748.0 MiB in 30 runs of >= 8 MiB (531 ms)
+zero scan 4 at t 230.0 s: CommitIABufferAllocator 2736.0 MiB, zero now 270.0 MiB, zero in all 4 scans 270.0 MiB, listed 270.0 MiB in 3 runs of >= 8 MiB (985 ms)
+zero scan 4: list written to /home/kjaniszewski/bc5-work/exp0412/night/zero-list-scan.txt
+zero scan 5 at t 260.0 s: RenderGpuWcLarge 2758.0 MiB, zero now 984.0 MiB, zero in all 5 scans 902.0 MiB, listed 740.0 MiB in 30 runs of >= 8 MiB (441 ms)
+zero scan 5 at t 260.0 s: CommitIABufferAllocator 2736.0 MiB, zero now 270.0 MiB, zero in all 5 scans 270.0 MiB, listed 270.0 MiB in 3 runs of >= 8 MiB (879 ms)
+zero scan 5: list written to /home/kjaniszewski/bc5-work/exp0412/night/zero-list-scan.txt

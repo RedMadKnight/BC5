@@ -1,0 +1,14 @@
+2026-11-10 23:43:29
+arm b2zo (zo), cap 560 s, play 300 s, binary /home/kjaniszewski/bc5-work/exp0412/bin/kyty_emulator md5 d32dfa89b585673106384b1c08f8e006, launcher 3a1f4e10, fuse 12400 1024
+the arm's words: BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=10,eager BC5_GUARD_SPLIT=1 BC5_DIRECT_ZERO_SKIP=/home/kjaniszewski/bc5-work/exp0412/zero-list-0412.txt BC5_0412N_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0412/night/input-b2zo.cfg 
+extra: none
+boot 46038e09, up since 2026-11-10 21:56:56
+MemAvailable:   13464036 kB SwapTotal:       7778300 kB SwapFree:        7205940 kB 
+emulator pid 830134 exe /home/kjaniszewski/bc5-work/exp0412/bin/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0412/night/wd
+route: cross (start screen) at 87 s
+route: the save-slot list runs; cross (slot 1) at 93 s
+route: cross (Continue) at 99 s
+route: the load seen at 102 s
+route: gameplay G = 126 s (the load at 102 s)
+route: walk of 18 cycles (300 s) queued at 126 s
+launcher gone: yes; launcher exit 0

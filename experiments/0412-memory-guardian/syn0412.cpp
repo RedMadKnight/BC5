@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 // Experiment 0412: a syntax check of guard0412.inc's host part on the laptop (clang++ -fsyntax-only, no Linux headers there).
 // The declarations below stand in for the host unit's own (patch 0001: DView, DState, DViews, direct_views, g_d, direct_gtt,
-// g_layout_gen, journal; exp 0401 e11: g_m11_reopens) and for the POSIX calls the guardian makes. Nothing here is linked or run.
+// g_layout_gen, journal, DBo, DMap, kDChunk, scratch_bo; exp 0401 e11: g_m11_reopens) and for the POSIX calls the guardian makes. Nothing here is linked or run.
 //   clang++ -std=c++20 -Wall -Wextra -Werror -Wno-unused-function -fsyntax-only -I <dir of env_flag.hpp> syn0412.cpp
 #include <algorithm>
 #include <atomic>
@@ -70,11 +70,26 @@ struct DView {
     bool        lazy;
     bool        eager;
 };
-struct DState {
-    int         kind;
-    const char* label;
+struct DBo {
+    uint64_t off, size;
+    uint32_t id;
+    uint64_t t_ns;
 };
-static DState g_d[2] = {{0, "direct"}, {1, "private"}};
+struct DMap {
+    uint64_t va, size, bo_off;
+    uint32_t id;
+};
+struct DState {
+    int                kind;
+    const char*        label;
+    std::vector<DBo>   bos;
+    std::set<uint64_t> forced;
+    uint64_t           bytes = 0, forced_seen = 0;
+};
+static DState g_d[2] = {{0, "direct", {}, {}}, {1, "private", {}, {}}};
+constexpr uint64_t kDChunk = 2ull << 20u;
+static uint32_t    scratch_bo() { return 1; }
+static void        aliases_apply(bool) {}
 struct DViews {
     std::vector<DView> v;
     uint64_t           sig = 0;
@@ -89,5 +104,13 @@ static std::atomic<uint64_t>         g_m11_reopens {0};
 
 int main() {
     guard0412_imported(0, 3, 0, 4096);
+    std::vector<uint64_t> need {0, kDChunk};
+    std::vector<DMap>     want;
+    const auto            views = direct_views(g_d[0]);
+    guard0412_cap(g_d[0], views->v, need);
+    if (guard0412_cap_changed(g_d[0])) guard0412_want(g_d[0], views->v, want);
+    guard0412_synced(g_d[0]);
+    guard0412_forget(g_d[0], views->v, views->sig, 0);
+    guard0412_after_cuts(guard0412_split() ? 1 : 0);
     return guard0412_defer_apply() ? 1 : 0;
 }

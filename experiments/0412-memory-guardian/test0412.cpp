@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -51,6 +52,61 @@ int main() {
         CHECK(!parse(nullptr, nullptr, "random", "games", nullptr, nullptr, nullptr).f_random);   // a relative root too
         CHECK(!parse(nullptr, nullptr, "random,", "/g", nullptr, nullptr, nullptr).f_random);     // an empty word
         CHECK(!parse(nullptr, nullptr, "random,drop", "/g", nullptr, nullptr, nullptr).f_random); // an unknown word turns all of it off
+    }
+    { // the acting cap: switches
+        const Cfg c = parse(nullptr, nullptr, nullptr, nullptr, nullptr, "11600", nullptr, "1", nullptr);
+        CHECK(c.cap_act && c.cap == 11600 * M && c.cap_names == std::vector<std::string> {"AMM"} && c.bad.empty() && c.worker());
+        CHECK(cap_name(c, "AMM") && !cap_name(c, "AMM2") && !cap_name(c, ""));
+        const Cfg d = parse(nullptr, nullptr, nullptr, nullptr, nullptr, "11600", nullptr, "1", "AMM,AssetHeap Large,,");
+        CHECK(d.cap_names == std::vector<std::string> {"AMM", "AssetHeap Large"});
+        CHECK(parse(nullptr, nullptr, nullptr, nullptr, nullptr, "11600", nullptr, "1", "-").cap_names.empty()); // "-": no eager heap is soft
+        const Cfg e = parse(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, "1", nullptr);
+        CHECK(!e.cap_act && e.bad == " BC5_GUARD_CAP_ACT" && e.cap_names.empty()); // no cap to act on
+        const Cfg f = parse(nullptr, nullptr, nullptr, nullptr, nullptr, "11600", nullptr, "yes", nullptr);
+        CHECK(!f.cap_act && f.bad == " BC5_GUARD_CAP_ACT");
+        const Cfg g = parse(nullptr, nullptr, nullptr, nullptr, nullptr, "11600", nullptr, "0", "AMM");
+        CHECK(!g.cap_act && g.bad.empty() && g.cap_names.empty()); // off: the names are not read
+    }
+    { // the acting cap: the plan
+        const uint64_t C = 2 * M;
+        const std::vector<uint64_t> need {0, C, 2 * C, 3 * C, 10 * C};
+        CapPlan p = cap_plan(need, {1, 1, 1, 1, 1}, 100 * M, 106 * M, C); // room for three chunks
+        CHECK(p.keep == std::vector<uint64_t> {0, C, 2 * C} && p.off == std::vector<uint64_t> {3 * C, 10 * C} && p.hard == 0);
+        p = cap_plan(need, {1, 1, 1, 1, 0}, 100 * M, 106 * M, C); // the hard chunk takes its room first
+        CHECK(p.keep == std::vector<uint64_t> {0, C, 10 * C} && p.off == std::vector<uint64_t> {2 * C, 3 * C} && p.hard == 1);
+        p = cap_plan(need, {0, 0, 0, 0, 0}, 200 * M, 106 * M, C); // hard chunks are kept over the cap
+        CHECK(p.keep == need && p.off.empty() && p.hard == 5);
+        p = cap_plan(need, {1, 0, 1, 0, 1}, 200 * M, 106 * M, C); // over the cap already: every soft chunk is put off
+        CHECK(p.keep == std::vector<uint64_t> {C, 3 * C} && p.off == std::vector<uint64_t> {0, 2 * C, 10 * C} && p.hard == 2);
+        p = cap_plan(need, {1, 1, 1, 1, 1}, 100 * M, 110 * M, C); // exactly at the cap is allowed
+        CHECK(p.keep == need && p.off.empty());
+        p = cap_plan(need, {1, 1}, 200 * M, 106 * M, C); // a short soft list: the chunks without a mark are hard
+        CHECK(p.keep == std::vector<uint64_t> {2 * C, 3 * C, 10 * C} && p.off == std::vector<uint64_t> {0, C} && p.hard == 3);
+        p = cap_plan({}, {}, 200 * M, 106 * M, C);
+        CHECK(p.keep.empty() && p.off.empty() && p.hard == 0);
+        p = cap_plan(need, {1, 1, 1, 1, 1}, 100 * M, 105 * M, C); // 5 MiB of room holds two chunks, not three
+        CHECK(p.keep.size() == 2 && p.off.size() == 3);
+    }
+    { // BC5_GUARD_FORGET
+        const uint64_t C = 2 * M, S = 1'000'000'000ull;
+        Ranges cov;
+        cov.add(0, 4 * C); // chunks 0..3 are under a view
+        std::set<uint64_t>           forced {0, 3 * C, 4 * C, 9 * C};
+        std::map<uint64_t, uint64_t> since;
+        CHECK(forget_step(forced, cov, since, 100 * S, 20 * S, C) == 0 && forced.size() == 4 && since.size() == 2); // first seen now
+        CHECK(forget_step(forced, cov, since, 119 * S, 20 * S, C) == 0 && forced.size() == 4);
+        cov.add(9 * C, 10 * C); // a view is back over chunk 9
+        CHECK(forget_step(forced, cov, since, 120 * S, 20 * S, C) == 1 && forced == std::set<uint64_t>({0, 3 * C, 9 * C}) && since.empty());
+        Ranges none;
+        CHECK(forget_step(forced, none, since, 121 * S, 20 * S, C) == 0 && since.size() == 3);
+        forced.erase(3 * C); // taken out by someone else
+        CHECK(forget_step(forced, none, since, 122 * S, 20 * S, C) == 0 && since.size() == 2);
+        CHECK(forget_step(forced, none, since, 141 * S, 20 * S, C) == 2 && forced.empty() && since.empty());
+        Ranges part;
+        part.add(C + 4096, C + 8192); // one page of a view inside the chunk keeps it
+        std::set<uint64_t> f2 {C};
+        CHECK(forget_step(f2, part, since, 0, 0, C) == 0 && f2.size() == 1);
+        CHECK(forget_step(f2, none, since, 5, 0, C) == 1 && f2.empty()); // idle 0: at once
     }
     { // ranges
         Ranges r;

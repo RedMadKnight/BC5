@@ -1,0 +1,14 @@
+2026-11-10 23:23:34
+arm a3cap (cap), cap 410 s, play 150 s, binary /home/kjaniszewski/bc5-work/exp0412/bin/kyty_emulator md5 baf16ce2fe4530b09464ba717b7a44e3, launcher 3a1f4e10, fuse 12400 1024
+the arm's words: BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=10,eager BC5_GUARD_PIN_CAP=11600 BC5_GUARD_CAP_ACT=1 BC5_0412N_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0412/night/input-a3cap.cfg 
+extra: none
+boot 46038e09, up since 2026-11-10 21:56:56
+MemAvailable:   13463308 kB SwapTotal:       7778300 kB SwapFree:        7214736 kB 
+emulator pid 582211 exe /home/kjaniszewski/bc5-work/exp0412/bin/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0412/night/wd
+route: cross (start screen) at 87 s
+route: the save-slot list runs; cross (slot 1) at 93 s
+route: cross (Continue) at 99 s
+route: the load seen at 101 s
+route: gameplay G = 128 s (the load at 101 s)
+route: walk of 9 cycles (150 s) queued at 128 s
+launcher gone: yes; launcher exit 0
