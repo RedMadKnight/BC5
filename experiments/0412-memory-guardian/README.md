@@ -516,12 +516,64 @@ capture off, no input, fuse and watchdog on. Tools: `smaps0412.sh` (reads `/proc
 
 The box at 01:28: no emulator, no mount, BOX-LOCK empty, the cgroup's limits at `max`, no fuse marker.
 
+### 11. The events cap: ASTRO BOT's leak is the graphics events' pending queues (2026-11-11 08:58–09:25; the maintainer's "Tak, buduj")
+
+**The change** (`events/`: `event_cap0412.hpp`, `mkev0412.py`, `evcap0412.cpp`, `mkev0412.sh`, `play-astro-ev-0412.sh`).
+`mkev0412.py` edits copies of two host units of the shared source (pinned by md5; `~/src/KytyPlus` is only read):
+the two places that did `event->pending_events.push_back(...)` for an already triggered event (`EopEventTriggerFunc`
+in `sync.cpp`, `AmprEventTriggerFunc` in `eventQueue.cpp`) now call one function, `KernelEventPendingPush`. Two
+switches, default off, and with both off it is the same `push_back`:
+- `KYTY_BC5_EVENT_PENDING_CAP=<n>` (1..65536): an event's pending queue holds at most n entries; a trigger past that
+  replaces the newest entry, so the triggers are coalesced and the latest data is kept.
+- `KYTY_BC5_EVENT_PENDING_LOG=1`: names the event whose queue reaches 64 entries and each doubling, and with the cap
+  the 1st, 2nd, 4th, ... coalesced trigger.
+No header changes, so `KernelEqueueEvent` keeps its layout and no other unit is recompiled.
+
+**Build ev412** (box, 09:03, BOX-LOCK ours and released): CPU test 1025 of 1025 on the laptop and the box; edited
+units cba001bc (eventQueue.cpp) and 06c1349c (sync.cpp); exp 0401 e8's `build0401.py` compiled them and the tree's
+unchanged `bc5LleAgc.cpp` with the shared build's commands and linked them with the shared build's other objects;
+6 warnings; binary `f0120ffe73b9e9033ad8671c14fb5ffc` at `~/bc5-work/exp0412/ev/bin/kyty_emulator`. The shared build
+is still 4d2b1b1d. Launcher `ev/play-astro-ev0412.sh` 894cf30b (exp 0412's astro copy with EMU and LOG changed).
+
+**The pair** (`astro0412n.sh`, 600 s each, no input, capture off, sampler, fuse 12,400 MiB, watchdog; both on the
+private build, so the only difference is the cap) [M]:
+
+| Run | Switches | Emulator anon + swap | Rate | Available | Kernel lines |
+|---|---|---|---|---|---|
+| ev1log | LOG=1 | 629 MiB at 120 s → 2,368 MiB at 599 s | **217.8 MiB/min** | 2,730 → 985 MiB | 0 |
+| ev2cap | CAP=64, LOG=1 | 212 MiB at 120 s → 213 MiB at 600 s | **0.1 MiB/min** | 3,338 → 3,312 MiB | 0 |
+
+- **The events** [M, the log]: all with filter −14 (the graphics filter), no user data. In ev1log the longest queues
+  passed 33,554,432 entries for ident 0x0 (the queued graphics interrupt), 8,388,608 for 0x40 (EOP), 524,288 for 0x46
+  and 262,144 for 0x48; the lines come at powers of two, so the true lengths are up to twice that. In ev2cap the same
+  four idents were coalesced as often. Over 40 million entries of 48 bytes are about 2 GiB, which is the growth.
+- So the title, left on its start screen, does not read these events at the rate the soft CP fires them (tens of
+  thousands a second for ident 0x0), and every unread trigger stayed in a `std::deque` for ever. A real kqueue keeps
+  one pending state per event. The shared build has no bound; the leak is the host's, not the title's.
+- **Section 10's second site** (`completion_thread` → `operator new`) was not a second leak: with the queues bounded
+  the slope is zero, so those were ordinary temporaries landing at the top of an arena the queues kept growing [I].
+- `bc5-mount` is flat at 1.47 GiB in both runs, as before.
+
+**Not shown.** Nobody looked at the picture or played: the title stayed on its start screen in both runs, and the
+play log has no frame counter for this title, so "the game behaves the same with the cap" is not measured. A title
+that does read these events slowly would now see at most 64 old ones and then the latest, where it used to see every
+one in order; whether ASTRO BOT ever depends on that is not known. The second title was not run on this build (it runs
+on the e11-based builds, which have their own event-queue changes and no such growth).
+
+**On the desktop:** `BC5 Astro (0412 events cap)` (`play-astro-ev-0412.sh cap`: the private build with CAP=64 and the
+log, capture off, sampler, fuse). The shared build and its shortcuts are unchanged.
+
+**Next, his call:** carry the two edits into patch 0001 with the cap on by default (a new shared build), after he has
+played ASTRO BOT on this shortcut.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
 - Night of 11-10/11 [M]: with `memory.max` 12,400 MiB every arm survived; zero skip + orphan release (arm zo): 0.55-0.75 GiB
   less pinned, major faults 550-1,250/s -> 2-56/s, PSI full under 1 %, the pin flat for 6 of 12 minutes. One GPU ring
   timeout in five zero-skip runs. ASTRO BOT's host leak is 217-218 MiB/min, steady, with no input and with PLAY_CAPTURE off.
+- ASTRO BOT's leak, fixed in a private build (section 11): the graphics events' unbounded pending queues. With
+  `KYTY_BC5_EVENT_PENDING_CAP=64` the host's anonymous memory grows 0.1 MiB/min instead of 217.8 [M]; not played, not in the shared build.
 - ASTRO BOT's leak (section 10): glibc arena memory of the completion thread `bc5-cq0`, through the soft CP's event
   fire into an unbounded `pending_events` queue and a second site in `completion_thread`; a bound on that queue is the fix candidate.
 - The earlier lines below are the state before the night.
