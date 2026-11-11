@@ -669,9 +669,98 @@ slow window and on every build; `BC5_GUARD_APPLY_MIN_MS=50` (the "low" arm) cut 
 play, and the zero skip buys 0.6 GiB at the price of the ring timeouts; (3) the fuse turns a dead box into a slow
 game, as designed, and is now the place where the thrash happens.
 
+### 15. Where the threads' time goes, and the first fix of the host's memory bookkeeping (2026-11-11 10:10–10:39)
+
+The maintainer after section 14: "Szukaj rozwiązania ... co jest źle zrobione przez co tracimy wydajność i dochodzimy
+do ściany. Czemu gra poświęca tyle czasu na obliczenia? Nasze biblioteki są słabo napisane?" This section measures it
+instead of adding another arm.
+
+**The tool** (`prof0412.sh`, `prof0412.py`): a wall-clock stack sampler without perf or root. Inside the container,
+`eu-stack -1 -p <tid>` attaches one thread for some milliseconds, 3–5 times a second (never a `bc5-*` thread, section
+10); beside each sample the thread's CPU ticks, faults and context switches and the process's `/proc/<pid>/io`. A
+sample of a blocked thread shows what it waits in, of a running one what it computes, so the share of samples per
+call path is the share of the thread's wall-clock time. Runs: the scripted load of the copy of his save, ledger arm
+(no zero skip), fuse and watchdog on. Raw: `raw/prof-20261111/`.
+
+**What it found** [M] (run i1off / i4off, g412f with the fix off; h1ledger on g412e agrees):
+
+| Thread, phase | Guest code | Waiting | Host library, running |
+|---|---|---|---|
+| game-main, scene load (33–62 s) | 29–33 % | 33–37 % | **24–31 % in `Ampr::AmmSubmitCommandBuffer`** (the title's AMM map/unmap commands) |
+| game-main, save load (28 s) | 23–26 % | 34–37 % | **33–36 %** in the same |
+| Render Thread, loads | 61–64 % | 6–13 % | 25–32 % in the GPU submit path (`Bc5LleKernel::Ioctl` → `chain_submit`, `submit_now`, `sorted_mappings`, `sync_mappings`) |
+
+- **The game thread spends a quarter to a third of the load phases inside our AMM implementation**, and the innermost
+  frames are bookkeeping, not system calls: `VirtualRanges::QuerySpan`, `PhysicalMemory::Unmap`,
+  `KernelMapDirectMemory2`, `KernelSetVirtualRangeName`, `VirtualRanges::Remove`.
+- **Why** [M, source: `src/kernel/memory.cpp`]: the host keeps the guest's address ranges in tables that are searched
+  from the start on every operation. `VirtualRanges::m_ranges` is a sorted `std::vector` of 72-byte entries, about
+  28,000 of them while the title streams (2 MiB); `QuerySpan` walked it from element 0 each time although the class's
+  own `Overlapping()` uses a binary search; `Add`/`Remove` shift half the table per edit. `PhysicalMemory::m_mappings`
+  is an **unsorted** vector: `Unmap` scans it, erases from the middle and scans it again (`still_mapped`);
+  `SetVirtualRangeName` and `SetVirtualRangeMemoryType` scan all of it for every call. The title maps and unmaps 16 KiB
+  pages by the thousand per second, so the cost per frame grows with the number of mappings: quadratic where the
+  console does a page-table update.
+- Every such edit also bumps the ranges' generation, which makes the direct path rebuild its 28,000 views (each with
+  a `std::string` name), drain the GPU, recompute every mapping and run `learned_apply` (section 14: `sync` + `hints`
+  6–30 ms a frame). Same class, second place.
+- **Reads** [M, `/proc/<pid>/io` of the emulator in h1ledger, 270 s]: 1.10 million read calls, 19.9 GiB asked for,
+  **44.6 GiB read from the disk**. During the loads 150–190 MiB/s are asked for and 310–440 MiB/s come off the NVMe;
+  while walking, 59–74 MiB/s asked and 135–175 MiB/s read. The disk delivers 2.2 times what the title asks for: the
+  files go through the page cache with read-ahead, inside a cgroup that is at its memory limit, so pages are read,
+  dropped and read again. The title's reads go to its own buffers; the page-cache copy is ours.
+  (About 2,200 of the read calls per second are tiny ones present even during the intro: pad, timers, sockets.)
+
+**The first fix: `KYTY_BC5_RANGES_FAST=1`, build g412f** (`memfast/`: `mkmem0412.py` edits e8's `memory.cpp`
+ee24c888 → 68c90f4b; `memfast0412.cpp` runs the old and the new walk on 200 random tables, 600,000 queries, the same
+answers; `mk0412f.sh`, `linkmf0412.py`). `QuerySpan` starts at the range that holds the address (`std::upper_bound`);
+the loop body is unchanged. Default off. Binary `8e42e0648031f09532d51c868ad8c309` in place of g412e (kept as
+`bin/kyty_emulator.g412-5db9b2e9`); 47 private objects, 8 warnings (g412e: 7; the new one not read).
+
+**A/B on g412f, ABBA** (i1off, i2fast, i3fast, i4off; the same scripted load, 60 s of walking) [M]:
+
+| | off (i1, i4) | on (i2, i3) |
+|---|---|---|
+| Scene load: flips/s | 15.3 / 15.0 | **19.6 / 19.8** |
+| Scene load: frame median, p95 | 55–57 ms, 157–158 ms | **27–30 ms**, 107–120 ms |
+| Save load: flips/s | 12.1 / 11.6 | **15.6 / 15.6** |
+| Save load: frame median, p95 | 64 ms, 161–202 ms | **47 ms**, 122–128 ms |
+| game-main inside the AMM library, scene / save load | 24–31 % / 33–36 % | **8–11 % / 16–20 %** |
+| Game thread outside the host per frame, scene / save load | 37–39 / 49–50 ms | 27–29 / 32 ms |
+
+One changed loop start gives 30 % more frames in both load phases. No kernel line, no crash line in the four runs.
+i2fast was ended by the watchdog at 167 s (available memory 299 MiB for 10 s at PSI 1 %): the faster load reaches
+the memory limit sooner. That is the next wall, not a fault of the fix.
+
+**What is still there with the fix on** [M]: game-main 8–20 % in the AMM library, now in `KernelSetVirtualRangeName`,
+`KernelMapDirectMemory2`, `PhysicalMemory::Unmap` and `VirtualRanges` edits (the other linear tables); the Render
+Thread 27–34 % in the submit path and 10–30 % waiting in it.
+
+**Root causes and what fixes each** (in the order the data ranks them; [I] where it says "should"):
+1. *The host's range tables are linear per operation* (measured above). Fix: `PhysicalMemory::m_mappings` indexed by
+   address (an ordered map or a sorted vector with binary search, and a count per host mapping instead of the
+   `still_mapped` scan), name and type edits by range lookup, `VirtualRanges` edits without shifting the whole table.
+   Each as its own switch with an old-against-new CPU test on random operation sequences, as here.
+2. *The direct path redoes everything per layout change* (views rebuild, GPU drain, full mapping diff,
+   `learned_apply`). Fix: apply the delta of the changed ranges only; batch one AMM command buffer into one change.
+3. *The submit path on the Render Thread* (a third of its time). Not opened yet; `sorted_mappings` and the per-submit
+   filter are the first frames to read.
+4. *Reads through the page cache* (2.2 times the bytes, inside the memory limit). Fix candidates: `O_DIRECT` reads into
+   the title's buffers where offset and length allow, else `POSIX_FADV_RANDOM` plus dropping behind the read; either
+   also takes the file cache out of the memory budget.
+5. *The memory budget* (sections 7, 9, 14): the pin itself. With 1–4 the title loads faster and so hits it sooner
+   (i2fast). The zero skip is the only lever measured and brings the ring timeouts; not solved here.
+
+"Are our libraries badly written?" For this workload, yes in these places: correct, but with per-operation costs that
+grow with the number of mappings, which this title drives to 28,000. The title's own share of the game thread in the
+loads is a quarter to a third; it is not where most of the time goes.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
+- Where the time goes (section 15) [M]: in the loads the game thread is a quarter to a third inside the host's AMM
+  bookkeeping (linear range tables, 28,000 entries); one fixed loop (`KYTY_BC5_RANGES_FAST=1`, build g412f) gives 30 % more
+  frames in both load phases. The disk delivers 2.2 times the bytes the title asks for. More of the same class is open.
 - His plays of 11-11 (section 14) [M]: unstable on every build after the intro movies. Loads are CPU-bound on the game thread
   (the title's work plus the host's mapping work per layout change); from about 95 s the cgroup limit thrashes; with the zero
   skip the pin still reaches 11.6 GiB in 130 s, and the zero skip has now 2 GPU ring timeouts in 8 runs.
