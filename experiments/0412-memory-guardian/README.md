@@ -1213,8 +1213,8 @@ title's code at that address).
    ten job threads 13–14 % each. Run-queue wait is at most 1.2 % for any thread. In 22 % of the 250 ms ticks with two
    hot threads, two of them sat on the two logical CPUs of one core. Outside the emulator: `kcompactd0` 30 % of a CPU
    (the kernel compacting memory), the collectors 8 %, KWin 2 %.
-5. The CPU's clock: no cpufreq driver on this box; `/proc/cpuinfo` reads a median of 3,492 MHz, one reading of 704
-   under 3,000 MHz; k10temp 73–75 °C. No throttling seen; throttle counters do not exist here.
+5. The CPU's clock: no cpufreq driver on this box; `/proc/cpuinfo` reads a median of 3,492 MHz, the lowest single
+   reading 1,612 MHz, under 3,000 MHz in fewer than 0.5 % of the 704 readings; k10temp 73–75 °C. No throttling seen; throttle counters do not exist here.
 6. Per frame, user-space CPU of the Render Thread / the main thread: frames up to 33 ms 13.8 / 16.7 ms; 33–50 ms
    14.6 / 19.0 ms; 50–80 ms 24.0 / 39.0 ms; 80–100 ms 23.2 / 63.0 ms; over 100 ms 144.5 / 207.8 ms (the spin loops).
    The title's threads are not saturated: nothing the box lacks in cores explains the frame time.
