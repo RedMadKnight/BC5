@@ -1748,9 +1748,68 @@ wall by that much; the pin without a GPU bit is 1.0 GiB on his load too, four ti
 deficit of section 16. Section 35's contradiction (F96's fault inside `Physics`) stands and is what has to be
 settled before that memory is left unpinned.
 
+### 37. Heaps the title mapped without a GPU bit are not pinned (build g412s, 2026-11-11 20:27–20:50, the top session's order)
+
+**The old fault, settled as far as the data goes.** F96's "fault inside `Physics`" is run 102 of exp 0042
+(`experiments/0042-pkg-title-heap-import/series-100.txt`): one GPU fault at 0x12d0410000, 4.1 MiB into the heap, on
+a day whose other stops were faults at addresses outside every heap ("wild addresses", runs 103, 109, 110, 112,
+which went on after the eager list was extended). No protection value was logged then, so whether that range had a
+GPU bit at that moment cannot be read back. One stray access among stray accesses is what it looks like [I]; the
+trial below gives such an access zeros instead of a fault.
+
+**The change** (`memfast/nogpu0412.inc`, `memfast/mknogpu0412.py`, tag ng412; default off):
+`BC5_GUARD_NOGPU_UNPIN=<heap>[,<heap>...]`. A 2 MiB chunk of the direct file is not imported (not pinned) when every
+view that touches it is of a listed heap and carries neither GPU bit (0x10, 0x20: `PROT_GPU_READ` /
+`PROT_GPU_WRITE` in the host's memory layer). A chunk that a hint or a learned window forced, and one that another
+view with a GPU bit touches, is imported as before. Under the views of what is left out the GPU gets the shared zero
+buffer (the mechanism of the cap arm, `guard0412_want`), so an access there cannot fault; every 10 s the buffer is
+read back and a GPU write into it is journaled.
+The transition that must be exact: when the title gives such a range a GPU bit, the protection edit in
+`VirtualRanges` bumps the guest ranges' generation (e8's `memory.cpp`, the edit at line 473 and the bump at 478;
+all eight places that change the ranges bump it), the views are rebuilt, the chunk leaves the left-out set, and the
+same sync imports and maps it before the next submission is handed to the kernel. It is "before the next
+submission", not "before the call returns".
+CPU test `memfast/nogpu0412.cpp`: the selection against a page-level model on 3,000 random layouts, 15,001 of
+15,001 on the laptop and on the box (a view that gains a GPU bit has none of its chunks left out; a chunk shared
+with a GPU view is imported). Build g412s = g412r + this, binary `ec8b4594` (g412r kept).
+
+**Runs** (`ab0412s.sh`; arm fast2 on the scripted load, RT on, measuring watchdog 220 MiB; one run each; data
+`raw/f?*-*`) [M]:
+
+| run, heaps left unpinned | not pinned at the end | pinned at 150 s | lowest available | PSI full, highest | play: frames over 100 ms | flips/s scene / save / play |
+|---|---|---|---|---|---|---|
+| f0base, none | 0 | 11,704 MiB | 283 MiB | 11 % | 22, 3.7 s | 20.9 / 19.5 / 21.7 |
+| f1phys, `Physics` | 96 MiB of 192 | 11,632 | 267 | 14 % | 19, 2.6 s | 20.6 / 17.2 / 22.3 |
+| f2comp, `ComponentHeap` | 104 of 104 | 11,604 | 261 | 16 % | 16, 3.8 s | 23.3 / 17.5 / 22.1 |
+| f3dyn, `DynamicHeap` | 328 of 328 | 11,364 | 368 | 8 % | 9, 2.0 s | 23.6 / 18.1 / 23.7 |
+| f4init, `InitAllocator` | 652 of 652 (448 were pinned) | 11,216 | 306 | 11 % | 24, 3.0 s | 22.8 / 16.9 / 21.7 |
+| **f5all, all four** | **1,180 MiB** | **10,680** | **428** | **4 %** | **14, 1.8 s** | 24.7 / 18.9 / 22.3 |
+
+In all six: no kernel line, no GPU fault or timeout line in the journal, no failed import; the zero buffer read
+back as all zeros every time (no GPU write into a left-out range). All reached 178–180 s.
+`Physics`: half of it (96 MiB) stays pinned because learned windows force those chunks: the fault of run 102
+taught the host a window there, and the rule keeps what is forced.
+
+**Reading.** With the four heaps left out the pin at the wall is 1,024 MiB lower (10,680 against 11,704), the lowest
+available memory of the run is 428 MiB instead of 283, the memory pressure a third, and the long frames of the
+play phase half (one run each: the direction is clear, the sizes are one sample). That is twice the deficit of
+section 16. **What these runs cannot show is the picture:** a GPU read from a left-out range returns zeros without
+any sign in a log. Nobody has looked at the image of this arm. On his own load the pin is about 0.2 GiB higher
+(section 36), so the margin there will be about 0.2 GiB less than here.
+
+**Read-only GPU ranges** (the other direction of the bits, noted on the top session's word): `AMM` has 2,417–2,558
+MiB with 0x13, GPU read without GPU write. Nothing to gain in memory; it says the GPU never writes there, which a
+zero-page scheme can use (section 31: no canary write to expect in those ranges).
+
+**The arm.** `play-guard-0412.sh fast4` = fast2 + `BC5_GUARD_NOGPU_UNPIN=Physics,ComponentHeap,DynamicHeap,InitAllocator`.
+It is in the wrapper; the desktop shortcut is not changed (it needs the maintainer's word and his eyes on the image).
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
+- **The first change that moves the wall (section 37) [M]:** four heaps the title mapped without a GPU bit are no longer pinned
+  (`BC5_GUARD_NOGPU_UNPIN`, arm fast4, build g412s): 1,024 MiB less pinned at the wall, lowest available 428 MiB instead of 283,
+  no fault, no timeout, the zero buffer never written, in six scripted runs. Not yet seen: the picture, and his own load.
 - What the pin is made of (section 34) [M]: in play the command buffers name 0.9 GiB of the 12.2 GiB under views; seven heaps, 5.9 GiB,
   are never named. Of those, heaps that by their purpose are the CPU's (audio, physics, components, assets: up to 2.7 GiB) are
   pinned for the GPU only because the title mapped them as direct memory; whether its GPU bits tell them apart is the next check.

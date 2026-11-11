@@ -85,8 +85,11 @@ case "${1:-}" in
   # cut and came back under a view is not cut again for 300 s (doubling with every return); dead memory still goes after 4 s.
   fast3)   WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=4,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 BC5_GUARD_RETURN_EXEMPT=300 KYTY_BC5_RANGES_FAST=1
              KYTY_BC5_PHYSMAP_SORTED=1 KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="12400 2048" ;;
+  # The nineteenth build (g412s, 2026-11-11): fast2 with the four heaps the title mapped without a GPU bit left unpinned (README section 37).
+  fast4)   WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
+             BC5_GUARD_NOGPU_UNPIN=Physics,ComponentHeap,DynamicHeap,InitAllocator KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="12400 2048" ;;
   zoe)     WORDS+=("${ORPH[@]}" "BC5_DIRECT_ZERO_SKIP=$ZL" KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="12400 2048" ;;
-  *) say "0412: usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm|zscan|zsk|zo|zoc|zof|of|zoe|fast|fast2|fast3 [dry]; not started"; exit 1 ;;
+  *) say "0412: usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm|zscan|zsk|zo|zoc|zof|of|zoe|fast|fast2|fast3|fast4 [dry]; not started"; exit 1 ;;
 esac
 ARM=$1; DRY=${2:-}
 # The catchers' env file (README section 23, the top session's order of 2026-11-11): $E/catchers.env with lines
