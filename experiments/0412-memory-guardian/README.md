@@ -1484,6 +1484,62 @@ the desktop shell to disappear for some minutes on his running session, so they 
 by mistake: that `python3` is `bc5-gpu-stall-sampler`, a service that has been running since boot. The sampler's
 own size was not measured; it is a small Python process, and the play's failure does not hang on it.
 
+### 31. Design note: zero pages without the GPU hang (2026-11-11 20:05; nothing built)
+
+**The maintainer's point** (20:02): "Przecież ps5 się nie wysypuje gdy gra potrzebuję pamięci ... Problemem jest NASZ
+kod i nasze biblioteki." What of the wall is ours, from this experiment's own numbers:
+- We pin every page of the title's heaps the moment a view covers it, written or not. The two large GPU heaps
+  (`RenderGpuWcLarge` 2,758 MiB, `CommitIABufferAllocator` 2,736 MiB) are about half all-zero, 1.38 GiB each
+  ([M], the table of section 1; F394, F402, F540). A console backs its guest memory with its own page tables and
+  need not pin anything for the GPU; our direct path pins because a GPU access to an unpinned page here is a fault
+  that can take the machine down (F6). The pin of never-written pages is the largest single cost of that choice.
+- Orphans, 180–340 MiB at the wall: memory under no view that we keep pinned (sections 16, 29).
+- The host around the guest: the emulator's own memory, the mount process, the page tables for 28,000 mappings
+  (section 16's table).
+
+**What exists.** The zero skip (exp 0379, arm zo here) already does not pin the chunks of a scanned zero list, and it
+already keeps the GPU from faulting: every skipped chunk is GPU-mapped onto a slice of one small "canary" BO at every
+address a view gives it. It saved 0.6–0.75 GiB here. Its two ways of learning that a skipped chunk is no longer
+zero: the canary slice is found changed (the GPU wrote there), and **the CPU's writes are found by polling the
+memfd with SEEK_DATA at the next sync** (`zskip_take_back`), which runs at most every 50 ms unless the guest's ranges
+changed (`direct_sync_one`).
+
+**The suspected defect** [I, to be proven]: between the title's first CPU write into a skipped chunk and the next
+sync that polls, the GPU still reads the canary's zeros at that address. If what the title wrote is something a
+shader walks (an acceleration structure for the reflections, an index or argument table), a job submitted in that
+window runs on zeros: a traversal that never ends is a ring timeout with no page fault line, which is exactly what
+both timeouts looked like (c1zof at 99 s on the save list; his play at 09:54:16: "no page fault line, the ring reset
+succeeded", sections 9 and 14). Ten runs without the zero skip had none.
+
+**The fix to build: catch the first CPU write synchronously.** A skipped chunk's CPU pages are write-protected; the
+first write faults; the handler pins the real chunk, swaps the GPU mappings from the canary to it, and only then
+lets the write go on. No window is left in which the CPU has data and the GPU sees zeros. Two ways to get the fault:
+- userfaultfd in write-protect mode on the memfd's mappings: supported for shmem on this kernel (7.2.15);
+  `vm.unprivileged_userfaultfd` is 0 here, which still allows a descriptor made with `UFFD_USER_MODE_ONLY`, and the
+  title's writes are user-mode. The host's own writes into guest memory (read() into a guest buffer, memcpy in a
+  library call) would fault in the kernel and are refused in that mode: they need the chunk taken back before the
+  call, or the second way.
+- `mprotect` to read-only and the host's existing SIGSEGV path (the one the learned windows use): no new kernel
+  feature, catches both kinds of write, but a guest thread inside a host library call must be handled the same way.
+Chunks the GPU may write (render targets and compute outputs, known from the hints and learned windows) are never
+skipped: that rule exists already (`direct_force` takes a skipped chunk back).
+
+**What makes it feasible in our code:** the canary mapping, the take-back and the swap of mappings exist and are
+tested (exp 0379's CPU tests); what is new is the trigger (a fault instead of a poll) and doing the take-back on the
+faulting thread under the device mutex. **What can make it fail:** a write from kernel context into a protected
+page; the cost of a fault per 2 MiB chunk at the moment the title starts using a region (one fault per chunk, then
+never again); 28,000 mappings to protect and unprotect.
+
+**Expected on his save:** the list scanned at his save holds what gave 0.6–0.75 GiB in the night's runs; the heaps'
+all-zero halves are 2.8 GiB, and the list could be dropped for "skip whatever the title has not written" once the
+write is caught synchronously, since then nothing depends on a scan made earlier. That is more than the 0.4–0.5 GiB
+the wall lacks.
+
+**Order of proof before any play:** (1) a catcher in the existing zero skip that journals, for every chunk taken
+back by the poll, how long the CPU's data had been there unseen and whether a submission ran in between (it proves
+or kills the suspected defect with the build we have); (2) the fault trigger behind its own switch with exp 0379's
+CPU tests extended; (3) scripted runs with the zero skip and the trigger, counting ring timeouts against the 2 in 8.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
