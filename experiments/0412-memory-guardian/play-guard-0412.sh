@@ -73,8 +73,11 @@ case "${1:-}" in
   zof)     WORDS+=("${ORPH[@]}" BC5_GUARD_FORGET=20 "BC5_DIRECT_ZERO_SKIP=$ZL"); FUSE="12400 2048" ;;   # the fourth build (g412d)
   of)      WORDS+=("${ORPH[@]}" BC5_GUARD_FORGET=20); FUSE="12400 2048" ;;
   # The fifth build (g412e, 2026-11-11): zo with the events cap of README section 11 (a bound of 64 on an event's pending queue).
+  # The sixth build (g412f, 2026-11-11): the first fix of the host's memory bookkeeping (README section 15), without the zero
+  # skip (2 GPU ring timeouts in 8 runs with it) and with the orphan release and the events cap.
+  fast)    WORDS+=("${ORPH[@]}" KYTY_BC5_RANGES_FAST=1 KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="12400 2048" ;;
   zoe)     WORDS+=("${ORPH[@]}" "BC5_DIRECT_ZERO_SKIP=$ZL" KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="12400 2048" ;;
-  *) say "0412: usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm|zscan|zsk|zo|zoc|zof|of|zoe [dry]; not started"; exit 1 ;;
+  *) say "0412: usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm|zscan|zsk|zo|zoc|zof|of|zoe|fast [dry]; not started"; exit 1 ;;
 esac
 ARM=$1; DRY=${2:-}
 # "words": the arm's environment words, one per line, for the night runner (run0412n.sh); nothing is started.
@@ -85,7 +88,7 @@ S=$E/sampler0412b.sh; F=$E/fuse0412.sh; STAMP=$(date +%Y%m%d-%H%M%S); SOUT=$E/sa
 SOK=0; pinned sampler0412b.sh "$E/tools.md5" && SOK=1
 FOK=0; pinned fuse0412.sh "$E/tools.md5" && FOK=1
 if [ -n "$DRY" ]; then
-  echo "dry: arm $ARM, ${#WORDS[@]} words; the arm's words: $(printf '%s\n' "${WORDS[@]}" | grep -E '^(BC5_GUARD_|BC5_DIRECT_LAZY_RELEASE|BC5_DIRECT_ZERO|KYTY_BC5_EVENT_PENDING)' | tr '\n' ' ')"
+  echo "dry: arm $ARM, ${#WORDS[@]} words; the arm's words: $(printf '%s\n' "${WORDS[@]}" | grep -E '^(BC5_GUARD_|BC5_DIRECT_LAZY_RELEASE|BC5_DIRECT_ZERO|KYTY_BC5_EVENT_PENDING|KYTY_BC5_RANGES)' | tr '\n' ' ')"
   echo "dry: RT word in the words: $(printf '%s\n' "${WORDS[@]}" | grep -ci 'KYTY_BC5_RT\|RAYTRAC') (0 = the launcher's settings decide, as in e11 unpacked)"
   echo "dry: sampler $([ "$SOK" = 1 ] && echo "pinned, would write $SOUT" || echo "NOT the installed copy: the play would run without it")"
   echo "dry: fuse $([ -z "$FUSE" ] && echo "none for this arm" || { [ "$FOK" = 1 ] && echo "pinned, would set memory.max and memory.swap.max to $FUSE MiB" || echo "NOT the installed copy: the play would run without it"; })"

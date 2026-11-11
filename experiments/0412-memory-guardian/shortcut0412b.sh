@@ -38,7 +38,10 @@ case "${1:-}" in
   zoe)       W=$E/play-guard-0412.sh; ARG=zoe; NAME="BC5 emulator (0412 zo + events cap)"
              WHAT="$G + zero skip + orphan release (the arm zo) + a bound of 64 on an event's pending queue (KYTY_BC5_EVENT_PENDING_CAP=64, the fix of ASTRO BOT's host leak carried into this line); $FU; private build g412e"
              LOGS="log ~/bc5-work/exp0412/play-last.log; sampler lines ~/bc5-work/exp0412/sampler/" ;;
-  *) echo "usage: shortcut0412b.sh orphans|cap|zo|zoe|astro-off|astro-on|astro-evcap|pkg-evcap"; exit 1 ;;
+  fast)      W=$E/play-guard-0412.sh; ARG=fast; NAME="BC5 emulator (0412 fast ranges)"
+             WHAT="$G + KYTY_BC5_RANGES_FAST=1 (the host's range lookup by binary search: 30 percent more frames in both load phases of the scripted run) + orphan release + events cap; NO zero skip (it had 2 GPU ring timeouts in 8 runs); $FU; private build g412f"
+             LOGS="log ~/bc5-work/exp0412/play-last.log; sampler lines ~/bc5-work/exp0412/sampler/" ;;
+  *) echo "usage: shortcut0412b.sh orphans|cap|zo|zoe|fast|astro-off|astro-on|astro-evcap|pkg-evcap"; exit 1 ;;
 esac
 DESK=$(xdg-user-dir DESKTOP 2> /dev/null); DESK=${DESK:-$HOME/Pulpit}
 m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }
