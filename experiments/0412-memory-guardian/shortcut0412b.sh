@@ -5,6 +5,8 @@
 #   cap        "BC5 emulator (0412 cap)"       play-guard-0412.sh cap
 #   astro-off  "BC5 Astro (0412 capture off)"  play-astro-guard-0412.sh off
 #   astro-on   "BC5 Astro (0412 capture on)"   play-astro-guard-0412.sh on
+#   astro-evcap "BC5 Astro (0412 events cap)"  play-astro-ev-0412.sh cap   (2026-11-11, the events-cap build ev412)
+#   zo         "BC5 emulator (0412 zo - best of the night)"  play-guard-0412.sh zo
 # Writes only the one .desktop file (made as a temporary file in ~/bc5-work/exp0412, validated, then moved); removes
 # nothing. The other shortcuts stay as they are ("0412 ledger" and "0412 low" run the same wrapper, so the new build).
 # usage (on the box): WANT_W=<md5 of the wrapper the shortcut runs> bash shortcut0412b.sh orphans|cap|zo|astro-off|astro-on
@@ -27,7 +29,10 @@ case "${1:-}" in
   astro-on)  W=$E/play-astro-guard-0412.sh; ARG=on; NAME="BC5 Astro (0412 capture on)"
              WHAT="ASTRO BOT on the shared build with PLAY_CAPTURE on (as the play the kernel killed on 2026-11-10), the memory sampler beside it; $FU"
              LOGS="log ~/bc5-work/exp0412/astro-last.log; sampler lines ~/bc5-work/exp0412/sampler/astro-*" ;;
-  *) echo "usage: shortcut0412b.sh orphans|cap|zo|astro-off|astro-on"; exit 1 ;;
+  astro-evcap) W=$E/play-astro-ev-0412.sh; ARG=cap; NAME="BC5 Astro (0412 events cap)"
+             WHAT="ASTRO BOT on the private build ev412 (the shared source + a bound of 64 on an event's pending queue, KYTY_BC5_EVENT_PENDING_CAP=64: the fix candidate for the host leak of 217 MiB/min), capture off, the memory sampler beside it; $FU"
+             LOGS="log ~/bc5-work/exp0412/astro-ev-last.log; sampler lines ~/bc5-work/exp0412/sampler/astro-*" ;;
+  *) echo "usage: shortcut0412b.sh orphans|cap|zo|astro-off|astro-on|astro-evcap"; exit 1 ;;
 esac
 DESK=$(xdg-user-dir DESKTOP 2> /dev/null); DESK=${DESK:-$HOME/Pulpit}
 m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }
