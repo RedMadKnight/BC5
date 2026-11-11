@@ -886,9 +886,62 @@ without the zero skip and what is left of the orphans is fragmentation, not a mi
 against 146–166 s for the ledger arm, then the watchdog ended it too (available 252 MiB): the budget is still short.
 No kernel line.
 
+### 19. The GPU path by source line (build g412i, 2026-11-11 14:53–15:07)
+
+**Question** (the top session's order: the Render Thread's submit path, `chain_submit` / `sorted_mappings`; the
+maintainer: "Ścieżka GPU"): what in the host's submission path costs the Render Thread its time, now that the two
+table fixes are in.
+
+**Setup.** Build g412i = g412h's code with line tables in the main unit (`-g1` through `BC5_0412_MAIN_EXTRA`,
+`memfast/mk0412i.sh`; binary `a4dce942`, g412h kept). `prof0412.sh` with `PROF_SRC=1` takes inlined frames and source
+lines; `prof0412src.py` sums them. Runs n1src, n2src (arm fast2, Render_Thread and game-main, 475 and 256 samples) and
+o1aud (the title's audio thread, and the emulator's GPU engine time from fdinfo every 5 s). Data `raw/n[12]src-*`,
+`raw/o1aud-*`. All three ended as scripted at 180 s, 24.6–25.2 flips/s, no kernel line.
+
+**Result** [M unless marked]:
+
+| share of the thread's wall-clock time | scene load | save load | play |
+|---|---|---|---|
+| Render Thread: guest code | 47 % | 35 % | 14 % |
+| Render Thread: waiting | 29 % | 50 % | 61 % |
+| Render Thread: host code | 22 % | 14 % | 23 % |
+| game-main: guest code | 45 % | 27 % | 34 % |
+| game-main: waiting (the title's own condition variables) | 48 % | 55 % | 57 % |
+| game-main: host code | 6 % | 16 % | 7 % |
+
+- The Render Thread's host code has no heavy line: the largest are the submit ioctl itself (2–4 %), the state
+  tracker's copy and `apply_level` in `piece_check` (2–4 %), `emit_prefix` (1.5–3 %); `sorted_mappings` as CPU work
+  does not appear. Every other line is under 1 %. A rewrite of this path can give a few percent of one thread.
+- What the Render Thread waits for, over all phases: the flip's `drain()` (nothing of the frame may be in flight)
+  20.5 %; the label waits in `submit_split` (a buffer waits for what an earlier one writes on the GPU) 10–13 %; the
+  device and chain mutexes 12 % (`g_dev_mutex` at `submit_now`, the chain's flush mutex); the device's own lock inside
+  `sorted_mappings` 3.5 %. The first two are the frame's CPU part and GPU part running one after the other.
+- The emulator's GPU engine time (fdinfo, two readings of one counter halved; rough): 6–22 % of the wall clock in the
+  scene load, 23–29 % at the start of the save load, about 55 % in play, 75–80 % in the menus. So the loads are not
+  bound by the GPU, and no thread is at 100 % of a core either (game-main 50–65 %, Render Thread 40–50 %, the whole
+  emulator 330–620 % of 1,600 %): the threads wait for each other and for the GPU in turn.
+- The audio thread (`AK::AudioMgr`, 55–75 % of a core in play): 48 % of its samples are the title's own code (its
+  software mix), 3 % host code (Opus decode in Ajm), the rest waiting. Not a host library's cost.
+
+**What was not built, and why.** No change of the submit path: the profile names no line worth a switch. Deferring
+the flip, which would remove the 20.5 %, was measured three times before (F68, F141, F226): the wait moves into the
+label and in-flight waits and the second title's text breaks; not repeated. Open and named for the next step: who
+holds `g_dev_mutex` while the Render Thread waits 12 % for it (the completion and ring threads are `bc5-*` threads,
+which this sampler must not attach to; the host's own `BC5_DIRECT_TIMING` split or a lock-hold counter in a build
+would say), and why game-main waits half its time in the loads (which of the title's threads it waits for).
+
+**Memory, three more fast2 runs.** n1src, n2src and o1aud reached 180 s without the watchdog (the ledger arm: three of
+five ended at 146–166 s, section 18); m1fast2 went on to 215 s and was ended there. The shortcut
+"BC5 emulator (0412 fast2)" is on the desktop (build g412i in place).
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
+- Speed after the table fixes (sections 18, 19) [M]: both fixes of the host's memory tables give about +47 % frames in the load phases
+  (`KYTY_BC5_RANGES_FAST=1`, `KYTY_BC5_PHYSMAP_SORTED=1`; arm fast2, build g412i). After them neither the game thread nor the Render
+  Thread is bound by host code (6-23 % of their time, no line over 4 %); they wait half their time, the Render Thread for the
+  GPU at the flip and at label waits (30 %) and for the device mutex (12 %). The orphan release now cuts on his route without the
+  zero skip (pin 11.5-11.65 GiB, was 12.0); the budget is still short at 215 s.
 - The wall as arithmetic (section 16) [M]: at 165 s the guest pins 12,024 of 15,193 MiB; the 3,169 left hold the kernel, the
   GPU driver's buffers, the desktop and the emulator only with 986 MiB in swap and 42 MiB of file cache for the game. Over by
   about 0.4-0.5 GiB; 320 MiB of the pin are orphans (ours).
