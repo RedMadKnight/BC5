@@ -1144,6 +1144,95 @@ zram are at their afternoon values), so there is nothing to reset; what would mo
 virtual keyboard and other desktop parts (section 18), or the top session's choice of a lower watchdog threshold for
 measuring runs. Neither was changed here.
 
+### 25. Why the title's own code is slow in the play phase (run x1why, 2026-11-11 18:30–18:34, the top session's order)
+
+**Setup.** One scripted run on arm fast2, RT on, build g412m, `BC5_GUARD_GAP_STAT=33` (a line for every frame over
+33 ms), with: `gapsamp0412.py` (20 ms), `perfall0412.sh` (perf cpu-clock 1 kHz, every page fault with its address,
+`perf stat` per thread every 100 ms; user space, two threads, no ptrace), `thr0412.py` (every thread's CPU, last CPU
+and run-queue wait every 250 ms; MHz per core; k10temp; other processes; policy and affinity of all 102 threads at
+150 s). The watchdog at 220 MiB for this measuring run by the top session's decision (`N_WD_MIB=220`; the fuse
+unchanged). The run reached 179 s: **a play phase of 43.4 s, 927 frames, median 34.2 ms, p90 62.7 ms**, 24.6 flips/s,
+lowest available 232 MiB, no kernel line. `why0412.py`, `spin0412.py`, `longfr0412.py` make the numbers below;
+outputs `raw/x1why-why.txt`, `-spin.txt`, `-longframes.txt`; the large collector files stay on the box
+(`~/bc5-work/exp0412/night/raw/x1why-*`).
+
+**The table: the flipping thread's (Render Thread's) play time by cause** (frames over 33 ms are 86 % of the play
+time, so the play phase as a whole is that time) [M]:
+
+| cause | share |
+|---|---|
+| waiting for the GPU: the drain at the flip 17.3 %, label waits 9.0 % | 26.3 % |
+| the title's own code on the CPU | 20.6 % |
+| — of it a wait loop of some 40 bytes of code, in the frames over 100 ms | 5.6 % |
+| the host's GPU path on the CPU, user space (`submit_now`, state tracker, filter, sync) | 11.0 % |
+| kernel time on the CPU (the submit and pin ioctls, page faults) | 7.0 % |
+| blocked on the device mutex 8.8 % and on the chain's flush mutex 7.9 % | 16.7 % |
+| libc (copies, allocations; from the title and from the host) | 6.5 % |
+| sleeping with no host stamp (20 ms samples) | 5.9 % |
+| futex wait with no host stamp (the title's own locks) | 4.4 % |
+| other host code 0.8 %, run-queue wait 0.5 % | 1.3 % |
+
+The main thread in the same time: the title's code 48.3 %, a futex wait of the title's own 43.4 %, host libkernel
+and loader 4.6 %, libc 2.0 %, kernel 0.9 %, run-queue wait 0.6 %.
+
+**The ordinary play frame** (577 frames of 33–50 ms, mean 36.9 ms; mean ms per frame) [M]: the completion thread
+waits for a GPU fence 21–24 ms (the GPU's work of the frame); the Render Thread waits 10.6 ms in the drain at the flip
+and 4.8 ms in label waits, spends 5.8 ms in `submit_now`, 2.5 ms in `submit_split`, 3.0 ms on the two mutexes, and has
+14.6 ms of user-space CPU of its own in the frame; the main thread has 19.0 ms. So the frame is the title's CPU part
+and the GPU's part one after the other, with the host's 8 ms of submission between them: about 15 + 8 + 15 ms.
+Neither thread is saturated (Render Thread on the CPU 46 %, main 56 %).
+
+**The long play frames** (20 frames over 100 ms, mean 345 ms, 6.9 s = 16 % of the play time) [M]: the GPU is idle
+(the completion thread has no work 315 ms of the 345); `bc5-ring` is 107 ms blocked on the device mutex and 91 ms in
+`submit_now`; `bc5-chainwd` 53 ms in `submit_now` and 32 ms on the mutex; the Render Thread 75 ms on the chain mutex,
+52 ms on the device mutex, 72 ms in `submit_now`. Meanwhile the title's two threads spin: of the Render Thread's
+guest-code samples in these frames 94.6 % lie in one 4 KiB page, in about 18 addresses two bytes apart (IPC 0.37
+there against 1.08 in the other frames), and 74 % of the main thread's lie in another single page. The same two loops
+hold 21–29 % and 18 % of the samples in the other frames. **So "the title's own code" in the long frames is the title
+waiting in a spin loop while the host's submission threads hold the device mutex for long (the mapping maintenance of
+sections 21–22), not the title computing.** What exactly the loops poll is not read (it needs the bytes of the
+title's code at that address).
+
+**The six questions** [M unless marked]:
+1. Counters, user space. IPC: Render Thread 0.94 in play (1.08 outside the frames over 100 ms, 0.37 inside them),
+   main thread 1.05; in the loads 0.53–0.66 and 0.85–1.16. dTLB load misses 0.41–0.46 per 1,000 instructions in play
+   (0.5–0.9 in the loads), iTLB 0.07–0.09, cache misses 7.7–8.6. The TLB is not what slows the title: large pages
+   for the guest memory are not indicated by this, and what THP on the memfd would need was therefore not worked out.
+2. Kernel time: 7.0 % of the Render Thread's play time (18 % of its CPU ticks are system), 0.9 % of the main
+   thread's. Page faults: Render Thread 1,121/s, 58 % on the guest's direct memory from the title's code, 26 % in the
+   host's `memmove` and 13 % in the direct sync's own vectors on host anonymous memory; main thread 720/s, 84 % on
+   direct memory from the title's code. Major faults 58/s and 47/s. No thread was seen blocked in a fault at the 20 ms
+   samples above 0.3 % of the time. The direct-memory faults are first touches after a mapping change (the AMM heap's
+   swing and the release, section 18); at these rates they are not a cause of the frame time.
+3. Signals: 301 of 166,012 user-space samples (0.18 %) lie in signal-return or handler symbols. The rate of signals
+   itself was not counted (the tracepoint needs root).
+4. Threads and cores: all 102 threads are SCHED_OTHER, nice 0, allowed on CPUs 0–15: whatever affinity and priority
+   the title asks for, the host applies none (what the title asks was not read). The emulator uses 4.3 of the 16
+   logical CPUs (8 cores) in play: the title's threads 3.4, the host's 0.9 (`bc5-ring` 27 %, `kyty-gpu` 11 %,
+   `bc5-chainwd` 7 %, the four `bc5-apr` threads 21 %). Hottest: `AK::AudioMgr` 56 %, main 56 %, Render Thread 46 %,
+   ten job threads 13–14 % each. Run-queue wait is at most 1.2 % for any thread. In 22 % of the 250 ms ticks with two
+   hot threads, two of them sat on the two logical CPUs of one core. Outside the emulator: `kcompactd0` 30 % of a CPU
+   (the kernel compacting memory), the collectors 8 %, KWin 2 %.
+5. The CPU's clock: no cpufreq driver on this box; `/proc/cpuinfo` reads a median of 3,492 MHz, one reading of 704
+   under 3,000 MHz; k10temp 73–75 °C. No throttling seen; throttle counters do not exist here.
+6. Per frame, user-space CPU of the Render Thread / the main thread: frames up to 33 ms 13.8 / 16.7 ms; 33–50 ms
+   14.6 / 19.0 ms; 50–80 ms 24.0 / 39.0 ms; 80–100 ms 23.2 / 63.0 ms; over 100 ms 144.5 / 207.8 ms (the spin loops).
+   The title's threads are not saturated: nothing the box lacks in cores explains the frame time.
+
+**What follows** [I]. Two different things make the play phase slow. (a) Every frame: the CPU part and the GPU part
+do not overlap. The GPU works 21–24 ms a frame and the Render Thread waits for it at the flip and at label waits
+(26 % of its time) instead of preparing the next frame; with the host's 8 ms of submission that gives 37 ms, where
+overlapped it would be about 23. Deferring the flip was tried three times and failed on the label waits and the
+text (F68, F141, F226), so the fix is not that switch again but what makes the title wait at its labels: to be named
+next (which labels, written by which job, and why the title cannot run ahead). (b) The frames over 100 ms (16 % of
+the play time): ours by measurement, the long holds of the device mutex during mapping maintenance while the GPU
+idles. That is stage 1 of `DESIGN-device-mutex.md` with the chain mutex; this run raises its worth for the play
+phase from "a quarter of the gaps" to "the long frames of play".
+
+**Build note.** The ubuntu container's `linux-libc-dev` went from its earlier version to 7.0.0-43 at 18:13 (apt,
+with perf). Before any A/B across that moment: build an untouched unit and compare its object's md5 with the object
+of the last build before it (g412m, 18:08, is the last build made before the change).
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
@@ -1162,6 +1251,10 @@ measuring runs. Neither was changed here.
 - Inside the gaps by function (section 24) [M]: the flipping thread's CPU time there is the title's own code (45 % of the gap time);
   our user-space code in the GPU path is 4 %, the other 12 % under the submit scopes is kernel time. Since 18:02 every fast2 run
   ends at 144-151 s (five of five, one without catchers): no memory line moved, the arm was always at the watchdog's threshold.
+- The play phase (section 25) [M]: an ordinary frame is 37 ms because the title's CPU part (15 ms), the host's submission (8 ms) and
+  the GPU's part (21-24 ms, of which the Render Thread waits 15 ms at the flip and at labels) run one after the other. The frames
+  over 100 ms (16 % of the play time) are the host's long holds of the device mutex with the GPU idle; the title's threads spin in
+  tight wait loops meanwhile. Not the TLB, not faults, not signals, not the cores, not the CPU's clock.
 - The wall as arithmetic (section 16) [M]: at 165 s the guest pins 12,024 of 15,193 MiB; the 3,169 left hold the kernel, the
   GPU driver's buffers, the desktop and the emulator only with 986 MiB in swap and 42 MiB of file cache for the game. Over by
   about 0.4-0.5 GiB; 320 MiB of the pin are orphans (ours).

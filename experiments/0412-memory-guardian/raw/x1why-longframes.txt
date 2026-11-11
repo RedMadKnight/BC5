@@ -1,0 +1,18 @@
+frames 33-50 ms: 577, mean 36.9 ms; mean ms per frame by thread and cause (0.5 ms and more):
+   others: gpu fence 23.6, idle (no work) 10.5
+   bc5-cq0: gpu fence 21.2, idle (no work) 13.4
+   Render Thread: flip drain 10.6, host submit 5.8, label wait 4.8, host split 2.5, device mutex 2.2, chain mutex 0.8
+   bc5-ring: host submit 8.7, device mutex 1.8, host split 0.5
+   bc5-chainwd: host submit 1.2, device mutex 0.8
+frames 50-100 ms: 149, mean 65.7 ms; mean ms per frame by thread and cause (0.5 ms and more):
+   bc5-cq0: idle (no work) 39.7, gpu fence 22.9
+   others: idle (no work) 38.0, gpu fence 24.3
+   bc5-ring: host submit 22.3, device mutex 10.4, host split 0.5
+   Render Thread: host submit 10.9, chain mutex 10.4, device mutex 10.2, flip drain 8.1, label wait 6.5, host split 2.7
+   bc5-chainwd: host submit 7.4, device mutex 5.3
+frames 100-up ms: 20, mean 345.1 ms; mean ms per frame by thread and cause (0.5 ms and more):
+   others: idle (no work) 315.5, gpu fence 27.1
+   bc5-cq0: idle (no work) 314.9, gpu fence 26.5
+   bc5-ring: device mutex 106.8, host submit 91.1, in-flight cap 0.6, host split 0.6
+   Render Thread: chain mutex 75.0, host submit 71.6, device mutex 51.5, flip drain 8.8, label wait 8.2, host split 2.6
+   bc5-chainwd: host submit 53.1, device mutex 32.1
