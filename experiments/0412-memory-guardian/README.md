@@ -1233,6 +1233,77 @@ phase from "a quarter of the gaps" to "the long frames of play".
 with perf). Before any A/B across that moment: build an untouched unit and compare its object's md5 with the object
 of the last build before it (g412m, 18:08, is the last build made before the change).
 
+### 26. The ordinary play frame: does the host hand the title's buffers to the kernel late? (run y1buf, 2026-11-11 18:42–18:46, the top session's order A)
+
+**Hypothesis under test** (the top session's): the host's submission policy (chains, the ring thread's queue, the
+device mutex) holds the title's buffers and gives them to the kernel late, so the GPU starts late and the labels
+the title waits for come back late.
+
+**Catcher.** `BC5_GUARD_BUF_STAT=<file>` (`memfast/buf0412.inc`, `memfast/mkbuf0412.py`, tag bf412; default off, no
+behaviour change): one line when the title hands a buffer to `submit_split`, one per submission (its chain opened,
+flushed, the reason of the flush), one when the completion thread sees its fence, one per label wait with the label's
+address, one when the title calls the flip and one when the flip's drain ends; all on the journal's clock.
+Build g412n = g412m + this, binary `9293fc81` (g412m kept). `buf0412.py` makes the tables; output
+`raw/y1buf-buf-tables.txt`; the 30 MB line file stays on the box (`night/raw/y1buf-buf.txt`).
+Run y1buf: arm fast2, RT on, watchdog 220 MiB (measuring run), scripted load; 181 s, 25.6 flips/s, a play phase of
+49 s with 1,156 flips, 173,030 buffers handed, 41,636 submissions; lowest available 303 MiB; no kernel line.
+
+**1. The host's queue** (chain opened to flushed, play phase) [M]:
+
+| thread, kind, what flushed the chain | submissions/s | segments | opened -> flushed: median / p90 / max |
+|---|---|---|---|
+| `bc5-ring`, compute, end of the call | 327 | 3.5 | 0.01 / 0.09 / 16 ms |
+| `bc5-ring`, compute, a wait | 213 | 3.8 | 0.01 / 0.07 / 1.5 ms |
+| Render Thread, draw, a wait | 133 | 5.3 | 0.71 / 1.85 / 121 ms |
+| `bc5-ring`, compute, reason 6 | 103 | 1.0 | 0.00 / 0.01 / 0.9 ms |
+| Render Thread, draw, reason 10 | 35 | 15.4 | 2.09 / 2.40 / 12.5 ms |
+| Render Thread, draw, the flip | 24 | 6.8 | 0.41 / 0.51 / 1.9 ms |
+| `bc5-chainwd`, draw, the chain watchdog | 23 | 13.6 | 2.06 / 2.08 / 66 ms |
+
+A buffer handed by the Render Thread reaches a flush in a median of 0.87 ms (p90 3.5 ms, p99 29 ms); one handed by
+the ring thread in 0.01 ms (p99 0.3 ms). From the flush to the fence: median 3.1–3.9 ms, p90 6.5–12 ms.
+
+**2. The time line of an ordinary frame** (704 frames of 33–50 ms; medians, ms from the end of the previous flip) [M]:
+frame 34.1 ms; 148 buffers handed in 36 submissions; the first buffer handed at 0.1 ms and the first flush at 1.7 ms;
+the last buffer and the last flush at 23.4 ms; **the title calls the flip at 22.4 ms; the last fence comes at
+33.5 ms; the flip returns at 34.1 ms**. Share of the frame's command words flushed in each tenth of the frame:
+4, 18, 10, 18, 12, 17, 11, 6, 2, 0 %. Time with nothing flushed-and-not-yet-fenced: 1.7 ms before the first flush,
+1.3 ms between submissions, 0.7 ms after the last fence: 3.7 ms of 34.1.
+
+**3. The label waits** [M]: 1,669 waits, all on the Render Thread, 5.5 s = 11.3 % of the phase, median 3.0 ms, p90
+4.6 ms, on 10 labels (three hold 92 % of the time). For 47 % of the wait time the submission whose fence ended the
+wait had been flushed before the wait began; for 52 % it was flushed after the wait began, a median of 0.25 ms (p90
+0.55 ms) into a 3 ms wait. So the waits are the GPU working through what it already has, not buffers held back.
+
+**Verdict: the hypothesis is not confirmed.** The host passes buffers on within a millisecond, submissions are
+spread over the first two thirds of the frame as the title makes them, and something is in flight on the GPU for
+30.4 of the 34.1 ms. The title has finished its frame's CPU work at 22.4 ms and then waits 11.7 ms for the GPU to
+finish. **In the ordinary play frame the GPU side is the long pole**: its work for one frame takes about as long as
+the frame. This corrects section 25's reading ("the CPU part and the GPU part one after the other"): they do
+overlap for 22 ms; the GPU simply needs 30. "In flight" is from the host's flush to the fence, so it holds the
+host's own submit work per submission (0.3–1 ms, section 21), the kernel's scheduling and the GPU's run; which of
+the three is how much of the 30 ms this catcher cannot say. The GPU's clock in play is not readable here
+(`pp_dpm_sclk` prints 9–100 "MHz" against a table of 1,000 and 2,000) [M, a non-result].
+
+**The title's two wait loops, read from the running process (described only; nothing of the title is kept).** The
+Render Thread's loop (section 25) is: while a state word in the title's own data is 1, call a helper of the title's
+job system and, when it reports nothing to do, execute twenty `pause` instructions and look again; when the word
+changes, the loop ends and the thread itself sets the word to 3. The main thread's loop compares two counters of a
+job record. Both poll memory that only the title's own code writes: neither polls a label, a flip status or
+anything the host updates. They are the title's threads waiting for its own jobs (its worker threads) and for
+each other. What the workers are held by in the long frames is the next thing to name.
+
+**What follows** [I]. For the ordinary frame the lever is on the GPU side of the submission: the number and size of
+the submissions (36 a frame, each with its own state prefix, sync and fence round trip), the host's per-submission
+work that sits inside "in flight", and whatever makes the GPU's own run long with RT on. A flush policy would not
+help: nothing waits to be flushed. The 8 ms of host submission on the Render Thread (section 25) are inside the
+22 ms the title needs anyway and do not set the frame's length while the GPU is the long pole.
+
+**Build note.** g412n is the first build after the container's `linux-libc-dev` change. The object of the unchanged
+unit `memory.cpp` differs from g412m's (`f6bb431a` against `9a518979`), but the two were compiled from different
+directories (`.../n/out/...` and `.../m/out/...`), so the comparison says nothing yet; a rebuild of g412m's unit in
+its own directory is the valid check and is not done.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
@@ -1255,6 +1326,9 @@ of the last build before it (g412m, 18:08, is the last build made before the cha
   the GPU's part (21-24 ms, of which the Render Thread waits 15 ms at the flip and at labels) run one after the other. The frames
   over 100 ms (16 % of the play time) are the host's long holds of the device mutex with the GPU idle; the title's threads spin in
   tight wait loops meanwhile. Not the TLB, not faults, not signals, not the cores, not the CPU's clock.
+- The ordinary play frame, corrected (section 26) [M]: the host does not hold buffers back (handed to flushed: median under 1 ms);
+  something is in flight on the GPU for 30 of the frame's 34 ms; the title calls the flip at 22 ms and waits 12 ms for the GPU.
+  The GPU side is the long pole of the ordinary frame. The title's wait loops poll its own job system, nothing of the host's.
 - The wall as arithmetic (section 16) [M]: at 165 s the guest pins 12,024 of 15,193 MiB; the 3,169 left hold the kernel, the
   GPU driver's buffers, the desktop and the emulator only with 986 MiB in swap and 42 MiB of file cache for the game. Over by
   about 0.4-0.5 GiB; 320 MiB of the pin are orphans (ours).
