@@ -1,0 +1,85 @@
+play phase 132-176 s: 927 frames, 43.4 s, median 34.2 ms, p90 62.7 ms; frames over 33 ms: 739 = 86 % of the play time; clock offset 74022.850
+
+== Render Thread: play time by cause, % of 43.9 s  [on CPU 46.1 %, run-queue wait 0.5 %, blocked 53.4 %]
+    20.6 %  guest code
+    11.0 %  host GPU path
+     6.5 %  libc / libstdc++
+     0.8 %  host other (libkernel, loader, memory)
+     7.0 %  kernel time on the CPU (on-CPU minus user-space samples: system calls, page faults)
+     0.5 %  run-queue wait
+    17.3 %  blocked: flip drain (host stamp, frames over 33 ms)
+     9.0 %  blocked: label wait (host stamp, frames over 33 ms)
+     8.8 %  blocked: device mutex (host stamp, frames over 33 ms)
+     7.9 %  blocked: chain mutex (host stamp, frames over 33 ms)
+     5.9 %  blocked, no host stamp: sleep (by the 20 ms samples)
+     4.4 %  blocked, no host stamp: futex (by the 20 ms samples)
+   ticks user 1657 system 367; minor faults 46693 (1064/s), major 2546 (58.0/s); host scopes: submit 6.5 s, split 1.9 s
+
+== game-main: play time by cause, % of 43.9 s  [on CPU 56.1 %, run-queue wait 0.6 %, blocked 43.4 %]
+    48.3 %  guest code
+     4.6 %  host other (libkernel, loader, memory)
+     2.0 %  libc / libstdc++
+     0.9 %  kernel time on the CPU (on-CPU minus user-space samples: system calls, page faults)
+     0.6 %  run-queue wait
+    43.4 %  blocked, no host stamp: futex (by the 20 ms samples)
+   ticks user 2363 system 98; minor faults 29558 (673/s), major 2066 (47.1/s); host scopes: submit 0.0 s, split 0.0 s
+
+== frames of the play phase by length: count, mean ms; mean user-space CPU ms of the Render Thread and of the main thread in the frame
+      0-33   ms:   188 frames, mean   31.8 ms; Render Thread  13.8 ms (44 %), main thread  16.7 ms (53 %)
+     33-50   ms:   575 frames, mean   36.8 ms; Render Thread  14.6 ms (40 %), main thread  19.0 ms (52 %)
+     50-80   ms:   121 frames, mean   61.1 ms; Render Thread  24.0 ms (39 %), main thread  39.0 ms (64 %)
+     80-100  ms:    24 frames, mean   87.4 ms; Render Thread  23.2 ms (27 %), main thread  63.0 ms (72 %)
+    100-0    ms:    19 frames, mean  356.3 ms; Render Thread 144.5 ms (41 %), main thread 207.8 ms (58 %)
+
+== hardware counters (user space; event counts per 8 events = 8 lines per interval): IPC, misses per 1,000 instructions, per second of wall clock
+   Render Thread menu and list all                   :  41.7 s, cycles 1.71 G/s, IPC 0.83, dTLB load misses 0.48, iTLB 0.107, cache misses 9.33 per 1,000 instr
+   Render Thread play          all                   :  41.4 s, cycles 1.35 G/s, IPC 0.94, dTLB load misses 0.41, iTLB 0.068, cache misses 8.64 per 1,000 instr
+   Render Thread play          in frames over 100 ms :   5.4 s, cycles 1.98 G/s, IPC 0.37, dTLB load misses 0.43, iTLB 0.099, cache misses 5.55 per 1,000 instr
+   Render Thread play          in the other frames   :  36.0 s, cycles 1.25 G/s, IPC 1.08, dTLB load misses 0.41, iTLB 0.066, cache misses 8.89 per 1,000 instr
+   Render Thread save load     all                   :  27.7 s, cycles 1.47 G/s, IPC 0.66, dTLB load misses 0.49, iTLB 0.135, cache misses 8.01 per 1,000 instr
+   Render Thread scene load    all                   :  29.0 s, cycles 2.05 G/s, IPC 0.53, dTLB load misses 0.54, iTLB 0.083, cache misses 10.68 per 1,000 instr
+   game-main     menu and list all                   :  41.7 s, cycles 3.31 G/s, IPC 0.79, dTLB load misses 0.94, iTLB 0.175, cache misses 13.03 per 1,000 instr
+   game-main     play          all                   :  42.6 s, cycles 5.12 G/s, IPC 1.05, dTLB load misses 0.46, iTLB 0.089, cache misses 7.67 per 1,000 instr
+   game-main     play          in frames over 100 ms :   6.6 s, cycles 5.17 G/s, IPC 1.64, dTLB load misses 0.28, iTLB 0.078, cache misses 3.51 per 1,000 instr
+   game-main     play          in the other frames   :  36.0 s, cycles 5.11 G/s, IPC 0.94, dTLB load misses 0.52, iTLB 0.093, cache misses 9.02 per 1,000 instr
+   game-main     save load     all                   :  27.7 s, cycles 3.70 G/s, IPC 1.16, dTLB load misses 0.45, iTLB 0.126, cache misses 6.81 per 1,000 instr
+   game-main     scene load    all                   :  29.0 s, cycles 3.11 G/s, IPC 0.85, dTLB load misses 0.83, iTLB 0.165, cache misses 11.76 per 1,000 instr
+
+== page faults in the play phase: by the memory they hit, and by the code that faulted
+   Render Thread: 49239 faults, 1121/s
+      memory: guest direct memory (memfd:KytyDirect) writable 58 %; host anonymous writable 41 %; guest private memory (memfd:KytyPrivate) writable 0 %; file mapping (libstdc++.so.6.0.35) read-only 0 %; file mapping (libstdc++.so.6.0.35) writable 0 %
+      code:   guest code 58 %; __memmove_avx_unaligned_erms 26 %; void std::vector<Libs::Bc5Gc::Direct::DView, std::allocator<Libs::Bc5G 6 %; Libs::Bc5Gc::Direct::direct_sync_one(Libs::Bc5Gc::Direct::DState&, boo 4 %; Libs::Bc5Gc::Direct::direct_views_build(Libs::Bc5Gc::Direct::DState co 3 %; bc5::direct::Device::mappings() const 1 %
+   game-main: 31624 faults, 720/s
+      memory: guest direct memory (memfd:KytyDirect) writable 84 %; guest private memory (memfd:KytyPrivate) writable 9 %; host anonymous writable 7 %; host heap writable 0 %
+      code:   guest code 91 %; std::_Rb_tree_rebalance_for_erase(std::_Rb_tree_node_base*, std::_Rb_t 2 %; __memmove_avx_unaligned_erms 1 %; __memset_avx2_unaligned_erms 1 %; Libs::LibAmpr::Ampr::Bc5ForgetPages(unsigned long, unsigned long) 1 %; __memmove_avx_unaligned 1 %
+
+== threads in the play phase: all the emulator's threads together use 429 % of one CPU (4.3 of 16 logical CPUs, 8 cores)
+   CPU %  run-queue %  thread (policy, rt priority, priority, nice, CPUs allowed)  logical CPUs it ran on
+    56.4    0.4  AK::AudioMgr       (policy 0, rt 0, prio 20, nice 0, allowed 0-15)  16 CPUs, most on cpu8 (100 samples)
+    55.8    0.5  game-main          (policy 0, rt 0, prio 20, nice 0, allowed 0-15)  15 CPUs, most on cpu6 (100 samples)
+    46.0    0.5  Render Thread      (policy 0, rt 0, prio 20, nice 0, allowed 0-15)  16 CPUs, most on cpu0 (100 samples)
+    27.2    1.0  bc5-ring           (policy 0, rt 0, prio 20, nice 0, allowed 0-15)  16 CPUs, most on cpu2 (100 samples)
+    14.1    1.2  Job Hi 1           (policy 0, rt 0, prio 20, nice 0, allowed 0-15)  16 CPUs, most on cpu0 (100 samples)
+    14.1    1.2  Job Hi 3           (policy 0, rt 0, prio 20, nice 0, allowed 0-15)  16 CPUs, most on cpu9 (100 samples)
+    14.1    1.2  Job Hi 0           (policy 0, rt 0, prio 20, nice 0, allowed 0-15)  16 CPUs, most on cpu12 (100 samples)
+    14.0    1.2  Job Hi 4           (policy 0, rt 0, prio 20, nice 0, allowed 0-15)  16 CPUs, most on cpu1 (100 samples)
+    14.0    1.2  Job Hi 2           (policy 0, rt 0, prio 20, nice 0, allowed 0-15)  16 CPUs, most on cpu3 (100 samples)
+    12.9    0.7  Job Lo 4           (policy 0, rt 0, prio 20, nice 0, allowed 0-15)  16 CPUs, most on cpu6 (100 samples)
+    12.9    0.7  Job Lo 1           (policy 0, rt 0, prio 20, nice 0, allowed 0-15)  16 CPUs, most on cpu2 (100 samples)
+    12.8    0.8  Job Lo 3           (policy 0, rt 0, prio 20, nice 0, allowed 0-15)  16 CPUs, most on cpu1 (100 samples)
+    12.8    0.8  Job Lo 2           (policy 0, rt 0, prio 20, nice 0, allowed 0-15)  16 CPUs, most on cpu11 (100 samples)
+    12.8    0.7  Job Lo 0           (policy 0, rt 0, prio 20, nice 0, allowed 0-15)  16 CPUs, most on cpu14 (100 samples)
+    11.2    0.2  kyty-gpu           (policy 0, rt 0, prio 20, nice 0, allowed 0-15)  16 CPUs, most on cpu0 (100 samples)
+     7.5    0.8  File Video Stre    (policy 0, rt 0, prio 20, nice 0, allowed 0-15)  16 CPUs, most on cpu1 (100 samples)
+     7.4    0.7  bc5-chainwd        (policy 0, rt 0, prio 20, nice 0, allowed 0-15)  16 CPUs, most on cpu6 (100 samples)
+     6.8    0.2  bc5-apr-q3         (policy 0, rt 0, prio 20, nice 0, allowed 0-15)  16 CPUs, most on cpu14 (100 samples)
+     6.0    0.3  bc5-apr-r1-1       (policy 0, rt 0, prio 20, nice 0, allowed 0-15)  16 CPUs, most on cpu11 (100 samples)
+     4.7    0.2  Coherent Layout    (policy 0, rt 0, prio 20, nice 0, allowed 0-15)  16 CPUs, most on cpu6 (100 samples)
+     4.3    0.2  bc5-apr-q1         (policy 0, rt 0, prio 20, nice 0, allowed 0-15)  16 CPUs, most on cpu14 (100 samples)
+     4.3    0.4  bc5-apr-r1-0       (policy 0, rt 0, prio 20, nice 0, allowed 0-15)  16 CPUs, most on cpu11 (100 samples)
+   ticks of 250 ms with two or more threads over 50 % CPU: 98; in 22 of them (22 %) two such threads were on the two logical CPUs of one core
+   the title's threads: 340 % of one CPU; host threads (bc5-*, kyty-*, mangohud): 89 % of one CPU
+   other processes in the play phase, % of one CPU: kcompactd0 30.0; perf 3.0; python3 2.8; python3 2.3; kwin_wayland 2.2; pipewire 2.0; wireplumber 1.4; kworker/u64:1-sdma1 1.2
+
+== CPU clock in the play phase (/proc/cpuinfo, 44 readings of 16 logical CPUs): min 1612 MHz, median 3492, max 3501; readings under 3,000 MHz: 0 %
+   k10temp: 73-75 C

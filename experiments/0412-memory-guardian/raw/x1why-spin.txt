@@ -1,0 +1,18 @@
+Render Thread, guest code inside frames over 100 ms: 2448 samples at 129 addresses; half of them at 10 addresses, 90 % at 19
+   heaviest addresses: 903f379a2 5.8 %, 903f379a0 5.5 %, 903f37982 5.1 %, 903f3799e 5.1 %, 903f3798a 5.1 %, 903f3798e 4.9 %, 903f37980 4.9 %, 903f3797e 4.9 %
+   heaviest 4 KiB pages: 903f37xxx 94.6 %, 903ccaxxx 1.0 %, 905e6exxx 0.3 %, 903f5fxxx 0.3 %, 905e69xxx 0.2 %
+Render Thread, guest code in the other frames: 6610 samples at 2299 addresses; half of them at 91 addresses, 90 % at 1638
+   heaviest addresses: 905e6e307 2.9 %, 903f37986 1.6 %, 903f379a2 1.6 %, 903f3798a 1.6 %, 903f37988 1.5 %, 903f3799e 1.5 %, 903f379a0 1.5 %, 903f37994 1.5 %
+   heaviest 4 KiB pages: 903f37xxx 28.8 %, 905e6exxx 4.6 %, 903f5fxxx 3.9 %, 903d99xxx 3.1 %, 930003xxx 2.5 %
+Render Thread, guest code inside frames over 50 ms: 4280 samples at 746 addresses; half of them at 13 addresses, 90 % at 318
+   heaviest addresses: 903f379a2 4.6 %, 903f379a0 4.5 %, 903f3798a 4.2 %, 903f3799e 4.1 %, 903f3798e 4.0 %, 903f37982 3.9 %, 903f37986 3.9 %, 903f3797e 3.8 %
+   heaviest 4 KiB pages: 903f37xxx 75.5 %, 905e6exxx 1.4 %, 903f5fxxx 1.3 %, 903ccaxxx 0.9 %, 903f61xxx 0.8 %
+Render Thread, guest code in the other frames: 4778 samples at 1948 addresses; half of them at 132 addresses, 90 % at 1471
+   heaviest addresses: 905e6e307 3.4 %, 903dcc54b 1.7 %, 903d993bd 1.3 %, 903d99381 1.3 %, 903f37988 1.2 %, 903f37998 1.2 %, 903f37996 1.2 %, 903f37986 1.2 %
+   heaviest 4 KiB pages: 903f37xxx 20.7 %, 905e6exxx 5.3 %, 903f5fxxx 4.4 %, 903d99xxx 3.8 %, 930003xxx 2.9 %
+game-main, guest code inside frames over 100 ms: 3246 samples at 375 addresses; half of them at 4 addresses, 90 % at 67
+   heaviest addresses: 903cca7b4 26.0 %, 903f39165 12.0 %, 903cca749 9.8 %, 903cca7bb 5.1 %, 903cca7c2 5.0 %, 903cca72d 4.0 %, 903cca7b0 2.9 %, 903cca72a 2.8 %
+   heaviest 4 KiB pages: 903ccaxxx 74.3 %, 903f39xxx 13.1 %, 90e3c8xxx 2.2 %, 903ccbxxx 0.7 %, 903ee0xxx 0.4 %
+game-main, guest code in the other frames: 18020 samples at 6472 addresses; half of them at 242 addresses, 90 % at 4670
+   heaviest addresses: 903cca7b4 5.9 %, 903f39165 3.1 %, 903cca749 2.3 %, 903cca7c2 1.2 %, 903cca72d 1.1 %, 903cca7bb 0.9 %, 903ee0aa0 0.9 %, 903cca72a 0.8 %
+   heaviest 4 KiB pages: 903ccaxxx 17.8 %, 903ccbxxx 8.7 %, 903f39xxx 3.4 %, 903ee0xxx 2.6 %, 903edexxx 2.2 %
