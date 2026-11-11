@@ -1722,6 +1722,32 @@ no-GPU-bit heaps for the GPU onto the zero canary instead of their pages (no fau
 unpinned, and watch for canary hits and for a picture that changes; `Physics` first and alone, because it is the
 one with a recorded fault. Not built.
 
+### 36. The same table on the maintainer's own load (play h3play, 2026-11-11 20:21–20:24)
+
+He said the scripted runs did not load his save the way he does, so the second measurement was repeated with him
+at the pad: the emulator started on his desktop through `play-guard-0412.sh fast2` (build g412r, `catchers.env` =
+`BC5_GUARD_USE_STAT=1`, no script, no watchdog, the hard stop off), he loaded his save, and on his word the session
+closed the emulator at 172 s (SIGTERM). The catcher is off again. Data `raw/h3play-usestat.txt`.
+
+**Result** [M]:
+- **The wall again.** Pinned 11,846–11,932 MiB from 111 s on (the scripted runs: 11,580–11,700), available 220–275
+  MiB; 21 frames over one second from 98 s on, the longest 15.6 s at 129 s and 6.5 s at 142 s.
+- **Where his 200–250 MiB more are:** the asset heaps hold more data on his load: `AssetHeap Large` 644 of 816 MiB
+  pinned (scripted: 504) and `AssetHeap Small` 282 of 350 (scripted: 230), together +192 MiB; the orphans are
+  272–355 MiB (scripted: 230–255). `InitAllocator` 414 (scripted: 448–450). The other heaps are the same.
+  So his load brings in more assets than the script's (another slot or another place in the game than the one the
+  script's first cross picks [I]); the save data itself is the same file set (section 30).
+- **The protection bits are the same as in the scripted run:** 10,673 MiB with a GPU bit, 1,517 MiB with none:
+  `InitAllocator` 652 (414 pinned), `DynamicHeap` 328, `Physics` 192, `ComponentHeap` 104 (pinned whole):
+  1,038 MiB pinned without a GPU bit on his load.
+- **Named by command buffers:** 788 MiB of 12,190 ever, the same heaps as in section 34; nothing in the four
+  no-GPU-bit heaps, nothing in `AMM` or the asset heaps.
+
+**Reading.** His load needs about 0.2–0.25 GiB more than the scripted route, so the scripted runs understate the
+wall by that much; the pin without a GPU bit is 1.0 GiB on his load too, four times that difference and twice the
+deficit of section 16. Section 35's contradiction (F96's fault inside `Physics`) stands and is what has to be
+settled before that memory is left unpinned.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**

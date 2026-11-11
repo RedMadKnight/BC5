@@ -95,7 +95,7 @@ ARM=$1; DRY=${2:-}
 CATCH=""
 if [ -f "$E/catchers.env" ]; then
   while IFS= read -r ln; do
-    if [[ "$ln" =~ ^BC5_GUARD_(GAP|LOCK)_STAT=[0-9]+$ ]]; then WORDS+=("$ln"); CATCH="$CATCH $ln"; fi
+    if [[ "$ln" =~ ^BC5_GUARD_(GAP|LOCK|USE|ZSKIP)_STAT=[0-9]+$ ]]; then WORDS+=("$ln"); CATCH="$CATCH $ln"; fi
   done < "$E/catchers.env"
 fi
 # "words": the arm's environment words, one per line, for the night runner (run0412n.sh); nothing is started.
