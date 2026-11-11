@@ -13,7 +13,7 @@ import sys
 PIN = "5361c8baac7690e5167e89a27cc7b4c7"
 HERE = os.path.dirname(os.path.abspath(__file__))
 A = b"static std::mutex                           g_dev_mutex;\n"
-HEAD = b"// Experiment 0412 (tag lk412): BC5_GUARD_LOCK_STAT, the device mutex with per-thread hold and wait counters.\n#define LK412_PRINT journal\n"
+HEAD = b"// Experiment 0412 (tag lk412): BC5_GUARD_LOCK_STAT, the device mutex with per-thread hold and wait counters.\n#define LK412_PRINT journal\n#define LK412_NOW timing_now\n"
 TAIL = b"static lk412::Mutex                         g_dev_mutex;\n"
 
 
@@ -31,6 +31,7 @@ def main():
     assert s.count(A) == 1, ("the anchor does not occur exactly once", s.count(A))
     assert s.count(b"g_dev_mutex)") == 3 and s.count(b"std::lock_guard lock(g_dev_mutex);") == 3, "the lock sites are not the three known ones"
     assert s.index(b"static void journal(const char* fmt, ...) __attribute__") < s.index(A), "journal() is not declared before the mutex"
+    assert s.index(b"static double timing_now();") < s.index(A), "timing_now() is not declared before the mutex"
     new = HEAD + inc + TAIL
     out = s.replace(A, new)
     assert out.count(new) == 1 and out.replace(new, A) == s, "undoing the edit does not give the input back"

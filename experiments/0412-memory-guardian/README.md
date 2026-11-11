@@ -981,6 +981,49 @@ maintenance's kernel work outside the mutex with the submission order unchanged,
 the lock, stage 3 (the device call) left to an experiment on the backend. Expected gain: in the gaps over 100 ms
 (51–61 s of each run have one), single percents in the mean frame rate [I]. Nothing of stages 0–3 is built.
 
+### 22. Stage 0: the long holds beside the frame gaps (build g412l, 2026-11-11 17:51–17:56, the top session's order)
+
+Build g412l = g412k + one journal line for every hold and every wait of the device mutex of 30 ms or more, stamped on
+the journal's clock (`memfast/lock0412.inc`; lock test 16 of 16; binary `e07c8f57`, g412k kept; default off, no change
+of behaviour). Run r1holds: arm fast2, `BC5_GUARD_LOCK_STAT=1`, scripted load, 181 s, 25.0 flips/s, no kernel line.
+`holds0412.py` puts the holds beside the frames with more than 100 ms since the last flip. Data `raw/r1holds-*`.
+
+**Result** [M]: 100 gaps over 100 ms, 18.0 s in all; 239 long holds, 13.9 s; 188 long waits, 10.8 s (Render Thread 3.1 s).
+
+| phase | gaps | gap time | gaps with a long hold inside | with a long wait of the Render Thread inside | gap time the holds cover |
+|---|---|---|---|---|---|
+| scene load | 27 | 3.7 s | 14 (52 %) | 5 (19 %) | 0.7 s (19 %) |
+| menu and list | 11 | 2.8 s | 6 (55 %) | 3 (27 %) | 0.4 s (13 %) |
+| save load | 35 | 5.1 s | 19 (54 %) | 9 (26 %) | 1.1 s (22 %) |
+| play | 23 | 5.9 s | 15 (65 %) | 5 (22 %) | 2.6 s (44 %) |
+| all (with 4 in the menus) | 100 | 18.0 s | 56 (56 %) | 23 (23 %) | 4.9 s (27 %) |
+
+The longest hold inside a gap is mostly `bc5-ring`'s or `bc5-chainwd`'s, in direct sync or anon sync; `learned` is
+rare after the first second. 174 of the 239 long holds (9.0 s) lie in no gap.
+
+**Verdict of stage 0.** The overlap is partial, not high: a long hold sits inside a little over half of the gaps but
+covers 27 % of their time (44 % in play, about 20 % in the two loads), and the Render Thread itself waits long in a
+quarter of them. Moving the mapping maintenance out of the mutex (stage 1) can at best shorten those gaps by that
+share; three quarters of the gap time has another cause, which this catcher does not name (candidates [I]: the
+title's own load work, memory pressure, the wait for the GPU at the flip). By the design's own rule stage 1 is not
+prepared on this result; the decision goes back to the top session.
+
+**The builds side by side** (flips/s by phase of the scripted run, from the frames files; the runs were made at
+different hours, n1src–o1aud with stack samplers attached, so this is a comparison of runs, not one ABBA) [M]:
+
+| arm and build | runs | scene load 33–62 s | save load 104–132 s | play 132–176 s | ended early by the watchdog |
+|---|---|---|---|---|---|
+| ledger, no table fix (g412f, off) | i1off, i4off | 15.3 / 15.0 | 12.1 / 12.8 | 18.0 / 21.2 | none |
+| ledger + `RANGES_FAST` | i2fast, i3fast, l2off, l5off | 19.6 / 19.8 / 19.8 / 18.3 | 15.9 / 15.2 / 14.9 / 15.6 | – / 20.8 / – / 23.4 | i2fast 164 s, l2off 160 s |
+| ledger + `RANGES_FAST` + `PHYSMAP_SORTED` | l3on, l4on | 23.1 / 21.5 | 18.4 / 17.2 | – / 20.8 | l3on 146 s |
+| fast2 (both + orphan release 4 s + forget 10 s + events cap) | m1fast2, n1src, n2src, o1aud | 22.2 / 23.0 / 21.9 / 22.7 | 17.7 / 18.8 / 17.9 / 17.0 | 23.4 / 20.3 / 23.2 / 21.0 | none before 180 s; m1fast2 at 215 s |
+
+(The save-load figures here count the window 104–132 s for every run; section 18's used each run's own load time.)
+The table fixes show in the two loads; play is within the run-to-run spread for every arm. The orphan release
+without the zero skip: works on his route since fast2 (section 18: 1,548 MiB cut over a run, pin 11.5–11.65 GiB
+against 12.0, orphans left 120–250 MiB as parts of chunks still under a view); its effect is that no fast2 run hit
+the watchdog before 180 s, where 3 of 7 runs without it did.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
@@ -991,7 +1034,8 @@ the lock, stage 3 (the device call) left to an experiment on the backend. Expect
   zero skip (pin 11.5-11.65 GiB, was 12.0); the budget is still short at 215 s.
 - The device mutex (section 20) [M]: every submission does all its host work under one mutex; it is held 45 % of the time
   (`bc5-ring` 23 %, Render Thread 14 %, `bc5-chainwd` 8 %), the three wait 35 s of 180 s for it, single holds reach 35-135 ms in most 10 s windows and 354 ms in the save load.
-  A shorter hold is the next speed fix; it changes the direct path's locking and is not built.
+  Stage 0 (section 22): long holds lie inside 56 % of the frame gaps over 100 ms but cover 27 % of their time, so a shorter
+  hold removes at most that share; not built (design: `DESIGN-device-mutex.md`).
 - The wall as arithmetic (section 16) [M]: at 165 s the guest pins 12,024 of 15,193 MiB; the 3,169 left hold the kernel, the
   GPU driver's buffers, the desktop and the emulator only with 986 MiB in swap and 42 MiB of file cache for the game. Over by
   about 0.4-0.5 GiB; 320 MiB of the pin are orphans (ours).
