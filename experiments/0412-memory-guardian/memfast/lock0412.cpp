@@ -26,9 +26,11 @@ static void test_print(const char* fmt, ...) {
 	std::vsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
 	g_lines++;
-	if (g_lines <= 8) std::fputs(buf, stdout);
+	if (g_lines <= 8 || std::strncmp(buf, "lock hold", 9) == 0 || std::strncmp(buf, "lock wait", 9) == 0) std::fputs(buf, stdout);
 }
 #define LK412_PRINT test_print
+static double test_now() { return 1.5; }
+#define LK412_NOW test_now
 #include "lock0412.inc"
 
 static uint64_t g_checks = 0, g_ok = 0;
@@ -74,10 +76,26 @@ int main() {
 	check(mu.total_hold_ns() <= wall, "the time held is within the wall-clock time");
 	check(mu.names() == 3, "three thread names");
 	check(mu.total_part_ns() == mu.total_hold_ns(), "the parts sum to the time held");
+	check(mu.long_holds() == 0, "no long hold yet");
+	{
+		const int before = g_lines;
+		std::thread waiter;
+		{
+			std::lock_guard lock(mu);
+			mu.mark(2);
+			waiter = std::thread([] { pthread_setname_np(pthread_self(), "lk-waiter"); std::lock_guard l2(mu); });
+			timespec d {0, 60000000};
+			nanosleep(&d, nullptr);
+		}
+		waiter.join();
+		check(mu.long_holds() == 1, "a hold of 60 ms is a long hold");
+		check(mu.long_waits() == 1, "the wait behind it is a long wait");
+		check(g_lines == before + 2, "one line for the hold, one for the wait");
+	}
 	check(mu.try_lock(), "try_lock on a free mutex");
 	std::thread([] { check(!mu.try_lock(), "try_lock on a held mutex fails"); }).join();
 	mu.unlock();
-	check(mu.total_acq() == static_cast<uint64_t>(threads) * rounds + 1, "try_lock counted");
+	check(mu.total_acq() == static_cast<uint64_t>(threads) * rounds + 3, "try_lock and the two long-hold locks counted");
 	std::printf("lock0412: %" PRIu64 " of %" PRIu64 "; end\n", g_ok, g_checks);
 	return g_ok == g_checks ? 0 : 1;
 }

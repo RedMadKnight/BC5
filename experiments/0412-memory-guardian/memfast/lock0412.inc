@@ -3,6 +3,8 @@
 // counts, per thread name: acquisitions, the time held (sum, longest, holds of 2 ms and more), the time waited, and
 // for every waiter the time waited behind each holder (the thread that held the mutex when the wait began). One block
 // of lines every 10 s through LK412_PRINT (printf-like). All counters are written by the thread that holds the mutex.
+// Stage 0 of DESIGN-device-mutex.md (build g412l): one line for every hold and every wait of 30 ms or more, stamped
+// with LK412_NOW() (seconds on the journal's clock, which the frame lines use) at its end.
 // The text is included by the main unit (mklock0412.py) and by the CPU test lock0412.cpp.
 namespace lk412 {
 inline uint64_t now_ns() {
@@ -36,6 +38,10 @@ public:
 		const int me = slot();
 		holder_.store(me, std::memory_order_relaxed);
 		acq_[me]++;
+		if (behind >= 0 && waited >= kLongNs) {
+			long_waits_++;
+			LK412_PRINT("lock wait (exp 0412, tag lk412): t %.3f s: %s waited %.1f ms behind %s\n", LK412_NOW(), name_[me], static_cast<double>(waited) / 1e6, name_[behind < N ? behind : N - 1]);
+		}
 		if (behind >= 0) {
 			waits_[me]++;
 			wait_ns_[me] += waited;
@@ -44,6 +50,7 @@ public:
 		t_acq_ = now_ns();
 		sect_ = 0;
 		t_sect_ = t_acq_;
+		for (int k = 0; k < S; k++) cur_ns_[k] = 0;
 	}
 	// The holder says which part of its work begins now (S parts; part 0 begins at lock()). Build g412k.
 	void mark(int part) {
@@ -61,6 +68,7 @@ public:
 			t_acq_ = now_ns();
 			sect_ = 0;
 			t_sect_ = t_acq_;
+			for (int k = 0; k < S; k++) cur_ns_[k] = 0;
 		}
 		return true;
 	}
@@ -73,6 +81,15 @@ public:
 			hold_ns_[me] += held;
 			if (held > max_ns_[me]) max_ns_[me] = held;
 			if (held >= 2000000ull) long_[me]++;
+			if (held >= kLongNs) {
+				long_holds_++;
+				char parts[300] = {};
+				int  pa         = 0;
+				for (int k = 0; k < S && pa < 220; k++) {
+					if (cur_ns_[k] >= 1000000ull) pa += std::snprintf(parts + pa, sizeof(parts) - static_cast<size_t>(pa), " %s %.1f", part_name(k), static_cast<double>(cur_ns_[k]) / 1e6);
+				}
+				LK412_PRINT("lock hold (exp 0412, tag lk412): t %.3f s: %s held %.1f ms:%s\n", LK412_NOW(), name_[me], static_cast<double>(held) / 1e6, parts);
+			}
 			if (t_report_ == 0) t_report_ = now;
 			if (now - t_report_ >= 10000000000ull) {
 				report(static_cast<double>(now - t_report_) / 1e9);
@@ -89,12 +106,20 @@ public:
 	int      names() const { return n_names_; }
 	uint64_t total_part_ns() const { uint64_t s = 0; for (int i = 0; i < N; i++) for (int k = 0; k < S; k++) s += part_ns_[i][k]; return s; }
 	static constexpr int S = 9;
+	static constexpr uint64_t kLongNs = 30000000ull; // stage 0: a hold or a wait this long gets its own line
+	uint64_t long_holds() const { return long_holds_; }
+	uint64_t long_waits() const { return long_waits_; }
+	static const char* part_name(int k) {
+		static const char* const n[S] = {"probe", "anon sync", "direct sync", "learned", "hints", "prepare", "device submit", "tail", "other"};
+		return n[k >= 0 && k < S ? k : S - 1];
+	}
 
 private:
 	void close_part(uint64_t now) { // the caller holds m_
 		const int      me = holder_.load(std::memory_order_relaxed);
 		const uint64_t d  = now - t_sect_;
 		part_ns_[me][sect_] += d;
+		cur_ns_[sect_] += d;
 		if (d > part_max_[me][sect_]) part_max_[me][sect_] = d;
 		t_sect_ = now;
 	}
@@ -130,12 +155,11 @@ private:
 			            secs, name_[i][0] != 0 ? name_[i] : "(no name)", acq_[i], static_cast<double>(hold_ns_[i]) / 1e6, static_cast<double>(hold_ns_[i]) / 1e7 / secs,
 			            static_cast<double>(max_ns_[i]) / 1e6, long_[i], static_cast<double>(wait_ns_[i]) / 1e6, waits_[i], static_cast<double>(wait_ns_[i]) / 1e7 / secs,
 			            who[0] != 0 ? "; behind:" : "", who);
-			static const char* const part_name[S] = {"probe", "anon sync", "direct sync", "learned", "hints", "prepare", "device submit", "tail", "other"};
 			char parts[700] = {};
 			int  pa         = 0;
 			for (int k = 0; k < S; k++) {
 				if (part_ns_[i][k] == 0) continue;
-				pa += std::snprintf(parts + pa, sizeof(parts) - static_cast<size_t>(pa), "%s %s %.1f (longest %.2f)", pa == 0 ? "" : ",", part_name[k], static_cast<double>(part_ns_[i][k]) / 1e6,
+				pa += std::snprintf(parts + pa, sizeof(parts) - static_cast<size_t>(pa), "%s %s %.1f (longest %.2f)", pa == 0 ? "" : ",", part_name(k), static_cast<double>(part_ns_[i][k]) / 1e6,
 				                    static_cast<double>(part_max_[i][k]) / 1e6);
 				part_ns_[i][k] = part_max_[i][k] = 0;
 				if (pa >= static_cast<int>(sizeof(parts)) - 80) break;
@@ -149,6 +173,7 @@ private:
 	std::atomic<int> holder_ {0};
 	uint64_t         t_acq_ = 0, t_report_ = 0, t_sect_ = 0;
 	int              sect_ = 0;
+	uint64_t         cur_ns_[9] = {}, long_holds_ = 0, long_waits_ = 0;
 	uint64_t         part_ns_[N][9] = {}, part_max_[N][9] = {};
 	int              n_names_ = 0;
 	char             name_[N][32] = {};

@@ -1,0 +1,531 @@
+hold (lk412): t 1.499 s: bc5-ring held 1498.7 ms: direct sync 850.2 learned 606.0 prepare 41.4
+wait (lk412): t 1.499 s: game-main waited 648.0 ms behind bc5-ring
+hold (lk412): t 1.766 s: game-main held 267.0 ms: anon sync 1.0 device submit 265.4
+wait (lk412): t 1.766 s: bc5-ring waited 266.9 ms behind game-main
+hold (lk412): t 1.924 s: bc5-chainwd held 48.9 ms: direct sync 45.8 device submit 2.6
+hold (lk412): t 2.095 s: bc5-ring held 69.6 ms: direct sync 44.8 learned 24.6
+wait (lk412): t 2.095 s: bc5-chainwd waited 67.9 ms behind bc5-ring
+hold (lk412): t 3.498 s: bc5-ring held 52.6 ms: direct sync 49.8 device submit 2.3
+hold (lk412): t 5.107 s: bc5-ring held 42.5 ms: direct sync 37.1 learned 3.2 device submit 2.1
+wait (lk412): t 5.107 s: Render Thread waited 36.7 ms behind bc5-ring
+stat (lk412): 10.0 s: game-main: 2 locks, held 268.4 ms (2.7 % of the time; longest 266.95 ms; 1 of 2 ms or more), waited 648.0 ms in 1 waits (6.5 %); behind: bc5-ring 648.0 ms
+parts (lk412): 10.0 s: game-main: ms held by part: probe 1.4 (longest 1.43), anon sync 1.0 (longest 1.02), direct sync 0.0 (longest 0.02), learned 0.3 (longest 0.25), hints 0.0 (longest 0.01), prepare 0.0 (longest 0.05), device submit 265.4 (longest 265.45), tail 0.2 (longest 0.15)
+stat (lk412): 10.0 s: bc5-ring: 2666 locks, held 2353.9 ms (23.5 % of the time; longest 1498.68 ms; 60 of 2 ms or more), waited 553.3 ms in 316 waits (5.5 %); behind: game-main 266.9 ms, Render Thread 208.3 ms, bc5-chainwd 42.6 ms, bc5-ring 35.5 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 10.3 (longest 0.06), anon sync 27.3 (longest 11.51), direct sync 1191.4 (longest 850.19), learned 707.2 (longest 605.96), hints 2.5 (longest 0.13), prepare 95.6 (longest 41.36), device submit 295.0 (longest 3.90), tail 24.6 (longest 0.12)
+stat (lk412): 10.0 s: bc5-chainwd: 244 locks, held 292.7 ms (2.9 % of the time; longest 48.89 ms; 22 of 2 ms or more), waited 95.5 ms in 23 waits (1.0 %); behind: bc5-ring 95.5 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 2.2 (longest 0.11), anon sync 9.6 (longest 4.73), direct sync 111.2 (longest 45.79), learned 8.5 (longest 2.67), hints 6.7 (longest 0.11), prepare 20.8 (longest 2.85), device submit 127.3 (longest 6.19), tail 6.4 (longest 0.11)
+stat (lk412): 10.0 s: Render Thread: 577 locks, held 599.8 ms (6.0 % of the time; longest 18.57 ms; 46 of 2 ms or more), waited 165.9 ms in 106 waits (1.7 %); behind: bc5-ring 162.2 ms, bc5-chainwd 3.8 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 1.8 (longest 0.03), anon sync 11.1 (longest 4.61), direct sync 181.6 (longest 14.87), learned 30.4 (longest 4.33), hints 21.2 (longest 1.01), prepare 46.0 (longest 2.54), device submit 290.2 (longest 9.26), tail 17.6 (longest 0.16)
+stat (lk412): 10.0 s: bc5-ring: 3372 locks, held 623.5 ms (6.2 % of the time; longest 9.41 ms; 12 of 2 ms or more), waited 89.6 ms in 310 waits (0.9 %); behind: Render Thread 76.7 ms, bc5-chainwd 6.6 ms, bc5-ring 6.3 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 13.3 (longest 0.04), anon sync 91.2 (longest 9.21), direct sync 12.3 (longest 0.48), learned 1.3 (longest 0.00), hints 2.8 (longest 0.01), prepare 65.9 (longest 5.38), device submit 398.3 (longest 0.85), tail 38.5 (longest 0.12)
+stat (lk412): 10.0 s: bc5-chainwd: 289 locks, held 194.9 ms (1.9 % of the time; longest 2.91 ms; 2 of 2 ms or more), waited 23.9 ms in 5 waits (0.2 %); behind: bc5-ring 23.9 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 0.9 (longest 0.01), anon sync 0.3 (longest 0.01), direct sync 9.6 (longest 2.09), learned 0.2 (longest 0.01), hints 8.9 (longest 0.09), prepare 21.1 (longest 0.37), device submit 145.7 (longest 0.95), tail 8.3 (longest 0.11)
+stat (lk412): 10.0 s: Render Thread: 788 locks, held 568.6 ms (5.7 % of the time; longest 17.32 ms; 16 of 2 ms or more), waited 72.0 ms in 106 waits (0.7 %); behind: bc5-ring 70.8 ms, Render Thread 0.6 ms, bc5-chainwd 0.6 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 3.7 (longest 0.04), anon sync 0.5 (longest 0.01), direct sync 60.6 (longest 13.19), learned 0.5 (longest 0.03), hints 30.4 (longest 0.14), prepare 71.8 (longest 0.22), device submit 368.5 (longest 3.94), tail 32.5 (longest 0.15)
+stat (lk412): 10.0 s: bc5-ring: 3402 locks, held 641.9 ms (6.4 % of the time; longest 11.77 ms; 12 of 2 ms or more), waited 97.6 ms in 320 waits (1.0 %); behind: Render Thread 74.6 ms, bc5-ring 17.2 ms, bc5-chainwd 5.8 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 13.7 (longest 0.10), anon sync 90.6 (longest 11.56), direct sync 13.0 (longest 1.11), learned 1.3 (longest 0.02), hints 2.9 (longest 0.05), prepare 66.7 (longest 6.19), device submit 414.2 (longest 0.84), tail 39.5 (longest 0.21)
+stat (lk412): 10.0 s: bc5-chainwd: 305 locks, held 205.5 ms (2.1 % of the time; longest 2.67 ms; 1 of 2 ms or more), waited 0.8 ms in 8 waits (0.0 %); behind: bc5-ring 0.8 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 0.7 (longest 0.00), anon sync 0.3 (longest 0.01), direct sync 10.5 (longest 1.69), learned 0.2 (longest 0.01), hints 9.6 (longest 0.11), prepare 22.6 (longest 0.23), device submit 152.4 (longest 0.95), tail 9.1 (longest 0.12)
+stat (lk412): 10.0 s: Render Thread: 778 locks, held 520.4 ms (5.2 % of the time; longest 3.39 ms; 9 of 2 ms or more), waited 86.5 ms in 95 waits (0.9 %); behind: bc5-ring 86.5 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 4.0 (longest 0.05), anon sync 0.5 (longest 0.00), direct sync 34.0 (longest 2.09), learned 0.5 (longest 0.01), hints 28.4 (longest 0.18), prepare 69.1 (longest 0.27), device submit 350.9 (longest 1.43), tail 32.8 (longest 0.16)
+hold (lk412): t 31.573 s: bc5-ring held 50.0 ms: direct sync 38.6 learned 4.2 device submit 7.1
+wait (lk412): t 31.573 s: Render Thread waited 49.8 ms behind bc5-ring
+hold (lk412): t 31.635 s: bc5-ring held 34.1 ms: direct sync 19.6 learned 12.3 device submit 2.1
+wait (lk412): t 31.635 s: Render Thread waited 33.9 ms behind bc5-ring
+hold (lk412): t 33.982 s: bc5-ring held 60.2 ms: direct sync 52.1 learned 2.4 device submit 5.6
+wait (lk412): t 33.982 s: Render Thread waited 60.0 ms behind bc5-ring
+hold (lk412): t 34.384 s: bc5-ring held 65.5 ms: direct sync 50.3 learned 11.7 device submit 3.4
+wait (lk412): t 34.384 s: Render Thread waited 65.4 ms behind bc5-ring
+hold (lk412): t 36.771 s: bc5-ring held 70.0 ms: direct sync 60.6 learned 2.3 device submit 6.9
+wait (lk412): t 36.771 s: Render Thread waited 69.7 ms behind bc5-ring
+hold (lk412): t 36.912 s: bc5-ring held 81.8 ms: direct sync 70.9 learned 4.5 device submit 6.3
+wait (lk412): t 36.912 s: Render Thread waited 81.4 ms behind bc5-ring
+hold (lk412): t 37.025 s: bc5-ring held 52.7 ms: direct sync 45.9 learned 2.5 device submit 4.1
+wait (lk412): t 37.025 s: Render Thread waited 52.4 ms behind bc5-ring
+hold (lk412): t 38.924 s: bc5-chainwd held 39.9 ms: anon sync 24.4 direct sync 12.0 learned 2.7
+wait (lk412): t 38.924 s: bc5-ring waited 37.8 ms behind bc5-chainwd
+stat (lk412): 10.0 s: bc5-ring: 8376 locks, held 2057.0 ms (20.6 % of the time; longest 81.80 ms; 77 of 2 ms or more), waited 891.7 ms in 203 waits (8.9 %); behind: bc5-chainwd 450.6 ms, Render Thread 429.0 ms, bc5-ring 12.1 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 37.6 (longest 0.08), anon sync 43.3 (longest 23.51), direct sync 734.0 (longest 70.92), learned 464.7 (longest 14.22), hints 6.5 (longest 0.60), prepare 76.9 (longest 3.26), device submit 635.5 (longest 7.10), tail 58.4 (longest 0.07)
+stat (lk412): 10.0 s: bc5-chainwd: 2094 locks, held 1721.1 ms (17.2 % of the time; longest 39.93 ms; 69 of 2 ms or more), waited 414.8 ms in 56 waits (4.1 %); behind: bc5-ring 372.9 ms, bc5-chainwd 41.8 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 5.7 (longest 0.04), anon sync 80.9 (longest 24.38), direct sync 376.5 (longest 25.32), learned 211.6 (longest 11.21), hints 58.1 (longest 0.22), prepare 150.1 (longest 2.89), device submit 787.7 (longest 8.15), tail 50.6 (longest 0.10)
+stat (lk412): 10.0 s: Render Thread: 205 locks, held 547.9 ms (5.5 % of the time; longest 26.13 ms; 38 of 2 ms or more), waited 790.0 ms in 66 waits (7.9 %); behind: bc5-ring 756.7 ms, bc5-chainwd 33.3 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 0.8 (longest 0.09), anon sync 39.6 (longest 23.93), direct sync 187.2 (longest 14.63), learned 162.5 (longest 14.46), hints 6.5 (longest 0.12), prepare 16.7 (longest 2.60), device submit 128.3 (longest 8.63), tail 6.3 (longest 0.20)
+hold (lk412): t 40.921 s: bc5-chainwd held 36.5 ms: anon sync 25.1 direct sync 9.5 device submit 1.7
+hold (lk412): t 41.397 s: bc5-chainwd held 55.2 ms: anon sync 28.6 direct sync 13.9 learned 12.3
+hold (lk412): t 43.112 s: bc5-chainwd held 30.4 ms: direct sync 6.5 learned 13.4 hints 9.2 device submit 1.3
+wait (lk412): t 43.112 s: bc5-ring waited 30.4 ms behind bc5-chainwd
+hold (lk412): t 43.388 s: bc5-ring held 41.7 ms: anon sync 27.6 direct sync 5.8 learned 8.1
+wait (lk412): t 43.388 s: Render Thread waited 41.4 ms behind bc5-ring
+hold (lk412): t 43.573 s: bc5-chainwd held 33.1 ms: anon sync 27.6 direct sync 5.3
+wait (lk412): t 43.574 s: bc5-ring waited 32.4 ms behind bc5-chainwd
+wait (lk412): t 43.896 s: bc5-ring waited 32.2 ms behind bc5-chainwd
+hold (lk412): t 43.977 s: bc5-ring held 35.9 ms: direct sync 23.1 learned 12.2
+hold (lk412): t 44.597 s: bc5-ring held 48.5 ms: anon sync 33.8 direct sync 10.9 learned 3.3
+wait (lk412): t 44.597 s: bc5-chainwd waited 46.6 ms behind bc5-ring
+hold (lk412): t 45.593 s: bc5-ring held 35.9 ms: anon sync 35.6
+hold (lk412): t 45.643 s: bc5-chainwd held 45.8 ms: anon sync 31.8 direct sync 10.3 learned 3.2
+wait (lk412): t 45.644 s: bc5-ring waited 43.4 ms behind bc5-chainwd
+hold (lk412): t 45.826 s: bc5-chainwd held 35.2 ms: direct sync 27.2 device submit 7.7
+hold (lk412): t 45.942 s: bc5-ring held 42.4 ms: direct sync 33.3 learned 5.8 device submit 3.1
+wait (lk412): t 45.942 s: bc5-chainwd waited 40.7 ms behind bc5-ring
+hold (lk412): t 46.650 s: bc5-ring held 40.4 ms: anon sync 40.2
+wait (lk412): t 46.650 s: Render Thread waited 39.3 ms behind bc5-ring
+hold (lk412): t 46.789 s: bc5-ring held 31.2 ms: direct sync 25.4 learned 3.4 device submit 2.2
+hold (lk412): t 47.296 s: bc5-ring held 32.4 ms: direct sync 26.6 learned 3.5 device submit 2.1
+wait (lk412): t 47.296 s: bc5-chainwd waited 30.7 ms behind bc5-ring
+hold (lk412): t 47.370 s: bc5-ring held 44.6 ms: direct sync 31.8 learned 4.1 device submit 8.5
+wait (lk412): t 47.370 s: bc5-chainwd waited 42.8 ms behind bc5-ring
+hold (lk412): t 47.642 s: bc5-ring held 31.7 ms: anon sync 30.8
+wait (lk412): t 47.642 s: Render Thread waited 31.0 ms behind bc5-ring
+hold (lk412): t 47.723 s: bc5-chainwd held 60.2 ms: anon sync 36.7 direct sync 19.7 learned 3.5
+wait (lk412): t 47.723 s: bc5-ring waited 57.9 ms behind bc5-chainwd
+hold (lk412): t 47.789 s: bc5-ring held 33.2 ms: direct sync 24.4 learned 6.2 device submit 2.4
+wait (lk412): t 47.789 s: bc5-chainwd waited 31.5 ms behind bc5-ring
+hold (lk412): t 47.864 s: bc5-ring held 43.0 ms: direct sync 37.0 learned 3.4 device submit 2.4
+wait (lk412): t 47.864 s: Render Thread waited 41.2 ms behind bc5-ring
+hold (lk412): t 48.158 s: bc5-ring held 39.8 ms: direct sync 32.0 learned 4.8 device submit 2.8
+wait (lk412): t 48.158 s: Render Thread waited 38.2 ms behind bc5-ring
+hold (lk412): t 48.291 s: bc5-ring held 33.3 ms: direct sync 26.9 learned 4.8 device submit 1.6
+wait (lk412): t 48.291 s: Render Thread waited 31.8 ms behind bc5-ring
+hold (lk412): t 48.709 s: Render Thread held 36.6 ms: anon sync 34.4 device submit 1.2
+wait (lk412): t 48.709 s: bc5-ring waited 36.6 ms behind Render Thread
+hold (lk412): t 49.272 s: bc5-ring held 31.2 ms: direct sync 26.2 learned 3.3 device submit 1.6
+hold (lk412): t 49.444 s: bc5-ring held 38.0 ms: direct sync 26.1 device submit 11.7
+wait (lk412): t 49.444 s: bc5-chainwd waited 37.9 ms behind bc5-ring
+hold (lk412): t 49.733 s: bc5-chainwd held 57.3 ms: anon sync 37.1 direct sync 15.6 learned 3.8
+wait (lk412): t 49.733 s: bc5-ring waited 47.6 ms behind bc5-chainwd
+hold (lk412): t 49.810 s: bc5-chainwd held 51.8 ms: anon sync 34.9 direct sync 13.0 learned 3.5
+wait (lk412): t 49.810 s: bc5-ring waited 48.8 ms behind bc5-chainwd
+stat (lk412): 10.0 s: bc5-ring: 4757 locks, held 3350.4 ms (33.5 % of the time; longest 48.49 ms; 141 of 2 ms or more), waited 1387.5 ms in 396 waits (13.9 %); behind: bc5-chainwd 866.5 ms, Render Thread 513.8 ms, bc5-ring 7.2 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 25.1 (longest 0.28), anon sync 223.1 (longest 40.16), direct sync 1427.5 (longest 37.03), learned 860.2 (longest 14.71), hints 16.4 (longest 0.18), prepare 87.4 (longest 8.79), device submit 668.4 (longest 11.75), tail 42.2 (longest 0.09)
+stat (lk412): 10.0 s: bc5-chainwd: 888 locks, held 1945.6 ms (19.5 % of the time; longest 60.18 ms; 159 of 2 ms or more), waited 1368.6 ms in 110 waits (13.7 %); behind: bc5-ring 1338.0 ms, bc5-chainwd 30.6 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 4.7 (longest 0.05), anon sync 222.6 (longest 37.14), direct sync 727.3 (longest 27.19), learned 240.8 (longest 14.62), hints 58.1 (longest 9.16), prepare 88.7 (longest 5.41), device submit 568.6 (longest 18.51), tail 34.7 (longest 0.67)
+stat (lk412): 10.0 s: Render Thread: 552 locks, held 936.5 ms (9.4 % of the time; longest 36.56 ms; 92 of 2 ms or more), waited 984.3 ms in 122 waits (9.8 %); behind: bc5-ring 983.5 ms, bc5-chainwd 0.8 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 1.5 (longest 0.05), anon sync 34.7 (longest 34.36), direct sync 183.3 (longest 18.64), learned 68.6 (longest 13.43), hints 35.2 (longest 3.22), prepare 68.7 (longest 4.17), device submit 516.3 (longest 15.70), tail 28.1 (longest 0.66)
+hold (lk412): t 50.464 s: bc5-ring held 36.6 ms: direct sync 23.5 device submit 13.0
+hold (lk412): t 50.796 s: bc5-ring held 35.2 ms: anon sync 35.0
+wait (lk412): t 50.796 s: bc5-chainwd waited 34.0 ms behind bc5-ring
+hold (lk412): t 51.493 s: Render Thread held 63.4 ms: direct sync 45.5 device submit 17.8
+wait (lk412): t 51.493 s: bc5-ring waited 63.4 ms behind Render Thread
+hold (lk412): t 51.794 s: bc5-ring held 30.7 ms: anon sync 30.3
+hold (lk412): t 52.232 s: bc5-ring held 41.2 ms: direct sync 24.6 device submit 16.5
+wait (lk412): t 52.232 s: Render Thread waited 41.0 ms behind bc5-ring
+hold (lk412): t 52.652 s: Render Thread held 30.1 ms: direct sync 14.2 learned 14.4 device submit 1.1
+hold (lk412): t 52.794 s: bc5-ring held 30.6 ms: anon sync 30.4
+hold (lk412): t 53.047 s: bc5-chainwd held 43.4 ms: anon sync 29.9 direct sync 9.9 learned 3.3
+wait (lk412): t 53.047 s: bc5-ring waited 42.7 ms behind bc5-chainwd
+hold (lk412): t 53.320 s: Render Thread held 31.9 ms: direct sync 14.7 learned 14.9 device submit 1.6
+hold (lk412): t 54.048 s: bc5-ring held 43.9 ms: anon sync 43.5
+wait (lk412): t 54.048 s: Render Thread waited 43.0 ms behind bc5-ring
+hold (lk412): t 55.037 s: bc5-ring held 33.3 ms: anon sync 32.9
+wait (lk412): t 55.037 s: bc5-chainwd waited 32.5 ms behind bc5-ring
+hold (lk412): t 55.125 s: bc5-chainwd held 42.6 ms: anon sync 30.3 direct sync 9.0 learned 3.0
+wait (lk412): t 55.125 s: bc5-ring waited 40.7 ms behind bc5-chainwd
+hold (lk412): t 57.116 s: bc5-ring held 31.2 ms: anon sync 30.8
+stat (lk412): 10.0 s: bc5-ring: 9002 locks, held 2564.3 ms (25.6 % of the time; longest 43.91 ms; 40 of 2 ms or more), waited 850.4 ms in 1042 waits (8.5 %); behind: Render Thread 535.3 ms, bc5-chainwd 274.6 ms, bc5-ring 40.5 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 22.1 (longest 0.31), anon sync 294.7 (longest 43.48), direct sync 297.1 (longest 24.60), learned 93.9 (longest 10.85), hints 10.8 (longest 0.17), prepare 204.2 (longest 4.26), device submit 1549.9 (longest 16.46), tail 91.7 (longest 0.35)
+stat (lk412): 10.0 s: bc5-chainwd: 402 locks, held 574.9 ms (5.7 % of the time; longest 43.43 ms; 28 of 2 ms or more), waited 241.0 ms in 90 waits (2.4 %); behind: bc5-ring 239.1 ms, bc5-chainwd 1.9 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 1.4 (longest 0.05), anon sync 60.5 (longest 30.26), direct sync 63.8 (longest 9.88), learned 6.6 (longest 3.34), hints 30.5 (longest 0.21), prepare 64.4 (longest 4.34), device submit 324.2 (longest 1.96), tail 23.5 (longest 0.17)
+stat (lk412): 10.0 s: Render Thread: 2219 locks, held 2015.7 ms (20.2 % of the time; longest 63.43 ms; 94 of 2 ms or more), waited 565.7 ms in 486 waits (5.7 %); behind: bc5-ring 565.4 ms, bc5-chainwd 0.3 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 4.0 (longest 0.02), anon sync 1.2 (longest 0.01), direct sync 173.8 (longest 45.50), learned 30.6 (longest 14.94), hints 100.0 (longest 0.37), prepare 210.6 (longest 3.33), device submit 1406.5 (longest 17.78), tail 89.0 (longest 0.36)
+hold (lk412): t 61.119 s: bc5-ring held 31.3 ms: anon sync 31.1
+hold (lk412): t 62.123 s: Render Thread held 35.6 ms: anon sync 35.0
+hold (lk412): t 63.123 s: bc5-ring held 35.6 ms: anon sync 35.2
+wait (lk412): t 63.123 s: Render Thread waited 33.0 ms behind bc5-ring
+hold (lk412): t 64.122 s: Render Thread held 33.6 ms: anon sync 33.0
+hold (lk412): t 64.792 s: bc5-chainwd held 49.3 ms: anon sync 33.3 direct sync 9.2 learned 3.3 prepare 3.3
+wait (lk412): t 64.792 s: bc5-ring waited 48.3 ms behind bc5-chainwd
+hold (lk412): t 65.779 s: Render Thread held 36.2 ms: anon sync 35.2
+hold (lk412): t 66.784 s: Render Thread held 41.0 ms: anon sync 40.4
+hold (lk412): t 67.774 s: bc5-ring held 30.0 ms: anon sync 29.8
+hold (lk412): t 68.781 s: bc5-ring held 37.0 ms: anon sync 36.6
+wait (lk412): t 68.781 s: bc5-chainwd waited 35.1 ms behind bc5-ring
+hold (lk412): t 68.979 s: bc5-chainwd held 52.8 ms: anon sync 36.3 direct sync 12.7 learned 3.5
+wait (lk412): t 68.982 s: bc5-ring waited 53.0 ms behind bc5-chainwd
+stat (lk412): 10.0 s: bc5-ring: 9839 locks, held 2218.1 ms (22.2 % of the time; longest 37.01 ms; 18 of 2 ms or more), waited 749.7 ms in 1062 waits (7.5 %); behind: Render Thread 428.2 ms, bc5-chainwd 277.4 ms, bc5-ring 44.1 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 24.1 (longest 0.12), anon sync 166.2 (longest 36.60), direct sync 101.6 (longest 4.61), learned 4.1 (longest 0.01), hints 9.5 (longest 0.07), prepare 217.0 (longest 4.20), device submit 1594.7 (longest 1.27), tail 100.8 (longest 0.30)
+stat (lk412): 10.0 s: bc5-chainwd: 400 locks, held 551.2 ms (5.5 % of the time; longest 52.84 ms; 7 of 2 ms or more), waited 90.0 ms in 117 waits (0.9 %); behind: bc5-ring 90.0 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 1.1 (longest 0.04), anon sync 70.0 (longest 36.34), direct sync 34.3 (longest 12.66), learned 7.1 (longest 3.50), hints 32.0 (longest 0.38), prepare 61.9 (longest 3.33), device submit 320.5 (longest 1.63), tail 24.3 (longest 0.35)
+stat (lk412): 10.0 s: Render Thread: 2382 locks, held 2139.4 ms (21.4 % of the time; longest 41.01 ms; 82 of 2 ms or more), waited 281.9 ms in 474 waits (2.8 %); behind: bc5-ring 281.7 ms, bc5-chainwd 0.2 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 4.4 (longest 0.03), anon sync 144.9 (longest 40.44), direct sync 50.7 (longest 4.67), learned 1.4 (longest 0.01), hints 111.7 (longest 0.18), prepare 235.7 (longest 0.55), device submit 1490.0 (longest 1.82), tail 100.6 (longest 0.16)
+hold (lk412): t 69.966 s: bc5-ring held 35.7 ms: anon sync 35.3
+wait (lk412): t 69.966 s: bc5-chainwd waited 34.6 ms behind bc5-ring
+hold (lk412): t 70.963 s: Render Thread held 32.6 ms: anon sync 32.1
+hold (lk412): t 71.968 s: bc5-ring held 35.5 ms: anon sync 35.1
+wait (lk412): t 71.968 s: bc5-chainwd waited 34.5 ms behind bc5-ring
+hold (lk412): t 72.105 s: Render Thread held 33.3 ms: direct sync 22.4 prepare 2.9 device submit 7.9
+hold (lk412): t 72.436 s: bc5-chainwd held 46.2 ms: anon sync 33.3 direct sync 9.3 learned 3.2
+wait (lk412): t 72.438 s: bc5-ring waited 47.0 ms behind bc5-chainwd
+hold (lk412): t 73.426 s: Render Thread held 36.0 ms: anon sync 35.5
+wait (lk412): t 73.426 s: bc5-ring waited 35.9 ms behind Render Thread
+hold (lk412): t 75.429 s: bc5-ring held 35.4 ms: anon sync 35.2
+hold (lk412): t 76.429 s: bc5-ring held 33.5 ms: anon sync 33.3
+wait (lk412): t 76.429 s: Render Thread waited 32.2 ms behind bc5-ring
+hold (lk412): t 76.910 s: bc5-chainwd held 53.9 ms: anon sync 32.4 direct sync 15.0 learned 3.4 prepare 2.9
+wait (lk412): t 76.912 s: bc5-ring waited 55.3 ms behind bc5-chainwd
+hold (lk412): t 77.892 s: bc5-ring held 34.4 ms: anon sync 34.2
+wait (lk412): t 77.892 s: bc5-chainwd waited 33.8 ms behind bc5-ring
+hold (lk412): t 78.892 s: bc5-ring held 33.7 ms: anon sync 33.5
+stat (lk412): 10.0 s: bc5-ring: 9646 locks, held 2272.3 ms (22.7 % of the time; longest 35.68 ms; 13 of 2 ms or more), waited 779.0 ms in 1042 waits (7.8 %); behind: Render Thread 487.5 ms, bc5-chainwd 255.8 ms, bc5-ring 35.7 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 25.1 (longest 0.08), anon sync 239.9 (longest 35.34), direct sync 82.5 (longest 4.65), learned 4.3 (longest 0.01), hints 9.6 (longest 0.14), prepare 204.1 (longest 3.93), device submit 1603.1 (longest 1.15), tail 103.6 (longest 0.37)
+stat (lk412): 10.0 s: bc5-chainwd: 421 locks, held 587.0 ms (5.9 % of the time; longest 53.94 ms; 12 of 2 ms or more), waited 129.0 ms in 96 waits (1.3 %); behind: bc5-ring 129.0 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 1.2 (longest 0.03), anon sync 66.1 (longest 33.31), direct sync 32.7 (longest 15.05), learned 6.9 (longest 3.36), hints 34.1 (longest 0.19), prepare 66.7 (longest 2.90), device submit 351.3 (longest 1.84), tail 27.9 (longest 0.80)
+stat (lk412): 10.0 s: Render Thread: 2313 locks, held 2110.8 ms (21.1 % of the time; longest 35.96 ms; 88 of 2 ms or more), waited 270.9 ms in 439 waits (2.7 %); behind: bc5-ring 270.7 ms, bc5-chainwd 0.2 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 4.6 (longest 0.04), anon sync 68.9 (longest 35.49), direct sync 98.6 (longest 22.40), learned 1.5 (longest 0.02), hints 110.3 (longest 0.18), prepare 240.9 (longest 3.29), device submit 1486.7 (longest 7.88), tail 99.4 (longest 0.17)
+hold (lk412): t 79.893 s: bc5-ring held 34.3 ms: anon sync 34.2
+hold (lk412): t 79.950 s: bc5-chainwd held 40.2 ms: direct sync 26.4 prepare 3.9 device submit 9.7
+wait (lk412): t 79.950 s: bc5-ring waited 39.9 ms behind bc5-chainwd
+hold (lk412): t 80.898 s: bc5-ring held 38.9 ms: anon sync 38.7
+wait (lk412): t 80.898 s: bc5-chainwd waited 38.9 ms behind bc5-ring
+hold (lk412): t 81.896 s: bc5-ring held 35.4 ms: anon sync 35.0
+wait (lk412): t 81.896 s: bc5-chainwd waited 34.3 ms behind bc5-ring
+hold (lk412): t 82.897 s: bc5-ring held 35.9 ms: anon sync 35.7
+wait (lk412): t 82.897 s: Render Thread waited 35.7 ms behind bc5-ring
+hold (lk412): t 83.894 s: bc5-ring held 32.3 ms: anon sync 32.1
+wait (lk412): t 83.894 s: bc5-chainwd waited 31.8 ms behind bc5-ring
+hold (lk412): t 84.896 s: bc5-ring held 33.8 ms: anon sync 33.6
+hold (lk412): t 85.351 s: bc5-ring held 33.5 ms: direct sync 11.7 learned 16.9 prepare 4.3
+wait (lk412): t 85.351 s: Render Thread waited 31.9 ms behind bc5-ring
+hold (lk412): t 86.409 s: bc5-chainwd held 59.8 ms: anon sync 41.6 direct sync 11.5 learned 3.3 prepare 3.1
+wait (lk412): t 86.409 s: bc5-ring waited 57.4 ms behind bc5-chainwd
+hold (lk412): t 87.382 s: bc5-chainwd held 32.9 ms: anon sync 32.2
+wait (lk412): t 87.382 s: bc5-ring waited 32.6 ms behind bc5-chainwd
+hold (lk412): t 88.386 s: bc5-ring held 36.1 ms: anon sync 35.7
+wait (lk412): t 88.386 s: Render Thread waited 33.2 ms behind bc5-ring
+hold (lk412): t 89.383 s: bc5-ring held 33.5 ms: anon sync 33.3
+hold (lk412): t 89.754 s: bc5-ring held 36.2 ms: direct sync 27.4 device submit 8.5
+wait (lk412): t 89.755 s: Render Thread waited 35.9 ms behind bc5-ring
+stat (lk412): 10.0 s: bc5-ring: 9145 locks, held 2465.1 ms (24.6 % of the time; longest 38.94 ms; 27 of 2 ms or more), waited 838.8 ms in 1049 waits (8.4 %); behind: Render Thread 555.1 ms, bc5-chainwd 236.6 ms, bc5-ring 47.1 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 24.2 (longest 0.49), anon sync 311.9 (longest 38.74), direct sync 190.8 (longest 27.43), learned 89.5 (longest 16.92), hints 10.6 (longest 0.54), prepare 204.8 (longest 4.33), device submit 1535.3 (longest 8.50), tail 97.9 (longest 0.10)
+stat (lk412): 10.0 s: bc5-chainwd: 376 locks, held 628.8 ms (6.3 % of the time; longest 59.78 ms; 16 of 2 ms or more), waited 126.1 ms in 70 waits (1.3 %); behind: bc5-ring 125.0 ms, bc5-chainwd 1.1 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 1.1 (longest 0.04), anon sync 74.2 (longest 41.60), direct sync 78.3 (longest 26.40), learned 9.7 (longest 6.06), hints 34.3 (longest 1.00), prepare 67.2 (longest 3.85), device submit 338.0 (longest 9.67), tail 26.0 (longest 0.17)
+stat (lk412): 10.0 s: Render Thread: 2246 locks, held 2067.1 ms (20.7 % of the time; longest 21.33 ms; 97 of 2 ms or more), waited 504.6 ms in 418 waits (5.0 %); behind: bc5-ring 504.2 ms, bc5-chainwd 0.4 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 4.5 (longest 0.03), anon sync 1.4 (longest 0.00), direct sync 141.9 (longest 14.30), learned 49.3 (longest 14.06), hints 113.6 (longest 4.99), prepare 229.2 (longest 3.74), device submit 1430.9 (longest 1.95), tail 96.2 (longest 0.18)
+hold (lk412): t 90.391 s: bc5-ring held 39.0 ms: anon sync 38.6
+wait (lk412): t 90.391 s: Render Thread waited 38.7 ms behind bc5-ring
+hold (lk412): t 91.388 s: bc5-ring held 35.9 ms: anon sync 35.7
+wait (lk412): t 91.388 s: Render Thread waited 34.8 ms behind bc5-ring
+hold (lk412): t 92.387 s: Render Thread held 34.9 ms: anon sync 33.3 device submit 1.2
+hold (lk412): t 92.622 s: bc5-chainwd held 36.4 ms: anon sync 36.0
+wait (lk412): t 92.622 s: bc5-ring waited 32.7 ms behind bc5-chainwd
+hold (lk412): t 93.625 s: Render Thread held 38.0 ms: anon sync 37.3
+hold (lk412): t 94.625 s: bc5-ring held 37.1 ms: anon sync 37.0
+wait (lk412): t 94.625 s: Render Thread waited 37.0 ms behind bc5-ring
+hold (lk412): t 95.629 s: bc5-ring held 40.9 ms: anon sync 40.7
+wait (lk412): t 95.629 s: Render Thread waited 40.6 ms behind bc5-ring
+hold (lk412): t 96.175 s: Render Thread held 45.1 ms: direct sync 33.3 device submit 11.3
+hold (lk412): t 96.371 s: bc5-chainwd held 55.7 ms: anon sync 35.1 direct sync 16.6 learned 3.7
+wait (lk412): t 96.371 s: bc5-ring waited 52.3 ms behind bc5-chainwd
+hold (lk412): t 97.348 s: bc5-ring held 30.9 ms: anon sync 30.7
+hold (lk412): t 98.349 s: bc5-ring held 31.9 ms: anon sync 31.6
+hold (lk412): t 99.362 s: bc5-chainwd held 44.6 ms: anon sync 43.8
+wait (lk412): t 99.362 s: bc5-ring waited 44.5 ms behind bc5-chainwd
+hold (lk412): t 99.513 s: bc5-chainwd held 50.3 ms: anon sync 34.0 direct sync 12.3 learned 3.6
+stat (lk412): 10.0 s: bc5-ring: 7267 locks, held 2189.2 ms (21.8 % of the time; longest 40.88 ms; 44 of 2 ms or more), waited 765.9 ms in 977 waits (7.6 %); behind: Render Thread 464.5 ms, bc5-chainwd 258.4 ms, bc5-ring 43.1 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 20.1 (longest 0.08), anon sync 217.5 (longest 40.70), direct sync 221.3 (longest 19.86), learned 109.9 (longest 14.97), hints 11.3 (longest 1.06), prepare 208.0 (longest 4.76), device submit 1316.5 (longest 2.47), tail 84.5 (longest 0.24)
+stat (lk412): 10.0 s: bc5-chainwd: 310 locks, held 615.6 ms (6.1 % of the time; longest 55.71 ms; 16 of 2 ms or more), waited 125.3 ms in 40 waits (1.2 %); behind: bc5-ring 124.4 ms, bc5-chainwd 0.9 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 1.3 (longest 0.05), anon sync 149.3 (longest 43.84), direct sync 51.8 (longest 16.57), learned 27.5 (longest 13.34), hints 30.6 (longest 0.82), prepare 52.5 (longest 3.37), device submit 280.6 (longest 5.29), tail 22.0 (longest 0.35)
+stat (lk412): 10.0 s: Render Thread: 1908 locks, held 1891.4 ms (18.8 % of the time; longest 45.14 ms; 92 of 2 ms or more), waited 561.1 ms in 451 waits (5.6 %); behind: bc5-ring 561.1 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 4.2 (longest 0.02), anon sync 71.9 (longest 37.31), direct sync 129.1 (longest 33.34), learned 25.8 (longest 12.13), hints 90.1 (longest 0.45), prepare 208.9 (longest 4.43), device submit 1275.5 (longest 11.26), tail 85.9 (longest 0.76)
+hold (lk412): t 100.436 s: Render Thread held 60.2 ms: direct sync 56.1 learned 3.4
+wait (lk412): t 100.436 s: bc5-ring waited 60.1 ms behind Render Thread
+hold (lk412): t 100.512 s: bc5-ring held 46.0 ms: anon sync 31.7 direct sync 10.9 learned 3.0
+wait (lk412): t 100.512 s: Render Thread waited 45.9 ms behind bc5-ring
+hold (lk412): t 100.785 s: bc5-ring held 47.4 ms: direct sync 43.9 learned 3.2
+wait (lk412): t 100.785 s: Render Thread waited 47.1 ms behind bc5-ring
+hold (lk412): t 101.038 s: bc5-ring held 37.0 ms: direct sync 28.5 learned 5.2 prepare 3.1
+wait (lk412): t 101.038 s: Render Thread waited 36.9 ms behind bc5-ring
+hold (lk412): t 101.797 s: Render Thread held 159.7 ms: anon sync 29.1 direct sync 126.7 learned 3.3
+wait (lk412): t 101.797 s: bc5-ring waited 159.7 ms behind Render Thread
+hold (lk412): t 102.016 s: bc5-ring held 37.6 ms: direct sync 35.4 learned 2.0
+wait (lk412): t 102.016 s: Render Thread waited 37.3 ms behind bc5-ring
+hold (lk412): t 104.203 s: bc5-chainwd held 50.1 ms: anon sync 33.6 direct sync 7.6 learned 6.8 device submit 2.0
+hold (lk412): t 104.525 s: bc5-ring held 31.1 ms: direct sync 19.0 learned 8.8 device submit 3.2
+wait (lk412): t 104.525 s: Render Thread waited 30.5 ms behind bc5-ring
+hold (lk412): t 105.082 s: bc5-ring held 86.2 ms: direct sync 81.6 learned 4.1
+wait (lk412): t 105.082 s: bc5-chainwd waited 84.4 ms behind bc5-ring
+hold (lk412): t 105.114 s: bc5-chainwd held 31.2 ms: direct sync 2.2 learned 2.8 device submit 26.1
+wait (lk412): t 105.114 s: bc5-ring waited 31.2 ms behind bc5-chainwd
+hold (lk412): t 105.205 s: bc5-chainwd held 52.6 ms: anon sync 44.0 direct sync 5.9 learned 1.9
+wait (lk412): t 105.205 s: bc5-ring waited 44.7 ms behind bc5-chainwd
+hold (lk412): t 105.616 s: bc5-ring held 31.7 ms: direct sync 18.2 learned 9.4 device submit 4.0
+wait (lk412): t 105.616 s: Render Thread waited 31.6 ms behind bc5-ring
+hold (lk412): t 106.195 s: bc5-ring held 42.4 ms: anon sync 42.3
+wait (lk412): t 106.195 s: bc5-chainwd waited 40.5 ms behind bc5-ring
+hold (lk412): t 106.241 s: bc5-chainwd held 45.3 ms: direct sync 35.8 device submit 9.4
+wait (lk412): t 106.241 s: bc5-ring waited 45.3 ms behind bc5-chainwd
+hold (lk412): t 106.370 s: bc5-chainwd held 43.9 ms: anon sync 35.0 direct sync 6.5 learned 1.9
+wait (lk412): t 106.370 s: bc5-ring waited 35.2 ms behind bc5-chainwd
+hold (lk412): t 107.374 s: bc5-chainwd held 47.9 ms: anon sync 47.3
+hold (lk412): t 108.252 s: bc5-ring held 35.6 ms: direct sync 27.0 learned 8.4
+wait (lk412): t 108.267 s: Render Thread waited 50.4 ms behind bc5-ring
+hold (lk412): t 108.391 s: bc5-chainwd held 57.8 ms: anon sync 40.1 direct sync 8.4 learned 8.9
+wait (lk412): t 108.391 s: bc5-ring waited 57.5 ms behind bc5-chainwd
+hold (lk412): t 108.523 s: bc5-chainwd held 56.8 ms: anon sync 38.8 direct sync 8.6 learned 9.1
+wait (lk412): t 108.523 s: bc5-ring waited 56.8 ms behind bc5-chainwd
+hold (lk412): t 109.261 s: Render Thread held 34.3 ms: direct sync 19.3 learned 11.9 device submit 3.0
+wait (lk412): t 109.261 s: bc5-ring waited 34.0 ms behind Render Thread
+hold (lk412): t 109.538 s: bc5-ring held 57.4 ms: anon sync 39.6 direct sync 7.9 learned 9.6
+wait (lk412): t 109.538 s: Render Thread waited 56.0 ms behind bc5-ring
+stat (lk412): 10.0 s: bc5-ring: 5092 locks, held 2295.3 ms (22.9 % of the time; longest 86.24 ms; 114 of 2 ms or more), waited 1697.6 ms in 194 waits (17.0 %); behind: Render Thread 1095.2 ms, bc5-chainwd 579.1 ms, bc5-ring 23.3 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 25.1 (longest 0.04), anon sync 171.4 (longest 42.25), direct sync 765.4 (longest 81.56), learned 804.8 (longest 16.40), hints 8.6 (longest 0.12), prepare 56.6 (longest 3.52), device submit 423.1 (longest 4.05), tail 40.3 (longest 0.13)
+stat (lk412): 10.0 s: bc5-chainwd: 1274 locks, held 1431.4 ms (14.3 % of the time; longest 57.79 ms; 41 of 2 ms or more), waited 437.8 ms in 72 waits (4.4 %); behind: bc5-ring 430.7 ms, bc5-chainwd 7.2 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 4.1 (longest 0.05), anon sync 268.2 (longest 47.32), direct sync 241.1 (longest 35.76), learned 203.2 (longest 11.02), hints 39.6 (longest 0.22), prepare 96.5 (longest 3.09), device submit 541.5 (longest 26.06), tail 37.1 (longest 0.21)
+stat (lk412): 10.0 s: Render Thread: 120 locks, held 1137.7 ms (11.4 % of the time; longest 159.74 ms; 55 of 2 ms or more), waited 1167.0 ms in 76 waits (11.7 %); behind: bc5-ring 1125.7 ms, bc5-chainwd 41.4 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 0.3 (longest 0.02), anon sync 29.2 (longest 29.09), direct sync 573.9 (longest 126.69), learned 442.0 (longest 11.92), hints 5.2 (longest 0.12), prepare 6.8 (longest 0.15), device submit 77.4 (longest 6.03), tail 2.9 (longest 0.08)
+hold (lk412): t 109.931 s: Render Thread held 33.0 ms: direct sync 19.5 learned 11.6 device submit 1.7
+wait (lk412): t 109.931 s: bc5-ring waited 32.7 ms behind Render Thread
+hold (lk412): t 109.965 s: bc5-ring held 34.3 ms: direct sync 23.1 learned 10.9
+wait (lk412): t 109.965 s: Render Thread waited 31.4 ms behind bc5-ring
+hold (lk412): t 110.380 s: bc5-ring held 51.6 ms: direct sync 28.2 learned 19.7 prepare 3.0
+wait (lk412): t 110.380 s: Render Thread waited 51.4 ms behind bc5-ring
+hold (lk412): t 110.520 s: bc5-ring held 34.0 ms: anon sync 33.8
+wait (lk412): t 110.520 s: Render Thread waited 34.0 ms behind bc5-ring
+hold (lk412): t 110.757 s: bc5-chainwd held 49.5 ms: anon sync 36.7 direct sync 9.9 learned 2.5
+hold (lk412): t 111.754 s: bc5-ring held 41.7 ms: anon sync 41.4
+wait (lk412): t 111.754 s: bc5-chainwd waited 38.7 ms behind bc5-ring
+hold (lk412): t 112.793 s: bc5-chainwd held 72.6 ms: anon sync 37.1 direct sync 13.0 learned 21.1 device submit 1.2
+wait (lk412): t 112.793 s: bc5-ring waited 72.3 ms behind bc5-chainwd
+hold (lk412): t 112.888 s: bc5-chainwd held 50.9 ms: anon sync 38.4 direct sync 9.6 learned 2.6
+wait (lk412): t 112.888 s: bc5-ring waited 49.4 ms behind bc5-chainwd
+hold (lk412): t 113.106 s: bc5-ring held 32.8 ms: direct sync 10.1 learned 21.3 device submit 1.3
+wait (lk412): t 113.106 s: Render Thread waited 32.8 ms behind bc5-ring
+hold (lk412): t 113.879 s: bc5-ring held 42.0 ms: anon sync 41.8
+wait (lk412): t 113.879 s: Render Thread waited 41.8 ms behind bc5-ring
+hold (lk412): t 114.886 s: bc5-ring held 48.6 ms: anon sync 48.3
+wait (lk412): t 114.886 s: Render Thread waited 48.3 ms behind bc5-ring
+hold (lk412): t 114.961 s: bc5-chainwd held 49.9 ms: anon sync 38.0 direct sync 8.9 learned 2.7
+wait (lk412): t 114.961 s: bc5-ring waited 46.0 ms behind bc5-chainwd
+hold (lk412): t 115.954 s: Render Thread held 38.0 ms: anon sync 37.5
+wait (lk412): t 115.954 s: bc5-ring waited 38.0 ms behind Render Thread
+hold (lk412): t 116.953 s: Render Thread held 36.4 ms: anon sync 35.9
+wait (lk412): t 116.953 s: bc5-ring waited 36.3 ms behind Render Thread
+hold (lk412): t 117.113 s: bc5-chainwd held 47.6 ms: anon sync 36.9 direct sync 7.8 learned 2.6
+wait (lk412): t 117.113 s: bc5-ring waited 45.9 ms behind bc5-chainwd
+hold (lk412): t 118.104 s: bc5-ring held 37.5 ms: anon sync 36.4
+wait (lk412): t 118.104 s: Render Thread waited 37.2 ms behind bc5-ring
+hold (lk412): t 118.862 s: bc5-chainwd held 45.8 ms: direct sync 31.3 device submit 14.3
+hold (lk412): t 119.108 s: bc5-ring held 40.4 ms: anon sync 40.2
+hold (lk412): t 119.316 s: bc5-chainwd held 49.9 ms: anon sync 38.9 direct sync 8.1 learned 2.6
+wait (lk412): t 119.316 s: bc5-ring waited 46.2 ms behind bc5-chainwd
+hold (lk412): t 119.421 s: Render Thread held 53.5 ms: direct sync 34.1 device submit 19.0
+wait (lk412): t 119.421 s: bc5-ring waited 53.5 ms behind Render Thread
+stat (lk412): 10.0 s: bc5-ring: 5073 locks, held 2754.8 ms (27.5 % of the time; longest 51.55 ms; 137 of 2 ms or more), waited 1268.0 ms in 638 waits (12.7 %); behind: Render Thread 651.7 ms, bc5-chainwd 598.0 ms, bc5-ring 18.2 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 13.8 (longest 0.03), anon sync 243.6 (longest 48.25), direct sync 953.9 (longest 28.16), learned 727.1 (longest 21.28), hints 14.4 (longest 0.75), prepare 101.4 (longest 3.69), device submit 660.9 (longest 8.43), tail 39.6 (longest 0.11)
+stat (lk412): 10.0 s: bc5-chainwd: 419 locks, held 1027.2 ms (10.3 % of the time; longest 72.58 ms; 52 of 2 ms or more), waited 373.1 ms in 65 waits (3.7 %); behind: bc5-ring 364.2 ms, bc5-chainwd 8.9 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 3.9 (longest 0.07), anon sync 226.4 (longest 38.89), direct sync 325.8 (longest 31.28), learned 166.5 (longest 21.09), hints 20.9 (longest 2.84), prepare 37.5 (longest 2.81), device submit 231.0 (longest 14.33), tail 15.2 (longest 0.34)
+stat (lk412): 10.0 s: Render Thread: 1111 locks, held 1248.1 ms (12.5 % of the time; longest 53.46 ms; 41 of 2 ms or more), waited 1437.6 ms in 224 waits (14.4 %); behind: bc5-ring 1434.4 ms, bc5-chainwd 3.3 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 2.0 (longest 0.05), anon sync 73.9 (longest 37.46), direct sync 215.4 (longest 34.14), learned 112.1 (longest 13.00), hints 36.4 (longest 0.69), prepare 87.7 (longest 1.68), device submit 685.0 (longest 19.04), tail 35.7 (longest 0.72)
+hold (lk412): t 120.346 s: bc5-ring held 52.5 ms: anon sync 41.5 direct sync 7.9 learned 2.8
+wait (lk412): t 120.346 s: Render Thread waited 50.5 ms behind bc5-ring
+hold (lk412): t 121.332 s: bc5-ring held 36.8 ms: anon sync 36.6
+wait (lk412): t 121.332 s: Render Thread waited 36.7 ms behind bc5-ring
+hold (lk412): t 121.496 s: bc5-chainwd held 46.8 ms: anon sync 37.0 direct sync 6.9 learned 2.6
+wait (lk412): t 121.496 s: bc5-ring waited 44.6 ms behind bc5-chainwd
+hold (lk412): t 122.181 s: bc5-ring held 30.1 ms: direct sync 20.5 device submit 9.5
+hold (lk412): t 122.501 s: bc5-ring held 41.4 ms: anon sync 38.1 learned 2.7
+wait (lk412): t 122.501 s: Render Thread waited 32.6 ms behind bc5-ring
+hold (lk412): t 122.975 s: bc5-ring held 39.0 ms: direct sync 25.6 learned 2.8 device submit 10.5
+wait (lk412): t 122.975 s: Render Thread waited 37.9 ms behind bc5-ring
+hold (lk412): t 123.497 s: bc5-ring held 37.1 ms: anon sync 36.9
+wait (lk412): t 123.497 s: Render Thread waited 36.9 ms behind bc5-ring
+hold (lk412): t 123.568 s: bc5-chainwd held 49.9 ms: anon sync 38.6 direct sync 8.3 learned 2.7
+wait (lk412): t 123.568 s: bc5-ring waited 46.5 ms behind bc5-chainwd
+hold (lk412): t 124.566 s: bc5-ring held 47.3 ms: anon sync 47.1
+wait (lk412): t 124.566 s: Render Thread waited 46.1 ms behind bc5-ring
+hold (lk412): t 125.566 s: Render Thread held 37.8 ms: anon sync 36.5
+wait (lk412): t 125.566 s: bc5-ring waited 37.8 ms behind Render Thread
+hold (lk412): t 125.773 s: bc5-chainwd held 73.5 ms: anon sync 37.7 direct sync 13.5 learned 21.9
+hold (lk412): t 126.744 s: bc5-ring held 44.1 ms: anon sync 43.9
+wait (lk412): t 126.744 s: Render Thread waited 44.1 ms behind bc5-ring
+hold (lk412): t 127.748 s: bc5-ring held 47.7 ms: anon sync 47.5
+wait (lk412): t 127.748 s: bc5-chainwd waited 46.2 ms behind bc5-ring
+hold (lk412): t 127.896 s: bc5-ring held 38.3 ms: direct sync 37.8
+wait (lk412): t 127.896 s: bc5-chainwd waited 36.6 ms behind bc5-ring
+hold (lk412): t 128.057 s: bc5-chainwd held 73.0 ms: anon sync 54.3 direct sync 14.7 learned 3.6
+wait (lk412): t 128.057 s: bc5-ring waited 67.7 ms behind bc5-chainwd
+hold (lk412): t 129.022 s: bc5-ring held 38.0 ms: anon sync 37.6
+wait (lk412): t 129.022 s: Render Thread waited 32.3 ms behind bc5-ring
+stat (lk412): 10.0 s: bc5-ring: 5206 locks, held 2823.2 ms (28.2 % of the time; longest 52.47 ms; 126 of 2 ms or more), waited 710.5 ms in 797 waits (7.1 %); behind: Render Thread 443.7 ms, bc5-chainwd 240.0 ms, bc5-ring 26.9 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 11.0 (longest 0.02), anon sync 330.9 (longest 47.53), direct sync 1030.8 (longest 37.78), learned 512.0 (longest 17.11), hints 15.1 (longest 0.27), prepare 117.3 (longest 5.98), device submit 761.8 (longest 10.49), tail 44.3 (longest 0.12)
+stat (lk412): 10.0 s: bc5-chainwd: 226 locks, held 444.6 ms (4.4 % of the time; longest 73.46 ms; 16 of 2 ms or more), waited 493.1 ms in 55 waits (4.9 %); behind: bc5-ring 484.4 ms, bc5-chainwd 8.7 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 3.9 (longest 0.08), anon sync 167.9 (longest 54.29), direct sync 61.8 (longest 14.72), learned 31.1 (longest 21.87), hints 10.0 (longest 0.22), prepare 32.1 (longest 3.54), device submit 127.5 (longest 1.78), tail 10.3 (longest 0.17)
+stat (lk412): 10.0 s: Render Thread: 1532 locks, held 1225.7 ms (12.3 % of the time; longest 37.75 ms; 42 of 2 ms or more), waited 1281.0 ms in 280 waits (12.8 %); behind: bc5-ring 1280.6 ms, bc5-chainwd 0.5 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 2.9 (longest 0.03), anon sync 37.3 (longest 36.55), direct sync 97.2 (longest 11.90), learned 43.6 (longest 13.51), hints 54.2 (longest 0.34), prepare 124.1 (longest 2.82), device submit 815.1 (longest 7.16), tail 51.4 (longest 0.33)
+hold (lk412): t 130.039 s: bc5-ring held 43.4 ms: anon sync 43.0
+wait (lk412): t 130.039 s: Render Thread waited 42.4 ms behind bc5-ring
+hold (lk412): t 130.127 s: bc5-chainwd held 52.5 ms: anon sync 40.7 direct sync 8.5 learned 3.0
+wait (lk412): t 130.127 s: bc5-ring waited 48.6 ms behind bc5-chainwd
+hold (lk412): t 131.043 s: bc5-ring held 53.9 ms: direct sync 36.1 learned 3.3 device submit 14.3
+wait (lk412): t 131.043 s: bc5-chainwd waited 52.1 ms behind bc5-ring
+hold (lk412): t 131.118 s: bc5-ring held 42.9 ms: anon sync 42.7
+wait (lk412): t 131.118 s: Render Thread waited 42.5 ms behind bc5-ring
+hold (lk412): t 132.113 s: bc5-ring held 36.7 ms: anon sync 36.6
+wait (lk412): t 132.113 s: Render Thread waited 36.1 ms behind bc5-ring
+hold (lk412): t 132.189 s: bc5-chainwd held 52.6 ms: anon sync 38.6 direct sync 10.8 learned 2.8
+wait (lk412): t 132.189 s: bc5-ring waited 37.5 ms behind bc5-chainwd
+hold (lk412): t 133.099 s: bc5-ring held 31.0 ms: direct sync 21.1 device submit 9.8
+hold (lk412): t 133.175 s: Render Thread held 38.5 ms: anon sync 36.9 device submit 1.1
+wait (lk412): t 133.846 s: bc5-ring waited 38.8 ms behind bc5-chainwd
+hold (lk412): t 134.118 s: bc5-ring held 46.0 ms: direct sync 27.7 learned 9.9 device submit 8.3
+hold (lk412): t 134.148 s: Render Thread held 30.2 ms: direct sync 22.3 learned 5.2 device submit 2.6
+hold (lk412): t 134.198 s: bc5-ring held 49.7 ms: anon sync 37.1 direct sync 7.6 learned 4.7
+wait (lk412): t 134.199 s: Render Thread waited 49.0 ms behind bc5-ring
+hold (lk412): t 134.308 s: bc5-chainwd held 54.4 ms: anon sync 42.0 direct sync 9.3 learned 2.8
+wait (lk412): t 134.308 s: bc5-ring waited 52.3 ms behind bc5-chainwd
+hold (lk412): t 135.834 s: Render Thread held 599.7 ms: direct sync 593.8 learned 3.1 device submit 2.3
+wait (lk412): t 135.834 s: bc5-ring waited 599.7 ms behind Render Thread
+hold (lk412): t 135.875 s: bc5-ring held 41.4 ms: anon sync 40.4
+wait (lk412): t 135.875 s: Render Thread waited 41.1 ms behind bc5-ring
+hold (lk412): t 136.337 s: bc5-ring held 114.6 ms: direct sync 101.0 learned 9.9 prepare 3.4
+wait (lk412): t 136.337 s: bc5-chainwd waited 112.9 ms behind bc5-ring
+hold (lk412): t 136.554 s: bc5-chainwd held 217.4 ms: direct sync 212.0 learned 3.6 device submit 1.5
+wait (lk412): t 136.554 s: bc5-ring waited 217.0 ms behind bc5-chainwd
+hold (lk412): t 137.304 s: bc5-chainwd held 718.1 ms: anon sync 65.5 direct sync 646.8 learned 5.3
+wait (lk412): t 137.304 s: bc5-ring waited 696.2 ms behind bc5-chainwd
+hold (lk412): t 137.350 s: bc5-ring held 46.6 ms: direct sync 43.4 prepare 3.0
+wait (lk412): t 137.350 s: bc5-chainwd waited 46.6 ms behind bc5-ring
+hold (lk412): t 137.455 s: bc5-ring held 35.4 ms: direct sync 27.8 learned 5.5 device submit 2.1
+wait (lk412): t 137.455 s: Render Thread waited 33.6 ms behind bc5-ring
+hold (lk412): t 137.633 s: Render Thread held 44.5 ms: anon sync 44.3
+hold (lk412): t 138.012 s: Render Thread held 37.1 ms: direct sync 32.6 learned 2.8 device submit 1.2
+wait (lk412): t 138.012 s: bc5-ring waited 37.1 ms behind Render Thread
+hold (lk412): t 138.631 s: bc5-ring held 43.4 ms: anon sync 43.1
+wait (lk412): t 138.631 s: Render Thread waited 43.2 ms behind bc5-ring
+hold (lk412): t 139.393 s: bc5-chainwd held 57.9 ms: anon sync 43.4 direct sync 11.4 learned 2.8
+wait (lk412): t 139.393 s: bc5-ring waited 46.4 ms behind bc5-chainwd
+hold (lk412): t 139.564 s: bc5-ring held 33.6 ms: direct sync 19.3 learned 11.6 device submit 2.6
+wait (lk412): t 139.564 s: Render Thread waited 31.8 ms behind bc5-ring
+stat (lk412): 10.0 s: bc5-ring: 3531 locks, held 2580.1 ms (25.8 % of the time; longest 114.60 ms; 116 of 2 ms or more), waited 2430.0 ms in 575 waits (24.3 %); behind: bc5-chainwd 1307.6 ms, Render Thread 1070.8 ms, bc5-ring 51.7 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 7.5 (longest 0.02), anon sync 244.1 (longest 43.10), direct sync 1079.5 (longest 101.03), learned 547.5 (longest 22.95), hints 13.4 (longest 1.42), prepare 92.5 (longest 4.59), device submit 563.1 (longest 14.32), tail 32.5 (longest 0.31)
+stat (lk412): 10.0 s: bc5-chainwd: 177 locks, held 1431.4 ms (14.3 % of the time; longest 718.14 ms; 25 of 2 ms or more), waited 635.9 ms in 48 waits (6.4 %); behind: bc5-ring 634.4 ms, bc5-chainwd 1.6 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 2.8 (longest 0.14), anon sync 230.5 (longest 65.54), direct sync 985.0 (longest 646.84), learned 44.5 (longest 9.54), hints 12.1 (longest 1.10), prepare 22.3 (longest 3.65), device submit 125.1 (longest 6.43), tail 9.1 (longest 0.19)
+stat (lk412): 10.0 s: Render Thread: 1103 locks, held 1910.8 ms (19.1 % of the time; longest 599.70 ms; 93 of 2 ms or more), waited 1127.2 ms in 217 waits (11.3 %); behind: bc5-ring 1123.4 ms, bc5-chainwd 3.8 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 2.3 (longest 0.03), anon sync 81.8 (longest 44.29), direct sync 883.5 (longest 593.81), learned 129.8 (longest 15.82), hints 65.9 (longest 12.93), prepare 90.1 (longest 0.44), device submit 614.3 (longest 11.85), tail 43.1 (longest 0.30)
+hold (lk412): t 140.675 s: bc5-ring held 260.2 ms: anon sync 238.8 direct sync 14.6 learned 3.5 prepare 3.0
+wait (lk412): t 140.675 s: bc5-chainwd waited 258.4 ms behind bc5-ring
+hold (lk412): t 141.273 s: bc5-chainwd held 31.2 ms: direct sync 30.8
+hold (lk412): t 141.410 s: bc5-ring held 47.5 ms: direct sync 43.6 learned 3.3
+wait (lk412): t 141.410 s: bc5-chainwd waited 45.8 ms behind bc5-ring
+hold (lk412): t 141.455 s: Render Thread held 40.6 ms: anon sync 40.1
+wait (lk412): t 141.455 s: bc5-ring waited 40.4 ms behind Render Thread
+hold (lk412): t 141.536 s: bc5-chainwd held 57.0 ms: anon sync 42.4 direct sync 11.3 learned 3.0
+wait (lk412): t 141.536 s: bc5-ring waited 53.2 ms behind bc5-chainwd
+hold (lk412): t 142.539 s: bc5-chainwd held 56.2 ms: anon sync 38.7 direct sync 14.5 learned 2.7
+wait (lk412): t 142.548 s: bc5-ring waited 62.9 ms behind bc5-chainwd
+hold (lk412): t 143.530 s: Render Thread held 46.2 ms: anon sync 45.3
+hold (lk412): t 143.600 s: bc5-chainwd held 60.8 ms: anon sync 50.3 direct sync 7.3 learned 2.8
+wait (lk412): t 143.602 s: bc5-ring waited 57.9 ms behind bc5-chainwd
+hold (lk412): t 144.578 s: bc5-chainwd held 37.7 ms: anon sync 37.3
+hold (lk412): t 145.606 s: bc5-ring held 53.4 ms: anon sync 39.5 direct sync 9.6 learned 3.7
+wait (lk412): t 145.606 s: bc5-chainwd waited 51.6 ms behind bc5-ring
+hold (lk412): t 145.695 s: bc5-chainwd held 53.4 ms: anon sync 39.2 direct sync 11.1 learned 2.8
+hold (lk412): t 146.841 s: bc5-ring held 70.3 ms: anon sync 42.9 direct sync 19.4 learned 3.6 device submit 4.2
+wait (lk412): t 146.841 s: Render Thread waited 69.2 ms behind bc5-ring
+hold (lk412): t 147.620 s: bc5-ring held 34.0 ms: direct sync 22.1 learned 2.9 device submit 8.8
+wait (lk412): t 147.620 s: bc5-chainwd waited 32.3 ms behind bc5-ring
+hold (lk412): t 147.765 s: bc5-chainwd held 66.2 ms: anon sync 47.4 direct sync 13.7 learned 4.7
+wait (lk412): t 147.765 s: bc5-ring waited 63.8 ms behind bc5-chainwd
+hold (lk412): t 148.739 s: bc5-ring held 39.8 ms: anon sync 39.5
+wait (lk412): t 148.739 s: Render Thread waited 39.6 ms behind bc5-ring
+hold (lk412): t 149.753 s: bc5-ring held 48.8 ms: anon sync 38.5 direct sync 7.0 learned 2.7
+wait (lk412): t 149.753 s: bc5-chainwd waited 47.0 ms behind bc5-ring
+hold (lk412): t 149.837 s: bc5-chainwd held 52.9 ms: anon sync 41.1 direct sync 8.6 learned 2.8
+wait (lk412): t 149.839 s: bc5-ring waited 45.0 ms behind bc5-chainwd
+stat (lk412): 10.0 s: bc5-ring: 5111 locks, held 2937.9 ms (29.3 % of the time; longest 260.23 ms; 129 of 2 ms or more), waited 919.6 ms in 926 waits (9.2 %); behind: bc5-chainwd 470.9 ms, Render Thread 418.0 ms, bc5-ring 30.6 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 12.0 (longest 0.47), anon sync 401.0 (longest 238.81), direct sync 943.9 (longest 43.58), learned 461.3 (longest 11.04), hints 16.1 (longest 0.14), prepare 171.5 (longest 4.14), device submit 877.2 (longest 10.10), tail 54.9 (longest 0.20)
+stat (lk412): 10.0 s: bc5-chainwd: 375 locks, held 929.3 ms (9.3 % of the time; longest 66.17 ms; 56 of 2 ms or more), waited 1024.3 ms in 82 waits (10.2 %); behind: bc5-ring 1023.0 ms, bc5-chainwd 1.3 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 4.6 (longest 0.11), anon sync 296.7 (longest 50.30), direct sync 166.5 (longest 30.81), learned 37.8 (longest 5.14), hints 31.3 (longest 2.87), prepare 51.9 (longest 3.39), device submit 305.0 (longest 23.02), tail 35.5 (longest 4.21)
+stat (lk412): 10.0 s: Render Thread: 1682 locks, held 1441.1 ms (14.4 % of the time; longest 46.16 ms; 85 of 2 ms or more), waited 740.5 ms in 361 waits (7.4 %); behind: bc5-ring 739.8 ms, bc5-chainwd 0.6 ms, Render Thread 0.2 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 3.3 (longest 0.05), anon sync 86.3 (longest 45.26), direct sync 98.1 (longest 15.78), learned 24.8 (longest 4.94), hints 75.4 (longest 0.22), prepare 155.0 (longest 0.48), device submit 929.7 (longest 2.26), tail 68.5 (longest 0.35)
+hold (lk412): t 150.032 s: bc5-ring held 48.3 ms: direct sync 32.2 learned 5.6 device submit 10.5
+wait (lk412): t 150.032 s: bc5-chainwd waited 46.5 ms behind bc5-ring
+hold (lk412): t 150.825 s: bc5-ring held 39.1 ms: anon sync 38.9
+wait (lk412): t 150.825 s: Render Thread waited 38.8 ms behind bc5-ring
+hold (lk412): t 151.831 s: bc5-ring held 39.0 ms: anon sync 38.9
+wait (lk412): t 151.831 s: Render Thread waited 38.1 ms behind bc5-ring
+hold (lk412): t 151.952 s: bc5-chainwd held 48.9 ms: anon sync 38.8 direct sync 7.1 learned 2.7
+wait (lk412): t 151.953 s: bc5-ring waited 45.6 ms behind bc5-chainwd
+hold (lk412): t 152.945 s: bc5-ring held 42.0 ms: anon sync 41.6
+wait (lk412): t 152.945 s: Render Thread waited 42.0 ms behind bc5-ring
+hold (lk412): t 153.941 s: bc5-ring held 37.9 ms: anon sync 37.8
+wait (lk412): t 153.942 s: Render Thread waited 37.6 ms behind bc5-ring
+hold (lk412): t 154.550 s: bc5-chainwd held 52.9 ms: anon sync 41.8 direct sync 7.8 learned 2.9
+wait (lk412): t 154.550 s: bc5-ring waited 45.1 ms behind bc5-chainwd
+hold (lk412): t 155.535 s: bc5-ring held 37.6 ms: anon sync 37.5
+wait (lk412): t 155.535 s: Render Thread waited 37.6 ms behind bc5-ring
+hold (lk412): t 156.539 s: bc5-ring held 41.4 ms: anon sync 41.1
+wait (lk412): t 156.540 s: bc5-chainwd waited 41.0 ms behind bc5-ring
+hold (lk412): t 156.685 s: bc5-chainwd held 51.9 ms: anon sync 40.4 direct sync 8.4 learned 2.8
+wait (lk412): t 156.685 s: bc5-ring waited 49.3 ms behind bc5-chainwd
+hold (lk412): t 157.507 s: Render Thread held 31.8 ms: direct sync 12.5 learned 18.1
+wait (lk412): t 157.507 s: bc5-ring waited 31.5 ms behind Render Thread
+hold (lk412): t 157.678 s: bc5-chainwd held 42.8 ms: anon sync 41.9
+wait (lk412): t 157.678 s: bc5-ring waited 42.8 ms behind bc5-chainwd
+hold (lk412): t 158.674 s: bc5-ring held 38.2 ms: anon sync 38.0
+wait (lk412): t 158.674 s: bc5-chainwd waited 38.1 ms behind bc5-ring
+hold (lk412): t 158.850 s: bc5-chainwd held 50.1 ms: anon sync 39.7 direct sync 7.3 learned 2.7
+wait (lk412): t 158.850 s: bc5-ring waited 44.6 ms behind bc5-chainwd
+hold (lk412): t 159.575 s: Render Thread held 38.5 ms: direct sync 28.2 device submit 10.0
+wait (lk412): t 159.575 s: bc5-ring waited 38.4 ms behind Render Thread
+hold (lk412): t 159.841 s: bc5-ring held 38.8 ms: anon sync 38.6
+wait (lk412): t 159.841 s: bc5-chainwd waited 38.0 ms behind bc5-ring
+stat (lk412): 10.0 s: bc5-ring: 6080 locks, held 2904.7 ms (29.0 % of the time; longest 48.30 ms; 107 of 2 ms or more), waited 892.7 ms in 930 waits (8.9 %); behind: Render Thread 532.5 ms, bc5-chainwd 312.9 ms, bc5-ring 47.3 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 14.2 (longest 0.04), anon sync 314.5 (longest 41.59), direct sync 831.2 (longest 32.18), learned 423.1 (longest 15.23), hints 15.8 (longest 0.16), prepare 202.6 (longest 4.30), device submit 1037.8 (longest 10.46), tail 65.6 (longest 0.31)
+stat (lk412): 10.0 s: bc5-chainwd: 230 locks, held 499.5 ms (5.0 % of the time; longest 52.87 ms; 16 of 2 ms or more), waited 511.2 ms in 44 waits (5.1 %); behind: bc5-ring 511.2 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 3.1 (longest 0.08), anon sync 202.7 (longest 41.87), direct sync 63.8 (longest 19.67), learned 19.9 (longest 3.06), hints 14.1 (longest 0.20), prepare 29.6 (longest 3.28), device submit 150.9 (longest 1.75), tail 15.4 (longest 0.26)
+stat (lk412): 10.0 s: Render Thread: 1868 locks, held 1509.6 ms (15.1 % of the time; longest 38.47 ms; 42 of 2 ms or more), waited 1078.4 ms in 455 waits (10.8 %); behind: bc5-ring 1078.0 ms, bc5-chainwd 0.2 ms, Render Thread 0.2 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 3.8 (longest 0.03), anon sync 1.0 (longest 0.02), direct sync 182.5 (longest 28.18), learned 89.1 (longest 18.11), hints 69.2 (longest 0.39), prepare 154.7 (longest 3.29), device submit 939.2 (longest 10.03), tail 70.0 (longest 0.50)
+hold (lk412): t 160.861 s: bc5-chainwd held 58.9 ms: anon sync 44.0 direct sync 10.4 learned 4.0
+wait (lk412): t 160.861 s: bc5-ring waited 50.6 ms behind bc5-chainwd
+hold (lk412): t 161.242 s: bc5-chainwd held 56.9 ms: anon sync 41.4 direct sync 11.3 learned 3.7
+hold (lk412): t 162.228 s: bc5-ring held 42.5 ms: anon sync 42.4
+wait (lk412): t 162.228 s: Render Thread waited 41.8 ms behind bc5-ring
+hold (lk412): t 163.227 s: Render Thread held 41.6 ms: anon sync 40.8
+hold (lk412): t 164.233 s: bc5-ring held 46.5 ms: anon sync 46.3
+wait (lk412): t 164.233 s: Render Thread waited 45.1 ms behind bc5-ring
+hold (lk412): t 164.804 s: bc5-chainwd held 55.7 ms: anon sync 40.3 direct sync 12.1 learned 3.0
+wait (lk412): t 164.804 s: bc5-ring waited 52.7 ms behind bc5-chainwd
+hold (lk412): t 165.791 s: bc5-ring held 40.9 ms: anon sync 40.5
+wait (lk412): t 165.791 s: Render Thread waited 40.7 ms behind bc5-ring
+hold (lk412): t 166.719 s: Render Thread held 31.6 ms: direct sync 22.0 device submit 9.6
+wait (lk412): t 166.719 s: bc5-ring waited 31.7 ms behind Render Thread
+hold (lk412): t 166.789 s: bc5-ring held 38.5 ms: anon sync 38.1
+wait (lk412): t 166.789 s: Render Thread waited 30.8 ms behind bc5-ring
+hold (lk412): t 167.142 s: bc5-chainwd held 58.0 ms: anon sync 47.6 direct sync 7.2 learned 2.9
+wait (lk412): t 167.142 s: bc5-ring waited 54.7 ms behind bc5-chainwd
+hold (lk412): t 168.126 s: bc5-ring held 41.1 ms: anon sync 40.9
+wait (lk412): t 168.126 s: Render Thread waited 41.1 ms behind bc5-ring
+hold (lk412): t 169.122 s: Render Thread held 37.2 ms: anon sync 36.8
+stat (lk412): 10.0 s: bc5-ring: 6406 locks, held 2484.4 ms (24.8 % of the time; longest 46.51 ms; 81 of 2 ms or more), waited 688.3 ms in 831 waits (6.9 %); behind: Render Thread 424.9 ms, bc5-chainwd 241.3 ms, bc5-ring 22.0 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 16.8 (longest 0.43), anon sync 210.7 (longest 46.30), direct sync 554.1 (longest 15.06), learned 294.9 (longest 10.25), hints 14.2 (longest 0.22), prepare 217.9 (longest 5.03), device submit 1101.9 (longest 3.06), tail 73.9 (longest 0.54)
+stat (lk412): 10.0 s: bc5-chainwd: 162 locks, held 394.4 ms (3.9 % of the time; longest 58.88 ms; 11 of 2 ms or more), waited 301.2 ms in 38 waits (3.0 %); behind: bc5-ring 300.9 ms, bc5-chainwd 0.3 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 2.2 (longest 0.07), anon sync 173.4 (longest 47.57), direct sync 52.1 (longest 12.07), learned 19.7 (longest 4.01), hints 10.0 (longest 0.22), prepare 22.2 (longest 4.10), device submit 104.7 (longest 1.71), tail 10.0 (longest 0.25)
+stat (lk412): 10.0 s: Render Thread: 1792 locks, held 1479.9 ms (14.8 % of the time; longest 41.64 ms; 34 of 2 ms or more), waited 852.8 ms in 395 waits (8.5 %); behind: bc5-ring 852.5 ms, bc5-chainwd 0.3 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 3.8 (longest 0.04), anon sync 78.7 (longest 40.83), direct sync 116.8 (longest 22.02), learned 26.2 (longest 4.14), hints 70.3 (longest 1.58), prepare 154.4 (longest 3.08), device submit 957.5 (longest 9.56), tail 72.2 (longest 0.30)
+hold (lk412): t 170.141 s: bc5-ring held 55.6 ms: anon sync 44.1 direct sync 4.2 learned 7.0
+wait (lk412): t 170.141 s: Render Thread waited 40.2 ms behind bc5-ring
+hold (lk412): t 170.796 s: bc5-chainwd held 57.0 ms: anon sync 40.8 direct sync 10.3 learned 2.8 prepare 3.0
+wait (lk412): t 170.796 s: bc5-ring waited 52.5 ms behind bc5-chainwd
+hold (lk412): t 171.320 s: Render Thread held 36.5 ms: direct sync 26.5 device submit 9.9
+wait (lk412): t 171.320 s: bc5-ring waited 36.4 ms behind Render Thread
+hold (lk412): t 171.789 s: bc5-ring held 41.0 ms: anon sync 38.3 direct sync 2.4
+wait (lk412): t 171.789 s: Render Thread waited 40.5 ms behind bc5-ring
+hold (lk412): t 172.803 s: Render Thread held 52.4 ms: anon sync 48.7 prepare 3.2
+wait (lk412): t 172.803 s: bc5-ring waited 52.4 ms behind Render Thread
+hold (lk412): t 172.902 s: bc5-chainwd held 50.9 ms: anon sync 40.9 direct sync 7.1 learned 2.7
+wait (lk412): t 172.902 s: bc5-ring waited 46.9 ms behind bc5-chainwd
+hold (lk412): t 173.890 s: bc5-ring held 38.9 ms: anon sync 38.7
+wait (lk412): t 173.890 s: bc5-chainwd waited 38.3 ms behind bc5-ring
+hold (lk412): t 174.899 s: bc5-ring held 41.1 ms: anon sync 40.8
+wait (lk412): t 174.899 s: Render Thread waited 40.9 ms behind bc5-ring
+hold (lk412): t 175.905 s: bc5-ring held 45.4 ms: anon sync 45.2
+wait (lk412): t 175.905 s: Render Thread waited 44.7 ms behind bc5-ring
+hold (lk412): t 176.325 s: bc5-chainwd held 53.8 ms: anon sync 42.8 direct sync 7.6 learned 3.0
+wait (lk412): t 176.325 s: bc5-ring waited 50.3 ms behind bc5-chainwd
+hold (lk412): t 177.318 s: Render Thread held 41.1 ms: anon sync 40.7
+wait (lk412): t 177.318 s: bc5-ring waited 41.1 ms behind Render Thread
+hold (lk412): t 178.326 s: bc5-ring held 43.3 ms: anon sync 43.0
+wait (lk412): t 178.326 s: Render Thread waited 43.1 ms behind bc5-ring
+hold (lk412): t 178.821 s: bc5-chainwd held 52.9 ms: anon sync 41.0 direct sync 8.7 learned 2.9
+wait (lk412): t 178.821 s: bc5-ring waited 47.5 ms behind bc5-chainwd
