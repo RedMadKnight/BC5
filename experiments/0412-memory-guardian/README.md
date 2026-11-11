@@ -1628,9 +1628,63 @@ no moment in which the title's data exists and the GPU sees zeros. Until then th
 shortcuts. The catcher stays in the build for the proof run of the fix: the count of chunks found by the poll must
 then be zero.
 
+### 34. What command buffers name of the pinned memory, the valid run (c2use, 2026-11-11 20:08–20:11)
+
+Section 32's question again on a clean box (Steam closed by the maintainer; 12.9 GiB available at the start): arm
+fast2, build g412q, `BC5_GUARD_USE_STAT=1`, scripted load, measuring watchdog 220 MiB. The run reached 181 s (46 s of
+play), 23.6 flips/s, lowest available 233 MiB, no kernel line. Data `raw/c2use-usestat.txt`.
+
+**Over the run** (direct memory; MiB in 2 MiB chunks that an operand of a submitted command buffer named) [M]:
+
+| seconds | under views | named ever | last 60 s | last 10 s | last 1 s | operands so far |
+|---|---|---|---|---|---|---|
+| 30 (menus) | 9,619 | 44 | 44 | 36 | 36 | 1.0 million |
+| 60 (scene load) | 12,078 | 450 | 450 | 450 | 148 | 3.6 million |
+| 120 (save load) | 12,184 | 744 | 586 | 334 | 162 | 13.6 million |
+| 150 (play) | 12,190 | 918 | 784 | 314 | 204 | 17.5 million |
+
+**By heap at 150 s, in play** (pinned then: 11,680 MiB, of it 11,425 under a view and 255 orphans) [M]:
+
+| heap | under views | named ever | last 60 s | last 10 s | last 1 s |
+|---|---|---|---|---|---|
+| `AMM` | 2,966 | 0 | 0 | 0 | 0 |
+| `RenderGpuWcLarge` | 2,758 | 70 | 70 | 56 | 54 |
+| `CommitIABufferAllocator` | 2,736 | 724 | 596 | 172 | 76 |
+| `AssetHeap Large` | 816 | 0 | 0 | 0 | 0 |
+| `InitAllocator` | 652 | 0 | 0 | 0 | 0 |
+| `RenderGpuRwLarge` | 414 | 98 | 92 | 66 | 54 |
+| `AssetHeap Small`, `DynamicHeap`, `Wwise`, `Physics`, `anon`, `ComponentHeap`, `RenderAlloc` | 1,430 | 0 | 0 | 0 | 0 |
+| `RenderGpuWcSmall` | 110 | 14 | 14 | 8 | 8 |
+| all | 12,190 | 918 | 784 | 314 | 204 |
+
+**Reading.**
+- Command buffers name 7.5 % of the memory under views by the play phase (918 MiB of 12,190), and 2.6 % in any
+  10 s. What they name is where the name says: the index-and-vertex heap (724 MiB of its 2,736) and the two
+  read-write render heaps.
+- **Seven heaps, 5.9 GiB, are never named at all: `AMM` (2,966 MiB), the two asset heaps, `InitAllocator`,
+  `DynamicHeap`, `Wwise`, `Physics`, `ComponentHeap`, `RenderAlloc`, `anon`.** `Wwise` is the audio engine's and
+  `Physics` the physics engine's by their names; nothing suggests the GPU reads them at all [I]. `AMM` is the
+  streaming pool: textures and geometry the shaders reach through descriptors, so "never named" there does NOT
+  mean "not used by the GPU" (the limit written in section 32).
+- So the catcher splits the pinned memory into three kinds, not two: named by commands (0.9 GiB), reachable only
+  through shaders (the GPU heaps and `AMM`: the catcher is blind there), and heaps that by their purpose are the
+  CPU's (`Wwise` 220, `Physics` 192, `ComponentHeap` 104 and probably `DynamicHeap` 328, `InitAllocator` 652,
+  `AssetHeap` 1,166: up to 2.7 GiB) which we pin for the GPU only because the title mapped them as direct memory.
+
+**What this adds to the plan** [I]. Besides the zero pages (section 31), a second defect of ours is now visible: we
+pin for the GPU every direct-memory heap whether or not the title ever marked it for the GPU. The library review
+(`ps5-libs-review.md` in the shared notes) reports that the title's GPU protection bits are decoded by the host and
+never read by the mapper. If those bits, or the memory type the title gives a range, separate the CPU's heaps from
+the GPU's, then up to 2.7 GiB need not be pinned at all, with no fault trap and no risk for the GPU, since the GPU
+has no mapping there to miss. That is cheaper and safer than anything else on the table and has to be checked
+first: which protection bits and memory types the seven never-named heaps carry on his save.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
+- What the pin is made of (section 34) [M]: in play the command buffers name 0.9 GiB of the 12.2 GiB under views; seven heaps, 5.9 GiB,
+  are never named. Of those, heaps that by their purpose are the CPU's (audio, physics, components, assets: up to 2.7 GiB) are
+  pinned for the GPU only because the title mapped them as direct memory; whether its GPU bits tell them apart is the next check.
 - The zero skip's hang, caught (section 33) [M]: the skip learns of the title's writes by a poll; 45 chunks were found written with a mean of
   59 ms (up to 149 ms) and 1,204 submissions inside the window, and the run's GPU hang begins 4 ms after one such find in the
   index-and-vertex heap (32 ms, 15 submissions on zeros). The fix is to catch the first CPU write synchronously (section 31).

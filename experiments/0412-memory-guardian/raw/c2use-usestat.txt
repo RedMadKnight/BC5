@@ -1,0 +1,95 @@
+direct: t 0 s: under views 5767 MiB; in chunks an operand named: ever 0, last 60 s 0, last 10 s 0, last 1 s 0 MiB; 0 chunks named, 0 operands so far
+direct:   RenderGpuWcLarge             under views    2758 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   AssetHeap Large              under views     816 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   InitAllocator                under views     652 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   RenderGpuRwLarge             under views     414 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   AssetHeap Small              under views     350 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   DynamicHeap                  under views     328 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   RenderGpuWcSmall             under views     110 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   ComponentHeap                under views     104 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   DynamicHeap Small            under views      54 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   FileSystem                   under views      52 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   ComponentHeap Small          under views      36 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   RenderGpuRwSmall             under views      36 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   MaterialHeap                 under views      20 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   DDLHeap                      under views      16 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct: t 30 s: under views 9619 MiB; in chunks an operand named: ever 44, last 60 s 44, last 10 s 36, last 1 s 36 MiB; 23 chunks named, 956445 operands so far
+direct:   RenderGpuWcLarge             under views    2758 MiB; named ever       6, 60 s       6, 10 s       4, 1 s       4
+direct:   CommitIABufferAllocator      under views    2736 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   AssetHeap Large              under views     816 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   InitAllocator                under views     652 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   AMM                          under views     495 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   RenderGpuRwLarge             under views     414 MiB; named ever      28, 60 s      28, 10 s      22, 1 s      22
+direct:   AssetHeap Small              under views     350 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   DynamicHeap                  under views     328 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   Wwise                        under views     220 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   Physics                      under views     192 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   RenderGpuWcSmall             under views     110 MiB; named ever       2, 60 s       2, 10 s       2, 1 s       2
+direct:   ComponentHeap                under views     104 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   anon                         under views      86 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   RenderAlloc                  under views      70 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct: t 60 s: under views 12078 MiB; in chunks an operand named: ever 450, last 60 s 450, last 10 s 450, last 1 s 148 MiB; 228 chunks named, 3632818 operands so far
+direct:   AMM                          under views    2886 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   RenderGpuWcLarge             under views    2758 MiB; named ever      58, 60 s      58, 10 s      58, 1 s      48
+direct:   CommitIABufferAllocator      under views    2736 MiB; named ever     318, 60 s     318, 10 s     318, 1 s      56
+direct:   AssetHeap Large              under views     816 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   InitAllocator                under views     652 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   RenderGpuRwLarge             under views     414 MiB; named ever      58, 60 s      58, 10 s      58, 1 s      28
+direct:   AssetHeap Small              under views     350 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   DynamicHeap                  under views     328 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   Wwise                        under views     220 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   Physics                      under views     192 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   anon                         under views     129 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   RenderGpuWcSmall             under views     110 MiB; named ever       8, 60 s       8, 10 s       8, 1 s       8
+direct:   ComponentHeap                under views     104 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   RenderAlloc                  under views      70 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct: t 90 s: under views 12102 MiB; in chunks an operand named: ever 462, last 60 s 462, last 10 s 186, last 1 s 148 MiB; 234 chunks named, 10578418 operands so far
+direct:   AMM                          under views    2916 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   RenderGpuWcLarge             under views    2758 MiB; named ever      58, 60 s      58, 10 s      48, 1 s      48
+direct:   CommitIABufferAllocator      under views    2736 MiB; named ever     330, 60 s     330, 10 s      86, 1 s      48
+direct:   AssetHeap Large              under views     816 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   InitAllocator                under views     652 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   RenderGpuRwLarge             under views     414 MiB; named ever      58, 60 s      58, 10 s      36, 1 s      36
+direct:   AssetHeap Small              under views     350 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   DynamicHeap                  under views     328 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   Wwise                        under views     220 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   Physics                      under views     192 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   anon                         under views     129 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   RenderGpuWcSmall             under views     110 MiB; named ever       8, 60 s       8, 10 s       8, 1 s       8
+direct:   ComponentHeap                under views     104 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   RenderAlloc                  under views      70 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct: t 120 s: under views 12184 MiB; in chunks an operand named: ever 744, last 60 s 586, last 10 s 334, last 1 s 162 MiB; 375 chunks named, 13600066 operands so far
+direct:   AMM                          under views    2964 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   RenderGpuWcLarge             under views    2758 MiB; named ever      66, 60 s      66, 10 s      58, 1 s      46
+direct:   CommitIABufferAllocator      under views    2736 MiB; named ever     582, 60 s     432, 10 s     194, 1 s      50
+direct:   AssetHeap Large              under views     816 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   InitAllocator                under views     652 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   RenderGpuRwLarge             under views     414 MiB; named ever      72, 60 s      64, 10 s      60, 1 s      44
+direct:   AssetHeap Small              under views     350 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   DynamicHeap                  under views     328 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   Wwise                        under views     220 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   Physics                      under views     192 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   anon                         under views     166 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   RenderGpuWcSmall             under views     110 MiB; named ever      12, 60 s      12, 10 s      10, 1 s      10
+direct:   ComponentHeap                under views     104 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   RenderAlloc                  under views      70 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+guard: t 130 s: pinned direct 11534.0 MiB, private 270.0; under a view 11345.0, orphans 189.0; views 21573 over 12155.0 MiB; gtt 12421.3; rss 6373 shmem 6129 swap 83 MiB; faults minor 2646736 major 2082; avail 311 unevictable 568 mlocked 45 swap used 775 MiB; psi some 10.2 full 10.1; guard locked 0.0 MiB, guest views 0 (0 refuse
+guard: t 140 s: pinned direct 11674.0 MiB, private 270.0; under a view 11426.6, orphans 247.4; views 21771 over 12192.6 MiB; gtt 12561.4; rss 1136 shmem 985 swap 179 MiB; faults minor 2931354 major 27721; avail 279 unevictable 568 mlocked 45 swap used 882 MiB; psi some 18.5 full 18.4; guard locked 0.0 MiB, guest views 0 (0 refus
+direct: t 150 s: under views 12190 MiB; in chunks an operand named: ever 918, last 60 s 784, last 10 s 314, last 1 s 204 MiB; 462 chunks named, 17495733 operands so far
+direct:   AMM                          under views    2966 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   RenderGpuWcLarge             under views    2758 MiB; named ever      70, 60 s      70, 10 s      56, 1 s      54
+direct:   CommitIABufferAllocator      under views    2736 MiB; named ever     724, 60 s     596, 10 s     172, 1 s      76
+direct:   AssetHeap Large              under views     816 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   InitAllocator                under views     652 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   RenderGpuRwLarge             under views     414 MiB; named ever      98, 60 s      92, 10 s      66, 1 s      54
+direct:   AssetHeap Small              under views     350 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   DynamicHeap                  under views     328 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   Wwise                        under views     220 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   Physics                      under views     192 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   anon                         under views     166 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   RenderGpuWcSmall             under views     110 MiB; named ever      14, 60 s      14, 10 s       8, 1 s       8
+direct:   ComponentHeap                under views     104 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+direct:   RenderAlloc                  under views      70 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0
+guard: t 150 s: pinned direct 11680.0 MiB, private 270.0; under a view 11425.4, orphans 254.6; views 21539 over 12189.4 MiB; gtt 12569.5; rss 1059 shmem 908 swap 182 MiB; faults minor 3066610 major 46387; avail 281 unevictable 568 mlocked 45 swap used 896 MiB; psi some 13.8 full 13.5; guard locked 0.0 MiB, guest views 0 (0 refus
+guard: t 160 s: pinned direct 11680.0 MiB, private 270.0; under a view 11427.6, orphans 252.4; views 21521 over 12189.6 MiB; gtt 12569.7; rss 892 shmem 750 swap 190 MiB; faults minor 3201384 major 60147; avail 264 unevictable 568 mlocked 45 swap used 914 MiB; psi some 10.6 full 10.6; guard locked 0.0 MiB, guest views 0 (0 refuse
+guard: t 170 s: pinned direct 11658.0 MiB, private 270.0; under a view 11427.8, orphans 230.2; views 21767 over 12189.8 MiB; gtt 12548.4; rss 1232 shmem 1063 swap 164 MiB; faults minor 3370586 major 69442; avail 316 unevictable 568 mlocked 45 swap used 888 MiB; psi some 6.4 full 6.3; guard locked 0.0 MiB, guest views 0 (0 refuse
