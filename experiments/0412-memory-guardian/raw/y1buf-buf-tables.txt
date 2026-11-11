@@ -1,0 +1,31 @@
+play phase 132-181 s: 173030 buffers handed, 41636 submissions, 1156 flips, 1669 label waits
+
+== 1. the host's queue: chain opened -> flushed (ms), by thread, kind and reason of the flush
+   bc5-ring      acb  flushed by end of the call       :  15872 submissions ( 326.7/s),  3.5 segments,    2286 dwords; open -> flush median   0.01, p90   0.09, max    16.1 ms
+   bc5-ring      acb  flushed by a wait                :  10345 submissions ( 212.9/s),  3.8 segments,     635 dwords; open -> flush median   0.01, p90   0.07, max     1.5 ms
+   Render Thread dcb  flushed by a wait                :   6450 submissions ( 132.7/s),  5.3 segments,    9055 dwords; open -> flush median   0.71, p90   1.85, max   120.7 ms
+   bc5-ring      acb  flushed by 6                     :   4997 submissions ( 102.8/s),  1.0 segments,      40 dwords; open -> flush median   0.00, p90   0.01, max     0.9 ms
+   Render Thread dcb  flushed by 10                    :   1695 submissions (  34.9/s), 15.4 segments,   20054 dwords; open -> flush median   2.09, p90   2.40, max    12.5 ms
+   Render Thread dcb  flushed by drain or flip         :   1153 submissions (  23.7/s),  6.8 segments,   15108 dwords; open -> flush median   0.41, p90   0.51, max     1.9 ms
+   bc5-chainwd   dcb  flushed by foreign (9)           :   1124 submissions (  23.1/s), 13.6 segments,   19035 dwords; open -> flush median   2.06, p90   2.08, max    66.2 ms
+   buffer handed -> the next flush of the same thread (ms):
+      bc5-ring      acb :  89876 buffers, median   0.01, p90   0.05, p99     0.3
+      Render Thread dcb :  79686 buffers, median   0.87, p90   3.52, p99    28.7
+      Render Thread hib :   2312 buffers, median   2.25, p90  18.06, p99    58.9
+      Render Thread cc  :   1156 buffers, median   2.26, p90  18.07, p99    59.0
+
+== 2. flushed -> fence seen by the completion thread (ms; the host's submit work, the kernel's queue and the GPU's run)
+   bc5-ring      acb :  31214, median   3.11, p90   6.48, max   845.5
+   Render Thread dcb :   9298, median   3.89, p90   9.60, max   782.6
+   bc5-chainwd   dcb :   1124, median   3.31, p90  11.95, max   131.5
+
+== 3. the time line of a frame of 33-50 ms (704 frames; medians, ms from the end of the previous flip's drain)
+   frame 34.1 ms; 148 buffers handed, 36 submissions
+   first buffer handed at 0.1, last at 23.4; first flush at 1.7, last flush at 23.4; last fence at 33.5; flip called at 22.4; drain ended at 34.1
+   nothing in flight (flushed and not yet fenced): 1.7 ms before the frame's first flush, 1.3 ms between submissions, 0.7 ms after the last fence
+   dwords flushed by tenth of the frame, %: 4 18 10 18 12 17 11 6 2 0
+
+== 4. label waits in the play phase: 1669 waits, 5.5 s (11.3 % of the phase), median 2.98 ms, p90 4.64 ms; by thread: Render Thread 5.5 s
+   the submission whose fence came at the wait's end had been flushed BEFORE the wait began: 47 % of the wait time (the GPU's time);
+   flushed AFTER the wait began: 52 % (it was still in the host's hands; flushed a median 0.25 ms, p90 0.55 ms into the wait); no fence at the wait's end: 1 %
+   labels by wait time: 12004b5438 46 %, 12004b3c38 35 %, 12004b7838 11 %, 12004b4c38 5 %, 12004b6038 3 %, 12004b5c38 0 % (10 labels)
