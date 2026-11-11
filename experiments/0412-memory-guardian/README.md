@@ -934,6 +934,38 @@ would say), and why game-main waits half its time in the loads (which of the tit
 five ended at 146–166 s, section 18); m1fast2 went on to 215 s and was ended there. The shortcut
 "BC5 emulator (0412 fast2)" is on the desktop (build g412i in place).
 
+### 20. Who holds the device mutex (build g412j, 2026-11-11 16:52–16:58, on the maintainer's "Tak, buduj licznik")
+
+**Setup.** `BC5_GUARD_LOCK_STAT=1` (`memfast/lock0412.inc`, `memfast/mklock0412.py`, tag lk412; default off, then a
+`std::mutex` behind one test): `g_dev_mutex`, which `submit_now` holds from its start to its end, counts per thread
+name the locks, the time held and the time waited, and behind which holder. CPU test `memfast/lock0412.cpp`, 11 of 11
+on the box. Build g412j = g412i + this, binary `c697e8cf` (g412i kept). One run, p1lock: arm fast2 with the counter
+on, scripted load, 182 s, 25.0 flips/s (the same as without the counter), no kernel line. Data `raw/p1lock-lockstat.txt`.
+
+**Result** [M], sums over the run's 180 s:
+
+| thread | locks | held | per lock | waited for it |
+|---|---|---|---|---|
+| `bc5-ring` | 111,589 | 40.6 s (23 % of the time) | 0.36 ms | 17.0 s |
+| Render Thread | 25,247 | 25.7 s (14 %) | 1.02 ms | 11.7 s |
+| `bc5-chainwd` | 8,915 | 14.2 s (8 %) | 1.60 ms | 6.4 s |
+| game-main | 4 | 0.3 s | | 0.6 s |
+
+- The mutex is held 45 % of the wall-clock time and the three submitting threads together wait 35 s for it. In the
+  heavy 10 s windows `bc5-ring` holds it 27 % and the Render Thread 22 % of the time.
+- The Render Thread waits almost only behind `bc5-ring` (the thread that submits for the asynchronous ring);
+  `bc5-ring` waits behind the Render Thread and `bc5-chainwd`.
+- Single holds reach 45–51 ms (Render Thread) and 83 ms (`bc5-ring`): a whole frame and more with every other
+  submitter stopped.
+
+**Reading** [I]: every submission, from whichever thread, does all of its host work under this one mutex: the probe,
+the mapping sync, the learned windows, the hints, the two filter passes and the submit ioctl (section 19 has their
+lines). So the submitting threads run one at a time, which is the "threads wait for each other in turn" of section
+19. The fix is not a faster line but a shorter hold: do what needs only the buffer (probe, filter, hints, the state
+tracker) outside the mutex, keep under it the mapping sync and the ioctl, and find what the 45–83 ms holds are (the
+forced sync or the learned windows, by the code). That changes the shared direct path's locking and needs its own
+design and review; not built here.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
@@ -942,6 +974,9 @@ five ended at 146–166 s, section 18); m1fast2 went on to 215 s and was ended t
   Thread is bound by host code (6-23 % of their time, no line over 4 %); they wait half their time, the Render Thread for the
   GPU at the flip and at label waits (30 %) and for the device mutex (12 %). The orphan release now cuts on his route without the
   zero skip (pin 11.5-11.65 GiB, was 12.0); the budget is still short at 215 s.
+- The device mutex (section 20) [M]: every submission does all its host work under one mutex; it is held 45 % of the time
+  (`bc5-ring` 23 %, Render Thread 14 %, `bc5-chainwd` 8 %), the three wait 35 s of 180 s for it, single holds reach 83 ms.
+  A shorter hold is the next speed fix; it changes the direct path's locking and is not built.
 - The wall as arithmetic (section 16) [M]: at 165 s the guest pins 12,024 of 15,193 MiB; the 3,169 left hold the kernel, the
   GPU driver's buffers, the desktop and the emulator only with 986 MiB in swap and 42 MiB of file cache for the game. Over by
   about 0.4-0.5 GiB; 320 MiB of the pin are orphans (ours).
