@@ -1,0 +1,852 @@
+# 2026-11-11 01:23:17 emulator 2062145 /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator; every 10 s
+== t 0 s: threads 60, fds 55, rssanon 62 swap 0 vmdata 565 MiB, maps 641
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 96 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 17 swap 0 anon 0
+map 315ba0000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1668 rss 85 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 20 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 52 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 123 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 13 swap 0 anon 0
+map 7fb7f8000000-7fb7f8f10000 rw-p - size 15 rss 14 swap 0 anon 14
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 10 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 20 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 174 maps, size 1023167 rss 47 swap 0 anon 47
+class file: 338 maps, size 442 rss 104 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 123 maps, size 26825 rss 612 swap 0 anon 0
+== t 10 s: threads 114, fds 174, rssanon 248 swap 0 vmdata 1236 MiB, maps 961
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 109 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 210 swap 0 anon 0
+map 3339ac000-33610c000 rw-s /memfd:KytyDirectMemory (deleted) size 39 rss 39 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 16 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 54 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 435 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 2340 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb618000000-7fb6193e7000 rw-p - size 19 rss 19 swap 0 anon 19
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb74dfd7000 rw-p - size 31 rss 31 swap 0 anon 31
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 300 maps, size 1027257 rss 234 swap 0 anon 234
+class file: 416 maps, size 448 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 239 maps, size 26904 rss 3946 swap 0 anon 0
+== t 20 s: threads 113, fds 174, rssanon 284 swap 0 vmdata 1272 MiB, maps 962
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 112 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 210 swap 0 anon 0
+map 3339ac000-33610c000 rw-s /memfd:KytyDirectMemory (deleted) size 39 rss 39 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 16 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 54 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 435 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 2340 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb618000000-7fb619479000 rw-p - size 20 rss 20 swap 0 anon 20
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb750000000 rw-p - size 64 rss 63 swap 0 anon 63
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 301 maps, size 1027321 rss 269 swap 0 anon 269
+class file: 416 maps, size 448 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 239 maps, size 26904 rss 3950 swap 0 anon 0
+== t 30 s: threads 118, fds 174, rssanon 312 swap 0 vmdata 1333 MiB, maps 971
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 119 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 215 swap 0 anon 0
+map 3339ac000-335a0c000 rw-s /memfd:KytyDirectMemory (deleted) size 32 rss 32 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 48 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 59 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 731 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 3719 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb614000000-7fb6164d6000 rw-p - size 36 rss 34 swap 0 anon 34
+map 7fb628000000-7fb62884f000 rw-p - size 8 rss 8 swap 0 anon 8
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb750000000 rw-p - size 64 rss 63 swap 0 anon 63
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 308 maps, size 1027545 rss 297 swap 0 anon 297
+class file: 416 maps, size 451 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 241 maps, size 26904 rss 5673 swap 0 anon 0
+== t 40 s: threads 118, fds 174, rssanon 348 swap 0 vmdata 1369 MiB, maps 972
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 123 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 215 swap 0 anon 0
+map 3339ac000-335a0c000 rw-s /memfd:KytyDirectMemory (deleted) size 32 rss 32 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 48 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 59 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 731 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 3719 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb614000000-7fb618000000 rw-p - size 64 rss 62 swap 0 anon 62
+map 7fb628000000-7fb62884f000 rw-p - size 8 rss 8 swap 0 anon 8
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb750000000 rw-p - size 64 rss 63 swap 0 anon 63
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 309 maps, size 1027609 rss 334 swap 0 anon 334
+class file: 416 maps, size 451 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 241 maps, size 26904 rss 5677 swap 0 anon 0
+== t 50 s: threads 118, fds 174, rssanon 386 swap 0 vmdata 1409 MiB, maps 972
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 126 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 215 swap 0 anon 0
+map 3339ac000-335a0c000 rw-s /memfd:KytyDirectMemory (deleted) size 32 rss 32 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 68 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 62 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 731 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 3719 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb5f8000000-7fb5fae91000 rw-p - size 46 rss 43 swap 0 anon 43
+map 7fb614000000-7fb618000000 rw-p - size 64 rss 63 swap 0 anon 63
+map 7fb628000000-7fb62884f000 rw-p - size 8 rss 8 swap 0 anon 8
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb750000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 309 maps, size 1027609 rss 371 swap 0 anon 371
+class file: 416 maps, size 452 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 241 maps, size 26904 rss 5703 swap 0 anon 0
+== t 60 s: threads 118, fds 174, rssanon 422 swap 0 vmdata 1445 MiB, maps 972
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 128 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 215 swap 0 anon 0
+map 3339ac000-335a0c000 rw-s /memfd:KytyDirectMemory (deleted) size 32 rss 32 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 68 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 62 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 731 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 3719 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb5f8000000-7fb5fd18b000 rw-p - size 81 rss 78 swap 0 anon 78
+map 7fb614000000-7fb618000000 rw-p - size 64 rss 63 swap 0 anon 63
+map 7fb628000000-7fb62884f000 rw-p - size 8 rss 8 swap 0 anon 8
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb750000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 309 maps, size 1027673 rss 407 swap 0 anon 407
+class file: 416 maps, size 452 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 241 maps, size 26904 rss 5705 swap 0 anon 0
+== t 70 s: threads 121, fds 174, rssanon 458 swap 0 vmdata 1481 MiB, maps 972
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 130 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 215 swap 0 anon 0
+map 3339ac000-335a0c000 rw-s /memfd:KytyDirectMemory (deleted) size 32 rss 32 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 68 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 62 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 731 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 3719 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb5f8000000-7fb5ff488000 rw-p - size 116 rss 113 swap 0 anon 113
+map 7fb614000000-7fb618000000 rw-p - size 64 rss 63 swap 0 anon 63
+map 7fb628000000-7fb62884f000 rw-p - size 8 rss 8 swap 0 anon 8
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb750000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 309 maps, size 1027673 rss 444 swap 0 anon 444
+class file: 416 maps, size 452 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 241 maps, size 26904 rss 5707 swap 0 anon 0
+== t 80 s: threads 118, fds 174, rssanon 494 swap 0 vmdata 1516 MiB, maps 973
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 132 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 215 swap 0 anon 0
+map 3339ac000-335a0c000 rw-s /memfd:KytyDirectMemory (deleted) size 32 rss 32 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 68 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 62 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 731 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 3719 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb5f0000000-7fb5f1785000 rw-p - size 23 rss 23 swap 0 anon 23
+map 7fb5f8000000-7fb600000000 rw-p - size 128 rss 125 swap 0 anon 125
+map 7fb614000000-7fb618000000 rw-p - size 64 rss 63 swap 0 anon 63
+map 7fb628000000-7fb62884f000 rw-p - size 8 rss 8 swap 0 anon 8
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb750000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 310 maps, size 1027737 rss 480 swap 0 anon 480
+class file: 416 maps, size 452 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 241 maps, size 26904 rss 5709 swap 0 anon 0
+== t 90 s: threads 118, fds 174, rssanon 530 swap 0 vmdata 1552 MiB, maps 973
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 133 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 215 swap 0 anon 0
+map 3339ac000-335a0c000 rw-s /memfd:KytyDirectMemory (deleted) size 32 rss 32 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 68 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 62 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 731 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 3719 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb5f0000000-7fb5f3a88000 rw-p - size 58 rss 58 swap 0 anon 58
+map 7fb5f8000000-7fb600000000 rw-p - size 128 rss 126 swap 0 anon 126
+map 7fb614000000-7fb618000000 rw-p - size 64 rss 63 swap 0 anon 63
+map 7fb628000000-7fb62884f000 rw-p - size 8 rss 8 swap 0 anon 8
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb750000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 310 maps, size 1027737 rss 516 swap 0 anon 516
+class file: 417 maps, size 452 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 241 maps, size 26904 rss 5710 swap 0 anon 0
+== t 101 s: threads 118, fds 174, rssanon 568 swap 0 vmdata 1595 MiB, maps 973
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 133 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 215 swap 0 anon 0
+map 3339ac000-335a0c000 rw-s /memfd:KytyDirectMemory (deleted) size 32 rss 32 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 68 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 62 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 731 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 3719 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb5f0000000-7fb5f6514000 rw-p - size 101 rss 94 swap 0 anon 94
+map 7fb5f8000000-7fb600000000 rw-p - size 128 rss 127 swap 0 anon 127
+map 7fb614000000-7fb618000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb628000000-7fb62884f000 rw-p - size 8 rss 8 swap 0 anon 8
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb750000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 310 maps, size 1027801 rss 554 swap 0 anon 554
+class file: 416 maps, size 452 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 241 maps, size 26904 rss 5711 swap 0 anon 0
+== t 111 s: threads 118, fds 174, rssanon 605 swap 0 vmdata 1631 MiB, maps 974
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 134 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 215 swap 0 anon 0
+map 3339ac000-335a0c000 rw-s /memfd:KytyDirectMemory (deleted) size 32 rss 32 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 68 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 62 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 731 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 3719 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb5e8000000-7fb5e8811000 rw-p - size 8 rss 8 swap 0 anon 8
+map 7fb5f0000000-7fb5f8000000 rw-p - size 128 rss 121 swap 0 anon 121
+map 7fb5f8000000-7fb600000000 rw-p - size 128 rss 127 swap 0 anon 127
+map 7fb614000000-7fb618000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb628000000-7fb62884f000 rw-p - size 8 rss 8 swap 0 anon 8
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb750000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 311 maps, size 1027865 rss 590 swap 0 anon 590
+class file: 416 maps, size 452 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 241 maps, size 26904 rss 5711 swap 0 anon 0
+== t 121 s: threads 118, fds 174, rssanon 627 swap 0 vmdata 1654 MiB, maps 974
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 134 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 215 swap 0 anon 0
+map 3339ac000-335a0c000 rw-s /memfd:KytyDirectMemory (deleted) size 32 rss 32 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 68 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 62 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 731 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 3719 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb5e8000000-7fb5e9ddc000 rw-p - size 29 rss 29 swap 0 anon 29
+map 7fb5f0000000-7fb5f8000000 rw-p - size 128 rss 122 swap 0 anon 122
+map 7fb5f8000000-7fb600000000 rw-p - size 128 rss 127 swap 0 anon 127
+map 7fb614000000-7fb618000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb628000000-7fb62884f000 rw-p - size 8 rss 8 swap 0 anon 8
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb750000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 311 maps, size 1027865 rss 612 swap 0 anon 612
+class file: 416 maps, size 452 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 241 maps, size 26904 rss 5711 swap 0 anon 0
+== t 131 s: threads 118, fds 174, rssanon 633 swap 0 vmdata 1659 MiB, maps 974
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 134 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 215 swap 0 anon 0
+map 3339ac000-335a0c000 rw-s /memfd:KytyDirectMemory (deleted) size 32 rss 32 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 68 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 62 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 731 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 3719 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb5e8000000-7fb5ea313000 rw-p - size 35 rss 35 swap 0 anon 35
+map 7fb5f0000000-7fb5f8000000 rw-p - size 128 rss 122 swap 0 anon 122
+map 7fb5f8000000-7fb600000000 rw-p - size 128 rss 127 swap 0 anon 127
+map 7fb614000000-7fb618000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb628000000-7fb62884f000 rw-p - size 8 rss 8 swap 0 anon 8
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb750000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 311 maps, size 1027865 rss 618 swap 0 anon 618
+class file: 416 maps, size 452 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 241 maps, size 26904 rss 5712 swap 0 anon 0
+== t 141 s: threads 118, fds 174, rssanon 636 swap 0 vmdata 1662 MiB, maps 974
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 134 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 215 swap 0 anon 0
+map 3339ac000-335a0c000 rw-s /memfd:KytyDirectMemory (deleted) size 32 rss 32 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 68 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 62 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 731 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 3719 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb5e8000000-7fb5ea611000 rw-p - size 38 rss 38 swap 0 anon 38
+map 7fb5f0000000-7fb5f8000000 rw-p - size 128 rss 122 swap 0 anon 122
+map 7fb5f8000000-7fb600000000 rw-p - size 128 rss 127 swap 0 anon 127
+map 7fb614000000-7fb618000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb628000000-7fb62884f000 rw-p - size 8 rss 8 swap 0 anon 8
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb750000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 311 maps, size 1027865 rss 621 swap 0 anon 621
+class file: 416 maps, size 452 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 241 maps, size 26904 rss 5712 swap 0 anon 0
+== t 151 s: threads 118, fds 173, rssanon 636 swap 0 vmdata 1662 MiB, maps 942
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 134 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 215 swap 0 anon 0
+map 3339ac000-335a0c000 rw-s /memfd:KytyDirectMemory (deleted) size 32 rss 32 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 68 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 62 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 731 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 3719 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb5e8000000-7fb5ea618000 rw-p - size 38 rss 38 swap 0 anon 38
+map 7fb5f0000000-7fb5f8000000 rw-p - size 128 rss 122 swap 0 anon 122
+map 7fb5f8000000-7fb600000000 rw-p - size 128 rss 127 swap 0 anon 127
+map 7fb614000000-7fb618000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb628000000-7fb62884f000 rw-p - size 8 rss 8 swap 0 anon 8
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb750000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 311 maps, size 1027865 rss 621 swap 0 anon 621
+class file: 384 maps, size 446 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 241 maps, size 26904 rss 5712 swap 0 anon 0
+== t 161 s: threads 118, fds 173, rssanon 636 swap 0 vmdata 1662 MiB, maps 942
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 134 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 215 swap 0 anon 0
+map 3339ac000-335a0c000 rw-s /memfd:KytyDirectMemory (deleted) size 32 rss 32 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 68 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 62 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 731 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 3719 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb5e8000000-7fb5ea618000 rw-p - size 38 rss 38 swap 0 anon 38
+map 7fb5f0000000-7fb5f8000000 rw-p - size 128 rss 122 swap 0 anon 122
+map 7fb5f8000000-7fb600000000 rw-p - size 128 rss 127 swap 0 anon 127
+map 7fb614000000-7fb618000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb628000000-7fb62884f000 rw-p - size 8 rss 8 swap 0 anon 8
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb750000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 311 maps, size 1027865 rss 621 swap 0 anon 621
+class file: 384 maps, size 446 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 241 maps, size 26904 rss 5712 swap 0 anon 0
+== t 171 s: threads 118, fds 173, rssanon 636 swap 0 vmdata 1662 MiB, maps 942
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 134 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 215 swap 0 anon 0
+map 3339ac000-335a0c000 rw-s /memfd:KytyDirectMemory (deleted) size 32 rss 32 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 68 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 62 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 731 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 3719 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb5e8000000-7fb5ea618000 rw-p - size 38 rss 38 swap 0 anon 38
+map 7fb5f0000000-7fb5f8000000 rw-p - size 128 rss 122 swap 0 anon 122
+map 7fb5f8000000-7fb600000000 rw-p - size 128 rss 127 swap 0 anon 127
+map 7fb614000000-7fb618000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb628000000-7fb62884f000 rw-p - size 8 rss 8 swap 0 anon 8
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb750000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 311 maps, size 1027865 rss 621 swap 0 anon 621
+class file: 384 maps, size 446 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 241 maps, size 26904 rss 5712 swap 0 anon 0
+== t 181 s: threads 118, fds 173, rssanon 636 swap 0 vmdata 1662 MiB, maps 942
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 134 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 215 swap 0 anon 0
+map 3339ac000-335a0c000 rw-s /memfd:KytyDirectMemory (deleted) size 32 rss 32 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 68 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 62 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 731 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 3719 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb5e8000000-7fb5ea618000 rw-p - size 38 rss 38 swap 0 anon 38
+map 7fb5f0000000-7fb5f8000000 rw-p - size 128 rss 122 swap 0 anon 122
+map 7fb5f8000000-7fb600000000 rw-p - size 128 rss 127 swap 0 anon 127
+map 7fb614000000-7fb618000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb628000000-7fb62884f000 rw-p - size 8 rss 8 swap 0 anon 8
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb750000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 311 maps, size 1027865 rss 621 swap 0 anon 621
+class file: 384 maps, size 446 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 241 maps, size 26904 rss 5712 swap 0 anon 0
+== t 192 s: threads 118, fds 173, rssanon 636 swap 0 vmdata 1662 MiB, maps 942
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 134 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 215 swap 0 anon 0
+map 3339ac000-335a0c000 rw-s /memfd:KytyDirectMemory (deleted) size 32 rss 32 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 68 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 62 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 731 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 3719 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb5e8000000-7fb5ea618000 rw-p - size 38 rss 38 swap 0 anon 38
+map 7fb5f0000000-7fb5f8000000 rw-p - size 128 rss 122 swap 0 anon 122
+map 7fb5f8000000-7fb600000000 rw-p - size 128 rss 127 swap 0 anon 127
+map 7fb614000000-7fb618000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb628000000-7fb62884f000 rw-p - size 8 rss 8 swap 0 anon 8
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb750000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 311 maps, size 1027865 rss 621 swap 0 anon 621
+class file: 384 maps, size 446 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 241 maps, size 26904 rss 5712 swap 0 anon 0
+== t 202 s: threads 118, fds 173, rssanon 636 swap 0 vmdata 1662 MiB, maps 942
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 134 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 215 swap 0 anon 0
+map 3339ac000-335a0c000 rw-s /memfd:KytyDirectMemory (deleted) size 32 rss 32 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 68 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 62 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 731 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 3719 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb5e8000000-7fb5ea618000 rw-p - size 38 rss 38 swap 0 anon 38
+map 7fb5f0000000-7fb5f8000000 rw-p - size 128 rss 122 swap 0 anon 122
+map 7fb5f8000000-7fb600000000 rw-p - size 128 rss 127 swap 0 anon 127
+map 7fb614000000-7fb618000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb628000000-7fb62884f000 rw-p - size 8 rss 8 swap 0 anon 8
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb750000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 311 maps, size 1027865 rss 621 swap 0 anon 621
+class file: 384 maps, size 446 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 241 maps, size 26904 rss 5712 swap 0 anon 0
+== t 212 s: threads 118, fds 173, rssanon 636 swap 0 vmdata 1662 MiB, maps 942
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 134 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 215 swap 0 anon 0
+map 3339ac000-335a0c000 rw-s /memfd:KytyDirectMemory (deleted) size 32 rss 32 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 68 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 62 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 731 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 3719 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb5e8000000-7fb5ea618000 rw-p - size 38 rss 38 swap 0 anon 38
+map 7fb5f0000000-7fb5f8000000 rw-p - size 128 rss 122 swap 0 anon 122
+map 7fb5f8000000-7fb600000000 rw-p - size 128 rss 127 swap 0 anon 127
+map 7fb614000000-7fb618000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb628000000-7fb62884f000 rw-p - size 8 rss 8 swap 0 anon 8
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb750000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 311 maps, size 1027865 rss 621 swap 0 anon 621
+class file: 384 maps, size 446 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 241 maps, size 26904 rss 5712 swap 0 anon 0
+== t 222 s: threads 118, fds 173, rssanon 636 swap 0 vmdata 1662 MiB, maps 942
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 134 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 215 swap 0 anon 0
+map 3339ac000-335a0c000 rw-s /memfd:KytyDirectMemory (deleted) size 32 rss 32 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 68 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 62 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 731 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 3719 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb5e8000000-7fb5ea618000 rw-p - size 38 rss 38 swap 0 anon 38
+map 7fb5f0000000-7fb5f8000000 rw-p - size 128 rss 122 swap 0 anon 122
+map 7fb5f8000000-7fb600000000 rw-p - size 128 rss 127 swap 0 anon 127
+map 7fb614000000-7fb618000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb628000000-7fb62884f000 rw-p - size 8 rss 8 swap 0 anon 8
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb750000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 311 maps, size 1027865 rss 621 swap 0 anon 621
+class file: 384 maps, size 446 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 241 maps, size 26904 rss 5712 swap 0 anon 0
+== t 232 s: threads 118, fds 173, rssanon 636 swap 0 vmdata 1662 MiB, maps 942
+map 300000000-300934000 rw-s /memfd:KytyDirectMemory (deleted) size 9 rss 9 swap 0 anon 0
+map 3018c0000-3135f0000 rw-s /memfd:KytyDirectMemory (deleted) size 285 rss 134 swap 0 anon 0
+map 31438c000-315794000 rw-s /memfd:KytyDirectMemory (deleted) size 20 rss 19 swap 0 anon 0
+map 315fe8000-3209e0000 rw-s /memfd:KytyDirectMemory (deleted) size 169 rss 169 swap 0 anon 0
+map 321254000-321f30000 rw-s /memfd:KytyDirectMemory (deleted) size 12 rss 12 swap 0 anon 0
+map 321f34000-324600000 rw-s /memfd:KytyDirectMemory (deleted) size 38 rss 37 swap 0 anon 0
+map 324604000-3339a8000 rw-s /memfd:KytyDirectMemory (deleted) size 243 rss 215 swap 0 anon 0
+map 3339ac000-335a0c000 rw-s /memfd:KytyDirectMemory (deleted) size 32 rss 32 swap 0 anon 0
+map 336430000-37e000000 rw-s /memfd:KytyDirectMemory (deleted) size 1147 rss 68 swap 0 anon 0
+map 400000000-40b800000 rw-s /memfd:KytyDirectMemory (deleted) size 184 rss 30 swap 0 anon 0
+map 500000000-587c00000 rw-s /memfd:KytyDirectMemory (deleted) size 2172 rss 62 swap 0 anon 0
+map 900000000-9074c0000 rwxs /memfd:KytyPrivateMemory (deleted) size 116 rss 116 swap 0 anon 0
+map 9074c0000-90f4e8000 rw-s /memfd:KytyPrivateMemory (deleted) size 128 rss 124 swap 0 anon 0
+map 90f4e8000-910218000 rwxs /memfd:KytyPrivateMemory (deleted) size 13 rss 13 swap 0 anon 0
+map 1000000000-10ca000000 rw-s /memfd:KytyDirectMemory (deleted) size 3232 rss 731 swap 0 anon 0
+map 10ca000000-11ea000000 rw-s /memfd:KytyDirectMemory (deleted) size 4608 rss 3719 swap 0 anon 0
+map 55b8cf21c000-55b8cffbe000 r-xp /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator size 13 rss 11 swap 0 anon 0
+map 7fb5e8000000-7fb5ea618000 rw-p - size 38 rss 38 swap 0 anon 38
+map 7fb5f0000000-7fb5f8000000 rw-p - size 128 rss 122 swap 0 anon 122
+map 7fb5f8000000-7fb600000000 rw-p - size 128 rss 127 swap 0 anon 127
+map 7fb614000000-7fb618000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb628000000-7fb62884f000 rw-p - size 8 rss 8 swap 0 anon 8
+map 7fb630000000-7fb633ecb000 rw-p - size 62 rss 62 swap 0 anon 62
+map 7fb640000000-7fb642823000 rw-p - size 40 rss 39 swap 0 anon 39
+map 7fb74c000000-7fb750000000 rw-p - size 64 rss 64 swap 0 anon 64
+map 7fb7f8000000-7fb7f9160000 rw-p - size 17 rss 17 swap 0 anon 17
+map 7fb826295000-7fb8273ea000 r-xp /usr/lib/x86_64-linux-gnu/libVkLayer_khronos_validation.so size 17 rss 12 swap 0 anon 0
+map 7fb82a283000-7fb82e5f3000 r--p /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 67 rss 12 swap 0 anon 0
+map 7fb82e5f3000-7fb832446000 r-xp /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 size 62 rss 28 swap 0 anon 0
+map 7fb837294000-7fbb97294000 rw-s /memfd:KytyDirectMemory (deleted) size 13824 rss 83 swap 0 anon 0
+class other: 4 maps, size 0 rss 0 swap 0 anon 0
+class anon: 311 maps, size 1027865 rss 621 swap 0 anon 621
+class file: 384 maps, size 446 rss 113 swap 0 anon 7
+class stack: 1 maps, size 0 rss 0 swap 0 anon 0
+class heap: 1 maps, size 7 rss 7 swap 0 anon 7
+class memfd: 241 maps, size 26904 rss 5712 swap 0 anon 0
+# 2026-11-11 01:27:19 emulator 2062145 ended

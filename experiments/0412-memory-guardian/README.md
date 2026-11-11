@@ -475,12 +475,55 @@ The frame profile files (`*-frames.txt`, 2.8 MB) and the play logs stay on the b
 - The zero list is a file beside the build (`~/bc5-work/exp0412/zero-list-0412.txt`), scanned over 2 minutes of one
   walk. A longer scan in his own play would list less and be taken back less.
 
+### 10. Where ASTRO BOT's host memory grows (2026-11-11 01:06–01:28, the top session's order; three more runs, read-only tools)
+
+Runs ao3off (510 s), ao4off (300 s), ao5off (240 s): the shared build 4d2b1b1d through the private launcher copy,
+capture off, no input, fuse and watchdog on. Tools: `smaps0412.sh` (reads `/proc/<pid>/smaps` every 30 or 10 s), one
+`eu-stack` snapshot, and `strace -k -e trace=mprotect,mmap` for 25–40 s from the ubuntu container. Raw:
+`raw/night/ao3off-smaps.txt`, `ao4off-*`, `ao5off-*` (the traces gzipped).
+
+- **Which mappings** [M, ao3off]: the growth is all in anonymous private memory, 398 MiB at 60 s → 1,913 MiB at 480 s.
+  `[heap]` stays at 7 MiB. Threads (118) and file descriptors (174) are constant; the mapping count goes 972 → 993.
+  The growing regions are 64 MiB-aligned blocks of 63–128 MiB, one below the other from 0x7efe60000000 down to
+  0x7efe08000000: **glibc malloc arena heaps of one arena**, 8 such blocks at 90 s and 24 at 480 s. So it is `malloc`
+  / `operator new` on a thread that is not the main one, never given back. The guest's memfd mappings do not grow.
+- **Which thread and call path** [M, ao4off and ao5off]: of the heap growth the traces caught, 93–98 % is on one
+  thread, **`bc5-cq0`** (BC5's completion thread of queue 0, `Libs::Bc5Gc::Direct::completion_thread`), by two paths:
+  1. `completion_thread` → `SoftCp::submit` → `SoftCp::execute` → `SoftCp::fire` → the host's end-of-pipe event code
+     in `src/graphics/host_gpu/renderer/sync.cpp` (addresses that resolve to lines 144 and 169, the functions around
+     `TriggerAgcUserInterrupt`) → `operator new`: 6.1 of 10.2 MiB in ao5off, 1.6 of 2.9 MiB in ao4off, in 4 KiB steps;
+  2. `completion_thread` itself → `operator new` (a container growing inside it; the address resolves into
+     `bc5LleAgc.cpp`): 3.9 of 10.2 MiB and 1.1 of 2.9 MiB.
+- **What the code at path 1 does** [M, source read; the link to the leak is I]: an event trigger
+  (`EopEventTriggerFunc` in sync.cpp, the same pattern in `src/kernel/eventQueue.cpp` for user and AMPR events) does
+  `event->pending_events.push_back(triggered_event)` whenever the event is already triggered and not yet read; the
+  queue is a `std::deque` with no bound, and one entry is taken off per read (`eventQueue.cpp:130`). An event the
+  title reads more slowly than the soft CP fires it, or never reads, grows by one entry per fire for ever. A real
+  kqueue keeps one pending state per event, not a list.
+- **Not shown** [open]: the byte rate through each path (the trace slows the title, and it caught 10 MiB where the
+  process grew about 31 MiB); which event's queue it is; what the second site in `completion_thread` appends to.
+  The inlined frames make the exact line uncertain.
+- **The second title does not have it** [M]: its emulator's anonymous + swapped memory moves 1.5–2.2 MiB/min in
+  c2zo, d1zof and b1ledger (g412d and e11-based builds, 4–9 min each), against 217 MiB/min here.
+- **Fix candidate** [I]: in a private build of the shared source, bound `pending_events` (coalesce a trigger into
+  the last pending entry when the queue is longer than a small number, or keep only the latest) behind a default-off
+  switch, journal the longest queue per event, and repeat ao1off: the slope and the journal line name the event. The
+  second site needs the same treatment once named (`addr2line` on a build with the unit's line table, or a counter).
+- **A side effect of mine**: in ao5off I attached `strace` to the emulator's `bc5-*` threads, the ring thread among
+  them. 10 s later the kernel logged a gfx ring timeout; the ring reset succeeded and the box stayed up. The title did
+  not draw again in that run (anonymous memory flat from 131 s). Tracing the ring thread stalls submissions past the
+  2 s fence timeout: do not attach to `bc5-ring`. ao4off's trace of every thread did not trip it.
+
+The box at 01:28: no emulator, no mount, BOX-LOCK empty, the cgroup's limits at `max`, no fuse marker.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
 - Night of 11-10/11 [M]: with `memory.max` 12,400 MiB every arm survived; zero skip + orphan release (arm zo): 0.55-0.75 GiB
   less pinned, major faults 550-1,250/s -> 2-56/s, PSI full under 1 %, the pin flat for 6 of 12 minutes. One GPU ring
   timeout in five zero-skip runs. ASTRO BOT's host leak is 217-218 MiB/min, steady, with no input and with PLAY_CAPTURE off.
+- ASTRO BOT's leak (section 10): glibc arena memory of the completion thread `bc5-cq0`, through the soft CP's event
+  fire into an unbounded `pending_events` queue and a second site in `completion_thread`; a bound on that queue is the fix candidate.
 - The earlier lines below are the state before the night.
 
 **Before the night: analysis, design, one build and two short plays (section 7): the ledger answered the split; no arm moved the wall.**
