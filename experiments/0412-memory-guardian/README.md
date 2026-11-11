@@ -1938,6 +1938,32 @@ about 650 MiB less pinned and 400–500 MiB more available than fast2, on the sc
 pages. The next step in this direction is to skip without a list (whatever is a hole when a view first covers it),
 which needs the canary's slices shared between runs and a count of wholly-zero 2 MiB chunks first.
 
+### 41. His save on fast5, two minutes of play after the load, twice (2026-11-12 00:26–00:35)
+
+The maintainer: "podmien i sam uruchom moj save (pozniej przywroc) - od chwili uruchomienia save - policz 2 minuty i
+wyłącz emulator - zbierz wyniki".
+- The desktop shortcut is now "BC5 emulator (0412 fast5)" (`shortcut0412b.sh fast5`); the fast4 one is in
+  `~/bc5-work/trash-20261111/pulpit`.
+- Runs w1his and w2his: `run0412n.sh <tag> fast5 120` (build g412u, RT on, measuring watchdog 220 MiB, no catcher):
+  the scripted route (start screen, slot, Continue) on a private copy of his saves, the walk for 120 s after the
+  load, then the stop. Before w2his the named snapshot was made again from the live saves; it reads the same as the
+  one of 11-10 (`1151e79071c72b17`), so both runs loaded his current save. **His live saves were only read: the same
+  sum before and after** (nothing to put back). The old snapshot stays beside as `night/saves-named.20261111-2020`.
+
+| [M] | w1his | w2his |
+|---|---|---|
+| ended | at G+120, 237 s | at G+120, 240 s |
+| kernel lines / timeouts / crash lines | 0 / 0 / 0 | 0 / 0 / 0 |
+| flips/s over the run; longest gap | 25.2; 616 ms | 25.0; 730 ms |
+| pinned direct in play (150–210 s) | 11,006–11,010 MiB | 11,034–11,042 MiB |
+| available memory in play; lowest of the run | 850–886 MiB | 805–823 MiB; 803 MiB |
+| PSI full in play | 0.1–2.2 % | 0.0–1.3 % |
+| still skipped at the end | 702 of 1,010 MiB | 686 of 1,010 MiB |
+
+His three plays on fast2 reached 220–275 MiB available within two minutes (section 29); fast2 on this script
+reaches 283–384 MiB. What these two runs are not: his hands on the pad (his load pinned about 0.2 GiB more than the
+script's, section 36), and nobody looked at the picture.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
