@@ -1,0 +1,9 @@
+zero skip: list /home/kjaniszewski/bc5-work/exp0412/zero-list-0412.txt, 2 heaps, 1010.0 MiB listed, 0 bad lines
+zero skip: RenderGpuWcLarge at file 0x156c00000: 740.0 MiB in 30 runs skipped
+zero skip: canary BO 1, 33 slices of 2 MiB
+guard: switches: LEDGER on, MLOCK off, FILE off, PSI 0.0, PIN_CAP 0 MiB (log only), APPLY_MIN_MS 0; memlock limit limited (exp 0412, tag g412b)
+lazy release (exp 0401 e7): on (10 s, eager): an imported chunk of the direct memfd under no view for 10 s, not forced by a hint or learned window, eager-heap chunks too, zero-list chunks never, is cut out of its BO; a view over it again imports it before the mappings are built; passes every 2.5 s
+lazy release (exp 0401 e7): t 1 s: 3164.0 MiB imported: 3136.0 under eager views, 28.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 0.0 under no view (0.0 last seen under an eager or zero-list view, 0.0 never seen under one; 0.0 idle 10 s or more); cut 0.0 MiB in 0 BOs (0 whole, 0 split), back 0.0 MiB, 0 chunks released now, 0 undone, 0 imports failed, 0 BOs deferred, 0 not split (aliases); GTT 301.9 of 13312.0 MiB
+zero skip: canary +370 mappings (370)
+zero skip: CommitIABufferAllocator at file 0x226200000: 270.0 MiB in 3 runs skipped
+zero skip: canary +135 mappings (505)

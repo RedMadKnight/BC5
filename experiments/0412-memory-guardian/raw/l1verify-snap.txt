@@ -1,0 +1,504 @@
+######## snapshot at 60 s (2026-11-11 14:33:50), emulator 3483438
+## meminfo
+MemTotal:       15557520 kB
+MemFree:          404504 kB
+MemAvailable:     767036 kB
+Buffers:             540 kB
+Cached:         13072272 kB
+SwapCached:         2564 kB
+Active:          1411928 kB
+Inactive:       11558372 kB
+Active(anon):    1273620 kB
+Inactive(anon): 11137808 kB
+Active(file):     138308 kB
+Inactive(file):   420564 kB
+Unevictable:      583164 kB
+Mlocked:           46736 kB
+SwapTotal:       7778300 kB
+SwapFree:        7022268 kB
+Zswap:                 0 kB
+Zswapped:              0 kB
+Dirty:              1148 kB
+Writeback:             0 kB
+AnonPages:        478544 kB
+Mapped:          3349196 kB
+Shmem:          11947196 kB
+KReclaimable:     115620 kB
+Slab:             468816 kB
+SReclaimable:     115620 kB
+SUnreclaim:       353196 kB
+KernelStack:       14320 kB
+PageTables:       101232 kB
+SecPageTables:         0 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:    15557060 kB
+Committed_AS:   17793080 kB
+VmallocTotal:   34359738367 kB
+VmallocUsed:      109240 kB
+VmallocChunk:          0 kB
+Percpu:            14336 kB
+HardwareCorrupted:     0 kB
+AnonHugePages:         0 kB
+ShmemHugePages:        0 kB
+ShmemPmdMapped:        0 kB
+FileHugePages:         0 kB
+FilePmdMapped:         0 kB
+CmaTotal:              0 kB
+CmaFree:               0 kB
+Unaccepted:            0 kB
+Balloon:               0 kB
+GPUActive:        563856 kB
+GPUReclaim:            0 kB
+HugePages_Total:       0
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
+Hugetlb:               0 kB
+DirectMap4k:    10441184 kB
+DirectMap2M:     5525504 kB
+DirectMap1G:     1048576 kB
+## emulator status
+VmSize:	1079705220 kB
+VmRSS:	 3385756 kB
+RssAnon:	  207052 kB
+RssFile:	  106832 kB
+RssShmem:	 3071872 kB
+VmData:	 1218068 kB
+VmPTE:	   58220 kB
+VmSwap:	   55016 kB
+Threads:	99
+## emulator smaps_rollup
+00040000-7ffe6b62e000 ---p 00000000 00:00 0                              [rollup]
+Rss:             3385756 kB
+Pss:             3381339 kB
+Pss_Dirty:       3222122 kB
+Pss_Anon:         207052 kB
+Pss_File:         104869 kB
+Pss_Shmem:       3069417 kB
+Shared_Clean:       3424 kB
+Shared_Dirty:       4300 kB
+Private_Clean:    158048 kB
+Private_Dirty:   3219984 kB
+Referenced:      2533152 kB
+Anonymous:        207052 kB
+KSM:                   0 kB
+LazyFree:              0 kB
+AnonHugePages:         0 kB
+ShmemPmdMapped:        0 kB
+FilePmdMapped:         0 kB
+Shared_Hugetlb:        0 kB
+Private_Hugetlb:       0 kB
+Swap:              62352 kB
+SwapPss:           55016 kB
+Locked:              366 kB
+## emulator smaps by class (kB): class maps size rss pss anon swap shmem_pmd
+other 4 36 16 0 0 0 0
+gpu-map 76 226556 116 116 16 0 0
+anon 18363 1052275548 196888 196888 196888 51024 0
+file 341 323112 112200 110249 5484 2260 0
+stack 1 140 140 140 140 0 0
+heap 1 6380 4584 4584 4584 1724 0
+memfd-direct 17572 26517040 2955972 2954144 0 3784 0
+memfd-other 35 1804 1272 638 0 0 0
+memfd-private 143 354624 114632 114632 0 3552 0
+## processes by name (kB): name count rssanon rssfile rssshmem vmswap vmpte
+kyty_emulator 1 207112 106832 3073608 55008 58240
+plasmashell 1 115312 35676 0 226568 2152
+pipewire 1 18628 7112 692 2692 156
+podman 1 15992 33296 4 716 376
+python3 1 15892 30440 0 0 540
+tailscaled 1 14112 16780 0 5088 212
+kwin_wayland 1 13340 23408 572 64456 1440
+xdg-desktop-por 3 7556 23284 0 13288 784
+pipewire-pulse 1 7132 6328 0 1456 132
+plasma-keyboard 1 6400 14328 0 37872 968
+systemd 2 5816 13588 0 8424 196
+kded6 1 5784 13584 0 13660 512
+sshd-session 2 4544 17172 0 0 152
+wireplumber 1 4116 8244 0 4008 256
+foreground_boos 1 3992 11572 0 4720 312
+systemd-nsresou 6 3248 26120 0 1404 344
+bash 15 3084 45576 0 2668 824
+dbus-broker 3 2516 8088 0 3224 152
+ds-inhibit 1 2432 8688 0 8972 108
+systemd-userwor 3 2052 14720 0 0 192
+sleep 6 1632 16596 0 108 336
+polkitd 1 1408 6132 0 3280 124
+org_kde_powerde 1 1336 9092 0 6456 380
+NetworkManager 1 1056 6760 0 2460 168
+host-spawn 1 1044 2452 0 56 92
+systemd-logind 1 808 5104 0 1884 64
+upowerd 1 756 5712 0 2564 128
+systemd-journal 1 688 27892 4 1264 180
+systemd-resolve 1 688 4524 0 1856 72
+Xwayland 1 672 4620 0 20024 492
+udisksd 1 664 5636 0 1640 152
+awk 1 628 3836 0 0 56
+tuned 1 584 8876 0 25564 208
+cupsd 1 544 4272 0 1316 100
+xdg-document-po 1 460 4636 0 272 180
+uresourced 2 456 8876 0 1480 208
+kunifiedpush-di 1 452 5044 0 2660 204
+polkit-kde-auth 1 448 6580 0 6884 344
+kaccess 1 424 5452 0 6692 324
+tuned-ppd 1 412 8784 0 22592 184
+xembedsniproxy 1 400 4616 0 2516 188
+gmenudbusmenupr 1 388 4600 0 2552 200
+gvfsd 1 368 4728 0 792 124
+ModemManager 1 352 4200 0 1896 132
+systemd-homed 1 352 3932 0 972 72
+accounts-daemon 1 332 5044 0 864 124
+sshd 1 332 3764 0 768 56
+dbus-broker-lau 3 316 8312 0 1368 184
+flatpak-session 1 316 4872 0 364 108
+avahi-daemon 2 308 4244 0 548 108
+at-spi-bus-laun 1 276 4396 0 480 108
+xdg-permission- 1 276 4844 0 296 108
+dmemcg-booster 2 268 5232 0 252 108
+conmon 2 260 3900 0 248 120
+ksmserver 1 232 3840 0 3144 220
+cardwired 1 208 5248 0 32716 536
+chronyd 1 192 3308 0 672 76
+systemd-oomd 1 192 3896 0 472 52
+at-spi2-registr 1 156 3068 0 488 84
+auditd 1 144 2368 0 728 68
+rtkit-daemon 1 140 2524 0 108 56
+mpris-proxy 1 132 2844 0 128 52
+obexd 1 120 3264 0 540 76
+systemd-userdbd 1 116 2852 0 480 52
+smartd 1 112 3192 0 1000 60
+sort 1 108 1948 0 0 44
+kactivitymanage 1 88 6660 0 6956 304
+cyan-skillfish- 1 84 2160 0 404 96
+gssproxy 1 64 2964 0 1020 108
+systemd-udevd 1 64 4092 0 7440 108
+distrobox 1 36 3292 0 276 44
+input-remapper- 2 16 11524 0 66320 412
+ostree 1 12 8664 0 1576 120
+ssh-agent 1 12 2112 0 860 56
+dconf-service 1 8 2208 0 528 80
+firewalld 1 8 8692 0 33836 212
+xsettingsd 1 8 2460 0 388 52
+(sd-pam) 1 4 1088 0 1400 64
+dmesg 1 4 2184 0 128 64
+findmnt 1 4 2552 0 308 72
+kde-inhibit 1 4 3416 0 1424 148
+kdeconnectd 1 4 4612 0 10580 348
+ksecretd 1 4 4476 0 7412 336
+kwin_wayland_wr 1 4 3680 0 2168 164
+plasmalogin 1 4 3540 0 3148 208
+plasmalogin-hel 1 4 3588 0 3792 212
+startplasma-way 1 4 4024 0 3384 204
+## cgroups (bytes): path current swap | anon file shmem kernel slab pagetables file_mapped inactive_file active_file unevictable
+ - - | anon=490524672 file=13455892480 kernel=196472832 pagetables=82059264 shmem=12233928704 file_mapped=3432906752 inactive_file=500092928 active_file=141746176 unevictable=597159936 slab=88124512 
+/system.slice 178683904 225378304 | anon=53100544 file=90640384 kernel=34316288 pagetables=6451200 shmem=102400 file_mapped=68333568 inactive_file=51572736 active_file=24256512 unevictable=31031296 slab=12765832 
+/user.slice 13348052992 542838784 | anon=433160192 file=12741144576 kernel=156110848 pagetables=75493376 shmem=12233818112 file_mapped=3347853312 inactive_file=390434816 active_file=116903936 unevictable=696320 slab=70333472 
+/user.slice/user-1000.slice 13348020224 542838784 | anon=433156096 file=12741144576 kernel=156254208 pagetables=75653120 shmem=12233818112 file_mapped=3347922944 inactive_file=390434816 active_file=116903936 unevictable=696320 slab=70334192 
+/user.slice/user-1000.slice/session-128.scope 31301632 2732032 | anon=17203200 file=6422528 kernel=4837376 pagetables=2011136 shmem=0 file_mapped=28672 inactive_file=6406144 active_file=16384 unevictable=0 slab=2331736 
+/user.slice/user-1000.slice/user@1000.service 13244768256 536326144 | anon=414457856 file=12668579840 kernel=147111936 pagetables=73109504 shmem=12233818112 file_mapped=3335143424 inactive_file=330473472 active_file=104296448 unevictable=696320 slab=64628688 
+/user.slice/user-1000.slice/user@1000.service/app.slice 26185728 31731712 | anon=2228224 file=15937536 kernel=5779456 pagetables=2183168 shmem=73728 file_mapped=12558336 inactive_file=11108352 active_file=4755456 unevictable=0 slab=2457192 
+/user.slice/user-1000.slice/user@1000.service/session.slice 267386880 396730368 | anon=185847808 file=49016832 kernel=24387584 pagetables=8200192 shmem=2240512 file_mapped=40284160 inactive_file=30015488 active_file=16760832 unevictable=0 slab=11984232 
+/user.slice/user-1000.slice/user@1000.service/user.slice 12929085440 62214144 | anon=216698880 file=12600758272 kernel=108478464 pagetables=60100608 shmem=12231495680 file_mapped=3279589376 inactive_file=288706560 active_file=80560128 unevictable=696320 slab=46132152 
+/user.slice/user-1000.slice/user@1000.service/user.slice/libpod-cb6100ac41bf8c253e2ff96249193e39ede4b059786051f12ef8012216c14459.scope 12886396928 62214144 | anon=215040000 file=12560470016 kernel=107737088 pagetables=60022784 shmem=12231495680 file_mapped=3252273152 inactive_file=276258816 active_file=52719616 unevictable=696320 slab=45818688 
+/user.slice/user-1000.slice/user@1000.service/user.slice/libpod-cb6100ac41bf8c253e2ff96249193e39ede4b059786051f12ef8012216c14459.scope/container 12886351872 62214144 | anon=215040000 file=12560470016 kernel=107692032 pagetables=60022784 shmem=12231495680 file_mapped=3252273152 inactive_file=276258816 active_file=52719616 unevictable=696320 slab=45814576 
+/system.slice/bc5-gpu-stall-sampler.service 21704704 0 | anon=16273408 file=4104192 kernel=1064960 pagetables=557056 shmem=0 file_mapped=4104192 inactive_file=0 active_file=262144 unevictable=20115456 slab=489864 
+/system.slice/systemd-journald.service 35016704 1572864 | anon=704512 file=33517568 kernel=794624 pagetables=188416 shmem=0 file_mapped=19546112 inactive_file=28528640 active_file=4988928 unevictable=0 slab=519384 
+/system.slice/tailscaled.service 33439744 5210112 | anon=14450688 file=17940480 kernel=1036288 pagetables=221184 shmem=0 file_mapped=17166336 inactive_file=8163328 active_file=9781248 unevictable=0 slab=465280 
+## gpu (bytes)
+mem_info_gtt_used 12633931776
+mem_info_gtt_total 13958643712
+mem_info_vram_used 440938496
+mem_info_vram_total 536870912
+mem_info_vis_vram_used 440938496
+## gpu clients (fdinfo, KiB): name pid client vram gtt cpu
+kyty_emulator 3483438 104 68240 11867732 0
+plasmashell 3094 27 8176 170400 0
+kyty_emulator 3483438 103 311960 120256 0
+plasma-keyboard 3196 23 68 98480 0
+Xwayland 3323 24 28 20560 0
+Xwayland 3323 25 12 2048 0
+## zram mm_stat (orig compr mem_used limit max same pages_compacted huge)
+716500992 164387102 170913792        0 722509824     1439   183042     3461   353356
+## thp
+enabled: always [madvise] never
+shmem_enabled: always within_size advise [never] deny force
+defrag: always defer defer+madvise [madvise] never
+## tmpfs
+Filesystem     1K-blocks  Used Available Use% Mounted on
+tmpfs            3111504  1900   3109604   1% /run
+## vmstat
+nr_free_pages 72788
+nr_zone_inactive_anon 2784264
+nr_zone_active_anon 318915
+nr_zone_inactive_file 127664
+nr_zone_active_file 34606
+nr_mlock 11684
+nr_zspages 41727
+nr_unevictable 145791
+nr_slab_reclaimable 28905
+nr_slab_unreclaimable 88279
+nr_anon_pages 119853
+nr_mapped 838179
+nr_file_pages 3291366
+nr_shmem 2986799
+nr_shmem_hugepages 0
+nr_vmscan_write 6360437
+nr_kernel_stack 14380
+nr_page_table_pages 25328
+nr_sec_page_table_pages 0
+nr_swapcached 644
+######## snapshot at 130 s (2026-11-11 14:35:00), emulator 3483438
+## meminfo
+MemTotal:       15557520 kB
+MemFree:          260424 kB
+MemAvailable:     367872 kB
+Buffers:             544 kB
+Cached:         13152004 kB
+SwapCached:          940 kB
+Active:          2685748 kB
+Inactive:       10373256 kB
+Active(anon):    2614316 kB
+Inactive(anon): 10140888 kB
+Active(file):      71432 kB
+Inactive(file):   232368 kB
+Unevictable:      583164 kB
+Mlocked:           46736 kB
+SwapTotal:       7778300 kB
+SwapFree:        6984868 kB
+Zswap:                 0 kB
+Zswapped:              0 kB
+Dirty:                76 kB
+Writeback:             0 kB
+AnonPages:        491260 kB
+Mapped:          5557624 kB
+Shmem:          12281980 kB
+KReclaimable:     115596 kB
+Slab:             468724 kB
+SReclaimable:     115596 kB
+SUnreclaim:       353128 kB
+KernelStack:       14448 kB
+PageTables:       111484 kB
+SecPageTables:         0 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:    15557060 kB
+Committed_AS:   18188844 kB
+VmallocTotal:   34359738367 kB
+VmallocUsed:      115868 kB
+VmallocChunk:          0 kB
+Percpu:            14336 kB
+HardwareCorrupted:     0 kB
+AnonHugePages:         0 kB
+ShmemHugePages:        0 kB
+ShmemPmdMapped:        0 kB
+FileHugePages:         0 kB
+FilePmdMapped:         0 kB
+CmaTotal:              0 kB
+CmaFree:               0 kB
+Unaccepted:            0 kB
+Balloon:               0 kB
+GPUActive:        588340 kB
+GPUReclaim:            0 kB
+HugePages_Total:       0
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
+Hugetlb:               0 kB
+DirectMap4k:    10441184 kB
+DirectMap2M:     5525504 kB
+DirectMap1G:     1048576 kB
+## emulator status
+VmSize:	1080065580 kB
+VmRSS:	 5631052 kB
+RssAnon:	  223748 kB
+RssFile:	   15176 kB
+RssShmem:	 5392128 kB
+VmData:	 1276712 kB
+VmPTE:	   68304 kB
+VmSwap:	   87216 kB
+Threads:	100
+## emulator smaps_rollup
+00040000-7ffe6b62e000 ---p 00000000 00:00 0                              [rollup]
+Rss:             5631176 kB
+Pss:             5629494 kB
+Pss_Dirty:       5519191 kB
+Pss_Anon:         223848 kB
+Pss_File:          14026 kB
+Pss_Shmem:       5391619 kB
+Shared_Clean:       2152 kB
+Shared_Dirty:        476 kB
+Private_Clean:    109580 kB
+Private_Dirty:   5518968 kB
+Referenced:      4887728 kB
+Anonymous:        223848 kB
+KSM:                   0 kB
+LazyFree:              0 kB
+AnonHugePages:         0 kB
+ShmemPmdMapped:        0 kB
+FilePmdMapped:         0 kB
+Shared_Hugetlb:        0 kB
+Private_Hugetlb:       0 kB
+Swap:              93684 kB
+SwapPss:           87116 kB
+Locked:              366 kB
+## emulator smaps by class (kB): class maps size rss pss anon swap shmem_pmd
+other 4 36 16 0 0 0 0
+gpu-map 76 251024 48 48 8 8 0
+anon 38800 1052512728 220328 220328 220328 79940 0
+file 341 323112 14916 13783 424 7320 0
+stack 1 140 20 20 20 120 0
+heap 1 6380 920 920 920 5388 0
+memfd-direct 10329 26664896 5254336 5254178 0 2584 0
+memfd-other 35 1804 764 384 0 0 0
+memfd-private 143 354640 116948 116948 0 3984 0
+## processes by name (kB): name count rssanon rssfile rssshmem vmswap vmpte
+kyty_emulator 1 221832 14920 5221192 92648 68172
+plasmashell 1 115324 35568 0 226568 2152
+pipewire 1 18628 7112 692 2692 156
+python3 1 15892 30440 0 0 540
+tailscaled 1 14760 7468 0 5156 212
+kwin_wayland 1 13340 23408 64 64456 1440
+podman 1 12568 28528 4 3876 376
+xdg-desktop-por 3 7556 23284 0 13288 784
+pipewire-pulse 1 7132 6328 0 1456 132
+plasma-keyboard 1 6400 14328 0 37872 968
+systemd 2 5812 13288 0 8428 196
+kded6 1 5784 13584 0 13660 512
+sshd-session 2 4544 16904 0 0 152
+wireplumber 1 4116 8244 0 4008 256
+foreground_boos 1 3984 11376 0 4728 312
+bash 15 2912 43560 0 2992 824
+systemd-nsresou 6 2748 25136 0 1848 344
+dbus-broker 3 2516 8088 0 3224 152
+ds-inhibit 1 2432 8688 0 8972 108
+systemd-userwor 3 2204 15744 0 0 192
+sleep 7 1736 15056 0 108 376
+org_kde_powerde 1 1336 9088 0 6456 380
+polkitd 1 1224 6080 0 3464 124
+NetworkManager 1 1056 6760 0 2460 168
+systemd-logind 1 808 5104 0 1884 64
+upowerd 1 756 5712 0 2564 128
+systemd-resolve 1 684 4508 0 1860 72
+Xwayland 1 672 4620 0 20024 492
+udisksd 1 664 5632 0 1640 152
+awk 1 628 3776 0 0 56
+systemd-journal 1 624 21404 4 1328 180
+tuned 1 584 8876 0 25564 208
+cupsd 1 544 4272 0 1316 100
+xdg-document-po 1 460 4636 0 272 180
+uresourced 2 456 8876 0 1480 208
+kunifiedpush-di 1 452 5044 0 2660 204
+polkit-kde-auth 1 448 6580 0 6884 344
+kaccess 1 424 5448 0 6692 324
+tuned-ppd 1 412 8784 0 22592 184
+xembedsniproxy 1 400 4612 0 2516 188
+gmenudbusmenupr 1 388 4596 0 2552 200
+gvfsd 1 368 4728 0 792 124
+ModemManager 1 352 4200 0 1896 132
+systemd-homed 1 352 3932 0 972 72
+accounts-daemon 1 332 5044 0 864 124
+sshd 1 332 3764 0 768 56
+dbus-broker-lau 3 316 8312 0 1368 184
+flatpak-session 1 316 4872 0 364 108
+avahi-daemon 2 308 4216 0 548 108
+at-spi-bus-laun 1 276 4396 0 480 108
+xdg-permission- 1 276 4844 0 296 108
+dmemcg-booster 2 268 5232 0 252 108
+ksmserver 1 232 3840 0 3144 220
+cardwired 1 208 5248 0 32716 536
+chronyd 1 192 3308 0 672 76
+systemd-oomd 1 192 3896 0 472 52
+conmon 2 188 3900 0 320 120
+at-spi2-registr 1 156 3068 0 488 84
+auditd 1 144 2368 0 728 68
+rtkit-daemon 1 140 2524 0 108 56
+mpris-proxy 1 132 2844 0 128 52
+obexd 1 120 3264 0 540 76
+systemd-userdbd 1 116 2852 0 480 52
+smartd 1 112 3136 0 1000 60
+sort 1 108 2120 0 0 44
+kactivitymanage 1 88 6660 0 6956 304
+cyan-skillfish- 1 84 2160 0 404 96
+gssproxy 1 64 2964 0 1020 108
+systemd-udevd 1 52 4092 0 7452 108
+distrobox 1 36 3292 0 276 44
+input-remapper- 2 16 11524 0 66320 412
+ostree 1 12 8664 0 1576 120
+ssh-agent 1 12 2112 0 860 56
+dconf-service 1 8 2208 0 528 80
+firewalld 1 8 8692 0 33836 212
+xsettingsd 1 8 2460 0 388 52
+(sd-pam) 1 4 1088 0 1400 64
+dmesg 1 4 2184 0 128 64
+findmnt 1 4 2552 0 308 72
+kde-inhibit 1 4 3416 0 1424 148
+kdeconnectd 1 4 4612 0 10580 348
+ksecretd 1 4 4476 0 7412 336
+kwin_wayland_wr 1 4 3680 0 2168 164
+plasmalogin 1 4 3540 0 3148 208
+plasmalogin-hel 1 4 3588 0 3792 212
+startplasma-way 1 4 4024 0 3384 204
+## cgroups (bytes): path current swap | anon file shmem kernel slab pagetables file_mapped inactive_file active_file unevictable
+ - - | anon=500977664 file=13472137216 kernel=208601088 pagetables=92471296 shmem=12599840768 file_mapped=5560672256 inactive_file=224854016 active_file=67174400 unevictable=597159936 slab=89843632 
+/system.slice 182411264 226181120 | anon=53137408 file=94916608 kernel=34320384 pagetables=6451200 shmem=94208 file_mapped=53583872 inactive_file=51638272 active_file=28483584 unevictable=31031296 slab=12770224 
+/user.slice 13387886592 585789440 | anon=443518976 file=12770856960 kernel=168210432 pagetables=85782528 shmem=12599738368 file_mapped=5489356800 inactive_file=132632576 active_file=38277120 unevictable=696320 slab=72114880 
+/user.slice/user-1000.slice 13388193792 585789440 | anon=443514880 file=12770836480 kernel=167620608 pagetables=85372928 shmem=12599738368 file_mapped=5489573888 inactive_file=132722688 active_file=38277120 unevictable=696320 slab=71966712 
+/user.slice/user-1000.slice/session-128.scope 29253632 5873664 | anon=14041088 file=6643712 kernel=5980160 pagetables=1929216 shmem=0 file_mapped=20480 inactive_file=6627328 active_file=16384 unevictable=0 slab=3568072 
+/user.slice/user-1000.slice/user@1000.service 13336084480 576004096 | anon=428118016 file=12747239424 kernel=157720576 pagetables=83247104 shmem=12599738368 file_mapped=5491019776 inactive_file=114737152 active_file=32591872 unevictable=696320 slab=65033544 
+/user.slice/user-1000.slice/user@1000.service/app.slice 24440832 31731712 | anon=2232320 file=16396288 kernel=5787648 pagetables=2187264 shmem=73728 file_mapped=12546048 inactive_file=10977280 active_file=5345280 unevictable=0 slab=2454848 
+/user.slice/user-1000.slice/user@1000.service/session.slice 259239936 396730368 | anon=185860096 file=49016832 kernel=24358912 pagetables=8200192 shmem=2240512 file_mapped=40284160 inactive_file=30015488 active_file=16760832 unevictable=0 slab=11974552 
+/user.slice/user-1000.slice/user@1000.service/user.slice 13030207488 101883904 | anon=230375424 file=12679987200 kernel=119185408 pagetables=70246400 shmem=12597415936 file_mapped=5451366400 inactive_file=73367552 active_file=9117696 unevictable=696320 slab=46647080 
+/user.slice/user-1000.slice/user@1000.service/user.slice/libpod-cb6100ac41bf8c253e2ff96249193e39ede4b059786051f12ef8012216c14459.scope 13002133504 101740544 | anon=229064704 file=12654067712 kernel=118452224 pagetables=70168576 shmem=12597415936 file_mapped=5428932608 inactive_file=47730688 active_file=8835072 unevictable=696320 slab=46341312 
+/user.slice/user-1000.slice/user@1000.service/user.slice/libpod-cb6100ac41bf8c253e2ff96249193e39ede4b059786051f12ef8012216c14459.scope/container 13002276864 101740544 | anon=229105664 file=12654030848 kernel=118448128 pagetables=70184960 shmem=12597415936 file_mapped=5440307200 inactive_file=47251456 active_file=8835072 unevictable=696320 slab=46302720 
+/system.slice/bc5-gpu-stall-sampler.service 21442560 0 | anon=16273408 file=4104192 kernel=1064960 pagetables=557056 shmem=0 file_mapped=4104192 inactive_file=0 active_file=262144 unevictable=20115456 slab=489864 
+/system.slice/systemd-journald.service 32182272 1638400 | anon=638976 file=30744576 kernel=798720 pagetables=188416 shmem=0 file_mapped=14422016 inactive_file=19812352 active_file=10932224 unevictable=0 slab=524120 
+/system.slice/tailscaled.service 41463808 5279744 | anon=15114240 file=25309184 kernel=1032192 pagetables=221184 shmem=0 file_mapped=7630848 inactive_file=16011264 active_file=9302016 unevictable=0 slab=466464 
+## gpu (bytes)
+mem_info_gtt_used 13015502848
+mem_info_gtt_total 13958643712
+mem_info_vram_used 503238656
+mem_info_vram_total 536870912
+mem_info_vis_vram_used 503238656
+## gpu clients (fdinfo, KiB): name pid client vram gtt cpu
+kyty_emulator 3483438 104 77328 12240360 0
+plasmashell 3094 27 8176 170400 0
+kyty_emulator 3483438 103 363800 120256 0
+plasma-keyboard 3196 23 68 98480 0
+Xwayland 3323 24 28 20560 0
+Xwayland 3323 25 12 2048 0
+## zram mm_stat (orig compr mem_used limit max same pages_compacted huge)
+762023936 175296480 180879360        0 722509824     1727   183497     3540   354523
+## thp
+enabled: always [madvise] never
+shmem_enabled: always within_size advise [never] deny force
+defrag: always defer defer+madvise [madvise] never
+## tmpfs
+Filesystem     1K-blocks  Used Available Use% Mounted on
+tmpfs            3111504  1900   3109604   1% /run
+## vmstat
+nr_free_pages 50407
+nr_zone_inactive_anon 989803
+nr_zone_active_anon 2208656
+nr_zone_inactive_file 44679
+nr_zone_active_file 21956
+nr_mlock 11684
+nr_zspages 43883
+nr_unevictable 145791
+nr_slab_reclaimable 28899
+nr_slab_unreclaimable 88256
+nr_anon_pages 119297
+nr_mapped 1260379
+nr_file_pages 3292243
+nr_shmem 3083199
+nr_shmem_hugepages 0
+nr_vmscan_write 6383640
+nr_kernel_stack 14524
+nr_page_table_pages 28112
+nr_sec_page_table_pages 0
+nr_swapcached 230
+# end 2026-11-11 14:35:14

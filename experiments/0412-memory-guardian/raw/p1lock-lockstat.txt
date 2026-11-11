@@ -1,0 +1,56 @@
+-rw-r--r--. 1 kjaniszewski kjaniszewski 3038581 11-11 16:58 /home/kjaniszewski/bc5-data/captures/play-20261111-1655/gc/d
+10.0 s: game-main: 4 locks, held 279.1 ms (2.8 % of the time; longest 277.50 ms; 1 of 2 ms or more), waited 648.6 ms in 2 waits (6.5 %); behind: bc5-ring 648.6 ms
+10.0 s: bc5-ring: 2602 locks, held 2440.7 ms (24.4 % of the time; longest 1500.68 ms; 63 of 2 ms or more), waited 565.8 ms in 305 waits (5.7 %); behind: game-main 277.5 ms, Render Thread 231.3 ms, bc5-chainwd 43.5 ms, bc5-ring 13.6 ms
+10.0 s: bc5-chainwd: 238 locks, held 257.0 ms (2.6 % of the time; longest 48.48 ms; 17 of 2 ms or more), waited 80.8 ms in 15 waits (0.8 %); behind: bc5-ring 80.7 ms, bc5-chainwd 0.1 ms
+10.0 s: Render Thread: 566 locks, held 630.4 ms (6.3 % of the time; longest 22.35 ms; 59 of 2 ms or more), waited 171.0 ms in 88 waits (1.7 %); behind: bc5-ring 166.2 ms, bc5-chainwd 4.1 ms, Render Thread 0.8 ms
+10.0 s: bc5-ring: 3588 locks, held 648.8 ms (6.5 % of the time; longest 15.74 ms; 11 of 2 ms or more), waited 137.8 ms in 400 waits (1.4 %); behind: Render Thread 106.8 ms, bc5-chainwd 18.6 ms, bc5-ring 12.4 ms
+10.0 s: bc5-chainwd: 329 locks, held 245.2 ms (2.5 % of the time; longest 2.18 ms; 2 of 2 ms or more), waited 27.6 ms in 15 waits (0.3 %); behind: bc5-ring 27.6 ms
+10.0 s: Render Thread: 796 locks, held 525.0 ms (5.2 % of the time; longest 10.88 ms; 9 of 2 ms or more), waited 79.4 ms in 135 waits (0.8 %); behind: bc5-ring 79.3 ms, bc5-chainwd 0.1 ms
+10.0 s: bc5-ring: 3670 locks, held 649.3 ms (6.5 % of the time; longest 11.78 ms; 11 of 2 ms or more), waited 123.2 ms in 411 waits (1.2 %); behind: Render Thread 100.2 ms, bc5-chainwd 12.1 ms, bc5-ring 10.9 ms
+10.0 s: bc5-chainwd: 314 locks, held 230.4 ms (2.3 % of the time; longest 3.87 ms; 4 of 2 ms or more), waited 20.4 ms in 15 waits (0.2 %); behind: bc5-ring 20.4 ms
+10.0 s: Render Thread: 833 locks, held 524.6 ms (5.2 % of the time; longest 2.31 ms; 8 of 2 ms or more), waited 82.4 ms in 169 waits (0.8 %); behind: bc5-ring 82.4 ms
+10.0 s: bc5-ring: 8177 locks, held 1916.1 ms (19.2 % of the time; longest 74.68 ms; 63 of 2 ms or more), waited 781.8 ms in 194 waits (7.8 %); behind: bc5-chainwd 467.3 ms, Render Thread 273.4 ms, bc5-ring 41.1 ms
+10.0 s: bc5-chainwd: 1993 locks, held 1924.0 ms (19.2 % of the time; longest 78.35 ms; 75 of 2 ms or more), waited 483.7 ms in 55 waits (4.8 %); behind: bc5-ring 409.7 ms, bc5-chainwd 74.0 ms
+10.0 s: Render Thread: 216 locks, held 403.6 ms (4.0 % of the time; longest 39.27 ms; 26 of 2 ms or more), waited 548.5 ms in 60 waits (5.5 %); behind: bc5-ring 548.5 ms
+10.0 s: bc5-ring: 5350 locks, held 2737.2 ms (27.4 % of the time; longest 55.88 ms; 127 of 2 ms or more), waited 1267.8 ms in 355 waits (12.7 %); behind: bc5-chainwd 815.5 ms, Render Thread 449.4 ms, bc5-ring 3.0 ms
+10.0 s: bc5-chainwd: 1086 locks, held 2024.7 ms (20.2 % of the time; longest 49.19 ms; 154 of 2 ms or more), waited 1069.3 ms in 98 waits (10.7 %); behind: bc5-ring 1004.8 ms, bc5-chainwd 64.5 ms
+10.0 s: Render Thread: 480 locks, held 816.5 ms (8.2 % of the time; longest 40.60 ms; 62 of 2 ms or more), waited 829.1 ms in 108 waits (8.3 %); behind: bc5-ring 829.0 ms, bc5-chainwd 0.1 ms
+10.0 s: bc5-ring: 8116 locks, held 2709.8 ms (27.1 % of the time; longest 82.57 ms; 49 of 2 ms or more), waited 1057.5 ms in 928 waits (10.6 %); behind: Render Thread 542.5 ms, bc5-chainwd 459.6 ms, bc5-ring 55.3 ms
+10.0 s: bc5-chainwd: 372 locks, held 773.1 ms (7.7 % of the time; longest 65.72 ms; 42 of 2 ms or more), waited 366.7 ms in 84 waits (3.7 %); behind: bc5-ring 349.5 ms, bc5-chainwd 17.2 ms
+10.0 s: Render Thread: 2030 locks, held 2061.8 ms (20.6 % of the time; longest 46.52 ms; 124 of 2 ms or more), waited 652.0 ms in 453 waits (6.5 %); behind: bc5-ring 651.3 ms, bc5-chainwd 0.7 ms
+10.0 s: bc5-ring: 9559 locks, held 2335.8 ms (23.4 % of the time; longest 36.97 ms; 19 of 2 ms or more), waited 758.4 ms in 1084 waits (7.6 %); behind: Render Thread 468.2 ms, bc5-chainwd 245.5 ms, bc5-ring 44.7 ms
+10.0 s: bc5-chainwd: 435 locks, held 568.9 ms (5.7 % of the time; longest 49.68 ms; 8 of 2 ms or more), waited 90.3 ms in 84 waits (0.9 %); behind: bc5-ring 90.3 ms
+10.0 s: Render Thread: 2307 locks, held 2181.2 ms (21.8 % of the time; longest 45.11 ms; 102 of 2 ms or more), waited 333.6 ms in 421 waits (3.3 %); behind: bc5-ring 332.8 ms, bc5-chainwd 0.8 ms
+10.0 s: bc5-ring: 9839 locks, held 2291.6 ms (22.9 % of the time; longest 42.36 ms; 15 of 2 ms or more), waited 797.2 ms in 1113 waits (8.0 %); behind: Render Thread 477.5 ms, bc5-chainwd 272.5 ms, bc5-ring 47.2 ms
+10.0 s: bc5-chainwd: 410 locks, held 612.2 ms (6.1 % of the time; longest 50.16 ms; 16 of 2 ms or more), waited 99.8 ms in 100 waits (1.0 %); behind: bc5-ring 99.8 ms
+10.0 s: Render Thread: 2365 locks, held 2188.0 ms (21.9 % of the time; longest 51.25 ms; 78 of 2 ms or more), waited 276.7 ms in 428 waits (2.8 %); behind: bc5-ring 276.7 ms
+10.0 s: bc5-ring: 9339 locks, held 2334.5 ms (23.3 % of the time; longest 37.45 ms; 29 of 2 ms or more), waited 826.5 ms in 1080 waits (8.3 %); behind: Render Thread 565.2 ms, bc5-chainwd 222.3 ms, bc5-ring 39.1 ms
+10.0 s: bc5-chainwd: 381 locks, held 600.9 ms (6.0 % of the time; longest 48.39 ms; 18 of 2 ms or more), waited 81.6 ms in 63 waits (0.8 %); behind: bc5-ring 80.7 ms, bc5-chainwd 1.0 ms
+10.0 s: Render Thread: 2292 locks, held 2280.2 ms (22.8 % of the time; longest 54.12 ms; 109 of 2 ms or more), waited 425.7 ms in 402 waits (4.3 %); behind: bc5-ring 425.6 ms, Render Thread 0.1 ms
+10.0 s: bc5-ring: 7431 locks, held 2120.3 ms (21.1 % of the time; longest 46.03 ms; 49 of 2 ms or more), waited 960.6 ms in 1006 waits (9.6 %); behind: Render Thread 546.5 ms, bc5-chainwd 375.0 ms, bc5-ring 39.1 ms
+10.0 s: bc5-chainwd: 337 locks, held 812.2 ms (8.1 % of the time; longest 55.59 ms; 37 of 2 ms or more), waited 199.2 ms in 64 waits (2.0 %); behind: bc5-ring 198.0 ms, bc5-chainwd 1.3 ms
+10.0 s: Render Thread: 1959 locks, held 1855.3 ms (18.5 % of the time; longest 33.30 ms; 79 of 2 ms or more), waited 373.5 ms in 446 waits (3.7 %); behind: bc5-ring 372.3 ms, bc5-chainwd 1.1 ms, Render Thread 0.2 ms
+10.0 s: bc5-ring: 5033 locks, held 2519.1 ms (25.2 % of the time; longest 69.92 ms; 113 of 2 ms or more), waited 1584.7 ms in 180 waits (15.8 %); behind: Render Thread 1165.7 ms, bc5-chainwd 416.1 ms, bc5-ring 2.9 ms
+10.0 s: bc5-chainwd: 1258 locks, held 1224.3 ms (12.2 % of the time; longest 60.42 ms; 39 of 2 ms or more), waited 561.6 ms in 63 waits (5.6 %); behind: bc5-ring 561.3 ms, bc5-chainwd 0.2 ms
+10.0 s: Render Thread: 125 locks, held 1209.9 ms (12.1 % of the time; longest 135.09 ms; 60 of 2 ms or more), waited 1238.7 ms in 75 waits (12.4 %); behind: bc5-ring 1238.7 ms
+10.0 s: bc5-ring: 4733 locks, held 2970.7 ms (29.7 % of the time; longest 106.13 ms; 135 of 2 ms or more), waited 1489.2 ms in 662 waits (14.9 %); behind: Render Thread 735.4 ms, bc5-chainwd 722.2 ms, bc5-ring 31.6 ms
+10.0 s: bc5-chainwd: 367 locks, held 1083.3 ms (10.8 % of the time; longest 89.15 ms; 55 of 2 ms or more), waited 566.8 ms in 67 waits (5.7 %); behind: bc5-ring 558.2 ms, bc5-chainwd 8.6 ms
+10.0 s: Render Thread: 1082 locks, held 1366.5 ms (13.6 % of the time; longest 46.22 ms; 43 of 2 ms or more), waited 1348.7 ms in 213 waits (13.5 %); behind: bc5-ring 1336.1 ms, bc5-chainwd 12.6 ms
+10.0 s: bc5-ring: 4807 locks, held 2208.6 ms (22.1 % of the time; longest 57.21 ms; 88 of 2 ms or more), waited 1484.5 ms in 713 waits (14.8 %); behind: Render Thread 897.6 ms, bc5-chainwd 570.1 ms, bc5-ring 16.9 ms
+10.0 s: bc5-chainwd: 202 locks, held 755.6 ms (7.5 % of the time; longest 120.26 ms; 20 of 2 ms or more), waited 254.6 ms in 44 waits (2.5 %); behind: bc5-ring 254.5 ms, bc5-chainwd 0.2 ms
+10.0 s: Render Thread: 1410 locks, held 1659.2 ms (16.6 % of the time; longest 354.03 ms; 42 of 2 ms or more), waited 1037.7 ms in 258 waits (10.4 %); behind: bc5-ring 1000.7 ms, bc5-chainwd 37.1 ms
+10.1 s: bc5-ring: 4189 locks, held 2707.1 ms (26.9 % of the time; longest 185.68 ms; 117 of 2 ms or more), waited 1503.3 ms in 758 waits (14.9 %); behind: Render Thread 889.2 ms, bc5-chainwd 568.7 ms, bc5-ring 45.5 ms
+10.1 s: bc5-chainwd: 243 locks, held 815.0 ms (8.1 % of the time; longest 152.34 ms; 43 of 2 ms or more), waited 890.2 ms in 57 waits (8.8 %); behind: bc5-ring 883.4 ms, bc5-chainwd 6.8 ms
+10.1 s: Render Thread: 1361 locks, held 1670.3 ms (16.6 % of the time; longest 82.75 ms; 126 of 2 ms or more), waited 806.8 ms in 250 waits (8.0 %); behind: bc5-ring 806.7 ms, Render Thread 0.1 ms
+10.0 s: bc5-ring: 5586 locks, held 2717.6 ms (27.2 % of the time; longest 44.29 ms; 117 of 2 ms or more), waited 1199.5 ms in 1074 waits (12.0 %); behind: Render Thread 595.5 ms, bc5-chainwd 465.7 ms, bc5-ring 138.3 ms
+10.0 s: bc5-chainwd: 386 locks, held 888.0 ms (8.9 % of the time; longest 64.29 ms; 65 of 2 ms or more), waited 720.9 ms in 74 waits (7.2 %); behind: bc5-ring 720.5 ms, bc5-chainwd 0.4 ms
+10.0 s: Render Thread: 1870 locks, held 1769.5 ms (17.7 % of the time; longest 105.60 ms; 111 of 2 ms or more), waited 845.1 ms in 427 waits (8.4 %); behind: bc5-ring 844.2 ms, Render Thread 0.6 ms, bc5-chainwd 0.3 ms
+10.0 s: bc5-ring: 6098 locks, held 2488.5 ms (24.9 % of the time; longest 45.79 ms; 82 of 2 ms or more), waited 1042.3 ms in 901 waits (10.4 %); behind: Render Thread 578.6 ms, bc5-chainwd 443.5 ms, bc5-ring 20.3 ms
+10.0 s: bc5-chainwd: 186 locks, held 619.2 ms (6.2 % of the time; longest 63.62 ms; 22 of 2 ms or more), waited 317.8 ms in 38 waits (3.2 %); behind: bc5-ring 317.4 ms, bc5-chainwd 0.4 ms
+10.0 s: Render Thread: 1805 locks, held 1547.8 ms (15.5 % of the time; longest 57.24 ms; 65 of 2 ms or more), waited 934.1 ms in 407 waits (9.3 %); behind: bc5-ring 932.8 ms, bc5-chainwd 1.4 ms
+10.0 s: bc5-ring: 6380 locks, held 2494.6 ms (24.9 % of the time; longest 52.81 ms; 82 of 2 ms or more), waited 767.8 ms in 881 waits (7.7 %); behind: Render Thread 513.4 ms, bc5-chainwd 216.0 ms, bc5-ring 38.4 ms
+10.0 s: bc5-chainwd: 158 locks, held 337.9 ms (3.4 % of the time; longest 53.66 ms; 9 of 2 ms or more), waited 310.0 ms in 44 waits (3.1 %); behind: bc5-ring 310.0 ms
+10.0 s: Render Thread: 1818 locks, held 1522.6 ms (15.2 % of the time; longest 38.57 ms; 46 of 2 ms or more), waited 936.0 ms in 419 waits (9.4 %); behind: bc5-ring 935.6 ms, bc5-chainwd 0.4 ms
+10.0 s: bc5-ring: 7092 locks, held 2331.1 ms (23.3 % of the time; longest 54.03 ms; 57 of 2 ms or more), waited 661.4 ms in 887 waits (6.6 %); behind: Render Thread 420.3 ms, bc5-chainwd 219.7 ms, bc5-ring 21.5 ms
+10.0 s: bc5-chainwd: 220 locks, held 451.2 ms (4.5 % of the time; longest 66.92 ms; 11 of 2 ms or more), waited 211.4 ms in 56 waits (2.1 %); behind: bc5-ring 211.4 ms
+10.0 s: Render Thread: 1932 locks, held 1473.1 ms (14.7 % of the time; longest 37.79 ms; 21 of 2 ms or more), waited 821.7 ms in 489 waits (8.2 %); behind: bc5-ring 821.0 ms, bc5-chainwd 0.7 ms

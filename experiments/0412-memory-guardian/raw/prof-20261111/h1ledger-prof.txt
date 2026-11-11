@@ -1,0 +1,1362 @@
+# 2026-11-11 10:12:51 emulator 2679609 /home/kjaniszewski/bc5-work/exp0412/bin/kyty_emulator; threads: game-main Render_Thread Archive_Asset_I; every 0.4 s from 25 to 270 s; HZ 100
+== t 1794388396.968 rel 25 game-main tid 2680028 | state utime stime minflt majflt: R 171 42 156396 0 | ctxsw vol invol: 9780 47 | schedstat run_ns wait_ns slices: 2138067001 6188076 9827 | io: rchar: 1596035423 wchar: 380354 syscr: 93936 syscw: 434 read_bytes: 3220107264 write_bytes: 507904 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388398.272 rel 27 game-main tid 2680028 | state utime stime minflt majflt: S 177 42 156548 0 | ctxsw vol invol: 10280 51 | schedstat run_ns wait_ns slices: 2198754855 6518801 10331 | io: rchar: 1596546808 wchar: 402173 syscr: 96684 syscw: 450 read_bytes: 3220107264 write_bytes: 532480 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388399.577 rel 28 game-main tid 2680028 | state utime stime minflt majflt: R 182 43 156585 0 | ctxsw vol invol: 10603 52 | schedstat run_ns wait_ns slices: 2262411058 6707782 10655 | io: rchar: 1597339755 wchar: 419693 syscr: 99539 syscw: 458 read_bytes: 3220107264 write_bytes: 548864 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388400.883 rel 29 game-main tid 2680028 | state utime stime minflt majflt: S 189 43 156685 0 | ctxsw vol invol: 10888 55 | schedstat run_ns wait_ns slices: 2330445129 7062725 10943 | io: rchar: 1597758217 wchar: 438185 syscr: 102294 syscw: 466 read_bytes: 3220107264 write_bytes: 565248 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388402.190 rel 31 game-main tid 2680028 | state utime stime minflt majflt: S 194 44 156693 0 | ctxsw vol invol: 11185 59 | schedstat run_ns wait_ns slices: 2390150906 7401440 11244 | io: rchar: 1598179651 wchar: 456101 syscr: 105048 syscw: 477 read_bytes: 3220107264 write_bytes: 585728 cancelled_write_bytes: 0 
+#0  0x000000090415dd71
+#1  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388403.495 rel 32 game-main tid 2680028 | state utime stime minflt majflt: S 199 45 156694 0 | ctxsw vol invol: 11502 59 | schedstat run_ns wait_ns slices: 2444244297 7507060 11561 | io: rchar: 1598991692 wchar: 488119 syscr: 108379 syscw: 489 read_bytes: 3220107264 write_bytes: 618496 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388404.802 rel 33 game-main tid 2680028 | state utime stime minflt majflt: R 206 46 157591 4 | ctxsw vol invol: 11834 60 | schedstat run_ns wait_ns slices: 2533449238 7988721 11895 | io: rchar: 1599781365 wchar: 507177 syscr: 111210 syscw: 500 read_bytes: 3220135936 write_bytes: 638976 cancelled_write_bytes: 0 
+#0  0x00007f9f6c1f9ae9 pthread_cond_signal@@GLIBC_2.3.2
+#1  0x000055a081eed172 Common::CondVar::Signal()
+#2  0x000055a081906d25 Libs::Graphics::GpuState::SendCommand(Common::UniqueFunction<void>&&)
+#3  0x000055a081906f9e Libs::Graphics::GpuState::SendCommandSync(Common::UniqueFunction<void>&&)
+#4  0x000055a08192e67d Libs::Graphics::GpuResourceManager::UnmapMemory(unsigned long, unsigned long)
+#5  0x000055a081b04dfa Libs::LibKernel::Memory::KernelMapDirectMemory(void**, unsigned long, int, int, long, unsigned long)
+#6  0x000055a081b051e1 Libs::LibKernel::Memory::KernelMapDirectMemory2(void**, unsigned long, int, int, int, long, unsigned long)
+#7  0x000055a081c352bc Libs::LibAmpr::Ampr::ExecuteAmmMapCommandToday(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#8  0x000055a081c33726 Libs::LibAmpr::Ampr::ExecuteAmmMapCommand(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#9  0x000055a081c2e0af Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#10 0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#11 0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#12 0x0000000903b0b179
+#13 0x0000000903d74583
+#14 0x0000000903d73383
+#15 0x0000000903d77518
+#16 0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388406.199 rel 35 game-main tid 2680028 | state utime stime minflt majflt: R 273 55 165417 4 | ctxsw vol invol: 15709 93 | schedstat run_ns wait_ns slices: 3294931396 14059382 15812 | io: rchar: 1866758124 wchar: 523019 syscr: 123364 syscw: 523 read_bytes: 4140081152 write_bytes: 659456 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388407.693 rel 36 game-main tid 2680028 | state utime stime minflt majflt: S 343 63 173759 4 | ctxsw vol invol: 19705 139 | schedstat run_ns wait_ns slices: 4070615271 18555153 19846 | io: rchar: 2177931485 wchar: 534252 syscr: 145925 syscw: 528 read_bytes: 5107621888 write_bytes: 671744 cancelled_write_bytes: 0 
+#0  0x000055a081b103e5 Libs::LibKernel::Memory::VirtualRanges::QuerySpan(unsigned long, unsigned long, std::vector<Libs::LibKernel::Memory::VirtualRanges::Range, std::allocator<Libs::LibKernel::Memory
+#1  0x000055a081b04dd2 Libs::LibKernel::Memory::KernelMapDirectMemory(void**, unsigned long, int, int, long, unsigned long)
+#2  0x000055a081b051e1 Libs::LibKernel::Memory::KernelMapDirectMemory2(void**, unsigned long, int, int, int, long, unsigned long)
+#3  0x000055a081c352bc Libs::LibAmpr::Ampr::ExecuteAmmMapCommandToday(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#4  0x000055a081c33726 Libs::LibAmpr::Ampr::ExecuteAmmMapCommand(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#5  0x000055a081c2e0af Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#6  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#7  0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#8  0x0000000903b0b179
+#9  0x0000000903d74583
+#10 0x0000000903d73383
+#11 0x0000000903d77518
+#12 0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388409.193 rel 38 game-main tid 2680028 | state utime stime minflt majflt: R 418 71 175266 4 | ctxsw vol invol: 23233 182 | schedstat run_ns wait_ns slices: 4902418410 22102230 23426 | io: rchar: 2691530330 wchar: 549617 syscr: 160705 syscw: 534 read_bytes: 6041059328 write_bytes: 692224 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388411.883 rel 40 game-main tid 2680028 | state utime stime minflt majflt: R 525 79 175417 4 | ctxsw vol invol: 27220 214 | schedstat run_ns wait_ns slices: 6051908894 26912985 27440 | io: rchar: 2834011915 wchar: 579126 syscr: 172391 syscw: 552 read_bytes: 6324264960 write_bytes: 724992 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388413.823 rel 42 game-main tid 2680028 | state utime stime minflt majflt: S 618 86 175439 4 | ctxsw vol invol: 30480 246 | schedstat run_ns wait_ns slices: 7045714378 32587839 30734 | io: rchar: 2902559064 wchar: 614834 syscr: 181279 syscw: 566 read_bytes: 6464679936 write_bytes: 761856 cancelled_write_bytes: 0 
+#0  0x000000093000f380
+#1  0x0000000903f9a071
+#2  0x0000000903d7675b
+#3  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388415.982 rel 44 game-main tid 2680028 | state utime stime minflt majflt: R 725 94 175456 4 | ctxsw vol invol: 34332 274 | schedstat run_ns wait_ns slices: 8209513228 36196612 34617 | io: rchar: 3058389324 wchar: 637862 syscr: 189487 syscw: 581 read_bytes: 6708097024 write_bytes: 790528 cancelled_write_bytes: 0 
+#0  0x000055a081b2afa0 Libs::LibKernel::Semaphore::KernelSemaPrivate::Signal(int)
+#1  0x000055a081b2bbbb Libs::LibKernel::Semaphore::KernelSignalSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int)
+#2  0x00000009007b8de8
+#3  0x00000009007c979c
+#4  0x0000000903ea863d
+#5  0x0000000903d768cb
+#6  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388418.194 rel 47 game-main tid 2680028 | state utime stime minflt majflt: R 831 105 177516 4 | ctxsw vol invol: 37881 304 | schedstat run_ns wait_ns slices: 9372757593 39864989 38201 | io: rchar: 3452700942 wchar: 659627 syscr: 205391 syscw: 593 read_bytes: 7531884544 write_bytes: 811008 cancelled_write_bytes: 0 
+#0  0x00007f9f6c28bacd syscall
+#1  0x000055a08191425a void std::__atomic_wait_address_bare<std::__atomic_semaphore::_M_acquire()::{lambda()#1}>(int const*, std::__atomic_semaphore::_M_acquire()::{lambda()#1})
+#2  0x000055a081906fb9 Libs::Graphics::GpuState::SendCommandSync(Common::UniqueFunction<void>&&)
+#3  0x000055a08192e67d Libs::Graphics::GpuResourceManager::UnmapMemory(unsigned long, unsigned long)
+#4  0x000055a081b04dfa Libs::LibKernel::Memory::KernelMapDirectMemory(void**, unsigned long, int, int, long, unsigned long)
+#5  0x000055a081b051e1 Libs::LibKernel::Memory::KernelMapDirectMemory2(void**, unsigned long, int, int, int, long, unsigned long)
+#6  0x000055a081c352bc Libs::LibAmpr::Ampr::ExecuteAmmMapCommandToday(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#7  0x000055a081c33726 Libs::LibAmpr::Ampr::ExecuteAmmMapCommand(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#8  0x000055a081c2e0af Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#9  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#10 0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#11 0x0000000903b0b179
+#12 0x0000000903d732bd
+#13 0x0000000903b0f583
+#14 0x0000000903d75632
+#15 0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388419.603 rel 48 game-main tid 2680028 | state utime stime minflt majflt: R 939 115 181298 4 | ctxsw vol invol: 41879 317 | schedstat run_ns wait_ns slices: 10560839838 43399024 42208 | io: rchar: 3597364898 wchar: 666575 syscr: 215261 syscw: 597 read_bytes: 7872626688 write_bytes: 819200 cancelled_write_bytes: 0 
+#0  0x000055a081b103db Libs::LibKernel::Memory::VirtualRanges::QuerySpan(unsigned long, unsigned long, std::vector<Libs::LibKernel::Memory::VirtualRanges::Range, std::allocator<Libs::LibKernel::Memory
+#1  0x000055a081b04dd2 Libs::LibKernel::Memory::KernelMapDirectMemory(void**, unsigned long, int, int, long, unsigned long)
+#2  0x000055a081b051e1 Libs::LibKernel::Memory::KernelMapDirectMemory2(void**, unsigned long, int, int, int, long, unsigned long)
+#3  0x000055a081c352bc Libs::LibAmpr::Ampr::ExecuteAmmMapCommandToday(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#4  0x000055a081c33726 Libs::LibAmpr::Ampr::ExecuteAmmMapCommand(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#5  0x000055a081c2e0af Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#6  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#7  0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#8  0x0000000903b0b179
+#9  0x0000000903d732bd
+#10 0x0000000903b0f583
+#11 0x0000000903d75632
+#12 0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388421.323 rel 50 game-main tid 2680028 | state utime stime minflt majflt: S 1037 124 182402 4 | ctxsw vol invol: 44753 357 | schedstat run_ns wait_ns slices: 11621117414 46845706 45117 | io: rchar: 4093409759 wchar: 684714 syscr: 233663 syscw: 605 read_bytes: 8841854976 write_bytes: 839680 cancelled_write_bytes: 0 
+#0  0x0000000903d64d9c
+#1  0x0000000903ccb583
+#2  0x0000000903f115a5
+#3  0x0000000903d773f7
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388422.767 rel 51 game-main tid 2680028 | state utime stime minflt majflt: R 1099 130 183674 4 | ctxsw vol invol: 46472 390 | schedstat run_ns wait_ns slices: 12297701594 49638226 46872 | io: rchar: 4340692192 wchar: 696332 syscr: 245717 syscw: 610 read_bytes: 9382014976 write_bytes: 860160 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388424.305 rel 53 game-main tid 2680028 | state utime stime minflt majflt: R 1179 137 184227 4 | ctxsw vol invol: 48753 447 | schedstat run_ns wait_ns slices: 13180398019 53396856 49208 | io: rchar: 4792847196 wchar: 727171 syscr: 267295 syscw: 622 read_bytes: 10359312384 write_bytes: 892928 cancelled_write_bytes: 0 
+#0  0x0000000903d64e1e
+#1  0x0000000903ccb583
+#2  0x0000000903f115a5
+#3  0x0000000903d773f7
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388425.930 rel 54 game-main tid 2680028 | state utime stime minflt majflt: R 1293 144 199300 4 | ctxsw vol invol: 50850 487 | schedstat run_ns wait_ns slices: 14380542647 55615337 51345 | io: rchar: 5160598025 wchar: 738761 syscr: 279705 syscw: 627 read_bytes: 11193462784 write_bytes: 901120 cancelled_write_bytes: 0 
+#0  0x00007f9f6c289fac mmap
+#1  0x000055a081b1479e Libs::LibKernel::Memory::GuestBackingStore::MapExistingPlaceholderFixed(unsigned long, unsigned long, unsigned long, Common::VirtualMemory::Mode, Libs::LibKernel::Memory::GuestB
+#2  0x000055a081b100e5 Libs::LibKernel::Memory::GuestAddressSpace::MapBacking(unsigned long, unsigned long, unsigned long, Common::VirtualMemory::Mode, Libs::LibKernel::Memory::GuestBackingStore::Fail
+#3  0x000055a081b04fb7 Libs::LibKernel::Memory::KernelMapDirectMemory(void**, unsigned long, int, int, long, unsigned long)::$_2::operator()() const
+#4  0x000055a081b04e96 Libs::LibKernel::Memory::KernelMapDirectMemory(void**, unsigned long, int, int, long, unsigned long)
+#5  0x000055a081b051e1 Libs::LibKernel::Memory::KernelMapDirectMemory2(void**, unsigned long, int, int, int, long, unsigned long)
+#6  0x000055a081c352bc Libs::LibAmpr::Ampr::ExecuteAmmMapCommandToday(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#7  0x000055a081c33726 Libs::LibAmpr::Ampr::ExecuteAmmMapCommand(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#8  0x000055a081c2e0af Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#9  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#10 0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#11 0x0000000903b0b179
+#12 0x0000000903d732bd
+#13 0x0000000903d76947
+#14 0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388427.484 rel 56 game-main tid 2680028 | state utime stime minflt majflt: S 1401 150 204668 4 | ctxsw vol invol: 53414 549 | schedstat run_ns wait_ns slices: 15528007513 63246842 53963 | io: rchar: 5535909139 wchar: 751517 syscr: 301209 syscw: 638 read_bytes: 12014915584 write_bytes: 913408 cancelled_write_bytes: 0 
+#0  0x00000009040d8f5d
+#1  0x00000009040d7f36
+#2  0x0000000903f99621
+#3  0x0000000903d75bc9
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388428.916 rel 57 game-main tid 2680028 | state utime stime minflt majflt: R 1471 154 208437 5 | ctxsw vol invol: 54519 563 | schedstat run_ns wait_ns slices: 16271172663 65424446 55088 | io: rchar: 5568557525 wchar: 771174 syscr: 306043 syscw: 646 read_bytes: 12098367488 write_bytes: 933888 cancelled_write_bytes: 0 
+#0  0x000055a081b052ad Libs::LibKernel::Memory::KernelMapDirectMemory2(void**, unsigned long, int, int, int, long, unsigned long)
+#1  0x000055a081c352bc Libs::LibAmpr::Ampr::ExecuteAmmMapCommandToday(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#2  0x000055a081c33726 Libs::LibAmpr::Ampr::ExecuteAmmMapCommand(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#3  0x000055a081c2e0af Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#4  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#5  0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#6  0x0000000903b0b179
+#7  0x0000000903d732bd
+#8  0x0000000903d76947
+#9  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388430.383 rel 59 game-main tid 2680028 | state utime stime minflt majflt: R 1560 161 211583 5 | ctxsw vol invol: 56062 616 | schedstat run_ns wait_ns slices: 17226671457 72501569 56683 | io: rchar: 5854432816 wchar: 786714 syscr: 315335 syscw: 653 read_bytes: 12844179456 write_bytes: 950272 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388431.864 rel 60 game-main tid 2680028 | state utime stime minflt majflt: S 1657 166 213281 5 | ctxsw vol invol: 57503 657 | schedstat run_ns wait_ns slices: 18243669309 76103745 58160 | io: rchar: 5990823732 wchar: 796720 syscr: 320708 syscw: 662 read_bytes: 13235462144 write_bytes: 958464 cancelled_write_bytes: 0 
+#0  0x0000000903af8c7c
+#1  0x0000000903ccb583
+#2  0x0000000903d764c0
+#3  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388433.521 rel 62 game-main tid 2680028 | state utime stime minflt majflt: S 1781 169 214733 5 | ctxsw vol invol: 57946 710 | schedstat run_ns wait_ns slices: 19506225977 81735877 58657 | io: rchar: 6421983876 wchar: 836897 syscr: 330158 syscw: 683 read_bytes: 14408695808 write_bytes: 1015808 cancelled_write_bytes: 0 
+#0  0x0000000903cca7b4
+#1  0x0000000903e5e9b8
+#2  0x0000000903fb0913
+#3  0x0000000903d76e2f
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388435.172 rel 64 game-main tid 2680028 | state utime stime minflt majflt: R 1908 171 216030 6 | ctxsw vol invol: 58362 756 | schedstat run_ns wait_ns slices: 20810573431 85971134 59119 | io: rchar: 6959324996 wchar: 860571 syscr: 340073 syscw: 694 read_bytes: 15623553024 write_bytes: 1036288 cancelled_write_bytes: 0 
+#0  0x000055a081b052ad Libs::LibKernel::Memory::KernelMapDirectMemory2(void**, unsigned long, int, int, int, long, unsigned long)
+#1  0x000055a081c352bc Libs::LibAmpr::Ampr::ExecuteAmmMapCommandToday(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#2  0x000055a081c33726 Libs::LibAmpr::Ampr::ExecuteAmmMapCommand(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#3  0x000055a081c2e0af Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#4  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#5  0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#6  0x0000000903b0b179
+#7  0x0000000903d744d4
+#8  0x0000000903d734db
+#9  0x0000000903d77518
+#10 0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388436.803 rel 65 game-main tid 2680028 | state utime stime minflt majflt: R 2034 175 216519 6 | ctxsw vol invol: 58983 782 | schedstat run_ns wait_ns slices: 22101986288 87405294 59766 | io: rchar: 7337855589 wchar: 881956 syscr: 349626 syscw: 707 read_bytes: 16626876416 write_bytes: 1056768 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388438.366 rel 67 game-main tid 2680028 | state utime stime minflt majflt: S 2136 177 216587 6 | ctxsw vol invol: 59340 913 | schedstat run_ns wait_ns slices: 23143284285 96015238 60253 | io: rchar: 7411547120 wchar: 908713 syscr: 360093 syscw: 718 read_bytes: 16896610304 write_bytes: 1089536 cancelled_write_bytes: 0 
+#0  0x0000000903c49372
+#1  0x0000000903af8987
+#2  0x0000000903ccb583
+#3  0x0000000903d764c0
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388439.904 rel 68 game-main tid 2680028 | state utime stime minflt majflt: R 2235 179 217299 6 | ctxsw vol invol: 59744 930 | schedstat run_ns wait_ns slices: 24154933723 97349418 60675 | io: rchar: 7429054766 wchar: 940043 syscr: 365751 syscw: 733 read_bytes: 16953679872 write_bytes: 1118208 cancelled_write_bytes: 0 
+#0  0x0000000903b9b7a2
+#1  0x0000000903b90016
+#2  0x0000000903b967e3
+#3  0x0000000903ccc581
+#4  0x0000000903ccb583
+#5  0x0000000903b95a2b
+#6  0x0000000903d764a8
+#7  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388441.419 rel 70 game-main tid 2680028 | state utime stime minflt majflt: R 2330 181 217304 6 | ctxsw vol invol: 60174 980 | schedstat run_ns wait_ns slices: 25130119204 101243221 61157 | io: rchar: 7443032239 wchar: 978288 syscr: 369421 syscw: 747 read_bytes: 16977928192 write_bytes: 1159168 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388442.900 rel 71 game-main tid 2680028 | state utime stime minflt majflt: S 2420 182 217313 6 | ctxsw vol invol: 60592 1033 | schedstat run_ns wait_ns slices: 26025738046 104760078 61625 | io: rchar: 7448952510 wchar: 1010109 syscr: 373687 syscw: 766 read_bytes: 16979341312 write_bytes: 1187840 cancelled_write_bytes: 0 
+#0  0x00007f9f6c1f987c pthread_cond_broadcast@@GLIBC_2.3.2
+#1  0x000055a081eed1b2 Common::CondVar::SignalAll()
+#2  0x000055a081b2afc8 Libs::LibKernel::Semaphore::KernelSemaPrivate::Signal(int)
+#3  0x000055a081b2bbbb Libs::LibKernel::Semaphore::KernelSignalSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int)
+#4  0x0000000903ccbb6b
+#5  0x0000000903cca447
+#6  0x0000000903d7620b
+#7  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388444.421 rel 73 game-main tid 2680028 | state utime stime minflt majflt: R 2519 184 217325 6 | ctxsw vol invol: 61012 1077 | schedstat run_ns wait_ns slices: 27039262121 107685447 62090 | io: rchar: 7471684436 wchar: 1058835 syscr: 379904 syscw: 782 read_bytes: 17053319168 write_bytes: 1236992 cancelled_write_bytes: 0 
+#0  0x0000000903ee21f6
+#1  0x0000000903edf6bc
+#2  0x0000000903ccb583
+#3  0x0000000903ee5245
+#4  0x0000000903d7721c
+#5  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388445.925 rel 74 game-main tid 2680028 | state utime stime minflt majflt: R 2613 185 217341 6 | ctxsw vol invol: 61468 1124 | schedstat run_ns wait_ns slices: 27994922703 112918215 62593 | io: rchar: 7474991927 wchar: 1094143 syscr: 383545 syscw: 798 read_bytes: 17057325056 write_bytes: 1269760 cancelled_write_bytes: 0 
+#0  0x0000000904161cc3
+#1  0x0000000903ccb583
+#2  0x0000000903d7665a
+#3  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388447.458 rel 76 game-main tid 2680028 | state utime stime minflt majflt: S 2710 188 217350 6 | ctxsw vol invol: 61901 1198 | schedstat run_ns wait_ns slices: 28989894711 118084217 63099 | io: rchar: 7491703481 wchar: 1130230 syscr: 388851 syscw: 811 read_bytes: 17099411456 write_bytes: 1306624 cancelled_write_bytes: 0 
+#0  0x0000000903c7dac8
+#1  0x0000000903fb0be3
+#2  0x0000000903d76e2f
+#3  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388448.965 rel 77 game-main tid 2680028 | state utime stime minflt majflt: S 2800 190 217350 6 | ctxsw vol invol: 62350 1248 | schedstat run_ns wait_ns slices: 29914607213 122181813 63600 | io: rchar: 7495495623 wchar: 1166635 syscr: 392518 syscw: 827 read_bytes: 17103384576 write_bytes: 1347584 cancelled_write_bytes: 0 
+#0  0x0000000903ee08ac
+#1  0x0000000903edeeba
+#2  0x0000000903ccb583
+#3  0x0000000903ee5245
+#4  0x0000000903d7721c
+#5  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388450.480 rel 79 game-main tid 2680028 | state utime stime minflt majflt: R 2896 192 217360 6 | ctxsw vol invol: 62799 1274 | schedstat run_ns wait_ns slices: 30892658414 124332179 64074 | io: rchar: 7504702842 wchar: 1203003 syscr: 397522 syscw: 844 read_bytes: 17105022976 write_bytes: 1384448 cancelled_write_bytes: 0 
+#0  0x000000093000f384
+#1  0x000000090403f063
+#2  0x00000009040450c2
+#3  0x0000000903d76481
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388452.027 rel 80 game-main tid 2680028 | state utime stime minflt majflt: R 2995 193 217361 6 | ctxsw vol invol: 63233 1320 | schedstat run_ns wait_ns slices: 31893637452 127875483 64553 | io: rchar: 7507777273 wchar: 1238243 syscr: 401213 syscw: 860 read_bytes: 17105362944 write_bytes: 1417216 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388453.540 rel 82 game-main tid 2680028 | state utime stime minflt majflt: R 3089 195 217364 6 | ctxsw vol invol: 63657 1364 | schedstat run_ns wait_ns slices: 32847495280 135147142 65021 | io: rchar: 7513982713 wchar: 1285113 syscr: 405588 syscw: 877 read_bytes: 17105858560 write_bytes: 1462272 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388455.081 rel 83 game-main tid 2680028 | state utime stime minflt majflt: R 3187 198 217369 6 | ctxsw vol invol: 64109 1400 | schedstat run_ns wait_ns slices: 33860293131 137277454 65510 | io: rchar: 7517466629 wchar: 1322623 syscr: 409951 syscw: 892 read_bytes: 17106190336 write_bytes: 1499136 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388456.604 rel 85 game-main tid 2680028 | state utime stime minflt majflt: S 3281 200 217369 6 | ctxsw vol invol: 64545 1419 | schedstat run_ns wait_ns slices: 34816418084 139713661 65964 | io: rchar: 7523699566 wchar: 1359364 syscr: 414305 syscw: 907 read_bytes: 17112051712 write_bytes: 1536000 cancelled_write_bytes: 0 
+#0  0x0000000903d64aca
+#1  0x0000000903b0f57e
+#2  0x0000000903d75632
+#3  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388458.129 rel 87 game-main tid 2680028 | state utime stime minflt majflt: S 3374 202 217374 6 | ctxsw vol invol: 64982 1479 | schedstat run_ns wait_ns slices: 35778356474 148763860 66466 | io: rchar: 7527479245 wchar: 1395648 syscr: 417968 syscw: 927 read_bytes: 17117667328 write_bytes: 1572864 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388459.658 rel 88 game-main tid 2680028 | state utime stime minflt majflt: R 3472 204 217374 6 | ctxsw vol invol: 65432 1534 | schedstat run_ns wait_ns slices: 36775912061 156993645 66967 | io: rchar: 7533671603 wchar: 1432491 syscr: 422341 syscw: 941 read_bytes: 17117851648 write_bytes: 1613824 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388461.193 rel 90 game-main tid 2680028 | state utime stime minflt majflt: R 3572 206 217402 7 | ctxsw vol invol: 65853 1636 | schedstat run_ns wait_ns slices: 37796121536 170872342 67490 | io: rchar: 7538929683 wchar: 1469242 syscr: 426534 syscw: 959 read_bytes: 17122512896 write_bytes: 1654784 cancelled_write_bytes: 0 
+#0  0x0000000903edec6f
+#1  0x0000000903ccb583
+#2  0x0000000903ee5245
+#3  0x0000000903d7721c
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388462.686 rel 91 game-main tid 2680028 | state utime stime minflt majflt: S 3673 208 218072 8 | ctxsw vol invol: 66239 1673 | schedstat run_ns wait_ns slices: 38820172181 179079264 67913 | io: rchar: 7545784979 wchar: 1501943 syscr: 430373 syscw: 978 read_bytes: 17136259072 write_bytes: 1683456 cancelled_write_bytes: 0 
+#0  0x0000000903cca6de
+#1  0x0000000903e5e9b8
+#2  0x0000000903fb0913
+#3  0x0000000903d76e2f
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388464.184 rel 93 game-main tid 2680028 | state utime stime minflt majflt: R 3768 210 218072 8 | ctxsw vol invol: 66635 1708 | schedstat run_ns wait_ns slices: 39786448441 182942191 68345 | io: rchar: 7550344819 wchar: 1549141 syscr: 435000 syscw: 996 read_bytes: 17140023296 write_bytes: 1732608 cancelled_write_bytes: 0 
+#0  0x0000000903f0f7da
+#1  0x0000000900e5bf84
+#2  0x0000000903a5e34b
+#3  0x0000000903d75d6e
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388465.773 rel 94 game-main tid 2680028 | state utime stime minflt majflt: S 3868 212 218081 8 | ctxsw vol invol: 67045 1750 | schedstat run_ns wait_ns slices: 40815403109 186670769 68801 | io: rchar: 7566393306 wchar: 1583679 syscr: 439851 syscw: 1019 read_bytes: 17156812800 write_bytes: 1773568 cancelled_write_bytes: 0 
+#0  0x000000093000f384
+#1  0x0000000903fb0e4a
+#2  0x0000000903d76e2f
+#3  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388468.109 rel 97 game-main tid 2680028 | state utime stime minflt majflt: S 4033 220 220170 19 | ctxsw vol invol: 67452 1813 | schedstat run_ns wait_ns slices: 42536920441 190140239 69265 | io: rchar: 7692071993 wchar: 1612754 syscr: 446772 syscw: 1039 read_bytes: 17496055808 write_bytes: 1818624 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388469.643 rel 98 game-main tid 2680028 | state utime stime minflt majflt: R 4140 221 220650 20 | ctxsw vol invol: 67855 1843 | schedstat run_ns wait_ns slices: 43631478855 192533443 69699 | io: rchar: 7702585973 wchar: 1637883 syscr: 451842 syscw: 1057 read_bytes: 17504645120 write_bytes: 1843200 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388471.201 rel 100 game-main tid 2680028 | state utime stime minflt majflt: S 4249 224 220709 20 | ctxsw vol invol: 68201 1935 | schedstat run_ns wait_ns slices: 44745234619 205388216 70140 | io: rchar: 7708851984 wchar: 1668074 syscr: 455602 syscw: 1072 read_bytes: 17518182400 write_bytes: 1871872 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388472.733 rel 101 game-main tid 2680028 | state utime stime minflt majflt: S 4358 225 220715 21 | ctxsw vol invol: 68585 1993 | schedstat run_ns wait_ns slices: 45832379020 210290801 70578 | io: rchar: 7756182358 wchar: 1695812 syscr: 460096 syscw: 1091 read_bytes: 17595486208 write_bytes: 1896448 cancelled_write_bytes: 0 
+#0  0x0000000903cbf1fa
+#1  0x0000000903cc2045
+#2  0x0000000903cc1749
+#3  0x0000000903ccb583
+#4  0x0000000903cc29cd
+#5  0x0000000903fb56ff
+#6  0x0000000903d76e2f
+#7  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388474.184 rel 103 game-main tid 2680028 | state utime stime minflt majflt: R 4456 229 226434 80 | ctxsw vol invol: 69511 2006 | schedstat run_ns wait_ns slices: 46862146673 211257545 71525 | io: rchar: 7762952183 wchar: 1736448 syscr: 464999 syscw: 1110 read_bytes: 17604255744 write_bytes: 2043904 cancelled_write_bytes: 0 
+#0  0x000055a081af7766 Libs::LibKernel::Memory::PhysicalMemory::Unmap(unsigned long, unsigned long, Libs::LibKernel::Memory::GpuAccessMode*, unsigned long*)
+#1  0x000055a081b018e4 Libs::LibKernel::Memory::UnmapMemoryRange(unsigned long, unsigned long)
+#2  0x000055a081b00fc2 Libs::LibKernel::Memory::KernelMunmap(unsigned long, unsigned long)
+#3  0x000055a081c2e392 Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#4  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#5  0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#6  0x0000000903b0b179
+#7  0x0000000903d73e57
+#8  0x0000000903d7341b
+#9  0x0000000903d77518
+#10 0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388475.596 rel 104 game-main tid 2680028 | state utime stime minflt majflt: R 4568 236 226772 113 | ctxsw vol invol: 72155 2015 | schedstat run_ns wait_ns slices: 48060730030 211571217 74178 | io: rchar: 7765672464 wchar: 1738589 syscr: 468393 syscw: 1120 read_bytes: 17606332416 write_bytes: 2048000 cancelled_write_bytes: 0 
+#0  0x000055a081b103d7 Libs::LibKernel::Memory::VirtualRanges::QuerySpan(unsigned long, unsigned long, std::vector<Libs::LibKernel::Memory::VirtualRanges::Range, std::allocator<Libs::LibKernel::Memory
+#1  0x000055a081b00f7d Libs::LibKernel::Memory::KernelMunmap(unsigned long, unsigned long)
+#2  0x000055a081c2e392 Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#3  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#4  0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#5  0x0000000903b0b179
+#6  0x0000000903d73e57
+#7  0x0000000903d7341b
+#8  0x0000000903d77518
+#9  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388476.947 rel 105 game-main tid 2680028 | state utime stime minflt majflt: R 4676 245 227398 245 | ctxsw vol invol: 74816 2123 | schedstat run_ns wait_ns slices: 49232605832 218719667 76949 | io: rchar: 7770768169 wchar: 1740717 syscr: 472231 syscw: 1126 read_bytes: 17615343616 write_bytes: 2052096 cancelled_write_bytes: 0 
+#0  0x00007f9f6c271a2b __sched_yield
+#1  0x000055a081914441 bool std::__detail::__atomic_spin<std::__atomic_semaphore::_M_acquire()::{lambda()#1}, std::__detail::__default_spin_policy>(std::__atomic_semaphore::_M_acquire()::{lambda()#1}&
+#2  0x000055a081914225 void std::__atomic_wait_address_bare<std::__atomic_semaphore::_M_acquire()::{lambda()#1}>(int const*, std::__atomic_semaphore::_M_acquire()::{lambda()#1})
+#3  0x000055a081906fb9 Libs::Graphics::GpuState::SendCommandSync(Common::UniqueFunction<void>&&)
+#4  0x000055a08192e67d Libs::Graphics::GpuResourceManager::UnmapMemory(unsigned long, unsigned long)
+#5  0x000055a081b00fb7 Libs::LibKernel::Memory::KernelMunmap(unsigned long, unsigned long)
+#6  0x000055a081c2e392 Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#7  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#8  0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#9  0x0000000903b0b179
+#10 0x0000000903d73e57
+#11 0x0000000903d7341b
+#12 0x0000000903d77518
+#13 0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388478.349 rel 107 game-main tid 2680028 | state utime stime minflt majflt: R 4802 253 228469 446 | ctxsw vol invol: 78879 2181 | schedstat run_ns wait_ns slices: 50564776236 222422415 81074 | io: rchar: 7770818544 wchar: 1742220 syscr: 474933 syscw: 1131 read_bytes: 17616179200 write_bytes: 2052096 cancelled_write_bytes: 0 
+#0  0x000055a081b103d7 Libs::LibKernel::Memory::VirtualRanges::QuerySpan(unsigned long, unsigned long, std::vector<Libs::LibKernel::Memory::VirtualRanges::Range, std::allocator<Libs::LibKernel::Memory
+#1  0x000055a081b00f7d Libs::LibKernel::Memory::KernelMunmap(unsigned long, unsigned long)
+#2  0x000055a081c2e392 Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#3  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#4  0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#5  0x0000000903b0b179
+#6  0x0000000903d73e57
+#7  0x0000000903d7341b
+#8  0x0000000903d77518
+#9  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388479.667 rel 108 game-main tid 2680028 | state utime stime minflt majflt: R 4916 264 228501 476 | ctxsw vol invol: 83541 2188 | schedstat run_ns wait_ns slices: 51821647858 223931894 85744 | io: rchar: 7770860040 wchar: 1743018 syscr: 477490 syscw: 1139 read_bytes: 17616293888 write_bytes: 2052096 cancelled_write_bytes: 0 
+#0  0x00007f9f6c2eebb3 __memcpy_avx_unaligned_erms
+#1  0x000055a081b115fc Libs::LibKernel::Memory::VirtualRanges::Remove(unsigned long, unsigned long)
+#2  0x000055a081b019aa Libs::LibKernel::Memory::UnmapMemoryRange(unsigned long, unsigned long)
+#3  0x000055a081b00fc2 Libs::LibKernel::Memory::KernelMunmap(unsigned long, unsigned long)
+#4  0x000055a081b0a581 Libs::LibKernel::Memory::KernelBatchMap2(Libs::LibKernel::Memory::KernelBatchMapEntry*, int, int*, int)
+#5  0x0000000904026af8
+#6  0x0000000903b0f21d
+#7  0x0000000903d75632
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388481.132 rel 109 game-main tid 2680028 | state utime stime minflt majflt: R 5002 272 230044 538 | ctxsw vol invol: 88846 2222 | schedstat run_ns wait_ns slices: 52748854143 226466626 91077 | io: rchar: 7798821342 wchar: 1751007 syscr: 481881 syscw: 1147 read_bytes: 17704517632 write_bytes: 2060288 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388482.827 rel 111 game-main tid 2680028 | state utime stime minflt majflt: R 5090 283 238995 539 | ctxsw vol invol: 91769 2336 | schedstat run_ns wait_ns slices: 53748711591 233589707 94113 | io: rchar: 8227754738 wchar: 1768481 syscr: 514260 syscw: 1169 read_bytes: 18799755264 write_bytes: 2080768 cancelled_write_bytes: 0 
+#0  0x000055a081b052c5 Libs::LibKernel::Memory::KernelMapDirectMemory2(void**, unsigned long, int, int, int, long, unsigned long)
+#1  0x000055a081c352bc Libs::LibAmpr::Ampr::ExecuteAmmMapCommandToday(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#2  0x000055a081c33726 Libs::LibAmpr::Ampr::ExecuteAmmMapCommand(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#3  0x000055a081c2e0af Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#4  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#5  0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#6  0x0000000903b0b179
+#7  0x0000000903d732bd
+#8  0x0000000903b0f583
+#9  0x0000000903d75632
+#10 0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388484.234 rel 113 game-main tid 2680028 | state utime stime minflt majflt: R 5188 293 240244 539 | ctxsw vol invol: 94733 2432 | schedstat run_ns wait_ns slices: 54819722918 238494011 97169 | io: rchar: 8550850824 wchar: 1789339 syscr: 523135 syscw: 1181 read_bytes: 19321577472 write_bytes: 2101248 cancelled_write_bytes: 0 
+#0  0x000055a081b103e2 Libs::LibKernel::Memory::VirtualRanges::QuerySpan(unsigned long, unsigned long, std::vector<Libs::LibKernel::Memory::VirtualRanges::Range, std::allocator<Libs::LibKernel::Memory
+#1  0x000055a081b04dd2 Libs::LibKernel::Memory::KernelMapDirectMemory(void**, unsigned long, int, int, long, unsigned long)
+#2  0x000055a081b051e1 Libs::LibKernel::Memory::KernelMapDirectMemory2(void**, unsigned long, int, int, int, long, unsigned long)
+#3  0x000055a081c352bc Libs::LibAmpr::Ampr::ExecuteAmmMapCommandToday(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#4  0x000055a081c33726 Libs::LibAmpr::Ampr::ExecuteAmmMapCommand(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#5  0x000055a081c2e0af Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#6  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#7  0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#8  0x0000000903b0b179
+#9  0x0000000903d732bd
+#10 0x0000000903b0f583
+#11 0x0000000903d75632
+#12 0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388485.623 rel 114 game-main tid 2680028 | state utime stime minflt majflt: R 5277 301 240309 539 | ctxsw vol invol: 96924 2460 | schedstat run_ns wait_ns slices: 55786701559 240424057 99393 | io: rchar: 8865984271 wchar: 1804442 syscr: 533589 syscw: 1194 read_bytes: 19814805504 write_bytes: 2121728 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388487.392 rel 116 game-main tid 2680028 | state utime stime minflt majflt: S 5376 311 240338 539 | ctxsw vol invol: 99698 2576 | schedstat run_ns wait_ns slices: 56875846159 246331757 102274 | io: rchar: 9449428428 wchar: 1823886 syscr: 558451 syscw: 1207 read_bytes: 20844150784 write_bytes: 2142208 cancelled_write_bytes: 0 
+#0  0x00000009007c8b40
+#1  0x0000000900b2a5e0
+#2  0x0000000900a708e9
+#3  0x0000000900a74e4f
+#4  0x0000000903e67aed
+#5  0x0000000903d7625b
+#6  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388488.887 rel 117 game-main tid 2680028 | state utime stime minflt majflt: S 5402 312 240703 539 | ctxsw vol invol: 100199 2587 | schedstat run_ns wait_ns slices: 57153029593 247188643 102785 | io: rchar: 9849229406 wchar: 1846493 syscr: 567114 syscw: 1224 read_bytes: 21480198144 write_bytes: 2162688 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388490.253 rel 119 game-main tid 2680028 | state utime stime minflt majflt: S 5407 312 240703 539 | ctxsw vol invol: 100441 2589 | schedstat run_ns wait_ns slices: 57206398107 247348841 103029 | io: rchar: 9851907045 wchar: 1869355 syscr: 570393 syscw: 1236 read_bytes: 21480198144 write_bytes: 2183168 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388491.687 rel 120 game-main tid 2680028 | state utime stime minflt majflt: S 5426 314 240704 539 | ctxsw vol invol: 101023 2591 | schedstat run_ns wait_ns slices: 57405695153 247376915 103613 | io: rchar: 9945768524 wchar: 1890448 syscr: 576035 syscw: 1251 read_bytes: 21620105216 write_bytes: 2207744 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388493.110 rel 122 game-main tid 2680028 | state utime stime minflt majflt: R 5515 318 244261 539 | ctxsw vol invol: 102339 2668 | schedstat run_ns wait_ns slices: 58348111030 251359444 105008 | io: rchar: 10173903277 wchar: 1899920 syscr: 586570 syscw: 1260 read_bytes: 22178942976 write_bytes: 2215936 cancelled_write_bytes: 0 
+#0  0x000055a081b103d7 Libs::LibKernel::Memory::VirtualRanges::QuerySpan(unsigned long, unsigned long, std::vector<Libs::LibKernel::Memory::VirtualRanges::Range, std::allocator<Libs::LibKernel::Memory
+#1  0x000055a081b00f7d Libs::LibKernel::Memory::KernelMunmap(unsigned long, unsigned long)
+#2  0x000055a081c2e392 Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#3  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#4  0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#5  0x0000000903b0b179
+#6  0x0000000903d73e57
+#7  0x0000000903d7341b
+#8  0x0000000903d77518
+#9  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388494.583 rel 123 game-main tid 2680028 | state utime stime minflt majflt: S 5589 323 244703 618 | ctxsw vol invol: 103968 2728 | schedstat run_ns wait_ns slices: 59133141097 256955375 106696 | io: rchar: 10261036104 wchar: 1932380 syscr: 596886 syscw: 1274 read_bytes: 22381314048 write_bytes: 2248704 cancelled_write_bytes: 0 
+#0  0x000055a081e82280 Loader::TlsMainGetAddr()
+#1  0x000000090e3c802c
+#2  0x0000000900e8d85e
+#3  0x0000000900e8cfd3
+#4  0x0000000900f1ab21
+#5  0x0000000900f19a20
+#6  0x0000000900f18e5e
+#7  0x000000090109cc40
+#8  0x00000009010a06d3
+#9  0x0000000903a43db8
+#10 0x0000000900eefe2b
+#11 0x000000090136a8ae
+#12 0x000000090449d750
+#13 0x0000000900ee9509
+#14 0x0000000901368b0d
+#15 0x0000000903a41ec6
+#16 0x0000000903a41c2b
+#17 0x0000000903a424b0
+#18 0x00000009048ae739
+#19 0x00000009040743e5
+#20 0x00000009047dfd2d
+#21 0x00000009047df4bb
+#22 0x00000009047dd3db
+#23 0x0000000904906344
+== t 1794388496.352 rel 125 game-main tid 2680028 | state utime stime minflt majflt: R 5724 330 245534 626 | ctxsw vol invol: 105761 2778 | schedstat run_ns wait_ns slices: 60556145200 262153167 108542 | io: rchar: 10679129647 wchar: 1951798 syscr: 605454 syscw: 1294 read_bytes: 23327371264 write_bytes: 2285568 cancelled_write_bytes: 0 
+#0  0x0000000903cca7b4
+#1  0x0000000903e5e9b8
+#2  0x0000000903fb0913
+#3  0x0000000903d76e2f
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388498.211 rel 127 game-main tid 2680028 | state utime stime minflt majflt: R 5816 333 245728 638 | ctxsw vol invol: 106611 2855 | schedstat run_ns wait_ns slices: 61508174116 272670518 109471 | io: rchar: 11217252137 wchar: 1977611 syscr: 614867 syscw: 1310 read_bytes: 24691412992 write_bytes: 2310144 cancelled_write_bytes: 0 
+#0  0x000055a081c33556 Libs::LibAmpr::Ampr::AmmAutoReleaseVa(unsigned long, unsigned long)
+#1  0x000055a081c353d6 Libs::LibAmpr::Ampr::ExecuteAmmMapCommandToday(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#2  0x000055a081c33726 Libs::LibAmpr::Ampr::ExecuteAmmMapCommand(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#3  0x000055a081c2e0af Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#4  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#5  0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#6  0x0000000903b0b179
+#7  0x0000000903d744d4
+#8  0x0000000903d734db
+#9  0x0000000903d77518
+#10 0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388500.003 rel 128 game-main tid 2680028 | state utime stime minflt majflt: R 5915 337 245762 678 | ctxsw vol invol: 107486 2904 | schedstat run_ns wait_ns slices: 62534405005 280447916 110392 | io: rchar: 11763414734 wchar: 2000692 syscr: 620305 syscw: 1327 read_bytes: 25651007488 write_bytes: 2334720 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388501.507 rel 130 game-main tid 2680028 | state utime stime minflt majflt: S 5980 338 245774 682 | ctxsw vol invol: 108015 2920 | schedstat run_ns wait_ns slices: 63190362235 282586910 110935 | io: rchar: 11813399996 wchar: 2027317 syscr: 624756 syscw: 1346 read_bytes: 25768075264 write_bytes: 2359296 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388503.399 rel 132 game-main tid 2680028 | state utime stime minflt majflt: S 6102 345 245865 713 | ctxsw vol invol: 109445 2994 | schedstat run_ns wait_ns slices: 64478126054 286722439 112443 | io: rchar: 12351565287 wchar: 2048934 syscr: 631515 syscw: 1363 read_bytes: 26890072064 write_bytes: 2379776 cancelled_write_bytes: 0 
+#0  0x0000000903f39165
+#1  0x0000000903e5e9c3
+#2  0x0000000903fb0913
+#3  0x0000000903d76e2f
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388504.886 rel 133 game-main tid 2680028 | state utime stime minflt majflt: R 6176 347 245894 717 | ctxsw vol invol: 110023 3024 | schedstat run_ns wait_ns slices: 65251530255 288395912 113052 | io: rchar: 12424891642 wchar: 2084049 syscr: 636647 syscw: 1383 read_bytes: 27050504192 write_bytes: 2416640 cancelled_write_bytes: 0 
+#0  0x00007f9f6c1f7920 __GI___lll_lock_wait
+#1  0x00007f9f6c1fe754 __pthread_mutex_lock@GLIBC_2.2.5
+#2  0x000055a081b10099 Libs::LibKernel::Memory::GuestAddressSpace::MapBacking(unsigned long, unsigned long, unsigned long, Common::VirtualMemory::Mode, Libs::LibKernel::Memory::GuestBackingStore::Fail
+#3  0x000055a081b04fb7 Libs::LibKernel::Memory::KernelMapDirectMemory(void**, unsigned long, int, int, long, unsigned long)::$_2::operator()() const
+#4  0x000055a081b04e96 Libs::LibKernel::Memory::KernelMapDirectMemory(void**, unsigned long, int, int, long, unsigned long)
+#5  0x000055a081b051e1 Libs::LibKernel::Memory::KernelMapDirectMemory2(void**, unsigned long, int, int, int, long, unsigned long)
+#6  0x000055a081c352bc Libs::LibAmpr::Ampr::ExecuteAmmMapCommandToday(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#7  0x000055a081c33726 Libs::LibAmpr::Ampr::ExecuteAmmMapCommand(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#8  0x000055a081c2e0af Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#9  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#10 0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#11 0x0000000903b0b179
+#12 0x0000000903d732bd
+#13 0x0000000903d76947
+#14 0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388506.829 rel 135 game-main tid 2680028 | state utime stime minflt majflt: S 6298 352 246422 730 | ctxsw vol invol: 111262 3086 | schedstat run_ns wait_ns slices: 66521796244 291299576 114349 | io: rchar: 12723910732 wchar: 2107192 syscr: 646149 syscw: 1400 read_bytes: 27950575616 write_bytes: 2449408 cancelled_write_bytes: 0 
+#0  0x0000000903c4a202
+#1  0x0000000903b0bcaf
+#2  0x0000000903d75771
+#3  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388508.375 rel 137 game-main tid 2680028 | state utime stime minflt majflt: R 6390 354 246508 732 | ctxsw vol invol: 111991 3158 | schedstat run_ns wait_ns slices: 67459579834 297160022 115151 | io: rchar: 12814614090 wchar: 2129319 syscr: 651492 syscw: 1411 read_bytes: 28196409344 write_bytes: 2469888 cancelled_write_bytes: 0 
+#0  0x000055a081b052ad Libs::LibKernel::Memory::KernelMapDirectMemory2(void**, unsigned long, int, int, int, long, unsigned long)
+#1  0x000055a081c352bc Libs::LibAmpr::Ampr::ExecuteAmmMapCommandToday(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#2  0x000055a081c33726 Libs::LibAmpr::Ampr::ExecuteAmmMapCommand(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#3  0x000055a081c2e0af Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#4  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#5  0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#6  0x0000000903b0b179
+#7  0x0000000903d744d4
+#8  0x0000000903d734db
+#9  0x0000000903d77518
+#10 0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388510.543 rel 139 game-main tid 2680028 | state utime stime minflt majflt: S 6539 361 246546 743 | ctxsw vol invol: 113403 3257 | schedstat run_ns wait_ns slices: 69015558088 305746518 116659 | io: rchar: 13496511656 wchar: 2154502 syscr: 659341 syscw: 1429 read_bytes: 29583581184 write_bytes: 2494464 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388512.093 rel 141 game-main tid 2680028 | state utime stime minflt majflt: R 6634 366 246561 744 | ctxsw vol invol: 114292 3314 | schedstat run_ns wait_ns slices: 70011465296 308621060 117606 | io: rchar: 13776512866 wchar: 2174131 syscr: 665920 syscw: 1445 read_bytes: 30242463744 write_bytes: 2514944 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388513.796 rel 142 game-main tid 2680028 | state utime stime minflt majflt: R 6736 371 247260 744 | ctxsw vol invol: 115271 3357 | schedstat run_ns wait_ns slices: 71090503897 310584597 118631 | io: rchar: 14064254621 wchar: 2207732 syscr: 671167 syscw: 1464 read_bytes: 30910758912 write_bytes: 2551808 cancelled_write_bytes: 0 
+#0  0x0000000903cca7c2
+#1  0x0000000903e5e9b8
+#2  0x0000000903fb0913
+#3  0x0000000903d76e2f
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388515.459 rel 144 game-main tid 2680028 | state utime stime minflt majflt: R 6825 375 247321 750 | ctxsw vol invol: 115830 3432 | schedstat run_ns wait_ns slices: 72004359259 316688756 119262 | io: rchar: 14290350236 wchar: 2233609 syscr: 676927 syscw: 1477 read_bytes: 31364022272 write_bytes: 2576384 cancelled_write_bytes: 0 
+#0  0x0000000903d2e0eb
+#1  0x0000000903d2db6a
+#2  0x0000000903fb4b58
+#3  0x0000000903d76e2f
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388516.993 rel 145 game-main tid 2680028 | state utime stime minflt majflt: R 6902 378 247977 753 | ctxsw vol invol: 116379 3466 | schedstat run_ns wait_ns slices: 72808346097 320985902 119844 | io: rchar: 14325553882 wchar: 3361781 syscr: 682390 syscw: 1502 read_bytes: 31511719936 write_bytes: 3837952 cancelled_write_bytes: 0 
+#0  0x0000000903cca614
+#1  0x0000000903e5e9b8
+#2  0x0000000903fb0913
+#3  0x0000000903d76e2f
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388518.631 rel 147 game-main tid 2680028 | state utime stime minflt majflt: R 7017 383 248166 757 | ctxsw vol invol: 117356 3527 | schedstat run_ns wait_ns slices: 74015152607 326048157 120883 | io: rchar: 14566736547 wchar: 3384852 syscr: 688803 syscw: 1518 read_bytes: 32021696512 write_bytes: 3887104 cancelled_write_bytes: 0 
+#0  0x0000000903f44b38
+#1  0x0000000903d7583f
+#2  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388520.224 rel 149 game-main tid 2680028 | state utime stime minflt majflt: R 7106 385 248466 758 | ctxsw vol invol: 117936 3562 | schedstat run_ns wait_ns slices: 74927912869 329830760 121502 | io: rchar: 14612709739 wchar: 3977415 syscr: 693893 syscw: 1548 read_bytes: 32157896704 write_bytes: 4534272 cancelled_write_bytes: 0 
+#0  0x000055a081af7758 Libs::LibKernel::Memory::PhysicalMemory::Unmap(unsigned long, unsigned long, Libs::LibKernel::Memory::GpuAccessMode*, unsigned long*)
+#1  0x000055a081b018e4 Libs::LibKernel::Memory::UnmapMemoryRange(unsigned long, unsigned long)
+#2  0x000055a081b00fc2 Libs::LibKernel::Memory::KernelMunmap(unsigned long, unsigned long)
+#3  0x000055a081c2e392 Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#4  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#5  0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#6  0x0000000903b0b179
+#7  0x0000000903d73e57
+#8  0x0000000903d7341b
+#9  0x0000000903d77518
+#10 0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388521.854 rel 150 game-main tid 2680028 | state utime stime minflt majflt: R 7194 387 248492 758 | ctxsw vol invol: 118467 3591 | schedstat run_ns wait_ns slices: 75824789309 333436498 122066 | io: rchar: 14675033232 wchar: 4001619 syscr: 698830 syscw: 1563 read_bytes: 32297472000 write_bytes: 4562944 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388524.578 rel 153 game-main tid 2680028 | state utime stime minflt majflt: S 7304 393 249312 808 | ctxsw vol invol: 119381 3676 | schedstat run_ns wait_ns slices: 76980323403 346924071 123059 | io: rchar: 14726708826 wchar: 4053057 syscr: 707925 syscw: 1589 read_bytes: 32448286720 write_bytes: 4612096 cancelled_write_bytes: 0 
+#0  0x000000090163c790
+#1  0x0000000903d75d6e
+#2  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388526.097 rel 155 game-main tid 2680028 | state utime stime minflt majflt: R 7385 396 249704 813 | ctxsw vol invol: 119912 3711 | schedstat run_ns wait_ns slices: 77818155707 350884700 123623 | io: rchar: 14758092209 wchar: 4077786 syscr: 713328 syscw: 1605 read_bytes: 32516677632 write_bytes: 4636672 cancelled_write_bytes: 0 
+#0  0x0000000903cca7b4
+#1  0x0000000903e5e9b8
+#2  0x0000000903fb0913
+#3  0x0000000903d76e2f
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388527.627 rel 156 game-main tid 2680028 | state utime stime minflt majflt: R 7458 398 249788 813 | ctxsw vol invol: 120480 3740 | schedstat run_ns wait_ns slices: 78578390252 357527573 124220 | io: rchar: 14779831736 wchar: 4101568 syscr: 718015 syscw: 1617 read_bytes: 32552652800 write_bytes: 4661248 cancelled_write_bytes: 0 
+#0  0x0000000903b06137
+#1  0x0000000903d75b05
+#2  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388529.145 rel 158 game-main tid 2680028 | state utime stime minflt majflt: R 7532 399 249835 814 | ctxsw vol invol: 120938 3769 | schedstat run_ns wait_ns slices: 79326907534 361822759 124706 | io: rchar: 14792974987 wchar: 4125574 syscr: 722563 syscw: 1633 read_bytes: 32573186048 write_bytes: 4685824 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388530.680 rel 159 game-main tid 2680028 | state utime stime minflt majflt: S 7607 401 249851 816 | ctxsw vol invol: 121428 3792 | schedstat run_ns wait_ns slices: 80102297789 365328184 125224 | io: rchar: 14803942979 wchar: 4150749 syscr: 727089 syscw: 1651 read_bytes: 32602411008 write_bytes: 4710400 cancelled_write_bytes: 0 
+#0  0x00000009049185fa
+#1  0x0000000904911946
+#2  0x0000000903a5e34b
+#3  0x0000000903d75d6e
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388532.196 rel 161 game-main tid 2680028 | state utime stime minflt majflt: S 7684 403 249862 817 | ctxsw vol invol: 121923 3818 | schedstat run_ns wait_ns slices: 80879602154 369030616 125740 | io: rchar: 14821336909 wchar: 4175847 syscr: 731546 syscw: 1667 read_bytes: 32642236416 write_bytes: 4734976 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388533.703 rel 162 game-main tid 2680028 | state utime stime minflt majflt: R 7747 404 249888 817 | ctxsw vol invol: 122405 3840 | schedstat run_ns wait_ns slices: 81526131699 372546772 126249 | io: rchar: 14830410774 wchar: 4212966 syscr: 735186 syscw: 1685 read_bytes: 32660443136 write_bytes: 4825088 cancelled_write_bytes: 0 
+#0  0x000055a081b27404 Libs::LibKernel::KernelGetProcessTimeCounter()
+#1  0x0000000903f3918b
+#2  0x0000000903e5e9c3
+#3  0x0000000903fb0913
+#4  0x0000000903d76e2f
+#5  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388535.311 rel 164 game-main tid 2680028 | state utime stime minflt majflt: R 7846 408 250013 858 | ctxsw vol invol: 123241 3880 | schedstat run_ns wait_ns slices: 82549671005 376222295 127121 | io: rchar: 15125443974 wchar: 4231226 syscr: 741894 syscw: 1702 read_bytes: 33299722240 write_bytes: 4849664 cancelled_write_bytes: 0 
+#0  0x000055a081e82348 Loader::TlsMainGetAddr()
+#1  0x000000090e3c802c
+#2  0x0000000903e5e9b8
+#3  0x0000000903fb0913
+#4  0x0000000903d76e2f
+#5  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388536.826 rel 165 game-main tid 2680028 | state utime stime minflt majflt: S 7919 409 250040 858 | ctxsw vol invol: 123780 3893 | schedstat run_ns wait_ns slices: 83297979046 379364258 127673 | io: rchar: 15139499138 wchar: 4256520 syscr: 745719 syscw: 1720 read_bytes: 33348591616 write_bytes: 4878336 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388538.347 rel 167 game-main tid 2680028 | state utime stime minflt majflt: R 7997 412 250063 859 | ctxsw vol invol: 124376 3922 | schedstat run_ns wait_ns slices: 84105897997 380410067 128304 | io: rchar: 15203666971 wchar: 4278655 syscr: 751856 syscw: 1731 read_bytes: 33483067392 write_bytes: 4902912 cancelled_write_bytes: 0 
+#0  0x0000000903cca753
+#1  0x0000000903e5e9b8
+#2  0x0000000903fb0913
+#3  0x0000000903d76e2f
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388539.871 rel 168 game-main tid 2680028 | state utime stime minflt majflt: S 8089 414 250242 874 | ctxsw vol invol: 124998 3949 | schedstat run_ns wait_ns slices: 85036060243 383660974 128947 | io: rchar: 15295997198 wchar: 4297623 syscr: 755994 syscw: 1746 read_bytes: 33714343936 write_bytes: 4919296 cancelled_write_bytes: 0 
+#0  0x0000000903cca7b4
+#1  0x0000000903e5e9b8
+#2  0x0000000903fb0913
+#3  0x0000000903d76e2f
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388541.535 rel 170 game-main tid 2680028 | state utime stime minflt majflt: R 8181 417 250574 878 | ctxsw vol invol: 125652 3979 | schedstat run_ns wait_ns slices: 86002280509 388417446 129643 | io: rchar: 15448900445 wchar: 4323533 syscr: 761070 syscw: 1764 read_bytes: 34018562048 write_bytes: 4943872 cancelled_write_bytes: 0 
+#0  0x0000000930004209
+#1  0x0000000903a5dcad
+#2  0x0000000903d75d6e
+#3  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388543.028 rel 171 game-main tid 2680028 | state utime stime minflt majflt: S 8272 421 251117 895 | ctxsw vol invol: 126505 4035 | schedstat run_ns wait_ns slices: 86934007281 398742697 130539 | io: rchar: 15484328688 wchar: 4346158 syscr: 765808 syscw: 1779 read_bytes: 34124197888 write_bytes: 4968448 cancelled_write_bytes: 0 
+#0  0x000055a081b27432 Libs::LibKernel::KernelGetProcessTimeCounter()
+#1  0x0000000903f3918b
+#2  0x0000000903e5e9c3
+#3  0x0000000903fb0913
+#4  0x0000000903d76e2f
+#5  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388544.585 rel 173 game-main tid 2680028 | state utime stime minflt majflt: R 8343 423 251165 900 | ctxsw vol invol: 127124 4074 | schedstat run_ns wait_ns slices: 87667693076 405420951 131198 | io: rchar: 15511308761 wchar: 4382689 syscr: 771218 syscw: 1796 read_bytes: 34198532096 write_bytes: 5005312 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388546.097 rel 175 game-main tid 2680028 | state utime stime minflt majflt: S 8408 424 251183 900 | ctxsw vol invol: 127750 4111 | schedstat run_ns wait_ns slices: 88341039781 410946082 131866 | io: rchar: 15523646451 wchar: 4408242 syscr: 775571 syscw: 1813 read_bytes: 34223996928 write_bytes: 5029888 cancelled_write_bytes: 0 
+#0  0x0000000903edaf08
+#1  0x0000000903ee2265
+#2  0x0000000903edeeba
+#3  0x0000000903ccb583
+#4  0x0000000903ee5245
+#5  0x0000000903d7721c
+#6  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388547.598 rel 176 game-main tid 2680028 | state utime stime minflt majflt: S 8472 427 251189 900 | ctxsw vol invol: 128352 4128 | schedstat run_ns wait_ns slices: 88995438055 413920341 132480 | io: rchar: 15536301951 wchar: 4432960 syscr: 779896 syscw: 1826 read_bytes: 34242273280 write_bytes: 5062656 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388549.103 rel 178 game-main tid 2680028 | state utime stime minflt majflt: R 8532 429 251194 900 | ctxsw vol invol: 128959 4154 | schedstat run_ns wait_ns slices: 89623725250 417179156 133119 | io: rchar: 15548947120 wchar: 4458615 syscr: 784294 syscw: 1843 read_bytes: 34272227328 write_bytes: 5087232 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388550.613 rel 179 game-main tid 2680028 | state utime stime minflt majflt: R 8599 432 251199 904 | ctxsw vol invol: 129599 4215 | schedstat run_ns wait_ns slices: 90323010288 422995282 133813 | io: rchar: 15588905595 wchar: 4479030 syscr: 788739 syscw: 1856 read_bytes: 34362916864 write_bytes: 5111808 cancelled_write_bytes: 0 
+#0  0x0000000903dca0d1
+#1  0x0000000903ee174c
+#2  0x0000000903edeeba
+#3  0x0000000903ccb583
+#4  0x0000000903ee5245
+#5  0x0000000903d7721c
+#6  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388552.523 rel 181 game-main tid 2680028 | state utime stime minflt majflt: R 8719 435 251265 911 | ctxsw vol invol: 130526 4260 | schedstat run_ns wait_ns slices: 91556756954 427762265 134786 | io: rchar: 15809410546 wchar: 4507933 syscr: 794641 syscw: 1880 read_bytes: 34863005696 write_bytes: 5152768 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388554.092 rel 183 game-main tid 2680028 | state utime stime minflt majflt: S 8808 438 251274 913 | ctxsw vol invol: 131151 4291 | schedstat run_ns wait_ns slices: 92469149210 430402407 135442 | io: rchar: 15900314471 wchar: 4545566 syscr: 799500 syscw: 1901 read_bytes: 35034488832 write_bytes: 5185536 cancelled_write_bytes: 0 
+#0  0x0000000903cca72a
+#1  0x0000000903e5e9b8
+#2  0x0000000903fb0913
+#3  0x0000000903d76e2f
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388555.726 rel 184 game-main tid 2680028 | state utime stime minflt majflt: S 8905 441 251285 914 | ctxsw vol invol: 131858 4343 | schedstat run_ns wait_ns slices: 93481094506 436703390 136202 | io: rchar: 15984786435 wchar: 4568080 syscr: 805430 syscw: 1913 read_bytes: 35234656256 write_bytes: 5210112 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388557.288 rel 186 game-main tid 2680028 | state utime stime minflt majflt: S 8997 443 251314 917 | ctxsw vol invol: 132581 4372 | schedstat run_ns wait_ns slices: 94413875439 438776651 136953 | io: rchar: 16093318359 wchar: 4590484 syscr: 810981 syscw: 1928 read_bytes: 35431215104 write_bytes: 5230592 cancelled_write_bytes: 0 
+#0  0x0000000903ccb256
+#1  0x0000000905d0b81d
+#2  0x00000009049064c2
+#3  0x0000000900e1fbb1
+#4  0x0000000903d75ba5
+#5  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388558.975 rel 187 game-main tid 2680028 | state utime stime minflt majflt: R 9102 447 251323 918 | ctxsw vol invol: 133308 4437 | schedstat run_ns wait_ns slices: 95499288781 441763313 137745 | io: rchar: 16219940542 wchar: 4618179 syscr: 815627 syscw: 1947 read_bytes: 35699957760 write_bytes: 5263360 cancelled_write_bytes: 0 
+#0  0x0000000903cca771
+#1  0x0000000903e5e9b8
+#2  0x0000000903fb0913
+#3  0x0000000903d76e2f
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388560.598 rel 189 game-main tid 2680028 | state utime stime minflt majflt: R 9188 450 251327 920 | ctxsw vol invol: 133926 4453 | schedstat run_ns wait_ns slices: 96394059138 444504664 138378 | io: rchar: 16293643394 wchar: 4640255 syscr: 821073 syscw: 1958 read_bytes: 35833470976 write_bytes: 5283840 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388562.125 rel 191 game-main tid 2680028 | state utime stime minflt majflt: R 9265 452 251333 920 | ctxsw vol invol: 134502 4498 | schedstat run_ns wait_ns slices: 97182214083 453240591 139001 | io: rchar: 16306296241 wchar: 4666153 syscr: 825491 syscw: 1981 read_bytes: 35867770880 write_bytes: 5308416 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388563.657 rel 192 game-main tid 2680028 | state utime stime minflt majflt: R 9344 453 251342 920 | ctxsw vol invol: 135121 4516 | schedstat run_ns wait_ns slices: 97985629974 455103702 139637 | io: rchar: 16315346456 wchar: 4706797 syscr: 829204 syscw: 1997 read_bytes: 35886923776 write_bytes: 5349376 cancelled_write_bytes: 0 
+#0  0x0000000903ee16af
+#1  0x0000000903edeeba
+#2  0x0000000903ccb583
+#3  0x0000000903ee5245
+#4  0x0000000903d7721c
+#5  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388565.220 rel 194 game-main tid 2680028 | state utime stime minflt majflt: S 9421 456 251344 920 | ctxsw vol invol: 135734 4545 | schedstat run_ns wait_ns slices: 98780972416 458176389 140279 | io: rchar: 16328291154 wchar: 4727840 syscr: 834352 syscw: 2013 read_bytes: 35914469376 write_bytes: 5373952 cancelled_write_bytes: 0 
+#0  0x000055a081b2afa9 Libs::LibKernel::Semaphore::KernelSemaPrivate::Signal(int)
+#1  0x000055a081b2bbbb Libs::LibKernel::Semaphore::KernelSignalSema(Libs::LibKernel::Semaphore::KernelSemaPrivate*, int)
+#2  0x0000000903ccbb6b
+#3  0x0000000903cca447
+#4  0x0000000902555e17
+#5  0x0000000903a5e34b
+#6  0x0000000903d75d6e
+#7  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388566.727 rel 195 game-main tid 2680028 | state utime stime minflt majflt: R 9498 457 251346 920 | ctxsw vol invol: 136336 4561 | schedstat run_ns wait_ns slices: 99566241946 460188407 140903 | io: rchar: 16343986565 wchar: 4752608 syscr: 839341 syscw: 2026 read_bytes: 35931885568 write_bytes: 5447680 cancelled_write_bytes: 0 
+#0  0x00007f9f6c2eec2a __memcpy_avx_unaligned_erms
+#1  0x000055a081b15bff std::vector<Libs::LibKernel::Memory::VirtualRanges::Range, std::allocator<Libs::LibKernel::Memory::VirtualRanges::Range> >::insert(__gnu_cxx::__normal_iterator<Libs::LibKernel::
+#2  0x000055a081b10960 Libs::LibKernel::Memory::VirtualRanges::Add(unsigned long, unsigned long, unsigned long, int, int, Libs::LibKernel::Memory::VirtualRangeType, char const*, bool)
+#3  0x000055a081aff3ee Libs::LibKernel::Memory::ReplaceFixedRangeWithReserved(unsigned long, unsigned long)
+#4  0x000055a081b04e61 Libs::LibKernel::Memory::KernelMapDirectMemory(void**, unsigned long, int, int, long, unsigned long)
+#5  0x000055a081b051e1 Libs::LibKernel::Memory::KernelMapDirectMemory2(void**, unsigned long, int, int, int, long, unsigned long)
+#6  0x000055a081c352bc Libs::LibAmpr::Ampr::ExecuteAmmMapCommandToday(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#7  0x000055a081c33726 Libs::LibAmpr::Ampr::ExecuteAmmMapCommand(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#8  0x000055a081c2e0af Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#9  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#10 0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#11 0x0000000903b0b179
+#12 0x0000000903d744d4
+#13 0x0000000903d734db
+#14 0x0000000903d77518
+#15 0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388569.277 rel 198 game-main tid 2680028 | state utime stime minflt majflt: R 9660 464 251427 932 | ctxsw vol invol: 137893 4674 | schedstat run_ns wait_ns slices: 101256201770 468587786 142566 | io: rchar: 16701832207 wchar: 4784371 syscr: 848368 syscw: 2053 read_bytes: 36725014528 write_bytes: 5488640 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388571.018 rel 199 game-main tid 2680028 | state utime stime minflt majflt: S 9763 467 251432 933 | ctxsw vol invol: 138737 4727 | schedstat run_ns wait_ns slices: 102315145209 473105839 143465 | io: rchar: 16804223805 wchar: 4811159 syscr: 854404 syscw: 2069 read_bytes: 36935290880 write_bytes: 5513216 cancelled_write_bytes: 0 
+#0  0x00007f9f6c2eeba9 __memcpy_avx_unaligned_erms
+#1  0x000055a081b16bb0 void Libs::LibKernel::Memory::VirtualRanges::EditUnlocked<Libs::LibKernel::Memory::VirtualRanges::SetMemoryType(unsigned long, unsigned long, int)::{lambda(Libs::LibKernel::Memo
+#2  0x000055a081b05275 Libs::LibKernel::Memory::KernelMapDirectMemory2(void**, unsigned long, int, int, int, long, unsigned long)
+#3  0x000055a081c352bc Libs::LibAmpr::Ampr::ExecuteAmmMapCommandToday(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#4  0x000055a081c33726 Libs::LibAmpr::Ampr::ExecuteAmmMapCommand(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#5  0x000055a081c2e0af Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#6  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#7  0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#8  0x0000000903b0b179
+#9  0x0000000903d744d4
+#10 0x0000000903d734db
+#11 0x0000000903d77518
+#12 0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388572.725 rel 201 game-main tid 2680028 | state utime stime minflt majflt: R 9856 472 251516 934 | ctxsw vol invol: 139778 4754 | schedstat run_ns wait_ns slices: 103293918403 474377485 144534 | io: rchar: 16904700907 wchar: 4834324 syscr: 859775 syscw: 2083 read_bytes: 37286678528 write_bytes: 5537792 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388574.516 rel 203 game-main tid 2680028 | state utime stime minflt majflt: S 9946 475 251657 935 | ctxsw vol invol: 140530 4799 | schedstat run_ns wait_ns slices: 104215746532 480655191 145328 | io: rchar: 16956814695 wchar: 4876338 syscr: 867626 syscw: 2110 read_bytes: 37513568256 write_bytes: 5578752 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388576.076 rel 204 game-main tid 2680028 | state utime stime minflt majflt: R 10018 477 251659 935 | ctxsw vol invol: 141145 4835 | schedstat run_ns wait_ns slices: 104968627349 484187754 145983 | io: rchar: 16992690820 wchar: 4900752 syscr: 872286 syscw: 2126 read_bytes: 37593522176 write_bytes: 5603328 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388577.610 rel 206 game-main tid 2680028 | state utime stime minflt majflt: R 10090 480 251661 935 | ctxsw vol invol: 141710 4882 | schedstat run_ns wait_ns slices: 105707684256 489260919 146597 | io: rchar: 17005080433 wchar: 4925162 syscr: 876087 syscw: 2139 read_bytes: 37627101184 write_bytes: 5627904 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388579.136 rel 208 game-main tid 2680028 | state utime stime minflt majflt: R 10160 481 251668 935 | ctxsw vol invol: 142365 4896 | schedstat run_ns wait_ns slices: 106433969332 493102762 147261 | io: rchar: 17021165446 wchar: 4950245 syscr: 880869 syscw: 2155 read_bytes: 37682094080 write_bytes: 5660672 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388580.662 rel 209 game-main tid 2680028 | state utime stime minflt majflt: R 10233 484 251672 935 | ctxsw vol invol: 142961 4931 | schedstat run_ns wait_ns slices: 107182370368 497962568 147891 | io: rchar: 17037165545 wchar: 4974025 syscr: 885325 syscw: 2168 read_bytes: 37728256000 write_bytes: 5689344 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388582.242 rel 211 game-main tid 2680028 | state utime stime minflt majflt: S 10302 485 251674 935 | ctxsw vol invol: 143548 4976 | schedstat run_ns wait_ns slices: 107880732429 505793127 148526 | io: rchar: 17048960514 wchar: 4998908 syscr: 889556 syscw: 2184 read_bytes: 37761347584 write_bytes: 5709824 cancelled_write_bytes: 0 
+#0  0x0000000900a99b45
+#1  0x0000000900a513e2
+#2  0x0000000900b5654f
+#3  0x00000009007ba11f
+#4  0x0000000903e681f0
+#5  0x0000000903d76446
+#6  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388583.956 rel 212 game-main tid 2680028 | state utime stime minflt majflt: S 10393 490 251683 935 | ctxsw vol invol: 144323 5042 | schedstat run_ns wait_ns slices: 108840405842 512230763 149365 | io: rchar: 17158156714 wchar: 5035980 syscr: 894028 syscw: 2201 read_bytes: 37981184000 write_bytes: 5750784 cancelled_write_bytes: 0 
+#0  0x000055a081b052c5 Libs::LibKernel::Memory::KernelMapDirectMemory2(void**, unsigned long, int, int, int, long, unsigned long)
+#1  0x000055a081c352bc Libs::LibAmpr::Ampr::ExecuteAmmMapCommandToday(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#2  0x000055a081c33726 Libs::LibAmpr::Ampr::ExecuteAmmMapCommand(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#3  0x000055a081c2e0af Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#4  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#5  0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#6  0x0000000903b0b179
+#7  0x0000000903d744d4
+#8  0x0000000903d734db
+#9  0x0000000903d77518
+#10 0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388586.294 rel 215 game-main tid 2680028 | state utime stime minflt majflt: R 10542 494 251767 941 | ctxsw vol invol: 145534 5100 | schedstat run_ns wait_ns slices: 110374417990 519464042 150634 | io: rchar: 17517671651 wchar: 5064472 syscr: 903450 syscw: 2231 read_bytes: 38718418944 write_bytes: 5795840 cancelled_write_bytes: 0 
+#0  0x0000000903cca7b4
+#1  0x0000000903e5e9b8
+#2  0x0000000903fb0913
+#3  0x0000000903d76e2f
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388587.869 rel 216 game-main tid 2680028 | state utime stime minflt majflt: R 10638 496 251772 943 | ctxsw vol invol: 146036 5130 | schedstat run_ns wait_ns slices: 111352813967 524780342 151166 | io: rchar: 17555384958 wchar: 5091821 syscr: 908289 syscw: 2244 read_bytes: 38812598272 write_bytes: 5824512 cancelled_write_bytes: 0 
+#0  0x0000000903d65df7
+#1  0x0000000903edaec8
+#2  0x0000000903ee2265
+#3  0x0000000903edeeba
+#4  0x0000000903ccb583
+#5  0x0000000903ee5245
+#6  0x0000000903d7721c
+#7  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388589.389 rel 218 game-main tid 2680028 | state utime stime minflt majflt: R 10730 499 251794 946 | ctxsw vol invol: 146720 5173 | schedstat run_ns wait_ns slices: 112311368058 530128493 151895 | io: rchar: 17693629256 wchar: 5114222 syscr: 913159 syscw: 2259 read_bytes: 39095103488 write_bytes: 5857280 cancelled_write_bytes: 0 
+#0  0x000055a081b052ad Libs::LibKernel::Memory::KernelMapDirectMemory2(void**, unsigned long, int, int, int, long, unsigned long)
+#1  0x000055a081c352bc Libs::LibAmpr::Ampr::ExecuteAmmMapCommandToday(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#2  0x000055a081c33726 Libs::LibAmpr::Ampr::ExecuteAmmMapCommand(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#3  0x000055a081c2e0af Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#4  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#5  0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#6  0x0000000903b0b179
+#7  0x0000000903d744d4
+#8  0x0000000903d734db
+#9  0x0000000903d77518
+#10 0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388590.956 rel 219 game-main tid 2680028 | state utime stime minflt majflt: S 10820 501 251807 946 | ctxsw vol invol: 147305 5187 | schedstat run_ns wait_ns slices: 113224824078 532240118 152491 | io: rchar: 17756590200 wchar: 5137973 syscr: 918145 syscw: 2280 read_bytes: 39243927552 write_bytes: 5877760 cancelled_write_bytes: 0 
+#0  0x0000000904709b9a
+#1  0x0000000903a5e529
+#2  0x0000000903d75d6e
+#3  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388593.082 rel 221 game-main tid 2680028 | state utime stime minflt majflt: S 10925 503 251963 946 | ctxsw vol invol: 148008 5298 | schedstat run_ns wait_ns slices: 114293444803 546279859 153306 | io: rchar: 17779262618 wchar: 5168294 syscr: 924694 syscw: 2302 read_bytes: 39304806400 write_bytes: 5906432 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388594.717 rel 223 game-main tid 2680028 | state utime stime minflt majflt: R 11004 506 252619 955 | ctxsw vol invol: 148627 5323 | schedstat run_ns wait_ns slices: 115115777217 553292711 153953 | io: rchar: 17801415776 wchar: 5206826 syscr: 930169 syscw: 2320 read_bytes: 39355322368 write_bytes: 5947392 cancelled_write_bytes: 0 
+#0  0x0000000903ccb612
+#1  0x00000009022a0d3a
+#2  0x0000000903a5e621
+#3  0x0000000903d75d6e
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388596.200 rel 225 game-main tid 2680028 | state utime stime minflt majflt: R 11076 508 252746 967 | ctxsw vol invol: 149205 5378 | schedstat run_ns wait_ns slices: 115853481358 558451474 154583 | io: rchar: 17820758372 wchar: 5232351 syscr: 933954 syscw: 2340 read_bytes: 39412633600 write_bytes: 5971968 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388597.712 rel 226 game-main tid 2680028 | state utime stime minflt majflt: S 11147 510 252813 970 | ctxsw vol invol: 149745 5402 | schedstat run_ns wait_ns slices: 116576371562 562733942 155146 | io: rchar: 17835410788 wchar: 5257199 syscr: 939128 syscw: 2358 read_bytes: 39434407936 write_bytes: 5996544 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388599.180 rel 228 game-main tid 2680028 | state utime stime minflt majflt: R 11230 514 262341 1159 | ctxsw vol invol: 150611 5415 | schedstat run_ns wait_ns slices: 117460840157 564635562 156032 | io: rchar: 17859551773 wchar: 5836182 syscr: 943381 syscw: 2381 read_bytes: 39503376384 write_bytes: 6631424 cancelled_write_bytes: 0 
+#0  0x000055a081af7766 Libs::LibKernel::Memory::PhysicalMemory::Unmap(unsigned long, unsigned long, Libs::LibKernel::Memory::GpuAccessMode*, unsigned long*)
+#1  0x000055a081b018e4 Libs::LibKernel::Memory::UnmapMemoryRange(unsigned long, unsigned long)
+#2  0x000055a081b00fc2 Libs::LibKernel::Memory::KernelMunmap(unsigned long, unsigned long)
+#3  0x000055a081c2e392 Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#4  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#5  0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#6  0x0000000903b0b179
+#7  0x0000000903d73e57
+#8  0x0000000903d7341b
+#9  0x0000000903d77518
+#10 0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388600.653 rel 229 game-main tid 2680028 | state utime stime minflt majflt: R 11335 520 266227 1693 | ctxsw vol invol: 152736 5463 | schedstat run_ns wait_ns slices: 118563732987 567823746 158205 | io: rchar: 17995176968 wchar: 5846491 syscr: 956516 syscw: 2393 read_bytes: 39957069824 write_bytes: 6643712 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388602.260 rel 231 game-main tid 2680028 | state utime stime minflt majflt: R 11434 526 267210 1722 | ctxsw vol invol: 154323 5527 | schedstat run_ns wait_ns slices: 119618955079 572325625 159852 | io: rchar: 18088451046 wchar: 5866166 syscr: 966610 syscw: 2414 read_bytes: 40255184896 write_bytes: 6672384 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388605.178 rel 234 game-main tid 2680028 | state utime stime minflt majflt: R 11630 532 268391 1827 | ctxsw vol invol: 155825 5667 | schedstat run_ns wait_ns slices: 121627914330 581854839 161493 | io: rchar: 18806774926 wchar: 5919992 syscr: 981961 syscw: 2451 read_bytes: 41969291264 write_bytes: 6725632 cancelled_write_bytes: 0 
+#0  0x0000000903b7e128
+#1  0x0000000903b881f2
+#2  0x0000000903b8892c
+#3  0x00000009049064c2
+#4  0x0000000900e1fbb1
+#5  0x0000000903d75ba5
+#6  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388606.874 rel 235 game-main tid 2680028 | state utime stime minflt majflt: S 11734 533 268520 1845 | ctxsw vol invol: 156447 5708 | schedstat run_ns wait_ns slices: 122686142075 584836425 162154 | io: rchar: 18882545261 wchar: 5948020 syscr: 987212 syscw: 2465 read_bytes: 42153177088 write_bytes: 6754304 cancelled_write_bytes: 0 
+#0  0x0000000903f39165
+#1  0x0000000903e5e9c3
+#2  0x0000000903fb0913
+#3  0x0000000903d76e2f
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388608.511 rel 237 game-main tid 2680028 | state utime stime minflt majflt: S 11836 535 268635 1850 | ctxsw vol invol: 157042 5779 | schedstat run_ns wait_ns slices: 123716333366 589915039 162820 | io: rchar: 18979186413 wchar: 5972711 syscr: 993363 syscw: 2486 read_bytes: 42361528320 write_bytes: 6778880 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388610.556 rel 239 game-main tid 2680028 | state utime stime minflt majflt: R 11937 580 268798 1902 | ctxsw vol invol: 157717 5873 | schedstat run_ns wait_ns slices: 125187040797 599348529 163590 | io: rchar: 19074747387 wchar: 5997732 syscr: 1000033 syscw: 2508 read_bytes: 42605940736 write_bytes: 6811648 cancelled_write_bytes: 0 
+#0  0x0000000903cca749
+#1  0x0000000903e5e9b8
+#2  0x0000000903fb0913
+#3  0x0000000903d76e2f
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388612.204 rel 241 game-main tid 2680028 | state utime stime minflt majflt: R 12043 583 269194 1929 | ctxsw vol invol: 158328 5899 | schedstat run_ns wait_ns slices: 126277969720 601237529 164230 | io: rchar: 19173286180 wchar: 6020743 syscr: 1004762 syscw: 2533 read_bytes: 42830929920 write_bytes: 6832128 cancelled_write_bytes: 0 
+#0  0x0000000903ee21c0
+#1  0x0000000903edeeba
+#2  0x0000000903ccb583
+#3  0x0000000903ee5245
+#4  0x0000000903d7721c
+#5  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388613.825 rel 242 game-main tid 2680028 | state utime stime minflt majflt: R 12156 586 269354 1940 | ctxsw vol invol: 159183 5950 | schedstat run_ns wait_ns slices: 127428777789 606251745 165138 | io: rchar: 19251325476 wchar: 6056833 syscr: 1011164 syscw: 2551 read_bytes: 43015659520 write_bytes: 6864896 cancelled_write_bytes: 0 
+#0  0x0000000903edab98
+#1  0x0000000903ee2265
+#2  0x0000000903edeeba
+#3  0x0000000903ccb583
+#4  0x0000000903ee5245
+#5  0x0000000903d7721c
+#6  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388615.460 rel 244 game-main tid 2680028 | state utime stime minflt majflt: R 12263 588 269475 1957 | ctxsw vol invol: 159836 5990 | schedstat run_ns wait_ns slices: 128532276450 608623188 165831 | io: rchar: 19331847582 wchar: 6078008 syscr: 1017471 syscw: 2570 read_bytes: 43212464128 write_bytes: 6885376 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388618.079 rel 246 game-main tid 2680028 | state utime stime minflt majflt: R 12446 598 269581 2016 | ctxsw vol invol: 161434 6059 | schedstat run_ns wait_ns slices: 130447951918 614888743 167501 | io: rchar: 19853371990 wchar: 6111080 syscr: 1027138 syscw: 2604 read_bytes: 44359380992 write_bytes: 6938624 cancelled_write_bytes: 0 
+#0  0x0000000903af0e15
+#1  0x0000000903aefa67
+#2  0x0000000903dcb772
+#3  0x0000000903f11555
+#4  0x0000000903d773f7
+#5  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388619.651 rel 248 game-main tid 2680028 | state utime stime minflt majflt: S 12525 600 269634 2017 | ctxsw vol invol: 162042 6090 | schedstat run_ns wait_ns slices: 131263982869 618329526 168131 | io: rchar: 19873363516 wchar: 6136164 syscr: 1031885 syscw: 2618 read_bytes: 44412211200 write_bytes: 6963200 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388621.331 rel 250 game-main tid 2680028 | state utime stime minflt majflt: S 12616 602 269648 2023 | ctxsw vol invol: 162676 6122 | schedstat run_ns wait_ns slices: 132202476404 622162248 168802 | io: rchar: 19942862920 wchar: 6160152 syscr: 1036629 syscw: 2638 read_bytes: 44546629632 write_bytes: 6983680 cancelled_write_bytes: 0 
+#0  0x000000090124eae1
+#1  0x0000000903a5e5c9
+#2  0x0000000903d75d6e
+#3  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388622.950 rel 251 game-main tid 2680028 | state utime stime minflt majflt: R 12704 605 269683 2027 | ctxsw vol invol: 163368 6167 | schedstat run_ns wait_ns slices: 133104907714 629387529 169538 | io: rchar: 20014350851 wchar: 6182736 syscr: 1041894 syscw: 2653 read_bytes: 44714708992 write_bytes: 7012352 cancelled_write_bytes: 0 
+#0  0x0000000903cca72d
+#1  0x0000000903e5e9b8
+#2  0x0000000903fb0913
+#3  0x0000000903d76e2f
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388624.613 rel 253 game-main tid 2680028 | state utime stime minflt majflt: S 12803 608 269700 2030 | ctxsw vol invol: 164084 6213 | schedstat run_ns wait_ns slices: 134126838933 637605409 170299 | io: rchar: 20153412378 wchar: 6221636 syscr: 1047948 syscw: 2676 read_bytes: 45009432576 write_bytes: 7049216 cancelled_write_bytes: 0 
+#0  0x00007f9f6c1a0584 getenv
+#1  0x000055a081c35312 Libs::LibAmpr::Ampr::ExecuteAmmMapCommandToday(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#2  0x000055a081c33726 Libs::LibAmpr::Ampr::ExecuteAmmMapCommand(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&)
+#3  0x000055a081c2e0af Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#4  0x000055a081c2c962 Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long)
+#5  0x000055a081c28093 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int)
+#6  0x0000000903b0b179
+#7  0x0000000903d744d4
+#8  0x0000000903d734db
+#9  0x0000000903d77518
+#10 0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388626.842 rel 255 game-main tid 2680028 | state utime stime minflt majflt: S 12942 614 270436 2041 | ctxsw vol invol: 165474 6321 | schedstat run_ns wait_ns slices: 135565838234 645865478 171794 | io: rchar: 20332298187 wchar: 6249389 syscr: 1058358 syscw: 2699 read_bytes: 45673308160 write_bytes: 7073792 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388628.583 rel 257 game-main tid 2680028 | state utime stime minflt majflt: R 13025 617 270444 2041 | ctxsw vol invol: 166146 6385 | schedstat run_ns wait_ns slices: 136432741107 652984034 172538 | io: rchar: 20394186028 wchar: 6279270 syscr: 1063432 syscw: 2726 read_bytes: 45802090496 write_bytes: 7106560 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388630.388 rel 259 game-main tid 2680028 | state utime stime minflt majflt: S 13120 620 270526 2046 | ctxsw vol invol: 166930 6420 | schedstat run_ns wait_ns slices: 137412103067 657967894 173349 | io: rchar: 20472165023 wchar: 6306265 syscr: 1070008 syscw: 2747 read_bytes: 46006415360 write_bytes: 7131136 cancelled_write_bytes: 0 
+#0  0x0000000903a7c91a
+#1  0x0000000903a5e0b9
+#2  0x0000000903d75d6e
+#3  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388631.932 rel 260 game-main tid 2680028 | state utime stime minflt majflt: S 13187 622 270529 2046 | ctxsw vol invol: 167451 6479 | schedstat run_ns wait_ns slices: 138100951591 665591137 173929 | io: rchar: 20487800232 wchar: 6331510 syscr: 1074607 syscw: 2762 read_bytes: 46049861632 write_bytes: 7155712 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388633.827 rel 262 game-main tid 2680028 | state utime stime minflt majflt: R 13293 626 270553 2050 | ctxsw vol invol: 168359 6572 | schedstat run_ns wait_ns slices: 139224775182 670805485 174934 | io: rchar: 20651065234 wchar: 6366670 syscr: 1079940 syscw: 2787 read_bytes: 46408118272 write_bytes: 7245824 cancelled_write_bytes: 0 
+#0  0x0000000903eded8f
+#1  0x0000000903ccb583
+#2  0x0000000903ee5245
+#3  0x0000000903d7721c
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388635.503 rel 264 game-main tid 2680028 | state utime stime minflt majflt: R 13395 628 270576 2050 | ctxsw vol invol: 168923 6618 | schedstat run_ns wait_ns slices: 140251894726 674610666 175544 | io: rchar: 20780488413 wchar: 6394432 syscr: 1086640 syscw: 2811 read_bytes: 46648606720 write_bytes: 7335936 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388637.149 rel 266 game-main tid 2680028 | state utime stime minflt majflt: R 13485 630 270603 2050 | ctxsw vol invol: 169372 6649 | schedstat run_ns wait_ns slices: 141171681922 679797237 176021 | io: rchar: 20792757284 wchar: 6420196 syscr: 1091358 syscw: 2832 read_bytes: 46677192704 write_bytes: 7360512 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388638.691 rel 267 game-main tid 2680028 | state utime stime minflt majflt: R 13576 631 270604 2050 | ctxsw vol invol: 169812 6712 | schedstat run_ns wait_ns slices: 142089327076 690099657 176524 | io: rchar: 20804789505 wchar: 6445685 syscr: 1095134 syscw: 2853 read_bytes: 46709833728 write_bytes: 7389184 cancelled_write_bytes: 0 
+#0  0x00007f9f6c203802 __syscall_cancel_arch
+#1  0x00007f9f6c1f730c __internal_syscall_cancel
+#2  0x00007f9f6c1f76e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f9f6c1fa689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x000055a081b21589 Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+#5  0x0000000903f39053
+#6  0x0000000903f118c8
+#7  0x0000000903d773f7
+#8  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+== t 1794388640.220 rel 269 game-main tid 2680028 | state utime stime minflt majflt: S 13662 633 270605 2050 | ctxsw vol invol: 170287 6730 | schedstat run_ns wait_ns slices: 142968306714 694355619 177016 | io: rchar: 20816663040 wchar: 6471312 syscr: 1099596 syscw: 2873 read_bytes: 46731870208 write_bytes: 7417856 cancelled_write_bytes: 0 
+#0  0x0000000903cca72a
+#1  0x0000000903e5e9b8
+#2  0x0000000903fb0913
+#3  0x0000000903d76e2f
+#4  0x000055a081d2ab43 Libs::Fiber::FiberStartTrampoline()
+# 2026-11-11 10:17:21 end

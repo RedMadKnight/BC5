@@ -566,9 +566,441 @@ log, capture off, sampler, fuse). The shared build and its shortcuts are unchang
 **Next, his call:** carry the two edits into patch 0001 with the cap on by default (a new shared build), after he has
 played ASTRO BOT on this shortcut.
 
+### 12. The second title, unpacked, on the events-cap build (2026-11-11 09:30–09:36; the maintainer: "do tej wersji dodaj możliwość uruchomienia rozpakowanej wersji drugiej gry")
+
+No code change: the unpacked game is a launcher feature (`BC5_GAME_DIR` makes the launcher pass the directory to
+`--game` instead of mounting the package; exp 0409's launcher and its descendants have it, the shared `play-pkg.sh`
+does not). Added (`events/`):
+- `ev/play-pkg-ev0412.sh` (box, e125fb4e): exp 0412's `play-pkg-0412.sh` with EMU = the ev412 binary and its own log
+  (`~/bc5-work/exp0412/pkg-ev-last.log`); `BC5_GAME_DIR` and `ulimit -c 0` kept. Made and pinned by `startev0412.sh`.
+- `play-pkg-ev-0412.sh cap|log|plain [dry]` (a8bde13f): runs it with `BC5_GAME_DIR=~/bc5-data/games/PPSA03671` and
+  the arm's event words, with the sampler and the fuse (12,400 MiB) as the other wrappers.
+- The shortcut `BC5 emulator (0412 events cap, unpacked)` (arm `cap`).
+
+**What this build is.** ev412 is the shared source of 2026-11-02 plus the events cap. It has none of exp 0401–0411's
+work (e8–e11: the reset and label switches, the table catcher, the ports) and none of the guardian's (ledger, zero
+skip arm, orphan release with split). So the wrapper does not pass the "e11 unpacked" shortcut's 70 switch words: this
+build does not know them. For his save's memory wall the shortcut to use stays `(0412 zo - best of the night)`.
+
+**Start check** (`startev0412.sh s1cap cap 180`: the wrapper with a test copy of the launcher whose working
+directory, save directory and learned file are private, no input, 180 s, watchdog, sampler, fuse) [M]: the title
+started from the unpacked directory and drew for the whole time, 174 one-second fps lines, 28.0 flips/s, longest gap
+255 ms; no crash line, no kernel line; available memory never under 2,450 MiB; the live saves' sum unchanged. It was
+on the start screen: no key was sent, no save loaded, nobody looked at the picture.
+The play log has **no event line**: in these 3 minutes no event of the second title was triggered while still unread,
+so the cap did not act and this title's start screen does not have ASTRO BOT's growth on this build either.
+
+**Not done:** a load of his save and play on this build; RT and the settings are the launcher's as usual. Whether he
+wants the events cap in the e11-based line instead (the build the second title is meant to run on) is his call: the
+two edits apply to that source as well, if its `eventQueue.cpp` and `sync.cpp` still have the two `push_back` lines.
+
+### 13. The events cap in the e11-based line: build g412e (2026-11-11 09:36–09:45; the maintainer's "Tak, przenieś")
+
+`events/mk0412e.sh`, `events/linkev0412.py`; `mkev0412.py` now also takes exp 0401 e8's `eventQueue.cpp`
+(`--eq`, pinned d8eaa6d2: the e-series changed that unit with mkeq0405.py, and its two anchors and the one
+`push_back` are still there). `sync.cpp` is the shared one (68733b6c); no earlier private build had it as its own
+object, g412e does.
+
+- **Build** (box, 09:39, BOX-LOCK ours and released): CPU test 1025 of 1025; edited units 64e176a7 (eventQueue.cpp)
+  and 06c1349c (sync.cpp); 47 private objects (e8's, exp 0409's two, the two edited ones, g412d's main unit 5361c8ba);
+  7 warnings (g412d: 6; the new one not read); binary `5db9b2e9805473ed3a01a96389087904` in place of g412d, which is
+  kept as `bin/kyty_emulator.g412-ca106494`. The launcher is unchanged (7899c6dd). With the two event switches off the
+  two functions do the `push_back` they did.
+- **Arm `zoe`** in `play-guard-0412.sh` (wrapper 3ba549d5): zo + `KYTY_BC5_EVENT_PENDING_CAP=64` +
+  `KYTY_BC5_EVENT_PENDING_LOG=1`. Every other arm runs the same binary without the event words.
+- **Check** [M] (`run0412n.sh g1zoe zoe 120`: the scripted load of the copy of his save, 120 s of walking, sampler,
+  fuse, watchdog): full run, no kernel line, no crash line. Pinned 11,230 MiB at 240 s (zo: 11,236–11,462), available
+  never under 704 MiB, PSI full 1.8 % mean, 24.5 flips/s after the load, median 34 ms, longest frame 454 ms.
+  The play log has the cap's announce line and **no coalesce line**: in this run no event of the second title had 64
+  unread triggers, so the cap did not act. For this title it is a guard that costs nothing measured here, not a fix
+  of something seen.
+- **Shortcut**: `BC5 emulator (0412 zo + events cap)`. `(0412 zo - best of the night)` and the others stay; they now
+  run g412e without the event words.
+
+**Not done:** ASTRO BOT on g412e (the e11-based line was never his ASTRO BOT build; its leak fix is the ev412
+shortcut of section 11). Nobody played or looked at the picture. One run of 4 minutes.
+
+### 14. His plays of 2026-11-11 09:47–09:54 (logs collected at 09:56 on his word: "filmiki ingame ... bardzo niestabilne na każdej wersji")
+
+Four starts from the shortcuts, all with the fuse at 12,400 MiB: zoe (09:47:17, closed after 6 s), the shared-source
+build ev412 unpacked (09:47:33–09:49:26), zoe on g412e (09:49:37–09:52:12), zo on g412e (09:52:14–09:54:21, ended by
+a GPU ring timeout at 09:54:16). Raw: `raw/play-20261111/` (the sampler files; per play the journal's memory lines
+and one line per frame: t, frame ms, in-host ms, sync, hints, label waits, outside, GPU busy). The play logs, the full
+journals and the device coredump `~/bc5-data/captures/devcoredump/20261111-095416-devcd3.txt` stay on the box.
+
+**The same picture in all three plays** [M], in 15-s windows of the journal's frame profile:
+
+| Window | What runs | Flips /s | Frame mean (max) | Game thread: in host (sync + hints) / outside | GPU busy |
+|---|---|---|---|---|---|
+| 15–30 s | the intro movies | 29.5 | 34 ms (44–60) | 3.5–3.8 (0.5) / 8–9 ms | 25–26 ms |
+| 30–45 s | the scene behind the start screen loads | 11.5–12.6 | 79–86 ms (600–1,020) | 16–20 (9–13) / 51–53 ms | 14 ms |
+| 60–90 s | the save loads | 6.9–8.9 | 111–150 ms (960–1,580) | 20–36 (11–30) / 69–112 ms | 8–13 ms |
+| 105–120 s | play (zoe, zo) | 25–30 | 30–33 ms (450–470) | 13–14 (2.7–3.4) / 14–15 ms | 16 ms |
+| 120–150 s | play (zoe) | 9–15 | 64–109 ms (330–1,909) | 21–45 (7–23) / 38–59 ms | 22–24 ms |
+| 105–120 s | play (ev412, the shared source) | 0.7 | 492 ms (2,552) | 312 / 144 ms | – |
+
+- **The intro movies are steady** (29.5 flips/s, no frame over 60 ms). What is unstable is everything after them.
+- **While the title loads, the GPU waits for the CPU**: GPU busy 8–14 ms of frames of 80–150 ms. The game thread is
+  50–110 ms a frame outside the host (the title's own loading work and its waits) and 16–36 ms inside it, of which
+  the mapping work on every layout change (`sync` 6–21 ms, `hints` 2–11 ms a frame) is the larger part. In the zoe
+  play `learned_apply` ran 993 times for 10.5 s in all and the merge pass 504 times, on the game thread, in 150 s.
+  No memory pressure yet in these windows (PSI under 2 %, no major faults).
+- **Then the memory limit** [M]: the container's cgroup is at 12,399 MiB from 40 s on in every play. From about 95 s
+  the sampler shows swap-ins and swap-outs of 500–5,000 pages/s, 1,000–2,800 major faults/s and PSI full 5–15 %,
+  available memory 300–600 MiB, and the emulator's mapped share of the pinned memory falls from 6.4 GiB to 1.0–1.4 GiB
+  within 10 s (the kernel unmapping pages it cannot free, now inside the cgroup). The shared-source build, without
+  the zero skip, was there first (11,792 MiB pinned, 0.7 flips/s at 105–120 s); zoe and zo got 20 s more
+  (11,598–11,616 MiB pinned at 130 s, 596–762 MiB still skipped).
+- So in his play the pin reaches 11.6 GiB within 130 s even with the zero skip and the orphan release. The night's
+  scripted walk stayed at 11.2–11.5 GiB over 12 min; his route loads more, sooner. **The night's "no wall" does not
+  hold for his play.**
+- **The GPU reset** (09:54:16, zo): gfx ring timeout on thread `bc5-chainwd`, no page fault line, the ring reset
+  succeeded; two submissions timed out at t 120 s. It is the second such timeout in 8 runs with the zero skip (c1zof
+  in the night); 10 runs without it had none [M]. That makes the zero skip the likely trigger [I], as exp 0401's 3 in
+  19 suggested. (The 01:25 entry in his notification list is the one my trace caused, section 10.)
+
+**His two guesses against the data.** "Too many reads": yes after about 95 s, as major faults and swap traffic
+caused by the memory limit, not before. "Something slows the frames": during loads it is the game thread, split
+between the title's own work and the host's mapping work per layout change; the GPU is idle then.
+
+**What follows** [I]: (1) the host's per-layout-change work on the game thread is the one cost present in every
+slow window and on every build; `BC5_GUARD_APPLY_MIN_MS=50` (the "low" arm) cut `learned_apply` calls from 932 to
+355 without a fault on 11-10 and was not in today's arms; (2) the memory budget is still over by 0.3–0.5 GiB in his
+play, and the zero skip buys 0.6 GiB at the price of the ring timeouts; (3) the fuse turns a dead box into a slow
+game, as designed, and is now the place where the thrash happens.
+
+### 15. Where the threads' time goes, and the first fix of the host's memory bookkeeping (2026-11-11 10:10–10:39)
+
+The maintainer after section 14: "Szukaj rozwiązania ... co jest źle zrobione przez co tracimy wydajność i dochodzimy
+do ściany. Czemu gra poświęca tyle czasu na obliczenia? Nasze biblioteki są słabo napisane?" This section measures it
+instead of adding another arm.
+
+**The tool** (`prof0412.sh`, `prof0412.py`): a wall-clock stack sampler without perf or root. Inside the container,
+`eu-stack -1 -p <tid>` attaches one thread for some milliseconds, 3–5 times a second (never a `bc5-*` thread, section
+10); beside each sample the thread's CPU ticks, faults and context switches and the process's `/proc/<pid>/io`. A
+sample of a blocked thread shows what it waits in, of a running one what it computes, so the share of samples per
+call path is the share of the thread's wall-clock time. Runs: the scripted load of the copy of his save, ledger arm
+(no zero skip), fuse and watchdog on. Raw: `raw/prof-20261111/`.
+
+**What it found** [M] (run i1off / i4off, g412f with the fix off; h1ledger on g412e agrees):
+
+| Thread, phase | Guest code | Waiting | Host library, running |
+|---|---|---|---|
+| game-main, scene load (33–62 s) | 29–33 % | 33–37 % | **24–31 % in `Ampr::AmmSubmitCommandBuffer`** (the title's AMM map/unmap commands) |
+| game-main, save load (28 s) | 23–26 % | 34–37 % | **33–36 %** in the same |
+| Render Thread, loads | 61–64 % | 6–13 % | 25–32 % in the GPU submit path (`Bc5LleKernel::Ioctl` → `chain_submit`, `submit_now`, `sorted_mappings`, `sync_mappings`) |
+
+- **The game thread spends a quarter to a third of the load phases inside our AMM implementation**, and the innermost
+  frames are bookkeeping, not system calls: `VirtualRanges::QuerySpan`, `PhysicalMemory::Unmap`,
+  `KernelMapDirectMemory2`, `KernelSetVirtualRangeName`, `VirtualRanges::Remove`.
+- **Why** [M, source: `src/kernel/memory.cpp`]: the host keeps the guest's address ranges in tables that are searched
+  from the start on every operation. `VirtualRanges::m_ranges` is a sorted `std::vector` of 72-byte entries, about
+  28,000 of them while the title streams (2 MiB); `QuerySpan` walked it from element 0 each time although the class's
+  own `Overlapping()` uses a binary search; `Add`/`Remove` shift half the table per edit. `PhysicalMemory::m_mappings`
+  is an **unsorted** vector: `Unmap` scans it, erases from the middle and scans it again (`still_mapped`);
+  `SetVirtualRangeName` and `SetVirtualRangeMemoryType` scan all of it for every call. The title maps and unmaps 16 KiB
+  pages by the thousand per second, so the cost per frame grows with the number of mappings: quadratic where the
+  console does a page-table update.
+- Every such edit also bumps the ranges' generation, which makes the direct path rebuild its 28,000 views (each with
+  a `std::string` name), drain the GPU, recompute every mapping and run `learned_apply` (section 14: `sync` + `hints`
+  6–30 ms a frame). Same class, second place.
+- **Reads** [M, `/proc/<pid>/io` of the emulator in h1ledger, 270 s]: 1.10 million read calls, 19.9 GiB asked for,
+  **44.6 GiB read from the disk**. During the loads 150–190 MiB/s are asked for and 310–440 MiB/s come off the NVMe;
+  while walking, 59–74 MiB/s asked and 135–175 MiB/s read. The disk delivers 2.2 times what the title asks for: the
+  files go through the page cache with read-ahead, inside a cgroup that is at its memory limit, so pages are read,
+  dropped and read again. The title's reads go to its own buffers; the page-cache copy is ours.
+  (About 2,200 of the read calls per second are tiny ones present even during the intro: pad, timers, sockets.)
+
+**The first fix: `KYTY_BC5_RANGES_FAST=1`, build g412f** (`memfast/`: `mkmem0412.py` edits e8's `memory.cpp`
+ee24c888 → 68c90f4b; `memfast0412.cpp` runs the old and the new walk on 200 random tables, 600,000 queries, the same
+answers; `mk0412f.sh`, `linkmf0412.py`). `QuerySpan` starts at the range that holds the address (`std::upper_bound`);
+the loop body is unchanged. Default off. Binary `8e42e0648031f09532d51c868ad8c309` in place of g412e (kept as
+`bin/kyty_emulator.g412-5db9b2e9`); 47 private objects, 8 warnings (g412e: 7; the new one not read).
+
+**A/B on g412f, ABBA** (i1off, i2fast, i3fast, i4off; the same scripted load, 60 s of walking) [M]:
+
+| | off (i1, i4) | on (i2, i3) |
+|---|---|---|
+| Scene load: flips/s | 15.3 / 15.0 | **19.6 / 19.8** |
+| Scene load: frame median, p95 | 55–57 ms, 157–158 ms | **27–30 ms**, 107–120 ms |
+| Save load: flips/s | 12.1 / 11.6 | **15.6 / 15.6** |
+| Save load: frame median, p95 | 64 ms, 161–202 ms | **47 ms**, 122–128 ms |
+| game-main inside the AMM library, scene / save load | 24–31 % / 33–36 % | **8–11 % / 16–20 %** |
+| Game thread outside the host per frame, scene / save load | 37–39 / 49–50 ms | 27–29 / 32 ms |
+
+One changed loop start gives 30 % more frames in both load phases. No kernel line, no crash line in the four runs.
+i2fast was ended by the watchdog at 167 s (available memory 299 MiB for 10 s at PSI 1 %): the faster load reaches
+the memory limit sooner. That is the next wall, not a fault of the fix.
+
+**What is still there with the fix on** [M]: game-main 8–20 % in the AMM library, now in `KernelSetVirtualRangeName`,
+`KernelMapDirectMemory2`, `PhysicalMemory::Unmap` and `VirtualRanges` edits (the other linear tables); the Render
+Thread 27–34 % in the submit path and 10–30 % waiting in it.
+
+**Root causes and what fixes each** (in the order the data ranks them; [I] where it says "should"):
+1. *The host's range tables are linear per operation* (measured above). Fix: `PhysicalMemory::m_mappings` indexed by
+   address (an ordered map or a sorted vector with binary search, and a count per host mapping instead of the
+   `still_mapped` scan), name and type edits by range lookup, `VirtualRanges` edits without shifting the whole table.
+   Each as its own switch with an old-against-new CPU test on random operation sequences, as here.
+2. *The direct path redoes everything per layout change* (views rebuild, GPU drain, full mapping diff,
+   `learned_apply`). Fix: apply the delta of the changed ranges only; batch one AMM command buffer into one change.
+3. *The submit path on the Render Thread* (a third of its time). Not opened yet; `sorted_mappings` and the per-submit
+   filter are the first frames to read.
+4. *Reads through the page cache* (2.2 times the bytes, inside the memory limit). Fix candidates: `O_DIRECT` reads into
+   the title's buffers where offset and length allow, else `POSIX_FADV_RANDOM` plus dropping behind the read; either
+   also takes the file cache out of the memory budget.
+5. *The memory budget* (sections 7, 9, 14): the pin itself. With 1–4 the title loads faster and so hits it sooner
+   (i2fast). The zero skip is the only lever measured and brings the ring timeouts; not solved here.
+
+"Are our libraries badly written?" For this workload, yes in these places: correct, but with per-operation costs that
+grow with the number of mappings, which this title drives to 28,000. The title's own share of the game thread in the
+loads is a quarter to a third; it is not where most of the time goes.
+
+### 16. The wall as arithmetic: the whole box at 165 s (2026-11-11 10:42–10:45, the top session's order)
+
+`snap0412.sh` (read-only): `/proc/meminfo`, every process, every cgroup, the GPU counters and zram at 25, 60, 130 and
+165 s of one scripted load of the copy of his save (run j1ledger: ledger arm on g412f, no zero skip, no orphan
+release, fuse 12,400 MiB). At 165 s 296 MiB were available: the wall. Raw: `raw/prof-20261111/j1ledger-snap.txt`.
+
+**MemTotal 15,193 MiB at 165 s** [M]; the lines sum to it:
+
+| Line | MiB | What it is | Whose |
+|---|---|---|---|
+| Guest memory, pinned | **12,024** | 11,754 direct + 270 private (ledger); of it 320 orphans | the title's pools, except the orphans |
+| Guest memory, not pinned, in RAM | 98 | Shmem 12,122 − pinned | the title's CPU heaps (the rest is in swap) |
+| Kernel and GPU pages meminfo does not class | 893 | of it **583 = GTT 12,607 − imported 12,024**: the driver's own buffers (the emulator's and the desktop's; 465 at 25 s); about 310 more (vmalloc 115, the rest unnamed) | ours and the desktop's |
+| File cache | 874 | Cached − Shmem. **In the container's cgroup: 42** (file 12,162 − shmem 12,120). The rest is the system's and the desktop's mapped files | system |
+| Slab | 460 | 345 not reclaimable | kernel |
+| Anonymous memory | 328 | the emulator 127 (+156 in swap), everything else 216 (+752 in swap; plasmashell alone 70 + 265) | ours 127, desktop 200 |
+| zram's own RAM | 212 | holds 850 MiB of swapped pages | the price of the swap |
+| Free | 167 | the kernel's reserve | – |
+| Page tables | 108 | the emulator 67 | mostly ours |
+| Kernel stacks, per-CPU | 28 | | kernel |
+
+**Non-guest: 3,169 MiB, and it only fits because 986 MiB sit in swap and the game's file cache is gone.** What the
+non-guest side wants when nothing is squeezed (resident + swapped): kernel/GPU 893, slab 460, page tables and stacks
+136, zram 212, the emulator's own anon 283, the desktop and system 968 anon plus about 650 of mapped files: about
+3,600 MiB, against 3,169 left by the guest. **The budget is over by roughly 0.4–0.5 GiB before the title's file
+reads get a single page of cache.** That deficit is the wall; the fuse only decides whether the box or the emulator
+suffers it.
+
+**Ranked, with the fix per line:**
+1. *Guest pinned, 12,024* — legitimate except **320 MiB of orphans** (memory the title released and we still pin; our
+   defect). Fix: the orphan release with the split (g412c, arm `orphans`/`fast`), which needs no zero skip. The night's
+   runs with it held the pin 0.1–0.2 GiB lower; in his play orphans were 440 MiB at 130 s with it on, so it does not
+   yet cut all of them (forced chunks, chunks under partial views).
+2. *Driver buffers outside the guest, 583* (465 before the save loads, so about 400–450 are there from the menu:
+   the desktop's surfaces and the emulator's own swapchain, shadow, scratch and tiler buffers). Not broken down yet;
+   needs the per-client numbers from `fdinfo` (`drm-memory-*`), readable without root. Open.
+3. *Desktop and system, about 970 anon (750 of it in swap) + 650 mapped files.* A session without Plasma's shell
+   (plasmashell 335, kwin 76, the portals and helpers) would return an estimated 400–500 MiB [I, from the per-process
+   lines; not tried]. His decision.
+4. *Slab 460 and the unnamed 310*: kernel; 12 GiB pinned as 3 million 4 KiB pages carries page arrays in the kernel.
+   The guest memfd uses no huge pages (`shmem_enabled` is `never`; ShmemHugePages 0). Page tables are 108 MiB in all,
+   so 2 MiB pages would save at most about 60 MiB there; what they would save in the pin's own bookkeeping and in TLB
+   misses is not measured.
+5. *The emulator's anon, 283* and *zram, 212*: small; zram returns four times what it costs.
+
+**Three of the top session's expectations against these numbers:**
+- *"The page-cache double is a wall item."* Not as resident memory: at the wall the container holds 42 MiB of file
+  cache. The 44.6 GiB read for 19.9 GiB asked (section 15) are traffic and reclaim work, not occupancy. Reading
+  without the cache (O_DIRECT or drop-behind) is a speed and I/O fix; it frees almost nothing at the wall. At 25 s the
+  cache is 4.2 GiB, so it does delay the wall by filling memory early, but the limit already takes it back.
+- *"memory.max is the wrong working limit."* Agreed on the mechanism, and the numbers show why moving it does not
+  help: the cgroup is 12,400 = 12,024 pinned + 111 kernel + 125 anon + 42 file + the rest. The limit sits on the pin.
+  Raised, the cgroup takes the box's last 296 MiB and the box is where it was on 11-10. A far fuse is right as a
+  fuse; protection of the session (`memory.low`) only chooses who is squeezed. Neither creates the missing 0.5 GiB.
+- *"Does the title take more than on the console?"* We offer 13,824 MiB of direct memory; the console's figure in exp
+  0407's model is about 12,800. The title's views cover 11,435 MiB and it pins 11,754 here, under both. Whether it
+  sizes its pools from the offer is not measured: the runs that offered less died in the host (the AMM window fault
+  at 12,800, the TLS deaths at 11,776 and 12,288; section 3). Offering the true smaller budget needs those host bugs
+  fixed first; that is the console-like answer and it is not done.
+
+**What closes the gap** [I], in order of certainty: the orphans (0.3 GiB, ours, measured); a lighter session
+(0.4–0.5 GiB, estimated, his call); the driver buffers once broken down; then the true guest budget. No single line
+is the wall; the sum is.
+
+### 17. Two short reads: the VRAM carve-out, and whether the mapping table's blocks ever overlap (2026-11-11 10:50–10:56)
+
+**The carve-out** (the top session's question: could a smaller BIOS UMA return the missing 0.5 GiB?) [M]:
+`mem_info_vram_total` 512 MiB (`vis_vram` the same), `mem_info_gtt_total` 13,312 MiB. `vram_used` is 48 MiB with the
+box idle and 398 → 420 → 479 MiB at 25, 60 and 130–165 s of run j1ledger: 93 % full at the wall. Of the 1,191 MiB
+that never reach Linux only 512 are the UMA; the other 679 are firmware and kernel reservations. A smaller UMA would
+push the emulator's 430 MiB of VRAM buffers into GTT, which is system RAM: nothing gained. Which client holds the
+VRAM at the wall was not read (the snapshot script has no `fdinfo` lines yet). Idle, the desktop holds 338 MiB of GTT
+(plasmashell 167, plasma-keyboard 96, Xwayland 22, by `fdinfo`): part of section 16's 583.
+
+**The overlap check, build g412g** (`memfast/mkphys0412.py`, `mk0412g.sh`; binary
+`c8a3fd44bd5d17da69a158a6ab685e6f` in place of g412f, which is kept beside it). `PhysicalMemory::Unmap` takes the first
+matching block in insertion order; a sorted table with a binary search is the same behaviour only if blocks never
+overlap in guest addresses. `KYTY_BC5_PHYSMAP_CHECK=1` (default off, diagnostic, no behaviour change) compares every
+block `Map()` adds with the whole table. Run k1check (the scripted load, 60 s of walking, `KYTY_BC5_RANGES_FAST=1`
+too): **over 32,768 blocks added, none overlapped an existing one**; the table held 12,521 blocks at that point; the
+run ended normally, no kernel line [M]. So for this title and this route a sorted table is valid. One run; the check
+stays in the build for a longer one.
+
+**Not done:** the sorted table itself. With `RANGES_FAST` on, `PhysicalMemory::Unmap` and the name edits are a few
+percent of the game thread (section 15), less than the Render Thread's submit path (27–34 % of that thread), so the
+submit path is the better next target by the numbers; the top session's order has the table first.
+
+### 18. The sorted mapping table (build g412h) and the arm fast2 (2026-11-11 14:10–14:53)
+
+**The fix.** `PhysicalMemory::m_mappings` (12,500 blocks at the save) was walked from its first element by `Unmap`,
+`Find`, `SetVirtualRangeName` and `SetVirtualRangeMemoryType`. `KYTY_BC5_PHYSMAP_SORTED=1` (`memfast/mksort0412.py`,
+helpers `memfast/physmap0412.inc`, tag ps412) keeps the table sorted by guest address and finds blocks by binary
+search; `=verify` also runs the old search in `Unmap` and prints differences. A block that overlaps another, is empty
+or wraps ends the sorted mode for the run (one line). Default off. CPU test `memfast/physmap0412.cpp`: 1,259,728
+checks of old against new on random and adversarial sequences, on the laptop and on the box; it found one real case
+(an empty-range `Unmap` breaks the order; that call now takes the old walk and the table is sorted again).
+Build g412h = g412g + this, binary `0167c6c0`; g412g kept beside it.
+
+**Runs** (`memfast/ab0412h.sh`; the scripted load of the copy of his save, arm ledger, `KYTY_BC5_RANGES_FAST=1` in all,
+RT on, fuse 12,400 MiB, watchdog; data `raw/l*`). l1verify: no difference line, no overlap line, no kernel line [M].
+ABBA l2off l3on l4on l5off [M]:
+
+| | off (l2, l5) | on (l3, l4) | verify (l1) |
+|---|---|---|---|
+| scene load 33–62 s, flips/s | 19.8 / 18.3 | 23.1 / 21.5 | 21.9 |
+| scene load, median / p95 frame ms | 30 / 120, 28 / 125 | 26 / 90, 28 / 98 | |
+| save load 104–132 s, flips/s | 13.9 / 15.6 | 18.4 / 16.4 | 18.7 |
+| game thread inside AMM bookkeeping, scene load | 15 % / 15 % | 4 % / 4 % | |
+| game thread inside AMM bookkeeping, save load | 21 % / 17 % | 9 % / 19 % | |
+
+Scene load +17 % frames (mean of two against mean of two), save load +18 % with one of the two "on" runs inside the
+"off" spread: the scene-load gain is clear, the save-load gain is likely [M, two runs each]. Against g412e without
+either fix (section 15: 15.0–15.3 and 11.6–12.1 flips/s) both fixes together give about +47 % in both phases [M].
+Three of the five runs (l1, l2, l3) were ended by the watchdog at 146–166 s with less than 300 MiB available: the
+ledger arm has no memory help, and a faster load reaches the limit sooner. No kernel line in any run.
+
+**Per-client GPU memory** (`snap0412.sh` now reads `drm-memory-*` from fdinfo; l1verify at 130 s) [M]: emulator
+GTT 12,071 MiB (two clients) and VRAM 431 MiB of the 512 carve-out (480 used in all); plasmashell 166 MiB GTT + 8 MiB
+VRAM, plasma-keyboard 96 MiB GTT, Xwayland 22 MiB. The desktop's GPU memory is 285 MiB; the virtual keyboard's 96 MiB
+is there on a box that has no touch screen.
+
+**Arm fast2** = ledger + both table fixes + orphan release `BC5_DIRECT_LAZY_RELEASE=4,eager` + `BC5_GUARD_SPLIT=1` +
+`BC5_GUARD_FORGET=10` + events cap 64; no zero skip. One scripted run, m1fast2 [M]: 24.2 flips/s over 208 s; the
+release cut 1,548 MiB in 169 BOs over the run and 1,486 MiB came back under views (the title frees and takes again:
+its AMM heap swings between 2,485 and 2,965 MiB about every 10 s on this route); at 182 s 12 MiB were under no view.
+The pin stayed 11.5–11.65 GiB (ledger arm at the same point: 12.0 GiB, section 16), orphans by pages 120–250 MiB,
+which are parts of 2 MiB chunks that still have a view and cannot be cut. So the release now works on his route
+without the zero skip and what is left of the orphans is fragmentation, not a missed release. The run lasted 215 s
+against 146–166 s for the ledger arm, then the watchdog ended it too (available 252 MiB): the budget is still short.
+No kernel line.
+
+### 19. The GPU path by source line (build g412i, 2026-11-11 14:53–15:07)
+
+**Question** (the top session's order: the Render Thread's submit path, `chain_submit` / `sorted_mappings`; the
+maintainer: "Ścieżka GPU"): what in the host's submission path costs the Render Thread its time, now that the two
+table fixes are in.
+
+**Setup.** Build g412i = g412h's code with line tables in the main unit (`-g1` through `BC5_0412_MAIN_EXTRA`,
+`memfast/mk0412i.sh`; binary `a4dce942`, g412h kept). `prof0412.sh` with `PROF_SRC=1` takes inlined frames and source
+lines; `prof0412src.py` sums them. Runs n1src, n2src (arm fast2, Render_Thread and game-main, 475 and 256 samples) and
+o1aud (the title's audio thread, and the emulator's GPU engine time from fdinfo every 5 s). Data `raw/n[12]src-*`,
+`raw/o1aud-*`. All three ended as scripted at 180 s, 24.6–25.2 flips/s, no kernel line.
+
+**Result** [M unless marked]:
+
+| share of the thread's wall-clock time | scene load | save load | play |
+|---|---|---|---|
+| Render Thread: guest code | 47 % | 35 % | 14 % |
+| Render Thread: waiting | 29 % | 50 % | 61 % |
+| Render Thread: host code | 22 % | 14 % | 23 % |
+| game-main: guest code | 45 % | 27 % | 34 % |
+| game-main: waiting (the title's own condition variables) | 48 % | 55 % | 57 % |
+| game-main: host code | 6 % | 16 % | 7 % |
+
+- The Render Thread's host code has no heavy line: the largest are the submit ioctl itself (2–4 %), the state
+  tracker's copy and `apply_level` in `piece_check` (2–4 %), `emit_prefix` (1.5–3 %); `sorted_mappings` as CPU work
+  does not appear. Every other line is under 1 %. A rewrite of this path can give a few percent of one thread.
+- What the Render Thread waits for, over all phases: the flip's `drain()` (nothing of the frame may be in flight)
+  20.5 %; the label waits in `submit_split` (a buffer waits for what an earlier one writes on the GPU) 10–13 %; the
+  device and chain mutexes 12 % (`g_dev_mutex` at `submit_now`, the chain's flush mutex); the device's own lock inside
+  `sorted_mappings` 3.5 %. The first two are the frame's CPU part and GPU part running one after the other.
+- The emulator's GPU engine time (fdinfo, two readings of one counter halved; rough): 6–22 % of the wall clock in the
+  scene load, 23–29 % at the start of the save load, about 55 % in play, 75–80 % in the menus. So the loads are not
+  bound by the GPU, and no thread is at 100 % of a core either (game-main 50–65 %, Render Thread 40–50 %, the whole
+  emulator 330–620 % of 1,600 %): the threads wait for each other and for the GPU in turn.
+- The audio thread (`AK::AudioMgr`, 55–75 % of a core in play): 48 % of its samples are the title's own code (its
+  software mix), 3 % host code (Opus decode in Ajm), the rest waiting. Not a host library's cost.
+
+**What was not built, and why.** No change of the submit path: the profile names no line worth a switch. Deferring
+the flip, which would remove the 20.5 %, was measured three times before (F68, F141, F226): the wait moves into the
+label and in-flight waits and the second title's text breaks; not repeated. Open and named for the next step: who
+holds `g_dev_mutex` while the Render Thread waits 12 % for it (the completion and ring threads are `bc5-*` threads,
+which this sampler must not attach to; the host's own `BC5_DIRECT_TIMING` split or a lock-hold counter in a build
+would say), and why game-main waits half its time in the loads (which of the title's threads it waits for).
+
+**Memory, three more fast2 runs.** n1src, n2src and o1aud reached 180 s without the watchdog (the ledger arm: three of
+five ended at 146–166 s, section 18); m1fast2 went on to 215 s and was ended there. The shortcut
+"BC5 emulator (0412 fast2)" is on the desktop (build g412i in place).
+
+### 20. Who holds the device mutex (build g412j, 2026-11-11 16:52–16:58, on the maintainer's "Tak, buduj licznik")
+
+**Setup.** `BC5_GUARD_LOCK_STAT=1` (`memfast/lock0412.inc`, `memfast/mklock0412.py`, tag lk412; default off, then a
+`std::mutex` behind one test): `g_dev_mutex`, which `submit_now` holds from its start to its end, counts per thread
+name the locks, the time held and the time waited, and behind which holder. CPU test `memfast/lock0412.cpp`, 11 of 11
+on the box. Build g412j = g412i + this, binary `c697e8cf` (g412i kept). One run, p1lock: arm fast2 with the counter
+on, scripted load, 182 s, 25.0 flips/s (the same as without the counter), no kernel line. Data `raw/p1lock-lockstat.txt`.
+
+**Result** [M], sums over the run's 180 s:
+
+| thread | locks | held | per lock | waited for it |
+|---|---|---|---|---|
+| `bc5-ring` | 111,589 | 40.6 s (23 % of the time) | 0.36 ms | 17.0 s |
+| Render Thread | 25,247 | 25.7 s (14 %) | 1.02 ms | 11.7 s |
+| `bc5-chainwd` | 8,915 | 14.2 s (8 %) | 1.60 ms | 6.4 s |
+| game-main | 4 | 0.3 s | | 0.6 s |
+
+- The mutex is held 45 % of the wall-clock time and the three submitting threads together wait 35 s for it. In the
+  heavy 10 s windows `bc5-ring` holds it 27 % and the Render Thread 22 % of the time.
+- The Render Thread waits almost only behind `bc5-ring` (the thread that submits for the asynchronous ring);
+  `bc5-ring` waits behind the Render Thread and `bc5-chainwd`.
+- The longest single hold in a 10 s window is 35–135 ms in most windows after the start, with peaks of 354 ms
+  (Render Thread), 186 ms (`bc5-ring`) and 152 ms (`bc5-chainwd`) in the save load; one of 1,501 ms by `bc5-ring` in
+  the first seconds (start-up). Each is one or more whole frames with every other submitter stopped.
+
+**Reading** [I]: every submission, from whichever thread, does all of its host work under this one mutex: the probe,
+the mapping sync, the learned windows, the hints, the two filter passes and the submit ioctl (section 19 has their
+lines). So the submitting threads run one at a time, which is the "threads wait for each other in turn" of section
+19. The fix is not a faster line but a shorter hold: do what needs only the buffer (probe, filter, hints, the state
+tracker) outside the mutex, keep under it the mapping sync and the ioctl, and find what the 35–354 ms holds are (the
+forced sync or the learned windows, by the code). That changes the shared direct path's locking and needs its own
+design and review; not built here.
+
+### 21. The device mutex by part of the work (build g412k, 2026-11-11 17:43–17:48), and the design of a shorter hold
+
+On the maintainer's "No to rób ten osobny projekt". Build g412k = g412j + `g_dev_mutex.mark()` at seven points of
+`submit_now` (`memfast/mksect0412.py`; lock test 12 of 12; binary `e6d3a69e`, g412j kept). Run q1parts: arm fast2,
+counter on, 179 s, 24.9 flips/s, no kernel line; data `raw/q1parts-lockstat.txt`. Of 77.8 s held [M]: the device call
+(filter, state, BO list, CS ioctl) 36.1 s, direct sync 15.7 s, learned windows 8.9 s, anon sync 6.9 s, prepare 5.7 s,
+the rest 4.6 s. The mapping maintenance (direct sync, learned, anon sync: 31.5 s) has the long single holds:
+847 ms, 606 ms and 217 ms, against 246 ms for the device call and under 40 ms for the rest.
+
+The design is `DESIGN-device-mutex.md`: stage 0 a catcher that puts long holds beside frame gaps, stage 1 the mapping
+maintenance's kernel work outside the mutex with the submission order unchanged, stage 2 the buffer's own work before
+the lock, stage 3 (the device call) left to an experiment on the backend. Expected gain: in the gaps over 100 ms
+(51–61 s of each run have one), single percents in the mean frame rate [I]. Nothing of stages 0–3 is built.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
+- Speed after the table fixes (sections 18, 19) [M]: both fixes of the host's memory tables give about +47 % frames in the load phases
+  (`KYTY_BC5_RANGES_FAST=1`, `KYTY_BC5_PHYSMAP_SORTED=1`; arm fast2, build g412i). After them neither the game thread nor the Render
+  Thread is bound by host code (6-23 % of their time, no line over 4 %); they wait half their time, the Render Thread for the
+  GPU at the flip and at label waits (30 %) and for the device mutex (12 %). The orphan release now cuts on his route without the
+  zero skip (pin 11.5-11.65 GiB, was 12.0); the budget is still short at 215 s.
+- The device mutex (section 20) [M]: every submission does all its host work under one mutex; it is held 45 % of the time
+  (`bc5-ring` 23 %, Render Thread 14 %, `bc5-chainwd` 8 %), the three wait 35 s of 180 s for it, single holds reach 35-135 ms in most 10 s windows and 354 ms in the save load.
+  A shorter hold is the next speed fix; it changes the direct path's locking and is not built.
+- The wall as arithmetic (section 16) [M]: at 165 s the guest pins 12,024 of 15,193 MiB; the 3,169 left hold the kernel, the
+  GPU driver's buffers, the desktop and the emulator only with 986 MiB in swap and 42 MiB of file cache for the game. Over by
+  about 0.4-0.5 GiB; 320 MiB of the pin are orphans (ours).
+- Where the time goes (section 15) [M]: in the loads the game thread is a quarter to a third inside the host's AMM
+  bookkeeping (linear range tables, 28,000 entries); one fixed loop (`KYTY_BC5_RANGES_FAST=1`, build g412f) gives 30 % more
+  frames in both load phases. The disk delivers 2.2 times the bytes the title asks for. More of the same class is open.
+- His plays of 11-11 (section 14) [M]: unstable on every build after the intro movies. Loads are CPU-bound on the game thread
+  (the title's work plus the host's mapping work per layout change); from about 95 s the cgroup limit thrashes; with the zero
+  skip the pin still reaches 11.6 GiB in 130 s, and the zero skip has now 2 GPU ring timeouts in 8 runs.
 - Night of 11-10/11 [M]: with `memory.max` 12,400 MiB every arm survived; zero skip + orphan release (arm zo): 0.55-0.75 GiB
   less pinned, major faults 550-1,250/s -> 2-56/s, PSI full under 1 %, the pin flat for 6 of 12 minutes. One GPU ring
   timeout in five zero-skip runs. ASTRO BOT's host leak is 217-218 MiB/min, steady, with no input and with PLAY_CAPTURE off.
