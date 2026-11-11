@@ -1,0 +1,63 @@
+zero skip: list /home/kjaniszewski/bc5-work/exp0412/zero-list-0412.txt, 2 heaps, 1010.0 MiB listed, 0 bad lines
+zero skip: RenderGpuWcLarge at file 0x156c00000: 740.0 MiB in 30 runs skipped
+zero skip: canary BO 1, 33 slices of 2 MiB
+zero skip: canary +370 mappings (370)
+zero skip: CommitIABufferAllocator at file 0x226200000: 270.0 MiB in 3 runs skipped
+zero skip: canary +135 mappings (505)
+t 30 s: 368 polls; 0 chunks found written by the CPU, 0 of them with a submission since the previous poll (0 submissions in all); the window: mean 0.00 ms, longest 0.0 ms, over 10 ms for 0 chunks, over 50 ms for 0
+zero skip: canary hit in run 21 (file 0x1cb000000 +30.0 MiB): 30.0 MiB taken back
+zero skip: canary hit in run 5 (file 0x1a0000000 +16.0 MiB): 2.0 MiB taken back
+zero skip: canary hit in run 6 (file 0x1a1600000 +10.0 MiB): 10.0 MiB taken back
+zero skip: canary hit in run 8 (file 0x1ac600000 +26.0 MiB): 26.0 MiB taken back
+zero skip: 762.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 90 by hints, 4 runs by canary hits; 381 canary mappings
+t 60 s: 1115 polls; 0 chunks found written by the CPU, 0 of them with a submission since the previous poll (0 submissions in all); the window: mean 0.00 ms, longest 0.0 ms, over 10 ms for 0 chunks, over 50 ms for 0
+t 69.806 s: chunk at file 0x2cf000000 has CPU data; the previous poll was 24.02 ms ago, 1 submissions went out in between
+t 69.842 s: chunk at file 0x2cf200000 has CPU data; the previous poll was 17.15 ms ago, 1 submissions went out in between
+t 69.866 s: chunk at file 0x2cf400000 has CPU data; the previous poll was 24.52 ms ago, 1 submissions went out in between
+t 69.892 s: chunk at file 0x2cf600000 has CPU data; the previous poll was 26.02 ms ago, 1 submissions went out in between
+t 69.912 s: chunk at file 0x2cf800000 has CPU data; the previous poll was 20.34 ms ago, 1 submissions went out in between
+t 69.982 s: chunk at file 0x2cfa00000 has CPU data; the previous poll was 69.99 ms ago, 1 submissions went out in between
+t 69.982 s: chunk at file 0x2cfc00000 has CPU data; the previous poll was 69.99 ms ago, 1 submissions went out in between
+t 69.982 s: chunk at file 0x2cfe00000 has CPU data; the previous poll was 69.99 ms ago, 1 submissions went out in between
+t 70.620 s: chunk at file 0x2d0000000 has CPU data; the previous poll was 99.01 ms ago, 136 submissions went out in between
+t 70.620 s: chunk at file 0x2d0200000 has CPU data; the previous poll was 99.01 ms ago, 136 submissions went out in between
+t 70.631 s: chunk at file 0x2d0400000 has CPU data; the previous poll was 10.31 ms ago, 5 submissions went out in between
+t 70.786 s: chunk at file 0x2d0600000 has CPU data; the previous poll was 149.01 ms ago, 45 submissions went out in between
+t 70.786 s: chunk at file 0x2d0800000 has CPU data; the previous poll was 149.01 ms ago, 45 submissions went out in between
+t 70.786 s: chunk at file 0x2d0a00000 has CPU data; the previous poll was 149.01 ms ago, 45 submissions went out in between
+t 70.786 s: chunk at file 0x2d0c00000 has CPU data; the previous poll was 149.01 ms ago, 45 submissions went out in between
+t 70.786 s: chunk at file 0x2d0e00000 has CPU data; the previous poll was 149.01 ms ago, 45 submissions went out in between
+t 70.786 s: chunk at file 0x2d1000000 has CPU data; the previous poll was 149.01 ms ago, 45 submissions went out in between
+t 73.876 s: chunk at file 0x257800000 has CPU data; the previous poll was 16.73 ms ago, 1 submissions went out in between
+t 73.891 s: chunk at file 0x257a00000 has CPU data; the previous poll was 15.31 ms ago, 2 submissions went out in between
+t 73.891 s: chunk at file 0x257c00000 has CPU data; the previous poll was 15.31 ms ago, 2 submissions went out in between
+t 73.891 s: chunk at file 0x257e00000 has CPU data; the previous poll was 15.31 ms ago, 2 submissions went out in between
+t 73.902 s: chunk at file 0x258000000 has CPU data; the previous poll was 6.06 ms ago, 3 submissions went out in between
+t 73.902 s: chunk at file 0x258200000 has CPU data; the previous poll was 6.06 ms ago, 3 submissions went out in between
+t 74.195 s: chunk at file 0x258400000 has CPU data; the previous poll was 113.84 ms ago, 63 submissions went out in between
+t 74.195 s: chunk at file 0x258600000 has CPU data; the previous poll was 113.84 ms ago, 63 submissions went out in between
+t 74.195 s: chunk at file 0x258800000 has CPU data; the previous poll was 113.84 ms ago, 63 submissions went out in between
+t 74.195 s: chunk at file 0x258a00000 has CPU data; the previous poll was 113.84 ms ago, 63 submissions went out in between
+t 74.195 s: chunk at file 0x258c00000 has CPU data; the previous poll was 113.84 ms ago, 63 submissions went out in between
+t 74.195 s: chunk at file 0x258e00000 has CPU data; the previous poll was 113.84 ms ago, 63 submissions went out in between
+t 74.195 s: chunk at file 0x259000000 has CPU data; the previous poll was 113.84 ms ago, 63 submissions went out in between
+t 74.195 s: chunk at file 0x259200000 has CPU data; the previous poll was 113.84 ms ago, 63 submissions went out in between
+t 74.223 s: chunk at file 0x259400000 has CPU data; the previous poll was 14.54 ms ago, 16 submissions went out in between
+t 74.223 s: chunk at file 0x259600000 has CPU data; the previous poll was 14.54 ms ago, 16 submissions went out in between
+t 74.240 s: chunk at file 0x259800000 has CPU data; the previous poll was 12.31 ms ago, 13 submissions went out in between
+t 74.240 s: chunk at file 0x259a00000 has CPU data; the previous poll was 12.31 ms ago, 13 submissions went out in between
+t 75.820 s: chunk at file 0x259c00000 has CPU data; the previous poll was 28.19 ms ago, 1 submissions went out in between
+t 75.820 s: chunk at file 0x259e00000 has CPU data; the previous poll was 28.19 ms ago, 1 submissions went out in between
+t 75.820 s: chunk at file 0x25a000000 has CPU data; the previous poll was 28.19 ms ago, 1 submissions went out in between
+t 77.148 s: chunk at file 0x25a200000 has CPU data; the previous poll was 27.00 ms ago, 28 submissions went out in between
+t 77.148 s: chunk at file 0x25a400000 has CPU data; the previous poll was 27.00 ms ago, 28 submissions went out in between
+t 77.161 s: chunk at file 0x25a600000 has CPU data; the previous poll was 13.47 ms ago, 1 submissions went out in between
+t 77.161 s: chunk at file 0x25a800000 has CPU data; the previous poll was 13.47 ms ago, 1 submissions went out in between
+t 78.497 s: chunk at file 0x25aa00000 has CPU data; the previous poll was 6.83 ms ago, 11 submissions went out in between
+zero skip: canary hit in run 26 (file 0x1e3400000 +14.0 MiB): 14.0 MiB taken back
+t 83.046 s: chunk at file 0x25ac00000 has CPU data; the previous poll was 4.15 ms ago, 1 submissions went out in between
+t 83.046 s: chunk at file 0x25ae00000 has CPU data; the previous poll was 4.15 ms ago, 1 submissions went out in between
+t 90 s: 1946 polls; 45 chunks found written by the CPU, 45 of them with a submission since the previous poll (1204 submissions in all); the window: mean 58.76 ms, longest 149.0 ms, over 10 ms for 40 chunks, over 50 ms for 19
+t 99.507 s: chunk at file 0x22e200000 has CPU data; the previous poll was 31.71 ms ago, 15 submissions went out in between
+t 99.609 s: chunk at file 0x25b600000 has CPU data; the previous poll was 22.75 ms ago, 0 submissions went out in between
+zero skip: off (device reopen)

@@ -1589,9 +1589,51 @@ list of a submission): the public source could not be fetched (the host rate-lim
 cited here; what this experiment measured itself is that the pin follows the imports, not the submissions (the
 ledger's "pinned" is the sum of imported BOs, section 7). The class split at 130 s on his save needs a valid run.
 
+### 33. The zero skip's blind window, caught with a GPU hang beside it (build g412q, run d1zc, 2026-11-11 20:03–20:06, on the maintainer's "Zbuduj łapacz")
+
+**Catcher.** `BC5_GUARD_ZSKIP_STAT=1` (`memfast/zcat0412.inc`, `memfast/mkzcat0412.py`, tag zc412; default off, no
+behaviour change): every time the zero skip's poll (`zskip_take_back`, SEEK_DATA on the memfd) finds CPU data in a
+chunk it had left unpinned, one journal line says how long ago the previous poll was (the title wrote the data
+inside that time, while the GPU had the canary's zeros mapped there) and how many submissions went to the GPU in
+between. Build g412q = g412p + this, binary `f344f790` (g412p kept).
+
+**Run d1zc**: arm zo (zero skip with the list scanned at his save + orphan release + split) with both table fixes,
+scripted load, RT on, measuring watchdog 220 MiB, Steam not running. **It ended in a GPU hang: gfx ring timeout,
+thread `bc5-chainwd`, no page fault line, the ring reset succeeded, the box stayed up** (the third such timeout
+with the zero skip, in 9 runs now). Data `raw/d1zc-*`.
+
+**Result** [M]:
+- 1,010 MiB placed as skipped (740 MiB of `RenderGpuWcLarge` in 30 runs, 270 MiB of `CommitIABufferAllocator` in 3).
+- In the first 90 s the poll found 45 chunks written by the CPU; for 45 of them submissions had gone out since the
+  previous poll, 1,204 submissions in all, each with zeros mapped for the GPU at a chunk that already held the
+  title's data. The window: mean 58.8 ms, longest 149 ms, over 10 ms for 40 chunks, over 50 ms for 19.
+- The hang: the last good flip is at 99.503 s. **At 99.507 s the poll found CPU data in the chunk at file offset
+  0x22e200000, which lies in the skipped part of `CommitIABufferAllocator`; the previous poll was 31.7 ms earlier
+  and 15 submissions had gone out in between.** A second chunk followed at 99.609 s (22.8 ms, no submission).
+  The next frame never completed: it lasted 17.1 s, and the kernel logged the ring timeout for a job of that frame.
+  No chunk was found between 83.0 s and 99.5 s.
+
+**Reading.** The blind window is real and long: tens of milliseconds, with tens of submissions inside it. And the
+one hang of this run starts within 4 ms of the moment the poll shows that the GPU had been drawing for 32 ms from
+zeros where the title had put data into its index-and-vertex heap. That is coincidence in time and in place, both
+measured; that those 15 submissions read that chunk and that zeros there make a job that never ends is the step
+still inferred [I]. It is the mechanism of section 31, now with a measured case; the two earlier timeouts
+(sections 9, 14) had the same signature and no catcher.
+The polls themselves are not rare (1,946 in 90 s, 22 a second); the window is long because a poll happens only at
+a sync, and syncs are throttled and skipped for light buffers. Polling more often narrows the window and cannot
+close it: the write and the submission are on different threads.
+
+**What follows.** The synchronous catch of the first CPU write (section 31) is the fix to build: with it there is
+no moment in which the title's data exists and the GPU sees zeros. Until then the zero skip stays out of his
+shortcuts. The catcher stays in the build for the proof run of the fix: the count of chunks found by the poll must
+then be zero.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
+- The zero skip's hang, caught (section 33) [M]: the skip learns of the title's writes by a poll; 45 chunks were found written with a mean of
+  59 ms (up to 149 ms) and 1,204 submissions inside the window, and the run's GPU hang begins 4 ms after one such find in the
+  index-and-vertex heap (32 ms, 15 submissions on zeros). The fix is to catch the first CPU write synchronously (section 31).
 - His play of 19:40 (section 29) [M]: on his live save the pin is 11.84-11.89 GiB at two minutes, about 250 MiB above the scripted
   copy; from 103 s the box swaps (2,000-6,000 major faults/s, PSI full to 48 %), frames of 1-15 s, the last flip at 144 s.
   The memory wall is the first defect in his way; the speed work of sections 19-28 does not reach his play while it ends so.
