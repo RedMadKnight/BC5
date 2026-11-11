@@ -1,0 +1,565 @@
+lazy release (exp 0401 e7): t 1 s: 6636.0 MiB imported: 6612.0 under eager views, 24.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 0.0 under no view (0.0 last seen under an eager or zero-list view, 0.0 never seen under one; 0.0 idle 30 s or more); cut 0.0 MiB in 0 BOs (0 whole, 0 split), back 0.0 MiB, 0 chunks released now, 0 undone, 0 imports failed, 0 BOs deferred, 0 not split (aliases); GTT 437.5 of 13312.0 MiB
+lock hold (exp 0412, tag lk412): t 1.512 s: bc5-ring held 1511.6 ms: direct sync 1429.6 learned 58.6 prepare 22.3
+lock wait (exp 0412, tag lk412): t 1.512 s: game-main waited 715.2 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 1.780 s: bc5-chainwd held 265.0 ms: device submit 264.7
+lock wait (exp 0412, tag lk412): t 1.780 s: bc5-ring waited 264.9 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 2.191 s: bc5-chainwd held 51.2 ms: direct sync 48.2 device submit 2.5
+lock hold (exp 0412, tag lk412): t 2.359 s: bc5-ring held 67.3 ms: direct sync 44.0 learned 23.1
+lock wait (exp 0412, tag lk412): t 2.359 s: bc5-chainwd waited 66.0 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 2.790 s mono 78255.753009: 401.2 ms since the last flip | Render Thread: chain mutex 1.1, flip drain 36.9, label wait 3.9, host submit 2.3, host split 3.4 | bc5-ring: device mutex 5.3, host submit 6.3, host split 0.1 | bc5-cq0: gpu fence 54.9, idle (no work) 344.6 | bc5-chainwd: device mutex 2.4, host submit 4.9 | others: gpu fence 57.4, idle (no work) 343.0
+lock hold (exp 0412, tag lk412): t 3.435 s: Render Thread held 31.0 ms: direct sync 26.6 device submit 4.2
+gap (exp 0412, tag gp412): t 3.648 s mono 78256.610760: 116.8 ms since the last flip | Render Thread: flip drain 17.3, label wait 1.1, host submit 1.4, host split 0.5 | bc5-ring: host submit 0.8, host split 0.2 | bc5-cq0: gpu fence 18.1, idle (no work) 98.4 | bc5-chainwd: host submit 0.4 | others: gpu fence 19.9, idle (no work) 96.7
+gap (exp 0412, tag gp412): t 3.965 s mono 78256.928218: 268.5 ms since the last flip | Render Thread: flip drain 14.2, label wait 1.1, host submit 4.5, host split 0.6 | bc5-ring: device mutex 3.4, host submit 0.8 | bc5-cq0: gpu fence 15.1, idle (no work) 253.2 | bc5-chainwd: host submit 0.6 | others: gpu fence 16.8, idle (no work) 251.5
+gap (exp 0412, tag gp412): t 4.549 s mono 78257.511953: 583.7 ms since the last flip | Render Thread: flip drain 17.5, label wait 1.1, host submit 1.9, host split 0.4 | bc5-ring: device mutex 0.9, host submit 0.8 | bc5-cq0: gpu fence 18.3, idle (no work) 565.1 | bc5-chainwd: host submit 0.4 | others: gpu fence 20.3, idle (no work) 563.2
+gap (exp 0412, tag gp412): t 5.417 s mono 78258.379953: 868.0 ms since the last flip | Render Thread: flip drain 8.0, label wait 1.1, host submit 13.4, host split 0.5 | bc5-ring: device mutex 12.1, host submit 0.9 | bc5-cq0: gpu fence 8.8, idle (no work) 858.9 | bc5-chainwd: host submit 0.7 | others: gpu fence 10.6, idle (no work) 857.2
+gap (exp 0412, tag gp412): t 7.358 s mono 78260.320949: 1941.0 ms since the last flip | Render Thread: flip drain 15.1, label wait 1.1, host submit 13.3, host split 0.4 | bc5-ring: device mutex 11.7, host submit 0.7 | bc5-cq0: gpu fence 16.0, idle (no work) 1924.7 | bc5-chainwd: host submit 0.3 | others: gpu fence 17.7, idle (no work) 1923.2
+gap (exp 0412, tag gp412): t 8.016 s mono 78260.978749: 657.8 ms since the last flip | Render Thread: flip drain 17.4, label wait 1.2, host submit 2.3, host split 0.4 | bc5-ring: device mutex 0.6, host submit 0.8, host split 0.4 | bc5-cq0: gpu fence 18.4, idle (no work) 639.0 | bc5-chainwd: host submit 0.3 | others: gpu fence 20.1, idle (no work) 637.6
+gap (exp 0412, tag gp412): t 8.578 s mono 78261.540622: 561.9 ms since the last flip | Render Thread: flip drain 7.9, label wait 1.4, host submit 11.2, host split 0.5 | bc5-ring: device mutex 9.6, host submit 0.7 | bc5-cq0: gpu fence 8.7, idle (no work) 552.8 | bc5-chainwd: host submit 0.6 | others: gpu fence 11.2, idle (no work) 550.2
+gap (exp 0412, tag gp412): t 9.544 s mono 78262.507010: 156.9 ms since the last flip | Render Thread: flip drain 16.7, label wait 0.9, host submit 1.3, host split 1.5 | bc5-ring: device mutex 0.6, host submit 2.0, host split 0.4 | bc5-cq0: gpu fence 17.6, idle (no work) 138.7 | bc5-chainwd: host submit 1.4 | others: gpu fence 19.1, idle (no work) 137.2
+memory (exp 0401): t 10.0 s: available 4491 MiB, swap used 593 MiB, psi some 0.65 full 0.65 (avg10, %), full total 411311 ms, gtt 8519 of 13312 MiB
+guard: t 10 s: pinned direct 7808.0 MiB, private 270.0; under a view 7804.1, orphans 3.9; views 245 over 9150.1 MiB; gtt 8519.3; rss 1094 shmem 915 swap 0 MiB; faults minor 0 major 0; avail 4491 unevictable 568 mlocked 44 swap used 593 MiB; psi some 0.7 full 0.7; guard locked 0.0 MiB, guest views 0 (0 refused); files advised 0, drops 0; apply put off 0; rss anon 74; cgroup 9080 MiB; cap put off 0.0 MiB (max 0.0, 0 changes, 0 hard chunks over)
+gap (exp 0412, tag gp412): t 14.260 s mono 78267.222334: 522.7 ms since the last flip | Render Thread: flip drain 13.0, label wait 1.7, host submit 5.1, host split 0.6 | bc5-ring: device mutex 3.3, host submit 1.5, host split 1.0 | bc5-cq0: gpu fence 15.9, idle (no work) 506.4 | bc5-chainwd: host submit 0.4 | others: gpu fence 17.8, idle (no work) 504.6
+memory (exp 0401): t 20.0 s: available 4464 MiB, swap used 593 MiB, psi some 0.23 full 0.23 (avg10, %), full total 411311 ms, gtt 8527 of 13312 MiB
+guard: t 20 s: pinned direct 7814.0 MiB, private 270.0; under a view 7810.1, orphans 3.9; views 245 over 9150.1 MiB; gtt 8527.4; rss 1167 shmem 985 swap 0 MiB; faults minor 22308 major 0; avail 4464 unevictable 568 mlocked 44 swap used 593 MiB; psi some 0.2 full 0.2; guard locked 0.0 MiB, guest views 0 (0 refused); files advised 0, drops 0; apply put off 0; rss anon 77; cgroup 9284 MiB; cap put off 0.0 MiB (max 0.0, 0 changes, 0 hard chunks over)
+lock hold (exp 0412, tag lk412): t 25.015 s: bc5-ring held 42.2 ms: direct sync 40.2 device submit 1.5
+lock hold (exp 0412, tag lk412): t 26.526 s: bc5-ring held 40.3 ms: direct sync 34.8 learned 1.8 prepare 1.9 device submit 1.8
+lock wait (exp 0412, tag lk412): t 26.526 s: Render Thread waited 35.1 ms behind bc5-ring
+memory (exp 0401): t 30.0 s: available 3756 MiB, swap used 593 MiB, psi some 0.08 full 0.08 (avg10, %), full total 411312 ms, gtt 9147 of 13312 MiB
+guard: t 30 s: pinned direct 8434.0 MiB, private 270.0; under a view 8429.6, orphans 4.4; views 7527 over 9619.6 MiB; gtt 9147.5; rss 2186 shmem 1951 swap 0 MiB; faults minor 298575 major 0; avail 3755 unevictable 568 mlocked 44 swap used 593 MiB; psi some 0.1 full 0.1; guard locked 0.0 MiB, guest views 0 (0 refused); files advised 0, drops 0; apply put off 0; rss anon 129; cgroup 11965 MiB; cap put off 0.0 MiB (max 0.0, 0 changes, 0 hard chunks over)
+lock hold (exp 0412, tag lk412): t 38.278 s: bc5-ring held 34.1 ms: direct sync 26.6 learned 1.5 device submit 6.0
+lock wait (exp 0412, tag lk412): t 38.278 s: bc5-chainwd waited 32.4 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 38.325 s mono 78291.287268: 138.2 ms since the last flip | Render Thread: device mutex 17.5, flip drain 2.2, host submit 4.6, host split 1.2 | bc5-ring: device mutex 9.5, host submit 55.6, host split 0.2 | bc5-cq0: gpu fence 13.1, idle (no work) 124.2 | bc5-chainwd: device mutex 32.5, host submit 8.6 | others: gpu fence 17.2, idle (no work) 118.6
+memory (exp 0401): t 40.0 s: available 3668 MiB, swap used 594 MiB, psi some 0.03 full 0.03 (avg10, %), full total 411319 ms, gtt 9275 of 13312 MiB
+guard: t 40 s: pinned direct 8562.0 MiB, private 270.0; under a view 8558.9, orphans 3.1; views 9578 over 9698.9 MiB; gtt 9275.6; rss 2509 shmem 2270 swap 0 MiB; faults minor 380813 major 1; avail 3668 unevictable 568 mlocked 45 swap used 594 MiB; psi some 0.0 full 0.0; guard locked 0.0 MiB, guest views 0 (0 refused); files advised 0, drops 0; apply put off 0; rss anon 134; cgroup 12110 MiB; cap put off 0.0 MiB (max 0.0, 0 changes, 0 hard chunks over)
+gap (exp 0412, tag gp412): t 40.362 s mono 78293.325005: 128.1 ms since the last flip | Render Thread: device mutex 15.3, flip drain 2.2, host submit 6.0, host split 1.5 | bc5-ring: device mutex 15.6, host submit 58.6, host split 0.2 | bc5-cq0: gpu fence 9.1, idle (no work) 117.9 | bc5-chainwd: device mutex 35.7, host submit 14.8 | others: gpu fence 7.7, idle (no work) 119.3
+lock hold (exp 0412, tag lk412): t 40.459 s: bc5-ring held 47.3 ms: direct sync 41.2 learned 1.7 device submit 4.4
+lock wait (exp 0412, tag lk412): t 40.459 s: Render Thread waited 47.1 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 40.475 s mono 78293.437940: 112.9 ms since the last flip | Render Thread: device mutex 47.1, flip drain 8.7, host submit 7.0, host split 0.3 | bc5-ring: device mutex 26.6, host submit 48.2 | bc5-cq0: gpu fence 11.6, idle (no work) 100.5 | bc5-chainwd: host submit 26.7 | others: gpu fence 18.1, idle (no work) 94.1
+lock hold (exp 0412, tag lk412): t 40.562 s: bc5-ring held 59.1 ms: direct sync 43.0 learned 10.4 device submit 5.6
+lock wait (exp 0412, tag lk412): t 40.562 s: Render Thread waited 59.1 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 40.579 s mono 78293.542005: 104.1 ms since the last flip | Render Thread: device mutex 59.1, flip drain 8.7, host submit 8.1, host split 0.1 | bc5-ring: device mutex 7.8, host submit 59.5, host split 0.2 | bc5-cq0: gpu fence 9.2, idle (no work) 94.7 | bc5-chainwd: host submit 0.3 | others: gpu fence 15.7, idle (no work) 87.1
+lock hold (exp 0412, tag lk412): t 40.979 s: bc5-ring held 40.8 ms: direct sync 33.3 learned 5.5 device submit 2.0
+lock wait (exp 0412, tag lk412): t 40.979 s: Render Thread waited 40.5 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 40.989 s mono 78293.951774: 119.2 ms since the last flip | Render Thread: device mutex 40.5, flip drain 5.0, host submit 5.3, host split 1.3 | bc5-ring: device mutex 5.3, host submit 43.6, host split 0.1 | bc5-cq0: gpu fence 8.1, idle (no work) 110.2 | bc5-chainwd: host submit 4.8 | others: gpu fence 7.4, idle (no work) 107.9
+lock hold (exp 0412, tag lk412): t 41.470 s: bc5-chainwd held 30.5 ms: direct sync 25.9 learned 2.7 device submit 1.6
+lock wait (exp 0412, tag lk412): t 41.471 s: bc5-ring waited 30.5 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 41.472 s mono 78294.434834: 106.9 ms since the last flip | Render Thread: flip drain 0.5, host split 2.4 | bc5-ring: device mutex 30.9, host submit 29.3, host split 0.3 | bc5-cq0: gpu fence 8.5, idle (no work) 96.6 | bc5-chainwd: device mutex 21.0, host submit 40.5 | others: gpu fence 1.9, idle (no work) 104.7
+gap (exp 0412, tag gp412): t 41.936 s mono 78294.898847: 108.0 ms since the last flip | Render Thread: device mutex 16.2, flip drain 0.4, host submit 25.4, host split 0.4 | bc5-ring: device mutex 60.0, host submit 47.2 | bc5-cq0: gpu fence 1.4, idle (no work) 106.2 | bc5-chainwd: device mutex 19.9, host submit 35.5 | others: idle (no work) 107.8
+gap (exp 0412, tag gp412): t 42.126 s mono 78295.088933: 104.5 ms since the last flip | Render Thread: device mutex 21.2, flip drain 1.6, host submit 27.8, host split 0.3 | bc5-ring: device mutex 50.5, host submit 52.2 | bc5-cq0: gpu fence 2.2, idle (no work) 101.9 | bc5-chainwd: device mutex 16.6, host submit 23.3 | others: gpu fence 1.1, idle (no work) 101.9
+lock hold (exp 0412, tag lk412): t 43.422 s: bc5-ring held 56.3 ms: direct sync 47.5 learned 4.3 device submit 4.4
+lock wait (exp 0412, tag lk412): t 43.422 s: Render Thread waited 56.1 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 43.457 s: Render Thread held 35.4 ms: anon sync 20.2 direct sync 7.6 learned 2.3 device submit 5.2
+lock wait (exp 0412, tag lk412): t 43.457 s: bc5-ring waited 35.4 ms behind Render Thread
+gap (exp 0412, tag gp412): t 43.465 s mono 78296.427946: 171.5 ms since the last flip | Render Thread: device mutex 56.1, flip drain 7.8, host submit 35.9, host split 0.3 | bc5-ring: device mutex 46.0, host submit 81.1 | bc5-cq0: gpu fence 12.1, idle (no work) 159.2 | bc5-chainwd: device mutex 21.9, host submit 10.7 | others: gpu fence 18.8, idle (no work) 151.3
+lock hold (exp 0412, tag lk412): t 43.523 s: bc5-chainwd held 55.5 ms: anon sync 21.3 direct sync 27.2 learned 4.0 device submit 2.8
+lock hold (exp 0412, tag lk412): t 43.568 s: bc5-chainwd held 45.6 ms: direct sync 30.3 learned 2.4 device submit 12.7
+lock wait (exp 0412, tag lk412): t 43.568 s: bc5-ring waited 66.4 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 43.580 s mono 78296.542524: 114.6 ms since the last flip | Render Thread: flip drain 11.3, host split 0.1 | bc5-ring: device mutex 66.4, host submit 0.3 | bc5-cq0: gpu fence 16.8, idle (no work) 80.3 | bc5-chainwd: host submit 101.1 | others: gpu fence 11.1, idle (no work) 103.5
+lock hold (exp 0412, tag lk412): t 43.662 s: bc5-ring held 55.4 ms: direct sync 46.2 learned 4.9 device submit 4.2
+lock wait (exp 0412, tag lk412): t 43.662 s: Render Thread waited 55.4 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 43.690 s mono 78296.652523: 110.0 ms since the last flip | Render Thread: device mutex 55.4, flip drain 7.6, host submit 19.7, host split 0.1 | bc5-ring: device mutex 19.6, host submit 55.9 | bc5-cq0: gpu fence 8.7, idle (no work) 101.1 | bc5-chainwd: host submit 12.5 | others: gpu fence 14.4, idle (no work) 95.5
+gap (exp 0412, tag gp412): t 44.887 s mono 78297.849625: 102.2 ms since the last flip | Render Thread: device mutex 15.5, flip drain 1.1, host submit 6.7, host split 0.4 | bc5-ring: device mutex 41.6, host submit 45.2 | bc5-cq0: gpu fence 4.3, idle (no work) 97.6 | bc5-chainwd: device mutex 24.9, host submit 35.9 | others: gpu fence 4.6, idle (no work) 96.9
+lock hold (exp 0412, tag lk412): t 45.615 s: bc5-chainwd held 40.5 ms: anon sync 24.5 direct sync 12.3 learned 2.6 device submit 1.1
+lock wait (exp 0412, tag lk412): t 45.615 s: bc5-ring waited 38.8 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 45.728 s mono 78298.691179: 155.8 ms since the last flip | Render Thread: device mutex 20.3, flip drain 0.6, host submit 20.0, host split 0.3 | bc5-ring: device mutex 81.1, host submit 43.3 | bc5-cq0: gpu fence 5.8, idle (no work) 149.4 | bc5-chainwd: device mutex 20.5, host submit 63.1 | others: gpu fence 8.2, idle (no work) 128.8
+gap (exp 0412, tag gp412): t 45.991 s mono 78298.954063: 111.7 ms since the last flip | Render Thread: device mutex 36.6, chain mutex 29.7, flip drain 0.4, host submit 41.8, host split 0.1 | bc5-ring: device mutex 56.5, host submit 54.7 | bc5-cq0: gpu fence 0.4, idle (no work) 111.2 | bc5-chainwd: device mutex 15.3, host submit 15.3 | others: idle (no work) 110.5
+lock hold (exp 0412, tag lk412): t 46.127 s: Render Thread held 31.2 ms: direct sync 24.0 learned 3.1 device submit 3.8
+lock wait (exp 0412, tag lk412): t 46.127 s: bc5-ring waited 31.2 ms behind Render Thread
+lock hold (exp 0412, tag lk412): t 48.032 s: bc5-ring held 30.7 ms: direct sync 25.4 learned 3.3 device submit 1.8
+lock wait (exp 0412, tag lk412): t 48.032 s: Render Thread waited 30.5 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 48.051 s mono 78301.013835: 187.4 ms since the last flip | Render Thread: device mutex 30.5, flip drain 3.5, host submit 15.3, host split 1.5 | bc5-ring: device mutex 15.3, host submit 35.0, host split 0.2 | bc5-cq0: gpu fence 8.2, idle (no work) 178.0 | bc5-chainwd: host submit 7.7 | others: gpu fence 6.2, idle (no work) 169.5
+lock hold (exp 0412, tag lk412): t 48.102 s: bc5-chainwd held 48.4 ms: anon sync 27.6 direct sync 10.0 learned 10.4
+gap (exp 0412, tag gp412): t 48.154 s mono 78301.116938: 103.1 ms since the last flip | Render Thread: device mutex 25.6, flip drain 3.9, host submit 3.3, host split 0.1 | bc5-ring: device mutex 3.3, host submit 26.1 | bc5-cq0: gpu fence 3.8, idle (no work) 99.1 | bc5-chainwd: host submit 48.4 | others: gpu fence 5.9, idle (no work) 96.1
+gap (exp 0412, tag gp412): t 49.201 s mono 78302.163384: 113.7 ms since the last flip | Render Thread: device mutex 14.9, flip drain 1.0, host submit 5.5, host split 1.1 | bc5-ring: device mutex 28.1, host submit 43.7, host split 0.2 | bc5-cq0: gpu fence 9.9, idle (no work) 103.0 | bc5-chainwd: device mutex 22.4, host submit 27.5 | others: gpu fence 4.7, idle (no work) 108.8
+memory (exp 0401): t 50.0 s: available 1933 MiB, swap used 594 MiB, psi some 0.01 full 0.01 (avg10, %), full total 411383 ms, gtt 10825 of 13312 MiB
+guard: t 50 s: pinned direct 10048.0 MiB, private 270.0; under a view 10034.5, orphans 13.5; views 24968 over 10945.5 MiB; gtt 10825.6; rss 5707 shmem 5393 swap 0 MiB; faults minor 1287062 major 1; avail 1906 unevictable 568 mlocked 45 swap used 594 MiB; psi some 0.0 full 0.0; guard locked 0.0 MiB, guest views 0 (0 refused); files advised 0, drops 0; apply put off 0; rss anon 209; cgroup 12019 MiB; cap put off 0.0 MiB (max 0.0, 0 changes, 0 hard chunks over)
+lock hold (exp 0412, tag lk412): t 50.104 s: bc5-chainwd held 41.9 ms: anon sync 29.1 direct sync 9.0 learned 2.9
+lock wait (exp 0412, tag lk412): t 50.104 s: bc5-ring waited 41.9 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 50.206 s: bc5-chainwd held 31.0 ms: anon sync 30.8
+lock wait (exp 0412, tag lk412): t 50.206 s: bc5-ring waited 30.1 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 50.563 s mono 78303.525310: 106.3 ms since the last flip | Render Thread: device mutex 22.7, flip drain 2.3, host submit 12.8, host split 0.7 | bc5-ring: device mutex 34.1, host submit 46.9, host split 0.2 | bc5-cq0: gpu fence 4.7, idle (no work) 100.8 | bc5-chainwd: device mutex 17.2, host submit 23.7 | others: gpu fence 2.4, idle (no work) 103.5
+lock hold (exp 0412, tag lk412): t 50.684 s: Render Thread held 41.1 ms: direct sync 23.7 learned 14.4 device submit 2.8
+lock wait (exp 0412, tag lk412): t 50.684 s: bc5-ring waited 40.8 ms behind Render Thread
+gap (exp 0412, tag gp412): t 50.688 s mono 78303.650787: 125.5 ms since the last flip | Render Thread: device mutex 38.4, chain mutex 17.0, flip drain 4.1, host submit 62.9, host split 0.1 | bc5-ring: device mutex 79.7, host submit 42.3 | bc5-cq0: gpu fence 4.7, idle (no work) 120.7 | bc5-chainwd: host submit 17.7 | others: gpu fence 0.5, idle (no work) 125.0
+gap (exp 0412, tag gp412): t 50.860 s mono 78303.823221: 107.2 ms since the last flip | Render Thread: device mutex 14.9, flip drain 0.7, host submit 18.5, host split 1.0 | bc5-ring: device mutex 19.4, host submit 38.5 | bc5-cq0: gpu fence 3.3, idle (no work) 103.1 | bc5-chainwd: device mutex 20.4, host submit 11.9 | others: gpu fence 2.2, idle (no work) 85.8
+lock hold (exp 0412, tag lk412): t 51.221 s: bc5-chainwd held 45.7 ms: anon sync 30.8 direct sync 10.7 learned 3.0
+gap (exp 0412, tag gp412): t 51.709 s mono 78304.672108: 109.5 ms since the last flip | Render Thread: device mutex 13.7, flip drain 3.0, host submit 24.5, host split 1.6 | bc5-ring: device mutex 24.9, host submit 30.3, host split 0.1 | bc5-cq0: gpu fence 11.1, idle (no work) 97.4 | bc5-chainwd: device mutex 12.3, host submit 7.4 | others: gpu fence 0.5, idle (no work) 81.5
+gap (exp 0412, tag gp412): t 51.858 s mono 78304.820802: 119.7 ms since the last flip | Render Thread: device mutex 16.0, chain mutex 13.1, flip drain 0.7, host submit 13.3, host split 0.6 | bc5-ring: device mutex 47.0, host submit 53.3 | bc5-cq0: gpu fence 3.3, idle (no work) 115.9 | bc5-chainwd: device mutex 29.2, host submit 35.0 | others: gpu fence 1.1, idle (no work) 118.5
+gap (exp 0412, tag gp412): t 52.063 s mono 78305.026205: 108.6 ms since the last flip | Render Thread: device mutex 25.7, flip drain 1.7, host submit 8.0, host split 0.9 | bc5-ring: device mutex 8.2, host submit 41.6 | bc5-cq0: gpu fence 3.3, idle (no work) 104.8 | bc5-chainwd: device mutex 12.3, host submit 2.4 | others: gpu fence 2.4, idle (no work) 106.0
+lock hold (exp 0412, tag lk412): t 52.245 s: bc5-ring held 63.8 ms: anon sync 29.3 direct sync 31.3 learned 2.9
+lock wait (exp 0412, tag lk412): t 52.245 s: bc5-chainwd waited 61.8 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 52.263 s mono 78305.226184: 144.4 ms since the last flip | Render Thread: flip drain 0.7, host submit 0.8, host split 1.3 | bc5-ring: device mutex 21.2, host submit 82.0, host split 0.1 | bc5-cq0: gpu fence 13.7, idle (no work) 129.8 | bc5-chainwd: device mutex 74.2, host submit 25.4 | others: gpu fence 11.4, idle (no work) 132.5
+lock hold (exp 0412, tag lk412): t 52.296 s: bc5-chainwd held 30.2 ms: anon sync 30.0
+gap (exp 0412, tag gp412): t 52.637 s mono 78305.599315: 247.6 ms since the last flip | Render Thread: device mutex 1.1, chain mutex 46.7, flip drain 10.9, label wait 7.5, host submit 59.6, host split 12.6 | bc5-ring: device mutex 67.6, host submit 42.0, host split 0.6 | bc5-cq0: gpu fence 84.8, idle (no work) 155.2 | bc5-chainwd: device mutex 26.6, host submit 39.9 | others: gpu fence 85.5, idle (no work) 147.8
+gap (exp 0412, tag gp412): t 52.897 s mono 78305.859306: 110.9 ms since the last flip | Render Thread: device mutex 0.3, chain mutex 33.2, flip drain 18.7, label wait 17.9, host submit 22.4, host split 6.4 | bc5-ring: device mutex 12.1, host submit 31.7, host split 0.2 | bc5-cq0: gpu fence 42.3, idle (no work) 64.6 | bc5-chainwd: device mutex 26.0, host submit 13.7 | others: gpu fence 47.0, idle (no work) 63.5
+lock hold (exp 0412, tag lk412): t 53.280 s: Render Thread held 147.7 ms: prepare 1.9 device submit 145.1
+lock hold (exp 0412, tag lk412): t 53.313 s: bc5-ring held 32.0 ms: anon sync 29.8 device submit 1.4
+lock wait (exp 0412, tag lk412): t 53.313 s: Render Thread waited 30.7 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 53.335 s mono 78306.298100: 218.6 ms since the last flip | Render Thread: device mutex 30.7, flip drain 2.9, label wait 10.0, host submit 162.7, host split 2.6 | bc5-ring: device mutex 5.5, host submit 37.9, host split 1.0 | bc5-cq0: gpu fence 30.8, idle (no work) 185.9 | others: gpu fence 17.9, idle (no work) 199.8
+lock hold (exp 0412, tag lk412): t 53.762 s: bc5-ring held 414.3 ms: direct sync 384.0 learned 10.3 hints 6.6 prepare 2.0 device submit 11.3
+lock wait (exp 0412, tag lk412): t 53.762 s: bc5-chainwd waited 412.6 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 53.818 s mono 78306.780628: 482.5 ms since the last flip | Render Thread: device mutex 1.5, chain mutex 428.4, flip drain 3.0, label wait 2.2, host submit 23.6, host split 1.6 | bc5-ring: device mutex 19.1, host submit 420.6, host split 0.4 | bc5-cq0: gpu fence 12.0, idle (no work) 467.3 | bc5-chainwd: device mutex 412.6, host submit 17.5 | others: gpu fence 16.0, idle (no work) 441.2
+lock hold (exp 0412, tag lk412): t 53.854 s: bc5-ring held 30.9 ms: direct sync 25.6 learned 4.0 device submit 1.1
+lock hold (exp 0412, tag lk412): t 54.296 s: bc5-chainwd held 32.0 ms: direct sync 24.8 device submit 6.7
+lock wait (exp 0412, tag lk412): t 54.296 s: bc5-ring waited 31.7 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 54.338 s: bc5-ring held 42.3 ms: anon sync 33.5 direct sync 5.2 learned 3.3
+lock wait (exp 0412, tag lk412): t 54.338 s: bc5-chainwd waited 42.3 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 54.418 s: bc5-chainwd held 57.0 ms: anon sync 37.3 direct sync 15.8 learned 3.6
+lock wait (exp 0412, tag lk412): t 54.418 s: bc5-ring waited 53.1 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 54.486 s: bc5-ring held 30.2 ms: direct sync 24.9 learned 3.0 device submit 2.2
+lock hold (exp 0412, tag lk412): t 54.709 s: bc5-ring held 33.4 ms: direct sync 29.0 learned 3.0 device submit 1.2
+lock wait (exp 0412, tag lk412): t 54.709 s: Render Thread waited 31.6 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 55.398 s: bc5-ring held 32.5 ms: anon sync 32.1
+lock wait (exp 0412, tag lk412): t 55.398 s: Render Thread waited 31.4 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 56.492 s: bc5-chainwd held 58.5 ms: anon sync 40.3 direct sync 14.6 learned 3.2
+lock wait (exp 0412, tag lk412): t 56.492 s: bc5-ring waited 46.9 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 56.985 s: bc5-chainwd held 33.6 ms: direct sync 4.7 learned 28.3
+lock hold (exp 0412, tag lk412): t 57.128 s: bc5-ring held 58.5 ms: direct sync 52.1 learned 5.4
+lock wait (exp 0412, tag lk412): t 57.128 s: bc5-chainwd waited 57.4 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 57.168 s mono 78310.130750: 145.5 ms since the last flip | Render Thread: device mutex 1.0, chain mutex 64.5, flip drain 4.4, label wait 17.0, host submit 5.2, host split 1.6 | bc5-ring: device mutex 10.3, host submit 64.0, host split 0.2 | bc5-cq0: gpu fence 26.2, idle (no work) 117.6 | bc5-chainwd: device mutex 57.4, host submit 9.2 | others: gpu fence 26.3, idle (no work) 107.6
+lock hold (exp 0412, tag lk412): t 57.464 s: bc5-ring held 30.4 ms: anon sync 30.2
+lock hold (exp 0412, tag lk412): t 58.464 s: bc5-ring held 30.2 ms: anon sync 30.0
+lock hold (exp 0412, tag lk412): t 58.626 s: bc5-ring held 45.7 ms: direct sync 29.6 device submit 16.0
+lock wait (exp 0412, tag lk412): t 58.626 s: Render Thread waited 38.6 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 58.785 s: bc5-chainwd held 53.8 ms: anon sync 31.6 direct sync 9.1 learned 11.0 prepare 1.9
+lock wait (exp 0412, tag lk412): t 58.785 s: bc5-ring waited 49.1 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 59.765 s: bc5-ring held 33.1 ms: anon sync 32.9
+lock wait (exp 0412, tag lk412): t 59.765 s: Render Thread waited 30.9 ms behind bc5-ring
+memory (exp 0401): t 60.0 s: available 687 MiB, swap used 600 MiB, psi some 1.70 full 1.70 (avg10, %), full total 411732 ms, gtt 12076 of 13312 MiB
+guard: t 60 s: pinned direct 11268.0 MiB, private 270.0; under a view 11257.1, orphans 10.9; views 26313 over 12081.1 MiB; gtt 12076.3; rss 7033 shmem 6692 swap 1 MiB; faults minor 1842001 major 286; avail 678 unevictable 568 mlocked 45 swap used 599 MiB; psi some 1.7 full 1.7; guard locked 0.0 MiB, guest views 0 (0 refused); files advised 0, drops 0; apply put off 0; rss anon 235; cgroup 12396 MiB; cap put off 0.0 MiB (max 0.0, 0 changes, 0 hard chunks over)
+lock hold (exp 0412, tag lk412): t 60.780 s: bc5-ring held 46.6 ms: anon sync 39.6 direct sync 6.7
+lock wait (exp 0412, tag lk412): t 60.781 s: bc5-chainwd waited 46.1 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 61.151 s: bc5-ring held 39.8 ms: direct sync 28.0 device submit 11.7
+lock wait (exp 0412, tag lk412): t 61.151 s: Render Thread waited 39.6 ms behind bc5-ring
+lazy release (exp 0401 e7): t 61 s: 11272.0 MiB imported: 9816.0 under eager views, 1308.0 under data views, 148.0 under lazy views, 0.0 forced and under no view, 0.0 under no view (0.0 last seen under an eager or zero-list view, 0.0 never seen under one; 0.0 idle 30 s or more); cut 0.0 MiB in 0 BOs (0 whole, 0 split), back 0.0 MiB, 0 chunks released now, 0 undone, 0 imports failed, 0 BOs deferred, 0 not split (aliases); GTT 12080.3 of 13312.0 MiB
+lock hold (exp 0412, tag lk412): t 61.769 s: bc5-ring held 34.4 ms: anon sync 34.3
+lock wait (exp 0412, tag lk412): t 61.769 s: Render Thread waited 33.7 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 61.879 s: bc5-chainwd held 57.7 ms: anon sync 40.5 direct sync 13.2 learned 3.5
+lock wait (exp 0412, tag lk412): t 61.879 s: bc5-ring waited 32.9 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 61.981 s: bc5-chainwd held 30.6 ms: direct sync 11.8 learned 17.5
+lock wait (exp 0412, tag lk412): t 61.981 s: bc5-ring waited 30.7 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 62.057 s: bc5-ring held 30.2 ms: direct sync 22.0 learned 6.7 hints 1.1
+gap (exp 0412, tag gp412): t 62.072 s mono 78315.034936: 173.8 ms since the last flip | Render Thread: device mutex 39.1, chain mutex 41.5, flip drain 4.8, label wait 17.4, host submit 34.4, host split 1.0 | bc5-ring: device mutex 38.7, host submit 69.8, host split 0.2 | bc5-cq0: gpu fence 21.8, idle (no work) 150.6 | bc5-chainwd: device mutex 19.6, host submit 31.1 | others: gpu fence 7.1, idle (no work) 166.5
+gap (exp 0412, tag gp412): t 62.193 s mono 78315.155629: 120.7 ms since the last flip | Render Thread: device mutex 0.9, flip drain 1.4, host submit 0.7, host split 0.3 | bc5-ring: device mutex 12.8, host submit 21.0 | bc5-cq0: gpu fence 3.7, idle (no work) 116.6 | bc5-chainwd: device mutex 17.3, host submit 13.1 | others: gpu fence 1.2, idle (no work) 119.7
+lock hold (exp 0412, tag lk412): t 62.518 s: bc5-ring held 36.8 ms: direct sync 33.1 learned 3.5
+lock wait (exp 0412, tag lk412): t 62.518 s: Render Thread waited 36.6 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 62.520 s mono 78315.482281: 326.7 ms since the last flip | Render Thread: device mutex 36.6, flip drain 0.4, host submit 1.0, host split 0.2 | bc5-ring: device mutex 1.6, host submit 51.1 | bc5-cq0: gpu fence 0.7, idle (no work) 325.8 | bc5-chainwd: device mutex 12.0, host submit 1.0 | others: gpu fence 0.4, idle (no work) 326.2
+lock hold (exp 0412, tag lk412): t 62.758 s: bc5-ring held 32.6 ms: direct sync 29.0 learned 3.2
+lock wait (exp 0412, tag lk412): t 62.758 s: Render Thread waited 32.4 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 62.760 s mono 78315.722736: 240.5 ms since the last flip | Render Thread: device mutex 32.4, flip drain 0.4, host submit 1.4 | bc5-ring: device mutex 1.4, host submit 32.8 | bc5-cq0: gpu fence 0.3, idle (no work) 240.0 | bc5-chainwd: host submit 0.2 | others: gpu fence 0.3, idle (no work) 240.2
+lock hold (exp 0412, tag lk412): t 62.869 s: Render Thread held 32.2 ms: anon sync 31.5
+lock wait (exp 0412, tag lk412): t 62.869 s: bc5-ring waited 32.2 ms behind Render Thread
+gap (exp 0412, tag gp412): t 62.869 s mono 78315.831909: 109.2 ms since the last flip | Render Thread: device mutex 18.8, flip drain 0.5, host submit 32.2, host split 0.1 | bc5-ring: device mutex 32.2, host submit 19.2 | bc5-cq0: gpu fence 0.4, idle (no work) 108.6 | bc5-chainwd: host submit 0.3 | others: gpu fence 2.4, idle (no work) 106.6
+lock hold (exp 0412, tag lk412): t 63.064 s: bc5-ring held 30.1 ms: direct sync 26.7 learned 3.2
+gap (exp 0412, tag gp412): t 63.065 s mono 78316.028102: 166.4 ms since the last flip | Render Thread: device mutex 29.9, flip drain 0.4, host submit 1.0, host split 0.1 | bc5-ring: device mutex 1.0, host submit 30.3 | bc5-cq0: gpu fence 0.4, idle (no work) 165.9 | bc5-chainwd: host submit 17.6 | others: gpu fence 0.2, idle (no work) 166.1
+lock hold (exp 0412, tag lk412): t 63.403 s: Render Thread held 40.7 ms: direct sync 36.6 learned 3.5
+lock wait (exp 0412, tag lk412): t 63.403 s: bc5-ring waited 40.5 ms behind Render Thread
+gap (exp 0412, tag gp412): t 63.403 s mono 78316.366097: 338.0 ms since the last flip | Render Thread: flip drain 0.5, host submit 41.2, host split 0.2 | bc5-ring: device mutex 41.0, host submit 1.1 | bc5-cq0: gpu fence 0.7, idle (no work) 336.9 | bc5-chainwd: host submit 0.9 | others: idle (no work) 337.9
+lock hold (exp 0412, tag lk412): t 63.655 s: bc5-ring held 40.7 ms: direct sync 37.5 learned 3.0
+lock wait (exp 0412, tag lk412): t 63.655 s: Render Thread waited 40.7 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 63.659 s mono 78316.621931: 218.7 ms since the last flip | Render Thread: device mutex 40.7, flip drain 2.4, host submit 1.4, host split 0.2 | bc5-ring: device mutex 2.4, host submit 53.2 | bc5-cq0: gpu fence 2.6, idle (no work) 215.8 | bc5-chainwd: device mutex 10.2, host submit 14.6 | others: gpu fence 2.4, idle (no work) 216.1
+lock hold (exp 0412, tag lk412): t 64.157 s: Render Thread held 106.7 ms: anon sync 30.5 direct sync 69.0 learned 4.0 prepare 2.3
+lock wait (exp 0412, tag lk412): t 64.157 s: bc5-ring waited 106.1 ms behind Render Thread
+gap (exp 0412, tag gp412): t 64.161 s mono 78317.124194: 471.9 ms since the last flip | Render Thread: flip drain 4.9, host submit 106.7 | bc5-ring: device mutex 106.1, host submit 0.4 | bc5-cq0: gpu fence 4.9, idle (no work) 467.0 | bc5-chainwd: host submit 15.2 | others: gpu fence 4.5, idle (no work) 467.4
+lock hold (exp 0412, tag lk412): t 64.210 s: bc5-chainwd held 46.8 ms: anon sync 29.9 direct sync 9.5 learned 7.0
+lock hold (exp 0412, tag lk412): t 64.359 s: bc5-ring held 30.8 ms: direct sync 28.2 learned 2.2
+lock wait (exp 0412, tag lk412): t 64.359 s: Render Thread waited 30.8 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 64.385 s mono 78317.347315: 223.1 ms since the last flip | Render Thread: device mutex 30.8, flip drain 5.3, host submit 20.4, host split 0.1 | bc5-ring: device mutex 20.0, host submit 31.1, host split 0.2 | bc5-cq0: gpu fence 5.8, idle (no work) 217.1 | bc5-chainwd: host submit 46.8 | others: gpu fence 8.4, idle (no work) 213.1
+lock hold (exp 0412, tag lk412): t 64.727 s: bc5-ring held 60.7 ms: direct sync 58.7 learned 1.8
+lock wait (exp 0412, tag lk412): t 64.727 s: Render Thread waited 60.4 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 64.733 s mono 78317.695382: 348.1 ms since the last flip | Render Thread: device mutex 60.4, flip drain 4.5, host submit 9.7, host split 0.2 | bc5-ring: device mutex 9.7, host submit 61.1 | bc5-cq0: gpu fence 4.7, idle (no work) 343.0 | bc5-chainwd: host submit 11.2 | others: gpu fence 5.0, idle (no work) 342.9
+lock hold (exp 0412, tag lk412): t 65.061 s: bc5-ring held 30.7 ms: direct sync 22.1 learned 1.4 device submit 7.1
+lock wait (exp 0412, tag lk412): t 65.061 s: Render Thread waited 30.5 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 65.070 s mono 78318.032421: 193.3 ms since the last flip | Render Thread: device mutex 30.5, flip drain 5.9, host submit 2.5, host split 0.5 | bc5-ring: device mutex 2.5, host submit 32.1 | bc5-cq0: gpu fence 6.6, idle (no work) 186.4 | bc5-chainwd: host submit 1.5 | others: gpu fence 8.4, idle (no work) 184.7
+lock hold (exp 0412, tag lk412): t 65.222 s: bc5-ring held 44.9 ms: anon sync 28.8 direct sync 9.8 learned 1.6 prepare 1.8 device submit 2.8
+lock wait (exp 0412, tag lk412): t 65.222 s: Render Thread waited 44.6 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 65.232 s mono 78318.194941: 162.5 ms since the last flip | Render Thread: device mutex 44.7, flip drain 8.8, host submit 1.6, host split 0.3 | bc5-ring: device mutex 11.1, host submit 72.2 | bc5-cq0: gpu fence 10.1, idle (no work) 152.0 | bc5-chainwd: device mutex 9.1, host submit 9.9 | others: gpu fence 12.4, idle (no work) 149.9
+lock hold (exp 0412, tag lk412): t 66.212 s: bc5-ring held 33.8 ms: anon sync 33.6
+lock wait (exp 0412, tag lk412): t 66.212 s: bc5-chainwd waited 32.5 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 67.749 s mono 78320.711438: 104.2 ms since the last flip | Render Thread: device mutex 18.7, flip drain 0.4, host submit 6.3, host split 0.9 | bc5-ring: device mutex 14.0, host submit 31.8, host split 0.1 | bc5-cq0: gpu fence 2.8, idle (no work) 100.8 | bc5-chainwd: device mutex 7.5, host submit 10.8 | others: gpu fence 1.7, idle (no work) 102.2
+lock hold (exp 0412, tag lk412): t 67.795 s: bc5-chainwd held 44.3 ms: anon sync 33.0 direct sync 7.8 learned 1.6 device submit 1.8
+lock wait (exp 0412, tag lk412): t 67.795 s: bc5-ring waited 32.7 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 68.181 s: bc5-ring held 42.2 ms: direct sync 33.1 learned 4.4 device submit 4.6
+lock wait (exp 0412, tag lk412): t 68.181 s: Render Thread waited 42.0 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 68.199 s mono 78321.161424: 212.1 ms since the last flip | Render Thread: device mutex 42.0, flip drain 1.6, host submit 15.7, host split 0.1 | bc5-ring: device mutex 15.4, host submit 42.5, host split 0.1 | bc5-cq0: gpu fence 2.1, idle (no work) 209.8 | bc5-chainwd: host submit 0.3 | others: gpu fence 6.7, idle (no work) 205.3
+gap (exp 0412, tag gp412): t 68.315 s mono 78321.277851: 116.4 ms since the last flip | Render Thread: device mutex 9.8, flip drain 0.5, host submit 0.5, host split 0.2 | bc5-ring: device mutex 10.8, host submit 32.7 | bc5-cq0: gpu fence 0.8, idle (no work) 115.4 | bc5-chainwd: device mutex 20.6, host submit 12.0 | others: gpu fence 5.5, idle (no work) 110.6
+gap (exp 0412, tag gp412): t 68.479 s mono 78321.441321: 103.8 ms since the last flip | Render Thread: device mutex 11.7, flip drain 0.7, host submit 7.1, host split 1.0 | bc5-ring: device mutex 20.6, host submit 35.6, host split 0.2 | bc5-cq0: gpu fence 7.1, idle (no work) 95.7 | bc5-chainwd: device mutex 19.2, host submit 34.9 | others: gpu fence 1.6, idle (no work) 101.5
+lock hold (exp 0412, tag lk412): t 68.790 s: bc5-chainwd held 38.1 ms: anon sync 34.0 direct sync 1.6 learned 1.8
+lock wait (exp 0412, tag lk412): t 68.790 s: bc5-ring waited 38.1 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 68.938 s mono 78321.901109: 207.2 ms since the last flip | Render Thread: device mutex 15.9, flip drain 5.0, host submit 0.5, host split 0.2 | bc5-ring: device mutex 43.5, host submit 26.2 | bc5-cq0: gpu fence 5.2, idle (no work) 201.8 | bc5-chainwd: device mutex 9.6, host submit 47.9 | others: gpu fence 5.5, idle (no work) 201.6
+gap (exp 0412, tag gp412): t 69.177 s mono 78322.140112: 239.0 ms since the last flip | Render Thread: device mutex 42.9, flip drain 0.4, host submit 28.1, host split 0.2 | bc5-ring: device mutex 27.8, host submit 43.2 | bc5-cq0: gpu fence 0.6, idle (no work) 238.3 | bc5-chainwd: host submit 0.3 | others: gpu fence 1.9, idle (no work) 225.3
+lock hold (exp 0412, tag lk412): t 69.795 s: bc5-ring held 42.7 ms: anon sync 42.6
+lock wait (exp 0412, tag lk412): t 69.796 s: bc5-chainwd waited 41.3 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 69.796 s mono 78322.759218: 100.6 ms since the last flip | Render Thread: flip drain 0.5, host split 3.4 | bc5-ring: device mutex 1.0, host submit 51.0, host split 0.7 | bc5-cq0: gpu fence 8.2, idle (no work) 90.3 | bc5-chainwd: device mutex 41.4, host submit 12.4 | others: gpu fence 1.8, idle (no work) 98.7
+memory (exp 0401): t 70.0 s: available 686 MiB, swap used 599 MiB, psi some 0.95 full 0.95 (avg10, %), full total 411801 ms, gtt 11810 of 13312 MiB
+guard: t 70 s: pinned direct 11274.0 MiB, private 270.0; under a view 9586.7, orphans 1687.3; views 14838 over 10406.7 MiB; gtt 11810.3; rss 5425 shmem 5138 swap 1 MiB; faults minor 1990418 major 293; avail 682 unevictable 568 mlocked 45 swap used 599 MiB; psi some 0.9 full 0.9; guard locked 0.0 MiB, guest views 0 (0 refused); files advised 0, drops 0; apply put off 0; rss anon 235; cgroup 12399 MiB; cap put off 0.0 MiB (max 0.0, 0 changes, 0 hard chunks over)
+lock hold (exp 0412, tag lk412): t 70.825 s: bc5-ring held 57.9 ms: anon sync 40.9 direct sync 7.6 learned 9.1
+lock wait (exp 0412, tag lk412): t 70.825 s: bc5-chainwd waited 58.0 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 70.855 s mono 78323.817958: 151.7 ms since the last flip | Render Thread: flip drain 0.6, host split 1.5 | bc5-ring: device mutex 55.3, host submit 72.2, host split 0.1 | bc5-cq0: gpu fence 4.1, idle (no work) 146.5 | bc5-chainwd: device mutex 69.3, host submit 60.8 | others: gpu fence 0.2, idle (no work) 121.2
+lock hold (exp 0412, tag lk412): t 70.932 s: bc5-chainwd held 62.0 ms: anon sync 43.3 direct sync 8.4 learned 9.9
+lock wait (exp 0412, tag lk412): t 70.932 s: bc5-ring waited 62.0 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 70.961 s mono 78323.924001: 106.0 ms since the last flip | Render Thread: flip drain 0.5, host split 0.1 | bc5-ring: device mutex 77.5, host submit 28.3 | bc5-cq0: gpu fence 0.4, idle (no work) 105.5 | bc5-chainwd: device mutex 25.4, host submit 77.8 | others: idle (no work) 119.4
+gap (exp 0412, tag gp412): t 71.082 s mono 78324.044313: 120.3 ms since the last flip | Render Thread: device mutex 32.7, flip drain 0.4, host submit 34.8, host split 0.1 | bc5-ring: device mutex 34.5, host submit 46.3 | bc5-cq0: gpu fence 0.4, idle (no work) 119.8 | bc5-chainwd: device mutex 10.6, host submit 13.5 | others: idle (no work) 119.4
+lock hold (exp 0412, tag lk412): t 71.526 s: Render Thread held 54.6 ms: direct sync 38.9 learned 10.0 device submit 5.4
+lock wait (exp 0412, tag lk412): t 71.526 s: bc5-ring waited 54.6 ms behind Render Thread
+gap (exp 0412, tag gp412): t 71.566 s mono 78324.529004: 111.5 ms since the last flip | Render Thread: device mutex 15.9, flip drain 0.4, host submit 54.6, host split 0.1 | bc5-ring: device mutex 72.0, host submit 39.1 | bc5-cq0: gpu fence 3.7, idle (no work) 107.5 | bc5-chainwd: device mutex 19.8, host submit 17.7 | others: idle (no work) 111.4
+lock hold (exp 0412, tag lk412): t 71.956 s: bc5-ring held 73.9 ms: anon sync 49.6 direct sync 12.2 learned 11.7
+lock wait (exp 0412, tag lk412): t 71.956 s: Render Thread waited 72.7 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 72.016 s mono 78324.978847: 133.7 ms since the last flip | Render Thread: device mutex 91.8, flip drain 0.4, host submit 40.3, host split 0.1 | bc5-ring: device mutex 40.0, host submit 93.3 | bc5-cq0: gpu fence 0.4, idle (no work) 133.2 | others: idle (no work) 132.9
+lock hold (exp 0412, tag lk412): t 72.440 s: Render Thread held 40.1 ms: direct sync 23.7 learned 15.1 device submit 1.1
+lock wait (exp 0412, tag lk412): t 72.440 s: bc5-ring waited 39.5 ms behind Render Thread
+gap (exp 0412, tag gp412): t 72.462 s mono 78325.424266: 445.4 ms since the last flip | Render Thread: device mutex 13.7, flip drain 0.7, host submit 47.2, host split 0.1 | bc5-ring: device mutex 62.6, host submit 55.0 | bc5-cq0: gpu fence 0.7, idle (no work) 444.6 | bc5-chainwd: device mutex 16.4, host submit 16.1 | others: gpu fence 0.5, idle (no work) 465.3
+lock hold (exp 0412, tag lk412): t 72.920 s: bc5-ring held 37.7 ms: anon sync 37.6
+lock wait (exp 0412, tag lk412): t 72.920 s: bc5-chainwd waited 35.8 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 73.208 s: bc5-ring held 30.5 ms: direct sync 14.6 learned 14.0 device submit 1.7
+lock wait (exp 0412, tag lk412): t 73.208 s: Render Thread waited 30.4 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 73.236 s mono 78326.198436: 175.6 ms since the last flip | Render Thread: device mutex 30.4, flip drain 0.8, host submit 27.7, host split 2.0 | bc5-ring: device mutex 27.6, host submit 36.5, host split 0.3 | bc5-cq0: gpu fence 6.6, idle (no work) 167.2 | bc5-chainwd: host submit 8.3 | others: gpu fence 2.1, idle (no work) 146.0
+lock hold (exp 0412, tag lk412): t 73.325 s: bc5-chainwd held 65.1 ms: anon sync 44.2 direct sync 14.8 learned 4.9
+lock wait (exp 0412, tag lk412): t 73.325 s: bc5-ring waited 64.8 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 73.482 s: bc5-ring held 34.7 ms: direct sync 24.5 learned 6.0 device submit 4.1
+lock wait (exp 0412, tag lk412): t 73.482 s: Render Thread waited 34.7 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 73.496 s mono 78326.458321: 161.2 ms since the last flip | Render Thread: device mutex 34.7, flip drain 0.4, host submit 12.8, host split 0.1 | bc5-ring: device mutex 12.5, host submit 35.1, host split 0.1 | bc5-cq0: gpu fence 0.8, idle (no work) 160.1 | bc5-chainwd: host submit 2.2 | others: gpu fence 6.7, idle (no work) 154.3
+lock hold (exp 0412, tag lk412): t 73.700 s: bc5-ring held 53.9 ms: direct sync 35.3 learned 5.6 device submit 12.8
+lock wait (exp 0412, tag lk412): t 73.700 s: Render Thread waited 53.4 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 73.731 s mono 78326.693523: 235.2 ms since the last flip | Render Thread: device mutex 53.4, flip drain 6.1, host submit 24.9, host split 0.1 | bc5-ring: device mutex 24.9, host submit 54.3 | bc5-cq0: gpu fence 6.0, idle (no work) 229.1 | bc5-chainwd: host submit 2.8 | others: gpu fence 13.5, idle (no work) 221.6
+lock hold (exp 0412, tag lk412): t 74.308 s: bc5-chainwd held 47.8 ms: anon sync 47.2
+lock hold (exp 0412, tag lk412): t 75.315 s: bc5-ring held 54.3 ms: anon sync 54.1
+lock wait (exp 0412, tag lk412): t 75.315 s: bc5-chainwd waited 53.0 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 75.729 s: bc5-chainwd held 66.4 ms: anon sync 50.0 direct sync 10.9 learned 3.2 prepare 2.0
+lock wait (exp 0412, tag lk412): t 75.729 s: bc5-ring waited 65.7 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 75.769 s: bc5-ring held 30.4 ms: direct sync 8.8 learned 21.2
+lock wait (exp 0412, tag lk412): t 75.769 s: Render Thread waited 30.3 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 75.893 s mono 78328.855953: 159.7 ms since the last flip | Render Thread: device mutex 51.8, flip drain 0.4, host submit 48.0, host split 0.2 | bc5-ring: device mutex 71.9, host submit 82.2 | bc5-cq0: gpu fence 0.7, idle (no work) 158.7 | bc5-chainwd: device mutex 24.7, host submit 24.5 | others: idle (no work) 135.0
+lock hold (exp 0412, tag lk412): t 75.951 s: bc5-chainwd held 31.2 ms: direct sync 13.7 learned 16.9
+lock wait (exp 0412, tag lk412): t 75.951 s: bc5-ring waited 31.0 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 75.982 s: bc5-ring held 31.4 ms: direct sync 11.7 learned 19.3
+lock hold (exp 0412, tag lk412): t 76.014 s: bc5-chainwd held 31.6 ms: direct sync 14.3 learned 17.0
+lock wait (exp 0412, tag lk412): t 76.014 s: bc5-ring waited 31.6 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 76.045 s: bc5-ring held 30.6 ms: direct sync 12.2 learned 18.2
+lock wait (exp 0412, tag lk412): t 76.045 s: Render Thread waited 30.6 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 76.122 s mono 78329.084489: 170.3 ms since the last flip | Render Thread: device mutex 57.8, chain mutex 59.9, flip drain 0.4, host submit 49.1, host split 0.1 | bc5-ring: device mutex 80.5, host submit 89.5 | bc5-cq0: gpu fence 0.3, idle (no work) 169.7 | bc5-chainwd: device mutex 28.8, host submit 31.6 | others: idle (no work) 176.9
+lock hold (exp 0412, tag lk412): t 76.183 s: bc5-chainwd held 33.5 ms: direct sync 14.4 learned 18.8
+lock wait (exp 0412, tag lk412): t 76.183 s: bc5-ring waited 33.2 ms behind bc5-chainwd
+lock wait (exp 0412, tag lk412): t 76.232 s: Render Thread waited 49.9 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 76.278 s mono 78329.240729: 156.2 ms since the last flip | Render Thread: device mutex 49.9, chain mutex 55.7, flip drain 0.4, host submit 44.9, host split 0.1 | bc5-ring: device mutex 55.4, host submit 77.6 | bc5-cq0: gpu fence 0.4, idle (no work) 155.7 | bc5-chainwd: device mutex 25.2, host submit 33.5 | others: idle (no work) 135.5
+lock hold (exp 0412, tag lk412): t 76.338 s: bc5-chainwd held 33.9 ms: direct sync 16.3 learned 17.2
+lock wait (exp 0412, tag lk412): t 76.338 s: bc5-ring waited 33.9 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 76.370 s: bc5-ring held 32.1 ms: direct sync 11.4 learned 20.4
+lock wait (exp 0412, tag lk412): t 76.370 s: Render Thread waited 32.1 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 76.455 s mono 78329.417433: 176.7 ms since the last flip | Render Thread: device mutex 61.5, chain mutex 55.9, flip drain 0.4, host submit 54.2, host split 0.1 | bc5-ring: device mutex 87.8, host submit 88.5 | bc5-cq0: gpu fence 0.4, idle (no work) 176.2 | bc5-chainwd: device mutex 24.3, host submit 33.9 | others: idle (no work) 195.4
+lock hold (exp 0412, tag lk412): t 76.513 s: bc5-chainwd held 30.1 ms: direct sync 14.7 learned 15.2
+gap (exp 0412, tag gp412): t 76.622 s mono 78329.584321: 166.9 ms since the last flip | Render Thread: device mutex 53.2, chain mutex 55.1, flip drain 0.4, host submit 54.6, host split 0.1 | bc5-ring: device mutex 84.2, host submit 82.1 | bc5-cq0: gpu fence 0.4, idle (no work) 166.3 | bc5-chainwd: device mutex 26.1, host submit 30.2 | others: idle (no work) 166.0
+lock hold (exp 0412, tag lk412): t 76.653 s: bc5-ring held 31.6 ms: direct sync 11.4 learned 19.9
+lock hold (exp 0412, tag lk412): t 76.684 s: bc5-chainwd held 30.8 ms: direct sync 14.2 learned 16.2
+lock wait (exp 0412, tag lk412): t 76.684 s: bc5-ring waited 30.8 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 76.777 s: bc5-ring held 93.9 ms: anon sync 60.2 direct sync 16.5 learned 14.0 prepare 2.9
+lock wait (exp 0412, tag lk412): t 76.777 s: Render Thread waited 93.9 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 76.864 s: Render Thread held 30.1 ms: direct sync 12.5 learned 17.1
+lock wait (exp 0412, tag lk412): t 76.864 s: bc5-ring waited 30.1 ms behind Render Thread
+gap (exp 0412, tag gp412): t 76.864 s mono 78329.826736: 242.4 ms since the last flip | Render Thread: device mutex 121.0, chain mutex 58.6, flip drain 0.4, host submit 58.7 | bc5-ring: device mutex 89.2, host submit 152.9 | bc5-cq0: gpu fence 0.4, idle (no work) 241.9 | bc5-chainwd: device mutex 29.0, host submit 30.8 | others: gpu fence 2.4, idle (no work) 236.9
+lock hold (exp 0412, tag lk412): t 76.925 s: bc5-chainwd held 34.8 ms: direct sync 14.8 learned 19.6
+lock wait (exp 0412, tag lk412): t 76.925 s: bc5-ring waited 34.6 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 76.982 s: Render Thread held 30.7 ms: direct sync 13.8 learned 16.5
+lock wait (exp 0412, tag lk412): t 76.982 s: bc5-ring waited 30.7 ms behind Render Thread
+gap (exp 0412, tag gp412): t 77.035 s mono 78329.997703: 171.0 ms since the last flip | Render Thread: device mutex 51.3, chain mutex 57.7, flip drain 0.4, host submit 58.1, host split 0.1 | bc5-ring: device mutex 92.3, host submit 78.0 | bc5-cq0: gpu fence 0.4, idle (no work) 170.4 | bc5-chainwd: device mutex 24.0, host submit 34.8 | others: idle (no work) 173.7
+lock hold (exp 0412, tag lk412): t 77.067 s: bc5-ring held 32.6 ms: direct sync 10.8 learned 21.5
+lock wait (exp 0412, tag lk412): t 77.067 s: bc5-chainwd waited 30.1 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 77.102 s: bc5-chainwd held 34.9 ms: direct sync 17.2 learned 17.4
+lock wait (exp 0412, tag lk412): t 77.102 s: bc5-ring waited 34.9 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 77.135 s: bc5-ring held 33.2 ms: direct sync 12.6 learned 20.3
+lock wait (exp 0412, tag lk412): t 77.135 s: Render Thread waited 33.2 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 77.196 s: bc5-ring held 32.3 ms: direct sync 12.3 learned 19.7
+lock wait (exp 0412, tag lk412): t 77.197 s: Render Thread waited 32.1 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 77.226 s mono 78330.189061: 191.4 ms since the last flip | Render Thread: device mutex 65.3, chain mutex 64.1, flip drain 0.4, host submit 58.2, host split 0.1 | bc5-ring: device mutex 92.8, host submit 98.2 | bc5-cq0: gpu fence 0.4, idle (no work) 190.8 | bc5-chainwd: device mutex 30.1, host submit 34.9 | others: idle (no work) 189.1
+lock hold (exp 0412, tag lk412): t 77.257 s: bc5-ring held 31.0 ms: direct sync 10.8 learned 20.0
+lock hold (exp 0412, tag lk412): t 77.287 s: bc5-chainwd held 30.4 ms: direct sync 14.0 learned 16.0
+lock wait (exp 0412, tag lk412): t 77.287 s: bc5-ring waited 30.1 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 77.790 s: Render Thread held 73.0 ms: anon sync 43.3 direct sync 15.2 learned 12.2 prepare 1.9
+lock wait (exp 0412, tag lk412): t 77.790 s: bc5-ring waited 72.5 ms behind Render Thread
+gap (exp 0412, tag gp412): t 77.840 s mono 78330.803174: 614.1 ms since the last flip | Render Thread: device mutex 24.7, flip drain 0.4, host submit 98.1, host split 0.1 | bc5-ring: device mutex 127.6, host submit 80.5 | bc5-cq0: gpu fence 3.5, idle (no work) 610.4 | bc5-chainwd: device mutex 28.5, host submit 30.4 | others: idle (no work) 618.4
+lock hold (exp 0412, tag lk412): t 77.944 s: bc5-chainwd held 81.0 ms: anon sync 55.6 direct sync 12.2 learned 13.0
+lock wait (exp 0412, tag lk412): t 77.944 s: bc5-ring waited 80.8 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 78.039 s mono 78331.001974: 198.8 ms since the last flip | Render Thread: device mutex 43.4, chain mutex 100.3, flip drain 0.4, host submit 51.5 | bc5-ring: device mutex 132.0, host submit 66.2 | bc5-cq0: gpu fence 0.4, idle (no work) 198.3 | bc5-chainwd: device mutex 20.0, host submit 81.1 | others: idle (no work) 197.7
+lock hold (exp 0412, tag lk412): t 78.191 s: Render Thread held 36.5 ms: direct sync 22.0 learned 14.0
+lock wait (exp 0412, tag lk412): t 78.191 s: bc5-ring waited 36.5 ms behind Render Thread
+gap (exp 0412, tag gp412): t 78.192 s mono 78331.154515: 152.5 ms since the last flip | Render Thread: device mutex 49.1, chain mutex 35.9, flip drain 0.4, host submit 61.5, host split 1.1 | bc5-ring: device mutex 79.4, host submit 72.8 | bc5-cq0: gpu fence 0.4, idle (no work) 152.0 | bc5-chainwd: device mutex 21.0, host submit 18.1 | others: idle (no work) 141.9
+lock hold (exp 0412, tag lk412): t 78.311 s: Render Thread held 39.4 ms: direct sync 23.6 device submit 15.6
+lock wait (exp 0412, tag lk412): t 78.311 s: bc5-ring waited 39.3 ms behind Render Thread
+gap (exp 0412, tag gp412): t 78.328 s mono 78331.290502: 136.0 ms since the last flip | Render Thread: device mutex 18.2, flip drain 17.2, host submit 48.6 | bc5-ring: device mutex 74.6, host submit 44.3 | bc5-cq0: gpu fence 18.6, idle (no work) 117.1 | bc5-chainwd: device mutex 17.1, host submit 26.4 | others: gpu fence 19.3, idle (no work) 153.4
+lock hold (exp 0412, tag lk412): t 78.666 s: Render Thread held 36.9 ms: direct sync 32.5 device submit 4.1
+lock wait (exp 0412, tag lk412): t 78.666 s: bc5-ring waited 36.7 ms behind Render Thread
+lock hold (exp 0412, tag lk412): t 78.918 s: bc5-ring held 54.9 ms: anon sync 54.7
+lock wait (exp 0412, tag lk412): t 78.918 s: bc5-chainwd waited 53.7 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 79.069 s mono 78332.031728: 150.4 ms since the last flip | Render Thread: device mutex 23.1, flip drain 2.0, host submit 1.3, host split 0.5 | bc5-ring: device mutex 1.9, host submit 24.4 | bc5-cq0: gpu fence 2.6, idle (no work) 147.5 | bc5-chainwd: host submit 1.1 | others: gpu fence 3.6, idle (no work) 146.8
+gap (exp 0412, tag gp412): t 79.202 s mono 78332.164741: 133.0 ms since the last flip | Render Thread: device mutex 22.6, flip drain 1.7, host submit 6.4 | bc5-ring: device mutex 6.3, host submit 23.2 | bc5-cq0: gpu fence 1.6, idle (no work) 131.3 | bc5-chainwd: host submit 0.4 | others: gpu fence 5.1, idle (no work) 127.9
+gap (exp 0412, tag gp412): t 79.438 s mono 78332.400488: 104.2 ms since the last flip | Render Thread: flip drain 0.6, host submit 17.4, host split 1.0 | bc5-ring: device mutex 17.3, host submit 3.0, host split 0.6 | bc5-cq0: gpu fence 3.5, idle (no work) 99.9 | bc5-chainwd: host submit 3.1 | others: gpu fence 1.2, idle (no work) 102.5
+lock hold (exp 0412, tag lk412): t 79.930 s: bc5-ring held 61.4 ms: anon sync 61.2
+lock wait (exp 0412, tag lk412): t 79.930 s: bc5-chainwd waited 58.5 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 80.001 s: bc5-chainwd held 62.4 ms: anon sync 62.1
+lock wait (exp 0412, tag lk412): t 80.001 s: bc5-ring waited 58.7 ms behind bc5-chainwd
+memory (exp 0401): t 80.0 s: available 485 MiB, swap used 661 MiB, psi some 4.81 full 4.81 (avg10, %), full total 412922 ms, gtt 12296 of 13312 MiB
+guard: t 80 s: pinned direct 11488.0 MiB, private 270.0; under a view 10396.6, orphans 1091.4; views 27522 over 11048.6 MiB; gtt 12296.3; rss 5210 shmem 5013 swap 60 MiB; faults minor 2598014 major 433; avail 485 unevictable 568 mlocked 45 swap used 662 MiB; psi some 4.8 full 4.8; guard locked 0.0 MiB, guest views 0 (0 refused); files advised 0, drops 0; apply put off 0; rss anon 171; cgroup 12399 MiB; cap put off 0.0 MiB (max 0.0, 0 changes, 0 hard chunks over)
+lock hold (exp 0412, tag lk412): t 80.502 s: bc5-chainwd held 274.7 ms: direct sync 273.7
+gap (exp 0412, tag gp412): t 80.507 s mono 78333.469927: 289.9 ms since the last flip | Render Thread: device mutex 1.9, flip drain 0.5, host submit 0.6, host split 0.5 | bc5-ring: host submit 3.0 | bc5-cq0: gpu fence 1.8, idle (no work) 287.7 | bc5-chainwd: host submit 275.7 | others: idle (no work) 289.4
+lock hold (exp 0412, tag lk412): t 80.997 s: bc5-ring held 56.3 ms: anon sync 56.1
+lock wait (exp 0412, tag lk412): t 80.997 s: bc5-chainwd waited 53.2 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 81.679 s mono 78334.642069: 115.6 ms since the last flip | Render Thread: device mutex 19.0, flip drain 0.5, host submit 0.6, host split 0.5 | bc5-ring: device mutex 1.7, host submit 37.7 | bc5-cq0: gpu fence 2.3, idle (no work) 112.9 | bc5-chainwd: device mutex 15.5, host submit 3.1 | others: gpu fence 1.3, idle (no work) 114.0
+lock hold (exp 0412, tag lk412): t 81.918 s: bc5-ring held 31.5 ms: direct sync 9.9 learned 21.1
+lock hold (exp 0412, tag lk412): t 82.009 s: Render Thread held 66.5 ms: anon sync 48.1 direct sync 13.7 learned 3.9
+lock wait (exp 0412, tag lk412): t 82.009 s: bc5-ring waited 66.5 ms behind Render Thread
+gap (exp 0412, tag gp412): t 82.009 s mono 78334.971995: 164.1 ms since the last flip | Render Thread: flip drain 0.5, host submit 66.5, host split 0.5 | bc5-ring: device mutex 114.3, host submit 35.7 | bc5-cq0: gpu fence 1.5, idle (no work) 162.3 | bc5-chainwd: device mutex 29.7, host submit 55.6 | others: gpu fence 0.3, idle (no work) 166.0
+lock hold (exp 0412, tag lk412): t 82.090 s: Render Thread held 78.5 ms: anon sync 50.0 direct sync 20.1 learned 7.5
+gap (exp 0412, tag gp412): t 82.125 s mono 78335.087628: 115.6 ms since the last flip | Render Thread: flip drain 21.8, host submit 90.5, host split 0.5 | bc5-ring: host submit 0.6, host split 11.7 | bc5-cq0: gpu fence 22.6, idle (no work) 92.8 | others: gpu fence 22.2, idle (no work) 93.2
+gap (exp 0412, tag gp412): t 82.370 s mono 78335.332539: 117.0 ms since the last flip | Render Thread: device mutex 15.4, flip drain 0.5, host submit 0.6, host split 0.5 | bc5-ring: device mutex 15.6, host submit 51.7, host split 0.1 | bc5-cq0: gpu fence 2.0, idle (no work) 114.7 | bc5-chainwd: device mutex 31.3, host submit 22.1 | others: gpu fence 1.1, idle (no work) 115.6
+gap (exp 0412, tag gp412): t 82.902 s mono 78335.865112: 108.7 ms since the last flip | Render Thread: device mutex 12.7, flip drain 0.7, host submit 1.1, host split 1.3 | bc5-ring: device mutex 21.3, host submit 53.6, host split 0.2 | bc5-cq0: gpu fence 6.4, idle (no work) 101.5 | bc5-chainwd: device mutex 33.7, host submit 24.8 | others: gpu fence 3.9, idle (no work) 104.1
+lock hold (exp 0412, tag lk412): t 83.075 s: bc5-ring held 50.9 ms: anon sync 50.7
+lock wait (exp 0412, tag lk412): t 83.075 s: bc5-chainwd waited 49.1 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 83.078 s mono 78336.041099: 111.5 ms since the last flip | Render Thread: flip drain 0.6, host submit 0.6, host split 0.8 | bc5-ring: device mutex 2.0, host submit 66.4, host split 0.1 | bc5-cq0: gpu fence 2.7, idle (no work) 108.0 | bc5-chainwd: device mutex 60.7, host submit 21.5 | others: gpu fence 1.2, idle (no work) 109.7
+lock wait (exp 0412, tag lk412): t 83.577 s: bc5-ring waited 37.1 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 83.580 s mono 78336.542724: 259.0 ms since the last flip | Render Thread: chain mutex 57.6, flip drain 2.7, host split 1.0 | bc5-ring: device mutex 46.8, host submit 46.6, host split 0.1 | bc5-cq0: gpu fence 4.9, idle (no work) 253.4 | bc5-chainwd: device mutex 41.3, host submit 57.1 | others: gpu fence 0.6, idle (no work) 218.6
+lock hold (exp 0412, tag lk412): t 83.700 s: bc5-ring held 32.2 ms: direct sync 19.6 learned 11.4 device submit 1.0
+lock wait (exp 0412, tag lk412): t 83.700 s: Render Thread waited 31.8 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 83.920 s mono 78336.882526: 213.5 ms since the last flip | Render Thread: device mutex 41.5, chain mutex 4.3, flip drain 3.2, label wait 19.9, host submit 33.0, host split 12.2 | bc5-ring: device mutex 18.4, host submit 56.5, host split 2.9 | bc5-cq0: gpu fence 45.9, idle (no work) 161.2 | bc5-chainwd: device mutex 3.6, host submit 16.6 | others: gpu fence 43.6, idle (no work) 155.4
+lock hold (exp 0412, tag lk412): t 84.073 s: bc5-ring held 48.3 ms: anon sync 48.1
+lock wait (exp 0412, tag lk412): t 84.073 s: bc5-chainwd waited 48.3 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 84.084 s mono 78337.047005: 122.1 ms since the last flip | Render Thread: device mutex 15.0, chain mutex 49.4, flip drain 3.6, host submit 4.2, host split 2.6 | bc5-ring: device mutex 7.9, host submit 67.8, host split 0.1 | bc5-cq0: gpu fence 18.5, idle (no work) 101.4 | bc5-chainwd: device mutex 48.3, host submit 6.9 | others: gpu fence 12.5, idle (no work) 107.0
+lock hold (exp 0412, tag lk412): t 84.160 s: bc5-chainwd held 73.6 ms: anon sync 52.4 direct sync 14.7 learned 6.1
+lock wait (exp 0412, tag lk412): t 84.162 s: bc5-ring waited 69.9 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 84.191 s mono 78337.153439: 106.4 ms since the last flip | Render Thread: device mutex 0.2, chain mutex 68.0, flip drain 7.7, host submit 11.8, host split 3.0 | bc5-ring: device mutex 80.0, host submit 3.9, host split 0.2 | bc5-cq0: gpu fence 19.9, idle (no work) 84.4 | bc5-chainwd: host submit 76.0 | others: gpu fence 19.6, idle (no work) 79.2
+gap (exp 0412, tag gp412): t 84.644 s mono 78337.606260: 156.3 ms since the last flip | Render Thread: device mutex 20.6, chain mutex 26.3, flip drain 3.3, label wait 32.1, host submit 20.0, host split 5.9 | bc5-ring: device mutex 27.9, host submit 45.5, host split 1.5 | bc5-cq0: gpu fence 46.1, idle (no work) 102.4 | bc5-chainwd: device mutex 14.1, host submit 26.0 | others: gpu fence 47.4, idle (no work) 93.4
+lock hold (exp 0412, tag lk412): t 85.141 s: bc5-ring held 54.5 ms: anon sync 54.3
+lock wait (exp 0412, tag lk412): t 85.141 s: Render Thread waited 53.1 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 86.144 s: Render Thread held 54.2 ms: anon sync 52.5 device submit 1.1
+lock wait (exp 0412, tag lk412): t 86.144 s: bc5-ring waited 54.2 ms behind Render Thread
+lock hold (exp 0412, tag lk412): t 86.236 s: bc5-chainwd held 71.5 ms: anon sync 57.0 direct sync 10.5 learned 3.6
+lock wait (exp 0412, tag lk412): t 86.236 s: bc5-ring waited 62.6 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 87.215 s: Render Thread held 49.8 ms: anon sync 48.4
+lock hold (exp 0412, tag lk412): t 88.213 s: bc5-ring held 48.2 ms: anon sync 47.9
+lock wait (exp 0412, tag lk412): t 88.213 s: Render Thread waited 40.4 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 88.331 s: bc5-chainwd held 63.0 ms: anon sync 49.6 direct sync 9.7 learned 3.3
+lock wait (exp 0412, tag lk412): t 88.331 s: bc5-ring waited 60.0 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 89.329 s: Render Thread held 60.6 ms: anon sync 59.3 device submit 1.0
+lock hold (exp 0412, tag lk412): t 89.891 s: bc5-ring held 466.1 ms: direct sync 457.1 learned 5.1 prepare 2.3 device submit 1.4
+lock wait (exp 0412, tag lk412): t 89.891 s: bc5-chainwd waited 464.3 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 89.913 s mono 78342.875577: 510.5 ms since the last flip | Render Thread: device mutex 0.2, chain mutex 457.0, flip drain 2.6, label wait 16.1, host submit 4.6, host split 1.8 | bc5-ring: device mutex 2.5, host submit 469.6, host split 0.6 | bc5-cq0: gpu fence 15.8, idle (no work) 493.0 | bc5-chainwd: device mutex 464.3, host submit 1.3 | others: gpu fence 17.3, idle (no work) 491.2
+memory (exp 0401): t 90.0 s: available 345 MiB, swap used 701 MiB, psi some 8.17 full 8.09 (avg10, %), full total 414280 ms, gtt 12414 of 13312 MiB
+lock hold (exp 0412, tag lk412): t 90.069 s: bc5-chainwd held 32.6 ms: direct sync 5.1 learned 27.1
+guard: t 90 s: pinned direct 11594.0 MiB, private 270.0; under a view 11568.6, orphans 25.4; views 28721 over 12192.6 MiB; gtt 12414.9; rss 3357 shmem 3147 swap 82 MiB; faults minor 3218766 major 17155; avail 350 unevictable 568 mlocked 45 swap used 696 MiB; psi some 8.2 full 8.1; guard locked 0.0 MiB, guest views 0 (0 refused); files advised 0, drops 0; apply put off 0; rss anon 195; cgroup 12399 MiB; cap put off 0.0 MiB (max 0.0, 0 changes, 0 hard chunks over)
+lock hold (exp 0412, tag lk412): t 90.543 s: bc5-ring held 359.9 ms: direct sync 355.3 learned 3.8
+lock wait (exp 0412, tag lk412): t 90.543 s: bc5-chainwd waited 358.1 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 90.602 s: bc5-chainwd held 59.7 ms: anon sync 57.3 direct sync 1.1
+lock wait (exp 0412, tag lk412): t 90.602 s: bc5-ring waited 59.7 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 90.623 s mono 78343.585627: 455.1 ms since the last flip | Render Thread: device mutex 0.3, chain mutex 408.9, flip drain 4.8, label wait 13.2, host submit 4.5, host split 1.5 | bc5-ring: device mutex 60.5, host submit 364.4, host split 0.6 | bc5-cq0: gpu fence 15.7, idle (no work) 438.2 | bc5-chainwd: device mutex 358.1, host submit 60.0 | others: gpu fence 19.1, idle (no work) 434.9
+lock hold (exp 0412, tag lk412): t 90.798 s: bc5-chainwd held 173.2 ms: anon sync 99.8 direct sync 68.6 learned 4.1
+lock wait (exp 0412, tag lk412): t 90.798 s: bc5-ring waited 85.4 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 90.838 s mono 78343.800282: 214.7 ms since the last flip | Render Thread: device mutex 0.3, chain mutex 78.9, flip drain 19.2, label wait 3.4, host submit 3.2, host split 1.2 | bc5-ring: device mutex 86.4, host submit 3.9, host split 0.2 | bc5-cq0: gpu fence 30.6, idle (no work) 182.9 | bc5-chainwd: host submit 174.9 | others: gpu fence 32.0, idle (no work) 181.3
+lock hold (exp 0412, tag lk412): t 90.973 s: bc5-ring held 39.3 ms: direct sync 38.9
+lock wait (exp 0412, tag lk412): t 90.973 s: Render Thread waited 38.1 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 91.040 s: Render Thread held 67.7 ms: direct sync 52.8 learned 13.8
+lock wait (exp 0412, tag lk412): t 91.040 s: bc5-ring waited 67.5 ms behind Render Thread
+gap (exp 0412, tag gp412): t 91.063 s mono 78344.025936: 135.8 ms since the last flip | Render Thread: device mutex 48.9, flip drain 2.9, label wait 3.3, host submit 71.1, host split 2.0 | bc5-ring: device mutex 68.9, host submit 54.4, host split 0.8 | bc5-cq0: gpu fence 12.6, idle (no work) 122.5 | bc5-chainwd: host submit 0.9 | others: gpu fence 11.9, idle (no work) 123.3
+lock hold (exp 0412, tag lk412): t 91.578 s: bc5-ring held 235.3 ms: direct sync 231.4 learned 3.5
+lock wait (exp 0412, tag lk412): t 91.578 s: bc5-chainwd waited 234.0 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 91.614 s mono 78344.576933: 289.1 ms since the last flip | Render Thread: device mutex 0.7, chain mutex 252.9, flip drain 3.1, label wait 6.0, host submit 3.0, host split 1.0 | bc5-ring: device mutex 20.8, host submit 238.2, host split 0.1 | bc5-cq0: gpu fence 13.3, idle (no work) 274.7 | bc5-chainwd: device mutex 234.0, host submit 20.1 | others: gpu fence 13.8, idle (no work) 274.0
+lock hold (exp 0412, tag lk412): t 92.109 s: bc5-ring held 77.1 ms: anon sync 49.9 direct sync 19.2 learned 4.4 prepare 2.8
+lock wait (exp 0412, tag lk412): t 92.110 s: bc5-chainwd waited 75.5 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 92.128 s mono 78345.091109: 514.2 ms since the last flip | Render Thread: device mutex 0.8, chain mutex 68.5, flip drain 2.3, label wait 14.0, host submit 3.8, host split 1.6 | bc5-ring: device mutex 2.2, host submit 80.6, host split 0.6 | bc5-cq0: gpu fence 12.3, idle (no work) 500.9 | bc5-chainwd: device mutex 75.5, host submit 1.7 | others: gpu fence 15.3, idle (no work) 498.1
+lock hold (exp 0412, tag lk412): t 92.285 s: bc5-ring held 31.3 ms: direct sync 18.0 learned 12.4
+lock wait (exp 0412, tag lk412): t 92.285 s: Render Thread waited 30.1 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 92.517 s: bc5-ring held 36.0 ms: direct sync 30.7 learned 3.6 device submit 1.4
+lock wait (exp 0412, tag lk412): t 92.517 s: bc5-chainwd waited 34.2 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 93.004 s: bc5-ring held 305.7 ms: direct sync 300.9 learned 3.6 device submit 1.0
+lock wait (exp 0412, tag lk412): t 93.004 s: bc5-chainwd waited 304.0 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 93.025 s mono 78345.987418: 346.3 ms since the last flip | Render Thread: device mutex 0.1, chain mutex 304.2, flip drain 2.6, label wait 8.4, host submit 4.3, host split 1.5 | bc5-ring: device mutex 1.3, host submit 308.8, host split 0.6 | bc5-cq0: gpu fence 13.0, idle (no work) 331.9 | bc5-chainwd: device mutex 304.0, host submit 1.7 | others: gpu fence 16.4, idle (no work) 327.4
+lock hold (exp 0412, tag lk412): t 93.268 s: bc5-chainwd held 240.7 ms: anon sync 50.2 direct sync 184.2 learned 3.8 prepare 2.1
+lock wait (exp 0412, tag lk412): t 93.268 s: bc5-ring waited 221.7 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 93.292 s mono 78346.254732: 267.3 ms since the last flip | Render Thread: device mutex 1.1, chain mutex 219.5, flip drain 7.4, label wait 7.7, host submit 4.3, host split 1.6 | bc5-ring: device mutex 223.6, host submit 3.9, host split 0.5 | bc5-cq0: gpu fence 20.3, idle (no work) 245.9 | bc5-chainwd: host submit 240.7 | others: gpu fence 21.6, idle (no work) 244.6
+lock hold (exp 0412, tag lk412): t 93.423 s: bc5-ring held 95.7 ms: direct sync 91.0 learned 4.0
+lock wait (exp 0412, tag lk412): t 93.423 s: Render Thread waited 94.7 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 93.443 s mono 78346.405839: 126.1 ms since the last flip | Render Thread: device mutex 94.7, flip drain 3.3, label wait 5.7, host submit 5.5, host split 1.7 | bc5-ring: device mutex 2.2, host submit 99.6, host split 0.9 | bc5-cq0: gpu fence 13.7, idle (no work) 110.9 | bc5-chainwd: host submit 0.3 | others: gpu fence 16.3, idle (no work) 107.7
+lock hold (exp 0412, tag lk412): t 93.661 s: bc5-ring held 136.1 ms: direct sync 132.0 learned 3.5
+lock wait (exp 0412, tag lk412): t 93.661 s: bc5-chainwd waited 134.3 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 93.680 s mono 78346.642835: 170.8 ms since the last flip | Render Thread: device mutex 0.5, chain mutex 127.1, flip drain 3.7, label wait 14.8, host submit 3.2, host split 1.2 | bc5-ring: device mutex 1.6, host submit 138.7, host split 0.3 | bc5-cq0: gpu fence 14.3, idle (no work) 155.7 | bc5-chainwd: device mutex 134.3, host submit 1.3 | others: gpu fence 16.2, idle (no work) 152.7
+lock hold (exp 0412, tag lk412): t 94.137 s: bc5-ring held 125.1 ms: direct sync 120.6 learned 3.5
+lock wait (exp 0412, tag lk412): t 94.137 s: Render Thread waited 123.4 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 94.207 s: Render Thread held 69.1 ms: anon sync 64.6 direct sync 3.5
+lock wait (exp 0412, tag lk412): t 94.207 s: bc5-ring waited 69.1 ms behind Render Thread
+gap (exp 0412, tag gp412): t 94.223 s mono 78347.186154: 219.5 ms since the last flip | Render Thread: device mutex 124.0, flip drain 3.7, label wait 5.5, host submit 72.4, host split 1.4 | bc5-ring: device mutex 70.2, host submit 127.9, host split 0.1 | bc5-cq0: gpu fence 12.5, idle (no work) 205.2 | bc5-chainwd: host submit 0.3 | others: gpu fence 15.3, idle (no work) 202.7
+lock hold (exp 0412, tag lk412): t 94.531 s: bc5-ring held 290.6 ms: direct sync 282.3 learned 5.9 prepare 2.0
+lock wait (exp 0412, tag lk412): t 94.531 s: Render Thread waited 288.9 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 94.556 s mono 78347.518313: 332.2 ms since the last flip | Render Thread: device mutex 289.4, flip drain 2.5, label wait 12.7, host submit 5.8, host split 1.1 | bc5-ring: device mutex 3.9, host submit 293.9, host split 0.1 | bc5-cq0: gpu fence 15.9, idle (no work) 315.4 | bc5-chainwd: host submit 0.3 | others: gpu fence 21.3, idle (no work) 309.5
+lock hold (exp 0412, tag lk412): t 95.066 s: bc5-ring held 482.1 ms: direct sync 477.8 learned 3.5
+lock wait (exp 0412, tag lk412): t 95.066 s: Render Thread waited 480.2 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 95.085 s mono 78348.048211: 529.9 ms since the last flip | Render Thread: device mutex 480.4, flip drain 4.0, label wait 6.7, host submit 5.0, host split 1.1 | bc5-ring: device mutex 2.9, host submit 485.1, host split 0.2 | bc5-cq0: gpu fence 14.0, idle (no work) 514.8 | bc5-chainwd: host submit 0.3 | others: gpu fence 16.0, idle (no work) 512.2
+lock hold (exp 0412, tag lk412): t 95.190 s: Render Thread held 49.3 ms: anon sync 48.5
+lock wait (exp 0412, tag lk412): t 95.190 s: bc5-ring waited 49.3 ms behind Render Thread
+lock hold (exp 0412, tag lk412): t 95.371 s: bc5-chainwd held 96.1 ms: anon sync 51.7 direct sync 40.4 learned 3.6
+lock wait (exp 0412, tag lk412): t 95.371 s: bc5-ring waited 93.0 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 95.392 s mono 78348.355112: 119.4 ms since the last flip | Render Thread: device mutex 1.4, chain mutex 91.2, flip drain 2.4, label wait 8.8, host submit 4.5, host split 1.2 | bc5-ring: device mutex 94.7, host submit 5.6, host split 0.3 | bc5-cq0: gpu fence 12.7, idle (no work) 104.9 | bc5-chainwd: host submit 96.1 | others: gpu fence 15.0, idle (no work) 102.2
+lock hold (exp 0412, tag lk412): t 95.532 s: bc5-ring held 117.1 ms: direct sync 109.9 learned 4.6 prepare 2.3
+lock wait (exp 0412, tag lk412): t 95.532 s: bc5-chainwd waited 116.0 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 95.596 s: bc5-ring held 49.7 ms: prepare 49.6
+gap (exp 0412, tag gp412): t 95.603 s mono 78348.565623: 210.5 ms since the last flip | Render Thread: device mutex 0.4, chain mutex 108.9, flip drain 2.0, label wait 17.0, host submit 4.8, host split 50.9 | bc5-ring: device mutex 2.9, host submit 170.2, host split 0.3 | bc5-cq0: gpu fence 15.4, idle (no work) 146.5 | bc5-chainwd: device mutex 116.0, host submit 1.3 | others: gpu fence 15.4, idle (no work) 144.2
+lock hold (exp 0412, tag lk412): t 97.937 s: Render Thread held 653.2 ms: anon sync 58.2 direct sync 578.3 learned 4.4 prepare 2.6 device submit 9.4
+lock wait (exp 0412, tag lk412): t 97.937 s: bc5-ring waited 652.7 ms behind Render Thread
+lock hold (exp 0412, tag lk412): t 98.723 s: Render Thread held 55.7 ms: anon sync 48.3 direct sync 6.9
+lock wait (exp 0412, tag lk412): t 98.723 s: bc5-ring waited 55.2 ms behind Render Thread
+gap (exp 0412, tag gp412): t 98.725 s mono 78351.687319: 3121.7 ms since the last flip | Render Thread: device mutex 16.6, flip drain 1.2, label wait 88.7, host submit 715.8, host split 2.3 | bc5-ring: device mutex 707.9, host submit 31.3, host split 42.4 | bc5-cq0: gpu fence 27.4, idle (no work) 3092.7 | bc5-chainwd: host submit 1.8 | others: gpu fence 19.4, idle (no work) 3093.3
+lock hold (exp 0412, tag lk412): t 98.780 s: bc5-chainwd held 53.6 ms: anon sync 53.3
+lock hold (exp 0412, tag lk412): t 98.892 s: bc5-ring held 55.1 ms: direct sync 51.2 learned 3.5
+lock wait (exp 0412, tag lk412): t 98.892 s: Render Thread waited 54.7 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 99.060 s: bc5-ring held 167.4 ms: prepare 167.2
+lock wait (exp 0412, tag lk412): t 99.060 s: Render Thread waited 159.4 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 99.085 s mono 78352.047417: 360.1 ms since the last flip | Render Thread: device mutex 214.6, flip drain 4.9, label wait 14.4, host submit 4.9, host split 1.9 | bc5-ring: device mutex 1.8, host submit 225.5, host split 0.6 | bc5-cq0: gpu fence 16.6, idle (no work) 174.9 | bc5-chainwd: host submit 55.7 | others: gpu fence 18.4, idle (no work) 339.5
+lock hold (exp 0412, tag lk412): t 99.169 s: bc5-ring held 43.4 ms: direct sync 38.3 learned 4.7
+lock wait (exp 0412, tag lk412): t 99.169 s: Render Thread waited 43.3 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 99.193 s mono 78352.156007: 108.6 ms since the last flip | Render Thread: device mutex 43.3, flip drain 4.6, label wait 7.2, host submit 3.6, host split 1.3 | bc5-ring: device mutex 1.8, host submit 46.0, host split 0.1 | bc5-cq0: gpu fence 12.5, idle (no work) 95.0 | bc5-chainwd: host submit 3.8 | others: gpu fence 15.2, idle (no work) 92.7
+gap (exp 0412, tag gp412): t 99.497 s mono 78352.459711: 146.6 ms since the last flip | Render Thread: flip drain 0.9, label wait 8.9, host submit 4.4, host split 1.6 | bc5-ring: device mutex 1.4, host submit 4.5, host split 0.2 | bc5-cq0: gpu fence 13.4, idle (no work) 131.9 | bc5-chainwd: host submit 0.6 | others: gpu fence 14.2, idle (no work) 131.2
+lock hold (exp 0412, tag lk412): t 99.820 s: bc5-ring held 82.5 ms: anon sync 82.3
+lock wait (exp 0412, tag lk412): t 99.820 s: Render Thread waited 81.3 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 99.841 s mono 78352.803983: 104.6 ms since the last flip | Render Thread: device mutex 81.6, flip drain 3.4, label wait 3.7, host submit 8.2, host split 1.7 | bc5-ring: device mutex 1.5, host submit 85.7, host split 0.7 | bc5-cq0: gpu fence 14.3, idle (no work) 89.1 | others: gpu fence 14.6, idle (no work) 88.9
+lock hold (exp 0412, tag lk412): t 99.923 s: bc5-chainwd held 54.1 ms: direct sync 29.0 learned 24.5
+lock wait (exp 0412, tag lk412): t 99.923 s: bc5-ring waited 34.3 ms behind bc5-chainwd
+memory (exp 0401): t 100.0 s: available 302 MiB, swap used 857 MiB, psi some 21.97 full 21.84 (avg10, %), full total 417168 ms, gtt 12574 of 13312 MiB
+lock hold (exp 0412, tag lk412): t 100.055 s: bc5-ring held 132.3 ms: direct sync 127.8 learned 3.8
+lock wait (exp 0412, tag lk412): t 100.055 s: Render Thread waited 132.4 ms behind bc5-chainwd
+guard: t 100 s: pinned direct 11760.0 MiB, private 270.0; under a view 11569.4, orphans 190.6; views 28533 over 12193.4 MiB; gtt 12580.9; rss 527 shmem 430 swap 193 MiB; faults minor 3486748 major 55125; avail 286 unevictable 568 mlocked 45 swap used 863 MiB; psi some 22.0 full 21.8; guard locked 0.0 MiB, guest views 0 (0 refused); files advised 0, drops 0; apply put off 0; rss anon 82; cgroup 12399 MiB; cap put off 0.0 MiB (max 0.0, 0 changes, 0 hard chunks over)
+gap (exp 0412, tag gp412): t 100.411 s mono 78353.373315: 544.1 ms since the last flip | Render Thread: device mutex 132.4, chain mutex 32.5, flip drain 3.7, label wait 5.9, host submit 6.2, host split 1.1 | bc5-ring: device mutex 37.1, host submit 137.7, host split 0.2 | bc5-cq0: gpu fence 11.1, idle (no work) 530.1 | bc5-chainwd: host submit 54.1 | others: gpu fence 18.3, idle (no work) 523.2
+lock hold (exp 0412, tag lk412): t 100.747 s: bc5-ring held 283.7 ms: direct sync 279.5 learned 3.5
+lock wait (exp 0412, tag lk412): t 100.747 s: Render Thread waited 282.2 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 100.808 s: Render Thread held 61.5 ms: anon sync 59.8
+lock wait (exp 0412, tag lk412): t 100.808 s: bc5-ring waited 61.5 ms behind Render Thread
+gap (exp 0412, tag gp412): t 101.175 s mono 78354.137319: 764.0 ms since the last flip | Render Thread: device mutex 282.3, flip drain 3.8, label wait 5.7, host submit 67.8, host split 1.8 | bc5-ring: device mutex 61.9, host submit 287.1, host split 0.2 | bc5-cq0: gpu fence 16.7, idle (no work) 744.9 | bc5-chainwd: host submit 2.0 | others: gpu fence 15.1, idle (no work) 747.5
+lock hold (exp 0412, tag lk412): t 101.263 s: bc5-chainwd held 85.8 ms: anon sync 57.7 direct sync 24.3 learned 3.5
+lock wait (exp 0412, tag lk412): t 101.263 s: bc5-ring waited 64.3 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 101.299 s mono 78354.261528: 124.2 ms since the last flip | Render Thread: device mutex 0.7, chain mutex 62.1, flip drain 21.3, label wait 6.6, host submit 4.0, host split 1.0 | bc5-ring: device mutex 66.6, host submit 3.9, host split 0.2 | bc5-cq0: gpu fence 31.7, idle (no work) 91.5 | bc5-chainwd: host submit 85.9 | others: gpu fence 32.9, idle (no work) 88.6
+lock hold (exp 0412, tag lk412): t 101.351 s: bc5-ring held 34.9 ms: direct sync 30.4 learned 4.1
+lock wait (exp 0412, tag lk412): t 101.351 s: bc5-chainwd waited 33.0 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 101.530 s mono 78354.493109: 231.6 ms since the last flip | Render Thread: device mutex 0.1, chain mutex 27.2, flip drain 161.0, label wait 15.1, host submit 3.9, host split 1.6 | bc5-ring: device mutex 2.6, host submit 37.8, host split 0.1 | bc5-cq0: gpu fence 16.0, idle (no work) 57.3 | bc5-chainwd: device mutex 33.0, host submit 2.8 | others: gpu fence 16.9, idle (no work) 56.0
+lock hold (exp 0412, tag lk412): t 103.167 s: Render Thread held 583.6 ms: anon sync 439.4 direct sync 136.5 learned 4.1 prepare 2.7
+gap (exp 0412, tag gp412): t 103.194 s mono 78356.156595: 1663.5 ms since the last flip | Render Thread: flip drain 2.7, label wait 9.7, host submit 587.8, host split 4.6 | bc5-ring: device mutex 0.3, host submit 6.0, host split 1.0 | bc5-cq0: gpu fence 16.3, idle (no work) 1645.5 | bc5-chainwd: host submit 22.7 | others: gpu fence 17.3, idle (no work) 1644.2
+lock hold (exp 0412, tag lk412): t 103.696 s: bc5-ring held 481.1 ms: direct sync 464.0 learned 16.7
+lock wait (exp 0412, tag lk412): t 103.696 s: bc5-chainwd waited 479.2 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 104.626 s: bc5-chainwd held 930.3 ms: anon sync 624.2 direct sync 300.4 prepare 3.4 device submit 1.7
+lock wait (exp 0412, tag lk412): t 104.626 s: bc5-ring waited 930.3 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 104.676 s: bc5-ring held 48.4 ms: tail 48.1
+lock wait (exp 0412, tag lk412): t 104.676 s: bc5-chainwd waited 38.0 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 104.698 s mono 78357.660622: 1504.0 ms since the last flip | Render Thread: device mutex 1.3, chain mutex 1401.3, flip drain 7.4, label wait 20.0, host submit 4.9, host split 1.9 | bc5-ring: device mutex 931.7, host submit 540.3, host split 0.4 | bc5-cq0: gpu fence 13.4, idle (no work) 1481.9 | bc5-chainwd: device mutex 517.2, host submit 931.2 | others: gpu fence 13.7, idle (no work) 1482.4
+lock hold (exp 0412, tag lk412): t 104.755 s: bc5-chainwd held 55.0 ms: anon sync 54.7
+lock hold (exp 0412, tag lk412): t 105.589 s: bc5-ring held 462.4 ms: direct sync 456.1 learned 3.9 device submit 2.2
+lock wait (exp 0412, tag lk412): t 105.589 s: bc5-chainwd waited 460.9 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 105.647 s mono 78358.609828: 949.2 ms since the last flip | Render Thread: device mutex 0.2, chain mutex 462.0, flip drain 20.5, label wait 6.2, host submit 5.4, host split 1.1 | bc5-ring: device mutex 2.1, host submit 464.7, host split 2.3 | bc5-cq0: gpu fence 34.3, idle (no work) 913.3 | bc5-chainwd: device mutex 460.9, host submit 57.9 | others: gpu fence 35.0, idle (no work) 912.1
+lock hold (exp 0412, tag lk412): t 105.684 s: bc5-chainwd held 35.2 ms: device submit 35.0
+lock hold (exp 0412, tag lk412): t 105.749 s: bc5-ring held 48.2 ms: anon sync 48.1
+lock wait (exp 0412, tag lk412): t 105.749 s: Render Thread waited 40.3 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 105.758 s mono 78358.720929: 111.1 ms since the last flip | Render Thread: device mutex 40.4, flip drain 5.5, label wait 18.5, host submit 3.8, host split 1.6 | bc5-ring: device mutex 0.8, host submit 50.5, host split 0.7 | bc5-cq0: gpu fence 16.2, idle (no work) 93.9 | bc5-chainwd: host submit 35.2 | others: gpu fence 13.3, idle (no work) 96.4
+lock hold (exp 0412, tag lk412): t 106.142 s: bc5-ring held 341.6 ms: direct sync 337.6 learned 3.4
+lock wait (exp 0412, tag lk412): t 106.142 s: Render Thread waited 340.1 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 106.174 s mono 78359.136520: 393.4 ms since the last flip | Render Thread: device mutex 340.5, flip drain 5.3, label wait 4.1, host submit 18.3, host split 1.3 | bc5-ring: device mutex 2.2, host submit 344.1, host split 0.1 | bc5-cq0: gpu fence 15.0, idle (no work) 363.9 | bc5-chainwd: host submit 0.3 | others: gpu fence 15.7, idle (no work) 363.2
+lock hold (exp 0412, tag lk412): t 106.257 s: Render Thread held 32.6 ms: prepare 31.8
+gap (exp 0412, tag gp412): t 106.654 s mono 78359.616428: 269.2 ms since the last flip | Render Thread: device mutex 24.7, flip drain 1.8, label wait 10.0, host submit 4.6, host split 1.6 | bc5-ring: device mutex 1.6, host submit 29.2, host split 0.2 | bc5-cq0: gpu fence 16.1, idle (no work) 252.2 | bc5-chainwd: host submit 0.3 | others: gpu fence 18.3, idle (no work) 250.0
+lock hold (exp 0412, tag lk412): t 106.783 s: bc5-ring held 82.3 ms: anon sync 82.2
+lock wait (exp 0412, tag lk412): t 106.783 s: Render Thread waited 82.2 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 106.827 s mono 78359.790213: 150.6 ms since the last flip | Render Thread: device mutex 90.3, flip drain 41.0, label wait 5.3, host submit 5.2, host split 2.5 | bc5-ring: device mutex 1.9, host submit 96.0, host split 0.8 | bc5-cq0: gpu fence 12.3, idle (no work) 98.7 | others: gpu fence 14.4, idle (no work) 95.7
+lock hold (exp 0412, tag lk412): t 107.549 s: bc5-chainwd held 683.6 ms: anon sync 166.4 direct sync 513.0 learned 3.7
+lock wait (exp 0412, tag lk412): t 107.549 s: bc5-ring waited 638.1 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 107.577 s mono 78360.539521: 713.4 ms since the last flip | Render Thread: device mutex 1.6, chain mutex 636.6, flip drain 2.8, label wait 7.8, host submit 11.7, host split 1.2 | bc5-ring: device mutex 641.6, host submit 3.7, host split 0.1 | bc5-cq0: gpu fence 15.8, idle (no work) 691.9 | bc5-chainwd: host submit 683.6 | others: gpu fence 16.1, idle (no work) 690.6
+lock hold (exp 0412, tag lk412): t 108.814 s: bc5-ring held 106.2 ms: anon sync 69.5 direct sync 30.9 learned 3.5 prepare 1.9
+lock wait (exp 0412, tag lk412): t 108.814 s: bc5-chainwd waited 104.4 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 108.848 s mono 78361.810730: 1271.2 ms since the last flip | Render Thread: device mutex 0.3, chain mutex 105.1, flip drain 1.0, label wait 11.8, host submit 3.1, host split 1.3 | bc5-ring: device mutex 1.9, host submit 109.4, host split 0.2 | bc5-cq0: gpu fence 15.6, idle (no work) 1254.0 | bc5-chainwd: device mutex 104.4, host submit 2.5 | others: gpu fence 18.1, idle (no work) 1252.1
+lock hold (exp 0412, tag lk412): t 108.958 s: bc5-ring held 43.1 ms: prepare 42.9
+gap (exp 0412, tag gp412): t 108.972 s mono 78361.934274: 123.5 ms since the last flip | Render Thread: chain mutex 15.4, flip drain 2.1, label wait 7.8, host submit 11.3, host split 44.1 | bc5-ring: device mutex 9.6, host submit 62.8, host split 0.1 | bc5-cq0: gpu fence 13.7, idle (no work) 68.4 | bc5-chainwd: device mutex 15.1, host submit 1.2 | others: gpu fence 13.4, idle (no work) 64.8
+memory (exp 0401): t 110.0 s: available 307 MiB, swap used 937 MiB, psi some 25.90 full 25.85 (avg10, %), full total 420465 ms, gtt 12644 of 13312 MiB
+guard: t 111 s: pinned direct 11824.0 MiB, private 270.0; under a view 11572.4, orphans 251.6; views 28579 over 12194.4 MiB; gtt 12644.9; rss 421 shmem 356 swap 227 MiB; faults minor 3652576 major 102662; avail 302 unevictable 568 mlocked 45 swap used 937 MiB; psi some 25.9 full 25.9; guard locked 0.0 MiB, guest views 0 (0 refused); files advised 0, drops 0; apply put off 0; rss anon 49; cgroup 12399 MiB; cap put off 0.0 MiB (max 0.0, 0 changes, 0 hard chunks over)
+lock hold (exp 0412, tag lk412): t 111.427 s: bc5-ring held 706.7 ms: anon sync 175.6 direct sync 516.4 learned 3.8 prepare 2.1 device submit 8.6
+lock wait (exp 0412, tag lk412): t 111.427 s: Render Thread waited 706.4 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 111.461 s mono 78364.423315: 2489.0 ms since the last flip | Render Thread: device mutex 706.8, chain mutex 0.1, flip drain 5.0, label wait 13.2, host submit 5.6, host split 2.7 | bc5-ring: device mutex 5.7, in-flight cap 4.0, host submit 710.5, host split 0.4 | bc5-cq0: gpu fence 29.8, idle (no work) 2457.4 | bc5-chainwd: chain mutex 708.3, host submit 3.3 | others: gpu fence 31.1, idle (no work) 2456.2
+lock hold (exp 0412, tag lk412): t 111.559 s: bc5-chainwd held 96.7 ms: anon sync 54.0 direct sync 38.7 learned 3.5
+lock wait (exp 0412, tag lk412): t 111.559 s: bc5-ring waited 91.1 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 111.582 s mono 78364.545218: 121.9 ms since the last flip | Render Thread: device mutex 0.2, chain mutex 89.4, flip drain 4.4, label wait 10.3, host submit 4.7, host split 1.1 | bc5-ring: device mutex 93.0, host submit 3.1, host split 0.6 | bc5-cq0: gpu fence 15.4, idle (no work) 105.0 | bc5-chainwd: host submit 96.7 | others: gpu fence 17.7, idle (no work) 103.1
+lock hold (exp 0412, tag lk412): t 112.803 s: bc5-ring held 994.8 ms: direct sync 987.9 learned 3.8 prepare 2.4
+lock wait (exp 0412, tag lk412): t 112.803 s: bc5-chainwd waited 992.9 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 112.858 s: bc5-chainwd held 55.3 ms: anon sync 52.3 device submit 1.9
+lock wait (exp 0412, tag lk412): t 112.858 s: bc5-ring waited 55.4 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 112.878 s mono 78365.840314: 1295.1 ms since the last flip | Render Thread: device mutex 0.6, chain mutex 1040.1, flip drain 4.9, label wait 14.8, host submit 3.6, host split 1.4 | bc5-ring: device mutex 55.7, host submit 997.5, host split 0.3 | bc5-cq0: gpu fence 14.2, idle (no work) 1278.7 | bc5-chainwd: device mutex 992.9, host submit 55.6 | others: gpu fence 18.8, idle (no work) 1274.4
+lock hold (exp 0412, tag lk412): t 113.129 s: bc5-chainwd held 39.1 ms: direct sync 18.5 learned 20.2
+lock hold (exp 0412, tag lk412): t 114.916 s: bc5-ring held 1736.7 ms: direct sync 1089.1 learned 601.0 prepare 45.1 device submit 1.0
+lock wait (exp 0412, tag lk412): t 114.916 s: bc5-chainwd waited 1735.1 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 115.503 s: bc5-chainwd held 586.5 ms: anon sync 459.6 direct sync 116.7 device submit 9.3
+lock wait (exp 0412, tag lk412): t 115.503 s: bc5-ring waited 586.7 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 115.535 s mono 78368.498211: 2383.2 ms since the last flip | Render Thread: device mutex 0.6, chain mutex 2313.7, flip drain 3.8, label wait 25.4, host submit 5.2, host split 2.7 | bc5-ring: device mutex 587.4, in-flight cap 0.5, host submit 1740.2, host split 0.5 | bc5-cq0: gpu fence 31.2, idle (no work) 2350.4 | bc5-chainwd: device mutex 1735.1, host submit 607.2 | others: gpu fence 31.1, idle (no work) 2342.7
+lock hold (exp 0412, tag lk412): t 115.586 s: bc5-chainwd held 48.3 ms: anon sync 48.1
+lock hold (exp 0412, tag lk412): t 116.147 s: bc5-ring held 544.7 ms: direct sync 537.8 learned 4.4 prepare 2.2
+lock wait (exp 0412, tag lk412): t 116.147 s: Render Thread waited 542.8 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 116.172 s mono 78369.134319: 636.1 ms since the last flip | Render Thread: device mutex 542.8, flip drain 2.0, label wait 8.7, host submit 7.5, host split 2.1 | bc5-ring: device mutex 4.1, host submit 548.3, host split 0.3 | bc5-cq0: gpu fence 15.1, idle (no work) 619.7 | bc5-chainwd: host submit 48.3 | others: gpu fence 18.8, idle (no work) 615.3
+lock hold (exp 0412, tag lk412): t 118.170 s: Render Thread held 154.6 ms: anon sync 94.5 direct sync 54.5 prepare 4.6
+lock wait (exp 0412, tag lk412): t 118.170 s: bc5-ring waited 154.3 ms behind Render Thread
+gap (exp 0412, tag gp412): t 118.173 s mono 78371.136110: 2001.8 ms since the last flip | Render Thread: device mutex 0.6, chain mutex 13.7, flip drain 3.3, label wait 13.6, host submit 157.3, host split 2.0 | bc5-ring: device mutex 156.5, host submit 25.4, host split 0.3 | bc5-cq0: gpu fence 15.7, idle (no work) 1981.0 | bc5-chainwd: device mutex 20.4, host submit 6.0 | others: gpu fence 15.1, idle (no work) 1985.5
+lock hold (exp 0412, tag lk412): t 118.248 s: bc5-chainwd held 50.5 ms: anon sync 50.2
+lock hold (exp 0412, tag lk412): t 118.362 s: bc5-ring held 41.3 ms: direct sync 36.8 learned 3.9
+lock wait (exp 0412, tag lk412): t 118.362 s: bc5-chainwd waited 39.4 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 118.382 s mono 78371.344907: 186.4 ms since the last flip | Render Thread: device mutex 0.4, chain mutex 39.8, flip drain 2.4, label wait 9.3, host submit 3.2, host split 1.0 | bc5-ring: device mutex 2.8, host submit 43.9, host split 0.1 | bc5-cq0: gpu fence 13.8, idle (no work) 171.6 | bc5-chainwd: device mutex 39.4, host submit 52.1 | others: gpu fence 15.5, idle (no work) 169.1
+lock hold (exp 0412, tag lk412): t 118.543 s: bc5-ring held 125.5 ms: direct sync 15.3 learned 109.4
+lock wait (exp 0412, tag lk412): t 118.543 s: bc5-chainwd waited 123.6 ms behind bc5-ring
+memory (exp 0401): t 120.2 s: available 350 MiB, swap used 986 MiB, psi some 32.91 full 32.89 (avg10, %), full total 424137 ms, gtt 12660 of 13312 MiB
+lock hold (exp 0412, tag lk412): t 120.270 s: Render Thread held 543.6 ms: anon sync 407.5 direct sync 133.5 prepare 2.0
+lock wait (exp 0412, tag lk412): t 120.270 s: bc5-ring waited 543.0 ms behind Render Thread
+gap (exp 0412, tag gp412): t 120.274 s mono 78373.237110: 1892.2 ms since the last flip | Render Thread: device mutex 1.1, chain mutex 116.9, flip drain 4.1, label wait 13.3, host submit 546.6, host split 1.5 | bc5-ring: device mutex 544.5, host submit 128.3, host split 0.2 | bc5-cq0: gpu fence 16.1, idle (no work) 1874.9 | bc5-chainwd: device mutex 123.6, host submit 2.2 | others: gpu fence 15.9, idle (no work) 1875.4
+lock hold (exp 0412, tag lk412): t 120.329 s: bc5-chainwd held 52.4 ms: anon sync 51.6
+lock hold (exp 0412, tag lk412): t 120.377 s: bc5-ring held 40.4 ms: direct sync 29.8 learned 10.2
+lock wait (exp 0412, tag lk412): t 120.377 s: bc5-chainwd waited 38.6 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 120.396 s mono 78373.359110: 122.0 ms since the last flip | Render Thread: device mutex 0.8, chain mutex 39.5, flip drain 4.5, label wait 6.6, host submit 2.8, host split 1.1 | bc5-ring: device mutex 2.1, host submit 43.8, host split 0.4 | bc5-cq0: gpu fence 13.8, idle (no work) 106.7 | bc5-chainwd: device mutex 38.6, host submit 54.2 | others: gpu fence 15.7, idle (no work) 104.0
+lock hold (exp 0412, tag lk412): t 120.920 s: bc5-chainwd held 397.3 ms: direct sync 31.1 learned 363.7 hints 2.2
+lock wait (exp 0412, tag lk412): t 120.920 s: bc5-ring waited 380.2 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 120.974 s mono 78373.937114: 453.3 ms since the last flip | Render Thread: device mutex 0.5, chain mutex 387.7, flip drain 3.3, label wait 4.6, host submit 3.0, host split 1.2 | bc5-ring: device mutex 381.2, host submit 11.5, host split 0.5 | bc5-cq0: gpu fence 10.2, idle (no work) 441.9 | bc5-chainwd: device mutex 8.5, host submit 398.3 | others: gpu fence 14.3, idle (no work) 437.7
+lock hold (exp 0412, tag lk412): t 121.050 s: Render Thread held 48.7 ms: device submit 48.3
+guard: t 121 s: pinned direct 11840.0 MiB, private 270.0; under a view 11558.8, orphans 281.2; views 28681 over 12180.8 MiB; gtt 12660.9; rss 660 shmem 558 swap 191 MiB; faults minor 3790265 major 166388; avail 279 unevictable 568 mlocked 45 swap used 926 MiB; psi some 32.2 full 32.2; guard locked 0.0 MiB, guest views 0 (0 refused); files advised 0, drops 0; apply put off 0; rss anon 87; cgroup 12399 MiB; cap put off 0.0 MiB (max 0.0, 0 changes, 0 hard chunks over)
+lock hold (exp 0412, tag lk412): t 121.261 s: bc5-ring held 106.9 ms: direct sync 102.8 learned 3.7
+lock wait (exp 0412, tag lk412): t 121.261 s: bc5-chainwd waited 105.1 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 121.332 s: bc5-ring held 49.6 ms: anon sync 49.4
+lock wait (exp 0412, tag lk412): t 121.332 s: Render Thread waited 49.1 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 121.339 s mono 78374.301651: 190.8 ms since the last flip | Render Thread: device mutex 49.3, chain mutex 98.5, flip drain 2.7, label wait 17.3, host submit 5.4, host split 6.3 | bc5-ring: device mutex 2.7, host submit 168.4, host split 0.2 | bc5-cq0: gpu fence 12.8, idle (no work) 169.1 | bc5-chainwd: device mutex 105.1, host submit 2.2 | others: gpu fence 14.3, idle (no work) 167.5
+gap (exp 0412, tag gp412): t 121.792 s mono 78374.755111: 453.5 ms since the last flip | Render Thread: device mutex 14.7, flip drain 1.3, label wait 8.2, host submit 3.5, host split 1.2 | bc5-ring: device mutex 1.8, host submit 18.7, host split 0.4 | bc5-cq0: gpu fence 12.3, idle (no work) 440.4 | bc5-chainwd: host submit 0.8 | others: gpu fence 13.2, idle (no work) 439.8
+lock hold (exp 0412, tag lk412): t 121.913 s: bc5-chainwd held 38.9 ms: direct sync 24.2 learned 14.2
+lock hold (exp 0412, tag lk412): t 122.641 s: bc5-ring held 535.1 ms: direct sync 528.1 learned 3.9 prepare 1.9 device submit 1.1
+lock wait (exp 0412, tag lk412): t 122.641 s: Render Thread waited 533.2 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 123.005 s: Render Thread held 363.6 ms: anon sync 358.5 direct sync 4.0
+lock wait (exp 0412, tag lk412): t 123.005 s: bc5-ring waited 363.7 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 123.018 s mono 78375.980700: 919.6 ms since the last flip | Render Thread: device mutex 533.2, flip drain 2.5, label wait 3.2, host submit 367.1, host split 1.5 | bc5-ring: device mutex 363.7, host submit 538.0, host split 0.1 | bc5-cq0: gpu fence 8.5, idle (no work) 909.0 | bc5-chainwd: host submit 0.2 | others: gpu fence 11.8, idle (no work) 906.6
+lock hold (exp 0412, tag lk412): t 123.160 s: bc5-chainwd held 49.7 ms: anon sync 49.5
+gap (exp 0412, tag gp412): t 123.213 s mono 78376.175421: 104.8 ms since the last flip | Render Thread: device mutex 0.5, flip drain 1.3, label wait 5.0, host submit 3.5, host split 4.7 | bc5-ring: device mutex 0.5, host submit 7.3, host split 0.3 | bc5-cq0: gpu fence 8.6, idle (no work) 94.2 | bc5-chainwd: host submit 50.6 | others: gpu fence 10.5, idle (no work) 89.8
+lazy release (exp 0401 e7): t 123 s: 11860.0 MiB imported: 10034.0 under eager views, 1544.0 under data views, 148.0 under lazy views, 6.0 forced and under no view, 128.0 under no view (126.0 last seen under an eager or zero-list view, 2.0 never seen under one; 0.0 idle 30 s or more); cut 0.0 MiB in 0 BOs (0 whole, 0 split), back 0.0 MiB, 0 chunks released now, 0 undone, 0 imports failed, 0 BOs deferred, 0 not split (aliases); GTT 12680.9 of 13312.0 MiB
+lock hold (exp 0412, tag lk412): t 124.511 s: bc5-chainwd held 1181.8 ms: direct sync 21.0 learned 1157.0 prepare 3.4
+lock hold (exp 0412, tag lk412): t 125.760 s: bc5-ring held 1249.1 ms: anon sync 63.3 direct sync 1172.9 learned 5.0 hints 1.9 prepare 1.9 device submit 4.0
+lock wait (exp 0412, tag lk412): t 125.760 s: bc5-chainwd waited 1249.2 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 125.885 s: bc5-chainwd held 125.4 ms: anon sync 89.2 direct sync 27.4 device submit 8.4
+lock wait (exp 0412, tag lk412): t 125.885 s: bc5-ring waited 125.3 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 127.206 s: Render Thread held 755.1 ms: direct sync 730.9 learned 9.7 prepare 2.3 device submit 11.4
+lock wait (exp 0412, tag lk412): t 127.206 s: bc5-ring waited 754.9 ms behind Render Thread
+lock hold (exp 0412, tag lk412): t 128.369 s: bc5-ring held 1163.1 ms: anon sync 331.2 direct sync 771.6 learned 5.2 prepare 2.1 device submit 52.7
+lock wait (exp 0412, tag lk412): t 128.369 s: Render Thread waited 1155.0 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 128.446 s: Render Thread held 76.4 ms: anon sync 72.0 direct sync 4.0
+lock wait (exp 0412, tag lk412): t 128.446 s: bc5-ring waited 76.3 ms behind Render Thread
+gap (exp 0412, tag gp412): t 128.510 s mono 78381.472314: 5182.9 ms since the last flip | Render Thread: device mutex 1155.2, chain mutex 1398.9, flip drain 8.9, label wait 17.2, host submit 887.0, host split 9.2 | bc5-ring: device mutex 988.6, host submit 2422.3, host split 1.9 | bc5-cq0: gpu fence 69.4, idle (no work) 5089.2 | bc5-chainwd: device mutex 1249.2, chain mutex 20.4, host submit 1318.9 | others: gpu fence 55.5, idle (no work) 5082.1
+lock hold (exp 0412, tag lk412): t 129.047 s: bc5-chainwd held 535.0 ms: anon sync 533.8
+memory (exp 0401): t 130.6 s: available 335 MiB, swap used 999 MiB, psi some 35.59 full 35.58 (avg10, %), full total 427599 ms, gtt 12699 of 13312 MiB
+guard: t 131 s: pinned direct 11876.0 MiB, private 270.0; under a view 11534.5, orphans 341.5; views 28686 over 12156.5 MiB; gtt 12699.8; rss 397 shmem 339 swap 218 MiB; faults minor 3961503 major 214203; avail 309 unevictable 568 mlocked 45 swap used 969 MiB; psi some 35.7 full 35.7; guard locked 0.0 MiB, guest views 0 (0 refused); files advised 0, drops 0; apply put off 0; rss anon 38; cgroup 12399 MiB; cap put off 0.0 MiB (max 0.0, 0 changes, 0 hard chunks over)
+lock hold (exp 0412, tag lk412): t 137.078 s: bc5-ring held 5833.7 ms: anon sync 73.5 direct sync 3776.1 learned 1678.4 hints 55.6 prepare 64.4 device submit 185.4
+lock wait (exp 0412, tag lk412): t 137.078 s: bc5-chainwd waited 5833.4 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 138.920 s: bc5-chainwd held 1841.8 ms: anon sync 77.0 direct sync 1640.9 device submit 24.5 tail 99.0
+lock wait (exp 0412, tag lk412): t 138.920 s: bc5-ring waited 1841.9 ms behind bc5-chainwd
+memory (exp 0401): t 141.2 s: available 224 MiB, swap used 1004 MiB, psi some 44.72 full 44.62 (avg10, %), full total 433150 ms, gtt 11807 of 13312 MiB
+lock hold (exp 0412, tag lk412): t 141.165 s: bc5-ring held 2245.6 ms: anon sync 860.0 direct sync 290.9 hints 84.7 prepare 1003.8 device submit 6.0
+lock wait (exp 0412, tag lk412): t 141.276 s: Render Thread waited 2245.6 ms behind bc5-ring
+guard: t 141 s: pinned direct 11892.0 MiB, private 270.0; under a view 11575.3, orphans 316.7; views 28684 over 12195.3 MiB; gtt 12709.8; rss 70 shmem 15 swap 219 MiB; faults minor 3995083 major 257938; avail 214 unevictable 568 mlocked 45 swap used 1007 MiB; psi some 44.7 full 44.6; guard locked 0.0 MiB, guest views 0 (0 refused); files advised 0, drops 0; apply put off 0; rss anon 47; cgroup 12399 MiB; cap put off 0.0 MiB (max 0.0, 0 changes, 0 hard chunks over)
+lock hold (exp 0412, tag lk412): t 141.481 s: Render Thread held 204.9 ms: anon sync 60.9 direct sync 60.6 device submit 48.4 tail 34.0
+lock wait (exp 0412, tag lk412): t 141.481 s: bc5-ring waited 203.1 ms behind Render Thread
+lock hold (exp 0412, tag lk412): t 141.789 s: bc5-chainwd held 64.7 ms: device submit 64.2
+lock wait (exp 0412, tag lk412): t 141.790 s: bc5-ring waited 65.7 ms behind bc5-chainwd
+lock hold (exp 0412, tag lk412): t 141.919 s: bc5-ring held 72.5 ms: direct sync 71.8
+lock wait (exp 0412, tag lk412): t 141.919 s: Render Thread waited 67.3 ms behind bc5-ring
+lock hold (exp 0412, tag lk412): t 143.808 s: Render Thread held 706.8 ms: anon sync 61.7 direct sync 642.0 prepare 2.4
+gap (exp 0412, tag gp412): t 143.812 s mono 78396.774284: 15302.0 ms since the last flip | Render Thread: device mutex 2312.9, chain mutex 7667.6, flip drain 1.9, label wait 59.2, host submit 1030.5, host split 201.4 | bc5-ring: device mutex 2111.9, host submit 8162.0, host split 1.1 | bc5-cq0: gpu fence 13.6, idle (no work) 15279.1 | bc5-chainwd: device mutex 5833.4, host submit 2443.5 | others: gpu fence 7.4, idle (no work) 13339.4
+lock hold (exp 0412, tag lk412): t 143.871 s: bc5-chainwd held 57.2 ms: anon sync 56.7
+lock hold (exp 0412, tag lk412): t 146.509 s: bc5-ring held 2365.6 ms: direct sync 1842.2 learned 132.0 prepare 2.1 device submit 385.7 tail 3.3
+lock wait (exp 0412, tag lk412): t 146.509 s: Render Thread waited 2365.0 ms behind bc5-ring

@@ -1408,9 +1408,56 @@ fix with an old-against-new test on a recorded maps text; not built yet.
 **Shortcut.** Unchanged: "BC5 emulator (0412 fast2)", which now runs with the 30 s idle time. fast3 is an arm of the
 wrapper only (`play-guard-0412.sh fast3`); it gave no reason to replace the shortcut.
 
+### 29. The maintainer's play of 2026-11-11 19:40–19:43 on fast2 (30 s) with the catchers on
+
+He started "BC5 emulator (0412 fast2)" (build g412o, `BC5_DIRECT_LAZY_RELEASE=30,eager`), with
+`catchers.env` = `BC5_GUARD_GAP_STAT=100`, `BC5_GUARD_LOCK_STAT=1` and the 20 ms sampler, loaded his save and gave up
+inside three minutes: "Nie da się 5 minut ... nie da się przejść nawet in-game". The emulator ended with exit 0 at
+19:43:38 (he closed it); no kernel line of that time. Data `raw/h2play-*` (journal lines, frames, the 5 s sampler);
+the catchers were switched off again after the play (`catchers.env.off`).
+
+**What happened** [M]: the memory wall, inside two minutes.
+
+| seconds after the start | available MiB | swap used MiB | emulator major faults/s | PSI memory full | emulator CPU % |
+|---|---|---|---|---|---|
+| 62 | 3,662 | 594 | 0 | 0.0 % | 211 |
+| 83 | 673 | 599 | 14 | 1.7 % | 457 |
+| 98 | 609 | 599 | 0 | 3.2 % | 341 |
+| 103 | 530 | 733 | 711 | 11.5 % | 606 |
+| 119 | 321 | 870 | 2,035 | 19.2 % | 508 |
+| 129 | 275 | 908 | 5,459 | 26.3 % | 613 |
+| 145 | 250 | 943 | 6,159 | 30.7 % | 468 |
+| 161 | 229 | 1,010 | 4,360 | 47.8 % | 871 |
+
+The ledger: pinned 11,840 MiB at 121 s, 11,876 at 131 s, 11,892 at 141 s (orphans 281–342 MiB; views 28,684 over
+12,195 MiB). Frames: 1,813 in all; 145 over 100 ms = 71.6 s; twelve over one second = 40.0 s: 3.1 s at 99 s, then
+1.3–2.5 s each several times, 5.2 s at 129 s, and **15.3 s at 144 s, the last flip of the run**; the emulator then
+stood for 30 s until he closed it.
+
+**Reading.** From 103 s the box swaps: 2,000–6,000 major faults a second in the emulator, half the time stalled on
+memory. This is the wall of section 16 reached on his live save, which pins about 250 MiB more than the copy of his
+save the scripted runs load (11,840–11,892 against 11,580–11,700 MiB at the same seconds). The scripted runs sit
+just above the watchdog's line; his play goes past it, and the shortcut has no watchdog, only the cgroup fuse at
+12,400 MiB, which a thrashing emulator does not reach.
+The catchers: the 20 ms sampler holds about 45 MiB and the journal lines are small. Against a deficit of several
+hundred MiB they did not make this play fail, but they did not help either, and with no margin at all 45 MiB is
+not nothing [I]. They are off again.
+The 30 s idle time: in this play the orphans stayed at 281–342 MiB, which the 4 s setting would have cut at least
+once. Whether that would have kept the play alive is not known from one play.
+
+**What this means for the order of work.** Nothing measured in sections 19–28 (mutex holds, the submit path, the
+release's timing) matters to his play while it ends like this: the first defect in his way is the 0.4–0.5 GiB of
+memory that the box does not have (section 16). The levers that exist, none of them built or changed here:
+the zero skip (0.6–0.75 GiB less pinned, with 2 GPU ring timeouts in 8 runs so far); a session without the Plasma
+desktop while playing (the desktop's processes and its 285 MiB of GPU memory); a hard stop that ends the emulator
+cleanly at the wall instead of letting it thrash (the watchdog of the scripted runs, for the shortcut).
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
+- His play of 19:40 (section 29) [M]: on his live save the pin is 11.84-11.89 GiB at two minutes, about 250 MiB above the scripted
+  copy; from 103 s the box swaps (2,000-6,000 major faults/s, PSI full to 48 %), frames of 1-15 s, the last flip at 144 s.
+  The memory wall is the first defect in his way; the speed work of sections 19-28 does not reach his play while it ends so.
 - Speed after the table fixes (sections 18, 19) [M]: both fixes of the host's memory tables give about +47 % frames in the load phases
   (`KYTY_BC5_RANGES_FAST=1`, `KYTY_BC5_PHYSMAP_SORTED=1`; arm fast2, build g412i). After them neither the game thread nor the Render
   Thread is bound by host code (6-23 % of their time, no line over 4 %); they wait half their time, the Render Thread for the
