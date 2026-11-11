@@ -955,14 +955,15 @@ on, scripted load, 182 s, 25.0 flips/s (the same as without the counter), no ker
   heavy 10 s windows `bc5-ring` holds it 27 % and the Render Thread 22 % of the time.
 - The Render Thread waits almost only behind `bc5-ring` (the thread that submits for the asynchronous ring);
   `bc5-ring` waits behind the Render Thread and `bc5-chainwd`.
-- Single holds reach 45–51 ms (Render Thread) and 83 ms (`bc5-ring`): a whole frame and more with every other
-  submitter stopped.
+- The longest single hold in a 10 s window is 35–135 ms in most windows after the start, with peaks of 354 ms
+  (Render Thread), 186 ms (`bc5-ring`) and 152 ms (`bc5-chainwd`) in the save load; one of 1,501 ms by `bc5-ring` in
+  the first seconds (start-up). Each is one or more whole frames with every other submitter stopped.
 
 **Reading** [I]: every submission, from whichever thread, does all of its host work under this one mutex: the probe,
 the mapping sync, the learned windows, the hints, the two filter passes and the submit ioctl (section 19 has their
 lines). So the submitting threads run one at a time, which is the "threads wait for each other in turn" of section
 19. The fix is not a faster line but a shorter hold: do what needs only the buffer (probe, filter, hints, the state
-tracker) outside the mutex, keep under it the mapping sync and the ioctl, and find what the 45–83 ms holds are (the
+tracker) outside the mutex, keep under it the mapping sync and the ioctl, and find what the 35–354 ms holds are (the
 forced sync or the learned windows, by the code). That changes the shared direct path's locking and needs its own
 design and review; not built here.
 
@@ -975,7 +976,7 @@ design and review; not built here.
   GPU at the flip and at label waits (30 %) and for the device mutex (12 %). The orphan release now cuts on his route without the
   zero skip (pin 11.5-11.65 GiB, was 12.0); the budget is still short at 215 s.
 - The device mutex (section 20) [M]: every submission does all its host work under one mutex; it is held 45 % of the time
-  (`bc5-ring` 23 %, Render Thread 14 %, `bc5-chainwd` 8 %), the three wait 35 s of 180 s for it, single holds reach 83 ms.
+  (`bc5-ring` 23 %, Render Thread 14 %, `bc5-chainwd` 8 %), the three wait 35 s of 180 s for it, single holds reach 35-135 ms in most 10 s windows and 354 ms in the save load.
   A shorter hold is the next speed fix; it changes the direct path's locking and is not built.
 - The wall as arithmetic (section 16) [M]: at 165 s the guest pins 12,024 of 15,193 MiB; the 3,169 left hold the kernel, the
   GPU driver's buffers, the desktop and the emulator only with 986 MiB in swap and 42 MiB of file cache for the game. Over by
