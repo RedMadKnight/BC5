@@ -29,7 +29,7 @@ case "${1:-}" in
 esac
 ARM=$1; DRY=${2:-}
 [ -z "$DRY" ] || [ "$DRY" = dry ] || { say "0412 astro: unknown second word $DRY; not started"; exit 1; }
-FUSE="12300 2048"
+FUSE="12400 2048"
 case "${BC5_0412_FUSE-unset}" in unset) ;; 0 | "") FUSE="" ;; *) FUSE=$BC5_0412_FUSE ;; esac
 S=$E/sampler0412b.sh; F=$E/fuse0412.sh; STAMP=$(date +%Y%m%d-%H%M%S); SOUT=$E/sampler/astro-$STAMP-capture-$ARM.txt; FLOG=$E/fuse.log
 SOK=0; pinned sampler0412b.sh "$E/tools.md5" && SOK=1

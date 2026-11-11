@@ -651,7 +651,7 @@ static void guard0412_after_cuts(size_t cuts) {
 
 // BC5_GUARD_FORGET (g412d): at the start of a full sync of the direct file, at most every 2 s.
 static void guard0412_forget(DState& S, const std::vector<DView>& views, uint64_t sig, uint64_t now) {
-    static const uint64_t idle = [] {
+    static const uint64_t idle = []() -> uint64_t {
         const char* e = std::getenv("BC5_GUARD_FORGET");
         if (!bc5::env_on(e)) return uint64_t {0};
         char*                    end = nullptr;

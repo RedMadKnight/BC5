@@ -1,0 +1,14 @@
+2026-11-10 23:15:25
+arm a1ledger (ledger), cap 410 s, play 150 s, binary /home/kjaniszewski/bc5-work/exp0412/bin/kyty_emulator md5 baf16ce2fe4530b09464ba717b7a44e3, launcher 3a1f4e10, fuse 12400 1024
+the arm's words: BC5_GUARD_LEDGER=1 BC5_0412N_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0412/night/input-a1ledger.cfg 
+extra: none
+boot 46038e09, up since 2026-11-10 21:56:56
+MemAvailable:   13490672 kB SwapTotal:       7778300 kB SwapFree:        7215916 kB 
+emulator pid 464113 exe /home/kjaniszewski/bc5-work/exp0412/bin/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0412/night/wd
+route: cross (start screen) at 87 s
+route: the save-slot list runs; cross (slot 1) at 93 s
+route: cross (Continue) at 99 s
+route: the load seen at 103 s
+route: gameplay G = 129 s (the load at 103 s)
+route: walk of 9 cycles (150 s) queued at 129 s
+launcher gone: yes; launcher exit 0

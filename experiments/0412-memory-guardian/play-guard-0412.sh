@@ -13,7 +13,7 @@
 #            put off and read as zeros on the GPU (missing textures or geometry) until room comes back
 #   amm      cap + BC5_GUARD_AMM_BY_USE=1 (the launcher drops AMM from the eager heaps: its chunks are pinned when they hold
 #            data, not when mapped). F403's class of risk: a GPU access to an AMM page no CPU wrote faults (14 s). No shortcut.
-# The fuse (orphans, cap, amm; fuse0412.sh): memory.max 12,300 MiB and memory.swap.max 2,048 MiB on the container's cgroup
+# The fuse (every arm but base, low and guest; fuse0412.sh): memory.max 12,400 MiB (the night of 11-10/11: 12,000 is too tight, 1 flip/s) and memory.swap.max 2,048 MiB on the container's cgroup
 # while the emulator runs; past them the kernel kills the emulator instead of the box dying. BC5_0412_FUSE=0 leaves it out,
 # BC5_0412_FUSE="<RAM MiB> <swap MiB>" sets other limits (any arm).
 # MLOCK needs an unlimited memlock limit inside the container; the wrapper asks for it and the guardian journals what it
@@ -56,21 +56,23 @@ LOW=(BC5_GUARD_LEDGER=1 BC5_GUARD_FILE=random,dontneed "BC5_GUARD_FILE_ROOT=$GAM
 ORPH=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=10,eager BC5_GUARD_SPLIT=1)   # SPLIT since the third build (g412c): without it nothing is cut while BC5_DIRECT_ALIASES is set
 CAP=("${ORPH[@]}" BC5_GUARD_PIN_CAP=11600 BC5_GUARD_CAP_ACT=1)
 FUSE=""; ZL=$E/zero-list-0412.txt   # the zero list of the z arms (a copy of the night's scan, put in place by hand)
-case "${1:-}" in zsk | zo | zoc) [ -s "$ZL" ] || { say "0412: no zero list at $ZL; not started"; exit 1; } ;; esac
+case "${1:-}" in zsk | zo | zoc | zof) [ -s "$ZL" ] || { say "0412: no zero list at $ZL; not started"; exit 1; } ;; esac
 case "${1:-}" in
   base)    ;;
-  ledger)  WORDS+=(BC5_GUARD_LEDGER=1) ;;
+  ledger)  WORDS+=(BC5_GUARD_LEDGER=1); FUSE="12400 2048" ;;   # the fuse since the night of 11-10/11: without a limit this arm took the box down (21:47)
   low)     WORDS+=("${LOW[@]}" BC5_GUARD_MLOCK=pinned) ;;
   guest)   WORDS+=("${LOW[@]}" BC5_GUARD_MLOCK=guest) ;;
-  orphans) WORDS+=("${ORPH[@]}"); FUSE="12300 2048" ;;
-  cap)     WORDS+=("${CAP[@]}"); FUSE="12300 2048" ;;
-  amm)     WORDS+=("${CAP[@]}" BC5_GUARD_AMM_BY_USE=1); FUSE="12300 2048" ;;
+  orphans) WORDS+=("${ORPH[@]}"); FUSE="12400 2048" ;;
+  cap)     WORDS+=("${CAP[@]}"); FUSE="12400 2048" ;;
+  amm)     WORDS+=("${CAP[@]}" BC5_GUARD_AMM_BY_USE=1); FUSE="12400 2048" ;;
   # The night's arms (2026-11-11): exp 0379's zero skip with a list scanned at the maintainer's current save.
-  zscan)   WORDS+=("${ORPH[@]}" BC5_DIRECT_ZEROSCAN_AT=140,170,200,230,260 "BC5_DIRECT_ZEROSCAN_OUT=$E/night/zero-list-scan.txt"); FUSE="12300 2048" ;;
-  zsk)     WORDS+=(BC5_GUARD_LEDGER=1 "BC5_DIRECT_ZERO_SKIP=$ZL"); FUSE="12300 2048" ;;
-  zo)      WORDS+=("${ORPH[@]}" "BC5_DIRECT_ZERO_SKIP=$ZL"); FUSE="12300 2048" ;;
-  zoc)     WORDS+=("${CAP[@]}" "BC5_DIRECT_ZERO_SKIP=$ZL"); FUSE="12300 2048" ;;
-  *) say "0412: usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm|zscan|zsk|zo|zoc [dry]; not started"; exit 1 ;;
+  zscan)   WORDS+=("${ORPH[@]}" BC5_DIRECT_ZEROSCAN_AT=140,170,200,230,260 "BC5_DIRECT_ZEROSCAN_OUT=$E/night/zero-list-scan.txt"); FUSE="12400 2048" ;;
+  zsk)     WORDS+=(BC5_GUARD_LEDGER=1 "BC5_DIRECT_ZERO_SKIP=$ZL"); FUSE="12400 2048" ;;
+  zo)      WORDS+=("${ORPH[@]}" "BC5_DIRECT_ZERO_SKIP=$ZL"); FUSE="12400 2048" ;;
+  zoc)     WORDS+=("${CAP[@]}" "BC5_DIRECT_ZERO_SKIP=$ZL"); FUSE="12400 2048" ;;
+  zof)     WORDS+=("${ORPH[@]}" BC5_GUARD_FORGET=20 "BC5_DIRECT_ZERO_SKIP=$ZL"); FUSE="12400 2048" ;;   # the fourth build (g412d)
+  of)      WORDS+=("${ORPH[@]}" BC5_GUARD_FORGET=20); FUSE="12400 2048" ;;
+  *) say "0412: usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm|zscan|zsk|zo|zoc|zof|of [dry]; not started"; exit 1 ;;
 esac
 ARM=$1; DRY=${2:-}
 # "words": the arm's environment words, one per line, for the night runner (run0412n.sh); nothing is started.

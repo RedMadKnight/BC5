@@ -7,10 +7,10 @@
 #   astro-on   "BC5 Astro (0412 capture on)"   play-astro-guard-0412.sh on
 # Writes only the one .desktop file (made as a temporary file in ~/bc5-work/exp0412, validated, then moved); removes
 # nothing. The other shortcuts stay as they are ("0412 ledger" and "0412 low" run the same wrapper, so the new build).
-# usage (on the box): WANT_W=<md5 of the wrapper the shortcut runs> bash shortcut0412b.sh orphans|cap|astro-off|astro-on
+# usage (on the box): WANT_W=<md5 of the wrapper the shortcut runs> bash shortcut0412b.sh orphans|cap|zo|astro-off|astro-on
 set -u
 E=$HOME/bc5-work/exp0412; WANT_W=${WANT_W:?the md5 of the wrapper}
-G="e11 unpacked's switches plus the guardian's ledger"; FU="fuse: the emulator is killed past 12,300 MiB in its cgroup instead of the box dying"
+G="e11 unpacked's switches plus the guardian's ledger"; FU="fuse: the emulator is killed past 12,400 MiB in its cgroup instead of the box dying"
 case "${1:-}" in
   orphans)   W=$E/play-guard-0412.sh; ARG=orphans; NAME="BC5 emulator (0412 orphans)"
              WHAT="$G + orphan release (BC5_DIRECT_LAZY_RELEASE=10,eager: pinned memory under no view for 10 s is unpinned); $FU; private build g412b"
@@ -18,13 +18,16 @@ case "${1:-}" in
   cap)       W=$E/play-guard-0412.sh; ARG=cap; NAME="BC5 emulator (0412 cap)"
              WHAT="$G + orphan release + the pin cap acting at 11,600 MiB (new streaming chunks over it read as zeros on the GPU: textures or geometry can be missing); $FU; private build g412b"
              LOGS="log ~/bc5-work/exp0412/play-last.log; sampler lines ~/bc5-work/exp0412/sampler/" ;;
+  zo)        W=$E/play-guard-0412.sh; ARG=zo; NAME="BC5 emulator (0412 zo - best of the night)"
+             WHAT="$G + zero skip (the list scanned at his save on 2026-11-10 night: all-zero chunks of the two render heaps are not pinned) + orphan release that works with aliases (BC5_GUARD_SPLIT); in the night's scripted runs 0.5-0.7 GiB less pinned and no memory pressure; one GPU ring reset in five runs with the zero skip (the box recovered); $FU; private build g412d"
+             LOGS="log ~/bc5-work/exp0412/play-last.log; sampler lines ~/bc5-work/exp0412/sampler/" ;;
   astro-off) W=$E/play-astro-guard-0412.sh; ARG=off; NAME="BC5 Astro (0412 capture off)"
              WHAT="ASTRO BOT on the shared build with PLAY_CAPTURE off (no journal), the memory sampler beside it; $FU"
              LOGS="log ~/bc5-work/exp0412/astro-last.log; sampler lines ~/bc5-work/exp0412/sampler/astro-*" ;;
   astro-on)  W=$E/play-astro-guard-0412.sh; ARG=on; NAME="BC5 Astro (0412 capture on)"
              WHAT="ASTRO BOT on the shared build with PLAY_CAPTURE on (as the play the kernel killed on 2026-11-10), the memory sampler beside it; $FU"
              LOGS="log ~/bc5-work/exp0412/astro-last.log; sampler lines ~/bc5-work/exp0412/sampler/astro-*" ;;
-  *) echo "usage: shortcut0412b.sh orphans|cap|astro-off|astro-on"; exit 1 ;;
+  *) echo "usage: shortcut0412b.sh orphans|cap|zo|astro-off|astro-on"; exit 1 ;;
 esac
 DESK=$(xdg-user-dir DESKTOP 2> /dev/null); DESK=${DESK:-$HOME/Pulpit}
 m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }

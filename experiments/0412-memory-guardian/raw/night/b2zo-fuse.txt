@@ -1,0 +1,3 @@
+2026-11-10 23:43:31 fuse: set on /sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/user.slice/libpod-cb6100ac41bf8c253e2ff96249193e39ede4b059786051f12ef8012216c14459.scope/container for process 830134: memory.max 12400 MiB, memory.swap.max 1024 MiB (the cgroup held 508 MiB)
+2026-11-10 23:50:40 fuse: process 830134 ended; the cgroup's peak 12716 MiB
+2026-11-10 23:50:40 fuse: limits back to max on /sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/user.slice/libpod-cb6100ac41bf8c253e2ff96249193e39ede4b059786051f12ef8012216c14459.scope/container; max 1211015 oom_kill 2 

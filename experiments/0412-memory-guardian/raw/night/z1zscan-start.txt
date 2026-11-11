@@ -1,0 +1,14 @@
+2026-11-10 23:30:01
+arm z1zscan (zscan), cap 430 s, play 170 s, binary /home/kjaniszewski/bc5-work/exp0412/bin/kyty_emulator md5 d32dfa89b585673106384b1c08f8e006, launcher 3a1f4e10, fuse 12400 1024
+the arm's words: BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=10,eager BC5_GUARD_SPLIT=1 BC5_DIRECT_ZEROSCAN_AT=140,170,200,230,260 BC5_DIRECT_ZEROSCAN_OUT=/home/kjaniszewski/bc5-work/exp0412/night/zero-list-scan.txt BC5_0412N_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0412/night/input-z1zscan.cfg 
+extra: none
+boot 46038e09, up since 2026-11-10 21:56:56
+MemAvailable:   13474116 kB SwapTotal:       7778300 kB SwapFree:        7215656 kB 
+emulator pid 654387 exe /home/kjaniszewski/bc5-work/exp0412/bin/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0412/night/wd
+route: cross (start screen) at 87 s
+route: the save-slot list runs; cross (slot 1) at 93 s
+route: cross (Continue) at 99 s
+route: the load seen at 103 s
+route: gameplay G = 143 s (the load at 103 s)
+route: walk of 10 cycles (170 s) queued at 143 s
+launcher gone: yes; launcher exit 0
