@@ -1,0 +1,51 @@
+78 gaps, 13.6 s; samples per thread: Render Thread 7045, game-main 7045, bc5-ring 7045, bc5-cq0 7001
+
+== scene load: 19 gaps, 2.7 s
+   Render Thread: on CPU 70.1 %, blocked: device mutex 18.7 %, blocked: chain mutex 6.0 %, blocked: flip drain 2.8 %, blocked: label wait 1.0 %, blocked, not a host stamp: futex wait 0.7 %
+        on-CPU split by ticks: user 92 %, system 8 % (186 ticks at HZ 100; CPU 1.9 s); of the CPU time: host submit 14.3 %, of the CPU time: host split 1.0 %; minor faults 17672, major 0, block-I/O delay ticks 0
+   game-main: blocked, not a host stamp: futex wait 54.5 %, on CPU 45.4 %
+        on-CPU split by ticks: user 90 %, system 10 % (126 ticks at HZ 100; CPU 1.2 s); minor faults 20970, major 0, block-I/O delay ticks 0
+   bc5-ring: on CPU 35.4 %, blocked: device mutex 27.8 %, blocked, not a host stamp: sleep 24.1 %, blocked, not a host stamp: futex wait 12.2 %, run-queue wait 0.5 %
+        on-CPU split by ticks: user 58 %, system 42 % (93 ticks at HZ 100; CPU 1.0 s); of the CPU time: host submit 35.2 %, of the CPU time: host split 0.1 %; minor faults 35593, major 0, block-I/O delay ticks 0
+   bc5-cq0: blocked: idle (no work) 89.5 %, blocked: gpu fence 9.4 %, on CPU 0.8 %
+        on-CPU split by ticks: user 100 %, system 0 % (1 ticks at HZ 100; CPU 0.0 s); minor faults 0, major 0, block-I/O delay ticks 0
+
+== menu and list: 15 gaps, 3.2 s
+   Render Thread: on CPU 73.6 %, blocked: device mutex 16.8 %, blocked: chain mutex 3.2 %, blocked, not a host stamp: futex wait 1.9 %, blocked: flip drain 1.8 %, blocked: not sampled 1.6 %, blocked: label wait 1.0 %
+        on-CPU split by ticks: user 96 %, system 4 % (235 ticks at HZ 100; CPU 2.4 s); of the CPU time: host submit 6.9 %, of the CPU time: host split 0.5 %; minor faults 448, major 0, block-I/O delay ticks 0
+   game-main: on CPU 66.3 %, blocked, not a host stamp: futex wait 32.9 %, blocked: not sampled 0.7 %
+        on-CPU split by ticks: user 84 %, system 16 % (212 ticks at HZ 100; CPU 2.1 s); minor faults 1125, major 0, block-I/O delay ticks 0
+   bc5-ring: blocked, not a host stamp: sleep 60.7 %, on CPU 20.7 %, blocked: device mutex 10.0 %, blocked, not a host stamp: futex wait 8.5 %
+        on-CPU split by ticks: user 64 %, system 36 % (66 ticks at HZ 100; CPU 0.7 s); of the CPU time: host submit 22.3 %, of the CPU time: host split 0.7 %; minor faults 8856, major 0, block-I/O delay ticks 0
+   bc5-cq0: blocked: idle (no work) 95.8 %, blocked: gpu fence 3.8 %
+        on-CPU split by ticks: user 0 %, system 0 % (0 ticks at HZ 100; CPU 0.0 s); minor faults 0, major 0, block-I/O delay ticks 0
+
+== save load: 34 gaps, 5.2 s
+   Render Thread: on CPU 63.9 %, blocked: device mutex 13.7 %, blocked: chain mutex 10.2 %, blocked: flip drain 4.4 %, blocked: label wait 4.2 %, blocked, not a host stamp: futex wait 2.1 %, blocked, not a host stamp: sleep 0.8 %, blocked: not sampled 0.5 %
+        on-CPU split by ticks: user 93 %, system 7 % (327 ticks at HZ 100; CPU 3.3 s); of the CPU time: host submit 15.5 %, of the CPU time: host split 1.2 %; minor faults 28511, major 308, block-I/O delay ticks 0
+   game-main: on CPU 50.8 %, blocked, not a host stamp: futex wait 48.6 %
+        on-CPU split by ticks: user 92 %, system 8 % (264 ticks at HZ 100; CPU 2.6 s); minor faults 3493, major 149, block-I/O delay ticks 0
+   bc5-ring: blocked, not a host stamp: sleep 40.9 %, on CPU 26.6 %, blocked: device mutex 24.3 %, blocked, not a host stamp: futex wait 7.4 %, run-queue wait 0.6 %
+        on-CPU split by ticks: user 71 %, system 29 % (142 ticks at HZ 100; CPU 1.4 s); of the CPU time: host submit 27.1 %, of the CPU time: host split 0.3 %; minor faults 19093, major 3, block-I/O delay ticks 0
+   bc5-cq0: blocked: idle (no work) 84.5 %, blocked: gpu fence 14.2 %, on CPU 0.8 %
+        on-CPU split by ticks: user 100 %, system 0 % (4 ticks at HZ 100; CPU 0.0 s); minor faults 1, major 5, block-I/O delay ticks 0
+
+== play: 9 gaps, 2.4 s
+   Render Thread: on CPU 36.6 %, blocked: device mutex 27.6 %, blocked, not a host stamp: futex wait 23.5 %, blocked: label wait 4.5 %, blocked: chain mutex 2.4 %, run-queue wait 2.1 %, blocked: flip drain 2.0 %, blocked, not a host stamp: sleep 1.3 %
+        on-CPU split by ticks: user 53 %, system 47 % (91 ticks at HZ 100; CPU 0.9 s); of the CPU time: host submit 26.0 %, of the CPU time: host split 0.8 %; minor faults 12273, major 117, block-I/O delay ticks 0
+   game-main: on CPU 53.7 %, blocked, not a host stamp: futex wait 42.3 %, run-queue wait 3.5 %, blocked: not sampled 0.6 %
+        on-CPU split by ticks: user 95 %, system 5 % (130 ticks at HZ 100; CPU 1.3 s); minor faults 658, major 51, block-I/O delay ticks 0
+   bc5-ring: on CPU 33.6 %, blocked, not a host stamp: sleep 28.0 %, blocked: device mutex 24.0 %, blocked, not a host stamp: futex wait 9.0 %, run-queue wait 4.2 %, blocked: not sampled 1.1 %
+        on-CPU split by ticks: user 30 %, system 70 % (80 ticks at HZ 100; CPU 0.8 s); of the CPU time: host submit 34.3 %, of the CPU time: host split 0.3 %; minor faults 13876, major 6, block-I/O delay ticks 0
+   bc5-cq0: blocked: idle (no work) 91.9 %, blocked: gpu fence 6.7 %, on CPU 0.7 %
+        on-CPU split by ticks: user 100 %, system 0 % (1 ticks at HZ 100; CPU 0.0 s); minor faults 0, major 2, block-I/O delay ticks 0
+
+== whole run: 78 gaps, 13.6 s
+   Render Thread: on CPU 62.5 %, blocked: device mutex 18.2 %, blocked: chain mutex 6.2 %, blocked, not a host stamp: futex wait 5.6 %, blocked: flip drain 3.0 %, blocked: label wait 2.8 %, blocked: not sampled 0.6 %, blocked, not a host stamp: sleep 0.6 %, run-queue wait 0.5 %
+        on-CPU split by ticks: user 89 %, system 11 % (848 ticks at HZ 100; CPU 8.5 s); of the CPU time: host submit 15.0 %, of the CPU time: host split 0.9 %; minor faults 58971, major 425, block-I/O delay ticks 0
+   game-main: on CPU 53.8 %, blocked, not a host stamp: futex wait 45.0 %, run-queue wait 0.8 %
+        on-CPU split by ticks: user 90 %, system 10 % (739 ticks at HZ 100; CPU 7.3 s); minor faults 27703, major 200, block-I/O delay ticks 0
+   bc5-ring: blocked, not a host stamp: sleep 40.1 %, on CPU 28.3 %, blocked: device mutex 21.3 %, blocked, not a host stamp: futex wait 8.8 %, run-queue wait 1.1 %
+        on-CPU split by ticks: user 57 %, system 43 % (388 ticks at HZ 100; CPU 3.9 s); of the CPU time: host submit 29.0 %, of the CPU time: host split 0.3 %; minor faults 77662, major 9, block-I/O delay ticks 0
+   bc5-cq0: blocked: idle (no work) 89.5 %, blocked: gpu fence 9.4 %, on CPU 0.7 %
+        on-CPU split by ticks: user 100 %, system 0 % (6 ticks at HZ 100; CPU 0.1 s); minor faults 1, major 7, block-I/O delay ticks 0

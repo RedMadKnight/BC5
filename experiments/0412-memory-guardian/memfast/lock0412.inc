@@ -23,6 +23,7 @@ class Mutex {
 public:
 	static constexpr int N = 48; // thread names; further ones share the last slot, "(others)"
 	void lock() {
+		gp412::Scope gs(gp412::kDevMutex); // the gap classifier (gap0412.inc): the time to get the mutex
 		if (!on()) {
 			m_.lock();
 			return;
@@ -35,6 +36,7 @@ public:
 			m_.lock();
 			waited = now_ns() - t0;
 		}
+		gs.end();
 		const int me = slot();
 		holder_.store(me, std::memory_order_relaxed);
 		acq_[me]++;

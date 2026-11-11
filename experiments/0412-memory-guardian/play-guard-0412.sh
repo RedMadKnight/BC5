@@ -84,6 +84,15 @@ case "${1:-}" in
   *) say "0412: usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm|zscan|zsk|zo|zoc|zof|of|zoe|fast|fast2 [dry]; not started"; exit 1 ;;
 esac
 ARM=$1; DRY=${2:-}
+# The catchers' env file (README section 23, the top session's order of 2026-11-11): $E/catchers.env with lines
+# BC5_GUARD_GAP_STAT=<n> and/or BC5_GUARD_LOCK_STAT=<n>. Absent (the default): no catcher. They change no behaviour;
+# with BC5_GUARD_GAP_STAT a play also gets the outside 20 ms sampler (gapsamp0412.py, read-only).
+CATCH=""
+if [ -f "$E/catchers.env" ]; then
+  while IFS= read -r ln; do
+    if [[ "$ln" =~ ^BC5_GUARD_(GAP|LOCK)_STAT=[0-9]+$ ]]; then WORDS+=("$ln"); CATCH="$CATCH $ln"; fi
+  done < "$E/catchers.env"
+fi
 # "words": the arm's environment words, one per line, for the night runner (run0412n.sh); nothing is started.
 if [ "$DRY" = words ]; then printf '%s\n' "${WORDS[@]}"; exit 0; fi
 [ -z "$DRY" ] || [ "$DRY" = dry ] || { say "0412: unknown second word $DRY; not started"; exit 1; }
@@ -97,6 +106,7 @@ if [ -n "$DRY" ]; then
   echo "dry: sampler $([ "$SOK" = 1 ] && echo "pinned, would write $SOUT" || echo "NOT the installed copy: the play would run without it")"
   echo "dry: fuse $([ -z "$FUSE" ] && echo "none for this arm" || { [ "$FOK" = 1 ] && echo "pinned, would set memory.max and memory.swap.max to $FUSE MiB" || echo "NOT the installed copy: the play would run without it"; })"
   echo "dry: would run: /usr/bin/distrobox enter ubuntu -- /usr/bin/bash -c 'ulimit -l unlimited 2> /dev/null; exec /usr/bin/env \"\$@\"' guard0412 <${#WORDS[@]} words> $L"
+  echo "dry: catchers from $E/catchers.env:${CATCH:- none}"
   echo "dry: nothing started"
   exit 0
 fi
@@ -116,5 +126,9 @@ if [ -n "$FUSE" ]; then
     say "0412: the fuse $F is not the installed one; playing without it"
   fi
 fi
+case "$CATCH" in *BC5_GUARD_GAP_STAT=*)
+  mkdir -p "$E/sampler"
+  nohup /usr/bin/python3 -I "$E/gapsamp0412.py" "$E/sampler/gapsamp-$STAMP-$ARM.txt" 14400 "Render Thread" game-main bc5-ring bc5-cq0 > /dev/null 2>&1 < /dev/null & ;;
+esac
 # The memlock limit is raised inside the container, where the emulator starts; a refusal is not an error here.
 /usr/bin/distrobox enter ubuntu -- /usr/bin/bash -c 'ulimit -l unlimited 2> /dev/null; exec /usr/bin/env "$@"' guard0412 "${WORDS[@]}" "$L"
