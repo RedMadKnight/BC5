@@ -1452,9 +1452,313 @@ the zero skip (0.6–0.75 GiB less pinned, with 2 GPU ring timeouts in 8 runs so
 desktop while playing (the desktop's processes and its 285 MiB of GPU memory); a hard stop that ends the emulator
 cleanly at the wall instead of letting it thrash (the watchdog of the scripted runs, for the shortcut).
 
+### 30. The hard stop for shortcut plays, the save copy checked, and the lean session prepared (2026-11-11 19:46–19:55, the top session's order)
+
+**The hard stop** (`stop0412.sh`, started by `play-guard-0412.sh` for every real play; `BC5_0412_STOP=0` turns it
+off): every 2 s it reads MemAvailable and the memory pressure "full" avg10 with the shell's own `read`; after five
+samples in a row (10 s) with less than 300 MiB available and 20 % or more pressure, or with 35 % pressure alone, it
+ends the emulator (SIGTERM, SIGKILL 3 s later if needed), writes a line to `~/bc5-work/exp0412/stop.log` and opens a
+window "BC5: zatrzymano, brak pamięci (N MiB)". The thresholds come from section 29: his play had 267–275 MiB and
+23–26 % at 124–129 s, when the frames were already 2 s long; the scripted runs that live dip under 300 MiB with
+3–20 % and recover. Tested on stand-ins on the box [M]: a `sleep` watched with thresholds that are true was ended
+after five samples (about 10 s); one watched with thresholds that are false was left alone and its end noted. The
+first version read the pressure line wrongly (it took `avg60` for the number) and never stopped anything; the
+stand-in test caught that before any play. **Not tested:** the window itself (the stand-ins ran with
+`STOP0412_QUIET=1`, so that nothing popped up on his desktop), and a real emulator at the wall.
+
+**The save copy** [M]: the scripted runs' snapshot was made again from his current `~/bc5-work/_SaveData/PPSA03671`
+(the old one kept as `night/saves-named.20261110`): the same content sum `1151e79071c72b17`, and `diff -r` finds
+no difference; only the prefs file's time is newer. **So his live save and the copy are the same; the 250 MiB more
+that his play pinned (section 29) is not the save.** What differs is what happens after the load: the script
+walks forward for 60 s, he plays. No scripted run reproduces 11.84–11.89 GiB yet.
+
+**The lean session, prepared, nothing stopped yet.** `lean0412.sh` and a hook in the wrapper (`BC5_0412_LEAN=1`):
+before the emulator starts, `plasma-plasmashell.service` is stopped (now 169 MiB of memory in its cgroup, and
+174 MiB of GPU memory by section 18); a watcher outside the launcher's process group starts it again when the
+launcher's process is gone, whatever ended it. `plasma-keyboard` (19 MiB and 96 MiB of GPU memory) is a child of
+KWin, not a unit of its own; stopping it needs a KWin setting and is left out. KWin, PipeWire, the pad's path, sshd
+and tailscale are not touched. Only the dry print has run. The real stop-and-restore test and the measurement need
+the desktop shell to disappear for some minutes on his running session, so they wait for his word.
+
+**A correction to section 29.** The "about 45 MiB" given there for the 20 ms sampler was read off the process list
+by mistake: that `python3` is `bc5-gpu-stall-sampler`, a service that has been running since boot. The sampler's
+own size was not measured; it is a small Python process, and the play's failure does not hang on it.
+
+### 31. Design note: zero pages without the GPU hang (2026-11-11 20:05; nothing built)
+
+**The maintainer's point** (20:02): "Przecież ps5 się nie wysypuje gdy gra potrzebuję pamięci ... Problemem jest NASZ
+kod i nasze biblioteki." What of the wall is ours, from this experiment's own numbers:
+- We pin every page of the title's heaps the moment a view covers it, written or not. The two large GPU heaps
+  (`RenderGpuWcLarge` 2,758 MiB, `CommitIABufferAllocator` 2,736 MiB) are about half all-zero, 1.38 GiB each
+  ([M], the table of section 1; F394, F402, F540). A console backs its guest memory with its own page tables and
+  need not pin anything for the GPU; our direct path pins because a GPU access to an unpinned page here is a fault
+  that can take the machine down (F6). The pin of never-written pages is the largest single cost of that choice.
+- Orphans, 180–340 MiB at the wall: memory under no view that we keep pinned (sections 16, 29).
+- The host around the guest: the emulator's own memory, the mount process, the page tables for 28,000 mappings
+  (section 16's table).
+
+**What exists.** The zero skip (exp 0379, arm zo here) already does not pin the chunks of a scanned zero list, and it
+already keeps the GPU from faulting: every skipped chunk is GPU-mapped onto a slice of one small "canary" BO at every
+address a view gives it. It saved 0.6–0.75 GiB here. Its two ways of learning that a skipped chunk is no longer
+zero: the canary slice is found changed (the GPU wrote there), and **the CPU's writes are found by polling the
+memfd with SEEK_DATA at the next sync** (`zskip_take_back`), which runs at most every 50 ms unless the guest's ranges
+changed (`direct_sync_one`).
+
+**The suspected defect** [I, to be proven]: between the title's first CPU write into a skipped chunk and the next
+sync that polls, the GPU still reads the canary's zeros at that address. If what the title wrote is something a
+shader walks (an acceleration structure for the reflections, an index or argument table), a job submitted in that
+window runs on zeros: a traversal that never ends is a ring timeout with no page fault line, which is exactly what
+both timeouts looked like (c1zof at 99 s on the save list; his play at 09:54:16: "no page fault line, the ring reset
+succeeded", sections 9 and 14). Ten runs without the zero skip had none.
+
+**The fix to build: catch the first CPU write synchronously.** A skipped chunk's CPU pages are write-protected; the
+first write faults; the handler pins the real chunk, swaps the GPU mappings from the canary to it, and only then
+lets the write go on. No window is left in which the CPU has data and the GPU sees zeros. Two ways to get the fault:
+- userfaultfd in write-protect mode on the memfd's mappings: supported for shmem on this kernel (7.2.15);
+  `vm.unprivileged_userfaultfd` is 0 here, which still allows a descriptor made with `UFFD_USER_MODE_ONLY`, and the
+  title's writes are user-mode. The host's own writes into guest memory (read() into a guest buffer, memcpy in a
+  library call) would fault in the kernel and are refused in that mode: they need the chunk taken back before the
+  call, or the second way.
+- `mprotect` to read-only and the host's existing SIGSEGV path (the one the learned windows use): no new kernel
+  feature, catches both kinds of write, but a guest thread inside a host library call must be handled the same way.
+Chunks the GPU may write (render targets and compute outputs, known from the hints and learned windows) are never
+skipped: that rule exists already (`direct_force` takes a skipped chunk back).
+
+**What makes it feasible in our code:** the canary mapping, the take-back and the swap of mappings exist and are
+tested (exp 0379's CPU tests); what is new is the trigger (a fault instead of a poll) and doing the take-back on the
+faulting thread under the device mutex. **What can make it fail:** a write from kernel context into a protected
+page; the cost of a fault per 2 MiB chunk at the moment the title starts using a region (one fault per chunk, then
+never again); 28,000 mappings to protect and unprotect.
+
+**Expected on his save:** the list scanned at his save holds what gave 0.6–0.75 GiB in the night's runs; the heaps'
+all-zero halves are 2.8 GiB, and the list could be dropped for "skip whatever the title has not written" once the
+write is caught synchronously, since then nothing depends on a scan made earlier. That is more than the 0.4–0.5 GiB
+the wall lacks.
+
+**Order of proof before any play:** (1) a catcher in the existing zero skip that journals, for every chunk taken
+back by the poll, how long the CPU's data had been there unseen and whether a submission ran in between (it proves
+or kills the suspected defect with the build we have); (2) the fault trigger behind its own switch with exp 0379's
+CPU tests extended; (3) scripted runs with the zero skip and the trigger, counting ring timeouts against the 2 in 8.
+
+### 32. How much of the pinned memory do command buffers name? (build g412p, 2026-11-11 19:57–19:59; a first, cut-short answer)
+
+**Question** (the top session's frame): we pin every byte the GPU could address; how much does the GPU touch? If
+little, residency could follow use.
+
+**Catcher.** `BC5_GUARD_USE_STAT=1` (`memfast/use0412.inc`, `memfast/mkuse0412.py`, tag us412; default off, no
+behaviour change): every memory operand the backend's filter asks about at submission stamps its 2 MiB chunks of
+guest address space; every 30 s the direct sync prints, per heap name, the MiB under views and of them the MiB in
+chunks an operand named ever / in the last 60 s / 10 s / 1 s. Build g412p = g412o + this, binary `e4dfc6d6` (g412o
+kept).
+
+**The run, c1use, is not a valid measuring run.** The watchdog ended it at 90 s on pressure (PSI full 66 %), before
+the save list. Cause [M]: Steam was running on the box (four `steamwebhelper` processes of 58–202 MiB and `steam`;
+available 2,400 MiB at 26 s where every earlier run had 3,900–4,100, swap 1,092 MiB used at the start). Steam was not
+started by this session; the guard before a run looks for an emulator and the lock only. No further run is made
+while Steam is up.
+
+**What the two tables that were printed say** (30 s and 60 s after the start, the title's menus) [M]:
+
+| | under views | in chunks an operand named: ever | last 10 s |
+|---|---|---|---|
+| direct memory, all heaps (30 s) | 9,619 MiB | 44 MiB (23 chunks) | 36 MiB |
+| `RenderGpuWcLarge` | 2,758 | 6 | 4 |
+| `CommitIABufferAllocator` | 2,736 | 0 | 0 |
+| `RenderGpuRwLarge` | 414 | 28 | 22 |
+| `AssetHeap Large`, `InitAllocator`, `AMM`, the others | 3,700 | 0 | 0 |
+| private memory (60 s) | 346 | 2 | 2 |
+
+after 921,650 operands (2.7 million by 60 s).
+
+**Reading.** In the menus the command buffers name 0.5 % of the memory under views, and of the heap that is
+certainly drawn from (`CommitIABufferAllocator`: index and vertex buffers by its name [I]) not one chunk. The
+addresses of what the shaders read are not in the command stream: the buffers carry register values and a few
+tables, and the shaders reach textures and buffers through descriptors and pointers they load from memory. That is
+the limit written into the catcher, and it is the whole picture, not a detail. **So the host cannot learn the GPU's
+use of memory from the command buffers, and a residency scheme driven by "what the next submission references"
+has nothing to stand on.** The play phase was not reached; nothing suggests it differs in kind.
+
+**What does carry information about use** [I]: the title's own calls (what it maps, unmaps, commits and gives a
+type to), the CPU's first write to a page (the zero pages of section 31: memory the title has reserved and never
+filled), and the GPU's own faults, which this driver turns into a hang instead of a recoverable event. Section 31's
+scheme uses the second. The first is the subject of the library review the maintainer ordered (a sub-agent of this
+session; its note goes to the shared notes folder).
+
+**Not done from the top session's list.** The kernel's rule for what holds the pages (udmabuf create against the BO
+list of a submission): the public source could not be fetched (the host rate-limited all three files), so it is not
+cited here; what this experiment measured itself is that the pin follows the imports, not the submissions (the
+ledger's "pinned" is the sum of imported BOs, section 7). The class split at 130 s on his save needs a valid run.
+
+### 33. The zero skip's blind window, caught with a GPU hang beside it (build g412q, run d1zc, 2026-11-11 20:03–20:06, on the maintainer's "Zbuduj łapacz")
+
+**Catcher.** `BC5_GUARD_ZSKIP_STAT=1` (`memfast/zcat0412.inc`, `memfast/mkzcat0412.py`, tag zc412; default off, no
+behaviour change): every time the zero skip's poll (`zskip_take_back`, SEEK_DATA on the memfd) finds CPU data in a
+chunk it had left unpinned, one journal line says how long ago the previous poll was (the title wrote the data
+inside that time, while the GPU had the canary's zeros mapped there) and how many submissions went to the GPU in
+between. Build g412q = g412p + this, binary `f344f790` (g412p kept).
+
+**Run d1zc**: arm zo (zero skip with the list scanned at his save + orphan release + split) with both table fixes,
+scripted load, RT on, measuring watchdog 220 MiB, Steam not running. **It ended in a GPU hang: gfx ring timeout,
+thread `bc5-chainwd`, no page fault line, the ring reset succeeded, the box stayed up** (the third such timeout
+with the zero skip, in 9 runs now). Data `raw/d1zc-*`.
+
+**Result** [M]:
+- 1,010 MiB placed as skipped (740 MiB of `RenderGpuWcLarge` in 30 runs, 270 MiB of `CommitIABufferAllocator` in 3).
+- In the first 90 s the poll found 45 chunks written by the CPU; for 45 of them submissions had gone out since the
+  previous poll, 1,204 submissions in all, each with zeros mapped for the GPU at a chunk that already held the
+  title's data. The window: mean 58.8 ms, longest 149 ms, over 10 ms for 40 chunks, over 50 ms for 19.
+- The hang: the last good flip is at 99.503 s. **At 99.507 s the poll found CPU data in the chunk at file offset
+  0x22e200000, which lies in the skipped part of `CommitIABufferAllocator`; the previous poll was 31.7 ms earlier
+  and 15 submissions had gone out in between.** A second chunk followed at 99.609 s (22.8 ms, no submission).
+  The next frame never completed: it lasted 17.1 s, and the kernel logged the ring timeout for a job of that frame.
+  No chunk was found between 83.0 s and 99.5 s.
+
+**Reading.** The blind window is real and long: tens of milliseconds, with tens of submissions inside it. And the
+one hang of this run starts within 4 ms of the moment the poll shows that the GPU had been drawing for 32 ms from
+zeros where the title had put data into its index-and-vertex heap. That is coincidence in time and in place, both
+measured; that those 15 submissions read that chunk and that zeros there make a job that never ends is the step
+still inferred [I]. It is the mechanism of section 31, now with a measured case; the two earlier timeouts
+(sections 9, 14) had the same signature and no catcher.
+The polls themselves are not rare (1,946 in 90 s, 22 a second); the window is long because a poll happens only at
+a sync, and syncs are throttled and skipped for light buffers. Polling more often narrows the window and cannot
+close it: the write and the submission are on different threads.
+
+**What follows.** The synchronous catch of the first CPU write (section 31) is the fix to build: with it there is
+no moment in which the title's data exists and the GPU sees zeros. Until then the zero skip stays out of his
+shortcuts. The catcher stays in the build for the proof run of the fix: the count of chunks found by the poll must
+then be zero.
+
+### 34. What command buffers name of the pinned memory, the valid run (c2use, 2026-11-11 20:08–20:11)
+
+Section 32's question again on a clean box (Steam closed by the maintainer; 12.9 GiB available at the start): arm
+fast2, build g412q, `BC5_GUARD_USE_STAT=1`, scripted load, measuring watchdog 220 MiB. The run reached 181 s (46 s of
+play), 23.6 flips/s, lowest available 233 MiB, no kernel line. Data `raw/c2use-usestat.txt`.
+
+**Over the run** (direct memory; MiB in 2 MiB chunks that an operand of a submitted command buffer named) [M]:
+
+| seconds | under views | named ever | last 60 s | last 10 s | last 1 s | operands so far |
+|---|---|---|---|---|---|---|
+| 30 (menus) | 9,619 | 44 | 44 | 36 | 36 | 1.0 million |
+| 60 (scene load) | 12,078 | 450 | 450 | 450 | 148 | 3.6 million |
+| 120 (save load) | 12,184 | 744 | 586 | 334 | 162 | 13.6 million |
+| 150 (play) | 12,190 | 918 | 784 | 314 | 204 | 17.5 million |
+
+**By heap at 150 s, in play** (pinned then: 11,680 MiB, of it 11,425 under a view and 255 orphans) [M]:
+
+| heap | under views | named ever | last 60 s | last 10 s | last 1 s |
+|---|---|---|---|---|---|
+| `AMM` | 2,966 | 0 | 0 | 0 | 0 |
+| `RenderGpuWcLarge` | 2,758 | 70 | 70 | 56 | 54 |
+| `CommitIABufferAllocator` | 2,736 | 724 | 596 | 172 | 76 |
+| `AssetHeap Large` | 816 | 0 | 0 | 0 | 0 |
+| `InitAllocator` | 652 | 0 | 0 | 0 | 0 |
+| `RenderGpuRwLarge` | 414 | 98 | 92 | 66 | 54 |
+| `AssetHeap Small`, `DynamicHeap`, `Wwise`, `Physics`, `anon`, `ComponentHeap`, `RenderAlloc` | 1,430 | 0 | 0 | 0 | 0 |
+| `RenderGpuWcSmall` | 110 | 14 | 14 | 8 | 8 |
+| all | 12,190 | 918 | 784 | 314 | 204 |
+
+**Reading.**
+- Command buffers name 7.5 % of the memory under views by the play phase (918 MiB of 12,190), and 2.6 % in any
+  10 s. What they name is where the name says: the index-and-vertex heap (724 MiB of its 2,736) and the two
+  read-write render heaps.
+- **Seven heaps, 5.9 GiB, are never named at all: `AMM` (2,966 MiB), the two asset heaps, `InitAllocator`,
+  `DynamicHeap`, `Wwise`, `Physics`, `ComponentHeap`, `RenderAlloc`, `anon`.** `Wwise` is the audio engine's and
+  `Physics` the physics engine's by their names; nothing suggests the GPU reads them at all [I]. `AMM` is the
+  streaming pool: textures and geometry the shaders reach through descriptors, so "never named" there does NOT
+  mean "not used by the GPU" (the limit written in section 32).
+- So the catcher splits the pinned memory into three kinds, not two: named by commands (0.9 GiB), reachable only
+  through shaders (the GPU heaps and `AMM`: the catcher is blind there), and heaps that by their purpose are the
+  CPU's (`Wwise` 220, `Physics` 192, `ComponentHeap` 104 and probably `DynamicHeap` 328, `InitAllocator` 652,
+  `AssetHeap` 1,166: up to 2.7 GiB) which we pin for the GPU only because the title mapped them as direct memory.
+
+**What this adds to the plan** [I]. Besides the zero pages (section 31), a second defect of ours is now visible: we
+pin for the GPU every direct-memory heap whether or not the title ever marked it for the GPU. The library review
+(`ps5-libs-review.md` in the shared notes) reports that the title's GPU protection bits are decoded by the host and
+never read by the mapper. If those bits, or the memory type the title gives a range, separate the CPU's heaps from
+the GPU's, then up to 2.7 GiB need not be pinned at all, with no fault trap and no risk for the GPU, since the GPU
+has no mapping there to miss. That is cheaper and safer than anything else on the table and has to be checked
+first: which protection bits and memory types the seven never-named heaps carry on his save.
+
+### 35. The title's own protection bits per heap (build g412r, run e1prot, 2026-11-11 20:14–20:18)
+
+**Why.** Section 34 left heaps that no command buffer ever names; the library review reported that the host decodes
+the title's GPU protection bits and the mapper never reads them. The check: which bits does each heap carry?
+
+**Change** (`memfast/mkprot0412.py`, tag pr412; no behaviour change): `Bc5ForEachMappedRange` already hands the
+view builder a protection value for every mapped range; `direct_views_build` took it as an unnamed, ignored
+argument. It is now stored in the view (`DView::prot`) and printed by the use catcher per heap. Build g412r = g412q
++ this, binary `a5829b25` (g412q kept). Run e1prot: arm fast2, `BC5_GUARD_USE_STAT=1`, scripted load; 178 s,
+25.1 flips/s, no kernel line. Data `raw/e1prot-usestat.txt`.
+
+**Result at 150 s, in play** [M] (the value as the host hands it over; 0x10 and 0x20 are GPU read and GPU write by
+the host's own comment "prot 0x22 = cpu write | gpu write" in the unit; the bits above 0x30 are not explained
+anywhere I have read: TODO(verify)):
+
+| heap | under views MiB | value | a GPU bit? | in the launcher's lists |
+|---|---|---|---|---|
+| `AMM` | 2,964 | 0x13 (2,417), 0x33 (444), 0x32 (103) | yes | eager |
+| `RenderGpuWcLarge` | 2,758 | 0x32 | yes | eager |
+| `CommitIABufferAllocator` | 2,736 | 0xf2 | yes | eager |
+| `AssetHeap Large` / `Small` | 816 / 350 | 0xf2 | yes | by data |
+| `RenderGpuRwLarge` | 414 | 0xf2 | yes | eager |
+| `Wwise` | 220 | 0x3f2 | yes | lazy (exp 0330: CPU-only) |
+| `anon` | 166 | 0xfffffff2 | (all bits set) | by data |
+| `RenderGpuWcSmall`, `RenderAlloc` | 110, 70 | 0x32, 0xf2 | yes | eager |
+| **`InitAllocator`** | 652 | 0xc2 | **no** | by data (448–450 pinned) |
+| **`DynamicHeap`** | 328 | 0xc2 | **no** | eager (328 pinned) |
+| **`Physics`** | 192 | 0xc2 | **no** | eager (192 pinned) |
+| **`ComponentHeap`** | 104 | 0xc2 | **no** | eager (104 pinned) |
+| all | 12,189 | | 10,667 with, **1,522 without** | |
+
+**Reading, with its contradiction.** 1,522 MiB under views carry neither GPU bit, about 1.1 GiB of it pinned today,
+and section 34 shows that no command buffer names any of those heaps. Two signs that this memory is the CPU's.
+Against that stands an older measured fact: F96 (exp 0042) records that run 102 **stopped on a GPU fault inside
+`Physics`**, which is why `Physics` and "eleven more heaps" were put on the eager list. And `Wwise`, which exp 0330
+treats as CPU-only without trouble, carries GPU bits here. So the value as I read it does not by itself say "the
+GPU never goes there": either the bits mean something else than the comment says, or the GPU reaches that memory
+through another mapping of it, or F96's fault had another cause than a real use.
+**So this is a lead worth about 1.1 GiB and not yet a fix.** What settles it without risking a hang: map the four
+no-GPU-bit heaps for the GPU onto the zero canary instead of their pages (no fault is possible), leave them
+unpinned, and watch for canary hits and for a picture that changes; `Physics` first and alone, because it is the
+one with a recorded fault. Not built.
+
+### 36. The same table on the maintainer's own load (play h3play, 2026-11-11 20:21–20:24)
+
+He said the scripted runs did not load his save the way he does, so the second measurement was repeated with him
+at the pad: the emulator started on his desktop through `play-guard-0412.sh fast2` (build g412r, `catchers.env` =
+`BC5_GUARD_USE_STAT=1`, no script, no watchdog, the hard stop off), he loaded his save, and on his word the session
+closed the emulator at 172 s (SIGTERM). The catcher is off again. Data `raw/h3play-usestat.txt`.
+
+**Result** [M]:
+- **The wall again.** Pinned 11,846–11,932 MiB from 111 s on (the scripted runs: 11,580–11,700), available 220–275
+  MiB; 21 frames over one second from 98 s on, the longest 15.6 s at 129 s and 6.5 s at 142 s.
+- **Where his 200–250 MiB more are:** the asset heaps hold more data on his load: `AssetHeap Large` 644 of 816 MiB
+  pinned (scripted: 504) and `AssetHeap Small` 282 of 350 (scripted: 230), together +192 MiB; the orphans are
+  272–355 MiB (scripted: 230–255). `InitAllocator` 414 (scripted: 448–450). The other heaps are the same.
+  So his load brings in more assets than the script's (another slot or another place in the game than the one the
+  script's first cross picks [I]); the save data itself is the same file set (section 30).
+- **The protection bits are the same as in the scripted run:** 10,673 MiB with a GPU bit, 1,517 MiB with none:
+  `InitAllocator` 652 (414 pinned), `DynamicHeap` 328, `Physics` 192, `ComponentHeap` 104 (pinned whole):
+  1,038 MiB pinned without a GPU bit on his load.
+- **Named by command buffers:** 788 MiB of 12,190 ever, the same heaps as in section 34; nothing in the four
+  no-GPU-bit heaps, nothing in `AMM` or the asset heaps.
+
+**Reading.** His load needs about 0.2–0.25 GiB more than the scripted route, so the scripted runs understate the
+wall by that much; the pin without a GPU bit is 1.0 GiB on his load too, four times that difference and twice the
+deficit of section 16. Section 35's contradiction (F96's fault inside `Physics`) stands and is what has to be
+settled before that memory is left unpinned.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
+- What the pin is made of (section 34) [M]: in play the command buffers name 0.9 GiB of the 12.2 GiB under views; seven heaps, 5.9 GiB,
+  are never named. Of those, heaps that by their purpose are the CPU's (audio, physics, components, assets: up to 2.7 GiB) are
+  pinned for the GPU only because the title mapped them as direct memory; whether its GPU bits tell them apart is the next check.
+- The GPU bits, checked (section 35) [M]: four heaps, 1,522 MiB under views and about 1.1 GiB pinned, carry no GPU bit and are never named by a
+  command buffer; but F96 recorded a GPU fault inside one of them (Physics), so the bits alone do not prove the GPU stays out. A lead, not a fix.
+- The zero skip's hang, caught (section 33) [M]: the skip learns of the title's writes by a poll; 45 chunks were found written with a mean of
+  59 ms (up to 149 ms) and 1,204 submissions inside the window, and the run's GPU hang begins 4 ms after one such find in the
+  index-and-vertex heap (32 ms, 15 submissions on zeros). The fix is to catch the first CPU write synchronously (section 31).
 - His play of 19:40 (section 29) [M]: on his live save the pin is 11.84-11.89 GiB at two minutes, about 250 MiB above the scripted
   copy; from 103 s the box swaps (2,000-6,000 major faults/s, PSI full to 48 %), frames of 1-15 s, the last flip at 144 s.
   The memory wall is the first defect in his way; the speed work of sections 19-28 does not reach his play while it ends so.

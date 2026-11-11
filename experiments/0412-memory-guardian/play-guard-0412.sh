@@ -95,7 +95,7 @@ ARM=$1; DRY=${2:-}
 CATCH=""
 if [ -f "$E/catchers.env" ]; then
   while IFS= read -r ln; do
-    if [[ "$ln" =~ ^BC5_GUARD_(GAP|LOCK)_STAT=[0-9]+$ ]]; then WORDS+=("$ln"); CATCH="$CATCH $ln"; fi
+    if [[ "$ln" =~ ^BC5_GUARD_(GAP|LOCK|USE|ZSKIP)_STAT=[0-9]+$ ]]; then WORDS+=("$ln"); CATCH="$CATCH $ln"; fi
   done < "$E/catchers.env"
 fi
 # "words": the arm's environment words, one per line, for the night runner (run0412n.sh); nothing is started.
@@ -111,6 +111,8 @@ if [ -n "$DRY" ]; then
   echo "dry: sampler $([ "$SOK" = 1 ] && echo "pinned, would write $SOUT" || echo "NOT the installed copy: the play would run without it")"
   echo "dry: fuse $([ -z "$FUSE" ] && echo "none for this arm" || { [ "$FOK" = 1 ] && echo "pinned, would set memory.max and memory.swap.max to $FUSE MiB" || echo "NOT the installed copy: the play would run without it"; })"
   echo "dry: would run: /usr/bin/distrobox enter ubuntu -- /usr/bin/bash -c 'ulimit -l unlimited 2> /dev/null; exec /usr/bin/env \"\$@\"' guard0412 <${#WORDS[@]} words> $L"
+  if [ "${BC5_0412_LEAN:-0}" = 1 ] && [ -x "$E/lean0412.sh" ]; then /usr/bin/bash "$E/lean0412.sh" dry; else echo "dry: lean session off"; fi
+  echo "dry: hard stop $([ "${BC5_0412_STOP:-0}" = 1 ] && [ -x "$E/stop0412.sh" ] && echo "on (stop0412.sh, log $E/stop.log)" || echo off)"
   echo "dry: catchers from $E/catchers.env:${CATCH:- none}"
   echo "dry: nothing started"
   exit 0
@@ -135,5 +137,16 @@ case "$CATCH" in *BC5_GUARD_GAP_STAT=*)
   mkdir -p "$E/sampler"
   nohup /usr/bin/python3 -I "$E/gapsamp0412.py" "$E/sampler/gapsamp-$STAMP-$ARM.txt" 14400 "Render Thread" game-main bc5-ring bc5-cq0 > /dev/null 2>&1 < /dev/null & ;;
 esac
+# The lean session (README section 30): BC5_0412_LEAN=1 in the environment (the shortcut "0412 fast2 lean" sets it) stops
+# the desktop shell for the time of the play; lean0412.sh starts it again when this launcher's process is gone.
+if [ "${BC5_0412_LEAN:-0}" = 1 ] && [ -x "$E/lean0412.sh" ]; then
+  /usr/bin/bash "$E/lean0412.sh" stop $$
+fi
+# The hard stop (README section 30; the top session's decision of 2026-11-11): stop0412.sh ends the emulator when the box
+# is at the memory wall for 10 s, and says so in a window. OFF unless BC5_0412_STOP=1 is in the environment: the maintainer,
+# 2026-11-11 19:58, "twardy stop to nie rozwiazanie".
+if [ "${BC5_0412_STOP:-0}" = 1 ] && [ -x "$E/stop0412.sh" ]; then
+  nohup /usr/bin/bash "$E/stop0412.sh" "$E/stop.log" > /dev/null 2>&1 < /dev/null &
+fi
 # The memlock limit is raised inside the container, where the emulator starts; a refusal is not an error here.
 /usr/bin/distrobox enter ubuntu -- /usr/bin/bash -c 'ulimit -l unlimited 2> /dev/null; exec /usr/bin/env "$@"' guard0412 "${WORDS[@]}" "$L"

@@ -1,0 +1,96 @@
+direct: t 0 s: by the title's protection bits: 4506 MiB with a GPU bit (0x10 read, 0x20 write), 1261 MiB with none
+direct: t 0 s: under views 5767 MiB; in chunks an operand named: ever 0, last 60 s 0, last 10 s 0, last 1 s 0 MiB; 0 chunks named, 0 operands so far
+direct:   RenderGpuWcLarge             under views    2758 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit    2758, none       0; prot:MiB 0x32:2758
+direct:   AssetHeap Large              under views     816 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     816, none       0; prot:MiB 0xf2:816
+direct:   InitAllocator                under views     652 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     652; prot:MiB 0xc2:652
+direct:   RenderGpuRwLarge             under views     414 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     414, none       0; prot:MiB 0x72:0 0xf2:414
+direct:   AssetHeap Small              under views     350 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     350, none       0; prot:MiB 0xf2:350
+direct:   DynamicHeap                  under views     328 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     328; prot:MiB 0xc2:328
+direct:   RenderGpuWcSmall             under views     110 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     110, none       0; prot:MiB 0x32:110
+direct:   ComponentHeap                under views     104 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     104; prot:MiB 0xc2:104
+direct:   DynamicHeap Small            under views      54 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none      54; prot:MiB 0xc2:54
+direct:   FileSystem                   under views      52 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none      52; prot:MiB 0xc2:52
+direct:   ComponentHeap Small          under views      36 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none      36; prot:MiB 0xc2:36
+direct:   RenderGpuRwSmall             under views      36 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit      36, none       0; prot:MiB 0xf2:36
+direct:   MaterialHeap                 under views      20 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit      20, none       0; prot:MiB 0xf2:20
+direct:   DDLHeap                      under views      16 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none      16; prot:MiB 0xc2:16
+direct: t 30 s: by the title's protection bits: 8119 MiB with a GPU bit (0x10 read, 0x20 write), 1502 MiB with none
+direct: t 30 s: under views 9621 MiB; in chunks an operand named: ever 44, last 60 s 44, last 10 s 36, last 1 s 36 MiB; 23 chunks named, 962669 operands so far
+direct:   RenderGpuWcLarge             under views    2758 MiB; named ever       6, 60 s       6, 10 s       4, 1 s       4; GPU bit    2758, none       0; prot:MiB 0x32:2758
+direct:   CommitIABufferAllocator      under views    2736 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit    2736, none       0; prot:MiB 0xf2:2736
+direct:   AssetHeap Large              under views     816 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     816, none       0; prot:MiB 0xf2:816
+direct:   InitAllocator                under views     652 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     652; prot:MiB 0xc2:652
+direct:   AMM                          under views     496 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     496, none       0; prot:MiB 0x13:293 0x32:39 0x33:164
+direct:   RenderGpuRwLarge             under views     414 MiB; named ever      28, 60 s      28, 10 s      22, 1 s      22; GPU bit     414, none       0; prot:MiB 0x72:0 0xf2:414
+direct:   AssetHeap Small              under views     350 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     350, none       0; prot:MiB 0xf2:350
+direct:   DynamicHeap                  under views     328 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     328; prot:MiB 0xc2:328
+direct:   Wwise                        under views     220 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     220, none       0; prot:MiB 0x3f2:220
+direct:   Physics                      under views     192 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     192; prot:MiB 0xc2:192
+direct:   RenderGpuWcSmall             under views     110 MiB; named ever       2, 60 s       2, 10 s       2, 1 s       2; GPU bit     110, none       0; prot:MiB 0x32:110
+direct:   ComponentHeap                under views     104 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     104; prot:MiB 0xc2:104
+direct:   anon                         under views      86 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit      86, none       0; prot:MiB 0xfffffff2:86
+direct:   RenderAlloc                  under views      70 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit      70, none       0; prot:MiB 0xf2:70
+direct: t 60 s: by the title's protection bits: 10572 MiB with a GPU bit (0x10 read, 0x20 write), 1523 MiB with none
+direct: t 60 s: under views 12096 MiB; in chunks an operand named: ever 436, last 60 s 436, last 10 s 178, last 1 s 154 MiB; 221 chunks named, 4622237 operands so far
+direct:   AMM                          under views    2907 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit    2907, none       0; prot:MiB 0x13:2556 0x32:42 0x33:309
+direct:   RenderGpuWcLarge             under views    2758 MiB; named ever      58, 60 s      58, 10 s      48, 1 s      48; GPU bit    2758, none       0; prot:MiB 0x32:2758
+direct:   CommitIABufferAllocator      under views    2736 MiB; named ever     304, 60 s     304, 10 s      86, 1 s      62; GPU bit    2736, none       0; prot:MiB 0xf2:2736
+direct:   AssetHeap Large              under views     816 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     816, none       0; prot:MiB 0xf2:816
+direct:   InitAllocator                under views     652 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     652; prot:MiB 0xc2:652
+direct:   RenderGpuRwLarge             under views     414 MiB; named ever      58, 60 s      58, 10 s      28, 1 s      28; GPU bit     414, none       0; prot:MiB 0x72:0 0xf2:414
+direct:   AssetHeap Small              under views     350 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     350, none       0; prot:MiB 0xf2:350
+direct:   DynamicHeap                  under views     328 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     328; prot:MiB 0xc2:328
+direct:   Wwise                        under views     220 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     220, none       0; prot:MiB 0x3f2:220
+direct:   Physics                      under views     192 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     192; prot:MiB 0xc2:192
+direct:   anon                         under views     129 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     129, none       0; prot:MiB 0xfffffff2:129
+direct:   RenderGpuWcSmall             under views     110 MiB; named ever       8, 60 s       8, 10 s       8, 1 s       8; GPU bit     110, none       0; prot:MiB 0x32:110
+direct:   ComponentHeap                under views     104 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     104; prot:MiB 0xc2:104
+direct:   RenderAlloc                  under views      70 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit      70, none       0; prot:MiB 0xf2:70
+direct: t 90 s: by the title's protection bits: 10589 MiB with a GPU bit (0x10 read, 0x20 write), 1520 MiB with none
+direct: t 90 s: under views 12108 MiB; in chunks an operand named: ever 442, last 60 s 442, last 10 s 184, last 1 s 160 MiB; 224 chunks named, 11574396 operands so far
+direct:   AMM                          under views    2924 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit    2924, none       0; prot:MiB 0x13:2570 0x32:42 0x33:313
+direct:   RenderGpuWcLarge             under views    2758 MiB; named ever      58, 60 s      58, 10 s      48, 1 s      48; GPU bit    2758, none       0; prot:MiB 0x32:2758
+direct:   CommitIABufferAllocator      under views    2736 MiB; named ever     310, 60 s     310, 10 s      84, 1 s      60; GPU bit    2736, none       0; prot:MiB 0xf2:2736
+direct:   AssetHeap Large              under views     816 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     816, none       0; prot:MiB 0xf2:816
+direct:   InitAllocator                under views     652 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     652; prot:MiB 0xc2:652
+direct:   RenderGpuRwLarge             under views     414 MiB; named ever      58, 60 s      58, 10 s      36, 1 s      36; GPU bit     414, none       0; prot:MiB 0x72:0 0xf2:414
+direct:   AssetHeap Small              under views     350 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     350, none       0; prot:MiB 0xf2:350
+direct:   DynamicHeap                  under views     328 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     328; prot:MiB 0xc2:328
+direct:   Wwise                        under views     220 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     220, none       0; prot:MiB 0x3f2:220
+direct:   Physics                      under views     192 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     192; prot:MiB 0xc2:192
+direct:   anon                         under views     129 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     129, none       0; prot:MiB 0xfffffff2:129
+direct:   RenderGpuWcSmall             under views     110 MiB; named ever       8, 60 s       8, 10 s       8, 1 s       8; GPU bit     110, none       0; prot:MiB 0x32:110
+direct:   ComponentHeap                under views     104 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     104; prot:MiB 0xc2:104
+direct:   RenderAlloc                  under views      70 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit      70, none       0; prot:MiB 0xf2:70
+direct: t 120 s: by the title's protection bits: 10667 MiB with a GPU bit (0x10 read, 0x20 write), 1518 MiB with none
+direct: t 120 s: under views 12185 MiB; in chunks an operand named: ever 742, last 60 s 602, last 10 s 342, last 1 s 158 MiB; 374 chunks named, 14625078 operands so far
+direct:   AMM                          under views    2965 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit    2965, none       0; prot:MiB 0x13:2546 0x32:98 0x33:321
+direct:   RenderGpuWcLarge             under views    2758 MiB; named ever      66, 60 s      66, 10 s      58, 1 s      50; GPU bit    2758, none       0; prot:MiB 0x32:2758
+direct:   CommitIABufferAllocator      under views    2736 MiB; named ever     582, 60 s     450, 10 s     208, 1 s      46; GPU bit    2736, none       0; prot:MiB 0xf2:2736
+direct:   AssetHeap Large              under views     816 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     816, none       0; prot:MiB 0xf2:816
+direct:   InitAllocator                under views     652 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     652; prot:MiB 0xc2:652
+direct:   RenderGpuRwLarge             under views     414 MiB; named ever      70, 60 s      62, 10 s      54, 1 s      40; GPU bit     414, none       0; prot:MiB 0x72:0 0xf2:414
+direct:   AssetHeap Small              under views     350 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     350, none       0; prot:MiB 0xf2:350
+direct:   DynamicHeap                  under views     328 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     328; prot:MiB 0xc2:328
+direct:   Wwise                        under views     220 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     220, none       0; prot:MiB 0x3f2:220
+direct:   Physics                      under views     192 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     192; prot:MiB 0xc2:192
+direct:   anon                         under views     166 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     166, none       0; prot:MiB 0xfffffff2:166
+direct:   RenderGpuWcSmall             under views     110 MiB; named ever      12, 60 s      12, 10 s      10, 1 s      10; GPU bit     110, none       0; prot:MiB 0x32:110
+direct:   ComponentHeap                under views     104 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     104; prot:MiB 0xc2:104
+direct:   RenderAlloc                  under views      70 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit      70, none       0; prot:MiB 0xf2:70
+direct: t 150 s: by the title's protection bits: 10667 MiB with a GPU bit (0x10 read, 0x20 write), 1522 MiB with none
+direct: t 150 s: under views 12188 MiB; in chunks an operand named: ever 938, last 60 s 816, last 10 s 352, last 1 s 222 MiB; 472 chunks named, 19087140 operands so far
+direct:   AMM                          under views    2964 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit    2964, none       0; prot:MiB 0x13:2417 0x32:103 0x33:444
+direct:   RenderGpuWcLarge             under views    2758 MiB; named ever      70, 60 s      70, 10 s      58, 1 s      58; GPU bit    2758, none       0; prot:MiB 0x32:2758
+direct:   CommitIABufferAllocator      under views    2736 MiB; named ever     744, 60 s     628, 10 s     204, 1 s      98; GPU bit    2736, none       0; prot:MiB 0xf2:2736
+direct:   AssetHeap Large              under views     816 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     816, none       0; prot:MiB 0xf2:816
+direct:   InitAllocator                under views     652 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     652; prot:MiB 0xc2:652
+direct:   RenderGpuRwLarge             under views     414 MiB; named ever      98, 60 s      92, 10 s      70, 1 s      46; GPU bit     414, none       0; prot:MiB 0x72:0 0xf2:414
+direct:   AssetHeap Small              under views     350 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     350, none       0; prot:MiB 0xf2:350
+direct:   DynamicHeap                  under views     328 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     328; prot:MiB 0xc2:328
+direct:   Wwise                        under views     220 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     220, none       0; prot:MiB 0x3f2:220
+direct:   Physics                      under views     192 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     192; prot:MiB 0xc2:192
+direct:   anon                         under views     166 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit     166, none       0; prot:MiB 0xfffffff2:166
+direct:   RenderGpuWcSmall             under views     110 MiB; named ever      14, 60 s      14, 10 s       8, 1 s       8; GPU bit     110, none       0; prot:MiB 0x32:110
+direct:   ComponentHeap                under views     104 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit       0, none     104; prot:MiB 0xc2:104
+direct:   RenderAlloc                  under views      70 MiB; named ever       0, 60 s       0, 10 s       0, 1 s       0; GPU bit      70, none       0; prot:MiB 0xf2:70
