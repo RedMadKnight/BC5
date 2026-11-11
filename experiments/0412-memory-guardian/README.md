@@ -967,6 +967,20 @@ tracker) outside the mutex, keep under it the mapping sync and the ioctl, and fi
 forced sync or the learned windows, by the code). That changes the shared direct path's locking and needs its own
 design and review; not built here.
 
+### 21. The device mutex by part of the work (build g412k, 2026-11-11 17:43–17:48), and the design of a shorter hold
+
+On the maintainer's "No to rób ten osobny projekt". Build g412k = g412j + `g_dev_mutex.mark()` at seven points of
+`submit_now` (`memfast/mksect0412.py`; lock test 12 of 12; binary `e6d3a69e`, g412j kept). Run q1parts: arm fast2,
+counter on, 179 s, 24.9 flips/s, no kernel line; data `raw/q1parts-lockstat.txt`. Of 77.8 s held [M]: the device call
+(filter, state, BO list, CS ioctl) 36.1 s, direct sync 15.7 s, learned windows 8.9 s, anon sync 6.9 s, prepare 5.7 s,
+the rest 4.6 s. The mapping maintenance (direct sync, learned, anon sync: 31.5 s) has the long single holds:
+847 ms, 606 ms and 217 ms, against 246 ms for the device call and under 40 ms for the rest.
+
+The design is `DESIGN-device-mutex.md`: stage 0 a catcher that puts long holds beside frame gaps, stage 1 the mapping
+maintenance's kernel work outside the mutex with the submission order unchanged, stage 2 the buffer's own work before
+the lock, stage 3 (the device call) left to an experiment on the backend. Expected gain: in the gaps over 100 ms
+(51–61 s of each run have one), single percents in the mean frame rate [I]. Nothing of stages 0–3 is built.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**

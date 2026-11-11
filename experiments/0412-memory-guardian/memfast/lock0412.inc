@@ -42,6 +42,15 @@ public:
 			behind_ns_[me][behind < N ? behind : N - 1] += waited;
 		}
 		t_acq_ = now_ns();
+		sect_ = 0;
+		t_sect_ = t_acq_;
+	}
+	// The holder says which part of its work begins now (S parts; part 0 begins at lock()). Build g412k.
+	void mark(int part) {
+		if (!on()) return;
+		const uint64_t now = now_ns();
+		close_part(now);
+		sect_ = part >= 0 && part < S ? part : S - 1;
 	}
 	bool try_lock() {
 		if (!m_.try_lock()) return false;
@@ -50,6 +59,8 @@ public:
 			holder_.store(me, std::memory_order_relaxed);
 			acq_[me]++;
 			t_acq_ = now_ns();
+			sect_ = 0;
+			t_sect_ = t_acq_;
 		}
 		return true;
 	}
@@ -58,6 +69,7 @@ public:
 			const int      me   = holder_.load(std::memory_order_relaxed);
 			const uint64_t now  = now_ns();
 			const uint64_t held = now - t_acq_;
+			close_part(now);
 			hold_ns_[me] += held;
 			if (held > max_ns_[me]) max_ns_[me] = held;
 			if (held >= 2000000ull) long_[me]++;
@@ -75,8 +87,17 @@ public:
 	uint64_t total_behind_ns() const { uint64_t s = 0; for (int i = 0; i < N; i++) for (int j = 0; j < N; j++) s += behind_ns_[i][j]; return s; }
 	uint64_t total_hold_ns() const { uint64_t s = 0; for (int i = 0; i < N; i++) s += hold_ns_[i]; return s; }
 	int      names() const { return n_names_; }
+	uint64_t total_part_ns() const { uint64_t s = 0; for (int i = 0; i < N; i++) for (int k = 0; k < S; k++) s += part_ns_[i][k]; return s; }
+	static constexpr int S = 9;
 
 private:
+	void close_part(uint64_t now) { // the caller holds m_
+		const int      me = holder_.load(std::memory_order_relaxed);
+		const uint64_t d  = now - t_sect_;
+		part_ns_[me][sect_] += d;
+		if (d > part_max_[me][sect_]) part_max_[me][sect_] = d;
+		t_sect_ = now;
+	}
 	int slot() { // the calling thread's slot, by its name; the caller holds m_
 		char tn[32] = {};
 		pthread_getname_np(pthread_self(), tn, sizeof(tn));
@@ -109,13 +130,26 @@ private:
 			            secs, name_[i][0] != 0 ? name_[i] : "(no name)", acq_[i], static_cast<double>(hold_ns_[i]) / 1e6, static_cast<double>(hold_ns_[i]) / 1e7 / secs,
 			            static_cast<double>(max_ns_[i]) / 1e6, long_[i], static_cast<double>(wait_ns_[i]) / 1e6, waits_[i], static_cast<double>(wait_ns_[i]) / 1e7 / secs,
 			            who[0] != 0 ? "; behind:" : "", who);
+			static const char* const part_name[S] = {"probe", "anon sync", "direct sync", "learned", "hints", "prepare", "device submit", "tail", "other"};
+			char parts[700] = {};
+			int  pa         = 0;
+			for (int k = 0; k < S; k++) {
+				if (part_ns_[i][k] == 0) continue;
+				pa += std::snprintf(parts + pa, sizeof(parts) - static_cast<size_t>(pa), "%s %s %.1f (longest %.2f)", pa == 0 ? "" : ",", part_name[k], static_cast<double>(part_ns_[i][k]) / 1e6,
+				                    static_cast<double>(part_max_[i][k]) / 1e6);
+				part_ns_[i][k] = part_max_[i][k] = 0;
+				if (pa >= static_cast<int>(sizeof(parts)) - 80) break;
+			}
+			if (parts[0] != 0) LK412_PRINT("lock parts (exp 0412, tag lk412): %.1f s: %s: ms held by part:%s\n", secs, name_[i][0] != 0 ? name_[i] : "(no name)", parts);
 			acq_[i] = waits_[i] = long_[i] = hold_ns_[i] = wait_ns_[i] = max_ns_[i] = 0;
 			for (int j = 0; j < N; j++) behind_ns_[i][j] = 0;
 		}
 	}
 	std::mutex       m_;
 	std::atomic<int> holder_ {0};
-	uint64_t         t_acq_ = 0, t_report_ = 0;
+	uint64_t         t_acq_ = 0, t_report_ = 0, t_sect_ = 0;
+	int              sect_ = 0;
+	uint64_t         part_ns_[N][9] = {}, part_max_[N][9] = {};
 	int              n_names_ = 0;
 	char             name_[N][32] = {};
 	uint64_t         acq_[N] = {}, waits_[N] = {}, long_[N] = {}, hold_ns_[N] = {}, wait_ns_[N] = {}, max_ns_[N] = {};

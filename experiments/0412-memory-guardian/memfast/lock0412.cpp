@@ -58,6 +58,7 @@ int main() {
 				if (inside) clashes++;
 				inside = true;
 				counter++;
+				if ((i & 7) == 0) mu.mark(1 + (i >> 3) % 7);
 				if ((i & 1023) == 0) { timespec d {0, 20000}; nanosleep(&d, nullptr); } // some holds long enough to be waited behind
 				inside = false;
 			}
@@ -72,6 +73,7 @@ int main() {
 	check(mu.total_wait_ns() > 0, "some waiting was seen");
 	check(mu.total_hold_ns() <= wall, "the time held is within the wall-clock time");
 	check(mu.names() == 3, "three thread names");
+	check(mu.total_part_ns() == mu.total_hold_ns(), "the parts sum to the time held");
 	check(mu.try_lock(), "try_lock on a free mutex");
 	std::thread([] { check(!mu.try_lock(), "try_lock on a held mutex fails"); }).join();
 	mu.unlock();
