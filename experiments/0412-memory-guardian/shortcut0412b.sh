@@ -44,7 +44,10 @@ case "${1:-}" in
   fast2)     W=$E/play-guard-0412.sh; ARG=fast2; NAME="BC5 emulator (0412 fast2)"
              WHAT="$G + both fixes of the host's memory tables (KYTY_BC5_RANGES_FAST, KYTY_BC5_PHYSMAP_SORTED: about 50 percent more frames in the load phases of the scripted run than g412e) + orphan release with idle 4 s and forget 10 s + events cap; NO zero skip; $FU; private build g412i (the code of g412h, with line tables)"
              LOGS="log ~/bc5-work/exp0412/play-last.log; sampler lines ~/bc5-work/exp0412/sampler/" ;;
-  *) echo "usage: shortcut0412b.sh orphans|cap|zo|zoe|fast|fast2|astro-off|astro-on|astro-evcap|pkg-evcap"; exit 1 ;;
+  fast4)     W=$E/play-guard-0412.sh; ARG=fast4; NAME="BC5 emulator (0412 fast4)"
+             WHAT="$G + both fixes of the host's memory tables + orphan release with idle 30 s + events cap + the four heaps the title mapped without a GPU bit are not pinned (BC5_GUARD_NOGPU_UNPIN=Physics,ComponentHeap,DynamicHeap,InitAllocator: about 1 GiB less pinned in the scripted runs; the GPU gets zeros there); NO zero skip, no hard stop, no catchers; $FU; private build g412s; the picture has not been looked at yet"
+             LOGS="log ~/bc5-work/exp0412/play-last.log; sampler lines ~/bc5-work/exp0412/sampler/" ;;
+  *) echo "usage: shortcut0412b.sh orphans|cap|zo|zoe|fast|fast2|fast4|astro-off|astro-on|astro-evcap|pkg-evcap"; exit 1 ;;
 esac
 DESK=$(xdg-user-dir DESKTOP 2> /dev/null); DESK=${DESK:-$HOME/Pulpit}
 m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }
