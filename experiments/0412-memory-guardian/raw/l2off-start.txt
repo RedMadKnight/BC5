@@ -1,0 +1,14 @@
+2026-11-11 14:35:34
+arm l2off (ledger), cap 320 s, play 60 s, binary /home/kjaniszewski/bc5-work/exp0412/bin/kyty_emulator md5 0167c6c0ee7d6dae75b1dc21cef59b5d, launcher 3a1f4e10, fuse 12400 1024
+the arm's words: BC5_GUARD_LEDGER=1 BC5_0412N_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0412/night/input-l2off.cfg 
+extra: KYTY_BC5_RANGES_FAST=1
+boot 46038e09, up since 2026-11-10 21:56:56
+MemAvailable:   13135000 kB SwapTotal:       7778300 kB SwapFree:        7085936 kB 
+emulator pid 3534264 exe /home/kjaniszewski/bc5-work/exp0412/bin/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0412/night/wd
+route: cross (start screen) at 87 s
+route: the save-slot list runs; cross (slot 1) at 93 s
+route: cross (Continue) at 99 s
+route: the load seen at 102 s
+route: gameplay G = 126 s (the load at 102 s)
+route: walk of 3 cycles (60 s) queued at 126 s
+launcher gone: yes; launcher exit 137

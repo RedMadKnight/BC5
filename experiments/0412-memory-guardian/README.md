@@ -842,6 +842,50 @@ stays in the build for a longer one.
 percent of the game thread (section 15), less than the Render Thread's submit path (27–34 % of that thread), so the
 submit path is the better next target by the numbers; the top session's order has the table first.
 
+### 18. The sorted mapping table (build g412h) and the arm fast2 (2026-11-11 14:10–14:53)
+
+**The fix.** `PhysicalMemory::m_mappings` (12,500 blocks at the save) was walked from its first element by `Unmap`,
+`Find`, `SetVirtualRangeName` and `SetVirtualRangeMemoryType`. `KYTY_BC5_PHYSMAP_SORTED=1` (`memfast/mksort0412.py`,
+helpers `memfast/physmap0412.inc`, tag ps412) keeps the table sorted by guest address and finds blocks by binary
+search; `=verify` also runs the old search in `Unmap` and prints differences. A block that overlaps another, is empty
+or wraps ends the sorted mode for the run (one line). Default off. CPU test `memfast/physmap0412.cpp`: 1,259,728
+checks of old against new on random and adversarial sequences, on the laptop and on the box; it found one real case
+(an empty-range `Unmap` breaks the order; that call now takes the old walk and the table is sorted again).
+Build g412h = g412g + this, binary `0167c6c0`; g412g kept beside it.
+
+**Runs** (`memfast/ab0412h.sh`; the scripted load of the copy of his save, arm ledger, `KYTY_BC5_RANGES_FAST=1` in all,
+RT on, fuse 12,400 MiB, watchdog; data `raw/l*`). l1verify: no difference line, no overlap line, no kernel line [M].
+ABBA l2off l3on l4on l5off [M]:
+
+| | off (l2, l5) | on (l3, l4) | verify (l1) |
+|---|---|---|---|
+| scene load 33–62 s, flips/s | 19.8 / 18.3 | 23.1 / 21.5 | 21.9 |
+| scene load, median / p95 frame ms | 30 / 120, 28 / 125 | 26 / 90, 28 / 98 | |
+| save load 104–132 s, flips/s | 13.9 / 15.6 | 18.4 / 16.4 | 18.7 |
+| game thread inside AMM bookkeeping, scene load | 15 % / 15 % | 4 % / 4 % | |
+| game thread inside AMM bookkeeping, save load | 21 % / 17 % | 9 % / 19 % | |
+
+Scene load +17 % frames (mean of two against mean of two), save load +18 % with one of the two "on" runs inside the
+"off" spread: the scene-load gain is clear, the save-load gain is likely [M, two runs each]. Against g412e without
+either fix (section 15: 15.0–15.3 and 11.6–12.1 flips/s) both fixes together give about +47 % in both phases [M].
+Three of the five runs (l1, l2, l3) were ended by the watchdog at 146–166 s with less than 300 MiB available: the
+ledger arm has no memory help, and a faster load reaches the limit sooner. No kernel line in any run.
+
+**Per-client GPU memory** (`snap0412.sh` now reads `drm-memory-*` from fdinfo; l1verify at 130 s) [M]: emulator
+GTT 12,071 MiB (two clients) and VRAM 431 MiB of the 512 carve-out (480 used in all); plasmashell 166 MiB GTT + 8 MiB
+VRAM, plasma-keyboard 96 MiB GTT, Xwayland 22 MiB. The desktop's GPU memory is 285 MiB; the virtual keyboard's 96 MiB
+is there on a box that has no touch screen.
+
+**Arm fast2** = ledger + both table fixes + orphan release `BC5_DIRECT_LAZY_RELEASE=4,eager` + `BC5_GUARD_SPLIT=1` +
+`BC5_GUARD_FORGET=10` + events cap 64; no zero skip. One scripted run, m1fast2 [M]: 24.2 flips/s over 208 s; the
+release cut 1,548 MiB in 169 BOs over the run and 1,486 MiB came back under views (the title frees and takes again:
+its AMM heap swings between 2,485 and 2,965 MiB about every 10 s on this route); at 182 s 12 MiB were under no view.
+The pin stayed 11.5–11.65 GiB (ledger arm at the same point: 12.0 GiB, section 16), orphans by pages 120–250 MiB,
+which are parts of 2 MiB chunks that still have a view and cannot be cut. So the release now works on his route
+without the zero skip and what is left of the orphans is fragmentation, not a missed release. The run lasted 215 s
+against 146–166 s for the ledger arm, then the watchdog ended it too (available 252 MiB): the budget is still short.
+No kernel line.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**

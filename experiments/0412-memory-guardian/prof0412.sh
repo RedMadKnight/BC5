@@ -32,7 +32,11 @@ while [ -d "/proc/$EP" ]; do
     cs=$(awk '/ctxt_switches/ { printf "%s ", $2 }' "/proc/$EP/task/$tid/status" 2> /dev/null)
     ss=$(cat "/proc/$EP/task/$tid/schedstat" 2> /dev/null)
     echo "== t $(date +%s.%N | cut -c1-14) rel $now $n tid $tid | state utime stime minflt majflt: $st | ctxsw vol invol: $cs| schedstat run_ns wait_ns slices: $ss | io: $io" >> "$OUT"
-    timeout 5 env -u DEBUGINFOD_URLS eu-stack -1 -p "$tid" 2> /dev/null | grep '^#' | head -24 | cut -c1-200 >> "$OUT"
+    if [ "${PROF_SRC:-0}" = 1 ]; then # build g412i: inlined frames and source lines (the line after each frame)
+      timeout 5 env -u DEBUGINFOD_URLS eu-stack -1 -i -s -p "$tid" 2> /dev/null | grep -A1 '^#' | grep -v '^--' | head -60 | cut -c1-200 >> "$OUT"
+    else
+      timeout 5 env -u DEBUGINFOD_URLS eu-stack -1 -p "$tid" 2> /dev/null | grep '^#' | head -24 | cut -c1-200 >> "$OUT"
+    fi
   done
   sleep "$STEP"
 done

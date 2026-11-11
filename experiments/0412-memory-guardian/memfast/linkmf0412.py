@@ -39,7 +39,11 @@ for rel, src in pairs:
         sys.exit(2)
     more[b.unit_obj(rel)] = o
 main_obj = os.path.join(objdir, "bc5LleAgc.cpp.o")
-if b.run(b.compile_argv(db, unit, main_obj, [os.path.join(e8, "mem", "src")]), build) != 0:
+# BC5_0412_MAIN_EXTRA (build g412i): further compiler words for the main unit, e.g. -g1 for line tables (no change of the code).
+main_extra = os.environ.get("BC5_0412_MAIN_EXTRA", "").split()
+if main_extra:
+    print("main unit extra words:", main_extra, flush=True)
+if b.run(b.compile_argv(db, unit, main_obj, [os.path.join(e8, "mem", "src")]) + main_extra, build) != 0:
     print("== COMPILE FAILED", unit, flush=True)
     sys.exit(2)
 print("private objects:", len(more) + 1, flush=True)

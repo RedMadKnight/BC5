@@ -43,6 +43,14 @@ snap() {
     echo "${g#/sys/fs/cgroup} $cur $swc | $(awk '$1 == "anon" || $1 == "file" || $1 == "shmem" || $1 == "kernel" || $1 == "slab" || $1 == "pagetables" || $1 == "file_mapped" || $1 == "inactive_file" || $1 == "active_file" || $1 == "unevictable" { printf "%s=%s ", $1, $2 }' "$g/memory.stat")"
   done
   echo "## gpu (bytes)"; for f in mem_info_gtt_used mem_info_gtt_total mem_info_vram_used mem_info_vram_total mem_info_vis_vram_used; do echo "$f $(cat "$D/$f" 2> /dev/null)"; done
+  echo "## gpu clients (fdinfo, KiB): name pid client vram gtt cpu"
+  for p in /proc/[0-9]*; do
+    for fd in "$p"/fdinfo/*; do
+      grep -q '^drm-driver:' "$fd" 2> /dev/null || continue
+      awk -v n="$(cat "$p/comm" 2> /dev/null)" -v pid="${p#/proc/}" '/^drm-client-id:/ { c = $2 } /^drm-memory-vram:/ { v = $2 } /^drm-memory-gtt:/ { g = $2 } /^drm-memory-cpu:/ { s = $2 }
+        END { if (v + g + s > 0) print n, pid, c, v, g, s }' "$fd" 2> /dev/null
+    done
+  done | sort -u -k3,3 | sort -k5,5nr | head -20
   echo "## zram mm_stat (orig compr mem_used limit max same pages_compacted huge)"; cat /sys/block/zram0/mm_stat 2> /dev/null
   echo "## thp"; for f in enabled shmem_enabled defrag; do echo "$f: $(cat /sys/kernel/mm/transparent_hugepage/$f 2> /dev/null)"; done
   echo "## tmpfs"; df -k -t tmpfs 2> /dev/null | awk 'NR == 1 || $3 > 1024'
