@@ -1888,9 +1888,62 @@ first write synchronously, instead of the zero skip's poll with its blind window
 **Box state.** g412t in place; the desktop still has "BC5 emulator (0412 fast4)" on the maintainer's word ("Nie
 przywracaj"): it will hang again if started.
 
+### 40. The zero skip polls before every submission: nine runs, no hang, 650 MiB less pinned (build g412u, 2026-11-11 23:20 – 11-12 00:19)
+
+On the maintainer's "Tak, buduj" (the zero-page fix of sections 31 and 39).
+
+**What was built instead of the write trap, and why.** Section 31 proposed catching the CPU's first write into a
+skipped chunk with a page fault. Reading the code again showed a smaller change with the same guarantee for every
+ordering the title can rely on, and without the trap's open ends (the title's own `mprotect` undoing ours; a kernel
+write such as `read()` into a protected page failing with EFAULT): **the poll is moved to the one moment that
+matters, the hand-over of each command buffer to the kernel.** Data that a buffer depends on was written before the
+title submitted it; so if the host looks, under the device mutex and before it takes the mapping list for that
+buffer, whether the direct file has grown, and takes the written chunk back and maps it before going on, the GPU
+never runs a buffer on the canary's zeros where data exists. The look is one `fstat` (a write into a hole changes
+the file's block count), and the SEEK_DATA walk runs only when it changed. Only a write racing a buffer that is
+already with the kernel stays unseen until the next submission, and no title can depend on that order.
+`BC5_GUARD_ZSKIP_POLL_SUBMIT=1` (`memfast/mkzpoll0412.py`, tag zp412; default off, one test of a constant).
+It is glue around exp 0379's functions (`zskip_take_back`, `direct_sync_one`); it has no computation of its own, so
+there is no CPU test for it: the proof is the runs. Build g412u = g412t + this, binary `1f39cd1e` (g412t kept;
+`memfast/mk0412u.sh`).
+
+**Arm fast5** = fast2 + `BC5_DIRECT_ZERO_SKIP=<the list scanned at his save, 1,010 MiB in 33 runs>` +
+`BC5_GUARD_ZSKIP_POLL_SUBMIT=1`.
+
+**Runs** (`ab0412u.sh`: fast5, scripted load, RT on, the zero skip's catcher on, measuring watchdog 220 MiB; nine
+runs v1zp–v9zp, 23:49–00:19; `raw/ab0412u.out`, `raw/v?zp-zpoll.txt`) [M]:
+
+| | fast2 (f0base, u2zero) | fast5, nine runs |
+|---|---|---|
+| gfx ring timeouts | 0 | **0 of 9** (the old zero skip: 3 of 9, sections 9, 14, 33) |
+| pinned direct at 150 s | 11,704–11,716 MiB | **11,000–11,102 MiB** |
+| lowest available memory of the run | 283–384 MiB | **680–889 MiB** |
+| still skipped at the end | – | 642–702 MiB of 1,010 |
+| flips/s over the run | 24.7–25.6 | 25.2–26.3 |
+| longest gap | 550 ms (t1scan) | 568–829 ms |
+
+- The look: about 140,000 per run, the file had grown at about 850 of them, **0 to 3 chunks per run were taken back
+  at a submission**; 0.43–0.47 s spent in all per run (0.3 % of the run).
+- The catcher of section 33 in v9zp: 0 chunks found by a sync's poll with a submission before it.
+- All nine reached 178–180 s; no kernel line, no crash line.
+
+**Reading, with its limits.** Nine clean runs where the old zero skip hung in three of nine: by chance alone that is
+about 3 in 100. Two things keep it from being proof: the old runs were on arms zo/zof (10 s release, no fast
+tables), not on fast2's settings, and the mechanism was exercised only a few times per run (0–3 chunks; run d1zc
+had found 45 written chunks in 90 s on its arm, a difference I have not explained). The memory side is plain:
+about 650 MiB less pinned and 400–500 MiB more available than fast2, on the scripted load; his own load is about
+0.2 GiB heavier (section 36). Not seen: the picture on this arm, and his play.
+
+**What is left of the 3.5 GiB.** The list covers two heaps and 1.0 GiB; section 39 counts 3,571 MiB of all-zero
+pages. The next step in this direction is to skip without a list (whatever is a hole when a view first covers it),
+which needs the canary's slices shared between runs and a count of wholly-zero 2 MiB chunks first.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
+- **The zero skip without its hang (section 40) [M]:** with the poll before every submission (`BC5_GUARD_ZSKIP_POLL_SUBMIT`, arm fast5,
+  build g412u) nine scripted runs had no ring timeout (3 of 9 before), about 650 MiB less pinned, lowest available 680-889 MiB
+  against 283-384. Not yet seen: the picture, and his play.
 - **Section 37's rule is refuted (section 39) [M]:** the GPU's command buffers and tables name the heaps without a GPU bit in 62 % of
   submissions; fast4 fed the GPU zeros there and is withdrawn. Pinning what is named takes back 1,114 of 1,180 MiB.
 - **30 % of the direct memory file is all-zero pages (section 39) [M]:** 3,571 of 11,826 MiB in play; that sizes the zero-page scheme of section 31.
