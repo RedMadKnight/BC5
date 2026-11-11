@@ -112,7 +112,7 @@ if [ -n "$DRY" ]; then
   echo "dry: fuse $([ -z "$FUSE" ] && echo "none for this arm" || { [ "$FOK" = 1 ] && echo "pinned, would set memory.max and memory.swap.max to $FUSE MiB" || echo "NOT the installed copy: the play would run without it"; })"
   echo "dry: would run: /usr/bin/distrobox enter ubuntu -- /usr/bin/bash -c 'ulimit -l unlimited 2> /dev/null; exec /usr/bin/env \"\$@\"' guard0412 <${#WORDS[@]} words> $L"
   if [ "${BC5_0412_LEAN:-0}" = 1 ] && [ -x "$E/lean0412.sh" ]; then /usr/bin/bash "$E/lean0412.sh" dry; else echo "dry: lean session off"; fi
-  echo "dry: hard stop $([ "${BC5_0412_STOP:-1}" != 0 ] && [ -x "$E/stop0412.sh" ] && echo "on (stop0412.sh, log $E/stop.log)" || echo off)"
+  echo "dry: hard stop $([ "${BC5_0412_STOP:-0}" = 1 ] && [ -x "$E/stop0412.sh" ] && echo "on (stop0412.sh, log $E/stop.log)" || echo off)"
   echo "dry: catchers from $E/catchers.env:${CATCH:- none}"
   echo "dry: nothing started"
   exit 0
@@ -143,8 +143,9 @@ if [ "${BC5_0412_LEAN:-0}" = 1 ] && [ -x "$E/lean0412.sh" ]; then
   /usr/bin/bash "$E/lean0412.sh" stop $$
 fi
 # The hard stop (README section 30; the top session's decision of 2026-11-11): stop0412.sh ends the emulator when the box
-# is at the memory wall for 10 s, and says so in a window. BC5_0412_STOP=0 in the environment turns it off.
-if [ "${BC5_0412_STOP:-1}" != 0 ] && [ -x "$E/stop0412.sh" ]; then
+# is at the memory wall for 10 s, and says so in a window. OFF unless BC5_0412_STOP=1 is in the environment: the maintainer,
+# 2026-11-11 19:58, "twardy stop to nie rozwiazanie".
+if [ "${BC5_0412_STOP:-0}" = 1 ] && [ -x "$E/stop0412.sh" ]; then
   nohup /usr/bin/bash "$E/stop0412.sh" "$E/stop.log" > /dev/null 2>&1 < /dev/null &
 fi
 # The memlock limit is raised inside the container, where the emulator starts; a refusal is not an error here.
