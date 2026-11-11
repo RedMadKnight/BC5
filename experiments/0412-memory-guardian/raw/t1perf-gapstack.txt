@@ -1,0 +1,121 @@
+87 gaps, 17.3 s; clock offset 73060.848 s; unparsed perf lines 0
+
+== scene load: 22 gaps, 4.5 s of gap time
+   Render Thread: 2031 user-space samples in the gaps = 45.6 % of the gap time on the CPU in user space
+      by group, % of the gap time: guest code 40.9; host GPU path (bc5LleAgc, backend) 2.9; libc / libstdc++ (memcpy, malloc, ...) 1.1; host time / misc libkernel 0.4
+      the ten heaviest functions, % of the gap time:
+         40.9  (guest code)   [guest code]
+          0.7  Libs::Bc5Gc::Direct::submit_now(unsigned int const*, unsigned int, char const*, int, Libs:   [host GPU path (bc5LleAgc, backend)]
+          0.5  Libs::Bc5Gc::Direct::direct_sync_one(Libs::Bc5Gc::Direct::DState&, bool)   [host GPU path (bc5LleAgc, backend)]
+          0.5  __memmove_avx_unaligned_erms   [libc / libstdc++ (memcpy, malloc, ...)]
+          0.4  Libs::LibKernel::KernelGetProcessTimeCounter()   [host time / misc libkernel]
+          0.4  std::_Rb_tree_increment(std::_Rb_tree_node_base*)   [libc / libstdc++ (memcpy, malloc, ...)]
+          0.3  bc5::full_state::Tracker::apply_level(std::span<unsigned int const, 18446744073709551615ul   [host GPU path (bc5LleAgc, backend)]
+          0.1  bc5::full_state::Tracker::emit_prefix() const   [host GPU path (bc5LleAgc, backend)]
+          0.1  Libs::Bc5Gc::Direct::scratch_fill(unsigned long, unsigned long, std::vector<bc5::direct::M   [host GPU path (bc5LleAgc, backend)]
+          0.1  void std::__introsort_loop<__gnu_cxx::__normal_iterator<Libs::Bc5Gc::Direct::DMap*, std::v   [host GPU path (bc5LleAgc, backend)]
+      outside the gaps, % of this thread's user-space samples: guest code 71; host GPU path (bc5LleAgc, backend) 17; libc / libstdc++ (memcpy, malloc, ...) 9; emulator, other functions 1; host time / misc libkernel 1
+   game-main: 2490 user-space samples in the gaps = 55.9 % of the gap time on the CPU in user space
+      by group, % of the gap time: guest code 43.3; host loader / JIT / patch 4.0; libc / libstdc++ (memcpy, malloc, ...) 3.8; host time / misc libkernel 2.7; host memory (memory.cpp, AMM) 1.2; emulator, other functions 0.5
+      the ten heaviest functions, % of the gap time:
+         43.3  (guest code)   [guest code]
+          4.0  Loader::TlsMainGetAddr()   [host loader / JIT / patch]
+          2.7  Libs::LibKernel::KernelGetProcessTimeCounter()   [host time / misc libkernel]
+          2.2  __memmove_avx_unaligned_erms   [libc / libstdc++ (memcpy, malloc, ...)]
+          0.4  pthread_mutex_lock@@GLIBC_2.2.5   [libc / libstdc++ (memcpy, malloc, ...)]
+          0.4  std::map<unsigned long, Libs::LibAmpr::Ampr::Bc5AmmPage, std::less<unsigned long>, std::al   [host memory (memory.cpp, AMM)]
+          0.3  __strncmp_avx2   [libc / libstdc++ (memcpy, malloc, ...)]
+          0.2  Libs::Graphics::RangeSet::Add(unsigned long, unsigned long)   [emulator, other functions]
+          0.2  pthread_mutex_unlock@@GLIBC_2.2.5   [libc / libstdc++ (memcpy, malloc, ...)]
+          0.2  _int_malloc   [libc / libstdc++ (memcpy, malloc, ...)]
+      outside the gaps, % of this thread's user-space samples: guest code 90; libc / libstdc++ (memcpy, malloc, ...) 4; host loader / JIT / patch 2; host time / misc libkernel 2; host threads and sync (libkernel) 1
+
+== save load: 28 gaps, 4.5 s of gap time
+   Render Thread: 2472 user-space samples in the gaps = 54.6 % of the gap time on the CPU in user space
+      by group, % of the gap time: guest code 39.7; host GPU path (bc5LleAgc, backend) 6.9; libc / libstdc++ (memcpy, malloc, ...) 6.6; host memory (memory.cpp, AMM) 0.6; emulator, other functions 0.6; host time / misc libkernel 0.3
+      the ten heaviest functions, % of the gap time:
+         39.7  (guest code)   [guest code]
+          2.0  __memmove_avx_unaligned_erms   [libc / libstdc++ (memcpy, malloc, ...)]
+          1.9  std::_Rb_tree_increment(std::_Rb_tree_node_base*)   [libc / libstdc++ (memcpy, malloc, ...)]
+          1.5  Libs::Bc5Gc::Direct::submit_now(unsigned int const*, unsigned int, char const*, int, Libs:   [host GPU path (bc5LleAgc, backend)]
+          1.3  Libs::Bc5Gc::Direct::direct_sync_one(Libs::Bc5Gc::Direct::DState&, bool)   [host GPU path (bc5LleAgc, backend)]
+          0.9  __vfscanf_internal   [libc / libstdc++ (memcpy, malloc, ...)]
+          0.4  __GI_____strtoull_l_internal   [libc / libstdc++ (memcpy, malloc, ...)]
+          0.4  bc5::full_state::Tracker::emit_prefix() const   [host GPU path (bc5LleAgc, backend)]
+          0.4  Libs::LibKernel::Memory::Bc5ForEachMappedRange(void (*)(unsigned long, unsigned long, int,   [host memory (memory.cpp, AMM)]
+          0.3  Libs::LibKernel::KernelGetProcessTimeCounter()   [host time / misc libkernel]
+      outside the gaps, % of this thread's user-space samples: guest code 60; host GPU path (bc5LleAgc, backend) 23; libc / libstdc++ (memcpy, malloc, ...) 15; emulator, other functions 1; host time / misc libkernel 1
+   game-main: 2480 user-space samples in the gaps = 54.8 % of the gap time on the CPU in user space
+      by group, % of the gap time: guest code 33.4; libc / libstdc++ (memcpy, malloc, ...) 13.9; host loader / JIT / patch 2.8; host time / misc libkernel 2.7; host memory (memory.cpp, AMM) 1.1; host libAmpr / APR 0.4
+      the ten heaviest functions, % of the gap time:
+         33.4  (guest code)   [guest code]
+         13.1  __memmove_avx_unaligned_erms   [libc / libstdc++ (memcpy, malloc, ...)]
+          2.8  Loader::TlsMainGetAddr()   [host loader / JIT / patch]
+          2.7  Libs::LibKernel::KernelGetProcessTimeCounter()   [host time / misc libkernel]
+          0.3  Libs::LibAmpr::Ampr::WriteCommandBufferPointers(unsigned long, unsigned long, unsigned lon   [host libAmpr / APR]
+          0.2  std::_Rb_tree_increment(std::_Rb_tree_node_base*)   [libc / libstdc++ (memcpy, malloc, ...)]
+          0.2  std::map<unsigned long, Libs::LibAmpr::Ampr::Bc5AmmPage, std::less<unsigned long>, std::al   [host memory (memory.cpp, AMM)]
+          0.2  pthread_mutex_lock@@GLIBC_2.2.5   [libc / libstdc++ (memcpy, malloc, ...)]
+          0.2  Libs::LibAmpr::Ampr::AmmAutoReleaseVa(unsigned long, unsigned long)   [host memory (memory.cpp, AMM)]
+          0.1  _int_malloc   [libc / libstdc++ (memcpy, malloc, ...)]
+      outside the gaps, % of this thread's user-space samples: guest code 81; libc / libstdc++ (memcpy, malloc, ...) 7; host loader / JIT / patch 5; host time / misc libkernel 4; host libAmpr / APR 1
+
+== play: 13 gaps, 2.9 s of gap time
+   Render Thread: 1004 user-space samples in the gaps = 34.5 % of the gap time on the CPU in user space
+      by group, % of the gap time: guest code 27.9; host GPU path (bc5LleAgc, backend) 3.4; libc / libstdc++ (memcpy, malloc, ...) 2.8
+      the ten heaviest functions, % of the gap time:
+         27.9  (guest code)   [guest code]
+          0.8  __memmove_avx_unaligned_erms   [libc / libstdc++ (memcpy, malloc, ...)]
+          0.8  __vfscanf_internal   [libc / libstdc++ (memcpy, malloc, ...)]
+          0.7  Libs::Bc5Gc::Direct::submit_now(unsigned int const*, unsigned int, char const*, int, Libs:   [host GPU path (bc5LleAgc, backend)]
+          0.4  std::_Rb_tree_increment(std::_Rb_tree_node_base*)   [libc / libstdc++ (memcpy, malloc, ...)]
+          0.3  Libs::Bc5Gc::Direct::direct_sync_one(Libs::Bc5Gc::Direct::DState&, bool)   [host GPU path (bc5LleAgc, backend)]
+          0.3  bc5::policy::filter(bc5::policy::Policy const&, std::span<unsigned int const, 184467440737   [host GPU path (bc5LleAgc, backend)]
+          0.2  bc5::full_state::Tracker::emit_prefix() const   [host GPU path (bc5LleAgc, backend)]
+          0.2  bc5::full_state::Tracker::apply_level(std::span<unsigned int const, 18446744073709551615ul   [host GPU path (bc5LleAgc, backend)]
+          0.1  pthread_mutex_lock@@GLIBC_2.2.5   [libc / libstdc++ (memcpy, malloc, ...)]
+      outside the gaps, % of this thread's user-space samples: guest code 55; host GPU path (bc5LleAgc, backend) 28; libc / libstdc++ (memcpy, malloc, ...) 14; emulator, other functions 1; host threads and sync (libkernel) 0
+   game-main: 1605 user-space samples in the gaps = 55.2 % of the gap time on the CPU in user space
+      by group, % of the gap time: guest code 43.9; host loader / JIT / patch 4.8; host time / misc libkernel 3.2; libc / libstdc++ (memcpy, malloc, ...) 2.7
+      the ten heaviest functions, % of the gap time:
+         43.9  (guest code)   [guest code]
+          4.8  Loader::TlsMainGetAddr()   [host loader / JIT / patch]
+          3.2  Libs::LibKernel::KernelGetProcessTimeCounter()   [host time / misc libkernel]
+          2.4  __memmove_avx_unaligned_erms   [libc / libstdc++ (memcpy, malloc, ...)]
+          0.1  std::pair<std::_Rb_tree_iterator<std::pair<unsigned long const, unsigned long> >, bool> st   [emulator, other functions]
+          0.1  std::_Rb_tree_increment(std::_Rb_tree_node_base*)   [libc / libstdc++ (memcpy, malloc, ...)]
+          0.1  Libs::LibAmpr::Ampr::WriteCommandBufferPointers(unsigned long, unsigned long, unsigned lon   [host libAmpr / APR]
+          0.1  Libs::LibAmpr::Ampr::Bc5ForgetPages(unsigned long, unsigned long)   [host libAmpr / APR]
+          0.1  pthread_mutex_lock@@GLIBC_2.2.5   [libc / libstdc++ (memcpy, malloc, ...)]
+          0.0  Libs::Graphics::GpuState::SendCommand(Common::UniqueFunction<void>&&)   [emulator, other functions]
+      outside the gaps, % of this thread's user-space samples: guest code 83; libc / libstdc++ (memcpy, malloc, ...) 8; host loader / JIT / patch 4; host time / misc libkernel 3; host libAmpr / APR 1
+
+== whole run: 87 gaps, 17.3 s of gap time
+   Render Thread: 9238 user-space samples in the gaps = 53.4 % of the gap time on the CPU in user space
+      by group, % of the gap time: guest code 45.5; host GPU path (bc5LleAgc, backend) 3.9; libc / libstdc++ (memcpy, malloc, ...) 3.2; emulator, other functions 0.3
+      the ten heaviest functions, % of the gap time:
+         45.5  (guest code)   [guest code]
+          1.2  __memmove_avx_unaligned_erms   [libc / libstdc++ (memcpy, malloc, ...)]
+          0.9  std::_Rb_tree_increment(std::_Rb_tree_node_base*)   [libc / libstdc++ (memcpy, malloc, ...)]
+          0.9  Libs::Bc5Gc::Direct::submit_now(unsigned int const*, unsigned int, char const*, int, Libs:   [host GPU path (bc5LleAgc, backend)]
+          0.6  Libs::Bc5Gc::Direct::direct_sync_one(Libs::Bc5Gc::Direct::DState&, bool)   [host GPU path (bc5LleAgc, backend)]
+          0.4  __vfscanf_internal   [libc / libstdc++ (memcpy, malloc, ...)]
+          0.3  Libs::LibKernel::KernelGetProcessTimeCounter()   [host time / misc libkernel]
+          0.2  bc5::full_state::Tracker::emit_prefix() const   [host GPU path (bc5LleAgc, backend)]
+          0.2  bc5::full_state::Tracker::apply_level(std::span<unsigned int const, 18446744073709551615ul   [host GPU path (bc5LleAgc, backend)]
+          0.1  bc5::policy::filter(bc5::policy::Policy const&, std::span<unsigned int const, 184467440737   [host GPU path (bc5LleAgc, backend)]
+      outside the gaps, % of this thread's user-space samples: guest code 60; host GPU path (bc5LleAgc, backend) 23; libc / libstdc++ (memcpy, malloc, ...) 13; emulator, other functions 1; host time / misc libkernel 1
+   game-main: 9243 user-space samples in the gaps = 53.4 % of the gap time on the CPU in user space
+      by group, % of the gap time: guest code 32.6; libc / libstdc++ (memcpy, malloc, ...) 13.7; host loader / JIT / patch 3.0; host time / misc libkernel 2.2; host memory (memory.cpp, AMM) 1.1; emulator, other functions 0.5
+      the ten heaviest functions, % of the gap time:
+         32.6  (guest code)   [guest code]
+         12.2  __memmove_avx_unaligned_erms   [libc / libstdc++ (memcpy, malloc, ...)]
+          3.0  Loader::TlsMainGetAddr()   [host loader / JIT / patch]
+          2.2  Libs::LibKernel::KernelGetProcessTimeCounter()   [host time / misc libkernel]
+          0.3  pthread_mutex_lock@@GLIBC_2.2.5   [libc / libstdc++ (memcpy, malloc, ...)]
+          0.2  pthread_mutex_unlock@@GLIBC_2.2.5   [libc / libstdc++ (memcpy, malloc, ...)]
+          0.2  std::map<unsigned long, Libs::LibAmpr::Ampr::Bc5AmmPage, std::less<unsigned long>, std::al   [host memory (memory.cpp, AMM)]
+          0.2  _int_malloc   [libc / libstdc++ (memcpy, malloc, ...)]
+          0.1  Libs::LibAmpr::Ampr::WriteCommandBufferPointers(unsigned long, unsigned long, unsigned lon   [host libAmpr / APR]
+          0.1  std::pair<std::_Rb_tree_iterator<std::pair<unsigned long const, unsigned long> >, bool> st   [emulator, other functions]
+      outside the gaps, % of this thread's user-space samples: guest code 89; libc / libstdc++ (memcpy, malloc, ...) 4; host loader / JIT / patch 3; host time / misc libkernel 2; host threads and sync (libkernel) 1

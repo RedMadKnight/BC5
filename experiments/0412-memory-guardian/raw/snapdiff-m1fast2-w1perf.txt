@@ -1,0 +1,39 @@
+old at 130 s, new at 128 s; lines that differ by 12 MiB or more (MiB: old, new, new - old)
+  process kyty_emulator (anon+shmem+swap)                                       4049      3408     -641
+  meminfo DirectMap2M                                                           4728      4202     -526
+  meminfo DirectMap4k                                                          10864     11390     +526
+  meminfo Mapped                                                                3784      3358     -427
+  emulator smaps memfd-direct rss                                               3512      3161     -351
+  meminfo Committed_AS                                                         17664     17903     +240
+  meminfo Active                                                                3639      3791     +152
+  meminfo Inactive                                                              9163      9021     -143
+  meminfo Active(anon)                                                          3559      3666     +107
+  meminfo Inactive(anon)                                                        8811      8708     -103
+  meminfo MemAvailable                                                           415       491      +76
+  meminfo MemFree                                                                174       245      +71
+  cgroup /user.slice/user-1000.slice/session-212.scope                             0        51      +51
+  meminfo Active(file)                                                            80       125      +45
+  meminfo Inactive(file)                                                         352       312      -40
+  zram stored (orig)                                                             730       767      +37
+  emulator smaps anon swap                                                       114        80      -33
+  meminfo AnonPages                                                              434       465      +32
+  cgroup /user.slice/user-1000.slice/session-131.scope                            31         0      -31
+  meminfo Shmem                                                                11952     11923      -29
+  meminfo SwapFree                                                              6793      6821      +28
+  meminfo Cached                                                               12937     12913      -24
+  emulator smaps memfd-private rss                                                38        62      +24
+  cgroup /system.slice/bc5-gpu-stall-sampler.service                              20         0      -20
+  gpu mem_info_gtt_used                                                        12346     12327      -19
+  emulator smaps anon rss                                                        155       174      +19
+  cgroup /user.slice/user-1000.slice                                           12816     12834      +18
+  cgroup /user.slice                                                           12816     12833      +17
+  cgroup /system.slice/systemd-journald.service                                   27        43      +16
+  process podman (anon+shmem+swap)                                                16        32      +16
+  meminfo GPUActive                                                              556       541      -15
+  = meminfo MemAvailable                                                         415       491      +76
+  = meminfo MemFree                                                              174       245      +71
+  = meminfo SwapFree                                                            6793      6821      +28
+  = meminfo Cached                                                             12937     12913      -24
+  = meminfo Shmem                                                              11952     11923      -29
+  = meminfo Slab                                                                 462       465       +3
+  = meminfo AnonPages                                                            434       465      +32
