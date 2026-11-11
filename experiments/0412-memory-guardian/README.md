@@ -1540,6 +1540,55 @@ back by the poll, how long the CPU's data had been there unseen and whether a su
 or kills the suspected defect with the build we have); (2) the fault trigger behind its own switch with exp 0379's
 CPU tests extended; (3) scripted runs with the zero skip and the trigger, counting ring timeouts against the 2 in 8.
 
+### 32. How much of the pinned memory do command buffers name? (build g412p, 2026-11-11 19:57–19:59; a first, cut-short answer)
+
+**Question** (the top session's frame): we pin every byte the GPU could address; how much does the GPU touch? If
+little, residency could follow use.
+
+**Catcher.** `BC5_GUARD_USE_STAT=1` (`memfast/use0412.inc`, `memfast/mkuse0412.py`, tag us412; default off, no
+behaviour change): every memory operand the backend's filter asks about at submission stamps its 2 MiB chunks of
+guest address space; every 30 s the direct sync prints, per heap name, the MiB under views and of them the MiB in
+chunks an operand named ever / in the last 60 s / 10 s / 1 s. Build g412p = g412o + this, binary `e4dfc6d6` (g412o
+kept).
+
+**The run, c1use, is not a valid measuring run.** The watchdog ended it at 90 s on pressure (PSI full 66 %), before
+the save list. Cause [M]: Steam was running on the box (four `steamwebhelper` processes of 58–202 MiB and `steam`;
+available 2,400 MiB at 26 s where every earlier run had 3,900–4,100, swap 1,092 MiB used at the start). Steam was not
+started by this session; the guard before a run looks for an emulator and the lock only. No further run is made
+while Steam is up.
+
+**What the two tables that were printed say** (30 s and 60 s after the start, the title's menus) [M]:
+
+| | under views | in chunks an operand named: ever | last 10 s |
+|---|---|---|---|
+| direct memory, all heaps (30 s) | 9,619 MiB | 44 MiB (23 chunks) | 36 MiB |
+| `RenderGpuWcLarge` | 2,758 | 6 | 4 |
+| `CommitIABufferAllocator` | 2,736 | 0 | 0 |
+| `RenderGpuRwLarge` | 414 | 28 | 22 |
+| `AssetHeap Large`, `InitAllocator`, `AMM`, the others | 3,700 | 0 | 0 |
+| private memory (60 s) | 346 | 2 | 2 |
+
+after 921,650 operands (2.7 million by 60 s).
+
+**Reading.** In the menus the command buffers name 0.5 % of the memory under views, and of the heap that is
+certainly drawn from (`CommitIABufferAllocator`: index and vertex buffers by its name [I]) not one chunk. The
+addresses of what the shaders read are not in the command stream: the buffers carry register values and a few
+tables, and the shaders reach textures and buffers through descriptors and pointers they load from memory. That is
+the limit written into the catcher, and it is the whole picture, not a detail. **So the host cannot learn the GPU's
+use of memory from the command buffers, and a residency scheme driven by "what the next submission references"
+has nothing to stand on.** The play phase was not reached; nothing suggests it differs in kind.
+
+**What does carry information about use** [I]: the title's own calls (what it maps, unmaps, commits and gives a
+type to), the CPU's first write to a page (the zero pages of section 31: memory the title has reserved and never
+filled), and the GPU's own faults, which this driver turns into a hang instead of a recoverable event. Section 31's
+scheme uses the second. The first is the subject of the library review the maintainer ordered (a sub-agent of this
+session; its note goes to the shared notes folder).
+
+**Not done from the top session's list.** The kernel's rule for what holds the pages (udmabuf create against the BO
+list of a submission): the public source could not be fetched (the host rate-limited all three files), so it is not
+cited here; what this experiment measured itself is that the pin follows the imports, not the submissions (the
+ledger's "pinned" is the sum of imported BOs, section 7). The class split at 130 s on his save needs a valid run.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
