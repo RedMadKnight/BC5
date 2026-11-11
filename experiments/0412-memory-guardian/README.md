@@ -1024,6 +1024,59 @@ without the zero skip: works on his route since fast2 (section 18: 1,548 MiB cut
 against 12.0, orphans left 120–250 MiB as parts of chunks still under a view); its effect is that no fast2 run hit
 the watchdog before 180 s, where 3 of 7 runs without it did.
 
+### 23. The frame gaps by cause (build g412m, 2026-11-11 18:02–18:12, the top session's order)
+
+**Catchers** (no behaviour change, default off). In the host, `BC5_GUARD_GAP_STAT=<ms>` (`memfast/gap0412.inc`,
+`memfast/mkgap0412.py`, tag gp412): every blocking point the host owns counts its time per thread and cause (the
+device mutex, the chain's flush mutex, the drain at the flip, the label waits, the in-flight cap, the ring's wait-idle,
+the completion thread's GPU fence wait and its wait for work), `submit_now` and `submit_split` count their own time
+exclusive of those, and at each flip that ends a gap over the limit one journal line gives the per-thread milliseconds
+with CLOCK_MONOTONIC. Outside, `gapsamp0412.py` reads `/proc/<pid>/task/<tid>/stat`, `schedstat` and `syscall` of the
+Render Thread, game-main, `bc5-ring` and `bc5-cq0` every 20 ms (no ptrace). `gaps0412.py` joins the two. CPU test in
+`memfast/lock0412.cpp`, 23 of 23 on the box. Build g412m = g412l + this, binary `b0921384` (g412l kept).
+For a play from the shortcut: a file `~/bc5-work/exp0412/catchers.env` with the line `BC5_GUARD_GAP_STAT=100` turns
+both halves on in `play-guard-0412.sh` (the sampler writes `sampler/gapsamp-<stamp>-<arm>.txt`); no file, no catcher.
+
+**Run** s1gap: arm fast2, RT on, `BC5_GUARD_GAP_STAT=100 BC5_GUARD_LOCK_STAT=1`, scripted load. 26.1 flips/s over
+138 s; **the watchdog ended it at 144 s** (available under 300 MiB; the first fast2 run to end before 180 s), so the
+play phase is 12 s long here. No kernel line, no rsync on the box. 78 gaps over 100 ms, 13.6 s.
+Data `raw/s1gap-*` (`raw/s1gap-gaps-by-cause.txt` is the full output).
+
+**Where the Render Thread (the thread that flips) was during the gaps, share of the gaps' time** [M]:
+
+| | scene load (19 gaps, 2.7 s) | save load (34, 5.2 s) | play (9, 2.4 s) | whole run (78, 13.6 s) |
+|---|---|---|---|---|
+| on CPU outside the host's GPU path (the title's code and the host libraries it calls) | 54.8 % | 47.2 % | 9.8 % | 46.6 % |
+| on CPU in the host's GPU path (`submit_now`, `submit_split`) | 15.3 % | 16.7 % | 26.8 % | 15.9 % |
+| blocked on the device mutex | 18.7 % | 13.7 % | 27.6 % | 18.2 % |
+| blocked on the chain's flush mutex | 6.0 % | 10.2 % | 2.4 % | 6.2 % |
+| blocked in a futex wait that is no host stamp (the title's own locks and waits) | 0.7 % | 2.1 % | 23.5 % | 5.6 % |
+| waiting for the GPU: the drain at the flip | 2.8 % | 4.4 % | 2.0 % | 3.0 % |
+| waiting for the GPU: label waits | 1.0 % | 4.2 % | 4.5 % | 2.8 % |
+| run-queue wait, sleeps, not sampled | 0.7 % | 1.5 % | 3.4 % | 1.7 % |
+
+(The first two rows are the on-CPU time of `schedstat`, 70.1 / 63.9 / 36.6 / 62.5 %, split by the host scopes' own
+time; the scopes' time is taken as CPU time. Of the on-CPU ticks 89 % are user, 11 % system.)
+
+The other threads in the same gaps [M]: game-main is on CPU 54 % and in a futex wait 45 %; `bc5-ring` is on CPU
+28 % (43 % of it system time), blocked on the device mutex 21 %, in its own idle sleep 40 %; `bc5-cq0` waits for
+work 89.5 % of the gap time and for a GPU fence 9.4 %. Major faults inside all gaps: Render Thread 425, game-main 200.
+The block-I/O delay counter reads 0 for every thread (delay accounting is off on this kernel), so reads are seen only
+as major faults and as the absence of any thread blocked in a read at the 20 ms samples.
+
+**Reading.** (1) The GPU is not what makes the gaps: its completion thread has nothing to wait for 90 % of the gap
+time, and the Render Thread's waits for the GPU are 6 %. (2) Nor is the disk, as far as this catcher sees. (3) In the
+two loads the largest share, about half, is the Render Thread computing outside the host's GPU path: the title's own
+frame work. (4) The host's part is 40 %: 24 % blocked on the two submission mutexes (the same quarter stage 0 found)
+and 16 % in the host's submit path. In the short play phase the mutex and the title's own waits lead.
+
+**Proposal.** The largest named cause is CPU time of the Render Thread outside the host's GPU path, and this
+catcher cannot say whose code it is (the title's or a host library's). So the next step for that cause is one more
+catcher, not a fix: the stack sampler of section 19 with the monotonic clock, joined to the gaps, to name the
+functions inside the long frames. For the largest cause that is ours by name, the two mutexes (24 %), the fix is
+stage 1 of `DESIGN-device-mutex.md` together with the chain's flush mutex, which the design did not yet cover;
+its bound is that quarter of the gap time. Not built; the top session's review comes first.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
@@ -1036,6 +1089,9 @@ the watchdog before 180 s, where 3 of 7 runs without it did.
   (`bc5-ring` 23 %, Render Thread 14 %, `bc5-chainwd` 8 %), the three wait 35 s of 180 s for it, single holds reach 35-135 ms in most 10 s windows and 354 ms in the save load.
   Stage 0 (section 22): long holds lie inside 56 % of the frame gaps over 100 ms but cover 27 % of their time, so a shorter
   hold removes at most that share; not built (design: `DESIGN-device-mutex.md`).
+- The frame gaps by cause (section 23) [M]: inside the gaps over 100 ms the flipping thread is 47 % on the CPU outside the host's
+  GPU path (the title's frame work), 16 % in the host's submit path, 24 % blocked on the two submission mutexes, 6 % waiting for
+  the GPU; the GPU's completion thread is idle 90 % of the gap time. The gaps are not the GPU and not the disk.
 - The wall as arithmetic (section 16) [M]: at 165 s the guest pins 12,024 of 15,193 MiB; the 3,169 left hold the kernel, the
   GPU driver's buffers, the desktop and the emulator only with 986 MiB in swap and 42 MiB of file cache for the game. Over by
   about 0.4-0.5 GiB; 320 MiB of the pin are orphans (ours).

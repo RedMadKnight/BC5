@@ -5,6 +5,8 @@
 // time held is no more than the wall-clock time, try_lock works, and a report prints a line per thread name.
 // build: g++ -std=c++20 -O1 -Wall -Wextra -Werror -pthread lock0412.cpp -o lock0412
 #include <atomic>
+#include <chrono>
+#include <string>
 #include <cinttypes>
 #include <cstdarg>
 #include <cstdint>
@@ -26,11 +28,14 @@ static void test_print(const char* fmt, ...) {
 	std::vsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
 	g_lines++;
-	if (g_lines <= 8 || std::strncmp(buf, "lock hold", 9) == 0 || std::strncmp(buf, "lock wait", 9) == 0) std::fputs(buf, stdout);
+	if (g_lines <= 8 || std::strncmp(buf, "lock hold", 9) == 0 || std::strncmp(buf, "lock wait", 9) == 0 || std::strncmp(buf, "gap (", 5) == 0) std::fputs(buf, stdout);
 }
 #define LK412_PRINT test_print
 static double test_now() { return 1.5; }
 #define LK412_NOW test_now
+#define GP412_PRINT test_print
+#define GP412_NOW test_now
+#include "gap0412.inc"
 #include "lock0412.inc"
 
 static uint64_t g_checks = 0, g_ok = 0;
@@ -42,6 +47,7 @@ static void check(bool c, const char* what) {
 
 int main() {
 	setenv("BC5_GUARD_LOCK_STAT", "1", 1);
+	setenv("BC5_GUARD_GAP_STAT", "40", 1);
 	check(lk412::on(), "the switch reads as on");
 	static lk412::Mutex mu;
 	static uint64_t     counter = 0;
@@ -96,6 +102,32 @@ int main() {
 	std::thread([] { check(!mu.try_lock(), "try_lock on a held mutex fails"); }).join();
 	mu.unlock();
 	check(mu.total_acq() == static_cast<uint64_t>(threads) * rounds + 3, "try_lock and the two long-hold locks counted");
+	{ // the gap classifier: exclusive scopes, and one line for a gap over the limit (40 ms here)
+		check(gp412::on() && gp412::limit_ns() == 40000000ull, "the gap switch reads 40 ms");
+		const int me = gp412::slot();
+		check(me == gp412::kSlots - 1, "the main thread is in the slot of the others");
+		const uint64_t a0 = gp412::g_ns[me][gp412::kSubmit].load(), b0 = gp412::g_ns[me][gp412::kDrain].load();
+		const uint64_t t0 = gp412::now_ns();
+		gp412::flip();
+		{
+			gp412::Scope outer(gp412::kSubmit);
+			timespec d {0, 20000000};
+			nanosleep(&d, nullptr);
+			for (int i = 0; i < 30; i++) gp412::poll_sleep(1000, gp412::kDrain);
+			nanosleep(&d, nullptr);
+		}
+		const uint64_t wall = gp412::now_ns() - t0;
+		const uint64_t a = gp412::g_ns[me][gp412::kSubmit].load() - a0, b = gp412::g_ns[me][gp412::kDrain].load() - b0;
+		check(b >= 30000000ull, "thirty sleeps of 1 ms count as at least 30 ms of the inner cause");
+		check(a >= 40000000ull && a < 60000000ull, "the outer cause has its own 40 ms, not the inner time");
+		check(a + b <= wall, "the two causes together are within the wall-clock time");
+		const uint64_t gaps = gp412::g_gaps;
+		const int      lines = g_lines;
+		gp412::flip();
+		check(gp412::g_gaps == gaps + 1 && g_lines == lines + 1, "a gap over the limit writes one line");
+		gp412::flip();
+		check(gp412::g_gaps == gaps + 1 && g_lines == lines + 1, "a flip right after it writes none");
+	}
 	std::printf("lock0412: %" PRIu64 " of %" PRIu64 "; end\n", g_ok, g_checks);
 	return g_ok == g_checks ? 0 : 1;
 }

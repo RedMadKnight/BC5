@@ -1,0 +1,440 @@
+hold (lk412): t 1.437 s: bc5-ring held 1436.9 ms: direct sync 836.6 learned 598.8
+wait (lk412): t 1.437 s: game-main waited 607.8 ms behind bc5-ring
+hold (lk412): t 1.668 s: bc5-chainwd held 227.1 ms: device submit 226.9
+wait (lk412): t 1.668 s: bc5-ring waited 227.1 ms behind bc5-chainwd
+hold (lk412): t 1.829 s: bc5-chainwd held 48.8 ms: direct sync 45.9 device submit 2.5
+hold (lk412): t 1.998 s: bc5-ring held 71.2 ms: direct sync 46.6 learned 24.4
+wait (lk412): t 1.999 s: bc5-chainwd waited 69.5 ms behind bc5-ring
+hold (lk412): t 3.377 s: bc5-ring held 52.5 ms: direct sync 49.0 device submit 3.1
+hold (lk412): t 5.033 s: bc5-ring held 52.1 ms: direct sync 48.0 learned 1.9 device submit 2.1
+wait (lk412): t 5.033 s: Render Thread waited 45.0 ms behind bc5-ring
+stat (lk412): 10.0 s: game-main: 4 locks, held 3.0 ms (0.0 % of the time; longest 1.45 ms; 0 of 2 ms or more), waited 607.8 ms in 1 waits (6.1 %); behind: bc5-ring 607.8 ms
+parts (lk412): 10.0 s: game-main: ms held by part: probe 0.7 (longest 0.71), anon sync 0.8 (longest 0.79), direct sync 0.0 (longest 0.01), learned 0.3 (longest 0.29), hints 0.0 (longest 0.01), prepare 0.1 (longest 0.06), device submit 1.0 (longest 0.41), tail 0.1 (longest 0.06)
+stat (lk412): 10.0 s: bc5-ring: 2693 locks, held 2227.4 ms (22.2 % of the time; longest 1436.87 ms; 59 of 2 ms or more), waited 466.8 ms in 300 waits (4.7 %); behind: bc5-chainwd 267.6 ms, Render Thread 191.1 ms, bc5-ring 6.1 ms, game-main 1.9 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 9.6 (longest 0.04), anon sync 18.8 (longest 8.72), direct sync 1155.7 (longest 836.59), learned 699.6 (longest 598.83), hints 2.6 (longest 0.17), prepare 41.8 (longest 2.16), device submit 276.5 (longest 3.11), tail 22.8 (longest 0.09)
+stat (lk412): 10.0 s: bc5-chainwd: 241 locks, held 496.6 ms (5.0 % of the time; longest 227.12 ms; 22 of 2 ms or more), waited 81.0 ms in 12 waits (0.8 %); behind: bc5-ring 80.9 ms, bc5-chainwd 0.1 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 2.2 (longest 0.10), anon sync 17.1 (longest 6.09), direct sync 90.8 (longest 45.86), learned 11.4 (longest 2.19), hints 6.2 (longest 0.13), prepare 19.1 (longest 2.00), device submit 343.6 (longest 226.92), tail 6.1 (longest 0.15)
+stat (lk412): 10.0 s: Render Thread: 569 locks, held 628.3 ms (6.3 % of the time; longest 23.75 ms; 57 of 2 ms or more), waited 192.5 ms in 89 waits (1.9 %); behind: bc5-ring 189.6 ms, bc5-chainwd 2.9 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 1.8 (longest 0.05), anon sync 8.3 (longest 4.19), direct sync 205.3 (longest 20.11), learned 33.1 (longest 3.11), hints 20.5 (longest 0.85), prepare 42.0 (longest 1.38), device submit 297.9 (longest 8.10), tail 19.3 (longest 0.13)
+stat (lk412): 10.0 s: bc5-ring: 3479 locks, held 662.0 ms (6.6 % of the time; longest 11.36 ms; 10 of 2 ms or more), waited 132.0 ms in 385 waits (1.3 %); behind: Render Thread 100.0 ms, bc5-ring 18.6 ms, bc5-chainwd 13.3 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 14.9 (longest 0.10), anon sync 85.0 (longest 11.19), direct sync 13.4 (longest 0.56), learned 1.4 (longest 0.00), hints 2.9 (longest 0.02), prepare 65.6 (longest 1.88), device submit 435.9 (longest 0.78), tail 43.0 (longest 0.21)
+stat (lk412): 10.0 s: bc5-chainwd: 301 locks, held 223.2 ms (2.2 % of the time; longest 5.85 ms; 3 of 2 ms or more), waited 26.3 ms in 19 waits (0.3 %); behind: bc5-ring 26.3 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 0.9 (longest 0.01), anon sync 5.7 (longest 5.39), direct sync 8.6 (longest 1.12), learned 0.2 (longest 0.00), hints 10.8 (longest 0.11), prepare 24.5 (longest 0.24), device submit 162.7 (longest 1.15), tail 9.8 (longest 0.13)
+stat (lk412): 10.0 s: Render Thread: 797 locks, held 603.3 ms (6.0 % of the time; longest 23.46 ms; 18 of 2 ms or more), waited 70.7 ms in 119 waits (0.7 %); behind: bc5-ring 70.0 ms, Render Thread 0.7 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 3.6 (longest 0.05), anon sync 0.6 (longest 0.00), direct sync 72.9 (longest 18.06), learned 0.5 (longest 0.00), hints 32.6 (longest 0.12), prepare 76.4 (longest 1.34), device submit 384.1 (longest 5.77), tail 32.6 (longest 0.15)
+stat (lk412): 10.0 s: bc5-ring: 3514 locks, held 631.9 ms (6.3 % of the time; longest 9.47 ms; 11 of 2 ms or more), waited 121.1 ms in 385 waits (1.2 %); behind: Render Thread 92.9 ms, bc5-ring 14.4 ms, bc5-chainwd 13.8 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 14.1 (longest 0.07), anon sync 80.3 (longest 9.30), direct sync 12.6 (longest 0.94), learned 1.3 (longest 0.00), hints 2.8 (longest 0.02), prepare 65.1 (longest 2.91), device submit 414.6 (longest 0.87), tail 41.1 (longest 0.10)
+stat (lk412): 10.0 s: bc5-chainwd: 314 locks, held 231.1 ms (2.3 % of the time; longest 2.25 ms; 4 of 2 ms or more), waited 17.5 ms in 14 waits (0.2 %); behind: bc5-ring 17.5 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 1.0 (longest 0.01), anon sync 0.3 (longest 0.00), direct sync 11.4 (longest 1.09), learned 0.2 (longest 0.01), hints 10.9 (longest 0.14), prepare 25.5 (longest 0.23), device submit 171.4 (longest 1.27), tail 10.4 (longest 0.11)
+stat (lk412): 10.0 s: Render Thread: 803 locks, held 527.1 ms (5.3 % of the time; longest 3.43 ms; 11 of 2 ms or more), waited 75.9 ms in 132 waits (0.8 %); behind: bc5-ring 74.3 ms, Render Thread 1.6 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 3.7 (longest 0.04), anon sync 0.6 (longest 0.00), direct sync 36.6 (longest 2.15), learned 0.4 (longest 0.01), hints 31.1 (longest 0.11), prepare 72.2 (longest 0.24), device submit 351.8 (longest 1.27), tail 30.6 (longest 0.12)
+hold (lk412): t 31.478 s: bc5-ring held 59.2 ms: direct sync 39.3 learned 7.9 device submit 11.9
+wait (lk412): t 31.478 s: Render Thread waited 58.9 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 31.492 s mono 72756.360740: 150.5 ms since the last flip | Render Thread: device mutex 58.9, flip drain 7.9, host submit 6.8, host split 1.1 | bc5-ring: device mutex 6.8, host submit 62.1, host split 0.2 | bc5-cq0: gpu fence 11.0, idle (no work) 138.7 | bc5-chainwd: host submit 4.2 | others: gpu fence 14.2, idle (no work) 135.2
+hold (lk412): t 33.386 s: bc5-ring held 41.4 ms: direct sync 33.4 learned 4.3 device submit 3.6
+wait (lk412): t 33.386 s: bc5-chainwd waited 39.6 ms behind bc5-ring
+hold (lk412): t 33.495 s: bc5-ring held 54.3 ms: direct sync 43.1 learned 6.3 device submit 4.9
+wait (lk412): t 33.495 s: Render Thread waited 54.1 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 33.509 s mono 72758.377628: 194.6 ms since the last flip | Render Thread: device mutex 54.1, flip drain 7.0, host submit 7.7, host split 0.2 | bc5-ring: device mutex 30.6, host submit 96.3 | bc5-cq0: gpu fence 14.8, idle (no work) 179.5 | bc5-chainwd: device mutex 39.6, host submit 43.5 | others: gpu fence 26.3, idle (no work) 162.3
+hold (lk412): t 33.860 s: bc5-ring held 68.0 ms: direct sync 57.0 learned 7.4 prepare 1.3 device submit 2.2
+wait (lk412): t 33.860 s: Render Thread waited 67.9 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 33.878 s mono 72758.746622: 204.4 ms since the last flip | Render Thread: device mutex 67.9, flip drain 10.9, host submit 18.7, host split 2.0 | bc5-ring: device mutex 8.5, host submit 76.4, host split 0.2 | bc5-cq0: gpu fence 16.9, idle (no work) 185.9 | bc5-chainwd: device mutex 1.8, host submit 8.0 | others: gpu fence 19.0, idle (no work) 184.1
+hold (lk412): t 34.321 s: bc5-chainwd held 30.1 ms: direct sync 25.1 learned 2.1 device submit 2.8
+wait (lk412): t 34.321 s: bc5-ring waited 30.1 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 34.637 s mono 72759.505116: 108.8 ms since the last flip | Render Thread: device mutex 11.1, flip drain 0.5, host submit 11.9, host split 1.4 | bc5-ring: device mutex 17.4, host submit 22.4, host split 0.2 | bc5-cq0: gpu fence 4.6, idle (no work) 102.9 | bc5-chainwd: device mutex 7.3, host submit 20.1 | others: gpu fence 0.5, idle (no work) 97.0
+wait (lk412): t 34.677 s: bc5-ring waited 30.4 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 35.020 s mono 72759.887931: 127.6 ms since the last flip | Render Thread: device mutex 7.9, flip drain 5.7, host submit 37.0, host split 0.3 | bc5-ring: device mutex 60.9, host submit 50.1 | bc5-cq0: gpu fence 6.2, idle (no work) 121.1 | bc5-chainwd: device mutex 14.3, host submit 24.4 | others: gpu fence 5.2, idle (no work) 136.6
+hold (lk412): t 36.584 s: bc5-ring held 46.7 ms: direct sync 39.9 learned 2.3 device submit 4.4
+wait (lk412): t 36.584 s: Render Thread waited 46.6 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 36.600 s mono 72761.468417: 160.0 ms since the last flip | Render Thread: device mutex 46.6, flip drain 8.5, host submit 7.6, host split 1.0 | bc5-ring: device mutex 19.5, host submit 68.5, host split 0.2 | bc5-cq0: gpu fence 15.6, idle (no work) 143.5 | bc5-chainwd: device mutex 16.6, host submit 15.8 | others: gpu fence 19.8, idle (no work) 137.2
+hold (lk412): t 36.654 s: bc5-chainwd held 52.0 ms: anon sync 19.8 direct sync 24.4 learned 5.1 device submit 2.6
+hold (lk412): t 36.763 s: bc5-ring held 40.0 ms: direct sync 32.0 learned 4.3 device submit 3.6
+wait (lk412): t 36.763 s: Render Thread waited 39.8 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 36.796 s mono 72761.664727: 102.6 ms since the last flip | Render Thread: device mutex 39.8, flip drain 5.9, host submit 27.0, host split 0.1 | bc5-ring: device mutex 26.8, host submit 40.3 | bc5-cq0: gpu fence 6.8, idle (no work) 95.7 | bc5-chainwd: host submit 13.0 | others: gpu fence 10.8, idle (no work) 83.5
+hold (lk412): t 38.756 s: bc5-chainwd held 40.4 ms: anon sync 24.7 direct sync 12.0 learned 2.8
+wait (lk412): t 38.757 s: bc5-ring waited 39.7 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 38.869 s mono 72763.737114: 155.4 ms since the last flip | Render Thread: device mutex 18.0, flip drain 0.8, host submit 19.4, host split 0.4 | bc5-ring: device mutex 81.0, host submit 42.6 | bc5-cq0: gpu fence 7.3, idle (no work) 147.2 | bc5-chainwd: device mutex 22.2, host submit 63.8 | others: gpu fence 7.4, idle (no work) 115.4
+gap (exp 0412, tag gp412): t 39.137 s mono 72764.005093: 117.7 ms since the last flip | Render Thread: device mutex 36.3, chain mutex 29.7, flip drain 0.4, host submit 46.6, host split 0.2 | bc5-ring: device mutex 62.2, host submit 54.8 | bc5-cq0: gpu fence 0.4, idle (no work) 117.2 | bc5-chainwd: device mutex 15.7, host submit 16.2 | others: idle (no work) 114.2
+gap (exp 0412, tag gp412): t 39.245 s mono 72764.113718: 108.6 ms since the last flip | Render Thread: device mutex 36.7, chain mutex 32.8, flip drain 0.4, host submit 34.6, host split 0.4 | bc5-ring: device mutex 53.3, host submit 55.0 | bc5-cq0: gpu fence 0.4, idle (no work) 108.1 | bc5-chainwd: device mutex 15.5, host submit 19.0 | others: idle (no work) 117.3
+stat (lk412): 10.0 s: bc5-ring: 8525 locks, held 1973.7 ms (19.7 % of the time; longest 67.96 ms; 76 of 2 ms or more), waited 897.1 ms in 189 waits (9.0 %); behind: bc5-chainwd 482.5 ms, Render Thread 409.9 ms, bc5-ring 4.7 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 36.9 (longest 0.06), anon sync 81.7 (longest 26.01), direct sync 650.4 (longest 56.99), learned 456.9 (longest 11.82), hints 5.9 (longest 0.10), prepare 68.4 (longest 1.66), device submit 615.0 (longest 11.90), tail 58.5 (longest 0.55)
+stat (lk412): 10.0 s: bc5-chainwd: 2136 locks, held 1842.9 ms (18.4 % of the time; longest 51.98 ms; 75 of 2 ms or more), waited 518.6 ms in 62 waits (5.2 %); behind: bc5-ring 449.4 ms, bc5-chainwd 69.2 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 5.3 (longest 0.04), anon sync 124.0 (longest 24.73), direct sync 402.6 (longest 25.08), learned 195.0 (longest 10.94), hints 61.2 (longest 0.15), prepare 151.1 (longest 1.81), device submit 850.2 (longest 7.98), tail 53.4 (longest 0.22)
+stat (lk412): 10.0 s: Render Thread: 198 locks, held 502.4 ms (5.0 % of the time; longest 26.25 ms; 35 of 2 ms or more), waited 628.5 ms in 63 waits (6.3 %); behind: bc5-ring 607.9 ms, bc5-chainwd 20.3 ms, Render Thread 0.3 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 0.6 (longest 0.05), anon sync 0.1 (longest 0.01), direct sync 191.4 (longest 18.33), learned 167.0 (longest 12.60), hints 6.5 (longest 0.11), prepare 13.8 (longest 0.25), device submit 116.9 (longest 5.90), tail 6.2 (longest 0.19)
+gap (exp 0412, tag gp412): t 41.227 s mono 72766.095367: 191.6 ms since the last flip | Render Thread: device mutex 29.1, flip drain 4.3, host submit 20.5, host split 1.5 | bc5-ring: device mutex 20.5, host submit 33.7, host split 0.2 | bc5-cq0: gpu fence 8.9, idle (no work) 181.6 | bc5-chainwd: host submit 8.8 | others: gpu fence 6.5, idle (no work) 186.4
+hold (lk412): t 41.277 s: bc5-chainwd held 47.5 ms: anon sync 26.4 direct sync 9.2 learned 11.7
+gap (exp 0412, tag gp412): t 42.473 s mono 72767.341641: 141.1 ms since the last flip | Render Thread: device mutex 27.6, flip drain 3.1, host submit 29.6, host split 0.5 | bc5-ring: device mutex 36.3, host submit 55.0 | bc5-cq0: gpu fence 5.2, idle (no work) 135.5 | bc5-chainwd: device mutex 21.9, host submit 9.0 | others: gpu fence 1.6, idle (no work) 114.7
+gap (exp 0412, tag gp412): t 42.684 s mono 72767.552296: 107.0 ms since the last flip | Render Thread: flip drain 0.6, host submit 7.8, host split 1.1 | bc5-ring: device mutex 57.2, host submit 24.1, host split 0.1 | bc5-cq0: gpu fence 5.5, idle (no work) 100.6 | bc5-chainwd: device mutex 19.1, host submit 58.9 | others: gpu fence 1.5, idle (no work) 105.1
+hold (lk412): t 43.276 s: bc5-ring held 41.2 ms: anon sync 26.8 direct sync 11.2 learned 2.8
+wait (lk412): t 43.276 s: bc5-chainwd waited 39.4 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 43.299 s mono 72768.166926: 107.6 ms since the last flip | Render Thread: flip drain 0.6, host submit 0.9, host split 1.4 | bc5-ring: device mutex 6.6, host submit 43.8, host split 0.8 | bc5-cq0: gpu fence 18.0, idle (no work) 88.7 | bc5-chainwd: device mutex 39.4, host submit 23.6 | others: gpu fence 14.4, idle (no work) 92.7
+gap (exp 0412, tag gp412): t 43.877 s mono 72768.744932: 129.8 ms since the last flip | Render Thread: device mutex 14.9, flip drain 1.1, host submit 23.9, host split 0.5 | bc5-ring: device mutex 45.0, host submit 54.4 | bc5-cq0: gpu fence 3.7, idle (no work) 125.6 | bc5-chainwd: device mutex 34.6, host submit 22.3 | others: gpu fence 1.8, idle (no work) 103.0
+hold (lk412): t 43.931 s: bc5-chainwd held 34.6 ms: direct sync 5.9 learned 27.1
+wait (lk412): t 43.931 s: bc5-ring waited 34.3 ms behind bc5-chainwd
+hold (lk412): t 43.965 s: bc5-ring held 34.9 ms: direct sync 15.1 learned 19.1
+gap (exp 0412, tag gp412): t 43.997 s mono 72768.865712: 120.8 ms since the last flip | Render Thread: device mutex 40.6, flip drain 0.3, host submit 17.1, host split 0.9 | bc5-ring: device mutex 51.1, host submit 70.0 | bc5-cq0: gpu fence 4.8, idle (no work) 115.7 | bc5-chainwd: device mutex 17.1, host submit 34.6 | others: gpu fence 0.7, idle (no work) 144.9
+gap (exp 0412, tag gp412): t 44.310 s mono 72769.177843: 104.4 ms since the last flip | Render Thread: device mutex 17.9, flip drain 4.3, host submit 24.4, host split 1.0 | bc5-ring: device mutex 37.4, host submit 37.4, host split 0.1 | bc5-cq0: gpu fence 6.1, idle (no work) 97.7 | bc5-chainwd: device mutex 14.6, host submit 16.8 | others: gpu fence 0.3, idle (no work) 75.3
+hold (lk412): t 44.339 s: bc5-ring held 33.9 ms: anon sync 30.9 direct sync 2.7
+hold (lk412): t 45.383 s: bc5-chainwd held 41.0 ms: anon sync 29.1 direct sync 8.6 learned 2.9
+wait (lk412): t 45.384 s: bc5-ring waited 35.1 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 45.470 s mono 72770.337907: 129.4 ms since the last flip | Render Thread: device mutex 21.4, flip drain 0.8, host submit 6.7, host split 0.9 | bc5-ring: device mutex 50.6, host submit 30.3, host split 0.3 | bc5-cq0: gpu fence 2.0, idle (no work) 126.9 | bc5-chainwd: device mutex 7.6, host submit 56.2 | others: gpu fence 1.8, idle (no work) 127.3
+hold (lk412): t 45.804 s: bc5-ring held 32.1 ms: direct sync 24.8 learned 4.9 device submit 2.3
+wait (lk412): t 45.804 s: bc5-chainwd waited 30.4 ms behind bc5-ring
+hold (lk412): t 45.888 s: bc5-chainwd held 44.3 ms: direct sync 36.1 hints 1.2 device submit 6.7
+wait (lk412): t 45.888 s: bc5-ring waited 44.2 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 46.000 s mono 72770.868168: 276.2 ms since the last flip | Render Thread: device mutex 24.8, chain mutex 83.0, flip drain 13.7, label wait 16.4, host submit 28.0, host split 7.4 | bc5-ring: device mutex 70.2, host submit 68.5, host split 1.0 | bc5-cq0: gpu fence 75.5, idle (no work) 189.7 | bc5-chainwd: device mutex 30.5, host submit 65.8 | others: gpu fence 74.6, idle (no work) 192.5
+gap (exp 0412, tag gp412): t 46.545 s mono 72771.412809: 101.6 ms since the last flip | Render Thread: device mutex 15.4, chain mutex 15.0, flip drain 25.3, label wait 15.8, host submit 15.6, host split 5.0 | bc5-ring: device mutex 11.4, host submit 21.7, host split 0.3 | bc5-cq0: gpu fence 49.7, idle (no work) 49.3 | bc5-chainwd: host submit 16.3 | others: gpu fence 48.5, idle (no work) 52.2
+hold (lk412): t 47.404 s: bc5-chainwd held 50.5 ms: anon sync 29.8 direct sync 13.5 learned 6.7
+wait (lk412): t 47.404 s: bc5-ring waited 46.6 ms behind bc5-chainwd
+hold (lk412): t 47.480 s: bc5-chainwd held 44.8 ms: anon sync 29.3 direct sync 12.1 learned 3.1
+wait (lk412): t 47.480 s: bc5-ring waited 43.2 ms behind bc5-chainwd
+hold (lk412): t 47.634 s: bc5-ring held 34.3 ms: direct sync 27.3 learned 6.7
+wait (lk412): t 47.634 s: Render Thread waited 32.4 ms behind bc5-ring
+hold (lk412): t 48.484 s: bc5-ring held 41.0 ms: anon sync 28.3 direct sync 8.7 learned 3.0
+wait (lk412): t 48.484 s: bc5-chainwd waited 41.0 ms behind bc5-chainwd
+hold (lk412): t 49.387 s: bc5-ring held 35.0 ms: direct sync 30.1 learned 3.0 device submit 1.8
+wait (lk412): t 49.387 s: Render Thread waited 33.2 ms behind bc5-ring
+hold (lk412): t 49.474 s: bc5-ring held 30.6 ms: anon sync 30.4
+hold (lk412): t 49.538 s: bc5-chainwd held 53.9 ms: anon sync 29.7 direct sync 20.7 learned 3.1
+wait (lk412): t 49.538 s: bc5-ring waited 44.8 ms behind bc5-chainwd
+stat (lk412): 10.0 s: bc5-ring: 5001 locks, held 3145.2 ms (31.4 % of the time; longest 41.17 ms; 150 of 2 ms or more), waited 1415.4 ms in 440 waits (14.1 %); behind: bc5-chainwd 972.6 ms, Render Thread 435.0 ms, bc5-ring 7.8 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 22.3 (longest 0.28), anon sync 171.3 (longest 30.86), direct sync 1361.3 (longest 30.12), learned 809.0 (longest 19.07), hints 16.6 (longest 0.61), prepare 72.5 (longest 2.20), device submit 651.0 (longest 2.89), tail 41.2 (longest 0.23)
+stat (lk412): 10.0 s: bc5-chainwd: 874 locks, held 2101.5 ms (21.0 % of the time; longest 53.89 ms; 179 of 2 ms or more), waited 1180.9 ms in 116 waits (11.8 %); behind: bc5-ring 1038.8 ms, bc5-chainwd 142.1 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 4.7 (longest 0.12), anon sync 200.3 (longest 29.83), direct sync 849.4 (longest 36.07), learned 319.9 (longest 27.12), hints 49.0 (longest 1.18), prepare 82.9 (longest 2.11), device submit 562.2 (longest 13.36), tail 33.2 (longest 0.66)
+stat (lk412): 10.0 s: Render Thread: 647 locks, held 908.7 ms (9.1 % of the time; longest 29.76 ms; 68 of 2 ms or more), waited 1020.2 ms in 151 waits (10.2 %); behind: bc5-ring 1020.1 ms, Render Thread 0.1 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 1.4 (longest 0.04), anon sync 30.0 (longest 29.53), direct sync 156.1 (longest 16.65), learned 47.2 (longest 14.77), hints 35.4 (longest 3.23), prepare 70.8 (longest 2.11), device submit 539.5 (longest 17.41), tail 28.5 (longest 0.59)
+hold (lk412): t 50.318 s: Render Thread held 44.3 ms: direct sync 37.4 device submit 6.7
+wait (lk412): t 50.318 s: bc5-ring waited 44.3 ms behind Render Thread
+hold (lk412): t 51.518 s: Render Thread held 31.9 ms: anon sync 30.8
+wait (lk412): t 51.518 s: bc5-ring waited 31.9 ms behind Render Thread
+hold (lk412): t 51.593 s: bc5-chainwd held 44.2 ms: anon sync 31.3 direct sync 9.5 learned 3.0
+wait (lk412): t 51.595 s: bc5-ring waited 44.3 ms behind bc5-chainwd
+hold (lk412): t 52.071 s: Render Thread held 40.1 ms: direct sync 24.7 device submit 15.3
+wait (lk412): t 52.071 s: bc5-ring waited 40.1 ms behind Render Thread
+hold (lk412): t 52.582 s: Render Thread held 45.2 ms: direct sync 33.1 device submit 11.8
+wait (lk412): t 52.582 s: bc5-ring waited 45.1 ms behind Render Thread
+hold (lk412): t 52.613 s: bc5-ring held 30.9 ms: anon sync 30.6
+hold (lk412): t 54.612 s: bc5-chainwd held 41.4 ms: anon sync 29.8 direct sync 8.2 learned 2.9
+wait (lk412): t 54.612 s: bc5-ring waited 39.8 ms behind bc5-chainwd
+hold (lk412): t 54.827 s: Render Thread held 32.2 ms: direct sync 24.1 device submit 7.6
+hold (lk412): t 56.602 s: Render Thread held 30.6 ms: anon sync 30.2
+hold (lk412): t 58.960 s: bc5-chainwd held 42.2 ms: anon sync 29.2 direct sync 9.6 learned 3.0
+wait (lk412): t 58.963 s: bc5-ring waited 41.1 ms behind bc5-chainwd
+stat (lk412): 10.0 s: bc5-ring: 9477 locks, held 2312.2 ms (23.1 % of the time; longest 30.87 ms; 32 of 2 ms or more), waited 1037.8 ms in 1091 waits (10.4 %); behind: Render Thread 647.0 ms, bc5-chainwd 356.0 ms, bc5-ring 34.7 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 21.3 (longest 0.22), anon sync 181.2 (longest 30.61), direct sync 222.3 (longest 17.12), learned 45.3 (longest 11.25), hints 9.8 (longest 0.17), prepare 195.7 (longest 2.53), device submit 1544.9 (longest 6.92), tail 91.8 (longest 0.72)
+stat (lk412): 10.0 s: bc5-chainwd: 369 locks, held 602.1 ms (6.0 % of the time; longest 44.17 ms; 26 of 2 ms or more), waited 93.4 ms in 95 waits (0.9 %); behind: bc5-ring 93.0 ms, bc5-chainwd 0.3 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 1.1 (longest 0.04), anon sync 90.7 (longest 31.26), direct sync 82.2 (longest 9.64), learned 25.7 (longest 8.70), hints 28.9 (longest 0.23), prepare 55.9 (longest 0.32), device submit 295.3 (longest 1.99), tail 22.3 (longest 0.16)
+stat (lk412): 10.0 s: Render Thread: 2359 locks, held 2141.6 ms (21.4 % of the time; longest 45.23 ms; 82 of 2 ms or more), waited 481.9 ms in 513 waits (4.8 %); behind: bc5-ring 481.7 ms, bc5-chainwd 0.2 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 3.7 (longest 0.03), anon sync 62.3 (longest 30.82), direct sync 190.7 (longest 37.38), learned 4.1 (longest 3.01), hints 104.1 (longest 0.56), prepare 227.3 (longest 1.70), device submit 1457.3 (longest 15.29), tail 92.1 (longest 0.22)
+hold (lk412): t 60.950 s: bc5-ring held 30.3 ms: anon sync 30.1
+hold (lk412): t 61.959 s: bc5-ring held 38.9 ms: anon sync 34.8 direct sync 3.7
+wait (lk412): t 61.959 s: Render Thread waited 38.0 ms behind bc5-ring
+hold (lk412): t 62.953 s: bc5-ring held 30.8 ms: anon sync 30.4
+hold (lk412): t 63.735 s: bc5-chainwd held 46.2 ms: anon sync 29.4 direct sync 12.0 learned 3.0 prepare 1.6
+wait (lk412): t 63.735 s: bc5-ring waited 45.2 ms behind bc5-chainwd
+hold (lk412): t 66.886 s: Render Thread held 30.3 ms: direct sync 22.4 device submit 7.5
+hold (lk412): t 67.723 s: bc5-ring held 30.8 ms: anon sync 30.7
+hold (lk412): t 69.734 s: bc5-ring held 41.5 ms: anon sync 41.1
+wait (lk412): t 69.734 s: Render Thread waited 38.6 ms behind bc5-ring
+stat (lk412): 10.0 s: bc5-ring: 10181 locks, held 2311.3 ms (23.1 % of the time; longest 41.46 ms; 20 of 2 ms or more), waited 765.4 ms in 1128 waits (7.7 %); behind: Render Thread 496.1 ms, bc5-chainwd 237.1 ms, bc5-ring 32.2 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 22.6 (longest 0.06), anon sync 286.6 (longest 41.09), direct sync 87.1 (longest 4.32), learned 6.6 (longest 3.01), hints 8.8 (longest 0.09), prepare 202.9 (longest 2.43), device submit 1598.0 (longest 1.05), tail 98.7 (longest 0.48)
+stat (lk412): 10.0 s: bc5-chainwd: 357 locks, held 452.1 ms (4.5 % of the time; longest 46.24 ms; 9 of 2 ms or more), waited 22.2 ms in 105 waits (0.2 %); behind: bc5-ring 22.2 ms, bc5-chainwd 0.1 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 0.9 (longest 0.02), anon sync 29.7 (longest 29.42), direct sync 27.7 (longest 12.04), learned 11.9 (longest 8.76), hints 26.7 (longest 0.34), prepare 56.7 (longest 1.61), device submit 277.6 (longest 1.86), tail 20.8 (longest 0.14)
+stat (lk412): 10.0 s: Render Thread: 2524 locks, held 2093.6 ms (20.9 % of the time; longest 30.32 ms; 33 of 2 ms or more), waited 499.1 ms in 554 waits (5.0 %); behind: bc5-ring 498.7 ms, bc5-chainwd 0.3 ms, Render Thread 0.1 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 3.9 (longest 0.02), anon sync 30.6 (longest 29.14), direct sync 107.9 (longest 22.40), learned 1.2 (longest 0.01), hints 112.4 (longest 0.22), prepare 243.6 (longest 1.79), device submit 1494.4 (longest 7.50), tail 99.5 (longest 0.21)
+hold (lk412): t 71.724 s: bc5-ring held 30.3 ms: anon sync 30.0
+hold (lk412): t 72.726 s: bc5-ring held 30.1 ms: anon sync 29.9
+hold (lk412): t 73.729 s: bc5-ring held 33.1 ms: anon sync 32.9
+hold (lk412): t 75.733 s: bc5-ring held 36.6 ms: anon sync 36.5
+wait (lk412): t 75.733 s: bc5-chainwd waited 30.3 ms behind bc5-ring
+hold (lk412): t 76.733 s: bc5-ring held 35.6 ms: anon sync 35.4
+hold (lk412): t 77.733 s: bc5-ring held 35.2 ms: anon sync 35.0
+wait (lk412): t 77.733 s: Render Thread waited 33.0 ms behind bc5-ring
+hold (lk412): t 78.730 s: bc5-ring held 32.3 ms: anon sync 32.0
+wait (lk412): t 78.730 s: Render Thread waited 31.5 ms behind bc5-ring
+hold (lk412): t 79.735 s: bc5-ring held 36.9 ms: anon sync 36.5
+wait (lk412): t 79.735 s: bc5-chainwd waited 36.1 ms behind bc5-ring
+stat (lk412): 10.0 s: bc5-ring: 10013 locks, held 2415.9 ms (24.2 % of the time; longest 36.93 ms; 17 of 2 ms or more), waited 686.9 ms in 1110 waits (6.9 %); behind: Render Thread 475.2 ms, bc5-chainwd 170.9 ms, bc5-ring 40.8 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 24.5 (longest 0.29), anon sync 301.9 (longest 36.47), direct sync 93.6 (longest 5.25), learned 3.8 (longest 0.01), hints 9.2 (longest 0.05), prepare 204.4 (longest 0.33), device submit 1674.5 (longest 2.10), tail 104.0 (longest 0.57)
+stat (lk412): 10.0 s: bc5-chainwd: 398 locks, held 443.6 ms (4.4 % of the time; longest 3.24 ms; 6 of 2 ms or more), waited 152.3 ms in 102 waits (1.5 %); behind: bc5-ring 152.0 ms, bc5-chainwd 0.3 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 1.0 (longest 0.02), anon sync 0.4 (longest 0.03), direct sync 7.7 (longest 1.09), learned 0.3 (longest 0.00), hints 30.0 (longest 0.19), prepare 60.9 (longest 0.34), device submit 319.5 (longest 1.58), tail 23.8 (longest 0.13)
+stat (lk412): 10.0 s: Render Thread: 2440 locks, held 2093.8 ms (20.9 % of the time; longest 29.63 ms; 87 of 2 ms or more), waited 339.3 ms in 473 waits (3.4 %); behind: bc5-ring 339.2 ms, Render Thread 0.1 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 4.3 (longest 0.03), anon sync 30.6 (longest 29.12), direct sync 54.6 (longest 4.70), learned 1.3 (longest 0.01), hints 113.8 (longest 0.24), prepare 248.8 (longest 0.56), device submit 1535.8 (longest 2.02), tail 104.6 (longest 0.92)
+hold (lk412): t 80.733 s: bc5-ring held 35.1 ms: anon sync 34.9
+wait (lk412): t 80.733 s: Render Thread waited 35.1 ms behind bc5-ring
+hold (lk412): t 81.734 s: bc5-ring held 35.5 ms: anon sync 35.3
+hold (lk412): t 82.749 s: bc5-ring held 47.6 ms: anon sync 47.1
+wait (lk412): t 82.749 s: bc5-chainwd waited 46.7 ms behind bc5-ring
+hold (lk412): t 83.736 s: bc5-ring held 33.2 ms: anon sync 32.9
+wait (lk412): t 83.736 s: bc5-chainwd waited 33.2 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 86.566 s mono 72811.434108: 111.5 ms since the last flip | Render Thread: device mutex 29.0, flip drain 5.1, label wait 17.7, host submit 50.6, host split 1.3 | bc5-ring: device mutex 26.5, host submit 49.7, host split 0.2 | bc5-cq0: gpu fence 11.6, idle (no work) 98.6 | bc5-chainwd: device mutex 1.0, host submit 0.8 | others: gpu fence 10.1, idle (no work) 100.1
+hold (lk412): t 86.646 s: bc5-chainwd held 42.5 ms: anon sync 29.3 direct sync 9.9 learned 3.0
+wait (lk412): t 86.647 s: bc5-ring waited 42.3 ms behind bc5-chainwd
+hold (lk412): t 87.634 s: bc5-ring held 30.3 ms: anon sync 30.1
+hold (lk412): t 88.639 s: bc5-ring held 33.1 ms: anon sync 33.0
+wait (lk412): t 88.639 s: Render Thread waited 32.4 ms behind bc5-ring
+hold (lk412): t 89.642 s: bc5-ring held 35.8 ms: anon sync 35.6
+wait (lk412): t 89.642 s: Render Thread waited 34.6 ms behind bc5-ring
+stat (lk412): 10.0 s: bc5-ring: 9504 locks, held 2468.7 ms (24.7 % of the time; longest 47.63 ms; 30 of 2 ms or more), waited 742.9 ms in 1113 waits (7.4 %); behind: Render Thread 492.6 ms, bc5-chainwd 206.5 ms, bc5-ring 43.7 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 23.5 (longest 0.17), anon sync 280.9 (longest 47.09), direct sync 191.1 (longest 13.16), learned 67.0 (longest 11.90), hints 9.5 (longest 0.11), prepare 200.8 (longest 1.95), device submit 1597.6 (longest 1.49), tail 98.2 (longest 0.44)
+stat (lk412): 10.0 s: bc5-chainwd: 365 locks, held 553.0 ms (5.5 % of the time; longest 42.49 ms; 21 of 2 ms or more), waited 122.5 ms in 68 waits (1.2 %); behind: bc5-ring 122.5 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 1.0 (longest 0.02), anon sync 29.6 (longest 29.26), direct sync 72.0 (longest 15.89), learned 8.1 (longest 4.86), hints 37.6 (longest 7.09), prepare 60.3 (longest 0.41), device submit 320.2 (longest 5.48), tail 24.2 (longest 0.16)
+stat (lk412): 10.0 s: Render Thread: 2327 locks, held 2101.0 ms (21.0 % of the time; longest 29.03 ms; 74 of 2 ms or more), waited 512.2 ms in 467 waits (5.1 %); behind: bc5-ring 498.7 ms, bc5-chainwd 13.4 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 4.4 (longest 0.02), anon sync 30.1 (longest 28.60), direct sync 85.1 (longest 10.53), learned 40.5 (longest 12.85), hints 112.1 (longest 1.31), prepare 245.4 (longest 2.64), device submit 1483.8 (longest 1.82), tail 99.6 (longest 0.19)
+hold (lk412): t 90.641 s: bc5-ring held 33.7 ms: anon sync 33.5
+wait (lk412): t 90.641 s: bc5-chainwd waited 33.0 ms behind bc5-ring
+hold (lk412): t 91.500 s: bc5-chainwd held 53.2 ms: anon sync 34.5 direct sync 12.0 learned 3.5 prepare 2.8
+wait (lk412): t 91.500 s: bc5-ring waited 51.8 ms behind bc5-chainwd
+hold (lk412): t 91.913 s: bc5-ring held 32.9 ms: direct sync 28.8 learned 3.1
+wait (lk412): t 91.913 s: bc5-chainwd waited 31.1 ms behind bc5-ring
+hold (lk412): t 92.480 s: bc5-ring held 32.2 ms: anon sync 32.0
+wait (lk412): t 92.480 s: Render Thread waited 31.5 ms behind bc5-ring
+hold (lk412): t 93.488 s: bc5-ring held 30.9 ms: anon sync 30.6
+hold (lk412): t 93.840 s: bc5-chainwd held 52.9 ms: anon sync 38.9 direct sync 10.7 learned 3.0
+wait (lk412): t 93.841 s: bc5-ring waited 46.7 ms behind bc5-chainwd
+hold (lk412): t 95.115 s: bc5-ring held 33.8 ms: direct sync 26.2 device submit 7.5
+hold (lk412): t 95.822 s: bc5-ring held 34.2 ms: anon sync 34.0
+wait (lk412): t 95.822 s: Render Thread waited 33.4 ms behind bc5-ring
+hold (lk412): t 96.785 s: bc5-chainwd held 44.9 ms: anon sync 31.1 direct sync 9.7 learned 3.7
+wait (lk412): t 96.787 s: bc5-ring waited 44.1 ms behind bc5-chainwd
+hold (lk412): t 97.778 s: Render Thread held 34.9 ms: anon sync 34.4
+wait (lk412): t 97.778 s: bc5-ring waited 34.9 ms behind Render Thread
+hold (lk412): t 98.820 s: bc5-ring held 53.8 ms: anon sync 37.0 direct sync 12.6 learned 3.9
+wait (lk412): t 98.820 s: Render Thread waited 51.8 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 98.843 s mono 72823.710970: 106.3 ms since the last flip | Render Thread: device mutex 51.8, flip drain 7.4, label wait 4.8, host submit 5.4, host split 1.9 | bc5-ring: device mutex 2.6, host submit 56.1, host split 0.1 | bc5-cq0: gpu fence 18.0, idle (no work) 86.5 | bc5-chainwd: host submit 0.4 | others: gpu fence 17.8, idle (no work) 86.9
+hold (lk412): t 98.921 s: bc5-chainwd held 76.4 ms: anon sync 43.6 direct sync 18.9 learned 13.5
+wait (lk412): t 98.921 s: bc5-ring waited 43.8 ms behind bc5-chainwd
+wait (lk412): t 98.957 s: Render Thread waited 36.1 ms behind bc5-ring
+hold (lk412): t 99.003 s: bc5-ring held 38.4 ms: direct sync 24.7 learned 13.2
+wait (lk412): t 99.003 s: Render Thread waited 30.8 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 99.020 s mono 72823.888272: 177.3 ms since the last flip | Render Thread: device mutex 66.8, chain mutex 41.0, flip drain 6.3, label wait 9.6, host submit 12.3, host split 1.1 | bc5-ring: device mutex 65.2, host submit 64.4, host split 0.1 | bc5-cq0: gpu fence 27.6, idle (no work) 148.8 | bc5-chainwd: device mutex 24.2, host submit 88.3 | others: gpu fence 29.0, idle (no work) 148.6
+gap (exp 0412, tag gp412): t 99.193 s mono 72824.061201: 172.9 ms since the last flip | Render Thread: device mutex 16.4, flip drain 0.8, host submit 0.9, host split 0.3 | bc5-ring: device mutex 18.3, host submit 45.8 | bc5-cq0: gpu fence 4.4, idle (no work) 168.0 | bc5-chainwd: device mutex 18.3, host submit 18.4 | others: gpu fence 3.1, idle (no work) 169.6
+hold (lk412): t 99.742 s: Render Thread held 65.7 ms: direct sync 59.5 learned 3.7 prepare 1.9
+wait (lk412): t 99.742 s: bc5-ring waited 65.5 ms behind Render Thread
+gap (exp 0412, tag gp412): t 99.743 s mono 72824.611589: 550.4 ms since the last flip | Render Thread: flip drain 1.4, host submit 65.8, host split 0.2 | bc5-ring: device mutex 66.1, host submit 16.5 | bc5-cq0: gpu fence 2.0, idle (no work) 548.3 | bc5-chainwd: device mutex 14.3, host submit 0.9 | others: gpu fence 1.6, idle (no work) 548.8
+hold (lk412): t 100.103 s: bc5-ring held 94.0 ms: anon sync 27.4 direct sync 63.6 learned 2.7
+stat (lk412): 10.2 s: bc5-ring: 6699 locks, held 2223.7 ms (21.8 % of the time; longest 94.02 ms; 40 of 2 ms or more), waited 934.9 ms in 930 waits (9.2 %); behind: Render Thread 587.0 ms, bc5-chainwd 306.6 ms, bc5-ring 41.3 ms
+parts (lk412): 10.2 s: bc5-ring: ms held by part: probe 18.4 (longest 0.05), anon sync 197.6 (longest 37.00), direct sync 360.9 (longest 63.64), learned 121.6 (longest 14.37), hints 9.9 (longest 0.15), prepare 188.6 (longest 2.54), device submit 1248.2 (longest 7.45), tail 78.5 (longest 0.39)
+stat (lk412): 10.2 s: bc5-chainwd: 286 locks, held 623.7 ms (6.1 % of the time; longest 76.39 ms; 18 of 2 ms or more), waited 208.0 ms in 36 waits (2.0 %); behind: bc5-ring 183.6 ms, bc5-chainwd 24.4 ms
+parts (lk412): 10.2 s: bc5-chainwd: ms held by part: probe 1.4 (longest 0.05), anon sync 148.3 (longest 43.58), direct sync 86.0 (longest 18.88), learned 43.0 (longest 13.46), hints 25.5 (longest 0.58), prepare 50.6 (longest 2.82), device submit 249.1 (longest 1.64), tail 19.7 (longest 0.22)
+stat (lk412): 10.2 s: Render Thread: 1788 locks, held 1740.3 ms (17.0 % of the time; longest 65.74 ms; 74 of 2 ms or more), waited 552.9 ms in 422 waits (5.4 %); behind: bc5-ring 552.1 ms, bc5-chainwd 0.9 ms
+parts (lk412): 10.2 s: Render Thread: ms held by part: probe 3.7 (longest 0.03), anon sync 65.0 (longest 34.44), direct sync 125.3 (longest 59.51), learned 14.5 (longest 3.74), hints 81.8 (longest 0.66), prepare 196.1 (longest 2.42), device submit 1176.3 (longest 9.02), tail 77.6 (longest 0.56)
+wait (lk412): t 100.103 s: Render Thread waited 93.8 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 100.123 s mono 72824.990933: 333.9 ms since the last flip | Render Thread: device mutex 93.8, flip drain 12.5, host submit 7.3 | bc5-ring: device mutex 7.3, host submit 94.2 | bc5-cq0: gpu fence 12.4, idle (no work) 321.3 | bc5-chainwd: host submit 0.3 | others: gpu fence 12.3, idle (no work) 321.5
+gap (exp 0412, tag gp412): t 100.315 s mono 72825.183420: 176.5 ms since the last flip | Render Thread: device mutex 28.4, flip drain 0.7, host submit 1.3, host split 0.1 | bc5-ring: device mutex 1.3, host submit 28.7 | bc5-cq0: gpu fence 0.6, idle (no work) 175.8 | bc5-chainwd: host submit 0.3 | others: gpu fence 0.6, idle (no work) 175.9
+hold (lk412): t 100.902 s: bc5-ring held 136.2 ms: direct sync 130.7 learned 3.7 prepare 1.5
+wait (lk412): t 100.902 s: Render Thread waited 136.0 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 100.904 s mono 72825.772524: 589.1 ms since the last flip | Render Thread: device mutex 136.0, flip drain 1.9, host submit 0.5, host split 0.2 | bc5-ring: device mutex 0.5, host submit 136.8 | bc5-cq0: gpu fence 2.4, idle (no work) 586.4 | bc5-chainwd: host submit 0.8 | others: gpu fence 2.3, idle (no work) 586.6
+hold (lk412): t 100.955 s: bc5-chainwd held 37.0 ms: anon sync 27.9 direct sync 7.1 learned 1.8
+hold (lk412): t 101.163 s: bc5-ring held 55.8 ms: direct sync 53.0 learned 2.5
+wait (lk412): t 101.163 s: Render Thread waited 55.6 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 101.170 s mono 72826.038419: 254.6 ms since the last flip | Render Thread: device mutex 55.6, flip drain 1.2, host submit 6.0, host split 0.6 | bc5-ring: device mutex 19.7, host submit 56.2 | bc5-cq0: gpu fence 1.8, idle (no work) 252.6 | bc5-chainwd: host submit 37.6 | others: gpu fence 4.3, idle (no work) 247.0
+gap (exp 0412, tag gp412): t 101.461 s mono 72826.329265: 119.1 ms since the last flip | Render Thread: device mutex 14.2, flip drain 0.9, host submit 13.1, host split 1.1 | bc5-ring: device mutex 23.6, host submit 48.7, host split 0.1 | bc5-cq0: gpu fence 5.1, idle (no work) 113.5 | bc5-chainwd: device mutex 14.9, host submit 18.1 | others: gpu fence 9.2, idle (no work) 109.7
+gap (exp 0412, tag gp412): t 103.288 s mono 72828.155811: 129.9 ms since the last flip | Render Thread: device mutex 9.7, flip drain 0.9, host submit 6.9, host split 1.0 | bc5-ring: device mutex 24.2, host submit 50.8, host split 0.1 | bc5-cq0: gpu fence 6.1, idle (no work) 123.0 | bc5-chainwd: device mutex 15.8, host submit 24.6 | others: gpu fence 4.1, idle (no work) 118.6
+hold (lk412): t 103.325 s: bc5-chainwd held 35.1 ms: anon sync 26.7 direct sync 5.1 learned 2.1 device submit 1.1
+wait (lk412): t 103.325 s: bc5-ring waited 34.8 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 103.410 s mono 72828.278617: 122.8 ms since the last flip | Render Thread: device mutex 15.2, flip drain 1.3, host submit 12.8, host split 0.2 | bc5-ring: device mutex 48.1, host submit 22.7 | bc5-cq0: gpu fence 3.2, idle (no work) 119.5 | bc5-chainwd: device mutex 3.9, host submit 35.8 | others: gpu fence 2.6, idle (no work) 115.0
+gap (exp 0412, tag gp412): t 103.517 s mono 72828.385687: 107.1 ms since the last flip | Render Thread: device mutex 19.4, flip drain 0.6, host submit 2.1, host split 0.1 | bc5-ring: device mutex 1.9, host submit 23.6 | bc5-cq0: gpu fence 0.7, idle (no work) 106.3 | bc5-chainwd: device mutex 0.3, host submit 0.2 | others: gpu fence 1.3, idle (no work) 117.7
+gap (exp 0412, tag gp412): t 103.623 s mono 72828.491546: 105.9 ms since the last flip | Render Thread: device mutex 15.7, flip drain 1.1, host submit 14.6 | bc5-ring: device mutex 14.6, host submit 16.1 | bc5-cq0: gpu fence 1.0, idle (no work) 104.7 | bc5-chainwd: host submit 0.3 | others: gpu fence 3.2, idle (no work) 90.2
+hold (lk412): t 103.939 s: bc5-chainwd held 73.1 ms: direct sync 69.4 learned 3.4
+gap (exp 0412, tag gp412): t 103.982 s mono 72828.850628: 155.6 ms since the last flip | Render Thread: chain mutex 61.1, flip drain 16.8, host submit 21.4, host split 7.1 | bc5-ring: host submit 5.0, host split 21.5 | bc5-cq0: gpu fence 26.3, idle (no work) 127.7 | bc5-chainwd: host submit 85.4 | others: gpu fence 17.6, idle (no work) 138.5
+hold (lk412): t 104.334 s: bc5-ring held 37.6 ms: anon sync 30.6 direct sync 3.1 learned 3.3
+wait (lk412): t 104.334 s: bc5-chainwd waited 35.8 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 104.535 s mono 72829.403634: 179.2 ms since the last flip | Render Thread: device mutex 23.7, flip drain 7.6, host submit 4.5, host split 0.6 | bc5-ring: device mutex 5.0, host submit 32.7 | bc5-cq0: gpu fence 10.1, idle (no work) 168.8 | bc5-chainwd: device mutex 5.6, host submit 2.2 | others: gpu fence 12.5, idle (no work) 166.0
+gap (exp 0412, tag gp412): t 104.674 s mono 72829.542123: 138.5 ms since the last flip | Render Thread: device mutex 20.5, flip drain 1.2, host submit 13.4, host split 0.1 | bc5-ring: device mutex 13.4, host submit 20.9 | bc5-cq0: gpu fence 1.2, idle (no work) 137.2 | bc5-chainwd: host submit 0.3 | others: gpu fence 5.4, idle (no work) 123.9
+hold (lk412): t 105.040 s: bc5-chainwd held 38.3 ms: direct sync 29.9 device submit 8.3
+gap (exp 0412, tag gp412): t 105.234 s mono 72830.102620: 115.4 ms since the last flip | Render Thread: device mutex 12.3, flip drain 0.9, host submit 19.6, host split 1.9 | bc5-ring: device mutex 29.3, host submit 35.7, host split 0.3 | bc5-cq0: gpu fence 8.2, idle (no work) 105.7 | bc5-chainwd: device mutex 14.0, host submit 14.8 | others: gpu fence 4.0, idle (no work) 110.7
+hold (lk412): t 105.337 s: bc5-ring held 40.9 ms: anon sync 40.7
+wait (lk412): t 105.337 s: bc5-chainwd waited 39.5 ms behind bc5-ring
+hold (lk412): t 106.344 s: bc5-ring held 44.6 ms: anon sync 44.4
+wait (lk412): t 106.344 s: bc5-chainwd waited 42.8 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 106.350 s mono 72831.217897: 109.0 ms since the last flip | Render Thread: flip drain 0.8, host submit 1.1, host split 3.3 | bc5-ring: device mutex 1.1, host submit 53.2, host split 0.7 | bc5-cq0: gpu fence 10.8, idle (no work) 96.4 | bc5-chainwd: device mutex 42.8, host submit 12.5 | others: gpu fence 1.8, idle (no work) 105.7
+gap (exp 0412, tag gp412): t 106.841 s mono 72831.709728: 135.2 ms since the last flip | Render Thread: device mutex 29.0, flip drain 1.5, host submit 26.7, host split 0.2 | bc5-ring: device mutex 40.2, host submit 65.7 | bc5-cq0: gpu fence 2.1, idle (no work) 133.0 | bc5-chainwd: device mutex 9.4, host submit 13.8 | others: idle (no work) 137.1
+hold (lk412): t 106.903 s: bc5-chainwd held 50.9 ms: anon sync 35.6 direct sync 7.8 learned 7.1
+wait (lk412): t 106.903 s: bc5-ring waited 50.6 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 106.955 s mono 72831.822929: 113.2 ms since the last flip | Render Thread: device mutex 21.9, chain mutex 55.3, flip drain 0.6, host submit 29.0 | bc5-ring: device mutex 79.4, host submit 34.1 | bc5-cq0: gpu fence 0.6, idle (no work) 112.5 | bc5-chainwd: device mutex 8.4, host submit 50.9 | others: idle (no work) 113.8
+gap (exp 0412, tag gp412): t 107.131 s mono 72831.999421: 104.7 ms since the last flip | Render Thread: device mutex 18.1, flip drain 0.7, host submit 33.8, host split 0.1 | bc5-ring: device mutex 47.3, host submit 56.8 | bc5-cq0: gpu fence 6.8, idle (no work) 97.7 | bc5-chainwd: device mutex 23.3, host submit 14.1 | others: idle (no work) 102.9
+gap (exp 0412, tag gp412): t 107.239 s mono 72832.106961: 107.5 ms since the last flip | Render Thread: device mutex 26.4, flip drain 0.7, host submit 29.4 | bc5-ring: device mutex 42.5, host submit 51.3 | bc5-cq0: gpu fence 0.7, idle (no work) 106.8 | bc5-chainwd: device mutex 8.9, host submit 13.3 | others: idle (no work) 106.5
+hold (lk412): t 107.914 s: bc5-ring held 57.5 ms: anon sync 37.7 direct sync 8.8 learned 10.8
+wait (lk412): t 107.914 s: Render Thread waited 57.3 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 107.939 s mono 72832.807600: 128.3 ms since the last flip | Render Thread: device mutex 75.1, flip drain 0.6, host submit 51.7, host split 0.1 | bc5-ring: device mutex 51.4, host submit 76.6 | bc5-cq0: gpu fence 0.6, idle (no work) 127.6 | others: idle (no work) 125.9
+hold (lk412): t 108.072 s: Render Thread held 38.1 ms: direct sync 22.8 learned 12.8 device submit 2.3
+wait (lk412): t 108.072 s: bc5-ring waited 37.8 ms behind Render Thread
+gap (exp 0412, tag gp412): t 108.204 s mono 72833.072195: 101.0 ms since the last flip | Render Thread: device mutex 25.0, flip drain 0.7, host submit 39.4, host split 0.2 | bc5-ring: device mutex 58.9, host submit 41.5 | bc5-cq0: gpu fence 1.5, idle (no work) 99.3 | bc5-chainwd: device mutex 11.7, host submit 20.0 | others: idle (no work) 95.8
+gap (exp 0412, tag gp412): t 108.370 s mono 72833.238321: 101.1 ms since the last flip | Render Thread: device mutex 26.6, flip drain 0.7, host submit 36.4, host split 0.2 | bc5-ring: device mutex 57.5, host submit 43.3 | bc5-cq0: gpu fence 1.3, idle (no work) 99.7 | bc5-chainwd: device mutex 12.2, host submit 21.4 | others: idle (no work) 100.7
+hold (lk412): t 108.479 s: Render Thread held 36.9 ms: direct sync 23.5 learned 10.8 device submit 2.4
+wait (lk412): t 108.480 s: bc5-ring waited 36.6 ms behind Render Thread
+gap (exp 0412, tag gp412): t 108.484 s mono 72833.352415: 114.1 ms since the last flip | Render Thread: device mutex 26.6, flip drain 4.6, host submit 52.8, host split 0.2 | bc5-ring: device mutex 67.1, host submit 42.5 | bc5-cq0: gpu fence 5.2, idle (no work) 108.7 | bc5-chainwd: device mutex 11.3, host submit 14.9 | others: idle (no work) 91.5
+hold (lk412): t 108.752 s: bc5-ring held 33.2 ms: direct sync 12.5 learned 20.0
+wait (lk412): t 108.752 s: Render Thread waited 33.1 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 108.774 s mono 72833.642621: 219.0 ms since the last flip | Render Thread: device mutex 45.8, flip drain 4.1, host submit 33.4, host split 0.2 | bc5-ring: device mutex 49.3, host submit 87.6 | bc5-cq0: gpu fence 4.7, idle (no work) 214.2 | bc5-chainwd: device mutex 11.6, host submit 16.2 | others: gpu fence 0.5, idle (no work) 212.2
+hold (lk412): t 108.894 s: bc5-ring held 37.2 ms: anon sync 37.1
+wait (lk412): t 108.894 s: bc5-chainwd waited 35.5 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 109.155 s mono 72834.022941: 251.3 ms since the last flip | Render Thread: device mutex 27.8, flip drain 8.0, host submit 25.0, host split 1.4 | bc5-ring: device mutex 24.9, host submit 31.8, host split 0.2 | bc5-cq0: gpu fence 16.0, idle (no work) 234.3 | bc5-chainwd: host submit 17.5 | others: gpu fence 6.4, idle (no work) 217.3
+hold (lk412): t 109.202 s: Render Thread held 37.0 ms: anon sync 34.7 direct sync 2.0
+wait (lk412): t 109.202 s: bc5-ring waited 36.7 ms behind Render Thread
+gap (exp 0412, tag gp412): t 109.794 s mono 72834.662741: 111.1 ms since the last flip | Render Thread: device mutex 14.6, flip drain 1.3, host submit 2.3, host split 3.2 | bc5-ring: device mutex 2.0, host submit 23.0, host split 0.3 | bc5-cq0: gpu fence 14.9, idle (no work) 94.4 | bc5-chainwd: host submit 17.2 | others: gpu fence 1.8, idle (no work) 108.3
+gap (exp 0412, tag gp412): t 109.958 s mono 72834.826626: 109.6 ms since the last flip | Render Thread: chain mutex 24.5, flip drain 0.7, host split 0.6 | bc5-ring: device mutex 27.6, host submit 51.2, host split 0.1 | bc5-cq0: gpu fence 7.3, idle (no work) 101.7 | bc5-chainwd: device mutex 47.4, host submit 33.8 | others: gpu fence 5.6, idle (no work) 103.7
+stat (lk412): 10.0 s: bc5-ring: 5878 locks, held 2584.2 ms (25.8 % of the time; longest 136.18 ms; 133 of 2 ms or more), waited 1557.4 ms in 222 waits (15.6 %); behind: Render Thread 1050.2 ms, bc5-chainwd 505.3 ms, bc5-ring 1.9 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 30.0 (longest 0.06), anon sync 247.7 (longest 44.39), direct sync 839.9 (longest 130.72), learned 882.0 (longest 20.04), hints 10.3 (longest 0.95), prepare 54.3 (longest 2.04), device submit 474.1 (longest 4.05), tail 45.9 (longest 0.17)
+stat (lk412): 10.0 s: bc5-chainwd: 1458 locks, held 1479.8 ms (14.8 % of the time; longest 73.13 ms; 50 of 2 ms or more), waited 635.0 ms in 101 waits (6.3 %); behind: bc5-ring 599.8 ms, bc5-chainwd 35.3 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 4.3 (longest 0.10), anon sync 91.3 (longest 35.63), direct sync 361.8 (longest 69.40), learned 218.9 (longest 11.75), hints 51.3 (longest 1.29), prepare 109.8 (longest 1.31), device submit 598.6 (longest 8.27), tail 43.8 (longest 0.21)
+stat (lk412): 10.0 s: Render Thread: 136 locks, held 1106.6 ms (11.1 % of the time; longest 38.08 ms; 60 of 2 ms or more), waited 1196.2 ms in 78 waits (12.0 %); behind: bc5-ring 1185.1 ms, bc5-chainwd 11.1 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 0.4 (longest 0.03), anon sync 34.8 (longest 34.66), direct sync 451.1 (longest 23.47), learned 486.2 (longest 13.67), hints 6.1 (longest 0.21), prepare 7.6 (longest 0.11), device submit 116.7 (longest 21.29), tail 3.7 (longest 0.10)
+hold (lk412): t 110.224 s: bc5-chainwd held 45.1 ms: anon sync 39.0 direct sync 2.6 learned 2.7
+wait (lk412): t 110.224 s: bc5-ring waited 45.1 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 110.228 s mono 72835.095937: 100.8 ms since the last flip | Render Thread: flip drain 1.1, host submit 0.6, host split 0.9 | bc5-ring: device mutex 45.8, host submit 35.2, host split 0.5 | bc5-cq0: gpu fence 4.9, idle (no work) 95.3 | bc5-chainwd: device mutex 29.7, host submit 52.5 | others: gpu fence 2.3, idle (no work) 98.3
+hold (lk412): t 111.227 s: bc5-chainwd held 44.6 ms: anon sync 40.9 direct sync 2.2 device submit 1.1
+wait (lk412): t 111.227 s: bc5-ring waited 44.6 ms behind bc5-chainwd
+hold (lk412): t 111.315 s: bc5-chainwd held 74.6 ms: anon sync 37.9 direct sync 9.8 learned 25.9
+gap (exp 0412, tag gp412): t 111.370 s mono 72836.237833: 131.6 ms since the last flip | Render Thread: chain mutex 16.4, flip drain 5.9, host split 0.2 | bc5-ring: device mutex 0.1, host submit 17.8, host split 2.6 | bc5-cq0: gpu fence 7.6, idle (no work) 122.5 | bc5-chainwd: device mutex 15.8, host submit 77.6 | others: gpu fence 7.3, idle (no work) 122.9
+hold (lk412): t 111.596 s: Render Thread held 52.6 ms: direct sync 11.8 learned 15.7 hints 22.7 device submit 2.4
+wait (lk412): t 111.596 s: bc5-ring waited 52.6 ms behind Render Thread
+gap (exp 0412, tag gp412): t 111.661 s mono 72836.529498: 251.9 ms since the last flip | Render Thread: device mutex 30.4, chain mutex 0.4, flip drain 7.7, label wait 31.3, host submit 83.1, host split 5.5 | bc5-ring: device mutex 61.6, host submit 45.4, host split 1.1 | bc5-cq0: gpu fence 66.3, idle (no work) 167.5 | bc5-chainwd: device mutex 0.1, host submit 14.9 | others: gpu fence 65.1, idle (no work) 174.4
+hold (lk412): t 112.301 s: bc5-ring held 58.4 ms: anon sync 45.7 direct sync 8.4 learned 3.8
+wait (lk412): t 112.301 s: Render Thread waited 57.0 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 112.811 s mono 72837.679485: 152.6 ms since the last flip | Render Thread: device mutex 1.4, chain mutex 23.9, flip drain 9.7, label wait 27.9, host submit 23.8, host split 5.7 | bc5-ring: device mutex 10.4, host submit 48.2, host split 1.1 | bc5-cq0: gpu fence 49.5, idle (no work) 99.3 | bc5-chainwd: device mutex 33.7, host submit 11.9 | others: gpu fence 52.2, idle (no work) 97.8
+hold (lk412): t 113.304 s: Render Thread held 46.8 ms: anon sync 45.1
+wait (lk412): t 113.304 s: bc5-ring waited 46.8 ms behind Render Thread
+hold (lk412): t 113.384 s: bc5-chainwd held 54.6 ms: anon sync 41.8 direct sync 8.9 learned 3.6
+wait (lk412): t 113.384 s: bc5-ring waited 45.6 ms behind bc5-chainwd
+hold (lk412): t 114.375 s: Render Thread held 41.9 ms: anon sync 41.7
+hold (lk412): t 114.741 s: Render Thread held 32.6 ms: direct sync 24.0 device submit 8.3
+wait (lk412): t 114.742 s: bc5-ring waited 32.6 ms behind Render Thread
+hold (lk412): t 115.376 s: Render Thread held 39.4 ms: anon sync 38.5
+wait (lk412): t 115.376 s: bc5-ring waited 39.2 ms behind Render Thread
+hold (lk412): t 115.466 s: bc5-chainwd held 47.5 ms: anon sync 37.5 direct sync 7.0 learned 2.7
+wait (lk412): t 115.466 s: bc5-ring waited 44.8 ms behind bc5-chainwd
+hold (lk412): t 116.461 s: bc5-ring held 42.3 ms: anon sync 41.2
+wait (lk412): t 116.461 s: Render Thread waited 41.6 ms behind bc5-ring
+hold (lk412): t 117.020 s: Render Thread held 34.0 ms: direct sync 26.0 device submit 7.9
+wait (lk412): t 117.020 s: bc5-ring waited 34.1 ms behind Render Thread
+hold (lk412): t 117.460 s: bc5-ring held 40.1 ms: anon sync 39.9
+wait (lk412): t 117.460 s: Render Thread waited 38.9 ms behind bc5-ring
+hold (lk412): t 117.803 s: bc5-chainwd held 83.1 ms: anon sync 45.7 direct sync 33.6 learned 3.4
+wait (lk412): t 117.803 s: bc5-ring waited 78.7 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 117.849 s mono 72842.717110: 131.3 ms since the last flip | Render Thread: device mutex 9.6, chain mutex 77.6, flip drain 9.0, label wait 18.6, host submit 4.8, host split 1.4 | bc5-ring: device mutex 79.7, host submit 12.3, host split 0.8 | bc5-cq0: gpu fence 33.1, idle (no work) 96.9 | bc5-chainwd: host submit 83.1 | others: gpu fence 35.3, idle (no work) 94.6
+hold (lk412): t 118.779 s: bc5-chainwd held 53.0 ms: anon sync 39.4 direct sync 9.7 learned 3.5
+wait (lk412): t 118.780 s: bc5-ring waited 47.2 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 119.476 s mono 72844.344272: 109.2 ms since the last flip | Render Thread: device mutex 12.1, flip drain 9.5, label wait 6.2, host submit 6.2, host split 2.2 | bc5-ring: device mutex 3.5, host submit 17.3, host split 0.3 | bc5-cq0: gpu fence 23.0, idle (no work) 84.7 | bc5-chainwd: host submit 0.3 | others: gpu fence 24.5, idle (no work) 83.2
+gap (exp 0412, tag gp412): t 119.616 s mono 72844.483791: 139.5 ms since the last flip | Render Thread: flip drain 13.0, label wait 4.4, host submit 8.9, host split 3.0 | bc5-ring: device mutex 5.0, host submit 4.8, host split 0.3 | bc5-cq0: gpu fence 28.4, idle (no work) 110.2 | bc5-chainwd: host submit 2.1 | others: gpu fence 31.5, idle (no work) 106.0
+hold (lk412): t 119.669 s: bc5-ring held 31.7 ms: direct sync 16.2 learned 11.2 device submit 4.2
+hold (lk412): t 119.780 s: bc5-chainwd held 51.8 ms: anon sync 50.8
+wait (lk412): t 119.780 s: bc5-ring waited 48.4 ms behind bc5-chainwd
+stat (lk412): 10.0 s: bc5-ring: 4802 locks, held 2657.7 ms (26.6 % of the time; longest 58.39 ms; 129 of 2 ms or more), waited 1223.7 ms in 703 waits (12.2 %); behind: Render Thread 637.2 ms, bc5-chainwd 559.8 ms, bc5-ring 26.8 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 12.6 (longest 0.19), anon sync 128.7 (longest 45.73), direct sync 981.8 (longest 16.24), learned 571.1 (longest 14.76), hints 14.5 (longest 0.13), prepare 95.7 (longest 2.14), device submit 809.8 (longest 8.35), tail 43.4 (longest 0.10)
+stat (lk412): 10.0 s: bc5-chainwd: 267 locks, held 895.6 ms (9.0 % of the time; longest 83.10 ms; 45 of 2 ms or more), waited 307.2 ms in 51 waits (3.1 %); behind: bc5-ring 306.8 ms, bc5-chainwd 0.4 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 3.9 (longest 0.07), anon sync 333.2 (longest 50.77), direct sync 251.3 (longest 33.59), learned 111.0 (longest 25.95), hints 11.4 (longest 0.93), prepare 28.7 (longest 2.87), device submit 146.0 (longest 6.76), tail 10.1 (longest 0.47)
+stat (lk412): 10.0 s: Render Thread: 1264 locks, held 1461.1 ms (14.6 % of the time; longest 52.58 ms; 54 of 2 ms or more), waited 1309.1 ms in 245 waits (13.1 %); behind: bc5-ring 1309.1 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 3.2 (longest 0.70), anon sync 126.1 (longest 45.13), direct sync 193.8 (longest 26.03), learned 45.0 (longest 15.66), hints 70.1 (longest 22.71), prepare 118.5 (longest 2.01), device submit 857.7 (longest 13.17), tail 46.7 (longest 0.64)
+hold (lk412): t 120.347 s: bc5-chainwd held 143.0 ms: anon sync 121.2 direct sync 17.2 learned 2.9 prepare 1.6
+wait (lk412): t 120.347 s: bc5-ring waited 58.3 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 120.408 s mono 72845.276625: 206.9 ms since the last flip | Render Thread: device mutex 0.2, chain mutex 58.2, flip drain 40.5, label wait 6.9, host submit 5.8, host split 1.8 | bc5-ring: device mutex 62.5, host submit 4.9, host split 0.4 | bc5-cq0: gpu fence 49.4, idle (no work) 155.9 | bc5-chainwd: host submit 145.1 | others: gpu fence 52.8, idle (no work) 151.8
+gap (exp 0412, tag gp412): t 120.766 s mono 72845.634216: 200.5 ms since the last flip | Render Thread: device mutex 0.2, flip drain 16.7, label wait 5.4, host submit 6.8, host split 1.8 | bc5-ring: device mutex 3.4, host submit 6.4, host split 0.4 | bc5-cq0: gpu fence 29.3, idle (no work) 169.7 | bc5-chainwd: host submit 0.9 | others: gpu fence 30.3, idle (no work) 167.5
+hold (lk412): t 121.286 s: bc5-ring held 72.7 ms: anon sync 37.5 direct sync 32.3 learned 2.7
+wait (lk412): t 121.286 s: Render Thread waited 64.7 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 121.331 s mono 72846.199728: 168.1 ms since the last flip | Render Thread: device mutex 81.4, flip drain 9.9, label wait 31.9, host submit 32.4, host split 2.1 | bc5-ring: device mutex 29.4, host submit 104.0, host split 0.2 | bc5-cq0: gpu fence 34.6, idle (no work) 131.4 | bc5-chainwd: host submit 0.4 | others: gpu fence 32.6, idle (no work) 133.8
+hold (lk412): t 122.254 s: bc5-ring held 40.1 ms: anon sync 39.8
+wait (lk412): t 122.254 s: Render Thread waited 40.0 ms behind bc5-ring
+hold (lk412): t 122.585 s: bc5-chainwd held 63.9 ms: anon sync 41.2 direct sync 18.9 learned 3.2
+wait (lk412): t 122.585 s: bc5-ring waited 48.2 ms behind bc5-chainwd
+hold (lk412): t 123.566 s: bc5-chainwd held 40.5 ms: anon sync 39.3
+wait (lk412): t 123.566 s: bc5-ring waited 40.5 ms behind bc5-chainwd
+hold (lk412): t 124.458 s: bc5-ring held 34.7 ms: direct sync 24.2 learned 8.0 prepare 2.1
+wait (lk412): t 124.458 s: bc5-chainwd waited 32.8 ms behind bc5-ring
+hold (lk412): t 124.607 s: bc5-ring held 53.3 ms: anon sync 39.0 direct sync 10.3 learned 3.8
+wait (lk412): t 124.607 s: Render Thread waited 51.5 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 124.636 s mono 72849.503841: 302.1 ms since the last flip | Render Thread: device mutex 51.6, chain mutex 35.3, flip drain 9.6, label wait 26.5, host submit 19.0, host split 3.7 | bc5-ring: device mutex 23.8, in-flight cap 3.9, host submit 94.9, host split 1.0 | bc5-cq0: gpu fence 74.1, idle (no work) 225.0 | bc5-chainwd: device mutex 32.9, host submit 12.7 | others: gpu fence 73.9, idle (no work) 215.6
+hold (lk412): t 124.692 s: bc5-chainwd held 54.3 ms: anon sync 41.6 direct sync 9.3 learned 3.0
+wait (lk412): t 124.692 s: bc5-ring waited 44.6 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 125.598 s mono 72850.466397: 185.3 ms since the last flip | Render Thread: device mutex 13.2, chain mutex 15.2, flip drain 16.2, label wait 4.4, host submit 17.9, host split 5.0 | bc5-ring: device mutex 5.1, host submit 40.2, host split 0.4 | bc5-cq0: gpu fence 72.0, idle (no work) 110.2 | bc5-chainwd: device mutex 15.0, host submit 3.0 | others: gpu fence 70.7, idle (no work) 108.3
+hold (lk412): t 125.686 s: Render Thread held 45.9 ms: anon sync 45.3
+wait (lk412): t 125.686 s: bc5-ring waited 45.8 ms behind Render Thread
+gap (exp 0412, tag gp412): t 125.699 s mono 72850.567632: 101.2 ms since the last flip | Render Thread: device mutex 0.9, chain mutex 11.7, flip drain 10.3, label wait 10.9, host submit 50.5, host split 1.9 | bc5-ring: device mutex 47.7, host submit 16.5, host split 0.1 | bc5-cq0: gpu fence 26.0, idle (no work) 73.4 | bc5-chainwd: device mutex 11.3, host submit 1.5 | others: gpu fence 29.3, idle (no work) 66.7
+hold (lk412): t 126.679 s: bc5-ring held 38.1 ms: anon sync 38.0
+wait (lk412): t 126.679 s: Render Thread waited 30.0 ms behind bc5-ring
+hold (lk412): t 126.945 s: bc5-chainwd held 74.4 ms: anon sync 42.1 direct sync 13.0 learned 18.9
+gap (exp 0412, tag gp412): t 127.046 s mono 72851.914073: 177.5 ms since the last flip | Render Thread: device mutex 27.5, flip drain 4.4, label wait 16.1, host submit 11.6, host split 3.0 | bc5-ring: device mutex 7.9, host submit 37.8, host split 0.6 | bc5-cq0: gpu fence 33.9, idle (no work) 140.9 | bc5-chainwd: host submit 76.6 | others: gpu fence 35.2, idle (no work) 138.8
+hold (lk412): t 127.916 s: bc5-ring held 37.6 ms: anon sync 37.3
+wait (lk412): t 127.916 s: Render Thread waited 36.7 ms behind bc5-ring
+hold (lk412): t 128.560 s: bc5-ring held 37.6 ms: direct sync 32.9 learned 4.4
+wait (lk412): t 128.560 s: Render Thread waited 36.0 ms behind bc5-ring
+hold (lk412): t 128.894 s: Render Thread held 103.7 ms: direct sync 91.0 learned 11.9
+wait (lk412): t 128.894 s: bc5-ring waited 103.1 ms behind Render Thread
+hold (lk412): t 128.943 s: bc5-ring held 49.1 ms: anon sync 42.2 direct sync 3.5 learned 3.1
+wait (lk412): t 128.943 s: Render Thread waited 48.6 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 128.954 s mono 72853.822096: 185.0 ms since the last flip | Render Thread: device mutex 52.4, flip drain 5.7, label wait 10.2, host submit 108.5, host split 1.4 | bc5-ring: device mutex 105.1, host submit 61.2, host split 0.4 | bc5-cq0: gpu fence 18.1, idle (no work) 166.1 | others: gpu fence 22.0, idle (no work) 162.3
+hold (lk412): t 129.124 s: bc5-chainwd held 168.1 ms: anon sync 45.6 direct sync 119.1 learned 3.1
+wait (lk412): t 129.124 s: bc5-ring waited 155.7 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 129.154 s mono 72854.022110: 200.0 ms since the last flip | Render Thread: chain mutex 154.0, flip drain 15.2, label wait 6.4, host submit 4.2, host split 1.8 | bc5-ring: device mutex 157.5, host submit 2.4, host split 0.5 | bc5-cq0: gpu fence 23.7, idle (no work) 175.2 | bc5-chainwd: host submit 168.1 | others: gpu fence 26.3, idle (no work) 172.3
+gap (exp 0412, tag gp412): t 129.390 s mono 72854.258207: 174.3 ms since the last flip | Render Thread: device mutex 31.2, chain mutex 1.6, flip drain 10.3, label wait 5.8, host submit 11.6, host split 5.1 | bc5-ring: device mutex 6.6, host submit 44.0, host split 0.5 | bc5-cq0: gpu fence 43.4, idle (no work) 126.6 | bc5-chainwd: host submit 6.9 | others: gpu fence 42.6, idle (no work) 125.1
+hold (lk412): t 130.014 s: bc5-ring held 54.8 ms: anon sync 42.4 direct sync 8.9 learned 3.0
+wait (lk412): t 130.014 s: bc5-chainwd waited 53.2 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 130.043 s mono 72854.911522: 102.2 ms since the last flip | Render Thread: device mutex 0.2, chain mutex 54.2, flip drain 9.1, label wait 8.2, host submit 4.9, host split 1.6 | bc5-ring: device mutex 2.8, host submit 58.5, host split 0.2 | bc5-cq0: gpu fence 21.6, idle (no work) 78.7 | bc5-chainwd: device mutex 53.2, host submit 2.2 | others: gpu fence 23.5, idle (no work) 76.1
+stat (lk412): 10.0 s: bc5-ring: 4704 locks, held 2665.2 ms (26.7 % of the time; longest 72.75 ms; 127 of 2 ms or more), waited 1033.5 ms in 691 waits (10.3 %); behind: Render Thread 582.1 ms, bc5-chainwd 431.9 ms, bc5-ring 19.5 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 10.3 (longest 0.18), anon sync 277.9 (longest 42.42), direct sync 1066.7 (longest 32.92), learned 500.7 (longest 11.08), hints 14.3 (longest 0.15), prepare 101.1 (longest 2.21), device submit 653.1 (longest 10.53), tail 41.1 (longest 0.40)
+stat (lk412): 10.0 s: bc5-chainwd: 225 locks, held 727.3 ms (7.3 % of the time; longest 168.12 ms; 14 of 2 ms or more), waited 436.7 ms in 57 waits (4.4 %); behind: bc5-ring 436.3 ms, bc5-chainwd 0.3 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 4.1 (longest 0.07), anon sync 331.3 (longest 121.16), direct sync 180.7 (longest 119.06), learned 31.4 (longest 18.92), hints 10.6 (longest 0.34), prepare 24.5 (longest 1.55), device submit 134.2 (longest 10.34), tail 10.7 (longest 0.28)
+stat (lk412): 10.0 s: Render Thread: 1356 locks, held 1252.0 ms (12.5 % of the time; longest 103.66 ms; 37 of 2 ms or more), waited 1300.6 ms in 297 waits (13.0 %); behind: bc5-ring 1300.6 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 2.7 (longest 0.04), anon sync 46.1 (longest 45.34), direct sync 213.6 (longest 91.00), learned 36.5 (longest 14.77), hints 53.2 (longest 2.64), prepare 113.6 (longest 1.63), device submit 738.6 (longest 11.24), tail 47.7 (longest 0.35)
+hold (lk412): t 131.017 s: bc5-ring held 47.2 ms: anon sync 41.7 direct sync 5.3
+wait (lk412): t 131.017 s: bc5-chainwd waited 46.6 ms behind bc5-ring
+hold (lk412): t 131.189 s: bc5-chainwd held 50.8 ms: anon sync 39.1 direct sync 8.7 learned 2.7
+wait (lk412): t 131.189 s: bc5-ring waited 39.3 ms behind bc5-chainwd
+hold (lk412): t 132.182 s: bc5-chainwd held 43.7 ms: anon sync 42.6
+wait (lk412): t 132.182 s: bc5-ring waited 43.6 ms behind bc5-chainwd
+gap (exp 0412, tag gp412): t 132.568 s mono 72857.436734: 218.6 ms since the last flip | Render Thread: device mutex 70.5, chain mutex 12.8, flip drain 4.5, label wait 27.3, host submit 81.6, host split 2.6 | bc5-ring: device mutex 91.3, host submit 120.4, host split 0.5 | bc5-cq0: gpu fence 12.6, idle (no work) 204.2 | bc5-chainwd: device mutex 10.0, host submit 12.6 | others: gpu fence 12.0, idle (no work) 231.3
+gap (exp 0412, tag gp412): t 132.784 s mono 72857.651996: 116.0 ms since the last flip | Render Thread: device mutex 23.6, chain mutex 24.8, flip drain 6.7, label wait 25.5, host submit 23.5, host split 2.3 | bc5-ring: device mutex 36.2, host submit 58.8, host split 0.4 | bc5-cq0: gpu fence 16.8, idle (no work) 96.2 | bc5-chainwd: device mutex 15.3, host submit 18.1 | others: gpu fence 13.8, idle (no work) 99.8
+hold (lk412): t 132.815 s: bc5-ring held 30.2 ms: direct sync 19.5 learned 10.3
+wait (lk412): t 132.927 s: Render Thread waited 30.9 ms behind bc5-ring
+hold (lk412): t 133.179 s: Render Thread held 39.6 ms: anon sync 38.2
+wait (lk412): t 133.179 s: bc5-ring waited 39.6 ms behind Render Thread
+hold (lk412): t 133.243 s: bc5-chainwd held 56.3 ms: anon sync 42.9 direct sync 9.8 learned 3.3
+wait (lk412): t 133.244 s: bc5-ring waited 50.8 ms behind bc5-chainwd
+hold (lk412): t 133.466 s: bc5-ring held 180.1 ms: direct sync 126.2 learned 53.2
+wait (lk412): t 133.475 s: Render Thread waited 186.5 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 133.502 s mono 72858.370331: 229.6 ms since the last flip | Render Thread: device mutex 186.5, flip drain 4.9, label wait 9.8, host submit 6.1, host split 2.0 | bc5-ring: device mutex 0.1, host submit 195.2, host split 0.5 | bc5-cq0: gpu fence 10.5, idle (no work) 217.9 | bc5-chainwd: host submit 0.3 | others: gpu fence 20.2, idle (no work) 207.1
+hold (lk412): t 133.844 s: bc5-ring held 304.0 ms: direct sync 293.8 learned 9.6
+wait (lk412): t 133.844 s: Render Thread waited 302.6 ms behind bc5-ring
+hold (lk412): t 133.876 s: Render Thread held 31.1 ms: direct sync 24.1 learned 5.1
+wait (lk412): t 133.876 s: bc5-ring waited 31.1 ms behind Render Thread
+gap (exp 0412, tag gp412): t 133.896 s mono 72858.763857: 393.5 ms since the last flip | Render Thread: device mutex 302.6, flip drain 6.1, label wait 6.3, host submit 34.2, host split 1.3 | bc5-ring: device mutex 31.1, host submit 306.8, host split 0.7 | bc5-cq0: gpu fence 15.3, idle (no work) 376.8 | bc5-chainwd: host submit 0.3 | others: gpu fence 16.7, idle (no work) 375.4
+gap (exp 0412, tag gp412): t 134.077 s mono 72858.944935: 111.4 ms since the last flip | Render Thread: device mutex 17.2, flip drain 6.3, label wait 7.4, host submit 16.3, host split 1.4 | bc5-ring: device mutex 11.1, host submit 21.5, host split 0.7 | bc5-cq0: gpu fence 16.2, idle (no work) 92.4 | bc5-chainwd: host submit 0.3 | others: gpu fence 17.6, idle (no work) 91.2
+hold (lk412): t 134.126 s: bc5-ring held 44.9 ms: direct sync 27.2 learned 7.1 device submit 10.5
+wait (lk412): t 134.126 s: Render Thread waited 43.2 ms behind bc5-ring
+hold (lk412): t 134.224 s: Render Thread held 36.5 ms: anon sync 36.1
+wait (lk412): t 134.224 s: bc5-ring waited 36.4 ms behind Render Thread
+hold (lk412): t 134.945 s: Render Thread held 158.2 ms: direct sync 152.9 learned 2.9 device submit 1.9
+wait (lk412): t 134.945 s: bc5-ring waited 158.2 ms behind bc5-ring
+gap (exp 0412, tag gp412): t 134.967 s mono 72859.835531: 204.0 ms since the last flip | Render Thread: device mutex 12.8, flip drain 7.7, label wait 6.0, host submit 161.6, host split 1.4 | bc5-ring: device mutex 159.2, host submit 19.1, host split 0.2 | bc5-cq0: gpu fence 16.3, idle (no work) 186.2 | bc5-chainwd: host submit 0.2 | others: gpu fence 17.8, idle (no work) 183.8
+hold (lk412): t 135.316 s: bc5-chainwd held 117.8 ms: anon sync 59.8 direct sync 57.6
+hold (lk412): t 135.511 s: Render Thread held 167.7 ms: direct sync 163.5 learned 2.9
+wait (lk412): t 135.511 s: bc5-ring waited 167.7 ms behind Render Thread
+gap (exp 0412, tag gp412): t 135.568 s mono 72860.436501: 373.4 ms since the last flip | Render Thread: device mutex 38.9, flip drain 3.8, label wait 19.7, host submit 175.3, host split 2.9 | bc5-ring: device mutex 169.0, host submit 59.0, host split 0.2 | bc5-cq0: gpu fence 24.4, idle (no work) 341.4 | bc5-chainwd: host submit 117.8 | others: gpu fence 32.7, idle (no work) 339.4
+hold (lk412): t 135.626 s: bc5-chainwd held 55.9 ms: anon sync 40.1 direct sync 12.0 learned 3.4
+wait (lk412): t 135.626 s: bc5-ring waited 52.2 ms behind bc5-chainwd
+hold (lk412): t 135.806 s: bc5-ring held 32.8 ms: direct sync 19.2 learned 2.9 device submit 10.5
+wait (lk412): t 135.806 s: Render Thread waited 31.0 ms behind bc5-ring
+hold (lk412): t 136.624 s: bc5-ring held 49.8 ms: anon sync 39.8 direct sync 6.9 learned 2.7
+wait (lk412): t 136.624 s: Render Thread waited 47.8 ms behind bc5-ring
+hold (lk412): t 137.615 s: Render Thread held 37.5 ms: anon sync 36.8
+gap (exp 0412, tag gp412): t 137.620 s mono 72862.488413: 101.9 ms since the last flip | Render Thread: device mutex 20.5, chain mutex 10.2, flip drain 4.4, label wait 2.8, host submit 43.7, host split 3.7 | bc5-ring: device mutex 2.8, host submit 37.2, host split 0.3 | bc5-cq0: gpu fence 28.9, idle (no work) 67.0 | bc5-chainwd: device mutex 9.3, host submit 2.5 | others: gpu fence 29.9, idle (no work) 67.6
+hold (lk412): t 137.713 s: bc5-chainwd held 47.8 ms: anon sync 38.2 direct sync 6.7 learned 2.6
+wait (lk412): t 137.714 s: bc5-ring waited 47.1 ms behind bc5-chainwd
+hold (lk412): t 138.196 s: bc5-ring held 34.9 ms: direct sync 24.7 learned 3.2 device submit 6.9
+wait (lk412): t 138.196 s: bc5-chainwd waited 33.5 ms behind bc5-ring
+hold (lk412): t 138.703 s: bc5-ring held 37.8 ms: anon sync 37.6
+wait (lk412): t 138.703 s: Render Thread waited 36.4 ms behind bc5-ring
+hold (lk412): t 139.582 s: Render Thread held 84.7 ms: direct sync 79.7 prepare 1.7 device submit 3.2
+wait (lk412): t 139.582 s: bc5-ring waited 81.4 ms behind Render Thread
+gap (exp 0412, tag gp412): t 139.586 s mono 72864.454323: 685.4 ms since the last flip | Render Thread: device mutex 0.2, chain mutex 10.4, flip drain 4.1, label wait 6.4, host submit 90.1, host split 2.4 | bc5-ring: device mutex 83.9, host submit 15.6, host split 2.6 | bc5-cq0: gpu fence 21.5, idle (no work) 660.5 | bc5-chainwd: device mutex 9.4, host submit 2.9 | others: gpu fence 19.9, idle (no work) 663.2
+hold (lk412): t 139.703 s: Render Thread held 37.8 ms: anon sync 36.6
+hold (lk412): t 139.807 s: bc5-chainwd held 52.9 ms: anon sync 39.8 direct sync 9.8 learned 2.8
+wait (lk412): t 139.807 s: bc5-ring waited 41.9 ms behind bc5-chainwd
+stat (lk412): 10.0 s: bc5-ring: 4321 locks, held 3030.6 ms (30.3 % of the time; longest 304.00 ms; 121 of 2 ms or more), waited 1560.9 ms in 742 waits (15.6 %); behind: Render Thread 922.3 ms, bc5-chainwd 463.6 ms, bc5-ring 174.9 ms
+parts (lk412): 10.0 s: bc5-ring: ms held by part: probe 10.3 (longest 0.07), anon sync 120.8 (longest 41.73), direct sync 1420.0 (longest 293.83), learned 610.2 (longest 53.24), hints 14.3 (longest 0.14), prepare 105.5 (longest 1.88), device submit 708.4 (longest 10.55), tail 41.2 (longest 0.14)
+stat (lk412): 10.0 s: bc5-chainwd: 223 locks, held 755.3 ms (7.6 % of the time; longest 117.80 ms; 36 of 2 ms or more), waited 472.5 ms in 54 waits (4.7 %); behind: bc5-ring 471.0 ms, bc5-chainwd 1.5 ms
+parts (lk412): 10.0 s: bc5-chainwd: ms held by part: probe 3.2 (longest 0.05), anon sync 302.7 (longest 59.82), direct sync 189.3 (longest 57.60), learned 45.7 (longest 6.21), hints 16.0 (longest 0.94), prepare 31.7 (longest 2.83), device submit 149.8 (longest 2.26), tail 16.7 (longest 1.27)
+stat (lk412): 10.0 s: Render Thread: 1373 locks, held 1973.4 ms (19.7 % of the time; longest 167.70 ms; 126 of 2 ms or more), waited 1567.7 ms in 279 waits (15.7 %); behind: bc5-ring 1567.4 ms, bc5-chainwd 0.3 ms
+parts (lk412): 10.0 s: Render Thread: ms held by part: probe 3.0 (longest 0.09), anon sync 148.5 (longest 38.22), direct sync 652.0 (longest 163.53), learned 135.2 (longest 12.73), hints 74.3 (longest 3.67), prepare 129.3 (longest 2.50), device submit 771.8 (longest 9.79), tail 59.3 (longest 0.53)
