@@ -1835,9 +1835,65 @@ least not for all four heaps on his load. fast4 is not an arm for his shortcut a
 ranges (the trial has to journal those ranges; one line per change), then a per-heap repeat on his slot with the
 scripted route (the slot is still to be asked).
 
+### 39. The GPU's work does name the four "no GPU bit" heaps: section 37's rule is refuted (build g412t, 2026-11-11 22:50–23:10)
+
+On the maintainer's "Znajdź rozwiązanie" after the hang of section 38.
+
+**The catcher and the candidate fix in one build** (`memfast/nscan0412.inc`, `memfast/mknscan0412.py`, tag ns412; default
+off): `BC5_GUARD_NOGPU_SCAN=1|2`. Before a command buffer is handed to the kernel it is searched by value for addresses
+inside the ranges `BC5_GUARD_NOGPU_UNPIN` left unpinned, in the two forms the probe lines of the hang show (a dword
+pair "low 32 bits, high bits in the low 16 of the next dword", and a dword that is the address shifted right by 8:
+image descriptors); so are the first 2 KiB behind every address in the buffer that points into other direct memory
+(up to 96 tables per buffer). Mode 1 journals a find; mode 2 also pins 8 MiB from the find on before the submission
+(`direct_force`, the hints' own call). The left-out ranges are journaled per heap whenever the set changes.
+CPU test `memfast/nscan0412.cpp`: 13,435 of 13,435 on the laptop and on the box (the ranges against a page model, the
+search against a brute-force one). Build g412t = g412s + this, binary `5e26c97d` (g412s kept; `mk0412t.sh`).
+Section 38's open point is closed by reading the code: the zero buffer's read-back prints only when its result
+changes, so one line at t 1 s is what a clean run gives.
+
+**Runs** (scripted load, arm fast4, RT on, measuring watchdog 220 MiB; one each) [M]:
+
+| run | scan | buffers searched | with a find | left unpinned at the end | pinned direct at 170 s | lowest line: available |
+|---|---|---|---|---|---|---|
+| t1scan | 1 (journal) | 140,096 | **87,223 (62 %)** | 1,180 MiB | 10,640 MiB | 788 MiB |
+| t2pin | 2 (pin) | 108,741 | 179 | **264 MiB** | **11,800 MiB** | 310 MiB |
+
+- t1scan: 42,623 finds in the buffers themselves and 2.05 million through tables. In the journaled sample (8,510
+  lines): `InitAllocator` 258 distinct addresses in 63 chunks, `DynamicHeap` 77 in 44, `ComponentHeap` 7 in 5,
+  `Physics` 1. Among them image descriptors (the shifted form) with bases 0x1041200000, 0x1041240000, 0x1041280000 in
+  `DynamicHeap` and 0x1071280000, 0x10712c0000 in `ComponentHeap`: 256 KiB apart, page-aligned: textures [I].
+  Others are pointers inside tables in GPU heaps (0x11e0…, 0x1200…) to `InitAllocator`; some of those may be the
+  title's own CPU pointers lying beside GPU data (the search is by value).
+- t2pin: pinning what is named took back 1,114 MiB of the 1,180: the pin was at the wall again (11,800 MiB,
+  available 310 MiB, PSI 15 %). The 8 MiB window overstates it; the direction does not change.
+- The search cost 13.8 s of the submitting threads in 170 s (8 %): a catcher's price, not an arm's.
+- Both runs: no kernel line, no timeout line, 178 s.
+
+**Verdict on section 37.** The title's protection value without bits 0x10/0x20 does **not** mean "the GPU never reads
+it": on this title the GPU's own command buffers and tables name `DynamicHeap`, `InitAllocator` and `ComponentHeap`.
+Arm fast4 gained its 1.0 GiB by giving the GPU zeros where it reads the title's data. That is the cause of the hang
+of section 38 as far as it can be shown without the hung dispatch's own bindings [I], and it would also have shown
+as a wrong picture. **fast4 is withdrawn as an arm for play**; `BC5_GUARD_NOGPU_UNPIN` stays in the build, off.
+(TODO(verify): what the value's bits above 0x30 mean; 0xc2 heaps are GPU-read in practice.)
+
+**The number that points at a fix: all-zero pages** (`zero0412.py`, run u2zero: arm fast2, scripted load; the direct
+memory file read from outside through `/proc/<pid>/fd` at 140 s, in play; `raw/u2zero-zero.txt`) [M]:
+of 11,826 MiB allocated in the file (pinned direct 11,716 MiB at that time), **3,571 MiB are 4 KiB pages holding
+only zeros (30 %)**. Each is a real page of RAM that exists only because the import pinned it or because something
+wrote zeros. That is 3.5 times the deficit of section 16. What it does not say: how many of those pages the title or
+the GPU will write later, and how many lie in wholly-zero 2 MiB chunks (the granularity the zero skip of exp 0379
+works at; a per-chunk count is the next read). It sizes section 31's scheme: keep such pages unbacked and catch the
+first write synchronously, instead of the zero skip's poll with its blind window (section 33).
+
+**Box state.** g412t in place; the desktop still has "BC5 emulator (0412 fast4)" on the maintainer's word ("Nie
+przywracaj"): it will hang again if started.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
+- **Section 37's rule is refuted (section 39) [M]:** the GPU's command buffers and tables name the heaps without a GPU bit in 62 % of
+  submissions; fast4 fed the GPU zeros there and is withdrawn. Pinning what is named takes back 1,114 of 1,180 MiB.
+- **30 % of the direct memory file is all-zero pages (section 39) [M]:** 3,571 of 11,826 MiB in play; that sizes the zero-page scheme of section 31.
 - **fast4 hung the GPU in his play (section 38) [M]:** ring timeout at 108 s, the ring reset failed, the box rebooted.
   The no-GPU-bit unpin is the first suspect [I]; it is not an arm for his shortcut as it stands.
 - **The first change that moves the wall (section 37) [M]:** four heaps the title mapped without a GPU bit are no longer pinned
