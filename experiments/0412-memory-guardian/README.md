@@ -1077,6 +1077,73 @@ functions inside the long frames. For the largest cause that is ours by name, th
 stage 1 of `DESIGN-device-mutex.md` together with the chain's flush mutex, which the design did not yet cover;
 its bound is that quarter of the gap time. Not built; the top session's review comes first.
 
+### 24. The on-CPU time inside the gaps by function, and why fast2 now ends at 144–151 s (2026-11-11 18:14–18:27, the top session's orders)
+
+**Setup.** `perfgap0412.sh`: perf's cpu-clock event at 1 kHz, user space, on the Render Thread and game-main only, on
+CLOCK_MONOTONIC (perf_event_open: no ptrace, no thread stopped; leaf address with symbol and DSO, no call chains).
+perf was installed in the ubuntu container for this (`apt-get update`, `linux-perf` 7.0.0-43; apt also moved the
+container's `linux-libc-dev` to 7.0.0-43, a side effect to know of for later builds there). `gapstack0412.py` joins
+the samples with the gap lines of section 23; `perftop0412.py` sums a thread's samples over a whole run.
+Runs t1perf and u1perf: arm fast2, RT on, `BC5_GUARD_GAP_STAT=100`, build g412m. **Both were ended by the watchdog at
+144 s, so the play phase is 12 s (13 and 4 gaps): its column is short and marked.** The perf text files (1.7 MB each)
+stay on the box, `~/bc5-work/exp0412/night/raw/{t1perf,u1perf}-perf.txt.gz`; the join's output is `raw/*-gapstack.txt`.
+
+**Result: the Render Thread's user-space CPU inside the gaps, % of the gaps' time (t1perf / u1perf)** [M]:
+
+| | scene load (22 / 22 gaps) | save load (28 / 30) | play, SHORT (13 / 4) | whole run (87 / 76) |
+|---|---|---|---|---|
+| guest code (the title's own, no host symbol) | 40.9 / 46.9 | 39.7 / 33.2 | 27.9 / 10.2 | 45.5 / 44.8 |
+| host GPU path (`submit_now`, `direct_sync_one`, state tracker, filter) | 2.9 / 5.5 | 6.9 / 4.8 | 3.4 / 5.4 | 3.9 / 4.2 |
+| libc and libstdc++ (`memmove`, tree walks, `malloc`) | 1.1 / 3.5 | 6.6 / 3.8 | 2.8 / 3.5 | 3.2 / 3.4 |
+| host memory, libkernel, loader, others | 0.4 / 1.4 | 1.5 / 0.6 | 0 / 0.4 | 0.3 / 0.4 |
+| all user-space CPU | 45.6 / 57.6 | 54.6 / 42.7 | 34.5 / 19.7 | 53.4 / 53.4 |
+
+No host function is over 2 % of the gap time on the Render Thread; the heaviest are `memmove` 1.2, `_Rb_tree_increment`
+0.9, `submit_now` 0.9, `direct_sync_one` 0.6. So section 23's "47 % on the CPU outside the host's GPU path" **is the
+title's own code** (45 %), and of the 16 % that section 23 counted inside the host's submit scopes only 4 % is our
+user-space code: the other 12 % is spent in the kernel under those scopes (the submit and pin ioctls, page faults),
+which user-space sampling does not see.
+game-main inside the gaps (whole run) [M]: guest code 32.6 / 33.7 %, `memmove` 12.2 / 14.7 % (the title's copies,
+through the host's libc), `Loader::TlsMainGetAddr` 3.0 / 3.0 %, `KernelGetProcessTimeCounter` 2.2 / 2.4 %, host memory
+(memory.cpp, AMM) 1.1 / 0.9 %.
+
+**The submit path's passes over the whole run** (`raw/u1perf-perftop.txt`; Render Thread, 65.1 s of user-space CPU in
+137 s) [M]: guest code 63.6 %; `memmove` 5.3 % (3.5 s); `submit_now`'s own loops 3.6 % (2.4 s); the state tracker
+`emit_prefix` 2.9 % + `apply_level` 2.2 % + `state_stack::apply_in_place` 0.9 % (3.9 s); `policy::filter` 1.4 %;
+`Device::submit` 1.0 %; `indirect_check::apply` + `insert_before` 1.5 %; `direct_sync_one` 0.7 %; `catch_add` 0.7 %;
+`submit_split` 0.7 %; `malloc` 1.2 %; number formatting for journal lines (`printf_fp`, `strlen`) 1.0 %. On game-main:
+`TlsMainGetAddr` 3.6 % (2.4 s) and `KernelGetProcessTimeCounter` 2.2 % (1.5 s) of its user-space CPU.
+The cheap candidates by these numbers: the state tracker's prefix (5 %, rebuilt per piece), the copies (5 %), the
+two libkernel helpers on game-main (6 %). None is built yet.
+
+**Why fast2 ends at 144–151 s since 18:02** (five runs of five: s1gap, t1perf, u1perf, the control v1ctl without any
+catcher, w1perf; the afternoon's eight all passed 180 s) [M]:
+
+| | afternoon (n1src, n2src, o1aud, p1lock, q1parts, r1holds) | evening (s1gap, t1perf, u1perf, v1ctl, w1perf) |
+|---|---|---|
+| available at 5 s | 3,900–4,100 MiB | 3,908–4,086 MiB |
+| swap used at 5 s | 658–678 MiB | 672–676 MiB |
+| pinned at 140 s | 11,570–11,668 MiB | 11,622–11,696 MiB |
+| orphans at 140 s | 146–290 MiB | 195–269 MiB |
+| available at 130 s | 348–447 MiB | 325–429 MiB |
+| available at 135 s | 287–357 MiB | 243–370 MiB |
+| available at 140–141 s | 274–329 MiB | 245–305 MiB |
+| lowest available of the run | 260–289 MiB (o1aud, r1holds; one or two 2 s samples) | under 300 MiB for five samples in a row |
+| watchdog, tools | 300 MiB, five samples of 2 s; `wd0412.sh`, `run0412n.sh`, `fuse0412.sh` unchanged since 2026-11-10 23:28 | the same files |
+
+Whole-box snapshots at 130 s, m1fast2 (14:51) against w1perf (18:26), `raw/snapdiff-m1fast2-w1perf.txt`: no line of
+`/proc/meminfo`, of the processes or of the cgroups moved by more than 76 MiB outside the emulator; MemAvailable was
+76 MiB higher in the evening run at that moment; zram holds 37 MiB more; the login session's scope +51 MiB (the ssh
+sessions that start the runs and perf), journald +16, podman +16.
+**No line moved.** The pin, the orphans and the start state are the same; the release cuts as before. The arm always
+dipped to 245–330 MiB at 135–141 s, where the save load ends; in the afternoon the dip lasted one or two samples and
+the run went on, in the evening it lasts five (10 s) and the watchdog acts. The control without catchers ends the
+same way, so neither the catchers nor build g412m is the cause. The difference is a few tens of MiB inside a margin
+that was never there (section 16: the budget is 0.4–0.5 GiB short). Nothing is left full by earlier runs (swap and
+zram are at their afternoon values), so there is nothing to reset; what would move the line is memory: the 96 MiB
+virtual keyboard and other desktop parts (section 18), or the top session's choice of a lower watchdog threshold for
+measuring runs. Neither was changed here.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
@@ -1092,6 +1159,9 @@ its bound is that quarter of the gap time. Not built; the top session's review c
 - The frame gaps by cause (section 23) [M]: inside the gaps over 100 ms the flipping thread is 47 % on the CPU outside the host's
   GPU path (the title's frame work), 16 % in the host's submit path, 24 % blocked on the two submission mutexes, 6 % waiting for
   the GPU; the GPU's completion thread is idle 90 % of the gap time. The gaps are not the GPU and not the disk.
+- Inside the gaps by function (section 24) [M]: the flipping thread's CPU time there is the title's own code (45 % of the gap time);
+  our user-space code in the GPU path is 4 %, the other 12 % under the submit scopes is kernel time. Since 18:02 every fast2 run
+  ends at 144-151 s (five of five, one without catchers): no memory line moved, the arm was always at the watchdog's threshold.
 - The wall as arithmetic (section 16) [M]: at 165 s the guest pins 12,024 of 15,193 MiB; the 3,169 left hold the kernel, the
   GPU driver's buffers, the desktop and the emulator only with 986 MiB in swap and 42 MiB of file cache for the game. Over by
   about 0.4-0.5 GiB; 320 MiB of the pin are orphans (ours).
