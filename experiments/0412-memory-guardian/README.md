@@ -1304,6 +1304,52 @@ unit `memory.cpp` differs from g412m's (`f6bb431a` against `9a518979`), but the 
 directories (`.../n/out/...` and `.../m/out/...`), so the comparison says nothing yet; a rebuild of g412m's unit in
 its own directory is the valid check and is not done.
 
+### 27. What the long holds of the play phase are, and how the GPU is clocked (read from existing data, 2026-11-11 19:05, the top session's order)
+
+**The long holds, from the journal of run r1holds** (section 22: arm fast2, a line per hold of 30 ms or more with its
+parts; play phase 132–181 s; the journal is `~/bc5-data/captures/play-20261111-1752/gc/direct.log` on the box) [M]:
+
+| hold of the device mutex, largest part | holds | time | what was journaled just before it |
+|---|---|---|---|
+| 100 ms and more, direct sync | 4 | 1.65 s | 1 right after a lazy-release cut (600 ms), 2 after it with nothing between (936 ms), 1 after a views rebuild (115 ms) |
+| 100 ms and more, anon sync | 1 | 0.26 s | after a views rebuild |
+| 30–100 ms, anon sync | 58 | 2.75 s | 34 after a views rebuild, 2 after a release cut, 22 with neither |
+| 30–100 ms, direct sync | 15 | 0.56 s | 9 after a views rebuild, 4 after a release cut, 2 with neither |
+
+- The worst cluster of the phase: the lazy release cuts 20 MiB out of 4 BOs ("43 mappings to move"), and the next
+  four holds are direct sync on three threads, 594 ms (Render Thread), 101 ms (`bc5-ring`), 212 ms and 647 ms
+  (`bc5-chainwd`), 1.55 s of holds within 1.5 s of wall clock. **So yes: the orphan release (exp 0401 e7's cut with
+  this experiment's `BC5_GUARD_SPLIT`) runs inside the device mutex and starts the longest frames of the play phase.**
+  The learned windows are not it (3–10 ms per hold here).
+- Why the release has so much to do: over that run it cut 1,422 MiB and nearly all of it came back under views
+  (section 18: 1,548 cut, 1,486 back). The title's AMM heap swings between about 2,485 and 2,965 MiB every 10 s; with
+  `BC5_DIRECT_LAZY_RELEASE=4` a part freed for 4 s is cut out of its BO, and when the title maps it again some
+  seconds later it is imported and its mappings rebuilt, each time under the mutex. The release works against a heap
+  that breathes faster than it waits.
+- The second kind, anon sync (59 holds, 3.0 s, 40–65 ms each, one of 239 ms): the forced walk over the guest's VMAs
+  in `sync_mappings`, mostly right after the title changed its layout (a views rebuild).
+
+**Proposal for order B** [I], cheaper than moving work out of the mutex and to be reviewed before any build:
+1. Stop the churn at its source: a chunk that came back under a view after a cut is not cut again for a long time
+   (minutes), or the idle time before a cut is longer than the heap's swing (30 s instead of 4 s). Cost: the release
+   then saves little on this route (cut minus back was 62 MiB), so the pin goes back toward the ledger arm's
+   12.0 GiB at the wall; the memory budget and the long frames pull in opposite directions here and the choice is
+   the maintainer's.
+2. For what is left (a real new mapping): do the import at map time on the mapping thread, outside the device
+   mutex, and splice under it (stage 1 of `DESIGN-device-mutex.md` in its smallest form).
+3. The anon sync walk: 23,000 mappings walked whole after every layout change; walking only the changed range is
+   the same class of fix as sections 15 and 18.
+
+**The GPU's clock and CUs** (read-only) [M]: `cyan-skillfish-governor-smu.service` is active, set by SMU, with
+`/etc/cyan-skillfish-governor-smu/config.toml` `[frequency-range] min = 1850, max = 2150` MHz (the D-Bus object
+`com.cyanskillfish.Governor` gives the same range; an older `config.toml.bak` had 1,000–1,850), load target
+0.50–0.65, throttling at 85 C. `oberon-governor.service` and the other two governor units are not running. The
+frequency the governor has set at a given moment is not exposed: hwmon `freq1_input` reads 9–60 MHz and
+`pp_dpm_sclk` is no better. `bc250-cu-live-manager status`: 40/40 CUs active and routed; vddgfx 918–924 mV, 52 C and
+64–69 W at idle. A console runs this GPU family at 2,230 MHz with 36 CUs; here it is 1,850–2,150 MHz with 40, so the
+clock is 83–96 % of a console's and the CU count 111 %: the GPU is not clocked far below a console. Whether the
+governor actually sits at 2,150 MHz in play is the one thing not read.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
@@ -1329,6 +1375,10 @@ its own directory is the valid check and is not done.
 - The ordinary play frame, corrected (section 26) [M]: the host does not hold buffers back (handed to flushed: median under 1 ms);
   something is in flight on the GPU for 30 of the frame's 34 ms; the title calls the flip at 22 ms and waits 12 ms for the GPU.
   The GPU side is the long pole of the ordinary frame. The title's wait loops poll its own job system, nothing of the host's.
+- The long play frames (section 27) [M]: the longest holds are direct sync under the device mutex right after the orphan release cuts
+  memory that the title maps again seconds later (its AMM heap swings every 10 s; 96 % of what is cut comes back). The release's
+  4 s idle time causes them; a longer idle time or a no-cut-again rule removes them at the price of the release's saving.
+  The GPU runs at 1,850-2,150 MHz with 40 CUs (a console: 2,230 MHz, 36 CUs).
 - The wall as arithmetic (section 16) [M]: at 165 s the guest pins 12,024 of 15,193 MiB; the 3,169 left hold the kernel, the
   GPU driver's buffers, the desktop and the emulator only with 986 MiB in swap and 42 MiB of file cache for the game. Over by
   about 0.4-0.5 GiB; 320 MiB of the pin are orphans (ours).
