@@ -1679,12 +1679,57 @@ the GPU's, then up to 2.7 GiB need not be pinned at all, with no fault trap and 
 has no mapping there to miss. That is cheaper and safer than anything else on the table and has to be checked
 first: which protection bits and memory types the seven never-named heaps carry on his save.
 
+### 35. The title's own protection bits per heap (build g412r, run e1prot, 2026-11-11 20:14–20:18)
+
+**Why.** Section 34 left heaps that no command buffer ever names; the library review reported that the host decodes
+the title's GPU protection bits and the mapper never reads them. The check: which bits does each heap carry?
+
+**Change** (`memfast/mkprot0412.py`, tag pr412; no behaviour change): `Bc5ForEachMappedRange` already hands the
+view builder a protection value for every mapped range; `direct_views_build` took it as an unnamed, ignored
+argument. It is now stored in the view (`DView::prot`) and printed by the use catcher per heap. Build g412r = g412q
++ this, binary `a5829b25` (g412q kept). Run e1prot: arm fast2, `BC5_GUARD_USE_STAT=1`, scripted load; 178 s,
+25.1 flips/s, no kernel line. Data `raw/e1prot-usestat.txt`.
+
+**Result at 150 s, in play** [M] (the value as the host hands it over; 0x10 and 0x20 are GPU read and GPU write by
+the host's own comment "prot 0x22 = cpu write | gpu write" in the unit; the bits above 0x30 are not explained
+anywhere I have read: TODO(verify)):
+
+| heap | under views MiB | value | a GPU bit? | in the launcher's lists |
+|---|---|---|---|---|
+| `AMM` | 2,964 | 0x13 (2,417), 0x33 (444), 0x32 (103) | yes | eager |
+| `RenderGpuWcLarge` | 2,758 | 0x32 | yes | eager |
+| `CommitIABufferAllocator` | 2,736 | 0xf2 | yes | eager |
+| `AssetHeap Large` / `Small` | 816 / 350 | 0xf2 | yes | by data |
+| `RenderGpuRwLarge` | 414 | 0xf2 | yes | eager |
+| `Wwise` | 220 | 0x3f2 | yes | lazy (exp 0330: CPU-only) |
+| `anon` | 166 | 0xfffffff2 | (all bits set) | by data |
+| `RenderGpuWcSmall`, `RenderAlloc` | 110, 70 | 0x32, 0xf2 | yes | eager |
+| **`InitAllocator`** | 652 | 0xc2 | **no** | by data (448–450 pinned) |
+| **`DynamicHeap`** | 328 | 0xc2 | **no** | eager (328 pinned) |
+| **`Physics`** | 192 | 0xc2 | **no** | eager (192 pinned) |
+| **`ComponentHeap`** | 104 | 0xc2 | **no** | eager (104 pinned) |
+| all | 12,189 | | 10,667 with, **1,522 without** | |
+
+**Reading, with its contradiction.** 1,522 MiB under views carry neither GPU bit, about 1.1 GiB of it pinned today,
+and section 34 shows that no command buffer names any of those heaps. Two signs that this memory is the CPU's.
+Against that stands an older measured fact: F96 (exp 0042) records that run 102 **stopped on a GPU fault inside
+`Physics`**, which is why `Physics` and "eleven more heaps" were put on the eager list. And `Wwise`, which exp 0330
+treats as CPU-only without trouble, carries GPU bits here. So the value as I read it does not by itself say "the
+GPU never goes there": either the bits mean something else than the comment says, or the GPU reaches that memory
+through another mapping of it, or F96's fault had another cause than a real use.
+**So this is a lead worth about 1.1 GiB and not yet a fix.** What settles it without risking a hang: map the four
+no-GPU-bit heaps for the GPU onto the zero canary instead of their pages (no fault is possible), leave them
+unpinned, and watch for canary hits and for a picture that changes; `Physics` first and alone, because it is the
+one with a recorded fault. Not built.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
 - What the pin is made of (section 34) [M]: in play the command buffers name 0.9 GiB of the 12.2 GiB under views; seven heaps, 5.9 GiB,
   are never named. Of those, heaps that by their purpose are the CPU's (audio, physics, components, assets: up to 2.7 GiB) are
   pinned for the GPU only because the title mapped them as direct memory; whether its GPU bits tell them apart is the next check.
+- The GPU bits, checked (section 35) [M]: four heaps, 1,522 MiB under views and about 1.1 GiB pinned, carry no GPU bit and are never named by a
+  command buffer; but F96 recorded a GPU fault inside one of them (Physics), so the bits alone do not prove the GPU stays out. A lead, not a fix.
 - The zero skip's hang, caught (section 33) [M]: the skip learns of the title's writes by a poll; 45 chunks were found written with a mean of
   59 ms (up to 149 ms) and 1,204 submissions inside the window, and the run's GPU hang begins 4 ms after one such find in the
   index-and-vertex heap (32 ms, 15 submissions on zeros). The fix is to catch the first CPU write synchronously (section 31).
