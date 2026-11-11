@@ -620,9 +620,61 @@ object, g412e does.
 **Not done:** ASTRO BOT on g412e (the e11-based line was never his ASTRO BOT build; its leak fix is the ev412
 shortcut of section 11). Nobody played or looked at the picture. One run of 4 minutes.
 
+### 14. His plays of 2026-11-11 09:47–09:54 (logs collected at 09:56 on his word: "filmiki ingame ... bardzo niestabilne na każdej wersji")
+
+Four starts from the shortcuts, all with the fuse at 12,400 MiB: zoe (09:47:17, closed after 6 s), the shared-source
+build ev412 unpacked (09:47:33–09:49:26), zoe on g412e (09:49:37–09:52:12), zo on g412e (09:52:14–09:54:21, ended by
+a GPU ring timeout at 09:54:16). Raw: `raw/play-20261111/` (the sampler files; per play the journal's memory lines
+and one line per frame: t, frame ms, in-host ms, sync, hints, label waits, outside, GPU busy). The play logs, the full
+journals and the device coredump `~/bc5-data/captures/devcoredump/20261111-095416-devcd3.txt` stay on the box.
+
+**The same picture in all three plays** [M], in 15-s windows of the journal's frame profile:
+
+| Window | What runs | Flips /s | Frame mean (max) | Game thread: in host (sync + hints) / outside | GPU busy |
+|---|---|---|---|---|---|
+| 15–30 s | the intro movies | 29.5 | 34 ms (44–60) | 3.5–3.8 (0.5) / 8–9 ms | 25–26 ms |
+| 30–45 s | the scene behind the start screen loads | 11.5–12.6 | 79–86 ms (600–1,020) | 16–20 (9–13) / 51–53 ms | 14 ms |
+| 60–90 s | the save loads | 6.9–8.9 | 111–150 ms (960–1,580) | 20–36 (11–30) / 69–112 ms | 8–13 ms |
+| 105–120 s | play (zoe, zo) | 25–30 | 30–33 ms (450–470) | 13–14 (2.7–3.4) / 14–15 ms | 16 ms |
+| 120–150 s | play (zoe) | 9–15 | 64–109 ms (330–1,909) | 21–45 (7–23) / 38–59 ms | 22–24 ms |
+| 105–120 s | play (ev412, the shared source) | 0.7 | 492 ms (2,552) | 312 / 144 ms | – |
+
+- **The intro movies are steady** (29.5 flips/s, no frame over 60 ms). What is unstable is everything after them.
+- **While the title loads, the GPU waits for the CPU**: GPU busy 8–14 ms of frames of 80–150 ms. The game thread is
+  50–110 ms a frame outside the host (the title's own loading work and its waits) and 16–36 ms inside it, of which
+  the mapping work on every layout change (`sync` 6–21 ms, `hints` 2–11 ms a frame) is the larger part. In the zoe
+  play `learned_apply` ran 993 times for 10.5 s in all and the merge pass 504 times, on the game thread, in 150 s.
+  No memory pressure yet in these windows (PSI under 2 %, no major faults).
+- **Then the memory limit** [M]: the container's cgroup is at 12,399 MiB from 40 s on in every play. From about 95 s
+  the sampler shows swap-ins and swap-outs of 500–5,000 pages/s, 1,000–2,800 major faults/s and PSI full 5–15 %,
+  available memory 300–600 MiB, and the emulator's mapped share of the pinned memory falls from 6.4 GiB to 1.0–1.4 GiB
+  within 10 s (the kernel unmapping pages it cannot free, now inside the cgroup). The shared-source build, without
+  the zero skip, was there first (11,792 MiB pinned, 0.7 flips/s at 105–120 s); zoe and zo got 20 s more
+  (11,598–11,616 MiB pinned at 130 s, 596–762 MiB still skipped).
+- So in his play the pin reaches 11.6 GiB within 130 s even with the zero skip and the orphan release. The night's
+  scripted walk stayed at 11.2–11.5 GiB over 12 min; his route loads more, sooner. **The night's "no wall" does not
+  hold for his play.**
+- **The GPU reset** (09:54:16, zo): gfx ring timeout on thread `bc5-chainwd`, no page fault line, the ring reset
+  succeeded; two submissions timed out at t 120 s. It is the second such timeout in 8 runs with the zero skip (c1zof
+  in the night); 10 runs without it had none [M]. That makes the zero skip the likely trigger [I], as exp 0401's 3 in
+  19 suggested. (The 01:25 entry in his notification list is the one my trace caused, section 10.)
+
+**His two guesses against the data.** "Too many reads": yes after about 95 s, as major faults and swap traffic
+caused by the memory limit, not before. "Something slows the frames": during loads it is the game thread, split
+between the title's own work and the host's mapping work per layout change; the GPU is idle then.
+
+**What follows** [I]: (1) the host's per-layout-change work on the game thread is the one cost present in every
+slow window and on every build; `BC5_GUARD_APPLY_MIN_MS=50` (the "low" arm) cut `learned_apply` calls from 932 to
+355 without a fault on 11-10 and was not in today's arms; (2) the memory budget is still over by 0.3–0.5 GiB in his
+play, and the zero skip buys 0.6 GiB at the price of the ring timeouts; (3) the fuse turns a dead box into a slow
+game, as designed, and is now the place where the thrash happens.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
+- His plays of 11-11 (section 14) [M]: unstable on every build after the intro movies. Loads are CPU-bound on the game thread
+  (the title's work plus the host's mapping work per layout change); from about 95 s the cgroup limit thrashes; with the zero
+  skip the pin still reaches 11.6 GiB in 130 s, and the zero skip has now 2 GPU ring timeouts in 8 runs.
 - Night of 11-10/11 [M]: with `memory.max` 12,400 MiB every arm survived; zero skip + orphan release (arm zo): 0.55-0.75 GiB
   less pinned, major faults 550-1,250/s -> 2-56/s, PSI full under 1 %, the pin flat for 6 of 12 minutes. One GPU ring
   timeout in five zero-skip runs. ASTRO BOT's host leak is 217-218 MiB/min, steady, with no input and with PLAY_CAPTURE off.
