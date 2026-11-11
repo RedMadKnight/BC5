@@ -566,6 +566,34 @@ log, capture off, sampler, fuse). The shared build and its shortcuts are unchang
 **Next, his call:** carry the two edits into patch 0001 with the cap on by default (a new shared build), after he has
 played ASTRO BOT on this shortcut.
 
+### 12. The second title, unpacked, on the events-cap build (2026-11-11 09:30–09:36; the maintainer: "do tej wersji dodaj możliwość uruchomienia rozpakowanej wersji drugiej gry")
+
+No code change: the unpacked game is a launcher feature (`BC5_GAME_DIR` makes the launcher pass the directory to
+`--game` instead of mounting the package; exp 0409's launcher and its descendants have it, the shared `play-pkg.sh`
+does not). Added (`events/`):
+- `ev/play-pkg-ev0412.sh` (box, e125fb4e): exp 0412's `play-pkg-0412.sh` with EMU = the ev412 binary and its own log
+  (`~/bc5-work/exp0412/pkg-ev-last.log`); `BC5_GAME_DIR` and `ulimit -c 0` kept. Made and pinned by `startev0412.sh`.
+- `play-pkg-ev-0412.sh cap|log|plain [dry]` (a8bde13f): runs it with `BC5_GAME_DIR=~/bc5-data/games/PPSA03671` and
+  the arm's event words, with the sampler and the fuse (12,400 MiB) as the other wrappers.
+- The shortcut `BC5 emulator (0412 events cap, unpacked)` (arm `cap`).
+
+**What this build is.** ev412 is the shared source of 2026-11-02 plus the events cap. It has none of exp 0401–0411's
+work (e8–e11: the reset and label switches, the table catcher, the ports) and none of the guardian's (ledger, zero
+skip arm, orphan release with split). So the wrapper does not pass the "e11 unpacked" shortcut's 70 switch words: this
+build does not know them. For his save's memory wall the shortcut to use stays `(0412 zo - best of the night)`.
+
+**Start check** (`startev0412.sh s1cap cap 180`: the wrapper with a test copy of the launcher whose working
+directory, save directory and learned file are private, no input, 180 s, watchdog, sampler, fuse) [M]: the title
+started from the unpacked directory and drew for the whole time, 174 one-second fps lines, 28.0 flips/s, longest gap
+255 ms; no crash line, no kernel line; available memory never under 2,450 MiB; the live saves' sum unchanged. It was
+on the start screen: no key was sent, no save loaded, nobody looked at the picture.
+The play log has **no event line**: in these 3 minutes no event of the second title was triggered while still unread,
+so the cap did not act and this title's start screen does not have ASTRO BOT's growth on this build either.
+
+**Not done:** a load of his save and play on this build; RT and the settings are the launcher's as usual. Whether he
+wants the events cap in the e11-based line instead (the build the second title is meant to run on) is his call: the
+two edits apply to that source as well, if its `eventQueue.cpp` and `sync.cpp` still have the two `push_back` lines.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**

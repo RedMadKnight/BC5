@@ -32,7 +32,10 @@ case "${1:-}" in
   astro-evcap) W=$E/play-astro-ev-0412.sh; ARG=cap; NAME="BC5 Astro (0412 events cap)"
              WHAT="ASTRO BOT on the private build ev412 (the shared source + a bound of 64 on an event's pending queue, KYTY_BC5_EVENT_PENDING_CAP=64: the fix candidate for the host leak of 217 MiB/min), capture off, the memory sampler beside it; $FU"
              LOGS="log ~/bc5-work/exp0412/astro-ev-last.log; sampler lines ~/bc5-work/exp0412/sampler/astro-*" ;;
-  *) echo "usage: shortcut0412b.sh orphans|cap|zo|astro-off|astro-on|astro-evcap"; exit 1 ;;
+  pkg-evcap) W=$E/play-pkg-ev-0412.sh; ARG=cap; NAME="BC5 emulator (0412 events cap, unpacked)"
+             WHAT="the second title, unpacked, on the private build ev412 (the SHARED source of 2026-11-02 + a bound of 64 on an event's pending queue; none of the e-series or guardian switches), the memory sampler beside it; $FU"
+             LOGS="log ~/bc5-work/exp0412/pkg-ev-last.log; sampler lines ~/bc5-work/exp0412/sampler/play-*-evcap.txt" ;;
+  *) echo "usage: shortcut0412b.sh orphans|cap|zo|astro-off|astro-on|astro-evcap|pkg-evcap"; exit 1 ;;
 esac
 DESK=$(xdg-user-dir DESKTOP 2> /dev/null); DESK=${DESK:-$HOME/Pulpit}
 m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }
