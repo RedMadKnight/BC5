@@ -1,0 +1,354 @@
+lazy release (exp 0401 e7): on (4 s, eager): an imported chunk of the direct memfd under no view for 4 s, not forced by a hint or learned window, eager-heap chunks too, zero-list chunks never, is cut out of its BO; a view over it again imports it before the mappings are built; passes every 1.0 s
+lazy release (exp 0401 e7): t 1 s: 3898.0 MiB imported: 3876.0 under eager views, 22.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 0.0 under no view (0.0 last seen under an eager or zero-list view, 0.0 never seen under one; 0.0 idle 4 s or more); cut 0.0 MiB in 0 BOs (0 whole, 0 split), back 0.0 MiB, 0 chunks released now, 0 undone, 0 imports failed, 0 BOs deferred, 0 not split (aliases); GTT 425.8 of 13312.0 MiB
+lock hold (exp 0412, tag lk412): t 1.454 s: bc5-ring held 1453.9 ms: direct sync 847.2 learned 604.8
+lock hold (exp 0412, tag lk412): t 1.674 s: game-main held 219.7 ms: anon sync 1.3 device submit 217.7
+lock hold (exp 0412, tag lk412): t 1.833 s: bc5-chainwd held 48.4 ms: direct sync 45.0 device submit 2.9
+lock hold (exp 0412, tag lk412): t 2.011 s: bc5-ring held 68.8 ms: direct sync 43.7 learned 24.9
+lock hold (exp 0412, tag lk412): t 3.394 s: bc5-ring held 49.9 ms: direct sync 46.3 device submit 3.1
+lock hold (exp 0412, tag lk412): t 5.061 s: bc5-ring held 45.0 ms: direct sync 39.3 learned 3.4 device submit 2.3
+lock stat (exp 0412, tag lk412): 10.0 s: game-main: 2 locks, held 220.6 ms (2.2 % of the time; longest 219.75 ms; 1 of 2 ms or more), waited 605.9 ms in 1 waits (6.1 %); behind: bc5-ring 605.9 ms
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-ring: 2783 locks, held 2268.2 ms (22.7 % of the time; longest 1453.86 ms; 60 of 2 ms or more), waited 496.2 ms in 316 waits (5.0 %); behind: Render Thread 221.1 ms, game-main 219.7 ms, bc5-chainwd 48.0 ms, bc5-ring 7.3 ms
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-chainwd: 264 locks, held 282.6 ms (2.8 % of the time; longest 48.43 ms; 19 of 2 ms or more), waited 84.3 ms in 20 waits (0.8 %); behind: bc5-ring 79.4 ms, bc5-chainwd 5.0 ms
+lock stat (exp 0412, tag lk412): 10.0 s: Render Thread: 577 locks, held 606.2 ms (6.1 % of the time; longest 23.80 ms; 57 of 2 ms or more), waited 152.2 ms in 91 waits (1.5 %); behind: bc5-ring 141.7 ms, bc5-chainwd 10.5 ms
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-ring: 3591 locks, held 644.5 ms (6.4 % of the time; longest 11.61 ms; 10 of 2 ms or more), waited 139.9 ms in 366 waits (1.4 %); behind: Render Thread 113.8 ms, bc5-ring 20.8 ms, bc5-chainwd 5.2 ms
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-chainwd: 285 locks, held 208.1 ms (2.1 % of the time; longest 4.90 ms; 4 of 2 ms or more), waited 7.3 ms in 12 waits (0.1 %); behind: bc5-ring 7.3 ms
+lock stat (exp 0412, tag lk412): 10.0 s: Render Thread: 831 locks, held 589.0 ms (5.9 % of the time; longest 13.78 ms; 15 of 2 ms or more), waited 74.7 ms in 145 waits (0.7 %); behind: bc5-ring 74.3 ms, bc5-chainwd 0.3 ms
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-ring: 3711 locks, held 709.1 ms (7.1 % of the time; longest 10.75 ms; 10 of 2 ms or more), waited 146.5 ms in 366 waits (1.5 %); behind: Render Thread 114.8 ms, bc5-ring 22.9 ms, bc5-chainwd 8.7 ms
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-chainwd: 302 locks, held 222.4 ms (2.2 % of the time; longest 6.05 ms; 2 of 2 ms or more), waited 0.8 ms in 9 waits (0.0 %); behind: bc5-ring 0.8 ms
+lock stat (exp 0412, tag lk412): 10.0 s: Render Thread: 845 locks, held 588.2 ms (5.9 % of the time; longest 8.16 ms; 12 of 2 ms or more), waited 83.2 ms in 153 waits (0.8 %); behind: bc5-ring 82.4 ms, Render Thread 0.8 ms
+lock hold (exp 0412, tag lk412): t 31.405 s: bc5-ring held 44.1 ms: direct sync 32.9 learned 1.5 device submit 9.6
+lock hold (exp 0412, tag lk412): t 33.808 s: bc5-chainwd held 41.5 ms: anon sync 10.2 direct sync 26.0 learned 2.5 device submit 2.8
+lock hold (exp 0412, tag lk412): t 33.849 s: bc5-chainwd held 40.8 ms: direct sync 23.5 learned 1.6 device submit 15.6
+lock hold (exp 0412, tag lk412): t 33.913 s: bc5-ring held 38.1 ms: direct sync 27.4 learned 7.6 device submit 2.9
+lock hold (exp 0412, tag lk412): t 34.332 s: bc5-ring held 41.3 ms: direct sync 33.2 learned 5.7 device submit 2.3
+lock hold (exp 0412, tag lk412): t 34.858 s: bc5-chainwd held 42.0 ms: direct sync 37.9 learned 2.0 device submit 2.0
+lock hold (exp 0412, tag lk412): t 37.183 s: bc5-ring held 48.2 ms: direct sync 39.9 learned 2.4 device submit 5.7
+lock hold (exp 0412, tag lk412): t 37.265 s: bc5-chainwd held 62.9 ms: anon sync 24.5 direct sync 30.6 learned 4.8 device submit 2.8
+lock hold (exp 0412, tag lk412): t 37.310 s: bc5-ring held 44.2 ms: direct sync 37.0 learned 3.1 device submit 4.0
+lock hold (exp 0412, tag lk412): t 37.403 s: bc5-ring held 38.4 ms: direct sync 30.2 learned 4.5 device submit 3.5
+lock hold (exp 0412, tag lk412): t 39.415 s: bc5-chainwd held 38.5 ms: anon sync 24.5 direct sync 10.5 learned 2.7
+lock hold (exp 0412, tag lk412): t 39.460 s: bc5-ring held 37.6 ms: direct sync 21.9 learned 14.8
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-ring: 8935 locks, held 1913.5 ms (19.1 % of the time; longest 48.15 ms; 75 of 2 ms or more), waited 817.1 ms in 190 waits (8.2 %); behind: bc5-chainwd 544.8 ms, Render Thread 268.5 ms, bc5-ring 3.8 ms
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-chainwd: 2226 locks, held 1951.9 ms (19.5 % of the time; longest 62.90 ms; 83 of 2 ms or more), waited 528.0 ms in 64 waits (5.3 %); behind: bc5-ring 466.3 ms, bc5-chainwd 61.7 ms
+lock stat (exp 0412, tag lk412): 10.0 s: Render Thread: 198 locks, held 359.2 ms (3.6 % of the time; longest 20.32 ms; 27 of 2 ms or more), waited 448.5 ms in 65 waits (4.5 %); behind: bc5-ring 448.5 ms
+lock hold (exp 0412, tag lk412): t 42.073 s: bc5-ring held 34.0 ms: direct sync 26.7 learned 3.5 prepare 1.7 device submit 2.0
+lock hold (exp 0412, tag lk412): t 42.104 s: Render Thread held 31.1 ms: device submit 30.5
+lock hold (exp 0412, tag lk412): t 42.179 s: bc5-chainwd held 61.2 ms: anon sync 32.0 direct sync 21.4 learned 6.0 device submit 1.8
+lock hold (exp 0412, tag lk412): t 42.298 s: bc5-ring held 36.0 ms: direct sync 23.3 learned 11.5 device submit 1.1
+lock hold (exp 0412, tag lk412): t 43.402 s: bc5-ring held 33.2 ms: direct sync 20.8 learned 11.9
+lock hold (exp 0412, tag lk412): t 44.064 s: bc5-chainwd held 30.1 ms: direct sync 12.1 learned 11.4 hints 4.0 device submit 2.5
+lock hold (exp 0412, tag lk412): t 44.167 s: bc5-ring held 46.6 ms: anon sync 33.4 direct sync 9.4 learned 3.5
+lock hold (exp 0412, tag lk412): t 44.204 s: bc5-chainwd held 31.2 ms: anon sync 31.0
+lock hold (exp 0412, tag lk412): t 44.987 s: bc5-chainwd held 32.4 ms: direct sync 6.4 learned 25.0
+lock hold (exp 0412, tag lk412): t 45.227 s: bc5-ring held 48.8 ms: anon sync 35.4 direct sync 9.6 learned 3.5
+lock hold (exp 0412, tag lk412): t 46.212 s: bc5-chainwd held 32.7 ms: anon sync 31.2
+lock hold (exp 0412, tag lk412): t 46.333 s: bc5-chainwd held 48.9 ms: anon sync 35.4 direct sync 9.6 learned 3.5
+lock hold (exp 0412, tag lk412): t 46.818 s: bc5-chainwd held 46.0 ms: direct sync 37.2 device submit 8.6
+lock hold (exp 0412, tag lk412): t 47.038 s: bc5-ring held 37.3 ms: direct sync 31.8 learned 4.8
+lock hold (exp 0412, tag lk412): t 47.328 s: Render Thread held 40.9 ms: anon sync 36.0 direct sync 4.2
+lock hold (exp 0412, tag lk412): t 47.663 s: bc5-ring held 116.4 ms: direct sync 106.6 learned 7.4 device submit 2.2
+lock hold (exp 0412, tag lk412): t 48.294 s: bc5-ring held 33.8 ms: direct sync 28.9 learned 3.2 device submit 1.5
+lock hold (exp 0412, tag lk412): t 48.329 s: bc5-chainwd held 35.1 ms: anon sync 33.0 device submit 1.2
+lock hold (exp 0412, tag lk412): t 48.412 s: bc5-chainwd held 61.9 ms: anon sync 34.6 direct sync 23.3 learned 3.6
+lock hold (exp 0412, tag lk412): t 48.480 s: bc5-chainwd held 40.7 ms: direct sync 40.3
+lock hold (exp 0412, tag lk412): t 48.597 s: bc5-ring held 40.7 ms: direct sync 36.9 learned 3.4
+lock hold (exp 0412, tag lk412): t 48.832 s: bc5-ring held 35.4 ms: direct sync 27.5 learned 7.5
+lock hold (exp 0412, tag lk412): t 49.395 s: Render Thread held 36.9 ms: anon sync 34.3 device submit 1.5
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-ring: 5037 locks, held 2961.6 ms (29.6 % of the time; longest 116.37 ms; 132 of 2 ms or more), waited 1433.9 ms in 330 waits (14.3 %); behind: bc5-chainwd 1041.6 ms, Render Thread 381.8 ms, bc5-ring 10.4 ms
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-chainwd: 1103 locks, held 2245.2 ms (22.4 % of the time; longest 61.93 ms; 158 of 2 ms or more), waited 1533.2 ms in 120 waits (15.3 %); behind: bc5-ring 1430.0 ms, bc5-chainwd 103.1 ms
+lock stat (exp 0412, tag lk412): 10.0 s: Render Thread: 379 locks, held 779.8 ms (7.8 % of the time; longest 40.94 ms; 65 of 2 ms or more), waited 593.9 ms in 80 waits (5.9 %); behind: bc5-ring 593.9 ms
+lock hold (exp 0412, tag lk412): t 50.393 s: Render Thread held 34.6 ms: anon sync 34.0
+lock hold (exp 0412, tag lk412): t 50.449 s: bc5-ring held 33.0 ms: direct sync 25.9 learned 5.4 device submit 1.5
+lock hold (exp 0412, tag lk412): t 50.555 s: bc5-chainwd held 84.1 ms: anon sync 34.0 direct sync 46.1 learned 3.5
+lock hold (exp 0412, tag lk412): t 50.695 s: bc5-ring held 31.6 ms: direct sync 24.3 learned 6.2
+lock hold (exp 0412, tag lk412): t 51.231 s: bc5-ring held 41.6 ms: direct sync 32.2 learned 6.7 device submit 2.4
+lock hold (exp 0412, tag lk412): t 51.510 s: bc5-ring held 34.6 ms: anon sync 34.1
+lock hold (exp 0412, tag lk412): t 51.555 s: Render Thread held 32.0 ms: direct sync 23.7 device submit 8.1
+lock hold (exp 0412, tag lk412): t 51.932 s: bc5-ring held 32.5 ms: direct sync 27.1 learned 3.5 device submit 1.7
+lock hold (exp 0412, tag lk412): t 52.511 s: bc5-ring held 34.8 ms: anon sync 34.6
+lock hold (exp 0412, tag lk412): t 52.567 s: bc5-ring held 38.5 ms: direct sync 30.1 device submit 8.3
+lock hold (exp 0412, tag lk412): t 52.758 s: bc5-chainwd held 51.5 ms: anon sync 35.5 direct sync 12.1 learned 3.5
+lock hold (exp 0412, tag lk412): t 53.329 s: bc5-ring held 44.7 ms: direct sync 29.5 device submit 15.0
+lock hold (exp 0412, tag lk412): t 53.738 s: bc5-ring held 30.4 ms: anon sync 30.0
+lock hold (exp 0412, tag lk412): t 53.818 s: bc5-ring held 31.3 ms: direct sync 18.1 learned 12.4
+lock hold (exp 0412, tag lk412): t 54.740 s: Render Thread held 32.2 ms: anon sync 30.7 device submit 1.1
+lock hold (exp 0412, tag lk412): t 55.738 s: bc5-ring held 30.5 ms: anon sync 30.0
+lock hold (exp 0412, tag lk412): t 56.355 s: bc5-ring held 50.4 ms: direct sync 39.7 device submit 10.6
+lock hold (exp 0412, tag lk412): t 56.739 s: bc5-ring held 31.1 ms: anon sync 31.0
+lock hold (exp 0412, tag lk412): t 56.848 s: bc5-ring held 36.3 ms: direct sync 27.4 device submit 8.8
+lock hold (exp 0412, tag lk412): t 57.747 s: Render Thread held 38.5 ms: anon sync 37.4
+lock hold (exp 0412, tag lk412): t 58.746 s: bc5-ring held 36.5 ms: anon sync 36.3
+lazy release (exp 0401 e7): cut 2.0 MiB out of 1 BOs (98 mappings to move); 2.0 MiB cut in all, 1 chunks released now
+guard split: 1 BOs cut in this sync; aliases mapped again at once (1 such syncs)
+lock hold (exp 0412, tag lk412): t 59.749 s: bc5-ring held 36.9 ms: anon sync 36.7
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-ring: 8193 locks, held 2933.0 ms (29.3 % of the time; longest 50.39 ms; 50 of 2 ms or more), waited 924.8 ms in 1014 waits (9.2 %); behind: Render Thread 521.0 ms, bc5-chainwd 356.6 ms, bc5-ring 47.2 ms
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-chainwd: 404 locks, held 717.9 ms (7.2 % of the time; longest 84.13 ms; 42 of 2 ms or more), waited 477.9 ms in 111 waits (4.8 %); behind: bc5-ring 436.6 ms, bc5-chainwd 41.2 ms
+lock stat (exp 0412, tag lk412): 10.0 s: Render Thread: 2044 locks, held 1924.2 ms (19.2 % of the time; longest 38.49 ms; 127 of 2 ms or more), waited 746.8 ms in 449 waits (7.5 %); behind: bc5-ring 746.8 ms
+lock hold (exp 0412, tag lk412): t 60.191 s: bc5-chainwd held 48.4 ms: anon sync 33.9 direct sync 10.6 learned 3.5
+lazy release (exp 0401 e7): t 60 s: 11314.0 MiB imported: 9854.0 under eager views, 1312.0 under data views, 148.0 under lazy views, 0.0 forced and under no view, 0.0 under no view (0.0 last seen under an eager or zero-list view, 0.0 never seen under one; 0.0 idle 4 s or more); cut 2.0 MiB in 1 BOs (0 whole, 1 split), back 0.0 MiB, 1 chunks released now, 0 undone, 0 imports failed, 0 BOs deferred, 0 not split (aliases); GTT 12107.4 of 13312.0 MiB
+lock hold (exp 0412, tag lk412): t 61.179 s: bc5-ring held 36.7 ms: anon sync 36.5
+lock hold (exp 0412, tag lk412): t 62.183 s: bc5-ring held 36.9 ms: anon sync 36.5
+lock hold (exp 0412, tag lk412): t 63.184 s: Render Thread held 37.1 ms: anon sync 36.1
+lock hold (exp 0412, tag lk412): t 63.644 s: Render Thread held 37.9 ms: direct sync 26.2 prepare 1.8 device submit 9.8
+lock hold (exp 0412, tag lk412): t 64.177 s: Render Thread held 30.1 ms: anon sync 29.7
+lock hold (exp 0412, tag lk412): t 65.183 s: bc5-ring held 35.4 ms: anon sync 35.1
+lock hold (exp 0412, tag lk412): t 65.967 s: bc5-chainwd held 49.1 ms: anon sync 33.8 direct sync 9.4 learned 3.6 prepare 2.0
+lock hold (exp 0412, tag lk412): t 66.956 s: bc5-ring held 36.6 ms: anon sync 36.2
+lock hold (exp 0412, tag lk412): t 67.957 s: bc5-ring held 37.8 ms: anon sync 37.6
+lock hold (exp 0412, tag lk412): t 68.955 s: bc5-ring held 35.4 ms: anon sync 35.2
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-ring: 9394 locks, held 2417.8 ms (24.2 % of the time; longest 37.78 ms; 17 of 2 ms or more), waited 814.0 ms in 1075 waits (8.1 %); behind: Render Thread 502.9 ms, bc5-chainwd 272.2 ms, bc5-ring 38.9 ms
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-chainwd: 434 locks, held 628.7 ms (6.3 % of the time; longest 49.08 ms; 17 of 2 ms or more), waited 58.6 ms in 89 waits (0.6 %); behind: bc5-ring 58.0 ms, bc5-chainwd 0.6 ms
+lock stat (exp 0412, tag lk412): 10.0 s: Render Thread: 2243 locks, held 2126.3 ms (21.3 % of the time; longest 37.90 ms; 119 of 2 ms or more), waited 387.4 ms in 432 waits (3.9 %); behind: bc5-ring 387.4 ms
+lock hold (exp 0412, tag lk412): t 69.928 s: bc5-ring held 39.5 ms: direct sync 27.2 prepare 1.9 device submit 10.3
+lock hold (exp 0412, tag lk412): t 69.964 s: bc5-chainwd held 36.5 ms: anon sync 35.6
+lock hold (exp 0412, tag lk412): t 70.966 s: Render Thread held 37.3 ms: anon sync 35.7 device submit 1.1
+lock hold (exp 0412, tag lk412): t 71.974 s: bc5-ring held 45.1 ms: anon sync 44.9
+lock hold (exp 0412, tag lk412): t 72.962 s: bc5-ring held 32.9 ms: anon sync 32.7
+lock hold (exp 0412, tag lk412): t 73.966 s: bc5-ring held 36.4 ms: anon sync 36.3
+lock hold (exp 0412, tag lk412): t 74.963 s: bc5-ring held 33.8 ms: anon sync 33.6
+lock hold (exp 0412, tag lk412): t 76.965 s: bc5-ring held 33.7 ms: anon sync 33.5
+lock hold (exp 0412, tag lk412): t 77.966 s: bc5-ring held 34.8 ms: anon sync 34.6
+lock hold (exp 0412, tag lk412): t 78.966 s: bc5-ring held 34.3 ms: anon sync 34.1
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-ring: 9512 locks, held 2487.6 ms (24.9 % of the time; longest 45.11 ms; 19 of 2 ms or more), waited 721.7 ms in 1058 waits (7.2 %); behind: Render Thread 498.7 ms, bc5-chainwd 178.6 ms, bc5-ring 44.4 ms
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-chainwd: 389 locks, held 511.7 ms (5.1 % of the time; longest 36.49 ms; 12 of 2 ms or more), waited 130.1 ms in 78 waits (1.3 %); behind: bc5-ring 130.1 ms
+lock stat (exp 0412, tag lk412): 10.0 s: Render Thread: 2308 locks, held 2162.3 ms (21.6 % of the time; longest 37.27 ms; 129 of 2 ms or more), waited 357.6 ms in 402 waits (3.6 %); behind: bc5-ring 357.6 ms
+lock hold (exp 0412, tag lk412): t 79.970 s: bc5-ring held 38.1 ms: anon sync 37.7
+lock hold (exp 0412, tag lk412): t 80.967 s: bc5-ring held 34.6 ms: anon sync 34.4
+lock hold (exp 0412, tag lk412): t 81.970 s: Render Thread held 36.7 ms: anon sync 36.1
+lock hold (exp 0412, tag lk412): t 82.969 s: bc5-ring held 35.6 ms: anon sync 35.4
+lock hold (exp 0412, tag lk412): t 83.974 s: bc5-ring held 37.2 ms: anon sync 36.7
+lock hold (exp 0412, tag lk412): t 84.972 s: bc5-ring held 35.6 ms: anon sync 35.1
+lock hold (exp 0412, tag lk412): t 85.223 s: bc5-chainwd held 52.7 ms: anon sync 35.1 direct sync 10.9 learned 3.6 prepare 2.6
+lock hold (exp 0412, tag lk412): t 86.207 s: bc5-ring held 36.1 ms: anon sync 29.4 direct sync 3.5 learned 3.0
+lock hold (exp 0412, tag lk412): t 87.203 s: Render Thread held 31.3 ms: anon sync 29.9
+lock hold (exp 0412, tag lk412): t 89.018 s: bc5-chainwd held 39.5 ms: anon sync 34.9 direct sync 4.3
+lock hold (exp 0412, tag lk412): t 89.315 s: Render Thread held 39.3 ms: direct sync 29.5 device submit 9.6
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-ring: 9279 locks, held 2441.2 ms (24.4 % of the time; longest 38.05 ms; 31 of 2 ms or more), waited 788.4 ms in 1087 waits (7.9 %); behind: Render Thread 525.7 ms, bc5-chainwd 235.5 ms, bc5-ring 27.2 ms
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-chainwd: 361 locks, held 594.0 ms (5.9 % of the time; longest 52.66 ms; 23 of 2 ms or more), waited 111.1 ms in 61 waits (1.1 %); behind: bc5-ring 110.9 ms, bc5-chainwd 0.2 ms
+lock stat (exp 0412, tag lk412): 10.0 s: Render Thread: 2319 locks, held 2261.7 ms (22.6 % of the time; longest 39.29 ms; 106 of 2 ms or more), waited 469.3 ms in 442 waits (4.7 %); behind: bc5-ring 468.6 ms, bc5-chainwd 0.7 ms
+lock hold (exp 0412, tag lk412): t 90.019 s: bc5-ring held 40.5 ms: anon sync 35.7 direct sync 4.5
+lock hold (exp 0412, tag lk412): t 91.023 s: bc5-ring held 41.2 ms: anon sync 36.2 direct sync 4.6
+lock hold (exp 0412, tag lk412): t 92.024 s: bc5-ring held 38.4 ms: anon sync 33.8 direct sync 4.1
+lock hold (exp 0412, tag lk412): t 92.391 s: bc5-chainwd held 36.2 ms: anon sync 35.9
+lock hold (exp 0412, tag lk412): t 92.576 s: bc5-ring held 30.1 ms: direct sync 24.6 learned 4.3
+lock hold (exp 0412, tag lk412): t 93.390 s: bc5-ring held 34.6 ms: anon sync 34.4
+lock hold (exp 0412, tag lk412): t 95.033 s: bc5-chainwd held 43.7 ms: anon sync 30.7 direct sync 9.6 learned 3.0
+lock hold (exp 0412, tag lk412): t 96.030 s: bc5-ring held 37.9 ms: anon sync 37.8
+lock hold (exp 0412, tag lk412): t 97.026 s: bc5-ring held 33.2 ms: anon sync 33.0
+lazy release (exp 0401 e7): cut 4.0 MiB out of 1 BOs (282 mappings to move); 6.0 MiB cut in all, 3 chunks released now
+guard split: 1 BOs cut in this sync; aliases mapped again at once (2 such syncs)
+lock hold (exp 0412, tag lk412): t 97.666 s: bc5-chainwd held 35.4 ms: direct sync 26.9 device submit 8.2
+lock hold (exp 0412, tag lk412): t 98.028 s: Render Thread held 31.7 ms: anon sync 30.9
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 2.0 MiB imported by the eager or data path; 2 chunks still released
+lock hold (exp 0412, tag lk412): t 98.552 s: bc5-chainwd held 45.0 ms: anon sync 30.3 direct sync 10.9 learned 3.2
+lock hold (exp 0412, tag lk412): t 99.557 s: bc5-ring held 36.1 ms: anon sync 35.8
+lock hold (exp 0412, tag lk412): t 100.135 s: bc5-ring held 59.9 ms: direct sync 56.3 learned 3.3
+lock stat (exp 0412, tag lk412): 10.3 s: bc5-ring: 7003 locks, held 2442.4 ms (23.8 % of the time; longest 59.87 ms; 56 of 2 ms or more), waited 771.3 ms in 995 waits (7.5 %); behind: Render Thread 502.1 ms, bc5-chainwd 222.1 ms, bc5-ring 47.1 ms
+lock stat (exp 0412, tag lk412): 10.3 s: bc5-chainwd: 299 locks, held 581.0 ms (5.7 % of the time; longest 44.98 ms; 24 of 2 ms or more), waited 259.1 ms in 44 waits (2.5 %); behind: bc5-ring 259.0 ms, bc5-chainwd 0.1 ms
+lock stat (exp 0412, tag lk412): 10.3 s: Render Thread: 1861 locks, held 1749.6 ms (17.1 % of the time; longest 31.74 ms; 86 of 2 ms or more), waited 521.4 ms in 421 waits (5.1 %); behind: bc5-ring 521.0 ms, Render Thread 0.4 ms
+lock hold (exp 0412, tag lk412): t 100.462 s: bc5-ring held 47.3 ms: direct sync 43.4 learned 3.6
+lock hold (exp 0412, tag lk412): t 100.738 s: bc5-ring held 74.3 ms: anon sync 33.8 direct sync 33.3 learned 5.0 prepare 1.9
+lock hold (exp 0412, tag lk412): t 100.784 s: bc5-chainwd held 39.8 ms: anon sync 39.5
+lock hold (exp 0412, tag lk412): t 101.431 s: Render Thread held 123.8 ms: direct sync 119.6 learned 3.6
+lock hold (exp 0412, tag lk412): t 101.746 s: bc5-ring held 30.1 ms: direct sync 25.9 learned 1.9 prepare 2.1
+lock hold (exp 0412, tag lk412): t 101.777 s: Render Thread held 30.9 ms: anon sync 30.3
+lock hold (exp 0412, tag lk412): t 104.087 s: bc5-chainwd held 37.7 ms: anon sync 28.3 direct sync 6.0 learned 1.7 device submit 1.6
+lazy release (exp 0401 e7): cut 194.0 MiB out of 7 BOs (134 mappings to move); 200.0 MiB cut in all, 99 chunks released now
+guard split: 7 BOs cut in this sync; aliases mapped again at once (3 such syncs)
+lock hold (exp 0412, tag lk412): t 104.418 s: Render Thread held 61.9 ms: direct sync 42.4 learned 1.7 device submit 17.8
+lock hold (exp 0412, tag lk412): t 105.088 s: bc5-ring held 38.2 ms: anon sync 38.0
+lazy release (exp 0401 e7): cut 568.0 MiB out of 32 BOs (166 mappings to move); 768.0 MiB cut in all, 383 chunks released now
+guard split: 32 BOs cut in this sync; aliases mapped again at once (4 such syncs)
+lock hold (exp 0412, tag lk412): t 105.443 s: bc5-ring held 53.3 ms: direct sync 48.7 learned 1.9 device submit 2.6
+lock hold (exp 0412, tag lk412): t 106.090 s: bc5-ring held 39.2 ms: anon sync 39.0
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 52.0 MiB imported by the eager or data path; 357 chunks still released
+lock hold (exp 0412, tag lk412): t 106.251 s: bc5-chainwd held 48.5 ms: anon sync 36.2 direct sync 9.2 learned 2.0
+lazy release (exp 0401 e7): cut 236.0 MiB out of 32 BOs (1 mappings to move); 1004.0 MiB cut in all, 475 chunks released now
+guard split: 32 BOs cut in this sync; aliases mapped again at once (5 such syncs)
+lock hold (exp 0412, tag lk412): t 107.243 s: bc5-ring held 39.6 ms: anon sync 39.4
+lazy release (exp 0401 e7): cut 234.0 MiB out of 32 BOs (35 mappings to move); 1238.0 MiB cut in all, 592 chunks released now
+guard split: 32 BOs cut in this sync; aliases mapped again at once (6 such syncs)
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 8.0 MiB imported by the eager or data path; 588 chunks still released
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 10.0 MiB imported by the eager or data path; 583 chunks still released
+lock hold (exp 0412, tag lk412): t 108.263 s: Render Thread held 50.0 ms: anon sync 33.9 direct sync 7.9 learned 7.7
+lock hold (exp 0412, tag lk412): t 108.325 s: bc5-chainwd held 49.8 ms: anon sync 33.8 direct sync 7.8 learned 8.0
+lazy release (exp 0401 e7): cut 88.0 MiB out of 10 BOs (22 mappings to move); 1326.0 MiB cut in all, 627 chunks released now
+guard split: 10 BOs cut in this sync; aliases mapped again at once (7 such syncs)
+lock hold (exp 0412, tag lk412): t 109.135 s: bc5-ring held 30.4 ms: direct sync 18.9 learned 11.1
+lock hold (exp 0412, tag lk412): t 109.336 s: bc5-ring held 48.4 ms: anon sync 33.8 direct sync 4.3 learned 9.9
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 20.0 MiB imported by the eager or data path; 617 chunks still released
+lock hold (exp 0412, tag lk412): t 109.433 s: bc5-ring held 35.9 ms: direct sync 15.8 learned 19.5
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 62.0 MiB imported by the eager or data path; 586 chunks still released
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 6.0 MiB imported by the eager or data path; 583 chunks still released
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-ring: 6034 locks, held 2338.2 ms (23.4 % of the time; longest 74.29 ms; 121 of 2 ms or more), waited 1542.6 ms in 208 waits (15.4 %); behind: Render Thread 1024.5 ms, bc5-chainwd 514.4 ms, bc5-ring 3.7 ms
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-chainwd: 1508 locks, held 1438.3 ms (14.4 % of the time; longest 49.84 ms; 47 of 2 ms or more), waited 483.9 ms in 86 waits (4.8 %); behind: bc5-ring 476.2 ms, bc5-chainwd 7.7 ms
+lock stat (exp 0412, tag lk412): 10.0 s: Render Thread: 123 locks, held 1049.7 ms (10.5 % of the time; longest 123.82 ms; 55 of 2 ms or more), waited 1008.3 ms in 75 waits (10.1 %); behind: bc5-ring 990.7 ms, bc5-chainwd 17.6 ms
+lock hold (exp 0412, tag lk412): t 110.324 s: bc5-ring held 36.3 ms: anon sync 36.1
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 4.0 MiB imported by the eager or data path; 581 chunks still released
+lock hold (exp 0412, tag lk412): t 110.436 s: bc5-chainwd held 37.1 ms: anon sync 36.8
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 10.0 MiB imported by the eager or data path; 576 chunks still released
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 32.0 MiB imported by the eager or data path; 560 chunks still released
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 2.0 MiB imported by the eager or data path; 559 chunks still released
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 2.0 MiB imported by the eager or data path; 558 chunks still released
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 2.0 MiB imported by the eager or data path; 557 chunks still released
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 30.0 MiB imported by the eager or data path; 542 chunks still released
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 2.0 MiB imported by the eager or data path; 541 chunks still released
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 32.0 MiB imported by the eager or data path; 525 chunks still released
+lock hold (exp 0412, tag lk412): t 111.440 s: bc5-chainwd held 35.8 ms: anon sync 34.7
+guard forget: 102 forced chunks under no view for 10 s left the forced set (102 so far, 2476 still forced, 24 waiting)
+lock hold (exp 0412, tag lk412): t 111.788 s: Render Thread held 31.6 ms: direct sync 9.0 learned 21.0
+lock hold (exp 0412, tag lk412): t 112.035 s: bc5-ring held 33.4 ms: direct sync 20.8 learned 8.1 device submit 4.3
+lock hold (exp 0412, tag lk412): t 112.154 s: Render Thread held 32.5 ms: direct sync 9.8 learned 20.5 device submit 2.0
+lock hold (exp 0412, tag lk412): t 112.452 s: bc5-ring held 45.6 ms: anon sync 44.6
+lock hold (exp 0412, tag lk412): t 112.533 s: bc5-chainwd held 63.4 ms: anon sync 48.0 direct sync 11.9 learned 3.1
+lock hold (exp 0412, tag lk412): t 113.525 s: Render Thread held 52.1 ms: anon sync 50.5
+guard forget: 5 forced chunks under no view for 10 s left the forced set (107 so far, 2525 still forced, 0 waiting)
+lock hold (exp 0412, tag lk412): t 114.516 s: bc5-ring held 41.4 ms: anon sync 41.2
+lock hold (exp 0412, tag lk412): t 114.605 s: bc5-chainwd held 64.4 ms: anon sync 45.4 direct sync 11.4 learned 5.5 prepare 1.8
+lock hold (exp 0412, tag lk412): t 115.133 s: bc5-ring held 34.6 ms: direct sync 24.3 learned 3.3 device submit 6.9
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 12.0 MiB imported by the eager or data path; 176 chunks still released
+lock hold (exp 0412, tag lk412): t 115.589 s: Render Thread held 42.8 ms: anon sync 42.2
+lock hold (exp 0412, tag lk412): t 116.156 s: Render Thread held 36.1 ms: direct sync 26.7 device submit 9.2
+lock hold (exp 0412, tag lk412): t 116.621 s: bc5-chainwd held 64.5 ms: anon sync 49.2 direct sync 9.6 learned 3.5 prepare 2.0
+lazy release (exp 0401 e7): cut 12.0 MiB out of 4 BOs (9 mappings to move); 1338.0 MiB cut in all, 134 chunks released now
+guard split: 4 BOs cut in this sync; aliases mapped again at once (8 such syncs)
+lock hold (exp 0412, tag lk412): t 116.717 s: bc5-chainwd held 64.7 ms: anon sync 45.4 direct sync 14.1 learned 4.9
+lock hold (exp 0412, tag lk412): t 117.166 s: bc5-ring held 30.4 ms: direct sync 20.7 device submit 9.6
+lock hold (exp 0412, tag lk412): t 117.701 s: bc5-ring held 45.3 ms: anon sync 44.9
+lock hold (exp 0412, tag lk412): t 117.924 s: Render Thread held 37.4 ms: direct sync 30.8 device submit 6.4
+lock hold (exp 0412, tag lk412): t 118.719 s: Render Thread held 49.4 ms: anon sync 46.6 prepare 2.3
+lock hold (exp 0412, tag lk412): t 118.788 s: bc5-chainwd held 58.9 ms: anon sync 44.5 direct sync 10.9 learned 3.0
+lock hold (exp 0412, tag lk412): t 119.782 s: bc5-ring held 46.4 ms: anon sync 46.1
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-ring: 4879 locks, held 2975.0 ms (29.7 % of the time; longest 46.36 ms; 143 of 2 ms or more), waited 1245.0 ms in 672 waits (12.4 %); behind: bc5-chainwd 690.2 ms, Render Thread 541.3 ms, bc5-ring 13.5 ms
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-chainwd: 339 locks, held 1017.8 ms (10.2 % of the time; longest 64.75 ms; 52 of 2 ms or more), waited 626.5 ms in 66 waits (6.3 %); behind: bc5-ring 626.4 ms, bc5-chainwd 0.1 ms
+lock stat (exp 0412, tag lk412): 10.0 s: Render Thread: 1182 locks, held 1385.6 ms (13.9 % of the time; longest 52.13 ms; 41 of 2 ms or more), waited 1283.3 ms in 238 waits (12.8 %); behind: bc5-ring 1281.5 ms, bc5-chainwd 1.8 ms
+lock hold (exp 0412, tag lk412): t 120.796 s: bc5-chainwd held 57.7 ms: anon sync 44.5 direct sync 9.3 learned 3.4
+lazy release (exp 0401 e7): t 121 s: 11436.0 MiB imported: 9922.0 under eager views, 1350.0 under data views, 148.0 under lazy views, 10.0 forced and under no view, 6.0 under no view (6.0 last seen under an eager or zero-list view, 0.0 never seen under one; 0.0 idle 4 s or more); cut 1338.0 MiB in 119 BOs (54 whole, 65 split), back 1332.0 MiB, 3 chunks released now, 0 undone, 0 imports failed, 77 BOs deferred, 0 not split (aliases); GTT 12251.0 of 13312.0 MiB
+lock hold (exp 0412, tag lk412): t 121.192 s: bc5-chainwd held 70.9 ms: anon sync 53.3 direct sync 12.7 learned 4.3
+lock hold (exp 0412, tag lk412): t 121.527 s: bc5-ring held 33.2 ms: direct sync 16.7 learned 15.5
+lock hold (exp 0412, tag lk412): t 121.560 s: Render Thread held 33.1 ms: direct sync 17.5 learned 13.3 device submit 1.7
+lock hold (exp 0412, tag lk412): t 121.725 s: bc5-ring held 36.8 ms: direct sync 24.4 learned 3.1 device submit 9.1
+lock hold (exp 0412, tag lk412): t 122.042 s: Render Thread held 90.9 ms: direct sync 85.3 learned 3.2 hints 1.2
+lock hold (exp 0412, tag lk412): t 122.167 s: bc5-ring held 45.0 ms: anon sync 44.6
+lock hold (exp 0412, tag lk412): t 122.245 s: Render Thread held 36.5 ms: direct sync 25.6 device submit 10.5
+lock hold (exp 0412, tag lk412): t 123.178 s: bc5-ring held 42.3 ms: anon sync 41.9
+lock hold (exp 0412, tag lk412): t 123.271 s: bc5-chainwd held 60.4 ms: anon sync 45.4 direct sync 11.3 learned 3.3
+lock hold (exp 0412, tag lk412): t 124.260 s: bc5-chainwd held 45.7 ms: anon sync 44.6
+lock hold (exp 0412, tag lk412): t 125.259 s: Render Thread held 44.0 ms: anon sync 42.8
+lock hold (exp 0412, tag lk412): t 125.341 s: bc5-chainwd held 59.3 ms: anon sync 45.0 direct sync 11.0 learned 3.1
+lock hold (exp 0412, tag lk412): t 126.321 s: bc5-ring held 39.3 ms: anon sync 39.1
+lock hold (exp 0412, tag lk412): t 127.080 s: bc5-ring held 71.8 ms: probe 71.6
+lock hold (exp 0412, tag lk412): t 127.367 s: bc5-ring held 65.3 ms: anon sync 50.6 direct sync 11.0 learned 3.2
+lazy release (exp 0401 e7): cut 2.0 MiB out of 1 BOs (12 mappings to move); 1340.0 MiB cut in all, 1 chunks released now
+lock hold (exp 0412, tag lk412): t 127.479 s: bc5-chainwd held 85.7 ms: anon sync 53.4 direct sync 27.1 learned 4.8
+lock hold (exp 0412, tag lk412): t 128.453 s: bc5-ring held 54.8 ms: anon sync 43.6 direct sync 7.8 learned 3.0
+lock hold (exp 0412, tag lk412): t 129.450 s: Render Thread held 44.7 ms: anon sync 43.5
+lazy release (exp 0401 e7): cut 4.0 MiB out of 2 BOs (84 mappings to move); 1344.0 MiB cut in all, 3 chunks released now
+lock hold (exp 0412, tag lk412): t 129.613 s: bc5-chainwd held 90.0 ms: anon sync 50.2 direct sync 35.9 learned 3.5
+lock hold (exp 0412, tag lk412): t 129.813 s: Render Thread held 38.3 ms: anon sync 38.0
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-ring: 4921 locks, held 2673.7 ms (26.7 % of the time; longest 71.78 ms; 108 of 2 ms or more), waited 1082.9 ms in 736 waits (10.8 %); behind: Render Thread 550.2 ms, bc5-chainwd 511.9 ms, bc5-ring 20.7 ms
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-chainwd: 221 locks, held 657.3 ms (6.6 % of the time; longest 89.97 ms; 17 of 2 ms or more), waited 463.9 ms in 52 waits (4.6 %); behind: bc5-ring 461.3 ms, bc5-chainwd 2.6 ms
+lock stat (exp 0412, tag lk412): 10.0 s: Render Thread: 1417 locks, held 1417.0 ms (14.2 % of the time; longest 90.93 ms; 40 of 2 ms or more), waited 1178.2 ms in 277 waits (11.8 %); behind: bc5-ring 1177.5 ms, bc5-chainwd 0.7 ms
+lazy release (exp 0401 e7): cut 6.0 MiB out of 1 BOs (6 mappings to move); 1350.0 MiB cut in all, 5 chunks released now
+lock hold (exp 0412, tag lk412): t 130.813 s: bc5-ring held 37.6 ms: anon sync 37.4
+lock hold (exp 0412, tag lk412): t 131.711 s: bc5-chainwd held 66.0 ms: anon sync 48.5 direct sync 11.6 learned 5.5
+lock hold (exp 0412, tag lk412): t 132.690 s: bc5-ring held 43.4 ms: anon sync 43.0
+lock hold (exp 0412, tag lk412): t 133.500 s: Render Thread held 30.4 ms: direct sync 16.9 learned 2.8 device submit 9.9
+lock hold (exp 0412, tag lk412): t 133.689 s: bc5-ring held 41.8 ms: anon sync 41.6
+lock hold (exp 0412, tag lk412): t 133.756 s: bc5-chainwd held 49.9 ms: anon sync 38.3 direct sync 8.4 learned 2.8
+lazy release (exp 0401 e7): cut 14.0 MiB out of 1 BOs (105 mappings to move); 1364.0 MiB cut in all, 11 chunks released now
+lock hold (exp 0412, tag lk412): t 133.832 s: bc5-ring held 32.7 ms: direct sync 7.4 learned 24.9
+lock hold (exp 0412, tag lk412): t 134.687 s: Render Thread held 43.3 ms: direct sync 37.3 learned 4.7
+lock hold (exp 0412, tag lk412): t 134.902 s: bc5-chainwd held 192.9 ms: anon sync 46.5 direct sync 141.5 learned 2.9 prepare 1.7
+lazy release (exp 0401 e7): cut 2.0 MiB out of 1 BOs (7 mappings to move); 1366.0 MiB cut in all, 9 chunks released now
+lock hold (exp 0412, tag lk412): t 135.145 s: bc5-ring held 102.8 ms: direct sync 99.6 learned 2.9
+lock hold (exp 0412, tag lk412): t 135.353 s: bc5-ring held 164.7 ms: direct sync 160.8 learned 3.4
+lock hold (exp 0412, tag lk412): t 135.933 s: bc5-chainwd held 263.3 ms: direct sync 258.2 learned 3.1 device submit 1.7
+lock hold (exp 0412, tag lk412): t 135.983 s: bc5-ring held 50.4 ms: anon sync 44.3 direct sync 3.3 prepare 2.5
+lazy release (exp 0401 e7): cut 2.0 MiB out of 1 BOs (73 mappings to move); 1368.0 MiB cut in all, 2 chunks released now
+lock hold (exp 0412, tag lk412): t 136.112 s: Render Thread held 123.1 ms: hints 113.3 device submit 9.4
+lock hold (exp 0412, tag lk412): t 136.202 s: bc5-chainwd held 58.1 ms: anon sync 42.5 direct sync 11.6 learned 3.5
+lock hold (exp 0412, tag lk412): t 136.369 s: bc5-ring held 96.3 ms: direct sync 86.2 learned 2.9 device submit 7.0
+lock hold (exp 0412, tag lk412): t 136.668 s: bc5-ring held 139.8 ms: direct sync 128.0 learned 2.9 device submit 8.8
+lock hold (exp 0412, tag lk412): t 136.804 s: bc5-ring held 79.3 ms: direct sync 75.7 learned 3.0
+lock hold (exp 0412, tag lk412): t 136.932 s: bc5-ring held 52.5 ms: direct sync 6.1 learned 46.1
+lock hold (exp 0412, tag lk412): t 137.193 s: bc5-ring held 45.7 ms: anon sync 45.4
+lock hold (exp 0412, tag lk412): t 137.426 s: bc5-ring held 73.7 ms: direct sync 65.9 learned 7.2
+lock hold (exp 0412, tag lk412): t 137.461 s: Render Thread held 35.6 ms: direct sync 31.3 learned 3.0
+lock hold (exp 0412, tag lk412): t 137.625 s: bc5-chainwd held 106.4 ms: direct sync 102.0 learned 3.3
+lock hold (exp 0412, tag lk412): t 138.190 s: bc5-ring held 42.7 ms: anon sync 42.5
+lock hold (exp 0412, tag lk412): t 138.276 s: bc5-chainwd held 64.8 ms: anon sync 51.1 direct sync 10.4 learned 3.0
+lazy release (exp 0401 e7): cut 16.0 MiB out of 2 BOs (35 mappings to move); 1384.0 MiB cut in all, 9 chunks released now
+lock hold (exp 0412, tag lk412): t 139.254 s: bc5-chainwd held 38.0 ms: anon sync 37.0
+lazy release (exp 0401 e7): cut 2.0 MiB out of 1 BOs (51 mappings to move); 1386.0 MiB cut in all, 10 chunks released now
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-ring: 4119 locks, held 3188.0 ms (31.9 % of the time; longest 164.74 ms; 122 of 2 ms or more), waited 1684.3 ms in 750 waits (16.8 %); behind: bc5-chainwd 986.6 ms, Render Thread 689.0 ms, bc5-ring 8.8 ms
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-chainwd: 226 locks, held 1175.4 ms (11.8 % of the time; longest 263.35 ms; 41 of 2 ms or more), waited 986.6 ms in 72 waits (9.9 %); behind: bc5-ring 985.2 ms, bc5-chainwd 1.4 ms
+lock stat (exp 0412, tag lk412): 10.0 s: Render Thread: 1295 locks, held 1611.9 ms (16.1 % of the time; longest 123.14 ms; 121 of 2 ms or more), waited 1272.7 ms in 269 waits (12.7 %); behind: bc5-ring 1267.0 ms, bc5-chainwd 5.7 ms
+lock hold (exp 0412, tag lk412): t 140.254 s: bc5-ring held 37.0 ms: anon sync 36.8
+lock hold (exp 0412, tag lk412): t 140.397 s: bc5-chainwd held 51.9 ms: anon sync 39.4 direct sync 9.3 learned 2.9
+lock hold (exp 0412, tag lk412): t 140.520 s: Render Thread held 37.3 ms: anon sync 37.1
+lock hold (exp 0412, tag lk412): t 141.249 s: Render Thread held 291.3 ms: direct sync 284.8 learned 2.9 prepare 2.1 device submit 1.2
+lock hold (exp 0412, tag lk412): t 141.535 s: bc5-ring held 50.6 ms: anon sync 36.9 direct sync 10.5 learned 2.9
+lock hold (exp 0412, tag lk412): t 142.519 s: bc5-chainwd held 60.9 ms: anon sync 39.8 direct sync 17.8 learned 2.9
+lock hold (exp 0412, tag lk412): t 143.503 s: Render Thread held 44.9 ms: anon sync 44.5
+lock hold (exp 0412, tag lk412): t 143.590 s: Render Thread held 35.1 ms: direct sync 21.8 learned 10.7 device submit 2.4
+lock hold (exp 0412, tag lk412): t 144.498 s: bc5-ring held 37.4 ms: anon sync 37.1
+lock hold (exp 0412, tag lk412): t 144.585 s: bc5-chainwd held 58.6 ms: anon sync 39.2 direct sync 14.0 learned 3.5 prepare 1.6
+lock hold (exp 0412, tag lk412): t 145.057 s: bc5-ring held 394.8 ms: direct sync 391.1 learned 3.2
+lock hold (exp 0412, tag lk412): t 145.511 s: bc5-ring held 51.3 ms: direct sync 47.8 learned 3.0
+lock hold (exp 0412, tag lk412): t 145.597 s: Render Thread held 70.5 ms: anon sync 38.1 direct sync 29.8 prepare 1.8
+lock hold (exp 0412, tag lk412): t 145.829 s: bc5-ring held 58.8 ms: prepare 58.7
+lock hold (exp 0412, tag lk412): t 146.577 s: Render Thread held 40.8 ms: anon sync 39.7
+lock hold (exp 0412, tag lk412): t 146.664 s: bc5-chainwd held 53.4 ms: anon sync 40.5 direct sync 9.7 learned 2.9
+lock hold (exp 0412, tag lk412): t 146.735 s: bc5-ring held 38.6 ms: direct sync 29.0 learned 3.0 device submit 6.5
+lock hold (exp 0412, tag lk412): t 147.656 s: bc5-chainwd held 38.3 ms: anon sync 36.9
+lock hold (exp 0412, tag lk412): t 148.660 s: bc5-ring held 41.1 ms: anon sync 38.0 direct sync 2.8
+lock hold (exp 0412, tag lk412): t 148.744 s: bc5-chainwd held 50.8 ms: anon sync 38.3 direct sync 7.7 learned 2.9 prepare 1.7
+lock hold (exp 0412, tag lk412): t 149.737 s: bc5-chainwd held 39.9 ms: anon sync 39.1
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-ring: 5030 locks, held 3332.6 ms (33.3 % of the time; longest 394.80 ms; 154 of 2 ms or more), waited 1335.5 ms in 980 waits (13.3 %); behind: Render Thread 810.7 ms, bc5-chainwd 499.0 ms, bc5-ring 25.8 ms
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-chainwd: 383 locks, held 829.2 ms (8.3 % of the time; longest 60.88 ms; 71 of 2 ms or more), waited 753.4 ms in 79 waits (7.5 %); behind: bc5-ring 752.8 ms, bc5-chainwd 0.6 ms
+lock stat (exp 0412, tag lk412): 10.0 s: Render Thread: 1712 locks, held 1842.7 ms (18.4 % of the time; longest 291.33 ms; 93 of 2 ms or more), waited 1426.6 ms in 412 waits (14.2 %); behind: bc5-ring 1424.8 ms, bc5-chainwd 1.8 ms
+lock hold (exp 0412, tag lk412): t 150.774 s: bc5-chainwd held 67.5 ms: anon sync 38.6 direct sync 25.3 learned 3.2
+lock hold (exp 0412, tag lk412): t 151.523 s: bc5-chainwd held 52.7 ms: anon sync 41.6 direct sync 7.0 learned 3.7
+lock hold (exp 0412, tag lk412): t 152.508 s: bc5-ring held 37.5 ms: anon sync 37.4
+lock hold (exp 0412, tag lk412): t 153.508 s: bc5-ring held 37.3 ms: anon sync 37.1
+lock hold (exp 0412, tag lk412): t 153.877 s: bc5-chainwd held 54.3 ms: anon sync 41.6 direct sync 9.0 learned 3.2
+lock hold (exp 0412, tag lk412): t 154.860 s: bc5-ring held 37.5 ms: anon sync 37.3
+lock hold (exp 0412, tag lk412): t 155.108 s: Render Thread held 39.5 ms: direct sync 30.4 device submit 9.0
+lock hold (exp 0412, tag lk412): t 155.619 s: Render Thread held 31.4 ms: direct sync 13.1 learned 17.2
+lock hold (exp 0412, tag lk412): t 155.869 s: bc5-ring held 45.7 ms: anon sync 45.6
+lock hold (exp 0412, tag lk412): t 155.964 s: bc5-chainwd held 67.2 ms: anon sync 53.4 direct sync 10.0 learned 3.4
+lock hold (exp 0412, tag lk412): t 156.957 s: bc5-chainwd held 52.3 ms: anon sync 39.9 direct sync 9.3 learned 2.8
+lock hold (exp 0412, tag lk412): t 157.946 s: bc5-ring held 40.5 ms: anon sync 40.4
+lock hold (exp 0412, tag lk412): t 158.061 s: bc5-chainwd held 56.4 ms: anon sync 45.2 direct sync 7.7 learned 3.1
+lock hold (exp 0412, tag lk412): t 159.064 s: bc5-ring held 53.9 ms: anon sync 41.4 direct sync 8.8 learned 3.1
+lock hold (exp 0412, tag lk412): t 160.063 s: bc5-ring held 41.7 ms: anon sync 41.5
+lock hold (exp 0412, tag lk412): t 160.212 s: bc5-chainwd held 57.2 ms: anon sync 42.8 direct sync 8.9 learned 3.3 prepare 2.0
+lock stat (exp 0412, tag lk412): 10.1 s: bc5-ring: 6301 locks, held 2694.9 ms (26.8 % of the time; longest 53.88 ms; 96 of 2 ms or more), waited 1013.1 ms in 855 waits (10.1 %); behind: Render Thread 568.3 ms, bc5-chainwd 400.7 ms, bc5-ring 44.1 ms
+lock stat (exp 0412, tag lk412): 10.1 s: bc5-chainwd: 207 locks, held 648.2 ms (6.4 % of the time; longest 67.47 ms; 19 of 2 ms or more), waited 319.5 ms in 35 waits (3.2 %); behind: bc5-ring 319.4 ms, bc5-chainwd 0.2 ms
+lock stat (exp 0412, tag lk412): 10.1 s: Render Thread: 1740 locks, held 1548.4 ms (15.4 % of the time; longest 39.48 ms; 44 of 2 ms or more), waited 1052.3 ms in 435 waits (10.5 %); behind: bc5-ring 1051.9 ms, bc5-chainwd 0.3 ms, Render Thread 0.1 ms
+lock hold (exp 0412, tag lk412): t 160.278 s: bc5-ring held 34.1 ms: direct sync 24.1 device submit 10.0
+guard forget: 1 forced chunks under no view for 10 s left the forced set (108 so far, 2804 still forced, 3 waiting)
+lock hold (exp 0412, tag lk412): t 161.198 s: bc5-ring held 43.0 ms: anon sync 42.8
+lock hold (exp 0412, tag lk412): t 162.208 s: bc5-ring held 52.3 ms: anon sync 51.9
+lock hold (exp 0412, tag lk412): t 163.197 s: Render Thread held 41.6 ms: anon sync 41.0
+lock hold (exp 0412, tag lk412): t 163.322 s: Render Thread held 31.9 ms: direct sync 21.7 device submit 10.1
+lock hold (exp 0412, tag lk412): t 164.196 s: Render Thread held 40.0 ms: anon sync 39.3
+lock hold (exp 0412, tag lk412): t 165.095 s: bc5-chainwd held 56.1 ms: anon sync 41.9 direct sync 10.5 learned 3.3
+lock hold (exp 0412, tag lk412): t 166.104 s: bc5-chainwd held 56.6 ms: anon sync 43.9 direct sync 9.0 learned 3.1
+lock hold (exp 0412, tag lk412): t 167.106 s: bc5-chainwd held 56.7 ms: anon sync 41.2 direct sync 12.4 learned 2.8
+lock hold (exp 0412, tag lk412): t 167.195 s: bc5-chainwd held 52.3 ms: anon sync 40.7 direct sync 8.2 learned 3.0
+lock hold (exp 0412, tag lk412): t 168.183 s: bc5-ring held 39.0 ms: anon sync 38.8
+lock hold (exp 0412, tag lk412): t 169.200 s: bc5-ring held 39.5 ms: anon sync 39.3
+lock hold (exp 0412, tag lk412): t 170.215 s: bc5-ring held 40.0 ms: anon sync 39.7
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-ring: 6794 locks, held 2371.9 ms (23.7 % of the time; longest 52.29 ms; 81 of 2 ms or more), waited 855.2 ms in 910 waits (8.5 %); behind: Render Thread 559.2 ms, bc5-chainwd 272.1 ms, bc5-ring 23.9 ms
+lock stat (exp 0412, tag lk412): 10.0 s: bc5-chainwd: 190 locks, held 437.6 ms (4.4 % of the time; longest 56.72 ms; 17 of 2 ms or more), waited 191.4 ms in 40 waits (1.9 %); behind: bc5-ring 190.5 ms, bc5-chainwd 0.9 ms
+lock stat (exp 0412, tag lk412): 10.0 s: Render Thread: 1935 locks, held 1630.7 ms (16.3 % of the time; longest 41.65 ms; 48 of 2 ms or more), waited 730.2 ms in 443 waits (7.3 %); behind: bc5-ring 729.7 ms, Render Thread 0.5 ms
+lock hold (exp 0412, tag lk412): t 171.222 s: Render Thread held 43.9 ms: anon sync 43.0
+lock hold (exp 0412, tag lk412): t 171.604 s: bc5-chainwd held 51.8 ms: anon sync 41.4 direct sync 7.2 learned 2.8
+lock hold (exp 0412, tag lk412): t 172.590 s: Render Thread held 37.9 ms: anon sync 37.5
+lock hold (exp 0412, tag lk412): t 173.597 s: bc5-ring held 44.1 ms: anon sync 43.8
+lock hold (exp 0412, tag lk412): t 174.595 s: bc5-ring held 41.8 ms: anon sync 41.6
+lock hold (exp 0412, tag lk412): t 175.597 s: bc5-chainwd held 57.5 ms: anon sync 47.2 direct sync 7.1 learned 2.9
+lock hold (exp 0412, tag lk412): t 176.590 s: bc5-chainwd held 49.8 ms: anon sync 39.8 direct sync 6.7 learned 3.0
+lock hold (exp 0412, tag lk412): t 177.583 s: bc5-ring held 42.1 ms: anon sync 41.8

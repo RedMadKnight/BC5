@@ -78,10 +78,15 @@ case "${1:-}" in
   fast)    WORDS+=("${ORPH[@]}" KYTY_BC5_RANGES_FAST=1 KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="12400 2048" ;;
   # The eighth build (g412h, 2026-11-11): fast + the sorted mapping table (README section 18) and a harder orphan release
   # (idle 4 s instead of 10, and forced chunks under no view for 10 s leave the forced set). No zero skip.
-  fast2)   WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=4,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
+  # 2026-11-11 19:10, the maintainer ("Tak, 30 s"): the idle time before a cut is 30 s here, was 4 s (README section 28).
+  fast2)   WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
              KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="12400 2048" ;;
+  # The fifteenth build (g412o, 2026-11-11): fast2 with the return-aware orphan release (README section 28): a chunk that was
+  # cut and came back under a view is not cut again for 300 s (doubling with every return); dead memory still goes after 4 s.
+  fast3)   WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=4,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 BC5_GUARD_RETURN_EXEMPT=300 KYTY_BC5_RANGES_FAST=1
+             KYTY_BC5_PHYSMAP_SORTED=1 KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="12400 2048" ;;
   zoe)     WORDS+=("${ORPH[@]}" "BC5_DIRECT_ZERO_SKIP=$ZL" KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="12400 2048" ;;
-  *) say "0412: usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm|zscan|zsk|zo|zoc|zof|of|zoe|fast|fast2 [dry]; not started"; exit 1 ;;
+  *) say "0412: usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm|zscan|zsk|zo|zoc|zof|of|zoe|fast|fast2|fast3 [dry]; not started"; exit 1 ;;
 esac
 ARM=$1; DRY=${2:-}
 # The catchers' env file (README section 23, the top session's order of 2026-11-11): $E/catchers.env with lines

@@ -1350,9 +1350,114 @@ frequency the governor has set at a given moment is not exposed: hwmon `freq1_in
 clock is 83–96 % of a console's and the CU count 111 %: the GPU is not clocked far below a console. Whether the
 governor actually sits at 2,150 MHz in play is the one thing not read.
 
+### 28. The return-aware release (fast3), and the maintainer's 30 s idle time, against fast2 (2026-11-11 18:55–19:13)
+
+**What was built.** `BC5_GUARD_RETURN_EXEMPT=<s>` (`memfast/ret0412.inc`, `memfast/mkret0412.py`, tag ra412; default
+off): a chunk that the lazy release cut and that came back under a view is not cut again for <s> seconds, doubling
+with every further return (at most 64 times); a chunk that never came back keeps the release's own idle time. One
+journal line every 10 s with cut, returned, exempt and net MiB. CPU test `memfast/ret0412.cpp`, old against new on a
+model of the release's decision: 1,537 of 1,537 on the laptop and on the box. Build g412o = g412n + this, binary
+`09c2d29b` (g412n kept). Arm **fast3** = fast2's words + `BC5_GUARD_RETURN_EXEMPT=300`.
+On the maintainer's word of 19:10 ("Tak, 30 s") arm **fast2 now has `BC5_DIRECT_LAZY_RELEASE=30,eager`** (was 4);
+the ABBA below ran before that change, with fast2 at 4 s.
+
+**Runs** (`ab0412q.sh`: a1f2, a2f3, a3f3, a4f2; then b1s30 = fast2 with 30 s; scripted load, RT on, build g412o,
+`BC5_GUARD_LOCK_STAT=1`, measuring watchdog 220 MiB; all five reached 176–178 s; no kernel line; `abq0412.py`,
+data `raw/a?f?-*`, `raw/b1s30-*`) [M]:
+
+| | fast2, 4 s (a1, a4) | fast3, return-aware (a2, a3) | fast2, 30 s (b1s30) |
+|---|---|---|---|
+| flips/s: scene load | 21.6 / 22.7 | 22.4 / 24.3 | 23.9 |
+| flips/s: save load | 18.0 / 18.0 | 18.9 / 18.9 | 18.4 |
+| flips/s: play | 21.6 / 20.8 | 20.4 / 22.0 | 21.4 |
+| play: frames over 100 ms, count and time | 21, 4.5 s / 21, 5.7 s | 34, 6.8 s / 23, 5.1 s | 17, 4.7 s |
+| play: frames over 50 ms, time | 17.0 / 16.9 s | 19.2 / 14.5 s | 15.8 s |
+| play: holds of 30 ms and more | 82, 5.3 s / 81, 5.5 s | 81, 5.4 s / 68, 4.4 s | 67, 4.3 s |
+| play: holds of 100 ms and more | 9, 1.8 s / 7, 2.0 s | 9, 1.9 s / 3, 1.3 s | 3, 1.2 s |
+| pinned at 140 s (available) | 11,652 (292) / 11,632 (270) | 11,702 (299) / 11,682 (245) | 11,646 (302) |
+| pinned at 170 s (available) | 11,584 (387) / 11,590 (320) | 11,588 (352) / 11,596 (313) | 11,598 (289) |
+| the release: cut / returned over the run | 1,338 / 1,332 and 1,344 / 1,344 MiB | 1,518 / 1,396 and 1,522 / 1,408 MiB | 0 / 0 MiB |
+
+**Reading.**
+- fast3 is not better than fast2 on anything measured here and not worse on the wall. In a run of 180 s nearly every
+  chunk the release cuts is cut for the first time, comes back once and only then becomes exempt, so the rule has
+  nothing to prevent yet; its effect, if any, is in a longer play. Not shown by this ABBA.
+- With a 30 s idle time the release cut nothing at all in the whole run, **and the pin is the same** (11,646 and
+  11,598 MiB against 11,632–11,702 and 11,584–11,596). So on this route the release at 4 s does not lower the pin at
+  the moments that matter: what it cuts is back before the wall. Section 18's "pin 11.5–11.65 against the ledger
+  arm's 12.0 GiB" was therefore not the release's doing; the ledger arm of that hour differed in something else
+  (not found; the comparison there was between runs of different hours).
+- With no cut at all the long frames are still there: 17 frames over 100 ms (4.7 s) against 21–34 (4.5–6.8 s), holds
+  of 30 ms and more 4.3 s against 4.4–5.5 s. **So the release starts one of the worst clusters (section 27) but is
+  not the main source of the long frames; section 27's emphasis was too strong.** The differences between the three
+  arms are inside the spread between two runs of one arm.
+- The frames over 100 ms take 4.5–6.8 s of the play phase while the holds of 100 ms and more take 1.2–2.0 s: most
+  of a long frame is made of many shorter holds and waits, which this hold catcher (30 ms and up) does not list.
+
+**The 600 ms hold of section 27, looked at again** [M from the journal, the cause I]: in that hold the direct sync
+imported one BO of 18 MiB and changed two mappings; nothing else. So the time was the import itself, pinning 18 MiB
+whose pages the kernel had meanwhile evicted, on a box with 250–300 MiB available and `kcompactd0` at 30 % of a
+CPU. It is kernel time for memory under pressure, not host bookkeeping that grows with the total. A delta-only
+rewrite of the direct sync would not shorten it.
+
+**The anon sync holds** (58 of the 30–100 ms holds in section 27) are `sync_mappings` reading and parsing
+`/proc/self/maps`, about 28,000 lines through `std::getline` and `sscanf`, 40–65 ms each time under the device mutex
+(`__vfscanf_internal` shows in section 24's profile). A hand-written parser of the same lines is a behaviour-neutral
+fix with an old-against-new test on a recorded maps text; not built yet.
+
+**Shortcut.** Unchanged: "BC5 emulator (0412 fast2)", which now runs with the 30 s idle time. fast3 is an arm of the
+wrapper only (`play-guard-0412.sh fast3`); it gave no reason to replace the shortcut.
+
+### 29. The maintainer's play of 2026-11-11 19:40–19:43 on fast2 (30 s) with the catchers on
+
+He started "BC5 emulator (0412 fast2)" (build g412o, `BC5_DIRECT_LAZY_RELEASE=30,eager`), with
+`catchers.env` = `BC5_GUARD_GAP_STAT=100`, `BC5_GUARD_LOCK_STAT=1` and the 20 ms sampler, loaded his save and gave up
+inside three minutes: "Nie da się 5 minut ... nie da się przejść nawet in-game". The emulator ended with exit 0 at
+19:43:38 (he closed it); no kernel line of that time. Data `raw/h2play-*` (journal lines, frames, the 5 s sampler);
+the catchers were switched off again after the play (`catchers.env.off`).
+
+**What happened** [M]: the memory wall, inside two minutes.
+
+| seconds after the start | available MiB | swap used MiB | emulator major faults/s | PSI memory full | emulator CPU % |
+|---|---|---|---|---|---|
+| 62 | 3,662 | 594 | 0 | 0.0 % | 211 |
+| 83 | 673 | 599 | 14 | 1.7 % | 457 |
+| 98 | 609 | 599 | 0 | 3.2 % | 341 |
+| 103 | 530 | 733 | 711 | 11.5 % | 606 |
+| 119 | 321 | 870 | 2,035 | 19.2 % | 508 |
+| 129 | 275 | 908 | 5,459 | 26.3 % | 613 |
+| 145 | 250 | 943 | 6,159 | 30.7 % | 468 |
+| 161 | 229 | 1,010 | 4,360 | 47.8 % | 871 |
+
+The ledger: pinned 11,840 MiB at 121 s, 11,876 at 131 s, 11,892 at 141 s (orphans 281–342 MiB; views 28,684 over
+12,195 MiB). Frames: 1,813 in all; 145 over 100 ms = 71.6 s; twelve over one second = 40.0 s: 3.1 s at 99 s, then
+1.3–2.5 s each several times, 5.2 s at 129 s, and **15.3 s at 144 s, the last flip of the run**; the emulator then
+stood for 30 s until he closed it.
+
+**Reading.** From 103 s the box swaps: 2,000–6,000 major faults a second in the emulator, half the time stalled on
+memory. This is the wall of section 16 reached on his live save, which pins about 250 MiB more than the copy of his
+save the scripted runs load (11,840–11,892 against 11,580–11,700 MiB at the same seconds). The scripted runs sit
+just above the watchdog's line; his play goes past it, and the shortcut has no watchdog, only the cgroup fuse at
+12,400 MiB, which a thrashing emulator does not reach.
+The catchers: the 20 ms sampler holds about 45 MiB and the journal lines are small. Against a deficit of several
+hundred MiB they did not make this play fail, but they did not help either, and with no margin at all 45 MiB is
+not nothing [I]. They are off again.
+The 30 s idle time: in this play the orphans stayed at 281–342 MiB, which the 4 s setting would have cut at least
+once. Whether that would have kept the play alive is not known from one play.
+
+**What this means for the order of work.** Nothing measured in sections 19–28 (mutex holds, the submit path, the
+release's timing) matters to his play while it ends like this: the first defect in his way is the 0.4–0.5 GiB of
+memory that the box does not have (section 16). The levers that exist, none of them built or changed here:
+the zero skip (0.6–0.75 GiB less pinned, with 2 GPU ring timeouts in 8 runs so far); a session without the Plasma
+desktop while playing (the desktop's processes and its 285 MiB of GPU memory); a hard stop that ends the emulator
+cleanly at the wall instead of letting it thrash (the watchdog of the scripted runs, for the shortcut).
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
+- His play of 19:40 (section 29) [M]: on his live save the pin is 11.84-11.89 GiB at two minutes, about 250 MiB above the scripted
+  copy; from 103 s the box swaps (2,000-6,000 major faults/s, PSI full to 48 %), frames of 1-15 s, the last flip at 144 s.
+  The memory wall is the first defect in his way; the speed work of sections 19-28 does not reach his play while it ends so.
 - Speed after the table fixes (sections 18, 19) [M]: both fixes of the host's memory tables give about +47 % frames in the load phases
   (`KYTY_BC5_RANGES_FAST=1`, `KYTY_BC5_PHYSMAP_SORTED=1`; arm fast2, build g412i). After them neither the game thread nor the Render
   Thread is bound by host code (6-23 % of their time, no line over 4 %); they wait half their time, the Render Thread for the
@@ -1379,6 +1484,9 @@ governor actually sits at 2,150 MHz in play is the one thing not read.
   memory that the title maps again seconds later (its AMM heap swings every 10 s; 96 % of what is cut comes back). The release's
   4 s idle time causes them; a longer idle time or a no-cut-again rule removes them at the price of the release's saving.
   The GPU runs at 1,850-2,150 MHz with 40 CUs (a console: 2,230 MHz, 36 CUs).
+- The release against the long frames, measured (section 28) [M]: neither the return-aware rule (fast3) nor a 30 s idle time changes the
+  long play frames or the pin beyond the run-to-run spread; with no cut at all (30 s) the pin is the same and 17 frames over 100 ms
+  remain. The release is one trigger, not the main source; the previous line's last sentence is corrected by this one.
 - The wall as arithmetic (section 16) [M]: at 165 s the guest pins 12,024 of 15,193 MiB; the 3,169 left hold the kernel, the
   GPU driver's buffers, the desktop and the emulator only with 986 MiB in swap and 42 MiB of file cache for the game. Over by
   about 0.4-0.5 GiB; 320 MiB of the pin are orphans (ours).
