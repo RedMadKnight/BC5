@@ -1452,6 +1452,38 @@ the zero skip (0.6–0.75 GiB less pinned, with 2 GPU ring timeouts in 8 runs so
 desktop while playing (the desktop's processes and its 285 MiB of GPU memory); a hard stop that ends the emulator
 cleanly at the wall instead of letting it thrash (the watchdog of the scripted runs, for the shortcut).
 
+### 30. The hard stop for shortcut plays, the save copy checked, and the lean session prepared (2026-11-11 19:46–19:55, the top session's order)
+
+**The hard stop** (`stop0412.sh`, started by `play-guard-0412.sh` for every real play; `BC5_0412_STOP=0` turns it
+off): every 2 s it reads MemAvailable and the memory pressure "full" avg10 with the shell's own `read`; after five
+samples in a row (10 s) with less than 300 MiB available and 20 % or more pressure, or with 35 % pressure alone, it
+ends the emulator (SIGTERM, SIGKILL 3 s later if needed), writes a line to `~/bc5-work/exp0412/stop.log` and opens a
+window "BC5: zatrzymano, brak pamięci (N MiB)". The thresholds come from section 29: his play had 267–275 MiB and
+23–26 % at 124–129 s, when the frames were already 2 s long; the scripted runs that live dip under 300 MiB with
+3–20 % and recover. Tested on stand-ins on the box [M]: a `sleep` watched with thresholds that are true was ended
+after five samples (about 10 s); one watched with thresholds that are false was left alone and its end noted. The
+first version read the pressure line wrongly (it took `avg60` for the number) and never stopped anything; the
+stand-in test caught that before any play. **Not tested:** the window itself (the stand-ins ran with
+`STOP0412_QUIET=1`, so that nothing popped up on his desktop), and a real emulator at the wall.
+
+**The save copy** [M]: the scripted runs' snapshot was made again from his current `~/bc5-work/_SaveData/PPSA03671`
+(the old one kept as `night/saves-named.20261110`): the same content sum `1151e79071c72b17`, and `diff -r` finds
+no difference; only the prefs file's time is newer. **So his live save and the copy are the same; the 250 MiB more
+that his play pinned (section 29) is not the save.** What differs is what happens after the load: the script
+walks forward for 60 s, he plays. No scripted run reproduces 11.84–11.89 GiB yet.
+
+**The lean session, prepared, nothing stopped yet.** `lean0412.sh` and a hook in the wrapper (`BC5_0412_LEAN=1`):
+before the emulator starts, `plasma-plasmashell.service` is stopped (now 169 MiB of memory in its cgroup, and
+174 MiB of GPU memory by section 18); a watcher outside the launcher's process group starts it again when the
+launcher's process is gone, whatever ended it. `plasma-keyboard` (19 MiB and 96 MiB of GPU memory) is a child of
+KWin, not a unit of its own; stopping it needs a KWin setting and is left out. KWin, PipeWire, the pad's path, sshd
+and tailscale are not touched. Only the dry print has run. The real stop-and-restore test and the measurement need
+the desktop shell to disappear for some minutes on his running session, so they wait for his word.
+
+**A correction to section 29.** The "about 45 MiB" given there for the 20 ms sampler was read off the process list
+by mistake: that `python3` is `bc5-gpu-stall-sampler`, a service that has been running since boot. The sampler's
+own size was not measured; it is a small Python process, and the play's failure does not hang on it.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
