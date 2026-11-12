@@ -331,6 +331,55 @@ index 0000000..f14377f
 +}
 +
 +} // namespace bc5::load_stat
+diff --git a/src/graphics/host_gpu/renderer/sync.cpp b/src/graphics/host_gpu/renderer/sync.cpp
+index 127d3a1..d6c7144 100644
+--- a/src/graphics/host_gpu/renderer/sync.cpp
++++ b/src/graphics/host_gpu/renderer/sync.cpp
+@@ -14,6 +14,8 @@
+ #include "libs/errno.h"
+ 
+ #include <array>
++#include <cstdio>
++#include <cstdlib>
+ #include <cstring>
+ #include <limits>
+ #include <optional>
+@@ -348,6 +350,21 @@ static void EopEventDeleteFunc(LibKernel::EventQueue::KernelEqueue       eq,
+ 	}
+ }
+ 
++// BC5 (exp 0414's list, item 1b; the idea is KytyPS5 c86d31b "coalesce repeated GPU interrupts with the same data"):
++// with KYTY_BC5_EVENT_COALESCE_SAME=1 a trigger for a still unread event whose data equals the newest unread entry's
++// only counts on that entry. Unset, empty and "0" are off: the code below runs as before.
++static bool Bc5EopCoalesceSame() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_EVENT_COALESCE_SAME");
++		const bool  v = e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
++		if (v) {
++			std::fprintf(stderr, "[bc5] KYTY_BC5_EVENT_COALESCE_SAME on: a repeated EOP trigger with the same data counts on the newest unread entry\n");
++		}
++		return v;
++	}();
++	return on;
++}
++
+ static void EopEventTriggerFunc(LibKernel::EventQueue::KernelEqueueEvent* event,
+                                 void*                                     trigger_data) {
+ 	EXIT_IF(event == nullptr);
+@@ -356,6 +373,13 @@ static void EopEventTriggerFunc(LibKernel::EventQueue::KernelEqueueEvent* event,
+ 	triggered_event.fflags++;
+ 	triggered_event.data = reinterpret_cast<intptr_t>(trigger_data);
+ 	if (event->triggered) {
++		if (Bc5EopCoalesceSame()) {
++			auto& newest = event->pending_events.empty() ? event->event : event->pending_events.back();
++			if (newest.data == triggered_event.data) {
++				newest.fflags++;
++				return;
++			}
++		}
+ 		LibKernel::EventQueue::KernelEventPendingPush(event, triggered_event); // exp 0412 (tag ev412): KYTY_BC5_EVENT_PENDING_CAP, _LOG
+ 	} else {
+ 		event->event     = triggered_event;
 diff --git a/src/kernel/fileSystem.cpp b/src/kernel/fileSystem.cpp
 index 93e2d1a..8916d6f 100644
 --- a/src/kernel/fileSystem.cpp
@@ -825,7 +874,7 @@ index be70ac2..6cdba11 100644
  
  	auto* pthread_static_objects = g_pthread_context->GetPthreadStaticObjects();
 diff --git a/src/kernel/semaphore.cpp b/src/kernel/semaphore.cpp
-index 8696edb..b000c11 100644
+index 8696edb..bd43388 100644
 --- a/src/kernel/semaphore.cpp
 +++ b/src/kernel/semaphore.cpp
 @@ -17,6 +17,7 @@
@@ -836,15 +885,80 @@ index 8696edb..b000c11 100644
  
  namespace Libs::LibKernel {
  void KernelDispatchPendingSignalForCurrentThread();
-@@ -213,6 +214,7 @@ KernelSemaPrivate::Result KernelSemaPrivate::Signal(int signal_count) {
+@@ -59,6 +60,7 @@ private:
+ 		int    need_count = 0;
+ 		Result result     = Result::TimedOut;
+ 		bool   ready      = false;
++		Common::CondVar* own_cond = nullptr; // BC5 KYTY_BC5_SEMA_TARGETED_WAKE: this waiter's own condition variable
+ 	};
+ 
+ 	void AddWaiter(WaitingThread* waiter);
+@@ -139,6 +141,21 @@ static bool Bc5SemaFix(uint32_t part) {
+ }
+ // ---- end of experiment 0405's block -------------------------------------------------------------------------------
+ 
++// BC5 (exp 0414's list, item 5; the idea is KytyPS5 a0268f1 "a semaphore signal wakes only the waiters it hands counts
++// to"): with KYTY_BC5_SEMA_TARGETED_WAKE=1 each waiter sleeps on its own condition variable (one per thread) and is
++// signalled when it is made ready; nothing is broadcast on the semaphore's shared one. Unset, empty and "0" are off.
++static bool Bc5SemaTargetedWake() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_SEMA_TARGETED_WAKE");
++		const bool  v = e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
++		if (v) {
++			std::fprintf(stderr, "[bc5] KYTY_BC5_SEMA_TARGETED_WAKE on: a semaphore signal wakes only the waiters it hands counts to\n");
++		}
++		return v;
++	}();
++	return on;
++}
++
+ KernelSemaPrivate::~KernelSemaPrivate() {
+ 	Common::LockGuard lock(m_mutex);
+ 
+@@ -154,6 +171,9 @@ KernelSemaPrivate::~KernelSemaPrivate() {
+ 		if (!waiter->ready) {
+ 			waiter->result = Result::Deleted;
+ 			waiter->ready  = true;
++			if (waiter->own_cond != nullptr) {
++				waiter->own_cond->Signal();
++			}
+ 		}
+ 	}
+ 
+@@ -189,6 +209,9 @@ KernelSemaPrivate::Result KernelSemaPrivate::Cancel(int set_count, int* num_wait
+ 		if (!waiter->ready) {
+ 			waiter->result = Result::Canceled;
+ 			waiter->ready  = true;
++			if (waiter->own_cond != nullptr) {
++				waiter->own_cond->Signal();
++			}
+ 		}
+ 	}
+ 
+@@ -213,10 +236,13 @@ KernelSemaPrivate::Result KernelSemaPrivate::Signal(int signal_count) {
  	}
  
  	m_count += signal_count;
-+	bc5::load_stat::count(bc5::load_stat::kSemaSignal, m_waiting_threads.size()); // experiment 0415 (ls415): items = waiters present, all woken below
++	bc5::load_stat::count(bc5::load_stat::kSemaSignal, m_waiting_threads.size()); // experiment 0415 (ls415): items = waiters present at the signal
  
  	WakeWaiters();
  
-@@ -252,6 +254,7 @@ void KernelSemaPrivate::WakeWaiters() {
+-	m_cond_var.SignalAll();
++	if (!Bc5SemaTargetedWake()) {
++		m_cond_var.SignalAll();
++	}
+ 
+ 	return Result::Ok;
+ }
+@@ -247,11 +273,15 @@ void KernelSemaPrivate::WakeWaiters() {
+ 			m_count -= waiter->need_count;
+ 			waiter->result = Result::Ok;
+ 			waiter->ready  = true;
++			if (waiter->own_cond != nullptr) {
++				waiter->own_cond->Signal();
++			}
+ 		}
+ 	}
  }
  
  KernelSemaPrivate::Result KernelSemaPrivate::Wait(int need_count, uint32_t* ptr_micros) {
@@ -852,6 +966,31 @@ index 8696edb..b000c11 100644
  	Common::LockGuard lock(m_mutex);
  
  	if (need_count < 1 || need_count > m_max_count) {
+@@ -291,6 +321,12 @@ KernelSemaPrivate::Result KernelSemaPrivate::Wait(int need_count, uint32_t* ptr_
+ 	waiter.id         = id;
+ 	waiter.priority   = (m_fifo_order ? 0 : Libs::LibKernel::PthreadGetCurrentPriorityForKernel());
+ 	waiter.need_count = need_count;
++	Common::CondVar* cond = &m_cond_var;
++	if (Bc5SemaTargetedWake()) {
++		static thread_local Common::CondVar own; // a thread waits on one semaphore at a time
++		waiter.own_cond = &own;
++		cond            = &own;
++	}
+ 	AddWaiter(&waiter);
+ 
+ 	while (!waiter.ready) {
+@@ -301,9 +337,9 @@ KernelSemaPrivate::Result KernelSemaPrivate::Wait(int need_count, uint32_t* ptr_
+ 		}
+ 
+ 		if (infinitely) {
+-			m_cond_var.WaitFor(&m_mutex, SIGNAL_APC_POLL_MICROS);
++			cond->WaitFor(&m_mutex, SIGNAL_APC_POLL_MICROS);
+ 		} else {
+-			m_cond_var.WaitFor(&m_mutex, micros - elapsed);
++			cond->WaitFor(&m_mutex, micros - elapsed);
+ 		}
+ 
+ 		m_mutex.Unlock();
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 index 66e6351..d481a10 100644
 --- a/src/libs/bc5LleAgc.cpp

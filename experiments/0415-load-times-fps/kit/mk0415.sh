@@ -82,7 +82,7 @@ for v in normal lean; do
     distrobox enter ubuntu -- sh -c "cd '$d' && nice -n 19 ninja kyty_emulator" < /dev/null > "$d.build.log" 2>&1 || { grep -m5 -E "error:" "$d.build.log"; die "the build ($v)"; }
     b=$d/src/kyty_emulator
     [ -x "$b" ] || die "no binary ($v)"
-    for s in KYTY_BC5_LOAD_STAT KYTY_BC5_RING_POLL_US KYTY_BC5_LOAD_DELAY KYTY_BC5_RING_SPIN_US KYTY_BC5_TIMERSLACK_NS KYTY_BC5_MUTEX_SPIN_US "tag ls415" bc5-loadstat KYTY_BC5_SWITCH_DEFAULTS KYTY_BC5_RANGES_FAST KYTY_BC5_PHYSMAP_SORTED; do
+    for s in KYTY_BC5_LOAD_STAT KYTY_BC5_RING_POLL_US KYTY_BC5_LOAD_DELAY KYTY_BC5_RING_SPIN_US KYTY_BC5_TIMERSLACK_NS KYTY_BC5_MUTEX_SPIN_US KYTY_BC5_SEMA_TARGETED_WAKE KYTY_BC5_EVENT_COALESCE_SAME "tag ls415" bc5-loadstat KYTY_BC5_SWITCH_DEFAULTS KYTY_BC5_RANGES_FAST KYTY_BC5_PHYSMAP_SORTED; do
         grep -aqF -- "$s" "$b" || die "the $v binary lacks [$s]"
     done
     mkdir -p "$E/$o" && cp -p "$b" "$E/$o/kyty_emulator" || die "cannot place the $v binary"

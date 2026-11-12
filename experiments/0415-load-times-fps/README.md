@@ -145,8 +145,10 @@ major faults per phase) but not removed: exp 0412 owns it.
 
 `kit/` (pinned by `kit/kit.sha256`):
 
-- `0415-l1.diff` (md5 `3993d0d2`, stored byte-exact: the host tree mixes LF and CRLF files): against the host tree
-  with 0413's patch 057e7d07. One new header, `src/bc5/load_stat.hpp` (tag ls415), and edits in ten files
+- `0415-l1.diff` (md5 `80b3086f`, stored byte-exact: the host tree mixes LF and CRLF files): against the host tree
+  with main's swapped patch `01abfc0c` (the box's shared tree reads the same pin [M, 2026-11-12 18:16]; the edits
+  were first made on 057e7d07 and came out the same). One new header, `src/bc5/load_stat.hpp` (tag ls415), and
+  edits in eleven files
   (`tree-l1.md5` has the sums the box must reproduce). All words default off; unset, empty and "0" are off.
   - `KYTY_BC5_LOAD_STAT=<file>`: 31 causes (the list is the header's `Cause`), each a count, a summed time, the
     longest single time of the second and an item or byte count; one cumulative line a second with CLOCK_MONOTONIC,
@@ -160,6 +162,11 @@ major faults per phase) but not removed: exp 0412 owns it.
     by every thread), `KYTY_BC5_MUTEX_SPIN_US` (C5: a held guest mutex is tried again for that long before the
     thread sleeps; `mutex->m` is released between tries, the owner field is read and written under it as before;
     a timed lock's deadline starts after the spin, so it can be late by at most the spin).
+  - From exp 0416 (branch `exp/0416-emufive-switches` c7bc3250, its `mk0416.py` run on the pinned inputs, outputs
+    `81049581` and `2d97421c` as that session states), so that every candidate is in one build:
+    `KYTY_BC5_SEMA_TARGETED_WAKE` (C6 for kernel semaphores: a signal wakes only the waiters it serves) and
+    `KYTY_BC5_EVENT_COALESCE_SAME` (a repeated EOP trigger with the same data counts on the newest unread entry).
+    My two semaphore counters sit on top of its `semaphore.cpp`.
   - Limits: in the lean build the label-wait and in-flight-cap counters are absent (they sit in a function lean
     compiles out); `sema_wait` and `cond_wait` time every call, blocked or not; `mem_lock_wait` counts only
     acquisitions that found the mutex taken.
@@ -196,6 +203,8 @@ major faults per phase) but not removed: exp 0412 owns it.
 | 6 | t1, t2 | `KYTY_BC5_TIMERSLACK_NS=1000` | C2's fix |
 | 7 | m1, m2 | `KYTY_BC5_MUTEX_SPIN_US=30` | C5's fix |
 | 8 | d1..d3 | `KYTY_BC5_LOAD_DELAY=amm_cmd:200`, `apr_buffer:2000`, `mutex_contended:100` | which of these is on the critical path |
+| 9 | w1, w2 | `KYTY_BC5_SEMA_TARGETED_WAKE=1` | C6's fix (exp 0416's) |
+| 10 | e1, e2 | `KYTY_BC5_EVENT_COALESCE_SAME=1` | exp 0416's second switch |
 
 Arms 4-8 alternate with a fresh baseline when the first four show a drift over the session.
 
