@@ -667,18 +667,25 @@ two runs per arm; `raw/f*-frame.txt.gz`, `frame0415.py`) [M]:
 
 - **The GPU's own stamps cost nothing measurable** (22.5-22.9 against 22.6-22.9 flips/s), so they can be used.
 - **RT off does not make the frame shorter at this place**: 22.8-23.0 flips/s against 22.5-22.9, the median frame
-  35.7 against 36.0 ms. The GPU's busy time per frame is 1.8 ms lower with RT off (24.6 against 26.4 ms, one run
-  each): RT's share of the GPU's work is about 7 % here. RT is not what limits the frame rate at this place. (RT off
-  was run only for this measurement.)
-- An ordinary frame of 36 ms has the GPU busy 26 ms and idle 5.4-6.5 ms between its 39 jobs; the frame is longer
-  than the GPU's work by about 10 ms.
+  35.7 against 36.0 ms. That is an observation at this one place, standing still; it is not RT's cost elsewhere.
+  The busy time of the recorded jobs is 1.8 ms lower with RT off (24.6 against 26.4 ms, one run each), but that
+  difference does not isolate RT: whether the other passes are the same in both arms is not established (RT off was
+  run only for this measurement).
+- Per completion group (the jobs whose fence the host saw during one sampled frame number: two frames in sixteen),
+  the recorded jobs' own GPU stamps cover a median of 26 ms and leave gaps of 5.4-6.5 ms between them. **These gaps
+  are not shown to be idle GPU time**: a gap in such a subset can be covered by a job that completed in a
+  neighbouring frame number or was not recorded, the grouping is by host completion and not by the frame a job
+  belongs to, and no coverage check was made. Corrected after Codex's review of 2026-11-12 (lesson R13); an earlier
+  wording of this section and of the messages called it idle time.
 - **Long frames are frequent even standing still**: in ft1's 43 s, 208 of 961 frames are over 50 ms and 12 over
   100 ms (p90 72.6 ms). In these runs the device mutex was held about half the time (31-33 s of 65 s) and its
-  users waited 15-16 s for it; `kcompactd0` used 27-41 s of CPU per 65 s, more than half a core throughout.
+  users waited 15-16 s for it; `kcompactd0` used 27-41 s of CPU per 65 s, more than half a core throughout. These
+  are totals of the same runs: they do not show what made any particular frame long (that needs the join per frame).
 - **A third of the jobs are tiny compute jobs**: of ft1's 12,493 sampled jobs about 4,000 have 2-28 dwords from the
-  title (1-4 packets), and in 934 of them the filter dropped the only packet, so an empty job went to the kernel and
-  was waited for (GPU time 0.04 ms, 3.4 ms from queue to fence, 0.07 ms of host work under the mutex each). About
-  13 such tiny jobs a frame.
+  title (1-4 packets), and in 934 of them the filter dropped the only packet (GPU time 0.04 ms, 3.4 ms from queue
+  to fence, 0.07 ms of host work under the mutex each). About 13 such tiny jobs a frame. A job left without a title
+  packet is not thereby a needless submission: it still carries the host's prologue and epilogue and may carry a
+  dependency, a fence the title waits on and state for the next job (`backend/src/direct.cpp`, `Device::submit`).
 - **The pass table is not usable yet.** The signature of this build (kind, ring, the title's dwords) splits one pass
   into many rows because the dwords vary from frame to frame: no row has more than 3.2 % of the GPU's time. The ring
   column reads -1 in every line (the field is not filled at that point of the completion code). Per-pass GPU time
@@ -690,11 +697,14 @@ two runs per arm; `raw/f*-frame.txt.gz`, `frame0415.py`) [M]:
 `O_DIRECT`, the page cache is used as before. The gains of section 7 (7.3 s and 4.2 s) are those of that series:
 10 runs against 8, RT on, the NAS archive active during most runs.
 
-**What follows for part 2** [I]. At this place the frame is not bound by RT and not by the GPU alone: 26 ms of GPU
-work sit in a 36 ms frame, with 5-6 ms of GPU idle between jobs and a fifth of the frames long. The candidates, in
-the order the numbers suggest: the idle between jobs (39 jobs a frame, a third of them tiny or empty: fewer and
-fuller submissions), the mutex held half the time (the lock-side stages), and the kernel's compaction at the memory
-wall (exp 0412). None is built. The GPU's clock per run was not read (not looked for yet).
+**What follows for part 2** [I]. Shown at this place: the frame rate is the same with RT off, and a fifth of the
+frames are long. Not shown: where the GPU's time goes, whether it idles inside an ordinary frame, and what makes a
+long frame long. The next build therefore records, for sampled windows, EVERY job on every ring in use with exact
+boundaries (the jobs at the window's edges, the frame each job belongs to, a check that the recorded stamps cover
+the window), and only then attributes gaps (the title had not handed the next buffer over; it was queued behind the
+device mutex; it waited for the ring dependency; it waited for the doorbell poll) and joins long frames with the
+mutex's holds and the kernel's compaction per frame. Candidates are named after that, not before. The GPU's clock
+per run was not read (not looked for yet).
 
 ## Verdict
 
@@ -710,8 +720,9 @@ fast forms of that maintenance: one shortens the learned windows by 0.4-0.9 s pe
 shortens a load. In five runs no learned window mapped anything.
 Build L4 (section 13): the change records of the guest's range table are complete and in order for the view list
 (7,991 comparisons, 0 mismatches, both titles), the base for the lock-side stages. Part 2's first runs: standing
-still the frame is 36 ms with 26 ms of GPU work; RT off does not shorten it (RT is about 1.8 ms of GPU time); a fifth
-of the frames are long. Per-pass GPU time is not measured yet (the signature was too weak).
+still at the save's spot the frame is 36 ms and RT off does not shorten it; a fifth of the frames are long. Where the
+GPU's time goes, and whether it idles inside a frame, is not measured yet (the first counter recorded a subset of the
+jobs and its signature was too weak; section 13 as corrected after review).
 
 ## Podsumowanie dla maintainera (stan na 2026-11-12, noc)
 
@@ -735,18 +746,20 @@ Oznaczenia: [zmierzone] = liczba z biegu na boxie; [wniosek] = moja interpretacj
   sprawdzony w trybie porównawczym: 7 991 porównań, 0 różnic, w obu grach. Jeszcze niczego nie przyspiesza.
 
 **FPS.**
-- [zmierzone] W miejscu z save'a, stojąc: klatka trwa 36 ms, z czego GPU pracuje 26 ms.
-- [zmierzone] **Wyłączenie RT nie zwiększa FPS w tym miejscu** (22,8–23,0 vs 22,5–22,9 klatki/s); RT kosztuje ok.
-  1,8 ms pracy GPU na klatkę.
+- [zmierzone] W miejscu z save'a, stojąc: klatka trwa 36 ms.
+- [zmierzone] **Wyłączenie RT nie zwiększa FPS w tym jednym miejscu, w bezruchu** (22,8–23,0 vs 22,5–22,9
+  klatki/s). To obserwacja z tego miejsca, nie koszt RT w całej grze.
 - [zmierzone] Co piąta klatka jest długa (ponad 50 ms) nawet w bezruchu. W tych biegach nasza blokada była trzymana
   przez połowę czasu, a jądro systemu zużywało ponad pół rdzenia na porządkowanie pamięci (`kcompactd0`).
-- [zmierzone] Jedna trzecia zadań wysyłanych do GPU jest malutka, a ok. 7 % jest pustych (filtr usuwa jedyny pakiet,
-  a zadanie i tak idzie do jądra).
-- [wniosek] FPS ogranicza tu nie RT i nie samo GPU, tylko przerwy między zadaniami, nasza blokada i ściana pamięci.
-  Rozbicia czasu GPU na przebiegi jeszcze nie ma (pierwsza sygnatura była za słaba).
+- [zmierzone] Jedna trzecia zadań wysyłanych do GPU jest malutka; w ok. 7 % filtr usuwa jedyny pakiet gry. Takie
+  zadanie nadal niesie nasze pakiety i może być potrzebne, więc to jeszcze nie dowód zbędnej pracy.
+- [niezmierzone] Gdzie idzie czas GPU w klatce, czy GPU ma w niej przestoje i co robi długą klatkę długą. Wcześniej
+  pisałem o „przestojach GPU 5–6 ms na klatkę”: po review to wycofuję, pomiar obejmował tylko część zadań i tego
+  nie dowodzi. Sumy (blokada, `kcompactd0`) też nie wskazują przyczyny konkretnych długich klatek.
 
-**Co dalej:** etap 2 poprawki blokady, pomijanie pustych zadań, przypisanie przerw GPU do przyczyn, lepsze
-sygnatury przebiegów. Wszystko za przełącznikami, domyślnie wyłączone.
+**Co dalej:** najpierw pełny pomiar klatki (wszystkie zadania, wszystkie ringi, dokładne granice), potem etap 2
+poprawki blokady i lepsze sygnatury przebiegów; pomijanie „pustych” zadań dopiero po ustaleniu, co one niosą.
+Wszystko za przełącznikami, domyślnie wyłączone.
 
 **Nie proszę o zmianę ustawień boxa.** Do Twojej wiadomości: nie odczytałem jeszcze, jaki zegar GPU faktycznie
 ustawia governor w grze (zakres 1850–2150 MHz); gra rozpakowana leży na dysku nieskompresowana, a pierwsza połowa

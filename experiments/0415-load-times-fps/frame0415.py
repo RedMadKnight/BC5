@@ -69,7 +69,7 @@ def main():
                     end = j['g1']
             busy.append(b / 1e5)
             idle.append(i / 1e5)
-        print('GPU per sampled frame (jobs completed in it): busy median %.1f ms, idle between its jobs median %.1f ms' % (st.median(busy), st.median(idle)))
+        print('per completion group (jobs whose fence was seen in one sampled frame number): stamps cover median %.1f ms, gaps between the RECORDED jobs median %.1f ms (not shown to be idle GPU: a subset, grouped by host completion, no coverage check)' % (st.median(busy), st.median(idle)))
     else:
         print('NO GPU stamps: the table below is queued-to-fence time on the host clock, which overlaps between jobs; not GPU time')
     sig = {}
