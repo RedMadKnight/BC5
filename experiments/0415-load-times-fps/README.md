@@ -342,6 +342,83 @@ BO list, ioctl).
 Private state on the box: `~/bc5-work/exp0415` (3.1 GiB: the tree copy with its two build directories, L1 and L1b
 binaries, raw files). Nothing shared was written; BOX-LOCK was held only by `mk0415*.sh` and the runs and is empty.
 
+### 8. The second slot (2026-11-12 21:31-22:08 box time): build L2, the hold by part, the checks of the read fix
+
+**Build L2** = L1b + `kit/0415-l2.diff` (tag ls415c; `mk0415d.sh` stopped at a compile error of the new test, a
+volatile increment; `mk0415e.sh` finished it): normal `468f304b`, lean `92b76c16`; L1b kept in `bin-l1b`,
+`bin-lean-l1b`. It adds the device mutex's hold in `submit_now` by part and `direct_sync_one` by part to the counters
+(13 more causes), and moves the read path of `KYTY_BC5_APR_POSIX` into `src/bc5/apr_posix.hpp` (same behaviour) with
+a counter for the fallback. CPU tests on the box [M]: `test0415` 62 of 62 and 32 of 32; **`test0415apr` 33 of 33**:
+both modes against a known file (aligned and unaligned offsets and lengths, chunks smaller than the read, a read
+across, at and past the end, size 0, a missing file, a directory) and the refused destination: pages mapped
+PROT_NONE that only the process's own SIGSEGV handler opens, as the host's lazy pages are; the direct read ends with
+every byte in place, the refused part goes through the staging copy with one fault per refused page, and `pread`
+alone returns a short count and the flag without a fault.
+
+**The device mutex's hold by part** (runs a1, a2 off; d1, d2 `direct`; `raw/<tag>-loadstat.txt`; seconds, per run) [M]:
+
+| | menu load, off (a1 / a2) | menu load, fix (d1 / d2) | save load, fix (d1 / d2) | 34 s of play, fix (d1 / d2) |
+|---|---|---|---|---|
+| the phase | 27.3 / 39.2 | 16.0 / 28.4 | 14.1 / 14.0 | 34.0 / 34.0 |
+| **mutex held** | 16.0 / 19.1 | **10.7 / 12.7** | 7.6 / 6.9 | **16.7 / 16.5** |
+| waited for it (three threads) | 8.8 / 9.9 | 7.3 / 8.0 | 5.2 / 4.7 | 8.6 / 8.4 |
+| direct sync, whole | 5.4 / 5.6 | 4.7 / 4.7 | 2.5 / 2.2 | 3.5 / 3.3 |
+| - imports | 2.3 / 2.0 | 2.2 / 1.6 | 0.05 / 0.05 | 0.6 / 0.3 |
+| - mappings recomputed | 1.3 / 1.3 | 1.2 / 1.2 | 1.05 / 1.0 | 1.0 / 0.95 |
+| - view list | 1.2 / 1.2 | 0.95 / 0.9 | 1.1 / 0.9 | 1.3 / 1.4 |
+| - merge, drain | 0.2 / 0.2 | 0.2 / 0.2 | 0.1 / 0.1 | 0.4 / 0.15 |
+| learned windows | 2.3 / 2.3 | 1.9 / 2.0 | 2.45 / 2.25 | 2.0 / 1.95 |
+| anonymous sync | 1.0 / 1.2 | 0.65 / 0.8 | 0.7 / 0.7 | 2.0 / 2.0 |
+| the device call | 5.9 / 7.6 | 2.7 / 4.1 | 1.5 / 1.4 | 7.1 / 7.1 |
+| - its CS ioctl / prepare / BO list | 3.5 / 1.9 / 0.4 | 1.6 / 0.9 / 0.2 | 0.7 / 0.7 / 0.1 | 3.3 / 3.4 / 0.3 |
+| before the device call, hints, probe | 1.0 / 1.8 | 0.6 / 0.75 | 0.35 / 0.3 | 1.5 / 1.65 |
+
+- In the menu load with the fix the mutex is held two thirds of the phase, and **68 % of the hold is mapping
+  maintenance** (imports 2.2 s, learned windows 1.9 s, mappings 1.2 s, view list 0.95 s, anonymous sync 0.65 s of
+  10.7 s in d1); the submission itself is a quarter.
+- The GPU drain before mappings change (`wait_jobs`) is 0.03-0.07 s in every phase: **C3 is refuted as a cost.**
+- In play the mutex is held 49 % of the time; the device call is the largest part (7.1 s of 16.6 s), mapping
+  maintenance 7.5 s.
+- The learned windows by their own journal lines (d1 and d2, the applications over 5 ms, whole run) [M]: 626 and 648
+  applications, 6.1 and 6.3 s, of which **4.8 s is `map_window` over the 81 learned entries** against a copy of the
+  device's 21,300 mappings, 0.3-0.4 s the copy and sort of those mappings, 0.6 s the guard holes, 0.4 s the fill.
+- The view list is rebuilt whenever the guest's ranges change (`direct_views`, one `std::string` and two name
+  classifications per range) [C].
+
+**This session was slower than the first one, with and without the fix** [M]: off, 6 GiB read at 57-60 s against
+52-54 s and the first key at 64.6 and 67.4 s against 55.1-62.1 s; with the fix 46-50 s against 44-45 s. Not the NAS
+archive: its log has 32 lines in the 19 h hour, 8 in the 20 h hour and 6 in the 21 h hour, the last at 21:31. What
+differs in the collector's rows: `kcompactd0` used 15.8 and 20.1 s of CPU in the menu loads of a1 and a2 (27 and
+39 s) against 3.2-9.1 s in c1-c3 (20-21 s), `kswapd0` about twice as much, and the disk delivered 342-462 MiB/s
+against 551-571. The kernel was compacting memory harder (the box had run about fifty emulator starts by then); why
+is the memory side's question (exp 0412), noted for it. Inside the session the fix's gain is the same size (57-60
+to 46-50 s).
+
+**The checks asked for before the read fix goes shared** [M]:
+- **A long second-title run, `direct`, RT on** (`long1`, no perf): 873 s, of which 773 s of play after the load
+  (the walk): mean 23.1 flips/s, median 25, 58 seconds under 15 flips and 4 under 5 (no run of this length without
+  the fix to compare with), 34.5 GiB of APR data read, the fallback counter 0, lowest available memory 390 MiB, the
+  watchdog did not act, no kernel line, no crash line. In the play phase the mutex was held 49 % of the time and
+  179 s were waited for it.
+- **ASTRO BOT, 120 s from start, no input, a private launcher** (`astro0415c.sh`: private mountpoint, an empty private
+  save directory; `as4off`, `as4on`): both ran their 120 s, no kernel line, no crash; 6,511 flips with the switch
+  off and 6,874 with `direct`; 1,000 flips reached by 24 s and by 19 s; 11,745 and 11,750 APR reads of 5.5 GiB at
+  1.26 and 1.50 ms a read (this title reads through the image mount, so what the switch turns off is the kernel's
+  read-ahead on the mounted file; one run each: no harm seen, no gain claimed). The fallback counter 0.
+  Three earlier attempts (`as1off`, `as1on`, `as3off`) ended after 6-8 s in the host renderer with the switch off
+  and on alike: the shared settings file names the system-module directory under the SHARED mountpoint, so a private
+  mountpoint needs that word set after the settings are read. Not a fault of the build.
+- Not done: ASTRO BOT with input (a level load), and the second title's `random` mode in a long run.
+
+**Candidates for build L3, against this split** (each default off, with a CPU test where a unit allows; nothing built):
+(a) the learned windows applied only where the layout changed, and `map_window` searching the sorted mappings
+instead of walking them (4.8 s a run); (b) the view list without a string per range, classified once per name
+(0.9-1.4 s per phase); (c) imports prepared outside the hold (2.2 s of the menu load); (d) mappings recomputed only
+for changed views (1.0-1.3 s per phase); (e) the device call's prepare (3.4 s per 34 s of play) and (f) the
+anonymous sync (2.0 s per 34 s of play): what they recompute per submission. Expected effect, stated before the
+build [I]: less waiting of the title's threads on the mutex (8-9 s per 34 s of play, 7-8 s per menu load) and
+shorter long frames; the ordinary play frame is GPU-bound (exp 0412 section 26), so not a higher mean frame rate.
+
 ## Verdict
 
 Part 1, first result. The largest cause of the long loads was ours: every APR read opened its file anew, the
@@ -349,4 +426,6 @@ kernel's read-ahead doubled the disk's work and the NVMe ran at its limit for th
 `KYTY_BC5_APR_POSIX=random|direct` (default off, private build L1b `55b05fae` / lean `f691fcf5`) brings the start
 screen 7.3 s earlier (50.3 against 57.6 s after the start, ten runs against eight) and the save load to 20 flips/s
 4.2 s sooner (13.3 against 17.5 s). Eight other candidates showed no effect on the loads at a resolution of 1-2 s.
-Open: the device mutex in the rest of the load, the start before the first flip, and part 2 (fps).
+The read path has its CPU test now (33 of 33); a 15-minute run and an ASTRO BOT start with the switch on were clean
+(section 8). Open: the device mutex, held two thirds of the menu load and half of play, 68 % of it mapping
+maintenance in the load (candidates in section 8, none built); the start before the first flip; part 2 (fps).

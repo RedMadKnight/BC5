@@ -42,7 +42,7 @@ static uint64_t              g_region_sz = 0;
 static void on_segv(int, siginfo_t* si, void*) {
 	const auto a = reinterpret_cast<uint8_t*>(si->si_addr);
 	if (g_region == nullptr || a < g_region || a >= g_region + g_region_sz) _exit(99); // not ours: a real crash
-	g_faults++;
+	g_faults = g_faults + 1;
 	mprotect(g_region + (static_cast<uint64_t>(a - g_region) / kPage) * kPage, kPage, PROT_READ | PROT_WRITE);
 }
 

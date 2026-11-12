@@ -1,0 +1,37 @@
+--- /home/kjaniszewski/bc5-work/play-astro.sh	2026-10-25 20:27:24.631171862 +0100
++++ /home/kjaniszewski/bc5-work/exp0415/play-astro-0415.sh	2026-11-12 22:03:18.925674846 +0100
+@@ -8,14 +8,14 @@
+ # ADR 0011: play-any.sh names another image and its mountpoint with these two.
+ C=${BC5_FFPFSC:-$HOME/bc5-data/games/"PPSA21567 - ASTRO BOT_4xx.ffpfsc"}
+ M=${BC5_FFPFSC_MOUNT:-$HOME/bc5-data/mnt/PPSA21567}
+-EMU=~/bc5-work/kytyplus-build/src/kyty_emulator
++EMU=/home/kjaniszewski/bc5-work/exp0415/bin/kyty_emulator  # exp 0415: the private build
+ ENVF=${BC5_RUN_ENV:-$HOME/bc5-work/bc5-run.env}
+-LOG=~/bc5-work/play-last.log
++LOG=/home/kjaniszewski/bc5-work/exp0415/astro-last.log  # exp 0415: own log
+ # Experiment 0177: BC5_LEAN=1 (the "BC5 emulator (lean)" shortcut) runs the emulator built with
+ # KYTY_BC5_LEAN in ~/bc5-work/kytyplus-build-lean: no tracing, journal, counters, recorder or
+ # samplers, inside or outside; its own log file. The title scripts take the same switch.
+ if [ "${BC5_LEAN:-0}" = 1 ]; then
+-  EMU=~/bc5-work/kytyplus-build-lean/src/kyty_emulator LOG=~/bc5-work/play-lean-last.log
++  EMU=~/bc5-work/kytyplus-build-lean/src/kyty_emulator LOG=/home/kjaniszewski/bc5-work/exp0415/astro-last.log  # exp 0415: own log (lean is not used here)
+ fi
+ # 2026-10-25 (exp 0324, the maintainer): with BC5_LEAN=1 this script writes no log at all; BC5_LOGS=1 keeps
+ # its logs. The normal shortcut logs as before.
+@@ -35,6 +35,7 @@
+   key=${line%%=*}; val=${line#*=}
+   if [ "$key" = PLAY_ARGS ]; then PLAY_ARGS=$val; else export "$key=$val"; fi
+ done < "$ENVF"
++export SHADPS4_SYSMODULES_PACK_DIR=$M/fakelib  # exp 0415 (astro0415c): the settings file names the shared mountpoint
+ # ADR 0011: another image's own system-module pack (play-any.sh), over the settings file's.
+ [ -n "${BC5_SYSMODULES_PACK_DIR:-}" ] && export SHADPS4_SYSMODULES_PACK_DIR=$BC5_SYSMODULES_PACK_DIR
+ unset BC5_GC_DUMP_DIR
+@@ -95,7 +96,7 @@
+   echo "== $(date '+%F %T') emulator $(stat -c '%y' "$EMU" | cut -c1-19)"
+   grep -v '^#' "$ENVF" | grep -v '^$'
+ } > "$LOG"
+-cd ~/bc5-work
++cd /home/kjaniszewski/bc5-work/exp0415/wd-astro  # exp 0415: the private working directory (an empty _SaveData)
+ # Experiment 0047: exit code 75 is the F2 menu's "Restart game": start the emulator again, with
+ # the mount and the settings kept.
+ while :; do
