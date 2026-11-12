@@ -16775,10 +16775,10 @@ index bc73d18..fab34b4 100644
  
  #endif /* EMULATOR_INCLUDE_EMULATOR_KERNEL_FILESYSTEM_H_ */
 diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
-index 02fc0fc..a503cb9 100644
+index 02fc0fc..e5a9a50 100644
 --- a/src/kernel/memory.cpp
 +++ b/src/kernel/memory.cpp
-@@ -1,4250 +1,4875 @@
+@@ -1,4250 +1,5099 @@
 -#include "kernel/memory.h"
 -
 -#include "common/assert.h"
@@ -25272,6 +25272,230 @@ index 02fc0fc..a503cb9 100644
 +	UnmapGpuRange(vaddr, mapped_size);
 +	return FreeGuestMemoryOwner(vaddr, mapped_size);
 +}
++
++// ---- BC5 experiment 0405 (series e6 of experiment 0401), KYTY_BC5_JIT_SHM: JIT shared memory (exp 0405 R3 M31) ----
++// What a JIT engine (an emulator, a script runtime) asks for to write code through one view and run it through another.
++// libKernel.cpp registers the three calls under the NIDs of their public names only when KYTY_BC5_JIT_SHM is on; with it
++// off nothing here is reachable and today's path is unchanged. Behaviour of AnyPS5 4f41f4c375f5 (GPL-2.0-only):
++// core/libs/prx/libkernel/DirectMemory/Jit.cpp:197-237, its note docs/dev/debt/libkernel.md:175 and the close path
++// core/libs/prx/libkernel/File/src/Open.cpp:312-320. Adapted, no code copied; the names and the structure are ours.
++//   create (label, bytes, ceiling, handle out): a new area of `bytes` whose views never get more than `ceiling` (CPU
++//       read 1, write 2, execute 4). The label is not used. No handle out, `bytes` 0 or not a multiple of the 16 KiB
++//       guest page, or other bits in `ceiling`: EINVAL. The host out of descriptors or memory: EMFILE, ENFILE or ENOMEM.
++//   alias (handle, ceiling, handle out): one more handle on the same area, with a ceiling no wider than the handle's.
++//       No handle out or other bits: EINVAL; not an area's handle: EBADF; a wider ceiling: EACCES.
++//   map (handle, prot, address in/out): the whole area at a free guest address; the address passed in is a hint only,
++//       and the address chosen is written back. No address or other bits: EINVAL; not an area's handle: EBADF; prot
++//       above the handle's ceiling: EACCES.
++//   Write and execute count as read when two protections are compared. A closed handle is gone (libKernel.cpp's close
++//   wrappers call Bc5JitHandleClose); views stay mapped until munmap, and an area lives as long as one of its views.
++// Host side, Linux: an area is a memfd of `bytes`. A view is a guest runtime range made by AllocateGuestRuntimeMemory (the
++// range table and the guest address space, so VirtualQuery, QueryMemoryProtection, mprotect and munmap treat it as any
++// other committed range), whose host pages are then replaced by a MAP_SHARED mapping of the memfd: every view of an area
++// shows the same bytes. munmap puts the placeholder back over it. As everywhere in this file the host view is read-write,
++// plus execute when prot has it; the range table keeps the guest's prot. Areas count against no memory budget. Other
++// hosts: create answers ENOMEM. Handles are our own numbers, 0x40000 up and never reused, clear of the file system's
++// descriptors (3 up), the sockets (128-1023) and the epoll ids (1024 up).
++// TODO(verify): the error answers and the budget are not measured on a console (AnyPS5's note says the same).
++static constexpr int      BC5_JIT_CPU_BITS     = PROT_CPU_READ | PROT_CPU_WRITE | PROT_CPU_EXEC;
++static constexpr uint64_t BC5_JIT_PAGE         = 0x4000; // the guest page, as GuestPageSize in this file
++static constexpr int      BC5_JIT_FIRST_HANDLE = 0x40000;
++static constexpr int      BC5_JIT_LAST_HANDLE  = 0x7fffffff;
++static constexpr char     BC5_JIT_VIEW_NAME[]  = "bc5-jit";
++
++// The bits a protection grants, write and execute taken to include read.
++static int Bc5JitGrants(int prot) {
++	return (prot & (PROT_CPU_WRITE | PROT_CPU_EXEC)) != 0 ? (prot | PROT_CPU_READ) : prot;
++}
++
++static bool Bc5JitFits(int prot, int ceiling) {
++	return (Bc5JitGrants(prot) & ~Bc5JitGrants(ceiling)) == 0;
++}
++
++// The host memory of one area. Its descriptor is closed with the area's last handle; mapped views keep their pages.
++struct Bc5JitArea {
++	int      host_fd = -1;
++	uint64_t bytes   = 0;
++
++	Bc5JitArea(int fd, uint64_t size): host_fd(fd), bytes(size) {}
++	~Bc5JitArea() {
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++		::close(host_fd);
++#endif
++	}
++	KYTY_CLASS_NO_COPY(Bc5JitArea);
++};
++
++struct Bc5JitHandle {
++	std::shared_ptr<Bc5JitArea> area;
++	int                         ceiling = 0;
++};
++
++static std::mutex                  g_bc5_jit_mutex;
++static std::map<int, Bc5JitHandle> g_bc5_jit_handles;
++static int                         g_bc5_jit_next_handle = BC5_JIT_FIRST_HANDLE;
++
++// A host errno as the guest's answer.
++static int Bc5JitHostAnswer(int error) {
++	switch (error) {
++		case EMFILE: return KERNEL_ERROR_EMFILE;
++		case ENFILE: return KERNEL_ERROR_ENFILE;
++		default: return KERNEL_ERROR_ENOMEM;
++	}
++}
++
++static std::shared_ptr<Bc5JitArea> Bc5JitNewArea(uint64_t bytes, int* error) {
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++	if (bytes > static_cast<uint64_t>(INT64_MAX)) {
++		*error = ENOMEM;
++		return nullptr;
++	}
++	// 0x0001 is MFD_CLOEXEC (Linux include/uapi/linux/memfd.h); this file calls memfd_create through syscall, as here.
++	const int fd = static_cast<int>(syscall(SYS_memfd_create, "bc5-jit", 0x0001u));
++	if (fd < 0) {
++		*error = errno;
++		return nullptr;
++	}
++	if (ftruncate(fd, static_cast<off_t>(bytes)) != 0) {
++		*error = errno;
++		::close(fd);
++		return nullptr;
++	}
++	return std::make_shared<Bc5JitArea>(fd, bytes);
++#else
++	(void)bytes;
++	*error = ENOMEM;
++	return nullptr;
++#endif
++}
++
++// Puts a shared view of the area over the host pages of the committed guest range at vaddr, area.bytes long.
++static bool Bc5JitShowArea(const Bc5JitArea& area, uint64_t vaddr, int prot) {
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++	const int host_prot = PROT_READ | PROT_WRITE | ((prot & PROT_CPU_EXEC) != 0 ? PROT_EXEC : 0);
++	void*     view =
++	    mmap(reinterpret_cast<void*>(vaddr), area.bytes, host_prot, MAP_SHARED | MAP_FIXED, area.host_fd, 0);
++	return view != MAP_FAILED && reinterpret_cast<uint64_t>(view) == vaddr;
++#else
++	(void)area;
++	(void)vaddr;
++	(void)prot;
++	return false;
++#endif
++}
++
++static int Bc5JitAddHandle(std::shared_ptr<Bc5JitArea> area, int ceiling, int* handle_out) {
++	std::lock_guard<std::mutex> lock(g_bc5_jit_mutex);
++	if (g_bc5_jit_next_handle == BC5_JIT_LAST_HANDLE) {
++		return KERNEL_ERROR_EMFILE;
++	}
++	const int handle            = g_bc5_jit_next_handle++;
++	g_bc5_jit_handles[handle]   = Bc5JitHandle {std::move(area), ceiling};
++	*handle_out                 = handle;
++	return OK;
++}
++
++// The area behind a handle, if the handle is one and `prot` fits under its ceiling; else the answer.
++static int Bc5JitLookUp(int handle, int prot, std::shared_ptr<Bc5JitArea>* area) {
++	std::lock_guard<std::mutex> lock(g_bc5_jit_mutex);
++	const auto                  it = g_bc5_jit_handles.find(handle);
++	if (it == g_bc5_jit_handles.end()) {
++		return KERNEL_ERROR_EBADF;
++	}
++	if (!Bc5JitFits(prot, it->second.ceiling)) {
++		return KERNEL_ERROR_EACCES;
++	}
++	*area = it->second.area;
++	return OK;
++}
++
++int KYTY_SYSV_ABI Bc5JitAreaCreate(const char* label, size_t bytes, int ceiling, int* handle_out) {
++	PRINT_NAME();
++
++	(void)label;
++	if (handle_out == nullptr || bytes == 0 || (bytes & (BC5_JIT_PAGE - 1u)) != 0 || (ceiling & ~BC5_JIT_CPU_BITS) != 0) {
++		return KERNEL_ERROR_EINVAL;
++	}
++	int  error = 0;
++	auto area  = Bc5JitNewArea(bytes, &error);
++	if (area == nullptr) {
++		LOGF("\t jit area of 0x%016" PRIx64 " bytes: the host refused it (errno %d)\n", static_cast<uint64_t>(bytes), error);
++		return Bc5JitHostAnswer(error);
++	}
++	const int result = Bc5JitAddHandle(std::move(area), ceiling, handle_out);
++	LOGF("\t jit area: 0x%016" PRIx64 " bytes, ceiling 0x%x, handle %d\n", static_cast<uint64_t>(bytes), ceiling,
++	     result == OK ? *handle_out : -1);
++	return result;
++}
++
++int KYTY_SYSV_ABI Bc5JitAreaAlias(int handle, int ceiling, int* handle_out) {
++	PRINT_NAME();
++
++	if (handle_out == nullptr || (ceiling & ~BC5_JIT_CPU_BITS) != 0) {
++		return KERNEL_ERROR_EINVAL;
++	}
++	std::shared_ptr<Bc5JitArea> area;
++	if (const int result = Bc5JitLookUp(handle, ceiling, &area); result != OK) {
++		return result;
++	}
++	const int result = Bc5JitAddHandle(std::move(area), ceiling, handle_out);
++	LOGF("\t jit alias of handle %d: ceiling 0x%x, handle %d\n", handle, ceiling, result == OK ? *handle_out : -1);
++	return result;
++}
++
++int KYTY_SYSV_ABI Bc5JitAreaMap(int handle, int prot, void** where) {
++	PRINT_NAME();
++
++	if (where == nullptr || (prot & ~BC5_JIT_CPU_BITS) != 0) {
++		return KERNEL_ERROR_EINVAL;
++	}
++	std::shared_ptr<Bc5JitArea> area;
++	if (const int result = Bc5JitLookUp(handle, prot, &area); result != OK) {
++		return result;
++	}
++
++	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++
++	const auto mode  = static_cast<VirtualMemory::Mode>(prot);
++	const auto hint  = reinterpret_cast<uint64_t>(*where) & ~(BC5_JIT_PAGE - 1u);
++	uint64_t   vaddr = 0;
++	if (hint != 0) {
++		vaddr = AllocateGuestRuntimeMemory(hint, area->bytes, mode, BC5_JIT_VIEW_NAME, VirtualRangeType::Runtime, false);
++	}
++	if (vaddr == 0) {
++		vaddr = AllocateGuestRuntimeMemory(0, area->bytes, mode, BC5_JIT_VIEW_NAME, VirtualRangeType::Runtime, false);
++	}
++	if (vaddr == 0) {
++		return KERNEL_ERROR_ENOMEM;
++	}
++	if (!Bc5JitShowArea(*area, vaddr, prot)) {
++		UnmapGpuRange(vaddr, area->bytes);
++		EXIT_IF(!FreeGuestMemoryOwner(vaddr, area->bytes));
++		return KERNEL_ERROR_ENOMEM;
++	}
++	*where = reinterpret_cast<void*>(vaddr);
++	LOGF("\t jit view of handle %d: 0x%016" PRIx64 "..0x%016" PRIx64 ", prot 0x%x\n", handle, vaddr, vaddr + area->bytes,
++	     prot);
++	return OK;
++}
++
++// Lets a JIT handle go; false when `handle` is not one (the caller then does today's close).
++bool Bc5JitHandleClose(int handle) {
++	if (handle < BC5_JIT_FIRST_HANDLE) {
++		return false;
++	}
++	std::shared_ptr<Bc5JitArea> last; // destroyed after the lock is released
++	std::lock_guard<std::mutex>  lock(g_bc5_jit_mutex);
++	const auto                   it = g_bc5_jit_handles.find(handle);
++	if (it == g_bc5_jit_handles.end()) {
++		return false;
++	}
++	last = std::move(it->second.area);
++	g_bc5_jit_handles.erase(it);
++	LOGF("\t jit handle %d closed\n", handle);
++	return true;
++}
++// ---- end of BC5 experiment 0405 series e6, KYTY_BC5_JIT_SHM ----------------------------------------------------------
 +
 +// Experiment 0405 series e5, BC5_R3_MPROTECT_GAPS (M1): protection over gaps, as a PS5 does. AnyPS5 measured on
 +// firmware 13.60 that sceKernelMprotect, mprotect and sceKernelMtypeprotect change the mapped parts of a range, skip its
@@ -47842,7 +48066,7 @@ index 183cd85..d36b6cd 100644
  	LIB_FUNC("bAM9Qwofus0", LibJson2::JsonArrayBack);
  	LIB_FUNC("UeuWT+yNdCQ", LibJson2::JsonValueBoolCtor);
 diff --git a/src/libs/libKernel.cpp b/src/libs/libKernel.cpp
-index 51c3a0e..2b13dd8 100644
+index 51c3a0e..0e02d2b 100644
 --- a/src/libs/libKernel.cpp
 +++ b/src/libs/libKernel.cpp
 @@ -25,6 +25,7 @@
@@ -47974,7 +48198,128 @@ index 51c3a0e..2b13dd8 100644
  
  	if (Network::Net::IsSocket(d)) {
  		return Network::Net::Send(d, str, static_cast<uint64_t>(size), 0);
-@@ -2111,6 +2196,334 @@ int KYTY_SYSV_ABI KernelSyncOnAddressWake(volatile void* address, int32_t count)
+@@ -1836,6 +1921,120 @@ uint64_t KYTY_SYSV_ABI KernelGetGPI() {
+ 	return bits;
+ }
+ 
++// ---- BC5 experiment 0405 (series e6 of experiment 0401): KYTY_BC5_JIT_SHM and KYTY_BC5_FW_KERNEL ----------------------
++// KYTY_BC5_JIT_SHM (exp 0405 R3 M31; the maintainer's decision 3 of 2026-11-04): registers the three JIT shared-memory
++// calls (kernel/memory.cpp, Bc5JitArea*; behaviour after AnyPS5 4f41f4c375f5 core/libs/prx/libkernel/DirectMemory/
++// Jit.cpp:197-237, GPL-2.0-only) under the NIDs of their public names, and puts a wrapper in front of today's close
++// entry points so that closing a JIT handle lets it go (AnyPS5 core/libs/prx/libkernel/File/src/Open.cpp:312-320); any
++// other descriptor goes on to today's function. Off: nothing is registered and close is today's.
++// KYTY_BC5_FW_KERNEL (exp 0405 R1 row 520a8249a; decision 1, a firmware run): item "notify", see below.
++// Each is read once, at registration, and its first use prints one stderr line: "[bc5] exp 0405: jit shm on (items:
++// create,alias,map,close)" or "[bc5] exp 0405: jit shm off"; "[bc5] exp 0405: fw kernel on (items: notify)" or
++// "[bc5] exp 0405: fw kernel off". A switch is on when set, non-empty and not "0"; KYTY_BC5_FW_KERNEL may name its items
++// in a comma list, and any other value turns all of them on.
++namespace Memory { // defined in kernel/memory.cpp (declared here: no header change)
++int KYTY_SYSV_ABI Bc5JitAreaCreate(const char* label, size_t bytes, int ceiling, int* handle_out);
++int KYTY_SYSV_ABI Bc5JitAreaAlias(int handle, int ceiling, int* handle_out);
++int KYTY_SYSV_ABI Bc5JitAreaMap(int handle, int prot, void** where);
++bool              Bc5JitHandleClose(int handle);
++} // namespace Memory
++
++static bool Bc5JitEnvOn(const char* value) {
++	return value != nullptr && value[0] != '\0' && std::strcmp(value, "0") != 0;
++}
++
++static bool Bc5JitShmOn() {
++	static const bool on = [] {
++		const bool v = Bc5JitEnvOn(std::getenv("KYTY_BC5_JIT_SHM"));
++		std::fprintf(stderr, "%s",
++		             v ? "[bc5] exp 0405: jit shm on (items: create,alias,map,close)\n" : "[bc5] exp 0405: jit shm off\n");
++		return v;
++	}();
++	return on;
++}
++
++// sceKernelClose: a JIT handle is let go here; any other descriptor goes to today's function.
++static int KYTY_SYSV_ABI Bc5JitSceClose(int d) {
++	if (Memory::Bc5JitHandleClose(d)) {
++		return OK;
++	}
++	return FileSystem::KernelClose(d);
++}
++
++// close and _close (the errno convention): the same, with today's LibKernel::close behind it.
++static int KYTY_SYSV_ABI Bc5JitPosixClose(int d) {
++	if (Memory::Bc5JitHandleClose(d)) {
++		return 0;
++	}
++	return LibKernel::close(d);
++}
++
++static constexpr uint32_t BC5_FW_NOTIFY = 1u << 0u;
++static constexpr uint32_t BC5_FW_ALL    = BC5_FW_NOTIFY;
++
++// The items of KYTY_BC5_FW_KERNEL that are on (0: off), read once.
++static uint32_t Bc5FwKernelItems() {
++	static const uint32_t items = [] {
++		const char* e = std::getenv("KYTY_BC5_FW_KERNEL");
++		uint32_t    v = 0;
++		if (Bc5JitEnvOn(e)) {
++			const std::string list = std::string(",") + e + ",";
++			if (list.find(",notify,") != std::string::npos) {
++				v |= BC5_FW_NOTIFY;
++			}
++			if (v == 0) {
++				v = BC5_FW_ALL;
++			}
++		}
++		std::fprintf(stderr, "%s",
++		             v != 0 ? "[bc5] exp 0405: fw kernel on (items: notify)\n" : "[bc5] exp 0405: fw kernel off\n");
++		return v;
++	}();
++	return items;
++}
++
++static bool Bc5FwKernelOn(uint32_t item) {
++	return (Bc5FwKernelItems() & item) != 0;
++}
++
++// KYTY_BC5_FW_KERNEL "notify": sceKernelSendNotificationRequest (NID zl7hupSO0C0), not registered today. AnyPS5
++// 4f41f4c375f5 docs/dev/debt/libkernel.md and libSceSysUtil.md (commit 520a8249a, GPL-2.0-only) give @BunnyFl's run of
++// firmware 13.42 under an emulator (AnyPS5 pull request 9081, comment 6418015178): the library only writes the request
++// to a notification descriptor, retrying on EINTR, and returns 0 or 0x80020000 | errno; the request
++// sceSysUtilSendSystemNotificationWithText makes is 0xc30 bytes, kind 5 in its first int32 and the text at +0x2d (at
++// most 179 characters). There is no notification device here: the request is taken (0) and, for a kind 5 request of
++// 0xc30 bytes, its text goes to the log. AnyPS5's own refusals of other kinds, sizes, devices and flags are not the
++// firmware's (its note says so) and are not ported. Adapted, no code copied.
++// TODO(verify): a NULL request answers EFAULT, as the descriptor write would fault; inferred from the run's
++// "0x80020000 | errno", not measured.
++static int KYTY_SYSV_ABI Bc5KernelSendNotificationRequest(int sink, const void* block, size_t block_bytes, int options) {
++	PRINT_NAME();
++
++	if (block == nullptr) {
++		return KERNEL_ERROR_EFAULT;
++	}
++	constexpr size_t SYSTEM_TEXT_BYTES = 0xc30;
++	constexpr size_t TEXT_AT           = 0x2d;
++	constexpr int    SYSTEM_TEXT_KIND  = 5;
++	int32_t          kind              = 0;
++	if (block_bytes >= sizeof(kind)) {
++		std::memcpy(&kind, block, sizeof(kind));
++	}
++	const char* text = static_cast<const char*>(block) + TEXT_AT;
++	const auto* stop = (kind == SYSTEM_TEXT_KIND && block_bytes == SYSTEM_TEXT_BYTES)
++	                       ? static_cast<const char*>(std::memchr(text, 0, block_bytes - TEXT_AT))
++	                       : nullptr;
++	if (stop != nullptr) {
++		const std::string message(text, stop);
++		LOGF("[bc5] notification (kind 5): %s\n", message.c_str());
++	} else {
++		LOGF("[bc5] notification request: sink %d, kind %d, %" PRIu64 " bytes, options 0x%x\n", sink, static_cast<int>(kind),
++		     static_cast<uint64_t>(block_bytes), static_cast<unsigned>(options));
++	}
++	return OK;
++}
++// ---- end of BC5 experiment 0405 series e6 -----------------------------------------------------------------------------
++
+ } // namespace LibKernel
+ 
+ namespace LibKernelWriteThrottling {
+@@ -2111,6 +2310,334 @@ int KYTY_SYSV_ABI KernelSyncOnAddressWake(volatile void* address, int32_t count)
  	return LibKernel::SyncOnAddress::Wake(address, count);
  }
  
@@ -48309,7 +48654,7 @@ index 51c3a0e..2b13dd8 100644
  LIB_DEFINE(InitLibKernel_1_Posix) {
  	LIB_FUNC("k+AXqu2-eBc", getpagesize);
  	LIB_FUNC("lLMT9vJAck0", clock_gettime);
-@@ -2118,6 +2531,11 @@ LIB_DEFINE(InitLibKernel_1_Posix) {
+@@ -2118,6 +2645,11 @@ LIB_DEFINE(InitLibKernel_1_Posix) {
  	LIB_FUNC("n88vx3C5nW8", gettimeofday);
  	LIB_FUNC("NhpspxdjEKU", nanosleep);
  	LIB_FUNC("yS8U2TGCe1A", nanosleep);
@@ -48321,7 +48666,7 @@ index 51c3a0e..2b13dd8 100644
  	LIB_FUNC("E6ao34wPw+U", stat);
  	LIB_FUNC("JGMio+21L4c", mkdir);
  	LIB_FUNC("ih4CD9-gghM", Posix::ftruncate);
-@@ -2139,9 +2557,17 @@ LIB_DEFINE(InitLibKernel_1_Posix) {
+@@ -2139,9 +2671,17 @@ LIB_DEFINE(InitLibKernel_1_Posix) {
  	LIB_FUNC("lZzFeSxPl08", Posix::pthread_setcancelstate);
  	LIB_FUNC("a2P9wYGeZvc", Posix::pthread_setprio);
  	LIB_FUNC("FIs3-UQT9sg", Posix::pthread_getschedparam);
@@ -48341,7 +48686,7 @@ index 51c3a0e..2b13dd8 100644
  	LIB_FUNC("B5GmVDKwpn0", Posix::pthread_yield);
  	LIB_FUNC("h9CcP3J0oVM", Posix::pthread_join);
  	LIB_FUNC("wtkt-teR1so", Posix::pthread_attr_init);
-@@ -2178,15 +2604,27 @@ LIB_DEFINE(InitLibKernel_1_Posix) {
+@@ -2178,15 +2718,27 @@ LIB_DEFINE(InitLibKernel_1_Posix) {
  	LIB_FUNC("1471ajPzxh0", Posix::pthread_rwlock_destroy);
  	LIB_FUNC("ytQULN-nhL4", Posix::pthread_rwlock_init);
  	LIB_FUNC("sIlRvQqsN2Y", Posix::pthread_rwlock_wrlock);
@@ -48373,7 +48718,7 @@ index 51c3a0e..2b13dd8 100644
  	LIB_FUNC("AqBioC2vF3I", LibKernel::read);
  	LIB_FUNC("TU-d9PfIHPM", Posix::socket);
  	LIB_FUNC("KuOmgKoqCdY", Posix::bind);
-@@ -2204,6 +2642,22 @@ LIB_DEFINE(InitLibKernel_1_Posix) {
+@@ -2204,6 +2756,26 @@ LIB_DEFINE(InitLibKernel_1_Posix) {
  	LIB_FUNC("4n51s0zEf0c", Posix::inet_pton);
  	LIB_FUNC("5jRCs2axtr4", Posix::inet_ntop);
  	LIB_FUNC("cfwBSQyr5Ys", cfwBSQyr5Ys);
@@ -48382,7 +48727,11 @@ index 51c3a0e..2b13dd8 100644
 +	// import reached libkernel's registration of the NID through the NID fallback, often an sce function (SCE codes
 +	// instead of -1/errno).
 +	LIB_FUNC("wuCroIGjt2g", LibKernel::open);
-+	LIB_FUNC("bY-PO6JhzhQ", LibKernel::close);
++	if (LibKernel::Bc5JitShmOn()) { // BC5 experiment 0405 series e6 (KYTY_BC5_JIT_SHM): close lets a JIT handle go
++		LIB_FUNC("bY-PO6JhzhQ", LibKernel::Bc5JitPosixClose);
++	} else {
++		LIB_FUNC("bY-PO6JhzhQ", LibKernel::close);
++	}
 +	LIB_FUNC("FN4gaPmuFV8", LibKernel::write);
 +	LIB_FUNC("Oy6IpwgtYOk", Posix::lseek);
 +	LIB_FUNC("mqQMh1zPPT8", Posix::fstat);
@@ -48396,7 +48745,7 @@ index 51c3a0e..2b13dd8 100644
  }
  
  } // namespace Posix
-@@ -2239,6 +2693,91 @@ int KYTY_SYSV_ABI sceCoredumpUnregisterCoredumpHandler() {
+@@ -2239,6 +2811,91 @@ int KYTY_SYSV_ABI sceCoredumpUnregisterCoredumpHandler() {
  	return OK;
  }
  
@@ -48488,7 +48837,7 @@ index 51c3a0e..2b13dd8 100644
  } // namespace Coredump
  
  namespace Fiber {
-@@ -2458,47 +2997,41 @@ static void FiberSetContextValid(FiberObject* fiber, bool valid) {
+@@ -2458,47 +3115,41 @@ static void FiberSetContextValid(FiberObject* fiber, bool valid) {
  }
  
  #if defined(__x86_64__) || defined(_M_X64)
@@ -48571,7 +48920,7 @@ index 51c3a0e..2b13dd8 100644
  }
  #else
  static int FiberSaveContext(FiberCpuContext* ctx) {
-@@ -2839,10 +3372,12 @@ int32_t KYTY_SYSV_ABI FiberGetThreadFramePointerAddress(uint64_t* addr_frame_poi
+@@ -2839,10 +3490,12 @@ int32_t KYTY_SYSV_ABI FiberGetThreadFramePointerAddress(uint64_t* addr_frame_poi
  
  } // namespace Fiber
  
@@ -48585,7 +48934,7 @@ index 51c3a0e..2b13dd8 100644
  }
  
  int KYTY_SYSV_ABI KernelAioInitializeImpl(void* param, int32_t size) {
-@@ -3045,6 +3580,11 @@ LIB_DEFINE(InitCoredump_1) {
+@@ -3045,11 +3698,20 @@ LIB_DEFINE(InitCoredump_1) {
  
  	LIB_FUNC("8zLSfEfW5AU", Coredump::sceCoredumpRegisterCoredumpHandler);
  	LIB_FUNC("fFkhOgztiCA", Coredump::sceCoredumpUnregisterCoredumpHandler);
@@ -48597,7 +48946,17 @@ index 51c3a0e..2b13dd8 100644
  }
  
  LIB_DEFINE(InitLibKernel_1_FS) {
-@@ -3058,6 +3598,10 @@ LIB_DEFINE(InitLibKernel_1_FS) {
+ 	LIB_FUNC("1G3lF1Gg1k8", FileSystem::KernelOpen);
+-	LIB_FUNC("UK2Tl2DWUns", FileSystem::KernelClose);
++	if (LibKernel::Bc5JitShmOn()) { // BC5 experiment 0405 series e6 (KYTY_BC5_JIT_SHM): close lets a JIT handle go
++		LIB_FUNC("UK2Tl2DWUns", LibKernel::Bc5JitSceClose);
++	} else {
++		LIB_FUNC("UK2Tl2DWUns", FileSystem::KernelClose);
++	}
+ 	LIB_FUNC("Cg4srZ6TKbU", FileSystem::KernelRead);
+ 	LIB_FUNC("4wSze92BhLI", FileSystem::KernelWrite);
+ 	LIB_FUNC("+r3rMFwItV4", FileSystem::KernelPread);
+@@ -3058,6 +3720,10 @@ LIB_DEFINE(InitLibKernel_1_FS) {
  	LIB_FUNC("kBwCPsYX-m4", FileSystem::KernelFstat);
  	LIB_FUNC("AUXVxWeJU-A", FileSystem::KernelUnlink);
  	LIB_FUNC("52NcYU9+lEo", FileSystem::KernelRename);
@@ -48608,7 +48967,7 @@ index 51c3a0e..2b13dd8 100644
  	LIB_FUNC("taRWhTJFTgE", FileSystem::KernelGetdirentries);
  	LIB_FUNC("oib76F-12fk", FileSystem::KernelLseek);
  	LIB_FUNC("j2AIqSqJP0w", FileSystem::KernelGetdents);
-@@ -3079,6 +3623,7 @@ LIB_DEFINE(InitLibKernel_1_Mem) {
+@@ -3079,6 +3745,7 @@ LIB_DEFINE(InitLibKernel_1_Mem) {
  	LIB_FUNC("rTXw65xmLIA", Memory::KernelAllocateDirectMemory);
  	LIB_FUNC("B+vc2AO2Zrc", Memory::KernelAllocateMainDirectMemory);
  	LIB_FUNC("rVjRvHJ0X6c", Memory::KernelVirtualQuery);
@@ -48616,7 +48975,19 @@ index 51c3a0e..2b13dd8 100644
  	LIB_FUNC("yDBwVAolDgg", Memory::KernelIsStack);
  	LIB_FUNC("7oxv3PPCumo", Memory::KernelReserveVirtualRange);
  	LIB_FUNC("L-Q3LEjIbgA", Memory::KernelMapDirectMemory);
-@@ -3180,7 +3725,7 @@ LIB_DEFINE(InitLibKernel_1_Pthread) {
+@@ -3103,6 +3770,11 @@ LIB_DEFINE(InitLibKernel_1_Mem) {
+ 	LIB_FUNC("LXo1tpFqJGs", Memory::KernelMemoryPoolDecommit);
+ 	LIB_FUNC("YN878uKRBbE", Memory::KernelMemoryPoolBatch);
+ 	LIB_FUNC("bvD+95Q6asU", Memory::KernelMemoryPoolGetBlockStats);
++	if (LibKernel::Bc5JitShmOn()) { // BC5 experiment 0405 series e6 (KYTY_BC5_JIT_SHM): exp 0405 R3 M31
++		LIB_FUNC("avvJ3J0H0EY", Memory::Bc5JitAreaCreate); // sceKernelJitCreateSharedMemory
++		LIB_FUNC("MR221Mwo0Pc", Memory::Bc5JitAreaAlias);  // sceKernelJitCreateAliasOfSharedMemory
++		LIB_FUNC("YKT49TOLQWs", Memory::Bc5JitAreaMap);    // sceKernelJitMapSharedMemory
++	}
+ }
+ 
+ LIB_DEFINE(InitLibKernel_1_Equeue) {
+@@ -3180,7 +3852,7 @@ LIB_DEFINE(InitLibKernel_1_Pthread) {
  	LIB_FUNC("1tKyG7RlMJo", LibKernel::PthreadGetprio);
  	LIB_FUNC("W0Hpm2X0uPE", LibKernel::PthreadSetprio);
  	LIB_FUNC("T72hz6ffq08", LibKernel::PthreadYield);
@@ -48625,7 +48996,7 @@ index 51c3a0e..2b13dd8 100644
  	LIB_FUNC("CBNtXOoef-E", Posix::sched_get_priority_max);
  	LIB_FUNC("m0iS6jNsXds", Posix::sched_get_priority_min);
  	LIB_FUNC("EI-5-jlq2dE", LibKernel::PthreadGetthreadid);
-@@ -3202,7 +3747,7 @@ LIB_DEFINE(InitLibKernel_1_Pthread) {
+@@ -3202,7 +3874,7 @@ LIB_DEFINE(InitLibKernel_1_Pthread) {
  	LIB_FUNC("Bvn74vj6oLo", LibKernel::PthreadAttrSetstack);
  	LIB_FUNC("F+yfmduIBB8", LibKernel::PthreadAttrSetstackaddr);
  	LIB_FUNC("UTXzJbWhhTE", LibKernel::PthreadAttrSetstacksize);
@@ -48634,7 +49005,7 @@ index 51c3a0e..2b13dd8 100644
  	LIB_FUNC("-Wreprtu0Qs", LibKernel::PthreadAttrSetdetachstate);
  	LIB_FUNC("El+cQ20DynU", LibKernel::PthreadAttrSetguardsize);
  	LIB_FUNC("eXbUSpEaTsA", LibKernel::PthreadAttrSetinheritsched);
-@@ -3215,12 +3760,15 @@ LIB_DEFINE(InitLibKernel_1_Pthread) {
+@@ -3215,12 +3887,15 @@ LIB_DEFINE(InitLibKernel_1_Pthread) {
  	LIB_FUNC("6ULAa0fq4jA", LibKernel::PthreadRwlockInit);
  	LIB_FUNC("BB+kb08Tl9A", LibKernel::PthreadRwlockDestroy);
  	LIB_FUNC("Ox9i0c7L5w0", LibKernel::PthreadRwlockRdlock);
@@ -48653,7 +49024,7 @@ index 51c3a0e..2b13dd8 100644
  	LIB_FUNC("i2ifZ3fS2fo", LibKernel::PthreadRwlockattrDestroy);
  	LIB_FUNC("yOfGg-I1ZII", LibKernel::PthreadRwlockattrInit);
  	LIB_FUNC("qsdmgXjqSgk", LibKernel::PthreadRwlockattrDestroy);
-@@ -3229,11 +3777,11 @@ LIB_DEFINE(InitLibKernel_1_Pthread) {
+@@ -3229,11 +3904,11 @@ LIB_DEFINE(InitLibKernel_1_Pthread) {
  
  	LIB_FUNC("2Tb92quprl0", LibKernel::PthreadCondInit);
  	LIB_FUNC("g+PZd2hiacg", LibKernel::PthreadCondDestroy);
@@ -48667,7 +49038,7 @@ index 51c3a0e..2b13dd8 100644
  	LIB_FUNC("o69RpYO-Mu0", LibKernel::PthreadCondSignalto);
  	LIB_FUNC("BmMjYxmew1w", LibKernel::PthreadCondTimedwait);
  	LIB_FUNC("27bAgiJmOh0", Posix::pthread_cond_timedwait);
-@@ -3262,7 +3810,11 @@ LIB_DEFINE(InitLibKernel_1_Pthread) {
+@@ -3262,7 +3937,11 @@ LIB_DEFINE(InitLibKernel_1_Pthread) {
  	LIB_FUNC("Io9+nTKXZtA", Posix::pthread_mutex_timedlock);
  	LIB_FUNC("mkx2fVhNMsg", Posix::pthread_cond_broadcast);
  	LIB_FUNC("Op8TBGY5KHg", Posix::pthread_cond_wait);
@@ -48680,7 +49051,7 @@ index 51c3a0e..2b13dd8 100644
  	LIB_FUNC("Z4QosVuAsA0", Posix::pthread_once);
  	LIB_FUNC("Oy6IpwgtYOk", Posix::lseek);
  	LIB_FUNC("ezv-RSBNKqI", Posix::pread);
-@@ -3271,11 +3823,15 @@ LIB_DEFINE(InitLibKernel_1_Pthread) {
+@@ -3271,11 +3950,19 @@ LIB_DEFINE(InitLibKernel_1_Pthread) {
  	LIB_FUNC("mqQMh1zPPT8", Posix::fstat);
  
  	LIB_FUNC("z0dtnPxYgtg", chmod);
@@ -48695,12 +49066,16 @@ index 51c3a0e..2b13dd8 100644
 -	LIB_FUNC("bY-PO6JhzhQ", FileSystem::KernelClose);
 -	LIB_FUNC("FN4gaPmuFV8", FileSystem::KernelWrite);
 +	LIB_FUNC("wuCroIGjt2g", LibKernel::open); // experiment 0338: the posix entry point
-+	LIB_FUNC("bY-PO6JhzhQ", LibKernel::close); // experiment 0338: the posix entry point
++	if (LibKernel::Bc5JitShmOn()) { // BC5 experiment 0405 series e6 (KYTY_BC5_JIT_SHM): close lets a JIT handle go
++		LIB_FUNC("bY-PO6JhzhQ", LibKernel::Bc5JitPosixClose);
++	} else {
++		LIB_FUNC("bY-PO6JhzhQ", LibKernel::close); // experiment 0338: the posix entry point
++	}
 +	LIB_FUNC("FN4gaPmuFV8", LibKernel::write); // experiment 0338: the posix entry point
  }
  
  static void AddLibkernelUnityFunc(Loader::SymbolDatabase* s, const char* nid, uint64_t func,
-@@ -3291,7 +3847,21 @@ static void AddLibkernelUnityFunc(Loader::SymbolDatabase* s, const char* nid, ui
+@@ -3291,7 +3978,24 @@ static void AddLibkernelUnityFunc(Loader::SymbolDatabase* s, const char* nid, ui
  	s->Add(sr, func, dbg_name);
  }
  
@@ -48719,10 +49094,13 @@ index 51c3a0e..2b13dd8 100644
 +
  LIB_DEFINE(InitLibKernel_1) {
 +	LIB_FUNC("NH6xARDOVv8", Bc5KernelGetOperationMode);
++	if (LibKernel::Bc5FwKernelOn(LibKernel::BC5_FW_NOTIFY)) { // BC5 experiment 0405 series e6 (KYTY_BC5_FW_KERNEL notify)
++		LIB_FUNC("zl7hupSO0C0", LibKernel::Bc5KernelSendNotificationRequest); // sceKernelSendNotificationRequest
++	}
  	InitLibKernel_1_FS(s);
  	InitLibKernel_1_Mem(s);
  	InitLibKernel_1_Equeue(s);
-@@ -3312,6 +3882,9 @@ LIB_DEFINE(InitLibKernel_1) {
+@@ -3312,6 +4016,9 @@ LIB_DEFINE(InitLibKernel_1) {
  	LIB_FUNC("-ZR+hG7aDHw", LibKernel::KernelSleep);
  	LIB_FUNC("6c3rCVE-fTU", LibKernel::open);
  	LIB_FUNC("6xVpy0Fdq+I", LibKernel::sigprocmask);
@@ -48732,7 +49110,20 @@ index 51c3a0e..2b13dd8 100644
  	LIB_FUNC("6Z83sYWFlA8", LibKernel::exit);
  	LIB_FUNC("8OnWXlgQlvo", LibKernel::KernelRtldThreadAtexitDecrement);
  	LIB_FUNC("959qrazPIrg", LibKernel::KernelGetProcParam);
-@@ -3364,6 +3937,8 @@ LIB_DEFINE(InitLibKernel_1) {
+@@ -3341,7 +4048,11 @@ LIB_DEFINE(InitLibKernel_1) {
+ 	LIB_FUNC("nu4a0-arQis", KernelAioInitializeParam);
+ 	LIB_FUNC("il03nluKfMk", LibKernel::KernelRaiseException);
+ 	LIB_FUNC("iKJMWrAumPE", LibKernel::getargc);
+-	LIB_FUNC("NNtFaKJbPt0", LibKernel::close);
++	if (LibKernel::Bc5JitShmOn()) { // BC5 experiment 0405 series e6 (KYTY_BC5_JIT_SHM): close lets a JIT handle go
++		LIB_FUNC("NNtFaKJbPt0", LibKernel::Bc5JitPosixClose);
++	} else {
++		LIB_FUNC("NNtFaKJbPt0", LibKernel::close);
++	}
+ 	LIB_FUNC("OMDRKKAZ8I4", LibKernel::KernelDebugRaiseException);
+ 	LIB_FUNC("Ou3iL1abvng", LibKernel::stack_chk_fail);
+ 	LIB_FUNC("p5EcQeEeJAE", LibKernel::KernelRtldSetApplicationHeapAPI);
+@@ -3364,6 +4075,8 @@ LIB_DEFINE(InitLibKernel_1) {
  	LIB_FUNC("B2n8aDorSH4", Posix::KernelSyncOnAddressWait32);
  	LIB_FUNC("PZQhiiLXRFs", Posix::KernelSyncOnAddressWait64);
  	LIB_FUNC("q2y-wDIVWZA", Posix::KernelSyncOnAddressWake);
