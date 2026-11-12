@@ -1,0 +1,14 @@
+2026-11-12 22:52:51
+arm z2emp (fast8), cap 680 s, play 420 s, binary /home/kjaniszewski/bc5-work/exp0412/bin/kyty_emulator md5 bc4356a5638a6486cbd23253b73cd230, launcher 3a1f4e10, fuse 13000 2048
+the arm's words: BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 BC5_0412N_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0412/night/input-z2emp.cfg 
+extra: none
+boot d7c07359, up since 2026-11-11 22:32:55
+MemAvailable:   13428028 kB SwapTotal:       7778300 kB SwapFree:        7179792 kB 
+emulator pid 3595260 exe /home/kjaniszewski/bc5-work/exp0412/bin/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0412/night/wd
+route: cross (start screen) at 87 s
+route: the save-slot list runs; cross (slot 1) at 93 s
+route: cross (Continue) at 99 s
+route: the load seen at 103 s
+route: gameplay G = 118 s (the load at 103 s)
+route: walk of 25 cycles (420 s) queued at 118 s
+launcher gone: yes; launcher exit 0

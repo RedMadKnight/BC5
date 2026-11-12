@@ -2372,7 +2372,44 @@ there, or only read zeros?). Which windows are of kind (3) is what a run with an
 session. The full rule costs 0.77 GiB at the wall, so it cannot go in before options A–C have made room; the PRT
 background (kind 1) costs nothing and can.
 
-## Verdict
+### 52. The scripted route with an empty learned file: no fault, nothing learned (2026-11-12 22:48–23:02)
+
+The top session's slot and conditions (one run first, stop at the third GPU reset, the shared file never written).
+`run0412n.sh` got two options, defaults unchanged: `N_LEARN=<file>` (the source of the run's private copy) and
+`N_RESETS=<n>` (ride out n−1 recovered GPU hangs). Runs on today's build with no code change: arm fast8, g412v
+`bc4356a5`, RT on, fuse 13,000/2,048, watchdog 220 MiB, the shell running, three rsync processes, kernel log streamed
+(no line). Data `raw/z1emp-*`, `raw/z2emp-*`; the control is section 50's y1sh and y4sh, 37 and 20 minutes earlier
+in the same boot.
+
+| run | learned file | play after G | ended | GPU faults / timeouts | windows learned | flips/s | s with a gap over 100 ms | pinned direct at 230 s | highest PSI full | lowest available | `learned_apply` passes over 5 ms |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| y1sh | 81 windows | 120 s | G+120 | 0 | 0 | 23.0 | 98 of 257 | 11,606 MiB | 23 % | 497 MiB | 990, 9.7 s |
+| y4sh | 81 windows | 120 s | G+120 | 0 | 0 | 24.0 | 73 of 239 | 11,670 | 14 % | 560 | |
+| **z1emp** | **empty** | 120 s | G+120 | **0** | **0** | 24.7 | 57 of 235 | **11,438** | 11 % | 407 | 535, 3.6 s |
+| **z2emp** | **empty** (z1emp's, 0 lines) | **420 s** | G+420 | **0** | **0** | 25.0 | 79 of 537 | 11,506 | 11 % | 424 | 907, 6.5 s in 542 s |
+
+[M]
+- **Not one of the 81 windows is needed on this route**: 783 s in two runs (540 s of it play), the start, the menu and the
+  save load twice, with no GPU fault, no timeout line in the journal, no kernel line, and the private file still
+  empty at the end of both. The shared learned file and the alias file kept their checksums.
+- Without the windows the pin is **228 MiB lower from the first ledger line** (8,206 against 8,434 MiB at 10 s) and
+  170–230 MiB lower in play; by heap: `AssetHeap Large` 428 against 500–504, the 24 small heaps 314 against 460.
+  That memory was pinned for no use the route shows.
+- The ledger's PSI "full" during play is 0–12 % against 7–21 %; the passes of `learned_apply` cost a third (what is
+  left is the 2 MiB guards behind the eager heaps: 11 zero-buffer lines in the run against 2,042 MiB of them).
+- The lowest available memory is **not** better (407 and 424 against 497 and 560): the emulator kept more of its
+  own memory resident instead (resident 3.6 GiB against 1.0–1.3 at 230 s, swap 92 against 161 MiB) [M]; why the
+  lower pin does not show as available memory is not explained. Two runs against two.
+
+**What it does not show.** His own play: the windows were learned at the pause menu, in Photo Mode, at the lake and
+in fights (F53, F257, F468, F687), none of which the scripted route visits. A fault there with an empty file is a
+14 s freeze, so the file cannot simply be dropped from his shortcut: the route says the windows are dead weight
+here, and the rule of `DESIGN-learned-windows.md` is what has to cover the places the route does not reach.
+
+**Answer to "what do the 15 hole windows map"** [C][M]: each maps our shared 2 MiB zero buffer, read-write, 48 times
+over its 96 MiB (the guest has no range there), re-derived on every layout change. With the empty file those
+addresses were unmapped for 783 s and nothing touched them. They are the record of single stray accesses
+(F92, exp 0040, 0042), kept for ever.
 
 - **Stopping Plasma's shell for the play is worth 0.22 GiB at the wall (section 50):** lowest available 724 and 775
   MiB without it against 497 and 560 with it; the launcher's lean mode stops it and brought it back in its first
