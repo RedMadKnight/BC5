@@ -1,0 +1,18 @@
+runner rc 0; R5 stopped at 420 s (after 420 s); R5: stopped at 420 s after 420 s; launcher exit 0; crash lines 0, kernel lines 0, TIMEOUT lines 0, compute-ring lines 0, fdinfo engines drm-engine-gfx , devcoredumps 0, RT-off drop lines 0, flips 0 over 0.0 s = 0 flips/s; direct: 19414 views; +0 BOs (81, 11436.0 MiB pinned); maps +1 -2 (19453); imports  (stubs ), call lines , procparam ; the private learned file is unchanged
+replug: pulls 3 (want 3), sequence done True, profile restored True, no DualSense card False
+stream lines 17, pad streams 8, pad streams on another sink 0
+pull 1: off 63853.539 on 63858.691 (5.2 s): closed lines 1, reopened lines 1
+  AudioOut (exp 0372): t 171.584 s port 2 type 10: its stream on the controller closed (an output device was removed); frames dropped until the controller is back
+  AudioOut (exp 0372): t 176.980 s port 2 type 10: opened on DualSense wireless controller (PS5) Direct DualSense Wireless Controller (48000 Hz, 6 ch) after an output device was added; node.dont-reconne
+pull 2: off 63893.965 on 63894.415 (0.5 s): closed lines 1, reopened lines 1
+  AudioOut (exp 0372): t 211.980 s port 2 type 10: its stream on the controller closed (an output device was removed); frames dropped until the controller is back
+  AudioOut (exp 0372): t 212.477 s port 2 type 10: opened on DualSense wireless controller (PS5) Direct DualSense Wireless Controller (48000 Hz, 6 ch) after an output device was added; node.dont-reconne
+pull 3: off 63929.670 on 63959.819 (30.1 s): closed lines 1, reopened lines 1
+  AudioOut (exp 0372): t 247.693 s port 2 type 10: its stream on the controller closed (an output device was removed); frames dropped until the controller is back
+  AudioOut (exp 0372): t 277.874 s port 2 type 10: opened on DualSense wireless controller (PS5) Direct DualSense Wireless Controller (48000 Hz, 6 ch) after an output device was added; node.dont-reconne
+trace offset 63681.955 s; '(pad) … device playing' lines inside a pull: 0
+pull 1: main port in the 3 s after the reopen: held min 717.9 ms, queue min 0 ms (4 lines)
+pull 2: main port in the 3 s after the reopen: held min 933.6 ms, queue min 0 ms (3 lines)
+pull 3: main port in the 3 s after the reopen: held min 932.7 ms, queue min 0 ms (3 lines)
+rumble writes 0, rumble failure lines 0, 'pad route … dropped' lines 39
+CLASS PASS mode pulls pulls 3

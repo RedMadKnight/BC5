@@ -1,0 +1,4 @@
+runner rc 1; R4 SETUP: no emulator started (after 0 s); R4: SETUP: no emulator started after 0 s; launcher exit 65; crash lines 0, kernel lines 0, TIMEOUT lines 0, compute-ring lines 0, fdinfo engines , devcoredumps 0, RT-off drop lines 0, flips 0 over 0 s = 0 flips/s; ; imports  (stubs ), call lines , procparam ; the private learned file is unchanged
+replug: pulls 0 (want 3), sequence done False, profile restored True, no DualSense card False
+FAIL: the S6N run's verdict is 'FAIL: no emulator started; the route save read was not seen; no journal of this run; the RT check did not run;'
+CLASS FAIL mode pulls pulls 0
