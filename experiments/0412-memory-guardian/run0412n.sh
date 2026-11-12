@@ -75,7 +75,7 @@ trap 'echo "$(date "+%F %T") $TAG aborted" >> "$R/saves.txt"; exit 1' HUP INT TE
 # 1. The private input configuration (RT on, JobArenaFix on) and the private learned file.
 CFG=$N/input-$TAG.cfg
 { grep -v -i "^RayTracing\.PPSA03671=\|^JobArenaFix\.PPSA03671=" "$W/input.cfg"; echo "RayTracing.PPSA03671=on"; echo "JobArenaFix.PPSA03671=on"; } > "$CFG" || exit 1
-cp -p "$LEARN_SRC" "$LEARN" || exit 1
+cp -p "${N_LEARN:-$LEARN_SRC}" "$LEARN" || exit 1   # exp 0412 section 52: N_LEARN=<file> is the private copy's source (default the shared file, which is only ever read)
 # 2. The derived launcher: four lines changed and one added, checked by anchor and by diff size.
 cp "$LAUNCH_SRC" "$LAUNCH" || exit 1
 chk() { local c; c=$(grep -cxF -- "$1" "$LAUNCH"); [ "$c" = 1 ] || { echo "anchor [$1] occurs $c times in $LAUNCH_SRC: not started"; rm -f "$LAUNCH"; exit 1; }; }
@@ -117,7 +117,7 @@ printf 'wait 1000\n' > "$CMD"; rm -f "$CMD.done"
 WL=$(ls "/run/user/$(id -u)/" 2> /dev/null | grep -m1 '^wayland-[0-9]*$')
 [ -n "$WL" ] || { echo "no Wayland socket in /run/user/$(id -u): not started"; exit 1; }
 ENVS=("${WORDS[@]}" "${EXTRA[@]}" ${N_EMU:+BC5_EMU=$N_EMU} BC5_0412N_INPUT_CONFIG="$CFG" KYTY_BC5_INPUT_CMD="$CMD" WAYLAND_DISPLAY="$WL")
-ND=$(sudo -n dmesg 2> /dev/null | wc -l)
+ND=$(sudo -n dmesg 2> /dev/null | wc -l); ND0=$ND; HANGS=0
 { date '+%F %T'; echo "arm $TAG ($ARM), cap $SECS s, play $PLAY s, binary $BIN md5 $WANT, launcher $(m "$LAUNCH" | cut -c1-8), fuse $FUSE"
   echo "the arm's words: $(printf '%s\n' "${ENVS[@]}" | grep -E '^(BC5_GUARD_|BC5_DIRECT_LAZY_RELEASE|BC5_DIRECT_ZERO|BC5_0412)' | tr '\n' ' ')"; echo "extra: ${EXTRA[*]:-none}"
   echo "boot $(cut -c1-8 /proc/sys/kernel/random/boot_id), up since $(uptime -s)"; grep -E '^(MemAvailable|SwapFree|SwapTotal):' /proc/meminfo | tr '\n' ' '; echo; } > "$R/$TAG-start.txt"
@@ -188,7 +188,14 @@ while [ -z "$ENDED" ] && [ $(($(date +%s) - T0)) -lt "$SECS" ]; do
   if sudo -n dmesg 2> /dev/null | tail -n +"$((ND + 1))" | grep -qi "amdgpu.*\(timeout\|reset\|fault\)"; then
     sleep 25
     if sudo -n dmesg 2> /dev/null | tail -n +"$((ND + 1))" | grep -qiE "reset failed|MODE1|mode1"; then ENDED="GPU HANG: reset failed or MODE1"
-    elif sudo -n dmesg 2> /dev/null | tail -n +"$((ND + 1))" | grep -q "reset succeeded"; then ENDED="GPU HANG: ring reset succeeded at $(($(date +%s) - T0 - 25)) s"
+    elif sudo -n dmesg 2> /dev/null | tail -n +"$((ND + 1))" | grep -q "reset succeeded"; then
+      # exp 0412 section 52: N_RESETS=<n> rides out n-1 recovered GPU hangs and stops at the n-th (default 1: as before).
+      HANGS=$((HANGS + 1))
+      if [ "$HANGS" -lt "${N_RESETS:-1}" ] && [ -d "/proc/$EP" ]; then
+        echo "gpu hang $HANGS (reset succeeded) at $(($(date +%s) - T0 - 25)) s: the run goes on (N_RESETS=${N_RESETS})" >> "$R/$TAG-start.txt"
+        ND=$(sudo -n dmesg 2> /dev/null | wc -l); continue
+      fi
+      ENDED="GPU HANG: ring reset succeeded at $(($(date +%s) - T0 - 25)) s (hang $HANGS)"
     else ENDED="GPU HANG: kernel amdgpu line at $(($(date +%s) - T0 - 25)) s, no reset line"; fi
     break
   fi
@@ -215,7 +222,7 @@ if [ -f "$J" ] && [ "$(stat -c %Y "$J")" -ge "$T0" ]; then
   nice -n 19 grep -a "^guard\|^lazy release\|^memory (exp 0401)\|FAILED\|^learned: fault\|^reopen" "$J" | cut -c1-1200 > "$R/$TAG-guard.txt"
   nice -n 19 grep -a "^frame profile: t" "$J" | sed -n 's/^frame profile: t \([0-9.]*\) s, \([0-9.]*\) ms since the last flip; game thread inside the host \([0-9.]*\) ms.*outside \([0-9.]*\); GPU busy \([0-9.]*\) ms.*/\1 \2 \3 \4 \5/p' > "$R/$TAG-frames.txt"
 else echo "no journal of this run ($J)" > "$R/$TAG-journal.txt"; : > "$R/$TAG-guard.txt"; : > "$R/$TAG-frames.txt"; fi
-sudo -n dmesg 2> /dev/null | tail -n +"$((ND + 1))" | grep -i "amdgpu\|gpu\|oom\|hung\|SQC\|Killed" > "$R/$TAG-dmesg-after.txt"
+sudo -n dmesg 2> /dev/null | tail -n +"$((ND0 + 1))" | grep -i "amdgpu\|gpu\|oom\|hung\|SQC\|Killed" > "$R/$TAG-dmesg-after.txt"
 S1=$(sumof "$WD/_SaveData"); echo "$(date '+%F %T') $TAG the private copy after the arm: $S1 ($([ "$S1" = "$NSUM" ] && echo unchanged || echo "the title wrote it"))" >> "$R/saves.txt"
 FPSL=$(awk 'NF == 4 {n++; f += $2; s += $3; if ($4 > 100) b++; if ($4 > mx) mx = $4} END {if (s > 0) printf "%.1f flips/s over %d s, %d s with a gap over 100 ms, longest %.0f ms", f / s, s, b, mx; else printf "no fps lines"}' "$R/$TAG-fps.txt")
 echo "$(cat "$R/$TAG-end.txt"); $FPSL; kernel lines $(grep -c . "$R/$TAG-dmesg-after.txt"), crash lines $(grep -c . "$R/$TAG-crash.txt"), ledger lines $(grep -c '^guard: t' "$R/$TAG-guard.txt")" > "$R/$TAG-summary.txt"

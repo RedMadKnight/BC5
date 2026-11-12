@@ -2288,8 +2288,137 @@ exp 0414, Linux v6.19 with v7.1 diffed (amdgpu userptr, dma-buf import, TTM swap
   this experiment the memory side (what is imported, when it is given back). Diffs to `direct_sync_one` are exchanged
   before a build.
 
-## Verdict
+### 50. Option A, first item: the scripted route with and without Plasma's shell (2026-11-12 22:10–22:33)
 
+On the maintainer's "Tak, wariant A" and "przy czym uruchomienie gry musialoby ubić plazmę". `ab0412y.sh`: four runs
+of `run0412n.sh <tag> fast8 120` (g412v `bc4356a5`, RT on, no zero skip, fuse 13,000/2,048, watchdog 220 MiB, the
+private save and learned copies), order shell, bare, bare, shell; "bare" = `plasma-plasmashell.service` stopped for
+the run and started after it. `snap0412.sh` took whole-box snapshots at 25, 60, 130, 165 and 225 s. Kernel
+7.2.15-ogc1.1; the box up since 11-11 22:32; three rsync processes (the NAS archive) in all four; no steamwebhelper.
+Data: `raw/ab0412y.out`, `raw/y{1sh,2ba,3ba,4sh}-{snap,watchdog,summary}.txt`; the kernel log was streamed to the
+laptop for the whole series: no line.
+
+| run | shell | lowest available | highest PSI full | seconds with a gap over 100 ms | longest gap | flips/s | available at 165 / 225 s | AnonPages | GPUActive | VRAM used (of 512) | the emulator's VRAM |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| y1sh | running | 497 MiB | 23 % | 98 | 1,328 ms | 23.0 | 632 / 656 | 353 / 348 | 499 / 502 | 502 | 352 |
+| y2ba | stopped | **724** | 12 % | 55 | 659 ms | 24.0 | 805 / 862 | 262 / 282 | 372 / 372 | 480 | 431 |
+| y3ba | stopped | **775** | 15 % | 67 | 628 ms | 23.9 | 856 / 839 | 251 / 243 | 369 / 371 | 488 | 439 |
+| y4sh | running | 560 | 14 % | 73 | 735 ms | 24.0 | 663 / 691 | 296 / 302 | 483 / 485 | 511 | 335 |
+
+[M] All four reached G+120 with no kernel line and no crash line. Pinned direct memory at the end 11,660 MiB in y1sh
+(the ledger), GTT 12.3–12.5 GiB in all.
+
+**Reading.**
+- [M] Without the shell the lowest available memory of the route is **+221 MiB** (750 against 529, means of two), and
+  +175–190 MiB at the 165 and 225 s snapshots. Two runs an arm, the arms do not overlap (724, 775 against 497, 560).
+- [M] Where it comes from: the shell's own pages (142–176 MiB resident plus 101–135 MiB already pushed to swap by the
+  time of the wall, so its resident part is what counts) and its GPU memory: by fdinfo 90–126 MiB of **VRAM** and
+  16–54 MiB of GTT. `GPUActive` is 111–130 MiB lower without it and `AnonPages` 50–90 MiB lower.
+- [M] The 512 MiB VRAM carve-out is full with the shell (502–511 MiB used). Without it the emulator's own VRAM share
+  rises from 335–352 to 431–439 MiB: about 90 MiB of the emulator's driver buffers move from system RAM into VRAM that
+  the shell had held. That is part of the gain and it is free.
+- [M] Still there in the bare runs: `plasma-keyboard` 74 MiB of GTT (the on-screen keyboard, a child of KWin, never
+  shown during play) and Xwayland 22 MiB. The next 0.1 GiB of this option.
+- [I] The long frames follow: 55–67 s with a gap against 73–98, the longest gap 0.63–0.66 s against 0.74–1.33 s.
+  One series; the direction agrees with the memory.
+
+**The mechanism he asked for** ("the game launch would have to stop Plasma") exists since section 30 and was run for
+the first time: `lean0412.sh stop <pid>` stopped the unit and its watcher started it again 24 s later, when the
+stand-in process had ended (`lean.log`: stopped 22:32:36, started 22:33:00; plasmashell pid 3326867 afterwards). In
+the series the unit was stopped and started twice more by `ab0412y.sh`'s own trap. It is `BC5_0412_LEAN=1` in the
+shortcut's environment; the shortcut is not changed yet (it needs his word after these numbers).
+
+**What it is against the deficit.** 0.22 GiB of the 0.4–0.5 GiB (section 16), 0.3 GiB with the keyboard and
+Xwayland. On his own load the pin is about 0.2 GiB higher than on the script's (section 36).
+
+### 51. The learned windows: what the file holds today and what each window does (2026-11-12 22:33–22:40, reads only)
+
+On the maintainer's "Wyuczone okna nie są rozwiązaniem tylko obejściem. Zleć znalezienie rozwiązania". The design is
+`DESIGN-learned-windows.md`; this section is its first measurement. `learnclass0412.py` sums the host's own journal
+lines per window over run y1sh (`~/bc5-data/captures/play-20261112-2211/gc/direct.log`, 262 s, scripted route);
+output `raw/learnclass-y1sh.txt`.
+
+[M]
+- The file: **81 windows** of 96 MiB (`cb30371e`), their union 6,432 MiB of address space. By place: 34 in the
+  0x11… block, 26 in 0x12…, 9 in the AMM window, 3 in 0x13…, 3 in 0x14…, one each at 0x0b…, 0x10…, 0x17…, 0x26…,
+  0x54…, 0x7f…. No line with a bit above 40 any more (those went to the alias file, 5 lines).
+- **No window was learned tonight**: none in y1sh, none in exp 0415's d1 and d2, and exp 0415's private copy after its
+  873 s run equals the shared file. The file's last two lines are 0x1112… and 0x11fe….
+- What the windows did in the run:
+  - forced chunks of the direct file under views: 4,778 MiB counted (an upper bound: the journal counts every chunk
+    under a view in a window, most of them inside heaps that are imported whole anyway);
+  - **anonymous memory handed over as userptr: 0 MiB.** That kind does not exist today;
+  - **zero buffer over addresses where the guest has no range: 2,042 MiB of address space** (no memory: one shared
+    2 MiB buffer). **15 windows lie wholly in such holes** (0x0b8a…, 0x1112…, 0x1116…, 0x1206…, 0x12ba…, 0x12c6…, 0x12ca…, 0x130a…,
+    0x1332…, the three at 0x14…, 0x1762…, 0x2672…, 0x5452…): they exist only so
+    that an access to an unmapped address does not stop the GPU. 22 more are part hole, part heap.
+  - The 9 AMM windows: 872 MiB under views, 158 MiB of holes, filled and given back 4–50 times each in the run.
+    The AMM window has had a PRT background by default since F257 (`play-pkg.sh` line 111); exp 0201's run without
+    these 9 had no fault.
+- Cost: 990 full passes of `learned_apply` over 5 ms, 9.7 s in the 262 s run (exp 0415 tonight: 626–648 passes, 6.1–6.3
+  s per 115 s; 1.9–2.5 s of device-mutex time per load phase).
+- What is pinned only because a window (or a hint) forced it: at most the 148 MiB under lazy views, plus an unknown
+  part of the 1,392 MiB under by-data views (the ledger of y1sh at 242 s). Under eager views (9,984 MiB) the windows
+  add nothing.
+- **What the rule "pin every view when the title maps it" would cost:** views 12,186 MiB, pinned under a view
+  11,418 MiB: **+768 MiB** on this route (`AssetHeap Large` 316, `InitAllocator` 198, `AssetHeap Small` 120, 24 small
+  heaps 134). The design's first estimate (0.26–0.49 GiB) compared against the pin including orphans and was too low.
+
+**Reading [I].** The windows are three different things under one name: (1) holes, where the cure is a "no fault"
+background and no memory at all (15 windows wholly, 22 in part); (2) heaps that are imported whole anyway (most of
+the 0x11… and 0x12… windows: dead weight, they only cost the passes); (3) by-data and lazy heaps, where a window is
+the only reason a never-written chunk is pinned: the one kind with a real question behind it (does the GPU write
+there, or only read zeros?). Which windows are of kind (3) is what a run with an empty file shows; asked of the top
+session. The full rule costs 0.77 GiB at the wall, so it cannot go in before options A–C have made room; the PRT
+background (kind 1) costs nothing and can.
+
+### 52. The scripted route with an empty learned file: no fault, nothing learned (2026-11-12 22:48–23:02)
+
+The top session's slot and conditions (one run first, stop at the third GPU reset, the shared file never written).
+`run0412n.sh` got two options, defaults unchanged: `N_LEARN=<file>` (the source of the run's private copy) and
+`N_RESETS=<n>` (ride out n−1 recovered GPU hangs). Runs on today's build with no code change: arm fast8, g412v
+`bc4356a5`, RT on, fuse 13,000/2,048, watchdog 220 MiB, the shell running, three rsync processes, kernel log streamed
+(no line). Data `raw/z1emp-*`, `raw/z2emp-*`; the control is section 50's y1sh and y4sh, 37 and 20 minutes earlier
+in the same boot.
+
+| run | learned file | play after G | ended | GPU faults / timeouts | windows learned | flips/s | s with a gap over 100 ms | pinned direct at 230 s | highest PSI full | lowest available | `learned_apply` passes over 5 ms |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| y1sh | 81 windows | 120 s | G+120 | 0 | 0 | 23.0 | 98 of 257 | 11,606 MiB | 23 % | 497 MiB | 990, 9.7 s |
+| y4sh | 81 windows | 120 s | G+120 | 0 | 0 | 24.0 | 73 of 239 | 11,670 | 14 % | 560 | |
+| **z1emp** | **empty** | 120 s | G+120 | **0** | **0** | 24.7 | 57 of 235 | **11,438** | 11 % | 407 | 535, 3.6 s |
+| **z2emp** | **empty** (z1emp's, 0 lines) | **420 s** | G+420 | **0** | **0** | 25.0 | 79 of 537 | 11,506 | 11 % | 424 | 907, 6.5 s in 542 s |
+
+[M]
+- **Not one of the 81 windows is needed on this route**: 783 s in two runs (540 s of it play), the start, the menu and the
+  save load twice, with no GPU fault, no timeout line in the journal, no kernel line, and the private file still
+  empty at the end of both. The shared learned file and the alias file kept their checksums.
+- Without the windows the pin is **228 MiB lower from the first ledger line** (8,206 against 8,434 MiB at 10 s) and
+  170–230 MiB lower in play; by heap: `AssetHeap Large` 428 against 500–504, the 24 small heaps 314 against 460.
+  That memory was pinned for no use the route shows.
+- The ledger's PSI "full" during play is 0–12 % against 7–21 %; the passes of `learned_apply` cost a third (what is
+  left is the 2 MiB guards behind the eager heaps: 11 zero-buffer lines in the run against 2,042 MiB of them).
+- The lowest available memory is **not** better (407 and 424 against 497 and 560): the emulator kept more of its
+  own memory resident instead (resident 3.6 GiB against 1.0–1.3 at 230 s, swap 92 against 161 MiB) [M]; why the
+  lower pin does not show as available memory is not explained. Two runs against two.
+
+**What it does not show.** His own play: the windows were learned at the pause menu, in Photo Mode, at the lake and
+in fights (F53, F257, F468, F687), none of which the scripted route visits. A fault there with an empty file is a
+14 s freeze, so the file cannot simply be dropped from his shortcut: the route says the windows are dead weight
+here, and the rule of `DESIGN-learned-windows.md` is what has to cover the places the route does not reach.
+
+**Answer to "what do the 15 hole windows map"** [C][M]: each maps our shared 2 MiB zero buffer, read-write, 48 times
+over its 96 MiB (the guest has no range there), re-derived on every layout change. With the empty file those
+addresses were unmapped for 783 s and nothing touched them. They are the record of single stray accesses
+(F92, exp 0040, 0042), kept for ever.
+
+- **Stopping Plasma's shell for the play is worth 0.22 GiB at the wall (section 50):** lowest available 724 and 775
+  MiB without it against 497 and 560 with it; the launcher's lean mode stops it and brought it back in its first
+  test. Not in his shortcut yet. `plasma-keyboard` and Xwayland hold 96 MiB of GPU memory more.
+- **The learned windows (section 51, `DESIGN-learned-windows.md`):** 81 on file, none learned tonight; 15 lie wholly
+  where the guest maps nothing, most of the rest inside heaps imported whole anyway. Their cause is ours: the GPU's
+  address space is a guessed subset of the title's. The replacement is a rule in two parts: a PRT background under
+  every unmapped address (no memory, already in use for the AMM window) and every mapped range handed to the GPU at
+  the title's map call (+768 MiB pinned on the scripted route, so only after options A–C made room). Not built.
 - **The architecture stays; the wall is closed from outside the title first (section 49, design only):** others avoid
   the wall by copying and translating, which the direct path cannot do. Proposed order: the console's budget outside
   the title (A), then sound handling of never-written pages (B) behind experiment E1. Nothing measured yet.
