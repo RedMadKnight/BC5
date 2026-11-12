@@ -419,6 +419,48 @@ anonymous sync (2.0 s per 34 s of play): what they recompute per submission. Exp
 build [I]: less waiting of the title's threads on the mutex (8-9 s per 34 s of play, 7-8 s per menu load) and
 shorter long frames; the ordinary play frame is GPU-bound (exp 0412 section 26), so not a higher mean frame rate.
 
+### 9. The kit for build L3: three exact fast forms of the mapping maintenance (laptop, 2026-11-12 night; not built on the box, not run)
+
+The maintainer on section 8's split (2026-11-12, through the top session): "Wyuczone okna nie są rozwiązaniem tylko
+obejściem. Zleć znalezienie rozwiązania". Replacing the learned windows by a rule is exp 0412's work now; what is
+here for them is a stopgap for the lock, labelled as one.
+
+`kit/0415-l3.diff` (against the L2 tree; `tree-l3.md5`), a new header `src/bc5/sync_fast.hpp` (tag ls415d) with the
+old and the new form of each piece as pure functions, and their use in `bc5LleAgc.cpp`. Each switch is default off;
+`=verify` runs both forms, uses the old one's result where they differ and counts the difference (`fast_diff`).
+
+| switch | what it changes [C] | cost it aims at [M, section 8] | if it were wrong |
+|---|---|---|---|
+| `KYTY_BC5_WINDOW_FAST` (candidate a, **stopgap**) | `map_window` cut a window's pieces by every device mapping and rebuilt the piece list once per mapping (21,300 mappings x 81 windows per layout change). The pieces lie inside the window, so a mapping that does not touch the window leaves them unchanged and is passed over. No order of the mappings is assumed | 4.8 s a run inside the learned windows' 6.1-6.3 s | a piece mapped twice, or a window's piece left unmapped (the GPU fault the window was learned from) |
+| `KYTY_BC5_VMA_FAST` (candidate f, in part) | the anonymous sync asked "is this mapping inside one VMA of its kind" by walking every VMA for each mapping; a binary search when the list is sorted and without overlaps, which is checked on every sync (else the old walk; a reversed range also takes the old walk) | part of the anonymous sync's 2.0 s per 34 s of play (its other part, reading and parsing `/proc/self/maps`, is not touched; the counters do not split the two yet) | a mapping whose VMA is gone stays on the GPU (stale pages), or a valid one is unmapped (a GPU fault) |
+| `KYTY_BC5_NAMES_FAST` (candidate b, in part) | the view list classified every range's name against the lazy and the eager list (two walks of string compares per range, on every rebuild); the class is remembered per name (both lists are read once, so a name's class never changes) | part of the view list's 0.9-1.4 s per phase (the per-range `std::string` stays) | a heap imported eagerly or lazily against its list |
+
+CPU test `kit/test0415sync.cpp`, **15 of 15 on the laptop** [M]: 20,000 random windows (mappings in any order,
+overlapping each other, zero-sized, on the window's ends, covering it, far away; 3,052 cases with pieces left) with 0
+differences between the old and the new piece lists; 720,000 inside-queries on ordered VMA lists (touching, with
+gaps, empty entries, both kinds; ranges on every boundary, empty and reversed) with 0 differences; the ordered check
+on ordered and disordered lists; the memo. Mutation check [M]: with the window's skip moved by one page the test
+reports 6,068 differences, with the VMA walk's stop moved by one it reports 11,560: the test can fail.
+Not checked on the laptop: that the edited unit compiles (the box build is its first compile).
+
+Three counters come with it: `learned_apply` (full applications: count and time), `learned_changed` (windows that
+mapped something: count and bytes; the number exp 0412 asked for), `fast_diff`.
+
+**Not built, and why.** (c) imports outside the hold and (d) mappings recomputed only for changed views both rewrite
+`direct_sync_one`'s import and mapping loops, which exp 0412 is about to change for the windows' replacement (its diff
+comes to this experiment first, as agreed); building them against the loop as it is today would be work thrown
+away, and both change what reaches the GPU, so they need a design note and review, not a night's edit. (e) the device
+call's prepare is the shared backend's filter and state tracker (`backend/src`), its own tests and its own
+experiment. The second half of (f), a faster reader of `/proc/self/maps`, waits for a counter that says how much of
+the anonymous sync is the read and how much the walk.
+
+**Runs planned for L3** (`mk0415f.sh`, then `run0415d.sh`): each switch once as `verify` (the `fast_diff` counter
+must stay 0 over a whole run); then all three on against all off, twice each in ABBA order, `KYTY_BC5_APR_POSIX=direct`
+in every run, reading per phase: mutex held and waited, learned windows, anonymous sync, view list, the first key's
+time, Continue to 20 flips/s, and in the 34 s of play the flips per second and the seconds under 15 flips. Expected
+[I]: the hold shorter by up to the learned windows' part (about 2 s per load phase and per 34 s of play) and a part
+of the anonymous sync; no change of the mean frame rate.
+
 ## Verdict
 
 Part 1, first result. The largest cause of the long loads was ours: every APR read opened its file anew, the
