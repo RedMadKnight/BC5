@@ -11,6 +11,7 @@
 # ~/bc5-work/exp0413/swap/.
 # usage: int0413.sh   (on the box, in the slot, with pins0413.env, 0001-new.patch and libNpCppWebApi.cpp beside it)
 set -u
+ulimit -c 0
 export LC_ALL=C LANGUAGE=C
 W=$HOME/bc5-work; E=$W/exp0413; I=$E/swap; K=$HOME/src/KytyPlus; HERE=$(cd "$(dirname "$0")" && pwd)
 LOCK=$W/BOX-LOCK; ID=$E/lock.line; UNIT=src/libs/libNpCppWebApi.cpp

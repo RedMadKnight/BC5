@@ -44,8 +44,49 @@ shared builds, and even the private builds needed the variable set.
 
 ## Result
 
-Pending: the top session's GO for the box read and the slot.
+The top session's GO: step 1 at 10:00, step 2 at 10:02. Each box step was guarded (no emulator, no foreign lock).
+
+**Step 1 (reads, 10:01).**
+- Shared normal 4d2b1b1d, lean 30d4be33 and archive 75e30335 are exp 0389's pins. The unit was 7c40b784.
+- The tree's diff without index lines read 4d186f67, not the 7e7c6899 given in the request, so the step stopped and was
+  reported.
+- Cause: the laptop's value went through Git Bash's grep, which strips CRs, and the patch has 14,834 CR bytes (CRLF
+  host sources).
+- The full diff fetched from the box is byte-identical (`cmp`) to main's patch 0001, md5 728f2a77 on both sides.
+- The top accepted this and set the pin to 4d186f67. Added to LESSONS R45.
+
+**Step 2 (the swap, 10:03:10–10:03:32, `int0413.sh` from `~/bc5-work/exp0413/s/`).**
+- The lock was claimed by hard link and released at the end.
+- Ninja rebuilt the one unit and relinked: normal 10 s, lean 11 s.
+
+| | before | after |
+|---|---|---|
+| normal `~/bc5-work/kytyplus-build/src/kyty_emulator` | 4d2b1b1d | **f6445dc6** |
+| lean `~/bc5-work/kytyplus-build-lean/src/kyty_emulator` | 30d4be33 | **30ee854b** |
+| archive `libbc5_backend.a` | 75e30335 | 75e30335 (not rebuilt) |
+| `~/src/KytyPlus/src/libs/libNpCppWebApi.cpp` | 7c40b784 | 910acbb5 |
+| tree diff vs f266548 | main's 0001 (728f2a77) | candidate (2dbed49a) |
+
+The script's checks passed:
+- both binaries changed and the archive did not;
+- each binary holds the "on" line once and all ten NIDs;
+- the tree's diff equals the candidate patch.
+
+Three warnings in each build:
+- `libNpCppWebApi.cpp:50` (`-Winvalid-noreturn`) and `:62` (an unused constant), both in exp 0328's code above the new
+  block;
+- `stringUtils.h:321` (deprecated `wstring_convert`).
+
+None comes from the new lines. No emulator was started. `~/bc5-work/exp0412` was not touched.
+
+**Rollback.** Copy back `~/bc5-work/exp0413/swap/kyty_emulator.before-0413` and `kyty_emulator-lean.before-0413` over
+the two binaries, and `libNpCppWebApi.cpp.before-0413` over the unit. Then rebuild before the next change, since the
+build directories' objects are the new ones. A rollback without touching files: `KYTY_BC5_NP_SESSION_V2=0`.
+
+**Not verified here:** the ten functions at run time. Series e's `npgate0401` gate ran on private builds only. The
+title's calls go through the maintainer's play.
 
 ## Verdict
 
-Pending.
+The ten SessionManager V2 NIDs are in both shared builds and in patch 0001 on this branch (2dbed49a), on by default. They
+no longer depend on a private build or a variable. A run-time check in play is still to come.
