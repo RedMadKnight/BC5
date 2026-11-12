@@ -2473,6 +2473,50 @@ unless the wall changed the route. Not settled.
 - R2 has to be tested apart from the wall: with R1 off it would hide misses (the top session's point 3), so its own
   clean test is R2 over holes only, on a run that is not at the wall. Not built: the switch refuses to act without R1.
 
+### 54. Reads after the reboot: what hung in r2a (2026-11-13 00:12–00:20, reads only, the top session's GO)
+
+**Intact by checksum** [M]: g412v in place `bc4356a5`, g412w `1d22954f`, g412x `655a86fc`; the shared builds
+`ce0e3b92` and `35ec3341`; `play-pkg.sh` `157021e3`; the shared learned file `cb30371e` and alias file `1bbc544b`;
+`play-guard-0412.sh` `a547d77c` and the fast8 shortcut's Exec line; the named save snapshot of the runs
+(`1151e790`, the runner's own sum); no file of the memory-heavy snapshot or of `~/bc5-work/_SaveData/PPSA03671` is
+newer than the evening.
+
+**The arm** [M]: r2a, build g412x, arm fast8's words plus `BC5_GUARD_MAP_RULE=1 BC5_GUARD_PRT_BG=1
+BC5_GUARD_LEARN_LOG=1`, an empty private learned file. **Both MAP_RULE and PRT_BG were on.** The PRT span was mapped
+(`PRT window 0x100000000+0x8f00000000: 0`).
+- How far: the journal's t 147.1 s, the run's 153rd second; the save was still loading (the route's G was set "by
+  time" at 150 s because the title had not reached 20 flips/s), so 0 s of play.
+- The submissions: #97739 and #97740 ended in 0.5–0.6 ms at t 147.08–147.10 s. Then **#97741, a draw buffer of 20,324
+  dwords** (40 dispatches, 291 label writes) and **#97744, a compute buffer of 5,171 dwords**, both on the GFX ring,
+  both timed out at 2.0 s with fault address 0 and status 0. The journal's operand filter passed both with
+  `unmapped 0` against 20,924 mappings; the table catcher found none of 256 hashed slots changed.
+- The devcoredump (`20261113-001041-devcd8.txt`): ring gfx_0.0.0; `CP_IB1_BASE` 0x100d00000000 (the device's own
+  buffer slot at 16 TiB), `CP_IB1_CMD_BUFSZ` 0x5608 with `CP_IB1_BUFSZ` 0x1708 left: the command processor stood
+  **inside the draw buffer, 16,128 of 22,024 dwords in**; `GRBM_STATUS` 0xa2712028 (the recovered hang of 19:07,
+  devcd7: 0xa0407028, 0x3b8 dwords left of its buffer); no page fault in either. The bits are not decoded here
+  (TODO(verify) against the gfx10 register header).
+- Memory at that moment (ledger, t 133 and 144 s): pinned direct 12,188 then 11,410 MiB, available 278 and 256 MiB,
+  PSI full 65 and 52 %, GTT 12,741 then 12,170 MiB, 97,744 → 155,678 major faults.
+- Mapping changes just before: between t 133 and 144 s the orphan release cut 214 and then 868 MiB out of 32 BOs and
+  moved 361 mappings (the title gave back what it had mapped for the load; with R1 on, orphans had reached 1,615 MiB
+  against 220–310 in the other arms). The mapping count was steady at 20,924 for the last submissions.
+
+**What kind of hang** [I]. Not F403's shape as far as this shows: the command processor is stopped in the middle of
+a **draw** buffer, not waiting behind a compute dispatch that never ends (the compute buffer timed out with it, as
+the pair did in F260 and in section 38). Nothing shows a mapping replaced under the running job: the filter saw
+every operand mapped and the mapping count had been steady. What R1/R2 **could** have done and is not excluded:
+(a) with the PRT span, the 361 mappings moved by the orphan release were for a moment PRT pages instead of unmapped
+ones, and so was everything the release cut: a job that reads there now gets zeros without any sign, where before it
+would have faulted loudly (in no earlier run did it fault, so nothing is known to read there); (b) R1 made the
+release five times larger than in any earlier run, 3–14 s before the hang. Against both stands the plain memory
+state: PSI full 43–65 % for 25 s, the worst of any run of this experiment that reached the load.
+**Why the reset failed** is not known: the same kernel recovered the ring at 19:07 and failed here, at F260 and in
+section 38; in all three failures a draw buffer and a compute buffer had timed out together. That is a correlation
+from four dumps, not a cause.
+
+**So:** MAP_RULE and PRT_BG stay off and are not to be run together again until R2 has a test of its own away from
+the wall, and the orphan release under R1 is looked at (it should not have 1.6 GiB to cut).
+
 ## Verdict
 
 - **The rule's first test (sections 52, 53):** the scripted route needs none of the 81 learned windows (three runs,
