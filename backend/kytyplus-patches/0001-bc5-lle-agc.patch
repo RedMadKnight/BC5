@@ -7022,10 +7022,10 @@ index 0000000..2c13267
 +
 +#endif // KYTY_GRAPHICS_PRESENTATION_SETTINGS_OVERLAY_H_
 diff --git a/src/graphics/presentation/videoOut.cpp b/src/graphics/presentation/videoOut.cpp
-index f980320..8a073e0 100644
+index f980320..54aac28 100644
 --- a/src/graphics/presentation/videoOut.cpp
 +++ b/src/graphics/presentation/videoOut.cpp
-@@ -1,1839 +1,2087 @@
+@@ -1,1839 +1,2148 @@
 -#include "graphics/presentation/videoOut.h"
 -
 -#include "common/abi.h"
@@ -10701,6 +10701,65 @@ index f980320..8a073e0 100644
 +	return OK;
 +}
 +
++// ---- experiment 0401 series e4: sceVideoOutGetOutputStatus's resolution (exp 0402 Top 10 item 10), switch
++// KYTY_BC5_VIDEOOUT_STATUS ----
++// On (set, non-empty and not "0", read once): `resolution` is 2, the UHD class, on every call from the port's open to its
++// close, before and after buffer registration, whatever the port size: the answer of a PS5 on a 4K display with its
++// resolution on Automatic. Sources (their authors keep the copyright of the rule ported here):
++//  - sharpemu (GPL-2.0-or-later), src/SharpEmu.Libs/VideoOut/VideoOutExports.cs at b1ec286
++//    (b1ec2866575bf72ffcef92cd639c580bf5bf0c61, "[VideoOut] Report UHD output status before buffers are registered", #1125;
++//    the same at 514d766): 2 on a Gen5 port while no buffer set is registered. From one title's behaviour (it read HD and
++//    laid its viewport out for 4K over 1080p buffers), not from a console measurement.
++//  - AnyPS5 (boykopovar/AnyPS5, GPL-2.0-only) at 4f41f4c37, core/libs/prx/libSceVideoOut/src/Output.cpp:22-30 and
++//    src/VideoOutDriver.cpp:73-91, 558-570 (bfeeed4ef41228321f8e2664cfa93f7c9d9e19d6, 983a81d91): the class of the host
++//    display's mode (>= 3840 wide or >= 2160 high: 2, else 1), independent of the registered buffers. Its commit and
++//    docs/dev/debt/libSceVideoOut.md:27 cite a payload on a PS5 (firmware 12.70) with no buffer registered: 2 with the
++//    console's resolution on Automatic on a 4K display, 1 with it set to 1080p.
++//  - After registration the two disagree and neither is measured: sharpemu answers the class of the last registered (or
++//    changed) set's size, AnyPS5 keeps the display's class (its tests/Flip.cpp:1221-1253 check that a flipped buffer does
++//    not change it). This follows AnyPS5: what was measured is that the field reports the console's output setting,
++//    which a buffer registration does not change.
++// Off (unset, empty or "0"): today's answer, the class of the port size (Impl::Init, from --screen-width/height, default
++// 1280x720: 1), before and after registration. On the box's 1920x1080 display (HANDOFF F67) that is AnyPS5's answer too.
++// Not changed, reasons in experiments/0401-mesa-preamble-switches/vo0401-notes.md: dynamicRange 1 and flags 0 (this
++// host's swapchain is SDR only; AnyPS5 e604020013 measured flags 0 even with HDR output on, where sharpemu sets bit 0) and
++// refreshRate (each of the three reports its own vblank rate, which here follows --vblank-frequency).
++// One stderr line at the first call, either way. GPL-2.0-only, as the rest of this file.
++bool     Bc5VideoOutStatusOn();
++uint32_t Bc5VideoOutStatusResolution(uint32_t today, uint32_t port_width, uint32_t port_height, int registered_sets);
++
++bool Bc5VideoOutStatusOn() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_VIDEOOUT_STATUS");
++		return e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
++	}();
++	return on;
++}
++
++// today: the answer of today's code (the class of the port size). Off returns it as it is; on returns the UHD class.
++uint32_t Bc5VideoOutStatusResolution(uint32_t today, uint32_t port_width, uint32_t port_height, int registered_sets) {
++	constexpr uint32_t bc5_resolution_uhd = 2; // AnyPS5 VIDEO_OUT_RESOLUTION_2160P; sharpemu's class of 3840x2160
++	const bool         on                 = Bc5VideoOutStatusOn();
++	const uint32_t     answer             = on ? bc5_resolution_uhd : today;
++	static std::atomic_bool told {false};
++	if (!told.exchange(true)) {
++		std::fprintf(stderr,
++		             "[bc5] exp 0401: videoout status %s: resolution %u at the first sceVideoOutGetOutputStatus (port size %ux%u, %d "
++		             "buffer sets registered; today's answer %u)\n",
++		             on ? "on" : "off", static_cast<unsigned>(answer), static_cast<unsigned>(port_width),
++		             static_cast<unsigned>(port_height), registered_sets, static_cast<unsigned>(today));
++	}
++	return answer;
++}
++
++static int Bc5VideoOutRegisteredSets(const VideoOutConfig& cfg) { // under cfg.mutex
++	int sets = 0;
++	for (const auto& group: cfg.groups) {
++		sets += group.occupied ? 1 : 0;
++	}
++	return sets;
++}
++
 +KYTY_SYSV_ABI int VideoOutGetOutputStatus(int handle, VideoOutOutputStatus* status) {
 +	PRINT_NAME();
 +
@@ -10715,6 +10774,8 @@ index f980320..8a073e0 100644
 +
 +	ctx->mutex.Lock();
 +	status->resolution   = (ctx->width >= 3840 || ctx->height >= 2160 ? 2u : 1u);
++	status->resolution   = Bc5VideoOutStatusResolution(status->resolution, ctx->width, ctx->height, // experiment 0401 series e4
++	                                                   Bc5VideoOutRegisteredSets(*ctx));
 +	status->dynamicRange = 1;
 +	status->refreshRate =
 +	    (ctx->output_mode == VIDEO_OUT_OUTPUT_MODE_119_88HZ || Config::GetVblankFrequency() >= 119
