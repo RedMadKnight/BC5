@@ -34,7 +34,7 @@ TAG=${1:?a tag}; SECS=${2:-420}; RT=on; VARIANT=normal; OWNER=${D19_OWNER:?}; LO
 case "$RT" in off | on) ;; *) echo "RT is off or on"; exit 1 ;; esac
 W=${D19_WORK:-$HOME/bc5-work}; E=$W/exp0413r/run; R=$E/raw; LOCK=$W/BOX-LOCK; E30=$W/exp0330  # 0391: private paths
 BIN=${D19_BIN:?}; WANT=${BC5_0380_WANT:?}
-SWITCHES="KYTY_BC5_AUDIO_TRACE=1 KYTY_BC5_MEASURE=1 KYTY_BC5_INPUT_TRACE=1 KYTY_BC5_SWITCH_DEFAULTS=0 BC5_DIRECT_ACB_STATE_RESTORE=1 KYTY_BC5_PTHREAD_FIXES=1 KYTY_BC5_SAVEDATA_FIXES=1 KYTY_BC5_SAVEDATA_EVENT_CB=1 KYTY_BC5_SAVEDATA_SORT=1 KYTY_BC5_AUDIO_FIXES=set,room KYTY_BC5_AMPR_WAITS=1 KYTY_BC5_VIDEOOUT_STATUS=1 KYTY_BC5_EQUEUE_FIXES=1 KYTY_BC5_MMAP_SHIM_FIXES=1 BC5_R3_MEMSEM_SIGNAL=1 BC5_R3_SUBMIT_EOP_EVENT=1 BC5_R3_COND_WRITE=1 BC5_R3_WAIT_IDLE=1 BC5_R3_TS_100MHZ=1 KYTY_BC5_TLS_FIXES=1 KYTY_BC5_THREAD_SYNC_FIXES=1 KYTY_BC5_SEMA_FIXES=1 BC5_R3_MPROTECT_GAPS=1 BC5_R3_NULL_ARGS=1 BC5_R3_RELEASE_HOLES=1 BC5_R3_MUNMAP_HOLES=1 BC5_R3_FLEX_HINT=1 BC5_R3_DMQ_END=1 BC5_R3_EXEC_EINVAL=1 BC5_R3_QUERY_SIZE=1 KYTY_BC5_FS_FIXES=1 KYTY_BC5_POSIX_RET_FIXES=1 KYTY_BC5_SAVEDATA_MEMORY_FIXES=1 KYTY_BC5_SAVEDATA_DELETE_BUSY=1 KYTY_BC5_SAVEDATA_ALIASES=1 KYTY_BC5_HTTP2_FIXES=1 KYTY_BC5_PAD_OPEN_EXT=1 KYTY_BC5_JSON2_FIXES=1 KYTY_BC5_ULT_FIXES=1 KYTY_BC5_USERSERVICE_VALUES=1 KYTY_BC5_SYSTEMSERVICE_VALUES=1 KYTY_BC5_SYSTEMSERVICE_PARAMS_7_1000=1 KYTY_BC5_AUDIOOUT_CHECKS=1 KYTY_BC5_AUDIOIN_CHECKS=1 KYTY_BC5_NGS2_RACK_FIX=1 KYTY_BC5_FW_NET=1 KYTY_BC5_FW_AUDIO=1 KYTY_BC5_JIT_SHM=1 KYTY_BC5_FW_KERNEL=1 KYTY_BC5_FW_PAD=1 KYTY_BC5_LOAD_ZLIB=1 KYTY_BC5_LOAD_JPEG=1 KYTY_BC5_LOAD_IME=1 KYTY_BC5_LOAD_NPCOMMON=1 KYTY_BC5_LOAD_NPMANAGER=1 KYTY_BC5_LOAD_NPTROPHY=1 BC5_DIRECT_JOURNAL_QUIET=1 KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1"  # 0413: the traces, plus the integration's 55 switches as the second title's launcher words (the table off)
+SWITCHES="KYTY_BC5_AUDIO_TRACE=1 KYTY_BC5_MEASURE=1 KYTY_BC5_INPUT_TRACE=1 BC5_GAME_DIR=/home/kjaniszewski/bc5-data/games/PPSA03671 BC5_DIRECT_ACB_STATE_RESTORE=1 KYTY_BC5_PTHREAD_FIXES=1 KYTY_BC5_SAVEDATA_FIXES=1 KYTY_BC5_SAVEDATA_EVENT_CB=1 KYTY_BC5_SAVEDATA_SORT=1 KYTY_BC5_AUDIO_FIXES=set,room KYTY_BC5_AMPR_WAITS=1 KYTY_BC5_VIDEOOUT_STATUS=1 KYTY_BC5_EQUEUE_FIXES=1 KYTY_BC5_MMAP_SHIM_FIXES=1 BC5_R3_MEMSEM_SIGNAL=1 BC5_R3_SUBMIT_EOP_EVENT=1 BC5_R3_COND_WRITE=1 BC5_R3_WAIT_IDLE=1 BC5_R3_TS_100MHZ=1 KYTY_BC5_TLS_FIXES=1 KYTY_BC5_THREAD_SYNC_FIXES=1 KYTY_BC5_SEMA_FIXES=1 BC5_R3_MPROTECT_GAPS=1 BC5_R3_NULL_ARGS=1 BC5_R3_RELEASE_HOLES=1 BC5_R3_MUNMAP_HOLES=1 BC5_R3_FLEX_HINT=1 BC5_R3_DMQ_END=1 BC5_R3_EXEC_EINVAL=1 BC5_R3_QUERY_SIZE=1 KYTY_BC5_FS_FIXES=1 KYTY_BC5_POSIX_RET_FIXES=1 KYTY_BC5_SAVEDATA_MEMORY_FIXES=1 KYTY_BC5_SAVEDATA_DELETE_BUSY=1 KYTY_BC5_SAVEDATA_ALIASES=1 KYTY_BC5_HTTP2_FIXES=1 KYTY_BC5_PAD_OPEN_EXT=1 KYTY_BC5_JSON2_FIXES=1 KYTY_BC5_ULT_FIXES=1 KYTY_BC5_USERSERVICE_VALUES=1 KYTY_BC5_SYSTEMSERVICE_VALUES=1 KYTY_BC5_SYSTEMSERVICE_PARAMS_7_1000=1 KYTY_BC5_AUDIOOUT_CHECKS=1 KYTY_BC5_AUDIOIN_CHECKS=1 KYTY_BC5_NGS2_RACK_FIX=1 KYTY_BC5_FW_NET=1 KYTY_BC5_FW_AUDIO=1 KYTY_BC5_JIT_SHM=1 KYTY_BC5_FW_KERNEL=1 KYTY_BC5_FW_PAD=1 KYTY_BC5_LOAD_ZLIB=1 KYTY_BC5_LOAD_JPEG=1 KYTY_BC5_LOAD_IME=1 KYTY_BC5_LOAD_NPCOMMON=1 KYTY_BC5_LOAD_NPMANAGER=1 KYTY_BC5_LOAD_NPTROPHY=1 BC5_DIRECT_JOURNAL_QUIET=1 KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1"  # 0413: the traces, plus the integration's 55 switches as the second title's launcher words (the table off)
 case "$TAG" in *[!A-Za-z0-9]* | "") echo "the tag is letters and digits"; exit 1 ;; esac
 SD=$W/_SaveData/PPSA03671; SAVES=$W/exp0196/saves-before-152617
 LAUNCH_SRC=$W/play-pkg.sh; LAUNCH=$E/play-pkg-0391.sh; LEARN_SRC=$W/direct-learned-pkg.txt; LEARN=$E/direct-learned-pkg.txt
@@ -81,9 +81,24 @@ sed -i -e 's#^LOG=~/bc5-work/play-pkg-last\.log$#LOG=~/bc5-work/exp0413r/run/pla
        -e 's#^export KYTY_BC5_SAVEDATA_DIR=\$HOME/bc5-work/_SaveData-pkg-play$#export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0413r/run/wd/_SaveData-pkg-play  \# exp 0350/0364: private#' \
        -e 's#^export BC5_DIRECT_LEARNED=\$HOME/bc5-work/direct-learned-pkg\.txt$#export BC5_DIRECT_LEARNED=$HOME/bc5-work/exp0413r/run/direct-learned-pkg.txt  \# exp 0350/0364: a private copy#' "$LAUNCH" || exit 1
 sed -i '/^done < "\$ENVF"$/a [ -n "${BC5_0358_INPUT_CONFIG:-}" ] \&\& export KYTY_BC5_INPUT_CONFIG=$BC5_0358_INPUT_CONFIG  # exp 0339' "$LAUNCH" || exit 1
+# 0413: the unpacked game, as play-pkg-0413.diff does (three lines of the shared launcher)
+python3 - "$LAUNCH" <<'PYEOF' || exit 1
+import sys
+p = sys.argv[1]
+s = open(p).read()
+E = [('[ -r "$PKG" ] || { say "No package at $PKG"; exit 1; }\n',
+      '[ -n "${BC5_GAME_DIR:-}" ] || [ -r "$PKG" ] || { say "No package at $PKG"; exit 1; }  # 0413: unpacked game\n'),
+     ('if ! mountpoint -q "$M"; then\n',
+      'if [ -n "${BC5_GAME_DIR:-}" ]; then M=$BC5_GAME_DIR  # 0413: unpacked game\nelif ! mountpoint -q "$M"; then\n'),
+     ('mountpoint -q "$M" || { say "Mounting the package failed', '[ -n "${BC5_GAME_DIR:-}" ] || mountpoint -q "$M" || { say "Mounting the package failed')]
+for a, b in E:
+    assert s.count(a) == 1, a[:50]
+    s = s.replace(a, b)
+open(p, 'w').write(s)
+PYEOF
 diff -u "$LAUNCH_SRC" "$LAUNCH" > "$R/play-pkg-0391.diff"
 for h in BC5_0358_INPUT_CONFIG 'exp0413r/run/wd' 'exp0413r/run/play-last.log' 'exp0413r/run/direct-learned-pkg.txt'; do grep -q "$h" "$LAUNCH" || { echo "the derived launcher lacks $h: not started"; exit 1; }; done
-[ "$(grep -c '^[-+][^-+]' "$R/play-pkg-0391.diff")" = 11 ] || { echo "the derived launcher's diff is not 5 lines changed + 1 added: not started"; exit 1; }
+[ "$(grep -c '^[-+][^-+]' "$R/play-pkg-0391.diff")" = 18 ] || { echo "the derived launcher's diff is not 5 lines changed + 1 added: not started"; exit 1; }
 [ "$(grep -c 'LOG=~/bc5-work/exp0413r/run/play-last\.log' "$LAUNCH")" = 2 ] && ! grep -Eq 'LOG=~/bc5-work/play-pkg(-lean)?-last\.log' "$LAUNCH" || { echo "a log of the derived launcher is not the private one: not started"; exit 1; }
 bash -n "$LAUNCH" || { echo "the derived launcher does not parse: not started"; exit 1; }
 chmod +x "$LAUNCH"

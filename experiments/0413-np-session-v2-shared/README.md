@@ -251,3 +251,23 @@ snapshot, copied privately.
   unpacked now and that launcher has no `BC5_GAME_DIR`). No emulator, no GPU work; the lock was released by the run
   itself.
 - The derived launcher needs the `BC5_GAME_DIR` edit before the next try.
+
+### Third round (2026-11-12 13:35–13:47, the top's slot to 15:00)
+
+**Build.** Incremental rebuild to patch 040812ce (empty defaults table): normal e82e65479c5f6dd70d919114374c61f4, lean
+4c75bbc7746f29fbf05e86d63c3d0f58. The archive stayed 75e30335.
+
+**p5final.**
+- **Setup:** e82e6547, the second title with the 63 launcher words of `integration/words0413launch.txt` (the proposed
+  launcher's words), RT on.
+- **Gameplay** at 118 s, then a GPU hang at 173 s. `gfx_0.0.0` ring timeout, the ring reset succeeded, the box stayed up.
+  The runs stopped there, as the rule requires.
+- **Class:** the devcoredump `20261112-134445-devcd3.txt` reads `GRBM_STATUS` 0xa0407028, `CP_STALLED_STAT2` 0x18000,
+  ME 0x77b, PFP 0xea1, no page fault. That is F403's signature (a compute dispatch that does not end), as in his plays on
+  the private and shared builds.
+- **Timed-out buffers:** acb #134489 and dcb #134490 (26 dispatches, 13 indirect). Dumps are under
+  `~/bc5-data/captures/play-20261112-1341/gc/`.
+- **Not a regression from a single run.** p4full ran the same configuration on d1b6f9cb without a hang, and F403 hits
+  the daily line too.
+- **Not done:** ASTRO BOT, lean and the replug on e82e6547. The replug harness now has the `BC5_GAME_DIR` edits
+  (`integration/gamedir.py`).
