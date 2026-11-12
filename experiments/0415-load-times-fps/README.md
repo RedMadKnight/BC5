@@ -712,3 +712,42 @@ Build L4 (section 13): the change records of the guest's range table are complet
 (7,991 comparisons, 0 mismatches, both titles), the base for the lock-side stages. Part 2's first runs: standing
 still the frame is 36 ms with 26 ms of GPU work; RT off does not shorten it (RT is about 1.8 ms of GPU time); a fifth
 of the frames are long. Per-pass GPU time is not measured yet (the signature was too weak).
+
+## Podsumowanie dla maintainera (stan na 2026-11-12, noc)
+
+Oznaczenia: [zmierzone] = liczba z biegu na boxie; [wniosek] = moja interpretacja.
+
+**Wczytywanie.**
+- [zmierzone] Główna przyczyna długiego wczytywania menu po filmikach była w naszym kodzie: każdy odczyt pliku
+  otwierał plik od nowa, więc system czytał „na zapas” i dysk dostarczał ponad 2× więcej danych, niż gra prosiła
+  (11–12 GiB zamiast 5 GiB), pracując na swoim limicie.
+- [zmierzone] Poprawka (przełącznik `KYTY_BC5_APR_POSIX`, domyślnie wyłączony; jest już w main, w buildach wspólnych
+  jeszcze nie): ekran startowy gotowy ok. 7 s wcześniej (50,3 s zamiast 57,6 s od startu), wczytanie save'a do
+  płynnej gry ok. 4 s krócej (13,3 s zamiast 17,5 s). 10 biegów z poprawką, 8 bez, RT on. Test jednostkowy 33/33,
+  bieg 15 min i start ASTRO BOT czyste.
+- [zmierzone] Podczas ok. 28 s filmików gra niczego nie czyta; tego po naszej stronie nie skrócimy.
+- [zmierzone] Reszta wczytywania: nasza blokada urządzenia jest trzymana przez 2/3 czasu, a 68 % tego to ponowne
+  przeliczanie całego układu pamięci przy każdej zmianie. Trzy szybkie poprawki pojedynczych pętli dały mało
+  (0,4–0,9 s na fazę) i żadna nie skróciła wczytywania.
+- [zmierzone] „Wyuczone okna” w pięciu biegach nie zmapowały niczego, a były przeliczane ok. 860 razy na bieg. To
+  potwierdza Twoją ocenę, że to obejście; zastąpienie ich regułą robi sesja pamięci (exp 0412).
+- [zmierzone] Pierwszy etap właściwej poprawki (zapis zmian układu pamięci zamiast przeliczania całości) jest
+  sprawdzony w trybie porównawczym: 7 991 porównań, 0 różnic, w obu grach. Jeszcze niczego nie przyspiesza.
+
+**FPS.**
+- [zmierzone] W miejscu z save'a, stojąc: klatka trwa 36 ms, z czego GPU pracuje 26 ms.
+- [zmierzone] **Wyłączenie RT nie zwiększa FPS w tym miejscu** (22,8–23,0 vs 22,5–22,9 klatki/s); RT kosztuje ok.
+  1,8 ms pracy GPU na klatkę.
+- [zmierzone] Co piąta klatka jest długa (ponad 50 ms) nawet w bezruchu. W tych biegach nasza blokada była trzymana
+  przez połowę czasu, a jądro systemu zużywało ponad pół rdzenia na porządkowanie pamięci (`kcompactd0`).
+- [zmierzone] Jedna trzecia zadań wysyłanych do GPU jest malutka, a ok. 7 % jest pustych (filtr usuwa jedyny pakiet,
+  a zadanie i tak idzie do jądra).
+- [wniosek] FPS ogranicza tu nie RT i nie samo GPU, tylko przerwy między zadaniami, nasza blokada i ściana pamięci.
+  Rozbicia czasu GPU na przebiegi jeszcze nie ma (pierwsza sygnatura była za słaba).
+
+**Co dalej:** etap 2 poprawki blokady, pomijanie pustych zadań, przypisanie przerw GPU do przyczyn, lepsze
+sygnatury przebiegów. Wszystko za przełącznikami, domyślnie wyłączone.
+
+**Nie proszę o zmianę ustawień boxa.** Do Twojej wiadomości: nie odczytałem jeszcze, jaki zegar GPU faktycznie
+ustawia governor w grze (zakres 1850–2150 MHz); gra rozpakowana leży na dysku nieskompresowana, a pierwsza połowa
+wczytywania menu to dysk na limicie.
