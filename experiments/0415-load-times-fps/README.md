@@ -569,6 +569,13 @@ that second, major faults. Exp 0412 owns the memory causes; this gives it the pe
 The GPU's time is serial time between fences, not a hardware counter. A pass's time includes the kernel's scheduling
 of the job.
 
+**Added on the top session's review (2026-11-12 night), to do in the build and the runs:** (a) record the GPU's
+clock per run if the governor exposes the frequency it set without root (its sysfs or its journal; not yet looked
+for); (b) `BC5_DIRECT_RING_DEPS=dcb` exists for correctness (exp 0323, F385: the BVH build split over two rings hung
+11 of 11 runs at about 2 minutes with RT on), so its gap time is measured directly and any relaxation would be default
+off with its catcher; (c) with RT off the title may change other passes too, so "the signatures that disappear" count
+as RT's share only where the remaining passes keep their target sizes.
+
 **Slot needed:** a build with the counter (incremental, minutes), then about 45 minutes: 4 x RT on, 4 x RT off on the
 fixed place (120 s each), then the host-side arms one at a time against a fresh baseline.
 
