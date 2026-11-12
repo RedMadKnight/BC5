@@ -72557,7 +72557,7 @@ index 08b7156..f274f41 100644
  	LIB_FUNC("6na+Sa-B83w", LibZlib::sceZlibFinalize);
  	LIB_FUNC("TLar1HULv1Q", LibZlib::sceZlibInflate);
 diff --git a/src/libs/libs.cpp b/src/libs/libs.cpp
-index 36e4dc8..8f7b589 100644
+index 36e4dc8..5048da4 100644
 --- a/src/libs/libs.cpp
 +++ b/src/libs/libs.cpp
 @@ -4,6 +4,12 @@
@@ -72595,7 +72595,7 @@ index 36e4dc8..8f7b589 100644
  LIB_DEFINE(InitPad_1);
  LIB_DEFINE(InitPlayGo_1);
  LIB_DEFINE(InitPngDec_1);
-@@ -73,8 +94,107 @@ LIB_DEFINE(InitSystemService_1);
+@@ -73,8 +94,191 @@ LIB_DEFINE(InitSystemService_1);
  LIB_DEFINE(InitTextToSpeech2_1);
  LIB_DEFINE(InitUserService_1);
  LIB_DEFINE(InitVideoOut_1);
@@ -72640,6 +72640,74 @@ index 36e4dc8..8f7b589 100644
 +namespace NpTrophy {
 +LIB_DEFINE(InitNpTrophy_1);
 +} // namespace NpTrophy
++// ---- BC5 experiment 0405 (series e7 of experiment 0401), tag "tl2": batch 2, fourteen more dead tables, each
++// behind a switch. The same decision 4 ("=> B => B"): each table's functions are ported first (series e7's port
++// agents, in each table's own unit), then the table is loaded here, behind its own switch, default off. Batch 2,
++// the CPU-only library tables, loads after batch 1's six, in this order (TABLES below):
++//   KYTY_BC5_LOAD_NPTUS              nptus              libs/libNp.cpp                 libSceNpTus
++//   KYTY_BC5_LOAD_NPPARTY            npparty            libs/libNp.cpp                 libSceNpParty
++//   KYTY_BC5_LOAD_NPPARTNER          nppartner          libs/libNp.cpp                 libSceNpPartner001
++//   KYTY_BC5_LOAD_NPSNSFACEBOOK      npsnsfacebook      libs/libNp.cpp                 libSceNpSnsFacebookDialog
++//   KYTY_BC5_LOAD_VOICE              voice              libs/libVoice.cpp              libSceVoice
++//   KYTY_BC5_LOAD_SCREENSHOT         screenshot         libs/libScreenShot.cpp         libSceScreenShot
++//   KYTY_BC5_LOAD_DISCMAP            discmap            libs/libDiscMap.cpp            libSceDiscMap
++//   KYTY_BC5_LOAD_ULOBJMGR           ulobjmgr           libs/libUlobjmgr.cpp           ulobjmgr
++//   KYTY_BC5_LOAD_COMPANIONHTTPD     companionhttpd     libs/libCompanion.cpp          libSceCompanionHttpd
++//   KYTY_BC5_LOAD_COMPANIONUTIL      companionutil      libs/libCompanion.cpp          libSceCompanionUtil
++//   KYTY_BC5_LOAD_INVITATIONDIALOG   invitationdialog   libs/libInvitationDialog.cpp   libSceInvitationDialog
++//   KYTY_BC5_LOAD_WEBBROWSERDIALOG   webbrowserdialog   libs/libWebBrowserDialog.cpp   libSceWebBrowserDialog
++//   KYTY_BC5_LOAD_SHAREPLAY          shareplay          libs/libSharePlay.cpp          libSceSharePlay
++//   KYTY_BC5_LOAD_GAMELIVESTREAMING  gamelivestreaming  libs/libGameLiveStreaming.cpp  libSceGameLiveStreaming
++// Each is library v1, module v1.1. The same rule and the same one stderr line as batch 1: the line lists the items
++// that are on, these after batch 1's, so with all fourteen unset InitAll's records and its line are series e6's.
++// With its switch on, a table's init registers only its ported functions (held stubs are skipped there).
++// Not loaded here: remoteplay (nothing ported), videorecording (its one function held), npauth (its functions go
++// into libNet.cpp's live NpAuth table, behind KYTY_BC5_LOAD_NPAUTH read there).
++// No key and no NID+type of these fourteen tables is registered by a live table (e7 input tree, tl20405-notes.md),
++// so the NID-only lookups described above do not move for them; tl20405.cpp fails if one appears.
++// No upstream code: this only loads this tree's own tables. GPL-2.0 as the rest of this file.
++namespace NpTus {
++LIB_DEFINE(InitNpTus_1);
++} // namespace NpTus
++namespace NpParty {
++LIB_DEFINE(InitNpParty_1);
++} // namespace NpParty
++namespace NpPartner {
++LIB_DEFINE(InitNpPartner_1);
++} // namespace NpPartner
++namespace NpSnsFacebookDialog {
++LIB_DEFINE(InitNpSnsFacebookDialog_1);
++} // namespace NpSnsFacebookDialog
++namespace LibVoice {
++LIB_DEFINE(InitVoice_1);
++} // namespace LibVoice
++namespace LibScreenShot {
++LIB_DEFINE(InitScreenShot_1);
++} // namespace LibScreenShot
++namespace LibDiscMap {
++LIB_DEFINE(InitDiscMap_1);
++} // namespace LibDiscMap
++namespace LibUlobjmgr {
++LIB_DEFINE(InitUlobjmgr_1);
++} // namespace LibUlobjmgr
++namespace CompanionHttpd {
++LIB_DEFINE(InitCompanionHttpd_1);
++} // namespace CompanionHttpd
++namespace CompanionUtil {
++LIB_DEFINE(InitCompanionUtil_1);
++} // namespace CompanionUtil
++namespace LibInvitationDialog {
++LIB_DEFINE(InitInvitationDialog_1);
++} // namespace LibInvitationDialog
++namespace LibWebBrowserDialog {
++LIB_DEFINE(InitWebBrowserDialog_1);
++} // namespace LibWebBrowserDialog
++namespace LibSharePlay {
++LIB_DEFINE(InitSharePlay_1);
++} // namespace LibSharePlay
++namespace LibGameLiveStreaming {
++LIB_DEFINE(InitGameLiveStreaming_1);
++} // namespace LibGameLiveStreaming
 +
 +namespace Bc5Tables {
 +
@@ -72657,9 +72725,25 @@ index 36e4dc8..8f7b589 100644
 +    {"KYTY_BC5_LOAD_NPCOMMON", "npcommon", NpCommon::InitNpCommon_1},
 +    {"KYTY_BC5_LOAD_NPMANAGER", "npmanager", NpManager::InitNpManager_1},
 +    {"KYTY_BC5_LOAD_NPTROPHY", "nptrophy", NpTrophy::InitNpTrophy_1},
++    // Batch 2 (series e7, tag "tl2"), after batch 1:
++    {"KYTY_BC5_LOAD_NPTUS", "nptus", NpTus::InitNpTus_1},
++    {"KYTY_BC5_LOAD_NPPARTY", "npparty", NpParty::InitNpParty_1},
++    {"KYTY_BC5_LOAD_NPPARTNER", "nppartner", NpPartner::InitNpPartner_1},
++    {"KYTY_BC5_LOAD_NPSNSFACEBOOK", "npsnsfacebook", NpSnsFacebookDialog::InitNpSnsFacebookDialog_1},
++    {"KYTY_BC5_LOAD_VOICE", "voice", LibVoice::InitVoice_1},
++    {"KYTY_BC5_LOAD_SCREENSHOT", "screenshot", LibScreenShot::InitScreenShot_1},
++    {"KYTY_BC5_LOAD_DISCMAP", "discmap", LibDiscMap::InitDiscMap_1},
++    {"KYTY_BC5_LOAD_ULOBJMGR", "ulobjmgr", LibUlobjmgr::InitUlobjmgr_1},
++    {"KYTY_BC5_LOAD_COMPANIONHTTPD", "companionhttpd", CompanionHttpd::InitCompanionHttpd_1},
++    {"KYTY_BC5_LOAD_COMPANIONUTIL", "companionutil", CompanionUtil::InitCompanionUtil_1},
++    {"KYTY_BC5_LOAD_INVITATIONDIALOG", "invitationdialog", LibInvitationDialog::InitInvitationDialog_1},
++    {"KYTY_BC5_LOAD_WEBBROWSERDIALOG", "webbrowserdialog", LibWebBrowserDialog::InitWebBrowserDialog_1},
++    {"KYTY_BC5_LOAD_SHAREPLAY", "shareplay", LibSharePlay::InitSharePlay_1},
++    {"KYTY_BC5_LOAD_GAMELIVESTREAMING", "gamelivestreaming", LibGameLiveStreaming::InitGameLiveStreaming_1},
 +};
 +static constexpr size_t TABLE_COUNT = sizeof(TABLES) / sizeof(TABLES[0]);
 +static_assert(TABLE_COUNT <= 32);
++static_assert(TABLE_COUNT == 20); // BC5 experiment 0405 (tl2): batch 1's six, then batch 2's fourteen
 +
 +// Bit i: TABLES[i]'s switch is on. Read once; the first call prints the line.
 +static uint32_t On() {
@@ -72703,7 +72787,7 @@ index 36e4dc8..8f7b589 100644
  	LIB_LOAD(InitAudio_1);
  	LIB_LOAD(InitAmpr_1);
  	LIB_LOAD(InitAppContent_1);
-@@ -95,6 +215,11 @@ void InitAll(Loader::SymbolDatabase* s) {
+@@ -95,6 +299,11 @@ void InitAll(Loader::SymbolDatabase* s) {
  	LIB_LOAD(LibKeyboard::InitKeyboard_1);
  	LIB_LOAD(Ime::InitPlatform_1_Ime);
  	LIB_LOAD(InitNet_1);
@@ -72715,7 +72799,7 @@ index 36e4dc8..8f7b589 100644
  	LIB_LOAD(InitPad_1);
  	LIB_LOAD(InitPlayGo_1);
  	LIB_LOAD(LibPsml::InitPsml_1);
-@@ -111,6 +236,7 @@ void InitAll(Loader::SymbolDatabase* s) {
+@@ -111,6 +320,7 @@ void InitAll(Loader::SymbolDatabase* s) {
  	LIB_LOAD(InitUserService_1);
  	LIB_LOAD(VideoDec2::InitVideoDec2_1);
  	LIB_LOAD(InitVideoOut_1);
