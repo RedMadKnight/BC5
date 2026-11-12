@@ -381,3 +381,36 @@ timeout, the reset succeeded; shared notes `exp0412-lean7-hang-0752.md`). That w
 and its poll. So the lean unit 8f6e92b3 is verified here only as source text ("g412d + the poll"), not as a clean
 line. The cause is unknown; the zero skip is one candidate, as in p5final. It stays off in code and out of the proposed
 launcher diff.
+
+### Round five (2026-11-12 14:25–15:0x, the top's slot to 16:00)
+
+**The second title without the zero skip, on f61d5874** (a2ab53c7's table; the five rows as launcher words;
+`integration/words0413nz.txt`, 25 words; RT on; 240 s after gameplay):
+
+| run | result |
+|---|---|
+| q1nz | PASS: gameplay at 120 s, 24.5 flips/s over 357 s, longest gap 894 ms, 0 kernel lines, 0 crash lines |
+| q2nz | PASS: gameplay at 118 s, 25.4 flips/s over 355 s, longest gap 941 ms, 0 kernel lines, 0 crash lines |
+
+Both ran past p5final's hang point (G+55). The zero skip is the difference between these and p5final, besides the
+binary's table (R21: two runs, a fit).
+
+**ASTRO BOT's start crash, more discriminators** (60-s starts; a crash ends at 5–6 s):
+
+| test | result |
+|---|---|
+| in-code row bisect: `mkskip0413.py` makes the table read the rows to skip from a file, each skipped row replaced by a dummy `setenv` (binary 126fd308) | **PASS with no row skipped** (k0none) and with all 36 replaced (k1all). The only change against f61d5874 is a file read in the constructor, so the bisect cannot be done this way: any change at start moves the outcome |
+| f61d5874 + `MALLOC_PERTURB_=165` | the same crash, the same registers (m1p165) |
+| f61d5874 + `MALLOC_PERTURB_=0` | the same crash (m2p0: the control at the same entry count) |
+| f61d5874 + `GLIBC_TUNABLES=glibc.malloc.tcache_count=0` | the same crash (m3tc) |
+| f61d5874 + `MALLOC_PERTURB_=165` + 8 dummies | PASS (m4p165d8: the pass side stays a pass) |
+| f61d5874, table off, `MALLOC_PERTURB_=165` | PASS (m5off165) |
+| call-ring build (`mkring0413.py`: a static ring of the last 256 `PRINT_NAME()` calls, no heap; binary e0665386) | PASS at 0–9 dummy variables so far; no crash to read the ring from yet |
+
+- **Not unset or freed glibc heap bytes.** The perturb fill changes nothing, and neither does the tcache.
+- **The outcome moves with anything that changes the start**: the count of environment entries, a file read in the
+  constructor, the ring's code. That is address-dependent behaviour (an order or a hash by pointer value, or a
+  placement), not content.
+- **Correction to "the host compare says equal for ("", NULL)".** The host's `strncmp` is glibc's and would fault on
+  NULL. The disassembly of frame 1 started at an arbitrary byte, so whether that compare ran for the zeroed entry is not
+  shown. What is shown: the entry the title passed on is zero and the key is empty.
