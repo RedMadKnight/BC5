@@ -2251,6 +2251,12 @@ the shared default either way. The price, measured above: about 0.55 GiB less av
 other means (sections 9-22's levers; the reason memory under the skip is pinned at all is that the title names it to the
 GPU). BC5_GUARD_ZSKIP_SCAN stays in g412w as a default-off diagnostic; it is not proposed for any shortcut.
 
+**Decision (the maintainer, 2026-11-12 19:25: "yes, remove it"):** arm `fast8` in `play-guard-0412.sh` = fast7 without
+BC5_DIRECT_ZERO_SKIP and BC5_GUARD_ZSKIP_POLL_SUBMIT (dry runs on the box: fast7's output identical before and after,
+fast8 differs by those two words, 78 words instead of 80). Launcher on the box a547d77c, the previous kept as
+`play-guard-0412.sh.before-fast8-1137c59b`; binary unchanged (g412v bc4356a5). Desktop: "BC5 emulator (0412 fast8)";
+fast7's shortcut moved to `~/bc5-work/trash-20261111/pulpit`. fast8 has not been run.
+
 Not done: no run of fast7's words without the zero skip on this route today (the memory figure above is from scan arms
 after their skip ended); the address behind run 21's write; a check of hung arguments against the canary's ranges.
 
