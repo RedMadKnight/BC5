@@ -16981,10 +16981,10 @@ index bc73d18..fab34b4 100644
  
  #endif /* EMULATOR_INCLUDE_EMULATOR_KERNEL_FILESYSTEM_H_ */
 diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
-index 02fc0fc..e5a9a50 100644
+index 02fc0fc..534a745 100644
 --- a/src/kernel/memory.cpp
 +++ b/src/kernel/memory.cpp
-@@ -1,4250 +1,5099 @@
+@@ -1,4250 +1,5112 @@
 -#include "kernel/memory.h"
 -
 -#include "common/assert.h"
@@ -21758,8 +21758,21 @@ index 02fc0fc..e5a9a50 100644
 +
 +		const auto end     = start + size;
 +		auto       current = start;
-+		for (const auto& range: m_ranges) {
-+			const auto range_end = End(range.start, range.size);
++		// Experiment 0412 (tag mf412, mkmem0412.py): KYTY_BC5_RANGES_FAST=1 starts the walk at the range that holds `start`
++		// instead of at the table's first element (28,000 ranges while the second title streams). The ranges are sorted
++		// by start and do not overlap, so every range before that one ends at or before `start` and the loop below skipped it.
++		static const bool fast412 = [] {
++			const char* e = std::getenv("KYTY_BC5_RANGES_FAST");
++			return e != nullptr && e[0] != 0 && !(e[0] == '0' && e[1] == 0);
++		}();
++		auto first412 = m_ranges.begin();
++		if (fast412) {
++			first412 = std::upper_bound(m_ranges.begin(), m_ranges.end(), start, [](uint64_t v, const Range& r) { return v < r.start; });
++			if (first412 != m_ranges.begin()) --first412;
++		}
++		for (auto it412 = first412; it412 != m_ranges.end(); ++it412) {
++			const auto& range     = *it412;
++			const auto  range_end = End(range.start, range.size);
 +			if (range_end <= current) {
 +				continue;
 +			}
