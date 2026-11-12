@@ -81,7 +81,7 @@ of device-mutex time exp 0415 measured in the menu load, and 2.0 s per 34 s of p
 ## 5. The price in pinned memory, and what pays for it
 
 R1 pins every view. Under views in play: 12,189 MiB; pinned today at the wall 11,700–11,930 MiB (README sections
-35, 36) [M]. **So R1 costs at most about 0.26–0.49 GiB more pinned memory than today**, in the heaps imported "by
+35, 36) [M]. **So R1 costs more pinned memory than today: +768 MiB measured on the scripted route (README section 51: views 12,186 MiB, pinned under a view 11,418; the 0.26–0.49 GiB first written here compared against a pin that included orphans)**, in the heaps imported "by
 data" (`AssetHeap` 1,166 under views, 730–930 pinned; `InitAllocator` 652, 414–450 pinned) and the lazy `Wwise`
 (220). The learned windows pin part of that already; how much is the first measurement (section 6). R2 costs nothing
 and gives back the zero buffer's mappings.
@@ -97,7 +97,7 @@ options of `DESIGN-memory-architecture.md`:
 A cheaper R1 that keeps "by data" and relies on PRT for the rest would hide GPU writes silently, the defect of the
 zero skip (section 48). Not proposed.
 
-## 6. Measurements (to be filled in)
+## 6. Measurements (the first is README section 51; kind K2 measured as 0 MiB today)
 
 1. The file on the box: lines, kinds K1–K4, what each window brings in during a run (`learnclass0412.py` on a
    journal of a normal run); the ledger's "learned-forced" pin.

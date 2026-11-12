@@ -1,0 +1,17 @@
+22:11:28 y1sh (shell): plasmashell 1, rsync processes 3, steamwebhelper 0
+y1sh (fast8) ended at G+120 (after 262 s; G 140, load 101, list 93); 23.0 flips/s over 257 s, 98 s with a gap over 100 ms, longest 1328 ms; kernel lines 0, crash lines 0, ledger lines 26
+22:16:04 y1sh ended: lowest available 497 MiB; snapshots 5
+22:17:09 plasmashell stopped
+22:17:09 y2ba (bare): plasmashell 0, rsync processes 3, steamwebhelper 0
+y2ba (fast8) ended at G+120 (after 240 s; G 119, load 103, list 93); 24.0 flips/s over 237 s, 55 s with a gap over 100 ms, longest 659 ms; kernel lines 0, crash lines 0, ledger lines 23
+22:21:29 plasmashell started again
+22:21:29 y2ba ended: lowest available 724 MiB; snapshots 5
+22:22:32 plasmashell stopped
+22:22:32 y3ba (bare): plasmashell 0, rsync processes 3, steamwebhelper 0
+y3ba (fast8) ended at G+120 (after 241 s; G 119, load 104, list 94); 23.9 flips/s over 235 s, 67 s with a gap over 100 ms, longest 628 ms; kernel lines 0, crash lines 0, ledger lines 23
+22:26:51 plasmashell started again
+22:26:51 y3ba ended: lowest available 775 MiB; snapshots 5
+22:27:51 y4sh (shell): plasmashell 1, rsync processes 3, steamwebhelper 0
+y4sh (fast8) ended at G+120 (after 244 s; G 123, load 105, list 94); 24.0 flips/s over 239 s, 73 s with a gap over 100 ms, longest 735 ms; kernel lines 0, crash lines 0, ledger lines 24
+22:32:08 y4sh ended: lowest available 560 MiB; snapshots 5
+2026-11-12 22:32:08 series done
