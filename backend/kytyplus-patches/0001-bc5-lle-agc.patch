@@ -16087,10 +16087,10 @@ index bc73d18..fab34b4 100644
  
  #endif /* EMULATOR_INCLUDE_EMULATOR_KERNEL_FILESYSTEM_H_ */
 diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
-index 02fc0fc..244c90f 100644
+index 02fc0fc..3d37091 100644
 --- a/src/kernel/memory.cpp
 +++ b/src/kernel/memory.cpp
-@@ -1,4250 +1,4492 @@
+@@ -1,4250 +1,4549 @@
 -#include "kernel/memory.h"
 -
 -#include "common/assert.h"
@@ -20356,6 +20356,7 @@ index 02fc0fc..244c90f 100644
 +#include "graphics/host_gpu/renderer/cache/gpuResourceManager.h"
 +#include "libs/errno.h"
 +#include "libs/libs.h"
++#include "loader/systemContent.h" // experiment 0401 series e
 +
 +#include <algorithm>
 +#include <array>
@@ -20421,6 +20422,41 @@ index 02fc0fc..244c90f 100644
 +static uint64_t                      g_flexible_memory_size        = DEFAULT_FLEXIBLE_MEMORY_SIZE;
 +static bool                          g_flexible_memory_size_frozen = false;
 +static Graphics::GpuResourceManager* g_gpu_resources               = nullptr;
++
++// Experiment 0401 series e: direct and flexible memory sized from param.json, after KytyPS5 09753bf "memory: change
++// defaults" (src/kernel/memory.cpp, src/loader/systemContent.cpp; GPL-2.0). With KYTY_BC5_MEMORY_FROM_PARAM set and not
++// "0", a game gets 12.5 GiB (12800 MiB): a fixed 64 MiB cache and the page-table memory past the 64 MiB included for each
++// of the CPU, GPU and AMM tables (param.json kernel.cpuPageTableSize, kernel.gpuPageTableSize, amm.pagetableMemorySizeInMib)
++// come off the top, and flexible memory (param.json kernel.flexibleMemorySize, set by emulator.cpp as before, or the
++// default) and direct memory share the rest. KYTY_GUEST_MEMORY_MB and the host-RAM cap are not used then. Unset or "0":
++// today's sizes by today's code path. Left out on purpose: 0a14091's charge of loaded modules' segments to flexible memory
++// (the title sets its own flexible size, and the charge changes the runtime linker too) and 09753bf's
++// KernelGetPageTableStats totals; both are outside this switch.
++constexpr uint64_t BC5_GUEST_MEMORY_BUDGET   = 12800ull * 1024ull * 1024ull;
++constexpr uint64_t BC5_RESERVED_CACHE_SIZE   = 64ull * 1024ull * 1024ull;
++constexpr uint64_t BC5_INCLUDED_TABLE_MEMORY = 64ull * 1024ull * 1024ull;
++static uint64_t    g_bc5_today_total         = 0; // what today's code gives, for the journal line
++
++static bool Bc5MemoryFromParamOn() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_MEMORY_FROM_PARAM");
++		return e != nullptr && e[0] != 0 && std::strcmp(e, "0") != 0;
++	}();
++	return on;
++}
++
++static uint64_t Bc5TableOverhead(const ::Loader::SystemContentMemoryTables& t) {
++	return std::max(t.cpu_table_memory, BC5_INCLUDED_TABLE_MEMORY) + std::max(t.gpu_table_memory, BC5_INCLUDED_TABLE_MEMORY) +
++	       std::max(t.amm_table_memory, BC5_INCLUDED_TABLE_MEMORY) - 3 * BC5_INCLUDED_TABLE_MEMORY;
++}
++
++// The total for the switch on: called from PhysicalMemory::TotalSize()'s first call, which comes after param.json is
++// loaded (emulator.cpp: SetFlexibleMemorySize right after SystemContentLoadParamSfo, else the memory subsystem's init).
++static uint64_t Bc5MemoryFromParamTotal() {
++	const uint64_t overhead = Bc5TableOverhead(::Loader::SystemContentGetMemoryTables());
++	EXIT_IF(overhead >= BC5_GUEST_MEMORY_BUDGET - BC5_RESERVED_CACHE_SIZE);
++	return (BC5_GUEST_MEMORY_BUDGET - BC5_RESERVED_CACHE_SIZE - overhead) & ~(0x4000ull - 1ull);
++}
 +
 +static Graphics::GpuResourceManager& GetGpuResources() {
 +	EXIT_IF(g_gpu_resources == nullptr);
@@ -21143,6 +21179,10 @@ index 02fc0fc..244c90f 100644
 +				target = std::strtoull(env, nullptr, 10) * megabyte;
 +			}
 +			target = target & ~(0x4000ull - 1ull);
++			g_bc5_today_total = target; // experiment 0401 series e
++			if (Bc5MemoryFromParamOn()) {
++				target = Bc5MemoryFromParamTotal();
++			}
 +			LOGF("guest memory total = %llu MiB\n", static_cast<unsigned long long>(target / megabyte));
 +			return target;
 +		}();
@@ -21540,6 +21580,23 @@ index 02fc0fc..244c90f 100644
 +
 +KYTY_SUBSYSTEM_INIT(Memory) {
 +	g_flexible_memory_size_frozen = true;
++	{ // experiment 0401 series e: the sizes, with the switch on or off (flexible + table overhead must fit, as in 09753bf)
++		constexpr uint64_t mib    = 1024ull * 1024ull;
++		const bool         on     = Bc5MemoryFromParamOn();
++		const auto         tables = ::Loader::SystemContentGetMemoryTables();
++		const uint64_t     total  = PhysicalMemory::TotalSize();
++		EXIT_IF(g_flexible_memory_size >= total);
++		std::fprintf(stderr,
++		             "[bc5] exp 0401: memory from param.json %s: total %" PRIu64 " MiB, flexible %" PRIu64 " MiB, direct %" PRIu64
++		             " MiB (param.json: flexible %" PRIu64 ", cpu table %" PRIu64 ", gpu table %" PRIu64 ", amm table %" PRIu64 " MiB)",
++		             on ? "on" : "off", total / mib, g_flexible_memory_size / mib, (total - g_flexible_memory_size) / mib,
++		             ::Loader::SystemContentGetFlexibleMemorySize() / mib, tables.cpu_table_memory / mib,
++		             tables.gpu_table_memory / mib, tables.amm_table_memory / mib);
++		if (on) {
++			std::fprintf(stderr, "; today's total would be %" PRIu64 " MiB", g_bc5_today_total / mib);
++		}
++		std::fprintf(stderr, "\n");
++	}
 +	VirtualMemory::Init();
 +	g_guest_address_space = std::make_unique<GuestAddressSpace>(PhysicalMemory::TotalSize());
 +	g_physical_memory     = std::make_unique<PhysicalMemory>();
@@ -57279,7 +57336,7 @@ index 343045e..487387c 100644
                              SymbolRecord* out_info, bool* bind_self) {
  	KYTY_PROFILER_FUNCTION();
 diff --git a/src/loader/systemContent.cpp b/src/loader/systemContent.cpp
-index efa8b48..ecd42b1 100644
+index efa8b48..de4bf37 100644
 --- a/src/loader/systemContent.cpp
 +++ b/src/loader/systemContent.cpp
 @@ -10,7 +10,9 @@
@@ -57292,7 +57349,65 @@ index efa8b48..ecd42b1 100644
  #include <cstring>
  #include <filesystem>
  #include <nlohmann/json.hpp>
-@@ -363,7 +365,10 @@ void PlayGo::Open(const std::filesystem::path& file_name) {
+@@ -37,6 +39,7 @@ public:
+ 	bool     GetParamString(const char* name, std::string* value);
+ 	bool     GetParamString(const char* name, char* value, size_t value_size);
+ 	uint64_t GetFlexibleMemorySize();
++	SystemContentMemoryTables GetMemoryTables(); // experiment 0401 series e
+ 
+ 	void DbgPrint();
+ 
+@@ -63,6 +66,7 @@ private:
+ 	bool               m_opened = false;
+ 	std::vector<Param> m_params;
+ 	uint64_t           m_flexible_memory_size = 0;
++	SystemContentMemoryTables m_memory_tables; // experiment 0401 series e
+ };
+ 
+ class PlayGo {
+@@ -176,6 +180,20 @@ void Psf::OpenJson(const std::filesystem::path& file_name) {
+ 			m_flexible_memory_size = it->get<uint64_t>();
+ 		}
+ 	}
++	// Experiment 0401 series e (KytyPS5 09753bf, GPL-2.0): the page-table sizes, kept for KYTY_BC5_MEMORY_FROM_PARAM. Only
++	// non-negative integers are taken; anything else leaves 0 (none set).
++	auto read_table_size = [](const nlohmann::ordered_json& object, const char* key, uint64_t* size, uint64_t unit) {
++		if (auto it = object.find(key); it != object.end() && it->is_number_unsigned()) {
++			*size = it->get<uint64_t>() * unit;
++		}
++	};
++	if (auto kernel = param_json.find("kernel"); kernel != param_json.end() && kernel->is_object()) {
++		read_table_size(*kernel, "cpuPageTableSize", &m_memory_tables.cpu_table_memory, 1);
++		read_table_size(*kernel, "gpuPageTableSize", &m_memory_tables.gpu_table_memory, 1);
++	}
++	if (auto amm = param_json.find("amm"); amm != param_json.end() && amm->is_object()) {
++		read_table_size(*amm, "pagetableMemorySizeInMib", &m_memory_tables.amm_table_memory, 1024ull * 1024ull);
++	}
+ 
+ 	auto localized = param_json.find("localizedParameters");
+ 	if (localized != param_json.end() && localized->is_object()) {
+@@ -226,6 +244,7 @@ void Psf::Close() {
+ 
+ 	m_params.clear();
+ 	m_flexible_memory_size = 0;
++	m_memory_tables        = {}; // experiment 0401 series e
+ 	m_opened               = false;
+ }
+ 
+@@ -343,6 +362,12 @@ uint64_t Psf::GetFlexibleMemorySize() {
+ 	return m_flexible_memory_size;
+ }
+ 
++SystemContentMemoryTables Psf::GetMemoryTables() { // experiment 0401 series e
++	Common::LockGuard lock(m_mutex);
++
++	return m_memory_tables;
++}
++
+ PlayGo::~PlayGo() {
+ 	Close();
+ }
+@@ -363,7 +388,10 @@ void PlayGo::Open(const std::filesystem::path& file_name) {
  
  	m_f.Read(&magic1, 4);
  
@@ -57304,7 +57419,7 @@ index efa8b48..ecd42b1 100644
  		LOGF("invalid file: magic1 = %08" PRIx32 "\n", magic1);
  		return;
  	}
-@@ -372,6 +377,7 @@ void PlayGo::Open(const std::filesystem::path& file_name) {
+@@ -372,6 +400,7 @@ void PlayGo::Open(const std::filesystem::path& file_name) {
  	m_f.Read(&m_chunks_num, 2);
  
  	m_opened = true;
@@ -57312,6 +57427,38 @@ index efa8b48..ecd42b1 100644
  }
  
  static bool ParseXmlUintAttr(std::string_view tag, std::string_view attr, uint32_t& value) {
+@@ -648,6 +677,12 @@ uint64_t SystemContentGetFlexibleMemorySize() {
+ 	return sc->psf.GetFlexibleMemorySize();
+ }
+ 
++SystemContentMemoryTables SystemContentGetMemoryTables() { // experiment 0401 series e
++	auto* sc = Common::Singleton<SystemContent>::Instance();
++
++	return sc->psf.GetMemoryTables();
++}
++
+ bool SystemContentGetIconPath(std::string* path) {
+ 	if (path == nullptr) {
+ 		return false;
+diff --git a/src/loader/systemContent.h b/src/loader/systemContent.h
+index f3216f1..815a084 100644
+--- a/src/loader/systemContent.h
++++ b/src/loader/systemContent.h
+@@ -15,6 +15,14 @@ bool     SystemContentParamSfoGetInt(const char* name, int32_t* value);
+ bool     SystemContentParamSfoGetString(const char* name, std::string* value);
+ bool     SystemContentParamSfoGetString(const char* name, char* value, size_t value_size);
+ uint64_t SystemContentGetFlexibleMemorySize();
++// Experiment 0401 series e (KytyPS5 09753bf, GPL-2.0): the page-table sizes a game's param.json sets, in bytes; 0 where
++// it sets none. Read for KYTY_BC5_MEMORY_FROM_PARAM (kernel/memory.cpp); the declarations around it are unchanged.
++struct SystemContentMemoryTables {
++	uint64_t cpu_table_memory = 0; // kernel.cpuPageTableSize
++	uint64_t gpu_table_memory = 0; // kernel.gpuPageTableSize
++	uint64_t amm_table_memory = 0; // amm.pagetableMemorySizeInMib, in bytes here
++};
++SystemContentMemoryTables SystemContentGetMemoryTables();
+ bool     SystemContentGetIconPath(std::string* path);
+ bool     SystemContentGetChunksNum(uint32_t* num);
+ 
 diff --git a/src/main.cpp b/src/main.cpp
 index c44d32f..23e6b19 100644
 --- a/src/main.cpp
