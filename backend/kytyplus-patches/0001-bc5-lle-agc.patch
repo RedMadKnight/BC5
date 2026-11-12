@@ -4528,10 +4528,10 @@ index 0000000..226a60e
 +} // namespace bc5::pad_audio_route
 diff --git a/src/bc5/switch_defaults.hpp b/src/bc5/switch_defaults.hpp
 new file mode 100644
-index 0000000..c3b8d4c
+index 0000000..da741a7
 --- /dev/null
 +++ b/src/bc5/switch_defaults.hpp
-@@ -0,0 +1,56 @@
+@@ -0,0 +1,58 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +// Experiment 0413: the defaults of switches that went from the private test builds (exps 0401, 0405, 0409, 0412) into
 +// both shared builds. Each row is applied at process start with setenv(name, value, 0), before any static initializer
@@ -4577,6 +4577,8 @@ index 0000000..c3b8d4c
 +    {"BC5_R3_COND_WRITE", "1"},
 +    {"BC5_R3_WAIT_IDLE", "1"},
 +    {"BC5_R3_TS_100MHZ", "1"},
++    // A11: TLS stub fixes
++    {"KYTY_BC5_TLS_FIXES", "1"},
 +    {nullptr, nullptr}};
 +
 +inline void Apply() {
