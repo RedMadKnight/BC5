@@ -16401,10 +16401,10 @@ index bc73d18..fab34b4 100644
  
  #endif /* EMULATOR_INCLUDE_EMULATOR_KERNEL_FILESYSTEM_H_ */
 diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
-index 02fc0fc..3d37091 100644
+index 02fc0fc..a503cb9 100644
 --- a/src/kernel/memory.cpp
 +++ b/src/kernel/memory.cpp
-@@ -1,4250 +1,4549 @@
+@@ -1,4250 +1,4875 @@
 -#include "kernel/memory.h"
 -
 -#include "common/assert.h"
@@ -20772,6 +20772,74 @@ index 02fc0fc..3d37091 100644
 +	return (BC5_GUEST_MEMORY_BUDGET - BC5_RESERVED_CACHE_SIZE - overhead) & ~(0x4000ull - 1ull);
 +}
 +
++// ---- Experiment 0405 series e5 (mkmem0405.py): exp 0405's R3 memory ports ------------------------------------------
++// One switch per item, R3's names (exp 0405 raw/r3-gpu-memory.md, "e4-now port specs"), read once from the
++// environment: on when set, not empty and not "0" (F767's reading); unset or "0" keeps today's code path. One stderr
++// line at memory init lists the items that are on. Each change cites its sources where it is made.
++//   BC5_R3_MPROTECT_GAPS (M1)  sceKernelMprotect/sceKernelMtypeprotect change the mapped parts of a range, skip its gaps
++//                              and return 0, also for a range that starts in a gap or is wholly unmapped (today: EXIT);
++//                              an overflowing range returns EINVAL (today: EXIT); the batch-map protect operations
++//                              return EINVAL for an unmapped start.
++//   BC5_R3_NULL_ARGS (M21)     sceKernelQueryMemoryProtection(NULL) returns EACCES and sceKernelMapNamedFlexibleMemory
++//                              with a NULL addr_in_out returns EINVAL (today: EXIT for both).
++//   BC5_R3_RELEASE_HOLES (M3)  an unchecked sceKernelReleaseDirectMemory over free gaps releases the allocated runs and
++//                              skips the gaps (today: it frees nothing; it returns OK either way).
++//   BC5_R3_MUNMAP_HOLES (M7)   sceKernelMunmap over holes unmaps the mapped runs and returns 0; a range with nothing
++//                              mapped returns 0 (today: EACCES for both).
++//   BC5_R3_FLEX_HINT (M6)      a flexible map without MAP_FIXED whose hint range lies wholly in reserved ranges is placed
++//                              at the hint, as direct maps already are (today: placed after the reservation).
++//   BC5_R3_DMQ_END (M20)       sceKernelDirectMemoryQuery find-next past the last block returns EACCES (today: OK with a
++//                              terminal record at the end of direct memory).
++//   BC5_R3_EXEC_EINVAL (M26)   sceKernelMapDirectMemory with CPU execute returns EINVAL (today: EACCES).
++//   BC5_R3_QUERY_SIZE (M30)    sceKernelVirtualQuery and sceKernelDirectMemoryQuery accept an info size larger than
++//                              their struct and write the struct only (today: EINVAL unless the size is equal).
++// Not here: M16, M17, M22-M25, M32 (registrations in libKernel.cpp), M18 (the system flexible map is in
++// bc5LleAgc.cpp), M28 (param.json sizing).
++enum Bc5R3Item : unsigned {
++	BC5_R3_ITEM_MPROTECT_GAPS,
++	BC5_R3_ITEM_NULL_ARGS,
++	BC5_R3_ITEM_RELEASE_HOLES,
++	BC5_R3_ITEM_MUNMAP_HOLES,
++	BC5_R3_ITEM_FLEX_HINT,
++	BC5_R3_ITEM_DMQ_END,
++	BC5_R3_ITEM_EXEC_EINVAL,
++	BC5_R3_ITEM_QUERY_SIZE,
++	BC5_R3_ITEM_COUNT,
++};
++static constexpr const char* BC5_R3_SWITCH_NAMES[BC5_R3_ITEM_COUNT] = {
++    "BC5_R3_MPROTECT_GAPS", "BC5_R3_NULL_ARGS", "BC5_R3_RELEASE_HOLES", "BC5_R3_MUNMAP_HOLES",
++    "BC5_R3_FLEX_HINT",     "BC5_R3_DMQ_END",   "BC5_R3_EXEC_EINVAL",   "BC5_R3_QUERY_SIZE",
++};
++
++static bool Bc5R3On(Bc5R3Item item) {
++	static const std::array<bool, BC5_R3_ITEM_COUNT> on = [] {
++		std::array<bool, BC5_R3_ITEM_COUNT> v {};
++		for (unsigned i = 0; i < BC5_R3_ITEM_COUNT; i++) {
++			const char* e = std::getenv(BC5_R3_SWITCH_NAMES[i]);
++			v[i]          = e != nullptr && e[0] != 0 && std::strcmp(e, "0") != 0;
++		}
++		return v;
++	}();
++	return on[item];
++}
++
++// The one journal line, at memory init: "[bc5] exp 0405: mem off" or "[bc5] exp 0405: mem on (items: A,B)".
++static void Bc5R3Journal() {
++	char   items[512] = {};
++	size_t used       = 0;
++	for (unsigned i = 0; i < BC5_R3_ITEM_COUNT; i++) {
++		if (Bc5R3On(static_cast<Bc5R3Item>(i)) && used < sizeof(items)) {
++			const int n = std::snprintf(items + used, sizeof(items) - used, "%s%s", used == 0 ? "" : ",", BC5_R3_SWITCH_NAMES[i]);
++			used += (n > 0 ? static_cast<size_t>(n) : 0);
++		}
++	}
++	if (used == 0) {
++		std::fprintf(stderr, "[bc5] exp 0405: mem off\n");
++	} else {
++		std::fprintf(stderr, "[bc5] exp 0405: mem on (items: %s)\n", items);
++	}
++}
++
 +static Graphics::GpuResourceManager& GetGpuResources() {
 +	EXIT_IF(g_gpu_resources == nullptr);
 +	return *g_gpu_resources;
@@ -21911,6 +21979,7 @@ index 02fc0fc..3d37091 100644
 +		}
 +		std::fprintf(stderr, "\n");
 +	}
++	Bc5R3Journal(); // experiment 0405 series e5: one line, the R3 memory switches
 +	VirtualMemory::Init();
 +	g_guest_address_space = std::make_unique<GuestAddressSpace>(PhysicalMemory::TotalSize());
 +	g_physical_memory     = std::make_unique<PhysicalMemory>();
@@ -23105,6 +23174,14 @@ index 02fc0fc..3d37091 100644
 +
 +	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
 +
++	// Experiment 0405 series e5, BC5_R3_NULL_ARGS (M21): a NULL addr_in_out is the guest's error, not the host's exit.
++	// EINVAL, as sharpemu 514d766 src/SharpEmu.Libs/Kernel/KernelMemoryCompatExports.cs:3352-3360 (MapFlexibleMemoryCore:
++	// a pointer of 0 gives MemoryInvalidArgument; GPL-2.0-or-later) and AnyPS5 4f41f4c37
++	// core/libs/prx/libkernel/DirectMemory/DirectMemory.cpp:1103-1108 (ValidateOutput: its comment names EINVAL, the code
++	// throws; GPL-2.0-only). shadPS4 60c42b9 reads *addr_in_out unchecked.
++	if (addr_in_out == nullptr && Bc5R3On(BC5_R3_ITEM_NULL_ARGS)) {
++		return KERNEL_ERROR_EINVAL;
++	}
 +	EXIT_NOT_IMPLEMENTED(addr_in_out == nullptr);
 +
 +	constexpr size_t   PAGE_SIZE                = 0x4000;
@@ -23183,11 +23260,32 @@ index 02fc0fc..3d37091 100644
 +			out_addr             = in_addr;
 +		}
 +	} else {
++		// Experiment 0405 series e5, BC5_R3_FLEX_HINT (M6): a hint whose whole range lies in reserved ranges is used as the
++		// address, as if MAP_FIXED were set (AnyPS5 4f41f4c37 core/libs/prx/libkernel/DirectMemory/DirectMemory.cpp:1157-1160,
++		// PlaceHintInReservation, used by MapAnonymous at 1205; title-observed in PPSA01474, docs/dev/debt/libkernel.md:109;
++		// GPL-2.0-only; sharpemu 514d766 BackedMappings.cs:339-344, GPL-2.0-or-later). This file's direct maps already do
++		// it (KernelMapDirectMemory's non-fixed branch); this is the same code. An unaligned hint stays a hint.
++		if (Bc5R3On(BC5_R3_ITEM_FLEX_HINT) && in_addr != 0 && (in_addr & (PAGE_SIZE - 1)) == 0 &&
++		    (in_addr & (map_alignment - 1u)) == 0) {
++			std::vector<VirtualRanges::Range> reserved_ranges;
++			if (g_virtual_ranges->QuerySpan(in_addr, len, &reserved_ranges) &&
++			    std::all_of(reserved_ranges.begin(), reserved_ranges.end(),
++			                [](const auto& range) { return range.type == VirtualRangeType::Reserved; })) {
++				UnmapGpuRange(in_addr, len);
++				consumed_range = reserved_ranges.front();
++				if (g_virtual_ranges->ConsumeReservedSpan(in_addr, len)) {
++					consumed_reservation = true;
++					out_addr             = in_addr;
++				}
++			}
++		}
++		if (!consumed_reservation) {
 +		const auto search_addr = (in_addr != 0 ? in_addr : DEFAULT_PS5_BASE);
 +		out_addr               = FindGuestFreeRange(search_addr, len, map_alignment);
 +		if (out_addr != 0) {
 +			UnmapGpuRange(out_addr, len);
 +		}
++		} // experiment 0405 series e5 (M6)
 +	}
 +
 +	*addr_in_out = reinterpret_cast<void*>(out_addr);
@@ -23430,6 +23528,49 @@ index 02fc0fc..3d37091 100644
 +	return OK;
 +}
 +
++// Experiment 0405 series e5, BC5_R3_MUNMAP_HOLES (M7): sceKernelMunmap over holes unmaps what is mapped, skips the
++// holes and returns 0; a range with nothing mapped returns 0. AnyPS5 4f41f4c37 core/libs/prx/libkernel/DirectMemory/
++// Export.cpp:332-339 and DirectMemory.cpp:1615-1622 (DoMunmap: nothing overlapping gives 0, after prosper's console
++// oracle, docs/dev/debt/libkernel.md:313; GPL-2.0-only); shadPS4 60c42b9 src/core/memory.cpp:913-1008 (free areas are
++// skipped, 942-944; GPL-2.0-or-later). sharpemu 514d766 returns an error here, as this file does today. Length checks
++// are unchanged (AnyPS5 and shadPS4 disagree on a length that is not a page multiple); a NULL address keeps today's
++// EACCES (AnyPS5 gives EINVAL there). Adapted, no code copied: each run of ranges without a hole goes through today's
++// path (UnmapGpuRange, UnmapMemoryRange); the first error ends the walk and is returned. The caller holds the memory
++// operation lock and has checked len != 0 and no overflow.
++static int Bc5MunmapHoles(uint64_t vaddr, size_t len) {
++	const uint64_t                             end     = vaddr + len;
++	uint64_t                                   current = vaddr;
++	std::vector<std::pair<uint64_t, uint64_t>> runs;
++	while (current < end) {
++		VirtualRanges::Range range {};
++		if (!g_virtual_ranges->Query(current, 1, &range) || range.start >= end) {
++			break;
++		}
++		const uint64_t range_end = (UINT64_MAX - range.start < range.size ? UINT64_MAX : range.start + range.size);
++		const uint64_t lo        = std::max(current, range.start);
++		const uint64_t hi        = std::min(end, range_end);
++		if (hi <= lo) {
++			break;
++		}
++		if (!runs.empty() && runs.back().first + runs.back().second == lo) {
++			runs.back().second += hi - lo;
++		} else {
++			runs.emplace_back(lo, hi - lo);
++		}
++		current = hi;
++	}
++	LOGF("\t exp 0405 M7: 0x%016" PRIx64 "+0x%016" PRIx64 " has holes: %" PRIu64 " mapped run(s)\n", vaddr,
++	     static_cast<uint64_t>(len), static_cast<uint64_t>(runs.size()));
++	for (const auto& [run_start, run_size]: runs) {
++		UnmapGpuRange(run_start, run_size);
++		const int result = UnmapMemoryRange(run_start, run_size);
++		if (result != OK) {
++			return result;
++		}
++	}
++	return OK;
++}
++
 +int KYTY_SYSV_ABI KernelMunmap(uint64_t vaddr, size_t len) {
 +	PRINT_NAME();
 +
@@ -23444,6 +23585,9 @@ index 02fc0fc..3d37091 100644
 +	}
 +	std::vector<VirtualRanges::Range> ranges;
 +	if (!g_virtual_ranges->QuerySpan(vaddr, len, &ranges)) {
++		if (vaddr != 0 && Bc5R3On(BC5_R3_ITEM_MUNMAP_HOLES)) { // experiment 0405 series e5 (M7)
++			return Bc5MunmapHoles(vaddr, len);
++		}
 +		return KERNEL_ERROR_EACCES;
 +	}
 +	UnmapGpuRange(vaddr, len);
@@ -23555,7 +23699,11 @@ index 02fc0fc..3d37091 100644
 +		int     memory_type;
 +	};
 +
-+	if (offset < 0 || (flags != 0 && flags != 1) || info_size != sizeof(QueryInfo) ||
++	// Experiment 0405 series e5, BC5_R3_QUERY_SIZE (M30): an info size larger than the struct is accepted and only the
++	// struct is written (AnyPS5 4f41f4c37 core/libs/prx/libkernel/DirectMemory/Export.cpp:253-262, size below the struct
++	// is EINVAL; GPL-2.0-only).
++	if (offset < 0 || (flags != 0 && flags != 1) ||
++	    (Bc5R3On(BC5_R3_ITEM_QUERY_SIZE) ? info_size < sizeof(QueryInfo) : info_size != sizeof(QueryInfo)) ||
 +	    info == nullptr) {
 +		return KERNEL_ERROR_EINVAL;
 +	}
@@ -23578,7 +23726,11 @@ index 02fc0fc..3d37091 100644
 +		    (flags == 0 && (static_cast<uint64_t>(offset) < current->second.start_addr ||
 +		                    static_cast<uint64_t>(offset) >=
 +		                        current->second.start_addr + current->second.size))) {
-+			if (flags == 1 && static_cast<uint64_t>(offset) < PhysicalMemory::Size()) {
++			// Experiment 0405 series e5, BC5_R3_DMQ_END (M20): find-next past the last block is EACCES, no terminal record
++			// (AnyPS5 4f41f4c37 core/libs/prx/libkernel/DirectMemory/Export.cpp:253-262 and MemoryPool.cpp:125-136, GPL-2.0-only;
++			// shadPS4 60c42b9 src/core/memory.cpp:1242-1245, GPL-2.0-or-later; sharpemu 514d766 KernelMemoryCompatExports.cs:
++			// 3713-3739). KytyPS5 dfec14a src/kernel/memory.cpp:2164-2170 returns the terminal record, as this file does today.
++			if (flags == 1 && static_cast<uint64_t>(offset) < PhysicalMemory::Size() && !Bc5R3On(BC5_R3_ITEM_DMQ_END)) {
 +				query_info->start       = static_cast<int64_t>(PhysicalMemory::Size());
 +				query_info->end         = static_cast<int64_t>(PhysicalMemory::Size());
 +				query_info->memory_type = 0;
@@ -23761,6 +23913,62 @@ index 02fc0fc..3d37091 100644
 +	           : OK;
 +}
 +
++// Experiment 0405 series e5, BC5_R3_RELEASE_HOLES (M3): an unchecked sceKernelReleaseDirectMemory over free gaps
++// releases the allocated parts and skips the gaps. KytyPS5 dfec14a src/kernel/memory.cpp:1281-1315 (GetAllocatedSpan
++// with skip_gaps) and 2354-2370 (the unchecked release; GPL-2.0); shadPS4 60c42b9 src/core/memory.cpp:283-376 (an
++// unchecked free ignores free areas, 305-313; GPL-2.0-or-later); AnyPS5 4f41f4c37 core/libs/prx/libkernel/DirectMemory/
++// MemoryPool.cpp:259-286 (only the used runs are forgotten; GPL-2.0-only). sharpemu 514d766 frees nothing here, as this
++// file does today. The checked form keeps ENOENT. Adapted, no code copied: called only after today's call failed. The
++// allocated blocks in the range are collected into runs of adjacent blocks, and each run goes through today's path
++// (ReleaseDirectMemoryInternal, which takes the run's mappings down too). As in KytyPS5, a pool-expansion block in the
++// range releases nothing (only an exact release frees an expansion, as today); a range with no hole is left to
++// today's result.
++static void Bc5ReleaseDirectMemoryHoles(int64_t start, size_t len) {
++	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++
++	const auto first = static_cast<uint64_t>(start);
++	if (len == 0 || UINT64_MAX - first < len) {
++		return;
++	}
++	const uint64_t                             end = first + len;
++	std::vector<std::pair<uint64_t, uint64_t>> runs;
++	{
++		Common::LockGuard lock(g_physical_memory->GetMutex());
++		const auto&       blocks = g_physical_memory->GetPhysicalBlocks();
++		auto              it     = blocks.upper_bound(first);
++		if (it != blocks.begin()) {
++			const auto previous = std::prev(it);
++			if (previous->second.start_addr + previous->second.size > first) {
++				it = previous;
++			}
++		}
++		for (; it != blocks.end() && it->second.start_addr < end; ++it) {
++			const auto& block = it->second;
++			if (block.pool_expansion) {
++				return;
++			}
++			const uint64_t lo = std::max(first, block.start_addr);
++			const uint64_t hi = std::min(end, block.start_addr + block.size);
++			if (hi <= lo) {
++				continue;
++			}
++			if (!runs.empty() && runs.back().first + runs.back().second == lo) {
++				runs.back().second += hi - lo;
++			} else {
++				runs.emplace_back(lo, hi - lo);
++			}
++		}
++	}
++	if (runs.empty() || (runs.size() == 1 && runs.front().first == first && runs.front().second == len)) {
++		return;
++	}
++	LOGF("\t exp 0405 M3: 0x%016" PRIx64 "+0x%016" PRIx64 " has free gaps: releasing %" PRIu64 " allocated run(s)\n",
++	     first, static_cast<uint64_t>(len), static_cast<uint64_t>(runs.size()));
++	for (const auto& [run_start, run_size]: runs) {
++		(void)ReleaseDirectMemoryInternal(static_cast<int64_t>(run_start), static_cast<size_t>(run_size));
++	}
++}
++
 +int KYTY_SYSV_ABI KernelReleaseDirectMemory(int64_t start, size_t len) {
 +	PRINT_NAME();
 +
@@ -23773,7 +23981,10 @@ index 02fc0fc..3d37091 100644
 +		return validation;
 +	}
 +	if (len != 0) {
-+		(void)ReleaseDirectMemoryInternal(start, len);
++		const int released = ReleaseDirectMemoryInternal(start, len); // today's call; its result is still not returned
++		if (released != OK && Bc5R3On(BC5_R3_ITEM_RELEASE_HOLES)) {    // experiment 0405 series e5 (M3)
++			Bc5ReleaseDirectMemoryHoles(start, len);
++		}
 +	}
 +	return OK;
 +}
@@ -23814,7 +24025,11 @@ index 02fc0fc..3d37091 100644
 +		return KERNEL_ERROR_EINVAL;
 +	}
 +	if ((prot & PROT_CPU_EXEC) != 0) {
-+		return KERNEL_ERROR_EACCES;
++		// Experiment 0405 series e5, BC5_R3_EXEC_EINVAL (M26): EINVAL with nothing mapped, as measured in a title on
++		// firmware 12.09 (PS5_PayloadSDK PROBE.md, cited by AnyPS5 4f41f4c37 docs/dev/debt/libkernel.md:190; AnyPS5
++		// core/libs/prx/libkernel/DirectMemory/DirectMemory.cpp:1168, GPL-2.0-only). shadPS4 and sharpemu use EACCES, as
++		// this file does today.
++		return Bc5R3On(BC5_R3_ITEM_EXEC_EINVAL) ? KERNEL_ERROR_EINVAL : KERNEL_ERROR_EACCES;
 +	}
 +
 +	bool fixed        = ((flags & GUEST_MAP_FIXED) != 0);
@@ -24027,6 +24242,13 @@ index 02fc0fc..3d37091 100644
 +
 +	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
 +
++	// Experiment 0405 series e5, BC5_R3_NULL_ARGS (M21): NULL is an unmapped address: EACCES, as for any unmapped address
++	// below (shadPS4 60c42b9 src/core/memory.cpp:1024-1030, an address below the mappable base gives EACCES;
++	// GPL-2.0-or-later; AnyPS5 4f41f4c37 core/libs/prx/libkernel/DirectMemory/Export.cpp:484-494 answers through
++	// sceKernelVirtualQuery, GPL-2.0-only).
++	if (addr == nullptr && Bc5R3On(BC5_R3_ITEM_NULL_ARGS)) {
++		return KERNEL_ERROR_EACCES;
++	}
 +	EXIT_NOT_IMPLEMENTED(addr == nullptr);
 +
 +	VirtualRanges::Range range {};
@@ -24389,7 +24611,13 @@ index 02fc0fc..3d37091 100644
 +	     "\t info_size = 0x%016" PRIx64 "\n",
 +	     vaddr, flags, info_size);
 +
-+	if (info == nullptr || info_size != sizeof(VirtualQueryInfo) || (flags != 0 && flags != 1)) {
++	// Experiment 0405 series e5, BC5_R3_QUERY_SIZE (M30): an info size larger than the struct is accepted; only the
++	// struct is written (AnyPS5 4f41f4c37 core/libs/prx/libkernel/DirectMemory/Export.cpp:373, GPL-2.0-only; sharpemu
++	// 514d766 KernelMemoryCompatExports.cs:3579, GPL-2.0-or-later; titles pass other sizes than 0x48, AnyPS5
++	// docs/dev/debt/libkernel.md:361).
++	if (info == nullptr ||
++	    (Bc5R3On(BC5_R3_ITEM_QUERY_SIZE) ? info_size < sizeof(VirtualQueryInfo) : info_size != sizeof(VirtualQueryInfo)) ||
++	    (flags != 0 && flags != 1)) {
 +		return KERNEL_ERROR_EINVAL;
 +	}
 +
@@ -24671,6 +24899,94 @@ index 02fc0fc..3d37091 100644
 +	return FreeGuestMemoryOwner(vaddr, mapped_size);
 +}
 +
++// Experiment 0405 series e5, BC5_R3_MPROTECT_GAPS (M1): protection over gaps, as a PS5 does. AnyPS5 measured on
++// firmware 13.60 that sceKernelMprotect, mprotect and sceKernelMtypeprotect change the mapped parts of a range, skip its
++// gaps and return 0, also when the range starts in a gap or is wholly unmapped (AnyPS5 4f41f4c37
++// docs/dev/debt/libkernel.md:172, commit 748b35835; DoMprotect in core/libs/prx/libkernel/DirectMemory/
++// DirectMemory.cpp:1484-1585, called with requireMappedStart false from Export.cpp:326-330 and 478-481; GPL-2.0-only).
++// Its batch-map protect operations keep EINVAL for an unmapped start (Export.cpp:620-624, unmeasured):
++// require_mapped_start. shadPS4 60c42b9 src/core/memory.cpp:1052-1178 (GPL-2.0-or-later) also skips gaps, and records
++// the protection on a reserved range without applying it (1104-1108) and leaves a pool-reserved one alone (1059-1062);
++// so does this. Adapted, no code copied: the pieces come from the range table; each mapped (committed) piece gets
++// today's treatment (host view, direct or flexible block, range table); a Reserved piece gets the range table only.
++// A host protect failure still EXITs, as today; an overflowing range returns EINVAL instead of EXIT.
++static int Bc5MprotectGaps(uint64_t vaddr, size_t len, int prot, bool require_mapped_start) {
++	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++
++	constexpr uint64_t PAGE_SIZE    = 0x4000;
++	const uint64_t     aligned_addr = vaddr & ~(PAGE_SIZE - 1);
++	const uint64_t     page_offset  = vaddr - aligned_addr;
++	if (len > UINT64_MAX - page_offset || len + page_offset > UINT64_MAX - (PAGE_SIZE - 1)) {
++		return KERNEL_ERROR_EINVAL;
++	}
++	const uint64_t aligned_len = (len + page_offset + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
++	if (aligned_len == 0) {
++		return OK;
++	}
++	if (aligned_len > UINT64_MAX - aligned_addr) {
++		return KERNEL_ERROR_EINVAL;
++	}
++
++	VirtualMemory::Mode mode     = VirtualMemory::Mode::NoAccess;
++	GpuAccessMode       gpu_mode = GpuAccessMode::NoAccess;
++	if (!DecodeMemoryProtection(prot, &mode, &gpu_mode)) {
++		return KERNEL_ERROR_EINVAL;
++	}
++
++	// The parts of the range that lie in a range of the table, in address order; what lies between them is a gap.
++	const uint64_t                    end     = aligned_addr + aligned_len;
++	uint64_t                          current = aligned_addr;
++	std::vector<VirtualRanges::Range> pieces;
++	while (current < end) {
++		VirtualRanges::Range range {};
++		if (!g_virtual_ranges->Query(current, 1, &range) || range.start >= end) {
++			break;
++		}
++		const uint64_t range_end = (UINT64_MAX - range.start < range.size ? UINT64_MAX : range.start + range.size);
++		VirtualRanges::Range piece = range;
++		piece.start                = std::max(current, range.start);
++		if (range_end <= piece.start) {
++			break;
++		}
++		piece.size = std::min(end, range_end) - piece.start;
++		if (piece.type == VirtualRangeType::Direct) {
++			piece.offset += piece.start - range.start;
++		}
++		pieces.push_back(piece);
++		current = piece.start + piece.size;
++	}
++	if (require_mapped_start && (pieces.empty() || pieces.front().start != aligned_addr)) {
++		return KERNEL_ERROR_EINVAL;
++	}
++
++	for (const auto& piece: pieces) {
++		if (IsCommittedRangeType(piece.type) && !g_guest_address_space->Protect(piece.start, piece.size, mode)) {
++			EXIT("host memory-protection update failed: addr=0x%016" PRIx64 " size=0x%016" PRIx64 " prot=0x%08x\n",
++			     piece.start, piece.size, prot);
++		}
++	}
++	uint64_t changed = 0;
++	for (const auto& piece: pieces) {
++		if (piece.type == VirtualRangeType::Direct) {
++			g_physical_memory->ProtectMapping(piece.start, piece.size, prot, mode, gpu_mode);
++		} else if (piece.type == VirtualRangeType::Flexible) {
++			g_flexible_memory->Protect(piece.start, piece.size, prot, mode, gpu_mode);
++		}
++		if (IsCommittedRangeType(piece.type) || piece.type == VirtualRangeType::Reserved) {
++			g_virtual_ranges->Protect(piece.start, piece.size, prot);
++		}
++		if (IsCommittedRangeType(piece.type)) {
++			changed += piece.size;
++		}
++	}
++
++	LOGF("\t exp 0405 M1: 0x%016" PRIx64 "+0x%016" PRIx64 ": 0x%016" PRIx64 " mapped bytes in %" PRIu64
++	     " piece(s) -> %s\n",
++	     aligned_addr, aligned_len, changed, static_cast<uint64_t>(pieces.size()), Common::EnumName(mode).c_str());
++
++	return OK;
++}
++
 +int KYTY_SYSV_ABI KernelMprotect(const void* addr, size_t len, int prot) {
 +	PRINT_NAME();
 +
@@ -24681,6 +24997,10 @@ index 02fc0fc..3d37091 100644
 +	LOGF("\t addr = 0x%016" PRIx64 "\n"
 +	     "\t len  = 0x%016" PRIx64 "\n",
 +	     vaddr, static_cast<uint64_t>(len));
++
++	if (Bc5R3On(BC5_R3_ITEM_MPROTECT_GAPS)) { // experiment 0405 series e5 (M1); sceKernelMtypeprotect comes here too
++		return Bc5MprotectGaps(vaddr, len, prot, false);
++	}
 +
 +	constexpr uint64_t PAGE_SIZE    = 0x4000;
 +	auto               aligned_addr = vaddr & ~(PAGE_SIZE - 1);
@@ -24800,15 +25120,21 @@ index 02fc0fc..3d37091 100644
 +				result = KernelMunmap(reinterpret_cast<uint64_t>(entry->start), entry->length);
 +				break;
 +			case MAP_OP_PROTECT:
-+				result = KernelMprotect(entry->start, entry->length, entry->protection);
++				// experiment 0405 series e5 (M1): with BC5_R3_MPROTECT_GAPS a batch protect returns EINVAL for an unmapped
++				// start and skips later gaps (AnyPS5 4f41f4c37 Export.cpp:620-624, requireMappedStart; GPL-2.0-only)
++				result = Bc5R3On(BC5_R3_ITEM_MPROTECT_GAPS)
++				             ? Bc5MprotectGaps(reinterpret_cast<uint64_t>(entry->start), entry->length, entry->protection, true)
++				             : KernelMprotect(entry->start, entry->length, entry->protection);
 +				break;
 +			case MAP_OP_MAP_FLEXIBLE:
 +				result = KernelMapNamedFlexibleMemory(&entry->start, entry->length,
 +				                                      entry->protection, flags, "anon");
 +				break;
 +			case MAP_OP_TYPE_PROTECT:
-+				result =
-+				    KernelMtypeprotect(entry->start, entry->length, entry->type, entry->protection);
++				// experiment 0405 series e5 (M1): as MAP_OP_PROTECT; the type is not applied, as today
++				result = Bc5R3On(BC5_R3_ITEM_MPROTECT_GAPS)
++				             ? Bc5MprotectGaps(reinterpret_cast<uint64_t>(entry->start), entry->length, entry->protection, true)
++				             : KernelMtypeprotect(entry->start, entry->length, entry->type, entry->protection);
 +				break;
 +			default: result = KERNEL_ERROR_EINVAL; break;
 +		}
