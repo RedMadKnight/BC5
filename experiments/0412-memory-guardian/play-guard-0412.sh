@@ -56,7 +56,7 @@ LOW=(BC5_GUARD_LEDGER=1 BC5_GUARD_FILE=random,dontneed "BC5_GUARD_FILE_ROOT=$GAM
 ORPH=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=10,eager BC5_GUARD_SPLIT=1)   # SPLIT since the third build (g412c): without it nothing is cut while BC5_DIRECT_ALIASES is set
 CAP=("${ORPH[@]}" BC5_GUARD_PIN_CAP=11600 BC5_GUARD_CAP_ACT=1)
 FUSE=""; ZL=$E/zero-list-0412.txt   # the zero list of the z arms (a copy of the night's scan, put in place by hand)
-case "${1:-}" in zsk | zo | zoc | zof | zoe | fast5) [ -s "$ZL" ] || { say "0412: no zero list at $ZL; not started"; exit 1; } ;; esac
+case "${1:-}" in zsk | zo | zoc | zof | zoe | fast5 | fast6 | fast7) [ -s "$ZL" ] || { say "0412: no zero list at $ZL; not started"; exit 1; } ;; esac
 case "${1:-}" in
   base)    ;;
   ledger)  WORDS+=(BC5_GUARD_LEDGER=1); FUSE="12400 2048" ;;   # the fuse since the night of 11-10/11: without a limit this arm took the box down (21:47)
@@ -91,8 +91,16 @@ case "${1:-}" in
   # The twenty-first build (g412u, 2026-11-11): fast2 with the zero skip and its poll before every submission (README section 40).
   fast5)   WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
              "BC5_DIRECT_ZERO_SKIP=$ZL" BC5_GUARD_ZSKIP_POLL_SUBMIT=1 KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="12400 2048" ;;
+  # 2026-11-12 (README section 46, the maintainer's "tak, zmien oba parametry"): fast5 with the orphan release at 10 s idle
+  # (his play kept 0.4-0.55 GiB of orphans at 30 s) and the fuse at 13,000 MiB (his play sat at the 12,400 limit with memory free beside it).
+  fast6)   WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=10,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
+             "BC5_DIRECT_ZERO_SKIP=$ZL" BC5_GUARD_ZSKIP_POLL_SUBMIT=1 KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="13000 2048" ;;
+  # 2026-11-12 01:35 (README section 46): fast6's check run z1f6 HUNG the GPU at 138 s (release at 10 s with the zero skip, as the
+  # old arms zo/zof that hung 3 of 9). fast7 = fast5 (release 30 s) with only the fuse at 13,000 MiB. fast6 is not for play.
+  fast7)   WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
+             "BC5_DIRECT_ZERO_SKIP=$ZL" BC5_GUARD_ZSKIP_POLL_SUBMIT=1 KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="13000 2048" ;;
   zoe)     WORDS+=("${ORPH[@]}" "BC5_DIRECT_ZERO_SKIP=$ZL" KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="12400 2048" ;;
-  *) say "0412: usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm|zscan|zsk|zo|zoc|zof|of|zoe|fast|fast2|fast3|fast4|fast5 [dry]; not started"; exit 1 ;;
+  *) say "0412: usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm|zscan|zsk|zo|zoc|zof|of|zoe|fast|fast2|fast3|fast4|fast5|fast6|fast7 [dry]; not started"; exit 1 ;;
 esac
 ARM=$1; DRY=${2:-}
 # The catchers' env file (README section 23, the top session's order of 2026-11-11): $E/catchers.env with lines

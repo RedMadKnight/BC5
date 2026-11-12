@@ -50,10 +50,22 @@ case "${1:-}" in
   fast5)     W=$E/play-guard-0412.sh; ARG=fast5; NAME="BC5 emulator (0412 fast5)"
              WHAT="$G + both fixes of the host's memory tables + orphan release with idle 30 s + events cap + the zero skip with its poll before every submission (BC5_DIRECT_ZERO_SKIP, BC5_GUARD_ZSKIP_POLL_SUBMIT: about 650 MiB less pinned, nine scripted runs without a GPU hang, README section 40); $FU; private build g412u"
              LOGS="log ~/bc5-work/exp0412/play-last.log; sampler lines ~/bc5-work/exp0412/sampler/" ;;
+  fast6)     W=$E/play-guard-0412.sh; ARG=fast6; NAME="BC5 emulator (0412 fast6)"
+             WHAT="$G + fast5 (table fixes, events cap, zero skip with its poll before every submission, fixed after the review) with the orphan release at 10 s idle and the fuse at 13,000 MiB (README section 46); private build g412v"
+             LOGS="log ~/bc5-work/exp0412/play-last.log; sampler lines ~/bc5-work/exp0412/sampler/" ;;
+  lean6)     W=$E/play-lean-0412.sh; ARG=; NAME="BC5 emulator (0412 lean6)"
+             WHAT="the LEAN version of fast6 (README sections 43 and 46): binary built without journal, traces, tallies and this experiment's catchers; no direct.log, no sampler, no counters, no MangoHud, no log file; only the memory fuse stays (13,000 MiB)"
+             LOGS="no logs by design" ;;
+  fast7)     W=$E/play-guard-0412.sh; ARG=fast7; NAME="BC5 emulator (0412 fast7)"
+             WHAT="$G + fast5 (table fixes, events cap, orphan release at 30 s, zero skip with its poll before every submission, fixed after the review) with the fuse at 13,000 MiB instead of 12,400 (README section 46); private build g412v"
+             LOGS="log ~/bc5-work/exp0412/play-last.log; sampler lines ~/bc5-work/exp0412/sampler/" ;;
+  lean7)     W=$E/play-lean-0412.sh; ARG=; NAME="BC5 emulator (0412 lean7)"
+             WHAT="the LEAN version of fast7 (README sections 43 and 46): binary built without journal, traces, tallies and this experiment's catchers; no direct.log, no sampler, no counters, no MangoHud, no log file; only the memory fuse stays (13,000 MiB)"
+             LOGS="no logs by design" ;;
   lean5)     W=$E/play-lean-0412.sh; ARG=; NAME="BC5 emulator (0412 lean5)"
              WHAT="the LEAN version of fast5 (README section 43): binary built without journal, traces, tallies and this experiment's catchers; no direct.log, no sampler, no counters, no MangoHud, no log file; only the memory fuse stays"
              LOGS="no logs by design" ;;
-  *) echo "usage: shortcut0412b.sh orphans|cap|zo|zoe|fast|fast2|fast4|fast5|lean5|astro-off|astro-on|astro-evcap|pkg-evcap"; exit 1 ;;
+  *) echo "usage: shortcut0412b.sh orphans|cap|zo|zoe|fast|fast2|fast4|fast5|fast6|fast7|lean5|lean6|lean7|astro-off|astro-on|astro-evcap|pkg-evcap"; exit 1 ;;
 esac
 DESK=$(xdg-user-dir DESKTOP 2> /dev/null); DESK=${DESK:-$HOME/Pulpit}
 m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }

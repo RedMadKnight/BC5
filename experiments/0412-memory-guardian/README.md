@@ -2089,9 +2089,39 @@ the filter's own copies, the shadow labels and the DMA snapshot's size are not c
   823 MiB available at 150 s, 3 chunks taken back at submissions. The lean binary was not started again after the
   rebuild (its dry check passes). Both desktop shortcuts run the fixed builds.
 
+### 46. The two parameters: the 10 s release hangs the GPU with the zero skip; the fuse goes to 13,000 MiB (2026-11-12 01:22–01:40)
+
+The maintainer: "tak, zmien oba parametry" (the fuse to 13,000 MiB, the orphan release to 10 s, in both shortcuts).
+
+| run (g412v, scripted load, RT on, fuse 13,000) | release | result [M] |
+|---|---|---|
+| z1f6, arm fast6 | 10 s | **GPU hang: gfx ring timeout at 138 s, the ring reset succeeded, the box stayed up**; the frame lasted 14.7 s |
+| z2f7, arm fast7 | 30 s | clean, 179 s, 25.9 flips/s; pinned 11,004 MiB, available 848–878 MiB, cgroup 12,290–12,390 MiB |
+
+- z1f6's hung compute buffer (#110401, 10,062 dwords, dumped beside the journal): 658 dispatches, 390 of them
+  indirect, 1 wait kept for the GPU, **the largest grid 18,201,402,566,665,830,400 groups**: an indirect dispatch whose
+  arguments were not the title's (and not zeros either). In the 20 s before it the release cut 220 MiB out of 18 BOs
+  with 163 mappings to move, 206 chunks released, and released chunks came under a view again several times.
+- **What it changes in section 40.** The four hangs with the zero skip (3 of 9 on arms zo/zof, this one) all had the
+  release at 10 s; the 13 runs and his play with the release at 30 s had none, before and after the poll's fix. So
+  the release's cut-and-move of mappings while jobs are in flight is at least as good a suspect for those hangs as
+  the blind window [I]; the poll before submission is not shown to be what removed them. The reviewer's point about
+  the two configurations was the right one.
+- **Decision taken here:** the release stays at 30 s (fast6 is defined and not for play); only the fuse changes.
+  **Arm fast7** = fast5's words with the fuse at 13,000 MiB. The desktop has "BC5 emulator (0412 fast7)" and
+  "BC5 emulator (0412 lean7)" (the lean wrapper takes fast7's words and sets the same fuse); fast5/lean5 and
+  fast6/lean6 are in `~/bc5-work/trash-20261111/pulpit`.
+- Open, and a defect of ours to find: why moving mappings at a release can hand a running job wrong indirect
+  arguments. The orphans it would free (0.4–0.55 GiB in his play) stay pinned until then.
+- The maintainer's `sudo systemctl stop bc5-gpu-stall-sampler.service auditd.service` was refused as a whole
+  because `auditd.service` refuses a manual stop; the sampler alone stops with the same command without `auditd`.
+  At 01:22 the sampler was still active.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
+- **The 10 s release hangs the GPU with the zero skip (section 46) [M]:** one hang in one run (fast6), as the old zo arms (3 of 9); with 30 s
+  none in 13 runs and his play. The shortcuts are fast7 and lean7: release 30 s, fuse 13,000 MiB. What removed the old hangs is not shown.
 - **His play on fast5 (section 42) [M]:** no hang in 185 s (the poll took 34 chunks back), available 462-548 MiB, but 62 s in
   frames over 100 ms; the container's fuse (12,400 MiB) was at its limit with memory free beside it, and orphans held 0.4-0.55 GiB.
 - **A lean version stands beside (section 43):** binary without journal, traces and this experiment's catchers, nothing beside the

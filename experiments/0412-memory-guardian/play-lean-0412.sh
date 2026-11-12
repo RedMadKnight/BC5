@@ -6,7 +6,7 @@
 #   - the launcher is play-pkg-0412-lean.sh (mklean0412.py: play-pkg-0412.sh with the lean binary and its BC5_LEAN branch
 #     open): no direct.log, no timing, no frame profile, no FPS counter, audio trace, measure lines, input recorder or
 #     timeout probe; the emulator's output goes nowhere;
-#   - the words are arm fast5's (play-guard-0412.sh fast5 words) WITHOUT the five that only write or count:
+#   - the words are arm fast7's since 2026-11-12 01:35 (fast5's own words; fast6 with the release at 10 s hung the GPU in its check run) WITHOUT the five that only write or count:
 #     BC5_GUARD_LEDGER, BC5_DIRECT_TABLE_CATCHER, KYTY_BC5_EVENT_PENDING_LOG, BC5_DIRECT_RESET_LABEL_JOURNAL,
 #     BC5_DIRECT_JOURNAL_QUIET, and without BC5_DIRECT_ACB_INHERIT=journal (mode 1 of acb_inherit_mode(): journal only);
 #     plus BC5_LEAN=1, BC5_LOGGING=0 (the logging switch of the objects that are not built lean) and KYTY_BC5_MANGOHUD=0;
@@ -30,21 +30,21 @@ while IFS= read -r w; do
   case "$w" in
     '' | BC5_GUARD_LEDGER=* | BC5_DIRECT_TABLE_CATCHER=* | KYTY_BC5_EVENT_PENDING_LOG=* | BC5_DIRECT_RESET_LABEL_JOURNAL=* | BC5_DIRECT_JOURNAL_QUIET=* | BC5_DIRECT_ACB_INHERIT=journal) ;;
     *=*) WORDS+=("$w") ;;
-    *) say "0412 lean: a word of arm fast5 is not KEY=VALUE ($w); not started"; exit 1 ;;
+    *) say "0412 lean: a word of arm fast7 is not KEY=VALUE ($w); not started"; exit 1 ;;
   esac
-done < <(/usr/bin/bash "$E/play-guard-0412.sh" fast5 words 2> /dev/null)
-[ "${#WORDS[@]}" = 74 ] || { say "0412 lean: ${#WORDS[@]} words, not fast5's 80 less 6; not started"; exit 1; }
+done < <(/usr/bin/bash "$E/play-guard-0412.sh" fast7 words 2> /dev/null)
+[ "${#WORDS[@]}" = 74 ] || { say "0412 lean: ${#WORDS[@]} words, not fast7's 80 less 6; not started"; exit 1; }
 WORDS+=(BC5_LEAN=1 BC5_LOGGING=0 KYTY_BC5_MANGOHUD=0)
 case "${1:-}" in
   words) printf '%s\n' "${WORDS[@]}"; exit 0 ;;
-  dry) echo "dry: binary $(m "$BIN"), launcher $(m "$L"), ${#WORDS[@]} words, fuse $([ -x "$F" ] || [ -f "$F" ] && echo "12400 2048" || echo "MISSING"), nothing beside the emulator"; exit 0 ;;
+  dry) echo "dry: binary $(m "$BIN"), launcher $(m "$L"), ${#WORDS[@]} words, fuse $([ -x "$F" ] || [ -f "$F" ] && echo "13000 2048" || echo "MISSING"), nothing beside the emulator"; exit 0 ;;
   '') ;;
   *) echo "usage: play-lean-0412.sh [dry|words]"; exit 1 ;;
 esac
 pgrep '^kyty_emulator' > /dev/null && { say "0412 lean: an emulator runs already; not started"; exit 1; }
 if pinned fuse0412.sh "$E/tools.md5"; then
   /usr/bin/bash "$F" restore "$FLOG"
-  nohup /usr/bin/bash "$F" set 12400 2048 "$FLOG" > /dev/null 2>&1 < /dev/null &
+  nohup /usr/bin/bash "$F" set 13000 2048 "$FLOG" > /dev/null 2>&1 < /dev/null &
 else
   say "0412 lean: the fuse $F is not the installed one; playing without it"
 fi
