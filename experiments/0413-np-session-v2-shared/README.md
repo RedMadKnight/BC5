@@ -480,3 +480,56 @@ table at guest 0x300a80000; the ordering candidates in the host's thread code.
   5 seconds (no change to the binary at all);
 - a one-shot write protection of the table's range through an environment-free mechanism, such as a file the
   unmodified loader already reads.
+
+### Round seven (2026-11-12 15:43–16:03): an external watcher on the unmodified crashing binary; the event is seen
+
+**Tool.** `integration/watch0413.py` and `watch0413m.py` run beside the emulator and only read `/proc/<pid>/task/*`
+and `/proc/<pid>/maps`, as fast as they can. The emulator's binary and environment are untouched (f61d5874), and it
+still crashes with the watcher running. (From 16:02 the NAS archive's rsync may have been active; the last run,
+x1memoff, falls there.)
+
+**Threads (v1watch, v3crash against the passing v2pass).**
+- At about 1.03 s after the process appears, the title creates SystemService_A, SystemWakeup and eight
+  BackgroundTaskW threads within 1.5 ms.
+- In the crashing start, game-main stops running about 1 ms later and the process is gone 50 ms after that.
+- In the passing start, game-main runs on for 70 ms and then waits on a condition variable.
+- One BackgroundTaskW is inside the host's `save_data_memory_load()`: `read(fd, 0x300e7f8c0, 0x10000)` of
+  `sce_sdmemory/memory.dat`, through that function's 64 KiB stack buffer. **Refuted as the cause:** with the file
+  moved away the start crashes all the same (n1nomem).
+
+**The memory map near guest 0x300a80000** (m1crash against m2pass; times since the process appeared):
+
+| time | crashing start | passing start |
+|---|---|---|
+| direct memory mapped | `300000000-37e000000 rw-s`, identity offsets | the same |
+| threads created | guard pages `---s` appear at 300934000, 300a6c000 and 300a84000: host-allocated guest stacks, among them 0x300a70000–0x300a84000 | the same three guards (1.0627 s) |
+| **1.2 ms later** | the three guards are gone, and **`300a80000-300a84000 rw-s 7e200000`** appears: 16 KiB at another backing offset, on the top of the stack 0x300a70000–0x300a84000 | **no further change** for the 4 s watched |
+| then | the process exits | runs |
+
+**What this shows.**
+- The zeroed "table" and the empty key at 0x300a82xxx (the crash walk) are inside that 16 KiB mapping.
+- A mapping call placed 16 KiB of fresh memory over the live top of a guest thread stack that the host had just
+  allocated, and removed the stacks' guard protection in the same step.
+- The backing offset 0x7e200000 lies past the direct-memory view (0x7e000000 long). So it is a flexible-memory block,
+  not a direct map (inference from `memory.cpp`'s backing allocator).
+
+**Checked and excluded.**
+- The host's stack allocation and the runtime allocations take one global lock (`g_memory_operation_mutex`,
+  `AllocateGuestRuntimeMemory`) and check for overlap. So two host allocations do not race to one address.
+- The stack cache (`g_guest_stack_cache`) keeps stacks mapped. Nothing unmaps a cached stack.
+- With every memory-placement switch off at a crashing count (A13's eight, A8's two, `RANGES_FAST`, `PHYSMAP_SORTED`,
+  plus 17 dummies = 29 entries), it still crashes, and the same 16 KiB mapping appears (x1memoff).
+
+**Open: which call maps it there.** The remaining path is a mapping at a **fixed** address (the flexible map's
+`MAP_FIXED` branch replaces whatever is there), with 0x300a80000 chosen by the title. The title would take such an
+address from something the host told it: a stack address or size from the thread attribute calls, a query of free
+address space, or an earlier mapping's address. A wrong or run-dependent answer there would explain why only some
+starts collide.
+
+**Next.**
+- Read the arguments of the flexible/`mmap` calls just before the event. The emulator's own call log
+  (`--printf-direction File` in a private launcher copy, no rebuild) is the first thing to try.
+- Review what `scePthreadAttrGetstack`, `pthread_getattr_np`-style calls and the virtual-query calls return for
+  host-allocated stacks.
+- **A host-side guard independent of the cause:** a fixed mapping must not replace a range of type Stack that the host
+  allocated; refuse it or move the stack. That goes behind a switch, default off, until the cause is known.
