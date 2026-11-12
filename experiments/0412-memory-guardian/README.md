@@ -2260,8 +2260,39 @@ fast7's shortcut moved to `~/bc5-work/trash-20261111/pulpit`. fast8 has not been
 Not done: no run of fast7's words without the zero skip on this route today (the memory figure above is from scan arms
 after their skip ended); the address behind run 21's write; a check of hung arguments against the canary's ranges.
 
+### 49. The memory architecture against other emulators (design study, 2026-11-12 night; laptop only, nothing run)
+
+The maintainer's order through the top session: why other emulators, and a PS4 emulating a PS5, do not hit the wall,
+and whether ours must be rebuilt. The study is `DESIGN-memory-architecture.md`. Sources read at named commits: shadPS4
+`b97bafa3`, RPCSX `e8ae1481`, RPCS3 `9b8974d3`, the yuzu line (Eden mirror `e9661b2a`), Kyty `4733b7e1`, KytyPS5 through
+exp 0414, Linux v6.19 with v7.1 diffed (amdgpu userptr, dma-buf import, TTM swap, udmabuf, PRT, faults).
+
+- **Why they have no wall [S]:** all of them keep guest RAM as ordinary swappable shared memory, recompile the guest's
+  shaders and hand the GPU copies of what a draw uses. The GPU never sees a guest address, so they always know which
+  bytes it needs. Their price: copies, write-protect faults, hashes, read-backs that drain the GPU; shadPS4 by default
+  does not return GPU writes at all.
+- **Why we pin [S/M]:** GPU VA = guest VA with native shaders and no translation; the GPU cannot wait for a page (F53).
+  The console holds the same memory resident. Ours on top of that: `udmabuf` allocates and long-term pins every page
+  of a range, written or not (kernel `memfd_pin_folios`), which is where the 3.5 GiB of zero pages come from; every
+  heap is imported whole, so CPU-only data cannot swap; and the non-guest side needs 3.2–3.6 GiB.
+- **Kernel facts that close two ideas [S]:** amdgpu userptr BOs are not pinned but are re-faulted on every submission
+  that lists them (F38's 5 ms per GiB); GPU-owned BOs are swapped by TTM only against its own limit, never on memory
+  pressure.
+- **Recommendation:** keep the direct architecture; (A) reproduce the console's budget outside the title (bare play
+  session, host copies, driver buffers, orphans, then the 12,800 MiB offer): 0.7–1.1 GiB against a deficit of 0.4–0.5;
+  (B) stop creating never-written pages, soundly, only after experiment E1 (what the GPU does at a PRT page and at a
+  read-only page on gfx1013) and after the one writer the last series could not name is known: up to 2.8 GiB; (C)
+  CPU-purpose heaps out of the pin after a long clean scan: 1.6 GiB swappable. The copy-and-translate model is a
+  different emulator and is not proposed.
+- **Split with exp 0415 (agreed):** it builds the lock side (imports prepared outside the device mutex, `wait_jobs`);
+  this experiment the memory side (what is imported, when it is given back). Diffs to `direct_sync_one` are exchanged
+  before a build.
+
 ## Verdict
 
+- **The architecture stays; the wall is closed from outside the title first (section 49, design only):** others avoid
+  the wall by copying and translating, which the direct path cannot do. Proposed order: the console's budget outside
+  the title (A), then sound handling of never-written pages (B) behind experiment E1. Nothing measured yet.
 - **The zero skip is unsound by design; proposed out of fast7 (section 48) [M]:** every run has GPU writes into
   "skipped" memory, readable through other chunks and then lost. A search before submission (BC5_GUARD_ZSKIP_SCAN, g412w,
   default off) leaves 1 hit per run and ends the skip at 47 s anyway. Without the skip the route's lowest available
