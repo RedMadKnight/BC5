@@ -70,26 +70,36 @@ inline int find(const std::vector<Range>& r, uint64_t a) {
 }
 inline uint64_t pair_addr(uint32_t lo, uint32_t hi) { return (static_cast<uint64_t>(hi & 0xffffu) << 32) | lo; }
 inline uint64_t shifted_addr(uint32_t lo, uint32_t hi) { return (static_cast<uint64_t>(hi & 0xffu) << 40) | (static_cast<uint64_t>(lo) << 8); }
+// Returns false when a hit or a candidate table was left out by a capacity limit (review of 2026-11-12, R25): true means
+// no truncation, NOT that every address the GPU can reach was seen. max_others: the limit of the candidates (kMaxTables
+// for the callers of g412t..g412v).
 // Searches n dwords. hits: every dword position whose pair or shifted form lies in a range (at most max_hits).
 // others (may be null): the distinct pair-form addresses in [win_lo, win_hi) that lie in no range, at most kMaxTables:
 // the candidates for a table to follow.
-inline void scan(const uint32_t* w, uint32_t n, const std::vector<Range>& r, std::vector<Hit>& hits, size_t max_hits, std::vector<uint64_t>* others, uint64_t win_lo,
-                 uint64_t win_hi) {
-	if (r.empty() || n < 2) return;
+inline bool scan(const uint32_t* w, uint32_t n, const std::vector<Range>& r, std::vector<Hit>& hits, size_t max_hits, std::vector<uint64_t>* others, uint64_t win_lo,
+                 uint64_t win_hi, size_t max_others = kMaxTables) {
+	if (r.empty() || n < 2) return true;
+	bool complete = true;
 	for (uint32_t i = 0; i + 1 < n; i++) {
 		const uint64_t a = pair_addr(w[i], w[i + 1]);
 		int            k = find(r, a);
 		if (k >= 0) {
 			if (hits.size() < max_hits) hits.push_back({i, 0, a, static_cast<uint32_t>(k)});
+			else complete = false;
 			continue;
 		}
 		const uint64_t b = shifted_addr(w[i], w[i + 1]);
 		k                = find(r, b);
 		if (k >= 0) {
 			if (hits.size() < max_hits) hits.push_back({i, 1, b, static_cast<uint32_t>(k)});
+			else complete = false;
 			continue;
 		}
-		if (others != nullptr && a >= win_lo && a < win_hi && others->size() < kMaxTables && std::find(others->begin(), others->end(), a) == others->end()) others->push_back(a);
+		if (others != nullptr && a >= win_lo && a < win_hi && std::find(others->begin(), others->end(), a) == others->end()) {
+			if (others->size() < max_others) others->push_back(a);
+			else complete = false;
+		}
 	}
+	return complete;
 }
 } // namespace ns412

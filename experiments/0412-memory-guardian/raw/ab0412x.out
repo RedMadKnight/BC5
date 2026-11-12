@@ -1,0 +1,58 @@
+18:06:27 c1s1: rsync processes 3, steamwebhelper 0
+c1s1 (lw7) ended at G+120 (after 243 s; G 121, load 103, list 93); 25.5 flips/s over 238 s, 57 s with a gap over 100 ms, longest 712 ms; kernel lines 0, crash lines 0, ledger lines 0
+18:10:46 c1s1 ended: rsync processes 0; canary hits 10
+zero skip scan (exp 0412, tag zs412): t 41 s: mode 1: 22702 buffers searched, 3 with a find (6 in the buffer, 45 through a table; 784747 tables read; 0 searches incomplete); 472.0 MiB taken back at 3 submissions; 412.0 MiB still skipped; canary hits 1; 3376.6 ms spent in all
+zero skip: 0.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 48 by hints, 1 runs by canary hits; 0 canary mappings
+18:11:46 c2s2: rsync processes 3, steamwebhelper 0
+c2s2 (lw7) ended at G+120 (after 242 s; G 120, load 105, list 94); 25.5 flips/s over 237 s, 52 s with a gap over 100 ms, longest 779 ms; kernel lines 0, crash lines 0, ledger lines 0
+18:16:01 c2s2 ended: rsync processes 3; canary hits 10
+zero skip scan (exp 0412, tag zs412): t 41 s: mode 2: 22666 buffers searched, 15 with a find (10 in the buffer, 77 through a table; 790691 tables read; 0 searches incomplete); 110.0 MiB taken back at 15 submissions; 758.0 MiB still skipped; canary hits 1; 3407.9 ms spent in all
+zero skip: 0.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 125 by hints, 1 runs by canary hits; 0 canary mappings
+18:17:01 c3s0: rsync processes 3, steamwebhelper 0
+c3s0 (lw7) ended at G+120 (after 241 s; G 120, load 104, list 93); 24.9 flips/s over 235 s, 61 s with a gap over 100 ms, longest 690 ms; kernel lines 0, crash lines 0, ledger lines 0
+18:21:15 c3s0 ended: rsync processes 3; canary hits 7
+zero skip: 704.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 119 by hints, 4 runs by canary hits; 352 canary mappings
+18:22:15 c4s1: rsync processes 3, steamwebhelper 0
+c4s1 (lw7) ended at G+120 (after 240 s; G 119, load 102, list 94); 25.1 flips/s over 236 s, 64 s with a gap over 100 ms, longest 692 ms; kernel lines 0, crash lines 0, ledger lines 0
+18:26:29 c4s1 ended: rsync processes 0; canary hits 9
+zero skip scan (exp 0412, tag zs412): t 41 s: mode 1: 22859 buffers searched, 10 with a find (6 in the buffer, 61 through a table; 787400 tables read; 0 searches incomplete); 652.0 MiB taken back at 10 submissions; 232.0 MiB still skipped; canary hits 1; 3372.0 ms spent in all
+zero skip: 0.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 48 by hints, 1 runs by canary hits; 0 canary mappings
+18:27:29 c5s2: rsync processes 3, steamwebhelper 0
+c5s2 (lw7) ended at G+120 (after 252 s; G 131, load 102, list 93); 24.2 flips/s over 246 s, 60 s with a gap over 100 ms, longest 789 ms; kernel lines 0, crash lines 0, ledger lines 0
+18:31:55 c5s2 ended: rsync processes 3; canary hits 10
+zero skip scan (exp 0412, tag zs412): t 41 s: mode 2: 22014 buffers searched, 15 with a find (9 in the buffer, 76 through a table; 769451 tables read; 0 searches incomplete); 136.0 MiB taken back at 15 submissions; 752.0 MiB still skipped; canary hits 1; 3304.9 ms spent in all
+zero skip: 0.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 158 by hints, 1 runs by canary hits; 0 canary mappings
+18:32:55 c6s0: rsync processes 3, steamwebhelper 0
+c6s0 (lw7) ended at G+120 (after 239 s; G 118, load 103, list 93); 25.5 flips/s over 233 s, 43 s with a gap over 100 ms, longest 799 ms; kernel lines 0, crash lines 0, ledger lines 0
+18:37:09 c6s0 ended: rsync processes 3; canary hits 7
+zero skip: 704.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 119 by hints, 4 runs by canary hits; 352 canary mappings
+18:38:09 c7s1: rsync processes 3, steamwebhelper 0
+c7s1 (lw7) ended by itself at 244 s (after 244 s; G 216, load 169, list 124); 16.2 flips/s over 236 s, 95 s with a gap over 100 ms, longest 8583 ms; kernel lines 0, crash lines 22, ledger lines 0
+18:42:22 c7s1 ended: rsync processes 0; canary hits 9
+zero skip scan (exp 0412, tag zs412): t 41 s: mode 1: 22703 buffers searched, 6 with a find (6 in the buffer, 52 through a table; 789328 tables read; 0 searches incomplete); 536.0 MiB taken back at 6 submissions; 348.0 MiB still skipped; canary hits 1; 3358.6 ms spent in all
+zero skip: 0.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 48 by hints, 1 runs by canary hits; 0 canary mappings
+18:43:22 c8s2: rsync processes 3, steamwebhelper 0
+c8s2 (lw7) ended at G+120 (after 239 s; G 118, load 103, list 93); 25.4 flips/s over 233 s, 59 s with a gap over 100 ms, longest 737 ms; kernel lines 0, crash lines 0, ledger lines 0
+18:47:39 c8s2 ended: rsync processes 3; canary hits 9
+zero skip scan (exp 0412, tag zs412): t 41 s: mode 2: 22153 buffers searched, 14 with a find (10 in the buffer, 85 through a table; 771359 tables read; 0 searches incomplete); 144.0 MiB taken back at 14 submissions; 724.0 MiB still skipped; canary hits 1; 3421.9 ms spent in all
+zero skip: 0.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 160 by hints, 1 runs by canary hits; 0 canary mappings
+18:48:39 c9f1: rsync processes 3, steamwebhelper 0
+c9f1 (fast7) ended at G+120 (after 241 s; G 119, load 104, list 94); 24.8 flips/s over 235 s, 61 s with a gap over 100 ms, longest 876 ms; kernel lines 0, crash lines 0, ledger lines 23
+18:52:53 c9f1 ended: rsync processes 3; canary hits 8
+zero skip scan (exp 0412, tag zs412): t 41 s: mode 1: 22615 buffers searched, 11 with a find (5 in the buffer, 58 through a table; 792970 tables read; 0 searches incomplete); 654.0 MiB taken back at 11 submissions; 260.0 MiB still skipped; canary hits 0; 3375.4 ms spent in all
+zero skip: 0.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 48 by hints, 0 runs by canary hits; 0 canary mappings
+18:53:53 d1s1: rsync processes 3, steamwebhelper 0
+d1s1 (lw7) ended at G+120 (after 240 s; G 118, load 101, list 93); 26.0 flips/s over 235 s, 56 s with a gap over 100 ms, longest 1124 ms; kernel lines 0, crash lines 0, ledger lines 0
+18:58:07 d1s1 ended: rsync processes 3; canary hits 9
+zero skip scan (exp 0412, tag zs412): t 41 s: mode 1: 22803 buffers searched, 9 with a find (5 in the buffer, 54 through a table; 788169 tables read; 0 searches incomplete); 618.0 MiB taken back at 9 submissions; 266.0 MiB still skipped; canary hits 1; 3259.8 ms spent in all
+zero skip: 0.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 48 by hints, 1 runs by canary hits; 0 canary mappings
+18:59:07 d2s2: rsync processes 3, steamwebhelper 0
+d2s2 (lw7) ended at G+120 (after 239 s; G 118, load 103, list 93); 25.2 flips/s over 235 s, 46 s with a gap over 100 ms, longest 629 ms; kernel lines 0, crash lines 0, ledger lines 0
+19:03:20 d2s2 ended: rsync processes 0; canary hits 9
+zero skip scan (exp 0412, tag zs412): t 41 s: mode 2: 22229 buffers searched, 12 with a find (9 in the buffer, 71 through a table; 775758 tables read; 0 searches incomplete); 122.0 MiB taken back at 12 submissions; 756.0 MiB still skipped; canary hits 1; 3349.0 ms spent in all
+zero skip: 0.0 MiB still skipped of 1010.0 placed; taken back: 0 chunks by CPU writes, 139 by hints, 1 runs by canary hits; 0 canary mappings
+19:04:20 d3s0: rsync processes 3, steamwebhelper 0
+d3s0 (lw7) GPU HANG: ring reset succeeded at 177 s (after 202 s; G 116, load 103, list 93); 23.9 flips/s over 183 s, 43 s with a gap over 100 ms, longest 16821 ms; kernel lines 11, crash lines 0, ledger lines 0
+19:07:56 d3s0 ended: rsync processes 3; canary hits 8
+zero skip: 0.0 MiB still skipped of 1010.0 placed; taken back: 2 chunks by CPU writes, 119 by hints, 5 runs by canary hits; 0 canary mappings; OFF
+2026-11-12 19:07:56 series done

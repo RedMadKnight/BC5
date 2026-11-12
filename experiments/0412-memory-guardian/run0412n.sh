@@ -39,8 +39,10 @@ case "$TAG" in *[!A-Za-z0-9]* | "") echo "the tag is letters and digits"; exit 1
 case "$PLAY" in *[!0-9]* | "") echo "the play time is seconds"; exit 1 ;; esac
 SECS=${N_CAP:-$((PLAY + 260))}; FUSE=${N_FUSE:-12400 1024}
 [ "$SECS" -ge 120 ] && [ "$SECS" -le 3000 ] || { echo "the cap is 120-3000 s"; exit 1; }
-BIN=$X/bin/kyty_emulator; LAUNCH_SRC=$X/play-pkg-0412.sh; LAUNCH=$N/play-pkg-0412n.sh; LEARN_SRC=$W/direct-learned-pkg.txt; LEARN=$N/direct-learned-pkg.txt
-grep -qxF "$(m "$BIN")  bin/kyty_emulator" "$X/built.md5" && grep -qxF "$(m "$LAUNCH_SRC")  play-pkg-0412.sh" "$X/built.md5" || { echo "the binary or the launcher is not the one in built.md5: not started"; exit 1; }
+BIN=${N_EMU:-$X/bin/kyty_emulator}; LAUNCH_SRC=$X/play-pkg-0412.sh; LAUNCH=$N/play-pkg-0412n.sh; LEARN_SRC=$W/direct-learned-pkg.txt; LEARN=$N/direct-learned-pkg.txt
+# N_EMU=<binary>: a build beside the one in place (the launcher takes it through BC5_EMU, exp 0177); it must be the one in built-w.md5.
+if [ -n "${N_EMU:-}" ]; then grep -qxF "$(m "$BIN")  bin-w/kyty_emulator" "$X/built-w.md5" && [ "$BIN" = "$X/bin-w/kyty_emulator" ] || { echo "N_EMU is not the build in built-w.md5: not started"; exit 1; }; fi
+{ [ -n "${N_EMU:-}" ] || grep -qxF "$(m "$BIN")  bin/kyty_emulator" "$X/built.md5"; } && grep -qxF "$(m "$LAUNCH_SRC")  play-pkg-0412.sh" "$X/built.md5" || { echo "the binary or the launcher is not the one in built.md5: not started"; exit 1; }
 WANT=$(m "$BIN")
 for f in sampler0412b.sh fuse0412.sh; do grep -qxF "$(m "$X/$f")  $f" "$X/tools.md5" || { echo "$f is not the installed one: not started"; exit 1; }; done
 [ -x "$X/wd0412.sh" ] && [ -f "$LEARN_SRC" ] && [ -d "$W/exp0330/wd" ] || { echo "no wd0412.sh, learned file or exp0330/wd: not started"; exit 1; }
@@ -114,7 +116,7 @@ printf 'wait 1000\n' > "$CMD"; rm -f "$CMD.done"
 # wayland-0, and a run over ssh has no WAYLAND_DISPLAY of its own: the pilot p1ledger ended with "wayland not available").
 WL=$(ls "/run/user/$(id -u)/" 2> /dev/null | grep -m1 '^wayland-[0-9]*$')
 [ -n "$WL" ] || { echo "no Wayland socket in /run/user/$(id -u): not started"; exit 1; }
-ENVS=("${WORDS[@]}" "${EXTRA[@]}" BC5_0412N_INPUT_CONFIG="$CFG" KYTY_BC5_INPUT_CMD="$CMD" WAYLAND_DISPLAY="$WL")
+ENVS=("${WORDS[@]}" "${EXTRA[@]}" ${N_EMU:+BC5_EMU=$N_EMU} BC5_0412N_INPUT_CONFIG="$CFG" KYTY_BC5_INPUT_CMD="$CMD" WAYLAND_DISPLAY="$WL")
 ND=$(sudo -n dmesg 2> /dev/null | wc -l)
 { date '+%F %T'; echo "arm $TAG ($ARM), cap $SECS s, play $PLAY s, binary $BIN md5 $WANT, launcher $(m "$LAUNCH" | cut -c1-8), fuse $FUSE"
   echo "the arm's words: $(printf '%s\n' "${ENVS[@]}" | grep -E '^(BC5_GUARD_|BC5_DIRECT_LAZY_RELEASE|BC5_DIRECT_ZERO|BC5_0412)' | tr '\n' ' ')"; echo "extra: ${EXTRA[*]:-none}"
