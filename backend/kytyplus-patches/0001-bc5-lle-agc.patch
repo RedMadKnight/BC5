@@ -46022,10 +46022,10 @@ index fda2623..db5e40e 100644
  	return OK;
  }
 diff --git a/src/libs/libSaveData.cpp b/src/libs/libSaveData.cpp
-index 08aa121..fe3d73b 100644
+index 08aa121..28f2046 100644
 --- a/src/libs/libSaveData.cpp
 +++ b/src/libs/libSaveData.cpp
-@@ -1,949 +1,1320 @@
+@@ -1,949 +1,1662 @@
 -#include "common/abi.h"
 -#include "common/assert.h"
 -#include "common/common.h"
@@ -46983,6 +46983,7 @@ index 08aa121..fe3d73b 100644
 +#include "common/stringUtils.h"
 +#include "common/threads.h"
 +#include "kernel/fileSystem.h"
++#include "kernel/pthread.h" // experiment 0401 series e4: the event callback's delivery thread
 +#include "libs/errno.h"
 +#include "libs/libs.h"
 +#include "libs/saveDataMountSlots.h"
@@ -47002,6 +47003,11 @@ index 08aa121..fe3d73b 100644
 +#include <system_error>
 +#include <sys/stat.h>
 +#include <vector>
++// experiment 0401 series e4 (KYTY_BC5_SAVEDATA_EVENT_CB): the event callback's delivery thread and its state
++#include <condition_variable>
++#include <memory>
++#include <thread>
++#include <utility>
 +
 +namespace Libs {
 +
@@ -47237,6 +47243,235 @@ index 08aa121..fe3d73b 100644
 +	return title_id;
 +}
 +
++// ---- experiment 0401 series e4: SaveData event callback (exp 0402 Top 10 item 9), switch KYTY_BC5_SAVEDATA_EVENT_CB ----
++// Ported from AnyPS5 (github.com/boykopovar/AnyPS5, GPL-2.0-only; the ported lines keep its authors' copyright),
++// core/libs/prx/libSceSaveData.native/Export.cpp @ 4f41f4c37 (4f41f4c375f5abb487dbd184fbc150f31994d762): the delivery
++// thread and its state (EventDelivery, EventWorker, EventCallbacks, DeliverEvents, StartEventDelivery,
++// DetachEventDelivery, JoinEventDelivery, InEventCallback, DeliverEvent: 69-163), sceSaveDataRegisterEventCallback
++// (1871-1886), sceSaveDataUnregisterEventCallback (2019-2027), and the initialization count of sceSaveDataInitialize3
++// (1059-1064) and sceSaveDataTerminate (1398-1419). That state has AnyPS5's two fixes: 0d0abe09c
++// (0d0abe09c19c85d61ac3f2227876a0c83037d6c8: the delivery thread starts at the first successful registration of an
++// initialization, not in Initialize3; a replacing registration, one from inside a callback and one after an unregister
++// reuse it; the final terminate joins it outside the lock, and only when one was started) and bc6b4d76f
++// (bc6b4d76f90dab36a47bc06789c11aa4d81bbeca: registration takes the calling lock, then the slot lock the final terminate
++// holds, and only under both checks the count and stores the callback, so no registration outlives that terminate).
++// NIDs hsKd5c21sQc (sceSaveDataRegisterEventCallback) and v-AK1AxQhS0 (sceSaveDataUnregisterEventCallback), from exp
++// 0327's calculator (nid0401.py's). Nothing here is measured on a console: AnyPS5's docs/dev/debt/libSceSaveData.native.md
++// says it follows shadPS4 #5226 and assumes PS4's signatures for PS5.
++// Fitted to this file:
++//  - Every event queue_save_data_event queues (type 1 Umount2 BACKUP_ASYNC, 2 Backup, 4 Commit BACKUP_ASYNC) still goes
++//    to the queue SaveDataGetEventResult polls, then to the callback registered at that moment, as AnyPS5's backups do
++//    (its types 1 and 2; it queues nothing on a commit). A polling title sees every event as before.
++//  - The poll queue gets a lock of its own, taken by the queueing, the poll and Terminate (it had none: the delivery
++//    thread's callbacks may queue and poll from one more thread).
++//  - g_mount_mutex stands for AnyPS5's g_slots_mutex (it is recursive here). The count is kept under it and counts only
++//    with the switch on. Terminate keeps this file's rules (BUSY while any save is mounted; OK when nothing was
++//    initialized; the poll queue cleared) and adds AnyPS5's BUSY from inside a callback and the delivery thread's stop.
++//  - The thread is a guest thread of this host (LibKernel::PthreadCreate, as AnyPS5's scePthreadCreate), so the title's
++//    callback runs on a guest stack and thread. The delivering thread is told by its host thread id (AnyPS5: Pthread).
++//  - This host builds without exceptions: a thread that cannot start makes the registration SAVE_DATA_ERROR_INTERNAL, and
++//    a join that fails leaves the worker allocated and prints a line (AnyPS5 throws std::runtime_error for both).
++// On: KYTY_BC5_SAVEDATA_EVENT_CB set, non-empty and not "0", read once; both NIDs are registered in both SaveData tables.
++// Off: neither is registered (a title that imports them gets the loader's stub, as today) and none of this runs: the poll
++// queue, Initialize3 and Terminate are today's. One stderr line either way, at the library's registration.
++static bool bc5_savedata_event_cb_on() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_SAVEDATA_EVENT_CB");
++		const bool  v = e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
++		std::fprintf(stderr, "[bc5] exp 0401: savedata event callback %s\n", v ? "on" : "off");
++		return v;
++	}();
++	return on;
++}
++
++using SaveDataEventCallback = KYTY_SYSV_ABI void (*)(const SaveDataEvent* event, void* userdata);
++
++struct Bc5EventDelivery {
++	SaveDataEvent         event;
++	SaveDataEventCallback callback;
++	void*                 userdata;
++};
++
++struct Bc5EventWorker {
++	LibKernel::Pthread thread   = nullptr;
++	bool               stopping = false;
++};
++
++struct Bc5EventCallbacks {
++	std::recursive_mutex         calling;
++	std::mutex                   mutex;
++	std::condition_variable      wake;
++	SaveDataEventCallback        callback = nullptr;
++	void*                        userdata = nullptr;
++	std::deque<Bc5EventDelivery> pending;
++	Bc5EventWorker*              worker = nullptr;
++	std::thread::id              delivering; // the thread in a callback now, none otherwise
++};
++
++static std::mutex g_bc5_save_data_events_mutex; // g_save_data_events, with the switch on
++static int        g_bc5_initializations = 0;   // under g_mount_mutex, counted with the switch on
++
++static Bc5EventCallbacks& bc5_event_callbacks() {
++	static auto* callbacks = new Bc5EventCallbacks; // never destroyed, as AnyPS5's
++	return *callbacks;
++}
++
++// The poll queue's lock: taken with the switch on, an empty lock (today's unlocked queue) with it off.
++static std::unique_lock<std::mutex> bc5_save_data_events_lock() {
++	return bc5_savedata_event_cb_on() ? std::unique_lock<std::mutex>(g_bc5_save_data_events_mutex)
++	                                  : std::unique_lock<std::mutex>();
++}
++
++static KYTY_SYSV_ABI void* bc5_deliver_events(void* argument) {
++	auto& callbacks = bc5_event_callbacks();
++	auto* worker    = static_cast<Bc5EventWorker*>(argument);
++	for (;;) {
++		{
++			std::unique_lock lock(callbacks.mutex);
++			callbacks.wake.wait(lock, [&] { return worker->stopping || !callbacks.pending.empty(); });
++			if (worker->stopping) {
++				return nullptr;
++			}
++		}
++		std::lock_guard  calling(callbacks.calling);
++		Bc5EventDelivery delivery {};
++		{
++			std::lock_guard lock(callbacks.mutex);
++			if (worker->stopping) {
++				return nullptr;
++			}
++			if (callbacks.pending.empty()) {
++				continue;
++			}
++			delivery = callbacks.pending.front();
++			callbacks.pending.pop_front();
++			callbacks.delivering = std::this_thread::get_id();
++		}
++		delivery.callback(&delivery.event, delivery.userdata);
++		std::lock_guard lock(callbacks.mutex);
++		callbacks.delivering = {};
++	}
++}
++
++static bool bc5_start_event_delivery() {
++	auto&           callbacks = bc5_event_callbacks();
++	auto            worker    = std::make_unique<Bc5EventWorker>();
++	std::lock_guard lock(callbacks.mutex);
++	if (callbacks.worker != nullptr) {
++		return true;
++	}
++	if (LibKernel::PthreadCreate(&worker->thread, nullptr, bc5_deliver_events, worker.get(),
++	                            "SceSaveDataEventCallback") != OK) {
++		return false;
++	}
++	callbacks.worker = worker.release();
++	return true;
++}
++
++static Bc5EventWorker* bc5_detach_event_delivery() {
++	auto&           callbacks = bc5_event_callbacks();
++	std::lock_guard lock(callbacks.mutex);
++	callbacks.callback = nullptr;
++	callbacks.userdata = nullptr;
++	callbacks.pending.clear();
++	auto* worker = std::exchange(callbacks.worker, nullptr);
++	if (worker != nullptr) {
++		worker->stopping = true;
++	}
++	return worker;
++}
++
++static void bc5_join_event_delivery(Bc5EventWorker* worker) {
++	bc5_event_callbacks().wake.notify_all();
++	const int rc = LibKernel::PthreadJoin(worker->thread, nullptr);
++	if (rc != OK) {
++		std::fprintf(stderr, "[bc5] exp 0401: the savedata event thread did not join (%d); its worker is kept\n", rc);
++		return;
++	}
++	delete worker;
++}
++
++static bool bc5_in_event_callback() {
++	auto&           callbacks = bc5_event_callbacks();
++	std::lock_guard lock(callbacks.mutex);
++	return callbacks.delivering == std::this_thread::get_id();
++}
++
++static void bc5_deliver_event(const SaveDataEvent& event) {
++	auto& callbacks = bc5_event_callbacks();
++	{
++		std::lock_guard lock(callbacks.mutex);
++		if (callbacks.callback == nullptr || callbacks.worker == nullptr) {
++			return;
++		}
++		callbacks.pending.push_back({event, callbacks.callback, callbacks.userdata});
++	}
++	callbacks.wake.notify_all();
++}
++
++// SaveDataTerminate with the switch on: AnyPS5's sceSaveDataTerminate on this file's rules.
++static int bc5_terminate() {
++	if (bc5_in_event_callback()) {
++		return SAVE_DATA_ERROR_BUSY;
++	}
++	Bc5EventWorker* stopped = nullptr;
++	{
++		Common::LockGuard lock(g_mount_mutex);
++		if (!g_mount_slots.Empty()) {
++			return SAVE_DATA_ERROR_BUSY;
++		}
++		{
++			std::lock_guard events(g_bc5_save_data_events_mutex);
++			g_save_data_events.clear();
++		}
++		if (g_bc5_initializations > 0 && --g_bc5_initializations == 0) {
++			stopped = bc5_detach_event_delivery();
++		}
++	}
++	if (stopped != nullptr) {
++		bc5_join_event_delivery(stopped);
++	}
++	return OK;
++}
++
++int KYTY_SYSV_ABI SaveDataRegisterEventCallback(SaveDataEventCallback callback, void* userdata) {
++	PRINT_NAME();
++
++	LOGF("\t callback = 0x%016" PRIx64 "\n"
++	     "\t userdata = 0x%016" PRIx64 "\n",
++	     reinterpret_cast<uint64_t>(callback), reinterpret_cast<uint64_t>(userdata));
++
++	auto&                                 callbacks = bc5_event_callbacks();
++	std::lock_guard<std::recursive_mutex> calling(callbacks.calling);
++	Common::LockGuard                     slots(g_mount_mutex);
++	if (g_bc5_initializations == 0) {
++		return SAVE_DATA_ERROR_NOT_INITIALIZED;
++	}
++	if (callback == nullptr) {
++		return SAVE_DATA_ERROR_PARAMETER;
++	}
++	if (!bc5_start_event_delivery()) {
++		return SAVE_DATA_ERROR_INTERNAL;
++	}
++	std::lock_guard lock(callbacks.mutex);
++	callbacks.callback = callback;
++	callbacks.userdata = userdata;
++	return OK;
++}
++
++int KYTY_SYSV_ABI SaveDataUnregisterEventCallback() {
++	PRINT_NAME();
++
++	auto&                                 callbacks = bc5_event_callbacks();
++	std::lock_guard<std::recursive_mutex> calling(callbacks.calling);
++	std::lock_guard                       lock(callbacks.mutex);
++	callbacks.callback = nullptr;
++	callbacks.userdata = nullptr;
++	callbacks.pending.clear();
++	return OK;
++}
++// ---- end of experiment 0401 series e4's event callback block ----
++
 +static void queue_save_data_event(uint32_t type, int32_t user_id,
 +                                  const SceSaveDataTitleId* title_id,
 +                                  const SceSaveDataDirName* dir_name, int32_t error_code = OK) {
@@ -47251,9 +47486,14 @@ index 08aa121..fe3d73b 100644
 +		std::memcpy(&event.dir_name, dir_name, sizeof(event.dir_name));
 +	}
 +
++	std::unique_lock<std::mutex> bc5_events_lock = bc5_save_data_events_lock(); // experiment 0401 series e4: on, locked
 +	g_save_data_events.push_back(event);
 +	if (g_save_data_events.size() > 20) {
 +		g_save_data_events.pop_front();
++	}
++	if (bc5_events_lock.owns_lock()) { // experiment 0401 series e4 (switch on): then to the registered callback
++		bc5_events_lock.unlock();
++		bc5_deliver_event(event);
 +	}
 +}
 +
@@ -47368,6 +47608,58 @@ index 08aa121..fe3d73b 100644
 +
 +static int64_t save_data_dir_mtime(const std::string& directory);
 +
++// ---- experiment 0401 series e4: SaveData sort keys (exp 0402 Top 10 item 9), switch KYTY_BC5_SAVEDATA_SORT ----
++// Ported from KytyPS5 (github.com/KytyPS5/KytyPS5, GPL-2.0, as KytyPlus; the ported lines keep its authors' copyright),
++// src/libs/libSaveData.cpp @ dfec14a (dfec14aa8c59f8ea2bc4d87eba9854fc370161c6), newest_save_time and load_save_param
++// (411-440): the mtime its search sorts by since 4b0282e (4b0282e3430ec64b5012d1c5c5a90f495f05df76, "savedata: sort
++// directory searches by the requested key") and that its search and GetParam report. A save's mtime is the newest write
++// time of its files, whatever the title put in the param's mtime. shadPS4 (param.sfo's write time) and AnyPS5 @ 4f41f4c37
++// (the time of the last SetParam) do not take the title's mtime either; this file did.
++// Fitted to this file: KytyPS5 keeps the param and the blocks record inside the save (sce_sys/param.bin,
++// sce_sys/blocks.bin), where they count among its files; this file keeps them beside it (<dir>.param, <dir>.blocks), so
++// they count from there. A save with no file at all keeps this file's rule (run 573: the directory's time), not 0.
++// Of the three key definitions in which this file differs from KytyPS5 4b0282e only this one is ported. Kept as they are
++// (reasons in experiments/0401-mesa-preamble-switches/sav0401-notes.md): free blocks (here the save's blocks less its
++// files, as shadPS4 and AnyPS5 sort and report them; KytyPS5 reports its total as free and sorts by it) and a save without
++// a blocks record (here the maximum, as shadPS4 and AnyPS5; KytyPS5 sorts it as 0 and its search and GetMountInfo report
++// it BROKEN).
++// On: KYTY_BC5_SAVEDATA_SORT set, non-empty and not "0", read once; save_data_load_param takes the files' time (the
++// search's mtime order and the params it returns, and GetParam). Off: today's (the title's mtime, else the directory's).
++// One stderr line either way, at the library's registration.
++static bool bc5_savedata_sort_on() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_SAVEDATA_SORT");
++		const bool  v = e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
++		std::fprintf(stderr, "[bc5] exp 0401: savedata sort %s\n", v ? "on" : "off");
++		return v;
++	}();
++	return on;
++}
++
++// KytyPS5 newest_save_time: the newest write time, in seconds, of the regular files in the save, 0 if it has none; here
++// with the save's two records beside it.
++static int64_t bc5_newest_save_time(const std::string& directory) {
++	int64_t     newest = 0;
++	struct stat st {};
++	for (const std::string& record: {save_data_param_path(directory), save_data_blocks_path(directory)}) {
++		std::error_code record_ec;
++		if (std::filesystem::is_regular_file(record, record_ec) && ::stat(record.c_str(), &st) == 0) {
++			newest = std::max<int64_t>(newest, st.st_mtime);
++		}
++	}
++	std::error_code ec;
++	for (auto it = std::filesystem::recursive_directory_iterator(
++	         directory, std::filesystem::directory_options::skip_permission_denied, ec);
++	     !ec && it != std::filesystem::recursive_directory_iterator(); it.increment(ec)) {
++		std::error_code file_ec;
++		if (it->is_regular_file(file_ec) && ::stat(it->path().string().c_str(), &st) == 0) {
++			newest = std::max<int64_t>(newest, st.st_mtime);
++		}
++	}
++	return newest;
++}
++// ---- end of experiment 0401 series e4's sort block ----
++
 +// The param the title set, or zeros; an mtime of 0 becomes the directory's time (run 573).
 +static SaveDataParam save_data_load_param(const std::string& directory) {
 +	SaveDataParam param {};
@@ -47377,6 +47669,9 @@ index 08aa121..fe3d73b 100644
 +			param = {};
 +		}
 +		std::fclose(f);
++	}
++	if (bc5_savedata_sort_on()) { // experiment 0401 series e4 (KytyPS5 load_save_param): the files' newest time
++		param.mtime = bc5_newest_save_time(directory);
 +	}
 +	if (param.mtime == 0) {
 +		param.mtime = save_data_dir_mtime(directory);
@@ -47423,6 +47718,29 @@ index 08aa121..fe3d73b 100644
 +	return newest;
 +}
 +
++// ---- experiment 0401 series e4: SaveData fixes (exp 0402 Top 10 item 9), switch KYTY_BC5_SAVEDATA_FIXES ----
++// Ported from KytyPS5 (github.com/KytyPS5/KytyPS5, GPL-2.0, as KytyPlus; the ported lines keep its authors' copyright),
++// src/libs/libSaveData.cpp at dfec14a (dfec14aa8c59f8ea2bc4d87eba9854fc370161c6, "Fix save mount result on failed
++// mounts", #2079): SaveDataMount3 clears the caller's SaveDataMountResult only on its way to a successful mount, so a
++// mount it refuses (BUSY, MOUNT_FULL, PARAMETER, NOT_FOUND, EXISTS, NO_PERMISSION) leaves the result as it was, e.g. the
++// mount point of the save already mounted there. AnyPS5 (boykopovar/AnyPS5, GPL-2.0-only) also writes it on success only
++// (core/libs/prx/libSceSaveData.native/Export.cpp @ 4f41f4c37, mount3). Neither cites a console measurement.
++// On: KYTY_BC5_SAVEDATA_FIXES set, non-empty and not "0", read once. Off: today's path (the result cleared before any
++// check). One stderr line either way, at the first read (the library's registration, InitSaveData_1).
++// The other commits of item 9 have blocks and switches of their own (reasons in
++// experiments/0401-mesa-preamble-switches/sav0401-notes.md): AnyPS5 0d0abe09c and bc6b4d76f with the event callback
++// (KYTY_BC5_SAVEDATA_EVENT_CB, before queue_save_data_event) and KytyPS5 4b0282e's mtime key (KYTY_BC5_SAVEDATA_SORT,
++// before save_data_load_param).
++static bool bc5_savedata_fixes_on() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_SAVEDATA_FIXES");
++		const bool  v = e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
++		std::fprintf(stderr, "[bc5] exp 0401: savedata fixes %s\n", v ? "on" : "off");
++		return v;
++	}();
++	return on;
++}
++
 +static int mount_save_data(int slot, std::string_view dir_name, const std::string& directory,
 +                           uint32_t status, SaveDataMountResult* result) {
 +	const std::string mount_point = SaveDataMountSlots::MountPoint(static_cast<size_t>(slot));
@@ -47439,6 +47757,10 @@ index 08aa121..fe3d73b 100644
 +	PRINT_NAME();
 +
 +	// EXIT_NOT_IMPLEMENTED(init != nullptr);
++	if (bc5_savedata_event_cb_on()) { // experiment 0401 series e4 (AnyPS5 sceSaveDataInitialize3): the count
++		Common::LockGuard lock(g_mount_mutex);
++		g_bc5_initializations++;
++	}
 +
 +	return OK;
 +}
@@ -47446,6 +47768,9 @@ index 08aa121..fe3d73b 100644
 +int KYTY_SYSV_ABI SaveDataTerminate() {
 +	PRINT_NAME();
 +
++	if (bc5_savedata_event_cb_on()) { // experiment 0401 series e4: with the count and the delivery thread's stop
++		return bc5_terminate();
++	}
 +	Common::LockGuard lock(g_mount_mutex);
 +	if (!g_mount_slots.Empty()) {
 +		return SAVE_DATA_ERROR_BUSY;
@@ -47599,7 +47924,9 @@ index 08aa121..fe3d73b 100644
 +	     mount->user_id, mount->dir_name->data, mount->blocks, mount->system_blocks,
 +	     mount->mount_mode, mount->resource);
 +
-+	*mount_result = {};
++	if (!bc5_savedata_fixes_on()) { // experiment 0401 series e4: off, today's clearing before the checks
++		*mount_result = {};
++	}
 +
 +	Common::LockGuard lock(g_mount_mutex);
 +	const std::string dir_name = mount->dir_name->data;
@@ -47651,6 +47978,9 @@ index 08aa121..fe3d73b 100644
 +		save_data_keep_blocks(Common::FixFilenameSlash(mount_dir), mount->blocks);
 +	}
 +
++	if (bc5_savedata_fixes_on()) { // experiment 0401 series e4 (KytyPS5 dfec14a): cleared only on the way to a mount
++		*mount_result = {};
++	}
 +	return mount_save_data(slot, dir_name, mount_dir, created ? 1u : 0u, mount_result);
 +}
 +
@@ -48064,6 +48394,7 @@ index 08aa121..fe3d73b 100644
 +		return SAVE_DATA_ERROR_PARAMETER;
 +	}
 +
++	std::unique_lock<std::mutex> bc5_events_lock = bc5_save_data_events_lock(); // experiment 0401 series e4: on, locked
 +	if (g_save_data_events.empty()) {
 +		return SAVE_DATA_ERROR_NOT_FOUND;
 +	}
@@ -48260,11 +48591,18 @@ index 08aa121..fe3d73b 100644
 +	LIB_FUNC("cGjO3wM3V28", ::Libs::SaveData::SaveDataLoadIcon);
 +	LIB_FUNC("X4MYzukPc3g", ::Libs::SaveData::SaveDataDirNameSearch);
 +	LIB_FUNC("yKDy8S5yLA0", ::Libs::SaveData::SaveDataTerminate);
++	if (::Libs::SaveData::bc5_savedata_event_cb_on()) { // experiment 0401 series e4: AnyPS5's event callback exports
++		LIB_FUNC("hsKd5c21sQc", ::Libs::SaveData::SaveDataRegisterEventCallback);
++		LIB_FUNC("v-AK1AxQhS0", ::Libs::SaveData::SaveDataUnregisterEventCallback);
++	}
 +}
 +
 +} // namespace LibSaveDataNative
 +
 +LIB_DEFINE(InitSaveData_1) {
++	(void)SaveData::bc5_savedata_fixes_on(); // experiment 0401 series e4: the switch's stderr line, read once
++	(void)SaveData::bc5_savedata_event_cb_on(); // experiment 0401 series e4: the event callback switch's line
++	(void)SaveData::bc5_savedata_sort_on(); // experiment 0401 series e4: the sort switch's line
 +	LIB_FUNC("TywrFKCoLGY", SaveData::SaveDataInitialize3);
 +	LIB_FUNC("dyIhnXq-0SM", SaveData::SaveDataDirNameSearch);
 +	LIB_FUNC("ZP4e7rlzOUk", SaveData::SaveDataMount3);
@@ -48290,6 +48628,10 @@ index 08aa121..fe3d73b 100644
 +	LIB_FUNC("cGjO3wM3V28", SaveData::SaveDataLoadIcon);
 +	LIB_FUNC("X4MYzukPc3g", SaveData::SaveDataDirNameSearch);
 +	LIB_FUNC("yKDy8S5yLA0", SaveData::SaveDataTerminate);
++	if (SaveData::bc5_savedata_event_cb_on()) { // experiment 0401 series e4: AnyPS5's event callback exports
++		LIB_FUNC("hsKd5c21sQc", SaveData::SaveDataRegisterEventCallback);
++		LIB_FUNC("v-AK1AxQhS0", SaveData::SaveDataUnregisterEventCallback);
++	}
 +
 +	LibSaveDataNative::InitSaveDataNative_1(s);
 +}
