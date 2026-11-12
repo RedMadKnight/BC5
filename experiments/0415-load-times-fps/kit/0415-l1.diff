@@ -1,0 +1,1153 @@
+diff --git a/src/bc5/load_stat.hpp b/src/bc5/load_stat.hpp
+new file mode 100644
+index 0000000..f14377f
+--- /dev/null
++++ b/src/bc5/load_stat.hpp
+@@ -0,0 +1,327 @@
++// SPDX-License-Identifier: GPL-2.0-only
++// Experiment 0415 (tag ls415): where a load's wall-clock time goes. One counter table shared by every unit, three
++// knobs that change a latency so that its place on a load's critical path can be measured, and three candidate fixes.
++// Everything is off by default; unset, empty and "0" are off (bc5::env_on's reading, F767); each word is read once.
++//   KYTY_BC5_LOAD_STAT=<file>     the counters: per cause a count, the summed time, the longest single time of the last
++//                                 second and a byte or item count; one line per second with CLOCK_MONOTONIC and the
++//                                 journal's time of the last flip; "mark" lines for single events. No change of behaviour.
++//   KYTY_BC5_RING_POLL_US=<n>     the doorbell poll's sleep after a pass (200 today; the long-idle sleep stays 5 times it).
++//   KYTY_BC5_LOAD_DELAY=<cause>:<us>   a busy delay added to each event of one cause (the names of kNames). Measurement only.
++//   KYTY_BC5_RING_SPIN_US=<n>     fix candidate: after a pass that served packets, look at the doorbells again without
++//                                 sleeping for n microseconds (cpu_relax between looks).
++//   KYTY_BC5_TIMERSLACK_NS=<n>    fix candidate: PR_SET_TIMERSLACK at process start (threads inherit it): the host's
++//                                 20-50 us sleep polls stop overshooting by the default 50 us.
++//   KYTY_BC5_MUTEX_SPIN_US=<n>    fix candidate: a guest mutex that is held is tried again for n microseconds before the
++//                                 thread sleeps on its condition variable. Lock order and ownership rules unchanged.
++#pragma once
++
++#include <atomic>
++#include <chrono>
++#include <cstdint>
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++#include <ctime>
++#include <mutex>
++#include <thread>
++
++#if defined(__x86_64__) || defined(__i386__)
++#include <immintrin.h>
++#endif
++#if defined(__linux__)
++#include <pthread.h>
++#include <sys/prctl.h>
++#endif
++
++namespace bc5::load_stat {
++
++enum Cause : unsigned {
++	kFlip,           // n = flips
++	kRingPass,       // n = doorbell passes that served packets, items = packets
++	kRingAfterSleep, // n = of those, passes that found work right after a sleep (the work waited for the poll)
++	kDrain,          // the flip's drain: n, time
++	kInflightCap,    // the wait for fewer than 24 jobs in flight
++	kLabelWait,      // CPU-served label waits (all sites)
++	kWaitJobs,       // wait_jobs(): the GPU drained before mappings change
++	kDevLockWait,    // g_dev_mutex in submit_now: time waited
++	kDevLockHold,    // ... and held
++	kImport,         // import_memfd: n, time, items = bytes
++	kDirectSync,     // direct_sync (whole)
++	kAnonSync,       // sync_mappings (whole, it holds direct_sync)
++	kLearned,        // learned_apply
++	kAprBuffer,      // an APR/AMM command buffer from submit to complete: n, time
++	kAprQueueWait,   // ... from submit to the worker taking it
++	kAprRead,        // one file read into the guest: n, time, items = bytes
++	kAprBusy,        // wall-clock time with at least one command buffer outstanding (n = idle->busy edges)
++	kAmmCmd,         // AMM map/unmap/remap commands: n, time
++	kMemLockWait,    // g_memory_operation_mutex: contended acquisitions and their wait
++	kCommitZero,     // Commit's zeroing of recommitted private memory: n, time, items = bytes
++	kMutexLock,      // guest mutex locks: n
++	kMutexContended, // ... that found the mutex held: n, time until owned
++	kMutexSpinWon,   // ... taken inside the spin window (KYTY_BC5_MUTEX_SPIN_US)
++	kCondSignal,     // guest condition signals and broadcasts: n, items = waiters present
++	kCondWait,       // guest condition waits: n, time
++	kSemaSignal,     // semaphore signals: n, items = waiters present
++	kSemaWait,       // semaphore waits that blocked: n, time
++	kFileOpen,       // sceKernelOpen: n, time
++	kFileStat,       // sceKernelStat/Fstat: n, time
++	kFileRead,       // sceKernelRead/Pread: n, time, items = bytes
++	kHttpSend,       // HttpFetchSync: n, time
++	kCount
++};
++
++inline constexpr const char* kNames[kCount] = {
++    "flip",     "ring_pass",  "ring_after_sleep", "drain",    "inflight_cap", "label_wait",  "wait_jobs",       "dev_wait",
++    "dev_hold", "import",     "direct_sync",      "anon_sync", "learned",     "apr_buffer",  "apr_queue_wait",  "apr_read",
++    "apr_busy", "amm_cmd",    "mem_lock_wait",    "commit_zero", "mutex_lock", "mutex_contended", "mutex_spin_won", "cond_signal",
++    "cond_wait", "sema_signal", "sema_wait",      "file_open", "file_stat",   "file_read",   "http_send"};
++
++static_assert(kNames[kCount - 1] != nullptr, "a name per cause");
++
++struct Slot {
++	std::atomic<uint64_t> n {0}, ns {0}, max_ns {0}, items {0};
++};
++
++struct State {
++	Slot                  slot[kCount];
++	std::atomic<uint64_t> journal_t_us {0}; // the journal's clock at the last flip, microseconds
++	std::atomic<int>      apr_outstanding {0};
++	std::atomic<uint64_t> apr_busy_since {0};
++	std::mutex            file_mutex;
++	FILE*                 file = nullptr;
++};
++
++inline State& state() {
++	static State s;
++	return s;
++}
++
++// CLOCK_MONOTONIC on Linux (libstdc++'s steady_clock; test0415.cpp checks that on the box), so the lines join perf's
++// "-k CLOCK_MONOTONIC" samples.
++inline uint64_t now_ns() {
++	return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
++}
++
++inline bool env_set(const char* e) {
++	return e != nullptr && e[0] != 0 && !(e[0] == '0' && e[1] == 0);
++}
++
++// A non-negative number of at most `cap`, or `dflt` when the word is unset, empty, not a number or over the cap.
++inline uint64_t env_num(const char* name, uint64_t dflt, uint64_t cap) {
++	const char* e = std::getenv(name);
++	if (e == nullptr || e[0] == 0) return dflt;
++	char*                    end = nullptr;
++	const unsigned long long v   = std::strtoull(e, &end, 10);
++	if (end == e || *end != 0 || v > cap) return dflt;
++	return v;
++}
++
++inline void cpu_relax() {
++#if defined(__x86_64__) || defined(__i386__)
++	_mm_pause();
++#endif
++}
++
++inline void write_line_locked(State& s, const char* line) {
++	if (s.file == nullptr) return;
++	std::fputs(line, s.file);
++	std::fflush(s.file);
++}
++
++inline void writer_thread() {
++#if defined(__linux__)
++	pthread_setname_np(pthread_self(), "bc5-loadstat");
++#endif
++	State& s = state();
++	char   buf[8192];
++	for (;;) {
++		std::this_thread::sleep_for(std::chrono::seconds(1));
++		int o = std::snprintf(buf, sizeof(buf), "s mono_ns=%llu jt_us=%llu apr_out=%d", static_cast<unsigned long long>(now_ns()),
++		                      static_cast<unsigned long long>(s.journal_t_us.load(std::memory_order_relaxed)), s.apr_outstanding.load(std::memory_order_relaxed));
++		for (unsigned c = 0; c < kCount && o > 0 && static_cast<size_t>(o) < sizeof(buf) - 160; c++) {
++			Slot&          x  = s.slot[c];
++			const uint64_t mx = x.max_ns.exchange(0, std::memory_order_relaxed);
++			o += std::snprintf(buf + o, sizeof(buf) - static_cast<size_t>(o), " %s=%llu,%llu,%llu,%llu", kNames[c], static_cast<unsigned long long>(x.n.load(std::memory_order_relaxed)),
++			                   static_cast<unsigned long long>(x.ns.load(std::memory_order_relaxed)), static_cast<unsigned long long>(mx),
++			                   static_cast<unsigned long long>(x.items.load(std::memory_order_relaxed)));
++		}
++		if (o > 0 && static_cast<size_t>(o) < sizeof(buf) - 2) {
++			buf[o]     = '\n';
++			buf[o + 1] = 0;
++		}
++		std::lock_guard lk(s.file_mutex);
++		write_line_locked(s, buf);
++	}
++}
++
++inline bool init_on() {
++	const char* p = std::getenv("KYTY_BC5_LOAD_STAT");
++	if (!env_set(p)) return false;
++	State& s = state();
++	s.file   = std::fopen(p, "a");
++	if (s.file == nullptr) return false;
++	{
++		char line[512];
++		std::snprintf(line, sizeof(line), "# exp 0415 load stat (tag ls415): s lines are cumulative name=n,ns,max_ns_of_the_second,items; mono_ns %llu\n",
++		              static_cast<unsigned long long>(now_ns()));
++		std::lock_guard lk(s.file_mutex);
++		write_line_locked(s, line);
++	}
++	std::thread(writer_thread).detach();
++	return true;
++}
++
++inline bool on() {
++	static const bool v = init_on();
++	return v;
++}
++
++// The busy delay of KYTY_BC5_LOAD_DELAY=<cause>:<us> for cause c, 0 when none. At most 100,000 us.
++inline uint64_t delay_ns_of(unsigned c) {
++	static const struct D {
++		unsigned c  = kCount;
++		uint64_t ns = 0;
++		D() {
++			const char* e = std::getenv("KYTY_BC5_LOAD_DELAY");
++			if (!env_set(e)) return;
++			const char* colon = std::strchr(e, ':');
++			if (colon == nullptr) return;
++			char*                    end = nullptr;
++			const unsigned long long us  = std::strtoull(colon + 1, &end, 10);
++			if (end == colon + 1 || *end != 0 || us == 0 || us > 100'000ull) return;
++			const size_t len = static_cast<size_t>(colon - e);
++			for (unsigned k = 0; k < kCount; k++) {
++				if (std::strlen(kNames[k]) == len && std::strncmp(kNames[k], e, len) == 0) {
++					c  = k;
++					ns = us * 1000ull;
++				}
++			}
++		}
++	} d;
++	return d.c == c ? d.ns : 0;
++}
++
++inline void delay(unsigned c) {
++	const uint64_t ns = delay_ns_of(c);
++	if (ns == 0) return;
++	const uint64_t t0 = now_ns();
++	while (now_ns() - t0 < ns) cpu_relax();
++}
++
++inline void add(unsigned c, uint64_t ns, uint64_t items = 0, uint64_t n = 1) {
++	Slot& x = state().slot[c];
++	x.n.fetch_add(n, std::memory_order_relaxed);
++	if (ns != 0) {
++		x.ns.fetch_add(ns, std::memory_order_relaxed);
++		uint64_t m = x.max_ns.load(std::memory_order_relaxed);
++		while (ns > m && !x.max_ns.compare_exchange_weak(m, ns, std::memory_order_relaxed)) {}
++	}
++	if (items != 0) x.items.fetch_add(items, std::memory_order_relaxed);
++}
++
++// Start of a timed stretch: 0 when the counters are off (then end() does nothing).
++inline uint64_t begin() {
++	return on() ? now_ns() : 0;
++}
++
++inline void end(unsigned c, uint64_t t0, uint64_t items = 0) {
++	if (t0 != 0) add(c, now_ns() - t0, items);
++}
++
++struct Scope {
++	unsigned c;
++	uint64_t t0;
++	uint64_t items = 0;
++	explicit Scope(unsigned cause): c(cause), t0(begin()) {}
++	~Scope() { end(c, t0, items); }
++	Scope(const Scope&)            = delete;
++	Scope& operator=(const Scope&) = delete;
++};
++
++inline void count(unsigned c, uint64_t items = 0) {
++	if (on()) add(c, 0, items);
++}
++
++inline void flip(double journal_t_s) {
++	if (!on()) return;
++	state().journal_t_us.store(journal_t_s > 0 ? static_cast<uint64_t>(journal_t_s * 1e6) : 0, std::memory_order_relaxed);
++	add(kFlip, 0);
++}
++
++// One line for a single event ("mark <mono_ns> <jt_us> <text>").
++inline void mark(const char* text) {
++	if (!on()) return;
++	State& s = state();
++	char   line[320];
++	std::snprintf(line, sizeof(line), "mark mono_ns=%llu jt_us=%llu %.200s\n", static_cast<unsigned long long>(now_ns()),
++	              static_cast<unsigned long long>(s.journal_t_us.load(std::memory_order_relaxed)), text);
++	std::lock_guard lk(s.file_mutex);
++	write_line_locked(s, line);
++}
++
++// Command buffers outstanding: the wall-clock time with at least one is kAprBusy.
++inline void apr_enter() {
++	if (!on()) return;
++	State& s = state();
++	if (s.apr_outstanding.fetch_add(1, std::memory_order_acq_rel) == 0) s.apr_busy_since.store(now_ns(), std::memory_order_release);
++}
++
++inline void apr_leave() {
++	if (!on()) return;
++	State& s = state();
++	if (s.apr_outstanding.fetch_sub(1, std::memory_order_acq_rel) == 1) {
++		const uint64_t t0 = s.apr_busy_since.load(std::memory_order_acquire);
++		const uint64_t t1 = now_ns();
++		if (t0 != 0 && t1 > t0) add(kAprBusy, t1 - t0);
++	}
++}
++
++// A lock that counts the wait of a contended acquisition (and nothing else). Off: a plain lock().
++template <class M>
++inline void lock_counted(M& m, unsigned wait_cause) {
++	if (!on()) {
++		m.lock();
++		return;
++	}
++	if (m.try_lock()) return;
++	const uint64_t t0 = now_ns();
++	m.lock();
++	add(wait_cause, now_ns() - t0);
++}
++
++template <class M>
++struct CountedLock {
++	M& m;
++	CountedLock(M& mu, unsigned wait_cause): m(mu) { lock_counted(m, wait_cause); }
++	~CountedLock() { m.unlock(); }
++	CountedLock(const CountedLock&)            = delete;
++	CountedLock& operator=(const CountedLock&) = delete;
++};
++
++inline uint64_t ring_poll_us() {
++	static const uint64_t v = [] {
++		const uint64_t x = env_num("KYTY_BC5_RING_POLL_US", 200, 20'000);
++		return x == 0 ? uint64_t {200} : x;
++	}();
++	return v;
++}
++
++inline uint64_t ring_spin_ns() {
++	static const uint64_t v = env_num("KYTY_BC5_RING_SPIN_US", 0, 5'000) * 1000ull;
++	return v;
++}
++
++inline uint64_t mutex_spin_ns() {
++	static const uint64_t v = env_num("KYTY_BC5_MUTEX_SPIN_US", 0, 1'000) * 1000ull;
++	return v;
++}
++
++// At process start, before any thread exists: the timer slack every later thread inherits.
++inline void apply_timer_slack() {
++#if defined(__linux__)
++	const uint64_t ns = env_num("KYTY_BC5_TIMERSLACK_NS", 0, 50'000);
++	if (ns != 0) prctl(PR_SET_TIMERSLACK, static_cast<unsigned long>(ns), 0, 0, 0);
++#endif
++}
++
++} // namespace bc5::load_stat
+diff --git a/src/kernel/fileSystem.cpp b/src/kernel/fileSystem.cpp
+index 93e2d1a..8916d6f 100644
+--- a/src/kernel/fileSystem.cpp
++++ b/src/kernel/fileSystem.cpp
+@@ -1,3 +1,4 @@
++#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
+ #include <cstdlib>
+ #include "kernel/fileSystem.h"
+ 
+@@ -689,6 +690,7 @@ std::filesystem::path GetRealFilename(const std::string& mounted_file_name) {
+ 
+ // NOLINTNEXTLINE(readability-function-cognitive-complexity)
+ int KYTY_SYSV_ABI KernelOpen(const char* path, int flags, uint16_t mode) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kFileOpen); // experiment 0415 (ls415)
+ 	PRINT_NAME();
+ 
+ 	if (path == nullptr) {
+@@ -896,6 +898,8 @@ int KYTY_SYSV_ABI KernelClose(int d) {
+ }
+ 
+ int64_t KYTY_SYSV_ABI KernelRead(int d, void* buf, size_t nbytes) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kFileRead); // experiment 0415 (ls415)
++	ls_scope.items = nbytes; // asked, not returned
+ 	PRINT_NAME();
+ 
+ 	if (d < DESCRIPTOR_MIN) {
+@@ -1036,6 +1040,8 @@ int64_t KYTY_SYSV_ABI KernelWrite(int d, const void* buf, size_t nbytes) {
+ }
+ 
+ int64_t KYTY_SYSV_ABI KernelPread(int d, void* buf, size_t nbytes, int64_t offset) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kFileRead); // experiment 0415 (ls415)
++	ls_scope.items = nbytes; // asked, not returned
+ 	PRINT_NAME();
+ 
+ 	if (d < DESCRIPTOR_MIN) {
+@@ -1227,6 +1233,7 @@ int64_t KYTY_SYSV_ABI KernelLseek(int d, int64_t offset, int whence) {
+ }
+ 
+ int KYTY_SYSV_ABI KernelStat(const char* path, FileStat* sb) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kFileStat); // experiment 0415 (ls415)
+ 	PRINT_NAME();
+ 
+ 	if (path == nullptr || sb == nullptr) {
+@@ -1282,6 +1289,7 @@ int KYTY_SYSV_ABI KernelStat(const char* path, FileStat* sb) {
+ }
+ 
+ int KYTY_SYSV_ABI KernelFstat(int d, FileStat* sb) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kFileStat); // experiment 0415 (ls415)
+ 	PRINT_NAME();
+ 
+ 	if (d < DESCRIPTOR_MIN) {
+diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
+index a8d0ca6..4d7a947 100644
+--- a/src/kernel/memory.cpp
++++ b/src/kernel/memory.cpp
+@@ -54,6 +54,7 @@
+ #include <sys/mman.h>
+ #include <sys/syscall.h>
+ #include <unistd.h>
++#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
+ #endif
+ 
+ namespace Libs::LibKernel::Memory {
+@@ -1514,7 +1515,7 @@ void RegisterCallbacks(callback_func_t alloc_func, callback_func_t free_func) {
+ 	EXIT_IF(g_alloc_callback != nullptr || g_free_callback != nullptr);
+ 	EXIT_IF(alloc_func == nullptr || free_func == nullptr);
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	g_alloc_callback = alloc_func;
+ 	g_free_callback  = free_func;
+@@ -2747,7 +2748,7 @@ int32_t KYTY_SYSV_ABI KernelMapNamedFlexibleMemory(void** addr_in_out, size_t le
+                                                    int flags, const char* name) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	// Experiment 0405 series e5, BC5_R3_NULL_ARGS (M21): a NULL addr_in_out is the guest's error, not the host's exit.
+ 	// EINVAL, as sharpemu 514d766 src/SharpEmu.Libs/Kernel/KernelMemoryCompatExports.cs:3352-3360 (MapFlexibleMemoryCore:
+@@ -2919,7 +2920,7 @@ int KYTY_SYSV_ABI KernelMapFlexibleMemory(void** addr_in_out, size_t len, int pr
+ int KYTY_SYSV_ABI KernelSetPrtAperture(int index, void* addr, size_t len) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	const auto address = reinterpret_cast<uint64_t>(addr);
+ 
+@@ -2997,7 +2998,7 @@ int KYTY_SYSV_ABI KernelGetPrtAperture(int index, void** addr, size_t* len) {
+ int KYTY_SYSV_ABI KernelSetVirtualRangeName(const void* addr, uint64_t len, const char* name) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	auto vaddr = reinterpret_cast<uint64_t>(addr);
+ 
+@@ -3149,7 +3150,7 @@ static int Bc5MunmapHoles(uint64_t vaddr, size_t len) {
+ int KYTY_SYSV_ABI KernelMunmap(uint64_t vaddr, size_t len) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	LOGF("\t start = 0x%016" PRIx64 "\n"
+ 	     "\t len   = 0x%016" PRIx64 "\n",
+@@ -3180,7 +3181,7 @@ int KYTY_SYSV_ABI KernelAvailableDirectMemorySize(int64_t search_start, int64_t
+                                                   size_t* size_out) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	LOGF("\t search_start = 0x%016" PRIx64 "\n"
+ 	     "\t search_end   = 0x%016" PRIx64 "\n"
+@@ -3228,7 +3229,7 @@ int KYTY_SYSV_ABI KernelGetPageTableStats(int* cpu_total, int* cpu_available, in
+                                           int* gpu_available) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	if (cpu_total == nullptr || cpu_available == nullptr || gpu_total == nullptr ||
+ 	    gpu_available == nullptr) {
+@@ -3261,7 +3262,7 @@ int KYTY_SYSV_ABI KernelGetPageTableStats(int* cpu_total, int* cpu_available, in
+ int KYTY_SYSV_ABI KernelDirectMemoryQuery(int64_t offset, int flags, void* info, size_t info_size) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	LOGF("\t offset    = 0x%016" PRIx64 "\n"
+ 	     "\t flags     = 0x%08" PRIx32 "\n"
+@@ -3347,7 +3348,7 @@ int KYTY_SYSV_ABI KernelAllocateDirectMemory(int64_t search_start, int64_t searc
+                                              int64_t* phys_addr_out) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	LOGF("\t search_start = 0x%016" PRIx64 "\n"
+ 	     "\t search_end   = 0x%016" PRIx64 "\n"
+@@ -3380,7 +3381,7 @@ int KYTY_SYSV_ABI KernelAllocateMainDirectMemory(size_t len, size_t alignment, i
+                                                  int64_t* phys_addr_out) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	LOGF("\t len          = 0x%016" PRIx64 "\n"
+ 	     "\t alignment    = 0x%016" PRIx64 "\n"
+@@ -3392,7 +3393,7 @@ int KYTY_SYSV_ABI KernelAllocateMainDirectMemory(size_t len, size_t alignment, i
+ }
+ 
+ static int ReleaseDirectMemoryInternal(int64_t start, size_t len) {
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	if (g_pooled_memory->ReleaseExpansion(static_cast<uint64_t>(start), len)) {
+ 		if (!g_physical_memory->ReleasePoolExpansion(static_cast<uint64_t>(start), len)) {
+@@ -3499,7 +3500,7 @@ static int ValidateDirectReleaseRange(int64_t start, size_t len) {
+ // range releases nothing (only an exact release frees an expansion, as today); a range with no hole is left to
+ // today's result.
+ static void Bc5ReleaseDirectMemoryHoles(int64_t start, size_t len) {
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	const auto first = static_cast<uint64_t>(start);
+ 	if (len == 0 || UINT64_MAX - first < len) {
+@@ -3584,7 +3585,7 @@ int KYTY_SYSV_ABI KernelMapDirectMemory(void** addr, size_t len, int prot, int f
+                                         int64_t direct_memory_start, size_t alignment) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	if (addr == nullptr) {
+ 		return KERNEL_ERROR_EFAULT;
+@@ -3766,7 +3767,7 @@ int KYTY_SYSV_ABI KernelMapDirectMemory2(void** addr, size_t len, int type, int
+                                          int64_t direct_memory_start, size_t alignment) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	LOGF("\t type = %d\n", type);
+ 
+@@ -3785,7 +3786,7 @@ int KYTY_SYSV_ABI KernelMapNamedDirectMemory(void** addr, size_t len, int prot,
+                                              const char* name) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	LOGF("\t name = %s\n", name != nullptr ? name : "(null)");
+ 
+@@ -3815,7 +3816,7 @@ int KYTY_SYSV_ABI KernelIsAddressSanitizerEnabled() {
+ int KYTY_SYSV_ABI KernelQueryMemoryProtection(void* addr, void** start, void** end, int* prot) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	// Experiment 0405 series e5, BC5_R3_NULL_ARGS (M21): NULL is an unmapped address: EACCES, as for any unmapped address
+ 	// below (shadPS4 60c42b9 src/core/memory.cpp:1024-1030, an address below the mappable base gives EACCES;
+@@ -4058,7 +4059,7 @@ static bool ReplaceFixedRangeWithReserved(uint64_t start, uint64_t size) {
+ int KYTY_SYSV_ABI KernelReserveVirtualRange(void** addr, size_t len, int flags, size_t alignment) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	const auto in_addr = (addr != nullptr ? reinterpret_cast<uint64_t>(*addr) : 0);
+ 
+@@ -4159,7 +4160,7 @@ bool TestGuestFreeRangeBounds() {
+ #endif
+ 
+ bool KernelHandleReservedRangeAccessViolation(uint64_t vaddr) {
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	VirtualRanges::Range range {};
+ 	if (!g_virtual_ranges->Query(vaddr, 0, &range) ||
+@@ -4177,7 +4178,7 @@ int KYTY_SYSV_ABI KernelVirtualQuery(const void* addr, int flags, VirtualQueryIn
+                                      uint64_t info_size) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	auto vaddr = reinterpret_cast<uint64_t>(addr);
+ 
+@@ -4241,7 +4242,7 @@ int KYTY_SYSV_ABI KernelVirtualQuery(const void* addr, int flags, VirtualQueryIn
+ int KYTY_SYSV_ABI KernelMlock(void* addr, size_t len) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	const auto vaddr = reinterpret_cast<uint64_t>(addr);
+ 
+@@ -4284,7 +4285,7 @@ int KYTY_SYSV_ABI KernelMlock(void* addr, size_t len) {
+ int KYTY_SYSV_ABI KernelIsStack(void* addr, void** start, void** end) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	auto vaddr = reinterpret_cast<uint64_t>(addr);
+ 
+@@ -4320,7 +4321,7 @@ int KYTY_SYSV_ABI KernelIsStack(void* addr, void** start, void** end) {
+ int KYTY_SYSV_ABI KernelAvailableFlexibleMemorySize(size_t* size) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	if (size == nullptr) {
+ 		return KERNEL_ERROR_EINVAL;
+@@ -4371,7 +4372,7 @@ static std::vector<VirtualRanges::Range> RequireGuestRuntimeMemory(uint64_t vadd
+ static uint64_t AllocateGuestRuntimeMemory(uint64_t search_addr, uint64_t size,
+                                            VirtualMemory::Mode mode, const char* name,
+                                            VirtualRangeType type, bool fixed) {
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	constexpr uint64_t GuestPageSize = 0x4000;
+ 	if (size == 0 || size > UINT64_MAX - (GuestPageSize - 1u) || name == nullptr ||
+@@ -4402,7 +4403,7 @@ uint64_t AllocateProgramMemory(uint64_t search_addr, uint64_t size, VirtualMemor
+ }
+ 
+ void SetProgramMemoryProtection(uint64_t vaddr, uint64_t size, VirtualMemory::Mode mode) {
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	const auto ranges = RequireGuestRuntimeMemory(vaddr, size);
+ 	if (std::any_of(ranges.begin(), ranges.end(),
+@@ -4436,7 +4437,7 @@ uint64_t AllocateGuestStackMemory(uint64_t search_addr, uint64_t size, VirtualMe
+ 
+ bool ProtectGuestMemory(uint64_t vaddr, uint64_t size, VirtualMemory::Mode mode,
+                         VirtualMemory::Mode* old_mode) {
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 	constexpr uint64_t                    GuestPageSize = 0x4000;
+ 	if (vaddr == 0 || size == 0 || size > UINT64_MAX - (vaddr & (GuestPageSize - 1u))) {
+ 		return false;
+@@ -4462,7 +4463,7 @@ bool ProtectGuestHostMemory(uint64_t vaddr, uint64_t size, VirtualMemory::Mode m
+ }
+ 
+ bool FreeGuestMemory(uint64_t vaddr, uint64_t size) {
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	constexpr uint64_t GuestPageSize = 0x4000;
+ 	if (vaddr == 0 || size == 0 || size > UINT64_MAX - (GuestPageSize - 1u)) {
+@@ -4655,7 +4656,7 @@ int KYTY_SYSV_ABI Bc5JitAreaMap(int handle, int prot, void** where) {
+ 		return result;
+ 	}
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	const auto mode  = static_cast<VirtualMemory::Mode>(prot);
+ 	const auto hint  = reinterpret_cast<uint64_t>(*where) & ~(BC5_JIT_PAGE - 1u);
+@@ -4710,7 +4711,7 @@ bool Bc5JitHandleClose(int handle) {
+ // today's treatment (host view, direct or flexible block, range table); a Reserved piece gets the range table only.
+ // A host protect failure still EXITs, as today; an overflowing range returns EINVAL instead of EXIT.
+ static int Bc5MprotectGaps(uint64_t vaddr, size_t len, int prot, bool require_mapped_start) {
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	constexpr uint64_t PAGE_SIZE    = 0x4000;
+ 	const uint64_t     aligned_addr = vaddr & ~(PAGE_SIZE - 1);
+@@ -4789,7 +4790,7 @@ static int Bc5MprotectGaps(uint64_t vaddr, size_t len, int prot, bool require_ma
+ int KYTY_SYSV_ABI KernelMprotect(const void* addr, size_t len, int prot) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	auto vaddr = reinterpret_cast<uint64_t>(addr);
+ 
+@@ -4855,7 +4856,7 @@ int KYTY_SYSV_ABI KernelMprotect(const void* addr, size_t len, int prot) {
+ int KYTY_SYSV_ABI KernelMtypeprotect(const void* addr, size_t len, int type, int prot) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	LOGF("\t addr = 0x%016" PRIx64 "\n"
+ 	     "\t len  = 0x%016" PRIx64 "\n"
+@@ -4871,7 +4872,7 @@ int KYTY_SYSV_ABI KernelBatchMap2(KernelBatchMapEntry* entries, int num_entries,
+                                   int* num_entries_out, int flags) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	LOGF("\t entries         = %p\n"
+ 	     "\t num_entries     = %d\n"
+@@ -4982,7 +4983,7 @@ int KYTY_SYSV_ABI KernelMemoryPoolExpand(int64_t search_start, int64_t search_en
+                                          size_t alignment, int64_t* phys_addr_out) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	constexpr uint64_t POOL_PAGE_SIZE = 0x10000;
+ 	if (search_start < 0 || search_end <= search_start || len == 0 ||
+@@ -5020,7 +5021,7 @@ int KYTY_SYSV_ABI KernelMemoryPoolReserve(void* addr_in, size_t len, size_t alig
+                                           void** addr_out) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	LOGF("\t addr_in   = 0x%016" PRIx64 "\n"
+ 	     "\t len       = 0x%016" PRIx64 "\n"
+@@ -5070,7 +5071,7 @@ int KYTY_SYSV_ABI KernelMemoryPoolReserve(void* addr_in, size_t len, size_t alig
+ int KYTY_SYSV_ABI KernelMemoryPoolCommit(void* addr, size_t len, int type, int prot, int flags) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	LOGF("\t addr  = 0x%016" PRIx64 "\n"
+ 	     "\t len   = 0x%016" PRIx64 "\n"
+@@ -5206,7 +5207,7 @@ static int DecommitMemoryPoolRange(uint64_t vaddr, size_t len) {
+ int KYTY_SYSV_ABI KernelMemoryPoolDecommit(void* addr, size_t len, int flags) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	LOGF("\t addr  = 0x%016" PRIx64 "\n"
+ 	     "\t len   = 0x%016" PRIx64 "\n"
+@@ -5248,7 +5249,7 @@ int KYTY_SYSV_ABI KernelMemoryPoolBatch(const KernelMemoryPoolBatchEntry* entrie
+                                         int* num_entries_out, int flags) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	if (entries == nullptr || num_entries < 0) {
+ 		return KERNEL_ERROR_EINVAL;
+@@ -5304,7 +5305,7 @@ int KYTY_SYSV_ABI KernelMemoryPoolGetBlockStats(KernelMemoryPoolBlockStats* outp
+                                                 size_t                      output_size) {
+ 	PRINT_NAME();
+ 
+-	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+ 
+ 	if (output == nullptr && output_size != 0) {
+ 		return KERNEL_ERROR_EFAULT;
+diff --git a/src/kernel/memoryAddressSpace.inc b/src/kernel/memoryAddressSpace.inc
+index 0b9ea30..64784a7 100644
+--- a/src/kernel/memoryAddressSpace.inc
++++ b/src/kernel/memoryAddressSpace.inc
+@@ -901,6 +901,7 @@ public:
+ 				// (nothing is punched out on release, so an imported BO never goes stale):
+ 				// what holds data is zeroed before the range is handed out again.
+ 				const uint64_t end = vaddr + size;
++				bc5::load_stat::Scope ls_scope(bc5::load_stat::kCommitZero); // experiment 0415 (ls415): items = bytes zeroed
+ 				for (uint64_t pos = vaddr; pos < end;) {
+ 					const off_t data = lseek(pfd, static_cast<off_t>(pos), SEEK_DATA);
+ 					if (data < 0 || static_cast<uint64_t>(data) >= end) {
+@@ -912,6 +913,7 @@ public:
+ 						break;
+ 					}
+ 					std::memset(reinterpret_cast<void*>(static_cast<uint64_t>(data)), 0, stop - static_cast<uint64_t>(data));
++					ls_scope.items += stop - static_cast<uint64_t>(data);
+ 					pos = stop;
+ 				}
+ 				EXIT_IF(!AddMappedUnlocked(vaddr, size, MappingType::Private));
+diff --git a/src/kernel/pthread.cpp b/src/kernel/pthread.cpp
+index be70ac2..6cdba11 100644
+--- a/src/kernel/pthread.cpp
++++ b/src/kernel/pthread.cpp
+@@ -60,6 +60,7 @@
+ 
+ #if KYTY_PLATFORM != KYTY_PLATFORM_WINDOWS && (defined(_M_X64) || defined(__x86_64__))
+ #include <x86intrin.h>
++#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
+ #endif
+ 
+ #ifdef pthread_attr_getguardsize
+@@ -1502,6 +1503,29 @@ static int NativeMutexLock(PthreadMutexPrivate* mutex, KernelUseconds* timeout_u
+ 		return EDEADLK;
+ 	}
+ 
++	// Experiment 0415 (ls415): the count of locks and of contended ones with their wait; and, with
++	// KYTY_BC5_MUTEX_SPIN_US, a held mutex is tried again for that long before the thread sleeps on the condition
++	// variable (the console's adaptive mutexes spin; here every contention was a sleep and a wake). mutex->m is
++	// released between tries; the owner field is read and written under it as before. Not for a try (timeout 0).
++	bc5::load_stat::count(bc5::load_stat::kMutexLock);
++	const bool     ls_contended = mutex->owner != nullptr;
++	const uint64_t ls_t0        = ls_contended ? bc5::load_stat::begin() : 0;
++	if (ls_contended && (timeout_us == nullptr || *timeout_us != 0)) {
++		if (const uint64_t spin = bc5::load_stat::mutex_spin_ns(); spin != 0) {
++			const uint64_t t0 = bc5::load_stat::now_ns();
++			for (;;) {
++				lock.unlock();
++				for (int k = 0; k < 32; k++) bc5::load_stat::cpu_relax();
++				lock.lock();
++				if (mutex->owner == nullptr) {
++					bc5::load_stat::count(bc5::load_stat::kMutexSpinWon);
++					break;
++				}
++				if (bc5::load_stat::now_ns() - t0 >= spin) break;
++			}
++		}
++	}
++
+ 	if (timeout_us == nullptr) {
+ 		while (mutex->owner != nullptr) {
+ 			mutex->cv.wait_for(lock, std::chrono::microseconds(SIGNAL_APC_POLL_MICROS));
+@@ -1538,6 +1562,10 @@ static int NativeMutexLock(PthreadMutexPrivate* mutex, KernelUseconds* timeout_u
+ 		}
+ 	}
+ 
++	if (ls_contended) { // experiment 0415 (ls415)
++		bc5::load_stat::end(bc5::load_stat::kMutexContended, ls_t0);
++		bc5::load_stat::delay(bc5::load_stat::kMutexContended);
++	}
+ 	mutex->owner = self;
+ 	mutex->count = 1;
+ 	return OK;
+@@ -3114,6 +3142,7 @@ int KYTY_SYSV_ABI PthreadCondattrSetclock(PthreadCondattr* attr, KernelClockid c
+ }
+ 
+ int KYTY_SYSV_ABI PthreadCondBroadcast(PthreadCond* cond) {
++	bc5::load_stat::count(bc5::load_stat::kCondSignal); // experiment 0415 (ls415)
+ 	// PRINT_NAME();
+ 
+ 	auto* pthread_static_objects = g_pthread_context->GetPthreadStaticObjects();
+@@ -3227,6 +3256,7 @@ int KYTY_SYSV_ABI PthreadCondInit(PthreadCond* cond, const PthreadCondattr* attr
+ }
+ 
+ int KYTY_SYSV_ABI PthreadCondSignal(PthreadCond* cond) {
++	bc5::load_stat::count(bc5::load_stat::kCondSignal); // experiment 0415 (ls415)
+ 	// PRINT_NAME();
+ 
+ 	auto* pthread_static_objects = g_pthread_context->GetPthreadStaticObjects();
+@@ -3478,6 +3508,7 @@ while (!ready()) {
+ }
+ 
+ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kCondWait); // experiment 0415 (ls415)
+ 	PRINT_NAME();
+ 
+ 	auto* pthread_static_objects = g_pthread_context->GetPthreadStaticObjects();
+diff --git a/src/kernel/semaphore.cpp b/src/kernel/semaphore.cpp
+index 8696edb..b000c11 100644
+--- a/src/kernel/semaphore.cpp
++++ b/src/kernel/semaphore.cpp
+@@ -17,6 +17,7 @@
+ #include <limits>
+ #include <unordered_map>
+ #include <vector>
++#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
+ 
+ namespace Libs::LibKernel {
+ void KernelDispatchPendingSignalForCurrentThread();
+@@ -213,6 +214,7 @@ KernelSemaPrivate::Result KernelSemaPrivate::Signal(int signal_count) {
+ 	}
+ 
+ 	m_count += signal_count;
++	bc5::load_stat::count(bc5::load_stat::kSemaSignal, m_waiting_threads.size()); // experiment 0415 (ls415): items = waiters present, all woken below
+ 
+ 	WakeWaiters();
+ 
+@@ -252,6 +254,7 @@ void KernelSemaPrivate::WakeWaiters() {
+ }
+ 
+ KernelSemaPrivate::Result KernelSemaPrivate::Wait(int need_count, uint32_t* ptr_micros) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kSemaWait); // experiment 0415 (ls415)
+ 	Common::LockGuard lock(m_mutex);
+ 
+ 	if (need_count < 1 || need_count > m_max_count) {
+diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
+index 66e6351..d481a10 100644
+--- a/src/libs/bc5LleAgc.cpp
++++ b/src/libs/bc5LleAgc.cpp
+@@ -34,6 +34,7 @@
+ #if defined(KYTY_BC5_DIRECT)
+ #include "bc5/direct.hpp"
+ #include "bc5/full_state.hpp"
++#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
+ #include <sys/resource.h> // experiment 0379 (exp 0401 e7, mkzsk0401.py): setpriority, for the zero scan and the canary
+ #include <sys/syscall.h>  // experiment 0379: SYS_gettid
+ // ---- experiment 0379's backend/include/bc5/zero_skip.hpp (782ca0e9) lines 13-228, inlined by exp 0401's mkzsk0401.py ----
+@@ -1722,7 +1723,25 @@ static void queue_consumer_thread() {
+ 		} else {
+ 			idle_ticks++;
+ 		}
+-		std::this_thread::sleep_for(std::chrono::microseconds(idle_ticks > 1000 ? 1000 : 200));
++		// Experiment 0415 (ls415): the poll's period is KYTY_BC5_RING_POLL_US (200, the long-idle sleep 5 times it: today's
++		// 200 and 1000); with KYTY_BC5_RING_SPIN_US the doorbells are read again without a sleep for that long after a pass
++		// that served packets. The counters say how many passes found work right after a sleep.
++		static bool     ls_slept      = false;
++		static uint64_t ls_spin_until = 0;
++		if (progressed) {
++			bc5::load_stat::count(bc5::load_stat::kRingPass);
++			if (ls_slept) bc5::load_stat::count(bc5::load_stat::kRingAfterSleep);
++			bc5::load_stat::delay(bc5::load_stat::kRingPass);
++			if (bc5::load_stat::ring_spin_ns() != 0) ls_spin_until = bc5::load_stat::now_ns() + bc5::load_stat::ring_spin_ns();
++		}
++		if (ls_spin_until != 0 && bc5::load_stat::now_ns() < ls_spin_until) {
++			ls_slept = false;
++			for (int k = 0; k < 16; k++) bc5::load_stat::cpu_relax();
++			continue;
++		}
++		ls_spin_until = 0;
++		ls_slept      = true;
++		std::this_thread::sleep_for(std::chrono::microseconds(idle_ticks > 1000 ? bc5::load_stat::ring_poll_us() * 5 : bc5::load_stat::ring_poll_us()));
+ 	}
+ }
+ 
+@@ -2031,6 +2050,12 @@ static std::mutex                           g_dev_mutex;
+ // frame's buffers), and a compute tail served late met its slot label cleared by the main buffer
+ // two frames on (the water in the second level: 4 s a frame).
+ static const bool g_async = g_journal_min;
++// Experiment 0415 (ls415): an import with its count, bytes and time.
++static uint32_t ls415_import(int fd, uint64_t off, uint64_t size) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kImport);
++	ls_scope.items = size;
++	return g_dev->import_memfd(fd, off, size);
++}
+ static std::shared_mutex g_finish_mutex; // shared: waiting for a job on g_dev; exclusive: replacing g_dev
+ // With jobs in flight a mapping must not go away or change under a job that may be using it
+ // (the kernel clears the page-table entries at once, whatever is still running): waits until
+@@ -2850,7 +2875,7 @@ static LzrPass lzr_pass(DState& S, const std::vector<DView>& views, uint64_t sig
+ 			}
+ 		}
+ 		for (const auto& r: Lzr0401::runs(need, kDMaxBo)) {
+-			const uint32_t id = r.hi <= S.file_size ? g_dev->import_memfd(fd, r.lo, r.hi - r.lo) : 0;
++			const uint32_t id = r.hi <= S.file_size ? ls415_import(fd, r.lo, r.hi - r.lo) : 0;
+ 			if (id == 0) {
+ 				retry = true;
+ 				if (g_lzr.import_failed++ < 16) journal("lazy release (exp 0401 e7): import 0x%" PRIx64 " +0x%" PRIx64 " of released chunks under a view again FAILED (tried again at the next sync)\n", r.lo, r.hi - r.lo);
+@@ -2906,7 +2931,7 @@ static LzrPass lzr_pass(DState& S, const std::vector<DView>& views, uint64_t sig
+ 		std::vector<uint32_t> ids;
+ 		bool                  ok = true;
+ 		for (const auto& r: cut.keep) {
+-			const uint32_t id = g_dev->import_memfd(fd, r.lo, r.hi - r.lo);
++			const uint32_t id = ls415_import(fd, r.lo, r.hi - r.lo);
+ 			if (id == 0) {
+ 				ok = false;
+ 				break;
+@@ -3575,7 +3600,7 @@ static void direct_sync_one(DState& S, bool force) {
+ 		size_t j = i + 1;
+ 		while (j < need.size() && need[j] == need[j - 1] + kDChunk && need[j] + kDChunk - need[i] <= kDMaxBo && S.failed.count(need[j]) == 0 && need[j] + kDChunk <= S.file_size) j++;
+ 		const uint64_t off = need[i], size = need[j - 1] + kDChunk - need[i];
+-		const uint32_t id = g_dev->import_memfd(fd, off, size);
++		const uint32_t id = ls415_import(fd, off, size);
+ 		if (id == 0) {
+ 			journal("%s import 0x%" PRIx64 " +0x%" PRIx64 " FAILED\n", S.label, off, size);
+ 			for (size_t k = i; k < j; k++) S.failed.insert(need[k]);
+@@ -3640,7 +3665,7 @@ static void direct_sync_one(DState& S, bool force) {
+ 				remaps += run_maps;
+ 			}
+ 			const uint64_t off = S.bos[i].off;
+-			const uint32_t id  = g_dev->import_memfd(fd, off, total);
++			const uint32_t id  = ls415_import(fd, off, total);
+ 			if (id == 0) {
+ 				journal("%s merge 0x%" PRIx64 " +0x%" PRIx64 " FAILED\n", S.label, off, total);
+ 				S.merge_failed.insert(off);
+@@ -3767,6 +3792,7 @@ static void direct_sync_one(DState& S, bool force) {
+ }
+ 
+ static void direct_sync(bool force) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kDirectSync); // experiment 0415 (ls415)
+ 	for (auto& S: g_d) direct_sync_one(S, force);
+ }
+ 
+@@ -3831,6 +3857,7 @@ static void sync_mappings(bool force = false, bool urgent = false) {
+ 		return;
+ 	}
+ 	g_last_sync_ns = now;
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kAnonSync); // experiment 0415 (ls415)
+ 	constexpr uint64_t kGuestMin = 0x40000ull, kGuestMax = 0xfbffffffffull;
+ 	constexpr uint64_t kPage = 4096, kGrain = 65536;
+ 
+@@ -5079,6 +5106,7 @@ static void guard0412_synced(const DState& S) {
+ #endif // !GUARD0412_TEST
+ 
+ static void learned_apply() {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kLearned); // experiment 0415 (ls415)
+ 	learned_load();
+ 	if (!g_dev) return;
+ 	static uint64_t applied_gen = 0;
+@@ -11696,12 +11724,14 @@ static void drain() {
+ 	chain_flush(5); // ADR 0010
+ 	if (g_chain_mode >= 2) chain_flush_all(5); // section B: the flip may come from another thread than the submitting one
+ 	if (!g_async) return;
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kDrain); // experiment 0415 (ls415)
+ 	while (g_cq_items.load() != 0) std::this_thread::sleep_for(std::chrono::microseconds(50));
+ }
+ 
+ static void wait_jobs() {
+ 	chain_flush(5); // ADR 0010
+ 	if (!g_async || !g_dev) return;
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kWaitJobs); // experiment 0415 (ls415)
+ 	g_dev->wait_idle(2'000'000'000ull);
+ }
+ 
+@@ -11726,6 +11756,7 @@ static const bool g_frame_profile_env = BC5_DIAG_ENV("BC5_DIRECT_FRAME_PROFILE")
+ static inline bool g_frame_profile_on() { return g_frame_profile_env && ::Log::Bc5LoggingOn(); }
+ 
+ static void frame_profile_wait(bool game_thread, bool cap, double ms) {
++	if (bc5::load_stat::on()) bc5::load_stat::add(cap ? bc5::load_stat::kInflightCap : bc5::load_stat::kLabelWait, ms > 0 ? static_cast<uint64_t>(ms * 1e6) : 0); // experiment 0415 (ls415)
+ 	if (!g_frame_profile_on() || !game_thread) return;
+ 	std::lock_guard lock(g_fp_mutex);
+ 	(cap ? g_fp.cap_ms : g_fp.cpuwait_ms) += ms;
+@@ -12138,7 +12169,11 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+ 		while (g_cq_fences.load() >= max_in_flight || g_recovering.load()) std::this_thread::sleep_for(std::chrono::microseconds(50));
+ 		frame_profile_wait(t_cq == 0, true, static_cast<double>(SoftCp::now_ns() - t_cap) / 1e6);
+ 	}
++	bc5::load_stat::delay(bc5::load_stat::kDevLockWait); // experiment 0415 (ls415): a delay outside the lock, measurement only
++	const uint64_t  ls_w0 = bc5::load_stat::begin();
+ 	std::lock_guard lock(g_dev_mutex);
++	bc5::load_stat::end(bc5::load_stat::kDevLockWait, ls_w0);
++	bc5::load_stat::Scope ls_hold(bc5::load_stat::kDevLockHold);
+ 	if (g_dev->wedged()) {
+ 		return;
+ 	}
+@@ -14062,6 +14097,7 @@ static KYTY_SYSV_ABI int SubmitEopFlip(int handle, int index, int flip_mode, int
+ 	const double t_drain = Bc5Gc::Direct::timing_now();
+ 	if (!defer) Bc5Gc::Direct::drain(); // nothing of the frame may still be in flight
+ 	Bc5Gc::Direct::frame_profile_flip((Bc5Gc::Direct::timing_now() - t_drain) * 1e3);
++	bc5::load_stat::flip(Bc5Gc::Direct::timing_now()); // experiment 0415 (ls415)
+ 	if (defer) {
+ 		if (index >= 0 && index < 64) {
+ 			Bc5Gc::g_flip_pending[index]++; // experiment 0069
+diff --git a/src/libs/controller.cpp b/src/libs/controller.cpp
+index 32faef0..51cf56e 100644
+--- a/src/libs/controller.cpp
++++ b/src/libs/controller.cpp
+@@ -1,3 +1,4 @@
++#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
+ #include <pthread.h>
+ #include "libs/controller.h"
+ #include "SDL.h"
+@@ -384,6 +385,7 @@ static void Bc5InputCmd(std::string path) {
+ 			const int n = std::sscanf(line.c_str(), "%31s %31s %d %d %d", a, b, &x, &y, &t);
+ 			const std::string cmd = a, arg = b;
+ 			if (n >= 2 && cmd == "press" && Bc5ButtonByName(arg) != 0) {
++				bc5::load_stat::mark(("key press " + std::string(arg)).c_str()); // experiment 0415 (ls415)
+ 				ControllerButton(-1000, Bc5ButtonByName(arg), true);
+ 				ms(n >= 3 && x > 0 ? x : 150);
+ 				ControllerButton(-1000, Bc5ButtonByName(arg), false);
+diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
+index 69709a8..b671519 100644
+--- a/src/libs/libAmpr.cpp
++++ b/src/libs/libAmpr.cpp
+@@ -32,6 +32,7 @@
+ #include <unordered_map>
+ #include <vector>
+ #include <sys/mman.h> // experiment 0401 series e4: mprotect of the AMM PRT zero pages
++#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
+ 
+ #ifdef min
+ #undef min
+@@ -2020,6 +2021,8 @@ static int Bc5WriteAddressFromCounter0401(void* command_buffer, volatile uint64_
+ extern "C" void bc5_watch_surface(uint64_t va); // bc5LleAgc.cpp, experiment 0104
+ 
+ static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kAmmCmd); // experiment 0415 (ls415)
++	bc5::load_stat::delay(bc5::load_stat::kAmmCmd);
+ 	if (Bc5AmmPagesOn()) { // experiment 0401 series e4: AnyPS5's _ammMap order, then today's map, then the page table
+ 		return Bc5ExecuteAmmMap0401(command);
+ 	}
+@@ -2175,6 +2178,8 @@ struct ParkedAprBuffer {
+ 	int                               ra_state = 0;
+ 	std::vector<std::vector<uint8_t>> ra_data;
+ 	std::vector<int32_t>              ra_rc;
++	uint64_t                          ls_t0    = bc5::load_stat::begin(); // experiment 0415 (ls415): queued at
++	bool                              ls_taken = false;
+ };
+ 
+ static std::recursive_mutex        g_apr_queue_mutex;
+@@ -2484,6 +2489,9 @@ static bool RunOrderedAprCommands(uint64_t command_buffer, const CommandBufferSt
+ // BC5 (experiment 0156): a submission's result, once it has run, for the title's WaitCommandBuffer
+ // and its result buffer.
+ static void FinishAprSubmission(const ParkedAprBuffer& b, int32_t result, uint32_t offset) {
++	bc5::load_stat::delay(bc5::load_stat::kAprBuffer); // experiment 0415 (ls415): measurement only
++	bc5::load_stat::end(bc5::load_stat::kAprBuffer, b.ls_t0);
++	bc5::load_stat::apr_leave();
+ 	if (b.state.bc5_journal) { // BC5 (experiment 0203)
+ 		AprJournal("finish cb 0x%016" PRIx64 " sub %u = 0x%08x at 0x%x", b.command_buffer, b.submission_id,
+ 		           static_cast<unsigned>(result), offset);
+@@ -2594,6 +2602,8 @@ static bool AprWorkerReadsInParallel(const ParkedAprBuffer& b) {
+ // Reads [file_offset, file_offset + size) of the host file into *out, as ReadHostFileToGuest would read it
+ // (nothing past the end of the file; OK with no data at or past the end), without touching guest memory.
+ static int ReadHostFileToHost(const std::string& host_path, uint64_t file_offset, uint64_t size, std::vector<uint8_t>* out) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kAprRead); // experiment 0415 (ls415)
++	ls_scope.items = size;
+ 	out->clear();
+ 	if (size == 0) {
+ 		return OK;
+@@ -2714,6 +2724,10 @@ static void AprWorkerThread(size_t qi) {
+ 			}
+ 		}
+ 		const bool prefetched = front.ra_state == 2;
++		if (!front.ls_taken) { // experiment 0415 (ls415): from the submit to the worker's first look
++			front.ls_taken = true;
++			bc5::load_stat::end(bc5::load_stat::kAprQueueWait, front.ls_t0);
++		}
+ 		lock.unlock();
+ 		const bool done = RunOrderedAprCommands(front.command_buffer, front.state, front.ordered, &front.next, &result, &offset,
+ 		                                        prefetched ? &front.ra_data : nullptr, prefetched ? &front.ra_rc : nullptr);
+@@ -2832,6 +2846,7 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+ 	if (AprAsync() && !amm_only) {
+ 		// Experiment 0156: queued for the priority's worker; the submit returns at once.
+ 		queue.push_back({command_buffer, state, ordered, 0, submission_id, result_ptr});
++		bc5::load_stat::apr_enter(); // experiment 0415 (ls415)
+ 		std::call_once(g_apr_worker_once[qi], [qi] {
+ 			std::thread(AprWorkerThread, qi).detach();
+ 			for (size_t k = 0; k < AprReadahead(); k++) { // BC5 (experiment 0203): KYTY_BC5_APR_READAHEAD
+@@ -2843,6 +2858,7 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+ 	}
+ 	if (!amm_only && !queue.empty()) {
+ 		queue.push_back({command_buffer, state, ordered, 0, submission_id, result_ptr});
++		bc5::load_stat::apr_enter(); // experiment 0415 (ls415)
+ 		if (AmmTrace()) {
+ 			AmmTraceStamp(), std::fprintf(stderr, "amm trace: submission 0x%016" PRIx64 " queued behind a waiting one\n", command_buffer);
+ 		}
+@@ -2852,6 +2868,7 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+ 	size_t next = 0;
+ 	if (!RunOrderedAprCommands(command_buffer, state, ordered, &next, execution_result, error_offset)) {
+ 		queue.push_back({command_buffer, state, ordered, next, submission_id, result_ptr});
++		bc5::load_stat::apr_enter(); // experiment 0415 (ls415)
+ 		StartAprWaitThread();
+ 		if (AmmTrace()) {
+ 			AmmTraceStamp(), std::fprintf(stderr, "amm trace: submission 0x%016" PRIx64 " waits at command %zu of %zu\n", command_buffer, next,
+@@ -2896,6 +2913,8 @@ static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offse
+ 	if (bytes_read == nullptr) {
+ 		return LibKernel::KERNEL_ERROR_EINVAL;
+ 	}
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kAprRead); // experiment 0415 (ls415)
++	ls_scope.items = size;
+ 
+ 	*bytes_read = 0;
+ 	if (size == 0) {
+diff --git a/src/libs/network.cpp b/src/libs/network.cpp
+index 4868939..5391a9a 100644
+--- a/src/libs/network.cpp
++++ b/src/libs/network.cpp
+@@ -1,3 +1,4 @@
++#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
+ #if defined(_WIN32)
+ #ifndef WIN32_LEAN_AND_MEAN
+ #define WIN32_LEAN_AND_MEAN
+@@ -3264,6 +3265,7 @@ static int HttpFetchSyncOpenSsl(const std::string& url, const std::string& metho
+ int HttpFetchSync(const std::string& url, const std::string& method, const std::string& user_agent,
+                   uint64_t content_length, const void* post_data, size_t post_size,
+                   int* out_status, std::string* out_headers, std::vector<uint8_t>* out_body) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kHttpSend); // experiment 0415 (ls415)
+ 	*out_status = 0;
+ 	out_headers->clear();
+ 	out_body->clear();
+diff --git a/src/main.cpp b/src/main.cpp
+index fc1e4bb..610ac29 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -381,10 +381,12 @@ static bool ParseArgs(int argc, char* argv[], RunOptions& options, bool& show_he
+ }
+ 
+ #include "bc5/switch_defaults.hpp"
++#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
+ // BC5 (experiment 0413): the shared builds' switch defaults, set before any static initializer can read a switch
+ // (priority 101, as the lean build's environment cleanup below; the two touch different names).
+ __attribute__((constructor(101))) static void Bc5SwitchDefaults() {
+ 	bc5::switch_defaults::Apply();
++	bc5::load_stat::apply_timer_slack(); // experiment 0415 (ls415): KYTY_BC5_TIMERSLACK_NS, before any thread exists
+ }
+ 
+ #ifdef BC5_LEAN

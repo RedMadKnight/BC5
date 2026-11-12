@@ -141,6 +141,65 @@ not zero.
 the GPU's own time per pass (part 2); the effect of the memory wall on P5 is recorded (available memory, reclaim,
 major faults per phase) but not removed: exp 0412 owns it.
 
+### 5. The kit for build L1 (laptop, 2026-11-12; not built on the box, not run)
+
+`kit/` (pinned by `kit/kit.sha256`):
+
+- `0415-l1.diff` (md5 `3993d0d2`, stored byte-exact: the host tree mixes LF and CRLF files): against the host tree
+  with 0413's patch 057e7d07. One new header, `src/bc5/load_stat.hpp` (tag ls415), and edits in ten files
+  (`tree-l1.md5` has the sums the box must reproduce). All words default off; unset, empty and "0" are off.
+  - `KYTY_BC5_LOAD_STAT=<file>`: 31 causes (the list is the header's `Cause`), each a count, a summed time, the
+    longest single time of the second and an item or byte count; one cumulative line a second with CLOCK_MONOTONIC,
+    the journal's time of the last flip and the number of APR command buffers outstanding; a mark line per scripted
+    key press. When off, a call site costs one test of a flag.
+  - `KYTY_BC5_RING_POLL_US` (200 = today, the long-idle sleep stays five times it) and
+    `KYTY_BC5_LOAD_DELAY=<cause>:<µs>` (a busy delay per event of one cause; wired for `ring_pass`, `dev_wait`
+    (before the lock), `apr_buffer`, `amm_cmd`, `mutex_contended`): the two measurement knobs.
+  - Candidate fixes: `KYTY_BC5_RING_SPIN_US` (C1: after a pass that served packets the doorbells are read again
+    without a sleep for that long), `KYTY_BC5_TIMERSLACK_NS` (C2: `PR_SET_TIMERSLACK` at process start, inherited
+    by every thread), `KYTY_BC5_MUTEX_SPIN_US` (C5: a held guest mutex is tried again for that long before the
+    thread sleeps; `mutex->m` is released between tries, the owner field is read and written under it as before;
+    a timed lock's deadline starts after the spin, so it can be late by at most the spin).
+  - Limits: in the lean build the label-wait and in-flight-cap counters are absent (they sit in a function lean
+    compiles out); `sema_wait` and `cond_wait` time every call, blocked or not; `mem_lock_wait` counts only
+    acquisitions that found the mutex taken.
+- `test0415.cpp`: the header's CPU test, two processes (off: nothing counted, nothing written, the knobs read
+  today's values, the words' grammar; on: counts, times, the busy-stretch accounting, the delay of one cause only,
+  contended against uncontended locks, 8 threads on one slot, the file's lines). **49 of 49 and 31 of 31 on the
+  laptop** (clang 22, MSVC target) [M]. Its last part is a model of the guest mutex with the spin loop copied by
+  hand (exclusion and progress over 160,000 sections, with and without spin): a check of the loop's logic, not of
+  the host's function.
+- Not checked on the laptop: that the ten edited units compile (they need the Linux headers; the box build is the
+  first compile), and anything at run time.
+- `mk0415.sh`: copies the shared host tree (pinned by the md5 of its diff against f266548, given as `P_TREE`),
+  applies the diff, checks the edited files against `tree-l1.md5`, builds and runs the CPU test in the container,
+  then configures and builds the normal and the lean variant under `~/bc5-work/exp0415` (0413's `p0413g.sh`
+  options); the shared tree, builds and backend archive are only read. No emulator.
+- `run0415.sh <tag> normal|lean <play s> [WORD=VALUE ...]`: one run of section 4's route. Dry-run on the laptop
+  [M]: the launcher's six anchors each occur once in the pre-swap `play-pkg.sh` copy of exp 0409 and the edit gives
+  the expected 11 diff lines and a script that parses; the gate reads a synthetic counter file. Never run as a whole.
+- `col0415.py` (host, `/proc` and `/sys` only, one JSON line a second) and `perf0415.sh` (container, cpu-clock at
+  1 kHz on the title's threads; every `bc5-*` and `kyty-*` thread is left out by name).
+- `phases0415.py` (laptop): cuts a run into P1-P6 by section 4's rules and prints per phase the counters'
+  deltas and the collector's (per-thread CPU, GPU engine time, reads asked and from disk, reclaim). Checked on a
+  synthetic file with known phase lengths (30, 20, 5, 12, 17, 25 s: reproduced) [M].
+
+**The first slot's runs** (each about 130-150 s; RT on; words of 0413's launcher; `R_WD_MIB=220`):
+
+| # | runs | arm | answers |
+|---|---|---|---|
+| 1 | b1..b4 | normal, counters on, perf on | the spread of P2 and P5; the ranking by counters |
+| 2 | n1, n2 | normal, counters on, `R_PERF=0` | what perf costs |
+| 3 | l1, l2 | lean, counters on | what the journal, timing and frame-profile lines cost in a load (his daily play is lean) |
+| 4 | p50a/b, p1000a/b | `KYTY_BC5_RING_POLL_US=50` / `1000` | C1 by slope |
+| 5 | s1, s2 | `KYTY_BC5_RING_SPIN_US=300` | C1's fix |
+| 6 | t1, t2 | `KYTY_BC5_TIMERSLACK_NS=1000` | C2's fix |
+| 7 | m1, m2 | `KYTY_BC5_MUTEX_SPIN_US=30` | C5's fix |
+| 8 | d1..d3 | `KYTY_BC5_LOAD_DELAY=amm_cmd:200`, `apr_buffer:2000`, `mutex_contended:100` | which of these is on the critical path |
+
+Arms 4-8 alternate with a fresh baseline when the first four show a drift over the session.
+
 ## Verdict
 
-Open. Part 1's measurement is designed; nothing is built or run.
+Open. Part 1's measurement is designed and its kit written and CPU-tested on the laptop; nothing is built on the
+box or run.
