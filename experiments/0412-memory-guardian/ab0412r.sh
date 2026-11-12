@@ -36,6 +36,7 @@ arm() {   # <tag> empty|file [KEY=VALUE ...]
   cp -p "$N/direct-learned-pkg.txt" "$R/$tag-learned.txt" 2> /dev/null
   local j; j=$(sed -n 's/^journal \([^ ]*\) .*/\1/p' "$R/$tag-journal.txt" 2> /dev/null)
   grep -a "^would learn\|^map rule\|^timeout: fault\|^learned: fault\|^reopen\|PRT window" "$j" "$R/$tag-play.log" 2> /dev/null | cut -c1-700 > "$R/$tag-rule.txt"
+  grep -a "^timing split\|^learned apply:" "$j" 2> /dev/null | cut -c1-500 | gzip > "$R/$tag-split.txt.gz"   # exp 0415 asked: full syncs, scan and maps time under the rule
   echo "$(date +%T) $tag ended: $(grep -o 'lowest available [0-9]* MiB, highest PSI full [0-9]* %' "$R/$tag-watchdog.txt" 2> /dev/null); would-learn lines $(grep -c 'would learn' "$R/$tag-rule.txt"); private learned file $(grep -c '' "$R/$tag-learned.txt" 2> /dev/null) lines; $(grep -a '^guard: t' "$R/$tag-guard.txt" 2> /dev/null | tail -1 | grep -o 'pinned direct [0-9.]* MiB')"
   grep -a 'map rule' "$R/$tag-rule.txt" | head -2 | cut -c1-300
   echo "$tag kernel threads' CPU during the arm: kcompactd0 $(( ($(kc) - kc0) / 100 )) s, kswapd0 $(( ($(ks) - ks0) / 100 )) s"
