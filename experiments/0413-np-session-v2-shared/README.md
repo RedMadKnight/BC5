@@ -195,3 +195,59 @@ snapshot, copied privately.
   private binary: the next slot;
 - a rebuild from a2ab53c7, which comes with the swap;
 - his play.
+
+### Second round of checks (2026-11-12 11:47–13:33, the top's slot to 13:15; overrun by about 3 minutes, see below)
+
+**ASTRO BOT's crash, separated (the top's points 1a–1c), on the private binary a76f86ab:**
+
+| run | setup | result |
+|---|---|---|
+| e1env | table off; the 20 switches of A15/A16/A17/A21/A22 in the real environment | PASS 90 s |
+| e2env | table off; all 56 switches in the real environment | PASS 90 s |
+| e3env | table on; those 20 in the real environment (so `setenv` adds only the other 36) | PASS 90 s |
+| e4dum | table on (all 56 through `setenv`) plus 20 dummy variables in the starting environment | PASS 90 s |
+
+- **1c, the crash state.** The guest reads its stack guard through the GOT (not `fs:0x28`) and gets the right value
+  0xdeadbeef00000007. It then crashes on `mov [rsi], rdx` with `rsi = 0`: the function's second argument, an output
+  pointer, is null. The address (eboot+0x48f), the registers and the log lines before it are the same in every crash.
+  The host backtrace was not taken.
+- **Reading at that point: a layout effect of `setenv` at start.** The defaults were moved into the initial environment
+  through one re-exec of the binary:
+  - commit 5a495769, executing `/proc/self/exe`;
+  - commit 5544da9e, executing the real path instead. Through `/proc/self/exe` the process was named `exe`, so
+    run p2def's harness saw no emulator and left it running. It was stopped by hand: our process, our run.
+
+**Rebuilds.** Incremental, in the private tree with `p0413b.sh` and `p0413c.sh`. Final private binary from patch
+1150799b: normal d1b6f9cb, lean 5767f015. Both carry the re-exec and the ten NIDs; the archive is unchanged.
+
+| run | binary, setup | result |
+|---|---|---|
+| p3def | d1b6f9cb, 36 rows through the re-exec | PASS: gameplay at 118 s + 120 s, 25.8 flips/s, longest gap 628 ms; the emulator's environment holds `KYTY_BC5_SWITCH_DEFAULTS_EXEC=1` |
+| f2lean | 5767f015, 150 s | PASS |
+| f1astro | d1b6f9cb, defaults through the re-exec (A15–A22's five rows already off) | **CRASH at 6 s, the same address** |
+| g10, g25, g36 | d1b6f9cb, table off, plus 10, 25 or 36 dummy variables | PASS each, 60 s |
+| p4full | d1b6f9cb, table off, all 56 switches as launcher words (`integration/words0413full.txt`) | PASS: gameplay at 117 s + 120 s, 25.8 flips/s, longest gap 582 ms |
+
+**Verdict of this round.**
+- ASTRO BOT's start crashes when the integration's switches are on as defaults, through `setenv` and through the re-exec
+  alike.
+- It passes with the table off at every environment size tried.
+- The daily line ran these switches only with the second title, so the crash is their combined effect on ASTRO BOT.
+  Its cause is not found.
+- Therefore the table is emptied (commit fa3e09ec, patch 040812ce). Every switch becomes a launcher word of the second
+  title only (`integration/play-pkg-0413.diff`, made by `mkpkg0413.py` from `words-integration.txt`: 56 words; a value
+  already in the environment wins). That is exactly the tested p4full configuration.
+- The re-exec code stays, with no rows.
+
+**Replug check (point 2): not done.**
+- The replug harness is exp 0391's, copied to `integration/replug/`:
+  - the box directory renamed to `exp0413r`;
+  - the binary pinned to d1b6f9cb, the launcher to 97835f88;
+  - the dropped `COMPUTE_RING=-1` anchor removed;
+  - the 56 switches passed as words, with the table off;
+  - the disk limit 90 % (the box was at 86 % with 72 GB free).
+- R2 lost its ssh connection at the start step and gave the lock back.
+- R3 started at 13:31, past the slot. The shared `play-pkg.sh` stopped at once ("No package at …/game.pkg": the game is
+  unpacked now and that launcher has no `BC5_GAME_DIR`). No emulator, no GPU work; the lock was released by the run
+  itself.
+- The derived launcher needs the `BC5_GAME_DIR` edit before the next try.

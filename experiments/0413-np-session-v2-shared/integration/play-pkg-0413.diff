@@ -1,5 +1,5 @@
 --- play-pkg.sh	2026-11-12 11:05:53.281954700 +0100
-+++ play-pkg-new.sh	2026-11-12 11:45:30.331819800 +0100
++++ play-pkg-new.sh	2026-11-12 13:32:34.208965600 +0100
 @@ -6,6 +6,7 @@
  # desktop shortcut does: distrobox enter ubuntu -- ~/bc5-work/play-pkg.sh). No time limit, no
  # buffer captures (the journal: see experiment 0129 below); the emulator's output goes to ~/bc5-work/play-pkg-last.log.
@@ -17,23 +17,35 @@
  
  PLAY_ARGS=""
  while IFS= read -r line; do
-@@ -47,6 +48,23 @@
+@@ -47,6 +48,35 @@
  export BC5_DIRECT_EAGER_NAMES="RenderGpuWcLarge,RenderGpuWcSmall,RenderGpuRwLarge,RenderGpuRwSmall,CommitIABufferAllocator,AMM,RenderAlloc,Physics,Decal Job Scheduler,VisualEffectInstanceHeap,DynamicHeap,DynamicHeap Small,ComponentHeap,ComponentHeap Small,MaterialHeap,DDLHeap,Physics query allocator"
  export BC5_DIRECT_LEARNED=$HOME/bc5-work/direct-learned-pkg.txt
  export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/_SaveData-pkg-play
-+# exp 0413: the second title's own words, as the tested daily line fast7/lean7 (exp 0412) ran them. The emulator's other
-+# fixes are defaults in its code now (src/bc5/switch_defaults.hpp); each word here can be overridden from the environment.
++# exp 0413: the second title's own words, as the tested daily line fast7/lean7 (exp 0412) ran them; each can be
++# overridden from the environment.
 +export BC5_DIRECT_CP_COHER_START_DELAY=${BC5_DIRECT_CP_COHER_START_DELAY:-1}  # on in every play since 11-03; never A/B'd
 +export BC5_DIRECT_LAZY_RELEASE=${BC5_DIRECT_LAZY_RELEASE:-30,eager}  # orphan release; 10 s hung the GPU with the zero skip
 +export BC5_GUARD_SPLIT=${BC5_GUARD_SPLIT:-1} BC5_GUARD_FORGET=${BC5_GUARD_FORGET:-10}
-+# exp 0413: audit rows A15, A16, A17, A21, A22 (ports played daily with this title since 11-04) stay this title's words:
-+# with four or more of them on, ASTRO BOT's start crashed, so they are not defaults in the emulator.
-+for w in KYTY_BC5_SAVEDATA_MEMORY_FIXES KYTY_BC5_SAVEDATA_DELETE_BUSY KYTY_BC5_SAVEDATA_ALIASES KYTY_BC5_HTTP2_FIXES \
-+         KYTY_BC5_PAD_OPEN_EXT KYTY_BC5_JSON2_FIXES KYTY_BC5_ULT_FIXES KYTY_BC5_USERSERVICE_VALUES KYTY_BC5_SYSTEMSERVICE_VALUES \
-+         KYTY_BC5_SYSTEMSERVICE_PARAMS_7_1000 KYTY_BC5_AUDIOOUT_CHECKS KYTY_BC5_AUDIOIN_CHECKS KYTY_BC5_NGS2_RACK_FIX \
-+         KYTY_BC5_FW_PAD KYTY_BC5_LOAD_ZLIB KYTY_BC5_LOAD_JPEG KYTY_BC5_LOAD_IME KYTY_BC5_LOAD_NPCOMMON \
-+         KYTY_BC5_LOAD_NPMANAGER KYTY_BC5_LOAD_NPTROPHY; do
-+  [ -n "${!w+x}" ] || export "$w=1"
++# exp 0413: the integration's switches (audit rows A2-A22, B16, C1-C3 of patch 0001), as the daily line fast7/lean7 ran
++# them: this title's words, not defaults in the emulator (ASTRO BOT's start crashed with them on by default). A value
++# already in the environment wins; NAME=0 there turns one off.
++for w in \
++    BC5_DIRECT_ACB_STATE_RESTORE=1 KYTY_BC5_PTHREAD_FIXES=1 KYTY_BC5_SAVEDATA_FIXES=1 KYTY_BC5_SAVEDATA_EVENT_CB=1 \
++    KYTY_BC5_SAVEDATA_SORT=1 KYTY_BC5_AUDIO_FIXES=set,room KYTY_BC5_AMPR_WAITS=1 KYTY_BC5_VIDEOOUT_STATUS=1 \
++    KYTY_BC5_EQUEUE_FIXES=1 KYTY_BC5_MMAP_SHIM_FIXES=1 BC5_R3_MEMSEM_SIGNAL=1 BC5_R3_SUBMIT_EOP_EVENT=1 \
++    BC5_R3_COND_WRITE=1 BC5_R3_WAIT_IDLE=1 BC5_R3_TS_100MHZ=1 KYTY_BC5_TLS_FIXES=1 \
++    KYTY_BC5_THREAD_SYNC_FIXES=1 KYTY_BC5_SEMA_FIXES=1 BC5_R3_MPROTECT_GAPS=1 BC5_R3_NULL_ARGS=1 \
++    BC5_R3_RELEASE_HOLES=1 BC5_R3_MUNMAP_HOLES=1 BC5_R3_FLEX_HINT=1 BC5_R3_DMQ_END=1 \
++    BC5_R3_EXEC_EINVAL=1 BC5_R3_QUERY_SIZE=1 KYTY_BC5_FS_FIXES=1 KYTY_BC5_POSIX_RET_FIXES=1 \
++    KYTY_BC5_SAVEDATA_MEMORY_FIXES=1 KYTY_BC5_SAVEDATA_DELETE_BUSY=1 KYTY_BC5_SAVEDATA_ALIASES=1 KYTY_BC5_HTTP2_FIXES=1 \
++    KYTY_BC5_PAD_OPEN_EXT=1 KYTY_BC5_JSON2_FIXES=1 KYTY_BC5_ULT_FIXES=1 KYTY_BC5_USERSERVICE_VALUES=1 \
++    KYTY_BC5_SYSTEMSERVICE_VALUES=1 KYTY_BC5_SYSTEMSERVICE_PARAMS_7_1000=1 KYTY_BC5_AUDIOOUT_CHECKS=1 KYTY_BC5_AUDIOIN_CHECKS=1 \
++    KYTY_BC5_NGS2_RACK_FIX=1 KYTY_BC5_FW_NET=1 KYTY_BC5_FW_AUDIO=1 KYTY_BC5_JIT_SHM=1 \
++    KYTY_BC5_FW_KERNEL=1 KYTY_BC5_FW_PAD=1 KYTY_BC5_LOAD_ZLIB=1 KYTY_BC5_LOAD_JPEG=1 \
++    KYTY_BC5_LOAD_IME=1 KYTY_BC5_LOAD_NPCOMMON=1 KYTY_BC5_LOAD_NPMANAGER=1 KYTY_BC5_LOAD_NPTROPHY=1 \
++    BC5_DIRECT_JOURNAL_QUIET=1 KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1 \
++    ; do
++  n=${w%%=*}; [ -n "${!n+x}" ] || export "$w"
 +done
 +# the zero skip only with its poll before every submission (exp 0412 section 40); the list is this title's, private data
 +ZL=$HOME/bc5-work/zero-list-pkg.txt
@@ -41,7 +53,7 @@
  # Experiment 0039: the compute IBs indirect dispatches run (rewritten for the GFX ring).
  # Experiment 0053: their arguments checked by the CP when it runs them, a CP DMA wait before a
  # dispatch after an unsynced copy; with both the tree refit runs too (before: skipped,
-@@ -154,13 +172,14 @@
+@@ -154,13 +184,14 @@
  
  mkdir -p "$M" "$KYTY_BC5_SAVEDATA_DIR"
  MP=""
