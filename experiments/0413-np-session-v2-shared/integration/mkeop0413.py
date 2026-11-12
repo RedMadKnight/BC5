@@ -17,5 +17,10 @@ NOTE = (b"    // BC5_R3_SUBMIT_EOP_EVENT is NOT a default (2026-11-12): its pack
         b"    // callback (Codex's review of exp 0413); a launcher word until the owned-packet fix is in.\n")
 assert s.count(ROW) == 1
 s = s.replace(ROW, NOTE)
+# The set-buffer guard is on in code now (the top: the table is for behaviour choices, not bug fixes): its row goes.
+E1 = (b"    // E1: set-buffer guard: no AMM map flavour over mapped memory (exp 0413)\n"
+      b'    {"KYTY_BC5_AMM_SETBUFFER_GUARD", "1"},\n')
+assert s.count(E1) == 1
+s = s.replace(E1, b"")
 open(sys.argv[2], "wb").write(s)
 print(hashlib.md5(s).hexdigest())
