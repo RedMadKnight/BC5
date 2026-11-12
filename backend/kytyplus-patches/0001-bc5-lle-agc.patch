@@ -47725,7 +47725,7 @@ index 5b0fc93..5b78760 100644
  	LOGF("\t target = %d\n"
  	     "\t msg    = 0x%016" PRIx64 "\n",
 diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
-index 073361d..7a0642e 100644
+index 073361d..c48c280 100644
 --- a/src/libs/libAmpr.cpp
 +++ b/src/libs/libAmpr.cpp
 @@ -1,3 +1,5 @@
@@ -49586,7 +49586,7 @@ index 073361d..7a0642e 100644
 +	static const bool on = Bc5Exp0401Switch("KYTY_BC5_AMM_SETBUFFER_GUARD");
 +	return on;
 +}
-+static bool Bc5SetBufferTargetMapped(uint64_t va, uint32_t size, uint64_t a3, uint64_t a4, uint64_t a5) {
++static bool Bc5SetBufferTargetMapped(uint64_t cb, uint64_t va, uint32_t size, uint64_t a3, uint64_t a4, uint64_t a5) {
 +	if (!Bc5SetBufferGuardOn()) {
 +		return false;
 +	}
@@ -49600,9 +49600,9 @@ index 073361d..7a0642e 100644
 +	if (told < 16) {
 +		told++;
 +		std::fprintf(stderr,
-+		             "[bc5] exp 0413: set-buffer with the map signature on mapped memory (va 0x%016" PRIx64 " len 0x%x a3 0x%" PRIx64
++		             "[bc5] exp 0413: set-buffer with the map signature on mapped memory (cb 0x%016" PRIx64 " va 0x%016" PRIx64 " len 0x%x a3 0x%" PRIx64
 +		             " a4 0x%" PRIx64 " a5 0x%" PRIx64 "): taken as the buffer flavour, nothing mapped\n",
-+		             va, size, a3, a4, a5);
++		             cb, va, size, a3, a4, a5);
 +	}
 +	return true;
 +}
@@ -49620,7 +49620,7 @@ index 073361d..7a0642e 100644
 +		AmmTraceStamp(), std::fprintf(stderr, "amm trace: set-buffer cb 0x%016" PRIx64 " va 0x%016" PRIx64 " len 0x%x a3 0x%" PRIx64 " a4 0x%" PRIx64 " a5 0x%" PRIx64 "\n",
 +		             reinterpret_cast<uint64_t>(command_buffer), va, size, a3, a4, a5);
 +	}
-+	if (SetBufferIsMapFlavour(va, a3, a4) && !Bc5SetBufferTargetMapped(va, size, a3, a4, a5)) { // + exp 0413
++	if (SetBufferIsMapFlavour(va, a3, a4) && !Bc5SetBufferTargetMapped(reinterpret_cast<uint64_t>(command_buffer), va, size, a3, a4, a5)) { // + exp 0413
 +		CommandBufferState::AmmMapCommand command {};
 +		command.kind = AmmCommandKind::MapAuto;
 +		command.va   = va & ~(AMM_PAGE_SIZE - 1u);
