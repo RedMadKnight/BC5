@@ -56,7 +56,7 @@ for v in normal lean; do
     d=$E/build-$v
     echo "== $(date +%T) build $v"
     distrobox enter ubuntu -- sh -c "cd '$d' && nice -n 19 ninja kyty_emulator" < /dev/null > "$d.build-l4.log" 2>&1 || { grep -m5 -E "error:" "$d.build-l4.log" | cut -c1-300; die "the build ($v)"; }
-    for s in KYTY_BC5_APR_POSIX "tag ls415b" KYTY_BC5_LOAD_STAT KYTY_BC5_SEMA_TARGETED_WAKE apr_fallback ds_views hold_probe KYTY_BC5_WINDOW_FAST KYTY_BC5_VMA_FAST KYTY_BC5_NAMES_FAST learned_changed KYTY_BC5_MAP_RECORDS KYTY_BC5_FRAME_STAT rec_mismatch; do grep -aqF -- "$s" "$d/src/kyty_emulator" || die "the $v binary lacks [$s]"; done
+    for s in KYTY_BC5_APR_POSIX "tag ls415b" KYTY_BC5_LOAD_STAT KYTY_BC5_SEMA_TARGETED_WAKE apr_fallback ds_views hold_probe KYTY_BC5_WINDOW_FAST KYTY_BC5_VMA_FAST KYTY_BC5_NAMES_FAST learned_changed KYTY_BC5_MAP_RECORDS KYTY_BC5_FRAME_STAT rec_mismatch maps_uncovered bc5-mapschk; do grep -aqF -- "$s" "$d/src/kyty_emulator" || die "the $v binary lacks [$s]"; done
     cp -p "$d/src/kyty_emulator" "$E/new/kyty_emulator.$v" || die "copy"
 done
 mv -T "$E/bin" "$E/bin-l3" && mv -T "$E/bin-lean" "$E/bin-lean-l3" && mkdir "$E/bin" "$E/bin-lean" &&

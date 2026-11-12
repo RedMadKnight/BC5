@@ -1,8 +1,8 @@
 diff --git a/src/bc5/load_stat.hpp b/src/bc5/load_stat.hpp
-index c2c0c13..724274f 100644
+index c2c0c13..7e76a70 100644
 --- a/src/bc5/load_stat.hpp
 +++ b/src/bc5/load_stat.hpp
-@@ -85,6 +85,10 @@ enum Cause : unsigned {
+@@ -85,6 +85,12 @@ enum Cause : unsigned {
  	kFastDiff,       // a "verify" mode of bc5/sync_fast.hpp found the fast form differing from the old one (the old one's result is used)
  	kLearnedApply,   // learned_apply past its "same layout" return: n, time
  	kLearnedChanged, // ... windows that mapped something: n, items = bytes
@@ -10,20 +10,22 @@ index c2c0c13..724274f 100644
 +	kMapRecord,      // comparisons of the view list kept from records with the rebuilt one: n, items = records applied
 +	kRecMismatch,    // ... that differed (the rebuilt list is used; the kept one is reset to it)
 +	kRecOverflow,    // ... not made because the record log was full
++	kMapsCheck,      // tag mr415b: checks of /proc/self/maps against the range table: n, items = uncovered bytes, summed over checks
++	kMapsUncovered,  // ... checks that found a readable guest-span VMA (or part of one) with no range in the table: n, items = such spans
  	kCount
  };
  
-@@ -94,7 +98,8 @@ inline constexpr const char* kNames[kCount] = {
+@@ -94,7 +100,8 @@ inline constexpr const char* kNames[kCount] = {
      "apr_busy", "amm_cmd",    "mem_lock_wait",    "commit_zero", "mutex_lock", "mutex_contended", "mutex_spin_won", "cond_signal",
      "cond_wait", "sema_signal", "sema_wait",      "file_open", "file_stat",   "file_read",   "http_send",
      "apr_fallback", "hold_probe", "hold_hints",   "hold_pre",  "dev_call",    "dev_prepare", "dev_list",        "dev_cs",
 -    "ds_views", "ds_scan",    "ds_merge",         "ds_drain",  "ds_maps",     "fast_diff",   "learned_apply",   "learned_changed"};
 +    "ds_views", "ds_scan",    "ds_merge",         "ds_drain",  "ds_maps",     "fast_diff",   "learned_apply",   "learned_changed",
-+    "map_record", "rec_mismatch", "rec_overflow"};
++    "map_record", "rec_mismatch", "rec_overflow",    "maps_check", "maps_uncovered"};
  
  static_assert(kNames[kCount - 1] != nullptr, "a name per cause");
  
-@@ -292,7 +297,7 @@ inline void apr_leave() {
+@@ -292,7 +299,7 @@ inline void apr_leave() {
  	if (s.apr_outstanding.fetch_sub(1, std::memory_order_acq_rel) == 1) {
  		const uint64_t t0 = s.apr_busy_since.load(std::memory_order_acquire);
  		const uint64_t t1 = now_ns();
@@ -262,7 +264,7 @@ index a051967..c8723cf 100644
  int  Bc5PrivateMemoryFd(); // BC5 (experiment 0023): the memfd behind private guest memory, -1 when anonymous
  void Bc5ForEachPrivateRegion(void* ctx, void (*cb)(uint64_t start, uint64_t size, int type, const char* name, void* ctx));
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
-index 302d6aa..9dfd92c 100644
+index 302d6aa..1223870 100644
 --- a/src/libs/bc5LleAgc.cpp
 +++ b/src/libs/bc5LleAgc.cpp
 @@ -36,6 +36,7 @@
@@ -281,7 +283,7 @@ index 302d6aa..9dfd92c 100644
  static double timing_now() {
  	static const uint64_t t_first = [] {
  		const uint64_t t = SoftCp::now_ns();
-@@ -2348,6 +2350,65 @@ struct DViews {
+@@ -2348,6 +2350,110 @@ struct DViews {
  	bool               sorted = true;
  };
  static std::atomic<uint64_t> g_views_builds {0}; // experiment 0156: rebuilds of the views
@@ -290,9 +292,54 @@ index 302d6aa..9dfd92c 100644
 +// from the range table's change records and compared, at every rebuild of the views, with the list built from the
 +// same snapshot's every range. Nothing uses the kept list: this only proves (or refutes) that the records are
 +// complete and in order, before any later stage relies on them. Called under direct_views' mutex.
++// Tag mr415b (the top session's review, 2026-11-12): with KYTY_BC5_MAP_RECORDS on, every 5 s on a thread of its own and
++// under no lock of the direct path, the readable VMAs of /proc/self/maps inside the guest's address span are held
++// against the range table: bytes of such a VMA that no range of the table covers are counted (maps_check,
++// maps_uncovered) and the first ten spans journaled. A mapper that changes the guest's address space without telling
++// the table shows up here as a stable non-zero count; a map call caught half-way shows as a count that comes and goes
++// (the two readings are not taken at one instant). Counts only: nothing acts on it.
++static void mr415_maps_check_thread() {
++	pthread_setname_np(pthread_self(), "bc5-mapschk");
++	constexpr uint64_t kGuestMin = 0x40000ull, kGuestMax = 0xfbffffffffull; // sync_mappings' span
++	int                logged    = 0;
++	for (;;) {
++		std::this_thread::sleep_for(std::chrono::seconds(5));
++		uint64_t                                   uncovered = 0, spans = 0;
++		std::vector<std::pair<uint64_t, uint64_t>> guest;
++		std::ifstream                              maps("/proc/self/maps");
++		std::string                                line;
++		while (std::getline(maps, line)) {
++			uint64_t start = 0, end = 0;
++			char     perms[8] = {};
++			if (std::sscanf(line.c_str(), "%" SCNx64 "-%" SCNx64 " %7s", &start, &end, perms) < 3) continue;
++			if (perms[0] != 'r' || start < kGuestMin || end > kGuestMax + 1 || end <= start) continue;
++			Libs::LibKernel::Memory::Bc5GuestRangesIn(start, end, &guest);
++			uint64_t cur = start;
++			auto     gap = [&](uint64_t a, uint64_t b) {
++				uncovered += b - a;
++				spans++;
++				if (logged < 10) {
++					logged++;
++					journal("maps check (exp 0415, mr415b): 0x%" PRIx64 "-0x%" PRIx64 " (%s) is readable in /proc/self/maps and in no range of the table\n", a, b, perms);
++				}
++			};
++			for (const auto& [a, b]: guest) {
++				if (a > cur) gap(cur, a < end ? a : end);
++				if (b > cur) cur = b;
++				if (cur >= end) break;
++			}
++			if (cur < end) gap(cur, end);
++		}
++		bc5::load_stat::count(bc5::load_stat::kMapsCheck, uncovered);
++		if (spans != 0) bc5::load_stat::count(bc5::load_stat::kMapsUncovered, spans);
++	}
++}
++
 +static void mr415_verify() {
 +	static const int mode = bc5::sync_fast::mode_of(std::getenv("KYTY_BC5_MAP_RECORDS"));
 +	if (mode == 0) return;
++	static std::once_flag maps_check_once;
++	std::call_once(maps_check_once, [] { std::thread(mr415_maps_check_thread).detach(); });
 +	struct R {
 +		uint64_t    start, size, offset;
 +		int         type;
@@ -347,7 +394,7 @@ index 302d6aa..9dfd92c 100644
  static std::shared_ptr<const DViews> direct_views(const DState& S) {
  	static std::mutex                    m;
  	static std::shared_ptr<const DViews> cache[2];
-@@ -2365,6 +2426,7 @@ static std::shared_ptr<const DViews> direct_views(const DState& S) {
+@@ -2365,6 +2471,7 @@ static std::shared_ptr<const DViews> direct_views(const DState& S) {
  	g_views_builds++;
  	auto d = std::make_shared<DViews>();
  	d->v   = direct_views_build(S);
@@ -355,7 +402,7 @@ index 302d6aa..9dfd92c 100644
  	uint64_t sig = 1469598103934665603ull;
  	for (size_t i = 0; i < d->v.size(); i++) {
  		const auto& v = d->v[i];
-@@ -11579,6 +11641,23 @@ static void ts_collect(const uint32_t* ib, uint32_t num_dwords, std::vector<uint
+@@ -11579,6 +11686,23 @@ static void ts_collect(const uint32_t* ib, uint32_t num_dwords, std::vector<uint
  		q += len;
  	}
  }
@@ -379,7 +426,7 @@ index 302d6aa..9dfd92c 100644
  struct CqItem {
  	bool                      fence = false;
  	PendingJob                job;
-@@ -11693,6 +11772,15 @@ static void completion_thread(int index) {
+@@ -11693,6 +11817,15 @@ static void completion_thread(int index) {
  			}
  			if (r.timed_out) m11_keep_lost(); // exp 0401 e11 (tag m11): the lost jobs' label writes, before they are forgotten
  			forget_label_writes(j.seq, r.ring, r.timed_out || r.rc == -125); // experiment 0055
@@ -395,7 +442,7 @@ index 302d6aa..9dfd92c 100644
  			const double total_ms = static_cast<double>(SoftCp::now_ns() - j.queued_ns) / 1e6 + j.cs_ms;
  			frame_profile_done(index == 0, j.queued_ns, SoftCp::now_ns(), 0.0);
  			if (!r.ok || (j.n & 0x3fu) == 0) journal("submit #%" PRIu64 " %s %u dwords at %p: pass %" PRIu64 " rewrite %" PRIu64 " drop %" PRIu64 " unmapped %" PRIu64 " cc %" PRIu64 " mappings %zu ... %s rc %d%s%s %.2f ms\n",
-@@ -11779,6 +11867,16 @@ static void drain() {
+@@ -11779,6 +11912,16 @@ static void drain() {
  	while (g_cq_items.load() != 0) std::this_thread::sleep_for(std::chrono::microseconds(50));
  }
  
@@ -412,7 +459,7 @@ index 302d6aa..9dfd92c 100644
  static void wait_jobs() {
  	chain_flush(5); // ADR 0010
  	if (!g_async || !g_dev) return;
-@@ -13198,6 +13296,7 @@ static void frame_profile_submit(bool, double, double) {}
+@@ -13198,6 +13341,7 @@ static void frame_profile_submit(bool, double, double) {}
  static void frame_profile_job(bool, double, double, double) {}
  static void frame_profile_done(bool, uint64_t, uint64_t, double) {}
  static void frame_profile_flip(double) {}
@@ -420,7 +467,7 @@ index 302d6aa..9dfd92c 100644
  #endif
  
  } // namespace Direct
-@@ -14161,6 +14260,7 @@ static KYTY_SYSV_ABI int SubmitEopFlip(int handle, int index, int flip_mode, int
+@@ -14161,6 +14305,7 @@ static KYTY_SYSV_ABI int SubmitEopFlip(int handle, int index, int flip_mode, int
  	if (!defer) Bc5Gc::Direct::drain(); // nothing of the frame may still be in flight
  	Bc5Gc::Direct::frame_profile_flip((Bc5Gc::Direct::timing_now() - t_drain) * 1e3);
  	bc5::load_stat::flip(Bc5Gc::Direct::timing_now()); // experiment 0415 (ls415)
