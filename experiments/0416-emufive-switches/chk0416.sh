@@ -44,8 +44,9 @@ second() {  # tag, extra words
     setsid nohup python3 ./fault0416.py "$R/$tag-faults.txt" 460 < /dev/null > /dev/null 2>&1 &
     local fp=$!
     P_WORDS=$N/words0413nz.txt bash ./run0413p.sh "$tag" nozeroskip 240 "$@"
-    kill "$fp" 2> /dev/null; pkill -f "fault0416.py $R/$tag-faults.txt" 2> /dev/null
-    echo "$tag faults: $(grep -c ' fault: ' "$R/$tag-faults.txt" 2> /dev/null) lines, unmapped $(grep -c ' fault: .*: unmapped' "$R/$tag-faults.txt" 2> /dev/null); switch lines: $(grep -a -h "COALESCE_SAME on\|TARGETED_WAKE on" "$R/$tag-play.log" 2> /dev/null | wc -l)"
+    kill "$fp" 2> /dev/null; pkill -f "fault0416.py $R/$tag-faults.txt" 2> /dev/null  # SIGTERM: the catcher ends and reaps its dmesg child and writes its last line
+    sleep 4; tail -1 "$R/$tag-faults.txt"
+    echo "$tag faults: $(grep -c ' fault: ' "$R/$tag-faults.txt" 2> /dev/null) lines, no CPU VMA $(grep -c ' fault: .*CPU VMA now: none' "$R/$tag-faults.txt" 2> /dev/null); switch lines: $(grep -a -h "COALESCE_SAME on\|TARGETED_WAKE on" "$R/$tag-play.log" 2> /dev/null | wc -l)"
     sleep 5
 }
 second r1off

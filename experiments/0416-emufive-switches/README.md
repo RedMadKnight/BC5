@@ -114,3 +114,46 @@ semaphore switch and the EOP fix with `BC5_R3_SUBMIT_EOP_EVENT=1`, runs the seco
 kernel or crash line. Missing before a shared build: a test that drives set-buffer with a4 = -1 on mapped and on
 unmapped memory in this patch (guard line, opt-in line), because chance did not produce the call here. Nothing from
 0416 is in the shared builds; that needs the top's release and Codex's short round.
+
+## Addendum 2026-11-12, after Codex's round (laptop only; Result and Verdict above are unchanged)
+
+Codex's entries of 17:43 and 22:20 UTC (`coordination/codex-to-claude.md`) asked for three things. No box run was made.
+
+**1. The missing set-buffer test** (`mktest0416sb.py`). The five real functions are cut out of the edited
+`libAmpr.cpp` (9a526e31, the unit of patch a099e662) and compiled with stand-ins (VS clang++ 22, `-std=c++20 -O1 -Wall
+-Wextra`): a table of committed and reserved ranges for the kernel's query, a recorder for the map, a real header for
+the buffer flavour. Six calls (A, B: a4 = -1 and 0xffffffff on ASTRO BOT's committed heap page; C: a4 = -1, nothing
+there; D: a4 = -1, reserved only; E: a3 == va; F: a4 = 0x9088e4e98) and 40 repeats of A, in four processes:
+
+| Guard | `KYTY_BC5_AMM_SETBUFFER_MAP` | A, B (mapped target) | C, D (not mapped) | Lines exp 0413 / exp 0416 | Result |
+|---|---|---|---|---|---|
+| on (default) | off (default) | attached, nothing mapped | attached, nothing mapped | 16 / 2 | PASS |
+| on | 1 | refused by the guard: attached | mapped, 0x4000-rounded, prot 0x33 | 16 / 0 | PASS |
+| `=0` | off | attached, nothing mapped | attached, nothing mapped | 0 / 16 | PASS |
+| `=0` | 1 | mapped (exp 0413's bug, behind two switches) | mapped | 0 / 0 | PASS |
+
+E and F attach in every run without a line; the 40 repeats never map unless the guard is off and the opt-in on. So
+the check that the box runs could not make is made on the function's own text. What it is not: the real
+`KernelVirtualQuery` and the real `ExecuteAmmMapCommand` are stand-ins, and no title made the call.
+One wording fault seen: with the guard off, the exp 0416 line says "a target that is not mapped" for A and B too.
+The patch is left as built (a099e662); the wording is for the next patch change.
+
+**2. `fault0416.py`, the stream** (R11/R46). The boundary is now the newest kernel stamp of the log before the run
+(one `dmesg`), and the followed stream is filtered by stamp, not by arrival time; a reader thread feeds a queue, so the
+limit and a signal are obeyed in silence; the dmesg child is closed, ended and reaped in `finally`, also on SIGTERM,
+SIGINT and SIGHUP. `test0416fault.py`, synthetic, 17 checks, PASS on the laptop: silence (a 1.2 s limit ends after
+1.5 s with no line), a late old backlog (dropped), a new fault at the first moment (kept), the reader's end, repeats,
+the pin, the cleanup of a child. Codex's repro `audit/test_fault0416_stream.py` cuts out `fresh()`, which no longer
+exists, so it does not run against the new file.
+
+**3. The labels** (R13). A sample is now "CPU VMA now: present / none / unknown" with the PID and the sample time;
+the file's header says what a sample cannot show (backing, the GPU's page table, a read of zeros). Each fault line
+carries "run attribution: unknown". The process is pinned (`--pid`, or the first `kyty_emulator` seen, start time
+checked against PID reuse) and never re-pinned. `chk0416.sh` counts "CPU VMA now: none" instead of "unmapped".
+The Result's words "mapped / unmapped" above describe the old file, which caught nothing.
+
+**Not verified:** the new catcher has not run on the box: the Linux parts (signals, `sudo` ending a root `dmesg`,
+`/proc` maps, the pin at a real start) are untested; the laptop skipped the own-process maps check (no `/proc`).
+`chk0416.sh` was edited and only syntax-checked.
+
+The two new switches stay experimental; no speed claim is made for them.
