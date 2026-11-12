@@ -27362,10 +27362,10 @@ index 82be73c..f090fcb 100644
  } // namespace Libs::Audio::AudioInternal
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..b822d66
+index 0000000..b87ecc6
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,8258 @@
+@@ -0,0 +1,8396 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -30276,6 +30276,10 @@ index 0000000..b822d66
 +	return std::strncmp(kind, "acb", 3) == 0 ? t_ring : bc5::direct::kGfxRing;
 +}
 +
++// Experiment 0401 (BC5_DIRECT_ACB_CS_PREFIX), defined with the CS prefix below.
++static std::vector<uint32_t> acb_cs_prefix(const uint32_t* part, uint32_t n);
++static void                  acb_cs_track(const uint32_t* part, uint32_t n);
++static void                  chain_append(const uint32_t* pre, uint32_t pre_n, const uint32_t* ib, uint32_t n, const char* kind, bool host_built);
 +static void submit_segment(const uint32_t* ib, uint32_t num_dwords, uint32_t from, uint32_t to) {
 +	if (from > 0) {
 +		uint32_t        n   = 0;
@@ -30314,7 +30318,21 @@ index 0000000..b822d66
 +		}
 +		i += len;
 +	}
-+	submit_one(ib + from, to - from, "acb");
++	// Experiment 0401: the guest queue's compute registers in front of a part that dispatches before it sets a program, in
++	// the part's own chain segment (ADR 0010); without the chain (BC5_DIRECT_CHAIN=0) as a job of its own just before it.
++	const std::vector<uint32_t> acb_cs = acb_cs_prefix(ib + from, to - from);
++	if (acb_cs.empty()) {
++		submit_one(ib + from, to - from, "acb");
++	} else if (chain_on()) {
++		chain_append(acb_cs.data(), static_cast<uint32_t>(acb_cs.size()), ib + from, to - from, "acb", false);
++	} else {
++		static thread_local std::deque<std::vector<uint32_t>> kept; // kept as state_prefix keeps its own
++		if (kept.size() >= 256) kept.pop_front();
++		kept.push_back(acb_cs);
++		submit_one(kept.back().data(), static_cast<uint32_t>(kept.back().size()), "acb-state");
++		submit_one(ib + from, to - from, "acb");
++	}
++	acb_cs_track(ib + from, to - from);
 +	t_keep_waits.clear();
 +}
 +
@@ -31095,6 +31113,104 @@ index 0000000..b822d66
 +	*pgm = (static_cast<uint64_t>(lo) | (static_cast<uint64_t>(hi & 0xffu) << 32u)) << 8u;
 +	return p;
 +}
++// Experiment 0401 (BC5_DIRECT_ACB_CS_PREFIX=1, default off): the acb side of experiment 0195's CS prefix. On the console
++// an acb runs on its own compute queue, which keeps the compute registers that queue's previous acb left. The second
++// title relies on it: on 2026-11-03 08:49 acb #432910 launched 19612 x 1 x 1 four times before it set a program (its
++// last dispatch sets 0x9098eb200 over the same arguments), and with the acbs on the GFX ring the stall sampler saw a
++// dcb's program, 0x11d0287900, running those groups when the ring hung. With the switch on, every acb part the ring
++// thread submits is applied to its guest queue's own tracker (bc5::full_state, keyed by t_queue_idx), and a part that
++// dispatches before it sets COMPUTE_PGM_LO (cs_inherit_at) gets that queue's tracked compute registers in front
++// (cs_prefix: SH 0x204-0x3ff). A queue with nothing tracked yet gets nothing. With the switch off nothing is tracked.
++static bool acb_cs_prefix_on() {
++	static const bool        on = bc5::env_on(std::getenv("BC5_DIRECT_ACB_CS_PREFIX"));
++	static std::atomic<bool> told {false};
++	if (!told.exchange(true))
++		journal("exp 0401: acb CS prefix %s\n", on ? "on (an acb part that dispatches before it sets a program gets its queue's tracked compute registers in front)" : "off");
++	return on;
++}
++static std::mutex                              g_acb_cs_mutex;
++static std::map<int, bc5::full_state::Tracker> g_acb_cs; // by guest queue (t_queue_idx)
++static std::vector<uint32_t> acb_cs_prefix(const uint32_t* part, uint32_t n) {
++	if (!acb_cs_prefix_on() || !g_dev || part == nullptr || n == 0) return {};
++	const int at = cs_inherit_at(part, n, *g_dev->sorted_mappings());
++	if (at < 0) return {};
++	uint64_t              pgm = 0;
++	std::vector<uint32_t> cs;
++	{
++		std::lock_guard lk(g_acb_cs_mutex);
++		const auto      it = g_acb_cs.find(t_queue_idx);
++		if (it != g_acb_cs.end()) cs = cs_prefix(it->second, &pgm);
++	}
++	static std::atomic<uint64_t> n_cs {0};
++	const uint64_t               k = n_cs++;
++	if (k < 64 || (k & 0x3ffu) == 0)
++		journal("acb cs prefix (exp 0401): t %.3f s queue %d acb part %u dwords dispatches at %d before it sets a program; the queue's program 0x%010" PRIx64 ", %zu dwords in front (%" PRIu64 " such parts)\n",
++		        timing_now(), t_queue_idx, n, at, pgm, cs.size(), k + 1);
++	return cs;
++}
++static void acb_cs_track(const uint32_t* part, uint32_t n) {
++	if (!acb_cs_prefix_on() || !g_dev || part == nullptr || n == 0) return;
++	std::shared_ptr<const std::vector<bc5::direct::Mapping>> maps_p = g_dev->sorted_mappings();
++	const bc5::full_state::Tracker::Reader read = [&maps_p](uint64_t a, uint64_t bytes) -> const uint32_t* {
++		return covered_sorted(*maps_p, a, bytes) ? reinterpret_cast<const uint32_t*>(a) : nullptr;
++	};
++	bc5::full_state::Stats st;
++	std::lock_guard        lk(g_acb_cs_mutex);
++	g_acb_cs[t_queue_idx].apply(std::span<const uint32_t>(part, n), read, st);
++}
++// Experiment 0381 (F679, F685), ported to this unit by experiment 0401 series b: BC5_DIRECT_ACB_STATE_RESTORE=1 puts the
++// graphics queue's tracked compute registers (the CS prefix's range without COMPUTE_VMID) in front of every graphics
++// buffer that dispatches (or calls an IB2) and gets no other prefix, in the buffer's own chain segment. With the acbs on
++// the GFX ring a graphics buffer that inherits them (its table sets the program, so cs_inherit_at finds nothing) ran with
++// an acb's USER_DATA_0 and faulted at 0x860xxxxxxxx (F679); with the restore 3 of 3 starts ran clean against 3 of 3 faults
++// without it (F685). bc5::acb_restore's wants() and runs() (backend/include/bc5/acb_restore.hpp @ main 029e0d6b) are
++// copied here, since the header is not on this build's include path; exp 0381's acb register census (Touched) is left out.
++// Off by default.
++static bool acb_restore_on() {
++	static const bool        on = bc5::env_on(std::getenv("BC5_DIRECT_ACB_STATE_RESTORE"));
++	static std::atomic<bool> told {false};
++	if (!told.exchange(true))
++		journal("exp 0401: acb state restore (exp 0381) %s\n", on ? "on (a graphics buffer that dispatches gets the graphics queue's tracked compute registers in front)" : "off");
++	return on;
++}
++static bool acb_restore_wants(const uint32_t* ib, uint32_t num_dwords) {
++	for (uint32_t i = 0; i < num_dwords;) {
++		const uint32_t h = ib[i], type = h >> 30u;
++		uint32_t       len = 1;
++		if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++		if (type == 3) {
++			const uint32_t op = (h >> 8u) & 0xffu;
++			if (op == 0x15 || op == 0x16 || op == 0x3f) return true; // DISPATCH_DIRECT, DISPATCH_INDIRECT, INDIRECT_BUFFER
++		}
++		i += len;
++	}
++	return false;
++}
++static std::vector<uint32_t> acb_restore_runs(const bc5::full_state::Tracker& t, size_t* regs) {
++	std::vector<uint32_t> p, vals;
++	uint32_t              first = 0;
++	size_t                n     = 0;
++	const auto flush = [&] {
++		if (vals.empty()) return;
++		p.push_back(0xC0007600u | (static_cast<uint32_t>(vals.size()) << 16u)); // SET_SH_REG, COUNT = body dwords - 1
++		p.push_back(first);
++		p.insert(p.end(), vals.begin(), vals.end());
++		n += vals.size();
++		vals.clear();
++	};
++	for (uint32_t o = 0x204u; o < 0x400u; o++) {
++		uint32_t v = 0;
++		if (o == 0x214u || !t.get(bc5::full_state::Sh, o, v)) { // COMPUTE_VMID is the kernel's: never replayed
++			flush();
++			continue;
++		}
++		if (vals.empty()) first = o;
++		vals.push_back(v);
++	}
++	flush();
++	*regs = n;
++	return p;
++}
 +static bool ib_has_draw(const uint32_t* ib, uint32_t num_dwords) {
 +	for (uint32_t i = 0; i < num_dwords;) {
 +		const uint32_t h = ib[i], type = h >> 30u;
@@ -31425,6 +31541,27 @@ index 0000000..b822d66
 +				full_prefix.swap(cs);
 +				full_used = cs_used = true;
 +			}
++		}
++	}
++	// Experiment 0381 (F679): the graphics queue's compute registers back after a merged acb, by the CS prefix's path
++	// (full_prefix + cs_used: same segment, same pieces).
++	if (!full_used && std::strcmp(kind, "dcb") == 0 && g_dev && acb_restore_on() && acb_restore_wants(ib, num_dwords)) {
++		size_t                       regs = 0;
++		std::vector<uint32_t>        re   = acb_restore_runs(t_fs_before, &regs);
++		static std::atomic<uint64_t> n_re {0};
++		const uint64_t               k = n_re++;
++		if (k < 16 || (k & 0x3ffu) == 0)
++			journal("acb state restore (exp 0381): t %.3f s dcb %u dwords, %zu registers in %zu dwords (%" PRIu64 " such buffers)\n", timing_now(), num_dwords, regs, re.size(), k + 1);
++		if (!re.empty()) {
++			full_prefix.swap(re);
++			full_used = cs_used = true;
++		}
++	}
++	if (!full_used && std::strcmp(kind, "acb") == 0) { // experiment 0401: the acb's own queue state, as the CS prefix above for a dcb
++		std::vector<uint32_t> cs = acb_cs_prefix(ib, num_dwords);
++		if (!cs.empty()) {
++			full_prefix.swap(cs);
++			full_used = cs_used = true;
 +		}
 +	}
 +	// Experiment 0118: a piece goes to the GPU as one job with its full-state prefix in front. As two
@@ -32612,7 +32749,7 @@ index 0000000..b822d66
 +				}
 +			});
 +		}
-+		if (t_fs_valid || prefix_all() || cs_prefix_mode() != 0) t_fs_before = tracker;
++		if (t_fs_valid || prefix_all() || cs_prefix_mode() != 0 || acb_restore_on()) t_fs_before = tracker; // + exp 0381
 +		if (!waits.empty()) with_waits++;
 +	}
 +	tracker.apply(span, read, st);
@@ -32686,6 +32823,7 @@ index 0000000..b822d66
 +							if (pre != nullptr) submit_one(pre, n, "acb-state");
 +						}
 +						submit_split(t + skip, tn - skip, "acb");
++						acb_cs_track(t + skip, tn - skip); // experiment 0401
 +						t_ring = bc5::direct::kGfxRing;
 +					}
 +				}
