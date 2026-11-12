@@ -42321,10 +42321,10 @@ index 0000000..6b58dd4
 +} // namespace Libs::NpCommerceDialog
 diff --git a/src/libs/libNpCppWebApi.cpp b/src/libs/libNpCppWebApi.cpp
 new file mode 100644
-index 0000000..0e19c18
+index 0000000..1adc6f1
 --- /dev/null
 +++ b/src/libs/libNpCppWebApi.cpp
-@@ -0,0 +1,951 @@
+@@ -0,0 +1,1032 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +// KytyPlus host library: libSceNpCppWebApi (the PS5's C++ web API — Common, SessionManager V1, TitleCloudStorage V1)
 +// for a console that is not signed in to PSN.
@@ -43133,6 +43133,61 @@ index 0000000..0e19c18
 +    self->libContext = libContext;
 +}
 +
++// ---- experiment 0401 series e: SessionManager V2, the ten entry points exp 0328's port missed (F809, exp 0402) ----
++// Ported from AnyPS5 (boykopovar/AnyPS5, GPL-2.0-only), core/libs/prx/libSceNpCppWebApi/Export.cpp @ 4f41f4c37
++// (the names are there since 8cd400aa4, also at 27c88a8). The four PlayerSessionsApi requests and the five factories
++// fail as a console without a PSN sign-in fails, with SCE_NP_WEBAPI_ERROR_NOT_SIGNED_IN, and leave their out-pointers
++// alone (the loader's return-0 stub reported success without writing them). ParameterToJoinPlayerSessionAsPlayer::
++// initialize succeeds as this port's other parameter initialize calls do: AnyPS5 4f41f4c37 routes it through
++// InitializeParameterWithBody, part of a parameter-object model (constructor, initialize, terminate) that this port,
++// taken from 27c88a8, does not have; at 27c88a8 its body was `return 0`. In both shared builds since exp 0413,
++// registered unless KYTY_BC5_NP_SESSION_V2=0 (InitNpCppWebApi_1). Lesson R32: name -> NID (nid0401.py) ->
++// SymbolDatabase after InitAll -> function (npgate0401.cpp). AnyPS5's copyright remains with its authors; GPL-2.0-only as the rest of this file.
++
++int KYTY_SYSV_ABI _ZN3sce2Np9CppWebApi14SessionManager2V117PlayerSessionsApi20createPlayerSessionsEiRKNS4_31ParameterToCreatePlayerSessionsERNS1_6Common11TransactionINS8_12IntrusivePtrINS3_30PostPlayerSessionsResponseBodyEEENSA_INS8_18ResponseHeaderBaseEEEEE() {
++    return SCE_NP_WEBAPI_ERROR_NOT_SIGNED_IN;
++}
++
++int KYTY_SYSV_ABI _ZN3sce2Np9CppWebApi14SessionManager2V117PlayerSessionsApi25joinPlayerSessionAsPlayerEiRKNS4_36ParameterToJoinPlayerSessionAsPlayerERNS1_6Common11TransactionINS8_12IntrusivePtrINS3_52PostPlayerSessionsSessionIdMemberPlayersResponseBodyEEENSA_INS8_18ResponseHeaderBaseEEEEE() {
++    return SCE_NP_WEBAPI_ERROR_NOT_SIGNED_IN;
++}
++
++int KYTY_SYSV_ABI _ZN3sce2Np9CppWebApi14SessionManager2V117PlayerSessionsApi18leavePlayerSessionEiRKNS4_29ParameterToLeavePlayerSessionERNS1_6Common11TransactionINS8_15DefaultResponseENS8_12IntrusivePtrINS8_18ResponseHeaderBaseEEEEE() {
++    return SCE_NP_WEBAPI_ERROR_NOT_SIGNED_IN;
++}
++
++int KYTY_SYSV_ABI _ZN3sce2Np9CppWebApi14SessionManager2V117PlayerSessionsApi27getPlayerSessionInvitationsEiRKNS4_38ParameterToGetPlayerSessionInvitationsERNS1_6Common11TransactionINS8_12IntrusivePtrINS3_54GetUsersAccountIdPlayerSessionsInvitationsResponseBodyEEENSA_INS8_18ResponseHeaderBaseEEEEE() {
++    return SCE_NP_WEBAPI_ERROR_NOT_SIGNED_IN;
++}
++
++int KYTY_SYSV_ABI _ZN3sce2Np9CppWebApi14SessionManager2V117PlayerSessionsApi36ParameterToJoinPlayerSessionAsPlayer10initializeEPNS1_6Common10LibContextEPKcNS6_12IntrusivePtrINS3_51PostPlayerSessionsSessionIdMemberPlayersRequestBodyEEE(void* self, const uint64_t* context, const char* sessionId, const IntrusivePtr* body) {
++    (void)self;
++    (void)context;
++    (void)sessionId;
++    (void)body;
++    return 0;
++}
++
++int KYTY_SYSV_ABI _ZN3sce2Np9CppWebApi14SessionManager2V127RequestPlayerSessionFactory6createEPNS1_6Common10LibContextEiNS5_12IntrusivePtrINS3_32RequestPlayerSessionMemberPlayerEEERKNS5_6VectorINS5_6StringEEENS8_INS3_15LocalizedStringEEEPNS8_INS3_20RequestPlayerSessionEEE() {
++    return SCE_NP_WEBAPI_ERROR_NOT_SIGNED_IN;
++}
++
++int KYTY_SYSV_ABI _ZN3sce2Np9CppWebApi14SessionManager2V139RequestCreatePlayerSessionPlayerFactory6createEPNS1_6Common10LibContextEPKcS9_RKNS5_6VectorINS5_12IntrusivePtrINS3_24PlayerSessionPushContextEEEEEPNSB_INS3_32RequestCreatePlayerSessionPlayerEEE() {
++    return SCE_NP_WEBAPI_ERROR_NOT_SIGNED_IN;
++}
++
++int KYTY_SYSV_ABI _ZN3sce2Np9CppWebApi14SessionManager2V139RequestPlayerSessionMemberPlayerFactory6createEPNS1_6Common10LibContextERKNS5_6VectorINS5_12IntrusivePtrINS3_32RequestCreatePlayerSessionPlayerEEEEEPNS9_INS3_32RequestPlayerSessionMemberPlayerEEE() {
++    return SCE_NP_WEBAPI_ERROR_NOT_SIGNED_IN;
++}
++
++int KYTY_SYSV_ABI _ZN3sce2Np9CppWebApi14SessionManager2V136PostPlayerSessionsRequestBodyFactory6createEPNS1_6Common10LibContextERKNS5_6VectorINS5_12IntrusivePtrINS3_20RequestPlayerSessionEEEEEPNS9_INS3_29PostPlayerSessionsRequestBodyEEE() {
++    return SCE_NP_WEBAPI_ERROR_NOT_SIGNED_IN;
++}
++
++int KYTY_SYSV_ABI _ZN3sce2Np9CppWebApi14SessionManager2V158PostPlayerSessionsSessionIdMemberPlayersRequestBodyFactory6createEPNS1_6Common10LibContextERKNS5_6VectorINS5_12IntrusivePtrINS3_26RequestPlayerSessionPlayerEEEEEPNS9_INS3_51PostPlayerSessionsSessionIdMemberPlayersRequestBodyEEE() {
++    return SCE_NP_WEBAPI_ERROR_NOT_SIGNED_IN;
++}
++
 +} // extern "C"
 +
 +LIB_DEFINE(InitNpCppWebApi_1) {
@@ -43273,6 +43328,32 @@ index 0000000..0e19c18
 +	LIB_FUNC("dVCh5JiPsSY", _ZNK3sce2Np9CppWebApi6Common6String5c_strEv);
 +	LIB_FUNC("awTPhlC4368", _ZNK3sce2Np9CppWebApi6Common8IteratorINS2_12IntrusivePtrINS1_14SessionManager2V136UsersPlayerSessionsInvitationForReadEEEEdeEv);
 +	LIB_FUNC("jYAXNHlcQAc", _ZNK3sce2Np9CppWebApi6Common8IteratorINS2_12IntrusivePtrINS1_14SessionManager2V136UsersPlayerSessionsInvitationForReadEEEEneERKS9_);
++
++	// Experiment 0413 (both shared builds; from exp 0401 series e): the ten SessionManager V2 entry points above, on
++	// by default. KYTY_BC5_NP_SESSION_V2=0 leaves the ten NIDs unregistered, so the loader answers them with its
++	// return-0 stub as before 0413. Read here, not cached.
++	{
++		const char* v2 = std::getenv("KYTY_BC5_NP_SESSION_V2");
++		const bool  on = v2 == nullptr || std::strcmp(v2, "0") != 0;
++		{
++			Common::HostException::RawLog log;
++			log.Append(on ? "[bc5] NpCppWebApi SessionManager V2 on (10 exports registered)\n"
++			              : "[bc5] NpCppWebApi SessionManager V2 off (KYTY_BC5_NP_SESSION_V2=0, the loader's stubs)\n");
++			log.Flush();
++		}
++		if (on) {
++			LIB_FUNC("eVU3cXIJz0w", _ZN3sce2Np9CppWebApi14SessionManager2V117PlayerSessionsApi20createPlayerSessionsEiRKNS4_31ParameterToCreatePlayerSessionsERNS1_6Common11TransactionINS8_12IntrusivePtrINS3_30PostPlayerSessionsResponseBodyEEENSA_INS8_18ResponseHeaderBaseEEEEE);
++			LIB_FUNC("BY1jyWLZrcA", _ZN3sce2Np9CppWebApi14SessionManager2V117PlayerSessionsApi25joinPlayerSessionAsPlayerEiRKNS4_36ParameterToJoinPlayerSessionAsPlayerERNS1_6Common11TransactionINS8_12IntrusivePtrINS3_52PostPlayerSessionsSessionIdMemberPlayersResponseBodyEEENSA_INS8_18ResponseHeaderBaseEEEEE);
++			LIB_FUNC("JiY4sfHkV34", _ZN3sce2Np9CppWebApi14SessionManager2V117PlayerSessionsApi18leavePlayerSessionEiRKNS4_29ParameterToLeavePlayerSessionERNS1_6Common11TransactionINS8_15DefaultResponseENS8_12IntrusivePtrINS8_18ResponseHeaderBaseEEEEE);
++			LIB_FUNC("LbhH9NeB93I", _ZN3sce2Np9CppWebApi14SessionManager2V117PlayerSessionsApi27getPlayerSessionInvitationsEiRKNS4_38ParameterToGetPlayerSessionInvitationsERNS1_6Common11TransactionINS8_12IntrusivePtrINS3_54GetUsersAccountIdPlayerSessionsInvitationsResponseBodyEEENSA_INS8_18ResponseHeaderBaseEEEEE);
++			LIB_FUNC("XuVY56j7GM0", _ZN3sce2Np9CppWebApi14SessionManager2V117PlayerSessionsApi36ParameterToJoinPlayerSessionAsPlayer10initializeEPNS1_6Common10LibContextEPKcNS6_12IntrusivePtrINS3_51PostPlayerSessionsSessionIdMemberPlayersRequestBodyEEE);
++			LIB_FUNC("fIzsqjyD5oY", _ZN3sce2Np9CppWebApi14SessionManager2V127RequestPlayerSessionFactory6createEPNS1_6Common10LibContextEiNS5_12IntrusivePtrINS3_32RequestPlayerSessionMemberPlayerEEERKNS5_6VectorINS5_6StringEEENS8_INS3_15LocalizedStringEEEPNS8_INS3_20RequestPlayerSessionEEE);
++			LIB_FUNC("sRn6qePT54Q", _ZN3sce2Np9CppWebApi14SessionManager2V139RequestCreatePlayerSessionPlayerFactory6createEPNS1_6Common10LibContextEPKcS9_RKNS5_6VectorINS5_12IntrusivePtrINS3_24PlayerSessionPushContextEEEEEPNSB_INS3_32RequestCreatePlayerSessionPlayerEEE);
++			LIB_FUNC("-0Vv7HKZaBM", _ZN3sce2Np9CppWebApi14SessionManager2V139RequestPlayerSessionMemberPlayerFactory6createEPNS1_6Common10LibContextERKNS5_6VectorINS5_12IntrusivePtrINS3_32RequestCreatePlayerSessionPlayerEEEEEPNS9_INS3_32RequestPlayerSessionMemberPlayerEEE);
++			LIB_FUNC("yl3T9brJay4", _ZN3sce2Np9CppWebApi14SessionManager2V136PostPlayerSessionsRequestBodyFactory6createEPNS1_6Common10LibContextERKNS5_6VectorINS5_12IntrusivePtrINS3_20RequestPlayerSessionEEEEEPNS9_INS3_29PostPlayerSessionsRequestBodyEEE);
++			LIB_FUNC("xjVhrq2KPJA", _ZN3sce2Np9CppWebApi14SessionManager2V158PostPlayerSessionsSessionIdMemberPlayersRequestBodyFactory6createEPNS1_6Common10LibContextERKNS5_6VectorINS5_12IntrusivePtrINS3_26RequestPlayerSessionPlayerEEEEEPNS9_INS3_51PostPlayerSessionsSessionIdMemberPlayersRequestBodyEEE);
++		}
++	}
 +}
 +
 +} // namespace Libs::NpCppWebApi
