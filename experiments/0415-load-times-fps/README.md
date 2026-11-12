@@ -225,7 +225,7 @@ collector's errors kept), `run0415d.sh` (the snapshot is read-only and `cp -a` k
 writable; **b1 ran on a read-only save copy**, the others on a writable one). The private launcher is derived from the
 shared `play-pkg.sh` `157021e3` (installed by exp 0413 at 19:20): its first start on the new shared-tree code was
 run b1, which started and reached play. The snapshot is the `PPSA03671` directory itself (sum `e3b9be4116574c95` by
-the runner's recipe); the title left it unchanged in every run. RT on, no zero skip, the launcher's own words,
+the runner's recipe); the private copy is reset from it before every run (section 7 on what the title writes). RT on, no zero skip, the launcher's own words,
 watchdog 220 MiB (never acted; lowest available 378-534 MiB over the first twelve runs). No kernel line and no crash line in any run. The NAS
 rsync ran during most runs (the tables' last column: 1 = an rsync process was seen in that phase).
 
@@ -280,8 +280,73 @@ What the fix does not change, and what binds the menu load now: a read buffer is
 and waits 340-370 ms in the queue; the device mutex is held 9.2-10.2 s of the 16 s. Series C (below) measures the
 other candidates on top of `direct`.
 
+### 7. All 38 runs of the slot: the read fix confirmed, the other candidates measured on top of it
+
+Series C and D ran every other candidate on top of `KYTY_BC5_APR_POSIX=direct`, a closing series two more controls
+and one more `random`. Steadier measures than P2's length (whose start and end are cut on one-second flip counts):
+the second, from the first counter line, at which 6.0 GiB of APR data had been read; the second of the runner's first
+key (the start screen ran at 30 flips/s in two polls); the time from the Continue key to the first of three seconds
+with 20 flips or more. `sum0415.py`, data `raw/<tag>-*` [M]:
+
+| arm | runs | 6 GiB read at, s | first key at, s | Continue to 20 flips/s, s |
+|---|---|---|---|---|
+| off (L1: b1-b4; L1b: c1-c4; c3, c4 at the end of the session) | 8 | 57 53 52 52 53 54 52 52 | 55.1-62.1, mean 57.6 | 15.4-22.9, mean 17.5 |
+| `random` (x1-x3) | 3 | 45 45 45 | 49.6 50.6 50.6 | 13.9 14.9 13.9 |
+| `direct` (y1-y7) | 7 | 45 45 45 45 45 44 45 | 48.4-51.9, mean 50.3 | 12.1-13.9, mean 12.9 |
+| `direct` + `KYTY_BC5_RING_SPIN_US=300` (s1-s4) | 4 | 45 44 45 46 | 49.5 49.7 49.6 51.8 | 13.0 13.9 12.0 13.7 |
+| `direct` + `KYTY_BC5_RING_POLL_US=50` (p50, p50b) | 2 | 45 46 | 49.8 51.3 | 12.7 13.1 |
+| `direct` + `KYTY_BC5_RING_POLL_US=1000` (p1000) | 1 | 45 | 50.5 | 12.1 |
+| `direct` + `KYTY_BC5_EVENT_COALESCE_SAME=1` (e1-e3) | 3 | 45 45 45 | 48.6 50.2 49.4 | 12.9 15.2 12.9 |
+| `direct` + `KYTY_BC5_APR_READAHEAD=12` (r12a, r12b) | 2 | 45 45 | 49.5 49.6 | 13.0 13.0 |
+| `direct` + `KYTY_BC5_TIMERSLACK_NS=1000` (t1) | 1 | 45 | 49.4 | 13.0 |
+| `direct` + `KYTY_BC5_MUTEX_SPIN_US=30` (m1) | 1 | 45 | 51.5 | 13.9 |
+| `direct` + `KYTY_BC5_SEMA_TARGETED_WAKE=1` (w1) | 1 | 45 | 49.5 | 13.9 |
+| `direct`, lean build (l1) | 1 | 45 | 50.7 | 13.8 |
+
+- **The read fix, 10 runs against 8 [M]: the menu's data is read 7-12 s earlier (44-45 s against 52-57 s), the
+  start screen takes its first key 7.3 s earlier in the mean (50.3 against 57.6 s; the ranges do not overlap:
+  48.4-51.9 against 55.1-62.1), and the save load reaches 20 flips/s 4.2 s sooner in the mean (13.3 s over the ten
+  runs against 17.5 s; ranges 12.1-14.9 against 15.4-22.9).** The controls at the end of the session (c3, c4) read as
+  the first ones: no drift. No kernel line, no crash line, the watchdog never acted, in all 38 runs.
+- `random` and `direct` do not differ at this resolution (the save load: 13.9-14.9 against 12.1-13.9, three and
+  seven runs).
+- **No other candidate moved either load by a second** (one to four runs each, every value inside the `direct` runs'
+  range): the doorbell poll at 50 or 1,000 µs or with a 300 µs spin (C1), the timer slack (C2), the guest mutex spin
+  (C5), exp 0416's targeted semaphore wake (C6) and EOP coalescing, twelve reader threads, the lean build (the
+  journal, timing and frame-profile lines). What this says: none of them is on the loads' critical path at a
+  resolution of 1-2 s. It says nothing about frame gaps in play, which this route does not measure (30 s of play,
+  22.5-26.2 flips/s in every arm).
+- The time between "6 GiB read" and a steady 30 flips/s (1-8 s) varies as much inside the `direct` runs as between
+  arms; three arms that had 1 s in their first run had 3-8 s in the repeats. Not an effect.
+- The title writes its save directory in every run on a writable copy (35 of 35 after b1; the private copy is reset
+  from the snapshot before each run). b1's read-only copy did not change its phases against b2-b4.
+
+**What the menu load is made of with the fix on** (run y2, per second, `raw/y2-loadstat.txt`) [M]: nothing is read
+while the movies play (5-33 s: the title starts the menu's reads when they end; before them, at 4-7 s, about 1.2 GiB).
+Then about 6 s of reads at 400-570 MiB/s, again near the NVMe's limit, now with real bytes; then about 6 s in which
+reads are slow with no buffer waiting, the device mutex is held 510-710 ms of every second and its three users wait
+220-520 ms of every second for it, while 500-700 MiB a second are imported (pinned). Over the whole phase the mutex
+is held 9.2-10.2 s of 16 s, of which the imports are about 1.1 s, direct sync as a whole 3.9 s, the learned windows
+1.8 s and the anonymous sync 0.7 s (b1's figures; the rest of the hold is the submission itself: filter, state,
+BO list, ioctl).
+
+**Next, in this order** [I]:
+1. The device mutex in the second half of the menu load and in the save load: split `dev_hold` by part first (the
+   counters above name a third of it), then move the mapping maintenance out of the hold (the lock side of exp
+   0412's `DESIGN-device-mutex.md`, agreed with that session on 2026-11-12: 0415 the lock, 0412 the memory policy).
+2. The first half is the disk at its limit with the bytes the title asks for. Not ours to fix in the host; listed for
+   the maintainer, not asked for: the unpacked game is uncompressed on btrfs, and the same files stored compressed by
+   the file system would trade idle CPU threads for disk bytes. Unmeasured.
+3. Process start to the first flip (2-3 s: 7.4 GiB imported under one 1.8 s hold) and the reads at 4-7 s.
+
+Private state on the box: `~/bc5-work/exp0415` (3.1 GiB: the tree copy with its two build directories, L1 and L1b
+binaries, raw files). Nothing shared was written; BOX-LOCK was held only by `mk0415*.sh` and the runs and is empty.
+
 ## Verdict
 
-Open. First cause found and fixed behind a switch: APR reads opened a fresh descriptor per read and the kernel's
-read-ahead doubled the disk's work; `KYTY_BC5_APR_POSIX` takes the menu load from 20.9 to 15.8 s and the save load
-from 18.0 to 13.6 s (private build L1b, four runs against six). The other candidates are being measured.
+Part 1, first result. The largest cause of the long loads was ours: every APR read opened its file anew, the
+kernel's read-ahead doubled the disk's work and the NVMe ran at its limit for the whole menu load.
+`KYTY_BC5_APR_POSIX=random|direct` (default off, private build L1b `55b05fae` / lean `f691fcf5`) brings the start
+screen 7.3 s earlier (50.3 against 57.6 s after the start, ten runs against eight) and the save load to 20 flips/s
+4.2 s sooner (13.3 against 17.5 s). Eight other candidates showed no effect on the loads at a resolution of 1-2 s.
+Open: the device mutex in the rest of the load, the start before the first flip, and part 2 (fps).
