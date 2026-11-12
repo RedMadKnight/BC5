@@ -41803,20 +41803,21 @@ index abc1b97..b6c072d 100644
  	LIB_FUNC("9nLbWmRDpa8", Acm::AcmConvReverbSharedIr);
  	LIB_FUNC("KovqaFbmtsM", Acm::AcmFft);
 diff --git a/src/libs/libAudio2.cpp b/src/libs/libAudio2.cpp
-index 312870a..11c2d04 100644
+index 312870a..254a08a 100644
 --- a/src/libs/libAudio2.cpp
 +++ b/src/libs/libAudio2.cpp
-@@ -11,7 +11,9 @@
+@@ -11,7 +11,10 @@
  #include <algorithm>
  #include <array>
  #include <atomic>
 +#include <cstdio>
++#include <cstdlib> // experiment 0401 series e4: std::getenv
  #include <cstring>
 +#include <deque>
  #include <vector>
  
  namespace Libs::Audio {
-@@ -176,8 +178,28 @@ struct AudioOut2ContextState {
+@@ -176,8 +179,28 @@ struct AudioOut2ContextState {
  	uint32_t               queued      = 0;
  	uint32_t               num_grains  = 512;
  	uint64_t               last_update = 0;
@@ -41845,15 +41846,21 @@ index 312870a..11c2d04 100644
  struct AudioOut2PortStateEntry {
  	bool                   used          = false;
  	AudioOut2PortHandle    handle        = 0;
-@@ -189,6 +211,7 @@ struct AudioOut2PortStateEntry {
+@@ -189,6 +212,13 @@ struct AudioOut2PortStateEntry {
  	AudioInternal::Format  audio_format  = AudioInternal::Format::Unknown;
  	int                    audio_handle  = 0;
  	const void*            pcm_data      = nullptr;
 +	std::vector<float>     downmix;      // BC5: 12-channel float ports, mixed down to 8 channels
++	// experiment 0401 series e4 (KYTY_BC5_AUDIO_FIXES; used only when it is on)
++	bool                   bc5_set_pending = false; // given a buffer since its last grain
++	uint32_t               bc5_sets        = 0;     // buffers given since created or cleared (a null set), at most 2
++	std::vector<uint8_t>   bc5_set_pcm;             // the grain copied at the last set ("set")
++	std::vector<uint8_t>   bc5_zero;                // one grain of silence for the push-time path ("silence")
++	bool                   bc5_silence_told = false; // its first silenced grain was reported
  };
  
  struct AudioOut2SpeakerArrayState {
-@@ -248,10 +271,40 @@ static uint8_t audioout2_data_format_channels(uint32_t data_format) {
+@@ -248,10 +278,40 @@ static uint8_t audioout2_data_format_channels(uint32_t data_format) {
  	return static_cast<uint8_t>(channels == 0 ? 2u : std::min(channels, 16u));
  }
  
@@ -41894,7 +41901,220 @@ index 312870a..11c2d04 100644
  
  	switch (data_type) {
  		case 0:
-@@ -352,10 +405,14 @@ static void audioout2_queue_context_audio(AudioOut2ContextHandle ctx, bool block
+@@ -336,6 +396,212 @@ static AudioOut2PortStateEntry* audioout2_find_port_locked(AudioOut2PortHandle p
+ 	return nullptr;
+ }
+ 
++// ---- experiment 0401 series e4: AnyPS5's AudioOut2 fixes after 7ba97f4 (exp 0402, Top 10 item 2) ----
++// Ported from AnyPS5 (github.com/boykopovar/AnyPS5, GPL-2.0-only), read at 4f41f4c375f5abb487dbd184fbc150f31994d762, and
++// rewritten for this file's grain model (experiment 0188). Behind KYTY_BC5_AUDIO_FIXES; off is today's path exactly.
++// - "set", c34ab0258 (core/libs/prx/libSceAudioOut/src/AudioOut2Port.cpp, AudioOut2CaptureGrain): a grain takes the PCM a
++//   port was given at its last set, copied at that set; Advance read the buffer when it ran. AnyPS5's case: a title whose
++//   Wwise clears its buffers after setting them and before Advance played silence.
++// - "silence", 11f217b14 (same file, sceAudioOut2PortSetAttributes): a port not set since its last grain repeats its
++//   buffer, read when the grain is taken, only if it was given a buffer once since it was created or cleared with a null
++//   buffer; any other such port plays silence (zeros, so that its device keeps its pace). AnyPS5's case: a title that gives
++//   a port the same buffer every grain, then none for ~350 ms while that memory is reused, played a loud burst of noise.
++// - "room", 42beeaa46 (core/libs/prx/libSceAudioOut/src/AudioOut2Context.cpp, sceAudioOut2ContextPush and WaitForRoom): a
++//   blocking push also waits after it queued its grain, until the queue has room again, at most 200 ms. Here only on the
++//   timer path (no port of the context plays on a device): with a device the push already waits for the device's queue
++//   before it queues (audio.cpp QueueSdlAudio, experiment 0180), and the level counts that queue beyond a two-grain
++//   cushion (experiment 0188).
++// Not ported: b87075aad and ccaac6602, the reopen of a default output or a controller sound card that SDL stopped (the pad
++// ports' route of experiment 0372 reopens the controller's streams; SDL's PipeWire backend never stops the default
++// output; experiment 0401 aud0401-notes.md).
++// KYTY_BC5_AUDIO_FIXES: unset, empty or "0" is off; any other value turns all three on, unless it names parts
++// (comma-separated "set", "silence", "room"): then only those. Read once; one stderr line at the first context.
++// AnyPS5's copyright remains with its authors; GPL-2.0-only as the rest of this file.
++static constexpr uint32_t BC5_AUDIO_FIX_SET          = 1u;     // c34ab0258
++static constexpr uint32_t BC5_AUDIO_FIX_SILENCE      = 2u;     // 11f217b14
++static constexpr uint32_t BC5_AUDIO_FIX_ROOM         = 4u;     // 42beeaa46
++static constexpr uint64_t BC5_AUDIO_FIX_ROOM_WAIT_US = 200000; // AnyPS5's FULL_WAIT_TIMEOUT
++static constexpr uint32_t BC5_AUDIO_FIX_ROOM_STEP_US = 1000;   // AnyPS5's FULL_WAIT_STEP
++
++static uint32_t Bc5AudioFixesParse(const char* e) {
++	if (e == nullptr || e[0] == '\0' || std::strcmp(e, "0") == 0) {
++		return 0;
++	}
++	uint32_t    parts = 0;
++	const char* p     = e;
++	for (;;) {
++		const char*  comma = std::strchr(p, ',');
++		const size_t n     = comma != nullptr ? static_cast<size_t>(comma - p) : std::strlen(p);
++		if (n == 3 && std::strncmp(p, "set", n) == 0) {
++			parts |= BC5_AUDIO_FIX_SET;
++		} else if (n == 7 && std::strncmp(p, "silence", n) == 0) {
++			parts |= BC5_AUDIO_FIX_SILENCE;
++		} else if (n == 4 && std::strncmp(p, "room", n) == 0) {
++			parts |= BC5_AUDIO_FIX_ROOM;
++		}
++		if (comma == nullptr) {
++			break;
++		}
++		p = comma + 1;
++	}
++	return parts != 0 ? parts : (BC5_AUDIO_FIX_SET | BC5_AUDIO_FIX_SILENCE | BC5_AUDIO_FIX_ROOM);
++}
++
++// The parts of KYTY_BC5_AUDIO_FIXES that are on (0: off), read once.
++static uint32_t Bc5AudioFixes() {
++	static const uint32_t parts = [] {
++		const uint32_t p = Bc5AudioFixesParse(std::getenv("KYTY_BC5_AUDIO_FIXES"));
++		if (p == 0) {
++			std::fprintf(stderr, "[bc5] exp 0401: audio fixes off\n");
++		} else {
++			std::fprintf(stderr, "[bc5] exp 0401: audio fixes on:%s%s%s\n", (p & BC5_AUDIO_FIX_SET) != 0 ? " set" : "",
++			             (p & BC5_AUDIO_FIX_SILENCE) != 0 ? " silence" : "", (p & BC5_AUDIO_FIX_ROOM) != 0 ? " room" : "");
++		}
++		std::fflush(stderr);
++		return p;
++	}();
++	return parts;
++}
++
++// The bytes of one grain of the port, as AudioOut2ContextAdvance copies them.
++static size_t Bc5AudioFixesGrainBytes(const AudioOut2PortStateEntry& port) {
++	const uint32_t channels    = audioout2_data_format_channels(port.data_format);
++	const uint32_t sample_size = (port.data_format & 0x7fu) == 0 ? 4u : 2u;
++	return static_cast<size_t>(port.samples_num) * channels * sample_size;
++}
++
++// "silence" took a grain of the port: one stderr line at the port's first such grain (at most 32 lines in a run), so that a
++// run shows which ports the rule touches (the second title's vibration port is an AudioOut2 port, experiment 0372's P1).
++static void Bc5AudioFixesTellSilence(AudioOut2PortStateEntry& port, const char* where) {
++	static std::atomic<uint32_t> told {0};
++	if (port.bc5_silence_told) {
++		return;
++	}
++	port.bc5_silence_told = true;
++	if (told.fetch_add(1, std::memory_order_relaxed) >= 32) {
++		return;
++	}
++	std::fprintf(stderr, "[bc5] exp 0401: AudioOut2 port 0x%" PRIx64 " (type 0x%x, format 0x%08x): silence at %s, no buffer set since its last grain (the port's first)\n",
++	             static_cast<uint64_t>(port.handle), static_cast<unsigned>(port.port_type), static_cast<unsigned>(port.data_format), where);
++	std::fflush(stderr);
++}
++
++// AudioOut2PortSetAttributes gave the port `pcm` (under g_audioout2_port_mutex).
++static void Bc5AudioFixesOnSet(AudioOut2PortStateEntry& port, const void* pcm) {
++	const uint32_t parts = Bc5AudioFixes();
++	if (parts == 0) {
++		return;
++	}
++	if (pcm == nullptr) { // cleared: the next buffer it is given counts as given once (11f217b14)
++		port.bc5_set_pending = false;
++		port.bc5_sets        = 0;
++		port.bc5_set_pcm.clear();
++		return;
++	}
++	port.bc5_set_pending = true;
++	port.bc5_sets        = std::min<uint32_t>(port.bc5_sets + 1u, 2u); // only "once" and "more than once" matter
++	if ((parts & BC5_AUDIO_FIX_SET) != 0 && port.audio_handle > 0) {
++		port.bc5_set_pcm.resize(Bc5AudioFixesGrainBytes(port));
++		std::memcpy(port.bc5_set_pcm.data(), pcm, port.bc5_set_pcm.size());
++	}
++}
++
++// AudioOut2ContextAdvance takes the port's grain into `pcm`, sized for one grain (under g_audioout2_port_mutex). False:
++// it reads the port's buffer now, as without the fixes.
++static bool Bc5AudioFixesCaptureAtAdvance(AudioOut2PortStateEntry& port, std::vector<uint8_t>* pcm) {
++	const uint32_t parts = Bc5AudioFixes();
++	if (parts == 0) {
++		return false;
++	}
++	const bool pending   = port.bc5_set_pending;
++	port.bc5_set_pending = false;
++	if (pending) {
++		if ((parts & BC5_AUDIO_FIX_SET) != 0 && port.bc5_set_pcm.size() == pcm->size()) {
++			std::memcpy(pcm->data(), port.bc5_set_pcm.data(), pcm->size());
++			return true;
++		}
++		return false;
++	}
++	if ((parts & BC5_AUDIO_FIX_SILENCE) != 0 && port.bc5_sets != 1) {
++		std::memset(pcm->data(), 0, pcm->size());
++		Bc5AudioFixesTellSilence(port, "Advance");
++		return true;
++	}
++	return false;
++}
++
++// The push-time path (no advanced grain) takes the port's PCM: its buffer, read now (as AnyPS5 does outside its advanced
++// mode), or silence (11f217b14). The port's buffer, pcm_data, when the fixes are off (under g_audioout2_port_mutex).
++static const void* Bc5AudioFixesAtPush(AudioOut2PortStateEntry& port) {
++	const uint32_t parts = Bc5AudioFixes();
++	if (parts == 0) {
++		return port.pcm_data;
++	}
++	const bool pending   = port.bc5_set_pending;
++	port.bc5_set_pending = false;
++	if (!pending && (parts & BC5_AUDIO_FIX_SILENCE) != 0 && port.bc5_sets != 1) {
++		const size_t bytes = Bc5AudioFixesGrainBytes(port);
++		if (port.bc5_zero.size() != bytes) {
++			port.bc5_zero.assign(bytes, uint8_t {0});
++		}
++		Bc5AudioFixesTellSilence(port, "Push");
++		return port.bc5_zero.data();
++	}
++	return port.pcm_data;
++}
++
++// A blocking push on the timer path (`timer_blocking`) waits after it queued its grain until the context's queue has
++// room again, at most BC5_AUDIO_FIX_ROOM_WAIT_US (42beeaa46). It returns at once when "room" is off.
++static void Bc5AudioFixesWaitForRoom(AudioOut2ContextHandle ctx, bool timer_blocking) {
++	if (!timer_blocking || (Bc5AudioFixes() & BC5_AUDIO_FIX_ROOM) == 0) {
++		return;
++	}
++	const uint64_t start = LibKernel::KernelGetProcessTime();
++	for (;;) {
++		bool room = true;
++		g_audioout2_context_mutex.Lock();
++		if (auto* state = audioout2_find_context_locked(ctx); state != nullptr) {
++			audioout2_update_context_locked(state);
++			room = state->queued < state->queue_depth;
++		}
++		g_audioout2_context_mutex.Unlock();
++		if (room || LibKernel::KernelGetProcessTime() - start > BC5_AUDIO_FIX_ROOM_WAIT_US) {
++			return;
++		}
++		Common::Thread::SleepMicro(BC5_AUDIO_FIX_ROOM_STEP_US);
++	}
++}
++
++// For the CPU test aud0401.cpp of experiment 0401 only; the emulator never calls it. Copies what the advanced grain
++// `index` (0: the oldest not yet pushed) of context `ctx` holds for the port `port` into `out`, at most `size` bytes.
++// Returns the grain's bytes for that port; -1: no such context or grain; -2: the grain holds nothing of the port.
++int64_t Bc5AudioFixesPeekGrain(AudioOut2ContextHandle ctx, size_t index, AudioOut2PortHandle port, void* out, size_t size);
++int64_t Bc5AudioFixesPeekGrain(AudioOut2ContextHandle ctx, size_t index, AudioOut2PortHandle port, void* out, size_t size) {
++	int audio_handle = 0;
++	g_audioout2_port_mutex.Lock();
++	if (const auto* p = audioout2_find_port_locked(port); p != nullptr) {
++		audio_handle = p->audio_handle;
++	}
++	g_audioout2_port_mutex.Unlock();
++	int64_t result = -1;
++	g_audioout2_context_mutex.Lock();
++	if (const auto* state = audioout2_find_context_locked(ctx); state != nullptr && index < state->advanced.size()) {
++		result = -2;
++		for (const auto& c: state->advanced[index]) {
++			if (audio_handle > 0 && c.audio_handle == audio_handle) {
++				if (out != nullptr && size != 0) {
++					std::memcpy(out, c.pcm.data(), std::min(size, c.pcm.size()));
++				}
++				result = static_cast<int64_t>(c.pcm.size());
++				break;
++			}
++		}
++	}
++	g_audioout2_context_mutex.Unlock();
++	return result;
++}
++// ---- end of experiment 0401 series e4's helpers ----
++
+ static bool audioout2_context_has_queueable_device(AudioOut2ContextHandle ctx) {
+ 	Common::LockGuard lock(g_audioout2_port_mutex);
+ 	for (const auto& state: g_audioout2_ports) {
+@@ -352,10 +618,15 @@ static void audioout2_queue_context_audio(AudioOut2ContextHandle ctx, bool block
  	params.reserve(AudioInternal::OUT_PORTS_MAX);
  
  	g_audioout2_port_mutex.Lock();
@@ -41903,21 +42123,30 @@ index 312870a..11c2d04 100644
  		if (state.used && state.context == ctx && state.audio_handle > 0 &&
  		    state.pcm_data != nullptr && params.size() < AudioInternal::OUT_PORTS_MAX) {
 -			params.push_back(AudioInternal::OutputParam {state.audio_handle, state.pcm_data});
-+			const void* data = state.pcm_data;
++			// experiment 0401 series e4: state.pcm_data when KYTY_BC5_AUDIO_FIXES is off; else that or silence
++			const void* data = Bc5AudioFixesAtPush(state);
 +			if (audioout2_is_float12(state.data_format)) {
-+				data = audioout2_downmix_12_to_8(state.downmix, state.pcm_data, state.samples_num);
++				data = audioout2_downmix_12_to_8(state.downmix, data, state.samples_num); // experiment 0401 series e4: data (was state.pcm_data)
 +			}
 +			params.push_back(AudioInternal::OutputParam {state.audio_handle, data});
  		}
  	}
  	g_audioout2_port_mutex.Unlock();
-@@ -491,18 +548,74 @@ int KYTY_SYSV_ABI AudioOut2ContextSetAttributes(AudioOut2ContextHandle    ctx,
+@@ -414,6 +685,7 @@ int KYTY_SYSV_ABI AudioOut2ContextQueryMemory(const AudioOut2ContextParam* param
+ int KYTY_SYSV_ABI AudioOut2ContextCreate(const AudioOut2ContextParam* params, void* buffer,
+                                          size_t buffer_size, AudioOut2ContextHandle* ctx) {
+ 	PRINT_NAME();
++	(void)Bc5AudioFixes(); // experiment 0401 series e4: reads KYTY_BC5_AUDIO_FIXES once and prints its line, on or off
+ 
+ 	EXIT_NOT_IMPLEMENTED(params == nullptr);
+ 	EXIT_NOT_IMPLEMENTED(ctx == nullptr);
+@@ -491,18 +763,76 @@ int KYTY_SYSV_ABI AudioOut2ContextSetAttributes(AudioOut2ContextHandle    ctx,
  }
  
  int KYTY_SYSV_ABI AudioOut2ContextAdvance(AudioOut2ContextHandle ctx) {
 +	std::vector<AudioOut2ContextState::Bc5Captured> grain;
 +	g_audioout2_port_mutex.Lock();
-+	for (const auto& port: g_audioout2_ports) {
++	for (auto& port: g_audioout2_ports) { // experiment 0401 series e4: not const (the fixes mark the port's grain as taken)
 +		if (!port.used || port.context != ctx || port.audio_handle <= 0 || port.pcm_data == nullptr) {
 +			continue;
 +		}
@@ -41928,7 +42157,9 @@ index 312870a..11c2d04 100644
 +		c.data_format  = port.data_format;
 +		c.frames       = port.samples_num;
 +		c.pcm.resize(static_cast<size_t>(port.samples_num) * channels * sample_size);
-+		std::memcpy(c.pcm.data(), port.pcm_data, c.pcm.size());
++		if (!Bc5AudioFixesCaptureAtAdvance(port, &c.pcm)) { // experiment 0401 series e4: false when KYTY_BC5_AUDIO_FIXES is off
++			std::memcpy(c.pcm.data(), port.pcm_data, c.pcm.size());
++		}
 +		grain.push_back(std::move(c));
 +	}
 +	g_audioout2_port_mutex.Unlock();
@@ -41986,7 +42217,7 @@ index 312870a..11c2d04 100644
  	for (;;) {
  		// Only a synchronous submission carrying PCM to a real device can rely on the SDL queue for
  		// pacing. Async pushes must retain queue-depth backpressure, and a handle without PCM (or a
-@@ -521,6 +634,13 @@ int KYTY_SYSV_ABI AudioOut2ContextPush(AudioOut2ContextHandle ctx, uint32_t bloc
+@@ -521,8 +851,17 @@ int KYTY_SYSV_ABI AudioOut2ContextPush(AudioOut2ContextHandle ctx, uint32_t bloc
  				if (state->queued < state->queue_depth) {
  					state->queued++;
  				}
@@ -41995,12 +42226,16 @@ index 312870a..11c2d04 100644
 +					state->advanced.pop_front();
 +					g_audioout2_context_mutex.Unlock();
 +					audioout2_output_grain(grain, blocking != 0);
++					Bc5AudioFixesWaitForRoom(ctx, blocking != 0 && !use_device_clock); // experiment 0401 series e4 (42beeaa46); at once when off
 +					return OK;
 +				}
  				g_audioout2_context_mutex.Unlock();
  				audioout2_queue_context_audio(ctx, blocking != 0);
++				Bc5AudioFixesWaitForRoom(ctx, blocking != 0 && !use_device_clock); // experiment 0401 series e4 (42beeaa46); at once when off
  				return OK;
-@@ -536,8 +656,28 @@ int KYTY_SYSV_ABI AudioOut2ContextPush(AudioOut2ContextHandle ctx, uint32_t bloc
+ 			}
+ 		}
+@@ -536,8 +875,28 @@ int KYTY_SYSV_ABI AudioOut2ContextPush(AudioOut2ContextHandle ctx, uint32_t bloc
  	}
  }
  
@@ -42029,7 +42264,7 @@ index 312870a..11c2d04 100644
  	if (queue_level != nullptr) {
  		*queue_level = 0;
  	}
-@@ -548,12 +688,21 @@ int KYTY_SYSV_ABI AudioOut2ContextGetQueueLevel(AudioOut2ContextHandle ctx, uint
+@@ -548,12 +907,21 @@ int KYTY_SYSV_ABI AudioOut2ContextGetQueueLevel(AudioOut2ContextHandle ctx, uint
  	g_audioout2_context_mutex.Lock();
  	if (auto* state = audioout2_find_context_locked(ctx); state != nullptr) {
  		audioout2_update_context_locked(state);
@@ -42054,6 +42289,14 @@ index 312870a..11c2d04 100644
  		}
  	}
  	g_audioout2_context_mutex.Unlock();
+@@ -684,6 +1052,7 @@ int KYTY_SYSV_ABI AudioOut2PortSetAttributes(AudioOut2PortHandle       port,
+ 		g_audioout2_port_mutex.Lock();
+ 		if (auto* state = audioout2_find_port_locked(port); state != nullptr) {
+ 			state->pcm_data = pcm_data;
++			Bc5AudioFixesOnSet(*state, pcm_data); // experiment 0401 series e4: nothing when KYTY_BC5_AUDIO_FIXES is off
+ 		}
+ 		g_audioout2_port_mutex.Unlock();
+ 	}
 diff --git a/src/libs/libC.cpp b/src/libs/libC.cpp
 index 43f62dd..2501929 100644
 --- a/src/libs/libC.cpp
