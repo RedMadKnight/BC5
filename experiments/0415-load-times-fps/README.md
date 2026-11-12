@@ -507,6 +507,71 @@ do nothing measurable. None of the three is proposed for the shared builds. The 
 repetition of whole-layout work on every change of the guest's ranges (views, mappings, windows, the VMA read), and
 that is what a fix has to remove: (d) and the windows' replacement, with exp 0412.
 
+### 11. Part 2, the frame rate: what is known and the measurement's design (laptop, 2026-11-12 night; nothing built or run)
+
+**Known before any new run** [M, with its source]:
+- The ordinary play frame is 34.1 ms; the title calls the flip at 22.4 ms and the last fence comes at 33.5 ms;
+  something is in flight on the GPU for 30.4 of the 34.1 ms; 148 buffers in 36 submissions a frame (exp 0412 section
+  26). The frame is GPU-bound; the host hands buffers on within a millisecond.
+- The long frames (16 % of play time there) had an idle GPU and the device mutex held for mapping maintenance (exp
+  0412 section 25). This experiment's section 8: the mutex is held 49 % of play, the device call 7.1 s per 34 s
+  (prepare 3.4, CS ioctl 3.3), mapping maintenance 7.5 s; `kcompactd0` used 13-28 s of CPU per 34 s of play.
+- RT's own GPU work was about 1.5 ms a frame, the CP check 0.8 ms, BVH compaction about 0.7 ms (the 10-31 ranking
+  note: journals of different days, not an A/B). The 15-minute run of section 8: mean 23.1 flips/s, 58 of 773
+  seconds under 15 flips.
+- Not known: what the GPU's 21-30 ms of a frame are made of.
+
+**Question 1: where does the GPU's time of an ordinary frame go?**
+
+*What can be attributed.* The completion thread sees every submission's fence. For submission i of a frame, with
+`flush_i` the time it reached the kernel and `fence_i` its completion, the GPU's serial time is
+`fence_i - max(flush_i, fence_(i-1) on the same ring)`. A frame has 36 submissions: that is the grain the host has
+without reading the title's shaders. To turn submissions into passes each gets a signature the title itself defines:
+the ring (GFX or compute), the kind (draw or dispatch buffer), the render-target size and count from the context
+registers the buffer sets, the number of draws and dispatches, and the address of its first shader. Frames are then
+aligned by signature, not by position. The title's own debug markers, if it ships any in its command buffers, are
+recorded as they are (a count per frame decides whether they exist).
+
+*Counter.* `KYTY_BC5_FRAME_STAT=<file>` (default off; tag fs415): for one frame in sixteen, one line per submission
+(frame number, ring, kind, signature, dwords from the title and dwords the host added, draws, dispatches, target
+size, flush and fence on CLOCK_MONOTONIC, BO count, device prepare / list / CS milliseconds), and one line per frame
+(flip called, flip returned, label waits, the drain). No behaviour change; the lines are written by the completion
+thread outside the device mutex. A laptop script groups by signature: per pass the median GPU-serial milliseconds,
+its share of the frame, its target size, and whether it exists with RT off.
+
+*Arms on a fixed place* (the save's spot after the load, standing still for 60 s, then the walk; four runs each for
+the spread; `kcompactd0`'s CPU and available memory per run beside every number):
+1. RT on (the baseline) against RT off (the input configuration's switch): RT's passes are the signatures that
+   disappear, their GPU time is RT's share by measurement, and what else changes with it.
+2. The render-target sizes per pass answer "at what resolution does each pass run" (the title's own dynamic
+   resolution and upscale path, read from its registers, not set by us).
+3. What the host adds, each with its existing switch or a count: the state prefix it emits per submission (host
+   dwords against title dwords per pass; `BC5_DIRECT_ACB_CS_PREFIX`, `ACB_STATE_RESTORE`), the CP coherence check
+   (`BC5_DIRECT_CP_COHER_START_DELAY`), the ring dependencies (`BC5_DIRECT_RING_DEPS=dcb`: "every GFX-ring job
+   starts after the compute rings' last jobs" serialises the two rings, by the launcher's own comment at the cost of
+   "about the one-ring flip rate"), the two-ring wait (4 ms), and the number of submissions a frame (each has a
+   fence round trip). For each: the GPU-serial time between submissions with nothing running (the gaps), per frame.
+4. The GPU's clock: the governor's range is 1,850-2,150 MHz and the frequency in play has never been read (exp 0412
+   section 27). It is the maintainer's setting; listed for him if the per-pass times scale with it, not asked for.
+
+**Question 2: the device call under the mutex in play** (prepare 3.4 s and CS ioctl 3.3 s per 34 s, 27,000
+submissions: 0.13 and 0.12 ms each). The device already reports prepare's parts (filter, state tracker, CU, nested,
+copy) and the BO count per submission; they go into the same counter file per phase. Two things to read from it:
+whether the CS ioctl's time follows the BO count (then the short list is the lever), and which part of prepare
+dominates (then that part's cache per layout generation is the candidate). The backend's own tests cover any change
+there.
+
+**Question 3: the long frames.** Per frame over 50 ms: was the GPU idle, who held the mutex and in which part
+(section 8's counters per second already give the totals; the per-frame line gives the join), `kcompactd0`'s CPU in
+that second, major faults. Exp 0412 owns the memory causes; this gives it the per-frame evidence.
+
+**What this design cannot see.** Inside one submission: several passes of the title in one buffer are one number.
+The GPU's time is serial time between fences, not a hardware counter. A pass's time includes the kernel's scheduling
+of the job.
+
+**Slot needed:** a build with the counter (incremental, minutes), then about 45 minutes: 4 x RT on, 4 x RT off on the
+fixed place (120 s each), then the host-side arms one at a time against a fresh baseline.
+
 ## Verdict
 
 Part 1, first result. The largest cause of the long loads was ours: every APR read opened its file anew, the
