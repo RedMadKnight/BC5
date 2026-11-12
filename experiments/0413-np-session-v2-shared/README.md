@@ -90,3 +90,10 @@ title's calls go through the maintainer's play.
 
 The ten SessionManager V2 NIDs are in both shared builds and in patch 0001 on this branch (2dbed49a), on by default. They
 no longer depend on a private build or a variable. A run-time check in play is still to come.
+
+## Audit: other tested items never integrated
+
+The maintainer also asked to check the other items that were tested but never integrated. `audit-unintegrated.md`
+(read-only, laptop) lists 67 rows with file:line evidence. Nothing from exp 0390 on is in patch 0001; the last patch
+commit on main is a8324c8b (exp 0389). 28 rows are recommended for integration default on, 20 default off, 19 left out
+(failed, answered catchers, or no measured gain). Each integration needs the maintainer's yes (D19).
