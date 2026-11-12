@@ -58723,10 +58723,23 @@ index 08b7156..f274f41 100644
  	LIB_FUNC("6na+Sa-B83w", LibZlib::sceZlibFinalize);
  	LIB_FUNC("TLar1HULv1Q", LibZlib::sceZlibInflate);
 diff --git a/src/libs/libs.cpp b/src/libs/libs.cpp
-index 36e4dc8..b124920 100644
+index 36e4dc8..8f7b589 100644
 --- a/src/libs/libs.cpp
 +++ b/src/libs/libs.cpp
-@@ -60,6 +60,21 @@ LIB_DEFINE(InitFontFt_1);
+@@ -4,6 +4,12 @@
+ #include "libs/errno.h"
+ #include "loader/symbolDatabase.h"
+ 
++#include <cstdint> // BC5 experiment 0405 (tld): the switched tables
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++#include <string>
++
+ namespace Libs {
+ 
+ namespace LibcInternal {
+@@ -60,6 +66,21 @@ LIB_DEFINE(InitFontFt_1);
  LIB_DEFINE(InitGraphicsDriver_1);
  LIB_DEFINE(InitLibKernel_1);
  LIB_DEFINE(InitNet_1);
@@ -58748,15 +58761,115 @@ index 36e4dc8..b124920 100644
  LIB_DEFINE(InitPad_1);
  LIB_DEFINE(InitPlayGo_1);
  LIB_DEFINE(InitPngDec_1);
-@@ -73,6 +88,7 @@ LIB_DEFINE(InitSystemService_1);
+@@ -73,8 +94,107 @@ LIB_DEFINE(InitSystemService_1);
  LIB_DEFINE(InitTextToSpeech2_1);
  LIB_DEFINE(InitUserService_1);
  LIB_DEFINE(InitVideoOut_1);
 +LIB_DEFINE(InitBc5LleAgc_1);
++
++// ---- BC5 experiment 0405 (series e6 of experiment 0401), tag "tld": six dead tables loaded, each behind a switch ----
++// KytyPlus f266548 compiles 32 HLE tables (a LIB_DEFINE with LIB_FUNC registrations) that InitAll below never calls. The
++// maintainer's decision 4 of exp 0405 (2026-11-04, "=> B => B"): each table's functions are ported first, then the table
++// is loaded, each behind its own switch, default off. Batch 1, the CPU-only tables (their functions: tags tbc and tbn):
++//   KYTY_BC5_LOAD_ZLIB       zlib       LibZlib::InitZlib_1         libs/libZlib.cpp  libSceZlib v1, module v1.1
++//   KYTY_BC5_LOAD_JPEG       jpeg       LibJpeg::InitJpeg_1         libs/libJpeg.cpp  libSceJpegEnc v1, module v1.1
++//   KYTY_BC5_LOAD_IME        ime        LibIme::InitIme_1           libs/libIme.cpp   libSceIme v1, module v1.1 (not the
++//                                                                                     live Ime::InitPlatform_1_Ime above)
++//   KYTY_BC5_LOAD_NPCOMMON   npcommon   NpCommon::InitNpCommon_1    libs/libNp.cpp    libSceNpCommon v1, module v1.1
++//   KYTY_BC5_LOAD_NPMANAGER  npmanager  NpManager::InitNpManager_1  libs/libNp.cpp    libSceNpManager v1, module v1.1
++//   KYTY_BC5_LOAD_NPTROPHY   nptrophy   NpTrophy::InitNpTrophy_1    libs/libNp.cpp    libSceNpTrophy v1, module v1.1
++// A switch is on when set, non-empty and not "0" (env_flag.hpp's rule). Each is read once, at the first InitAll, which
++// prints one stderr line: "[bc5] exp 0405: tables on (items: zlib,jpeg,...)" or "[bc5] exp 0405: tables off".
++// The switched tables load FIRST, in the order above, before every live table. SymbolDatabase::Add keeps every record in
++// its list and points the record's key, nid[library_vN][module_vM.m][Type] with "libSce" removed, at the newest record
++// (insert_or_assign). A key that a live table also registers therefore keeps the live function for Find, the loader's
++// lookup of a title's import by library and module (input tree: 7 Ime keys, 2 NpManager keys). The loader's NID-only
++// lookups (FindByNid: RuntimeLinker::Resolve's fallback for an import whose key is not registered, and the late resolve
++// of a stubbed import) take the FIRST record with that NID and type: for those 9 NIDs they reach the switched table's
++// function (tld0405-notes.md, risk 1). With every switch off InitAll makes today's calls in today's order.
++// No upstream code: this block only loads this tree's own tables. GPL-2.0 as the rest of this file.
++namespace LibZlib {
++LIB_DEFINE(InitZlib_1);
++} // namespace LibZlib
++namespace LibJpeg {
++LIB_DEFINE(InitJpeg_1);
++} // namespace LibJpeg
++namespace LibIme {
++LIB_DEFINE(InitIme_1);
++} // namespace LibIme
++namespace NpCommon {
++LIB_DEFINE(InitNpCommon_1);
++} // namespace NpCommon
++namespace NpManager {
++LIB_DEFINE(InitNpManager_1);
++} // namespace NpManager
++namespace NpTrophy {
++LIB_DEFINE(InitNpTrophy_1);
++} // namespace NpTrophy
++
++namespace Bc5Tables {
++
++struct Table {
++	const char* env;  // the switch
++	const char* item; // its name on the stderr line
++	void (*init)(Loader::SymbolDatabase* s);
++};
++
++// In load order.
++static const Table TABLES[] = {
++    {"KYTY_BC5_LOAD_ZLIB", "zlib", LibZlib::InitZlib_1},
++    {"KYTY_BC5_LOAD_JPEG", "jpeg", LibJpeg::InitJpeg_1},
++    {"KYTY_BC5_LOAD_IME", "ime", LibIme::InitIme_1},
++    {"KYTY_BC5_LOAD_NPCOMMON", "npcommon", NpCommon::InitNpCommon_1},
++    {"KYTY_BC5_LOAD_NPMANAGER", "npmanager", NpManager::InitNpManager_1},
++    {"KYTY_BC5_LOAD_NPTROPHY", "nptrophy", NpTrophy::InitNpTrophy_1},
++};
++static constexpr size_t TABLE_COUNT = sizeof(TABLES) / sizeof(TABLES[0]);
++static_assert(TABLE_COUNT <= 32);
++
++// Bit i: TABLES[i]'s switch is on. Read once; the first call prints the line.
++static uint32_t On() {
++	static const uint32_t on = [] {
++		uint32_t    bits = 0;
++		std::string items;
++		for (size_t i = 0; i < TABLE_COUNT; i++) {
++			const char* e = std::getenv(TABLES[i].env);
++			if (e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0) {
++				bits |= 1u << i;
++				items += items.empty() ? "" : ",";
++				items += TABLES[i].item;
++			}
++		}
++		if (bits == 0) {
++			std::fprintf(stderr, "[bc5] exp 0405: tables off\n");
++		} else {
++			std::fprintf(stderr, "[bc5] exp 0405: tables on (items: %s)\n", items.c_str());
++		}
++		std::fflush(stderr);
++		return bits;
++	}();
++	return on;
++}
++
++// The switched tables, in TABLES' order; nothing when every switch is off.
++static void LoadSwitched(Loader::SymbolDatabase* s) {
++	const uint32_t on = On();
++	for (size_t i = 0; i < TABLE_COUNT; i++) {
++		if ((on & (1u << i)) != 0) {
++			TABLES[i].init(s);
++		}
++	}
++}
++
++} // namespace Bc5Tables
++// ---- end of experiment 0405's switched tables ----
  
  void InitAll(Loader::SymbolDatabase* s) {
++	Bc5Tables::LoadSwitched(s); // BC5 experiment 0405 (KYTY_BC5_LOAD_*): the switched tables first; none when all are off
  	LIB_LOAD(InitAudio_1);
-@@ -95,6 +111,11 @@ void InitAll(Loader::SymbolDatabase* s) {
+ 	LIB_LOAD(InitAmpr_1);
+ 	LIB_LOAD(InitAppContent_1);
+@@ -95,6 +215,11 @@ void InitAll(Loader::SymbolDatabase* s) {
  	LIB_LOAD(LibKeyboard::InitKeyboard_1);
  	LIB_LOAD(Ime::InitPlatform_1_Ime);
  	LIB_LOAD(InitNet_1);
@@ -58768,7 +58881,7 @@ index 36e4dc8..b124920 100644
  	LIB_LOAD(InitPad_1);
  	LIB_LOAD(InitPlayGo_1);
  	LIB_LOAD(LibPsml::InitPsml_1);
-@@ -111,6 +132,7 @@ void InitAll(Loader::SymbolDatabase* s) {
+@@ -111,6 +236,7 @@ void InitAll(Loader::SymbolDatabase* s) {
  	LIB_LOAD(InitUserService_1);
  	LIB_LOAD(VideoDec2::InitVideoDec2_1);
  	LIB_LOAD(InitVideoOut_1);
