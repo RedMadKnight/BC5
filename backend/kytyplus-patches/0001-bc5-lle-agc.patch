@@ -64406,7 +64406,7 @@ index 80a1bcb..1b35962 100644
  
  } // namespace Loader
 diff --git a/src/loader/runtimeLinker.cpp b/src/loader/runtimeLinker.cpp
-index 343045e..487387c 100644
+index 343045e..f7830ac 100644
 --- a/src/loader/runtimeLinker.cpp
 +++ b/src/loader/runtimeLinker.cpp
 @@ -1,3 +1,5 @@
@@ -64743,7 +64743,7 @@ index 343045e..487387c 100644
  		}
  	}
  
-@@ -1386,6 +1483,11 @@ static KYTY_MS_ABI uint8_t* TlsMainGetAddr() {
+@@ -1386,6 +1483,226 @@ static KYTY_MS_ABI uint8_t* TlsMainGetAddr() {
  	return g_tls_cached_main_tcb;
  }
  
@@ -64752,10 +64752,260 @@ index 343045e..487387c 100644
 +	return TlsMainGetAddr();
 +}
 +
++// ---- experiment 0401 series e5: KYTY_BC5_TLS_FIXES, the patched TLS loads (exp 0405 KL01, KL02) -------------------
++// A main program's `mov <reg>,qword ptr fs:[0]` (64 48 8B /r 25 00 00 00 00, after up to three 0x66 bytes) becomes, at
++// load time, a call of the TLS handler that SetupTlsHandler writes (Jit::SafeCall, which calls TlsMainGetAddr, and a
++// Jit::TlsRegStub per output register; loader/jit.h). Two defects of that patch, in every title whose main ELF has such
++// a load:
++// - KL01: the original instruction leaves RFLAGS alone, but the stubs step over the guest's red zone with
++//   `sub rsp,0x80` ... `add rsp,0x80` around SafeCall's pushfq/popfq, so the guest gets the flags of the last `add`: a
++//   compare that the compiler scheduled across the TLS load branches on them. On: `lea rsp,[rsp-0x80]` and a 2-byte
++//   nop (the same 7 bytes) and `lea rsp,[rsp+0x80]` (8 bytes: the ret one byte later, one nop less); lea writes no
++//   flag. The call and data offsets (TlsRegStub code[9], code[13], code[15]; SafeCall code[0x22]) do not move.
++// - KL02: the byte scan counts up to three 0x66 bytes before the load and writes its 9-byte call at the first of them,
++//   then nops. A 0x66 that ends the previous instruction (`cmp al,0x66` = 3C 66) is overwritten, and after four 0x66
++//   bytes one is left in front of a plain E8 call. On: the call goes at the 0x64 byte itself, the counted 0x66 bytes
++//   stay as they are, and the call carries REX.W (48 E8 rel32, then 48 89 C0 mov rax,rax) so that a 0x66 left in
++//   front of it cannot make it a 16-bit call on AMD processors, which do not ignore 0x66 on a near branch as Intel's
++//   do (Zydis, MIT, include/Zydis/Decoder.h ZYDIS_DECODER_MODE_AMD_BRANCHES, as vendored in GPCS4 88480de
++//   3rdParty/zydis; TODO(verify): the AMD64 APM vol. 3 section that gives REX.W precedence over 0x66 for a near CALL;
++//   experiment 0401's tls0405.cpp runs such calls on the box's Zen 2). A segment under 9 bytes is not scanned (today's
++//   end pointer, start + size - 9, lies before the start, so its loop does not run).
++// From KytyPS5 (github.com/KytyPS5/KytyPS5, GPL-2.0) dfec14a: src/loader/jit.h:21-117 (Call9, TlsRegStub, SafeCall)
++// and src/loader/runtimeLinker.cpp:968-1016 (the scan). Adapted: the three structs live here under new names, because
++// loader/jit.h stays as it is (no header edit); the stub offsets come from Jit::TlsRegStub::GetOffset on both paths;
++// the switch chooses at run time. KytyPS5's copyright remains with its authors; GPL-2.0, as the rest of this file.
++// KYTY_BC5_TLS_FIXES: unset, empty or "0" is off, today's bytes exactly (loader/jit.h's structs and today's scan); any
++// other value turns both items on, unless it names items (comma-separated "kl01", "kl02"): then only those. Read
++// once; one line on stderr at the first use. Experiment 0401's tls0405.cpp calls Bc5Tls0405Items,
++// Bc5Tls0405PatchTlsLoads and Bc5Tls0405WriteTlsHandler, declaring them itself.
++static constexpr uint32_t BC5_TLS_FIX_KL01 = 1u; // the stubs keep RFLAGS
++static constexpr uint32_t BC5_TLS_FIX_KL02 = 2u; // the call at the 0x64 byte, with REX.W; no scan under 9 bytes
++
++static uint32_t Bc5TlsFixesParse(const char* e) {
++	if (e == nullptr || e[0] == '\0' || std::strcmp(e, "0") == 0) {
++		return 0;
++	}
++	uint32_t    items = 0;
++	const char* p     = e;
++	for (;;) {
++		const char*  comma = std::strchr(p, ',');
++		const size_t n     = comma != nullptr ? static_cast<size_t>(comma - p) : std::strlen(p);
++		if (n == 4 && std::strncmp(p, "kl01", n) == 0) {
++			items |= BC5_TLS_FIX_KL01;
++		} else if (n == 4 && std::strncmp(p, "kl02", n) == 0) {
++			items |= BC5_TLS_FIX_KL02;
++		}
++		if (comma == nullptr) {
++			break;
++		}
++		p = comma + 1;
++	}
++	return items != 0 ? items : (BC5_TLS_FIX_KL01 | BC5_TLS_FIX_KL02);
++}
++
++// The items of KYTY_BC5_TLS_FIXES that are on (0: off), read once.
++uint32_t Bc5Tls0405Items();
++uint32_t Bc5Tls0405Items() {
++	static const uint32_t items = [] {
++		const uint32_t i = Bc5TlsFixesParse(std::getenv("KYTY_BC5_TLS_FIXES"));
++		if (i == 0) {
++			std::fprintf(stderr, "[bc5] exp 0405: tls fixes off\n");
++		} else {
++			std::fprintf(stderr, "[bc5] exp 0405: tls fixes on (items:%s%s)\n", (i & BC5_TLS_FIX_KL01) != 0 ? " kl01" : "",
++			             (i & BC5_TLS_FIX_KL02) != 0 ? " kl02" : "");
++		}
++		std::fflush(stderr);
++		return i;
++	}();
++	return items;
++}
++
++namespace {
++
++#pragma pack(1)
++
++// KytyPS5 dfec14a src/loader/jit.h:21-41 (Call9): the patched TLS load with KL02 on.
++struct Bc5TlsCall9 {
++	void SetFunc(uint64_t func) {
++		auto func_addr = static_cast<int64_t>(func);
++		auto rip_addr  = reinterpret_cast<int64_t>(&code[6]);
++		auto offset64  = func_addr - rip_addr;
++		auto offset32  = static_cast<uint32_t>(static_cast<uint64_t>(offset64) & 0xffffffffu);
++
++		std::memcpy(&code[2], &offset32, sizeof(offset32));
++	}
++
++	static uint64_t GetSize() { return 9; }
++
++	// rex.w call func
++	// mov rax,rax
++	uint8_t code[9] = {0x48, 0xE8, 0x00, 0x00, 0x00, 0x00, 0x48, 0x89, 0xC0};
++};
++
++// KytyPS5 dfec14a src/loader/jit.h:43-72 (TlsRegStub): with KL01 on.
++struct Bc5TlsRegStub {
++	void SetFunc(uint64_t func) {
++		auto func_addr = static_cast<int64_t>(func);
++		auto rip_addr  = reinterpret_cast<int64_t>(&code[13]);
++		auto offset64  = func_addr - rip_addr;
++		auto offset32  = static_cast<uint32_t>(static_cast<uint64_t>(offset64) & 0xffffffffu);
++
++		std::memcpy(&code[9], &offset32, sizeof(offset32));
++	}
++
++	void SetOutputReg(uint8_t reg) { code[15] = static_cast<uint8_t>(0xc0u | (reg & 7u)); }
++
++	// lea rsp,[rsp-0x80]
++	// nop
++	// push rax
++	// call safe_call
++	// mov <reg>,rax
++	// pop rax
++	// lea rsp,[rsp+0x80]
++	// ret
++	uint8_t code[32] = {0x48, 0x8D, 0x64, 0x24, 0x80, 0x66, 0x90, 0x50, 0xE8, 0x00, 0x00,
++	                    0x00, 0x00, 0x48, 0x89, 0xC0, 0x58, 0x48, 0x8D, 0xA4, 0x24, 0x80,
++	                    0x00, 0x00, 0x00, 0xC3, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90};
++};
++
++// KytyPS5 dfec14a src/loader/jit.h:74-117 (SafeCall): with KL01 on.
++struct Bc5TlsSafeCall {
++	void SetFunc(Jit::SafeCall::func_t func) { std::memcpy(&code[0x22], &func, sizeof(func)); }
++
++	uint8_t code[0x90] = {
++	    /*00*/ 0x48, 0x8d, 0x64, 0x24, 0x80,             // lea    rsp,[rsp-0x80]
++	    /*05*/ 0x66, 0x90,                               // nop
++	    /*07*/ 0x9c,                                     // pushfq
++	    /*08*/ 0x51,                                     // push   rcx
++	    /*09*/ 0x52,                                     // push   rdx
++	    /*0a*/ 0x41, 0x50,                               // push   r8
++	    /*0c*/ 0x41, 0x51,                               // push   r9
++	    /*0e*/ 0x41, 0x52,                               // push   r10
++	    /*10*/ 0x41, 0x53,                               // push   r11
++	    /*12*/ 0x53,                                     // push   rbx
++	    /*13*/ 0x57,                                     // push   rdi
++	    /*14*/ 0x56,                                     // push   rsi
++	    /*15*/ 0x48, 0x89, 0xe3,                         // mov    rbx,rsp
++	    /*18*/ 0x48, 0x83, 0xe4, 0xf0,                   // and    rsp,0xfffffffffffffff0
++	    /*1c*/ 0x48, 0x83, 0xec, 0x20,                   // sub    rsp,0x20
++	    /*20*/ 0x48, 0xb9, 0x88, 0x77, 0x66, 0x55, 0x44, // movabs rcx,0x1122334455667788
++	    /*27*/ 0x33, 0x22, 0x11,                         // (the handler's address: SetFunc, code[0x22])
++	    /*2a*/ 0xff, 0xd1,                               // call   rcx
++	    /*2c*/ 0x48, 0x89, 0xc1,                         // mov    rcx,rax
++	    /*2f*/ 0x48, 0x89, 0xdc,                         // mov    rsp,rbx
++	    /*32*/ 0x48, 0x89, 0xc8,                         // mov    rax,rcx
++	    /*35*/ 0x5e,                                     // pop    rsi
++	    /*36*/ 0x5f,                                     // pop    rdi
++	    /*37*/ 0x5b,                                     // pop    rbx
++	    /*38*/ 0x41, 0x5b,                               // pop    r11
++	    /*3a*/ 0x41, 0x5a,                               // pop    r10
++	    /*3c*/ 0x41, 0x59,                               // pop    r9
++	    /*3e*/ 0x41, 0x58,                               // pop    r8
++	    /*40*/ 0x5a,                                     // pop    rdx
++	    /*41*/ 0x59,                                     // pop    rcx
++	    /*42*/ 0x9d,                                     // popfq
++	    /*43*/ 0x48, 0x8d, 0xa4, 0x24, 0x80, 0x00, 0x00, // lea    rsp,[rsp+0x80]
++	    /*4a*/ 0x00,                                     // (lea's last byte)
++	    /*4b*/ 0xc3,                                     // ret
++	};
++};
++
++#pragma pack()
++
++static_assert(sizeof(Bc5TlsCall9) == sizeof(Jit::Call9), "KL02's call has the size of today's");
++static_assert(sizeof(Bc5TlsRegStub) == sizeof(Jit::TlsRegStub), "KL01's TlsRegStub has the size of today's");
++static_assert(sizeof(Bc5TlsSafeCall) == sizeof(Jit::SafeCall), "KL01's SafeCall has the size of today's");
++
++} // namespace
++
++// KL02 on: KytyPS5 dfec14a src/loader/runtimeLinker.cpp:968-1016, the TLS scan of PatchProgram, with Bc5TlsCall9.
++static void Bc5TlsPatchTlsLoadsKl02(uint64_t address, uint64_t size, uint64_t handler_vaddr) {
++	if (size < Bc5TlsCall9::GetSize()) {
++		return; // shorter than the load
++	}
++
++	const uint8_t tls_pattern[5]       = {0x64, 0x48, 0x8B, 0x00, 0x25};
++	const uint8_t zero_displacement[4] = {};
++
++	auto* start_ptr = reinterpret_cast<uint8_t*>(address);
++	auto* end_ptr   = start_ptr + size - Bc5TlsCall9::GetSize();
++
++	for (auto* ptr = start_ptr; ptr <= end_ptr; ptr++) {
++		auto*  inst_ptr     = ptr;
++		size_t prefix_count = 0;
++		while (prefix_count < 3 && inst_ptr < start_ptr + size && *inst_ptr == 0x66) {
++			inst_ptr++;
++			prefix_count++;
++		}
++
++		if (inst_ptr + Bc5TlsCall9::GetSize() > start_ptr + size) {
++			break;
++		}
++
++		const uint8_t modrm = inst_ptr[3];
++		if (std::memcmp(inst_ptr, tls_pattern, 3) == 0 && (modrm & 0xc7u) == 0x04u && inst_ptr[4] == tls_pattern[4] &&
++		    std::memcmp(inst_ptr + 5, zero_displacement, sizeof(zero_displacement)) == 0) {
++			LOGF("Patch tls at addr: [%016" PRIx64 "]\n", reinterpret_cast<uint64_t>(inst_ptr));
++
++			const auto reg = (modrm >> 3u) & 7u;
++			EXIT_NOT_IMPLEMENTED(reg == 4u);
++
++			// A raw scan can meet a 0x66 of the instruction before, so the call does not overwrite one; its REX.W keeps a real
++			// 0x66 prefix from making it a 16-bit call on AMD (KytyPS5's comment, runtimeLinker.cpp:1007-1009).
++			auto* code = new (inst_ptr) Bc5TlsCall9;
++			code->SetFunc(reg == 0 ? handler_vaddr
++			                       : handler_vaddr + Jit::TlsRegStub::GetOffset(static_cast<uint8_t>(reg)));
++			ptr += prefix_count + Bc5TlsCall9::GetSize() - 1;
++		}
++	}
++}
++
++// PatchProgram's TLS scan and SetupTlsHandler's writes, each chosen by the switch: defined right after PatchProgram
++// and right before SetupTlsHandler, around today's lines.
++void Bc5Tls0405PatchTlsLoads(uint64_t address, uint64_t size, uint64_t handler_vaddr);
++void Bc5Tls0405WriteTlsHandler(uint64_t handler_vaddr, Jit::SafeCall::func_t func);
++// ---- end of experiment 0401 series e5's block ------------------------------------------------------------------------
++
  static void PatchProgram(Program* program, uint64_t address, uint64_t size) {
  	EXIT_IF(program == nullptr);
  	EXIT_IF(program->elf == nullptr);
-@@ -1685,6 +1787,8 @@ void RuntimeLinker::Execute(const std::filesystem::path& game_patch) {
+@@ -1414,7 +1731,23 @@ static void PatchProgram(Program* program, uint64_t address, uint64_t size) {
+ 		}
+ 	}
+ 
++	// Experiment 0401 series e5 (KYTY_BC5_TLS_FIXES, exp 0405 KL02): the scan that stood here is the body of
++	// Bc5Tls0405PatchTlsLoads now (just below), which runs it unchanged with the switch off and KytyPS5's with it on.
+ 	if (!program->elf->IsShared() && program->tls.handler_vaddr != 0) {
++		Bc5Tls0405PatchTlsLoads(address, size, program->tls.handler_vaddr);
++	}
++}
++
++// ---- experiment 0401 series e5: PatchProgram's TLS scan, chosen by KYTY_BC5_TLS_FIXES (exp 0405 KL02) ----------------
++// On: Bc5TlsPatchTlsLoadsKl02 (above PatchProgram). Off: today's scan, PatchProgram's lines as they were but for
++// handler_vaddr in place of program->tls.handler_vaddr (the caller tests what the scan's `if` tested).
++void Bc5Tls0405PatchTlsLoads(uint64_t address, uint64_t size, uint64_t handler_vaddr) {
++	if ((Bc5Tls0405Items() & BC5_TLS_FIX_KL02) != 0) {
++		Bc5TlsPatchTlsLoadsKl02(address, size, handler_vaddr);
++		return;
++	}
++	// ---- end of experiment 0401 series e5's lines: today's scan follows, its `if` line now a plain block ---------------
++	{
+ 		// Replace:
+ 		//   66 66 66
+ 		//   mov <reg>, qword ptr fs:[0x00]
+@@ -1453,8 +1786,8 @@ static void PatchProgram(Program* program, uint64_t address, uint64_t size) {
+ 
+ 				auto* code = new (ptr) Jit::Call9;
+ 				code->SetFunc(reg == 0
+-				                  ? program->tls.handler_vaddr
+-				                  : program->tls.handler_vaddr + Jit::TlsRegStub::GetOffset(reg));
++				                  ? handler_vaddr
++				                  : handler_vaddr + Jit::TlsRegStub::GetOffset(reg));
+ 				if (inst_size > Jit::Call9::GetSize()) {
+ 					std::memset(ptr + Jit::Call9::GetSize(), 0x90,
+ 					            inst_size - Jit::Call9::GetSize());
+@@ -1685,6 +2018,8 @@ void RuntimeLinker::Execute(const std::filesystem::path& game_patch) {
  	if (!game_patch.empty()) {
  		GamePatch::Apply(game_patch, m_programs.empty() ? nullptr : m_programs.front());
  	}
@@ -64764,7 +65014,7 @@ index 343045e..487387c 100644
  	StartAllModules();
  
  	LOGF_COLOR(Log::Color::BrightYellow, "---\n--- Execute: %s\n---\n", "Main");
-@@ -1731,6 +1835,10 @@ void RuntimeLinker::Clear() {
+@@ -1731,6 +2066,10 @@ void RuntimeLinker::Clear() {
  	m_relocated = false;
  }
  
@@ -64775,6 +65025,74 @@ index 343045e..487387c 100644
  void RuntimeLinker::Resolve(const std::string& name, SymbolType type, Program* program,
                              SymbolRecord* out_info, bool* bind_self) {
  	KYTY_PROFILER_FUNCTION();
+@@ -2999,29 +3338,54 @@ void RuntimeLinker::CreateSymbolDatabase(Program* program) {
+ 	syms(program, program->import_symbols.get(), false);
+ }
+ 
+-void RuntimeLinker::SetupTlsHandler(Program* program) {
+-	EXIT_IF(program == nullptr);
+-	EXIT_IF(g_tls_main_program != nullptr);
+-	EXIT_IF(program->elf == nullptr);
+-	EXIT_IF(program->elf->IsShared());
+-	EXIT_IF(program->tls.handler_vaddr == 0);
+-
+-	g_tls_main_program = program;
+-
+-	auto* code = new (reinterpret_cast<void*>(program->tls.handler_vaddr)) Jit::SafeCall;
++// ---- experiment 0401 series e5: SetupTlsHandler's writes of the TLS handler, chosen by KYTY_BC5_TLS_FIXES (KL01) ------
++// On: KytyPS5's SafeCall and TlsRegStub bytes (Bc5TlsSafeCall, Bc5TlsRegStub, above PatchProgram), at the same places.
++// Off: SetupTlsHandler's lines as they were, but for handler_vaddr and func in place of program->tls.handler_vaddr and
++// TlsMainGetAddr.
++void Bc5Tls0405WriteTlsHandler(uint64_t handler_vaddr, Jit::SafeCall::func_t func) {
++	if ((Bc5Tls0405Items() & BC5_TLS_FIX_KL01) != 0) {
++		auto* safe_call = new (reinterpret_cast<void*>(handler_vaddr)) Bc5TlsSafeCall;
++		safe_call->SetFunc(func);
++		for (uint8_t reg = 1; reg < 8; reg++) {
++			if (reg == 4) {
++				continue;
++			}
++			auto* stub = new (reinterpret_cast<void*>(handler_vaddr + Jit::TlsRegStub::GetOffset(reg))) Bc5TlsRegStub;
++			stub->SetFunc(handler_vaddr);
++			stub->SetOutputReg(reg);
++		}
++		return;
++	}
++	// ---- the switch off: SetupTlsHandler's lines follow, as they were ----
++	auto* code = new (reinterpret_cast<void*>(handler_vaddr)) Jit::SafeCall;
+ 
+-	code->SetFunc(TlsMainGetAddr);
++	code->SetFunc(func);
+ 
+ 	for (uint8_t reg = 1; reg < 8; reg++) {
+ 		if (reg == 4) {
+ 			continue;
+ 		}
+ 
+-		auto* stub = new (reinterpret_cast<void*>(program->tls.handler_vaddr +
++		auto* stub = new (reinterpret_cast<void*>(handler_vaddr +
+ 		                                          Jit::TlsRegStub::GetOffset(reg))) Jit::TlsRegStub;
+-		stub->SetFunc(program->tls.handler_vaddr);
++		stub->SetFunc(handler_vaddr);
+ 		stub->SetOutputReg(reg);
+ 	}
++}
++// ---- end of experiment 0401 series e5's block ------------------------------------------------------------------------
++
++void RuntimeLinker::SetupTlsHandler(Program* program) {
++	EXIT_IF(program == nullptr);
++	EXIT_IF(g_tls_main_program != nullptr);
++	EXIT_IF(program->elf == nullptr);
++	EXIT_IF(program->elf->IsShared());
++	EXIT_IF(program->tls.handler_vaddr == 0);
++
++	g_tls_main_program = program;
++
++	// Experiment 0401 series e5 (KYTY_BC5_TLS_FIXES, exp 0405 KL01): the SafeCall and TlsRegStub writes that stood here
++	// are Bc5Tls0405WriteTlsHandler's now (just above), unchanged with the switch off.
++	Bc5Tls0405WriteTlsHandler(program->tls.handler_vaddr, TlsMainGetAddr);
+ 
+ 	EXIT_IF(!Libs::LibKernel::Memory::ProtectGuestMemory(program->tls.handler_vaddr,
+ 	                                                     Jit::SafeCall::GetSize(),
 diff --git a/src/loader/systemContent.cpp b/src/loader/systemContent.cpp
 index efa8b48..de4bf37 100644
 --- a/src/loader/systemContent.cpp
