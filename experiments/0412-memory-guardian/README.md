@@ -2326,7 +2326,10 @@ laptop for the whole series: no line.
 the first time: `lean0412.sh stop <pid>` stopped the unit and its watcher started it again 24 s later, when the
 stand-in process had ended (`lean.log`: stopped 22:32:36, started 22:33:00; plasmashell pid 3326867 afterwards). In
 the series the unit was stopped and started twice more by `ab0412y.sh`'s own trap. It is `BC5_0412_LEAN=1` in the
-shortcut's environment; the shortcut is not changed yet (it needs his word after these numbers).
+shortcut's environment; the shortcut was not changed then.
+**2026-11-13 00:48, on his "Tak, włącz":** the desktop has "BC5 emulator (0412 fast8 bez Plasmy)" (`Exec=/usr/bin/env
+BC5_0412_LEAN=1 … play-guard-0412.sh fast8`); the fast8 shortcut went to `~/bc5-work/trash-20261111/pulpit`. The
+launcher's dry run with the switch names the unit it would stop; it has not been run with the game yet.
 
 **What it is against the deficit.** 0.22 GiB of the 0.4–0.5 GiB (section 16), 0.3 GiB with the keyboard and
 Xwayland. On his own load the pin is about 0.2 GiB higher than on the script's (section 36).
