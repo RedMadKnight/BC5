@@ -18,13 +18,16 @@ EMPTY=$N/learned-empty.txt
 : > "$EMPTY" || exit 1
 SUM0=$(md5sum < "$W/direct-learned-pkg.txt"); ALI0=$(md5sum < "$W/direct-aliases-pkg.txt")
 now() { date +%H:%M; }
+kc() { awk '{print $14 + $15}' "/proc/$(pgrep -x kcompactd0 | head -1)/stat" 2> /dev/null || echo 0; }   # kcompactd0's CPU in ticks (HZ 100)
+ks() { awk '{print $14 + $15}' "/proc/$(pgrep -x kswapd0 | head -1)/stat" 2> /dev/null || echo 0; }
 free_box() { [ ! -s "$LOCK" ] && ! pgrep '^kyty_emulator' > /dev/null; }
 arm() {   # <tag> empty|file [KEY=VALUE ...]
   local tag=$1 lf=$2; shift 2
   [ -e "$R/$tag-start.txt" ] && { echo "$(date +%T) $tag already run: skipped"; return 0; }
   local ok=0
   while [ "$ok" -lt 6 ]; do if free_box; then ok=$((ok + 1)); else ok=0; fi; sleep 10; [[ "$(now)" > "$LAST" ]] && { echo "$(date +%T) $tag not started: past $LAST"; return 1; }; done
-  echo "$(date +%T) $tag ($lf $*): plasmashell $(pgrep -cx plasmashell), rsync processes $(pgrep -c rsync), steamwebhelper $(pgrep -c steamwebhelper), available $(awk '/^MemAvailable/ {print int($2 / 1024)}' /proc/meminfo) MiB"
+  echo "$(date +%T) $tag ($lf $*): plasmashell $(pgrep -cx plasmashell), rsync processes $(pgrep -c rsync), steamwebhelper $(pgrep -c steamwebhelper), available $(awk '/^MemAvailable/ {print int($2 / 1024)}' /proc/meminfo) MiB, up $(awk '{printf "%.1f h", $1 / 3600}' /proc/uptime)"
+  local kc0 ks0; kc0=$(kc); ks0=$(ks)
   if [ "$lf" = empty ]; then
     N_LEARN=$EMPTY N_RESETS=3 N_EMU=$EMU N_FUSE="13000 2048" N_WD_MIB=220 bash "$X/run0412n.sh" "$tag" fast8 120 "$@" 2>&1 | tail -1
   else
@@ -35,6 +38,7 @@ arm() {   # <tag> empty|file [KEY=VALUE ...]
   grep -a "^would learn\|^map rule\|^timeout: fault\|^learned: fault\|^reopen\|PRT window" "$j" "$R/$tag-play.log" 2> /dev/null | cut -c1-700 > "$R/$tag-rule.txt"
   echo "$(date +%T) $tag ended: $(grep -o 'lowest available [0-9]* MiB, highest PSI full [0-9]* %' "$R/$tag-watchdog.txt" 2> /dev/null); would-learn lines $(grep -c 'would learn' "$R/$tag-rule.txt"); private learned file $(grep -c '' "$R/$tag-learned.txt" 2> /dev/null) lines; $(grep -a '^guard: t' "$R/$tag-guard.txt" 2> /dev/null | tail -1 | grep -o 'pinned direct [0-9.]* MiB')"
   grep -a 'map rule' "$R/$tag-rule.txt" | head -2 | cut -c1-300
+  echo "$tag kernel threads' CPU during the arm: kcompactd0 $(( ($(kc) - kc0) / 100 )) s, kswapd0 $(( ($(ks) - ks0) / 100 )) s"
   [ "$(md5sum < "$W/direct-learned-pkg.txt")" = "$SUM0" ] && [ "$(md5sum < "$W/direct-aliases-pkg.txt")" = "$ALI0" ] || { echo "$(date +%T) STOP: the shared learned or alias file changed"; return 1; }
   if grep -q "GPU HANG" "$R/$tag-end.txt" 2> /dev/null && ! grep -q "reset succeeded" "$R/$tag-end.txt"; then echo "$(date +%T) STOP: $tag ended on a GPU hang without a recovered reset"; return 1; fi
   return 0
