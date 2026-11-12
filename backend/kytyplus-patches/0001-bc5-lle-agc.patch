@@ -49858,7 +49858,7 @@ index b67cfd5..0531e49 100644
  	LIB_FUNC("U9ueyEhSkF4", Gen5Driver::GraphicsDriverUnknownU9ueyEhSkF4);
  }
 diff --git a/src/libs/libIme.cpp b/src/libs/libIme.cpp
-index 95ac2e9..3027212 100644
+index 95ac2e9..54e69d5 100644
 --- a/src/libs/libIme.cpp
 +++ b/src/libs/libIme.cpp
 @@ -12,11 +12,120 @@
@@ -50067,44 +50067,190 @@ index 95ac2e9..3027212 100644
  
  static int KYTY_SYSV_ABI sceImeVshClearPreedit() {
  	PRINT_NAME();
-@@ -260,12 +354,13 @@ static int KYTY_SYSV_ABI sceImeVshUpdateContext2() {
+@@ -260,54 +354,137 @@ static int KYTY_SYSV_ABI sceImeVshUpdateContext2() {
  
  
  LIB_DEFINE(InitIme_1) {
-+	(void)Bc5ImeItems(); // BC5 experiment 0405: reads KYTY_BC5_LOAD_IME once and prints its line at registration
- 	LIB_FUNC("mN+ZoSN-8hQ", LibIme::FinalizeImeModule);
- 	LIB_FUNC("uTW+63goeJs", LibIme::InitializeImeModule);
- 	LIB_FUNC("Lf3DeGWC6xg", LibIme::sceImeCheckFilterText);
- 	LIB_FUNC("zHuMUGb-AQI", LibIme::sceImeCheckRemoteEventParam);
- 	LIB_FUNC("OTb0Mg+1i1k", LibIme::sceImeCheckUpdateTextInfo);
+-	LIB_FUNC("mN+ZoSN-8hQ", LibIme::FinalizeImeModule);
+-	LIB_FUNC("uTW+63goeJs", LibIme::InitializeImeModule);
+-	LIB_FUNC("Lf3DeGWC6xg", LibIme::sceImeCheckFilterText);
+-	LIB_FUNC("zHuMUGb-AQI", LibIme::sceImeCheckRemoteEventParam);
+-	LIB_FUNC("OTb0Mg+1i1k", LibIme::sceImeCheckUpdateTextInfo);
 -	LIB_FUNC("TmVP8LzcFcY", LibIme::sceImeClose);
+-	LIB_FUNC("Ho5NVQzpKHo", LibIme::sceImeConfigGet);
+-	LIB_FUNC("P5dPeiLwm-M", LibIme::sceImeConfigSet);
+-	LIB_FUNC("tKLmVIUkpyM", LibIme::sceImeConfirmCandidate);
+-	LIB_FUNC("NYDsL9a0oEo", LibIme::sceImeDicAddWord);
+-	LIB_FUNC("l01GKoyiQrY", LibIme::sceImeDicDeleteLearnDics);
+-	LIB_FUNC("E2OcGgi-FPY", LibIme::sceImeDicDeleteUserDics);
+-	LIB_FUNC("JAiMBkOTYKI", LibIme::sceImeDicDeleteWord);
+-	LIB_FUNC("JoPdCUXOzMU", LibIme::sceImeDicGetWords);
+-	LIB_FUNC("FuEl46uHDyo", LibIme::sceImeDicReplaceWord);
+-	LIB_FUNC("E+f1n8e8DAw", LibIme::sceImeDisableController);
+-	LIB_FUNC("evjOsE18yuI", LibIme::sceImeFilterText);
++	(void)Bc5ImeItems(); // BC5 experiment 0405: reads KYTY_BC5_LOAD_IME once and prints its line at registration
++	// BC5 experiment 0405 (thb, series e7): with KYTY_BC5_LOAD_IME on, the 39 held stubs below (no behaviour to port:
++	// AnyPS5 has none, or its only source is not usable) are not registered, so a title's import of one stays
++	// unresolved, as when this table was not loaded: the runtime linker's thunk answers 0 and journals it (exp
++	// 0327's "[bc5] stubbed import called"). Off, every NID is registered as today, in today's order.
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("mN+ZoSN-8hQ", LibIme::FinalizeImeModule);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("uTW+63goeJs", LibIme::InitializeImeModule);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("Lf3DeGWC6xg", LibIme::sceImeCheckFilterText);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("zHuMUGb-AQI", LibIme::sceImeCheckRemoteEventParam);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("OTb0Mg+1i1k", LibIme::sceImeCheckUpdateTextInfo);
++	}
 +	// TmVP8LzcFcY sceImeClose: the live Ime table's (BC5 experiment 0405)
- 	LIB_FUNC("Ho5NVQzpKHo", LibIme::sceImeConfigGet);
- 	LIB_FUNC("P5dPeiLwm-M", LibIme::sceImeConfigSet);
- 	LIB_FUNC("tKLmVIUkpyM", LibIme::sceImeConfirmCandidate);
-@@ -279,16 +374,16 @@ LIB_DEFINE(InitIme_1) {
- 	LIB_FUNC("evjOsE18yuI", LibIme::sceImeFilterText);
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("Ho5NVQzpKHo", LibIme::sceImeConfigGet);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("P5dPeiLwm-M", LibIme::sceImeConfigSet);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("tKLmVIUkpyM", LibIme::sceImeConfirmCandidate);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("NYDsL9a0oEo", LibIme::sceImeDicAddWord);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("l01GKoyiQrY", LibIme::sceImeDicDeleteLearnDics);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("E2OcGgi-FPY", LibIme::sceImeDicDeleteUserDics);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("JAiMBkOTYKI", LibIme::sceImeDicDeleteWord);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("JoPdCUXOzMU", LibIme::sceImeDicGetWords);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("FuEl46uHDyo", LibIme::sceImeDicReplaceWord);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("E+f1n8e8DAw", LibIme::sceImeDisableController);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("evjOsE18yuI", LibIme::sceImeFilterText);
++	}
  	LIB_FUNC("wVkehxutK-U", LibIme::sceImeForTestFunction);
  	LIB_FUNC("T6FYjZXG93o", LibIme::sceImeGetPanelPositionAndForm);
 -	LIB_FUNC("ziPDcIjO0Vk", LibIme::sceImeGetPanelSize);
-+	// ziPDcIjO0Vk sceImeGetPanelSize: the live Ime table's (BC5 experiment 0405)
- 	LIB_FUNC("oYkJlMK51SA", LibIme::sceImeKeyboardOpenInternal);
- 	LIB_FUNC("3Hx2Uw9xnv8", LibIme::sceImeKeyboardUpdate);
+-	LIB_FUNC("oYkJlMK51SA", LibIme::sceImeKeyboardOpenInternal);
+-	LIB_FUNC("3Hx2Uw9xnv8", LibIme::sceImeKeyboardUpdate);
 -	LIB_FUNC("RPydv-Jr1bc", LibIme::sceImeOpen);
-+	// RPydv-Jr1bc sceImeOpen: the live Ime table's (BC5 experiment 0405)
- 	LIB_FUNC("16UI54cWRQk", LibIme::sceImeOpenInternal);
+-	LIB_FUNC("16UI54cWRQk", LibIme::sceImeOpenInternal);
 -	LIB_FUNC("WmYDzdC4EHI", LibIme::sceImeParamInit);
-+	// WmYDzdC4EHI sceImeParamInit: the live Ime table's (BC5 experiment 0405)
- 	LIB_FUNC("TQaogSaqkEk", LibIme::sceImeSetCandidateIndex);
+-	LIB_FUNC("TQaogSaqkEk", LibIme::sceImeSetCandidateIndex);
 -	LIB_FUNC("WLxUN2WMim8", LibIme::sceImeSetCaret);
 -	LIB_FUNC("ieCNrVrzKd4", LibIme::sceImeSetText);
 -	LIB_FUNC("TXYHFRuL8UY", LibIme::sceImeSetTextGeometry);
+-	LIB_FUNC("oOwl47ouxoM", LibIme::sceImeVshClearPreedit);
+-	LIB_FUNC("gtoTsGM9vEY", LibIme::sceImeVshClose);
+-	LIB_FUNC("wTKF4mUlSew", LibIme::sceImeVshConfirmPreedit);
+-	LIB_FUNC("rM-1hkuOhh0", LibIme::sceImeVshDisableController);
+-	LIB_FUNC("42xMaQ+GLeQ", LibIme::sceImeVshGetPanelPositionAndForm);
+-	LIB_FUNC("ZmmV6iukhyo", LibIme::sceImeVshInformConfirmdString);
+-	LIB_FUNC("EQBusz6Uhp8", LibIme::sceImeVshInformConfirmdString2);
+-	LIB_FUNC("LBicRa-hj3A", LibIme::sceImeVshOpen);
+-	LIB_FUNC("-IAOwd2nO7g", LibIme::sceImeVshSendTextInfo);
+-	LIB_FUNC("qDagOjvJdNk", LibIme::sceImeVshSetCaretGeometry);
+-	LIB_FUNC("tNOlmxee-Nk", LibIme::sceImeVshSetCaretIndexInPreedit);
+-	LIB_FUNC("rASXozKkQ9g", LibIme::sceImeVshSetPanelPosition);
+-	LIB_FUNC("idvMaIu5H+k", LibIme::sceImeVshSetParam);
+-	LIB_FUNC("ga5GOgThbjo", LibIme::sceImeVshSetPreeditGeometry);
+-	LIB_FUNC("RuSca8rS6yA", LibIme::sceImeVshSetSelectGeometry);
+-	LIB_FUNC("J7COZrgSFRA", LibIme::sceImeVshSetSelectionText);
+-	LIB_FUNC("WqAayyok5p0", LibIme::sceImeVshUpdate);
+-	LIB_FUNC("O7Fdd+Oc-qQ", LibIme::sceImeVshUpdateContext);
+-	LIB_FUNC("fwcPR7+7Rks", LibIme::sceImeVshUpdateContext2);
++	// ziPDcIjO0Vk sceImeGetPanelSize: the live Ime table's (BC5 experiment 0405)
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("oYkJlMK51SA", LibIme::sceImeKeyboardOpenInternal);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("3Hx2Uw9xnv8", LibIme::sceImeKeyboardUpdate);
++	}
++	// RPydv-Jr1bc sceImeOpen: the live Ime table's (BC5 experiment 0405)
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("16UI54cWRQk", LibIme::sceImeOpenInternal);
++	}
++	// WmYDzdC4EHI sceImeParamInit: the live Ime table's (BC5 experiment 0405)
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("TQaogSaqkEk", LibIme::sceImeSetCandidateIndex);
++	}
 +	// WLxUN2WMim8 sceImeSetCaret: the live Ime table's (BC5 experiment 0405)
 +	// ieCNrVrzKd4 sceImeSetText: the live Ime table's (BC5 experiment 0405)
 +	// TXYHFRuL8UY sceImeSetTextGeometry: the live Ime table's (BC5 experiment 0405)
- 	LIB_FUNC("oOwl47ouxoM", LibIme::sceImeVshClearPreedit);
- 	LIB_FUNC("gtoTsGM9vEY", LibIme::sceImeVshClose);
- 	LIB_FUNC("wTKF4mUlSew", LibIme::sceImeVshConfirmPreedit);
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("oOwl47ouxoM", LibIme::sceImeVshClearPreedit);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("gtoTsGM9vEY", LibIme::sceImeVshClose);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("wTKF4mUlSew", LibIme::sceImeVshConfirmPreedit);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("rM-1hkuOhh0", LibIme::sceImeVshDisableController);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("42xMaQ+GLeQ", LibIme::sceImeVshGetPanelPositionAndForm);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("ZmmV6iukhyo", LibIme::sceImeVshInformConfirmdString);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("EQBusz6Uhp8", LibIme::sceImeVshInformConfirmdString2);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("LBicRa-hj3A", LibIme::sceImeVshOpen);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("-IAOwd2nO7g", LibIme::sceImeVshSendTextInfo);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("qDagOjvJdNk", LibIme::sceImeVshSetCaretGeometry);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("tNOlmxee-Nk", LibIme::sceImeVshSetCaretIndexInPreedit);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("rASXozKkQ9g", LibIme::sceImeVshSetPanelPosition);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("idvMaIu5H+k", LibIme::sceImeVshSetParam);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("ga5GOgThbjo", LibIme::sceImeVshSetPreeditGeometry);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("RuSca8rS6yA", LibIme::sceImeVshSetSelectGeometry);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("J7COZrgSFRA", LibIme::sceImeVshSetSelectionText);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("WqAayyok5p0", LibIme::sceImeVshUpdate);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("O7Fdd+Oc-qQ", LibIme::sceImeVshUpdateContext);
++	}
++	if (Bc5ImeItems() == 0) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_IME is off
++		LIB_FUNC("fwcPR7+7Rks", LibIme::sceImeVshUpdateContext2);
++	}
+ }
+ 
+ } // namespace LibIme
 diff --git a/src/libs/libInvitationDialog.cpp b/src/libs/libInvitationDialog.cpp
 index aeaa823..9a20ce1 100644
 --- a/src/libs/libInvitationDialog.cpp
@@ -52973,7 +53119,7 @@ index 1b9db8a..cd8a08a 100644
  	LIB_FUNC("sk54bi6FtYM", LibNpWebApi2::NpWebApi2CreateUserContext);
  	LIB_FUNC("9X9+cneTGUU", LibNpWebApi2::NpWebApi2DeleteUserContext);
 diff --git a/src/libs/libNp.cpp b/src/libs/libNp.cpp
-index a0aee52..b1a4573 100644
+index a0aee52..d317c0a 100644
 --- a/src/libs/libNp.cpp
 +++ b/src/libs/libNp.cpp
 @@ -12,10 +12,36 @@
@@ -54018,28 +54164,54 @@ index a0aee52..b1a4573 100644
  	return OK;
  }
  
-@@ -375,6 +1098,7 @@ static int KYTY_SYSV_ABI sceNpUnregisterStateCallbackForToolkit() {
+@@ -375,6 +1098,11 @@ static int KYTY_SYSV_ABI sceNpUnregisterStateCallbackForToolkit() {
  
  
  LIB_DEFINE(InitNpManager_1) {
 +	(void)Bc5NpmOn(); // BC5 experiment 0405 (tbn): reads KYTY_BC5_LOAD_NPMANAGER once, prints its line
++	// BC5 experiment 0405 (thb, series e7): with KYTY_BC5_LOAD_NPMANAGER on, the 4 held stubs below (no behaviour to port:
++	// AnyPS5 has none, or its only source is not usable) are not registered, so a title's import of one stays
++	// unresolved, as when this table was not loaded: the runtime linker's thunk answers 0 and journals it (exp
++	// 0327's "[bc5] stubbed import called"). Off, every NID is registered as today, in today's order.
  	LIB_FUNC("8Z2Jc5GvGDI", NpManager::sceNpCheckNpAvailabilityA);
  	LIB_FUNC("r6MyYJkryz8", NpManager::sceNpCheckPlus);
  	LIB_FUNC("KZ1Mj9yEGYc", NpManager::sceNpGetAccountLanguage);
-@@ -398,8 +1122,10 @@ LIB_DEFINE(InitNpManager_1) {
+@@ -390,18 +1118,28 @@ LIB_DEFINE(InitNpManager_1) {
+ 	LIB_FUNC("oPO9U42YpgI", NpManager::sceNpGetGamePresenceStatusA);
+ 	LIB_FUNC("KO+11cgC7N0", NpManager::sceNpSetGamePresenceOnline);
+ 	LIB_FUNC("C0gNCiRIi4U", NpManager::sceNpSetGamePresenceOnlineA);
+-	LIB_FUNC("KswxLxk4c1Y", NpManager::sceNpRegisterGamePresenceCallbackA);
+-	LIB_FUNC("aJZyCcHxzu4", NpManager::sceNpUnregisterGamePresenceCallbackA);
++	if (!Bc5NpmOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPMANAGER is off
++		LIB_FUNC("KswxLxk4c1Y", NpManager::sceNpRegisterGamePresenceCallbackA);
++	}
++	if (!Bc5NpmOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPMANAGER is off
++		LIB_FUNC("aJZyCcHxzu4", NpManager::sceNpUnregisterGamePresenceCallbackA);
++	}
+ 	LIB_FUNC("Ybu6AxV6S0o", NpManager::sceNpIsPlusMember);
+ 	LIB_FUNC("xViqJdDgKl0", NpManager::sceNpUnregisterPlusEventCallback);
+ 	LIB_FUNC("a8R9-75u4iM", NpManager::sceNpGetAccountId);
  	LIB_FUNC("VgYczPGB5ss", NpManager::sceNpGetUserIdByAccountId);
  	LIB_FUNC("F6E4ycq9Dbg", NpManager::sceNpGetUserIdByOnlineId);
  	LIB_FUNC("JELHf4xPufo", NpManager::sceNpCheckCallbackForLib);
 -	LIB_FUNC("mjjTXh+NHWY", NpManager::sceNpUnregisterStateCallback);
 -	LIB_FUNC("cRILAEvn+9M", NpManager::sceNpUnregisterNpReachabilityStateCallback);
+-	LIB_FUNC("0c7HbXRKUt4", NpManager::sceNpRegisterStateCallbackForToolkit);
+-	LIB_FUNC("YIvqqvJyjEc", NpManager::sceNpUnregisterStateCallbackForToolkit);
 +	if (!Bc5NpmOn()) { // BC5 experiment 0405 (tbn): on, only the live table (libNet.cpp) registers these two NIDs
 +		LIB_FUNC("mjjTXh+NHWY", NpManager::sceNpUnregisterStateCallback);
 +		LIB_FUNC("cRILAEvn+9M", NpManager::sceNpUnregisterNpReachabilityStateCallback);
 +	}
- 	LIB_FUNC("0c7HbXRKUt4", NpManager::sceNpRegisterStateCallbackForToolkit);
- 	LIB_FUNC("YIvqqvJyjEc", NpManager::sceNpUnregisterStateCallbackForToolkit);
++	if (!Bc5NpmOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPMANAGER is off
++		LIB_FUNC("0c7HbXRKUt4", NpManager::sceNpRegisterStateCallbackForToolkit);
++	}
++	if (!Bc5NpmOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPMANAGER is off
++		LIB_FUNC("YIvqqvJyjEc", NpManager::sceNpUnregisterStateCallbackForToolkit);
++	}
  }
-@@ -409,8 +1135,64 @@ namespace NpPartner {
+ 
+ } // namespace NpManager
+@@ -409,8 +1147,64 @@ namespace NpPartner {
  
  LIB_VERSION("libSceNpPartner001", 1, "libSceNpPartner001", 1, 1);
  
@@ -54104,7 +54276,7 @@ index a0aee52..b1a4573 100644
  	return OK;
  }
  
-@@ -421,18 +1203,27 @@ static int KYTY_SYSV_ABI sceNpHasEAAccessSubscriptionAbortRequest() {
+@@ -421,18 +1215,27 @@ static int KYTY_SYSV_ABI sceNpHasEAAccessSubscriptionAbortRequest() {
  
  static int KYTY_SYSV_ABI sceNpEAAccessInitialize() {
  	PRINT_NAME();
@@ -54134,7 +54306,7 @@ index a0aee52..b1a4573 100644
  	LIB_FUNC("7CxI50-xlCk", NpPartner::sceNpEAAccessInitialize);
  	LIB_FUNC("+OnbUs1CV0M", NpPartner::sceNpHasEAAccessSubscription);
  }
-@@ -442,8 +1233,106 @@ namespace NpParty {
+@@ -442,8 +1245,106 @@ namespace NpParty {
  
  LIB_VERSION("libSceNpParty", 1, "libSceNpParty", 1, 1);
  
@@ -54241,7 +54413,7 @@ index a0aee52..b1a4573 100644
  	return NP_NOT_SIGNED_IN;
  }
  
-@@ -457,43 +1346,67 @@ static int KYTY_SYSV_ABI sceNpPartyCreateA() {
+@@ -457,43 +1358,67 @@ static int KYTY_SYSV_ABI sceNpPartyCreateA() {
  	return NP_NOT_SIGNED_IN;
  }
  
@@ -54317,7 +54489,7 @@ index a0aee52..b1a4573 100644
  	return NP_NOT_SIGNED_IN;
  }
  
-@@ -502,8 +1415,11 @@ static int KYTY_SYSV_ABI sceNpPartyGetStateAsUser() {
+@@ -502,8 +1427,11 @@ static int KYTY_SYSV_ABI sceNpPartyGetStateAsUser() {
  	return NP_NOT_SIGNED_IN;
  }
  
@@ -54330,7 +54502,7 @@ index a0aee52..b1a4573 100644
  	return NP_NOT_SIGNED_IN;
  }
  
-@@ -512,8 +1428,11 @@ static int KYTY_SYSV_ABI sceNpPartyGetVoiceChatPriority() {
+@@ -512,8 +1440,11 @@ static int KYTY_SYSV_ABI sceNpPartyGetVoiceChatPriority() {
  	return NP_NOT_SIGNED_IN;
  }
  
@@ -54343,7 +54515,7 @@ index a0aee52..b1a4573 100644
  	return NP_NOT_SIGNED_IN;
  }
  
-@@ -527,13 +1446,19 @@ static int KYTY_SYSV_ABI sceNpPartyLeave() {
+@@ -527,13 +1458,19 @@ static int KYTY_SYSV_ABI sceNpPartyLeave() {
  	return NP_NOT_SIGNED_IN;
  }
  
@@ -54365,7 +54537,7 @@ index a0aee52..b1a4573 100644
  	return NP_NOT_SIGNED_IN;
  }
  
-@@ -542,8 +1467,11 @@ static int KYTY_SYSV_ABI sceNpPartyRegisterPrivateHandler() {
+@@ -542,8 +1479,11 @@ static int KYTY_SYSV_ABI sceNpPartyRegisterPrivateHandler() {
  	return NP_NOT_SIGNED_IN;
  }
  
@@ -54378,7 +54550,7 @@ index a0aee52..b1a4573 100644
  	return NP_NOT_SIGNED_IN;
  }
  
-@@ -564,6 +1492,9 @@ static int KYTY_SYSV_ABI sceNpPartyShowInvitationListA() {
+@@ -564,6 +1504,9 @@ static int KYTY_SYSV_ABI sceNpPartyShowInvitationListA() {
  
  static int KYTY_SYSV_ABI sceNpPartyTerminate() {
  	PRINT_NAME();
@@ -54388,7 +54560,7 @@ index a0aee52..b1a4573 100644
  	return NP_NOT_SIGNED_IN;
  }
  
-@@ -574,9 +1505,14 @@ static int KYTY_SYSV_ABI sceNpPartyUnregisterPrivateHandler() {
+@@ -574,9 +1517,14 @@ static int KYTY_SYSV_ABI sceNpPartyUnregisterPrivateHandler() {
  
  
  LIB_DEFINE(InitNpParty_1) {
@@ -54405,7 +54577,7 @@ index a0aee52..b1a4573 100644
  	LIB_FUNC("DRA3ay-1DFQ", NpParty::sceNpPartyGetId);
  	LIB_FUNC("F1P+-wpxQow", NpParty::sceNpPartyGetMemberInfo);
  	LIB_FUNC("v2RYVGrJDkM", NpParty::sceNpPartyGetMemberInfoA);
-@@ -585,21 +1521,39 @@ LIB_DEFINE(InitNpParty_1) {
+@@ -585,21 +1533,39 @@ LIB_DEFINE(InitNpParty_1) {
  	LIB_FUNC("4gOMfNYzllw", NpParty::sceNpPartyGetMemberSessionInfo);
  	LIB_FUNC("EKi1jx59SP4", NpParty::sceNpPartyGetMemberVoiceInfo);
  	LIB_FUNC("aEzKdJzATZ0", NpParty::sceNpPartyGetState);
@@ -54454,7 +54626,7 @@ index a0aee52..b1a4573 100644
  }
  
  } // namespace NpParty
-@@ -607,6 +1561,27 @@ namespace NpSnsFacebookDialog {
+@@ -607,6 +1573,27 @@ namespace NpSnsFacebookDialog {
  
  LIB_VERSION("libSceNpSnsFacebookDialog", 1, "libSceNpSnsFacebookDialog", 1, 1);
  
@@ -54482,7 +54654,7 @@ index a0aee52..b1a4573 100644
  static int KYTY_SYSV_ABI sceNpSnsFacebookDialogUpdateStatus() {
  	PRINT_NAME();
  	return OK;
-@@ -614,6 +1589,7 @@ static int KYTY_SYSV_ABI sceNpSnsFacebookDialogUpdateStatus() {
+@@ -614,6 +1601,7 @@ static int KYTY_SYSV_ABI sceNpSnsFacebookDialogUpdateStatus() {
  
  
  LIB_DEFINE(InitNpSnsFacebookDialog_1) {
@@ -54490,7 +54662,7 @@ index a0aee52..b1a4573 100644
  	LIB_FUNC("fjV7C8H0Y8k", NpSnsFacebookDialog::sceNpSnsFacebookDialogUpdateStatus);
  }
  
-@@ -622,8 +1598,495 @@ namespace NpTrophy {
+@@ -622,8 +1610,495 @@ namespace NpTrophy {
  
  LIB_VERSION("libSceNpTrophy", 1, "libSceNpTrophy", 1, 1);
  
@@ -54988,7 +55160,7 @@ index a0aee52..b1a4573 100644
  	return OK;
  }
  
-@@ -677,63 +2140,99 @@ static int KYTY_SYSV_ABI sceNpTrophyConfigHasGroupFeature() {
+@@ -677,63 +2152,99 @@ static int KYTY_SYSV_ABI sceNpTrophyConfigHasGroupFeature() {
  	return OK;
  }
  
@@ -55100,7 +55272,7 @@ index a0aee52..b1a4573 100644
  	return OK;
  }
  
-@@ -792,23 +2291,35 @@ static int KYTY_SYSV_ABI sceNpTrophyIntNetSyncTitles() {
+@@ -792,23 +2303,35 @@ static int KYTY_SYSV_ABI sceNpTrophyIntNetSyncTitles() {
  	return OK;
  }
  
@@ -55140,7 +55312,7 @@ index a0aee52..b1a4573 100644
  	return OK;
  }
  
-@@ -869,6 +2380,9 @@ static int KYTY_SYSV_ABI sceNpTrophySystemCreateHandle() {
+@@ -869,6 +2392,9 @@ static int KYTY_SYSV_ABI sceNpTrophySystemCreateHandle() {
  
  static int KYTY_SYSV_ABI sceNpTrophySystemDbgCtl() {
  	PRINT_NAME();
@@ -55150,7 +55322,7 @@ index a0aee52..b1a4573 100644
  	return OK;
  }
  
-@@ -899,11 +2413,17 @@ static int KYTY_SYSV_ABI sceNpTrophySystemDestroyTrophyConfig() {
+@@ -899,11 +2425,17 @@ static int KYTY_SYSV_ABI sceNpTrophySystemDestroyTrophyConfig() {
  
  static int KYTY_SYSV_ABI sceNpTrophySystemGetDbgParam() {
  	PRINT_NAME();
@@ -55168,7 +55340,7 @@ index a0aee52..b1a4573 100644
  	return OK;
  }
  
-@@ -1024,16 +2544,25 @@ static int KYTY_SYSV_ABI sceNpTrophySystemRemoveUserData() {
+@@ -1024,16 +2556,25 @@ static int KYTY_SYSV_ABI sceNpTrophySystemRemoveUserData() {
  
  static int KYTY_SYSV_ABI sceNpTrophySystemSetDbgParam() {
  	PRINT_NAME();
@@ -55195,15 +55367,293 @@ index a0aee52..b1a4573 100644
  	return NP_NOT_SIGNED_IN;
  }
  
-@@ -1059,6 +2588,7 @@ static int KYTY_SYSV_ABI Func_FA7A2DD770447552() {
+@@ -1059,17 +2600,42 @@ static int KYTY_SYSV_ABI Func_FA7A2DD770447552() {
  
  
  LIB_DEFINE(InitNpTrophy_1) {
 +	(void)Bc5NptOn(); // BC5 experiment 0405 (tbn): reads KYTY_BC5_LOAD_NPTROPHY once, prints its line
++	// BC5 experiment 0405 (thb, series e7): with KYTY_BC5_LOAD_NPTROPHY on, the 64 held stubs below (no behaviour to port:
++	// AnyPS5 has none, or its only source is not usable) are not registered, so a title's import of one stays
++	// unresolved, as when this table was not loaded: the runtime linker's thunk answers 0 and journals it (exp
++	// 0327's "[bc5] stubbed import called"). Off, every NID is registered as today, in today's order.
  	LIB_FUNC("aTnHs7W-9Uk", NpTrophy::sceNpTrophyAbortHandle);
- 	LIB_FUNC("cqGkYAN-gRw", NpTrophy::sceNpTrophyCaptureScreenshot);
- 	LIB_FUNC("lhE4XS9OJXs", NpTrophy::sceNpTrophyConfigGetTrophyDetails);
-@@ -1153,248 +2683,963 @@ namespace NpTus {
+-	LIB_FUNC("cqGkYAN-gRw", NpTrophy::sceNpTrophyCaptureScreenshot);
+-	LIB_FUNC("lhE4XS9OJXs", NpTrophy::sceNpTrophyConfigGetTrophyDetails);
+-	LIB_FUNC("qJ3IvrOoXg0", NpTrophy::sceNpTrophyConfigGetTrophyFlagArray);
+-	LIB_FUNC("zDjF2G+6tI0", NpTrophy::sceNpTrophyConfigGetTrophyGroupArray);
+-	LIB_FUNC("7Kh86vJqtxw", NpTrophy::sceNpTrophyConfigGetTrophyGroupDetails);
+-	LIB_FUNC("ndLeNWExeZE", NpTrophy::sceNpTrophyConfigGetTrophySetInfo);
+-	LIB_FUNC("6EOfS5SDgoo", NpTrophy::sceNpTrophyConfigGetTrophySetInfoInGroup);
+-	LIB_FUNC("MW5ygoZqEBs", NpTrophy::sceNpTrophyConfigGetTrophySetVersion);
+-	LIB_FUNC("3tWKpNKn5+I", NpTrophy::sceNpTrophyConfigGetTrophyTitleDetails);
+-	LIB_FUNC("iqYfxC12sak", NpTrophy::sceNpTrophyConfigHasGroupFeature);
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("cqGkYAN-gRw", NpTrophy::sceNpTrophyCaptureScreenshot);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("lhE4XS9OJXs", NpTrophy::sceNpTrophyConfigGetTrophyDetails);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("qJ3IvrOoXg0", NpTrophy::sceNpTrophyConfigGetTrophyFlagArray);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("zDjF2G+6tI0", NpTrophy::sceNpTrophyConfigGetTrophyGroupArray);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("7Kh86vJqtxw", NpTrophy::sceNpTrophyConfigGetTrophyGroupDetails);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("ndLeNWExeZE", NpTrophy::sceNpTrophyConfigGetTrophySetInfo);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("6EOfS5SDgoo", NpTrophy::sceNpTrophyConfigGetTrophySetInfoInGroup);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("MW5ygoZqEBs", NpTrophy::sceNpTrophyConfigGetTrophySetVersion);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("3tWKpNKn5+I", NpTrophy::sceNpTrophyConfigGetTrophyTitleDetails);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("iqYfxC12sak", NpTrophy::sceNpTrophyConfigHasGroupFeature);
++	}
+ 	LIB_FUNC("XbkjbobZlCY", NpTrophy::sceNpTrophyCreateContext);
+ 	LIB_FUNC("q7U6tEAQf7c", NpTrophy::sceNpTrophyCreateHandle);
+ 	LIB_FUNC("E1Wrwd07Lr8", NpTrophy::sceNpTrophyDestroyContext);
+@@ -1082,70 +2648,178 @@ LIB_DEFINE(InitNpTrophy_1) {
+ 	LIB_FUNC("qqUVGDgQBm0", NpTrophy::sceNpTrophyGetTrophyInfo);
+ 	LIB_FUNC("LHuSmO3SLd8", NpTrophy::sceNpTrophyGetTrophyUnlockState);
+ 	LIB_FUNC("Ht6MNTl-je4", NpTrophy::sceNpTrophyGroupArrayGetNum);
+-	LIB_FUNC("u9plkqa2e0k", NpTrophy::sceNpTrophyIntAbortHandle);
+-	LIB_FUNC("pE5yhroy9m0", NpTrophy::sceNpTrophyIntCheckNetSyncTitles);
+-	LIB_FUNC("edPIOFpEAvU", NpTrophy::sceNpTrophyIntCreateHandle);
+-	LIB_FUNC("DSh3EXpqAQ4", NpTrophy::sceNpTrophyIntDestroyHandle);
+-	LIB_FUNC("sng98qULzPA", NpTrophy::sceNpTrophyIntGetLocalTrophySummary);
+-	LIB_FUNC("t3CQzag7-zs", NpTrophy::sceNpTrophyIntGetProgress);
+-	LIB_FUNC("jF-mCgGuvbQ", NpTrophy::sceNpTrophyIntGetRunningTitle);
+-	LIB_FUNC("PeAyBjC5kp8", NpTrophy::sceNpTrophyIntGetRunningTitles);
+-	LIB_FUNC("PEo09Dkqv0o", NpTrophy::sceNpTrophyIntGetTrpIconByUri);
+-	LIB_FUNC("kF9zjnlAzIA", NpTrophy::sceNpTrophyIntNetSyncTitle);
+-	LIB_FUNC("UXiyfabxFNQ", NpTrophy::sceNpTrophyIntNetSyncTitles);
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("u9plkqa2e0k", NpTrophy::sceNpTrophyIntAbortHandle);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("pE5yhroy9m0", NpTrophy::sceNpTrophyIntCheckNetSyncTitles);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("edPIOFpEAvU", NpTrophy::sceNpTrophyIntCreateHandle);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("DSh3EXpqAQ4", NpTrophy::sceNpTrophyIntDestroyHandle);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("sng98qULzPA", NpTrophy::sceNpTrophyIntGetLocalTrophySummary);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("t3CQzag7-zs", NpTrophy::sceNpTrophyIntGetProgress);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("jF-mCgGuvbQ", NpTrophy::sceNpTrophyIntGetRunningTitle);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("PeAyBjC5kp8", NpTrophy::sceNpTrophyIntGetRunningTitles);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("PEo09Dkqv0o", NpTrophy::sceNpTrophyIntGetTrpIconByUri);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("kF9zjnlAzIA", NpTrophy::sceNpTrophyIntNetSyncTitle);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("UXiyfabxFNQ", NpTrophy::sceNpTrophyIntNetSyncTitles);
++	}
+ 	LIB_FUNC("hvdThnVvwdY", NpTrophy::sceNpTrophyNumInfoGetTotal);
+ 	LIB_FUNC("TJCAxto9SEU", NpTrophy::sceNpTrophyRegisterContext);
+ 	LIB_FUNC("ITUmvpBPaG0", NpTrophy::sceNpTrophySetInfoGetTrophyFlagArray);
+ 	LIB_FUNC("BSoSgiMVHnY", NpTrophy::sceNpTrophySetInfoGetTrophyNum);
+-	LIB_FUNC("d9jpdPz5f-8", NpTrophy::sceNpTrophyShowTrophyList);
+-	LIB_FUNC("JzJdh-JLtu0", NpTrophy::sceNpTrophySystemAbortHandle);
+-	LIB_FUNC("z8RCP536GOM", NpTrophy::sceNpTrophySystemBuildGroupIconUri);
+-	LIB_FUNC("Rd2FBOQE094", NpTrophy::sceNpTrophySystemBuildNetTrophyIconUri);
+-	LIB_FUNC("Q182x0rT75I", NpTrophy::sceNpTrophySystemBuildTitleIconUri);
+-	LIB_FUNC("lGnm5Kg-zpA", NpTrophy::sceNpTrophySystemBuildTrophyIconUri);
+-	LIB_FUNC("20wAMbXP-u0", NpTrophy::sceNpTrophySystemCheckNetSyncTitles);
+-	LIB_FUNC("sKGFFY59ksY", NpTrophy::sceNpTrophySystemCheckRecoveryRequired);
+-	LIB_FUNC("JMSapEtDH9Q", NpTrophy::sceNpTrophySystemCloseStorage);
+-	LIB_FUNC("dk27olS4CEE", NpTrophy::sceNpTrophySystemCreateContext);
+-	LIB_FUNC("cBzXEdzVzvs", NpTrophy::sceNpTrophySystemCreateHandle);
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("d9jpdPz5f-8", NpTrophy::sceNpTrophyShowTrophyList);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("JzJdh-JLtu0", NpTrophy::sceNpTrophySystemAbortHandle);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("z8RCP536GOM", NpTrophy::sceNpTrophySystemBuildGroupIconUri);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("Rd2FBOQE094", NpTrophy::sceNpTrophySystemBuildNetTrophyIconUri);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("Q182x0rT75I", NpTrophy::sceNpTrophySystemBuildTitleIconUri);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("lGnm5Kg-zpA", NpTrophy::sceNpTrophySystemBuildTrophyIconUri);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("20wAMbXP-u0", NpTrophy::sceNpTrophySystemCheckNetSyncTitles);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("sKGFFY59ksY", NpTrophy::sceNpTrophySystemCheckRecoveryRequired);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("JMSapEtDH9Q", NpTrophy::sceNpTrophySystemCloseStorage);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("dk27olS4CEE", NpTrophy::sceNpTrophySystemCreateContext);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("cBzXEdzVzvs", NpTrophy::sceNpTrophySystemCreateHandle);
++	}
+ 	LIB_FUNC("8aLlLHKP+No", NpTrophy::sceNpTrophySystemDbgCtl);
+-	LIB_FUNC("NobVwD8qcQY", NpTrophy::sceNpTrophySystemDebugLockTrophy);
+-	LIB_FUNC("yXJlgXljItk", NpTrophy::sceNpTrophySystemDebugUnlockTrophy);
+-	LIB_FUNC("U0TOSinfuvw", NpTrophy::sceNpTrophySystemDestroyContext);
+-	LIB_FUNC("-LC9hudmD+Y", NpTrophy::sceNpTrophySystemDestroyHandle);
+-	LIB_FUNC("q6eAMucXIEM", NpTrophy::sceNpTrophySystemDestroyTrophyConfig);
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("NobVwD8qcQY", NpTrophy::sceNpTrophySystemDebugLockTrophy);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("yXJlgXljItk", NpTrophy::sceNpTrophySystemDebugUnlockTrophy);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("U0TOSinfuvw", NpTrophy::sceNpTrophySystemDestroyContext);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("-LC9hudmD+Y", NpTrophy::sceNpTrophySystemDestroyHandle);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("q6eAMucXIEM", NpTrophy::sceNpTrophySystemDestroyTrophyConfig);
++	}
+ 	LIB_FUNC("WdCUUJLQodM", NpTrophy::sceNpTrophySystemGetDbgParam);
+ 	LIB_FUNC("4QYFwC7tn4U", NpTrophy::sceNpTrophySystemGetDbgParamInt);
+-	LIB_FUNC("OcllHFFcQkI", NpTrophy::sceNpTrophySystemGetGroupIcon);
+-	LIB_FUNC("tQ3tXfVZreU", NpTrophy::sceNpTrophySystemGetLocalTrophySummary);
+-	LIB_FUNC("g0dxBNTspC0", NpTrophy::sceNpTrophySystemGetNextTitleFileEntryStatus);
+-	LIB_FUNC("sJSDnJRJHhI", NpTrophy::sceNpTrophySystemGetProgress);
+-	LIB_FUNC("X47s4AamPGg", NpTrophy::sceNpTrophySystemGetTitleFileStatus);
+-	LIB_FUNC("7WPj4KCF3D8", NpTrophy::sceNpTrophySystemGetTitleIcon);
+-	LIB_FUNC("pzL+aAk0tQA", NpTrophy::sceNpTrophySystemGetTitleSyncStatus);
+-	LIB_FUNC("Ro4sI9xgYl4", NpTrophy::sceNpTrophySystemGetTrophyConfig);
+-	LIB_FUNC("7+OR1TU5QOA", NpTrophy::sceNpTrophySystemGetTrophyData);
+-	LIB_FUNC("aXhvf2OmbiE", NpTrophy::sceNpTrophySystemGetTrophyGroupData);
+-	LIB_FUNC("Rkt0bVyaa4Y", NpTrophy::sceNpTrophySystemGetTrophyIcon);
+-	LIB_FUNC("nXr5Rho8Bqk", NpTrophy::sceNpTrophySystemGetTrophyTitleData);
+-	LIB_FUNC("eV1rtLr+eys", NpTrophy::sceNpTrophySystemGetTrophyTitleIds);
+-	LIB_FUNC("SsGLKTfWfm0", NpTrophy::sceNpTrophySystemGetUserFileInfo);
+-	LIB_FUNC("XqLLsvl48kA", NpTrophy::sceNpTrophySystemGetUserFileStatus);
+-	LIB_FUNC("-qjm2fFE64M", NpTrophy::sceNpTrophySystemIsServerAvailable);
+-	LIB_FUNC("50BvYYzPTsY", NpTrophy::sceNpTrophySystemNetSyncTitle);
+-	LIB_FUNC("yDJ-r-8f4S4", NpTrophy::sceNpTrophySystemNetSyncTitles);
+-	LIB_FUNC("mWtsnHY8JZg", NpTrophy::sceNpTrophySystemOpenStorage);
+-	LIB_FUNC("tAxnXpzDgFw", NpTrophy::sceNpTrophySystemPerformRecovery);
+-	LIB_FUNC("tV18n8OcheI", NpTrophy::sceNpTrophySystemRemoveAll);
+-	LIB_FUNC("kV4DP0OTMNo", NpTrophy::sceNpTrophySystemRemoveTitleData);
+-	LIB_FUNC("lZSZoN8BstI", NpTrophy::sceNpTrophySystemRemoveUserData);
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("OcllHFFcQkI", NpTrophy::sceNpTrophySystemGetGroupIcon);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("tQ3tXfVZreU", NpTrophy::sceNpTrophySystemGetLocalTrophySummary);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("g0dxBNTspC0", NpTrophy::sceNpTrophySystemGetNextTitleFileEntryStatus);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("sJSDnJRJHhI", NpTrophy::sceNpTrophySystemGetProgress);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("X47s4AamPGg", NpTrophy::sceNpTrophySystemGetTitleFileStatus);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("7WPj4KCF3D8", NpTrophy::sceNpTrophySystemGetTitleIcon);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("pzL+aAk0tQA", NpTrophy::sceNpTrophySystemGetTitleSyncStatus);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("Ro4sI9xgYl4", NpTrophy::sceNpTrophySystemGetTrophyConfig);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("7+OR1TU5QOA", NpTrophy::sceNpTrophySystemGetTrophyData);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("aXhvf2OmbiE", NpTrophy::sceNpTrophySystemGetTrophyGroupData);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("Rkt0bVyaa4Y", NpTrophy::sceNpTrophySystemGetTrophyIcon);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("nXr5Rho8Bqk", NpTrophy::sceNpTrophySystemGetTrophyTitleData);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("eV1rtLr+eys", NpTrophy::sceNpTrophySystemGetTrophyTitleIds);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("SsGLKTfWfm0", NpTrophy::sceNpTrophySystemGetUserFileInfo);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("XqLLsvl48kA", NpTrophy::sceNpTrophySystemGetUserFileStatus);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("-qjm2fFE64M", NpTrophy::sceNpTrophySystemIsServerAvailable);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("50BvYYzPTsY", NpTrophy::sceNpTrophySystemNetSyncTitle);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("yDJ-r-8f4S4", NpTrophy::sceNpTrophySystemNetSyncTitles);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("mWtsnHY8JZg", NpTrophy::sceNpTrophySystemOpenStorage);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("tAxnXpzDgFw", NpTrophy::sceNpTrophySystemPerformRecovery);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("tV18n8OcheI", NpTrophy::sceNpTrophySystemRemoveAll);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("kV4DP0OTMNo", NpTrophy::sceNpTrophySystemRemoveTitleData);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("lZSZoN8BstI", NpTrophy::sceNpTrophySystemRemoveUserData);
++	}
+ 	LIB_FUNC("nytN-3-pdvI", NpTrophy::sceNpTrophySystemSetDbgParam);
+ 	LIB_FUNC("JsRnDKRzvRw", NpTrophy::sceNpTrophySystemSetDbgParamInt);
+ 	LIB_FUNC("28xmRUFao68", NpTrophy::sceNpTrophyUnlockTrophy);
+-	LIB_FUNC("FJZW2oHUHFk", NpTrophy::Func_149656DA81D41C59);
+-	LIB_FUNC("n4AHGHb-pfY", NpTrophy::Func_9F80071876FFA5F6);
+-	LIB_FUNC("+O9vU1CpGZA", NpTrophy::Func_F8EF6F5350A91990);
+-	LIB_FUNC("+not13BEdVI", NpTrophy::Func_FA7A2DD770447552);
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("FJZW2oHUHFk", NpTrophy::Func_149656DA81D41C59);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("n4AHGHb-pfY", NpTrophy::Func_9F80071876FFA5F6);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("+O9vU1CpGZA", NpTrophy::Func_F8EF6F5350A91990);
++	}
++	if (!Bc5NptOn()) { // BC5 experiment 0405 (thb): held, registered only when KYTY_BC5_LOAD_NPTROPHY is off
++		LIB_FUNC("+not13BEdVI", NpTrophy::Func_FA7A2DD770447552);
++	}
+ }
+ 
+ } // namespace NpTrophy
+@@ -1153,248 +2827,963 @@ namespace NpTus {
  
  LIB_VERSION("libSceNpTus", 1, "libSceNpTus", 1, 1);
  
@@ -56216,7 +56666,7 @@ index a0aee52..b1a4573 100644
  	return NP_NOT_SIGNED_IN;
  }
  
-@@ -1408,48 +3653,75 @@ static int KYTY_SYSV_ABI sceNpTssGetStorageAsync() {
+@@ -1408,48 +3797,75 @@ static int KYTY_SYSV_ABI sceNpTssGetStorageAsync() {
  	return NP_NOT_SIGNED_IN;
  }
  
@@ -56301,7 +56751,7 @@ index a0aee52..b1a4573 100644
  	return NP_NOT_SIGNED_IN;
  }
  
-@@ -1458,13 +3730,19 @@ static int KYTY_SYSV_ABI sceNpTusChangeModeForOtherSaveDataOwners() {
+@@ -1458,13 +3874,19 @@ static int KYTY_SYSV_ABI sceNpTusChangeModeForOtherSaveDataOwners() {
  	return NP_NOT_SIGNED_IN;
  }
  
@@ -56323,7 +56773,7 @@ index a0aee52..b1a4573 100644
  	return NP_NOT_SIGNED_IN;
  }
  
-@@ -1473,338 +3751,539 @@ static int KYTY_SYSV_ABI sceNpTusCreateTitleCtx() {
+@@ -1473,338 +3895,539 @@ static int KYTY_SYSV_ABI sceNpTusCreateTitleCtx() {
  	return NP_NOT_SIGNED_IN;
  }
  
@@ -56930,7 +57380,7 @@ index a0aee52..b1a4573 100644
  	return NP_NOT_SIGNED_IN;
  }
  
-@@ -1818,53 +4297,82 @@ static int KYTY_SYSV_ABI sceNpTusSetTimeout() {
+@@ -1818,53 +4441,82 @@ static int KYTY_SYSV_ABI sceNpTusSetTimeout() {
  	return NP_NOT_SIGNED_IN;
  }
  
@@ -57022,7 +57472,7 @@ index a0aee52..b1a4573 100644
  	LIB_FUNC("sRVb2Cf0GHg", NpTus::sceNpTssCreateNpTitleCtx);
  	LIB_FUNC("cRVmNrJDbG8", NpTus::sceNpTusAddAndGetVariable);
  	LIB_FUNC("Q2UmHdK04c8", NpTus::sceNpTusAddAndGetVariableAsync);
-@@ -1914,8 +4422,10 @@ LIB_DEFINE(InitNpTus_1) {
+@@ -1914,8 +4566,10 @@ LIB_DEFINE(InitNpTus_1) {
  	LIB_FUNC("DS2yu3Sjj1o", NpTus::sceNpTssGetDataAsync);
  	LIB_FUNC("lL+Z3zCKNTs", NpTus::sceNpTssGetSmallStorage);
  	LIB_FUNC("f2Pe4LGS2II", NpTus::sceNpTssGetSmallStorageAsync);
@@ -57035,7 +57485,7 @@ index a0aee52..b1a4573 100644
  	LIB_FUNC("2eq1bMwgZYo", NpTus::sceNpTusAbortRequest);
  	LIB_FUNC("wPFah4-5Xec", NpTus::sceNpTusAddAndGetVariableA);
  	LIB_FUNC("2dB427dT3Iw", NpTus::sceNpTusAddAndGetVariableAAsync);
-@@ -1925,10 +4435,14 @@ LIB_DEFINE(InitNpTus_1) {
+@@ -1925,10 +4579,14 @@ LIB_DEFINE(InitNpTus_1) {
  	LIB_FUNC("mXZi1D2xwZE", NpTus::sceNpTusAddAndGetVariableForCrossSaveAsync);
  	LIB_FUNC("4VLlu7EIjzk", NpTus::sceNpTusAddAndGetVariableForCrossSaveVUser);
  	LIB_FUNC("6Lu9geO5TiA", NpTus::sceNpTusAddAndGetVariableForCrossSaveVUserAsync);
@@ -57052,7 +57502,7 @@ index a0aee52..b1a4573 100644
  	LIB_FUNC("iXzUOM9sXU0", NpTus::sceNpTusDeleteMultiSlotDataA);
  	LIB_FUNC("6-+Yqc-NppQ", NpTus::sceNpTusDeleteMultiSlotDataAAsync);
  	LIB_FUNC("xutwCvsydkk", NpTus::sceNpTusDeleteMultiSlotDataVUser);
-@@ -1996,8 +4510,10 @@ LIB_DEFINE(InitNpTus_1) {
+@@ -1996,8 +4654,10 @@ LIB_DEFINE(InitNpTus_1) {
  	LIB_FUNC("ypMObSwfcns", NpTus::sceNpTusSetMultiSlotVariableAAsync);
  	LIB_FUNC("1Cz0hTJFyh4", NpTus::sceNpTusSetMultiSlotVariableVUser);
  	LIB_FUNC("CJAxTxQdwHM", NpTus::sceNpTusSetMultiSlotVariableVUserAsync);
