@@ -52865,7 +52865,7 @@ index 1b9db8a..0cdeb6a 100644
  	LIB_FUNC("sk54bi6FtYM", LibNpWebApi2::NpWebApi2CreateUserContext);
  	LIB_FUNC("9X9+cneTGUU", LibNpWebApi2::NpWebApi2DeleteUserContext);
 diff --git a/src/libs/libNp.cpp b/src/libs/libNp.cpp
-index a0aee52..dba8ec8 100644
+index a0aee52..5427455 100644
 --- a/src/libs/libNp.cpp
 +++ b/src/libs/libNp.cpp
 @@ -12,10 +12,35 @@
@@ -54643,6 +54643,1868 @@ index a0aee52..dba8ec8 100644
  	LIB_FUNC("aTnHs7W-9Uk", NpTrophy::sceNpTrophyAbortHandle);
  	LIB_FUNC("cqGkYAN-gRw", NpTrophy::sceNpTrophyCaptureScreenshot);
  	LIB_FUNC("lhE4XS9OJXs", NpTrophy::sceNpTrophyConfigGetTrophyDetails);
+@@ -1153,248 +2432,963 @@ namespace NpTus {
+ 
+ LIB_VERSION("libSceNpTus", 1, "libSceNpTus", 1, 1);
+ 
+-static int KYTY_SYSV_ABI sceNpTssCreateNpTitleCtx() {
++// ---- BC5 experiment 0405 (series e7 of experiment 0401), tag tbt: KYTY_BC5_LOAD_NPTUS, the NpTus table's port ----
++// Exp 0405 decision 4 ("=> B => B", 2026-11-04): this table is compiled but Libs::InitAll never loaded it; it is ported
++// first, then loaded behind KYTY_BC5_LOAD_NPTUS (libs.cpp, agent tl2). Unset, empty or "0" is off: every stub below takes
++// today's path (PRINT_NAME, return NP_NOT_SIGNED_IN). On, 136 of the 142 exports answer as AnyPS5
++// (github.com/boykopovar/AnyPS5, GPL-2.0-only) @ 4f41f4c375f5abb487dbd184fbc150f31994d762,
++// core/libs/prx/libSceNpTus/Export.cpp:
++//  - 10-34 (the error codes and limits: 32 title contexts, 256 requests, 64 slots, 101 users, 100 friends, TSS slots 0 to
++//    15, a TSS small storage of at most 64 KiB), 36-137 (the request record; the slot-list, friends-option and empty-name
++//    checks; a request that starts and finishes at once; the title-context table that TUS and TSS share), 141-183, 222-230,
++//    247-249 and 1055-1057 (title contexts, requests, abort, poll, wait), 185-1089 (the 63 *Async calls: their argument
++//    checks in AnyPS5's order, then a request that finishes with SCE_NP_ERROR_SIGNED_OUT, or ABORTED once the request was
++//    aborted; and the 63 blocking forms: the same checks, then that result).
++//  - Its debt note docs/dev/debt/libSceNpTus.md: the signatures, the checks, their order and the community error codes follow
++//    shadPS4 (github.com/shadps4-emu/shadPS4, GPL-2.0-or-later; checked here against 60c42b9:
++//    src/core/libraries/np/np_tus/np_tus.cpp:122-168, np_tus.h:48-82, np_error.h:15,105-125, np_types.h:29-33), and fpPS4
++//    for the context and request calls; none of it is measured on a console. There is no PSN: no request reaches a server,
++//    and no output (variables, data, statuses, hits, content length) is ever written. sceNpTssGetDataAsync's data-status size
++//    0x18 is shadPS4's (np_tus.h:48-52, np_tus.cpp:4871); AnyPS5's commit dbc28c0a9 calls its check "measured", its note
++//    says "not measured on a console": TODO(verify).
++//  - The checks that an emulator run of firmware 13.42's module measured (debt note, AnyPS5 PR 10675), which AnyPS5's code
++//    does not apply, are here behind their own item switch, KYTY_BC5_NPTUS_FRIENDS_RUN, default off (Bc5NtuRunOn below).
++// Held: the 6 exports AnyPS5 does not implement (sceNpTssGetStorage, sceNpTssGetStorageAsync, sceNpTusSetThreadParam,
++// sceNpTusCreateTitleCtx, sceNpTusSetTimeout, sceNpTusChangeModeForOtherSaveDataOwners) keep today's stub, and with the
++// switch on InitNpTus_1 does not register them, so the loader reports them as stubbed imports (the top session, e7).
++// TUS keeps its own title contexts and request ids and reads no NpManager or NpCommon state: a context made for a user does
++// not ask whether that user is signed in (AnyPS5; shadPS4 asks sceNpGetNpId first). Signed out is 0x80550006, as network.cpp
++// and AnyPS5 answer; the off path keeps today's NP_NOT_SIGNED_IN (0x80550005).
++// AnyPS5's and shadPS4's copyrights remain with their authors; GPL-2.0 as the rest of this file.
++static bool Bc5NtuOn() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_LOAD_NPTUS");
++		const bool  v = e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
++		std::fprintf(stderr, "%s\n",
++		             v ? "[bc5] exp 0405: nptus port on (items: context request abort poll wait slots variable data status "
++		                 "friends users tss)"
++		               : "[bc5] exp 0405: nptus port off");
++		std::fflush(stderr);
++		return v;
++	}();
++	return on;
++}
++
++// The item switch KYTY_BC5_NPTUS_FRIENDS_RUN: default off, read once, and it acts only when KYTY_BC5_LOAD_NPTUS is on. On,
++// these calls check as an emulator run of firmware 13.42's libSceNpTus did, as AnyPS5's debt note
++// docs/dev/debt/libSceNpTus.md reports it ("Friends, cross-save and virtual-user argument checks", AnyPS5 PR 10675; the
++// maintainer's decision 1 of 2026-11-04 accepts values from firmware runs), in place of AnyPS5's shadPS4-based code:
++//  - the A and cross-save friends calls: an option of another size is INVALID_ARGUMENT, a start rank of 0 is taken. Kept
++//    as AnyPS5 (the run leaves them unknown here): the array-size check (0x80550714 unless arrayLen entries; the note gives
++//    no entry size) and zeroing the array for SDK 5.50 and later (no compiled SDK version is reachable in this file);
++//  - sceNpTusGetDataForCrossSaveVUser and its Async form: only a data-status size of 0x1F0 or 0x210 is taken, and a null
++//    status or an empty name is taken. The run names no code for another size: INVALID_ALIGNMENT here, the code AnyPS5 and
++//    shadPS4 give a wrong structure size, TODO(verify); it sits where AnyPS5 checks the status;
++//  - sceNpTusDeleteMultiSlotDataVUser and its Async form: a null or an empty user and arrayLen -1 are taken, 0 is
++//    INVALID_ARGUMENT. Kept as AnyPS5 (not in the run): null slot ids, other negative lengths, the option, too many slots,
++//    negative slot ids. What follows for a null user is unknown: offline the request finishes signed out, as every request.
++static bool Bc5NtuRunOn() {
++	static const bool on = [] {
++		const char* e   = std::getenv("KYTY_BC5_NPTUS_FRIENDS_RUN");
++		const bool  set = e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
++		const bool  v   = set && Bc5NtuOn();
++		std::fprintf(stderr, "%s\n",
++		             v     ? "[bc5] exp 0405: nptus friends run on (items: friends-option friends-rank cross-save-status "
++		                     "delete-user delete-count)"
++		             : set ? "[bc5] exp 0405: nptus friends run off (the nptus port is off)"
++		                   : "[bc5] exp 0405: nptus friends run off");
++		std::fflush(stderr);
++		return v;
++	}();
++	return on;
++}
++
++constexpr int      BC5_NTU_SIGNED_OUT        = static_cast<int>(0x80550006u);
++constexpr int      BC5_NTU_INVALID_ARGUMENT  = static_cast<int>(0x80550704u);
++constexpr int      BC5_NTU_TOO_MANY_OBJECTS  = static_cast<int>(0x80550706u);
++constexpr int      BC5_NTU_ABORTED           = static_cast<int>(0x80550707u);
++constexpr int      BC5_NTU_INSUFFICIENT      = static_cast<int>(0x8055070Cu);
++constexpr int      BC5_NTU_INVALID_ID        = static_cast<int>(0x8055070Eu);
++constexpr int      BC5_NTU_INVALID_TYPE      = static_cast<int>(0x80550711u);
++constexpr int      BC5_NTU_INVALID_ALIGNMENT = static_cast<int>(0x80550714u);
++constexpr int      BC5_NTU_TOO_MANY_SLOTS    = static_cast<int>(0x80550718u);
++constexpr int      BC5_NTU_TOO_MANY_USERS    = static_cast<int>(0x80550719u);
++constexpr int      BC5_NTU_POLL_RUNNING      = 1;
++constexpr size_t   BC5_NTU_MAX_CONTEXTS      = 32;
++constexpr size_t   BC5_NTU_MAX_REQUESTS      = 256;
++constexpr int      BC5_NTU_MAX_SLOTS         = 64;
++constexpr int      BC5_NTU_MAX_USERS         = 101;
++constexpr int      BC5_NTU_MAX_FRIENDS       = 100;
++constexpr int32_t  BC5_NTU_TSS_LAST_SLOT     = 15;
++constexpr uint64_t BC5_NTU_TSS_MAX_SIZE      = 64u * 1024u;
++constexpr uint32_t BC5_NTU_NO_SERVICE_LABEL  = 0xFFFFFFFFu;
++constexpr size_t   BC5_NTU_NAME_STRIDE       = 20;   // an online id: 16 characters, a terminator, 3 bytes of padding
++constexpr uint64_t BC5_NTU_FRIENDS_OPT_SIZE  = 0x18; // its size, then pointers to a start rank and to the hits
++constexpr uint64_t BC5_NTU_TSS_OPT_SIZE      = 0x20; // its size, then pointers to an offset, a last byte and a condition
++constexpr uint64_t BC5_NTU_TSS_STATUS_SIZE   = 0x18; // a time, a status, a content length
++constexpr uint64_t BC5_NTU_RUN_STATUS_SHORT  = 0x1F0; // the 13.42 run: the two data-status sizes it takes
++constexpr uint64_t BC5_NTU_RUN_STATUS_LONG   = 0x210;
++constexpr int32_t  BC5_NTU_SORT_FIRST        = 1;    // the friends calls' sort orders start at 1
++constexpr int32_t  BC5_NTU_STATUS_SORT_LAST  = 2;    // data statuses: by date, two ways
++constexpr int32_t  BC5_NTU_VALUE_SORT_LAST   = 4;    // variables: by date or by value, two ways each
++constexpr int32_t  BC5_NTU_OP_FIRST          = 1;    // try-and-set: the six comparisons, 1 to 6
++constexpr int32_t  BC5_NTU_OP_LAST           = 6;
++
++struct Bc5NtuRequest {
++	int  context = 0;
++	bool started = false;
++	bool aborted = false;
++	int  result  = 0;
++};
++
++struct Bc5NtuState {
++	std::mutex                   mutex;
++	std::set<int>                contexts;
++	std::map<int, Bc5NtuRequest> requests;
++	int                          next_context = 1;
++	int                          next_request = 1;
++};
++
++static Bc5NtuState& Bc5Ntu() {
++	static auto* s = new Bc5NtuState; // never destroyed: guest threads may call late
++	return *s;
++}
++
++// Title contexts: one table for the TUS and TSS, NpId and user forms (AnyPS5 :128-145, 222-230, 1055-1057).
++static int Bc5NtuNewContext() {
++	auto&           st = Bc5Ntu();
++	std::lock_guard lock(st.mutex);
++	if (st.contexts.size() >= BC5_NTU_MAX_CONTEXTS) {
++		return BC5_NTU_TOO_MANY_OBJECTS;
++	}
++	const int id = st.next_context++;
++	st.contexts.insert(id);
++	return id;
++}
++
++static int Bc5NtuNewContextNpId(uint32_t service_label, const void* np_id) {
++	if (np_id == nullptr) {
++		return BC5_NTU_INSUFFICIENT;
++	}
++	if (service_label == BC5_NTU_NO_SERVICE_LABEL) {
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	return Bc5NtuNewContext();
++}
++
++static int Bc5NtuDeleteContext(int context) {
++	auto&           st = Bc5Ntu();
++	std::lock_guard lock(st.mutex);
++	if (st.contexts.erase(context) == 0) {
++		return BC5_NTU_INVALID_ID;
++	}
++	for (auto it = st.requests.begin(); it != st.requests.end();) { // the context's requests go with it
++		if (it->second.context == context) {
++			it = st.requests.erase(it);
++		} else {
++			++it;
++		}
++	}
++	return 0;
++}
++
++// Requests (AnyPS5 :147-183, 247-249).
++static int Bc5NtuNewRequest(int context) {
++	auto&           st = Bc5Ntu();
++	std::lock_guard lock(st.mutex);
++	if (st.contexts.count(context) == 0) {
++		return BC5_NTU_INVALID_ID;
++	}
++	if (st.requests.size() >= BC5_NTU_MAX_REQUESTS) {
++		return BC5_NTU_TOO_MANY_OBJECTS;
++	}
++	Bc5NtuRequest request;
++	request.context = context;
++	const int id    = st.next_request++;
++	st.requests[id] = request;
++	return id;
++}
++
++static int Bc5NtuDeleteRequest(int request) {
++	auto&           st = Bc5Ntu();
++	std::lock_guard lock(st.mutex);
++	return st.requests.erase(request) != 0 ? 0 : BC5_NTU_INVALID_ID;
++}
++
++static int Bc5NtuAbort(int request) { // an abort stays: every later start of the request finishes ABORTED
++	auto&           st = Bc5Ntu();
++	std::lock_guard lock(st.mutex);
++	const auto      it = st.requests.find(request);
++	if (it == st.requests.end()) {
++		return BC5_NTU_INVALID_ID;
++	}
++	it->second.aborted = true;
++	return 0;
++}
++
++static int Bc5NtuPoll(int request, int* result) {
++	auto&           st = Bc5Ntu();
++	std::lock_guard lock(st.mutex);
++	const auto      it = st.requests.find(request);
++	if (it == st.requests.end()) {
++		return BC5_NTU_INVALID_ID;
++	}
++	if (!it->second.started) {
++		return BC5_NTU_POLL_RUNNING;
++	}
++	if (result != nullptr) {
++		*result = it->second.result;
++	}
++	return 0;
++}
++
++static int Bc5NtuWait(int request, int* result) {
++	auto&           st = Bc5Ntu();
++	std::lock_guard lock(st.mutex);
++	const auto      it = st.requests.find(request);
++	if (it == st.requests.end()) {
++		return BC5_NTU_INVALID_ID;
++	}
++	if (!it->second.started) {
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	if (result != nullptr) {
++		*result = it->second.result;
++	}
++	return 0;
++}
++
++// An *Async call: its argument check first (0: passed), then the request starts and finishes at once, signed out, or
++// aborted once the request was aborted (AnyPS5 :103-110).
++static int Bc5NtuStart(int request, int check) {
++	if (check != 0) {
++		return check;
++	}
++	auto&           st = Bc5Ntu();
++	std::lock_guard lock(st.mutex);
++	const auto      it = st.requests.find(request);
++	if (it == st.requests.end()) {
++		return BC5_NTU_INVALID_ID;
++	}
++	it->second.started = true;
++	it->second.result  = it->second.aborted ? BC5_NTU_ABORTED : BC5_NTU_SIGNED_OUT;
++	return 0;
++}
++
++// A blocking call: its *Async form, then the request's result (AnyPS5 :112-126).
++static int Bc5NtuBlock(int request, int check) {
++	const int started = Bc5NtuStart(request, check);
++	if (started < 0) {
++		return started;
++	}
++	int       result = 0;
++	const int waited = Bc5NtuWait(request, &result);
++	return waited != 0 ? waited : result;
++}
++
++// An online id whose first character is 0 names nobody (AnyPS5 :99-101).
++static bool Bc5NtuNoName(const void* name) {
++	return static_cast<const char*>(name)[0] == '\0';
++}
++
++static bool Bc5NtuNegativeSlot(const int32_t* slot_ids, int count) {
++	for (int i = 0; i < count; i++) {
++		if (slot_ids[i] < 0) {
++			return true;
++		}
++	}
++	return false;
++}
++
++// The slot list of the multi-slot calls (AnyPS5 :50-63).
++static int Bc5NtuSlotList(const int32_t* slot_ids, int count, const void* option) {
++	if (slot_ids == nullptr) {
++		return BC5_NTU_INSUFFICIENT;
++	}
++	if (count < 1 || option != nullptr) {
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	if (count > BC5_NTU_MAX_SLOTS) {
++		return BC5_NTU_TOO_MANY_SLOTS;
++	}
++	return Bc5NtuNegativeSlot(slot_ids, count) ? BC5_NTU_INVALID_ARGUMENT : 0;
++}
++
++static int Bc5NtuSlotListNeeded(const int32_t* slot_ids, int count, const void* option) {
++	if (slot_ids == nullptr || count < 1) {
++		return BC5_NTU_INSUFFICIENT;
++	}
++	return Bc5NtuSlotList(slot_ids, count, option);
++}
++
++// Multi-slot variables, get and set, the NpId, account and cross-save forms: the target is not checked (AnyPS5 :185-198,
++// 255-261, 283-289, 311-316).
++static int Bc5NtuSlotValues(const int32_t* slot_ids, const void* values, int count, const void* option) {
++	if (values == nullptr) {
++		return BC5_NTU_INSUFFICIENT;
++	}
++	return Bc5NtuSlotList(slot_ids, count, option);
++}
++
++// ... their virtual-user forms (AnyPS5 :263-277, 295-301, 318-323); the VUser get form also needs a slot (need_slots).
++static int Bc5NtuSlotValuesUser(const void* user, const int32_t* slot_ids, const void* values, int count, const void* option,
++	                               bool need_slots) {
++	if (user == nullptr || values == nullptr) {
++		return BC5_NTU_INSUFFICIENT;
++	}
++	const int slots = need_slots ? Bc5NtuSlotListNeeded(slot_ids, count, option) : Bc5NtuSlotList(slot_ids, count, option);
++	if (slots != 0) {
++		return slots;
++	}
++	return Bc5NtuNoName(user) ? BC5_NTU_INVALID_ARGUMENT : 0;
++}
++
++// Multi-slot delete of variables and data, the NpId and virtual-user forms (AnyPS5 :329-355, 520-526); the account forms
++// are Bc5NtuSlotList alone (:200-204, 511-518).
++static int Bc5NtuSlotDelete(const void* target, const int32_t* slot_ids, int count, const void* option, bool by_name) {
++	if (target == nullptr) {
++		return BC5_NTU_INSUFFICIENT;
++	}
++	const int slots = Bc5NtuSlotListNeeded(slot_ids, count, option);
++	if (slots != 0) {
++		return slots;
++	}
++	return by_name && Bc5NtuNoName(target) ? BC5_NTU_INVALID_ARGUMENT : 0;
++}
++
++// Add and get (AnyPS5 :206-215, 454-509): each form checks in its own order.
++static int Bc5NtuAddAccount(int32_t slot_id, const void* out, const void* option) {
++	if (out == nullptr) {
++		return BC5_NTU_INSUFFICIENT;
++	}
++	return slot_id < 0 || option != nullptr ? BC5_NTU_INVALID_ARGUMENT : 0;
++}
++
++static int Bc5NtuAddCrossSave(int32_t slot_id, const void* out, const void* option) {
++	if (option != nullptr || slot_id < 0) {
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	return out == nullptr ? BC5_NTU_INSUFFICIENT : 0;
++}
++
++static int Bc5NtuAddNpId(int32_t slot_id, const void* out, const void* option) {
++	if (option != nullptr) {
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	if (out == nullptr) {
++		return BC5_NTU_INSUFFICIENT;
++	}
++	return slot_id < 0 ? BC5_NTU_INVALID_ARGUMENT : 0;
++}
++
++// option_first: the VUser form; the AVUser and cross-save VUser forms check the user and the output first.
++static int Bc5NtuAddUser(const void* user, int32_t slot_id, const void* out, const void* option, bool option_first) {
++	if (option_first && option != nullptr) {
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	if (user == nullptr || out == nullptr) {
++		return BC5_NTU_INSUFFICIENT;
++	}
++	if (option != nullptr || slot_id < 0) {
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	return Bc5NtuNoName(user) ? BC5_NTU_INVALID_ARGUMENT : 0;
++}
++
++// Get data (AnyPS5 :371-378, 528-575): the cross-save forms check the slot together with the option, the others after the
++// data status.
++static int Bc5NtuDataGet(const void* user, bool by_name, int32_t slot_id, const void* status, uint64_t status_size,
++	                        const void* option, bool cross_save) {
++	if (option != nullptr || (cross_save && slot_id < 0)) {
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	if ((by_name && user == nullptr) || status == nullptr || status_size == 0) {
++		return BC5_NTU_INSUFFICIENT;
++	}
++	if (slot_id < 0) {
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	return by_name && Bc5NtuNoName(user) ? BC5_NTU_INVALID_ARGUMENT : 0;
++}
++
++// Friends' variables and data statuses (AnyPS5 :65-84, 384-430, 577-595): the plain forms refuse any option; the A and
++// cross-save forms read one (size 0x18; a start rank of 0 is refused) and never write its hits.
++static int Bc5NtuFriends(int32_t slot_id, int32_t sort_type, int32_t last_sort, const void* array, int count,
++	                        const void* option, bool option_read) {
++	if (array == nullptr) {
++		return BC5_NTU_INSUFFICIENT;
++	}
++	if ((!option_read && option != nullptr) || count < 1 || slot_id < 0) {
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	if (count > BC5_NTU_MAX_FRIENDS) {
++		return BC5_NTU_TOO_MANY_USERS;
++	}
++	if (sort_type < BC5_NTU_SORT_FIRST || sort_type > last_sort) {
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	if (option == nullptr) {
++		return 0;
++	}
++	uint64_t        size  = 0;
++	const uint32_t* start = nullptr;
++	std::memcpy(&size, option, sizeof(size));
++	std::memcpy(&start, static_cast<const uint8_t*>(option) + 8, sizeof(start));
++	if (size != BC5_NTU_FRIENDS_OPT_SIZE) {
++		return Bc5NtuRunOn() ? BC5_NTU_INVALID_ARGUMENT : BC5_NTU_INVALID_ALIGNMENT; // the 13.42 run: INVALID_ARGUMENT
++	}
++	if (Bc5NtuRunOn()) {
++		return 0; // the 13.42 run takes a start rank of 0
++	}
++	return start != nullptr && *start == 0 ? BC5_NTU_INVALID_ARGUMENT : 0;
++}
++
++// sceNpTusGetDataForCrossSaveVUser and its Async form: AnyPS5's checks, or with KYTY_BC5_NPTUS_FRIENDS_RUN the 13.42 run's.
++static int Bc5NtuDataGetCrossSaveUser(const void* user, int32_t slot_id, const void* status, uint64_t status_size,
++	                                     const void* option) {
++	if (!Bc5NtuRunOn()) {
++		return Bc5NtuDataGet(user, true, slot_id, status, status_size, option, true);
++	}
++	if (option != nullptr || slot_id < 0) { // AnyPS5 (the run reports nothing else here)
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	if (user == nullptr) { // AnyPS5 (the run takes a null status and an empty name, not a null user)
++		return BC5_NTU_INSUFFICIENT;
++	}
++	if (status_size != BC5_NTU_RUN_STATUS_SHORT && status_size != BC5_NTU_RUN_STATUS_LONG) {
++		return BC5_NTU_INVALID_ALIGNMENT; // TODO(verify): the run names no code for another size
++	}
++	return 0;
++}
++
++// sceNpTusDeleteMultiSlotDataVUser and its Async form: AnyPS5's checks, or with KYTY_BC5_NPTUS_FRIENDS_RUN the 13.42 run's.
++static int Bc5NtuSlotDeleteDataUser(const void* user, const int32_t* slot_ids, int count, const void* option) {
++	if (!Bc5NtuRunOn()) {
++		return Bc5NtuSlotDelete(user, slot_ids, count, option, true);
++	}
++	if (slot_ids == nullptr) { // AnyPS5
++		return BC5_NTU_INSUFFICIENT;
++	}
++	if (count == 0) { // the run
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	if (count < -1) { // AnyPS5's answer: the run tried -1 only
++		return BC5_NTU_INSUFFICIENT;
++	}
++	if (option != nullptr) { // AnyPS5
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	if (count > BC5_NTU_MAX_SLOTS) { // AnyPS5
++		return BC5_NTU_TOO_MANY_SLOTS;
++	}
++	return Bc5NtuNegativeSlot(slot_ids, count) ? BC5_NTU_INVALID_ARGUMENT : 0; // AnyPS5; a null or empty user is taken
++}
++
++// Multi-slot data statuses, the account and AVUser forms (AnyPS5 :597-615, 626-644).
++static int Bc5NtuSlotStatus(const void* user, bool by_name, const int32_t* slot_ids, const void* statuses, int count,
++	                           const void* option) {
++	if ((by_name && user == nullptr) || slot_ids == nullptr || statuses == nullptr) {
++		return BC5_NTU_INSUFFICIENT;
++	}
++	if (option != nullptr || count < 1) {
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	if (count > BC5_NTU_MAX_SLOTS) {
++		return BC5_NTU_TOO_MANY_SLOTS;
++	}
++	if (Bc5NtuNegativeSlot(slot_ids, count)) {
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	return by_name && Bc5NtuNoName(user) ? BC5_NTU_INVALID_ARGUMENT : 0;
++}
++
++// ... the NpId and VUser forms: no slot is INSUFFICIENT_ARGUMENT, too many is TOO_MANY_NPID (AnyPS5 :617-624, 646-654;
++// shadPS4's difference, debt note).
++static int Bc5NtuSlotStatusNpId(const void* target, bool by_name, const int32_t* slot_ids, const void* statuses, int count,
++	                               const void* option) {
++	if (target == nullptr || slot_ids == nullptr || statuses == nullptr || count < 1) {
++		return BC5_NTU_INSUFFICIENT;
++	}
++	if (option != nullptr) {
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	if (count > BC5_NTU_MAX_SLOTS) {
++		return BC5_NTU_TOO_MANY_USERS;
++	}
++	if (Bc5NtuNegativeSlot(slot_ids, count)) {
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	return by_name && Bc5NtuNoName(target) ? BC5_NTU_INVALID_ARGUMENT : 0;
++}
++
++// Several users' variables and data statuses (AnyPS5 :656-772): the NpId and VUser forms answer no user with
++// INSUFFICIENT_ARGUMENT (need_count), the others with INVALID_ARGUMENT; the virtual-user forms refuse an empty name among
++// the first count.
++static int Bc5NtuUsers(const void* targets, int32_t slot_id, const void* array, int count, const void* option, bool by_name,
++	                      bool need_count) {
++	if (targets == nullptr || array == nullptr || (need_count && count < 1)) {
++		return BC5_NTU_INSUFFICIENT;
++	}
++	if (option != nullptr || count < 1 || slot_id < 0) {
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	if (count > BC5_NTU_MAX_USERS) {
++		return BC5_NTU_TOO_MANY_USERS;
++	}
++	if (by_name) {
++		for (int i = 0; i < count; i++) {
++			if (Bc5NtuNoName(static_cast<const uint8_t*>(targets) + static_cast<size_t>(i) * BC5_NTU_NAME_STRIDE)) {
++				return BC5_NTU_INVALID_ARGUMENT;
++			}
++		}
++	}
++	return 0;
++}
++
++// Set data (AnyPS5 :774-820).
++static int Bc5NtuDataSet(const void* user, bool by_name, int32_t slot_id, uint64_t total_size, uint64_t send_size,
++	                        const void* data, const void* option) {
++	if (option != nullptr) {
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	if ((by_name && user == nullptr) || data == nullptr || send_size == 0) {
++		return BC5_NTU_INSUFFICIENT;
++	}
++	if (slot_id < 0 || send_size > total_size) {
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	return by_name && Bc5NtuNoName(user) ? BC5_NTU_INVALID_ARGUMENT : 0;
++}
++
++// Try and set (AnyPS5 :822-897): an operation outside 1 to 6 is INVALID_TYPE in the account, AVUser and cross-save forms,
++// INVALID_ARGUMENT in the NpId and VUser forms (bad_op; shadPS4's difference, debt note).
++static int Bc5NtuTrySet(const void* target, bool need_target, bool by_name, int32_t slot_id, int32_t op_type,
++	                       const void* result_variable, const void* option, int bad_op) {
++	if ((need_target && target == nullptr) || result_variable == nullptr) {
++		return BC5_NTU_INSUFFICIENT;
++	}
++	if (option != nullptr || slot_id < 0) {
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	if (op_type < BC5_NTU_OP_FIRST || op_type > BC5_NTU_OP_LAST) {
++		return bad_op;
++	}
++	return by_name && Bc5NtuNoName(target) ? BC5_NTU_INVALID_ARGUMENT : 0;
++}
++
++// TSS data (AnyPS5 :432-440): the option's size, then the data status's size (a null status is taken), then the slot.
++static int Bc5NtuTssData(int32_t slot_id, const void* status, uint64_t status_size, const void* option) {
++	if (option != nullptr) {
++		uint64_t size = 0;
++		std::memcpy(&size, option, sizeof(size));
++		if (size != BC5_NTU_TSS_OPT_SIZE) {
++			return BC5_NTU_INVALID_ALIGNMENT;
++		}
++	}
++	if (status != nullptr && status_size != BC5_NTU_TSS_STATUS_SIZE) {
++		return BC5_NTU_INVALID_ALIGNMENT;
++	}
++	if (slot_id < 0 || slot_id > BC5_NTU_TSS_LAST_SLOT) {
++		return BC5_NTU_INVALID_ARGUMENT;
++	}
++	return 0;
++}
++
++// TSS small storage (AnyPS5 :446-452).
++static int Bc5NtuTssSmall(uint64_t max_size, const void* option) {
++	return option != nullptr || max_size > BC5_NTU_TSS_MAX_SIZE ? BC5_NTU_INVALID_ARGUMENT : 0;
++}
++// ---- end of BC5 experiment 0405 (tbt) NpTus block ----
++
++static int KYTY_SYSV_ABI sceNpTssCreateNpTitleCtx(uint32_t service_label, const void* np_id) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuNewContextNpId(service_label, np_id);
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusAddAndGetVariable() {
++static int KYTY_SYSV_ABI sceNpTusAddAndGetVariable(int req_id, const void* /*target_np_id*/, int32_t slot_id, int64_t /*value*/, const void* /*last_author*/, const void* /*last_date*/, void* out, uint64_t /*out_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuAddNpId(slot_id, out, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusAddAndGetVariableAsync() {
++static int KYTY_SYSV_ABI sceNpTusAddAndGetVariableAsync(int req_id, const void* /*target_np_id*/, int32_t slot_id, int64_t /*value*/, const void* /*last_author*/, const void* /*last_date*/, void* out, uint64_t /*out_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuAddNpId(slot_id, out, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusAddAndGetVariableVUser() {
++static int KYTY_SYSV_ABI sceNpTusAddAndGetVariableVUser(int req_id, const void* target_user, int32_t slot_id, int64_t /*value*/, const void* /*last_author*/, const void* /*last_date*/, void* out, uint64_t /*out_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuAddUser(target_user, slot_id, out, option, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusAddAndGetVariableVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusAddAndGetVariableVUserAsync(int req_id, const void* target_user, int32_t slot_id, int64_t /*value*/, const void* /*last_author*/, const void* /*last_date*/, void* out, uint64_t /*out_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuAddUser(target_user, slot_id, out, option, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusCreateNpTitleCtx() {
++static int KYTY_SYSV_ABI sceNpTusCreateNpTitleCtx(uint32_t service_label, const void* np_id) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuNewContextNpId(service_label, np_id);
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotData() {
++static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotData(int req_id, const void* target_np_id, const int32_t* slot_ids, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuSlotDelete(target_np_id, slot_ids, count, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotDataAsync() {
++static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotDataAsync(int req_id, const void* target_np_id, const int32_t* slot_ids, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuSlotDelete(target_np_id, slot_ids, count, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotVariable() {
++static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotVariable(int req_id, const void* target_np_id, const int32_t* slot_ids, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuSlotDelete(target_np_id, slot_ids, count, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotVariableAsync() {
++static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotVariableAsync(int req_id, const void* target_np_id, const int32_t* slot_ids, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuSlotDelete(target_np_id, slot_ids, count, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetData() {
++static int KYTY_SYSV_ABI sceNpTusGetData(int req_id, const void* /*target_np_id*/, int32_t slot_id, void* status, uint64_t status_size, void* /*data*/, uint64_t /*recv_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuDataGet(nullptr, false, slot_id, status, status_size, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetDataAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetDataAsync(int req_id, const void* /*target_np_id*/, int32_t slot_id, void* status, uint64_t status_size, void* /*data*/, uint64_t /*recv_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuDataGet(nullptr, false, slot_id, status, status_size, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetDataVUser() {
++static int KYTY_SYSV_ABI sceNpTusGetDataVUser(int req_id, const void* target_user, int32_t slot_id, void* status, uint64_t status_size, void* /*data*/, uint64_t /*recv_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuDataGet(target_user, true, slot_id, status, status_size, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetDataVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetDataVUserAsync(int req_id, const void* target_user, int32_t slot_id, void* status, uint64_t status_size, void* /*data*/, uint64_t /*recv_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuDataGet(target_user, true, slot_id, status, status_size, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetFriendsDataStatus() {
++static int KYTY_SYSV_ABI sceNpTusGetFriendsDataStatus(int req_id, int32_t slot_id, int32_t /*include_self*/, int32_t sort_type, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuFriends(slot_id, sort_type, BC5_NTU_STATUS_SORT_LAST, array, count, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetFriendsDataStatusAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetFriendsDataStatusAsync(int req_id, int32_t slot_id, int32_t /*include_self*/, int32_t sort_type, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuFriends(slot_id, sort_type, BC5_NTU_STATUS_SORT_LAST, array, count, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetFriendsVariable() {
++static int KYTY_SYSV_ABI sceNpTusGetFriendsVariable(int req_id, int32_t slot_id, int32_t /*include_self*/, int32_t sort_type, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuFriends(slot_id, sort_type, BC5_NTU_VALUE_SORT_LAST, array, count, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetFriendsVariableAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetFriendsVariableAsync(int req_id, int32_t slot_id, int32_t /*include_self*/, int32_t sort_type, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuFriends(slot_id, sort_type, BC5_NTU_VALUE_SORT_LAST, array, count, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatus() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatus(int req_id, const void* target_np_id, const int32_t* slot_ids, void* statuses, uint64_t /*statuses_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuSlotStatusNpId(target_np_id, false, slot_ids, statuses, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatusAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatusAsync(int req_id, const void* target_np_id, const int32_t* slot_ids, void* statuses, uint64_t /*statuses_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuSlotStatusNpId(target_np_id, false, slot_ids, statuses, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatusVUser() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatusVUser(int req_id, const void* target_user, const int32_t* slot_ids, void* statuses, uint64_t /*statuses_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuSlotStatusNpId(target_user, true, slot_ids, statuses, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatusVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatusVUserAsync(int req_id, const void* target_user, const int32_t* slot_ids, void* statuses, uint64_t /*statuses_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuSlotStatusNpId(target_user, true, slot_ids, statuses, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariable() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariable(int req_id, const void* /*target_np_id*/, const int32_t* slot_ids, void* variables, uint64_t /*variables_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuSlotValues(slot_ids, variables, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariableAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariableAsync(int req_id, const void* /*target_np_id*/, const int32_t* slot_ids, void* variables, uint64_t /*variables_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuSlotValues(slot_ids, variables, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariableVUser() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariableVUser(int req_id, const void* target_user, const int32_t* slot_ids, void* variables, uint64_t /*variables_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuSlotValuesUser(target_user, slot_ids, variables, count, option, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariableVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariableVUserAsync(int req_id, const void* target_user, const int32_t* slot_ids, void* variables, uint64_t /*variables_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuSlotValuesUser(target_user, slot_ids, variables, count, option, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatus() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatus(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, false, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatusAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatusAsync(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, false, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatusVUser() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatusVUser(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, true, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatusVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatusVUserAsync(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, true, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariable() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariable(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, false, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariableAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariableAsync(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, false, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariableVUser() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariableVUser(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, true, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariableVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariableVUserAsync(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, true, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusSetData() {
++static int KYTY_SYSV_ABI sceNpTusSetData(int req_id, const void* /*target_np_id*/, int32_t slot_id, uint64_t total_size, uint64_t send_size, const void* data, const void* /*info*/, uint64_t /*info_size*/, const void* /*last_author*/, const void* /*last_date*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuDataSet(nullptr, false, slot_id, total_size, send_size, data, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusSetDataAsync() {
++static int KYTY_SYSV_ABI sceNpTusSetDataAsync(int req_id, const void* /*target_np_id*/, int32_t slot_id, uint64_t total_size, uint64_t send_size, const void* data, const void* /*info*/, uint64_t /*info_size*/, const void* /*last_author*/, const void* /*last_date*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuDataSet(nullptr, false, slot_id, total_size, send_size, data, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusSetDataVUser() {
++static int KYTY_SYSV_ABI sceNpTusSetDataVUser(int req_id, const void* target_user, int32_t slot_id, uint64_t total_size, uint64_t send_size, const void* data, const void* /*info*/, uint64_t /*info_size*/, const void* /*last_author*/, const void* /*last_date*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuDataSet(target_user, true, slot_id, total_size, send_size, data, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusSetDataVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusSetDataVUserAsync(int req_id, const void* target_user, int32_t slot_id, uint64_t total_size, uint64_t send_size, const void* data, const void* /*info*/, uint64_t /*info_size*/, const void* /*last_author*/, const void* /*last_date*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuDataSet(target_user, true, slot_id, total_size, send_size, data, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusSetMultiSlotVariable() {
++static int KYTY_SYSV_ABI sceNpTusSetMultiSlotVariable(int req_id, const void* /*target_np_id*/, const int32_t* slot_ids, const int64_t* values, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuSlotValues(slot_ids, values, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusSetMultiSlotVariableAsync() {
++static int KYTY_SYSV_ABI sceNpTusSetMultiSlotVariableAsync(int req_id, const void* /*target_np_id*/, const int32_t* slot_ids, const int64_t* values, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuSlotValues(slot_ids, values, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusTryAndSetVariable() {
++static int KYTY_SYSV_ABI sceNpTusTryAndSetVariable(int req_id, const void* target_np_id, int32_t slot_id, int32_t op_type, int64_t /*value*/, const int64_t* /*compare_value*/, const void* /*last_author*/, const void* /*last_date*/, void* result_variable, uint64_t /*result_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuTrySet(target_np_id, true, false, slot_id, op_type, result_variable, option, BC5_NTU_INVALID_ARGUMENT));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusTryAndSetVariableAsync() {
++static int KYTY_SYSV_ABI sceNpTusTryAndSetVariableAsync(int req_id, const void* target_np_id, int32_t slot_id, int32_t op_type, int64_t /*value*/, const int64_t* /*compare_value*/, const void* /*last_author*/, const void* /*last_date*/, void* result_variable, uint64_t /*result_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuTrySet(target_np_id, true, false, slot_id, op_type, result_variable, option, BC5_NTU_INVALID_ARGUMENT));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusTryAndSetVariableVUser() {
++static int KYTY_SYSV_ABI sceNpTusTryAndSetVariableVUser(int req_id, const void* target_user, int32_t slot_id, int32_t op_type, int64_t /*value*/, const int64_t* /*compare_value*/, const void* /*last_author*/, const void* /*last_date*/, void* result_variable, uint64_t /*result_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuTrySet(target_user, true, true, slot_id, op_type, result_variable, option, BC5_NTU_INVALID_ARGUMENT));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusTryAndSetVariableVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusTryAndSetVariableVUserAsync(int req_id, const void* target_user, int32_t slot_id, int32_t op_type, int64_t /*value*/, const int64_t* /*compare_value*/, const void* /*last_author*/, const void* /*last_date*/, void* result_variable, uint64_t /*result_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuTrySet(target_user, true, true, slot_id, op_type, result_variable, option, BC5_NTU_INVALID_ARGUMENT));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTssCreateNpTitleCtxA() {
++static int KYTY_SYSV_ABI sceNpTssCreateNpTitleCtxA(uint32_t /*service_label*/, int /*user_id*/) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuNewContext();
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTssGetData() {
++static int KYTY_SYSV_ABI sceNpTssGetData(int req_id, int32_t slot_id, void* status, uint64_t status_size, void* /*data*/, uint64_t /*recv_size*/, const void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuTssData(slot_id, status, status_size, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTssGetDataAsync() {
++static int KYTY_SYSV_ABI sceNpTssGetDataAsync(int req_id, int32_t slot_id, void* status, uint64_t status_size, void* /*data*/, uint64_t /*recv_size*/, const void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuTssData(slot_id, status, status_size, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTssGetSmallStorage() {
++static int KYTY_SYSV_ABI sceNpTssGetSmallStorage(int req_id, void* /*data*/, uint64_t max_size, uint64_t* /*content_length*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuTssSmall(max_size, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTssGetSmallStorageAsync() {
++static int KYTY_SYSV_ABI sceNpTssGetSmallStorageAsync(int req_id, void* /*data*/, uint64_t max_size, uint64_t* /*content_length*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuTssSmall(max_size, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+@@ -1408,48 +3402,75 @@ static int KYTY_SYSV_ABI sceNpTssGetStorageAsync() {
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusAbortRequest() {
++static int KYTY_SYSV_ABI sceNpTusAbortRequest(int req_id) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuAbort(req_id);
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusAddAndGetVariableA() {
++static int KYTY_SYSV_ABI sceNpTusAddAndGetVariableA(int req_id, uint64_t /*target_account_id*/, int32_t slot_id, int64_t /*value*/, const void* /*last_author*/, const void* /*last_date*/, void* out, uint64_t /*out_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuAddAccount(slot_id, out, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusAddAndGetVariableAAsync() {
++static int KYTY_SYSV_ABI sceNpTusAddAndGetVariableAAsync(int req_id, uint64_t /*target_account_id*/, int32_t slot_id, int64_t /*value*/, const void* /*last_author*/, const void* /*last_date*/, void* out, uint64_t /*out_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuAddAccount(slot_id, out, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusAddAndGetVariableAVUser() {
++static int KYTY_SYSV_ABI sceNpTusAddAndGetVariableAVUser(int req_id, const void* target_user, int32_t slot_id, int64_t /*value*/, const void* /*last_author*/, const void* /*last_date*/, void* out, uint64_t /*out_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuAddUser(target_user, slot_id, out, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusAddAndGetVariableAVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusAddAndGetVariableAVUserAsync(int req_id, const void* target_user, int32_t slot_id, int64_t /*value*/, const void* /*last_author*/, const void* /*last_date*/, void* out, uint64_t /*out_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuAddUser(target_user, slot_id, out, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusAddAndGetVariableForCrossSave() {
++static int KYTY_SYSV_ABI sceNpTusAddAndGetVariableForCrossSave(int req_id, uint64_t /*target_account_id*/, int32_t slot_id, int64_t /*value*/, const void* /*last_author*/, const void* /*last_date*/, void* out, uint64_t /*out_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuAddCrossSave(slot_id, out, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveAsync() {
++static int KYTY_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveAsync(int req_id, uint64_t /*target_account_id*/, int32_t slot_id, int64_t /*value*/, const void* /*last_author*/, const void* /*last_date*/, void* out, uint64_t /*out_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuAddCrossSave(slot_id, out, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveVUser() {
++static int KYTY_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveVUser(int req_id, const void* target_user, int32_t slot_id, int64_t /*value*/, const void* /*last_author*/, const void* /*last_date*/, void* out, uint64_t /*out_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuAddUser(target_user, slot_id, out, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveVUserAsync(int req_id, const void* target_user, int32_t slot_id, int64_t /*value*/, const void* /*last_author*/, const void* /*last_date*/, void* out, uint64_t /*out_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuAddUser(target_user, slot_id, out, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+@@ -1458,13 +3479,19 @@ static int KYTY_SYSV_ABI sceNpTusChangeModeForOtherSaveDataOwners() {
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusCreateNpTitleCtxA() {
++static int KYTY_SYSV_ABI sceNpTusCreateNpTitleCtxA(uint32_t /*service_label*/, int /*user_id*/) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuNewContext();
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusCreateRequest() {
++static int KYTY_SYSV_ABI sceNpTusCreateRequest(int title_ctx_id) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuNewRequest(title_ctx_id);
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+@@ -1473,338 +3500,539 @@ static int KYTY_SYSV_ABI sceNpTusCreateTitleCtx() {
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotDataA() {
++static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotDataA(int req_id, uint64_t /*target_account_id*/, const int32_t* slot_ids, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuSlotList(slot_ids, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotDataAAsync() {
++static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotDataAAsync(int req_id, uint64_t /*target_account_id*/, const int32_t* slot_ids, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuSlotList(slot_ids, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotDataVUser() {
++static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotDataVUser(int req_id, const void* target_user, const int32_t* slot_ids, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuSlotDeleteDataUser(target_user, slot_ids, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotDataVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotDataVUserAsync(int req_id, const void* target_user, const int32_t* slot_ids, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuSlotDeleteDataUser(target_user, slot_ids, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotVariableA() {
++static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotVariableA(int req_id, uint64_t /*target_account_id*/, const int32_t* slot_ids, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuSlotList(slot_ids, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotVariableAAsync() {
++static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotVariableAAsync(int req_id, uint64_t /*target_account_id*/, const int32_t* slot_ids, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuSlotList(slot_ids, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotVariableVUser() {
++static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotVariableVUser(int req_id, const void* target_user, const int32_t* slot_ids, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuSlotDelete(target_user, slot_ids, count, option, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotVariableVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusDeleteMultiSlotVariableVUserAsync(int req_id, const void* target_user, const int32_t* slot_ids, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuSlotDelete(target_user, slot_ids, count, option, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusDeleteNpTitleCtx() {
++static int KYTY_SYSV_ABI sceNpTusDeleteNpTitleCtx(int title_ctx_id) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuDeleteContext(title_ctx_id);
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusDeleteRequest() {
++static int KYTY_SYSV_ABI sceNpTusDeleteRequest(int req_id) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuDeleteRequest(req_id);
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetDataA() {
++static int KYTY_SYSV_ABI sceNpTusGetDataA(int req_id, uint64_t /*target_account_id*/, int32_t slot_id, void* status, uint64_t status_size, void* /*data*/, uint64_t /*recv_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuDataGet(nullptr, false, slot_id, status, status_size, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetDataAAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetDataAAsync(int req_id, uint64_t /*target_account_id*/, int32_t slot_id, void* status, uint64_t status_size, void* /*data*/, uint64_t /*recv_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuDataGet(nullptr, false, slot_id, status, status_size, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetDataAVUser() {
++static int KYTY_SYSV_ABI sceNpTusGetDataAVUser(int req_id, const void* target_user, int32_t slot_id, void* status, uint64_t status_size, void* /*data*/, uint64_t /*recv_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuDataGet(target_user, true, slot_id, status, status_size, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetDataAVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetDataAVUserAsync(int req_id, const void* target_user, int32_t slot_id, void* status, uint64_t status_size, void* /*data*/, uint64_t /*recv_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuDataGet(target_user, true, slot_id, status, status_size, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetDataForCrossSave() {
++static int KYTY_SYSV_ABI sceNpTusGetDataForCrossSave(int req_id, uint64_t /*target_account_id*/, int32_t slot_id, void* status, uint64_t status_size, void* /*data*/, uint64_t /*recv_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuDataGet(nullptr, false, slot_id, status, status_size, option, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetDataForCrossSaveAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetDataForCrossSaveAsync(int req_id, uint64_t /*target_account_id*/, int32_t slot_id, void* status, uint64_t status_size, void* /*data*/, uint64_t /*recv_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuDataGet(nullptr, false, slot_id, status, status_size, option, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetDataForCrossSaveVUser() {
++static int KYTY_SYSV_ABI sceNpTusGetDataForCrossSaveVUser(int req_id, const void* target_user, int32_t slot_id, void* status, uint64_t status_size, void* /*data*/, uint64_t /*recv_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuDataGetCrossSaveUser(target_user, slot_id, status, status_size, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetDataForCrossSaveVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetDataForCrossSaveVUserAsync(int req_id, const void* target_user, int32_t slot_id, void* status, uint64_t status_size, void* /*data*/, uint64_t /*recv_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuDataGetCrossSaveUser(target_user, slot_id, status, status_size, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetFriendsDataStatusA() {
++static int KYTY_SYSV_ABI sceNpTusGetFriendsDataStatusA(int req_id, int32_t slot_id, int32_t /*include_self*/, int32_t sort_type, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuFriends(slot_id, sort_type, BC5_NTU_STATUS_SORT_LAST, array, count, option, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetFriendsDataStatusAAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetFriendsDataStatusAAsync(int req_id, int32_t slot_id, int32_t /*include_self*/, int32_t sort_type, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuFriends(slot_id, sort_type, BC5_NTU_STATUS_SORT_LAST, array, count, option, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetFriendsDataStatusForCrossSave() {
++static int KYTY_SYSV_ABI sceNpTusGetFriendsDataStatusForCrossSave(int req_id, int32_t slot_id, int32_t /*include_self*/, int32_t sort_type, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuFriends(slot_id, sort_type, BC5_NTU_STATUS_SORT_LAST, array, count, option, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetFriendsDataStatusForCrossSaveAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetFriendsDataStatusForCrossSaveAsync(int req_id, int32_t slot_id, int32_t /*include_self*/, int32_t sort_type, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuFriends(slot_id, sort_type, BC5_NTU_STATUS_SORT_LAST, array, count, option, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetFriendsVariableA() {
++static int KYTY_SYSV_ABI sceNpTusGetFriendsVariableA(int req_id, int32_t slot_id, int32_t /*include_self*/, int32_t sort_type, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuFriends(slot_id, sort_type, BC5_NTU_VALUE_SORT_LAST, array, count, option, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetFriendsVariableAAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetFriendsVariableAAsync(int req_id, int32_t slot_id, int32_t /*include_self*/, int32_t sort_type, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuFriends(slot_id, sort_type, BC5_NTU_VALUE_SORT_LAST, array, count, option, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetFriendsVariableForCrossSave() {
++static int KYTY_SYSV_ABI sceNpTusGetFriendsVariableForCrossSave(int req_id, int32_t slot_id, int32_t /*include_self*/, int32_t sort_type, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuFriends(slot_id, sort_type, BC5_NTU_VALUE_SORT_LAST, array, count, option, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetFriendsVariableForCrossSaveAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetFriendsVariableForCrossSaveAsync(int req_id, int32_t slot_id, int32_t /*include_self*/, int32_t sort_type, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuFriends(slot_id, sort_type, BC5_NTU_VALUE_SORT_LAST, array, count, option, true));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatusA() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatusA(int req_id, uint64_t /*target_account_id*/, const int32_t* slot_ids, void* statuses, uint64_t /*statuses_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuSlotStatus(nullptr, false, slot_ids, statuses, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatusAAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatusAAsync(int req_id, uint64_t /*target_account_id*/, const int32_t* slot_ids, void* statuses, uint64_t /*statuses_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuSlotStatus(nullptr, false, slot_ids, statuses, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatusAVUser() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatusAVUser(int req_id, const void* target_user, const int32_t* slot_ids, void* statuses, uint64_t /*statuses_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuSlotStatus(target_user, true, slot_ids, statuses, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatusAVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatusAVUserAsync(int req_id, const void* target_user, const int32_t* slot_ids, void* statuses, uint64_t /*statuses_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuSlotStatus(target_user, true, slot_ids, statuses, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSave() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSave(int req_id, uint64_t /*target_account_id*/, const int32_t* slot_ids, void* statuses, uint64_t /*statuses_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuSlotStatus(nullptr, false, slot_ids, statuses, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveAsync(int req_id, uint64_t /*target_account_id*/, const int32_t* slot_ids, void* statuses, uint64_t /*statuses_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuSlotStatus(nullptr, false, slot_ids, statuses, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveVUser() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveVUser(int req_id, const void* target_user, const int32_t* slot_ids, void* statuses, uint64_t /*statuses_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuSlotStatus(target_user, true, slot_ids, statuses, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveVUserAsync(int req_id, const void* target_user, const int32_t* slot_ids, void* statuses, uint64_t /*statuses_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuSlotStatus(target_user, true, slot_ids, statuses, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariableA() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariableA(int req_id, uint64_t /*target_account_id*/, const int32_t* slot_ids, void* variables, uint64_t /*variables_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuSlotValues(slot_ids, variables, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariableAAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariableAAsync(int req_id, uint64_t /*target_account_id*/, const int32_t* slot_ids, void* variables, uint64_t /*variables_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuSlotValues(slot_ids, variables, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariableAVUser() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariableAVUser(int req_id, const void* target_user, const int32_t* slot_ids, void* variables, uint64_t /*variables_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuSlotValuesUser(target_user, slot_ids, variables, count, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariableAVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariableAVUserAsync(int req_id, const void* target_user, const int32_t* slot_ids, void* variables, uint64_t /*variables_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuSlotValuesUser(target_user, slot_ids, variables, count, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSave() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSave(int req_id, uint64_t /*target_account_id*/, const int32_t* slot_ids, void* variables, uint64_t /*variables_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuSlotValues(slot_ids, variables, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveAsync(int req_id, uint64_t /*target_account_id*/, const int32_t* slot_ids, void* variables, uint64_t /*variables_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuSlotValues(slot_ids, variables, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveVUser() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveVUser(int req_id, const void* target_user, const int32_t* slot_ids, void* variables, uint64_t /*variables_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuSlotValuesUser(target_user, slot_ids, variables, count, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveVUserAsync(int req_id, const void* target_user, const int32_t* slot_ids, void* variables, uint64_t /*variables_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuSlotValuesUser(target_user, slot_ids, variables, count, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatusA() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatusA(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, false, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatusAAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatusAAsync(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, false, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatusAVUser() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatusAVUser(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, true, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatusAVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatusAVUserAsync(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, true, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSave() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSave(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, false, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSaveAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSaveAsync(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, false, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSaveVUser() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSaveVUser(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, true, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSaveVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSaveVUserAsync(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, true, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariableA() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariableA(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, false, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariableAAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariableAAsync(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, false, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariableAVUser() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariableAVUser(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, true, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariableAVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariableAVUserAsync(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, true, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSave() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSave(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, false, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveAsync(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, false, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveVUser() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveVUser(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, true, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveVUserAsync(int req_id, const void* targets, int32_t slot_id, void* array, uint64_t /*array_size*/, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuUsers(targets, slot_id, array, count, option, true, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusPollAsync() {
++static int KYTY_SYSV_ABI sceNpTusPollAsync(int req_id, int* result) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuPoll(req_id, result);
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusSetDataA() {
++static int KYTY_SYSV_ABI sceNpTusSetDataA(int req_id, uint64_t /*target_account_id*/, int32_t slot_id, uint64_t total_size, uint64_t send_size, const void* data, const void* /*info*/, uint64_t /*info_size*/, const void* /*last_author*/, const void* /*last_date*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuDataSet(nullptr, false, slot_id, total_size, send_size, data, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusSetDataAAsync() {
++static int KYTY_SYSV_ABI sceNpTusSetDataAAsync(int req_id, uint64_t /*target_account_id*/, int32_t slot_id, uint64_t total_size, uint64_t send_size, const void* data, const void* /*info*/, uint64_t /*info_size*/, const void* /*last_author*/, const void* /*last_date*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuDataSet(nullptr, false, slot_id, total_size, send_size, data, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusSetDataAVUser() {
++static int KYTY_SYSV_ABI sceNpTusSetDataAVUser(int req_id, const void* target_user, int32_t slot_id, uint64_t total_size, uint64_t send_size, const void* data, const void* /*info*/, uint64_t /*info_size*/, const void* /*last_author*/, const void* /*last_date*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuDataSet(target_user, true, slot_id, total_size, send_size, data, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusSetDataAVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusSetDataAVUserAsync(int req_id, const void* target_user, int32_t slot_id, uint64_t total_size, uint64_t send_size, const void* data, const void* /*info*/, uint64_t /*info_size*/, const void* /*last_author*/, const void* /*last_date*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuDataSet(target_user, true, slot_id, total_size, send_size, data, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusSetMultiSlotVariableA() {
++static int KYTY_SYSV_ABI sceNpTusSetMultiSlotVariableA(int req_id, uint64_t /*target_account_id*/, const int32_t* slot_ids, const int64_t* values, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuSlotValues(slot_ids, values, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusSetMultiSlotVariableAAsync() {
++static int KYTY_SYSV_ABI sceNpTusSetMultiSlotVariableAAsync(int req_id, uint64_t /*target_account_id*/, const int32_t* slot_ids, const int64_t* values, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuSlotValues(slot_ids, values, count, option));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusSetMultiSlotVariableVUser() {
++static int KYTY_SYSV_ABI sceNpTusSetMultiSlotVariableVUser(int req_id, const void* target_user, const int32_t* slot_ids, const int64_t* values, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuSlotValuesUser(target_user, slot_ids, values, count, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusSetMultiSlotVariableVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusSetMultiSlotVariableVUserAsync(int req_id, const void* target_user, const int32_t* slot_ids, const int64_t* values, int count, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuSlotValuesUser(target_user, slot_ids, values, count, option, false));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+@@ -1818,53 +4046,82 @@ static int KYTY_SYSV_ABI sceNpTusSetTimeout() {
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusTryAndSetVariableA() {
++static int KYTY_SYSV_ABI sceNpTusTryAndSetVariableA(int req_id, uint64_t /*target_account_id*/, int32_t slot_id, int32_t op_type, int64_t /*value*/, const int64_t* /*compare_value*/, const void* /*last_author*/, const void* /*last_date*/, void* result_variable, uint64_t /*result_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuTrySet(nullptr, false, false, slot_id, op_type, result_variable, option, BC5_NTU_INVALID_TYPE));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusTryAndSetVariableAAsync() {
++static int KYTY_SYSV_ABI sceNpTusTryAndSetVariableAAsync(int req_id, uint64_t /*target_account_id*/, int32_t slot_id, int32_t op_type, int64_t /*value*/, const int64_t* /*compare_value*/, const void* /*last_author*/, const void* /*last_date*/, void* result_variable, uint64_t /*result_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuTrySet(nullptr, false, false, slot_id, op_type, result_variable, option, BC5_NTU_INVALID_TYPE));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusTryAndSetVariableAVUser() {
++static int KYTY_SYSV_ABI sceNpTusTryAndSetVariableAVUser(int req_id, const void* target_user, int32_t slot_id, int32_t op_type, int64_t /*value*/, const int64_t* /*compare_value*/, const void* /*last_author*/, const void* /*last_date*/, void* result_variable, uint64_t /*result_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuTrySet(target_user, true, true, slot_id, op_type, result_variable, option, BC5_NTU_INVALID_TYPE));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusTryAndSetVariableAVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusTryAndSetVariableAVUserAsync(int req_id, const void* target_user, int32_t slot_id, int32_t op_type, int64_t /*value*/, const int64_t* /*compare_value*/, const void* /*last_author*/, const void* /*last_date*/, void* result_variable, uint64_t /*result_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuTrySet(target_user, true, true, slot_id, op_type, result_variable, option, BC5_NTU_INVALID_TYPE));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusTryAndSetVariableForCrossSave() {
++static int KYTY_SYSV_ABI sceNpTusTryAndSetVariableForCrossSave(int req_id, uint64_t /*target_account_id*/, int32_t slot_id, int32_t op_type, int64_t /*value*/, const int64_t* /*compare_value*/, const void* /*last_author*/, const void* /*last_date*/, void* result_variable, uint64_t /*result_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuTrySet(nullptr, false, false, slot_id, op_type, result_variable, option, BC5_NTU_INVALID_TYPE));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveAsync() {
++static int KYTY_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveAsync(int req_id, uint64_t /*target_account_id*/, int32_t slot_id, int32_t op_type, int64_t /*value*/, const int64_t* /*compare_value*/, const void* /*last_author*/, const void* /*last_date*/, void* result_variable, uint64_t /*result_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuTrySet(nullptr, false, false, slot_id, op_type, result_variable, option, BC5_NTU_INVALID_TYPE));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveVUser() {
++static int KYTY_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveVUser(int req_id, const void* target_user, int32_t slot_id, int32_t op_type, int64_t /*value*/, const int64_t* /*compare_value*/, const void* /*last_author*/, const void* /*last_date*/, void* result_variable, uint64_t /*result_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuBlock(req_id, Bc5NtuTrySet(target_user, true, true, slot_id, op_type, result_variable, option, BC5_NTU_INVALID_TYPE));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveVUserAsync() {
++static int KYTY_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveVUserAsync(int req_id, const void* target_user, int32_t slot_id, int32_t op_type, int64_t /*value*/, const int64_t* /*compare_value*/, const void* /*last_author*/, const void* /*last_date*/, void* result_variable, uint64_t /*result_size*/, void* option) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuStart(req_id, Bc5NtuTrySet(target_user, true, true, slot_id, op_type, result_variable, option, BC5_NTU_INVALID_TYPE));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpTusWaitAsync() {
++static int KYTY_SYSV_ABI sceNpTusWaitAsync(int req_id, int* result) {
+ 	PRINT_NAME();
++	if (Bc5NtuOn()) { // BC5 experiment 0405 (tbt): the port, KYTY_BC5_LOAD_NPTUS
++		return Bc5NtuWait(req_id, result);
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+ 
+ LIB_DEFINE(InitNpTus_1) {
++	(void)Bc5NtuOn(); // BC5 experiment 0405 (tbt): reads KYTY_BC5_LOAD_NPTUS once, prints its line
++	(void)Bc5NtuRunOn(); // BC5 experiment 0405 (tbt): reads KYTY_BC5_NPTUS_FRIENDS_RUN once, prints its line
+ 	LIB_FUNC("sRVb2Cf0GHg", NpTus::sceNpTssCreateNpTitleCtx);
+ 	LIB_FUNC("cRVmNrJDbG8", NpTus::sceNpTusAddAndGetVariable);
+ 	LIB_FUNC("Q2UmHdK04c8", NpTus::sceNpTusAddAndGetVariableAsync);
+@@ -1914,8 +4171,10 @@ LIB_DEFINE(InitNpTus_1) {
+ 	LIB_FUNC("DS2yu3Sjj1o", NpTus::sceNpTssGetDataAsync);
+ 	LIB_FUNC("lL+Z3zCKNTs", NpTus::sceNpTssGetSmallStorage);
+ 	LIB_FUNC("f2Pe4LGS2II", NpTus::sceNpTssGetSmallStorageAsync);
+-	LIB_FUNC("IVSbAEOxJ6I", NpTus::sceNpTssGetStorage);
+-	LIB_FUNC("k5NZIzggbuk", NpTus::sceNpTssGetStorageAsync);
++	if (!Bc5NtuOn()) { // BC5 experiment 0405 (tbt): held, not registered when on (a stubbed import)
++		LIB_FUNC("IVSbAEOxJ6I", NpTus::sceNpTssGetStorage);
++		LIB_FUNC("k5NZIzggbuk", NpTus::sceNpTssGetStorageAsync);
++	}
+ 	LIB_FUNC("2eq1bMwgZYo", NpTus::sceNpTusAbortRequest);
+ 	LIB_FUNC("wPFah4-5Xec", NpTus::sceNpTusAddAndGetVariableA);
+ 	LIB_FUNC("2dB427dT3Iw", NpTus::sceNpTusAddAndGetVariableAAsync);
+@@ -1925,10 +4184,14 @@ LIB_DEFINE(InitNpTus_1) {
+ 	LIB_FUNC("mXZi1D2xwZE", NpTus::sceNpTusAddAndGetVariableForCrossSaveAsync);
+ 	LIB_FUNC("4VLlu7EIjzk", NpTus::sceNpTusAddAndGetVariableForCrossSaveVUser);
+ 	LIB_FUNC("6Lu9geO5TiA", NpTus::sceNpTusAddAndGetVariableForCrossSaveVUserAsync);
+-	LIB_FUNC("wjNhItL2wzg", NpTus::sceNpTusChangeModeForOtherSaveDataOwners);
++	if (!Bc5NtuOn()) { // BC5 experiment 0405 (tbt): held, not registered when on (a stubbed import)
++		LIB_FUNC("wjNhItL2wzg", NpTus::sceNpTusChangeModeForOtherSaveDataOwners);
++	}
+ 	LIB_FUNC("1n-dGukBgnY", NpTus::sceNpTusCreateNpTitleCtxA);
+ 	LIB_FUNC("3bh2aBvvmvM", NpTus::sceNpTusCreateRequest);
+-	LIB_FUNC("hhy8+oecGac", NpTus::sceNpTusCreateTitleCtx);
++	if (!Bc5NtuOn()) { // BC5 experiment 0405 (tbt): held, not registered when on (a stubbed import)
++		LIB_FUNC("hhy8+oecGac", NpTus::sceNpTusCreateTitleCtx);
++	}
+ 	LIB_FUNC("iXzUOM9sXU0", NpTus::sceNpTusDeleteMultiSlotDataA);
+ 	LIB_FUNC("6-+Yqc-NppQ", NpTus::sceNpTusDeleteMultiSlotDataAAsync);
+ 	LIB_FUNC("xutwCvsydkk", NpTus::sceNpTusDeleteMultiSlotDataVUser);
+@@ -1996,8 +4259,10 @@ LIB_DEFINE(InitNpTus_1) {
+ 	LIB_FUNC("ypMObSwfcns", NpTus::sceNpTusSetMultiSlotVariableAAsync);
+ 	LIB_FUNC("1Cz0hTJFyh4", NpTus::sceNpTusSetMultiSlotVariableVUser);
+ 	LIB_FUNC("CJAxTxQdwHM", NpTus::sceNpTusSetMultiSlotVariableVUserAsync);
+-	LIB_FUNC("6GKDdRCFx8c", NpTus::sceNpTusSetThreadParam);
+-	LIB_FUNC("KMlHj+tgfdQ", NpTus::sceNpTusSetTimeout);
++	if (!Bc5NtuOn()) { // BC5 experiment 0405 (tbt): held, not registered when on (a stubbed import)
++		LIB_FUNC("6GKDdRCFx8c", NpTus::sceNpTusSetThreadParam);
++		LIB_FUNC("KMlHj+tgfdQ", NpTus::sceNpTusSetTimeout);
++	}
+ 	LIB_FUNC("0up4MP1wNtc", NpTus::sceNpTusTryAndSetVariableA);
+ 	LIB_FUNC("bGTjTkHPHTE", NpTus::sceNpTusTryAndSetVariableAAsync);
+ 	LIB_FUNC("oGIcxlUabSA", NpTus::sceNpTusTryAndSetVariableAVUser);
 diff --git a/src/libs/libNpCommerceDialog.cpp b/src/libs/libNpCommerceDialog.cpp
 new file mode 100644
 index 0000000..6b58dd4
