@@ -4528,10 +4528,10 @@ index 0000000..226a60e
 +} // namespace bc5::pad_audio_route
 diff --git a/src/bc5/switch_defaults.hpp b/src/bc5/switch_defaults.hpp
 new file mode 100644
-index 0000000..468d967
+index 0000000..cf9d218
 --- /dev/null
 +++ b/src/bc5/switch_defaults.hpp
-@@ -0,0 +1,33 @@
+@@ -0,0 +1,35 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +// Experiment 0413: the defaults of switches that went from the private test builds (exps 0401, 0405, 0409, 0412) into
 +// both shared builds. Each row is applied at process start with setenv(name, value, 0), before any static initializer
@@ -4554,6 +4554,8 @@ index 0000000..468d967
 +};
 +
 +inline constexpr Default kDefaults[] = {
++    // A2: acb state restore (exp 0381, 0401 series c)
++    {"BC5_DIRECT_ACB_STATE_RESTORE", "1"},
 +    {nullptr, nullptr}};
 +
 +inline void Apply() {
