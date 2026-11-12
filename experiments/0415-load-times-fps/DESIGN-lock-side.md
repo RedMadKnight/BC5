@@ -108,3 +108,30 @@ the hold falls by about that much and so does the waiting of the other submitter
 34 s of play). Whether a load gets shorter by it is not known: L3 removed 0.4-0.9 s of hold per phase and no load
 moved. The honest expectation is fewer long frames (a full sync of 10-40 ms inside a submission is one) rather than a
 shorter load or a higher mean frame rate. S1's run also gives the count of records per phase, which bounds the gain.
+
+## 7. Review by the top session (2026-11-12 night): what S1 has to settle before S2-S5 exist
+
+Approved to build: S1 (records and `verify`) together with `KYTY_BC5_FRAME_STAT`, one private build. These points
+are open work for S1; none is done yet.
+
+1. **Enumerate the writers of the guest's layout, not only the generation bumps.** To list here, with file and line,
+   before S1's code: every memory call including its failure paths (a call that bumps the generation and then fails:
+   record or not); `MAP_FIXED` over part of an existing range (an unmap record and a map record, in that order, seen
+   atomically by a reader); mappers that do not go through `kernel/memory.cpp` (the map flavour of libAmpr's
+   `CommandBufferSetBuffer`, which mapped FIXED over the title's heap; `AllocateGuestStackMemory`; save-data and file
+   mmaps; anything in `libs` that calls the allocator directly); protection changes; name changes; teardown at
+   process exit. **S1's comparison is made at the sequence number the submission read**, so that a record arriving
+   after its change became visible to a submission counts as a mismatch (order, not only content).
+2. **The wait with `g_dev_mutex` released.** After taking the mutex again the newest sequence is read again, with a
+   bound on the loop so that a title thread mapping without pause cannot starve a submission. The lock order is to be
+   written down (the applier's mutex, `g_dev_mutex`, the memory subsystem's lock held by the title's thread while it
+   queues) with the argument that there is no cycle: a memory call must not hold its lock while it waits for anything
+   the applier needs.
+3. **Coalescing.** A map and an unmap of the same range before any submission should cost no kernel work (a pending
+   import may be cancelled); an unmap is never reordered before the map it follows; an unmap and a map at the same
+   address with a job in flight keep `wait_jobs`.
+4. **Publication of a range imported outside the mutex.** The import must be of the file range as it is at
+   publication: state why the backing cannot change between queue and publish (truncate, remap), or check again
+   under the mutex.
+5. **S5.** Before records are trusted for private memory, the read of `/proc/self/maps` stays as the comparison in
+   `verify` over a long play, as in S1.

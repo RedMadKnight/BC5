@@ -569,8 +569,132 @@ that second, major faults. Exp 0412 owns the memory causes; this gives it the pe
 The GPU's time is serial time between fences, not a hardware counter. A pass's time includes the kernel's scheduling
 of the job.
 
+**Added on the top session's review (2026-11-12 night), to do in the build and the runs:** (a) record the GPU's
+clock per run if the governor exposes the frequency it set without root (its sysfs or its journal; not yet looked
+for); (b) `BC5_DIRECT_RING_DEPS=dcb` exists for correctness (exp 0323, F385: the BVH build split over two rings hung
+11 of 11 runs at about 2 minutes with RT on), so its gap time is measured directly and any relaxation would be default
+off with its catcher; (c) with RT off the title may change other passes too, so "the signatures that disappear" count
+as RT's share only where the remaining passes keep their target sizes.
+
 **Slot needed:** a build with the counter (incremental, minutes), then about 45 minutes: 4 x RT on, 4 x RT off on the
 fixed place (120 s each), then the host-side arms one at a time against a fresh baseline.
+
+### 12. The kit for build L4: stage S1 (change records, verify) and the frame counter (laptop, 2026-11-12 night; not built on the box, not run)
+
+`kit/0415-l4.diff` against the L3 tree (`tree-l4.md5`; `mk0415g.sh`). Both parts default off, neither changes
+behaviour.
+
+**S1, `KYTY_BC5_MAP_RECORDS` (tag mr415).**
+- Where the layout is written [C]: the direct path's view list is derived only from the range table `VirtualRanges`
+  (`kernel/memory.cpp`), and that table has eight mutators (`Add`, `Remove`, `ReleaseReserved`, `ConsumeReserved`,
+  `ConsumeReservedSpan`, `Rename`, `Protect`, `SetMemoryType`). Each bumps the generation under the table's mutex;
+  each now also notes the span it was called with, in the same critical section, failed calls included. So a reader
+  cannot see a change without its record (the review's ordering point), and whatever reaches the view list goes
+  through these eight. What this does NOT cover is a writer of the real address space that never tells the range
+  table (the review named libAmpr's set-buffer map, guest stacks, save-data and file mmaps): such a mapping is
+  invisible to the view list today as well; it is a question of the table against the address space, listed as open,
+  not answered by S1.
+- `VirtualRanges::SnapshotWithDirty` hands out, under one hold of the mutex, the ranges, their generation and the
+  spans since the last call; the log holds 65,536 spans, a full log is reported and counted (`rec_overflow`).
+- `src/bc5/map_records.hpp`: `apply` brings a list derived from the ranges up to date for one span: the current
+  ranges that overlap or touch the span are read again and replace what the list held in their extent (a mutator
+  merges or splits only ranges that overlap or touch its span). Spans can be applied late and in any order against
+  one snapshot.
+- In the direct path, at every rebuild of the views: the list kept from records is compared with the list built
+  from the same snapshot's every range (`map_record` counts comparisons and records, `rec_mismatch` differences,
+  with a journal line for the first eight). The rebuilt list is what is used.
+- CPU test `kit/test0415rec.cpp`, **10 of 10 on the laptop** [M]: a model of the range table (merging equal
+  neighbours, splitting under partial edits) takes 120,000 random add / remove / rename / protect / retype calls;
+  the kept list equals the rebuilt list after every call and after each of 20,051 batches (spans applied late,
+  shuffled, with spans of calls that changed nothing among them): 0 differences. Mutation check [M]: without the
+  "touch" at the span's lower edge 9,838 calls differ, without the widening to the touched ranges' extent 5,697.
+- Still open from the review, for the stages that will use the records: the lock order and the bounded wait (point
+  2), coalescing (3), the import's file range at publication (4), the private-memory side (5).
+
+**The frame counter, `KYTY_BC5_FRAME_STAT=<file>` (tag fs415).** One line per flip, and for two frames in every
+sixteen one line per completed job: kind, ring, the title's dwords, what the filter saw and dropped, BOs listed, the
+device's prepare / list / CS milliseconds, queued and fence-seen times, and the GPU's own start and end stamps.
+The stamps exist only with the existing diagnostic `BC5_DIRECT_JOB_TS=1` (exp 0124: a GPU timestamp at each job's
+start and end, which adds packets to every job; so a run with stamps is compared with one without for its frame
+rate before its per-pass numbers are used). The signature is weaker than section 11 planned: kind, ring and the
+title's dwords; render-target size and the first shader's address need the buffer parsed and are not in this build.
+`frame0415.py` groups the job lines by signature (checked on a synthetic file of known passes [M]).
+
+Also in the diff: a busy stretch of the APR counter shorter than the clock's step was not counted as a stretch
+(seen as an intermittent failure of `test0415` on the laptop's coarser clock; 8 of 8 runs pass after the fix).
+
+**Runs planned for L4:** (1) `KYTY_BC5_MAP_RECORDS=verify` over the scripted route twice, one 15-minute run and
+ASTRO BOT 120 s: `rec_mismatch` and `rec_overflow` must be 0; the records per phase bound what later stages can
+gain. (2) The frame counter standing at the save's spot: twice with `BC5_DIRECT_JOB_TS=1`, twice without (the cost
+of the stamps), then RT off twice with stamps.
+
+### 13. The fourth slot (2026-11-12 23:06-23:44 box time): build L4, S1's verify, the first frame-counter runs
+
+**Build L4** = L3 + `kit/0415-l4.diff` (`mk0415g.sh`): normal `9c2dddee`, lean `45be70e6`; L3 kept in `bin-l3`,
+`bin-lean-l3`. CPU tests on the box [M]: `test0415` 70 of 70 and 32 of 32, `test0415apr` 33 of 33, `test0415sync` 15
+of 15, `test0415rec` 10 of 10. On the top session's review the diff also got a check of its own thread (`bc5-mapschk`,
+with `KYTY_BC5_MAP_RECORDS` on): every 5 s the readable VMAs of `/proc/self/maps` inside the guest's span are held
+against the range table and bytes that no range covers are counted (`maps_check`, `maps_uncovered`).
+All runs `KYTY_BC5_APR_POSIX=direct`, no kernel line, no crash line; the watchdog did not act.
+
+**S1, `KYTY_BC5_MAP_RECORDS=verify`** [M]:
+
+| run | comparisons (view rebuilds) | records applied | mismatches | log full | maps checks | uncovered |
+|---|---|---|---|---|---|---|
+| g1, g2: the scripted route, 114 s each | 1,021 / 1,048 | 208,063 / 207,357 | 0 / 0 | 0 / 0 | 22 / 22 | 0 bytes |
+| lv1: the route and 664 s of play (the walk) | 5,898 | 451,103 | 0 | 0 | 147 | 16,384 bytes in one check |
+| as5rec: ASTRO BOT, 120 s from start, no input | 24 | 209 | 0 | 0 | 23 | 0 bytes |
+
+- **The records are complete and in order for the view list**: in 7,991 comparisons over 866,732 records the list
+  kept from records equalled the list rebuilt from the same snapshot every time, in both titles.
+- **No mapper bypassed the range table in these runs**: 214 checks of `/proc/self/maps`, one of which saw 16 KiB
+  uncovered once and not again (a map call caught between its two steps, the case the check's comment names). The
+  review's suspects (libAmpr's set-buffer map, guest stacks, save-data and file mmaps) left no stable trace on this
+  route or in ASTRO BOT's start. A level load of ASTRO BOT and other places of the second title are not covered.
+- The rate: 4,100-5,500 records a second in the two loads, 620-660 a second in play, for about 20 view rebuilds a
+  second in the loads and 10 in play: 200-390 records per rebuild in a load. That is the size of the work a later
+  stage would do instead of walking 12,500-28,000 ranges.
+- In lv1's 664 s of play: mean 23.9 flips/s, median 25, 27 seconds under 15 flips, none under 5.
+
+**The frame counter, standing still at the save's spot for 60 s after the load** (`run0415f.sh` with `R_WALK=0`;
+two runs per arm; `raw/f*-frame.txt.gz`, `frame0415.py`) [M]:
+
+| arm | flips/s (two runs) | median frame | GPU busy per sampled frame | GPU idle between the frame's jobs | GPU engines busy (fdinfo) | `kcompactd0` CPU in the 65 s |
+|---|---|---|---|---|---|---|
+| RT on, `BC5_DIRECT_JOB_TS=1` (ft1, ft2) | 22.5 / 22.9 | 36.0 ms (ft1) | 26.4 ms (ft1) | 5.4 ms (ft1) | 60 / 61 % | 26.9 (in 48 s) / 39.8 s |
+| RT on, no stamps (fu1, fu2) | 22.6 / 22.9 | 35.4 ms (fu1) | not measured (no stamps) | | 60 / 60 % | 40.9 / 41.1 s |
+| **RT off**, stamps (fo1, fo2) | **22.8 / 23.0** | 35.7 ms (fo1) | 24.6 ms (fo1) | 6.5 ms (fo1) | 57 / 58 % | 36.3 / 27.9 s |
+
+- **The GPU's own stamps cost nothing measurable** (22.5-22.9 against 22.6-22.9 flips/s), so they can be used.
+- **RT off does not make the frame shorter at this place**: 22.8-23.0 flips/s against 22.5-22.9, the median frame
+  35.7 against 36.0 ms. The GPU's busy time per frame is 1.8 ms lower with RT off (24.6 against 26.4 ms, one run
+  each): RT's share of the GPU's work is about 7 % here. RT is not what limits the frame rate at this place. (RT off
+  was run only for this measurement.)
+- An ordinary frame of 36 ms has the GPU busy 26 ms and idle 5.4-6.5 ms between its 39 jobs; the frame is longer
+  than the GPU's work by about 10 ms.
+- **Long frames are frequent even standing still**: in ft1's 43 s, 208 of 961 frames are over 50 ms and 12 over
+  100 ms (p90 72.6 ms). In these runs the device mutex was held about half the time (31-33 s of 65 s) and its
+  users waited 15-16 s for it; `kcompactd0` used 27-41 s of CPU per 65 s, more than half a core throughout.
+- **A third of the jobs are tiny compute jobs**: of ft1's 12,493 sampled jobs about 4,000 have 2-28 dwords from the
+  title (1-4 packets), and in 934 of them the filter dropped the only packet, so an empty job went to the kernel and
+  was waited for (GPU time 0.04 ms, 3.4 ms from queue to fence, 0.07 ms of host work under the mutex each). About
+  13 such tiny jobs a frame.
+- **The pass table is not usable yet.** The signature of this build (kind, ring, the title's dwords) splits one pass
+  into many rows because the dwords vary from frame to frame: no row has more than 3.2 % of the GPU's time. The ring
+  column reads -1 in every line (the field is not filled at that point of the completion code). Per-pass GPU time
+  needs the signature section 11 planned (render-target size, first shader), which needs the buffer parsed: next
+  build.
+
+**Review notes carried in** (the top session, from Codex's review of the read path in L2: no blocking remark).
+`KYTY_BC5_APR_POSIX=direct` means reading into the destination memory instead of a staging buffer; it is not
+`O_DIRECT`, the page cache is used as before. The gains of section 7 (7.3 s and 4.2 s) are those of that series:
+10 runs against 8, RT on, the NAS archive active during most runs.
+
+**What follows for part 2** [I]. At this place the frame is not bound by RT and not by the GPU alone: 26 ms of GPU
+work sit in a 36 ms frame, with 5-6 ms of GPU idle between jobs and a fifth of the frames long. The candidates, in
+the order the numbers suggest: the idle between jobs (39 jobs a frame, a third of them tiny or empty: fewer and
+fuller submissions), the mutex held half the time (the lock-side stages), and the kernel's compaction at the memory
+wall (exp 0412). None is built. The GPU's clock per run was not read (not looked for yet).
 
 ## Verdict
 
@@ -584,3 +708,7 @@ The read path has its CPU test now (33 of 33); a 15-minute run and an ASTRO BOT 
 maintenance in the load; the start before the first flip; part 2 (fps). Build L3 (section 10) tried three exact
 fast forms of that maintenance: one shortens the learned windows by 0.4-0.9 s per phase, two do nothing, none
 shortens a load. In five runs no learned window mapped anything.
+Build L4 (section 13): the change records of the guest's range table are complete and in order for the view list
+(7,991 comparisons, 0 mismatches, both titles), the base for the lock-side stages. Part 2's first runs: standing
+still the frame is 36 ms with 26 ms of GPU work; RT off does not shorten it (RT is about 1.8 ms of GPU time); a fifth
+of the frames are long. Per-pass GPU time is not measured yet (the signature was too weak).
