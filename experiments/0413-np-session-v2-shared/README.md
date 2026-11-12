@@ -442,3 +442,41 @@ binary's table (R21: two runs, a fit).
 **Next, for a separate session.** At the fault, print the title's threads and what each waits in (the host's sync
 objects), and find the writer of the table at guest 0x300a80000. An order the console guarantees and the host does not
 is the thing to look for.
+
+### Round six (2026-11-12 15:14–15:45): a thread dump at the fault; every build that carries it passes
+
+**Tool.** `integration/mkthr0413.py` (+ `mkthr2.py`) adds to the crash walk a dump of every thread, run only after the
+fault:
+- name, state and start time from `/proc/self/task`;
+- the blocking system call and its first argument;
+- by a signal to each thread, its RIP/RSP and the guest code addresses on its stack.
+
+**Results.**
+
+| binary | what differs from the crashing walk build (af36798a) | ASTRO BOT start |
+|---|---|---|
+| 0b581b92 | the dump's code, plus a 35 KiB static array | PASS at 1–30 dummy variables (17 counts; t1thr, tt1–tt30) |
+| 2e2e4b9a | the dump's code only, its buffers mapped at the fault | PASS (u1thr) |
+
+- The fault never came, so no thread dump exists.
+- These builds change nothing before the fault: no call, no allocation, no timing. They change only the binary's code
+  and data size.
+- **So the crash also moves with the binary's layout, not only with timing.** The earlier "start race" reading is
+  therefore weaker: an address-dependent cause fits as well (something ordered, hashed or placed by address, in the
+  host or in the title).
+- **Crashing binaries so far:** every build without diagnostics (a76f86ab, d1b6f9cb, f61d5874, the pattern-init
+  fd867ac6) and the four small walk builds.
+- **Passing binaries:** the skip-file build, the call-ring build and both thread-dump builds.
+- During these runs exp 0412's session ran one arm of its own (15:15:48, about 4 minutes). My guard stopped my start
+  and no runs overlapped.
+
+**State.** The private tree and binary are back at a2ab53c7 / f61d5874. The shared builds are untouched.
+
+**Not done.** Naming import 0x62d (the eboot's segments are not plain zlib; a SELF reader is needed); the writer of the
+table at guest 0x300a80000; the ordering candidates in the host's thread code.
+
+**What could work next:**
+- a watcher outside the process that reads `/proc/<pid>/task/*` of the unmodified crashing binary in its first
+  5 seconds (no change to the binary at all);
+- a one-shot write protection of the table's range through an environment-free mechanism, such as a file the
+  unmodified loader already reads.
