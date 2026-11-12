@@ -72557,7 +72557,7 @@ index 08b7156..f274f41 100644
  	LIB_FUNC("6na+Sa-B83w", LibZlib::sceZlibFinalize);
  	LIB_FUNC("TLar1HULv1Q", LibZlib::sceZlibInflate);
 diff --git a/src/libs/libs.cpp b/src/libs/libs.cpp
-index 36e4dc8..5048da4 100644
+index 36e4dc8..70f9ec7 100644
 --- a/src/libs/libs.cpp
 +++ b/src/libs/libs.cpp
 @@ -4,6 +4,12 @@
@@ -72595,7 +72595,7 @@ index 36e4dc8..5048da4 100644
  LIB_DEFINE(InitPad_1);
  LIB_DEFINE(InitPlayGo_1);
  LIB_DEFINE(InitPngDec_1);
-@@ -73,8 +94,191 @@ LIB_DEFINE(InitSystemService_1);
+@@ -73,8 +94,229 @@ LIB_DEFINE(InitSystemService_1);
  LIB_DEFINE(InitTextToSpeech2_1);
  LIB_DEFINE(InitUserService_1);
  LIB_DEFINE(InitVideoOut_1);
@@ -72708,6 +72708,38 @@ index 36e4dc8..5048da4 100644
 +namespace LibGameLiveStreaming {
 +LIB_DEFINE(InitGameLiveStreaming_1);
 +} // namespace LibGameLiveStreaming
++// ---- BC5 experiment 0405 (series e7 of experiment 0401), tag "tl3": batch 2's hardware group, five more dead
++// tables, each behind a switch. The same decision 4 ("=> B => B"): each table's functions are ported first
++// (series e7's port agents, in each table's own unit), then the table is loaded here, behind its own switch,
++// default off. They load after every table above, in this order (TABLES below):
++//   KYTY_BC5_LOAD_CAMERA     camera     libs/libCamera.cpp     libSceCamera
++//   KYTY_BC5_LOAD_USBD       usbd       libs/libUsbd.cpp       libSceUsbd
++//   KYTY_BC5_LOAD_HMD        hmd        libs/libHmd.cpp        libSceHmd
++//   KYTY_BC5_LOAD_VRTRACKER  vrtracker  libs/libVrTracker.cpp  libSceVrTracker
++//   KYTY_BC5_LOAD_MOVE       move       libs/libMove.cpp       libSceMove
++// Each is library v1, module v1.1. The same rule and the same one stderr line as batch 1: the line lists the items
++// that are on, these last, so with all five unset InitAll's records and its line are what the tables above give.
++// Each table's own unit decides what its init registers (series e7: held stubs are not registered with the switch
++// on); tl30405.cpp counts the records at run time.
++// No key and no NID+type of these five tables is registered by a live table or by another dead table (e7 input
++// tree, tl30405-notes.md), so no lookup of another table moves; tl30405.cpp fails if one appears. Loading only
++// registers the tables' functions: nothing here opens a device.
++// No upstream code: this only loads this tree's own tables. GPL-2.0 as the rest of this file.
++namespace LibCamera {
++LIB_DEFINE(InitCamera_1);
++} // namespace LibCamera
++namespace LibUsbd {
++LIB_DEFINE(InitUsbd_1);
++} // namespace LibUsbd
++namespace LibHmd {
++LIB_DEFINE(InitHmd_1);
++} // namespace LibHmd
++namespace LibVrTracker {
++LIB_DEFINE(InitVrTracker_1);
++} // namespace LibVrTracker
++namespace LibMove {
++LIB_DEFINE(InitMove_1);
++} // namespace LibMove
 +
 +namespace Bc5Tables {
 +
@@ -72740,10 +72772,16 @@ index 36e4dc8..5048da4 100644
 +    {"KYTY_BC5_LOAD_WEBBROWSERDIALOG", "webbrowserdialog", LibWebBrowserDialog::InitWebBrowserDialog_1},
 +    {"KYTY_BC5_LOAD_SHAREPLAY", "shareplay", LibSharePlay::InitSharePlay_1},
 +    {"KYTY_BC5_LOAD_GAMELIVESTREAMING", "gamelivestreaming", LibGameLiveStreaming::InitGameLiveStreaming_1},
++    // Batch 2's hardware group (series e7, tag "tl3"), after every row above:
++    {"KYTY_BC5_LOAD_CAMERA", "camera", LibCamera::InitCamera_1},
++    {"KYTY_BC5_LOAD_USBD", "usbd", LibUsbd::InitUsbd_1},
++    {"KYTY_BC5_LOAD_HMD", "hmd", LibHmd::InitHmd_1},
++    {"KYTY_BC5_LOAD_VRTRACKER", "vrtracker", LibVrTracker::InitVrTracker_1},
++    {"KYTY_BC5_LOAD_MOVE", "move", LibMove::InitMove_1},
 +};
 +static constexpr size_t TABLE_COUNT = sizeof(TABLES) / sizeof(TABLES[0]);
 +static_assert(TABLE_COUNT <= 32);
-+static_assert(TABLE_COUNT == 20); // BC5 experiment 0405 (tl2): batch 1's six, then batch 2's fourteen
++static_assert(TABLE_COUNT == 25); // BC5 experiment 0405 (tl3): batch 1's 6, batch 2's 14, its hardware group's 5
 +
 +// Bit i: TABLES[i]'s switch is on. Read once; the first call prints the line.
 +static uint32_t On() {
@@ -72787,7 +72825,7 @@ index 36e4dc8..5048da4 100644
  	LIB_LOAD(InitAudio_1);
  	LIB_LOAD(InitAmpr_1);
  	LIB_LOAD(InitAppContent_1);
-@@ -95,6 +299,11 @@ void InitAll(Loader::SymbolDatabase* s) {
+@@ -95,6 +337,11 @@ void InitAll(Loader::SymbolDatabase* s) {
  	LIB_LOAD(LibKeyboard::InitKeyboard_1);
  	LIB_LOAD(Ime::InitPlatform_1_Ime);
  	LIB_LOAD(InitNet_1);
@@ -72799,7 +72837,7 @@ index 36e4dc8..5048da4 100644
  	LIB_LOAD(InitPad_1);
  	LIB_LOAD(InitPlayGo_1);
  	LIB_LOAD(LibPsml::InitPsml_1);
-@@ -111,6 +320,7 @@ void InitAll(Loader::SymbolDatabase* s) {
+@@ -111,6 +358,7 @@ void InitAll(Loader::SymbolDatabase* s) {
  	LIB_LOAD(InitUserService_1);
  	LIB_LOAD(VideoDec2::InitVideoDec2_1);
  	LIB_LOAD(InitVideoOut_1);
