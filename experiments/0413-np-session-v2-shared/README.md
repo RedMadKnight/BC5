@@ -533,3 +533,66 @@ starts collide.
   host-allocated stacks.
 - **A host-side guard independent of the cause:** a fixed mapping must not replace a range of type Stack that the host
   allocated; refuse it or move the stack. That goes behind a switch, default off, until the cause is known.
+
+### The cause of ASTRO BOT's start crash (2026-11-12 16:05–16:20): the set-buffer "map flavour" heuristic
+
+**This section replaces the earlier readings in this README:** "heap contents", "a start race", "binary layout" and
+round seven's "a mapping lands on a host-allocated stack". The stacks in that zone are the title's own, cut from its
+heap, with guards it sets by `mprotect`.
+
+**Found with no rebuild, on the unmodified crashing f61d5874:**
+1. **The call log** (`--printf-direction File` in a private launcher copy, `integration/start0413l.sh astrolog`; run
+   L1log, which crashes as usual). Right before the fault:
+   - `sceKernelAllocateDirectMemory(len 0x4000)` → phys 0x7e200000;
+   - then `sceKernelMapDirectMemory` with `in_addr = 0x300a80000`, `flags = 0x10` (fixed), size 0x4000, name "AMM".
+
+   That is the 16 KiB mapping the map watcher saw. The passing start's log (L2log) has no such map; there the same
+   physical block goes to the title's "ResourceMemoryAllocator" at 0x1000000000.
+2. **The AMM trace** (`KYTY_BC5_AMM_TRACE=1`, an existing switch; runs T1trace and T2trace). The first three set-buffer
+   calls print, among others, `set-buffer cb 0x300a82ce0 va 0x300a828c0 len 0x400 a3 0x300a82d00 a4 0x9088e4e98 a5
+   0x563d185e8250`.
+   - `a5` is a host heap pointer; in the third call it is 0x7f38e0e255c0. The 4th–6th "arguments" are leftover
+     register contents: the title passes three.
+   - The buffer 0x300a828c0 rounds down to the page 0x300a80000, and its length rounds up to 0x4000: exactly the mapping.
+   - The command buffer header 0x300a82ce0 and the crash walk's "table" and "key" lie in that page of the title's heap
+     (`orbis_user_malloc`, mapped by the title at 0x300000000).
+
+**The code.** `CommandBufferSetBuffer(cb, buffer, size, a3, a4, a5)` in `src/libs/libAmpr.cpp` (exp 0035) takes the
+"map flavour" when `a3 != va && (a4 == 0xffffffff || a4 == ~0)`. It then runs an AMM MapAuto: it allocates direct
+memory and maps it fixed, zeroed, at the buffer's page.
+- With three real arguments, `a4` is whatever earlier host code left in `r8`.
+- When that is -1, the host replaces a live page of the title's heap with zeros. The title then reads its own zeroed
+  data and faults.
+- The guard pages of the title's stacks vanish in the same step because a partial replace inside one big direct view
+  re-maps the rest read/write (`memoryAddressSpace.inc`, `UnmapOne`; the code review, read).
+
+**Why it looked like everything else.**
+- The leftover in `r8` depends on which host code ran just before: `getenv` readers at first use, their loop length,
+  the calls the default-on rows add.
+- So the outcome was fixed per (binary, environment count), moved with both, and moved with every diagnostic.
+- It is a latent bug of the shared builds as well. The old binary's leftovers happen not to be -1 at ASTRO BOT's
+  start.
+
+**Not shown directly:** a trace line with `a4 = 0xffffffff` in a crashing run. Both trace runs passed, since the trace
+itself changes the leftovers. The match is by the mapping's address and size, and by the call log of the crashing run.
+
+**The fix** (`integration/mkset0413.py`, commit 64844801; default on as row E1 of the table, commit 8d729958; patch
+9e21a5f8).
+- With `KYTY_BC5_AMM_SETBUFFER_GUARD` on, a call with the map signature whose first page is already committed memory is
+  taken as the buffer flavour, with one stderr line (the first 16 times).
+- That follows exp 0035's own description: the buffer flavour attaches existing storage; the map flavour commits pool
+  pages where nothing is mapped yet.
+- `=0` gives the old heuristic.
+- Not compiled yet.
+
+**Side findings of the code review** (an agent, read-only; not acted on here):
+- A partial unmap inside a big view makes the whole view inaccessible for an instant (`UnmapOne` replaces it with a
+  `PROT_NONE` placeholder, then re-maps the two remainders) and drops `PROT_NONE` protections inside it. Both are
+  separate hazards.
+- `ValidateAmmMapArgs` does not check that an AMM map's address lies in the AMM range.
+- The existing "fixed map over live range" trace line would be the right always-on catcher if freed from
+  `KYTY_BC5_AMM_TRACE`.
+
+**Open questions, not claims:** whether the second title's unexplained zeroed data or start crashes at low guest budgets
+go through the same call (its set-buffer arguments are not traced here), and what the real third-argument convention of
+this NID is (exp 0035's TODO).
