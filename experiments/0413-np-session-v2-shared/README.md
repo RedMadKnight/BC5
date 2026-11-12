@@ -308,3 +308,46 @@ skipped) plus `BC5_GUARD_ZSKIP_POLL_SUBMIT=1`. `~/bc5-work/zero-list-pkg.txt` do
   ends.
 - So p5final's F403 reading is weaker than stated above: the hang may be the zero skip's.
 - The zero skip is out of the proposed `play-pkg.sh` diff.
+
+### ASTRO BOT's crash: the root-cause work (2026-11-12 13:58–14:1x; private diagnostic builds only)
+
+**Tool.** `integration/mkwalk0413*.py` add a crash walk to a private copy of `runtimeLinker.cpp` (tree a2ab53c7,
+aba94c24), behind `BC5_0413_CRASH_WALK=1`. It logs:
+- the guest frame chain;
+- each call site's 64 bytes;
+- the key and the table of the faulting lookup;
+- each import stub's hops to its target.
+
+The bytes were disassembled with clang/llvm-objdump (VS's LLVM on the laptop). ASTRO BOT's eboot is a SELF whose
+segments are neither plain nor zlib, so its code was read from the running process instead. The private tree and
+binary are back to aba94c24 / f61d5874 afterwards.
+
+**The chain at the fault** (runs w1walk–w4walk; the crash is unchanged with the extra variable):
+
+| frame | return address | what |
+|---|---|---|
+| — | 0x90000048f | the fault: the function's first store, `*arg2 = arg3`, with `arg2 = NULL` |
+| 0 | 0x900000454 | a wrapper at 0x900000435: `mov rsi, [rsi]`, so it hands on the *value* of its pointer argument |
+| 1 | 0x90029930a | a loop over 24-byte entries up to an end pointer; per entry, `cmp(key r14, [rbx+8], 0x400)` through import 0x90001d750; on a match it passes `rbx+0x18`, the next entry's first field, to the wrapper |
+| 2 | 0x9002a0ebd | calls the frame-1 function right after a call through stub 0x9074b62e0 |
+| 3–5 | 0x9010d29fe, 0x90029fdeb, 0x9000000af | up to the title's entry |
+| 6 | 0x56515544ebad | **host**: the host's call of the guest entry |
+
+**State at the fault.**
+- The key string (frame 1's `r14`) is **empty**.
+- **Every table entry around the match is zero**: 15 entries, all four fields 0.
+- The compare is a **host** function (import index 0x62d, reached through stub 0x9074bc310). For ("", entry name
+  NULL) it returned "equal", so the title took the next entry's NULL as a string pointer.
+- Stub 0x9074b62e0 is not the host's: it lands in guest code at 0x9200040c0 (another loaded guest module, a SIMD
+  routine).
+- A host heap pointer (0x5577…) sits in a guest callee-saved register (frame 1's saved `r15`).
+
+**Reading so far (inference).** The title walks a table that should hold its entries and finds it zeroed, with an empty
+key. Two places to look next:
+1. **The host compare's contract for a NULL argument.** It treats ("", NULL) as equal. The console's libc would crash
+   or compare differently. Which NID is index 0x62d, and what does our body do with NULL?
+2. **Why the table range covers zeroed entries.** Either the end pointer or count comes from a host call that is
+   switched by these rows, or a host write that fills the table is skipped. That would explain the dependence on the
+   rows and on the environment's size.
+
+The top's discriminator, `-ftrivial-auto-var-init=pattern` and `=zero` builds (`pz0413.sh`), is in progress.
