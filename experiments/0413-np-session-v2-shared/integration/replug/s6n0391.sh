@@ -5,12 +5,12 @@
 # (each marked "0391:" where it stands):
 #  - run0391.sh owns the lock: this script only checks that BOX-LOCK is this run's exact line (E0391_LOCKLINE), at the start,
 #    before the launch and at every poll; it never writes or clears the lock.
-#  - no live-save sum as a gate: the live saves are snapshot by name (saves-before-HHMM) and compared at the end only.
+#  - one named route snapshot; reset the private working copy and record its hash before each run.
 #  - the traces: KYTY_BC5_AUDIO_TRACE=1 KYTY_BC5_MEASURE=1 KYTY_BC5_INPUT_TRACE=1 in the emulator's environment, proved there.
 #  - no stall-sampler requests, no sampler gate, no menu shots (exp 0378/0380's additions, not needed here).
 #  - the audio and rumble lines of the play log go to raw/<tag>-audio-lines.txt for check0391.py.
 # Called by run0391.sh only. usage: s6n0391.sh <tag> [secs]   (420 s by default)
-# Exit: 0 verdict pass with the live saves unchanged, 1 anything else.
+# Exit: 0 verdict pass, 1 anything else.
 # BC5 D19 smoke, derived from exp 0380 s6n0380r1.sh 494ac253 by mks6n-d19.py, then edited by hand for REVIEW-PORTS-06.
 # Changes from that first derivation (each marked "d19:" where it stands):
 #  - D19_OWNER: required, passed to the emulator, proved in its environment, so d19box.sh can find all our processes.
@@ -20,15 +20,15 @@
 #  - the environ line also shows BC5_LOGS.
 #  - the raw /proc/PID/environ goes to -environ.bin, private before its first byte, never in Git; -start.txt ties it to the pid.
 #  - the verdict also rejects TIMEOUT, kernel, devcoredump, RT-off lines, a missing journal (normal), no route read.
-#  - the exit status is 0 only for verdict pass with the live saves unchanged; it was always 0 after a run.
+#  - the exit status is 0 only for verdict pass; it was always 0 after a run.
 # BC5 experiment  0380 (s6n0378.sh by mk-s6n0380.pl; the rebase fix runs) (exp 0372's s6n0372.sh, made by mk-s6n0378.pl): the healthy-frame register baseline of the
 # second title. The S6N route RT on with the SHARED normal build (~/bc5-work/kytyplus-build/src/kyty_emulator, md5
 # pinned) through a private copy of play-pkg.sh (own log, wd, save directory, learned-file copy; the shared file is
-# only read), exp 0196's route save copy in the private wd, the live saves compared only. While the scene runs the
+# only read), exp 0196's named route save copy in the private wd. While the scene runs the
 # script asks the installed stall sampler (0377, registers only) for forced samples: `echo once` into its force file,
 # 20 samples 5 s apart from t 180 s and 20 more from t 450 s. No wave request is ever written (F520).
 # Everything else as s6n0372.sh / s6n0368.sh / s6n0350.sh: exp 0330's memory sampler, fdinfo, flips, the summary.
-# usage: s6n0378.sh <expected live-saves sum> <tag> [secs] [off|on]   (on the box; 600 s, RT on by default)
+# Historical derivation: s6n0378.sh; current usage is s6n0391.sh <tag> [secs].
 set -u
 TAG=${1:?a tag}; SECS=${2:-420}; RT=on; VARIANT=normal; OWNER=${D19_OWNER:?}; LOCKLINE=${E0391_LOCKLINE:?}  # 0391: RT on, the shared normal build, run0391.sh's lock line  # d19: the mark of all our processes
 case "$RT" in off | on) ;; *) echo "RT is off or on"; exit 1 ;; esac
@@ -36,7 +36,7 @@ W=${D19_WORK:-$HOME/bc5-work}; E=$W/exp0413r/run; R=$E/raw; LOCK=$W/BOX-LOCK; E3
 BIN=${D19_BIN:?}; WANT=${BC5_0380_WANT:?}
 SWITCHES="KYTY_BC5_AUDIO_TRACE=1 KYTY_BC5_MEASURE=1 KYTY_BC5_INPUT_TRACE=1 BC5_GAME_DIR=/home/kjaniszewski/bc5-data/games/PPSA03671 BC5_DIRECT_ACB_STATE_RESTORE=1 KYTY_BC5_PTHREAD_FIXES=1 KYTY_BC5_SAVEDATA_FIXES=1 KYTY_BC5_SAVEDATA_EVENT_CB=1 KYTY_BC5_SAVEDATA_SORT=1 KYTY_BC5_AUDIO_FIXES=set,room KYTY_BC5_AMPR_WAITS=1 KYTY_BC5_VIDEOOUT_STATUS=1 KYTY_BC5_EQUEUE_FIXES=1 KYTY_BC5_MMAP_SHIM_FIXES=1 BC5_R3_MEMSEM_SIGNAL=1 BC5_R3_COND_WRITE=1 BC5_R3_WAIT_IDLE=1 BC5_R3_TS_100MHZ=1 KYTY_BC5_TLS_FIXES=1 KYTY_BC5_THREAD_SYNC_FIXES=1 KYTY_BC5_SEMA_FIXES=1 BC5_R3_MPROTECT_GAPS=1 BC5_R3_NULL_ARGS=1 BC5_R3_RELEASE_HOLES=1 BC5_R3_MUNMAP_HOLES=1 BC5_R3_FLEX_HINT=1 BC5_R3_DMQ_END=1 BC5_R3_EXEC_EINVAL=1 BC5_R3_QUERY_SIZE=1 KYTY_BC5_FS_FIXES=1 KYTY_BC5_POSIX_RET_FIXES=1 KYTY_BC5_SAVEDATA_MEMORY_FIXES=1 KYTY_BC5_SAVEDATA_DELETE_BUSY=1 KYTY_BC5_SAVEDATA_ALIASES=1 KYTY_BC5_HTTP2_FIXES=1 KYTY_BC5_PAD_OPEN_EXT=1 KYTY_BC5_JSON2_FIXES=1 KYTY_BC5_ULT_FIXES=1 KYTY_BC5_USERSERVICE_VALUES=1 KYTY_BC5_SYSTEMSERVICE_VALUES=1 KYTY_BC5_SYSTEMSERVICE_PARAMS_7_1000=1 KYTY_BC5_AUDIOOUT_CHECKS=1 KYTY_BC5_AUDIOIN_CHECKS=1 KYTY_BC5_NGS2_RACK_FIX=1 KYTY_BC5_FW_NET=1 KYTY_BC5_FW_AUDIO=1 KYTY_BC5_JIT_SHM=1 KYTY_BC5_FW_KERNEL=1 KYTY_BC5_FW_PAD=1 KYTY_BC5_LOAD_ZLIB=1 KYTY_BC5_LOAD_JPEG=1 KYTY_BC5_LOAD_IME=1 KYTY_BC5_LOAD_NPCOMMON=1 KYTY_BC5_LOAD_NPMANAGER=1 KYTY_BC5_LOAD_NPTROPHY=1 BC5_DIRECT_JOURNAL_QUIET=1 KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1"  # 0413: the traces, plus the integration's 55 switches as the second title's launcher words (the table off)
 case "$TAG" in *[!A-Za-z0-9]* | "") echo "the tag is letters and digits"; exit 1 ;; esac
-SD=$W/_SaveData/PPSA03671; SAVES=$W/exp0196/saves-before-152617
+SAVES=$W/exp0196/saves-before-152617
 LAUNCH_SRC=$W/play-pkg.sh; LAUNCH=$E/play-pkg-0391.sh; LEARN_SRC=$W/direct-learned-pkg.txt; LEARN=$E/direct-learned-pkg.txt
 mkdir -p "$R"
 [ "$SECS" -le 900 ] || { echo "at most 900 s"; exit 1; }
@@ -47,7 +47,7 @@ sudo -n dmesg > /dev/null 2>&1 || { echo "no dmesg access, the kernel gate would
 [ -d "$HOME/bc5-data/captures/devcoredump" ] || { echo "no devcoredump directory, that gate would be empty: not started"; exit 1; }  # d19
 [ -n "$WANT" ] && [ "$(md5sum < "$BIN" | cut -c1-8)" = "$WANT" ] || { echo "$BIN is not md5 ${WANT:-?} (build0358.sh first): not started"; exit 1; }
 [ -d "$SAVES" ] && [ -x "$LAUNCH_SRC" ] && [ -f "$W/exp0203/o2-continue.cmd" ] && [ -x "$E30/sample0330.sh" ] && [ -f "$LEARN_SRC" ] || { echo "no $SAVES, $LAUNCH_SRC, o2-continue.cmd, sample0330.sh or $LEARN_SRC"; exit 1; }
-saves() { (cd "$W/_SaveData" && find PPSA03671 -type f -exec md5sum {} + | sort -k2 | md5sum | cut -c1-16); }  # exp 0253's ab0253.sh
+copy_hash() { (set -o pipefail; export LC_ALL=C; cd "$1" && find . -type f -print0 | sort -z | xargs -0 -r sha256sum | sha256sum | cut -d " " -f1); }  # R45: files and relative names, C byte order, SHA256
 # The box's memory settings, read only (the maintainer's to change)
 { echo "swappiness $(cat /proc/sys/vm/swappiness) vfs_cache_pressure $(cat /proc/sys/vm/vfs_cache_pressure) watermark_scale_factor $(cat /proc/sys/vm/watermark_scale_factor) min_free_kbytes $(cat /proc/sys/vm/min_free_kbytes) page-cluster $(cat /proc/sys/vm/page-cluster)"
   echo "zram0 disksize $(cat /sys/block/zram0/disksize 2> /dev/null) comp $(cat /sys/block/zram0/comp_algorithm 2> /dev/null); MemTotal $(awk '/^MemTotal:/ {print int($2/1024)}' /proc/meminfo) MiB; GTT total $(awk '{print int($1/1048576)}' /sys/class/drm/card1/device/mem_info_gtt_total 2> /dev/null) MiB"
@@ -121,11 +121,6 @@ SROOT=$WD/_SaveData
 case " $(findmnt -no OPTIONS -T "$E" 2> /dev/null | tr ',' ' ') " in *" noatime "*) ATIME_OK=0 ;; *) ATIME_OK=1 ;; esac
 [ "$ATIME_OK" = 1 ] || { echo "noatime on $E: the route save read cannot be shown: not started"; exit 1; }  # d19
 echo "launcher $LAUNCH md5 $(md5sum < "$LAUNCH" | cut -c1-8) ($R/play-pkg-0391.diff); wd $WD ($(ls -A "$WD" | wc -l) entries)"
-SNAP=$E/saves-before-$(date +%H%M)
-[ -e "$SNAP" ] && { echo "$SNAP exists: not started"; exit 1; }
-cp -a "$SD" "$SNAP" && diff -rq "$SD" "$SNAP" > /dev/null || { echo "the live saves could not be snapshot: not started"; exit 1; }
-WANT_SAVES=$(saves)
-echo "$(date '+%F %T') live saves $WANT_SAVES, snapshot $SNAP (comparison only)" | tee -a "$R/s6n-saves.txt"
 # 0391: run0391.sh owns the lock; no lock trap
 EP=""; SP=""
 abort() { if [ -n "$EP" ] && [ -d "/proc/$EP" ]; then kill "$EP"; sleep 4; [ -d "/proc/$EP" ] && kill -9 "$EP" 2> /dev/null; fi; [ -n "$SP" ] && kill "$SP" 2> /dev/null; echo "$(date '+%F %T') aborted" >> "$R/s6n-saves.txt"; sync; exit 1; }
@@ -184,6 +179,8 @@ WANTENV=("BC5_DIRECT_RING_DEPS=dcb" "BC5_DIRECT_GPU_CHECK=1" "BC5_DIRECT_GPU_CHE
 [ -e "$R/$TAG-start.txt" ] && { echo "tag $TAG already used: not started"; exit 1; }
 case "$SROOT" in "$E"/*) rm -rf "$SROOT/PPSA03671" ;; *) echo "refusing to clear $SROOT"; exit 1 ;; esac
 cp -a "$SAVES" "$SROOT/PPSA03671" && diff -rq "$SAVES" "$SROOT/PPSA03671" > /dev/null || { echo "the route saves could not be put into $SROOT"; exit 1; }
+COPY_HASH=$(copy_hash "$SROOT/PPSA03671") || { echo "the private save copy could not be hashed: not started"; exit 1; }
+echo "$(date '+%F %T') tag $TAG sample $SAVES private $SROOT/PPSA03671 sha256 $COPY_HASH (C sorted relative file names and SHA256)" | tee -a "$R/s6n-saves.txt"
 find "$SROOT/PPSA03671" -type f -exec touch -a -d '2020-01-01 00:00:00' {} +
 cp "$W/exp0203/o2-continue.cmd" "$E/in-$TAG.cmd"
 N=$(sudo -n dmesg 2> /dev/null | wc -l)
@@ -259,8 +256,6 @@ echo "$TAG: ${ENDED:-stopped at $SECS s} after $DUR s; ${X:-no launcher exit lin
 final_verdict > "$R/$TAG-verdict.txt"
 sync
 cat "$R/$TAG-summary.txt" "$R/$TAG-0358.txt" "$R/$TAG-verdict.txt"
-S1=$(saves); echo "$(date '+%F %T') live saves $S1 (want $WANT_SAVES)" | tee -a "$R/s6n-saves.txt"
-[ "$S1" = "$WANT_SAVES" ] || echo "THE LIVE SAVES ARE NOT $WANT_SAVES (snapshot $SNAP): tell the maintainer before anything is restored"
 sync
 # d19: the lock stays with d19box.sh
-[ "$S1" = "$WANT_SAVES" ] && [ "$(cat "$R/$TAG-verdict.txt")" = pass ]  # d19: the exit status carries the result
+[ "$(cat "$R/$TAG-verdict.txt")" = pass ]  # d19: the exit status carries the result
