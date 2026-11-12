@@ -1,0 +1,45 @@
+# ab0412w.out.1 / ab0412w.out / ab0412w2.out and the summaries, 2026-11-12
+2026-11-12 15:43:09 the box is free; series starts
+15:43:09 b1f7 not started: the box is taken (exp 0413 | private start v1watch (astro, 60 s) on exp0413/f61d5874, token 202611121543072938543)
+2026-11-12 15:46:43 the box is free; series starts
+15:46:43 b1f7: rsync processes 0, steamwebhelper 0
+b1f7 (fast7) ended at G+120 (after 239 s; G 118, load 103, list 93); 25.3 flips/s over 235 s, 49 s with a gap over 100 ms, longest 751 ms; kernel lines 0, crash lines 0, ledger lines 23
+2026-11-12 15:54:14 the box is free; series starts
+15:54:14 b1f7 already run: skipped
+15:55:14 b2lw: rsync processes 0, steamwebhelper 0
+b2lw (lw7) ended at G+120 (after 239 s; G 118, load 103, list 93); 25.4 flips/s over 234 s, 56 s with a gap over 100 ms, longest 779 ms; kernel lines 0, crash lines 0, ledger lines 0
+15:59:26 b2lw ended: rsync processes 0; 8 canary hits
+16:01:56 b3ai: rsync processes 0, steamwebhelper 0
+the box is locked: exp 0413 | private start x1memoff (astro, 60 s) on exp0413/f61d5874, token 202611121601493118391
+sed: can't read /home/kjaniszewski/bc5-work/exp0412/night/raw/b3ai-journal.txt: No such file or directory
+16:01:57 b3ai ended: rsync processes 0;  canary hits
+16:03:07 b4tc: rsync processes 3, steamwebhelper 0
+b4tc (lw7) ended at G+120 (after 239 s; G 118, load 104, list 94); 25.7 flips/s over 234 s, 52 s with a gap over 100 ms, longest 769 ms; kernel lines 0, crash lines 0, ledger lines 0
+16:07:19 b4tc ended: rsync processes 0; 8 canary hits
+16:08:39 b5jr: rsync processes 3, steamwebhelper 0
+b5jr (lw7) ended at G+120 (after 239 s; G 118, load 105, list 94); 26.0 flips/s over 235 s, 42 s with a gap over 100 ms, longest 928 ms; kernel lines 0, crash lines 0, ledger lines 23
+16:12:51 b5jr ended: rsync processes 3; 8 canary hits
+16:18:12 b6f7: rsync processes 3, steamwebhelper 0
+b6f7 (fast7) ended at G+120 (after 246 s; G 125, load 101, list 93); 24.9 flips/s over 242 s, 56 s with a gap over 100 ms, longest 591 ms; kernel lines 0, crash lines 0, ledger lines 24
+16:22:31 b6f7 ended: rsync processes 0; 8 canary hits
+16:23:31 b7lw: rsync processes 3, steamwebhelper 0
+b7lw (lw7) ended at G+120 (after 238 s; G 117, load 103, list 93); 24.8 flips/s over 225 s, 51 s with a gap over 100 ms, longest 685 ms; kernel lines 0, crash lines 0, ledger lines 0
+16:27:47 b7lw ended: rsync processes 0; 10 canary hits
+16:28:48 b8ai: rsync processes 3, steamwebhelper 0
+b8ai (lw7) GPU HANG: ring reset succeeded at 224 s (after 249 s; G 118, load 103, list 93); 24.4 flips/s over 228 s, 42 s with a gap over 100 ms, longest 14756 ms; kernel lines 11, crash lines 0, ledger lines 0
+16:33:10 b8ai ended: rsync processes 0; 10 canary hits
+16:34:10 b9tc: rsync processes 3, steamwebhelper 0
+b9tc (lw7) GPU HANG: ring reset succeeded at 100 s (after 125 s; G none, load none, list 93); 25.0 flips/s over 108 s, 16 s with a gap over 100 ms, longest 14632 ms; kernel lines 11, crash lines 0, ledger lines 0
+16:36:29 b9tc ended: rsync processes 3; 5 canary hits
+2026-11-12 16:36:29 series done
+a1lw (lw7) GPU HANG: ring reset succeeded at 180 s (after 205 s; G 119, load 105, list 94); 23.1 flips/s over 187 s, 45 s with a gap over 100 ms, longest 14888 ms; kernel lines 11, crash lines 0, ledger lines 0
+b1f7 (fast7) ended at G+120 (after 239 s; G 118, load 103, list 93); 25.3 flips/s over 235 s, 49 s with a gap over 100 ms, longest 751 ms; kernel lines 0, crash lines 0, ledger lines 23
+b2lw (lw7) ended at G+120 (after 239 s; G 118, load 103, list 93); 25.4 flips/s over 234 s, 56 s with a gap over 100 ms, longest 779 ms; kernel lines 0, crash lines 0, ledger lines 0
+b4tc (lw7) ended at G+120 (after 239 s; G 118, load 104, list 94); 25.7 flips/s over 234 s, 52 s with a gap over 100 ms, longest 769 ms; kernel lines 0, crash lines 0, ledger lines 0
+b5jr (lw7) ended at G+120 (after 239 s; G 118, load 105, list 94); 26.0 flips/s over 235 s, 42 s with a gap over 100 ms, longest 928 ms; kernel lines 0, crash lines 0, ledger lines 23
+b6f7 (fast7) ended at G+120 (after 246 s; G 125, load 101, list 93); 24.9 flips/s over 242 s, 56 s with a gap over 100 ms, longest 591 ms; kernel lines 0, crash lines 0, ledger lines 24
+b7lw (lw7) ended at G+120 (after 238 s; G 117, load 103, list 93); 24.8 flips/s over 225 s, 51 s with a gap over 100 ms, longest 685 ms; kernel lines 0, crash lines 0, ledger lines 0
+b8ai (lw7) GPU HANG: ring reset succeeded at 224 s (after 249 s; G 118, load 103, list 93); 24.4 flips/s over 228 s, 42 s with a gap over 100 ms, longest 14756 ms; kernel lines 11, crash lines 0, ledger lines 0
+b9tc (lw7) GPU HANG: ring reset succeeded at 100 s (after 125 s; G none, load none, list 93); 25.0 flips/s over 108 s, 16 s with a gap over 100 ms, longest 14632 ms; kernel lines 11, crash lines 0, ledger lines 0
+1137c59b8e45f78f71ce95dfbba0d7ee  play-guard-0412.sh
+82118628546123cea35a895c8a3c60df  ab0412w2.sh
