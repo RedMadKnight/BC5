@@ -157,3 +157,17 @@ The Result's words "mapped / unmapped" above describe the old file, which caught
 `chk0416.sh` was edited and only syntax-checked.
 
 The two new switches stay experimental; no speed claim is made for them.
+
+**Second round, Codex 22:43 UTC (R46), laptop only.** Three faults in the catcher of the round above, fixed:
+- `end_child` closed the stream first; with a silent child the reader holds the buffer lock in its read, so the close
+  never returned and the child was never ended (Codex's `audit/test_fault0416_silent_cleanup.py`: rescue needed after
+  0.8 s). Now: end the child, wait with a limit, join the reader with a limit, close the stream only after the reader
+  has ended; if something still holds the pipe the last line says "INCOMPLETE cleanup" and nothing blocks. Codex's
+  repro now passes (0.002 s, no rescue). My earlier test used a child that wrote every 50 ms and did not cover silence.
+- A failed one-shot `dmesg` gave boundary -1 and would have kept the whole old backlog. Now a failed or stampless
+  first read follows nothing and writes "MONITOR ERROR" (exit 2).
+- The header said kept lines "belong to this run"; it now says they are stamped after the boundary and that the run
+  they belong to is unknown.
+`test0416fault.py`: 23 checks, PASS (a writing child, a silent child, a grandchild that holds the pipe, the failed
+first read). Still not run on the box; on Linux the case "sudo cannot be signalled" is expected to end as
+"INCOMPLETE cleanup", which is untested.

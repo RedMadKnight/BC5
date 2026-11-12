@@ -104,14 +104,51 @@ check("run attribution: unknown" in out[0] and "mapped" not in out[0].replace("u
 out, _ = run([0.1, fault(101.0, 0x1000)], 100.0, tick=iter(["pinned pid 7", None, None, None]).__next__)
 check(out[0] == "# pinned pid 7\n", "the pin note goes to the log")
 
-# 8. the child cleanup: a child that ignores nothing is ended and reaped; closing the pipe comes first
-p = subprocess.Popen([sys.executable, "-c", "import sys,time\nwhile True:\n    print('x', flush=True); time.sleep(0.05)"], stdout=subprocess.PIPE, text=True)
-q = queue.Queue()
-threading.Thread(target=f.reader, args=(p.stdout, q), daemon=True).start()
-q.get(timeout=5)
-msg = f.end_child(p)
-check(p.poll() is not None and msg.startswith("child ended"), "cleanup: the child is ended and reaped (%s)" % msg)
+# 8. the child cleanup, with a real pipe and our own child only
+def child(code):
+    p = subprocess.Popen([sys.executable, "-u", "-c", code], stdout=subprocess.PIPE, text=True)
+    q = queue.Queue()
+    th = threading.Thread(target=f.reader, args=(p.stdout, q), daemon=True)
+    th.start()
+    q.get(timeout=5)
+    time.sleep(0.1)
+    return p, th
+
+
+def timed_end(p, th):
+    t = time.monotonic()
+    box = []
+    w = threading.Thread(target=lambda: box.append(f.end_child(p, th)), daemon=True)
+    w.start()
+    w.join(timeout=12)
+    return (box[0] if box else None), time.monotonic() - t
+
+
+# 8a. a child that keeps writing
+p, th = child("import time\nwhile True:\n    print('x', flush=True); time.sleep(0.05)")
+msg, el = timed_end(p, th)
+check(msg is not None and p.poll() is not None and msg.startswith("child terminated") and not th.is_alive(), "cleanup, a writing child: ended and reaped, reader ended (%s, %.2f s)" % (msg, el))
+# 8b. SILENCE (Codex's case, R46): the reader blocks in readline; the old order closed the stream first and hung
+p, th = child("import time; print('ready', flush=True); time.sleep(60)")
+msg, el = timed_end(p, th)
+check(msg is not None and el < 5 and p.poll() is not None and msg.startswith("child terminated") and not th.is_alive(),
+      "cleanup, a SILENT child: ended and reaped without help in %.2f s, reader ended (%s)" % (el, msg))
+if msg is None:
+    p.kill()
+# 8c. a descendant keeps the pipe open after the child is gone: said as incomplete, nothing blocks, stream not closed
+p, th = child("import subprocess,sys,time\nsubprocess.Popen([sys.executable,'-c','import time; time.sleep(9)'])\nprint('ready', flush=True)\ntime.sleep(60)")
+msg, el = timed_end(p, th)
+check(msg is not None and el < 8 and p.poll() is not None and msg.startswith("INCOMPLETE cleanup") and "holds the pipe" in msg,
+      "cleanup, a grandchild holds the pipe: reported, not blocked (%.2f s: %s)" % (el, (msg or "")[:60]))
+th.join(timeout=12)  # the grandchild ends by itself after 9 s
 check(f.end_child(None) == "no child", "cleanup with no child started")
+
+# 9. the one-shot dmesg: a failure or a log without a stamp gives no boundary (the old code took -1 and kept the backlog)
+check(f.boundary_of(1, "") is None and f.boundary_of(1, "[   5.000000] x\n") is None, "snapshot failed (status 1): no boundary, nothing may be followed")
+check(f.boundary_of(0, "") is None and f.boundary_of(0, "no stamps here\n") is None, "snapshot empty or without a stamp: no boundary")
+check(f.boundary_of(0, "[   5.000000] x\n[   7.250000] y\n") == 7.25, "snapshot good: the newest stamp is the boundary")
+src = open(f.__file__, encoding="utf-8").read()
+check("belong to this run" not in src.split('"""', 2)[2], "the header no longer says lines 'belong to this run'")
 
 print("%s: %d failed checks" % ("PASS" if fails == 0 else "FAIL", fails))
 sys.exit(1 if fails else 0)

@@ -12,8 +12,11 @@ space at that address.
 Which kernel lines belong to this run (Codex, 2026-11-12, R11/R46): the boundary is a kernel timestamp, not the time
 a line is received. At the start the newest stamp of the existing log is read (sudo -n dmesg, one shot); the followed
 stream is then filtered to lines whose stamp is greater. A fault in the first seconds is kept; a late line of the old
-backlog is not. The reader is a thread, so the time limit and a stop signal are obeyed in silence too, and the dmesg
-child is ended and reaped in a finally block, also on SIGTERM, SIGINT and SIGHUP.
+backlog is not. If that first read fails or has no stamp, the catcher follows nothing and writes "MONITOR ERROR"
+(exit 2). The stamp says when the kernel wrote a line, not which run caused it. The reader is a thread, so the time
+limit and a stop signal are obeyed in silence too, and in a finally block (also on SIGTERM, SIGINT and SIGHUP) the
+dmesg child is ended and waited for first, the reader joined with a limit, and the stream closed only after the
+reader has ended; anything left over is written as "INCOMPLETE cleanup".
 
 What the sample is and is not (Codex, R13). It is /proc/<pid>/maps of the pinned emulator process, read when the
 catcher reads the kernel's line, which is later than the fault. The labels:
@@ -184,24 +187,46 @@ def getter(q):
     return get
 
 
-def end_child(p):
-    """End and reap the sudo/dmesg child. Our end of the pipe is closed first, so a dmesg that the signal does not
-    reach (sudo runs as root) ends at its next write."""
+def end_child(p, thread=None):
+    """End and reap the sudo/dmesg child, then collect the reader. Order (Codex, R46, 22:43 UTC): the child is ended
+    first and waited for with a limit; the stream is NOT closed while the reader may still block in it (a close from
+    this thread waits for the reader's buffer lock, so in silence it never returned). The reader is joined with a
+    limit; only when it has ended is the stream closed. If it has not (sudo could not be signalled, or a descendant
+    still holds the pipe), that is said as an incomplete cleanup and nothing blocks."""
     if p is None:
         return "no child"
-    for step in (lambda: p.stdout.close(), p.terminate):
-        try:
-            step()
-        except (OSError, ValueError):
-            pass
     try:
-        return "child ended, status %d" % p.wait(timeout=3)
+        p.terminate()
+    except OSError as e:
+        said = "terminate failed (%s)" % e.__class__.__name__
+    else:
+        said = "terminated"
+    try:
+        said += ", status %d" % p.wait(timeout=3)
     except subprocess.TimeoutExpired:
         try:
             p.kill()
-            return "child killed, status %d" % p.wait(timeout=3)
+            said += ", then killed, status %d" % p.wait(timeout=3)
         except (OSError, subprocess.TimeoutExpired):
-            return "child NOT reaped (pid %d): it ends at the kernel's next line" % p.pid
+            said += ", NOT reaped (pid %d)" % p.pid
+    if thread is not None:
+        thread.join(timeout=3)
+    if thread is not None and thread.is_alive():
+        return "INCOMPLETE cleanup: child %s; the reader still blocks (something holds the pipe open), stream not closed" % said
+    try:
+        p.stdout.close()
+    except (OSError, ValueError):
+        pass
+    return ("child %s" % said) if "NOT reaped" not in said and "failed" not in said else "INCOMPLETE cleanup: child %s" % said
+
+
+def boundary_of(returncode, text):
+    """The boundary from the one-shot dmesg, or None when that read failed or holds no stamp: then nothing may be
+    followed, because every old line would pass as new."""
+    if returncode != 0:
+        return None
+    b = newest_stamp(text.splitlines())
+    return b if b >= 0 else None
 
 
 class Stop(Exception):
@@ -229,28 +254,37 @@ def main(argv):
     for name in ("SIGTERM", "SIGINT", "SIGHUP"):
         if hasattr(signal, name):
             signal.signal(getattr(signal, name), stop)
-    p = None
+    p = th = None
+    rc = 0
     why = "limit"
     n = d = old = 0
     t0 = time.time()
     try:
         snap = subprocess.run(["sudo", "-n", "dmesg"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, errors="replace", timeout=20)
-        boundary = newest_stamp(snap.stdout.splitlines())
+        boundary = boundary_of(snap.returncode, snap.stdout)
+        if boundary is None:
+            why = "MONITOR ERROR: the one-shot dmesg gave status %d and no usable stamp; nothing was followed" % snap.returncode
+            rc = 2
+            return rc
         pin = Pinned(pid)
         first = pin.poll()
-        out.write("# fault0416 started %s; kernel lines with a stamp above %.6f belong to this run; process: %s\n"
+        out.write("# fault0416 started %s; kernel lines stamped after %.6f (the newest stamp read at the start) are kept; which run a line belongs to: unknown; process: %s\n"
                   % (time.strftime("%F %T"), boundary, "pid %d (given)" % pid if pid is not None else (first or "none yet, the first kyty_emulator seen is pinned")))
         p = subprocess.Popen(["sudo", "-n", "dmesg", "-w"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, errors="replace")
         q = queue.Queue()
-        threading.Thread(target=reader, args=(p.stdout, q), daemon=True).start()
+        th = threading.Thread(target=reader, args=(p.stdout, q), daemon=True)
+        th.start()
         n, d, old, why = scan(getter(q), out.write, pin.sample, boundary, lambda: time.time() - t0 < secs, pin.poll)
     except Stop as e:
         why = str(e)
+    except (OSError, subprocess.TimeoutExpired) as e:
+        why = "MONITOR ERROR: %s" % e.__class__.__name__
+        rc = 2
     finally:
-        child = end_child(p)
+        child = end_child(p, th)
         out.write("# ended after %.0f s (%s): %d fault blocks, %d distinct addresses, %d older lines dropped; %s\n"
                   % (time.time() - t0, why, n, d, old, child))
-    return 0
+    return rc
 
 
 if __name__ == "__main__":
