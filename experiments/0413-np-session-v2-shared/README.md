@@ -271,3 +271,31 @@ snapshot, copied privately.
   the daily line too.
 - **Not done:** ASTRO BOT, lean and the replug on e82e6547. The replug harness now has the `BC5_GAME_DIR` edits
   (`integration/gamedir.py`).
+
+### Fourth round (2026-11-12 13:48–13:57): back to a2ab53c7's table through setenv; ASTRO BOT still crashes; no swap
+
+**Branch.** The top session's decision: the five rows A15/A16/A17/A21/A22 are launcher-only, every other row stays on
+by default through the plain `setenv` constructor, and the re-exec is dropped. Commit 5d71c985 restores patch a2ab53c7.
+
+**Build.** Private and incremental, `p0413e.sh`: normal f61d5874ec7e776db502a827579d7be2, lean fd0af8a0. The archive is
+unchanged.
+
+**h1astro.** ASTRO BOT on f61d5874 with the plain defaults: **CRASH at 5 s**, at the same guest address 0x90000048f.
+
+**What the d1 pass was.**
+- d1 delivered "five rows off" as 20 `NAME=0` words in the environment.
+- Those 20 extra entries in the starting environment are what e4dum showed to be enough by themselves to pass (20 dummy
+  variables, all rows on).
+- So d1 did not show that the 35-row table is safe for ASTRO BOT. Here is what does hold:
+
+| configuration | result |
+|---|---|
+| table off (any size of environment tried) | ASTRO BOT passes |
+| rows as words in a larger starting environment (e1env–e4dum, d1, c3–c6, b2/b3/b5/b7) | ASTRO BOT passes |
+| rows through `setenv`, or through the re-exec, with nothing else added (a1, b1, b4, b6, b8, b9, c1, c2, f1, h1) | ASTRO BOT crashes |
+
+- The common factor is a layout or timing effect around start that these switches tip. The cause in ASTRO BOT is open:
+  which host call returned just before eboot+0x48f, and with what, is the next question.
+
+**Consequence.** By the top's rule, no swap. The shared builds stay f6445dc6 and 30ee854b. Not run on f61d5874: the
+second title, lean, the `=0` start, the replug.
