@@ -48855,10 +48855,10 @@ index 0000000..6b58dd4
 +} // namespace Libs::NpCommerceDialog
 diff --git a/src/libs/libNpCppWebApi.cpp b/src/libs/libNpCppWebApi.cpp
 new file mode 100644
-index 0000000..1adc6f1
+index 0000000..48a2a11
 --- /dev/null
 +++ b/src/libs/libNpCppWebApi.cpp
-@@ -0,0 +1,1032 @@
+@@ -0,0 +1,1113 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +// KytyPlus host library: libSceNpCppWebApi (the PS5's C++ web API — Common, SessionManager V1, TitleCloudStorage V1)
 +// for a console that is not signed in to PSN.
@@ -48888,6 +48888,7 @@ index 0000000..1adc6f1
 +#include <atomic>
 +#include <cstddef>
 +#include <cstdint>
++#include <cstdio> // BC5 experiment 0405: std::fprintf
 +#include <cstdlib>
 +#include <cstring>
 +
@@ -48909,6 +48910,71 @@ index 0000000..1adc6f1
 +	}
 +	EXIT("NpCppWebApi: %s is not reachable on an offline console\n", function);
 +}
++
++// ---- BC5 experiment 0405 (series e6 of experiment 0401): KYTY_BC5_FW_NET, item "npwebapi" ----
++// exp 0405 R1 verdict row D1 libSceNpCppWebApi 08fa66176 (class excluded-provenance: "finish returns 0x80553508 per the
++// bundled PPSA21564 module"), cleared by the maintainer's decision 1 of 2026-11-04 (a reading of a module's behaviour).
++// Ported in adapted form from AnyPS5 (github.com/boykopovar/AnyPS5, GPL-2.0-only) @ 4f41f4c375f5abb487dbd184fbc150f31994d762, core/libs/prx/libSceNpCppWebApi/Export.cpp:11
++// (TransactionNotStarted) and its finish overrides, commit 08fa66176 "answer finish, abort and getId for never-started
++// transactions as the module does" (Alexandre Figueiredo): finish of a transaction that never started returns 0x80553508,
++// as the libSceNpCppWebApi module bundled with PPSA21564 does. Here every request fails before its transaction starts
++// (SCE_NP_WEBAPI_ERROR_NOT_SIGNED_IN), so every finish this file registers answers 0x80553508 with the item on; today they
++// return 0. Not taken: abort and getId (this file registers neither) and the commit's constructor changes.
++// KYTY_BC5_FW_NET (one switch for this group: libRtc.cpp, libRudp.cpp, network.cpp, libSystemService.cpp,
++// libNpCppWebApi.cpp): unset, empty or "0" is off (today's path exactly); any other value turns every item on, unless it
++// names items (comma-separated): rtc, rudp, resolver, param400, npwebapi. Each unit reads it once; libRtc.cpp prints the
++// group's one stderr line at its registration.
++// AnyPS5's copyright remains with its authors; GPL-2.0 as the rest of this file.
++static constexpr uint32_t BC5_FWN_NPWEBAPI               = 16u;
++static constexpr int      BC5_NP_TRANSACTION_NOT_STARTED = static_cast<int>(0x80553508u);
++
++static uint32_t Bc5FwNetNpParse(const char* e) {
++	if (e == nullptr || e[0] == '\0' || std::strcmp(e, "0") == 0) {
++		return 0;
++	}
++	static const char* const names[] = {"rtc", "rudp", "resolver", "param400", "npwebapi"}; // bit i is names[i]
++	uint32_t                 parts   = 0;
++	const char*              p       = e;
++	for (;;) {
++		const char*  comma = std::strchr(p, ',');
++		const size_t n     = comma != nullptr ? static_cast<size_t>(comma - p) : std::strlen(p);
++		for (uint32_t i = 0; i < 5; i++) {
++			if (n == std::strlen(names[i]) && std::strncmp(p, names[i], n) == 0) {
++				parts |= 1u << i;
++			}
++		}
++		if (comma == nullptr) {
++			break;
++		}
++		p = comma + 1;
++	}
++	return parts != 0 ? parts : 31u; // every item
++}
++
++// The items of KYTY_BC5_FW_NET that are on (0: off), read once (libRtc.cpp prints the group's line).
++static uint32_t Bc5FwNetNpItems() {
++	static const uint32_t parts = Bc5FwNetNpParse(std::getenv("KYTY_BC5_FW_NET"));
++	return parts;
++}
++
++// A stderr line for each of the first 8 calls in this file whose answer KYTY_BC5_FW_NET changed (only when it is on).
++static void Bc5FwNetNpTell(const char* what) {
++	static std::atomic<uint32_t> told {0};
++	if (told.fetch_add(1, std::memory_order_relaxed) < 8) {
++		std::fprintf(stderr, "[bc5] exp 0405: fw-net %s\n", what);
++		std::fflush(stderr);
++	}
++}
++
++// "npwebapi": true when finish answers BC5_NP_TRANSACTION_NOT_STARTED (no transaction here ever starts); false when off.
++static bool Bc5NpFinishNotStarted() {
++	if ((Bc5FwNetNpItems() & BC5_FWN_NPWEBAPI) == 0) {
++		return false;
++	}
++	Bc5FwNetNpTell("npwebapi: finish of a never-started transaction -> 0x80553508 (0 when off)");
++	return true;
++}
++// ---- end of experiment 0405's fw-net NpCppWebApi helpers ----
 +
 +extern "C" {
 +
@@ -49093,6 +49159,9 @@ index 0000000..1adc6f1
 +}
 +
 +int KYTY_SYSV_ABI _ZN3sce2Np9CppWebApi6Common21DownStreamTransactionINS2_12IntrusivePtrINS1_17TitleCloudStorage2V17DataApi27DownloadDataResponseHeadersEEEE6finishEv() {
++ if (Bc5NpFinishNotStarted()) { // BC5 experiment 0405 (KYTY_BC5_FW_NET "npwebapi"); false when off
++  return BC5_NP_TRANSACTION_NOT_STARTED;
++ }
 + return 0;
 +}
 +
@@ -49439,6 +49508,9 @@ index 0000000..1adc6f1
 +}
 +
 +int KYTY_SYSV_ABI _ZN3sce2Np9CppWebApi6Common15TransactionBaseINS2_12IntrusivePtrINS1_14SessionManager2V130PostPlayerSessionsResponseBodyEEENS4_INS2_18ResponseHeaderBaseEEEE6finishEv() {
++    if (Bc5NpFinishNotStarted()) { // BC5 experiment 0405 (KYTY_BC5_FW_NET "npwebapi"); false when off
++        return BC5_NP_TRANSACTION_NOT_STARTED;
++    }
 +    return 0;
 +}
 +
@@ -49576,6 +49648,9 @@ index 0000000..1adc6f1
 +}
 +
 +int KYTY_SYSV_ABI _ZN3sce2Np9CppWebApi6Common15TransactionBaseINS2_12IntrusivePtrINS1_14SessionManager2V152PostPlayerSessionsSessionIdMemberPlayersResponseBodyEEENS4_INS2_18ResponseHeaderBaseEEEE6finishEv() {
++    if (Bc5NpFinishNotStarted()) { // BC5 experiment 0405 (KYTY_BC5_FW_NET "npwebapi"); false when off
++        return BC5_NP_TRANSACTION_NOT_STARTED;
++    }
 +    return 0;
 +}
 +
@@ -49584,6 +49659,9 @@ index 0000000..1adc6f1
 +}
 +
 +int KYTY_SYSV_ABI _ZN3sce2Np9CppWebApi6Common15TransactionBaseINS2_15DefaultResponseENS2_12IntrusivePtrINS2_18ResponseHeaderBaseEEEE6finishEv() {
++    if (Bc5NpFinishNotStarted()) { // BC5 experiment 0405 (KYTY_BC5_FW_NET "npwebapi"); false when off
++        return BC5_NP_TRANSACTION_NOT_STARTED;
++    }
 +    return 0;
 +}
 +
@@ -49608,6 +49686,9 @@ index 0000000..1adc6f1
 +}
 +
 +int KYTY_SYSV_ABI _ZN3sce2Np9CppWebApi6Common15TransactionBaseINS2_12IntrusivePtrINS1_14SessionManager2V154GetUsersAccountIdPlayerSessionsInvitationsResponseBodyEEENS4_INS2_18ResponseHeaderBaseEEEE6finishEv() {
++    if (Bc5NpFinishNotStarted()) { // BC5 experiment 0405 (KYTY_BC5_FW_NET "npwebapi"); false when off
++        return BC5_NP_TRANSACTION_NOT_STARTED;
++    }
 +    return 0;
 +}
 +
@@ -50955,24 +51036,28 @@ index 0000000..54fa8de
 +
 +} // namespace Libs::PngEnc
 diff --git a/src/libs/libRtc.cpp b/src/libs/libRtc.cpp
-index fda2623..db5e40e 100644
+index fda2623..18da521 100644
 --- a/src/libs/libRtc.cpp
 +++ b/src/libs/libRtc.cpp
-@@ -1,4 +1,5 @@
+@@ -1,12 +1,17 @@
  #include "common/abi.h"
 +#include "common/common.h"
  #include "common/dateTime.h"
  #include "libs/errno.h"
  #include "libs/libs.h"
-@@ -7,6 +8,7 @@
+ #include "loader/symbolDatabase.h"
+ 
++#include <atomic>  // BC5 experiment 0405 (KYTY_BC5_FW_NET)
  #include <chrono>
  #include <cstdint>
  #include <cstdio>
++#include <cstdlib> // BC5 experiment 0405: std::getenv
++#include <cstring> // BC5 experiment 0405: std::strcmp
 +#include <ctime>
  #include <limits>
  
  namespace Libs {
-@@ -280,6 +282,20 @@ static int KYTY_SYSV_ABI RtcGetCurrentClock(RtcDateTime* time, int time_zone_min
+@@ -280,6 +285,20 @@ static int KYTY_SYSV_ABI RtcGetCurrentClock(RtcDateTime* time, int time_zone_min
  	return RtcSetTick(time, &tick);
  }
  
@@ -50993,7 +51078,7 @@ index fda2623..db5e40e 100644
  static int KYTY_SYSV_ABI RtcConvertUtcToLocalTime(const RtcTick* utc, RtcTick* local_time) {
  	PRINT_NAME();
  
-@@ -287,8 +303,7 @@ static int KYTY_SYSV_ABI RtcConvertUtcToLocalTime(const RtcTick* utc, RtcTick* l
+@@ -287,8 +306,7 @@ static int KYTY_SYSV_ABI RtcConvertUtcToLocalTime(const RtcTick* utc, RtcTick* l
  		return RTC_ERROR_INVALID_POINTER;
  	}
  
@@ -51003,7 +51088,7 @@ index fda2623..db5e40e 100644
  
  	return OK;
  }
-@@ -300,8 +315,7 @@ static int KYTY_SYSV_ABI RtcConvertLocalTimeToUtc(const RtcTick* local_time, Rtc
+@@ -300,12 +318,158 @@ static int KYTY_SYSV_ABI RtcConvertLocalTimeToUtc(const RtcTick* local_time, Rtc
  		return RTC_ERROR_INVALID_POINTER;
  	}
  
@@ -51013,6 +51098,284 @@ index fda2623..db5e40e 100644
  
  	return OK;
  }
+ 
++// ---- BC5 experiment 0405 (series e6 of experiment 0401): KYTY_BC5_FW_NET, item "rtc" ----
++// exp 0405 R1 #35, cleared by the maintainer's decision 1 of 2026-11-04 (values from firmware modules run natively or
++// under an emulator are accepted as another person's description). Ported in adapted form from AnyPS5 (github.com/boykopovar/AnyPS5, GPL-2.0-only) @ 4f41f4c375f5abb487dbd184fbc150f31994d762,
++// core/libs/prx/libSceRtc/Export.cpp:578-599 (sceRtcFormatRFC3339), commit 4dd4ec5ff "check the 16-bit year when
++// formatting far ticks" (BunnyFl). Its debt note docs/dev/debt/libSceRtc.md:12: the zone-shifted tick is converted to a
++// date whose year is kept in 16 bits, as the date-time record stores it, and only that year is checked (1 to 9999), so
++// past year 65535 it wraps: a tick in year 65536 returns RTC_ERROR_INVALID_YEAR (0x80B50008), one in year 65537 formats
++// as year 0001; "from firmware 13.42's module run natively" (SDK versions 0x01000051, 0x03000000, 0x0A000000), "not
++// measured on a console". From the same function: a zone outside -1439 to 1439 minutes returns RTC_ERROR_INVALID_VALUE
++// (debt :14, native formatting), and so does a zone shift that overflows or underflows 64 bits (debt :11, measured on PS4
++// 10.71 for SDK 0x03000000 on and on PS5 13.60, the rule a PS5 title always gets).
++// Today: a tick past year 9999 returns INVALID_VALUE (0x80B50003, from RtcSetTick), a zone outside the limit is
++// formatted, and an eastern zone that overflows 64 bits wraps to year 1. Here the date is computed with this file's own
++// day arithmetic (RtcSetTick's) in 64 bits; only the year is then cut to 16 bits. The text is today's format.
++// KYTY_BC5_FW_NET (one switch for this group: libRtc.cpp, libRudp.cpp, network.cpp, libSystemService.cpp,
++// libNpCppWebApi.cpp): unset, empty or "0" is off (today's path exactly); any other value turns every item on, unless it
++// names items (comma-separated): rtc, rudp, resolver, param400, npwebapi. Each unit reads it once; libRtc.cpp prints the
++// group's one stderr line at its registration.
++// AnyPS5's copyright remains with its authors; GPL-2.0 as the rest of this file.
++static constexpr uint32_t BC5_FWN_RTC = 1u;
++
++static uint32_t Bc5FwNetRtcParse(const char* e) {
++	if (e == nullptr || e[0] == '\0' || std::strcmp(e, "0") == 0) {
++		return 0;
++	}
++	static const char* const names[] = {"rtc", "rudp", "resolver", "param400", "npwebapi"}; // bit i is names[i]
++	uint32_t                 parts   = 0;
++	const char*              p       = e;
++	for (;;) {
++		const char*  comma = std::strchr(p, ',');
++		const size_t n     = comma != nullptr ? static_cast<size_t>(comma - p) : std::strlen(p);
++		for (uint32_t i = 0; i < 5; i++) {
++			if (n == std::strlen(names[i]) && std::strncmp(p, names[i], n) == 0) {
++				parts |= 1u << i;
++			}
++		}
++		if (comma == nullptr) {
++			break;
++		}
++		p = comma + 1;
++	}
++	return parts != 0 ? parts : 31u; // every item
++}
++
++// The items of KYTY_BC5_FW_NET that are on (0: off), read once; the first call (this library's registration) prints the
++// group's one stderr line, on or off.
++static uint32_t Bc5FwNetRtcItems() {
++	static const uint32_t parts = [] {
++		const uint32_t p = Bc5FwNetRtcParse(std::getenv("KYTY_BC5_FW_NET"));
++		if (p == 0) {
++			std::fprintf(stderr, "[bc5] exp 0405: fw-net off\n");
++		} else {
++			std::fprintf(stderr, "[bc5] exp 0405: fw-net on (items:%s%s%s%s%s)\n", (p & 1u) != 0 ? " rtc" : "",
++			             (p & 2u) != 0 ? " rudp" : "", (p & 4u) != 0 ? " resolver" : "", (p & 8u) != 0 ? " param400" : "",
++			             (p & 16u) != 0 ? " npwebapi" : "");
++		}
++		std::fflush(stderr);
++		return p;
++	}();
++	return parts;
++}
++
++// A stderr line for each of the first 8 calls in this file whose answer KYTY_BC5_FW_NET changed (only when it is on).
++static void Bc5FwNetRtcTell(const char* what) {
++	static std::atomic<uint32_t> told {0};
++	if (told.fetch_add(1, std::memory_order_relaxed) < 8) {
++		std::fprintf(stderr, "[bc5] exp 0405: fw-net %s\n", what);
++		std::fflush(stderr);
++	}
++}
++
++// "rtc": sceRtcFormatRFC3339 with the far-year rule; date_time is not null (the caller checked it, as today).
++static int Bc5RtcFormatRFC3339(char* date_time, const RtcTick* utc, int time_zone_minutes) {
++	RtcTick tick {};
++	if (utc == nullptr) {
++		const auto ret = RtcGetCurrentTick(&tick);
++		if (ret != OK) {
++			return ret;
++		}
++	} else {
++		tick = *utc;
++	}
++	if (time_zone_minutes < -1439 || time_zone_minutes > 1439) {
++		Bc5FwNetRtcTell("rtc: FormatRFC3339 zone outside -1439..1439 minutes -> 0x80B50003 (formatted when off)");
++		return RTC_ERROR_INVALID_VALUE;
++	}
++	const int64_t shift = static_cast<int64_t>(time_zone_minutes) * 60000000ll;
++	if (shift < 0 ? tick.tick < static_cast<uint64_t>(-shift)
++	              : tick.tick > std::numeric_limits<uint64_t>::max() - static_cast<uint64_t>(shift)) {
++		if (shift > 0) {
++			Bc5FwNetRtcTell("rtc: FormatRFC3339 zone shift overflows 64 bits -> 0x80B50003 (wraps when off)");
++		}
++		return RTC_ERROR_INVALID_VALUE;
++	}
++	const uint64_t local = tick.tick + static_cast<uint64_t>(shift); // modulo 2^64: a western zone subtracts
++
++	// The date of `local`, with RtcSetTick's day arithmetic, the year in 64 bits.
++	uint64_t days = local / 86400000000ull;
++	uint64_t usec = local % 86400000000ull;
++	days += 307;
++	uint64_t j  = (days << 2) - 1;
++	uint64_t ly = j / 146097;
++	j -= 146097 * ly;
++	uint64_t ld = j >> 2;
++	j           = ((ld << 2) + 3) / 1461;
++	ld          = (((ld << 2) + 7) - 1461 * j) >> 2;
++	uint64_t lm = (5 * ld - 3) / 153;
++	ld          = (5 * ld + 2 - 153 * lm) / 5;
++	ly          = 100 * ly + j;
++	if (lm < 10) {
++		lm += 3;
++	} else {
++		lm -= 9;
++		ly++;
++	}
++	if (ly > 9999) {
++		Bc5FwNetRtcTell("rtc: FormatRFC3339 past year 9999: the 16-bit year rule (0x80B50003 when off)");
++	}
++	const auto year = static_cast<uint16_t>(ly); // kept in 16 bits, as the date-time record keeps it: wraps past 65535
++	if (year == 0 || year > 9999) {
++		return RTC_ERROR_INVALID_YEAR;
++	}
++
++	const auto hour = static_cast<unsigned>(usec / 3600000000ull);
++	usec %= 3600000000ull;
++	const auto minute = static_cast<unsigned>(usec / 60000000ull);
++	usec %= 60000000ull;
++	const auto second = static_cast<unsigned>(usec / 1000000ull);
++	usec %= 1000000ull;
++
++	char zone[8] {};
++	if (time_zone_minutes == 0) {
++		std::snprintf(zone, sizeof(zone), "Z");
++	} else {
++		const auto sign    = (time_zone_minutes < 0 ? '-' : '+');
++		const auto minutes = (time_zone_minutes < 0 ? -time_zone_minutes : time_zone_minutes);
++		std::snprintf(zone, sizeof(zone), "%c%02d:%02d", sign, minutes / 60, minutes % 60);
++	}
++
++	std::snprintf(date_time, 32, "%04u-%02u-%02uT%02u:%02u:%02u.%02u%s", static_cast<unsigned>(year),
++	              static_cast<unsigned>(lm), static_cast<unsigned>(ld), hour, minute, second,
++	              static_cast<unsigned>(usec / 10000), zone);
++
++	return OK;
++}
++// ---- end of experiment 0405's fw-net Rtc helpers ----
++
+ static int KYTY_SYSV_ABI RtcFormatRFC3339(char* date_time, const RtcTick* utc,
+                                           int time_zone_minutes) {
+ 	PRINT_NAME();
+@@ -313,6 +477,9 @@ static int KYTY_SYSV_ABI RtcFormatRFC3339(char* date_time, const RtcTick* utc,
+ 	if (date_time == nullptr) {
+ 		return RTC_ERROR_INVALID_POINTER;
+ 	}
++	if ((Bc5FwNetRtcItems() & BC5_FWN_RTC) != 0) { // BC5 experiment 0405 (KYTY_BC5_FW_NET "rtc"); today's path when off
++		return Bc5RtcFormatRFC3339(date_time, utc, time_zone_minutes);
++	}
+ 
+ 	RtcTick tick {};
+ 	if (utc == nullptr) {
+@@ -550,6 +717,7 @@ static int KYTY_SYSV_ABI RtcTickAddWeeks(RtcTick* dst, const RtcTick* src, int32
+ } // namespace Rtc
+ 
+ LIB_DEFINE(InitRtc_1_Rtc) {
++	(void)Rtc::Bc5FwNetRtcItems(); // BC5 experiment 0405: reads KYTY_BC5_FW_NET once and prints the group's line
+ 	LIB_FUNC("lPEBYdVX0XQ", Rtc::RtcCheckValid);
+ 	LIB_FUNC("8Yr143yEnRo", Rtc::RtcConvertLocalTimeToUtc);
+ 	LIB_FUNC("M1TvFst-jrM", Rtc::RtcConvertUtcToLocalTime);
+diff --git a/src/libs/libRudp.cpp b/src/libs/libRudp.cpp
+index 8a4c59a..bf0b089 100644
+--- a/src/libs/libRudp.cpp
++++ b/src/libs/libRudp.cpp
+@@ -4,8 +4,12 @@
+ #include "libs/libs.h"
+ #include "loader/symbolDatabase.h"
+ 
++#include <atomic>  // BC5 experiment 0405 (KYTY_BC5_FW_NET)
+ #include <cinttypes>
+ #include <cstdint>
++#include <cstdio>  // BC5 experiment 0405: std::fprintf
++#include <cstdlib> // BC5 experiment 0405: std::getenv
++#include <cstring> // BC5 experiment 0405: std::strcmp
+ 
+ namespace Libs {
+ 
+@@ -41,6 +45,79 @@ static KYTY_SYSV_ABI int RudpEnableInternalIOThread(uint32_t stack_size, uint32_
+ 	return OK;
+ }
+ 
++// ---- BC5 experiment 0405 (series e6 of experiment 0401): KYTY_BC5_FW_NET, item "rudp" ----
++// exp 0405 R1 #35, cleared by the maintainer's decision 1 of 2026-11-04. Ported in adapted form from AnyPS5 (github.com/boykopovar/AnyPS5, GPL-2.0-only) @ 4f41f4c375f5abb487dbd184fbc150f31994d762,
++// core/libs/prx/libSceRudp/Export.cpp:269-280 (sceRudpSetEventHandler), commit 11f42d025 "bind, listen and accept as a
++// firmware 13.42 run shows" (zaryabzip). Its debt note docs/dev/debt/libSceRudp.md:23: sceRudpSetEventHandler returns
++// RUDP_ERROR_NOT_INITIALIZED (0x80770001) before sceRudpInit and RUDP_ERROR_NO_EVENT_HANDLER (0x80770022) for a null
++// handler, "as the 13.42 run under an emulator with imports stubbed shows; not measured on a console" (BunnyFl's run,
++// AnyPS5 issue 13682). Neither error stores the handler. Today both store it and return 0.
++// Not taken: sceRudpEnd clearing the handler, sceRudpBind, sceRudpListen and sceRudpAccept from the same commit: this file
++// registers none of them (exp 0405 R1 #39 keeps Rudp's 31 missing exports for later).
++// KYTY_BC5_FW_NET (one switch for this group: libRtc.cpp, libRudp.cpp, network.cpp, libSystemService.cpp,
++// libNpCppWebApi.cpp): unset, empty or "0" is off (today's path exactly); any other value turns every item on, unless it
++// names items (comma-separated): rtc, rudp, resolver, param400, npwebapi. Each unit reads it once; libRtc.cpp prints the
++// group's one stderr line at its registration.
++// AnyPS5's copyright remains with its authors; GPL-2.0 as the rest of this file.
++static constexpr uint32_t BC5_FWN_RUDP                    = 2u;
++static constexpr int      BC5_RUDP_ERROR_NOT_INITIALIZED  = static_cast<int>(0x80770001u);
++static constexpr int      BC5_RUDP_ERROR_NO_EVENT_HANDLER = static_cast<int>(0x80770022u);
++
++static uint32_t Bc5FwNetRudpParse(const char* e) {
++	if (e == nullptr || e[0] == '\0' || std::strcmp(e, "0") == 0) {
++		return 0;
++	}
++	static const char* const names[] = {"rtc", "rudp", "resolver", "param400", "npwebapi"}; // bit i is names[i]
++	uint32_t                 parts   = 0;
++	const char*              p       = e;
++	for (;;) {
++		const char*  comma = std::strchr(p, ',');
++		const size_t n     = comma != nullptr ? static_cast<size_t>(comma - p) : std::strlen(p);
++		for (uint32_t i = 0; i < 5; i++) {
++			if (n == std::strlen(names[i]) && std::strncmp(p, names[i], n) == 0) {
++				parts |= 1u << i;
++			}
++		}
++		if (comma == nullptr) {
++			break;
++		}
++		p = comma + 1;
++	}
++	return parts != 0 ? parts : 31u; // every item
++}
++
++// The items of KYTY_BC5_FW_NET that are on (0: off), read once (libRtc.cpp prints the group's line).
++static uint32_t Bc5FwNetRudpItems() {
++	static const uint32_t parts = Bc5FwNetRudpParse(std::getenv("KYTY_BC5_FW_NET"));
++	return parts;
++}
++
++// A stderr line for each of the first 8 calls in this file whose answer KYTY_BC5_FW_NET changed (only when it is on).
++static void Bc5FwNetRudpTell(const char* what) {
++	static std::atomic<uint32_t> told {0};
++	if (told.fetch_add(1, std::memory_order_relaxed) < 8) {
++		std::fprintf(stderr, "[bc5] exp 0405: fw-net %s\n", what);
++		std::fflush(stderr);
++	}
++}
++
++// "rudp": the checks sceRudpSetEventHandler makes before it stores the handler; OK (store it: today's path) when off.
++static int Bc5RudpSetEventHandlerCheck(RudpEventHandler handler) {
++	if ((Bc5FwNetRudpItems() & BC5_FWN_RUDP) == 0) {
++		return OK;
++	}
++	if (!g_initialized) {
++		Bc5FwNetRudpTell("rudp: SetEventHandler before sceRudpInit -> 0x80770001, not stored (stored and 0 when off)");
++		return BC5_RUDP_ERROR_NOT_INITIALIZED;
++	}
++	if (handler == nullptr) {
++		Bc5FwNetRudpTell("rudp: SetEventHandler(null) -> 0x80770022, not stored (stored and 0 when off)");
++		return BC5_RUDP_ERROR_NO_EVENT_HANDLER;
++	}
++	return OK;
++}
++// ---- end of experiment 0405's fw-net Rudp helpers ----
++
+ static KYTY_SYSV_ABI int RudpSetEventHandler(RudpEventHandler handler, void* arg) {
+ 	PRINT_NAME();
+ 
+@@ -48,6 +125,11 @@ static KYTY_SYSV_ABI int RudpSetEventHandler(RudpEventHandler handler, void* arg
+ 	     "\t arg     = 0x%016" PRIx64 "\n",
+ 	     reinterpret_cast<uint64_t>(handler), reinterpret_cast<uint64_t>(arg));
+ 
++	const int bc5_refused = Bc5RudpSetEventHandlerCheck(handler); // BC5 experiment 0405 (KYTY_BC5_FW_NET "rudp"); OK when off
++	if (bc5_refused != OK) {
++		return bc5_refused;
++	}
++
+ 	g_event_handler = handler;
+ 	g_event_arg     = arg;
+ 
 diff --git a/src/libs/libSaveData.cpp b/src/libs/libSaveData.cpp
 index 08aa121..6357db0 100644
 --- a/src/libs/libSaveData.cpp
@@ -53837,10 +54200,10 @@ index 08aa121..6357db0 100644
 +
 +} // namespace Libs
 diff --git a/src/libs/libSystemService.cpp b/src/libs/libSystemService.cpp
-index cd205f6..305ad97 100644
+index cd205f6..0e111c7 100644
 --- a/src/libs/libSystemService.cpp
 +++ b/src/libs/libSystemService.cpp
-@@ -1,14 +1,21 @@
+@@ -1,14 +1,22 @@
 +#include <cstdio>
 +#include <set>
  #include "common/abi.h"
@@ -53855,6 +54218,7 @@ index cd205f6..305ad97 100644
 +#include "libs/systemService.h"
  #include "loader/symbolDatabase.h"
  
++#include <atomic>  // BC5 experiment 0405 (KYTY_BC5_FW_NET)
 +#include <cstdlib> // BC5 experiment 0405: std::getenv
  #include <cstring>
 +#include <deque>
@@ -53862,7 +54226,7 @@ index cd205f6..305ad97 100644
  
  namespace Libs {
  
-@@ -63,6 +70,16 @@ struct SystemServiceStatus {
+@@ -63,6 +71,16 @@ struct SystemServiceStatus {
  	uint8_t reserved[127]              = {};
  };
  
@@ -53879,7 +54243,7 @@ index cd205f6..305ad97 100644
  struct SystemServiceEvent {
  	int32_t event_type;
  	uint8_t data[8192];
-@@ -85,17 +102,171 @@ static int KYTY_SYSV_ABI SystemServiceHideSplashScreen() {
+@@ -85,17 +103,240 @@ static int KYTY_SYSV_ABI SystemServiceHideSplashScreen() {
  	return OK;
  }
  
@@ -54029,6 +54393,75 @@ index cd205f6..305ad97 100644
 +}
 +// ---- end of experiment 0405's SystemService helpers ----
 +
++// ---- BC5 experiment 0405 (series e6 of experiment 0401): KYTY_BC5_FW_NET, item "param400" ----
++// The value e5 held (lib0405-notes.md "Item 4"; exp 0405 R1 #4), cleared by the maintainer's decision 1 of 2026-11-04
++// (readings of firmware modules are accepted as another person's description). After AnyPS5 (github.com/boykopovar/AnyPS5, GPL-2.0-only) @ 4f41f4c375f5abb487dbd184fbc150f31994d762,
++// core/libs/prx/libSceSystemService/Export.cpp:549-566 (sceSystemServiceParamGetInt; :555, parameter 400 answers as
++// parameter 1) and its debt note docs/dev/debt/libSceSystemService.md:70: "in the PS5 10.01 and 12.60 libSceSystemService
++// modules parameter 400 reads the same registry value as parameter 1", without parameter 1's mapping of newer language
++// numbers by SDK version (this file has no such mapping for parameter 1 either), and the 4.03 module has no parameter
++// 400; the 0x80A10003 those modules return when an unidentified imported check returns 1 is not modelled (as in AnyPS5).
++// A 13.40 console answered parameter 400 (debt :74, measured). Its name is not known. Today parameter 400 answers 0.
++// With "param400" it answers what parameter 1 answers here (the input configuration's SystemLanguage, else
++// --console-language). Independent of KYTY_BC5_SYSTEMSERVICE_VALUES (e5), which already lets parameter 400 answer.
++// KYTY_BC5_FW_NET (one switch for this group: libRtc.cpp, libRudp.cpp, network.cpp, libSystemService.cpp,
++// libNpCppWebApi.cpp): unset, empty or "0" is off (today's path exactly); any other value turns every item on, unless it
++// names items (comma-separated): rtc, rudp, resolver, param400, npwebapi. Each unit reads it once; libRtc.cpp prints the
++// group's one stderr line at its registration.
++// AnyPS5's copyright remains with its authors; GPL-2.0 as the rest of this file.
++static constexpr uint32_t BC5_FWN_PARAM400 = 8u;
++
++static uint32_t Bc5FwNetSysParse(const char* e) {
++	if (e == nullptr || e[0] == '\0' || std::strcmp(e, "0") == 0) {
++		return 0;
++	}
++	static const char* const names[] = {"rtc", "rudp", "resolver", "param400", "npwebapi"}; // bit i is names[i]
++	uint32_t                 parts   = 0;
++	const char*              p       = e;
++	for (;;) {
++		const char*  comma = std::strchr(p, ',');
++		const size_t n     = comma != nullptr ? static_cast<size_t>(comma - p) : std::strlen(p);
++		for (uint32_t i = 0; i < 5; i++) {
++			if (n == std::strlen(names[i]) && std::strncmp(p, names[i], n) == 0) {
++				parts |= 1u << i;
++			}
++		}
++		if (comma == nullptr) {
++			break;
++		}
++		p = comma + 1;
++	}
++	return parts != 0 ? parts : 31u; // every item
++}
++
++// The items of KYTY_BC5_FW_NET that are on (0: off), read once (libRtc.cpp prints the group's line).
++static uint32_t Bc5FwNetSysItems() {
++	static const uint32_t parts = Bc5FwNetSysParse(std::getenv("KYTY_BC5_FW_NET"));
++	return parts;
++}
++
++// A stderr line for each of the first 8 calls in this file whose answer KYTY_BC5_FW_NET changed (only when it is on).
++static void Bc5FwNetSysTell(const char* what) {
++	static std::atomic<uint32_t> told {0};
++	if (told.fetch_add(1, std::memory_order_relaxed) < 8) {
++		std::fprintf(stderr, "[bc5] exp 0405: fw-net %s\n", what);
++		std::fflush(stderr);
++	}
++}
++
++// "param400": ParamGetInt(400) answers the language into *v (true); false (today's "unsupported, 0") when off or another
++// parameter.
++static bool Bc5SysParam400(int param_id, int* v) {
++	if (param_id != 400 || (Bc5FwNetSysItems() & BC5_FWN_PARAM400) == 0) {
++		return false;
++	}
++	const int system_language = Graphics::HostInputSystemLanguage();
++	*v                        = system_language >= 0 ? system_language : static_cast<int>(Config::GetConsoleLanguage());
++	Bc5FwNetSysTell("param400: ParamGetInt(400) answers the language (0 when off)");
++	return true;
++}
++// ---- end of experiment 0405's fw-net SystemService helpers ----
++
  static int KYTY_SYSV_ABI SystemServiceParamGetInt(int param_id, int* value) {
  	PRINT_NAME();
  
@@ -54052,7 +54485,14 @@ index cd205f6..305ad97 100644
  		case PARAM_ID_DATE_FORMAT: v = PARAM_DATE_FORMAT_DDMMYYYY; break;
  		case PARAM_ID_TIME_FORMAT: v = PARAM_TIME_FORMAT_24HOUR; break;
  		case PARAM_ID_TIME_ZONE: v = +180; break;
-@@ -109,7 +280,15 @@ static int KYTY_SYSV_ABI SystemServiceParamGetInt(int param_id, int* value) {
+@@ -105,11 +346,22 @@ static int KYTY_SYSV_ABI SystemServiceParamGetInt(int param_id, int* value) {
+ 		case PARAM_ID_SCREEN_READER: v = 0; break;
+ 		case PARAM_ID_ENTER_BUTTON_ASSIGN: v = PARAM_ENTER_BUTTON_ASSIGN_CROSS; break;
+ 		default:
++			if (Bc5SysParam400(param_id, &v)) { // BC5 experiment 0405 (KYTY_BC5_FW_NET "param400"); false when off
++				break;
++			}
+ 			LOGF_COLOR(Log::Color::Yellow, " unsupported param_id %d, using 0\n", param_id);
  			break;
  	}
  
@@ -54068,7 +54508,7 @@ index cd205f6..305ad97 100644
  
  	*value = v;
  
-@@ -119,6 +298,9 @@ static int KYTY_SYSV_ABI SystemServiceParamGetInt(int param_id, int* value) {
+@@ -119,6 +371,9 @@ static int KYTY_SYSV_ABI SystemServiceParamGetInt(int param_id, int* value) {
  static int KYTY_SYSV_ABI SystemServiceParamGetString(int param_id, char* buf, size_t buf_size) {
  	PRINT_NAME();
  
@@ -54078,7 +54518,7 @@ index cd205f6..305ad97 100644
  	if (buf == nullptr || buf_size == 0) {
  		return SYSTEM_SERVICE_ERROR_PARAMETER;
  	}
-@@ -150,7 +332,14 @@ static int KYTY_SYSV_ABI SystemServiceReceiveEvent(SystemServiceEvent* event) {
+@@ -150,7 +405,14 @@ static int KYTY_SYSV_ABI SystemServiceReceiveEvent(SystemServiceEvent* event) {
  	event->event_type = -1;
  	std::memset(event->data, 0, sizeof(event->data));
  
@@ -54094,7 +54534,7 @@ index cd205f6..305ad97 100644
  }
  
  static int KYTY_SYSV_ABI SystemServiceGetStatus(SystemServiceStatus* status) {
-@@ -161,6 +350,10 @@ static int KYTY_SYSV_ABI SystemServiceGetStatus(SystemServiceStatus* status) {
+@@ -161,6 +423,10 @@ static int KYTY_SYSV_ABI SystemServiceGetStatus(SystemServiceStatus* status) {
  	}
  
  	*status = SystemServiceStatus();
@@ -54105,7 +54545,7 @@ index cd205f6..305ad97 100644
  
  	return OK;
  }
-@@ -530,6 +723,8 @@ LIB_DEFINE(InitSystemGesture_1) {
+@@ -530,6 +796,8 @@ LIB_DEFINE(InitSystemGesture_1) {
  } // namespace SystemGesture
  
  LIB_DEFINE(InitSystemService_1) {
@@ -54779,10 +55219,10 @@ index 36e4dc8..b124920 100644
  
  namespace LibContentExport {
 diff --git a/src/libs/network.cpp b/src/libs/network.cpp
-index 7f81218..7cb4045 100644
+index 7f81218..4868939 100644
 --- a/src/libs/network.cpp
 +++ b/src/libs/network.cpp
-@@ -1,4610 +1,4817 @@
+@@ -1,4610 +1,4887 @@
 -#if defined(_WIN32)
 -#ifndef WIN32_LEAN_AND_MEAN
 -#define WIN32_LEAN_AND_MEAN
@@ -60838,6 +61278,73 @@ index 7f81218..7cb4045 100644
 +	return id;
 +}
 +
++// ---- BC5 experiment 0405 (series e6 of experiment 0401): KYTY_BC5_FW_NET, item "resolver" ----
++// exp 0405 R1 #35, cleared by the maintainer's decision 1 of 2026-11-04. Ported in adapted form from AnyPS5 (github.com/boykopovar/AnyPS5, GPL-2.0-only) @ 4f41f4c375f5abb487dbd184fbc150f31994d762,
++// core/libs/prx/libSceNet/Export.cpp:2547-2552 (sceNetResolverStartNtoa), commit ce093095f "refuse resolver timeouts
++// below one second as firmware 13.42 does" (zaryabzip). Its debt note docs/dev/debt/libSceNet.md:98: a negative timeout
++// or retry count fails with NET_EINVAL before anything else is checked, as prosper's reading of the libSceNet module gives
++// (github.com/mattias800/prosper @ 6c09a34a prosper/src/hle/net/hle_net.cpp:579-587), and a timeout from 1 to 999999
++// also fails with NET_EINVAL before the resolver is looked up, 0 counting as 1000000, as "@BunnyFl's 13.42 run of the
++// module shows" (AnyPS5 PR 9727). Today neither the timeout nor the retry count is looked at. Still not applied: the
++// timeout and the retry count themselves (one synchronous host lookup, as today).
++// KYTY_BC5_FW_NET (one switch for this group: libRtc.cpp, libRudp.cpp, network.cpp, libSystemService.cpp,
++// libNpCppWebApi.cpp): unset, empty or "0" is off (today's path exactly); any other value turns every item on, unless it
++// names items (comma-separated): rtc, rudp, resolver, param400, npwebapi. Each unit reads it once; libRtc.cpp prints the
++// group's one stderr line at its registration.
++// AnyPS5's copyright remains with its authors; GPL-2.0 as the rest of this file.
++static constexpr uint32_t BC5_FWN_RESOLVER = 4u;
++
++static uint32_t Bc5FwNetNetParse(const char* e) {
++	if (e == nullptr || e[0] == '\0' || std::strcmp(e, "0") == 0) {
++		return 0;
++	}
++	static const char* const names[] = {"rtc", "rudp", "resolver", "param400", "npwebapi"}; // bit i is names[i]
++	uint32_t                 parts   = 0;
++	const char*              p       = e;
++	for (;;) {
++		const char*  comma = std::strchr(p, ',');
++		const size_t n     = comma != nullptr ? static_cast<size_t>(comma - p) : std::strlen(p);
++		for (uint32_t i = 0; i < 5; i++) {
++			if (n == std::strlen(names[i]) && std::strncmp(p, names[i], n) == 0) {
++				parts |= 1u << i;
++			}
++		}
++		if (comma == nullptr) {
++			break;
++		}
++		p = comma + 1;
++	}
++	return parts != 0 ? parts : 31u; // every item
++}
++
++// The items of KYTY_BC5_FW_NET that are on (0: off), read once (libRtc.cpp prints the group's line).
++static uint32_t Bc5FwNetNetItems() {
++	static const uint32_t parts = Bc5FwNetNetParse(std::getenv("KYTY_BC5_FW_NET"));
++	return parts;
++}
++
++// A stderr line for each of the first 8 calls in this file whose answer KYTY_BC5_FW_NET changed (only when it is on).
++static void Bc5FwNetNetTell(const char* what) {
++	static std::atomic<uint32_t> told {0};
++	if (told.fetch_add(1, std::memory_order_relaxed) < 8) {
++		std::fprintf(stderr, "[bc5] exp 0405: fw-net %s\n", what);
++		std::fflush(stderr);
++	}
++}
++
++// "resolver": true when sceNetResolverStartNtoa refuses its timeout or retry count with NET_EINVAL; false when off.
++static bool Bc5NetResolverArgsRefused(int timeout, int retry) {
++	if ((Bc5FwNetNetItems() & BC5_FWN_RESOLVER) == 0) {
++		return false;
++	}
++	if (timeout < 0 || (timeout != 0 && timeout < 1000000) || retry < 0) {
++		Bc5FwNetNetTell("resolver: StartNtoa timeout under 1 s or a negative retry -> NET_ERROR_EINVAL (looked up when off)");
++		return true;
++	}
++	return false;
++}
++// ---- end of experiment 0405's fw-net resolver helpers ----
++
 +int KYTY_SYSV_ABI NetResolverStartNtoa(int rid, const char* hostname, void* addr, int timeout,
 +                                       int retry, int flags) {
 +	PRINT_NAME();
@@ -60851,6 +61358,9 @@ index 7f81218..7cb4045 100644
 +
 +	(void)timeout;
 +	(void)retry;
++	if (Bc5NetResolverArgsRefused(timeout, retry)) { // BC5 experiment 0405 (KYTY_BC5_FW_NET "resolver"); false when off
++		return NET_ERROR_EINVAL;
++	}
 +
 +	if (hostname == nullptr || addr == nullptr || (flags & ~0x00010000) != 0) {
 +		return NET_ERROR_EINVAL;
