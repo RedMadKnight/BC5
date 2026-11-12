@@ -47467,10 +47467,22 @@ index 51c3a0e..2b13dd8 100644
  	AddLibkernelUnityFunc(s, "Qhv5ARAoOEc",
  	                      reinterpret_cast<uint64_t>(LibKernel::KernelRemoveExceptionHandler),
 diff --git a/src/libs/libNet.cpp b/src/libs/libNet.cpp
-index 1b9db8a..d507a3d 100644
+index 1b9db8a..0cdeb6a 100644
 --- a/src/libs/libNet.cpp
 +++ b/src/libs/libNet.cpp
-@@ -11,6 +11,8 @@
+@@ -2,15 +2,20 @@
+ #include "common/assert.h"
+ #include "common/common.h"
+ #include "common/logging/log.h"
++#include "kernel/eventQueue.h" // experiment 0401 series e5: Http2's user event (KS01)
+ #include "libs/errno.h"
+ #include "libs/libs.h"
+ #include "libs/network.h"
+ #include "loader/symbolDatabase.h"
+ 
+ #include <cctype>
++#include <cstdio>  // experiment 0401 series e5: the switch's stderr line
++#include <cstdlib> // experiment 0401 series e5: std::getenv
  #include <cstring>
  #include <map>
  #include <mutex>
@@ -47479,15 +47491,221 @@ index 1b9db8a..d507a3d 100644
  #include <string>
  #include <vector>
  
-@@ -614,6 +616,7 @@ static int KYTY_SYSV_ABI HttpUriBuild(char* out, size_t* require, size_t prepare
+@@ -233,6 +238,76 @@ LIB_DEFINE(InitNet_1_Ssl) {
  
+ } // namespace LibSsl
+ 
++// ---- experiment 0401 series e5: Http and Http2 fixes (exp 0405 top-32 row 21 and two extras), switch KYTY_BC5_HTTP2_FIXES ----
++// Items, comma-separated; a value naming none of them (any value set, non-empty and not "0") turns all three on:
++//  - "async" (R2 KS01): sceHttp2SendRequestAsync (A+NVAFu4eCg) and sceHttp2ReadDataAsync (bGN-6zbo7ms) trigger the
++//    caller's equeue user event (its kqueue_option {equeue, id, udata}) when the call completes, as KytyPS5 a06e356
++//    ("net: signal the event queue when Http2 async calls complete", github.com/KytyPS5/KytyPS5, GPL-2.0, as KytyPlus;
++//    the ported lines keep its authors' copyright) does at dfec14a src/libs/libNet.cpp:837-845, 1259-1288, 1436-1473.
++//    Today the option is ignored, and a title that waits on its equeue for the completion waits forever. The calls
++//    complete at once here (no transport: SendRequestAsync fails with TIMEOUT), so the event is triggered before they
++//    return, on the kernel's own user-event trigger (LibKernel::EventQueue::KernelTriggerUserEvent).
++//  - "ssl" (R1 #18): sceHttp2SslEnableOption (EWcwMpbr5F8) and sceHttp2SslDisableOption (B37SruheQ5Y) accept a context id
++//    (AnyPS5 754aad4e9 core/libs/prx/libSceHttp2/Export.cpp:79-90, 303-315, GPL-2.0-only; a title sets them on its
++//    context, AnyPS5 #13715). Today a context id that is no template's or request's is INVALID_ID. The flags are kept
++//    per context; no transport reads them. Templates made later do not inherit them (AnyPS5 copies a context's
++//    settings, held: unverified).
++//  - "agent" (R2 KS04): sceHttpCreateTemplate (0gYjPTR-6cY) with a NULL user agent makes a template with an empty one
++//    (KytyPS5 87e815b "net: accept a NULL user agent in sceHttpCreateTemplate (Cyberpunk 2077)", dfec14a
++//    src/libs/network.cpp:469). Today Network::HttpCreateTemplate builds a std::string from the NULL pointer. Done here
++//    by a wrapper registered in its place (network.cpp is not this group's file).
++// Nothing here is measured on a console. Off (unset, empty or "0"): today's path, the old code kept. One stderr line, at
++// the first read (InitNet_1_Http, at the library's registration).
++static constexpr uint32_t BC5_HTTP2_FIX_ASYNC = 1u; // "async"
++static constexpr uint32_t BC5_HTTP2_FIX_SSL   = 2u; // "ssl"
++static constexpr uint32_t BC5_HTTP2_FIX_AGENT = 4u; // "agent"
++static constexpr uint32_t BC5_HTTP2_FIX_ALL   = BC5_HTTP2_FIX_ASYNC | BC5_HTTP2_FIX_SSL | BC5_HTTP2_FIX_AGENT;
++
++static uint32_t bc5_http2_fixes_parse(const char* e) {
++	if (e == nullptr || e[0] == '\0' || std::strcmp(e, "0") == 0) {
++		return 0;
++	}
++	uint32_t    items = 0;
++	const char* p     = e;
++	for (;;) {
++		const char*  comma = std::strchr(p, ',');
++		const size_t n     = comma != nullptr ? static_cast<size_t>(comma - p) : std::strlen(p);
++		if (n == 5 && std::strncmp(p, "async", n) == 0) {
++			items |= BC5_HTTP2_FIX_ASYNC;
++		} else if (n == 3 && std::strncmp(p, "ssl", n) == 0) {
++			items |= BC5_HTTP2_FIX_SSL;
++		} else if (n == 5 && std::strncmp(p, "agent", n) == 0) {
++			items |= BC5_HTTP2_FIX_AGENT;
++		}
++		if (comma == nullptr) {
++			break;
++		}
++		p = comma + 1;
++	}
++	return items != 0 ? items : BC5_HTTP2_FIX_ALL;
++}
++
++// The items of KYTY_BC5_HTTP2_FIXES that are on (0: off), read once.
++static uint32_t bc5_http2_fixes() {
++	static const uint32_t items = [] {
++		const uint32_t v = bc5_http2_fixes_parse(std::getenv("KYTY_BC5_HTTP2_FIXES"));
++		if (v == 0) {
++			std::fprintf(stderr, "[bc5] exp 0405: http2 fixes off\n");
++		} else {
++			std::fprintf(stderr, "[bc5] exp 0405: http2 fixes on (items:%s%s%s)\n",
++			             (v & BC5_HTTP2_FIX_ASYNC) != 0 ? " async" : "", (v & BC5_HTTP2_FIX_SSL) != 0 ? " ssl" : "",
++			             (v & BC5_HTTP2_FIX_AGENT) != 0 ? " agent" : "");
++		}
++		return v;
++	}();
++	return items;
++}
++
++static bool bc5_http2_fix(uint32_t item) {
++	return (bc5_http2_fixes() & item) != 0;
++}
++// ---- end of experiment 0401 series e5's switch ----
++
+ namespace LibHttp {
+ 
+ LIB_VERSION("Http", 1, "Http", 1, 1);
+@@ -612,10 +687,22 @@ static int KYTY_SYSV_ABI HttpUriBuild(char* out, size_t* require, size_t prepare
+ 	return 0;
+ }
+ 
++// experiment 0401 series e5 (KYTY_BC5_HTTP2_FIXES "agent", KytyPS5 87e815b, dfec14a src/libs/network.cpp:469): a NULL
++// user agent is an empty one; everything else is today's Network::Http::HttpCreateTemplate.
++static int KYTY_SYSV_ABI Bc5HttpCreateTemplate(int http_ctx_id, const char* user_agent, int http_ver,
++                                               int is_auto_proxy_conf) {
++	return Http::HttpCreateTemplate(http_ctx_id, user_agent != nullptr ? user_agent : "", http_ver, is_auto_proxy_conf);
++}
++
  LIB_DEFINE(InitNet_1_Http) {
  	LIB_FUNC("A9cVMUtEp4Y", Http::HttpInit);
 +	LIB_FUNC("P5pdoykPYTk", Http::HttpReadData); // experiment 0329
  	LIB_FUNC("Ik-KpLTlf7Q", Http::HttpTerm);
- 	LIB_FUNC("0gYjPTR-6cY", Http::HttpCreateTemplate);
+-	LIB_FUNC("0gYjPTR-6cY", Http::HttpCreateTemplate);
++	if (bc5_http2_fix(BC5_HTTP2_FIX_AGENT)) { // experiment 0401 series e5 (KytyPS5 87e815b, R2 KS04)
++		LIB_FUNC("0gYjPTR-6cY", Bc5HttpCreateTemplate);
++	} else {
++		LIB_FUNC("0gYjPTR-6cY", Http::HttpCreateTemplate);
++	}
  	LIB_FUNC("4I8vEpuEhZ8", Http::HttpDeleteTemplate);
-@@ -1410,13 +1413,50 @@ LIB_VERSION("NpManager", 1, "NpManager", 1, 1);
+ 	LIB_FUNC("s2-NPIvz+iA", Http::HttpSetNonblock);
+ 	LIB_FUNC("htyBOoWeS58", Http::HttpsSetSslCallback);
+@@ -663,6 +750,29 @@ constexpr int HTTP2_ERROR_BEFORE_SEND  = -2122641307; /* 0x817B1065 */
+ constexpr int HTTP2_ERROR_TIMEOUT      = -2122641304; /* 0x817B1068 */
+ constexpr int HTTP2_ERROR_NULL_POINTER = -2122640859; /* 0x817B1225 */
+ 
++// experiment 0401 series e5 (KYTY_BC5_HTTP2_FIXES "async", R2 KS01): the kqueue_option of the two async calls, KytyPS5
++// a06e356's Http2TriggerUserEventArgs (dfec14a src/libs/libNet.cpp:837-845); TODO(verify): the layout is KytyPS5's, no
++// console source cited. The equeue is this host's handle (KernelCreateEqueue's), as the title got it.
++struct Bc5Http2TriggerUserEventArgs {
++	LibKernel::EventQueue::KernelEqueue eq;
++	int                                 uniq_id;
++	uint8_t                             padding[4];
++	void*                               udata;
++	void*                               reserved;
++};
++static_assert(sizeof(Bc5Http2TriggerUserEventArgs) == 32);
++
++// KytyPS5 a06e356 Http2TriggerUserEvent (dfec14a src/libs/libNet.cpp:1259-1264): the caller's user event, if it gave one.
++static void bc5_http2_trigger_user_event(const void* kqueue_option) {
++	if (kqueue_option == nullptr || !bc5_http2_fix(BC5_HTTP2_FIX_ASYNC)) {
++		return;
++	}
++	const auto* args   = static_cast<const Bc5Http2TriggerUserEventArgs*>(kqueue_option);
++	const int   result = LibKernel::EventQueue::KernelTriggerUserEvent(args->eq, args->uniq_id, args->udata);
++	LOGF("\t user event: eq = 0x%016" PRIx64 ", id = %d -> 0x%08x\n", static_cast<uint64_t>(args->eq), args->uniq_id,
++	     static_cast<unsigned>(result));
++}
++
+ struct Http2Options {
+ 	bool     auth_enabled               = false;
+ 	bool     auto_redirect              = false;
+@@ -941,6 +1051,18 @@ static int KYTY_SYSV_ABI Http2SetInflateGZIPEnabled(int id, int enable) {
+ 	return 0;
+ }
+ 
++// experiment 0401 series e5 (KYTY_BC5_HTTP2_FIXES "ssl", AnyPS5 754aad4e9, R1 #18): the SSL flags of a context, for an
++// id that is a context's and no template's or request's (today's lookup goes first); nullptr with the item off or for an
++// id that is no context's. Kept per context, read by nothing yet (no transport).
++static std::map<int, uint32_t> g_bc5_http2_context_ssl_options;
++
++static uint32_t* bc5_http2_context_ssl_options(int id) {
++	if (!bc5_http2_fix(BC5_HTTP2_FIX_SSL) || g_http2_contexts.find(id) == g_http2_contexts.end()) {
++		return nullptr;
++	}
++	return &g_bc5_http2_context_ssl_options[id];
++}
++
+ static int KYTY_SYSV_ABI Http2SslEnableOption(int id, uint32_t ssl_flags) {
+ 	PRINT_NAME();
+ 
+@@ -948,6 +1070,10 @@ static int KYTY_SYSV_ABI Http2SslEnableOption(int id, uint32_t ssl_flags) {
+ 	LOGF("\t ssl_flags = 0x%08" PRIx32 "\n", ssl_flags);
+ 
+ 	auto* options = GetHttp2Options(id);
++	if (uint32_t* bc5_context = options == nullptr ? bc5_http2_context_ssl_options(id) : nullptr; bc5_context != nullptr) {
++		*bc5_context |= ssl_flags; // experiment 0401 series e5 ("ssl"): a context's
++		return 0;
++	}
+ 	if (options == nullptr) {
+ 		return HTTP2_ERROR_INVALID_ID;
+ 	}
+@@ -964,6 +1090,10 @@ static int KYTY_SYSV_ABI Http2SslDisableOption(int id, uint32_t ssl_flags) {
+ 	LOGF("\t ssl_flags = 0x%08" PRIx32 "\n", ssl_flags);
+ 
+ 	auto* options = GetHttp2Options(id);
++	if (uint32_t* bc5_context = options == nullptr ? bc5_http2_context_ssl_options(id) : nullptr; bc5_context != nullptr) {
++		*bc5_context &= ~ssl_flags; // experiment 0401 series e5 ("ssl"): a context's
++		return 0;
++	}
+ 	if (options == nullptr) {
+ 		return HTTP2_ERROR_INVALID_ID;
+ 	}
+@@ -1127,7 +1257,7 @@ static int KYTY_SYSV_ABI Http2SendRequest(int req_id, const void* post_data, siz
+ }
+ 
+ static int KYTY_SYSV_ABI Http2SendRequestAsync(int req_id, const void* post_data, size_t size,
+-                                               void* /*kqueue_option*/, void* /*option*/) {
++                                               void* kqueue_option, void* /*option*/) { // e5: kqueue_option named
+ 	PRINT_NAME();
+ 
+ 	LOGF("\t req_id    = %d\n", req_id);
+@@ -1146,6 +1276,7 @@ static int KYTY_SYSV_ABI Http2SendRequestAsync(int req_id, const void* post_data
+ 	request->second.send_result  = HTTP2_ERROR_TIMEOUT;
+ 	request->second.async_result = request->second.send_result;
+ 	request->second.async_event  = 0;
++	bc5_http2_trigger_user_event(kqueue_option); // experiment 0401 series e5 ("async"; off: nothing)
+ 
+ 	return 0;
+ }
+@@ -1295,7 +1426,7 @@ static int KYTY_SYSV_ABI Http2ReadData(int req_id, void* data, size_t size) {
+ }
+ 
+ static int KYTY_SYSV_ABI Http2ReadDataAsync(int req_id, void* data, size_t size,
+-                                            void* /*kqueue_option*/, void* /*option*/) {
++                                            void* kqueue_option, void* /*option*/) { // e5: kqueue_option named
+ 	PRINT_NAME();
+ 
+ 	LOGF("\t req_id = %d\n", req_id);
+@@ -1315,6 +1446,7 @@ static int KYTY_SYSV_ABI Http2ReadDataAsync(int req_id, void* data, size_t size,
+ 	if (send_result != 0) {
+ 		request->second.async_result = send_result;
+ 		request->second.async_event  = 1;
++		bc5_http2_trigger_user_event(kqueue_option); // experiment 0401 series e5 ("async"; off: nothing)
+ 		return 0;
+ 	}
+ 
+@@ -1330,6 +1462,7 @@ static int KYTY_SYSV_ABI Http2ReadDataAsync(int req_id, void* data, size_t size,
+ 
+ 	request->second.async_result = static_cast<int>(to_copy);
+ 	request->second.async_event  = 1;
++	bc5_http2_trigger_user_event(kqueue_option); // experiment 0401 series e5 ("async"; off: nothing)
+ 
+ 	return 0;
+ }
+@@ -1410,13 +1543,50 @@ LIB_VERSION("NpManager", 1, "NpManager", 1, 1);
  
  namespace NpManager = Network::NpManager;
  
@@ -47540,7 +47758,7 @@ index 1b9db8a..d507a3d 100644
  	LIB_FUNC("uFJpaKNBAj4", NpManager::NpRegisterGamePresenceCallback);
  	LIB_FUNC("GImICnh+boA", NpManager::NpRegisterPlusEventCallback);
  	LIB_FUNC("+yqjab2fUJA", NpManager::NpRegisterPremiumEventCallback);
-@@ -1437,6 +1477,7 @@ LIB_DEFINE(InitNet_1_NpManager) {
+@@ -1437,6 +1607,7 @@ LIB_DEFINE(InitNet_1_NpManager) {
  	LIB_FUNC("eQH7nWPcAgc", NpManager::NpGetState);
  	LIB_FUNC("e-ZuhGEoeC4", NpManager::NpGetNpReachabilityState);
  	LIB_FUNC("Oad3rvY-NJQ", NpManager::NpHasSignedUp);
@@ -47548,7 +47766,7 @@ index 1b9db8a..d507a3d 100644
  }
  
  } // namespace LibNpManager
-@@ -1445,16 +1486,56 @@ namespace LibNpSessionSignaling {
+@@ -1445,16 +1616,56 @@ namespace LibNpSessionSignaling {
  
  LIB_VERSION("NpSessionSignaling", 1, "NpSessionSignaling", 1, 1);
  
@@ -47605,7 +47823,7 @@ index 1b9db8a..d507a3d 100644
  }
  
  } // namespace LibNpSessionSignaling
-@@ -1572,7 +1653,71 @@ static int KYTY_SYSV_ABI NpEntitlementAccessGetAddcontEntitlementInfo(
+@@ -1572,7 +1783,71 @@ static int KYTY_SYSV_ABI NpEntitlementAccessGetAddcontEntitlementInfo(
  	return NP_ENTITLEMENT_ACCESS_ERROR_NO_ENTITLEMENT;
  }
  
@@ -47677,7 +47895,7 @@ index 1b9db8a..d507a3d 100644
  	LIB_FUNC("jO8DM8oyego", LibNpEntitlementAccess::NpEntitlementAccessInitialize);
  	LIB_FUNC("lPDO62PpJIA", LibNpEntitlementAccess::NpEntitlementAccessGetSkuFlag);
  	LIB_FUNC("TFyU+KFBv54",
-@@ -2209,6 +2354,45 @@ static int KYTY_SYSV_ABI NpTrophy2DestroyContext(int context) {
+@@ -2209,6 +2484,45 @@ static int KYTY_SYSV_ABI NpTrophy2DestroyContext(int context) {
  	return 0;
  }
  
@@ -47723,7 +47941,7 @@ index 1b9db8a..d507a3d 100644
  LIB_DEFINE(InitNet_1_NpTrophy2) {
  	LIB_FUNC("Bagshr7OQ6Q", LibNpTrophy2::NpTrophy2CreateContext);
  	LIB_FUNC("Gz1rmUZpROM", LibNpTrophy2::NpTrophy2CreateHandle);
-@@ -2225,6 +2409,12 @@ LIB_DEFINE(InitNet_1_NpTrophy2) {
+@@ -2225,6 +2539,12 @@ LIB_DEFINE(InitNet_1_NpTrophy2) {
  	LIB_FUNC("fYapWA9xVmA", LibNpTrophy2::NpTrophy2AbortHandle);
  	LIB_FUNC("d8P11CI40KE", LibNpTrophy2::NpTrophy2DestroyHandle);
  	LIB_FUNC("sysY2FHYff4", LibNpTrophy2::NpTrophy2DestroyContext);
@@ -47736,7 +47954,7 @@ index 1b9db8a..d507a3d 100644
  }
  
  } // namespace LibNpTrophy2
-@@ -3493,6 +3683,17 @@ static int KYTY_SYSV_ABI NpWebApi2PushEventDeletePushContext(int         user_co
+@@ -3493,6 +3813,17 @@ static int KYTY_SYSV_ABI NpWebApi2PushEventDeletePushContext(int         user_co
  	return 0;
  }
  
@@ -47754,7 +47972,7 @@ index 1b9db8a..d507a3d 100644
  static int KYTY_SYSV_ABI NpWebApi2PushEventCreateFilter(int lib_ctx_id, int handle_id,
                                                          const char* np_service_name,
                                                          uint32_t    np_service_label,
-@@ -3507,7 +3708,9 @@ static int KYTY_SYSV_ABI NpWebApi2PushEventCreateFilter(int lib_ctx_id, int hand
+@@ -3507,7 +3838,9 @@ static int KYTY_SYSV_ABI NpWebApi2PushEventCreateFilter(int lib_ctx_id, int hand
  	LOGF("\t filter_param     = 0x%016" PRIx64 "\n", reinterpret_cast<uint64_t>(filter_param));
  	LOGF("\t filter_param_num = %" PRIu64 "\n", filter_param_num);
  
@@ -47765,7 +47983,7 @@ index 1b9db8a..d507a3d 100644
  
  	return filter_id++;
  }
-@@ -3526,6 +3729,60 @@ static int KYTY_SYSV_ABI NpWebApi2PushEventRegisterCallback(int user_context_id,
+@@ -3526,6 +3859,60 @@ static int KYTY_SYSV_ABI NpWebApi2PushEventRegisterCallback(int user_context_id,
  	return callback_id++;
  }
  
@@ -47826,7 +48044,7 @@ index 1b9db8a..d507a3d 100644
  static void KYTY_SYSV_ABI NpWebApi2CheckTimeout() {
  	// Timeout processing is an internal maintenance tick in Prospero. Requests
  	// complete synchronously in this implementation, so there is no pending
-@@ -3542,6 +3799,10 @@ static int KYTY_SYSV_ABI NpWebApi2Terminate(int lib_ctx_id) {
+@@ -3542,6 +3929,10 @@ static int KYTY_SYSV_ABI NpWebApi2Terminate(int lib_ctx_id) {
  
  LIB_DEFINE(InitNet_1_NpWebApi2) {
  	LIB_FUNC("+o9816YQhqQ", LibNpWebApi2::NpWebApi2Initialize);
@@ -49046,7 +49264,7 @@ index 0000000..1adc6f1
 +
 +} // namespace Libs::NpCppWebApi
 diff --git a/src/libs/libPad.cpp b/src/libs/libPad.cpp
-index 676ecb9..29f40aa 100644
+index 676ecb9..58e1048 100644
 --- a/src/libs/libPad.cpp
 +++ b/src/libs/libPad.cpp
 @@ -7,6 +7,8 @@
@@ -49170,7 +49388,59 @@ index 676ecb9..29f40aa 100644
  	// KytyPlus: forward adaptive-trigger effect to the DualSense HID driver.
  	// HONEST: spec-accurate interpretation of the PS5 ScePadTriggerEffect param
  	// forwarded to the driver. UNVALIDATED on hardware — the exact param layout
-@@ -222,6 +311,7 @@ LIB_DEFINE(InitPad_1) {
+@@ -209,11 +298,51 @@ static int KYTY_SYSV_ABI PadUnknownN3kSX62fgNo(uint64_t arg0, uint64_t arg1, uin
+ 	return OK;
+ }
+ 
++// ---- experiment 0401 series e5: scePadOpenExt (exp 0405 top-32 row 22, R2 SS22 + KS69), switch KYTY_BC5_PAD_OPEN_EXT ----
++// scePadOpenExt (WFIiSfXGUq8; the NID from exp 0327's calculator, nid0401.py's, and sharpemu's and KytyPS5's tables) was
++// not registered, so a title that opens its pad this way got the loader's stub, handle 0, which every pad call rejects
++// (Controller::ControllerIndexFromHandle): no input at all. As sharpemu (GPL-2.0-or-later; added in 373100a, read at
++// 514d766) SharpEmu.Libs/Pad/PadExports.cs:91-96 and PadOpenCore 132-180: scePadOpen's checks, handles and errors, and a
++// personal port also of type 1 (typeAccepted: 0, 1 or 2 for the Ext call; the system user's remote port as before). Here
++// port type 1 goes to Controller::PadOpen as the standard port 0, so its handle is the player's (1000 + N - 1 -> N).
++// KytyPS5 dfec14a src/libs/libPad.cpp:126-135, 170 (KS69, GPL-2.0) registers the NID to a stub that returns 0, the
++// handle this item is about; only its NID is taken from there. TODO(verify): what port type 1 is on the console (no
++// public source names it); sharpemu also lets types 1 and 2 be opened more than once, which this host's PadOpen never
++// refuses anyway. On: KYTY_BC5_PAD_OPEN_EXT set, non-empty and not "0", read once at the registration, one stderr line
++// either way. Off: the NID is not registered (today's stub).
++static bool Bc5PadOpenExtOn() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_PAD_OPEN_EXT");
++		const bool  v = e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
++		std::fprintf(stderr, "[bc5] exp 0405: pad open ext %s\n", v ? "on (items: openext)" : "off");
++		return v;
++	}();
++	return on;
++}
++
++static int KYTY_SYSV_ABI Bc5PadOpenExt(int user_id, int type, int index, const void* param) {
++	PRINT_NAME();
++
++	LOGF("\t user_id = %d\n"
++	     "\t type    = %d\n"
++	     "\t index   = %d\n"
++	     "\t param   = 0x%016" PRIx64 "\n",
++	     user_id, type, index, reinterpret_cast<uint64_t>(param));
++
++	constexpr int port_type_ext      = 1; // sharpemu PadOpenCore: a personal port type the Ext call accepts too
++	constexpr int port_type_standard = 0;
++	return Controller::PadOpen(user_id, type == port_type_ext ? port_type_standard : type, index, param);
++}
++// ---- end of experiment 0401 series e5's block ----
++
+ LIB_DEFINE(InitPad_1) {
+ 	PRINT_NAME_ENABLE(true);
+ 
+ 	LIB_FUNC("hv1luiJrqQM", Controller::PadInit);
+ 	LIB_FUNC("xk0AcarP3V4", Controller::PadOpen);
++	if (Bc5PadOpenExtOn()) { // experiment 0401 series e5 (sharpemu 373100a, R2 SS22): scePadOpenExt
++		LIB_FUNC("WFIiSfXGUq8", Bc5PadOpenExt);
++	}
+ 	LIB_FUNC("u1GRHp+oWoY", Controller::PadGetHandle);
+ 	LIB_FUNC("AcslpN1jHR8", PadDeviceClassGetExtendedInformation);
+ 	LIB_FUNC("IHPqcbc0zCA", PadDeviceClassParseData);
+@@ -222,6 +351,7 @@ LIB_DEFINE(InitPad_1) {
  	LIB_FUNC("rIZnR6eSpvk", Controller::PadResetOrientation);
  	LIB_FUNC("vDLMoJLde8I", PadSetTiltCorrectionState);
  	LIB_FUNC("gjP9-KQzoUk", Controller::PadGetControllerInformation);
@@ -50116,10 +50386,10 @@ index fda2623..db5e40e 100644
  	return OK;
  }
 diff --git a/src/libs/libSaveData.cpp b/src/libs/libSaveData.cpp
-index 08aa121..28f2046 100644
+index 08aa121..6357db0 100644
 --- a/src/libs/libSaveData.cpp
 +++ b/src/libs/libSaveData.cpp
-@@ -1,949 +1,1662 @@
+@@ -1,949 +1,1869 @@
 -#include "common/abi.h"
 -#include "common/assert.h"
 -#include "common/common.h"
@@ -51337,6 +51607,133 @@ index 08aa121..28f2046 100644
 +	return title_id;
 +}
 +
++// ---- experiment 0401 series e5: SaveData memory, queue lock, busy delete, Initialize aliases (exp 0405) ----------
++// KYTY_BC5_SAVEDATA_MEMORY_FIXES (exp 0405 top-32 rows 19 and 20). Items, comma-separated; a value naming none of them (any
++// value set, non-empty and not "0") turns all three on:
++//  - "sync" (R2 KS03 + SS01): sceSaveDataSyncSaveDataMemory (wiT9jeC7xPw) checks its argument (PARAMETER for a null one,
++//    a slot of 4 or more or an option over 1; INVALID_LOGIN_USER for a negative user), answers MEMORY_NOT_READY for a
++//    slot that no SetupSaveDataMemory2 set up, writes the memory file and, unless option is 1, queues the MEMORY_SYNC_END
++//    event (type 3) that a title polling SaveDataGetEventResult waits for; option 1 returns the write's status only.
++//    Today it returns OK and queues nothing, so such a title polls NOT_FOUND forever (sharpemu's comment: what wedged
++//    Dead Cells at FLIP 0). Ported from KytyPS5 (github.com/KytyPS5/KytyPS5, GPL-2.0, as KytyPlus; the ported lines keep
++//    its authors' copyright) dfec14a src/libs/libSaveData.cpp:197-202 (SaveDataMemorySync), 267 (MEMORY_SYNC_END = 3),
++//    1151-1182 (SaveDataSyncSaveDataMemory); sharpemu (GPL-2.0-or-later) SharpEmu.Libs/SaveData/SaveDataExports.cs:78,
++//    1571-1609 at 514d766 (added in 9415395) and shadPS4 60c42b9 src/core/libraries/save_data/savedata.cpp:1637-1665 with
++//    save_backup.h:26
++//    (GPL-2.0-or-later, SAVE_DATA_MEMORY_SYNC = 3) agree on the event. Fitted to this file: its memory is one store for
++//    every slot (sce_sdmemory/memory.dat), so "set up" is kept per slot 0-3 as KytyPS5 and shadPS4 keep it, the write is
++//    save_data_memory_store, and the event names the slot's directory ("sce_sdmemory", "sce_sdmemory1", ...) as KytyPS5
++//    does. KytyPS5's BUSY for a memory directory mounted through Mount3 is not taken (this file never mounts it).
++//  - "lock" (R2 KS02; KytyPS5 dfec14a libs/libSaveData.cpp:1027-1028, 1191, 1275-1276 take its mount mutex there): the
++//    poll queue g_save_data_events is queued, polled and cleared under a lock also with KYTY_BC5_SAVEDATA_EVENT_CB off; the
++//    lock is e4's g_bc5_save_data_events_mutex (a leaf lock: nothing is taken under it).
++//  - "existed" (R2 KS09 + SS02): SetupSaveDataMemory2's existed_memory_size is the size of the stored memory file before
++//    the call, 0 when there is none. Today it is the memory's size, at least 64 KiB, so a title on its first run reads
++//    zeros as a save. KytyPS5 dfec14a libs/libSaveData.cpp:457-483 (load_memory), 811-825; sharpemu
++//    SaveDataExports.cs:1495-1551 at 514d766, added in 488b285 (the backing file's length before the call); shadPS4
++//    savedata.cpp:1580-1603 (0 is "just created").
++// KYTY_BC5_SAVEDATA_DELETE_BUSY (R2 KS14 + SS10; KytyPS5 dfec14a libs/libSaveData.cpp:1051-1056): SaveDataDelete of a save
++//   that is mounted is BUSY and deletes nothing; the mount lock is held to the end of the delete. Today it removes the
++//   files under the open mount. KytyPS5's use of del->title_id is not taken (it needs KS17's name checks, held).
++// KYTY_BC5_SAVEDATA_ALIASES (R1 #15): sceSaveDataInitialize (ZkZhskCPXFw) and sceSaveDataInitialize2 (l1NmDeDpNGU) are
++//   SaveDataInitialize3 in both SaveData tables: AnyPS5 bc6a5e4ea core/libs/prx/libSceSaveData.native/Export.cpp:1817,
++//   2070 (GPL-2.0-only), shadPS4 60c42b9 savedata.cpp:1194-1210, 1817-1819 (all three initialize alike). NIDs from exp
++//   0327's calculator (nid0401.py's), which gives these two for those names.
++// Nothing here is measured on a console. Off (unset, empty or "0"): today's path, the old code kept. One stderr line per
++// switch, at the library's registration (InitSaveData_1).
++static constexpr uint32_t BC5_SDM_FIX_SYNC    = 1u; // "sync"
++static constexpr uint32_t BC5_SDM_FIX_LOCK    = 2u; // "lock"
++static constexpr uint32_t BC5_SDM_FIX_EXISTED = 4u; // "existed"
++static constexpr uint32_t BC5_SDM_FIX_ALL     = BC5_SDM_FIX_SYNC | BC5_SDM_FIX_LOCK | BC5_SDM_FIX_EXISTED;
++
++static constexpr uint32_t BC5_SAVE_DATA_EVENT_TYPE_MEMORY_SYNC_END = 3u; // KytyPS5 dfec14a :267, shadPS4 save_backup.h:26
++static constexpr uint32_t BC5_SAVE_DATA_MEMORY_SLOTS               = 4u; // KytyPS5 dfec14a :1154 (slot_id >= 4)
++
++static uint32_t bc5_savedata_memory_fixes_parse(const char* e) {
++	if (e == nullptr || e[0] == '\0' || std::strcmp(e, "0") == 0) {
++		return 0;
++	}
++	uint32_t    items = 0;
++	const char* p     = e;
++	for (;;) {
++		const char*  comma = std::strchr(p, ',');
++		const size_t n     = comma != nullptr ? static_cast<size_t>(comma - p) : std::strlen(p);
++		if (n == 4 && std::strncmp(p, "sync", n) == 0) {
++			items |= BC5_SDM_FIX_SYNC;
++		} else if (n == 4 && std::strncmp(p, "lock", n) == 0) {
++			items |= BC5_SDM_FIX_LOCK;
++		} else if (n == 7 && std::strncmp(p, "existed", n) == 0) {
++			items |= BC5_SDM_FIX_EXISTED;
++		}
++		if (comma == nullptr) {
++			break;
++		}
++		p = comma + 1;
++	}
++	return items != 0 ? items : BC5_SDM_FIX_ALL;
++}
++
++// The items of KYTY_BC5_SAVEDATA_MEMORY_FIXES that are on (0: off), read once.
++static uint32_t bc5_savedata_memory_fixes() {
++	static const uint32_t items = [] {
++		const uint32_t v = bc5_savedata_memory_fixes_parse(std::getenv("KYTY_BC5_SAVEDATA_MEMORY_FIXES"));
++		if (v == 0) {
++			std::fprintf(stderr, "[bc5] exp 0405: savedata memory fixes off\n");
++		} else {
++			std::fprintf(stderr, "[bc5] exp 0405: savedata memory fixes on (items:%s%s%s)\n",
++			             (v & BC5_SDM_FIX_SYNC) != 0 ? " sync" : "", (v & BC5_SDM_FIX_LOCK) != 0 ? " lock" : "",
++			             (v & BC5_SDM_FIX_EXISTED) != 0 ? " existed" : "");
++		}
++		return v;
++	}();
++	return items;
++}
++
++static bool bc5_savedata_memory_fix(uint32_t item) {
++	return (bc5_savedata_memory_fixes() & item) != 0;
++}
++
++static bool bc5_savedata_delete_busy_on() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_SAVEDATA_DELETE_BUSY");
++		const bool  v = e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
++		std::fprintf(stderr, "[bc5] exp 0405: savedata delete busy %s\n", v ? "on (items: delete)" : "off");
++		return v;
++	}();
++	return on;
++}
++
++static bool bc5_savedata_aliases_on() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_SAVEDATA_ALIASES");
++		const bool  v = e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
++		std::fprintf(stderr, "[bc5] exp 0405: savedata aliases %s\n", v ? "on (items: initialize)" : "off");
++		return v;
++	}();
++	return on;
++}
++
++// "sync": the memory slots a SetupSaveDataMemory2 set up, under g_save_data_memory_mutex; kept with the item on only.
++static bool g_bc5_memory_set_up[BC5_SAVE_DATA_MEMORY_SLOTS] = {};
++
++// KYTY_BC5_SAVEDATA_DELETE_BUSY: g_mount_mutex held for the scope when the switch is on, not taken when it is off.
++struct Bc5MountLockIf {
++	explicit Bc5MountLockIf(bool on): held(on) {
++		if (held) {
++			g_mount_mutex.Lock();
++		}
++	}
++	~Bc5MountLockIf() {
++		if (held) {
++			g_mount_mutex.Unlock();
++		}
++	}
++	Bc5MountLockIf(const Bc5MountLockIf&)            = delete;
++	Bc5MountLockIf& operator=(const Bc5MountLockIf&) = delete;
++	const bool      held;
++};
++// ---- end of experiment 0401 series e5's switches ----
++
 +// ---- experiment 0401 series e4: SaveData event callback (exp 0402 Top 10 item 9), switch KYTY_BC5_SAVEDATA_EVENT_CB ----
 +// Ported from AnyPS5 (github.com/boykopovar/AnyPS5, GPL-2.0-only; the ported lines keep its authors' copyright),
 +// core/libs/prx/libSceSaveData.native/Export.cpp @ 4f41f4c37 (4f41f4c375f5abb487dbd184fbc150f31994d762): the delivery
@@ -51412,8 +51809,10 @@ index 08aa121..28f2046 100644
 +
 +// The poll queue's lock: taken with the switch on, an empty lock (today's unlocked queue) with it off.
 +static std::unique_lock<std::mutex> bc5_save_data_events_lock() {
-+	return bc5_savedata_event_cb_on() ? std::unique_lock<std::mutex>(g_bc5_save_data_events_mutex)
-+	                                  : std::unique_lock<std::mutex>();
++	// experiment 0401 series e5 (KYTY_BC5_SAVEDATA_MEMORY_FIXES "lock", KytyPS5 dfec14a KS02): also with the item on
++	return (bc5_savedata_event_cb_on() || bc5_savedata_memory_fix(BC5_SDM_FIX_LOCK))
++	           ? std::unique_lock<std::mutex>(g_bc5_save_data_events_mutex)
++	           : std::unique_lock<std::mutex>();
 +}
 +
 +static KYTY_SYSV_ABI void* bc5_deliver_events(void* argument) {
@@ -51585,7 +51984,7 @@ index 08aa121..28f2046 100644
 +	if (g_save_data_events.size() > 20) {
 +		g_save_data_events.pop_front();
 +	}
-+	if (bc5_events_lock.owns_lock()) { // experiment 0401 series e4 (switch on): then to the registered callback
++	if (bc5_events_lock.owns_lock() && bc5_savedata_event_cb_on()) { // experiment 0401 series e4 (switch on): then to the registered callback (series e5: not for the "lock" item alone)
 +		bc5_events_lock.unlock();
 +		bc5_deliver_event(event);
 +	}
@@ -51869,6 +52268,7 @@ index 08aa121..28f2046 100644
 +	if (!g_mount_slots.Empty()) {
 +		return SAVE_DATA_ERROR_BUSY;
 +	}
++	std::unique_lock<std::mutex> bc5_events_lock = bc5_save_data_events_lock(); // experiment 0401 series e5: "lock" (off: none)
 +	g_save_data_events.clear();
 +
 +	return OK;
@@ -52118,7 +52518,7 @@ index 08aa121..28f2046 100644
 +	LOGF("\t save data memory: %zu bytes read from %s\n", data.size(), path.c_str());
 +}
 +
-+static void save_data_memory_store() {
++static bool save_data_memory_store() { // experiment 0401 series e5: true when written ("sync"'s status)
 +	const std::string dir = save_data_memory_dir();
 +	std::error_code   ec;
 +	std::filesystem::create_directories(dir, ec);
@@ -52127,16 +52527,26 @@ index 08aa121..28f2046 100644
 +	std::FILE*        f    = std::fopen(tmp.c_str(), "wb");
 +	if (f == nullptr) {
 +		LOGF("\t save data memory: cannot write %s\n", tmp.c_str());
-+		return;
++		return false; // experiment 0401 series e5
 +	}
 +	const size_t written = std::fwrite(g_save_data_memory.data(), 1, g_save_data_memory.size(), f);
 +	const bool   ok      = (std::fclose(f) == 0 && written == g_save_data_memory.size());
 +	if (!ok || std::rename(tmp.c_str(), path.c_str()) != 0) {
 +		LOGF("\t save data memory: writing %s failed\n", path.c_str());
 +		std::remove(tmp.c_str());
-+		return;
++		return false; // experiment 0401 series e5
 +	}
 +	LOGF("\t save data memory: %zu bytes written to %s\n", written, path.c_str());
++	return true; // experiment 0401 series e5
++}
++
++// experiment 0401 series e5 (KYTY_BC5_SAVEDATA_MEMORY_FIXES "existed", R2 KS09 + SS02): the size of the stored memory
++// file, 0 when there is none (KytyPS5 dfec14a load_memory, libs/libSaveData.cpp:457-483; sharpemu 514d766, added in
++// 488b285, SaveDataExports.cs:1525-1526, the backing file's length before the call).
++static size_t bc5_save_data_memory_file_size() {
++	std::error_code ec;
++	const auto      size = std::filesystem::file_size(save_data_memory_dir() + "/memory.dat", ec);
++	return ec ? 0 : static_cast<size_t>(size);
 +}
 +
 +int KYTY_SYSV_ABI SaveDataSetupSaveDataMemory2(const SaveDataMemorySetup2* setup_param,
@@ -52156,14 +52566,22 @@ index 08aa121..28f2046 100644
 +	     static_cast<uint64_t>(setup_param->icon_memory_size), setup_param->slot_id);
 +
 +	std::lock_guard lock(g_save_data_memory_mutex);
++	// experiment 0401 series e5 ("existed"): the stored file's size before this call; off: not read
++	const size_t bc5_existed = bc5_savedata_memory_fix(BC5_SDM_FIX_EXISTED) ? bc5_save_data_memory_file_size() : 0;
 +	save_data_memory_load();
 +	if (setup_param->memory_size > g_save_data_memory.size()) {
 +		g_save_data_memory.resize(setup_param->memory_size);
++	}
++	if (bc5_savedata_memory_fix(BC5_SDM_FIX_SYNC) && setup_param->slot_id < BC5_SAVE_DATA_MEMORY_SLOTS) {
++		g_bc5_memory_set_up[setup_param->slot_id] = true; // experiment 0401 series e5 ("sync"): this slot is ready
 +	}
 +
 +	if (result != nullptr) {
 +		*result                     = {};
 +		result->existed_memory_size = g_save_data_memory.size();
++		if (bc5_savedata_memory_fix(BC5_SDM_FIX_EXISTED)) { // experiment 0401 series e5 (KytyPS5 dfec14a :823, sharpemu 488b285)
++			result->existed_memory_size = bc5_existed;
++		}
 +	}
 +
 +	return OK;
@@ -52359,6 +52777,12 @@ index 08aa121..28f2046 100644
 +
 +	std::string dir =
 +	    std::string(SAVE_DATA_DIR) + "/" + get_title_id() + "/" + std::string(del->dir_name->data);
++	// experiment 0401 series e5 (KYTY_BC5_SAVEDATA_DELETE_BUSY, KytyPS5 dfec14a :1051-1056): a mounted save is BUSY; the
++	// mount lock is held to the end of the delete, so that no mount comes in between. Off: no lock, today's delete.
++	Bc5MountLockIf bc5_mount_lock(bc5_savedata_delete_busy_on());
++	if (bc5_mount_lock.held && g_mount_slots.FindAvailable(del->dir_name->data) == SaveDataMountSlots::BUSY) {
++		return SAVE_DATA_ERROR_BUSY;
++	}
 +	if ((g_bc5_save_trace && ::Log::Bc5LoggingOn())) {
 +		std::fprintf(stderr, "save trace: SaveDataDelete %s exists %d\n", dir.c_str(),
 +		             Common::File::IsDirectoryExisting(dir) ? 1 : 0);
@@ -52459,11 +52883,54 @@ index 08aa121..28f2046 100644
 +	return OK;
 +}
 +
++// experiment 0401 series e5 (KYTY_BC5_SAVEDATA_MEMORY_FIXES "sync", R2 KS03 + SS01): KytyPS5 dfec14a
++// libs/libSaveData.cpp:197-202 (the argument) and 1151-1182 (the call), fitted to this file's one memory store.
++struct Bc5SaveDataMemorySync {
++	int32_t  user_id;
++	uint32_t slot_id;
++	uint32_t option;
++	uint8_t  reserved[28];
++};
++static_assert(sizeof(Bc5SaveDataMemorySync) == 40);
++
++static int bc5_sync_save_data_memory(const Bc5SaveDataMemorySync* sync_param) {
++	if (sync_param == nullptr || sync_param->slot_id >= BC5_SAVE_DATA_MEMORY_SLOTS || sync_param->option > 1) {
++		return SAVE_DATA_ERROR_PARAMETER;
++	}
++	if (sync_param->user_id < 0) {
++		return SAVE_DATA_ERROR_INVALID_LOGIN_USER;
++	}
++	bool written = false;
++	{
++		std::lock_guard lock(g_save_data_memory_mutex);
++		if (!g_bc5_memory_set_up[sync_param->slot_id]) {
++			return SAVE_DATA_ERROR_MEMORY_NOT_READY;
++		}
++		written = save_data_memory_store();
++	}
++	const int status = written ? OK : SAVE_DATA_ERROR_INTERNAL;
++	LOGF("\t user_id = %" PRId32 ", slot_id = %" PRIu32 ", option = %" PRIu32 ": memory %s\n", sync_param->user_id,
++	     sync_param->slot_id, sync_param->option, written ? "written" : "not written");
++	if (sync_param->option == 1) {
++		return status;
++	}
++	SceSaveDataTitleId title {};
++	SceSaveDataDirName directory {};
++	std::snprintf(title.data, sizeof(title.data), "%s", get_title_id().c_str());
++	std::snprintf(directory.data, sizeof(directory.data), "sce_sdmemory%s",
++	              sync_param->slot_id == 0 ? "" : std::to_string(sync_param->slot_id).c_str());
++	queue_save_data_event(BC5_SAVE_DATA_EVENT_TYPE_MEMORY_SYNC_END, sync_param->user_id, &title, &directory, status);
++	return OK;
++}
++
 +int KYTY_SYSV_ABI SaveDataSyncSaveDataMemory(const void* sync_param) {
 +	PRINT_NAME();
 +
 +	LOGF("\t sync_param = 0x%016" PRIx64 "\n", reinterpret_cast<uint64_t>(sync_param));
 +
++	if (bc5_savedata_memory_fix(BC5_SDM_FIX_SYNC)) { // experiment 0401 series e5: the checks, the write and the event
++		return bc5_sync_save_data_memory(static_cast<const Bc5SaveDataMemorySync*>(sync_param));
++	}
 +	return OK;
 +}
 +
@@ -52660,6 +53127,10 @@ index 08aa121..28f2046 100644
 +	LIB_FUNC("8EA5OMIL1lQ", SaveDataGetConvertProgress); // experiment 0329
 +	LIB_FUNC("e6y3WMBYbiM", SaveDataCancel);             // experiment 0329
 +	LIB_FUNC("TywrFKCoLGY", ::Libs::SaveData::SaveDataInitialize3);
++	if (::Libs::SaveData::bc5_savedata_aliases_on()) { // experiment 0401 series e5 (AnyPS5 bc6a5e4ea, R1 #15)
++		LIB_FUNC("ZkZhskCPXFw", ::Libs::SaveData::SaveDataInitialize3); // sceSaveDataInitialize
++		LIB_FUNC("l1NmDeDpNGU", ::Libs::SaveData::SaveDataInitialize3); // sceSaveDataInitialize2
++	}
 +	LIB_FUNC("dyIhnXq-0SM", ::Libs::SaveData::SaveDataDirNameSearch);
 +	LIB_FUNC("PHnuI4LhuRk", ::Libs::SaveData::SaveDataDirNameSearch);
 +	LIB_FUNC("ZP4e7rlzOUk", ::Libs::SaveData::SaveDataMount3);
@@ -52697,7 +53168,13 @@ index 08aa121..28f2046 100644
 +	(void)SaveData::bc5_savedata_fixes_on(); // experiment 0401 series e4: the switch's stderr line, read once
 +	(void)SaveData::bc5_savedata_event_cb_on(); // experiment 0401 series e4: the event callback switch's line
 +	(void)SaveData::bc5_savedata_sort_on(); // experiment 0401 series e4: the sort switch's line
++	(void)SaveData::bc5_savedata_memory_fixes(); // experiment 0401 series e5: the memory fixes switch's line
++	(void)SaveData::bc5_savedata_delete_busy_on(); // experiment 0401 series e5: the delete busy switch's line
 +	LIB_FUNC("TywrFKCoLGY", SaveData::SaveDataInitialize3);
++	if (SaveData::bc5_savedata_aliases_on()) { // experiment 0401 series e5 (AnyPS5 bc6a5e4ea, R1 #15)
++		LIB_FUNC("ZkZhskCPXFw", SaveData::SaveDataInitialize3); // sceSaveDataInitialize
++		LIB_FUNC("l1NmDeDpNGU", SaveData::SaveDataInitialize3); // sceSaveDataInitialize2
++	}
 +	LIB_FUNC("dyIhnXq-0SM", SaveData::SaveDataDirNameSearch);
 +	LIB_FUNC("ZP4e7rlzOUk", SaveData::SaveDataMount3);
 +	LIB_FUNC("gjRZNnw0JPE", SaveData::SaveDataCreateTransactionResource);
