@@ -50,7 +50,10 @@ case "${1:-}" in
   fast5)     W=$E/play-guard-0412.sh; ARG=fast5; NAME="BC5 emulator (0412 fast5)"
              WHAT="$G + both fixes of the host's memory tables + orphan release with idle 30 s + events cap + the zero skip with its poll before every submission (BC5_DIRECT_ZERO_SKIP, BC5_GUARD_ZSKIP_POLL_SUBMIT: about 650 MiB less pinned, nine scripted runs without a GPU hang, README section 40); $FU; private build g412u"
              LOGS="log ~/bc5-work/exp0412/play-last.log; sampler lines ~/bc5-work/exp0412/sampler/" ;;
-  *) echo "usage: shortcut0412b.sh orphans|cap|zo|zoe|fast|fast2|fast4|fast5|astro-off|astro-on|astro-evcap|pkg-evcap"; exit 1 ;;
+  lean5)     W=$E/play-lean-0412.sh; ARG=; NAME="BC5 emulator (0412 lean5)"
+             WHAT="the LEAN version of fast5 (README section 43): binary built without journal, traces, tallies and this experiment's catchers; no direct.log, no sampler, no counters, no MangoHud, no log file; only the memory fuse stays"
+             LOGS="no logs by design" ;;
+  *) echo "usage: shortcut0412b.sh orphans|cap|zo|zoe|fast|fast2|fast4|fast5|lean5|astro-off|astro-on|astro-evcap|pkg-evcap"; exit 1 ;;
 esac
 DESK=$(xdg-user-dir DESKTOP 2> /dev/null); DESK=${DESK:-$HOME/Pulpit}
 m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }
@@ -67,7 +70,7 @@ Type=Application
 Version=1.0
 Name=$NAME
 Comment=BC5 exp 0412 (2026-11-10): $WHAT; starts the game directly; $LOGS
-Exec=/usr/bin/bash $W $ARG
+Exec=/usr/bin/bash $W${ARG:+ $ARG}
 Icon=applications-games
 Terminal=false
 Categories=Game;

@@ -1964,9 +1964,107 @@ His three plays on fast2 reached 220–275 MiB available within two minutes (sec
 reaches 283–384 MiB. What these two runs are not: his hands on the pad (his load pinned about 0.2 GiB more than the
 script's, section 36), and nobody looked at the picture.
 
+### 42. His play on fast5 (2026-11-12 00:47–00:50)
+
+The maintainer played from "BC5 emulator (0412 fast5)" (g412u `1f39cd1e`, RT on, no catchers) and wrote "zagrałem -
+zbierz dane". Journal `~/bc5-data/captures/play-20261112-0047/gc/direct.log`; 185 s, he ended it himself (exit 0) [M]:
+- **No ring timeout, no kernel line, no fault.** The poll before submission took 34 chunks back at 28 submissions
+  (scripted runs: 0–3): his play exercises the mechanism ten times more, and nothing hung.
+- Memory in play (100–181 s): pinned direct 11,462–11,720 MiB, of it **orphans 390–550 MiB**; available 462–548 MiB
+  (his plays on fast2: 220–275); swap used 639 → 854 MiB; **PSI full 18–39 %**. Still skipped at the end: 444 of
+  1,010 MiB (66 chunks back by CPU writes, 115 by hints, 6 runs by canary hits).
+- Frames: 3,212; **252 over 100 ms, 62 s of the 183 in them**; 24 over 500 ms; the longest 2,671 ms at 169.7 s.
+- **The fuse was the wall, not the box** [M for the numbers, I for the cause]: `fuse.log` gives the container
+  cgroup's peak as 12,400 MiB, exactly its `memory.max`, while 460–550 MiB were still available outside it. At the
+  limit every allocation of the emulator reclaims inside the cgroup first (its file cache, then swap), which is what
+  a PSI of 18–39 % with free memory beside it looks like. One scripted run with the limit at 13,800 MiB (x1fuse) used
+  12,518–12,665 MiB of cgroup against 12,399 at the limit (w2his); pressure and gaps were alike there (41 s against
+  45–66 s with a gap over 100 ms), because the script stays 0.6 GiB lower than his play. The limit was set at 12,400
+  on the night of 11-10 for unattended runs; for his play it leaves about 0.3 GiB unused.
+- Orphans: with the release at 30 s idle (his "Tak, 30 s", section 28, measured on the script where it made no
+  difference) his play keeps 0.4–0.55 GiB pinned under no view. At 4–10 s that was 180–340 MiB (section 29).
+
+Not playable yet: a third of the time in long frames. Two levers measured here, neither built into his shortcut
+(both change what it does and need his word): the fuse's limit, and the release's idle time.
+
+### 43. The lean version beside (build g412L, 2026-11-12 00:55–01:05)
+
+The maintainer: "możesz mi zbudować wersję obok - lean - ale zrób uczciwe czyszczenie wszystkiego co jest zbędne,
+łącznie z przełącznikami i martwym kodem oraz wyłącz jeszcze sledzenia zmian poza emulatorem - w OS".
+
+**What was built** (`memfast/mk0412L.sh`, `memfast/mkzpolll0412.py`, `memfast/linkmf0412l.py`, `mklean0412.py`,
+`play-lean-0412.sh`; desktop "BC5 emulator (0412 lean5)" beside fast5; `bin/kyty_emulator` untouched):
+- **Binary `bin-lean/kyty_emulator` `520183de`**: the main unit is g412d's plus only the zero skip's poll; none of
+  the ten catchers and counters of g412j–g412t is compiled in (the build script refuses a binary that still has one
+  of their switch names). The main unit and the three private units are compiled with `BC5_LEAN` (exp 0177): the
+  journal, traces, tallies and frame profile are not in the code (`frame profile: t`, `guard: t`: 0 occurrences).
+- **Launcher `play-pkg-0412-lean.sh`**: the title's launcher with its own `BC5_LEAN` branch opened: no `direct.log`,
+  no timing or frame-profile switches, no FPS counter, audio trace, measure lines, input recorder, timeout probe; the
+  emulator's output goes to /dev/null.
+- **Words**: fast5's 80 less six that only write or count (`BC5_GUARD_LEDGER`, `BC5_DIRECT_TABLE_CATCHER`,
+  `KYTY_BC5_EVENT_PENDING_LOG`, `BC5_DIRECT_RESET_LABEL_JOURNAL`, `BC5_DIRECT_JOURNAL_QUIET`,
+  `BC5_DIRECT_ACB_INHERIT=journal`), plus `BC5_LEAN=1 BC5_LOGGING=0 KYTY_BC5_MANGOHUD=0`.
+- **Beside the emulator nothing runs**: no sampler, no catcher's sampler. The fuse stays (a limit set once on the
+  cgroup; it measures nothing).
+
+**Test** [M]: started over ssh, 80 s, sampled from outside: alive with 96 threads, RSS 6.7 GiB and 1.5 GiB available
+at 60–80 s (the start screen's level), no new capture directory, no sampler file, no kernel line; ended by SIGTERM.
+(The first attempt failed with "wayland not available": since the reboot of 22:32 the session's socket is
+`wayland-1`; a start from the desktop has the right one.) **Not tested: a load, play, the picture**: the scripted
+route gates on the journal, which the lean version does not write.
+
+**What is not lean, said plainly:**
+- e8's other 47 private objects and all shared objects are the normal builds; their traces are off at run time
+  (`BC5_LOGGING=0`), not compiled out. A fully lean link needs those units rebuilt from their sources.
+- "Switches and dead code": the unit still carries the switches of every earlier experiment (about 70 are set by
+  the launcher to turn fixes on). Removing them means making each fix unconditional and deleting the old path, in the
+  15,000-line unit and in patch 0001: a change of shared code, unit by unit with its test, not a build flag.
+  Section 44's audit lists what can go first.
+- OS side: what runs outside the emulator and watches something is `bc5-gpu-stall-sampler.service` (root, 46 MiB,
+  always on), `auditd` (root), and the user timer `bc5-compress-captures.timer` (daily). The two root services need
+  the maintainer's `sudo`; this session has none and changed nothing system-wide. `bc5-gpu-watch.service` is not
+  tracking: it is what reboots the box after a failed GPU reset (22:32), and stays.
+
+### 44. Where the host copies, re-reads and double-maps the title's data (audit, 2026-11-12)
+
+The maintainer, 00:58: "kiedy bedzie mozna pozbyc sie wyuczonych okien, czy musimy kopiowac wszystko dwa razy dla
+obszarow high i low bit? tworzymy zbedne czytania; gdzie jeszcze nadmiarowo kopiujemy i odczytujemy dane gry - trzeba
+rozwiazac problem a nie robić obejscia".
+A subagent read g412u's unit, `memory.cpp`, the launcher and the active switches; its report, with line numbers and
+each statement marked read-from-code or inferred, is in the shared notes as `exp0412-redundant-copies-audit.md`.
+**I have not checked its line references myself**; the backend's sources (`backend/src`) were not in its reach, so
+the filter's own copies, the shadow labels and the DMA snapshot's size are not covered. Its findings:
+- **High-bit / low-bit areas ("aliases")**: nothing is copied. The same imported pages are mapped a second time at
+  (byte << 40) + address; 192 MiB in 5 windows in his play [M, the journal]. The unit's own later comments say the
+  stray byte was, in the cases found, another process's register left on the shared GFX ring, not a PS5 rule.
+- **Learned windows**: 81 on file, each 96 MiB around a past fault; each forces the pin of every chunk under a view
+  in it, and all are re-applied on every layout change. They exist because what the GPU gets mapped is found out by
+  watching CPU writes and corrected by faults. They become unnecessary when every guest-mapped range is GPU-mapped
+  from the start: for reads the zero buffer already does that; for GPU **writes** it does not (the zero buffer is one
+  shared 2 MiB object and loses them). The change the code points to: sparse (PRT) mapping over the whole guest range
+  (today only the AMM window) with real backing put in at map time.
+- **Per submission**: each command buffer is copied whole two to three times and walked about ten times (chain copy,
+  the filter's copy, a throwaway probe pass for light buffers, the timeout probe's copy, the soft CP's walk after
+  the fence); a full state prefix goes in front of every drawing buffer (the one item with a stated price: 43.9
+  against 45.0 fps); mapping upkeep (fstat per file per submission, a SEEK_DATA pass at least every 250 ms, hint
+  windows of 64 MiB per new target, learned and alias re-application); label polling.
+- **Behind them, seven defects** (its names): D1 GPU mappings discovered from CPU writes and faults (learned and
+  hint windows, eager list, zero skip, forced syncs, forget, lazy release); D2 guest memory still treated as possibly
+  anonymous (`/proc/self/maps` parse, probe pass); D3 the title shares the GFX ring's register state with other
+  processes (prefixes, state restore, part of the aliases); D4 all guest queues on one kernel ring (CPU waits,
+  splits, pending labels); D5 no guest interrupt from the GPU (soft-CP replay of every buffer, ring poll, flip
+  drain); D6 uploads read their source late (DMA snapshot); D7 a GPU fault costs a reset (every operand checked, the
+  buffer rewritten).
+- **What a lean build can drop at once** (diagnostics): the timeout probe's per-job copy, the table catcher, ACB
+  inherit in journal mode, timing and frame-profile lines, the ledger. The lean version of section 43 drops these.
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
+- **His play on fast5 (section 42) [M]:** no hang in 185 s (the poll took 34 chunks back), available 462-548 MiB, but 62 s in
+  frames over 100 ms; the container's fuse (12,400 MiB) was at its limit with memory free beside it, and orphans held 0.4-0.55 GiB.
+- **A lean version stands beside (section 43):** binary without journal, traces and this experiment's catchers, nothing beside the
+  emulator; boots, not yet played. The audit of redundant copies and mappings is section 44.
 - **The zero skip without its hang (section 40) [M]:** with the poll before every submission (`BC5_GUARD_ZSKIP_POLL_SUBMIT`, arm fast5,
   build g412u) nine scripted runs had no ring timeout (3 of 9 before), about 650 MiB less pinned, lowest available 680-889 MiB
   against 283-384. Not yet seen: the picture, and his play.
