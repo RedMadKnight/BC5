@@ -4528,10 +4528,10 @@ index 0000000..226a60e
 +} // namespace bc5::pad_audio_route
 diff --git a/src/bc5/switch_defaults.hpp b/src/bc5/switch_defaults.hpp
 new file mode 100644
-index 0000000..bf90f09
+index 0000000..0ed73ee
 --- /dev/null
 +++ b/src/bc5/switch_defaults.hpp
-@@ -0,0 +1,144 @@
+@@ -0,0 +1,93 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +// Experiment 0413: the defaults of switches that went from the private test builds (exps 0401, 0405, 0409, 0412) into
 +// both shared builds. A value set in the environment always wins and NAME=0 restores the old behaviour of that row.
@@ -4564,61 +4564,10 @@ index 0000000..bf90f09
 +};
 +
 +inline constexpr Default kDefaults[] = {
-+    // A2: acb state restore (exp 0381, 0401 series c)
-+    {"BC5_DIRECT_ACB_STATE_RESTORE", "1"},
-+    // A3: pthread rwlock prefer-reader
-+    {"KYTY_BC5_PTHREAD_FIXES", "1"},
-+    // A4: SaveData mount result, event callback, mtime sort
-+    {"KYTY_BC5_SAVEDATA_FIXES", "1"},
-+    {"KYTY_BC5_SAVEDATA_EVENT_CB", "1"},
-+    {"KYTY_BC5_SAVEDATA_SORT", "1"},
-+    // A5: AudioOut2 fixes, set and room only
-+    {"KYTY_BC5_AUDIO_FIXES", "set,room"},
-+    // A6: AMPR WaitOnAddress/Counter NIDs (PRT and extra AMM commands stay off: a cost on every map, no user)
-+    {"KYTY_BC5_AMPR_WAITS", "1"},
-+    // A7: VideoOutGetOutputStatus
-+    {"KYTY_BC5_VIDEOOUT_STATUS", "1"},
-+    // A8: equeue and mmap shim fixes
-+    {"KYTY_BC5_EQUEUE_FIXES", "1"},
-+    {"KYTY_BC5_MMAP_SHIM_FIXES", "1"},
-+    // A9: soft-CP fixes (the rewind and drop catchers stay off)
-+    {"BC5_R3_MEMSEM_SIGNAL", "1"},
-+    {"BC5_R3_SUBMIT_EOP_EVENT", "1"},
-+    {"BC5_R3_COND_WRITE", "1"},
-+    {"BC5_R3_WAIT_IDLE", "1"},
-+    {"BC5_R3_TS_100MHZ", "1"},
-+    // A11: TLS stub fixes
-+    {"KYTY_BC5_TLS_FIXES", "1"},
-+    // A12: thread sync and semaphores
-+    {"KYTY_BC5_THREAD_SYNC_FIXES", "1"},
-+    {"KYTY_BC5_SEMA_FIXES", "1"},
-+    // A13: memory-call fixes
-+    {"BC5_R3_MPROTECT_GAPS", "1"},
-+    {"BC5_R3_NULL_ARGS", "1"},
-+    {"BC5_R3_RELEASE_HOLES", "1"},
-+    {"BC5_R3_MUNMAP_HOLES", "1"},
-+    {"BC5_R3_FLEX_HINT", "1"},
-+    {"BC5_R3_DMQ_END", "1"},
-+    {"BC5_R3_EXEC_EINVAL", "1"},
-+    {"BC5_R3_QUERY_SIZE", "1"},
-+    // A14: file system and POSIX returns
-+    {"KYTY_BC5_FS_FIXES", "1"},
-+    {"KYTY_BC5_POSIX_RET_FIXES", "1"},
-+    // A18: firmware behaviour: net and system
-+    {"KYTY_BC5_FW_NET", "1"},
-+    // A19: firmware behaviour: audio
-+    {"KYTY_BC5_FW_AUDIO", "1"},
-+    // A20: JIT shared memory, kernel notify
-+    {"KYTY_BC5_JIT_SHM", "1"},
-+    {"KYTY_BC5_FW_KERNEL", "1"},
-+    // B16: quiet journal and inherit-map caps
-+    {"BC5_DIRECT_JOURNAL_QUIET", "1"},
-+    // C1: graphics event pending cap
-+    {"KYTY_BC5_EVENT_PENDING_CAP", "64"},
-+    // C2: fast AMM range query
-+    {"KYTY_BC5_RANGES_FAST", "1"},
-+    // C3: sorted physical-mapping table
-+    {"KYTY_BC5_PHYSMAP_SORTED", "1"},
++    // Empty since exp 0413's checks: ASTRO BOT's start crashed (eboot+0x48f) with these rows on by default, through
++    // setenv and through the re-exec alike, and passed with the table off at every environment size tried. The
++    // second title's launcher sets all of them (as the daily line fast7/lean7 ran them); a row comes back here
++    // only with an ASTRO BOT start that passes.
 +    {nullptr, nullptr}};
 +
 +// The command line of this process, from /proc/self/cmdline (NUL-separated); empty on failure.
