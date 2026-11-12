@@ -375,3 +375,9 @@ The top's discriminator, `-ftrivial-auto-var-init=pattern` and `=zero` builds (`
 - Who owns guest memory 0x300a80000–0x300a83000 (the zeroed table and the empty key)? Is it a host mapping that a
   switched-on path returns earlier, larger, or at another address?
 - An in-emulator log of host calls before the fault is the tool for both; it was not built in this slot.
+
+**Note from exp 0412 (2026-11-12).** The maintainer's lean7 play of this morning hung the GPU at 107 s (07:52:07 gfx ring
+timeout, the reset succeeded; shared notes `exp0412-lean7-hang-0752.md`). That was g412L2 8ef2168f with the zero skip
+and its poll. So the lean unit 8f6e92b3 is verified here only as source text ("g412d + the poll"), not as a clean
+line. The cause is unknown; the zero skip is one candidate, as in p5final. It stays off in code and out of the proposed
+launcher diff.
