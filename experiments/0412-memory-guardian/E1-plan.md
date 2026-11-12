@@ -58,6 +58,18 @@ once. After any stop line nothing more is run.
 - 4 (b), a hang and a reset: no cheap detector exists on this kernel; B needs complete knowledge of write targets
   and stays high-risk; the catcher for "does the GPU write there" remains a 14 s event.
 
+## State (2026-11-13 01:10)
+
+- The maintainer's word for E1: "zgoda", to this session, after the question named raw GPU submission and the
+  possible reboot.
+- IGT @ 9d4b6ef has the gfx10 copy program (`lib/amdgpu/amd_shaders.c:321-324`) and its dispatch
+  (`lib/amdgpu/compute_utils/amd_dispatch.c:249-400`); read on the box, cited in the tool's header.
+- `e1/e1-probe.cpp` and `e1/e1run.sh` are written. Without the GPU part the tool builds on the laptop
+  (`-Wall -Wextra -Werror`) and `--dump-ib` gives a clear IB and a copy IB of 80 dwords that differ in exactly the
+  four user-data dwords 0x244..0x247 (md5 02072557, 11997d01 for the placeholder addresses); the copy's destination
+  V# reads `lo, hi | 0x100000, 0x400, 0x1104bfac`, IGT's sequence. The GPU part has not been compiled yet (the box).
+- `real` and `out` are 64 KiB BOs of which the jobs touch the first 16 KiB (IGT's size).
+
 ## Before the slot
 
 1. The copy program from IGT (a read of `~/src/igt-gpu-tools` on the box) and `e1-probe`'s source; `--dump-ib` of
