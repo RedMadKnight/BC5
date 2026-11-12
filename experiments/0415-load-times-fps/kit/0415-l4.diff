@@ -1,0 +1,430 @@
+diff --git a/src/bc5/load_stat.hpp b/src/bc5/load_stat.hpp
+index c2c0c13..724274f 100644
+--- a/src/bc5/load_stat.hpp
++++ b/src/bc5/load_stat.hpp
+@@ -85,6 +85,10 @@ enum Cause : unsigned {
+ 	kFastDiff,       // a "verify" mode of bc5/sync_fast.hpp found the fast form differing from the old one (the old one's result is used)
+ 	kLearnedApply,   // learned_apply past its "same layout" return: n, time
+ 	kLearnedChanged, // ... windows that mapped something: n, items = bytes
++	// tag mr415 (stage S1 of DESIGN-lock-side.md)
++	kMapRecord,      // comparisons of the view list kept from records with the rebuilt one: n, items = records applied
++	kRecMismatch,    // ... that differed (the rebuilt list is used; the kept one is reset to it)
++	kRecOverflow,    // ... not made because the record log was full
+ 	kCount
+ };
+ 
+@@ -94,7 +98,8 @@ inline constexpr const char* kNames[kCount] = {
+     "apr_busy", "amm_cmd",    "mem_lock_wait",    "commit_zero", "mutex_lock", "mutex_contended", "mutex_spin_won", "cond_signal",
+     "cond_wait", "sema_signal", "sema_wait",      "file_open", "file_stat",   "file_read",   "http_send",
+     "apr_fallback", "hold_probe", "hold_hints",   "hold_pre",  "dev_call",    "dev_prepare", "dev_list",        "dev_cs",
+-    "ds_views", "ds_scan",    "ds_merge",         "ds_drain",  "ds_maps",     "fast_diff",   "learned_apply",   "learned_changed"};
++    "ds_views", "ds_scan",    "ds_merge",         "ds_drain",  "ds_maps",     "fast_diff",   "learned_apply",   "learned_changed",
++    "map_record", "rec_mismatch", "rec_overflow"};
+ 
+ static_assert(kNames[kCount - 1] != nullptr, "a name per cause");
+ 
+@@ -292,7 +297,7 @@ inline void apr_leave() {
+ 	if (s.apr_outstanding.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+ 		const uint64_t t0 = s.apr_busy_since.load(std::memory_order_acquire);
+ 		const uint64_t t1 = now_ns();
+-		if (t0 != 0 && t1 > t0) add(kAprBusy, t1 - t0);
++		if (t0 != 0 && t1 >= t0) add(kAprBusy, t1 - t0); // a stretch shorter than the clock's step still counts as one
+ 	}
+ }
+ 
+diff --git a/src/bc5/map_records.hpp b/src/bc5/map_records.hpp
+new file mode 100644
+index 0000000..847ac04
+--- /dev/null
++++ b/src/bc5/map_records.hpp
+@@ -0,0 +1,63 @@
++// SPDX-License-Identifier: GPL-2.0-only
++// Experiment 0415 (tag mr415), stage S1 of experiments/0415-load-times-fps/DESIGN-lock-side.md: the guest's ranges
++// leave a record of every change (the span [start, start + size) a mutator of the range table was called with), and a
++// list derived from the ranges is brought up to date from those spans instead of being rebuilt from every range.
++// KYTY_BC5_MAP_RECORDS=verify (the only mode in S1; default off): the direct path keeps such a list of its views
++// beside the rebuilt one and compares the two at every rebuild; the rebuilt list is what is used.
++//
++// Why a span is enough [C, kernel/memory.cpp VirtualRanges]: each mutator changes ranges inside its span and merges or
++// splits only ranges that overlap or touch it. So after a change, every entry that differs from before lies inside the
++// extent of the current ranges that overlap or touch the span: those ranges are read again and replace whatever the
++// list held there. Reading the CURRENT ranges for an OLD span is right as well (the result is the current state of
++// that extent), so several spans can be applied in any order against one snapshot.
++// Pure functions; CPU test experiments/0415-load-times-fps/kit/test0415rec.cpp.
++#pragma once
++
++#include <algorithm>
++#include <cstdint>
++#include <utility>
++#include <vector>
++
++namespace bc5::map_records {
++
++inline uint64_t end_of(uint64_t start, uint64_t size) {
++	return size > UINT64_MAX - start ? UINT64_MAX : start + size;
++}
++
++// `ranges` sorted by start, not overlapping (R has .start and .size). The index range [first, last) of the ranges
++// that overlap [lo, hi) or touch it (end == lo, or start == hi).
++template <class R>
++inline std::pair<size_t, size_t> touching(const std::vector<R>& ranges, uint64_t lo, uint64_t hi) {
++	// ends are in order too, since the ranges do not overlap
++	const auto first = std::lower_bound(ranges.begin(), ranges.end(), lo, [](const R& r, uint64_t x) { return end_of(r.start, r.size) < x; });
++	const auto last  = std::upper_bound(ranges.begin(), ranges.end(), hi, [](uint64_t x, const R& r) { return x < r.start; });
++	const auto a     = static_cast<size_t>(first - ranges.begin());
++	const auto b     = static_cast<size_t>(last - ranges.begin());
++	return {a, b < a ? a : b};
++}
++
++// `views` sorted by va, not overlapping (V has .va and .size), derived from the ranges by `make` (bool make(const R&,
++// V*): false when the range is not a view). Brings `views` up to date for a change inside [lo, hi).
++template <class V, class R, class Make>
++inline void apply(std::vector<V>& views, const std::vector<R>& ranges, uint64_t lo, uint64_t hi, Make&& make) {
++	const auto [a, b] = touching(ranges, lo, hi);
++	uint64_t   slo = lo, shi = hi;
++	if (a < b) {
++		slo = std::min(slo, ranges[a].start);
++		shi = std::max(shi, end_of(ranges[b - 1].start, ranges[b - 1].size));
++	}
++	// the views that overlap [slo, shi), and the ones of zero extent inside it, go
++	auto from = std::lower_bound(views.begin(), views.end(), slo, [](const V& v, uint64_t x) { return end_of(v.va, v.size) <= x; });
++	auto to   = from;
++	while (to != views.end() && to->va < shi) ++to;
++	const auto at = static_cast<size_t>(from - views.begin());
++	views.erase(from, to);
++	std::vector<V> fresh;
++	for (size_t i = a; i < b; i++) {
++		V v {};
++		if (make(ranges[i], &v)) fresh.push_back(std::move(v));
++	}
++	views.insert(views.begin() + static_cast<std::ptrdiff_t>(at), std::make_move_iterator(fresh.begin()), std::make_move_iterator(fresh.end()));
++}
++
++} // namespace bc5::map_records
+diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
+index 4d7a947..9b6cb05 100644
+--- a/src/kernel/memory.cpp
++++ b/src/kernel/memory.cpp
+@@ -342,6 +342,7 @@ public:
+ 	         VirtualRangeType type, const char* name, bool disallow_merge = false) {
+ 		Common::LockGuard lock(m_mutex);
+ 		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
++		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
+ 
+ 		if (start == 0 || size == 0) {
+ 			return false;
+@@ -373,6 +374,7 @@ public:
+ 	bool Remove(uint64_t start, uint64_t size) {
+ 		Common::LockGuard lock(m_mutex);
+ 		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
++		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
+ 
+ 		auto position = LowerBound(start);
+ 		if (position != m_ranges.end() && position->start == start && position->size == size) {
+@@ -403,6 +405,7 @@ public:
+ 	bool ReleaseReserved(uint64_t start, uint64_t size) {
+ 		Common::LockGuard lock(m_mutex);
+ 		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
++		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
+ 
+ 		for (size_t index = 0; index < m_ranges.size(); index++) {
+ 			auto& r = m_ranges[index];
+@@ -418,6 +421,7 @@ public:
+ 	                     VirtualRangeType type = VirtualRangeType::Reserved) {
+ 		Common::LockGuard lock(m_mutex);
+ 		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
++		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
+ 
+ 		auto end = End(start, size);
+ 		if (const Range* r = ContainingUnlocked(start); r != nullptr && r->type == type && end <= End(r->start, r->size)) {
+@@ -432,6 +436,7 @@ public:
+ 	                         VirtualRangeType type = VirtualRangeType::Reserved) {
+ 		Common::LockGuard lock(m_mutex);
+ 		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
++		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
+ 
+ 		if (size == 0) {
+ 			return false;
+@@ -457,6 +462,7 @@ public:
+ 	void Rename(uint64_t start, uint64_t size, const char* name) {
+ 		Common::LockGuard lock(m_mutex);
+ 		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
++		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
+ 
+ 		auto position = LowerBound(start);
+ 		if (position != m_ranges.end() && position->start == start && position->size == size) {
+@@ -470,6 +476,7 @@ public:
+ 	void Protect(uint64_t start, uint64_t size, int protection) {
+ 		Common::LockGuard lock(m_mutex);
+ 		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
++		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
+ 
+ 		EditUnlocked(start, size, [protection](Range* r) { r->protection = protection; });
+ 	}
+@@ -477,6 +484,7 @@ public:
+ 	void SetMemoryType(uint64_t start, uint64_t size, int memory_type) {
+ 		Common::LockGuard lock(m_mutex);
+ 		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
++		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
+ 
+ 		EditUnlocked(start, size, [memory_type](Range* r) { r->memory_type = memory_type; });
+ 	}
+@@ -511,6 +519,23 @@ public:
+ 		*out = m_ranges;
+ 	}
+ 
++	// BC5 (experiment 0415, tag mr415; stage S1 of experiments/0415-load-times-fps/DESIGN-lock-side.md): under ONE hold
++	// of the mutex, the ranges as they are, their generation, and the spans the mutators were called with since the
++	// last call (the log is emptied). The first call turns the log on, so its spans are not complete: *complete is
++	// false then, and when the log was full. Every mutator above bumps the generation and notes its span in the same
++	// critical section, so a reader never sees a change without its record.
++	void SnapshotWithDirty(std::vector<Range>* out, uint64_t* gen, std::vector<std::pair<uint64_t, uint64_t>>* spans, bool* complete) {
++		EXIT_IF(out == nullptr || gen == nullptr || spans == nullptr || complete == nullptr);
++		Common::LockGuard lock(m_mutex);
++		*out      = m_ranges;
++		*gen      = m_gen.load(std::memory_order_acquire);
++		*complete = m_dirty_on && !m_dirty_overflow;
++		spans->clear();
++		spans->swap(m_dirty);
++		m_dirty_on       = true;
++		m_dirty_overflow = false;
++	}
++
+ 	bool QuerySpan(uint64_t start, uint64_t size, std::vector<Range>* out) {
+ 		EXIT_IF(out == nullptr);
+ 
+@@ -638,6 +663,19 @@ private:
+ 		       std::strncmp(left.name, right.name, KERNEL_MAXIMUM_NAME_LENGTH) == 0;
+ 	}
+ 
++	// BC5 (experiment 0415, mr415): the span of a mutator's call, under m_mutex. Off until the first reader asks.
++	void NoteDirtyUnlocked(uint64_t start, uint64_t size) {
++		if (!m_dirty_on) return;
++		if (m_dirty.size() >= 65536) {
++			m_dirty_overflow = true;
++			return;
++		}
++		m_dirty.emplace_back(start, size);
++	}
++	std::vector<std::pair<uint64_t, uint64_t>> m_dirty;
++	bool                                       m_dirty_on       = false;
++	bool                                       m_dirty_overflow = false;
++
+ 	static void AddPiece(std::vector<Range>* ranges, const Range& source, uint64_t start,
+ 	                     uint64_t end) {
+ 		EXIT_IF(ranges == nullptr);
+@@ -1230,6 +1268,31 @@ void Bc5GuestRangesIn(uint64_t lo, uint64_t hi, std::vector<std::pair<uint64_t,
+ uint64_t Bc5MappedRangesGeneration() {
+ 	return g_virtual_ranges != nullptr ? g_virtual_ranges->Generation() : 0;
+ }
++// BC5 (experiment 0415, tag mr415): Bc5ForEachMappedRange's callback over one snapshot, with that snapshot's
++// generation and the spans changed since the last call (see VirtualRanges::SnapshotWithDirty). False when there are
++// no ranges yet.
++bool Bc5RangesWithDirty(void (*cb)(uint64_t, uint64_t, uint64_t, int, int, const char*, void*), void* ctx, uint64_t* gen,
++                        std::vector<std::pair<uint64_t, uint64_t>>* spans, bool* complete) {
++	if (g_virtual_ranges == nullptr || cb == nullptr || gen == nullptr || spans == nullptr || complete == nullptr) {
++		return false;
++	}
++	std::vector<VirtualRanges::Range> ranges;
++	g_virtual_ranges->SnapshotWithDirty(&ranges, gen, spans, complete);
++	for (const auto& r: ranges) {
++		int type = -1;
++		switch (r.type) {
++			case VirtualRangeType::Direct: type = 0; break;
++			case VirtualRangeType::Flexible: type = 1; break;
++			case VirtualRangeType::Pooled: type = 2; break;
++			case VirtualRangeType::Stack: type = 3; break;
++			case VirtualRangeType::Code: type = 4; break;
++			case VirtualRangeType::Runtime: type = 5; break;
++			default: break;
++		}
++		if (type >= 0) cb(r.start, r.size, r.offset, type, r.protection, r.name, ctx);
++	}
++	return true;
++}
+ // BC5 (ADR 0006): the direct-memory memfd (sealed), -1 when there is none.
+ int Bc5DirectMemoryFd() {
+ 	return GuestBackingStore::Bc5Fd();
+diff --git a/src/kernel/memory.h b/src/kernel/memory.h
+index a051967..c8723cf 100644
+--- a/src/kernel/memory.h
++++ b/src/kernel/memory.h
+@@ -116,6 +116,11 @@ bool                   TryReadBacking(uint64_t vaddr, void* data, uint64_t size)
+ // BC5 (direct mode): the guest's mapped ranges, see memory.cpp.
+ int  Bc5DirectMemoryFd(); // BC5 (ADR 0006): the direct-memory memfd, -1 when none
+ uint64_t Bc5MappedRangesGeneration(); // BC5 (experiment 0037): changes with every edit of the guest's ranges
++// BC5 (experiment 0415, tag mr415): the mapped ranges of one snapshot through cb (as Bc5ForEachMappedRange's second
++// callback), that snapshot's generation, and the spans changed since the last call; *complete false when the spans
++// may miss a change (the first call, or a full log).
++bool Bc5RangesWithDirty(void (*cb)(uint64_t start, uint64_t size, uint64_t offset, int type, int protection, const char* name, void* ctx), void* ctx,
++                        uint64_t* gen, std::vector<std::pair<uint64_t, uint64_t>>* spans, bool* complete);
+ void     Bc5GuestRangesIn(uint64_t lo, uint64_t hi, std::vector<std::pair<uint64_t, uint64_t>>* out); // reserved or mapped, overlapping [lo, hi)
+ int  Bc5PrivateMemoryFd(); // BC5 (experiment 0023): the memfd behind private guest memory, -1 when anonymous
+ void Bc5ForEachPrivateRegion(void* ctx, void (*cb)(uint64_t start, uint64_t size, int type, const char* name, void* ctx));
+diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
+index 302d6aa..9dfd92c 100644
+--- a/src/libs/bc5LleAgc.cpp
++++ b/src/libs/bc5LleAgc.cpp
+@@ -36,6 +36,7 @@
+ #include "bc5/full_state.hpp"
+ #include "bc5/load_stat.hpp" // experiment 0415 (ls415)
+ #include "bc5/sync_fast.hpp" // experiment 0415 (ls415d)
++#include "bc5/map_records.hpp" // experiment 0415 (mr415)
+ #include <sys/resource.h> // experiment 0379 (exp 0401 e7, mkzsk0401.py): setpriority, for the zero scan and the canary
+ #include <sys/syscall.h>  // experiment 0379: SYS_gettid
+ // ---- experiment 0379's backend/include/bc5/zero_skip.hpp (782ca0e9) lines 13-228, inlined by exp 0401's mkzsk0401.py ----
+@@ -2032,6 +2033,7 @@ static void journal(const char* fmt, ...) {
+ }
+ 
+ // Seconds since the first call: the time base of the BC5_DIRECT_TIMING journal lines.
++static void fs415_flip(); // experiment 0415 (fs415): defined after the completion code
+ static double timing_now() {
+ 	static const uint64_t t_first = [] {
+ 		const uint64_t t = SoftCp::now_ns();
+@@ -2348,6 +2350,65 @@ struct DViews {
+ 	bool               sorted = true;
+ };
+ static std::atomic<uint64_t> g_views_builds {0}; // experiment 0156: rebuilds of the views
++// Experiment 0415 (tag mr415), stage S1 of experiments/0415-load-times-fps/DESIGN-lock-side.md, KYTY_BC5_MAP_RECORDS
++// (default off; any value but 0 is "verify", the only mode yet): a list of the direct-memory views is kept up to date
++// from the range table's change records and compared, at every rebuild of the views, with the list built from the
++// same snapshot's every range. Nothing uses the kept list: this only proves (or refutes) that the records are
++// complete and in order, before any later stage relies on them. Called under direct_views' mutex.
++static void mr415_verify() {
++	static const int mode = bc5::sync_fast::mode_of(std::getenv("KYTY_BC5_MAP_RECORDS"));
++	if (mode == 0) return;
++	struct R {
++		uint64_t    start, size, offset;
++		int         type;
++		std::string name;
++	};
++	static std::vector<DView> kept;
++	static bool               have = false;
++	std::vector<R>                             ranges;
++	std::vector<std::pair<uint64_t, uint64_t>> spans;
++	uint64_t                                   gen      = 0;
++	bool                                       complete = false;
++	if (!Libs::LibKernel::Memory::Bc5RangesWithDirty(
++	        [](uint64_t start, uint64_t size, uint64_t offset, int type, int, const char* name, void* p) {
++		        static_cast<std::vector<R>*>(p)->push_back({start, size, offset, type, name != nullptr ? name : ""});
++	        },
++	        &ranges, &gen, &spans, &complete)) {
++		return;
++	}
++	auto make = [](const R& r, DView* v) {
++		if (r.type != 0 || r.size == 0) return false;
++		*v = {r.start, r.size, r.offset, r.name, ls415_name_class(r.name.c_str(), false), ls415_name_class(r.name.c_str(), true)};
++		return true;
++	};
++	std::vector<DView> full;
++	for (const R& r: ranges) {
++		DView v;
++		if (make(r, &v)) full.push_back(std::move(v));
++	}
++	if (have && complete) {
++		for (const auto& [start, size]: spans) bc5::map_records::apply(kept, ranges, start, bc5::map_records::end_of(start, size), make);
++		bool   same = kept.size() == full.size();
++		size_t at   = 0;
++		for (; same && at < full.size(); at++) {
++			const DView &a = kept[at], &b = full[at];
++			if (a.va != b.va || a.size != b.size || a.off != b.off || a.name != b.name || a.lazy != b.lazy || a.eager != b.eager) same = false;
++		}
++		bc5::load_stat::count(bc5::load_stat::kMapRecord, spans.size());
++		if (!same) {
++			bc5::load_stat::count(bc5::load_stat::kRecMismatch);
++			static int logged = 0;
++			if (logged++ < 8) {
++				journal("map records (exp 0415, mr415): MISMATCH at generation %" PRIu64 " after %zu records: kept %zu views, rebuilt %zu, first difference at index %zu\n", gen,
++				        spans.size(), kept.size(), full.size(), at == 0 ? size_t {0} : at - 1);
++			}
++		}
++	} else if (have) {
++		bc5::load_stat::count(bc5::load_stat::kRecOverflow);
++	}
++	kept = std::move(full);
++	have = true;
++}
+ static std::shared_ptr<const DViews> direct_views(const DState& S) {
+ 	static std::mutex                    m;
+ 	static std::shared_ptr<const DViews> cache[2];
+@@ -2365,6 +2426,7 @@ static std::shared_ptr<const DViews> direct_views(const DState& S) {
+ 	g_views_builds++;
+ 	auto d = std::make_shared<DViews>();
+ 	d->v   = direct_views_build(S);
++	if (k == 0) mr415_verify(); // experiment 0415 (mr415)
+ 	uint64_t sig = 1469598103934665603ull;
+ 	for (size_t i = 0; i < d->v.size(); i++) {
+ 		const auto& v = d->v[i];
+@@ -11579,6 +11641,23 @@ static void ts_collect(const uint32_t* ib, uint32_t num_dwords, std::vector<uint
+ 		q += len;
+ 	}
+ }
++// Experiment 0415 (tag fs415), KYTY_BC5_FRAME_STAT=<file> (default off; unset, empty and "0" are off), part 2's
++// counter: one "f" line per flip (frame number, CLOCK_MONOTONIC ns when the flip returned) and, for two frames in every
++// sixteen, one "j" line per completed job: the frame it completed in, its number, kind, ring, the title's dwords, the
++// dwords and packets the filter saw, packets dropped, BOs listed, the device's prepare / list / CS milliseconds, when
++// it was queued and when its fence was seen (ns, the host's clock), and the GPU's own start and end stamps (0 unless
++// BC5_DIRECT_JOB_TS=1; 10 ns units). No change of behaviour: lines are written by the completion threads and at the
++// flip, outside the device mutex.
++static FILE* fs415_file() {
++	static FILE* const f = [] {
++		const char* e = std::getenv("KYTY_BC5_FRAME_STAT");
++		return bc5::load_stat::env_set(e) ? std::fopen(e, "a") : nullptr;
++	}();
++	return f;
++}
++static std::mutex            g_fs415_mutex;
++static std::atomic<uint64_t> g_fs415_frame {0};
++
+ struct CqItem {
+ 	bool                      fence = false;
+ 	PendingJob                job;
+@@ -11693,6 +11772,15 @@ static void completion_thread(int index) {
+ 			}
+ 			if (r.timed_out) m11_keep_lost(); // exp 0401 e11 (tag m11): the lost jobs' label writes, before they are forgotten
+ 			forget_label_writes(j.seq, r.ring, r.timed_out || r.rc == -125); // experiment 0055
++			if (FILE* fs = fs415_file(); fs != nullptr && r.ok) { // experiment 0415 (fs415)
++				const uint64_t frame = g_fs415_frame.load(std::memory_order_relaxed);
++				if ((frame & 15u) < 2) {
++					std::lock_guard fl(g_fs415_mutex);
++					std::fprintf(fs, "j %" PRIu64 " %" PRIu64 " %s %d %u %" PRIu64 " %" PRIu64 " %" PRIu64 " %u %.3f %.3f %.3f %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 "\n", frame, j.n, j.kind,
++					             r.ring, j.num_dwords, j.filter.dwords, j.filter.packets, j.filter.dropped, j.bo_count, j.prepare_ms, j.list_ms, j.cs_ms, j.queued_ns,
++					             static_cast<uint64_t>(SoftCp::now_ns()), r.gpu_start, r.gpu_end);
++				}
++			}
+ 			const double total_ms = static_cast<double>(SoftCp::now_ns() - j.queued_ns) / 1e6 + j.cs_ms;
+ 			frame_profile_done(index == 0, j.queued_ns, SoftCp::now_ns(), 0.0);
+ 			if (!r.ok || (j.n & 0x3fu) == 0) journal("submit #%" PRIu64 " %s %u dwords at %p: pass %" PRIu64 " rewrite %" PRIu64 " drop %" PRIu64 " unmapped %" PRIu64 " cc %" PRIu64 " mappings %zu ... %s rc %d%s%s %.2f ms\n",
+@@ -11779,6 +11867,16 @@ static void drain() {
+ 	while (g_cq_items.load() != 0) std::this_thread::sleep_for(std::chrono::microseconds(50));
+ }
+ 
++// Experiment 0415 (fs415): the flip's line and the frame number the job lines carry.
++static void fs415_flip() {
++	FILE* fs = fs415_file();
++	if (fs == nullptr) return;
++	const uint64_t frame = g_fs415_frame.fetch_add(1, std::memory_order_relaxed) + 1;
++	std::lock_guard fl(g_fs415_mutex);
++	std::fprintf(fs, "f %" PRIu64 " %" PRIu64 "\n", frame, bc5::load_stat::now_ns());
++	if ((frame & 63u) == 0) std::fflush(fs);
++}
++
+ static void wait_jobs() {
+ 	chain_flush(5); // ADR 0010
+ 	if (!g_async || !g_dev) return;
+@@ -13198,6 +13296,7 @@ static void frame_profile_submit(bool, double, double) {}
+ static void frame_profile_job(bool, double, double, double) {}
+ static void frame_profile_done(bool, uint64_t, uint64_t, double) {}
+ static void frame_profile_flip(double) {}
++static void fs415_flip() {} // experiment 0415 (fs415)
+ #endif
+ 
+ } // namespace Direct
+@@ -14161,6 +14260,7 @@ static KYTY_SYSV_ABI int SubmitEopFlip(int handle, int index, int flip_mode, int
+ 	if (!defer) Bc5Gc::Direct::drain(); // nothing of the frame may still be in flight
+ 	Bc5Gc::Direct::frame_profile_flip((Bc5Gc::Direct::timing_now() - t_drain) * 1e3);
+ 	bc5::load_stat::flip(Bc5Gc::Direct::timing_now()); // experiment 0415 (ls415)
++	Bc5Gc::Direct::fs415_flip();                       // experiment 0415 (fs415)
+ 	if (defer) {
+ 		if (index >= 0 && index < 64) {
+ 			Bc5Gc::g_flip_pending[index]++; // experiment 0069

@@ -579,6 +579,55 @@ as RT's share only where the remaining passes keep their target sizes.
 **Slot needed:** a build with the counter (incremental, minutes), then about 45 minutes: 4 x RT on, 4 x RT off on the
 fixed place (120 s each), then the host-side arms one at a time against a fresh baseline.
 
+### 12. The kit for build L4: stage S1 (change records, verify) and the frame counter (laptop, 2026-11-12 night; not built on the box, not run)
+
+`kit/0415-l4.diff` against the L3 tree (`tree-l4.md5`; `mk0415g.sh`). Both parts default off, neither changes
+behaviour.
+
+**S1, `KYTY_BC5_MAP_RECORDS` (tag mr415).**
+- Where the layout is written [C]: the direct path's view list is derived only from the range table `VirtualRanges`
+  (`kernel/memory.cpp`), and that table has eight mutators (`Add`, `Remove`, `ReleaseReserved`, `ConsumeReserved`,
+  `ConsumeReservedSpan`, `Rename`, `Protect`, `SetMemoryType`). Each bumps the generation under the table's mutex;
+  each now also notes the span it was called with, in the same critical section, failed calls included. So a reader
+  cannot see a change without its record (the review's ordering point), and whatever reaches the view list goes
+  through these eight. What this does NOT cover is a writer of the real address space that never tells the range
+  table (the review named libAmpr's set-buffer map, guest stacks, save-data and file mmaps): such a mapping is
+  invisible to the view list today as well; it is a question of the table against the address space, listed as open,
+  not answered by S1.
+- `VirtualRanges::SnapshotWithDirty` hands out, under one hold of the mutex, the ranges, their generation and the
+  spans since the last call; the log holds 65,536 spans, a full log is reported and counted (`rec_overflow`).
+- `src/bc5/map_records.hpp`: `apply` brings a list derived from the ranges up to date for one span: the current
+  ranges that overlap or touch the span are read again and replace what the list held in their extent (a mutator
+  merges or splits only ranges that overlap or touch its span). Spans can be applied late and in any order against
+  one snapshot.
+- In the direct path, at every rebuild of the views: the list kept from records is compared with the list built
+  from the same snapshot's every range (`map_record` counts comparisons and records, `rec_mismatch` differences,
+  with a journal line for the first eight). The rebuilt list is what is used.
+- CPU test `kit/test0415rec.cpp`, **10 of 10 on the laptop** [M]: a model of the range table (merging equal
+  neighbours, splitting under partial edits) takes 120,000 random add / remove / rename / protect / retype calls;
+  the kept list equals the rebuilt list after every call and after each of 20,051 batches (spans applied late,
+  shuffled, with spans of calls that changed nothing among them): 0 differences. Mutation check [M]: without the
+  "touch" at the span's lower edge 9,838 calls differ, without the widening to the touched ranges' extent 5,697.
+- Still open from the review, for the stages that will use the records: the lock order and the bounded wait (point
+  2), coalescing (3), the import's file range at publication (4), the private-memory side (5).
+
+**The frame counter, `KYTY_BC5_FRAME_STAT=<file>` (tag fs415).** One line per flip, and for two frames in every
+sixteen one line per completed job: kind, ring, the title's dwords, what the filter saw and dropped, BOs listed, the
+device's prepare / list / CS milliseconds, queued and fence-seen times, and the GPU's own start and end stamps.
+The stamps exist only with the existing diagnostic `BC5_DIRECT_JOB_TS=1` (exp 0124: a GPU timestamp at each job's
+start and end, which adds packets to every job; so a run with stamps is compared with one without for its frame
+rate before its per-pass numbers are used). The signature is weaker than section 11 planned: kind, ring and the
+title's dwords; render-target size and the first shader's address need the buffer parsed and are not in this build.
+`frame0415.py` groups the job lines by signature (checked on a synthetic file of known passes [M]).
+
+Also in the diff: a busy stretch of the APR counter shorter than the clock's step was not counted as a stretch
+(seen as an intermittent failure of `test0415` on the laptop's coarser clock; 8 of 8 runs pass after the fix).
+
+**Runs planned for L4:** (1) `KYTY_BC5_MAP_RECORDS=verify` over the scripted route twice, one 15-minute run and
+ASTRO BOT 120 s: `rec_mismatch` and `rec_overflow` must be 0; the records per phase bound what later stages can
+gain. (2) The frame counter standing at the save's spot: twice with `BC5_DIRECT_JOB_TS=1`, twice without (the cost
+of the stamps), then RT off twice with stamps.
+
 ## Verdict
 
 Part 1, first result. The largest cause of the long loads was ours: every APR read opened its file anew, the
