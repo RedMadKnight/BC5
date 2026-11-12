@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=BC5 emulator (0412 fast8)
+Comment=BC5 exp 0412 (2026-11-12): fast7 without the zero skip and its poll (README section 48: the zero skip let GPU writes get lost and hung the GPU); everything else as fast7: the guardian's ledger, table fixes, events cap, orphan release at 30 s, fuse 13,000 MiB; private build g412v; starts the game directly; log ~/bc5-work/exp0412/play-last.log; sampler lines ~/bc5-work/exp0412/sampler/
+Exec=/usr/bin/bash /home/kjaniszewski/bc5-work/exp0412/play-guard-0412.sh fast8
+Icon=applications-games
+Terminal=false
+Categories=Game;
+StartupNotify=false

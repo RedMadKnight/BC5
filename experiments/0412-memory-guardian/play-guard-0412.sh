@@ -103,8 +103,12 @@ case "${1:-}" in
   # play-lean-0412.sh drops are dropped here too) on the normal binary, for the scripted comparison. Not for play.
   lw7)     WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
              "BC5_DIRECT_ZERO_SKIP=$ZL" BC5_GUARD_ZSKIP_POLL_SUBMIT=1 KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="13000 2048"; LW=1 ;;
+  # 2026-11-12 19:30 (README section 48, the maintainer's word): the zero skip is unsound by design (GPU writes into
+  # "skipped" memory in every run). fast8 = fast7 without BC5_DIRECT_ZERO_SKIP and its poll; nothing else differs.
+  fast8)   WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
+             KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="13000 2048" ;;
   zoe)     WORDS+=("${ORPH[@]}" "BC5_DIRECT_ZERO_SKIP=$ZL" KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="12400 2048" ;;
-  *) say "0412: usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm|zscan|zsk|zo|zoc|zof|of|zoe|fast|fast2|fast3|fast4|fast5|fast6|fast7|lw7 [dry]; not started"; exit 1 ;;
+  *) say "0412: usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm|zscan|zsk|zo|zoc|zof|of|zoe|fast|fast2|fast3|fast4|fast5|fast6|fast7|fast8|lw7 [dry]; not started"; exit 1 ;;
 esac
 if [ "${LW:-}" = 1 ]; then
   T=(); for x in "${WORDS[@]}"; do case "$x" in BC5_GUARD_LEDGER=* | BC5_DIRECT_TABLE_CATCHER=* | KYTY_BC5_EVENT_PENDING_LOG=* | BC5_DIRECT_RESET_LABEL_JOURNAL=* | BC5_DIRECT_JOURNAL_QUIET=* | BC5_DIRECT_ACB_INHERIT=journal) ;; *) T+=("$x") ;; esac; done
