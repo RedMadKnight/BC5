@@ -1,0 +1,6 @@
+13:31:22.335 tag R3: DualSense card 44 profile 1 (Direct); default sink 54 muted=0
+13:31:22.552 default sink 54 muted for the run
+Terminated                 sleep 2
+13:33:11.778 restored: DualSense profile 1 Direct, default sink 54 Volume: 0.95
+Terminated                 setsid "$@"
+replug rc 143

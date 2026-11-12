@@ -97,3 +97,555 @@ The maintainer also asked to check the other items that were tested but never in
 (read-only, laptop) lists 67 rows with file:line evidence. Nothing from exp 0390 on is in patch 0001; the last patch
 commit on main is a8324c8b (exp 0389). 28 rows are recommended for integration default on, 20 default off, 19 left out
 (failed, answered catchers, or no measured gain). Each integration needs the maintainer's yes (D19).
+
+## Integration of the tested private builds (2026-11-12, branch int/0413-tested-into-shared)
+
+The maintainer: "przepisuj po kolei to co było zrobione u nas i merge do main, a potem poprawki z emufive". The top
+session set the source and the rules:
+- the source is the guardian's daily line fast7/lean7;
+- one commit per item, in the audit's order;
+- default-on only with a clean measured result.
+
+**Source.** Binaries g412v bc4356a5 (fast7) and g412L2 8ef2168f (lean7). Every private source was copied from the box at
+10:2x–10:33 (reads only, the top's GO). The main GPU unit follows the lean unit 8f6e92b3 = g412d + the fixed poll, as the
+guardian asked. g412v's ten catchers and the refuted `BC5_GUARD_NOGPU_UNPIN` stay out.
+
+**Replay (`integration/replay.py`, `runner.py`).**
+- 52 steps from the shared tree (f266548 + 0001 2dbed49a): every edit script with the box's arguments, in build order
+  (0401 series c/e/e3/e4–e8, 0409, e11, 0412 g412d/e/memfast/L2).
+- 51 are byte-exact against the files the private build compiled (`steps.tsv`, `final-vs-box.tsv`). None was made by hand.
+- The exception is step 22's `libNpCppWebApi.cpp`. It is a fold of e8's FW_NET edit (e613bc8f) with this experiment's V2
+  unit (910acbb5): e613bc8f's head plus 910acbb5 from line 816. The fold's diff from e613bc8f equals 935fcc7e→910acbb5
+  exactly. It had never been compiled.
+- g412v's eleven left-out steps were replayed on a side copy, byte-exact to 3cea62bc (`vchain.tsv`).
+
+**Commits.**
+- 51 step commits (step 04 changes no file).
+- One commit for the defaults table `src/bc5/switch_defaults.hpp`: `setenv(name, value, 0)` from a priority-101
+  constructor in `main.cpp`. A value in the environment wins, `NAME=0` restores a row's old behaviour, and
+  `KYTY_BC5_SWITCH_DEFAULTS=0` skips the table.
+- One commit per audit row turning its switches on: A2–A9, A11–A22, B16, C1–C3 (`defaults.py`). That is 55 switches,
+  each checked to be read in the sources.
+
+**Off in code, set by the launcher only:**
+- the zero skip and its poll;
+- the orphan release (30 s), split and forget;
+- `CP_COHER_START_DELAY` (never A/B'd).
+
+**Off:** `NOGPU_UNPIN`, `SET_PREDICATION`, PRT/extra AMM commands, the catchers, the journals, and the e11 reset
+switches (they never acted).
+
+Final patch 0001: md5 76c1d045, 85,516 lines.
+
+**Not yet done:** the box build of both shared builds, then 0389's checks:
+- S6N route, RT on;
+- lean start;
+- ASTRO BOT start (also the condition for A11's TLS default);
+- the replug check for the audio rows A5, A17, A19 (s6n0372.sh + replug0372.sh).
+Then the shared launchers' words, and the merge.
+
+### Private build and checks (2026-11-12 10:59–11:45, the top's GO, slot to 12:30)
+
+**Build.** `integration/p0413.sh` built patch 76c1d045 under `~/bc5-work/exp0413/p` only:
+- A copy of `~/src/KytyPlus` (with `.git`, which ffmpeg-core's CMake asks for its commit), 0001 2dbed49a reversed and
+  76c1d045 applied. All 121 patched files match the laptop's tree.
+- Configured as `bc5-build.sh` configures. The shared backend paths were only read; the cached `ffmpeg-94dde08.zip` was
+  copied in, so nothing was downloaded.
+- Results: normal a76f86abffed99a3423ce5c9a394d5f4 (284 warnings), lean f64dadd2c39dd9fcffd90564eb72be5a (287 warnings).
+  None of the warnings is in `switch_defaults.hpp` or `main.cpp`. `libNpCppWebApi.cpp` has only its two old warnings.
+- The archive stayed 75e30335.
+- Both binaries carry the NP V2 "on" line, the ten NIDs, `KYTY_BC5_SWITCH_DEFAULTS`, the C1–C3 switches, `FW_NET` and
+  `AMM_SCATTER`. Step 22's fold compiles.
+
+**Static checks (the top's points a and b).**
+- No switch is read before the priority-101 constructor. The only namespace-scope `getenv` initialiser is `BC5_GC_MODE`
+  in `bc5LleAgc.cpp`, which is not in the table and runs at the default priority. The other constructors are the lean
+  cleanup (101, different names) and hostMenu's MangoHud constructor (default priority).
+- The backend archive has no namespace-scope `getenv` initialisers.
+- Nothing starts a thread at or before priority 101.
+
+**Runs.** All RT on, `ulimit -c 0`, the kernel log streamed to the laptop. The second title ran from exp 0412's named
+snapshot, copied privately.
+- The second title used `integration/run0413p.sh`, derived from 0412's `run0412n.sh` by `mkrun0413.py`, with the
+  launcher words of `integration/words0413.txt` and the fuse at 13,000/2,048.
+- The lean and ASTRO BOT starts used `integration/start0413.sh`.
+
+| run | what | result |
+|---|---|---|
+| p1def | normal, defaults on | PASS: gameplay at 118 s, then 120 s of walk, 24.5 flips/s, 60 s with a gap over 100 ms, longest 758 ms. 0 kernel lines, 0 crash lines. The journal shows acb restore on, quiet journal on, events cap 64, physmap sorted, NP V2 and 37 port lines "on" |
+| p0off | normal, `KYTY_BC5_SWITCH_DEFAULTS=0` (point c) | PASS: gameplay at 127 s, +60 s, 23.2 flips/s, longest gap 2,893 ms. Only NP V2 (on in code) prints "on"; acb restore and TLS read "off": the old behaviour is reachable |
+| l2lean | lean, 150 s, no input | PASS: 216 MiB anon at the end, defaults on, 0 kernel or crash lines (l1lean did not start: 0412's launcher refuses `BC5_LEAN=1`; the lean binary strips the diagnostics itself) |
+| a1astro | ASTRO BOT, defaults on | **CRASH at 5 s**: a write to address 0 at guest 0x90000048f, a stack-guard prologue taking a null out-pointer |
+| a2astro | `KYTY_BC5_TLS_FIXES=0` | the same crash: not A11 |
+| a3astro | `KYTY_BC5_SWITCH_DEFAULTS=0` | PASS 120 s |
+| b1–b9, c1–c6 | rows set to 0 in groups | the same crash, at the same address, whenever four or more of A15, A16, A17, A21, A22 are on. It passes with any two of them off (c3–c6, b5) and does not depend on the other rows |
+| d1 | A15, A16, A17, A21, A22 off | PASS 120 s |
+
+**Consequence.**
+- A15, A16, A17, A21 and A22 are taken back out of the defaults table, one commit each (`integration/undefault.py`). They
+  are the SaveData memory/Http2/pad-open-ext, Json2/Ult/UserService/SystemService, AudioOut/AudioIn/Ngs2,
+  firmware-pad and dead-table rows: 20 switches.
+- The proposed `play-pkg.sh` diff turns them on for the second title, as the daily line ran them.
+- Patch 0001 is now a2ab53c7. It differs from the built 76c1d045 only in the table's rows; the d1 run is that table's
+  behaviour, through the environment.
+- The cause in ASTRO BOT is not found: its start depends on how many of these ports are on, not on one of them.
+
+**Not done yet:**
+- the replug check (`s6n0372.sh` + `replug0372.sh`, A5 and A19 being audio). It needs exp 0391's runner adapted to a
+  private binary: the next slot;
+- a rebuild from a2ab53c7, which comes with the swap;
+- his play.
+
+### Second round of checks (2026-11-12 11:47–13:33, the top's slot to 13:15; overrun by about 3 minutes, see below)
+
+**ASTRO BOT's crash, separated (the top's points 1a–1c), on the private binary a76f86ab:**
+
+| run | setup | result |
+|---|---|---|
+| e1env | table off; the 20 switches of A15/A16/A17/A21/A22 in the real environment | PASS 90 s |
+| e2env | table off; all 56 switches in the real environment | PASS 90 s |
+| e3env | table on; those 20 in the real environment (so `setenv` adds only the other 36) | PASS 90 s |
+| e4dum | table on (all 56 through `setenv`) plus 20 dummy variables in the starting environment | PASS 90 s |
+
+- **1c, the crash state.** The guest reads its stack guard through the GOT (not `fs:0x28`) and gets the right value
+  0xdeadbeef00000007. It then crashes on `mov [rsi], rdx` with `rsi = 0`: the function's second argument, an output
+  pointer, is null. The address (eboot+0x48f), the registers and the log lines before it are the same in every crash.
+  The host backtrace was not taken.
+- **Reading at that point: a layout effect of `setenv` at start.** The defaults were moved into the initial environment
+  through one re-exec of the binary:
+  - commit 5a495769, executing `/proc/self/exe`;
+  - commit 5544da9e, executing the real path instead. Through `/proc/self/exe` the process was named `exe`, so
+    run p2def's harness saw no emulator and left it running. It was stopped by hand: our process, our run.
+
+**Rebuilds.** Incremental, in the private tree with `p0413b.sh` and `p0413c.sh`. Final private binary from patch
+1150799b: normal d1b6f9cb, lean 5767f015. Both carry the re-exec and the ten NIDs; the archive is unchanged.
+
+| run | binary, setup | result |
+|---|---|---|
+| p3def | d1b6f9cb, 36 rows through the re-exec | PASS: gameplay at 118 s + 120 s, 25.8 flips/s, longest gap 628 ms; the emulator's environment holds `KYTY_BC5_SWITCH_DEFAULTS_EXEC=1` |
+| f2lean | 5767f015, 150 s | PASS |
+| f1astro | d1b6f9cb, defaults through the re-exec (A15–A22's five rows already off) | **CRASH at 6 s, the same address** |
+| g10, g25, g36 | d1b6f9cb, table off, plus 10, 25 or 36 dummy variables | PASS each, 60 s |
+| p4full | d1b6f9cb, table off, all 56 switches as launcher words (`integration/words0413full.txt`) | PASS: gameplay at 117 s + 120 s, 25.8 flips/s, longest gap 582 ms |
+
+**Verdict of this round.**
+- ASTRO BOT's start crashes when the integration's switches are on as defaults, through `setenv` and through the re-exec
+  alike.
+- It passes with the table off at every environment size tried.
+- The daily line ran these switches only with the second title, so the crash is their combined effect on ASTRO BOT.
+  Its cause is not found.
+- Therefore the table is emptied (commit fa3e09ec, patch 040812ce). Every switch becomes a launcher word of the second
+  title only (`integration/play-pkg-0413.diff`, made by `mkpkg0413.py` from `words-integration.txt`: 56 words; a value
+  already in the environment wins). That is exactly the tested p4full configuration.
+- The re-exec code stays, with no rows.
+
+**Replug check (point 2): not done.**
+- The replug harness is exp 0391's, copied to `integration/replug/`:
+  - the box directory renamed to `exp0413r`;
+  - the binary pinned to d1b6f9cb, the launcher to 97835f88;
+  - the dropped `COMPUTE_RING=-1` anchor removed;
+  - the 56 switches passed as words, with the table off;
+  - the disk limit 90 % (the box was at 86 % with 72 GB free).
+- R2 lost its ssh connection at the start step and gave the lock back.
+- R3 started at 13:31, past the slot. The shared `play-pkg.sh` stopped at once ("No package at …/game.pkg": the game is
+  unpacked now and that launcher has no `BC5_GAME_DIR`). No emulator, no GPU work; the lock was released by the run
+  itself.
+- The derived launcher needs the `BC5_GAME_DIR` edit before the next try.
+
+### Third round (2026-11-12 13:35–13:47, the top's slot to 15:00)
+
+**Build.** Incremental rebuild to patch 040812ce (empty defaults table): normal e82e65479c5f6dd70d919114374c61f4, lean
+4c75bbc7746f29fbf05e86d63c3d0f58. The archive stayed 75e30335.
+
+**p5final.**
+- **Setup:** e82e6547, the second title with the 63 launcher words of `integration/words0413launch.txt` (the proposed
+  launcher's words), RT on.
+- **Gameplay** at 118 s, then a GPU hang at 173 s. `gfx_0.0.0` ring timeout, the ring reset succeeded, the box stayed up.
+  The runs stopped there, as the rule requires.
+- **Class:** the devcoredump `20261112-134445-devcd3.txt` reads `GRBM_STATUS` 0xa0407028, `CP_STALLED_STAT2` 0x18000,
+  ME 0x77b, PFP 0xea1, no page fault. That is F403's signature (a compute dispatch that does not end), as in his plays on
+  the private and shared builds.
+- **Timed-out buffers:** acb #134489 and dcb #134490 (26 dispatches, 13 indirect). Dumps are under
+  `~/bc5-data/captures/play-20261112-1341/gc/`.
+- **Not a regression from a single run.** p4full ran the same configuration on d1b6f9cb without a hang, and F403 hits
+  the daily line too.
+- **Not done:** ASTRO BOT, lean and the replug on e82e6547. The replug harness now has the `BC5_GAME_DIR` edits
+  (`integration/gamedir.py`).
+
+### Fourth round (2026-11-12 13:48–13:57): back to a2ab53c7's table through setenv; ASTRO BOT still crashes; no swap
+
+**Branch.** The top session's decision: the five rows A15/A16/A17/A21/A22 are launcher-only, every other row stays on
+by default through the plain `setenv` constructor, and the re-exec is dropped. Commit 5d71c985 restores patch a2ab53c7.
+
+**Build.** Private and incremental, `p0413e.sh`: normal f61d5874ec7e776db502a827579d7be2, lean fd0af8a0. The archive is
+unchanged.
+
+**h1astro.** ASTRO BOT on f61d5874 with the plain defaults: **CRASH at 5 s**, at the same guest address 0x90000048f.
+
+**What the d1 pass was.**
+- d1 delivered "five rows off" as 20 `NAME=0` words in the environment.
+- Those 20 extra entries in the starting environment are what e4dum showed to be enough by themselves to pass (20 dummy
+  variables, all rows on).
+- So d1 did not show that the 35-row table is safe for ASTRO BOT. Here is what does hold:
+
+| configuration | result |
+|---|---|
+| table off (any size of environment tried) | ASTRO BOT passes |
+| rows as words in a larger starting environment (e1env–e4dum, d1, c3–c6, b2/b3/b5/b7) | ASTRO BOT passes |
+| rows through `setenv`, or through the re-exec, with nothing else added (a1, b1, b4, b6, b8, b9, c1, c2, f1, h1) | ASTRO BOT crashes |
+
+- The common factor is a layout or timing effect around start that these switches tip. The cause in ASTRO BOT is open:
+  which host call returned just before eboot+0x48f, and with what, is the next question.
+
+**Consequence.** By the top's rule, no swap. The shared builds stay f6445dc6 and 30ee854b. Not run on f61d5874: the
+second title, lean, the `=0` start, the replug.
+
+**Zero skip in the second-title runs (the top's question).** Every second-title run of this experiment had the zero skip
+on with its poll: p1def, p0off, p3def, p4full and p5final. Each took `BC5_DIRECT_ZERO_SKIP` from exp 0412's own list
+(`~/bc5-work/exp0412/zero-list-0412.txt`, 1,010 MiB in 2 heaps; p5final's journal shows 740 MiB of RenderGpuWcLarge
+skipped) plus `BC5_GUARD_ZSKIP_POLL_SUBMIT=1`. `~/bc5-work/zero-list-pkg.txt` does not exist.
+- The zero skip has three GPU hangs in exp 0412's history, and a zeroed input can also produce a dispatch that never
+  ends.
+- So p5final's F403 reading is weaker than stated above: the hang may be the zero skip's.
+- The zero skip is out of the proposed `play-pkg.sh` diff.
+
+### ASTRO BOT's crash: the root-cause work (2026-11-12 13:58–14:1x; private diagnostic builds only)
+
+**Tool.** `integration/mkwalk0413*.py` add a crash walk to a private copy of `runtimeLinker.cpp` (tree a2ab53c7,
+aba94c24), behind `BC5_0413_CRASH_WALK=1`. It logs:
+- the guest frame chain;
+- each call site's 64 bytes;
+- the key and the table of the faulting lookup;
+- each import stub's hops to its target.
+
+The bytes were disassembled with clang/llvm-objdump (VS's LLVM on the laptop). ASTRO BOT's eboot is a SELF whose
+segments are neither plain nor zlib, so its code was read from the running process instead. The private tree and
+binary are back to aba94c24 / f61d5874 afterwards.
+
+**The chain at the fault** (runs w1walk–w4walk; the crash is unchanged with the extra variable):
+
+| frame | return address | what |
+|---|---|---|
+| — | 0x90000048f | the fault: the function's first store, `*arg2 = arg3`, with `arg2 = NULL` |
+| 0 | 0x900000454 | a wrapper at 0x900000435: `mov rsi, [rsi]`, so it hands on the *value* of its pointer argument |
+| 1 | 0x90029930a | a loop over 24-byte entries up to an end pointer; per entry, `cmp(key r14, [rbx+8], 0x400)` through import 0x90001d750; on a match it passes `rbx+0x18`, the next entry's first field, to the wrapper |
+| 2 | 0x9002a0ebd | calls the frame-1 function right after a call through stub 0x9074b62e0 |
+| 3–5 | 0x9010d29fe, 0x90029fdeb, 0x9000000af | up to the title's entry |
+| 6 | 0x56515544ebad | **host**: the host's call of the guest entry |
+
+**State at the fault.**
+- The key string (frame 1's `r14`) is **empty**.
+- **Every table entry around the match is zero**: 15 entries, all four fields 0.
+- The compare is a **host** function (import index 0x62d, reached through stub 0x9074bc310). For ("", entry name
+  NULL) it returned "equal", so the title took the next entry's NULL as a string pointer.
+- Stub 0x9074b62e0 is not the host's: it lands in guest code at 0x9200040c0 (another loaded guest module, a SIMD
+  routine).
+- A host heap pointer (0x5577…) sits in a guest callee-saved register (frame 1's saved `r15`).
+
+**Reading so far (inference).** The title walks a table that should hold its entries and finds it zeroed, with an empty
+key. Two places to look next:
+1. **The host compare's contract for a NULL argument.** It treats ("", NULL) as equal. The console's libc would crash
+   or compare differently. Which NID is index 0x62d, and what does our body do with NULL?
+2. **Why the table range covers zeroed entries.** Either the end pointer or count comes from a host call that is
+   switched by these rows, or a host write that fills the table is skipped. That would explain the dependence on the
+   rows and on the environment's size.
+
+The top's discriminator, `-ftrivial-auto-var-init=pattern` and `=zero` builds (`pz0413.sh`), is in progress.
+
+**Discriminators (2026-11-12 14:04–14:24), ASTRO BOT starts on private builds of a2ab53c7:**
+
+| test | result |
+|---|---|
+| `-ftrivial-auto-var-init=pattern` build (fd867ac6), plain defaults | the same crash: eboot+0x48f, `rsi = 0`, write to address 0 (z1pat) |
+| the same build plus 20 dummy variables | PASS 60 s (z2pat) |
+| f61d5874, one extra variable `BC5_PAD` of 0, 1, …, 8, 12, 16, 24, 32, 48, 64 characters | crash in all 15 (s0pad–s64pad) |
+| f61d5874, n dummy variables `BC5_DUMMY_nn=1` | n = 2, 4, 6: crash; 8, 10, 12, 16, 20, 24: PASS; 29: crash; 32: PASS (c2cnt–c32cnt) |
+
+- **Not an uninitialised host local.** The pattern fill changes neither the fault address nor the dependence on the
+  environment. The `=zero` build was not made.
+- **Not byte alignment of the initial stack.** The length of one variable does not matter.
+- **It follows the number of environment entries, and not monotonically.** b1's crash with 29 `NAME=0` entries
+  repeats as c29cnt. That looks like a layout effect of the pointer array's size (the initial `envp`, and the block
+  `setenv` moves it to), not of the data.
+- **With the table off, every start passed** (a3astro, g10, g25, g36), so the switches being on is still a needed
+  condition.
+
+**Open, for the next session.**
+- Which import is index 0x62d (the compare), and what does its host body do with a NULL argument?
+- Who owns guest memory 0x300a80000–0x300a83000 (the zeroed table and the empty key)? Is it a host mapping that a
+  switched-on path returns earlier, larger, or at another address?
+- An in-emulator log of host calls before the fault is the tool for both; it was not built in this slot.
+
+**Note from exp 0412 (2026-11-12).** The maintainer's lean7 play of this morning hung the GPU at 107 s (07:52:07 gfx ring
+timeout, the reset succeeded; shared notes `exp0412-lean7-hang-0752.md`). That was g412L2 8ef2168f with the zero skip
+and its poll. So the lean unit 8f6e92b3 is verified here only as source text ("g412d + the poll"), not as a clean
+line. The cause is unknown; the zero skip is one candidate, as in p5final. It stays off in code and out of the proposed
+launcher diff.
+
+### Round five (2026-11-12 14:25–15:0x, the top's slot to 16:00)
+
+**The second title without the zero skip, on f61d5874** (a2ab53c7's table; the five rows as launcher words;
+`integration/words0413nz.txt`, 25 words; RT on; 240 s after gameplay):
+
+| run | result |
+|---|---|
+| q1nz | PASS: gameplay at 120 s, 24.5 flips/s over 357 s, longest gap 894 ms, 0 kernel lines, 0 crash lines |
+| q2nz | PASS: gameplay at 118 s, 25.4 flips/s over 355 s, longest gap 941 ms, 0 kernel lines, 0 crash lines |
+
+Both ran past p5final's hang point (G+55). The zero skip is the difference between these and p5final, besides the
+binary's table (R21: two runs, a fit).
+
+**ASTRO BOT's start crash, more discriminators** (60-s starts; a crash ends at 5–6 s):
+
+| test | result |
+|---|---|
+| in-code row bisect: `mkskip0413.py` makes the table read the rows to skip from a file, each skipped row replaced by a dummy `setenv` (binary 126fd308) | **PASS with no row skipped** (k0none) and with all 36 replaced (k1all). The only change against f61d5874 is a file read in the constructor, so the bisect cannot be done this way: any change at start moves the outcome |
+| f61d5874 + `MALLOC_PERTURB_=165` | the same crash, the same registers (m1p165) |
+| f61d5874 + `MALLOC_PERTURB_=0` | the same crash (m2p0: the control at the same entry count) |
+| f61d5874 + `GLIBC_TUNABLES=glibc.malloc.tcache_count=0` | the same crash (m3tc) |
+| f61d5874 + `MALLOC_PERTURB_=165` + 8 dummies | PASS (m4p165d8: the pass side stays a pass) |
+| f61d5874, table off, `MALLOC_PERTURB_=165` | PASS (m5off165) |
+| call-ring build (`mkring0413.py`: a static ring of the last 256 `PRINT_NAME()` calls, no heap; binary e0665386) | PASS at 0–9 dummy variables so far; no crash to read the ring from yet |
+
+- **Not unset or freed glibc heap bytes.** The perturb fill changes nothing, and neither does the tcache.
+- **The outcome moves with anything that changes the start**: the count of environment entries, a file read in the
+  constructor, the ring's code. That is address-dependent behaviour (an order or a hash by pointer value, or a
+  placement), not content.
+- **Correction to "the host compare says equal for ("", NULL)".** The host's `strncmp` is glibc's and would fault on
+  NULL. The disassembly of frame 1 started at an arbitrary byte, so whether that compare ran for the zeroed entry is not
+  shown. What is shown: the entry the title passed on is zero and the key is empty.
+
+**Round five, continued (15:05–15:15).** The private tree and binary are back at a2ab53c7 / f61d5874.
+
+| test (ASTRO BOT start, f61d5874 unless said) | result |
+|---|---|
+| the call-ring build e0665386 with 0–29 dummy variables (14 counts) | PASS at every count: the ring's per-call atomic increment alone removes the crash |
+| A12 off (thread sync + semaphores, 2 entries); each of the two alone | crash |
+| A3 off (pthread); A8 off (equeue, mmap shim); A11 off (TLS); A13 off (6 of the memory-call switches) | crash, each |
+| controls: 2 and 6 dummy variables set to 0 | crash, both |
+| g1: A2, A4, A5, A6 off (6 entries) | PASS |
+| g2: A7, A9 off (6 entries) | crash |
+| g3: A14, A18, A19, A20 off (6 entries) | PASS |
+| g4: B16, C1, C2, C3 off + 2 dummies (6 entries) | crash |
+| A14 off (2 entries), twice; its two switches alone | crash, each (and b4, A18–A20 off, crashed earlier) |
+
+**Reading.**
+- No single row is the cause. Two disjoint groups (g1, g3) each remove the crash, and g3's parts do not.
+- Whether the title finds its table filled therefore depends on the total of small effects at start, and a per-call
+  atomic in the host's library calls removes it at every environment size tried.
+- **That is the shape of a race at ASTRO BOT's start**: a title thread reads a table before another has filled it, and
+  the host's timing decides who wins. It is not memory layout or contents. `getenv` time grows with the entry count,
+  which would explain the count effect. (Inference: no thread was observed.)
+- The table-off pass is then the old timing, not proof that the rows are wrong. Equally, a row may have broken a wait
+  that used to order the two threads.
+
+**Next, for a separate session.** At the fault, print the title's threads and what each waits in (the host's sync
+objects), and find the writer of the table at guest 0x300a80000. An order the console guarantees and the host does not
+is the thing to look for.
+
+### Round six (2026-11-12 15:14–15:45): a thread dump at the fault; every build that carries it passes
+
+**Tool.** `integration/mkthr0413.py` (+ `mkthr2.py`) adds to the crash walk a dump of every thread, run only after the
+fault:
+- name, state and start time from `/proc/self/task`;
+- the blocking system call and its first argument;
+- by a signal to each thread, its RIP/RSP and the guest code addresses on its stack.
+
+**Results.**
+
+| binary | what differs from the crashing walk build (af36798a) | ASTRO BOT start |
+|---|---|---|
+| 0b581b92 | the dump's code, plus a 35 KiB static array | PASS at 1–30 dummy variables (17 counts; t1thr, tt1–tt30) |
+| 2e2e4b9a | the dump's code only, its buffers mapped at the fault | PASS (u1thr) |
+
+- The fault never came, so no thread dump exists.
+- These builds change nothing before the fault: no call, no allocation, no timing. They change only the binary's code
+  and data size.
+- **So the crash also moves with the binary's layout, not only with timing.** The earlier "start race" reading is
+  therefore weaker: an address-dependent cause fits as well (something ordered, hashed or placed by address, in the
+  host or in the title).
+- **Crashing binaries so far:** every build without diagnostics (a76f86ab, d1b6f9cb, f61d5874, the pattern-init
+  fd867ac6) and the four small walk builds.
+- **Passing binaries:** the skip-file build, the call-ring build and both thread-dump builds.
+- During these runs exp 0412's session ran one arm of its own (15:15:48, about 4 minutes). My guard stopped my start
+  and no runs overlapped.
+
+**State.** The private tree and binary are back at a2ab53c7 / f61d5874. The shared builds are untouched.
+
+**Not done.** Naming import 0x62d (the eboot's segments are not plain zlib; a SELF reader is needed); the writer of the
+table at guest 0x300a80000; the ordering candidates in the host's thread code.
+
+**What could work next:**
+- a watcher outside the process that reads `/proc/<pid>/task/*` of the unmodified crashing binary in its first
+  5 seconds (no change to the binary at all);
+- a one-shot write protection of the table's range through an environment-free mechanism, such as a file the
+  unmodified loader already reads.
+
+### Round seven (2026-11-12 15:43–16:03): an external watcher on the unmodified crashing binary; the event is seen
+
+**Tool.** `integration/watch0413.py` and `watch0413m.py` run beside the emulator and only read `/proc/<pid>/task/*`
+and `/proc/<pid>/maps`, as fast as they can. The emulator's binary and environment are untouched (f61d5874), and it
+still crashes with the watcher running. (From 16:02 the NAS archive's rsync may have been active; the last run,
+x1memoff, falls there.)
+
+**Threads (v1watch, v3crash against the passing v2pass).**
+- At about 1.03 s after the process appears, the title creates SystemService_A, SystemWakeup and eight
+  BackgroundTaskW threads within 1.5 ms.
+- In the crashing start, game-main stops running about 1 ms later and the process is gone 50 ms after that.
+- In the passing start, game-main runs on for 70 ms and then waits on a condition variable.
+- One BackgroundTaskW is inside the host's `save_data_memory_load()`: `read(fd, 0x300e7f8c0, 0x10000)` of
+  `sce_sdmemory/memory.dat`, through that function's 64 KiB stack buffer. **Refuted as the cause:** with the file
+  moved away the start crashes all the same (n1nomem).
+
+**The memory map near guest 0x300a80000** (m1crash against m2pass; times since the process appeared):
+
+| time | crashing start | passing start |
+|---|---|---|
+| direct memory mapped | `300000000-37e000000 rw-s`, identity offsets | the same |
+| threads created | guard pages `---s` appear at 300934000, 300a6c000 and 300a84000: host-allocated guest stacks, among them 0x300a70000–0x300a84000 | the same three guards (1.0627 s) |
+| **1.2 ms later** | the three guards are gone, and **`300a80000-300a84000 rw-s 7e200000`** appears: 16 KiB at another backing offset, on the top of the stack 0x300a70000–0x300a84000 | **no further change** for the 4 s watched |
+| then | the process exits | runs |
+
+**What this shows.**
+- The zeroed "table" and the empty key at 0x300a82xxx (the crash walk) are inside that 16 KiB mapping.
+- A mapping call placed 16 KiB of fresh memory over the live top of a guest thread stack that the host had just
+  allocated, and removed the stacks' guard protection in the same step.
+- The backing offset 0x7e200000 lies past the direct-memory view (0x7e000000 long). So it is a flexible-memory block,
+  not a direct map (inference from `memory.cpp`'s backing allocator).
+
+**Checked and excluded.**
+- The host's stack allocation and the runtime allocations take one global lock (`g_memory_operation_mutex`,
+  `AllocateGuestRuntimeMemory`) and check for overlap. So two host allocations do not race to one address.
+- The stack cache (`g_guest_stack_cache`) keeps stacks mapped. Nothing unmaps a cached stack.
+- With every memory-placement switch off at a crashing count (A13's eight, A8's two, `RANGES_FAST`, `PHYSMAP_SORTED`,
+  plus 17 dummies = 29 entries), it still crashes, and the same 16 KiB mapping appears (x1memoff).
+
+**Open: which call maps it there.** The remaining path is a mapping at a **fixed** address (the flexible map's
+`MAP_FIXED` branch replaces whatever is there), with 0x300a80000 chosen by the title. The title would take such an
+address from something the host told it: a stack address or size from the thread attribute calls, a query of free
+address space, or an earlier mapping's address. A wrong or run-dependent answer there would explain why only some
+starts collide.
+
+**Next.**
+- Read the arguments of the flexible/`mmap` calls just before the event. The emulator's own call log
+  (`--printf-direction File` in a private launcher copy, no rebuild) is the first thing to try.
+- Review what `scePthreadAttrGetstack`, `pthread_getattr_np`-style calls and the virtual-query calls return for
+  host-allocated stacks.
+- **A host-side guard independent of the cause:** a fixed mapping must not replace a range of type Stack that the host
+  allocated; refuse it or move the stack. That goes behind a switch, default off, until the cause is known.
+
+### The cause of ASTRO BOT's start crash (2026-11-12 16:05–16:20): the set-buffer "map flavour" heuristic
+
+**This section replaces the earlier readings in this README:** "heap contents", "a start race", "binary layout" and
+round seven's "a mapping lands on a host-allocated stack". The stacks in that zone are the title's own, cut from its
+heap, with guards it sets by `mprotect`.
+
+**Found with no rebuild, on the unmodified crashing f61d5874:**
+1. **The call log** (`--printf-direction File` in a private launcher copy, `integration/start0413l.sh astrolog`; run
+   L1log, which crashes as usual). Right before the fault:
+   - `sceKernelAllocateDirectMemory(len 0x4000)` → phys 0x7e200000;
+   - then `sceKernelMapDirectMemory` with `in_addr = 0x300a80000`, `flags = 0x10` (fixed), size 0x4000, name "AMM".
+
+   That is the 16 KiB mapping the map watcher saw. The passing start's log (L2log) has no such map; there the same
+   physical block goes to the title's "ResourceMemoryAllocator" at 0x1000000000.
+2. **The AMM trace** (`KYTY_BC5_AMM_TRACE=1`, an existing switch; runs T1trace and T2trace). The first three set-buffer
+   calls print, among others, `set-buffer cb 0x300a82ce0 va 0x300a828c0 len 0x400 a3 0x300a82d00 a4 0x9088e4e98 a5
+   0x563d185e8250`.
+   - `a5` is a host heap pointer; in the third call it is 0x7f38e0e255c0. The 4th–6th "arguments" are leftover
+     register contents: the title passes three.
+   - The buffer 0x300a828c0 rounds down to the page 0x300a80000, and its length rounds up to 0x4000: exactly the mapping.
+   - The command buffer header 0x300a82ce0 and the crash walk's "table" and "key" lie in that page of the title's heap
+     (`orbis_user_malloc`, mapped by the title at 0x300000000).
+
+**The code.** `CommandBufferSetBuffer(cb, buffer, size, a3, a4, a5)` in `src/libs/libAmpr.cpp` (exp 0035) takes the
+"map flavour" when `a3 != va && (a4 == 0xffffffff || a4 == ~0)`. It then runs an AMM MapAuto: it allocates direct
+memory and maps it fixed, zeroed, at the buffer's page.
+- With three real arguments, `a4` is whatever earlier host code left in `r8`.
+- When that is -1, the host replaces a live page of the title's heap with zeros. The title then reads its own zeroed
+  data and faults.
+- The guard pages of the title's stacks vanish in the same step because a partial replace inside one big direct view
+  re-maps the rest read/write (`memoryAddressSpace.inc`, `UnmapOne`; the code review, read).
+
+**Why it looked like everything else.**
+- The leftover in `r8` depends on which host code ran just before: `getenv` readers at first use, their loop length,
+  the calls the default-on rows add.
+- So the outcome was fixed per (binary, environment count), moved with both, and moved with every diagnostic.
+- It is a latent bug of the shared builds as well. The old binary's leftovers happen not to be -1 at ASTRO BOT's
+  start.
+
+**Not shown directly:** a trace line with `a4 = 0xffffffff` in a crashing run. Both trace runs passed, since the trace
+itself changes the leftovers. The match is by the mapping's address and size, and by the call log of the crashing run.
+
+**The fix** (`integration/mkset0413.py`, commit 64844801; default on as row E1 of the table, commit 8d729958; patch
+9e21a5f8).
+- With `KYTY_BC5_AMM_SETBUFFER_GUARD` on, a call with the map signature whose first page is already committed memory is
+  taken as the buffer flavour, with one stderr line (the first 16 times).
+- That follows exp 0035's own description: the buffer flavour attaches existing storage; the map flavour commits pool
+  pages where nothing is mapped yet.
+- `=0` gives the old heuristic.
+- Not compiled yet.
+
+**Side findings of the code review** (an agent, read-only; not acted on here):
+- A partial unmap inside a big view makes the whole view inaccessible for an instant (`UnmapOne` replaces it with a
+  `PROT_NONE` placeholder, then re-maps the two remainders) and drops `PROT_NONE` protections inside it. Both are
+  separate hazards.
+- `ValidateAmmMapArgs` does not check that an AMM map's address lies in the AMM range.
+- The existing "fixed map over live range" trace line would be the right always-on catcher if freed from
+  `KYTY_BC5_AMM_TRACE`.
+
+**Open questions, not claims:** whether the second title's unexplained zeroed data or start crashes at low guest budgets
+go through the same call (its set-buffer arguments are not traced here), and what the real third-argument convention of
+this NID is (exp 0035's TODO).
+
+### The fix built and checked (2026-11-12 16:38–17:35, the guardian released the box at 16:37)
+
+**Proof by observation** (the top's request; private normal 28d6c0d1, patch f085d4a3, the guard as a table row, its
+line also printing the command buffer). ASTRO BOT, `integration/sweep0413g.sh`, 20 s starts with n dummy variables:
+
+| starts | result |
+|---|---|
+| n = 0–6 (ga0–ga6) | PASS, 7 of 7. Each log has one guard line: `cb 0x300a8xxxx va 0x300a8xxxx len 0x400 a3 = cb + 0x20`, **`a4 0xffffffff`**, `a5` a host heap pointer (0x55…/0x56…); "nothing mapped" |
+| n = 7–16 (ga7–ga16) | PASS, 10 of 10; no guard line (the leftover in `r8` is not -1 there) |
+| the same binary, `KYTY_BC5_AMM_SETBUFFER_GUARD=0`, n = 0, 2, 4 (gb) | **crash, 3 of 3**, at 5–6 s, the old crash text |
+| 60 s at n = 0 and 29 (gc) | PASS, the guard line in both |
+
+So the call with `a4 = -1` is seen in the very starts that crash without the guard: the caveat of the section above
+("not shown directly") is closed. `a3` is always the command buffer plus 0x20, a leftover of the title's own code.
+
+**Is there a real six-argument caller?** Not in either title.
+- The second title, 180 s with `KYTY_BC5_AMM_TRACE=1` (r1tr, to G+60): 2,304 set-buffer calls. `a3` is 0 or a host
+  pointer and never equals `va`; `a4` is 0 in 2,273 calls and takes 21 other values; `a5` looks like a host pointer in
+  2,288. The map flavour was taken 0 times and the guard refused 0 times in that run.
+- So the second title also passes three arguments, and exp 0035's "this title only uses the buffer flavour" holds. Any
+  of its calls would have mapped zeroed memory over the live buffer page had `r8` held -1. That is a candidate for its
+  unexplained zeroed data; it was not seen in this run. The guardian was told.
+- ASTRO BOT: every call seen with the map signature is the faulty one.
+- The map flavour itself comes from prosper's notes on another title (exp 0035). It stays reachable for a target that
+  is not mapped yet. Whether to make it opt-in is the top's decision; not changed here.
+
+**Changes after the reviews (the top; Codex's round), all before the final build:**
+- The guard is on in code, off only with `KYTY_BC5_AMM_SETBUFFER_GUARD=0`; its table row E1 is gone (a crash fix must
+  not depend on the table). `integration/mkset0413.py`, `mkeop0413.py`.
+- `BC5_R3_SUBMIT_EOP_EVENT` left the table (Codex: `r3gpu_submit_eop` rotates a global ring of 4,096 packets and a
+  deferred callback reads the raw address later, so after a wrap it can read another event's packet). The switch stays
+  in the code as a launcher word; Codex's owned-packet fix is a later commit with its own build and run. Every run
+  before the final build had this switch on through the table.
+- The table now has 35 rows: audit A2–A8, A9 without the EOP event, A11–A14, A18–A20, B16, C1–C3.
+- Step 22 (the `libNpCppWebApi.cpp` fold) was compiled; the run-time on/off check is below.
+
+**The final private build** (`integration/p0413g.sh`, `final0413.sh`): patch 0001 **01abfc0c**, normal
+**0eda68b5d76cb11daed79ca516b0d1d6**, lean **13c00498a3175dc2c1ba8a8696aa64c0**, archive 75e30335 unchanged.
+
+| check on exactly these binaries | result |
+|---|---|
+| ASTRO BOT, plain defaults, n = 0, 2, 4, 30 s (f1n) | PASS 3 of 3; the guard line with `a4 0xffffffff` in each; "KYTY_BC5_AMM_SETBUFFER_GUARD on" with no table row |
+| ASTRO BOT, `KYTY_BC5_SWITCH_DEFAULTS=0` alone, 60 s (f2n0) and n = 1–8, 20 s (f5n) | PASS 9 of 9. No guard line in any: with the table off the leftover is not -1 at these counts, so the guard was not exercised in this mode |
+| ASTRO BOT, guard off (f3n0) | crash at 5 s (the control) |
+| ASTRO BOT, `KYTY_BC5_NP_SESSION_V2=0 KYTY_BC5_FW_NET=0` (f4n0) | PASS; the log says "SessionManager V2 off (… the loader's stubs)"; the other starts say "V2 on (10 exports registered)" |
+| second title, RT on, no zero skip, 240 s after G (r3fin) | clean: G at 122 s, 23.5 flips/s, longest gap 895 ms, 0 kernel lines, 0 crash lines |
+| lean start, 120 s (l4lean) | PASS |
+
+The same set on 28d6c0d1 (EOP event on): second title r2nz clean (23.8 flips/s, longest gap 942 ms), lean l3lean PASS.
+Raw files: `~/bc5-work/exp0413/n/raw/` on the box (not committed). The NAS rsync may have run during these runs.
+Not checked at run time: that the V2 and FW_NET functions return right values when a title calls them (ASTRO BOT's
+start only shows the registration, on and off).
