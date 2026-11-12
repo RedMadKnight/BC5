@@ -5176,6 +5176,30 @@ index 8c19ba5..85d0bcb 100644
  	}
  	LOGF("AsyncPipelineCompiler: started %zu worker threads\n", kWorkerCount);
  }
+diff --git a/src/graphics/host_gpu/renderer/sync.cpp b/src/graphics/host_gpu/renderer/sync.cpp
+index 94ebbad..127d3a1 100644
+--- a/src/graphics/host_gpu/renderer/sync.cpp
++++ b/src/graphics/host_gpu/renderer/sync.cpp
+@@ -18,6 +18,10 @@
+ #include <limits>
+ #include <optional>
+ 
++namespace Libs::LibKernel::EventQueue {
++void KernelEventPendingPush(KernelEqueueEvent* event, const KernelEvent& triggered_event); // exp 0412 (tag ev412): eventQueue.cpp
++} // namespace Libs::LibKernel::EventQueue
++
+ namespace Libs::Graphics::Sync {
+ 
+ constexpr int      GRAPHICS_EVENT_QUEUED_GRAPHICS_INTERRUPT = 0x00;
+@@ -352,7 +356,7 @@ static void EopEventTriggerFunc(LibKernel::EventQueue::KernelEqueueEvent* event,
+ 	triggered_event.fflags++;
+ 	triggered_event.data = reinterpret_cast<intptr_t>(trigger_data);
+ 	if (event->triggered) {
+-		event->pending_events.push_back(triggered_event);
++		LibKernel::EventQueue::KernelEventPendingPush(event, triggered_event); // exp 0412 (tag ev412): KYTY_BC5_EVENT_PENDING_CAP, _LOG
+ 	} else {
+ 		event->event     = triggered_event;
+ 		event->triggered = true;
 diff --git a/src/graphics/host_gpu/vma.cpp b/src/graphics/host_gpu/vma.cpp
 index 14608a6..bf3cbd8 100644
 --- a/src/graphics/host_gpu/vma.cpp
@@ -13007,7 +13031,7 @@ index c729a98..2f3e5fb 100644
  #if defined(__APPLE__)
  	// AppKit traps on title changes off the main thread; fire-and-forget keeps present pacing.
 diff --git a/src/kernel/eventQueue.cpp b/src/kernel/eventQueue.cpp
-index 14561b0..4ab2b73 100644
+index 14561b0..eb46821 100644
 --- a/src/kernel/eventQueue.cpp
 +++ b/src/kernel/eventQueue.cpp
 @@ -1,8 +1,15 @@
@@ -13026,8 +13050,14 @@ index 14561b0..4ab2b73 100644
  #include "common/stringUtils.h"
  #include "common/threads.h"
  #include "common/timer.h"
-@@ -17,6 +24,10 @@
+@@ -14,9 +21,16 @@
+ #include <fmt/format.h>
+ #include <limits>
+ #include <list>
++#include <map>   // exp 0412 (tag ev412)
++#include <mutex> // exp 0412 (tag ev412)
  #include <unordered_map>
++#include "event_cap0412.hpp" // exp 0412 (tag ev412)
  #include <vector>
  
 +namespace Libs {
@@ -13037,7 +13067,7 @@ index 14561b0..4ab2b73 100644
  namespace Libs::LibKernel::EventQueue {
  
  LIB_NAME("libkernel", "libkernel");
-@@ -36,6 +47,87 @@ static std::unordered_map<KernelEqueue, KernelEqueueRef> g_equeues;
+@@ -36,6 +50,87 @@ static std::unordered_map<KernelEqueue, KernelEqueueRef> g_equeues;
  static Common::Mutex                                     g_equeues_mutex;
  static uint64_t                                          g_next_equeue = 1;
  
@@ -13125,7 +13155,7 @@ index 14561b0..4ab2b73 100644
  class KernelEqueuePrivate {
  public:
  	explicit KernelEqueuePrivate(KernelEqueue handle): m_handle(handle) {}
-@@ -51,12 +143,14 @@ public:
+@@ -51,12 +146,14 @@ public:
  	int DeleteEvent(uintptr_t ident, int16_t filter);
  
  	int  GetTriggeredEvents(KernelEvent* ev, int num);
@@ -13140,7 +13170,7 @@ index 14561b0..4ab2b73 100644
  
  	std::list<KernelEqueueEvent> m_events;
  	Common::Mutex                m_mutex;
-@@ -64,6 +158,9 @@ private:
+@@ -64,6 +161,9 @@ private:
  	std::string                  m_name;
  	KernelEqueue                 m_handle = KERNEL_EQUEUE_INVALID;
  	bool                         m_closed = false;
@@ -13150,7 +13180,7 @@ index 14561b0..4ab2b73 100644
  };
  
  KernelEqueuePrivate::~KernelEqueuePrivate() {
-@@ -98,12 +195,13 @@ int KernelEqueuePrivate::GetTriggeredEvents(KernelEvent* ev, int num) {
+@@ -98,12 +198,13 @@ int KernelEqueuePrivate::GetTriggeredEvents(KernelEvent* ev, int num) {
  	TriggerExpiredTimers(MonotonicTimeNs());
  
  	int ret = 0;
@@ -13165,7 +13195,7 @@ index 14561b0..4ab2b73 100644
  			if ((event.event.flags & EV_ONESHOT) != 0) {
  				erase = true;
  				break;
-@@ -121,6 +219,10 @@ int KernelEqueuePrivate::GetTriggeredEvents(KernelEvent* ev, int num) {
+@@ -121,6 +222,10 @@ int KernelEqueuePrivate::GetTriggeredEvents(KernelEvent* ev, int num) {
  				event.event = event.pending_events.front();
  				event.pending_events.pop_front();
  				event.triggered = true;
@@ -13176,7 +13206,7 @@ index 14561b0..4ab2b73 100644
  			}
  
  			if (ret >= num) {
-@@ -137,6 +239,9 @@ int KernelEqueuePrivate::GetTriggeredEvents(KernelEvent* ev, int num) {
+@@ -137,6 +242,9 @@ int KernelEqueuePrivate::GetTriggeredEvents(KernelEvent* ev, int num) {
  }
  
  void KernelEqueuePrivate::TriggerExpiredTimers(uint64_t now_ns) {
@@ -13186,7 +13216,7 @@ index 14561b0..4ab2b73 100644
  	for (auto& event: m_events) {
  		if (!event.triggered && event.deadline_ns != 0 && event.deadline_ns <= now_ns) {
  			event.triggered = true;
-@@ -144,6 +249,27 @@ void KernelEqueuePrivate::TriggerExpiredTimers(uint64_t now_ns) {
+@@ -144,6 +252,27 @@ void KernelEqueuePrivate::TriggerExpiredTimers(uint64_t now_ns) {
  	}
  }
  
@@ -13214,7 +13244,7 @@ index 14561b0..4ab2b73 100644
  bool KernelEqueuePrivate::GetNextTimerWaitMicros(uint64_t now_ns, uint32_t* wait_micros) const {
  	EXIT_IF(wait_micros == nullptr);
  
-@@ -222,6 +348,35 @@ int KernelEqueuePrivate::AddEvent(const KernelEqueueEvent& event) {
+@@ -222,6 +351,35 @@ int KernelEqueuePrivate::AddEvent(const KernelEqueueEvent& event) {
  	return OK;
  }
  
@@ -13250,7 +13280,7 @@ index 14561b0..4ab2b73 100644
  int KernelEqueuePrivate::TriggerEvent(uintptr_t ident, int16_t filter, void* trigger_data) {
  	Common::LockGuard lock(m_mutex);
  
-@@ -255,6 +410,23 @@ static void UserEventTriggerFunc(KernelEqueueEvent* event, void* trigger_data) {
+@@ -255,12 +413,68 @@ static void UserEventTriggerFunc(KernelEqueueEvent* event, void* trigger_data) {
  	event->event.udata = trigger_data;
  }
  
@@ -13271,10 +13301,56 @@ index 14561b0..4ab2b73 100644
 +	return result;
 +}
 +
++// Experiment 0412 (tag ev412, mkev0412.py; README section 10): the one place an already triggered event gets one more
++// pending entry. With KYTY_BC5_EVENT_PENDING_CAP the queue is bounded (a trigger past the bound replaces the newest entry);
++// with KYTY_BC5_EVENT_PENDING_LOG the event whose queue grows is named on stderr. Both off: the push_back as before.
++// The callers hold the queue's mutex.
++void KernelEventPendingPush(KernelEqueueEvent* event, const KernelEvent& triggered_event) {
++	EXIT_IF(event == nullptr);
++	static const bc5::evcap::Cfg cfg = [] {
++		const bc5::evcap::Cfg c = bc5::evcap::parse(std::getenv("KYTY_BC5_EVENT_PENDING_CAP"), std::getenv("KYTY_BC5_EVENT_PENDING_LOG"));
++		if (c.on() || c.bad) {
++			std::fprintf(stderr, "[bc5] exp 0412 events: pending cap %zu (0: none), log %s%s (tag ev412)\n", c.cap, c.log ? "on" : "off",
++			             c.bad ? "; a value was not understood and is off" : "");
++		}
++		return c;
++	}();
++	if (!cfg.on()) {
++		auto& q = event->pending_events;
++		q.push_back(triggered_event);
++		return;
++	}
++	const bool grew = bc5::evcap::push(event->pending_events, triggered_event, cfg.cap);
++	if (!cfg.log) {
++		return;
++	}
++	static std::mutex                                                 m;
++	static std::map<std::pair<uintptr_t, int>, bc5::evcap::Seen> seen;
++	std::lock_guard                                                   lock(m);
++	bc5::evcap::Seen& s = seen[{triggered_event.ident, static_cast<int>(triggered_event.filter)}];
++	const uint64_t    len = event->pending_events.size();
++	if (grew) {
++		if (bc5::evcap::due_len(s, len)) {
++			std::fprintf(stderr, "[bc5] exp 0412 events: ident 0x%" PRIx64 " filter %d udata %p: %" PRIu64 " pending entries (the longest so far), %" PRIu64 " coalesced\n",
++			             static_cast<uint64_t>(triggered_event.ident), static_cast<int>(triggered_event.filter), triggered_event.udata, len, s.coalesced);
++		}
++	} else if (bc5::evcap::due_coalesced(s)) {
++		std::fprintf(stderr, "[bc5] exp 0412 events: ident 0x%" PRIx64 " filter %d udata %p: %" PRIu64 " triggers coalesced at the cap of %zu pending entries\n",
++		             static_cast<uint64_t>(triggered_event.ident), static_cast<int>(triggered_event.filter), triggered_event.udata, s.coalesced, cfg.cap);
++	}
++}
++
  static void AmprEventTriggerFunc(KernelEqueueEvent* event, void* trigger_data) {
  	EXIT_IF(event == nullptr);
  	auto triggered_event = event->event;
-@@ -293,6 +465,9 @@ int KernelEqueuePrivate::DeleteEvent(uintptr_t ident, int16_t filter) {
+ 	triggered_event.data = static_cast<intptr_t>(reinterpret_cast<uintptr_t>(trigger_data));
+ 	if (event->triggered) {
+-		event->pending_events.push_back(triggered_event);
++		KernelEventPendingPush(event, triggered_event); // exp 0412 (tag ev412): KYTY_BC5_EVENT_PENDING_CAP, _LOG
+ 	} else {
+ 		event->event     = triggered_event;
+ 		event->triggered = true;
+@@ -293,6 +507,9 @@ int KernelEqueuePrivate::DeleteEvent(uintptr_t ident, int16_t filter) {
  			event.filter.delete_event_func(m_handle, &event);
  		}
  
@@ -13284,7 +13360,7 @@ index 14561b0..4ab2b73 100644
  		m_events.erase(it);
  
  		return OK;
-@@ -396,19 +571,20 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
+@@ -396,19 +613,20 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
  		return KERNEL_ERROR_EFAULT;
  	}
  
@@ -13312,7 +13388,7 @@ index 14561b0..4ab2b73 100644
  	if (timo == nullptr) {
  		*out = owner->WaitForEvents(ev, num, 0);
  	}
-@@ -429,12 +605,6 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
+@@ -429,12 +647,6 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
  		return KERNEL_ERROR_ETIMEDOUT;
  	}
  
@@ -13325,7 +13401,7 @@ index 14561b0..4ab2b73 100644
  	return OK;
  }
  
-@@ -541,16 +711,46 @@ int KYTY_SYSV_ABI KernelDeleteHRTimerEvent(KernelEqueue eq, int id) {
+@@ -541,16 +753,46 @@ int KYTY_SYSV_ABI KernelDeleteHRTimerEvent(KernelEqueue eq, int id) {
  	return KernelDeleteEvent(eq, static_cast<uintptr_t>(id), KERNEL_EVFILT_HRTIMER);
  }
  
@@ -13373,7 +13449,7 @@ index 14561b0..4ab2b73 100644
  		event.event.flags         = EV_ADD | EV_CLEAR;
  		event.event.fflags        = 0;
  		event.event.data          = 0;
-@@ -578,7 +778,7 @@ int KYTY_SYSV_ABI KernelDeleteAmprEvent(KernelEqueue eq, int id) {
+@@ -578,7 +820,7 @@ int KYTY_SYSV_ABI KernelDeleteAmprEvent(KernelEqueue eq, int id) {
  	LOGF("\t AMPR event delete: eq = 0x%016" PRIx64 ", id = %d\n", static_cast<uint64_t>(eq), id);
  
  	if (eq != KERNEL_EQUEUE_INVALID) {
@@ -13395,6 +13471,91 @@ index 765d72f..ea0cc55 100644
  int KYTY_SYSV_ABI KernelTriggerUserEventForAll(int id, void* udata);
  int KYTY_SYSV_ABI KernelDeleteUserEvent(KernelEqueue eq, int id);
  int KYTY_SYSV_ABI KernelAddHRTimerEvent(KernelEqueue eq, int id, const KernelTimespec* ts,
+diff --git a/src/kernel/event_cap0412.hpp b/src/kernel/event_cap0412.hpp
+new file mode 100644
+index 0000000..b7e15d6
+--- /dev/null
++++ b/src/kernel/event_cap0412.hpp
+@@ -0,0 +1,79 @@
++// SPDX-License-Identifier: GPL-2.0-only
++// BC5 experiment 0412 (the ASTRO BOT host leak, README section 10; tag ev412): a bound on an event's pending queue.
++// The host's event queue keeps, for an event that is triggered again before the title has read it, one more entry in
++// KernelEqueueEvent::pending_events, a std::deque without a bound (EopEventTriggerFunc in
++// src/graphics/host_gpu/renderer/sync.cpp, AmprEventTriggerFunc in src/kernel/eventQueue.cpp). An event the title reads
++// more slowly than it is triggered, or never reads, grows by one entry per trigger for ever.
++//   KYTY_BC5_EVENT_PENDING_CAP=<n>   1..65536: an event's pending queue holds at most n entries; a trigger past that
++//                                    replaces the newest entry (the triggers are coalesced, the latest data is kept).
++//   KYTY_BC5_EVENT_PENDING_LOG=1     one line when an event's queue first reaches 64 entries and each time it doubles, and
++//                                    with the cap one line at the 1st, 2nd, 4th, ... coalesced trigger: which event it is.
++// Unset, empty and "0" are off (F767); with both off the queue is used exactly as before. No system call here: this file
++// is what evcap0412.cpp tests on the laptop.
++#pragma once
++#include <cstddef>
++#include <cstdint>
++#include <cstdlib>
++#include <cstring>
++
++namespace bc5::evcap {
++
++struct Cfg {
++    size_t cap = 0;     // 0: no bound
++    bool   log = false;
++    bool   bad = false; // a value that was not understood (the switch stays off)
++    bool   on() const { return cap != 0 || log; }
++};
++
++inline bool env_on(const char* e) {
++    return e != nullptr && e[0] != 0 && !(e[0] == '0' && e[1] == 0);
++}
++
++inline Cfg parse(const char* cap, const char* log) {
++    Cfg c;
++    if (env_on(cap)) {
++        char*                    end = nullptr;
++        const unsigned long long v = std::strtoull(cap, &end, 10);
++        if (end != cap && *end == 0 && v >= 1 && v <= 65536 && cap[0] >= '0' && cap[0] <= '9') c.cap = static_cast<size_t>(v);
++        else c.bad = true;
++    }
++    if (env_on(log)) {
++        if (std::strcmp(log, "1") == 0) c.log = true;
++        else c.bad = true;
++    }
++    return c;
++}
++
++// Puts e at the end of q, or over q's newest entry when q already holds cap entries (cap 0: no bound).
++// True when the queue grew, false when the trigger was coalesced.
++template <class Q, class E> bool push(Q& q, const E& e, size_t cap) {
++    if (cap != 0 && q.size() >= cap) {
++        q.back() = e;
++        return false;
++    }
++    q.push_back(e);
++    return true;
++}
++
++// What is remembered of one event (by ident and filter) for the log lines.
++struct Seen {
++    uint64_t longest = 0, coalesced = 0, next_len = 64, next_coalesced = 1;
++};
++
++// After a push that left the queue `len` long: whether a "longest queue" line is due (at 64 entries, then at each doubling).
++inline bool due_len(Seen& s, uint64_t len) {
++    if (len > s.longest) s.longest = len;
++    if (len < s.next_len) return false;
++    while (s.next_len <= len) s.next_len *= 2;
++    return true;
++}
++
++// After a coalesced trigger: whether a line is due (the 1st, 2nd, 4th, ... one).
++inline bool due_coalesced(Seen& s) {
++    s.coalesced++;
++    if (s.coalesced < s.next_coalesced) return false;
++    s.next_coalesced *= 2;
++    return true;
++}
++
++} // namespace bc5::evcap
 diff --git a/src/kernel/fileSystem.cpp b/src/kernel/fileSystem.cpp
 index 4034f52..93e2d1a 100644
 --- a/src/kernel/fileSystem.cpp
