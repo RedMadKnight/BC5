@@ -649,3 +649,48 @@ The same set on 28d6c0d1 (EOP event on): second title r2nz clean (23.8 flips/s, 
 Raw files: `~/bc5-work/exp0413/n/raw/` on the box (not committed). The NAS rsync may have run during these runs.
 Not checked at run time: that the V2 and FW_NET functions return right values when a title calls them (ASTRO BOT's
 start only shows the registration, on and off).
+
+### Replug check and the second shared swap (2026-11-12 17:34–18:02; the top's release, window to 18:25)
+
+**Replug (software check, exp 0391's harness in `integration/replug/`, on the private normal 0eda68b5).**
+- R4 failed at once and says nothing about the binary: "no emulator started", launcher exit 65. Cause: the desktop
+  session's socket is `wayland-1` today, the shared `play-pkg.sh` falls back to `wayland-0`, and the harness did not
+  pass the variable. Shown by an 8-s start by hand with the real socket (it ran) and the same launch form with a
+  stand-in emulator (exit 0). The harness now passes the socket it finds (`s6n0391.sh`); it also no longer passes the
+  EOP event word.
+- **R5: CLASS PASS**, mode pulls, 3 pulls: the pad's stream closed and reopened on the DualSense each time (0.5 s,
+  0.5 s and 30.1 s off). Raw: `integration/replug/raw/R5-*`.
+- Not done here: the physical replug with a DualSense and a DS4 (the maintainer's).
+
+**The swap** (`int0413b.sh`; its restore checks every copy by md5 and the tree by its diff, and keeps the lock when the
+restore is incomplete: Codex's point 2).
+
+| | before | after |
+|---|---|---|
+| shared normal | f6445dc6b37634ddd06366bb4b30753b | **ce0e3b928b6d1d1d47fc035c13e8cee3** |
+| shared lean | 30ee854b1dff4ae436720ab78f7ba229 | **35ec3341be46ffd7013db8ffa9a4b2f5** |
+| the shared tree's diff against f266548 | 2dbed49a | **01abfc0c** (121 patched files equal the laptop's) |
+| backend archive | 75e30335 | 75e30335 |
+
+- Rollback: `~/bc5-work/exp0413/swap/kyty_emulator.before-0413b` and `kyty_emulator-lean.before-0413b`; the tree by
+  reversing `0001-new7.patch` and applying `0001-old.patch` (`~/bc5-work/exp0413/p/kit`), then a rebuild.
+- The shared binaries are not byte-identical to the private ones (other build directories), so two checks ran on the
+  shared normal build afterwards (`integration/post0413.sh`):
+  - ASTRO BOT, 30 s (s1sh0): PASS, the guard line with `a4 0xffffffff`, "V2 on (10 exports registered)".
+  - second title, RT on, no zero skip, 240 s after G (s2sh): 0 kernel lines, 0 crash lines, 23.4 flips/s. Its longest
+    gap is 2,799 ms; the four earlier runs today had 0.8–0.9 s. Not looked into.
+
+**Not verified:**
+- the shared lean binary 35ec3341 was not started (the private lean build of the same patch was);
+- the replug check ran on the private binary, not on the shared one;
+- the guard with the table off never met `a4 = -1`;
+- V2 and FW_NET return values in a title that calls them;
+- the physical replug.
+
+**The proposed `play-pkg.sh` change** (`integration/play-pkg-0413.diff`, made by `mkpkg0413.py` from 97835f88 and
+`words0413pkg.txt`; NOT installed, the shared launcher changes only on the maintainer's word): `ulimit -c 0`, the
+`BC5_GAME_DIR` edits, the start delay, `LAZY_RELEASE=30,eager`, split and forget, and the 20 switches of rows A15, A16,
+A17, A21, A22. No zero skip. The EOP event is a comment only.
+
+**For a later round** (the top): the map flavour opt-in; Codex's owned-packet fix for the EOP event; the pure fixes
+A2 and C1 (C2, C3 as speed-only) from the table into code defaults.
