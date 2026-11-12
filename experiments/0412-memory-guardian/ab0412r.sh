@@ -42,7 +42,7 @@ arm() {   # <tag> empty|file [KEY=VALUE ...]
   grep -a 'map rule' "$R/$tag-rule.txt" | head -2 | cut -c1-300
   echo "$tag kernel threads' CPU during the arm: kcompactd0 $(( ($(kc) - kc0) / 100 )) s, kswapd0 $(( ($(ks) - ks0) / 100 )) s"
   [ "$(md5sum < "$W/direct-learned-pkg.txt")" = "$SUM0" ] && [ "$(md5sum < "$W/direct-aliases-pkg.txt")" = "$ALI0" ] || { echo "$(date +%T) STOP: the shared learned or alias file changed"; return 1; }
-  if grep -q "GPU HANG" "$R/$tag-end.txt" 2> /dev/null || grep -qi "amdgpu|drm" "$R/$tag-dmesg-after.txt" 2> /dev/null; then echo "$(date +%T) STOP: $tag had a kernel line: $(cut -c1-200 "$R/$tag-end.txt")"; cut -c1-700 "$R/$tag-rule.txt" | tail -5; return 1; fi
+  if grep -q "GPU HANG" "$R/$tag-end.txt" 2> /dev/null || grep -qiE "amdgpu|drm" "$R/$tag-dmesg-after.txt" 2> /dev/null; then echo "$(date +%T) STOP: $tag had a kernel line: $(cut -c1-200 "$R/$tag-end.txt")"; cut -c1-700 "$R/$tag-rule.txt" | tail -5; return 1; fi
   return 0
 }
 arm c0a file || exit 0
