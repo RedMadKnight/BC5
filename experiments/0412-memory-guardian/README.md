@@ -2473,6 +2473,12 @@ unless the wall changed the route. Not settled.
 - R2 has to be tested apart from the wall: with R1 off it would hide misses (the top session's point 3), so its own
   clean test is R2 over holes only, on a run that is not at the wall. Not built: the switch refuses to act without R1.
 
+## Verdict
+
+- **The rule's first test (sections 52, 53):** the scripted route needs none of the 81 learned windows (three runs,
+  1,022 s, no fault; 246 MiB less pinned). "Pin every view whole" (R1) reaches the memory wall in the menu and is not
+  runnable today. The arm with R1 and the PRT background hung the GPU without a page fault and the box rebooted;
+  whether the wall or the PRT span did it is open. Build g412x (`bin-x`) holds the three switches, all off.
 - **Stopping Plasma's shell for the play is worth 0.22 GiB at the wall (section 50):** lowest available 724 and 775
   MiB without it against 497 and 560 with it; the launcher's lean mode stops it and brought it back in its first
   test. Not in his shortcut yet. `plasma-keyboard` and Xwayland hold 96 MiB of GPU memory more.
