@@ -47723,7 +47723,7 @@ index 5b0fc93..5b78760 100644
  	LOGF("\t target = %d\n"
  	     "\t msg    = 0x%016" PRIx64 "\n",
 diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
-index 073361d..054da75 100644
+index 073361d..7a0642e 100644
 --- a/src/libs/libAmpr.cpp
 +++ b/src/libs/libAmpr.cpp
 @@ -1,3 +1,5 @@
@@ -49556,7 +49556,7 @@ index 073361d..054da75 100644
  	return CommitCommandBufferRecord(command_buffer, &state, record_size);
  }
  
-@@ -1678,13 +2991,50 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
+@@ -1678,13 +2991,78 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
  	return OK;
  }
  
@@ -49577,6 +49577,34 @@ index 073361d..054da75 100644
 +	return a3 != va && (a4 == 0xffffffffull || a4 == ~0ull);
 +}
 +
++// Experiment 0413 (KYTY_BC5_AMM_SETBUFFER_GUARD): a set-buffer call with the map signature whose target is already
++// committed guest memory is the buffer flavour. A title that passes three arguments leaves rcx, r8 and r9 to chance;
++// with r8 == -1 the map flavour below replaced a page of ASTRO BOT's own heap with zeroed memory (exp 0413).
++static bool Bc5SetBufferGuardOn() {
++	static const bool on = Bc5Exp0401Switch("KYTY_BC5_AMM_SETBUFFER_GUARD");
++	return on;
++}
++static bool Bc5SetBufferTargetMapped(uint64_t va, uint32_t size, uint64_t a3, uint64_t a4, uint64_t a5) {
++	if (!Bc5SetBufferGuardOn()) {
++		return false;
++	}
++	LibKernel::Memory::VirtualQueryInfo info {};
++	const uint64_t                      first = va & ~(AMM_PAGE_SIZE - 1u);
++	if (LibKernel::Memory::KernelVirtualQuery(reinterpret_cast<const void*>(first), 0, &info, sizeof(info)) != OK ||
++	    info.is_committed == 0) {
++		return false;
++	}
++	static int told = 0;
++	if (told < 16) {
++		told++;
++		std::fprintf(stderr,
++		             "[bc5] exp 0413: set-buffer with the map signature on mapped memory (va 0x%016" PRIx64 " len 0x%x a3 0x%" PRIx64
++		             " a4 0x%" PRIx64 " a5 0x%" PRIx64 "): taken as the buffer flavour, nothing mapped\n",
++		             va, size, a3, a4, a5);
++	}
++	return true;
++}
++
 +static int KYTY_SYSV_ABI CommandBufferSetBuffer(void* command_buffer, void* buffer, uint32_t size,
 +                                                uint64_t a3, uint64_t a4, uint64_t a5) {
  	PRINT_NAME();
@@ -49590,7 +49618,7 @@ index 073361d..054da75 100644
 +		AmmTraceStamp(), std::fprintf(stderr, "amm trace: set-buffer cb 0x%016" PRIx64 " va 0x%016" PRIx64 " len 0x%x a3 0x%" PRIx64 " a4 0x%" PRIx64 " a5 0x%" PRIx64 "\n",
 +		             reinterpret_cast<uint64_t>(command_buffer), va, size, a3, a4, a5);
 +	}
-+	if (SetBufferIsMapFlavour(va, a3, a4)) {
++	if (SetBufferIsMapFlavour(va, a3, a4) && !Bc5SetBufferTargetMapped(va, size, a3, a4, a5)) { // + exp 0413
 +		CommandBufferState::AmmMapCommand command {};
 +		command.kind = AmmCommandKind::MapAuto;
 +		command.va   = va & ~(AMM_PAGE_SIZE - 1u);
@@ -49608,7 +49636,7 @@ index 073361d..054da75 100644
  	const auto command_buffer_addr = reinterpret_cast<uint64_t>(command_buffer);
  	if (!ValidateCommandBufferHeader(command_buffer_addr)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -1767,15 +3117,25 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
+@@ -1767,15 +3145,25 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
  	PRINT_NAME();
  
  	const auto destination_addr = reinterpret_cast<uint64_t>(destination);
@@ -49640,7 +49668,7 @@ index 073361d..054da75 100644
  }
  
  static uint64_t AlignUp4(uint64_t value) {
-@@ -1811,11 +3171,11 @@ static uint64_t KYTY_SYSV_ABI MeasureCommandSizeFixed32(uint64_t, uint64_t, uint
+@@ -1811,11 +3199,11 @@ static uint64_t KYTY_SYSV_ABI MeasureCommandSizeFixed32(uint64_t, uint64_t, uint
  	return 0x20;
  }
  
@@ -49655,7 +49683,7 @@ index 073361d..054da75 100644
  }
  
  static uint64_t KYTY_SYSV_ABI
-@@ -2111,27 +3471,45 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
+@@ -2111,27 +3499,45 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
  	return AppendNoOpCommand(command_buffer, sizeof(uint32_t));
  }
  
@@ -49708,7 +49736,7 @@ index 073361d..054da75 100644
  	           ? OK
  	           : LibKernel::KERNEL_ERROR_EBUSY;
  }
-@@ -2139,8 +3517,12 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
+@@ -2139,8 +3545,12 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
  static int KYTY_SYSV_ABI CommandBufferWriteAddress(void* command_buffer, volatile uint64_t* address,
                                                     uint64_t value, uint32_t) {
  	PRINT_NAME();
@@ -49722,7 +49750,7 @@ index 073361d..054da75 100644
  }
  
  static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*              command_buffer,
-@@ -2148,12 +3530,15 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*
+@@ -2148,12 +3558,15 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*
                                                                 uint64_t           value) {
  	PRINT_NAME();
  
@@ -49741,7 +49769,7 @@ index 073361d..054da75 100644
  
  	return AppendNoOpCommand(command_buffer, 0x20);
  }
-@@ -2170,44 +3555,56 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromTimeCounter(void*
+@@ -2170,44 +3583,56 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromTimeCounter(void*
                                                                    uint32_t) {
  	PRINT_NAME();
  
@@ -49809,7 +49837,7 @@ index 073361d..054da75 100644
  }
  
  static int KYTY_SYSV_ABI AprCommandBufferReadFileGather(void*    command_buffer, uint64_t, uint64_t,
-@@ -2314,15 +3711,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
+@@ -2314,15 +3739,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
  	return OK;
  }
  
@@ -49839,7 +49867,7 @@ index 073361d..054da75 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2333,7 +3742,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
+@@ -2333,7 +3770,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
  
  static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, uint64_t va,
                                                          uint64_t dmem_offset, uint64_t size,
@@ -49848,7 +49876,7 @@ index 073361d..054da75 100644
  	PRINT_NAME();
  
  	if (command_buffer == nullptr || !ValidateAmmMapArgs(va, size) ||
-@@ -2341,7 +3750,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
+@@ -2341,7 +3778,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
  		return LibKernel::KERNEL_ERROR_EINVAL;
  	}
  
@@ -49865,7 +49893,7 @@ index 073361d..054da75 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2504,38 +3921,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
+@@ -2504,38 +3949,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
  	}
  
  	*dmem_offset = allocated;
@@ -49938,7 +49966,7 @@ index 073361d..054da75 100644
  	}
  }
  
-@@ -2589,11 +4028,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
+@@ -2589,11 +4056,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto     submit_result =
@@ -49951,7 +49979,7 @@ index 073361d..054da75 100644
  
  	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -2618,11 +4056,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
+@@ -2618,11 +4084,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto     submit_result =
@@ -49964,7 +49992,7 @@ index 073361d..054da75 100644
  
  	if (out_submission_id != nullptr &&
  	    !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
-@@ -2648,91 +4085,1118 @@ static int KYTY_SYSV_ABI AmmWaitCommandBufferCompletion(uint32_t submission_id)
+@@ -2648,82 +4113,1109 @@ static int KYTY_SYSV_ABI AmmWaitCommandBufferCompletion(uint32_t submission_id)
  	return OK;
  }
  
@@ -50046,15 +50074,6 @@ index 073361d..054da75 100644
 -	LIB_FUNC("mZSbNJVJpV8", Ampr::AprCommandBufferReadFileGather);
 -	LIB_FUNC("Jg-AgkdJHkk", Ampr::AprCommandBufferReadFileScatter);
 -	LIB_FUNC("BVmR1H8l+XI", Ampr::AprCommandBufferReadFileGatherScatter);
--	LIB_FUNC("YPxkUDhgoNI", Ampr::AprCommandBufferResetGatherScatterState);
--	LIB_FUNC("Eul7AGEpjLo", Ampr::AprCommandBufferMapBegin);
--	LIB_FUNC("bFEs0Gs6D2A", Ampr::AprCommandBufferMapDirectBegin);
--	LIB_FUNC("X169CE6G3Y4", Ampr::AprCommandBufferMapEnd);
--	LIB_FUNC("Q07J7XpvhrU", Ampr::AmmGiveDirectMemory);
--	LIB_FUNC("wkQR9+xTFKY", Ampr::AmmGetVirtualAddressRanges);
--	LIB_FUNC("KqiWXLgCVe0", Ampr::AmmGetUsageStatsData);
--	LIB_FUNC("touqMEt6qXQ", Ampr::AmmSetPageTablePoolOccupancyNotificationThreshold);
--	LIB_FUNC("EDq5bqCqYpA", Ampr::AmmCommandBufferConstructor);
 +struct Bc5AmmPage {
 +	uint64_t dmem  = 0; // the direct memory behind the page
 +	int32_t  type  = 0;
@@ -51155,19 +51174,10 @@ index 073361d..054da75 100644
 +	LIB_FUNC("mZSbNJVJpV8", Ampr::AprCommandBufferReadFileGather);
 +	LIB_FUNC("Jg-AgkdJHkk", Ampr::AprCommandBufferReadFileScatter);
 +	LIB_FUNC("BVmR1H8l+XI", Ampr::AprCommandBufferReadFileGatherScatter);
-+	LIB_FUNC("YPxkUDhgoNI", Ampr::AprCommandBufferResetGatherScatterState);
-+	LIB_FUNC("Eul7AGEpjLo", Ampr::AprCommandBufferMapBegin);
-+	LIB_FUNC("bFEs0Gs6D2A", Ampr::AprCommandBufferMapDirectBegin);
-+	LIB_FUNC("X169CE6G3Y4", Ampr::AprCommandBufferMapEnd);
-+	LIB_FUNC("Q07J7XpvhrU", Ampr::AmmGiveDirectMemory);
-+	LIB_FUNC("wkQR9+xTFKY", Ampr::AmmGetVirtualAddressRanges);
-+	LIB_FUNC("KqiWXLgCVe0", Ampr::AmmGetUsageStatsData);
-+	LIB_FUNC("touqMEt6qXQ", Ampr::AmmSetPageTablePoolOccupancyNotificationThreshold);
-+	LIB_FUNC("EDq5bqCqYpA", Ampr::AmmCommandBufferConstructor);
- 	LIB_FUNC("pvUFDOHilnE", Ampr::AmmCommandBufferDestructor);
- 	LIB_FUNC("JEVYGhDc97M", Ampr::AmmCommandBufferMap);
- 	LIB_FUNC("ojBkmG7+CgE", Ampr::AmmCommandBufferMapWithGpuMaskId);
-@@ -2743,6 +5207,40 @@ LIB_DEFINE(InitAmpr_1_Ampr) {
+ 	LIB_FUNC("YPxkUDhgoNI", Ampr::AprCommandBufferResetGatherScatterState);
+ 	LIB_FUNC("Eul7AGEpjLo", Ampr::AprCommandBufferMapBegin);
+ 	LIB_FUNC("bFEs0Gs6D2A", Ampr::AprCommandBufferMapDirectBegin);
+@@ -2743,6 +5235,40 @@ LIB_DEFINE(InitAmpr_1_Ampr) {
  	LIB_FUNC("NnKhlMJtIsI", Ampr::AmmSubmitCommandBufferAndGetId);
  	LIB_FUNC("OJf3vCckPAM", Ampr::AmmSubmitCommandBufferAndGetResult);
  	LIB_FUNC("HXymib4T8gc", Ampr::AmmWaitCommandBufferCompletion);
