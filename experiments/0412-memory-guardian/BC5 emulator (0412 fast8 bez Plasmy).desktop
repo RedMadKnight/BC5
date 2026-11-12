@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=BC5 emulator (0412 fast8 bez Plasmy)
+Comment=BC5 exp 0412 (2026-11-13, on the maintainer's word): fast8 with the lean session (README sections 30 and 50): Plasma's shell (panel, desktop, notifications) is stopped when the game starts and started again when the launcher is gone, about 220 MiB more free memory at the wall; everything else as fast8 (private build g412v, no zero skip, fuse 13,000 MiB); if the panel does not come back: systemctl --user start plasma-plasmashell.service; log ~/bc5-work/exp0412/play-last.log, lean log ~/bc5-work/exp0412/lean.log
+Exec=/usr/bin/env BC5_0412_LEAN=1 /usr/bin/bash /home/kjaniszewski/bc5-work/exp0412/play-guard-0412.sh fast8
+Icon=applications-games
+Terminal=false
+Categories=Game;
+StartupNotify=false
