@@ -4,7 +4,8 @@
 # which gave the box until about 02:00). After exp 0401's run0401t.sh (its route gate on the journal's frame profile
 # lines, its private working directory, its derived launcher, its walk), with these differences:
 #   - the save is the maintainer's current one: ONE named snapshot, $N/saves-named/PPSA03671, a copy of the live
-#     ~/bc5-work/_SaveData/PPSA03671 made once by MODE=name (the live saves are read once there and never written);
+#     ~/bc5-work/_SaveData/PPSA03671 made once by MODE=name (the live saves are read once there and never written;
+#     the sum is the copy's own, under LC_ALL=C: no comparison with the live saves, no new snapshot per arm: lesson R45);
 #     every arm resets its private copy from it. The save list has one slot, so the route is cross (start screen),
 #     cross (slot 1), cross (Continue).
 #   - the arm's words come from play-guard-0412.sh <arm> words (the "e11 unpacked" shortcut's 70 plus the arm's);
@@ -28,7 +29,6 @@ if [ "${MODE:-}" = name ]; then
   [ ! -e "$NS" ] || { echo "$NS exists ($(cat "$N/saves-named.sum" 2> /dev/null)): not made again"; exit 0; }
   [ -d "$W/_SaveData/PPSA03671" ] || { echo "no live saves"; exit 1; }
   mkdir -p "$NS" && cp -a "$W/_SaveData/PPSA03671" "$NS/PPSA03671" || { rm -rf "$NS"; echo "the copy failed"; exit 1; }
-  [ "$(sumof "$NS")" = "$(sumof "$W/_SaveData")" ] || { rm -rf "$NS"; echo "the copy does not read as the live saves: removed"; exit 1; }
   sumof "$NS" > "$N/saves-named.sum"
   echo "named snapshot $NS/PPSA03671: $(cat "$N/saves-named.sum") ($(du -sh "$NS" | cut -f1), $(find "$NS" -type f | wc -l) files)"
   exit 0

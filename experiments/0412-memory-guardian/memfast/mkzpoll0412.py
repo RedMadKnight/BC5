@@ -13,11 +13,14 @@ Input: the main unit after mknscan0412.py. No behaviour change with the switch u
 Each anchor occurs exactly once; the script undoes its edits and asserts that this gives the input back.
 usage: mkzpoll0412.py <bc5LleAgc.cpp in> <bc5LleAgc.cpp out>"""
 import hashlib
+import os
 import sys
 
 T = b" // exp 0412 (tag zp412)\n"
+INC = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "zpoll0412.inc"), "rb").read()
+assert b"\r" not in INC and INC.decode("ascii")
 
-GLUE = b'''// Experiment 0412 (tag zp412): BC5_GUARD_ZSKIP_POLL_SUBMIT. The zero skip's poll before every submission: see mkzpoll0412.py.
+GLUE = INC + b'''// Experiment 0412 (tag zp412): BC5_GUARD_ZSKIP_POLL_SUBMIT. The zero skip's poll before every submission: see mkzpoll0412.py.
 static void zpoll412_submit() {
 	static const bool on = [] {
 		const char* e = std::getenv("BC5_GUARD_ZSKIP_POLL_SUBMIT");
@@ -31,8 +34,7 @@ static void zpoll412_submit() {
 	const uint64_t  t0 = SoftCp::now_ns();
 	struct stat     st {};
 	looks++;
-	if (fstat(fd, &st) == 0 && static_cast<uint64_t>(st.st_blocks) != seen) {
-		seen = static_cast<uint64_t>(st.st_blocks);
+	if (fstat(fd, &st) == 0 && zp412::look(seen, static_cast<uint64_t>(st.st_blocks))) { // seen = the sample taken BEFORE the scan (zpoll0412.inc, R12)
 		grew++;
 		const uint64_t before = g_zstat_cpu + g_zstat_hits;
 		zskip_take_back(S, fd);
@@ -41,9 +43,7 @@ static void zpoll412_submit() {
 			took += n;
 			took_subs++;
 			S.blocks = ~0ull; // a full sync: pin what came back and map it in the canary's place, before this buffer goes out
-			direct_sync_one(S, true);
-			struct stat st2 {};
-			if (fstat(fd, &st2) == 0) seen = static_cast<uint64_t>(st2.st_blocks); // the pin itself allocated pages
+			direct_sync_one(S, true); // the pin allocates pages: the next submission sees a changed count and scans once more
 			if (lines++ < 60 || (lines & 63u) == 0) {
 				journal("zero skip poll (exp 0412, tag zp412): t %.3f s: %" PRIu64 " chunks taken back before submission %" PRIu64 " (%.2f ms)\\n", timing_now(), n, g_submits.load(),
 				        static_cast<double>(SoftCp::now_ns() - t0) / 1e6);

@@ -1605,8 +1605,11 @@ with the zero skip, in 9 runs now). Data `raw/d1zc-*`.
 **Result** [M]:
 - 1,010 MiB placed as skipped (740 MiB of `RenderGpuWcLarge` in 30 runs, 270 MiB of `CommitIABufferAllocator` in 3).
 - In the first 90 s the poll found 45 chunks written by the CPU; for 45 of them submissions had gone out since the
-  previous poll, 1,204 submissions in all, each with zeros mapped for the GPU at a chunk that already held the
-  title's data. The window: mean 58.8 ms, longest 149 ms, over 10 ms for 40 chunks, over 50 ms for 19.
+  previous poll, 1,204 submissions in all. The window: mean 58.8 ms, longest 149 ms, over 10 ms for 40 chunks,
+  over 50 ms for 19. (Corrected 2026-11-12 after the review, R13: these are intervals BETWEEN TWO SCANS and the
+  submissions counted in them. When inside an interval the CPU wrote is not known, so it is not known how many
+  of those submissions went out after the write; and the catcher does not tie any submission to a read of the
+  chunk or to the values read.)
 - The hang: the last good flip is at 99.503 s. **At 99.507 s the poll found CPU data in the chunk at file offset
   0x22e200000, which lies in the skipped part of `CommitIABufferAllocator`; the previous poll was 31.7 ms earlier
   and 15 submissions had gone out in between.** A second chunk followed at 99.609 s (22.8 ms, no submission).
@@ -1614,10 +1617,10 @@ with the zero skip, in 9 runs now). Data `raw/d1zc-*`.
   No chunk was found between 83.0 s and 99.5 s.
 
 **Reading.** The blind window is real and long: tens of milliseconds, with tens of submissions inside it. And the
-one hang of this run starts within 4 ms of the moment the poll shows that the GPU had been drawing for 32 ms from
-zeros where the title had put data into its index-and-vertex heap. That is coincidence in time and in place, both
-measured; that those 15 submissions read that chunk and that zeros there make a job that never ends is the step
-still inferred [I]. It is the mechanism of section 31, now with a measured case; the two earlier timeouts
+one hang of this run starts within 4 ms of a scan that found CPU data in a skipped chunk of the index-and-vertex
+heap, 31.7 ms and 15 submissions after the scan before it. That is nearness in time and in place, both measured.
+That the write came before any of those 15 submissions, that one of them read that chunk, and that zeros there
+make a job that never ends are each inferred [I]: "the GPU read zeros" is a hypothesis (corrected 2026-11-12, R13). It is the mechanism of section 31, now with a measured case; the two earlier timeouts
 (sections 9, 14) had the same signature and no catcher.
 The polls themselves are not rare (1,946 in 90 s, 22 a second); the window is long because a poll happens only at
 a sync, and syncs are throttled and skipped for light buffers. Polling more often narrows the window and cannot
@@ -1903,8 +1906,8 @@ never runs a buffer on the canary's zeros where data exists. The look is one `fs
 the file's block count), and the SEEK_DATA walk runs only when it changed. Only a write racing a buffer that is
 already with the kernel stays unseen until the next submission, and no title can depend on that order.
 `BC5_GUARD_ZSKIP_POLL_SUBMIT=1` (`memfast/mkzpoll0412.py`, tag zp412; default off, one test of a constant).
-It is glue around exp 0379's functions (`zskip_take_back`, `direct_sync_one`); it has no computation of its own, so
-there is no CPU test for it: the proof is the runs. Build g412u = g412t + this, binary `1f39cd1e` (g412t kept;
+It is glue around exp 0379's functions (`zskip_take_back`, `direct_sync_one`). (As built in g412u it had no CPU test
+and a defect the review found; see section 45.) Build g412u = g412t + this, binary `1f39cd1e` (g412t kept;
 `memfast/mk0412u.sh`).
 
 **Arm fast5** = fast2 + `BC5_DIRECT_ZERO_SKIP=<the list scanned at his save, 1,010 MiB in 33 runs>` +
@@ -1927,8 +1930,9 @@ runs v1zp–v9zp, 23:49–00:19; `raw/ab0412u.out`, `raw/v?zp-zpoll.txt`) [M]:
 - The catcher of section 33 in v9zp: 0 chunks found by a sync's poll with a submission before it.
 - All nine reached 178–180 s; no kernel line, no crash line.
 
-**Reading, with its limits.** Nine clean runs where the old zero skip hung in three of nine: by chance alone that is
-about 3 in 100. Two things keep it from being proof: the old runs were on arms zo/zof (10 s release, no fast
+**Reading, with its limits.** 0 timeouts in 9 runs here against 3 in 9 with the old zero skip (a one-sided exact
+Fisher test on those counts gives 0.103, and the two series are not the same configuration). Two things keep it
+from being proof: the old runs were on arms zo/zof (10 s release, no fast
 tables), not on fast2's settings, and the mechanism was exercised only a few times per run (0–3 chunks; run d1zc
 had found 45 written chunks in 90 s on its arm, a difference I have not explained). The memory side is plain:
 about 650 MiB less pinned and 400–500 MiB more available than fast2, on the scripted load; his own load is about
@@ -1946,9 +1950,11 @@ wyłącz emulator - zbierz wyniki".
   `~/bc5-work/trash-20261111/pulpit`.
 - Runs w1his and w2his: `run0412n.sh <tag> fast5 120` (build g412u, RT on, measuring watchdog 220 MiB, no catcher):
   the scripted route (start screen, slot, Continue) on a private copy of his saves, the walk for 120 s after the
-  load, then the stop. Before w2his the named snapshot was made again from the live saves; it reads the same as the
-  one of 11-10 (`1151e79071c72b17`), so both runs loaded his current save. **His live saves were only read: the same
-  sum before and after** (nothing to put back). The old snapshot stays beside as `night/saves-named.20261111-2020`.
+  load, then the stop. Both runs reset their private copy from the named snapshot (`1151e79071c72b17`, the copy's own
+  sum); the runs never write the live saves, so there is nothing to put back. (Corrected 2026-11-12, lesson R45:
+  before w2his I made the snapshot again from the live saves and compared live sums before and after; neither is
+  part of the process: one named snapshot per series, hashed as the copy it is. The second copy,
+  `night/saves-named.20261111-2020`, holds the same content.)
 
 | [M] | w1his | w2his |
 |---|---|---|
@@ -2057,6 +2063,31 @@ the filter's own copies, the shadow labels and the DMA snapshot's size are not c
   buffer rewritten).
 - **What a lean build can drop at once** (diagnostics): the timeout probe's per-job copy, the table catcher, ACB
   inherit in journal mode, timing and frame-profile lines, the ledger. The lean version of section 43 drops these.
+
+### 45. After the review of 2026-11-12 (lessons R12, R13, R45): the poll's sample, and three corrections
+
+- **R12, a defect in section 40's glue** (`memfast/mkzpoll0412.py` as built into g412u and g412L): after the scan
+  and the sync it read the file's block count a second time and stored that. A CPU write into another still-skipped
+  chunk that lands between the scan and that second read is then credited without having been scanned, and the next
+  submission, even one made after that write was complete, skips its scan at an unchanged count (the reviewer's
+  model: 100 -> 108 for A -> 116 for B). **Fixed:** the stored value is the sample taken before the scan
+  (`memfast/zpoll0412.inc`, `zp412::look`); the host's own pin after a scan then costs one more scan at the next
+  submission. CPU test `memfast/zpoll0412.cpp` on stand-ins: the targeted case (B written after the sync must be
+  recovered before its next submission) passes with the new rule and fails with the old one; 20,000 random
+  interleavings pass, and the old rule fails in 14,015 of them. 20,005 of 20,005.
+  **Section 40's "same guarantee" is narrowed:** the block count is a hint that something was written somewhere in
+  the file, not a per-chunk record; the guarantee rests on the scan running whenever the count differs from the last
+  sample taken before a scan. The nine runs of section 40, the two of section 41 and his play of section 42 ran the
+  defective glue.
+- **R13**: section 33's intervals are between two scans; the hypothesis "the GPU read zeros" stays a hypothesis
+  (corrected in place).
+- **R45**: `run0412n.sh` no longer compares the named snapshot with the live saves; section 41 corrected in place.
+- Section 40's "3 in 100" replaced by the counts and the test.
+- **Builds with the fix** (2026-11-12 01:12-01:17): g412v `bc4356a5` in place (`memfast/mk0412v.sh`; g412u `1f39cd1e` kept) and
+  the lean g412L2 `8ef2168f` in `bin-lean` (`memfast/mk0412L2.sh`); both ran `zpoll0412.cpp` on the box, 20,005 of 20,005.
+  One scripted run of fast5 on g412v (y1v): 179 s, no kernel line, no timeout, 26.0 flips/s, pinned 10,982 MiB and
+  823 MiB available at 150 s, 3 chunks taken back at submissions. The lean binary was not started again after the
+  rebuild (its dry check passes). Both desktop shortcuts run the fixed builds.
 
 ## Verdict
 
