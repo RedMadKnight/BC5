@@ -27362,10 +27362,10 @@ index 82be73c..f090fcb 100644
  } // namespace Libs::Audio::AudioInternal
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..7de7e4b
+index 0000000..b822d66
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,8237 @@
+@@ -0,0 +1,8258 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -31215,11 +31215,32 @@ index 0000000..7de7e4b
 +	p.insert(p.end(), {0xC0017900u, 0x250u, static_cast<uint32_t>(base >> 8u)});           // VGT_TF_MEMORY_BASE
 +	p.insert(p.end(), {0xC0017900u, 0x261u, static_cast<uint32_t>(base >> 40u) & 0xffu});  // VGT_TF_MEMORY_BASE_HI
 +}
++// Experiment 0401, behaviour switches, both off by default: two registers of Mesa's gfx10 preamble that neither the
++// title's stream nor the host sets (static audit of 2026-11-02, 1,347 captured buffers), written in every prefix as the
++// rings are, by the packets Mesa's own preamble sends from an unprivileged user IB (src/amd/common/ac_cmdbuf.c @ 0866ae7,
++// through ac_pm4_set_reg). Neither is in Mesa's privileged list (src/amd/common/ac_pm4.c:34 is_privileged_reg).
++// - BC5_DIRECT_CP_COHER_START_DELAY=1: CP_COHER_START_DELAY = 0x20 (R_0301EC, uconfig 0x7b, START_DELAY_COUNT bits 0-5,
++//   src/amd/registers/gfx10.json), SET_UCONFIG_REG; ac_cmdbuf.c:60 gfx10_init_compute_preamble_state. Mesa gives no reason.
++// - BC5_DIRECT_SPI_REQ_CTRL_PS=1: SPI_SHADER_REQ_CTRL_PS = 0x7 (R_00B0C0, SH 0x30: SOFT_GROUPING_EN bit 0 = 1,
++//   NUMBER_OF_REQUESTS_PER_CU bits 1-4 = 4 - 1), SET_SH_REG; ac_cmdbuf.c:444 gfx10_init_graphics_preamble_state.
++// TODO(verify): what the chip holds before these writes; there is no read-back yet (debugfs needs root).
++static void mesa_preamble_prefix(std::vector<uint32_t>& p) {
++	static const bool coher  = bc5::env_on(std::getenv("BC5_DIRECT_CP_COHER_START_DELAY"));
++	static const bool req_ps = bc5::env_on(std::getenv("BC5_DIRECT_SPI_REQ_CTRL_PS"));
++	static std::atomic<bool> told {false};
++	if (!told.exchange(true)) {
++		journal("exp 0401: CP_COHER_START_DELAY %s\n", coher ? "0x20 in every prefix (SET_UCONFIG_REG 0x7b)" : "off");
++		journal("exp 0401: SPI_SHADER_REQ_CTRL_PS %s\n", req_ps ? "0x7 in every prefix (SET_SH_REG 0x30)" : "off");
++	}
++	if (coher) p.insert(p.end(), {0xC0017900u, 0x7bu, 0x20u});
++	if (req_ps) p.insert(p.end(), {0xC0017600u, 0x30u, 0x7u});
++}
 +static std::vector<uint32_t> prefix_of(const bc5::full_state::Tracker& t) {
 +	std::vector<uint32_t> p = t.emit_prefix();
 +	static const bool no_clear = bc5::env_on(std::getenv("BC5_DIRECT_PIECES_NO_CLEAR"));
 +	if (no_clear && p.size() >= 5) p.erase(p.begin(), p.begin() + 5);
 +	tf_ring_prefix(p); // experiment 0160
++	mesa_preamble_prefix(p); // experiment 0401
 +	return p;
 +}
 +static std::atomic<uint64_t> g_dry_bufs {0}, g_dry_splits {0}, g_dry_prefix {0}, g_dry_ns {0}, g_dry_max_ns {0}, g_dry_kept {0}, g_dry_ok {0},
