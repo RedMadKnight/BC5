@@ -4528,10 +4528,10 @@ index 0000000..226a60e
 +} // namespace bc5::pad_audio_route
 diff --git a/src/bc5/switch_defaults.hpp b/src/bc5/switch_defaults.hpp
 new file mode 100644
-index 0000000..9293315
+index 0000000..f90ec90
 --- /dev/null
 +++ b/src/bc5/switch_defaults.hpp
-@@ -0,0 +1,89 @@
+@@ -0,0 +1,97 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +// Experiment 0413: the defaults of switches that went from the private test builds (exps 0401, 0405, 0409, 0412) into
 +// both shared builds. Each row is applied at process start with setenv(name, value, 0), before any static initializer
@@ -4553,9 +4553,20 @@ index 0000000..9293315
 +	const char* value;
 +};
 +
-+inline constexpr Default kDefaults[] = {
++// Experiment 0416: pure fixes (a fault, a leak, two same-answer speed-ups). They are not behaviour choices, so
++// KYTY_BC5_SWITCH_DEFAULTS=0 does not skip them; NAME=0 in the environment still turns one off.
++inline constexpr Default kFixes[] = {
 +    // A2: acb state restore (exp 0381, 0401 series c)
 +    {"BC5_DIRECT_ACB_STATE_RESTORE", "1"},
++    // C1: graphics event pending cap
++    {"KYTY_BC5_EVENT_PENDING_CAP", "64"},
++    // C2: fast AMM range query
++    {"KYTY_BC5_RANGES_FAST", "1"},
++    // C3: sorted physical-mapping table
++    {"KYTY_BC5_PHYSMAP_SORTED", "1"},
++    {nullptr, nullptr}};
++
++inline constexpr Default kDefaults[] = {
 +    // A3: pthread rwlock prefer-reader
 +    {"KYTY_BC5_PTHREAD_FIXES", "1"},
 +    // A4: SaveData mount result, event callback, mtime sort
@@ -4604,15 +4615,12 @@ index 0000000..9293315
 +    {"KYTY_BC5_FW_KERNEL", "1"},
 +    // B16: quiet journal and inherit-map caps
 +    {"BC5_DIRECT_JOURNAL_QUIET", "1"},
-+    // C1: graphics event pending cap
-+    {"KYTY_BC5_EVENT_PENDING_CAP", "64"},
-+    // C2: fast AMM range query
-+    {"KYTY_BC5_RANGES_FAST", "1"},
-+    // C3: sorted physical-mapping table
-+    {"KYTY_BC5_PHYSMAP_SORTED", "1"},
 +    {nullptr, nullptr}};
 +
 +inline void Apply() {
++	for (const Default* d = kFixes; d->name != nullptr; d++) {
++		setenv(d->name, d->value, 0);
++	}
 +	const char* all = std::getenv("KYTY_BC5_SWITCH_DEFAULTS");
 +	if (all != nullptr && std::strcmp(all, "0") == 0) return;
 +	for (const Default* d = kDefaults; d->name != nullptr; d++) {
@@ -5272,10 +5280,16 @@ index 8c19ba5..85d0bcb 100644
  	LOGF("AsyncPipelineCompiler: started %zu worker threads\n", kWorkerCount);
  }
 diff --git a/src/graphics/host_gpu/renderer/sync.cpp b/src/graphics/host_gpu/renderer/sync.cpp
-index 94ebbad..127d3a1 100644
+index 94ebbad..d6c7144 100644
 --- a/src/graphics/host_gpu/renderer/sync.cpp
 +++ b/src/graphics/host_gpu/renderer/sync.cpp
-@@ -18,6 +18,10 @@
+@@ -14,10 +14,16 @@
+ #include "libs/errno.h"
+ 
+ #include <array>
++#include <cstdio>
++#include <cstdlib>
+ #include <cstring>
  #include <limits>
  #include <optional>
  
@@ -5286,11 +5300,40 @@ index 94ebbad..127d3a1 100644
  namespace Libs::Graphics::Sync {
  
  constexpr int      GRAPHICS_EVENT_QUEUED_GRAPHICS_INTERRUPT = 0x00;
-@@ -352,7 +356,7 @@ static void EopEventTriggerFunc(LibKernel::EventQueue::KernelEqueueEvent* event,
+@@ -344,6 +350,21 @@ static void EopEventDeleteFunc(LibKernel::EventQueue::KernelEqueue       eq,
+ 	}
+ }
+ 
++// BC5 (exp 0414's list, item 1b; the idea is KytyPS5 c86d31b "coalesce repeated GPU interrupts with the same data"):
++// with KYTY_BC5_EVENT_COALESCE_SAME=1 a trigger for a still unread event whose data equals the newest unread entry's
++// only counts on that entry. Unset, empty and "0" are off: the code below runs as before.
++static bool Bc5EopCoalesceSame() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_EVENT_COALESCE_SAME");
++		const bool  v = e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
++		if (v) {
++			std::fprintf(stderr, "[bc5] KYTY_BC5_EVENT_COALESCE_SAME on: a repeated EOP trigger with the same data counts on the newest unread entry\n");
++		}
++		return v;
++	}();
++	return on;
++}
++
+ static void EopEventTriggerFunc(LibKernel::EventQueue::KernelEqueueEvent* event,
+                                 void*                                     trigger_data) {
+ 	EXIT_IF(event == nullptr);
+@@ -352,7 +373,14 @@ static void EopEventTriggerFunc(LibKernel::EventQueue::KernelEqueueEvent* event,
  	triggered_event.fflags++;
  	triggered_event.data = reinterpret_cast<intptr_t>(trigger_data);
  	if (event->triggered) {
 -		event->pending_events.push_back(triggered_event);
++		if (Bc5EopCoalesceSame()) {
++			auto& newest = event->pending_events.empty() ? event->event : event->pending_events.back();
++			if (newest.data == triggered_event.data) {
++				newest.fflags++;
++				return;
++			}
++		}
 +		LibKernel::EventQueue::KernelEventPendingPush(event, triggered_event); // exp 0412 (tag ev412): KYTY_BC5_EVENT_PENDING_CAP, _LOG
  	} else {
  		event->event     = triggered_event;
@@ -27587,7 +27630,7 @@ index 3b39581..6b35a70 100644
  int KYTY_SYSV_ABI pthread_rwlock_init(LibKernel::PthreadRwlock*           rwlock,
                                        const LibKernel::PthreadRwlockattr* attr);
 diff --git a/src/kernel/semaphore.cpp b/src/kernel/semaphore.cpp
-index ed7c35b..8696edb 100644
+index ed7c35b..671df48 100644
 --- a/src/kernel/semaphore.cpp
 +++ b/src/kernel/semaphore.cpp
 @@ -2,6 +2,10 @@
@@ -27601,7 +27644,15 @@ index ed7c35b..8696edb 100644
  #include "common/stringUtils.h"
  #include "common/threads.h"
  #include "common/timer.h"
-@@ -72,6 +76,69 @@ private:
+@@ -55,6 +59,7 @@ private:
+ 		int    need_count = 0;
+ 		Result result     = Result::TimedOut;
+ 		bool   ready      = false;
++		Common::CondVar* own_cond = nullptr; // BC5 KYTY_BC5_SEMA_TARGETED_WAKE: this waiter's own condition variable
+ 	};
+ 
+ 	void AddWaiter(WaitingThread* waiter);
+@@ -72,6 +77,84 @@ private:
  	int                         m_max_count;
  };
  
@@ -27668,10 +27719,45 @@ index ed7c35b..8696edb 100644
 +}
 +// ---- end of experiment 0405's block -------------------------------------------------------------------------------
 +
++// BC5 (exp 0414's list, item 5; the idea is KytyPS5 a0268f1 "a semaphore signal wakes only the waiters it hands counts
++// to"): with KYTY_BC5_SEMA_TARGETED_WAKE=1 each waiter sleeps on its own condition variable (one per thread) and is
++// signalled when it is made ready; nothing is broadcast on the semaphore's shared one. Unset, empty and "0" are off.
++static bool Bc5SemaTargetedWake() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_SEMA_TARGETED_WAKE");
++		const bool  v = e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
++		if (v) {
++			std::fprintf(stderr, "[bc5] KYTY_BC5_SEMA_TARGETED_WAKE on: a semaphore signal wakes only the waiters it hands counts to\n");
++		}
++		return v;
++	}();
++	return on;
++}
++
  KernelSemaPrivate::~KernelSemaPrivate() {
  	Common::LockGuard lock(m_mutex);
  
-@@ -137,6 +204,10 @@ KernelSemaPrivate::Result KernelSemaPrivate::Signal(int signal_count) {
+@@ -87,6 +170,9 @@ KernelSemaPrivate::~KernelSemaPrivate() {
+ 		if (!waiter->ready) {
+ 			waiter->result = Result::Deleted;
+ 			waiter->ready  = true;
++			if (waiter->own_cond != nullptr) {
++				waiter->own_cond->Signal();
++			}
+ 		}
+ 	}
+ 
+@@ -122,6 +208,9 @@ KernelSemaPrivate::Result KernelSemaPrivate::Cancel(int set_count, int* num_wait
+ 		if (!waiter->ready) {
+ 			waiter->result = Result::Canceled;
+ 			waiter->ready  = true;
++			if (waiter->own_cond != nullptr) {
++				waiter->own_cond->Signal();
++			}
+ 		}
+ 	}
+ 
+@@ -137,6 +226,10 @@ KernelSemaPrivate::Result KernelSemaPrivate::Signal(int signal_count) {
  		return Result::Deleted;
  	}
  
@@ -27682,7 +27768,53 @@ index ed7c35b..8696edb 100644
  	if (m_count + signal_count > m_max_count) {
  		return Result::InvalCount;
  	}
-@@ -257,6 +328,11 @@ int KYTY_SYSV_ABI KernelCreateSema(KernelSema* sem, const char* name, uint32_t a
+@@ -145,7 +238,9 @@ KernelSemaPrivate::Result KernelSemaPrivate::Signal(int signal_count) {
+ 
+ 	WakeWaiters();
+ 
+-	m_cond_var.SignalAll();
++	if (!Bc5SemaTargetedWake()) {
++		m_cond_var.SignalAll();
++	}
+ 
+ 	return Result::Ok;
+ }
+@@ -176,6 +271,9 @@ void KernelSemaPrivate::WakeWaiters() {
+ 			m_count -= waiter->need_count;
+ 			waiter->result = Result::Ok;
+ 			waiter->ready  = true;
++			if (waiter->own_cond != nullptr) {
++				waiter->own_cond->Signal();
++			}
+ 		}
+ 	}
+ }
+@@ -220,6 +318,12 @@ KernelSemaPrivate::Result KernelSemaPrivate::Wait(int need_count, uint32_t* ptr_
+ 	waiter.id         = id;
+ 	waiter.priority   = (m_fifo_order ? 0 : Libs::LibKernel::PthreadGetCurrentPriorityForKernel());
+ 	waiter.need_count = need_count;
++	Common::CondVar* cond = &m_cond_var;
++	if (Bc5SemaTargetedWake()) {
++		static thread_local Common::CondVar own; // a thread waits on one semaphore at a time
++		waiter.own_cond = &own;
++		cond            = &own;
++	}
+ 	AddWaiter(&waiter);
+ 
+ 	while (!waiter.ready) {
+@@ -230,9 +334,9 @@ KernelSemaPrivate::Result KernelSemaPrivate::Wait(int need_count, uint32_t* ptr_
+ 		}
+ 
+ 		if (infinitely) {
+-			m_cond_var.WaitFor(&m_mutex, SIGNAL_APC_POLL_MICROS);
++			cond->WaitFor(&m_mutex, SIGNAL_APC_POLL_MICROS);
+ 		} else {
+-			m_cond_var.WaitFor(&m_mutex, micros - elapsed);
++			cond->WaitFor(&m_mutex, micros - elapsed);
+ 		}
+ 
+ 		m_mutex.Unlock();
+@@ -257,6 +361,11 @@ int KYTY_SYSV_ABI KernelCreateSema(KernelSema* sem, const char* name, uint32_t a
  
  	EXIT_NOT_IMPLEMENTED(sem == nullptr);
  
@@ -27694,7 +27826,7 @@ index ed7c35b..8696edb 100644
  	if (name == nullptr || attr > 2 || init < 0 || max <= 0 || init > max) {
  		return KERNEL_ERROR_EINVAL;
  	}
-@@ -294,10 +370,6 @@ int KYTY_SYSV_ABI KernelWaitSema(KernelSema sem, int need, KernelUseconds* time)
+@@ -294,10 +403,6 @@ int KYTY_SYSV_ABI KernelWaitSema(KernelSema sem, int need, KernelUseconds* time)
  		return KERNEL_ERROR_ESRCH;
  	}
  
@@ -27705,7 +27837,7 @@ index ed7c35b..8696edb 100644
  	auto result = sem->Wait(need, time);
  
  	int ret = OK;
-@@ -341,6 +413,10 @@ int KYTY_SYSV_ABI KernelSignalSema(KernelSema sem, int count) {
+@@ -341,6 +446,10 @@ int KYTY_SYSV_ABI KernelSignalSema(KernelSema sem, int count) {
  	if (sem == nullptr) {
  		return KERNEL_ERROR_ESRCH;
  	}
@@ -30735,10 +30867,10 @@ index 6df0a95..eca6d2d 100644
  		    static_cast<uint32_t>(src->crop_right + (pitch - src->width));
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..66e6351
+index 0000000..c6d9433
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,14263 @@
+@@ -0,0 +1,14273 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -31292,6 +31424,7 @@ index 0000000..66e6351
 +static bool chain_cross();   // ADR 0010 section B: this thread's chain is held across its ioctls (BC5_DIRECT_CHAIN=2, a game thread)
 +static bool chain_cross_mode(); // BC5_DIRECT_CHAIN=2 at all
 +static void chain_observe(); // the title can observe the GPU now (submit done / wait idle / an event-queue wait): every held chain is submitted
++static void chain_soft_push_copy(const uint32_t* dwords, uint32_t n, const char* kind);
 +static void chain_soft_push(const uint32_t* dwords, uint32_t n, const char* kind); // a soft-CP replay to post once the chain holding the buffer is submitted
 +// The doorbell-queue consumer (source 1) keeps waiting for its own jobs and runs its soft-CP
 +// pass itself: a compute buffer may end in a wait for the next frame's label, and that wait has
@@ -31680,15 +31813,13 @@ index 0000000..66e6351
 +// there is no direct path. With the game thread's chain held across its ioctls (BC5_DIRECT_CHAIN=2) the buffers are not
 +// submitted yet, so RPCSX's EVENT_WRITE_EOP itself (6 dwords, the form event_write_eop below reads; address 0, so nothing
 +// is written) goes to the chain as a soft-CP replay, posted behind the chain's fence. The replay reads it later, so it
-+// lives in a ring of 4096 slots. Nothing is submitted to the GPU for it. RPCSX also waits for idle at the end of this
++// owns a copy through completion of its callback. Nothing is submitted to the GPU for it. RPCSX also waits for idle at the end of this
 +// ioctl (gc.cpp:271); that is not ported here (G12 is the wait-idle ioctl's).
-+static uint32_t              g_r3gpu_eop_slots[4096][6];
-+static std::atomic<uint32_t> g_r3gpu_eop_next {0};
 +static void r3gpu_submit_eop(uint64_t eop_value) {
 +	g_r3gpu_count[kR3EopEvents]++;
 +	const bool chained = Direct::chain_cross();
 +	if (chained) {
-+		uint32_t* s = g_r3gpu_eop_slots[g_r3gpu_eop_next.fetch_add(1, std::memory_order_relaxed) & 4095u];
++		uint32_t s[6] {}; // copied into the queued replay before returning
 +		s[0]        = 0xc0044700u;                 // PKT3 EVENT_WRITE_EOP (0x47), count 4: 6 dwords
 +		s[1]        = 0;                           // EVENT_CNTL (RPCSX: the event type is not used)
 +		s[2]        = 0;                           // address lo
@@ -31696,7 +31827,7 @@ index 0000000..66e6351
 +		s[4]        = static_cast<uint32_t>(eop_value);
 +		s[5]        = static_cast<uint32_t>(eop_value >> 32u);
 +		g_r3gpu_count[kR3EopChained]++;
-+		Direct::chain_soft_push(s, 6, "r3eop");
++		Direct::chain_soft_push_copy(s, 6, "r3eop");
 +	} else {
 +		Direct::post([eop_value](bool) { fire_eop(eop_value); });
 +	}
@@ -36668,6 +36799,7 @@ index 0000000..66e6351
 +	const uint32_t* dwords;
 +	uint32_t        n;
 +	const char*     kind;
++	std::shared_ptr<const std::vector<uint32_t>> owned {}; // host-generated replay only; captured by value with e
 +};
 +// ADR 0013 (experiment 0226): a wait a held chain carries for the GPU, released when
 +// its label is satisfied or its writer is on a ring.
@@ -37042,6 +37174,15 @@ index 0000000..66e6351
 +	std::lock_guard lk(s.mu);
 +	s.soft.push_back({dwords, n, kind});
 +	if (s.c.segs.empty() && !s.in_submit) chain_post_soft_locked(s); // nothing of the buffer is held back (flushed at a wait, or never appended)
++}
++// Experiment 0416 (Codex's review of exp 0413): host-generated packets must survive both the held chain and the
++// completion queue. Guest command-buffer replays keep their borrowed-buffer semantics.
++static void chain_soft_push_copy(const uint32_t* dwords, uint32_t n, const char* kind) {
++	auto owned = std::make_shared<const std::vector<uint32_t>>(dwords, dwords + n);
++	ChainSlot& s = g_chain_tl;
++	std::lock_guard lk(s.mu);
++	s.soft.push_back({owned->data(), n, kind, owned});
++	if (s.c.segs.empty() && !s.in_submit) chain_post_soft_locked(s);
 +}
 +// Appends `pre` (host-built, may be empty) then `ib` to the thread's chain, closing it first if the buffer
 +// cannot share it. host_built: no soft-CP marks for `ib` (a state prefix submitted on its own).
@@ -43830,6 +43971,7 @@ index 0000000..66e6351
 +static bool chain_cross_mode() { return false; }
 +static void chain_observe() {}
 +static void chain_soft_push(const uint32_t*, uint32_t, const char*) {}
++static void chain_soft_push_copy(const uint32_t*, uint32_t, const char*) {}
 +static void set_source(int) {}
 +static bool async_on() { return false; }
 +static bool on_game_thread() { return true; }
@@ -47724,7 +47866,7 @@ index 5b0fc93..5b78760 100644
  	LOGF("\t target = %d\n"
  	     "\t msg    = 0x%016" PRIx64 "\n",
 diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
-index 073361d..69709a8 100644
+index 073361d..2b03ec1 100644
 --- a/src/libs/libAmpr.cpp
 +++ b/src/libs/libAmpr.cpp
 @@ -1,3 +1,5 @@
@@ -49557,7 +49699,7 @@ index 073361d..69709a8 100644
  	return CommitCommandBufferRecord(command_buffer, &state, record_size);
  }
  
-@@ -1678,13 +2991,84 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
+@@ -1678,13 +2991,108 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
  	return OK;
  }
  
@@ -49612,6 +49754,29 @@ index 073361d..69709a8 100644
 +	return true;
 +}
 +
++// Experiment 0416 (KYTY_BC5_AMM_SETBUFFER_MAP): the map flavour is opt-in. Neither of our two titles passes more than
++// three arguments (exp 0413), so a3-a5 are leftovers and the flavour would be chosen by chance. Off (the default): a
++// call with the map signature is the buffer flavour, with a line for the first 16. =1: exp 0035's map flavour, for
++// a target that is not mapped yet (the guard above still refuses mapped ones).
++static bool Bc5SetBufferMapAllowed(uint64_t cb, uint64_t va, uint32_t size, uint64_t a3, uint64_t a4, uint64_t a5) {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_AMM_SETBUFFER_MAP");
++		return e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
++	}();
++	if (on) {
++		return true;
++	}
++	static int told = 0;
++	if (told < 16) {
++		told++;
++		std::fprintf(stderr,
++		             "[bc5] exp 0416: set-buffer with the map signature on a target that is not mapped (cb 0x%016" PRIx64 " va 0x%016" PRIx64
++		             " len 0x%x a3 0x%" PRIx64 " a4 0x%" PRIx64 " a5 0x%" PRIx64 "): taken as the buffer flavour (KYTY_BC5_AMM_SETBUFFER_MAP=1 maps)\n",
++		             cb, va, size, a3, a4, a5);
++	}
++	return false;
++}
++
 +static int KYTY_SYSV_ABI CommandBufferSetBuffer(void* command_buffer, void* buffer, uint32_t size,
 +                                                uint64_t a3, uint64_t a4, uint64_t a5) {
  	PRINT_NAME();
@@ -49625,7 +49790,8 @@ index 073361d..69709a8 100644
 +		AmmTraceStamp(), std::fprintf(stderr, "amm trace: set-buffer cb 0x%016" PRIx64 " va 0x%016" PRIx64 " len 0x%x a3 0x%" PRIx64 " a4 0x%" PRIx64 " a5 0x%" PRIx64 "\n",
 +		             reinterpret_cast<uint64_t>(command_buffer), va, size, a3, a4, a5);
 +	}
-+	if (SetBufferIsMapFlavour(va, a3, a4) && !Bc5SetBufferTargetMapped(reinterpret_cast<uint64_t>(command_buffer), va, size, a3, a4, a5)) { // + exp 0413
++	if (SetBufferIsMapFlavour(va, a3, a4) && !Bc5SetBufferTargetMapped(reinterpret_cast<uint64_t>(command_buffer), va, size, a3, a4, a5) && // + exp 0413
++	    Bc5SetBufferMapAllowed(reinterpret_cast<uint64_t>(command_buffer), va, size, a3, a4, a5)) { // + exp 0416
 +		CommandBufferState::AmmMapCommand command {};
 +		command.kind = AmmCommandKind::MapAuto;
 +		command.va   = va & ~(AMM_PAGE_SIZE - 1u);
@@ -49643,7 +49809,7 @@ index 073361d..69709a8 100644
  	const auto command_buffer_addr = reinterpret_cast<uint64_t>(command_buffer);
  	if (!ValidateCommandBufferHeader(command_buffer_addr)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -1767,15 +3151,25 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
+@@ -1767,15 +3175,25 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
  	PRINT_NAME();
  
  	const auto destination_addr = reinterpret_cast<uint64_t>(destination);
@@ -49675,7 +49841,7 @@ index 073361d..69709a8 100644
  }
  
  static uint64_t AlignUp4(uint64_t value) {
-@@ -1811,11 +3205,11 @@ static uint64_t KYTY_SYSV_ABI MeasureCommandSizeFixed32(uint64_t, uint64_t, uint
+@@ -1811,11 +3229,11 @@ static uint64_t KYTY_SYSV_ABI MeasureCommandSizeFixed32(uint64_t, uint64_t, uint
  	return 0x20;
  }
  
@@ -49690,7 +49856,7 @@ index 073361d..69709a8 100644
  }
  
  static uint64_t KYTY_SYSV_ABI
-@@ -2111,27 +3505,45 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
+@@ -2111,27 +3529,45 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
  	return AppendNoOpCommand(command_buffer, sizeof(uint32_t));
  }
  
@@ -49743,7 +49909,7 @@ index 073361d..69709a8 100644
  	           ? OK
  	           : LibKernel::KERNEL_ERROR_EBUSY;
  }
-@@ -2139,8 +3551,12 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
+@@ -2139,8 +3575,12 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
  static int KYTY_SYSV_ABI CommandBufferWriteAddress(void* command_buffer, volatile uint64_t* address,
                                                     uint64_t value, uint32_t) {
  	PRINT_NAME();
@@ -49757,7 +49923,7 @@ index 073361d..69709a8 100644
  }
  
  static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*              command_buffer,
-@@ -2148,12 +3564,15 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*
+@@ -2148,12 +3588,15 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*
                                                                 uint64_t           value) {
  	PRINT_NAME();
  
@@ -49776,7 +49942,7 @@ index 073361d..69709a8 100644
  
  	return AppendNoOpCommand(command_buffer, 0x20);
  }
-@@ -2170,44 +3589,56 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromTimeCounter(void*
+@@ -2170,44 +3613,56 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromTimeCounter(void*
                                                                    uint32_t) {
  	PRINT_NAME();
  
@@ -49844,7 +50010,7 @@ index 073361d..69709a8 100644
  }
  
  static int KYTY_SYSV_ABI AprCommandBufferReadFileGather(void*    command_buffer, uint64_t, uint64_t,
-@@ -2314,15 +3745,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
+@@ -2314,15 +3769,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
  	return OK;
  }
  
@@ -49874,7 +50040,7 @@ index 073361d..69709a8 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2333,7 +3776,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
+@@ -2333,7 +3800,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
  
  static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, uint64_t va,
                                                          uint64_t dmem_offset, uint64_t size,
@@ -49883,7 +50049,7 @@ index 073361d..69709a8 100644
  	PRINT_NAME();
  
  	if (command_buffer == nullptr || !ValidateAmmMapArgs(va, size) ||
-@@ -2341,7 +3784,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
+@@ -2341,7 +3808,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
  		return LibKernel::KERNEL_ERROR_EINVAL;
  	}
  
@@ -49900,7 +50066,7 @@ index 073361d..69709a8 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2504,38 +3955,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
+@@ -2504,38 +3979,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
  	}
  
  	*dmem_offset = allocated;
@@ -49973,7 +50139,7 @@ index 073361d..69709a8 100644
  	}
  }
  
-@@ -2589,11 +4062,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
+@@ -2589,11 +4086,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto     submit_result =
@@ -49986,7 +50152,7 @@ index 073361d..69709a8 100644
  
  	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -2618,11 +4090,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
+@@ -2618,11 +4114,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto     submit_result =
@@ -49999,7 +50165,7 @@ index 073361d..69709a8 100644
  
  	if (out_submission_id != nullptr &&
  	    !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
-@@ -2648,86 +4119,1113 @@ static int KYTY_SYSV_ABI AmmWaitCommandBufferCompletion(uint32_t submission_id)
+@@ -2648,80 +4143,1107 @@ static int KYTY_SYSV_ABI AmmWaitCommandBufferCompletion(uint32_t submission_id)
  	return OK;
  }
  
@@ -50079,12 +50245,6 @@ index 073361d..69709a8 100644
 -	LIB_FUNC("o67gODLFpls", Ampr::CommandBufferWriteKernelEventQueue);
 -	LIB_FUNC("mQ16-QdKv7k", Ampr::AprCommandBufferReadFile);
 -	LIB_FUNC("mZSbNJVJpV8", Ampr::AprCommandBufferReadFileGather);
--	LIB_FUNC("Jg-AgkdJHkk", Ampr::AprCommandBufferReadFileScatter);
--	LIB_FUNC("BVmR1H8l+XI", Ampr::AprCommandBufferReadFileGatherScatter);
--	LIB_FUNC("YPxkUDhgoNI", Ampr::AprCommandBufferResetGatherScatterState);
--	LIB_FUNC("Eul7AGEpjLo", Ampr::AprCommandBufferMapBegin);
--	LIB_FUNC("bFEs0Gs6D2A", Ampr::AprCommandBufferMapDirectBegin);
--	LIB_FUNC("X169CE6G3Y4", Ampr::AprCommandBufferMapEnd);
 +struct Bc5AmmPage {
 +	uint64_t dmem  = 0; // the direct memory behind the page
 +	int32_t  type  = 0;
@@ -51183,16 +51343,10 @@ index 073361d..69709a8 100644
 +	LIB_FUNC("o67gODLFpls", Ampr::CommandBufferWriteKernelEventQueue);
 +	LIB_FUNC("mQ16-QdKv7k", Ampr::AprCommandBufferReadFile);
 +	LIB_FUNC("mZSbNJVJpV8", Ampr::AprCommandBufferReadFileGather);
-+	LIB_FUNC("Jg-AgkdJHkk", Ampr::AprCommandBufferReadFileScatter);
-+	LIB_FUNC("BVmR1H8l+XI", Ampr::AprCommandBufferReadFileGatherScatter);
-+	LIB_FUNC("YPxkUDhgoNI", Ampr::AprCommandBufferResetGatherScatterState);
-+	LIB_FUNC("Eul7AGEpjLo", Ampr::AprCommandBufferMapBegin);
-+	LIB_FUNC("bFEs0Gs6D2A", Ampr::AprCommandBufferMapDirectBegin);
-+	LIB_FUNC("X169CE6G3Y4", Ampr::AprCommandBufferMapEnd);
- 	LIB_FUNC("Q07J7XpvhrU", Ampr::AmmGiveDirectMemory);
- 	LIB_FUNC("wkQR9+xTFKY", Ampr::AmmGetVirtualAddressRanges);
- 	LIB_FUNC("KqiWXLgCVe0", Ampr::AmmGetUsageStatsData);
-@@ -2743,6 +5241,40 @@ LIB_DEFINE(InitAmpr_1_Ampr) {
+ 	LIB_FUNC("Jg-AgkdJHkk", Ampr::AprCommandBufferReadFileScatter);
+ 	LIB_FUNC("BVmR1H8l+XI", Ampr::AprCommandBufferReadFileGatherScatter);
+ 	LIB_FUNC("YPxkUDhgoNI", Ampr::AprCommandBufferResetGatherScatterState);
+@@ -2743,6 +5265,40 @@ LIB_DEFINE(InitAmpr_1_Ampr) {
  	LIB_FUNC("NnKhlMJtIsI", Ampr::AmmSubmitCommandBufferAndGetId);
  	LIB_FUNC("OJf3vCckPAM", Ampr::AmmSubmitCommandBufferAndGetResult);
  	LIB_FUNC("HXymib4T8gc", Ampr::AmmWaitCommandBufferCompletion);
