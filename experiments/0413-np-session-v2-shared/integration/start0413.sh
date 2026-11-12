@@ -34,7 +34,7 @@ case "$KIND" in
     { grep -v -i "^RayTracing\.PPSA03671=\|^JobArenaFix\.PPSA03671=" "$W/input.cfg"; echo "RayTracing.PPSA03671=on"; echo "JobArenaFix.PPSA03671=on"; } > "$CFG" || exit 1
     rm -rf "$WD/_SaveData/PPSA03671" && cp -a "$NS/PPSA03671" "$WD/_SaveData/PPSA03671" || { echo "the saves could not be put in place"; exit 1; }
     [ "$(sumof "$WD/_SaveData")" = "$(cat "$NSF")" ] || { echo "the private copy does not read as the named snapshot: not started"; exit 1; }
-    ENVS+=("${WORDS[@]}" BC5_LEAN=1 BC5_LOGS=1 "BC5_EMU=$BIN" "BC5_0412N_INPUT_CONFIG=$CFG") ;;
+    ENVS+=("${WORDS[@]}" KYTY_BC5_MANGOHUD=0 "BC5_EMU=$BIN" "BC5_0412N_INPUT_CONFIG=$CFG") ;;  # the lean binary strips the diagnostic words itself (BC5_LEAN constructor); the 0412 launcher refuses BC5_LEAN=1
   astro)
     LAUNCH=$N/play-astro-0413.sh; WD=$N/wda; LOG=$N/astro-last.log
     if [ ! -e "$WD" ]; then

@@ -143,3 +143,55 @@ Final patch 0001: md5 76c1d045, 85,516 lines.
 - ASTRO BOT start (also the condition for A11's TLS default);
 - the replug check for the audio rows A5, A17, A19 (s6n0372.sh + replug0372.sh).
 Then the shared launchers' words, and the merge.
+
+### Private build and checks (2026-11-12 10:59–11:45, the top's GO, slot to 12:30)
+
+**Build.** `integration/p0413.sh` built patch 76c1d045 under `~/bc5-work/exp0413/p` only:
+- A copy of `~/src/KytyPlus` (with `.git`, which ffmpeg-core's CMake asks for its commit), 0001 2dbed49a reversed and
+  76c1d045 applied. All 121 patched files match the laptop's tree.
+- Configured as `bc5-build.sh` configures. The shared backend paths were only read; the cached `ffmpeg-94dde08.zip` was
+  copied in, so nothing was downloaded.
+- Results: normal a76f86abffed99a3423ce5c9a394d5f4 (284 warnings), lean f64dadd2c39dd9fcffd90564eb72be5a (287 warnings).
+  None of the warnings is in `switch_defaults.hpp` or `main.cpp`. `libNpCppWebApi.cpp` has only its two old warnings.
+- The archive stayed 75e30335.
+- Both binaries carry the NP V2 "on" line, the ten NIDs, `KYTY_BC5_SWITCH_DEFAULTS`, the C1–C3 switches, `FW_NET` and
+  `AMM_SCATTER`. Step 22's fold compiles.
+
+**Static checks (the top's points a and b).**
+- No switch is read before the priority-101 constructor. The only namespace-scope `getenv` initialiser is `BC5_GC_MODE`
+  in `bc5LleAgc.cpp`, which is not in the table and runs at the default priority. The other constructors are the lean
+  cleanup (101, different names) and hostMenu's MangoHud constructor (default priority).
+- The backend archive has no namespace-scope `getenv` initialisers.
+- Nothing starts a thread at or before priority 101.
+
+**Runs.** All RT on, `ulimit -c 0`, the kernel log streamed to the laptop. The second title ran from exp 0412's named
+snapshot, copied privately.
+- The second title used `integration/run0413p.sh`, derived from 0412's `run0412n.sh` by `mkrun0413.py`, with the
+  launcher words of `integration/words0413.txt` and the fuse at 13,000/2,048.
+- The lean and ASTRO BOT starts used `integration/start0413.sh`.
+
+| run | what | result |
+|---|---|---|
+| p1def | normal, defaults on | PASS: gameplay at 118 s, then 120 s of walk, 24.5 flips/s, 60 s with a gap over 100 ms, longest 758 ms. 0 kernel lines, 0 crash lines. The journal shows acb restore on, quiet journal on, events cap 64, physmap sorted, NP V2 and 37 port lines "on" |
+| p0off | normal, `KYTY_BC5_SWITCH_DEFAULTS=0` (point c) | PASS: gameplay at 127 s, +60 s, 23.2 flips/s, longest gap 2,893 ms. Only NP V2 (on in code) prints "on"; acb restore and TLS read "off": the old behaviour is reachable |
+| l2lean | lean, 150 s, no input | PASS: 216 MiB anon at the end, defaults on, 0 kernel or crash lines (l1lean did not start: 0412's launcher refuses `BC5_LEAN=1`; the lean binary strips the diagnostics itself) |
+| a1astro | ASTRO BOT, defaults on | **CRASH at 5 s**: a write to address 0 at guest 0x90000048f, a stack-guard prologue taking a null out-pointer |
+| a2astro | `KYTY_BC5_TLS_FIXES=0` | the same crash: not A11 |
+| a3astro | `KYTY_BC5_SWITCH_DEFAULTS=0` | PASS 120 s |
+| b1–b9, c1–c6 | rows set to 0 in groups | the same crash, at the same address, whenever four or more of A15, A16, A17, A21, A22 are on. It passes with any two of them off (c3–c6, b5) and does not depend on the other rows |
+| d1 | A15, A16, A17, A21, A22 off | PASS 120 s |
+
+**Consequence.**
+- A15, A16, A17, A21 and A22 are taken back out of the defaults table, one commit each (`integration/undefault.py`). They
+  are the SaveData memory/Http2/pad-open-ext, Json2/Ult/UserService/SystemService, AudioOut/AudioIn/Ngs2,
+  firmware-pad and dead-table rows: 20 switches.
+- The proposed `play-pkg.sh` diff turns them on for the second title, as the daily line ran them.
+- Patch 0001 is now a2ab53c7. It differs from the built 76c1d045 only in the table's rows; the d1 run is that table's
+  behaviour, through the environment.
+- The cause in ASTRO BOT is not found: its start depends on how many of these ports are on, not on one of them.
+
+**Not done yet:**
+- the replug check (`s6n0372.sh` + `replug0372.sh`, A5 and A19 being audio). It needs exp 0391's runner adapted to a
+  private binary: the next slot;
+- a rebuild from a2ab53c7, which comes with the swap;
+- his play.
