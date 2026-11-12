@@ -2411,6 +2411,68 @@ over its 96 MiB (the guest has no range there), re-derived on every layout chang
 addresses were unmapped for 783 s and nothing touched them. They are the record of single stray accesses
 (F92, exp 0040, 0042), kept for ever.
 
+### 53. Build g412x with the rule's three switches; the series ended in a GPU hang and a reboot in the arm with R1 and R2 (2026-11-12 23:50 – 11-13 00:12)
+
+**The build** (`memfast/maprule0412.inc`, `mkrule0412.py`, `mk0412x.sh`, tag mr412; all three default off):
+`BC5_GUARD_MAP_RULE=1|2` (R1: every chunk under a view is imported when the view exists; one condition in
+`direct_sync_one`), `BC5_GUARD_PRT_BG=1` (R2: one PRT mapping from 4 GiB to 0x9000000000 at device open, acting only
+with R1 on, so that a miss of a guessing import policy cannot turn silent; `scratch_fill` does nothing inside it),
+`BC5_GUARD_LEARN_LOG=1|2` (the catcher: one "would learn" line per fault with what lay at its address; the learned
+and alias files are not written). CPU test `maprule0412.cpp`: 15,281 of 15,281 on the laptop and on the box. Build
+g412x = g412w + this, unit `15fc40ee`, binary `655a86fc` beside (`bin-x`); g412v `bc4356a5` in place and g412w
+untouched. `raw/mk0412x.out`. The diff went to exp 0415 before the build; no objection.
+
+**The series** (`ab0412r.sh`: bin-x, arm fast8's words, the scripted route, 120 s after G, RT on, fuse
+13,000/2,048, watchdog 220 MiB or PSI full 60 %, the shell running, 3 rsync processes, kernel log streamed; stop at
+the first kernel line). Planned c0 c4 r1 r2 r2 r1 c4 c0; **four ran**. Data `raw/ab0412r.out`, `raw/{c0a,c4a,r1a,r2a}-*`,
+`raw/r2a-kernel-stream.txt`. Boot age 25.3–25.6 h.
+
+| run | learned file | switches | ended | lowest available | highest PSI full | pinned direct | flips/s | kcompactd0 / kswapd0 CPU |
+|---|---|---|---|---|---|---|---|---|
+| c0a | 81 windows | none | G+120, 239 s | 411 MiB | 10 % | 11,764 MiB | 24.8 | 80 / 12 s |
+| c4a | empty | LEARN_LOG=1 | G+120, 239 s | 446 | 9 % | 11,518 | 26.0 | 100 / 8 s |
+| r1a | empty | MAP_RULE=1, LEARN_LOG=1 | **the watchdog killed it at 190 s** (PSI full 76 %, available 257) | 239 (ledger) | 76 % | 12,030–12,200 | 18.4 | 62 / 63 s |
+| r2a | empty | MAP_RULE=1, PRT_BG=1, LEARN_LOG=1 | **GPU hang at 153 s, the box rebooted** | 219 (ledger) | 65 % | 12,188 | | |
+
+[M]
+- **c0a against c4a, the same binary, 5 minutes apart:** without the learned file the pin is 246 MiB lower, the
+  lowest available memory 35 MiB higher, no fault, no "would learn" line, nothing learned. With section 52 that is
+  three runs of the route without the file and no fault. **So section 52's lower "lowest available" without the file
+  (407, 424 against 497, 560) was not the file's doing**: on one binary in one quarter of an hour it does not
+  appear. Section 52 compared runs 20–37 minutes apart in a session whose compaction load was climbing (kcompactd0
+  80–100 s of CPU per 4-minute run here; exp 0415 measured 3–9 s per phase early in the same boot and 16–20 s later).
+- **R1 goes to the wall in the menu.** With every view pinned whole the pin is 9,624 MiB at 10 s (8,206 without the
+  file, 8,434 with it) and 12,114 MiB at 60 s, before the save is loaded; available memory stays at 240–280 MiB from
+  50 s on, PSI full reaches 32–76 %, a 7.7 s frame. The watchdog ended r1a at 190 s. No GPU fault, no kernel line.
+  The heaps are whole (`AssetHeap Large` 816 of 816, `InitAllocator` 652 of 652, `Wwise` 220 of 220). That is the
+  +0.77 GiB of section 51 arriving, plus what the title maps before play and gives back later.
+- **r2a:** the PRT span was accepted (`PRT window 0x100000000+0x8f00000000: 0` in the run's log). Memory as in r1a
+  (12,188 MiB pinned at 133 s, available 256–278 MiB, PSI full 52–65 %; the watchdog's limits were not crossed five
+  samples in a row). At 00:10:41, 153 s into the run and 3 s after G, `ring gfx_0.0.0 timeout` (thread `bc5-ring`),
+  **no page fault** (the devcoredump's fault address and status are 0), `Ring gfx_0.0.0 reset failed` 0.19 s later,
+  and `bc5-gpu-watch` crashed the kernel for a reboot as it is built to. The box was back at 00:11:54 with Plasma.
+  On the box, never committed (the title's buffers): `~/bc5-data/captures/play-20261113-0008/gc/` (journal, two dumped
+  buffers: a draw buffer of 20,324 dwords, submission 97741, and a compute buffer of 5,171 dwords, 97744),
+  `~/bc5-data/captures/devcoredump/20261113-001041-devcd8.txt`, three pstore records of 00:11.
+  The shared learned and alias files, g412v and the saves kept their checksums.
+
+**Reading [I].** One hang. Against r1a, which met the same wall for 140 s without a kernel line, this run differs by the
+PRT span and by chance. It cannot be said which. For the memory wall speak the fault-less ring timeouts under memory pressure already on record (F260:
+three machine-downs at 346–490 MB available, two of them without any PRT). For the PRT span speaks only that it was
+the one difference to r1a, which ended without a kernel line. A PRT page cannot produce a fault, and a job that reads
+zeros where it faulted before could loop instead (section 38's pattern); but with the empty file nothing in 1,022 s
+of this route touched an unmapped address at all (sections 52 and here), so there was nothing for the span to change
+unless the wall changed the route. Not settled.
+
+**What is settled.**
+- R1 "pin every view whole" is not runnable on this box today: it reaches the wall before the save loads. It needs
+  options A–C first, or a form that does not create never-written pages (option B, behind experiment E1).
+- Today's import policy without the learned file (arm c4) is the cheapest arm measured: 246 MiB less pinned, no
+  fault on this route in three runs. What it risks is a 14 s freeze at each place of his play the route does not
+  visit, once per run (LEARN_LOG=1 keeps the window for that run).
+- R2 has to be tested apart from the wall: with R1 off it would hide misses (the top session's point 3), so its own
+  clean test is R2 over holes only, on a run that is not at the wall. Not built: the switch refuses to act without R1.
+
 - **Stopping Plasma's shell for the play is worth 0.22 GiB at the wall (section 50):** lowest available 724 and 775
   MiB without it against 497 and 560 with it; the launcher's lean mode stops it and brought it back in its first
   test. Not in his shortcut yet. `plasma-keyboard` and Xwayland hold 96 MiB of GPU memory more.
