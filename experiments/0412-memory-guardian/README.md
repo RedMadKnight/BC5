@@ -2172,7 +2172,94 @@ The maintainer: "tak, zmien oba parametry" (the fuse to 13,000 MiB, the orphan r
 - Process note: the first arm (a1lw) was started inside a slot the top session had given exp 0413, because I
   checked only the lock; the top session's slot is asked for before every series (corrected the same hour).
 
+### 48. The zero skip's defect, a search before submission, and why the skip has to go (2026-11-12 evening)
+
+Question (the maintainer: "find the cause and fix it"): why does the zero skip hang the GPU (section 47), and can it be
+made sound?
+
+**The defect, from the code [M]** (main unit, exp 0379's zero skip as carried by g412v). A skipped run is mapped onto ONE
+2 MiB slice of the canary BO at every chunk of the run, so what the GPU writes into one skipped chunk is read back
+through every other chunk of that run. The watcher looks at one slice per 50 ms, i.e. at a given slice every 1.65 s with
+33 runs. On a hit the run is erased and the title's own (zero) pages replace the canary: what the GPU wrote is lost.
+Every run of section 47 has such hits, fast7's too (recount with the exact line "canary hit in run": a1lw 4, b1f7 7,
+b2lw 5, b4tc 5, b5jr 5, b6f7 4, b7lw 7, b8ai 7, b9tc 4; always runs 21, 5, 6, 8 first). That the hung buffers' arguments
+(float bit patterns read as dispatch group counts) came from memory under the canary is [I]; no address was checked.
+
+**Correction of section 47 [M]:** its text says "4-10 canary hits per run"; that count came from a pattern that also
+matched statistics lines. The numbers above are the real ones. Section 47's causal limits stand (Codex): the hang counts
+compare different binaries, word sets and exposure, the NAS rsync ran through most arms, and which word protects is not
+shown.
+
+**The candidate fix: BC5_GUARD_ZSKIP_SCAN=1|2** (tag zs412; `memfast/zscan0412.inc`, glue in `memfast/mkzscan0412.py`,
+CPU test `memfast/zscan0412.cpp`: 14,642 of 14,642; `nscan0412.cpp` 13,435 of 13,435). Default off. Before every
+submission the command buffer and the tables it points to (2 KiB each, read through the direct memfd) are searched by
+value for addresses under the canary, and that memory gets its real pages before the buffer goes out: mode 1 the whole
+run, mode 2 an 8 MiB window from the find. Review R25 (Codex) applied before any run: `ns412::scan` reports whether a
+capacity limit (4,096 finds, 1,024 table candidates) cut it short, and after an incomplete search, or a table that
+cannot be read in full, every run under the canary comes back.
+
+**Build g412w** (`memfast/mk0412w.sh`, kit `memfast/kit-w.sha256`): g412v's chain plus the scan, binary BESIDE the one in
+place: `~/bc5-work/exp0412/bin-w/kyty_emulator` 1d22954ffc9a1d7219889f7f34223f43; `bin/kyty_emulator` (g412v, bc4356a5,
+fast7's) untouched and re-checked. Limit: the shared build's objects were rebuilt by exp 0413 at 17:54 (patch 0001
+01abfc0c), and g412w links those for every unit that is not private, so g412w is not exactly "g412v + scan"; the three
+control arms below run the same binary without the scan for that reason. `run0412n.sh` takes `N_EMU` for the binary
+beside (the launcher's `BC5_EMU`).
+
+**Series** (`ab0412x.sh`, raw `raw/ab0412x.out`, `raw/ab0412x-summary.txt`, per-arm files on the box under
+`~/bc5-work/exp0412/night/raw/<tag>-*`; scripted route, 120 s after G, RT on, fuse 13,000 MiB, watchdog 220 MiB;
+18:06-19:08, the NAS rsync running in every arm; word set lw7 = fast7 less lean's six words, the set that hung 3 of 7 on
+g412v):
+
+| arm | scan | result | canary hits (runs) | skip ends | lowest available |
+|---|---|---|---|---|---|
+| c1s1 | 1 | clean, 25.5 flips/s | 1 (21) | 46.7 s, incomplete search | 305 MiB |
+| c2s2 | 2 | clean, 25.5 | 1 (21) | 46.6 s, incomplete (1,124 finds) | 334 |
+| c3s0 | off | clean, 24.9 | 4 (21, 5, 6, 8) | 704 MiB still skipped at the end | 894 |
+| c4s1 | 1 | clean, 25.1 | 1 (21) | 46.6 s | 445 |
+| c5s2 | 2 | clean, 24.2 | 1 (21) | 46.1 s (76 finds) | 376 |
+| c6s0 | off | clean, 25.5 | 4 (21, 5, 6, 8) | 704 MiB still skipped | 883 |
+| c7s1 | 1 | **title crash** at 244 s, before G+120 (G at 216 s, a gap of 8.6 s) | 1 (21) | 46.8 s | 198 |
+| c8s2 | 2 | clean, 25.4 | 1 (21) | 45.8 s (88 finds) | 359 |
+| c9f1 | 1, fast7's words | clean, 24.8 | 0 | 46.4 s | 331 |
+| d1s1 | 1 | clean, 26.0 | 1 (21) | 46.8 s | 321 |
+| d2s2 | 2 | clean, 25.2 | 1 (21) | 45.5 s (55 finds) | 308 |
+| d3s0 | off | **GPU hang** at G+61 s (ring gfx timeout, reset succeeded; devcoredump `~/bc5-data/captures/devcoredump/20261112-190716-devcd7.txt`) | 5 (21, 5, 6, 8, 32) | off after the hang | 437 |
+
+Result [M]:
+- Under the scan: 0 GPU hangs in 9 arms, but canary hits remain: 1 in each of the 8 lw7 arms, always run 21 at about
+  34 s (0 in the one fast7 arm). The search by value does not find the address of that write. Without the scan on the
+  same binary: 4, 4 and 5 hits and 1 hang in 3 arms. 0 in 9 against 1 in 3 is not a difference (Fisher p = 0.25).
+- At 45.5-46.8 s, in the loading screen, every scan arm meets a buffer whose search is incomplete (over 1,024 table
+  candidates; in mode 2, where more is still under the canary, 55 to 1,124 real finds in that one buffer) and all
+  skipped memory comes back. From then on the run has no zero skip: pinned peaks 11.67-11.80 GiB against 10.97-11.06,
+  lowest available 305-445 MiB against 883-894.
+- Cost of the scan to that point: 3.3-3.4 s of the submitting thread in 41 s, about 790,000 table reads.
+- c7s1's crash is the title's own access violation (a read of address 0 in guest code at 0x903a05f35, registers holding
+  text), after a load twice as slow as the other arms' and the lowest memory of the series (198 MiB). Whether the scan,
+  the memory level or the rsync is behind it is not shown [I: memory pressure]. `raw` on the box: `c7s1-crash.txt`.
+
+**Reading.** The accepted criterion was "0 canary hits and no hang under the scan". It is not met: hits remain. The
+series also shows why the skip cannot be repaired by searching: the title hands the GPU hundreds of addresses inside
+memory that read zero when the list was made. "Zero at list time" does not mean "the GPU will not write here", addresses
+a shader computes cannot be found by value, and a canary can only report a write after the data is already in the wrong
+place. So the zero skip is unsound by design and BC5_GUARD_ZSKIP_SCAN does not make it sound; with the scan the skip
+also saves nothing after 47 s.
+
+**Proposal (the maintainer's decision, his shortcut):** take BC5_DIRECT_ZERO_SKIP out of fast7 too. It stays out of
+the shared default either way. The price, measured above: about 0.55 GiB less available memory on the 120 s route
+(about 300-450 MiB lowest instead of about 890), i.e. the memory wall comes back for long play and has to be removed by
+other means (sections 9-22's levers; the reason memory under the skip is pinned at all is that the title names it to the
+GPU). BC5_GUARD_ZSKIP_SCAN stays in g412w as a default-off diagnostic; it is not proposed for any shortcut.
+
+Not done: no run of fast7's words without the zero skip on this route today (the memory figure above is from scan arms
+after their skip ended); the address behind run 21's write; a check of hung arguments against the canary's ranges.
+
 ## Verdict
+
+- **The zero skip is unsound by design; proposed out of fast7 (section 48) [M]:** every run has GPU writes into
+  "skipped" memory, readable through other chunks and then lost. A search before submission (BC5_GUARD_ZSKIP_SCAN, g412w,
+  default off) leaves 1 hit per run and ends the skip at 47 s anyway. Without the skip the route's lowest available
+  memory is about 300-450 MiB instead of about 890. Waiting for the maintainer's word on his shortcut.
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
 - **The zero skip hangs the GPU without fast7's full word set (section 47) [M]:** 5 hangs in 8 runs without
