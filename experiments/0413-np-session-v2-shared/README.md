@@ -351,3 +351,27 @@ key. Two places to look next:
    rows and on the environment's size.
 
 The top's discriminator, `-ftrivial-auto-var-init=pattern` and `=zero` builds (`pz0413.sh`), is in progress.
+
+**Discriminators (2026-11-12 14:04–14:24), ASTRO BOT starts on private builds of a2ab53c7:**
+
+| test | result |
+|---|---|
+| `-ftrivial-auto-var-init=pattern` build (fd867ac6), plain defaults | the same crash: eboot+0x48f, `rsi = 0`, write to address 0 (z1pat) |
+| the same build plus 20 dummy variables | PASS 60 s (z2pat) |
+| f61d5874, one extra variable `BC5_PAD` of 0, 1, …, 8, 12, 16, 24, 32, 48, 64 characters | crash in all 15 (s0pad–s64pad) |
+| f61d5874, n dummy variables `BC5_DUMMY_nn=1` | n = 2, 4, 6: crash; 8, 10, 12, 16, 20, 24: PASS; 29: crash; 32: PASS (c2cnt–c32cnt) |
+
+- **Not an uninitialised host local.** The pattern fill changes neither the fault address nor the dependence on the
+  environment. The `=zero` build was not made.
+- **Not byte alignment of the initial stack.** The length of one variable does not matter.
+- **It follows the number of environment entries, and not monotonically.** b1's crash with 29 `NAME=0` entries
+  repeats as c29cnt. That looks like a layout effect of the pointer array's size (the initial `envp`, and the block
+  `setenv` moves it to), not of the data.
+- **With the table off, every start passed** (a3astro, g10, g25, g36), so the switches being on is still a needed
+  condition.
+
+**Open, for the next session.**
+- Which import is index 0x62d (the compare), and what does its host body do with a NULL argument?
+- Who owns guest memory 0x300a80000–0x300a83000 (the zeroed table and the empty key)? Is it a host mapping that a
+  switched-on path returns earlier, larger, or at another address?
+- An in-emulator log of host calls before the fault is the tool for both; it was not built in this slot.
