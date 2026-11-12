@@ -16981,10 +16981,10 @@ index bc73d18..fab34b4 100644
  
  #endif /* EMULATOR_INCLUDE_EMULATOR_KERNEL_FILESYSTEM_H_ */
 diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
-index 02fc0fc..534a745 100644
+index 02fc0fc..43484fc 100644
 --- a/src/kernel/memory.cpp
 +++ b/src/kernel/memory.cpp
-@@ -1,4250 +1,5112 @@
+@@ -1,4250 +1,5135 @@
 -#include "kernel/memory.h"
 -
 -#include "common/assert.h"
@@ -22900,6 +22900,29 @@ index 02fc0fc..534a745 100644
 +	mapping.prot           = prot;
 +	mapping.mode           = mode;
 +	mapping.gpu_mode       = gpu_mode;
++	{ // Experiment 0412 (tag pm412, mkphys0412.py): KYTY_BC5_PHYSMAP_CHECK=1 counts the blocks that overlap one already in the table
++		static const bool check412 = [] {
++			const char* e = std::getenv("KYTY_BC5_PHYSMAP_CHECK");
++			return e != nullptr && e[0] != 0 && !(e[0] == '0' && e[1] == 0);
++		}();
++		if (check412) {
++			static uint64_t inserts412 = 0, overlaps412 = 0;
++			inserts412++;
++			for (const auto& b412: m_mappings) {
++				if (VirtualRangesOverlap(mapping.map_vaddr, mapping.map_size, b412.map_vaddr, b412.map_size)) {
++					if (overlaps412++ < 8) {
++						std::fprintf(stderr, "[bc5] exp 0412 physmap check: new block 0x%" PRIx64 "+0x%" PRIx64 " overlaps 0x%" PRIx64 "+0x%" PRIx64 "\n",
++						             mapping.map_vaddr, mapping.map_size, b412.map_vaddr, b412.map_size);
++					}
++					break;
++				}
++			}
++			if ((inserts412 & (inserts412 - 1)) == 0 || inserts412 % 100000 == 0) {
++				std::fprintf(stderr, "[bc5] exp 0412 physmap check: %" PRIu64 " blocks added, %" PRIu64 " overlapped an existing one, table %zu (tag pm412)\n",
++				             inserts412, overlaps412, m_mappings.size());
++			}
++		}
++	}
 +	m_mappings.push_back(mapping);
 +
 +	return true;
