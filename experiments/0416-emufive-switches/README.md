@@ -4,8 +4,8 @@
 items can go into patch 0001 as default-off switches now, and do they, with the three changes exp 0413 left for "a
 later round", build and run without changing anything while they are off?
 
-**Status: written and checked on the laptop; not built, not run on the box yet.** This file gets its Result and
-Verdict after the private build.
+**Status: built privately and run on the box 2026-11-12 (Result below); not in the shared builds.** Result and
+Verdict were added after the private build.
 
 ## Setup
 
@@ -55,8 +55,62 @@ zero skip, 240 s after G, switches off and on; `BC5_R3_SUBMIT_EOP_EVENT=1` once 
 
 ## Result
 
-Pending.
+Box, 2026-11-12 21:00-21:30 (the top's slot), private build only (`chk0416.sh`; raw logs stay on the box under
+`~/bc5-work/exp0413/n/raw`, tags below; `chk0416.out` beside them). Kernel 7.2.11-ogc4.1 as recorded.
+
+**Build.** All five units compile; patch a099e662 on the private tree gives normal
+**37e3bae63e9e7df1bd9ecf610a75595f** and lean **465f86bebccec4161c295045ab872c59** (285 warnings in the lean log, not
+compared with the build before). The shared builds were not touched (ce0e3b92, 35ec3341 re-read after the runs).
+
+**ASTRO BOT, 30 s starts on the normal build** (PASS = ran 30 s, 0 kernel lines, 0 crash lines):
+
+| Tag | Words | Result | Switch lines in the log |
+|---|---|---|---|
+| a1x0 | none | PASS | pending cap 64 |
+| a2x0 | `KYTY_BC5_EVENT_COALESCE_SAME=1` | PASS | COALESCE_SAME on; pending cap 64 |
+| a3x0 | `KYTY_BC5_SEMA_TARGETED_WAKE=1` | PASS | TARGETED_WAKE on; pending cap 64 |
+| a4x0 | both and `KYTY_BC5_AMM_SETBUFFER_MAP=1` | PASS | both on; pending cap 64 |
+| a5x0 | `KYTY_BC5_SWITCH_DEFAULTS=0` | PASS | pending cap 64 (fix C1 stays on without the table) |
+| a6x0 | `BC5_R3_SUBMIT_EOP_EVENT=1` | PASS | pending cap 64 |
+| a7x1, a7x2, a7x4, a7x6 | 1, 2, 4, 6 dummy variables | PASS x4 | — |
+| a8x0 | `KYTY_BC5_AMM_TRACE=1` | PASS | 3 set-buffer calls, a4 = 0x9088e4e98, 0xd, 0x300a82bc0 |
+
+**The second title, RT on, no zero skip, 240 s after G, normal build, `fault0416.py` beside:**
+
+| Tag | Switches | Flips/s | Seconds with a gap over 100 ms | Longest gap | Kernel / crash lines | Page faults caught |
+|---|---|---|---|---|---|---|
+| r1off | off | 24.5 over 357 s | 85 | 1,640 ms | 0 / 0 | 0 |
+| r2on | COALESCE_SAME, SEMA_TARGETED_WAKE, SUBMIT_EOP_EVENT on | 24.2 over 356 s | 101 | 1,897 ms | 0 / 0 | 0 |
+
+One run each way: the differences are inside what single runs of this route have shown and say nothing about speed.
+
+**Lean build**, l5lean, the two switches on, 120 s: PASS, 0 kernel lines, 0 crash lines.
+
+**Not exercised, said plainly:**
+- **The set-buffer guard and the map opt-in.** In this binary the leftover a4 of the title's first set-buffer call is
+  0x9088e4e98, not -1 (a8x0), so no call had the map signature in any of the 11 starts: neither exp 0413's line nor
+  the new "exp 0416: set-buffer" line was printed. The top's condition "the guard line must still be there" is
+  therefore **not met and not refuted**; the code path is the one exp 0413 proved on 0eda68b5 and ce0e3b92, with one
+  more condition behind it. A call with a4 = -1 needs a test of its own (a stand-in call, or a build where the
+  leftover happens to be -1).
+- **`KYTY_BC5_EVENT_COALESCE_SAME` in the second title.** Its "on" line is printed at the first trigger that finds the
+  event already triggered; r2on and l5lean have no such line, so the title never reached that path in these runs.
+  ASTRO BOT reaches it (a2x0, a4x0).
+- **A2, C2 and C3 with `KYTY_BC5_SWITCH_DEFAULTS=0`**: they print no line; only C1's line shows the fix table works.
+- `fault0416.py` saw no amdgpu page fault, so its "mapped / unmapped" answer was not produced; the ray-tracing
+  hypothesis of exp 0414 stays open. (The kernel's last ring timeout is from 19:07, before this slot.)
+- Speed of either switch (0415 measures them per phase in its own build), a long session, the physical replug.
+
+**Launchers.** `~/bc5-work/play-pkg.sh` is 157021e3 since 19:20:25 (exp 0413's `instpkg0413.sh`; the old one is
+`play-pkg.sh.before-0413`). `play-pkg-log.sh` and `play-pkg-quiet.sh` were not changed and now differ from it: no
+`ulimit -c 0`, no unpacked-title handling, none of the 20 title switches. The new `play-pkg.sh` has not had a real
+start on the shared build yet.
 
 ## Verdict
 
-Pending.
+**Builds and runs; the switches are safe to carry default-off, with one check missing.** Patch a099e662 compiles in
+both configurations; with everything off both titles run as before; each new switch on starts ASTRO BOT and, for the
+semaphore switch and the EOP fix with `BC5_R3_SUBMIT_EOP_EVENT=1`, runs the second title 240 s with RT without a
+kernel or crash line. Missing before a shared build: a test that drives set-buffer with a4 = -1 on mapped and on
+unmapped memory in this patch (guard line, opt-in line), because chance did not produce the call here. Nothing from
+0416 is in the shared builds; that needs the top's release and Codex's short round.
