@@ -596,3 +596,56 @@ itself changes the leftovers. The match is by the mapping's address and size, an
 **Open questions, not claims:** whether the second title's unexplained zeroed data or start crashes at low guest budgets
 go through the same call (its set-buffer arguments are not traced here), and what the real third-argument convention of
 this NID is (exp 0035's TODO).
+
+### The fix built and checked (2026-11-12 16:38–17:35, the guardian released the box at 16:37)
+
+**Proof by observation** (the top's request; private normal 28d6c0d1, patch f085d4a3, the guard as a table row, its
+line also printing the command buffer). ASTRO BOT, `integration/sweep0413g.sh`, 20 s starts with n dummy variables:
+
+| starts | result |
+|---|---|
+| n = 0–6 (ga0–ga6) | PASS, 7 of 7. Each log has one guard line: `cb 0x300a8xxxx va 0x300a8xxxx len 0x400 a3 = cb + 0x20`, **`a4 0xffffffff`**, `a5` a host heap pointer (0x55…/0x56…); "nothing mapped" |
+| n = 7–16 (ga7–ga16) | PASS, 10 of 10; no guard line (the leftover in `r8` is not -1 there) |
+| the same binary, `KYTY_BC5_AMM_SETBUFFER_GUARD=0`, n = 0, 2, 4 (gb) | **crash, 3 of 3**, at 5–6 s, the old crash text |
+| 60 s at n = 0 and 29 (gc) | PASS, the guard line in both |
+
+So the call with `a4 = -1` is seen in the very starts that crash without the guard: the caveat of the section above
+("not shown directly") is closed. `a3` is always the command buffer plus 0x20, a leftover of the title's own code.
+
+**Is there a real six-argument caller?** Not in either title.
+- The second title, 180 s with `KYTY_BC5_AMM_TRACE=1` (r1tr, to G+60): 2,304 set-buffer calls. `a3` is 0 or a host
+  pointer and never equals `va`; `a4` is 0 in 2,273 calls and takes 21 other values; `a5` looks like a host pointer in
+  2,288. The map flavour was taken 0 times and the guard refused 0 times in that run.
+- So the second title also passes three arguments, and exp 0035's "this title only uses the buffer flavour" holds. Any
+  of its calls would have mapped zeroed memory over the live buffer page had `r8` held -1. That is a candidate for its
+  unexplained zeroed data; it was not seen in this run. The guardian was told.
+- ASTRO BOT: every call seen with the map signature is the faulty one.
+- The map flavour itself comes from prosper's notes on another title (exp 0035). It stays reachable for a target that
+  is not mapped yet. Whether to make it opt-in is the top's decision; not changed here.
+
+**Changes after the reviews (the top; Codex's round), all before the final build:**
+- The guard is on in code, off only with `KYTY_BC5_AMM_SETBUFFER_GUARD=0`; its table row E1 is gone (a crash fix must
+  not depend on the table). `integration/mkset0413.py`, `mkeop0413.py`.
+- `BC5_R3_SUBMIT_EOP_EVENT` left the table (Codex: `r3gpu_submit_eop` rotates a global ring of 4,096 packets and a
+  deferred callback reads the raw address later, so after a wrap it can read another event's packet). The switch stays
+  in the code as a launcher word; Codex's owned-packet fix is a later commit with its own build and run. Every run
+  before the final build had this switch on through the table.
+- The table now has 35 rows: audit A2–A8, A9 without the EOP event, A11–A14, A18–A20, B16, C1–C3.
+- Step 22 (the `libNpCppWebApi.cpp` fold) was compiled; the run-time on/off check is below.
+
+**The final private build** (`integration/p0413g.sh`, `final0413.sh`): patch 0001 **01abfc0c**, normal
+**0eda68b5d76cb11daed79ca516b0d1d6**, lean **13c00498a3175dc2c1ba8a8696aa64c0**, archive 75e30335 unchanged.
+
+| check on exactly these binaries | result |
+|---|---|
+| ASTRO BOT, plain defaults, n = 0, 2, 4, 30 s (f1n) | PASS 3 of 3; the guard line with `a4 0xffffffff` in each; "KYTY_BC5_AMM_SETBUFFER_GUARD on" with no table row |
+| ASTRO BOT, `KYTY_BC5_SWITCH_DEFAULTS=0` alone, 60 s (f2n0) and n = 1–8, 20 s (f5n) | PASS 9 of 9. No guard line in any: with the table off the leftover is not -1 at these counts, so the guard was not exercised in this mode |
+| ASTRO BOT, guard off (f3n0) | crash at 5 s (the control) |
+| ASTRO BOT, `KYTY_BC5_NP_SESSION_V2=0 KYTY_BC5_FW_NET=0` (f4n0) | PASS; the log says "SessionManager V2 off (… the loader's stubs)"; the other starts say "V2 on (10 exports registered)" |
+| second title, RT on, no zero skip, 240 s after G (r3fin) | clean: G at 122 s, 23.5 flips/s, longest gap 895 ms, 0 kernel lines, 0 crash lines |
+| lean start, 120 s (l4lean) | PASS |
+
+The same set on 28d6c0d1 (EOP event on): second title r2nz clean (23.8 flips/s, longest gap 942 ms), lean l3lean PASS.
+Raw files: `~/bc5-work/exp0413/n/raw/` on the box (not committed). The NAS rsync may have run during these runs.
+Not checked at run time: that the V2 and FW_NET functions return right values when a title calls them (ASTRO BOT's
+start only shows the registration, on and off).
