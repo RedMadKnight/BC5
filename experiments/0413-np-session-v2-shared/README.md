@@ -414,3 +414,31 @@ binary's table (R21: two runs, a fit).
 - **Correction to "the host compare says equal for ("", NULL)".** The host's `strncmp` is glibc's and would fault on
   NULL. The disassembly of frame 1 started at an arbitrary byte, so whether that compare ran for the zeroed entry is not
   shown. What is shown: the entry the title passed on is zero and the key is empty.
+
+**Round five, continued (15:05–15:15).** The private tree and binary are back at a2ab53c7 / f61d5874.
+
+| test (ASTRO BOT start, f61d5874 unless said) | result |
+|---|---|
+| the call-ring build e0665386 with 0–29 dummy variables (14 counts) | PASS at every count: the ring's per-call atomic increment alone removes the crash |
+| A12 off (thread sync + semaphores, 2 entries); each of the two alone | crash |
+| A3 off (pthread); A8 off (equeue, mmap shim); A11 off (TLS); A13 off (6 of the memory-call switches) | crash, each |
+| controls: 2 and 6 dummy variables set to 0 | crash, both |
+| g1: A2, A4, A5, A6 off (6 entries) | PASS |
+| g2: A7, A9 off (6 entries) | crash |
+| g3: A14, A18, A19, A20 off (6 entries) | PASS |
+| g4: B16, C1, C2, C3 off + 2 dummies (6 entries) | crash |
+| A14 off (2 entries), twice; its two switches alone | crash, each (and b4, A18–A20 off, crashed earlier) |
+
+**Reading.**
+- No single row is the cause. Two disjoint groups (g1, g3) each remove the crash, and g3's parts do not.
+- Whether the title finds its table filled therefore depends on the total of small effects at start, and a per-call
+  atomic in the host's library calls removes it at every environment size tried.
+- **That is the shape of a race at ASTRO BOT's start**: a title thread reads a table before another has filled it, and
+  the host's timing decides who wins. It is not memory layout or contents. `getenv` time grows with the entry count,
+  which would explain the count effect. (Inference: no thread was observed.)
+- The table-off pass is then the old timing, not proof that the rows are wrong. Equally, a row may have broken a wait
+  that used to order the two threads.
+
+**Next, for a separate session.** At the fault, print the title's threads and what each waits in (the host's sync
+objects), and find the writer of the table at guest 0x300a80000. An order the console guarantees and the host does not
+is the thing to look for.
