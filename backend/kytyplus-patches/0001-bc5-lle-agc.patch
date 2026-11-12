@@ -27991,7 +27991,7 @@ index e82b93e..6cf1b61 100644
  
  } // namespace Libs::Audio::Ajm
 diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
-index fe4b332..a0b63c2 100644
+index fe4b332..40b76cd 100644
 --- a/src/libs/audio.cpp
 +++ b/src/libs/audio.cpp
 @@ -1,6 +1,7 @@
@@ -28082,7 +28082,7 @@ index fe4b332..a0b63c2 100644
  	struct PortIn {
  		bool     used            = false;
  		uint32_t type            = 0;
-@@ -132,6 +180,12 @@ private:
+@@ -132,10 +180,108 @@ private:
  	static const void*     PrepareOutputBuffer(const PortOut& port, const void* data,
  	                                           std::vector<uint8_t>* buffer);
  	static bool            QueueSdlAudio(PortOut* port, const void* data, bool blocking);
@@ -28095,7 +28095,103 @@ index fe4b332..a0b63c2 100644
  };
  
  static Audio* g_audio = nullptr;
-@@ -157,6 +211,10 @@ bool AudioOutHasDevice(int handle) {
+ 
++// ---- experiment 0405 (series e5 of experiment 0401, mkao0405.py): the switches of this file's ports ----
++// Ported in adapted form from KytyPS5 (github.com/KytyPS5/KytyPS5, GPL-2.0) at dfec14aa8c59f8ea2bc4d87eba9854fc370161c6;
++// each inserted block names its source lines. Three groups, default off, each read once from the environment, with one
++// stderr line per group at the Audio subsystem's init (or at the group's first use, if that comes first). A value: unset,
++// empty or "0" is off; a comma list naming items ("ka01,ka02") turns on only those; any other value turns on all of the
++// group's items.
++//   KYTY_BC5_AUDIOOUT_CHECKS  ka01 sceAudioOutOutputs: num 0 or > 32 -> AUDIO_OUT_ERROR_INVALID_SIZE
++//                             ka02 sceAudioOutOpen: freq 0 -> AUDIO_OUT_ERROR_INVALID_SAMPLE_FREQ
++//   KYTY_BC5_AUDIOIN_CHECKS   ka06 sceAudioInInput: silence written into dest; a null dest returns 0
++//                             ka07 sceAudioInOpen: errors for type, index, len 0 and freq 0 instead of an exit
++//   KYTY_BC5_NGS2_RACK_FIX    ka03 Ngs2RackDestroy: the rack unlinked and given back through its allocator
++//                             ka08 Ngs2VoiceGetState: a custom rack's voice state as large as configured
++// Off is today's path exactly: the old code stays, the new code runs only when its item is on.
++// KytyPS5's copyright remains with its authors; GPL-2.0 as the rest of this file.
++static constexpr uint32_t BC5_AO_KA01 = 1u << 0;
++static constexpr uint32_t BC5_AO_KA02 = 1u << 1;
++static constexpr uint32_t BC5_AO_KA06 = 1u << 2;
++static constexpr uint32_t BC5_AO_KA07 = 1u << 3;
++static constexpr uint32_t BC5_AO_KA03 = 1u << 4;
++static constexpr uint32_t BC5_AO_KA08 = 1u << 5;
++
++struct Bc5AoItem {
++	const char* name;
++	uint32_t    bit;
++};
++
++// The items (of the n in `items`) that the value `e` turns on; 0: off.
++static uint32_t Bc5AoParse(const char* e, const Bc5AoItem* items, int n) {
++	if (e == nullptr || e[0] == '\0' || std::strcmp(e, "0") == 0) {
++		return 0;
++	}
++	uint32_t all = 0;
++	for (int k = 0; k < n; k++) {
++		all |= items[k].bit;
++	}
++	uint32_t    on = 0;
++	const char* p  = e;
++	for (;;) {
++		const char*  comma = std::strchr(p, ',');
++		const size_t len   = comma != nullptr ? static_cast<size_t>(comma - p) : std::strlen(p);
++		for (int k = 0; k < n; k++) {
++			if (len == std::strlen(items[k].name) && std::strncmp(p, items[k].name, len) == 0) {
++				on |= items[k].bit;
++			}
++		}
++		if (comma == nullptr) {
++			break;
++		}
++		p = comma + 1;
++	}
++	return on != 0 ? on : all;
++}
++
++// Reads the group's switch and prints its one line: "[bc5] exp 0405: <group> on (items: ...)" or "... off".
++static uint32_t Bc5AoRead(const char* env, const char* group, const Bc5AoItem* items, int n) {
++	const uint32_t on   = Bc5AoParse(std::getenv(env), items, n);
++	std::string    line = std::string("[bc5] exp 0405: ") + group;
++	if (on == 0) {
++		line += " off";
++	} else {
++		line += " on (items:";
++		for (int k = 0; k < n; k++) {
++			if ((on & items[k].bit) != 0) {
++				line += std::string(" ") + items[k].name;
++			}
++		}
++		line += ")";
++	}
++	std::fprintf(stderr, "%s\n", line.c_str());
++	std::fflush(stderr);
++	return on;
++}
++
++static uint32_t Bc5AudioOutChecks() {
++	static const Bc5AoItem items[] = {{"ka01", BC5_AO_KA01}, {"ka02", BC5_AO_KA02}};
++	static const uint32_t  on      = Bc5AoRead("KYTY_BC5_AUDIOOUT_CHECKS", "audioout checks", items, 2);
++	return on;
++}
++
++static uint32_t Bc5AudioInChecks() {
++	static const Bc5AoItem items[] = {{"ka06", BC5_AO_KA06}, {"ka07", BC5_AO_KA07}};
++	static const uint32_t  on      = Bc5AoRead("KYTY_BC5_AUDIOIN_CHECKS", "audioin checks", items, 2);
++	return on;
++}
++
++static uint32_t Bc5Ngs2RackFix() {
++	static const Bc5AoItem items[] = {{"ka03", BC5_AO_KA03}, {"ka08", BC5_AO_KA08}};
++	static const uint32_t  on      = Bc5AoRead("KYTY_BC5_NGS2_RACK_FIX", "ngs2 rack fix", items, 2);
++	return on;
++}
++// ---- end of experiment 0405's switches ----
++
+ namespace AudioInternal {
+ 
+ int AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, Format format) {
+@@ -157,6 +303,10 @@ bool AudioOutHasDevice(int handle) {
  	return g_audio != nullptr && handle > 0 && g_audio->AudioOutHasDevice(Audio::Id(handle));
  }
  
@@ -28106,7 +28202,18 @@ index fe4b332..a0b63c2 100644
  uint32_t AudioOutOutputs(const OutputParam* params, uint32_t num, bool blocking) {
  	if (g_audio == nullptr || params == nullptr || num == 0) {
  		return 0;
-@@ -221,13 +279,157 @@ SDL_AudioFormat Audio::SdlFormat(Format format) {
+@@ -185,6 +335,10 @@ KYTY_SUBSYSTEM_INIT(Audio) {
+ 	EXIT_IF(g_audio != nullptr);
+ 
+ 	g_audio = new Audio;
++	// experiment 0405: each group's switch is read once here and prints its line, on or off (mkao0405.py)
++	(void)Bc5AudioOutChecks();
++	(void)Bc5AudioInChecks();
++	(void)Bc5Ngs2RackFix();
+ }
+ 
+ KYTY_SUBSYSTEM_UNEXPECTED_SHUTDOWN(Audio) {}
+@@ -221,13 +375,157 @@ SDL_AudioFormat Audio::SdlFormat(Format format) {
  	return FormatIsFloat(format) ? AUDIO_F32SYS : AUDIO_S16SYS;
  }
  
@@ -28264,7 +28371,7 @@ index fe4b332..a0b63c2 100644
  
  	SDL_AudioSpec desired {};
  	desired.freq     = static_cast<int>(port->freq);
-@@ -236,20 +438,84 @@ bool Audio::OpenSdlDevice(PortOut* port) {
+@@ -236,20 +534,84 @@ bool Audio::OpenSdlDevice(PortOut* port) {
  	desired.samples  = static_cast<Uint16>(port->samples_num);
  	desired.callback = nullptr;
  
@@ -28354,7 +28461,7 @@ index fe4b332..a0b63c2 100644
  	return true;
  }
  
-@@ -326,16 +592,183 @@ const void* Audio::PrepareOutputBuffer(const PortOut& port, const void* data,
+@@ -326,16 +688,183 @@ const void* Audio::PrepareOutputBuffer(const PortOut& port, const void* data,
  	return buffer->data();
  }
  
@@ -28539,7 +28646,7 @@ index fe4b332..a0b63c2 100644
  
  	std::vector<uint8_t> convert_buffer;
  	const void*          queue_data = prepared_data;
-@@ -343,7 +776,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -343,7 +872,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  
  	SDL_AudioCVT cvt {};
  	const int    cvt_result =
@@ -28548,7 +28655,7 @@ index fe4b332..a0b63c2 100644
  	                      static_cast<int>(port->freq), port->audio_spec.format,
  	                      port->audio_spec.channels, port->audio_spec.freq);
  
-@@ -368,6 +801,31 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -368,6 +897,31 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		queue_size = static_cast<uint32_t>(cvt.len_cvt);
  	}
  
@@ -28580,7 +28687,7 @@ index fe4b332..a0b63c2 100644
  	if (blocking) {
  		// More aggressive buffer management to prevent audio issues
  		// during heavy GPU load (common in gameplay vs cutscene)
-@@ -378,17 +836,35 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -378,17 +932,35 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		                   : 2u;
  		const auto min_queued_size = queue_size * std::clamp(buffers, 2u, 8u); // Smaller max
  		const auto wait_start      = LibKernel::KernelGetProcessTime();
@@ -28618,7 +28725,7 @@ index fe4b332..a0b63c2 100644
  
  	if (SDL_QueueAudio(port->audio_device, queue_data, queue_size) < 0) {
  		LOGF("AudioOut: SDL_QueueAudio failed: %s\n", SDL_GetError());
-@@ -398,7 +874,198 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -398,7 +970,198 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  	return true;
  }
  
@@ -28817,7 +28924,7 @@ index fe4b332..a0b63c2 100644
  	Common::LockGuard lock(m_mutex);
  
  	for (int id = 0; id < OUT_PORTS_MAX; id++) {
-@@ -428,7 +1095,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
+@@ -428,7 +1191,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
  				port.volume[i] = 32768;
  			}
  
@@ -28826,7 +28933,7 @@ index fe4b332..a0b63c2 100644
  				// KytyPlus diagnostic: OpenSdlDevice() may fail (no host audio device,
  				// unsupported sample rate/format, or SDL init failure). The return is
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
-@@ -478,6 +1145,19 @@ bool Audio::AudioOutHasDevice(Id handle) {
+@@ -478,6 +1241,19 @@ bool Audio::AudioOutHasDevice(Id handle) {
  	        m_out_ports[handle.GetId()].used && m_out_ports[handle.GetId()].audio_device != 0);
  }
  
@@ -28846,7 +28953,7 @@ index fe4b332..a0b63c2 100644
  bool Audio::AudioOutGetStatus(Id handle, int* type, int* channels_num) {
  	Common::LockGuard lock(m_mutex);
  
-@@ -568,6 +1248,52 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
+@@ -568,6 +1344,52 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
  		m_out_ports[params[i].handle.GetId()].last_output_time = LibKernel::KernelGetProcessTime();
  	}
  
@@ -28899,7 +29006,86 @@ index fe4b332..a0b63c2 100644
  	return first_port.samples_num;
  }
  
-@@ -974,6 +1700,27 @@ int KYTY_SYSV_ABI AcmBatchJobNotification(AcmBatchInfo* batch_info) {
+@@ -621,6 +1443,13 @@ uint32_t Audio::AudioInInput(Id handle, void* dest) {
+ 
+ 	m_in_ports[handle.GetId()].last_input_time = LibKernel::KernelGetProcessTime();
+ 
++	// experiment 0405 ka06 (KYTY_BC5_AUDIOIN_CHECKS): there is no capture device here, so the title gets silence instead
++	// of whatever its buffer held (KytyPS5 dfec14a src/libs/audio.cpp:805-806, GPL-2.0: samples_num frames zeroed when it
++	// has no capture stream). AudioInOpen keeps only 16-bit mono (2 bytes a frame) and 16-bit stereo (4) ports.
++	if ((Bc5AudioInChecks() & BC5_AO_KA06) != 0) {
++		std::memset(dest, 0, static_cast<size_t>(port.samples_num) * (port.format == Format::Signed16bitMono ? 2u : 4u));
++	}
++
+ 	return port.samples_num;
+ }
+ 
+@@ -663,6 +1492,11 @@ int KYTY_SYSV_ABI AudioOutOpen(int user_id, int type, int index, uint32_t len, u
+ 	if (!audio_out_port_type_is_valid(type)) {
+ 		return AUDIO_OUT_ERROR_INVALID_PORT_TYPE;
+ 	}
++	// experiment 0405 ka02 (KYTY_BC5_AUDIOOUT_CHECKS): no port with freq 0, whose first output divides by it (Audio::
++	// AudioOutOutputs, block_time: SIGFPE): KytyPS5 dfec14a src/libs/audio.cpp:870-872 (GPL-2.0).
++	if ((Bc5AudioOutChecks() & BC5_AO_KA02) != 0 && freq == 0) {
++		return AUDIO_OUT_ERROR_INVALID_SAMPLE_FREQ;
++	}
+ 	EXIT_NOT_IMPLEMENTED(index != 0);
+ 
+ 	Audio::Format format       = Audio::Format::Unknown;
+@@ -773,6 +1607,11 @@ int KYTY_SYSV_ABI AudioOutOutputs(AudioOutOutputParam* param, uint32_t num) {
+ 	PRINT_NAME();
+ 
+ 	EXIT_NOT_IMPLEMENTED(param == nullptr);
++	// experiment 0405 ka01 (KYTY_BC5_AUDIOOUT_CHECKS): num 0 exited in Audio::AudioOutOutputs, and num > 32 wrote past
++	// params[] below (a stack overflow): KytyPS5 dfec14a src/libs/audio.cpp:995-997 (GPL-2.0).
++	if ((Bc5AudioOutChecks() & BC5_AO_KA01) != 0 && (num == 0 || num > static_cast<uint32_t>(Audio::OUT_PORTS_MAX))) {
++		return AUDIO_OUT_ERROR_INVALID_SIZE;
++	}
+ 
+ 	Audio::OutputParam params[Audio::OUT_PORTS_MAX];
+ 
+@@ -827,7 +1666,25 @@ int KYTY_SYSV_ABI AudioInOpen(int user_id, uint32_t type, uint32_t index, uint32
+ 	if (user_id != 255 && user_id != 1) {
+ 		LOGF("\t temporary: accepting unsupported audio input user_id %d\n", user_id);
+ 	}
+-	EXIT_NOT_IMPLEMENTED(type != 1);
++	// experiment 0405 ka07 (KYTY_BC5_AUDIOIN_CHECKS): errors instead of an exit, and no port with len 0 or freq 0 (its
++	// first input divides by freq): KytyPS5 dfec14a src/libs/audio.cpp:1047-1058 (GPL-2.0), of its len/freq rules only
++	// the zero guards (its full sets are exp 0405's KA22). Type 0 opens a port, as type 1 does.
++	const bool bc5_ka07 = (Bc5AudioInChecks() & BC5_AO_KA07) != 0;
++	if (bc5_ka07) {
++		if (type != 0 && type != 1) {
++			return AUDIO_IN_ERROR_INVALID_TYPE;
++		}
++		if (index != 0) {
++			return AUDIO_IN_ERROR_INVALID_PARAM;
++		}
++		if (len == 0) {
++			return AUDIO_IN_ERROR_INVALID_SIZE;
++		}
++		if (freq == 0) {
++			return AUDIO_IN_ERROR_INVALID_FREQ;
++		}
++	}
++	EXIT_NOT_IMPLEMENTED(!bc5_ka07 && type != 1); // experiment 0405 ka07: was EXIT_NOT_IMPLEMENTED(type != 1)
+ 	EXIT_NOT_IMPLEMENTED(index != 0);
+ 
+ 	Audio::Format format = Audio::Format::Unknown;
+@@ -858,6 +1715,13 @@ int KYTY_SYSV_ABI AudioInOpen(int user_id, uint32_t type, uint32_t index, uint32
+ int KYTY_SYSV_ABI AudioInInput(int handle, void* dest) {
+ 	PRINT_NAME();
+ 
++	// experiment 0405 ka06 (KYTY_BC5_AUDIOIN_CHECKS): a null dest is a stop, not an exit: an invalid handle still returns
++	// AUDIO_IN_ERROR_INVALID_HANDLE, a valid one 0 frames at once (KytyPS5 dfec14a src/libs/audio.cpp:747-749, 808-811
++	// and 822, GPL-2.0; ours has no capture stream to stop).
++	if ((Bc5AudioInChecks() & BC5_AO_KA06) != 0 && dest == nullptr) {
++		EXIT_IF(g_audio == nullptr);
++		return g_audio->AudioInValid(Audio::Id(handle)) ? 0 : AUDIO_IN_ERROR_INVALID_HANDLE;
++	}
+ 	EXIT_NOT_IMPLEMENTED(dest == nullptr);
+ 
+ 	EXIT_IF(g_audio == nullptr);
+@@ -974,6 +1838,27 @@ int KYTY_SYSV_ABI AcmBatchJobNotification(AcmBatchInfo* batch_info) {
  	return OK;
  }
  
@@ -28927,6 +29113,198 @@ index fe4b332..a0b63c2 100644
  int KYTY_SYSV_ABI AcmConvReverbSharedInput(AcmBatchInfo* batch_info, uint32_t block_count, void* in,
                                             uint32_t count, const void* const ir[],
                                             const float* gain, void* const out[]) {
+@@ -1764,6 +2649,123 @@ static uint32_t Ngs2GetStateFlags(const Ngs2VoiceInternal* voice) {
+ 	return 0;
+ }
+ 
++// ---- experiment 0405 ka03 and ka08 (KYTY_BC5_NGS2_RACK_FIX; mkao0405.py) ----
++// ka03, from KytyPS5 (github.com/KytyPS5/KytyPS5, GPL-2.0) dfec14a src/libs/ngs2.cpp:1456-1528 (Ngs2RackDestroy), 1377
++// (the rack's context buffer kept at create), 910 (g_racks_mutex), 1380-1384 and 1972-1983 (the racks' list linked and
++// walked under it), adapted. Ngs2RackDestroy only zeroed *buffer_info: the rack stayed in g_racks_list, Ngs2SystemRender
++// went on writing its voices into memory the title had freed, and a rack made with an allocator was never given back.
++// When on, the rack is unlinked under its system's mutex and the racks' mutex; then its allocator's free handler gets the
++// context buffer the rack was made in (and its result is returned), or, for a rack made without an allocator, that buffer
++// is returned in *buffer_info. A handle not in the list (0, or destroyed already) returns
++// BC5_NGS2_ERROR_INVALID_RACK_HANDLE. The context buffer is kept in a map beside the rack, not in Ngs2RackInternal, so
++// that the rack's size (Ngs2RackQueryBufferSize) does not change. KytyPS5's custom-module cleanup (ngs2.cpp:1503-1518) is
++// not ported: our racks have no modules. Lock order, as KytyPS5's: a system's mutex, then the racks' mutex.
++// ka08, from KytyPS5 dfec14a src/libs/ngs2.cpp:2795-2813 (a0b99a8 "ngs2: accept larger custom voice state buffers") and
++// 897-905 (the custom sampler's voice state), GPL-2.0: a custom mastering or custom sampler voice's state is the rack's
++// configured state_size; a larger buffer is accepted (that many bytes written, the rest untouched), a smaller one returns
++// BC5_NGS2_ERROR_STATE_SIZE. Ours has no decode state, so only state_flags is filled. A rack configured smaller than its
++// state struct takes today's path (KytyPS5 exits there; no new exit here).
++// TODO(verify): both error values are KytyPS5's (its PS5 libSceNgs2 codes, 0x804a8xxx); shadPS4 60c42b9
++// src/core/libraries/ngs2/ngs2_error.h:50 and :11 give the PS4 library's INVALID_RACK_HANDLE 0x804A0261 and
++// INVALID_OUT_SIZE 0x804A0054.
++static constexpr int32_t BC5_NGS2_ERROR_INVALID_RACK_HANDLE = static_cast<int32_t>(0x804a8202u); // KytyPS5 ngs2.cpp:1457
++static constexpr int32_t BC5_NGS2_ERROR_STATE_SIZE          = static_cast<int32_t>(0x804a8011u); // KytyPS5 ngs2.cpp:2803
++
++struct Bc5Ngs2CustomSamplerVoiceState { // KytyPS5 dfec14a src/libs/ngs2.cpp:897-905
++	Ngs2VoiceState voice_state;
++	const void*    waveform_data;
++	uint64_t       num_decoded_samples;
++	uint64_t       decoded_data_size;
++	uint64_t       user_data;
++	uint32_t       reserved;
++	uint32_t       reserved2;
++};
++
++static_assert(sizeof(Bc5Ngs2CustomSamplerVoiceState) == 48);
++
++static Common::Mutex                                            g_bc5_racks_mutex;  // KytyPS5's g_racks_mutex
++static std::map<const Ngs2RackInternal*, Ngs2ContextBufferInfo> g_bc5_rack_buffers; // each linked rack's context buffer
++
++static bool Bc5Ngs2Ka03() {
++	return (Bc5Ngs2RackFix() & BC5_AO_KA03) != 0;
++}
++
++// Ngs2RackDestroy when ka03 is on; the caller has zeroed *buffer_info (if given).
++static int Bc5Ngs2RackDestroy(uintptr_t rack_handle, Ngs2ContextBufferInfo* buffer_info) {
++	if (rack_handle == 0) {
++		return BC5_NGS2_ERROR_INVALID_RACK_HANDLE;
++	}
++	auto*         rack = reinterpret_cast<Ngs2RackInternal*>(rack_handle);
++	Ngs2Internal* ngs  = nullptr;
++	g_bc5_racks_mutex.Lock();
++	for (auto* current = g_racks_list; current != nullptr; current = current->next) {
++		if (current == rack) {
++			ngs = current->ngs;
++			break;
++		}
++	}
++	g_bc5_racks_mutex.Unlock();
++	if (ngs == nullptr) {
++		return BC5_NGS2_ERROR_INVALID_RACK_HANDLE;
++	}
++	Ngs2ContextBufferInfo context_buffer {};
++	Ngs2BufferAllocator   allocator;
++	{
++		Common::LockGuard lock(ngs->mutex);
++		Common::LockGuard racks_lock(g_bc5_racks_mutex);
++		auto**            link = &g_racks_list;
++		while (*link != nullptr && *link != rack) {
++			link = &(*link)->next;
++		}
++		if (*link == nullptr) { // destroyed by another thread meanwhile
++			return BC5_NGS2_ERROR_INVALID_RACK_HANDLE;
++		}
++		*link = rack->next;
++		if (auto it = g_bc5_rack_buffers.find(rack); it != g_bc5_rack_buffers.end()) {
++			context_buffer = it->second;
++			g_bc5_rack_buffers.erase(it);
++		} else { // not expected (the switch is read once): the buffer as Ngs2RackQueryBufferSize sized it
++			context_buffer.host_buffer = rack;
++			context_buffer.host_buffer_size =
++			    sizeof(Ngs2RackInternal) + sizeof(Ngs2VoiceInternal) * rack->option.common.max_voices;
++			context_buffer.user_data = rack->allocator.user_data;
++		}
++		allocator = rack->allocator;
++	}
++	LOGF("\t exp 0405 ka03: rack unlinked, host_buffer = 0x%016" PRIx64 ", free_handler = 0x%016" PRIx64 "\n",
++	     reinterpret_cast<uint64_t>(context_buffer.host_buffer), reinterpret_cast<uint64_t>(allocator.free_handler));
++	if (allocator.free_handler != nullptr) {
++		return allocator.free_handler(&context_buffer);
++	}
++	if (buffer_info != nullptr) {
++		*buffer_info = context_buffer;
++	}
++	return OK;
++}
++
++// Ngs2VoiceGetState for a custom mastering or custom sampler voice when ka08 is on (under the system's mutex). False: the
++// rack is configured smaller than its state struct, and the caller takes today's path.
++static bool Bc5Ngs2CustomVoiceState(const Ngs2VoiceInternal* voice, Ngs2VoiceState* state, size_t state_size,
++                                    int* result) {
++	const bool   sampler    = voice->rack->type == Ngs2RackType::CustomSampler;
++	const size_t configured = sampler ? voice->rack->option.custom_sampler.custom_rack_option.state_size
++	                                  : voice->rack->option.custom_mastering.custom_rack_option.state_size;
++	if (configured < (sampler ? sizeof(Bc5Ngs2CustomSamplerVoiceState) : sizeof(Ngs2CustomMasteringVoiceState))) {
++		return false;
++	}
++	if (state_size < configured) {
++		*result = BC5_NGS2_ERROR_STATE_SIZE;
++		return true;
++	}
++	std::memset(state, 0, configured);
++	state->state_flags = Ngs2GetStateFlags(voice);
++	LOGF("\t exp 0405 ka08: state_flags = %u (%" PRIu64 " of %" PRIu64 " bytes)\n", state->state_flags,
++	     static_cast<uint64_t>(configured), static_cast<uint64_t>(state_size));
++	*result = OK;
++	return true;
++}
++// ---- end of experiment 0405's Ngs2 helpers ----
++
+ static Ngs2SystemOption Ngs2DefaultSystemOption() {
+ 	Ngs2SystemOption option {};
+ 	option.size              = sizeof(Ngs2SystemOption);
+@@ -2127,8 +3129,18 @@ int KYTY_SYSV_ABI Ngs2RackCreate(uintptr_t system_handle, uint32_t rack_id,
+ 	rack->allocator = Ngs2BufferAllocator();
+ 	rack->ngs       = ngs;
+ 
++	// experiment 0405 ka03 (KYTY_BC5_NGS2_RACK_FIX): the list changed under the racks' mutex, and the rack's context
++	// buffer kept for Ngs2RackDestroy (KytyPS5 dfec14a src/libs/ngs2.cpp:1377-1384, GPL-2.0); neither when off
++	const bool bc5_ka03 = Bc5Ngs2Ka03();
++	if (bc5_ka03) {
++		g_bc5_racks_mutex.Lock();
++		g_bc5_rack_buffers[rack] = *buffer_info;
++	}
+ 	rack->next   = g_racks_list;
+ 	g_racks_list = rack;
++	if (bc5_ka03) {
++		g_bc5_racks_mutex.Unlock();
++	}
+ 
+ 	for (uint32_t i = 0; i < option->max_voices; i++) {
+ 		voices[i].rack  = rack;
+@@ -2215,6 +3227,9 @@ int KYTY_SYSV_ABI Ngs2RackDestroy(uintptr_t rack_handle, Ngs2ContextBufferInfo*
+ 	if (buffer_info != nullptr) {
+ 		std::memset(buffer_info, 0, sizeof(Ngs2ContextBufferInfo));
+ 	}
++	if (Bc5Ngs2Ka03()) { // experiment 0405 ka03 (KYTY_BC5_NGS2_RACK_FIX): unlinked and given back (Bc5Ngs2RackDestroy)
++		return Bc5Ngs2RackDestroy(rack_handle, buffer_info);
++	}
+ 
+ 	return OK;
+ }
+@@ -2274,6 +3289,12 @@ int KYTY_SYSV_ABI Ngs2SystemRender(uintptr_t system_handle, const Ngs2RenderBuff
+ 		}
+ 	}
+ 
++	// experiment 0405 ka03 (KYTY_BC5_NGS2_RACK_FIX): the racks' list walked under its mutex (KytyPS5 dfec14a
++	// src/libs/ngs2.cpp:1972-1983, GPL-2.0), so that a rack being destroyed is walked whole or not at all; not when off
++	const bool bc5_ka03 = Bc5Ngs2Ka03();
++	if (bc5_ka03) {
++		g_bc5_racks_mutex.Lock();
++	}
+ 	for (auto* rack = g_racks_list; rack != nullptr; rack = rack->next) {
+ 		if (rack->ngs == ngs) {
+ 			auto* voices = reinterpret_cast<Ngs2VoiceInternal*>(rack + 1);
+@@ -2314,6 +3335,9 @@ int KYTY_SYSV_ABI Ngs2SystemRender(uintptr_t system_handle, const Ngs2RenderBuff
+ 			}
+ 		}
+ 	}
++	if (bc5_ka03) { // experiment 0405 ka03
++		g_bc5_racks_mutex.Unlock();
++	}
+ 
+ 	return OK;
+ }
+@@ -2665,6 +3689,15 @@ int KYTY_SYSV_ABI Ngs2VoiceGetState(uintptr_t voice_handle, Ngs2VoiceState* stat
+ 
+ 	Common::LockGuard lock(voice->rack->ngs->mutex);
+ 
++	// experiment 0405 ka08 (KYTY_BC5_NGS2_RACK_FIX): a custom rack's voice state as large as configured
++	// (Bc5Ngs2CustomVoiceState); today's path when off or when the rack is configured smaller than its state struct
++	if (int bc5_result = OK; (Bc5Ngs2RackFix() & BC5_AO_KA08) != 0 &&
++	                         (voice->rack->type == Ngs2RackType::CustomMastering ||
++	                          voice->rack->type == Ngs2RackType::CustomSampler) &&
++	                         Bc5Ngs2CustomVoiceState(voice, state, state_size, &bc5_result)) {
++		return bc5_result;
++	}
++
+ 	switch (voice->rack->type) {
+ 		case Ngs2RackType::Submixer: {
+ 			EXIT_NOT_IMPLEMENTED(state_size != sizeof(Ngs2SubmixerVoiceState));
 diff --git a/src/libs/audio.h b/src/libs/audio.h
 index 7218bdd..3deb589 100644
 --- a/src/libs/audio.h
