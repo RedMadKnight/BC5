@@ -4526,6 +4526,45 @@ index 0000000..226a60e
 +}
 +
 +} // namespace bc5::pad_audio_route
+diff --git a/src/bc5/switch_defaults.hpp b/src/bc5/switch_defaults.hpp
+new file mode 100644
+index 0000000..468d967
+--- /dev/null
++++ b/src/bc5/switch_defaults.hpp
+@@ -0,0 +1,33 @@
++// SPDX-License-Identifier: GPL-2.0-only
++// Experiment 0413: the defaults of switches that went from the private test builds (exps 0401, 0405, 0409, 0412) into
++// both shared builds. Each row is applied at process start with setenv(name, value, 0), before any static initializer
++// reads a switch, so a value set in the environment always wins and NAME=0 restores the old behaviour of that row.
++// KYTY_BC5_SWITCH_DEFAULTS=0 skips the whole table (the code then behaves as in the private builds with nothing set).
++// One audit row of experiments/0413-np-session-v2-shared/audit-unintegrated.md per block, in the audit's order.
++// Left out on purpose (the top session's rules, 2026-11-12): the zero skip and its poll, the orphan release, split and
++// forget (launcher only); CP_COHER_START_DELAY (never A/B'd; the second title's launcher keeps it); NOGPU_UNPIN,
++// SET_PREDICATION, the catchers and journals (off).
++#pragma once
++
++#include <cstdlib>
++#include <cstring>
++
++namespace bc5::switch_defaults {
++
++struct Default {
++	const char* name;
++	const char* value;
++};
++
++inline constexpr Default kDefaults[] = {
++    {nullptr, nullptr}};
++
++inline void Apply() {
++	const char* all = std::getenv("KYTY_BC5_SWITCH_DEFAULTS");
++	if (all != nullptr && std::strcmp(all, "0") == 0) return;
++	for (const Default* d = kDefaults; d->name != nullptr; d++) {
++		setenv(d->name, d->value, 0);
++	}
++}
++
++} // namespace bc5::switch_defaults
 diff --git a/src/common/emulatorConfig.cpp b/src/common/emulatorConfig.cpp
 index 15a98b9..0e3d63d 100644
 --- a/src/common/emulatorConfig.cpp
@@ -85277,7 +85316,7 @@ index f3216f1..815a084 100644
  bool     SystemContentGetChunksNum(uint32_t* num);
  
 diff --git a/src/main.cpp b/src/main.cpp
-index c44d32f..23e6b19 100644
+index c44d32f..fc1e4bb 100644
 --- a/src/main.cpp
 +++ b/src/main.cpp
 @@ -16,6 +16,7 @@
@@ -85335,7 +85374,7 @@ index c44d32f..23e6b19 100644
  		} else if (arg == "--keymap") {
  			const auto split = value.find('=');
  			if (split == std::string::npos || split == 0 || split + 1 == value.size()) {
-@@ -356,10 +376,42 @@ static bool ParseArgs(int argc, char* argv[], RunOptions& options, bool& show_he
+@@ -356,10 +376,49 @@ static bool ParseArgs(int argc, char* argv[], RunOptions& options, bool& show_he
  		}
  	}
  
@@ -85344,6 +85383,13 @@ index c44d32f..23e6b19 100644
  	       (!options.app0_dir.empty() && !options.elf.empty());
  }
  
++#include "bc5/switch_defaults.hpp"
++// BC5 (experiment 0413): the shared builds' switch defaults, set before any static initializer can read a switch
++// (priority 101, as the lean build's environment cleanup below; the two touch different names).
++__attribute__((constructor(101))) static void Bc5SwitchDefaults() {
++	bc5::switch_defaults::Apply();
++}
++
 +#ifdef BC5_LEAN
 +#include <cstdlib>
 +// BC5 (KYTY_BC5_LEAN, experiment 0177): the diagnostic switches of the host and the direct path,
@@ -85379,7 +85425,7 @@ index c44d32f..23e6b19 100644
  int main(int argc, char* argv[]) {
  	auto& slist = *SubsystemsList::Instance();
  
-@@ -474,7 +526,7 @@ int main(int argc, char* argv[]) {
+@@ -474,7 +533,7 @@ int main(int argc, char* argv[]) {
  	// shadPS4; only PS5 (Prospero) titles reach the native Run() path. This
  	// must happen BEFORE Run() so no PS5 Vulkan/memory subsystems are
  	// initialized for a PS4 title (and vice versa).
