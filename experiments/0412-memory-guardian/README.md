@@ -2508,8 +2508,8 @@ every operand mapped and the mapping count had been steady. What R1/R2 **could**
 (a) with the PRT span, the 361 mappings moved by the orphan release were for a moment PRT pages instead of unmapped
 ones, and so was everything the release cut: a job that reads there now gets zeros without any sign, where before it
 would have faulted loudly (in no earlier run did it fault, so nothing is known to read there); (b) R1 made the
-release five times larger than in any earlier run, 2–14 s before the hang. Against both stands the plain memory
-state: PSI full 52–65 % for 25 s, the worst of any run of this experiment that reached the load.
+release five times larger than in any earlier run, 3–14 s before the hang. Against both stands the plain memory
+state: PSI full 43–65 % for 25 s, the worst of any run of this experiment that reached the load.
 **Why the reset failed** is not known: the same kernel recovered the ring at 19:07 and failed here, at F260 and in
 section 38; in all three failures a draw buffer and a compute buffer had timed out together. That is a correlation
 from four dumps, not a cause.
