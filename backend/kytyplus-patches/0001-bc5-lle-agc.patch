@@ -12962,10 +12962,10 @@ index c729a98..2f3e5fb 100644
  #if defined(__APPLE__)
  	// AppKit traps on title changes off the main thread; fire-and-forget keeps present pacing.
 diff --git a/src/kernel/eventQueue.cpp b/src/kernel/eventQueue.cpp
-index 14561b0..4aaf7af 100644
+index 14561b0..4ab2b73 100644
 --- a/src/kernel/eventQueue.cpp
 +++ b/src/kernel/eventQueue.cpp
-@@ -1,8 +1,14 @@
+@@ -1,8 +1,15 @@
 +#include <atomic>
 +#include <chrono>
 +#include <cinttypes>
@@ -12977,10 +12977,11 @@ index 14561b0..4aaf7af 100644
  #include "common/logging/log.h"
 +
 +#include <cstdlib>
++#include <cstring> // exp 0401 series e5 (eq0405): std::strcmp, strchr, strncmp, strlen
  #include "common/stringUtils.h"
  #include "common/threads.h"
  #include "common/timer.h"
-@@ -17,6 +23,10 @@
+@@ -17,6 +24,10 @@
  #include <unordered_map>
  #include <vector>
  
@@ -12991,7 +12992,126 @@ index 14561b0..4aaf7af 100644
  namespace Libs::LibKernel::EventQueue {
  
  LIB_NAME("libkernel", "libkernel");
-@@ -103,7 +113,7 @@ int KernelEqueuePrivate::GetTriggeredEvents(KernelEvent* ev, int num) {
+@@ -36,6 +47,87 @@ static std::unordered_map<KernelEqueue, KernelEqueueRef> g_equeues;
+ static Common::Mutex                                     g_equeues_mutex;
+ static uint64_t                                          g_next_equeue = 1;
+ 
++// ---- exp 0401 series e5 (eq0405): exp 0405's equeue fixes, KYTY_BC5_EQUEUE_FIXES ------------------------------------
++// Ported in adapted form (no line copied); each source's copyright stays with its authors; GPL-2.0 as this file.
++// - "kk02" (exp 0405 R2 KK02 + SK01): a level event, one that is still triggered after its reset function or EV_CLEAR step
++//   and has no pending copy, is delivered once per wait instead of into every slot of the caller's array. KytyPS5 dfec14a
++//   kernel/eventQueue.cpp:120-127 (`else break;` after the pending pop; GPL-2.0); sharpemu 514d766
++//   SharpEmu.Libs/Kernel/KernelEventQueueCompatExports.cs:1940-1960 (each entry once per wait, a level entry queued
++//   again; commit 816ec4a; GPL-2.0-or-later). Events that their reset clears (the GPU EOP events of
++//   graphics/host_gpu/renderer/sync.cpp, the VideoOut flip events, EV_CLEAR user events) and events with pending copies
++//   (EOP, AMPR) are delivered exactly as before. Exp 0188 had the same rule as KYTY_BC5_EQUEUE_LEVEL_ONCE (removed with the
++//   unused levers on 2026-11-01); the second title showed no repeated level event then (F247, run M2).
++// - "sk03" (R2 SK03): sceKernelWaitEqueue with out == NULL waits as usual and writes no count; today the host EXITs.
++//   sharpemu 514d766 KernelEventQueueCompatExports.cs:783-976 (the out checks at 813 and 937; GPL-2.0-or-later).
++// - "kk01" (R2 KK01, F246): sceKernelAddTimerEvent(eq, id, usec, udata) (bc5LleAgc.cpp's shim) adds a periodic
++//   EVFILT_TIMER (-7) with EV_CLEAR: `data` counts the periods that ran out since the last read, the deadline moves on by
++//   whole periods, a re-add first counts the periods already run out. KytyPS5 dfec14a kernel/eventQueue.cpp:142-154,
++//   210-234 and 525-539 (GPL-2.0); its eventQueue.h:55 interval_ns field is a side table of the queue here
++//   (m_bc5_timer_period_ns, ident -> period), so no header changes. sceKernelDeleteTimerEvent (YWQFUyXIVdU; AnyPS5
++//   4f41f4c37 core/libs/prx/libkernel/Equeue/Equeue.cpp:841-843, GPL-2.0-only) is registered with it in bc5LleAgc.cpp.
++// - "g1" (R3 G1): kevent honours its timespec (bc5LleAgc.cpp); the switch is read here so that one line names all four.
++// KYTY_BC5_EQUEUE_FIXES: unset, empty or "0" is off (today's path exactly); any other value turns all four on, unless it
++// names items (comma-separated "kk02", "sk03", "g1", "kk01"): then only those. Read once; one stderr line at the first use
++// (bc5LleAgc.cpp's registration reads it at init).
++static constexpr uint32_t BC5_EQ_FIX_KK02 = 1u;
++static constexpr uint32_t BC5_EQ_FIX_SK03 = 2u;
++static constexpr uint32_t BC5_EQ_FIX_G1   = 4u; // bc5LleAgc.cpp's BC5_EQ_FIX_G1_0405 has the same value
++static constexpr uint32_t BC5_EQ_FIX_KK01 = 8u; // bc5LleAgc.cpp's BC5_EQ_FIX_KK01_0405 has the same value
++static constexpr uint32_t BC5_EQ_FIX_ALL  = BC5_EQ_FIX_KK02 | BC5_EQ_FIX_SK03 | BC5_EQ_FIX_G1 | BC5_EQ_FIX_KK01;
++
++// No header may change: bc5LleAgc.cpp and the CPU test eq0405.cpp declare these themselves.
++uint32_t          Bc5EqueueFixesParse0405(const char* value);
++uint32_t          Bc5EqueueFixes0405();
++int KYTY_SYSV_ABI Bc5KernelAddTimerEvent0405(KernelEqueue eq, int id, KernelUseconds usec, void* udata);
++
++uint32_t Bc5EqueueFixesParse0405(const char* value) {
++	if (value == nullptr || value[0] == '\0' || std::strcmp(value, "0") == 0) {
++		return 0;
++	}
++	uint32_t    items = 0;
++	const char* p     = value;
++	for (;;) {
++		const char*  comma = std::strchr(p, ',');
++		const size_t n     = comma != nullptr ? static_cast<size_t>(comma - p) : std::strlen(p);
++		if (n == 4 && std::strncmp(p, "kk02", n) == 0) {
++			items |= BC5_EQ_FIX_KK02;
++		} else if (n == 4 && std::strncmp(p, "sk03", n) == 0) {
++			items |= BC5_EQ_FIX_SK03;
++		} else if (n == 2 && std::strncmp(p, "g1", n) == 0) {
++			items |= BC5_EQ_FIX_G1;
++		} else if (n == 4 && std::strncmp(p, "kk01", n) == 0) {
++			items |= BC5_EQ_FIX_KK01;
++		}
++		if (comma == nullptr) {
++			break;
++		}
++		p = comma + 1;
++	}
++	return items != 0 ? items : BC5_EQ_FIX_ALL;
++}
++
++// The items of KYTY_BC5_EQUEUE_FIXES that are on (0: off), read once.
++uint32_t Bc5EqueueFixes0405() {
++	static const uint32_t items = [] {
++		const uint32_t v = Bc5EqueueFixesParse0405(std::getenv("KYTY_BC5_EQUEUE_FIXES"));
++		if (v == 0) {
++			std::fprintf(stderr, "[bc5] exp 0405: equeue fixes off\n");
++		} else {
++			std::fprintf(stderr, "[bc5] exp 0405: equeue fixes on (items:%s%s%s%s)\n", (v & BC5_EQ_FIX_KK02) != 0 ? " kk02" : "",
++			             (v & BC5_EQ_FIX_SK03) != 0 ? " sk03" : "", (v & BC5_EQ_FIX_G1) != 0 ? " g1" : "",
++			             (v & BC5_EQ_FIX_KK01) != 0 ? " kk01" : "");
++		}
++		std::fflush(stderr);
++		return v;
++	}();
++	return items;
++}
++
++static bool Bc5EqFix(uint32_t item) {
++	return (Bc5EqueueFixes0405() & item) != 0;
++}
++// ---- end of exp 0401 series e5 (eq0405)'s block ----------------------------------------------------------------------
++
+ class KernelEqueuePrivate {
+ public:
+ 	explicit KernelEqueuePrivate(KernelEqueue handle): m_handle(handle) {}
+@@ -51,12 +143,14 @@ public:
+ 	int DeleteEvent(uintptr_t ident, int16_t filter);
+ 
+ 	int  GetTriggeredEvents(KernelEvent* ev, int num);
++	int  Bc5AddPeriodicTimer(const KernelEqueueEvent& event, uint64_t period_ns); // exp 0401 series e5 (eq0405) kk01
+ 	int  WaitForEvents(KernelEvent* ev, int num, uint32_t micros);
+ 	void Close();
+ 
+ private:
+ 	void TriggerExpiredTimers(uint64_t now_ns);
+ 	bool GetNextTimerWaitMicros(uint64_t now_ns, uint32_t* wait_micros) const;
++	void Bc5TriggerExpiredPeriodicTimers(uint64_t now_ns); // exp 0401 series e5 (eq0405) kk01
+ 
+ 	std::list<KernelEqueueEvent> m_events;
+ 	Common::Mutex                m_mutex;
+@@ -64,6 +158,9 @@ private:
+ 	std::string                  m_name;
+ 	KernelEqueue                 m_handle = KERNEL_EQUEUE_INVALID;
+ 	bool                         m_closed = false;
++	// exp 0401 series e5 (eq0405, KYTY_BC5_EQUEUE_FIXES kk01): the period of each periodic EVFILT_TIMER event, by ident
++	// (KytyPS5 keeps it in KernelEqueueEvent::interval_ns, a header field). Filled only with the switch on.
++	std::unordered_map<uintptr_t, uint64_t> m_bc5_timer_period_ns;
+ };
+ 
+ KernelEqueuePrivate::~KernelEqueuePrivate() {
+@@ -98,12 +195,13 @@ int KernelEqueuePrivate::GetTriggeredEvents(KernelEvent* ev, int num) {
+ 	TriggerExpiredTimers(MonotonicTimeNs());
+ 
+ 	int ret = 0;
++	const bool bc5_level_once = Bc5EqFix(BC5_EQ_FIX_KK02); // exp 0401 series e5 (eq0405) kk02
+ 
+ 	for (auto it = m_events.begin(); it != m_events.end();) {
  		auto& event = *it;
  		bool  erase = false;
  		while (event.triggered) {
@@ -13000,7 +13120,92 @@ index 14561b0..4aaf7af 100644
  			if ((event.event.flags & EV_ONESHOT) != 0) {
  				erase = true;
  				break;
-@@ -255,6 +265,23 @@ static void UserEventTriggerFunc(KernelEqueueEvent* event, void* trigger_data) {
+@@ -121,6 +219,10 @@ int KernelEqueuePrivate::GetTriggeredEvents(KernelEvent* ev, int num) {
+ 				event.event = event.pending_events.front();
+ 				event.pending_events.pop_front();
+ 				event.triggered = true;
++			} else if (bc5_level_once) {
++				// exp 0401 series e5 (eq0405, KYTY_BC5_EQUEUE_FIXES kk02; KytyPS5 dfec14a eventQueue.cpp:124-127): a level event
++				// is delivered again by the next wait, not into the other slots of this one
++				break;
+ 			}
+ 
+ 			if (ret >= num) {
+@@ -137,6 +239,9 @@ int KernelEqueuePrivate::GetTriggeredEvents(KernelEvent* ev, int num) {
+ }
+ 
+ void KernelEqueuePrivate::TriggerExpiredTimers(uint64_t now_ns) {
++	if (!m_bc5_timer_period_ns.empty() && Bc5EqFix(BC5_EQ_FIX_KK01)) {
++		Bc5TriggerExpiredPeriodicTimers(now_ns); // exp 0401 series e5 (eq0405) kk01: before the one-shot rule below
++	}
+ 	for (auto& event: m_events) {
+ 		if (!event.triggered && event.deadline_ns != 0 && event.deadline_ns <= now_ns) {
+ 			event.triggered = true;
+@@ -144,6 +249,27 @@ void KernelEqueuePrivate::TriggerExpiredTimers(uint64_t now_ns) {
+ 	}
+ }
+ 
++// exp 0401 series e5 (eq0405, KYTY_BC5_EQUEUE_FIXES kk01; KytyPS5 dfec14a kernel/eventQueue.cpp:142-154): a periodic
++// timer whose deadline has passed adds every period that ran out to `data` (also while it is unread) and moves its
++// deadline on by those periods; EV_CLEAR on delivery sets `data` back to 0. Only events in the side table are touched.
++void KernelEqueuePrivate::Bc5TriggerExpiredPeriodicTimers(uint64_t now_ns) {
++	for (auto& event: m_events) {
++		if (event.event.filter != KERNEL_EVFILT_TIMER || event.deadline_ns == 0 || event.deadline_ns > now_ns) {
++			continue;
++		}
++		const auto period = m_bc5_timer_period_ns.find(event.event.ident);
++		if (period == m_bc5_timer_period_ns.end() || period->second == 0) {
++			continue;
++		}
++		const uint64_t count = 1 + (now_ns - event.deadline_ns) / period->second;
++		event.event.data += static_cast<intptr_t>(count);
++		event.deadline_ns = count <= (UINT64_MAX - event.deadline_ns) / period->second
++		                        ? event.deadline_ns + count * period->second
++		                        : UINT64_MAX;
++		event.triggered   = true;
++	}
++}
++
+ bool KernelEqueuePrivate::GetNextTimerWaitMicros(uint64_t now_ns, uint32_t* wait_micros) const {
+ 	EXIT_IF(wait_micros == nullptr);
+ 
+@@ -222,6 +348,35 @@ int KernelEqueuePrivate::AddEvent(const KernelEqueueEvent& event) {
+ 	return OK;
+ }
+ 
++// exp 0401 series e5 (eq0405, KYTY_BC5_EQUEUE_FIXES kk01; KytyPS5 dfec14a kernel/eventQueue.cpp:210-234): AddEvent for a
++// periodic timer. A re-add of a live timer first counts the periods that ran out under its old setting, then takes the
++// new deadline, period and udata; the period goes to the side table.
++int KernelEqueuePrivate::Bc5AddPeriodicTimer(const KernelEqueueEvent& event, uint64_t period_ns) {
++	Common::LockGuard lock(m_mutex);
++
++	if (m_closed) {
++		return KERNEL_ERROR_EBADF;
++	}
++	auto it = std::find_if(m_events.begin(), m_events.end(),
++	                       [ident = event.event.ident, filter = event.event.filter](const auto& e) {
++		                       return e.event.ident == ident && e.event.filter == filter;
++	                       });
++	if (it != m_events.end()) {
++		TriggerExpiredTimers(MonotonicTimeNs());
++		it->deadline_ns = event.deadline_ns;
++		it->event.udata = event.event.udata;
++		for (auto& pending: it->pending_events) {
++			pending.udata = event.event.udata;
++		}
++	} else {
++		m_events.push_back(event);
++	}
++	m_bc5_timer_period_ns[event.event.ident] = period_ns;
++
++	m_cond_var.Signal();
++	return OK;
++}
++
+ int KernelEqueuePrivate::TriggerEvent(uintptr_t ident, int16_t filter, void* trigger_data) {
+ 	Common::LockGuard lock(m_mutex);
+ 
+@@ -255,6 +410,23 @@ static void UserEventTriggerFunc(KernelEqueueEvent* event, void* trigger_data) {
  	event->event.udata = trigger_data;
  }
  
@@ -13024,7 +13229,17 @@ index 14561b0..4aaf7af 100644
  static void AmprEventTriggerFunc(KernelEqueueEvent* event, void* trigger_data) {
  	EXIT_IF(event == nullptr);
  	auto triggered_event = event->event;
-@@ -396,19 +423,14 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
+@@ -293,6 +465,9 @@ int KernelEqueuePrivate::DeleteEvent(uintptr_t ident, int16_t filter) {
+ 			event.filter.delete_event_func(m_handle, &event);
+ 		}
+ 
++		if (filter == KERNEL_EVFILT_TIMER && !m_bc5_timer_period_ns.empty()) {
++			m_bc5_timer_period_ns.erase(ident); // exp 0401 series e5 (eq0405) kk01: the timer's period goes with it
++		}
+ 		m_events.erase(it);
+ 
+ 		return OK;
+@@ -396,19 +571,20 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
  		return KERNEL_ERROR_EFAULT;
  	}
  
@@ -13034,6 +13249,12 @@ index 14561b0..4aaf7af 100644
  		return KERNEL_ERROR_EINVAL;
  	}
  
++	// exp 0401 series e5 (eq0405, KYTY_BC5_EQUEUE_FIXES sk03; sharpemu 514d766 KernelEventQueueCompatExports.cs:813, 937):
++	// a NULL out waits as usual and gets no count written; off, today's EXIT.
++	int bc5_count = 0;
++	if (out == nullptr && Bc5EqFix(BC5_EQ_FIX_SK03)) {
++		out = &bc5_count;
++	}
  	EXIT_NOT_IMPLEMENTED(out == nullptr);
  
 -	LOGF("\tEqueue wait: %s, caller = 0x%016" PRIx64 ", eq = 0x%016" PRIx64 ", ev = 0x%016" PRIx64
@@ -13046,7 +13267,7 @@ index 14561b0..4aaf7af 100644
  	if (timo == nullptr) {
  		*out = owner->WaitForEvents(ev, num, 0);
  	}
-@@ -429,12 +451,6 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
+@@ -429,12 +605,6 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
  		return KERNEL_ERROR_ETIMEDOUT;
  	}
  
@@ -13059,7 +13280,39 @@ index 14561b0..4aaf7af 100644
  	return OK;
  }
  
-@@ -547,10 +563,14 @@ int KYTY_SYSV_ABI KernelAddAmprEvent(KernelEqueue eq, int id, void* udata) {
+@@ -541,16 +711,46 @@ int KYTY_SYSV_ABI KernelDeleteHRTimerEvent(KernelEqueue eq, int id) {
+ 	return KernelDeleteEvent(eq, static_cast<uintptr_t>(id), KERNEL_EVFILT_HRTIMER);
+ }
+ 
++// exp 0401 series e5 (eq0405, KYTY_BC5_EQUEUE_FIXES kk01): sceKernelAddTimerEvent's body, called by bc5LleAgc.cpp's shim
++// with the switch on. KytyPS5 dfec14a kernel/eventQueue.cpp:525-539 (AddTimerEvent, KernelAddTimerEvent; GPL-2.0) and
++// AnyPS5 4f41f4c37 Equeue.cpp:829-839 (GPL-2.0-only): ident id, filter EVFILT_TIMER, EV_ADD | EV_CLEAR, the first deadline
++// one period from now. A period of 0 is taken as 1 us (FreeBSD's EVFILT_TIMER takes a 0 period as 1 unit unless
++// EV_ONESHOT; TODO(verify): sys/kern/kern_event.c was not read tonight, and the console's rule is not measured).
++int KYTY_SYSV_ABI Bc5KernelAddTimerEvent0405(KernelEqueue eq, int id, KernelUseconds usec, void* udata) {
++	LOGF("\t timer event add: eq = 0x%016" PRIx64 ", id = %d, usec = %u, udata = 0x%016" PRIx64 "\n",
++	     static_cast<uint64_t>(eq), id, static_cast<unsigned>(usec), reinterpret_cast<uint64_t>(udata));
++
++	auto owner = KernelPinEqueue(eq);
++	if (!owner) {
++		return KERNEL_ERROR_EBADF;
++	}
++	const uint64_t period_ns = static_cast<uint64_t>(usec != 0 ? usec : 1u) * 1000u;
++
++	KernelEqueueEvent event {};
++	event.deadline_ns  = MonotonicTimeNs() + period_ns;
++	event.event.ident  = static_cast<uintptr_t>(id);
++	event.event.filter = KERNEL_EVFILT_TIMER;
++	event.event.flags  = EV_ADD | EV_CLEAR;
++	event.event.fflags = 0;
++	event.event.data   = 0;
++	event.event.udata  = udata;
++	return owner->Bc5AddPeriodicTimer(event, period_ns);
++}
++
+ int KYTY_SYSV_ABI KernelAddAmprEvent(KernelEqueue eq, int id, void* udata) {
+ 	PRINT_NAME();
+ 
  	LOGF("\t AMPR event add: eq = 0x%016" PRIx64 ", id = %d, udata = 0x%016" PRIx64 "\n",
  	     static_cast<uint64_t>(eq), id, reinterpret_cast<uint64_t>(udata));
  
@@ -13075,7 +13328,7 @@ index 14561b0..4aaf7af 100644
  		event.event.flags         = EV_ADD | EV_CLEAR;
  		event.event.fflags        = 0;
  		event.event.data          = 0;
-@@ -578,7 +598,7 @@ int KYTY_SYSV_ABI KernelDeleteAmprEvent(KernelEqueue eq, int id) {
+@@ -578,7 +778,7 @@ int KYTY_SYSV_ABI KernelDeleteAmprEvent(KernelEqueue eq, int id) {
  	LOGF("\t AMPR event delete: eq = 0x%016" PRIx64 ", id = %d\n", static_cast<uint64_t>(eq), id);
  
  	if (eq != KERNEL_EQUEUE_INVALID) {
@@ -27580,10 +27833,10 @@ index 82be73c..f090fcb 100644
  } // namespace Libs::Audio::AudioInternal
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..1e02888
+index 0000000..c818d88
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,9774 @@
+@@ -0,0 +1,9944 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -36809,6 +37062,150 @@ index 0000000..1e02888
 +	return err == 0 ? 0 : -1;
 +}
 +
++// ---- exp 0401 series e5 (eq0405): exp 0405's fixes of the libkernel mmap, kevent and timer shims ------------------
++} // namespace Bc5LleKernel (eq0405 closes it here for two declarations and opens it again below)
++
++namespace LibKernel::EventQueue {
++// Defined in src/kernel/eventQueue.cpp by the same edit (mkeq0405.py); no header declares them (no header may change), so
++// a build that pairs this unit with an unedited eventQueue.cpp.o fails at the link.
++uint32_t          Bc5EqueueFixes0405();
++int KYTY_SYSV_ABI Bc5KernelAddTimerEvent0405(KernelEqueue eq, int id, KernelUseconds usec, void* udata);
++} // namespace LibKernel::EventQueue
++
++namespace Bc5LleKernel {
++
++// The bits of EQ::Bc5EqueueFixes0405() (KYTY_BC5_EQUEUE_FIXES, read and journalled in eventQueue.cpp) used here.
++static constexpr uint32_t BC5_EQ_FIX_G1_0405   = 4u; // "g1": kevent honours its timespec (exp 0405 R3 G1)
++static constexpr uint32_t BC5_EQ_FIX_KK01_0405 = 8u; // "kk01": sceKernelAddTimerEvent is periodic (exp 0405 R2 KK01)
++
++// KYTY_BC5_MMAP_SHIM_FIXES (exp 0405 R3 M2), the mmap shim below:
++// - "hint": an anonymous mapping (fd < 0) whose flags lack MAP_FIXED (0x10) takes its address as a hint, the start of the
++//   search for free space, and no longer replaces what is mapped there. shadPS4 60c42b9
++//   src/core/libraries/kernel/memory.cpp:753-816 (posix_mmap passes the flags on; its MapMemory replaces only with
++//   Fixed), AnyPS5 4f41f4c37 core/libs/prx/libkernel/DirectMemory/PosixMemory.cpp:145-249, sharpemu 514d766
++//   KernelMemoryCompatExports.Mmap.cs:10-42 (all GPL; behaviour only, no line copied). A device mapping (fd >= 0) keeps
++//   today's path, fixed at its address: Sony's driver maps the gc page at 0xfe0200000 (exp 0011), and its flags were
++//   logged as MAP_SHARED without saying whether MAP_FIXED is set (TODO(verify) in a run's "[bc5-gc] mmap" line).
++//   MAP_FIXED keeps today's path (it replaces, as POSIX says).
++// - "prot": prot 0 stays no-access (today it becomes 0x33), and a mapping without CPU write is not cleared with memset
++//   (it would fault; flexible memory is zeroed when mapped, memory.cpp FlexibleMemory::Map's ZeroBacking).
++// Unset, empty or "0" is off (today's path exactly); any other value turns both on, unless it names items
++// (comma-separated "hint", "prot"): then only those. Read once; one stderr line at the first mmap.
++static constexpr uint32_t BC5_MMAP_FIX_HINT = 1u;
++static constexpr uint32_t BC5_MMAP_FIX_PROT = 2u;
++
++// Not static: the CPU test eq0405.cpp declares them.
++uint32_t Bc5MmapShimFixesParse0405(const char* value);
++uint32_t Bc5MmapShimFixes0405();
++
++uint32_t Bc5MmapShimFixesParse0405(const char* value) {
++	if (value == nullptr || value[0] == '\0' || std::strcmp(value, "0") == 0) {
++		return 0;
++	}
++	uint32_t    items = 0;
++	const char* p     = value;
++	for (;;) {
++		const char*  comma = std::strchr(p, ',');
++		const size_t n     = comma != nullptr ? static_cast<size_t>(comma - p) : std::strlen(p);
++		if (n == 4 && std::strncmp(p, "hint", n) == 0) {
++			items |= BC5_MMAP_FIX_HINT;
++		} else if (n == 4 && std::strncmp(p, "prot", n) == 0) {
++			items |= BC5_MMAP_FIX_PROT;
++		}
++		if (comma == nullptr) {
++			break;
++		}
++		p = comma + 1;
++	}
++	return items != 0 ? items : (BC5_MMAP_FIX_HINT | BC5_MMAP_FIX_PROT);
++}
++
++// The items of KYTY_BC5_MMAP_SHIM_FIXES that are on (0: off), read once.
++uint32_t Bc5MmapShimFixes0405() {
++	static const uint32_t items = [] {
++		const uint32_t v = Bc5MmapShimFixesParse0405(std::getenv("KYTY_BC5_MMAP_SHIM_FIXES"));
++		if (v == 0) {
++			std::fprintf(stderr, "[bc5] exp 0405: mmap shim fixes off\n");
++		} else {
++			std::fprintf(stderr, "[bc5] exp 0405: mmap shim fixes on (items:%s%s)\n", (v & BC5_MMAP_FIX_HINT) != 0 ? " hint" : "",
++			             (v & BC5_MMAP_FIX_PROT) != 0 ? " prot" : "");
++		}
++		std::fflush(stderr);
++		return v;
++	}();
++	return items;
++}
++
++// "hint" catcher: an anonymous hint that was not free; the first 8 go to stderr.
++static void Bc5MmapHintMoved0405(const void* hint, const void* got, size_t len) {
++	static std::atomic<uint32_t> told {0};
++	const uint32_t                n = told.fetch_add(1, std::memory_order_relaxed);
++	if (n < 8) {
++		std::fprintf(stderr, "[bc5] exp 0405: mmap hint %p len 0x%zx is not free: mapped at %p (#%u)\n", hint, len, got,
++		             static_cast<unsigned>(n + 1));
++		std::fflush(stderr);
++	}
++}
++
++// "g1" (exp 0405 R3 G1): kevent's wait with a timespec (FreeBSD amd64 struct timespec, LibKernel::KernelTimespec's
++// layout). FreeBSD kevent(2): a zero timespec polls; when the time runs out, 0 is returned; a timespec with tv_sec < 0,
++// tv_nsec < 0 or tv_nsec >= 1e9 is EINVAL. AnyPS5 4f41f4c37 core/libs/prx/libkernel/Equeue/src/Kqueue.cpp:545-551 and
++// 669-678 (GPL-2.0-only; read for the semantics only) does the same and waits without a deadline when tv_sec > INT32_MAX.
++// TODO(verify): FreeBSD's sys/kern/kern_event.c (kqueue_scan) was not read tonight (no network). Rounded up to whole
++// microseconds; waited in parts of 1000 s because KernelWaitEqueue takes 32-bit microseconds. -1 sets no errno, like this
++// shim's other failures. The first 8 calls go to stderr (whether the graphics driver's waits carry a timeout is not known).
++static int Bc5KeventTimed0405(EQ::KernelEqueue eq, EQ::KernelEvent* events, int nevents, const void* timeout) {
++	static std::atomic<uint32_t> told {0};
++	LibKernel::KernelTimespec    ts {};
++	std::memcpy(&ts, timeout, sizeof(ts));
++	int result = 0;
++	if (ts.tv_sec < 0 || ts.tv_nsec < 0 || ts.tv_nsec >= 1000000000) {
++		result = -1;
++	} else if (ts.tv_sec > INT32_MAX) {
++		int       out = 0;
++		const int r   = EQ::KernelWaitEqueue(eq, events, nevents, &out, nullptr);
++		result        = r == 0 ? out : -1;
++	} else {
++		constexpr uint64_t kPartUs = 1000000000ull;
++		uint64_t           left_us = static_cast<uint64_t>(ts.tv_sec) * 1000000ull +
++		                            (static_cast<uint64_t>(ts.tv_nsec) + 999ull) / 1000ull;
++		for (;;) {
++			const auto part = static_cast<LibKernel::KernelUseconds>(std::min(left_us, kPartUs));
++			int        out  = 0;
++			const int  r    = EQ::KernelWaitEqueue(eq, events, nevents, &out, &part);
++			if (r == 0) {
++				result = out;
++				break;
++			}
++			if (r != LibKernel::KERNEL_ERROR_ETIMEDOUT) {
++				result = -1;
++				break;
++			}
++			if (left_us <= part) {
++				result = 0;
++				break;
++			}
++			left_us -= part;
++		}
++	}
++	const uint32_t n = told.fetch_add(1, std::memory_order_relaxed);
++	if (n < 8) {
++		std::fprintf(stderr, "[bc5] exp 0405: kevent eq %d timeout {%lld s, %lld ns} nevents %d -> %d (#%u)\n",
++		             static_cast<int>(eq), static_cast<long long>(ts.tv_sec), static_cast<long long>(ts.tv_nsec), nevents,
++		             result, static_cast<unsigned>(n + 1));
++		std::fflush(stderr);
++	}
++	return result;
++}
++
++// "kk01": sceKernelDeleteTimerEvent (YWQFUyXIVdU), registered only with the switch on (AnyPS5 4f41f4c37
++// core/libs/prx/libkernel/Equeue/Equeue.cpp:841-843, GPL-2.0-only; adapted).
++static KYTY_SYSV_ABI int Bc5DeleteTimerEvent0405(EQ::KernelEqueue eq, int id) {
++	PRINT_NAME();
++	return EQ::KernelDeleteEvent(eq, static_cast<uintptr_t>(id), EQ::KERNEL_EVFILT_TIMER);
++}
++// ---- end of exp 0401 series e5 (eq0405)'s block ----------------------------------------------------------------------
++
 +// mmap(addr, len, prot, flags, fd, offset). The driver maps the gc device at a fixed guest address
 +// (0xfe0200000, 16 KiB, prot 0x22 = cpu write | gpu write, MAP_SHARED) and keeps the returned
 +// pointer; anonymous mappings go to flexible memory. Returns nullptr on failure (the driver tests
@@ -36818,12 +37215,17 @@ index 0000000..1e02888
 +	PRINT_NAME();
 +	LOGF("[bc5-gc] mmap addr %p len 0x%zx prot 0x%x flags 0x%x fd %d off 0x%" PRIx64 "\n", addr,
 +	     len, prot, flags, fd, offset);
-+	if (prot == 0) {
++	// exp 0401 series e5 (eq0405, KYTY_BC5_MMAP_SHIM_FIXES): "prot" keeps prot 0 no-access; "hint" makes an anonymous
++	// mapping's address without MAP_FIXED a hint. Off: today's path.
++	const uint32_t bc5_mmap_fixes = Bc5MmapShimFixes0405();
++	const bool     bc5_hint_only  = (bc5_mmap_fixes & BC5_MMAP_FIX_HINT) != 0 && fd < 0 &&
++	                           (static_cast<uint32_t>(flags) & Bc5Gc::GUEST_MAP_FIXED) == 0;
++	if (prot == 0 && (bc5_mmap_fixes & BC5_MMAP_FIX_PROT) == 0) {
 +		prot = 0x33;
 +	}
 +	void* out = addr;
 +	int   r   = Mem::KernelMapNamedFlexibleMemory(&out, len, prot,
-+	                                              addr != nullptr ? Bc5Gc::GUEST_MAP_FIXED : 0,
++	                                              (addr != nullptr && !bc5_hint_only) ? Bc5Gc::GUEST_MAP_FIXED : 0,
 +	                                              fd >= 0 ? "bc5-gc-mmap" : "bc5-anon-mmap");
 +	if (r != 0 && addr != nullptr) {
 +		LOGF_COLOR(Log::Color::Yellow, "[bc5-gc] fixed mmap at %p failed (%d), retrying anywhere\n",
@@ -36836,7 +37238,12 @@ index 0000000..1e02888
 +		LOGF_COLOR(Log::Color::Red, "[bc5-gc] mmap failed: %d\n", r);
 +		return nullptr;
 +	}
-+	std::memset(out, 0, len);
++	if (bc5_hint_only && addr != nullptr && out != addr) {
++		Bc5MmapHintMoved0405(addr, out, len); // exp 0401 series e5 (eq0405) "hint": the catcher
++	}
++	if ((bc5_mmap_fixes & BC5_MMAP_FIX_PROT) == 0 || (prot & 0x02) != 0) { // eq0405 "prot": no memset without CPU write
++		std::memset(out, 0, len);
++	}
 +	return out;
 +}
 +
@@ -36873,6 +37280,12 @@ index 0000000..1e02888
 +		int out = 0;
 +		Bc5Gc::Direct::chain_observe(); // ADR 0010 section B: the EOP events it waits for come after the chain's fence
 +		const uint64_t t_eq = Bc5Gc::SoftCp::now_ns();
++		if (timeout != nullptr && (EQ::Bc5EqueueFixes0405() & BC5_EQ_FIX_G1_0405) != 0) {
++			// exp 0401 series e5 (eq0405, KYTY_BC5_EQUEUE_FIXES g1): the timespec is honoured; off, today's wait below
++			const int n = Bc5KeventTimed0405(eq, reinterpret_cast<EQ::KernelEvent*>(events), nevents, timeout);
++			Bc5Gc::Direct::frame_profile_eqwait(static_cast<double>(Bc5Gc::SoftCp::now_ns() - t_eq) / 1e6);
++			return n;
++		}
 +		int r   = EQ::KernelWaitEqueue(eq, reinterpret_cast<EQ::KernelEvent*>(events), nevents,
 +		                               &out, nullptr);
 +		Bc5Gc::Direct::frame_profile_eqwait(static_cast<double>(Bc5Gc::SoftCp::now_ns() - t_eq) / 1e6);
@@ -37042,6 +37455,13 @@ index 0000000..1e02888
 +
 +static KYTY_SYSV_ABI int AddTimerEvent(EQ::KernelEqueue eq, int id, const void* ts, void* udata) {
 +	PRINT_NAME();
++	if ((EQ::Bc5EqueueFixes0405() & BC5_EQ_FIX_KK01_0405) != 0) {
++		// exp 0401 series e5 (eq0405, KYTY_BC5_EQUEUE_FIXES kk01; exp 0405 R2 KK01, F246): the third argument is the period
++		// in microseconds, a 32-bit SceKernelUseconds passed by value (KytyPS5 dfec14a kernel/eventQueue.cpp:537-539, AnyPS5
++		// 4f41f4c37 Equeue.cpp:829; the upper half of the register is not part of it); a periodic EVFILT_TIMER.
++		return EQ::Bc5KernelAddTimerEvent0405(
++		    eq, id, static_cast<LibKernel::KernelUseconds>(reinterpret_cast<uintptr_t>(ts)), udata);
++	}
 +	return EQ::KernelAddHRTimerEvent(eq, id, static_cast<const LibKernel::KernelTimespec*>(ts),
 +	                                 udata);
 +}
@@ -37102,6 +37522,9 @@ index 0000000..1e02888
 +	LIB_FUNC("+xy9ORMbd8U", GetAppCategoryType);
 +	LIB_FUNC("JGfTMBOdUJo", GetFsSandboxRandomWord);
 +	LIB_FUNC("57ZK+ODEXWY", AddTimerEvent);
++	if ((EQ::Bc5EqueueFixes0405() & BC5_EQ_FIX_KK01_0405) != 0) { // exp 0401 series e5 (eq0405) kk01
++		LIB_FUNC("YWQFUyXIVdU", Bc5DeleteTimerEvent0405); // sceKernelDeleteTimerEvent
++	}
 +	LIB_FUNC("aML18Z0J0t0", GetProsperoSystemSwVersion);
 +	LIB_FUNC("LzoM-wVLJDE", Unknown_LzoM);
 +	LIB_FUNC("dkBx0YqFQ+Y", Unknown_dkBx);
