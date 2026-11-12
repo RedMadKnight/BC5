@@ -1,0 +1,13 @@
+23:53:23 c0a (file ): plasmashell 1, rsync processes 3, steamwebhelper 0, available 13095 MiB, up 25.3 h
+c0a (fast8) ended at G+120 (after 239 s; G 118, load 103, list 93); 24.8 flips/s over 235 s, 50 s with a gap over 100 ms, longest 671 ms; kernel lines 0, crash lines 0, ledger lines 23
+23:57:36 c0a ended: lowest available 411 MiB, highest PSI full 10 %; would-learn lines 0; private learned file 81 lines; pinned direct 11764.0 MiB
+c0a kernel threads' CPU during the arm: kcompactd0 80 s, kswapd0 12 s
+23:58:36 c4a (empty BC5_GUARD_LEARN_LOG=1): plasmashell 1, rsync processes 3, steamwebhelper 0, available 13119 MiB, up 25.4 h
+c4a (fast8) ended at G+120 (after 239 s; G 118, load 104, list 94); 26.0 flips/s over 233 s, 43 s with a gap over 100 ms, longest 555 ms; kernel lines 0, crash lines 0, ledger lines 23
+00:02:48 c4a ended: lowest available 446 MiB, highest PSI full 9 %; would-learn lines 0; private learned file 0 lines; pinned direct 11518.0 MiB
+c4a kernel threads' CPU during the arm: kcompactd0 100 s, kswapd0 8 s
+00:03:48 r1a (empty BC5_GUARD_MAP_RULE=1 BC5_GUARD_LEARN_LOG=1): plasmashell 1, rsync processes 3, steamwebhelper 0, available 13112 MiB, up 25.5 h
+r1a (fast8) ended by itself at 190 s; THE WATCHDOG KILLED IT (after 190 s; G 158, load 112, list 95); 18.4 flips/s over 167 s, 65 s with a gap over 100 ms, longest 7722 ms; kernel lines 0, crash lines 0, ledger lines 16
+00:07:07 r1a ended: ; would-learn lines 0; private learned file 0 lines; pinned direct 12030.0 MiB
+r1a kernel threads' CPU during the arm: kcompactd0 62 s, kswapd0 63 s
+00:08:08 r2a (empty BC5_GUARD_MAP_RULE=1 BC5_GUARD_PRT_BG=1 BC5_GUARD_LEARN_LOG=1): plasmashell 1, rsync processes 3, steamwebhelper 0, available 13114 MiB, up 25.6 h

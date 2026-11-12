@@ -1,0 +1,15 @@
+[92266.202874] amdgpu 0000:01:00.0: Dumping IP State
+[92266.205251] amdgpu 0000:01:00.0: Dumping IP State Completed
+[92266.205289] amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+[92266.205292] amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+[92266.205294] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=30983284, emitted seq=30983286
+[92266.205297] amdgpu 0000:01:00.0:  Process kyty_emulator pid 244081 thread bc5-ring pid 244520
+[92266.205299] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+[92266.394792] amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed
+[92266.394801] amdgpu 0000:01:00.0: GPU reset begin!. Source:  1
+[92266.409886] bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=30983284, emitted seq=30983286
+[92266.414033] bc5-gpu-watch: a ring reset failed [amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed]: crashing before the full reset: syncing and crashing the kernel for a reboot (SysRq s, c)
+[92266.414301] sysrq: Emergency Sync
+[92266.892807] Emergency Sync complete
+Read from remote host 100.88.23.35: Connection reset by peer
+client_loop: send disconnect: Connection reset by peer

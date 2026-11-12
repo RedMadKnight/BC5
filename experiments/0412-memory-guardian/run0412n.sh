@@ -41,7 +41,11 @@ SECS=${N_CAP:-$((PLAY + 260))}; FUSE=${N_FUSE:-12400 1024}
 [ "$SECS" -ge 120 ] && [ "$SECS" -le 3000 ] || { echo "the cap is 120-3000 s"; exit 1; }
 BIN=${N_EMU:-$X/bin/kyty_emulator}; LAUNCH_SRC=$X/play-pkg-0412.sh; LAUNCH=$N/play-pkg-0412n.sh; LEARN_SRC=$W/direct-learned-pkg.txt; LEARN=$N/direct-learned-pkg.txt
 # N_EMU=<binary>: a build beside the one in place (the launcher takes it through BC5_EMU, exp 0177); it must be the one in built-w.md5.
-if [ -n "${N_EMU:-}" ]; then grep -qxF "$(m "$BIN")  bin-w/kyty_emulator" "$X/built-w.md5" && [ "$BIN" = "$X/bin-w/kyty_emulator" ] || { echo "N_EMU is not the build in built-w.md5: not started"; exit 1; }; fi
+if [ -n "${N_EMU:-}" ]; then
+  NS_=$(basename "$(dirname "$BIN")"); NS_=${NS_#bin-}   # bin-w -> w, bin-x -> x (exp 0412 section 53)
+  case "$NS_" in [a-z]) ;; *) echo "N_EMU is not a bin-<letter> build: not started"; exit 1 ;; esac
+  grep -qxF "$(m "$BIN")  bin-$NS_/kyty_emulator" "$X/built-$NS_.md5" && [ "$BIN" = "$X/bin-$NS_/kyty_emulator" ] || { echo "N_EMU is not the build in built-$NS_.md5: not started"; exit 1; }
+fi
 { [ -n "${N_EMU:-}" ] || grep -qxF "$(m "$BIN")  bin/kyty_emulator" "$X/built.md5"; } && grep -qxF "$(m "$LAUNCH_SRC")  play-pkg-0412.sh" "$X/built.md5" || { echo "the binary or the launcher is not the one in built.md5: not started"; exit 1; }
 WANT=$(m "$BIN")
 for f in sampler0412b.sh fuse0412.sh; do grep -qxF "$(m "$X/$f")  $f" "$X/tools.md5" || { echo "$f is not the installed one: not started"; exit 1; }; done

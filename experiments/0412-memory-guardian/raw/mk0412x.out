@@ -1,0 +1,30 @@
+cpu test: lock0412: 23 of 23; end
+bc5LleAgc.cpp 8c1969b58ef96ed9f1139dff146f96dc
+bc5LleAgc.cpp 4eeb706f084ced0d86f95dfad664c517
+bc5LleAgc.cpp 82c86b33aae104c29b3c6bc30061d5e4
+bc5LleAgc.cpp f54d1d0ba5dba99e82c865da8d6bab08
+cpu test: ret0412: 1537 of 1537; end
+bc5LleAgc.cpp 92690fafa9bb3554b0f9ca91b30e91d8
+bc5LleAgc.cpp c138ca2f450cca98b3467418cbc9c2f7
+bc5LleAgc.cpp 009f71e85a984fdbb344231c2f878dee
+bc5LleAgc.cpp e06abdd8bb0c8bd879a2cc1c14ce0bdd
+cpu test: nogpu0412: 15001 of 15001; end
+bc5LleAgc.cpp ecd0fe52226ef65bf5624cd14287ab8d
+cpu test: nscan0412: 13435 of 13435; end
+bc5LleAgc.cpp 1f47fe3aa2018ecbdb42e95b94a403b2
+cpu test: zpoll0412: 20005 of 20005; end
+bc5LleAgc.cpp c1feeeb14cb99c148507630da95e150f
+the unit before the zero-skip scan: c1feeeb14cb99c148507630da95e150f (g412v's was 3cea62bc; it differs by nscan0412.inc's scan() returning its completeness, review R25)
+cpu test: zscan0412: 14642 of 14642; end
+bc5LleAgc.cpp 1d27e927cd2da227aaefd7eaaac44b2c
+cpu test: maprule0412: 15281 of 15281; end
+bc5LleAgc.cpp 15fc40ee769dfe8e08e3cd3ab0af4bc2
+cpu test: memfast0412: 600000 of 600000; end
+cpu test: physmap0412: 1259728 of 1259728; end
+src/kernel/memory.cpp 68c90f4b7746cec114300e82fd0bc93a
+src/kernel/memory.cpp 72bcd493cc28ec602fe12c9ca638c365
+src/kernel/memory.cpp 6ae3ff7236610a14360739b54c53adc1
+untouched unit memory.cpp: this build's object 8b1b0de97ef368cf7530d6b1f4618860, g412v's bceacfa1dc36de94cbf7c9668b32da8a (equal = the container's header change did not reach it)
+warnings: 8; private unit src/kernel/memory.cpp (replaces e8's object);private unit src/kernel/eventQueue.cpp (replaces e8's object);private unit src/graphics/host_gpu/renderer/sync.cpp (a new private object); private objects: 47
+binary beside 655a86fcd0b93d8ebbf89087799bba16 (bin-x); the build in place bc4356a5638a6486cbd23253b73cd230 untouched
+built: g412x
