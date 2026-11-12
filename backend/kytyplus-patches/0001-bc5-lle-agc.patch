@@ -46181,7 +46181,7 @@ index 5b0fc93..5b78760 100644
  	LOGF("\t target = %d\n"
  	     "\t msg    = 0x%016" PRIx64 "\n",
 diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
-index 073361d..28d69ec 100644
+index 073361d..054da75 100644
 --- a/src/libs/libAmpr.cpp
 +++ b/src/libs/libAmpr.cpp
 @@ -1,3 +1,5 @@
@@ -46623,7 +46623,7 @@ index 073361d..28d69ec 100644
  }
  
  static bool ValidateAmmMapArgs(uint64_t va, uint64_t size) {
-@@ -1358,26 +1570,112 @@ static int NormalizeAmmProtection(int prot) {
+@@ -1358,26 +1570,373 @@ static int NormalizeAmmProtection(int prot) {
  	return normalized;
  }
  
@@ -46709,6 +46709,267 @@ index 073361d..28d69ec 100644
 +	g_amm_auto_maps[va] = AmmAutoMapping {dmem, size};
 +}
 +
++// ---- Hook functions for pool0401_impl.inc ----
++static const int KERNEL_ERROR_EAGAIN = LibKernel::KERNEL_ERROR_EAGAIN; // the helpers use the unqualified name
++// These bridge the shared helpers to the real kernel calls.
++
++extern "C" void* Bc5PoolMapDirect(void** addr, uint64_t size, int memory_type,
++                                   int prot, int flags, int64_t dmem, uint64_t page_size) {
++	if (addr == nullptr) return nullptr;
++	*addr = reinterpret_cast<void*>(reinterpret_cast<uint64_t>(*addr));
++	const int rc = LibKernel::Memory::KernelMapDirectMemory2(
++		addr, size, memory_type, prot, flags, dmem, page_size);
++	return rc == OK ? *addr : nullptr;
++}
++
++extern "C" int Bc5PoolUnmapDirect(void* addr, uint64_t size) {
++	return LibKernel::Memory::KernelMunmap(reinterpret_cast<uint64_t>(addr), static_cast<size_t>(size));
++}
++
++extern "C" int Bc5PoolAllocDirect(int64_t search_start, int64_t search_end,
++                                   uint64_t size, uint64_t align, int type,
++                                   int64_t* allocated) {
++	return LibKernel::Memory::KernelAllocateDirectMemory(
++		search_start, search_end, size, align, type, allocated);
++}
++
++extern "C" int Bc5PoolSetName(void* addr, uint64_t size, const char* name) {
++	(void)LibKernel::Memory::KernelSetVirtualRangeName(addr, size, name);
++	return 0;
++}
++
++extern "C" void Bc5PoolTraceStamp() {
++	AmmTraceStamp();
++}
++
++// exp 0409: every scattered map is counted and journalled (the first 300, then every 50th; failures always).
++static void Bc5PoolNoteScatter(int mode, uint64_t va, uint64_t size, int np) {
++	static std::atomic<uint64_t> n_ok {0}, n_fail {0}, n_pieces {0};
++	const uint64_t k = np > 0 ? n_ok.fetch_add(1) + 1 : n_fail.fetch_add(1) + 1;
++	if (np > 0) n_pieces.fetch_add(static_cast<uint64_t>(np));
++	if (np <= 0 || k <= 300 || k % 50 == 0) {
++		AmmTraceStamp(), std::fprintf(stderr, "[bc5] exp 0401 pool: scatter %s mode %d va 0x%016" PRIx64 " size 0x%" PRIx64 " pieces %d (ok %" PRIu64 ", failed %" PRIu64 ", pieces %" PRIu64 ")\n",
++		                              np > 0 ? "ok" : "FAILED", mode, va, size, np, n_ok.load(), n_fail.load(), n_pieces.load());
++	}
++}
++
++extern "C" void bc5_watch_surface(uint64_t va); // bc5LleAgc.cpp, experiment 0104 (declared again here, before its first use)
++
++extern "C" void Bc5PoolWatchSurface(uint64_t va) {
++	bc5_watch_surface(va);
++}
++
++extern "C" int64_t Bc5PoolGetDirectMemorySize() {
++	return LibKernel::Memory::KernelGetDirectMemorySize();
++}
++
++// ---- BEGIN pool0401_impl.inc ----
++// pool0401_impl.inc — shared pure helpers for pool scatter (experiment 0401).
++// Included by both libAmpr.cpp (via mkpool0401.py) and pool0401.cpp.
++// In libAmpr.cpp the g_* globals and AmmAutoRecordVa/ReleaseVa are the real ones.
++// In pool0401.cpp they are simulated.
++//
++// Hooks (defined by the includer before this file):
++//   Bc5PoolMapDirect(addr, size, mem_type, prot, flags, dmem, page_size) → void*
++//   Bc5PoolUnmapDirect(addr, size) → int
++//   Bc5PoolAllocDirect(search_start, search_end, size, align, type, allocated) → int
++//   Bc5PoolSetName(addr, size, name) → int
++//   Bc5PoolTraceStamp() → void
++//   Bc5PoolWatchSurface(va) → void
++//   Bc5PoolGetDirectMemorySize() → int64_t
++//
++// Globals assumed present: g_amm_auto_free, g_amm_auto_maps, g_amm_auto_pool_mutex
++// Constants assumed present: PROT_CPU_READ, PROT_CPU_WRITE, OK, KERNEL_ERROR_EAGAIN,
++//   AMM_MAP_FIXED, AMM_PAGE_SIZE
++// Functions assumed present: NormalizeAmmProtection, AmmAutoRecordVa, AmmAutoReleaseVa
++
++// ---- Mode reader ----
++// Reads KYTY_BC5_AMM_SCATTER env var each call.
++// unset / empty / "0" / unknown → 0 (off)
++// "journal" → 1, "rescue" → 2, "first" → 3
++static int Bc5AmmScatterMode() {
++	const char* e = std::getenv("KYTY_BC5_AMM_SCATTER");
++	if (e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0) {
++		if (std::strcmp(e, "journal") == 0)      return 1;
++		if (std::strcmp(e, "rescue") == 0)       return 2;
++		if (std::strcmp(e, "first") == 0)        return 3;
++	}
++	return 0;
++}
++
++// ---- Pure helpers (no host state) ----
++
++// Sum free bytes and count holes (g_amm_auto_free must be held).
++static void Bc5PoolFreeStats(uint64_t* total, uint64_t* holes, uint64_t* largest) {
++	uint64_t t = 0, h = 0, l = 0;
++	for (const auto& r: g_amm_auto_free) {
++		t += r.second;
++		h++;
++		if (r.second > l) l = r.second;
++	}
++	if (total) *total = t;
++	if (holes) *holes = h;
++	if (largest) *largest = l;
++}
++
++// Give a range back to the free list, merging with its neighbours (the same merge as the original's AmmAutoFreeLocked;
++// g_amm_auto_pool_mutex must be held).
++static void Bc5PoolGiveBackLocked(uint64_t start, uint64_t size) {
++	auto next = g_amm_auto_free.lower_bound(start);
++	if (next != g_amm_auto_free.begin()) {
++		auto prev = std::prev(next);
++		if (prev->first + prev->second == start) {
++			start = prev->first;
++			size += prev->second;
++			g_amm_auto_free.erase(prev);
++		}
++	}
++	if (next != g_amm_auto_free.end() && start + size == next->first) {
++		size += next->second;
++		g_amm_auto_free.erase(next);
++	}
++	g_amm_auto_free[start] = size;
++}
++
++// Gather free ranges largest-first into [out_dmem, out_size] pairs, total >= want.
++// Returns the number of pieces gathered (0 if not enough).
++// FIX (review point 3): removes gathered pieces from the free list.
++// FIX: trims the last piece to fit exactly within 'want'.
++static size_t Bc5PoolGatherLocked(uint64_t want, std::vector<std::pair<uint64_t, uint64_t>>* out) {
++	out->clear();
++	if (want == 0) return 0;
++	// Copy free list into a vector and sort largest first.
++	std::vector<std::pair<uint64_t, uint64_t>> pieces;
++	pieces.reserve(g_amm_auto_free.size());
++	for (const auto& r: g_amm_auto_free) {
++		pieces.push_back({r.first, r.second});
++	}
++	std::sort(pieces.begin(), pieces.end(),
++	          [](const auto& a, const auto& b) { return a.second > b.second; });
++	uint64_t have = 0;
++	std::vector<uint64_t> erased_addrs;
++	for (auto& p: pieces) {
++		uint64_t take = p.second;
++		if (have + take > want) {
++			// Trim to fit within want.
++			take = want - have;
++		}
++		out->push_back({p.first, take});
++		have += take;
++		erased_addrs.push_back(p.first);
++		if (have >= want) {
++			// Put remainder of last piece back into free list.
++			if (take < p.second) {
++				g_amm_auto_free[p.first + take] = p.second - take;
++			}
++			// Remove all gathered pieces from the free list.
++			for (auto addr: erased_addrs) {
++				auto it = g_amm_auto_free.find(addr);
++				if (it != g_amm_auto_free.end()) {
++					g_amm_auto_free.erase(it);
++				}
++			}
++			return out->size();
++		}
++	}
++	out->clear();
++	return 0;
++}
++
++// Map a scattered automatic map: walk pieces, map each with the hook,
++// record each with AmmAutoRecordVa. On failure of piece k, unmap 0..k-1.
++// FIX (point 1): each piece is mapped at va + offset_of_piece, not at va.
++// FIX (point 2): the last piece is trimmed to fit exactly 'size' bytes.
++// FIX (point 5): each piece gets its own AmmAutoRecordVa(va_i, dmem_i, size_i).
++static int Bc5MapAutoScattered(uint64_t va, uint64_t size, int memory_type, int32_t prot) {
++	const int host_prot = NormalizeAmmProtection(prot);
++	int host = host_prot | PROT_CPU_READ | PROT_CPU_WRITE;
++
++	std::vector<std::pair<uint64_t, uint64_t>> pieces;
++	{
++		std::scoped_lock lock(g_amm_auto_pool_mutex);
++		const int mode = Bc5AmmScatterMode();
++		if (mode == 0) {
++			// Off: first-fit — find one contiguous range >= size.
++			for (auto it = g_amm_auto_free.begin(); it != g_amm_auto_free.end(); ++it) {
++				if (it->second >= size) {
++					pieces.push_back({it->first, size});
++					const uint64_t rest_start = it->first + size;
++					const uint64_t rest_size = it->second - size;
++					g_amm_auto_free.erase(it);
++					if (rest_size != 0) g_amm_auto_free[rest_start] = rest_size;
++					break;
++				}
++			}
++		} else {
++			Bc5PoolGatherLocked(size, &pieces);
++		}
++	}
++	if (pieces.empty()) return KERNEL_ERROR_EAGAIN;
++
++	// Trim the last piece if the sum exceeds 'size'.
++	uint64_t sum_before_last = 0;
++	if (pieces.size() > 1) {
++		for (size_t i = 0; i < pieces.size() - 1; i++) {
++			sum_before_last += pieces[i].second;
++		}
++		uint64_t last_trim = size - sum_before_last;
++		if (last_trim < pieces.back().second) {
++			pieces.back().second = last_trim;
++			// Put the remainder back into the free list.
++			{ std::scoped_lock lock(g_amm_auto_pool_mutex);
++				g_amm_auto_free[pieces.back().first + last_trim] = pieces.back().second - last_trim;
++			}
++		}
++	}
++
++	// Map each piece.
++	std::vector<void*> mapped(pieces.size(), nullptr);
++	for (size_t i = 0; i < pieces.size(); i++) {
++		// FIX (point 1): each piece at its own VA offset.
++		uint64_t piece_va = va;
++		for (size_t j = 0; j < i; j++) piece_va += pieces[j].second;
++		void* addr = reinterpret_cast<void*>(piece_va);
++		void* result = Bc5PoolMapDirect(&addr, pieces[i].second, memory_type, host,
++		                                 AMM_MAP_FIXED,
++		                                 static_cast<int64_t>(pieces[i].first), AMM_PAGE_SIZE);
++		if (result == nullptr) {
++			// Rollback: unmap pieces 0..i-1.
++			for (size_t j = 0; j < i; j++) {
++				Bc5PoolUnmapDirect(mapped[j], pieces[j].second);
++			}
++			{ std::scoped_lock lock(g_amm_auto_pool_mutex); // the gathered pieces go back to the pool
++				for (const auto& pc: pieces) Bc5PoolGiveBackLocked(pc.first, pc.second);
++			}
++			return KERNEL_ERROR_EAGAIN;
++		}
++		mapped[i] = addr;
++	}
++
++	// All pieces mapped: record each in g_amm_auto_maps.
++	// AmmAutoRecordVa acquires its own mutex internally.
++	{
++		uint64_t cur_va = va;
++		for (size_t i = 0; i < pieces.size(); i++) {
++			// FIX (point 5): each piece gets its own record.
++			AmmAutoRecordVa(cur_va, pieces[i].first, pieces[i].second);
++			cur_va += pieces[i].second;
++		}
++	}
++
++	// Name the full range.
++	(void)Bc5PoolSetName(reinterpret_cast<void*>(
++		reinterpret_cast<uint64_t>(mapped[0])), size, "AMM");
++
++	// Watch for the surface size.
++	if (size == 0x1fe0000ull) {
++		Bc5PoolWatchSurface(reinterpret_cast<uint64_t>(mapped[0]));
++	}
++
++	return static_cast<int>(pieces.size());
++}
++// ---- END pool0401_impl.inc ----
++
  static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t* dmem_offset) {
  	if (dmem_offset == nullptr || size == 0) {
  		return false;
@@ -46744,7 +47005,7 @@ index 073361d..28d69ec 100644
  		return false;
  	}
  
-@@ -1385,7 +1683,89 @@ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t
+@@ -1385,21 +1944,181 @@ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t
  	return true;
  }
  
@@ -46834,8 +47095,49 @@ index 073361d..28d69ec 100644
  	if (!ValidateAmmMapArgs(command.va, command.size)) {
  		return LibKernel::KERNEL_ERROR_EINVAL;
  	}
-@@ -1397,9 +1777,54 @@ static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command
- 	}
+ 
+ 	uint64_t dmem_offset = command.dmem_offset;
+-	if (command.kind == AmmCommandKind::MapAuto &&
+-	    !AllocateAmmAutoDirectMemory(command.size, command.type, &dmem_offset)) {
+-		return LibKernel::KERNEL_ERROR_EAGAIN;
+-	}
++		if (command.kind == AmmCommandKind::MapAuto) {
++			// experiment 0401: journal(1)=log-only, rescue(2)=scatter on EAGAIN, first(3)=scatter first.
++			const int mode = Bc5AmmScatterMode();
++			if (mode == 3) {
++				// first: try scattered map before contiguous borrow.
++				const int np = Bc5MapAutoScattered(command.va, command.size, command.type, command.prot);
++				Bc5PoolNoteScatter(3, command.va, command.size, np);
++				if (np > 0) {
++					// Scattered map succeeded — skip the original contiguous path.
++					return OK;
++				}
++				// Scatter failed, fall through to contiguous borrow.
++				if (!AllocateAmmAutoDirectMemory(command.size, command.type, &dmem_offset)) {
++					return LibKernel::KERNEL_ERROR_EAGAIN;
++				}
++			} else if (mode == 2) {
++				// rescue: try contiguous borrow; if it fails, try scattered map.
++				if (!AllocateAmmAutoDirectMemory(command.size, command.type, &dmem_offset)) {
++					const int np = Bc5MapAutoScattered(command.va, command.size, command.type, command.prot);
++					Bc5PoolNoteScatter(2, command.va, command.size, np);
++					if (np > 0) {
++						// Scattered map succeeded — skip the original contiguous path.
++						return OK;
++					}
++					return LibKernel::KERNEL_ERROR_EAGAIN;
++				}
++			} else {
++				// journal(1) or off(0): original behavior.
++				if (!AllocateAmmAutoDirectMemory(command.size, command.type, &dmem_offset)) {
++					if (mode == 1) {
++						AmmTraceStamp(), std::fprintf(stderr,
++							"[bc5] exp 0401 pool: journal — contiguous borrow failed, scattered map refused\n");
++					}
++					return LibKernel::KERNEL_ERROR_EAGAIN;
++				}
++			}
++		}
  
  	void* addr = reinterpret_cast<void*>(command.va);
 -	return LibKernel::Memory::KernelMapDirectMemory2(
@@ -46891,7 +47193,7 @@ index 073361d..28d69ec 100644
  }
  
  static bool AppendAmmMapRecord(uint64_t                                 command_buffer,
-@@ -1425,68 +1850,192 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
+@@ -1425,68 +2144,192 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
  
  static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offset,
                                 uint64_t destination, uint64_t size, uint64_t* bytes_read);
@@ -47136,7 +47438,7 @@ index 073361d..28d69ec 100644
  				const auto& command = state.read_file_commands[entry.index];
  				std::string host_path;
  				if (!AprShared::TryGetHostPath(command.file_id, &host_path)) {
-@@ -1494,55 +2043,129 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1494,55 +2337,129 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     command.file_id);
  					*execution_result = LibKernel::KERNEL_ERROR_ENOENT;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -47275,7 +47577,7 @@ index 073361d..28d69ec 100644
  				if (result != OK) {
  					LOGF("\tAMM submit command failed: kind=%u va=0x%016" PRIx64
  					     " dmem=0x%016" PRIx64 " size=0x%016" PRIx64 " type=%" PRId32
-@@ -1552,49 +2175,137 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1552,29 +2469,425 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     static_cast<uint32_t>(result));
  					*execution_result = result;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -47286,17 +47588,11 @@ index 073361d..28d69ec 100644
  			} break;
  		}
  	}
--
--	return OK;
 +	*next = ordered.size();
 +	return true;
- }
++}
  
--static bool AdvanceCommandBuffer(uint64_t command_buffer, uint64_t record_size) {
--	std::scoped_lock      lock(g_command_buffer_mutex);
--	CommandBufferIterator it;
--	if (!GetOrCreateCommandBufferStateLocked(command_buffer, &it)) {
--		return false;
+-	return OK;
 +// The APR engine runs submissions in order; one stopped at a wait holds those behind it. AMM
 +// submissions (maps only) run at once: they are what the waits wait for.
 +// BC5 (experiment 0156): a submission's result, once it has run, for the title's WaitCommandBuffer
@@ -47305,22 +47601,20 @@ index 073361d..28d69ec 100644
 +	if (b.state.bc5_journal) { // BC5 (experiment 0203)
 +		AprJournal("finish cb 0x%016" PRIx64 " sub %u = 0x%08x at 0x%x", b.command_buffer, b.submission_id,
 +		           static_cast<unsigned>(result), offset);
- 	}
--
--	auto& state = it->second;
--	if (!EnsureCommandBufferRecordSpace(command_buffer, &state, record_size)) {
--		return false;
++	}
 +	if (b.submission_id != 0) {
 +		AprShared::SetSubmissionResult(b.submission_id, result, offset);
 +	}
 +	if (b.result_ptr != 0) {
 +		(void)AprShared::WriteResult(reinterpret_cast<void*>(b.result_ptr), result, offset);
- 	}
-+}
++	}
+ }
  
--	std::memset(reinterpret_cast<void*>(state.buffer + state.write_offset), 0,
--	            static_cast<size_t>(record_size));
--	return CommitCommandBufferRecord(command_buffer, &state, record_size);
+-static bool AdvanceCommandBuffer(uint64_t command_buffer, uint64_t record_size) {
+-	std::scoped_lock      lock(g_command_buffer_mutex);
+-	CommandBufferIterator it;
+-	if (!GetOrCreateCommandBufferStateLocked(command_buffer, &it)) {
+-		return false;
 +static void PumpParkedAprBuffersLocked() {
 +	for (auto& queue: g_apr_parked) {
 +		while (!queue.empty()) {
@@ -47337,13 +47631,11 @@ index 073361d..28d69ec 100644
 +			}
 +			queue.pop_front();
 +		}
-+	}
- }
+ 	}
++}
  
--static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offset,
--                               uint64_t destination, uint64_t size, uint64_t* bytes_read) {
--	if (bytes_read == nullptr) {
--		return LibKernel::KERNEL_ERROR_EINVAL;
+-	auto& state = it->second;
+-	if (!EnsureCommandBufferRecordSpace(command_buffer, &state, record_size)) {
 +// BC5 (experiment 0156): the console's APR engine is asynchronous: a submit returns at once and the
 +// title learns of completion through the buffer's events, its address writes and WaitCommandBuffer.
 +// The host ran every submission's reads on the submitting title thread, and the parked ones on
@@ -47410,76 +47702,55 @@ index 073361d..28d69ec 100644
 +// BC5 (experiment 0227): true when the worker would read part of b on KYTY_BC5_APR_PARALLEL threads.
 +static bool AprWorkerReadsInParallel(const ParkedAprBuffer& b) {
 +	if (AprParallelReads() == 0) {
-+		return false;
-+	}
+ 		return false;
+ 	}
 +	for (size_t pos = 0; pos < b.ordered.size(); pos++) {
 +		if (b.ordered[pos].kind == CommandKind::ReadFile && AprParallelReadRun(b.state, b.ordered, pos) > pos + 1) {
 +			return true;
 +		}
- 	}
++	}
 +	return false;
 +}
  
--	*bytes_read = 0;
+-	std::memset(reinterpret_cast<void*>(state.buffer + state.write_offset), 0,
+-	            static_cast<size_t>(record_size));
 +// Reads [file_offset, file_offset + size) of the host file into *out, as ReadHostFileToGuest would read it
 +// (nothing past the end of the file; OK with no data at or past the end), without touching guest memory.
 +static int ReadHostFileToHost(const std::string& host_path, uint64_t file_offset, uint64_t size, std::vector<uint8_t>* out) {
 +	out->clear();
- 	if (size == 0) {
- 		return OK;
- 	}
--	if (!AprShared::IsValidGuestRange(destination, size, true)) {
--		return LibKernel::KERNEL_ERROR_EFAULT;
--	}
--
- 	Common::File file;
- 	if (!file.Open(host_path, Common::File::Mode::Read)) {
--		LOGF("\tAPR read missing host file: %s\n", host_path.c_str());
- 		return LibKernel::KERNEL_ERROR_ENOENT;
- 	}
- 	const auto file_size = file.Size();
-@@ -1606,62 +2317,370 @@ static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offse
- 		file.Close();
- 		return LibKernel::KERNEL_ERROR_EINVAL;
- 	}
--
- 	const auto readable = std::min<uint64_t>(size, file_size - file_offset);
--	if (readable == 0) {
--		file.Close();
--		return OK;
--	}
--
--	std::vector<uint8_t> buffer(
--	    static_cast<size_t>(std::min<uint64_t>(APR_HOST_READ_CHUNK_SIZE, readable)));
--	while (*bytes_read < readable) {
--		const auto request =
--		    static_cast<uint32_t>(std::min<uint64_t>(buffer.size(), readable - *bytes_read));
--		uint32_t read = 0;
--		file.Read(buffer.data(), request, &read);
++	if (size == 0) {
++		return OK;
++	}
++	Common::File file;
++	if (!file.Open(host_path, Common::File::Mode::Read)) {
++		return LibKernel::KERNEL_ERROR_ENOENT;
++	}
++	const auto file_size = file.Size();
++	if (file_offset >= file_size) {
++		file.Close();
++		return OK;
++	}
++	if (!file.Seek(file_offset)) {
++		file.Close();
++		return LibKernel::KERNEL_ERROR_EINVAL;
++	}
++	const auto readable = std::min<uint64_t>(size, file_size - file_offset);
 +	out->resize(static_cast<size_t>(readable));
 +	uint64_t done = 0;
 +	while (done < readable) {
 +		const auto request = static_cast<uint32_t>(std::min<uint64_t>(APR_HOST_READ_CHUNK_SIZE, readable - done));
 +		uint32_t   read    = 0;
 +		file.Read(out->data() + done, request, &read);
- 		if (read == 0) {
- 			break;
- 		}
--		std::memcpy(reinterpret_cast<void*>(destination + *bytes_read), buffer.data(), read);
--		*bytes_read += read;
++		if (read == 0) {
++			break;
++		}
 +		done += read;
- 	}
--
++	}
 +	out->resize(static_cast<size_t>(done));
- 	file.Close();
- 	return OK;
- }
- 
--static int KYTY_SYSV_ABI CommandBufferConstructor(void* command_buffer) {
--	PRINT_NAME();
--
--	if (command_buffer == nullptr) {
--		return OK;
++	file.Close();
++	return OK;
++}
++
 +static void AprReaderThread(size_t qi, size_t k) {
 +	char name[16];
 +	std::snprintf(name, sizeof(name), "bc5-apr-r%zu-%zu", qi, k);
@@ -47586,16 +47857,9 @@ index 073361d..28d69ec 100644
 +		if (AprReadahead() > 0) {
 +			g_apr_queue_cv.notify_all(); // the freed read-ahead budget may let a reader go on
 +		}
- 	}
--
--	return InitializeBaseCommandBuffer(reinterpret_cast<uint64_t>(command_buffer))
--	           ? OK
--	           : LibKernel::KERNEL_ERROR_EFAULT;
- }
- 
--static int KYTY_SYSV_ABI AprCommandBufferConstructor(void* command_buffer, void* reserved_state0,
--                                                     void* reserved_state1) {
--	PRINT_NAME();
++	}
++}
++
 +static void StartAprWaitThread() {
 +	static std::once_flag once;
 +	std::call_once(once, [] {
@@ -47609,29 +47873,17 @@ index 073361d..28d69ec 100644
 +		}).detach();
 +	});
 +}
- 
--	if (command_buffer == nullptr) {
--		return OK;
++
 +static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_result,
 +                                   uint32_t* error_offset, uint32_t priority, uint32_t submission_id,
 +                                   uint64_t result_ptr) {
 +	if (execution_result == nullptr || error_offset == nullptr) {
 +		return LibKernel::KERNEL_ERROR_EINVAL;
- 	}
- 
--	return InitializeAprReservedState(reinterpret_cast<uint64_t>(command_buffer),
--	                                  reinterpret_cast<uint64_t>(reserved_state0),
--	                                  reinterpret_cast<uint64_t>(reserved_state1))
--	           ? OK
--	           : LibKernel::KERNEL_ERROR_EFAULT;
--}
--
--static int KYTY_SYSV_ABI AprCommandBufferDestructor(void* command_buffer) {
--	PRINT_NAME();
++	}
++
 +	*execution_result = OK;
 +	*error_offset     = 0;
- 
--	(void)command_buffer;
++
 +	CommandBufferState state {};
 +	if (!TryGetCommandBufferState(command_buffer, &state)) {
 +		if (AmmTrace()) {
@@ -47759,97 +48011,10 @@ index 073361d..28d69ec 100644
 +
 +	std::memset(reinterpret_cast<void*>(state.buffer + state.write_offset), 0,
 +	            static_cast<size_t>(record_size));
-+	return CommitCommandBufferRecord(command_buffer, &state, record_size);
-+}
-+
-+static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offset,
-+                               uint64_t destination, uint64_t size, uint64_t* bytes_read) {
-+	if (bytes_read == nullptr) {
-+		return LibKernel::KERNEL_ERROR_EINVAL;
-+	}
-+
-+	*bytes_read = 0;
-+	if (size == 0) {
-+		return OK;
-+	}
-+	if (!AprShared::IsValidGuestRange(destination, size, true)) {
-+		return LibKernel::KERNEL_ERROR_EFAULT;
-+	}
-+
-+	Common::File file;
-+	if (!file.Open(host_path, Common::File::Mode::Read)) {
-+		LOGF("\tAPR read missing host file: %s\n", host_path.c_str());
-+		return LibKernel::KERNEL_ERROR_ENOENT;
-+	}
-+	const auto file_size = file.Size();
-+	if (file_offset >= file_size) {
-+		file.Close();
-+		return OK;
-+	}
-+	if (!file.Seek(file_offset)) {
-+		file.Close();
-+		return LibKernel::KERNEL_ERROR_EINVAL;
-+	}
-+
-+	const auto readable = std::min<uint64_t>(size, file_size - file_offset);
-+	if (readable == 0) {
-+		file.Close();
-+		return OK;
-+	}
-+
-+	std::vector<uint8_t> buffer(
-+	    static_cast<size_t>(std::min<uint64_t>(APR_HOST_READ_CHUNK_SIZE, readable)));
-+	while (*bytes_read < readable) {
-+		const auto request =
-+		    static_cast<uint32_t>(std::min<uint64_t>(buffer.size(), readable - *bytes_read));
-+		uint32_t read = 0;
-+		file.Read(buffer.data(), request, &read);
-+		if (read == 0) {
-+			break;
-+		}
-+		std::memcpy(reinterpret_cast<void*>(destination + *bytes_read), buffer.data(), read);
-+		*bytes_read += read;
-+	}
-+
-+	file.Close();
-+	return OK;
-+}
-+
-+static int KYTY_SYSV_ABI CommandBufferConstructor(void* command_buffer) {
-+	PRINT_NAME();
-+
-+	if (command_buffer == nullptr) {
-+		return OK;
-+	}
-+
-+	return InitializeBaseCommandBuffer(reinterpret_cast<uint64_t>(command_buffer))
-+	           ? OK
-+	           : LibKernel::KERNEL_ERROR_EFAULT;
-+}
-+
-+static int KYTY_SYSV_ABI AprCommandBufferConstructor(void* command_buffer, void* reserved_state0,
-+                                                     void* reserved_state1) {
-+	PRINT_NAME();
-+
-+	if (command_buffer == nullptr) {
-+		return OK;
-+	}
-+
-+	return InitializeAprReservedState(reinterpret_cast<uint64_t>(command_buffer),
-+	                                  reinterpret_cast<uint64_t>(reserved_state0),
-+	                                  reinterpret_cast<uint64_t>(reserved_state1))
-+	           ? OK
-+	           : LibKernel::KERNEL_ERROR_EFAULT;
-+}
-+
-+static int KYTY_SYSV_ABI AprCommandBufferDestructor(void* command_buffer) {
-+	PRINT_NAME();
-+
-+	(void)command_buffer;
- 	return OK;
+ 	return CommitCommandBufferRecord(command_buffer, &state, record_size);
  }
  
-@@ -1678,13 +2697,50 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
+@@ -1678,13 +2991,50 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
  	return OK;
  }
  
@@ -47901,7 +48066,7 @@ index 073361d..28d69ec 100644
  	const auto command_buffer_addr = reinterpret_cast<uint64_t>(command_buffer);
  	if (!ValidateCommandBufferHeader(command_buffer_addr)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -1767,15 +2823,25 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
+@@ -1767,15 +3117,25 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
  	PRINT_NAME();
  
  	const auto destination_addr = reinterpret_cast<uint64_t>(destination);
@@ -47933,7 +48098,7 @@ index 073361d..28d69ec 100644
  }
  
  static uint64_t AlignUp4(uint64_t value) {
-@@ -1811,11 +2877,11 @@ static uint64_t KYTY_SYSV_ABI MeasureCommandSizeFixed32(uint64_t, uint64_t, uint
+@@ -1811,11 +3171,11 @@ static uint64_t KYTY_SYSV_ABI MeasureCommandSizeFixed32(uint64_t, uint64_t, uint
  	return 0x20;
  }
  
@@ -47948,7 +48113,7 @@ index 073361d..28d69ec 100644
  }
  
  static uint64_t KYTY_SYSV_ABI
-@@ -2111,27 +3177,45 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
+@@ -2111,27 +3471,45 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
  	return AppendNoOpCommand(command_buffer, sizeof(uint32_t));
  }
  
@@ -48001,7 +48166,7 @@ index 073361d..28d69ec 100644
  	           ? OK
  	           : LibKernel::KERNEL_ERROR_EBUSY;
  }
-@@ -2139,8 +3223,12 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
+@@ -2139,8 +3517,12 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
  static int KYTY_SYSV_ABI CommandBufferWriteAddress(void* command_buffer, volatile uint64_t* address,
                                                     uint64_t value, uint32_t) {
  	PRINT_NAME();
@@ -48015,7 +48180,7 @@ index 073361d..28d69ec 100644
  }
  
  static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*              command_buffer,
-@@ -2148,12 +3236,15 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*
+@@ -2148,12 +3530,15 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*
                                                                 uint64_t           value) {
  	PRINT_NAME();
  
@@ -48034,7 +48199,7 @@ index 073361d..28d69ec 100644
  
  	return AppendNoOpCommand(command_buffer, 0x20);
  }
-@@ -2170,44 +3261,56 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromTimeCounter(void*
+@@ -2170,44 +3555,56 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromTimeCounter(void*
                                                                    uint32_t) {
  	PRINT_NAME();
  
@@ -48102,7 +48267,7 @@ index 073361d..28d69ec 100644
  }
  
  static int KYTY_SYSV_ABI AprCommandBufferReadFileGather(void*    command_buffer, uint64_t, uint64_t,
-@@ -2314,15 +3417,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
+@@ -2314,15 +3711,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
  	return OK;
  }
  
@@ -48132,7 +48297,7 @@ index 073361d..28d69ec 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2333,7 +3448,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
+@@ -2333,7 +3742,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
  
  static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, uint64_t va,
                                                          uint64_t dmem_offset, uint64_t size,
@@ -48141,7 +48306,7 @@ index 073361d..28d69ec 100644
  	PRINT_NAME();
  
  	if (command_buffer == nullptr || !ValidateAmmMapArgs(va, size) ||
-@@ -2341,7 +3456,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
+@@ -2341,7 +3750,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
  		return LibKernel::KERNEL_ERROR_EINVAL;
  	}
  
@@ -48158,7 +48323,7 @@ index 073361d..28d69ec 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2504,38 +3627,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
+@@ -2504,38 +3921,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
  	}
  
  	*dmem_offset = allocated;
@@ -48231,7 +48396,7 @@ index 073361d..28d69ec 100644
  	}
  }
  
-@@ -2589,11 +3734,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
+@@ -2589,11 +4028,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto     submit_result =
@@ -48244,7 +48409,7 @@ index 073361d..28d69ec 100644
  
  	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -2618,11 +3762,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
+@@ -2618,11 +4056,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto     submit_result =
@@ -48257,7 +48422,7 @@ index 073361d..28d69ec 100644
  
  	if (out_submission_id != nullptr &&
  	    !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
-@@ -2648,60 +3791,1087 @@ static int KYTY_SYSV_ABI AmmWaitCommandBufferCompletion(uint32_t submission_id)
+@@ -2648,91 +4085,1118 @@ static int KYTY_SYSV_ABI AmmWaitCommandBufferCompletion(uint32_t submission_id)
  	return OK;
  }
  
@@ -48317,6 +48482,37 @@ index 073361d..28d69ec 100644
 -	LIB_FUNC("ZFDZoN9IbVU", Ampr::MeasureAmmCommandSizeMapDirect);
 -	LIB_FUNC("KUjtdPZJo5I", Ampr::MeasureAmmCommandSizeMapDirectWithGpuMaskId);
 -	LIB_FUNC("Ayg6PIon2wA", Ampr::MeasureAmmCommandSizeUnmap);
+-	LIB_FUNC("NNIZ-FMyz3M", Ampr::MeasureCommandSizeNop);
+-	LIB_FUNC("Xp85BP3+BBI", Ampr::MeasureCommandSizeNopWithData);
+-	LIB_FUNC("qesF88X4DRg", Ampr::MeasureCommandSizeReadFileGather);
+-	LIB_FUNC("7nXGDGMXSqo", Ampr::MeasureCommandSizeReadFileScatter);
+-	LIB_FUNC("DXmgc5op8Yw", Ampr::MeasureCommandSizeReadFileGatherScatter);
+-	LIB_FUNC("rddQYXM0CjM", Ampr::MeasureCommandSizePopMarker);
+-	LIB_FUNC("kdFImtTD0hc", Ampr::MeasureAprCommandSizeMapBegin);
+-	LIB_FUNC("qvbdJc7bG+s", Ampr::MeasureAprCommandSizeMapDirectBegin);
+-	LIB_FUNC("iwTNhyaemnw", Ampr::MeasureCommandSizePopMarker);
+-	LIB_FUNC("tmfr97+ED5I", Ampr::MeasureCommandSizeMarkerWithColor);
+-	LIB_FUNC("VGkEj4d6-Kg", Ampr::MeasureCommandSizeMarker);
+-	LIB_FUNC("3OfeY4pzDV0", Ampr::MeasureCommandSizeMarkerWithColor);
+-	LIB_FUNC("0RdLmAh7WVo", Ampr::MeasureCommandSizeMarker);
+-	LIB_FUNC("pbnNnahE8vk", Ampr::MeasureCommandSizePopMarker);
+-	LIB_FUNC("tZDDEo2tE5k", Ampr::CommandBufferGetSize);
+-	LIB_FUNC("GnxKOHEawhk", Ampr::CommandBufferGetCurrentOffset);
+-	LIB_FUNC("H896Pt-yB4I", Ampr::CommandBufferWriteKernelEventQueue);
+-	LIB_FUNC("o67gODLFpls", Ampr::CommandBufferWriteKernelEventQueue);
+-	LIB_FUNC("mQ16-QdKv7k", Ampr::AprCommandBufferReadFile);
+-	LIB_FUNC("mZSbNJVJpV8", Ampr::AprCommandBufferReadFileGather);
+-	LIB_FUNC("Jg-AgkdJHkk", Ampr::AprCommandBufferReadFileScatter);
+-	LIB_FUNC("BVmR1H8l+XI", Ampr::AprCommandBufferReadFileGatherScatter);
+-	LIB_FUNC("YPxkUDhgoNI", Ampr::AprCommandBufferResetGatherScatterState);
+-	LIB_FUNC("Eul7AGEpjLo", Ampr::AprCommandBufferMapBegin);
+-	LIB_FUNC("bFEs0Gs6D2A", Ampr::AprCommandBufferMapDirectBegin);
+-	LIB_FUNC("X169CE6G3Y4", Ampr::AprCommandBufferMapEnd);
+-	LIB_FUNC("Q07J7XpvhrU", Ampr::AmmGiveDirectMemory);
+-	LIB_FUNC("wkQR9+xTFKY", Ampr::AmmGetVirtualAddressRanges);
+-	LIB_FUNC("KqiWXLgCVe0", Ampr::AmmGetUsageStatsData);
+-	LIB_FUNC("touqMEt6qXQ", Ampr::AmmSetPageTablePoolOccupancyNotificationThreshold);
+-	LIB_FUNC("EDq5bqCqYpA", Ampr::AmmCommandBufferConstructor);
 +struct Bc5AmmPage {
 +	uint64_t dmem  = 0; // the direct memory behind the page
 +	int32_t  type  = 0;
@@ -49395,10 +49591,41 @@ index 073361d..28d69ec 100644
 +	LIB_FUNC("ZFDZoN9IbVU", Ampr::MeasureAmmCommandSizeMapDirect);
 +	LIB_FUNC("KUjtdPZJo5I", Ampr::MeasureAmmCommandSizeMapDirectWithGpuMaskId);
 +	LIB_FUNC("Ayg6PIon2wA", Ampr::MeasureAmmCommandSizeUnmap);
- 	LIB_FUNC("NNIZ-FMyz3M", Ampr::MeasureCommandSizeNop);
- 	LIB_FUNC("Xp85BP3+BBI", Ampr::MeasureCommandSizeNopWithData);
- 	LIB_FUNC("qesF88X4DRg", Ampr::MeasureCommandSizeReadFileGather);
-@@ -2743,6 +4913,40 @@ LIB_DEFINE(InitAmpr_1_Ampr) {
++	LIB_FUNC("NNIZ-FMyz3M", Ampr::MeasureCommandSizeNop);
++	LIB_FUNC("Xp85BP3+BBI", Ampr::MeasureCommandSizeNopWithData);
++	LIB_FUNC("qesF88X4DRg", Ampr::MeasureCommandSizeReadFileGather);
++	LIB_FUNC("7nXGDGMXSqo", Ampr::MeasureCommandSizeReadFileScatter);
++	LIB_FUNC("DXmgc5op8Yw", Ampr::MeasureCommandSizeReadFileGatherScatter);
++	LIB_FUNC("rddQYXM0CjM", Ampr::MeasureCommandSizePopMarker);
++	LIB_FUNC("kdFImtTD0hc", Ampr::MeasureAprCommandSizeMapBegin);
++	LIB_FUNC("qvbdJc7bG+s", Ampr::MeasureAprCommandSizeMapDirectBegin);
++	LIB_FUNC("iwTNhyaemnw", Ampr::MeasureCommandSizePopMarker);
++	LIB_FUNC("tmfr97+ED5I", Ampr::MeasureCommandSizeMarkerWithColor);
++	LIB_FUNC("VGkEj4d6-Kg", Ampr::MeasureCommandSizeMarker);
++	LIB_FUNC("3OfeY4pzDV0", Ampr::MeasureCommandSizeMarkerWithColor);
++	LIB_FUNC("0RdLmAh7WVo", Ampr::MeasureCommandSizeMarker);
++	LIB_FUNC("pbnNnahE8vk", Ampr::MeasureCommandSizePopMarker);
++	LIB_FUNC("tZDDEo2tE5k", Ampr::CommandBufferGetSize);
++	LIB_FUNC("GnxKOHEawhk", Ampr::CommandBufferGetCurrentOffset);
++	LIB_FUNC("H896Pt-yB4I", Ampr::CommandBufferWriteKernelEventQueue);
++	LIB_FUNC("o67gODLFpls", Ampr::CommandBufferWriteKernelEventQueue);
++	LIB_FUNC("mQ16-QdKv7k", Ampr::AprCommandBufferReadFile);
++	LIB_FUNC("mZSbNJVJpV8", Ampr::AprCommandBufferReadFileGather);
++	LIB_FUNC("Jg-AgkdJHkk", Ampr::AprCommandBufferReadFileScatter);
++	LIB_FUNC("BVmR1H8l+XI", Ampr::AprCommandBufferReadFileGatherScatter);
++	LIB_FUNC("YPxkUDhgoNI", Ampr::AprCommandBufferResetGatherScatterState);
++	LIB_FUNC("Eul7AGEpjLo", Ampr::AprCommandBufferMapBegin);
++	LIB_FUNC("bFEs0Gs6D2A", Ampr::AprCommandBufferMapDirectBegin);
++	LIB_FUNC("X169CE6G3Y4", Ampr::AprCommandBufferMapEnd);
++	LIB_FUNC("Q07J7XpvhrU", Ampr::AmmGiveDirectMemory);
++	LIB_FUNC("wkQR9+xTFKY", Ampr::AmmGetVirtualAddressRanges);
++	LIB_FUNC("KqiWXLgCVe0", Ampr::AmmGetUsageStatsData);
++	LIB_FUNC("touqMEt6qXQ", Ampr::AmmSetPageTablePoolOccupancyNotificationThreshold);
++	LIB_FUNC("EDq5bqCqYpA", Ampr::AmmCommandBufferConstructor);
+ 	LIB_FUNC("pvUFDOHilnE", Ampr::AmmCommandBufferDestructor);
+ 	LIB_FUNC("JEVYGhDc97M", Ampr::AmmCommandBufferMap);
+ 	LIB_FUNC("ojBkmG7+CgE", Ampr::AmmCommandBufferMapWithGpuMaskId);
+@@ -2743,6 +5207,40 @@ LIB_DEFINE(InitAmpr_1_Ampr) {
  	LIB_FUNC("NnKhlMJtIsI", Ampr::AmmSubmitCommandBufferAndGetId);
  	LIB_FUNC("OJf3vCckPAM", Ampr::AmmSubmitCommandBufferAndGetResult);
  	LIB_FUNC("HXymib4T8gc", Ampr::AmmWaitCommandBufferCompletion);
