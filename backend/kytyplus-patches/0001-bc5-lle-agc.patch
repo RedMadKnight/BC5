@@ -27419,10 +27419,10 @@ index 82be73c..f090fcb 100644
  } // namespace Libs::Audio::AudioInternal
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..bb7271e
+index 0000000..5c5a9f7
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,8496 @@
+@@ -0,0 +1,8947 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -30336,6 +30336,13 @@ index 0000000..bb7271e
 +// Experiment 0401 (BC5_DIRECT_ACB_CS_PREFIX), defined with the CS prefix below.
 +static std::vector<uint32_t> acb_cs_prefix(const uint32_t* part, uint32_t n);
 +static void                  acb_cs_track(const uint32_t* part, uint32_t n);
++static int                   acb_inherit_mode(); // experiment 0403 (BC5_DIRECT_ACB_INHERIT), defined with the CS prefix below
++static std::vector<uint32_t> acb_inherit_prefix(const uint32_t* part, uint32_t n, uint32_t from);
++static void                  acb_inherit_track(const uint32_t* part, uint32_t n);
++static void                  acb_inherit_census(const uint32_t* p, uint32_t len);
++static void                  acb_inherit_census_slice();
++static bool                  acb_inherit_take(const uint32_t* p);
++static thread_local uint32_t t_acb_from = 0; // experiment 0403: where in its title buffer the acb part submit_split gets starts
 +static void                  chain_append(const uint32_t* pre, uint32_t pre_n, const uint32_t* ib, uint32_t n, const char* kind, bool host_built);
 +static void submit_segment(const uint32_t* ib, uint32_t num_dwords, uint32_t from, uint32_t to) {
 +	if (from > 0) {
@@ -30377,7 +30384,7 @@ index 0000000..bb7271e
 +	}
 +	// Experiment 0401: the guest queue's compute registers in front of a part that dispatches before it sets a program, in
 +	// the part's own chain segment (ADR 0010); without the chain (BC5_DIRECT_CHAIN=0) as a job of its own just before it.
-+	const std::vector<uint32_t> acb_cs = acb_cs_prefix(ib + from, to - from);
++	const std::vector<uint32_t> acb_cs = acb_inherit_mode() != 0 ? acb_inherit_prefix(ib + from, to - from, from) : acb_cs_prefix(ib + from, to - from); // + exp 0403
 +	if (acb_cs.empty()) {
 +		submit_one(ib + from, to - from, "acb");
 +	} else if (chain_on()) {
@@ -30390,6 +30397,7 @@ index 0000000..bb7271e
 +		submit_one(ib + from, to - from, "acb");
 +	}
 +	acb_cs_track(ib + from, to - from);
++	acb_inherit_track(ib + from, to - from); // experiment 0403
 +	t_keep_waits.clear();
 +}
 +
@@ -31170,6 +31178,322 @@ index 0000000..bb7271e
 +	*pgm = (static_cast<uint64_t>(lo) | (static_cast<uint64_t>(hi & 0xffu) << 32u)) << 8u;
 +	return p;
 +}
++// Experiment 0403 (exp 0401 series e3; BC5_DIRECT_ACB_INHERIT=journal|queue|skip, default off), after 0403's addendum
++// (a423f761). An acb part that dispatches before it sets a program (cs_inherit_at) needs its guest queue's own register
++// state at the end of the queue's previous buffer, whatever the wave mode: a console compute queue keeps one state from IB
++// to IB, and the driver's 2-dword NOP IB in between does not change it. Series e2's per-wave slots are withdrawn; they also
++// recorded inherited programs (Codex's review).
++// - Tracking, in every mode: per guest queue (t_queue_idx), the live compute state (bc5::full_state::Tracker over all of
++//   its parts). Per program address (COMPUTE_PGM_LO/HI), the wave modes the title used with it in a part that set it itself
++//   (inherit_scan's bound dispatches), and the queue and part that last did. Per physical ring, the guest queue of its last
++//   tracked part (exp 0403's difference 3).
++// - journal: no submission changes. Each inheriting part gets a line (the first 64, then every 1024th): queue, head or rest,
++//   the part's address, its first inheriting dispatch and initiator, and the queue's live program with USER_DATA_0..3. Also
++//   that program's provenance and own-wave counts, and UNSEEN when no dispatch of the title's own with it in this wave
++//   mode has been seen (not observed: no evidence of an illegal shader or of a wrong order, Codex's second review). Also
++//   whether the physical ring last ran a part of the same queue, the queue's previous three parts with their first two
++//   dwords, and the counts below. The census of non-IB packets on the guest rings stays.
++// - queue: a head (offset 0 in its title buffer) gets the queue's live state in front (cs_prefix, SH 0x204-0x3ff), as exp
++//   0401's prefix does, but on heads only, and only when that state is known: a tracked program, set by a certain write
++//   that no IB2 or unreadable table voided since (inherit_scan's end state), and seen with the dispatch's wave mode.
++//   Otherwise nothing is put in front and the part keeps today's behaviour, the ring's state: "unknown, fallback ring"
++//   (the top session's decision, 2026-11-03). Prefixes and fallbacks are counted apart, so a clean play in this mode
++//   cannot come from silent drops.
++// - skip: a head's inheriting dispatches are dropped by submit_now's filter (drop_offsets), the way BC5_DIRECT_SKIP_PGM
++//   drops them. This is the only mode that drops.
++// Rests and segments, whose head state_prefix replays, are left as they are in every mode. With BC5_DIRECT_ACB_CS_PREFIX
++// also set, this switch wins: the acb CS prefix stays off, with one journal line.
++// Series e3 (exp 0403's addendum, a423f761, and Codex's review of e2): which dispatches of an acb part run a program the
++// part set itself. A dispatch (0x15 / 0x16) is "bound" when a packet that certainly sets COMPUTE_PGM_LO (SH 0x20c) comes
++// before it in the same part: SET_SH_REG(_INDEX) 0x76 / 0x9b over it, LOAD_SH_REG 0x5f with a range over it,
++// LOAD_SH_REG_INDEX 0x63 in the offset format with a range over it or with a pair table (DATA_FORMAT bit 31) that can be
++// read and names it (cs_inherit_at's packets). An unreadable pair table and an INDIRECT_BUFFER (0x3f) may set it too, so
++// after one the part's own program is no longer known: dispatches are unbound again until the next certain write (Codex's
++// second review). w32 is the initiator's bit 15, CS_W32_EN, the packet's last dword (exp 0403 section 2; TODO(verify) in
++// the register database). Only bound dispatches say which wave mode the title uses with a program. The return value is
++// what the part leaves behind: 1 when its last packet that touches the program is a certain write, 0 when it is one that
++// may set it unseen (the queue's program is then not known), -1 when it has none (the queue's state carries over).
++struct InheritDispatch {
++	uint32_t at = 0, end = 0; // the packet's offset in the part, and the offset after it
++	bool     w32 = false, bound = false;
++};
++template <class Read>
++static int inherit_scan(const uint32_t* part, uint32_t n, const Read& read, std::vector<InheritDispatch>& out) {
++	constexpr uint32_t kPgmLo = 0x20cu;
++	bool               bound  = false;
++	int                state  = -1;
++	const auto         sure   = [&bound, &state] {
++		bound = true;
++		state = 1;
++	};
++	const auto lost = [&bound, &state] {
++		bound = false;
++		state = 0;
++	};
++	for (uint32_t i = 0; i < n;) {
++		const uint32_t h = part[i], type = h >> 30u;
++		uint32_t       len = 1;
++		if (type == 3 || type == 0) {
++			const uint32_t c = (h >> 16u) & 0x3fffu;
++			len              = c == 0x3fffu ? 1 : c + 2;
++		}
++		if (i + len > n) break;
++		if (type == 3) {
++			const uint32_t  op = (h >> 8u) & 0xffu;
++			const uint32_t* q  = part + i;
++			if ((op == 0x76 || op == 0x9b) && len >= 3 && kPgmLo - (q[1] & 0xffffu) < len - 2) sure();
++			if (op == 0x5f && len >= 5) {
++				for (uint32_t k = 3; k + 1 < len; k += 2) {
++					if (kPgmLo - (q[k] & 0xffffu) < (q[k + 1] & 0x3fffu)) sure();
++				}
++			}
++			if (op == 0x63 && len >= 5 && (q[4] & 0x3fffu) != 0) {
++				const uint32_t tn = q[4] & 0x3fffu;
++				if ((q[3] >> 31u) == 0) {
++					if (kPgmLo - (q[3] & 0xffffu) < tn) sure();
++				} else {
++					const uint64_t  ta = (q[1] & ~3u) | (static_cast<uint64_t>(q[2] & 0xffffu) << 32u);
++					const uint32_t* t  = ta != 0 ? read(ta, static_cast<uint64_t>(tn) * 8u) : nullptr;
++					if (t == nullptr) lost(); // may set it: the part's own program is not known any more
++					for (uint32_t k = 0; t != nullptr && k < tn; k++) {
++						if ((t[2 * k] & 0xffffu) == kPgmLo) sure();
++					}
++				}
++			}
++			if (op == 0x3f) lost(); // an IB2 may set it too
++			if ((op == 0x15 || op == 0x16) && len >= 3) out.push_back(InheritDispatch {i, i + len, (part[i + len - 1] & 0x8000u) != 0, bound});
++		}
++		i += len;
++	}
++	return state;
++}
++static int acb_inherit_mode() { // 0 off, 1 journal, 2 queue, 3 skip
++	static const int m = [] {
++		const char* e = std::getenv("BC5_DIRECT_ACB_INHERIT");
++		if (e == nullptr || *e == 0 || std::strcmp(e, "0") == 0) return 0;
++		if (std::strcmp(e, "journal") == 0) return 1;
++		if (std::strcmp(e, "queue") == 0) return 2;
++		if (std::strcmp(e, "skip") == 0) return 3;
++		return -1;
++	}();
++	static std::atomic<bool> told {false};
++	if (!told.exchange(true)) {
++		static const char* const names[] = {"an unknown value: off", "off", "journal (no submission changes)",
++		                                    "queue (a head gets its queue's live state when it is known, else the ring's; no drops)", "skip (a head's inheriting dispatches are dropped)"};
++		journal("exp 0403: acb inherit %s\n", names[m + 1]);
++		if (m > 0 && bc5::env_on(std::getenv("BC5_DIRECT_ACB_CS_PREFIX"))) journal("exp 0403: BC5_DIRECT_ACB_CS_PREFIX is set too: BC5_DIRECT_ACB_INHERIT wins, the acb CS prefix stays off\n");
++	}
++	return m < 0 ? 0 : m;
++}
++struct InheritQueue {
++	bc5::full_state::Tracker t;           // the queue's live compute state
++	const uint32_t*          prev[3] = {}; // its last three parts, newest first
++	uint32_t                 prev_n[3] = {};
++	uint64_t                 unbound = 0; // its dispatches that ran a program their part did not set
++	bool                     known   = false; // the live program came from a certain write that nothing voided since
++};
++struct InheritProg {
++	uint64_t        own32 = 0, own64 = 0; // the title's own dispatches with this program, by wave mode
++	int             queue = -1;           // the queue and part that last made one
++	const uint32_t* part  = nullptr;
++};
++struct InheritCensus {
++	std::map<uint32_t, uint64_t> ops, sh; // by opcode; SET_SH_REG by (first register << 8 | count)
++	uint64_t                     slices = 0;
++};
++static std::mutex                     g_inh_mutex;
++static std::map<int, InheritQueue>    g_inh;        // by guest queue (t_queue_idx)
++static std::map<uint64_t, InheritProg> g_inh_prog;  // by program address
++static std::map<int, int>             g_inh_ring;   // physical ring -> the guest queue of its last tracked part
++static std::map<int, InheritCensus>   g_inh_census; // by guest queue
++static std::set<const uint32_t*>      g_inh_drop;   // skip: the title's dispatch packets submit_now drops
++static std::atomic<size_t>            g_inh_drops {0};
++static std::atomic<uint64_t>          g_inh_prefixed {0}, g_inh_fb_noprog {0}, g_inh_fb_void {0}, g_inh_fb_unseen {0}; // queue mode
++static std::atomic<uint64_t>          g_inh_skip_heads {0}, g_inh_dropped {0};                                     // skip mode
++static uint32_t inherit_len(uint32_t h) {
++	const uint32_t type = h >> 30u;
++	if (type != 3 && type != 0) return 1;
++	const uint32_t c = (h >> 16u) & 0x3fffu;
++	return c == 0x3fffu ? 1 : c + 2;
++}
++static uint64_t inherit_pgm(const bc5::full_state::Tracker& t) { // COMPUTE_PGM_LO/HI as an address, as cs_prefix gives it
++	uint32_t lo = 0, hi = 0;
++	if (!t.get(bc5::full_state::Sh, 0x20cu, lo)) return 0;
++	if (!t.get(bc5::full_state::Sh, 0x20du, hi)) hi = 0;
++	return (static_cast<uint64_t>(lo) << 8u) | (static_cast<uint64_t>(hi & 0xffu) << 40u);
++}
++static void acb_inherit_track(const uint32_t* part, uint32_t n) {
++	if (acb_inherit_mode() == 0 || !g_dev || part == nullptr || n == 0) return;
++	std::shared_ptr<const std::vector<bc5::direct::Mapping>> maps_p = g_dev->sorted_mappings();
++	const bc5::full_state::Tracker::Reader read = [&maps_p](uint64_t a, uint64_t bytes) -> const uint32_t* {
++		return covered_sorted(*maps_p, a, bytes) ? reinterpret_cast<const uint32_t*>(a) : nullptr;
++	};
++	std::vector<InheritDispatch> ds;
++	const int end_state = inherit_scan(part, n, read, ds);
++	bc5::full_state::Stats st;
++	std::lock_guard        lk(g_inh_mutex);
++	InheritQueue&          q    = g_inh[t_queue_idx];
++	uint32_t               done = 0;
++	for (const InheritDispatch& d: ds) { // the program at each bound dispatch: the tracker applied up to it
++		if (!d.bound) {
++			q.unbound++;
++			continue;
++		}
++		q.t.apply(std::span<const uint32_t>(part + done, d.end - done), read, st);
++		done               = d.end;
++		const uint64_t pgm = inherit_pgm(q.t);
++		if (pgm == 0) continue;
++		InheritProg& p = g_inh_prog[pgm];
++		(d.w32 ? p.own32 : p.own64)++;
++		p.queue = t_queue_idx;
++		p.part  = part;
++	}
++	if (done < n) q.t.apply(std::span<const uint32_t>(part + done, n - done), read, st);
++	if (end_state >= 0) q.known = end_state == 1; // what this part leaves: a certain program, or one an IB2 or table voided
++	for (int k = 2; k > 0; k--) {
++		q.prev[k]   = q.prev[k - 1];
++		q.prev_n[k] = q.prev_n[k - 1];
++	}
++	q.prev[0]          = part;
++	q.prev_n[0]        = n;
++	g_inh_ring[t_ring] = t_queue_idx;
++}
++static std::vector<uint32_t> acb_inherit_prefix(const uint32_t* part, uint32_t n, uint32_t from) {
++	const int mode = acb_inherit_mode();
++	if (mode == 0 || !g_dev || part == nullptr || n == 0) return {};
++	std::shared_ptr<const std::vector<bc5::direct::Mapping>> maps_p = g_dev->sorted_mappings();
++	const int                                                at     = cs_inherit_at(part, n, *maps_p);
++	if (at < 0) return {};
++	std::vector<uint32_t> inh; // each dispatch before the part's first packet that may set the program
++	for (uint32_t base = 0; base < n;) {
++		const int k = cs_inherit_at(part + base, n - base, *maps_p);
++		if (k < 0) break;
++		const uint32_t o = base + static_cast<uint32_t>(k);
++		inh.push_back(o);
++		base = o + inherit_len(part[o]);
++	}
++	const uint32_t        init = part[static_cast<uint32_t>(at) + inherit_len(part[at]) - 1];
++	const bool            w32 = (init & 0x8000u) != 0, head = from == 0;
++	std::vector<uint32_t> pre;
++	uint64_t              pgm = 0;
++	uint32_t              ud[4] = {}, prev_n[3] = {};
++	const uint32_t*       prev[3] = {};
++	InheritProg           prog;
++	bool                  known = false, qknown = false;
++	int                   ring_q = -1;
++	{
++		std::lock_guard lk(g_inh_mutex);
++		const auto      it = g_inh.find(t_queue_idx);
++		if (it != g_inh.end()) {
++			const InheritQueue& q = it->second;
++			pgm                   = inherit_pgm(q.t);
++			for (uint32_t k = 0; k < 4; k++) {
++				uint32_t v = 0;
++				ud[k]      = q.t.get(bc5::full_state::Sh, 0x240u + k, v) ? v : 0u;
++			}
++			for (int k = 0; k < 3; k++) {
++				prev[k]   = q.prev[k];
++				prev_n[k] = q.prev_n[k];
++			}
++			const auto pit = g_inh_prog.find(pgm);
++			if (pgm != 0 && pit != g_inh_prog.end()) {
++				prog  = pit->second;
++				known = true;
++			}
++			qknown = q.known;
++			if (mode == 2 && head && pgm != 0 && qknown && (w32 ? prog.own32 : prog.own64) != 0) {
++				uint64_t live = 0;
++				pre           = cs_prefix(q.t, &live);
++			}
++		}
++		const auto rit = g_inh_ring.find(t_ring);
++		if (rit != g_inh_ring.end()) ring_q = rit->second;
++	}
++	const bool  unseen = pgm != 0 && (w32 ? prog.own32 : prog.own64) == 0;
++	const bool  skip   = head && mode == 3; // the only mode that drops
++	const char* why    = pgm == 0  ? "the queue has no tracked program"
++	                     : !qknown ? "an IB2 or an unreadable table voided the state's provenance"
++	                     : unseen  ? "the program is unseen in this wave mode"
++	                               : "";
++	if (head && mode == 2) {
++		if (!pre.empty()) g_inh_prefixed++;
++		else if (pgm == 0) g_inh_fb_noprog++;
++		else if (!qknown) g_inh_fb_void++;
++		else g_inh_fb_unseen++;
++	}
++	if (skip) g_inh_skip_heads++;
++	if (skip) {
++		std::lock_guard lk(g_inh_mutex);
++		if (g_inh_drop.size() > 4096) g_inh_drop.clear(); // parts that never reached submit_now leave entries behind
++		for (const uint32_t o: inh) g_inh_drop.insert(part + o);
++		g_inh_drops = g_inh_drop.size();
++	}
++	uint32_t pw[3][2] = {}; // the previous parts' first two dwords, where they are still mapped
++	for (int k = 0; k < 3; k++) {
++		if (prev[k] != nullptr && prev_n[k] >= 2 && covered_sorted(*maps_p, reinterpret_cast<uint64_t>(prev[k]), 8)) {
++			pw[k][0] = prev[k][0];
++			pw[k][1] = prev[k][1];
++		}
++	}
++	const char* action = mode == 1      ? "journal only"
++	                     : !head        ? "a rest: left as it is"
++	                     : mode == 3    ? "dropped (skip mode)"
++	                     : !pre.empty() ? "prefixed with the queue's state"
++	                                    : "unknown, fallback ring";
++	static std::atomic<uint64_t> n_inh {0};
++	const uint64_t               k = n_inh++;
++	if (k < 64 || (k & 0x3ffu) == 0)
++		journal("acb inherit (exp 0403): t %.3f s queue %d %s part %p %u dwords from offset %u: %zu inheriting dispatches, the first at %u, initiator 0x%x (%s); the queue's live program 0x%010" PRIx64 " ud0-3 %08x %08x %08x %08x, %s by queue %d part %p, own W32 %" PRIu64 " W64 %" PRIu64 "%s; ring %d's last tracked part from queue %d (%s); previous parts %p+%u [%08x %08x] %p+%u [%08x %08x] %p+%u [%08x %08x]; %s%s%s%s, %zu dwords in front; so far prefixed %" PRIu64 ", fallback ring %" PRIu64 " (no program %" PRIu64 ", voided %" PRIu64 ", unseen %" PRIu64 "), skip-mode heads %" PRIu64 ", dispatches dropped %" PRIu64 " (%" PRIu64 " such parts)\n",
++		        timing_now(), t_queue_idx, head ? "head" : "rest", static_cast<const void*>(part), n, from, inh.size(), from + static_cast<uint32_t>(at), init, w32 ? "W32" : "W64", pgm, ud[0], ud[1],
++		        ud[2], ud[3], known ? "bound last" : "never bound in a part of its own", prog.queue, static_cast<const void*>(prog.part), prog.own32, prog.own64, unseen ? ", UNSEEN (not observed in this wave mode)" : "", t_ring, ring_q,
++		        ring_q == t_queue_idx ? "the same queue" : ring_q < 0 ? "none yet" : "another queue", static_cast<const void*>(prev[0]), prev_n[0], pw[0][0], pw[0][1], static_cast<const void*>(prev[1]),
++		        prev_n[1], pw[1][0], pw[1][1], static_cast<const void*>(prev[2]), prev_n[2], pw[2][0], pw[2][1], action, why[0] != 0 ? " (" : "", why,
++		        why[0] != 0 ? ")" : "", pre.size(), g_inh_prefixed.load(), g_inh_fb_noprog.load() + g_inh_fb_void.load() + g_inh_fb_unseen.load(), g_inh_fb_noprog.load(),
++		        g_inh_fb_void.load(), g_inh_fb_unseen.load(), g_inh_skip_heads.load(), g_inh_dropped.load(), k + 1);
++	return pre;
++}
++static bool acb_inherit_take(const uint32_t* p) {
++	{
++		std::lock_guard lk(g_inh_mutex);
++		const auto      it = g_inh_drop.find(p);
++		if (it == g_inh_drop.end()) return false;
++		g_inh_drop.erase(it);
++		g_inh_drops = g_inh_drop.size();
++	}
++	const uint64_t k = g_inh_dropped++;
++	if (k < 64 || (k & 0x3ffu) == 0) journal("acb inherit (exp 0403): the inheriting dispatch at %p dropped (%" PRIu64 " so far)\n", static_cast<const void*>(p), k + 1);
++	return true;
++}
++static void acb_inherit_census(const uint32_t* p, uint32_t len) {
++	if (acb_inherit_mode() == 0 || p == nullptr || len == 0) return;
++	const uint32_t  op = (p[0] >> 8u) & 0xffu;
++	std::lock_guard lk(g_inh_mutex);
++	InheritCensus&  c = g_inh_census[t_queue_idx];
++	c.ops[op]++;
++	if (op == 0x76 && len >= 3) c.sh[((p[1] & 0xffffu) << 8u) | std::min<uint32_t>(len - 2, 255u)]++;
++}
++static void acb_inherit_census_slice() {
++	if (acb_inherit_mode() == 0) return;
++	std::string line;
++	uint64_t    k = 0;
++	{
++		std::lock_guard lk(g_inh_mutex);
++		InheritCensus&  c = g_inh_census[t_queue_idx];
++		k                 = c.slices++;
++		if (k != 0 && (k & 0x3ffu) != 0) return;
++		char b[64];
++		for (const auto& [op, cnt]: c.ops) {
++			std::snprintf(b, sizeof(b), " op %02x x%" PRIu64, op, cnt);
++			if (line.size() < 1400) line += b;
++		}
++		for (const auto& [key, cnt]: c.sh) {
++			std::snprintf(b, sizeof(b), " sh 0x%x+%u x%" PRIu64, key >> 8u, key & 0xffu, cnt);
++			if (line.size() < 1400) line += b;
++		}
++	}
++	journal("acb inherit census (exp 0403): queue %d after %" PRIu64 " ring slices, non-IB type-3 packets:%s\n", t_queue_idx, k + 1, line.empty() ? " none" : line.c_str());
++}
++
 +// Experiment 0401 (BC5_DIRECT_ACB_CS_PREFIX=1, default off): the acb side of experiment 0195's CS prefix. On the console
 +// an acb runs on its own compute queue, which keeps the compute registers that queue's previous acb left. The second
 +// title relies on it: on 2026-11-03 08:49 acb #432910 launched 19612 x 1 x 1 four times before it set a program (its
@@ -31179,7 +31503,7 @@ index 0000000..bb7271e
 +// dispatches before it sets COMPUTE_PGM_LO (cs_inherit_at) gets that queue's tracked compute registers in front
 +// (cs_prefix: SH 0x204-0x3ff). A queue with nothing tracked yet gets nothing. With the switch off nothing is tracked.
 +static bool acb_cs_prefix_on() {
-+	static const bool        on = bc5::env_on(std::getenv("BC5_DIRECT_ACB_CS_PREFIX"));
++	static const bool        on = bc5::env_on(std::getenv("BC5_DIRECT_ACB_CS_PREFIX")) && acb_inherit_mode() == 0; // + exp 0403: ACB_INHERIT wins
 +	static std::atomic<bool> told {false};
 +	if (!told.exchange(true))
 +		journal("exp 0401: acb CS prefix %s\n", on ? "on (an acb part that dispatches before it sets a program gets its queue's tracked compute registers in front)" : "off");
@@ -31615,7 +31939,7 @@ index 0000000..bb7271e
 +		}
 +	}
 +	if (!full_used && std::strcmp(kind, "acb") == 0) { // experiment 0401: the acb's own queue state, as the CS prefix above for a dcb
-+		std::vector<uint32_t> cs = acb_cs_prefix(ib, num_dwords);
++		std::vector<uint32_t> cs = acb_inherit_mode() != 0 ? acb_inherit_prefix(ib, num_dwords, t_acb_from) : acb_cs_prefix(ib, num_dwords); // + exp 0403
 +		if (!cs.empty()) {
 +			full_prefix.swap(cs);
 +			full_used = cs_used = true;
@@ -32845,7 +33169,112 @@ index 0000000..bb7271e
 +	}
 +}
 +
++// Experiment 0401 series e3 (the top session, 2026-11-03: the next guest crash should show whether memory was at its
++// floor): a journal line every 10 s with MemAvailable and swap used (/proc/meminfo), PSI memory (/proc/pressure/memory: some
++// and full avg10, full total) and GTT used (amdgpu's sysfs mem_info_gtt_used / mem_info_gtt_total), each file read once, no
++// smaps walk; the journal is flushed after it. A value that cannot be read is "unknown" (mem_line_parse). On by default;
++// BC5_DIRECT_MEM_LINE=0 turns it off.
++// Series e3 (Codex's second review of e3): the memory line's parsing, pure. A field whose file could not be read, or whose
++// key or number is missing, is "unknown" in the line, never 0, so a missing file cannot look like memory at its floor or
++// like no swap in use.
++struct MemLine {
++	bool     avail_ok = false, swap_ok = false, some_ok = false, full_ok = false, gtt_ok = false;
++	uint64_t avail_kib = 0, swap_used_kib = 0, full_total_us = 0, gtt_used = 0, gtt_total = 0;
++	double   some10 = 0.0, full10 = 0.0;
++};
++static bool mem_line_key(const char* text, const char* key, uint64_t* v) { // "Key:   1234 kB" -> 1234
++	const size_t kl = std::strlen(key);
++	for (const char* l = text; l != nullptr && *l != 0;) {
++		if (std::strncmp(l, key, kl) == 0 && l[kl] == ':') {
++			char* end = nullptr;
++			*v        = std::strtoull(l + kl + 1, &end, 10);
++			return end != l + kl + 1;
++		}
++		l = std::strchr(l, '\n');
++		if (l != nullptr) l++;
++	}
++	return false;
++}
++static bool mem_line_number(const char* text, uint64_t* v) {
++	if (text == nullptr) return false;
++	char* end = nullptr;
++	*v        = std::strtoull(text, &end, 10);
++	return end != text;
++}
++// Each argument is a file's text, or nullptr when the file could not be read.
++static MemLine mem_line_parse(const char* meminfo, const char* psi, const char* gtt_used, const char* gtt_total) {
++	MemLine m;
++	if (meminfo != nullptr) {
++		uint64_t swap_total = 0, swap_free = 0;
++		m.avail_ok = mem_line_key(meminfo, "MemAvailable", &m.avail_kib);
++		if (mem_line_key(meminfo, "SwapTotal", &swap_total) && mem_line_key(meminfo, "SwapFree", &swap_free)) {
++			m.swap_ok       = true;
++			m.swap_used_kib = swap_total - std::min(swap_free, swap_total);
++		}
++	}
++	if (psi != nullptr) {
++		m.some_ok                 = std::sscanf(psi, "some avg10=%lf", &m.some10) == 1;
++		const char*        full    = std::strstr(psi, "full ");
++		unsigned long long total  = 0;
++		m.full_ok                 = full != nullptr && std::sscanf(full, "full avg10=%lf avg60=%*f avg300=%*f total=%llu", &m.full10, &total) == 2;
++		m.full_total_us           = total;
++	}
++	m.gtt_ok = mem_line_number(gtt_used, &m.gtt_used) && mem_line_number(gtt_total, &m.gtt_total);
++	return m;
++}
++static void mem_line_format(const MemLine& m, double t, char* out, size_t cap) {
++	char a[32] = "unknown", sw[32] = "unknown", so[32] = "unknown", fu[32] = "unknown", ft[32] = "unknown", gu[32] = "unknown", gt[32] = "unknown";
++	if (m.avail_ok) std::snprintf(a, sizeof(a), "%llu", static_cast<unsigned long long>(m.avail_kib >> 10u));
++	if (m.swap_ok) std::snprintf(sw, sizeof(sw), "%llu", static_cast<unsigned long long>(m.swap_used_kib >> 10u));
++	if (m.some_ok) std::snprintf(so, sizeof(so), "%.2f", m.some10);
++	if (m.full_ok) {
++		std::snprintf(fu, sizeof(fu), "%.2f", m.full10);
++		std::snprintf(ft, sizeof(ft), "%llu", static_cast<unsigned long long>(m.full_total_us / 1000u));
++	}
++	if (m.gtt_ok) {
++		std::snprintf(gu, sizeof(gu), "%llu", static_cast<unsigned long long>(m.gtt_used >> 20u));
++		std::snprintf(gt, sizeof(gt), "%llu", static_cast<unsigned long long>(m.gtt_total >> 20u));
++	}
++	std::snprintf(out, cap, "memory (exp 0401): t %.1f s: available %s MiB, swap used %s MiB, psi some %s full %s (avg10, %%), full total %s ms, gtt %s of %s MiB\n", t, a, sw, so, fu, ft, gu, gt);
++}
++static bool mem_line_read(const char* path, char* buf, size_t cap) {
++	FILE* f = std::fopen(path, "r");
++	if (f == nullptr) return false;
++	const size_t n = std::fread(buf, 1, cap - 1, f);
++	std::fclose(f);
++	buf[n] = 0;
++	return n != 0;
++}
++static void mem_line_loop() {
++	std::string gtt_dir;
++	for (int c = 0; c < 8 && gtt_dir.empty(); c++) {
++		const std::string d = "/sys/class/drm/card" + std::to_string(c) + "/device/";
++		if (access((d + "mem_info_gtt_used").c_str(), R_OK) == 0) gtt_dir = d;
++	}
++	for (;;) {
++		std::this_thread::sleep_for(std::chrono::seconds(10));
++		char       mi[8192], ps[512], gu[64], gt[64], line[512];
++		const bool mi_ok = mem_line_read("/proc/meminfo", mi, sizeof(mi));
++		const bool ps_ok = mem_line_read("/proc/pressure/memory", ps, sizeof(ps));
++		const bool gu_ok = !gtt_dir.empty() && mem_line_read((gtt_dir + "mem_info_gtt_used").c_str(), gu, sizeof(gu));
++		const bool gt_ok = !gtt_dir.empty() && mem_line_read((gtt_dir + "mem_info_gtt_total").c_str(), gt, sizeof(gt));
++		mem_line_format(mem_line_parse(mi_ok ? mi : nullptr, ps_ok ? ps : nullptr, gu_ok ? gu : nullptr, gt_ok ? gt : nullptr), timing_now(), line, sizeof(line));
++		journal("%s", line);
++		if (g_journal_min) (void)journal_min_file(true);
++	}
++}
++static void mem_line_start() {
++	static std::once_flag once;
++	std::call_once(once, [] {
++		const char* e  = std::getenv("BC5_DIRECT_MEM_LINE");
++		const bool  on = e == nullptr || *e == 0 || std::strcmp(e, "0") != 0;
++		journal("exp 0401: memory line %s\n", on ? "every 10 s (MemAvailable, swap, PSI memory, GTT)" : "off");
++		if (on) std::thread(mem_line_loop).detach();
++	});
++}
++
 +static void submit(const uint32_t* ib, uint32_t num_dwords, const char* kind) {
++	mem_line_start(); // experiment 0401 series e3
 +	if (!chain_on()) SoftCp::clear_gpu_executed(); // the soft CP runs this buffer next, on this thread (ADR 0010: per call, chain_begin)
 +	if (g_stage == Stage::Off || !g_dev || ib == nullptr || num_dwords == 0) return;
 +	const ChainInSubmit in_submit(chain_cross()); // ADR 0010 section B
@@ -32879,14 +33308,20 @@ index 0000000..bb7271e
 +							journal("acb rest %u..%u of %u dwords: state prefix of %u dwords replayed first\n", skip, tn, tn, n);
 +							if (pre != nullptr) submit_one(pre, n, "acb-state");
 +						}
++						t_acb_from = skip; // experiment 0403: a rest starts there
 +						submit_split(t + skip, tn - skip, "acb");
++						t_acb_from = 0;
 +						acb_cs_track(t + skip, tn - skip); // experiment 0401
++						acb_inherit_track(t + skip, tn - skip); // experiment 0403
 +						t_ring = bc5::direct::kGfxRing;
 +					}
 +				}
++			} else if (type == 3) {
++				acb_inherit_census(ib + q, len); // experiment 0403: a non-IB packet on the guest ring
 +			}
 +			q += len;
 +		}
++		acb_inherit_census_slice(); // experiment 0403
 +		return;
 +	}
 +	submit_split(ib, num_dwords, kind);
@@ -34462,6 +34897,22 @@ index 0000000..bb7271e
 +				}
 +			}
 +			if (type == 3 && (op == 0x15 || op == 0x16)) flat_aperture_fix(pgm, *maps_p); // experiment 0190
++			if (type == 3 && (op == 0x15 || op == 0x16) && g_inh_drops.load(std::memory_order_relaxed) != 0) { // experiment 0403: skip
++				const uint32_t* gq = chain == nullptr ? ib + q : nullptr; // the title's address of this packet
++				if (chain != nullptr) {
++					for (const ChainSeg& s: chain->segs) {
++						if (s.src != nullptr && q >= s.off + s.prefix && q < s.off + s.prefix + s.n) {
++							gq = s.src + (q - s.off - s.prefix);
++							break;
++						}
++					}
++				}
++				if (gq != nullptr && acb_inherit_take(gq)) {
++					opt.drop_offsets.push_back(q);
++					q += len;
++					continue;
++				}
++			}
 +			// Experiment 0059: BC5_DIRECT_SKIP_PGM=<hex list> drops every dispatch (DISPATCH_DIRECT and both
 +			// forms of DISPATCH_INDIRECT, in any kind of buffer) of these compute programs — e.g. the
 +			// second title's ray-traced-reflection traversal 0x11d049aa00, which loops forever on a bad
