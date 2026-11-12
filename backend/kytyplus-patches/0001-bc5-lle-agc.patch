@@ -30640,10 +30640,10 @@ index 6df0a95..eca6d2d 100644
  		    static_cast<uint32_t>(src->crop_right + (pitch - src->width));
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..e5f4cb8
+index 0000000..66e6351
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,14208 @@
+@@ -0,0 +1,14263 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -36128,6 +36128,60 @@ index 0000000..e5f4cb8
 +}
 +
 +// Submits one IB.
++// BC5 experiment 0412 (tag zp412, README section 40 and its correction, section 45): the decision of the zero skip's
++// poll before a submission. `seen` is the direct file's block count the last scan was started for; `sample` is the
++// count read now, BEFORE any scan. A scan runs when they differ, and `seen` becomes that sample: never a count read
++// after the scan or after the sync that follows it, because a write that lands between the scan and such a second
++// read would be credited to `seen` without having been scanned, and the next submission would then skip its scan
++// (the review of 2026-11-12, lesson R12: a sequence of reads is not a snapshot).
++// The block count is a hint that something was written somewhere in the file; it is the scan that looks at the
++// skipped chunks. A growth caused by the host's own pin after a scan costs one more scan at the next submission.
++// This text is included by the main unit (through mkzpoll0412.py) and by the CPU test zpoll0412.cpp.
++namespace zp412 {
++inline bool look(uint64_t& seen, uint64_t sample) {
++	if (sample == seen) return false;
++	seen = sample;
++	return true;
++}
++} // namespace zp412
++// Experiment 0412 (tag zp412): BC5_GUARD_ZSKIP_POLL_SUBMIT. The zero skip's poll before every submission: see mkzpoll0412.py.
++static void zpoll412_submit() {
++	static const bool on = [] {
++		const char* e = std::getenv("BC5_GUARD_ZSKIP_POLL_SUBMIT");
++		return e != nullptr && e[0] == '1';
++	}();
++	if (!on || g_zskip.empty()) return;
++	DState&   S  = g_d[0];
++	const int fd = dstate_fd(S);
++	if (fd < 0) return;
++	static uint64_t seen = ~0ull, looks = 0, grew = 0, took = 0, took_subs = 0, spent_ns = 0, last_ns = 0, lines = 0;
++	const uint64_t  t0 = SoftCp::now_ns();
++	struct stat     st {};
++	looks++;
++	if (fstat(fd, &st) == 0 && zp412::look(seen, static_cast<uint64_t>(st.st_blocks))) { // seen = the sample taken BEFORE the scan (zpoll0412.inc, R12)
++		grew++;
++		const uint64_t before = g_zstat_cpu + g_zstat_hits;
++		zskip_take_back(S, fd);
++		const uint64_t n = g_zstat_cpu + g_zstat_hits - before;
++		if (n != 0) {
++			took += n;
++			took_subs++;
++			S.blocks = ~0ull; // a full sync: pin what came back and map it in the canary's place, before this buffer goes out
++			direct_sync_one(S, true); // the pin allocates pages: the next submission sees a changed count and scans once more
++			if (lines++ < 60 || (lines & 63u) == 0) {
++				journal("zero skip poll (exp 0412, tag zp412): t %.3f s: %" PRIu64 " chunks taken back before submission %" PRIu64 " (%.2f ms)\n", timing_now(), n, g_submits.load(),
++				        static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
++			}
++		}
++	}
++	const uint64_t t1 = SoftCp::now_ns();
++	spent_ns += t1 - t0;
++	if (t1 - last_ns >= 10'000'000'000ull) {
++		last_ns = t1;
++		journal("zero skip poll (exp 0412, tag zp412): t %.0f s: %" PRIu64 " looks, the file had grown at %" PRIu64 ", %" PRIu64 " chunks taken back at %" PRIu64 " submissions; %.1f MiB still skipped; %.1f ms spent in all\n",
++		        timing_now(), looks, grew, took, took_subs, static_cast<double>(g_zskip.bytes()) / 1048576.0, static_cast<double>(spent_ns) / 1e6);
++	}
++}
 +static void submit_one(const uint32_t* ib, uint32_t num_dwords, const char* kind);
 +static void chain_flush(int why); // ADR 0010, defined below
 +
@@ -42863,6 +42917,7 @@ index 0000000..e5f4cb8
 +	// page fault on the BC-250 ends in a reset that takes the machine down (F6, experiment 0016).
 +	// Experiment 0037: the device keeps this list sorted and rebuilds it only when a mapping
 +	// changes (a copy and a sort of 12,000 mappings per submission before).
++	zpoll412_submit(); // exp 0412 (tag zp412)
 +	aliases_apply(false); // experiment 0056
 +	// Experiment 0057: BC5_DIRECT_IB_DUMP=<min>:<max>:<t0>:<count>[:<dir>] writes the first <count>
 +	// buffers of <min>..<max> dwords submitted from <t0> s on, as the game wrote them, to
