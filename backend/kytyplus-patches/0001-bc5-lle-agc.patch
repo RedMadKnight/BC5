@@ -52276,7 +52276,7 @@ index 51c3a0e..0e02d2b 100644
  	AddLibkernelUnityFunc(s, "Qhv5ARAoOEc",
  	                      reinterpret_cast<uint64_t>(LibKernel::KernelRemoveExceptionHandler),
 diff --git a/src/libs/libNet.cpp b/src/libs/libNet.cpp
-index 1b9db8a..0cdeb6a 100644
+index 1b9db8a..cd8a08a 100644
 --- a/src/libs/libNet.cpp
 +++ b/src/libs/libNet.cpp
 @@ -2,15 +2,20 @@
@@ -52704,7 +52704,115 @@ index 1b9db8a..0cdeb6a 100644
  	LIB_FUNC("jO8DM8oyego", LibNpEntitlementAccess::NpEntitlementAccessInitialize);
  	LIB_FUNC("lPDO62PpJIA", LibNpEntitlementAccess::NpEntitlementAccessGetSkuFlag);
  	LIB_FUNC("TFyU+KFBv54",
-@@ -2209,6 +2484,45 @@ static int KYTY_SYSV_ABI NpTrophy2DestroyContext(int context) {
+@@ -1823,6 +2098,93 @@ static int KYTY_SYSV_ABI NpAuthGetIdTokenV3(int req_id, const void* param, void*
+ 	return np_auth_complete_signed_out(request);
+ }
+ 
++// ---- BC5 experiment 0405 (series e7 of experiment 0401), tag tbp: KYTY_BC5_LOAD_NPAUTH, the dead NpAuth table's five ----
++// Exp 0405 decision 4: libNp.cpp's NpAuth table (sceNpAuthGetAuthorizationCode/A, sceNpAuthGetIdToken/A,
++// sceNpAuthSetTimeout), which Libs::InitAll never loaded, is ported here, next to this table's request state, so that the
++// state has one owner. InitNet_1_NpAuth registers the five only when KYTY_BC5_LOAD_NPAUTH is on; unset, empty or "0" is
++// off: today's eight NIDs and nothing else. libNp.cpp's NpAuth table stays unloaded in both states, so no NID is
++// registered twice. On, they answer as AnyPS5 (github.com/boykopovar/AnyPS5, GPL-2.0-only) @
++// 4f41f4c375f5abb487dbd184fbc150f31994d762, core/libs/prx/libSceNpAuth/Export.cpp:
++//  - :115-121 and :162-168: GetAuthorizationCode/A and GetIdToken/A forward to the V3 calls (NpAuthGetAuthorizationCodeV3
++//    and NpAuthGetIdTokenV3 above, unchanged), after V3's own null check (:82, :99: a null parameter or output gives
++//    0x80550301 before any request is looked up); the plain GetAuthorizationCode passes no issuer (AnyPS5's
++//    three-argument form). AnyPS5's docs/dev/debt/libSceNpAuth.md:5 names shadPS4 (github.com/shadps4-emu/shadPS4,
++//    GPL-2.0-or-later) @ f68923f, src/core/libraries/np/np_auth/np_auth.cpp:189-199 and 375-383, as the source: the A
++//    forms differ from V3 only in a version flag.
++//  - :137-150: SetTimeout checks its arguments first (also shadPS4 @ 60c42b9, np_auth.cpp:201-219): a negative retry
++//    count, all five values 0, a resolve timeout under 1 s, or a connect, send or receive timeout under 10 s (0 means "no
++//    effect") give 0x80550301; then an unknown request gives 0x80550306; else 0. The values are not kept: nothing would
++//    read them (AnyPS5 keeps them for a transport that does not exist, debt :11).
++// Nothing here is measured on a console (TODO(verify)). AnyPS5's and shadPS4's copyrights remain with their authors;
++// GPL-2.0 as the rest of this file.
++static bool Bc5TbpAuthOn() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_LOAD_NPAUTH");
++		const bool  v = e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
++		std::fprintf(stderr, "%s\n",
++		             v ? "[bc5] exp 0405: npauth port on (items: getters settimeout)"
++		               : "[bc5] exp 0405: npauth port off");
++		std::fflush(stderr);
++		return v;
++	}();
++	return on;
++}
++
++static int KYTY_SYSV_ABI NpAuthGetAuthorizationCode(int req_id, const void* param, void* auth_code) {
++	PRINT_NAME();
++	if (param == nullptr || auth_code == nullptr) {
++		return NP_AUTH_ERROR_INVALID_ARGUMENT;
++	}
++	return NpAuthGetAuthorizationCodeV3(req_id, param, auth_code, nullptr);
++}
++
++static int KYTY_SYSV_ABI NpAuthGetAuthorizationCodeA(int req_id, const void* param, void* auth_code, int* issuer_id) {
++	PRINT_NAME();
++	if (param == nullptr || auth_code == nullptr) {
++		return NP_AUTH_ERROR_INVALID_ARGUMENT;
++	}
++	return NpAuthGetAuthorizationCodeV3(req_id, param, auth_code, issuer_id);
++}
++
++static int KYTY_SYSV_ABI NpAuthGetIdToken(int req_id, const void* param, void* id_token) {
++	PRINT_NAME();
++	if (param == nullptr || id_token == nullptr) {
++		return NP_AUTH_ERROR_INVALID_ARGUMENT;
++	}
++	return NpAuthGetIdTokenV3(req_id, param, id_token);
++}
++
++static int KYTY_SYSV_ABI NpAuthGetIdTokenA(int req_id, const void* param, void* id_token) {
++	PRINT_NAME();
++	if (param == nullptr || id_token == nullptr) {
++		return NP_AUTH_ERROR_INVALID_ARGUMENT;
++	}
++	return NpAuthGetIdTokenV3(req_id, param, id_token);
++}
++
++// 0 leaves a timeout as it is; any other value must reach its minimum (1 s to resolve, 10 s for the others).
++static bool Bc5TbpAuthTimeoutOk(uint32_t usec, uint32_t min_usec) {
++	return usec == 0 || usec >= min_usec;
++}
++
++static int KYTY_SYSV_ABI NpAuthSetTimeout(int req_id, int32_t resolve_retry, uint32_t resolve_timeout,
++                                          uint32_t connect_timeout, uint32_t send_timeout, uint32_t receive_timeout) {
++	PRINT_NAME();
++	constexpr uint32_t resolve_min  = 1000000;
++	constexpr uint32_t transfer_min = 10000000;
++	if (resolve_retry < 0 || (resolve_retry == 0 && resolve_timeout == 0 && connect_timeout == 0 && send_timeout == 0 &&
++	                          receive_timeout == 0)) {
++		return NP_AUTH_ERROR_INVALID_ARGUMENT;
++	}
++	if (!Bc5TbpAuthTimeoutOk(resolve_timeout, resolve_min) || !Bc5TbpAuthTimeoutOk(connect_timeout, transfer_min) ||
++	    !Bc5TbpAuthTimeoutOk(send_timeout, transfer_min) || !Bc5TbpAuthTimeoutOk(receive_timeout, transfer_min)) {
++		return NP_AUTH_ERROR_INVALID_ARGUMENT;
++	}
++	std::scoped_lock lock(g_np_auth_request_mutex);
++	return np_auth_find_request(req_id) == nullptr ? NP_AUTH_ERROR_REQUEST_NOT_FOUND : 0;
++}
++// ---- end of BC5 experiment 0405 (tbp) NpAuth block ----
++
+ LIB_DEFINE(InitNet_1_NpAuth) {
+ 	LIB_FUNC("6bwFkosYRQg", LibNpAuth::NpAuthCreateRequest);
+ 	LIB_FUNC("N+mr7GjTvr8", LibNpAuth::NpAuthCreateAsyncRequest);
+@@ -1832,6 +2194,13 @@ LIB_DEFINE(InitNet_1_NpAuth) {
+ 	LIB_FUNC("gjSyfzSsDcE", LibNpAuth::NpAuthPollAsync);
+ 	LIB_FUNC("KI4dHLlTNl0", LibNpAuth::NpAuthGetAuthorizationCodeV3);
+ 	LIB_FUNC("RdsFVsgSpZY", LibNpAuth::NpAuthGetIdTokenV3);
++	if (Bc5TbpAuthOn()) { // BC5 experiment 0405 (tbp): libNp.cpp's dead NpAuth table, here with the request state
++		LIB_FUNC("KxGkOrQJTqY", LibNpAuth::NpAuthGetAuthorizationCode);
++		LIB_FUNC("qAUXQ9GdWp8", LibNpAuth::NpAuthGetAuthorizationCodeA);
++		LIB_FUNC("uaB-LoJqHis", LibNpAuth::NpAuthGetIdToken);
++		LIB_FUNC("CocbHVIKPE8", LibNpAuth::NpAuthGetIdTokenA);
++		LIB_FUNC("PM3IZCw-7m0", LibNpAuth::NpAuthSetTimeout);
++	}
+ }
+ 
+ } // namespace LibNpAuth
+@@ -2209,6 +2578,45 @@ static int KYTY_SYSV_ABI NpTrophy2DestroyContext(int context) {
  	return 0;
  }
  
@@ -52750,7 +52858,7 @@ index 1b9db8a..0cdeb6a 100644
  LIB_DEFINE(InitNet_1_NpTrophy2) {
  	LIB_FUNC("Bagshr7OQ6Q", LibNpTrophy2::NpTrophy2CreateContext);
  	LIB_FUNC("Gz1rmUZpROM", LibNpTrophy2::NpTrophy2CreateHandle);
-@@ -2225,6 +2539,12 @@ LIB_DEFINE(InitNet_1_NpTrophy2) {
+@@ -2225,6 +2633,12 @@ LIB_DEFINE(InitNet_1_NpTrophy2) {
  	LIB_FUNC("fYapWA9xVmA", LibNpTrophy2::NpTrophy2AbortHandle);
  	LIB_FUNC("d8P11CI40KE", LibNpTrophy2::NpTrophy2DestroyHandle);
  	LIB_FUNC("sysY2FHYff4", LibNpTrophy2::NpTrophy2DestroyContext);
@@ -52763,7 +52871,7 @@ index 1b9db8a..0cdeb6a 100644
  }
  
  } // namespace LibNpTrophy2
-@@ -3493,6 +3813,17 @@ static int KYTY_SYSV_ABI NpWebApi2PushEventDeletePushContext(int         user_co
+@@ -3493,6 +3907,17 @@ static int KYTY_SYSV_ABI NpWebApi2PushEventDeletePushContext(int         user_co
  	return 0;
  }
  
@@ -52781,7 +52889,7 @@ index 1b9db8a..0cdeb6a 100644
  static int KYTY_SYSV_ABI NpWebApi2PushEventCreateFilter(int lib_ctx_id, int handle_id,
                                                          const char* np_service_name,
                                                          uint32_t    np_service_label,
-@@ -3507,7 +3838,9 @@ static int KYTY_SYSV_ABI NpWebApi2PushEventCreateFilter(int lib_ctx_id, int hand
+@@ -3507,7 +3932,9 @@ static int KYTY_SYSV_ABI NpWebApi2PushEventCreateFilter(int lib_ctx_id, int hand
  	LOGF("\t filter_param     = 0x%016" PRIx64 "\n", reinterpret_cast<uint64_t>(filter_param));
  	LOGF("\t filter_param_num = %" PRIu64 "\n", filter_param_num);
  
@@ -52792,7 +52900,7 @@ index 1b9db8a..0cdeb6a 100644
  
  	return filter_id++;
  }
-@@ -3526,6 +3859,60 @@ static int KYTY_SYSV_ABI NpWebApi2PushEventRegisterCallback(int user_context_id,
+@@ -3526,6 +3953,60 @@ static int KYTY_SYSV_ABI NpWebApi2PushEventRegisterCallback(int user_context_id,
  	return callback_id++;
  }
  
@@ -52853,7 +52961,7 @@ index 1b9db8a..0cdeb6a 100644
  static void KYTY_SYSV_ABI NpWebApi2CheckTimeout() {
  	// Timeout processing is an internal maintenance tick in Prospero. Requests
  	// complete synchronously in this implementation, so there is no pending
-@@ -3542,6 +3929,10 @@ static int KYTY_SYSV_ABI NpWebApi2Terminate(int lib_ctx_id) {
+@@ -3542,6 +4023,10 @@ static int KYTY_SYSV_ABI NpWebApi2Terminate(int lib_ctx_id) {
  
  LIB_DEFINE(InitNet_1_NpWebApi2) {
  	LIB_FUNC("+o9816YQhqQ", LibNpWebApi2::NpWebApi2Initialize);
@@ -52865,10 +52973,10 @@ index 1b9db8a..0cdeb6a 100644
  	LIB_FUNC("sk54bi6FtYM", LibNpWebApi2::NpWebApi2CreateUserContext);
  	LIB_FUNC("9X9+cneTGUU", LibNpWebApi2::NpWebApi2DeleteUserContext);
 diff --git a/src/libs/libNp.cpp b/src/libs/libNp.cpp
-index a0aee52..5427455 100644
+index a0aee52..b1a4573 100644
 --- a/src/libs/libNp.cpp
 +++ b/src/libs/libNp.cpp
-@@ -12,10 +12,35 @@
+@@ -12,10 +12,36 @@
  
  #include <common/abi.h>
  
@@ -52888,6 +52996,7 @@ index a0aee52..5427455 100644
 +#include <map>
 +#include <mutex>
 +#include <optional>
++#include <atomic> // BC5 experiment 0405 (series e7 of experiment 0401, tag tbp): the NpParty and NpPartner001 flags
 +#include <set>
 +#include <string>
 +
@@ -52904,7 +53013,7 @@ index a0aee52..5427455 100644
  constexpr int NP_NOT_SIGNED_IN = static_cast<int>(0x80550005u);
  
  namespace NpAuth {
-@@ -61,148 +86,633 @@ namespace NpCommon {
+@@ -61,148 +87,633 @@ namespace NpCommon {
  
  LIB_VERSION("libSceNpCommon", 1, "libSceNpCommon", 1, 1);
  
@@ -53566,7 +53675,7 @@ index a0aee52..5427455 100644
  	LIB_FUNC("i8UmXTSq7N4", NpCommon::sceNpCmpNpId);
  	LIB_FUNC("TcwEFnakiSc", NpCommon::sceNpCmpNpIdInOrder);
  	LIB_FUNC("dj+O5aD2a0Q", NpCommon::sceNpCmpOnlineId);
-@@ -238,78 +748,275 @@ namespace NpManager {
+@@ -238,78 +749,275 @@ namespace NpManager {
  
  LIB_VERSION("libSceNpManager", 1, "libSceNpManager", 1, 1);
  
@@ -53857,7 +53966,7 @@ index a0aee52..5427455 100644
  	return NP_NOT_SIGNED_IN;
  }
  
-@@ -323,8 +1030,11 @@ static int KYTY_SYSV_ABI sceNpUnregisterGamePresenceCallbackA() {
+@@ -323,8 +1031,11 @@ static int KYTY_SYSV_ABI sceNpUnregisterGamePresenceCallbackA() {
  	return OK;
  }
  
@@ -53870,7 +53979,7 @@ index a0aee52..5427455 100644
  	return NP_NOT_SIGNED_IN;
  }
  
-@@ -333,23 +1043,35 @@ static int KYTY_SYSV_ABI sceNpUnregisterPlusEventCallback() {
+@@ -333,23 +1044,35 @@ static int KYTY_SYSV_ABI sceNpUnregisterPlusEventCallback() {
  	return OK;
  }
  
@@ -53909,7 +54018,7 @@ index a0aee52..5427455 100644
  	return OK;
  }
  
-@@ -375,6 +1097,7 @@ static int KYTY_SYSV_ABI sceNpUnregisterStateCallbackForToolkit() {
+@@ -375,6 +1098,7 @@ static int KYTY_SYSV_ABI sceNpUnregisterStateCallbackForToolkit() {
  
  
  LIB_DEFINE(InitNpManager_1) {
@@ -53917,7 +54026,7 @@ index a0aee52..5427455 100644
  	LIB_FUNC("8Z2Jc5GvGDI", NpManager::sceNpCheckNpAvailabilityA);
  	LIB_FUNC("r6MyYJkryz8", NpManager::sceNpCheckPlus);
  	LIB_FUNC("KZ1Mj9yEGYc", NpManager::sceNpGetAccountLanguage);
-@@ -398,8 +1121,10 @@ LIB_DEFINE(InitNpManager_1) {
+@@ -398,8 +1122,10 @@ LIB_DEFINE(InitNpManager_1) {
  	LIB_FUNC("VgYczPGB5ss", NpManager::sceNpGetUserIdByAccountId);
  	LIB_FUNC("F6E4ycq9Dbg", NpManager::sceNpGetUserIdByOnlineId);
  	LIB_FUNC("JELHf4xPufo", NpManager::sceNpCheckCallbackForLib);
@@ -53930,7 +54039,458 @@ index a0aee52..5427455 100644
  	LIB_FUNC("0c7HbXRKUt4", NpManager::sceNpRegisterStateCallbackForToolkit);
  	LIB_FUNC("YIvqqvJyjEc", NpManager::sceNpUnregisterStateCallbackForToolkit);
  }
-@@ -622,8 +1347,495 @@ namespace NpTrophy {
+@@ -409,8 +1135,64 @@ namespace NpPartner {
+ 
+ LIB_VERSION("libSceNpPartner001", 1, "libSceNpPartner001", 1, 1);
+ 
++// ---- BC5 experiment 0405 (series e7 of experiment 0401), tag tbp: KYTY_BC5_LOAD_NPPARTNER, the NpPartner001 table's port ----
++// Exp 0405 decision 4: this table is loaded behind KYTY_BC5_LOAD_NPPARTNER (libs.cpp). Unset, empty or "0" is off: every
++// stub below takes today's path (PRINT_NAME, return OK). On, three of its four exports answer as AnyPS5
++// (github.com/boykopovar/AnyPS5, GPL-2.0-only) @ 4f41f4c375f5abb487dbd184fbc150f31994d762,
++// core/libs/prx/libSceNpPartner001/Export.cpp:9-33: Initialize and Terminate set and clear a flag without contacting a
++// server, and sceNpHasEAAccessSubscription(user, result) writes false (no subscription) and gives 0. Where AnyPS5 throws
++// (Terminate or HasEAAccessSubscription before Initialize, a null result) the answers are shadPS4's
++// (github.com/shadps4-emu/shadPS4, GPL-2.0-or-later) @ 60c42b9, src/core/libraries/np/np_partner.cpp:17-59 and
++// np_partner_error.h:8-9: 0x819D0001 (not initialized) and 0x819D0002 (invalid argument), PS4 values whose PS5 values are
++// unverified (AnyPS5 docs/dev/debt/libSceNpPartner001.md:10-11; TODO(verify)); a second Initialize gives 0, as in
++// shadPS4. Nothing here is measured on a console. Held: pQfYTZHznMc (sceNpHasEAAccessSubscriptionAbortRequest), a
++// placeholder in AnyPS5 (debt :5: its name, signature and behaviour are unverified there). On, InitNpPartner_1 does not
++// register it, so a title's call shows the loader's stubbed-import line; off, it is registered as today.
++// AnyPS5's and shadPS4's copyrights remain with their authors; GPL-2.0 as the rest of this file.
++static bool Bc5TbpPartnerOn() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_LOAD_NPPARTNER");
++		const bool  v = e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
++		std::fprintf(stderr, "%s\n",
++		             v ? "[bc5] exp 0405: nppartner port on (items: init subscription)"
++		               : "[bc5] exp 0405: nppartner port off");
++		std::fflush(stderr);
++		return v;
++	}();
++	return on;
++}
++
++constexpr int BC5_TBP_PARTNER_NOT_INITIALIZED  = static_cast<int>(0x819D0001u);
++constexpr int BC5_TBP_PARTNER_INVALID_ARGUMENT = static_cast<int>(0x819D0002u);
++
++static std::atomic<bool> g_bc5_tbp_partner_up {false};
++
++static int Bc5TbpPartnerInitialize() {
++	g_bc5_tbp_partner_up = true;
++	return OK;
++}
++
++static int Bc5TbpPartnerTerminate() {
++	return g_bc5_tbp_partner_up.exchange(false) ? OK : BC5_TBP_PARTNER_NOT_INITIALIZED;
++}
++
++static int Bc5TbpPartnerHasSubscription(bool* result) {
++	if (!g_bc5_tbp_partner_up) {
++		return BC5_TBP_PARTNER_NOT_INITIALIZED;
++	}
++	if (result == nullptr) {
++		return BC5_TBP_PARTNER_INVALID_ARGUMENT;
++	}
++	*result = false; // no EA Access server: never a subscription
++	return OK;
++}
++// ---- end of BC5 experiment 0405 (tbp) NpPartner001 block ----
++
+ static int KYTY_SYSV_ABI sceNpEAAccessTerminate() {
+ 	PRINT_NAME();
++	if (Bc5TbpPartnerOn()) { // BC5 experiment 0405 (tbp): the port, KYTY_BC5_LOAD_NPPARTNER
++		return Bc5TbpPartnerTerminate();
++	}
+ 	return OK;
+ }
+ 
+@@ -421,18 +1203,27 @@ static int KYTY_SYSV_ABI sceNpHasEAAccessSubscriptionAbortRequest() {
+ 
+ static int KYTY_SYSV_ABI sceNpEAAccessInitialize() {
+ 	PRINT_NAME();
++	if (Bc5TbpPartnerOn()) { // BC5 experiment 0405 (tbp): the port, KYTY_BC5_LOAD_NPPARTNER
++		return Bc5TbpPartnerInitialize();
++	}
+ 	return OK;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpHasEAAccessSubscription() {
++static int KYTY_SYSV_ABI sceNpHasEAAccessSubscription(int user_id, bool* result) {
+ 	PRINT_NAME();
++	if (Bc5TbpPartnerOn()) { // BC5 experiment 0405 (tbp): the port, KYTY_BC5_LOAD_NPPARTNER
++		return (static_cast<void>(user_id), Bc5TbpPartnerHasSubscription(result));
++	}
+ 	return OK;
+ }
+ 
+ 
+ LIB_DEFINE(InitNpPartner_1) {
++	(void)Bc5TbpPartnerOn(); // BC5 experiment 0405 (tbp): reads KYTY_BC5_LOAD_NPPARTNER once, prints its line
+ 	LIB_FUNC("pMxXhNozUX8", NpPartner::sceNpEAAccessTerminate);
+-	LIB_FUNC("pQfYTZHznMc", NpPartner::sceNpHasEAAccessSubscriptionAbortRequest);
++	if (!Bc5TbpPartnerOn()) { // BC5 experiment 0405 (tbp): held, registered only when KYTY_BC5_LOAD_NPPARTNER is off
++		LIB_FUNC("pQfYTZHznMc", NpPartner::sceNpHasEAAccessSubscriptionAbortRequest);
++	}
+ 	LIB_FUNC("7CxI50-xlCk", NpPartner::sceNpEAAccessInitialize);
+ 	LIB_FUNC("+OnbUs1CV0M", NpPartner::sceNpHasEAAccessSubscription);
+ }
+@@ -442,8 +1233,106 @@ namespace NpParty {
+ 
+ LIB_VERSION("libSceNpParty", 1, "libSceNpParty", 1, 1);
+ 
++// ---- BC5 experiment 0405 (series e7 of experiment 0401), tag tbp: KYTY_BC5_LOAD_NPPARTY, the NpParty table's port ----
++// Exp 0405 decision 4: this table is loaded behind KYTY_BC5_LOAD_NPPARTY (libs.cpp). Unset, empty or "0" is off: every
++// stub below takes today's path (PRINT_NAME, return 0x80550005). On, the 15 exports AnyPS5 implements answer as AnyPS5
++// (github.com/boykopovar/AnyPS5, GPL-2.0-only) @ 4f41f4c375f5abb487dbd184fbc150f31994d762,
++// core/libs/prx/libSceNpParty/Export.cpp:8-38, 50-76, 83-87, 94-99, 111-119, 126-128 and 145-148; the user is never in a
++// party:
++//  - Initialize (its parameter is required) and Terminate set and clear a flag; before Initialize and after Terminate
++//    every other call gives NOT_INITIALIZED first;
++//  - GetState writes the 16-bit state 2 (not in a party); GetStateAsUserA refuses user -1, then answers as GetState;
++//  - the id, member and send calls give NOT_IN_PARTY and write nothing (a null output gives INVALID_ARGUMENT);
++//  - the handlers are accepted and never called, as no party event can happen.
++// The error values 0x80552502-0x80552506 and the state value 2 are shadPS4's (github.com/shadps4-emu/shadPS4,
++// GPL-2.0-or-later) @ 60c42b9, src/core/libraries/np/np_error.h:404-408 and np_party.h:14-17 (PS4). AnyPS5's
++// docs/dev/debt/libSceNpParty.md:5-6 says the NOT_INITIALIZED order and the user -1 answer follow a run of firmware
++// 13.42's module under an emulator (github.com/boykopovar/AnyPS5/pull/12948): a firmware run, accepted by the maintainer's
++// decision 1 of 2026-11-04. Nothing is measured on a PS5 (TODO(verify)). Held: the 11 exports AnyPS5 leaves unimplemented
++// (Create, CreateA, GetStateAsUser, GetVoiceChatPriority, Join, Leave, RegisterPrivateHandler, SetVoiceChatPriority,
++// ShowInvitationList, ShowInvitationListA, UnregisterPrivateHandler). On, InitNpParty_1 does not register them, so a
++// title's call shows the loader's stubbed-import line; off, they are registered as today (0x80550005).
++// AnyPS5's and shadPS4's copyrights remain with their authors; GPL-2.0 as the rest of this file.
++static bool Bc5TbpPartyOn() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_LOAD_NPPARTY");
++		const bool  v = e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
++		std::fprintf(stderr, "%s\n",
++		             v ? "[bc5] exp 0405: npparty port on (items: init state members handler message)"
++		               : "[bc5] exp 0405: npparty port off");
++		std::fflush(stderr);
++		return v;
++	}();
++	return on;
++}
++
++constexpr int      BC5_TBP_PARTY_ALREADY_INITIALIZED = static_cast<int>(0x80552502u);
++constexpr int      BC5_TBP_PARTY_NOT_INITIALIZED     = static_cast<int>(0x80552503u);
++constexpr int      BC5_TBP_PARTY_INVALID_ARGUMENT    = static_cast<int>(0x80552504u);
++constexpr int      BC5_TBP_PARTY_NOT_IN_PARTY        = static_cast<int>(0x80552506u);
++constexpr uint16_t BC5_TBP_PARTY_STATE_NOT_IN_PARTY  = 2;
++
++static std::atomic<bool> g_bc5_tbp_party_up {false};
++
++static int Bc5TbpPartyInitialize(const void* param) {
++	if (param == nullptr) {
++		return BC5_TBP_PARTY_INVALID_ARGUMENT;
++	}
++	bool was_up = false;
++	return g_bc5_tbp_party_up.compare_exchange_strong(was_up, true) ? OK : BC5_TBP_PARTY_ALREADY_INITIALIZED;
++}
++
++static int Bc5TbpPartyTerminate() {
++	return g_bc5_tbp_party_up.exchange(false) ? OK : BC5_TBP_PARTY_NOT_INITIALIZED;
++}
++
++static int Bc5TbpPartyCheckCallback() {
++	return g_bc5_tbp_party_up ? OK : BC5_TBP_PARTY_NOT_INITIALIZED;
++}
++
++static int Bc5TbpPartyGetState(uint16_t* state) {
++	if (!g_bc5_tbp_party_up) {
++		return BC5_TBP_PARTY_NOT_INITIALIZED;
++	}
++	if (state == nullptr) {
++		return BC5_TBP_PARTY_INVALID_ARGUMENT;
++	}
++	*state = BC5_TBP_PARTY_STATE_NOT_IN_PARTY;
++	return OK;
++}
++
++static int Bc5TbpPartyGetStateAsUser(int32_t user_id, uint16_t* state) {
++	if (!g_bc5_tbp_party_up) {
++		return BC5_TBP_PARTY_NOT_INITIALIZED;
++	}
++	if (user_id == -1) {
++		return BC5_TBP_PARTY_INVALID_ARGUMENT;
++	}
++	return Bc5TbpPartyGetState(state);
++}
++
++// The id, member and send calls: never in a party, so there is nothing to write.
++static int Bc5TbpPartyNotInParty(const void* out) {
++	if (!g_bc5_tbp_party_up) {
++		return BC5_TBP_PARTY_NOT_INITIALIZED;
++	}
++	return out == nullptr ? BC5_TBP_PARTY_INVALID_ARGUMENT : BC5_TBP_PARTY_NOT_IN_PARTY;
++}
++
++// The handlers are kept nowhere: no party event can happen, so none is ever called.
++static int Bc5TbpPartyRegisterHandler(const void* handlers) {
++	if (!g_bc5_tbp_party_up) {
++		return BC5_TBP_PARTY_NOT_INITIALIZED;
++	}
++	return handlers == nullptr ? BC5_TBP_PARTY_INVALID_ARGUMENT : OK;
++}
++// ---- end of BC5 experiment 0405 (tbp) NpParty block ----
++
+ static int KYTY_SYSV_ABI sceNpPartyCheckCallback() {
+ 	PRINT_NAME();
++	if (Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): the port, KYTY_BC5_LOAD_NPPARTY
++		return Bc5TbpPartyCheckCallback();
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+@@ -457,43 +1346,67 @@ static int KYTY_SYSV_ABI sceNpPartyCreateA() {
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpPartyGetId() {
++static int KYTY_SYSV_ABI sceNpPartyGetId(void* party_id) {
+ 	PRINT_NAME();
++	if (Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): the port, KYTY_BC5_LOAD_NPPARTY
++		return Bc5TbpPartyNotInParty(party_id);
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpPartyGetMemberInfo() {
++static int KYTY_SYSV_ABI sceNpPartyGetMemberInfo(uint16_t member, void* info) {
+ 	PRINT_NAME();
++	if (Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): the port, KYTY_BC5_LOAD_NPPARTY
++		return (static_cast<void>(member), Bc5TbpPartyNotInParty(info));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpPartyGetMemberInfoA() {
++static int KYTY_SYSV_ABI sceNpPartyGetMemberInfoA(uint16_t member, void* info) {
+ 	PRINT_NAME();
++	if (Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): the port, KYTY_BC5_LOAD_NPPARTY
++		return (static_cast<void>(member), Bc5TbpPartyNotInParty(info));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpPartyGetMembers() {
++static int KYTY_SYSV_ABI sceNpPartyGetMembers(void* members) {
+ 	PRINT_NAME();
++	if (Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): the port, KYTY_BC5_LOAD_NPPARTY
++		return Bc5TbpPartyNotInParty(members);
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpPartyGetMembersA() {
++static int KYTY_SYSV_ABI sceNpPartyGetMembersA(void* members) {
+ 	PRINT_NAME();
++	if (Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): the port, KYTY_BC5_LOAD_NPPARTY
++		return Bc5TbpPartyNotInParty(members);
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpPartyGetMemberSessionInfo() {
++static int KYTY_SYSV_ABI sceNpPartyGetMemberSessionInfo(uint16_t member, void* info) {
+ 	PRINT_NAME();
++	if (Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): the port, KYTY_BC5_LOAD_NPPARTY
++		return (static_cast<void>(member), Bc5TbpPartyNotInParty(info));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpPartyGetMemberVoiceInfo() {
++static int KYTY_SYSV_ABI sceNpPartyGetMemberVoiceInfo(uint16_t member, uint16_t other, uint8_t* voice) {
+ 	PRINT_NAME();
++	if (Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): the port, KYTY_BC5_LOAD_NPPARTY
++		return (static_cast<void>(member), static_cast<void>(other), Bc5TbpPartyNotInParty(voice));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpPartyGetState() {
++static int KYTY_SYSV_ABI sceNpPartyGetState(uint16_t* state) {
+ 	PRINT_NAME();
++	if (Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): the port, KYTY_BC5_LOAD_NPPARTY
++		return Bc5TbpPartyGetState(state);
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+@@ -502,8 +1415,11 @@ static int KYTY_SYSV_ABI sceNpPartyGetStateAsUser() {
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpPartyGetStateAsUserA() {
++static int KYTY_SYSV_ABI sceNpPartyGetStateAsUserA(int32_t user_id, uint16_t* state) {
+ 	PRINT_NAME();
++	if (Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): the port, KYTY_BC5_LOAD_NPPARTY
++		return Bc5TbpPartyGetStateAsUser(user_id, state);
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+@@ -512,8 +1428,11 @@ static int KYTY_SYSV_ABI sceNpPartyGetVoiceChatPriority() {
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpPartyInitialize() {
++static int KYTY_SYSV_ABI sceNpPartyInitialize(const void* param) {
+ 	PRINT_NAME();
++	if (Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): the port, KYTY_BC5_LOAD_NPPARTY
++		return Bc5TbpPartyInitialize(param);
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+@@ -527,13 +1446,19 @@ static int KYTY_SYSV_ABI sceNpPartyLeave() {
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpPartyRegisterHandler() {
++static int KYTY_SYSV_ABI sceNpPartyRegisterHandler(const void* handlers, void* user_arg) {
+ 	PRINT_NAME();
++	if (Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): the port, KYTY_BC5_LOAD_NPPARTY
++		return (static_cast<void>(user_arg), Bc5TbpPartyRegisterHandler(handlers));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpPartyRegisterHandlerA() {
++static int KYTY_SYSV_ABI sceNpPartyRegisterHandlerA(const void* handlers, void* user_arg) {
+ 	PRINT_NAME();
++	if (Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): the port, KYTY_BC5_LOAD_NPPARTY
++		return (static_cast<void>(user_arg), Bc5TbpPartyRegisterHandler(handlers));
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+@@ -542,8 +1467,11 @@ static int KYTY_SYSV_ABI sceNpPartyRegisterPrivateHandler() {
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+-static int KYTY_SYSV_ABI sceNpPartySendBinaryMessage() {
++static int KYTY_SYSV_ABI sceNpPartySendBinaryMessage(const void* message) {
+ 	PRINT_NAME();
++	if (Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): the port, KYTY_BC5_LOAD_NPPARTY
++		return Bc5TbpPartyNotInParty(message);
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+@@ -564,6 +1492,9 @@ static int KYTY_SYSV_ABI sceNpPartyShowInvitationListA() {
+ 
+ static int KYTY_SYSV_ABI sceNpPartyTerminate() {
+ 	PRINT_NAME();
++	if (Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): the port, KYTY_BC5_LOAD_NPPARTY
++		return Bc5TbpPartyTerminate();
++	}
+ 	return NP_NOT_SIGNED_IN;
+ }
+ 
+@@ -574,9 +1505,14 @@ static int KYTY_SYSV_ABI sceNpPartyUnregisterPrivateHandler() {
+ 
+ 
+ LIB_DEFINE(InitNpParty_1) {
++	(void)Bc5TbpPartyOn(); // BC5 experiment 0405 (tbp): reads KYTY_BC5_LOAD_NPPARTY once, prints its line
+ 	LIB_FUNC("3e4k2mzLkmc", NpParty::sceNpPartyCheckCallback);
+-	LIB_FUNC("nOZRy-slBoA", NpParty::sceNpPartyCreate);
+-	LIB_FUNC("XQSUbbnpPBA", NpParty::sceNpPartyCreateA);
++	if (!Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): held, registered only when KYTY_BC5_LOAD_NPPARTY is off
++		LIB_FUNC("nOZRy-slBoA", NpParty::sceNpPartyCreate);
++	}
++	if (!Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): held, registered only when KYTY_BC5_LOAD_NPPARTY is off
++		LIB_FUNC("XQSUbbnpPBA", NpParty::sceNpPartyCreateA);
++	}
+ 	LIB_FUNC("DRA3ay-1DFQ", NpParty::sceNpPartyGetId);
+ 	LIB_FUNC("F1P+-wpxQow", NpParty::sceNpPartyGetMemberInfo);
+ 	LIB_FUNC("v2RYVGrJDkM", NpParty::sceNpPartyGetMemberInfoA);
+@@ -585,21 +1521,39 @@ LIB_DEFINE(InitNpParty_1) {
+ 	LIB_FUNC("4gOMfNYzllw", NpParty::sceNpPartyGetMemberSessionInfo);
+ 	LIB_FUNC("EKi1jx59SP4", NpParty::sceNpPartyGetMemberVoiceInfo);
+ 	LIB_FUNC("aEzKdJzATZ0", NpParty::sceNpPartyGetState);
+-	LIB_FUNC("o7grRhiGHYI", NpParty::sceNpPartyGetStateAsUser);
++	if (!Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): held, registered only when KYTY_BC5_LOAD_NPPARTY is off
++		LIB_FUNC("o7grRhiGHYI", NpParty::sceNpPartyGetStateAsUser);
++	}
+ 	LIB_FUNC("EjyAI+QNgFw", NpParty::sceNpPartyGetStateAsUserA);
+-	LIB_FUNC("-lc6XZnQXvM", NpParty::sceNpPartyGetVoiceChatPriority);
++	if (!Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): held, registered only when KYTY_BC5_LOAD_NPPARTY is off
++		LIB_FUNC("-lc6XZnQXvM", NpParty::sceNpPartyGetVoiceChatPriority);
++	}
+ 	LIB_FUNC("lhYCTQmBkds", NpParty::sceNpPartyInitialize);
+-	LIB_FUNC("RXNCDw2GDEg", NpParty::sceNpPartyJoin);
+-	LIB_FUNC("J8jAi-tfJHc", NpParty::sceNpPartyLeave);
++	if (!Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): held, registered only when KYTY_BC5_LOAD_NPPARTY is off
++		LIB_FUNC("RXNCDw2GDEg", NpParty::sceNpPartyJoin);
++	}
++	if (!Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): held, registered only when KYTY_BC5_LOAD_NPPARTY is off
++		LIB_FUNC("J8jAi-tfJHc", NpParty::sceNpPartyLeave);
++	}
+ 	LIB_FUNC("kA88gbv71ao", NpParty::sceNpPartyRegisterHandler);
+ 	LIB_FUNC("+v4fVHMwFWc", NpParty::sceNpPartyRegisterHandlerA);
+-	LIB_FUNC("zo4G5WWYpKg", NpParty::sceNpPartyRegisterPrivateHandler);
++	if (!Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): held, registered only when KYTY_BC5_LOAD_NPPARTY is off
++		LIB_FUNC("zo4G5WWYpKg", NpParty::sceNpPartyRegisterPrivateHandler);
++	}
+ 	LIB_FUNC("U6VdUe-PNAY", NpParty::sceNpPartySendBinaryMessage);
+-	LIB_FUNC("nazKyHygHhY", NpParty::sceNpPartySetVoiceChatPriority);
+-	LIB_FUNC("-MFiL7hEnPE", NpParty::sceNpPartyShowInvitationList);
+-	LIB_FUNC("yARHEYLajs0", NpParty::sceNpPartyShowInvitationListA);
++	if (!Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): held, registered only when KYTY_BC5_LOAD_NPPARTY is off
++		LIB_FUNC("nazKyHygHhY", NpParty::sceNpPartySetVoiceChatPriority);
++	}
++	if (!Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): held, registered only when KYTY_BC5_LOAD_NPPARTY is off
++		LIB_FUNC("-MFiL7hEnPE", NpParty::sceNpPartyShowInvitationList);
++	}
++	if (!Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): held, registered only when KYTY_BC5_LOAD_NPPARTY is off
++		LIB_FUNC("yARHEYLajs0", NpParty::sceNpPartyShowInvitationListA);
++	}
+ 	LIB_FUNC("oLYkibiHqRA", NpParty::sceNpPartyTerminate);
+-	LIB_FUNC("zQ7gIvt11Pc", NpParty::sceNpPartyUnregisterPrivateHandler);
++	if (!Bc5TbpPartyOn()) { // BC5 experiment 0405 (tbp): held, registered only when KYTY_BC5_LOAD_NPPARTY is off
++		LIB_FUNC("zQ7gIvt11Pc", NpParty::sceNpPartyUnregisterPrivateHandler);
++	}
+ }
+ 
+ } // namespace NpParty
+@@ -607,6 +1561,27 @@ namespace NpSnsFacebookDialog {
+ 
+ LIB_VERSION("libSceNpSnsFacebookDialog", 1, "libSceNpSnsFacebookDialog", 1, 1);
+ 
++// ---- BC5 experiment 0405 (series e7 of experiment 0401), tag tbp: KYTY_BC5_LOAD_NPSNSFACEBOOK, the NpSnsFacebookDialog table ----
++// Exp 0405 decision 4: this table is loaded behind KYTY_BC5_LOAD_NPSNSFACEBOOK (libs.cpp). Its one export already answers
++// as AnyPS5 (github.com/boykopovar/AnyPS5, GPL-2.0-only) @ 4f41f4c375f5abb487dbd184fbc150f31994d762,
++// core/libs/prx/libSceNpSnsFacebookDialog/Export.cpp:23 and 45-47: sceNpSnsFacebookDialogUpdateStatus returns the
++// dialog's status, which starts at "none" (0). Only Initialize, Open, Close and Terminate move it, and no table of this
++// tree registers them, so the status cannot leave 0 and today's "return OK" (0) is that answer. Nothing is changed; the
++// switch only prints its line when the table is loaded.
++static bool Bc5TbpFacebookOn() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_LOAD_NPSNSFACEBOOK");
++		const bool  v = e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
++		std::fprintf(stderr, "%s\n",
++		             v ? "[bc5] exp 0405: npsnsfacebook port on (items: none, UpdateStatus already matches)"
++		               : "[bc5] exp 0405: npsnsfacebook port off");
++		std::fflush(stderr);
++		return v;
++	}();
++	return on;
++}
++// ---- end of BC5 experiment 0405 (tbp) NpSnsFacebookDialog block ----
++
+ static int KYTY_SYSV_ABI sceNpSnsFacebookDialogUpdateStatus() {
+ 	PRINT_NAME();
+ 	return OK;
+@@ -614,6 +1589,7 @@ static int KYTY_SYSV_ABI sceNpSnsFacebookDialogUpdateStatus() {
+ 
+ 
+ LIB_DEFINE(InitNpSnsFacebookDialog_1) {
++	(void)Bc5TbpFacebookOn(); // BC5 experiment 0405 (tbp): reads KYTY_BC5_LOAD_NPSNSFACEBOOK once, prints its line
+ 	LIB_FUNC("fjV7C8H0Y8k", NpSnsFacebookDialog::sceNpSnsFacebookDialogUpdateStatus);
+ }
+ 
+@@ -622,8 +1598,495 @@ namespace NpTrophy {
  
  LIB_VERSION("libSceNpTrophy", 1, "libSceNpTrophy", 1, 1);
  
@@ -54428,7 +54988,7 @@ index a0aee52..5427455 100644
  	return OK;
  }
  
-@@ -677,63 +1889,99 @@ static int KYTY_SYSV_ABI sceNpTrophyConfigHasGroupFeature() {
+@@ -677,63 +2140,99 @@ static int KYTY_SYSV_ABI sceNpTrophyConfigHasGroupFeature() {
  	return OK;
  }
  
@@ -54540,7 +55100,7 @@ index a0aee52..5427455 100644
  	return OK;
  }
  
-@@ -792,23 +2040,35 @@ static int KYTY_SYSV_ABI sceNpTrophyIntNetSyncTitles() {
+@@ -792,23 +2291,35 @@ static int KYTY_SYSV_ABI sceNpTrophyIntNetSyncTitles() {
  	return OK;
  }
  
@@ -54580,7 +55140,7 @@ index a0aee52..5427455 100644
  	return OK;
  }
  
-@@ -869,6 +2129,9 @@ static int KYTY_SYSV_ABI sceNpTrophySystemCreateHandle() {
+@@ -869,6 +2380,9 @@ static int KYTY_SYSV_ABI sceNpTrophySystemCreateHandle() {
  
  static int KYTY_SYSV_ABI sceNpTrophySystemDbgCtl() {
  	PRINT_NAME();
@@ -54590,7 +55150,7 @@ index a0aee52..5427455 100644
  	return OK;
  }
  
-@@ -899,11 +2162,17 @@ static int KYTY_SYSV_ABI sceNpTrophySystemDestroyTrophyConfig() {
+@@ -899,11 +2413,17 @@ static int KYTY_SYSV_ABI sceNpTrophySystemDestroyTrophyConfig() {
  
  static int KYTY_SYSV_ABI sceNpTrophySystemGetDbgParam() {
  	PRINT_NAME();
@@ -54608,7 +55168,7 @@ index a0aee52..5427455 100644
  	return OK;
  }
  
-@@ -1024,16 +2293,25 @@ static int KYTY_SYSV_ABI sceNpTrophySystemRemoveUserData() {
+@@ -1024,16 +2544,25 @@ static int KYTY_SYSV_ABI sceNpTrophySystemRemoveUserData() {
  
  static int KYTY_SYSV_ABI sceNpTrophySystemSetDbgParam() {
  	PRINT_NAME();
@@ -54635,7 +55195,7 @@ index a0aee52..5427455 100644
  	return NP_NOT_SIGNED_IN;
  }
  
-@@ -1059,6 +2337,7 @@ static int KYTY_SYSV_ABI Func_FA7A2DD770447552() {
+@@ -1059,6 +2588,7 @@ static int KYTY_SYSV_ABI Func_FA7A2DD770447552() {
  
  
  LIB_DEFINE(InitNpTrophy_1) {
@@ -54643,7 +55203,7 @@ index a0aee52..5427455 100644
  	LIB_FUNC("aTnHs7W-9Uk", NpTrophy::sceNpTrophyAbortHandle);
  	LIB_FUNC("cqGkYAN-gRw", NpTrophy::sceNpTrophyCaptureScreenshot);
  	LIB_FUNC("lhE4XS9OJXs", NpTrophy::sceNpTrophyConfigGetTrophyDetails);
-@@ -1153,248 +2432,963 @@ namespace NpTus {
+@@ -1153,248 +2683,963 @@ namespace NpTus {
  
  LIB_VERSION("libSceNpTus", 1, "libSceNpTus", 1, 1);
  
@@ -55656,7 +56216,7 @@ index a0aee52..5427455 100644
  	return NP_NOT_SIGNED_IN;
  }
  
-@@ -1408,48 +3402,75 @@ static int KYTY_SYSV_ABI sceNpTssGetStorageAsync() {
+@@ -1408,48 +3653,75 @@ static int KYTY_SYSV_ABI sceNpTssGetStorageAsync() {
  	return NP_NOT_SIGNED_IN;
  }
  
@@ -55741,7 +56301,7 @@ index a0aee52..5427455 100644
  	return NP_NOT_SIGNED_IN;
  }
  
-@@ -1458,13 +3479,19 @@ static int KYTY_SYSV_ABI sceNpTusChangeModeForOtherSaveDataOwners() {
+@@ -1458,13 +3730,19 @@ static int KYTY_SYSV_ABI sceNpTusChangeModeForOtherSaveDataOwners() {
  	return NP_NOT_SIGNED_IN;
  }
  
@@ -55763,7 +56323,7 @@ index a0aee52..5427455 100644
  	return NP_NOT_SIGNED_IN;
  }
  
-@@ -1473,338 +3500,539 @@ static int KYTY_SYSV_ABI sceNpTusCreateTitleCtx() {
+@@ -1473,338 +3751,539 @@ static int KYTY_SYSV_ABI sceNpTusCreateTitleCtx() {
  	return NP_NOT_SIGNED_IN;
  }
  
@@ -56370,7 +56930,7 @@ index a0aee52..5427455 100644
  	return NP_NOT_SIGNED_IN;
  }
  
-@@ -1818,53 +4046,82 @@ static int KYTY_SYSV_ABI sceNpTusSetTimeout() {
+@@ -1818,53 +4297,82 @@ static int KYTY_SYSV_ABI sceNpTusSetTimeout() {
  	return NP_NOT_SIGNED_IN;
  }
  
@@ -56462,7 +57022,7 @@ index a0aee52..5427455 100644
  	LIB_FUNC("sRVb2Cf0GHg", NpTus::sceNpTssCreateNpTitleCtx);
  	LIB_FUNC("cRVmNrJDbG8", NpTus::sceNpTusAddAndGetVariable);
  	LIB_FUNC("Q2UmHdK04c8", NpTus::sceNpTusAddAndGetVariableAsync);
-@@ -1914,8 +4171,10 @@ LIB_DEFINE(InitNpTus_1) {
+@@ -1914,8 +4422,10 @@ LIB_DEFINE(InitNpTus_1) {
  	LIB_FUNC("DS2yu3Sjj1o", NpTus::sceNpTssGetDataAsync);
  	LIB_FUNC("lL+Z3zCKNTs", NpTus::sceNpTssGetSmallStorage);
  	LIB_FUNC("f2Pe4LGS2II", NpTus::sceNpTssGetSmallStorageAsync);
@@ -56475,7 +57035,7 @@ index a0aee52..5427455 100644
  	LIB_FUNC("2eq1bMwgZYo", NpTus::sceNpTusAbortRequest);
  	LIB_FUNC("wPFah4-5Xec", NpTus::sceNpTusAddAndGetVariableA);
  	LIB_FUNC("2dB427dT3Iw", NpTus::sceNpTusAddAndGetVariableAAsync);
-@@ -1925,10 +4184,14 @@ LIB_DEFINE(InitNpTus_1) {
+@@ -1925,10 +4435,14 @@ LIB_DEFINE(InitNpTus_1) {
  	LIB_FUNC("mXZi1D2xwZE", NpTus::sceNpTusAddAndGetVariableForCrossSaveAsync);
  	LIB_FUNC("4VLlu7EIjzk", NpTus::sceNpTusAddAndGetVariableForCrossSaveVUser);
  	LIB_FUNC("6Lu9geO5TiA", NpTus::sceNpTusAddAndGetVariableForCrossSaveVUserAsync);
@@ -56492,7 +57052,7 @@ index a0aee52..5427455 100644
  	LIB_FUNC("iXzUOM9sXU0", NpTus::sceNpTusDeleteMultiSlotDataA);
  	LIB_FUNC("6-+Yqc-NppQ", NpTus::sceNpTusDeleteMultiSlotDataAAsync);
  	LIB_FUNC("xutwCvsydkk", NpTus::sceNpTusDeleteMultiSlotDataVUser);
-@@ -1996,8 +4259,10 @@ LIB_DEFINE(InitNpTus_1) {
+@@ -1996,8 +4510,10 @@ LIB_DEFINE(InitNpTus_1) {
  	LIB_FUNC("ypMObSwfcns", NpTus::sceNpTusSetMultiSlotVariableAAsync);
  	LIB_FUNC("1Cz0hTJFyh4", NpTus::sceNpTusSetMultiSlotVariableVUser);
  	LIB_FUNC("CJAxTxQdwHM", NpTus::sceNpTusSetMultiSlotVariableVUserAsync);
