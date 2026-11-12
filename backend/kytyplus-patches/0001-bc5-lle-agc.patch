@@ -16981,10 +16981,10 @@ index bc73d18..fab34b4 100644
  
  #endif /* EMULATOR_INCLUDE_EMULATOR_KERNEL_FILESYSTEM_H_ */
 diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
-index 02fc0fc..43484fc 100644
+index 02fc0fc..a8d0ca6 100644
 --- a/src/kernel/memory.cpp
 +++ b/src/kernel/memory.cpp
-@@ -1,4250 +1,5135 @@
+@@ -1,4250 +1,5331 @@
 -#include "kernel/memory.h"
 -
 -#include "common/assert.h"
@@ -22087,6 +22087,139 @@ index 02fc0fc..43484fc 100644
 +static bool     g_test_fail_next_fixed_reserve_range_add     = false;
 +#endif
 +
++// SPDX-License-Identifier: GPL-2.0-only
++// Experiment 0412 (tag ps412, mksort0412.py; README section 18): PhysicalMemory's mapping table kept sorted by guest
++// address, so a block is found by binary search. Used only with KYTY_BC5_PHYSMAP_SORTED set and only while no two blocks
++// overlap (insert() refuses an overlapping block; the caller then goes back to the old code for the rest of the run).
++// Under that condition the old code's "first block, in insertion order, that matches" is "the block that contains the
++// address", which is what containing() returns. V is a std::vector of blocks with map_vaddr, map_size, start_addr, size,
++// host_vaddr, host_size and gpu_mode. No system call, no global: physmap0412.cpp runs this text against the old code.
++namespace pm412 {
++
++// The block whose [map_vaddr, map_vaddr + map_size) holds addr; end() when none does.
++template <class V> auto containing(V& v, uint64_t addr) {
++	auto it = std::upper_bound(v.begin(), v.end(), addr, [](uint64_t a, const auto& b) { return a < b.map_vaddr; });
++	if (it == v.begin()) return v.end();
++	--it;
++	return addr - it->map_vaddr < it->map_size ? it : v.end();
++}
++
++// A place to start a walk over every block that can overlap [addr, ...): one block before the first that starts after addr.
++template <class V> auto walk_from(V& v, uint64_t addr) {
++	auto it = std::upper_bound(v.begin(), v.end(), addr, [](uint64_t a, const auto& b) { return a < b.map_vaddr; });
++	if (it != v.begin()) --it;
++	return it;
++}
++
++// Puts b in its place. False, and nothing changed, when b is empty, wraps, or overlaps a neighbour.
++template <class V, class B> bool insert(V& v, const B& b) {
++	if (b.map_size == 0 || UINT64_MAX - b.map_vaddr < b.map_size) return false;
++	auto it = std::lower_bound(v.begin(), v.end(), b.map_vaddr, [](const auto& x, uint64_t a) { return x.map_vaddr < a; });
++	if (it != v.end() && it->map_vaddr - b.map_vaddr < b.map_size) return false;
++	if (it != v.begin()) {
++		const auto& p = *std::prev(it);
++		if (b.map_vaddr - p.map_vaddr < p.map_size) return false;
++	}
++	v.insert(it, b);
++	return true;
++}
++
++enum Hit { None = 0, Whole = 1, Middle = 2, Head = 3, Tail = 4 };
++
++// Which of Unmap's four cases the block at `it` matches for [vaddr, vaddr + size), in the old code's order.
++template <class It> Hit match(It it, uint64_t vaddr, uint64_t size) {
++	const auto& b = *it;
++	if (b.map_vaddr == vaddr && b.map_size == size) return Whole;
++	if (vaddr > b.map_vaddr && vaddr + size < b.map_vaddr + b.map_size) return Middle;
++	if (vaddr == b.map_vaddr && size < b.map_size) return Head;
++	if (vaddr > b.map_vaddr && vaddr + size == b.map_vaddr + b.map_size) return Tail;
++	return None;
++}
++
++// The block Unmap acts on, or end(): the one that contains vaddr, when it matches a case.
++template <class V> auto candidate(V& v, uint64_t vaddr, uint64_t size) {
++	auto it = containing(v, vaddr);
++	return it != v.end() && match(it, vaddr, size) != None ? it : v.end();
++}
++
++// The old search, for the verify mode and the CPU test: the first block in vector order that matches a case.
++template <class V> auto linear_first(V& v, uint64_t vaddr, uint64_t size) {
++	for (auto it = v.begin(); it != v.end(); ++it) {
++		if (match(it, vaddr, size) != None) return it;
++	}
++	return v.end();
++}
++
++// Unmap's edit on the sorted table, the old code's statements. For Whole, *host_vaddr and *host_size are the removed
++// block's host mapping (the caller asks host_still_mapped). The table stays sorted and without overlaps.
++template <class V, class G> Hit unmap(V& v, uint64_t vaddr, uint64_t size, G* gpu_mode, uint64_t* host_vaddr, uint64_t* host_size) {
++	auto it = candidate(v, vaddr, size);
++	if (it == v.end()) return None;
++	const Hit h = match(it, vaddr, size);
++	auto&     b = *it;
++	*gpu_mode   = b.gpu_mode;
++	if (h == Whole) {
++		*host_vaddr = b.host_vaddr;
++		*host_size  = b.host_size;
++		v.erase(it);
++	} else if (h == Middle) {
++		auto right = b;
++		right.start_addr += (vaddr + size) - b.map_vaddr;
++		right.size      = b.map_vaddr + b.map_size - (vaddr + size);
++		right.map_size  = right.size;
++		right.map_vaddr = vaddr + size;
++		b.size          = vaddr - b.map_vaddr;
++		b.map_size      = b.size;
++		v.insert(std::next(it), right); // right after its left half: still sorted
++	} else if (h == Head) {
++		b.start_addr += size;
++		b.size -= size;
++		b.map_vaddr += size;
++		b.map_size -= size;
++	} else {
++		b.size     = vaddr - b.map_vaddr;
++		b.map_size = b.size;
++	}
++	return h;
++}
++
++// Whether a block with this host mapping is left. Every block is a piece of the Map() call that made its host mapping
++// (Map sets host_vaddr = vaddr, host_size = len; the splits copy them), so it lies inside the host range.
++template <class V> bool host_still_mapped(V& v, uint64_t host_vaddr, uint64_t host_size) {
++	for (auto it = walk_from(v, host_vaddr); it != v.end(); ++it) {
++		if (it->map_vaddr >= host_vaddr && it->map_vaddr - host_vaddr >= host_size) break; // past the host range
++		if (it->host_vaddr == host_vaddr && it->host_size == host_size) return true;
++	}
++	return false;
++}
++
++// Whether every block lies inside its host range (what host_still_mapped relies on) and the table is sorted without overlaps.
++template <class V> bool sound(const V& v) {
++	for (size_t i = 0; i < v.size(); i++) {
++		const auto& b = v[i];
++		if (b.map_size == 0 || b.map_vaddr < b.host_vaddr || b.map_vaddr - b.host_vaddr > b.host_size || b.map_size > b.host_size - (b.map_vaddr - b.host_vaddr)) return false;
++		if (i != 0 && b.map_vaddr - v[i - 1].map_vaddr < v[i - 1].map_size) return false;
++		if (i != 0 && b.map_vaddr < v[i - 1].map_vaddr) return false;
++	}
++	return true;
++}
++
++} // namespace pm412
++
++// Experiment 0412 (tag ps412): KYTY_BC5_PHYSMAP_SORTED. 0 off, 1 on, 2 verify. g_pm412_ok: no overlapping block was ever added.
++static int Pm412Mode() {
++	static const int mode = [] {
++		const char* e = std::getenv("KYTY_BC5_PHYSMAP_SORTED");
++		if (e == nullptr || e[0] == 0 || (e[0] == '0' && e[1] == 0)) return 0;
++		const int m = std::strcmp(e, "verify") == 0 ? 2 : std::strcmp(e, "1") == 0 ? 1 : 0;
++		std::fprintf(stderr, "[bc5] exp 0412 physmap sorted: %s (tag ps412)\n", m == 2 ? "verify" : m == 1 ? "on" : "value not understood, off");
++		return m;
++	}();
++	return mode;
++}
++static bool     g_pm412_ok       = true;
++static uint64_t g_pm412_mismatch = 0;
++
 +class PhysicalMemory {
 +public:
 +	struct AllocatedBlock {
@@ -22923,7 +23056,16 @@ index 02fc0fc..43484fc 100644
 +			}
 +		}
 +	}
-+	m_mappings.push_back(mapping);
++	if (Pm412Mode() != 0 && g_pm412_ok) { // exp 0412 (tag ps412): the table stays sorted by guest address
++		if (!pm412::insert(m_mappings, mapping)) {
++			g_pm412_ok = false;
++			std::fprintf(stderr, "[bc5] exp 0412 physmap sorted: block 0x%" PRIx64 "+0x%" PRIx64 " overlaps another, is empty or wraps: the old table code from here on (tag ps412)\n",
++			             mapping.map_vaddr, mapping.map_size);
++			m_mappings.push_back(mapping);
++		}
++	} else {
++		m_mappings.push_back(mapping);
++	}
 +
 +	return true;
 +}
@@ -23045,6 +23187,34 @@ index 02fc0fc..43484fc 100644
 +		}
 +	};
 +
++	// Experiment 0412 (tag ps412): the old walk below can append the right half of a split block; when it runs in the
++	// sorted mode (an empty range, or a verify difference) the table is sorted again on the way out.
++	struct Pm412Resort {
++		std::vector<AllocatedBlock>* v = nullptr;
++		~Pm412Resort() {
++			if (v != nullptr) {
++				std::stable_sort(v->begin(), v->end(), [](const AllocatedBlock& x, const AllocatedBlock& y) { return x.map_vaddr < y.map_vaddr; });
++			}
++		}
++	} resort412;
++	if (Pm412Mode() != 0 && g_pm412_ok) {
++		bool fast412 = size != 0;
++		if (fast412 && Pm412Mode() == 2 && pm412::linear_first(m_mappings, vaddr, size) != pm412::candidate(m_mappings, vaddr, size)) {
++			fast412 = false;
++			if (g_pm412_mismatch++ < 8) {
++				std::fprintf(stderr, "[bc5] exp 0412 physmap sorted: verify: Unmap 0x%" PRIx64 "+0x%" PRIx64 ": the old search finds another block (tag ps412)\n", vaddr, size);
++			}
++		}
++		if (fast412) {
++			uint64_t         hv412 = 0, hs412 = 0;
++			const pm412::Hit hit412 = pm412::unmap(m_mappings, vaddr, size, gpu_mode, &hv412, &hs412);
++			if (hit412 == pm412::Whole && host_vaddr_to_release != nullptr && hv412 != 0 && hs412 != 0 && !pm412::host_still_mapped(m_mappings, hv412, hs412)) {
++				*host_vaddr_to_release = hv412;
++			}
++			return hit412 != pm412::None;
++		}
++		resort412.v = &m_mappings;
++	}
 +	size_t index = 0;
 +	for (auto& b: m_mappings) {
 +		if (b.map_vaddr == vaddr && b.map_size == size) {
@@ -23189,6 +23359,18 @@ index 02fc0fc..43484fc 100644
 +                          VirtualMemory::Mode* mode, GpuAccessMode* gpu_mode) {
 +	Common::LockGuard lock(m_mutex);
 +
++	if (Pm412Mode() != 0 && g_pm412_ok) { // exp 0412 (tag ps412): the block that holds vaddr, by binary search
++		const auto it412 = pm412::containing(m_mappings, vaddr);
++		if (it412 == m_mappings.end()) {
++			return false;
++		}
++		if (base_addr != nullptr) *base_addr = it412->map_vaddr;
++		if (len != nullptr) *len = it412->map_size;
++		if (prot != nullptr) *prot = it412->prot;
++		if (mode != nullptr) *mode = it412->mode;
++		if (gpu_mode != nullptr) *gpu_mode = it412->gpu_mode;
++		return true;
++	}
 +	return std::any_of(m_mappings.begin(), m_mappings.end(),
 +	                   [vaddr, base_addr, len, prot, mode, gpu_mode](auto& b) {
 +		                   if (vaddr >= b.map_vaddr && vaddr < b.map_vaddr + b.map_size) {
@@ -23217,6 +23399,13 @@ index 02fc0fc..43484fc 100644
 +void PhysicalMemory::SetVirtualRangeName(uint64_t vaddr, uint64_t len, const char* name) {
 +	Common::LockGuard lock(m_mutex);
 +
++	if (Pm412Mode() != 0 && g_pm412_ok) { // exp 0412 (tag ps412): only the blocks around the range, the same overlap test
++		for (auto it412 = pm412::walk_from(m_mappings, vaddr); it412 != m_mappings.end(); ++it412) {
++			if (it412->map_vaddr > vaddr && it412->map_vaddr - vaddr >= len) break;
++			if (VirtualRangesOverlap(vaddr, len, it412->map_vaddr, it412->map_size)) CopyVirtualRangeName(it412->name, name);
++		}
++		return;
++	}
 +	for (auto& b: m_mappings) {
 +		if (VirtualRangesOverlap(vaddr, len, b.map_vaddr, b.map_size)) {
 +			CopyVirtualRangeName(b.name, name);
@@ -23559,6 +23748,13 @@ index 02fc0fc..43484fc 100644
 +void PhysicalMemory::SetVirtualRangeMemoryType(uint64_t vaddr, uint64_t len, int memory_type) {
 +	Common::LockGuard lock(m_mutex);
 +
++	if (Pm412Mode() != 0 && g_pm412_ok) { // exp 0412 (tag ps412): only the blocks around the range, the same overlap test
++		for (auto it412 = pm412::walk_from(m_mappings, vaddr); it412 != m_mappings.end(); ++it412) {
++			if (it412->map_vaddr > vaddr && it412->map_vaddr - vaddr >= len) break;
++			if (VirtualRangesOverlap(vaddr, len, it412->map_vaddr, it412->map_size)) it412->memory_type = memory_type;
++		}
++		return;
++	}
 +	for (auto& b: m_mappings) {
 +		if (VirtualRangesOverlap(vaddr, len, b.map_vaddr, b.map_size)) {
 +			b.memory_type = memory_type;
