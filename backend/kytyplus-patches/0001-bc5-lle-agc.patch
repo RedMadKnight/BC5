@@ -47232,6 +47232,254 @@ index b67cfd5..0531e49 100644
  	LIB_FUNC("Ddwk4gLT5j0", Gen5Driver::GraphicsDriverIsCaptureInProgress);
  	LIB_FUNC("U9ueyEhSkF4", Gen5Driver::GraphicsDriverUnknownU9ueyEhSkF4);
  }
+diff --git a/src/libs/libIme.cpp b/src/libs/libIme.cpp
+index 95ac2e9..3027212 100644
+--- a/src/libs/libIme.cpp
++++ b/src/libs/libIme.cpp
+@@ -12,11 +12,120 @@
+ 
+ #include <common/abi.h>
+ 
++#include "libs/ime.h"       // BC5 experiment 0405 (KYTY_BC5_LOAD_IME): these includes
++#include "libs/imeDialog.h"
++
++#include <cstdint>
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++
+ namespace Libs {
+ 
+ namespace LibIme {
+ LIB_VERSION("libSceIme", 1, "libSceIme", 1, 1);
+ 
++// ---- BC5 experiment 0405 (series e6 of experiment 0401), tag "tbc": KYTY_BC5_LOAD_IME, libSceIme ported ----
++// Exp 0405 decision 4 (the tables compiled but never loaded): this table is ported first, then loaded by Libs::InitAll when
++// KYTY_BC5_LOAD_IME is on (libs.cpp, tag "tld"), before the live Ime table (libs/ime.cpp InitPlatform_1_Ime).
++// SymbolDatabase::GenerateName drops "libSce", so this table's libSceIme v1 / v1.1 keys are the live table's Ime keys.
++// The 7 NIDs the live table also registers (SetText, SetCaret, ParamInit, GetPanelSize, Open, Close, SetTextGeometry) are
++// not registered here, and their stubs are removed. Find (exact key) returns a key's last registration, but the NID-only
++// fallback FindByNid (RuntimeLinker::Resolve, ResolveLoadedSymbolByNid, libKernel.cpp's symbol lookup) returns the first,
++// which would be this table's stub. Today nothing calls this init, so with the switch off nothing changes.
++// IME state: "panel" reads the live table's state (the panel ime.cpp's ImeOpen opened); the held stubs read and change no
++// state. KYTY_BC5_LOAD_IME: unset, empty or "0" is off (today's answers); a value naming items (comma-separated) turns on
++// only those; any other value turns every item on. Read once; one stderr line at registration or at the first call. Items:
++//   panel: sceImeGetPanelPositionAndForm (T6FYjZXG93o), ported in adapted form from AnyPS5 (github.com/boykopovar/AnyPS5,
++//          GPL-2.0-only) @ 4f41f4c375f5abb487dbd184fbc150f31994d762, core/libs/prx/libSceIme/Export.cpp:499-512 (commit
++//          e21d8bd12) and its note docs/dev/debt/libSceIme.md:21. With no panel open it is NOT_OPENED (0x80bc0002),
++//          checked before a null form (INVALID_ADDRESS 0x80bc0031). While a panel is open, the form is cleared and gets
++//          the type, position and alignments that sceImeOpen was given, and the size that sceImeGetPanelSize gives. The
++//          open panel is read through libs/ime.h's GetHostSnapshot (the live table's state). The form is libs/imeDialog.h's
++//          PositionAndForm (0x1c bytes), which sceImeDialogGetPanelPositionAndForm fills.
++//   test:  sceImeForTestFunction (wVkehxutK-U) returns 0x80bc00ff (the IME's internal error). Source: AnyPS5
++//          Export.cpp:760-762 (commit db2575839, "return what the firmware returns from 29 more calls it does not
++//          implement") and its note libSceIme.md:25 (a constant error in the supplied module). Exp 0405 decision 1.
++// Held (today's stubs: OK, nothing written):
++//   - sceImeFilterText: AnyPS5's note libSceIme.md:22 names a disassembly of a firmware module, with addresses, as its
++//     source.
++//   - 36 calls that AnyPS5 does not implement either (they throw there).
++//   - sceImeOpenInternal and sceImeVshDisableController: not in AnyPS5.
++// AnyPS5's copyright remains with its authors; GPL-2.0 as the rest of this file (AnyPS5's part is GPL-2.0-only).
++static constexpr int      BC5_IME_ERROR_NOT_OPENED      = static_cast<int>(0x80bc0002u);
++static constexpr int      BC5_IME_ERROR_INVALID_ADDRESS = static_cast<int>(0x80bc0031u);
++static constexpr int      BC5_IME_ERROR_INTERNAL        = static_cast<int>(0x80bc00ffu);
++static constexpr uint32_t BC5_IME_PANEL                 = 1u;
++static constexpr uint32_t BC5_IME_TEST                  = 2u;
++static constexpr uint32_t BC5_IME_ALL                   = 3u;
++
++static uint32_t Bc5ImeItemsParse(const char* e) {
++	if (e == nullptr || e[0] == '\0' || std::strcmp(e, "0") == 0) {
++		return 0;
++	}
++	static const char* const names[] = {"panel", "test"}; // bit i is names[i]
++	uint32_t                 parts   = 0;
++	const char*              p       = e;
++	for (;;) {
++		const char*  comma = std::strchr(p, ',');
++		const size_t n     = comma != nullptr ? static_cast<size_t>(comma - p) : std::strlen(p);
++		for (uint32_t i = 0; i < 2; i++) {
++			if (n == std::strlen(names[i]) && std::strncmp(p, names[i], n) == 0) {
++				parts |= 1u << i;
++			}
++		}
++		if (comma == nullptr) {
++			break;
++		}
++		p = comma + 1;
++	}
++	return parts != 0 ? parts : BC5_IME_ALL;
++}
++
++// The items of KYTY_BC5_LOAD_IME that are on (0: off), read once; the first call prints the switch's line.
++static uint32_t Bc5ImeItems() {
++	static const uint32_t items = [] {
++		const uint32_t p = Bc5ImeItemsParse(std::getenv("KYTY_BC5_LOAD_IME"));
++		if (p == 0) {
++			std::fputs("[bc5] exp 0405: ime port off\n", stderr);
++		} else {
++			std::fprintf(stderr, "[bc5] exp 0405: ime port on (items:%s%s; the 7 NIDs of the live Ime table not registered)\n",
++			             (p & BC5_IME_PANEL) != 0 ? " panel" : "", (p & BC5_IME_TEST) != 0 ? " test" : "");
++		}
++		std::fflush(stderr);
++		return p;
++	}();
++	return items;
++}
++
++static bool Bc5ImeItem(uint32_t item) {
++	return (Bc5ImeItems() & item) != 0;
++}
++
++// "panel": the open panel's type, position, alignments and size, as AnyPS5's sceImeGetPanelPositionAndForm gives them.
++static int Bc5ImeGetPanelPositionAndForm(void* form_out) {
++	Libs::Ime::HostSnapshot open {};
++	if (!Libs::Ime::GetHostSnapshot(&open)) {
++		return BC5_IME_ERROR_NOT_OPENED;
++	}
++	if (form_out == nullptr) {
++		return BC5_IME_ERROR_INVALID_ADDRESS;
++	}
++	using Form = Libs::Dialog::ImeDialog::PositionAndForm;
++	using Align = Libs::Dialog::ImeDialog::Alignment;
++	auto* form                 = static_cast<Form*>(form_out);
++	*form                      = Form {};
++	form->type                 = static_cast<uint32_t>(open.type);
++	form->posx                 = open.posx;
++	form->posy                 = open.posy;
++	form->horizontal_alignment = static_cast<Align>(static_cast<uint32_t>(open.horizontal_alignment));
++	form->vertical_alignment   = static_cast<Align>(static_cast<uint32_t>(open.vertical_alignment));
++	form->width                = open.panel_width;
++	form->height               = open.panel_height;
++	return OK;
++}
++// ---- end of BC5 experiment 0405 (KYTY_BC5_LOAD_IME) ----
++
+ static int KYTY_SYSV_ABI FinalizeImeModule() {
+ 	PRINT_NAME();
+ 	return OK; // STUBBED
+@@ -42,10 +151,7 @@ static int KYTY_SYSV_ABI sceImeCheckUpdateTextInfo() {
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceImeClose() {
+-	PRINT_NAME();
+-	return OK; // STUBBED
+-}
++// BC5 experiment 0405: sceImeClose (TmVP8LzcFcY) is the live Ime table's (libs/ime.cpp), not registered here.
+ 
+ static int KYTY_SYSV_ABI sceImeConfigGet() {
+ 	PRINT_NAME();
+@@ -104,18 +210,21 @@ static int KYTY_SYSV_ABI sceImeFilterText() {
+ 
+ static int KYTY_SYSV_ABI sceImeForTestFunction() {
+ 	PRINT_NAME();
++	if (Bc5ImeItem(BC5_IME_TEST)) { // BC5 experiment 0405 (KYTY_BC5_LOAD_IME "test"); false when off
++		return BC5_IME_ERROR_INTERNAL;
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceImeGetPanelPositionAndForm() {
++static int KYTY_SYSV_ABI sceImeGetPanelPositionAndForm(void* form) {
+ 	PRINT_NAME();
++	if (Bc5ImeItem(BC5_IME_PANEL)) { // BC5 experiment 0405 (KYTY_BC5_LOAD_IME "panel"); false when off
++		return Bc5ImeGetPanelPositionAndForm(form);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceImeGetPanelSize() {
+-	PRINT_NAME();
+-	return OK; // STUBBED
+-}
++// BC5 experiment 0405: sceImeGetPanelSize (ziPDcIjO0Vk) is the live Ime table's (libs/ime.cpp), not registered here.
+ 
+ static int KYTY_SYSV_ABI sceImeKeyboardOpenInternal() {
+ 	PRINT_NAME();
+@@ -127,40 +236,25 @@ static int KYTY_SYSV_ABI sceImeKeyboardUpdate() {
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceImeOpen() {
+-	PRINT_NAME();
+-	return OK; // STUBBED
+-}
++// BC5 experiment 0405: sceImeOpen (RPydv-Jr1bc) is the live Ime table's (libs/ime.cpp), not registered here.
+ 
+ static int KYTY_SYSV_ABI sceImeOpenInternal() {
+ 	PRINT_NAME();
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceImeParamInit() {
+-	PRINT_NAME();
+-	return OK; // STUBBED
+-}
++// BC5 experiment 0405: sceImeParamInit (WmYDzdC4EHI) is the live Ime table's (libs/ime.cpp), not registered here.
+ 
+ static int KYTY_SYSV_ABI sceImeSetCandidateIndex() {
+ 	PRINT_NAME();
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceImeSetCaret() {
+-	PRINT_NAME();
+-	return OK; // STUBBED
+-}
++// BC5 experiment 0405: sceImeSetCaret (WLxUN2WMim8) is the live Ime table's (libs/ime.cpp), not registered here.
+ 
+-static int KYTY_SYSV_ABI sceImeSetText() {
+-	PRINT_NAME();
+-	return OK; // STUBBED
+-}
++// BC5 experiment 0405: sceImeSetText (ieCNrVrzKd4) is the live Ime table's (libs/ime.cpp), not registered here.
+ 
+-static int KYTY_SYSV_ABI sceImeSetTextGeometry() {
+-	PRINT_NAME();
+-	return OK; // STUBBED
+-}
++// BC5 experiment 0405: sceImeSetTextGeometry (TXYHFRuL8UY) is the live Ime table's (libs/ime.cpp), not registered here.
+ 
+ static int KYTY_SYSV_ABI sceImeVshClearPreedit() {
+ 	PRINT_NAME();
+@@ -260,12 +354,13 @@ static int KYTY_SYSV_ABI sceImeVshUpdateContext2() {
+ 
+ 
+ LIB_DEFINE(InitIme_1) {
++	(void)Bc5ImeItems(); // BC5 experiment 0405: reads KYTY_BC5_LOAD_IME once and prints its line at registration
+ 	LIB_FUNC("mN+ZoSN-8hQ", LibIme::FinalizeImeModule);
+ 	LIB_FUNC("uTW+63goeJs", LibIme::InitializeImeModule);
+ 	LIB_FUNC("Lf3DeGWC6xg", LibIme::sceImeCheckFilterText);
+ 	LIB_FUNC("zHuMUGb-AQI", LibIme::sceImeCheckRemoteEventParam);
+ 	LIB_FUNC("OTb0Mg+1i1k", LibIme::sceImeCheckUpdateTextInfo);
+-	LIB_FUNC("TmVP8LzcFcY", LibIme::sceImeClose);
++	// TmVP8LzcFcY sceImeClose: the live Ime table's (BC5 experiment 0405)
+ 	LIB_FUNC("Ho5NVQzpKHo", LibIme::sceImeConfigGet);
+ 	LIB_FUNC("P5dPeiLwm-M", LibIme::sceImeConfigSet);
+ 	LIB_FUNC("tKLmVIUkpyM", LibIme::sceImeConfirmCandidate);
+@@ -279,16 +374,16 @@ LIB_DEFINE(InitIme_1) {
+ 	LIB_FUNC("evjOsE18yuI", LibIme::sceImeFilterText);
+ 	LIB_FUNC("wVkehxutK-U", LibIme::sceImeForTestFunction);
+ 	LIB_FUNC("T6FYjZXG93o", LibIme::sceImeGetPanelPositionAndForm);
+-	LIB_FUNC("ziPDcIjO0Vk", LibIme::sceImeGetPanelSize);
++	// ziPDcIjO0Vk sceImeGetPanelSize: the live Ime table's (BC5 experiment 0405)
+ 	LIB_FUNC("oYkJlMK51SA", LibIme::sceImeKeyboardOpenInternal);
+ 	LIB_FUNC("3Hx2Uw9xnv8", LibIme::sceImeKeyboardUpdate);
+-	LIB_FUNC("RPydv-Jr1bc", LibIme::sceImeOpen);
++	// RPydv-Jr1bc sceImeOpen: the live Ime table's (BC5 experiment 0405)
+ 	LIB_FUNC("16UI54cWRQk", LibIme::sceImeOpenInternal);
+-	LIB_FUNC("WmYDzdC4EHI", LibIme::sceImeParamInit);
++	// WmYDzdC4EHI sceImeParamInit: the live Ime table's (BC5 experiment 0405)
+ 	LIB_FUNC("TQaogSaqkEk", LibIme::sceImeSetCandidateIndex);
+-	LIB_FUNC("WLxUN2WMim8", LibIme::sceImeSetCaret);
+-	LIB_FUNC("ieCNrVrzKd4", LibIme::sceImeSetText);
+-	LIB_FUNC("TXYHFRuL8UY", LibIme::sceImeSetTextGeometry);
++	// WLxUN2WMim8 sceImeSetCaret: the live Ime table's (BC5 experiment 0405)
++	// ieCNrVrzKd4 sceImeSetText: the live Ime table's (BC5 experiment 0405)
++	// TXYHFRuL8UY sceImeSetTextGeometry: the live Ime table's (BC5 experiment 0405)
+ 	LIB_FUNC("oOwl47ouxoM", LibIme::sceImeVshClearPreedit);
+ 	LIB_FUNC("gtoTsGM9vEY", LibIme::sceImeVshClose);
+ 	LIB_FUNC("wTKF4mUlSew", LibIme::sceImeVshConfirmPreedit);
 diff --git a/src/libs/libInvitationDialog.cpp b/src/libs/libInvitationDialog.cpp
 index aeaa823..9a20ce1 100644
 --- a/src/libs/libInvitationDialog.cpp
@@ -47370,6 +47618,276 @@ index aeaa823..9a20ce1 100644
  }
  
  
+diff --git a/src/libs/libJpeg.cpp b/src/libs/libJpeg.cpp
+index ad8f883..c1a1a28 100644
+--- a/src/libs/libJpeg.cpp
++++ b/src/libs/libJpeg.cpp
+@@ -12,34 +12,261 @@
+ 
+ #include <common/abi.h>
+ 
++#include <cstdint> // BC5 experiment 0405 (KYTY_BC5_LOAD_JPEG): these includes
++#include <cstdio>
++#include <cstdlib>
++
+ namespace Libs {
+ 
+ namespace LibJpeg {
+ LIB_VERSION("libSceJpegEnc", 1, "libSceJpegEnc", 1, 1);
+ 
+-static int KYTY_SYSV_ABI sceJpegEncCreate() {
++// ---- BC5 experiment 0405 (series e6 of experiment 0401), tag "tbc": KYTY_BC5_LOAD_JPEG, libSceJpegEnc ported ----
++// Exp 0405 decision 4 (the tables compiled but never loaded): this table is ported first, then loaded by Libs::InitAll when
++// KYTY_BC5_LOAD_JPEG is on (libs.cpp, tag "tld"). Ported in adapted form from AnyPS5 (github.com/boykopovar/AnyPS5,
++// GPL-2.0-only) @ 4f41f4c375f5abb487dbd184fbc150f31994d762, core/libs/prx/libSceJpegEnc/Export.cpp:18-105 and 169-215: the
++// error codes; the create-parameter checks; the encode-parameter checks in their order; the 0x800-byte memory answer,
++// which is also Create's minimum; a handle placed at the first 32-byte boundary of the caller's memory that points at
++// itself, which Delete clears and Delete and Encode check. The parameter layouts follow core/libs/SceTypes.hpp:2030-2049.
++// Its note docs/dev/debt/libSceJpegEnc.md:5: restart intervals 0, -1 (one MCU row) and 1..65535 "are confirmed by the
++// native validator", other values are an invalid parameter. shadPS4 (GPL-2.0-or-later) @ 60c42b9,
++// src/core/libraries/jpeg/jpegenc.cpp:16-198 and jpeg_error.h, has the same codes, sizes and checks on the PS4, without
++// AnyPS5's zero-width and zero-height checks and its restart-interval floor of -1.
++// Held: the encode itself (no JPEG encoder is compiled in this tree). When the checks pass, Encode keeps today's answer:
++// OK, with nothing written to the JPEG buffer or the output info (AnyPS5 returns the JPEG's size and fills both).
++// KYTY_BC5_LOAD_JPEG: unset, empty or "0" is off (today's stubs: OK, nothing written); any other value is on. Read once;
++// one stderr line at registration or at the first call.
++// AnyPS5's copyright remains with its authors; GPL-2.0 as the rest of this file (AnyPS5's part is GPL-2.0-only).
++static constexpr int       BC5_JPEG_ENC_ERROR_INVALID_ADDR   = static_cast<int>(0x80650101u);
++static constexpr int       BC5_JPEG_ENC_ERROR_INVALID_SIZE   = static_cast<int>(0x80650102u);
++static constexpr int       BC5_JPEG_ENC_ERROR_INVALID_PARAM  = static_cast<int>(0x80650103u);
++static constexpr int       BC5_JPEG_ENC_ERROR_INVALID_HANDLE = static_cast<int>(0x80650104u);
++static constexpr uint32_t  BC5_JPEG_ENC_MEMORY_SIZE          = 0x800; // QueryMemorySize's answer and Create's minimum
++static constexpr uintptr_t BC5_JPEG_ENC_HANDLE_ALIGN         = 0x20;
++static constexpr uint32_t  BC5_JPEG_ENC_MAX_DIMENSION        = 0xFFFF;
++static constexpr uint32_t  BC5_JPEG_ENC_MAX_PITCH            = 0xFFFFFFF;
++static constexpr uint64_t  BC5_JPEG_ENC_MAX_IMAGE_SIZE       = 0x7FFFFFFF;
++static constexpr uint16_t  BC5_JPEG_ENC_PIXEL_R8G8B8A8       = 0;
++static constexpr uint16_t  BC5_JPEG_ENC_PIXEL_B8G8R8A8       = 1;
++static constexpr uint16_t  BC5_JPEG_ENC_PIXEL_Y8U8Y8V8       = 10;
++static constexpr uint16_t  BC5_JPEG_ENC_PIXEL_Y8             = 11;
++static constexpr uint16_t  BC5_JPEG_ENC_MODE_NORMAL          = 0;
++static constexpr uint16_t  BC5_JPEG_ENC_MODE_MJPEG           = 1;
++static constexpr uint16_t  BC5_JPEG_ENC_COLOR_YCC            = 1;
++static constexpr uint16_t  BC5_JPEG_ENC_COLOR_GRAY           = 2;
++static constexpr uint8_t   BC5_JPEG_ENC_SAMPLING_FULL        = 0;
++static constexpr uint8_t   BC5_JPEG_ENC_SAMPLING_422         = 1;
++static constexpr uint8_t   BC5_JPEG_ENC_SAMPLING_420         = 2;
++static constexpr int32_t   BC5_JPEG_ENC_RESTART_PER_ROW      = -1;
++
++struct Bc5JpegEncCreateParam {
++	uint32_t size; // sizeof(Bc5JpegEncCreateParam)
++	uint32_t attr; // 0
++};
++
++struct Bc5JpegEncEncodeParam {
++	const void* image;
++	void*       jpeg;
++	uint32_t    image_size;
++	uint32_t    jpeg_size;
++	uint32_t    image_width;
++	uint32_t    image_height;
++	uint32_t    image_pitch;
++	uint16_t    pixel_format;
++	uint16_t    encode_mode;
++	uint16_t    color_space;
++	uint8_t     sampling_type;
++	uint8_t     compression_ratio;
++	int32_t     restart_interval;
++};
++
++static_assert(sizeof(Bc5JpegEncCreateParam) == 0x8);
++static_assert(sizeof(Bc5JpegEncEncodeParam) == 0x30);
++
++// What Create leaves in the caller's memory: a pointer to itself while the handle is valid.
++struct Bc5JpegEncHandle {
++	Bc5JpegEncHandle* self;
++};
++
++// KYTY_BC5_LOAD_JPEG, read once; the first call prints the switch's line.
++static bool Bc5JpegOn() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_LOAD_JPEG");
++		const bool  v = e != nullptr && e[0] != '\0' && !(e[0] == '0' && e[1] == '\0');
++		std::fputs(v ? "[bc5] exp 0405: jpeg port on (items: Create Delete QueryMemorySize Encode-checks; Encode itself held)\n"
++		             : "[bc5] exp 0405: jpeg port off\n",
++		           stderr);
++		std::fflush(stderr);
++		return v;
++	}();
++	return on;
++}
++
++static int Bc5JpegCheckCreateParam(const void* param_in) {
++	const auto* param = static_cast<const Bc5JpegEncCreateParam*>(param_in);
++	if (param == nullptr) {
++		return BC5_JPEG_ENC_ERROR_INVALID_ADDR;
++	}
++	if (param->size != sizeof(Bc5JpegEncCreateParam)) {
++		return BC5_JPEG_ENC_ERROR_INVALID_SIZE;
++	}
++	if (param->attr != 0) {
++		return BC5_JPEG_ENC_ERROR_INVALID_PARAM;
++	}
++	return OK;
++}
++
++// The handle a Create made and no Delete has cleared; nullptr for any other value.
++static Bc5JpegEncHandle* Bc5JpegValidHandle(void* handle) {
++	const auto address = reinterpret_cast<uintptr_t>(handle);
++	if (address == 0 || (address % BC5_JPEG_ENC_HANDLE_ALIGN) != 0) {
++		return nullptr;
++	}
++	auto* h = static_cast<Bc5JpegEncHandle*>(handle);
++	return h->self == h ? h : nullptr;
++}
++
++static int Bc5JpegCheckEncodeParam(const void* param_in) {
++	const auto* p = static_cast<const Bc5JpegEncEncodeParam*>(param_in);
++	if (p == nullptr) {
++		return BC5_JPEG_ENC_ERROR_INVALID_ADDR;
++	}
++	const bool gray_input = p->pixel_format == BC5_JPEG_ENC_PIXEL_Y8;
++	if (p->image == nullptr || (!gray_input && (reinterpret_cast<uintptr_t>(p->image) % 4) != 0) || p->jpeg == nullptr) {
++		return BC5_JPEG_ENC_ERROR_INVALID_ADDR;
++	}
++	if (p->image_size == 0 || p->jpeg_size == 0) {
++		return BC5_JPEG_ENC_ERROR_INVALID_SIZE;
++	}
++	if (p->image_width == 0 || p->image_height == 0 || p->image_width > BC5_JPEG_ENC_MAX_DIMENSION ||
++	    p->image_height > BC5_JPEG_ENC_MAX_DIMENSION) {
++		return BC5_JPEG_ENC_ERROR_INVALID_PARAM;
++	}
++	if (p->image_pitch == 0 || p->image_pitch > BC5_JPEG_ENC_MAX_PITCH || (!gray_input && (p->image_pitch % 4) != 0)) {
++		return BC5_JPEG_ENC_ERROR_INVALID_PARAM;
++	}
++	const uint64_t needed = static_cast<uint64_t>(p->image_height) * p->image_pitch;
++	if (needed > BC5_JPEG_ENC_MAX_IMAGE_SIZE || needed > p->image_size) {
++		return BC5_JPEG_ENC_ERROR_INVALID_PARAM;
++	}
++	if (p->encode_mode != BC5_JPEG_ENC_MODE_NORMAL && p->encode_mode != BC5_JPEG_ENC_MODE_MJPEG) {
++		return BC5_JPEG_ENC_ERROR_INVALID_PARAM;
++	}
++	if (p->color_space != BC5_JPEG_ENC_COLOR_YCC && p->color_space != BC5_JPEG_ENC_COLOR_GRAY) {
++		return BC5_JPEG_ENC_ERROR_INVALID_PARAM;
++	}
++	if (p->sampling_type != BC5_JPEG_ENC_SAMPLING_FULL && p->sampling_type != BC5_JPEG_ENC_SAMPLING_422 &&
++	    p->sampling_type != BC5_JPEG_ENC_SAMPLING_420) {
++		return BC5_JPEG_ENC_ERROR_INVALID_PARAM;
++	}
++	if (p->restart_interval < BC5_JPEG_ENC_RESTART_PER_ROW ||
++	    p->restart_interval > static_cast<int32_t>(BC5_JPEG_ENC_MAX_DIMENSION)) {
++		return BC5_JPEG_ENC_ERROR_INVALID_PARAM;
++	}
++	bool fits = false;
++	switch (p->pixel_format) {
++		case BC5_JPEG_ENC_PIXEL_R8G8B8A8:
++		case BC5_JPEG_ENC_PIXEL_B8G8R8A8:
++			fits = p->image_pitch / 4 >= p->image_width && p->color_space == BC5_JPEG_ENC_COLOR_YCC &&
++			       p->sampling_type != BC5_JPEG_ENC_SAMPLING_FULL;
++			break;
++		case BC5_JPEG_ENC_PIXEL_Y8U8Y8V8:
++			fits = p->image_pitch / 2 >= ((p->image_width + 1) & ~1u) && p->color_space == BC5_JPEG_ENC_COLOR_YCC &&
++			       p->sampling_type != BC5_JPEG_ENC_SAMPLING_FULL;
++			break;
++		case BC5_JPEG_ENC_PIXEL_Y8:
++			fits = p->image_pitch >= p->image_width && p->color_space == BC5_JPEG_ENC_COLOR_GRAY &&
++			       p->sampling_type == BC5_JPEG_ENC_SAMPLING_FULL;
++			break;
++		default: fits = false; break;
++	}
++	return fits ? OK : BC5_JPEG_ENC_ERROR_INVALID_PARAM;
++}
++
++static int Bc5JpegQueryMemorySize(const void* param) {
++	const int checked = Bc5JpegCheckCreateParam(param);
++	return checked != OK ? checked : static_cast<int>(BC5_JPEG_ENC_MEMORY_SIZE);
++}
++
++static int Bc5JpegCreate(const void* param, void* memory, uint32_t memory_size, void** handle) {
++	const int checked = Bc5JpegCheckCreateParam(param);
++	if (checked != OK) {
++		return checked;
++	}
++	if (memory == nullptr) {
++		return BC5_JPEG_ENC_ERROR_INVALID_ADDR;
++	}
++	if (memory_size < BC5_JPEG_ENC_MEMORY_SIZE) {
++		return BC5_JPEG_ENC_ERROR_INVALID_SIZE;
++	}
++	if (handle == nullptr) {
++		return BC5_JPEG_ENC_ERROR_INVALID_ADDR;
++	}
++	const uintptr_t at =
++	    (reinterpret_cast<uintptr_t>(memory) + BC5_JPEG_ENC_HANDLE_ALIGN - 1) & ~(BC5_JPEG_ENC_HANDLE_ALIGN - 1);
++	auto* h = reinterpret_cast<Bc5JpegEncHandle*>(at); // within the 0x800 bytes the caller gave
++	h->self = h;
++	*handle = h;
++	return OK;
++}
++
++static int Bc5JpegDelete(void* handle) {
++	Bc5JpegEncHandle* h = Bc5JpegValidHandle(handle);
++	if (h == nullptr) {
++		return BC5_JPEG_ENC_ERROR_INVALID_HANDLE;
++	}
++	h->self = nullptr;
++	return OK;
++}
++
++// Encode's checks: the handle, then the parameters. OK when they pass; the encode itself is held.
++static int Bc5JpegEncodeChecks(void* handle, const void* param) {
++	if (Bc5JpegValidHandle(handle) == nullptr) {
++		return BC5_JPEG_ENC_ERROR_INVALID_HANDLE;
++	}
++	return Bc5JpegCheckEncodeParam(param);
++}
++// ---- end of BC5 experiment 0405 (KYTY_BC5_LOAD_JPEG) ----
++
++static int KYTY_SYSV_ABI sceJpegEncCreate(const void* param, void* memory, uint32_t memory_size, void** handle) {
+ 	PRINT_NAME();
++	if (Bc5JpegOn()) { // BC5 experiment 0405 (KYTY_BC5_LOAD_JPEG); false when off
++		return Bc5JpegCreate(param, memory, memory_size, handle);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceJpegEncDelete() {
++static int KYTY_SYSV_ABI sceJpegEncDelete(void* handle) {
+ 	PRINT_NAME();
++	if (Bc5JpegOn()) { // BC5 experiment 0405 (KYTY_BC5_LOAD_JPEG); false when off
++		return Bc5JpegDelete(handle);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceJpegEncEncode() {
++static int KYTY_SYSV_ABI sceJpegEncEncode(void* handle, const void* param, void* /*output_info*/) {
+ 	PRINT_NAME();
++	if (Bc5JpegOn()) { // BC5 experiment 0405 (KYTY_BC5_LOAD_JPEG); false when off. The encode itself is held:
++		const int checked = Bc5JpegEncodeChecks(handle, param); // when the checks pass, today's answer below
++		if (checked != OK) {
++			return checked;
++		}
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceJpegEncQueryMemorySize() {
++static int KYTY_SYSV_ABI sceJpegEncQueryMemorySize(const void* param) {
+ 	PRINT_NAME();
++	if (Bc5JpegOn()) { // BC5 experiment 0405 (KYTY_BC5_LOAD_JPEG); false when off
++		return Bc5JpegQueryMemorySize(param);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+ 
+ 
+ LIB_DEFINE(InitJpeg_1) {
++	(void)Bc5JpegOn(); // BC5 experiment 0405: reads KYTY_BC5_LOAD_JPEG once and prints its line at registration
+ 	LIB_FUNC("K+rocojkr-I", LibJpeg::sceJpegEncCreate);
+ 	LIB_FUNC("j1LyMdaM+C0", LibJpeg::sceJpegEncDelete);
+ 	LIB_FUNC("QbrU0cUghEM", LibJpeg::sceJpegEncEncode);
 diff --git a/src/libs/libJson2.cpp b/src/libs/libJson2.cpp
 index 183cd85..d36b6cd 100644
 --- a/src/libs/libJson2.cpp
@@ -56202,6 +56720,246 @@ index 2bb809f..eb9002a 100644
  }
  
  
+diff --git a/src/libs/libZlib.cpp b/src/libs/libZlib.cpp
+index 08b7156..f274f41 100644
+--- a/src/libs/libZlib.cpp
++++ b/src/libs/libZlib.cpp
+@@ -12,39 +12,231 @@
+ 
+ #include <common/abi.h>
+ 
++#include <chrono> // BC5 experiment 0405 (KYTY_BC5_LOAD_ZLIB): these includes to <zlib.h>
++#include <condition_variable>
++#include <cstdint>
++#include <cstdio>
++#include <cstdlib>
++#include <deque>
++#include <mutex>
++#include <unordered_map>
++
++#include <zlib.h>
++
+ namespace Libs {
+ 
+ namespace LibZlib {
+ LIB_VERSION("libSceZlib", 1, "libSceZlib", 1, 1);
+ 
+-static int KYTY_SYSV_ABI sceZlibInitialize() {
++// ---- BC5 experiment 0405 (series e6 of experiment 0401), tag "tbc": KYTY_BC5_LOAD_ZLIB, libSceZlib ported ----
++// Exp 0405 decision 4 (the tables compiled but never loaded): this table is ported first, then loaded by Libs::InitAll when
++// KYTY_BC5_LOAD_ZLIB is on (libs.cpp, tag "tld"). Ported in adapted form from AnyPS5 (github.com/boykopovar/AnyPS5,
++// GPL-2.0-only) @ 4f41f4c375f5abb487dbd184fbc150f31994d762, core/libs/prx/libSceZlib/Export.cpp:16-112: the error codes,
++// one service with an initialized flag, a request id per inflate, the ids handed out by WaitForDone in submission order
++// (with a timeout in microseconds), the results kept until Finalize; and its note docs/dev/debt/libSceZlib.md:5 ("Native
++// validation confirms the 64-bit initialization length, 2 KiB output granularity up to 64 KiB, null-argument errors and
++// initialization precedence"; the rest follows shadPS4 (PS4) and SharpProspero and is unverified on a PS5). The inflate
++// runs at submission, as AnyPS5's does, over the zlib this tree already links (ZLIB::ZLIBSTATIC with KYTY_HAS_ZLIB=1 in
++// src/CMakeLists.txt; libPngEnc.cpp and rpfArchiveReader.cpp use it): a zlib-wrapped stream (inflateInit), Z_FINISH into
++// the caller's buffer; Z_STREAM_END is 0, an output that ran out with input left is NO_SPACE, anything else FATAL.
++// Adapted where AnyPS5 throws (a case it does not know): a non-null work memory is accepted and not used, a destination
++// not on a 2 KiB boundary is written as any other, and a wait that Finalize ends returns NOT_INITIALIZED; each
++// TODO(verify). KYTY_BC5_LOAD_ZLIB: unset, empty or "0" is off (today's stubs: OK, nothing written); any other value is
++// on. Read once; one stderr line at registration or at the first call.
++// AnyPS5's copyright remains with its authors; GPL-2.0 as the rest of this file (AnyPS5's part is GPL-2.0-only).
++static constexpr int      BC5_ZLIB_ERROR_NOT_FOUND           = static_cast<int>(0x81120002u);
++static constexpr int      BC5_ZLIB_ERROR_INVALID_ARGUMENT    = static_cast<int>(0x81120016u);
++static constexpr int      BC5_ZLIB_ERROR_NO_SPACE            = static_cast<int>(0x8112001Cu);
++static constexpr int      BC5_ZLIB_ERROR_TIMED_OUT           = static_cast<int>(0x81120027u);
++static constexpr int      BC5_ZLIB_ERROR_NOT_INITIALIZED     = static_cast<int>(0x81120032u);
++static constexpr int      BC5_ZLIB_ERROR_ALREADY_INITIALIZED = static_cast<int>(0x81120033u);
++static constexpr int      BC5_ZLIB_ERROR_FATAL               = static_cast<int>(0x811200FFu);
++static constexpr uint32_t BC5_ZLIB_OUT_STEP                  = 2048;  // a destination length is a multiple of 2 KiB ...
++static constexpr uint32_t BC5_ZLIB_OUT_MAX                   = 65536; // ... up to 64 KiB
++
++// KYTY_BC5_LOAD_ZLIB, read once; the first call prints the switch's line.
++static bool Bc5ZlibOn() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_LOAD_ZLIB");
++		const bool  v = e != nullptr && e[0] != '\0' && !(e[0] == '0' && e[1] == '\0');
++		std::fputs(v ? "[bc5] exp 0405: zlib port on (items: Initialize Finalize Inflate WaitForDone GetResult)\n"
++		             : "[bc5] exp 0405: zlib port off\n",
++		           stderr);
++		std::fflush(stderr);
++		return v;
++	}();
++	return on;
++}
++
++struct Bc5ZlibResult {
++	uint32_t produced; // bytes written to the destination
++	int32_t  status;   // 0, NO_SPACE or FATAL
++};
++
++struct Bc5ZlibState {
++	std::mutex                                  mutex;
++	std::condition_variable                     done;
++	bool                                        initialized = false;
++	uint64_t                                    next_id     = 1;
++	uint64_t                                    session     = 0; // counts the Finalize calls: a wait that one ends sees it
++	std::unordered_map<uint64_t, Bc5ZlibResult> results;         // every request since Initialize
++	std::deque<uint64_t>                        completed;       // ids WaitForDone has not handed out yet, in order
++};
++
++// Never destroyed: a guest thread may still wait on it while the process ends.
++static Bc5ZlibState& Bc5Zlib() {
++	static auto* state = new Bc5ZlibState;
++	return *state;
++}
++
++static int Bc5ZlibInitialize(const void* buffer, uint64_t length) {
++	auto&           z = Bc5Zlib();
++	std::lock_guard lock(z.mutex);
++	if (z.initialized) {
++		return BC5_ZLIB_ERROR_ALREADY_INITIALIZED;
++	}
++	if ((buffer == nullptr) != (length == 0)) {
++		return BC5_ZLIB_ERROR_INVALID_ARGUMENT;
++	}
++	z.initialized = true; // a work memory (AnyPS5 throws there) is accepted and not used: TODO(verify)
++	return OK;
++}
++
++static int Bc5ZlibFinalize() {
++	auto&           z = Bc5Zlib();
++	std::lock_guard lock(z.mutex);
++	if (!z.initialized) {
++		return BC5_ZLIB_ERROR_NOT_INITIALIZED;
++	}
++	z.results.clear();
++	z.completed.clear();
++	z.initialized = false;
++	z.session++;
++	z.done.notify_all();
++	return OK;
++}
++
++static int Bc5ZlibInflate(const void* source, uint32_t source_length, void* destination, uint32_t destination_length,
++                          uint64_t* request_id) {
++	auto&           z = Bc5Zlib();
++	std::lock_guard lock(z.mutex);
++	if (!z.initialized) {
++		return BC5_ZLIB_ERROR_NOT_INITIALIZED;
++	}
++	if (source == nullptr || source_length == 0 || destination == nullptr || request_id == nullptr ||
++	    destination_length == 0 || destination_length > BC5_ZLIB_OUT_MAX || (destination_length % BC5_ZLIB_OUT_STEP) != 0) {
++		return BC5_ZLIB_ERROR_INVALID_ARGUMENT;
++	}
++	// A destination not on a 2 KiB boundary (AnyPS5 throws there) is written as any other: TODO(verify).
++	Bc5ZlibResult result {0, BC5_ZLIB_ERROR_FATAL};
++	z_stream      stream {};
++	stream.next_in   = static_cast<Bytef*>(const_cast<void*>(source));
++	stream.avail_in  = source_length;
++	stream.next_out  = static_cast<Bytef*>(destination);
++	stream.avail_out = destination_length;
++	if (inflateInit(&stream) == Z_OK) {
++		const int r     = inflate(&stream, Z_FINISH);
++		const bool full = (r == Z_BUF_ERROR) && stream.avail_out == 0 && stream.avail_in != 0;
++		result.produced = static_cast<uint32_t>(stream.total_out);
++		result.status   = (r == Z_STREAM_END) ? 0 : (full ? BC5_ZLIB_ERROR_NO_SPACE : BC5_ZLIB_ERROR_FATAL);
++		inflateEnd(&stream);
++	}
++	const uint64_t id = z.next_id++;
++	z.results[id]     = result;
++	z.completed.push_back(id);
++	z.done.notify_one();
++	*request_id = id;
++	return OK;
++}
++
++static int Bc5ZlibWaitForDone(uint64_t* request_id, const uint32_t* timeout) {
++	auto&            z = Bc5Zlib();
++	std::unique_lock lock(z.mutex);
++	if (!z.initialized) {
++		return BC5_ZLIB_ERROR_NOT_INITIALIZED;
++	}
++	if (request_id == nullptr) {
++		return BC5_ZLIB_ERROR_INVALID_ARGUMENT;
++	}
++	const uint64_t session  = z.session;
++	const auto     finished = [&z, session] { return !z.completed.empty() || z.session != session; };
++	if (timeout == nullptr) {
++		z.done.wait(lock, finished);
++	} else if (!z.done.wait_for(lock, std::chrono::microseconds(*timeout), finished)) {
++		return BC5_ZLIB_ERROR_TIMED_OUT;
++	}
++	if (z.session != session) {
++		return BC5_ZLIB_ERROR_NOT_INITIALIZED; // Finalize ended the wait (AnyPS5 throws there): TODO(verify)
++	}
++	*request_id = z.completed.front();
++	z.completed.pop_front();
++	return OK;
++}
++
++static int Bc5ZlibGetResult(uint64_t request_id, uint32_t* destination_length, int32_t* status) {
++	auto&           z = Bc5Zlib();
++	std::lock_guard lock(z.mutex);
++	if (!z.initialized) {
++		return BC5_ZLIB_ERROR_NOT_INITIALIZED;
++	}
++	if (destination_length == nullptr || status == nullptr) {
++		return BC5_ZLIB_ERROR_INVALID_ARGUMENT;
++	}
++	const auto found = z.results.find(request_id);
++	if (found == z.results.end()) {
++		return BC5_ZLIB_ERROR_NOT_FOUND;
++	}
++	*destination_length = found->second.produced;
++	*status             = found->second.status;
++	return OK;
++}
++// ---- end of BC5 experiment 0405 (KYTY_BC5_LOAD_ZLIB) ----
++
++static int KYTY_SYSV_ABI sceZlibInitialize(const void* buffer, uint64_t length) {
+ 	PRINT_NAME();
++	if (Bc5ZlibOn()) { // BC5 experiment 0405 (KYTY_BC5_LOAD_ZLIB); false when off
++		return Bc5ZlibInitialize(buffer, length);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+ static int KYTY_SYSV_ABI sceZlibFinalize() {
+ 	PRINT_NAME();
++	if (Bc5ZlibOn()) { // BC5 experiment 0405 (KYTY_BC5_LOAD_ZLIB); false when off
++		return Bc5ZlibFinalize();
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceZlibInflate() {
++static int KYTY_SYSV_ABI sceZlibInflate(const void* source, uint32_t source_length, void* destination,
++                                        uint32_t destination_length, uint64_t* request_id) {
+ 	PRINT_NAME();
++	if (Bc5ZlibOn()) { // BC5 experiment 0405 (KYTY_BC5_LOAD_ZLIB); false when off
++		return Bc5ZlibInflate(source, source_length, destination, destination_length, request_id);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceZlibWaitForDone() {
++static int KYTY_SYSV_ABI sceZlibWaitForDone(uint64_t* request_id, const uint32_t* timeout) {
+ 	PRINT_NAME();
++	if (Bc5ZlibOn()) { // BC5 experiment 0405 (KYTY_BC5_LOAD_ZLIB); false when off
++		return Bc5ZlibWaitForDone(request_id, timeout);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceZlibGetResult() {
++static int KYTY_SYSV_ABI sceZlibGetResult(uint64_t request_id, uint32_t* destination_length, int32_t* status) {
+ 	PRINT_NAME();
++	if (Bc5ZlibOn()) { // BC5 experiment 0405 (KYTY_BC5_LOAD_ZLIB); false when off
++		return Bc5ZlibGetResult(request_id, destination_length, status);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+ 
+ 
+ LIB_DEFINE(InitZlib_1) {
++	(void)Bc5ZlibOn(); // BC5 experiment 0405: reads KYTY_BC5_LOAD_ZLIB once and prints its line at registration
+ 	LIB_FUNC("m1YErdIXCp4", LibZlib::sceZlibInitialize);
+ 	LIB_FUNC("6na+Sa-B83w", LibZlib::sceZlibFinalize);
+ 	LIB_FUNC("TLar1HULv1Q", LibZlib::sceZlibInflate);
 diff --git a/src/libs/libs.cpp b/src/libs/libs.cpp
 index 36e4dc8..b124920 100644
 --- a/src/libs/libs.cpp
