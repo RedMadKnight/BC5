@@ -6,8 +6,9 @@
 #   c4  an EMPTY private learned file, BC5_GUARD_LEARN_LOG=1 (today's import policy without the memory of earlier runs)
 #   r1  empty file, BC5_GUARD_MAP_RULE=1, LEARN_LOG=1 (R1 alone: a miss still faults)
 #   r2  empty file, MAP_RULE=1, BC5_GUARD_PRT_BG=1, LEARN_LOG=1 (R1 + R2)
-# Order c0 c4 r1 r2 r2 r1 c4 c0. A run rides out two recovered GPU hangs and stops at the third (N_RESETS=3); the series
-# stops after any run that ended on a GPU hang without "reset succeeded", and never writes the shared learned file.
+# Order c0 c4 r1 r2 r2 r1 c4 c0. A run ends at its first kernel amdgpu line (run0412n.sh's default) and the SERIES stops
+# there too (the standing rule: stop at a kernel error; the top session, 2026-11-12). A run the memory watchdog ended is
+# a result and the series goes on. The shared learned file is never written.
 # Before every arm: the lock empty and no emulator for 60 s in a row. Starts no arm after LAST (HH:MM).
 # usage (on the box): LAST=01:10 bash ab0412r.sh > night/ab0412r.out 2>&1
 set -u
@@ -29,9 +30,9 @@ arm() {   # <tag> empty|file [KEY=VALUE ...]
   echo "$(date +%T) $tag ($lf $*): plasmashell $(pgrep -cx plasmashell), rsync processes $(pgrep -c rsync), steamwebhelper $(pgrep -c steamwebhelper), available $(awk '/^MemAvailable/ {print int($2 / 1024)}' /proc/meminfo) MiB, up $(awk '{printf "%.1f h", $1 / 3600}' /proc/uptime)"
   local kc0 ks0; kc0=$(kc); ks0=$(ks)
   if [ "$lf" = empty ]; then
-    N_LEARN=$EMPTY N_RESETS=3 N_EMU=$EMU N_FUSE="13000 2048" N_WD_MIB=220 bash "$X/run0412n.sh" "$tag" fast8 120 "$@" 2>&1 | tail -1
+    N_LEARN=$EMPTY N_EMU=$EMU N_FUSE="13000 2048" N_WD_MIB=220 bash "$X/run0412n.sh" "$tag" fast8 120 "$@" 2>&1 | tail -1
   else
-    N_RESETS=3 N_EMU=$EMU N_FUSE="13000 2048" N_WD_MIB=220 bash "$X/run0412n.sh" "$tag" fast8 120 "$@" 2>&1 | tail -1
+    N_EMU=$EMU N_FUSE="13000 2048" N_WD_MIB=220 bash "$X/run0412n.sh" "$tag" fast8 120 "$@" 2>&1 | tail -1
   fi
   cp -p "$N/direct-learned-pkg.txt" "$R/$tag-learned.txt" 2> /dev/null
   local j; j=$(sed -n 's/^journal \([^ ]*\) .*/\1/p' "$R/$tag-journal.txt" 2> /dev/null)
@@ -41,7 +42,7 @@ arm() {   # <tag> empty|file [KEY=VALUE ...]
   grep -a 'map rule' "$R/$tag-rule.txt" | head -2 | cut -c1-300
   echo "$tag kernel threads' CPU during the arm: kcompactd0 $(( ($(kc) - kc0) / 100 )) s, kswapd0 $(( ($(ks) - ks0) / 100 )) s"
   [ "$(md5sum < "$W/direct-learned-pkg.txt")" = "$SUM0" ] && [ "$(md5sum < "$W/direct-aliases-pkg.txt")" = "$ALI0" ] || { echo "$(date +%T) STOP: the shared learned or alias file changed"; return 1; }
-  if grep -q "GPU HANG" "$R/$tag-end.txt" 2> /dev/null && ! grep -q "reset succeeded" "$R/$tag-end.txt"; then echo "$(date +%T) STOP: $tag ended on a GPU hang without a recovered reset"; return 1; fi
+  if grep -q "GPU HANG" "$R/$tag-end.txt" 2> /dev/null || [ -s "$R/$tag-dmesg-after.txt" ]; then echo "$(date +%T) STOP: $tag had a kernel line: $(cut -c1-200 "$R/$tag-end.txt")"; cut -c1-700 "$R/$tag-rule.txt" | tail -5; return 1; fi
   return 0
 }
 arm c0a file || exit 0
