@@ -97,3 +97,49 @@ The maintainer also asked to check the other items that were tested but never in
 (read-only, laptop) lists 67 rows with file:line evidence. Nothing from exp 0390 on is in patch 0001; the last patch
 commit on main is a8324c8b (exp 0389). 28 rows are recommended for integration default on, 20 default off, 19 left out
 (failed, answered catchers, or no measured gain). Each integration needs the maintainer's yes (D19).
+
+## Integration of the tested private builds (2026-11-12, branch int/0413-tested-into-shared)
+
+The maintainer: "przepisuj po kolei to co było zrobione u nas i merge do main, a potem poprawki z emufive". The top
+session set the source and the rules:
+- the source is the guardian's daily line fast7/lean7;
+- one commit per item, in the audit's order;
+- default-on only with a clean measured result.
+
+**Source.** Binaries g412v bc4356a5 (fast7) and g412L2 8ef2168f (lean7). Every private source was copied from the box at
+10:2x–10:33 (reads only, the top's GO). The main GPU unit follows the lean unit 8f6e92b3 = g412d + the fixed poll, as the
+guardian asked. g412v's ten catchers and the refuted `BC5_GUARD_NOGPU_UNPIN` stay out.
+
+**Replay (`integration/replay.py`, `runner.py`).**
+- 52 steps from the shared tree (f266548 + 0001 2dbed49a): every edit script with the box's arguments, in build order
+  (0401 series c/e/e3/e4–e8, 0409, e11, 0412 g412d/e/memfast/L2).
+- 51 are byte-exact against the files the private build compiled (`steps.tsv`, `final-vs-box.tsv`). None was made by hand.
+- The exception is step 22's `libNpCppWebApi.cpp`. It is a fold of e8's FW_NET edit (e613bc8f) with this experiment's V2
+  unit (910acbb5): e613bc8f's head plus 910acbb5 from line 816. The fold's diff from e613bc8f equals 935fcc7e→910acbb5
+  exactly. It had never been compiled.
+- g412v's eleven left-out steps were replayed on a side copy, byte-exact to 3cea62bc (`vchain.tsv`).
+
+**Commits.**
+- 51 step commits (step 04 changes no file).
+- One commit for the defaults table `src/bc5/switch_defaults.hpp`: `setenv(name, value, 0)` from a priority-101
+  constructor in `main.cpp`. A value in the environment wins, `NAME=0` restores a row's old behaviour, and
+  `KYTY_BC5_SWITCH_DEFAULTS=0` skips the table.
+- One commit per audit row turning its switches on: A2–A9, A11–A22, B16, C1–C3 (`defaults.py`). That is 55 switches,
+  each checked to be read in the sources.
+
+**Off in code, set by the launcher only:**
+- the zero skip and its poll;
+- the orphan release (30 s), split and forget;
+- `CP_COHER_START_DELAY` (never A/B'd).
+
+**Off:** `NOGPU_UNPIN`, `SET_PREDICATION`, PRT/extra AMM commands, the catchers, the journals, and the e11 reset
+switches (they never acted).
+
+Final patch 0001: md5 76c1d045, 85,516 lines.
+
+**Not yet done:** the box build of both shared builds, then 0389's checks:
+- S6N route, RT on;
+- lean start;
+- ASTRO BOT start (also the condition for A11's TLS default);
+- the replug check for the audio rows A5, A17, A19 (s6n0372.sh + replug0372.sh).
+Then the shared launchers' words, and the merge.

@@ -1,0 +1,132 @@
+--- /c/Users/kjani/AppData/Local/Temp/claude/7e70d624f1bff3f5/43cd6eac-dc2c-49c1-b603-e5283be4d569/scratchpad/int/box/exp0401e8/src/libNpCppWebApi.cpp	2026-11-05 15:00:56.000000000 +0100
++++ /c/Users/kjani/AppData/Local/Temp/claude/7e70d624f1bff3f5/43cd6eac-dc2c-49c1-b603-e5283be4d569/scratchpad/int/replay/work/fwn-verify/x/src/libs/libNpCppWebApi.cpp	2026-11-12 10:41:24.555387100 +0100
+@@ -27,6 +27,7 @@
+ #include <atomic>
+ #include <cstddef>
+ #include <cstdint>
++#include <cstdio> // BC5 experiment 0405: std::fprintf
+ #include <cstdlib>
+ #include <cstring>
+ 
+@@ -49,6 +50,71 @@
+ 	EXIT("NpCppWebApi: %s is not reachable on an offline console\n", function);
+ }
+ 
++// ---- BC5 experiment 0405 (series e6 of experiment 0401): KYTY_BC5_FW_NET, item "npwebapi" ----
++// exp 0405 R1 verdict row D1 libSceNpCppWebApi 08fa66176 (class excluded-provenance: "finish returns 0x80553508 per the
++// bundled PPSA21564 module"), cleared by the maintainer's decision 1 of 2026-11-04 (a reading of a module's behaviour).
++// Ported in adapted form from AnyPS5 (github.com/boykopovar/AnyPS5, GPL-2.0-only) @ 4f41f4c375f5abb487dbd184fbc150f31994d762, core/libs/prx/libSceNpCppWebApi/Export.cpp:11
++// (TransactionNotStarted) and its finish overrides, commit 08fa66176 "answer finish, abort and getId for never-started
++// transactions as the module does" (Alexandre Figueiredo): finish of a transaction that never started returns 0x80553508,
++// as the libSceNpCppWebApi module bundled with PPSA21564 does. Here every request fails before its transaction starts
++// (SCE_NP_WEBAPI_ERROR_NOT_SIGNED_IN), so every finish this file registers answers 0x80553508 with the item on; today they
++// return 0. Not taken: abort and getId (this file registers neither) and the commit's constructor changes.
++// KYTY_BC5_FW_NET (one switch for this group: libRtc.cpp, libRudp.cpp, network.cpp, libSystemService.cpp,
++// libNpCppWebApi.cpp): unset, empty or "0" is off (today's path exactly); any other value turns every item on, unless it
++// names items (comma-separated): rtc, rudp, resolver, param400, npwebapi. Each unit reads it once; libRtc.cpp prints the
++// group's one stderr line at its registration.
++// AnyPS5's copyright remains with its authors; GPL-2.0 as the rest of this file.
++static constexpr uint32_t BC5_FWN_NPWEBAPI               = 16u;
++static constexpr int      BC5_NP_TRANSACTION_NOT_STARTED = static_cast<int>(0x80553508u);
++
++static uint32_t Bc5FwNetNpParse(const char* e) {
++	if (e == nullptr || e[0] == '\0' || std::strcmp(e, "0") == 0) {
++		return 0;
++	}
++	static const char* const names[] = {"rtc", "rudp", "resolver", "param400", "npwebapi"}; // bit i is names[i]
++	uint32_t                 parts   = 0;
++	const char*              p       = e;
++	for (;;) {
++		const char*  comma = std::strchr(p, ',');
++		const size_t n     = comma != nullptr ? static_cast<size_t>(comma - p) : std::strlen(p);
++		for (uint32_t i = 0; i < 5; i++) {
++			if (n == std::strlen(names[i]) && std::strncmp(p, names[i], n) == 0) {
++				parts |= 1u << i;
++			}
++		}
++		if (comma == nullptr) {
++			break;
++		}
++		p = comma + 1;
++	}
++	return parts != 0 ? parts : 31u; // every item
++}
++
++// The items of KYTY_BC5_FW_NET that are on (0: off), read once (libRtc.cpp prints the group's line).
++static uint32_t Bc5FwNetNpItems() {
++	static const uint32_t parts = Bc5FwNetNpParse(std::getenv("KYTY_BC5_FW_NET"));
++	return parts;
++}
++
++// A stderr line for each of the first 8 calls in this file whose answer KYTY_BC5_FW_NET changed (only when it is on).
++static void Bc5FwNetNpTell(const char* what) {
++	static std::atomic<uint32_t> told {0};
++	if (told.fetch_add(1, std::memory_order_relaxed) < 8) {
++		std::fprintf(stderr, "[bc5] exp 0405: fw-net %s\n", what);
++		std::fflush(stderr);
++	}
++}
++
++// "npwebapi": true when finish answers BC5_NP_TRANSACTION_NOT_STARTED (no transaction here ever starts); false when off.
++static bool Bc5NpFinishNotStarted() {
++	if ((Bc5FwNetNpItems() & BC5_FWN_NPWEBAPI) == 0) {
++		return false;
++	}
++	Bc5FwNetNpTell("npwebapi: finish of a never-started transaction -> 0x80553508 (0 when off)");
++	return true;
++}
++// ---- end of experiment 0405's fw-net NpCppWebApi helpers ----
++
+ extern "C" {
+ 
+ struct IntrusivePtr {
+@@ -232,6 +298,9 @@
+ }
+ 
+ int KYTY_SYSV_ABI _ZN3sce2Np9CppWebApi6Common21DownStreamTransactionINS2_12IntrusivePtrINS1_17TitleCloudStorage2V17DataApi27DownloadDataResponseHeadersEEEE6finishEv() {
++ if (Bc5NpFinishNotStarted()) { // BC5 experiment 0405 (KYTY_BC5_FW_NET "npwebapi"); false when off
++  return BC5_NP_TRANSACTION_NOT_STARTED;
++ }
+  return 0;
+ }
+ 
+@@ -578,6 +647,9 @@
+ }
+ 
+ int KYTY_SYSV_ABI _ZN3sce2Np9CppWebApi6Common15TransactionBaseINS2_12IntrusivePtrINS1_14SessionManager2V130PostPlayerSessionsResponseBodyEEENS4_INS2_18ResponseHeaderBaseEEEE6finishEv() {
++    if (Bc5NpFinishNotStarted()) { // BC5 experiment 0405 (KYTY_BC5_FW_NET "npwebapi"); false when off
++        return BC5_NP_TRANSACTION_NOT_STARTED;
++    }
+     return 0;
+ }
+ 
+@@ -715,6 +787,9 @@
+ }
+ 
+ int KYTY_SYSV_ABI _ZN3sce2Np9CppWebApi6Common15TransactionBaseINS2_12IntrusivePtrINS1_14SessionManager2V152PostPlayerSessionsSessionIdMemberPlayersResponseBodyEEENS4_INS2_18ResponseHeaderBaseEEEE6finishEv() {
++    if (Bc5NpFinishNotStarted()) { // BC5 experiment 0405 (KYTY_BC5_FW_NET "npwebapi"); false when off
++        return BC5_NP_TRANSACTION_NOT_STARTED;
++    }
+     return 0;
+ }
+ 
+@@ -723,6 +798,9 @@
+ }
+ 
+ int KYTY_SYSV_ABI _ZN3sce2Np9CppWebApi6Common15TransactionBaseINS2_15DefaultResponseENS2_12IntrusivePtrINS2_18ResponseHeaderBaseEEEE6finishEv() {
++    if (Bc5NpFinishNotStarted()) { // BC5 experiment 0405 (KYTY_BC5_FW_NET "npwebapi"); false when off
++        return BC5_NP_TRANSACTION_NOT_STARTED;
++    }
+     return 0;
+ }
+ 
+@@ -747,6 +825,9 @@
+ }
+ 
+ int KYTY_SYSV_ABI _ZN3sce2Np9CppWebApi6Common15TransactionBaseINS2_12IntrusivePtrINS1_14SessionManager2V154GetUsersAccountIdPlayerSessionsInvitationsResponseBodyEEENS4_INS2_18ResponseHeaderBaseEEEE6finishEv() {
++    if (Bc5NpFinishNotStarted()) { // BC5 experiment 0405 (KYTY_BC5_FW_NET "npwebapi"); false when off
++        return BC5_NP_TRANSACTION_NOT_STARTED;
++    }
+     return 0;
+ }
+ 
