@@ -1,0 +1,15 @@
+2026-11-12 23:26:31
+run fu2 (normal), cap 300 s, play 60 s, binary /home/kjaniszewski/bc5-work/exp0415/bin/kyty_emulator md5 9c2dddeed638245ab200dcfe07651dab, launcher 7bb71360 from 157021e3, snapshot e3b9be4116574c95
+extra: KYTY_BC5_APR_POSIX=direct KYTY_BC5_FRAME_STAT=/home/kjaniszewski/bc5-work/exp0415/raw/fu2-frame.txt
+RT on (run0415f: R_RT=off only for measuring RT's share), walk 0, perf 0
+boot d7c07359, up since 2026-11-11 22:32:55
+MemAvailable:   13402676 kB SwapTotal:       7778300 kB SwapFree:        7173616 kB 
+other load: rsync 0, load average 4.86 5.27 5.25
+emulator pid 4020030 exe /home/kjaniszewski/bc5-work/exp0415/bin/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0415/wd
+route: cross (start screen) at 51 s
+route: the save-slot list runs; cross (slot 1) at 57 s
+route: cross (Continue) at 63 s
+route: the load seen at 65 s
+route: gameplay G = 80 s (the load at 65 s)
+route: no walk (R_WALK=0), standing for 60 s from 80 s
+launcher gone: yes; perf ended: not started; launcher exit 0
