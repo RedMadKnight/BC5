@@ -4528,10 +4528,10 @@ index 0000000..226a60e
 +} // namespace bc5::pad_audio_route
 diff --git a/src/bc5/switch_defaults.hpp b/src/bc5/switch_defaults.hpp
 new file mode 100644
-index 0000000..4c85e48
+index 0000000..23e70f0
 --- /dev/null
 +++ b/src/bc5/switch_defaults.hpp
-@@ -0,0 +1,107 @@
+@@ -0,0 +1,101 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +// Experiment 0413: the defaults of switches that went from the private test builds (exps 0401, 0405, 0409, 0412) into
 +// both shared builds. Each row is applied at process start with setenv(name, value, 0), before any static initializer
@@ -4594,12 +4594,6 @@ index 0000000..4c85e48
 +    // A14: file system and POSIX returns
 +    {"KYTY_BC5_FS_FIXES", "1"},
 +    {"KYTY_BC5_POSIX_RET_FIXES", "1"},
-+    // A16: Json2, Ult, UserService, SystemService
-+    {"KYTY_BC5_JSON2_FIXES", "1"},
-+    {"KYTY_BC5_ULT_FIXES", "1"},
-+    {"KYTY_BC5_USERSERVICE_VALUES", "1"},
-+    {"KYTY_BC5_SYSTEMSERVICE_VALUES", "1"},
-+    {"KYTY_BC5_SYSTEMSERVICE_PARAMS_7_1000", "1"},
 +    // A17: AudioOut/AudioIn checks, Ngs2 rack
 +    {"KYTY_BC5_AUDIOOUT_CHECKS", "1"},
 +    {"KYTY_BC5_AUDIOIN_CHECKS", "1"},
