@@ -22,7 +22,7 @@ export LC_ALL=C LANGUAGE=C
 W=$HOME/bc5-work; E=$W/exp0415; R=$E/raw; LOCK=$W/BOX-LOCK; HERE=$(cd "$(dirname "$0")" && pwd)
 SNAP=${R_SNAP:-$HOME/bc5-data/saves/PPSA03671-20261111-2100-memory-heavy}
 GAME=$HOME/bc5-data/games/PPSA03671
-sumof() { (cd "$1" && find PPSA03671 -type f -exec md5sum {} + | sort -k2 | md5sum | cut -c1-16); }
+sumof() { (cd "$1" && find . -type f -exec md5sum {} + | sort -k2 | md5sum | cut -c1-16); }  # of a PPSA03671 directory, from inside it
 m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }
 stop() { echo "run0415 STOP: $*"; exit 1; }
 pgrep '^kyty_emulator' > /dev/null && stop "an emulator is running: not started"
@@ -39,7 +39,7 @@ WANT=$(m "$BIN"); grep -qxF "$WANT  $PIN" "$E/built.md5" || stop "the binary is 
 (cd "$HERE" && sha256sum -c --quiet kit.sha256) || stop "the kit is not what was sent"
 LAUNCH_SRC=$W/play-pkg.sh; LAUNCH=$E/play-pkg-0415.sh; LEARN_SRC=$W/direct-learned-pkg.txt; LEARN=$E/direct-learned-pkg.txt
 [ -f "$LAUNCH_SRC" ] && [ -f "$LEARN_SRC" ] && [ -d "$W/exp0330/wd" ] && [ -x "$W/exp0412/wd0412.sh" ] && [ -d "$GAME" ] || stop "no shared launcher, learned file, exp0330/wd, exp0412/wd0412.sh or game directory"
-[ -d "$SNAP/PPSA03671" ] && [ ! -L "$SNAP" ] || stop "no PPSA03671 directory in the snapshot $SNAP"
+[ -d "$SNAP" ] && [ ! -L "$SNAP" ] && [ -n "$(ls -A "$SNAP")" ] || stop "the snapshot $SNAP is not a directory with files (it is the PPSA03671 directory itself)"
 NSUM=$(sumof "$SNAP")
 if [ -s "$E/snapshot.sum" ]; then [ "$NSUM" = "$(cat "$E/snapshot.sum")" ] || stop "the snapshot reads $NSUM, not $(cat "$E/snapshot.sum")"; else echo "$NSUM" > "$E/snapshot.sum"; fi
 command -v python3 > /dev/null || stop "no python3 on the host for the collector"
@@ -115,8 +115,8 @@ if [ ! -e "$WD" ]; then
 fi
 [ -d "$WD/_SaveData" ] && [ ! -L "$WD/_SaveData" ] && [ -d "$SDD" ] && [ ! -L "$SDD" ] && [ ! -L "$WD" ] || stop "$WD/_SaveData or $SDD is not a private directory"
 case "$(readlink -f "$WD/_SaveData")" in "$E"/*) ;; *) stop "the save directory does not resolve under $E" ;; esac
-rm -rf "$E/wd/_SaveData/PPSA03671" && cp -a "$SNAP/PPSA03671" "$WD/_SaveData/PPSA03671" || stop "the saves could not be put in place"
-[ "$(sumof "$WD/_SaveData")" = "$NSUM" ] || stop "the private copy does not read as the snapshot"
+rm -rf "$E/wd/_SaveData/PPSA03671" && cp -a "$SNAP" "$WD/_SaveData/PPSA03671" || stop "the saves could not be put in place"
+[ "$(sumof "$WD/_SaveData/PPSA03671")" = "$NSUM" ] || stop "the private copy does not read as the snapshot"
 echo "$(date '+%F %T') $TAG the private copy reset from the snapshot $NSUM" >> "$R/saves.txt"
 # ---- the environment
 CMD=$E/in-$TAG.cmd; STAT=$R/$TAG-loadstat.txt
@@ -216,7 +216,7 @@ echo "$TAG ($VAR) ${ENDED:-ended at G+$PLAY}$WHY (after $DUR s; G ${G:-none}, lo
 if [ -f "$LOG" ] && [ "$(stat -c %Y "$LOG")" -ge "$T0" ]; then cp -p "$LOG" "$R/$TAG-play.log"; else echo "no log of this run at $LOG" > "$R/$TAG-play.log"; fi
 grep -a -B2 -A12 "Access violation\|Segmentation\|Aborted\|terminate called\|exception_address\|--- Error ---" "$R/$TAG-play.log" | head -80 > "$R/$TAG-crash.txt" 2> /dev/null
 sudo -n dmesg 2> /dev/null | tail -n +"$((ND + 1))" | grep -i "amdgpu\|gpu\|oom\|hung\|SQC\|Killed" > "$R/$TAG-dmesg-after.txt"
-S1=$(sumof "$WD/_SaveData"); echo "$(date '+%F %T') $TAG the private copy after the run: $S1 ($([ "$S1" = "$NSUM" ] && echo unchanged || echo "the title wrote it"))" >> "$R/saves.txt"
+S1=$(sumof "$WD/_SaveData/PPSA03671"); echo "$(date '+%F %T') $TAG the private copy after the run: $S1 ($([ "$S1" = "$NSUM" ] && echo unchanged || echo "the title wrote it"))" >> "$R/saves.txt"
 echo "$(cat "$R/$TAG-end.txt"); counter lines $(grep -c '^s ' "$STAT" 2> /dev/null), marks $(grep -c '^mark ' "$STAT" 2> /dev/null), kernel lines $(grep -c . "$R/$TAG-dmesg-after.txt"), crash lines $(grep -c . "$R/$TAG-crash.txt"), other load at the end: rsync $(pgrep -c -x rsync)" > "$R/$TAG-summary.txt"
 sync
 cat "$R/$TAG-summary.txt"
