@@ -4528,15 +4528,15 @@ index 0000000..226a60e
 +} // namespace bc5::pad_audio_route
 diff --git a/src/bc5/switch_defaults.hpp b/src/bc5/switch_defaults.hpp
 new file mode 100644
-index 0000000..d5ff331
+index 0000000..bf90f09
 --- /dev/null
 +++ b/src/bc5/switch_defaults.hpp
-@@ -0,0 +1,135 @@
+@@ -0,0 +1,144 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +// Experiment 0413: the defaults of switches that went from the private test builds (exps 0401, 0405, 0409, 0412) into
 +// both shared builds. A value set in the environment always wins and NAME=0 restores the old behaviour of that row.
 +// The rows reach the process through its INITIAL environment: if any is missing, the priority-101 constructor runs
-+// /proc/self/exe again, once, with the same arguments and the missing rows added (KYTY_BC5_SWITCH_DEFAULTS_EXEC=1 marks
++// its own binary (the real path of /proc/self/exe) again, once, with the same arguments and the missing rows added (KYTY_BC5_SWITCH_DEFAULTS_EXEC=1 marks
 +// the second start). Not setenv: in exp 0413 ASTRO BOT's start crashed at eboot+0x48f whenever the rows were added by
 +// setenv (the environ array grown on the heap at start), and passed with the same rows in the initial environment, and
 +// also with setenv plus 20 unrelated variables at start: a layout effect, not a row. If the exec fails, the process goes
@@ -4662,7 +4662,16 @@ index 0000000..d5ff331
 +	for (char** e = environ; e != nullptr && *e != nullptr; e++) envp.push_back(*e);
 +	for (const std::string& a: add) envp.push_back(const_cast<char*>(a.c_str()));
 +	envp.push_back(nullptr);
-+	execve("/proc/self/exe", argv.data(), envp.data());
++	// The real path, not /proc/self/exe: exec through that link would name the process "exe", and every
++	// pgrep '^kyty_emulator' guard on the box would stop seeing it (exp 0413 run p2def).
++	char self[4096];
++	const ssize_t n = readlink("/proc/self/exe", self, sizeof(self) - 1);
++	if (n <= 0) {
++		std::fprintf(stderr, "[bc5] switch defaults: no /proc/self/exe, going on without them\n");
++		return;
++	}
++	self[n] = 0;
++	execve(self, argv.data(), envp.data());
 +	std::fprintf(stderr, "[bc5] switch defaults: the exec failed, going on without them\n");
 +}
 +
