@@ -4528,10 +4528,10 @@ index 0000000..226a60e
 +} // namespace bc5::pad_audio_route
 diff --git a/src/bc5/switch_defaults.hpp b/src/bc5/switch_defaults.hpp
 new file mode 100644
-index 0000000..6e7825b
+index 0000000..8a841de
 --- /dev/null
 +++ b/src/bc5/switch_defaults.hpp
-@@ -0,0 +1,88 @@
+@@ -0,0 +1,90 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +// Experiment 0413: the defaults of switches that went from the private test builds (exps 0401, 0405, 0409, 0412) into
 +// both shared builds. Each row is applied at process start with setenv(name, value, 0), before any static initializer
@@ -4609,6 +4609,8 @@ index 0000000..6e7825b
 +    {"KYTY_BC5_RANGES_FAST", "1"},
 +    // C3: sorted physical-mapping table
 +    {"KYTY_BC5_PHYSMAP_SORTED", "1"},
++    // E1: set-buffer guard: no AMM map flavour over mapped memory (exp 0413)
++    {"KYTY_BC5_AMM_SETBUFFER_GUARD", "1"},
 +    {nullptr, nullptr}};
 +
 +inline void Apply() {
