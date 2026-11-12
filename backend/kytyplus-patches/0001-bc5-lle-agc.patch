@@ -27362,10 +27362,10 @@ index 82be73c..f090fcb 100644
  } // namespace Libs::Audio::AudioInternal
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..b87ecc6
+index 0000000..bb7271e
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,8396 @@
+@@ -0,0 +1,8496 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -32953,6 +32953,86 @@ index 0000000..b87ecc6
 +		journal("reopen: %s\n", g_dev ? "ok" : "FAILED");
 +	}
 +
++// Experiment 0401 series e (BC5_DIRECT_TABLE_CATCHER=1, default off; F403 sub-class B, exp 0402 item 4): the submit-time
++// table catcher. The idea is sharpemu 11506fc's (src/SharpEmu.Libs/Agc/AgcExports.Submissions.cs, CaptureSubmittedTables,
++// GPL-2.0-or-later: titles rewrite their tables soon after submit); no code is taken from it. At submit, submit_now's walk
++// hashes the memory each running indirect packet names: the arguments of DRAW_INDIRECT (0x24, 16 bytes), DRAW_INDEX_INDIRECT
++// (0x25, 20), DISPATCH_INDIRECT (0x16, 12; both forms, as the walk reads them) and up to 16 records of the multi-draw packets
++// (0x2c, 0x38; count and stride where exp 0054 reads them), at the SET_BASE index-1 base the walk tracks; and the (offset,
++// value) tables of LOAD_SH/UCONFIG/CONTEXT_REG_INDEX (0x63, 0x64, 0x9f), in the layout timeout_probe's load_pairs reads
++// (exp 0160). The argument sizes are the Vulkan indirect command structs radv passes to these packets unchanged
++// (TODO(verify) on the console). At the job's completion, and at a fence timeout before timeout_probe, the same memory is
++// hashed again (FNV-1a) and each change is journaled with the first five dwords at submit and now. Not walked: buffers
++// reached through INDIRECT_BUFFER (IB2s); the other LOAD_*_REG_INDEX format (offset and size) is counted, not hashed.
++// A change says the slot was written between submit and completion; it does not say whether the GPU read the old values
++// or the new ones.
++struct CatchSlot {
++	uint64_t addr  = 0;
++	uint32_t bytes = 0, at = 0, op = 0;
++	uint64_t hash  = 0;
++	uint32_t v[5]  = {};
++};
++static bool table_catcher_on() {
++	static const bool        on = bc5::env_on(std::getenv("BC5_DIRECT_TABLE_CATCHER"));
++	static std::atomic<bool> told {false};
++	if (!told.exchange(true))
++		journal("exp 0401: table catcher %s\n", on ? "on (indirect arguments and LOAD_*_REG_INDEX tables hashed at submit, compared at completion and at a timeout)" : "off");
++	return on;
++}
++static std::atomic<uint64_t> g_catch_bufs {0}, g_catch_slots {0}, g_catch_changed {0}, g_catch_gone {0}, g_catch_skipped {0};
++static uint64_t catch_hash(uint64_t a, uint32_t bytes) {
++	const auto* t = reinterpret_cast<const volatile uint32_t*>(a);
++	uint64_t    h = 0xcbf29ce484222325ull; // FNV-1a, 64 bits, a dword at a time
++	for (uint32_t k = 0; k < bytes / 4; k++) {
++		h ^= t[k];
++		h *= 0x100000001b3ull;
++	}
++	return h;
++}
++static void catch_add(std::vector<CatchSlot>& out, const std::vector<bc5::direct::Mapping>& maps, uint32_t op, uint32_t at, uint64_t a, uint32_t bytes) {
++	bytes &= ~3u;
++	if (out.size() >= 256 || a == 0 || bytes < 4 || bytes > 65536 || !covered_sorted(maps, a, bytes)) {
++		g_catch_skipped++;
++		return;
++	}
++	CatchSlot s;
++	s.addr       = a;
++	s.bytes      = bytes;
++	s.at         = at;
++	s.op         = op;
++	s.hash       = catch_hash(a, bytes);
++	const auto* t = reinterpret_cast<const volatile uint32_t*>(a);
++	for (uint32_t k = 0; k < 5 && k < bytes / 4; k++) s.v[k] = t[k];
++	out.push_back(s);
++	g_catch_slots++;
++}
++static void catch_check(const std::vector<CatchSlot>& slots, bool at_timeout, uint64_t n, const char* kind) {
++	if (slots.empty() || !g_dev) return;
++	std::shared_ptr<const std::vector<bc5::direct::Mapping>> maps_p = g_dev->sorted_mappings();
++	uint32_t changed = 0;
++	for (const CatchSlot& s: slots) {
++		if (!covered_sorted(*maps_p, s.addr, s.bytes)) {
++			g_catch_gone++;
++			continue;
++		}
++		if (catch_hash(s.addr, s.bytes) == s.hash) continue;
++		changed++;
++		const uint64_t k = g_catch_changed++;
++		if (at_timeout ? changed <= 64 : (k < 64 || (k & 0x3ffu) == 0)) {
++			const auto* t    = reinterpret_cast<const volatile uint32_t*>(s.addr);
++			uint32_t    v[5] = {};
++			for (uint32_t i = 0; i < 5 && i < s.bytes / 4; i++) v[i] = t[i];
++			journal("table catcher (exp 0401): at %s, submit #%" PRIu64 " %s op %02x at %u: 0x%" PRIx64 " %u bytes changed since submit: was %08x %08x %08x %08x %08x, now %08x %08x %08x %08x %08x (%" PRIu64 " changes so far)\n",
++			        at_timeout ? "the timeout" : "completion", n, kind, s.op, s.at, s.addr, s.bytes, s.v[0], s.v[1], s.v[2], s.v[3], s.v[4], v[0], v[1], v[2], v[3], v[4], k + 1);
++		}
++	}
++	if (at_timeout) journal("table catcher (exp 0401): at the timeout, submit #%" PRIu64 " %s: %zu slots hashed at submit, %u changed\n", n, kind, slots.size(), changed);
++	static std::atomic<uint64_t> n_checks {0};
++	if ((n_checks++ & 0xffffu) == 0)
++		journal("table catcher (exp 0401): %" PRIu64 " buffers, %" PRIu64 " slots hashed, %" PRIu64 " changed, %" PRIu64 " unmapped at the check, %" PRIu64 " not hashed\n", g_catch_bufs.load(),
++		        g_catch_slots.load(), g_catch_changed.load(), g_catch_gone.load(), g_catch_skipped.load());
++}
++
 +// ---- experiment 0024: jobs in flight ---------------------------------------------------------
 +struct PendingJob {
 +	uint64_t                 n          = 0;
@@ -32970,6 +33050,7 @@ index 0000000..b87ecc6
 +	std::vector<uint32_t>    ib_copy;  // experiment 0160: the executed buffer, kept for the timeout probe
 +	std::vector<uint32_t>    ran_copy; // experiment 0160: its executed offsets (what the filter let through)
 +	std::vector<GeProbeSlot> ge_probe; // experiment 0160: the register captures inserted in front of its draws
++	std::vector<CatchSlot>   catch_slots; // experiment 0401 series e: the table catcher's slots
 +};
 +// Experiment 0160: BC5_DIRECT_TIMEOUT_PROBE=1 — after a fence timeout, the buffer the GPU ran (prefix
 +// and rewrites included) goes to <dump dir>/ib-timeout-<submission>.bin, and its draw packets are
@@ -33412,6 +33493,7 @@ index 0000000..b87ecc6
 +				failed = true;
 +				if (FILE* f = journal_min_file(true); f != nullptr) fsync(fileno(f));
 +			}
++			if (!j.catch_slots.empty() && r.rc != -125) catch_check(j.catch_slots, r.timed_out, j.n, j.kind); // experiment 0401 series e
 +			if (r.timed_out && !j.ib_copy.empty()) timeout_probe(j.ib_copy.data(), static_cast<uint32_t>(j.ib_copy.size()), j.kind, j.n, &j.ran_copy, &j.ge_probe); // experiment 0160
 +			if (r.timed_out) {
 +				std::lock_guard lock(g_dev_mutex);
@@ -34150,6 +34232,9 @@ index 0000000..b87ecc6
 +	// Layouts (PAL): DRAW_INDIRECT/DRAW_INDEX_INDIRECT dword1 = offset from the SET_BASE index-1
 +	// base; args {count, instance_count, first, base_vertex, first_instance}; DISPATCH_INDIRECT
 +	// dword1 = offset, args {x, y, z}. TODO(verify) SET_BASE index 1 vs the console's usage.
++	const bool             catch_on = table_catcher_on(); // experiment 0401 series e: the table catcher's slots of this buffer
++	std::vector<CatchSlot> catch_slots;
++	if (catch_on) g_catch_bufs++;
 +	bool                  mec_expand_ib = false; // experiment 0038: rebuild the IB with GFX-form dispatches
 +	std::vector<uint32_t> mec_positions;         // offsets of its compute-form DISPATCH_INDIRECT
 +	{
@@ -34353,6 +34438,19 @@ index 0000000..b87ecc6
 +				static std::atomic<uint64_t> n_multi {0};
 +				if ((n_multi++ & 0xfffu) == 0) journal("  indirect multi draw op %02x at %u: draw count %u, DROPPED (%" PRIu64 " so far)\n", op, q, ib[q + 5], n_multi.load());
 +				opt.drop_offsets.push_back(q);
++			}
++			if (catch_on && type == 3) { // experiment 0401 series e: the table catcher
++				if ((op == 0x24 || op == 0x25 || op == 0x16) && len >= 2) {
++					const bool     cmec = compute_ib && op == 0x16 && len == 4;
++					const uint64_t ca   = cmec ? ((ib[q + 1] & ~3ull) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u)) : (base1 != 0 ? base1 + ib[q + 1] : 0);
++					catch_add(catch_slots, *maps_p, op, q, ca, op == 0x16 ? 12u : op == 0x24 ? 16u : 20u);
++				} else if ((op == 0x2c || op == 0x38) && len >= 10) {
++					const uint32_t one = op == 0x2c ? 16u : 20u, count = ib[q + 5], stride = ib[q + 8];
++					catch_add(catch_slots, *maps_p, op, q, base1 != 0 ? base1 + ib[q + 1] : 0, stride >= one && stride <= 256u && count >= 1 ? std::min(count, 16u) * stride : one);
++				} else if ((op == 0x63 || op == 0x64 || op == 0x9f) && len >= 5) {
++					if ((ib[q + 3] >> 31u) != 0) catch_add(catch_slots, *maps_p, op, q, (ib[q + 1] & ~3u) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u), (ib[q + 4] & 0x3fffu) * 8u);
++					else g_catch_skipped++;
++				}
 +			}
 +			if (type == 3 && op == 0x11 && len >= 4 && (ib[q + 1] & 0xfu) == 1) {
 +				base1 = (ib[q + 2] & ~3u) | (static_cast<uint64_t>(ib[q + 3] & 0xffffu) << 32u);
@@ -34679,6 +34777,7 @@ index 0000000..b87ecc6
 +		r       = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, true, qring);
 +		mec_back(r.executed_offsets);
 +	}
++	if (!catch_slots.empty() && (r.timed_out || !r.pending)) catch_check(catch_slots, r.timed_out, n, kind); // experiment 0401 series e
 +	if (r.timed_out) timeout_probe(sub_ib, sub_n, kind, g_submits.load(), &r.executed_offsets); // experiment 0160
 +	if (r.pending) { // the completion thread waits for it and journals the result
 +		g_ok++;
@@ -34693,6 +34792,7 @@ index 0000000..b87ecc6
 +		it.job.num_dwords = num_dwords;
 +		it.job.ib         = ib;
 +		if (BC5_DIAG_ENV("BC5_DIRECT_TIMEOUT_PROBE") != nullptr) { it.job.ib_copy.assign(sub_ib, sub_ib + sub_n); it.job.ran_copy = r.executed_offsets; } // experiment 0160
++		it.job.catch_slots.swap(catch_slots); // experiment 0401 series e
 +		it.job.ge_probe.swap(t_ge_probe); t_ge_probe.clear(); // experiment 0160
 +		it.job.filter     = r.filter;
 +		it.job.maps       = maps_p->size();
