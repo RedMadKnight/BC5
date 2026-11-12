@@ -4528,14 +4528,19 @@ index 0000000..226a60e
 +} // namespace bc5::pad_audio_route
 diff --git a/src/bc5/switch_defaults.hpp b/src/bc5/switch_defaults.hpp
 new file mode 100644
-index 0000000..6e7825b
+index 0000000..d5ff331
 --- /dev/null
 +++ b/src/bc5/switch_defaults.hpp
-@@ -0,0 +1,88 @@
+@@ -0,0 +1,135 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +// Experiment 0413: the defaults of switches that went from the private test builds (exps 0401, 0405, 0409, 0412) into
-+// both shared builds. Each row is applied at process start with setenv(name, value, 0), before any static initializer
-+// reads a switch, so a value set in the environment always wins and NAME=0 restores the old behaviour of that row.
++// both shared builds. A value set in the environment always wins and NAME=0 restores the old behaviour of that row.
++// The rows reach the process through its INITIAL environment: if any is missing, the priority-101 constructor runs
++// /proc/self/exe again, once, with the same arguments and the missing rows added (KYTY_BC5_SWITCH_DEFAULTS_EXEC=1 marks
++// the second start). Not setenv: in exp 0413 ASTRO BOT's start crashed at eboot+0x48f whenever the rows were added by
++// setenv (the environ array grown on the heap at start), and passed with the same rows in the initial environment, and
++// also with setenv plus 20 unrelated variables at start: a layout effect, not a row. If the exec fails, the process goes
++// on without the defaults and says so on stderr.
 +// KYTY_BC5_SWITCH_DEFAULTS=0 skips the whole table (the code then behaves as in the private builds with nothing set).
 +// One audit row of experiments/0413-np-session-v2-shared/audit-unintegrated.md per block, in the audit's order.
 +// Left out on purpose (the top session's rules, 2026-11-12): the zero skip and its poll, the orphan release, split and
@@ -4543,8 +4548,13 @@ index 0000000..6e7825b
 +// SET_PREDICATION, the catchers and journals (off).
 +#pragma once
 +
++#include <cstdio>
 +#include <cstdlib>
 +#include <cstring>
++#include <string>
++#include <vector>
++
++#include <unistd.h>
 +
 +namespace bc5::switch_defaults {
 +
@@ -4611,12 +4621,49 @@ index 0000000..6e7825b
 +    {"KYTY_BC5_PHYSMAP_SORTED", "1"},
 +    {nullptr, nullptr}};
 +
++// The command line of this process, from /proc/self/cmdline (NUL-separated); empty on failure.
++inline std::vector<std::string> OwnArgs() {
++	std::vector<std::string> args;
++	FILE*                    f = std::fopen("/proc/self/cmdline", "rb");
++	if (f == nullptr) return args;
++	std::string cur;
++	for (int c = std::fgetc(f); c != EOF; c = std::fgetc(f)) {
++		if (c == 0) {
++			args.push_back(cur);
++			cur.clear();
++		} else {
++			cur.push_back(static_cast<char>(c));
++		}
++	}
++	std::fclose(f);
++	if (!cur.empty()) args.push_back(cur);
++	return args;
++}
++
 +inline void Apply() {
 +	const char* all = std::getenv("KYTY_BC5_SWITCH_DEFAULTS");
 +	if (all != nullptr && std::strcmp(all, "0") == 0) return;
++	if (std::getenv("KYTY_BC5_SWITCH_DEFAULTS_EXEC") != nullptr) return; // the second start: the rows are in the environment
++	std::vector<std::string> add;
 +	for (const Default* d = kDefaults; d->name != nullptr; d++) {
-+		setenv(d->name, d->value, 0);
++		if (std::getenv(d->name) == nullptr) add.push_back(std::string(d->name) + "=" + d->value);
 +	}
++	if (add.empty()) return;
++	add.emplace_back("KYTY_BC5_SWITCH_DEFAULTS_EXEC=1");
++	const std::vector<std::string> args = OwnArgs();
++	if (args.empty()) {
++		std::fprintf(stderr, "[bc5] switch defaults: no /proc/self/cmdline, going on without them\n");
++		return;
++	}
++	std::vector<char*> argv;
++	for (const std::string& a: args) argv.push_back(const_cast<char*>(a.c_str()));
++	argv.push_back(nullptr);
++	std::vector<char*> envp;
++	for (char** e = environ; e != nullptr && *e != nullptr; e++) envp.push_back(*e);
++	for (const std::string& a: add) envp.push_back(const_cast<char*>(a.c_str()));
++	envp.push_back(nullptr);
++	execve("/proc/self/exe", argv.data(), envp.data());
++	std::fprintf(stderr, "[bc5] switch defaults: the exec failed, going on without them\n");
 +}
 +
 +} // namespace bc5::switch_defaults
