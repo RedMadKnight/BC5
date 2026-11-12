@@ -50182,6 +50182,1102 @@ index 43f62dd..2501929 100644
  	LIB_FUNC("6sJWiWSRuqk", LibcInternal::strncpy);
  	LIB_FUNC("Ls4tzzhimqQ", LibcInternal::strcat);
  	LIB_FUNC("ob5xAW4ln-0", LibcInternal::strchr);
+diff --git a/src/libs/libCamera.cpp b/src/libs/libCamera.cpp
+index 1a43495..15900d4 100644
+--- a/src/libs/libCamera.cpp
++++ b/src/libs/libCamera.cpp
+@@ -12,11 +12,482 @@
+ 
+ #include <common/abi.h>
+ 
++// BC5 experiment 0405 (series e7 of experiment 0401, tag tcm): what the Camera table's port uses.
++#include <cstddef>
++#include <cstdint>
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++#include <limits>
++#include <mutex>
++#include <set>
++#include <type_traits>
++
+ namespace Libs {
+ 
+ namespace LibCamera {
+ LIB_VERSION("libSceCamera", 1, "libSceCamera", 1, 1);
+ 
++// ---- BC5 experiment 0405 (series e7 of experiment 0401), tag tcm: KYTY_BC5_LOAD_CAMERA, the Camera table's port ----
++// Exp 0405 decision 4 ("=> B => B", 2026-11-04): this table is compiled but Libs::InitAll never loaded it; it is ported
++// first, then loaded behind KYTY_BC5_LOAD_CAMERA (libs.cpp). Unset, empty or "0" is off: every stub below takes today's
++// path (PRINT_NAME, return OK) and InitCamera_1 registers all 76 NIDs. On, the exports answer as a console with NO camera
++// attached; nothing here opens, maps or reads a host device:
++//  - AnyPS5 (github.com/boykopovar/AnyPS5, GPL-2.0-only) @ 4f41f4c375f5abb487dbd184fbc150f31994d762,
++//    core/libs/prx/libSceCamera/: Export.cpp:11-14 (sceCameraIsAttached: index 0 is "not attached", any other index is
++//    refused), 214-216 and 238-240 (the audio data calls refuse a null buffer, else 0, nothing written); src/Handles.cpp:
++//    11-92 (open hands out a handle for the system user, type 0, index 0, handles are not reused; close, start, stop,
++//    the frame data calls with their 584-byte limit: start reports "not connected", the frame data "not open");
++//    src/Config.cpp:7-57 (the default configuration and the cleared device configurations; a new one is refused with
++//    "not connected"); src/Device.cpp:7-52 (device, product and registry queries report a missing device, the mmap
++//    count is 0, the calibration data "not connected", audio open "fatal"); src/Attributes.cpp:8-182 (the getters report
++//    the defaults, the setters check their arguments and report "not connected"). Its debt note
++//    docs/dev/debt/libSceCamera.md:18-25 names shadPS4's camera library (without a camera configured) as the source of
++//    every one of these and says none is measured on a console (TODO(verify)).
++//  - Values: the errors are shadPS4's (github.com/shadps4-emu/shadPS4, GPL-2.0-or-later) @ 60c42b9,
++//    src/core/libraries/camera/camera_error.h:8-31 (PS4 values; AnyPS5 include/Camera.hpp:5-10 uses the same on the PS5);
++//    the system user 0xFF is shadPS4 src/core/libraries/system/userservice.h:22; the defaults are shadPS4
++//    camera_config.cpp:28-37, 122, 156-157, 191, 265, 281, 304-305; the layouts below follow shadPS4 camera.h:42-46,
++//    63-74, 89-158 (AnyPS5 include/Api.hpp:5-97 is the same), only as far as the answers read or write them.
++//  - Our own choice (host safety): where AnyPS5 throws once the handle space is exhausted, open answers 0x802E0014
++//    (shadPS4 camera_error.h:26, MAX_HANDLE; TODO(verify)). Clearing a configuration also clears its padding.
++//  - Already today's answer, not changed: sceCameraAudioClose, sceCameraAudioReset, sceCameraDeviceOpen and
++//    sceCameraSetAttributeInternal answer 0 and do nothing (AnyPS5 Export.cpp:175-177, 351-353, 282-284, 86-88).
++//  - Held (AnyPS5 has throwing placeholders for them, debt :29-91: "signature and behavior are unverified"): 22 exports,
++//    not registered when the switch is on (see InitCamera_1); today's stubs are kept for the off path.
++// AnyPS5's and shadPS4's copyrights remain with their authors; GPL-2.0 as the rest of this file.
++static bool Bc5TcmOn() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_LOAD_CAMERA");
++		const bool  v = e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
++		std::fprintf(stderr, "%s\n",
++		             v ? "[bc5] exp 0405: camera port on (items: isattached open-close start-stop frame config attributes device-queries audio)"
++		               : "[bc5] exp 0405: camera port off");
++		std::fflush(stderr);
++		return v;
++	}();
++	return on;
++}
++
++constexpr int BC5_TCM_ERROR_PARAM          = static_cast<int>(0x802E0000u);
++constexpr int BC5_TCM_ERROR_NOT_INIT       = static_cast<int>(0x802E0002u);
++constexpr int BC5_TCM_ERROR_NOT_OPEN       = static_cast<int>(0x802E0004u);
++constexpr int BC5_TCM_ERROR_FORMAT_UNKNOWN = static_cast<int>(0x802E0007u);
++constexpr int BC5_TCM_ERROR_NOT_CONNECTED  = static_cast<int>(0x802E0010u);
++constexpr int BC5_TCM_ERROR_MAX_HANDLE     = static_cast<int>(0x802E0014u);
++constexpr int BC5_TCM_ERROR_FATAL          = static_cast<int>(0x802E00FFu);
++
++constexpr int32_t  BC5_TCM_SYSTEM_USER          = 0xFF;
++constexpr uint32_t BC5_TCM_FRAME_DATA_MAX       = 584;
++constexpr uint32_t BC5_TCM_FIRST_CHANNEL        = 1; // channel 0 = 1, channel 1 = 2, both = 3
++constexpr uint32_t BC5_TCM_BOTH_CHANNELS        = 3;
++constexpr uint32_t BC5_TCM_DEFAULT_CONTRAST     = 32;
++constexpr uint32_t BC5_TCM_DEFAULT_SATURATION   = 64;
++constexpr uint32_t BC5_TCM_DEFAULT_SHARPNESS    = 1;
++constexpr int32_t  BC5_TCM_DEFAULT_HUE          = 1;
++constexpr uint32_t BC5_TCM_DEFAULT_GAMMA        = 4;
++constexpr uint32_t BC5_TCM_MAX_SHARPNESS        = 10;
++constexpr uint32_t BC5_TCM_CONFIG_TYPE_DEFAULT  = 1;
++constexpr uint32_t BC5_TCM_FORMAT_YUV422        = 0;
++constexpr uint32_t BC5_TCM_FORMAT_SCALED_Y8     = 4;
++constexpr uint32_t BC5_TCM_FRAMERATE_DEFAULT    = 60;
++constexpr uint32_t BC5_TCM_LAST_CALIBRATION_FUN = 1;
++
++// What the answers read or write in the caller's buffers.
++struct Bc5TcmExposure {
++	uint32_t control;
++	uint32_t exposure;
++	uint32_t gain;
++	uint32_t mode;
++};
++struct Bc5TcmBalance {
++	uint32_t control;
++	uint32_t red;
++	uint32_t blue;
++	uint32_t green;
++};
++struct Bc5TcmGammaValue {
++	uint32_t control;
++	uint32_t value;
++	uint8_t  unused[16];
++};
++struct Bc5TcmAttributes { // the whole set of image settings of one channel
++	uint32_t         size;
++	uint32_t         channel;
++	uint32_t         window[4];
++	Bc5TcmExposure   exposure;
++	Bc5TcmBalance    balance;
++	Bc5TcmGammaValue gamma;
++	uint32_t         saturation;
++	uint32_t         contrast;
++	uint32_t         sharpness;
++	int32_t          hue;
++	uint32_t         unused[4];
++};
++struct Bc5TcmTarget { // the optional automatic exposure target
++	uint32_t size;
++	uint32_t level;
++};
++struct Bc5TcmOutput { // one sensor's output in a configuration
++	uint32_t format[4];
++	uint32_t resolution;
++	uint32_t framerate;
++	uint32_t width;
++	uint32_t height;
++	uint32_t unused;
++	void*    extra;
++};
++struct Bc5TcmConfiguration {
++	uint32_t     size;
++	uint32_t     type;
++	Bc5TcmOutput output[2];
++};
++struct Bc5TcmDeviceQuery {
++	uint32_t size;
++	uint32_t revision;
++	uint32_t unused[2];
++};
++struct Bc5TcmCalibrationQuery {
++	uint32_t size;
++	uint32_t format;
++	uint32_t function;
++};
++struct Bc5TcmStartRequest {
++	uint32_t size;
++	uint32_t format[2];
++	void*    extra;
++};
++struct Bc5TcmFrameView { // only the size and the two status words are used
++	uint32_t size;
++	uint32_t mode;
++	uint8_t  frames[224];
++	uint32_t status[2];
++	uint8_t  rest[344];
++};
++static_assert(sizeof(Bc5TcmAttributes) == 112 && offsetof(Bc5TcmAttributes, saturation) == 80);
++static_assert(sizeof(Bc5TcmTarget) == 8 && sizeof(Bc5TcmDeviceQuery) == 16 && sizeof(Bc5TcmCalibrationQuery) == 12);
++static_assert(sizeof(Bc5TcmOutput) == 48 && sizeof(Bc5TcmConfiguration) == 104);
++static_assert(sizeof(Bc5TcmStartRequest) == 24);
++static_assert(sizeof(Bc5TcmFrameView) == BC5_TCM_FRAME_DATA_MAX && offsetof(Bc5TcmFrameView, status) == 232);
++
++// The open handles (AnyPS5 Handles.cpp:14-16, 26-34): handles start at 1 and are never handed out twice.
++struct Bc5TcmHandles {
++	std::mutex        mutex;
++	std::set<int32_t> open;
++	int64_t           next = 1;
++};
++static Bc5TcmHandles& Bc5TcmState() {
++	static Bc5TcmHandles state;
++	return state;
++}
++static bool Bc5TcmIsOpen(int32_t handle) {
++	auto&                 st = Bc5TcmState();
++	std::lock_guard<std::mutex> lock(st.mutex);
++	return st.open.count(handle) != 0;
++}
++static bool Bc5TcmAnyOpen() {
++	auto&                 st = Bc5TcmState();
++	std::lock_guard<std::mutex> lock(st.mutex);
++	return !st.open.empty();
++}
++
++// ---- attached, open, close, start, stop, frames (AnyPS5 Export.cpp:11-14, Handles.cpp:18-22, 38-92) ----
++static int Bc5TcmIsAttached(int32_t index) {
++	return index != 0 ? BC5_TCM_ERROR_PARAM : 0; // 0: no camera attached
++}
++
++static int Bc5TcmOpen(int32_t user_id, int32_t type, int32_t index) {
++	if (user_id != BC5_TCM_SYSTEM_USER || type != 0 || index != 0) {
++		return BC5_TCM_ERROR_PARAM;
++	}
++	auto&                 st = Bc5TcmState();
++	std::lock_guard<std::mutex> lock(st.mutex);
++	if (st.next > std::numeric_limits<int32_t>::max()) {
++		return BC5_TCM_ERROR_MAX_HANDLE;
++	}
++	const auto handle = static_cast<int32_t>(st.next++);
++	st.open.insert(handle);
++	return handle;
++}
++
++static int Bc5TcmClose(int32_t handle) {
++	if (handle < 1) {
++		return BC5_TCM_ERROR_PARAM;
++	}
++	auto&                 st = Bc5TcmState();
++	std::lock_guard<std::mutex> lock(st.mutex);
++	return st.open.erase(handle) == 0 ? BC5_TCM_ERROR_NOT_OPEN : 0;
++}
++
++static int Bc5TcmCheckStart(int32_t handle, const void* request) {
++	const auto* r = static_cast<const Bc5TcmStartRequest*>(request);
++	if (handle < 1 || r == nullptr || r->size != sizeof(Bc5TcmStartRequest)) {
++		return BC5_TCM_ERROR_PARAM;
++	}
++	return Bc5TcmIsOpen(handle) ? 0 : BC5_TCM_ERROR_NOT_OPEN;
++}
++
++static int Bc5TcmStart(int32_t handle, const void* request) {
++	if (const int error = Bc5TcmCheckStart(handle, request); error != 0) {
++		return error;
++	}
++	const auto* r = static_cast<const Bc5TcmStartRequest*>(request);
++	if (r->format[0] > 0xF || r->format[1] > 0xF || (r->format[0] | r->format[1]) == 0) {
++		return BC5_TCM_ERROR_FORMAT_UNKNOWN;
++	}
++	return BC5_TCM_ERROR_NOT_CONNECTED;
++}
++
++static int Bc5TcmStop(int32_t handle) {
++	if (handle < 1) {
++		return BC5_TCM_ERROR_PARAM;
++	}
++	return Bc5TcmIsOpen(handle) ? 0 : BC5_TCM_ERROR_NOT_OPEN;
++}
++
++static int Bc5TcmGetFrameData(int32_t handle, void* frame) {
++	auto* f = static_cast<Bc5TcmFrameView*>(frame);
++	if (f == nullptr) {
++		return BC5_TCM_ERROR_PARAM;
++	}
++	f->status[0] = 0xFFFFFFFFu; // no frame on either sensor
++	f->status[1] = 0xFFFFFFFFu;
++	if (handle < 1 || f->size > BC5_TCM_FRAME_DATA_MAX) {
++		return BC5_TCM_ERROR_PARAM;
++	}
++	return BC5_TCM_ERROR_NOT_OPEN; // no camera was started, so no frame can be read
++}
++
++static int Bc5TcmIsValidFrameData(int32_t handle, const void* frame) {
++	const auto* f = static_cast<const Bc5TcmFrameView*>(frame);
++	if (handle < 1 || f == nullptr || f->size > BC5_TCM_FRAME_DATA_MAX) {
++		return BC5_TCM_ERROR_PARAM;
++	}
++	if (!Bc5TcmIsOpen(handle)) {
++		return BC5_TCM_ERROR_NOT_OPEN;
++	}
++	return (f->status[0] == 1 && f->status[1] == 1) ? 1 : 0;
++}
++
++// ---- configuration (AnyPS5 Config.cpp:7-57) ----
++static int Bc5TcmCheckConfig(int32_t handle, const void* config) {
++	const auto* c = static_cast<const Bc5TcmConfiguration*>(config);
++	if (handle < 1 || c == nullptr || c->size != sizeof(Bc5TcmConfiguration)) {
++		return BC5_TCM_ERROR_PARAM;
++	}
++	return Bc5TcmIsOpen(handle) ? 0 : BC5_TCM_ERROR_NOT_OPEN;
++}
++
++static int Bc5TcmGetConfig(int32_t handle, void* config) {
++	if (const int error = Bc5TcmCheckConfig(handle, config); error != 0) {
++		return error;
++	}
++	auto* c = static_cast<Bc5TcmConfiguration*>(config);
++	c->type = BC5_TCM_CONFIG_TYPE_DEFAULT;
++	for (auto& out: c->output) { // YUV422 with three scaled Y8 levels, 1280x800 (resolution 0), 60 fps
++		std::memset(&out, 0, sizeof(out));
++		out.format[0] = BC5_TCM_FORMAT_YUV422;
++		out.format[1] = BC5_TCM_FORMAT_SCALED_Y8;
++		out.format[2] = BC5_TCM_FORMAT_SCALED_Y8;
++		out.format[3] = BC5_TCM_FORMAT_SCALED_Y8;
++		out.framerate = BC5_TCM_FRAMERATE_DEFAULT;
++	}
++	return 0;
++}
++
++static int Bc5TcmSetConfig(int32_t handle, const void* config) {
++	if (const int error = Bc5TcmCheckConfig(handle, config); error != 0) {
++		return error;
++	}
++	return BC5_TCM_ERROR_NOT_CONNECTED;
++}
++
++static int Bc5TcmGetDeviceConfig(int32_t handle, void* config) {
++	if (const int error = Bc5TcmCheckConfig(handle, config); error != 0) {
++		return error;
++	}
++	auto* c = static_cast<Bc5TcmConfiguration*>(config);
++	std::memset(c, 0, sizeof(Bc5TcmConfiguration));
++	c->size = sizeof(Bc5TcmConfiguration);
++	return 0;
++}
++
++static int Bc5TcmGetDeviceConfigWithoutHandle(void* config) {
++	auto* c = static_cast<Bc5TcmConfiguration*>(config);
++	if (c == nullptr || c->size != sizeof(Bc5TcmConfiguration)) {
++		return BC5_TCM_ERROR_PARAM;
++	}
++	if (!Bc5TcmAnyOpen()) {
++		return BC5_TCM_ERROR_NOT_OPEN;
++	}
++	std::memset(c, 0, sizeof(Bc5TcmConfiguration)); // the size word too, as AnyPS5 does
++	return 0;
++}
++
++// ---- device queries and audio (AnyPS5 Device.cpp:7-52, Export.cpp:214-216, 238-240) ----
++static int Bc5TcmRefuseQuery(const void* out) {
++	if (out == nullptr) {
++		return BC5_TCM_ERROR_PARAM;
++	}
++	return Bc5TcmAnyOpen() ? BC5_TCM_ERROR_NOT_CONNECTED : BC5_TCM_ERROR_NOT_INIT;
++}
++
++static int Bc5TcmGetDeviceInfo(int32_t reserved, const void* info) {
++	const auto* q = static_cast<const Bc5TcmDeviceQuery*>(info);
++	if (reserved != 0 || q == nullptr || q->size != sizeof(Bc5TcmDeviceQuery) || q->revision != 1) {
++		return BC5_TCM_ERROR_PARAM;
++	}
++	return Bc5TcmRefuseQuery(info);
++}
++
++static int Bc5TcmGetMmapConnectedCount(uint32_t* count) {
++	if (!Bc5TcmAnyOpen()) {
++		return BC5_TCM_ERROR_NOT_OPEN;
++	}
++	if (count == nullptr) {
++		return BC5_TCM_ERROR_PARAM;
++	}
++	*count = 0;
++	return 0;
++}
++
++static int Bc5TcmGetCalibDataFromDevice() {
++	return BC5_TCM_ERROR_NOT_CONNECTED;
++}
++
++static int Bc5TcmGetCalibrationData(const void* query, const void* data) {
++	const auto* q = static_cast<const Bc5TcmCalibrationQuery*>(query);
++	if (q == nullptr || data == nullptr || q->size != sizeof(Bc5TcmCalibrationQuery) || q->format != 0 ||
++	    q->function > BC5_TCM_LAST_CALIBRATION_FUN) {
++		return BC5_TCM_ERROR_PARAM;
++	}
++	return BC5_TCM_ERROR_NOT_CONNECTED;
++}
++
++static int Bc5TcmAudioOpen() {
++	return BC5_TCM_ERROR_FATAL;
++}
++
++static int Bc5TcmAudioGetData(const void* data) {
++	return data == nullptr ? BC5_TCM_ERROR_PARAM : 0; // nothing is written
++}
++
++// ---- image settings (AnyPS5 Attributes.cpp:8-182) ----
++static bool Bc5TcmReadable(uint32_t channel) {
++	return channel >= BC5_TCM_FIRST_CHANNEL && channel < BC5_TCM_BOTH_CHANNELS;
++}
++static bool Bc5TcmWritable(uint32_t channel) {
++	return channel >= BC5_TCM_FIRST_CHANNEL && channel <= BC5_TCM_BOTH_CHANNELS;
++}
++
++// A getter: a valid open handle, one readable channel, an output and no option; then the value.
++template <typename V>
++static int Bc5TcmReport(int32_t handle, uint32_t channel, V* out, const void* option, std::type_identity_t<V> value) {
++	if (handle < 1 || !Bc5TcmReadable(channel) || out == nullptr || option != nullptr) {
++		return BC5_TCM_ERROR_PARAM;
++	}
++	if (!Bc5TcmIsOpen(handle)) {
++		return BC5_TCM_ERROR_NOT_OPEN;
++	}
++	*out = value;
++	return 0;
++}
++
++// A setter: checked, then refused, since no camera takes the value.
++static int Bc5TcmRefuseSet(int32_t handle, uint32_t channel, bool valid) {
++	if (handle < 1 || !Bc5TcmWritable(channel) || !valid) {
++		return BC5_TCM_ERROR_PARAM;
++	}
++	return Bc5TcmIsOpen(handle) ? BC5_TCM_ERROR_NOT_CONNECTED : BC5_TCM_ERROR_NOT_OPEN;
++}
++
++static bool Bc5TcmTargetOk(const void* target) {
++	const auto* t = static_cast<const Bc5TcmTarget*>(target);
++	if (t == nullptr) {
++		return true;
++	}
++	if (t->size != sizeof(Bc5TcmTarget)) {
++		return false;
++	}
++	switch (t->level) { // 0 (default) and 0.2 to 2.0 in the steps the library knows
++		case 0x00:
++		case 0x02:
++		case 0x04:
++		case 0x06:
++		case 0x08:
++		case 0x10:
++		case 0x12:
++		case 0x14:
++		case 0x16:
++		case 0x20: return true;
++		default: return false;
++	}
++}
++
++static int Bc5TcmGetAttribute(int32_t handle, void* attributes) {
++	auto* a = static_cast<Bc5TcmAttributes*>(attributes);
++	if (handle < 1 || a == nullptr || a->size != sizeof(Bc5TcmAttributes) || !Bc5TcmReadable(a->channel)) {
++		return BC5_TCM_ERROR_PARAM;
++	}
++	if (!Bc5TcmIsOpen(handle)) {
++		return BC5_TCM_ERROR_NOT_OPEN;
++	}
++	const uint32_t channel = a->channel;
++	std::memset(a, 0, sizeof(Bc5TcmAttributes));
++	a->size              = sizeof(Bc5TcmAttributes);
++	a->channel           = channel;
++	a->exposure.exposure = 83;
++	a->exposure.gain     = 100;
++	a->balance           = Bc5TcmBalance {0, 768, 768, 512};
++	a->gamma.value       = BC5_TCM_DEFAULT_GAMMA;
++	a->saturation        = BC5_TCM_DEFAULT_SATURATION;
++	a->contrast          = BC5_TCM_DEFAULT_CONTRAST;
++	a->sharpness         = BC5_TCM_DEFAULT_SHARPNESS;
++	a->hue               = BC5_TCM_DEFAULT_HUE;
++	return 0;
++}
++
++static int Bc5TcmGetAutoExposureGain(int32_t handle, uint32_t channel, uint32_t* enable, void* target) {
++	auto* t = static_cast<Bc5TcmTarget*>(target);
++	if (handle < 1 || !Bc5TcmReadable(channel) || enable == nullptr) {
++		return BC5_TCM_ERROR_PARAM;
++	}
++	if (t != nullptr && t->size != sizeof(Bc5TcmTarget)) {
++		return BC5_TCM_ERROR_PARAM;
++	}
++	if (!Bc5TcmIsOpen(handle)) {
++		return BC5_TCM_ERROR_NOT_OPEN;
++	}
++	*enable = 0;
++	if (t != nullptr) {
++		*t = Bc5TcmTarget {0, 0}; // cleared, the size word too, as AnyPS5 does
++	}
++	return 0;
++}
++
++static int Bc5TcmGetExposureGain(int32_t handle, uint32_t channel, void* exposure, void* option) {
++	return Bc5TcmReport(handle, channel, static_cast<Bc5TcmExposure*>(exposure), option, Bc5TcmExposure {0, 20, 100, 0});
++}
++
++static int Bc5TcmGetWhiteBalance(int32_t handle, uint32_t channel, void* balance, void* option) {
++	return Bc5TcmReport(handle, channel, static_cast<Bc5TcmBalance*>(balance), option, Bc5TcmBalance {0, 768, 768, 512});
++}
++
++static int Bc5TcmGetGamma(int32_t handle, uint32_t channel, void* gamma, void* option) {
++	Bc5TcmGammaValue value {};
++	value.value = BC5_TCM_DEFAULT_GAMMA;
++	return Bc5TcmReport(handle, channel, static_cast<Bc5TcmGammaValue*>(gamma), option, value);
++}
++
++static int Bc5TcmSetAttribute(int32_t handle, const void* attributes) {
++	const auto* a = static_cast<const Bc5TcmAttributes*>(attributes);
++	if (a == nullptr || a->size != sizeof(Bc5TcmAttributes)) {
++		return BC5_TCM_ERROR_PARAM;
++	}
++	return Bc5TcmRefuseSet(handle, a->channel, true);
++}
++// ---- end of BC5 experiment 0405 (tcm) Camera block ----
++
+ static int KYTY_SYSV_ABI sceCameraAccGetData() {
+ 	PRINT_NAME();
+ 	return OK; // STUBBED
+@@ -27,18 +498,27 @@ static int KYTY_SYSV_ABI sceCameraAudioClose() {
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraAudioGetData() {
++static int KYTY_SYSV_ABI sceCameraAudioGetData(void* data) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmAudioGetData(data);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraAudioGetData2() {
++static int KYTY_SYSV_ABI sceCameraAudioGetData2(void* data) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmAudioGetData(data);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+ static int KYTY_SYSV_ABI sceCameraAudioOpen() {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmAudioOpen();
++	}
+ 	return OK; // STUBBED
+ }
+ 
+@@ -52,13 +532,19 @@ static int KYTY_SYSV_ABI sceCameraChangeAppModuleState() {
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraClose() {
++static int KYTY_SYSV_ABI sceCameraClose(int32_t handle) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmClose(handle);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraCloseByHandle() {
++static int KYTY_SYSV_ABI sceCameraCloseByHandle(int32_t handle) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmClose(handle);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+@@ -67,18 +553,27 @@ static int KYTY_SYSV_ABI sceCameraDeviceOpen() {
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraGetAttribute() {
++static int KYTY_SYSV_ABI sceCameraGetAttribute(int32_t handle, void* attributes) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmGetAttribute(handle, attributes);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraGetAutoExposureGain() {
++static int KYTY_SYSV_ABI sceCameraGetAutoExposureGain(int32_t handle, uint32_t channel, uint32_t* enable, void* target) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmGetAutoExposureGain(handle, channel, enable, target);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraGetAutoWhiteBalance() {
++static int KYTY_SYSV_ABI sceCameraGetAutoWhiteBalance(int32_t handle, uint32_t channel, uint32_t* enable, void* option) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmReport(handle, channel, enable, option, 0u);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+@@ -89,36 +584,57 @@ static int KYTY_SYSV_ABI sceCameraGetCalibData() {
+ 
+ static int KYTY_SYSV_ABI sceCameraGetCalibDataFromDevice() {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmGetCalibDataFromDevice();
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraGetCalibrationData() {
++static int KYTY_SYSV_ABI sceCameraGetCalibrationData(const void* query, void* data) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmGetCalibrationData(query, data);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraGetConfig() {
++static int KYTY_SYSV_ABI sceCameraGetConfig(int32_t handle, void* config) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmGetConfig(handle, config);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraGetContrast() {
++static int KYTY_SYSV_ABI sceCameraGetContrast(int32_t handle, uint32_t channel, uint32_t* contrast, void* option) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmReport(handle, channel, contrast, option, BC5_TCM_DEFAULT_CONTRAST);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraGetDefectivePixelCancellation() {
++static int KYTY_SYSV_ABI sceCameraGetDefectivePixelCancellation(int32_t handle, uint32_t channel, uint32_t* enable, void* option) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmReport(handle, channel, enable, option, 0u);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraGetDeviceConfig() {
++static int KYTY_SYSV_ABI sceCameraGetDeviceConfig(int32_t handle, void* config) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmGetDeviceConfig(handle, config);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraGetDeviceConfigWithoutHandle() {
++static int KYTY_SYSV_ABI sceCameraGetDeviceConfigWithoutHandle(void* config) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmGetDeviceConfigWithoutHandle(config);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+@@ -132,43 +648,67 @@ static int KYTY_SYSV_ABI sceCameraGetDeviceIDWithoutOpen() {
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraGetDeviceInfo() {
++static int KYTY_SYSV_ABI sceCameraGetDeviceInfo(int32_t reserved, const void* info) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmGetDeviceInfo(reserved, info);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraGetExposureGain() {
++static int KYTY_SYSV_ABI sceCameraGetExposureGain(int32_t handle, uint32_t channel, void* exposure, void* option) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmGetExposureGain(handle, channel, exposure, option);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraGetFrameData() {
++static int KYTY_SYSV_ABI sceCameraGetFrameData(int32_t handle, void* frame) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmGetFrameData(handle, frame);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraGetGamma() {
++static int KYTY_SYSV_ABI sceCameraGetGamma(int32_t handle, uint32_t channel, void* gamma, void* option) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmGetGamma(handle, channel, gamma, option);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraGetHue() {
++static int KYTY_SYSV_ABI sceCameraGetHue(int32_t handle, uint32_t channel, int32_t* hue, void* option) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmReport(handle, channel, hue, option, BC5_TCM_DEFAULT_HUE);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraGetLensCorrection() {
++static int KYTY_SYSV_ABI sceCameraGetLensCorrection(int32_t handle, uint32_t channel, uint32_t* enable, void* option) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmReport(handle, channel, enable, option, 0u);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraGetMmapConnectedCount() {
++static int KYTY_SYSV_ABI sceCameraGetMmapConnectedCount(uint32_t* count) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmGetMmapConnectedCount(count);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraGetProductInfo() {
++static int KYTY_SYSV_ABI sceCameraGetProductInfo(void* info) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmRefuseQuery(info);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+@@ -177,18 +717,27 @@ static int KYTY_SYSV_ABI sceCameraGetRegister() {
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraGetRegistryInfo() {
++static int KYTY_SYSV_ABI sceCameraGetRegistryInfo(void* info) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmRefuseQuery(info);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraGetSaturation() {
++static int KYTY_SYSV_ABI sceCameraGetSaturation(int32_t handle, uint32_t channel, uint32_t* saturation, void* option) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmReport(handle, channel, saturation, option, BC5_TCM_DEFAULT_SATURATION);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraGetSharpness() {
++static int KYTY_SYSV_ABI sceCameraGetSharpness(int32_t handle, uint32_t channel, uint32_t* sharpness, void* option) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmReport(handle, channel, sharpness, option, BC5_TCM_DEFAULT_SHARPNESS);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+@@ -197,8 +746,11 @@ static int KYTY_SYSV_ABI sceCameraGetVrCaptureInfo() {
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraGetWhiteBalance() {
++static int KYTY_SYSV_ABI sceCameraGetWhiteBalance(int32_t handle, uint32_t channel, void* balance, void* option) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmGetWhiteBalance(handle, channel, balance, option);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+@@ -207,8 +759,11 @@ static int KYTY_SYSV_ABI sceCameraInitializeRegistryCalibData() {
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraIsAttached() {
++static int KYTY_SYSV_ABI sceCameraIsAttached(int32_t index) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmIsAttached(index);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+@@ -217,13 +772,19 @@ static int KYTY_SYSV_ABI sceCameraIsConfigChangeDone() {
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraIsValidFrameData() {
++static int KYTY_SYSV_ABI sceCameraIsValidFrameData(int32_t handle, const void* frame) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmIsValidFrameData(handle, frame);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraOpen() {
++static int KYTY_SYSV_ABI sceCameraOpen(int32_t user_id, int32_t type, int32_t index, void* param) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return (static_cast<void>(param), Bc5TcmOpen(user_id, type, index));
++	}
+ 	return OK; // STUBBED
+ }
+ 
+@@ -242,8 +803,11 @@ static int KYTY_SYSV_ABI sceCameraSetAppModuleFocus() {
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraSetAttribute() {
++static int KYTY_SYSV_ABI sceCameraSetAttribute(int32_t handle, const void* attributes) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmSetAttribute(handle, attributes);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+@@ -252,13 +816,19 @@ static int KYTY_SYSV_ABI sceCameraSetAttributeInternal() {
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraSetAutoExposureGain() {
++static int KYTY_SYSV_ABI sceCameraSetAutoExposureGain(int32_t handle, uint32_t channel, uint32_t enable, const void* target) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return (static_cast<void>(enable), Bc5TcmRefuseSet(handle, channel, Bc5TcmTargetOk(target)));
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraSetAutoWhiteBalance() {
++static int KYTY_SYSV_ABI sceCameraSetAutoWhiteBalance(int32_t handle, uint32_t channel, uint32_t enable, const void* option) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return (static_cast<void>(enable), Bc5TcmRefuseSet(handle, channel, option == nullptr));
++	}
+ 	return OK; // STUBBED
+ }
+ 
+@@ -267,18 +837,27 @@ static int KYTY_SYSV_ABI sceCameraSetCalibData() {
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraSetConfig() {
++static int KYTY_SYSV_ABI sceCameraSetConfig(int32_t handle, const void* config) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmSetConfig(handle, config);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraSetConfigInternal() {
++static int KYTY_SYSV_ABI sceCameraSetConfigInternal(int32_t handle, const void* config) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmSetConfig(handle, config);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraSetContrast() {
++static int KYTY_SYSV_ABI sceCameraSetContrast(int32_t handle, uint32_t channel, uint32_t contrast, const void* option) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return (static_cast<void>(contrast), Bc5TcmRefuseSet(handle, channel, option == nullptr));
++	}
+ 	return OK; // STUBBED
+ }
+ 
+@@ -287,18 +866,27 @@ static int KYTY_SYSV_ABI sceCameraSetDebugStop() {
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraSetDefectivePixelCancellation() {
++static int KYTY_SYSV_ABI sceCameraSetDefectivePixelCancellation(int32_t handle, uint32_t channel, uint32_t enable, const void* option) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmRefuseSet(handle, channel, enable <= 1 && option == nullptr);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraSetDefectivePixelCancellationInternal() {
++static int KYTY_SYSV_ABI sceCameraSetDefectivePixelCancellationInternal(int32_t handle, uint32_t channel, uint32_t enable, const void* option) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmRefuseSet(handle, channel, enable <= 2 && option == nullptr);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraSetExposureGain() {
++static int KYTY_SYSV_ABI sceCameraSetExposureGain(int32_t handle, uint32_t channel, const void* exposure, const void* option) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmRefuseSet(handle, channel, exposure != nullptr && option == nullptr);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+@@ -307,23 +895,35 @@ static int KYTY_SYSV_ABI sceCameraSetForceActivate() {
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraSetGamma() {
++static int KYTY_SYSV_ABI sceCameraSetGamma(int32_t handle, uint32_t channel, const void* gamma, const void* option) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmRefuseSet(handle, channel, gamma != nullptr && option == nullptr);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraSetHue() {
++static int KYTY_SYSV_ABI sceCameraSetHue(int32_t handle, uint32_t channel, int32_t hue, const void* option) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return (static_cast<void>(hue), Bc5TcmRefuseSet(handle, channel, option == nullptr));
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraSetLensCorrection() {
++static int KYTY_SYSV_ABI sceCameraSetLensCorrection(int32_t handle, uint32_t channel, uint32_t enable, const void* option) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmRefuseSet(handle, channel, enable <= 1 && option == nullptr);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraSetLensCorrectionInternal() {
++static int KYTY_SYSV_ABI sceCameraSetLensCorrectionInternal(int32_t handle, uint32_t channel, uint32_t enable, const void* option) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmRefuseSet(handle, channel, enable <= 2 && option == nullptr);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+@@ -342,13 +942,19 @@ static int KYTY_SYSV_ABI sceCameraSetRegister() {
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraSetSaturation() {
++static int KYTY_SYSV_ABI sceCameraSetSaturation(int32_t handle, uint32_t channel, uint32_t saturation, const void* option) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return (static_cast<void>(saturation), Bc5TcmRefuseSet(handle, channel, option == nullptr));
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraSetSharpness() {
++static int KYTY_SYSV_ABI sceCameraSetSharpness(int32_t handle, uint32_t channel, uint32_t sharpness, const void* option) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmRefuseSet(handle, channel, sharpness <= BC5_TCM_MAX_SHARPNESS && option == nullptr);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+@@ -372,48 +978,64 @@ static int KYTY_SYSV_ABI sceCameraSetVideoSyncInternal() {
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraSetWhiteBalance() {
++static int KYTY_SYSV_ABI sceCameraSetWhiteBalance(int32_t handle, uint32_t channel, const void* balance, const void* option) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmRefuseSet(handle, channel, balance != nullptr && option == nullptr);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraStart() {
++static int KYTY_SYSV_ABI sceCameraStart(int32_t handle, const void* request) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmStart(handle, request);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraStartByHandle() {
++static int KYTY_SYSV_ABI sceCameraStartByHandle(int32_t handle, const void* request) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmCheckStart(handle, request);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraStop() {
++static int KYTY_SYSV_ABI sceCameraStop(int32_t handle) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmStop(handle);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+-static int KYTY_SYSV_ABI sceCameraStopByHandle() {
++static int KYTY_SYSV_ABI sceCameraStopByHandle(int32_t handle) {
+ 	PRINT_NAME();
++	if (Bc5TcmOn()) { // BC5 experiment 0405 (tcm): the port, KYTY_BC5_LOAD_CAMERA
++		return Bc5TcmStop(handle);
++	}
+ 	return OK; // STUBBED
+ }
+ 
+ 
+ 
+ LIB_DEFINE(InitCamera_1) {
+-	LIB_FUNC("QhjrPkRPUZQ", LibCamera::sceCameraAccGetData);
++	const bool bc5_tcm_on = Bc5TcmOn(); // BC5 experiment 0405 (tcm): reads KYTY_BC5_LOAD_CAMERA once and prints its line; on, the 22 held exports are not registered
++	if (!bc5_tcm_on) { LIB_FUNC("QhjrPkRPUZQ", LibCamera::sceCameraAccGetData); } // BC5 experiment 0405 (tcm): held, registered only when off
+ 	LIB_FUNC("UFonL7xopFM", LibCamera::sceCameraAudioClose);
+ 	LIB_FUNC("fkZE7Hup2ro", LibCamera::sceCameraAudioGetData);
+ 	LIB_FUNC("hftC5A1C8OQ", LibCamera::sceCameraAudioGetData2);
+ 	LIB_FUNC("DhqqFiBU+6g", LibCamera::sceCameraAudioOpen);
+ 	LIB_FUNC("wyU98EXAYxU", LibCamera::sceCameraAudioReset);
+-	LIB_FUNC("Y0pCDajzkVQ", LibCamera::sceCameraChangeAppModuleState);
++	if (!bc5_tcm_on) { LIB_FUNC("Y0pCDajzkVQ", LibCamera::sceCameraChangeAppModuleState); } // BC5 experiment 0405 (tcm): held, registered only when off
+ 	LIB_FUNC("OMS9LlcrvBo", LibCamera::sceCameraClose);
+ 	LIB_FUNC("ztqH5qNTpTk", LibCamera::sceCameraCloseByHandle);
+ 	LIB_FUNC("nBH6i2s4Glc", LibCamera::sceCameraDeviceOpen);
+ 	LIB_FUNC("0btIPD5hg5A", LibCamera::sceCameraGetAttribute);
+ 	LIB_FUNC("oEi6vM-3E2c", LibCamera::sceCameraGetAutoExposureGain);
+ 	LIB_FUNC("qTPRMh4eY60", LibCamera::sceCameraGetAutoWhiteBalance);
+-	LIB_FUNC("hHA1frlMxYE", LibCamera::sceCameraGetCalibData);
++	if (!bc5_tcm_on) { LIB_FUNC("hHA1frlMxYE", LibCamera::sceCameraGetCalibData); } // BC5 experiment 0405 (tcm): held, registered only when off
+ 	LIB_FUNC("5Oie5RArfWs", LibCamera::sceCameraGetCalibDataFromDevice);
+ 	LIB_FUNC("RHYJ7GKOSMg", LibCamera::sceCameraGetCalibrationData);
+ 	LIB_FUNC("ZaqmGEtYuL0", LibCamera::sceCameraGetConfig);
+@@ -421,8 +1043,8 @@ LIB_DEFINE(InitCamera_1) {
+ 	LIB_FUNC("tslCukqFE+E", LibCamera::sceCameraGetDefectivePixelCancellation);
+ 	LIB_FUNC("DSOLCrc3Kh8", LibCamera::sceCameraGetDeviceConfig);
+ 	LIB_FUNC("n+rFeP1XXyM", LibCamera::sceCameraGetDeviceConfigWithoutHandle);
+-	LIB_FUNC("jTJCdyv9GLU", LibCamera::sceCameraGetDeviceID);
+-	LIB_FUNC("-H3UwGQvNZI", LibCamera::sceCameraGetDeviceIDWithoutOpen);
++	if (!bc5_tcm_on) { LIB_FUNC("jTJCdyv9GLU", LibCamera::sceCameraGetDeviceID); } // BC5 experiment 0405 (tcm): held, registered only when off
++	if (!bc5_tcm_on) { LIB_FUNC("-H3UwGQvNZI", LibCamera::sceCameraGetDeviceIDWithoutOpen); } // BC5 experiment 0405 (tcm): held, registered only when off
+ 	LIB_FUNC("WZpxnSAM-ds", LibCamera::sceCameraGetDeviceInfo);
+ 	LIB_FUNC("ObIste7hqdk", LibCamera::sceCameraGetExposureGain);
+ 	LIB_FUNC("mxgMmR+1Kr0", LibCamera::sceCameraGetFrameData);
+@@ -431,46 +1053,46 @@ LIB_DEFINE(InitCamera_1) {
+ 	LIB_FUNC("XqYRHc4aw3w", LibCamera::sceCameraGetLensCorrection);
+ 	LIB_FUNC("B260o9pSzM8", LibCamera::sceCameraGetMmapConnectedCount);
+ 	LIB_FUNC("ULxbwqiYYuU", LibCamera::sceCameraGetProductInfo);
+-	LIB_FUNC("olojYZKYiYs", LibCamera::sceCameraGetRegister);
++	if (!bc5_tcm_on) { LIB_FUNC("olojYZKYiYs", LibCamera::sceCameraGetRegister); } // BC5 experiment 0405 (tcm): held, registered only when off
+ 	LIB_FUNC("hawKak+Auw4", LibCamera::sceCameraGetRegistryInfo);
+ 	LIB_FUNC("RTDOsWWqdME", LibCamera::sceCameraGetSaturation);
+ 	LIB_FUNC("c6Fp9M1EXXc", LibCamera::sceCameraGetSharpness);
+-	LIB_FUNC("IAz2HgZQWzE", LibCamera::sceCameraGetVrCaptureInfo);
++	if (!bc5_tcm_on) { LIB_FUNC("IAz2HgZQWzE", LibCamera::sceCameraGetVrCaptureInfo); } // BC5 experiment 0405 (tcm): held, registered only when off
+ 	LIB_FUNC("HX5524E5tMY", LibCamera::sceCameraGetWhiteBalance);
+-	LIB_FUNC("0wnf2a60FqI", LibCamera::sceCameraInitializeRegistryCalibData);
++	if (!bc5_tcm_on) { LIB_FUNC("0wnf2a60FqI", LibCamera::sceCameraInitializeRegistryCalibData); } // BC5 experiment 0405 (tcm): held, registered only when off
+ 	LIB_FUNC("p6n3Npi3YY4", LibCamera::sceCameraIsAttached);
+-	LIB_FUNC("wQfd7kfRZvo", LibCamera::sceCameraIsConfigChangeDone);
++	if (!bc5_tcm_on) { LIB_FUNC("wQfd7kfRZvo", LibCamera::sceCameraIsConfigChangeDone); } // BC5 experiment 0405 (tcm): held, registered only when off
+ 	LIB_FUNC("U3BVwQl2R5Q", LibCamera::sceCameraIsValidFrameData);
+ 	LIB_FUNC("BHn83xrF92E", LibCamera::sceCameraOpen);
+-	LIB_FUNC("eTywOSWsEiI", LibCamera::sceCameraOpenByModuleId);
+-	LIB_FUNC("py8p6kZcHmA", LibCamera::sceCameraRemoveAppModuleFocus);
+-	LIB_FUNC("j5isFVIlZLk", LibCamera::sceCameraSetAppModuleFocus);
++	if (!bc5_tcm_on) { LIB_FUNC("eTywOSWsEiI", LibCamera::sceCameraOpenByModuleId); } // BC5 experiment 0405 (tcm): held, registered only when off
++	if (!bc5_tcm_on) { LIB_FUNC("py8p6kZcHmA", LibCamera::sceCameraRemoveAppModuleFocus); } // BC5 experiment 0405 (tcm): held, registered only when off
++	if (!bc5_tcm_on) { LIB_FUNC("j5isFVIlZLk", LibCamera::sceCameraSetAppModuleFocus); } // BC5 experiment 0405 (tcm): held, registered only when off
+ 	LIB_FUNC("doPlf33ab-U", LibCamera::sceCameraSetAttribute);
+ 	LIB_FUNC("96F7zp1Xo+k", LibCamera::sceCameraSetAttributeInternal);
+ 	LIB_FUNC("yfSdswDaElo", LibCamera::sceCameraSetAutoExposureGain);
+ 	LIB_FUNC("zIKL4kZleuc", LibCamera::sceCameraSetAutoWhiteBalance);
+-	LIB_FUNC("LEMk5cTHKEA", LibCamera::sceCameraSetCalibData);
++	if (!bc5_tcm_on) { LIB_FUNC("LEMk5cTHKEA", LibCamera::sceCameraSetCalibData); } // BC5 experiment 0405 (tcm): held, registered only when off
+ 	LIB_FUNC("VQ+5kAqsE2Q", LibCamera::sceCameraSetConfig);
+ 	LIB_FUNC("9+SNhbctk64", LibCamera::sceCameraSetConfigInternal);
+ 	LIB_FUNC("3i5MEzrC1pg", LibCamera::sceCameraSetContrast);
+-	LIB_FUNC("vejouEusC7g", LibCamera::sceCameraSetDebugStop);
++	if (!bc5_tcm_on) { LIB_FUNC("vejouEusC7g", LibCamera::sceCameraSetDebugStop); } // BC5 experiment 0405 (tcm): held, registered only when off
+ 	LIB_FUNC("jMv40y2A23g", LibCamera::sceCameraSetDefectivePixelCancellation);
+ 	LIB_FUNC("vER3cIMBHqI", LibCamera::sceCameraSetDefectivePixelCancellationInternal);
+ 	LIB_FUNC("wgBMXJJA6K4", LibCamera::sceCameraSetExposureGain);
+-	LIB_FUNC("jeTpU0MqKU0", LibCamera::sceCameraSetForceActivate);
++	if (!bc5_tcm_on) { LIB_FUNC("jeTpU0MqKU0", LibCamera::sceCameraSetForceActivate); } // BC5 experiment 0405 (tcm): held, registered only when off
+ 	LIB_FUNC("lhEIsHzB8r4", LibCamera::sceCameraSetGamma);
+ 	LIB_FUNC("QI8GVJUy2ZY", LibCamera::sceCameraSetHue);
+ 	LIB_FUNC("K7W7H4ZRwbc", LibCamera::sceCameraSetLensCorrection);
+ 	LIB_FUNC("eHa3vhGu2rQ", LibCamera::sceCameraSetLensCorrectionInternal);
+-	LIB_FUNC("lS0tM6n+Q5E", LibCamera::sceCameraSetProcessFocus);
+-	LIB_FUNC("NVITuK83Z7o", LibCamera::sceCameraSetProcessFocusByHandle);
+-	LIB_FUNC("8MjO05qk5hA", LibCamera::sceCameraSetRegister);
++	if (!bc5_tcm_on) { LIB_FUNC("lS0tM6n+Q5E", LibCamera::sceCameraSetProcessFocus); } // BC5 experiment 0405 (tcm): held, registered only when off
++	if (!bc5_tcm_on) { LIB_FUNC("NVITuK83Z7o", LibCamera::sceCameraSetProcessFocusByHandle); } // BC5 experiment 0405 (tcm): held, registered only when off
++	if (!bc5_tcm_on) { LIB_FUNC("8MjO05qk5hA", LibCamera::sceCameraSetRegister); } // BC5 experiment 0405 (tcm): held, registered only when off
+ 	LIB_FUNC("bSKEi2PzzXI", LibCamera::sceCameraSetSaturation);
+ 	LIB_FUNC("P-7MVfzvpsM", LibCamera::sceCameraSetSharpness);
+-	LIB_FUNC("3VJOpzKoIeM", LibCamera::sceCameraSetTrackerMode);
+-	LIB_FUNC("nnR7KAIDPv8", LibCamera::sceCameraSetUacModeInternal);
+-	LIB_FUNC("wpeyFwJ+UEI", LibCamera::sceCameraSetVideoSync);
+-	LIB_FUNC("8WtmqmE4edw", LibCamera::sceCameraSetVideoSyncInternal);
++	if (!bc5_tcm_on) { LIB_FUNC("3VJOpzKoIeM", LibCamera::sceCameraSetTrackerMode); } // BC5 experiment 0405 (tcm): held, registered only when off
++	if (!bc5_tcm_on) { LIB_FUNC("nnR7KAIDPv8", LibCamera::sceCameraSetUacModeInternal); } // BC5 experiment 0405 (tcm): held, registered only when off
++	if (!bc5_tcm_on) { LIB_FUNC("wpeyFwJ+UEI", LibCamera::sceCameraSetVideoSync); } // BC5 experiment 0405 (tcm): held, registered only when off
++	if (!bc5_tcm_on) { LIB_FUNC("8WtmqmE4edw", LibCamera::sceCameraSetVideoSyncInternal); } // BC5 experiment 0405 (tcm): held, registered only when off
+ 	LIB_FUNC("k3zPIcgFNv0", LibCamera::sceCameraSetWhiteBalance);
+ 	LIB_FUNC("9EpRYMy7rHU", LibCamera::sceCameraStart);
+ 	LIB_FUNC("cLxF1QtHch0", LibCamera::sceCameraStartByHandle);
 diff --git a/src/libs/libCompanion.cpp b/src/libs/libCompanion.cpp
 index d86648a..fc08021 100644
 --- a/src/libs/libCompanion.cpp
