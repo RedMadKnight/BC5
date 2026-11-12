@@ -299,3 +299,12 @@ unchanged.
 
 **Consequence.** By the top's rule, no swap. The shared builds stay f6445dc6 and 30ee854b. Not run on f61d5874: the
 second title, lean, the `=0` start, the replug.
+
+**Zero skip in the second-title runs (the top's question).** Every second-title run of this experiment had the zero skip
+on with its poll: p1def, p0off, p3def, p4full and p5final. Each took `BC5_DIRECT_ZERO_SKIP` from exp 0412's own list
+(`~/bc5-work/exp0412/zero-list-0412.txt`, 1,010 MiB in 2 heaps; p5final's journal shows 740 MiB of RenderGpuWcLarge
+skipped) plus `BC5_GUARD_ZSKIP_POLL_SUBMIT=1`. `~/bc5-work/zero-list-pkg.txt` does not exist.
+- The zero skip has three GPU hangs in exp 0412's history, and a zeroed input can also produce a dispatch that never
+  ends.
+- So p5final's F403 reading is weaker than stated above: the hang may be the zero skip's.
+- The zero skip is out of the proposed `play-pkg.sh` diff.
