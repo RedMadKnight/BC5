@@ -208,7 +208,80 @@ major faults per phase) but not removed: exp 0412 owns it.
 
 Arms 4-8 alternate with a fresh baseline when the first four show a drift over the session.
 
+### 6. The first slot (2026-11-12 19:21-21:00 box time, the top session's window): build L1, the baseline, the first cause and its fix
+
+**Builds** (private, `~/bc5-work/exp0415`; shared tree pin `01abfc0c`, archive `75e30335`, both only read) [M]:
+- `mk0415.sh` stopped at configure (ffmpeg-core's CMake asks git for its commit and wants its prebuilt archive);
+  `mk0415b.sh` copies the tree with `.git` and the shared build's prebuilt, as 0413's `p0413.sh`. The 12 edited
+  files matched the laptop's sums; CPU test on the box 49 of 49 and 32 of 32 (one more than on the laptop: the
+  CLOCK_MONOTONIC check). **L1: normal `8f0e4c8c`, lean `2e397081`**, 284 / 287 warnings (not compared with the
+  shared build's count).
+- `mk0415c.sh`, incremental: **L1b = L1 + `kit/0415-l1b-apr.diff`** (`KYTY_BC5_APR_POSIX`, below): normal
+  `55b05fae`, lean `f691fcf5`; L1 kept in `bin-l1`, `bin-lean-l1`.
+
+**Runner.** `run0415.sh` needed three corrections on the box, each as a new file: `run0415b.sh` (`/home` is a link
+to `/var/home`, so the "save directory is under exp0415" check compares resolved paths), `run0415c.sh` (the
+collector's errors kept), `run0415d.sh` (the snapshot is read-only and `cp -a` kept that: the private copy is made
+writable; **b1 ran on a read-only save copy**, the others on a writable one). The private launcher is derived from the
+shared `play-pkg.sh` `157021e3` (installed by exp 0413 at 19:20): its first start on the new shared-tree code was
+run b1, which started and reached play. The snapshot is the `PPSA03671` directory itself (sum `e3b9be4116574c95` by
+the runner's recipe); the title left it unchanged in every run. RT on, no zero skip, the launcher's own words,
+watchdog 220 MiB (never acted; lowest available 378-534 MiB over the first twelve runs). No kernel line and no crash line in any run. The NAS
+rsync ran during most runs (the tables' last column: 1 = an rsync process was seen in that phase).
+
+**The route works from 12 s:** the first cross goes out at 56-63 s on the runner's clock instead of 87 s, a run with
+30 s of play is 109-126 s.
+
+**Baseline, six runs** (b1-b4 on L1; c1, c2 on L1b with the new switch off), by `tab0415.py` [M]:
+
+| | menu load (P2) | Continue to 20 flips/s | P2: APR busy | P2: asked / from disk | P2: per read | P2: buffer's wait in the queue | P2: device mutex held / waited |
+|---|---|---|---|---|---|---|---|
+| b1-b4, c1, c2 | **20.0-22.0 s, mean 20.9** | 15.5-22.9 s, mean 18.0 | 17.9-20.3 s (90-97 % of the phase) | 4.9-5.0 GiB / **11.0-11.9 GiB** | 1.5-1.8 ms | 603-689 ms | 10.9-13.2 s / 5.8-7.4 s |
+
+- The menu load is the disk's: a read buffer is outstanding 90-97 % of the phase, the title asks for 5 GiB in
+  63,000-65,000 reads (mean 80 KiB) and **the NVMe delivers 2.2-2.4 times that at 550-590 MiB/s, which is its limit
+  on this board** (PCIe 2.0 x2; F286 measured 154-623 MiB/s). The phase's length is the bytes from the disk divided by
+  that rate.
+- Why twice the bytes [C, then M below]: `ReadHostFileToGuest` and `ReadHostFileToHost` open the file anew for every
+  read (`Common::File::Open`, then seek and `fread`). A fresh descriptor has no read-ahead history, so the kernel
+  treats each 80 KiB read as the start of a sequential stream and reads ahead of it. The console reads exactly the
+  bytes the command names.
+- More reader threads do not help while the disk is the limit: `KYTY_BC5_APR_READAHEAD=12` (ra1, ra2) gave 22.0
+  and 21.0 s [M].
+- The save load by the rule "reads quiet" is 17-40 s and too noisy to compare (streaming goes on into play); the
+  column "Continue to 20 flips/s" is the comparable one.
+- Other counters of P2 in b1, for the ranking that follows the disk [M]: device mutex held 55 % of the phase and
+  6.2 s waited for it (three threads); direct sync 3.9 s, learned windows 1.8 s, imports 1.1 s (6.1 GiB), AMM
+  commands 1.0 s (14,857), the flip's drain 0.8 s, label waits 0.8 s, anonymous sync 0.7 s, contended guest mutexes
+  0.2 s (2,297 of 959,000 locks), `wait_jobs` 0.1 s, memory-lock waits and zeroing under 0.1 s, HTTP 0. Every ring
+  pass that served packets came right after a sleep (7,604 of 7,604: C1's precondition holds). Semaphores: 254,000
+  signals with 693,000 waiters present, so each signal woke 2.7 threads on average (C6). Render Thread 73 % of a core,
+  game-main 58 %, emulator 3.9 CPUs.
+
+**The fix: `KYTY_BC5_APR_POSIX`** (default off; `kit/0415-l1b-apr.diff`, tag ls415b). `random`: an APR read is
+`open` + `posix_fadvise(POSIX_FADV_RANDOM)` + `pread`, through the same staging buffer and `memcpy` as before.
+`direct`: the same, read straight into the guest's pages (no staging buffer, no second copy); a destination the
+kernel refuses falls back to the staging copy. Missing files, short reads and reads past the end return what the
+old path returned [C]. Not unit-tested: the function needs a file and guest memory; its check is the runs.
+
+| arm (L1b, same session, runs interleaved: c1 x1 y1 c2 y2 x2) | menu load (P2) | Continue to 20 flips/s | P2: from disk | P2: per read | P2: APR busy | to gameplay on the runner's clock |
+|---|---|---|---|---|---|---|
+| off (c1, c2; with b1-b4: six runs) | 22.0, 21.0 (20.0-22.0, mean 20.9) | 15.5, 16.3 (15.5-22.9, mean 18.0) | 11.0-11.9 GiB | 1.5-1.8 ms | 17.9-20.3 s | 90-96 s |
+| `random` (x1, x2) | **16.0, 15.0** | 13.9, 14.9 | 5.07, 5.05 GiB | 0.77, 0.78 ms | 11.0, 11.2 s | 81, 82 s |
+| `direct` (y1, y2) | **16.0, 16.0** | 12.6, 13.0 | 5.11, 5.08 GiB | 0.78, 0.80 ms | 11.4, 11.2 s | 81, 79 s |
+
+**Result [M]: the menu load after the movies goes from 20.9 s (six runs, 20.0-22.0) to 15.8 s (four runs,
+15.0-16.0), 5.1 s or a quarter less; the save load to a steady 20 flips/s from 18.0 s to 13.6 s (12.6-14.9); the
+whole start to gameplay 9-15 s earlier.** The disk now delivers what is asked (5.05-5.11 GiB for 5.1-5.2 asked).
+The two modes do not differ in the menu load; `direct` has the two shortest save loads, inside the spread of two
+runs each. Frame rate in the 20-30 s of play after the load: 22.9-26.0 flips/s in every arm (no difference).
+
+What the fix does not change, and what binds the menu load now: a read buffer is still outstanding 11 of the 16 s
+and waits 340-370 ms in the queue; the device mutex is held 9.2-10.2 s of the 16 s. Series C (below) measures the
+other candidates on top of `direct`.
+
 ## Verdict
 
-Open. Part 1's measurement is designed and its kit written and CPU-tested on the laptop; nothing is built on the
-box or run.
+Open. First cause found and fixed behind a switch: APR reads opened a fresh descriptor per read and the kernel's
+read-ahead doubled the disk's work; `KYTY_BC5_APR_POSIX` takes the menu load from 20.9 to 15.8 s and the save load
+from 18.0 to 13.6 s (private build L1b, four runs against six). The other candidates are being measured.
