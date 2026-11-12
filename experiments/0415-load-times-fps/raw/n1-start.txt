@@ -1,0 +1,14 @@
+2026-11-12 22:38:45
+run n1 (normal), cap 270 s, play 30 s, binary /home/kjaniszewski/bc5-work/exp0415/bin/kyty_emulator md5 3ef2bbf96cd94c457e0876798b1dc745, launcher 7bb71360 from 157021e3, snapshot e3b9be4116574c95
+extra: KYTY_BC5_APR_POSIX=direct KYTY_BC5_WINDOW_FAST=1 KYTY_BC5_VMA_FAST=1 KYTY_BC5_NAMES_FAST=1
+boot d7c07359, up since 2026-11-11 22:32:55
+MemAvailable:   13444308 kB SwapTotal:       7778300 kB SwapFree:        7136876 kB 
+other load: rsync 3, load average 6.85 5.69 6.24
+emulator pid 3369393 exe /home/kjaniszewski/bc5-work/exp0415/bin/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0415/wd
+route: cross (start screen) at 53 s
+route: the save-slot list runs; cross (slot 1) at 59 s
+route: cross (Continue) at 65 s
+route: the load seen at 67 s
+route: gameplay G = 83 s (the load at 67 s)
+route: walk of 1 cycles (30 s) queued at 83 s
+launcher gone: yes; perf ended: yes; launcher exit 0

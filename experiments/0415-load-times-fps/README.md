@@ -461,6 +461,52 @@ time, Continue to 20 flips/s, and in the 34 s of play the flips per second and t
 [I]: the hold shorter by up to the learned windows' part (about 2 s per load phase and per 34 s of play) and a part
 of the anonymous sync; no change of the mean frame rate.
 
+### 10. The third slot (2026-11-12 22:34-22:48 box time): build L3 and its A/B
+
+**Build L3** = L2 + `kit/0415-l3.diff` (`mk0415f.sh`): normal `3ef2bbf9`, lean `4fd184da`; L2 kept in `bin-l2`,
+`bin-lean-l2`. CPU tests on the box [M]: `test0415` 65 of 65 and 32 of 32, `test0415apr` 33 of 33, `test0415sync` 15
+of 15. Five runs, `KYTY_BC5_APR_POSIX=direct` in each, RT on: v1 (the three switches as `verify`), then n1, f1, f2, n2
+(all three on / off / off / on). No kernel line, no crash line. `hold0415.py`, `sum0415.py`; data `raw/<tag>-*`.
+
+**Verify** [M]: `fast_diff` = 0 in every phase of v1: over a whole run the fast forms gave what the old forms gave,
+for every window, every VMA question and every name.
+
+**On against off** (seconds per phase; two runs each) [M]:
+
+| | menu load, off (f1 / f2) | menu load, on (n1 / n2) | save load, off | save load, on | 33-34 s of play, off | play, on |
+|---|---|---|---|---|---|---|
+| the phase | 21 / 16 | 22 / 15 | 14 / 15 | 14 / 15 | | |
+| mutex held | 12.6 / 9.9 | 13.1 / 9.2 | 7.6 / 7.6 | 7.1 / 7.3 | 17.1 / 16.3 | 15.5 / 14.1 |
+| waited for it | 7.2 / 6.4 | 7.4 / 5.9 | 5.5 / 5.4 | 4.9 / 4.9 | 9.1 / 8.5 | 8.0 / 7.1 |
+| **learned windows** | 2.2 / 2.0 | **1.8 / 1.4** | 2.6 / 2.6 | **2.1 / 2.1** | 2.1 / 2.2 | **1.3 / 1.2** |
+| anonymous sync | 0.9 / 0.7 | 0.9 / 0.6 | 0.7 / 0.7 | 0.7 / 0.7 | 1.9 / 1.9 | 1.9 / 1.8 |
+| view list | 1.2 / 1.0 | 1.5 / 1.2 | 1.0 / 1.1 | 1.1 / 1.2 | 1.4 / 1.5 | 1.7 / 1.7 |
+| flips/s, seconds under 15 flips | | | | | 21.6 / 22.1, 4 / 2 | 23.2 / 24.1, 2 / 0 |
+| `kcompactd0` CPU | 17.9 / 12.8 | 18.7 / 7.7 | 10.8 / 12.6 | 11.4 / 7.5 | 27.1 / 28.2 | 24.1 / 13.4 |
+| first key at / Continue to 20 flips/s | 52.2, 52.9 / 14.4, 15.9 | 53.0, 52.4 / 14.5, 15.2 | | | | |
+
+- **`KYTY_BC5_WINDOW_FAST` shortens the learned windows' time by 0.4-0.9 s per phase** (2.0-2.6 s to 1.2-2.1 s; in
+  play 2.1-2.2 to 1.2-1.3), not by the 4.8 s a run that the journal's "windows" part suggested: the rest of that
+  part is not the piece loop (each window also asks `direct_force` and walks the VMAs; not split further).
+- **`KYTY_BC5_VMA_FAST` and `KYTY_BC5_NAMES_FAST` show no effect**: the anonymous sync is 0.6-0.9 and 1.8-1.9 s with
+  and without, the view list 1.0-1.7 s with and without. Their targets are not where those two parts spend their
+  time (for the anonymous sync that leaves the read and parse of `/proc/self/maps`; for the view list the walk of
+  the guest's ranges and a string per range). Exact and harmless, and not worth a default.
+- **The loads did not get shorter** (the first key at 52.2-53.0 s in all four runs; Continue to 20 flips/s
+  14.4-15.9 s) and the mutex's hold in the loads is inside the runs' spread.
+- In play the hold is 1.6-2.2 s shorter in the two "on" runs and the frame rate 1.5-2 flips/s higher, but
+  `kcompactd0` used 24.1 and 13.4 s of CPU in those against 27.1 and 28.2 s, so two runs each do not separate the
+  switches from the kernel's compaction: no claim about the frame rate.
+- **In no run did a learned window map anything** (`learned_changed` = 0 in all 15 phases of the five runs), while
+  `learned_apply` did its full work 262-332 times per phase: on this route the whole application re-derives, about
+  860 times a run and under the device mutex, that everything is already mapped. Passed to exp 0412, which is
+  replacing the windows; it is the measured argument for that work, and for nothing more in this stopgap.
+
+**Verdict of L3.** The stopgap is correct by test and by a verified run and small in effect; the two other fast forms
+do nothing measurable. None of the three is proposed for the shared builds. The mapping maintenance's cost is the
+repetition of whole-layout work on every change of the guest's ranges (views, mappings, windows, the VMA read), and
+that is what a fix has to remove: (d) and the windows' replacement, with exp 0412.
+
 ## Verdict
 
 Part 1, first result. The largest cause of the long loads was ours: every APR read opened its file anew, the
@@ -470,4 +516,6 @@ screen 7.3 s earlier (50.3 against 57.6 s after the start, ten runs against eigh
 4.2 s sooner (13.3 against 17.5 s). Eight other candidates showed no effect on the loads at a resolution of 1-2 s.
 The read path has its CPU test now (33 of 33); a 15-minute run and an ASTRO BOT start with the switch on were clean
 (section 8). Open: the device mutex, held two thirds of the menu load and half of play, 68 % of it mapping
-maintenance in the load (candidates in section 8, none built); the start before the first flip; part 2 (fps).
+maintenance in the load; the start before the first flip; part 2 (fps). Build L3 (section 10) tried three exact
+fast forms of that maintenance: one shortens the learned windows by 0.4-0.9 s per phase, two do nothing, none
+shortens a load. In five runs no learned window mapped anything.
