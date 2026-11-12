@@ -4528,10 +4528,10 @@ index 0000000..226a60e
 +} // namespace bc5::pad_audio_route
 diff --git a/src/bc5/switch_defaults.hpp b/src/bc5/switch_defaults.hpp
 new file mode 100644
-index 0000000..80ac040
+index 0000000..75ad7ba
 --- /dev/null
 +++ b/src/bc5/switch_defaults.hpp
-@@ -0,0 +1,61 @@
+@@ -0,0 +1,70 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +// Experiment 0413: the defaults of switches that went from the private test builds (exps 0401, 0405, 0409, 0412) into
 +// both shared builds. Each row is applied at process start with setenv(name, value, 0), before any static initializer
@@ -4582,6 +4582,15 @@ index 0000000..80ac040
 +    // A12: thread sync and semaphores
 +    {"KYTY_BC5_THREAD_SYNC_FIXES", "1"},
 +    {"KYTY_BC5_SEMA_FIXES", "1"},
++    // A13: memory-call fixes
++    {"BC5_R3_MPROTECT_GAPS", "1"},
++    {"BC5_R3_NULL_ARGS", "1"},
++    {"BC5_R3_RELEASE_HOLES", "1"},
++    {"BC5_R3_MUNMAP_HOLES", "1"},
++    {"BC5_R3_FLEX_HINT", "1"},
++    {"BC5_R3_DMQ_END", "1"},
++    {"BC5_R3_EXEC_EINVAL", "1"},
++    {"BC5_R3_QUERY_SIZE", "1"},
 +    {nullptr, nullptr}};
 +
 +inline void Apply() {
