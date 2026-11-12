@@ -55,8 +55,8 @@ WORDS=(BC5_GAME_DIR=$GAME BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_ACB_CS_PR
 LOW=(BC5_GUARD_LEDGER=1 BC5_GUARD_FILE=random,dontneed "BC5_GUARD_FILE_ROOT=$GAME" BC5_GUARD_PSI=10 BC5_GUARD_APPLY_MIN_MS=50 BC5_GUARD_PIN_CAP=11600)
 ORPH=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=10,eager BC5_GUARD_SPLIT=1)   # SPLIT since the third build (g412c): without it nothing is cut while BC5_DIRECT_ALIASES is set
 CAP=("${ORPH[@]}" BC5_GUARD_PIN_CAP=11600 BC5_GUARD_CAP_ACT=1)
-FUSE=""; ZL=$E/zero-list-0412.txt   # the zero list of the z arms (a copy of the night's scan, put in place by hand)
-case "${1:-}" in zsk | zo | zoc | zof | zoe | fast5 | fast6 | fast7) [ -s "$ZL" ] || { say "0412: no zero list at $ZL; not started"; exit 1; } ;; esac
+LW=; FUSE=""; ZL=$E/zero-list-0412.txt   # the zero list of the z arms (a copy of the night's scan, put in place by hand)
+case "${1:-}" in zsk | zo | zoc | zof | zoe | fast5 | fast6 | fast7 | lw7) [ -s "$ZL" ] || { say "0412: no zero list at $ZL; not started"; exit 1; } ;; esac
 case "${1:-}" in
   base)    ;;
   ledger)  WORDS+=(BC5_GUARD_LEDGER=1); FUSE="12400 2048" ;;   # the fuse since the night of 11-10/11: without a limit this arm took the box down (21:47)
@@ -99,9 +99,17 @@ case "${1:-}" in
   # old arms zo/zof that hung 3 of 9). fast7 = fast5 (release 30 s) with only the fuse at 13,000 MiB. fast6 is not for play.
   fast7)   WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
              "BC5_DIRECT_ZERO_SKIP=$ZL" BC5_GUARD_ZSKIP_POLL_SUBMIT=1 KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="13000 2048" ;;
+  # 2026-11-12 (README section 47): his lean7 play hung the GPU at 107 s. lw7 = fast7 with lean's word set (the six words
+  # play-lean-0412.sh drops are dropped here too) on the normal binary, for the scripted comparison. Not for play.
+  lw7)     WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
+             "BC5_DIRECT_ZERO_SKIP=$ZL" BC5_GUARD_ZSKIP_POLL_SUBMIT=1 KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="13000 2048"; LW=1 ;;
   zoe)     WORDS+=("${ORPH[@]}" "BC5_DIRECT_ZERO_SKIP=$ZL" KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="12400 2048" ;;
-  *) say "0412: usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm|zscan|zsk|zo|zoc|zof|of|zoe|fast|fast2|fast3|fast4|fast5|fast6|fast7 [dry]; not started"; exit 1 ;;
+  *) say "0412: usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm|zscan|zsk|zo|zoc|zof|of|zoe|fast|fast2|fast3|fast4|fast5|fast6|fast7|lw7 [dry]; not started"; exit 1 ;;
 esac
+if [ "${LW:-}" = 1 ]; then
+  T=(); for x in "${WORDS[@]}"; do case "$x" in BC5_GUARD_LEDGER=* | BC5_DIRECT_TABLE_CATCHER=* | KYTY_BC5_EVENT_PENDING_LOG=* | BC5_DIRECT_RESET_LABEL_JOURNAL=* | BC5_DIRECT_JOURNAL_QUIET=* | BC5_DIRECT_ACB_INHERIT=journal) ;; *) T+=("$x") ;; esac; done
+  WORDS=("${T[@]}")
+fi
 ARM=$1; DRY=${2:-}
 # The catchers' env file (README section 23, the top session's order of 2026-11-11): $E/catchers.env with lines
 # BC5_GUARD_GAP_STAT=<n> and/or BC5_GUARD_LOCK_STAT=<n>. Absent (the default): no catcher. They change no behaviour;

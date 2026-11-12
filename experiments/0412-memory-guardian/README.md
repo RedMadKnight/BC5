@@ -2117,9 +2117,67 @@ The maintainer: "tak, zmien oba parametry" (the fuse to 13,000 MiB, the orphan r
   because `auditd.service` refuses a manual stop; the sampler alone stops with the same command without `auditd`.
   At 01:22 the sampler was still active.
 
+### 47. His lean7 play hung the GPU; the zero skip hangs without the "journal" words (2026-11-12 07:50–16:37)
+
+- **His play [M].** 07:50:20 he started the desktop's lean7 (g412L2 8ef2168f, release 30 s, zero skip with its poll,
+  fuse 13,000 MiB). 07:52:07 `ring gfx_0.0.0 timeout`, thread bc5-chainwd, 107 s after the start; the ring reset
+  succeeded, the box stayed up; cgroup peak 12,788 MiB, no OOM kill. Lean writes no journal, so the buffer is not
+  recorded; devcoredump `~/bc5-data/captures/devcoredump/20261112-075210-devcd2.txt` (not read yet).
+- **The same day, another build [M, exp 0413's report].** Its integration binary e82e6547 (main unit = the lean unit
+  8f6e92b3) hung at G+55 s with the zero skip and the poll on, release 30 s, BC5_DIRECT_JOURNAL_QUIET=1, none of
+  lean's other dropped words; twice clean to G+240 s with the same words minus the zero skip.
+- **Series on g412v [M]** (scripted route, named snapshot, RT on, 120 s after G, fuse 13,000, watchdog 220 MiB;
+  `ab0412w.sh`, `raw/ab0412w.out`). Arm **lw7** = fast7's words minus the six words lean drops (BC5_GUARD_LEDGER,
+  BC5_DIRECT_TABLE_CATCHER, KYTY_BC5_EVENT_PENDING_LOG, BC5_DIRECT_RESET_LABEL_JOURNAL, BC5_DIRECT_JOURNAL_QUIET,
+  BC5_DIRECT_ACB_INHERIT=journal); its words equal play-lean-0412.sh's less BC5_LEAN, BC5_LOGGING, KYTY_BC5_MANGOHUD.
+
+| run | words | result |
+|---|---|---|
+| a1lw 15:15 | lw7 | **GPU hang at G+61 s** |
+| b1f7 15:46 | fast7 | clean, 25.3 flips/s |
+| b2lw 15:55 | lw7 | clean, 25.4 |
+| b4tc 16:03 | lw7 + BC5_DIRECT_TABLE_CATCHER=1 | clean, 25.7 |
+| b5jr 16:08 | lw7 + LEDGER, EVENT_PENDING_LOG, RESET_LABEL_JOURNAL, JOURNAL_QUIET | clean, 26.0 |
+| b6f7 16:18 | fast7 | clean, 24.9 |
+| b7lw 16:23 | lw7 | clean, 24.8 |
+| b8ai 16:28 | lw7 + BC5_DIRECT_ACB_INHERIT=journal | **GPU hang at G+106 s** |
+| b9tc 16:34 | lw7 + BC5_DIRECT_TABLE_CATCHER=1 | **GPU hang at 100 s, before G (during the load)** |
+
+  Every hang: ring reset succeeded, box up. b3ai did not run (exp 0413 took the lock in the same second; the runner
+  refused). The NAS archive's idle-priority rsync ran from 16:02 (3 processes at the starts of b4tc..b9tc).
+- **Count [M].** With all of fast7's words: 0 hangs in 16 scripted runs (14 before, b1f7, b6f7) and his one play.
+  Without BC5_GUARD_LEDGER (lean7's play, exp 0413's run, a1lw, b2lw, b4tc, b7lw, b8ai, b9tc): **5 hangs in 8**.
+  0 of 16 against 5 of 8: Fisher's exact p = 0.0013 two-sided, so the difference is not chance at the usual level.
+  The words lean drops are therefore NOT journal-only as a set; section 43 assumed it without a test, and that
+  was wrong. The lean compile is cleared: g412v hangs too.
+- **Which word: not shown.** ACB_INHERIT=journal alone does not protect (b8ai), TABLE_CATCHER alone does not
+  (b9tc). BC5_GUARD_LEDGER is the one word present in all 17 clean fast7 runs and b5jr and absent in all five
+  hangs [M]; that it is the protecting one is an inference from one clean run of its group of four (b5jr) [I].
+- **The hung buffers [M]** (a1lw acb #144379, b8ai acb #181713; dumped beside the journals in
+  `~/bc5-data/captures/play-20261112-1515/gc/` and the run's own directory): compute buffers with 731 and 1,178
+  indirect dispatches, the largest grid 18,413,305,064,660,664,320 and 18,443,821,864,561,147,904 groups; many
+  dispatches read group counts such as 1068779520 x 1086467584 x 1067442176 from their argument addresses
+  (0x12aae9ed20, 0x1213a77e20, ...): these are bit patterns of small floats (0x3fb4..., 0x40c2...), i.e. other data
+  where the title's arguments should be. Same signature as z1f6 (section 46).
+- **Hypothesis, not tested [I].** All skipped chunks are mapped to one canary BO, so what the GPU writes into one
+  skipped chunk is readable through every other skipped chunk until the watcher takes the run back; an indirect
+  dispatch whose arguments lie in a skipped chunk then reads another chunk's floats. Whether the argument
+  addresses above lie in skipped chunks at the time of the hang is the next check (the journal has no view table;
+  needs the views of a run or /proc/<pid>/maps). If so, the zero skip as built is unsound for memory the GPU
+  writes, whatever the words, and the ledger only narrows the window.
+- **Consequences.** lean7 must not be played: it is the hanging word set. fast7 stays the tested line. Section 46's
+  "30 s release: no hang" holds only for fast7's full word set. For exp 0413's shared patch the zero skip stays
+  launcher-only and off in code. Arm lw7 was added to play-guard-0412.sh (1137c59b; fast7's words unchanged,
+  checked by the sum of the word list before and after); the copy before is play-guard-0412.sh.before-lw7-63fd0133.
+- Process note: the first arm (a1lw) was started inside a slot the top session had given exp 0413, because I
+  checked only the lock; the top session's slot is asked for before every series (corrected the same hour).
+
 ## Verdict
 
 **After the unattended night (section 9): a cgroup memory limit keeps the box alive, and the zero skip with a list scanned at his save removes the memory pressure in scripted runs of his save; the frame rate there is GPU-bound and did not change. Not yet seen or played by him.**
+- **The zero skip hangs the GPU without fast7's full word set (section 47) [M]:** 5 hangs in 8 runs without
+  BC5_GUARD_LEDGER (his lean7 play, exp 0413's build, three scripted runs) against 0 in 16 with fast7's words.
+  lean7 is not for play. Which word protects and why is not shown; the canary's sharing is the suspect [I].
 - **The 10 s release hangs the GPU with the zero skip (section 46) [M]:** one hang in one run (fast6), as the old zo arms (3 of 9); with 30 s
   none in 13 runs and his play. The shortcuts are fast7 and lean7: release 30 s, fuse 13,000 MiB. What removed the old hangs is not shown.
 - **His play on fast5 (section 42) [M]:** no hang in 185 s (the poll took 34 chunks back), available 462-548 MiB, but 62 s in
