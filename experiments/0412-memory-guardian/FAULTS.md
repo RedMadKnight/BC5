@@ -22,3 +22,5 @@ not rows yet: each needs its record read against the kinds above before it gets 
 Deliberate faults are not rows: 2026-11-13 11:10, run k1rh, the host's probe read of 0x1100000000 with K1r off (his word: "Tak, wywołaj"), record `~/bc5-data/captures/faults/20261113-111017/`.
 
 Open, not a fault (README section 69): the packet filter drops a packet whose write target lies in never-imported lazy memory, so the title's write is lost (ASTRO BOT's start, `orbis_user_malloc`; older than K1r). The console has that memory. Rule to write: import a packet's write target when the packet is seen.
+
+2026-11-13 15:13-15:42, build g412zc (README section 71), no fault in six arms: row 6's packet is named (two op-0x49 packets of the 10,494-dword dcb, operands on the fault's page); with cv412 ASTRO BOT's start runs 120 s with K1r on, and with `BC5_GUARD_K1_FILTER=1` one 2 MiB import lets the packets through. The second title's dropped operands are none under a view. New K1r defect (no fault, found by the watch): under lazy views a zero cover lay over memory the CPU had written; fix kl412 written, not compiled.

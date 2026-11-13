@@ -128,7 +128,7 @@ distrobox enter ubuntu -- sh -c "cd '$B' && nice -n 19 ninja kyty_emulator" < /d
 b=$B/src/kyty_emulator
 [ -x "$b" ] || die "no binary"
 echo "normal: $(md5sum < "$b" | cut -d' ' -f1), warnings $(grep -c 'warning:' "$B.build.log")"
-for s in BC5_GUARD_K1R_COVERS_VISIBLE BC5_GUARD_K1_FILTER "tag k1f412" "tag cv412" BC5_GUARD_K1R_PROBE "tag pr412" BC5_GUARD_WATCH "tag wa412" BC5_FAULT_RECORD "tag fr412" "tag sg412" "MAY BE INCOMPLETE" BC5_GUARD_K1R_REPLACE KYTY_BC5_MEM_FIRSTFAIL KYTY_BC5_TRAP_LOG BC5_DIRECT_MAX_BO_MIB "tag ff412" BC5_GUARD_K1R "tag k1r412" BC5_DIRECT_RESET_LABELS_ADD "tag rl412" "tag nl412" BC5_GUARD_K1_STAT KYTY_BC5_AMM_SCATTER KYTY_BC5_AMM_SETBUFFER_GUARD; do
+for s in BC5_GUARD_K1R_COVERS_VISIBLE BC5_GUARD_K1_FILTER "tag k1f412" BC5_GUARD_K1R_PROBE "tag pr412" BC5_GUARD_WATCH "tag wa412" BC5_FAULT_RECORD "tag fr412" "tag sg412" "MAY BE INCOMPLETE" BC5_GUARD_K1R_REPLACE KYTY_BC5_MEM_FIRSTFAIL KYTY_BC5_TRAP_LOG BC5_DIRECT_MAX_BO_MIB "tag ff412" BC5_GUARD_K1R "tag k1r412" BC5_DIRECT_RESET_LABELS_ADD "tag rl412" "tag nl412" BC5_GUARD_K1_STAT KYTY_BC5_AMM_SCATTER KYTY_BC5_AMM_SETBUFFER_GUARD; do
   grep -aqF -- "$s" "$b" || die "the binary lacks [$s]"
 done
 grep -aqF "direct-learned" "$b" && echo "note: the string direct-learned is still in the binary (another unit?)"

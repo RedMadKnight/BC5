@@ -3369,6 +3369,59 @@ the cutscene's case. What neither does: a **shader's write** into never-written 
 depth, RW buffers and images in the descriptors): the bind hints do the first two today, the descriptors are not
 read.
 
+### 71. Build g412zc on the box: what the filter drops, K1r with cv412 on ASTRO BOT, K1 at the filter; a new K1r defect under lazy views (2026-11-13 15:13-15:42, box)
+
+Build g412zc (`memfast/mk0412zc.sh`, kit `kit-zc.sha256`): binary a927b6fa, private backend archive 4c5bb4fc, the
+six CPU tests passed on the box. The first run of the script stopped at its own string check ("tag cv412" is only in
+comments, never in the binary); the check was removed and the script run again (same binary). Six arms, all [M],
+none with a kernel amdgpu line, no reboot. `BC5_DIRECT_TIMEOUT_PROBE=1` and `BC5_FAULT_RECORD=1` in all. ASTRO BOT
+through exp 0413's `start0413g.sh` with `PLAY_CAPTURE=1` on a fresh private save directory (the integrator's was
+moved to `wda/_SaveData.aside-0412-1520`); the second title through `run0412n.sh`, arm fast8, the cutscene snapshot,
+slot 4, no input, 240 s, fuse 13,000/2,048, watchdog 220. Raw files on the box: `~/bc5-work/exp0413/n/raw/zc*` and
+`~/bc5-work/exp0412/night/raw/zc*`; journals `~/bc5-data/captures/play-20261113-15{16,30,33}/gc/direct.log`.
+
+| arm | title, switches | result |
+|---|---|---|
+| zc1alog | ASTRO BOT 60 s, `K1_FILTER=log`, K1r off | ran 60 s; 17,886 unmapped operands by 51 s: op 0x49 14,905 (11,924 under a view), op 0x93 2,981 (none under a view); 3 pages named |
+| zc2log | second title, `K1_FILTER=log`, K1r off | G+240; 23,084 unmapped operands by 352 s: op 0x49 10,459, op 0x93 12,615, op 0x9f 10; **none under a view** |
+| zc3k1r | second title, `K1R=1`, watch and probe at 0x1100000000 | G+240; the probe at 200 s: 16,384 zero bytes, no fault (as k1rf: cv412 changed nothing here); 516-518 covers over 1,028-1,032 MiB |
+| zc4k1r | ASTRO BOT 120 s, `K1R=1` (cv412 alone) | ran 120 s, no fault (the start that faulted at 3.8 s and rebooted the box at 11:32); 2,876-3,747 covers over 5.8-7.5 GiB |
+| zc5k1f | ASTRO BOT 120 s, `K1R=1`, `K1_FILTER=1` | ran 120 s; ONE import, 2 MiB at 1.271 s (the chunk of 0x3082f6f60); "now mapped" |
+| zc6k1f | second title, `K1_FILTER=1`, K1r off | G+240; 0 imports (as zc2log predicts); 29.9 flips/s, GTT 11,578 MiB at 352 s (zc2log: 29.9, 11,579) |
+
+**What the filter drops in ASTRO BOT [M].** The dcb of 10,494 dwords (the size of the 11:32 record's submission #58)
+carries, at dwords 1883 and 1891, two packets of opcode 0x49 whose operands are 0x3082f6f60+8 and 0x3082f7060+8:
+the page of the 11:32 fault, under "orbis_user_malloc" (lazy), chunk not imported. So the packet that faulted with
+visible covers is named: with K1r's covers visible the filter let these two through and the command processor wrote
+into a read-only page. Without K1r they are dropped about 230 times a second: the title's write is lost each frame.
+With `K1_FILTER=1` one 2 MiB import ends that. The third page, 0x7fc0a4269000 (op 0x93), is a host address under no
+view: not memory of the direct file, so not K1's case. Not decoded here: what opcode 0x49 and 0x93 are in the
+title's stream (TODO(verify): the packet names against the public PM4 headers before they are written as fact).
+
+**What the filter drops in the second title [M]:** nothing under a view. K1 at the filter is ASTRO BOT's cure, not
+the second title's; there it costs nothing and changes nothing (zc6k1f).
+
+**A new defect of K1r, found by the watch (zc4k1r, zc5k1f) [M]:** at 0x3082f6000 from 0.5 s on: "the chunk WRITTEN by
+the CPU, not imported; GPU: a read-only zero cover (K1r)". K1r covers every part of a view that no imported buffer
+covers (`k1r412_want`), and `k1r0412.inc` says such a part is never-written memory because "the import's SEEK_DATA
+pass sees data, the chunk is imported". That holds under a view imported by data. Under a LAZY view only hints
+import, so a chunk the CPU has written stays unimported and got the zero cover: a GPU read there would return zeros
+where the title's data lies. No such read was seen (the title's packets there are writes), so this is a defect by
+reading the code and one watched page, not a wrong picture observed.
+
+**The fix written: kl412** (`memfast/kl0412.inc`, `kl0412.cpp` 99,003 of 99,003 on the laptop, `mkkl0412.py` after
+`mkk1f0412.py`: unit 52319499, after `mkff0412.py` 90c1129b; build script `mk0412zd.sh`, kit `kit-zd.sha256`, bin-d;
+NOT compiled, NOT on the box). Under a lazy view a piece whose file chunk holds data gets no cover: it stays unmapped
+as without K1r, and a GPU read there is a fault with a record that names it. `BC5_GUARD_K1R_COVER_WRITTEN=1` turns
+the rule off. The file is asked (SEEK_DATA, once per piece) at a mapping rebuild and at most every
+`BC5_GUARD_K1R_WRITTEN_SCAN_MS` (default 100); the journal gives the count and the time. Limits: a chunk written
+since the last scan keeps its cover until the next rebuild after the period; and a hole is the honest state, not the
+cure: the console lets the GPU read written memory, so the cure for a read of written lazy memory is its import
+(K1 at the filter does that for the operands packets name; shader reads are not known in advance).
+
+Not done: the arms on g412zd; the second title's walk route and his own play with any of this; a decode of the
+packets; the defaults (K1R stays off by default).
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over
