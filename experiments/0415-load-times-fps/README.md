@@ -791,6 +791,74 @@ by measurement and is what the lock-side stages are for; the first needs the spl
 stamp for when the title handed the buffer to the host, pass signatures, S2; the empty-job handling after its design
 note. The compositor's GPU time by its real process.
 
+### 15. The sixth slot (2026-11-13 05:58-06:11 box time): build L5b, the long frames split by part, and stage S2
+
+**Build L5b** = L5a + `kit/0415-l5b.diff` (tags mr415c, fs415c; `mk0415i.sh`, incremental on the private tree5):
+normal `e6a2010d`, lean `4f9137b2` (L5a kept in `bin-l5a`, `bin-lean-l5a`). CPU tests on the box [M]: 70 of 70, 32 of
+32, 33 of 33, 15 of 15, `test0415rec` 11 of 11 (it now also applies each span with only the ranges that touch it, the
+form S2 uses: 120,000 calls, 0 differences).
+- **S2, `KYTY_BC5_MAP_RECORDS=views`** (default off): the direct path uses the view list kept from the range table's
+  change records; `VirtualRanges::DirtyWithTouching` hands out, under one hold, the spans and for each the ranges that
+  touch it; every `KYTY_BC5_MAP_RECORDS_CHECK_MS` (2,000) the list is rebuilt from every range, the kept list is
+  compared with it and with the old builder's list and replaced; a gap in the record log forces that at once.
+- **The frame counter's K line**: the job line also carries when the host's chain got its first buffer of this
+  job, why the chain was flushed and how many buffers it held, and the end of each part of `submit_now` under the
+  device mutex. `frame0415b.py` reads both line forms (the same numbers as before on an L5a file; a synthetic K
+  file with known parts reproduced) [M].
+
+**Runs** (RT on, the read fix on by default, 60 s after the load, full job windows 64/256, GPU stamps; no kernel line,
+no crash line): r6v1 (S2, standing), r6n1 (off, standing), r6n2 (off, walking), r6v2 (S2, walking). Coverage in all
+four: every job stamped, none missing, one ring, none completed by its submitter.
+
+**The long frames by part** (frames over 50 ms; mean milliseconds per frame in which none of our jobs ran because the
+next job was at that point) [M]:
+
+| | r6n1 (off) | r6n2 (off) | r6v1 (S2) | r6v2 (S2) |
+|---|---|---|---|---|
+| long frames of the inner frames | 78 of 312 | 45 of 360 | 38 of 248 | 62 of 360 |
+| median long frame | 67.3 ms | 65.7 ms | 70.8 ms | 70.8 ms |
+| our jobs on the GPU | 21.6 | 23.6 | 27.4 | 22.2 |
+| not handed to the host yet (the title) | 11.4 | 8.2 | 15.8 | 10.2 |
+| in our chain before `submit_now` | 2.5 | 1.6 | 1.5 | 1.2 |
+| waiting for the device mutex | 1.1 | 2.7 | under 1 | 1.9 |
+| **under the mutex: anonymous sync** | **10.8** | **14.9** | **16.3** | **13.7** |
+| **under the mutex: direct sync** | **11.5** | **11.4** | **20.3** | **13.4** |
+| **under the mutex: learned windows** | **7.7** | **7.0** | **3.3** | **7.2** |
+| under the mutex: the device call | 0.4 | under 1 | 1.9 | under 1 |
+| in the kernel / after the last job | 1.6 / 1.2 | 1.7 / 1.6 | 1.3 / 1.3 | 1.3 / 1.8 |
+
+In the ordinary frames (33.5-34.5 ms) our jobs run 25.2-25.5 ms; the next job is with the title 4.4-5.3 ms, in our
+chain 1.2-1.3 ms, in the direct sync 1.1-1.8 ms, in the learned windows up to 0.6 ms; every other part is under
+0.5 ms.
+
+- **The 28-39 ms of section 14 are three parts of the mapping maintenance, none of them the submission itself:**
+  the anonymous sync (10.8-16.3 ms per long frame), the direct sync (11.4-20.3 ms) and the learned windows
+  (3.3-7.7 ms). The device call is 0.4-1.9 ms. So a long frame is a layout change being digested inside a
+  submission.
+- **The anonymous sync is as large as the direct sync here.** Its own comment says that with private memory in a
+  file it "should find nothing anonymous" and "stays as a check, once a second"; exp 0412 measured what it maps as
+  0 MiB. Each run of it reads and parses `/proc/self/maps` under the device mutex. It is stage S5 of the lock-side
+  design, and by this table it comes first, not last.
+- **"Not yet handed over" is the title's**: of the 6-7 ms of section 14, 4.4-5.3 ms lie before our chain has the
+  buffer and 1.2-1.3 ms inside our chain (the chain holds a median of 3 buffers a job; most flushes are "end of the
+  call" and "a wait").
+- **S2 does not help as built.** The records applied: 1,578 and 1,370 checks-and-applications over 228,350 and
+  216,190 records, `rec_mismatch` 0, `rec_overflow` 0 (the list in use equalled the rebuilt list and the old
+  builder's list at every check). But the view list's time under the mutex is not lower: 1.30 and 1.39 s in the
+  menu load with S2 against 0.77 and 0.88 s without, 1.6-3.0 s against 2.2-2.5 s in play. The kept list is copied
+  whole into each new snapshot (12,500-28,000 entries with a string each), which costs what the rebuild cost. The
+  rebuild was never the expensive part of the direct sync; the direct sync's 11-20 ms in a long frame lie in what
+  follows it (the scan, the imports, the mappings), which the job line does not split yet. S2 stays off; a list
+  that is shared instead of copied would be needed for it to pay, and the table says the anonymous sync and the
+  rest of the direct sync are worth more.
+
+**Order of the fixes, from this table** [I]: (1) the anonymous sync out of the submission path (S5: what it would
+find comes from records; the read of `/proc/self/maps` stays as a low-rate check on a thread of its own, as S1's
+maps check already does); (2) the direct sync's inside, after one more split per job (scan, imports, mappings):
+S4 for the imports, S3 for the mappings; (3) the learned windows go with exp 0412's rule. Expected, stated before
+any of it is built: the long frames' 28-39 ms under the mutex fall by the anonymous sync's 11-16 ms with (1) alone;
+the share of long frames (12-25 % in these runs) is what to read.
+
 ## Verdict
 
 Part 1, first result. The largest cause of the long loads was ours: every APR read opened its file anew, the
@@ -811,6 +879,9 @@ jobs and its signature was too weak; section 13 as corrected after review).
 Section 14, from complete job windows (six runs): in an ordinary frame of 34-36 ms our jobs run on the GPU 24-26 ms;
 in the long frames (15-33 % of the frames) the largest part, 28-39 ms a frame, is the next job sitting in the host's
 submit path under the device mutex. Since 2026-11-13 the read fix is on by default in both shared builds.
+Section 15 splits that time: the anonymous sync 11-16 ms, the direct sync 11-20 ms and the learned windows 3-8 ms per
+long frame; the submission itself under 2 ms. Stage S2 (the incremental view list in use) is correct by its own
+checks and saves nothing as built.
 
 ## Podsumowanie dla maintainera (stan na 2026-11-12, noc)
 
@@ -844,7 +915,10 @@ Oznaczenia: [zmierzone] = liczba z biegu na boxie; [wniosek] = moja interpretacj
 - [zmierzone 2026-11-13, pełne okna zadań, 6 biegów] W zwykłej klatce (34–36 ms) nasze zadania pracują na GPU
   24–26 ms. **W długich klatkach (co trzecia do co szóstej, 63–71 ms) największa część, 28–39 ms na klatkę, to
   czas, gdy następne zadanie tkwi w naszej ścieżce wysyłania pod blokadą urządzenia.** To jest nasz kod.
-- [niezmierzone] Podział czasu GPU na przebiegi i to, która część naszej ścieżki zabiera te 28–39 ms. Wcześniej
+- [zmierzone 2026-11-13, 4 biegi] Te 28–39 ms to trzy części utrzymania mapowań pamięci, nie samo wysyłanie:
+  „anonymous sync” (czytanie /proc/self/maps pod blokadą) 11–16 ms, „direct sync” 11–20 ms, wyuczone okna 3–8 ms na
+  długą klatkę. Samo wysłanie zadania to poniżej 2 ms.
+- [niezmierzone] Podział czasu GPU na przebiegi. Wcześniej
   pisałem o „przestojach GPU 5–6 ms na klatkę”: po review to wycofuję, pomiar obejmował tylko część zadań i tego
   nie dowodzi. Sumy (blokada, `kcompactd0`) też nie wskazują przyczyny konkretnych długich klatek.
 
