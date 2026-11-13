@@ -91,6 +91,9 @@ E = [('[ -r "$PKG" ] || { say "No package at $PKG"; exit 1; }\n',
      ('if ! mountpoint -q "$M"; then\n',
       'if [ -n "${BC5_GAME_DIR:-}" ]; then M=$BC5_GAME_DIR  # 0413: unpacked game\nelif ! mountpoint -q "$M"; then\n'),
      ('mountpoint -q "$M" || { say "Mounting the package failed', '[ -n "${BC5_GAME_DIR:-}" ] || mountpoint -q "$M" || { say "Mounting the package failed')]
+if 'BC5_GAME_DIR' in s:  # integration 2026-11-13: the shared launcher 157021e3 has the unpacked-game lines itself
+    assert s.count('BC5_GAME_DIR') >= 3 and E[0][1].split('  #')[0] in s and E[2][1] in s, 'the launcher names BC5_GAME_DIR but not as play-pkg-0413.diff does'
+    sys.exit(0)
 for a, b in E:
     assert s.count(a) == 1, a[:50]
     s = s.replace(a, b)
@@ -98,7 +101,8 @@ open(p, 'w').write(s)
 PYEOF
 diff -u "$LAUNCH_SRC" "$LAUNCH" > "$R/play-pkg-0391.diff"
 for h in BC5_0358_INPUT_CONFIG 'exp0413r/run/wd' 'exp0413r/run/play-last.log' 'exp0413r/run/direct-learned-pkg.txt'; do grep -q "$h" "$LAUNCH" || { echo "the derived launcher lacks $h: not started"; exit 1; }; done
-[ "$(grep -c '^[-+][^-+]' "$R/play-pkg-0391.diff")" = 18 ] || { echo "the derived launcher's diff is not 5 lines changed + 1 added: not started"; exit 1; }
+WANT_DIFF=18; grep -q 'BC5_GAME_DIR' "$LAUNCH_SRC" && WANT_DIFF=11  # integration 2026-11-13: 5 changed + 1 added; 7 more when the three unpacked-game edits are made here
+[ "$(grep -c '^[-+][^-+]' "$R/play-pkg-0391.diff")" = "$WANT_DIFF" ] || { echo "the derived launcher's diff is not $WANT_DIFF marked lines: not started"; exit 1; }
 [ "$(grep -c 'LOG=~/bc5-work/exp0413r/run/play-last\.log' "$LAUNCH")" = 2 ] && ! grep -Eq 'LOG=~/bc5-work/play-pkg(-lean)?-last\.log' "$LAUNCH" || { echo "a log of the derived launcher is not the private one: not started"; exit 1; }
 bash -n "$LAUNCH" || { echo "the derived launcher does not parse: not started"; exit 1; }
 chmod +x "$LAUNCH"

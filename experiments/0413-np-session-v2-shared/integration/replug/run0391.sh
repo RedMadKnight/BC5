@@ -15,7 +15,7 @@
 set -u
 export LC_ALL=C
 W=${D19_WORK:-$HOME/bc5-work}
-EX=$W/exp0413r; E=$EX/run; R=$E/raw; S=$EX/s; B=$W/exp0413/p/build-normal  # 0413: the PRIVATE normal build of the integration
+EX=$W/exp0413r; E=$EX/run; R=$E/raw; S=$EX/s; B=${E0391_BUILD:-$W/kytyplus-build}  # integration 2026-11-13: the SHARED normal build again (exp 0413 ran its private one here)
 LOCK=$W/BOX-LOCK; QUEUE=$W/BOX-QUEUE
 # The deadline is the end of everything. The outer limit ends 90 s before it, hard kill included; the run must leave 150 s
 # for its own kill (30), reap (30), check and release. A run needs 420 s of play plus ~90 s of setup and end, so the

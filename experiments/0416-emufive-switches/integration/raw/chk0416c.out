@@ -1,0 +1,30 @@
+lean: a569bb99549dfeb115522ebee50fff1a, warnings 285
+2026-11-13 01:11:09 done; normal fa34047c, lean a569bb99
+lock released
+ok   sema-off: PASS: 0 failed checks, 1.6 s
+ok   sema-on: PASS: 0 failed checks, 1.6 s
+ok   sb-default: PASS: 0 failed checks
+ok   sb-map: PASS: 0 failed checks
+ok   sb-noguard: PASS: 0 failed checks
+ok   sb-noguard-map: PASS: 0 failed checks
+ok   fault0416: 24 checks, PASS: 0 failed checks
+ok   maprule0412: maprule0412: 15281 of 15281; end
+ok   test0415-off: test0415: 70 of 70; end
+ok   test0415-on: test0415: 32 of 32; end
+ok   test0415apr: test0415apr: 33 of 33; end
+ok   test0415sync: test0415sync: 15 of 15; end
+ok   test0415rec: test0415rec: 10 of 10; end
+cpu0416: 0 failed
+binaries (p): normal fa34047cb3dc1f1cd0880b68f56c2078 lean a569bb99549dfeb115522ebee50fff1a
+n=0: a9pp0 (astro) PASS: ran 120 s; RssAnon at the end 185004 kB; kernel lines 0, crash lines 0; guard lines 0
+a9pp lines:  1 NpCppWebApi SessionManager V2 on (10 exports registered); 1 exp 0412 events: pending cap 64 (0: none), log off (tag ev412); 1 exp 0415: APR reads by pread with POSIX_FADV_RANDOM, straight into the guest (ta;
+n=0: a9pd0 (astro) PASS: ran 120 s; RssAnon at the end 208020 kB; kernel lines 0, crash lines 0; guard lines 0
+a9pd lines:  1 NpCppWebApi SessionManager V2 on (10 exports registered); 1 exp 0412 events: pending cap 64 (0: none), log off (tag ev412); 1 exp 0415: APR reads by pread with POSIX_FADV_RANDOM, straight into the guest (ta;
+r9papr catcher: 0 fault lines; # ended after 371 s (signal 15): 0 fault blocks, 0 distinct addresses, 0 older lines dropped; child terminated, status -15
+r9papr APR line: 1; counters: s mono_ns=4253709738551 jt_us=351645431 apr_out=0 flip=8666,0,0,0 ring_pass=96930,0,0,0 ring_after_sleep=96930,0,0,0 drain=8666,87293901890,17319643,0 inflight_cap=291078,141634917,587,0 label_wait=130158,43709892445,8597832,0 wait_jobs=3320,382640899,14007,0 dev_wait=291077,76527971525,44702933,0 dev_hold=291076,155304409618,49387074,0 import=718,5154473926,0,32591839232 direct_sync=291077,31800558364,6947480,0 anon_sync=443,15520675356,42938497,0 learned=291077,20550053950,4068607,0 apr_buffer=23826,2315456965171,53648217,0 apr_queue_wait=23826,2225013252186,36499795,0 apr_read=182980,300306
+r9papr (nozeroskip) ended at G+240 (after 359 s; G 117, load 103, list 93); 24.9 flips/s over 354 s, 75 s with a gap over 100 ms, longest 911 ms; kernel lines 0, crash lines 0, ledger lines 0
+r9pold catcher: 0 fault lines; # ended after 373 s (signal 15): 0 fault blocks, 0 distinct addresses, 0 older lines dropped; child terminated, status -15
+r9pold APR line: 0; counters: s mono_ns=4636110972928 jt_us=353017064 apr_out=4 flip=8841,0,0,0 ring_pass=103891,0,0,0 ring_after_sleep=103891,0,0,0 drain=8841,93302767124,18957645,0 inflight_cap=304213,310965449,720,0 label_wait=130578,39325906604,7537451,0 wait_jobs=2467,489951271,18936,0 dev_wait=304213,70431876116,36295075,0 dev_hold=304213,154218161650,37119504,0 import=685,4671340066,1099492,27149729792 direct_sync=304213,26398552272,11575604,0 anon_sync=426,15489506886,36964623,0 learned=304213,15370888378,8980775,0 apr_buffer=20795,3503661707416,17081090,0 apr_queue_wait=20796,3392447612737,10527280,0 apr_read=1558
+r9pold (nozeroskip) ended at G+240 (after 361 s; G 119, load 103, list 93); 25.2 flips/s over 356 s, 74 s with a gap over 100 ms, longest 710 ms; kernel lines 0, crash lines 0, ledger lines 0
+l9p (lean) PASS: ran 120 s; RssAnon at the end 121328 kB; kernel lines 0, crash lines 0
+chk0416c ended 01:31:03: all clean

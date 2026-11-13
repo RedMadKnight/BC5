@@ -1,0 +1,9 @@
+claimed: exp 0413 | token 179452833411860 | integration 0416+0415+0412: private rebuild (incremental) under exp0413/p, CPU only, no emulator, until 01:45 | 2026-11-13 01:05:34
+2026-11-13 01:05:34 start; archive 75e30335
+tree: 125 patched files match the laptop's (0001-new9)
+== 01:05:34 build normal
+normal: fa34047cb3dc1f1cd0880b68f56c2078, warnings 282
+== 01:08:24 build lean
+lean: a569bb99549dfeb115522ebee50fff1a, warnings 285
+2026-11-13 01:11:09 done; normal fa34047c, lean a569bb99
+lock released
