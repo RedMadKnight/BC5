@@ -147,3 +147,33 @@ first thing to measure (E1 measured neither).
 3. The K3/K4 rule as above, tested first on a run that is not at the wall (README section 54's lesson).
 4. Every "would learn" line of his play is classified and answered by one of these rules; the table grows only by
    kinds, never by addresses.
+
+### 7.1 The alias rule (the second remembered list; the top session's direction of 2026-11-13)
+
+No title constant and no remembered line: **when the title names a GPU address A that is not mapped, and A with its
+top byte (bits 47:40) cleared lies in a mapped guest view, that view is also mapped at the tagged address**, at bind
+time, for any tag and any title. An address whose untagged form is not mapped either stays unmapped and loud.
+
+Where the tagged pointers are first visible to the host [M, exp 0056]: **not in a register and not in a packet
+operand**. No program register carries the byte (exp 0055). The title's programs load the pointer from a constant
+buffer and call through it: `s_buffer_load_dwordx2 s[14:15], s[4:7], 0x70`, a test for non-zero, `s_swappc_b64`.
+The buffer's descriptor (s[4:7], user-data registers 4 to 7) IS in the command buffer before the job runs; the
+pointer is inside the buffer, at an offset the program chooses (0x70 in the one disassembled).
+
+So the host can apply the rule only by reading the constant buffers the descriptors name, as the hints path
+already does for shader buffers (exp 0364) and as the scan of README sections 39 and 48 did for tables (the first
+2 KiB behind every address a buffer names): look for 8-byte values whose bits 47:40 are non-zero, whose low 40 bits
+lie in a mapped view, and whose tagged form is not mapped; alias that view under that byte. Two things bound the
+cost (the table scan of section 39 took 8 % of the submitting threads when run on every buffer):
+1. an alias is per (view, byte), not per pointer: once the code heap is mapped under 0x80 every later pointer of
+   that kind is already served, so a scan that finds nothing new ends at once per descriptor (one lookup);
+2. only a program that calls through a pointer needs its buffers read. Whether a program does is a property of its
+   code: one pass over a program the first time its address is bound, looking for the indirect call's encoding
+   (to be taken from LLVM's AMDGPU instruction tables with the file and commit, not from memory), cached by
+   program address.
+What it does not cover: a pointer the shader computes, or one in a buffer reached through a second pointer. The
+catcher's K4 line (a tagged fault whose low 40 bits are guest memory) is the report for those.
+
+Order: the rule behind a default-off switch with the list still present and a line "alias by rule would map view X
+under byte B" (does the rule find the one real line by itself on the route?); then a run with the list cut to
+nothing and the rule on; then the list, `alias_learn` and the file's read are removed as the learned windows were.
