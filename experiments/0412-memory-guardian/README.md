@@ -2813,6 +2813,50 @@ bug report (README section 61 will hold the rules by kind); none becomes a windo
 **Undo** (his word only): copy the three `.before-nolearned` files back, move the learned file back from the trash
 directory, and put the fast8 shortcut back from `trash-20261113/pulpit`.
 
+### 61. The learned path out of the unit (tag nl412), the K1 catcher, and the second remembered list (2026-11-13, laptop; not compiled)
+
+**nl412** (`memfast/mknl0412.py`, on the shared unit a81efd2c of patch 4651d1d3; sent to the integrator). The top
+session chose the variant `--keep-guards`, output `cfb7533e`:
+- **gone:** the learned file's read (also the code's default path, which ASTRO BOT used) and write, the list
+  `g_learned`, `learned_add()`, `map_window()` (forcing a past fault's chunks and mapping anonymous memory in its
+  window), and the zero fill of the windows' holes;
+- **always on:** the catcher: a GPU fault is journaled as "would learn ..." with what lay at its address; nothing is
+  added and nothing is written; `BC5_GUARD_LEARN_LOG` no longer decides it;
+- **kept, and why (the top session's words):** the 2 MiB zero guard behind each eager heap is a rule from the title's
+  behaviour (it reads up to 64 KiB past its GPU heaps' ends, exp 0037), applied to every such heap from the layout,
+  with no memory of a fault; what the maintainer rejects is the remembered list. Its proper form is the K3 rule
+  (the console's behaviour over true holes), and the guard goes when that rule is in. All my runs without the file
+  (2,216 s) had the guards active; the variant without them (`b91669e0`) has never run.
+- one journal line at the first submission says the path is gone.
+
+**The K1 catcher in the same unit**: `BC5_GUARD_K1_STAT=1` (default off, no behaviour change). For every new target
+base the hint path sees (colour, depth, stencil, HTILE) it journals whether the 2 MiB chunk at the base itself was
+imported when the title bound it, and how much the ±32 MiB window around it then pinned; a summary every 64 bases.
+It measures how far today's guess is from the rule "import exactly what the title binds, when it binds it"
+(`DESIGN-learned-windows.md` section 7).
+
+**The second remembered list: the aliases** (`BC5_DIRECT_ALIASES=1` in the launchers, `~/bc5-work/direct-aliases-pkg.txt`,
+written on 10-22 and not since; it was active in all my runs). Five lines "byte, window start, 96 MiB" [M, read
+today], each mapped a second time at (byte << 40) + address **over whatever is mapped in the window**:
+
+| line | what it is | source |
+|---|---|---|
+| `0x80 0x11ce000000` | the one real alias: the title's programs (0x11d0…) are fetched at 0x80 11d0…: dozens of its programs call through function pointers loaded from its constant buffers, and those pointers carry 0x80 in bits 47:40 | exp 0056, F110 (the fault went, hangs followed; TODO(verify) there: whether the console's GPU ignores those bits or maps code there too) |
+| `0x80 0xc8d2000000`, `0xcc 0x580a000000`, `0xdb 0x3252000000`, `0x80 0x906000000` | no guest memory lies in any of these windows (the title's heaps are at 0x10…–0x14… and the AMM window at 0x80…): they map nothing. They are faults at junk addresses learned before exp 0195 added the test "the low 40 bits must name guest memory"; one of that kind (0x80 over 0–96 MiB) is what exp 0195 found and removed | exp 0195; F251, F253: 0x80 in `COMPUTE_PGM_HI` there was another process's register left on the shared GFX ring, not the title's tag |
+
+So the list is one rule and four dead lines. **The rule that replaces it** [I]: an alias is not two guest views of one
+physical range (the host would know those at map time); it is the title's own code reached through pointers that
+carry a tag byte. What the title tells the host before use is the program addresses themselves (it sets them in the
+program registers of every draw and dispatch): the view that holds a bound program is the title's code heap, and
+"map the code heap a second time under 0x80 when it is mapped" is a rule from the layout, with no memory of a fault.
+The four junk lines need no replacement (they are K4). Before the list is removed: (1) which view the programs lie
+in and its size (one line of a journal), (2) one run with the list reduced to its first line, (3) the rule in code.
+Not removed today, on the top session's word.
+
+**Stale launchers that still name the old learned file** (for the cleanup; not called by anything current as far as
+a search of `~/bc5-work/*.sh` and the desktop shows: TODO(verify) on the box before they move): `run-pkg.sh`,
+`play-pkg-exp0155.sh`, `lean-backup-play-pkg.sh`.
+
 ## Verdict
 
 - **No learned windows any more (section 60, the maintainer's order):** his shortcut (fast9, the shared build) and the
