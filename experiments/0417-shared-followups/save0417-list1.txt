@@ -1,0 +1,9 @@
+# step 1: the shared build with the table off, three more; B with the table off, two more
+sv1 shared 120 astro KYTY_BC5_SWITCH_DEFAULTS=0
+sv2 shared 120 astro KYTY_BC5_SWITCH_DEFAULTS=0
+sv3 shared 120 astro KYTY_BC5_SWITCH_DEFAULTS=0
+bv1 B 120 astro KYTY_BC5_SWITCH_DEFAULTS=0
+bv2 B 120 astro KYTY_BC5_SWITCH_DEFAULTS=0
+# step 4: B with the defaults, two more
+bd1 B 120 astro
+bd2 B 120 astro
