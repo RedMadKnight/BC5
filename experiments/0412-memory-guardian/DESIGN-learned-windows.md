@@ -109,3 +109,41 @@ zero skip (section 48). Not proposed.
 
 Open before the build: whether one PRT mapping over the whole span is accepted and what it costs in page tables
 (exp 0102 mapped 64 GiB); with R2 on a miss of R1 no longer faults, so R1 is tested first **without** R2.
+
+## 7. After the order of 2026-11-13: no windows, rules by kind
+
+The maintainer: the learned windows are to go, and the solution is to be in software. Since 08:17 the second title's
+launchers read no learned file and the catcher only logs (README section 60); `mknl0412.py` (tag nl412) takes the
+path out of the unit. **A GPU fault is from now on a bug report with an address and a kind, never a window.** The
+catcher's line gives the kind (`mr412::classify`): K1 a view not imported (by-data, lazy, or eager and failed), K2
+anonymous guest memory not mapped, K3 no guest range (a hole), K4 a junk address, K5 imported but not mapped at the
+fault, K6 mapped (a protection fault or a stale report).
+
+What replaces the windows is not "pin everything" (R1: section 5, and README section 53: the box cannot hold it) but
+one exact rule per kind, each taken from what the title itself tells the host:
+
+| kind | what the title tells us, and when | the rule | state |
+|---|---|---|---|
+| K1, GPU-written memory the CPU never wrote | the address of every colour target, depth and stencil buffer, every destination of a copy or resolve, every buffer a shader may write (its descriptors in the user data), is in registers and packets of the command buffer **before** the job runs | **import at bind time, exactly**: the range the descriptor names (base and size from the surface's or buffer's own description), not a ±32 MiB guess around a base. The hints path already reads the target bases (`hint_targets`) and the user-data hint reads shader buffers (exp 0364); they are made exact and complete | to build: the next unit |
+| K1, a lazy-listed heap the GPU reads | the same descriptors name it when it is used | the same rule; the lazy list then only says "do not import by data", never "do not import when named" | follows from the rule above |
+| K3, an address near real memory with nothing mapped (reads past a heap's end, sparse AMM blocks the title never backs) | the title's own map calls say where nothing is mapped | over **true holes only**: the console's behaviour (reads zero, writes dropped; E1 cases 1 and 3, F257). Never over a range the title mapped and we did not import: there a fault must stay loud | to build; see below |
+| K4, a junk address | nothing: the address is not the title's | the same true-hole behaviour up to the end of the guest's span; beyond it a fault is a bug of ours in a register or a shader operand (F663) and is reported | to build |
+| K2, anonymous guest memory | the anonymous sync | measured 0 MiB in the windows (README section 51); no rule needed until a line of this kind appears | none |
+| K5, K6 | | not a mapping question: timing or a protection bug; each is investigated as a defect | none |
+
+**True holes without a per-hole pass.** `scratch_fill` walked windows and mapped a zero buffer piece by piece. The
+rule form: one PRT mapping under the guest's span at device open (as `BC5_GUARD_PRT_BG` does), and in the mapping
+rebuild every part of a **view that is not imported** is taken out of it again (`AMDGPU_VA_OP_CLEAR` on that range),
+so that an access there faults and is named. The rebuild already computes, per view, which chunks are imported; the
+complement under views is the list to clear. The cost in page tables and time of a clear per unimported run is the
+first thing to measure (E1 measured neither).
+
+**Order of work.**
+1. nl412 in the next patch (the integrator's vehicle), with or without the heap-end guards as the top decides; the
+   guards are themselves the K3 rule in a narrow form (2 MiB behind each eager heap, only where the guest has no range).
+2. The K1 rule: exact import at bind time. First step is a catcher on the laptop's side of the build: for every
+   target, depth buffer and shader-written buffer a submission names, journal when its range is not fully imported
+   at submission (it would have faulted without the hint's ±32 MiB): that count says how much the guesses still do.
+3. The K3/K4 rule as above, tested first on a run that is not at the wall (README section 54's lesson).
+4. Every "would learn" line of his play is classified and answered by one of these rules; the table grows only by
+   kinds, never by addresses.
