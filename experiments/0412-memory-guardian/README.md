@@ -3611,6 +3611,11 @@ the log-only zero scan sees its two default heaps (RenderGpuWcLarge, CommitIABuf
 given back (asked). Order agreed: the integrator builds E privately and runs its chain; then my two arms on that
 binary (ASTRO BOT 120 s; the cutscene arm to its end).
 
+Later the same evening the integrator regenerated E from FORM 4: unit 9a54eaa4 -> 449878ca, patch 410273ca, private
+backend e96e5c73 / 28100ce5, the read of `BC5_DIRECT_ZERO_NAMES` given back. Checked on the laptop: the three rule
+bodies verbatim, no replace form. E's sources of my chain are commit 0e2c7e56. After its chain I run three arms on
+its binary: ASTRO BOT 120 s, the cutscene arm to its end, the walk with the zero scan.
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over
