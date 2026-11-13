@@ -389,6 +389,19 @@ p = 0.47), nor K1r on from off. Neither fault is explained, and the first-failur
 because nothing failed. The hypothesis "a null pointer after a failed memory call near the wall" is neither supported
 nor refuted: no arm came near the conditions of sA's fault with the catcher on.
 
+### 16. Candidate G prepared on the laptop (2026-11-14, no box access, nothing built)
+
+Ordered by the top session for the night. `candidate-G.md` is the record: G = F + the library ports built in (22 words
+gone), ten words deleted with their code, one made a constant, twelve more with the option gone and the code still to
+cut, in all 43 words; patch `99f32d3b`, unit `dd30a593`, backend `direct.cpp` `9eb378e1`. Counted from the source
+(`words0419g.py`, `settable0419g.py`): B reads 264 words, F 247 (200 can be set), G 204 (**157** can be set). Checked:
+every edit matched once, braces balance, the library units pass `-fsyntax-only`, the defaults test, a dry run of the
+patch swap F -> G on a clean clone (132 of 132 files). NOT checked: any compile of the main unit (Linux-only), the
+link, any run: `p0419g.sh` on the box is G's first compile. Five hang-hunt words are kept until the maintainer confirms
+their delete knowing that F403 and F813 are open; `dla-maintainera-slowa.md` (Polish) is the word-by-word sheet for him.
+F and G still change three lines of `audio.cpp` (the reading rule of `KYTY_BC5_NO_PAD_AUDIO`), so their swap gets one
+software replug check.
+
 ## Decisions for the maintainer
 
 One "yes" covers the swap of E as a whole (the top session asks): both shared builds, the shared backend archive
