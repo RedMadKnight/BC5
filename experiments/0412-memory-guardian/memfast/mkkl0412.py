@@ -59,6 +59,23 @@ def main():
 		        timing_now(), kl412::cover_written() ? "rule OFF (BC5_GUARD_K1R_COVER_WRITTEN)" : "rule on", kl_dropped, kl.written.size(), kl.scans, kl.asked, static_cast<double>(kl.scan_ns) / 1e6,
 		        kl.scans != 0 ? static_cast<double>(kl.scan_ns) / 1e6 / static_cast<double>(kl.scans) : 0.0);
 ''')
+    # Variant (b) of the cure (the top, 2026-11-13: a written chunk under a lazy view is imported, as on the console):
+    # BC5_GUARD_LAZY_BY_DATA=1 (default off) ignores BC5_DIRECT_LAZY_NAMES, so those views are imported by data like
+    # every other: a chunk is imported at the sync after the CPU writes it. What it pins is the price to measure.
+    a = (b"\tif (name == nullptr || names.empty()) return false;\n\treturn std::find(names.begin(), names.end(), name) != names.end();\n}\n\n"
+         b"// BC5_DIRECT_EAGER_NAMES")
+    s = once(s, a, rb'''	static const bool by_data = [] { // exp 0412 (tag kl412): BC5_GUARD_LAZY_BY_DATA=1, no view is lazy
+		const char* e = std::getenv("BC5_GUARD_LAZY_BY_DATA");
+		const bool  v = e != nullptr && e[0] != 0 && !(e[0] == '0' && e[1] == 0);
+		if (v) std::fprintf(stderr, "[bc5] exp 0412 (tag kl412): BC5_GUARD_LAZY_BY_DATA on: BC5_DIRECT_LAZY_NAMES is ignored, every view of direct memory is imported where it holds data\n");
+		return v;
+	}();
+	if (by_data) return false;
+	if (name == nullptr || names.empty()) return false;
+	return std::find(names.begin(), names.end(), name) != names.end();
+}
+
+// BC5_DIRECT_EAGER_NAMES''')
     g = s.index(b"namespace kl412 {")
     assert s.index(b"static double timing_now() {") < g
     open(sys.argv[2], "wb").write(s)

@@ -88,13 +88,13 @@ python3 -I "$KIT/mkcv0412.py" unit "$P/u-pr.cpp" "$P/u-cv.cpp" > "$R/mkcv.out" 2
 python3 -I "$KIT/mkk1f0412.py" "$P/u-cv.cpp" "$P/u-k1f.cpp" > "$R/mkk1f.out" 2>&1 || die "mkk1f0412.py: $(tail -1 "$R/mkk1f.out")"
 [ "$(m "$P/u-k1f.cpp")" = 8623837b ] || die "the unit after k1f412 is not 8623837b"
 python3 -I "$KIT/mkkl0412.py" "$P/u-k1f.cpp" "$P/u-kl.cpp" > "$R/mkkl.out" 2>&1 || die "mkkl0412.py: $(tail -1 "$R/mkkl.out")"
-[ "$(m "$P/u-kl.cpp")" = 52319499 ] || die "the unit after kl412 is not 52319499"
+[ "$(m "$P/u-kl.cpp")" = b4e59ce3 ] || die "the unit after kl412 is not b4e59ce3"
 python3 -I "$KIT/mksg0412.py" "$K" "$P/sg-out" "$KIT/saveguard0412.inc" > "$R/mksg.out" 2>&1 || die "mksg0412.py: $(tail -1 "$R/mksg.out")"
 cat "$R/mksg.out"
 cp -p "$K/src/kernel/memory.cpp" "$S/src/kernel/" && cp -p "$K/src/libs/libAmpr.cpp" "$S/src/libs/" && cp -p "$K/src/common/hostException.cpp" "$S/src/common/" && cp "$P/u-kl.cpp" "$S/src/libs/bc5LleAgc.cpp" || die "staging"
 python3 -I "$KIT/mkff0412.py" "$S" "$P/out" > "$R/mkff0412.out" 2> "$R/mkff0412.err" || die "mkff0412.py: $(tail -1 "$R/mkff0412.err")"
 cat "$R/mkff0412.out"
-for u in "src/kernel/memory.cpp 961da63a" "src/libs/libAmpr.cpp d88da83d" "src/common/hostException.cpp e978e975" "src/libs/bc5LleAgc.cpp 90c1129b"; do
+for u in "src/kernel/memory.cpp 961da63a" "src/libs/libAmpr.cpp d88da83d" "src/common/hostException.cpp e978e975" "src/libs/bc5LleAgc.cpp a7d3d08d"; do
   set -- $u; [ "$(m "$P/out/$1")" = "$2" ] || die "$1 is not the unit checked on the laptop ($2)"
   cp -p "$P/out/$1" "$P/tree/$1" || die "cannot put $1 into the private tree"
 done
@@ -132,7 +132,7 @@ distrobox enter ubuntu -- sh -c "cd '$B' && nice -n 19 ninja kyty_emulator" < /d
 b=$B/src/kyty_emulator
 [ -x "$b" ] || die "no binary"
 echo "normal: $(md5sum < "$b" | cut -d' ' -f1), warnings $(grep -c 'warning:' "$B.build.log")"
-for s in BC5_GUARD_K1R_COVER_WRITTEN "tag kl412" BC5_GUARD_K1R_COVERS_VISIBLE BC5_GUARD_K1_FILTER "tag k1f412" BC5_GUARD_K1R_PROBE "tag pr412" BC5_GUARD_WATCH "tag wa412" BC5_FAULT_RECORD "tag fr412" "tag sg412" "MAY BE INCOMPLETE" BC5_GUARD_K1R_REPLACE KYTY_BC5_MEM_FIRSTFAIL KYTY_BC5_TRAP_LOG BC5_DIRECT_MAX_BO_MIB "tag ff412" BC5_GUARD_K1R "tag k1r412" BC5_DIRECT_RESET_LABELS_ADD "tag rl412" "tag nl412" BC5_GUARD_K1_STAT KYTY_BC5_AMM_SCATTER KYTY_BC5_AMM_SETBUFFER_GUARD; do
+for s in BC5_GUARD_LAZY_BY_DATA BC5_GUARD_K1R_COVER_WRITTEN "tag kl412" BC5_GUARD_K1R_COVERS_VISIBLE BC5_GUARD_K1_FILTER "tag k1f412" BC5_GUARD_K1R_PROBE "tag pr412" BC5_GUARD_WATCH "tag wa412" BC5_FAULT_RECORD "tag fr412" "tag sg412" "MAY BE INCOMPLETE" BC5_GUARD_K1R_REPLACE KYTY_BC5_MEM_FIRSTFAIL KYTY_BC5_TRAP_LOG BC5_DIRECT_MAX_BO_MIB "tag ff412" BC5_GUARD_K1R "tag k1r412" BC5_DIRECT_RESET_LABELS_ADD "tag rl412" "tag nl412" BC5_GUARD_K1_STAT KYTY_BC5_AMM_SCATTER KYTY_BC5_AMM_SETBUFFER_GUARD; do
   grep -aqF -- "$s" "$b" || die "the binary lacks [$s]"
 done
 grep -aqF "direct-learned" "$b" && echo "note: the string direct-learned is still in the binary (another unit?)"
