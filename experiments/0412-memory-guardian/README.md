@@ -3603,6 +3603,14 @@ BC5_DIRECT_EAGER_NAMES list>` (the scan reads only eager views of the named heap
 with the emulator's `fdinfo` near the end for the 555 MiB of host buffers. Log only; no skip, no list is used. No
 arm with a GPU write risk is prepared: that waits for the number and for his word.
 
+Candidate E as the integrator made it (exp 0419, 2026-11-13 evening): from FORM 3, not form 4 (the messages crossed):
+my unit 2824caf7 plus its four generators gives unit 1215d7d7, patch 2dd4c95c; backend 26519fcc / b1d27875; the
+replace form stays in E until the next backend change. E's sources of my chain are commit 173a38b4. Checked on the
+laptop: the three rule bodies are in 1215d7d7 verbatim. In E the read of `BC5_DIRECT_ZERO_NAMES` is a constant, so
+the log-only zero scan sees its two default heaps (RenderGpuWcLarge, CommitIABufferAllocator) unless the read is
+given back (asked). Order agreed: the integrator builds E privately and runs its chain; then my two arms on that
+binary (ASTRO BOT 120 s; the cutscene arm to its end).
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over
