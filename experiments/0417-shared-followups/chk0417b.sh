@@ -13,6 +13,7 @@
 #     g3off g4off BC5_DIRECT_HEAP_GUARDS=0: no guard (the full removal's behaviour). LAST on purpose: a heap-end
 #                 fault here is the measurement the top session asked for, and it stops the chain with nothing left.
 # usage (on the box, detached): P_NEW11=<patch md5> chk0417b.sh      MODE=post: the same runs on the SHARED binaries
+#   MODE=resume: only the runs, on the private binaries already built (after a foreign lock stopped the chain between steps)
 set -u
 ulimit -c 0
 export LC_ALL=C
@@ -21,6 +22,8 @@ cd "$N" || exit 1
 halt() { echo "chk0417b STOP: $*"; echo "chk0417b ended $(date +%T): STOPPED"; exit 1; }
 if [ "${MODE:-}" = post ]; then
     BN=$W/kytyplus-build/src/kyty_emulator; BL=$W/kytyplus-build-lean/src/kyty_emulator; X=s
+elif [ "${MODE:-}" = resume ]; then  # the private binaries as they are (the build and the CPU tests were done by an earlier call)
+    BN=$P/build-normal/src/kyty_emulator; BL=$P/build-lean/src/kyty_emulator; X=p
 else
     : "${P_NEW11:?the patch md5}"
     (cd "$P/kit" && P_NEW11=$P_NEW11 bash ./p0417b.sh) > "$P/p0417b.log" 2>&1
