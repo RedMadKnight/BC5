@@ -197,6 +197,8 @@ Arms. Every arm uses the 0406 binary. Base words = the new shortcut's (e8 `cpacb
 
 ## Verdict
 
+No final verdict written (noted 2026-11-13): the arms below were not run. What follows is the interim reading.
+
 Pending the arms. The laptop part answers the question as far as code and records can:
 - **High confidence:** items 1, 2, 3 and 9 can go, the catchers already answered and the unused AMM commands for this
   title.

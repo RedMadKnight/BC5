@@ -12,7 +12,7 @@ PC emulators have to translate a console's graphics for a different GPU. BC5 doe
 
 - **ASTRO BOT is fully playable**, at about 60 fps in its first level, with the DualSense's motion, haptics and adaptive triggers, and with saves.
 - **Marvel's Wolverine plays** (called "the second title" in the findings and below) from its menus through the opening into gameplay, with sound, saves and pause, with its ray-traced reflections switched on and, since 2026-10-23, with the DualSense's haptics (rumble with a DualShock 4). It ran at about 37 fps through an 18-minute session; the maintainer's verdict: "fully playable, minimal stutter". Ray tracing can be switched off live in the emulator's menu (since 2026-10-24): about 48 fps in a 10-minute session, without reflections.
-- **Loading is quick again:** ASTRO BOT reaches its first logo about 12 s after a cold start (it was 33–50 s while the dev box's drive was nearly full).
+- **Loading is quick again:** ASTRO BOT reaches its first logo about 12 s after a cold start (it was 33–50 s while the dev box's drive was nearly full). Since 2026-11-13 the second title's start screen answers about 7 s sooner and its save loads about 4 s sooner: the host had been letting the kernel read ahead of every file read, twice the data the game asked for (F817).
 - **Any other game is untested.** A game that needs a system library BC5 has not rewritten yet stops there.
 
 ### How you start it
@@ -21,7 +21,7 @@ On the maintainer's box a desktop shortcut, *BC5 emulator*, opens the emulator w
 
 ### What is still broken
 
-The second title's night water is fixed since 2026-11-02: the host now passes on a tessellation setting the game asks for (F785, F786). Two GPU hangs remain in long play, a compute dispatch with a garbage size and a draw that never ends; both restart the box by itself (F813).
+The second title's night water is fixed since 2026-11-02: the host now passes on a tessellation setting the game asks for (F785, F786). Two GPU hangs remain in long play, a compute dispatch with a garbage size and a draw that never ends; both restart the box by itself (F813). Since 2026-11-13 the second title runs without the file of "learned windows", a list of places where the GPU had once faulted; the first play without it met one such fault in a cutscene, a shader's read of memory the game had mapped and never written, and the picture froze (F820, F821). The project now treats every GPU fault as a bug to remove at its source, with a diagnostic record, not as something the game should recover from. At the maintainer's later save the scripted test route runs at about 25 frames a second with ray tracing on (2026-11-13); the figures above are from earlier saves.
 
 With ray tracing on, the second title used to hang, or take the machine down, a minute or two after loading. Each failure on 2026-10-27 followed one frame whose GPU command buffer had been grown by the host's safety checks past the kernel's size limit for one buffer. The kernel refused it, so that frame was lost, and the next frame read its arguments through a setting the lost one should have made. Since 2026-10-28 both builds cut such buffers into up to four pieces (experiments 0349, 0350). On the test build the maintainer played 18 minutes with ray tracing on at 39 frames a second with no hang. The shared build then passed the scripted route twice with ray tracing on, cutting the big frame each time. One of those runs fell to about 26 frames a second for its last five minutes, for a reason not yet found. With ray tracing off the game runs clean.
 
@@ -35,7 +35,7 @@ BC5 is a hobby research project and is against piracy. You play games you own, d
 
 ## Status in numbers
 
-As of 2026-11-02, measured on one BC-250 with the maintainer's own copies of the games. Every number is a finding (F1 … F814) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
+As of 2026-11-02 (rows that name 2026-11-13 are newer), measured on one BC-250 with the maintainer's own copies of the games. Every number is a finding (F1 … F829) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
 
 | | ASTRO BOT | Marvel's Wolverine (second title) |
 | --- | --- | --- |
@@ -44,6 +44,8 @@ As of 2026-11-02, measured on one BC-250 with the maintainer's own copies of the
 | Picture | 3D resolution chosen live in the F2 menu: 4K, ~1872p, ~1368p or 1080p (F101) | Paces itself by GPU time: keep the F2 resolution at 4K (scale 1.0); a higher scale halves its frame rate (F237) |
 | Loading | Cold start to the first logo ~12 s (F287); startup reads are no longer bound by the disk (F289) | Logo load ends at 13–15 s, Continue into gameplay 37–41 s (F287) |
 | Controller | Motion, haptics, adaptive triggers (F52–F60, F78–F80); with a DualShock 4, rumble from the haptics (F214) | Haptics (its ATRAC9 vibration tracks, F300, F301), touchpad press (F252); with a DualShock 4, rumble from the same tracks, also after an unplug and replug (F329) |
+
+Since 2026-11-13 the builds set their own defaults in code (F827), so a launcher only adds what is one title's own. New among them: a bound on unread graphics events, which ended a host memory leak of 218 MiB a minute on ASTRO BOT's start screen (F815); a guard against the host mapping zeroed memory over a game's heap from leftover register values, which had crashed ASTRO BOT's start on test builds (F816); the file-read path of F817; and the compute-state restore of F685.
 
 **On by default** (in both builds, normal and lean):
 
