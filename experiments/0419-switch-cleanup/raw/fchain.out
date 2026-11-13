@@ -1,0 +1,60 @@
+chain lock: exp 0417 | chain: exp 0419 candidate F: private build (CPU), then ASTRO BOT x4, the second title x6, lean; private dirs, until about 20:45 | token 202611131925522829827 | 2026-11-13 19:25:52
+== 19:29:31 build lean
+lean: 034bf107b7d93bc3a924a416b4bb2efb, warnings 286
+2026-11-13 19:32:16 done; normal 1a2900a0, lean 034bf107
+lock released (kept by the chain)
+before the runs: MemAvailable: 13208128 kB; browsers: 0
+binaries: B normal 1a2900a08142311961050686395c4054, B lean 034bf107b7d93bc3a924a416b4bb2efb, shared normal 51af1ed78e84291caf5ee042ea82c46d
+m0a (astro) PASS: ran 120 s; RssAnon at the end 208300 kB; kernel lines 0, crash lines 0
+m0a stderr: title line 0, sdt417 
+m0b (astro) PASS: ran 120 s; RssAnon at the end 214060 kB; kernel lines 0, crash lines 0
+m0b stderr: title line 0, sdt417 
+m0c (astro) PASS: ran 120 s; RssAnon at the end 212368 kB; kernel lines 0, crash lines 0
+m0c stderr: title line 0, sdt417 
+ASTRO BOT start-state lines (exp 0418): 1; first: bc5-direct: start state (exp 0418): rows on: CP_COHER_START_DELAY SPI_SHADER_REQ_CTRL_PS GE_MIN_VTX_INDX GE_MAX_VTX_INDX VGT_INSTANCE_BASE_ID VGT_TF_RING VGT_HS_OFFCHIP_PARAM VGT_GS_RINGS; skipped: no
+m0f (astro) PASS: ran 30 s; RssAnon at the end 212020 kB; kernel lines 0, crash lines 0
+m0f stderr: title line 0, sdt417 [bc5] sdt417: transferring mount of PPSA01325/sce_sdmemory: no such save, NOT_FOUND (nothing created)
+m0f: the start PASSES with the fix
+m1a input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 35 at 54.973 s
+m1a (nozeroskip) ended at G+240 (after 356 s; G 114, load 103, list 93); 25.6 flips/s over 353 s, 60 s with a gap over 100 ms, longest 698 ms; kernel lines 0, crash lines 0, ledger lines 0
+m1a title table: [bc5] exp 0419: title PPSA03671: 42 title defaults, 1 taken, 41 already set in the environment
+m1a start state: ~/bc5-data/captures/play-20261113-1939/gc/direct.log:start state (exp 0418): 15 dwords of constant rows in every prefix (rows 0xff, skipped 0x0)
+m1a last timing split: timing split over 128 submissions: probe 1.4 ms, anon sync 0.0, direct sync 14.2 (views 5.5; 4 full, 137 fast; scan 1.6, merge 0.5, drain 0.0 in 2, maps 6.0 = want 3.4 + drop 1.9 + zero 0.0 + add 0.7), learned 3.6, hints 1.3
+m1a frame-profile lines over 500 ms: 4; the largest: frame profile: t 126.794 s, 624.8 ms since the last flip; game thread inside the host 17.3 ms (sync 3.3, hints 0.4, prepare 3.2, list 0.2, cs 1.6, fence 0.0, cap 0.0, label waits 8.6, event waits 0.0);frame profile: t 101.034 s, 697.8 ms since the last flip; game thread inside the host 149.1 ms (sync 147.4
+m1offa input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 31 at 50.066 s
+m1offa (nozeroskip) ended at G+240 (after 357 s; G 116, load 103, list 93); 25.4 flips/s over 352 s, 76 s with a gap over 100 ms, longest 879 ms; kernel lines 0, crash lines 0, ledger lines 0
+m1offa title table: [bc5] exp 0419: title PPSA03671: 42 title defaults, 1 taken, 41 already set in the environment
+m1offa start state: ~/bc5-data/captures/play-20261113-1945/gc/direct.log:start state (exp 0418): 15 dwords of constant rows in every prefix (rows 0xff, skipped 0x0)
+m1offa last timing split: timing split over 128 submissions: probe 0.4 ms, anon sync 0.0, direct sync 33.8 (views 23.9; 4 full, 142 fast; scan 1.8, merge 0.5, drain 0.0 in 3, maps 6.8 = want 2.4 + drop 3.9 + zero 0.0 + add 0.5), learned 9.3, hints 2.2
+m1offa frame-profile lines over 500 ms: 2; the largest: frame profile: t 99.845 s, 785.8 ms since the last flip; game thread inside the host 32.7 ms (sync 31.2, hints 0.1, prepare 0.5, list 0.2, cs 0.8, fence 0.0, cap 0.0, label waits 0.0, event waits 0.0);frame profile: t 92.792 s, 879.4 ms since the last flip; game thread inside the host 36.7 ms (sync 0.7,
+m2cuta input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 33 at 53.320 s
+m2cuta (nozeroskip) ended at G+320 (after 435 s; G 113, load 104, list 93); 29.8 flips/s over 430 s, 40 s with a gap over 100 ms, longest 408 ms; kernel lines 0, crash lines 0, ledger lines 0
+m2cuta title table: [bc5] exp 0419: title PPSA03671: 42 title defaults, 1 taken, 41 already set in the environment
+m2cuta start state: ~/bc5-data/captures/play-20261113-1952/gc/direct.log:start state (exp 0418): 15 dwords of constant rows in every prefix (rows 0xff, skipped 0x0)
+m2cuta last timing split: timing split over 128 submissions: probe 1.7 ms, anon sync 0.0, direct sync 0.7 (views 0.1; 0 full, 148 fast; scan 0.0, merge 0.0, drain 0.0 in 0, maps 0.0 = want 0.0 + drop 0.0 + zero 0.0 + add 0.0), learned 0.0, hints 1.3
+m2cuta frame-profile lines over 500 ms: 0; the largest: 
+m1b input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 32 at 51.414 s
+m1b (nozeroskip) ended at G+240 (after 358 s; G 116, load 103, list 93); 25.4 flips/s over 352 s, 74 s with a gap over 100 ms, longest 695 ms; kernel lines 0, crash lines 0, ledger lines 0
+m1b title table: [bc5] exp 0419: title PPSA03671: 42 title defaults, 1 taken, 41 already set in the environment
+m1b start state: ~/bc5-data/captures/play-20261113-1959/gc/direct.log:start state (exp 0418): 15 dwords of constant rows in every prefix (rows 0xff, skipped 0x0)
+m1b last timing split: timing split over 128 submissions: probe 1.6 ms, anon sync 0.0, direct sync 0.7 (views 0.1; 0 full, 130 fast; scan 0.0, merge 0.0, drain 0.0 in 0, maps 0.0 = want 0.0 + drop 0.0 + zero 0.0 + add 0.0), learned 0.1, hints 1.4
+m1b frame-profile lines over 500 ms: 3; the largest: frame profile: t 154.526 s, 553.7 ms since the last flip; game thread inside the host 12.1 ms (sync 1.5, hints 0.3, prepare 2.3, list 0.0, cs 1.0, fence 0.0, cap 0.0, label waits 7.0, event waits 0.0);frame profile: t 100.178 s, 694.8 ms since the last flip; game thread inside the host 32.2 ms (sync 31.4, 
+m1offb input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 30 at 50.477 s
+m1offb (nozeroskip) ended at G+240 (after 357 s; G 116, load 103, list 93); 25.7 flips/s over 352 s, 54 s with a gap over 100 ms, longest 625 ms; kernel lines 0, crash lines 0, ledger lines 0
+m1offb title table: [bc5] exp 0419: title PPSA03671: 42 title defaults, 1 taken, 41 already set in the environment
+m1offb start state: ~/bc5-data/captures/play-20261113-2005/gc/direct.log:start state (exp 0418): 15 dwords of constant rows in every prefix (rows 0xff, skipped 0x0)
+m1offb last timing split: timing split over 128 submissions: probe 0.7 ms, anon sync 74.3, direct sync 81.0 (views 51.2; 13 full, 49 fast; scan 7.0, merge 1.6, drain 0.1 in 11, maps 20.3 = want 7.2 + drop 9.4 + zero 0.0 + add 2.9), learned 17.0, hints 1.7
+m1offb frame-profile lines over 500 ms: 2; the largest: frame profile: t 98.464 s, 543.5 ms since the last flip; game thread inside the host 4.5 ms (sync 3.1, hints 0.1, prepare 0.4, list 0.3, cs 0.7, fence 0.0, cap 0.0, label waits 0.0, event waits 0.0), ;frame profile: t 99.649 s, 624.6 ms since the last flip; game thread inside the host 110.8 ms (sync 109
+m2cutb input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 29 at 50.097 s
+m2cutb (nozeroskip) ended at G+320 (after 435 s; G 113, load 102, list 93); 29.5 flips/s over 429 s, 35 s with a gap over 100 ms, longest 678 ms; kernel lines 0, crash lines 0, ledger lines 0
+m2cutb title table: [bc5] exp 0419: title PPSA03671: 42 title defaults, 1 taken, 41 already set in the environment
+m2cutb start state: ~/bc5-data/captures/play-20261113-2012/gc/direct.log:start state (exp 0418): 15 dwords of constant rows in every prefix (rows 0xff, skipped 0x0)
+m2cutb last timing split: timing split over 128 submissions: probe 1.7 ms, anon sync 0.0, direct sync 0.7 (views 0.1; 1 full, 147 fast; scan 0.0, merge 0.0, drain 0.0 in 0, maps 0.0 = want 0.0 + drop 0.0 + zero 0.0 + add 0.0), learned 0.0, hints 1.3
+m2cutb frame-profile lines over 500 ms: 1; the largest: frame profile: t 103.953 s, 678.1 ms since the last flip; game thread inside the host 75.6 ms (sync 64.1, hints 4.0, prepare 0.3, list 0.1, cs 7.1, fence 0.0, cap 0.0, label waits 0.0, event waits 0.0;
+m3l (lean) PASS: ran 120 s; RssAnon at the end 131352 kB; kernel lines 0, crash lines 0
+candidate F, private: all runs clean (the pass marks are in the lines above)
+chk0419f ended 20:21:45
+chain lock released
+fchain ended 20:21:45
+chain: the lock no longer holds our line, left as it is: 
+

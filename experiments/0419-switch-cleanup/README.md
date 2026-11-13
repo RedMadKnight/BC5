@@ -223,6 +223,51 @@ and the normal binary have changed. In each of the three failures the two source
 and the tree read back as before and the lock is released. Not covered by a dry run: the real builds, the real
 archive's sum, and whether the shared binaries equal the private ones (for B they did not).
 
+### 12. E is not swapped; candidate F built and accepted privately (2026-11-13 19:25-20:21)
+
+Exp 0412 traced E's long gaps (section 10) to its own code: `k1r412::cover()` walked the imported-buffer list from its
+start for each of some 21,000 views, 19-20 ms per full sync in the "want" step against 0.8 ms with K1r off, and a
+1.0-1.36 s stall in the menu at about 39 s in two of three arms. E is therefore withdrawn. By the top session's order
+one candidate carries all the fixes:
+
+**F = B + exp 0412's FORM 6** (the cover pass with a binary search; its writers catcher `BC5_GUARD_WRITERS`, off)
+**+ this experiment's cleanup + exp 0417's save fix + exp 0418's start-state table** (`0418-on-410273ca.diff`: always on,
+its three words read by nothing, the second title's table at 42 rows). Patch **d9af28ca**, unit 59d17cf5,
+`switch_defaults.hpp` 6fbfb8a5 (`tree-candidate-F-d9af28ca.md5`, 132 files); backend files as E's (e96e5c73, 28100ce5).
+Every generator anchor matched on form 6 and exp 0418's diff applied cleanly on top. `test0419defs.cpp` (42 rows) and
+`cmplaunch0419.py` (43 launcher words in the tables, 0 problems) pass; the launcher diff also drops exp 0418's three
+words. Phase 2 of the deletes (removing the dead code) is NOT in F: not ready, and not to be rushed into a unit two
+other sessions changed the same evening.
+
+Private build (`p0419f.sh`): normal **1a2900a0**, lean **034bf107**, the private archive d4c4882e as before; both
+binaries kept under `~/bc5-work/exp0413/kept/`. Chain `chk0419f.sh` (`raw/fchain.out`), no pad key in any run, 13.2 GB
+available before it:
+
+| Run | K1r | Flips/s | s with a gap > 100 ms | Longest gap | End |
+|---|---|---|---|---|---|
+| ASTRO BOT 120 s x3 (fresh directory) | on | - | - | - | PASS x3, kernel 0, crash 0; the title table silent; exp 0418's line "rows on: ... (8 rows); skipped: none" |
+| ASTRO BOT on the kept bad save, the transfer fix on | on | - | - | - | PASS 30 s, "NOT_FOUND (nothing created)" |
+| m1a walk | on | 25.6 | 60 | 698 ms | G+240, clean |
+| m1b walk | on | 25.4 | 74 | 695 ms | G+240, clean |
+| m1offa walk | off (+ filter off) | 25.4 | 76 | 879 ms | G+240, clean |
+| m1offb walk | off (+ filter off) | 25.7 | 54 | 625 ms | G+240, clean |
+| m2cuta cutscene arm 320 s | on | 29.8 | 40 | 408 ms | G+320, clean, no fault record |
+| m2cutb cutscene arm 320 s | on | 29.5 | 35 | 678 ms | G+320, clean, no fault record |
+| lean 120 s | on | - | - | - | PASS |
+
+**The stall is gone: with K1r on the longest gap is 408-698 ms in four runs (E: 1238 and 1357 ms), the same as with it
+off (625, 879 ms) and as B today (574-701 ms).** The frame-profile lines over 500 ms are 0-4 per run and all sit at
+92-155 s (the load and just after it); none is in the menu at 39 s. The 1.1 s gap "outside the host" of E's k1 at
+249 s did not come back in these six runs. The "want" step is exp 0412's to read from the journals (the chain prints
+each run's last timing-split line; m1a's has 3.4 ms over 4 full syncs). Every second-title run printed the title
+table's line ("42 title defaults, 1 taken, 41 already set") and exp 0418's start-state line.
+
+The runners' kernel stopper was fixed first (`fixstop0419.py`, LESSONS R54): it no longer takes a backtrace frame
+such as `amdgpu_gem_fault+0x95/0x100` for a GPU fault.
+
+After the acceptance, under one lock line (`rchain.sh`; results in section 13): exp 0412's extra wall walk with its
+writers catcher, and a private diagnostic build with exp 0418's one-off RSRC2 journal; the private builds go back to F.
+
 ## Decisions for the maintainer
 
 One "yes" covers the swap of E as a whole (the top session asks): both shared builds, the shared backend archive
@@ -239,9 +284,11 @@ to the trash directory. Still his to say separately, because they are behaviour 
 
 ## Verdict
 
-**Built privately and clean on both titles (section 10), not swapped: candidate E (patch 410273ca) = B + exp 0412's K1r (default on, no probe, form 4) + the cleanup + exp
-0417's save fix. Of the 266 names, 77 can no longer be set (29 deleted, 48 hardened), 189 remain: 69 diagnostics,
-63 without a verdict, 42 one title's, 13 configuration, 2 general defaults with an option.** 47 launcher words moved
-into the code (2 general, 45 for the second title) and 15 words got the one reading rule. The ASTRO BOT first-save fault is cured by the transferring-mount fix in its pair. Open before the swap: the longest
-frame gap with K1r on (one run each), and the maintainer's one "yes" (`int0419e.sh`, dry-run 40 of 40, section 11). The removal of the dead code behind the
-77 words is the patch change after that.
+**Candidate F (patch d9af28ca) is built and accepted privately on both titles (section 12); nothing is swapped.**
+F = B + exp 0412's K1r (form 6, default on, the cover pass fixed) + the cleanup + exp 0417's save fix + exp 0418's
+start-state table. E (410273ca) is withdrawn: its K1r stalled the menu for over a second. Of the inventory's 266
+names 77 can no longer be set (29 deleted, 48 hardened) and 189 remain: 69 diagnostics, 63 without a verdict, 42 one
+title's, 13 configuration, 2 general defaults with an option; exp 0418's change takes five more out (its three
+start-state words and two others are read by nothing in F). Before the swap: a swap script for F (E's `int0419e.sh`
+with F's pins and its dry run again), the maintainer's one "yes" (builds, backend archive, launchers, shortcuts), and
+his play. The dead code behind the removed options is the patch change after that.
