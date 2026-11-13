@@ -91,7 +91,18 @@ the dry run of the integration and by R7 and R8 on the box.
 
 `../0416-emufive-switches/DESIGN-submit-owner.md` was sent to exp 0415's session (it owns the lock side, stages
 S2-S5 of its `DESIGN-lock-side.md`) with three questions: fit or overlap, what is unsafe from its measurements, and
-drop / fold / later. No code. Its answer: pending.
+drop / fold / later. No code.
+
+**Its answer** (`REVIEW-submit-owner-by-0415.md`): not dropped and not built apart; it is a later stage of the lock
+side, after S2-S4 ("the applier of change records also owns the CS ioctl"). The note's premise is dated (the
+maintenance is 540-860 full syncs per phase, not a few long holds), its point 1 is unsafe as written (the probe, the
+filter and the state prefix read mapping and ring state), its point 4 would change the cross-ring order that
+`BC5_DIRECT_RING_DEPS` protects, and the callers that matter still wait for their own entry. Three counters come
+first, among them one table of the callers of `submit_now` and the holders of `g_dev_mutex` for both designs. The
+note itself is not edited (it lies in exp 0416's directory); this review stands beside it.
+
+The same message corrects a reading of the integration's runs: the route times that did not move with the APR
+default are the runner's gate (its first key goes at 85 s or later), not a missing effect.
 
 ## Open items carried from the integration (not worked on here)
 
@@ -109,4 +120,5 @@ drop / fold / later. No code. Its answer: pending.
 
 **Prepared, not proven.** The patch change and the hook pass their CPU tests on the laptop and wait for a private
 build; the CLAUDE.md diff and the harness self-test are done; the two launchers wait for a read on the box; the
-submit-owner note waits for exp 0415's comment. Nothing here changes a shared file.
+submit-owner note has exp 0415's review: a later stage of the lock side, three counters first. Nothing here changes a
+shared file.
