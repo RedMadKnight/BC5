@@ -348,6 +348,47 @@ step is counts, not another guess: the same long walk several times on B and on 
 box time each), stopping to read each fault's record. Both failures are bugs to remove at their source by the
 maintainer's rule; neither has a cause yet.
 
+### 15. The second series: nine long walks, none failed (2026-11-13 22:06 to 2026-11-14 00:01)
+
+Ordered by the top session. Nine walks of the second title to G+620, interleaved, no pad key in any (the recorder:
+0 presses each), `KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1` in every arm (log only), RT on, one lock line.
+Script `counts0419f.sh`, raw `raw/counts0419f.out`. Private F is 1a2900a0, the shared build is B's 51af1ed7.
+
+| Arm | Build and words | End | Flips/s | Longest gap | Available / GTT / swap at 600 s (MiB) |
+|---|---|---|---|---|---|
+| dF1 | F | G+620, clean | 25.2 | 872 ms | 435 / 12,323 / 696 |
+| dB1 | shared B | G+620, clean | 25.1 | 795 ms | 536 / 12,252 / 721 |
+| dK1 | F, `BC5_GUARD_K1R=0 BC5_GUARD_K1_FILTER=0` | G+620, clean | 25.6 | 739 ms | 497 / 12,272 / 700 |
+| dN1 | F without exp 0418's five new rows | G+620, clean | 25.4 | 677 ms | 457 / 12,177 / 658 |
+| dF2 | F | G+620, clean | 25.2 | 902 ms | 459 / 12,217 / 699 |
+| dB2 | shared B | G+620, clean | 25.6 | 953 ms | 493 / 12,228 / 694 |
+| dK2 | F, K1r and its filter off | G+620, clean | 25.3 | 736 ms | 444 / 12,228 / 671 |
+| dN2 | F without exp 0418's five new rows | G+620, clean | 25.3 | 531 ms | 456 / 12,216 / 718 |
+| dF3 | F | G+620, clean | 25.5 | 608 ms | 556 / 12,225 / 681 |
+
+In all nine: 0 kernel lines, 0 crash lines, 0 fault records (the newest record is still 20261113-203301, the hang of
+section 13), 0 would-learn. The trap catcher printed its arming line in every arm (`sigaction(SIGTRAP) rc 0`) and
+nothing else; the memory first-failure catcher printed nothing. It has no arming line, so "it was armed" rests on the
+word being in F's binary (`grep -c` = 1) and on exp 0412's code, not on a line of these runs. The lowest available
+memory in a 580-620 s window was 389 MiB (dN1); GTT stayed between 12,177 and 12,323 of 13,312 MiB. The four variants
+do not differ in speed (25.1-25.6 flips/s) or in memory beyond the run-to-run spread.
+
+**Counts of walks past G+320, all runs so far** (sections 12 to 15):
+
+| Variant | Failed / run | The failures |
+|---|---|---|
+| F, K1r on (defaults, with or without the scan and writers catcher) | 2 / 7 | GPU hang at 601 s (m5wall); guest CPU fault at 543 s (sA) |
+| F, K1r and its filter off | 0 / 3 | |
+| F without exp 0418's five new rows | 0 / 3 | |
+| shared B | 0 / 3 | |
+| E | 0 / 1 | |
+
+What this says and does not say: neither fault came back in five more walks on F's defaults, so each is rarer than
+the first four runs suggested; 2 of 7 against 0 of 3 does not separate F from B (Fisher's exact test, one-sided:
+p = 0.47), nor K1r on from off. Neither fault is explained, and the first-failure catchers have nothing to show
+because nothing failed. The hypothesis "a null pointer after a failed memory call near the wall" is neither supported
+nor refuted: no arm came near the conditions of sA's fault with the catcher on.
+
 ## Decisions for the maintainer
 
 One "yes" covers the swap of E as a whole (the top session asks): both shared builds, the shared backend archive
@@ -367,7 +408,7 @@ to the trash directory. Still his to say separately, because they are behaviour 
 **Candidate F (patch d9af28ca) is built and passed its acceptance runs on both titles (section 12), but its one run
 past G+320 ended in a GPU hang at 601 s (section 13): The deciding series (section 14) did not reproduce the hang in five long walks and
 added a different failure (the title faulted on the CPU at 543 s in the plain F arm): 2 of 4 long walks on F with K1r
-on failed, 0 of 1 with it off, 0 of 1 on B. F is NOT ready for the swap; the next step is counts. Nothing is swapped.**
+on failed, 0 of 1 with it off, 0 of 1 on B. F is NOT ready for the swap. The second series (section 15) ran nine more long walks (F x3, F K1r off x2, F without exp 0418's rows x2, B x2) and none failed: 2 of 7 on F's defaults in all, 0 of 3 on each other variant, which does not separate F from B. Both faults stay unexplained; whether F is swapped with two rare, unexplained faults on record is the maintainer's decision. Nothing is swapped.**
 F = B + exp 0412's K1r (form 6, default on, the cover pass fixed) + the cleanup + exp 0417's save fix + exp 0418's
 start-state table. E (410273ca) is withdrawn: its K1r stalled the menu for over a second. Of the inventory's 266
 names 77 can no longer be set (29 deleted, 48 hardened) and 189 remain: 69 diagnostics, 63 without a verdict, 42 one
