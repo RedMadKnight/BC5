@@ -1,0 +1,15 @@
+2026-11-13 07:33:18
+run r7t3 (normal), cap 300 s, play 60 s, binary /home/kjaniszewski/bc5-work/exp0415/bin/kyty_emulator md5 d8497f082ad1a226e46499a6d3f1e199, launcher 7bb71360 from 157021e3, snapshot e3b9be4116574c95
+extra: BC5_DIRECT_JOB_TS=1 KYTY_BC5_FRAME_STAT_WIN=64/256 KYTY_BC5_ANON_SYNC=thread KYTY_BC5_FRAME_STAT=/home/kjaniszewski/bc5-work/exp0415/raw/r7t3-frame.txt
+RT on (run0415f: R_RT=off only for measuring RT's share), walk 1, perf 0
+boot e88d45fe, up since 2026-11-13 00:11:11
+MemAvailable:   13410260 kB SwapTotal:       7778300 kB SwapFree:        7194744 kB 
+other load: rsync 0, load average 3.77 4.73 3.58
+emulator pid 1763039 exe /home/kjaniszewski/bc5-work/exp0415/bin/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0415/wd
+route: cross (start screen) at 50 s
+route: the save-slot list runs; cross (slot 1) at 56 s
+route: cross (Continue) at 62 s
+route: the load seen at 64 s
+route: gameplay G = 79 s (the load at 64 s)
+route: walk of 3 cycles (60 s) queued at 79 s
+launcher gone: yes; perf ended: not started; launcher exit 0
