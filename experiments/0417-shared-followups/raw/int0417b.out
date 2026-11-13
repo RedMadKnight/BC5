@@ -1,0 +1,8 @@
+claimed: exp 0413 | token 17945809251301144 | exp 0417 candidate B: patch 0001 27b6416f into the shared normal and lean, CPU only, no emulator, until 16:22 | 2026-11-13 15:42:05
+2026-11-13 15:42:05 before: normal fe0933c0ad7c0d9a86194bc0a7598a06, lean 711d6c0d33d171bcb4749903bd607aa2, archive 75e30335, tree diff 4651d1d3
+tree: 129 patched files match; diff 27b6416f
+== 15:42:07 normal
+== 15:44:55 lean
+2026-11-13 15:47:41 after: normal 51af1ed78e84291caf5ee042ea82c46d, lean 59894428d98ed94918d09a31002c1e3b, archive 75e30335, tree diff 27b6416f; DIFFERENT from the private builds (normal 3baa8e3947c1c294e3745014988a523a, lean e11ad4deb29d1d31d53297f09c02167f)
+undo: both binaries from /home/kjaniszewski/bc5-work/exp0413/swap/*.before-0417b, the tree by reversing 0001-new14 and applying 0001-new9 (then rebuild); the launchers are not touched
+lock released

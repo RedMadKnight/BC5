@@ -401,6 +401,47 @@ each candidate alone, all together; every arm is a fresh private test directory,
 then a 30 s start on what it wrote. The result wanted: which arm's next start passes, and the calls before the
 crash in the arm that does not.
 
+## 14. The swap of candidate B into the shared builds (2026-11-13 15:42-15:47) and the checks after it
+
+The maintainer, through the top session, on "swap the shared builds to candidate B?": "Tak, podmień". Scope: the
+shared normal and lean builds; the backend archive unchanged; no launcher, no desktop shortcut, no `faultrec0412.sh`
+in a launcher.
+
+`int0417b.sh` (`raw/int0417b.out`), CPU only, the box free after exp 0412's arm:
+
+| | Before | After |
+|---|---|---|
+| normal `~/bc5-work/kytyplus-build/src/kyty_emulator` | fe0933c0ad7c0d9a86194bc0a7598a06 | **51af1ed78e84291caf5ee042ea82c46d** |
+| lean `~/bc5-work/kytyplus-build-lean/src/kyty_emulator` | 711d6c0d33d171bcb4749903bd607aa2 | **59894428d98ed94918d09a31002c1e3b** |
+| archive `libbc5_backend.a` | 75e30335 | 75e30335 |
+| `~/src/KytyPlus`, diff against f266548 | 4651d1d3 | **27b6416f**, 129 patched files equal to the laptop's |
+
+The shared binaries are NOT byte-identical to the private builds of the same tree (3baa8e39 / e11ad4de), so the
+private runs of section 10 do not stand for them; the chain below is their check. Why they differ was not looked at
+(the build directories differ). Undo: `~/bc5-work/exp0413/swap/kyty_emulator.before-0417b` and
+`kyty_emulator-lean.before-0417b` over the two binaries, the tree by reversing `0001-new14.patch` and applying
+`0001-new9.patch` (both in `~/bc5-work/exp0413/p/kit`), then a rebuild of the build directories before the next change.
+`backend/kytyplus-patches/0001-bc5-lle-agc.patch` on this branch is 27b6416f (`grep -c 'exp 0372'` = 5, the route's
+header present).
+
+`post0417b.sh` on the shared builds. Its first start (`raw/post0417b-first.out`) ran ASTRO BOT 3 of 3 clean and then
+stopped without starting the walk: the tag `h1` was already used on 2026-11-12, the runner refused it, and the
+chain's filter hid the runner's message. A mistake of the script, not of the build; the tags were changed, the chain
+now names a used tag, and it was started again 15:55-16:22 (`raw/post0417b.out`). No pad key in any run.
+
+| Run | Result |
+|---|---|
+| ASTRO BOT 120 s, three in a row from a fresh private directory (twice: 6 starts) | 6 of 6 PASS, kernel 0, crash 0 |
+| sw1, the walk | G+240, 25.9 flips/s, 60 s with a gap over 100 ms, longest 668 ms; 10 MiB under no view at 61 s; available 876 / 840 MiB at ~60 / ~104 s; kernel 0, crash 0 |
+| sw2cut, the cutscene arm, no input | G+240, 30.7 flips/s, longest gap 574 ms; no fault, no record (one run) |
+| sw3l, lean 120 s | PASS, kernel 0, crash 0 |
+| sw4eop, the walk with `BC5_R3_SUBMIT_EOP_EVENT=1 BC5_R3_EOP_STAT=1` | G+240, 26.6 flips/s, longest gap 747 ms; kernel 0, crash 0; **no `eop stat` line**: the counter's callback never ran in 354 s, so this route makes no chained EOP publication with a deferred callback (the journal names `BC5_R3_SUBMIT_EOP_EVENT` as on) |
+
+Against the control of section 10 on the old shared build (26.3 flips/s, 8 MiB, 947 / 911 MiB): no difference
+shown, one run each. Not explained: after three ASTRO BOT starts in a row the save-memory file reads 43703630, not
+the 1fa391a4 of a single first start (both chains; the count of non-zero bytes was not taken, and every one of the
+starts on it passed). Not done: the replug series on the new shared binaries and the maintainer's own start.
+
 ## Open items carried from the integration (not worked on here)
 
 | # | Item | Needs |
@@ -418,7 +459,7 @@ crash in the arm that does not.
 **Candidate B (27b6416f; section 9) is clean privately and not different from the shared build fe0933c0 in the valid
 chain of 2026-11-13 14:25 (section 10: one walk each, the cutscene arm, lean); the save-memory finding was the pad's
 input and exists on the shared build too (section 11). K1r is out of this fold after its fault on ASTRO BOT (section
-8). B's swap waits for the top session and the maintainer; it changes no backend file.** The guard and the map
+8). B is in the shared builds since 2026-11-13 15:47 (normal 51af1ed7, lean 59894428, patch 27b6416f; section 14) and its checks there are clean; the replug series on the new binaries is still to do.** The guard and the map
 opt-in are shown on real calls. The candidate patch 33bddfa1
 built privately and its hook did what was expected in six ASTRO BOT starts (section 2b); two of the new lines (C2, A2)
 still have to be seen in a title that reaches their code; the CLAUDE.md diff (with the versions read on the box) and the harness self-test are done; the two other launchers

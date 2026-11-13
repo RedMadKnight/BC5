@@ -1,0 +1,35 @@
+chain lock: exp 0417 | chain: exp 0417: checks on the shared builds after candidate B's swap (ASTRO BOT, walk, cutscene arm, lean, EOP count), until about 16:40 | token 202611131555091379424 | 2026-11-13 15:55:09
+shared binaries: normal 51af1ed78e84291caf5ee042ea82c46d, lean 59894428d98ed94918d09a31002c1e3b
+sw0a (astro) PASS: ran 120 s; RssAnon at the end 206304 kB; kernel lines 0, crash lines 0
+sw0b (astro) PASS: ran 120 s; RssAnon at the end 209272 kB; kernel lines 0, crash lines 0
+sw0c (astro) PASS: ran 120 s; RssAnon at the end 209472 kB; kernel lines 0, crash lines 0
+sw0a-c save-memory file: 43703630 (1fa391a4 with no key)
+sw1 journal: would-learn 0, timeout-fault 0, fault record lines 0
+sw1 import: t 61 s: 11140.0 MiB imported: 9902.0 under eager views, 1228.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 10.0 under no view (10.0 last seen under an eager or zero-list view, 0.0 never seen u
+sw1 import: t 122 s: 11286.0 MiB imported: 9990.0 under eager views, 1264.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 32.0 under no view (32.0 last seen under an eager or zero-list view, 0.0 never seen 
+sw1 route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 93 s;route: cross (Continue) at 99 s;route: the load seen at 105 s;route: gameplay G = 114 s (the load at 105 s);route: walk of 14 cycles (240 s) queued at 114 s;; watchdog: watchdog: emulator 1453824 ended; 178 samples, lowest available 328 MiB, highest PSI full 8 %
+sw1 at ~104 s: avail,swap,io 840 533 0 4 1 | psi 0.65/0.65 1.20 | gtt 11877 
+sw1 at ~60 s: avail,swap,io 876 532 1 0 2 | psi 0.19/0.19 1.82 | gtt 11855 
+sw1 input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 35 at 50.795 s
+sw1 (nozeroskip) ended at G+240 (after 356 s; G 114, load 105, list 93); 25.9 flips/s over 351 s, 60 s with a gap over 100 ms, longest 668 ms; kernel lines 0, crash lines 0, ledger lines 0
+sw2cut journal: would-learn 0, timeout-fault 0, fault record lines 0
+sw2cut import: t 61 s: 11132.0 MiB imported: 9900.0 under eager views, 1224.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 8.0 under no view (8.0 last seen under an eager or zero-list view, 0.0 never seen 
+sw2cut import: t 122 s: 11166.0 MiB imported: 9152.0 under eager views, 1252.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 762.0 under no view (754.0 last seen under an eager or zero-list view, 0.0 never 
+sw2cut route: route: cross (start screen) at 86 s;route: the save-slot list runs; down x 3, cross (slot 4) at 92 s;route: cross (Continue) at 98 s;route: the load seen at 100 s;route: gameplay G = 112 s (the load at 100 s);route: no input after the load (N_NOWALK=1), 240 s from 112 s;; watchdog: watchdog: emulator 1547978 ended; 177 samples, lowest available 761 MiB, highest PSI full 0 %
+sw2cut at ~104 s: avail,swap,io 1005 539 1 4 4 | psi 0.00/0.00 0.96 | gtt 11617 
+sw2cut at ~60 s: avail,swap,io 1021 539 1 0 7 | psi 0.11/0.11 1.34 | gtt 11849 
+sw2cut input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 38 at 50.565 s
+sw2cut (nozeroskip) ended at G+240 (after 353 s; G 112, load 100, list 92); 30.7 flips/s over 348 s, 35 s with a gap over 100 ms, longest 574 ms; kernel lines 0, crash lines 0, ledger lines 0
+sw3l (lean) PASS: ran 120 s; RssAnon at the end 135028 kB; kernel lines 0, crash lines 0
+second title: all clean
+sw4eop journal: would-learn 0, timeout-fault 0, fault record lines 0
+sw4eop import: t 61 s: 11140.0 MiB imported: 9910.0 under eager views, 1224.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 6.0 under no view (6.0 last seen under an eager or zero-list view, 0.0 never seen 
+sw4eop import: t 121 s: 11240.0 MiB imported: 9942.0 under eager views, 1260.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 38.0 under no view (22.0 last seen under an eager or zero-list view, 16.0 never s
+sw4eop route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 94 s;route: cross (Continue) at 100 s;route: the load seen at 106 s;route: gameplay G = 117 s (the load at 106 s);route: walk of 14 cycles (240 s) queued at 117 s;; watchdog: watchdog: emulator 1657314 ended; 180 samples, lowest available 362 MiB, highest PSI full 4 %
+sw4eop at ~104 s: avail,swap,io 927 551 0 0 2 | psi 0.16/0.16 1.03 | gtt 11926 
+sw4eop at ~60 s: avail,swap,io 981 544 0 0 1 | psi 0.03/0.03 1.78 | gtt 11855 
+sw4eop input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 36 at 60.544 s
+sw4eop (nozeroskip) ended at G+240 (after 358 s; G 117, load 106, list 94); 26.6 flips/s over 354 s, 54 s with a gap over 100 ms, longest 747 ms; kernel lines 0, crash lines 0, ledger lines 0
+sw4eop EOP lines: 
+post0417b ended 16:22:31
+chain lock released
