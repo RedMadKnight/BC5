@@ -214,10 +214,23 @@ Under the fixes-first rule, everything above is in one build, each piece behind 
 
    - `P_ARCH` is the archive's md5 from the 2026-11-13 integration record; B keeps it (exp 0417 section 9). Check it on the box first.
    - Output: `~/bc5-work/exp0418/bin/kyty_emulator` (normal) and `bin-lean/`.
-2. **One start of the second title, RT on**, with the launcher's own words plus `BC5_EMU=~/bc5-work/exp0418/bin/kyty_emulator BC5_GC_IOCTL_TRACE=1 BC5_DIRECT_START_STATE=1`, to the menu and a short play.
-   - Expected: the start-state line with all 8 rows on, the trace lines, and no change in picture or speed.
-   - `BC5_DIRECT_START_STATE_SKIP` bisects if anything changes.
-3. **The umr read of `../README.md` §3** (the maintainer's sudo), once with the table off and once with it on, in play. This turns the five "inferred" rows into measured ones, or shows that one of them differs.
+2. **The trace run** (the top session's order of 2026-11-13 evening): one run of the second title with `BC5_GC_IOCTL_TRACE=1` only. The table and the GS rings stay off, so the run differs from the shared build only by the trace.
+
+   ```bash
+   bash ~/bc5-work/exp0418/kit/run0418.sh t418a 240
+   ```
+
+   - **`kit/run0418.sh`** passes the private binary (pinned by `built.md5`) and the one extra word to exp 0413's runner `run0413p.sh`, unchanged. That runner gives:
+     - its own atomic BOX-LOCK claim;
+     - RT on;
+     - the private save copy;
+     - the walk to G+240, ending at that time cap;
+     - its sampler, fuse and watchdog.
+   - Around it, `chk0417g.sh`'s pad recording (`evtest`, every key press of every joystick).
+   - Afterwards it copies the trace lines out of the run's log into `~/bc5-work/exp0418/raw/t418a-trace.txt` and prints a count.
+   - The laptop streams the kernel log and stops the run at the first amdgpu error line.
+   - Checked on the laptop: `bash -n`; a stand-in dry run (a fake runner and home) passes; its refusals pass (a used tag, a wrong tag, a binary not in `built.md5`).
+3. **The umr reads.** The maintainer made them at 18:03 (idle) and 18:06 (in play, shared build, table off) into `~/bc5-work/exp0418/idle.txt` and `play.txt`. `umr0418.py <idle> <play>` (laptop) prints each register at idle and in play, the expectation of §2, whether each `_UMD` equals its register, and the bank witness `GRBM_GFX_CNTL`. A read with the table on comes after the trace run.
 4. **Name the NIDs on the laptop** (`nid-names.py`) and write the list of named requests: each with its register and whether a user IB may write it.
 
 ## Open
