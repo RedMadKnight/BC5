@@ -23,6 +23,47 @@ import sys
 
 T = b" // exp 0412 (tag nl412)\n"
 
+K1 = b'''// Experiment 0412 (tag nl412): the K1 catcher, BC5_GUARD_K1_STAT=1 (default off; no behaviour changes). The rule that
+// replaces the learned windows for GPU-written memory is "import exactly what the title binds, when it binds it". This
+// counts how far today's hint is from that: for every new target base, was its own chunk imported at bind time, and
+// how much did the +-32 MiB window around it pin.
+static bool k1412_on() {
+	static const bool on = [] {
+		const char* e = std::getenv("BC5_GUARD_K1_STAT");
+		return e != nullptr && e[0] != 0 && !(e[0] == '0' && e[1] == 0);
+	}();
+	return on;
+}
+// 1: the 2 MiB chunk of the direct or private file under this guest address is imported; 0: it is under a view and
+// not imported; -1: no view holds the address.
+static int k1412_imported(uint64_t va) {
+	for (auto& S: g_d) {
+		if (dstate_fd(S) < 0) continue;
+		const auto views_p = direct_views(S);
+		for (const auto& v: views_p->v) {
+			if (va < v.va || va >= v.va + v.size) continue;
+			return direct_covered_end(S, (v.off + (va - v.va)) & ~(kDChunk - 1)) != 0 ? 1 : 0;
+		}
+	}
+	return -1;
+}
+static void k1412_note(const char* name, uint64_t addr, int before, uint64_t window_bytes) {
+	static uint64_t binds = 0, base_missing = 0, no_view = 0, window_total = 0, lines = 0;
+	binds++;
+	if (before == 0) base_missing++;
+	if (before < 0) no_view++;
+	window_total += window_bytes;
+	if ((before == 0 || window_bytes != 0) && lines++ < 200) {
+		journal("k1 stat (exp 0412, tag nl412): t %.3f s: %s base 0x%" PRIx64 " bound: its own chunk was %s; the +-32 MiB window pinned %.1f MiB more\\n", timing_now(), name, addr,
+		        before > 0 ? "imported" : (before == 0 ? "NOT imported (a K1 case: the bind is what brought it in)" : "under no view"), static_cast<double>(window_bytes) / 1048576.0);
+	}
+	if ((binds & 63u) == 0) {
+		journal("k1 stat (exp 0412, tag nl412): t %.0f s: %" PRIu64 " new target bases; own chunk not imported at the bind %" PRIu64 ", under no view %" PRIu64 "; the windows pinned %.1f MiB in all\\n",
+		        timing_now(), binds, base_missing, no_view, static_cast<double>(window_total) / 1048576.0);
+	}
+}
+'''
+
 
 def cut_function(s, head, note):
     """Replace the function that starts with the line `head` (at column 0) and ends at the next "\n}\n" by a comment."""
@@ -46,11 +87,28 @@ def main():
     s = open(sys.argv[1], "rb").read()
     assert b"\r" not in s and b"tag mr412" in s and b"tag nl412" not in s, "refused: not the shared unit with mr412, or already edited"
     n0 = len(s)
+    # The K1 catcher (DESIGN-learned-windows.md section 7, step 2; both variants): BC5_GUARD_K1_STAT=1. For every new
+    # target base the hint path sees (colour, depth, stencil, HTILE) it journals whether the 2 MiB chunk AT the base
+    # was imported when the title bound it, and how much the +-32 MiB window around it then pinned. A count of what the
+    # guesses still cover; no behaviour changes. Default off.
+    a = b"static void hint_targets(const uint32_t* ib, uint32_t num_dwords) {\n"
+    s = once(s, a, K1 + a)
+    a = b"\t\t\t\tconst uint64_t asked = direct_force(dlo, lo + window);\n"
+    s = once(s, b"\t\t\t\tconst uint64_t dlo = lo > below ? lo - below : 0;\n" + a,
+             b"\t\t\t\tconst uint64_t dlo = lo > below ? lo - below : 0;\n"
+             b"\t\t\t\tconst int      k1_before = k1412_on() ? k1412_imported(lo) : -1; // exp 0412 (tag nl412)\n"
+             b"\t\t\t\tconst uint64_t k1_bytes  = g_d[0].bytes + g_d[1].bytes;\n" + a +
+             b"\t\t\t\tif (k1412_on()) k1412_note(b.name, addr, k1_before, g_d[0].bytes + g_d[1].bytes - k1_bytes); // exp 0412 (tag nl412)\n")
     if keep_guards:
-        # The variant that keeps ONE thing of the pass: the 2 MiB of zero buffer behind every eager heap of 32 MiB or
-        # more (exp 0037), and the release of such pieces when the guest puts a range there. That is a rule (the title
-        # reads up to 64 KiB past its GPU heaps' ends), not a remembered fault; the catcher-only build without it has
-        # never run. learned_apply() loses its file, its windows and their fill; scratch_fill and have_insert stay.
+        # The variant that keeps ONE thing of the pass, in the top session's words (2026-11-13): the 2 MiB zero guard
+        # behind an eager heap is a rule from the title's behaviour (it reads up to 64 KiB past its GPU heaps' ends,
+        # exp 0037), applied to every such heap from the layout, with no memory of a fault; what the maintainer rejects
+        # is the remembered list. Its proper form is the K3 rule (true holes), and the guard goes when that rule is in.
+        s = once(s, b"\t// Experiment 0037: the GPU reads up to 64 KiB past the end of the title's GPU heaps (four\n",
+                 b"\t// exp 0412 (tag nl412): what follows is a RULE, not a learned window: it comes from the title's behaviour and is\n"
+                 b"\t// applied to every eager heap from the layout, with no memory of a fault. Its proper form is the K3 rule (the\n"
+                 b"\t// console's behaviour over true holes, DESIGN-learned-windows.md section 7); this guard goes when that rule is in.\n"
+                 b"\t// Experiment 0037: the GPU reads up to 64 KiB past the end of the title's GPU heaps (four\n")
         s = once(s, b"\tlearned_load();\n\tif (!g_dev) return;\n\tstatic uint64_t applied_gen = 0;\n", b"\tif (!g_dev) return; // exp 0412 (tag nl412): no learned file\n\tstatic uint64_t applied_gen = 0;\n")
         s = once(s, b"\tfor (auto& S: g_d) {\n\t\tif (dstate_fd(S) >= 0) t_pinned_views[S.kind == 0 ? 0 : 1] = direct_views(S);\n\t}\n"
                     b"\tfor (const auto& [a, n]: g_learned) map_window(a, a + n, have, \"learned\", a);\n\tfor (auto& pin: t_pinned_views) pin.reset();\n",
