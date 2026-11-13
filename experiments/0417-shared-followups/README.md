@@ -336,6 +336,71 @@ What remains is a defect of its own on every build: a first save made this way f
 next start crash at 5 s. The files are kept on the box (`~/bc5-work/exp0413/n/wda/_SaveData.ks1`, `.kb1`, the two
 midday ones); it is not worked on here.
 
+## 12. Prepared, not run: candidate B's swap and its checks after the swap
+
+`mkswap0417b.py` makes `int0417b.sh` from the integration's `int0416.sh` (pins fe0933c0 / 711d6c0d / patch
+4651d1d3; `0001-new9.patch` out, `0001-new14.patch` = 27b6416f in; the archive 75e30335 must stay; the binaries must
+hold B's words and must NOT hold `BC5_GUARD_K1R` or the set-buffer test hook's word). The swap is the top session's
+to put to the maintainer; nothing was run on the box.
+
+Dry run on the laptop (`dryswap0417b.sh`, `raw/dryswap0417b.out`): a stand-in HOME whose host tree is the scratch
+tree with 0001-new9 applied, a stand-in `distrobox` whose "build" writes a file made of the tree's own sources, the
+real patches and tree list. Three cases, 21 of 21 checks:
+
+| Case | Expected | Result |
+|---|---|---|
+| ok | tree diff 27b6416f, "byte-identical to the private builds", copies kept, lock released | as expected, exit 0 |
+| the build fails | both binaries and the tree (4651d1d3) restored and read back, lock released | as expected, exit 1 |
+| a binary holds `BC5_GUARD_K1R` | refused by name, restored and read back, lock released | as expected, exit 1 |
+
+Not covered by a dry run: the real build, the real binaries' words, and whether the shared binaries come out equal
+to the private ones (3baa8e39 / e11ad4de).
+
+After the swap, `post0417b.sh` (one chain, pad keys recorded, `P_N` / `P_L` = the expected shared md5s): ASTRO BOT
+120 s on a fresh private test directory (the save-memory file must read 1fa391a4), the walk to G+240, the cutscene
+arm, lean 120 s, and the walk once more with `BC5_R3_SUBMIT_EOP_EVENT=1 BC5_R3_EOP_STAT=1` (the EOP count, never run).
+Then the replug series with the maintainer at the box: `run0391.sh` with
+`experiments/0413-np-session-v2-shared/integration/replug/pins0391-B-shared.env` copied over the box's
+`pins0391.env`, followed by his physical DualSense replug and the DS4 (the standing audio rule). `post0417b.sh` was
+checked with `bash -n` only.
+
+## 13. ASTRO BOT's first save: reading of the SaveData path, a catcher and three candidate fixes (not run)
+
+The defect of section 11 is on every build. What `src/libs/libSaveData.cpp` (candidate B's, 0bd91bb4) does with the
+save data memory, read on the laptop:
+
+| # | What the code does | Why it can matter here | Candidate |
+|---|---|---|---|
+| H1 | ONE store and one file (`sce_sdmemory/memory.dat`) for every `slot_id`; its own comment says so, and its "sync" event already names per-slot directories | a title using two slots writes one over the other at the same offsets; the next start reads the wrong slot's bytes | `KYTY_BC5_SAVEDATA_MEMORY_SLOTS=1` (new) |
+| H2 | `SetupSaveDataMemory2` answers `existed_memory_size` = the store's size (2 MiB) on an EMPTY directory, unless `KYTY_BC5_SAVEDATA_MEMORY_FIXES` has "existed"; that switch is not in the default table | the title is told a save exists, reads zeros as one, and its first real save is built on that | `KYTY_BC5_SAVEDATA_MEMORY_FIXES=existed` (exp 0401 e5, exists) |
+| H3 | `SetSaveDataMemory2` drops the parameters and the icon; `GetSaveDataMemory2` answers zeroed parameters and an empty icon | a title that checks them after a real save gets nothing | `KYTY_BC5_SAVEDATA_MEMORY_PARAM=1` (new) |
+| H4 | none of the above: the file is right and the title's path with a real save hits another missing piece at 5 s | then the call log shows clean reads and the fault is elsewhere | the catcher's output and the crash text |
+
+These are hypotheses from reading; no call sequence has been seen yet. The good and the bad file are on the box
+(not read this round: the box was the guardian's), so the structural comparison of the two files is still owed; the
+catcher gives the same information per call (slot, offset, size, non-zero count, FNV-1a).
+
+Made, all off by default (with all off the calls do what they did): `sdm0417.inc` (the block), `mksdm0417.py`
+(puts it into the unit: 0bd91bb4 -> a01e4b64, one more line in the sync path), candidate C = B + this = patch
+1689b7da (`tree-candidate-C-1689b7da.md5`; the patch is in the sessions' notes folder).
+
+- `KYTY_BC5_SAVEDATA_MEMORY_LOG=1`, the catcher: one stderr line per Setup / Get / Set / Sync.
+- `KYTY_BC5_SAVEDATA_MEMORY_SLOTS=1`: slots 1-3 get their own store and file (`sce_sdmemory<n>/memory.dat`), slot 0
+  keeps today's; a slot of 4 or more is PARAMETER.
+- `KYTY_BC5_SAVEDATA_MEMORY_PARAM=1`: parameters and icon kept per slot (`param.bin`, `icon.bin`) and answered.
+
+Own test (`test0417sdm.cpp` includes the block as it is, between stand-ins; `test0417sdm.sh`, VS clang++ on the
+laptop): 8 of 8 cases. It shows today's overwrite with the switches off (slot 0 reads slot 1's bytes), the two
+slots apart with the switch on, slot 4 refused, "existed" per slot, the parameters and icon kept across a process
+and cut to the caller's buffer, and the old zeroed answers with the switch off. The unit itself has NOT been
+compiled (the laptop cannot build the host); the private build is the first step on the box.
+
+For the box, when a slot is given (about 25 minutes, CPU build then five arms of 3 minutes): `mkkit0417f.py` ->
+`p0417f.sh` (the private tree from 27b6416f to 1689b7da), then `sdm0417run.sh sdm0417-list1.txt`: the catcher alone,
+each candidate alone, all together; every arm is a fresh private test directory, 120 s with five scripted crosses,
+then a 30 s start on what it wrote. The result wanted: which arm's next start passes, and the calls before the
+crash in the arm that does not.
+
 ## Open items carried from the integration (not worked on here)
 
 | # | Item | Needs |
