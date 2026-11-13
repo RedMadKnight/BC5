@@ -35,7 +35,7 @@ BC5 is a hobby research project and is against piracy. You play games you own, d
 
 ## Status in numbers
 
-As of 2026-11-02 (rows that name 2026-11-13 are newer), measured on one BC-250 with the maintainer's own copies of the games. Every number is a finding (F1 … F829) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
+As of 2026-11-02 (rows that name 2026-11-13 are newer), measured on one BC-250 with the maintainer's own copies of the games. Every number is a finding (F1 … F830) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
 
 | | ASTRO BOT | Marvel's Wolverine (second title) |
 | --- | --- | --- |
