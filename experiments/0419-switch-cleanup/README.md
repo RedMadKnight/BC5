@@ -115,6 +115,26 @@ act); and the promotions that wait for an ASTRO BOT run (14 direct-path words, n
 experiment ends with a disposition for each switch it added (promote / remove the option / diagnostic / delete /
 no verdict, with what is missing).
 
+### 8. Candidate E: the form aimed at the swap (prepared, not compiled)
+
+The top session's order of 2026-11-13: fold exp 0412's K1r into the cleanup candidate, all off by default, the
+backend archive as a separate named step. E = B + exp 0412's chain WITHOUT the probe (its "form 2": `mkk1r`, `mkwa`,
+`mkcv`, `mkk1f`, `mkkl`; unit 2f4a3d63; a deliberate GPU fault has no place in a build he plays) + this experiment's
+three generators (every anchor matched on that unit; one line of K1r's refusal loses its zero-skip half) + exp 0417's
+save-data-memory switches and its transferring-mount fix. Patch **d28dff94**, unit c92f5913, `libSaveData.cpp`
+164c0869 (`tree-candidate-E-d28dff94.md5`; the patch is in the sessions' notes folder). exp 0412 checked the unit:
+its three rule bodies are in it verbatim, and its chain also applies to D's unit.
+
+E needs exp 0412's two backend files (`direct.hpp` 26519fcc, `direct.cpp` b1d27875), so its private build makes a
+private backend archive (`mkkit0419e.py` -> `p0419e.sh`) and a swap of E changes the SHARED archive: that step is the
+top session's to put to the maintainer. If the archive must wait, D is the form without it.
+
+Private chain `chk0419e.sh` (`mkchk0419e.py`): ASTRO BOT on a fresh directory (the title table must not speak);
+the kept bad save with the transferring-mount fix off (the fault) and on (must pass); the second title's walk and
+cutscene arm with every new switch off (the control "all off = B"; each prints the title table's line); lean.
+K1r ON is exp 0412's own chain. Not covered: the new launchers (the private runner starts exp 0412's own launcher,
+which sets the words itself, so the table's "taken" path is exercised only for words that launcher lacks).
+
 ## Decisions for the maintainer
 
 1. D removes the recovery words and `alias_learn`. With `BC5_FAULT_RECORD=0` a GPU fault then goes on with no label
