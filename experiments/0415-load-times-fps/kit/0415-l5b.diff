@@ -1,0 +1,378 @@
+diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
+index 9b6cb05..9dec9c9 100644
+--- a/src/kernel/memory.cpp
++++ b/src/kernel/memory.cpp
+@@ -55,6 +55,7 @@
+ #include <sys/syscall.h>
+ #include <unistd.h>
+ #include "bc5/load_stat.hpp" // experiment 0415 (ls415)
++#include "bc5/map_records.hpp" // experiment 0415 (mr415c, stage S2)
+ #endif
+ 
+ namespace Libs::LibKernel::Memory {
+@@ -676,6 +677,29 @@ private:
+ 	bool                                       m_dirty_on       = false;
+ 	bool                                       m_dirty_overflow = false;
+ 
++public:
++	// BC5 (experiment 0415, tag mr415c; stage S2 of DESIGN-lock-side.md): as SnapshotWithDirty, but instead of every
++	// range only, per span, the ranges that overlap or touch it as they are NOW (one hold of the mutex for all).
++	// *complete false: the log was not on or was full; the spans are then not to be used and `touching` is empty.
++	void DirtyWithTouching(uint64_t* gen, std::vector<std::pair<uint64_t, uint64_t>>* spans, std::vector<std::vector<Range>>* touching, bool* complete) {
++		EXIT_IF(gen == nullptr || spans == nullptr || touching == nullptr || complete == nullptr);
++		Common::LockGuard lock(m_mutex);
++		*gen      = m_gen.load(std::memory_order_acquire);
++		*complete = m_dirty_on && !m_dirty_overflow;
++		spans->clear();
++		spans->swap(m_dirty);
++		m_dirty_on       = true;
++		m_dirty_overflow = false;
++		touching->clear();
++		if (!*complete) return;
++		touching->reserve(spans->size());
++		for (const auto& [start, size]: *spans) {
++			const auto [a, b] = bc5::map_records::touching(m_ranges, start, bc5::map_records::end_of(start, size));
++			touching->emplace_back(m_ranges.begin() + static_cast<std::ptrdiff_t>(a), m_ranges.begin() + static_cast<std::ptrdiff_t>(b));
++		}
++	}
++
++private:
+ 	static void AddPiece(std::vector<Range>* ranges, const Range& source, uint64_t start,
+ 	                     uint64_t end) {
+ 		EXIT_IF(ranges == nullptr);
+@@ -1268,6 +1292,32 @@ void Bc5GuestRangesIn(uint64_t lo, uint64_t hi, std::vector<std::pair<uint64_t,
+ uint64_t Bc5MappedRangesGeneration() {
+ 	return g_virtual_ranges != nullptr ? g_virtual_ranges->Generation() : 0;
+ }
++// BC5 (experiment 0415, tag mr415c): the spans changed since the last call and, through cb, for span number `index`
++// the mapped ranges that overlap or touch it now (the types of Bc5ForEachMappedRange). False when there are no ranges.
++bool Bc5RangesDirtyTouching(void (*cb)(size_t, uint64_t, uint64_t, uint64_t, int, int, const char*, void*), void* ctx, uint64_t* gen,
++                            std::vector<std::pair<uint64_t, uint64_t>>* spans, bool* complete) {
++	if (g_virtual_ranges == nullptr || cb == nullptr || gen == nullptr || spans == nullptr || complete == nullptr) {
++		return false;
++	}
++	std::vector<std::vector<VirtualRanges::Range>> touching;
++	g_virtual_ranges->DirtyWithTouching(gen, spans, &touching, complete);
++	for (size_t i = 0; i < touching.size(); i++) {
++		for (const auto& r: touching[i]) {
++			int type = -1;
++			switch (r.type) {
++				case VirtualRangeType::Direct: type = 0; break;
++				case VirtualRangeType::Flexible: type = 1; break;
++				case VirtualRangeType::Pooled: type = 2; break;
++				case VirtualRangeType::Stack: type = 3; break;
++				case VirtualRangeType::Code: type = 4; break;
++				case VirtualRangeType::Runtime: type = 5; break;
++				default: break;
++			}
++			if (type >= 0) cb(i, r.start, r.size, r.offset, type, r.protection, r.name, ctx);
++		}
++	}
++	return true;
++}
+ // BC5 (experiment 0415, tag mr415): Bc5ForEachMappedRange's callback over one snapshot, with that snapshot's
+ // generation and the spans changed since the last call (see VirtualRanges::SnapshotWithDirty). False when there are
+ // no ranges yet.
+diff --git a/src/kernel/memory.h b/src/kernel/memory.h
+index c8723cf..d325641 100644
+--- a/src/kernel/memory.h
++++ b/src/kernel/memory.h
+@@ -119,6 +119,10 @@ uint64_t Bc5MappedRangesGeneration(); // BC5 (experiment 0037): changes with eve
+ // BC5 (experiment 0415, tag mr415): the mapped ranges of one snapshot through cb (as Bc5ForEachMappedRange's second
+ // callback), that snapshot's generation, and the spans changed since the last call; *complete false when the spans
+ // may miss a change (the first call, or a full log).
++// BC5 (experiment 0415, tag mr415c): the spans changed since the last call, and for each (cb's first argument is the
++// span's index) the mapped ranges that overlap or touch it now. *complete false: do not use the spans.
++bool Bc5RangesDirtyTouching(void (*cb)(size_t index, uint64_t start, uint64_t size, uint64_t offset, int type, int protection, const char* name, void* ctx),
++                            void* ctx, uint64_t* gen, std::vector<std::pair<uint64_t, uint64_t>>* spans, bool* complete);
+ bool Bc5RangesWithDirty(void (*cb)(uint64_t start, uint64_t size, uint64_t offset, int type, int protection, const char* name, void* ctx), void* ctx,
+                         uint64_t* gen, std::vector<std::pair<uint64_t, uint64_t>>* spans, bool* complete);
+ void     Bc5GuestRangesIn(uint64_t lo, uint64_t hi, std::vector<std::pair<uint64_t, uint64_t>>* out); // reserved or mapped, overlapping [lo, hi)
+diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
+index 219685f..3e73381 100644
+--- a/src/libs/bc5LleAgc.cpp
++++ b/src/libs/bc5LleAgc.cpp
+@@ -2469,9 +2469,20 @@ static void mr415_maps_check_thread() {
+ 	}
+ }
+ 
++// The modes of KYTY_BC5_MAP_RECORDS: 0 off (unset, empty, "0"); 2 "views" (stage S2, tag mr415c: the kept list is used);
++// 1 anything else ("verify": stage S1, the kept list is only compared).
++static int mr415_mode() {
++	static const int mode = [] {
++		const char* e = std::getenv("KYTY_BC5_MAP_RECORDS");
++		if (!bc5::load_stat::env_set(e)) return 0;
++		return std::strcmp(e, "views") == 0 ? 2 : 1;
++	}();
++	return mode;
++}
++
+ static void mr415_verify() {
+-	static const int mode = bc5::sync_fast::mode_of(std::getenv("KYTY_BC5_MAP_RECORDS"));
+-	if (mode == 0) return;
++	static const int mode = mr415_mode();
++	if (mode != 1) return;
+ 	static std::once_flag maps_check_once;
+ 	std::call_once(maps_check_once, [] { std::thread(mr415_maps_check_thread).detach(); });
+ 	struct R {
+@@ -2525,6 +2536,98 @@ static void mr415_verify() {
+ 	kept = std::move(full);
+ 	have = true;
+ }
++// Experiment 0415 (tag mr415c), stage S2: KYTY_BC5_MAP_RECORDS=views. The direct-memory view list is the one kept from
++// the range table's change records (stage S1 found it equal to the rebuilt list in 7,991 comparisons over 866,732
++// records, both titles); the list is rebuilt from every range only every KYTY_BC5_MAP_RECORDS_CHECK_MS (2,000 when
++// unset), and at that moment the kept list is compared with it and with the old builder's list (rec_mismatch) and
++// replaced by it. If the record log reports a gap the list is rebuilt at once. Called under direct_views' mutex.
++// If a record were missing, a view would be absent (its memory not on the GPU) or would stay after the guest unmapped
++// it (the GPU reads pages the guest gave back) until the next check, at most the check period.
++static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_out) {
++	struct R {
++		uint64_t    start, size, offset;
++		int         type;
++		std::string name;
++	};
++	static std::vector<DView> kept;
++	static bool               have       = false;
++	static uint64_t           checked_ns = 0;
++	static const uint64_t     period_ns  = bc5::load_stat::env_num("KYTY_BC5_MAP_RECORDS_CHECK_MS", 2000, 600'000) * 1'000'000ull;
++	auto make = [](const R& r, DView* v) {
++		if (r.type != 0 || r.size == 0) return false;
++		*v = {r.start, r.size, r.offset, r.name, ls415_name_class(r.name.c_str(), false), ls415_name_class(r.name.c_str(), true)};
++		return true;
++	};
++	const uint64_t                             now = SoftCp::now_ns();
++	std::vector<std::pair<uint64_t, uint64_t>> spans;
++	uint64_t                                   gen      = 0;
++	bool                                       complete = false;
++	if (have && now - checked_ns < period_ns) {
++		std::vector<std::vector<R>> lists;
++		if (Libs::LibKernel::Memory::Bc5RangesDirtyTouching(
++		        [](size_t index, uint64_t start, uint64_t size, uint64_t offset, int type, int, const char* name, void* p) {
++			        auto* l = static_cast<std::vector<std::vector<R>>*>(p);
++			        if (l->size() <= index) l->resize(index + 1);
++			        (*l)[index].push_back({start, size, offset, type, name != nullptr ? name : ""});
++		        },
++		        &lists, &gen, &spans, &complete) &&
++		    complete) {
++			lists.resize(spans.size());
++			for (size_t i = 0; i < spans.size(); i++) bc5::map_records::apply(kept, lists[i], spans[i].first, bc5::map_records::end_of(spans[i].first, spans[i].second), make);
++			bc5::load_stat::count(bc5::load_stat::kMapRecord, spans.size());
++			*out     = kept;
++			*gen_out = gen;
++			return;
++		}
++		bc5::load_stat::count(bc5::load_stat::kRecOverflow);
++		have = false; // the log had a gap: the kept list is not to be compared, only replaced
++	}
++	std::vector<R> ranges;
++	spans.clear();
++	if (!Libs::LibKernel::Memory::Bc5RangesWithDirty(
++	        [](uint64_t start, uint64_t size, uint64_t offset, int type, int, const char* name, void* p) {
++		        static_cast<std::vector<R>*>(p)->push_back({start, size, offset, type, name != nullptr ? name : ""});
++	        },
++	        &ranges, &gen, &spans, &complete)) {
++		*out = direct_views_build(S);
++		return;
++	}
++	std::vector<DView> full;
++	for (const R& r: ranges) {
++		DView v;
++		if (make(r, &v)) full.push_back(std::move(v));
++	}
++	auto same = [](const std::vector<DView>& a, const std::vector<DView>& b) {
++		if (a.size() != b.size()) return false;
++		for (size_t i = 0; i < a.size(); i++) {
++			if (a[i].va != b[i].va || a[i].size != b[i].size || a[i].off != b[i].off || a[i].name != b[i].name || a[i].lazy != b[i].lazy || a[i].eager != b[i].eager) return false;
++		}
++		return true;
++	};
++	static int logged = 0;
++	if (have && complete) {
++		for (const auto& [start, size]: spans) bc5::map_records::apply(kept, ranges, start, bc5::map_records::end_of(start, size), make);
++		bc5::load_stat::count(bc5::load_stat::kMapRecord, spans.size());
++		if (!same(kept, full)) {
++			bc5::load_stat::count(bc5::load_stat::kRecMismatch);
++			if (logged++ < 8) journal("map records (exp 0415, mr415c): MISMATCH of the list in use at generation %" PRIu64 ": kept %zu views, rebuilt %zu\n", gen, kept.size(), full.size());
++		}
++	}
++	// the old builder's list, read a moment later: it can differ only if the ranges changed in between
++	if (const uint64_t g2 = Libs::LibKernel::Memory::Bc5MappedRangesGeneration(); g2 == gen) {
++		const std::vector<DView> old = direct_views_build(S);
++		if (Libs::LibKernel::Memory::Bc5MappedRangesGeneration() == gen && !same(old, full)) {
++			bc5::load_stat::count(bc5::load_stat::kRecMismatch);
++			if (logged++ < 8) journal("map records (exp 0415, mr415c): the snapshot's list differs from the old builder's at generation %" PRIu64 ": %zu against %zu views\n", gen, full.size(), old.size());
++		}
++	}
++	kept       = std::move(full);
++	have       = true;
++	checked_ns = now;
++	*out       = kept;
++	*gen_out   = gen;
++}
++
+ static std::shared_ptr<const DViews> direct_views(const DState& S) {
+ 	static std::mutex                    m;
+ 	static std::shared_ptr<const DViews> cache[2];
+@@ -2541,8 +2644,13 @@ static std::shared_ptr<const DViews> direct_views(const DState& S) {
+ 	built_ns[k] = now;
+ 	g_views_builds++;
+ 	auto d = std::make_shared<DViews>();
+-	d->v   = direct_views_build(S);
+-	if (k == 0) mr415_verify(); // experiment 0415 (mr415)
++	uint64_t g_used = g;
++	if (k == 0 && mr415_mode() == 2) { // experiment 0415 (mr415c), stage S2: the list kept from the change records
++		mr415_views(S, &d->v, &g_used);
++	} else {
++		d->v = direct_views_build(S);
++		if (k == 0) mr415_verify(); // experiment 0415 (mr415)
++	}
+ 	uint64_t sig = 1469598103934665603ull;
+ 	for (size_t i = 0; i < d->v.size(); i++) {
+ 		const auto& v = d->v[i];
+@@ -2551,7 +2659,7 @@ static std::shared_ptr<const DViews> direct_views(const DState& S) {
+ 	}
+ 	d->sig   = sig;
+ 	cache[k] = d;
+-	gen[k]   = g;
++	gen[k]   = g_used; // experiment 0415 (mr415c): the generation of the snapshot the list was made from
+ 	return d;
+ }
+ 
+@@ -6250,6 +6358,11 @@ struct ChainSlot {
+ 	~ChainSlot();
+ };
+ static thread_local ChainSlot g_chain_tl;
++// Experiment 0415 (fs415c): what chain_submit knows about the chain it hands to submit_now (the same thread, the next
++// call): when its first segment was appended, why it was flushed, how many of the title's buffers it holds.
++static thread_local uint64_t t_fs415_open_ns = 0;
++static thread_local int      t_fs415_why     = -1;
++static thread_local uint32_t t_fs415_segs    = 0;
+ static std::mutex             g_chains_mu;
+ static std::vector<ChainSlot*> g_chains; // the registered (cross) slots, for the watchdog and the observe points
+ static const int g_chain_mode = [] {
+@@ -6482,7 +6595,8 @@ static void chain_submit(ChainSlot& s, int why, bool foreign) {
+ 	}
+ 	if (!hold_release(s, !(foreign && (why == 9 || why == 11)))) return; // ADR 0013 (experiment 0226)
+ 	std::lock_guard order(s.flush_mu);
+-	Chain mine;
++	Chain    mine;
++	uint64_t fs_open = 0; // experiment 0415 (fs415c)
+ 	{
+ 		std::lock_guard lk(s.mu);
+ 		Chain& c = s.c;
+@@ -6491,6 +6605,7 @@ static void chain_submit(ChainSlot& s, int why, bool foreign) {
+ 		mine.segs.swap(c.segs);
+ 		mine.ring    = c.ring;
+ 		mine.compute = c.compute;
++		fs_open      = s.open_ns;
+ 		s.open_ns    = 0;
+ 		s.hold_writes.clear(); // ADR 0013
+ 	}
+@@ -6510,6 +6625,9 @@ static void chain_submit(ChainSlot& s, int why, bool foreign) {
+ 			        g_chain_why[9].load(), g_chain_why[10].load());
+ 		}
+ 	}
++	t_fs415_open_ns = fs_open; // experiment 0415 (fs415c)
++	t_fs415_why     = why;
++	t_fs415_segs    = static_cast<uint32_t>(mine.segs.size());
+ 	submit_now(mine.buf.data(), static_cast<uint32_t>(mine.buf.size()), mine.compute ? "acb" : "dcb", mine.ring, &mine);
+ 	if (s.cross) { // section B.4: the marks this submission produced belong to the slot; replays wait for the chain to be empty
+ 		std::lock_guard lk(s.mu);
+@@ -11495,6 +11613,9 @@ struct PendingJob {
+ 	bool                     short_list = false, retried = false;
+ 	uint64_t                 seq = 0, t2_ns = 0, queued_ns = 0, dev_gen = 0;
+ 	uint64_t                 fs_sub_ns = 0, fs_ask_ns = 0, fs_got_ns = 0; // experiment 0415 (fs415b): submit_now entered, the device mutex asked, got
++	uint64_t                 fs_open_ns = 0, fs_part_ns[6] = {};          // experiment 0415 (fs415c): the chain's first segment; the ends of probe, anon sync, direct sync, learned, hints, pre-device
++	int                      fs_why = -1;
++	uint32_t                 fs_segs = 0;
+ 	uint32_t                 slot = 0;
+ 	std::vector<uint64_t>    ts_addrs; // experiment 0046: GPU timestamps to rescale once the job is done
+ 	std::vector<uint32_t>    ib_copy;  // experiment 0160: the executed buffer, kept for the timeout probe
+@@ -11814,8 +11935,9 @@ static void ts_collect(const uint32_t* ib, uint32_t num_dwords, std::vector<uint
+ // 2's counter. No change of behaviour: lines are written by the completion threads, by a submitter for a job it
+ // completed itself, and at the flip, outside the device mutex.
+ //   f <frame> <flip called ns> <flip returned ns>                                   every flip (CLOCK_MONOTONIC)
+-//   J <frame> <n> <kind> <ring> <title dwords> <filter dwords> <packets> <dropped> <BOs> <prepare ms> <list ms> <cs ms>
++//   K <frame> <n> <kind> <ring> <title dwords> <filter dwords> <packets> <dropped> <BOs> <prepare ms> <list ms> <cs ms>
+ //     <submit_now entered ns> <device mutex asked ns> <got ns> <queued ns> <fence seen ns> <gpu start> <gpu end> <how>
++//     <chain opened ns> <flush reason> <segments> <six part ends, ns>      (fs415c; build L5a wrote "J" without these)
+ //       every job (fs415b: ALL of them, on every ring, whether the completion thread or the submitter completed it)
+ //       while the frame number is inside a window: KYTY_BC5_FRAME_STAT_WIN=<frames>/<period>, 64/512 when unset
+ //       (64 frames in a row out of every 512). ring -1 is the GFX ring (bc5::direct::kGfxRing), 0-3 the compute
+@@ -11845,16 +11967,22 @@ static bool fs415_in_window(uint64_t frame) { // fs415b
+ 	}();
+ 	return frame % w.second < w.first;
+ }
++// fs415c: the line is "K": J's fields, then the chain's first segment (ns, 0 without a chain), why it was flushed
++// (chain_submit's reason, -1 without a chain), its segments, and the ends of submit_now's parts under the mutex (ns):
++// probe, anonymous sync, direct sync, learned windows, hints, the work before the device call. The device call is
++// from the last of these to "queued".
+ static void fs415_job(uint64_t n, const char* kind, int ring, uint32_t num_dwords, const bc5::policy::FilterStats& fs, uint32_t bo_count, double prepare_ms, double list_ms,
+-                      double cs_ms, uint64_t sub_ns, uint64_t ask_ns, uint64_t got_ns, uint64_t queued_ns, uint64_t gpu_start, uint64_t gpu_end, char how) {
++                      double cs_ms, uint64_t sub_ns, uint64_t ask_ns, uint64_t got_ns, uint64_t queued_ns, uint64_t gpu_start, uint64_t gpu_end, char how, uint64_t open_ns,
++                      int why, uint32_t segs, const uint64_t* part_ns) {
+ 	FILE* f = fs415_file();
+ 	if (f == nullptr) return;
+ 	const uint64_t frame = g_fs415_frame.load(std::memory_order_relaxed);
+ 	if (!fs415_in_window(frame)) return;
+ 	std::lock_guard fl(g_fs415_mutex);
+-	std::fprintf(f, "J %" PRIu64 " %" PRIu64 " %s %d %u %" PRIu64 " %" PRIu64 " %" PRIu64 " %u %.3f %.3f %.3f %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %c\n",
++	std::fprintf(f, "K %" PRIu64 " %" PRIu64 " %s %d %u %" PRIu64 " %" PRIu64 " %" PRIu64 " %u %.3f %.3f %.3f %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %c %" PRIu64
++	                " %d %u %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 "\n",
+ 	             frame, n, kind, ring, num_dwords, fs.dwords, fs.packets, fs.dropped, bo_count, prepare_ms, list_ms, cs_ms, sub_ns, ask_ns, got_ns, queued_ns,
+-	             static_cast<uint64_t>(SoftCp::now_ns()), gpu_start, gpu_end, how);
++	             static_cast<uint64_t>(SoftCp::now_ns()), gpu_start, gpu_end, how, open_ns, why, segs, part_ns[0], part_ns[1], part_ns[2], part_ns[3], part_ns[4], part_ns[5]);
+ }
+ 
+ struct CqItem {
+@@ -11973,7 +12101,7 @@ static void completion_thread(int index) {
+ 			forget_label_writes(j.seq, r.ring, r.timed_out || r.rc == -125); // experiment 0055
+ 			// experiment 0415 (fs415b): every job, also one that failed or timed out (its stamps are 0 then)
+ 			fs415_job(j.n, j.kind, r.ring, j.num_dwords, j.filter, j.bo_count, j.prepare_ms, j.list_ms, j.cs_ms, j.fs_sub_ns, j.fs_ask_ns, j.fs_got_ns, j.queued_ns,
+-			          r.ok ? r.gpu_start : 0, r.ok ? r.gpu_end : 0, 'a');
++			          r.ok ? r.gpu_start : 0, r.ok ? r.gpu_end : 0, 'a', j.fs_open_ns, j.fs_why, j.fs_segs, j.fs_part_ns);
+ 			const double total_ms = static_cast<double>(SoftCp::now_ns() - j.queued_ns) / 1e6 + j.cs_ms;
+ 			frame_profile_done(index == 0, j.queued_ns, SoftCp::now_ns(), 0.0);
+ 			if (!r.ok || (j.n & 0x3fu) == 0) journal("submit #%" PRIu64 " %s %u dwords at %p: pass %" PRIu64 " rewrite %" PRIu64 " drop %" PRIu64 " unmapped %" PRIu64 " cc %" PRIu64 " mappings %zu ... %s rc %d%s%s %.2f ms\n",
+@@ -12503,6 +12631,12 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+ 	}
+ 	const int qring = ring; // ADR 0009: the compute ring takes the MEC form as it is
+ 	const uint64_t fs_sub = fs415_file() != nullptr ? SoftCp::now_ns() : 0; // experiment 0415 (fs415b): submit_now entered
++	const uint64_t fs_open = t_fs415_open_ns;                               // experiment 0415 (fs415c): the chain's first segment (0: no chain)
++	const int      fs_why  = t_fs415_why;
++	const uint32_t fs_segs = t_fs415_segs;
++	t_fs415_open_ns = 0;
++	t_fs415_why     = -1;
++	t_fs415_segs    = 0;
+ 	if (g_async) {
+ 		// Experiment 0045: 24 jobs in flight before the game's
+ 		// thread waits; with the flip deferred (BC5_DIRECT_FLIP_DEFER=1) the thread can then run
+@@ -13396,6 +13530,13 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+ 		it.job.fs_sub_ns  = fs_sub; // experiment 0415 (fs415b)
+ 		it.job.fs_ask_ns  = fs_ask;
+ 		it.job.fs_got_ns  = fs_got;
++		it.job.fs_open_ns = fs_open; // experiment 0415 (fs415c)
++		it.job.fs_why     = fs_why;
++		it.job.fs_segs    = fs_segs;
++		{
++			const uint64_t parts[6] = {ta, tb, t1, tc, t2, ls_t3};
++			for (int k = 0; k < 6; k++) it.job.fs_part_ns[k] = parts[k];
++		}
+ 		it.job.dev_gen    = g_dev_gen.load();
+ 		if (ts_scale() != 1.0) ts_collect(ib, num_dwords, &it.job.ts_addrs);
+ 		frame_profile_job(t_cq == 0, r.prepare_ms, r.list_ms, r.cs_ms);
+@@ -13426,8 +13567,11 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+ 	// A job the ring thread finished inline (jobs in flight) overlaps the game thread's jobs: it counts by its interval, not by its wait.
+ 	frame_profile_done(t_cq == 0, g_async ? t2 : 0, g_async ? SoftCp::now_ns() : 0, r.fence_ms);
+ 	// experiment 0415 (fs415b): a job this thread waited for itself; "queued" is taken as now less the fence wait
+-	fs415_job(n, kind, r.ring, num_dwords, r.filter, r.bo_count, r.prepare_ms, r.list_ms, r.cs_ms, fs_sub, fs_ask, fs_got,
+-	          SoftCp::now_ns() - (r.fence_ms > 0 ? static_cast<uint64_t>(r.fence_ms * 1e6) : 0), r.ok ? r.gpu_start : 0, r.ok ? r.gpu_end : 0, 's');
++	{
++		const uint64_t parts[6] = {ta, tb, t1, tc, t2, ls_t3};
++		fs415_job(n, kind, r.ring, num_dwords, r.filter, r.bo_count, r.prepare_ms, r.list_ms, r.cs_ms, fs_sub, fs_ask, fs_got,
++		          SoftCp::now_ns() - (r.fence_ms > 0 ? static_cast<uint64_t>(r.fence_ms * 1e6) : 0), r.ok ? r.gpu_start : 0, r.ok ? r.gpu_end : 0, 's', fs_open, fs_why, fs_segs, parts);
++	}
+ 	if (timing) {
+ 		journal("timing: #%" PRIu64 " done at t %.3f s, %.1f ms after the sync and hints; device: prepare %.2f list %.2f cs %.2f fence %.2f ms, %u BOs%s\n", n, timing_now(),
+ 		        static_cast<double>(SoftCp::now_ns() - t2) / 1e6, r.prepare_ms, r.list_ms, r.cs_ms, r.fence_ms, r.bo_count, r.short_list ? " (short list)" : "");
