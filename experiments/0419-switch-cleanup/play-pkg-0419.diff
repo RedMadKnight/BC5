@@ -1,13 +1,13 @@
 --- /c/Users/kjani/AppData/Local/Temp/claude/7e70d624f1bff3f5/43cd6eac-dc2c-49c1-b603-e5283be4d569/scratchpad/int/box19/play-pkg.sh	2026-11-13 08:17:43.000000000 +0100
-+++ /c/Users/kjani/AppData/Local/Temp/claude/7e70d624f1bff3f5/43cd6eac-dc2c-49c1-b603-e5283be4d569/scratchpad/int/l19/play-pkg.sh	2026-11-13 16:54:51.256354700 +0100
++++ /c/Users/kjani/AppData/Local/Temp/claude/7e70d624f1bff3f5/43cd6eac-dc2c-49c1-b603-e5283be4d569/scratchpad/int/l19/play-pkg.sh	2026-11-13 19:23:39.637798200 +0100
 @@ -46,25 +46,14 @@
  export SHADPS4_SYSMODULES_PACK_DIR=$HOME/bc5-data/sysmodules-pack-hle-ampr-noplaygo  # 2026-10-25 (exp 0298, the maintainer's yes): no libScePlayGo.sprx, the host answers PlayGo (100 chunks)
  # Experiment 0042: also the heaps the GPU reads or writes before the CPU touches them
  export BC5_DIRECT_EAGER_NAMES="RenderGpuWcLarge,RenderGpuWcSmall,RenderGpuRwLarge,RenderGpuRwSmall,CommitIABufferAllocator,AMM,RenderAlloc,Physics,Decal Job Scheduler,VisualEffectInstanceHeap,DynamicHeap,DynamicHeap Small,ComponentHeap,ComponentHeap Small,MaterialHeap,DDLHeap,Physics query allocator"
 -export BC5_DIRECT_LEARNED=$HOME/bc5-work/direct-learned-none.txt  # 2026-11-13, the maintainer's order (exp 0412 sections 52-56, 60): NO learned windows; an empty read-only file
 -export BC5_GUARD_LEARN_LOG=${BC5_GUARD_LEARN_LOG:-2}  # the catcher: a GPU fault is journaled ("would learn ..." in gc/direct.log) with its address and kind; nothing is written, nothing added
-+# 2026-11-13, the maintainer's order (exp 0412 sections 52-56, 60): NO learned windows; an empty read-only file  [exp 0419: now in the emulator's table]
-+# the catcher: a GPU fault is journaled ("would learn ..." in gc/direct.log) with its address and kind; nothing is written, nothing added  [exp 0419: now in the emulator's table]
++# 2026-11-13, the maintainer's order (exp 0412 sections 52-56, 60): NO learned windows; an empty read-only file  [exp 0419: now in the emulator's table or read by nothing]
++# the catcher: a GPU fault is journaled ("would learn ..." in gc/direct.log) with its address and kind; nothing is written, nothing added  [exp 0419: now in the emulator's table or read by nothing]
  export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/_SaveData-pkg-play
  # exp 0413: the second title's own words, as the tested daily line fast7/lean7 (exp 0412) ran them; each can be
  # overridden from the environment.
@@ -25,8 +25,8 @@
 -    ; do
 -  n=${w%%=*}; [ -n "${!n+x}" ] || export "$w"
 -done
-+# on in every play since 11-03; never A/B'd  [exp 0419: now in the emulator's table]
-+# orphan release  [exp 0419: now in the emulator's table]
++# on in every play since 11-03; never A/B'd  [exp 0419: now in the emulator's table or read by nothing]
++# orphan release  [exp 0419: now in the emulator's table or read by nothing]
 +# exp 0419: this title's twenty library words are in the emulator's own table for this title (src/bc5/switch_defaults.hpp)
  # Optional, off here: export BC5_R3_SUBMIT_EOP_EVENT=1  (on in the daily line until 11-12; its global packet ring can be
  # read after a wrap by a deferred callback, Codex's review of exp 0413; back on once the owned-packet fix is in)
@@ -59,7 +59,7 @@
  # is skipped too. BC5_DIRECT_GC_TF_RING=0 and the old skip list restore the previous setup.
 -export BC5_DIRECT_GC_TF_RING=${BC5_DIRECT_GC_TF_RING:-1}
 -export BC5_DIRECT_GC_HS_OFFCHIP=1  # exp 0399: the title's own VGT_HS_OFFCHIP_PARAM, the water
-+# exp 0399: the title's own VGT_HS_OFFCHIP_PARAM, the water  [exp 0419: now in the emulator's table]
++# exp 0399: the title's own VGT_HS_OFFCHIP_PARAM, the water  [exp 0419: now in the emulator's table or read by nothing]
  # Experiment 0218 (the maintainer said yes, 2026-10-22: "Wygląda świetnie... w pełni grywalne"): the
  # reflections are on by default. The traversal variants run with the flat-aperture fix
  # (BC5_DIRECT_FLAT_APERTURE=1, F249-F251), the sparse AMM pages are backed (BC5_DIRECT_AMM_PRT=1, F257,
@@ -71,7 +71,7 @@
 -if [ "${BC5_DIRECT_AMM_PRT-1}" = 0 ]; then unset BC5_DIRECT_AMM_PRT; else export BC5_DIRECT_AMM_PRT=${BC5_DIRECT_AMM_PRT:-1}; fi
 -export BC5_DIRECT_SKIP_PGM=${BC5_DIRECT_SKIP_PGM:-0}  # exp 0323: the compaction 909974400 runs with RT on (exp 0306+); 0 = nothing skipped
 +# exp 0419: BC5_DIRECT_AMM_PRT is in the title's table; BC5_DIRECT_AMM_PRT=0 in the environment turns it off
-+# exp 0323: the compaction 909974400 runs with RT on (exp 0306+); 0 = nothing skipped  [exp 0419: now in the emulator's table]
++# exp 0323: the compaction 909974400 runs with RT on (exp 0306+); 0 = nothing skipped  [exp 0419: now in the emulator's table or read by nothing]
  # Top session, 2026-10-24 (exp 0278/0280, F337-F340; the maintainer approved it): the BVH build work the Emulation >
  # Ray tracing switch drops when it is off. The switch itself stays on unless the menu or KYTY_BC5_RT=0 says otherwise.
  # 2026-10-25 (exp 0299, F362, the maintainer's yes): RT off also drops the reflection traversal 0x11d049aa00, 0x11d04a6000 and 0x11d04bb900, which with no BVH built whitens the lab.
@@ -97,10 +97,10 @@
 -export BC5_DIRECT_GPU_CHECK_PRODUCT=1 BC5_DIRECT_SHADOW_LABELS=1  # exp 0342 (F414, F415): the RT-on guards - the product staircase in the CP check, host shadow labels
 -export BC5_DIRECT_HOST_INDIRECT=learn:1100000000 BC5_DIRECT_SOFT_WAIT_MS=8  # exp 0350 (F432): exp 0346 v3 (a GFX-form dispatch after the title zeroed base-1 resolved by the host, rewritten only to a page it read, else NOP-ed) + exp 0343 (soft-CP replay polls bounded at 8 ms); the exp 0349 cut is on by default
 -export BC5_DIRECT_RING_DEPS=dcb  # exp 0323 (F385): every GFX-ring job starts after the compute rings' last jobs - the BVH build's two-ring split hung 11/11 at ~2 min with RT on (exps 0320-0322); cost about the one-ring flip rate
-+# exp 0342 (F412, F415): one ring - every compute buffer on the GFX ring (was 0)  [exp 0419: now in the emulator's table]
-+# exp 0342 (F414, F415): the RT-on guards - the product staircase in the CP check, host shadow labels  [exp 0419: now in the emulator's table]
-+# exp 0350 (F432): exp 0346 v3 (a GFX-form dispatch after the title zeroed base-1 resolved by the host, rewritten only to a page it read, else NOP-ed) + exp 0343 (soft-CP replay polls bounded at 8 ms); the exp 0349 cut is on by default  [exp 0419: now in the emulator's table]
-+# exp 0323 (F385): every GFX-ring job starts after the compute rings' last jobs - the BVH build's two-ring split hung 11/11 at ~2 min with RT on (exps 0320-0322); cost about the one-ring flip rate  [exp 0419: now in the emulator's table]
++# exp 0342 (F412, F415): one ring - every compute buffer on the GFX ring (was 0)  [exp 0419: now in the emulator's table or read by nothing]
++# exp 0342 (F414, F415): the RT-on guards - the product staircase in the CP check, host shadow labels  [exp 0419: now in the emulator's table or read by nothing]
++# exp 0350 (F432): exp 0346 v3 (a GFX-form dispatch after the title zeroed base-1 resolved by the host, rewritten only to a page it read, else NOP-ed) + exp 0343 (soft-CP replay polls bounded at 8 ms); the exp 0349 cut is on by default  [exp 0419: now in the emulator's table or read by nothing]
++# exp 0323 (F385): every GFX-ring job starts after the compute rings' last jobs - the BVH build's two-ring split hung 11/11 at ~2 min with RT on (exps 0320-0322); cost about the one-ring flip rate  [exp 0419: now in the emulator's table or read by nothing]
  # Experiment 0134 (2026-10-16): no ring dependencies; the black blocks of experiment 0132 were the
  # compute heads dropping their waits on graphics (fixed in the host), not the order itself.
  # Experiment 0133 (2026-10-16): the two-ring limit at 4 ms (ASTRO BOT geyser 32-34 fps against 30-31 at 8 ms).

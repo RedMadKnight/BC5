@@ -71,8 +71,8 @@ int main(int argc, char** argv) {
 	g_env["BC5_DIRECT_GPU_CHECK"] = "0";  // the environment wins
 	g_env["KYTY_BC5_LOAD_ZLIB"]   = "";   // an empty value counts as set, as in the launcher
 	const int rows = ApplyTitle("PPSA03671", &took);
-	expect("45 rows", rows == 45);
-	expect("43 taken", took == 43);
+	expect("42 rows (45 before exp 0418 took its three start-state words out)", rows == 42);
+	expect("40 taken", took == 40);
 	expect("the environment's 0 stays", g_env["BC5_DIRECT_GPU_CHECK"] == "0");
 	expect("the empty value stays", g_env["KYTY_BC5_LOAD_ZLIB"].empty());
 	expect("a row is set", g_env["BC5_DIRECT_HOST_INDIRECT"] == "learn:1100000000" && g_env["BC5_DIRECT_RING_DEPS"] == "dcb");

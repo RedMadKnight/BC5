@@ -49,7 +49,8 @@ s = s[:a] + "# exp 0419: this title's twenty library words are in the emulator's
 old = 'if [ "${BC5_DIRECT_AMM_PRT-1}" = 0 ]; then unset BC5_DIRECT_AMM_PRT; else export BC5_DIRECT_AMM_PRT=${BC5_DIRECT_AMM_PRT:-1}; fi\n'
 assert s.count(old) == 1
 s = s.replace(old, "# exp 0419: BC5_DIRECT_AMM_PRT is in the title's table; BC5_DIRECT_AMM_PRT=0 in the environment turns it off\n")
-s, removed = strip_exports(s, gen | per | {"BC5_DIRECT_LEARNED", "BC5_DIRECT_SOFT_WAIT_MS"}, "exp 0419: now in the emulator's table")
+# exp 0418 (candidate F): its three start-state words are read by nothing any more, so they leave the launcher too
+s, removed = strip_exports(s, gen | per | {"BC5_DIRECT_LEARNED", "BC5_DIRECT_SOFT_WAIT_MS", "BC5_DIRECT_CP_COHER_START_DELAY", "BC5_DIRECT_GC_TF_RING", "BC5_DIRECT_GC_HS_OFFCHIP"}, "exp 0419: now in the emulator's table or read by nothing")
 names = sorted(set(x.split("=")[0] for x in removed))
 left = [n for n in sorted(gen | per) if re.search(r"^export .*\b%s=" % n, s, re.M)]
 assert not left, left

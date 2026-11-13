@@ -21,6 +21,7 @@ STAY = {
     "BC5_DIRECT_TIMING", "BC5_DIRECT_FRAME_PROFILE", "BC5_DIRECT_TIMEOUT_PROBE",          # diagnostics, non-lean only
     "KYTY_BC5_FPS_COUNTER", "KYTY_BC5_AUDIO_TRACE", "KYTY_BC5_MEASURE",
     "BC5_DIRECT_LEARNED",                                                                 # read by nothing; goes from the launcher
+    "BC5_DIRECT_CP_COHER_START_DELAY", "BC5_DIRECT_GC_TF_RING", "BC5_DIRECT_GC_HS_OFFCHIP",  # exp 0418: read by nothing since the start-state table is always on
     "BC5_DIRECT_SOFT_WAIT_MS",                                                            # 8 is the code's own default
 }
 src = open(launcher, encoding="utf-8").read()
