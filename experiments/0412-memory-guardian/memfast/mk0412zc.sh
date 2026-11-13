@@ -19,7 +19,7 @@
 #   ff412   KYTY_BC5_MEM_FIRSTFAIL, KYTY_BC5_TRAP_LOG, BC5_DIRECT_MAX_BO_MIB (mkff0412.py)
 # ~/src/KytyPlus, the shared build directories, the shared backend source and the shared archive are only read.
 #   1. checks: no emulator; the shared tree is 0001 4651d1d3; the shared archive is 75e30335; the kit's sums
-#   2. the lock (the hard-link claim); the five CPU tests
+#   2. the lock (the hard-link claim); the six CPU tests
 #   3. the private tree $P/tree (copied once, with .git); the units made from the SHARED tree's units in the order
 #      nl, rl, k1r, fr, sg, ff and checked against the sums made on the laptop; the private backend source and its archive
 #   4. configure (every time: the backend paths are private) and ninja kyty_emulator, nice 19
@@ -54,7 +54,7 @@ printf '%s\n' "guard exp 0412 | claimed: build g412zc | $(date '+%F %T')" >> "$W
 pgrep '^kyty_emulator' > /dev/null && die "an emulator started during the claim"
 R=$X/raw-zc; mkdir -p "$P" "$R" || die mkdir
 echo "$(date '+%F %T') start"
-for t in firstfail0412 maprule0412 rlabels0412 k1r0412 saveguard0412; do
+for t in firstfail0412 maprule0412 rlabels0412 k1r0412 saveguard0412 cover0412; do
   distrobox enter ubuntu -- env LC_ALL=C g++ -std=c++20 -O1 -Wall -Wextra -Werror -pthread -I "$KIT" "$KIT/$t.cpp" -o "$R/$t" < /dev/null > "$R/$t-build.out" 2>&1 ||
       die "the CPU test $t does not build: $(grep -m2 error "$R/$t-build.out" | cut -c1-160 | tr '\n' ' ')"
   distrobox enter ubuntu -- "$R/$t" "$R" < /dev/null > "$R/$t.out" 2>&1 || die "the CPU test $t failed: $(grep -m2 FAIL "$R/$t.out" | cut -c1-160 | tr '\n' ' ')"
@@ -82,15 +82,15 @@ python3 -I "$KIT/mkwa0412.py" "$P/u-fr.cpp" "$P/u-wa.cpp" > "$R/mkwa.out" 2>&1 |
 python3 -I "$KIT/mkpr0412.py" unit "$P/u-wa.cpp" "$P/u-pr.cpp" > "$R/mkpr.out" 2>&1 || die "mkpr0412.py unit: $(tail -1 "$R/mkpr.out")"
 [ "$(m "$P/u-pr.cpp")" = dfa98a48 ] || die "the unit after pr412 is not dfa98a48"
 python3 -I "$KIT/mkcv0412.py" unit "$P/u-pr.cpp" "$P/u-cv.cpp" > "$R/mkcv.out" 2>&1 || die "mkcv0412.py unit: $(tail -1 "$R/mkcv.out")"
-[ "$(m "$P/u-cv.cpp")" = ec17e59f ] || die "the unit after cv412 is not ec17e59f"
+[ "$(m "$P/u-cv.cpp")" = 8269b175 ] || die "the unit after cv412 is not 8269b175"
 python3 -I "$KIT/mkk1f0412.py" "$P/u-cv.cpp" "$P/u-k1f.cpp" > "$R/mkk1f.out" 2>&1 || die "mkk1f0412.py: $(tail -1 "$R/mkk1f.out")"
-[ "$(m "$P/u-k1f.cpp")" = 4ef7faf7 ] || die "the unit after k1f412 is not 4ef7faf7"
+[ "$(m "$P/u-k1f.cpp")" = 609b0f58 ] || die "the unit after k1f412 is not 609b0f58"
 python3 -I "$KIT/mksg0412.py" "$K" "$P/sg-out" "$KIT/saveguard0412.inc" > "$R/mksg.out" 2>&1 || die "mksg0412.py: $(tail -1 "$R/mksg.out")"
 cat "$R/mksg.out"
 cp -p "$K/src/kernel/memory.cpp" "$S/src/kernel/" && cp -p "$K/src/libs/libAmpr.cpp" "$S/src/libs/" && cp -p "$K/src/common/hostException.cpp" "$S/src/common/" && cp "$P/u-k1f.cpp" "$S/src/libs/bc5LleAgc.cpp" || die "staging"
 python3 -I "$KIT/mkff0412.py" "$S" "$P/out" > "$R/mkff0412.out" 2> "$R/mkff0412.err" || die "mkff0412.py: $(tail -1 "$R/mkff0412.err")"
 cat "$R/mkff0412.out"
-for u in "src/kernel/memory.cpp 961da63a" "src/libs/libAmpr.cpp d88da83d" "src/common/hostException.cpp e978e975" "src/libs/bc5LleAgc.cpp 1dd0e35a"; do
+for u in "src/kernel/memory.cpp 961da63a" "src/libs/libAmpr.cpp d88da83d" "src/common/hostException.cpp e978e975" "src/libs/bc5LleAgc.cpp 063f9ad4"; do
   set -- $u; [ "$(m "$P/out/$1")" = "$2" ] || die "$1 is not the unit checked on the laptop ($2)"
   cp -p "$P/out/$1" "$P/tree/$1" || die "cannot put $1 into the private tree"
 done
@@ -128,7 +128,7 @@ distrobox enter ubuntu -- sh -c "cd '$B' && nice -n 19 ninja kyty_emulator" < /d
 b=$B/src/kyty_emulator
 [ -x "$b" ] || die "no binary"
 echo "normal: $(md5sum < "$b" | cut -d' ' -f1), warnings $(grep -c 'warning:' "$B.build.log")"
-for s in BC5_GUARD_K1_FILTER "tag k1f412" "tag cv412" BC5_GUARD_K1R_PROBE "tag pr412" BC5_GUARD_WATCH "tag wa412" BC5_FAULT_RECORD "tag fr412" "tag sg412" "MAY BE INCOMPLETE" BC5_GUARD_K1R_REPLACE KYTY_BC5_MEM_FIRSTFAIL KYTY_BC5_TRAP_LOG BC5_DIRECT_MAX_BO_MIB "tag ff412" BC5_GUARD_K1R "tag k1r412" BC5_DIRECT_RESET_LABELS_ADD "tag rl412" "tag nl412" BC5_GUARD_K1_STAT KYTY_BC5_AMM_SCATTER KYTY_BC5_AMM_SETBUFFER_GUARD; do
+for s in BC5_GUARD_K1R_COVERS_VISIBLE BC5_GUARD_K1_FILTER "tag k1f412" "tag cv412" BC5_GUARD_K1R_PROBE "tag pr412" BC5_GUARD_WATCH "tag wa412" BC5_FAULT_RECORD "tag fr412" "tag sg412" "MAY BE INCOMPLETE" BC5_GUARD_K1R_REPLACE KYTY_BC5_MEM_FIRSTFAIL KYTY_BC5_TRAP_LOG BC5_DIRECT_MAX_BO_MIB "tag ff412" BC5_GUARD_K1R "tag k1r412" BC5_DIRECT_RESET_LABELS_ADD "tag rl412" "tag nl412" BC5_GUARD_K1_STAT KYTY_BC5_AMM_SCATTER KYTY_BC5_AMM_SETBUFFER_GUARD; do
   grep -aqF -- "$s" "$b" || die "the binary lacks [$s]"
 done
 grep -aqF "direct-learned" "$b" && echo "note: the string direct-learned is still in the binary (another unit?)"

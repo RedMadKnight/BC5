@@ -11,7 +11,9 @@ The rule: a cover exists for the GPU's own reads (shaders); for every decision o
 memory was before K1r. So with K1r on the host behaves exactly as without it, and only the GPU's page tables differ.
   backend  SharedMap keeps `readonly`; Device::mappings() and sorted_mappings() report it (Mapping::readonly with
            Mapping::shared; before, a shared mapping was always reported writable)
-  unit     covered_sorted(): a mapping that is shared and read-only (only K1r's covers are) does not cover
+  unit     covered_sorted() and covered(): a mapping that is shared and read-only (only K1r's covers are) does not
+           cover (cover0412.inc's cv412::hole, with the CPU test cover0412.cpp). The switch: the rule is ON by
+           default; BC5_GUARD_K1R_COVERS_VISIBLE=1 turns it off (the state that faulted, for telling the two apart)
 What this does not settle: that the filter drops a packet which writes into never-imported lazy memory was true
 before K1r and is true again. It is a defect of its own (the title's write is lost), not a fault; registered in
 FAULTS.md as open.
@@ -35,9 +37,16 @@ def unit(src, out):
          b"\tconst uint64_t end = a + bytes;\n\tuint64_t       pos = a;\n\tfor (int guard = 0; pos < end && guard < 64; guard++) {\n"
          b"\t\tauto it = std::upper_bound(maps.begin(), maps.end(), pos, [](uint64_t v, const bc5::direct::Mapping& m) { return v < m.va; });\n"
          b"\t\tif (it == maps.begin()) return false;\n\t\t--it;\n")
-    s = once(s, a, a + b"\t\tif (it->shared && it->readonly) return false; // exp 0412 (tag cv412): a K1r cover is for the GPU's reads; for the host it is a hole, as before K1r\n")
+    s = once(s, a, a + b"\t\tif (cv412::hole(it->shared, it->readonly)) return false; // exp 0412 (tag cv412): a K1r cover is for the GPU's reads; for the host it is a hole, as before K1r\n")
     a = b"\t\t\tif (pos >= m.va && pos < m.va + m.size) { pos = m.va + m.size; hit = true; break; }\n"  # covered(), the unsorted form
-    s = once(s, a, b"\t\t\tif (m.shared && m.readonly) continue; // exp 0412 (tag cv412): as in covered_sorted\n" + a)
+    s = once(s, a, b"\t\t\tif (cv412::hole(m.shared, m.readonly)) continue; // exp 0412 (tag cv412): as in covered_sorted\n" + a)
+    # cover0412.inc's namespace (the rule and its switch, the text the CPU test cover0412.cpp checks) goes in before the first use
+    inc = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "cover0412.inc"), "rb").read()
+    assert b"\r" not in inc
+    body = inc[inc.index(b"namespace cv412 {"):]
+    assert body.rstrip().endswith(b"} // namespace cv412") and b"#include" not in body
+    a = b"static bool covered(const std::vector<bc5::direct::Mapping>& maps, uint64_t a, uint64_t bytes);\n"
+    s = once(s, a, b"// Experiment 0412 (tag cv412): cover0412.inc, what a K1r cover is to the host. BC5_GUARD_K1R_COVERS_VISIBLE=1 turns the rule off.\n" + body + a)
     open(out, "wb").write(s)
     print(f"bc5LleAgc.cpp {hashlib.md5(s).hexdigest()}")
 

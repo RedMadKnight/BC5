@@ -3350,8 +3350,15 @@ it names (the backend filters those; ASTRO BOT's fault had just left one); an op
 (the K3 case); every import pins memory, and that price is not measured; the walk's time under the device mutex is
 not measured. Needs cv412 when K1r is on.
 
-**The build** `memfast/mk0412zc.sh` (g412zc, `bin-c`, kit of 20 files) now chains … pr412 dfa98a48 → cv412 ec17e59f →
-k1f412 4ef7faf7 → ff412 1dd0e35a; backend direct.cpp 1d88a8b3. **Not compiled.**
+**The build** `memfast/mk0412zc.sh` (g412zc, `bin-c`, kit of 22 files) now chains … pr412 dfa98a48 → cv412 8269b175 →
+k1f412 609b0f58 → ff412 063f9ad4; backend direct.cpp 1d88a8b3. **Not compiled.** After the top's word ("each with its
+switch, CPU tests first") cv412 got both: the rule lives in `memfast/cover0412.inc` (`cv412::hole`), is on by default,
+and `BC5_GUARD_K1R_COVERS_VISIBLE=1` turns it off (the state that faulted, kept only to tell the two apart); CPU test
+`memfast/cover0412.cpp`, 640,008 of 640,008 on the laptop: with the rule the answer is the same as on the mapping list
+with the covers removed (the host behaves as before K1r); the operand of 11:32 under a cover is not mapped with the
+rule and mapped without. K1 at the filter has no CPU test (its decision is that same function; the rest is the
+import call). The maintainer's word for the ASTRO BOT start with K1r on, relayed by the top, to "if the reading is
+wrong the box may reboot again: do you agree to this test?": "Tak".
 
 **The order of the cure for row 1 (his cutscene) without harming ASTRO BOT:** cv412 always with K1r (K1r then cannot
 change any host decision); K1 at the filter beside it, measured for its imports and time on both titles; K1r's
