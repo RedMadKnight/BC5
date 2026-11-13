@@ -49,7 +49,11 @@ title() { echo "$1 title table: $(grep -a 'exp 0419: title' "$R/$1-play.log" 2> 
 second k1 "$BN" "$MN"; title k1
 [ "$PADN" = 0 ] || echo "k1: VOID as a measurement, a foreign pad key"
 if [ "$KERN" = 0 ]; then second k1off "$BN" "$MN" BC5_GUARD_K1R=0 BC5_GUARD_K1_FILTER=0; title k1off; fi
-if [ "$KERN" = 0 ]; then PLAYS=320 second k2cut "$BN" "$MN" N_SAVES=$HOME/bc5-data/saves/PPSA03671-20261113-0914-cutscene N_SLOT=4 N_NOWALK=1; title k2cut; fi
+if [ "$KERN" = 0 ]; then PLAYS=320 second k2cut "$BN" "$MN" N_SAVES=$HOME/bc5-data/saves/PPSA03671-20261113-0914-cutscene N_SLOT=4 N_NOWALK=1; title k2cut
+    J=$(sed -n 's/^journal \([^ ]*\) .*$/\1/p' "$R/k2cut-journal.txt" 2> /dev/null)
+    echo "k2cut last k1r line: $(grep -a -i 'k1r' "$J" 2> /dev/null | tail -1 | cut -c1-220)"
+    echo "k2cut last kl412 line: $(grep -a 'kl412' "$J" 2> /dev/null | tail -1 | cut -c1-220)"
+fi
 if [ "$KERN" = 0 ]; then
     line=$(P_BIN=$BL P_WANT=$ML P_WORDS=$N/words0413nz.txt bash ./start0413l.sh k3l lean 120 | grep "^k3l ")
     echo "$line"
@@ -59,16 +63,18 @@ fi
 # launcher's eager heaps at five moments, the whole-box table and the emulator's fdinfo near G+500. The scan preads the
 # heaps on a nice-19 thread: this arm's frame numbers are NOT comparable with the others.
 if [ "$KERN" = 0 ]; then
-    ZN=$(sed -n 's/^export BC5_DIRECT_EAGER_NAMES="\(.*\)"$/\1/p' "$W/play-pkg.sh")
+    ZL=$W/exp0412/play-pkg-0412.sh; [ -f "$ZL" ] || ZL=$W/play-pkg.sh   # the launcher the private runner really starts
+    ZN=$(sed -n 's/^export BC5_DIRECT_EAGER_NAMES="\(.*\)"$/\1/p' "$ZL" | head -1)
     [ -n "$ZN" ] || echo "k4wall: no BC5_DIRECT_EAGER_NAMES line in the launcher; the scan runs on its two default heaps"
     (
         until EP=$(pgrep -n '^kyty_emulator'); do sleep 2; done
         bash "$W/exp0412/snap0412.sh" "$R/k4wall-snap.txt" 615 > /dev/null 2>&1 &
         while [ -d "/proc/$EP" ] && [ $(($(date +%s) - $(stat -c %Y "/proc/$EP"))) -lt 615 ]; do sleep 5; done
-        cat /proc/"$EP"/fdinfo/* 2> /dev/null | grep -a "drm-\|^pos" > "$R/k4wall-fdinfo.txt"
+        { for f in /proc/"$EP"/fdinfo/*; do echo "fd ${f##*/} -> $(readlink "/proc/$EP/fd/${f##*/}" 2> /dev/null)"; grep -a "^drm-\|^pos" "$f" 2> /dev/null; done
+          echo "gtt used $(cat /sys/class/drm/card*/device/mem_info_gtt_used 2> /dev/null | head -1), vram used $(cat /sys/class/drm/card*/device/mem_info_vram_used 2> /dev/null | head -1), at $(date +%T)"; } > "$R/k4wall-fdinfo.txt"
     ) &
     HP=$!
-    PLAYS=560 second k4wall "$BN" "$MN" BC5_DIRECT_ZEROSCAN_AT=175,295,415,535,655 ${ZN:+"BC5_DIRECT_ZERO_NAMES=$ZN"}
+    PLAYS=560 second k4wall "$BN" "$MN" BC5_DIRECT_ZEROSCAN_AT=175,295,415,535,640 ${ZN:+"BC5_DIRECT_ZERO_NAMES=$ZN"}
     kill "$HP" 2> /dev/null
     J=$(sed -n 's/^journal \([^ ]*\) .*$/\1/p' "$R/k4wall-journal.txt" 2> /dev/null)
     echo "k4wall (frame numbers not comparable): zero scan lines $(grep -a -c '^zero scan' "$J" 2> /dev/null) in $J; snap $(wc -c < "$R/k4wall-snap.txt" 2> /dev/null) bytes, fdinfo $(wc -l < "$R/k4wall-fdinfo.txt" 2> /dev/null) lines"
