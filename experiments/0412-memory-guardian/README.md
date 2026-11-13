@@ -2993,6 +2993,24 @@ CPU test `k1r0412.cpp`: 17,742 of 17,742 on the laptop (a page-level model of a 
 view, 3,000 layouts; after "the CPU writes one chunk" exactly that chunk's pieces go and every other piece is
 unchanged; the write bit of the two kernel status samples).
 
+**The console's behaviour for K1r** [I]: on the console memory the title mapped exists for the GPU from the map call
+on, and reads as zero until something writes it; a GPU read of such memory is ordinary. That is inferred from the
+title's own map calls and from this fault (the title's shader reads there in normal play); I have no console trace
+and no public document that states it.
+
+**The second form: `BC5_GUARD_K1R_REPLACE=1`** (default off; the top session's order, written before any measurement).
+A real mapping that takes the place of covers is mapped **over** them with one `AMDGPU_VA_OP_REPLACE`
+(`Device::map_shared_over`, new in the backend: it accepts the range only if every shared mapping in it lies wholly
+inside, and takes those out of its list), and the rebuild does **not** drain the GPU for it; the drop pass leaves such
+covers mapped until the real mapping goes over them. What it is and is not, from the driver's code (v6.19
+`amdgpu_gem_va_update_vm`: `amdgpu_vm_clear_freed` and then `amdgpu_vm_bo_update` in one ioctl) [C]: one ioctl, but
+still two page-table updates in order, the old entries cleared and then the new ones written. The hole a running
+job could meet shrinks from "between two ioctls" to "between two updates in the kernel"; it is **not shown to be
+zero**. With `BC5_FAULT_RECORD` a job that meets it ends the game with a record, so the comparison of the two forms
+has to count faults as well as the drain's time. The backend diff is now 87 lines (`direct.hpp` 26519fcc,
+`direct.cpp` 8f617378 from this branch's 51279eae); it is a shared change decided yes by the top session, for the
+integrator to rebuild the archive from when the tests are clean.
+
 **rl412's risk, and what e11 decided** [C]. Exp 0401's e11 chose that at "reopen: ok" the last pending write of each
 label of the jobs in flight goes to guest memory, unless memory already holds it or the label lies in no guest
 range. That tells the title "this work happened" for jobs whose GPU work did not run: the frame's picture or
@@ -3002,10 +3020,10 @@ when two jobs time out together, which it did not (section 62). Whether the titl
 frame's state is what the test at the cutscene measures.
 
 **One build with everything** (`memfast/mk0412z.sh`, build g412z, binary beside as `bin-z`): from the shared tree's
-unit a81efd2c the chain nl412 `--keep-guards` (cfb7533e) → rl412 (0878903e) → k1r412 (843b40cb) → ff412 (9a954b2b),
+unit a81efd2c the chain nl412 `--keep-guards` (cfb7533e) → rl412 (0878903e) → k1r412 (0d265595) → fr412 (ce3be3a7) → ff412 (2961feac),
 with `memory.cpp` 961da63a, `libAmpr.cpp` d88da83d, `hostException.cpp` e978e975, a private backend with
 `map_shared(readonly)`, and the four CPU tests first. Every sum is pinned in the script. Switches, all default off:
-`BC5_GUARD_K1R`, `BC5_DIRECT_RESET_LABELS_ADD`, `BC5_GUARD_K1_STAT`, `KYTY_BC5_MEM_FIRSTFAIL`, `KYTY_BC5_TRAP_LOG`,
+`BC5_GUARD_K1R`, `BC5_GUARD_K1R_REPLACE`, `BC5_FAULT_RECORD`, `BC5_DIRECT_RESET_LABELS_ADD`, `BC5_GUARD_K1_STAT`, `KYTY_BC5_MEM_FIRSTFAIL`, `KYTY_BC5_TRAP_LOG`,
 `BC5_DIRECT_MAX_BO_MIB`, `BC5_GUARD_MAP_RULE`, `BC5_GUARD_PRT_BG`. **Not compiled anywhere yet.**
 
 **Tests in the top session's order**: (a) the place of his fault, K1r on (expected: no fault there, the read
@@ -3035,8 +3053,8 @@ and does not resume a title after a GPU hang; e11's write-back is a net for our 
   later run. Limits: the exit is abrupt for the title (a save being written at that instant could be cut short).
 - **The register**: `FAULTS.md` beside this file, one row per fault with its kind, root cause, rule, how the console
   behaves (with a source, or marked inferred) and status. Row 1 is today's cutscene fault.
-- **The build** (`memfast/mk0412z.sh`) now chains nl412 keep-guards (cfb7533e) → rl412 (0878903e) → k1r412 (843b40cb)
-  → fr412 (9864c363) → ff412 (646a42d6). Not compiled.
+- **The build** (`memfast/mk0412z.sh`) now chains nl412 keep-guards (cfb7533e) → rl412 (0878903e) → k1r412 with the replace form
+  (0d265595) → fr412 (ce3be3a7) → ff412 (2961feac). Not compiled.
 
 **The cutscene arm.** His answer: "ostatni zapis - przerywnik od razu się uruchamia". A new read-only snapshot of his
 live saves as they were after the play: `~/bc5-data/saves/PPSA03671-20261113-0914-cutscene` (131 files, 23 MiB, the

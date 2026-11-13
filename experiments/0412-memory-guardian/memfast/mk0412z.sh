@@ -65,13 +65,13 @@ python3 -I "$KIT/mknl0412.py" "$K/src/libs/bc5LleAgc.cpp" "$P/u-nl.cpp" --keep-g
 python3 -I "$KIT/mkrl0412.py" "$P/u-nl.cpp" "$P/u-rl.cpp" > "$R/mkrl.out" 2>&1 || die "mkrl0412.py: $(tail -1 "$R/mkrl.out")"
 [ "$(m "$P/u-rl.cpp")" = 0878903e ] || die "the unit after rl412 is not 0878903e"
 python3 -I "$KIT/mkk1r0412.py" unit "$P/u-rl.cpp" "$P/u-k1r.cpp" > "$R/mkk1r.out" 2>&1 || die "mkk1r0412.py unit: $(tail -1 "$R/mkk1r.out")"
-[ "$(m "$P/u-k1r.cpp")" = 843b40cb ] || die "the unit after k1r412 is not 843b40cb"
+[ "$(m "$P/u-k1r.cpp")" = 0d265595 ] || die "the unit after k1r412 is not 0d265595"
 python3 -I "$KIT/mkfr0412.py" "$P/u-k1r.cpp" "$P/u-fr.cpp" > "$R/mkfr.out" 2>&1 || die "mkfr0412.py: $(tail -1 "$R/mkfr.out")"
-[ "$(m "$P/u-fr.cpp")" = 9864c363 ] || die "the unit after fr412 is not 9864c363"
+[ "$(m "$P/u-fr.cpp")" = ce3be3a7 ] || die "the unit after fr412 is not ce3be3a7"
 cp -p "$K/src/kernel/memory.cpp" "$S/src/kernel/" && cp -p "$K/src/libs/libAmpr.cpp" "$S/src/libs/" && cp -p "$K/src/common/hostException.cpp" "$S/src/common/" && cp "$P/u-fr.cpp" "$S/src/libs/bc5LleAgc.cpp" || die "staging"
 python3 -I "$KIT/mkff0412.py" "$S" "$P/out" > "$R/mkff0412.out" 2> "$R/mkff0412.err" || die "mkff0412.py: $(tail -1 "$R/mkff0412.err")"
 cat "$R/mkff0412.out"
-for u in "src/kernel/memory.cpp 961da63a" "src/libs/libAmpr.cpp d88da83d" "src/common/hostException.cpp e978e975" "src/libs/bc5LleAgc.cpp 646a42d6"; do
+for u in "src/kernel/memory.cpp 961da63a" "src/libs/libAmpr.cpp d88da83d" "src/common/hostException.cpp e978e975" "src/libs/bc5LleAgc.cpp 2961feac"; do
   set -- $u; [ "$(m "$P/out/$1")" = "$2" ] || die "$1 is not the unit checked on the laptop ($2)"
   cp -p "$P/out/$1" "$P/tree/$1" || die "cannot put $1 into the private tree"
 done
@@ -100,7 +100,7 @@ distrobox enter ubuntu -- sh -c "cd '$B' && nice -n 19 ninja kyty_emulator" < /d
 b=$B/src/kyty_emulator
 [ -x "$b" ] || die "no binary"
 echo "normal: $(md5sum < "$b" | cut -d' ' -f1), warnings $(grep -c 'warning:' "$B.build.log")"
-for s in BC5_FAULT_RECORD "tag fr412" KYTY_BC5_MEM_FIRSTFAIL KYTY_BC5_TRAP_LOG BC5_DIRECT_MAX_BO_MIB "tag ff412" BC5_GUARD_K1R "tag k1r412" BC5_DIRECT_RESET_LABELS_ADD "tag rl412" "tag nl412" BC5_GUARD_K1_STAT KYTY_BC5_AMM_SCATTER KYTY_BC5_AMM_SETBUFFER_GUARD; do
+for s in BC5_FAULT_RECORD "tag fr412" BC5_GUARD_K1R_REPLACE KYTY_BC5_MEM_FIRSTFAIL KYTY_BC5_TRAP_LOG BC5_DIRECT_MAX_BO_MIB "tag ff412" BC5_GUARD_K1R "tag k1r412" BC5_DIRECT_RESET_LABELS_ADD "tag rl412" "tag nl412" BC5_GUARD_K1_STAT KYTY_BC5_AMM_SCATTER KYTY_BC5_AMM_SETBUFFER_GUARD; do
   grep -aqF -- "$s" "$b" || die "the binary lacks [$s]"
 done
 grep -aqF "direct-learned" "$b" && echo "note: the string direct-learned is still in the binary (another unit?)"
