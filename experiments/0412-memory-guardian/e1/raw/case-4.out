@@ -1,0 +1,39 @@
+case 4 at 2026-11-13 04:56:56; kernel 7.2.15-ogc1.1.fc45.x86_64; uptime 4.8 h; plasmashell 1
+vram total 536870912, used 198270976; gtt used 155082752
+e1-probe: --submit runs shaders on the GPU (GFX ring). A bad submission can hang or reset the machine.
+case 4 on /dev/dri/renderD128, DRM 3.64
+buffer shclr : 4096 bytes, GPU VA 0x100000000, page flags 0xe, va_op rc 0, all rc 0
+buffer shcpy : 4096 bytes, GPU VA 0x100200000, page flags 0xe, va_op rc 0, all rc 0
+buffer cmd   : 4096 bytes, GPU VA 0x100400000, page flags 0xe, va_op rc 0, all rc 0
+buffer real  : 65536 bytes, GPU VA 0x100600000, page flags 0x6, va_op rc 0, all rc 0
+buffer out   : 65536 bytes, GPU VA 0x100800000, page flags 0x6, va_op rc 0, all rc 0
+buffer zero  : 65536 bytes, GPU VA 0x100a00000, page flags 0x2, va_op rc 0, all rc 0
+buffer prt   : 2097152 bytes, GPU VA 0x100c00000, no BO, AMDGPU_VM_PAGE_PRT, rc 0
+GPUVM_FAULT before: rc 0 addr 0x0 status 0x00000000 vmhub 0
+buffer cmd+  : 4096 bytes, GPU VA 0x100e00000, page flags 0xe, va_op rc 0, all rc 0
+job clear zero(read-only): submitting 80 dwords; user data 0x240.. 00a00000 00100001 00000400 1104bfac | 0x244.. 22222222 22222222 22222222 22222222
+job clear zero(read-only): submit rc 0, fence rc -62, signalled 0, 2030.93 ms  <-- NOT COMPLETED
+GPUVM_FAULT after the job: rc 0 addr 0x100a02000 status 0x00741041 vmhub 0
+content out   : first 16 bytes a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5; of 16384 bytes: 16384 non-zero, 16384 are 0xA5 (never written), 0 are 0x22 (the clear's value)
+200 ms later:
+content real  : first 16 bytes 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a; of 16384 bytes: 16384 non-zero, 0 are 0xA5 (never written), 0 are 0x22 (the clear's value)
+content out   : first 16 bytes a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5; of 16384 bytes: 16384 non-zero, 16384 are 0xA5 (never written), 0 are 0x22 (the clear's value)
+content zero  : first 16 bytes 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00; of 16384 bytes: 0 non-zero, 0 are 0xA5 (never written), 0 are 0x22 (the clear's value)
+the job did not complete: waiting 15 s for the kernel's timeout and reset
+GPUVM_FAULT 15 s later: rc 0 addr 0x100a02000 status 0x00741041 vmhub 0
+context reset state: rc 0 state 3 hangs 0
+content real  : first 16 bytes 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a; of 16384 bytes: 16384 non-zero, 0 are 0xA5 (never written), 0 are 0x22 (the clear's value)
+content out   : first 16 bytes a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5; of 16384 bytes: 16384 non-zero, 16384 are 0xA5 (never written), 0 are 0x22 (the clear's value)
+content zero  : first 16 bytes 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00; of 16384 bytes: 0 non-zero, 0 are 0xA5 (never written), 0 are 0x22 (the clear's value)
+buffer cmd+  : 4096 bytes, GPU VA 0x101000000, page flags 0xe, va_op rc 0, all rc 0
+job follow-up: clear real: submitting 80 dwords; user data 0x240.. 00600000 00100001 00000400 1104bfac | 0x244.. 22222222 22222222 22222222 22222222
+job follow-up: clear real: submit rc 0, fence rc 0, signalled 1, 0.08 ms
+buffer cmd+  : 4096 bytes, GPU VA 0x101200000, page flags 0xe, va_op rc 0, all rc 0
+job follow-up: copy real -> out: submitting 80 dwords; user data 0x240.. 00600000 00100001 00000400 1104bfac | 0x244.. 00800000 00100001 00000400 1104bfac
+job follow-up: copy real -> out: submit rc 0, fence rc 0, signalled 1, 0.04 ms
+GPUVM_FAULT after the follow-up: rc 0 addr 0x100a02000 status 0x00741041 vmhub 0
+content real  : first 16 bytes 22 22 22 22 22 22 22 22 22 22 22 22 22 22 22 22; of 16384 bytes: 16384 non-zero, 0 are 0xA5 (never written), 16384 are 0x22 (the clear's value)
+content out   : first 16 bytes 22 22 22 22 22 22 22 22 22 22 22 22 22 22 22 22; of 16384 bytes: 16384 non-zero, 0 are 0xA5 (never written), 16384 are 0x22 (the clear's value)
+content zero  : first 16 bytes 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00; of 16384 bytes: 0 non-zero, 0 are 0xA5 (never written), 0 are 0x22 (the clear's value)
+case 4: THE JOB DID NOT COMPLETE
+exit code 2 at 04:57:13

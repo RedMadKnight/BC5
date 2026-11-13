@@ -1,0 +1,36 @@
+case 5 at 2026-11-13 04:53:39; kernel 7.2.15-ogc1.1.fc45.x86_64; uptime 4.7 h; plasmashell 1
+vram total 536870912, used 198270976; gtt used 155082752
+e1-probe: --submit runs shaders on the GPU (GFX ring). A bad submission can hang or reset the machine.
+case 5 on /dev/dri/renderD128, DRM 3.64
+buffer shclr : 4096 bytes, GPU VA 0x100000000, page flags 0xe, va_op rc 0, all rc 0
+buffer shcpy : 4096 bytes, GPU VA 0x100200000, page flags 0xe, va_op rc 0, all rc 0
+buffer cmd   : 4096 bytes, GPU VA 0x100400000, page flags 0xe, va_op rc 0, all rc 0
+buffer real  : 65536 bytes, GPU VA 0x100600000, page flags 0x6, va_op rc 0, all rc 0
+buffer out   : 65536 bytes, GPU VA 0x100800000, page flags 0x6, va_op rc 0, all rc 0
+buffer zero  : 65536 bytes, GPU VA 0x100a00000, page flags 0x2, va_op rc 0, all rc 0
+buffer prt   : 2097152 bytes, GPU VA 0x100c00000, no BO, AMDGPU_VM_PAGE_PRT, rc 0
+GPUVM_FAULT before: rc 0 addr 0x0 status 0x00000000 vmhub 0
+job clear out: submitting 80 dwords; user data 0x240.. 00800000 00100001 00000400 1104bfac | 0x244.. 22222222 22222222 22222222 22222222
+job clear out: submit rc 0, fence rc 0, signalled 1, 0.05 ms
+content out   : first 16 bytes 22 22 22 22 22 22 22 22 22 22 22 22 22 22 22 22; of 16384 bytes: 16384 non-zero, 0 are 0xA5 (never written), 16384 are 0x22 (the clear's value)
+job copy out -> real: submitting 80 dwords; user data 0x240.. 00800000 00100001 00000400 1104bfac | 0x244.. 00600000 00100001 00000400 1104bfac
+job copy out -> real: submit rc 0, fence rc 0, signalled 1, 0.02 ms
+job copy real -> real+32K: submitting 80 dwords; user data 0x240.. 00600000 00100001 00000400 1104bfac | 0x244.. 00608000 00100001 00000400 1104bfac
+job copy real -> real+32K: submit rc 0, fence rc 0, signalled 1, 0.02 ms
+content real+32K: first 16 bytes 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a
+GPUVM_FAULT after the job: rc 0 addr 0x0 status 0x00000000 vmhub 0
+content out   : first 16 bytes 22 22 22 22 22 22 22 22 22 22 22 22 22 22 22 22; of 16384 bytes: 16384 non-zero, 0 are 0xA5 (never written), 16384 are 0x22 (the clear's value)
+200 ms later:
+content real  : first 16 bytes 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a; of 16384 bytes: 16384 non-zero, 0 are 0xA5 (never written), 0 are 0x22 (the clear's value)
+content out   : first 16 bytes 22 22 22 22 22 22 22 22 22 22 22 22 22 22 22 22; of 16384 bytes: 16384 non-zero, 0 are 0xA5 (never written), 16384 are 0x22 (the clear's value)
+content zero  : first 16 bytes 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00; of 16384 bytes: 0 non-zero, 0 are 0xA5 (never written), 0 are 0x22 (the clear's value)
+job follow-up: clear real: submitting 80 dwords; user data 0x240.. 00600000 00100001 00000400 1104bfac | 0x244.. 22222222 22222222 22222222 22222222
+job follow-up: clear real: submit rc 0, fence rc 0, signalled 1, 0.06 ms
+job follow-up: copy real -> out: submitting 80 dwords; user data 0x240.. 00600000 00100001 00000400 1104bfac | 0x244.. 00800000 00100001 00000400 1104bfac
+job follow-up: copy real -> out: submit rc 0, fence rc 0, signalled 1, 0.04 ms
+GPUVM_FAULT after the follow-up: rc 0 addr 0x0 status 0x00000000 vmhub 0
+content real  : first 16 bytes 22 22 22 22 22 22 22 22 22 22 22 22 22 22 22 22; of 16384 bytes: 16384 non-zero, 0 are 0xA5 (never written), 16384 are 0x22 (the clear's value)
+content out   : first 16 bytes 22 22 22 22 22 22 22 22 22 22 22 22 22 22 22 22; of 16384 bytes: 16384 non-zero, 0 are 0xA5 (never written), 16384 are 0x22 (the clear's value)
+content zero  : first 16 bytes 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00; of 16384 bytes: 0 non-zero, 0 are 0xA5 (never written), 0 are 0x22 (the clear's value)
+case 5: the job completed
+exit code 0 at 04:53:39

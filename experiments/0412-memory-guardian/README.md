@@ -2440,9 +2440,9 @@ the first kernel line). Planned c0 c4 r1 r2 r2 r1 c4 c0; **four ran**. Data `raw
 [M]
 - **c0a against c4a, the same binary, 5 minutes apart:** without the learned file the pin is 246 MiB lower, the
   lowest available memory 35 MiB higher, no fault, no "would learn" line, nothing learned. With section 52 that is
-  three runs of the route without the file and no fault. **So section 52's lower "lowest available" without the file
-  (407, 424 against 497, 560) was not the file's doing**: on one binary in one quarter of an hour it does not
-  appear. Section 52 compared runs 20–37 minutes apart in a session whose compaction load was climbing (kcompactd0
+  three runs of the route without the file and no fault. **Section 52's lower "lowest available" without the file
+  (407, 424 against 497, 560) did not repeat** on one binary in one quarter of an hour. One pair: it shows the
+  difference is not stable, not what caused it (review R13). Section 52 compared runs 20–37 minutes apart in a session whose compaction load was climbing (kcompactd0
   80–100 s of CPU per 4-minute run here; exp 0415 measured 3–9 s per phase early in the same boot and 16–20 s later).
 - **R1 goes to the wall in the menu.** With every view pinned whole the pin is 9,624 MiB at 10 s (8,206 without the
   file, 8,434 with it) and 12,114 MiB at 60 s, before the save is loaded; available memory stays at 240–280 MiB from
@@ -2504,10 +2504,11 @@ BC5_GUARD_LEARN_LOG=1`, an empty private learned file. **Both MAP_RULE and PRT_B
   moved 361 mappings (the title gave back what it had mapped for the load; with R1 on, orphans had reached 1,615 MiB
   against 220–310 in the other arms). The mapping count was steady at 20,924 for the last submissions.
 
-**What kind of hang** [I]. Not F403's shape as far as this shows: the command processor is stopped in the middle of
-a **draw** buffer, not waiting behind a compute dispatch that never ends (the compute buffer timed out with it, as
-the pair did in F260 and in section 38). Nothing shows a mapping replaced under the running job: the filter saw
-every operand mapped and the mapping count had been steady. What R1/R2 **could** have done and is not excluded:
+**What kind of hang** [I]. Not decided. The command processor stood inside the buffer the journal calls a draw
+buffer, but that buffer holds 40 dispatches, so its name and the position neither assign the hang to a draw nor
+exclude a compute or ray-tracing job that never ends (F403); the compute buffer timed out with it, as the pair did
+in F260 and in section 38. The filter's `unmapped 0`, the steady mapping count and the ledger's samples were taken
+at submission and afterwards: they do not show which mappings existed, or changed, while the job ran (review R13). What R1/R2 **could** have done and is not excluded:
 (a) with the PRT span, the 361 mappings moved by the orphan release were for a moment PRT pages instead of unmapped
 ones, and so was everything the release cut: a job that reads there now gets zeros without any sign, where before it
 would have faulted loudly (in no earlier run did it fault, so nothing is known to read there); (b) R1 made the
@@ -2515,13 +2516,95 @@ release five times larger than in any earlier run, 3–14 s before the hang. Aga
 state: PSI full 43–65 % for 25 s, the worst of any run of this experiment that reached the load.
 **Why the reset failed** is not known: the same kernel recovered the ring at 19:07 and failed here, at F260 and in
 section 38; in all three failures a draw buffer and a compute buffer had timed out together. That is a correlation
-from four dumps, not a cause.
+from four dumps, not a cause. One run with R1, R2 and heavy memory pressure at once isolates neither the hang nor
+the failed reset; that the kernel accepted the PRT span says nothing about what the span costs, and its size alone
+explains no reset failure.
 
 **So:** MAP_RULE and PRT_BG stay off and are not to be run together again until R2 has a test of its own away from
 the wall, and the orphan release under R1 is looked at (it should not have 1.6 GiB to cut).
 
+### 55. E1: what gfx1013 does at a page without backing (2026-11-13 04:50–04:57)
+
+On the maintainer's "zgoda" to the question that named raw GPU submission and a possible reboot; the top session's
+slot after the integration. Plan `E1-plan.md`; tool `e1/e1-probe.cpp` (binary `e0351ced` at the cases that count),
+runner `e1/e1run.sh`; one process and one lock line per case, the kernel log streamed. Kernel 7.2.15-ogc1.1, DRM
+3.64, uptime 4.7 h, no emulator, Plasma's shell running. Data `e1/raw/case-N.out`, `case-N.dmesg`,
+`e1/raw/e1-kernel-stream.txt`. Programs: the backend's gfx10 buffer-clear and IGT's gfx10 buffer-copy
+(`lib/amdgpu/amd_shaders.c:321-324` @ 9d4b6ef, MIT), 16 KiB a job, GFX ring.
+
+| case | job | result [M] | kernel lines |
+|---|---|---|---|
+| 0 control | clear `real`; copy `real` to `out` | both as written; fences 0.05 and 0.03 ms | none |
+| 1 PRT read | copy from a PRT page to `out` | **`out` all zero**; 0.05 ms; fault register empty | none |
+| 2 read-only read | copy from a page mapped readable only to `out` | `out` all zero | none |
+| 3 PRT write | clear a PRT page | completed in 0.05 ms; fault register empty; the follow-up clear and copy ran | **none: the write vanishes without a sign** |
+| 4 read-only write | clear a page mapped readable only | **the job never completes**: fence timeout at 2.03 s; `AMDGPU_INFO_GPUVM_FAULT` = address 0x100a02000, status 0x00741041; the read-only BO still all zero; context reset state 3; a new context ran clear and copy correctly **15 s after the timeout** (the tool waits 15 s before it looks: when a new context became usable was not measured) | `[gfxhub] page fault` at 0x100a00000–0x100a03000 (client TCP, `PERMISSION_FAULTS: 0x4`, `RW: 0x1`), 2.03 s later `ring gfx_0.0.0 timeout`, `Ring gfx_0.0.0 reset succeeded` 0.1 ms after it, `device wedged, but no recovery needed` |
+
+No `reset failed`, no GPU reset, no reboot; `bc5-gpu-watch` armed and disarmed. A devcoredump of case 4 was saved
+(`~/bc5-data/captures/devcoredump/20261113-045658-devcd1.txt`; our own test job, still not committed).
+
+**A fault of the tool found by the control, and fixed before the cases that count.** The first two control runs
+(kept as `case-0-first.out`, `case-0-second.out`, and `case-5-first.out`) used one command buffer for all jobs,
+rewritten between them: the "copy" left its destination untouched, also 200 ms later, and in `case-5-first` a
+buffer the CPU had refilled came back holding the earlier clear's value: **the GPU ran the previous job's dwords
+again**. With a command buffer of its own for every job the control is right. Why a rewritten buffer was not seen
+is not known (TODO(verify); the direct path rotates its buffer slots, so it is not known to be exposed).
+
+**What it decides** (design section 7 and `DESIGN-learned-windows.md`):
+- **Reads are safe on both kinds** [M]: a shader's read of a PRT page and of a read-only page gives zeros with no
+  fault and no cost. A never-written page can be shown to the GPU with no memory behind it, as far as reads go.
+- **A PRT page swallows writes silently** [M]. R2 therefore must never lie under memory the title mapped and we
+  chose not to import: a GPU write there is lost and nothing says so (the zero skip's defect, section 48, in
+  another form). Under addresses the title did not map it is the console's behaviour (F257).
+- **A read-only page is a write detector, in this one sample without a game** [M]: a GPU write to it is a named
+  fault (the address and status are readable from user space), the page is intact, the job is lost and the ring
+  is reset. Measured: the fence timeout at 2.03 s and the kernel's reset line 0.1 ms after its timeout line;
+  a new context usable at +15 s (the tool slept 15 s first, so nothing earlier is known). It detects the write;
+  it does not restore it. The reset is the one that has failed three times under the title's load (F260,
+  sections 38 and 53).
+- For option B this is a **detector, not yet a floor** [I] (review of 2026-11-13). Never-written chunks under a view
+  could be mapped **read-only onto one zero BO** instead of being created and pinned: reads are right (the file
+  holds zeros there) and nothing can be written into the shared zero page, so nothing is aliased. A GPU write
+  then faults with its address. What that does NOT give: (1) the write itself: the job is lost, and running the
+  whole job again can double what had already taken effect before the fault (atomics, appends, labels), so a
+  replay is not known to be sound; (2) the CPU's side: the GPU's read-only mapping does not see the CPU's first
+  write into such a chunk, so the mapping has to be switched to the real page on the CPU's first write as well,
+  consistently with the GPU; (3) a price: the stall per first GPU write is at least the kernel's 2 s and today
+  14 s (the recovery code sleeps 12 s); how many chunks the GPU writes first decides whether that is bearable.
+  Section 51's 768 MiB of never-written chunks under views is the upper bound of the saving on the route,
+  section 39's 3,571 MiB of all-zero pages the bound if written-zero pages are counted in. F403, F443 and Q21
+  stay open.
+- Not answered: the cost of a large PRT or read-only span in page tables; whether the ring reset succeeds under
+  the title's own load.
+
+### 56. Fifteen minutes of play on the shared build without the learned file (2026-11-13 04:59–05:17)
+
+The top session's order after the integration (shared normal build `fe0933c0`, patch 4651d1d3 = main 7d21b208, with
+the three mr412 switches compiled in and off). Run s1nol: `run0412n.sh s1nol fast8 900 BC5_GUARD_LEARN_LOG=1` with
+`N_EMU` = the shared binary (the runner's new `N_SHARED_MD5` check), an **empty** private learned file, RT on, the
+private copy of the named save snapshot, fuse 13,000/2,048, watchdog 220 MiB, the shell running, no rsync, the
+kernel log streamed. It follows one recovered ring reset in the same boot (E1 case 4, 04:56:58; `raw/s1nol-header.txt`).
+Data `raw/s1nol-*`.
+
+[M] It reached G+900: 1,017 s, 900 s of play on the scripted walk, **no kernel line, no GPU fault or timeout, no
+"would learn" line, the private learned file still empty**; 25.8 flips/s over 1,013 s, 87 s with a gap over 100 ms,
+the longest 681 ms; lowest available 402 MiB, highest PSI full 5 %; pinned direct 11,440 MiB at the end. The shared
+learned and alias files kept their checksums.
+
+**Reading.** With sections 52 and 53 that is four runs and 2,039 s of this route without the learned file and without
+a fault, one of them 15 minutes long and on the shared build. It is evidence for the route, which stays in one area
+of the game; his own play (the pause menu, Photo Mode, the lake, fights) is where the windows were learned and is
+not covered by it.
+
 ## Verdict
 
+- **Without the learned file on the shared build (section 56):** 15 minutes of scripted play, no fault, nothing the
+  catcher would have learned, 25.8 flips/s. The route does not need the file; his own play is not covered by this.
+- **E1 (section 55):** on gfx1013 a shader's read of a PRT page and of a read-only page gives zeros with no fault; a
+  write to a PRT page vanishes silently; a write to a read-only page is a named page fault that costs the job and
+  one recovered ring reset (fence timeout at 2.03 s; a new context checked 15 s later) and leaves the page intact.
+  One sample each, no game running. A read-only zero mapping is a detector of GPU writes, not a way to keep
+  them; a PRT page is a cover only where the title mapped nothing.
 - **The rule's first test (sections 52, 53):** the scripted route needs none of the 81 learned windows (three runs,
   1,022 s, no fault; 246 MiB less pinned). "Pin every view whole" (R1) reaches the memory wall in the menu and is not
   runnable today. The arm with R1 and the PRT background hung the GPU without a page fault and the box rebooted;

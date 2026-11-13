@@ -1,0 +1,37 @@
+[17144.688077] gmc_v10_0_process_interrupt: 149 callbacks suppressed
+[17144.688082] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:32 vmid:7 pasid:59)
+[17144.688088] amdgpu 0000:01:00.0:  Process e1-probe pid 813845 thread e1-probe pid 813845
+[17144.688090] amdgpu 0000:01:00.0:   in page starting at address 0x0000000100a02000 from client 0x1b (UTCL2)
+[17144.688092] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00741041
+[17144.688093] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[17144.688095] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[17144.688096] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[17144.688097] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x4
+[17144.688098] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[17144.688099] amdgpu 0000:01:00.0: 	 RW: 0x1
+[17144.688102] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:32 vmid:7 pasid:59)
+[17144.688103] amdgpu 0000:01:00.0:  Process e1-probe pid 813845 thread e1-probe pid 813845
+[17144.688104] amdgpu 0000:01:00.0:   in page starting at address 0x0000000100a01000 from client 0x1b (UTCL2)
+[17144.688107] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:32 vmid:7 pasid:59)
+[17144.688109] amdgpu 0000:01:00.0:  Process e1-probe pid 813845 thread e1-probe pid 813845
+[17144.688110] amdgpu 0000:01:00.0:   in page starting at address 0x0000000100a01000 from client 0x1b (UTCL2)
+[17144.688113] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:32 vmid:7 pasid:59)
+[17144.688114] amdgpu 0000:01:00.0:  Process e1-probe pid 813845 thread e1-probe pid 813845
+[17144.688115] amdgpu 0000:01:00.0:   in page starting at address 0x0000000100a03000 from client 0x1b (UTCL2)
+[17144.688119] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:32 vmid:7 pasid:59)
+[17144.688120] amdgpu 0000:01:00.0:  Process e1-probe pid 813845 thread e1-probe pid 813845
+[17144.688121] amdgpu 0000:01:00.0:   in page starting at address 0x0000000100a02000 from client 0x1b (UTCL2)
+[17144.688124] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:32 vmid:7 pasid:59)
+[17144.688125] amdgpu 0000:01:00.0:  Process e1-probe pid 813845 thread e1-probe pid 813845
+[17144.688126] amdgpu 0000:01:00.0:   in page starting at address 0x0000000100a00000 from client 0x1b (UTCL2)
+[17146.716633] amdgpu 0000:01:00.0: Dumping IP State
+[17146.718790] amdgpu 0000:01:00.0: Dumping IP State Completed
+[17146.718817] amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+[17146.718820] amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+[17146.718825] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=3744503, emitted seq=3744504
+[17146.718829] amdgpu 0000:01:00.0:  Process e1-probe pid 813845 thread e1-probe pid 813845
+[17146.718833] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+[17146.718934] amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+[17146.718938] amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+[17146.724389] bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=3744503, emitted seq=3744504
+[17146.730123] bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
