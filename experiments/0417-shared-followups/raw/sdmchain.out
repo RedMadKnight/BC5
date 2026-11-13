@@ -1,0 +1,97 @@
+chain lock: exp 0417 | chain: exp 0417 save data memory: private build of candidate C (CPU), then five ASTRO BOT arms on private test save directories, until about 17:37 | token 202611131657322036138 | 2026-11-13 16:57:32
+2026-11-13 17:03:10 done; normal cfd35639, lean 709224df
+lock released (kept by the chain)
+binary: private normal cfd35639597a7079cf35e3efedd301fb
+== sm0 [no fix]: real pad keys 0; first run: sm0 (astro) PASS: ran 120 s
+sm0 files: sce_sdmemory/memory.dat 97fb2aba 164965;
+sm0 first run calls: setup 1, get 4, set 20, sync 0, slots 0 
+      1 [bc5] sdm417 setup: slot 0 (store 0) option 0x0 memory_size 2097152 icon_memory_size 0 init_param 0 init_icon 0; file before 0 bytes; existed_memory_size answered 2097152 (no result pointer)
+      3  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 393216 size 3304 non-zero 3303
+      3  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 0 size 13397 non-zero 13396
+      1  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 393216 size 3264 non-zero 3263
+      1  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 393216 size 3110 non-zero 3109
+      1  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 1179648 size 13397 non-zero 13396
+      1  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 0 size 148267 non-zero 148266
+sm0 next start: CRASHES (ENDED BY ITSELF at 5 s); calls: setup 1, get 4, set 0, sync 0, slots 0 
+[bc5] sdm417 setup: slot 0 (store 0) option 0x0 memory_size 2097152 icon_memory_size 0 init_param 0 init_icon 0; file before 2097152 bytes; existed_memory_size answered 2097152 (no result pointer)
+[bc5] sdm417 get: slot 0 (store 0) offset 393216 size 393216 non-zero 3303 fnv 896503faa59a6bbb; param 0 icon 0 (icon bytes answered 0); store 2097152 bytes
+[bc5] sdm417 get: slot 0 (store 0) offset 0 size 393216 non-zero 148266 fnv f054369f188383f5; param 0 icon 0 (icon bytes answered 0); store 2097152 bytes
+[bc5] sdm417 get: slot 0 (store 0) offset 786432 size 393216 non-zero 0 fnv 7bbaebfc39e50383; param 0 icon 0 (icon bytes answered 0); store 2097152 bytes
+[bc5] sdm417 get: slot 0 (store 0) offset 1179648 size 393216 non-zero 13396 fnv 49f6dd52e4c8a265; param 0 icon 0 (icon bytes answered 0); store 2097152 bytes
+exception_address=0x0x90029c385
+Access violation: Read [0000000fefdf1b58] 
+== sm1 [KYTY_BC5_SAVEDATA_MEMORY_FIXES=existed]: real pad keys 0; first run: sm1 (astro) PASS: ran 120 s
+sm1 files: sce_sdmemory/memory.dat 97fb2aba 164965;
+sm1 first run calls: setup 1, get 4, set 20, sync 0, slots 0 
+      1 [bc5] sdm417 setup: slot 0 (store 0) option 0x0 memory_size 2097152 icon_memory_size 0 init_param 0 init_icon 0; file before 0 bytes; existed_memory_size answered 0 (no result pointer)
+      3  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 393216 size 3304 non-zero 3303
+      3  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 0 size 13397 non-zero 13396
+      1  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 393216 size 3264 non-zero 3263
+      1  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 393216 size 3110 non-zero 3109
+      1  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 1179648 size 13397 non-zero 13396
+      1  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 0 size 148267 non-zero 148266
+sm1 next start: CRASHES (ENDED BY ITSELF at 6 s); calls: setup 1, get 4, set 0, sync 0, slots 0 
+[bc5] sdm417 setup: slot 0 (store 0) option 0x0 memory_size 2097152 icon_memory_size 0 init_param 0 init_icon 0; file before 2097152 bytes; existed_memory_size answered 2097152 (no result pointer)
+[bc5] sdm417 get: slot 0 (store 0) offset 393216 size 393216 non-zero 3303 fnv 896503faa59a6bbb; param 0 icon 0 (icon bytes answered 0); store 2097152 bytes
+[bc5] sdm417 get: slot 0 (store 0) offset 0 size 393216 non-zero 148266 fnv f054369f188383f5; param 0 icon 0 (icon bytes answered 0); store 2097152 bytes
+[bc5] sdm417 get: slot 0 (store 0) offset 786432 size 393216 non-zero 0 fnv 7bbaebfc39e50383; param 0 icon 0 (icon bytes answered 0); store 2097152 bytes
+[bc5] sdm417 get: slot 0 (store 0) offset 1179648 size 393216 non-zero 13396 fnv 49f6dd52e4c8a265; param 0 icon 0 (icon bytes answered 0); store 2097152 bytes
+exception_address=0x0x90029c385
+Access violation: Read [0000000fefdf1b58] 
+== sm2 [KYTY_BC5_SAVEDATA_MEMORY_SLOTS=1]: real pad keys 0; first run: sm2 (astro) PASS: ran 120 s
+sm2 files: sce_sdmemory/memory.dat 97fb2aba 164965;
+sm2 first run calls: setup 1, get 4, set 20, sync 0, slots 0 
+      1 [bc5] sdm417 setup: slot 0 (store 0) option 0x0 memory_size 2097152 icon_memory_size 0 init_param 0 init_icon 0; file before 0 bytes; existed_memory_size answered 2097152 (no result pointer)
+      3  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 393216 size 3304 non-zero 3303
+      3  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 0 size 13397 non-zero 13396
+      1  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 393216 size 3264 non-zero 3263
+      1  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 393216 size 3110 non-zero 3109
+      1  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 1179648 size 13397 non-zero 13396
+      1  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 0 size 148267 non-zero 148266
+sm2 next start: CRASHES (ENDED BY ITSELF at 6 s); calls: setup 1, get 4, set 0, sync 0, slots 0 
+[bc5] sdm417 setup: slot 0 (store 0) option 0x0 memory_size 2097152 icon_memory_size 0 init_param 0 init_icon 0; file before 2097152 bytes; existed_memory_size answered 2097152 (no result pointer)
+[bc5] sdm417 get: slot 0 (store 0) offset 393216 size 393216 non-zero 3303 fnv 896503faa59a6bbb; param 0 icon 0 (icon bytes answered 0); store 2097152 bytes
+[bc5] sdm417 get: slot 0 (store 0) offset 0 size 393216 non-zero 148266 fnv f054369f188383f5; param 0 icon 0 (icon bytes answered 0); store 2097152 bytes
+[bc5] sdm417 get: slot 0 (store 0) offset 786432 size 393216 non-zero 0 fnv 7bbaebfc39e50383; param 0 icon 0 (icon bytes answered 0); store 2097152 bytes
+[bc5] sdm417 get: slot 0 (store 0) offset 1179648 size 393216 non-zero 13396 fnv 49f6dd52e4c8a265; param 0 icon 0 (icon bytes answered 0); store 2097152 bytes
+exception_address=0x0x90029c385
+Access violation: Read [0000000fefdf1b58] 
+== sm3 [KYTY_BC5_SAVEDATA_MEMORY_PARAM=1]: real pad keys 0; first run: sm3 (astro) PASS: ran 120 s
+sm3 files: sce_sdmemory/memory.dat 97fb2aba 164965;
+sm3 first run calls: setup 1, get 4, set 20, sync 0, slots 0 
+      1 [bc5] sdm417 setup: slot 0 (store 0) option 0x0 memory_size 2097152 icon_memory_size 0 init_param 0 init_icon 0; file before 0 bytes; existed_memory_size answered 2097152 (no result pointer)
+      3  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 393216 size 3304 non-zero 3303
+      3  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 0 size 13397 non-zero 13396
+      1  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 393216 size 3264 non-zero 3263
+      1  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 393216 size 3110 non-zero 3109
+      1  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 1179648 size 13397 non-zero 13396
+      1  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 0 size 148267 non-zero 148266
+sm3 next start: CRASHES (ENDED BY ITSELF at 6 s); calls: setup 1, get 4, set 0, sync 0, slots 0 
+[bc5] sdm417 setup: slot 0 (store 0) option 0x0 memory_size 2097152 icon_memory_size 0 init_param 0 init_icon 0; file before 2097152 bytes; existed_memory_size answered 2097152 (no result pointer)
+[bc5] sdm417 get: slot 0 (store 0) offset 393216 size 393216 non-zero 3303 fnv 896503faa59a6bbb; param 0 icon 0 (icon bytes answered 0); store 2097152 bytes
+[bc5] sdm417 get: slot 0 (store 0) offset 0 size 393216 non-zero 148266 fnv f054369f188383f5; param 0 icon 0 (icon bytes answered 0); store 2097152 bytes
+[bc5] sdm417 get: slot 0 (store 0) offset 786432 size 393216 non-zero 0 fnv 7bbaebfc39e50383; param 0 icon 0 (icon bytes answered 0); store 2097152 bytes
+[bc5] sdm417 get: slot 0 (store 0) offset 1179648 size 393216 non-zero 13396 fnv 49f6dd52e4c8a265; param 0 icon 0 (icon bytes answered 0); store 2097152 bytes
+exception_address=0x0x90029c385
+Access violation: Read [0000000fefdf1b58] 
+== sm4 [KYTY_BC5_SAVEDATA_MEMORY_FIXES=1 KYTY_BC5_SAVEDATA_MEMORY_SLOTS=1 KYTY_BC5_SAVEDATA_MEMORY_PARAM=1]: real pad keys 0; first run: sm4 (astro) PASS: ran 120 s
+sm4 files: sce_sdmemory/memory.dat 97fb2aba 164965;
+sm4 first run calls: setup 1, get 4, set 20, sync 1, slots 0 
+      1 [bc5] sdm417 setup: slot 0 (store 0) option 0x0 memory_size 2097152 icon_memory_size 0 init_param 0 init_icon 0; file before 0 bytes; existed_memory_size answered 0 (no result pointer)
+      3  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 393216 size 3304 non-zero 3303
+      3  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 0 size 13397 non-zero 13396
+      1  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 393216 size 3264 non-zero 3263
+      1  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 393216 size 3110 non-zero 3109
+      1  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 1179648 size 13397 non-zero 13396
+      1  sdm417 set: slot 0 (store 0) piece 0 of 1 (data_num 0) offset 0 size 148267 non-zero 148266
+sm4 next start: CRASHES (ENDED BY ITSELF at 6 s); calls: setup 1, get 4, set 0, sync 0, slots 0 
+[bc5] sdm417 setup: slot 0 (store 0) option 0x0 memory_size 2097152 icon_memory_size 0 init_param 0 init_icon 0; file before 2097152 bytes; existed_memory_size answered 2097152 (no result pointer)
+[bc5] sdm417 get: slot 0 (store 0) offset 393216 size 393216 non-zero 3303 fnv 896503faa59a6bbb; param 0 icon 0 (icon bytes answered 0); store 2097152 bytes
+[bc5] sdm417 get: slot 0 (store 0) offset 0 size 393216 non-zero 148266 fnv f054369f188383f5; param 0 icon 0 (icon bytes answered 0); store 2097152 bytes
+[bc5] sdm417 get: slot 0 (store 0) offset 786432 size 393216 non-zero 0 fnv 7bbaebfc39e50383; param 0 icon 0 (icon bytes answered 0); store 2097152 bytes
+[bc5] sdm417 get: slot 0 (store 0) offset 1179648 size 393216 non-zero 13396 fnv 49f6dd52e4c8a265; param 0 icon 0 (icon bytes answered 0); store 2097152 bytes
+exception_address=0x0x90029c385
+Access violation: Read [0000000fefdf1b58] 
+sdm0417run ended 17:14:57
+sdmchain ended 17:14:57
+chain lock released

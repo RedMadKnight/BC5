@@ -442,6 +442,45 @@ shown, one run each. Not explained: after three ASTRO BOT starts in a row the sa
 the 1fa391a4 of a single first start (both chains; the count of non-zero bytes was not taken, and every one of the
 starts on it passed). Not done: the replug series on the new shared binaries and the maintainer's own start.
 
+## 15. ASTRO BOT's first save, run (2026-11-13 16:57-17:15): the three candidates are refuted, the save path is clean
+
+`sdmchain.sh` on the box: candidate C built privately (normal cfd35639, lean 709224df: the unit of section 13
+compiles), then `sdm0417run.sh sdm0417-list1.txt`, five arms, no real pad key in any (`raw/sdmchain.out`).
+
+| Arm | Words | File after 120 s with five crosses | The next start |
+|---|---|---|---|
+| sm0 | the call log only | 97fb2aba, 164,965 bytes | ends by itself at 5 s |
+| sm1 | `KYTY_BC5_SAVEDATA_MEMORY_FIXES=existed` | the same | at 6 s |
+| sm2 | `KYTY_BC5_SAVEDATA_MEMORY_SLOTS=1` | the same | at 6 s |
+| sm3 | `KYTY_BC5_SAVEDATA_MEMORY_PARAM=1` | the same | at 6 s |
+| sm4 | all three | the same | at 6 s |
+
+What the call log shows, the same in every arm:
+
+- one slot only (slot 0): H1 (two slots over each other) does not apply to this title;
+- `existed_memory_size` answered 0 (sm1, sm4) or 2 MiB makes no difference to what is written: H2 is not the cause;
+- no call passes parameters or an icon (param 0, icon 0 in every Set and Get): H3 does not apply;
+- 20 Sets in the first run, at three offsets: 0 (13,397 bytes three times, then 148,267 once the keys took the title
+  into the game), 393,216 (about 3.3 KiB, five times) and 1,179,648 (13,397 bytes once); the next start does one Setup
+  and four Gets of 393,216 bytes at offsets 393,216, 0, 786,432 and 1,179,648, and each Get returns the non-zero
+  counts that were set (3,303 / 148,266 / 0 / 13,396). **The title gets back what it stored.**
+
+So the defect is not in the save data memory (H4). The crash itself, from the host's register dump of the failing
+start (`~/bc5-work/exp0413/n/raw/sm0n-crash.txt`, not committed): a read at 0xfefdf1b58 at eboot+0x29c385, in an
+instruction that indexes a stack array with `rax*8` where `eax` = 0xffffffff; the bytes before it decrement a
+32-bit counter that was 0 and load `esi` = 0x2f ('/') for a call. Reading of those bytes (ours, of the dump's 64
+code bytes; not checked further): the title splits a path at '/' and a count of 0 underflows. A title that has a
+real save asks the host for something whose answer is a path or name, and ours is empty or has no '/'.
+
+Next (one 30 s start on the kept directory `wda/_SaveData.sm0` with the runner's `astrolog` kind, which writes the
+emulator's own call log): the host calls between the fourth Get and the fault. No fix is proposed until that is
+read. The three switches stay off; `KYTY_BC5_SAVEDATA_MEMORY_LOG` did its job, `_SLOTS` and `_PARAM` have no title
+that needs them (disposition: no verdict; missing: a title that uses a second slot or reads parameters back).
+
+Also in this slot: the software replug check on the new shared normal build 51af1ed7, R10: PASS, three pulls
+(`experiments/0413-np-session-v2-shared/integration/replug/raw/R10-*`). By the maintainer's rule of the same day it
+was not needed (B changes no audio or pad code) and is not repeated.
+
 ## Open items carried from the integration (not worked on here)
 
 | # | Item | Needs |
