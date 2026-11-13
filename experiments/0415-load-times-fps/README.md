@@ -920,6 +920,13 @@ scan with its imports 1.3-1.7 ms (imports alone 0.3-1.3 ms), merges 0.2-0.9 ms, 
 **Order now** [I]: (1) S5 without the read (records decide, the file read only as a slow check); (2) S2 with a shared
 list; (3) S3; (4) the learned windows with exp 0412's rule (8 ms of each long frame left).
 
+Later the same day the maintainer ordered the learned windows removed outright (exp 0412 does it): item (4) is no
+longer part of this order, nothing here speeds up or keeps `learned_apply`, and the next runs use no learned file
+(`BC5_GUARD_LEARN_LOG=2`). Kit L5d (`kit/0415-l5d.diff`, `mk0415k.sh`; not built yet): S2 with the kept list handed
+out instead of copied (changed in place when nobody else holds it, else a copy, counted as `views_clone`), and
+`KYTY_BC5_ANON_SYNC_KICK=0`, a knob that with a long `KYTY_BC5_ANON_SYNC_MS` shows what the thread's own reads cost
+before the read is replaced.
+
 ## Verdict
 
 Part 1, first result. The largest cause of the long loads was ours: every APR read opened its file anew, the
