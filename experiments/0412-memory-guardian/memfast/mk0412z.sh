@@ -69,17 +69,17 @@ python3 -I "$KIT/mkrl0412.py" "$P/u-nl.cpp" "$P/u-rl.cpp" > "$R/mkrl.out" 2>&1 |
 python3 -I "$KIT/mkk1r0412.py" unit "$P/u-rl.cpp" "$P/u-k1r.cpp" > "$R/mkk1r.out" 2>&1 || die "mkk1r0412.py unit: $(tail -1 "$R/mkk1r.out")"
 [ "$(m "$P/u-k1r.cpp")" = 0d265595 ] || die "the unit after k1r412 is not 0d265595"
 python3 -I "$KIT/mkfr0412.py" "$P/u-k1r.cpp" "$P/u-fr.cpp" > "$R/mkfr.out" 2>&1 || die "mkfr0412.py: $(tail -1 "$R/mkfr.out")"
-[ "$(m "$P/u-fr.cpp")" = df69ba22 ] || die "the unit after fr412 is not df69ba22"
+[ "$(m "$P/u-fr.cpp")" = 0a4fa422 ] || die "the unit after fr412 is not 0a4fa422"
 python3 -I "$KIT/mksg0412.py" "$K" "$P/sg-out" "$KIT/saveguard0412.inc" > "$R/mksg.out" 2>&1 || die "mksg0412.py: $(tail -1 "$R/mksg.out")"
 cat "$R/mksg.out"
 cp -p "$K/src/kernel/memory.cpp" "$S/src/kernel/" && cp -p "$K/src/libs/libAmpr.cpp" "$S/src/libs/" && cp -p "$K/src/common/hostException.cpp" "$S/src/common/" && cp "$P/u-fr.cpp" "$S/src/libs/bc5LleAgc.cpp" || die "staging"
 python3 -I "$KIT/mkff0412.py" "$S" "$P/out" > "$R/mkff0412.out" 2> "$R/mkff0412.err" || die "mkff0412.py: $(tail -1 "$R/mkff0412.err")"
 cat "$R/mkff0412.out"
-for u in "src/kernel/memory.cpp 961da63a" "src/libs/libAmpr.cpp d88da83d" "src/common/hostException.cpp e978e975" "src/libs/bc5LleAgc.cpp 169bd1df"; do
+for u in "src/kernel/memory.cpp 961da63a" "src/libs/libAmpr.cpp d88da83d" "src/common/hostException.cpp e978e975" "src/libs/bc5LleAgc.cpp 1c5d1ec2"; do
   set -- $u; [ "$(m "$P/out/$1")" = "$2" ] || die "$1 is not the unit checked on the laptop ($2)"
   cp -p "$P/out/$1" "$P/tree/$1" || die "cannot put $1 into the private tree"
 done
-for u in "src/kernel/fileSystem.cpp 3d2b9c0b" "src/libs/libSaveData.cpp 090e32cb" "src/bc5/save_guard0412.hpp 1f1585b4"; do
+for u in "src/kernel/fileSystem.cpp 3d2b9c0b" "src/libs/libSaveData.cpp 0bd91bb4" "src/bc5/save_guard0412.hpp 1f1585b4"; do
   set -- $u; [ "$(m "$P/sg-out/$1")" = "$2" ] || die "$1 is not the unit checked on the laptop ($2)"
   cp -p "$P/sg-out/$1" "$P/tree/$1" || die "cannot put $1 into the private tree"
 done

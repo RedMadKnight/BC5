@@ -122,7 +122,7 @@ if [ ! -e "$WD" ]; then
 fi
 [ -d "$WD/_SaveData" ] && [ ! -L "$WD/_SaveData" ] && [ -d "$SDD" ] && [ ! -L "$SDD" ] || { echo "$WD/_SaveData or $SDD is not a private directory"; exit 1; }
 # 4. The save: the private copy reset from the named snapshot.
-rm -rf "$WD/_SaveData/PPSA03671" && cp -a "$NS/PPSA03671" "$WD/_SaveData/PPSA03671" || { echo "the saves could not be put in place"; exit 1; }
+{ [ ! -e "$WD/_SaveData/PPSA03671" ] || chmod -R u+w "$WD/_SaveData/PPSA03671"; } && rm -rf "$WD/_SaveData/PPSA03671" && cp -a "$NS/PPSA03671" "$WD/_SaveData/PPSA03671" && chmod -R u+w "$WD/_SaveData/PPSA03671" || { echo "the saves could not be put in place"; exit 1; }
 [ "$(sumof "$WD/_SaveData")" = "$NSUM" ] || { echo "the private copy does not read as the named snapshot: not started"; exit 1; }
 echo "$(date '+%F %T') $TAG the private copy reset from the named snapshot $NSUM" >> "$R/saves.txt"
 CMD=$N/in-$TAG.cmd

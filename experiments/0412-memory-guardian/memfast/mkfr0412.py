@@ -26,7 +26,6 @@ T = b" // exp 0412 (tag fr412)\n"
 
 GLUE = b'''// Experiment 0412 (tag fr412): BC5_FAULT_RECORD. A GPU fault is a bug to remove at its source: write what is needed to
 // find it, then end the game. No reopen, no recovery.
-#include "bc5/save_guard0412.hpp" // exp 0412 (tag sg412): the save guard
 namespace fr412 {
 inline bool on() {
 	static const bool v = [] {
@@ -205,6 +204,9 @@ def main():
     GLUE.decode("ascii")
     a = b"static void recover_after_timeout(const bc5::direct::SubmitResult& r) {\n"
     s = once(s, a, GLUE + a)
+    a = b'#include "loader/symbolDatabase.h"\n\n#if defined(KYTY_BC5_DIRECT)\n'  # the file's top level, before any namespace opens
+    s = once(s, a, b'#include "bc5/save_guard0412.hpp" // exp 0412 (tag sg412): the save guard of the fault record\n' + a)
+    assert s.index(b"save_guard0412.hpp") < s.index(b"\nnamespace ")
     a = b"\t\tmr412_would_learn(r.fault_addr, static_cast<uint32_t>(r.fault_status)); // exp 0412 (tag mr412)\n"
     s = once(s, a, a + b"\t\tif (fr412::on()) fr412_record_and_exit(r.fault_addr, static_cast<uint32_t>(r.fault_status), r.timed_out, r.rc);" + T)
     g = s.index(b"[[noreturn]] static void fr412_record_and_exit(")

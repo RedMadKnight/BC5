@@ -66,8 +66,9 @@ static int Bc5SgFd(int d) {
 
 def save_data(s):
     assert b"\r" not in s and b"tag sg412" not in s
-    a = b"static constexpr char     SAVE_DATA_DIR[]      = \"_SaveData\";\n"
-    s = once(s, a, INC + a)
+    a = b'#include "loader/systemContent.h"\n'  # the file's top level: the header must not land inside a namespace
+    s = once(s, a, a + INC)
+    assert s.index(b"save_guard0412.hpp") < s.index(b"\nnamespace ")
     a = b"\tg_mount_slots.Mount(static_cast<size_t>(slot), dir_name);\n"
     s = once(s, a, a + b"\tsg412::note_root(directory.c_str());" + T + b"\tsg412::mounted(slot);" + T)
     a = b"\tLibKernel::FileSystem::Umount(point);\n\tg_mount_slots.Release(static_cast<size_t>(slot));\n"

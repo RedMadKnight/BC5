@@ -3115,8 +3115,52 @@ stand-ins (a fake record, a fake kernel log) completed the record and did nothin
 shortcut's launcher: that follows the first clean test and his word.
 
 **The build's sums now** (`memfast/mk0412z.sh`, kit `kit-z.sha256`, 16 files): nl412 cfb7533e → rl412 0878903e → k1r412
-0d265595 → fr412 with the guard's call df69ba22 → ff412 169bd1df; sg412: fileSystem.cpp 9194fc38 → 3d2b9c0b,
+0d265595 → fr412 with the guard's call df69ba22 → ff412 169bd1df (as first written; as built: section 66); sg412: fileSystem.cpp 9194fc38 → 3d2b9c0b,
 libSaveData.cpp 0e0c5d40 → 090e32cb, the header 1f1585b4. Five CPU tests in the build script.
+
+### 66. g412z built; the cutscene arm three times: clean with K1r, and clean WITHOUT it (2026-11-13 09:56–10:21, box)
+
+**The build.** `mk0412z.sh`: the five CPU tests pass on the box (firstfail 101,506, maprule 15,281, rlabels 4,970,
+k1r 17,742, saveguard 178). The first compile failed in one place of mine: the save guard's header was included
+inside a namespace in `libSaveData.cpp` (and would have been in the main unit, where it would also have made a second,
+separate set of the guard's counters); both includes moved to the files' top level. Second compile: **g412z
+`e07e3414`**, 64 warnings, private backend archive 4c340f6d; the shared tree, builds, backend and archive only read.
+Sums as built: main unit nl412 cfb7533e → rl412 0878903e → k1r412 0d265595 → fr412 0a4fa422 → ff412 1c5d1ec2;
+fileSystem.cpp 3d2b9c0b, libSaveData.cpp 0bd91bb4, the header 1f1585b4; backend direct.hpp 26519fcc, direct.cpp 8f617378.
+
+**The arm** (`run0412n.sh`, `N_SAVES` = the snapshot of 09:14, `N_SLOT=4`, `N_NOWALK=1`, arm fast8's words plus
+`BC5_GUARD_LEARN_LOG=2 BC5_GUARD_K1_STAT=1 BC5_FAULT_RECORD=1`, RT on, fuse 13,000/2,048, 240 s after the load with no
+input). The slot list is walked by position; the title wrote `i38-slot4-game-autosave` in the runs where it could
+write, so the fourth entry is his slot 4 [M].
+
+| run | K1r | ended | flips/s | kernel lines | fault record | pinned direct max, lowest available |
+|---|---|---|---|---|---|---|
+| k1ra 10:01 | on | G+240, 354 s | 29.7 | 0 | none | 11,248 MiB, 685 MiB |
+| k1rb 10:08 | on | G+240, 355 s | 29.9 | 0 | none | 11,250 MiB, 727 MiB |
+| k1rc 10:14 | **off** | G+240, 356 s | 30.5 | 0 | none | 11,234 MiB, 970 MiB |
+
+(f9a this morning, the scripted walk on the shared build: 11,424 MiB and 501 MiB.) All three passed the 286th second,
+the time of the morning's fault, with 25–34 flips/s around it.
+
+- **K1r in k1ra** [M]: 942 read-only zero pieces over 1,870 MiB at the first rebuild; 512 pieces over 1,020 MiB at
+  289 s (about 430 pieces gave way to real pages as the CPU wrote them); the zero buffer held 0 non-zero words at
+  every one of the 12 checks; no line of a GPU write into a cover; the drain counted 0 in the journal's last timing
+  windows. Covers pin nothing: the pin is the same with and without them. The replace form was not run.
+- **The maintainer watched k1ra at the box** (relayed by the top; his observation of the picture, not a
+  measurement): "Bardzo stabilna gra była".
+- **k1ra ran on a read-only save copy** (my defect: `cp -a` kept the snapshot's read-only modes, the title could not
+  write; the next start failed on `rm`). Fixed in `run0412n.sh` (the private copy is made writable); k1rb and k1rc
+  ran with it and the title wrote its autosave.
+
+**What this does and does not show.** The control did not fault. So on this route **the morning's fault is not
+reproduced, and the two clean K1r runs do not show that K1r removes it.** K1r is shown only to run: 710 s of this
+scene with about 1 GiB under read-only zero covers, no fault, no write into a cover, the speed and the memory of
+the control. The fault record and the save guard were armed in all three and never called: untested in the real
+build. Why the control is clean is not known. Candidates [I]: (a) the morning's state came from four minutes of his
+play before the scene (the autosave of 08:58 was written in that play, the fault came a minute later), and a load
+straight into the scene lays the heap out differently; (b) the fault depends on what the scene does after an input
+of his; (c) it is intermittent (one control so far). The K1 catcher's line carries a defect of mine (an unsigned
+underflow prints "17592186044412.0 MiB" for the windows' total in k1ra): the number is wrong, nothing depends on it.
 
 ## Verdict
 
