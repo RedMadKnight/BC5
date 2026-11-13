@@ -29,3 +29,5 @@ Open, not a fault (README section 69): the packet filter drops a packet whose wr
 - A packet the filter drops is executed by the soft CP on the CPU (read in the code): the "title's write is lost" of the item above and of section 71 is wrong; the write is made by the host, later than the GPU would.
 - kl412: under lazy views 366 chunks (ASTRO BOT) and 110 chunks (second title) hold data and now get no zero cover. Importing them instead (`BC5_GUARD_LAZY_BY_DATA=1`) pins +734 MiB and +194 MiB.
 - Open: one RELEASE_MEM and one WAIT_REG_MEM64 a frame, in both titles, name a 12 KiB anonymous mapping of the HOST (0x7f... addresses, above the guest's range). Served by the soft CP. It is the host's `g_labels` page, the target of `sceVideoOutGetBufferLabelAddress` (README section 73; from the code, the address not printed): the VideoOut buffer label is written and waited for by the host's CPU, not by the GPU.
+
+2026-11-13 18:00-18:06, his play on the K1r test shortcut (g412zd, README section 75): two plays of about two minutes, no fault, his word "Wszystko ok". Row 1 stays open until a shared build carries K1r (candidate E) and he has played on it.

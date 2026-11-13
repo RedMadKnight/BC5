@@ -3535,6 +3535,23 @@ E; E's unit c92f5913 holds the three rule bodies of k1r0412.inc, cover0412.inc a
 inside my functions only in the K1r refusal (the zero-skip half is gone with the option). `memfast/mk0412ze.sh`
 builds form 2 on B privately (unit 2f4a3d63, backend 26519fcc/b1d27875, bin-e); not run yet: after his play.
 
+### 75. His play on the K1r test shortcut: no fault; the wall as before (2026-11-13 18:00-18:06, read at 18:10)
+
+His word after the play, relayed by the top: "Wszystko ok. Masz swoje pomiary". Read only (sampler
+`~/bc5-work/exp0412/sampler/play-20261113-18{0030,0404}-k1rcut.txt`, journals
+`~/bc5-data/captures/play-20261113-18{00,04}/gc/direct.log`, `play-last.log`, `fuse.log`, dmesg), all [M]:
+
+- Two plays on g412zd, arm k1rcut (its first runs): about 122 s and 138 s of frames; the second ended "exit 0". No
+  kernel amdgpu line, no new fault record, no "would learn" line, no timeout line.
+- K1r: 413-425 covers over 822-846 MiB. kl412: 105-106 written chunks under lazy views without a cover; the named
+  fault for a GPU read there did not fire. K1 at the filter: 0 imports.
+- Second play: 30.0 flips/s over 134 s, 39 s with a gap over 100 ms, longest 660 ms. No control play without
+  `BC5_DIRECT_TIMEOUT_PROBE`, so its cost in a play is still not measured.
+- Memory, second play: GTT 12,046-12,067 MiB from 73 s, available 658-739 MiB, swap used 1.6-1.7 GiB, the cgroup's
+  peak 12,884 MiB of the fuse's 13,000. The wall is where it was: K1r pins nothing and frees nothing.
+- Not established from the files: that the slot-4 cutscene itself played (the journal names no slot or scene). What
+  stands: his word, and no fault where the morning's play faulted at once.
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over
