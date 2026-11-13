@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # BC5 exp 0418, the private build of the start-state table and the /dev/gc caller trace (impl/README.md), on the SHARED
-# tree as it is since the integration of 2026-11-13 (patch 0001 4651d1d3): a fresh private copy of ~/src/KytyPlus as
-# ~/bc5-work/exp0418/tree, plus kit/0418-start-state.diff. Every change is behind a switch that is off by default
+# tree as it is (patch 0001 4651d1d3 since the integration of 2026-11-13, or candidate B 27b6416f after the swap; the kit
+# has a diff and a sum list for each): a fresh private copy of ~/src/KytyPlus as
+# ~/bc5-work/exp0418/tree, plus kit/0418-on-<P_TREE>.diff. Every change is behind a switch that is off by default
 # (BC5_DIRECT_START_STATE, BC5_DIRECT_START_STATE_SKIP, BC5_DIRECT_GC_GS_RINGS, BC5_GC_IOCTL_TRACE; the four older
 # switches keep their meaning). A full build of the normal and the lean variant under ~/bc5-work/exp0418/build-*.
 # ~/src/KytyPlus, the shared build directories, the backend source and its archive are only read. No emulator is started.
 # Only ~/bc5-work/exp0418 is written, and the lock line while it runs.
-# usage (on the box): P_TREE=4651d1d3 P_ARCH=<8 hex> P_DIFF=<sha256, 16 hex> bash mk0418.sh
+# usage (on the box): P_TREE=<4651d1d3|27b6416f> P_ARCH=<8 hex> P_DIFF=<sha256 of kit/0418-on-$P_TREE.diff, 16 hex> bash mk0418.sh
 set -u
 ulimit -c 0
 export LC_ALL=C LANGUAGE=C
@@ -48,23 +49,25 @@ release() {
 }
 die() { echo "mk0418 STOP: $*"; release; exit 1; }
 pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
+case "$P_TREE" in 4651d1d3 | 27b6416f) ;; *) stop "the kit has no diff for a shared tree $P_TREE" ;; esac
+DIFF=$HERE/0418-on-$P_TREE.diff; SUMS=$HERE/tree-0418-on-$P_TREE.md5
 [ "$(git -C "$K" diff --no-color f266548 | md5sum | cut -c1-8)" = "$P_TREE" ] || stop "the shared tree's diff is not $P_TREE"
-[ "$(sha256sum < "$HERE/0418-start-state.diff" | cut -c1-16)" = "${P_DIFF:?the diff sha256, 16 hex}" ] || stop "the diff is not the one sent"
-for f in tree-0418.md5 test418.cpp; do [ -s "$HERE/$f" ] || stop "no $f in the kit"; done
+[ "$(sha256sum < "$DIFF" | cut -c1-16)" = "${P_DIFF:?the diff sha256, 16 hex}" ] || stop "the diff is not the one sent"
+for f in "$SUMS" "$HERE/test418.cpp"; do [ -s "$f" ] || stop "no $f in the kit"; done
 [ "$(m "$ARCH")" = "$P_ARCH" ] || stop "the archive is not $P_ARCH"
 [ -d "$BSRC/include/bc5" ] || stop "no backend include dir at $BSRC"
 [ ! -e "$E/tree" ] && [ ! -e "$E/bin" ] || stop "$E/tree or $E/bin exists: built already"
 claim "exp 0418: private build under exp0418 (tree, normal and lean builds), CPU only" 45
 mkdir -p "$E/tree" "$E/raw/test" || die "mkdir"
-echo "$(date '+%F %T') start; tree pin $P_TREE, archive $(m "$ARCH"), kit diff $(m "$HERE/0418-start-state.diff")"
+echo "$(date '+%F %T') start; tree pin $P_TREE, archive $(m "$ARCH"), kit diff $(m "$DIFF") (on $P_TREE)"
 ls "$W"/kytyplus-build/externals/ffmpeg-*.zip > /dev/null 2>&1 || die "no ffmpeg prebuilt in the shared build"
 tar -C "$K" -cf - . | tar -C "$E/tree" -xf - || die "the tree copy"  # with .git: ffmpeg-core's CMake asks git for its commit
 cmp -s "$K/src/libs/bc5LleAgc.cpp" "$E/tree/src/libs/bc5LleAgc.cpp" || die "the copy differs from the shared tree"
-(cd "$E/tree" && git -c core.autocrlf=false apply --whitespace=nowarn "$HERE/0418-start-state.diff") || die "the diff does not apply"
+(cd "$E/tree" && git -c core.autocrlf=false apply --whitespace=nowarn "$DIFF") || die "the diff does not apply"
 bad=0
-while read -r sum f; do [ "$(md5sum < "$E/tree/$f" | cut -d' ' -f1)" = "$sum" ] || { echo "differs: $f"; bad=$((bad + 1)); }; done < "$HERE/tree-0418.md5"
+while read -r sum f; do [ "$(md5sum < "$E/tree/$f" | cut -d' ' -f1)" = "$sum" ] || { echo "differs: $f"; bad=$((bad + 1)); }; done < "$SUMS"
 [ "$bad" = 0 ] || die "$bad edited files differ from the laptop's tree"
-echo "tree: $(wc -l < "$HERE/tree-0418.md5") edited files match the laptop's"
+echo "tree: $(wc -l < "$SUMS") edited files match the laptop's (on $P_TREE)"
 T=$E/raw/test
 distrobox enter ubuntu -- env LC_ALL=C g++ -std=c++20 -O1 -Wall -Wextra -Werror -I "$E/tree/src" "$HERE/test418.cpp" -o "$T/test418" < /dev/null > "$T/test418-build.out" 2>&1 ||
     die "test418 does not build: $(grep -m2 'error' "$T/test418-build.out" | cut -c1-200 | tr '\n' ' ')"

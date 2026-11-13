@@ -15,7 +15,7 @@ In English: why do we only log these registers instead of writing them, and what
 
 ## What was built
 
-The base is the shared tree, patch 0001 `4651d1d3` (main). The scratch tree's diff against f266548 has md5 `4651d1d3`, the same as the patch file.
+The base is the shared tree: patch 0001 `4651d1d3` (main), and candidate B `27b6416f` once the integrator has swapped it in (the kit below). The scratch tree's diff against f266548 has md5 `4651d1d3`, the same as the patch file.
 
 | Piece | Where | Switch | Default |
 |---|---|---|---|
@@ -25,7 +25,21 @@ The base is the shared tree, patch 0001 `4651d1d3` (main). The scratch tree's di
 | The caller trace | `Bc5Gc::ioctl_trace`, called from `Bc5LleKernel::Ioctl`; pure parts in `backend/include/bc5/gc_trace.hpp` (copy `src/bc5/gc_trace.hpp`) | `BC5_GC_IOCTL_TRACE=1`, diagnostic, compiled out of the lean build | off |
 | Naming the NIDs afterwards | `nid-names.py` (laptop) | — | — |
 
-The kit is `kit/0418-start-state.diff` (3 files against the shared tree; sha256 `bf40cb55356cc9df…`, md5 `79fe2dd4`). It also holds `kit/tree-0418.md5`, `kit/test418.cpp` (the box's CPU test) and `kit/mk0418.sh` (the build).
+**The kit.** It holds one diff of the same 3 files for each base the shared tree may have when the slot comes, each with its own sum list:
+
+| Shared tree | Diff | sha256 (16 hex) | md5 | Sum list |
+|---|---|---|---|---|
+| patch 0001 `4651d1d3` (main, the shared builds of 2026-11-13) | `kit/0418-on-4651d1d3.diff` | `bf40cb55356cc9df` | `79fe2dd4` | `kit/tree-0418-on-4651d1d3.md5` |
+| candidate B `27b6416f` (exp 0417 section 9, after the integrator's swap) | `kit/0418-on-27b6416f.diff` | `7f9efd19c5f32c9e` | `808e2805` | `kit/tree-0418-on-27b6416f.md5` |
+
+`mk0418.sh` picks the pair by `P_TREE` and refuses any other base. It also holds `kit/test418.cpp`, the box's CPU test.
+
+**How the B diff was made.**
+
+- Tree B was rebuilt in the laptop's scratch: f266548 + `0001-new14.patch`, read from the integrator's kit, md5 `27b6416f`. All 129 files match main's `experiments/0417-shared-followups/tree-candidate-B-27b6416f.md5`.
+- Then the 0418 commit was cherry-picked onto it, with no conflict.
+- B changes none of the places 0418 edits (`prefix_of`, `gc_ioctl`, `Ioctl`, the includes). Its new headers (`save_guard0412.hpp`, `anon_sync.hpp`) bring no system ELF header. The 0418 function names occur once each.
+- The syntax check below passes on both bases.
 
 **The rows.** Values and lines are from `../README.md` §2 and the sources it lists; `start-state.tsv` gives each row's source.
 
@@ -125,12 +139,12 @@ It reads no code.
 - **The unit's new code.** VS clang 22: `clang++ -fsyntax-only -std=c++20 -Wall -Wextra -Werror` on the new regions. A script cuts them out of the edited `bc5LleAgc.cpp` and checks them against the real KytyPlus loader headers (`elf.h`, `runtimeLinker.h`), with stand-ins only for Linux's `process_vm_readv`, the journal and the tracker. Result: 0 diagnostics.
   - The whole unit cannot be compiled on the laptop (it needs Linux headers). The box build is the full check.
 - **`kit/test418.cpp`.** Built with VS clang `-Wall -Wextra -Werror`: `test418: 15 of 15; end`.
-- **The kit diff.** It applies with `git -c core.autocrlf=false apply` to a clean f266548 + `4651d1d3` tree, and the three edited files match `kit/tree-0418.md5`.
+- **The kit diffs.** `0418-on-4651d1d3.diff` applies with `git -c core.autocrlf=false apply` to a clean f266548 + `4651d1d3` tree, and its three files match `kit/tree-0418-on-4651d1d3.md5`. The B diff is the cherry-pick itself.
 - **`mk0418.sh`.**
   - `bash -n` passes.
-  - Dry run with stand-ins for `pgrep`, `distrobox`, `g++`, `cmake` and `ninja`, on a fake home whose tree pins to `4651d1d3`:
+  - Dry run with stand-ins for `pgrep`, `distrobox`, `g++`, `cmake` and `ninja`, once on a fake home whose tree pins to `4651d1d3` and once on one that pins to `27b6416f`. Each time:
     - Lock claimed; tree checked; `test418` 15 of 15; both variants built and checked for their strings (the trace in normal, not in lean); binaries placed; lock released empty.
-  - Refusals checked: built already; wrong diff; a foreign lock, left untouched.
+  - Refusals checked: built already; wrong diff; a foreign lock, left untouched; a base the kit has no diff for.
 - **`nid-names.py`.** Tested on a synthetic trace against KytyPlus's `src/libs`: both test NIDs are named by their `LIB_FUNC` lines (`GraphicsDriverSetTFRing`, `GraphicsDriverSetHsOffchipParam`).
 
 ## On the box (needs the top's slot; not done)
@@ -139,11 +153,19 @@ Under the fixes-first rule, everything above is in one build, each piece behind 
 
 1. **Build** (CPU only, about 45 minutes, no emulator). The kit goes to `~/bc5-work/exp0418/kit/`, then:
 
+   After the integrator's swap to candidate B:
+
+   ```bash
+   P_TREE=27b6416f P_ARCH=75e30335 P_DIFF=7f9efd19c5f32c9e bash ~/bc5-work/exp0418/kit/mk0418.sh
+   ```
+
+   If the shared tree is still `4651d1d3`:
+
    ```bash
    P_TREE=4651d1d3 P_ARCH=75e30335 P_DIFF=bf40cb55356cc9df bash ~/bc5-work/exp0418/kit/mk0418.sh
    ```
 
-   - `P_ARCH` is the archive's md5 from the 2026-11-13 integration record; check it on the box first.
+   - `P_ARCH` is the archive's md5 from the 2026-11-13 integration record; B keeps it (exp 0417 section 9). Check it on the box first.
    - Output: `~/bc5-work/exp0418/bin/kyty_emulator` (normal) and `bin-lean/`.
 2. **One start of the second title, RT on**, with the launcher's own words plus `BC5_EMU=~/bc5-work/exp0418/bin/kyty_emulator BC5_GC_IOCTL_TRACE=1 BC5_DIRECT_START_STATE=1`, to the menu and a short play.
    - Expected: the start-state line with all 8 rows on, the trace lines, and no change in picture or speed.
