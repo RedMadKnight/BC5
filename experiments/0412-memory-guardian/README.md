@@ -3007,7 +3007,7 @@ covers mapped until the real mapping goes over them. What it is and is not, from
 still two page-table updates in order, the old entries cleared and then the new ones written. The hole a running
 job could meet shrinks from "between two ioctls" to "between two updates in the kernel"; it is **not shown to be
 zero**. With `BC5_FAULT_RECORD` a job that meets it ends the game with a record, so the comparison of the two forms
-has to count faults as well as the drain's time. The backend diff is now 87 lines (`direct.hpp` 26519fcc,
+has to count faults as well as the drain's time. The backend diff is now 83 lines (`direct.hpp` 26519fcc,
 `direct.cpp` 8f617378 from this branch's 51279eae); it is a shared change decided yes by the top session, for the
 integrator to rebuild the archive from when the tests are clean.
 
