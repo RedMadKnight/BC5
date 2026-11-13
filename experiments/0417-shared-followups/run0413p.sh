@@ -201,7 +201,7 @@ while [ -z "$ENDED" ] && [ $(($(date +%s) - T0)) -lt "$SECS" ]; do
   if [ -n "$G" ] && [ "$WALKED" = 0 ] && [ "${N_NOWALK:-0}" = 1 ]; then WALKED=1; echo "route: no input after the load (N_NOWALK=1), $PLAY s from $NOW s" >> "$R/$TAG-start.txt"; fi   # exp 0412 section 64
   if [ -n "$G" ] && [ "$WALKED" = 0 ]; then WALKED=1; echo "route: walk of $(wk) cycles ($PLAY s) queued at $NOW s" >> "$R/$TAG-start.txt"; fi
   [ -n "$G" ] && [ "$NOW" -ge $((G + PLAY)) ] && break
-  if sudo -n dmesg 2> /dev/null | tail -n +"$((ND + 1))" | grep -qi "amdgpu.*\(timeout\|reset\|fault\)"; then
+  if sudo -n dmesg 2> /dev/null | tail -n +"$((ND + 1))" | grep -i amdgpu | grep -v -E '[A-Za-z_][A-Za-z0-9_.]*\+0x[0-9a-f]+/0x[0-9a-f]+' | grep -qi "timeout\|reset\|fault"; then
     sleep 25
     if sudo -n dmesg 2> /dev/null | tail -n +"$((ND + 1))" | grep -qiE "reset failed|MODE1|mode1"; then ENDED="GPU HANG: reset failed or MODE1"
     elif sudo -n dmesg 2> /dev/null | tail -n +"$((ND + 1))" | grep -q "reset succeeded"; then ENDED="GPU HANG: ring reset succeeded at $(($(date +%s) - T0 - 25)) s"

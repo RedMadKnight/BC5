@@ -79,7 +79,7 @@ else
 fi
 while [ -z "$ENDED" ] && [ $(($(date +%s) - T0)) -lt "$SECS" ]; do
   [ -d "/proc/$EP" ] || { ENDED="ENDED BY ITSELF at $(($(date +%s) - T0)) s"; break; }
-  if sudo -n dmesg 2> /dev/null | tail -n +"$((ND + 1))" | grep -qi "amdgpu.*\(timeout\|reset\|fault\)"; then ENDED="GPU: kernel amdgpu line at $(($(date +%s) - T0)) s"; break; fi
+  if sudo -n dmesg 2> /dev/null | tail -n +"$((ND + 1))" | grep -i amdgpu | grep -v -E '[A-Za-z_][A-Za-z0-9_.]*\+0x[0-9a-f]+/0x[0-9a-f]+' | grep -qi "timeout\|reset\|fault"; then ENDED="GPU: kernel amdgpu line at $(($(date +%s) - T0)) s"; break; fi
   sleep 5
 done
 ANON=""; [ -n "$EP" ] && [ -d "/proc/$EP" ] && ANON=$(awk '/^RssAnon/ {print $2}' "/proc/$EP/status")
