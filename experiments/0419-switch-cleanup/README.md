@@ -265,6 +265,22 @@ table's line ("42 title defaults, 1 taken, 41 already set") and exp 0418's start
 The runners' kernel stopper was fixed first (`fixstop0419.py`, LESSONS R54): it no longer takes a backtrace frame
 such as `amdgpu_gem_fault+0x95/0x100` for a GPU fault.
 
+**Exp 0412's mark, read from the six journals (`want0419.sh`): "want" under 2 ms per full sync with K1r on is NOT
+met at the maxima.** Per timing-split line with a full sync, want / full:
+
+| Run | K1r | Lines with a full sync | Over 2 ms | The three largest (ms per full sync, at t) |
+|---|---|---|---|---|
+| m1a | on | 1,905 | 64 | 3.10 (63 s), 3.00 (52 s), 2.90 (66 s) |
+| m1b | on | 1,955 | 103 | 3.30 (51 s), 3.20 (56 s), 3.15 (49 s) |
+| m2cuta | on | 2,612 | 29 | 3.10 (51 s), 3.10 (46 s), 3.00 (51 s) |
+| m2cutb | on | 2,444 | 48 | 2.90 (68 s), 2.80 (46 s), 2.75 (45 s) |
+| m1offa | off | 1,911 | 0 | 1.50 (336 s), 1.20, 1.10 |
+| m1offb | off | 2,013 | 0 | 1.40 (88 s), 1.20, 1.20 |
+
+With K1r on the worst full syncs cost about 3 ms, all between 45 and 68 s (the menu), in 1-5 % of the windows;
+with it off the worst is 1.5 ms. E measured 18.8-20.3 ms. No long gap came with them. Whether 3 ms at the menu's
+worst is acceptable against the 2 ms mark is exp 0412's and the top session's decision.
+
 After the acceptance, under one lock line (`rchain.sh`; results in section 13): exp 0412's extra wall walk with its
 writers catcher, and a private diagnostic build with exp 0418's one-off RSRC2 journal; the private builds go back to F.
 
