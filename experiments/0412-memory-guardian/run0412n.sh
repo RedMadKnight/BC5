@@ -54,8 +54,15 @@ WANT=$(m "$BIN")
 for f in sampler0412b.sh fuse0412.sh; do grep -qxF "$(m "$X/$f")  $f" "$X/tools.md5" || { echo "$f is not the installed one: not started"; exit 1; }; done
 : >> "$LEARN_SRC"
 [ -x "$X/wd0412.sh" ] && [ -f "$LEARN_SRC" ] && [ -d "$W/exp0330/wd" ] || { echo "no wd0412.sh, learned file or exp0330/wd: not started"; exit 1; }
+# exp 0412 section 64: N_SAVES=<dir holding PPSA03671> takes another read-only snapshot (the cutscene arm: his saves of 2026-11-13);
+# it is only read, the private working copy is reset from it as from the named one.
+if [ -n "${N_SAVES:-}" ]; then
+  NS=$N_SAVES; [ -d "$NS/PPSA03671" ] && [ ! -L "$NS" ] || { echo "N_SAVES holds no PPSA03671: not started"; exit 1; }
+  NSUM=$(sumof "$NS")
+else
 [ -d "$NS/PPSA03671" ] && [ ! -L "$NS" ] && [ -s "$N/saves-named.sum" ] || { echo "no named snapshot (MODE=name makes it): not started"; exit 1; }
 NSUM=$(sumof "$NS"); [ "$NSUM" = "$(cat "$N/saves-named.sum")" ] || { echo "the named snapshot reads $NSUM, not $(cat "$N/saves-named.sum"): not started"; exit 1; }
+fi
 [ -e "$R/$TAG-start.txt" ] && { echo "tag $TAG already used: not started"; exit 1; }
 mapfile -t WORDS < <(bash "$X/play-guard-0412.sh" "$ARM" words) && [ "${#WORDS[@]}" -ge 70 ] || { echo "no words for arm $ARM: not started"; exit 1; }
 T=$(date +%Y%m%d%H%M%S)$$
@@ -179,7 +186,8 @@ while [ -z "$ENDED" ] && [ $(($(date +%s) - T0)) -lt "$SECS" ]; do
       0) if [ "$FASTN" -ge 2 ]; then printf 'press cross\n' >> "$CMD"; RS=1; K=$NOW; echo "route: cross (start screen) at $NOW s" >> "$R/$TAG-start.txt"
          elif [ "$NOW" -ge 160 ]; then ENDED="ROUTE: the start screen did not run by 160 s"; fi ;;
       1) if [ "$NOW" -ge $((K + 6)) ] && [ "$FASTN" -ge 3 ]; then
-           LISTED=$NOW; printf 'press cross\n' >> "$CMD"; RS=2; K=$NOW; echo "route: the save-slot list runs; cross (slot 1) at $NOW s" >> "$R/$TAG-start.txt"
+           LISTED=$NOW; for _ in $(seq 2 "${N_SLOT:-1}"); do printf 'press down\nwait 500\n' >> "$CMD"; done   # exp 0412 section 64: N_SLOT=<n>
+           printf 'press cross\n' >> "$CMD"; RS=2; K=$NOW; echo "route: the save-slot list runs; down x $((${N_SLOT:-1} - 1)), cross (slot ${N_SLOT:-1}) at $NOW s" >> "$R/$TAG-start.txt"
          elif [ "$NOW" -ge $((K + 90)) ]; then ENDED="ROUTE: the save list did not run within 90 s of its cross"; fi ;;
       2) if [ "$NOW" -ge $((K + 6)) ] && [ "$FASTN" -ge 2 ]; then printf 'press cross\n' >> "$CMD"; RS=3; K=$NOW; echo "route: cross (Continue) at $NOW s" >> "$R/$TAG-start.txt"
          elif [ "$NOW" -ge $((K + 60)) ]; then ENDED="ROUTE: the Continue menu did not run within 60 s"; fi ;;
@@ -191,6 +199,7 @@ while [ -z "$ENDED" ] && [ $(($(date +%s) - T0)) -lt "$SECS" ]; do
     esac
     [ -n "$ENDED" ] && break
   fi
+  if [ -n "$G" ] && [ "$WALKED" = 0 ] && [ "${N_NOWALK:-0}" = 1 ]; then WALKED=1; echo "route: no input after the load (N_NOWALK=1), $PLAY s from $NOW s" >> "$R/$TAG-start.txt"; fi   # exp 0412 section 64
   if [ -n "$G" ] && [ "$WALKED" = 0 ]; then WALKED=1; echo "route: walk of $(wk) cycles ($PLAY s) queued at $NOW s" >> "$R/$TAG-start.txt"; fi
   [ -n "$G" ] && [ "$NOW" -ge $((G + PLAY)) ] && break
   if sudo -n dmesg 2> /dev/null | tail -n +"$((ND + 1))" | grep -qi "amdgpu.*\(timeout\|reset\|fault\)"; then
