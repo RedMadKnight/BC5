@@ -32,7 +32,8 @@ inline bool on() {
 // The parts of the view [voff, voff + vsize) of the file, mapped at vva, that no imported range covers, cut at the
 // file's chunk boundaries (so that a piece never exceeds the zero buffer and a chunk's later import replaces whole
 // pieces). Appended to out in ascending address order.
-template <typename Bos> inline void cover(uint64_t vva, uint64_t voff, uint64_t vsize, const Bos& bos, uint64_t chunk, std::vector<Piece>& out) {
+// steps, when given, counts the list entries looked at (the CPU test's measure of the pass's cost).
+template <typename Bos> inline void cover(uint64_t vva, uint64_t voff, uint64_t vsize, const Bos& bos, uint64_t chunk, std::vector<Piece>& out, uint64_t* steps = nullptr) {
 	const uint64_t vend = voff + vsize;
 	uint64_t       cur  = voff;
 	auto           emit = [&](uint64_t lo, uint64_t hi) { // a gap [lo, hi) of the file under the view
@@ -50,6 +51,7 @@ template <typename Bos> inline void cover(uint64_t vva, uint64_t voff, uint64_t 
 	if (first != bos.begin()) --first;
 	for (auto it = first; it != bos.end(); ++it) {
 		const auto& b = *it;
+		if (steps != nullptr) ++*steps;
 		if (b.off + b.size <= cur) continue;
 		if (b.off >= vend) break;
 		if (b.off > cur) emit(cur, b.off < vend ? b.off : vend);

@@ -106,6 +106,53 @@ int main() {
 		for (const auto& x: p) sum += x.size;
 		check(sum == 3 * kChunk && p.size() == 4 && p.front().va == 0x1100000000ull && p.front().size == kChunk - 0x4000, "nothing imported: covered whole, the first piece ends at the chunk boundary");
 	}
+	{ // The cost of the pass (README section 78): 21,000 views over a file with 600 imported buffers, as in the second
+		// title's menu. The form before 2026-11-13 evening walked the list from its start for every view; it is kept here
+		// as the reference, with its step counter. The pieces must be the same; the steps must not.
+		auto old_cover = [](uint64_t vva, uint64_t voff, uint64_t vsize, const std::vector<k1r412::Bo>& bos, uint64_t chunk, std::vector<k1r412::Piece>& out, uint64_t& steps) {
+			const uint64_t vend = voff + vsize;
+			uint64_t       cur  = voff;
+			auto           emit = [&](uint64_t lo, uint64_t hi) {
+				while (lo < hi) {
+					const uint64_t stop = ((lo / chunk) + 1) * chunk, e = stop < hi ? stop : hi;
+					out.push_back({vva + (lo - voff), e - lo});
+					lo = e;
+				}
+			};
+			for (const auto& b: bos) {
+				steps++;
+				if (b.off + b.size <= cur) continue;
+				if (b.off >= vend) break;
+				if (b.off > cur) emit(cur, b.off < vend ? b.off : vend);
+				if (b.off + b.size > cur) cur = b.off + b.size;
+				if (cur >= vend) break;
+			}
+			if (cur < vend) emit(cur, vend);
+		};
+		std::mt19937_64         r2(0x636f7374);
+		std::vector<k1r412::Bo> bos;
+		uint64_t                off = 0;
+		for (int i = 0; i < 600; i++) { // 600 buffers of 2-64 MiB with gaps of 0-16 MiB: about 12 GiB of file
+			off += (r2() % 9) * kChunk;
+			const uint64_t n = (1 + r2() % 32) * kChunk;
+			bos.push_back({off, n});
+			off += n;
+		}
+		uint64_t steps_old = 0, steps_new = 0, pieces = 0;
+		bool     same = true;
+		for (int v = 0; v < 21000; v++) {
+			const uint64_t voff = (r2() % (off / kPage)) * kPage, vsize = (1 + r2() % 2048) * kPage, vva = 0x1000000000ull + voff;
+			std::vector<k1r412::Piece> a, b;
+			old_cover(vva, voff, vsize, bos, kChunk, a, steps_old);
+			k1r412::cover(vva, voff, vsize, bos, kChunk, b, &steps_new);
+			same = same && a == b;
+			pieces += b.size();
+		}
+		std::printf("cost: 21000 views, 600 buffers: the old pass looked at %" PRIu64 " list entries, the new one at %" PRIu64 " (%" PRIu64 " pieces)\n", steps_old, steps_new, pieces);
+		check(same, "the pass with the binary search gives the same pieces as the walk from the list's start");
+		check(steps_old > 3'000'000, "the old pass costs millions of steps for 21,000 views (the 20 ms a rebuild of section 78)");
+		check(steps_new < 21000 * 6, "the new pass looks at a handful of entries per view");
+	}
 	// the write bit of the fault status, the two kernel samples
 	check(k1r412::status_write(0x00741041u), "status 0x00741041 (E1 case 4, RW 1) is a write");
 	check(!k1r412::status_write(0x00601431u), "status 0x00601431 (the play of 2026-11-13, RW 0) is a read");

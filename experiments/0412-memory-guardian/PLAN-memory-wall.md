@@ -59,3 +59,45 @@ failed reset and a reboot (11:32). A B arm can reboot the box; it needs his word
 
 Not in this plan: any cap, hard stop, learned window or "skip" list. The pin falls only where the title wrote
 nothing and the GPU is shown to read zeros there.
+
+## After the first measurement (2026-11-13 19:14, README section 78)
+
+B's floor on the walk route: **1,930 MiB** all-zero in every one of five scans over ten minutes [M]. The gate of
+500 MiB is passed; option B is worth the work. GTT beyond the guest: the emulator's present side 245 MiB, desktop
+clients about 100 (plasma-keyboard 76), the direct path's own buffers about 210.
+
+### Step 2, prepared: the catcher for unnamed writers (tag ww412, `BC5_GUARD_WRITERS=1`, default off, log only)
+
+`memfast/ww0412.inc`, `ww0412.cpp` (105,737 of 105,737 on the laptop), `mkww0412.py` after `mkkl0412.py`; in form 6
+for candidate F. With the zero scan on, each scan journals per eager heap how many 2 MiB chunks turned non-zero
+since the last scan, and how many of them a hint, a force or a packet operand had NAMED. The not-named count is an
+upper bound of what option B cannot see today (a CPU write counts as not named). One walk arm with
+`BC5_GUARD_WRITERS=1 BC5_DIRECT_ZEROSCAN_AT=... BC5_DIRECT_ZERO_NAMES=...` gives the number per heap. No risk: it
+changes nothing but the journal.
+
+### Step 3, the order of the heaps and what each arm risks (NOT prepared; each arm on his word)
+
+How an arm is made: no new code. A heap leaves `BC5_DIRECT_EAGER_NAMES` for that arm, so it is imported by data;
+K1r covers what nobody wrote; the bind hints and K1 at the filter import the write targets they can name. The risk
+is the same in kind for every heap: a GPU write the host did not name lands on a read-only page. Then, with luck,
+the ring reset succeeds and the game ends with a record that names the address and the buffer (exit 86); without
+luck the reset fails (ASTRO BOT, 11:32) and `bc5-gpu-watch` reboots the box after 60 s. The scripted arms use a
+private save copy, so no save of his is at risk; his desktop session is.
+
+| order | heap | zero in all scans / span, MiB | what it holds [I, from its name and what was seen] | expected writers | risk of a write fault |
+|---|---|---|---|---|---|
+| 1 | CommitIABufferAllocator | 274 / 2,736 | index and vertex data the CPU commits and the GPU reads | the CPU (seen by SEEK_DATA) | low: the mechanism's first proof on a real heap |
+| 2 | RenderGpuWcLarge | 842 / 2,758 | render targets and GPU-written textures | binds (named by hints); shader writes through descriptors (not named) | high; the largest gain; go only after ww412's count for it |
+| 3 | RenderGpuRwLarge | 204 / 414 | buffers both sides read and write | both | high |
+| 4 | DynamicHeap, ComponentHeap, Physics | 182, 80, 116 | CPU heaps that also hold image descriptors (section 39) | the CPU | low to medium |
+| 5 | AMM | 154 / 10,084 | the streaming pool, reached only through shaders | unknown: every catcher is blind there | leave eager |
+
+My order differs from the top's proposal (RenderGpuWcLarge first) in one thing: one low-risk heap first, to learn
+whether a by-data heap under K1r runs at all, before the heap where a fault is likely. If ww412 shows zero
+not-named chunks for RenderGpuWcLarge on the walk route, it can go first.
+
+### The lean session list (to write into the shortcut only on his word)
+
+Stopped for the time of a play today: Plasma's shell (118 MiB of RAM). To add: `plasma-keyboard` (the virtual
+keyboard, 76 MiB of GTT and its RAM; nobody types on it in a play), stopped and started again as the shell is.
+Not measured: which unit or process owns it on his session and whether it restarts by itself.

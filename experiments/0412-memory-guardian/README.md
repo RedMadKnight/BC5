@@ -3673,6 +3673,24 @@ plasmashell 20. Available 657 MiB. For his play's 555 MiB beyond the guest this 
 100 desktop clients, about 210 the direct path's own buffers [I: the split is k4wall's, the 555 is his play's].
 plasma-keyboard's 76 MiB can go in the lean session.
 
+### 79. For candidate F: the cover pass's cost in a CPU test; the catcher for unnamed writers; the heaps' order (2026-11-13 evening, laptop; not compiled)
+
+The top's order: form 5 goes into candidate F (E + form 5 + exp 0418's diff) with a CPU test that shows the old
+cover pass's cost; step 2 of the wall plan enters F as a diagnostic, off; the heaps' order and each arm's risk are
+written down; plasma-keyboard joins the lean list on paper.
+
+- **The cost test** (`k1r0412.cpp`, now 17,745 checks): 21,000 views over 600 imported buffers. The pass before
+  form 5, kept in the test as the reference, looks at 6,201,535 list entries; `k1r412::cover()` with the binary
+  search at 27,072; the pieces are identical. `cover()` got an optional step counter for this.
+- **ww412** (`BC5_GUARD_WRITERS=1`, default off, log only): `ww0412.inc`, `ww0412.cpp` 105,737 of 105,737,
+  `mkww0412.py`. Hooks: `direct_force` names every chunk a hint or force asks for; `ww412_packets` names the chunks
+  of every memory operand of a submission's main buffer; the zero scan's thread compares each heap's flags with the
+  last scan's and journals "turned non-zero: N named, M NOT named". Limits in the file's header.
+- **Form 6** on B's unit 8126c0aa: mkk1r dffb4216, mkwa 46f2cf87, mkcv 2d466d15, mkk1f 6944eaf8, mkkl 1a2535ee,
+  mkww **b76dc93e**; backend as form 4 (e96e5c73, 28100ce5). `mk0412ze.sh`, `kit-ze.sha256` follow.
+- `PLAN-memory-wall.md` has the first measurement's result, step 2, the order of the heaps with each arm's risk
+  (no arm prepared), and the lean list's new line.
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over
