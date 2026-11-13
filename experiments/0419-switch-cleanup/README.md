@@ -312,6 +312,42 @@ Exp 0418's answer from its journal: no shader of either title loads an RSRC2 wor
 these routes; `rsrc2_journal` is not kept in the tree. Its start-state line is in both titles' logs with all eight
 rows and none skipped; the second title also has the TF ring and HS offchip lines; neither has a GS ring line.
 
+### 14. The deciding series for the hang (2026-11-13 21:00-22:00): not reproduced; a second, different failure
+
+`series0419f.sh` (`raw/series0419f.out`): five walks of the second title to G+620 (past 601 s), a private copy of the
+save, the fault record on, RT on, no pad key in any, 13.4 GB available before it. All five ran.
+
+| Arm | Build and words | End | Flips/s | Longest gap | Available / GTT at 600 s |
+|---|---|---|---|---|---|
+| sA | F, no scan, no writers catcher | **the title faulted on the CPU at 543 s**: a read of address 0x17fc at eboot+0x1b349f (exit 65); kernel lines 0, no GPU fault, no fault record; available 531 MiB at 530 s, the memory watchdog did not act (lowest 487 MiB) | 25.7 | 883 ms | - |
+| sB | F, `BC5_GUARD_K1R=0 BC5_GUARD_K1_FILTER=0` | clean to G+620 | 26.3 | 739 ms | 434 MiB / 12,310 |
+| sC | F without exp 0418's five new rows | clean to G+620 | 25.9 | 1020 ms | 343 MiB / 12,258 |
+| sD | the shared build B (51af1ed7), the control | clean to G+620 | 26.1 | 875 ms | 494 MiB / 12,218 |
+| sE | F with the zero scan and `BC5_GUARD_WRITERS=1` (the arm that hung) | clean to G+620 | 24.8 | 573 ms | 425 MiB / 12,289 |
+
+**The GPU hang of 601 s did not come back in five long walks, including the same arm run again (sE).** No arm
+isolates a cause: exp 0418's rows, the writers catcher and K1r each have a clean run with them on.
+
+**A second failure, of another kind, in the plain F arm (sA):** the title's own code read a 16-bit value through a
+pointer of about zero (`movzx ebx, word [r11 + r10 - 4]` with r11 0x800, r10 0x1000) at eboot+0x1b349f, 543 s in.
+That address is in no record of the repository. No GPU fault, no kernel line, memory not at the wall.
+
+So far, long walks past G+320 on this route:
+
+| Build | K1r | Runs | Failed |
+|---|---|---|---|
+| F | on | 4 (m5wall, sA, sC, sE) | 2: one GPU hang at 601 s, one guest fault at 543 s |
+| F | off | 1 (sB) | 0 |
+| E (form 4) | on | 1 (k4wall) | 0 |
+| B (shared today) | none | 1 (sD) | 0 |
+
+Two failures of four against none of three is NOT a result: the two failures are different faults, and one clean
+control says nothing about how often B fails at this length (F403 and F813, hangs of this title, are open in
+HANDOFF and come once in several runs). What it does say: **F must not be swapped on these numbers**, and the next
+step is counts, not another guess: the same long walk several times on B and on F with K1r on and off (13 minutes of
+box time each), stopping to read each fault's record. Both failures are bugs to remove at their source by the
+maintainer's rule; neither has a cause yet.
+
 ## Decisions for the maintainer
 
 One "yes" covers the swap of E as a whole (the top session asks): both shared builds, the shared backend archive
@@ -329,8 +365,9 @@ to the trash directory. Still his to say separately, because they are behaviour 
 ## Verdict
 
 **Candidate F (patch d9af28ca) is built and passed its acceptance runs on both titles (section 12), but its one run
-past G+320 ended in a GPU hang at 601 s (section 13): F is NOT ready for the swap until the long walk has been
-repeated. Nothing is swapped.**
+past G+320 ended in a GPU hang at 601 s (section 13): The deciding series (section 14) did not reproduce the hang in five long walks and
+added a different failure (the title faulted on the CPU at 543 s in the plain F arm): 2 of 4 long walks on F with K1r
+on failed, 0 of 1 with it off, 0 of 1 on B. F is NOT ready for the swap; the next step is counts. Nothing is swapped.**
 F = B + exp 0412's K1r (form 6, default on, the cover pass fixed) + the cleanup + exp 0417's save fix + exp 0418's
 start-state table. E (410273ca) is withdrawn: its K1r stalled the menu for over a second. Of the inventory's 266
 names 77 can no longer be set (29 deleted, 48 hardened) and 189 remain: 69 diagnostics, 63 without a verdict, 42 one

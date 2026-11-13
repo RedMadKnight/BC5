@@ -1,0 +1,52 @@
+chain lock: exp 0417 | chain: exp 0419: the deciding series for F's hang at 601 s: five walks to G+620 (F, F K1R off, F without exp 0418's new rows, shared B, F + scan + writers); about 70 minutes, until about 22:18 | token 202611132100053780612 | 2026-11-13 21:00:05
+binaries: B normal 1a2900a08142311961050686395c4054, B lean 034bf107b7d93bc3a924a416b4bb2efb, shared normal 51af1ed78e84291caf5ee042ea82c46d
+== 21:00:06 sA: no extra word
+sA input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 32 at 56.747 s
+sA (nozeroskip) ended by itself at 543 s (after 543 s; G 115, load 101, list 93); 25.7 flips/s over 537 s, 66 s with a gap over 100 ms, longest 883 ms; kernel lines 0, crash lines 22, ledger lines 0
+sA: NOT a clean run
+sA memory at 580-620 s:
+sA frame-profile lines over 500 ms: 3; last flip line t: frame profile: t 539.850 s, 33.2 ms sinc
+sA kernel lines: 0
+== 21:09:32 sB: BC5_GUARD_K1R=0 BC5_GUARD_K1_FILTER=0
+sB input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 35 at 51.278 s
+sB (nozeroskip) ended at G+620 (after 736 s; G 116, load 102, list 93); 26.3 flips/s over 732 s, 73 s with a gap over 100 ms, longest 739 ms; kernel lines 0, crash lines 0, ledger lines 0
+sB memory at 580-620 s:
+memory (exp 0401): t 580.0 s: available 478 MiB, swap used 694 MiB, psi some 1.20 full 1.20 (avg10, %), full total 222173 ms, gtt 12260 of 13312 MiB
+memory (exp 0401): t 590.0 s: available 389 MiB, swap used 700 MiB, psi some 2.11 full 2.11 (avg10, %), full total 222548 ms, gtt 12272 of 13312 MiB
+memory (exp 0401): t 600.0 s: available 434 MiB, swap used 697 MiB, psi some 1.26 full 1.26 (avg10, %), full total 222683 ms, gtt 12310 of 13312 MiB
+memory (exp 0401): t 610.0 s: available 434 MiB, swap used 692 MiB, psi some 0.46 full 0.46 (avg10, %), full total 222707 ms, gtt 12320 of 13312 MiB
+sB frame-profile lines over 500 ms: 2; last flip line t: frame profile: t 734.676 s, 29.2 ms sinc
+sB kernel lines: 0
+== 21:22:17 sC: BC5_DIRECT_START_STATE_SKIP=SPI_SHADER_REQ_CTRL_PS:GE_MIN_VTX_INDX:GE_MAX_VTX_INDX:VGT_INSTANCE_BASE_ID:VGT_GS_RINGS
+sC input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 33 at 51.282 s
+sC (nozeroskip) ended at G+620 (after 740 s; G 116, load 103, list 93); 25.9 flips/s over 735 s, 111 s with a gap over 100 ms, longest 1020 ms; kernel lines 0, crash lines 0, ledger lines 0
+sC memory at 580-620 s:
+memory (exp 0401): t 580.0 s: available 396 MiB, swap used 640 MiB, psi some 0.00 full 0.00 (avg10, %), full total 224660 ms, gtt 12240 of 13312 MiB
+memory (exp 0401): t 590.0 s: available 405 MiB, swap used 640 MiB, psi some 0.00 full 0.00 (avg10, %), full total 224661 ms, gtt 12240 of 13312 MiB
+memory (exp 0401): t 600.0 s: available 343 MiB, swap used 641 MiB, psi some 0.09 full 0.09 (avg10, %), full total 224694 ms, gtt 12258 of 13312 MiB
+memory (exp 0401): t 610.0 s: available 356 MiB, swap used 641 MiB, psi some 0.03 full 0.03 (avg10, %), full total 224703 ms, gtt 12252 of 13312 MiB
+sC frame-profile lines over 500 ms: 3; last flip line t: frame profile: t 738.192 s, 38.3 ms sinc
+sC kernel lines: 0
+== 21:35:05 sD: no extra word
+sD input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 31 at 51.308 s
+sD (nozeroskip) ended at G+620 (after 740 s; G 116, load 103, list 93); 26.1 flips/s over 735 s, 74 s with a gap over 100 ms, longest 875 ms; kernel lines 0, crash lines 0, ledger lines 0
+sD memory at 580-620 s:
+memory (exp 0401): t 580.0 s: available 483 MiB, swap used 680 MiB, psi some 0.00 full 0.00 (avg10, %), full total 227643 ms, gtt 12214 of 13312 MiB
+memory (exp 0401): t 590.0 s: available 479 MiB, swap used 679 MiB, psi some 0.00 full 0.00 (avg10, %), full total 227643 ms, gtt 12200 of 13312 MiB
+memory (exp 0401): t 600.0 s: available 494 MiB, swap used 679 MiB, psi some 0.00 full 0.00 (avg10, %), full total 227657 ms, gtt 12218 of 13312 MiB
+memory (exp 0401): t 610.0 s: available 482 MiB, swap used 679 MiB, psi some 0.00 full 0.00 (avg10, %), full total 227665 ms, gtt 12224 of 13312 MiB
+sD frame-profile lines over 500 ms: 5; last flip line t: frame profile: t 737.714 s, 33.6 ms sinc
+sD kernel lines: 0
+== 21:47:53 sE: BC5_DIRECT_ZEROSCAN_AT=175,295,415,535,640 BC5_GUARD_WRITERS=1 BC5_DIRECT_ZERO_NAMES=RenderGpuWcLarge,RenderGpuWcSmall,RenderGpuRwLarge,RenderGpuRwSmall,CommitIABufferAllocator,AMM,RenderAlloc,Physics
+sE input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 32 at 50.383 s
+sE (nozeroskip) ended at G+620 (after 736 s; G 116, load 104, list 93); 24.8 flips/s over 731 s, 123 s with a gap over 100 ms, longest 573 ms; kernel lines 0, crash lines 0, ledger lines 0
+sE memory at 580-620 s:
+memory (exp 0401): t 580.0 s: available 441 MiB, swap used 712 MiB, psi some 0.10 full 0.10 (avg10, %), full total 234237 ms, gtt 12232 of 13312 MiB
+memory (exp 0401): t 590.0 s: available 457 MiB, swap used 699 MiB, psi some 1.22 full 1.22 (avg10, %), full total 234424 ms, gtt 12301 of 13312 MiB
+memory (exp 0401): t 600.0 s: available 425 MiB, swap used 699 MiB, psi some 0.45 full 0.45 (avg10, %), full total 234440 ms, gtt 12289 of 13312 MiB
+memory (exp 0401): t 610.0 s: available 414 MiB, swap used 699 MiB, psi some 0.16 full 0.16 (avg10, %), full total 234449 ms, gtt 12291 of 13312 MiB
+sE frame-profile lines over 500 ms: 3; last flip line t: frame profile: t 734.090 s, 33.5 ms sinc
+sE kernel lines: 0
+series0419f ended 22:00:37: all five arms ran
+chain lock released
+
