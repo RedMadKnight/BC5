@@ -33,7 +33,7 @@ elif [ "${MODE:-}" = resume ]; then
 else
     : "${P_NEW12:?the patch md5}"
     (cd "$P/kit" && P_NEW12=$P_NEW12 bash ./p0417c.sh) > "$P/p0417c.log" 2>&1
-    grep "^private backend archive\|^backend tests\|done; normal\|^lock released" "$P/p0417c.log" | cut -c1-260
+    grep "^recipe check\|^private backend archive\|^backend tests\|done; normal\|^lock released" "$P/p0417c.log" | cut -c1-260
     grep -q "^lock released" "$P/p0417c.log" && grep -q " done; normal " "$P/p0417c.log" ||
         { grep -m8 "error:\|STOP\|differs\|lacks\|holds" "$P/p0417c.log" "$P"/build-*.build.log "$P"/backend-build.build.log 2> /dev/null | cut -c1-300; halt "the build did not end clean"; }
     bash "$N/cpu12/cpu0417c.sh" || halt "a CPU test failed"
@@ -68,8 +68,10 @@ second() {  # tag, words and N_* settings (NAME=VALUE; N_* go to the runner's en
     kill "$fp" 2> /dev/null; sleep 4
     local J; J=$(sed -n 's/^journal \([^ ]*\) .*$/\1/p' "$R/$tag-journal.txt" 2> /dev/null)
     echo "$tag lines: $(grep -a -h "$LINES" "$R/$tag-play.log" 2> /dev/null | sed 's/\[bc5\] //' | cut -c1-110 | sort | uniq -c | sort -rn | head -12 | tr -s ' ' | tr '\n' ';')"
-    echo "$tag journal: removed-line $(grep -a -c 'learned windows: removed from this build' "$J" 2> /dev/null), k1r lines $(grep -a -c -i 'k1r' "$J" 2> /dev/null), would-learn $(grep -a -c '^would learn' "$J" 2> /dev/null), timeout-fault $(grep -a -c '^timeout: fault' "$J" 2> /dev/null), eop stat: $(grep -a '^eop stat' "$J" 2> /dev/null | tail -1 | cut -c1-150); last k1r: $(grep -a -i 'k1r' "$J" 2> /dev/null | tail -1 | cut -c1-200)"
+    echo "$tag journal: removed-line $(grep -a -c 'learned windows: removed from this build' "$J" 2> /dev/null), k1r banner $(grep -a -c 'BC5_GUARD_K1R on' "$J" 2> /dev/null), k1r lines $(grep -a -c -i 'k1r' "$J" 2> /dev/null), would-learn $(grep -a -c '^would learn' "$J" 2> /dev/null), timeout-fault $(grep -a -c '^timeout: fault' "$J" 2> /dev/null), eop stat: $(grep -a '^eop stat' "$J" 2> /dev/null | tail -1 | cut -c1-150); last k1r: $(grep -a -i 'k1r' "$J" 2> /dev/null | tail -1 | cut -c1-200)"
     echo "$tag route: $(grep -h 'route:' "$R/$tag-start.txt" 2> /dev/null | tail -2 | tr '\n' ';' | cut -c1-240); catcher: $(grep -c ' fault: ' "$R/$tag-faults.txt" 2> /dev/null) fault lines; watchdog: $(tail -1 "$R/$tag-watchdog.txt" 2> /dev/null | cut -c21-140)"
+    local bad; bad=$(grep -a -c 'IT MUST BE ZERO\|fault record (exp 0412, tag fr412): written to' "$J" 2> /dev/null)
+    [ "${bad:-0}" = 0 ] || halt "$tag: the journal has $bad line(s) that a clean run must not have (a non-zero zero buffer, or a fault record written)"
     clean "$line" "ended at G+240" "$t0"
     sleep 5
 }

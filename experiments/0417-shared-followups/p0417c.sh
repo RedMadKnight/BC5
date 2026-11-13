@@ -76,6 +76,17 @@ PB=$P/backend-src; BB=$P/backend-build; BT=$P/backend-test
 rm -rf "$PB" "$BB" "$BT" && cp -a "$BSRC" "$PB" || die "cannot copy the backend source"
 cp "$HERE/backend-direct.hpp" "$PB/include/bc5/direct.hpp" && cp "$HERE/backend-direct.cpp" "$PB/src/direct.cpp" || die "cannot put the two backend files in"
 [ "$(diff -rq "$BSRC" "$PB" | grep -c .)" = 2 ] || die "the private backend differs from the shared one by more than direct.hpp and direct.cpp: $(diff -rq "$BSRC" "$PB" | head -4 | tr '\n' ' ')"
+# The recipe checked first (exp 0412's author: it was never shown that these options reproduce the shared archive):
+# the UNTOUCHED shared source built the same way, its archive compared with the shared one. Informational.
+BR=$P/backend-ref
+rm -rf "$BR"
+if distrobox enter ubuntu -- cmake -S "$BSRC" -B "$BR" -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
+       -DBC5_WITH_AMDGPU=ON -DBC5_BUILD_TESTS=OFF < /dev/null > "$BR.configure.log" 2>&1 &&
+   distrobox enter ubuntu -- sh -c "cd '$BR' && nice -n 19 ninja" < /dev/null > "$BR.build.log" 2>&1 && [ -f "$BR/libbc5_backend.a" ]; then
+    echo "recipe check: the untouched shared backend source built with these options gives $(m "$BR/libbc5_backend.a"); the shared archive is $(m "$ARCH") ($([ "$(m "$BR/libbc5_backend.a")" = "$(m "$ARCH")" ] && echo "the SAME: a rebuild reproduces it" || echo "DIFFERENT: a rollback must restore the kept archive file, not rebuild"))"
+else
+    echo "recipe check: the untouched shared backend source did not build with these options ($(grep -m1 -i error "$BR.configure.log" "$BR.build.log" 2> /dev/null | cut -c1-160))"
+fi
 echo "== $(date +%T) backend"
 distrobox enter ubuntu -- cmake -S "$PB" -B "$BB" -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
     -DBC5_WITH_AMDGPU=ON -DBC5_BUILD_TESTS=OFF < /dev/null > "$BB.configure.log" 2>&1 || die "backend configure: $(tail -3 "$BB.configure.log" | tr '\n' ' ' | cut -c1-300)"
