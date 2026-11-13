@@ -3262,6 +3262,106 @@ replace form off, the probe and the watch compiled in and off. `memfast/mkdef041
 final unit ("0" turns each off): 9d4de45e → 417616db. Not built or run with the flipped defaults; **K1r has never run
 on ASTRO BOT**, which the shared build also plays: that run is owed before or with the fold.
 
+### 69. K1r faulted ASTRO BOT's start and the box rebooted: a cover was visible to the host's packet filter (2026-11-13 11:32; the fix written, not compiled)
+
+**What happened** (the integrator's run, exp 0417, candidate 26ef195c with K1r and the fault record on by default,
+nothing set; its report, not my measurement): ASTRO BOT faulted 3.8 s after the start, the ring reset **failed**, the
+gpu-watch rebooted the box at 11:32:18. The fault record fired (`~/bc5-data/captures/faults/20261113-113217`, without
+the launcher's files: the box went down first): fault 0x3082f6000, status 0x00640c41 (a **write**), under the lazy
+view "orbis_user_malloc" (0x3018c0000+0x11d30000), the chunk not imported, a GPU mapping at the address: yes (the
+cover); the journal's own line "under the read-only zero cover: a GPU WRITE (kind K1w)"; 2,615 covers over 5,230 MiB
+at 1 s. The same start is clean without K1r.
+
+**This is a defect of mine in K1r**, and section 68's last sentence named the gap it came through: K1r had never
+run on ASTRO BOT.
+
+**Cause** [I: from the code and the status; the record's journal is not read yet]. The status' client field is 6,
+CPG in the kernel's gfxhub client table (today's other two statuses decode by the same table to 8 = TCP and 10 =
+SQC (data), which the kernel printed in words): the **command processor** wrote, so it was a packet's write, not a
+shader's. The unit asks "is this address mapped?" with one function, `covered_sorted()` over the device's mapping
+list, in 49 places; the first of them is the packet filter's operand check (a packet whose operand is unmapped is
+dropped). A cover is a shared mapping in that list and was reported as an ordinary writable one. So with K1r on,
+never-written memory under a view looked mapped to the host: the filter let a packet through that it had always
+dropped, and the command processor wrote into a read-only page. Lazy views import only what the bind hints force
+(`direct_sync_one`: `if (v.lazy) continue`), so that chunk was not imported in the clean runs either: **before K1r
+the title's write was silently dropped by the filter**. My five K1r runs on the second title did not meet such a
+packet, and I had not asked what else reads the mapping list.
+
+**The rule.** A cover exists for the GPU's own reads (a shader's, as in his cutscene). For every decision of the
+host it is a hole, as that memory was before K1r. Then with K1r on the host behaves exactly as without it and only
+the GPU's page tables differ: a shader's read of never-written memory returns zeros instead of faulting; everything
+else is as it was. It is not "no covers under lazy views": a shader's read of a lazy heap's never-written chunk is
+the same case as the cutscene's.
+
+**The fix** (tag cv412, `memfast/mkcv0412.py`, no switch of its own: it is part of K1r). Backend: a shared mapping
+keeps whether it was mapped readable only, and `Device::mappings()` / `sorted_mappings()` report it (before, a
+shared mapping was always reported writable). Unit: `covered_sorted()` and `covered()` do not count a mapping that
+is shared and read-only (only covers are). Sums on my chain: after pr412 dfa98a48 → cv412 ec17e59f → ff412 5706511b;
+backend direct.cpp b183516e → 1d88a8b3, direct.hpp 2497a4ce unchanged. Build script `memfast/mk0412zc.sh` (g412zc,
+`bin-c`, kit of 19 files). **Not compiled, not run.** No CPU test of its own (two one-line conditions).
+
+**What stays wrong and is older than K1r:** the filter drops a packet that writes into never-imported lazy memory,
+so that write of the title is lost. The console has that memory (the title mapped it). Its rule is the import of a
+packet's write target when the packet is seen (section 61's K1, "exact bind-time import", for packets). Registered
+in `FAULTS.md` as an open item that is not a fault.
+
+**Owed before K1r is a default again:** g412zc built; the second title's cutscene arm with the probe (the read must
+still return zeros: the probe is the backend's own job and does not pass the filter); ASTRO BOT's start with K1r;
+the scripted walk. The default stays off until then.
+
+### 70. The record of ASTRO BOT's fault read; K1 at the filter written (2026-11-13; laptop, not compiled)
+
+**The record** `~/bc5-data/captures/faults/20261113-113217` and the devcoredump `20261113-113218-devcd4.txt`, read
+with the top's GO (files only) [M]:
+
+- the fault: 3.756 s after the start, 0x3082f6000, status 0x00640c41 (a write; client field 6); thread DrawThread;
+  under "orbis_user_malloc" (lazy; view 0x3018c0000+0x11d30000), the chunk not imported, a GPU mapping there (the
+  cover); pinned 2,468 MiB in 21 buffers, 5,120 mappings;
+- the job: **submission #58, a draw buffer of 10,494 dwords** ("pass 830 rewrite 287 drop 259 **unmapped 0**"),
+  timed out after 2,359 ms; the next submission was refused;
+- the devcoredump: ring gfx_0.0.0; `CP_IB1_CMD_BUFSZ` 0x49f8 with `CP_IB1_BUFSZ` 0x3f98 left (the command processor
+  stood 2,656 dwords into a first-level buffer); `CP_IB2_BASE` 0x800100015000, `CP_IB2_CMD_BUFSZ` 0xa8, 0 left (it had
+  run a second-level buffer of 168 dwords to its end); the page fault at 0x3082f6000 with status 0x640c41;
+- the run wrote no dump of the buffer (the fault record ends the game before the timed-out job's dump), so **which
+  packet wrote is not read from the run**.
+
+**What that confirms and what it does not.** Confirmed: the write came from the command processor's side (the
+status' client 6, CPG in the kernel's table) while it ran a draw buffer; the filter counted **no** unmapped operand
+in that buffer, with 5,230 MiB of never-written memory reported as mapped. Not confirmed from the run: that
+without K1r the filter counts an unmapped operand in the same buffer and drops the packet (that line needs a run
+without K1r with the journal not quiet), and which packet it is. A second reading fits the same facts: a
+host-inserted helper (the backend's indirect-argument check asks `opt.mapped(va, 12)` before it adds its own
+packets, some of which write) that was not added before because the address was not mapped. Both are the same
+defect, a host decision that took a cover for the title's memory, and cv412 removes both. Old journals in this
+repository show the drops are common without K1r (for example a draw buffer of 3,257 dwords with "drop 200
+unmapped 52").
+
+**The top's point, and it is right:** cv412 only restores the state before K1r, and that state drops a packet in
+which the title tells the command processor to read or write memory it mapped. On the console that memory exists
+and the access lands. The packet names its operand, so the host knows the address before the GPU touches it.
+
+**K1 at the filter** (tag k1f412, `memfast/mkk1f0412.py`, `BC5_GUARD_K1_FILTER=1`, default off). Before the sync of
+each submission the unit walks the buffer's type-3 packets and their memory operands (`bc5::policy::
+memory_operands`, the list the filter itself checks); an operand that is not mapped gets its chunk(s) imported at
+once (`direct_force`: real pages, mapped), so the filter then passes the packet. The journal names the first 200
+firings and every 256th after (the buffer's kind, the packet's opcode and place, the operand, the megabytes
+imported) with the totals. Limits: only the buffer handed to the submission is walked, not the second-level buffers
+it names (the backend filters those; ASTRO BOT's fault had just left one); an operand under no view stays unmapped
+(the K3 case); every import pins memory, and that price is not measured; the walk's time under the device mutex is
+not measured. Needs cv412 when K1r is on.
+
+**The build** `memfast/mk0412zc.sh` (g412zc, `bin-c`, kit of 20 files) now chains … pr412 dfa98a48 → cv412 ec17e59f →
+k1f412 4ef7faf7 → ff412 1dd0e35a; backend direct.cpp 1d88a8b3. **Not compiled.**
+
+**The order of the cure for row 1 (his cutscene) without harming ASTRO BOT:** cv412 always with K1r (K1r then cannot
+change any host decision); K1 at the filter beside it, measured for its imports and time on both titles; K1r's
+default stays off until ASTRO BOT's start and both titles' routes have run with it. Covers stay under lazy views:
+with cv412 a cover there changes nothing for the host, and a shader's read of a lazy heap's never-written chunk is
+the cutscene's case. What neither does: a **shader's write** into never-written memory under a cover still faults
+(as it faulted before K1r, unmapped). Its rule is the import of the write targets the title binds (render targets,
+depth, RW buffers and images in the descriptors): the bind hints do the first two today, the descriptors are not
+read.
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over
