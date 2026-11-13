@@ -1,0 +1,625 @@
+diff --git a/src/bc5/gc_trace.hpp b/src/bc5/gc_trace.hpp
+new file mode 100644
+index 0000000..a7d791e
+--- /dev/null
++++ b/src/bc5/gc_trace.hpp
+@@ -0,0 +1,82 @@
++// SPDX-License-Identifier: GPL-2.0-only
++// Experiment 0418 section 3b: who in the title's driver sends each /dev/gc request.
++//
++// The KytyPlus unit (patch 0001, src/bc5/gc_trace.hpp, an identical copy) traces the first calls of each /dev/gc request
++// code (BC5_GC_IOCTL_TRACE=1, diagnostic, compiled out of the lean build). For each it writes the bytes passed in and
++// the guest return addresses, each with its module and the nearest exported function before it, by NID. The NIDs are
++// named afterwards from public tables (experiments/0418-console-start-state/impl/nid-names.py); nothing here reads
++// the title's code, only the stack and the module's dynamic symbol table that the loader already parsed.
++//
++// The pure parts are here so they can be unit-tested: the frame-pointer walk with its stop rules, the stack-word scan,
++// the nearest-export search and the NID of a symbol name. The reads of guest memory are the caller's (the unit uses
++// process_vm_readv on its own pid, so a bad address is an error, not a fault).
++#pragma once
++
++#include <cstddef>
++#include <cstdint>
++#include <string_view>
++
++namespace bc5::gc_trace {
++
++// The reading of the trace's switch, the same as bc5::env_on (backend/include/bc5/env_flag.hpp, F767): unset, empty
++// and "0" are off.
++inline bool switch_on(const char *e) { return e != nullptr && e[0] != 0 && !(e[0] == '0' && e[1] == 0); }
++
++// How many calls of each request code are traced, and how many frames each.
++inline constexpr int kCallsPerCode = 8;
++inline constexpr int kMaxFrames = 8;
++// A frame chain longer than this from the first frame is not trusted (a guest thread's stack is far smaller).
++inline constexpr std::uint64_t kMaxSpan = 1ull << 20;
++
++// The frame-pointer walk. `fp` is a frame address whose two quadwords are {the caller's frame pointer, the return
++// address}: on x86-64 with frame pointers, [rbp] and [rbp + 8]. `read(addr, two)` reads two quadwords and returns false
++// when it cannot. Stops at a null, misaligned, non-increasing or too-distant frame, a failed read or a zero return
++// address, so a caller without frame pointers ends the walk instead of misleading it. Returns the count written.
++template <class Read>
++int walk_frames(std::uint64_t fp, Read read, std::uint64_t *ret, int max) {
++    const std::uint64_t first = fp;
++    int n = 0;
++    while (n < max) {
++        if (fp == 0 || (fp & 7u) != 0 || fp < first || fp - first > kMaxSpan) break;
++        std::uint64_t w[2] = {0, 0};
++        if (!read(fp, w)) break;
++        if (w[1] == 0) break;
++        ret[n++] = w[1];
++        if (w[0] <= fp) break;
++        fp = w[0];
++    }
++    return n;
++}
++
++// The stack-word scan, for callers built without frame pointers: of `count` words read above the first frame, those
++// `is_code(word)` accepts (an address inside a loaded module's executable segment), at most `max`, in stack order.
++template <class IsCode>
++int scan_words(const std::uint64_t *words, std::size_t count, IsCode is_code, std::uint64_t *out, int max) {
++    int n = 0;
++    for (std::size_t i = 0; i < count && n < max; ++i)
++        if (words[i] != 0 && is_code(words[i])) out[n++] = words[i];
++    return n;
++}
++
++struct Export {
++    std::uint64_t addr; // absolute address of an exported function
++    std::string_view name; // its symbol name as the module's dynamic string table has it ("NID#L#M")
++};
++
++// The exported function at or before `addr`: the one with the greatest address not above it. `exports` need not be
++// sorted. Returns nullptr when none is at or below `addr`.
++inline const Export *nearest_export(const Export *exports, std::size_t count, std::uint64_t addr) {
++    const Export *best = nullptr;
++    for (std::size_t i = 0; i < count; ++i)
++        if (exports[i].addr <= addr && (best == nullptr || exports[i].addr > best->addr)) best = &exports[i];
++    return best;
++}
++
++// The NID of a dynamic symbol name: the part before the first '#' ("NID#library#module" in the loader's reading,
++// RuntimeLinker::CreateSymbolDatabase). A name without '#' is returned whole.
++inline std::string_view nid_of(std::string_view symbol_name) {
++    const std::size_t h = symbol_name.find('#');
++    return h == std::string_view::npos ? symbol_name : symbol_name.substr(0, h);
++}
++
++} // namespace bc5::gc_trace
+diff --git a/src/bc5/start_state.hpp b/src/bc5/start_state.hpp
+new file mode 100644
+index 0000000..553303f
+--- /dev/null
++++ b/src/bc5/start_state.hpp
+@@ -0,0 +1,180 @@
++// SPDX-License-Identifier: GPL-2.0-only
++// Experiment 0418 section 4: the console's start state as one table instead of one switch per register.
++//
++// On the console the system programs some GPU state before the title runs, or when the title's driver asks it through
++// /dev/gc. Under amdgpu nobody does, unless the host writes it. This header holds the rows the host can write from a user
++// IB and the packets they become. backend/policy/start-state.tsv is the same table with its sources and the rows met
++// elsewhere (the kernel, the BO list, the code rewrite); start_state_test.cpp checks that the two agree. The KytyPlus
++// unit (patch 0001, src/bc5/start_state.hpp, an identical copy) writes the rows in every job's prefix.
++//
++// The table is always on (the top session's dispositions after exp 0418's measurements, 2026-11-13: "Pozbądź się
++// zbędnych przełączników"). The five constant rows hold what the umr reads of 2026-11-13 measured in play; writing them
++// makes the host independent of the Mesa clients (KWin, the presenter) that put those values there today. The request
++// rows act only when the title's driver sent its request. One switch is left, a diagnostic:
++// - BC5_DIRECT_START_STATE_SKIP=<names>: the named rows are not written (bisection). Names are the table's, separated by
++//   commas, spaces or colons.
++// The switches the table replaced are gone and read by nothing: BC5_DIRECT_START_STATE, BC5_DIRECT_CP_COHER_START_DELAY,
++// BC5_DIRECT_SPI_REQ_CTRL_PS, BC5_DIRECT_GC_TF_RING, BC5_DIRECT_GC_HS_OFFCHIP, BC5_DIRECT_GC_GS_RINGS.
++//
++// Constant rows go first in the prefix (after its CONTEXT_CONTROL and CLEAR_STATE), so the state the title wrote, which
++// the full-state prefix writes back after them, still wins. Request rows (the rings) take the value the title's driver
++// sent /dev/gc and are written by their own code, through the _UMD addresses the kernel remaps to the real registers
++// (GRBM CAM, Linux v7.2 gfx_v10_0.c:7296-7475; exp 0418's umr read: each _UMD equals its register).
++#pragma once
++
++#include <cstddef>
++#include <cstdint>
++#include <string_view>
++#include <vector>
++
++namespace bc5::start_state {
++
++// Where a row is written: a uconfig register (SET_UCONFIG_REG offset = byte address / 4 - 0xc000) or a gfx SH register
++// (SET_SH_REG offset = byte address / 4 - 0x2c00).
++enum class Space : std::uint8_t { Uconfig, Sh };
++
++// Constant: the value below, in the prefix. Request: the value the title's driver sent /dev/gc, written by the ring code.
++enum class Kind : std::uint8_t { Constant, Request };
++
++// Cited: a source says the console's system sets it (or the title asks for it). Measured: the value the umr read of
++// 2026-11-13 showed in play on this box (exp 0418 impl/README.md result 1; the drivers write the same).
++enum class Status : std::uint8_t { Cited, Measured };
++
++struct Row {
++    const char *name;        // the table's name, also the SKIP key
++    Space space;
++    std::uint16_t offset;    // the first register's packet offset
++    std::uint32_t value;     // Constant rows; 0 for Request rows
++    std::uint32_t request;   // the /dev/gc request a Request row comes from; 0 for Constant rows
++    Kind kind;
++    Status status;
++};
++
++// Offsets: Linux v7.2 gc_10_1_0_offset.h (uconfig: mm - 0x2000 for BASE_IDX 1; SH: mm + 0x1260 - 0x2c00 for BASE_IDX 0),
++// the same as Mesa's R_xxxxxx names. Values: measured (umr, 2026-11-13, in play), and the same as Mesa 0866ae7
++// src/amd/common/ac_cmdbuf.c (gfx10 preamble) and PAL c5e80007.
++inline constexpr Row kRows[] = {
++    // measured 0x20 = reset (gc_10_1_0_default.h:3638); Mesa gfx10 0x20 (ac_cmdbuf.c:60); PAL 0x20 (gfx9QueueContexts.cpp:155-165)
++    {"CP_COHER_START_DELAY", Space::Uconfig, 0x07b, 0x20u, 0, Kind::Constant, Status::Measured},
++    // measured 0x7 (reset 0, :2074); Mesa 0x7 (ac_cmdbuf.c:444-446); PAL NumPsWavesSoftGroupedPerCu 4 (settings_gfx9.json:1386-1397)
++    {"SPI_SHADER_REQ_CTRL_PS", Space::Sh, 0x030, 0x7u, 0, Kind::Constant, Status::Measured},
++    // measured 0 = reset (:3745); Mesa 0 (ac_cmdbuf.c:599); PAL 0 (gfx9QueueContexts.cpp:1827-1830)
++    {"GE_MIN_VTX_INDX", Space::Uconfig, 0x249, 0x0u, 0, Kind::Constant, Status::Measured},
++    // measured ~0 (reset 0, :3761); Mesa ~0 (ac_cmdbuf.c:608); PAL UINT_MAX (gfx9QueueContexts.cpp:1817-1826)
++    {"GE_MAX_VTX_INDX", Space::Uconfig, 0x259, 0xffffffffu, 0, Kind::Constant, Status::Measured},
++    // measured 0 = reset (:3762); Mesa 0 (ac_cmdbuf.c:609)
++    {"VGT_INSTANCE_BASE_ID", Space::Uconfig, 0x25a, 0x0u, 0, Kind::Constant, Status::Measured},
++    // VGT_TF_RING_SIZE_UMD 0x24e, VGT_TF_MEMORY_BASE_UMD 0x250, VGT_TF_MEMORY_BASE_HI_UMD 0x261 (F248)
++    {"VGT_TF_RING", Space::Uconfig, 0x24e, 0, 0x80108128u, Kind::Request, Status::Cited},
++    // VGT_HS_OFFCHIP_PARAM_UMD 0x24f (F785, F786)
++    {"VGT_HS_OFFCHIP_PARAM", Space::Uconfig, 0x24f, 0, 0x8004812au, Kind::Request, Status::Cited},
++    // VGT_ESGS_RING_SIZE_UMD 0x240, VGT_GSVS_RING_SIZE_UMD 0x241; "set gs ring sizes" (RPCSX e8ae148 gc.cpp:295-307)
++    {"VGT_GS_RINGS", Space::Uconfig, 0x240, 0, 0xc00c8110u, Kind::Request, Status::Cited},
++};
++inline constexpr std::size_t kRowCount = sizeof(kRows) / sizeof(kRows[0]);
++static_assert(kRowCount <= 32, "a Selection holds one bit per row");
++
++// The index of a row by name, or kRowCount.
++inline constexpr std::size_t index_of(std::string_view name) {
++    for (std::size_t i = 0; i < kRowCount; ++i)
++        if (name == kRows[i].name) return i;
++    return kRowCount;
++}
++
++// True when `name` is one of the names in `list` (separated by commas, spaces or colons; exact, case-sensitive).
++inline bool listed(const char *list, std::string_view name) {
++    if (list == nullptr) return false;
++    const std::string_view l(list);
++    std::size_t i = 0;
++    while (i < l.size()) {
++        while (i < l.size() && (l[i] == ',' || l[i] == ' ' || l[i] == ':')) ++i;
++        std::size_t j = i;
++        while (j < l.size() && l[j] != ',' && l[j] != ' ' && l[j] != ':') ++j;
++        if (j > i && l.substr(i, j - i) == name) return true;
++        i = j;
++    }
++    return false;
++}
++
++struct Selection {
++    std::uint32_t on = 0;           // rows written
++    std::uint32_t skipped = 0;      // rows BC5_DIRECT_START_STATE_SKIP named
++    std::uint32_t unknown_skip = 0; // count of SKIP names that are no row (reported, not fatal)
++
++    [[nodiscard]] bool row_on(std::size_t i) const { return i < kRowCount && ((on >> i) & 1u) != 0; }
++    [[nodiscard]] bool row_on(std::string_view name) const { return row_on(index_of(name)); }
++};
++
++// Every row, less the ones BC5_DIRECT_START_STATE_SKIP names. `get` is std::getenv or a stand-in:
++// const char *get(const char *name).
++template <class Get> Selection select(Get get) {
++    Selection s;
++    const char *skip = get("BC5_DIRECT_START_STATE_SKIP");
++    for (std::size_t i = 0; i < kRowCount; ++i) {
++        const std::uint32_t bit = 1u << i;
++        if (listed(skip, kRows[i].name)) s.skipped |= bit;
++        else s.on |= bit;
++    }
++    if (skip != nullptr) {
++        const std::string_view l(skip);
++        std::size_t i = 0;
++        while (i < l.size()) {
++            while (i < l.size() && (l[i] == ',' || l[i] == ' ' || l[i] == ':')) ++i;
++            std::size_t j = i;
++            while (j < l.size() && l[j] != ',' && l[j] != ' ' && l[j] != ':') ++j;
++            if (j > i && index_of(l.substr(i, j - i)) == kRowCount) ++s.unknown_skip;
++            i = j;
++        }
++    }
++    return s;
++}
++
++// PKT3 headers with COUNT 1 (one register: offset dword + one value): SET_UCONFIG_REG 0x79, SET_SH_REG 0x76.
++inline constexpr std::uint32_t kSetUconfig1 = 0xC0017900u;
++inline constexpr std::uint32_t kSetSh1 = 0xC0017600u;
++
++// The Constant rows that are on, in table order, one packet each: 3 dwords a row.
++inline std::vector<std::uint32_t> constant_packets(const Selection &s) {
++    std::vector<std::uint32_t> p;
++    for (std::size_t i = 0; i < kRowCount; ++i) {
++        if (!s.row_on(i) || kRows[i].kind != Kind::Constant) continue;
++        p.push_back(kRows[i].space == Space::Uconfig ? kSetUconfig1 : kSetSh1);
++        p.push_back(kRows[i].offset);
++        p.push_back(kRows[i].value);
++    }
++    return p;
++}
++
++// Where the constant packets go in a prefix from bc5::full_state::Tracker::emit_prefix(): after its CONTEXT_CONTROL
++// (3 dwords) and CLEAR_STATE (2 dwords), or at 0 when those were removed (BC5_DIRECT_PIECES_NO_CLEAR).
++inline std::size_t insert_at(const std::vector<std::uint32_t> &prefix) {
++    if (prefix.size() >= 5 && prefix[0] == 0xC0012800u && prefix[3] == 0xC0001200u) return 5;
++    return 0;
++}
++
++// "set gs ring sizes" (0xc00c8110): three dwords {ES->GS ring bytes, GS->VS ring bytes, 0} by RPCSX's layout
++// (gc.cpp:295-307, "arg1, arg2, unk // 0"). The unit is taken as bytes, the unit of the PS4 call that sets the same two
++// sizes (shadPS4 60c42b9 gnmdriver.cpp:1765-1782: 4-8 MiB, MiB-aligned, the register gets bytes >> 8) and of RADV
++// (radv_queue.c:372-374 @ 0866ae7, esgs_ring_size >> 8 into VGT_ESGS_RING_SIZE). TODO(verify): the PS5 driver's unit;
++// no title of ours sends it (exp 0189's and exp 0418's traces). Values that are 0 or not a multiple of 256 are not
++// programmed.
++struct GsRings {
++    std::uint32_t esgs = 0; // register values (bytes >> 8)
++    std::uint32_t gsvs = 0;
++};
++inline bool gs_rings_from_request(const std::uint32_t *a, GsRings &out) {
++    if (a == nullptr || a[0] == 0 || a[1] == 0 || (a[0] & 0xffu) != 0 || (a[1] & 0xffu) != 0) return false;
++    out.esgs = a[0] >> 8u;
++    out.gsvs = a[1] >> 8u;
++    return true;
++}
++
++// The ring sizes as RADV writes them (radv_queue.c:372-374): one SET_UCONFIG_REG of two registers at
++// VGT_ESGS_RING_SIZE_UMD. `flush` adds RADV's VS_PARTIAL_FLUSH + VGT_FLUSH before (radv_queue.c:1048-1052; event types
++// 15 index 4 and 36 index 0, the encoding Direct::tf_ring_prefix uses): due when the sizes differ from the last written.
++inline void gs_rings_packets(std::vector<std::uint32_t> &p, const GsRings &r, bool flush) {
++    if (flush) p.insert(p.end(), {0xC0004600u, 0x40fu, 0xC0004600u, 0x24u});
++    p.insert(p.end(), {0xC0027900u, 0x240u, r.esgs, r.gsvs});
++}
++
++} // namespace bc5::start_state
+diff --git a/src/bc5/switch_defaults.hpp b/src/bc5/switch_defaults.hpp
+index 9c3a614..2f5560b 100644
+--- a/src/bc5/switch_defaults.hpp
++++ b/src/bc5/switch_defaults.hpp
+@@ -5,7 +5,7 @@
+ // Since experiment 0419 the two tables below are FORCED (no option, no KYTY_BC5_SWITCH_DEFAULTS); kSoft keeps options.
+ // One audit row of experiments/0413-np-session-v2-shared/audit-unintegrated.md per block, in the audit's order.
+ // Left out on purpose (the top session's rules, 2026-11-12): the zero skip and its poll, the orphan release, split and
+-// forget (launcher only); CP_COHER_START_DELAY (never A/B'd; the second title's launcher keeps it); NOGPU_UNPIN,
++// forget (launcher only); NOGPU_UNPIN,
+ // SET_PREDICATION, the catchers and journals (off).
+ #pragma once
+ 
+@@ -131,7 +131,6 @@ struct TitleDefault {
+ #define BC5_T2 "PPSA03671"
+ inline constexpr TitleDefault kTitleDefaults[] = {
+     // the direct path (launcher lines 54-56, 75-148)
+-    {BC5_T2, "BC5_DIRECT_CP_COHER_START_DELAY", "1"}, // on in every play since 11-03; never A/B'd
+     {BC5_T2, "BC5_DIRECT_LAZY_RELEASE", "30,eager"},  // orphan release (exp 0412)
+     {BC5_T2, "BC5_GUARD_SPLIT", "1"},
+     {BC5_T2, "BC5_GUARD_FORGET", "10"},
+@@ -142,8 +141,6 @@ inline constexpr TitleDefault kTitleDefaults[] = {
+     {BC5_T2, "BC5_DIRECT_REMEMBER_UNMAPPED", "1"}, // F163
+     {BC5_T2, "KYTY_BC5_APR_PARALLEL", "8"},        // F166
+     {BC5_T2, "BC5_DIRECT_DMA_SNAPSHOT", "4096"},   // F172
+-    {BC5_T2, "BC5_DIRECT_GC_TF_RING", "1"},        // F248
+-    {BC5_T2, "BC5_DIRECT_GC_HS_OFFCHIP", "1"},     // F786
+     {BC5_T2, "BC5_DIRECT_FLAT_APERTURE", "1"},     // F249
+     {BC5_T2, "BC5_DIRECT_AMM_PRT", "1"},           // F260
+     {BC5_T2, "BC5_DIRECT_SKIP_PGM", "0"},          // as the launcher had it
+diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
+index 48760cc..c67b916 100644
+--- a/src/libs/bc5LleAgc.cpp
++++ b/src/libs/bc5LleAgc.cpp
+@@ -31,6 +31,15 @@
+ #include "libs/libs.h"
+ #include "bc5/save_guard0412.hpp" // exp 0412 (tag sg412): the save guard of the fault record
+ #include "loader/symbolDatabase.h"
++#include "bc5/start_state.hpp" // experiment 0418 section 4: the start-state table (backend/include/bc5's copy)
++#include "bc5/gc_trace.hpp"    // experiment 0418 section 3b: the /dev/gc caller trace (backend/include/bc5's copy)
++#include "common/singleton.h"  // experiment 0418 section 3b: the runtime linker, for the callers' modules
++#include "loader/elf.h"
++#include "loader/runtimeLinker.h"
++#if defined(__linux__)
++#include <sys/uio.h> // experiment 0418 section 3b: process_vm_readv, a read of the guest's stack that cannot fault
++#include <unistd.h>  // experiment 0418 section 3b: getpid
++#endif
+ 
+ #if defined(KYTY_BC5_DIRECT)
+ #include "bc5/direct.hpp"
+@@ -390,22 +399,46 @@ static void tf_default_alloc() {
+ //   0x8004812a (4 bytes in):  one dword, 0x1ff, sent right after it: by its place the HS offchip parameter
+ //                             (sceAgcDriverSetHsOffchipParam). TODO(verify): which register value it is.
+ // Before, both were answered as unhandled (nothing written back, nothing programmed). They are recorded here;
+-// Direct::tf_ring_prefix uses them only with BC5_DIRECT_GC_TF_RING=1 / BC5_DIRECT_GC_HS_OFFCHIP=1.
++// Direct::tf_ring_prefix programs them through the start-state table's rows VGT_TF_RING and VGT_HS_OFFCHIP_PARAM (exp 0418:
++// always on, as on the console, where the system programs what the driver sends; BC5_DIRECT_START_STATE_SKIP drops a row).
+ static std::atomic<uint64_t> g_gc_tf_base {0};
+ static std::atomic<uint32_t> g_gc_tf_size {0};
+ static std::atomic<uint64_t> g_gc_hs_offchip {0}; // bit 32 = received
+-static bool gc_tf_ring_on() {
+-	static const bool v = [] {
+-		const char* e = std::getenv("BC5_DIRECT_GC_TF_RING");
+-		return e != nullptr && *e != 0 && std::strcmp(e, "0") != 0;
++// Experiment 0418: "set gs ring sizes" (0xc00c8110) as register values: ESGS bits 0-31, GSVS bits 32-62, bit 63 = received.
++static std::atomic<uint64_t> g_gc_gs_rings {0};
++// Experiment 0418 section 4: which rows of the start-state table (bc5/start_state.hpp, backend/policy/start-state.tsv)
++// are written: all of them, less those BC5_DIRECT_START_STATE_SKIP=<names> names (a diagnostic, read once). The table
++// replaced BC5_DIRECT_START_STATE and the one-row switches BC5_DIRECT_GC_TF_RING, BC5_DIRECT_GC_HS_OFFCHIP,
++// BC5_DIRECT_CP_COHER_START_DELAY, BC5_DIRECT_SPI_REQ_CTRL_PS and BC5_DIRECT_GC_GS_RINGS; nothing reads them now
++// (the top session's dispositions of 2026-11-13, after the umr reads of exp 0418).
++static const bc5::start_state::Selection& start_state_sel() {
++	static const bc5::start_state::Selection s = [] {
++		const auto v = bc5::start_state::select([](const char* n) { return static_cast<const char*>(std::getenv(n)); });
++		{
++			std::string on, skipped;
++			for (std::size_t i = 0; i < bc5::start_state::kRowCount; i++) {
++				const char* n = bc5::start_state::kRows[i].name;
++				if (((v.on >> i) & 1u) != 0) on += std::string(" ") + n;
++				if (((v.skipped >> i) & 1u) != 0) skipped += std::string(" ") + n;
++			}
++			std::fprintf(stderr, "bc5-direct: start state (exp 0418): rows on:%s; skipped:%s%s\n",
++			             on.empty() ? " none" : on.c_str(), skipped.empty() ? " none" : skipped.c_str(),
++			             v.unknown_skip != 0 ? "; BC5_DIRECT_START_STATE_SKIP names a row that does not exist" : "");
++		}
++		return v;
+ 	}();
++	return s;
++}
++static bool gc_tf_ring_on() {
++	static const bool v = start_state_sel().row_on("VGT_TF_RING");
+ 	return v;
+ }
+ static bool gc_hs_offchip_on() {
+-	static const bool v = [] {
+-		const char* e = std::getenv("BC5_DIRECT_GC_HS_OFFCHIP");
+-		return e != nullptr && *e != 0 && std::strcmp(e, "0") != 0;
+-	}();
++	static const bool v = start_state_sel().row_on("VGT_HS_OFFCHIP_PARAM");
++	return v;
++}
++static bool gc_gs_rings_on() {
++	static const bool v = start_state_sel().row_on("VGT_GS_RINGS");
+ 	return v;
+ }
+ // For the HLE GraphicsDriverGetTFRing (agc.cpp): the host's default ring, 0 when BC5_DIRECT_TF_DEFAULT is off.
+@@ -8177,7 +8210,7 @@ static void tf_ring_prefix(std::vector<uint32_t>& p) {
+ 		}
+ 	}
+ 	if (base == 0 || size == 0) {
+-		// Experiment 0189: BC5_DIRECT_GC_HS_OFFCHIP=1 without a ring to program: the parameter alone.
++		// Experiment 0189: the VGT_HS_OFFCHIP_PARAM row without a ring to program: the parameter alone.
+ 		if (write_off && gc_hs_offchip_on() && (g_gc_hs_offchip.load() >> 32u) != 0) p.insert(p.end(), {0xC0017900u, 0x24fu, off_v});
+ 		return;
+ 	}
+@@ -8196,32 +8229,49 @@ static void tf_ring_prefix(std::vector<uint32_t>& p) {
+ 	p.insert(p.end(), {0xC0017900u, 0x250u, static_cast<uint32_t>(base >> 8u)});           // VGT_TF_MEMORY_BASE
+ 	p.insert(p.end(), {0xC0017900u, 0x261u, static_cast<uint32_t>(base >> 40u) & 0xffu});  // VGT_TF_MEMORY_BASE_HI
+ }
+-// Experiment 0401, behaviour switches, both off by default: two registers of Mesa's gfx10 preamble that neither the
+-// title's stream nor the host sets (static audit of 2026-11-02, 1,347 captured buffers), written in every prefix as the
+-// rings are, by the packets Mesa's own preamble sends from an unprivileged user IB (src/amd/common/ac_cmdbuf.c @ 0866ae7,
+-// through ac_pm4_set_reg). Neither is in Mesa's privileged list (src/amd/common/ac_pm4.c:34 is_privileged_reg).
+-// - BC5_DIRECT_CP_COHER_START_DELAY=1: CP_COHER_START_DELAY = 0x20 (R_0301EC, uconfig 0x7b, START_DELAY_COUNT bits 0-5,
+-//   src/amd/registers/gfx10.json), SET_UCONFIG_REG; ac_cmdbuf.c:60 gfx10_init_compute_preamble_state. Mesa gives no reason.
+-// - BC5_DIRECT_SPI_REQ_CTRL_PS=1: SPI_SHADER_REQ_CTRL_PS = 0x7 (R_00B0C0, SH 0x30: SOFT_GROUPING_EN bit 0 = 1,
+-//   NUMBER_OF_REQUESTS_PER_CU bits 1-4 = 4 - 1), SET_SH_REG; ac_cmdbuf.c:444 gfx10_init_graphics_preamble_state.
+-// TODO(verify): what the chip holds before these writes; there is no read-back yet (debugfs needs root).
+-static void mesa_preamble_prefix(std::vector<uint32_t>& p) {
+-	static const bool coher  = bc5::env_on(std::getenv("BC5_DIRECT_CP_COHER_START_DELAY"));
+-	static const bool req_ps = bc5::env_on(std::getenv("BC5_DIRECT_SPI_REQ_CTRL_PS"));
+-	static std::atomic<bool> told {false};
++// Experiment 0418: the GS ring sizes the title's driver sent /dev/gc ("set gs ring sizes", 0xc00c8110), written with the
++// rings by the table's VGT_GS_RINGS row (always on; BC5_DIRECT_START_STATE_SKIP drops it), as RADV writes
++// them (radv_queue.c:372-374 @ 0866ae7: one SET_UCONFIG_REG at VGT_ESGS_RING_SIZE_UMD 0x240, the kernel's CAM row maps
++// it to the real register, gfx_v10_0.c:7296-7475 @ v7.2), with RADV's VS_PARTIAL_FLUSH + VGT_FLUSH before the first write
++// and before any change of sizes. No title of ours sends the request (exp 0189's trace): the ports rule.
++static void gs_rings_prefix(std::vector<uint32_t>& p) {
++	if (!gc_gs_rings_on()) return;
++	const uint64_t v = g_gc_gs_rings.load();
++	if ((v >> 63u) == 0) return;
++	const bc5::start_state::GsRings r {static_cast<uint32_t>(v), static_cast<uint32_t>(v >> 32u) & 0x7fffffffu};
++	static std::atomic<uint64_t> written {0};
++	const bool                   changed = written.exchange(v) != v;
++	if (changed) journal("gs rings (exp 0418): VGT_ESGS_RING_SIZE 0x%x, VGT_GSVS_RING_SIZE 0x%x (the _UMD addresses), after a flush\n", r.esgs, r.gsvs);
++	bc5::start_state::gs_rings_packets(p, r, changed);
++}
++// Experiment 0418 section 4: the start-state table's constant rows (bc5/start_state.hpp; start_state_sel() says which),
++// first in every prefix, after its CONTEXT_CONTROL and CLEAR_STATE, so the state the title wrote, which the tracker writes
++// back after them, still wins. They are uconfig and SH registers a user IB may write: Mesa's gfx10 preamble writes the
++// same values with the same packets (src/amd/common/ac_cmdbuf.c @ 0866ae7), and none is in Mesa's privileged list
++// (src/amd/common/ac_pm4.c:34 is_privileged_reg).
++// This replaces exp 0401's mesa_preamble_prefix and its two switches: CP_COHER_START_DELAY = 0x20 by SET_UCONFIG_REG
++// 0x7b (ac_cmdbuf.c:60) and SPI_SHADER_REQ_CTRL_PS = 0x7 by SET_SH_REG 0x30 (ac_cmdbuf.c:444-446) are rows here, with
++// GE_MIN_VTX_INDX 0, GE_MAX_VTX_INDX ~0 and VGT_INSTANCE_BASE_ID 0; neither register is in the tracker (the static audit
++// of 2026-11-02: the title never writes them). All five are the values the umr read of 2026-11-13 found in play (exp
++// 0418 impl/README.md result 1), written there today by the Mesa clients on the shared ring; the rows make the host
++// independent of them.
++static void start_state_prefix(std::vector<uint32_t>& p) {
++	static const std::vector<uint32_t> packets = bc5::start_state::constant_packets(start_state_sel());
++	static std::atomic<bool>           told {false};
+ 	if (!told.exchange(true)) {
+-		journal("exp 0401: CP_COHER_START_DELAY %s\n", coher ? "0x20 in every prefix (SET_UCONFIG_REG 0x7b)" : "off");
+-		journal("exp 0401: SPI_SHADER_REQ_CTRL_PS %s\n", req_ps ? "0x7 in every prefix (SET_SH_REG 0x30)" : "off");
++		const auto& s = start_state_sel();
++		journal("start state (exp 0418): %zu dwords of constant rows in every prefix (rows 0x%x, skipped 0x%x)\n", packets.size(), s.on, s.skipped);
+ 	}
+-	if (coher) p.insert(p.end(), {0xC0017900u, 0x7bu, 0x20u});
+-	if (req_ps) p.insert(p.end(), {0xC0017600u, 0x30u, 0x7u});
++	if (packets.empty()) return;
++	p.insert(p.begin() + static_cast<std::ptrdiff_t>(bc5::start_state::insert_at(p)), packets.begin(), packets.end());
+ }
+ static std::vector<uint32_t> prefix_of(const bc5::full_state::Tracker& t) {
+ 	std::vector<uint32_t> p = t.emit_prefix();
+ 	static const bool no_clear = bc5::env_on(std::getenv("BC5_DIRECT_PIECES_NO_CLEAR"));
+ 	if (no_clear && p.size() >= 5) p.erase(p.begin(), p.begin() + 5);
+-	tf_ring_prefix(p); // experiment 0160
+-	mesa_preamble_prefix(p); // experiment 0401
++	start_state_prefix(p); // experiment 0418 (exp 0401's two registers among its rows)
++	tf_ring_prefix(p);     // experiment 0160
++	gs_rings_prefix(p);    // experiment 0418
+ 	return p;
+ }
+ static std::atomic<uint64_t> g_dry_bufs {0}, g_dry_splits {0}, g_dry_prefix {0}, g_dry_ns {0}, g_dry_max_ns {0}, g_dry_kept {0}, g_dry_ok {0},
+@@ -14472,6 +14522,128 @@ static void submit_raw(const uint32_t* dwords, uint32_t num, const char* kind) {
+ 	}
+ }
+ 
++#ifndef BC5_LEAN
++// Experiment 0418 section 3b (diagnostic, compiled out of the lean build): BC5_GC_IOCTL_TRACE=1 writes the first
++// bc5::gc_trace::kCallsPerCode calls of each /dev/gc request code to stderr ("[bc5-gc-trace]"): the bytes passed in, as
++// exp 0189's trace did (experiments/0189-ge-system-rings/patch_0189.py), and who sent the request: the guest return
++// addresses by the frame-pointer walk from the ioctl's own frame, then the module words a scan of 64 stack quadwords above
++// that frame finds (for callers built without frame pointers), each with its module and the nearest exported function at
++// or before it, by NID. The NIDs are named afterwards from public tables (experiments/0418-console-start-state/impl/
++// nid-names.py). It reads the stack (process_vm_readv on this process, so a bad address is an error, not a fault) and the
++// dynamic symbol table the loader parsed; nothing of the title's code. The trace's own lock covers the count only: the
++// runtime linker holds its lock while modules start (RuntimeLinker::StartAllModules), so FindProgramByAddr is called
++// outside it. Lines of two threads can interleave; each carries its request and call number.
++static bool trace_read(uint64_t addr, void* out, size_t n) {
++#if defined(__linux__)
++	iovec local {out, n};
++	iovec remote {reinterpret_cast<void*>(static_cast<uintptr_t>(addr)), n};
++	return process_vm_readv(getpid(), &local, 1, &remote, 1, 0) == static_cast<ssize_t>(n);
++#else
++	(void)addr;
++	(void)out;
++	(void)n;
++	return false;
++#endif
++}
++static bool trace_in_code(const Loader::Program* p, uint64_t addr) {
++	if (p == nullptr || p->elf == nullptr) return false;
++	const auto* ehdr = p->elf->GetEhdr();
++	const auto* phdr = p->elf->GetPhdr();
++	if (ehdr == nullptr || phdr == nullptr) return false;
++	for (Loader::Elf64_Half i = 0; i < ehdr->e_phnum; i++) {
++		if (phdr[i].p_type != Loader::PT_LOAD || (phdr[i].p_flags & Loader::PF_X) == 0) continue;
++		const uint64_t a = phdr[i].p_vaddr + p->base_vaddr;
++		if (addr >= a && addr < a + phdr[i].p_memsz) return true;
++	}
++	return false;
++}
++static void trace_where(uint64_t request, int call, const char* what, int i, uint64_t addr) {
++	const Loader::Program* p = Common::Singleton<Loader::RuntimeLinker>::Instance()->FindProgramByAddr(addr);
++	if (p == nullptr) {
++		std::fprintf(stderr, "[bc5-gc-trace] 0x%08" PRIx64 " #%d %s %d 0x%016" PRIx64 " (no module)\n", request, call, what, i, addr);
++		return;
++	}
++	const auto*       di     = p->dynamic_info.get();
++	const std::string module = di != nullptr && di->so_name != nullptr && di->so_name[0] != 0 ? std::string(di->so_name) : p->file_name.filename().string();
++	std::vector<bc5::gc_trace::Export> ex;
++	if (di != nullptr && di->symbol_table != nullptr && di->str_table != nullptr) {
++		const size_t n = di->symbol_table_total_size / sizeof(Loader::Elf64_Sym);
++		for (size_t k = 0; k < n; k++) {
++			const Loader::Elf64_Sym& s    = di->symbol_table[k];
++			const auto               bind = s.GetBind();
++			if (s.st_value == 0 || s.GetType() != Loader::STT_FUNC || (bind != Loader::STB_GLOBAL && bind != Loader::STB_WEAK) || s.st_name >= di->str_table_size) continue;
++			ex.push_back({s.st_value + p->base_vaddr, std::string_view(di->str_table + s.st_name)});
++		}
++	}
++	const bc5::gc_trace::Export* e = bc5::gc_trace::nearest_export(ex.data(), ex.size(), addr);
++	if (e == nullptr) {
++		std::fprintf(stderr, "[bc5-gc-trace] 0x%08" PRIx64 " #%d %s %d 0x%016" PRIx64 " %s+0x%" PRIx64 " (no export at or before it)\n", request, call, what, i, addr, module.c_str(), addr - p->base_vaddr);
++		return;
++	}
++	const std::string_view nid = bc5::gc_trace::nid_of(e->name);
++	std::fprintf(stderr, "[bc5-gc-trace] 0x%08" PRIx64 " #%d %s %d 0x%016" PRIx64 " %s+0x%" PRIx64 " export %.*s+0x%" PRIx64 "\n", request, call, what, i, addr, module.c_str(), addr - p->base_vaddr, static_cast<int>(nid.size()), nid.data(), addr - e->addr);
++}
++// `frame` is the frame address of the libkernel ioctl the guest called (Bc5LleKernel::Ioctl): {the caller's frame
++// pointer, the return address into the caller}.
++static void ioctl_trace(uint64_t request, const void* argp, const void* frame) {
++	static const bool on = bc5::gc_trace::switch_on(BC5_DIAG_ENV("BC5_GC_IOCTL_TRACE"));
++	if (!on) return;
++	int call = 0;
++	{
++		static std::mutex              m;
++		static std::map<uint64_t, int> seen;
++		std::lock_guard                lk(m);
++		call = ++seen[request];
++	}
++	if (call > bc5::gc_trace::kCallsPerCode) return;
++	// _IOC: size bits 29:16, 0x80000000 = the caller passes data in, 0x40000000 = the kernel writes it back.
++	const uint32_t size = (static_cast<uint32_t>(request) >> 16u) & 0x1fffu;
++	const bool     in   = (request & 0x80000000u) != 0;
++	const bool     out  = (request & 0x40000000u) != 0;
++	std::string    line;
++	char           w[16];
++	if (in && argp != nullptr) {
++		const auto* a = static_cast<const uint32_t*>(argp);
++		for (uint32_t i = 0; i < size / 4 && i < 64; i++) {
++			std::snprintf(w, sizeof(w), " %08x", a[i]);
++			line += w;
++		}
++	}
++	std::fprintf(stderr, "[bc5-gc-trace] ioctl 0x%08" PRIx64 " (size %u, %s%s) call %d:%s\n", request, size, in ? "in" : "", out ? "out" : "", call, line.c_str());
++	// Exp 0418 point 5: 0x80888123 is a table of address and size pairs (136 bytes: 8 pairs and a trailing quadword,
++	// exp 0189's trace, F787). Each address is named by the guest mapping it lies in, under the name the title's driver
++	// gave that mapping (KernelVirtualQuery), so the trace says which of the driver's areas the table lists.
++	if (request == 0x80888123u && in && argp != nullptr) {
++		const auto* q = static_cast<const uint64_t*>(argp);
++		for (uint32_t i = 0; i + 1 < size / 8; i += 2) {
++			if (q[i] == 0) continue;
++			LibKernel::Memory::VirtualQueryInfo vq {};
++			const int r = LibKernel::Memory::KernelVirtualQuery(reinterpret_cast<const void*>(static_cast<uintptr_t>(q[i])), 0, &vq, sizeof(vq));
++			char nm[sizeof(vq.name) + 1] = {};
++			std::memcpy(nm, vq.name, sizeof(vq.name));
++			if (r != 0) {
++				std::fprintf(stderr, "[bc5-gc-trace] 0x%08" PRIx64 " #%d pair %u 0x%016" PRIx64 " size 0x%" PRIx64 " (no mapping, %d)\n", request, call, i / 2, q[i], q[i + 1], r);
++				continue;
++			}
++			std::fprintf(stderr, "[bc5-gc-trace] 0x%08" PRIx64 " #%d pair %u 0x%016" PRIx64 " size 0x%" PRIx64 " mapping '%s' 0x%016" PRIx64 "-0x%016" PRIx64 " %s prot 0x%x\n",
++			             request, call, i / 2, q[i], q[i + 1], nm, static_cast<uint64_t>(vq.start), static_cast<uint64_t>(vq.end),
++			             vq.is_flexible != 0 ? "flexible" : vq.is_direct != 0 ? "direct" : "other", static_cast<unsigned>(vq.protection));
++		}
++	}
++	const auto fp = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(frame));
++	uint64_t   ret[bc5::gc_trace::kMaxFrames] = {};
++	const int  nf = bc5::gc_trace::walk_frames(fp, [](uint64_t a, uint64_t* two) { return trace_read(a, two, 16); }, ret, bc5::gc_trace::kMaxFrames);
++	for (int i = 0; i < nf; i++) trace_where(request, call, "frame", i, ret[i]);
++	uint64_t words[64] = {};
++	if (fp != 0 && trace_read(fp + 16, words, sizeof(words))) {
++		auto*     rt = Common::Singleton<Loader::RuntimeLinker>::Instance();
++		uint64_t  found[12] = {};
++		const int ns = bc5::gc_trace::scan_words(words, 64, [rt](uint64_t v) { return trace_in_code(rt->FindProgramByAddr(v), v); }, found, 12);
++		for (int i = 0; i < ns; i++) trace_where(request, call, "scan", i, found[i]);
++	}
++}
++#endif // BC5_LEAN
++
+ // Returns 0 on success or a positive errno (the libkernel wrapper turns it into -1/errno).
+ static int gc_ioctl(uint64_t request, void* argp) {
+ 	switch (request) {
+@@ -14685,18 +14857,25 @@ static int gc_ioctl(uint64_t request, void* argp) {
+ 			const auto* a = static_cast<const uint32_t*>(argp);
+ 			g_gc_tf_base  = static_cast<uint64_t>(a[0]) | (static_cast<uint64_t>(a[1]) << 32u);
+ 			g_gc_tf_size  = a[2];
+-			std::fprintf(stderr, "bc5-direct: /dev/gc TF ring 0x%" PRIx64 " size 0x%x%s\n", g_gc_tf_base.load(), a[2], gc_tf_ring_on() ? " (programmed, BC5_DIRECT_GC_TF_RING=1)" : "");
++			std::fprintf(stderr, "bc5-direct: /dev/gc TF ring 0x%" PRIx64 " size 0x%x%s\n", g_gc_tf_base.load(), a[2], gc_tf_ring_on() ? " (programmed, row VGT_TF_RING)" : " (not programmed: SKIP names VGT_TF_RING)");
+ 			return 0;
+ 		}
+ 		case 0x8004812a: { // experiment 0189: one dword after the TF ring, by its place the HS offchip parameter
+ 			const uint32_t v  = *static_cast<const uint32_t*>(argp);
+ 			g_gc_hs_offchip   = 0x100000000ull | v;
+-			std::fprintf(stderr, "bc5-direct: /dev/gc HS offchip 0x%x%s\n", v, gc_hs_offchip_on() ? " (programmed, BC5_DIRECT_GC_HS_OFFCHIP=1)" : "");
++			std::fprintf(stderr, "bc5-direct: /dev/gc HS offchip 0x%x%s\n", v, gc_hs_offchip_on() ? " (programmed, row VGT_HS_OFFCHIP_PARAM)" : " (not programmed: SKIP names VGT_HS_OFFCHIP_PARAM)");
+ 			return 0;
+ 		}
+ 		case 0xc00c8110: { // set gs ring sizes
+ 			auto* a = static_cast<uint32_t*>(argp);
+ 			LOGF("[bc5-gc] gs ring sizes: %u %u %u\n", a[0], a[1], a[2]);
++			// Experiment 0418: kept as register values (bytes >> 8; bc5/start_state.hpp gs_rings_from_request says why
++			// bytes); Direct::gs_rings_prefix writes them when the table's VGT_GS_RINGS row is on.
++			bc5::start_state::GsRings r;
++			const bool                ok = bc5::start_state::gs_rings_from_request(a, r);
++			if (ok) g_gc_gs_rings = (1ull << 63u) | (static_cast<uint64_t>(r.gsvs) << 32u) | r.esgs;
++			std::fprintf(stderr, "bc5-direct: /dev/gc GS ring sizes 0x%x 0x%x 0x%x%s\n", a[0], a[1], a[2],
++			             !ok ? " (0 or not a multiple of 256: not programmed)" : gc_gs_rings_on() ? " (programmed, row VGT_GS_RINGS)" : "");
+ 			return 0;
+ 		}
+ 		case 0xc0848119: { // stats report control
+@@ -14816,6 +14995,9 @@ static KYTY_SYSV_ABI int Ioctl(int fd, uint64_t request, void* argp) {
+ 	int err = 0;
+ 	if (dev == "/dev/gc") {
+ 		Bc5Gc::Direct::init_once();
++#ifndef BC5_LEAN
++		Bc5Gc::ioctl_trace(request, argp, __builtin_frame_address(0)); // experiment 0418 section 3b (BC5_GC_IOCTL_TRACE=1)
++#endif
+ 		err = Bc5Gc::gc_ioctl(request, argp);
+ 	} else if (dev == "/dev/dipsw") {
+ 		err = Bc5Gc::dipsw_ioctl(request, argp);
