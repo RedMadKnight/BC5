@@ -2538,7 +2538,7 @@ runner `e1/e1run.sh`; one process and one lock line per case, the kernel log str
 | 1 PRT read | copy from a PRT page to `out` | **`out` all zero**; 0.05 ms; fault register empty | none |
 | 2 read-only read | copy from a page mapped readable only to `out` | `out` all zero | none |
 | 3 PRT write | clear a PRT page | completed in 0.05 ms; fault register empty; the follow-up clear and copy ran | **none: the write vanishes without a sign** |
-| 4 read-only write | clear a page mapped readable only | **the job never completes**: fence timeout at 2.03 s; `AMDGPU_INFO_GPUVM_FAULT` = address 0x100a02000, status 0x00741041; the read-only BO still all zero; context reset state 3; a new context ran clear and copy correctly afterwards | `[gfxhub] page fault` at 0x100a00000–0x100a03000 (client TCP, `PERMISSION_FAULTS: 0x4`, `RW: 0x1`), 2.03 s later `ring gfx_0.0.0 timeout`, `Ring gfx_0.0.0 reset succeeded` 0.1 ms after it, `device wedged, but no recovery needed` |
+| 4 read-only write | clear a page mapped readable only | **the job never completes**: fence timeout at 2.03 s; `AMDGPU_INFO_GPUVM_FAULT` = address 0x100a02000, status 0x00741041; the read-only BO still all zero; context reset state 3; a new context ran clear and copy correctly **15 s after the timeout** (the tool waits 15 s before it looks: when a new context became usable was not measured) | `[gfxhub] page fault` at 0x100a00000–0x100a03000 (client TCP, `PERMISSION_FAULTS: 0x4`, `RW: 0x1`), 2.03 s later `ring gfx_0.0.0 timeout`, `Ring gfx_0.0.0 reset succeeded` 0.1 ms after it, `device wedged, but no recovery needed` |
 
 No `reset failed`, no GPU reset, no reboot; `bc5-gpu-watch` armed and disarmed. A devcoredump of case 4 was saved
 (`~/bc5-data/captures/devcoredump/20261113-045658-devcd1.txt`; our own test job, still not committed).
@@ -2556,19 +2556,24 @@ is not known (TODO(verify); the direct path rotates its buffer slots, so it is n
 - **A PRT page swallows writes silently** [M]. R2 therefore must never lie under memory the title mapped and we
   chose not to import: a GPU write there is lost and nothing says so (the zero skip's defect, section 48, in
   another form). Under addresses the title did not map it is the console's behaviour (F257).
-- **A read-only page is a write detector** [M]: a GPU write to it is a named fault (the address and status are
-  readable from user space), the page is intact, and the price is that job and one ring reset, about 2 s here.
-  That is outcome (b) of the plan in its mild form: not a free detector, but a sound one: no garbage, no lost
-  write that goes unnoticed, the box survives (one sample; the reset is the one that has failed three times under
-  the title's load, F260 and sections 38 and 53).
-- So option B has its net [I]: never-written chunks under a view can be mapped **read-only onto one zero BO** instead
-  of being created and pinned (reads are right, since the file holds zeros there; no aliasing problem, since
-  nothing can be written into the shared zero page). A GPU write then faults with its address; the host imports
-  that chunk for real, reopens and goes on, exactly as the learned windows do today but with nothing remembered
-  and nothing pinned in advance. The first write to each such chunk costs a 2 s stall (14 s with today's recovery
-  code, which sleeps 12 s): how many chunks the GPU writes first is the number that decides whether that is
-  bearable; section 51's 768 MiB of never-written chunks under views is the upper bound of what it could save on
-  the route, section 39's 3,571 MiB of all-zero pages the bound if written-zero pages are counted in.
+- **A read-only page is a write detector, in this one sample without a game** [M]: a GPU write to it is a named
+  fault (the address and status are readable from user space), the page is intact, the job is lost and the ring
+  is reset. Measured: the fence timeout at 2.03 s and the kernel's reset line 0.1 ms after its timeout line;
+  a new context usable at +15 s (the tool slept 15 s first, so nothing earlier is known). It detects the write;
+  it does not restore it. The reset is the one that has failed three times under the title's load (F260,
+  sections 38 and 53).
+- For option B this is a **detector, not yet a floor** [I] (review of 2026-11-13). Never-written chunks under a view
+  could be mapped **read-only onto one zero BO** instead of being created and pinned: reads are right (the file
+  holds zeros there) and nothing can be written into the shared zero page, so nothing is aliased. A GPU write
+  then faults with its address. What that does NOT give: (1) the write itself: the job is lost, and running the
+  whole job again can double what had already taken effect before the fault (atomics, appends, labels), so a
+  replay is not known to be sound; (2) the CPU's side: the GPU's read-only mapping does not see the CPU's first
+  write into such a chunk, so the mapping has to be switched to the real page on the CPU's first write as well,
+  consistently with the GPU; (3) a price: the stall per first GPU write is at least the kernel's 2 s and today
+  14 s (the recovery code sleeps 12 s); how many chunks the GPU writes first decides whether that is bearable.
+  Section 51's 768 MiB of never-written chunks under views is the upper bound of the saving on the route,
+  section 39's 3,571 MiB of all-zero pages the bound if written-zero pages are counted in. F403, F443 and Q21
+  stay open.
 - Not answered: the cost of a large PRT or read-only span in page tables; whether the ring reset succeeds under
   the title's own load.
 
@@ -2576,8 +2581,9 @@ is not known (TODO(verify); the direct path rotates its buffer slots, so it is n
 
 - **E1 (section 55):** on gfx1013 a shader's read of a PRT page and of a read-only page gives zeros with no fault; a
   write to a PRT page vanishes silently; a write to a read-only page is a named page fault that costs the job and
-  one recovered ring reset (2 s) and leaves the page intact. A read-only zero mapping is therefore a sound cover
-  for never-written memory; a PRT page is one only where the title mapped nothing.
+  one recovered ring reset (fence timeout at 2.03 s; a new context checked 15 s later) and leaves the page intact.
+  One sample each, no game running. A read-only zero mapping is a detector of GPU writes, not a way to keep
+  them; a PRT page is a cover only where the title mapped nothing.
 - **The rule's first test (sections 52, 53):** the scripted route needs none of the 81 learned windows (three runs,
   1,022 s, no fault; 246 MiB less pinned). "Pin every view whole" (R1) reaches the memory wall in the menu and is not
   runnable today. The arm with R1 and the PRT background hung the GPU without a page fault and the box rebooted;

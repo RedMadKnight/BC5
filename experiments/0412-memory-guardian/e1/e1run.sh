@@ -29,9 +29,16 @@ case "${1:-}" in
     pgrep '^kyty_emulator' > /dev/null && die "an emulator runs"
     LINE="guard exp 0412 | E1 case $N (raw GPU submission, no emulator), token $$"
     [ -e "$LOCK" ] || touch "$LOCK"
-    [ -f "$LOCK" ] && [ ! -s "$LOCK" ] || die "the box is locked: $(cat "$LOCK")"
-    printf '%s\n' "$LINE" > "$LOCK" || die "the claim failed"
-    trap 'if grep -qxF -- "$LINE" "$LOCK" 2> /dev/null; then : > "$LOCK"; fi' EXIT
+    [ -f "$LOCK" ] && [ ! -L "$LOCK" ] && [ ! -s "$LOCK" ] || die "the box is locked: $(cat "$LOCK")"
+    # The atomic claim of the other runners (mk0412*.sh, run0412n.sh; review R35): the empty lock is moved aside and a
+    # file holding only our line is hard-linked into its place; a line that arrived meanwhile is put back and we stop.
+    # The first form here (test, then write; release by grep, then truncate) could overwrite a competitor's claim.
+    tl=$LOCK.0412e1-$$.new; al=$LOCK.0412e1-$$.aside
+    printf '%s\n' "$LINE" > "$tl" && mv -T "$LOCK" "$al" && ln "$tl" "$LOCK" || { [ -e "$LOCK" ] || mv -T "$al" "$LOCK"; rm -f "$tl"; die "the claim failed"; }
+    if [ -s "$al" ]; then mv -fT "$al" "$LOCK"; rm -f "$tl"; die "a foreign line arrived during the claim"; fi
+    rm -f "$al" "$tl"
+    release() { if grep -qxF -- "$LINE" "$LOCK" 2> /dev/null; then grep -vxF -- "$LINE" "$LOCK" > "$LOCK.0412e1-rel"; mv -fT "$LOCK.0412e1-rel" "$LOCK"; fi; }
+    trap release EXIT
     pgrep '^kyty_emulator' > /dev/null && die "an emulator started during the claim"
     ND=$(sudo -n dmesg 2> /dev/null | wc -l)
     {
@@ -39,8 +46,12 @@ case "${1:-}" in
       echo "vram total $(cat /sys/class/drm/card*/device/mem_info_vram_total 2> /dev/null | head -1), used $(cat /sys/class/drm/card*/device/mem_info_vram_used 2> /dev/null | head -1); gtt used $(cat /sys/class/drm/card*/device/mem_info_gtt_used 2> /dev/null | head -1)"
     } > "$R/case-$N.out"
     sync
-    distrobox enter ubuntu -- "$E1/e1-probe" --submit --case "$N" < /dev/null >> "$R/case-$N.out" 2>&1
+    # An outer limit around the whole process (review, 2026-11-13): the tool's fence timeout bounds one wait, not the
+    # process. 90 s covers the longest case (a hang: 3 s fence, 15 s wait, the follow-up); at the limit the tool gets
+    # TERM, 10 s later KILL, and the kernel lines are still collected below.
+    timeout -k 10 90 distrobox enter ubuntu -- "$E1/e1-probe" --submit --case "$N" < /dev/null >> "$R/case-$N.out" 2>&1
     RC=$?
+    [ "$RC" = 124 ] || [ "$RC" = 137 ] && { echo "THE OUTER LIMIT OF 90 s ENDED THE TOOL (rc $RC)" >> "$R/case-$N.out"; pkill -KILL -x e1-probe 2> /dev/null; }
     echo "exit code $RC at $(date '+%T')" >> "$R/case-$N.out"
     sync
     sleep 20

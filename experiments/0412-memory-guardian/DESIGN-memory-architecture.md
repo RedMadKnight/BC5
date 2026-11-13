@@ -146,16 +146,21 @@ Second, without the GPU: the `fdinfo` breakdown of section 16's 583 MiB and of t
 E1 ran: on gfx1013 a shader's read of a PRT page and of a page mapped readable only gives zeros with no fault; a write
 to a PRT page vanishes without a sign; a write to a read-only page is a named page fault (address and status readable
 through `AMDGPU_INFO_GPUVM_FAULT`), the job never completes, the kernel's timeout comes 2.03 s after the fault and
-the ring reset succeeds at once; the page is intact and a new context on the same device works. One sample each, no
-title running.
+the ring reset line follows 0.1 ms after the timeout line; the page is intact and a new context on the same device
+worked when the tool tried it 15 s later (it sleeps first: when the context became usable was not measured). One
+sample each, no title running.
 
 ### 8.1 What changes in the options
 
-- **Option B has its sound floor.** A never-written chunk under a view is mapped **read-only onto one zero BO**: no
-  udmabuf, no pinned page. Reads are right (the file holds zeros there). A GPU write is a named fault with its
-  address; the host then imports that chunk for real and goes on. A missed writer is detected, never silently lost,
-  and nothing is aliased (nothing can be written into the shared zero page). This is the learned windows' loop with
-  nothing remembered between runs and nothing pinned in advance.
+- **Option B has a detector, in this one sample without a game; not yet a floor** (review of 2026-11-13). A
+  never-written chunk under a view mapped **read-only onto one zero BO** needs no udmabuf and no pinned page; reads
+  are right (the file holds zeros there) and nothing is aliased (nothing can be written into the shared zero
+  page). A GPU write is a named fault with its address. It **detects** the write and does not restore it: the
+  job is lost; replaying the whole job can double what took effect before the fault (atomics, appends, labels),
+  so a replay is not known to be equivalent. And the GPU's read-only mapping does not follow the **CPU's** first
+  write into such a chunk: the mapping must be switched to the real page on the CPU's first write too,
+  consistently. Until both are answered B is the learned windows' loop with nothing remembered and nothing pinned
+  in advance, at the same price per first GPU write. F403, F443 and Q21 stay open.
 - **PRT must not be that cover.** A PRT write vanishes without a sign, so PRT under anything the title mapped
   repeats the zero skip's defect (section 48). This settles R2 of `DESIGN-learned-windows.md`: a PRT background is
   right only over addresses the title did not map (the console drops writes there, if F257 holds beyond the AMM
@@ -176,20 +181,23 @@ before (F44, F53), so it is not hopeless, but what state the frame is in afterwa
 `BC5_GUARD_RO_FLIP=<seconds after the first flip>`: once, at that time, the GPU mapping of ONE imported 2 MiB chunk
 of a GPU-written eager heap (the newest render-target hint) is replaced by a mapping of the **same pages, readable
 only**. The data stays where it is; the GPU's next write there faults by name. The existing recovery runs, the
-mapping goes back to read-write, and the run goes on. Recorded: the kernel lines, the stall from the fault to the
+mapping goes back to read-write, and the run goes on. (What it can show: whether the title goes on after a lost
+job and how long the stall is. What it cannot show: that the state afterwards is equivalent to a run without
+the fault; a flip proves survival, not correctness.) Recorded: the kernel lines, the stall from the fault to the
 next flip, whether the title continues and for how long, the journal's label and wait lines around it, and the
 picture as he sees it. Runs: the scripted route, the flip in the menu (little at stake) and then in play. Risk: the
 ring reset under the title's load is the one that failed in F260 and sections 38 and 53; a failed reset reboots
 the box. It needs its own slot and the standing stop rule.
 
-### 8.3 Fault handling in 2 s instead of 14 s
+### 8.3 Fault handling shorter than 14 s (how short is not measured)
 
 [C] `recover_after_timeout` sleeps 12 s ("the kernel's timeout + reset") after our own 2 s fence timeout, then opens
 a fresh device and rebuilds every import and mapping. [M, one sample] On this kernel the ring's own timeout fired
-2.03 s after the fault and the reset was complete 0.1 ms later; a new context on the SAME device then ran jobs with
-all mappings in place. So of today's 14 s, about 10 s is a sleep written for an older kernel's 10 s timeout
-(TODO(verify): the kernel's gfx timeout value on the box; it is a module parameter and is not ours to change).
-What a 2 s path takes:
+2.03 s after the fault and its reset line followed 0.1 ms later; a new context on the SAME device ran jobs with
+all mappings in place when tried 15 s after that. E1 did NOT measure how soon after the reset line a context is
+usable (the tool slept 15 s), so "2 s instead of 14 s" is a hypothesis: the 12 s sleep may be longer than this
+kernel needs (TODO(verify): the kernel's gfx timeout value on the box; a module parameter, not ours to change;
+and a repeat of case 4 with the follow-up tried at once and every 100 ms). What a shorter path would take:
 1. wait for the kernel instead of sleeping: poll `amdgpu_cs_query_reset_state` (or the hung fence's status) until the
    context reports the reset, with the 12 s as the upper bound, not the wait;
 2. keep the device: make a new context and re-create what belongs to a context (the state stack, the GDS/OA/GWS
