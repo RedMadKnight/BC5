@@ -1,0 +1,15 @@
+2026-11-13 06:05:42
+run r6n2 (normal), cap 300 s, play 60 s, binary /home/kjaniszewski/bc5-work/exp0415/bin/kyty_emulator md5 e6a2010d6e031530888294330684dfdc, launcher 7bb71360 from 157021e3, snapshot e3b9be4116574c95
+extra: BC5_DIRECT_JOB_TS=1 KYTY_BC5_FRAME_STAT_WIN=64/256 KYTY_BC5_FRAME_STAT=/home/kjaniszewski/bc5-work/exp0415/raw/r6n2-frame.txt
+RT on (run0415f: R_RT=off only for measuring RT's share), walk 1, perf 0
+boot e88d45fe, up since 2026-11-13 00:11:11
+MemAvailable:   13406988 kB SwapTotal:       7778300 kB SwapFree:        7200360 kB 
+other load: rsync 0, load average 5.86 5.10 4.87
+emulator pid 1436716 exe /home/kjaniszewski/bc5-work/exp0415/bin/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0415/wd
+route: cross (start screen) at 51 s
+route: the save-slot list runs; cross (slot 1) at 57 s
+route: cross (Continue) at 63 s
+route: the load seen at 65 s
+route: gameplay G = 80 s (the load at 65 s)
+route: walk of 3 cycles (60 s) queued at 80 s
+launcher gone: yes; perf ended: not started; launcher exit 0
