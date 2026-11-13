@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
-# BC5 exp 0419: counts (the maintainer, 2026-11-13: "Yes, run counts"). After the deciding series (README section 14):
-# the same walk of the second title to G+620, nine times, interleaved: cB1-3 the SHARED build B (51af1ed7), cF1-3 candidate
-# F's private binary (1a2900a0) with its defaults (K1r on), cK1-3 F with BC5_GUARD_K1R=0 BC5_GUARD_K1_FILTER=0.
-# A failure (a GPU hang with its fault record, a fault of the title) is an arm's RESULT and the next arm runs; the series
-# stops only on a failed GPU reset or a reboot. Made from counts0419f.sh by replacing its list of arms.
+# BC5 exp 0419: the second series for F's two faults (the top session's order, 2026-11-13 22:05; the maintainer: "Yes,
+# run counts"). Nine walks of the second title to G+620, interleaved so that a drift of the box cannot pose as an effect:
+#   dF1 dF2 dF3  candidate F's private binary (1a2900a0), its defaults (K1r on)
+#   dB1 dB2      the SHARED build B (51af1ed7)
+#   dK1 dK2      F with BC5_GUARD_K1R=0 BC5_GUARD_K1_FILTER=0
+#   dN1 dN2      F without exp 0418's five new rows (BC5_DIRECT_START_STATE_SKIP)
+# In EVERY arm exp 0412's first-failure catchers are on, log only: KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1 (the
+# hypothesis to check: the title's null pointer after a memory call that failed near the wall, whatever K1r does).
+# No E arm: E's binary was not kept. A failure is an arm's RESULT and the next arm runs; the series stops only on a
+# failed GPU reset or a reboot. After each arm: the end line, the journal's memory lines at 580-620 s and its last three,
+# the first-failure lines, and for a new fault record its first lines.
 # usage (on the box, detached): counts0419f.sh
 set -u
 ulimit -c 0
@@ -14,7 +20,7 @@ cd "$N" || exit 1
 PADS=()
 padstop() { [ ${#PADS[@]} = 0 ] || kill "${PADS[@]}" 2> /dev/null; PADS=(); }
 fin() { padstop; chain_release; }
-[ -n "${CHAIN_LOCKLINE:-}" ] || chain_claim "exp 0419: counts for F's two faults: nine walks to G+620, three each on shared B, F, and F with K1R off, interleaved; about 2 hours" 125 || { echo "counts0419f ended $(date +%T): NOT STARTED"; exit 1; }
+[ -n "${CHAIN_LOCKLINE:-}" ] || chain_claim "exp 0419: the second series for F's faults: nine walks to G+620 (F x3, shared B x2, F K1R off x2, F without exp 0418's rows x2), first-failure catchers on; about 2 hours" 125 || { echo "counts0419f ended $(date +%T): NOT STARTED"; exit 1; }
 trap fin EXIT
 recs() { find "$FR" -mindepth 1 -maxdepth 1 -type d -newermt "@$1" 2> /dev/null | wc -l; }
 BN=$P/build-normal/src/kyty_emulator; BL=$P/build-lean/src/kyty_emulator; SN=$W/kytyplus-build/src/kyty_emulator
@@ -66,18 +72,22 @@ arm() {  # tag, binary, md5, words...
         grep -a -m1 '^when' "$d/record.txt" | cut -c1-120
         grep -a -i -m6 'timed out\|acb #\|dcb #' "$d/journal-tail.txt" | cut -c1-260
     done
+    echo "$tag last memory lines:"; grep -a '^memory (exp 0401)' "$J" 2> /dev/null | tail -3 | cut -c1-170
+    echo "$tag first-failure lines (exp 0412, ff412): $(grep -a -c -i 'first fail\|firstfail\|ff412' "$J" "$R/$tag-play.log" 2> /dev/null | tr '
+' ' ')"; grep -a -h -i 'first fail\|firstfail\|ff412' "$J" "$R/$tag-play.log" 2> /dev/null | head -4 | cut -c1-240
+    [ -s "$R/$tag-crash.txt" ] && { echo "$tag crash text:"; grep -a -m3 'exception_address\|Access violation\|access_violation_vaddr' "$R/$tag-crash.txt" | cut -c1-160; }
     echo "$tag kernel lines: $(grep -c . "$R/$tag-dmesg-after.txt" 2> /dev/null)"; grep -i 'timeout\|reset' "$R/$tag-dmesg-after.txt" 2> /dev/null | cut -c1-160 | head -4
     if grep -qi 'reset.*fail\|fail.*reset' "$R/$tag-dmesg-after.txt" 2> /dev/null; then echo "counts0419f STOP after $tag: the kernel reports a failed reset"; echo "counts0419f ended $(date +%T): STOPPED"; exit 1; fi
     [ "$(cat /proc/sys/kernel/random/boot_id)" = "$BOOT" ] || { echo "counts0419f STOP: the boot id changed"; exit 1; }
     sleep 10
 }
-arm cB1 "$SN" "$MS"
-arm cF1 "$BN" "$MN"
-arm cK1 "$BN" "$MN" BC5_GUARD_K1R=0 BC5_GUARD_K1_FILTER=0
-arm cB2 "$SN" "$MS"
-arm cF2 "$BN" "$MN"
-arm cK2 "$BN" "$MN" BC5_GUARD_K1R=0 BC5_GUARD_K1_FILTER=0
-arm cB3 "$SN" "$MS"
-arm cF3 "$BN" "$MN"
-arm cK3 "$BN" "$MN" BC5_GUARD_K1R=0 BC5_GUARD_K1_FILTER=0
+arm dF1 "$BN" "$MN" KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1
+arm dB1 "$SN" "$MS" KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1
+arm dK1 "$BN" "$MN" BC5_GUARD_K1R=0 BC5_GUARD_K1_FILTER=0 KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1
+arm dN1 "$BN" "$MN" BC5_DIRECT_START_STATE_SKIP=SPI_SHADER_REQ_CTRL_PS:GE_MIN_VTX_INDX:GE_MAX_VTX_INDX:VGT_INSTANCE_BASE_ID:VGT_GS_RINGS KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1
+arm dF2 "$BN" "$MN" KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1
+arm dB2 "$SN" "$MS" KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1
+arm dK2 "$BN" "$MN" BC5_GUARD_K1R=0 BC5_GUARD_K1_FILTER=0 KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1
+arm dN2 "$BN" "$MN" BC5_DIRECT_START_STATE_SKIP=SPI_SHADER_REQ_CTRL_PS:GE_MIN_VTX_INDX:GE_MAX_VTX_INDX:VGT_INSTANCE_BASE_ID:VGT_GS_RINGS KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1
+arm dF3 "$BN" "$MN" KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1
 echo "counts0419f ended $(date +%T): all nine arms ran"
