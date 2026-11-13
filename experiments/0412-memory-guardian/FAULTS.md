@@ -24,3 +24,8 @@ Deliberate faults are not rows: 2026-11-13 11:10, run k1rh, the host's probe rea
 Open, not a fault (README section 69): the packet filter drops a packet whose write target lies in never-imported lazy memory, so the title's write is lost (ASTRO BOT's start, `orbis_user_malloc`; older than K1r). The console has that memory. Rule to write: import a packet's write target when the packet is seen.
 
 2026-11-13 15:13-15:42, build g412zc (README section 71), no fault in six arms: row 6's packet is named (two op-0x49 packets of the 10,494-dword dcb, operands on the fault's page); with cv412 ASTRO BOT's start runs 120 s with K1r on, and with `BC5_GUARD_K1_FILTER=1` one 2 MiB import lets the packets through. The second title's dropped operands are none under a view. New K1r defect (no fault, found by the watch): under lazy views a zero cover lay over memory the CPU had written; fix kl412 written, not compiled.
+
+2026-11-13 16:24-16:47, build g412zd on candidate B (README section 72), no fault in four arms. Corrections and open items, none a fault:
+- A packet the filter drops is executed by the soft CP on the CPU (read in the code): the "title's write is lost" of the item above and of section 71 is wrong; the write is made by the host, later than the GPU would.
+- kl412: under lazy views 366 chunks (ASTRO BOT) and 110 chunks (second title) hold data and now get no zero cover. Importing them instead (`BC5_GUARD_LAZY_BY_DATA=1`) pins +734 MiB and +194 MiB.
+- Open: one RELEASE_MEM and one WAIT_REG_MEM64 a frame, in both titles, name a 12 KiB anonymous mapping of the HOST (0x7f... addresses, above the guest's range). Served by the soft CP. Who allocates it and whether the console's label lies in title memory there is not established.

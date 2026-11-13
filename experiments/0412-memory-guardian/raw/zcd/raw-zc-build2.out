@@ -1,0 +1,26 @@
+2026-11-13 15:14:47 start
+cpu test: firstfail0412: 101506 of 101506; end
+cpu test: maprule0412: 15281 of 15281; end
+cpu test: rlabels0412: 4970 of 4970; end
+cpu test: k1r0412: 17742 of 17742; end
+cpu test: saveguard0412: 178 of 178; end
+cpu test: cover0412: 640008 of 640008; end
+src/kernel/fileSystem.cpp 3d2b9c0b3881601cfe4d38ad29a930da
+src/libs/libSaveData.cpp 0bd91bb44e0c2fd34f662f27592d314f
+src/bc5/save_guard0412.hpp 1f1585b42aea1b5bb4e64e484c5ae1de
+src/kernel/memory.cpp 961da63a0869a2a88bf937a90b523bef
+src/libs/libAmpr.cpp d88da83d0668fbedad512164d17de236
+src/common/hostException.cpp e978e975f0628146b5c5a3d4158eaf7e
+src/libs/bc5LleAgc.cpp 8f53bd7659d253d7d4e687f9edad3799
+include/bc5/direct.hpp 26519fcca6815f28c7b059a6460c4bcc
+src/direct.cpp 8f617378a5bd6768cfbb19bcf2456d67
+include/bc5/direct.hpp 2497a4cebb63867607c12a2d4ff931cb
+src/direct.cpp b183516eba3e3b7c44015307c2cf86ce
+src/direct.cpp 1d88a8b3470351cff77bc0abbaeea9bf
+== 15:14:59 backend
+private backend archive 4c5bb4fc (the shared one 75e30335 untouched)
+== 15:15:04 configure
+== 15:15:06 build
+normal: a927b6fa2e4044096832bcdaa027cc23, warnings 18
+binary beside a927b6fa (bin-c); g412v in place untouched; the shared builds, backend and archive only read
+2026-11-13 15:15:47 built: g412zc

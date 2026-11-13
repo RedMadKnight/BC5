@@ -1,0 +1,7 @@
+watch (exp 0412, tag wa412): t 0.0 s: 0x3082f6000: under "orbis_user_malloc" (lazy; view 0x3018c0000+0x7c740000, 0x6a36000 into it; file chunk 0x8200000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)  <-- changed
+k1r (exp 0412, tag k1r412): BC5_GUARD_K1R on: never-written parts of the views of direct memory are GPU-mapped read-only onto one zero buffer; nothing is pinned for them
+k1r (exp 0412, tag k1r412): t 1 s: 2615 read-only zero pieces cover 5230.0 MiB of never-written memory under 27 views (rebuild 1); the zero buffer holds 0 non-zero words
+watch (exp 0412, tag wa412): t 0.5 s: 0x3082f6000: under "orbis_user_malloc" (lazy; view 0x3018c0000+0x11d30000, 0x6a36000 into it; file chunk 0x8200000): the chunk WRITTEN by the CPU, not imported; GPU: a read-only zero cover (K1r)  <-- changed
+k1r (exp 0412, tag k1r412): t 11 s: 4094 read-only zero pieces cover 8188.0 MiB of never-written memory under 80 views (rebuild 649); the zero buffer holds 0 non-zero words
+k1r (exp 0412, tag k1r412): t 26 s: 3747 read-only zero pieces cover 7494.0 MiB of never-written memory under 82 views (rebuild 896); the zero buffer holds 0 non-zero words
+k1r (exp 0412, tag k1r412): t 37 s: 2876 read-only zero pieces cover 5752.0 MiB of never-written memory under 86 views (rebuild 1552); the zero buffer holds 0 non-zero words

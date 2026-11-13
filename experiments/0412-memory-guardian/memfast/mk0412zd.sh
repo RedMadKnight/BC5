@@ -1,32 +1,19 @@
 #!/usr/bin/env bash
-# BC5 exp 0412, build g412zd = g412zc + kl412 (section 71: under a lazy view K1r covers only never-written chunks); g412zc = g412z + the watched address, the read probe (section 67) and the covers made invisible to the host (section 69) (2026-11-13, README sections 59-63; "fixes first": one private build with all of it, each
-# behind its switch), on a PRIVATE copy of the integrated shared tree (patch 0001 4651d1d3) and a PRIVATE copy of the
-# backend source:
-#   nl412   the learned path removed from the unit, the heap-end guards kept (mknl0412.py --keep-guards); the catcher
-#           always on; BC5_GUARD_K1_STAT (default off)
-#   rl412   BC5_DIRECT_RESET_LABELS_ADD (mkrl0412.py): the lost jobs' label writes when two jobs time out in one hang
-#   k1r412  BC5_GUARD_K1R (mkk1r0412.py unit + backend): the read-only zero cover; the backend gets map_shared(readonly)
-#   fr412   BC5_FAULT_RECORD (mkfr0412.py): at the first GPU fault a self-contained record is written and the game ends
-#   sg412   the record's save guard (mksg0412.py, saveguard0412.inc): the exit lets a save being written finish;
-#           marks in src/kernel/fileSystem.cpp and src/libs/libSaveData.cpp, the header src/bc5/save_guard0412.hpp
-#   pr412   BC5_GUARD_K1R_PROBE (mkpr0412.py unit + backend): the host's own read at one guest GPU address, in a
-#           context of its own; with K1r off at an unmapped address it is a DELIBERATE GPU FAULT (his word first)
-#   k1f412  BC5_GUARD_K1_FILTER (mkk1f0412.py): a packet's unmapped operand under a view is imported before the
-#           submission instead of the packet being dropped (K1 at the filter)
-#   cv412   (mkcv0412.py unit + backend, no switch: part of K1r) a K1r cover is invisible to the host's
-#           "is it mapped?" (the packet filter's operand check and every other use), as that memory was before K1r
-#   kl412   (mkkl0412.py; BC5_GUARD_K1R_COVER_WRITTEN=1 turns it off) under a lazy view a chunk the CPU has written
-#           gets no zero cover
-#   wa412   BC5_GUARD_WATCH (mkwa0412.py): the state of up to four guest addresses in the journal, a catcher
-#   ff412   KYTY_BC5_MEM_FIRSTFAIL, KYTY_BC5_TRAP_LOG, BC5_DIRECT_MAX_BO_MIB (mkff0412.py)
+# BC5 exp 0412, build g412zd (2026-11-13, README sections 71-72): the K1r family on the SHARED tree as it is since
+# 15:47 (candidate B, patch 0001 27b6416f: it already carries nl412, rl412, fr412, sg412 and ff412), on a PRIVATE copy
+# of that tree and a PRIVATE copy of the backend source. "Fixes first": one build, each thing behind its switch.
+#   k1r412  BC5_GUARD_K1R (mkk1r0412.py unit + backend): the read-only zero cover; backend map_shared(readonly)
+#   wa412   BC5_GUARD_WATCH (mkwa0412.py): the state of up to four guest addresses in the journal
+#   pr412   BC5_GUARD_K1R_PROBE (mkpr0412.py unit + backend): the host's own read at one guest GPU address; with K1r
+#           off at an unmapped address it is a DELIBERATE GPU FAULT (his word first)
+#   cv412   (mkcv0412.py unit + backend; BC5_GUARD_K1R_COVERS_VISIBLE=1 turns it off) a cover is invisible to the host
+#   k1f412  BC5_GUARD_K1_FILTER (mkk1f0412.py): =1 imports a packet's unmapped operand under a view; =log names it
+#   kl412   (mkkl0412.py; BC5_GUARD_K1R_COVER_WRITTEN=1 turns it off) under a lazy view a written chunk gets no cover;
+#           BC5_GUARD_LAZY_BY_DATA=1: no view is lazy (a written chunk is imported)
 # ~/src/KytyPlus, the shared build directories, the shared backend source and the shared archive are only read.
-#   1. checks: no emulator; the shared tree is 0001 4651d1d3; the shared archive is 75e30335; the kit's sums
-#   2. the lock (the hard-link claim); the seven CPU tests
-#   3. the private tree $P/tree (copied once, with .git); the units made from the SHARED tree's units in the order
-#      nl, rl, k1r, fr, sg, ff and checked against the sums made on the laptop; the private backend source and its archive
-#   4. configure (every time: the backend paths are private) and ninja kyty_emulator, nice 19
-#   5. checks on the binary; it is put beside as bin-d/kyty_emulator with built-d.md5 (run0412n.sh's N_EMU form)
-# usage (on the box, no emulator running): bash mk0412z.sh
+# The private tree $P/tree is brought to the shared tree's state with rsync (times kept, .git left alone), then the
+# one unit is replaced. The binary goes beside as bin-d/kyty_emulator with built-d.md5 (run0412n.sh's N_EMU form).
+# usage (on the box, no emulator running): bash mk0412zd.sh
 set -u
 ulimit -c 0
 export LC_ALL=C LANGUAGE=C
@@ -36,13 +23,12 @@ m() { md5sum < "$1" 2> /dev/null | cut -c1-8; }
 die() { echo "STOP: $*"; exit 1; }
 pgrep '^kyty_emulator' > /dev/null && die "an emulator runs"
 (cd "$KIT" && sha256sum -c --quiet kit.sha256) || die "the kit is not what was sent"
-[ "$(git -C "$K" diff --no-color f266548 | md5sum | cut -c1-8)" = 4651d1d3 ] || die "the shared tree is not 0001 4651d1d3"
+[ "$(git -C "$K" diff --no-color f266548 | md5sum | cut -c1-8)" = 27b6416f ] || die "the shared tree is not 0001 27b6416f"
 [ "$(m "$ARCH")" = 75e30335 ] || die "the shared archive is not 75e30335"
-[ -d "$BSRC/include/bc5" ] && [ -f "$BSRC/src/direct.cpp" ] || die "no backend source at $BSRC"
-for u in "src/kernel/memory.cpp eff24b4c" "src/libs/libAmpr.cpp a2d09d32" "src/libs/bc5LleAgc.cpp a81efd2c" "src/kernel/fileSystem.cpp 9194fc38" "src/libs/libSaveData.cpp 0e0c5d40"; do
-  set -- $u; [ "$(m "$K/$1")" = "$2" ] || die "the shared tree's $1 is not $2"
-done
-LINE="guard exp 0412 | build g412zd (nl412 + rl412 + k1r412 + fr412 + sg412 + ff412 on private copies of the shared tree and backend; CPU only), token $$"
+[ "$(m "$BSRC/include/bc5/direct.hpp")" = a9fcb26b ] && [ "$(m "$BSRC/src/direct.cpp")" = 51279eae ] || die "the shared backend source is not a9fcb26b/51279eae"
+[ "$(m "$K/src/libs/bc5LleAgc.cpp")" = 8126c0aa ] || die "the shared tree's unit is not 8126c0aa"
+[ -d "$P/tree/.git" ] || die "no private tree at $P/tree"
+LINE="guard exp 0412 | build g412zd (k1r412 + wa412 + pr412 + cv412 + k1f412 + kl412 on private copies of the shared tree B and backend; CPU only), token $$"
 [ -e "$LOCK" ] || touch "$LOCK"
 [ -f "$LOCK" ] && [ ! -L "$LOCK" ] && [ ! -s "$LOCK" ] || die "the box is locked: $(cat "$LOCK")"
 tl=$LOCK.0412-$$.new; al=$LOCK.0412-$$.aside
@@ -54,67 +40,43 @@ release() { if grep -qxF -- "$LINE" "$LOCK" 2> /dev/null; then grep -vxF -- "$LI
 trap release EXIT
 printf '%s\n' "guard exp 0412 | claimed: build g412zd | $(date '+%F %T')" >> "$W/BOX-QUEUE"
 pgrep '^kyty_emulator' > /dev/null && die "an emulator started during the claim"
-R=$X/raw-zd; mkdir -p "$P" "$R" || die mkdir
+R=$X/raw-zd; mkdir -p "$R" || die mkdir
 echo "$(date '+%F %T') start"
-for t in firstfail0412 maprule0412 rlabels0412 k1r0412 saveguard0412 cover0412 kl0412; do
+for t in k1r0412 cover0412 kl0412; do
   distrobox enter ubuntu -- env LC_ALL=C g++ -std=c++20 -O1 -Wall -Wextra -Werror -pthread -I "$KIT" "$KIT/$t.cpp" -o "$R/$t" < /dev/null > "$R/$t-build.out" 2>&1 ||
       die "the CPU test $t does not build: $(grep -m2 error "$R/$t-build.out" | cut -c1-160 | tr '\n' ' ')"
   distrobox enter ubuntu -- "$R/$t" "$R" < /dev/null > "$R/$t.out" 2>&1 || die "the CPU test $t failed: $(grep -m2 FAIL "$R/$t.out" | cut -c1-160 | tr '\n' ' ')"
   grep -q "^$t: \([0-9]*\) of \1; end\$" "$R/$t.out" || die "no end marker from the CPU test $t"
   echo "cpu test: $(tail -1 "$R/$t.out")"
 done
-if [ ! -d "$P/tree/.git" ]; then
-  [ ! -e "$P/tree" ] || die "$P/tree exists without .git"
-  echo "$(date +%T) copying the shared tree (with .git) to $P/tree"
-  cp -a --reflink=auto "$K" "$P/tree" || die "the copy failed"
-fi
+# The unit's chain from the shared tree's unit, each step checked against the sum made on the laptop.
+U=$K/src/libs/bc5LleAgc.cpp
+step() { # <script> <mode or -> <in> <out> <sum>
+  if [ "$2" = - ]; then python3 -I "$KIT/$1" "$3" "$4" > "$R/$1.out" 2>&1; else python3 -I "$KIT/$1" "$2" "$3" "$4" > "$R/$1.out" 2>&1; fi || die "$1: $(tail -1 "$R/$1.out")"
+  [ "$(m "$4")" = "$5" ] || die "the unit after $1 is $(m "$4"), not $5"
+}
+rm -f "$P"/b-u[1-6].cpp
+step mkk1r0412.py unit "$U" "$P/b-u1.cpp" 4bd99863
+step mkwa0412.py - "$P/b-u1.cpp" "$P/b-u2.cpp" f27b793e
+step mkpr0412.py unit "$P/b-u2.cpp" "$P/b-u3.cpp" 5edc7f4c
+step mkcv0412.py unit "$P/b-u3.cpp" "$P/b-u4.cpp" 74412dc8
+step mkk1f0412.py - "$P/b-u4.cpp" "$P/b-u5.cpp" 150c5d89
+step mkkl0412.py - "$P/b-u5.cpp" "$P/b-u6.cpp" 393a0cbf
+echo "$(date +%T) the private tree is brought to the shared tree's state"
+rsync -a --delete --exclude=.git "$K/" "$P/tree/" || die "rsync of the shared tree failed"
 [ "$(git -C "$P/tree" rev-parse HEAD)" = "$(git -C "$K" rev-parse HEAD)" ] || die "the private tree is not at the shared tree's commit"
-# The unit's chain, from the shared tree's unit: nl (guards kept), rl, k1r, fr; then ff over a staged copy of the four units.
-S=$P/stage; rm -rf "$S" "$P/out" && mkdir -p "$S/src/kernel" "$S/src/libs" "$S/src/common" || die "mkdir stage"
-python3 -I "$KIT/mknl0412.py" "$K/src/libs/bc5LleAgc.cpp" "$P/u-nl.cpp" --keep-guards > "$R/mknl.out" 2>&1 || die "mknl0412.py: $(tail -1 "$R/mknl.out")"
-[ "$(m "$P/u-nl.cpp")" = cfb7533e ] || die "the unit after nl412 is not cfb7533e"
-python3 -I "$KIT/mkrl0412.py" "$P/u-nl.cpp" "$P/u-rl.cpp" > "$R/mkrl.out" 2>&1 || die "mkrl0412.py: $(tail -1 "$R/mkrl.out")"
-[ "$(m "$P/u-rl.cpp")" = 0878903e ] || die "the unit after rl412 is not 0878903e"
-python3 -I "$KIT/mkk1r0412.py" unit "$P/u-rl.cpp" "$P/u-k1r.cpp" > "$R/mkk1r.out" 2>&1 || die "mkk1r0412.py unit: $(tail -1 "$R/mkk1r.out")"
-[ "$(m "$P/u-k1r.cpp")" = 0d265595 ] || die "the unit after k1r412 is not 0d265595"
-python3 -I "$KIT/mkfr0412.py" "$P/u-k1r.cpp" "$P/u-fr.cpp" > "$R/mkfr.out" 2>&1 || die "mkfr0412.py: $(tail -1 "$R/mkfr.out")"
-[ "$(m "$P/u-fr.cpp")" = d2400f90 ] || die "the unit after fr412 is not d2400f90"
-python3 -I "$KIT/mkwa0412.py" "$P/u-fr.cpp" "$P/u-wa.cpp" > "$R/mkwa.out" 2>&1 || die "mkwa0412.py: $(tail -1 "$R/mkwa.out")"
-[ "$(m "$P/u-wa.cpp")" = ac2dbd7b ] || die "the unit after wa412 is not ac2dbd7b"
-python3 -I "$KIT/mkpr0412.py" unit "$P/u-wa.cpp" "$P/u-pr.cpp" > "$R/mkpr.out" 2>&1 || die "mkpr0412.py unit: $(tail -1 "$R/mkpr.out")"
-[ "$(m "$P/u-pr.cpp")" = f46d6ed5 ] || die "the unit after pr412 is not f46d6ed5"
-python3 -I "$KIT/mkcv0412.py" unit "$P/u-pr.cpp" "$P/u-cv.cpp" > "$R/mkcv.out" 2>&1 || die "mkcv0412.py unit: $(tail -1 "$R/mkcv.out")"
-[ "$(m "$P/u-cv.cpp")" = 561c8b4d ] || die "the unit after cv412 is not 561c8b4d"
-python3 -I "$KIT/mkk1f0412.py" "$P/u-cv.cpp" "$P/u-k1f.cpp" > "$R/mkk1f.out" 2>&1 || die "mkk1f0412.py: $(tail -1 "$R/mkk1f.out")"
-[ "$(m "$P/u-k1f.cpp")" = 8623837b ] || die "the unit after k1f412 is not 8623837b"
-python3 -I "$KIT/mkkl0412.py" "$P/u-k1f.cpp" "$P/u-kl.cpp" > "$R/mkkl.out" 2>&1 || die "mkkl0412.py: $(tail -1 "$R/mkkl.out")"
-[ "$(m "$P/u-kl.cpp")" = b4e59ce3 ] || die "the unit after kl412 is not b4e59ce3"
-python3 -I "$KIT/mksg0412.py" "$K" "$P/sg-out" "$KIT/saveguard0412.inc" > "$R/mksg.out" 2>&1 || die "mksg0412.py: $(tail -1 "$R/mksg.out")"
-cat "$R/mksg.out"
-cp -p "$K/src/kernel/memory.cpp" "$S/src/kernel/" && cp -p "$K/src/libs/libAmpr.cpp" "$S/src/libs/" && cp -p "$K/src/common/hostException.cpp" "$S/src/common/" && cp "$P/u-kl.cpp" "$S/src/libs/bc5LleAgc.cpp" || die "staging"
-python3 -I "$KIT/mkff0412.py" "$S" "$P/out" > "$R/mkff0412.out" 2> "$R/mkff0412.err" || die "mkff0412.py: $(tail -1 "$R/mkff0412.err")"
-cat "$R/mkff0412.out"
-for u in "src/kernel/memory.cpp 961da63a" "src/libs/libAmpr.cpp d88da83d" "src/common/hostException.cpp e978e975" "src/libs/bc5LleAgc.cpp a7d3d08d"; do
-  set -- $u; [ "$(m "$P/out/$1")" = "$2" ] || die "$1 is not the unit checked on the laptop ($2)"
-  cp -p "$P/out/$1" "$P/tree/$1" || die "cannot put $1 into the private tree"
-done
-for u in "src/kernel/fileSystem.cpp 3d2b9c0b" "src/libs/libSaveData.cpp 0bd91bb4" "src/bc5/save_guard0412.hpp 1f1585b4"; do
-  set -- $u; [ "$(m "$P/sg-out/$1")" = "$2" ] || die "$1 is not the unit checked on the laptop ($2)"
-  cp -p "$P/sg-out/$1" "$P/tree/$1" || die "cannot put $1 into the private tree"
-done
-D=$(diff -rq --exclude=.git "$K/src" "$P/tree/src" | grep -v -E "src/kernel/memory.cpp|src/libs/libAmpr.cpp|src/common/hostException.cpp|src/libs/bc5LleAgc.cpp|src/kernel/fileSystem.cpp|src/libs/libSaveData.cpp|save_guard0412.hpp" | head -5)
-[ -z "$D" ] || die "the private tree differs from the shared one beyond the six units and the header: $D"
-# The private backend: the shared source copied, map_shared(readonly) added, its own build directory.
+[ -z "$(diff -rq --exclude=.git "$K" "$P/tree" | head -3)" ] || die "the private tree differs from the shared one after rsync: $(diff -rq --exclude=.git "$K" "$P/tree" | head -3 | tr '\n' ' ')"
+cp "$P/b-u6.cpp" "$P/tree/src/libs/bc5LleAgc.cpp" || die "cannot put the unit into the private tree"
+D=$(diff -rq --exclude=.git "$K" "$P/tree" | grep -v "src/libs/bc5LleAgc.cpp" | head -5)
+[ -z "$D" ] || die "the private tree differs from the shared one beyond the unit: $D"
+# The private backend: the shared source copied, map_shared(readonly), the probe and the cover's readonly report added.
 PB=$P/backend-src; BB=$P/backend-build
 rm -rf "$PB" && cp -a "$BSRC" "$PB" || die "cannot copy the backend source"
 python3 -I "$KIT/mkk1r0412.py" backend "$BSRC" "$PB" > "$R/mkk1r-backend.out" 2>&1 || die "mkk1r0412.py backend: $(tail -1 "$R/mkk1r-backend.out")"
-cat "$R/mkk1r-backend.out"
 python3 -I "$KIT/mkpr0412.py" backend "$PB" "$PB" > "$R/mkpr-backend.out" 2>&1 || die "mkpr0412.py backend: $(tail -1 "$R/mkpr-backend.out")"
-cat "$R/mkpr-backend.out"
 python3 -I "$KIT/mkcv0412.py" backend "$PB" "$PB" > "$R/mkcv-backend.out" 2>&1 || die "mkcv0412.py backend: $(tail -1 "$R/mkcv-backend.out")"
-cat "$R/mkcv-backend.out"
 [ "$(m "$PB/include/bc5/direct.hpp")" = 2497a4ce ] && [ "$(m "$PB/src/direct.cpp")" = 1d88a8b3 ] || die "the private backend is not the one checked on the laptop (2497a4ce, 1d88a8b3)"
-[ "$(diff -rq "$BSRC" "$PB" | grep -c .)" = 2 ] || die "the private backend differs from the shared one by more than direct.hpp and direct.cpp: $(diff -rq "$BSRC" "$PB" | head -4 | tr '\n' ' ')"
+[ "$(diff -rq "$BSRC" "$PB" | grep -c .)" = 2 ] || die "the private backend differs from the shared one by more than direct.hpp and direct.cpp"
 echo "== $(date +%T) backend"
 distrobox enter ubuntu -- cmake -S "$PB" -B "$BB" -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
     -DBC5_WITH_AMDGPU=ON -DBC5_BUILD_TESTS=OFF < /dev/null > "$BB.configure.log" 2>&1 || die "backend configure: $(tail -3 "$BB.configure.log" | tr '\n' ' ' | cut -c1-300)"
@@ -132,17 +94,14 @@ distrobox enter ubuntu -- sh -c "cd '$B' && nice -n 19 ninja kyty_emulator" < /d
 b=$B/src/kyty_emulator
 [ -x "$b" ] || die "no binary"
 echo "normal: $(md5sum < "$b" | cut -d' ' -f1), warnings $(grep -c 'warning:' "$B.build.log")"
-for s in BC5_GUARD_LAZY_BY_DATA BC5_GUARD_K1R_COVER_WRITTEN "tag kl412" BC5_GUARD_K1R_COVERS_VISIBLE BC5_GUARD_K1_FILTER "tag k1f412" BC5_GUARD_K1R_PROBE "tag pr412" BC5_GUARD_WATCH "tag wa412" BC5_FAULT_RECORD "tag fr412" "tag sg412" "MAY BE INCOMPLETE" BC5_GUARD_K1R_REPLACE KYTY_BC5_MEM_FIRSTFAIL KYTY_BC5_TRAP_LOG BC5_DIRECT_MAX_BO_MIB "tag ff412" BC5_GUARD_K1R "tag k1r412" BC5_DIRECT_RESET_LABELS_ADD "tag rl412" "tag nl412" BC5_GUARD_K1_STAT KYTY_BC5_AMM_SCATTER KYTY_BC5_AMM_SETBUFFER_GUARD; do
+for s in BC5_GUARD_LAZY_BY_DATA BC5_GUARD_K1R_COVER_WRITTEN "tag kl412" BC5_GUARD_K1R_COVERS_VISIBLE BC5_GUARD_K1_FILTER "tag k1f412" BC5_GUARD_K1R_PROBE "tag pr412" BC5_GUARD_WATCH "tag wa412" BC5_FAULT_RECORD "tag fr412" BC5_GUARD_K1R_REPLACE BC5_GUARD_K1R "tag k1r412" BC5_DIRECT_RESET_LABELS_ADD; do
   grep -aqF -- "$s" "$b" || die "the binary lacks [$s]"
 done
-grep -aqF "direct-learned" "$b" && echo "note: the string direct-learned is still in the binary (another unit?)"
 [ "$(m "$ARCH")" = 75e30335 ] || die "the shared archive changed"
+[ "$(m "$K/src/libs/bc5LleAgc.cpp")" = 8126c0aa ] || die "the shared tree's unit changed"
 mkdir -p "$X/bin-d" || die "mkdir bin-d"
 cp -p "$b" "$X/bin-d/kyty_emulator.new-$$" && mv -fT "$X/bin-d/kyty_emulator.new-$$" "$X/bin-d/kyty_emulator" || die "cannot put the binary beside"
-L1=$(distrobox enter ubuntu -- ldd "$b" < /dev/null 2> /dev/null | awk '{print $1, $3}' | sort | md5sum | cut -c1-8)
-L2=$(distrobox enter ubuntu -- ldd "$X/bin-d/kyty_emulator" < /dev/null 2> /dev/null | awk '{print $1, $3}' | sort | md5sum | cut -c1-8)
-[ "$L1" = "$L2" ] && ! distrobox enter ubuntu -- ldd "$X/bin-d/kyty_emulator" < /dev/null 2> /dev/null | grep -q "not found" || die "the copy in bin-d does not resolve the same libraries as the build's binary ($L1 / $L2)"
+distrobox enter ubuntu -- ldd "$X/bin-d/kyty_emulator" < /dev/null 2> /dev/null | grep -q "not found" && die "the copy in bin-d lacks a library"
 printf '%s  bin-d/kyty_emulator\n' "$(md5sum < "$X/bin-d/kyty_emulator" | cut -d' ' -f1)" > "$X/built-d.md5" || die "built-d.md5"
-[ "$(md5sum < "$X/bin/kyty_emulator" | cut -c1-8)" = bc4356a5 ] || die "the build in place changed"
-echo "binary beside $(m "$X/bin-d/kyty_emulator") (bin-d); g412v in place untouched; the shared builds, backend and archive only read"
+echo "binary beside $(m "$X/bin-d/kyty_emulator") (bin-d); the shared builds, backend and archive only read"
 echo "$(date '+%F %T') built: g412zd"

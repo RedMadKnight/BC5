@@ -3393,7 +3393,8 @@ slot 4, no input, 240 s, fuse 13,000/2,048, watchdog 220. Raw files on the box: 
 carries, at dwords 1883 and 1891, two packets of opcode 0x49 whose operands are 0x3082f6f60+8 and 0x3082f7060+8:
 the page of the 11:32 fault, under "orbis_user_malloc" (lazy), chunk not imported. So the packet that faulted with
 visible covers is named: with K1r's covers visible the filter let these two through and the command processor wrote
-into a read-only page. Without K1r they are dropped about 230 times a second: the title's write is lost each frame.
+into a read-only page. Without K1r they are dropped about 230 times a second (CORRECTED in section 72: a dropped
+packet is executed by the soft CP on the CPU; the write is not lost, it is made by the host).
 With `K1_FILTER=1` one 2 MiB import ends that. The third page, 0x7fc0a4269000 (op 0x93), is a host address under no
 view: not memory of the direct file, so not K1's case. Not decoded here: what opcode 0x49 and 0x93 are in the
 title's stream (TODO(verify): the packet names against the public PM4 headers before they are written as fact).
@@ -3421,6 +3422,65 @@ cure: the console lets the GPU read written memory, so the cure for a read of wr
 
 Not done: the arms on g412zd; the second title's walk route and his own play with any of this; a decode of the
 packets; the defaults (K1R stays off by default).
+
+### 72. Build g412zd on candidate B: kl412 on both titles, the price of importing written lazy memory, whose the "no view" operands are; a correction to section 71 (2026-11-13 16:24-16:47, box)
+
+**Correction to section 71.** "The title's write is lost each frame" was wrong. A packet the filter drops is not
+lost: the soft CP runs after every submission and executes each packet that did not run on the real GPU
+(`execute()` in the unit: `done = gpu_packet_done(...)`, then `release_mem(p, len - 1, !done)`, `if (!done)
+wait_reg_mem(...)`, `if (!done) write_data(...)`), so a dropped RELEASE_MEM's value is written by the host's CPU and
+a dropped WAIT_REG_MEM is waited for on the CPU [read in the code, not measured]. What differs from the console is
+WHEN and BY WHOM the value is written (by the host after the submission returns, not by the GPU at the end of the
+pipeline). The packet names, from `backend/src/policy.cpp`'s table: 0x49 RELEASE_MEM, 0x93 WAIT_REG_MEM64, 0x9f
+LOAD_CONTEXT_REG_INDEX. So K1 at the filter in ASTRO BOT moves two label writes a frame from the host's CPU to the
+GPU for 2 MiB of pin; it does not restore a lost write.
+
+**The base.** The shared tree is candidate B since 15:47 (patch 0001 27b6416f, unit 8126c0aa; it carries nl412,
+rl412, fr412, sg412, ff412). `memfast/mk0412zd.sh` was rewritten for it: the private tree is brought to the shared
+tree's state (rsync, .git left), then six scripts on the shared unit, each sum checked against the laptop's:
+mkk1r 4bd99863, mkwa f27b793e, mkpr 5edc7f4c, mkcv 74412dc8, mkk1f 150c5d89, mkkl 393a0cbf; the backend as in g412zc
+(archive 4c5bb4fc). Binary **be507cd5** (bin-d); CPU tests k1r0412, cover0412, kl0412 passed on the box. mkkl0412.py
+also adds `BC5_GUARD_LAZY_BY_DATA=1` (default off): `direct_lazy_name()` answers "no", so `BC5_DIRECT_LAZY_NAMES` is
+ignored and those views are imported by data like every other. This IS the top's variant (b), "import a written
+chunk of a lazy view at the CPU's write": no new mechanism, the lazy list is what keeps such chunks out today.
+
+Four arms, all [M], no kernel amdgpu line, no reboot; `BC5_GUARD_K1R=1 BC5_GUARD_K1_FILTER=log BC5_FAULT_RECORD=1
+BC5_DIRECT_TIMEOUT_PROBE=1` in all. Small raw files: `raw/zcd/` (also section 71's).
+
+| arm | title | written chunks under lazy views (kl412) | GTT | result |
+|---|---|---|---|---|
+| zd1k1r | ASTRO BOT 120 s | 366 (732 MiB) get no cover; 2,510 covers over 5,020 MiB | 7,263 MiB at 45 and 100 s | ran 120 s; the page 0x3082f6000 "WRITTEN, not imported; GPU: NO MAPPING" from 0.5 s |
+| zd2bydata | ASTRO BOT 120 s, `LAZY_BY_DATA=1` | 0 (all imported) | 7,995-7,999 MiB: **+734 MiB** | ran 120 s; the page imported at 1.4 s; the two RELEASE_MEM operands no longer dropped |
+| zd3k1r | second title, cutscene arm, probe | 110 (220 MiB) get no cover; 406 covers over 808 MiB | 11,614 MiB at 285-326 s (peak 11,974) | G+240, 29.6 flips/s; the probe: 16,384 zero bytes |
+| zd4bydata | second title, cutscene arm, `LAZY_BY_DATA=1` | 0 | 11,808 MiB at 284-326 s (peak 12,188): **+194 MiB** | G+240, 30.2 flips/s; lowest available memory 749 MiB; the sampler's last column 74 against 0 (swap, as I read it) |
+
+**kl412 [M]:** with the rule the written chunks of lazy views are uncovered on both titles and nothing faults in
+these arms, so in these 120 s and 240 s no GPU read touches them. The scan costs 0.84-1.1 ms each, 3-5 a second
+(650 ms over 212 s in the second title: 0.3 % of one core). In the second title the covers shrink from 1,028 to
+808 MiB: 220 MiB of what K1r called "never-written" held data.
+
+**The price of the general rule (variant b) [M], one run each:** +734 MiB of pin in ASTRO BOT, +194 MiB in the
+second title's cutscene arm (lazy names there: orbis_user_malloc, Wwise, SoundAlloc, FileSystem, UIStringAlloc).
+ASTRO BOT has the room (8.0 of 13 GiB). The second title does not: its wall is the open problem of this experiment,
+and this arm ran with 749 MiB available at the lowest and started to swap. Not measured: the walk route, a long
+play, his save at the wall. On these numbers the general rule is affordable for ASTRO BOT and is 0.2 GiB more
+against the wall in the second title; import on demand (K1 at the filter: 2 MiB in ASTRO BOT, 0 in the second
+title) costs nothing but covers only what packets name.
+
+**Whose the operands "under no view" are [M + code].** In all arms of both titles they are ONE page per run:
+0x7f3772b03000, 0x7fcec19b6000 (ASTRO BOT), 0x7ff8c8680000 (second title). `/proc/<emulator>/maps` during the run:
+an anonymous private `rw-p` mapping of exactly 12 KiB at that address, far above the guest's range (the unit's
+`kGuestMax` is 0xfbffffffff). So it is the HOST's memory, not the title's direct memory and not an alias: one
+RELEASE_MEM and one WAIT_REG_MEM64 a frame name it (in ASTRO BOT with `LAZY_BY_DATA`: 6,491 and 6,491 in 112 s).
+The filter drops both and the soft CP serves both on the CPU, as designed for memory the GPU cannot see. Not
+identified: which host code allocates those 12 KiB and hands the address to the title (an HLE library's own label
+or work area [I]). The 0x9f operand 0x408 lies in no mapping at all: it is LOAD_CONTEXT_REG_INDEX's index form,
+an offset, not an address (4-10 a run, second title only) [I: from the value; the packet not decoded]. No import can
+or should cure these; whether a label in host memory is right against the console is a question for the library
+that allocates it, registered in FAULTS.md as an open item, not a fault.
+
+Not done: his play with any of this; the walk route with K1r; a GPU read of written lazy memory (none seen, so
+kl412's fault-by-name has not fired); the defaults (K1R off).
 
 ## Verdict
 

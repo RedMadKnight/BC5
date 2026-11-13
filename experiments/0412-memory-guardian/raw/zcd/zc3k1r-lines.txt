@@ -1,0 +1,14 @@
+k1r (exp 0412, tag k1r412): BC5_GUARD_K1R on: never-written parts of the views of direct memory are GPU-mapped read-only onto one zero buffer; nothing is pinned for them
+k1r (exp 0412, tag k1r412): t 1 s: 942 read-only zero pieces cover 1870.0 MiB of never-written memory under 43 views (rebuild 1); the zero buffer holds 0 non-zero words
+k1r (exp 0412, tag k1r412): t 31 s: 713 read-only zero pieces cover 1418.0 MiB of never-written memory under 7505 views (rebuild 107); the zero buffer holds 0 non-zero words
+k1r (exp 0412, tag k1r412): t 41 s: 529 read-only zero pieces cover 1054.0 MiB of never-written memory under 25814 views (rebuild 410); the zero buffer holds 0 non-zero words
+k1r (exp 0412, tag k1r412): t 85 s: 528 read-only zero pieces cover 1052.0 MiB of never-written memory under 26375 views (rebuild 576); the zero buffer holds 0 non-zero words
+k1r (exp 0412, tag k1r412): t 97 s: 527 read-only zero pieces cover 1050.0 MiB of never-written memory under 26406 views (rebuild 614); the zero buffer holds 0 non-zero words
+k1r (exp 0412, tag k1r412): t 107 s: 519 read-only zero pieces cover 1034.0 MiB of never-written memory under 20014 views (rebuild 989); the zero buffer holds 0 non-zero words
+k1r (exp 0412, tag k1r412): t 118 s: 518 read-only zero pieces cover 1032.0 MiB of never-written memory under 20814 views (rebuild 1116); the zero buffer holds 0 non-zero words
+k1r (exp 0412, tag k1r412): t 176 s: 516 read-only zero pieces cover 1028.0 MiB of never-written memory under 21120 views (rebuild 1459); the zero buffer holds 0 non-zero words
+probe (exp 0412, tag pr412): t 200.0 s: BC5_GUARD_K1R_PROBE: the host reads 16 KiB at 0x1100000000 with a job of its own (own context)
+probe (exp 0412, tag pr412): control (the probe's own pattern): ran in 7.09 ms; first 16 bytes 01 09 0f 17 1d 25 2b 33 39 41 47 4f 55 5d 63 6b; of 16384 bytes 0 are zero, 128 still hold the destination's fill, 16384 match the control's pattern
+probe (exp 0412, tag pr412): the address before the read: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+probe (exp 0412, tag pr412): the read: ran in 0.06 ms; first 16 bytes 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00; of 16384 bytes 16384 are zero, 0 still hold the destination's fill, 0 match the control's pattern
+probe (exp 0412, tag pr412): verdict: the GPU read the address without a fault; all 16384 bytes are ZERO

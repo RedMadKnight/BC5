@@ -1,0 +1,14 @@
+2026-11-13 16:39:38
+arm zd4bydata (fast8), cap 500 s, play 240 s, binary /home/kjaniszewski/bc5-work/exp0412/bin-d/kyty_emulator md5 be507cd56ea4e04448fb7e48811b00c5, launcher 3a1f4e10, fuse 13000 2048
+the arm's words: BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 BC5_GUARD_K1_STAT=1 BC5_GUARD_K1R=1 BC5_GUARD_K1_FILTER=log BC5_GUARD_LAZY_BY_DATA=1 BC5_0412N_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0412/night/input-zd4bydata.cfg 
+extra: BC5_GUARD_K1_STAT=1 BC5_FAULT_RECORD=1 BC5_GUARD_K1R=1 BC5_GUARD_K1_FILTER=log BC5_GUARD_LAZY_BY_DATA=1 BC5_DIRECT_TIMEOUT_PROBE=1
+boot 48cf6bf1, up since 2026-11-13 11:32:48
+MemAvailable:   13389212 kB SwapTotal:       7778300 kB SwapFree:        7220924 kB 
+emulator pid 1880445 exe /home/kjaniszewski/bc5-work/exp0412/bin-d/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0412/night/wd
+route: cross (start screen) at 87 s
+route: the save-slot list runs; down x 3, cross (slot 4) at 93 s
+route: cross (Continue) at 99 s
+route: the load seen at 101 s
+route: gameplay G = 113 s (the load at 101 s)
+route: no input after the load (N_NOWALK=1), 240 s from 113 s
+launcher gone: yes; launcher exit 0

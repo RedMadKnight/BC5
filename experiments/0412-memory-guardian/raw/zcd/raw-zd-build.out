@@ -1,0 +1,12 @@
+2026-11-13 16:24:45 start
+cpu test: k1r0412: 17742 of 17742; end
+cpu test: cover0412: 640008 of 640008; end
+cpu test: kl0412: 99003 of 99003; end
+16:24:50 the private tree is brought to the shared tree's state
+== 16:24:55 backend
+private backend archive 4c5bb4fc (the shared one 75e30335 untouched)
+== 16:25:01 configure
+== 16:25:04 build
+normal: be507cd56ea4e04448fb7e48811b00c5, warnings 283
+binary beside be507cd5 (bin-d); the shared builds, backend and archive only read
+2026-11-13 16:27:50 built: g412zd
