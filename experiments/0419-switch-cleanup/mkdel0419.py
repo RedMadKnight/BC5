@@ -80,6 +80,12 @@ for rel, edits in EDITS.items():
         assert s.count(old) == cnt, (rel, old[:70], s.count(old), cnt)
         s = s.replace(old, new)
         n += cnt
+    # exp 0412's K1r (when the unit has it) refused to run beside the zero skip: that half of its check goes with the word
+    k = 'std::getenv("BC5_DIRECT_ZERO_SKIP") != nullptr || std::getenv("BC5_GUARD_PIN_CAP") != nullptr'
+    assert s.count(k) in (0, 1), rel
+    if k in s:
+        s = s.replace(k, 'std::getenv("BC5_GUARD_PIN_CAP") != nullptr' + X)
+        n += 1
     open(p, "w", encoding="utf-8", newline="").write(s)
     texts[rel] = s
 left = []
