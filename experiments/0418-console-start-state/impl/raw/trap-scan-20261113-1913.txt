@@ -1,0 +1,84 @@
+== 2026-11-13 19:13:40 trap0418.py (md5 e570b489) in ~/bc5-data/captures
+trap0418: 43 buffers (0 unreadable)
+  PS: RSRC2 sets 27, TRAP_PRESENT 0, EXCP_EN 0; loads covering it 659; trap/excp bits seen: 0x00000000x27
+  VS: RSRC2 sets 0, TRAP_PRESENT 0, EXCP_EN 0; loads covering it 35; trap/excp bits seen: -
+  GS: RSRC2 sets 27, TRAP_PRESENT 0, EXCP_EN 0; loads covering it 35; trap/excp bits seen: 0x00000000x27
+  ES: RSRC2 sets 0, TRAP_PRESENT 0, EXCP_EN 0; loads covering it 0; trap/excp bits seen: -
+  HS: RSRC2 sets 27, TRAP_PRESENT 0, EXCP_EN 0; loads covering it 0; trap/excp bits seen: 0x00000000x27
+  LS: RSRC2 sets 0, TRAP_PRESENT 0, EXCP_EN 0; loads covering it 0; trap/excp bits seen: -
+  CS: RSRC2 sets 306, TRAP_PRESENT 0, EXCP_EN 0; loads covering it 0; trap/excp bits seen: 0x00000000x306
+trap0418: per capture directory (20): buffers, RSRC2 sets, TRAP_PRESENT, EXCP_EN
+  play-20261105-0635: 2 31 0 0
+  play-20261105-1553: 2 5 0 0
+  play-20261105-1645: 2 8 0 0
+  play-20261106-0044: 2 39 0 0
+  play-20261106-0303: 2 32 0 0
+  play-20261106-0323: 2 24 0 0
+  play-20261106-2248: 2 27 0 0
+  play-20261109-2203: 3 5 0 0
+  play-20261111-0007: 2 5 0 0
+  play-20261111-0952: 2 35 0 0
+  play-20261111-2003: 2 43 0 0
+  play-20261111-2230: 2 25 0 0
+  play-20261112-0122: 2 5 0 0
+  play-20261112-1341: 2 5 0 0
+  play-20261112-1515: 2 8 0 0
+  play-20261112-1628: 4 12 0 0
+  play-20261112-1634: 2 5 0 0
+  play-20261112-1904: 2 2 0 0
+  play-20261113-0008: 2 30 0 0
+  play-20261113-0854: 2 41 0 0
+trap0418: NO set RSRC2 asks for a trap handler or an exception
+== shader dumps: files and directories named like shaders, depth 4
+     10 ~/bc5-work/exp0415/wd-astro
+     10 ~/bc5-work/exp0415/wd
+     10 ~/bc5-work/exp0413r/run/wd
+     10 ~/bc5-work/exp0413/n/wda
+     10 ~/bc5-work/exp0413/n/wd
+     10 ~/bc5-work/exp0412/night/wd
+     10 ~/bc5-work/exp0401t/wd
+     10 ~/bc5-work/exp0389/wd
+     10 ~/bc5-work/exp0388r/run/wd
+     10 ~/bc5-work/exp0382/wd
+     10 ~/bc5-work/exp0372/wd
+     10 ~/bc5-work/exp0330/wd
+     10 ~/bc5-work/d19/run/wd
+     10 ~/bc5-work
+      4 ~/bc5-work/kyty-union/tests
+      4 ~/bc5-work/exp0415/tree5/tests
+      4 ~/bc5-work/d19/verify/tests
+      3 ~/bc5-work/kytyps5-build/CMakeFiles
+      2 ~/bc5-work/kytyps5-build
+      1 ~/bc5-work/user
+== the capture directories, newest first
+play-20261113-1901
+play-20261113-1858
+play-20261113-1851
+play-20261113-1845
+play-20261113-1838
+play-20261113-1837
+play-20261113-1835
+play-20261113-1825
+play-20261113-1807
+play-20261113-1804
+play-20261113-1800
+play-20261113-1714
+play-20261113-1712
+play-20261113-1710
+play-20261113-1707
+play-20261113-1705
+play-20261113-1703
+play-20261113-1649
+play-20261113-1639
+play-20261113-1633
+play-20261113-1630
+play-20261113-1628
+play-20261113-1616
+play-20261113-1614
+play-20261113-1607
+play-20261113-1601
+play-20261113-1559
+play-20261113-1557
+play-20261113-1555
+play-20261113-1552
+== 2026-11-13 19:13:42 end
