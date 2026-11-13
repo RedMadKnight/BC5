@@ -481,6 +481,36 @@ Also in this slot: the software replug check on the new shared normal build 51af
 (`experiments/0413-np-session-v2-shared/integration/replug/raw/R10-*`). By the maintainer's rule of the same day it
 was not needed (B changes no audio or pad code) and is not repeated.
 
+## 16. The cause: `sceSaveDataTransferringMount` for another title's save (2026-11-13 18:07)
+
+`al0417.sh al1`: one 30 s start of candidate C's private build on the kept bad directory (`wda/_SaveData.sm0`) with
+the emulator's call log (`~/bc5-work/exp0413/n/raw/al1-calls.log`, 9,243 lines; it holds the title's own strings and
+is not committed). The start ended by itself at 5 s with the same fault. The last host calls of the faulting thread:
+
+    SaveDataGetSaveDataMemory2   x4      (the four reads of section 15)
+    PthreadMutexInitNamed
+    SaveDataTransferringMount            user_id 1000, title_id PPSA01325, dir_name sce_sdmemory
+
+and then, before the fault, a read of 65,536 bytes of `_SaveData/PPSA21564/sce_sdmemory/memory.dat` through the file
+calls. The title asks for the save of ANOTHER title (PPSA01325). `SaveDataTransferringMount` in
+`src/libs/libSaveData.cpp` ignores `title_id`: it takes the directory of that name under the RUNNING title, which is
+the title's own save data memory directory, creates it when it is absent, mounts it and answers OK with status
+"created". The title then reads our `memory.dat` as the other title's save and faults in its own parsing (the path
+split of section 15). With no key the title never has a save of its own and (not checked) does not ask.
+
+Fix behind a switch, written and not run: `mksdt0417.py` (unit a01e4b64 -> 164c0869),
+`KYTY_BC5_SAVEDATA_TRANSFER_FIX=1`: the directory is the one of the title the call names; a directory that does not
+exist is not created and the call answers `SAVE_DATA_ERROR_NOT_FOUND` (0x809F0008); one that exists is mounted with
+status 0. `TODO(verify)`: the console's own answer for a transfer source that does not exist. Off by default; it is
+folded into exp 0419's candidate E, whose private chain has the pair for it (the kept bad save with the fix off:
+the fault; with the fix on: the start must pass and name the transfer).
+
+Dispositions of this experiment's switches: `KYTY_BC5_SAVEDATA_TRANSFER_FIX`: promote when its pair passes and one
+ASTRO BOT play has gone over a first save; `KYTY_BC5_SAVEDATA_MEMORY_LOG`: diagnostic; `_MEMORY_SLOTS`, `_MEMORY_PARAM`:
+no verdict (missing: a title that uses a second slot or reads parameters back); `BC5_R3_EOP_STAT`: diagnostic;
+`BC5_DIRECT_HEAP_GUARDS`: no verdict (clean with and without; missing: the maintainer's play with it off);
+`KYTY_BC5_SETBUFFER_TEST_HOOK`: a compile-time gate, stays 0.
+
 ## Open items carried from the integration (not worked on here)
 
 | # | Item | Needs |
