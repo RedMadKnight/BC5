@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=BC5 emulator (0412 K1r test)
+Comment=BC5 exp 0412 (2026-11-13, the maintainer's "Tak, zamien"): the test of the cutscene fault's cure on the private build g412zd (the shared tree B + K1r): memory the title mapped and never wrote reads as zeros on the GPU (BC5_GUARD_K1R=1), a packet's unimported operand is imported (BC5_GUARD_K1_FILTER=1); no learned windows, no e11 reset-replay words; a GPU fault ENDS the game and leaves a record in ~/bc5-data/captures/faults/ (a save being written is let finish); Plasma's shell is stopped while the game runs and started again after it (if the panel does not come back: systemctl --user start plasma-plasmashell.service); fuse 13,000 MiB; log ~/bc5-work/exp0412/play-last.log
+Exec=/usr/bin/env BC5_0412_LEAN=1 /usr/bin/bash /home/kjaniszewski/bc5-work/exp0412/play-guard-0412.sh k1rcut
+Icon=applications-games
+Terminal=false
+Categories=Game;
+StartupNotify=false
