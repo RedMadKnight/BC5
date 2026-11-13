@@ -284,6 +284,34 @@ worst is acceptable against the 2 ms mark is exp 0412's and the top session's de
 After the acceptance, under one lock line (`rchain.sh`; results in section 13): exp 0412's extra wall walk with its
 writers catcher, and a private diagnostic build with exp 0418's one-off RSRC2 journal; the private builds go back to F.
 
+### 13. After the acceptance: a GPU hang in the long walk on F; exp 0418's RSRC2 journal (2026-11-13 20:22-20:54)
+
+`rchain.sh` (`raw/rchain.out`), one lock line, F's private binary 1a2900a0:
+
+| Step | Result |
+|---|---|
+| m5wall: the walk to G+560 with exp 0412's zero scan and `BC5_GUARD_WRITERS=1` (outside the acceptance) | **GPU HANG at 601 s** (G+484): `ring gfx_0.0.0 timeout`, no fault address, the ring reset succeeded, the game ended itself with a fault record (`~/bc5-data/captures/faults/20261113-203301`; journal `~/bc5-data/captures/play-20261113-2022/gc/direct.log`; neither committed). Until then 25.8 flips/s, longest gap 674 ms. Four of the five scans ran; the whole-box table and the fdinfo read (due at 615 s) are empty |
+| a private diagnostic build, F + exp 0418's `rsrc2_journal` (patch e794fbe6, unit 877d6edc) | builds |
+| r1: the second title's walk with `BC5_DIRECT_RSRC2_JOURNAL=1` | clean to G+240; totals after 188,001 buffers: PS 4,174,715 words, GS 4,453,233, HS 445,361, CS 2,755,281, **TRAP_PRESENT 0, EXCP_EN 0** in every stage |
+| r0a: ASTRO BOT 120 s with it | PASS; after 52,001 buffers PS 662,298, GS 1,169,993, HS 82,138, CS 771,515, **0 / 0** |
+| back to F | the private builds read 1a2900a0 / 034bf107 again (the same bytes) |
+
+**The hang is a finding against F until shown otherwise.** F's six acceptance runs ended at G+240 or G+320; this is
+its only run past that. E's long walk on the same route (k4wall, to G+560, with the scan) was clean to 681 s. What
+differs between the two: exp 0412's form 6 for form 4, `BC5_GUARD_WRITERS=1`, and exp 0418's start-state table (always
+on in F; it writes `SPI_SHADER_REQ_CTRL_PS`, whose one earlier verdict was a failed play, audit row B2). The journal
+shows 409 MiB available and 12,237 of 13,312 MiB of GTT at 420 s. One run: no cause is named here. By the
+maintainer's rule it is a bug to remove at its source, with its record. Next: the long walk on F with no scan and no
+writers catcher, twice; if it hangs, the same with exp 0418's rows skipped, and on E's kept form. F is NOT ready for
+the swap before that.
+
+A mistake of this chain: it did not stop at the hang's kernel lines (the extra arm's status was not checked) and went
+on to the diagnostic build and two more runs; both were clean and the box did not reboot.
+
+Exp 0418's answer from its journal: no shader of either title loads an RSRC2 word with TRAP_PRESENT or EXCP_EN on
+these routes; `rsrc2_journal` is not kept in the tree. Its start-state line is in both titles' logs with all eight
+rows and none skipped; the second title also has the TF ring and HS offchip lines; neither has a GS ring line.
+
 ## Decisions for the maintainer
 
 One "yes" covers the swap of E as a whole (the top session asks): both shared builds, the shared backend archive
@@ -300,7 +328,9 @@ to the trash directory. Still his to say separately, because they are behaviour 
 
 ## Verdict
 
-**Candidate F (patch d9af28ca) is built and accepted privately on both titles (section 12); nothing is swapped.**
+**Candidate F (patch d9af28ca) is built and passed its acceptance runs on both titles (section 12), but its one run
+past G+320 ended in a GPU hang at 601 s (section 13): F is NOT ready for the swap until the long walk has been
+repeated. Nothing is swapped.**
 F = B + exp 0412's K1r (form 6, default on, the cover pass fixed) + the cleanup + exp 0417's save fix + exp 0418's
 start-state table. E (410273ca) is withdrawn: its K1r stalled the menu for over a second. Of the inventory's 266
 names 77 can no longer be set (29 deleted, 48 hardened) and 189 remain: 69 diagnostics, 63 without a verdict, 42 one
