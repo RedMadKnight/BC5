@@ -1,0 +1,14 @@
+2026-11-13 10:44:16
+arm k1rg (fast8), cap 500 s, play 240 s, binary /home/kjaniszewski/bc5-work/exp0412/bin-b/kyty_emulator md5 655118242a216ff4fd34c5573a9a7d86, launcher 3a1f4e10, fuse 13000 2048
+the arm's words: BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 BC5_GUARD_LEARN_LOG=2 BC5_GUARD_K1_STAT=1 BC5_GUARD_K1R=1 BC5_GUARD_K1R_REPLACE=1 BC5_GUARD_WATCH=1100000000 BC5_GUARD_K1R_PROBE=1100000000,200 BC5_0412N_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0412/night/input-k1rg.cfg 
+extra: BC5_GUARD_LEARN_LOG=2 BC5_GUARD_K1_STAT=1 BC5_FAULT_RECORD=1 BC5_GUARD_K1R=1 BC5_GUARD_K1R_REPLACE=1 BC5_GUARD_WATCH=1100000000 BC5_GUARD_K1R_PROBE=1100000000,200
+boot e88d45fe, up since 2026-11-13 00:11:11
+MemAvailable:   13418324 kB SwapTotal:       7778300 kB SwapFree:        7191512 kB 
+emulator pid 3220891 exe /home/kjaniszewski/bc5-work/exp0412/bin-b/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0412/night/wd
+route: cross (start screen) at 88 s
+route: the save-slot list runs; down x 3, cross (slot 4) at 94 s
+route: cross (Continue) at 100 s
+route: the load seen at 102 s
+route: gameplay G = 114 s (the load at 102 s)
+route: no input after the load (N_NOWALK=1), 240 s from 114 s
+launcher gone: yes; launcher exit 0

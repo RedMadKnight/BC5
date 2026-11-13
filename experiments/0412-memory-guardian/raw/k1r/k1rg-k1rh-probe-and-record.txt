@@ -1,0 +1,106 @@
+watch (exp 0412, tag wa412): t 0.0 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)  <-- changed
+watch (exp 0412, tag wa412): t 0.9 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)  <-- changed
+watch (exp 0412, tag wa412): t 10.0 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 20.0 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 30.0 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 40.0 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 50.0 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 60.0 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 70.0 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 80.0 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 90.0 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 100.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 110.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 120.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 130.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 140.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 150.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 160.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 170.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 180.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 190.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+probe (exp 0412, tag pr412): t 200.0 s: BC5_GUARD_K1R_PROBE: the host reads 16 KiB at 0x1100000000 with a job of its own (own context)
+probe (exp 0412, tag pr412): control (the probe's own pattern): ran in 0.06 ms; first 16 bytes 01 09 0f 17 1d 25 2b 33 39 41 47 4f 55 5d 63 6b; of 16384 bytes 0 are zero, 128 still hold the destination's fill, 16384 match the control's pattern
+probe (exp 0412, tag pr412): the address before the read: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+probe (exp 0412, tag pr412): the read: ran in 0.05 ms; first 16 bytes 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00; of 16384 bytes 16384 are zero, 0 still hold the destination's fill, 0 match the control's pattern
+probe (exp 0412, tag pr412): verdict: the GPU read the address without a fault; all 16384 bytes are ZERO
+watch (exp 0412, tag wa412): t 200.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 210.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 220.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 230.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 240.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 250.3 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 260.3 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 270.3 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 280.3 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 290.3 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 300.3 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 310.3 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 320.3 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 330.3 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 340.3 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 350.4 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: a read-only zero cover (K1r)
+watch (exp 0412, tag wa412): t 0.0 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)  <-- changed
+watch (exp 0412, tag wa412): t 10.0 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)
+watch (exp 0412, tag wa412): t 20.0 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)
+watch (exp 0412, tag wa412): t 30.1 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)
+watch (exp 0412, tag wa412): t 40.1 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)
+watch (exp 0412, tag wa412): t 50.1 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)
+watch (exp 0412, tag wa412): t 60.1 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)
+watch (exp 0412, tag wa412): t 70.1 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)
+watch (exp 0412, tag wa412): t 80.1 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)
+watch (exp 0412, tag wa412): t 90.1 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)
+watch (exp 0412, tag wa412): t 100.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)
+watch (exp 0412, tag wa412): t 110.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)
+watch (exp 0412, tag wa412): t 120.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)
+watch (exp 0412, tag wa412): t 130.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)
+watch (exp 0412, tag wa412): t 140.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)
+watch (exp 0412, tag wa412): t 150.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)
+watch (exp 0412, tag wa412): t 160.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)
+watch (exp 0412, tag wa412): t 170.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)
+watch (exp 0412, tag wa412): t 180.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)
+watch (exp 0412, tag wa412): t 190.2 s: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)
+probe (exp 0412, tag pr412): t 200.0 s: BC5_GUARD_K1R_PROBE: the host reads 16 KiB at 0x1100000000 with a job of its own (own context)
+probe (exp 0412, tag pr412): control (the probe's own pattern): ran in 0.05 ms; first 16 bytes 01 09 0f 17 1d 25 2b 33 39 41 47 4f 55 5d 63 6b; of 16384 bytes 0 are zero, 128 still hold the destination's fill, 16384 match the control's pattern
+probe (exp 0412, tag pr412): the address before the read: 0x1100000000: under "AssetHeap Large" (by data; view 0x10d0000000+0x33000000, 0x30000000 into it; file chunk 0x91a00000): the chunk never written by the CPU, not imported; GPU: NO MAPPING (a read here faults)
+probe (exp 0412, tag pr412): the read: THE JOB TIMED OUT after 2055 ms: fault address 0x1100000000, status 0x00701031 (a read)
+probe (exp 0412, tag pr412): verdict: the read FAULTED or hung; this is the known fault of this probe
+fault record (exp 0412, tag fr412): written to /home/kjaniszewski/bc5-data/captures/faults/20261113-111017; the game ends here (BC5_FAULT_RECORD)
+== record.txt
+BC5 GPU fault record (exp 0412, tag fr412). A GPU fault is a bug to remove at its source; the game was ended here.
+
+when: 20261113-111017, 202.056 s after the emulator's start
+what the host saw: a submission timed out after 2 s (rc 0); the kernel's last fault address 0x1100000000, status 0x00701031 (a READ, by the status' bit 18)
+kind: K1 under a BY-DATA view, chunk never written by the CPU
+the address: a plain guest address; guest range there: yes; under a view: yes: "AssetHeap Large" (direct file, by data), view 0x10d0000000+0x33000000, the address is 0x30000000 into it; its 2 MiB chunk is NOT imported (the CPU never wrote it, or its heap is lazy); a GPU mapping at the address: no
+memory: pinned direct 11250.0 MiB in 69 buffers, private 270.0 MiB in 9; 15378 GPU mappings (meminfo.txt, pressure.txt)
+saves (tag sg412): no save was being written when the game was ended. At the request: 0 save call(s) of the host in flight, 0 save mount(s) written and not yet unmounted, the last save call began 9775 ms before (-1: none in this run). Waited 0 ms (5000 at most); left then: 0 call(s), 0 mount(s); 0 caller(s) held from starting something new. Sync of the save directory: done.
+the capture directory of this run (the whole journal, the dumped buffers of the timed-out jobs): /home/kjaniszewski/bc5-data/captures/play-20261113-1106/gc
+
+in this directory: journal-tail.txt (the probe's summary of the timed-out jobs, the last submissions, the ledger, the frame lines), layout-views.txt, layout-buffers.txt,
+layout-mappings.txt, meminfo.txt, pressure.txt, environment.txt (every BC5_* and KYTY_* variable), process.txt.
+
+NOT known to the emulator, added by the launcher when it can (dmesg.txt, build.txt): the kernel's own fault lines (client, RW, the ring), the devcoredump's path, the binary's md5.
+Nothing here is read by a later run.
+== build.txt
+added by faultrec0412.sh at 2026-11-13 11:10:48 (the launcher's step; the emulator cannot read these)
+binary: /home/kjaniszewski/bc5-work/exp0412/bin-b/kyty_emulator
+binary md5: 655118242a216ff4fd34c5573a9a7d86
+binary time: 2026-11-13 10:37:35.877674996 +0100
+kernel: 7.2.15-ogc1.1.fc45.x86_64
+mesa: 26.2.6-2.fc4526.2.6-2.fc45
+libdrm: 2.4.134-2.fc452.4.134-2.fc45
+the kernel's words (dmesg-gpu.txt, 33 lines): a page fault, a ring timeout, reset succeeded
+  [39543.401767] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:147)
+  [39543.401776] amdgpu 0000:01:00.0:   in page starting at address 0x0000001100000000 from client 0x1b (UTCL2)
+  [39543.401779] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00701031
+  [39543.401780] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+  [39543.401781] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+  [39543.401783] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+  [39543.401785] amdgpu 0000:01:00.0: 	 RW: 0x0
+  [39543.401788] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:147)
+  [39543.401791] amdgpu 0000:01:00.0:   in page starting at address 0x0000001100001000 from client 0x1b (UTCL2)
+  [39543.401795] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:147)
+  [39543.401797] amdgpu 0000:01:00.0:   in page starting at address 0x0000001100002000 from client 0x1b (UTCL2)
+  [39543.401800] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:147)
+devcoredump: /home/kjaniszewski/bc5-data/captures/devcoredump/20261113-111017-devcd3.txt
