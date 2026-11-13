@@ -89,5 +89,8 @@ for a, b in (("bash ./run0413p.sh \"$tag\" nozeroskip 240 ", "bash ./run0413p.sh
     assert t.count(a) == 1, a
     t = t.replace(a, b)
 t = t.replace("chk0417g", "chk0419e")
+# a wrapper that already holds the chain's lock line (echain.sh) passes it in CHAIN_LOCKLINE: do not claim twice
+assert t.count('\nchain_claim "') == 1
+t = t.replace('\nchain_claim "', '\n[ -n "${CHAIN_LOCKLINE:-}" ] || chain_claim "')
 open(out + "/chk0419e.sh", "w", encoding="utf-8", newline="\n").write(t)
 print("chk0419e.sh ok")

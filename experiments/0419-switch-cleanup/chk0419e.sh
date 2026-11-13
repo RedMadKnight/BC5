@@ -21,7 +21,7 @@ cd "$N" || exit 1
 PADS=()
 padstop() { [ ${#PADS[@]} = 0 ] || kill "${PADS[@]}" 2> /dev/null; PADS=(); }
 fin() { padstop; chain_release; }
-chain_claim "exp 0419 candidate E, private: ASTRO BOT (3 starts), the second title walk twice + cutscene arm to its end, lean, the wall walk to G+560" 65 || { echo "chk0419e ended $(date +%T): NOT STARTED"; exit 1; }
+[ -n "${CHAIN_LOCKLINE:-}" ] || chain_claim "exp 0419 candidate E, private: ASTRO BOT (3 starts), the second title walk twice + cutscene arm to its end, lean, the wall walk to G+560" 65 || { echo "chk0419e ended $(date +%T): NOT STARTED"; exit 1; }
 trap fin EXIT
 recs() { find "$FR" -mindepth 1 -maxdepth 1 -type d -newermt "@$1" 2> /dev/null | wc -l; }
 BN=$P/build-normal/src/kyty_emulator; BL=$P/build-lean/src/kyty_emulator; SN=$W/kytyplus-build/src/kyty_emulator
