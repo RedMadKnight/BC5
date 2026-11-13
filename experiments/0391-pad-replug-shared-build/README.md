@@ -80,4 +80,4 @@ maintainer's physical replug and the DualShock 4 check are separate steps, his.
 
 **Result.** (empty: no box run yet)
 
-**Verdict.** (empty)
+**Verdict.** None written (noted 2026-11-13). The run this experiment planned was never made under its own name. Its harness was used later, by exp 0413 and by exp 0416 and exp 0417, on the builds of 2026-11-12 and 2026-11-13: software replug runs R5, R7, R8 (on the shared normal build fe0933c0) and R9, each CLASS PASS with three pulls, raw files under `experiments/0413-np-session-v2-shared/integration/replug/raw/`; see `docs/HANDOFF.md` F828.

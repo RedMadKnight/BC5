@@ -69,3 +69,7 @@ The binary is e8's (dc7fb4e0) with two more private units, linked by `box/link04
 
 Play the three shortcuts with the box idle and read `~/bc5-work/exp0409/play-last.log` and the journal: look for
 `[bc5] exp 0401 pool:` lines and for the old "AMM virtual-memory unmap" fatal at 12,800 MiB.
+
+## Verdict
+
+None written (noted 2026-11-13). This README ends at its plan ("Next"). The runs made on this build are recorded elsewhere: exp 0401 (the 12,800 MiB tally: 5 of 5 runs died at 159-195 s without `KYTY_BC5_AMM_SCATTER`; with `rescue` 4 of 7 reached G+600 and 3 exited 133) and exp 0412 sections 57 and 59, which read them; see `docs/HANDOFF.md` F826.
