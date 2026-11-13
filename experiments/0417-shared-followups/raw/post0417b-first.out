@@ -1,0 +1,16 @@
+chain lock: exp 0417 | chain: exp 0417: checks on the shared builds after candidate B's swap (ASTRO BOT, walk, cutscene arm, lean, EOP count), until about 16:32 | token 202611131547561305277 | 2026-11-13 15:47:56
+shared binaries: normal 51af1ed78e84291caf5ee042ea82c46d, lean 59894428d98ed94918d09a31002c1e3b
+h0a (astro) PASS: ran 120 s; RssAnon at the end 203548 kB; kernel lines 0, crash lines 0
+h0b (astro) PASS: ran 120 s; RssAnon at the end 209108 kB; kernel lines 0, crash lines 0
+h0c (astro) PASS: ran 120 s; RssAnon at the end 201408 kB; kernel lines 0, crash lines 0
+h0a-c save-memory file: 43703630 (1fa391a4 with no key)
+h1 journal: would-learn , timeout-fault , fault record lines 
+h1 route: ; watchdog: 
+h1 at ~104 s: 
+h1 at ~60 s: 
+h1 input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 
+
+h1: NOT a clean run
+second title: NOT all clean
+post0417b ended 15:54:34: STOPPED (a kernel line or a fault record)
+chain lock released

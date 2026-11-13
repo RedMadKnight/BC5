@@ -1,0 +1,28 @@
+--- ok (exit 0)
+claimed: exp 0413 | token 17945795602992 | exp 0417 candidate B: patch 0001 27b6416f into the shared normal and lean, CPU only, no emulator, until 15:59 | 2026-11-13 15:19:20
+2026-11-13 15:19:20 before: normal 7e25158f21fa1217eadf07a237d95e9e, lean 9467b57ef745403904438baaf11673ea, archive 23600b02, tree diff 4651d1d3
+tree: 129 patched files match; diff 27b6416f
+== 15:19:35 normal
+== 15:19:36 lean
+2026-11-13 15:19:40 after: normal c215a5767b9716f7b4e8b6139d988a89, lean 51c852eea6228c3e4fef85866e1b7553, archive 23600b02, tree diff 27b6416f; byte-identical to the private builds
+undo: both binaries from <work>/ok/bc5-work/exp0413/swap/*.before-0417b, the tree by rever
+lock released
+--- fail (exit 1)
+claimed: exp 0413 | token 17945795983645 | exp 0417 candidate B: patch 0001 27b6416f into the shared normal and lean, CPU only, no emulator, until 15:59 | 2026-11-13 15:19:58
+2026-11-13 15:19:59 before: normal 7e25158f21fa1217eadf07a237d95e9e, lean 9467b57ef745403904438baaf11673ea, archive 23600b02, tree diff 4651d1d3
+tree: 129 patched files match; diff 27b6416f
+== 15:20:14 normal
+error: stand-in build failure
+int0417b: FAILED (build normal); restoring from <work>/fail/bc5-work/exp0413/swap
+restored and read back: normal 7e25158f21fa1217eadf07a237d95e9e, lean 9467b57ef745403904438baaf11673ea, tree 4651d1d3; the build directories' objects are newer than the tree: rebuild before the next c
+lock released
+--- k1r (exit 1)
+claimed: exp 0413 | token 17945796334239 | exp 0417 candidate B: patch 0001 27b6416f into the shared normal and lean, CPU only, no emulator, until 16:00 | 2026-11-13 15:20:33
+2026-11-13 15:20:34 before: normal 7e25158f21fa1217eadf07a237d95e9e, lean 9467b57ef745403904438baaf11673ea, archive 23600b02, tree diff 4651d1d3
+tree: 129 patched files match; diff 27b6416f
+== 15:20:49 normal
+== 15:20:50 lean
+int0417b: FAILED (<work>/k1r/bc5-work/kytyplus-build/src/kyty_emulator holds [BC5_GUARD_K1
+restored and read back: normal 7e25158f21fa1217eadf07a237d95e9e, lean 9467b57ef745403904438baaf11673ea, tree 4651d1d3; the build directories' objects are newer than the tree: rebuild before the next c
+lock released
+dryswap0417b: 21 passed, 0 failed

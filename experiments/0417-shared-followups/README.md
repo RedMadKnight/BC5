@@ -336,6 +336,112 @@ What remains is a defect of its own on every build: a first save made this way f
 next start crash at 5 s. The files are kept on the box (`~/bc5-work/exp0413/n/wda/_SaveData.ks1`, `.kb1`, the two
 midday ones); it is not worked on here.
 
+## 12. Prepared, not run: candidate B's swap and its checks after the swap
+
+`mkswap0417b.py` makes `int0417b.sh` from the integration's `int0416.sh` (pins fe0933c0 / 711d6c0d / patch
+4651d1d3; `0001-new9.patch` out, `0001-new14.patch` = 27b6416f in; the archive 75e30335 must stay; the binaries must
+hold B's words and must NOT hold `BC5_GUARD_K1R` or the set-buffer test hook's word). The swap is the top session's
+to put to the maintainer; nothing was run on the box.
+
+Dry run on the laptop (`dryswap0417b.sh`, `raw/dryswap0417b.out`): a stand-in HOME whose host tree is the scratch
+tree with 0001-new9 applied, a stand-in `distrobox` whose "build" writes a file made of the tree's own sources, the
+real patches and tree list. Three cases, 21 of 21 checks:
+
+| Case | Expected | Result |
+|---|---|---|
+| ok | tree diff 27b6416f, "byte-identical to the private builds", copies kept, lock released | as expected, exit 0 |
+| the build fails | both binaries and the tree (4651d1d3) restored and read back, lock released | as expected, exit 1 |
+| a binary holds `BC5_GUARD_K1R` | refused by name, restored and read back, lock released | as expected, exit 1 |
+
+Not covered by a dry run: the real build, the real binaries' words, and whether the shared binaries come out equal
+to the private ones (3baa8e39 / e11ad4de).
+
+After the swap, `post0417b.sh` (one chain, pad keys recorded, `P_N` / `P_L` = the expected shared md5s): ASTRO BOT
+120 s on a fresh private test directory (the save-memory file must read 1fa391a4), the walk to G+240, the cutscene
+arm, lean 120 s, and the walk once more with `BC5_R3_SUBMIT_EOP_EVENT=1 BC5_R3_EOP_STAT=1` (the EOP count, never run).
+Then the replug series with the maintainer at the box: `run0391.sh` with
+`experiments/0413-np-session-v2-shared/integration/replug/pins0391-B-shared.env` copied over the box's
+`pins0391.env`, followed by his physical DualSense replug and the DS4 (the standing audio rule). `post0417b.sh` was
+checked with `bash -n` only.
+
+## 13. ASTRO BOT's first save: reading of the SaveData path, a catcher and three candidate fixes (not run)
+
+The defect of section 11 is on every build. What `src/libs/libSaveData.cpp` (candidate B's, 0bd91bb4) does with the
+save data memory, read on the laptop:
+
+| # | What the code does | Why it can matter here | Candidate |
+|---|---|---|---|
+| H1 | ONE store and one file (`sce_sdmemory/memory.dat`) for every `slot_id`; its own comment says so, and its "sync" event already names per-slot directories | a title using two slots writes one over the other at the same offsets; the next start reads the wrong slot's bytes | `KYTY_BC5_SAVEDATA_MEMORY_SLOTS=1` (new) |
+| H2 | `SetupSaveDataMemory2` answers `existed_memory_size` = the store's size (2 MiB) on an EMPTY directory, unless `KYTY_BC5_SAVEDATA_MEMORY_FIXES` has "existed"; that switch is not in the default table | the title is told a save exists, reads zeros as one, and its first real save is built on that | `KYTY_BC5_SAVEDATA_MEMORY_FIXES=existed` (exp 0401 e5, exists) |
+| H3 | `SetSaveDataMemory2` drops the parameters and the icon; `GetSaveDataMemory2` answers zeroed parameters and an empty icon | a title that checks them after a real save gets nothing | `KYTY_BC5_SAVEDATA_MEMORY_PARAM=1` (new) |
+| H4 | none of the above: the file is right and the title's path with a real save hits another missing piece at 5 s | then the call log shows clean reads and the fault is elsewhere | the catcher's output and the crash text |
+
+These are hypotheses from reading; no call sequence has been seen yet. The good and the bad file are on the box
+(not read this round: the box was the guardian's), so the structural comparison of the two files is still owed; the
+catcher gives the same information per call (slot, offset, size, non-zero count, FNV-1a).
+
+Made, all off by default (with all off the calls do what they did): `sdm0417.inc` (the block), `mksdm0417.py`
+(puts it into the unit: 0bd91bb4 -> a01e4b64, one more line in the sync path), candidate C = B + this = patch
+1689b7da (`tree-candidate-C-1689b7da.md5`; the patch is in the sessions' notes folder).
+
+- `KYTY_BC5_SAVEDATA_MEMORY_LOG=1`, the catcher: one stderr line per Setup / Get / Set / Sync.
+- `KYTY_BC5_SAVEDATA_MEMORY_SLOTS=1`: slots 1-3 get their own store and file (`sce_sdmemory<n>/memory.dat`), slot 0
+  keeps today's; a slot of 4 or more is PARAMETER.
+- `KYTY_BC5_SAVEDATA_MEMORY_PARAM=1`: parameters and icon kept per slot (`param.bin`, `icon.bin`) and answered.
+
+Own test (`test0417sdm.cpp` includes the block as it is, between stand-ins; `test0417sdm.sh`, VS clang++ on the
+laptop): 8 of 8 cases. It shows today's overwrite with the switches off (slot 0 reads slot 1's bytes), the two
+slots apart with the switch on, slot 4 refused, "existed" per slot, the parameters and icon kept across a process
+and cut to the caller's buffer, and the old zeroed answers with the switch off. The unit itself has NOT been
+compiled (the laptop cannot build the host); the private build is the first step on the box.
+
+For the box, when a slot is given (about 25 minutes, CPU build then five arms of 3 minutes): `mkkit0417f.py` ->
+`p0417f.sh` (the private tree from 27b6416f to 1689b7da), then `sdm0417run.sh sdm0417-list1.txt`: the catcher alone,
+each candidate alone, all together; every arm is a fresh private test directory, 120 s with five scripted crosses,
+then a 30 s start on what it wrote. The result wanted: which arm's next start passes, and the calls before the
+crash in the arm that does not.
+
+## 14. The swap of candidate B into the shared builds (2026-11-13 15:42-15:47) and the checks after it
+
+The maintainer, through the top session, on "swap the shared builds to candidate B?": "Tak, podmień". Scope: the
+shared normal and lean builds; the backend archive unchanged; no launcher, no desktop shortcut, no `faultrec0412.sh`
+in a launcher.
+
+`int0417b.sh` (`raw/int0417b.out`), CPU only, the box free after exp 0412's arm:
+
+| | Before | After |
+|---|---|---|
+| normal `~/bc5-work/kytyplus-build/src/kyty_emulator` | fe0933c0ad7c0d9a86194bc0a7598a06 | **51af1ed78e84291caf5ee042ea82c46d** |
+| lean `~/bc5-work/kytyplus-build-lean/src/kyty_emulator` | 711d6c0d33d171bcb4749903bd607aa2 | **59894428d98ed94918d09a31002c1e3b** |
+| archive `libbc5_backend.a` | 75e30335 | 75e30335 |
+| `~/src/KytyPlus`, diff against f266548 | 4651d1d3 | **27b6416f**, 129 patched files equal to the laptop's |
+
+The shared binaries are NOT byte-identical to the private builds of the same tree (3baa8e39 / e11ad4de), so the
+private runs of section 10 do not stand for them; the chain below is their check. Why they differ was not looked at
+(the build directories differ). Undo: `~/bc5-work/exp0413/swap/kyty_emulator.before-0417b` and
+`kyty_emulator-lean.before-0417b` over the two binaries, the tree by reversing `0001-new14.patch` and applying
+`0001-new9.patch` (both in `~/bc5-work/exp0413/p/kit`), then a rebuild of the build directories before the next change.
+`backend/kytyplus-patches/0001-bc5-lle-agc.patch` on this branch is 27b6416f (`grep -c 'exp 0372'` = 5, the route's
+header present).
+
+`post0417b.sh` on the shared builds. Its first start (`raw/post0417b-first.out`) ran ASTRO BOT 3 of 3 clean and then
+stopped without starting the walk: the tag `h1` was already used on 2026-11-12, the runner refused it, and the
+chain's filter hid the runner's message. A mistake of the script, not of the build; the tags were changed, the chain
+now names a used tag, and it was started again 15:55-16:22 (`raw/post0417b.out`). No pad key in any run.
+
+| Run | Result |
+|---|---|
+| ASTRO BOT 120 s, three in a row from a fresh private directory (twice: 6 starts) | 6 of 6 PASS, kernel 0, crash 0 |
+| sw1, the walk | G+240, 25.9 flips/s, 60 s with a gap over 100 ms, longest 668 ms; 10 MiB under no view at 61 s; available 876 / 840 MiB at ~60 / ~104 s; kernel 0, crash 0 |
+| sw2cut, the cutscene arm, no input | G+240, 30.7 flips/s, longest gap 574 ms; no fault, no record (one run) |
+| sw3l, lean 120 s | PASS, kernel 0, crash 0 |
+| sw4eop, the walk with `BC5_R3_SUBMIT_EOP_EVENT=1 BC5_R3_EOP_STAT=1` | G+240, 26.6 flips/s, longest gap 747 ms; kernel 0, crash 0; **no `eop stat` line**: the counter's callback never ran in 354 s, so this route makes no chained EOP publication with a deferred callback (the journal names `BC5_R3_SUBMIT_EOP_EVENT` as on) |
+
+Against the control of section 10 on the old shared build (26.3 flips/s, 8 MiB, 947 / 911 MiB): no difference
+shown, one run each. Not explained: after three ASTRO BOT starts in a row the save-memory file reads 43703630, not
+the 1fa391a4 of a single first start (both chains; the count of non-zero bytes was not taken, and every one of the
+starts on it passed). Not done: the replug series on the new shared binaries and the maintainer's own start.
+
 ## Open items carried from the integration (not worked on here)
 
 | # | Item | Needs |
@@ -353,7 +459,7 @@ midday ones); it is not worked on here.
 **Candidate B (27b6416f; section 9) is clean privately and not different from the shared build fe0933c0 in the valid
 chain of 2026-11-13 14:25 (section 10: one walk each, the cutscene arm, lean); the save-memory finding was the pad's
 input and exists on the shared build too (section 11). K1r is out of this fold after its fault on ASTRO BOT (section
-8). B's swap waits for the top session and the maintainer; it changes no backend file.** The guard and the map
+8). B is in the shared builds since 2026-11-13 15:47 (normal 51af1ed7, lean 59894428, patch 27b6416f; section 14) and its checks there are clean; the replug series on the new binaries is still to do.** The guard and the map
 opt-in are shown on real calls. The candidate patch 33bddfa1
 built privately and its hook did what was expected in six ASTRO BOT starts (section 2b); two of the new lines (C2, A2)
 still have to be seen in a title that reaches their code; the CLAUDE.md diff (with the versions read on the box) and the harness self-test are done; the two other launchers
