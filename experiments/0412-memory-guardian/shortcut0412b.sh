@@ -65,7 +65,10 @@ case "${1:-}" in
   lean5)     W=$E/play-lean-0412.sh; ARG=; NAME="BC5 emulator (0412 lean5)"
              WHAT="the LEAN version of fast5 (README section 43): binary built without journal, traces, tallies and this experiment's catchers; no direct.log, no sampler, no counters, no MangoHud, no log file; only the memory fuse stays"
              LOGS="no logs by design" ;;
-  *) echo "usage: shortcut0412b.sh orphans|cap|zo|zoe|fast|fast2|fast4|fast5|fast6|fast7|lean5|lean6|lean7|astro-off|astro-on|astro-evcap|pkg-evcap"; exit 1 ;;
+  k1rcut)    W=$E/play-guard-0412.sh; ARG=k1rcut; NAME="BC5 emulator (0412 K1R cutscena)"
+             WHAT="fast9's words on the private build g412zd (shared tree B + K1r): never-written memory reads as zeros on the GPU (BC5_GUARD_K1R=1), a packet's unimported operand is imported (BC5_GUARD_K1_FILTER=1), no learned windows, no e11 reset-replay words; a GPU fault ends the game with a record in ~/bc5-data/captures/faults/ (README sections 71-73); fuse 13,000 MiB"
+             LOGS="log ~/bc5-work/exp0412/play-last.log; sampler lines ~/bc5-work/exp0412/sampler/" ;;
+  *) echo "usage: shortcut0412b.sh k1rcut|orphans|cap|zo|zoe|fast|fast2|fast4|fast5|fast6|fast7|lean5|lean6|lean7|astro-off|astro-on|astro-evcap|pkg-evcap"; exit 1 ;;
 esac
 DESK=$(xdg-user-dir DESKTOP 2> /dev/null); DESK=${DESK:-$HOME/Pulpit}
 m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }

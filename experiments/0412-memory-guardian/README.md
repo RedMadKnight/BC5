@@ -3482,6 +3482,40 @@ that allocates it, registered in FAULTS.md as an open item, not a fault.
 Not done: his play with any of this; the walk route with K1r; a GPU read of written lazy memory (none seen, so
 kl412's fault-by-name has not fired); the defaults (K1R off).
 
+### 73. Whose the 12 KiB host page is; the test shortcut prepared; the fold proposed for candidate C (2026-11-13, laptop)
+
+**The host page of section 72 is the VideoOut buffer labels [I, from the code; the address itself not printed].**
+The unit's only anonymous mapping of the host is `g_labels` in namespace `Bc5Gc`: `uint64_t[64]` on one page from
+`::mmap(nullptr, 4096, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)`, the target of
+`sceVideoOutGetBufferLabelAddress` (the comment there: experiment 0071 put it on a page of its own "so that it can
+be mapped for the GPU"). It fits what was measured: the operand is always the first 8 bytes of the mapping (buffer
+0's label), the mapping is anonymous `rw-p` at a host address, and the title names it once in a RELEASE_MEM and once
+in a WAIT_REG_MEM64 every frame (write the flip label at the end of the frame's pipeline, wait for it). The kernel
+shows 12 KiB because neighbouring anonymous mappings merge. The address is above the unit's `kGuestMax`
+(0xfbffffffff), so the anonymous sync never maps it and the filter drops both packets; the soft CP writes and waits
+on the CPU. On the console that label is memory the GPU writes. What follows for the picture or the timing is not
+measured; what would settle "is it mapped for the GPU at any time": one journal line with `g_labels`' address and a
+watch on it (BC5_GUARD_WATCH takes only addresses under views today).
+
+**The maintainer's test shortcut, prepared, NOT installed** (the top's order; his word comes first):
+`play-guard-0412.sh` gets the arm `k1rcut` and `shortcut0412b.sh` the entry `k1rcut`, "BC5 emulator (0412 K1R
+cutscena)". The arm is fast9's words on g412zd (`BC5_EMU=bin-d`, pinned by `built-d.md5`) plus `BC5_GUARD_K1R=1
+BC5_GUARD_K1_FILTER=1 BC5_FAULT_RECORD=1 BC5_DIRECT_TIMEOUT_PROBE=1`, and without e11's reset-replay words
+(`BC5_DIRECT_RESET_REPLAY_ACB`, `_RESET_LABELS`, `_RESET_LABEL_JOURNAL`) and the dead `BC5_DIRECT_LEARN_GUEST_ONLY`:
+80 words. Checked on the laptop with a stand-in directory (the words, the refusal on a wrong bin-d); not run on the
+box. The box's copy of the wrapper must read eb4feddc before this one (d15bcca6) replaces it. RT is the launcher's
+setting, as in fast9. `BC5_DIRECT_TIMEOUT_PROBE=1` copies every buffer: its cost in his play is not measured (my
+scripted arms ran at 30 flips/s with it).
+
+**The fold into candidate C (exp 0419), proposed to the integrator:** form 1 = g412zd as measured (unit 393a0cbf,
+backend 2497a4ce/1d88a8b3); form 2, recommended for a shared build, the same without the read probe pr412 (a
+deliberate-fault tool): unit 2f4a3d63, backend direct.hpp 26519fcc, direct.cpp b1d27875, NOT compiled. All switches
+default off; the backend archive is a separate swap step that needs the maintainer's word. Not measured: "all
+switches off = B" on the box.
+
+The branch was not pushed: this session's permission classifier refused `git push`; the commits are on the local
+branch `exp/0412-memory-guardian`.
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over
