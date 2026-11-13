@@ -240,6 +240,7 @@ if [ -f "$J" ] && [ "$(stat -c %Y "$J")" -ge "$T0" ]; then
   nice -n 19 grep -a "^frame profile: t" "$J" | sed -n 's/^frame profile: t \([0-9.]*\) s, \([0-9.]*\) ms since the last flip; game thread inside the host \([0-9.]*\) ms.*outside \([0-9.]*\); GPU busy \([0-9.]*\) ms.*/\1 \2 \3 \4 \5/p' > "$R/$TAG-frames.txt"
 else echo "no journal of this run ($J)" > "$R/$TAG-journal.txt"; : > "$R/$TAG-guard.txt"; : > "$R/$TAG-frames.txt"; fi
 sudo -n dmesg 2> /dev/null | tail -n +"$((ND0 + 1))" | grep -i "amdgpu\|gpu\|oom\|hung\|SQC\|Killed" > "$R/$TAG-dmesg-after.txt"
+[ -f "$X/faultrec0412.sh" ] && bash "$X/faultrec0412.sh" "$T0" "$BIN" "$ND0" > "$R/$TAG-faultrec.txt" 2>&1   # exp 0412 sections 64-65: the fault record's kernel lines, devcoredump, binary sum
 S1=$(sumof "$WD/_SaveData"); echo "$(date '+%F %T') $TAG the private copy after the arm: $S1 ($([ "$S1" = "$NSUM" ] && echo unchanged || echo "the title wrote it"))" >> "$R/saves.txt"
 FPSL=$(awk 'NF == 4 {n++; f += $2; s += $3; if ($4 > 100) b++; if ($4 > mx) mx = $4} END {if (s > 0) printf "%.1f flips/s over %d s, %d s with a gap over 100 ms, longest %.0f ms", f / s, s, b, mx; else printf "no fps lines"}' "$R/$TAG-fps.txt")
 echo "$(cat "$R/$TAG-end.txt"); $FPSL; kernel lines $(grep -c . "$R/$TAG-dmesg-after.txt"), crash lines $(grep -c . "$R/$TAG-crash.txt"), ledger lines $(grep -c '^guard: t' "$R/$TAG-guard.txt")" > "$R/$TAG-summary.txt"

@@ -3066,6 +3066,58 @@ the cross on the slot list: the list is walked by position, and whether the titl
 to be seen in the first run), `N_NOWALK=1` (no input after the load). The arm: start, menu, slot 4, Continue, no
 input, 240 s.
 
+### 65. The fault record must not cut a save: the save guard; the launcher's step (2026-11-13; laptop, not compiled)
+
+The top's condition before `BC5_FAULT_RECORD` can become a default: the maintainer plays on his live saves, and a
+diagnostic exit that cuts a save would be worse than the freeze. The title's saves go through our own host calls,
+so the host knows when one is being written.
+
+**The save guard** (tag sg412: `memfast/saveguard0412.inc`, put into the tree as `src/bc5/save_guard0412.hpp` by
+`memfast/mksg0412.py`; the wait is called from the fault record only). "A save being written" is a marked host call
+in flight, or a save mount (`/savedata<n>`) that has been written since it was mounted and is not unmounted yet
+(the title mounts, writes its files, unmounts). Before exit 86 the record now:
+
+1. lets a save that is being written go on to its end, **5 s at most**; nothing new starts in that time (a first
+   write on a clean mount, a new mount, a writing call of the save-data library: the caller is held and never
+   returns);
+2. then holds every marked call, flushes the streams and syncs the file system of the save directory (`syncfs`);
+3. writes into `record.txt` whether a save was in flight at the request, how long the wait took, what was left, and
+   the sync's outcome; when the 5 s were not enough the words are "A SAVE WAS BEING WRITTEN AND DID NOT FINISH IN
+   THE TIME ALLOWED: THAT SAVE MAY BE INCOMPLETE", also on stderr.
+
+Marked calls: in `src/kernel/fileSystem.cpp` open (a write, create or truncate open counts as a write), close,
+write, pwrite, ftruncate, truncate, fsync, unlink, rename, mkdir, rmdir, only for names under a save mount; in
+`src/libs/libSaveData.cpp` the mounts, the unmount, delete, the save-data memory's set and sync, the parameters, the
+icon by path. Without a fault nothing is held or changed: a marked call costs two atomic adds. A second thread that
+reaches the record while the first writes it is held (one record per run).
+
+**CPU test** `memfast/saveguard0412.cpp` with a stand-in writer (mount, four parts, close, unmount) and close() as the
+stand-in exit: 178 of 178 on the laptop (three runs; 20 rounds each of A–D). A: the exit asked for in the middle of a
+write: the file is complete; B: between two writes of one save: complete; C: mounted, nothing written yet: untouched,
+the writer's first write held; D: before the mount: untouched; E: a writer that never finishes: the bound holds and
+the outcome says the save may be incomplete (the one case where a half file stays, and it is named); F: after the
+close every marked call is held; G: no close, nothing held; the path parsing; the draining rules.
+
+**Limits, said plainly.** (1) The guard knows saves by the host's calls. If the title keeps a save mount open for a
+long time after writing it (not seen yet: its autosave pattern is to be read from the first record's line "the last
+save call began … ms before"), every exit would wait the full 5 s and report an incomplete save falsely; then the
+rule needs a quiet-time clause. (2) A save is several files; the guard waits for the unmount, it does not make the
+set atomic: a fault more than 5 s before the title would have finished still leaves a part. On the console that
+set is made atomic by the system's save-data transaction [I: from the library's Prepare/Commit calls, which this
+host answers without doing anything; no console trace]. (3) Not compiled; the first build is g412z.
+
+**The launcher's step** `faultrec0412.sh <start> <binary> [<dmesg lines at the start>]`: after a run it completes every
+record written since the start that has no `build.txt`: `dmesg.txt` (the kernel log since the start),
+`dmesg-gpu.txt` (its amdgpu, drm, fault and reset lines), `build.txt` (the binary's path, md5 and time; kernel, Mesa,
+libdrm; the kernel's verdict in one line with the fault lines; the devcoredump's path, waited for 20 s at most).
+It ends by itself; it leaves no waiter. `run0412n.sh` calls it after every run. A dry run on the laptop with
+stand-ins (a fake record, a fake kernel log) completed the record and did nothing the second time. Not yet in his
+shortcut's launcher: that follows the first clean test and his word.
+
+**The build's sums now** (`memfast/mk0412z.sh`, kit `kit-z.sha256`, 16 files): nl412 cfb7533e → rl412 0878903e → k1r412
+0d265595 → fr412 with the guard's call df69ba22 → ff412 169bd1df; sg412: fileSystem.cpp 9194fc38 → 3d2b9c0b,
+libSaveData.cpp 0e0c5d40 → 090e32cb, the header 1f1585b4. Five CPU tests in the build script.
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over
