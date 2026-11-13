@@ -2577,8 +2577,29 @@ is not known (TODO(verify); the direct path rotates its buffer slots, so it is n
 - Not answered: the cost of a large PRT or read-only span in page tables; whether the ring reset succeeds under
   the title's own load.
 
+### 56. Fifteen minutes of play on the shared build without the learned file (2026-11-13 04:59–05:17)
+
+The top session's order after the integration (shared normal build `fe0933c0`, patch 4651d1d3 = main 7d21b208, with
+the three mr412 switches compiled in and off). Run s1nol: `run0412n.sh s1nol fast8 900 BC5_GUARD_LEARN_LOG=1` with
+`N_EMU` = the shared binary (the runner's new `N_SHARED_MD5` check), an **empty** private learned file, RT on, the
+private copy of the named save snapshot, fuse 13,000/2,048, watchdog 220 MiB, the shell running, no rsync, the
+kernel log streamed. It follows one recovered ring reset in the same boot (E1 case 4, 04:56:58; `raw/s1nol-header.txt`).
+Data `raw/s1nol-*`.
+
+[M] It reached G+900: 1,017 s, 900 s of play on the scripted walk, **no kernel line, no GPU fault or timeout, no
+"would learn" line, the private learned file still empty**; 25.8 flips/s over 1,013 s, 87 s with a gap over 100 ms,
+the longest 681 ms; lowest available 402 MiB, highest PSI full 5 %; pinned direct 11,440 MiB at the end. The shared
+learned and alias files kept their checksums.
+
+**Reading.** With sections 52 and 53 that is four runs and 2,039 s of this route without the learned file and without
+a fault, one of them 15 minutes long and on the shared build. It is evidence for the route, which stays in one area
+of the game; his own play (the pause menu, Photo Mode, the lake, fights) is where the windows were learned and is
+not covered by it.
+
 ## Verdict
 
+- **Without the learned file on the shared build (section 56):** 15 minutes of scripted play, no fault, nothing the
+  catcher would have learned, 25.8 flips/s. The route does not need the file; his own play is not covered by this.
 - **E1 (section 55):** on gfx1013 a shader's read of a PRT page and of a read-only page gives zeros with no fault; a
   write to a PRT page vanishes silently; a write to a read-only page is a named page fault that costs the job and
   one recovered ring reset (fence timeout at 2.03 s; a new context checked 15 s later) and leaves the page intact.
