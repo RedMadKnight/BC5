@@ -17,9 +17,10 @@ if sys.argv[1] == "def":
     g = {"__name__": "mkdef0412_part"}
     exec(compile(open(gen, "rb").read(), gen, "exec"), g)
     s = open(src, "rb").read()
-    assert b"\r" not in s and b"tag k1r412" in s and b"tag fr412" in s and b"mkdef0412.py" not in s
+    assert b"\r" not in s and b"tag fr412" in s and b"mkdef0412.py" not in s
+    k1r = b"tag k1r412" in s  # candidate B (the top session, 2026-11-13) has no K1r step at all
     s = g["flip"](s, b"BC5_FAULT_RECORD")
-    assert s.count(b'std::getenv("BC5_GUARD_K1R");\n\t\treturn e != nullptr && e[0] != 0 && !(e[0] == \'0\' && e[1] == 0);\n') == 1, "K1R is not default off"
+    assert not k1r or s.count(b'std::getenv("BC5_GUARD_K1R");\n\t\treturn e != nullptr && e[0] != 0 && !(e[0] == \'0\' && e[1] == 0);\n') == 1, "K1R is not default off"
     open(dst, "wb").write(s)
     print("def -> %s (the fault record on by default, K1R off)" % hashlib.md5(s).hexdigest()[:8])
     sys.exit(0)
