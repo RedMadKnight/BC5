@@ -61,6 +61,15 @@ Not shown by these tests: the real `KernelVirtualQuery` and `ExecuteAmmMapComman
 map fails and the hook prints the error code, which is a result); whether a 0x100-byte scratch header passes the real
 `ValidateCommandBufferHeader`.
 
+**The kit for that slot** (`mkkit0417.py` makes `p0417.sh` from the integration's private rebuild script;
+`chk0417.sh` is the chain): the private tree goes from 4651d1d3 to c61fe48b, the gate is set to 1 in the private tree
+only, the normal build is rebuilt (two units recompile), the gate goes back to 0, then six ASTRO BOT starts of 30 s:
+mapped, mapped with the opt-in, unmapped, unmapped with the opt-in, `KYTY_BC5_SWITCH_DEFAULTS=0`, nothing set. A
+start that does not run its 30 s is a result and the chain goes on; a kernel line stops it. Checked on the laptop:
+`bash -n` of both scripts and a dry run of the gate switch (the header returns to its sum). About 12 minutes on the
+box. Not in the kit: the mapped arm with the guard off and the opt-in on (exp 0413's crash, already proved). If the
+build fails the gate stays at 1 in the private tree; the next private rebuild then stops at its tree check.
+
 **Proposed box check for the next slot** (private build of c61fe48b with the header set to 1, ASTRO BOT 30 s each):
 `mapped` (guard line, PASS), `unmapped` (exp 0416's line, PASS), `unmapped` with `KYTY_BC5_AMM_SETBUFFER_MAP=1` (the
 hook's result line; PASS expected whatever the map returns), and once `KYTY_BC5_SWITCH_DEFAULTS=0` for the lines of
