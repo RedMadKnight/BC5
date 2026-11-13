@@ -32,7 +32,7 @@ one() {  # tag, words...
     local tag=$1; shift
     local line; line=$(bash ./sweep0413g.sh "$tag" 30 "0" "$@" | grep "^n=0:")
     echo "$line"
-    echo "$tag lines: $(grep -a -h "exp 0417 hook\|set-buffer with the map\|SETBUFFER_GUARD o\|ranges fast\|physmap sorted\|pending cap\|exp 0415: APR reads" "$R/${tag}0-play.log" 2> /dev/null | sed 's/\[bc5\] //' | cut -c1-230)"
+    echo "$tag lines: $(grep -a -h "exp 0417 hook\|set-buffer with the map\|SETBUFFER_GUARD o\|ranges fast|physmap sorted|acb state restore\|physmap sorted\|pending cap\|exp 0415: APR reads" "$R/${tag}0-play.log" 2> /dev/null | sed 's/\[bc5\] //' | cut -c1-230)"
     case "$line" in *"kernel lines 0,"*) ;; *) echo "chk0417 ended $(date +%T): STOPPED after $tag (a kernel line, or no result line)"; exit 1 ;; esac
 }
 T=KYTY_BC5_AMM_SETBUFFER_TEST

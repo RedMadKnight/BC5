@@ -41,6 +41,22 @@ index 9b6cb05..c0b6562 100644
  		const int m = std::strcmp(e, "verify") == 0 ? 2 : std::strcmp(e, "1") == 0 ? 1 : 0;
  		std::fprintf(stderr, "[bc5] exp 0412 physmap sorted: %s (tag ps412)\n", m == 2 ? "verify" : m == 1 ? "on" : "value not understood, off");
  		return m;
+diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
+index 4dc1055..9b02bb6 100644
+--- a/src/libs/bc5LleAgc.cpp
++++ b/src/libs/bc5LleAgc.cpp
+@@ -7392,8 +7392,10 @@ static void acb_cs_track(const uint32_t* part, uint32_t n) {
+ static bool acb_restore_on() {
+ 	static const bool        on = bc5::env_on(std::getenv("BC5_DIRECT_ACB_STATE_RESTORE"));
+ 	static std::atomic<bool> told {false};
+-	if (!told.exchange(true))
++	if (!told.exchange(true)) {
+ 		journal("exp 0401: acb state restore (exp 0381) %s\n", on ? "on (a graphics buffer that dispatches gets the graphics queue's tracked compute registers in front)" : "off");
++		std::fprintf(stderr, "[bc5] exp 0401: acb state restore (exp 0381) %s\n", on ? "on" : "off"); // exp 0417: also in the play log (lean has no journal)
++	}
+ 	return on;
+ }
+ static bool acb_restore_wants(const uint32_t* ib, uint32_t num_dwords) {
 diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
 index 6fb7951..610c32a 100644
 --- a/src/libs/libAmpr.cpp

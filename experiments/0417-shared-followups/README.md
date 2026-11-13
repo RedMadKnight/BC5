@@ -6,7 +6,8 @@ are short? The top session's list of 2026-11-13: the wording of one line, a line
 that forces set-buffer's a4 = -1 on a real call, the two other launchers, CLAUDE.md, the replug harness's self-test,
 the submit-owner note to exp 0415.
 
-**Status: laptop work done; nothing of it is built on the box, nothing is in the shared builds.** The patch on main
+**Status: laptop work done; the candidate patch was built PRIVATELY with the test hook and the hook ran in six ASTRO
+BOT starts on 2026-11-13 (section 2b). Nothing is in the shared builds.** The patch on main
 stays 4651d1d3 (it must match the shared builds, D19).
 
 ## Setup
@@ -18,22 +19,24 @@ Laptop: VS clang++ 22 for the CPU tests (`-std=c++20 -O1 -Wall -Wextra -D_CRT_SE
 
 ### 1. The next small patch change (`mk0417.py`; rides with the next swap, not its own)
 
-Candidate patch 0001 **c61fe48b** (126 files; 4651d1d3 plus `0417-on-4651d1d3.diff`, 155 lines; sums of all patched
+Candidate patch 0001 **33bddfa1** (126 files; 4651d1d3 plus `0417-on-4651d1d3.diff`; it was c61fe48b before A2's
+line was added; sums of all patched
 files in `tree-candidate.md5`). The full candidate is not in the repository (the repository's line-ending rule would
 change it outside `backend/kytyplus-patches/`); it is made by `mk0417.py` on the pinned units, and a copy lies in the
-sessions' shared notes as `exp0417-0001-candidate-c61fe48b.patch`.
+sessions' shared notes as `exp0417-0001-candidate-33bddfa1.patch`.
 
 | Unit | In -> out | Change |
 |---|---|---|
 | `src/libs/libAmpr.cpp` | a2d09d32 -> 1cdf1424 | exp 0416's line no longer says "a target that is not mapped" when exp 0413's guard is off; it says the guard did not take the call. The test hook (below), compiled out. |
 | `src/bc5/setbuffer_test.hpp` | new -> 56589d82 | `KYTY_BC5_SETBUFFER_TEST_HOOK 0`: the hook's compile-time gate |
+| `src/libs/bc5LleAgc.cpp` | a81efd2c -> 30f9ef2b | A2's line "exp 0401: acb state restore (exp 0381) on/off" also goes to stderr, once (the top session: the lean build has no journal) |
 | `src/kernel/memory.cpp` | eff24b4c -> 3844ef65 | `KYTY_BC5_RANGES_FAST` (C2) prints "exp 0412 ranges fast: on/off" once at its first use; `KYTY_BC5_PHYSMAP_SORTED` (C3) now also prints "off" |
 
 **What a log shows for `KYTY_BC5_SWITCH_DEFAULTS=0` after this change** (the code defaults of `kFixes` must stay on):
 C1 "exp 0412 events: pending cap 64" (play log, exists), C2 "exp 0412 ranges fast: on" (play log, new), C3 "exp 0412
 physmap sorted: on" (play log, exists; "off" is new), the APR row "exp 0415: APR reads by pread ..." (play log,
-exists), A2 "exp 0401: acb state restore (exp 0381) on" (the journal, exists; not in the play log, and the lean build
-has no journal lines). A2 was left as it is: its line exists, in the journal.
+exists), A2 "exp 0401: acb state restore (exp 0381) on" (the journal as before, and now the play log).
+C2's and A2's lines are printed at the first use of their code, which ASTRO BOT's first 30 s do not reach (section 2b).
 
 ### 2. The hook: a forced a4 = -1 on a real call (`KYTY_BC5_AMM_SETBUFFER_TEST`, private builds only)
 
@@ -70,10 +73,39 @@ start that does not run its 30 s is a result and the chain goes on; a kernel lin
 box. Not in the kit: the mapped arm with the guard off and the opt-in on (exp 0413's crash, already proved). If the
 build fails the gate stays at 1 in the private tree; the next private rebuild then stops at its tree check.
 
-**Proposed box check for the next slot** (private build of c61fe48b with the header set to 1, ASTRO BOT 30 s each):
-`mapped` (guard line, PASS), `unmapped` (exp 0416's line, PASS), `unmapped` with `KYTY_BC5_AMM_SETBUFFER_MAP=1` (the
-hook's result line; PASS expected whatever the map returns), and once `KYTY_BC5_SWITCH_DEFAULTS=0` for the lines of
-section 1.
+### 2b. The hook on the box (2026-11-13 07:05-07:12, the top session's slot; `chk0417.sh`, output in `raw/chk0417.out`)
+
+Private build of the candidate 33bddfa1 with the gate at 1: **normal d85d86176e3eb1cbe7b9f703809fc104** (282
+warnings in the build log; the hook compiled in the real unit at the first try). The gate was set back to 0 in the
+private tree. Six ASTRO BOT starts of 30 s on that binary; all six PASS (ran 30 s, 0 kernel lines, 0 crash lines):
+
+| Tag | Words | What the log shows |
+|---|---|---|
+| h1x0 | `KYTY_BC5_AMM_SETBUFFER_TEST=mapped` | the title's first call (va 0x300a82820, len 0x400, leftover a4 0x9088e4e98) got a4 = -1; the target is committed; **exp 0413's guard: "taken as the buffer flavour, nothing mapped"**; the title ran on |
+| h2x0 | mapped and `KYTY_BC5_AMM_SETBUFFER_MAP=1` | the same: the guard refuses before the opt-in is asked (va 0x300a807a0) |
+| h3x0 | `KYTY_BC5_AMM_SETBUFFER_TEST=unmapped` | the synthetic call on 0x8ff0000000: **exp 0416's line "taken as the buffer flavour"**, returned 0, "committed before no, after no (nothing mapped)" |
+| h4x0 | unmapped and `KYTY_BC5_AMM_SETBUFFER_MAP=1` | the synthetic call returned 0, **"committed before no, after YES (mapped)"**: the real map command ran; no exp 0416 line |
+| h5x0 | `KYTY_BC5_SWITCH_DEFAULTS=0` | "pending cap 64", "physmap sorted: on", the APR line: C1, C3 and the APR row stay on without the table |
+| h6x0 | nothing set | no hook line; the same three lines |
+
+So the check that chance stopped providing is made on real calls: with the map signature on the title's own mapped
+buffer the guard refuses (with and without the opt-in), and on an unmapped address nothing is mapped unless
+`KYTY_BC5_AMM_SETBUFFER_MAP=1`, in which case the real `ExecuteAmmMapCommand` maps it.
+
+What these six starts do not show:
+- **C2's and A2's lines appear in none of them**: "exp 0412 ranges fast" and "exp 0401: acb state restore" are printed
+  at the first use of their code, and ASTRO BOT did not reach either in 30 s. They need a start of the second title
+  (or a longer ASTRO BOT run) to be seen; for ASTRO BOT `KYTY_BC5_SWITCH_DEFAULTS=0` is checkable for C1, C3 and the
+  APR row only.
+- h3x0: the synthetic call's buffer flavour wrote its pointers into the hook's scratch header and returned 0, so the
+  real header check accepts a zeroed 0x100-byte header; nothing else used that header.
+- h4x0 leaves one 16 KiB page mapped at 0x8ff0000000 for the rest of the run (a test's side effect).
+- The arm "mapped, guard off, opt-in on" was not run (exp 0413's crash, proved there).
+- One start per arm; ASTRO BOT only; the hook is not in any shared binary and was not run in the second title.
+
+**Side effect on the box:** `~/bc5-work/exp0413/p/build-normal` (d85d8617) now carries the test hook and is patch
+33bddfa1's, so it is **no longer the twin of the shared normal build** (fe0933c0, patch 4651d1d3). The private lean
+build (a569bb99) is still patch 4651d1d3's. The private tree is the candidate with the gate at 0.
 
 ### 3. `play-pkg-log.sh` and `play-pkg-quiet.sh`
 
@@ -148,8 +180,9 @@ default are the runner's gate (its first key goes at 85 s or later), not a missi
 
 ## Verdict
 
-**Prepared, not proven.** The patch change and the hook pass their CPU tests on the laptop and wait for a private
-build; the CLAUDE.md diff (with the versions read on the box) and the harness self-test are done; the two other launchers
+**The guard and the map opt-in are now shown on real calls; the rest is prepared.** The candidate patch 33bddfa1
+built privately and its hook did what was expected in six ASTRO BOT starts (section 2b); two of the new lines (C2, A2)
+still have to be seen in a title that reaches their code; the CLAUDE.md diff (with the versions read on the box) and the harness self-test are done; the two other launchers
 are made again from the current one and wait for the maintainer's word; the
 submit-owner note has exp 0415's review: a later stage of the lock side, three counters first. Nothing here changes a
 shared file.

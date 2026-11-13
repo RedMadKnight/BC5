@@ -22,7 +22,10 @@ pinned inputs. They ride with the next swap of the shared builds, not their own 
            nothing when asked: KYTY_BC5_RANGES_FAST (C2) says "on" or "off" at its first use; KYTY_BC5_PHYSMAP_SORTED
            (C3) now also says "off". With these and the lines that exist (C1 "pending cap", A2's journal line
            "acb state restore", exp 0415's APR line) a log shows what KYTY_BC5_SWITCH_DEFAULTS=0 left on.
-usage: mk0417.py ampr|memory <in> <out>      mk0417.py header <out>"""
+  agc      src/libs/bc5LleAgc.cpp (md5 a81efd2c): A2's line "exp 0401: acb state restore (exp 0381) on/off" also goes
+           to stderr, once (the top session, 2026-11-13: the lean build has no journal, and KYTY_BC5_SWITCH_DEFAULTS=0
+           must be checkable from a play log in both builds).
+usage: mk0417.py ampr|memory|agc <in> <out>      mk0417.py header <out>"""
 import hashlib
 import sys
 
@@ -167,6 +170,15 @@ elif what == "memory":
 		}
 		const int m = std::strcmp(e, "verify") == 0 ? 2 : std::strcmp(e, "1") == 0 ? 1 : 0;
 """)
+elif what == "agc":
+    assert md5 == "a81efd2c86878357207032270eb8b291", md5
+    rep(b'''	if (!told.exchange(true))
+		journal("exp 0401: acb state restore (exp 0381) %s\\n", on ? "on (a graphics buffer that dispatches gets the graphics queue's tracked compute registers in front)" : "off");
+''', b'''	if (!told.exchange(true)) {
+		journal("exp 0401: acb state restore (exp 0381) %s\\n", on ? "on (a graphics buffer that dispatches gets the graphics queue's tracked compute registers in front)" : "off");
+		std::fprintf(stderr, "[bc5] exp 0401: acb state restore (exp 0381) %s\\n", on ? "on" : "off"); // exp 0417: also in the play log (lean has no journal)
+	}
+''')
 else:
     raise SystemExit(__doc__)
 open(dst, "wb").write(s)
