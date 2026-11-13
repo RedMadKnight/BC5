@@ -1,0 +1,8 @@
+claimed: exp 0413 | token 1794530708368585 | integration 0416+0415+0412: patch 0001 4651d1d3 into the shared normal and lean, CPU only, no emulator, until 02:25 | 2026-11-13 01:45:08
+2026-11-13 01:45:08 before: normal ce0e3b928b6d1d1d47fc035c13e8cee3, lean 35ec3341be46ffd7013db8ffa9a4b2f5, archive 75e30335, tree diff 01abfc0c
+tree: 125 patched files match; diff 4651d1d3
+== 01:45:10 normal
+== 01:47:58 lean
+2026-11-13 01:50:45 after: normal fe0933c0ad7c0d9a86194bc0a7598a06, lean 711d6c0d33d171bcb4749903bd607aa2, archive 75e30335, tree diff 4651d1d3; DIFFERENT from the private builds (normal fa34047cb3dc1f1cd0880b68f56c2078, lean a569bb99549dfeb115522ebee50fff1a)
+undo: both binaries from /home/kjaniszewski/bc5-work/exp0413/swap/*.before-0416, the tree by reversing 0001-new9 and applying 0001-new7 (then rebuild)
+lock released
