@@ -38,6 +38,9 @@ SWITCHES="KYTY_BC5_AUDIO_TRACE=1 KYTY_BC5_MEASURE=1 KYTY_BC5_INPUT_TRACE=1 BC5_G
 case "$TAG" in *[!A-Za-z0-9]* | "") echo "the tag is letters and digits"; exit 1 ;; esac
 SAVES=$W/exp0196/saves-before-152617
 LAUNCH_SRC=$W/play-pkg.sh; LAUNCH=$E/play-pkg-0391.sh; LEARN_SRC=$W/direct-learned-pkg.txt; LEARN=$E/direct-learned-pkg.txt
+# exp 0417 (2026-11-13): since launcher 47426d8e the title has NO learned windows: the launcher names the empty read-only
+# file direct-learned-none.txt. Then nothing is copied or edited for it and the emulator must show that file's name.
+NOLEARN=0; grep -qxF 'export BC5_DIRECT_LEARNED=$HOME/bc5-work/direct-learned-pkg.txt' "$LAUNCH_SRC" || { NOLEARN=1; LEARN_SRC=$W/direct-learned-none.txt; LEARN=$LEARN_SRC; }
 mkdir -p "$R"
 [ "$SECS" -le 900 ] || { echo "at most 900 s"; exit 1; }
 pgrep '^kyty_emulator' > /dev/null && { echo "an emulator is running: not started"; exit 1; }
@@ -58,7 +61,7 @@ cat "$R/$TAG-box-settings.txt"
 CFG_SRC=$W/input.cfg; CFG=$E/input-rt$RT.cfg
 [ -r "$CFG_SRC" ] || { echo "no $CFG_SRC to copy"; exit 1; }
 { grep -v -i "^RayTracing\.PPSA03671=" "$CFG_SRC"; echo "RayTracing.PPSA03671=$RT"; } > "$CFG" || exit 1
-cp -p "$LEARN_SRC" "$LEARN" || exit 1
+[ "$NOLEARN" = 1 ] || cp -p "$LEARN_SRC" "$LEARN" || exit 1
 # exp 0364: BC5_0368_RESET_LEARNED=1 drops the learned windows inside the title's 0x11 window from the PRIVATE copy, so
 # the runs meet those regions as a fresh box would (the shared file is only read).
 if [ -n "${BC5_0368_RESET_LEARNED:-}" ]; then grep -v '^0x11' "$LEARN" > "$LEARN.tmp" && mv "$LEARN.tmp" "$LEARN"; echo "learned list reset: $(grep -c . "$LEARN") windows kept of $(grep -c . "$LEARN_SRC")"; fi
@@ -73,7 +76,7 @@ chk 'LOG=~/bc5-work/play-pkg-last.log'
 chk '  EMU=~/bc5-work/kytyplus-build-lean/src/kyty_emulator LOG=~/bc5-work/play-pkg-lean-last.log'
 chk 'cd ~/bc5-work'
 chk 'export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/_SaveData-pkg-play'
-chk 'export BC5_DIRECT_LEARNED=$HOME/bc5-work/direct-learned-pkg.txt'
+[ "$NOLEARN" = 1 ] || chk 'export BC5_DIRECT_LEARNED=$HOME/bc5-work/direct-learned-pkg.txt'
 chk 'export BC5_DIRECT_GPU_CHECK_PRODUCT=1 BC5_DIRECT_SHADOW_LABELS=1  # exp 0342 (F414, F415): the RT-on guards - the product staircase in the CP check, host shadow labels'
 sed -i -e 's#^LOG=~/bc5-work/play-pkg-last\.log$#LOG=~/bc5-work/exp0413r/run/play-last.log  \# exp 0350/0364: own log#' \
        -e 's#^\(  EMU=~/bc5-work/kytyplus-build-lean/src/kyty_emulator\) LOG=~/bc5-work/play-pkg-lean-last\.log$#\1 LOG=~/bc5-work/exp0413r/run/play-last.log  \# the same own log#' \
@@ -100,8 +103,9 @@ for a, b in E:
 open(p, 'w').write(s)
 PYEOF
 diff -u "$LAUNCH_SRC" "$LAUNCH" > "$R/play-pkg-0391.diff"
-for h in BC5_0358_INPUT_CONFIG 'exp0413r/run/wd' 'exp0413r/run/play-last.log' 'exp0413r/run/direct-learned-pkg.txt'; do grep -q "$h" "$LAUNCH" || { echo "the derived launcher lacks $h: not started"; exit 1; }; done
-WANT_DIFF=18; grep -q 'BC5_GAME_DIR' "$LAUNCH_SRC" && WANT_DIFF=11  # integration 2026-11-13: 5 changed + 1 added; 7 more when the three unpacked-game edits are made here
+LH='exp0413r/run/direct-learned-pkg.txt'; [ "$NOLEARN" = 1 ] && LH='bc5-work/direct-learned-none.txt'
+for h in BC5_0358_INPUT_CONFIG 'exp0413r/run/wd' 'exp0413r/run/play-last.log' "$LH"; do grep -q "$h" "$LAUNCH" || { echo "the derived launcher lacks $h: not started"; exit 1; }; done
+WANT_DIFF=18; grep -q 'BC5_GAME_DIR' "$LAUNCH_SRC" && WANT_DIFF=11; [ "$NOLEARN" = 1 ] && WANT_DIFF=$((WANT_DIFF - 2))  # exp 0417: no learned-file edit; integration 2026-11-13: 5 changed + 1 added; 7 more when the three unpacked-game edits are made here
 [ "$(grep -c '^[-+][^-+]' "$R/play-pkg-0391.diff")" = "$WANT_DIFF" ] || { echo "the derived launcher's diff is not $WANT_DIFF marked lines: not started"; exit 1; }
 [ "$(grep -c 'LOG=~/bc5-work/exp0413r/run/play-last\.log' "$LAUNCH")" = 2 ] && ! grep -Eq 'LOG=~/bc5-work/play-pkg(-lean)?-last\.log' "$LAUNCH" || { echo "a log of the derived launcher is not the private one: not started"; exit 1; }
 bash -n "$LAUNCH" || { echo "the derived launcher does not parse: not started"; exit 1; }
