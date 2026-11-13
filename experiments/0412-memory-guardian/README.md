@@ -2751,7 +2751,13 @@ imported BO; user space cannot reuse them. They are made on every `import_memfd`
 run, every merge (the merged buffer is a new udmabuf, the old ones are freed), and every cut by the orphan release
 (the surviving pieces are imported again). Only buffers above 16 MiB make requests the kernel calls costly (above
 order 3). How many imports of which size a load makes is not counted in my data; exp 0415's `ls415_import` counter
-has it per phase (asked). The candidates are: (1) `BC5_DIRECT_MAX_BO_MIB=16` (above): four times the buffers, each
+has it per phase. **Exp 0415's counts** [M, its runs r6n1 and r6n2, build L5b, RT on; first imports and merges are
+counted together]: movies (33 s) 181 and 167 calls, 10.0 and 9.7 GiB, mean 57–59 MiB; menu load (13–15 s) 261 and
+280 calls, 4.8 and 5.7 GiB, mean 19–20 MiB; start screen and menus 19 and 7 calls; save load 22 and 23 calls,
+mean 56–80 MiB; play (64 s) 64 and 74 calls, 3.0 and 3.4 GiB, mean 47–48 MiB: about one call a second. In all about
+**550 imports and 21 GiB imported for a footprint of 12 GiB up to one minute of play**: every byte is imported about
+1.8 times (first as it fills, again when merged), and by the mean sizes most calls are above 16 MiB, so most make
+the costly-order arrays: on the order of 2,500 such requests a run [I, 5 arrays a call]. The candidates are: (1) `BC5_DIRECT_MAX_BO_MIB=16` (above): four times the buffers, each
 with order-3 arrays; the price is a longer BO list per submission; (2) no merge-then-cut: buffers made once at
 their final size, which needs the final size known at map time (R1 or option B).
 
