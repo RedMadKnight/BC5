@@ -135,7 +135,7 @@ do_claim() {
     [ $((dl - $(now))) -ge "$RUN_MIN" ] || die "under $RUN_MIN s left"
     hook before-claim
     TOK=$(date +%Y%m%d%H%M%S)$$
-    LOCKLINE="anyps5-ports exp0413r | token $TOK | $tag software replug ($fix), shared 78f25172, RT on, until $(date -d "@$dl" +%H:%M:%S) | $(date '+%F %T')"
+    LOCKLINE="anyps5-ports exp0413r | token $TOK | $tag software replug ($fix), the build its pins name (shared, or a private one before a swap; see <tag>-pins.txt), RT on, until $(date -d "@$dl" +%H:%M:%S) | $(date '+%F %T')"
     trap 'release' EXIT
     claim
     hook after-claim
@@ -167,6 +167,7 @@ load_tok() {
 inputs_ok() {
     local v
     . "$S/pins0391.env" || die "no pins"
+    [ -n "${BUILD:-}" ] && B=$BUILD  # exp 0417: the pins may name a PRIVATE build directory (a check before a swap); without it the shared build
     for v in NORMAL8 LAUNCHER RUN_ENV; do
         case "${!v:-FILL}" in FILL) die "the pin $v is not filled" ;; esac
     done

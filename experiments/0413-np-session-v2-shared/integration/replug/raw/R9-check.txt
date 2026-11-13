@@ -1,0 +1,24 @@
+runner rc 0; R9 stopped at 420 s (after 423 s); R9: stopped at 420 s after 423 s; launcher exit 0; crash lines 0, kernel lines 0, TIMEOUT lines 0, compute-ring lines 0, fdinfo engines drm-engine-gfx , devcoredumps 0, RT-off drop lines 0, flips 0 over 0.0 s = 0 flips/s; direct: 17689 views; +0 BOs (98, 11264.0 MiB pinned); maps +0 -2 (17736); imports  (stubs ), call lines , procparam ; the private learned file is unchanged
+replug: pulls 3 (want 3), sequence done True, profile restored True, no DualSense card False
+stream lines 23, pad streams 14, pad streams on another sink 0
+pull 1: off 35376.419 on 35381.593 (5.2 s): closed lines 2, reopened lines 2
+  AudioOut (exp 0372): t 170.545 s port 1 type 4: its stream on the controller closed (an output device was removed); frames dropped until the controller is back
+  AudioOut (exp 0372): t 170.546 s port 2 type 10: its stream on the controller closed (an output device was removed); frames dropped until the controller is back
+  AudioOut (exp 0372): t 176.090 s port 1 type 4: opened on DualSense wireless controller (PS5) Direct DualSense Wireless Controller (48000 Hz, 6 ch) after an output device was added; node.dont-reconnec
+  AudioOut (exp 0372): t 176.130 s port 2 type 10: opened on DualSense wireless controller (PS5) Direct DualSense Wireless Controller (48000 Hz, 6 ch) after an output device was added; node.dont-reconne
+pull 2: off 35416.906 on 35417.358 (0.5 s): closed lines 2, reopened lines 2
+  AudioOut (exp 0372): t 210.997 s port 1 type 4: its stream on the controller closed (an output device was removed); frames dropped until the controller is back
+  AudioOut (exp 0372): t 210.998 s port 2 type 10: its stream on the controller closed (an output device was removed); frames dropped until the controller is back
+  AudioOut (exp 0372): t 211.484 s port 1 type 4: opened on DualSense wireless controller (PS5) Direct DualSense Wireless Controller (48000 Hz, 6 ch) after an output device was added; node.dont-reconnec
+  AudioOut (exp 0372): t 211.520 s port 2 type 10: opened on DualSense wireless controller (PS5) Direct DualSense Wireless Controller (48000 Hz, 6 ch) after an output device was added; node.dont-reconne
+pull 3: off 35452.667 on 35482.814 (30.1 s): closed lines 2, reopened lines 2
+  AudioOut (exp 0372): t 246.753 s port 1 type 4: its stream on the controller closed (an output device was removed); frames dropped until the controller is back
+  AudioOut (exp 0372): t 246.754 s port 2 type 10: its stream on the controller closed (an output device was removed); frames dropped until the controller is back
+  AudioOut (exp 0372): t 276.941 s port 1 type 4: opened on DualSense wireless controller (PS5) Direct DualSense Wireless Controller (48000 Hz, 6 ch) after an output device was added; node.dont-reconnec
+  AudioOut (exp 0372): t 276.981 s port 2 type 10: opened on DualSense wireless controller (PS5) Direct DualSense Wireless Controller (48000 Hz, 6 ch) after an output device was added; node.dont-reconne
+trace offset 35205.874 s; '(pad) … device playing' lines inside a pull: 0
+pull 1: main port in the 3 s after the reopen: held min 555.1 ms, queue min 0 ms (3 lines)
+pull 2: main port in the 3 s after the reopen: held min 916.3 ms, queue min 0 ms (3 lines)
+pull 3: main port in the 3 s after the reopen: held min 917.2 ms, queue min 0 ms (3 lines)
+rumble writes 658, rumble failure lines 0, 'pad route … dropped' lines 108
+CLASS PASS mode pulls pulls 3

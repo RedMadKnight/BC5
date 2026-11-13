@@ -166,6 +166,92 @@ note itself is not edited (it lies in exp 0416's directory); this review stands 
 The same message corrects a reading of the integration's runs: the route times that did not move with the APR
 default are the runner's gate (its first key goes at 85 s or later), not a missing effect.
 
+## 7. The next patch change: candidate c55174b1, built privately and checked (2026-11-13 09:04-09:54)
+
+Ordered by the top session on the maintainer's word that the learned windows go. Patch 0001 4651d1d3 ->
+**c55174b1** (127 files; sums in `tree-candidate-c55174b1.md5`; the full patch is in the sessions' shared notes as
+`exp0417-0001-candidate-c55174b1.patch`). Not in the shared builds: one more fold is ordered first (exp 0412's K1r
+rule and its fault record).
+
+| From | What | Default |
+|---|---|---|
+| this experiment, sections 1-2 | the reworded line, the on/off lines of C2, C3 and A2, the set-buffer test hook behind its compile-time gate | gate 0: the hook is not in the binary |
+| exp 0415, kit L5c (`0415-l5c-cumulative.diff`, sha256 a31ee56d) | `KYTY_BC5_ANON_SYNC`; it brings `KYTY_BC5_FRAME_STAT_WIN`, `KYTY_BC5_MAP_RECORDS=views` and `KYTY_BC5_MAP_RECORDS_CHECK_MS` | all OFF |
+| exp 0412, tag nl412 (`mknl0412.py --keep-guards`, commit 45a686c4) | the learned windows removed: no file is read or written, no window is forced or mapped, a GPU fault is journaled by the catcher (always on) and nothing is added; the K1 catcher `BC5_GUARD_K1_STAT` | the removal is unconditional; `BC5_GUARD_K1_STAT` OFF |
+| this experiment (`mkguards0417.py`) | `BC5_DIRECT_HEAP_GUARDS`: the 2 MiB zero guard behind each eager heap (exp 0037) | ON; `=0` makes no guard |
+
+**The fold** (scratch clone of KytyPlus f266548; three-way `git merge` of exp 0415's tree with this experiment's,
+no conflict; then the two scripts):
+
+| Unit | 4651d1d3 | + sections 1-2 | + exp 0415 L5c (L5c alone) | + nl412 keep-guards | + the guard switch |
+|---|---|---|---|---|---|
+| `src/libs/bc5LleAgc.cpp` | a81efd2c | 30f9ef2b | 353893b8 (e581552a) | 457c1943 | **88f70d98** |
+| `src/kernel/memory.cpp` | eff24b4c | 3844ef65 | **66b26ef5** (390f64c1) | | |
+| `src/libs/libAmpr.cpp` | a2d09d32 | **1cdf1424** | | | |
+| `src/bc5/load_stat.hpp`, `memory.h`, `anon_sync.hpp` | abaa375b, dd8d114a, new | | **b0637802, 224b9fa8, 058bb712** (exp 0415's, byte for byte) | | |
+
+Both authors confirmed the folded unit (exp 0415 by count of its lines; exp 0412 by reading `learned_apply` and the
+place of the switch: after nl412 only the guard loop puts entries into `g_scratch`, so the early return for `=0`
+leaves nothing undone). After their confirmation one string changed (exp 0412's journal line now says the guard stays
+"unless BC5_DIRECT_HEAP_GUARDS=0"); the top session waived a second reading. exp 0415's `tc` stamp and its three
+`learned` counters stay as fields that read near zero, as its author asked.
+
+**Private build** (`p0417b.sh`): normal **7ef631c3b03784b8814e07eb9a05ef89**, lean
+**717aa5d69471fb1d12904c8488b88f40**; nl412 compiled at the first try; the test hook's variable name is absent from
+the binary. **CPU tests on the box** (`cpu0417.sh`): semaphore off/on, set-buffer x4 (hook out), the catcher 24
+checks, maprule 15281 of 15281, test0415 76 of 76 and 32 of 32, apr 33, sync 15, rec 11, anon 31: all pass.
+
+**Runs** (`chk0417b.sh`; raw output in `raw/chk0417b-build.out` and `raw/chk0417b-runs.out`; every run 0 kernel lines
+and 0 crash lines; second title RT on, no zero skip, to 240 s after G):
+
+| Tag | What | Flips/s | Seconds with a gap over 100 ms | Longest gap | Lowest available memory | Journal |
+|---|---|---|---|---|---|---|
+| b1pp0, b1pd0 | ASTRO BOT 120 s, plain and `KYTY_BC5_SWITCH_DEFAULTS=0` | PASS, PASS | | | | |
+| g1pon | second title, guards on (default) | 26.0 over 353 s | 60 | 852 ms | 487 MiB | "learned windows: removed" once, 0 would-learn |
+| g2pon | the same | 25.5 over 352 s | 59 | 1,209 ms | 432 MiB | the same |
+| l11p | lean, 120 s | PASS | | | | |
+| g3poff | second title, `BC5_DIRECT_HEAP_GUARDS=0` | 26.4 over 355 s | 55 | 652 ms | 406 MiB | "removed" once, 0 would-learn, 0 timeout-fault |
+| g4poff | the same | 26.1 over 354 s | 58 | 726 ms | 380 MiB | the same |
+
+- **The lines of the code defaults are now all in a play log**, in every one of the seven starts, also with
+  `KYTY_BC5_SWITCH_DEFAULTS=0`: A2 "acb state restore ... on", C1 "pending cap 64", C2 "ranges fast: on", C3 "physmap
+  sorted: on", the APR line, and "the zero guards ... are on/off". (ASTRO BOT reaches A2's and C2's code within 120 s;
+  section 2b's 30 s starts did not.)
+- **Without the guards the route ran clean twice**: no heap-end fault in 2 x 358 s. That is this route, twice; exp
+  0037's four faults were in play elsewhere, so it does not show the guards are unneeded.
+- The time under the device mutex spent in the learned pass (`learned` in exp 0415's counters): 4.10 s and 3.49 s
+  with the guards (2,679 and 3,018 full applications), 0.050 s and 0.053 s without (0 applications).
+- Against patch 4651d1d3 on the same route (the integration's r9papr: 24.9 flips/s, 75 s with a gap, lowest
+  available 338 MiB): these four runs are 0.6 to 1.5 flips/s higher, with 15 to 20 fewer gap seconds and 42 to 149 MiB
+  more available memory. Single runs on different days of the same box; an observation, not a measured gain.
+- The chain was stopped once before its game runs: another session's build claimed BOX-LOCK between two steps
+  (09:10-09:13). Since then a chain holds one lock line for all its steps (`mklock0417.py`, `chainlock0417.inc`;
+  `testlock0417.sh` 17 of 17 on the laptop). The runs above still used the per-step lock.
+
+**Replug R9** (exp 0391's harness; private 7ef631c3, launcher 47426d8e; `s6n0391.sh` adapted to the launcher without
+a learned file, `run0391.sh` takes a private build from its pins): **CLASS PASS**, mode pulls, 3 pulls, raw files
+`../0413-np-session-v2-shared/integration/replug/raw/R9-*`. The harness's three pulls, all on the DualSense: closed
+at t 170.5 s and reopened at 176.1 s; 211.0 s and 211.5 s; 246.8 s and 276.9 s. Its sequence ended at 09:51:48 and
+it restored the default sink then ("restored: DualSense profile 1 Direct, default sink 54 Volume: 0.95"; the sink is
+muted for the run by design, read back unmuted at 09:54).
+
+**The maintainer at the box during R9** (his words through the top session; observations, not measurements):
+- "Gra jest super stabilna." The first human look at a build without the learned windows.
+- "Wrócił dźwięk": the harness's unmute at 09:51:48, about 305 s into the run.
+- "Odłączenie i podłączenie pada działa": his own pull of the DualSense. In the log it is the close at t 359.6 s
+  and the reopen on the DualSense at t 365.2 s, outside the harness's three pulls (the last ended at 276.9 s).
+- "Podłączenie pada PS4 po odłączeniu ps5 też działa": the DualSense's streams closed again at t 414.7 s and were
+  not reopened before the run's end at 420 s. The pad-audio log has no line for a DualShock 4 (the route opens ports
+  on a DualSense only, and prints "no controller device" after 414.7 s), so his DS4 check is his observation alone;
+  nothing in R9's files shows it.
+- R9's own verdict is not affected: all three of its pulls ran, and were judged, before his first pull.
+
+**Not verified in this section:** nothing of it is in the shared builds; no play by the maintainer beyond the R9
+window, no run longer than G+240; `KYTY_BC5_ANON_SYNC`, `BC5_GUARD_K1_STAT`, `KYTY_BC5_MAP_RECORDS=views` and the
+frame-stat windows were not switched on (their authors ran them in their own builds); the DS4 and both physical
+checks on the shared binaries after the swap; the cutscene fault of the maintainer's morning play without the learned
+file (a shader read of a never-written chunk) is not on this route and is what the ordered K1r fold is for.
+
 ## Open items carried from the integration (not worked on here)
 
 | # | Item | Needs |
@@ -180,7 +266,9 @@ default are the runner's gate (its first key goes at 85 s or later), not a missi
 
 ## Verdict
 
-**The guard and the map opt-in are now shown on real calls; the rest is prepared.** The candidate patch 33bddfa1
+**The guard and the map opt-in are shown on real calls, and the next patch change (c55174b1: the learned windows
+removed, exp 0415's L5c, the guard switch) builds and runs clean privately (section 7); it waits for one more fold
+before the swap.** The candidate patch 33bddfa1
 built privately and its hook did what was expected in six ASTRO BOT starts (section 2b); two of the new lines (C2, A2)
 still have to be seen in a title that reaches their code; the CLAUDE.md diff (with the versions read on the box) and the harness self-test are done; the two other launchers
 are made again from the current one and wait for the maintainer's word; the
