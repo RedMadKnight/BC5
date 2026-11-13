@@ -78,7 +78,7 @@ echo "tree: $(wc -l < "$HERE/tree17.md5") patched files match the laptop's (0001
 # exp 0417 (the K1r fold): the PRIVATE backend. The shared source copied, exp 0412's two files put in, its own build dir.
 PB=$P/backend-src; BB=$P/backend-build; BT=$P/backend-test
 [ "$(m "$BSRC/include/bc5/direct.hpp")" = a9fcb26b ] && [ "$(m "$BSRC/src/direct.cpp")" = 51279eae ] || die "the shared backend source is not a9fcb26b / 51279eae"
-[ "$(m "$HERE/backend-direct-noprobe.hpp")" = 26519fcc ] && [ "$(m "$HERE/backend-direct-noprobe.cpp")" = b1d27875 ] || die "the kit's backend files are not 26519fcc / b1d27875"
+[ "$(m "$HERE/backend-direct-noprobe.hpp")" = e96e5c73 ] && [ "$(m "$HERE/backend-direct-noprobe.cpp")" = 28100ce5 ] || die "the kit's backend files are not e96e5c73 / 28100ce5"
 rm -rf "$PB" "$BB" "$BT" && cp -a "$BSRC" "$PB" || die "cannot copy the backend source"
 cp "$HERE/backend-direct-noprobe.hpp" "$PB/include/bc5/direct.hpp" && cp "$HERE/backend-direct-noprobe.cpp" "$PB/src/direct.cpp" || die "cannot put the two backend files in"
 [ "$(diff -rq "$BSRC" "$PB" | grep -c .)" = 2 ] || die "the private backend differs from the shared one by more than direct.hpp and direct.cpp: $(diff -rq "$BSRC" "$PB" | head -4 | tr '\n' ' ')"

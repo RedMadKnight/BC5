@@ -155,28 +155,28 @@ experiments 0412-0418 sets one of these to another value, except closed test scr
 `_PHYSMAP_SORTED=verify`): on E those words do nothing, so such a control must be a build of B.
 `test0419defs.cpp` covers it (forced, ignored, soft, no word in two tables): all ok.
 
-**Candidate E, final form: patch 2dd4c95c** (`tree-candidate-E-2dd4c95c.md5`), unit 1215d7d7, `switch_defaults.hpp`
-2121d020; not compiled. It is made from exp 0412's FORM 3 (unit 2824caf7, its branch at 17dfc5b5; this replaces the
+**Candidate E, final form: patch 410273ca** (`tree-candidate-E-410273ca.md5`), unit 449878ca, `switch_defaults.hpp`
+2121d020; not compiled. It is made from exp 0412's FORM 4 (unit 9a54eaa4, its branch at 0e2c7e56; this replaces the
 form-2 fold of section 8): `BC5_GUARD_K1R` and `BC5_GUARD_K1_FILTER` are on unless "0" at their own read sites (one rule
 for both titles; "0" and the filter's "log" stay as the catcher), the switches of its two rules (cover, written scan)
-are gone, `BC5_GUARD_WATCH` and `_K1_STAT` are diagnostics, `_LAZY_BY_DATA` has no verdict (off), `_K1R_REPLACE` is a
-delete candidate that needs a backend change. The backend files are unchanged (26519fcc, b1d27875).
+are gone, `BC5_GUARD_WATCH` and `_K1_STAT` are diagnostics, `_LAZY_BY_DATA` has no verdict (off), and `BC5_GUARD_K1R_REPLACE` is gone with `map_shared_over` in the backend (the top
+session's order). The backend files are `direct.hpp` e96e5c73 and `direct.cpp` 28100ce5.
 
 **The count.** The inventory had 266 names.
 
 | After E | n | |
 |---|---|---|
-| can no longer be set: deleted (refuted, superseded, answered) | 30 | 24 of the inventory's DELETE rows, exp 0415's 5 tuning words, and `BC5_DIRECT_LEARNED` (a launcher line read by nothing) |
+| can no longer be set: deleted (refuted, superseded, answered) | 29 | 23 of the inventory's DELETE rows, exp 0415's 5 tuning words, and `BC5_DIRECT_LEARNED` (a launcher line read by nothing) |
 | can no longer be set: hardened (the tested behaviour, always) | 48 | above |
-| **still a word** | **188** | |
-| - diagnostics, traces, catchers, test hooks | 68 | off by default |
+| **still a word** | **189** | |
+| - diagnostics, traces, catchers, test hooks | 69 | off by default; with `BC5_DIRECT_ZERO_NAMES`, which exp 0412's log-only zero scan reads (only the skip's own reader of it is a constant) |
 | - no verdict | 63 | `undecided-list.md` + `KYTY_BC5_ANON_SYNC`, `BC5_GUARD_FORGET`, `BC5_GUARD_MAP_RULE`, `BC5_DIRECT_SPI_REQ_CTRL_PS`, `BC5_R3_SUBMIT_EOP_EVENT`, less exp 0415's four |
 | - one title's words, now in the code's table for that title or its data in the launcher | 42 | the inventory's 28 title-specific + 13 fixes with no ASTRO BOT run + `BC5_GUARD_LEARN_LOG` |
 | - configuration (paths, lists, user settings) | 13 | |
 | - general defaults that keep an option | 2 | `BC5_DIRECT_CHAIN`, `BC5_GC_MODE` |
 
-E adds 10 new words: exp 0412's K1r set (5: `BC5_GUARD_K1R` and `_K1_FILTER` on by default, `_WATCH`, `_LAZY_BY_DATA`,
-`_K1R_REPLACE` off), exp 0417's save words (4, off) and `KYTY_BC5_TITLE_DEFAULTS`. So a build of E reads 198 names, of which 78 fewer than today can change its behaviour
+E adds 9 new words: exp 0412's K1r set (4: `BC5_GUARD_K1R` and `_K1_FILTER` on by default, `_WATCH`, `_LAZY_BY_DATA`
+off), exp 0417's save words (4, off) and `KYTY_BC5_TITLE_DEFAULTS`. So a build of E reads 198 names, of which 77 fewer than today can change its behaviour
 by accident. The next reductions are in the 63 without a verdict (each needs one run) and the 42 title words
 (each needs a run on ASTRO BOT to become general and then lose its option).
 
@@ -196,10 +196,10 @@ to the trash directory. Still his to say separately, because they are behaviour 
 
 ## Verdict
 
-**Prepared, not built: candidate E (patch 2dd4c95c) = B + exp 0412's K1r (default on, no probe, form 3) + the cleanup + exp
-0417's save fix. Of the 266 names, 78 can no longer be set (30 deleted, 48 hardened), 188 remain: 68 diagnostics,
+**Prepared, not built: candidate E (patch 410273ca) = B + exp 0412's K1r (default on, no probe, form 4) + the cleanup + exp
+0417's save fix. Of the 266 names, 77 can no longer be set (29 deleted, 48 hardened), 189 remain: 69 diagnostics,
 63 without a verdict, 42 one title's, 13 configuration, 2 general defaults with an option.** 47 launcher words moved
 into the code (2 general, 45 for the second title) and 15 words got the one reading rule. Every generator's anchors
 matched and the laptop tests pass; the first compile is the private build on the box (`p0419e.sh`), then
 `chk0419e.sh` on both titles, then the swap on the maintainer's one "yes". The removal of the dead code behind the
-78 words is the patch change after that.
+77 words is the patch change after that.

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """BC5 experiment 0419: the private build script of candidate E, made from exp 0417's generated p0417c.sh (the
 script that also builds a PRIVATE backend archive) by exact replacements.
-E = B (27b6416f) + exp 0412's K1r without the probe (all off by default; two backend files: direct.hpp 26519fcc,
-direct.cpp b1d27875) + this experiment's cleanup + exp 0417's save-data-memory switches and transferring-mount fix.
+E = B (27b6416f) + exp 0412's K1r, its form 4 (no probe, no replace; K1R and its filter on by default; two backend files: direct.hpp e96e5c73,
+direct.cpp 28100ce5) + this experiment's cleanup + exp 0417's save-data-memory switches and transferring-mount fix.
 The private tree goes from 0001-new15 (1689b7da, exp 0417's candidate C) to 0001-new17 (P_NEW17). The shared tree,
 the shared archive and the shared backend source are only read.
 usage: mkkit0419e.py <p0417c.sh as generated> <out dir>"""
@@ -35,7 +35,7 @@ rep('git apply -R --whitespace=nowarn "$HERE/0001-new11.patch" && git apply --wh
 rep("tree12.md5", "tree17.md5", 2)
 rep("(0001-new12)", "(0001-new17)")
 rep('[ "$(m "$HERE/backend-direct.hpp")" = 2497a4ce ] && [ "$(m "$HERE/backend-direct.cpp")" = b183516e ] || die "the kit\'s backend files are not 2497a4ce / b183516e"',
-    '[ "$(m "$HERE/backend-direct-noprobe.hpp")" = 26519fcc ] && [ "$(m "$HERE/backend-direct-noprobe.cpp")" = b1d27875 ] || die "the kit\'s backend files are not 26519fcc / b1d27875"')
+    '[ "$(m "$HERE/backend-direct-noprobe.hpp")" = e96e5c73 ] && [ "$(m "$HERE/backend-direct-noprobe.cpp")" = 28100ce5 ] || die "the kit\'s backend files are not e96e5c73 / 28100ce5"')
 rep('cp "$HERE/backend-direct.hpp" "$PB/include/bc5/direct.hpp" && cp "$HERE/backend-direct.cpp" "$PB/src/direct.cpp"',
     'cp "$HERE/backend-direct-noprobe.hpp" "$PB/include/bc5/direct.hpp" && cp "$HERE/backend-direct-noprobe.cpp" "$PB/src/direct.cpp"')
 rep("exp 0412's private one was ed63df2f)", "exp 0412's with the probe was ed63df2f; this one has no probe)")
