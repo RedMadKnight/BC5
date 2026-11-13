@@ -15,7 +15,7 @@ In English: why do we only log these registers instead of writing them, and what
 
 ## What was built
 
-The base is the shared tree: patch 0001 `4651d1d3` (main), and candidate B `27b6416f` once the integrator has swapped it in (the kit below). The scratch tree's diff against f266548 has md5 `4651d1d3`, the same as the patch file.
+The base is the shared tree. It was patch 0001 `4651d1d3` when this was built; since 2026-11-13 15:47 it is candidate B `27b6416f`, the patch on main since `2ba82971` (the kit below has a diff for each). The scratch tree's diff against f266548 has md5 `4651d1d3`, the same as the patch file.
 
 | Piece | Where | Switch | Default |
 |---|---|---|---|
@@ -30,7 +30,7 @@ The base is the shared tree: patch 0001 `4651d1d3` (main), and candidate B `27b6
 | Shared tree | Diff | sha256 (16 hex) | md5 | Sum list |
 |---|---|---|---|---|
 | patch 0001 `4651d1d3` (main, the shared builds of 2026-11-13) | `kit/0418-on-4651d1d3.diff` | `8f946cb2874252de` | `d2a4b31b` | `kit/tree-0418-on-4651d1d3.md5` |
-| candidate B `27b6416f` (exp 0417 section 9, after the integrator's swap) | `kit/0418-on-27b6416f.diff` | `557656da0d691375` | `d857d736` | `kit/tree-0418-on-27b6416f.md5` |
+| candidate B `27b6416f` (exp 0417 section 9; the shared builds since 2026-11-13 15:47, main's patch since `2ba82971`) | `kit/0418-on-27b6416f.diff` | `557656da0d691375` | `d857d736` | `kit/tree-0418-on-27b6416f.md5` |
 
 `mk0418.sh` picks the pair by `P_TREE` and refuses any other base. It also holds `kit/test418.cpp`, the box's CPU test.
 
@@ -200,13 +200,13 @@ Under the fixes-first rule, everything above is in one build, each piece behind 
 
 1. **Build** (CPU only, about 45 minutes, no emulator). The kit goes to `~/bc5-work/exp0418/kit/`, then:
 
-   After the integrator's swap to candidate B:
+   On the shared tree as it is since 2026-11-13 15:47 (candidate B):
 
    ```bash
    P_TREE=27b6416f P_ARCH=75e30335 P_DIFF=557656da0d691375 bash ~/bc5-work/exp0418/kit/mk0418.sh
    ```
 
-   If the shared tree is still `4651d1d3`:
+   Only if the shared tree were back on `4651d1d3`:
 
    ```bash
    P_TREE=4651d1d3 P_ARCH=75e30335 P_DIFF=8f946cb2874252de bash ~/bc5-work/exp0418/kit/mk0418.sh
