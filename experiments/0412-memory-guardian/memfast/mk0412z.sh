@@ -6,6 +6,7 @@
 #           always on; BC5_GUARD_K1_STAT (default off)
 #   rl412   BC5_DIRECT_RESET_LABELS_ADD (mkrl0412.py): the lost jobs' label writes when two jobs time out in one hang
 #   k1r412  BC5_GUARD_K1R (mkk1r0412.py unit + backend): the read-only zero cover; the backend gets map_shared(readonly)
+#   fr412   BC5_FAULT_RECORD (mkfr0412.py): at the first GPU fault a self-contained record is written and the game ends
 #   ff412   KYTY_BC5_MEM_FIRSTFAIL, KYTY_BC5_TRAP_LOG, BC5_DIRECT_MAX_BO_MIB (mkff0412.py)
 # ~/src/KytyPlus, the shared build directories, the shared backend source and the shared archive are only read.
 #   1. checks: no emulator; the shared tree is 0001 4651d1d3; the shared archive is 75e30335; the kit's sums
@@ -30,7 +31,7 @@ pgrep '^kyty_emulator' > /dev/null && die "an emulator runs"
 for u in "src/kernel/memory.cpp eff24b4c" "src/libs/libAmpr.cpp a2d09d32" "src/libs/bc5LleAgc.cpp a81efd2c"; do
   set -- $u; [ "$(m "$K/$1")" = "$2" ] || die "the shared tree's $1 is not $2"
 done
-LINE="guard exp 0412 | build g412z (nl412 + rl412 + k1r412 + ff412 on private copies of the shared tree and backend; CPU only), token $$"
+LINE="guard exp 0412 | build g412z (nl412 + rl412 + k1r412 + fr412 + ff412 on private copies of the shared tree and backend; CPU only), token $$"
 [ -e "$LOCK" ] || touch "$LOCK"
 [ -f "$LOCK" ] && [ ! -L "$LOCK" ] && [ ! -s "$LOCK" ] || die "the box is locked: $(cat "$LOCK")"
 tl=$LOCK.0412-$$.new; al=$LOCK.0412-$$.aside
@@ -57,7 +58,7 @@ if [ ! -d "$P/tree/.git" ]; then
   cp -a --reflink=auto "$K" "$P/tree" || die "the copy failed"
 fi
 [ "$(git -C "$P/tree" rev-parse HEAD)" = "$(git -C "$K" rev-parse HEAD)" ] || die "the private tree is not at the shared tree's commit"
-# The unit's chain, from the shared tree's unit: nl (guards kept), rl, k1r; then ff over a staged copy of the four units.
+# The unit's chain, from the shared tree's unit: nl (guards kept), rl, k1r, fr; then ff over a staged copy of the four units.
 S=$P/stage; rm -rf "$S" "$P/out" && mkdir -p "$S/src/kernel" "$S/src/libs" "$S/src/common" || die "mkdir stage"
 python3 -I "$KIT/mknl0412.py" "$K/src/libs/bc5LleAgc.cpp" "$P/u-nl.cpp" --keep-guards > "$R/mknl.out" 2>&1 || die "mknl0412.py: $(tail -1 "$R/mknl.out")"
 [ "$(m "$P/u-nl.cpp")" = cfb7533e ] || die "the unit after nl412 is not cfb7533e"
@@ -65,10 +66,12 @@ python3 -I "$KIT/mkrl0412.py" "$P/u-nl.cpp" "$P/u-rl.cpp" > "$R/mkrl.out" 2>&1 |
 [ "$(m "$P/u-rl.cpp")" = 0878903e ] || die "the unit after rl412 is not 0878903e"
 python3 -I "$KIT/mkk1r0412.py" unit "$P/u-rl.cpp" "$P/u-k1r.cpp" > "$R/mkk1r.out" 2>&1 || die "mkk1r0412.py unit: $(tail -1 "$R/mkk1r.out")"
 [ "$(m "$P/u-k1r.cpp")" = 843b40cb ] || die "the unit after k1r412 is not 843b40cb"
-cp -p "$K/src/kernel/memory.cpp" "$S/src/kernel/" && cp -p "$K/src/libs/libAmpr.cpp" "$S/src/libs/" && cp -p "$K/src/common/hostException.cpp" "$S/src/common/" && cp "$P/u-k1r.cpp" "$S/src/libs/bc5LleAgc.cpp" || die "staging"
+python3 -I "$KIT/mkfr0412.py" "$P/u-k1r.cpp" "$P/u-fr.cpp" > "$R/mkfr.out" 2>&1 || die "mkfr0412.py: $(tail -1 "$R/mkfr.out")"
+[ "$(m "$P/u-fr.cpp")" = 9864c363 ] || die "the unit after fr412 is not 9864c363"
+cp -p "$K/src/kernel/memory.cpp" "$S/src/kernel/" && cp -p "$K/src/libs/libAmpr.cpp" "$S/src/libs/" && cp -p "$K/src/common/hostException.cpp" "$S/src/common/" && cp "$P/u-fr.cpp" "$S/src/libs/bc5LleAgc.cpp" || die "staging"
 python3 -I "$KIT/mkff0412.py" "$S" "$P/out" > "$R/mkff0412.out" 2> "$R/mkff0412.err" || die "mkff0412.py: $(tail -1 "$R/mkff0412.err")"
 cat "$R/mkff0412.out"
-for u in "src/kernel/memory.cpp 961da63a" "src/libs/libAmpr.cpp d88da83d" "src/common/hostException.cpp e978e975" "src/libs/bc5LleAgc.cpp 9a954b2b"; do
+for u in "src/kernel/memory.cpp 961da63a" "src/libs/libAmpr.cpp d88da83d" "src/common/hostException.cpp e978e975" "src/libs/bc5LleAgc.cpp 646a42d6"; do
   set -- $u; [ "$(m "$P/out/$1")" = "$2" ] || die "$1 is not the unit checked on the laptop ($2)"
   cp -p "$P/out/$1" "$P/tree/$1" || die "cannot put $1 into the private tree"
 done
@@ -97,7 +100,7 @@ distrobox enter ubuntu -- sh -c "cd '$B' && nice -n 19 ninja kyty_emulator" < /d
 b=$B/src/kyty_emulator
 [ -x "$b" ] || die "no binary"
 echo "normal: $(md5sum < "$b" | cut -d' ' -f1), warnings $(grep -c 'warning:' "$B.build.log")"
-for s in KYTY_BC5_MEM_FIRSTFAIL KYTY_BC5_TRAP_LOG BC5_DIRECT_MAX_BO_MIB "tag ff412" BC5_GUARD_K1R "tag k1r412" BC5_DIRECT_RESET_LABELS_ADD "tag rl412" "tag nl412" BC5_GUARD_K1_STAT KYTY_BC5_AMM_SCATTER KYTY_BC5_AMM_SETBUFFER_GUARD; do
+for s in BC5_FAULT_RECORD "tag fr412" KYTY_BC5_MEM_FIRSTFAIL KYTY_BC5_TRAP_LOG BC5_DIRECT_MAX_BO_MIB "tag ff412" BC5_GUARD_K1R "tag k1r412" BC5_DIRECT_RESET_LABELS_ADD "tag rl412" "tag nl412" BC5_GUARD_K1_STAT KYTY_BC5_AMM_SCATTER KYTY_BC5_AMM_SETBUFFER_GUARD; do
   grep -aqF -- "$s" "$b" || die "the binary lacks [$s]"
 done
 grep -aqF "direct-learned" "$b" && echo "note: the string direct-learned is still in the binary (another unit?)"
