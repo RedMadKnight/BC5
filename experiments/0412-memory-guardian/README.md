@@ -2648,8 +2648,78 @@ Runs (his slot, RT on, the scripted route): 12,288 once (10 s: is the start deat
 12,800 without and with `rescue`, three each, stop at the first kernel error. The answer wanted is one line: the
 first failing call and the pool state, per class.
 
+### 58. What asks the kernel for compaction (kcompactd0's 80–100 s per run): a read of the sources (2026-11-13, laptop only)
+
+The top session's order, after exp 0415's numbers and section 53's (kcompactd0 80 and 100 s of CPU in a 4-minute
+run, kswapd0 8–12 s; more with every emulator start since boot). Nothing measured here. Sources: Linux v6.19
+(`drivers/dma-buf/udmabuf.c` read whole; the `mm/` files through a fetching sub-agent, whose quotes are marked
+[V] verbatim or [S] from its summary of a part it did not get verbatim: **[S] lines are unverified**), and the local
+copies of `ttm_pool.c`, `ttm_tt.c` used for the design study. The box runs 7.2: TODO(verify) against its source.
+
+**Who can wake kcompactd.**
+1. **kcompactd by itself: proactive compaction.** [V] `sysctl_compaction_proactiveness = 20` by default; every
+   `HPAGE_FRAG_CHECK_INTERVAL_MSEC` (500 ms) the thread asks `should_proactive_compact_node()`, which is false while
+   kswapd runs and otherwise true when the node's fragmentation score **at huge-page order** is above the high mark
+   (`fragmentation_score_wmark`: low = 100 − proactiveness = 80, high = 90); it then compacts until the score is
+   under 80. [S] When the score does not fall it backs off (`timeout << COMPACT_MAX_DEFER_SHIFT`, 6: 32 s). No
+   allocation of ours is needed for this: a machine whose free memory is scattered between pinned pages has a high
+   score all the time.
+2. **kswapd, on every pass.** [S] `balance_pgdat()` ends with `wakeup_kcompactd(pgdat, pageblock_order, ...)` and
+   `kswapd_try_to_sleep()` with the order kswapd was woken for. At the wall kswapd runs continuously (README
+   sections 16, 53), so kcompactd is woken continuously with the page-block order, whatever we ask for.
+3. **High-order requests on our import path** [V unless marked]:
+   - `udmabuf_create`: four arrays of one pointer or offset per page, `kvmalloc_array`/`kvcalloc` with `GFP_KERNEL`:
+     a temporary `folios`, then `ubuf->folios`, `ubuf->offsets`, `ubuf->pinned_folios`. For a 64 MiB buffer (16,384
+     pages, the module's default `size_limit_mb = 64`) each is **131,072 bytes: an order-5 request** before
+     `kvmalloc` falls back to vmalloc ([S] `kmalloc_gfp_adjust`: above a page it adds `__GFP_NOWARN` and drops
+     direct reclaim unless `__GFP_RETRY_MAYFAIL`; the request can still wake kswapd, and through it kcompactd).
+     `vmap_udmabuf` makes a fifth. For a 2 MiB buffer the arrays are 4 KiB: order 0.
+   - amdgpu's import: `ttm_sg_tt_alloc_page_directory`: `kvcalloc(num_pages, sizeof(*ttm->dma_address), GFP_KERNEL)`,
+     again 131,072 bytes per 64 MiB BO (local `ttm_tt.c:138`).
+   - `sg_alloc_table(sg, pagecount, GFP_KERNEL)` per buffer: chained page-sized pieces, order 0 [I].
+   - GPU-owned memory (page tables of the GPU VM, the driver's buffers): `__ttm_pool_alloc` starts at
+     `MAX_PAGE_ORDER` and walks down; for order > 0 it adds `__GFP_NORETRY | __GFP_NOWARN | __GFP_NOMEMALLOC`, and
+     above the device's "beneficial order" it drops direct reclaim (local `ttm_pool.c:149–158, 738`). Every miss
+     at a high order can wake kswapd.
+   - Pinning: [S] `memfd_pin_folios()` runs `check_and_migrate_movable_folios()` in a retry loop: folios that may not
+     be pinned long-term (ZONE_MOVABLE, CMA) are migrated first. The box has no CMA (`CmaTotal 0`, section 50's
+     snapshot); whether it has a movable zone is not known [TODO(verify): /proc/zoneinfo].
+4. **THP**: `enabled` is madvise, shmem never, `AnonHugePages 0` in every snapshot: nothing asks on our behalf [M
+   for the settings and the zero; that no library madvises is not checked].
+
+**Reading [I].** Two of the three sources need nothing from us: with 12 GiB pinned and unmovable, the huge-page
+fragmentation score is high for good, so the proactive thread and every kswapd pass send kcompactd to scan for
+pages it cannot move. That also fits the growth with boot age: each emulator start pins 12 GiB in a new pattern, the
+free pages left between runs are scattered over more page blocks, and the scans get longer for the same result.
+Our own part is the order-5 arrays: with imports made 2 MiB at a time, merged into 64 MiB buffers later and cut
+again by the orphan release, a run makes thousands of them (two to five per buffer per cycle). They do not cause
+the scanning, but each can start one.
+
+**How to tell them apart, read-only** (no root beyond what the sampler already has): per phase, the deltas of
+`/proc/vmstat` `compact_daemon_wake`, `compact_daemon_migrate_scanned`, `compact_daemon_free_scanned`,
+`compact_stall`, `compact_fail`, `compact_success`, `pgmigrate_success`/`_fail`, `kswapd_low_wmark_hit_quickly`,
+`pageoutrun`; `/proc/buddyinfo` at the phase's start and end (free blocks of order 9 and above); the value of
+`/proc/sys/vm/compaction_proactiveness`; kcompactd0's and kswapd0's CPU as exp 0415 already samples. A run of the
+shared build with the merge pass off (2 MiB buffers only, if a switch exists: TODO(verify)) against one with it on
+separates our arrays from the rest.
+
+**What could change, and who decides.**
+- `vm.compaction_proactiveness = 0` for the time of a play removes source 1. It is a system-wide setting: **his
+  decision and his command**, not ours (no sysctl changes by a session). The cheapest experiment there is: one
+  value, undone by writing 20 back.
+- Our path: make each heap's buffers **once, at their final size** when the title maps the heap, instead of
+  2 MiB → merge → cut. Fewer order-5 requests and far fewer create/import/free cycles; but "final size at map
+  time" is R1, which pins what is never written (section 53). With option B's read-only cover the two fit
+  together; not before.
+- A hugetlb memfd (udmabuf accepts it: `check_memfd_seals` allows `is_file_hugepages`) would end fragmentation for
+  the guest's memory, at the price of 12 GiB of huge pages reserved up front by the system and never swappable:
+  his decision too, and the opposite of what the wall needs. Not proposed.
+
 ## Verdict
 
+- **Compaction (section 58, sources only):** kcompactd is driven by the kernel's own proactive compaction and by every
+  kswapd pass once 12 GiB is pinned; our import adds order-5 array requests per 64 MiB buffer on every create,
+  merge and cut. The first is a system setting that only the maintainer can change; ours needs buffers made once.
 - **The 12,800 MiB offer (section 57):** the recorded deaths at 12,460–12,800 are ours (the AMM auto pool's refused
   borrow), the start deaths at 12,288 and below were never read; all predate exp 0413's set-buffer guard. Measured
   gain at 12,800: 190–220 MiB of GTT, not 1 GiB. A catcher naming the first failing memory call is proposed, not built.
