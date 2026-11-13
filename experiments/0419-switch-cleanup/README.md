@@ -144,7 +144,7 @@ which sets the words itself, so the table's "taken" path is exercised only for w
 | the fixes and the long-standing defaults | forced (`setenv` with overwrite): the environment cannot change them | 35: the 5 of `kFixes`, 30 of `kDefaults` |
 | defaults that live at the read site | removed from the environment (`kIgnored`): the read always sees "unset" | 12: `BC5_FAULT_RECORD` (a GPU fault always ends the game with a record), `BC5_DIRECT_COMPUTE_RING`, `_IB_MAX_DW`, `_PREFIX_ALL`, `_SOFT_WAIT_MS`, `KYTY_BC5_AMM_SETBUFFER_GUARD`, `_APR_READAHEAD`, `_APR_SYNC`, `_AT9_VIBRATION`, `_NP_SESSION_V2`, `_PAD_PW_PROPS`, `_PAD_RUMBLE_FALLBACK` |
 | `KYTY_BC5_SWITCH_DEFAULTS` | gone (ignored); a control is a build of the older patch | 1 |
-| defaults that keep their option (`kSoft`) | `setenv` without overwrite | `BC5_DIRECT_JOURNAL_QUIET` (a launcher may ask for the full journal), `BC5_DIRECT_CHAIN`, `BC5_GC_MODE`, and `BC5_GUARD_K1R=1` (new default; its rules cv412 and kl412 act with it) |
+| defaults that keep their option (`kSoft`) | `setenv` without overwrite | `BC5_DIRECT_JOURNAL_QUIET` (a launcher may ask for the full journal), `BC5_DIRECT_CHAIN`, `BC5_GC_MODE` |
 
 That is 48 of the inventory's 52 HARDEN rows. The other four are not behaviour defaults and stay: `JOURNAL_QUIET`
 (diagnostic) and `KYTY_BC5_NO_PAD_AUDIO`, `_PAD_SPEAKER`, `_PAUSE_ON_BACKGROUND` (the user's configuration). As with
@@ -155,9 +155,12 @@ experiments 0412-0418 sets one of these to another value, except closed test scr
 `_PHYSMAP_SORTED=verify`): on E those words do nothing, so such a control must be a build of B.
 `test0419defs.cpp` covers it (forced, ignored, soft, no word in two tables): all ok.
 
-**Candidate E, final form: patch e05212cc** (`tree-candidate-E-e05212cc.md5`), `switch_defaults.hpp` 448333f3;
-not compiled. Open with exp 0412: whether `BC5_GUARD_K1_FILTER` and `_LAZY_BY_DATA` are defaults too (asked; one rule
-for both titles).
+**Candidate E, final form: patch 2dd4c95c** (`tree-candidate-E-2dd4c95c.md5`), unit 1215d7d7, `switch_defaults.hpp`
+2121d020; not compiled. It is made from exp 0412's FORM 3 (unit 2824caf7, its branch at 17dfc5b5; this replaces the
+form-2 fold of section 8): `BC5_GUARD_K1R` and `BC5_GUARD_K1_FILTER` are on unless "0" at their own read sites (one rule
+for both titles; "0" and the filter's "log" stay as the catcher), the switches of its two rules (cover, written scan)
+are gone, `BC5_GUARD_WATCH` and `_K1_STAT` are diagnostics, `_LAZY_BY_DATA` has no verdict (off), `_K1R_REPLACE` is a
+delete candidate that needs a backend change. The backend files are unchanged (26519fcc, b1d27875).
 
 **The count.** The inventory had 266 names.
 
@@ -172,8 +175,8 @@ for both titles).
 | - configuration (paths, lists, user settings) | 13 | |
 | - general defaults that keep an option | 2 | `BC5_DIRECT_CHAIN`, `BC5_GC_MODE` |
 
-E adds 13 new words: exp 0412's K1r set (8, `BC5_GUARD_K1R` default on), exp 0417's save words (4, off) and
-`KYTY_BC5_TITLE_DEFAULTS`. So a build of E reads 201 names, of which 78 fewer than today can change its behaviour
+E adds 10 new words: exp 0412's K1r set (5: `BC5_GUARD_K1R` and `_K1_FILTER` on by default, `_WATCH`, `_LAZY_BY_DATA`,
+`_K1R_REPLACE` off), exp 0417's save words (4, off) and `KYTY_BC5_TITLE_DEFAULTS`. So a build of E reads 198 names, of which 78 fewer than today can change its behaviour
 by accident. The next reductions are in the 63 without a verdict (each needs one run) and the 42 title words
 (each needs a run on ASTRO BOT to become general and then lose its option).
 
@@ -193,7 +196,7 @@ to the trash directory. Still his to say separately, because they are behaviour 
 
 ## Verdict
 
-**Prepared, not built: candidate E (patch e05212cc) = B + exp 0412's K1r (default on, no probe) + the cleanup + exp
+**Prepared, not built: candidate E (patch 2dd4c95c) = B + exp 0412's K1r (default on, no probe, form 3) + the cleanup + exp
 0417's save fix. Of the 266 names, 78 can no longer be set (30 deleted, 48 hardened), 188 remain: 68 diagnostics,
 63 without a verdict, 42 one title's, 13 configuration, 2 general defaults with an option.** 47 launcher words moved
 into the code (2 general, 45 for the second title) and 15 words got the one reading rule. Every generator's anchors
