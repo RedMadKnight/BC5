@@ -1,0 +1,478 @@
+diff --git a/src/bc5/anon_sync.hpp b/src/bc5/anon_sync.hpp
+new file mode 100644
+index 0000000..f74cbb1
+--- /dev/null
++++ b/src/bc5/anon_sync.hpp
+@@ -0,0 +1,73 @@
++// BC5 experiment 0415 (tag as415), stage S5 of experiments/0415-load-times-fps/DESIGN-lock-side.md: the pieces of the
++// anonymous sync that the submission path and the checking thread share, kept apart from the device so that they can be
++// tested on any CPU (experiments/0415-load-times-fps/kit/test0415anon.cpp).
++#pragma once
++
++#include <cinttypes>
++#include <cstdint>
++#include <cstdio>
++#include <cstring>
++
++namespace bc5::anon_sync {
++
++inline constexpr uint64_t kGuestMin = 0x40000ull, kGuestMax = 0xfbffffffffull;
++
++// One line of /proc/self/maps: true when it is a readable anonymous VMA inside the guest's address span (not backed by
++// a file, not [stack]/[heap]/...); the rule sync_mappings has used since experiment 0016.
++inline bool parse_line(const char* line, uint64_t* start, uint64_t* end, bool* readonly) {
++	uint64_t s = 0, e = 0, offset = 0, inode = 0;
++	char     perms[8] = {};
++	char     dev[16]  = {};
++	if (std::sscanf(line, "%" SCNx64 "-%" SCNx64 " %7s %" SCNx64 " %15s %" SCNu64, &s, &e, perms, &offset, dev, &inode) < 6) return false;
++	if (perms[0] != 'r' || inode != 0 || s < kGuestMin || e > kGuestMax + 1) return false;
++	if (std::strchr(line, '/') != nullptr || std::strchr(line, '[') != nullptr) return false;
++	*start    = s;
++	*end      = e;
++	*readonly = perms[1] != 'w';
++	return true;
++}
++
++// KYTY_BC5_ANON_SYNC: 0 off (unset, empty, "0"); 2 "thread" (the submission path leaves the walk out while the checking
++// thread's last pass saw what the last walk saw); 1 anything else ("verify": the walk runs as before and
++// is compared with what "thread" would have done).
++inline int mode_of(const char* e) {
++	if (e == nullptr || e[0] == '\0' || std::strcmp(e, "0") == 0) return 0;
++	return std::strcmp(e, "thread") == 0 ? 2 : 1;
++}
++
++// The signature of what a walk acts on: the list of VMAs and, inside each, the resident runs at the walk's 64 KiB grain.
++// Two walks with the same signature (and the same mappings on the device) add and drop nothing.
++inline constexpr uint64_t kSigEmpty = 0x9e3779b97f4a7c15ull;
++inline uint64_t fold(uint64_t h, uint64_t v) {
++	h ^= v + 0x9e3779b97f4a7c15ull + (h << 6u) + (h >> 2u);
++	return h * 0xff51afd7ed558ccdull;
++}
++inline uint64_t sig_vma(uint64_t h, uint64_t start, uint64_t end, bool readonly) {
++	return fold(fold(fold(h, start), end), readonly ? 3 : 1);
++}
++// vec: mincore's bytes for [start, end), bit 0 = resident. The runs are rounded as sync_mappings rounds them.
++inline uint64_t sig_runs(uint64_t h, uint64_t start, uint64_t end, const unsigned char* vec, size_t pages) {
++	constexpr uint64_t kPage = 4096, kGrain = 65536;
++	size_t i = 0;
++	while (i < pages) {
++		while (i < pages && (vec[i] & 1) == 0) i++;
++		if (i >= pages) break;
++		size_t j = i;
++		while (j < pages && (vec[j] & 1) != 0) j++;
++		const uint64_t a = start + (i * kPage / kGrain) * kGrain;
++		uint64_t       b = start + ((j * kPage + kGrain - 1) / kGrain) * kGrain;
++		if (b > end) b = end;
++		h = fold(fold(h, a), b);
++		i = j;
++	}
++	return h;
++}
++
++// May the submission path leave the walk out? Only when the thread has finished at least one pass and its last pass
++// saw exactly what the last walk on the submission path saw (the same VMAs, the same resident runs), and that walk's
++// result still stands (no device reopen since).
++inline bool can_skip(uint64_t thread_passes, uint64_t thread_sig, bool walk_valid, uint64_t walk_sig) {
++	return thread_passes != 0 && walk_valid && thread_sig == walk_sig;
++}
++
++} // namespace bc5::anon_sync
+diff --git a/src/bc5/load_stat.hpp b/src/bc5/load_stat.hpp
+index 7e76a70..7fbcc29 100644
+--- a/src/bc5/load_stat.hpp
++++ b/src/bc5/load_stat.hpp
+@@ -91,6 +91,12 @@ enum Cause : unsigned {
+ 	kRecOverflow,    // ... not made because the record log was full
+ 	kMapsCheck,      // tag mr415b: checks of /proc/self/maps against the range table: n, items = uncovered bytes, summed over checks
+ 	kMapsUncovered,  // ... checks that found a readable guest-span VMA (or part of one) with no range in the table: n, items = such spans
++	kAnonRead,       // tag as415: sync_mappings' read of /proc/self/maps on the submission path: n, time, items = anonymous guest VMAs found
++	kAnonUrgent,     // ... calls that were urgent (an operand unmapped, -EFAULT): n
++	kAnonNeeded,     // KYTY_BC5_ANON_SYNC: walks that saw a changed list or changed resident runs, or mapped or unmapped something: n, items = VMAs
++	kAnonMiss,       // ... of those, walks that "thread" mode would have left out (the thread's last pass matched the walk before): n
++	kAnonSkip,       // KYTY_BC5_ANON_SYNC=thread: walks left out: n
++	kAnonThread,     // the checking thread's passes: n, time, items = anonymous guest VMAs found
+ 	kCount
+ };
+ 
+@@ -101,7 +107,8 @@ inline constexpr const char* kNames[kCount] = {
+     "cond_wait", "sema_signal", "sema_wait",      "file_open", "file_stat",   "file_read",   "http_send",
+     "apr_fallback", "hold_probe", "hold_hints",   "hold_pre",  "dev_call",    "dev_prepare", "dev_list",        "dev_cs",
+     "ds_views", "ds_scan",    "ds_merge",         "ds_drain",  "ds_maps",     "fast_diff",   "learned_apply",   "learned_changed",
+-    "map_record", "rec_mismatch", "rec_overflow",    "maps_check", "maps_uncovered"};
++    "map_record", "rec_mismatch", "rec_overflow",    "maps_check", "maps_uncovered",
++    "anon_read", "anon_urgent", "anon_needed",     "anon_miss", "anon_skip",   "anon_thread"};
+ 
+ static_assert(kNames[kCount - 1] != nullptr, "a name per cause");
+ 
+diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
+index 3e73381..7aaef29 100644
+--- a/src/libs/bc5LleAgc.cpp
++++ b/src/libs/bc5LleAgc.cpp
+@@ -37,6 +37,7 @@
+ #include "bc5/load_stat.hpp" // experiment 0415 (ls415)
+ #include "bc5/sync_fast.hpp" // experiment 0415 (ls415d)
+ #include "bc5/map_records.hpp" // experiment 0415 (mr415)
++#include "bc5/anon_sync.hpp" // experiment 0415 (as415)
+ #include <sys/resource.h> // experiment 0379 (exp 0401 e7, mkzsk0401.py): setpriority, for the zero scan and the canary
+ #include <sys/syscall.h>  // experiment 0379: SYS_gettid
+ // ---- experiment 0379's backend/include/bc5/zero_skip.hpp (782ca0e9) lines 13-228, inlined by exp 0401's mkzsk0401.py ----
+@@ -2125,10 +2126,19 @@ static std::mutex                           g_dev_mutex;
+ // two frames on (the water in the second level: 4 s a frame).
+ static const bool g_async = g_journal_min;
+ // Experiment 0415 (ls415): an import with its count, bytes and time.
++// Experiment 0415 (fs415d): what this thread spent, since submit_now last cleared it, in the parts of direct_sync_one
++// (0 views, 1 scan with its imports, 2 merges and the lazy release, 3 the drain, 4 the mappings, 5 the imports alone,
++// which lie inside 1 and 2), 6 in sync_mappings' read of /proc/self/maps; 7 flags of sync_mappings: 1 it walked,
++// 2 the call was urgent, 4 the walk was left out (KYTY_BC5_ANON_SYNC=thread). Nanoseconds; for the frame counter's line.
++static thread_local uint64_t t_fs415_ds[8] = {};
++
+ static uint32_t ls415_import(int fd, uint64_t off, uint64_t size) {
+ 	bc5::load_stat::Scope ls_scope(bc5::load_stat::kImport);
+ 	ls_scope.items = size;
+-	return g_dev->import_memfd(fd, off, size);
++	const uint64_t t0 = SoftCp::now_ns();
++	const uint32_t id = g_dev->import_memfd(fd, off, size);
++	t_fs415_ds[5] += SoftCp::now_ns() - t0;
++	return id;
+ }
+ static std::shared_mutex g_finish_mutex; // shared: waiting for a job on g_dev; exclusive: replacing g_dev
+ // With jobs in flight a mapping must not go away or change under a job that may be using it
+@@ -3852,6 +3862,7 @@ static void direct_sync_one(DState& S, bool force) {
+ 	const auto               views_p = direct_views(S);
+ 	const std::vector<DView>& views  = views_p->v;
+ 	g_dprof_views_ns += SoftCp::now_ns() - now;
++	t_fs415_ds[0] += SoftCp::now_ns() - now; // experiment 0415 (fs415d)
+ 	if (bc5::load_stat::on()) bc5::load_stat::add(bc5::load_stat::kDsViews, SoftCp::now_ns() - now); // experiment 0415 (ls415c)
+ 	const uint64_t sig = views_p->sig;
+ 	if (sig != S.views_sig) g_layout_gen++;
+@@ -3927,6 +3938,7 @@ static void direct_sync_one(DState& S, bool force) {
+ 	// one merged import — a bounded amount per call, the old BOs freed after the remap below.
+ 	const uint64_t        t_merge0 = SoftCp::now_ns(); // experiment 0169
+ 	g_dprof_scan_ns += t_merge0 - t_scan0;
++	t_fs415_ds[1] += t_merge0 - t_scan0; // experiment 0415 (fs415d)
+ 	if (bc5::load_stat::on()) bc5::load_stat::add(bc5::load_stat::kDsScan, t_merge0 - t_scan0); // experiment 0415 (ls415c)
+ 	std::vector<uint32_t> retired;
+ 	uint32_t              merged = 0;
+@@ -3997,6 +4009,7 @@ static void direct_sync_one(DState& S, bool force) {
+ 	// 2. the views' addresses: every (view, imported range) intersection is one GPU mapping
+ 	const uint64_t t_drain0 = SoftCp::now_ns(); // experiment 0169
+ 	g_dprof_merge_ns += t_drain0 - t_merge0;
++	t_fs415_ds[2] += t_drain0 - t_merge0; // experiment 0415 (fs415d)
+ 	if (bc5::load_stat::on()) bc5::load_stat::add(bc5::load_stat::kDsMerge, t_drain0 - t_merge0); // experiment 0415 (ls415c)
+ 	if (!retired.empty() || sig != S.views_sig || guard0412_cap_changed(S)) { // exp 0412 (tag g412b)
+ 		wait_jobs(); // mappings are about to go or be replaced
+@@ -4004,6 +4017,7 @@ static void direct_sync_one(DState& S, bool force) {
+ 	}
+ 	const uint64_t t_maps0 = SoftCp::now_ns();
+ 	g_dprof_drain_ns += t_maps0 - t_drain0;
++	t_fs415_ds[3] += t_maps0 - t_drain0; // experiment 0415 (fs415d)
+ 	if (bc5::load_stat::on()) bc5::load_stat::add(bc5::load_stat::kDsDrain, t_maps0 - t_drain0); // experiment 0415 (ls415c)
+ 	lzr_confirm(S, lzr, retired); // experiment 0401 series e7 (lzr): a cut stands only when every ring is idle after the drain
+ 	uint32_t mapped = 0, unmapped = 0, map_failed = 0;
+@@ -4079,6 +4093,7 @@ static void direct_sync_one(DState& S, bool force) {
+ 		S.bos_mapped = map_failed == 0 ? S.bos.size() : 0; // a failure is retried at the next sync
+ 	}
+ 	g_dprof_maps_ns += SoftCp::now_ns() - t_maps0; // experiment 0169
++	t_fs415_ds[4] += SoftCp::now_ns() - t_maps0; // experiment 0415 (fs415d)
+ 	if (bc5::load_stat::on()) bc5::load_stat::add(bc5::load_stat::kDsMaps, SoftCp::now_ns() - t_maps0); // experiment 0415 (ls415c)
+ 	if (imported != 0) S.blocks = ~0ull; // pinning may have allocated pages: look once more
+ 	for (const uint32_t id: retired) g_dev->free_shared(id);
+@@ -4148,13 +4163,84 @@ static uint64_t direct_force(uint64_t lo, uint64_t hi) {
+ 	return asked;
+ }
+ 
++// Experiment 0415 (tag as415), stage S5 of experiments/0415-load-times-fps/DESIGN-lock-side.md, KYTY_BC5_ANON_SYNC
++// (default off). Build L5b measured sync_mappings at 11-16 ms of each frame over 50 ms, under the device mutex; with
++// private guest memory in a file it is expected to find no anonymous VMA at all, and its cost is the read of
++// /proc/self/maps (tens of thousands of lines).
++//   "verify": the walk runs as before. A thread of its own (bc5-anonchk) reads /proc/self/maps with the same rule every
++//             KYTY_BC5_ANON_SYNC_MS (1,000 when unset; an urgent call wakes it, at most every 50 ms) under no lock of
++//             the direct path. Each walk is held against what "thread" would have done: anon_needed counts walks that
++//             found a VMA, a changed list or a mapping to add or drop; anon_miss those of them "thread" would have left
++//             out.
++//   "thread": the submission path leaves the walk out while the thread's last pass saw what the last walk saw: the same
++//             VMAs and the same resident runs (bc5/anon_sync.hpp, the signature and can_skip); an urgent call wakes the
++//             thread. The walk after -EFAULT always runs, and so does the first one after a device reopen. With pages in
++//             swap the walk counts swapped pages as resident and the thread does not: the signatures then differ and
++//             the walk runs as before.
++// What "thread" gives up: an anonymous guest VMA that appears is walked at the first call after the thread's next pass
++// instead of at once for an urgent call (operands on it are dropped by the filter until then, as they are today for a
++// non-urgent call for up to a second). So it stays off until "verify" shows no miss.
++static std::mutex              g_as415_mu;
++static std::condition_variable g_as415_cv;
++static uint64_t                g_as415_sig    = 0;     // the thread's last pass: its signature
++static uint64_t                g_as415_walk_sig   = 0; // the last walk's signature (the submission path, under the device mutex)
++static bool                    g_as415_walk_valid = false;
++static uint64_t                g_as415_passes = 0;     // passes finished
++static bool                    g_as415_kick   = false; // an urgent call asks for a pass now
++
++static int as415_mode() {
++	static const int mode = bc5::anon_sync::mode_of(std::getenv("KYTY_BC5_ANON_SYNC"));
++	return mode;
++}
++
++static void anon_vmas_read(std::vector<Vma>* vmas) {
++	std::ifstream maps("/proc/self/maps");
++	std::string   line;
++	while (std::getline(maps, line)) {
++		uint64_t start = 0, end = 0;
++		bool     readonly = false;
++		// r-- and r-x anonymous pages (the executable's segments after the loader's
++		// mprotect) hold shader code and rodata: the first draw of step (d) faulted in the
++		// SQC on 0x908e86000, 8 KiB past the last rw run (experiment 0016, run 27).
++		if (bc5::anon_sync::parse_line(line.c_str(), &start, &end, &readonly)) vmas->push_back({start, end, readonly});
++	}
++}
++
++static void as415_thread() {
++	pthread_setname_np(pthread_self(), "bc5-anonchk");
++	const auto period = std::chrono::milliseconds(bc5::load_stat::env_num("KYTY_BC5_ANON_SYNC_MS", 1000, 60'000));
++	for (;;) {
++		const uint64_t   t0 = SoftCp::now_ns();
++		std::vector<Vma> vmas;
++		anon_vmas_read(&vmas);
++		uint64_t                   sig = bc5::anon_sync::kSigEmpty;
++		std::vector<unsigned char> vec;
++		for (const auto& v: vmas) {
++			sig = bc5::anon_sync::sig_vma(sig, v.start, v.end, v.readonly);
++			const size_t pages = static_cast<size_t>((v.end - v.start) / 4096);
++			vec.assign(pages, 0);
++			if (mincore(reinterpret_cast<void*>(v.start), v.end - v.start, vec.data()) != 0) continue;
++			sig = bc5::anon_sync::sig_runs(sig, v.start, v.end, vec.data(), pages);
++		}
++		bc5::load_stat::add(bc5::load_stat::kAnonThread, SoftCp::now_ns() - t0, vmas.size());
++		{
++			std::unique_lock lk(g_as415_mu);
++			g_as415_sig = sig;
++			g_as415_passes++;
++			g_as415_kick = false;
++			g_as415_cv.wait_for(lk, period, [] { return g_as415_kick; });
++		}
++		std::this_thread::sleep_for(std::chrono::milliseconds(50)); // a kicked pass is at least 50 ms after the last
++	}
++}
++
+ // force: before a submission whose shaders may read memory the filter does not see. With the
+ // direct memory on the dma-buf path (ADR 0006) what is left here are the anonymous VMAs (module
+ // data, stacks, flexible memory), walked through /proc/self/maps and mincore — 0.9 ms a call,
+ // seven calls a frame (experiment 0022). A forced call is therefore skipped when the last walk
+ // is younger than 100 ms; urgent calls (an
+ // operand of the IB is unmapped, -EFAULT from a submission) always walk.
+-static void sync_mappings(bool force = false, bool urgent = false) {
++static void sync_mappings(bool force = false, bool urgent = false, bool must = false) { // must (exp 0415, as415): after -EFAULT, never left out
+ 	const uint64_t now = SoftCp::now_ns();
+ 	if (!force && now - g_last_sync_ns < 50'000'000ull) { // at most every 50 ms
+ 		return;
+@@ -4169,37 +4255,44 @@ static void sync_mappings(bool force = false, bool urgent = false) {
+ 		return;
+ 	}
+ 	g_last_sync_ns = now;
++	// Experiment 0415 (as415), KYTY_BC5_ANON_SYNC: see as415_thread.
++	const int as_mode    = as415_mode();
++	bool      as_skip_ok = false;
++	if (urgent) {
++		bc5::load_stat::count(bc5::load_stat::kAnonUrgent);
++		t_fs415_ds[7] |= 2;
++	}
++	if (as_mode != 0) {
++		static std::once_flag once;
++		std::call_once(once, [] { std::thread(as415_thread).detach(); });
++		std::lock_guard lk(g_as415_mu);
++		as_skip_ok = bc5::anon_sync::can_skip(g_as415_passes, g_as415_sig, g_as415_walk_valid, g_as415_walk_sig);
++		if (urgent && !g_as415_kick) {
++			g_as415_kick = true;
++			g_as415_cv.notify_one();
++		}
++	}
++	if (as_mode == 2 && as_skip_ok && !must) {
++		bc5::load_stat::count(bc5::load_stat::kAnonSkip);
++		t_fs415_ds[7] |= 4;
++		return;
++	}
++	t_fs415_ds[7] |= 1;
+ 	bc5::load_stat::Scope ls_scope(bc5::load_stat::kAnonSync); // experiment 0415 (ls415)
+-	constexpr uint64_t kGuestMin = 0x40000ull, kGuestMax = 0xfbffffffffull;
+ 	constexpr uint64_t kPage = 4096, kGrain = 65536;
+ 
+ 	// Pass 0: the rw anonymous guest VMAs.
+ 	std::vector<Vma> vmas;
+ 	{
+-		std::ifstream maps("/proc/self/maps");
+-		std::string   line;
+-		while (std::getline(maps, line)) {
+-			uint64_t start = 0, end = 0;
+-			char     perms[8] = {};
+-			uint64_t offset = 0;
+-			char     dev[16] = {};
+-			uint64_t inode = 0;
+-			if (std::sscanf(line.c_str(), "%" SCNx64 "-%" SCNx64 " %7s %" SCNx64 " %15s %" SCNu64, &start, &end, perms, &offset, dev, &inode) < 6) {
+-				continue;
+-			}
+-			if (perms[0] != 'r' || inode != 0 || start < kGuestMin || end > kGuestMax + 1) {
+-				continue;
+-			}
+-			if (line.find('/') != std::string::npos || line.find('[') != std::string::npos) {
+-				continue; // file-backed or [stack]/[heap]
+-			}
+-			// r-- and r-x anonymous pages (the executable's segments after the loader's
+-			// mprotect) hold shader code and rodata: the first draw of step (d) faulted in the
+-			// SQC on 0x908e86000, 8 KiB past the last rw run (experiment 0016, run 27).
+-			vmas.push_back({start, end, perms[1] != 'w'});
+-		}
+-	}
+-	if (vmas.size() != g_vmas.size() || !std::equal(vmas.begin(), vmas.end(), g_vmas.begin(), [](const Vma& a, const Vma& b) { return a.start == b.start && a.end == b.end && a.readonly == b.readonly; })) {
++		const uint64_t tr = SoftCp::now_ns();
++		anon_vmas_read(&vmas);
++		const uint64_t dr = SoftCp::now_ns() - tr;
++		t_fs415_ds[6] += dr;
++		if (bc5::load_stat::on()) bc5::load_stat::add(bc5::load_stat::kAnonRead, dr, vmas.size());
++	}
++	const bool as_changed =
++	    vmas.size() != g_vmas.size() || !std::equal(vmas.begin(), vmas.end(), g_vmas.begin(), [](const Vma& a, const Vma& b) { return a.start == b.start && a.end == b.end && a.readonly == b.readonly; });
++	if (as_changed) {
+ 		g_layout_gen++;
+ 	}
+ 	g_vmas = vmas;
+@@ -4251,10 +4344,12 @@ static void sync_mappings(bool force = false, bool urgent = false) {
+ 	std::vector<unsigned char> vec;
+ 	int added = 0;
+ 	uint64_t vma_total = 0, vma_resident = 0;
++	uint64_t as_sig = bc5::anon_sync::kSigEmpty; // experiment 0415 (as415)
+ 	for (const auto& v: vmas) {
+ 		const uint64_t start = v.start, end = v.end;
+ 		const size_t pages = static_cast<size_t>((end - start) / kPage);
+ 		vec.assign(pages, 0);
++		as_sig = bc5::anon_sync::sig_vma(as_sig, start, end, v.readonly);
+ 		if (mincore(reinterpret_cast<void*>(start), end - start, vec.data()) != 0) {
+ 			continue;
+ 		}
+@@ -4300,6 +4395,7 @@ static void sync_mappings(bool force = false, bool urgent = false) {
+ 			}
+ 		}
+ 		for (size_t k = 0; k < pages; k++) vma_resident += (vec[k] & 1) ? kPage : 0;
++		as_sig = bc5::anon_sync::sig_runs(as_sig, start, end, vec.data(), pages); // experiment 0415 (as415): after the swapped pages were added
+ 		// Resident runs at 64 KiB granularity.
+ 		size_t i = 0;
+ 		while (i < pages) {
+@@ -4347,6 +4443,20 @@ static void sync_mappings(bool force = false, bool urgent = false) {
+ 			i = j;
+ 		}
+ 	}
++	const bool as_same = g_as415_walk_valid && g_as415_walk_sig == as_sig; // experiment 0415 (as415)
++	g_as415_walk_sig   = as_sig;
++	g_as415_walk_valid = true;
++	if (as_mode != 0 && (as_changed || added != 0 || removed != 0 || !as_same)) {
++		bc5::load_stat::count(bc5::load_stat::kAnonNeeded, vmas.size());
++		if (as_skip_ok) {
++			bc5::load_stat::count(bc5::load_stat::kAnonMiss);
++			static int logged = 0;
++			if (logged++ < 8) {
++				journal("anon sync (exp 0415, as415): MISS: %zu VMAs, list %s, signature %s, +%d -%d mappings, %s, while the thread's last pass matched the walk before\n", vmas.size(),
++				        as_changed ? "changed" : "same", as_same ? "same" : "changed", added, removed, urgent ? "urgent" : "not urgent");
++			}
++		}
++	}
+ 	if (added != 0 || removed != 0) {
+ 		const double mib = 1024.0 * 1024.0;
+ 		LOGF("[bc5-direct] mappings: +%d -%d, %zu total, %.1f MiB (rw anon VMAs: %zu, %.1f MiB, %.1f MiB resident)\n", added, removed, have.size(), static_cast<double>(g_bytes_mapped.load()) / mib, vmas.size(), static_cast<double>(vma_total) / mib, static_cast<double>(vma_resident) / mib);
+@@ -9509,6 +9619,7 @@ static void recover_after_timeout(const bc5::direct::SubmitResult& r) {
+ 		zskip_disable("device reopen"); // experiment 0379
+ 		g_bytes_mapped = 0;
+ 		g_last_sync_ns = 0;
++		g_as415_walk_valid = false; // experiment 0415 (as415): the mappings are gone, the next walk must run
+ 		for (auto& S: g_d) {
+ 			S.bos.clear();
+ 			S.maps.clear();
+@@ -11616,6 +11727,7 @@ struct PendingJob {
+ 	uint64_t                 fs_open_ns = 0, fs_part_ns[6] = {};          // experiment 0415 (fs415c): the chain's first segment; the ends of probe, anon sync, direct sync, learned, hints, pre-device
+ 	int                      fs_why = -1;
+ 	uint32_t                 fs_segs = 0;
++	uint64_t                 fs_ds[8] = {}; // experiment 0415 (fs415d): t_fs415_ds at the end of the direct sync
+ 	uint32_t                 slot = 0;
+ 	std::vector<uint64_t>    ts_addrs; // experiment 0046: GPU timestamps to rescale once the job is done
+ 	std::vector<uint32_t>    ib_copy;  // experiment 0160: the executed buffer, kept for the timeout probe
+@@ -11967,22 +12079,27 @@ static bool fs415_in_window(uint64_t frame) { // fs415b
+ 	}();
+ 	return frame % w.second < w.first;
+ }
+-// fs415c: the line is "K": J's fields, then the chain's first segment (ns, 0 without a chain), why it was flushed
++// fs415d: the line is "L": K's fields, then what the submitting thread spent between the probe and the end of the direct
++// sync in direct_sync_one's parts (ns: views, scan with its imports, merges, the drain, the mappings; the imports
++// alone), in sync_mappings' read of /proc/self/maps (ns), and sync_mappings' flags (1 walked, 2 urgent, 4 left out).
++// fs415c: the line was "K": J's fields, then the chain's first segment (ns, 0 without a chain), why it was flushed
+ // (chain_submit's reason, -1 without a chain), its segments, and the ends of submit_now's parts under the mutex (ns):
+ // probe, anonymous sync, direct sync, learned windows, hints, the work before the device call. The device call is
+ // from the last of these to "queued".
+ static void fs415_job(uint64_t n, const char* kind, int ring, uint32_t num_dwords, const bc5::policy::FilterStats& fs, uint32_t bo_count, double prepare_ms, double list_ms,
+                       double cs_ms, uint64_t sub_ns, uint64_t ask_ns, uint64_t got_ns, uint64_t queued_ns, uint64_t gpu_start, uint64_t gpu_end, char how, uint64_t open_ns,
+-                      int why, uint32_t segs, const uint64_t* part_ns) {
++                      int why, uint32_t segs, const uint64_t* part_ns, const uint64_t* ds) {
+ 	FILE* f = fs415_file();
+ 	if (f == nullptr) return;
+ 	const uint64_t frame = g_fs415_frame.load(std::memory_order_relaxed);
+ 	if (!fs415_in_window(frame)) return;
+ 	std::lock_guard fl(g_fs415_mutex);
+-	std::fprintf(f, "K %" PRIu64 " %" PRIu64 " %s %d %u %" PRIu64 " %" PRIu64 " %" PRIu64 " %u %.3f %.3f %.3f %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %c %" PRIu64
+-	                " %d %u %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 "\n",
++	std::fprintf(f, "L %" PRIu64 " %" PRIu64 " %s %d %u %" PRIu64 " %" PRIu64 " %" PRIu64 " %u %.3f %.3f %.3f %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %c %" PRIu64
++	                " %d %u %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64
++	                " %" PRIu64 "\n",
+ 	             frame, n, kind, ring, num_dwords, fs.dwords, fs.packets, fs.dropped, bo_count, prepare_ms, list_ms, cs_ms, sub_ns, ask_ns, got_ns, queued_ns,
+-	             static_cast<uint64_t>(SoftCp::now_ns()), gpu_start, gpu_end, how, open_ns, why, segs, part_ns[0], part_ns[1], part_ns[2], part_ns[3], part_ns[4], part_ns[5]);
++	             static_cast<uint64_t>(SoftCp::now_ns()), gpu_start, gpu_end, how, open_ns, why, segs, part_ns[0], part_ns[1], part_ns[2], part_ns[3], part_ns[4], part_ns[5], ds[0], ds[1], ds[2], ds[3], ds[4],
++	             ds[5], ds[6], ds[7]);
+ }
+ 
+ struct CqItem {
+@@ -12101,7 +12218,7 @@ static void completion_thread(int index) {
+ 			forget_label_writes(j.seq, r.ring, r.timed_out || r.rc == -125); // experiment 0055
+ 			// experiment 0415 (fs415b): every job, also one that failed or timed out (its stamps are 0 then)
+ 			fs415_job(j.n, j.kind, r.ring, j.num_dwords, j.filter, j.bo_count, j.prepare_ms, j.list_ms, j.cs_ms, j.fs_sub_ns, j.fs_ask_ns, j.fs_got_ns, j.queued_ns,
+-			          r.ok ? r.gpu_start : 0, r.ok ? r.gpu_end : 0, 'a', j.fs_open_ns, j.fs_why, j.fs_segs, j.fs_part_ns);
++			          r.ok ? r.gpu_start : 0, r.ok ? r.gpu_end : 0, 'a', j.fs_open_ns, j.fs_why, j.fs_segs, j.fs_part_ns, j.fs_ds);
+ 			const double total_ms = static_cast<double>(SoftCp::now_ns() - j.queued_ns) / 1e6 + j.cs_ms;
+ 			frame_profile_done(index == 0, j.queued_ns, SoftCp::now_ns(), 0.0);
+ 			if (!r.ok || (j.n & 0x3fu) == 0) journal("submit #%" PRIu64 " %s %u dwords at %p: pass %" PRIu64 " rewrite %" PRIu64 " drop %" PRIu64 " unmapped %" PRIu64 " cc %" PRIu64 " mappings %zu ... %s rc %d%s%s %.2f ms\n",
+@@ -12727,6 +12844,7 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+ 			urgent_sync = force_sync;
+ 		}
+ 	}
++	for (uint64_t& v: t_fs415_ds) v = 0; // experiment 0415 (fs415d)
+ 	const uint64_t ta = SoftCp::now_ns();
+ 	sync_mappings(force_sync, urgent_sync);
+ 	const uint64_t tb = SoftCp::now_ns();
+@@ -12742,6 +12860,8 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+ 		}
+ 	}
+ 	const uint64_t t1 = SoftCp::now_ns();
++	uint64_t       fs_ds[8]; // experiment 0415 (fs415d): the parts of the two syncs of this submission
++	for (int k = 0; k < 8; k++) fs_ds[k] = t_fs415_ds[k];
+ 	if (!guard0412_defer_apply()) learned_apply(); // exp 0412 (tag g412): BC5_GUARD_APPLY_MIN_MS
+ 	const uint64_t tc = SoftCp::now_ns();
+ 	if (tc - t1 > 20'000'000ull) { // experiment 0156: a long learned_apply call, with its thread
+@@ -13487,7 +13607,7 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+ 	bool retried = false;
+ 	if (!r.ok && !r.timed_out && r.rc == -EFAULT) {
+ 		journal("EFAULT, resync ... ");
+-		sync_mappings(true, true);
++		sync_mappings(true, true, true);
+ 		maps_p  = g_dev->sorted_mappings();
+ 		retried = true;
+ 		r       = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, true, qring);
+@@ -13536,6 +13656,7 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+ 		{
+ 			const uint64_t parts[6] = {ta, tb, t1, tc, t2, ls_t3};
+ 			for (int k = 0; k < 6; k++) it.job.fs_part_ns[k] = parts[k];
++			for (int k = 0; k < 8; k++) it.job.fs_ds[k] = fs_ds[k]; // experiment 0415 (fs415d)
+ 		}
+ 		it.job.dev_gen    = g_dev_gen.load();
+ 		if (ts_scale() != 1.0) ts_collect(ib, num_dwords, &it.job.ts_addrs);
+@@ -13570,7 +13691,7 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+ 	{
+ 		const uint64_t parts[6] = {ta, tb, t1, tc, t2, ls_t3};
+ 		fs415_job(n, kind, r.ring, num_dwords, r.filter, r.bo_count, r.prepare_ms, r.list_ms, r.cs_ms, fs_sub, fs_ask, fs_got,
+-		          SoftCp::now_ns() - (r.fence_ms > 0 ? static_cast<uint64_t>(r.fence_ms * 1e6) : 0), r.ok ? r.gpu_start : 0, r.ok ? r.gpu_end : 0, 's', fs_open, fs_why, fs_segs, parts);
++		          SoftCp::now_ns() - (r.fence_ms > 0 ? static_cast<uint64_t>(r.fence_ms * 1e6) : 0), r.ok ? r.gpu_start : 0, r.ok ? r.gpu_end : 0, 's', fs_open, fs_why, fs_segs, parts, fs_ds);
+ 	}
+ 	if (timing) {
+ 		journal("timing: #%" PRIu64 " done at t %.3f s, %.1f ms after the sync and hints; device: prepare %.2f list %.2f cs %.2f fence %.2f ms, %u BOs%s\n", n, timing_now(),

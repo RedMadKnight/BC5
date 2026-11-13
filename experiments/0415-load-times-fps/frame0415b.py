@@ -7,6 +7,12 @@
 #     <submit_now entered> <mutex asked> <mutex got> <queued> <fence seen> <gpu start> <gpu end> <a|s>        (L5a)
 #   K ... the same, then <chain opened ns> <flush reason> <segments> and the ends of submit_now's parts under the
 #     mutex: probe, anonymous sync, direct sync, learned windows, hints, before the device call              (L5b)
+#   L ... the same, then what the submitting thread spent inside the two syncs (ns): direct_sync_one's views, scan
+#     with its imports, merges, drain, mappings; the imports alone; sync_mappings' read of /proc/self/maps; and
+#     sync_mappings' flags (1 walked, 2 urgent, 4 left out)                                                 (L5c)
+#     A stretch that falls into the direct sync (or the anonymous sync) of an L job is divided among those parts in
+#     proportion to their durations in that job: the parts' own stamps are not recorded, so this is a share, not a
+#     position. "of which imports" is counted beside the table the same way.
 # What it does, and what it checks before it says anything about gaps:
 #   - windows are runs of consecutive frame numbers with job lines; a window's first and last two frames are dropped
 #     (their jobs may lie outside the recorded set);
@@ -30,6 +36,8 @@ PARTS = ('probe', 'anonymous sync', 'direct sync', 'learned windows', 'hints', '
 C_TITLE, C_CHAIN, C_PRE, C_WAIT, C_HOST, C_DEV, C_KERN, C_AFTER = (
     'not handed to the host yet', 'in our chain before submit_now', 'before the mutex', 'waiting for the mutex',
     'under the mutex (not split)', 'under the mutex: the device call', 'in the kernel', 'after the last job')
+DS = ('views', 'scan and its imports', 'merges', 'drain', 'mappings')
+SUB = tuple('  direct sync: ' + d for d in DS) + ('  direct sync: rest', '  direct sync: (of which imports)', '  anonymous sync: the maps read')
 CLASSES = (C_TITLE, C_CHAIN, C_PRE, C_WAIT, C_HOST) + tuple('under the mutex: ' + p for p in PARTS) + (C_DEV, C_KERN, C_AFTER)
 
 
@@ -42,11 +50,13 @@ def main():
         p = line.split()
         if len(p) == 4 and p[0] == 'f':
             flips[int(p[1])] = (int(p[2]), int(p[3]))
-        elif (len(p) == 21 and p[0] == 'J') or (len(p) == 30 and p[0] == 'K'):
+        elif (len(p) == 21 and p[0] == 'J') or (len(p) == 30 and p[0] == 'K') or (len(p) == 38 and p[0] == 'L'):
             n = int(p[2])
             j = dict(frame=int(p[1]), n=n, kind=p[3], ring=int(p[4]), dw=int(p[5]), packets=int(p[7]), dropped=int(p[8]), sub=int(p[13]), ask=int(p[14]),
-                     got=int(p[15]), q=int(p[16]), done=int(p[17]), g0=int(p[18]), g1=int(p[19]), how=p[20], open=0, why=-1, segs=0, parts=None)
-            if p[0] == 'K':
+                     got=int(p[15]), q=int(p[16]), done=int(p[17]), g0=int(p[18]), g1=int(p[19]), how=p[20], open=0, why=-1, segs=0, parts=None, ds=None)
+            if p[0] == 'L':
+                j['ds'] = [int(x) for x in p[30:38]]
+            if p[0] in 'KL':
                 j['open'], j['why'], j['segs'] = int(p[21]), int(p[22]), int(p[23])
                 j['parts'] = [int(x) for x in p[24:30]]
             jobs[n] = j
@@ -66,6 +76,7 @@ def main():
     tot = dict(frames=0, long=0)
     rows, rows_long, cov = [], [], dict(jobs=0, nostamp=0, otherring=0, missing=0, overlap=0, sync=0)
     lat, why, segs = [], {}, []
+    anon = dict(jobs=0, walked=0, urgent=0, skipped=0, walk_ms=[], read_ms=[])
     for w in windows:
         if len(w) < 8:
             continue
@@ -83,6 +94,15 @@ def main():
             if j['parts'] is not None:
                 why[j['why']] = why.get(j['why'], 0) + 1
                 segs.append(j['segs'])
+            if j['ds'] is not None:
+                fl = j['ds'][7]
+                anon['jobs'] += 1
+                anon['urgent'] += 1 if fl & 2 else 0
+                anon['skipped'] += 1 if fl & 4 else 0
+                if fl & 1:
+                    anon['walked'] += 1
+                    anon['walk_ms'].append((j['parts'][1] - j['parts'][0]) / 1e6)
+                    anon['read_ms'].append(j['ds'][6] / 1e6)
         if len(st_j) < 4:
             continue
         off = min(j['done'] - j['g1'] * 10 for j in st_j)
@@ -97,7 +117,7 @@ def main():
             fa, fb = flips[f - 1][1], flips[f][1]
             js = [j for j in by_start if j['h1'] > fa and j['h0'] < fb]
             row = dict(ms=(fb - fa) / 1e6, jobs=len(js), busy=0.0, called=(flips[f][0] - fa) / 1e6)
-            for c in CLASSES:
+            for c in CLASSES + SUB:
                 row[c] = 0.0
             end = fa
             for j in js:
@@ -116,6 +136,16 @@ def main():
                         t = min(max(t, g0), g1) if t != 0 else pos
                         if t > pos:
                             row[name] += (t - pos) / 1e6
+                            if j['ds'] is not None and name == 'under the mutex: direct sync':
+                                whole = max(1, j['parts'][2] - j['parts'][1])
+                                share = (t - pos) / 1e6 / whole
+                                for k in range(5):
+                                    row[SUB[k]] += j['ds'][k] * share
+                                row[SUB[5]] += max(0, whole - sum(j['ds'][:5])) * share
+                                row[SUB[6]] += j['ds'][5] * share
+                            if j['ds'] is not None and name == 'under the mutex: anonymous sync':
+                                whole = max(1, j['parts'][1] - j['parts'][0])
+                                row[SUB[7]] += j['ds'][6] * (t - pos) / 1e6 / whole
                             pos = t
                     if g1 > pos:
                         row[C_KERN] += (g1 - pos) / 1e6
@@ -144,6 +174,10 @@ def main():
         print('clock: the GPU clock is put on the host clock by each window\'s quickest fence; the other fences are seen median %.3f ms, p90 %.3f ms later than that. The mapping is off by the quickest fence\'s own delay, which is not known' % (st.median(lat), sorted(lat)[int(len(lat) * 0.9)]))
     if segs:
         print('chains: segments per job median %d, mean %.1f; flush reasons (chain_submit\'s number: jobs) %s' % (st.median(segs), st.mean(segs), ' '.join('%d:%d' % kv for kv in sorted(why.items()))))
+    if anon['jobs']:
+        print('anonymous sync (L lines): of %d jobs %d walked, %d left the walk out, %d were urgent calls; a walk took median %.2f ms, max %.2f ms, its maps read median %.2f ms' % (
+            anon['jobs'], anon['walked'], anon['skipped'], anon['urgent'], st.median(anon['walk_ms']) if anon['walk_ms'] else 0, max(anon['walk_ms']) if anon['walk_ms'] else 0,
+            st.median(anon['read_ms']) if anon['read_ms'] else 0))
     for name, rr in (('frames up to 50 ms', rows), ('frames over 50 ms', rows_long)):
         if not rr:
             continue
@@ -153,6 +187,11 @@ def main():
             v = st.mean(r[c] for r in rr)
             if v >= 0.005:
                 print('   next job %-33s %7.2f  (%4.1f %%)' % (c, v, 100 * sum(r[c] for r in rr) / sum(r['ms'] for r in rr)))
+            subs = SUB[:7] if c == 'under the mutex: direct sync' else SUB[7:] if c == 'under the mutex: anonymous sync' else ()
+            for q in subs:
+                w = st.mean(r[q] for r in rr)
+                if w >= 0.005:
+                    print('      %-39s %7.2f' % (q.strip(), w))
     return 0
 
 

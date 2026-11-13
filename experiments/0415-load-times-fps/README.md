@@ -859,6 +859,67 @@ S4 for the imports, S3 for the mappings; (3) the learned windows go with exp 041
 any of it is built: the long frames' 28-39 ms under the mutex fall by the anonymous sync's 11-16 ms with (1) alone;
 the share of long frames (12-25 % in these runs) is what to read.
 
+### 16. The seventh slot (2026-11-13 07:20-07:43 box time): build L5c, stage S5 (the anonymous sync off the submission path) and the direct sync split per job
+
+**Build L5c** = L5b + `kit/0415-l5c.diff` (tags as415, fs415d; `mk0415j.sh`, incremental): normal `d8497f08`, lean
+`b27ff955` (L5b kept in `bin-l5b`, `bin-lean-l5b`). CPU tests on the box [M]: 76 of 76, 32 of 32, 33 of 33, 15 of 15,
+11 of 11, and the new `test0415anon` 31 of 31 (`src/bc5/anon_sync.hpp`: the rule for one line of `/proc/self/maps`,
+the signature, the rule for leaving the walk out).
+- **S5, `KYTY_BC5_ANON_SYNC`** (default off). A thread of its own (`bc5-anonchk`) reads `/proc/self/maps` with the
+  walk's rule every `KYTY_BC5_ANON_SYNC_MS` (1,000; an urgent call wakes it, at most every 50 ms), under no lock of the
+  direct path, and folds what a walk acts on into a signature: the anonymous guest VMAs and their resident runs at the
+  walk's 64 KiB grain. `verify`: the walk runs as before and is held against that (`anon_needed`: walks that saw a
+  changed list or changed runs or mapped or unmapped something; `anon_miss`: those of them the thread's last pass
+  would have let through). `thread`: the submission path leaves the walk out while the thread's last pass saw what
+  the last walk saw; the walk after -EFAULT and the first one after a device reopen always run.
+  **What `thread` gives up**: an anonymous guest VMA that appears is walked at the first call after the thread's next
+  pass, not at once for an urgent call. So it is a candidate, not a default.
+- **The frame counter's L line**: per job, what the submitting thread spent in the direct sync's parts (views, scan
+  with its imports, merges, drain, mappings; the imports alone) and in the anonymous sync's maps read, and whether the
+  walk ran, was urgent or was left out. `frame0415b.py` divides a stretch that falls into the direct sync among the
+  parts in proportion to their durations in that job (a share, not a position; checked on a synthetic L file).
+
+**Runs** (RT on, 60 s after the load; no kernel line, no crash line in any): r7a1, r7a4 (verify, standing), r7a2, r7a3
+(verify, walking), r7t1, r7t4 (thread, standing), r7t2, r7t3 (thread, walking). The first four ran without the frame
+file (my slip: the word was missing), so the frame tables are from r7a3, r7t3, r7a4, r7t4.
+
+**What the walk is** [M, the four verify runs]: 139-141 s of run hold 174-181 walks (48-53 of them urgent calls); in play 82-85 walks of 41-43 ms
+each (3.4-3.6 s of 59-64 s), of which the read of `/proc/self/maps` is 99.5 % (`anon_read` 3.35 of 3.36 s). About a
+third of the calls are urgent (27-28 in play). It found no anonymous guest VMA in any walk (`anon_needed` 1 per run:
+the first walk, which has nothing before it; items 0). **`anon_miss` 0 in all four runs** (708 walks).
+
+**`thread`** [M]: one walk per run (0.7-0.9 ms, at the start), 163-176 walks left out, `anon_miss` and `anon_needed`
+as above. The same last 55 s of play (`play0415.py`, independent of the phase cutter):
+
+| | verify (walk on the submission path) | thread |
+|---|---|---|
+| standing, flips/s | 22.7 (r7a1), 22.5 (r7a4) | 23.6 (r7t1), 23.3 (r7t4) |
+| walking, flips/s | 24.1 (r7a2), 24.9 (r7a3) | 25.3 (r7t2), 25.3 (r7t3) |
+| anonymous sync under the mutex | 2.9-3.3 s | 0 |
+| device mutex held | 22.7-27.4 s | 21.1-26.1 s |
+| frames over 50 ms (frame file, from 80 s) | 17 % (r7a3), 25 % (r7a4) | 9 % (r7t3), 17 % (r7t4) |
+
+Two runs an arm and state; the arms do not overlap in flips/s (+0.4 to +1.2), and the share of long frames is lower
+by 8 points in both pairs. With four windows of 64 frames in each quarter second sampled, the share is from 288-340
+frames a run: a direction, not yet a size.
+- The thread pays the same read (54-57 passes of 44-46 ms in those 55 s, 2.5 s of one core) and, like the walk
+  before it, holds the address space's lock for reading while it runs. In r7t4 the long frames' "not yet handed over"
+  is 24.7 ms against 8.7-9.9 ms in the other three [M]; whether the title's own map calls wait behind the thread's
+  read is not measured [I]. The read itself is the cost that has to go: the next form lets the range table's records
+  say whether anything outside the file-backed memory was mapped, and reads the file only as S1's low-rate check.
+
+**The long frames with the walk gone** (r7t3 walking / r7t4 standing; mean ms per long frame) [M]: direct sync
+13.8 / 12.8, learned windows 8.4 / 8.3, waiting for the mutex 3.6 / 2.5, the device call 1.0 / 0.5.
+**The direct sync's inside** (all four runs, per long frame): the view list 5.2-6.1 ms, the mappings 4.1-5.3 ms, the
+scan with its imports 1.3-1.7 ms (imports alone 0.3-1.3 ms), merges 0.2-0.9 ms, the drain 0.3-0.6 ms.
+- So section 15's sentence "the rebuild was never the expensive part" is wrong for the long frames: there the view
+  list is the largest single part of the direct sync. Stage S2 as built did not lower it because it copies the kept
+  list; a list handed over without the copy is the fix to build, then S3 for the mappings. The imports are small
+  here (S4 is last, not first).
+
+**Order now** [I]: (1) S5 without the read (records decide, the file read only as a slow check); (2) S2 with a shared
+list; (3) S3; (4) the learned windows with exp 0412's rule (8 ms of each long frame left).
+
 ## Verdict
 
 Part 1, first result. The largest cause of the long loads was ours: every APR read opened its file anew, the
@@ -882,6 +943,9 @@ submit path under the device mutex. Since 2026-11-13 the read fix is on by defau
 Section 15 splits that time: the anonymous sync 11-16 ms, the direct sync 11-20 ms and the learned windows 3-8 ms per
 long frame; the submission itself under 2 ms. Stage S2 (the incremental view list in use) is correct by its own
 checks and saves nothing as built.
+Section 16: the anonymous sync is a 41-43 ms read of /proc/self/maps under the device mutex, 82-85 times a minute of
+play, and finds nothing; left to a thread (KYTY_BC5_ANON_SYNC=thread, default off, 0 misses in verify) play runs at
+23.3-25.3 instead of 22.5-24.9 flips/s and the share of frames over 50 ms falls from 17-25 % to 9-17 % (two pairs).
 
 ## Podsumowanie dla maintainera (stan na 2026-11-12, noc)
 
@@ -918,6 +982,10 @@ Oznaczenia: [zmierzone] = liczba z biegu na boxie; [wniosek] = moja interpretacj
 - [zmierzone 2026-11-13, 4 biegi] Te 28–39 ms to trzy części utrzymania mapowań pamięci, nie samo wysyłanie:
   „anonymous sync” (czytanie /proc/self/maps pod blokadą) 11–16 ms, „direct sync” 11–20 ms, wyuczone okna 3–8 ms na
   długą klatkę. Samo wysłanie zadania to poniżej 2 ms.
+- [zmierzone 2026-11-13, 8 biegów] „Anonymous sync” to czytanie /proc/self/maps przez 41–43 ms pod blokadą, ok. 85 razy
+  na minutę gry, i nic nie znajduje. Przeniesione do osobnego wątku (przełącznik KYTY_BC5_ANON_SYNC=thread, domyślnie
+  wyłączony; tryb sprawdzający: 0 rozbieżności): 23,3–25,3 zamiast 22,5–24,9 klatek/s, a długich klatek (ponad 50 ms)
+  jest 9–17 % zamiast 17–25 %. To jeszcze nie jest wersja docelowa: wątek nadal czyta ten plik.
 - [niezmierzone] Podział czasu GPU na przebiegi. Wcześniej
   pisałem o „przestojach GPU 5–6 ms na klatkę”: po review to wycofuję, pomiar obejmował tylko część zadań i tego
   nie dowodzi. Sumy (blokada, `kcompactd0`) też nie wskazują przyczyny konkretnych długich klatek.
