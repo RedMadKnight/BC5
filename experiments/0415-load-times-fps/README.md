@@ -883,12 +883,12 @@ the signature, the rule for leaving the walk out).
 (verify, walking), r7t1, r7t4 (thread, standing), r7t2, r7t3 (thread, walking). The first four ran without the frame
 file (my slip: the word was missing), so the frame tables are from r7a3, r7t3, r7a4, r7t4.
 
-**What the walk is** [M, the four verify runs]: 139-141 s of run hold 177-190 walks; in play 82-85 walks of 41-43 ms
+**What the walk is** [M, the four verify runs]: 139-141 s of run hold 174-181 walks (48-53 of them urgent calls); in play 82-85 walks of 41-43 ms
 each (3.4-3.6 s of 59-64 s), of which the read of `/proc/self/maps` is 99.5 % (`anon_read` 3.35 of 3.36 s). About a
 third of the calls are urgent (27-28 in play). It found no anonymous guest VMA in any walk (`anon_needed` 1 per run:
-the first walk, which has nothing before it; items 0). **`anon_miss` 0 in all four runs** (about 720 walks).
+the first walk, which has nothing before it; items 0). **`anon_miss` 0 in all four runs** (708 walks).
 
-**`thread`** [M]: one walk per run (0.7-0.9 ms, at the start), 196-213 walks left out, `anon_miss` and `anon_needed`
+**`thread`** [M]: one walk per run (0.7-0.9 ms, at the start), 163-176 walks left out, `anon_miss` and `anon_needed`
 as above. The same last 55 s of play (`play0415.py`, independent of the phase cutter):
 
 | | verify (walk on the submission path) | thread |
