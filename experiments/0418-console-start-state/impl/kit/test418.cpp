@@ -33,31 +33,25 @@ struct Env {
 
 int main() {
     {
-        const Env none;
+        const Env none; // the table is always on: every row, with nothing set
         const auto s = ss::select(none);
-        check(s.on == 0 && !s.table && ss::constant_packets(s).empty(), "nothing set: nothing written");
-    }
-    {
-        Env e;
-        e.v["BC5_DIRECT_START_STATE"] = "1";
-        const auto s = ss::select(e);
         const std::vector<std::uint32_t> want = {0xC0017900u, 0x07bu, 0x20u, 0xC0017600u, 0x030u, 0x7u, 0xC0017900u, 0x249u, 0x0u,
                                                  0xC0017900u, 0x259u, 0xffffffffu, 0xC0017900u, 0x25au, 0x0u};
-        check(s.on == (1u << ss::kRowCount) - 1u, "table: every row");
-        check(ss::constant_packets(s) == want, "table: the five constant packets");
+        check(s.on == (1u << ss::kRowCount) - 1u && s.skipped == 0, "nothing set: every row");
+        check(ss::constant_packets(s) == want, "the five constant packets");
+        check(s.row_on("VGT_TF_RING") && s.row_on("VGT_HS_OFFCHIP_PARAM") && s.row_on("VGT_GS_RINGS"), "the ring rows");
     }
     {
-        Env e; // the second title's launcher words of 2026-11-13 among these switches
-        e.v["BC5_DIRECT_GC_TF_RING"] = "1";
-        e.v["BC5_DIRECT_GC_HS_OFFCHIP"] = "1";
-        e.v["BC5_DIRECT_CP_COHER_START_DELAY"] = "1";
+        Env e; // the deleted switches change nothing, at 0 or 1
+        for (const char *w : {"BC5_DIRECT_START_STATE", "BC5_DIRECT_CP_COHER_START_DELAY", "BC5_DIRECT_SPI_REQ_CTRL_PS",
+                              "BC5_DIRECT_GC_TF_RING", "BC5_DIRECT_GC_HS_OFFCHIP", "BC5_DIRECT_GC_GS_RINGS"})
+            e.v[w] = "0";
+        check(ss::select(e).on == (1u << ss::kRowCount) - 1u, "deleted switches at 0: every row");
+        e.v["BC5_DIRECT_START_STATE_SKIP"] = "VGT_HS_OFFCHIP_PARAM,GE_MAX_VTX_INDX";
         const auto s = ss::select(e);
-        check(s.row_on("VGT_TF_RING") && s.row_on("VGT_HS_OFFCHIP_PARAM") && !s.row_on("VGT_GS_RINGS"), "aliases: the rings");
-        check(ss::constant_packets(s) == std::vector<std::uint32_t>{0xC0017900u, 0x07bu, 0x20u}, "aliases: exp 0401's one packet");
-        e.v["BC5_DIRECT_START_STATE_SKIP"] = "VGT_HS_OFFCHIP_PARAM";
-        check(!ss::select(e).row_on("VGT_HS_OFFCHIP_PARAM"), "SKIP wins over an alias");
-        e.v["BC5_DIRECT_GC_TF_RING"] = "0";
-        check(!ss::select(e).row_on("VGT_TF_RING"), "an alias at 0 is off");
+        check(!s.row_on("VGT_HS_OFFCHIP_PARAM") && !s.row_on("GE_MAX_VTX_INDX") && s.row_on("VGT_TF_RING"), "SKIP drops its rows");
+        check(ss::constant_packets(s).size() == 12, "SKIP: four constant packets left");
+        check(gt::switch_on("1") && !gt::switch_on("0") && !gt::switch_on(nullptr), "the trace switch");
     }
     {
         const std::vector<std::uint32_t> prefix = {0xC0012800u, 0x80000000u, 0x80000000u, 0xC0001200u, 0u};

@@ -113,3 +113,11 @@ TEST_CASE("gc trace: the NID of a dynamic symbol name", "[gc_trace]") {
     CHECK(gt::nid_of("") == "");
     CHECK(gt::nid_of("#A#B") == "");
 }
+
+TEST_CASE("gc trace: the switch reads like bc5::env_on", "[gc_trace]") {
+    CHECK_FALSE(gt::switch_on(nullptr));
+    CHECK_FALSE(gt::switch_on(""));
+    CHECK_FALSE(gt::switch_on("0"));
+    CHECK(gt::switch_on("1"));
+    CHECK(gt::switch_on("00"));
+}

@@ -34,21 +34,11 @@ std::vector<std::string> split_tabs(const std::string &line) {
 
 } // namespace
 
-TEST_CASE("start state: nothing is written with every switch unset", "[start_state]") {
+TEST_CASE("start state: every row is written with nothing set", "[start_state]") {
     const FakeEnv env;
     const auto s = ss::select(env);
-    CHECK_FALSE(s.table);
-    CHECK(s.on == 0);
-    CHECK(ss::constant_packets(s).empty());
-}
-
-TEST_CASE("start state: BC5_DIRECT_START_STATE=1 turns every row on", "[start_state]") {
-    FakeEnv env;
-    env.v["BC5_DIRECT_START_STATE"] = "1";
-    const auto s = ss::select(env);
-    CHECK(s.table);
     CHECK(s.on == (1u << ss::kRowCount) - 1u);
-    CHECK(s.by_alias == 0);
+    CHECK(s.skipped == 0);
     // The five constant rows, one 3-dword packet each, in table order.
     const std::vector<std::uint32_t> want = {
         0xC0017900u, 0x07bu, 0x20u,        // CP_COHER_START_DELAY (SET_UCONFIG_REG, as exp 0401 wrote it)
@@ -63,40 +53,19 @@ TEST_CASE("start state: BC5_DIRECT_START_STATE=1 turns every row on", "[start_st
     CHECK(s.row_on("VGT_GS_RINGS"));
 }
 
-TEST_CASE("start state: \"0\" and empty are off, like bc5::env_on", "[start_state]") {
+TEST_CASE("start state: the deleted switches are read by nothing", "[start_state]") {
     FakeEnv env;
-    env.v["BC5_DIRECT_START_STATE"] = "0";
-    env.v["BC5_DIRECT_GC_TF_RING"] = "";
-    CHECK(ss::select(env).on == 0);
-}
-
-TEST_CASE("start state: the older switches turn on their own row only", "[start_state]") {
-    FakeEnv env;
-    env.v["BC5_DIRECT_GC_TF_RING"] = "1";
-    env.v["BC5_DIRECT_GC_HS_OFFCHIP"] = "1";
-    env.v["BC5_DIRECT_CP_COHER_START_DELAY"] = "1";
+    for (const char *w : {"BC5_DIRECT_START_STATE", "BC5_DIRECT_CP_COHER_START_DELAY", "BC5_DIRECT_SPI_REQ_CTRL_PS",
+                          "BC5_DIRECT_GC_TF_RING", "BC5_DIRECT_GC_HS_OFFCHIP", "BC5_DIRECT_GC_GS_RINGS"})
+        env.v[w] = "0";
     const auto s = ss::select(env);
-    CHECK_FALSE(s.table);
-    CHECK(s.row_on("VGT_TF_RING"));
-    CHECK(s.row_on("VGT_HS_OFFCHIP_PARAM"));
-    CHECK(s.row_on("CP_COHER_START_DELAY"));
-    CHECK_FALSE(s.row_on("SPI_SHADER_REQ_CTRL_PS"));
-    CHECK_FALSE(s.row_on("GE_MAX_VTX_INDX"));
-    CHECK_FALSE(s.row_on("VGT_GS_RINGS"));
-    CHECK(s.by_alias == s.on);
-    // The launcher of 2026-11-13 (GC_TF_RING, GC_HS_OFFCHIP, CP_COHER) gets exp 0401's one packet, unchanged.
-    CHECK(ss::constant_packets(s) == std::vector<std::uint32_t>{0xC0017900u, 0x07bu, 0x20u});
-    env.v["BC5_DIRECT_SPI_REQ_CTRL_PS"] = "1";
-    env.v["BC5_DIRECT_GC_GS_RINGS"] = "1";
-    const auto t = ss::select(env);
-    CHECK(t.row_on("SPI_SHADER_REQ_CTRL_PS"));
-    CHECK(t.row_on("VGT_GS_RINGS"));
+    CHECK(s.on == (1u << ss::kRowCount) - 1u);
+    for (auto &kv : env.v) kv.second = "1";
+    CHECK(ss::select(env).on == (1u << ss::kRowCount) - 1u);
 }
 
-TEST_CASE("start state: SKIP drops rows whatever turned them on", "[start_state]") {
+TEST_CASE("start state: SKIP drops the named rows", "[start_state]") {
     FakeEnv env;
-    env.v["BC5_DIRECT_START_STATE"] = "1";
-    env.v["BC5_DIRECT_GC_HS_OFFCHIP"] = "1";
     env.v["BC5_DIRECT_START_STATE_SKIP"] = "GE_MAX_VTX_INDX, VGT_HS_OFFCHIP_PARAM:NOT_A_ROW";
     const auto s = ss::select(env);
     CHECK_FALSE(s.row_on("GE_MAX_VTX_INDX"));
@@ -104,13 +73,13 @@ TEST_CASE("start state: SKIP drops rows whatever turned them on", "[start_state]
     CHECK(s.row_on("GE_MIN_VTX_INDX"));
     CHECK(s.row_on("VGT_TF_RING"));
     CHECK(s.skipped == ((1u << ss::index_of("GE_MAX_VTX_INDX")) | (1u << ss::index_of("VGT_HS_OFFCHIP_PARAM"))));
+    CHECK((s.on | s.skipped) == (1u << ss::kRowCount) - 1u);
     CHECK(s.unknown_skip == 1);
-    // SKIP alone turns nothing on.
-    FakeEnv only_skip;
-    only_skip.v["BC5_DIRECT_START_STATE_SKIP"] = "GE_MAX_VTX_INDX";
-    const auto t = ss::select(only_skip);
-    CHECK(t.on == 0);
-    CHECK(t.skipped == 0);
+    CHECK(ss::constant_packets(s).size() == 4 * 3);
+    // An empty SKIP drops nothing.
+    FakeEnv empty;
+    empty.v["BC5_DIRECT_START_STATE_SKIP"] = "";
+    CHECK(ss::select(empty).on == (1u << ss::kRowCount) - 1u);
 }
 
 TEST_CASE("start state: names in SKIP match whole names only", "[start_state]") {
@@ -182,7 +151,7 @@ TEST_CASE("start state: the header and backend/policy/start-state.tsv agree", "[
             CHECK(c[6] == "cam");
             CHECK(std::strtoul(c[3].c_str(), nullptr, 16) == r.request);
         }
-        CHECK(c[5] == (r.status == ss::Status::Cited ? "cited" : "inferred"));
-        CHECK(c[7] == (r.alias != nullptr ? r.alias : "-"));
+        CHECK(c[5] == (r.status == ss::Status::Cited ? "cited" : "measured"));
+        CHECK(c[7] == "-");
     }
 }

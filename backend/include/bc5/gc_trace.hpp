@@ -18,6 +18,10 @@
 
 namespace bc5::gc_trace {
 
+// The reading of the trace's switch, the same as bc5::env_on (backend/include/bc5/env_flag.hpp, F767): unset, empty
+// and "0" are off.
+inline bool switch_on(const char *e) { return e != nullptr && e[0] != 0 && !(e[0] == '0' && e[1] == 0); }
+
 // How many calls of each request code are traced, and how many frames each.
 inline constexpr int kCallsPerCode = 8;
 inline constexpr int kMaxFrames = 8;
