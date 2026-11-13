@@ -180,6 +180,34 @@ off), exp 0417's save words (4, off) and `KYTY_BC5_TITLE_DEFAULTS`. So a build o
 by accident. The next reductions are in the 63 without a verdict (each needs one run) and the 42 title words
 (each needs a run on ASTRO BOT to become general and then lose its option).
 
+### 10. Candidate E built and run privately (2026-11-13 18:28-19:12)
+
+`p0419e.sh` (tree 1689b7da -> 410273ca, a private backend archive from exp 0412's two files): the private archive
+is d4c4882e, normal **93188758**, lean **96a995c2**; the shared tree, archive and builds were only read. First
+compile of the whole of E: no error (the normal build's log has 286 warnings, not compared with B's).
+`chk0419e.sh` (`raw/chk0419e.out`), no pad key in any run, 13.2 GB available before it, no browser on the box:
+
+| Arm | What | Result |
+|---|---|---|
+| k0a | ASTRO BOT 120 s, fresh directory, E's defaults (K1R and its filter on) | PASS, kernel 0, crash 0; the title table is silent (no line), as it must be |
+| k0x | ASTRO BOT on the kept bad save, the fix off | ends by itself at 5 s: the fault of exp 0417 section 15, as expected |
+| k0f | the same, `KYTY_BC5_SAVEDATA_TRANSFER_FIX=1` | **PASS 30 s**; "sdt417: transferring mount of PPSA01325/sce_sdmemory: no such save, NOT_FOUND (nothing created)" |
+| k1 | the second title's walk to G+240, E's defaults | clean; 25.5 flips/s, 67 s with a gap over 100 ms, longest 1238 ms; available 930 / 845 MiB at ~60 / ~104 s |
+| k1off | the same, `BC5_GUARD_K1R=0 BC5_GUARD_K1_FILTER=0` | clean; 26.1 flips/s, 61 s, longest 638 ms; 948 / 860 MiB |
+| k2cut | the cutscene arm to its end (320 s after gameplay, no input) | clean to G+320, 28.9 flips/s, longest gap 1357 ms, no fault, no record; K1r's last line: 406 read-only zero pieces cover 808 MiB of never-written memory |
+| k3l | lean 120 s | PASS |
+| k4wall | the walk to G+560 with exp 0412's log-only zero scan (frame numbers not comparable) | clean to G+560; 88 "zero scan" lines, all five scans ran; the whole-box table and the fdinfo read are on the box for exp 0412 |
+
+Every second-title arm printed "title PPSA03671: 45 title defaults, 1 taken, 44 already set in the environment":
+the title is found from the command line, and the private runner's launcher (exp 0412's) sets 44 of the 45 itself,
+so the table's "taken" path ran for one word only. The new launchers are what exercises it in full.
+
+Against B on the same route today (exp 0417: 25.7-26.3 flips/s, longest gap 574-701 ms): the flip rate is the same;
+**the longest gap is about twice as long in the two arms with K1r on (1238, 1357 ms) and not in the arm with it off
+(638 ms)**. One run each, so not a finding; put to exp 0412. The maintainer's own play on K1r was "smooth".
+
+Not done here: the "taken" path of the title table with the new launchers; a play; the swap.
+
 ## Decisions for the maintainer
 
 One "yes" covers the swap of E as a whole (the top session asks): both shared builds, the shared backend archive
@@ -196,10 +224,9 @@ to the trash directory. Still his to say separately, because they are behaviour 
 
 ## Verdict
 
-**Prepared, not built: candidate E (patch 410273ca) = B + exp 0412's K1r (default on, no probe, form 4) + the cleanup + exp
+**Built privately and clean on both titles (section 10), not swapped: candidate E (patch 410273ca) = B + exp 0412's K1r (default on, no probe, form 4) + the cleanup + exp
 0417's save fix. Of the 266 names, 77 can no longer be set (29 deleted, 48 hardened), 189 remain: 69 diagnostics,
 63 without a verdict, 42 one title's, 13 configuration, 2 general defaults with an option.** 47 launcher words moved
-into the code (2 general, 45 for the second title) and 15 words got the one reading rule. Every generator's anchors
-matched and the laptop tests pass; the first compile is the private build on the box (`p0419e.sh`), then
-`chk0419e.sh` on both titles, then the swap on the maintainer's one "yes". The removal of the dead code behind the
+into the code (2 general, 45 for the second title) and 15 words got the one reading rule. The ASTRO BOT first-save fault is cured by the transferring-mount fix in its pair. Open before the swap: the longest
+frame gap with K1r on (one run each), the swap script's dry run, and the maintainer's one "yes" (`int0419e.sh`). The removal of the dead code behind the
 77 words is the patch change after that.
