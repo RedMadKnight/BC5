@@ -54,14 +54,14 @@ With the shortcuts' change in the same swap: `BC5_GUARD_LEARN_LOG` goes; `BC5_DI
 | the inventory | 266 |
 | read by today's shared build B | 266 |
 | read by F (77 options gone, 4 more by exp 0418's table; 12 new: K1r 4, writers 1, save 4, title table 1, start-state skip 1, ioctl trace 1) | 197 |
-| G takes out for certain: 11 deletes + `HEAP_GUARDS` + 23 library words + 3 ring words + 5 discarded hang-hunt words | -43 |
-| **G, certain** | **154** |
+| G takes out for certain: 11 deletes + `HEAP_GUARDS` + 22 library words (`USBD_ALLOW` stays as configuration) + 3 ring words + 5 discarded hang-hunt words | -42 |
+| **G, certain** | **155** |
 | if he confirms the other five hang-hunt words and `FL_SERIAL`... (FL_SERIAL is one of the five above: `ARGS_WB`, `FL_SERIAL`, `FL_VGT_FLUSH`, `ARGS_FLUSH`, `ARGS_FLUSH_DRAWS`) | -5 |
 | if `FORGET`'s arm says delete, the two timing words become constants, `LEARN_LOG` and `ZEROSCAN_OUT` go | -5 |
-| **G at the least** | **144** |
+| **G at the least** | **145** |
 
-Of G's 154: about 70 diagnostics and catchers (off), 39 one title's words in its table or its launcher data (42 less
-exp 0418's three), 13 configuration, 3 general defaults with an option (`BC5_DIRECT_CHAIN`, `BC5_GC_MODE`, `BC5_GUARD_K1R`
+Of G's 155: about 70 diagnostics and catchers (off), 39 one title's words in its table or its launcher data (42 less
+exp 0418's three), 14 configuration, 3 general defaults with an option (`BC5_DIRECT_CHAIN`, `BC5_GC_MODE`, `BC5_GUARD_K1R`
 with its filter counted as one rule), and the rest the lists above. **Without a verdict after G: 11**
 (`LAZY_RELEASE`, `SPLIT`, `FORGET`, `CHAIN_HOLD_US`, `DCB_WAIT_MS`, `MAX_BO_MIB`, `AMM_SCATTER`, `AMM_SETBUFFER_MAP`,
 `ANON_SYNC`, `SUBMIT_EOP_EVENT`, `PAD_TOUCH`); 10 once `FORGET`'s arm is read; each has an owner and a next step.
