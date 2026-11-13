@@ -31,3 +31,5 @@ Open, not a fault (README section 69): the packet filter drops a packet whose wr
 - Open: one RELEASE_MEM and one WAIT_REG_MEM64 a frame, in both titles, name a 12 KiB anonymous mapping of the HOST (0x7f... addresses, above the guest's range). Served by the soft CP. It is the host's `g_labels` page, the target of `sceVideoOutGetBufferLabelAddress` (README section 73; from the code, the address not printed): the VideoOut buffer label is written and waited for by the host's CPU, not by the GPU.
 
 2026-11-13 18:00-18:06, his play on the K1r test shortcut (g412zd, README section 75): two plays of about two minutes, no fault, his word "Wszystko ok". Row 1 stays open until a shared build carries K1r (candidate E) and he has played on it.
+
+Row 1, 2026-11-13 evening: in his play on K1R (g412zd) the cutscene went past the point of the morning's fault and was smooth (his word, relayed by the top: "Przerywnik poszedl dalej. Byl plynny. Nic nie zacinalo"; the journal does not name the scene). To close row 1 one thing is missing: one scripted arm of the cutscene to its end (more than 300 s) on build E.

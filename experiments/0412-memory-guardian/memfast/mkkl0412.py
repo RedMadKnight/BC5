@@ -4,8 +4,8 @@ Found on 2026-11-13 15:32 (ASTRO BOT on g412zc, K1r on, the watched page 0x3082f
 not imported; GPU: a read-only zero cover (K1r)". K1r covered every part of a view no imported buffer covers; under a
 lazy view that includes memory the CPU has written (only hints import a lazy view), so a GPU read there returned
 zeros where the title's data lies. With this edit such a piece gets no cover: it is unmapped as without K1r, and a
-read there is a fault with a record. BC5_GUARD_K1R_COVER_WRITTEN=1 turns the rule off;
-BC5_GUARD_K1R_WRITTEN_SCAN_MS (default 100) is the least time between two SEEK_DATA scans.
+read there is a fault with a record. No switch since 2026-11-13 (COVER_WRITTEN and WRITTEN_SCAN_MS removed); the
+least time between two SEEK_DATA scans is 100 ms.
 The rule and its CPU test: kl0412.inc, kl0412.cpp.
 Input: the main unit after mkk1f0412.py.
 usage: mkkl0412.py <bc5LleAgc.cpp in> <bc5LleAgc.cpp out>"""
@@ -37,11 +37,11 @@ def main():
 	static kl412::Known kl; // exp 0412 (tag kl412)
 	uint64_t            kl_dropped = 0;
 	const uint64_t      kl_t0      = SoftCp::now_ns();
-	const bool          kl_scan    = !kl412::cover_written() && kl.begin(kl_t0, kl412::period_ns());
+	const bool          kl_scan    = kl.begin(kl_t0, kl412::kPeriodNs);
 	for (const auto& v: views) {
 		pieces.clear();
 		k1r412::cover(v.va, v.off, v.size, bos, kDChunk, pieces);
-		if (v.lazy && !kl412::cover_written()) { // exp 0412 (tag kl412): a written chunk of a lazy view gets no zero cover
+		if (v.lazy) { // exp 0412 (tag kl412): a written chunk of a lazy view gets no zero cover
 			kl_dropped += kl412::drop_written(pieces, v.va, v.off, kDChunk, kl, kl_scan, [fd](uint64_t choff) {
 				const off_t d = lseek(fd, static_cast<off_t>(choff), SEEK_DATA);
 				return d >= 0 && static_cast<uint64_t>(d) < choff + kDChunk;
@@ -55,8 +55,8 @@ def main():
 	if (n != last_n && now - last_ns >= 10'000'000'000ull) {
 		last_n  = n;
 		last_ns = now;
-		journal("k1r written chunks (exp 0412, tag kl412): t %.0f s: %s: %" PRIu64 " pieces under lazy views hold data and get NO cover (unmapped; a GPU read there faults by name); %zu chunks known written; %" PRIu64 " scans, %" PRIu64 " SEEK_DATA calls, %.1f ms in all (%.3f ms a scan)\n",
-		        timing_now(), kl412::cover_written() ? "rule OFF (BC5_GUARD_K1R_COVER_WRITTEN)" : "rule on", kl_dropped, kl.written.size(), kl.scans, kl.asked, static_cast<double>(kl.scan_ns) / 1e6,
+		journal("k1r written chunks (exp 0412, tag kl412): t %.0f s: %" PRIu64 " pieces under lazy views hold data and get NO cover (unmapped; a GPU read there faults by name); %zu chunks known written; %" PRIu64 " scans, %" PRIu64 " SEEK_DATA calls, %.1f ms in all (%.3f ms a scan)\n",
+		        timing_now(), kl_dropped, kl.written.size(), kl.scans, kl.asked, static_cast<double>(kl.scan_ns) / 1e6,
 		        kl.scans != 0 ? static_cast<double>(kl.scan_ns) / 1e6 / static_cast<double>(kl.scans) : 0.0);
 ''')
     # Variant (b) of the cure (the top, 2026-11-13: a written chunk under a lazy view is imported, as on the console):

@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # BC5 exp 0412, build g412ze (2026-11-13, README section 74): FORM 2 for the shared fold (exp 0419's candidate E takes
-# this order): g412zd WITHOUT the read probe pr412 (a deliberate-fault tool has no place in a shared build). The K1r family on the SHARED tree as it is since
+# this order): g412zd WITHOUT the read probe pr412 (a deliberate-fault tool has no place in a shared build), and since
+# the top's order of 2026-11-13 evening (README section 76) with K1R, cv412, kl412 and K1_FILTER ON by default and the
+# options BC5_GUARD_K1R_COVERS_VISIBLE, _COVER_WRITTEN, _WRITTEN_SCAN_MS removed (off switches left: BC5_GUARD_K1R=0,
+# BC5_GUARD_K1_FILTER=0; BC5_GUARD_LAZY_BY_DATA stays off, undecided). The K1r family on the SHARED tree as it is since
 # 15:47 (candidate B, patch 0001 27b6416f: it already carries nl412, rl412, fr412, sg412 and ff412), on a PRIVATE copy
 # of that tree and a PRIVATE copy of the backend source. "Fixes first": one build, each thing behind its switch.
 #   k1r412  BC5_GUARD_K1R (mkk1r0412.py unit + backend): the read-only zero cover; backend map_shared(readonly)
@@ -16,7 +19,7 @@
 set -u
 ulimit -c 0
 export LC_ALL=C LANGUAGE=C
-W=$HOME/bc5-work; X=$W/exp0412; P=$X/p; KIT=$X/kit-zd; K=$HOME/src/KytyPlus; LOCK=$W/BOX-LOCK
+W=$HOME/bc5-work; X=$W/exp0412; P=$X/p; KIT=$X/kit-ze; K=$HOME/src/KytyPlus; LOCK=$W/BOX-LOCK
 ARCH=$W/backend-ubuntu/libbc5_backend.a; BSRC=$W/d19/export/backend
 m() { md5sum < "$1" 2> /dev/null | cut -c1-8; }
 die() { echo "STOP: $*"; exit 1; }
@@ -55,11 +58,11 @@ step() { # <script> <mode or -> <in> <out> <sum>
   [ "$(m "$4")" = "$5" ] || die "the unit after $1 is $(m "$4"), not $5"
 }
 rm -f "$P"/e-u[1-6].cpp
-step mkk1r0412.py unit "$U" "$P/e-u1.cpp" 4bd99863
-step mkwa0412.py - "$P/e-u1.cpp" "$P/e-u2.cpp" f27b793e
-step mkcv0412.py unit "$P/e-u2.cpp" "$P/e-u4.cpp" 3e297a72
-step mkk1f0412.py - "$P/e-u4.cpp" "$P/e-u5.cpp" 811544bc
-step mkkl0412.py - "$P/e-u5.cpp" "$P/e-u6.cpp" 2f4a3d63
+step mkk1r0412.py unit "$U" "$P/e-u1.cpp" 1a0ba9aa
+step mkwa0412.py - "$P/e-u1.cpp" "$P/e-u2.cpp" 7aecbf99
+step mkcv0412.py unit "$P/e-u2.cpp" "$P/e-u4.cpp" 3c620459
+step mkk1f0412.py - "$P/e-u4.cpp" "$P/e-u5.cpp" ab349ecb
+step mkkl0412.py - "$P/e-u5.cpp" "$P/e-u6.cpp" 2824caf7
 echo "$(date +%T) the private tree is brought to the shared tree's state"
 rsync -a --delete --exclude=.git "$K/" "$P/tree/" || die "rsync of the shared tree failed"
 [ "$(git -C "$P/tree" rev-parse HEAD)" = "$(git -C "$K" rev-parse HEAD)" ] || die "the private tree is not at the shared tree's commit"
@@ -91,12 +94,12 @@ distrobox enter ubuntu -- sh -c "cd '$B' && nice -n 19 ninja kyty_emulator" < /d
 b=$B/src/kyty_emulator
 [ -x "$b" ] || die "no binary"
 echo "normal: $(md5sum < "$b" | cut -d' ' -f1), warnings $(grep -c 'warning:' "$B.build.log")"
-for s in BC5_GUARD_LAZY_BY_DATA BC5_GUARD_K1R_COVER_WRITTEN "tag kl412" BC5_GUARD_K1R_COVERS_VISIBLE BC5_GUARD_K1_FILTER "tag k1f412" BC5_GUARD_WATCH "tag wa412" BC5_FAULT_RECORD "tag fr412" BC5_GUARD_K1R_REPLACE BC5_GUARD_K1R "tag k1r412" BC5_DIRECT_RESET_LABELS_ADD; do
+for s in BC5_GUARD_LAZY_BY_DATA "tag kl412" BC5_GUARD_K1_FILTER "tag k1f412" BC5_GUARD_WATCH "tag wa412" BC5_FAULT_RECORD "tag fr412" BC5_GUARD_K1R_REPLACE BC5_GUARD_K1R "tag k1r412" BC5_DIRECT_RESET_LABELS_ADD; do
   grep -aqF -- "$s" "$b" || die "the binary lacks [$s]"
 done
 [ "$(m "$ARCH")" = 75e30335 ] || die "the shared archive changed"
 [ "$(m "$K/src/libs/bc5LleAgc.cpp")" = 8126c0aa ] || die "the shared tree's unit changed"
-grep -aqF "BC5_GUARD_K1R_PROBE" "$b" && die "the binary still holds the probe"
+for s in BC5_GUARD_K1R_PROBE BC5_GUARD_K1R_COVERS_VISIBLE BC5_GUARD_K1R_COVER_WRITTEN BC5_GUARD_K1R_WRITTEN_SCAN_MS; do grep -aqF -- "$s" "$b" && die "the binary still holds [$s]"; done
 mkdir -p "$X/bin-e" || die "mkdir bin-e"
 cp -p "$b" "$X/bin-e/kyty_emulator.new-$$" && mv -fT "$X/bin-e/kyty_emulator.new-$$" "$X/bin-e/kyty_emulator" || die "cannot put the binary beside"
 distrobox enter ubuntu -- ldd "$X/bin-e/kyty_emulator" < /dev/null 2> /dev/null | grep -q "not found" && die "the copy in bin-e lacks a library"

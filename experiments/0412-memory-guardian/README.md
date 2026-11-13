@@ -3552,6 +3552,39 @@ His word after the play, relayed by the top: "Wszystko ok. Masz swoje pomiary". 
 - Not established from the files: that the slot-4 cutscene itself played (the journal names no slot or scene). What
   stands: his word, and no fault where the morning's play faulted at once.
 
+### 76. After his play: the defaults turned on and the options removed, for candidate E (2026-11-13 evening, laptop; not compiled)
+
+His words, relayed by the top: "Przerywnik poszedl dalej. Byl plynny. [...] Nic nie zacinalo. Rob dalej testy.
+Pozbadz sie zbednych przelacznikow". The top's order for candidate E: K1R + cv412 + kl412 ON by default with no
+option that restores the old behaviour; K1 at the filter one rule for both titles; variant (b) off, undecided.
+
+Done in the sources (the .inc files, so the CPU tests test what the unit holds):
+- `k1r0412.inc`: `BC5_GUARD_K1R` on unless "0".
+- `cover0412.inc`: `BC5_GUARD_K1R_COVERS_VISIBLE` removed; a read-only shared mapping is always a hole for the host
+  (the three-argument forms stay as the test's model of the state that faulted).
+- `kl0412.inc`, `mkkl0412.py`: `BC5_GUARD_K1R_COVER_WRITTEN` and `BC5_GUARD_K1R_WRITTEN_SCAN_MS` removed; the period
+  is the constant 100 ms.
+- `mkk1f0412.py`: `BC5_GUARD_K1_FILTER` on unless "0"; "log" names and imports nothing.
+CPU tests on the laptop: k1r0412 17,742, cover0412 640,008, kl0412 99,003. The chain on B's unit 8126c0aa (no
+probe): mkk1r 1a0ba9aa, mkwa 7aecbf99, mkcv 3c620459, mkk1f ab349ecb, mkkl **2824caf7** (44 lines from form 2's
+2f4a3d63); backend unchanged (26519fcc, b1d27875). `memfast/mk0412ze.sh` and `kit-ze.sha256` build it (bin-e).
+`mk0412zd.sh` no longer reproduces g412zd from this state of the scripts: g412zd's sources are commit 2ed121cb.
+
+What is left of this experiment's words in that unit:
+
+| word | state | why |
+|---|---|---|
+| `BC5_GUARD_K1R` | on; "0" off | the one off switch, for the control arm "all off = B" and for telling a K1r defect apart; remove when row 1 is closed on a shared build |
+| `BC5_GUARD_K1_FILTER` | on; "0" off, "log" | 2 MiB in ASTRO BOT, 0 in the second title; "log" is the catcher that names what the filter drops |
+| `BC5_GUARD_K1R_REPLACE` | off | the map-over form; ran once (k1rg), never shown faster: DELETE candidate, with `map_shared_over` in the backend |
+| `BC5_GUARD_LAZY_BY_DATA` | off, UNDECIDED | missing: a GPU read of written lazy memory (kl412's named fault is the proof and has not fired in four arms and his two plays); its price is +734 MiB (ASTRO BOT) and +194 MiB (second title), one run each |
+| `BC5_GUARD_WATCH` | off, diagnostic | the state of up to four addresses in the journal; found kl412's defect |
+| `BC5_GUARD_K1_STAT` | off, diagnostic | bind statistics |
+| removed | | `BC5_GUARD_K1R_COVERS_VISIBLE`, `_COVER_WRITTEN`, `_WRITTEN_SCAN_MS`, `BC5_GUARD_K1R_PROBE` (form 2) |
+
+Not done: nothing of this is compiled or run; the maintainer's shortcut still runs g412zd (be507cd5) with its
+explicit words.
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over

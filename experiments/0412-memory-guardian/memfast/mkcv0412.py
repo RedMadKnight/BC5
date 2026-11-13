@@ -12,8 +12,7 @@ memory was before K1r. So with K1r on the host behaves exactly as without it, an
   backend  SharedMap keeps `readonly`; Device::mappings() and sorted_mappings() report it (Mapping::readonly with
            Mapping::shared; before, a shared mapping was always reported writable)
   unit     covered_sorted() and covered(): a mapping that is shared and read-only (only K1r's covers are) does not
-           cover (cover0412.inc's cv412::hole, with the CPU test cover0412.cpp). The switch: the rule is ON by
-           default; BC5_GUARD_K1R_COVERS_VISIBLE=1 turns it off (the state that faulted, for telling the two apart)
+           cover (cover0412.inc's cv412::hole, with the CPU test cover0412.cpp). No switch since 2026-11-13.
 What this does not settle: that the filter drops a packet which writes into never-imported lazy memory was true
 before K1r and is true again. It is a defect of its own (the title's write is lost), not a fault; registered in
 FAULTS.md as open.
@@ -46,7 +45,7 @@ def unit(src, out):
     body = inc[inc.index(b"namespace cv412 {"):]
     assert body.rstrip().endswith(b"} // namespace cv412") and b"#include" not in body
     a = b"static bool covered(const std::vector<bc5::direct::Mapping>& maps, uint64_t a, uint64_t bytes);\n"
-    s = once(s, a, b"// Experiment 0412 (tag cv412): cover0412.inc, what a K1r cover is to the host. BC5_GUARD_K1R_COVERS_VISIBLE=1 turns the rule off.\n" + body + a)
+    s = once(s, a, b"// Experiment 0412 (tag cv412): cover0412.inc, what a K1r cover is to the host (no switch).\n" + body + a)
     open(out, "wb").write(s)
     print(f"bc5LleAgc.cpp {hashlib.md5(s).hexdigest()}")
 

@@ -109,7 +109,7 @@ int main() {
 	// the write bit of the fault status, the two kernel samples
 	check(k1r412::status_write(0x00741041u), "status 0x00741041 (E1 case 4, RW 1) is a write");
 	check(!k1r412::status_write(0x00601431u), "status 0x00601431 (the play of 2026-11-13, RW 0) is a read");
-	check(!k1r412::on(), "the switch is off when unset");
+	check(k1r412::on(), "the rule is on when the variable is unset");
 	std::printf("k1r0412: %" PRIu64 " of %" PRIu64 "; end\n", g_ok, g_checks);
 	return g_ok == g_checks ? 0 : 1;
 }

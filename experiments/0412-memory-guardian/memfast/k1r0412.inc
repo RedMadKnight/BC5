@@ -1,5 +1,5 @@
 // BC5 experiment 0412 (tag k1r412, README sections 62 and 63; design section 8): the read-only zero cover.
-// BC5_GUARD_K1R=1 (default off in the test build; meant to become the default). Every part of a view of direct
+// ON by default since 2026-11-13 (the top's order after the maintainer's play); BC5_GUARD_K1R=0 turns it off. Every part of a view of direct
 // memory that no imported buffer covers (a chunk the CPU has never written, in a heap that is imported by data or
 // lazily) is GPU-mapped READABLE ONLY onto one shared 2 MiB zero buffer of its own. Nothing is pinned for it.
 //   - a GPU READ there returns zeros, which is what the file holds there (E1 case 2; his play of 2026-11-13 faulted on
@@ -25,7 +25,7 @@ struct Piece {
 inline bool on() {
 	static const bool v = [] {
 		const char* e = std::getenv("BC5_GUARD_K1R");
-		return e != nullptr && e[0] != 0 && !(e[0] == '0' && e[1] == 0);
+		return e == nullptr || !(e[0] == '0' && e[1] == 0); // on unless "0"
 	}();
 	return v;
 }

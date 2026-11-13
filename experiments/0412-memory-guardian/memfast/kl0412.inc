@@ -6,27 +6,13 @@
 // data lies. The console returns the data. A zero is right only where nothing was ever written.
 // The rule: under a lazy view a piece whose file chunk holds data gets NO cover; it stays unmapped, as without K1r,
 // and a GPU read there is a fault with a record that names it (the cure is then the import of that memory, not a zero).
-// BC5_GUARD_K1R_COVER_WRITTEN=1 turns the rule off (the state before, for telling the two apart).
-// Which chunks hold data is asked of the file (SEEK_DATA) at most once per BC5_GUARD_K1R_WRITTEN_SCAN_MS (default
-// 100) and only at a mapping rebuild; between scans the last answer stands. Limit: a chunk written since the last
+// No switch (BC5_GUARD_K1R_COVER_WRITTEN and BC5_GUARD_K1R_WRITTEN_SCAN_MS were removed on 2026-11-13).
+// Which chunks hold data is asked of the file (SEEK_DATA) at most once per 100 ms (kPeriodNs)
+// and only at a mapping rebuild; between scans the last answer stands. Limit: a chunk written since the last
 // scan keeps its zero cover until the next rebuild after the period.
 // The rule is here, free of the host, and tested by kl0412.cpp.
 namespace kl412 {
-inline bool cover_written() {
-	static const bool v = [] {
-		const char* e = std::getenv("BC5_GUARD_K1R_COVER_WRITTEN");
-		return e != nullptr && e[0] != 0 && !(e[0] == '0' && e[1] == 0);
-	}();
-	return v;
-}
-inline uint64_t period_ns() {
-	static const uint64_t v = [] {
-		const char*    e  = std::getenv("BC5_GUARD_K1R_WRITTEN_SCAN_MS");
-		const uint64_t ms = e != nullptr && e[0] != 0 ? std::strtoull(e, nullptr, 10) : 100;
-		return (ms > 10000 ? 10000 : ms) * 1'000'000ull;
-	}();
-	return v;
-}
+constexpr uint64_t kPeriodNs = 100'000'000ull; // the least time between two scans
 struct Known {
 	std::set<uint64_t> written;                                         // file chunk offsets that held data at the last scan
 	uint64_t           last_ns = 0, scans = 0, asked = 0, scan_ns = 0; // counters for the journal
