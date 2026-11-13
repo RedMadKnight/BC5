@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # BC5 exp 0417: the checks on the SHARED builds after candidate B's swap (int0417b.sh). Made from chk0417g.sh by hand.
 # One chain, one lock line; every second-title run records pad keys (a foreign key voids the run).
-#   h0a     ASTRO BOT 120 s on the shared normal build (a fresh private test save directory, no key)
+#   h0a-c   ASTRO BOT 120 s three times on the shared normal build (a fresh private test save directory, no key)
 #   h1      the second title's walk to G+240
 #   h2cut   the cutscene arm (exp 0412's snapshot of 2026-11-13, slot 4, no input, 240 s)
 #   h3l     the shared lean build, 120 s
@@ -26,8 +26,12 @@ MN=$(md5sum < "$BN" | cut -d' ' -f1); ML=$(md5sum < "$BL" | cut -d' ' -f1); MS=$
 echo "shared binaries: normal $MN, lean $ML"
 [ "$MN" = "$P_N" ] && [ "$ML" = "$P_L" ] || { echo "post0417b ended $(date +%T): NOT STARTED, the shared builds are not the expected ones"; exit 1; }
 WD=$N/wda; KEEP=$WD/_SaveData.before-post0417b-$$; mv "$WD/_SaveData" "$KEEP" && mkdir "$WD/_SaveData" || exit 1
-line=$(P_BIN=$BN P_WANT=$MN bash ./start0413g.sh h0a astro 120 2>&1 | tail -1); echo "$line"
-echo "h0a save-memory file: $(md5sum < "$WD/_SaveData/PPSA21564/sce_sdmemory/memory.dat" 2> /dev/null | cut -c1-8) (1fa391a4 with no key)"
+# ASTRO BOT three times (the top session, 2026-11-13); the first on the fresh directory, the others on what it wrote
+for t in h0a h0b h0c; do
+    line=$(P_BIN=$BN P_WANT=$MN bash ./start0413g.sh $t astro 120 2>&1 | tail -1); echo "$line"
+    case "$line" in *"PASS: ran 120 s"*"kernel lines 0, crash lines 0"*) ;; *) break ;; esac
+done
+echo "h0a-c save-memory file: $(md5sum < "$WD/_SaveData/PPSA21564/sce_sdmemory/memory.dat" 2> /dev/null | cut -c1-8) (1fa391a4 with no key)"
 rm -rf "$WD/_SaveData"; mv "$KEEP" "$WD/_SaveData"
 case "$line" in *"PASS: ran 120 s"*"kernel lines 0, crash lines 0"*) ;; *) echo "post0417b ended $(date +%T): STOPPED at ASTRO BOT"; exit 1 ;; esac
 KERN=0; OK=1
