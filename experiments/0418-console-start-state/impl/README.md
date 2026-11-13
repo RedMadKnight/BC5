@@ -233,9 +233,65 @@ Under the fixes-first rule, everything above is in one build, each piece behind 
 3. **The umr reads.** The maintainer made them at 18:03 (idle) and 18:06 (in play, shared build, table off) into `~/bc5-work/exp0418/idle.txt` and `play.txt`. `umr0418.py <idle> <play>` (laptop) prints each register at idle and in play, the expectation of §2, whether each `_UMD` equals its register, and the bank witness `GRBM_GFX_CNTL`. A read with the table on comes after the trace run.
 4. **Name the NIDs on the laptop** (`nid-names.py`) and write the list of named requests: each with its register and whether a user IB may write it.
 
+## Result 1: what the chip holds (the umr reads of 2026-11-13)
+
+**The reads.** The maintainer ran `../README.md` §3's two commands. The files are in `raw/`:
+
+- `umr-idle-20261113-1803.txt`: 45 values.
+- `umr-play-20261113-1806.txt`: 23 values.
+
+Both files are clean: no umr error, and the bank witness `GRBM_GFX_CNTL` reads 0 first and last in each.
+
+**When they were taken.** The times come from the box: the read files' mtimes, the launcher's `lean.log` (it stops plasmashell for a game and starts it again after), and the game's `play-last.log`.
+
+| Read | Box time | State |
+|---|---|---|
+| idle | 18:03:44 | No emulator, about one minute after game 1 (18:00:31 to 18:02:37). **Not a fresh boot**: the title's ring values are still latched (below) |
+| in play | 18:06:19.99 (file closed) | Game 2 (18:04:05 to 18:06:24, the exp 0412 launcher, the shared build B, exit 0), at t ≈ 135 s of its log, with 25-28 flips/s in its last seconds. **The game was running and drawing during the read** |
+
+**The five of §2: all as inferred.**
+
+| Register | Reset | Idle | In play | §2's inference | Verdict |
+|---|---|---|---|---|---|
+| `CP_COHER_START_DELAY` | 0x20 | 0x20 | 0x20 | 0x20 | confirmed. It is the reset value, so exp 0401's switch writes what is already there |
+| `SPI_SHADER_REQ_CTRL_PS` | 0 | 0x7 | 0x7 | 0x7, from the Mesa clients | confirmed. Not the reset value, and the launcher has exp 0401's switch off, so a Mesa client wrote it |
+| `GE_MIN_VTX_INDX` | 0 | 0 | 0 | 0 | confirmed |
+| `GE_MAX_VTX_INDX` | 0 | 0xffffffff | 0xffffffff | ~0 | confirmed. A Mesa client wrote ~0, so §2's clamp TODO is settled for play |
+| `VGT_INSTANCE_BASE_ID` | 0 | 0 | 0 | 0 | confirmed |
+
+**The rings and the CAM.**
+
+- **`_UMD` = register: yes, all six pairs** in the idle read: the TF ring size, base and high base, the HS offchip parameter, ESGS and GSVS. The CAM maps as the kernel code says (`gfx_v10_0.c:7296-7475`): measured now, no longer inferred.
+- **The title's values outlive the game.** One minute after game 1:
+  - `VGT_HS_OFFCHIP_PARAM` = 0x1ff;
+  - `VGT_TF_RING_SIZE` = 0xfffe (0x3fff8 / 4, the title's ring);
+  - `VGT_TF_MEMORY_BASE` = 0x11200000 (0x1120000000 >> 8).
+
+  Nobody else writes them, which is F780/F785's latch, here measured without a CP packet.
+- **ESGS/GSVS = 0.** No GS ring was asked for.
+- **`SPI_CONFIG_CNTL` = 0xc062c688,** its reset value. Nobody writes it.
+
+**Also seen.**
+
+- `GE_CNTL` reads 0xf680 at idle and 0 in play. `GE_PC_ALLOC` reads 0x1ff at idle and 0x3ff in play. The desktop's clients and the game write different values to these two.
+- `TA_CS_BC_BASE_ADDR` = 0x01004100 in both reads; its reset value is 0. Someone writes it, and whether that is a Mesa client's border-colour buffer or the title's is not known (TODO).
+- `SPI_WCL_PIPE_PERCENT_GFX` = 0x07ffffff, its reset value (`gc_10_1_0_default.h:2609`): nobody limits the gfx pipe's waves. `SQ_CONFIG` = 0x01180000 is its reset value too.
+- The golden set as read is recorded in the idle file. It is the console's values that cannot be known, not these.
+
+**Verdict of the read.** §2 holds by measurement:
+
+- In play the five hold the drivers' values, and on this box the Mesa clients write them.
+- The table's five constant rows therefore change nothing here today.
+- Exp 0401's two switches are no-ops by measurement.
+
+The limits:
+
+- One sample in play, at t ≈ 135 s; whether the game was in the menu or in play then is not known.
+- The idle read follows a game, not a fresh boot.
+
 ## Open
 
-- The box build, the trace run, the umr read and the play: none done.
+- The box build and the trace run: under way since 18:13 (this section is updated with their result).
 - `0xc00c8110`'s unit on the PS5 (TODO(verify)). No title of ours sends it.
 - Whether the title's driver keeps frame pointers. The scan covers the case where it does not.
 - **Integration.** The diff folds into patch 0001 when the top and the integrator decide. The two headers, their tests and `start-state.tsv` are on this branch. `backend/CMakeLists.txt` gains the two test files and the TSV's path.
