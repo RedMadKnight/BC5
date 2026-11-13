@@ -37,6 +37,47 @@ static uint32_t k1r412_bo() {
 	return g_k1r_id;
 }
 static bool k1r412_is_cover(uint32_t id) { return g_k1r_id != 0 && id == g_k1r_id; }
+// BC5_GUARD_K1R_REPLACE=1 (default off): a real mapping that takes the place of covers is mapped OVER them with one
+// AMDGPU_VA_OP_REPLACE (Device::map_shared_over) instead of unmap, drain, map. By the driver's code (v6.19
+// amdgpu_gem_va_update_vm) that is one ioctl but still two page-table updates in order (the old entries cleared, the new
+// ones written): the hole a running job could meet shrinks from "between two ioctls" to "between two updates", it is
+// not proven to be zero. So no drain is made in this form, and that is what the first measurement compares.
+static bool k1r412_replace_on() {
+	static const bool v = [] {
+		const char* e = std::getenv("BC5_GUARD_K1R_REPLACE");
+		return k1r412::on() && e != nullptr && e[0] != 0 && !(e[0] == '0' && e[1] == 0);
+	}();
+	return v;
+}
+static std::vector<DMap> g_k1r_kept; // covers left mapped by the drop pass of this rebuild, for the real mappings to go over
+static uint64_t          g_k1r_over = 0, g_k1r_over_failed = 0;
+static void k1r412_begin_rebuild() { g_k1r_kept.clear(); }
+// The drop pass asks: is m a cover that a wanted real mapping contains? Then it is not unmapped (want is sorted by va).
+static bool k1r412_keep_for_replace(const DMap& m, const std::vector<DMap>& want) {
+	if (!k1r412_replace_on() || !k1r412_is_cover(m.id)) return false;
+	auto u = std::upper_bound(want.begin(), want.end(), m.va, [](uint64_t va, const DMap& a) { return va < a.va; });
+	if (u == want.begin()) return false;
+	--u;
+	if (k1r412_is_cover(u->id) || u->va > m.va || u->va + u->size < m.va + m.size) return false;
+	g_k1r_kept.push_back(m);
+	return true;
+}
+// The add pass: one wanted mapping.
+static bool k1r412_map(const DMap& w) {
+	if (k1r412_is_cover(w.id)) return g_dev->map_shared(w.id, w.bo_off, w.size, w.va, true);
+	if (!k1r412_replace_on()) return g_dev->map_shared(w.id, w.bo_off, w.size, w.va);
+	if (g_dev->map_shared_over(w.id, w.bo_off, w.size, w.va, false)) {
+		g_k1r_over++;
+		return true;
+	}
+	// Refused (something else overlaps the range in part): the old way for this one. Its covers go first.
+	g_k1r_over_failed++;
+	for (const auto& c: g_k1r_kept) {
+		if (c.va >= w.va && c.va + c.size <= w.va + w.size) g_dev->unmap_shared(c.va);
+	}
+	journal("k1r (exp 0412, tag k1r412): map over 0x%" PRIx64 "+0x%" PRIx64 " refused (%" PRIu64 " so far, %" PRIu64 " done): its covers unmapped, mapped the old way without a drain\\n", w.va, w.size, g_k1r_over_failed, g_k1r_over);
+	return g_dev->map_shared(w.id, w.bo_off, w.size, w.va);
+}
 // The mapping rebuild's hook: every part of a view of direct memory that no imported buffer covers is one or more
 // read-only mappings of the zero buffer. Not with the zero skip or the pin cap (they put their own buffer there).
 static void k1r412_want(const DState& S, const std::vector<DView>& views, std::vector<DMap>& want) {
@@ -115,10 +156,16 @@ def unit(src, dst):
     a = b"\t\tguard0412_want(S, views, want); // exp 0412 (tag g412b): the zero buffer under the views of put-off chunks\n"
     s = once(s, a, a + b"\t\tk1r412_want(S, views, want);" + T)
     s = once(s, b"\t\t\t\tif (g_dev->map_shared(w.id, w.bo_off, w.size, w.va)) {\n",
-             b"\t\t\t\tif (g_dev->map_shared(w.id, w.bo_off, w.size, w.va, k1r412_is_cover(w.id))) { // exp 0412 (tag k1r412): a cover is mapped READ-ONLY\n")
-    # A rebuild that changes the set of buffers replaces covers by real mappings (unmap, then map): no job may run across it.
+             b"\t\t\t\tif (k1r412_map(w)) { // exp 0412 (tag k1r412): a cover is mapped READ-ONLY; with BC5_GUARD_K1R_REPLACE a real mapping goes OVER the covers under it\n")
+    # The drop pass: with BC5_GUARD_K1R_REPLACE a cover that a new real mapping will lie over is not unmapped first.
+    s = once(s, b"\t\t\t} else {\n\t\t\t\tg_dev->unmap_shared(m.va);\n\t\t\t\tunmapped++;\n\t\t\t}\n",
+             b"\t\t\t} else if (k1r412_keep_for_replace(m, want)) { // exp 0412 (tag k1r412): stays mapped until the real mapping replaces it\n"
+             b"\t\t\t} else {\n\t\t\t\tg_dev->unmap_shared(m.va);\n\t\t\t\tunmapped++;\n\t\t\t}\n")
+    # A rebuild that changes the set of buffers replaces covers by real mappings. Without BC5_GUARD_K1R_REPLACE that is
+    # an unmap and then a map, and no job may run across it: the GPU is drained first.
     s = once(s, b"\tif (!retired.empty() || sig != S.views_sig || guard0412_cap_changed(S)) { // exp 0412 (tag g412b)\n",
-             b"\tif (!retired.empty() || sig != S.views_sig || guard0412_cap_changed(S) || (k1r412::on() && S.kind == 0 && S.bos.size() != S.bos_mapped)) { // exp 0412 (tag g412b; k1r412: covers are about to be replaced)\n")
+             b"\tk1r412_begin_rebuild();" + T +
+             b"\tif (!retired.empty() || sig != S.views_sig || guard0412_cap_changed(S) || (k1r412::on() && !k1r412_replace_on() && S.kind == 0 && S.bos.size() != S.bos_mapped)) { // exp 0412 (tag g412b; k1r412: covers are about to be unmapped and replaced)\n")
     s = once(s, b"\t\tg_scratch.clear();\n\t\tg_scratch_id = 0;\n", b"\t\tg_scratch.clear();\n\t\tg_scratch_id = 0;\n\t\tg_k1r_id     = 0;" + T)
     a = b"\tjournal(\"would learn (exp 0412, tag mr412): t %.3f s: fault 0x%\" PRIx64"
     assert s.count(a) == 1
@@ -138,7 +185,12 @@ def backend(src, dst):
              b"    bool map_shared(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t size, std::uint64_t gpu_va);\n"
              b"    // exp 0412 (tag k1r412): readonly = the GPU may read these pages and not write them (AMDGPU_VM_PAGE_READABLE\n"
              b"    // alone): a GPU write is a page fault with the address (exp 0412 E1, case 4). For the read-only zero cover.\n"
-             b"    bool map_shared(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t size, std::uint64_t gpu_va, bool readonly);\n"),
+             b"    bool map_shared(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t size, std::uint64_t gpu_va, bool readonly);\n"
+             b"    // exp 0412 (tag k1r412): as map_shared, but OVER whatever shared mappings lie wholly inside [gpu_va, gpu_va + size)\n"
+             b"    // (AMDGPU_VA_OP_REPLACE: one ioctl; the kernel clears the old mappings and writes the new ones in that call, as two\n"
+             b"    // page-table updates in order, v6.19 amdgpu_gem_va_update_vm). The mappings it replaces leave the list. Fails, and\n"
+             b"    // changes nothing, if a shared mapping overlaps the range only in part.\n"
+             b"    bool map_shared_over(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t size, std::uint64_t gpu_va, bool readonly);\n"),
         ]),
         ("src/direct.cpp", [
             (b"bool Device::map_shared(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t size, std::uint64_t gpu_va) {\n"
@@ -157,6 +209,45 @@ def backend(src, dst):
              b"                                          : AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_WRITEABLE | AMDGPU_VM_PAGE_EXECUTABLE);\n"
              b"    if (rc != 0) {\n"
              b"        std::fprintf(stderr, \"bc5-direct: shared map at 0x%llx+0x%llx: %d\\n\",\n"),
+            (b"bool Device::unmap_shared(std::uint64_t gpu_va) {\n",
+             b"// exp 0412 (tag k1r412): map over the shared mappings that lie wholly inside the range (the read-only zero cover's\n"
+             b"// pieces, replaced by the real pages of a chunk the CPU has written), with one AMDGPU_VA_OP_REPLACE.\n"
+             b"bool Device::map_shared_over(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t size, std::uint64_t gpu_va, bool readonly) {\n"
+             b"    std::lock_guard lock(impl_->mutex);\n"
+             b"    if (size == 0 || ((bo_offset | size | gpu_va) & 0xfff) != 0) return false;\n"
+             b"    SharedBo *b = impl_->shared_bo_locked(id);\n"
+             b"    if (b == nullptr || bo_offset + size > b->size) return false;\n"
+             b"    const std::uint64_t end = gpu_va + size;\n"
+             b"    auto first = std::lower_bound(impl_->shared_maps.begin(), impl_->shared_maps.end(), gpu_va,\n"
+             b"                                  [](const SharedMap &m, std::uint64_t va) { return m.va < va; });\n"
+             b"    if (first != impl_->shared_maps.begin()) {\n"
+             b"        const auto prev = first - 1;\n"
+             b"        if (prev->va + prev->size > gpu_va) return false; // a mapping reaches into the range from below\n"
+             b"    }\n"
+             b"    auto last = first;\n"
+             b"    while (last != impl_->shared_maps.end() && last->va < end) {\n"
+             b"        if (last->va + last->size > end) return false; // a mapping reaches out of the range\n"
+             b"        ++last;\n"
+             b"    }\n"
+             b"    const int rc = amdgpu_bo_va_op_raw(impl_->dev, b->bo, bo_offset, size, gpu_va,\n"
+             b"                                       readonly ? AMDGPU_VM_PAGE_READABLE\n"
+             b"                                                : AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_WRITEABLE | AMDGPU_VM_PAGE_EXECUTABLE,\n"
+             b"                                       AMDGPU_VA_OP_REPLACE);\n"
+             b"    if (rc != 0) {\n"
+             b"        std::fprintf(stderr, \"bc5-direct: shared map over 0x%llx+0x%llx: %d\\n\", static_cast<unsigned long long>(gpu_va),\n"
+             b"                     static_cast<unsigned long long>(size), rc);\n"
+             b"        return false;\n"
+             b"    }\n"
+             b"    for (auto it = first; it != last; ++it) {\n"
+             b"        if (SharedBo *o = impl_->shared_bo_locked(it->id); o != nullptr && o->maps != 0) o->maps--;\n"
+             b"    }\n"
+             b"    const auto at = impl_->shared_maps.erase(first, last);\n"
+             b"    impl_->shared_maps.insert(at, SharedMap{gpu_va, size, bo_offset, id, b->bo});\n"
+             b"    b->maps++;\n"
+             b"    impl_->list_gen++;\n"
+             b"    return true;\n"
+             b"}\n\n"
+             b"bool Device::unmap_shared(std::uint64_t gpu_va) {\n"),
         ]),
     ):
         s = open(os.path.join(src, rel), "rb").read()

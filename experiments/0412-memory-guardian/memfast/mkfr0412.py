@@ -14,6 +14,9 @@ the record is read by a later run.
                     the ledger (pinned, available, PSI), the frame lines of the last seconds
   layout-views.txt, layout-buffers.txt, layout-mappings.txt   the views, the imported ranges, the GPU mappings then
   meminfo.txt, pressure.txt, environment.txt (every BC5_* and KYTY_* variable), process.txt (binary, command line)
+The exit does not cut a save (tag sg412, saveguard0412.inc, put into the tree by mksg0412.py as
+src/bc5/save_guard0412.hpp): before it, a save being written through the host's calls is let finish (5 s at most),
+nothing new starts, what was written is synced; record.txt says whether a save was in flight and how the wait ended.
 Input: the main unit after mknl0412.py (the catcher's code is reused). One anchor for the glue, one for the call.
 usage: mkfr0412.py <bc5LleAgc.cpp in> <bc5LleAgc.cpp out>"""
 import hashlib
@@ -23,6 +26,7 @@ T = b" // exp 0412 (tag fr412)\n"
 
 GLUE = b'''// Experiment 0412 (tag fr412): BC5_FAULT_RECORD. A GPU fault is a bug to remove at its source: write what is needed to
 // find it, then end the game. No reopen, no recovery.
+#include "bc5/save_guard0412.hpp" // exp 0412 (tag sg412): the save guard
 namespace fr412 {
 inline bool on() {
 	static const bool v = [] {
@@ -50,6 +54,23 @@ static void fr412_copy(const std::string& from, const std::string& to, long tail
 }
 [[noreturn]] static void fr412_record_and_exit(uint64_t fault, uint32_t status, bool timed_out, int rc) {
 	const double t = timing_now();
+	{ // one record: a second thread that arrives here while the first writes is held
+		static std::atomic<bool> once {false};
+		if (once.exchange(true)) {
+			for (;;) std::this_thread::sleep_for(std::chrono::hours(1));
+		}
+	}
+	// The save guard (tag sg412): the exit must not cut a save. A save being written through the host's calls is let
+	// finish (5 s at most), nothing new starts, then what was written is flushed and synced. The outcome goes into
+	// the record.
+	const sg412::Closed sg      = sg412::close(5000);
+	int                 sg_sync = -2; // -2 no save directory was mounted in this run, -1 it could not be opened, else syncfs's result
+	if (sg.complete) std::fflush(nullptr);
+	if (sg412::g_root_set.load()) {
+		const int fd = ::open(sg412::g_root, O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+		sg_sync      = fd < 0 ? -1 : ::syncfs(fd);
+		if (fd >= 0) ::close(fd);
+	}
 	char         stamp[32] = "unknown";
 	{
 		const time_t now = std::time(nullptr);
@@ -151,6 +172,10 @@ static void fr412_copy(const std::string& from, const std::string& to, long tail
 		}
 		std::fprintf(f, "memory: pinned direct %.1f MiB in %zu buffers, private %.1f MiB in %zu; %zu GPU mappings (meminfo.txt, pressure.txt)\\n", static_cast<double>(g_d[0].bytes) / 1048576.0, g_d[0].bos.size(),
 		             static_cast<double>(g_d[1].bytes) / 1048576.0, g_d[1].bos.size(), n_maps);
+		std::fprintf(f, "saves (tag sg412): %s. At the request: %d save call(s) of the host in flight, %d save mount(s) written and not yet unmounted, the last save call began %" PRId64 " ms before (-1: none in this run). "
+		                "Waited %" PRId64 " ms (5000 at most); left then: %d call(s), %d mount(s); %d caller(s) held from starting something new. Sync of the save directory: %s.\\n",
+		             sg412::verdict(sg), sg.ops_at_request, sg.dirty_at_request, sg.last_op_age_ms, sg.waited_ms, sg.ops_left, sg.dirty_left, sg.held,
+		             sg_sync == 0 ? "done" : (sg_sync == -2 ? "not needed (no save directory was mounted)" : "FAILED"));
 		std::fprintf(f, "the capture directory of this run (the whole journal, the dumped buffers of the timed-out jobs): %s\\n", g_dump_dir.empty() ? "(none: logging was off)" : g_dump_dir.c_str());
 		std::fprintf(f, "\\nin this directory: journal-tail.txt (the probe's summary of the timed-out jobs, the last submissions, the ledger, the frame lines), layout-views.txt, layout-buffers.txt,\\n"
 		                "layout-mappings.txt, meminfo.txt, pressure.txt, environment.txt (every BC5_* and KYTY_* variable), process.txt.\\n");
@@ -159,9 +184,10 @@ static void fr412_copy(const std::string& from, const std::string& to, long tail
 		std::fclose(f);
 	}
 	journal("fault record (exp 0412, tag fr412): written to %s; the game ends here (BC5_FAULT_RECORD)\\n", dir.c_str());
-	std::fprintf(stderr, "[bc5] GPU FAULT at 0x%" PRIx64 " (status 0x%08x), %.1f s after the start: the record is in %s; the game ends here (exit 86). A GPU fault is a bug to fix, not something to get up from.\\n", fault, status, t,
-	             dir.c_str());
-	std::fflush(nullptr);
+	std::fprintf(stderr, "[bc5] GPU FAULT at 0x%" PRIx64 " (status 0x%08x), %.1f s after the start: the record is in %s; the game ends here (exit 86). A GPU fault is a bug to fix, not something to get up from. Saves: %s.\\n", fault,
+	             status, t, dir.c_str(), sg412::verdict(sg));
+	if (sg.complete) std::fflush(nullptr); // not when a save call is still in flight: it may hold a stream
+	else std::fflush(stderr);
 	_exit(86);
 }
 '''
