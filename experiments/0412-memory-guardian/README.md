@@ -3877,6 +3877,28 @@ RenderGpuRwLarge 192, DynamicHeap 160 + 22, Physics 116, ComponentHeap 56 + 24; 
 
 Not updated: `kit-ze.sha256` (it names the old `k1r0412.cpp`; that kit was never sent).
 
+### 84. The deciding series was run by the integrator: nine long walks, none failed (2026-11-13 22:06 - 2026-11-14 00:01; exp 0419 README section 15, 71d552d7; not read on the box by me)
+
+[M, the integrator] Nine walks to G+620, interleaved: F plain x3, shared B x2, F with `BC5_GUARD_K1R=0
+BC5_GUARD_K1_FILTER=0` x2, F without exp 0418's five new rows x2; `KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1`
+in all. All nine reached G+620 with 25.1-25.6 flips/s, 0 kernel lines, 0 crash lines, no new fault record.
+Lowest available memory in 580-620 s: 389 MiB; GTT 12,177-12,323 of 13,312. Raw:
+`~/bc5-work/exp0413/n/raw/counts0419f.out`, journals `~/bc5-data/captures/play-20261113-2206` to `-2349`.
+
+Long walks past G+320 now: F with K1r on 2 failed of 7 (the GPU hang at 601 s, the CPU fault at 543 s), F with
+K1r off 0 of 3, F without exp 0418's rows 0 of 3, B 0 of 3 (E's form-4 binary was not run).
+- [M, arithmetic] 2 of 7 against 0 of 3 (K1r off alone): p 0.47 (21 of 45). 2 of 7 against 0 of 9 (all other
+  arms together): p 0.175 (21 of 120). Neither separates.
+- [I] This is section 83's third outcome: nothing failed, so no arm is named. The two failures are of two kinds
+  (a GPU ring timeout without a page fault; a null pointer in the title's own structure), each seen once in 16
+  long walks; nothing shows they share a source, and nothing ties either to K1r beyond the arm they fell in.
+- NOT known: the source of either. The records of both stay the only evidence (`FAULTS.md`).
+
+What this leaves for option B's arms: the top's first condition ("the hang is explained first") is NOT met and
+cannot be met by more reading of these runs. Whether the arms start on F with the two faults open at about 1 in
+8 long walks each is the top's and the maintainer's call; an arm that hangs or faults the same way would then
+not be attributable to its heap without the fault record saying so.
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over
