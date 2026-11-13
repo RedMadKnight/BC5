@@ -2440,9 +2440,9 @@ the first kernel line). Planned c0 c4 r1 r2 r2 r1 c4 c0; **four ran**. Data `raw
 [M]
 - **c0a against c4a, the same binary, 5 minutes apart:** without the learned file the pin is 246 MiB lower, the
   lowest available memory 35 MiB higher, no fault, no "would learn" line, nothing learned. With section 52 that is
-  three runs of the route without the file and no fault. **So section 52's lower "lowest available" without the file
-  (407, 424 against 497, 560) was not the file's doing**: on one binary in one quarter of an hour it does not
-  appear. Section 52 compared runs 20–37 minutes apart in a session whose compaction load was climbing (kcompactd0
+  three runs of the route without the file and no fault. **Section 52's lower "lowest available" without the file
+  (407, 424 against 497, 560) did not repeat** on one binary in one quarter of an hour. One pair: it shows the
+  difference is not stable, not what caused it (review R13). Section 52 compared runs 20–37 minutes apart in a session whose compaction load was climbing (kcompactd0
   80–100 s of CPU per 4-minute run here; exp 0415 measured 3–9 s per phase early in the same boot and 16–20 s later).
 - **R1 goes to the wall in the menu.** With every view pinned whole the pin is 9,624 MiB at 10 s (8,206 without the
   file, 8,434 with it) and 12,114 MiB at 60 s, before the save is loaded; available memory stays at 240–280 MiB from
@@ -2504,10 +2504,11 @@ BC5_GUARD_LEARN_LOG=1`, an empty private learned file. **Both MAP_RULE and PRT_B
   moved 361 mappings (the title gave back what it had mapped for the load; with R1 on, orphans had reached 1,615 MiB
   against 220–310 in the other arms). The mapping count was steady at 20,924 for the last submissions.
 
-**What kind of hang** [I]. Not F403's shape as far as this shows: the command processor is stopped in the middle of
-a **draw** buffer, not waiting behind a compute dispatch that never ends (the compute buffer timed out with it, as
-the pair did in F260 and in section 38). Nothing shows a mapping replaced under the running job: the filter saw
-every operand mapped and the mapping count had been steady. What R1/R2 **could** have done and is not excluded:
+**What kind of hang** [I]. Not decided. The command processor stood inside the buffer the journal calls a draw
+buffer, but that buffer holds 40 dispatches, so its name and the position neither assign the hang to a draw nor
+exclude a compute or ray-tracing job that never ends (F403); the compute buffer timed out with it, as the pair did
+in F260 and in section 38. The filter's `unmapped 0`, the steady mapping count and the ledger's samples were taken
+at submission and afterwards: they do not show which mappings existed, or changed, while the job ran (review R13). What R1/R2 **could** have done and is not excluded:
 (a) with the PRT span, the 361 mappings moved by the orphan release were for a moment PRT pages instead of unmapped
 ones, and so was everything the release cut: a job that reads there now gets zeros without any sign, where before it
 would have faulted loudly (in no earlier run did it fault, so nothing is known to read there); (b) R1 made the
@@ -2515,7 +2516,9 @@ release five times larger than in any earlier run, 3–14 s before the hang. Aga
 state: PSI full 43–65 % for 25 s, the worst of any run of this experiment that reached the load.
 **Why the reset failed** is not known: the same kernel recovered the ring at 19:07 and failed here, at F260 and in
 section 38; in all three failures a draw buffer and a compute buffer had timed out together. That is a correlation
-from four dumps, not a cause.
+from four dumps, not a cause. One run with R1, R2 and heavy memory pressure at once isolates neither the hang nor
+the failed reset; that the kernel accepted the PRT span says nothing about what the span costs, and its size alone
+explains no reset failure.
 
 **So:** MAP_RULE and PRT_BG stay off and are not to be run together again until R2 has a test of its own away from
 the wall, and the orphan release under R1 is looked at (it should not have 1.6 GiB to cut).
