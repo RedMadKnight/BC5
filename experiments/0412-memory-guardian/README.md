@@ -2883,17 +2883,46 @@ two dumped buffers beside it are the title's and are not committed).
 - The emulator had `BC5_EMU` = the shared build, `BC5_DIRECT_LEARNED=…/exp0412/learned-none.txt`,
   `BC5_GUARD_LEARN_LOG=2`. The shell was stopped at 08:54:37 and started again at 09:02:01 by the lean watcher
   (plasmashell 0 during the play, running after it): **the lean session's first real run worked**.
-- The play lasted 441 s and ended with exit 0. At the last ledger line (430 s): pinned direct 11,764 MiB, available
-  873 MiB, PSI full 0.7 %.
+- The emulator lived 441 s. **Corrected (the top session's facts, 09:10): the play did not go on after the fault.** He
+  was in an in-game cutscene; after the fault and the reopen the picture stayed frozen while the emulator ran on
+  (sound, 289 % CPU); the top session ended it with SIGTERM at 09:02, which is the "exit 0". My first reading of
+  "reopen: ok" and the later ledger lines as "the play went on" was wrong. At the last ledger line (430 s): pinned
+  direct 11,764 MiB, available 873 MiB, PSI full 0.7 %.
 - **One GPU fault, at 285.9 s**: address **0x1100000000**. The kernel: client SQC (data), `PERMISSION_FAULTS: 0x3`,
-  **`RW: 0x0`: a read**. Ring timeout 2.0 s later, `Ring gfx_0.0.0 reset succeeded`, the host's "reopen: ok", and
-  the play went on for 155 s more. Two submissions timed out together (a draw buffer of 32,485 dwords and a compute
+  **`RW: 0x0`: a read**. Ring timeout 2.0 s later, `Ring gfx_0.0.0 reset succeeded`, the host's "reopen: ok"; the
+  title did not recover (see the correction above and "After the reopen" below). Two submissions timed out together (a draw buffer of 32,485 dwords and a compute
   buffer of 32,335), both passed by the operand filter with `unmapped 0`.
 - The catcher's line: **K1, under a BY-DATA view, chunk never written by the CPU**: view `AssetHeap Large` (direct,
   by data; 604 of 816 MiB of that heap were pinned at the end), chunk not imported, no GPU mapping, a guest range
   yes. The window it would once have learned, 0x10fe000000+96 MiB, is one of the old file's 81 lines (HANDOFF F779 and
   F781 record it being learned): the file did cover this place; the scripted route never goes there.
 - The old learned file was not created again; nothing was added.
+
+**Is 0x1100000000 exp 0346's fallback window?** [C][M] It is the same number, and for a reason: 0x11 is the high
+half of the title's 4 GiB window, which exp 0346's switch (`BC5_DIRECT_HOST_INDIRECT=learn:1100000000`) uses as the
+base for a GFX-form indirect dispatch that carries no `SET_BASE`, "until one is learned", where "learned" means read
+from the title's own `SET_BASE`s during the run (`backend/src/direct.cpp:558`), not from the learned file. But this
+fault was not that path: the kernel names the client **SQC (data)**, a shader's data fetch, not the command
+processor reading dispatch arguments, and 0346 rewrites a dispatch only to a page the host itself could read and
+NOPs it otherwise, so it sends no reader to an unmapped page. What the two share is the address: the first page of
+the title's window, where `AssetHeap Large` begins. A shader that follows a 32-bit pointer or offset of 0 inside
+that window reads exactly there [I]. The learned file did not feed 0346's base; it kept this page mapped (its line
+0x10fe000000+96 MiB forced the heap's first chunks), and without it the page was unmapped.
+
+**The indirect dispatch with the garbage grid (dword 40,954 of the compute buffer)** [M][I]. The probe marks every
+dispatch and every label write of the compute buffer #229185 as DROPPED: that buffer did not run. Its indirect
+dispatch at 40,954 takes its arguments at 0x1187497000+0xe00; the count the probe printed is what that memory held
+at the timeout, and since the jobs that would have produced it were lost with the reset, garbage there is expected
+and comes **after** the fault, not before it. Nothing here shows F403's shape (a dispatch that never ends): the
+fault came first, in a shader's read.
+
+**After the reopen: why the picture froze** [M][I]. The lost compute buffer ends in label writes that the title
+waits for, among them a counter at 0x11e1024040 (to become 0x21c71; it stayed 0x21c70) and a flag at 0x11e0ec0018
+(to become 1; it stayed 0). The probe counts 14 label writes in that buffer; e11's recovery line says "0 label
+writes of the lost jobs: ... 0 written (BC5_DIRECT_RESET_LABELS on)". So the labels of the lost job were never
+written and the title waits on them for ever. That is a defect of ours in the recovery (the reset-labels code did
+not find the lost job's writes), apart from the mapping question: with it, **every** recovered fault in such a
+frame freezes the title, whatever caused the fault.
 
 **What kind of miss this is, and its rule** [I]. The GPU **read** (a shader's data fetch) a 2 MiB chunk of a heap
 that the title mapped and the CPU had never written. Its content is zeros: the read was legitimate and its right
@@ -2916,7 +2945,7 @@ play (his save, about 285 s in).
 
 ## Verdict
 
-- **His first play without the learned file (section 62):** 441 s, one GPU fault at 286 s, recovered: a shader READ of
+- **His first play without the learned file (section 62):** one GPU fault at 286 s in a cutscene; the reset succeeded but the title froze (the lost job's label writes were never written: our recovery's defect). The fault: a shader READ of
   a never-written chunk of `AssetHeap Large`. Its right answer was zero: the rule is a read-only zero cover over
   never-written chunks of by-data heaps (E1's measured case), not a window. The lean session worked in real play.
 - **No learned windows any more (section 60, the maintainer's order):** his shortcut (fast9, the shared build) and the
