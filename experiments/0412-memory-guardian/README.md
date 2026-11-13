@@ -3212,6 +3212,56 @@ build (they have still not fired), and the title's own read of that page (not re
 another context: it says what the address space returns, not what the title's shader would have done with zeros.
 The control's line counts 128 bytes "still holding the fill": those are pattern bytes that happen to equal 0xA5.
 
+### 68. The replace form; the one deliberate fault: the read without K1r faults, the record is written, exit 86 (2026-11-13 10:46–11:11, box)
+
+**k1rg [M]: K1r's replace form** (`BC5_GUARD_K1R=1 BC5_GUARD_K1R_REPLACE=1`, g412zb, the probe at 200 s): G+240, 355 s,
+30.0 flips/s, 0 kernel lines; the probe's control whole, the address under a read-only zero cover, **the read
+16,384 zero bytes, no fault**; 942 pieces at the first rebuild, 516 at 177 s, the zero buffer 0 non-zero words. The
+journal's drain figures do not separate the two forms (k1rf: 1,674 drains counted, k1rg: 1,482; the timing line's
+drain is for every rebuild, not K1r's alone), so the replace form is shown to run, not to be faster. Whether its
+two page-table updates can be met by a running job (section 63) was not seen and is not excluded by one run.
+
+**k1rh [M]: the deliberate fault.** The maintainer's word, relayed by the top, to the question "may the guardian
+trigger ONE deliberate GPU fault (K1R off, the probe reading 0x1100000000) to test the fault record, the save guard
+and the clean exit, with the risk of a reboot if the reset fails; private save copy only": "Tak, wywołaj". One run:
+g412zb, K1r off, `BC5_GUARD_K1R_PROBE=1100000000,200 BC5_FAULT_RECORD=1`, the private save copy, the kernel log
+polled every 10 s.
+
+- The probe at 200.0 s: the control whole; the address "never written by the CPU, not imported; GPU: NO MAPPING";
+  **the read timed out after 2,055 ms: fault address 0x1100000000, status 0x00701031 (a read)**.
+- The kernel: page faults at 0x1100000000–0x1100003000 (the probe's four pages), client TCP, `PERMISSION_FAULTS 0x3`,
+  `RW 0x0`; ring gfx_0.0.0 timeout; **ring reset succeeded**; "device wedged, but no recovery needed"; the gpu-watch
+  armed and disarmed 5 ms apart. No reboot (up since 00:11). Devcoredump `20261113-111017-devcd3.txt`.
+- **The fault record** `~/bc5-data/captures/faults/20261113-111017/` (never committed): `record.txt` names the time
+  (202.056 s), the address and status as a read, the kind "K1 under a BY-DATA view, chunk never written by the CPU",
+  the view ("AssetHeap Large", by data, 0x10d0000000+0x33000000, the address 0x30000000 into it), the chunk not
+  imported, no GPU mapping, the pin (11,250 MiB in 69 buffers; 15,378 mappings), the capture directory; with it the
+  journal's tail (4 MiB), the three layout files, meminfo, pressure, environment, process.
+- **The save guard's line in it:** "no save was being written when the game was ended. At the request: 0 save
+  call(s) of the host in flight, 0 save mount(s) written and not yet unmounted, the last save call began 9775 ms
+  before. Waited 0 ms; … Sync of the save directory: done." So the guard was called, found nothing in flight, and
+  synced. **The case of a save in flight at the fault has still run only in the CPU test.**
+- **The exit:** one stderr line naming the record and the saves' state; the emulator's exit code 86; the launcher's
+  exit 86; no emulator left, the lock released, plasmashell running. `run0412n.sh` ended the arm at "ring reset
+  succeeded at 203 s" and called `faultrec0412.sh`, which added `dmesg.txt`, `dmesg-gpu.txt` (33 lines) and
+  `build.txt` (binary 65511824, the kernel's verdict "a page fault, a ring timeout, reset succeeded" with the fault
+  lines, the devcoredump's path). A defect of that step: Mesa's and libdrm's versions are printed twice in one
+  line (two packages answer the query); the versions themselves are right (kernel 7.2.15-ogc1.1, Mesa 26.2.6-2,
+  libdrm 2.4.134-2: newer than CLAUDE.md records).
+
+**The pair at one address, in the title's real layout** [M]: the same page, the same state (never written, not
+imported), the same read by the same program: **without K1r a fault** with the morning's kernel words (address,
+`PERMISSION_FAULTS 0x3`, `RW 0x0`; the morning's client was SQC (data), the probe's is TCP: another shader stage);
+**with K1r, in both forms, 16,384 zero bytes and no kernel line**. That is the rule shown to remove this fault
+class at this address. Still not shown: the title's own read of the page (not reproduced on the scripted route),
+and what the title does with the zeros (in his play of the morning the learned window had given it zeros there
+for weeks, section 62).
+
+**For the shared build** (the top's order): K1r on by default, the fault record on by default, rl412 off, the
+replace form off, the probe and the watch compiled in and off. `memfast/mkdef0412.py` flips the two defaults in the
+final unit ("0" turns each off): 9d4de45e → 417616db. Not built or run with the flipped defaults; **K1r has never run
+on ASTRO BOT**, which the shared build also plays: that run is owed before or with the fold.
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over

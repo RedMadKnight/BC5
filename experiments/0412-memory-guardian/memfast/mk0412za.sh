@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # BC5 exp 0412, build g412za = g412z + the watched address (section 67) (2026-11-13, README sections 59-63; "fixes first": one private build with all of it, each
+# NOTE (2026-11-13): g412za c4bb0bff was built with the first mkwa0412.py (unit ae77dd9b); the script was then reshaped for the probe (5d763ab8). Rebuild with mk0412zb.sh, not with this file.
 # behind its switch), on a PRIVATE copy of the integrated shared tree (patch 0001 4651d1d3) and a PRIVATE copy of the
 # backend source:
 #   nl412   the learned path removed from the unit, the heap-end guards kept (mknl0412.py --keep-guards); the catcher
