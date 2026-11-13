@@ -60,6 +60,7 @@ def main():
     excp = collections.Counter()
     values = collections.defaultdict(collections.Counter)
     loads = collections.Counter()
+    perdir = collections.defaultdict(lambda: [0, 0, 0, 0])  # top dir: buffers, RSRC2 sets, TRAP_PRESENT, EXCP_EN
     bad = 0
     for f in sorted(files):
         try:
@@ -68,6 +69,8 @@ def main():
             bad += 1
             continue
         w = struct.unpack("<%dI" % (len(b) // 4), b[: len(b) // 4 * 4])
+        d = perdir[f.replace("\\", "/").split("/")[0]]
+        d[0] += 1
         for op, body in walk(w):
             if op in SET_SH and len(body) >= 2:
                 base = body[0] & 0xFFFF
@@ -77,11 +80,14 @@ def main():
                         continue
                     st, m = hit
                     sets[st] += 1
+                    d[1] += 1
                     values[st][v & (TRAP_PRESENT | m)] += 1
                     if v & TRAP_PRESENT:
                         trap[st] += 1
+                        d[2] += 1
                     if v & m:
                         excp[st] += 1
+                        d[3] += 1
             elif op in LOAD_SH and len(body) >= 3:
                 # LOAD_SH_REG: addr lo, addr hi, then (offset, count) pairs; _INDEX: index/addr, then offset, count
                 pairs = body[2:]
@@ -94,6 +100,9 @@ def main():
     for st in RSRC2:
         tv = ", ".join(f"0x{k:08x}x{n}" for k, n in values[st].most_common(4))
         print(f"  {st}: RSRC2 sets {sets[st]}, TRAP_PRESENT {trap[st]}, EXCP_EN {excp[st]}; loads covering it {loads[st]}; trap/excp bits seen: {tv or '-'}")
+    print(f"trap0418: per capture directory ({len(perdir)}): buffers, RSRC2 sets, TRAP_PRESENT, EXCP_EN")
+    for k in sorted(perdir):
+        print(f"  {k}: {perdir[k][0]} {perdir[k][1]} {perdir[k][2]} {perdir[k][3]}")
     total = sum(trap.values()) + sum(excp.values())
     print("trap0418: " + ("NO set RSRC2 asks for a trap handler or an exception" if total == 0 else f"{total} set RSRC2 values ask for a trap handler or an exception"))
     return 0
