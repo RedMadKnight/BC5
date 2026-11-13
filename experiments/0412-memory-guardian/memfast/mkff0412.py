@@ -8,6 +8,7 @@ SHARED tree (patch 4651d1d3: memory.cpp eff24b4c, libAmpr.cpp a2d09d32, hostExce
   KYTY_BC5_TRAP_LOG=1       a SIGTRAP is journaled (rip, rsp, thread) and then takes its default action as before.
 Both default off; neither changes a result. No fix is in this kit: the fix candidate for the refused borrow is the
 shared tree's own KYTY_BC5_AMM_SCATTER=rescue|first (exp 0409).
+  BC5_DIRECT_MAX_BO_MIB=<n> the largest import (bc5LleAgc.cpp), for the compaction test of README section 58.
 usage: mkff0412.py <shared src dir in> <dir out>     (writes out/src/kernel/memory.cpp, out/src/libs/libAmpr.cpp,
                                                       out/src/common/hostException.cpp; prints their md5)"""
 import hashlib
