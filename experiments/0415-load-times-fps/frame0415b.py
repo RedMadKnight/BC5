@@ -8,9 +8,9 @@
 # What it does, and what it checks before it says anything about gaps:
 #   - windows are runs of consecutive frame numbers with J lines; a window's first and last two frames are dropped
 #     (their jobs may lie outside the recorded set);
-#   - COVERAGE: jobs without GPU stamps, jobs on other rings than the GFX ring, job numbers missing inside a window,
-#     and jobs whose GPU interval overlaps the one before on the same ring are counted and printed first. With any
-#     of these above 1 % of the jobs the gap table is printed with a warning line;
+#   - COVERAGE: jobs without GPU stamps, jobs on other rings than the GFX ring and job numbers missing inside a window
+#     are counted and printed first. With any of these above 1 % of the jobs the gap table is printed with a warning
+#     line. Jobs whose start stamp lies before the previous job's end stamp are counted apart (pipelining);
 #   - the GPU's clock is put on the host's clock per window by the smallest (fence seen - GPU end) of its jobs, so a
 #     GPU time on the host clock is late by at most that job's fence latency (printed);
 #   - a frame is flip returned to flip returned; its jobs are those whose GPU interval overlaps it; busy is the
@@ -113,13 +113,15 @@ def main():
         print('no complete window in the range')
         return 1
     print('%s: %d windows, %d inner frames (%d over 50 ms); jobs in the windows %d' % (path, len(windows), tot['frames'], tot['long'], cov['jobs']))
-    print('COVERAGE: without GPU stamps %d (%.1f %%), completed by the submitter %d, on a compute ring %d, job numbers missing inside a window %d, GPU intervals overlapping the one before %d' % (
-        cov['nostamp'], 100.0 * cov['nostamp'] / max(1, cov['jobs']), cov['sync'], cov['otherring'], cov['missing'], cov['overlap']))
-    bad = max(cov['nostamp'], cov['missing'], cov['overlap'], cov['otherring']) > 0.01 * cov['jobs']
+    print('COVERAGE: without GPU stamps %d (%.1f %%), completed by the submitter %d, on a compute ring %d, job numbers missing inside a window %d' % (
+        cov['nostamp'], 100.0 * cov['nostamp'] / max(1, cov['jobs']), cov['sync'], cov['otherring'], cov['missing']))
+    print('pipelining: %d jobs (%.0f %%) have their start stamp before the end stamp of the job before (the start is written when the CP reaches the job, the end when its last work leaves the pipeline: the two packets of job_timestamps in backend/src/direct.cpp); busy time is the union, so nothing is counted twice' % (
+        cov['overlap'], 100.0 * cov['overlap'] / max(1, cov['jobs'])))
+    bad = max(cov['nostamp'], cov['missing'], cov['otherring']) > 0.01 * cov['jobs']
     if bad:
         print('WARNING: coverage is not complete (over 1 % of the jobs in one of the counts above): the gap table below does not account for every job')
     if lat:
-        print('clock: fence seen after the GPU end by median %.3f ms, p90 %.3f ms beyond the window\'s smallest (the error of every GPU time on the host clock)' % (st.median(lat), sorted(lat)[int(len(lat) * 0.9)]))
+        print('clock: the GPU clock is put on the host clock by each window\'s quickest fence; the other fences are seen median %.3f ms, p90 %.3f ms later than that. The mapping is off by the quickest fence\'s own delay, which is not known' % (st.median(lat), sorted(lat)[int(len(lat) * 0.9)]))
     for name, rr in (('frames up to 50 ms', rows), ('frames over 50 ms', rows_long)):
         if not rr:
             continue

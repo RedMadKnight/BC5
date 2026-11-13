@@ -706,6 +706,91 @@ device mutex; it waited for the ring dependency; it waited for the doorbell poll
 mutex's holds and the kernel's compaction per frame. Candidates are named after that, not before. The GPU's clock
 per run was not read (not looked for yet).
 
+### 14. The fifth slot (2026-11-13 05:23-05:51 box time): build L5a on the integrated tree, the frame's time line from complete job windows
+
+**Base.** Since the integration of 2026-11-13 (main 03de9b8c, patch 0001 `4651d1d3`) this experiment's L4 is in both
+shared builds (normal `fe0933c0`, lean `711d6c0d`): `KYTY_BC5_APR_POSIX` is on by default as `direct` (`=0` gives the
+old path); the counters, L3's fast paths, `KYTY_BC5_MAP_RECORDS` and `KYTY_BC5_FRAME_STAT` are compiled in and off.
+**Build L5a** = a fresh private copy of that shared tree + `kit/0415-l5a.diff` (tag fs415b; `mk0415h.sh`): normal
+`2ad68311`, lean `e10a2130` (L4 kept in `bin-l4`, `bin-lean-l4`). CPU tests on the box against the integrated tree
+[M]: 70 of 70, 32 of 32, 33 of 33, 15 of 15, 10 of 10.
+
+**What L5a records** (after Codex's review, lesson R13): `KYTY_BC5_FRAME_STAT` writes EVERY job while the frame number
+is inside a window (`KYTY_BC5_FRAME_STAT_WIN`, here 64 frames of every 256), whichever thread completes it, with the
+host's stamps: `submit_now` entered, the device mutex asked, got, the job queued (the CS ioctl returned), the fence
+seen; and the GPU's own start and end stamps (`BC5_DIRECT_JOB_TS=1`). The flip line has the time the title called
+the flip and the time it returned. `frame0415b.py` prints coverage first, drops a window's first and last two
+frames, puts the GPU's clock on the host's by each window's quickest fence, and splits every stretch of a frame in
+which none of our jobs ran by the NEXT job's host stamps. Checked on a synthetic file with known classes: reproduced
+within the 0.05 ms the synthetic fence delay shifts the clock [M].
+
+**Correction of section 13:** the ring field of the job lines was not unfilled. -1 is the GFX ring's constant
+(`bc5::direct::kGfxRing`): every job of these runs, draw and dispatch buffers alike, goes to the one GFX ring.
+
+**Runs** (`run0415g.sh`, RT on unless said, the read fix on by default, 60 s after the load; no kernel line, no
+crash line; the box had no NAS rsync): q5s1, q5s2 standing still; q5k1, q5k2 walking; q5o1, q5o2 standing with RT
+off. Data `raw/q5*-frame.txt.gz`, `-loadstat.txt`, `-col.txt.gz`.
+
+**Coverage** [M]: 8,044-13,995 jobs per run inside the windows; every job has both GPU stamps; no job was completed by
+its submitter; none is on a compute ring; job numbers missing inside a window: 0 in five runs, 1 in q5o1. 29-31 % of
+the jobs have their start stamp before the end stamp of the job before: the start is written when the command
+processor reaches the job and the end when its last work leaves the pipeline (the two packets `Device::submit` adds
+for `job_timestamps`, `backend/src/direct.cpp`), so consecutive jobs overlap on the GPU; busy time is the union.
+What the coverage does not include: the compositor's own jobs on the same ring. The shell and Xwayland used 0.0 s of
+GPU engine time in the play phases; the compositor's time was not read (the collector matched its wrapper process).
+So a stretch without our jobs is not shown to be an idle GPU; the stamps of the NEXT job say why our next job was
+not there, which is what the table uses.
+
+**The frame's time line, mean milliseconds per frame** [M]:
+
+| | standing, RT on (q5s1 / q5s2) | walking, RT on (q5k1 / q5k2) | standing, RT off (q5o1 / q5o2) |
+|---|---|---|---|
+| inner frames; of them over 50 ms | 328 / 300; 54 / 48 | 300 / 213; 69 / 66 | 326 / 355; 94 / 117 |
+| **frames up to 50 ms**: median frame | 34.0 / 35.1 | 34.4 / 36.1 | 34.2 / 33.9 |
+| the title calls the flip at | 23.5 / 24.7 | 22.0 / 22.4 | 26.0 / 24.9 |
+| our jobs on the GPU | 26.4 / 26.0 | 25.5 / 25.8 | 24.2 / 24.9 |
+| next job not yet in `submit_now` | 5.7 / 6.3 | 6.4 / 6.4 | 7.2 / 6.4 |
+| next job in `submit_now` under the device mutex | 2.2 / 2.8 | 3.6 / 4.2 | 3.3 / 2.5 |
+| next job waiting for the device mutex | 0.1 / 0.2 | 0.3 / 0.4 | 0.3 / 0.2 |
+| next job queued, not started | 0.3 / 0.4 | 0.5 / 0.7 | 0.5 / 0.4 |
+| after the frame's last job | 1.1 / 1.2 | 1.2 / 1.2 | 1.0 / 1.1 |
+| **frames over 50 ms**: median frame | 69.8 / 63.3 | 65.2 / 67.7 | 70.9 / 67.0 |
+| our jobs on the GPU | 21.2 / 25.4 | 24.1 / 18.5 | 18.0 / 19.2 |
+| **next job in `submit_now` under the device mutex** | **30.7 / 28.3** | **28.5 / 28.7** | **39.3 / 34.8** |
+| next job not yet in `submit_now` | 18.5 / 8.2 | 12.0 / 23.0 | 21.5 / 17.8 |
+| next job waiting for the mutex / queued / after the last job | 2.5, 0.6, 1.8 / 1.0, 3.2, 1.4 | 1.0, 2.2, 1.5 / 2.0, 0.9, 1.5 | 2.8, 1.2, 1.7 / 2.6, 1.2, 2.3 |
+
+Conditions of the same play phases [M]: 22.1-23.3 flips/s with RT on, 22.7 and 22.9 with RT off; the device mutex
+held 23.3-30.0 s of 48-64 s; `kcompactd0` 10.8, 33.8, 31.7 and 28.3 s of CPU in the four RT-on runs (the run with
+10.8 s had 23.3 flips/s, the one with 33.8 s had 22.4); our GPU engine time by fdinfo 59-62 % of the wall clock;
+lowest available memory 423-498 MiB.
+
+**What the table shows.**
+- **Ordinary frame (34-36 ms): our jobs run on the GPU for 24-26 ms of it.** For 5.7-7.2 ms the next job had not
+  reached `submit_now` yet: that is the title's own CPU work between its buffers together with what the host does
+  before `submit_now` (the chain that collects buffers, `submit_split`); the two are not separated by these stamps.
+  For 2.2-4.2 ms the next job was inside `submit_now` with the mutex held: the host's own submission work, during
+  which nothing of ours runs on the GPU. Waiting for the mutex and waiting in the kernel are under 1 ms together.
+- **Long frame (15-33 % of the frames; 63-71 ms): the largest part is the next job sitting in `submit_now` under the
+  device mutex, 28-39 ms a frame, 39-47 % of the frame**, in all six runs. Our jobs' own GPU time is not longer in
+  these frames (18-25 ms). So a long frame is, for its largest part, one or more submissions that take tens of
+  milliseconds inside the host's submit path. Which part of `submit_now` (the mapping maintenance of section 8, the
+  device call) is not in the job line yet; the per-phase totals of section 8 point at the mapping maintenance, and the
+  per-job split is the next counter.
+- **RT off** (two runs, standing, same place): our jobs' GPU time in an ordinary frame is 24.2 and 24.9 ms against
+  26.0 and 26.4 ms, the frame and the frame rate the same. An observation at this place.
+- The stretch "not yet in `submit_now`" is also larger in long frames (8-23 ms against 6-7 ms); not explained.
+
+**Reading for part 2** [I]. At this place the frame rate is set by about 26 ms of GPU work plus about 9 ms in which
+the GPU has none of our jobs because the next one is still on the CPU side (the title's and ours); and every sixth
+to third frame is doubled by submissions that stay tens of milliseconds under the device mutex. The second is ours
+by measurement and is what the lock-side stages are for; the first needs the split of "not yet in `submit_now`"
+(title against host chain) before anything is proposed.
+
+**Next build.** The per-job split of the time under the mutex (the parts of section 8, per job, on the job line), a
+stamp for when the title handed the buffer to the host, pass signatures, S2; the empty-job handling after its design
+note. The compositor's GPU time by its real process.
+
 ## Verdict
 
 Part 1, first result. The largest cause of the long loads was ours: every APR read opened its file anew, the
@@ -723,6 +808,9 @@ Build L4 (section 13): the change records of the guest's range table are complet
 still at the save's spot the frame is 36 ms and RT off does not shorten it; a fifth of the frames are long. Where the
 GPU's time goes, and whether it idles inside a frame, is not measured yet (the first counter recorded a subset of the
 jobs and its signature was too weak; section 13 as corrected after review).
+Section 14, from complete job windows (six runs): in an ordinary frame of 34-36 ms our jobs run on the GPU 24-26 ms;
+in the long frames (15-33 % of the frames) the largest part, 28-39 ms a frame, is the next job sitting in the host's
+submit path under the device mutex. Since 2026-11-13 the read fix is on by default in both shared builds.
 
 ## Podsumowanie dla maintainera (stan na 2026-11-12, noc)
 
@@ -753,7 +841,10 @@ Oznaczenia: [zmierzone] = liczba z biegu na boxie; [wniosek] = moja interpretacj
   przez połowę czasu, a jądro systemu zużywało ponad pół rdzenia na porządkowanie pamięci (`kcompactd0`).
 - [zmierzone] Jedna trzecia zadań wysyłanych do GPU jest malutka; w ok. 7 % filtr usuwa jedyny pakiet gry. Takie
   zadanie nadal niesie nasze pakiety i może być potrzebne, więc to jeszcze nie dowód zbędnej pracy.
-- [niezmierzone] Gdzie idzie czas GPU w klatce, czy GPU ma w niej przestoje i co robi długą klatkę długą. Wcześniej
+- [zmierzone 2026-11-13, pełne okna zadań, 6 biegów] W zwykłej klatce (34–36 ms) nasze zadania pracują na GPU
+  24–26 ms. **W długich klatkach (co trzecia do co szóstej, 63–71 ms) największa część, 28–39 ms na klatkę, to
+  czas, gdy następne zadanie tkwi w naszej ścieżce wysyłania pod blokadą urządzenia.** To jest nasz kod.
+- [niezmierzone] Podział czasu GPU na przebiegi i to, która część naszej ścieżki zabiera te 28–39 ms. Wcześniej
   pisałem o „przestojach GPU 5–6 ms na klatkę”: po review to wycofuję, pomiar obejmował tylko część zadań i tego
   nie dowodzi. Sumy (blokada, `kcompactd0`) też nie wskazują przyczyny konkretnych długich klatek.
 
