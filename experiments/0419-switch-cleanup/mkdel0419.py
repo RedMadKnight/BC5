@@ -33,7 +33,10 @@ EDITS = {
         # the zero skip (F818: unsound by design) and its poll
         ('static const bool on = std::getenv("BC5_DIRECT_ZERO_SKIP") != nullptr;', "static const bool on = false;" + X, 1),
         ('static const char* p = bc5::env_on(std::getenv("BC5_DIRECT_ZERO_SKIP")) ? std::getenv("BC5_DIRECT_ZERO_SKIP") : nullptr;', "static const char* p = nullptr;" + X, 1),
-        ('e = std::getenv("BC5_DIRECT_ZERO_NAMES");', "e = nullptr;" + X, 2),
+        # the skip's own reader of the heap list; zero_names() keeps its read: exp 0412's log-only zero scan
+        # (BC5_DIRECT_ZEROSCAN_AT, a diagnostic) takes its heaps from BC5_DIRECT_ZERO_NAMES
+        ('\t\tif (!lzr_zero_skip()) return v;\n\t\tconst char* e = std::getenv("BC5_DIRECT_ZERO_NAMES");\n',
+         "\t\tif (!lzr_zero_skip()) return v;\n\t\tconst char* e = nullptr;" + X + "\n", 1),
         ('\t\tconst char* e = std::getenv("BC5_GUARD_ZSKIP_POLL_SUBMIT");\n', "\t\tconst char* e = nullptr;" + X + "\n", 1),
         # the recovery after a GPU reset (F821 and the maintainer's rule of 2026-11-13: no recovery as a fix)
         ("bc5::env_on(std::getenv(kM11Names[0]))", "false", 1),
@@ -67,7 +70,7 @@ EDITS = {
 }
 GONE = ["BC5_R3_REWIND_CATCH", "BC5_R3_DROP_CATCH", "KYTY_BC5_NAMES_FAST", "KYTY_BC5_VMA_FAST", "BC5_DIRECT_ACB_INHERIT", "BC5_DIRECT_ACB_CS_PREFIX",
         "BC5_DIRECT_INHERIT_PROG_CAP", "BC5_DIRECT_INHERIT_CENSUS_CAP", "BC5_DIRECT_FL_SKIP_ES", "BC5_DIRECT_FL_MESHLET_SAMPLE", "BC5_DIRECT_ZERO_SKIP",
-        "BC5_DIRECT_ZERO_NAMES", "BC5_GUARD_ZSKIP_POLL_SUBMIT", "BC5_DIRECT_RESET_LABELS_ADD", "BC5_GUARD_FILE", "BC5_GUARD_FILE_ROOT", "BC5_GUARD_PSI",
+        "BC5_GUARD_ZSKIP_POLL_SUBMIT", "BC5_DIRECT_RESET_LABELS_ADD", "BC5_GUARD_FILE", "BC5_GUARD_FILE_ROOT", "BC5_GUARD_PSI",
         "BC5_GUARD_APPLY_MIN_MS", "KYTY_BC5_MEMORY_FROM_PARAM", "KYTY_BC5_MIN_FLIP_RATE", "KYTY_BC5_LOAD_DELAY", "KYTY_BC5_RING_POLL_US",
         "KYTY_BC5_RING_SPIN_US", "KYTY_BC5_MUTEX_SPIN_US", "KYTY_BC5_TIMERSLACK_NS"]
 n = 0
