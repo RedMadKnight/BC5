@@ -1,0 +1,18 @@
+--- a/play-pkg.sh	2026-11-13 05:19:55.342170800 +0100
++++ new/play-pkg-log.sh	2026-11-13 05:19:55.551903600 +0100
+@@ -1,4 +1,5 @@
+ #!/usr/bin/env bash
++# BC5 play-pkg-log.sh: play-pkg.sh (157021e3) with the guest's printf written to a file (exp 0417's mklaunch0417.py; first made 2026-10-16 for the save data diagnosis)
+ # BC5 track B: play the maintainer's own second title from its PS5 package on the direct GPU path,
+ # with the latest build of the emulator and the settings in ~/bc5-work/bc5-run.env plus what this
+ # title needs (experiment 0036): the system module pack without the title's own libSceAmpr, its
+@@ -211,7 +212,8 @@
+ # the mount and the settings kept.
+ while :; do
+   # shellcheck disable=SC2086
+-  "$EMU" --game "$M" --printf-direction Silent --shader-log-direction Silent --command-buffer-dump false $PLAY_ARGS >> "$LOG" 2>&1
++  PRINTF_OUT=${BC5_GC_DUMP_DIR:+$BC5_GC_DUMP_DIR/../guest-printf.txt}; PRINTF_OUT=${PRINTF_OUT:-$HOME/bc5-work/play-pkg-guest-printf.txt}  # play-pkg-log.sh: the guest's printf (beside the capture; a fixed file with BC5_LEAN=1)
++  "$EMU" --game "$M" --printf-direction File --printf-output-file "$PRINTF_OUT" --shader-log-direction Silent --command-buffer-dump false $PLAY_ARGS >> "$LOG" 2>&1
+   RC=$?
+   [ "$RC" = 75 ] || break
+   echo "== $(date '+%F %T') restart requested from the F2 menu" >> "$LOG"

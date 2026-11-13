@@ -68,17 +68,38 @@ section 1.
 
 ### 3. `play-pkg-log.sh` and `play-pkg-quiet.sh`
 
-**Not done: the two files are not on the laptop or in the repository.** They need one read on the box. Then
-`../0413-np-session-v2-shared/integration/mkpkg0413.py <file> words0413pkg.txt <out>` (the generator that made
-`play-pkg.sh` 157021e3; every anchor asserted) is tried on each; where an anchor differs the edit is written for that
-file. The result is two diffs for the maintainer's word, not an install.
+Read on the box on 2026-11-13 05:18 (the top session's GO for reads only; no lock, nothing started):
+`play-pkg-log.sh` 5080d2ce (147 lines) and `play-pkg-quiet.sh` 48fa60ba (141 lines), both last changed 2026-10-26.
+
+**They are not `play-pkg.sh` minus exp 0413's change: they are copies from 2026-10-16.** Against `play-pkg.sh`
+157021e3 the log copy lacks 94 lines and the quiet copy 96 (the lean switch, `BC5_EMU`, the TF ring, the
+reflections' settings, the RT-on guards, the start delay, the unpacked title, `ulimit -c 0`, the title's 20 switch
+words, ...). What each has of its own is small: the log copy writes the guest's printf to a file in the capture
+directory; the quiet copy does that too and sets `BC5_LOGGING=0` with no timing, no frame profile and no per-second
+counters. No desktop shortcut names either file; only old run scripts in `~/bc5-work` do (`route.sh`, `bisect.sh`,
+`run57x.sh`, ...).
+
+`mkpkg0413.py` does apply to both (its anchors exist), but the result would still be three weeks behind. So the
+proposal is to make both again from the current launcher (`mklaunch0417.py`, input pinned to 157021e3):
+
+| File | Made from `play-pkg.sh` with | Diff against `play-pkg.sh` | Against the file on the box | md5 |
+|---|---|---|---|---|
+| `play-pkg-log.sh` | printf to a file | `play-pkg-log-vs-play-pkg.diff`, 4 marked lines | 21 lines out, 96 in | 02274778 |
+| `play-pkg-quiet.sh` | printf to a file, `BC5_LOGGING=0`, no timing, frame profile or counters | `play-pkg-quiet-vs-play-pkg.diff`, 8 marked lines | 17 lines out, 98 in | 330be87a |
+
+Both parse (`bash -n`). **Not installed and not run.** With `BC5_LEAN=1` the capture directory does not exist, so the
+printf file is then `~/bc5-work/play-pkg-guest-printf.txt`. The maintainer's choice: install these two, or retire the
+two files (nothing he starts uses them).
 
 ### 4. CLAUDE.md
 
-`CLAUDE-md-update.diff` (applies on main 7d21b208 with `git apply`): the kernel is 7.2.15-ogc1.1.fc45 (the replug
-runner's line on 2026-11-12 and 2026-11-13); Mesa and libdrm are marked "to re-read" (not read since); the shared
-builds' paragraph names patch 4651d1d3, its code defaults and the two exp 0412 switches that must stay unset; the
-launcher 157021e3; the Wayland socket was `wayland-1`. Not applied here: the top session merges it.
+`CLAUDE-md-update.diff` (applies on main 03de9b8c with `git apply`), with the versions read on the box on 2026-11-13
+05:18: kernel 7.2.15-ogc1.1.fc45 (`uname -r`), Mesa 26.2.6 (`rpm -q mesa-vulkan-drivers`: 26.2.6-2.fc45), libdrm
+2.4.134 (`rpm -q libdrm`: 2.4.134-2.fc45; `ldd` shows the shared emulator loads the host's
+`/usr/lib64/libdrm_amdgpu.so.1`); `mem_info_vram_total` 536,870,912 (512 MiB, as D8 says). The Mesa in the `ubuntu`
+build container was not read (the emulator does not load it). The diff also gives the shared builds' paragraph for
+patch 4651d1d3, its code defaults and the two exp 0412 switches that must stay unset; the launcher 157021e3 and the
+state of the two copies; the Wayland socket `wayland-1`. Not applied here: the top session merges it.
 
 ### 5. The replug harness's self-test
 
@@ -119,6 +140,7 @@ default are the runner's gate (its first key goes at 85 s or later), not a missi
 ## Verdict
 
 **Prepared, not proven.** The patch change and the hook pass their CPU tests on the laptop and wait for a private
-build; the CLAUDE.md diff and the harness self-test are done; the two launchers wait for a read on the box; the
+build; the CLAUDE.md diff (with the versions read on the box) and the harness self-test are done; the two other launchers
+are made again from the current one and wait for the maintainer's word; the
 submit-owner note has exp 0415's review: a later stage of the lock side, three counters first. Nothing here changes a
 shared file.
