@@ -435,19 +435,85 @@ The requests that were already named fit the names:
 - The request rows act only when a title asks, and then with its value.
 - No row depends on what the chip holds at boot.
 
+## Result 5: the loaded RSRC2 words and the table on candidate F (exp 0419's chain, 2026-11-13 evening)
+
+**Where the numbers come from.** The integrator ran both checks on the box. These files hold the lines the integrator sent (`grep -a` of the play logs):
+
+- `raw/rsrc2-F-second-title-20261113.txt` (107 lines, md5 `8e3a4a00`);
+- `raw/rsrc2-F-astro-20261113.txt` (39 lines, md5 `5fe9e19f`);
+- `raw/startstate-F-20261113.txt` (md5 `093fbbe3`).
+
+They hold counters and register names only.
+
+**The RSRC2 journal: no trap bit, no exception bit, in any word either title sets or loads.**
+
+The build was a private diagnostic build of F with `kit/0418-rsrc2-on-d9af28ca.diff`: unit `877d6edc` as expected, patch `e794fbe6`, normal build only. Two arms, both clean by the integrator's account:
+
+| Arm | Run | Buffers with RSRC2 words | Words: PS / GS / HS / CS (VS, ES, LS: 0) | With `TRAP_PRESENT` | With an `EXCP_EN` bit | Unread |
+|---|---|---|---|---|---|---|
+| second title, walk G+240 | 25.8 flips/s, 0 kernel error lines | 188,001 | 4,174,715 / 4,453,233 / 445,361 / 2,755,281 | 0 | 0 | 0 |
+| ASTRO BOT, 120 s | PASS | 52,001 | 662,298 / 1,169,993 / 82,138 / 771,515 | 0 | 0 | 0 |
+
+The counts are from each log's last totals line: about 11.8 million words in the second title and 2.7 million in ASTRO BOT.
+
+- **Every source is used.** Both titles send PS, GS, HS and CS RSRC2 words in all three ways: set in the buffer, loaded flat (`LOAD_SH_REG`), and loaded as pairs (`LOAD_SH_REG_INDEX`). Each log has the same 12 "new" lines, one per stage and source, all with trap bits 0.
+- **Unread 0.** No load in the offset format covered an RSRC2, and every loaded word lay inside the process's mappings, so all of them were read.
+- **The limit.** The journal prints a value only for the first word of each combination, and all 24 of those first values are 0x00000000.
+  - The set words come straight from the buffer, so a zero first word is the titles' own (a cleared state first), not a read error.
+  - A load read from a wrong place would land on other registers' words: addresses and user data. Some of those 14.5 million words would then very likely show bit 6.
+  - What these lines cannot exclude: loads that read only zeroed memory.
+
+**What this answers (result 4's open part).** Neither title's shaders ask for a trap handler or an exception, in any RSRC2 word they set or load. That is what amdgpu gives them. Of result 4's ways, (iii) applies: nothing to do.
+- **Still open:** `s_trap` in the code (no shader dump), and what the hardware does with `s_trap` when no handler is installed (TODO(verify), RDNA 1.0 ISA guide).
+- **The journal goes.** It was a one-off check: `rsrc2_journal` is in no candidate tree, the private builds are F again, and the diff stays in `kit/` as the record of what ran.
+
+**The table on F: as designed in both titles.** F's chain printed, once per run, `rows on: CP_COHER_START_DELAY SPI_SHADER_REQ_CTRL_PS GE_MIN_VTX_INDX GE_MAX_VTX_INDX VGT_INSTANCE_BASE_ID VGT_TF_RING VGT_HS_OFFCHIP_PARAM VGT_GS_RINGS; skipped: none`.
+
+- **ASTRO BOT** sends no ring request, so it has no `/dev/gc` line.
+- **The second title** shows its two rings programmed through the rows: `HS offchip 0x1ff (programmed, row VGT_HS_OFFCHIP_PARAM)` and `TF ring 0x1120000000 size 0x3fff8 (programmed, row VGT_TF_RING)`.
+- **GS rings:** no line in either title. Neither sends the request, so nothing is written.
+
+**A hang on F's long walk: one run, no cause named.** The integrator ran an extra arm for exp 0412: a walk to G+560 on F, with the zero scan and the writers catcher on.
+
+- At 601 s the GPU hung: ring `gfx_0.0.0` timeout, no fault address, and the reset succeeded.
+- The fault record is `~/bc5-data/captures/faults/20261113-203301`, and the journal is `~/bc5-data/captures/play-20261113-2022/gc/direct.log` (both on the box).
+- E's same walk ran clean to 681 s. The integrator counts three differences between the two walks: the table and exp 0412's writers catcher are two of them.
+
+What the table adds over E for the second title:
+- E's title table already had `CP_COHER_START_DELAY`, the TF ring and the offchip parameter (result 3).
+- F adds four constant writes, 12 dwords right after `CONTEXT_CONTROL` + `CLEAR_STATE` in every job's prefix:
+  - `SPI_SHADER_REQ_CTRL_PS` 0x7: `C0017600 00000030 00000007`;
+  - `GE_MIN_VTX_INDX` 0: `C0017900 00000249 00000000`;
+  - `GE_MAX_VTX_INDX` ~0: `C0017900 00000259 ffffffff`;
+  - `VGT_INSTANCE_BASE_ID` 0: `C0017900 0000025a 00000000`.
+- In play on B, without the table, umr read all four at exactly these values (result 1); the Mesa clients' preamble wrote them. So while those clients have written them, the four writes change no register value. Where the title writes one of these registers itself, the tracker writes the title's value back after the table.
+- That makes the table an unlikely cause, not an excluded one: there is one umr sample, and one hang against one clean run.
+- Audit row B2 had found `SPI_SHADER_REQ_CTRL_PS` in one failed play: a single run, unplayable and confounded (`experiments/0413-np-session-v2-shared/audit-unintegrated.md`, B2).
+
+**If the repeat hangs.** The integrator asked for the SKIP values (`BC5_DIRECT_START_STATE_SKIP`, read by `std::getenv`, so it works in the lean build too). The values given:
+
+| Arm | Value | Journal line `start state (exp 0418): …` |
+|---|---|---|
+| E's start state on F (first) | `SPI_SHADER_REQ_CTRL_PS,GE_MIN_VTX_INDX,GE_MAX_VTX_INDX,VGT_INSTANCE_BASE_ID,VGT_GS_RINGS` | 3 dwords, rows 0x61, skipped 0x9e |
+| only `SPI_SHADER_REQ_CTRL_PS` (second) | `SPI_SHADER_REQ_CTRL_PS` | 12 dwords, rows 0xfd, skipped 0x2 |
+| all rows | all eight names | 0 dwords, rows 0x0, skipped 0xff |
+
+- **The all-rows arm is not E.** It also drops the TF ring and the offchip parameter, which E has on (F248, F786). It can therefore fail for its own reason.
+- **One difference from E remains in the first arm.** `CP_COHER_START_DELAY`'s packet comes before the tracker's writes, not after them. The value is the same, and the tracker never holds that register.
+
 ## Open
 
 - **A second trace run is not needed for the names.** All requests before the menu were caught.
-- **Whether the titles' shaders trap: none of the 387 set RSRC2 values does** (result 4). Open:
-  - the 729 values loaded by `LOAD_SH_REG`. For this there is a one-off journal on candidate F (exp 0419, patch `d9af28ca`, unit `59d17cf5`), `kit/0418-rsrc2-on-d9af28ca.diff` (sha256 `78747c697a1cbe61`, md5 `1f8742c0`; one function and one call in `bc5LleAgc.cpp`, unit afterwards `877d6edc`).
+- **Whether the titles' shaders trap: no RSRC2 word set or loaded asks for it** (result 4: 387 set words in the captures; result 5: about 14.5 million words set or loaded in two runs on F). Open:
+  - Answered (result 5): the values loaded by `LOAD_SH_REG`. The one-off journal that answered it, now in no tree: on candidate F (exp 0419, patch `d9af28ca`, unit `59d17cf5`), `kit/0418-rsrc2-on-d9af28ca.diff` (sha256 `78747c697a1cbe61`, md5 `1f8742c0`; one function and one call in `bc5LleAgc.cpp`, unit afterwards `877d6edc`).
     - **What it does.** `BC5_DIRECT_RSRC2_JOURNAL=1` (diagnostic, not in lean) reads every stage's RSRC2 word in each submitted buffer, whether the buffer sets it, loads it flat (`LOAD_SH_REG`) or loads it as pairs (`LOAD_SH_REG_INDEX`). It writes `[bc5-rsrc2] new: …` for each new combination of stage, source and trap bits, and running totals every 2000 buffers. A `LOAD_SH_REG_INDEX` in the offset format is counted as unread.
     - **Checked on the laptop:**
       - the diff applies to a clean F tree;
       - the syntax check of the region passes;
       - `kit/rsrc2test.py` cuts the function out of the unit and runs it on synthetic buffers, with a set, a flat load, pairs and the offset format: the 5 new lines and the totals are as expected, and a second identical buffer adds no line.
-    - The integrator runs it in his chain on one second-title walk and one ASTRO BOT arm;
+    - The integrator ran it on one second-title walk and one ASTRO BOT arm (result 5).
   - `s_trap` in the code: it needs a dump of the titles' shaders, and none was found.
-- **The table and the GS rings on both titles:** in the integrator's chain, after E (result 3).
+- **The table on both titles: as designed on F** (result 5). Open: F's long walk to G+560 hung once at 601 s, and E's ran clean. The table is one of three differences and an unlikely cause, not an excluded one. The integrator repeats the run; if it hangs again, the SKIP arms of result 5 go first.
 - **The memory wall in the menu.** It belongs to exp 0412/0417, not to 0418.
 - `0xc00c8110`'s unit on the PS5 (TODO(verify)). No title of ours sends it.
 - **Frame pointers.** The title's driver keeps them: frame walks through `libSceAgcDriver`, `libSceAgc` and `eboot.bin` came out whole.
