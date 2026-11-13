@@ -4227,6 +4227,102 @@ index db25107..c59b2b8 100644
  # Build the generated FSR shader headers before any kyty_emulator source compiles
  # (fsrUpscaler.cpp #includes them and is GLOB-collected, so it needs an explicit edge).
  add_dependencies(kyty_emulator fsr_shaders)
+diff --git a/src/bc5/apr_posix.hpp b/src/bc5/apr_posix.hpp
+new file mode 100644
+index 0000000..9bd3c5d
+--- /dev/null
++++ b/src/bc5/apr_posix.hpp
+@@ -0,0 +1,90 @@
++// SPDX-License-Identifier: GPL-2.0-only
++// Experiment 0415 (tag ls415b/c): an APR file read as open + posix_fadvise(POSIX_FADV_RANDOM) + pread, for
++// KYTY_BC5_APR_POSIX. Every APR read used to open its file anew and read it with fread; a fresh descriptor has no
++// read-ahead history, so the kernel read ahead of each read and the disk delivered 2.2-2.4 times the bytes the title
++// asked for (exp 0415 section 6). Pure POSIX, no host types: experiments/0415-load-times-fps/kit/test0415apr.cpp
++// tests it against a plain read of the same file.
++#pragma once
++
++#if defined(__linux__)
++
++#include <algorithm>
++#include <cerrno>
++#include <cstdint>
++#include <cstring>
++#include <fcntl.h>
++#include <sys/stat.h>
++#include <unistd.h>
++#include <vector>
++
++namespace bc5::apr_posix {
++
++// Opens the file for one read of [offset, offset + size). Returns the descriptor (advised random) or -1 when the file
++// cannot be opened or is not a regular file. *readable is what the file holds of the range (0 past its end).
++inline int open_for_read(const char* host_path, uint64_t file_offset, uint64_t size, uint64_t* readable) {
++	*readable    = 0;
++	const int fd = ::open(host_path, O_RDONLY | O_CLOEXEC);
++	if (fd < 0) return -1;
++	struct stat sb {};
++	if (::fstat(fd, &sb) != 0 || !S_ISREG(sb.st_mode)) {
++		::close(fd);
++		return -1;
++	}
++	::posix_fadvise(fd, 0, 0, POSIX_FADV_RANDOM);
++	const auto file_size = static_cast<uint64_t>(sb.st_size);
++	if (file_offset < file_size) *readable = std::min<uint64_t>(size, file_size - file_offset);
++	return fd;
++}
++
++// Reads up to `want` bytes at `offset` into dst, `chunk` bytes per call at most. Returns the bytes read: fewer than
++// `want` at the end of the file or on an error. *efault (when given) is set if the kernel refused the destination.
++inline uint64_t pread_all(int fd, uint8_t* dst, uint64_t want, uint64_t offset, uint64_t chunk, bool* efault) {
++	uint64_t done = 0;
++	while (done < want) {
++		const ssize_t r = ::pread(fd, dst + done, static_cast<size_t>(std::min<uint64_t>(want - done, chunk)), static_cast<off_t>(offset + done));
++		if (r < 0) {
++			if (errno == EINTR) continue;
++			if (errno == EFAULT && efault != nullptr) *efault = true;
++			break;
++		}
++		if (r == 0) break;
++		done += static_cast<uint64_t>(r);
++	}
++	return done;
++}
++
++// One whole read into memory at `dest`. direct: pread straight into dest; where the kernel refuses the destination
++// (EFAULT: a page the process can only reach through its own fault handler) the rest goes the old way, through a
++// staging buffer and memcpy, which takes the fault as any other access of the process does. Not direct: all of it
++// through the staging buffer. Returns 0, or -1 when the file cannot be opened. *bytes_read is what arrived at dest;
++// *staged_bytes (when given) how much of it went through the staging buffer.
++inline int read_to(const char* host_path, uint64_t file_offset, uint64_t size, uint8_t* dest, bool direct, uint64_t chunk, uint64_t* bytes_read,
++                   uint64_t* staged_bytes = nullptr) {
++	*bytes_read = 0;
++	if (staged_bytes != nullptr) *staged_bytes = 0;
++	uint64_t  readable = 0;
++	const int fd       = open_for_read(host_path, file_offset, size, &readable);
++	if (fd < 0) return -1;
++	bool staged = !direct;
++	if (!staged && readable != 0) {
++		bool efault = false;
++		*bytes_read = pread_all(fd, dest, readable, file_offset, chunk, &efault);
++		staged      = efault;
++	}
++	if (staged && *bytes_read < readable) {
++		std::vector<uint8_t> staging(static_cast<size_t>(std::min<uint64_t>(chunk, readable - *bytes_read)));
++		while (*bytes_read < readable) {
++			const uint64_t got = pread_all(fd, staging.data(), std::min<uint64_t>(staging.size(), readable - *bytes_read), file_offset + *bytes_read, chunk, nullptr);
++			if (got == 0) break;
++			std::memcpy(dest + *bytes_read, staging.data(), static_cast<size_t>(got));
++			*bytes_read += got;
++			if (staged_bytes != nullptr) *staged_bytes += got;
++		}
++	}
++	::close(fd);
++	return 0;
++}
++
++} // namespace bc5::apr_posix
++
++#endif // __linux__
 diff --git a/src/bc5/job_arena_fix.hpp b/src/bc5/job_arena_fix.hpp
 new file mode 100644
 index 0000000..7d2c08d
@@ -4338,6 +4434,435 @@ index 0000000..7d2c08d
 +}
 +
 +} // namespace bc5::job_arena_fix
+diff --git a/src/bc5/load_stat.hpp b/src/bc5/load_stat.hpp
+new file mode 100644
+index 0000000..7e76a70
+--- /dev/null
++++ b/src/bc5/load_stat.hpp
+@@ -0,0 +1,354 @@
++// SPDX-License-Identifier: GPL-2.0-only
++// Experiment 0415 (tag ls415): where a load's wall-clock time goes. One counter table shared by every unit, three
++// knobs that change a latency so that its place on a load's critical path can be measured, and three candidate fixes.
++// Everything is off by default; unset, empty and "0" are off (bc5::env_on's reading, F767); each word is read once.
++//   KYTY_BC5_LOAD_STAT=<file>     the counters: per cause a count, the summed time, the longest single time of the last
++//                                 second and a byte or item count; one line per second with CLOCK_MONOTONIC and the
++//                                 journal's time of the last flip; "mark" lines for single events. No change of behaviour.
++//   KYTY_BC5_RING_POLL_US=<n>     the doorbell poll's sleep after a pass (200 today; the long-idle sleep stays 5 times it).
++//   KYTY_BC5_LOAD_DELAY=<cause>:<us>   a busy delay added to each event of one cause (the names of kNames). Measurement only.
++//   KYTY_BC5_RING_SPIN_US=<n>     fix candidate: after a pass that served packets, look at the doorbells again without
++//                                 sleeping for n microseconds (cpu_relax between looks).
++//   KYTY_BC5_TIMERSLACK_NS=<n>    fix candidate: PR_SET_TIMERSLACK at process start (threads inherit it): the host's
++//                                 20-50 us sleep polls stop overshooting by the default 50 us.
++//   KYTY_BC5_MUTEX_SPIN_US=<n>    fix candidate: a guest mutex that is held is tried again for n microseconds before the
++//                                 thread sleeps on its condition variable. Lock order and ownership rules unchanged.
++#pragma once
++
++#include <atomic>
++#include <chrono>
++#include <cstdint>
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++#include <ctime>
++#include <mutex>
++#include <thread>
++
++#if defined(__x86_64__) || defined(__i386__)
++#include <immintrin.h>
++#endif
++#if defined(__linux__)
++#include <pthread.h>
++#include <sys/prctl.h>
++#endif
++
++namespace bc5::load_stat {
++
++enum Cause : unsigned {
++	kFlip,           // n = flips
++	kRingPass,       // n = doorbell passes that served packets, items = packets
++	kRingAfterSleep, // n = of those, passes that found work right after a sleep (the work waited for the poll)
++	kDrain,          // the flip's drain: n, time
++	kInflightCap,    // the wait for fewer than 24 jobs in flight
++	kLabelWait,      // CPU-served label waits (all sites)
++	kWaitJobs,       // wait_jobs(): the GPU drained before mappings change
++	kDevLockWait,    // g_dev_mutex in submit_now: time waited
++	kDevLockHold,    // ... and held
++	kImport,         // import_memfd: n, time, items = bytes
++	kDirectSync,     // direct_sync (whole)
++	kAnonSync,       // sync_mappings (whole, it holds direct_sync)
++	kLearned,        // learned_apply
++	kAprBuffer,      // an APR/AMM command buffer from submit to complete: n, time
++	kAprQueueWait,   // ... from submit to the worker taking it
++	kAprRead,        // one file read into the guest: n, time, items = bytes
++	kAprBusy,        // wall-clock time with at least one command buffer outstanding (n = idle->busy edges)
++	kAmmCmd,         // AMM map/unmap/remap commands: n, time
++	kMemLockWait,    // g_memory_operation_mutex: contended acquisitions and their wait
++	kCommitZero,     // Commit's zeroing of recommitted private memory: n, time, items = bytes
++	kMutexLock,      // guest mutex locks: n
++	kMutexContended, // ... that found the mutex held: n, time until owned
++	kMutexSpinWon,   // ... taken inside the spin window (KYTY_BC5_MUTEX_SPIN_US)
++	kCondSignal,     // guest condition signals and broadcasts: n, items = waiters present
++	kCondWait,       // guest condition waits: n, time
++	kSemaSignal,     // semaphore signals: n, items = waiters present
++	kSemaWait,       // semaphore waits that blocked: n, time
++	kFileOpen,       // sceKernelOpen: n, time
++	kFileStat,       // sceKernelStat/Fstat: n, time
++	kFileRead,       // sceKernelRead/Pread: n, time, items = bytes
++	kHttpSend,       // HttpFetchSync: n, time
++	// tag ls415c: the device mutex's hold in submit_now by part, direct_sync by part, and the APR fallback
++	kAprFallback,    // KYTY_BC5_APR_POSIX=direct: reads whose destination the kernel refused; items = bytes that went through the staging copy
++	kHoldProbe,      // submit_now: from the lock to the anonymous sync (the probe)
++	kHoldHints,      // submit_now: after the learned windows, to the end of the hints
++	kHoldPre,        // submit_now: from the hints to the device call (aliases, the buffer's survey, split, options)
++	kDevCall,        // submit_now: the device call as a whole (the first one of a submission)
++	kDevPrepare,     // ... its prepare (filter, state tracker), as the device reports it
++	kDevList,        // ... its BO list
++	kDevCs,          // ... its CS ioctl
++	kDsViews,        // direct_sync_one: the views
++	kDsScan,         // direct_sync_one: the scan for chunks to import and the imports
++	kDsMerge,        // direct_sync_one: merges and the lazy release
++	kDsDrain,        // direct_sync_one: the GPU drained before mappings change
++	kDsMaps,         // direct_sync_one: the mappings (want, drop, add)
++	// tag ls415d
++	kFastDiff,       // a "verify" mode of bc5/sync_fast.hpp found the fast form differing from the old one (the old one's result is used)
++	kLearnedApply,   // learned_apply past its "same layout" return: n, time
++	kLearnedChanged, // ... windows that mapped something: n, items = bytes
++	// tag mr415 (stage S1 of DESIGN-lock-side.md)
++	kMapRecord,      // comparisons of the view list kept from records with the rebuilt one: n, items = records applied
++	kRecMismatch,    // ... that differed (the rebuilt list is used; the kept one is reset to it)
++	kRecOverflow,    // ... not made because the record log was full
++	kMapsCheck,      // tag mr415b: checks of /proc/self/maps against the range table: n, items = uncovered bytes, summed over checks
++	kMapsUncovered,  // ... checks that found a readable guest-span VMA (or part of one) with no range in the table: n, items = such spans
++	kCount
++};
++
++inline constexpr const char* kNames[kCount] = {
++    "flip",     "ring_pass",  "ring_after_sleep", "drain",    "inflight_cap", "label_wait",  "wait_jobs",       "dev_wait",
++    "dev_hold", "import",     "direct_sync",      "anon_sync", "learned",     "apr_buffer",  "apr_queue_wait",  "apr_read",
++    "apr_busy", "amm_cmd",    "mem_lock_wait",    "commit_zero", "mutex_lock", "mutex_contended", "mutex_spin_won", "cond_signal",
++    "cond_wait", "sema_signal", "sema_wait",      "file_open", "file_stat",   "file_read",   "http_send",
++    "apr_fallback", "hold_probe", "hold_hints",   "hold_pre",  "dev_call",    "dev_prepare", "dev_list",        "dev_cs",
++    "ds_views", "ds_scan",    "ds_merge",         "ds_drain",  "ds_maps",     "fast_diff",   "learned_apply",   "learned_changed",
++    "map_record", "rec_mismatch", "rec_overflow",    "maps_check", "maps_uncovered"};
++
++static_assert(kNames[kCount - 1] != nullptr, "a name per cause");
++
++struct Slot {
++	std::atomic<uint64_t> n {0}, ns {0}, max_ns {0}, items {0};
++};
++
++struct State {
++	Slot                  slot[kCount];
++	std::atomic<uint64_t> journal_t_us {0}; // the journal's clock at the last flip, microseconds
++	std::atomic<int>      apr_outstanding {0};
++	std::atomic<uint64_t> apr_busy_since {0};
++	std::mutex            file_mutex;
++	FILE*                 file = nullptr;
++};
++
++inline State& state() {
++	static State s;
++	return s;
++}
++
++// CLOCK_MONOTONIC on Linux (libstdc++'s steady_clock; test0415.cpp checks that on the box), so the lines join perf's
++// "-k CLOCK_MONOTONIC" samples.
++inline uint64_t now_ns() {
++	return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
++}
++
++inline bool env_set(const char* e) {
++	return e != nullptr && e[0] != 0 && !(e[0] == '0' && e[1] == 0);
++}
++
++// A non-negative number of at most `cap`, or `dflt` when the word is unset, empty, not a number or over the cap.
++inline uint64_t env_num(const char* name, uint64_t dflt, uint64_t cap) {
++	const char* e = std::getenv(name);
++	if (e == nullptr || e[0] == 0) return dflt;
++	char*                    end = nullptr;
++	const unsigned long long v   = std::strtoull(e, &end, 10);
++	if (end == e || *end != 0 || v > cap) return dflt;
++	return v;
++}
++
++inline void cpu_relax() {
++#if defined(__x86_64__) || defined(__i386__)
++	_mm_pause();
++#endif
++}
++
++inline void write_line_locked(State& s, const char* line) {
++	if (s.file == nullptr) return;
++	std::fputs(line, s.file);
++	std::fflush(s.file);
++}
++
++inline void writer_thread() {
++#if defined(__linux__)
++	pthread_setname_np(pthread_self(), "bc5-loadstat");
++#endif
++	State& s = state();
++	char   buf[12288];
++	for (;;) {
++		std::this_thread::sleep_for(std::chrono::seconds(1));
++		int o = std::snprintf(buf, sizeof(buf), "s mono_ns=%llu jt_us=%llu apr_out=%d", static_cast<unsigned long long>(now_ns()),
++		                      static_cast<unsigned long long>(s.journal_t_us.load(std::memory_order_relaxed)), s.apr_outstanding.load(std::memory_order_relaxed));
++		for (unsigned c = 0; c < kCount && o > 0 && static_cast<size_t>(o) < sizeof(buf) - 160; c++) {
++			Slot&          x  = s.slot[c];
++			const uint64_t mx = x.max_ns.exchange(0, std::memory_order_relaxed);
++			o += std::snprintf(buf + o, sizeof(buf) - static_cast<size_t>(o), " %s=%llu,%llu,%llu,%llu", kNames[c], static_cast<unsigned long long>(x.n.load(std::memory_order_relaxed)),
++			                   static_cast<unsigned long long>(x.ns.load(std::memory_order_relaxed)), static_cast<unsigned long long>(mx),
++			                   static_cast<unsigned long long>(x.items.load(std::memory_order_relaxed)));
++		}
++		if (o > 0 && static_cast<size_t>(o) < sizeof(buf) - 2) {
++			buf[o]     = '\n';
++			buf[o + 1] = 0;
++		}
++		std::lock_guard lk(s.file_mutex);
++		write_line_locked(s, buf);
++	}
++}
++
++inline bool init_on() {
++	const char* p = std::getenv("KYTY_BC5_LOAD_STAT");
++	if (!env_set(p)) return false;
++	State& s = state();
++	s.file   = std::fopen(p, "a");
++	if (s.file == nullptr) return false;
++	{
++		char line[512];
++		std::snprintf(line, sizeof(line), "# exp 0415 load stat (tag ls415): s lines are cumulative name=n,ns,max_ns_of_the_second,items; mono_ns %llu\n",
++		              static_cast<unsigned long long>(now_ns()));
++		std::lock_guard lk(s.file_mutex);
++		write_line_locked(s, line);
++	}
++	std::thread(writer_thread).detach();
++	return true;
++}
++
++inline bool on() {
++	static const bool v = init_on();
++	return v;
++}
++
++// The busy delay of KYTY_BC5_LOAD_DELAY=<cause>:<us> for cause c, 0 when none. At most 100,000 us.
++inline uint64_t delay_ns_of(unsigned c) {
++	static const struct D {
++		unsigned c  = kCount;
++		uint64_t ns = 0;
++		D() {
++			const char* e = std::getenv("KYTY_BC5_LOAD_DELAY");
++			if (!env_set(e)) return;
++			const char* colon = std::strchr(e, ':');
++			if (colon == nullptr) return;
++			char*                    end = nullptr;
++			const unsigned long long us  = std::strtoull(colon + 1, &end, 10);
++			if (end == colon + 1 || *end != 0 || us == 0 || us > 100'000ull) return;
++			const size_t len = static_cast<size_t>(colon - e);
++			for (unsigned k = 0; k < kCount; k++) {
++				if (std::strlen(kNames[k]) == len && std::strncmp(kNames[k], e, len) == 0) {
++					c  = k;
++					ns = us * 1000ull;
++				}
++			}
++		}
++	} d;
++	return d.c == c ? d.ns : 0;
++}
++
++inline void delay(unsigned c) {
++	const uint64_t ns = delay_ns_of(c);
++	if (ns == 0) return;
++	const uint64_t t0 = now_ns();
++	while (now_ns() - t0 < ns) cpu_relax();
++}
++
++inline void add(unsigned c, uint64_t ns, uint64_t items = 0, uint64_t n = 1) {
++	Slot& x = state().slot[c];
++	x.n.fetch_add(n, std::memory_order_relaxed);
++	if (ns != 0) {
++		x.ns.fetch_add(ns, std::memory_order_relaxed);
++		uint64_t m = x.max_ns.load(std::memory_order_relaxed);
++		while (ns > m && !x.max_ns.compare_exchange_weak(m, ns, std::memory_order_relaxed)) {}
++	}
++	if (items != 0) x.items.fetch_add(items, std::memory_order_relaxed);
++}
++
++// Start of a timed stretch: 0 when the counters are off (then end() does nothing).
++inline uint64_t begin() {
++	return on() ? now_ns() : 0;
++}
++
++inline void end(unsigned c, uint64_t t0, uint64_t items = 0) {
++	if (t0 != 0) add(c, now_ns() - t0, items);
++}
++
++struct Scope {
++	unsigned c;
++	uint64_t t0;
++	uint64_t items = 0;
++	explicit Scope(unsigned cause): c(cause), t0(begin()) {}
++	~Scope() { end(c, t0, items); }
++	Scope(const Scope&)            = delete;
++	Scope& operator=(const Scope&) = delete;
++};
++
++inline void count(unsigned c, uint64_t items = 0) {
++	if (on()) add(c, 0, items);
++}
++
++inline void flip(double journal_t_s) {
++	if (!on()) return;
++	state().journal_t_us.store(journal_t_s > 0 ? static_cast<uint64_t>(journal_t_s * 1e6) : 0, std::memory_order_relaxed);
++	add(kFlip, 0);
++}
++
++// One line for a single event ("mark <mono_ns> <jt_us> <text>").
++inline void mark(const char* text) {
++	if (!on()) return;
++	State& s = state();
++	char   line[320];
++	std::snprintf(line, sizeof(line), "mark mono_ns=%llu jt_us=%llu %.200s\n", static_cast<unsigned long long>(now_ns()),
++	              static_cast<unsigned long long>(s.journal_t_us.load(std::memory_order_relaxed)), text);
++	std::lock_guard lk(s.file_mutex);
++	write_line_locked(s, line);
++}
++
++// Command buffers outstanding: the wall-clock time with at least one is kAprBusy.
++inline void apr_enter() {
++	if (!on()) return;
++	State& s = state();
++	if (s.apr_outstanding.fetch_add(1, std::memory_order_acq_rel) == 0) s.apr_busy_since.store(now_ns(), std::memory_order_release);
++}
++
++inline void apr_leave() {
++	if (!on()) return;
++	State& s = state();
++	if (s.apr_outstanding.fetch_sub(1, std::memory_order_acq_rel) == 1) {
++		const uint64_t t0 = s.apr_busy_since.load(std::memory_order_acquire);
++		const uint64_t t1 = now_ns();
++		if (t0 != 0 && t1 >= t0) add(kAprBusy, t1 - t0); // a stretch shorter than the clock's step still counts as one
++	}
++}
++
++// A lock that counts the wait of a contended acquisition (and nothing else). Off: a plain lock().
++template <class M>
++inline void lock_counted(M& m, unsigned wait_cause) {
++	if (!on()) {
++		m.lock();
++		return;
++	}
++	if (m.try_lock()) return;
++	const uint64_t t0 = now_ns();
++	m.lock();
++	add(wait_cause, now_ns() - t0);
++}
++
++template <class M>
++struct CountedLock {
++	M& m;
++	CountedLock(M& mu, unsigned wait_cause): m(mu) { lock_counted(m, wait_cause); }
++	~CountedLock() { m.unlock(); }
++	CountedLock(const CountedLock&)            = delete;
++	CountedLock& operator=(const CountedLock&) = delete;
++};
++
++inline uint64_t ring_poll_us() {
++	static const uint64_t v = [] {
++		const uint64_t x = env_num("KYTY_BC5_RING_POLL_US", 200, 20'000);
++		return x == 0 ? uint64_t {200} : x;
++	}();
++	return v;
++}
++
++inline uint64_t ring_spin_ns() {
++	static const uint64_t v = env_num("KYTY_BC5_RING_SPIN_US", 0, 5'000) * 1000ull;
++	return v;
++}
++
++inline uint64_t mutex_spin_ns() {
++	static const uint64_t v = env_num("KYTY_BC5_MUTEX_SPIN_US", 0, 1'000) * 1000ull;
++	return v;
++}
++
++// At process start, before any thread exists: the timer slack every later thread inherits.
++inline void apply_timer_slack() {
++#if defined(__linux__)
++	const uint64_t ns = env_num("KYTY_BC5_TIMERSLACK_NS", 0, 50'000);
++	if (ns != 0) prctl(PR_SET_TIMERSLACK, static_cast<unsigned long>(ns), 0, 0, 0);
++#endif
++}
++
++} // namespace bc5::load_stat
+diff --git a/src/bc5/map_records.hpp b/src/bc5/map_records.hpp
+new file mode 100644
+index 0000000..847ac04
+--- /dev/null
++++ b/src/bc5/map_records.hpp
+@@ -0,0 +1,63 @@
++// SPDX-License-Identifier: GPL-2.0-only
++// Experiment 0415 (tag mr415), stage S1 of experiments/0415-load-times-fps/DESIGN-lock-side.md: the guest's ranges
++// leave a record of every change (the span [start, start + size) a mutator of the range table was called with), and a
++// list derived from the ranges is brought up to date from those spans instead of being rebuilt from every range.
++// KYTY_BC5_MAP_RECORDS=verify (the only mode in S1; default off): the direct path keeps such a list of its views
++// beside the rebuilt one and compares the two at every rebuild; the rebuilt list is what is used.
++//
++// Why a span is enough [C, kernel/memory.cpp VirtualRanges]: each mutator changes ranges inside its span and merges or
++// splits only ranges that overlap or touch it. So after a change, every entry that differs from before lies inside the
++// extent of the current ranges that overlap or touch the span: those ranges are read again and replace whatever the
++// list held there. Reading the CURRENT ranges for an OLD span is right as well (the result is the current state of
++// that extent), so several spans can be applied in any order against one snapshot.
++// Pure functions; CPU test experiments/0415-load-times-fps/kit/test0415rec.cpp.
++#pragma once
++
++#include <algorithm>
++#include <cstdint>
++#include <utility>
++#include <vector>
++
++namespace bc5::map_records {
++
++inline uint64_t end_of(uint64_t start, uint64_t size) {
++	return size > UINT64_MAX - start ? UINT64_MAX : start + size;
++}
++
++// `ranges` sorted by start, not overlapping (R has .start and .size). The index range [first, last) of the ranges
++// that overlap [lo, hi) or touch it (end == lo, or start == hi).
++template <class R>
++inline std::pair<size_t, size_t> touching(const std::vector<R>& ranges, uint64_t lo, uint64_t hi) {
++	// ends are in order too, since the ranges do not overlap
++	const auto first = std::lower_bound(ranges.begin(), ranges.end(), lo, [](const R& r, uint64_t x) { return end_of(r.start, r.size) < x; });
++	const auto last  = std::upper_bound(ranges.begin(), ranges.end(), hi, [](uint64_t x, const R& r) { return x < r.start; });
++	const auto a     = static_cast<size_t>(first - ranges.begin());
++	const auto b     = static_cast<size_t>(last - ranges.begin());
++	return {a, b < a ? a : b};
++}
++
++// `views` sorted by va, not overlapping (V has .va and .size), derived from the ranges by `make` (bool make(const R&,
++// V*): false when the range is not a view). Brings `views` up to date for a change inside [lo, hi).
++template <class V, class R, class Make>
++inline void apply(std::vector<V>& views, const std::vector<R>& ranges, uint64_t lo, uint64_t hi, Make&& make) {
++	const auto [a, b] = touching(ranges, lo, hi);
++	uint64_t   slo = lo, shi = hi;
++	if (a < b) {
++		slo = std::min(slo, ranges[a].start);
++		shi = std::max(shi, end_of(ranges[b - 1].start, ranges[b - 1].size));
++	}
++	// the views that overlap [slo, shi), and the ones of zero extent inside it, go
++	auto from = std::lower_bound(views.begin(), views.end(), slo, [](const V& v, uint64_t x) { return end_of(v.va, v.size) <= x; });
++	auto to   = from;
++	while (to != views.end() && to->va < shi) ++to;
++	const auto at = static_cast<size_t>(from - views.begin());
++	views.erase(from, to);
++	std::vector<V> fresh;
++	for (size_t i = a; i < b; i++) {
++		V v {};
++		if (make(ranges[i], &v)) fresh.push_back(std::move(v));
++	}
++	views.insert(views.begin() + static_cast<std::ptrdiff_t>(at), std::make_move_iterator(fresh.begin()), std::make_move_iterator(fresh.end()));
++}
++
++} // namespace bc5::map_records
 diff --git a/src/bc5/pad_audio_route.hpp b/src/bc5/pad_audio_route.hpp
 new file mode 100644
 index 0000000..226a60e
@@ -4528,10 +5053,10 @@ index 0000000..226a60e
 +} // namespace bc5::pad_audio_route
 diff --git a/src/bc5/switch_defaults.hpp b/src/bc5/switch_defaults.hpp
 new file mode 100644
-index 0000000..9293315
+index 0000000..612d16c
 --- /dev/null
 +++ b/src/bc5/switch_defaults.hpp
-@@ -0,0 +1,89 @@
+@@ -0,0 +1,100 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +// Experiment 0413: the defaults of switches that went from the private test builds (exps 0401, 0405, 0409, 0412) into
 +// both shared builds. Each row is applied at process start with setenv(name, value, 0), before any static initializer
@@ -4553,9 +5078,23 @@ index 0000000..9293315
 +	const char* value;
 +};
 +
-+inline constexpr Default kDefaults[] = {
++// Experiment 0416: pure fixes (a fault, a leak, two same-answer speed-ups; since 2026-11-13 exp 0415's read fix). They are not behaviour choices, so
++// KYTY_BC5_SWITCH_DEFAULTS=0 does not skip them; NAME=0 in the environment still turns one off.
++inline constexpr Default kFixes[] = {
 +    // A2: acb state restore (exp 0381, 0401 series c)
 +    {"BC5_DIRECT_ACB_STATE_RESTORE", "1"},
++    // C1: graphics event pending cap
++    {"KYTY_BC5_EVENT_PENDING_CAP", "64"},
++    // C2: fast AMM range query
++    {"KYTY_BC5_RANGES_FAST", "1"},
++    // C3: sorted physical-mapping table
++    {"KYTY_BC5_PHYSMAP_SORTED", "1"},
++    // exp 0415: APR reads by pread with POSIX_FADV_RANDOM, straight into the guest's pages (the old code let the
++    // kernel read ahead 11.7 GiB for 5.1 GiB asked). KYTY_BC5_APR_POSIX=0 gives the old fread path.
++    {"KYTY_BC5_APR_POSIX", "direct"},
++    {nullptr, nullptr}};
++
++inline constexpr Default kDefaults[] = {
 +    // A3: pthread rwlock prefer-reader
 +    {"KYTY_BC5_PTHREAD_FIXES", "1"},
 +    // A4: SaveData mount result, event callback, mtime sort
@@ -4604,15 +5143,12 @@ index 0000000..9293315
 +    {"KYTY_BC5_FW_KERNEL", "1"},
 +    // B16: quiet journal and inherit-map caps
 +    {"BC5_DIRECT_JOURNAL_QUIET", "1"},
-+    // C1: graphics event pending cap
-+    {"KYTY_BC5_EVENT_PENDING_CAP", "64"},
-+    // C2: fast AMM range query
-+    {"KYTY_BC5_RANGES_FAST", "1"},
-+    // C3: sorted physical-mapping table
-+    {"KYTY_BC5_PHYSMAP_SORTED", "1"},
 +    {nullptr, nullptr}};
 +
 +inline void Apply() {
++	for (const Default* d = kFixes; d->name != nullptr; d++) {
++		setenv(d->name, d->value, 0);
++	}
 +	const char* all = std::getenv("KYTY_BC5_SWITCH_DEFAULTS");
 +	if (all != nullptr && std::strcmp(all, "0") == 0) return;
 +	for (const Default* d = kDefaults; d->name != nullptr; d++) {
@@ -4621,6 +5157,142 @@ index 0000000..9293315
 +}
 +
 +} // namespace bc5::switch_defaults
+diff --git a/src/bc5/sync_fast.hpp b/src/bc5/sync_fast.hpp
+new file mode 100644
+index 0000000..d9e1de1
+--- /dev/null
++++ b/src/bc5/sync_fast.hpp
+@@ -0,0 +1,130 @@
++// SPDX-License-Identifier: GPL-2.0-only
++// Experiment 0415 (tag ls415d): three pieces of the mapping maintenance that runs under the device mutex, each with
++// its old form and a faster form that gives the same result, as pure functions (CPU test:
++// experiments/0415-load-times-fps/kit/test0415sync.cpp, old against new on random and adversarial inputs).
++// Each has a switch, default off; "verify" runs both forms and counts differences.
++//   KYTY_BC5_WINDOW_FAST   a window's uncovered pieces: mappings that do not touch the window are passed over without
++//                          rebuilding the piece list (the old loop rebuilt it once per mapping: 21,300 mappings x 81
++//                          windows per application, 4.8 s a run).
++//                          A STOPGAP: the learned windows themselves are being replaced by a rule (exp 0412).
++//   KYTY_BC5_VMA_FAST      "is [a, b) inside one VMA of this kind": a binary search in the VMA list when that list is
++//                          sorted and its entries do not overlap (checked each time; else the old walk).
++//   KYTY_BC5_NAMES_FAST    the lazy / eager classification of a range's name, remembered per name.
++// None changes what is mapped: same pieces, same answer, same class. What each could leave stale if it were wrong is
++// stated at its use in bc5LleAgc.cpp.
++#pragma once
++
++#include <algorithm>
++#include <cstdint>
++#include <cstdlib>
++#include <cstring>
++#include <string>
++#include <unordered_map>
++#include <utility>
++#include <vector>
++
++namespace bc5::sync_fast {
++
++using Piece = std::pair<uint64_t, uint64_t>; // [first, second)
++
++// 0 off, 1 on, 2 verify (both forms, differences counted). Unset, empty and "0" are off.
++inline int mode_of(const char* e) {
++	if (e == nullptr || e[0] == 0 || (e[0] == '0' && e[1] == 0)) return 0;
++	return std::strcmp(e, "verify") == 0 ? 2 : 1;
++}
++
++// ---- a window's pieces minus the mappings -----------------------------------------------------------------------
++// M needs .va and .size. The old form, as map_window had it: every mapping rebuilds the list.
++template <class M>
++inline void subtract_old(std::vector<Piece>& pieces, const std::vector<M>& have) {
++	for (const auto& m: have) {
++		std::vector<Piece> next;
++		for (const auto& [pa, pb]: pieces) {
++			if (m.va + m.size <= pa || m.va >= pb) {
++				next.emplace_back(pa, pb);
++				continue;
++			}
++			if (m.va > pa) next.emplace_back(pa, m.va);
++			if (m.va + m.size < pb) next.emplace_back(m.va + m.size, pb);
++		}
++		pieces.swap(next);
++	}
++}
++
++// The new form. Every piece lies inside [lo, hi) (the caller clips the window to the VMAs first), so a mapping that
++// does not touch [lo, hi) touches no piece and the old loop copied the list unchanged for it: it is passed over.
++// No order of `have` is assumed.
++template <class M>
++inline void subtract_fast(std::vector<Piece>& pieces, const std::vector<M>& have, uint64_t lo, uint64_t hi) {
++	std::vector<Piece> next;
++	for (const auto& m: have) {
++		if (m.va + m.size <= lo || m.va >= hi) continue;
++		next.clear();
++		for (const auto& [pa, pb]: pieces) {
++			if (m.va + m.size <= pa || m.va >= pb) {
++				next.emplace_back(pa, pb);
++				continue;
++			}
++			if (m.va > pa) next.emplace_back(pa, m.va);
++			if (m.va + m.size < pb) next.emplace_back(m.va + m.size, pb);
++		}
++		pieces.swap(next);
++	}
++}
++
++// ---- [a, b) inside one VMA of the kind ---------------------------------------------------------------------------
++// V needs .start, .end, .readonly. The old form, as sync_mappings had it.
++template <class V>
++inline bool inside_old(const std::vector<V>& vmas, uint64_t a, uint64_t b, bool readonly) {
++	for (const auto& v: vmas) {
++		if (a >= v.start && b <= v.end && v.readonly == readonly) return true;
++	}
++	return false;
++}
++
++// True when the list is sorted by start and no entry reaches into the next one (what /proc/self/maps gives).
++template <class V>
++inline bool vmas_ordered(const std::vector<V>& vmas) {
++	for (size_t i = 0; i < vmas.size(); i++) {
++		if (vmas[i].end < vmas[i].start) return false;
++		if (i > 0 && vmas[i].start < vmas[i - 1].end) return false;
++	}
++	return true;
++}
++
++// The new form, for a list vmas_ordered() accepted. The entries that can hold `a` are the ones with start <= a; in an
++// ordered list their ends do not pass the next start, so only the last of them (and, for an empty [a, a) on a
++// boundary, the ones that end exactly at a before it) can satisfy a >= start && b <= end. The walk goes back from the
++// last entry with start <= a while an entry still ends at or after a.
++template <class V>
++inline bool inside_fast(const std::vector<V>& vmas, uint64_t a, uint64_t b, bool readonly) {
++	if (b < a) return inside_old(vmas, a, b, readonly); // not a range: the argument below needs a <= b
++	auto it = std::upper_bound(vmas.begin(), vmas.end(), a, [](uint64_t x, const V& v) { return x < v.start; });
++	while (it != vmas.begin()) {
++		--it;
++		if (it->end < a) break; // every earlier entry ends at or before this one's start, so before a as well
++		if (b <= it->end && it->readonly == readonly) return true;
++	}
++	return false;
++}
++
++// ---- the class of a range's name ---------------------------------------------------------------------------------
++// Remembers what `classify` (the old function) said for a name. One instance per classification, used under the
++// caller's lock (direct_views builds under its own mutex). A null name is not remembered: the old function is asked.
++class NameMemo {
++public:
++	template <class F>
++	bool get(const char* name, F&& classify) {
++		if (name == nullptr) return classify(name);
++		auto it = m_seen.find(name);
++		if (it != m_seen.end()) return it->second;
++		const bool v = classify(name);
++		if (m_seen.size() < 4096) m_seen.emplace(name, v);
++		return v;
++	}
++
++private:
++	std::unordered_map<std::string, bool> m_seen;
++};
++
++} // namespace bc5::sync_fast
 diff --git a/src/common/emulatorConfig.cpp b/src/common/emulatorConfig.cpp
 index 15a98b9..0e3d63d 100644
 --- a/src/common/emulatorConfig.cpp
@@ -5272,10 +5944,16 @@ index 8c19ba5..85d0bcb 100644
  	LOGF("AsyncPipelineCompiler: started %zu worker threads\n", kWorkerCount);
  }
 diff --git a/src/graphics/host_gpu/renderer/sync.cpp b/src/graphics/host_gpu/renderer/sync.cpp
-index 94ebbad..127d3a1 100644
+index 94ebbad..d6c7144 100644
 --- a/src/graphics/host_gpu/renderer/sync.cpp
 +++ b/src/graphics/host_gpu/renderer/sync.cpp
-@@ -18,6 +18,10 @@
+@@ -14,10 +14,16 @@
+ #include "libs/errno.h"
+ 
+ #include <array>
++#include <cstdio>
++#include <cstdlib>
+ #include <cstring>
  #include <limits>
  #include <optional>
  
@@ -5286,11 +5964,40 @@ index 94ebbad..127d3a1 100644
  namespace Libs::Graphics::Sync {
  
  constexpr int      GRAPHICS_EVENT_QUEUED_GRAPHICS_INTERRUPT = 0x00;
-@@ -352,7 +356,7 @@ static void EopEventTriggerFunc(LibKernel::EventQueue::KernelEqueueEvent* event,
+@@ -344,6 +350,21 @@ static void EopEventDeleteFunc(LibKernel::EventQueue::KernelEqueue       eq,
+ 	}
+ }
+ 
++// BC5 (exp 0414's list, item 1b; the idea is KytyPS5 c86d31b "coalesce repeated GPU interrupts with the same data"):
++// with KYTY_BC5_EVENT_COALESCE_SAME=1 a trigger for a still unread event whose data equals the newest unread entry's
++// only counts on that entry. Unset, empty and "0" are off: the code below runs as before.
++static bool Bc5EopCoalesceSame() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_EVENT_COALESCE_SAME");
++		const bool  v = e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
++		if (v) {
++			std::fprintf(stderr, "[bc5] KYTY_BC5_EVENT_COALESCE_SAME on: a repeated EOP trigger with the same data counts on the newest unread entry\n");
++		}
++		return v;
++	}();
++	return on;
++}
++
+ static void EopEventTriggerFunc(LibKernel::EventQueue::KernelEqueueEvent* event,
+                                 void*                                     trigger_data) {
+ 	EXIT_IF(event == nullptr);
+@@ -352,7 +373,14 @@ static void EopEventTriggerFunc(LibKernel::EventQueue::KernelEqueueEvent* event,
  	triggered_event.fflags++;
  	triggered_event.data = reinterpret_cast<intptr_t>(trigger_data);
  	if (event->triggered) {
 -		event->pending_events.push_back(triggered_event);
++		if (Bc5EopCoalesceSame()) {
++			auto& newest = event->pending_events.empty() ? event->event : event->pending_events.back();
++			if (newest.data == triggered_event.data) {
++				newest.fflags++;
++				return;
++			}
++		}
 +		LibKernel::EventQueue::KernelEventPendingPush(event, triggered_event); // exp 0412 (tag ev412): KYTY_BC5_EVENT_PENDING_CAP, _LOG
  	} else {
  		event->event     = triggered_event;
@@ -13652,10 +14359,10 @@ index 0000000..b7e15d6
 +
 +} // namespace bc5::evcap
 diff --git a/src/kernel/fileSystem.cpp b/src/kernel/fileSystem.cpp
-index 4034f52..93e2d1a 100644
+index 4034f52..8916d6f 100644
 --- a/src/kernel/fileSystem.cpp
 +++ b/src/kernel/fileSystem.cpp
-@@ -1,1314 +1,2076 @@
+@@ -1,1314 +1,2084 @@
 -#include "kernel/fileSystem.h"
 -
 -#include "common/assert.h"
@@ -14970,6 +15677,7 @@ index 4034f52..93e2d1a 100644
 -}
 -
 -} // namespace Libs::LibKernel::FileSystem
++#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
 +#include <cstdlib>
 +#include "kernel/fileSystem.h"
 +
@@ -15661,6 +16369,7 @@ index 4034f52..93e2d1a 100644
 +
 +// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 +int KYTY_SYSV_ABI KernelOpen(const char* path, int flags, uint16_t mode) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kFileOpen); // experiment 0415 (ls415)
 +	PRINT_NAME();
 +
 +	if (path == nullptr) {
@@ -15868,6 +16577,8 @@ index 4034f52..93e2d1a 100644
 +}
 +
 +int64_t KYTY_SYSV_ABI KernelRead(int d, void* buf, size_t nbytes) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kFileRead); // experiment 0415 (ls415)
++	ls_scope.items = nbytes; // asked, not returned
 +	PRINT_NAME();
 +
 +	if (d < DESCRIPTOR_MIN) {
@@ -16008,6 +16719,8 @@ index 4034f52..93e2d1a 100644
 +}
 +
 +int64_t KYTY_SYSV_ABI KernelPread(int d, void* buf, size_t nbytes, int64_t offset) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kFileRead); // experiment 0415 (ls415)
++	ls_scope.items = nbytes; // asked, not returned
 +	PRINT_NAME();
 +
 +	if (d < DESCRIPTOR_MIN) {
@@ -16199,6 +16912,7 @@ index 4034f52..93e2d1a 100644
 +}
 +
 +int KYTY_SYSV_ABI KernelStat(const char* path, FileStat* sb) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kFileStat); // experiment 0415 (ls415)
 +	PRINT_NAME();
 +
 +	if (path == nullptr || sb == nullptr) {
@@ -16254,6 +16968,7 @@ index 4034f52..93e2d1a 100644
 +}
 +
 +int KYTY_SYSV_ABI KernelFstat(int d, FileStat* sb) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kFileStat); // experiment 0415 (ls415)
 +	PRINT_NAME();
 +
 +	if (d < DESCRIPTOR_MIN) {
@@ -17076,10 +17791,10 @@ index bc73d18..fab34b4 100644
  
  #endif /* EMULATOR_INCLUDE_EMULATOR_KERNEL_FILESYSTEM_H_ */
 diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
-index 02fc0fc..a8d0ca6 100644
+index 02fc0fc..9b6cb05 100644
 --- a/src/kernel/memory.cpp
 +++ b/src/kernel/memory.cpp
-@@ -1,4250 +1,5331 @@
+@@ -1,4250 +1,5395 @@
 -#include "kernel/memory.h"
 -
 -#include "common/assert.h"
@@ -21386,6 +22101,7 @@ index 02fc0fc..a8d0ca6 100644
 +#include <sys/mman.h>
 +#include <sys/syscall.h>
 +#include <unistd.h>
++#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
 +#endif
 +
 +namespace Libs::LibKernel::Memory {
@@ -21673,6 +22389,7 @@ index 02fc0fc..a8d0ca6 100644
 +	         VirtualRangeType type, const char* name, bool disallow_merge = false) {
 +		Common::LockGuard lock(m_mutex);
 +		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
++		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
 +
 +		if (start == 0 || size == 0) {
 +			return false;
@@ -21704,6 +22421,7 @@ index 02fc0fc..a8d0ca6 100644
 +	bool Remove(uint64_t start, uint64_t size) {
 +		Common::LockGuard lock(m_mutex);
 +		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
++		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
 +
 +		auto position = LowerBound(start);
 +		if (position != m_ranges.end() && position->start == start && position->size == size) {
@@ -21734,6 +22452,7 @@ index 02fc0fc..a8d0ca6 100644
 +	bool ReleaseReserved(uint64_t start, uint64_t size) {
 +		Common::LockGuard lock(m_mutex);
 +		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
++		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
 +
 +		for (size_t index = 0; index < m_ranges.size(); index++) {
 +			auto& r = m_ranges[index];
@@ -21749,6 +22468,7 @@ index 02fc0fc..a8d0ca6 100644
 +	                     VirtualRangeType type = VirtualRangeType::Reserved) {
 +		Common::LockGuard lock(m_mutex);
 +		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
++		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
 +
 +		auto end = End(start, size);
 +		if (const Range* r = ContainingUnlocked(start); r != nullptr && r->type == type && end <= End(r->start, r->size)) {
@@ -21763,6 +22483,7 @@ index 02fc0fc..a8d0ca6 100644
 +	                         VirtualRangeType type = VirtualRangeType::Reserved) {
 +		Common::LockGuard lock(m_mutex);
 +		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
++		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
 +
 +		if (size == 0) {
 +			return false;
@@ -21788,6 +22509,7 @@ index 02fc0fc..a8d0ca6 100644
 +	void Rename(uint64_t start, uint64_t size, const char* name) {
 +		Common::LockGuard lock(m_mutex);
 +		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
++		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
 +
 +		auto position = LowerBound(start);
 +		if (position != m_ranges.end() && position->start == start && position->size == size) {
@@ -21801,6 +22523,7 @@ index 02fc0fc..a8d0ca6 100644
 +	void Protect(uint64_t start, uint64_t size, int protection) {
 +		Common::LockGuard lock(m_mutex);
 +		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
++		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
 +
 +		EditUnlocked(start, size, [protection](Range* r) { r->protection = protection; });
 +	}
@@ -21808,6 +22531,7 @@ index 02fc0fc..a8d0ca6 100644
 +	void SetMemoryType(uint64_t start, uint64_t size, int memory_type) {
 +		Common::LockGuard lock(m_mutex);
 +		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
++		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
 +
 +		EditUnlocked(start, size, [memory_type](Range* r) { r->memory_type = memory_type; });
 +	}
@@ -21840,6 +22564,23 @@ index 02fc0fc..a8d0ca6 100644
 +		EXIT_IF(out == nullptr);
 +		Common::LockGuard lock(m_mutex);
 +		*out = m_ranges;
++	}
++
++	// BC5 (experiment 0415, tag mr415; stage S1 of experiments/0415-load-times-fps/DESIGN-lock-side.md): under ONE hold
++	// of the mutex, the ranges as they are, their generation, and the spans the mutators were called with since the
++	// last call (the log is emptied). The first call turns the log on, so its spans are not complete: *complete is
++	// false then, and when the log was full. Every mutator above bumps the generation and notes its span in the same
++	// critical section, so a reader never sees a change without its record.
++	void SnapshotWithDirty(std::vector<Range>* out, uint64_t* gen, std::vector<std::pair<uint64_t, uint64_t>>* spans, bool* complete) {
++		EXIT_IF(out == nullptr || gen == nullptr || spans == nullptr || complete == nullptr);
++		Common::LockGuard lock(m_mutex);
++		*out      = m_ranges;
++		*gen      = m_gen.load(std::memory_order_acquire);
++		*complete = m_dirty_on && !m_dirty_overflow;
++		spans->clear();
++		spans->swap(m_dirty);
++		m_dirty_on       = true;
++		m_dirty_overflow = false;
 +	}
 +
 +	bool QuerySpan(uint64_t start, uint64_t size, std::vector<Range>* out) {
@@ -21968,6 +22709,19 @@ index 02fc0fc..a8d0ca6 100644
 +		       left.memory_type == right.memory_type &&
 +		       std::strncmp(left.name, right.name, KERNEL_MAXIMUM_NAME_LENGTH) == 0;
 +	}
++
++	// BC5 (experiment 0415, mr415): the span of a mutator's call, under m_mutex. Off until the first reader asks.
++	void NoteDirtyUnlocked(uint64_t start, uint64_t size) {
++		if (!m_dirty_on) return;
++		if (m_dirty.size() >= 65536) {
++			m_dirty_overflow = true;
++			return;
++		}
++		m_dirty.emplace_back(start, size);
++	}
++	std::vector<std::pair<uint64_t, uint64_t>> m_dirty;
++	bool                                       m_dirty_on       = false;
++	bool                                       m_dirty_overflow = false;
 +
 +	static void AddPiece(std::vector<Range>* ranges, const Range& source, uint64_t start,
 +	                     uint64_t end) {
@@ -22561,6 +23315,31 @@ index 02fc0fc..a8d0ca6 100644
 +uint64_t Bc5MappedRangesGeneration() {
 +	return g_virtual_ranges != nullptr ? g_virtual_ranges->Generation() : 0;
 +}
++// BC5 (experiment 0415, tag mr415): Bc5ForEachMappedRange's callback over one snapshot, with that snapshot's
++// generation and the spans changed since the last call (see VirtualRanges::SnapshotWithDirty). False when there are
++// no ranges yet.
++bool Bc5RangesWithDirty(void (*cb)(uint64_t, uint64_t, uint64_t, int, int, const char*, void*), void* ctx, uint64_t* gen,
++                        std::vector<std::pair<uint64_t, uint64_t>>* spans, bool* complete) {
++	if (g_virtual_ranges == nullptr || cb == nullptr || gen == nullptr || spans == nullptr || complete == nullptr) {
++		return false;
++	}
++	std::vector<VirtualRanges::Range> ranges;
++	g_virtual_ranges->SnapshotWithDirty(&ranges, gen, spans, complete);
++	for (const auto& r: ranges) {
++		int type = -1;
++		switch (r.type) {
++			case VirtualRangeType::Direct: type = 0; break;
++			case VirtualRangeType::Flexible: type = 1; break;
++			case VirtualRangeType::Pooled: type = 2; break;
++			case VirtualRangeType::Stack: type = 3; break;
++			case VirtualRangeType::Code: type = 4; break;
++			case VirtualRangeType::Runtime: type = 5; break;
++			default: break;
++		}
++		if (type >= 0) cb(r.start, r.size, r.offset, type, r.protection, r.name, ctx);
++	}
++	return true;
++}
 +// BC5 (ADR 0006): the direct-memory memfd (sealed), -1 when there is none.
 +int Bc5DirectMemoryFd() {
 +	return GuestBackingStore::Bc5Fd();
@@ -22846,7 +23625,7 @@ index 02fc0fc..a8d0ca6 100644
 +	EXIT_IF(g_alloc_callback != nullptr || g_free_callback != nullptr);
 +	EXIT_IF(alloc_func == nullptr || free_func == nullptr);
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	g_alloc_callback = alloc_func;
 +	g_free_callback  = free_func;
@@ -24079,7 +24858,7 @@ index 02fc0fc..a8d0ca6 100644
 +                                                   int flags, const char* name) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	// Experiment 0405 series e5, BC5_R3_NULL_ARGS (M21): a NULL addr_in_out is the guest's error, not the host's exit.
 +	// EINVAL, as sharpemu 514d766 src/SharpEmu.Libs/Kernel/KernelMemoryCompatExports.cs:3352-3360 (MapFlexibleMemoryCore:
@@ -24251,7 +25030,7 @@ index 02fc0fc..a8d0ca6 100644
 +int KYTY_SYSV_ABI KernelSetPrtAperture(int index, void* addr, size_t len) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	const auto address = reinterpret_cast<uint64_t>(addr);
 +
@@ -24329,7 +25108,7 @@ index 02fc0fc..a8d0ca6 100644
 +int KYTY_SYSV_ABI KernelSetVirtualRangeName(const void* addr, uint64_t len, const char* name) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	auto vaddr = reinterpret_cast<uint64_t>(addr);
 +
@@ -24481,7 +25260,7 @@ index 02fc0fc..a8d0ca6 100644
 +int KYTY_SYSV_ABI KernelMunmap(uint64_t vaddr, size_t len) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	LOGF("\t start = 0x%016" PRIx64 "\n"
 +	     "\t len   = 0x%016" PRIx64 "\n",
@@ -24512,7 +25291,7 @@ index 02fc0fc..a8d0ca6 100644
 +                                                  size_t* size_out) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	LOGF("\t search_start = 0x%016" PRIx64 "\n"
 +	     "\t search_end   = 0x%016" PRIx64 "\n"
@@ -24560,7 +25339,7 @@ index 02fc0fc..a8d0ca6 100644
 +                                          int* gpu_available) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	if (cpu_total == nullptr || cpu_available == nullptr || gpu_total == nullptr ||
 +	    gpu_available == nullptr) {
@@ -24593,7 +25372,7 @@ index 02fc0fc..a8d0ca6 100644
 +int KYTY_SYSV_ABI KernelDirectMemoryQuery(int64_t offset, int flags, void* info, size_t info_size) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	LOGF("\t offset    = 0x%016" PRIx64 "\n"
 +	     "\t flags     = 0x%08" PRIx32 "\n"
@@ -24679,7 +25458,7 @@ index 02fc0fc..a8d0ca6 100644
 +                                             int64_t* phys_addr_out) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	LOGF("\t search_start = 0x%016" PRIx64 "\n"
 +	     "\t search_end   = 0x%016" PRIx64 "\n"
@@ -24712,7 +25491,7 @@ index 02fc0fc..a8d0ca6 100644
 +                                                 int64_t* phys_addr_out) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	LOGF("\t len          = 0x%016" PRIx64 "\n"
 +	     "\t alignment    = 0x%016" PRIx64 "\n"
@@ -24724,7 +25503,7 @@ index 02fc0fc..a8d0ca6 100644
 +}
 +
 +static int ReleaseDirectMemoryInternal(int64_t start, size_t len) {
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	if (g_pooled_memory->ReleaseExpansion(static_cast<uint64_t>(start), len)) {
 +		if (!g_physical_memory->ReleasePoolExpansion(static_cast<uint64_t>(start), len)) {
@@ -24831,7 +25610,7 @@ index 02fc0fc..a8d0ca6 100644
 +// range releases nothing (only an exact release frees an expansion, as today); a range with no hole is left to
 +// today's result.
 +static void Bc5ReleaseDirectMemoryHoles(int64_t start, size_t len) {
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	const auto first = static_cast<uint64_t>(start);
 +	if (len == 0 || UINT64_MAX - first < len) {
@@ -24916,7 +25695,7 @@ index 02fc0fc..a8d0ca6 100644
 +                                        int64_t direct_memory_start, size_t alignment) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	if (addr == nullptr) {
 +		return KERNEL_ERROR_EFAULT;
@@ -25098,7 +25877,7 @@ index 02fc0fc..a8d0ca6 100644
 +                                         int64_t direct_memory_start, size_t alignment) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	LOGF("\t type = %d\n", type);
 +
@@ -25117,7 +25896,7 @@ index 02fc0fc..a8d0ca6 100644
 +                                             const char* name) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	LOGF("\t name = %s\n", name != nullptr ? name : "(null)");
 +
@@ -25147,7 +25926,7 @@ index 02fc0fc..a8d0ca6 100644
 +int KYTY_SYSV_ABI KernelQueryMemoryProtection(void* addr, void** start, void** end, int* prot) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	// Experiment 0405 series e5, BC5_R3_NULL_ARGS (M21): NULL is an unmapped address: EACCES, as for any unmapped address
 +	// below (shadPS4 60c42b9 src/core/memory.cpp:1024-1030, an address below the mappable base gives EACCES;
@@ -25390,7 +26169,7 @@ index 02fc0fc..a8d0ca6 100644
 +int KYTY_SYSV_ABI KernelReserveVirtualRange(void** addr, size_t len, int flags, size_t alignment) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	const auto in_addr = (addr != nullptr ? reinterpret_cast<uint64_t>(*addr) : 0);
 +
@@ -25491,7 +26270,7 @@ index 02fc0fc..a8d0ca6 100644
 +#endif
 +
 +bool KernelHandleReservedRangeAccessViolation(uint64_t vaddr) {
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	VirtualRanges::Range range {};
 +	if (!g_virtual_ranges->Query(vaddr, 0, &range) ||
@@ -25509,7 +26288,7 @@ index 02fc0fc..a8d0ca6 100644
 +                                     uint64_t info_size) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	auto vaddr = reinterpret_cast<uint64_t>(addr);
 +
@@ -25573,7 +26352,7 @@ index 02fc0fc..a8d0ca6 100644
 +int KYTY_SYSV_ABI KernelMlock(void* addr, size_t len) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	const auto vaddr = reinterpret_cast<uint64_t>(addr);
 +
@@ -25616,7 +26395,7 @@ index 02fc0fc..a8d0ca6 100644
 +int KYTY_SYSV_ABI KernelIsStack(void* addr, void** start, void** end) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	auto vaddr = reinterpret_cast<uint64_t>(addr);
 +
@@ -25652,7 +26431,7 @@ index 02fc0fc..a8d0ca6 100644
 +int KYTY_SYSV_ABI KernelAvailableFlexibleMemorySize(size_t* size) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	if (size == nullptr) {
 +		return KERNEL_ERROR_EINVAL;
@@ -25703,7 +26482,7 @@ index 02fc0fc..a8d0ca6 100644
 +static uint64_t AllocateGuestRuntimeMemory(uint64_t search_addr, uint64_t size,
 +                                           VirtualMemory::Mode mode, const char* name,
 +                                           VirtualRangeType type, bool fixed) {
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	constexpr uint64_t GuestPageSize = 0x4000;
 +	if (size == 0 || size > UINT64_MAX - (GuestPageSize - 1u) || name == nullptr ||
@@ -25734,7 +26513,7 @@ index 02fc0fc..a8d0ca6 100644
 +}
 +
 +void SetProgramMemoryProtection(uint64_t vaddr, uint64_t size, VirtualMemory::Mode mode) {
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	const auto ranges = RequireGuestRuntimeMemory(vaddr, size);
 +	if (std::any_of(ranges.begin(), ranges.end(),
@@ -25768,7 +26547,7 @@ index 02fc0fc..a8d0ca6 100644
 +
 +bool ProtectGuestMemory(uint64_t vaddr, uint64_t size, VirtualMemory::Mode mode,
 +                        VirtualMemory::Mode* old_mode) {
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +	constexpr uint64_t                    GuestPageSize = 0x4000;
 +	if (vaddr == 0 || size == 0 || size > UINT64_MAX - (vaddr & (GuestPageSize - 1u))) {
 +		return false;
@@ -25794,7 +26573,7 @@ index 02fc0fc..a8d0ca6 100644
 +}
 +
 +bool FreeGuestMemory(uint64_t vaddr, uint64_t size) {
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	constexpr uint64_t GuestPageSize = 0x4000;
 +	if (vaddr == 0 || size == 0 || size > UINT64_MAX - (GuestPageSize - 1u)) {
@@ -25987,7 +26766,7 @@ index 02fc0fc..a8d0ca6 100644
 +		return result;
 +	}
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	const auto mode  = static_cast<VirtualMemory::Mode>(prot);
 +	const auto hint  = reinterpret_cast<uint64_t>(*where) & ~(BC5_JIT_PAGE - 1u);
@@ -26042,7 +26821,7 @@ index 02fc0fc..a8d0ca6 100644
 +// today's treatment (host view, direct or flexible block, range table); a Reserved piece gets the range table only.
 +// A host protect failure still EXITs, as today; an overflowing range returns EINVAL instead of EXIT.
 +static int Bc5MprotectGaps(uint64_t vaddr, size_t len, int prot, bool require_mapped_start) {
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	constexpr uint64_t PAGE_SIZE    = 0x4000;
 +	const uint64_t     aligned_addr = vaddr & ~(PAGE_SIZE - 1);
@@ -26121,7 +26900,7 @@ index 02fc0fc..a8d0ca6 100644
 +int KYTY_SYSV_ABI KernelMprotect(const void* addr, size_t len, int prot) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	auto vaddr = reinterpret_cast<uint64_t>(addr);
 +
@@ -26187,7 +26966,7 @@ index 02fc0fc..a8d0ca6 100644
 +int KYTY_SYSV_ABI KernelMtypeprotect(const void* addr, size_t len, int type, int prot) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	LOGF("\t addr = 0x%016" PRIx64 "\n"
 +	     "\t len  = 0x%016" PRIx64 "\n"
@@ -26203,7 +26982,7 @@ index 02fc0fc..a8d0ca6 100644
 +                                  int* num_entries_out, int flags) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	LOGF("\t entries         = %p\n"
 +	     "\t num_entries     = %d\n"
@@ -26314,7 +27093,7 @@ index 02fc0fc..a8d0ca6 100644
 +                                         size_t alignment, int64_t* phys_addr_out) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	constexpr uint64_t POOL_PAGE_SIZE = 0x10000;
 +	if (search_start < 0 || search_end <= search_start || len == 0 ||
@@ -26352,7 +27131,7 @@ index 02fc0fc..a8d0ca6 100644
 +                                          void** addr_out) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	LOGF("\t addr_in   = 0x%016" PRIx64 "\n"
 +	     "\t len       = 0x%016" PRIx64 "\n"
@@ -26402,7 +27181,7 @@ index 02fc0fc..a8d0ca6 100644
 +int KYTY_SYSV_ABI KernelMemoryPoolCommit(void* addr, size_t len, int type, int prot, int flags) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	LOGF("\t addr  = 0x%016" PRIx64 "\n"
 +	     "\t len   = 0x%016" PRIx64 "\n"
@@ -26538,7 +27317,7 @@ index 02fc0fc..a8d0ca6 100644
 +int KYTY_SYSV_ABI KernelMemoryPoolDecommit(void* addr, size_t len, int flags) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	LOGF("\t addr  = 0x%016" PRIx64 "\n"
 +	     "\t len   = 0x%016" PRIx64 "\n"
@@ -26580,7 +27359,7 @@ index 02fc0fc..a8d0ca6 100644
 +                                        int* num_entries_out, int flags) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	if (entries == nullptr || num_entries < 0) {
 +		return KERNEL_ERROR_EINVAL;
@@ -26636,7 +27415,7 @@ index 02fc0fc..a8d0ca6 100644
 +                                                size_t                      output_size) {
 +	PRINT_NAME();
 +
-+	std::lock_guard<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex);
++	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
 +
 +	if (output == nullptr && output_size != 0) {
 +		return KERNEL_ERROR_EFAULT;
@@ -26662,7 +27441,7 @@ index 02fc0fc..a8d0ca6 100644
 +
 +} // namespace Libs::LibKernel::Memory
 diff --git a/src/kernel/memory.h b/src/kernel/memory.h
-index d1fc7f8..a051967 100644
+index d1fc7f8..c8723cf 100644
 --- a/src/kernel/memory.h
 +++ b/src/kernel/memory.h
 @@ -1,6 +1,8 @@
@@ -26674,13 +27453,18 @@ index d1fc7f8..a051967 100644
  #include "common/abi.h"
  #include "common/common.h"
  #include "common/subsystems.h"
-@@ -111,6 +113,14 @@ void                   RegisterCallbacks(callback_func_t alloc_func, callback_fu
+@@ -111,6 +113,19 @@ void                   RegisterCallbacks(callback_func_t alloc_func, callback_fu
  void                   SetFlexibleMemorySize(uint64_t size);
  bool                   TryWriteBacking(uint64_t vaddr, const void* data, uint64_t size);
  bool                   TryReadBacking(uint64_t vaddr, void* data, uint64_t size);
 +// BC5 (direct mode): the guest's mapped ranges, see memory.cpp.
 +int  Bc5DirectMemoryFd(); // BC5 (ADR 0006): the direct-memory memfd, -1 when none
 +uint64_t Bc5MappedRangesGeneration(); // BC5 (experiment 0037): changes with every edit of the guest's ranges
++// BC5 (experiment 0415, tag mr415): the mapped ranges of one snapshot through cb (as Bc5ForEachMappedRange's second
++// callback), that snapshot's generation, and the spans changed since the last call; *complete false when the spans
++// may miss a change (the first call, or a full log).
++bool Bc5RangesWithDirty(void (*cb)(uint64_t start, uint64_t size, uint64_t offset, int type, int protection, const char* name, void* ctx), void* ctx,
++                        uint64_t* gen, std::vector<std::pair<uint64_t, uint64_t>>* spans, bool* complete);
 +void     Bc5GuestRangesIn(uint64_t lo, uint64_t hi, std::vector<std::pair<uint64_t, uint64_t>>* out); // reserved or mapped, overlapping [lo, hi)
 +int  Bc5PrivateMemoryFd(); // BC5 (experiment 0023): the memfd behind private guest memory, -1 when anonymous
 +void Bc5ForEachPrivateRegion(void* ctx, void (*cb)(uint64_t start, uint64_t size, int type, const char* name, void* ctx));
@@ -26689,7 +27473,7 @@ index d1fc7f8..a051967 100644
  [[nodiscard]] uint64_t ClampRangeSize(uint64_t vaddr, uint64_t size);
  void                   WriteBacking(uint64_t vaddr, const void* data, uint64_t size) noexcept;
  void                   InvalidateMemory(uint64_t vaddr, uint64_t size);
-@@ -150,6 +160,7 @@ int KYTY_SYSV_ABI KernelDirectMemoryQuery(int64_t offset, int flags, void* info,
+@@ -150,6 +165,7 @@ int KYTY_SYSV_ABI KernelDirectMemoryQuery(int64_t offset, int flags, void* info,
  int KYTY_SYSV_ABI KernelVirtualQuery(const void* addr, int flags, VirtualQueryInfo* info,
                                       uint64_t info_size);
  int KYTY_SYSV_ABI KernelIsStack(void* addr, void** start, void** end);
@@ -26698,7 +27482,7 @@ index d1fc7f8..a051967 100644
  bool              KernelHandleReservedRangeAccessViolation(uint64_t vaddr);
  void              KernelLogFaultRange(uint64_t vaddr);
 diff --git a/src/kernel/memoryAddressSpace.inc b/src/kernel/memoryAddressSpace.inc
-index 9ea25b0..0b9ea30 100644
+index 9ea25b0..64784a7 100644
 --- a/src/kernel/memoryAddressSpace.inc
 +++ b/src/kernel/memoryAddressSpace.inc
 @@ -31,6 +31,15 @@ static bool CoalescePlaceholders(uint64_t vaddr, uint64_t size) {
@@ -26826,7 +27610,7 @@ index 9ea25b0..0b9ea30 100644
  	bool Commit(uint64_t vaddr, uint64_t size, VirtualMemory::Mode mode) {
  		std::lock_guard lock(m_mutex);
  		if (!ConsumeUnlocked(vaddr, size)) {
-@@ -821,6 +892,33 @@ public:
+@@ -821,6 +892,35 @@ public:
  		EXIT_IF(!AddMappedUnlocked(vaddr, size, MappingType::Private));
  		return true;
  #else
@@ -26839,6 +27623,7 @@ index 9ea25b0..0b9ea30 100644
 +				// (nothing is punched out on release, so an imported BO never goes stale):
 +				// what holds data is zeroed before the range is handed out again.
 +				const uint64_t end = vaddr + size;
++				bc5::load_stat::Scope ls_scope(bc5::load_stat::kCommitZero); // experiment 0415 (ls415): items = bytes zeroed
 +				for (uint64_t pos = vaddr; pos < end;) {
 +					const off_t data = lseek(pfd, static_cast<off_t>(pos), SEEK_DATA);
 +					if (data < 0 || static_cast<uint64_t>(data) >= end) {
@@ -26850,6 +27635,7 @@ index 9ea25b0..0b9ea30 100644
 +						break;
 +					}
 +					std::memset(reinterpret_cast<void*>(static_cast<uint64_t>(data)), 0, stop - static_cast<uint64_t>(data));
++					ls_scope.items += stop - static_cast<uint64_t>(data);
 +					pos = stop;
 +				}
 +				EXIT_IF(!AddMappedUnlocked(vaddr, size, MappingType::Private));
@@ -26861,7 +27647,7 @@ index 9ea25b0..0b9ea30 100644
  			EXIT_IF(!AddMappedUnlocked(vaddr, size, MappingType::Private));
  			return true;
 diff --git a/src/kernel/pthread.cpp b/src/kernel/pthread.cpp
-index 5f87e6b..be70ac2 100644
+index 5f87e6b..6cdba11 100644
 --- a/src/kernel/pthread.cpp
 +++ b/src/kernel/pthread.cpp
 @@ -1,3 +1,4 @@
@@ -26885,7 +27671,15 @@ index 5f87e6b..be70ac2 100644
  #endif
  
  #if KYTY_PLATFORM != KYTY_PLATFORM_WINDOWS
-@@ -180,9 +183,64 @@ static uint64_t KernelGetInitialTsc() {
+@@ -57,6 +60,7 @@
+ 
+ #if KYTY_PLATFORM != KYTY_PLATFORM_WINDOWS && (defined(_M_X64) || defined(__x86_64__))
+ #include <x86intrin.h>
++#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
+ #endif
+ 
+ #ifdef pthread_attr_getguardsize
+@@ -180,9 +184,64 @@ static uint64_t KernelGetInitialTsc() {
  	return initial_tsc;
  }
  
@@ -26951,7 +27745,7 @@ index 5f87e6b..be70ac2 100644
  	return current_tsc >= initial_tsc ? current_tsc - initial_tsc : 0;
  }
  
-@@ -458,6 +516,106 @@ struct PthreadCondPrivate {
+@@ -458,6 +517,106 @@ struct PthreadCondPrivate {
  	std::vector<Pthread>    waiters;
  };
  
@@ -27058,7 +27852,7 @@ index 5f87e6b..be70ac2 100644
  static void CondAddWaiter(PthreadCondPrivate* cond, Pthread thread) {
  	EXIT_IF(cond == nullptr);
  	EXIT_IF(thread == nullptr);
-@@ -530,6 +688,10 @@ void PthreadWakeForSignal(Pthread thread) {
+@@ -530,6 +689,10 @@ void PthreadWakeForSignal(Pthread thread) {
  	{
  		std::lock_guard lock(cond->m);
  		notify = (thread->waiting_cond == cond);
@@ -27069,7 +27863,7 @@ index 5f87e6b..be70ac2 100644
  	}
  	if (notify) {
  		cond->cv.notify_all();
-@@ -650,6 +812,7 @@ public:
+@@ -650,6 +813,7 @@ public:
  	Pthread Create();
  
  	void FreeDetachedThreads();
@@ -27077,7 +27871,7 @@ index 5f87e6b..be70ac2 100644
  
  private:
  	std::vector<Pthread> m_threads;
-@@ -1135,6 +1298,7 @@ KYTY_SUBSYSTEM_INIT(Pthread) {
+@@ -1135,6 +1299,7 @@ KYTY_SUBSYSTEM_INIT(Pthread) {
  	g_pthread_context->SetPthreadPool(new PthreadPool);
  	g_pthread_context->SetPthreadKeys(new PthreadKeys);
  	Common::CondVar::SetWaitPollCallback(KernelDispatchPendingSignalForCurrentThread);
@@ -27085,7 +27879,7 @@ index 5f87e6b..be70ac2 100644
  
  	PthreadMutexattr  default_mutexattr  = nullptr;
  	PthreadRwlockattr default_rwlockattr = nullptr;
-@@ -1303,6 +1467,7 @@ static bool NativeClockGettime(KernelClockid clock_id, KernelTimespec* tp) {
+@@ -1303,6 +1468,7 @@ static bool NativeClockGettime(KernelClockid clock_id, KernelTimespec* tp) {
  
  	tp->tv_sec  = native_time.tv_sec;
  	tp->tv_nsec = native_time.tv_nsec;
@@ -27093,7 +27887,48 @@ index 5f87e6b..be70ac2 100644
  	return true;
  }
  
-@@ -1430,6 +1595,10 @@ static int NativeMutexUnlock(PthreadMutexPrivate* mutex, uint32_t* recurse = nul
+@@ -1337,6 +1503,29 @@ static int NativeMutexLock(PthreadMutexPrivate* mutex, KernelUseconds* timeout_u
+ 		return EDEADLK;
+ 	}
+ 
++	// Experiment 0415 (ls415): the count of locks and of contended ones with their wait; and, with
++	// KYTY_BC5_MUTEX_SPIN_US, a held mutex is tried again for that long before the thread sleeps on the condition
++	// variable (the console's adaptive mutexes spin; here every contention was a sleep and a wake). mutex->m is
++	// released between tries; the owner field is read and written under it as before. Not for a try (timeout 0).
++	bc5::load_stat::count(bc5::load_stat::kMutexLock);
++	const bool     ls_contended = mutex->owner != nullptr;
++	const uint64_t ls_t0        = ls_contended ? bc5::load_stat::begin() : 0;
++	if (ls_contended && (timeout_us == nullptr || *timeout_us != 0)) {
++		if (const uint64_t spin = bc5::load_stat::mutex_spin_ns(); spin != 0) {
++			const uint64_t t0 = bc5::load_stat::now_ns();
++			for (;;) {
++				lock.unlock();
++				for (int k = 0; k < 32; k++) bc5::load_stat::cpu_relax();
++				lock.lock();
++				if (mutex->owner == nullptr) {
++					bc5::load_stat::count(bc5::load_stat::kMutexSpinWon);
++					break;
++				}
++				if (bc5::load_stat::now_ns() - t0 >= spin) break;
++			}
++		}
++	}
++
+ 	if (timeout_us == nullptr) {
+ 		while (mutex->owner != nullptr) {
+ 			mutex->cv.wait_for(lock, std::chrono::microseconds(SIGNAL_APC_POLL_MICROS));
+@@ -1373,6 +1562,10 @@ static int NativeMutexLock(PthreadMutexPrivate* mutex, KernelUseconds* timeout_u
+ 		}
+ 	}
+ 
++	if (ls_contended) { // experiment 0415 (ls415)
++		bc5::load_stat::end(bc5::load_stat::kMutexContended, ls_t0);
++		bc5::load_stat::delay(bc5::load_stat::kMutexContended);
++	}
+ 	mutex->owner = self;
+ 	mutex->count = 1;
+ 	return OK;
+@@ -1430,6 +1623,10 @@ static int NativeMutexUnlock(PthreadMutexPrivate* mutex, uint32_t* recurse = nul
  
  	mutex->owner = nullptr;
  	mutex->count = 0;
@@ -27104,7 +27939,7 @@ index 5f87e6b..be70ac2 100644
  	lock.unlock();
  	mutex->cv.notify_one();
  
-@@ -1597,6 +1766,30 @@ void PthreadPool::FreeDetachedThreads() {
+@@ -1597,6 +1794,30 @@ void PthreadPool::FreeDetachedThreads() {
  	}
  }
  
@@ -27135,7 +27970,7 @@ index 5f87e6b..be70ac2 100644
  bool PthreadKeys::Create(int* key, pthread_key_destructor_func_t destructor) {
  	EXIT_IF(key == nullptr);
  
-@@ -2403,6 +2596,11 @@ int KYTY_SYSV_ABI PthreadRwlockDestroy(PthreadRwlock* rwlock) {
+@@ -2403,6 +2624,11 @@ int KYTY_SYSV_ABI PthreadRwlockDestroy(PthreadRwlock* rwlock) {
  		return KERNEL_ERROR_EINVAL;
  	}
  
@@ -27147,7 +27982,7 @@ index 5f87e6b..be70ac2 100644
  	EXIT_NOT_IMPLEMENTED(*rwlock == nullptr);
  
  	{
-@@ -2449,6 +2647,53 @@ int KYTY_SYSV_ABI PthreadRwlockInit(PthreadRwlock* rwlock, const PthreadRwlockat
+@@ -2449,6 +2675,53 @@ int KYTY_SYSV_ABI PthreadRwlockInit(PthreadRwlock* rwlock, const PthreadRwlockat
  	return PthreadRwlockInitNamed(rwlock, attr, name);
  }
  
@@ -27201,7 +28036,7 @@ index 5f87e6b..be70ac2 100644
  static PthreadRwlockPrivate::Reader* RwlockFindReader(PthreadRwlock rwlock, Pthread thread) {
  	EXIT_IF(rwlock == nullptr);
  
-@@ -2526,11 +2771,14 @@ static int RwlockLockCooperative(PthreadRwlock rwlock, bool write, KernelUsecond
+@@ -2526,11 +2799,14 @@ static int RwlockLockCooperative(PthreadRwlock rwlock, bool write, KernelUsecond
  					writer_wait_registered = true;
  				}
  			} else {
@@ -27217,7 +28052,7 @@ index 5f87e6b..be70ac2 100644
  					return OK;
  				}
  			}
-@@ -2581,6 +2829,12 @@ int KYTY_SYSV_ABI PthreadRwlockTimedrdlock(PthreadRwlock* rwlock, KernelUseconds
+@@ -2581,6 +2857,12 @@ int KYTY_SYSV_ABI PthreadRwlockTimedrdlock(PthreadRwlock* rwlock, KernelUseconds
  		return KERNEL_ERROR_EINVAL;
  	}
  
@@ -27230,7 +28065,7 @@ index 5f87e6b..be70ac2 100644
  	EXIT_NOT_IMPLEMENTED(*rwlock == nullptr);
  
  	return RwlockLockCooperative(*rwlock, false, &usec);
-@@ -2593,6 +2847,12 @@ int KYTY_SYSV_ABI PthreadRwlockTimedwrlock(PthreadRwlock* rwlock, KernelUseconds
+@@ -2593,6 +2875,12 @@ int KYTY_SYSV_ABI PthreadRwlockTimedwrlock(PthreadRwlock* rwlock, KernelUseconds
  		return KERNEL_ERROR_EINVAL;
  	}
  
@@ -27243,7 +28078,7 @@ index 5f87e6b..be70ac2 100644
  	EXIT_NOT_IMPLEMENTED(*rwlock == nullptr);
  
  	return RwlockLockCooperative(*rwlock, true, &usec);
-@@ -2601,6 +2861,11 @@ int KYTY_SYSV_ABI PthreadRwlockTimedwrlock(PthreadRwlock* rwlock, KernelUseconds
+@@ -2601,6 +2889,11 @@ int KYTY_SYSV_ABI PthreadRwlockTimedwrlock(PthreadRwlock* rwlock, KernelUseconds
  int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
  	PRINT_NAME();
  
@@ -27255,7 +28090,7 @@ index 5f87e6b..be70ac2 100644
  	if (rwlock == nullptr) {
  		return KERNEL_ERROR_EINVAL;
  	}
-@@ -2614,10 +2879,12 @@ int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
+@@ -2614,10 +2907,12 @@ int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
  
  	{
  		std::lock_guard lock((*rwlock)->m);
@@ -27269,7 +28104,7 @@ index 5f87e6b..be70ac2 100644
  			return OK;
  		}
  	}
-@@ -2628,6 +2895,10 @@ int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
+@@ -2628,6 +2923,10 @@ int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
  int KYTY_SYSV_ABI PthreadRwlockTrywrlock(PthreadRwlock* rwlock) {
  	PRINT_NAME();
  
@@ -27280,7 +28115,7 @@ index 5f87e6b..be70ac2 100644
  	if (rwlock == nullptr) {
  		return KERNEL_ERROR_EINVAL;
  	}
-@@ -2676,6 +2947,7 @@ int KYTY_SYSV_ABI PthreadRwlockUnlock(PthreadRwlock* rwlock) {
+@@ -2676,6 +2975,7 @@ int KYTY_SYSV_ABI PthreadRwlockUnlock(PthreadRwlock* rwlock) {
  	{
  		std::lock_guard lock((*rwlock)->m);
  		if (RwlockRemoveReader(*rwlock, self)) {
@@ -27288,7 +28123,15 @@ index 5f87e6b..be70ac2 100644
  			(*rwlock)->cv.notify_all();
  			return OK;
  		}
-@@ -2864,6 +3136,10 @@ int KYTY_SYSV_ABI PthreadCondBroadcast(PthreadCond* cond) {
+@@ -2842,6 +3142,7 @@ int KYTY_SYSV_ABI PthreadCondattrSetclock(PthreadCondattr* attr, KernelClockid c
+ }
+ 
+ int KYTY_SYSV_ABI PthreadCondBroadcast(PthreadCond* cond) {
++	bc5::load_stat::count(bc5::load_stat::kCondSignal); // experiment 0415 (ls415)
+ 	// PRINT_NAME();
+ 
+ 	auto* pthread_static_objects = g_pthread_context->GetPthreadStaticObjects();
+@@ -2864,6 +3165,10 @@ int KYTY_SYSV_ABI PthreadCondBroadcast(PthreadCond* cond) {
  			CondClearWaiters(*cond);
  			notify = true;
  		}
@@ -27299,7 +28142,7 @@ index 5f87e6b..be70ac2 100644
  	}
  	if (notify) {
  		(*cond)->cv.notify_all();
-@@ -2885,6 +3161,11 @@ int KYTY_SYSV_ABI PthreadCondDestroy(PthreadCond* cond) {
+@@ -2885,6 +3190,11 @@ int KYTY_SYSV_ABI PthreadCondDestroy(PthreadCond* cond) {
  		return KERNEL_ERROR_EINVAL;
  	}
  
@@ -27311,7 +28154,15 @@ index 5f87e6b..be70ac2 100644
  	EXIT_NOT_IMPLEMENTED(*cond == nullptr);
  
  	int result = 0;
-@@ -2964,6 +3245,10 @@ int KYTY_SYSV_ABI PthreadCondSignal(PthreadCond* cond) {
+@@ -2946,6 +3256,7 @@ int KYTY_SYSV_ABI PthreadCondInit(PthreadCond* cond, const PthreadCondattr* attr
+ }
+ 
+ int KYTY_SYSV_ABI PthreadCondSignal(PthreadCond* cond) {
++	bc5::load_stat::count(bc5::load_stat::kCondSignal); // experiment 0415 (ls415)
+ 	// PRINT_NAME();
+ 
+ 	auto* pthread_static_objects = g_pthread_context->GetPthreadStaticObjects();
+@@ -2964,6 +3275,10 @@ int KYTY_SYSV_ABI PthreadCondSignal(PthreadCond* cond) {
  	{
  		std::lock_guard lock((*cond)->m);
  		notify = CondWakeWaiter(*cond, nullptr);
@@ -27322,7 +28173,7 @@ index 5f87e6b..be70ac2 100644
  	}
  	if (notify) {
  		(*cond)->cv.notify_all();
-@@ -2994,13 +3279,22 @@ int KYTY_SYSV_ABI PthreadCondSignalto(PthreadCond* cond, Pthread thread) {
+@@ -2994,13 +3309,22 @@ int KYTY_SYSV_ABI PthreadCondSignalto(PthreadCond* cond, Pthread thread) {
  
  	int  result = 0;
  	bool notify = false;
@@ -27345,7 +28196,15 @@ index 5f87e6b..be70ac2 100644
  
  	// LOGF("\tcond signalto: %s(0x%016" PRIx64 "), %d\n", (*cond)->name.c_str(),
  	// reinterpret_cast<uint64_t>(cond), result);
-@@ -3238,9 +3532,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
+@@ -3184,6 +3508,7 @@ while (!ready()) {
+ }
+ 
+ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kCondWait); // experiment 0415 (ls415)
+ 	PRINT_NAME();
+ 
+ 	auto* pthread_static_objects = g_pthread_context->GetPthreadStaticObjects();
+@@ -3238,9 +3563,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
  		if (cond_elapsed >= 10 &&
  		    std::chrono::steady_clock::now() - cond_wait_logged > std::chrono::seconds(1)) {
  			cond_wait_logged = std::chrono::steady_clock::now();
@@ -27358,7 +28217,7 @@ index 5f87e6b..be70ac2 100644
  		}
  	}
  	CondRemoveWaiter(cond_value, thread);
-@@ -3381,10 +3676,52 @@ static void CleanupThread(void* arg) {
+@@ -3381,10 +3707,52 @@ static void CleanupThread(void* arg) {
  	thread->almost_done = true;
  }
  
@@ -27411,7 +28270,7 @@ index 5f87e6b..be70ac2 100644
  	thread->unique_id = Common::Thread::GetThreadIdUnique();
  
  	g_pthread_self = thread;
-@@ -3396,6 +3733,20 @@ static void* RunThread(void* arg) {
+@@ -3396,6 +3764,20 @@ static void* RunThread(void* arg) {
  	os_thread_id = GetHostThreadId();
  #endif
  	thread->host_thread_id = os_thread_id;
@@ -27432,7 +28291,7 @@ index 5f87e6b..be70ac2 100644
  
  	LOGF("\tPthread run begin: %s, id = %d, os_thread_id = %" PRIu64 ", entry = 0x%016" PRIx64
  	     ", arg = 0x%016" PRIx64 ", stack_addr = 0x%016" PRIx64 ", stack_size = %" PRIu64 "\n",
-@@ -3549,6 +3900,9 @@ int KYTY_SYSV_ABI PthreadCancel(Pthread thread) {
+@@ -3549,6 +3931,9 @@ int KYTY_SYSV_ABI PthreadCancel(Pthread thread) {
  	if (thread == nullptr) {
  		return KERNEL_ERROR_EINVAL;
  	}
@@ -27442,7 +28301,7 @@ index 5f87e6b..be70ac2 100644
  
  	int result = pthread_cancel(thread->p);
  
-@@ -3650,6 +4004,9 @@ int KYTY_SYSV_ABI PthreadGetprio(Pthread thread, int* prio) {
+@@ -3650,6 +4035,9 @@ int KYTY_SYSV_ABI PthreadGetprio(Pthread thread, int* prio) {
  	if (thread == nullptr) {
  		return KERNEL_ERROR_ESRCH;
  	}
@@ -27452,7 +28311,7 @@ index 5f87e6b..be70ac2 100644
  
  	EXIT_NOT_IMPLEMENTED(prio == nullptr);
  
-@@ -3670,6 +4027,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
+@@ -3670,6 +4058,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
  	if (thread == nullptr) {
  		return KERNEL_ERROR_ESRCH;
  	}
@@ -27462,7 +28321,7 @@ index 5f87e6b..be70ac2 100644
  
  	sched_param param {};
  	int         pol = 0;
-@@ -3695,6 +4055,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
+@@ -3695,6 +4086,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
  #endif
  
  	thread->attr->guest_priority = prio;
@@ -27472,7 +28331,7 @@ index 5f87e6b..be70ac2 100644
  	LOGF("\t PthreadSetprio: %d, %d\n", thread->unique_id, prio);
  	return OK;
  }
-@@ -3791,6 +4154,10 @@ int KYTY_SYSV_ABI PthreadRename(Pthread thread, const char* name) {
+@@ -3791,6 +4185,10 @@ int KYTY_SYSV_ABI PthreadRename(Pthread thread, const char* name) {
  	}
  
  	thread->name = std::string(name);
@@ -27483,7 +28342,7 @@ index 5f87e6b..be70ac2 100644
  
  	return OK;
  }
-@@ -3850,6 +4217,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
+@@ -3850,6 +4248,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
  
  	int special_error = OK;
  	if (KernelClockGettimeSpecial(clock_id, tp, &special_error)) {
@@ -27491,7 +28350,7 @@ index 5f87e6b..be70ac2 100644
  		return special_error;
  	}
  
-@@ -3867,6 +4235,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
+@@ -3867,6 +4266,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
  	tp->tv_nsec = t.tv_nsec;
  
  	if (result == 0) {
@@ -27499,7 +28358,7 @@ index 5f87e6b..be70ac2 100644
  		return OK;
  	}
  	return KERNEL_ERROR_EINVAL;
-@@ -3994,7 +4363,7 @@ uint64_t KYTY_SYSV_ABI KernelGetTscFrequency() {
+@@ -3994,7 +4394,7 @@ uint64_t KYTY_SYSV_ABI KernelGetTscFrequency() {
  }
  
  uint64_t KYTY_SYSV_ABI KernelReadTsc() {
@@ -27508,7 +28367,7 @@ index 5f87e6b..be70ac2 100644
  }
  
  uint64_t KYTY_SYSV_ABI KernelGetProcessTime() {
-@@ -4294,6 +4663,12 @@ void KYTY_SYSV_ABI pthread_yield() {
+@@ -4294,6 +4694,12 @@ void KYTY_SYSV_ABI pthread_yield() {
  	LibKernel::PthreadYield();
  }
  
@@ -27521,7 +28380,7 @@ index 5f87e6b..be70ac2 100644
  int KYTY_SYSV_ABI sched_get_priority_max(int policy) {
  	PRINT_NAME();
  
-@@ -4431,6 +4806,11 @@ int KYTY_SYSV_ABI pthread_cond_signal(LibKernel::PthreadCond* cond) {
+@@ -4431,6 +4837,11 @@ int KYTY_SYSV_ABI pthread_cond_signal(LibKernel::PthreadCond* cond) {
  	return POSIX_PTHREAD_CALL(LibKernel::PthreadCondSignal(cond));
  }
  
@@ -27533,7 +28392,7 @@ index 5f87e6b..be70ac2 100644
  int KYTY_SYSV_ABI pthread_cond_init(LibKernel::PthreadCond*           cond,
                                      const LibKernel::PthreadCondattr* attr) {
  	PRINT_NAME();
-@@ -4540,6 +4920,12 @@ int KYTY_SYSV_ABI pthread_rwlock_wrlock(LibKernel::PthreadRwlock* rwlock) {
+@@ -4540,6 +4951,12 @@ int KYTY_SYSV_ABI pthread_rwlock_wrlock(LibKernel::PthreadRwlock* rwlock) {
  	return POSIX_PTHREAD_CALL(LibKernel::PthreadRwlockWrlock(rwlock));
  }
  
@@ -27587,7 +28446,7 @@ index 3b39581..6b35a70 100644
  int KYTY_SYSV_ABI pthread_rwlock_init(LibKernel::PthreadRwlock*           rwlock,
                                        const LibKernel::PthreadRwlockattr* attr);
 diff --git a/src/kernel/semaphore.cpp b/src/kernel/semaphore.cpp
-index ed7c35b..8696edb 100644
+index ed7c35b..bd43388 100644
 --- a/src/kernel/semaphore.cpp
 +++ b/src/kernel/semaphore.cpp
 @@ -2,6 +2,10 @@
@@ -27601,7 +28460,23 @@ index ed7c35b..8696edb 100644
  #include "common/stringUtils.h"
  #include "common/threads.h"
  #include "common/timer.h"
-@@ -72,6 +76,69 @@ private:
+@@ -13,6 +17,7 @@
+ #include <limits>
+ #include <unordered_map>
+ #include <vector>
++#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
+ 
+ namespace Libs::LibKernel {
+ void KernelDispatchPendingSignalForCurrentThread();
+@@ -55,6 +60,7 @@ private:
+ 		int    need_count = 0;
+ 		Result result     = Result::TimedOut;
+ 		bool   ready      = false;
++		Common::CondVar* own_cond = nullptr; // BC5 KYTY_BC5_SEMA_TARGETED_WAKE: this waiter's own condition variable
+ 	};
+ 
+ 	void AddWaiter(WaitingThread* waiter);
+@@ -72,6 +78,84 @@ private:
  	int                         m_max_count;
  };
  
@@ -27668,10 +28543,45 @@ index ed7c35b..8696edb 100644
 +}
 +// ---- end of experiment 0405's block -------------------------------------------------------------------------------
 +
++// BC5 (exp 0414's list, item 5; the idea is KytyPS5 a0268f1 "a semaphore signal wakes only the waiters it hands counts
++// to"): with KYTY_BC5_SEMA_TARGETED_WAKE=1 each waiter sleeps on its own condition variable (one per thread) and is
++// signalled when it is made ready; nothing is broadcast on the semaphore's shared one. Unset, empty and "0" are off.
++static bool Bc5SemaTargetedWake() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_SEMA_TARGETED_WAKE");
++		const bool  v = e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
++		if (v) {
++			std::fprintf(stderr, "[bc5] KYTY_BC5_SEMA_TARGETED_WAKE on: a semaphore signal wakes only the waiters it hands counts to\n");
++		}
++		return v;
++	}();
++	return on;
++}
++
  KernelSemaPrivate::~KernelSemaPrivate() {
  	Common::LockGuard lock(m_mutex);
  
-@@ -137,6 +204,10 @@ KernelSemaPrivate::Result KernelSemaPrivate::Signal(int signal_count) {
+@@ -87,6 +171,9 @@ KernelSemaPrivate::~KernelSemaPrivate() {
+ 		if (!waiter->ready) {
+ 			waiter->result = Result::Deleted;
+ 			waiter->ready  = true;
++			if (waiter->own_cond != nullptr) {
++				waiter->own_cond->Signal();
++			}
+ 		}
+ 	}
+ 
+@@ -122,6 +209,9 @@ KernelSemaPrivate::Result KernelSemaPrivate::Cancel(int set_count, int* num_wait
+ 		if (!waiter->ready) {
+ 			waiter->result = Result::Canceled;
+ 			waiter->ready  = true;
++			if (waiter->own_cond != nullptr) {
++				waiter->own_cond->Signal();
++			}
+ 		}
+ 	}
+ 
+@@ -137,15 +227,22 @@ KernelSemaPrivate::Result KernelSemaPrivate::Signal(int signal_count) {
  		return Result::Deleted;
  	}
  
@@ -27682,7 +28592,61 @@ index ed7c35b..8696edb 100644
  	if (m_count + signal_count > m_max_count) {
  		return Result::InvalCount;
  	}
-@@ -257,6 +328,11 @@ int KYTY_SYSV_ABI KernelCreateSema(KernelSema* sem, const char* name, uint32_t a
+ 
+ 	m_count += signal_count;
++	bc5::load_stat::count(bc5::load_stat::kSemaSignal, m_waiting_threads.size()); // experiment 0415 (ls415): items = waiters present at the signal
+ 
+ 	WakeWaiters();
+ 
+-	m_cond_var.SignalAll();
++	if (!Bc5SemaTargetedWake()) {
++		m_cond_var.SignalAll();
++	}
+ 
+ 	return Result::Ok;
+ }
+@@ -176,11 +273,15 @@ void KernelSemaPrivate::WakeWaiters() {
+ 			m_count -= waiter->need_count;
+ 			waiter->result = Result::Ok;
+ 			waiter->ready  = true;
++			if (waiter->own_cond != nullptr) {
++				waiter->own_cond->Signal();
++			}
+ 		}
+ 	}
+ }
+ 
+ KernelSemaPrivate::Result KernelSemaPrivate::Wait(int need_count, uint32_t* ptr_micros) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kSemaWait); // experiment 0415 (ls415)
+ 	Common::LockGuard lock(m_mutex);
+ 
+ 	if (need_count < 1 || need_count > m_max_count) {
+@@ -220,6 +321,12 @@ KernelSemaPrivate::Result KernelSemaPrivate::Wait(int need_count, uint32_t* ptr_
+ 	waiter.id         = id;
+ 	waiter.priority   = (m_fifo_order ? 0 : Libs::LibKernel::PthreadGetCurrentPriorityForKernel());
+ 	waiter.need_count = need_count;
++	Common::CondVar* cond = &m_cond_var;
++	if (Bc5SemaTargetedWake()) {
++		static thread_local Common::CondVar own; // a thread waits on one semaphore at a time
++		waiter.own_cond = &own;
++		cond            = &own;
++	}
+ 	AddWaiter(&waiter);
+ 
+ 	while (!waiter.ready) {
+@@ -230,9 +337,9 @@ KernelSemaPrivate::Result KernelSemaPrivate::Wait(int need_count, uint32_t* ptr_
+ 		}
+ 
+ 		if (infinitely) {
+-			m_cond_var.WaitFor(&m_mutex, SIGNAL_APC_POLL_MICROS);
++			cond->WaitFor(&m_mutex, SIGNAL_APC_POLL_MICROS);
+ 		} else {
+-			m_cond_var.WaitFor(&m_mutex, micros - elapsed);
++			cond->WaitFor(&m_mutex, micros - elapsed);
+ 		}
+ 
+ 		m_mutex.Unlock();
+@@ -257,6 +364,11 @@ int KYTY_SYSV_ABI KernelCreateSema(KernelSema* sem, const char* name, uint32_t a
  
  	EXIT_NOT_IMPLEMENTED(sem == nullptr);
  
@@ -27694,7 +28658,7 @@ index ed7c35b..8696edb 100644
  	if (name == nullptr || attr > 2 || init < 0 || max <= 0 || init > max) {
  		return KERNEL_ERROR_EINVAL;
  	}
-@@ -294,10 +370,6 @@ int KYTY_SYSV_ABI KernelWaitSema(KernelSema sem, int need, KernelUseconds* time)
+@@ -294,10 +406,6 @@ int KYTY_SYSV_ABI KernelWaitSema(KernelSema sem, int need, KernelUseconds* time)
  		return KERNEL_ERROR_ESRCH;
  	}
  
@@ -27705,7 +28669,7 @@ index ed7c35b..8696edb 100644
  	auto result = sem->Wait(need, time);
  
  	int ret = OK;
-@@ -341,6 +413,10 @@ int KYTY_SYSV_ABI KernelSignalSema(KernelSema sem, int count) {
+@@ -341,6 +449,10 @@ int KYTY_SYSV_ABI KernelSignalSema(KernelSema sem, int count) {
  	if (sem == nullptr) {
  		return KERNEL_ERROR_ESRCH;
  	}
@@ -30735,10 +31699,10 @@ index 6df0a95..eca6d2d 100644
  		    static_cast<uint32_t>(src->crop_right + (pitch - src->width));
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..66e6351
+index 0000000..4dc1055
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,14263 @@
+@@ -0,0 +1,14631 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -30775,6 +31739,9 @@ index 0000000..66e6351
 +#if defined(KYTY_BC5_DIRECT)
 +#include "bc5/direct.hpp"
 +#include "bc5/full_state.hpp"
++#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
++#include "bc5/sync_fast.hpp" // experiment 0415 (ls415d)
++#include "bc5/map_records.hpp" // experiment 0415 (mr415)
 +#include <sys/resource.h> // experiment 0379 (exp 0401 e7, mkzsk0401.py): setpriority, for the zero scan and the canary
 +#include <sys/syscall.h>  // experiment 0379: SYS_gettid
 +// ---- experiment 0379's backend/include/bc5/zero_skip.hpp (782ca0e9) lines 13-228, inlined by exp 0401's mkzsk0401.py ----
@@ -31292,6 +32259,7 @@ index 0000000..66e6351
 +static bool chain_cross();   // ADR 0010 section B: this thread's chain is held across its ioctls (BC5_DIRECT_CHAIN=2, a game thread)
 +static bool chain_cross_mode(); // BC5_DIRECT_CHAIN=2 at all
 +static void chain_observe(); // the title can observe the GPU now (submit done / wait idle / an event-queue wait): every held chain is submitted
++static void chain_soft_push_copy(const uint32_t* dwords, uint32_t n, const char* kind);
 +static void chain_soft_push(const uint32_t* dwords, uint32_t n, const char* kind); // a soft-CP replay to post once the chain holding the buffer is submitted
 +// The doorbell-queue consumer (source 1) keeps waiting for its own jobs and runs its soft-CP
 +// pass itself: a compute buffer may end in a wait for the next frame's label, and that wait has
@@ -31680,15 +32648,13 @@ index 0000000..66e6351
 +// there is no direct path. With the game thread's chain held across its ioctls (BC5_DIRECT_CHAIN=2) the buffers are not
 +// submitted yet, so RPCSX's EVENT_WRITE_EOP itself (6 dwords, the form event_write_eop below reads; address 0, so nothing
 +// is written) goes to the chain as a soft-CP replay, posted behind the chain's fence. The replay reads it later, so it
-+// lives in a ring of 4096 slots. Nothing is submitted to the GPU for it. RPCSX also waits for idle at the end of this
++// owns a copy through completion of its callback. Nothing is submitted to the GPU for it. RPCSX also waits for idle at the end of this
 +// ioctl (gc.cpp:271); that is not ported here (G12 is the wait-idle ioctl's).
-+static uint32_t              g_r3gpu_eop_slots[4096][6];
-+static std::atomic<uint32_t> g_r3gpu_eop_next {0};
 +static void r3gpu_submit_eop(uint64_t eop_value) {
 +	g_r3gpu_count[kR3EopEvents]++;
 +	const bool chained = Direct::chain_cross();
 +	if (chained) {
-+		uint32_t* s = g_r3gpu_eop_slots[g_r3gpu_eop_next.fetch_add(1, std::memory_order_relaxed) & 4095u];
++		uint32_t s[6] {}; // copied into the queued replay before returning
 +		s[0]        = 0xc0044700u;                 // PKT3 EVENT_WRITE_EOP (0x47), count 4: 6 dwords
 +		s[1]        = 0;                           // EVENT_CNTL (RPCSX: the event type is not used)
 +		s[2]        = 0;                           // address lo
@@ -31696,7 +32662,7 @@ index 0000000..66e6351
 +		s[4]        = static_cast<uint32_t>(eop_value);
 +		s[5]        = static_cast<uint32_t>(eop_value >> 32u);
 +		g_r3gpu_count[kR3EopChained]++;
-+		Direct::chain_soft_push(s, 6, "r3eop");
++		Direct::chain_soft_push_copy(s, 6, "r3eop");
 +	} else {
 +		Direct::post([eop_value](bool) { fire_eop(eop_value); });
 +	}
@@ -32463,7 +33429,25 @@ index 0000000..66e6351
 +		} else {
 +			idle_ticks++;
 +		}
-+		std::this_thread::sleep_for(std::chrono::microseconds(idle_ticks > 1000 ? 1000 : 200));
++		// Experiment 0415 (ls415): the poll's period is KYTY_BC5_RING_POLL_US (200, the long-idle sleep 5 times it: today's
++		// 200 and 1000); with KYTY_BC5_RING_SPIN_US the doorbells are read again without a sleep for that long after a pass
++		// that served packets. The counters say how many passes found work right after a sleep.
++		static bool     ls_slept      = false;
++		static uint64_t ls_spin_until = 0;
++		if (progressed) {
++			bc5::load_stat::count(bc5::load_stat::kRingPass);
++			if (ls_slept) bc5::load_stat::count(bc5::load_stat::kRingAfterSleep);
++			bc5::load_stat::delay(bc5::load_stat::kRingPass);
++			if (bc5::load_stat::ring_spin_ns() != 0) ls_spin_until = bc5::load_stat::now_ns() + bc5::load_stat::ring_spin_ns();
++		}
++		if (ls_spin_until != 0 && bc5::load_stat::now_ns() < ls_spin_until) {
++			ls_slept = false;
++			for (int k = 0; k < 16; k++) bc5::load_stat::cpu_relax();
++			continue;
++		}
++		ls_spin_until = 0;
++		ls_slept      = true;
++		std::this_thread::sleep_for(std::chrono::microseconds(idle_ticks > 1000 ? bc5::load_stat::ring_poll_us() * 5 : bc5::load_stat::ring_poll_us()));
 +	}
 +}
 +
@@ -32753,6 +33737,7 @@ index 0000000..66e6351
 +}
 +
 +// Seconds since the first call: the time base of the BC5_DIRECT_TIMING journal lines.
++static void fs415_flip(); // experiment 0415 (fs415): defined after the completion code
 +static double timing_now() {
 +	static const uint64_t t_first = [] {
 +		const uint64_t t = SoftCp::now_ns();
@@ -32764,6 +33749,78 @@ index 0000000..66e6351
 +
 +#if defined(KYTY_BC5_DIRECT)
 +static std::unique_ptr<bc5::direct::Device> g_dev;
++// BC5 experiment 0412 (tag mr412, DESIGN-learned-windows.md, README sections 51-53): the learned windows replaced by a
++// rule. Three switches, each off when unset or 0 (one test of a constant where it is asked):
++//   BC5_GUARD_MAP_RULE=1|2   R1: every 2 MiB chunk under a view of direct memory is imported when the view exists, with
++//                            no name list and no "has data" test (1: the direct-memory file; 2: the private file too).
++//   BC5_GUARD_PRT_BG=1       R2: one PRT mapping (reads 0, writes dropped, no memory) under the guest's address span
++//                            [kBgLo, kBgHi) at device open; real mappings replace it. It acts ONLY with MAP_RULE on:
++//                            with the "by data" import a PRT page under an unimported view would turn a loud miss
++//                            (a GPU fault) into a silent one (the top session's point 3). scratch_fill does nothing
++//                            inside the span then.
++//   BC5_GUARD_LEARN_LOG=1|2  the catcher: a GPU fault that would be learned is journaled with what lay at its address
++//                            (classify below), and nothing is written to the learned file or the alias file.
++//                            1: the window still joins this run's list in memory, so the same place does not fault
++//                            again in this run; 2: nothing is added at all.
++// The span: 4 GiB (above libdrm's 32-bit range, where the device keeps its argument slot) to the end of the title's
++// AMM window (0x9000000000); the device's own addresses are at 16 TiB and its code page at 0xFE00000000
++// (backend/include/bc5/direct.hpp kCodeVa, backend/src/direct.cpp kScratchVa), outside it.
++// This text is included by the main unit and by the CPU test maprule0412.cpp.
++namespace mr412 {
++static constexpr uint64_t kBgLo = 0x100000000ull, kBgHi = 0x9000000000ull;
++inline int env_digit(const char* name, int max) {
++	const char* e = std::getenv(name);
++	if (e == nullptr || e[0] < '0' || e[0] > '9' || e[1] != 0) return 0;
++	const int v = e[0] - '0';
++	return v > max ? 0 : v;
++}
++inline int rule() {
++	static const int v = env_digit("BC5_GUARD_MAP_RULE", 2);
++	return v;
++}
++inline bool rule_for(int kind) { return rule() == 2 || (rule() == 1 && kind == 0); } // kind: 0 direct memory, 1 private memory
++inline bool prt_bg() {
++	static const bool v = env_digit("BC5_GUARD_PRT_BG", 1) == 1 && rule() != 0;
++	return v;
++}
++inline int learn_log() {
++	static const int v = env_digit("BC5_GUARD_LEARN_LOG", 2);
++	return v;
++}
++// Is [lo, hi) wholly inside the background span? (scratch_fill's question; a piece that straddles an end is left to it.)
++inline bool in_bg(uint64_t lo, uint64_t hi) { return lo >= kBgLo && hi <= kBgHi && lo < hi; }
++// The chunks of the file a view [off, off + size) touches, as the eager loop walks them.
++inline void view_chunks(uint64_t off, uint64_t size, uint64_t chunk, std::vector<uint64_t>& out) {
++	if (size == 0) return;
++	for (uint64_t c = off & ~(chunk - 1); c < off + size; c += chunk) out.push_back(c);
++}
++// What lay at a faulting address, for the catcher's line. The order is the order of the questions that matter:
++// was it a guest address at all, did the guest have a range there, did we hold its memory, had the GPU a mapping.
++inline const char* classify(bool junk_bits, bool guest_range, bool under_view, bool view_lazy, bool view_eager, bool chunk_imported, bool gpu_mapped) {
++	if (junk_bits) return "K4 junk address (a bit above 40 set)";
++	if (!guest_range && !under_view) return "K3 no guest range (a hole)";
++	if (under_view && !chunk_imported) return view_lazy ? "K1 under a LAZY view, chunk not imported" : (view_eager ? "K1 under an EAGER view, chunk not imported (import failed or late)" : "K1 under a BY-DATA view, chunk never written by the CPU");
++	if (under_view && !gpu_mapped) return "K5 imported but not GPU-mapped at the fault (timing or a dropped mapping)";
++	if (under_view) return "K6 imported and GPU-mapped (a protection fault or a stale report)";
++	return gpu_mapped ? "K6 guest range outside direct memory, GPU-mapped" : "K2 guest range outside direct memory (anonymous), not GPU-mapped";
++}
++} // namespace mr412
++static bool g_mr412_bg = false; // exp 0412 (tag mr412): the PRT background span is mapped on the open device
++// Experiment 0412 (tag mr412): the PRT mappings a freshly opened device gets. With BC5_GUARD_PRT_BG (and MAP_RULE) the
++// whole guest span; otherwise, or when the kernel refuses the span, the AMM window alone as before (BC5_DIRECT_AMM_PRT).
++static void mr412_prt_open() {
++	g_mr412_bg = false;
++	if (!g_dev) return;
++	if (mr412::prt_bg()) {
++		const uint64_t t0 = SoftCp::now_ns();
++		g_mr412_bg        = g_dev->map_prt_window(mr412::kBgLo, mr412::kBgHi - mr412::kBgLo);
++		journal("map rule (exp 0412, tag mr412): PRT background 0x%" PRIx64 "-0x%" PRIx64 ": %s, %.1f ms\n", mr412::kBgLo, mr412::kBgHi, g_mr412_bg ? "mapped" : "REFUSED (the AMM window alone, as before)",
++		        static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
++		if (g_mr412_bg) return; // the AMM window lies inside the span
++	}
++	const bool amm_prt = std::getenv("BC5_DIRECT_AMM_PRT") != nullptr; // experiment 0102
++	if (amm_prt) g_dev->map_prt_window(0x8000000000ull, 0x1000000000ull);
++}
 +static std::mutex                           g_dev_mutex;
 +// Experiment 0024: jobs are queued and completed by a thread of their own
 +// (needs BC5_DIRECT_JOURNAL=min: the crash journal writes one line in two halves around a job).
@@ -32772,6 +33829,12 @@ index 0000000..66e6351
 +// frame's buffers), and a compute tail served late met its slot label cleared by the main buffer
 +// two frames on (the water in the second level: 4 s a frame).
 +static const bool g_async = g_journal_min;
++// Experiment 0415 (ls415): an import with its count, bytes and time.
++static uint32_t ls415_import(int fd, uint64_t off, uint64_t size) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kImport);
++	ls_scope.items = size;
++	return g_dev->import_memfd(fd, off, size);
++}
 +static std::shared_mutex g_finish_mutex; // shared: waiting for a job on g_dev; exclusive: replacing g_dev
 +// With jobs in flight a mapping must not go away or change under a job that may be using it
 +// (the kernel clears the page-table entries at once, whatever is still running): waits until
@@ -32840,7 +33903,7 @@ index 0000000..66e6351
 +	// BC5_DIRECT_AMM_PRT=1 maps the title's AMM window (0x8000000000, 64 GiB, as the guest log's
 +	// "AMM" reservation shows) as PRT pages before anything is imported there: pages the title leaves
 +	// unbacked read as 0 and drop writes, as its sparse UI layer expects (F161).
-+	if (std::getenv("BC5_DIRECT_AMM_PRT") != nullptr) g_dev->map_prt_window(0x8000000000ull, 0x1000000000ull);
++	mr412_prt_open(); // exp 0412 (tag mr412): the AMM window's PRT mapping, or the whole span with BC5_GUARD_PRT_BG
 +	// Submissions without draws and dispatches list only the BOs their packets name
 +	// (Device::set_short_lists; run 81: 0.05 ms instead of 27 ms in the CS ioctl for half of a
 +	// frame's submissions).
@@ -33013,11 +34076,31 @@ index 0000000..66e6351
 +	return std::find(names.begin(), names.end(), name) != names.end();
 +}
 +
++// Experiment 0415 (ls415d), KYTY_BC5_NAMES_FAST (default off; "verify" asks the old function too): the lazy and eager
++// class of a range's name remembered per name. Both lists are read once from the environment, so a name's class never
++// changes. Used only from direct_views_build, which runs under direct_views' mutex. If this were wrong, a heap would
++// be imported eagerly or lazily against its list: memory pinned that should not be, or a GPU fault on a heap that
++// should have been imported whole.
++static bool ls415_name_class(const char* name, bool eager) {
++	static const int               mode = bc5::sync_fast::mode_of(std::getenv("KYTY_BC5_NAMES_FAST"));
++	static bc5::sync_fast::NameMemo memo[2];
++	if (mode == 0) return eager ? direct_eager_name(name) : direct_lazy_name(name);
++	const bool f = memo[eager ? 1 : 0].get(name, eager ? direct_eager_name : direct_lazy_name);
++	if (mode == 2) {
++		const bool o = eager ? direct_eager_name(name) : direct_lazy_name(name);
++		if (o != f) {
++			bc5::load_stat::count(bc5::load_stat::kFastDiff);
++			return o;
++		}
++	}
++	return f;
++}
++
 +static std::vector<DView> direct_views_build(const DState& S) {
 +	std::vector<DView> v;
 +	if (S.kind == 0) {
 +		Libs::LibKernel::Memory::Bc5ForEachMappedRange(nullptr, &v, [](uint64_t start, uint64_t size, uint64_t offset, int type, int, const char* name, void* p) {
-+			if (type == 0 && size != 0) static_cast<std::vector<DView>*>(p)->push_back({start, size, offset, name != nullptr ? name : "", direct_lazy_name(name), direct_eager_name(name)});
++			if (type == 0 && size != 0) static_cast<std::vector<DView>*>(p)->push_back({start, size, offset, name != nullptr ? name : "", ls415_name_class(name, false), ls415_name_class(name, true)});
 +		});
 +	} else {
 +		// Private regions: the file offset is the address. Thread stacks (type 3) are lazy:
@@ -33027,7 +34110,7 @@ index 0000000..66e6351
 +			if (size == 0) return;
 +			std::string n = name != nullptr && *name != 0 ? name : "(unnamed)";
 +			if (type == 3) n = "(thread stacks)";
-+			static_cast<std::vector<DView>*>(p)->push_back({start, size, start, n, direct_lazy_name(name) || type == 3, direct_eager_name(name)});
++			static_cast<std::vector<DView>*>(p)->push_back({start, size, start, n, ls415_name_class(name, false) || type == 3, ls415_name_class(name, true)});
 +		});
 +	}
 +	return v;
@@ -33043,6 +34126,110 @@ index 0000000..66e6351
 +	bool               sorted = true;
 +};
 +static std::atomic<uint64_t> g_views_builds {0}; // experiment 0156: rebuilds of the views
++// Experiment 0415 (tag mr415), stage S1 of experiments/0415-load-times-fps/DESIGN-lock-side.md, KYTY_BC5_MAP_RECORDS
++// (default off; any value but 0 is "verify", the only mode yet): a list of the direct-memory views is kept up to date
++// from the range table's change records and compared, at every rebuild of the views, with the list built from the
++// same snapshot's every range. Nothing uses the kept list: this only proves (or refutes) that the records are
++// complete and in order, before any later stage relies on them. Called under direct_views' mutex.
++// Tag mr415b (the top session's review, 2026-11-12): with KYTY_BC5_MAP_RECORDS on, every 5 s on a thread of its own and
++// under no lock of the direct path, the readable VMAs of /proc/self/maps inside the guest's address span are held
++// against the range table: bytes of such a VMA that no range of the table covers are counted (maps_check,
++// maps_uncovered) and the first ten spans journaled. A mapper that changes the guest's address space without telling
++// the table shows up here as a stable non-zero count; a map call caught half-way shows as a count that comes and goes
++// (the two readings are not taken at one instant). Counts only: nothing acts on it.
++static void mr415_maps_check_thread() {
++	pthread_setname_np(pthread_self(), "bc5-mapschk");
++	constexpr uint64_t kGuestMin = 0x40000ull, kGuestMax = 0xfbffffffffull; // sync_mappings' span
++	int                logged    = 0;
++	for (;;) {
++		std::this_thread::sleep_for(std::chrono::seconds(5));
++		uint64_t                                   uncovered = 0, spans = 0;
++		std::vector<std::pair<uint64_t, uint64_t>> guest;
++		std::ifstream                              maps("/proc/self/maps");
++		std::string                                line;
++		while (std::getline(maps, line)) {
++			uint64_t start = 0, end = 0;
++			char     perms[8] = {};
++			if (std::sscanf(line.c_str(), "%" SCNx64 "-%" SCNx64 " %7s", &start, &end, perms) < 3) continue;
++			if (perms[0] != 'r' || start < kGuestMin || end > kGuestMax + 1 || end <= start) continue;
++			Libs::LibKernel::Memory::Bc5GuestRangesIn(start, end, &guest);
++			uint64_t cur = start;
++			auto     gap = [&](uint64_t a, uint64_t b) {
++				uncovered += b - a;
++				spans++;
++				if (logged < 10) {
++					logged++;
++					journal("maps check (exp 0415, mr415b): 0x%" PRIx64 "-0x%" PRIx64 " (%s) is readable in /proc/self/maps and in no range of the table\n", a, b, perms);
++				}
++			};
++			for (const auto& [a, b]: guest) {
++				if (a > cur) gap(cur, a < end ? a : end);
++				if (b > cur) cur = b;
++				if (cur >= end) break;
++			}
++			if (cur < end) gap(cur, end);
++		}
++		bc5::load_stat::count(bc5::load_stat::kMapsCheck, uncovered);
++		if (spans != 0) bc5::load_stat::count(bc5::load_stat::kMapsUncovered, spans);
++	}
++}
++
++static void mr415_verify() {
++	static const int mode = bc5::sync_fast::mode_of(std::getenv("KYTY_BC5_MAP_RECORDS"));
++	if (mode == 0) return;
++	static std::once_flag maps_check_once;
++	std::call_once(maps_check_once, [] { std::thread(mr415_maps_check_thread).detach(); });
++	struct R {
++		uint64_t    start, size, offset;
++		int         type;
++		std::string name;
++	};
++	static std::vector<DView> kept;
++	static bool               have = false;
++	std::vector<R>                             ranges;
++	std::vector<std::pair<uint64_t, uint64_t>> spans;
++	uint64_t                                   gen      = 0;
++	bool                                       complete = false;
++	if (!Libs::LibKernel::Memory::Bc5RangesWithDirty(
++	        [](uint64_t start, uint64_t size, uint64_t offset, int type, int, const char* name, void* p) {
++		        static_cast<std::vector<R>*>(p)->push_back({start, size, offset, type, name != nullptr ? name : ""});
++	        },
++	        &ranges, &gen, &spans, &complete)) {
++		return;
++	}
++	auto make = [](const R& r, DView* v) {
++		if (r.type != 0 || r.size == 0) return false;
++		*v = {r.start, r.size, r.offset, r.name, ls415_name_class(r.name.c_str(), false), ls415_name_class(r.name.c_str(), true)};
++		return true;
++	};
++	std::vector<DView> full;
++	for (const R& r: ranges) {
++		DView v;
++		if (make(r, &v)) full.push_back(std::move(v));
++	}
++	if (have && complete) {
++		for (const auto& [start, size]: spans) bc5::map_records::apply(kept, ranges, start, bc5::map_records::end_of(start, size), make);
++		bool   same = kept.size() == full.size();
++		size_t at   = 0;
++		for (; same && at < full.size(); at++) {
++			const DView &a = kept[at], &b = full[at];
++			if (a.va != b.va || a.size != b.size || a.off != b.off || a.name != b.name || a.lazy != b.lazy || a.eager != b.eager) same = false;
++		}
++		bc5::load_stat::count(bc5::load_stat::kMapRecord, spans.size());
++		if (!same) {
++			bc5::load_stat::count(bc5::load_stat::kRecMismatch);
++			static int logged = 0;
++			if (logged++ < 8) {
++				journal("map records (exp 0415, mr415): MISMATCH at generation %" PRIu64 " after %zu records: kept %zu views, rebuilt %zu, first difference at index %zu\n", gen,
++				        spans.size(), kept.size(), full.size(), at == 0 ? size_t {0} : at - 1);
++			}
++		}
++	} else if (have) {
++		bc5::load_stat::count(bc5::load_stat::kRecOverflow);
++	}
++	kept = std::move(full);
++	have = true;
++}
 +static std::shared_ptr<const DViews> direct_views(const DState& S) {
 +	static std::mutex                    m;
 +	static std::shared_ptr<const DViews> cache[2];
@@ -33060,6 +34247,7 @@ index 0000000..66e6351
 +	g_views_builds++;
 +	auto d = std::make_shared<DViews>();
 +	d->v   = direct_views_build(S);
++	if (k == 0) mr415_verify(); // experiment 0415 (mr415)
 +	uint64_t sig = 1469598103934665603ull;
 +	for (size_t i = 0; i < d->v.size(); i++) {
 +		const auto& v = d->v[i];
@@ -33591,7 +34779,7 @@ index 0000000..66e6351
 +			}
 +		}
 +		for (const auto& r: Lzr0401::runs(need, kDMaxBo)) {
-+			const uint32_t id = r.hi <= S.file_size ? g_dev->import_memfd(fd, r.lo, r.hi - r.lo) : 0;
++			const uint32_t id = r.hi <= S.file_size ? ls415_import(fd, r.lo, r.hi - r.lo) : 0;
 +			if (id == 0) {
 +				retry = true;
 +				if (g_lzr.import_failed++ < 16) journal("lazy release (exp 0401 e7): import 0x%" PRIx64 " +0x%" PRIx64 " of released chunks under a view again FAILED (tried again at the next sync)\n", r.lo, r.hi - r.lo);
@@ -33647,7 +34835,7 @@ index 0000000..66e6351
 +		std::vector<uint32_t> ids;
 +		bool                  ok = true;
 +		for (const auto& r: cut.keep) {
-+			const uint32_t id = g_dev->import_memfd(fd, r.lo, r.hi - r.lo);
++			const uint32_t id = ls415_import(fd, r.lo, r.hi - r.lo);
 +			if (id == 0) {
 +				ok = false;
 +				break;
@@ -34261,6 +35449,7 @@ index 0000000..66e6351
 +	const auto               views_p = direct_views(S);
 +	const std::vector<DView>& views  = views_p->v;
 +	g_dprof_views_ns += SoftCp::now_ns() - now;
++	if (bc5::load_stat::on()) bc5::load_stat::add(bc5::load_stat::kDsViews, SoftCp::now_ns() - now); // experiment 0415 (ls415c)
 +	const uint64_t sig = views_p->sig;
 +	if (sig != S.views_sig) g_layout_gen++;
 +	const bool zskip_new = zskip_sync_start(S, views); // experiment 0379 (exp 0401 e7): place the zero list; a canary hit forces a full sync
@@ -34284,7 +35473,7 @@ index 0000000..66e6351
 +	// 1. chunks to import: data inside a view, and the forced ones
 +	std::vector<uint64_t> need;
 +	for (const auto& v: views) {
-+		if (v.eager) { // BC5_DIRECT_EAGER_NAMES: every chunk of the view
++		if (v.eager || mr412::rule_for(S.kind)) { // BC5_DIRECT_EAGER_NAMES: every chunk of the view; exp 0412 (tag mr412): BC5_GUARD_MAP_RULE, of every view
 +			for (uint64_t c = v.off & ~(kDChunk - 1); c < v.off + v.size; c += kDChunk) {
 +				if (zskip_on && g_zskip.contains(c)) continue; // experiment 0379: on the zero list, under the canary
 +				if (direct_covered_end(S, c) == 0) need.push_back(c);
@@ -34316,7 +35505,7 @@ index 0000000..66e6351
 +		size_t j = i + 1;
 +		while (j < need.size() && need[j] == need[j - 1] + kDChunk && need[j] + kDChunk - need[i] <= kDMaxBo && S.failed.count(need[j]) == 0 && need[j] + kDChunk <= S.file_size) j++;
 +		const uint64_t off = need[i], size = need[j - 1] + kDChunk - need[i];
-+		const uint32_t id = g_dev->import_memfd(fd, off, size);
++		const uint32_t id = ls415_import(fd, off, size);
 +		if (id == 0) {
 +			journal("%s import 0x%" PRIx64 " +0x%" PRIx64 " FAILED\n", S.label, off, size);
 +			for (size_t k = i; k < j; k++) S.failed.insert(need[k]);
@@ -34335,6 +35524,7 @@ index 0000000..66e6351
 +	// one merged import — a bounded amount per call, the old BOs freed after the remap below.
 +	const uint64_t        t_merge0 = SoftCp::now_ns(); // experiment 0169
 +	g_dprof_scan_ns += t_merge0 - t_scan0;
++	if (bc5::load_stat::on()) bc5::load_stat::add(bc5::load_stat::kDsScan, t_merge0 - t_scan0); // experiment 0415 (ls415c)
 +	std::vector<uint32_t> retired;
 +	uint32_t              merged = 0;
 +	// Experiment 0167 (F222): a merge moves every GPU mapping that lies on the merged BOs - an
@@ -34381,7 +35571,7 @@ index 0000000..66e6351
 +				remaps += run_maps;
 +			}
 +			const uint64_t off = S.bos[i].off;
-+			const uint32_t id  = g_dev->import_memfd(fd, off, total);
++			const uint32_t id  = ls415_import(fd, off, total);
 +			if (id == 0) {
 +				journal("%s merge 0x%" PRIx64 " +0x%" PRIx64 " FAILED\n", S.label, off, total);
 +				S.merge_failed.insert(off);
@@ -34404,12 +35594,14 @@ index 0000000..66e6351
 +	// 2. the views' addresses: every (view, imported range) intersection is one GPU mapping
 +	const uint64_t t_drain0 = SoftCp::now_ns(); // experiment 0169
 +	g_dprof_merge_ns += t_drain0 - t_merge0;
++	if (bc5::load_stat::on()) bc5::load_stat::add(bc5::load_stat::kDsMerge, t_drain0 - t_merge0); // experiment 0415 (ls415c)
 +	if (!retired.empty() || sig != S.views_sig || guard0412_cap_changed(S)) { // exp 0412 (tag g412b)
 +		wait_jobs(); // mappings are about to go or be replaced
 +		g_dprof_drains++;
 +	}
 +	const uint64_t t_maps0 = SoftCp::now_ns();
 +	g_dprof_drain_ns += t_maps0 - t_drain0;
++	if (bc5::load_stat::on()) bc5::load_stat::add(bc5::load_stat::kDsDrain, t_maps0 - t_drain0); // experiment 0415 (ls415c)
 +	lzr_confirm(S, lzr, retired); // experiment 0401 series e7 (lzr): a cut stands only when every ring is idle after the drain
 +	uint32_t mapped = 0, unmapped = 0, map_failed = 0;
 +	if (sig != S.views_sig || S.bos.size() != S.bos_mapped || !retired.empty() || guard0412_cap_changed(S)) { // exp 0412 (tag g412b)
@@ -34484,6 +35676,7 @@ index 0000000..66e6351
 +		S.bos_mapped = map_failed == 0 ? S.bos.size() : 0; // a failure is retried at the next sync
 +	}
 +	g_dprof_maps_ns += SoftCp::now_ns() - t_maps0; // experiment 0169
++	if (bc5::load_stat::on()) bc5::load_stat::add(bc5::load_stat::kDsMaps, SoftCp::now_ns() - t_maps0); // experiment 0415 (ls415c)
 +	if (imported != 0) S.blocks = ~0ull; // pinning may have allocated pages: look once more
 +	for (const uint32_t id: retired) g_dev->free_shared(id);
 +	guard0412_after_cuts(lzr.done.size()); // exp 0412 (tag g412c): BC5_GUARD_SPLIT
@@ -34508,6 +35701,7 @@ index 0000000..66e6351
 +}
 +
 +static void direct_sync(bool force) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kDirectSync); // experiment 0415 (ls415)
 +	for (auto& S: g_d) direct_sync_one(S, force);
 +}
 +
@@ -34572,6 +35766,7 @@ index 0000000..66e6351
 +		return;
 +	}
 +	g_last_sync_ns = now;
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kAnonSync); // experiment 0415 (ls415)
 +	constexpr uint64_t kGuestMin = 0x40000ull, kGuestMax = 0xfbffffffffull;
 +	constexpr uint64_t kPage = 4096, kGrain = 65536;
 +
@@ -34605,11 +35800,23 @@ index 0000000..66e6351
 +		g_layout_gen++;
 +	}
 +	g_vmas = vmas;
++	// Experiment 0415 (ls415d), KYTY_BC5_VMA_FAST (default off; "verify" runs both): the walk over every VMA for each
++	// mapping becomes a binary search when the list is sorted and its entries do not overlap (checked here each time;
++	// else the old walk). If this were wrong, a mapping whose VMA is gone would stay on the GPU (stale pages read) or a
++	// valid one would be unmapped (a GPU fault).
++	static const int vma_fast = bc5::sync_fast::mode_of(std::getenv("KYTY_BC5_VMA_FAST"));
++	const bool       vma_ok   = vma_fast != 0 && bc5::sync_fast::vmas_ordered(vmas);
 +	auto inside_vma = [&](uint64_t a, uint64_t b, bool readonly) {
-+		for (const auto& v: vmas) {
-+			if (a >= v.start && b <= v.end && v.readonly == readonly) return true;
++		if (!vma_ok) return bc5::sync_fast::inside_old(vmas, a, b, readonly);
++		const bool f = bc5::sync_fast::inside_fast(vmas, a, b, readonly);
++		if (vma_fast == 2) {
++			const bool o = bc5::sync_fast::inside_old(vmas, a, b, readonly);
++			if (o != f) {
++				bc5::load_stat::count(bc5::load_stat::kFastDiff);
++				return o;
++			}
 +		}
-+		return false;
++		return f;
 +	};
 +
 +	// Pass 1: revalidation.
@@ -34829,6 +36036,7 @@ index 0000000..66e6351
 +}
 +static void alias_learn(uint64_t fault_addr) {
 +	if (!aliases_on()) return;
++	if (mr412::learn_log() == 2) return; // exp 0412 (tag mr412): BC5_GUARD_LEARN_LOG=2
 +	const uint64_t t = fault_addr >> 40u, low = fault_addr & ((1ull << 40u) - 1);
 +	if (t == 0 || t == 0x10 || low == 0) return; // 0x10: the device's own scratch at 16 TiB
 +	// Experiment 0195: a fault whose low 40 bits name no guest memory is not a tagged guest address. Session 0808's
@@ -34849,7 +36057,7 @@ index 0000000..66e6351
 +		}
 +		g_aliases.emplace_back(t, lo, n);
 +	}
-+	if (FILE* f = std::fopen(alias_path(), "a")) {
++	if (FILE* f = mr412::learn_log() != 0 ? nullptr : std::fopen(alias_path(), "a")) { // exp 0412 (tag mr412): the catcher writes no file
 +		std::fprintf(f, "0x%llx 0x%llx 0x%llx\n", static_cast<unsigned long long>(t), static_cast<unsigned long long>(lo), static_cast<unsigned long long>(n));
 +		std::fclose(f);
 +	}
@@ -34903,16 +36111,55 @@ index 0000000..66e6351
 +	marks.clear();
 +	reopens = now;
 +}
++// Experiment 0412 (tag mr412): BC5_GUARD_LEARN_LOG. What lay at the address of a GPU fault that would be learned: one
++// journal line per fault, the sample the rule's design asks for. Called before the learning, on the thread that learns.
++static void mr412_would_learn(uint64_t fault, uint32_t status) {
++	if (mr412::learn_log() == 0 || fault == 0) return;
++	const bool     junk = (fault >> 40u) != 0;
++	const uint64_t page = (junk ? fault & ((1ull << 40u) - 1) : fault) & ~0xfffull;
++	std::vector<std::pair<uint64_t, uint64_t>> guest;
++	Libs::LibKernel::Memory::Bc5GuestRangesIn(page, page + 0x1000ull, &guest);
++	bool        under = false, lazy = false, eager = false, imported = false, forced = false;
++	int         kind = -1;
++	std::string name;
++	for (auto& S: g_d) {
++		if (under || dstate_fd(S) < 0) continue;
++		const auto views_p = direct_views(S);
++		for (const auto& v: views_p->v) {
++			if (page < v.va || page >= v.va + v.size) continue;
++			const uint64_t c = (v.off + (page - v.va)) & ~(kDChunk - 1);
++			under    = true;
++			lazy     = v.lazy;
++			eager    = v.eager;
++			kind     = S.kind;
++			name     = v.name;
++			imported = direct_covered_end(S, c) != 0;
++			forced   = S.forced.count(c) != 0;
++			break;
++		}
++	}
++	const bool     mapped = g_dev && covered_sorted(*g_dev->sorted_mappings(), page, 4);
++	const uint64_t lo     = (fault & ~0x3ffffffull) > 0x2000000ull ? (fault & ~0x3ffffffull) - 0x2000000ull : 0;
++	bool           listed = false;
++	for (const auto& [a, b]: g_learned) {
++		if (a == lo && b == 0x6000000ull) listed = true;
++	}
++	journal("would learn (exp 0412, tag mr412): t %.3f s: fault 0x%" PRIx64 " status 0x%08x: %s; guest range %s; view %s%s%s; chunk %s%s; GPU mapping %s; PRT background %s; window 0x%" PRIx64 "+0x6000000 %s; mode %d, no file written\n",
++	        timing_now(), fault, status, mr412::classify(junk, !guest.empty(), under, lazy, eager, imported, mapped), guest.empty() ? "no" : "yes", under ? name.c_str() : "none",
++	        under ? (kind == 0 ? " (direct" : " (private") : "", under ? (eager ? ", eager)" : (lazy ? ", lazy)" : ", by data)")) : "", imported ? "imported" : "not imported", forced ? ", forced" : "",
++	        mapped ? "yes" : "no", g_mr412_bg ? "on" : "off", lo, listed ? "already on this run's list" : "new", mr412::learn_log());
++}
 +static void learned_add(uint64_t fault_addr) {
 +	const uint64_t lo = (fault_addr & ~0x3ffffffull) > 0x2000000ull ? (fault_addr & ~0x3ffffffull) - 0x2000000ull : 0; // 64 MiB aligned, 32 MiB before
 +	const uint64_t n  = 0x6000000ull; // 96 MiB
 +	if (m11_learn_refused(fault_addr, lo, n)) return; // exp 0401 e11 (tag m11): BC5_DIRECT_LEARN_GUEST_ONLY
++	if (mr412::learn_log() == 2) return; // exp 0412 (tag mr412): BC5_GUARD_LEARN_LOG=2, the line is written, nothing is added
 +	for (const auto& [a, b]: g_learned) {
 +		if (a == lo && b == n) return;
 +	}
 +	g_learned.emplace_back(lo, n);
 +	g_layout_gen++;
-+	if (FILE* f = std::fopen(learned_path(), "a")) {
++	if (FILE* f = mr412::learn_log() != 0 ? nullptr : std::fopen(learned_path(), "a")) { // exp 0412 (tag mr412): the catcher writes no file
 +		std::fprintf(f, "0x%llx 0x%llx\n", static_cast<unsigned long long>(lo), static_cast<unsigned long long>(n));
 +		std::fclose(f);
 +	}
@@ -34936,14 +36183,25 @@ index 0000000..66e6351
 +		if (v.readonly || v.end <= lo || v.start >= hi) continue;
 +		pieces.emplace_back(v.start > lo ? v.start : lo, v.end < hi ? v.end : hi);
 +	}
-+	for (const auto& m: have) {
-+		std::vector<std::pair<uint64_t, uint64_t>> next;
-+		for (const auto& [pa, pb]: pieces) {
-+			if (m.va + m.size <= pa || m.va >= pb) { next.emplace_back(pa, pb); continue; }
-+			if (m.va > pa) next.emplace_back(pa, m.va);
-+			if (m.va + m.size < pb) next.emplace_back(m.va + m.size, pb);
++	// Experiment 0415 (ls415d), KYTY_BC5_WINDOW_FAST (default off; "verify" runs both). A STOPGAP for the device
++	// mutex's hold: the learned windows themselves are to be replaced by a rule (the maintainer, 2026-11-12; exp 0412).
++	// The pieces lie inside [lo, hi), so a mapping that does not touch [lo, hi) leaves them as they are; the old loop
++	// rebuilt the piece list once per mapping (21,300 mappings x 81 windows on every layout change: 4.8 s a run).
++	// If this were wrong, a piece already mapped would be mapped again, or a window's piece would stay unmapped (the
++	// GPU fault the window was learned from).
++	static const int window_fast = bc5::sync_fast::mode_of(std::getenv("KYTY_BC5_WINDOW_FAST"));
++	if (window_fast == 0) {
++		bc5::sync_fast::subtract_old(pieces, have);
++	} else if (window_fast == 2) {
++		auto old_pieces = pieces;
++		bc5::sync_fast::subtract_old(old_pieces, have);
++		bc5::sync_fast::subtract_fast(pieces, have, lo, hi);
++		if (pieces != old_pieces) {
++			bc5::load_stat::count(bc5::load_stat::kFastDiff);
++			pieces = old_pieces;
 +		}
-+		pieces.swap(next);
++	} else {
++		bc5::sync_fast::subtract_fast(pieces, have, lo, hi);
 +	}
 +	uint64_t added = 0;
 +	for (const auto& [pa, pb]: pieces) {
@@ -34955,6 +36213,7 @@ index 0000000..66e6351
 +		}
 +	}
 +	if (added != 0) journal("%s 0x%" PRIx64 ": window 0x%" PRIx64 "+0x%" PRIx64 ", mapped +%.1f MiB\n", what, addr, lo, hi - lo, static_cast<double>(added) / 1048576.0);
++	if (added != 0) bc5::load_stat::count(bc5::load_stat::kLearnedChanged, added); // experiment 0415 (ls415d): a window that mapped something
 +}
 +// Experiment 0037: a learned fault window may cover addresses the guest has no range at all in:
 +// one title's GPU reads up to 24 KiB past the end of a 2.7 GiB heap, and a fault is a 14 s freeze
@@ -34991,6 +36250,7 @@ index 0000000..66e6351
 +}
 +static void scratch_fill(uint64_t lo, uint64_t hi, std::vector<bc5::direct::Mapping>& have) {
 +	if (!g_dev) return;
++	if (g_mr412_bg && mr412::in_bg(lo, hi)) return; // exp 0412 (tag mr412): BC5_GUARD_PRT_BG, the hole is PRT already
 +	constexpr uint64_t kGpuVaEnd = 1ull << 47u; // windows learned from faults at garbage addresses lie beyond it
 +	if (lo >= kGpuVaEnd) return;
 +	if (hi > kGpuVaEnd) hi = kGpuVaEnd;
@@ -35820,11 +37080,13 @@ index 0000000..66e6351
 +#endif // !GUARD0412_TEST
 +
 +static void learned_apply() {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kLearned); // experiment 0415 (ls415)
 +	learned_load();
 +	if (!g_dev) return;
 +	static uint64_t applied_gen = 0;
 +	if (applied_gen == g_layout_gen) return; // same views, VMAs and learned list as last time
 +	applied_gen = g_layout_gen;
++	bc5::load_stat::Scope ls_apply(bc5::load_stat::kLearnedApply); // experiment 0415 (ls415d): a full application
 +	const uint64_t la_t0 = SoftCp::now_ns(), la_b0 = g_views_builds.load(); // experiment 0156
 +	// Holes the guest has put a range in since: give them back first.
 +	for (size_t i = 0; i < g_scratch.size();) {
@@ -36668,6 +37930,7 @@ index 0000000..66e6351
 +	const uint32_t* dwords;
 +	uint32_t        n;
 +	const char*     kind;
++	std::shared_ptr<const std::vector<uint32_t>> owned {}; // host-generated replay only; captured by value with e
 +};
 +// ADR 0013 (experiment 0226): a wait a held chain carries for the GPU, released when
 +// its label is satisfied or its writer is on a ring.
@@ -37042,6 +38305,15 @@ index 0000000..66e6351
 +	std::lock_guard lk(s.mu);
 +	s.soft.push_back({dwords, n, kind});
 +	if (s.c.segs.empty() && !s.in_submit) chain_post_soft_locked(s); // nothing of the buffer is held back (flushed at a wait, or never appended)
++}
++// Experiment 0416 (Codex's review of exp 0413): host-generated packets must survive both the held chain and the
++// completion queue. Guest command-buffer replays keep their borrowed-buffer semantics.
++static void chain_soft_push_copy(const uint32_t* dwords, uint32_t n, const char* kind) {
++	auto owned = std::make_shared<const std::vector<uint32_t>>(dwords, dwords + n);
++	ChainSlot& s = g_chain_tl;
++	std::lock_guard lk(s.mu);
++	s.soft.push_back({owned->data(), n, kind, owned});
++	if (s.c.segs.empty() && !s.in_submit) chain_post_soft_locked(s);
 +}
 +// Appends `pre` (host-built, may be empty) then `ib` to the thread's chain, closing it first if the buffer
 +// cannot share it. host_built: no soft-CP marks for `ib` (a state prefix submitted on its own).
@@ -39797,6 +41069,7 @@ index 0000000..66e6351
 +				}
 +			}
 +		}
++		mr412_would_learn(r.fault_addr, static_cast<uint32_t>(r.fault_status)); // exp 0412 (tag mr412)
 +		if (r.fault_addr != 0 && (r.fault_addr >> 40u) != 0 && aliases_on()) alias_learn(r.fault_addr); // experiment 0056
 +		else if (r.fault_addr != 0) learned_add(r.fault_addr);
 +		// After the kernel's ring reset (F28) the process opens a fresh device and goes on; the
@@ -39812,7 +41085,7 @@ index 0000000..66e6351
 +		ro.gds_shadow = true;
 +		g_dev = bc5::direct::Device::open(kRenderNode, ro);
 +		if (g_dev) g_dev->set_state_stack(true);
-+		if (g_dev && std::getenv("BC5_DIRECT_AMM_PRT") != nullptr) g_dev->map_prt_window(0x8000000000ull, 0x1000000000ull); // experiment 0102
++		mr412_prt_open(); // exp 0412 (tag mr412): after a reopen, as at the first open (experiment 0102)
 +		if (g_dev) g_dev->set_short_lists(true);
 +		if (g_dev) g_dev->set_dma_idle(true);
 +		if (g_dev) g_dev->set_async(g_async);
@@ -42241,6 +43514,23 @@ index 0000000..66e6351
 +		q += len;
 +	}
 +}
++// Experiment 0415 (tag fs415), KYTY_BC5_FRAME_STAT=<file> (default off; unset, empty and "0" are off), part 2's
++// counter: one "f" line per flip (frame number, CLOCK_MONOTONIC ns when the flip returned) and, for two frames in every
++// sixteen, one "j" line per completed job: the frame it completed in, its number, kind, ring, the title's dwords, the
++// dwords and packets the filter saw, packets dropped, BOs listed, the device's prepare / list / CS milliseconds, when
++// it was queued and when its fence was seen (ns, the host's clock), and the GPU's own start and end stamps (0 unless
++// BC5_DIRECT_JOB_TS=1; 10 ns units). No change of behaviour: lines are written by the completion threads and at the
++// flip, outside the device mutex.
++static FILE* fs415_file() {
++	static FILE* const f = [] {
++		const char* e = std::getenv("KYTY_BC5_FRAME_STAT");
++		return bc5::load_stat::env_set(e) ? std::fopen(e, "a") : nullptr;
++	}();
++	return f;
++}
++static std::mutex            g_fs415_mutex;
++static std::atomic<uint64_t> g_fs415_frame {0};
++
 +struct CqItem {
 +	bool                      fence = false;
 +	PendingJob                job;
@@ -42355,6 +43645,15 @@ index 0000000..66e6351
 +			}
 +			if (r.timed_out) m11_keep_lost(); // exp 0401 e11 (tag m11): the lost jobs' label writes, before they are forgotten
 +			forget_label_writes(j.seq, r.ring, r.timed_out || r.rc == -125); // experiment 0055
++			if (FILE* fs = fs415_file(); fs != nullptr && r.ok) { // experiment 0415 (fs415)
++				const uint64_t frame = g_fs415_frame.load(std::memory_order_relaxed);
++				if ((frame & 15u) < 2) {
++					std::lock_guard fl(g_fs415_mutex);
++					std::fprintf(fs, "j %" PRIu64 " %" PRIu64 " %s %d %u %" PRIu64 " %" PRIu64 " %" PRIu64 " %u %.3f %.3f %.3f %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 "\n", frame, j.n, j.kind,
++					             r.ring, j.num_dwords, j.filter.dwords, j.filter.packets, j.filter.dropped, j.bo_count, j.prepare_ms, j.list_ms, j.cs_ms, j.queued_ns,
++					             static_cast<uint64_t>(SoftCp::now_ns()), r.gpu_start, r.gpu_end);
++				}
++			}
 +			const double total_ms = static_cast<double>(SoftCp::now_ns() - j.queued_ns) / 1e6 + j.cs_ms;
 +			frame_profile_done(index == 0, j.queued_ns, SoftCp::now_ns(), 0.0);
 +			if (!r.ok || (j.n & 0x3fu) == 0) journal("submit #%" PRIu64 " %s %u dwords at %p: pass %" PRIu64 " rewrite %" PRIu64 " drop %" PRIu64 " unmapped %" PRIu64 " cc %" PRIu64 " mappings %zu ... %s rc %d%s%s %.2f ms\n",
@@ -42437,12 +43736,24 @@ index 0000000..66e6351
 +	chain_flush(5); // ADR 0010
 +	if (g_chain_mode >= 2) chain_flush_all(5); // section B: the flip may come from another thread than the submitting one
 +	if (!g_async) return;
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kDrain); // experiment 0415 (ls415)
 +	while (g_cq_items.load() != 0) std::this_thread::sleep_for(std::chrono::microseconds(50));
++}
++
++// Experiment 0415 (fs415): the flip's line and the frame number the job lines carry.
++static void fs415_flip() {
++	FILE* fs = fs415_file();
++	if (fs == nullptr) return;
++	const uint64_t frame = g_fs415_frame.fetch_add(1, std::memory_order_relaxed) + 1;
++	std::lock_guard fl(g_fs415_mutex);
++	std::fprintf(fs, "f %" PRIu64 " %" PRIu64 "\n", frame, bc5::load_stat::now_ns());
++	if ((frame & 63u) == 0) std::fflush(fs);
 +}
 +
 +static void wait_jobs() {
 +	chain_flush(5); // ADR 0010
 +	if (!g_async || !g_dev) return;
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kWaitJobs); // experiment 0415 (ls415)
 +	g_dev->wait_idle(2'000'000'000ull);
 +}
 +
@@ -42467,6 +43778,7 @@ index 0000000..66e6351
 +static inline bool g_frame_profile_on() { return g_frame_profile_env && ::Log::Bc5LoggingOn(); }
 +
 +static void frame_profile_wait(bool game_thread, bool cap, double ms) {
++	if (bc5::load_stat::on()) bc5::load_stat::add(cap ? bc5::load_stat::kInflightCap : bc5::load_stat::kLabelWait, ms > 0 ? static_cast<uint64_t>(ms * 1e6) : 0); // experiment 0415 (ls415)
 +	if (!g_frame_profile_on() || !game_thread) return;
 +	std::lock_guard lock(g_fp_mutex);
 +	(cap ? g_fp.cap_ms : g_fp.cpuwait_ms) += ms;
@@ -42879,7 +44191,11 @@ index 0000000..66e6351
 +		while (g_cq_fences.load() >= max_in_flight || g_recovering.load()) std::this_thread::sleep_for(std::chrono::microseconds(50));
 +		frame_profile_wait(t_cq == 0, true, static_cast<double>(SoftCp::now_ns() - t_cap) / 1e6);
 +	}
++	bc5::load_stat::delay(bc5::load_stat::kDevLockWait); // experiment 0415 (ls415): a delay outside the lock, measurement only
++	const uint64_t  ls_w0 = bc5::load_stat::begin();
 +	std::lock_guard lock(g_dev_mutex);
++	bc5::load_stat::end(bc5::load_stat::kDevLockWait, ls_w0);
++	bc5::load_stat::Scope ls_hold(bc5::load_stat::kDevLockHold);
 +	if (g_dev->wedged()) {
 +		return;
 +	}
@@ -42978,6 +44294,10 @@ index 0000000..66e6351
 +	}
 +	hint_targets(ib, num_dwords);
 +	const uint64_t t2 = SoftCp::now_ns();
++	if (bc5::load_stat::on()) { // experiment 0415 (ls415c): the hold by part
++		bc5::load_stat::add(bc5::load_stat::kHoldProbe, ta - t0);
++		bc5::load_stat::add(bc5::load_stat::kHoldHints, t2 - tc);
++	}
 +	if (timing) { // the split of "sync" and "hints", every 128 submissions (experiment 0022, step 3)
 +		static uint64_t acc[5] = {}, count = 0;
 +		acc[0] += ta - t0;
@@ -43627,7 +44947,15 @@ index 0000000..66e6351
 +		}
 +		offsets.swap(back);
 +	};
++	const uint64_t ls_t3 = SoftCp::now_ns(); // experiment 0415 (ls415c)
 +	auto r = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, true, qring);
++	if (bc5::load_stat::on()) { // experiment 0415 (ls415c): the hold by part
++		bc5::load_stat::add(bc5::load_stat::kHoldPre, ls_t3 - t2);
++		bc5::load_stat::add(bc5::load_stat::kDevCall, SoftCp::now_ns() - ls_t3);
++		bc5::load_stat::add(bc5::load_stat::kDevPrepare, r.prepare_ms > 0 ? static_cast<uint64_t>(r.prepare_ms * 1e6) : 0);
++		bc5::load_stat::add(bc5::load_stat::kDevList, r.list_ms > 0 ? static_cast<uint64_t>(r.list_ms * 1e6) : 0);
++		bc5::load_stat::add(bc5::load_stat::kDevCs, r.cs_ms > 0 ? static_cast<uint64_t>(r.cs_ms * 1e6) : 0);
++	}
 +	mec_back(r.executed_offsets);
 +	fl_back(r.executed_offsets); // experiment 0404
 +	if (qring != bc5::direct::kGfxRing && (g_comp_jobs++ & 0xffffu) == 0) {
@@ -43830,6 +45158,7 @@ index 0000000..66e6351
 +static bool chain_cross_mode() { return false; }
 +static void chain_observe() {}
 +static void chain_soft_push(const uint32_t*, uint32_t, const char*) {}
++static void chain_soft_push_copy(const uint32_t*, uint32_t, const char*) {}
 +static void set_source(int) {}
 +static bool async_on() { return false; }
 +static bool on_game_thread() { return true; }
@@ -43841,6 +45170,7 @@ index 0000000..66e6351
 +static void frame_profile_job(bool, double, double, double) {}
 +static void frame_profile_done(bool, uint64_t, uint64_t, double) {}
 +static void frame_profile_flip(double) {}
++static void fs415_flip() {} // experiment 0415 (fs415)
 +#endif
 +
 +} // namespace Direct
@@ -44803,6 +46133,8 @@ index 0000000..66e6351
 +	const double t_drain = Bc5Gc::Direct::timing_now();
 +	if (!defer) Bc5Gc::Direct::drain(); // nothing of the frame may still be in flight
 +	Bc5Gc::Direct::frame_profile_flip((Bc5Gc::Direct::timing_now() - t_drain) * 1e3);
++	bc5::load_stat::flip(Bc5Gc::Direct::timing_now()); // experiment 0415 (ls415)
++	Bc5Gc::Direct::fs415_flip();                       // experiment 0415 (fs415)
 +	if (defer) {
 +		if (index >= 0 && index < 64) {
 +			Bc5Gc::g_flip_pending[index]++; // experiment 0069
@@ -45003,10 +46335,10 @@ index 0000000..66e6351
 +
 +} // namespace Libs
 diff --git a/src/libs/controller.cpp b/src/libs/controller.cpp
-index 55718eb..32faef0 100644
+index 55718eb..51cf56e 100644
 --- a/src/libs/controller.cpp
 +++ b/src/libs/controller.cpp
-@@ -1,787 +1,1480 @@
+@@ -1,787 +1,1482 @@
 -#include "libs/controller.h"
 -
 -#include "common/assert.h"
@@ -45794,6 +47126,7 @@ index 55718eb..32faef0 100644
 -}
 -
 -} // namespace Libs::Controller
++#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
 +#include <pthread.h>
 +#include "libs/controller.h"
 +#include "SDL.h"
@@ -46180,6 +47513,7 @@ index 55718eb..32faef0 100644
 +			const int n = std::sscanf(line.c_str(), "%31s %31s %d %d %d", a, b, &x, &y, &t);
 +			const std::string cmd = a, arg = b;
 +			if (n >= 2 && cmd == "press" && Bc5ButtonByName(arg) != 0) {
++				bc5::load_stat::mark(("key press " + std::string(arg)).c_str()); // experiment 0415 (ls415)
 +				ControllerButton(-1000, Bc5ButtonByName(arg), true);
 +				ms(n >= 3 && x > 0 ? x : 150);
 +				ControllerButton(-1000, Bc5ButtonByName(arg), false);
@@ -47724,7 +49058,7 @@ index 5b0fc93..5b78760 100644
  	LOGF("\t target = %d\n"
  	     "\t msg    = 0x%016" PRIx64 "\n",
 diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
-index 073361d..69709a8 100644
+index 073361d..6fb7951 100644
 --- a/src/libs/libAmpr.cpp
 +++ b/src/libs/libAmpr.cpp
 @@ -1,3 +1,5 @@
@@ -47733,7 +49067,7 @@ index 073361d..69709a8 100644
  #include "common/abi.h"
  #include "common/dateTime.h"
  #include "common/file.h"
-@@ -11,14 +13,25 @@
+@@ -11,14 +13,27 @@
  #include "loader/symbolDatabase.h"
  
  #include <algorithm>
@@ -47756,10 +49090,12 @@ index 073361d..69709a8 100644
  #include <unordered_map>
  #include <vector>
 +#include <sys/mman.h> // experiment 0401 series e4: mprotect of the AMM PRT zero pages
++#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
++#include "bc5/apr_posix.hpp" // experiment 0415 (ls415b/c): KYTY_BC5_APR_POSIX
  
  #ifdef min
  #undef min
-@@ -27,6 +40,92 @@
+@@ -27,6 +42,92 @@
  #undef max
  #endif
  
@@ -47852,7 +49188,7 @@ index 073361d..69709a8 100644
  namespace Libs {
  
  namespace AprShared {
-@@ -41,6 +140,7 @@ struct SubmissionState {
+@@ -41,6 +142,7 @@ struct SubmissionState {
  	uint64_t result           = 0;
  	int32_t  execution_result = 0;
  	uint32_t error_offset     = 0;
@@ -47860,7 +49196,7 @@ index 073361d..69709a8 100644
  };
  
  struct ResolvedPathInfo {
-@@ -54,6 +154,7 @@ struct ResolvedPathInfo {
+@@ -54,6 +156,7 @@ struct ResolvedPathInfo {
  static std::mutex                                        g_mutex;
  static uint32_t                                          g_next_submission_id = 1;
  static std::unordered_map<uint32_t, SubmissionState>     g_submissions;
@@ -47868,7 +49204,7 @@ index 073361d..69709a8 100644
  static std::unordered_map<uint32_t, std::string>         g_files;
  static std::unordered_map<uint32_t, uint64_t>            g_file_sizes;
  static std::unordered_map<std::string, ResolvedPathInfo> g_resolved_paths;
-@@ -468,12 +569,23 @@ static void SetSubmissionResult(uint32_t submission_id, int32_t execution_result
+@@ -468,12 +571,23 @@ static void SetSubmissionResult(uint32_t submission_id, int32_t execution_result
  	if (it != g_submissions.end()) {
  		it->second.execution_result = execution_result;
  		it->second.error_offset     = error_offset;
@@ -47894,7 +49230,7 @@ index 073361d..69709a8 100644
  	if (it == g_submissions.end()) {
  		return false;
  	}
-@@ -501,7 +613,8 @@ static int WriteResult(void* result, int32_t execution_result = 0, uint32_t erro
+@@ -501,7 +615,8 @@ static int WriteResult(void* result, int32_t execution_result = 0, uint32_t erro
  
  namespace LibAmpr::Ampr {
  static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_result,
@@ -47904,7 +49240,7 @@ index 073361d..69709a8 100644
  }
  
  namespace LibKernelApr {
-@@ -667,7 +780,7 @@ static int KYTY_SYSV_ABI ResolveFilepathsWithPrefixToIdsAndFileSizesForEach(
+@@ -667,7 +782,7 @@ static int KYTY_SYSV_ABI ResolveFilepathsWithPrefixToIdsAndFileSizesForEach(
  	    AprShared::ResolvePathsCommon(path_list, count, ids, sizes, nullptr, prefix_buf, results));
  }
  
@@ -47913,7 +49249,7 @@ index 073361d..69709a8 100644
                                                           void*     result,
                                                           uint32_t* out_submission_id) {
  	PRINT_NAME();
-@@ -683,11 +796,10 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
+@@ -683,11 +798,10 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto submit_result = LibAmpr::Ampr::ExecuteAprCommandBuffer(command_buffer_addr,
@@ -47926,7 +49262,7 @@ index 073361d..69709a8 100644
  
  	if (out_submission_id != nullptr) {
  		if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
-@@ -698,7 +810,7 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
+@@ -698,7 +812,7 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
  	return KernelSyscallResult(AprShared::WriteResult(result, execution_result, error_offset));
  }
  
@@ -47935,7 +49271,7 @@ index 073361d..69709a8 100644
  	PRINT_NAME();
  
  	if (command_buffer == nullptr) {
-@@ -708,10 +820,11 @@ static int KYTY_SYSV_ABI SubmitCommandBuffer(void* command_buffer, uint64_t) {
+@@ -708,10 +822,11 @@ static int KYTY_SYSV_ABI SubmitCommandBuffer(void* command_buffer, uint64_t) {
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	return KernelSyscallResult(LibAmpr::Ampr::ExecuteAprCommandBuffer(
@@ -47949,7 +49285,7 @@ index 073361d..69709a8 100644
                                                       uint32_t* out_submission_id) {
  	PRINT_NAME();
  
-@@ -725,11 +838,10 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetId(void*     command_buffer, u
+@@ -725,11 +840,10 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetId(void*     command_buffer, u
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto submit_result = LibAmpr::Ampr::ExecuteAprCommandBuffer(command_buffer_addr,
@@ -47962,7 +49298,7 @@ index 073361d..69709a8 100644
  
  	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
  		return KernelSyscallResult(LibKernel::KERNEL_ERROR_EFAULT);
-@@ -816,7 +928,11 @@ constexpr int      PROT_AMPR_READ                = 0x40;
+@@ -816,7 +930,11 @@ constexpr int      PROT_AMPR_READ                = 0x40;
  constexpr int      PROT_AMPR_WRITE               = 0x80;
  constexpr int      PROT_ACP_READ                 = 0x100;
  constexpr int      PROT_ACP_WRITE                = 0x200;
@@ -47975,7 +49311,7 @@ index 073361d..69709a8 100644
  constexpr uint64_t AMM_VA_SIZE                   = 0x0000001000000000ull;
  constexpr uint64_t APR_MAX_READ_LENGTH           = 0x0000000100000000ull;
  constexpr uint64_t APR_MAX_FILE_OFFSET           = 0x0000010000000000ull;
-@@ -829,6 +945,15 @@ enum class AmmCommandKind : uint32_t {
+@@ -829,6 +947,15 @@ enum class AmmCommandKind : uint32_t {
  	MapAuto,
  	MapDirect,
  	Unmap,
@@ -47991,7 +49327,7 @@ index 073361d..69709a8 100644
  };
  
  struct CommandBufferState {
-@@ -855,6 +980,13 @@ struct CommandBufferState {
+@@ -855,6 +982,13 @@ struct CommandBufferState {
  		uint64_t address       = 0;
  		uint64_t value         = 0;
  	};
@@ -48005,7 +49341,7 @@ index 073361d..69709a8 100644
  	struct AmmMapCommand {
  		uint64_t       record_offset = 0;
  		AmmCommandKind kind          = AmmCommandKind::MapAuto;
-@@ -864,21 +996,44 @@ struct CommandBufferState {
+@@ -864,21 +998,44 @@ struct CommandBufferState {
  		int32_t        type          = 0;
  		int32_t        prot          = 0;
  		uint8_t        gpu_mask_id   = 0;
@@ -48054,7 +49390,7 @@ index 073361d..69709a8 100644
  };
  
  struct AmmVirtualAddressRanges {
-@@ -902,7 +1057,8 @@ static std::mutex                                       g_command_buffer_mutex;
+@@ -902,7 +1059,8 @@ static std::mutex                                       g_command_buffer_mutex;
  static std::unordered_map<uint64_t, CommandBufferState> g_command_buffers;
  static std::unordered_map<uint64_t, uint64_t>           g_command_buffer_aliases;
  static std::mutex                                       g_amm_auto_pool_mutex;
@@ -48064,7 +49400,7 @@ index 073361d..69709a8 100644
  using CommandBufferIterator = std::unordered_map<uint64_t, CommandBufferState>::iterator;
  
  static bool HasQueuedCommands(const CommandBufferState& state) {
-@@ -925,6 +1081,12 @@ static void RegisterCommandBufferAliasLocked(uint64_t command_buffer, uint64_t b
+@@ -925,6 +1083,12 @@ static void RegisterCommandBufferAliasLocked(uint64_t command_buffer, uint64_t b
  }
  
  static void EraseCommandBufferStateLocked(uint64_t command_buffer) {
@@ -48077,7 +49413,7 @@ index 073361d..69709a8 100644
  	g_command_buffers.erase(command_buffer);
  	for (auto it = g_command_buffer_aliases.begin(); it != g_command_buffer_aliases.end();) {
  		if (it->first == command_buffer || it->second == command_buffer) {
-@@ -1078,6 +1240,16 @@ static uint64_t AprReadFileRecordSize(uint64_t file_offset) {
+@@ -1078,6 +1242,16 @@ static uint64_t AprReadFileRecordSize(uint64_t file_offset) {
  	return (file_offset >> 32u) != 0 ? READ_FILE_RECORD_SIZE_EXT : READ_FILE_RECORD_SIZE;
  }
  
@@ -48094,7 +49430,7 @@ index 073361d..69709a8 100644
  static uint64_t AprReadGatherRecordSize(uint64_t file_offset) {
  	return file_offset > 0x3ffffu ? READ_GATHER_RECORD_SIZE_EXT : READ_GATHER_RECORD_SIZE;
  }
-@@ -1151,6 +1323,8 @@ static bool WriteCommandBufferPointers(uint64_t command_buffer, uint64_t buffer,
+@@ -1151,6 +1325,8 @@ static bool WriteCommandBufferPointers(uint64_t command_buffer, uint64_t buffer,
  	state.kernel_event_commands.clear();
  	state.write_address_commands.clear();
  	state.amm_map_commands.clear();
@@ -48103,7 +49439,7 @@ index 073361d..69709a8 100644
  	state.gather_scatter_valid       = false;
  	state.gather_scatter_file_id     = 0;
  	state.gather_scatter_destination = 0;
-@@ -1256,6 +1430,9 @@ static bool AppendReadFileRecord(uint64_t command_buffer, uint8_t opcode, uint32
+@@ -1256,6 +1432,9 @@ static bool AppendReadFileRecord(uint64_t command_buffer, uint8_t opcode, uint32
  	            static_cast<size_t>(record_size));
  	std::memcpy(reinterpret_cast<void*>(state.buffer + record_offset), &opcode, sizeof(opcode));
  	state.read_file_commands.push_back({record_offset, file_id, destination, size, file_offset});
@@ -48113,7 +49449,7 @@ index 073361d..69709a8 100644
  	if (!CommitCommandBufferRecord(command_buffer, &state, record_size)) {
  		return false;
  	}
-@@ -1294,7 +1471,12 @@ static bool AppendKernelEventRecord(uint64_t command_buffer, uint64_t eq, int32_
+@@ -1294,7 +1473,12 @@ static bool AppendKernelEventRecord(uint64_t command_buffer, uint64_t eq, int32_
  	std::memcpy(reinterpret_cast<void*>(state.buffer + record_offset), record.data(),
  	            record.size());
  	state.kernel_event_commands.push_back({record_offset, eq, id, data});
@@ -48127,7 +49463,7 @@ index 073361d..69709a8 100644
  }
  
  static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address, uint64_t value,
-@@ -1314,7 +1496,37 @@ static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address,
+@@ -1314,7 +1498,37 @@ static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address,
  	std::memset(reinterpret_cast<void*>(state.buffer + record_offset), 0,
  	            static_cast<size_t>(record_size));
  	state.write_address_commands.push_back({record_offset, address, value});
@@ -48166,7 +49502,7 @@ index 073361d..69709a8 100644
  }
  
  static bool ValidateAmmMapArgs(uint64_t va, uint64_t size) {
-@@ -1358,26 +1570,373 @@ static int NormalizeAmmProtection(int prot) {
+@@ -1358,26 +1572,373 @@ static int NormalizeAmmProtection(int prot) {
  	return normalized;
  }
  
@@ -48548,7 +49884,7 @@ index 073361d..69709a8 100644
  		return false;
  	}
  
-@@ -1385,21 +1944,181 @@ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t
+@@ -1385,21 +1946,183 @@ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t
  	return true;
  }
  
@@ -48628,6 +49964,8 @@ index 073361d..69709a8 100644
 +extern "C" void bc5_watch_surface(uint64_t va); // bc5LleAgc.cpp, experiment 0104
 +
  static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kAmmCmd); // experiment 0415 (ls415)
++	bc5::load_stat::delay(bc5::load_stat::kAmmCmd);
 +	if (Bc5AmmPagesOn()) { // experiment 0401 series e4: AnyPS5's _ammMap order, then today's map, then the page table
 +		return Bc5ExecuteAmmMap0401(command);
 +	}
@@ -48736,7 +50074,7 @@ index 073361d..69709a8 100644
  }
  
  static bool AppendAmmMapRecord(uint64_t                                 command_buffer,
-@@ -1425,68 +2144,192 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
+@@ -1425,68 +2148,194 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
  
  static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offset,
                                 uint64_t destination, uint64_t size, uint64_t* bytes_read);
@@ -48810,6 +50148,8 @@ index 073361d..69709a8 100644
 +	int                               ra_state = 0;
 +	std::vector<std::vector<uint8_t>> ra_data;
 +	std::vector<int32_t>              ra_rc;
++	uint64_t                          ls_t0    = bc5::load_stat::begin(); // experiment 0415 (ls415): queued at
++	bool                              ls_taken = false;
 +};
 +
 +static std::recursive_mutex        g_apr_queue_mutex;
@@ -48981,7 +50321,7 @@ index 073361d..69709a8 100644
  				const auto& command = state.read_file_commands[entry.index];
  				std::string host_path;
  				if (!AprShared::TryGetHostPath(command.file_id, &host_path)) {
-@@ -1494,55 +2337,129 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1494,55 +2343,129 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     command.file_id);
  					*execution_result = LibKernel::KERNEL_ERROR_ENOENT;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -49120,7 +50460,7 @@ index 073361d..69709a8 100644
  				if (result != OK) {
  					LOGF("\tAMM submit command failed: kind=%u va=0x%016" PRIx64
  					     " dmem=0x%016" PRIx64 " size=0x%016" PRIx64 " type=%" PRId32
-@@ -1552,29 +2469,425 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1552,29 +2475,474 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     static_cast<uint32_t>(result));
  					*execution_result = result;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -49141,6 +50481,9 @@ index 073361d..69709a8 100644
 +// BC5 (experiment 0156): a submission's result, once it has run, for the title's WaitCommandBuffer
 +// and its result buffer.
 +static void FinishAprSubmission(const ParkedAprBuffer& b, int32_t result, uint32_t offset) {
++	bc5::load_stat::delay(bc5::load_stat::kAprBuffer); // experiment 0415 (ls415): measurement only
++	bc5::load_stat::end(bc5::load_stat::kAprBuffer, b.ls_t0);
++	bc5::load_stat::apr_leave();
 +	if (b.state.bc5_journal) { // BC5 (experiment 0203)
 +		AprJournal("finish cb 0x%016" PRIx64 " sub %u = 0x%08x at 0x%x", b.command_buffer, b.submission_id,
 +		           static_cast<unsigned>(result), offset);
@@ -49259,11 +50602,50 @@ index 073361d..69709a8 100644
 -	            static_cast<size_t>(record_size));
 +// Reads [file_offset, file_offset + size) of the host file into *out, as ReadHostFileToGuest would read it
 +// (nothing past the end of the file; OK with no data at or past the end), without touching guest memory.
++// Experiment 0415 (ls415b), KYTY_BC5_APR_POSIX; off when unset, empty or "0". Since the integration of 2026-11-13 the
++// code defaults (bc5/switch_defaults.hpp, kFixes) set it to "direct". Run b1 measured the cause: every APR
++// read opens its file anew, so the kernel takes each one for the start of a sequential stream and reads ahead: the
++// disk delivered 11.7 GiB for 5.1 GiB asked in the menu load, at the NVMe's limit, with a read outstanding 97 % of
++// the time. "random" (or 1): the read uses open + posix_fadvise(POSIX_FADV_RANDOM) + pread, through the same staging
++// buffer and memcpy as before. "direct": that, and the bytes are read straight into the guest's pages (no staging
++// buffer, no second copy); a destination the kernel refuses (EFAULT) falls back to the staging copy for the rest.
++static int AprPosixMode() {
++#if defined(__linux__)
++	static const int mode = [] {
++		const char* e = std::getenv("KYTY_BC5_APR_POSIX");
++		if (!bc5::load_stat::env_set(e)) return 0;
++		const int m = std::strcmp(e, "direct") == 0 ? 2 : 1;
++		std::fprintf(stderr, "[bc5] exp 0415: APR reads by pread with POSIX_FADV_RANDOM%s (tag ls415b)\n", m == 2 ? ", straight into the guest" : "");
++		std::fflush(stderr);
++		return m;
++	}();
++	return mode;
++#else
++	return 0;
++#endif
++}
++
 +static int ReadHostFileToHost(const std::string& host_path, uint64_t file_offset, uint64_t size, std::vector<uint8_t>* out) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kAprRead); // experiment 0415 (ls415)
++	ls_scope.items = size;
 +	out->clear();
 +	if (size == 0) {
 +		return OK;
 +	}
++#if defined(__linux__)
++	if (AprPosixMode() != 0) { // experiment 0415 (ls415b)
++		uint64_t  readable = 0;
++		const int fd       = bc5::apr_posix::open_for_read(host_path.c_str(), file_offset, size, &readable);
++		if (fd < 0) {
++			return LibKernel::KERNEL_ERROR_ENOENT;
++		}
++		out->resize(static_cast<size_t>(readable));
++		const uint64_t done = readable != 0 ? bc5::apr_posix::pread_all(fd, out->data(), readable, file_offset, APR_HOST_READ_CHUNK_SIZE, nullptr) : 0;
++		out->resize(static_cast<size_t>(done));
++		::close(fd);
++		return OK;
++	}
++#endif
 +	Common::File file;
 +	if (!file.Open(host_path, Common::File::Mode::Read)) {
 +		return LibKernel::KERNEL_ERROR_ENOENT;
@@ -49380,6 +50762,10 @@ index 073361d..69709a8 100644
 +			}
 +		}
 +		const bool prefetched = front.ra_state == 2;
++		if (!front.ls_taken) { // experiment 0415 (ls415): from the submit to the worker's first look
++			front.ls_taken = true;
++			bc5::load_stat::end(bc5::load_stat::kAprQueueWait, front.ls_t0);
++		}
 +		lock.unlock();
 +		const bool done = RunOrderedAprCommands(front.command_buffer, front.state, front.ordered, &front.next, &result, &offset,
 +		                                        prefetched ? &front.ra_data : nullptr, prefetched ? &front.ra_rc : nullptr);
@@ -49498,6 +50884,7 @@ index 073361d..69709a8 100644
 +	if (AprAsync() && !amm_only) {
 +		// Experiment 0156: queued for the priority's worker; the submit returns at once.
 +		queue.push_back({command_buffer, state, ordered, 0, submission_id, result_ptr});
++		bc5::load_stat::apr_enter(); // experiment 0415 (ls415)
 +		std::call_once(g_apr_worker_once[qi], [qi] {
 +			std::thread(AprWorkerThread, qi).detach();
 +			for (size_t k = 0; k < AprReadahead(); k++) { // BC5 (experiment 0203): KYTY_BC5_APR_READAHEAD
@@ -49509,6 +50896,7 @@ index 073361d..69709a8 100644
 +	}
 +	if (!amm_only && !queue.empty()) {
 +		queue.push_back({command_buffer, state, ordered, 0, submission_id, result_ptr});
++		bc5::load_stat::apr_enter(); // experiment 0415 (ls415)
 +		if (AmmTrace()) {
 +			AmmTraceStamp(), std::fprintf(stderr, "amm trace: submission 0x%016" PRIx64 " queued behind a waiting one\n", command_buffer);
 +		}
@@ -49518,6 +50906,7 @@ index 073361d..69709a8 100644
 +	size_t next = 0;
 +	if (!RunOrderedAprCommands(command_buffer, state, ordered, &next, execution_result, error_offset)) {
 +		queue.push_back({command_buffer, state, ordered, next, submission_id, result_ptr});
++		bc5::load_stat::apr_enter(); // experiment 0415 (ls415)
 +		StartAprWaitThread();
 +		if (AmmTrace()) {
 +			AmmTraceStamp(), std::fprintf(stderr, "amm trace: submission 0x%016" PRIx64 " waits at command %zu of %zu\n", command_buffer, next,
@@ -49557,7 +50946,35 @@ index 073361d..69709a8 100644
  	return CommitCommandBufferRecord(command_buffer, &state, record_size);
  }
  
-@@ -1678,13 +2991,84 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
+@@ -1583,6 +2951,8 @@ static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offse
+ 	if (bytes_read == nullptr) {
+ 		return LibKernel::KERNEL_ERROR_EINVAL;
+ 	}
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kAprRead); // experiment 0415 (ls415)
++	ls_scope.items = size;
+ 
+ 	*bytes_read = 0;
+ 	if (size == 0) {
+@@ -1592,6 +2962,18 @@ static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offse
+ 		return LibKernel::KERNEL_ERROR_EFAULT;
+ 	}
+ 
++#if defined(__linux__)
++	if (const int posix_mode = AprPosixMode(); posix_mode != 0) { // experiment 0415 (ls415b)
++		uint64_t staged_bytes = 0;
++		if (bc5::apr_posix::read_to(host_path.c_str(), file_offset, size, reinterpret_cast<uint8_t*>(destination), posix_mode == 2, APR_HOST_READ_CHUNK_SIZE, bytes_read,
++		                            &staged_bytes) != 0) {
++			LOGF("\tAPR read missing host file: %s\n", host_path.c_str());
++			return LibKernel::KERNEL_ERROR_ENOENT;
++		}
++		if (posix_mode == 2 && staged_bytes != 0) bc5::load_stat::count(bc5::load_stat::kAprFallback, staged_bytes); // the kernel refused the destination
++		return OK;
++	}
++#endif
+ 	Common::File file;
+ 	if (!file.Open(host_path, Common::File::Mode::Read)) {
+ 		LOGF("\tAPR read missing host file: %s\n", host_path.c_str());
+@@ -1678,13 +3060,108 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
  	return OK;
  }
  
@@ -49612,6 +51029,29 @@ index 073361d..69709a8 100644
 +	return true;
 +}
 +
++// Experiment 0416 (KYTY_BC5_AMM_SETBUFFER_MAP): the map flavour is opt-in. Neither of our two titles passes more than
++// three arguments (exp 0413), so a3-a5 are leftovers and the flavour would be chosen by chance. Off (the default): a
++// call with the map signature is the buffer flavour, with a line for the first 16. =1: exp 0035's map flavour, for
++// a target that is not mapped yet (the guard above still refuses mapped ones).
++static bool Bc5SetBufferMapAllowed(uint64_t cb, uint64_t va, uint32_t size, uint64_t a3, uint64_t a4, uint64_t a5) {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_AMM_SETBUFFER_MAP");
++		return e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
++	}();
++	if (on) {
++		return true;
++	}
++	static int told = 0;
++	if (told < 16) {
++		told++;
++		std::fprintf(stderr,
++		             "[bc5] exp 0416: set-buffer with the map signature on a target that is not mapped (cb 0x%016" PRIx64 " va 0x%016" PRIx64
++		             " len 0x%x a3 0x%" PRIx64 " a4 0x%" PRIx64 " a5 0x%" PRIx64 "): taken as the buffer flavour (KYTY_BC5_AMM_SETBUFFER_MAP=1 maps)\n",
++		             cb, va, size, a3, a4, a5);
++	}
++	return false;
++}
++
 +static int KYTY_SYSV_ABI CommandBufferSetBuffer(void* command_buffer, void* buffer, uint32_t size,
 +                                                uint64_t a3, uint64_t a4, uint64_t a5) {
  	PRINT_NAME();
@@ -49625,7 +51065,8 @@ index 073361d..69709a8 100644
 +		AmmTraceStamp(), std::fprintf(stderr, "amm trace: set-buffer cb 0x%016" PRIx64 " va 0x%016" PRIx64 " len 0x%x a3 0x%" PRIx64 " a4 0x%" PRIx64 " a5 0x%" PRIx64 "\n",
 +		             reinterpret_cast<uint64_t>(command_buffer), va, size, a3, a4, a5);
 +	}
-+	if (SetBufferIsMapFlavour(va, a3, a4) && !Bc5SetBufferTargetMapped(reinterpret_cast<uint64_t>(command_buffer), va, size, a3, a4, a5)) { // + exp 0413
++	if (SetBufferIsMapFlavour(va, a3, a4) && !Bc5SetBufferTargetMapped(reinterpret_cast<uint64_t>(command_buffer), va, size, a3, a4, a5) && // + exp 0413
++	    Bc5SetBufferMapAllowed(reinterpret_cast<uint64_t>(command_buffer), va, size, a3, a4, a5)) { // + exp 0416
 +		CommandBufferState::AmmMapCommand command {};
 +		command.kind = AmmCommandKind::MapAuto;
 +		command.va   = va & ~(AMM_PAGE_SIZE - 1u);
@@ -49643,7 +51084,7 @@ index 073361d..69709a8 100644
  	const auto command_buffer_addr = reinterpret_cast<uint64_t>(command_buffer);
  	if (!ValidateCommandBufferHeader(command_buffer_addr)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -1767,15 +3151,25 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
+@@ -1767,15 +3244,25 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
  	PRINT_NAME();
  
  	const auto destination_addr = reinterpret_cast<uint64_t>(destination);
@@ -49675,7 +51116,7 @@ index 073361d..69709a8 100644
  }
  
  static uint64_t AlignUp4(uint64_t value) {
-@@ -1811,11 +3205,11 @@ static uint64_t KYTY_SYSV_ABI MeasureCommandSizeFixed32(uint64_t, uint64_t, uint
+@@ -1811,11 +3298,11 @@ static uint64_t KYTY_SYSV_ABI MeasureCommandSizeFixed32(uint64_t, uint64_t, uint
  	return 0x20;
  }
  
@@ -49690,7 +51131,7 @@ index 073361d..69709a8 100644
  }
  
  static uint64_t KYTY_SYSV_ABI
-@@ -2111,27 +3505,45 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
+@@ -2111,27 +3598,45 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
  	return AppendNoOpCommand(command_buffer, sizeof(uint32_t));
  }
  
@@ -49743,7 +51184,7 @@ index 073361d..69709a8 100644
  	           ? OK
  	           : LibKernel::KERNEL_ERROR_EBUSY;
  }
-@@ -2139,8 +3551,12 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
+@@ -2139,8 +3644,12 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
  static int KYTY_SYSV_ABI CommandBufferWriteAddress(void* command_buffer, volatile uint64_t* address,
                                                     uint64_t value, uint32_t) {
  	PRINT_NAME();
@@ -49757,7 +51198,7 @@ index 073361d..69709a8 100644
  }
  
  static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*              command_buffer,
-@@ -2148,12 +3564,15 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*
+@@ -2148,12 +3657,15 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*
                                                                 uint64_t           value) {
  	PRINT_NAME();
  
@@ -49776,7 +51217,7 @@ index 073361d..69709a8 100644
  
  	return AppendNoOpCommand(command_buffer, 0x20);
  }
-@@ -2170,44 +3589,56 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromTimeCounter(void*
+@@ -2170,44 +3682,56 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromTimeCounter(void*
                                                                    uint32_t) {
  	PRINT_NAME();
  
@@ -49844,7 +51285,7 @@ index 073361d..69709a8 100644
  }
  
  static int KYTY_SYSV_ABI AprCommandBufferReadFileGather(void*    command_buffer, uint64_t, uint64_t,
-@@ -2314,15 +3745,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
+@@ -2314,15 +3838,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
  	return OK;
  }
  
@@ -49874,7 +51315,7 @@ index 073361d..69709a8 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2333,7 +3776,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
+@@ -2333,7 +3869,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
  
  static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, uint64_t va,
                                                          uint64_t dmem_offset, uint64_t size,
@@ -49883,7 +51324,7 @@ index 073361d..69709a8 100644
  	PRINT_NAME();
  
  	if (command_buffer == nullptr || !ValidateAmmMapArgs(va, size) ||
-@@ -2341,7 +3784,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
+@@ -2341,7 +3877,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
  		return LibKernel::KERNEL_ERROR_EINVAL;
  	}
  
@@ -49900,7 +51341,7 @@ index 073361d..69709a8 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2504,38 +3955,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
+@@ -2504,38 +4048,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
  	}
  
  	*dmem_offset = allocated;
@@ -49973,7 +51414,7 @@ index 073361d..69709a8 100644
  	}
  }
  
-@@ -2589,11 +4062,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
+@@ -2589,11 +4155,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto     submit_result =
@@ -49986,7 +51427,7 @@ index 073361d..69709a8 100644
  
  	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -2618,11 +4090,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
+@@ -2618,11 +4183,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto     submit_result =
@@ -49999,7 +51440,7 @@ index 073361d..69709a8 100644
  
  	if (out_submission_id != nullptr &&
  	    !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
-@@ -2648,86 +4119,1113 @@ static int KYTY_SYSV_ABI AmmWaitCommandBufferCompletion(uint32_t submission_id)
+@@ -2648,68 +4212,1095 @@ static int KYTY_SYSV_ABI AmmWaitCommandBufferCompletion(uint32_t submission_id)
  	return OK;
  }
  
@@ -50067,24 +51508,6 @@ index 073361d..69709a8 100644
 -	LIB_FUNC("rddQYXM0CjM", Ampr::MeasureCommandSizePopMarker);
 -	LIB_FUNC("kdFImtTD0hc", Ampr::MeasureAprCommandSizeMapBegin);
 -	LIB_FUNC("qvbdJc7bG+s", Ampr::MeasureAprCommandSizeMapDirectBegin);
--	LIB_FUNC("iwTNhyaemnw", Ampr::MeasureCommandSizePopMarker);
--	LIB_FUNC("tmfr97+ED5I", Ampr::MeasureCommandSizeMarkerWithColor);
--	LIB_FUNC("VGkEj4d6-Kg", Ampr::MeasureCommandSizeMarker);
--	LIB_FUNC("3OfeY4pzDV0", Ampr::MeasureCommandSizeMarkerWithColor);
--	LIB_FUNC("0RdLmAh7WVo", Ampr::MeasureCommandSizeMarker);
--	LIB_FUNC("pbnNnahE8vk", Ampr::MeasureCommandSizePopMarker);
--	LIB_FUNC("tZDDEo2tE5k", Ampr::CommandBufferGetSize);
--	LIB_FUNC("GnxKOHEawhk", Ampr::CommandBufferGetCurrentOffset);
--	LIB_FUNC("H896Pt-yB4I", Ampr::CommandBufferWriteKernelEventQueue);
--	LIB_FUNC("o67gODLFpls", Ampr::CommandBufferWriteKernelEventQueue);
--	LIB_FUNC("mQ16-QdKv7k", Ampr::AprCommandBufferReadFile);
--	LIB_FUNC("mZSbNJVJpV8", Ampr::AprCommandBufferReadFileGather);
--	LIB_FUNC("Jg-AgkdJHkk", Ampr::AprCommandBufferReadFileScatter);
--	LIB_FUNC("BVmR1H8l+XI", Ampr::AprCommandBufferReadFileGatherScatter);
--	LIB_FUNC("YPxkUDhgoNI", Ampr::AprCommandBufferResetGatherScatterState);
--	LIB_FUNC("Eul7AGEpjLo", Ampr::AprCommandBufferMapBegin);
--	LIB_FUNC("bFEs0Gs6D2A", Ampr::AprCommandBufferMapDirectBegin);
--	LIB_FUNC("X169CE6G3Y4", Ampr::AprCommandBufferMapEnd);
 +struct Bc5AmmPage {
 +	uint64_t dmem  = 0; // the direct memory behind the page
 +	int32_t  type  = 0;
@@ -51171,28 +52594,10 @@ index 073361d..69709a8 100644
 +	LIB_FUNC("rddQYXM0CjM", Ampr::MeasureCommandSizePopMarker);
 +	LIB_FUNC("kdFImtTD0hc", Ampr::MeasureAprCommandSizeMapBegin);
 +	LIB_FUNC("qvbdJc7bG+s", Ampr::MeasureAprCommandSizeMapDirectBegin);
-+	LIB_FUNC("iwTNhyaemnw", Ampr::MeasureCommandSizePopMarker);
-+	LIB_FUNC("tmfr97+ED5I", Ampr::MeasureCommandSizeMarkerWithColor);
-+	LIB_FUNC("VGkEj4d6-Kg", Ampr::MeasureCommandSizeMarker);
-+	LIB_FUNC("3OfeY4pzDV0", Ampr::MeasureCommandSizeMarkerWithColor);
-+	LIB_FUNC("0RdLmAh7WVo", Ampr::MeasureCommandSizeMarker);
-+	LIB_FUNC("pbnNnahE8vk", Ampr::MeasureCommandSizePopMarker);
-+	LIB_FUNC("tZDDEo2tE5k", Ampr::CommandBufferGetSize);
-+	LIB_FUNC("GnxKOHEawhk", Ampr::CommandBufferGetCurrentOffset);
-+	LIB_FUNC("H896Pt-yB4I", Ampr::CommandBufferWriteKernelEventQueue);
-+	LIB_FUNC("o67gODLFpls", Ampr::CommandBufferWriteKernelEventQueue);
-+	LIB_FUNC("mQ16-QdKv7k", Ampr::AprCommandBufferReadFile);
-+	LIB_FUNC("mZSbNJVJpV8", Ampr::AprCommandBufferReadFileGather);
-+	LIB_FUNC("Jg-AgkdJHkk", Ampr::AprCommandBufferReadFileScatter);
-+	LIB_FUNC("BVmR1H8l+XI", Ampr::AprCommandBufferReadFileGatherScatter);
-+	LIB_FUNC("YPxkUDhgoNI", Ampr::AprCommandBufferResetGatherScatterState);
-+	LIB_FUNC("Eul7AGEpjLo", Ampr::AprCommandBufferMapBegin);
-+	LIB_FUNC("bFEs0Gs6D2A", Ampr::AprCommandBufferMapDirectBegin);
-+	LIB_FUNC("X169CE6G3Y4", Ampr::AprCommandBufferMapEnd);
- 	LIB_FUNC("Q07J7XpvhrU", Ampr::AmmGiveDirectMemory);
- 	LIB_FUNC("wkQR9+xTFKY", Ampr::AmmGetVirtualAddressRanges);
- 	LIB_FUNC("KqiWXLgCVe0", Ampr::AmmGetUsageStatsData);
-@@ -2743,6 +5241,40 @@ LIB_DEFINE(InitAmpr_1_Ampr) {
+ 	LIB_FUNC("iwTNhyaemnw", Ampr::MeasureCommandSizePopMarker);
+ 	LIB_FUNC("tmfr97+ED5I", Ampr::MeasureCommandSizeMarkerWithColor);
+ 	LIB_FUNC("VGkEj4d6-Kg", Ampr::MeasureCommandSizeMarker);
+@@ -2743,6 +5334,40 @@ LIB_DEFINE(InitAmpr_1_Ampr) {
  	LIB_FUNC("NnKhlMJtIsI", Ampr::AmmSubmitCommandBufferAndGetId);
  	LIB_FUNC("OJf3vCckPAM", Ampr::AmmSubmitCommandBufferAndGetResult);
  	LIB_FUNC("HXymib4T8gc", Ampr::AmmWaitCommandBufferCompletion);
@@ -74887,10 +76292,10 @@ index 36e4dc8..70f9ec7 100644
  
  namespace LibContentExport {
 diff --git a/src/libs/network.cpp b/src/libs/network.cpp
-index 7f81218..4868939 100644
+index 7f81218..5391a9a 100644
 --- a/src/libs/network.cpp
 +++ b/src/libs/network.cpp
-@@ -1,4610 +1,4887 @@
+@@ -1,4610 +1,4889 @@
 -#if defined(_WIN32)
 -#ifndef WIN32_LEAN_AND_MEAN
 -#define WIN32_LEAN_AND_MEAN
@@ -79501,6 +80906,7 @@ index 7f81218..4868939 100644
 -} // namespace NpManager
 -
 -} // namespace Libs::Network
++#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
 +#if defined(_WIN32)
 +#ifndef WIN32_LEAN_AND_MEAN
 +#define WIN32_LEAN_AND_MEAN
@@ -82767,6 +84173,7 @@ index 7f81218..4868939 100644
 +int HttpFetchSync(const std::string& url, const std::string& method, const std::string& user_agent,
 +                  uint64_t content_length, const void* post_data, size_t post_size,
 +                  int* out_status, std::string* out_headers, std::vector<uint8_t>* out_body) {
++	bc5::load_stat::Scope ls_scope(bc5::load_stat::kHttpSend); // experiment 0415 (ls415)
 +	*out_status = 0;
 +	out_headers->clear();
 +	out_body->clear();
@@ -85396,7 +86803,7 @@ index f3216f1..815a084 100644
  bool     SystemContentGetChunksNum(uint32_t* num);
  
 diff --git a/src/main.cpp b/src/main.cpp
-index c44d32f..fc1e4bb 100644
+index c44d32f..610ac29 100644
 --- a/src/main.cpp
 +++ b/src/main.cpp
 @@ -16,6 +16,7 @@
@@ -85454,7 +86861,7 @@ index c44d32f..fc1e4bb 100644
  		} else if (arg == "--keymap") {
  			const auto split = value.find('=');
  			if (split == std::string::npos || split == 0 || split + 1 == value.size()) {
-@@ -356,10 +376,49 @@ static bool ParseArgs(int argc, char* argv[], RunOptions& options, bool& show_he
+@@ -356,10 +376,51 @@ static bool ParseArgs(int argc, char* argv[], RunOptions& options, bool& show_he
  		}
  	}
  
@@ -85464,10 +86871,12 @@ index c44d32f..fc1e4bb 100644
  }
  
 +#include "bc5/switch_defaults.hpp"
++#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
 +// BC5 (experiment 0413): the shared builds' switch defaults, set before any static initializer can read a switch
 +// (priority 101, as the lean build's environment cleanup below; the two touch different names).
 +__attribute__((constructor(101))) static void Bc5SwitchDefaults() {
 +	bc5::switch_defaults::Apply();
++	bc5::load_stat::apply_timer_slack(); // experiment 0415 (ls415): KYTY_BC5_TIMERSLACK_NS, before any thread exists
 +}
 +
 +#ifdef BC5_LEAN
@@ -85505,7 +86914,7 @@ index c44d32f..fc1e4bb 100644
  int main(int argc, char* argv[]) {
  	auto& slist = *SubsystemsList::Instance();
  
-@@ -474,7 +533,7 @@ int main(int argc, char* argv[]) {
+@@ -474,7 +535,7 @@ int main(int argc, char* argv[]) {
  	// shadPS4; only PS5 (Prospero) titles reach the native Run() path. This
  	// must happen BEFORE Run() so no PS5 Vulkan/memory subsystems are
  	// initialized for a PS4 title (and vice versa).
