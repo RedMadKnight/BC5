@@ -39,7 +39,7 @@ case "$TAG" in *[!A-Za-z0-9]* | "") echo "the tag is letters and digits"; exit 1
 case "$PLAY" in *[!0-9]* | "") echo "the play time is seconds"; exit 1 ;; esac
 SECS=${N_CAP:-$((PLAY + 260))}; FUSE=${N_FUSE:-12400 1024}
 [ "$SECS" -ge 120 ] && [ "$SECS" -le 3000 ] || { echo "the cap is 120-3000 s"; exit 1; }
-BIN=${N_EMU:-$X/bin/kyty_emulator}; LAUNCH_SRC=$X/play-pkg-0412.sh; LAUNCH=$N/play-pkg-0412n.sh; LEARN_SRC=$W/direct-learned-pkg.txt; LEARN=$N/direct-learned-pkg.txt
+BIN=${N_EMU:-$X/bin/kyty_emulator}; LAUNCH_SRC=$X/play-pkg-0412.sh; LAUNCH=$N/play-pkg-0412n.sh; LEARN_SRC=$N/learned-empty.txt; LEARN=$N/direct-learned-pkg.txt   # 2026-11-13: no learned windows any more (section 60); the default source is an empty file
 # N_EMU=<binary>: a build beside the one in place (the launcher takes it through BC5_EMU, exp 0177); it must be the one in built-w.md5.
 if [ -n "${N_EMU:-}" ] && [ -n "${N_SHARED_MD5:-}" ]; then
   # exp 0412 section 56: the SHARED normal build, read only, named with its md5 by the caller (N_SHARED_MD5=<first 8 hex>).
@@ -52,6 +52,7 @@ fi
 { [ -n "${N_EMU:-}" ] || grep -qxF "$(m "$BIN")  bin/kyty_emulator" "$X/built.md5"; } && grep -qxF "$(m "$LAUNCH_SRC")  play-pkg-0412.sh" "$X/built.md5" || { echo "the binary or the launcher is not the one in built.md5: not started"; exit 1; }
 WANT=$(m "$BIN")
 for f in sampler0412b.sh fuse0412.sh; do grep -qxF "$(m "$X/$f")  $f" "$X/tools.md5" || { echo "$f is not the installed one: not started"; exit 1; }; done
+: >> "$LEARN_SRC"
 [ -x "$X/wd0412.sh" ] && [ -f "$LEARN_SRC" ] && [ -d "$W/exp0330/wd" ] || { echo "no wd0412.sh, learned file or exp0330/wd: not started"; exit 1; }
 [ -d "$NS/PPSA03671" ] && [ ! -L "$NS" ] && [ -s "$N/saves-named.sum" ] || { echo "no named snapshot (MODE=name makes it): not started"; exit 1; }
 NSUM=$(sumof "$NS"); [ "$NSUM" = "$(cat "$N/saves-named.sum")" ] || { echo "the named snapshot reads $NSUM, not $(cat "$N/saves-named.sum"): not started"; exit 1; }

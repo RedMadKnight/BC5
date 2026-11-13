@@ -1,0 +1,14 @@
+2026-11-13 08:18:01
+arm f9a (fast9), cap 320 s, play 60 s, binary /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator md5 fe0933c0ad7c0d9a86194bc0a7598a06, launcher 3a1f4e10, fuse 13000 2048
+the arm's words: BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 BC5_GUARD_LEARN_LOG=2 BC5_0412N_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0412/night/input-f9a.cfg 
+extra: none
+boot e88d45fe, up since 2026-11-13 00:11:11
+MemAvailable:   13372856 kB SwapTotal:       7778300 kB SwapFree:        7208548 kB 
+emulator pid 1953002 exe /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0412/night/wd
+route: cross (start screen) at 87 s
+route: the save-slot list runs; cross (slot 1) at 94 s
+route: cross (Continue) at 100 s
+route: the load seen at 104 s
+route: gameplay G = 117 s (the load at 104 s)
+route: walk of 3 cycles (60 s) queued at 117 s
+launcher gone: yes; launcher exit 0

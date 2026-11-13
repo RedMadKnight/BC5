@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=BC5 emulator (0412 fast9 bez Plasmy)
+Comment=BC5 exp 0412 (2026-11-13, the maintainer's order: no learned windows): fast8's words on the SHARED build with NO learned file; the catcher BC5_GUARD_LEARN_LOG=2 journals every GPU fault with its address and kind ("would learn" in gc/direct.log) and adds nothing; such a fault is a 14 s stall each time and a bug to fix, not a window; Plasma's shell is stopped while the game runs and started again after it (if the panel does not come back: systemctl --user start plasma-plasmashell.service); fuse 13,000 MiB; log ~/bc5-work/exp0412/play-last.log
+Exec=/usr/bin/env BC5_0412_LEAN=1 /usr/bin/bash /home/kjaniszewski/bc5-work/exp0412/play-guard-0412.sh fast9
+Icon=applications-games
+Terminal=false
+Categories=Game;
+StartupNotify=false
