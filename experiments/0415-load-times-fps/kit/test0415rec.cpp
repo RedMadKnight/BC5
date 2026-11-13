@@ -99,11 +99,12 @@ int main() {
 	auto            rnd = [&rng](uint64_t n) { return n == 0 ? 0 : rng() % n; };
 	const uint64_t  kPage = 0x4000, kSpace = 400; // pages
 
-	uint64_t steps = 0, differ = 0, batches = 0, batch_differ = 0, nonempty = 0, splits = 0;
+	uint64_t steps = 0, differ = 0, batches = 0, batch_differ = 0, nonempty = 0, splits = 0, touch_differ = 0;
 	for (int round = 0; round < 300; round++) {
 		Model             m;
 		std::vector<View> views;             // kept from records, call by call
 		std::vector<View> bviews;            // kept from records, batch by batch
+		std::vector<View> tviews;            // kept from records, each span applied with only the ranges that touch it (stage S2's form)
 		std::vector<std::pair<uint64_t, uint64_t>> pending;
 		for (int step = 0; step < 400; step++) {
 			const uint64_t lo = (1 + rnd(kSpace)) * kPage, hi = lo + (1 + rnd(24)) * kPage;
@@ -125,11 +126,20 @@ int main() {
 			}
 			if (m.r.size() > before + 1) splits++;
 			mr::apply(views, m.r, lo, hi, make_view);
+			{
+				const auto         t = mr::touching(m.r, lo, hi);
+				std::vector<Range> only(m.r.begin() + static_cast<std::ptrdiff_t>(t.first), m.r.begin() + static_cast<std::ptrdiff_t>(t.second));
+				mr::apply(tviews, only, lo, hi, make_view);
+			}
 			const auto full = rebuild(m);
 			steps++;
 			if (!(views == full)) {
 				differ++;
 				views = full;
+			}
+			if (!(tviews == full)) {
+				touch_differ++;
+				tviews = full;
 			}
 			if (!full.empty()) nonempty++;
 			pending.emplace_back(lo, hi);
@@ -148,6 +158,7 @@ int main() {
 	}
 	check(differ == 0, "apply: the list kept from records equals the rebuilt list after every call");
 	check(batch_differ == 0, "apply: the same for batches of spans applied late and in any order");
+	check(touch_differ == 0, "apply: the same when a span is applied with only the ranges that touch it (stage S2's form)");
 	check(nonempty > steps / 2 && splits > steps / 100, "apply: the calls include splits and leave views most of the time");
 	std::printf("apply: %llu calls, %llu differences; %llu batches, %llu differences; %llu calls that split a range\n", static_cast<unsigned long long>(steps),
 	            static_cast<unsigned long long>(differ), static_cast<unsigned long long>(batches), static_cast<unsigned long long>(batch_differ), static_cast<unsigned long long>(splits));
