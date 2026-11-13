@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """BC5 experiment 0412, tag k1f412 (README section 70; the top's order of 2026-11-13): K1 AT THE FILTER.
-BC5_GUARD_K1_FILTER=1 (default off). Today a packet whose memory operand is not GPU-mapped is DROPPED by the packet
+BC5_GUARD_K1_FILTER=1 (default off); =log names what the filter would drop and imports nothing. Today a packet whose memory operand is not GPU-mapped is DROPPED by the packet
 filter. When that operand lies in memory the title mapped (under a view) whose chunk is merely not imported (never
 written by the CPU, or a lazy heap), the drop loses something the console does: there the memory exists and the
 command processor reads or writes it. The packet NAMES its operand, so the host knows the address before the GPU
@@ -22,16 +22,81 @@ T = b" // exp 0412 (tag k1f412)\n"
 
 GLUE = rb'''// Experiment 0412 (tag k1f412): BC5_GUARD_K1_FILTER, a packet's unmapped operand under a view is imported, not dropped.
 namespace k1f412 {
-inline bool on() {
-	static const bool v = [] {
+// 0 off (unset, "0"), 1 import ("1" or anything else), 2 log only ("log"): name what the filter would drop, import nothing
+inline int mode() {
+	static const int v = [] {
 		const char* e = std::getenv("BC5_GUARD_K1_FILTER");
-		return e != nullptr && e[0] != 0 && !(e[0] == '0' && e[1] == 0);
+		if (e == nullptr || e[0] == 0 || (e[0] == '0' && e[1] == 0)) return 0;
+		return std::strcmp(e, "log") == 0 ? 2 : 1;
 	}();
 	return v;
 }
+inline bool on() { return mode() != 0; }
 } // namespace k1f412
+// Log only: every operand the filter would drop is named once per page (the first 400), with its packet, its view and
+// whether its chunk is imported; every 10 s a count by packet opcode. Nothing is imported, nothing else changes.
+static void k1f412_log(const uint32_t* ib, uint32_t num_dwords, const char* kind) {
+	static std::set<uint64_t>           seen;
+	static std::map<uint32_t, uint64_t> by_op, by_op_view;
+	static uint64_t                     total = 0, under_view = 0, last_ns = 0, lines = 0;
+	const auto                          have_p  = g_dev->sorted_mappings();
+	const auto                          views_p = direct_views(g_d[0]);
+	for (uint32_t q = 0; q < num_dwords;) {
+		const uint32_t h   = ib[q];
+		uint32_t       len = 1;
+		if ((h >> 30u) == 3 || (h >> 30u) == 0) {
+			const uint32_t c = (h >> 16u) & 0x3fffu;
+			len              = c == 0x3fffu ? 1 : c + 2;
+		}
+		if (q + len > num_dwords) break;
+		if ((h >> 30u) == 3) {
+			const uint32_t op = (h >> 8u) & 0xffu;
+			for (const auto& [a, bytes]: bc5::policy::memory_operands(ib + q, len)) {
+				const uint64_t n = bytes == 0 ? 4 : bytes;
+				if (a == 0 || covered_sorted(*have_p, a, n)) continue;
+				const DView* v = nullptr;
+				for (const auto& x: views_p->v) {
+					if (a >= x.va && a < x.va + x.size) {
+						v = &x;
+						break;
+					}
+				}
+				total++;
+				by_op[op]++;
+				if (v != nullptr) {
+					under_view++;
+					by_op_view[op]++;
+				}
+				if (seen.size() < 400 && seen.insert(a & ~0xfffull).second) {
+					const bool imported = v != nullptr && direct_covered_end(g_d[0], (v->off + (a - v->va)) & ~(kDChunk - 1)) != 0;
+					journal("k1 at the filter LOG (exp 0412, tag k1f412): t %.3f s: %s %u dwords, packet op 0x%02x at dword %u: operand 0x%" PRIx64 "+%" PRIu64 " is not mapped (the filter drops the packet): %s%s%s%s\n",
+					        timing_now(), kind, num_dwords, op, q, a, n, v == nullptr ? "under NO view of the direct file" : "under \"", v == nullptr ? "" : v->name.c_str(),
+					        v == nullptr ? "" : (v->eager ? "\" (eager)" : (v->lazy ? "\" (lazy)" : "\" (by data)")), v == nullptr ? "" : (imported ? ", its chunk imported (mapped elsewhere?)" : ", its chunk not imported: an import would let the packet through"));
+					lines++;
+				}
+			}
+		}
+		q += len;
+	}
+	const uint64_t now = SoftCp::now_ns();
+	if (total != 0 && now - last_ns >= 10'000'000'000ull) {
+		last_ns = now;
+		std::string ops;
+		for (const auto& [op, c]: by_op) {
+			char t[64];
+			std::snprintf(t, sizeof(t), " 0x%02x:%" PRIu64 "/%" PRIu64, op, c, by_op_view.count(op) != 0 ? by_op_view[op] : 0);
+			ops += t;
+		}
+		journal("k1 at the filter LOG (exp 0412, tag k1f412): t %.0f s: %" PRIu64 " unmapped operands so far, %" PRIu64 " under a view (an import would cure), %zu distinct pages named; by packet opcode (all/under a view):%s\n",
+		        timing_now(), total, under_view, seen.size(), ops.c_str());
+	}
+}
 static void k1f412_pass(const uint32_t* ib, uint32_t num_dwords, const char* kind) {
 	if (!k1f412::on() || !g_dev) return;
+	if (k1f412::mode() == 2) {
+		k1f412_log(ib, num_dwords, kind);
+		return;
+	}
 	static uint64_t fired = 0, asked_bytes = 0, lines = 0, no_view = 0;
 	auto            have_p = g_dev->sorted_mappings();
 	for (uint32_t q = 0; q < num_dwords;) {

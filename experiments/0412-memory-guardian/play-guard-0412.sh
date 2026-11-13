@@ -116,7 +116,24 @@ case "${1:-}" in
   fast9)   WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
              KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1 BC5_GUARD_LEARN_LOG=2 "BC5_EMU=$SHARED"); FUSE="13000 2048"; NOLEARN=1 ;;
   zoe)     WORDS+=("${ORPH[@]}" "BC5_DIRECT_ZERO_SKIP=$ZL" KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="12400 2048" ;;
-  *) say "0412: usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm|zscan|zsk|zo|zoc|zof|of|zoe|fast|fast2|fast3|fast4|fast5|fast6|fast7|fast8|fast9|lw7 [dry]; not started"; exit 1 ;;
+  # 2026-11-13 (README sections 71-73; PREPARED on the top's order, NOT installed: the maintainer's word comes first):
+  # k1rcut = fast9's words on the private build g412zd (bin-d, the shared tree B + the K1r family), with
+  #   BC5_GUARD_K1R=1          never-written memory the title mapped reads as zeros on the GPU (his cutscene fault's cure)
+  #   BC5_GUARD_K1_FILTER=1    a packet's operand in title memory that is not imported is imported, not dropped
+  #   BC5_FAULT_RECORD=1       a GPU fault ends the game with a record under ~/bc5-data/captures/faults/ (no recovery)
+  #   BC5_DIRECT_TIMEOUT_PROBE=1  the record then holds the buffer the GPU was in
+  # and WITHOUT e11's reset-replay words (BC5_DIRECT_RESET_REPLAY_ACB, _RESET_LABELS, _RESET_LABEL_JOURNAL) and the dead
+  # BC5_DIRECT_LEARN_GUEST_ONLY: with the fault record the game does not go on after a fault, so nothing is replayed.
+  # Installed on the maintainer's word of 2026-11-13 ("Tak, zamien", relayed by the top) in place of fast9; by the top's
+  # scope also without BC5_R3_DROP_CATCH, BC5_R3_REWIND_CATCH and BC5_DIRECT_ACB_INHERIT=journal. Variant (b) off.
+  k1rcut)  T=(); for x in "${WORDS[@]}"; do case "$x" in BC5_DIRECT_RESET_REPLAY_ACB=* | BC5_DIRECT_RESET_LABELS=* | BC5_DIRECT_RESET_LABEL_JOURNAL=* | BC5_DIRECT_LEARN_GUEST_ONLY=* | BC5_R3_DROP_CATCH=* | BC5_R3_REWIND_CATCH=* | BC5_DIRECT_ACB_INHERIT=journal) ;; *) T+=("$x") ;; esac; done
+           [ "${#T[@]}" = 63 ] || { say "0412: k1rcut: the words without e11's replay and catchers are not 63; not started"; exit 1; }
+           pinned bin-d/kyty_emulator "$E/built-d.md5" || { say "0412: bin-d/kyty_emulator is not the build in built-d.md5; not started"; exit 1; }
+           for w in BC5_GUARD_K1R BC5_GUARD_K1_FILTER BC5_FAULT_RECORD "tag kl412"; do grep -aqF -- "$w" "$E/bin-d/kyty_emulator" || { say "0412: bin-d lacks $w; not started"; exit 1; }; done
+           WORDS=("${T[@]}" BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
+             KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1 BC5_GUARD_LEARN_LOG=2 BC5_GUARD_K1R=1 BC5_GUARD_K1_FILTER=1 BC5_FAULT_RECORD=1
+             BC5_DIRECT_TIMEOUT_PROBE=1 "BC5_EMU=$E/bin-d/kyty_emulator"); FUSE="13000 2048"; NOLEARN=1 ;;   # NOLEARN: the launcher with the empty learned file, as fast9
+  *) say "0412: usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm|zscan|zsk|zo|zoc|zof|of|zoe|fast|fast2|fast3|fast4|fast5|fast6|fast7|fast8|fast9|k1rcut|lw7 [dry]; not started"; exit 1 ;;
 esac
 if [ "${LW:-}" = 1 ]; then
   T=(); for x in "${WORDS[@]}"; do case "$x" in BC5_GUARD_LEDGER=* | BC5_DIRECT_TABLE_CATCHER=* | KYTY_BC5_EVENT_PENDING_LOG=* | BC5_DIRECT_RESET_LABEL_JOURNAL=* | BC5_DIRECT_JOURNAL_QUIET=* | BC5_DIRECT_ACB_INHERIT=journal) ;; *) T+=("$x") ;; esac; done

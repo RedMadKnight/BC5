@@ -3350,8 +3350,15 @@ it names (the backend filters those; ASTRO BOT's fault had just left one); an op
 (the K3 case); every import pins memory, and that price is not measured; the walk's time under the device mutex is
 not measured. Needs cv412 when K1r is on.
 
-**The build** `memfast/mk0412zc.sh` (g412zc, `bin-c`, kit of 20 files) now chains … pr412 dfa98a48 → cv412 ec17e59f →
-k1f412 4ef7faf7 → ff412 1dd0e35a; backend direct.cpp 1d88a8b3. **Not compiled.**
+**The build** `memfast/mk0412zc.sh` (g412zc, `bin-c`, kit of 22 files) now chains … pr412 dfa98a48 → cv412 8269b175 →
+k1f412 609b0f58 → ff412 063f9ad4; backend direct.cpp 1d88a8b3. **Not compiled.** After the top's word ("each with its
+switch, CPU tests first") cv412 got both: the rule lives in `memfast/cover0412.inc` (`cv412::hole`), is on by default,
+and `BC5_GUARD_K1R_COVERS_VISIBLE=1` turns it off (the state that faulted, kept only to tell the two apart); CPU test
+`memfast/cover0412.cpp`, 640,008 of 640,008 on the laptop: with the rule the answer is the same as on the mapping list
+with the covers removed (the host behaves as before K1r); the operand of 11:32 under a cover is not mapped with the
+rule and mapped without. K1 at the filter has no CPU test (its decision is that same function; the rest is the
+import call). The maintainer's word for the ASTRO BOT start with K1r on, relayed by the top, to "if the reading is
+wrong the box may reboot again: do you agree to this test?": "Tak".
 
 **The order of the cure for row 1 (his cutscene) without harming ASTRO BOT:** cv412 always with K1r (K1r then cannot
 change any host decision); K1 at the filter beside it, measured for its imports and time on both titles; K1r's
@@ -3361,6 +3368,189 @@ the cutscene's case. What neither does: a **shader's write** into never-written 
 (as it faulted before K1r, unmapped). Its rule is the import of the write targets the title binds (render targets,
 depth, RW buffers and images in the descriptors): the bind hints do the first two today, the descriptors are not
 read.
+
+### 71. Build g412zc on the box: what the filter drops, K1r with cv412 on ASTRO BOT, K1 at the filter; a new K1r defect under lazy views (2026-11-13 15:13-15:42, box)
+
+Build g412zc (`memfast/mk0412zc.sh`, kit `kit-zc.sha256`): binary a927b6fa, private backend archive 4c5bb4fc, the
+six CPU tests passed on the box. The first run of the script stopped at its own string check ("tag cv412" is only in
+comments, never in the binary); the check was removed and the script run again (same binary). Six arms, all [M],
+none with a kernel amdgpu line, no reboot. `BC5_DIRECT_TIMEOUT_PROBE=1` and `BC5_FAULT_RECORD=1` in all. ASTRO BOT
+through exp 0413's `start0413g.sh` with `PLAY_CAPTURE=1` on a fresh private save directory (the integrator's was
+moved to `wda/_SaveData.aside-0412-1520`); the second title through `run0412n.sh`, arm fast8, the cutscene snapshot,
+slot 4, no input, 240 s, fuse 13,000/2,048, watchdog 220. Raw files on the box: `~/bc5-work/exp0413/n/raw/zc*` and
+`~/bc5-work/exp0412/night/raw/zc*`; journals `~/bc5-data/captures/play-20261113-15{16,30,33}/gc/direct.log`.
+
+| arm | title, switches | result |
+|---|---|---|
+| zc1alog | ASTRO BOT 60 s, `K1_FILTER=log`, K1r off | ran 60 s; 17,886 unmapped operands by 51 s: op 0x49 14,905 (11,924 under a view), op 0x93 2,981 (none under a view); 3 pages named |
+| zc2log | second title, `K1_FILTER=log`, K1r off | G+240; 23,084 unmapped operands by 352 s: op 0x49 10,459, op 0x93 12,615, op 0x9f 10; **none under a view** |
+| zc3k1r | second title, `K1R=1`, watch and probe at 0x1100000000 | G+240; the probe at 200 s: 16,384 zero bytes, no fault (as k1rf: cv412 changed nothing here); 516-518 covers over 1,028-1,032 MiB |
+| zc4k1r | ASTRO BOT 120 s, `K1R=1` (cv412 alone) | ran 120 s, no fault (the start that faulted at 3.8 s and rebooted the box at 11:32); 2,876-3,747 covers over 5.8-7.5 GiB |
+| zc5k1f | ASTRO BOT 120 s, `K1R=1`, `K1_FILTER=1` | ran 120 s; ONE import, 2 MiB at 1.271 s (the chunk of 0x3082f6f60); "now mapped" |
+| zc6k1f | second title, `K1_FILTER=1`, K1r off | G+240; 0 imports (as zc2log predicts); 29.9 flips/s, GTT 11,578 MiB at 352 s (zc2log: 29.9, 11,579) |
+
+**What the filter drops in ASTRO BOT [M].** The dcb of 10,494 dwords (the size of the 11:32 record's submission #58)
+carries, at dwords 1883 and 1891, two packets of opcode 0x49 whose operands are 0x3082f6f60+8 and 0x3082f7060+8:
+the page of the 11:32 fault, under "orbis_user_malloc" (lazy), chunk not imported. So the packet that faulted with
+visible covers is named: with K1r's covers visible the filter let these two through and the command processor wrote
+into a read-only page. Without K1r they are dropped about 230 times a second (CORRECTED in section 72: a dropped
+packet is executed by the soft CP on the CPU; the write is not lost, it is made by the host).
+With `K1_FILTER=1` one 2 MiB import ends that. The third page, 0x7fc0a4269000 (op 0x93), is a host address under no
+view: not memory of the direct file, so not K1's case. Not decoded here: what opcode 0x49 and 0x93 are in the
+title's stream (TODO(verify): the packet names against the public PM4 headers before they are written as fact).
+
+**What the filter drops in the second title [M]:** nothing under a view. K1 at the filter is ASTRO BOT's cure, not
+the second title's; there it costs nothing and changes nothing (zc6k1f).
+
+**A new defect of K1r, found by the watch (zc4k1r, zc5k1f) [M]:** at 0x3082f6000 from 0.5 s on: "the chunk WRITTEN by
+the CPU, not imported; GPU: a read-only zero cover (K1r)". K1r covers every part of a view that no imported buffer
+covers (`k1r412_want`), and `k1r0412.inc` says such a part is never-written memory because "the import's SEEK_DATA
+pass sees data, the chunk is imported". That holds under a view imported by data. Under a LAZY view only hints
+import, so a chunk the CPU has written stays unimported and got the zero cover: a GPU read there would return zeros
+where the title's data lies. No such read was seen (the title's packets there are writes), so this is a defect by
+reading the code and one watched page, not a wrong picture observed.
+
+**The fix written: kl412** (`memfast/kl0412.inc`, `kl0412.cpp` 99,003 of 99,003 on the laptop, `mkkl0412.py` after
+`mkk1f0412.py`: unit 52319499, after `mkff0412.py` 90c1129b; build script `mk0412zd.sh`, kit `kit-zd.sha256`, bin-d;
+NOT compiled, NOT on the box). Under a lazy view a piece whose file chunk holds data gets no cover: it stays unmapped
+as without K1r, and a GPU read there is a fault with a record that names it. `BC5_GUARD_K1R_COVER_WRITTEN=1` turns
+the rule off. The file is asked (SEEK_DATA, once per piece) at a mapping rebuild and at most every
+`BC5_GUARD_K1R_WRITTEN_SCAN_MS` (default 100); the journal gives the count and the time. Limits: a chunk written
+since the last scan keeps its cover until the next rebuild after the period; and a hole is the honest state, not the
+cure: the console lets the GPU read written memory, so the cure for a read of written lazy memory is its import
+(K1 at the filter does that for the operands packets name; shader reads are not known in advance).
+
+Not done: the arms on g412zd; the second title's walk route and his own play with any of this; a decode of the
+packets; the defaults (K1R stays off by default).
+
+### 72. Build g412zd on candidate B: kl412 on both titles, the price of importing written lazy memory, whose the "no view" operands are; a correction to section 71 (2026-11-13 16:24-16:47, box)
+
+**Correction to section 71.** "The title's write is lost each frame" was wrong. A packet the filter drops is not
+lost: the soft CP runs after every submission and executes each packet that did not run on the real GPU
+(`execute()` in the unit: `done = gpu_packet_done(...)`, then `release_mem(p, len - 1, !done)`, `if (!done)
+wait_reg_mem(...)`, `if (!done) write_data(...)`), so a dropped RELEASE_MEM's value is written by the host's CPU and
+a dropped WAIT_REG_MEM is waited for on the CPU [read in the code, not measured]. What differs from the console is
+WHEN and BY WHOM the value is written (by the host after the submission returns, not by the GPU at the end of the
+pipeline). The packet names, from `backend/src/policy.cpp`'s table: 0x49 RELEASE_MEM, 0x93 WAIT_REG_MEM64, 0x9f
+LOAD_CONTEXT_REG_INDEX. So K1 at the filter in ASTRO BOT moves two label writes a frame from the host's CPU to the
+GPU for 2 MiB of pin; it does not restore a lost write.
+
+**The base.** The shared tree is candidate B since 15:47 (patch 0001 27b6416f, unit 8126c0aa; it carries nl412,
+rl412, fr412, sg412, ff412). `memfast/mk0412zd.sh` was rewritten for it: the private tree is brought to the shared
+tree's state (rsync, .git left), then six scripts on the shared unit, each sum checked against the laptop's:
+mkk1r 4bd99863, mkwa f27b793e, mkpr 5edc7f4c, mkcv 74412dc8, mkk1f 150c5d89, mkkl 393a0cbf; the backend as in g412zc
+(archive 4c5bb4fc). Binary **be507cd5** (bin-d); CPU tests k1r0412, cover0412, kl0412 passed on the box. mkkl0412.py
+also adds `BC5_GUARD_LAZY_BY_DATA=1` (default off): `direct_lazy_name()` answers "no", so `BC5_DIRECT_LAZY_NAMES` is
+ignored and those views are imported by data like every other. This IS the top's variant (b), "import a written
+chunk of a lazy view at the CPU's write": no new mechanism, the lazy list is what keeps such chunks out today.
+
+Four arms, all [M], no kernel amdgpu line, no reboot; `BC5_GUARD_K1R=1 BC5_GUARD_K1_FILTER=log BC5_FAULT_RECORD=1
+BC5_DIRECT_TIMEOUT_PROBE=1` in all. Small raw files: `raw/zcd/` (also section 71's).
+
+| arm | title | written chunks under lazy views (kl412) | GTT | result |
+|---|---|---|---|---|
+| zd1k1r | ASTRO BOT 120 s | 366 (732 MiB) get no cover; 2,510 covers over 5,020 MiB | 7,263 MiB at 45 and 100 s | ran 120 s; the page 0x3082f6000 "WRITTEN, not imported; GPU: NO MAPPING" from 0.5 s |
+| zd2bydata | ASTRO BOT 120 s, `LAZY_BY_DATA=1` | 0 (all imported) | 7,995-7,999 MiB: **+734 MiB** | ran 120 s; the page imported at 1.4 s; the two RELEASE_MEM operands no longer dropped |
+| zd3k1r | second title, cutscene arm, probe | 110 (220 MiB) get no cover; 406 covers over 808 MiB | 11,614 MiB at 285-326 s (peak 11,974) | G+240, 29.6 flips/s; the probe: 16,384 zero bytes |
+| zd4bydata | second title, cutscene arm, `LAZY_BY_DATA=1` | 0 | 11,808 MiB at 284-326 s (peak 12,188): **+194 MiB** | G+240, 30.2 flips/s; lowest available memory 749 MiB; the sampler's last column 74 against 0 (swap, as I read it) |
+
+**kl412 [M]:** with the rule the written chunks of lazy views are uncovered on both titles and nothing faults in
+these arms, so in these 120 s and 240 s no GPU read touches them. The scan costs 0.84-1.1 ms each, 3-5 a second
+(650 ms over 212 s in the second title: 0.3 % of one core). In the second title the covers shrink from 1,028 to
+808 MiB: 220 MiB of what K1r called "never-written" held data.
+
+**The price of the general rule (variant b) [M], one run each:** +734 MiB of pin in ASTRO BOT, +194 MiB in the
+second title's cutscene arm (lazy names there: orbis_user_malloc, Wwise, SoundAlloc, FileSystem, UIStringAlloc).
+ASTRO BOT has the room (8.0 of 13 GiB). The second title does not: its wall is the open problem of this experiment,
+and this arm ran with 749 MiB available at the lowest and started to swap. Not measured: the walk route, a long
+play, his save at the wall. On these numbers the general rule is affordable for ASTRO BOT and is 0.2 GiB more
+against the wall in the second title; import on demand (K1 at the filter: 2 MiB in ASTRO BOT, 0 in the second
+title) costs nothing but covers only what packets name.
+
+**Whose the operands "under no view" are [M + code].** In all arms of both titles they are ONE page per run:
+0x7f3772b03000, 0x7fcec19b6000 (ASTRO BOT), 0x7ff8c8680000 (second title). `/proc/<emulator>/maps` during the run:
+an anonymous private `rw-p` mapping of exactly 12 KiB at that address, far above the guest's range (the unit's
+`kGuestMax` is 0xfbffffffff). So it is the HOST's memory, not the title's direct memory and not an alias: one
+RELEASE_MEM and one WAIT_REG_MEM64 a frame name it (in ASTRO BOT with `LAZY_BY_DATA`: 6,491 and 6,491 in 112 s).
+The filter drops both and the soft CP serves both on the CPU, as designed for memory the GPU cannot see. Not
+identified: which host code allocates those 12 KiB and hands the address to the title (an HLE library's own label
+or work area [I]). The 0x9f operand 0x408 lies in no mapping at all: it is LOAD_CONTEXT_REG_INDEX's index form,
+an offset, not an address (4-10 a run, second title only) [I: from the value; the packet not decoded]. No import can
+or should cure these; whether a label in host memory is right against the console is a question for the library
+that allocates it, registered in FAULTS.md as an open item, not a fault.
+
+Not done: his play with any of this; the walk route with K1r; a GPU read of written lazy memory (none seen, so
+kl412's fault-by-name has not fired); the defaults (K1R off).
+
+### 73. Whose the 12 KiB host page is; the test shortcut prepared; the fold proposed for candidate C (2026-11-13, laptop)
+
+**The host page of section 72 is the VideoOut buffer labels [I, from the code; the address itself not printed].**
+The unit's only anonymous mapping of the host is `g_labels` in namespace `Bc5Gc`: `uint64_t[64]` on one page from
+`::mmap(nullptr, 4096, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)`, the target of
+`sceVideoOutGetBufferLabelAddress` (the comment there: experiment 0071 put it on a page of its own "so that it can
+be mapped for the GPU"). It fits what was measured: the operand is always the first 8 bytes of the mapping (buffer
+0's label), the mapping is anonymous `rw-p` at a host address, and the title names it once in a RELEASE_MEM and once
+in a WAIT_REG_MEM64 every frame (write the flip label at the end of the frame's pipeline, wait for it). The kernel
+shows 12 KiB because neighbouring anonymous mappings merge. The address is above the unit's `kGuestMax`
+(0xfbffffffff), so the anonymous sync never maps it and the filter drops both packets; the soft CP writes and waits
+on the CPU. On the console that label is memory the GPU writes. What follows for the picture or the timing is not
+measured; what would settle "is it mapped for the GPU at any time": one journal line with `g_labels`' address and a
+watch on it (BC5_GUARD_WATCH takes only addresses under views today).
+
+**The maintainer's test shortcut, prepared, NOT installed** (the top's order; his word comes first):
+`play-guard-0412.sh` gets the arm `k1rcut` and `shortcut0412b.sh` the entry `k1rcut`, "BC5 emulator (0412 K1R
+cutscena)". The arm is fast9's words on g412zd (`BC5_EMU=bin-d`, pinned by `built-d.md5`) plus `BC5_GUARD_K1R=1
+BC5_GUARD_K1_FILTER=1 BC5_FAULT_RECORD=1 BC5_DIRECT_TIMEOUT_PROBE=1`, and without e11's reset-replay words
+(`BC5_DIRECT_RESET_REPLAY_ACB`, `_RESET_LABELS`, `_RESET_LABEL_JOURNAL`) and the dead `BC5_DIRECT_LEARN_GUEST_ONLY`:
+80 words. Checked on the laptop with a stand-in directory (the words, the refusal on a wrong bin-d); not run on the
+box. The box's copy of the wrapper must read eb4feddc before this one (d15bcca6) replaces it. RT is the launcher's
+setting, as in fast9. `BC5_DIRECT_TIMEOUT_PROBE=1` copies every buffer: its cost in his play is not measured (my
+scripted arms ran at 30 flips/s with it).
+
+**The fold into candidate C (exp 0419), proposed to the integrator:** form 1 = g412zd as measured (unit 393a0cbf,
+backend 2497a4ce/1d88a8b3); form 2, recommended for a shared build, the same without the read probe pr412 (a
+deliberate-fault tool): unit 2f4a3d63, backend direct.hpp 26519fcc, direct.cpp b1d27875, NOT compiled. All switches
+default off; the backend archive is a separate swap step that needs the maintainer's word. Not measured: "all
+switches off = B" on the box.
+
+The branch was not pushed: this session's permission classifier refused `git push`; the commits are on the local
+branch `exp/0412-memory-guardian`.
+
+### 74. The maintainer's test shortcut installed; candidates D and E checked against the chain (2026-11-13 17:16, box; laptop)
+
+His word, relayed by the top, to "Czy zamienic skrot fast9 na skrot testowy z K1r, zebys sprawdzil przerywnik z
+ostatniego zapisu?": "Tak, zamien". Installed with `install0412k.sh` (kit `~/bc5-work/exp0412/kit-sc`):
+"BC5 emulator (0412 K1r test)" (.desktop 0bd386b5; `BC5_0412_LEAN=1 ... play-guard-0412.sh k1rcut`), the old "BC5
+emulator (0412 fast9 bez Plasmy)" moved to `~/bc5-work/trash-20261113/pulpit`. Wrapper b1080e6f (the old eb4feddc
+kept beside it), launcher `play-pkg-0412-nolearn.sh` 6a0ae47b (his live saves, `ulimit -c 0`), binary g412zd be507cd5,
+RT on in `input.cfg`, fuse 13,000/2,048. The arm `k1rcut`, 77 words: e11 unpacked's 70 without the three reset-replay
+words, `BC5_DIRECT_LEARN_GUEST_ONLY`, `BC5_R3_DROP_CATCH`, `BC5_R3_REWIND_CATCH` and `BC5_DIRECT_ACB_INHERIT=journal`
+(the top's scope), plus fast9's arm words and `BC5_GUARD_K1R=1 BC5_GUARD_K1_FILTER=1 BC5_FAULT_RECORD=1
+BC5_DIRECT_TIMEOUT_PROBE=1`. Checked: the wrapper's dry run on the box. NOT run: this arm itself; the scripted arms
+of sections 71-72 had the seven removed words in. His play is its first run.
+
+The integrator's cleanup (exp 0419), laptop only, nothing compiled: on candidate D's unit 2c43382d every anchor of
+the chain matches once (full form ends at 4a1bdf0a, form 2 at 92cb76ff). It takes FORM 2 (no probe) for candidate
+E; E's unit c92f5913 holds the three rule bodies of k1r0412.inc, cover0412.inc and kl0412.inc verbatim, and differs
+inside my functions only in the K1r refusal (the zero-skip half is gone with the option). `memfast/mk0412ze.sh`
+builds form 2 on B privately (unit 2f4a3d63, backend 26519fcc/b1d27875, bin-e); not run yet: after his play.
+
+### 75. His play on the K1r test shortcut: no fault; the wall as before (2026-11-13 18:00-18:06, read at 18:10)
+
+His word after the play, relayed by the top: "Wszystko ok. Masz swoje pomiary". Read only (sampler
+`~/bc5-work/exp0412/sampler/play-20261113-18{0030,0404}-k1rcut.txt`, journals
+`~/bc5-data/captures/play-20261113-18{00,04}/gc/direct.log`, `play-last.log`, `fuse.log`, dmesg), all [M]:
+
+- Two plays on g412zd, arm k1rcut (its first runs): about 122 s and 138 s of frames; the second ended "exit 0". No
+  kernel amdgpu line, no new fault record, no "would learn" line, no timeout line.
+- K1r: 413-425 covers over 822-846 MiB. kl412: 105-106 written chunks under lazy views without a cover; the named
+  fault for a GPU read there did not fire. K1 at the filter: 0 imports.
+- Second play: 30.0 flips/s over 134 s, 39 s with a gap over 100 ms, longest 660 ms. No control play without
+  `BC5_DIRECT_TIMEOUT_PROBE`, so its cost in a play is still not measured.
+- Memory, second play: GTT 12,046-12,067 MiB from 73 s, available 658-739 MiB, swap used 1.6-1.7 GiB, the cgroup's
+  peak 12,884 MiB of the fuse's 13,000. The wall is where it was: K1r pins nothing and frees nothing.
+- Not established from the files: that the slot-4 cutscene itself played (the journal names no slot or scene). What
+  stands: his word, and no fault where the morning's play faulted at once.
 
 ## Verdict
 
