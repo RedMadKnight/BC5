@@ -3013,6 +3013,41 @@ returns zero), then K1r off with rl412 on (expected: the fault, a recovered rese
 title then goes on is the measurement); (b) the scripted route to G+240 with K1r on: regressions, the pin, the cost
 of the extra drains; (c) the budget runs of section 59; (d) `e1-probe` case 6 last.
 
+### 64. The rule after his play: a fault is a bug at its source; the fault record, the register, the cutscene arm (2026-11-13; laptop, not compiled)
+
+The maintainer, on the label write-back (rl412): "i znowu robimy obejście dla problemu? czy jest szansa ze ps5 dziala
+tak samo?" and his rule: "Każdy błąd GPU traktujemy jako błąd do usunięcia u źródła, a nie coś, po czym gra ma się
+podnieść. zapis diagnostykę dla siebie, aby usunąć źródło błędu w kolejnym podejściu". The console has no such fault
+and does not resume a title after a GPU hang; e11's write-back is a net for our own bugs. So:
+
+- **rl412** (`BC5_DIRECT_RESET_LABELS_ADD`) stays default off and is no fix: one diagnostic arm at most. No recovery
+  variant is offered again. **K1r is the fix** for his cutscene and the only priority.
+- **The fault record** (tag fr412, `memfast/mkfr0412.py`): `BC5_FAULT_RECORD=1` (default off in the test build, meant
+  to become the default). At the first GPU fault or ring timeout the emulator writes one self-contained directory
+  under `~/bc5-data/captures/faults/<date-time>/` and **ends the game** (exit code 86, one stderr line naming the
+  record): no reopen. In it: `record.txt` in words (when, the address and status with read or write, the catcher's
+  kind, the view or heap and whether its chunk was imported and GPU-mapped, the pin, the capture directory with the
+  journal and the dumped buffers), `journal-tail.txt` (the last 4 MiB: the probe's summary of the timed-out jobs,
+  the last submissions, the ledger, the frame lines), the layout (`layout-views.txt`, `layout-buffers.txt`,
+  `layout-mappings.txt`), `meminfo.txt`, `pressure.txt`, `environment.txt` (every `BC5_*` and `KYTY_*` variable),
+  `process.txt`. What the emulator cannot read (the kernel's own lines, the devcoredump's path, the binary's md5)
+  the launcher is to add after the exit; that launcher step is not written yet. Nothing in a record is read by a
+  later run. Limits: the exit is abrupt for the title (a save being written at that instant could be cut short).
+- **The register**: `FAULTS.md` beside this file, one row per fault with its kind, root cause, rule, how the console
+  behaves (with a source, or marked inferred) and status. Row 1 is today's cutscene fault.
+- **The build** (`memfast/mk0412z.sh`) now chains nl412 keep-guards (cfb7533e) → rl412 (0878903e) → k1r412 (843b40cb)
+  → fr412 (9864c363) → ff412 (646a42d6). Not compiled.
+
+**The cutscene arm.** His answer: "ostatni zapis - przerywnik od razu się uruchamia". A new read-only snapshot of his
+live saves as they were after the play: `~/bc5-data/saves/PPSA03671-20261113-0914-cutscene` (131 files, 23 MiB, the
+list `files.md5` d26b3608; the copy compared equal to the source; no emulator of his ran; nothing is ever written
+back). By time the newest is **slot 4** (autosave and its snapshot written 08:58 today, during the play, before the
+fault at 08:59; slots 1–3 are of 11-03, 10-22 and 11-01). `run0412n.sh` got three options, defaults unchanged:
+`N_SAVES=<dir>` (the private working copy is reset from that snapshot), `N_SLOT=<n>` (n−1 presses of down before
+the cross on the slot list: the list is walked by position, and whether the title lists slot 4 fourth or first is
+to be seen in the first run), `N_NOWALK=1` (no input after the load). The arm: start, menu, slot 4, Continue, no
+input, 240 s.
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over
