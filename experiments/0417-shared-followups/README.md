@@ -252,6 +252,90 @@ frame-stat windows were not switched on (their authors ran them in their own bui
 checks on the shared binaries after the swap; the cutscene fault of the maintainer's morning play without the learned
 file (a shader read of a never-written chunk) is not on this route and is what the ordered K1r fold is for.
 
+## 8. The K1r fold (26ef195c), its fault on ASTRO BOT, and the K1R-off form (05fe48b6) (2026-11-13 10:40-12:10)
+
+The fold on top of c55174b1: exp 0412's rl412, K1r (two backend files, a private archive ed63df2f), the fault record,
+the address watch, the probe, the first-fail catchers, the save guard, and this experiment's EOP counter
+(`mkeop0417.py`, own test `mktest0417eop.py`). Kits: `mkkit0417c.py` (26ef195c, K1R and the fault record on by
+default), `mkkit0417d.py` (05fe48b6, K1R off by default again).
+
+| Candidate | Private normal / lean | Result |
+|---|---|---|
+| 26ef195c (K1R on) | 6cf00a3c / 6cc0b76e | builds; backend tests 121 of 121; exp 0412's CPU tests pass. **ASTRO BOT faulted 3.8 s after its start**: a GPU write (K1w) into a covered chunk of the lazy view `orbis_user_malloc`, the ring reset FAILED, the box rebooted at 11:32:18. The fault record was written (`~/bc5-data/captures/faults/20261113-113217`, the devcoredump `20261113-113218-devcd4.txt`; neither is committed). The chain's EXIT trap cannot free the lock across a reboot; the stale line was removed by hand. |
+| 05fe48b6 (K1R off) | b2281fe8 / dd24ecac | builds, the same tests pass; ASTRO BOT 3 of 3 clean. Its second-title walk d4p is VOID (section 10). Its `KYTY_BC5_SWITCH_DEFAULTS=0` ASTRO BOT run left the bad save file of section 11. |
+
+Reading of the fault (exp 0412's, not re-checked here): the cover makes the operands look mapped to the packet
+filter, so a write the title would otherwise have had dropped went to a covered chunk. K1r is NOT sound on ASTRO BOT;
+it leaves this fold until exp 0412's next form (cv412) is built and run on both titles. By the maintainer's rule of
+2026-11-13 the fault is a bug with a record, not something to recover from.
+
+## 9. Candidate B (27b6416f): the fold without K1r, its probe and its watch; no backend change
+
+c55174b1 + rl412 (off) + the fault record (ON by default) with the first-fail catchers and the save guard + the EOP
+counter. It links against the SHARED archive 75e30335, so a swap of B changes no backend file. Kit `mkkit0417e.py`;
+private normal 3baa8e39, lean e11ad4de, both kept on the box under `~/bc5-work/exp0413/kept/`. Build and CPU tests
+pass; the binaries hold no `BC5_GUARD_K1R`. Unit 8126c0aa confirmed by exp 0412's session.
+
+Behaviour changes a swap of B would bring (for the patch notes): a GPU fault now ends the game with a record and
+exit 86 instead of going on; a fault at a tagged address ends with a record before the alias-learn path; B does NOT
+cure the cutscene fault of the maintainer's morning play (that is what K1r was for).
+
+## 10. Three void runs, and the valid chain of 14:25 (`chk0417g.sh`)
+
+The second-title walks d4p (05fe48b6, 12:00), f4p (B, 12:27) and the control f8ctl (shared fe0933c0, 12:32) all ran
+into the memory wall in the menu. In all three the title left the start screen at 51-52 s, 35 s before the runner's
+own cross at 87-89 s; the morning's runs stayed on it. The maintainer, asked: he pressed the pad at the start screen
+and went into the game in those windows, without playing. **The three runs are void as memory measurements**: the
+scripted route was out of step with the screen. Their numbers say nothing about B, the shared build or the box.
+
+`chk0417g.sh` repeats them with the foreign input made visible: `evtest` records every key press of every joystick
+during a run (the runner's keys do not pass through evdev), and the flip log gives the lowest flips/s between 50 s
+and 84 s. The control must hold the start screen with no pad key, or the chain stops. Raw: `raw/chk0417g.out`.
+
+| Run | Build | Pad keys | Lowest flips/s 50-84 s | Import at 61 s: eager / data / no view (MiB) | Available at ~60 / ~104 s (MiB) | Lowest available | Flips/s | Seconds with a gap > 100 ms, longest | End |
+|---|---|---|---|---|---|---|---|---|---|
+| g1ctl, walk | shared fe0933c0 | 0 | 34 | 9912 / 1216 / 8 | 947 / 911 | 366 | 26.3 | 59, 701 ms | G+240, kernel 0, crash 0 |
+| g4p, walk | B 3baa8e39 | 0 | 34 | 9912 / 1226 / 10 | 932 / 863 | 298 | 25.7 | 68, 579 ms | G+240, kernel 0, crash 0 |
+| g6pcut, cutscene arm, no input | B 3baa8e39 | 0 | 35 | 9900 / 1224 / 6 | 971 / 931 | 779 | 31.0 | 27, 698 ms | G+240, kernel 0, crash 0, no fault record |
+| g7p, lean 120 s | B e11ad4de | - | - | - | - | - | - | - | PASS, kernel 0, crash 0 |
+
+One run each: B's walk is within the control's spread of the morning (25.5-26.4 flips/s); 68 MiB less at the lowest
+point is one pair and not a finding. The cutscene arm did not fault in this run (772 MiB under no view at 121 s, as
+that arm does); one clean run does not show the fault gone.
+
+Lesson for runs made while the maintainer is at the box: record the pad's key events beside the run, and treat a
+run with a foreign key before the route's own first key as void.
+
+## 11. The save-memory finding: the pad again, not candidate B
+
+Seen at midday: a private ASTRO BOT save directory held a save-memory file (md5 97fb2aba, 164,965 non-zero bytes)
+on which every later start ended by itself at 5 s (eboot+0x29c385), on any build; it was written by 05fe48b6 at
+11:59 and again by B at 12:19, both with `KYTY_BC5_SWITCH_DEFAULTS=0`, and looked like a change of the fold.
+
+Counts (`save0417.sh`, `save0417-list1.txt`; each pair = a fresh empty directory, 120 s, then a 30 s default start;
+raw in `raw/chk0417g.out`), no pad key in any:
+
+| Build | Words | Pairs | File | The next start |
+|---|---|---|---|---|
+| shared fe0933c0 | `KYTY_BC5_SWITCH_DEFAULTS=0` | 3 | 1fa391a4, 30,095 bytes, 3 of 3 | passes 3 of 3 |
+| B 3baa8e39 | `KYTY_BC5_SWITCH_DEFAULTS=0` | 2 | 1fa391a4, 2 of 2 | passes 2 of 2 |
+| B 3baa8e39 | defaults | 2 | 1fa391a4, 2 of 2 | passes 2 of 2 |
+
+Both large files were written inside the window in which the maintainer pressed the pad (section 10). The test of
+that (`save0417k.sh`, `raw/save0417k.out`): a cross sent at 30, 45, 60, 75 and 90 s through `KYTY_BC5_INPUT_CMD`,
+no real pad key:
+
+| Build | File after 120 s | The next default start |
+|---|---|---|
+| shared fe0933c0 | 97fb2aba, 164,965 bytes | ends by itself at 5 s |
+| B 3baa8e39 | 97fb2aba, 164,965 bytes | ends by itself at 5 s |
+
+**The large file is what ASTRO BOT saves once a key takes it past its first screen, and the shared build writes the
+same bytes and crashes the same way.** It is not a change of the fold, and the planned bisect by pieces is dropped.
+What remains is a defect of its own on every build: a first save made this way from an empty directory makes the
+next start crash at 5 s. The files are kept on the box (`~/bc5-work/exp0413/n/wda/_SaveData.ks1`, `.kb1`, the two
+midday ones); it is not worked on here.
+
 ## Open items carried from the integration (not worked on here)
 
 | # | Item | Needs |
@@ -266,9 +350,11 @@ file (a shader read of a never-written chunk) is not on this route and is what t
 
 ## Verdict
 
-**The guard and the map opt-in are shown on real calls, and the next patch change (c55174b1: the learned windows
-removed, exp 0415's L5c, the guard switch) builds and runs clean privately (section 7); it waits for one more fold
-before the swap.** The candidate patch 33bddfa1
+**Candidate B (27b6416f; section 9) is clean privately and not different from the shared build fe0933c0 in the valid
+chain of 2026-11-13 14:25 (section 10: one walk each, the cutscene arm, lean); the save-memory finding was the pad's
+input and exists on the shared build too (section 11). K1r is out of this fold after its fault on ASTRO BOT (section
+8). B's swap waits for the top session and the maintainer; it changes no backend file.** The guard and the map
+opt-in are shown on real calls. The candidate patch 33bddfa1
 built privately and its hook did what was expected in six ASTRO BOT starts (section 2b); two of the new lines (C2, A2)
 still have to be seen in a title that reaches their code; the CLAUDE.md diff (with the versions read on the box) and the harness self-test are done; the two other launchers
 are made again from the current one and wait for the maintainer's word; the

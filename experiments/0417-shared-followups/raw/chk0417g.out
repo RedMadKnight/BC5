@@ -1,0 +1,40 @@
+chain lock: exp 0417 | chain: exp 0417: control on the shared build, candidate B walk + cutscene arm + lean, then ASTRO BOT save counts, until about 15:55 | token 20261113142550432421 | 2026-11-13 14:25:50
+binaries: B normal 3baa8e3947c1c294e3745014988a523a, B lean e11ad4deb29d1d31d53297f09c02167f, shared normal fe0933c0ad7c0d9a86194bc0a7598a06
+g1ctl journal: would-learn 0, timeout-fault 0, fault record lines 0
+g1ctl import: t 61 s: 11136.0 MiB imported: 9912.0 under eager views, 1216.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 8.0 under no view (2.0 last seen under an eager or zero-list view, 4.0 never seen u
+g1ctl import: t 122 s: 11220.0 MiB imported: 9942.0 under eager views, 1254.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 24.0 under no view (24.0 last seen under an eager or zero-list view, 0.0 never see
+g1ctl route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 94 s;route: cross (Continue) at 100 s;route: the load seen at 102 s;route: gameplay G = 117 s (the load at 102 s);route: walk of 14 cycles (240 s) queued at 117 s;; watchdog: watchdog: emulator 432815 ended; 179 samples, lowest available 366 MiB, highest PSI full 8 %
+g1ctl at ~104 s: avail,swap,io 911 509 0 0 0 | psi 1.05/1.05 1.19 | gtt 11788 
+g1ctl at ~60 s: avail,swap,io 947 509 0 0 1 | psi 0.65/0.65 1.37 | gtt 11860 
+g1ctl input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 34 at 50.341 s
+g1ctl (nozeroskip) ended at G+240 (after 358 s; G 117, load 102, list 94); 26.3 flips/s over 353 s, 59 s with a gap over 100 ms, longest 701 ms; kernel lines 0, crash lines 0, ledger lines 0
+control: as the morning's (start screen held to the runner's cross, no pad key, clean to G+240)
+g4p journal: would-learn 0, timeout-fault 0, fault record lines 0
+g4p import: t 61 s: 11148.0 MiB imported: 9912.0 under eager views, 1226.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 10.0 under no view (8.0 last seen under an eager or zero-list view, 2.0 never seen un
+g4p import: t 121 s: 11234.0 MiB imported: 9956.0 under eager views, 1262.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 16.0 under no view (16.0 last seen under an eager or zero-list view, 0.0 never seen 
+g4p route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 93 s;route: cross (Continue) at 100 s;route: the load seen at 104 s;route: gameplay G = 115 s (the load at 104 s);route: walk of 14 cycles (240 s) queued at 115 s;; watchdog: watchdog: emulator 525617 ended; 179 samples, lowest available 298 MiB, highest PSI full 8 %
+g4p at ~104 s: avail,swap,io 863 515 0 3 0 | psi 0.00/0.00 1.41 | gtt 11815 
+g4p at ~60 s: avail,swap,io 932 515 0 0 0 | psi 0.06/0.06 1.35 | gtt 11862 
+g4p input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 34 at 51.828 s
+g4p (nozeroskip) ended at G+240 (after 357 s; G 115, load 104, list 93); 25.7 flips/s over 353 s, 68 s with a gap over 100 ms, longest 579 ms; kernel lines 0, crash lines 0, ledger lines 0
+g6pcut journal: would-learn 0, timeout-fault 0, fault record lines 0
+g6pcut import: t 61 s: 11130.0 MiB imported: 9900.0 under eager views, 1224.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 6.0 under no view (6.0 last seen under an eager or zero-list view, 0.0 never seen 
+g6pcut import: t 121 s: 11162.0 MiB imported: 9142.0 under eager views, 1248.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 772.0 under no view (762.0 last seen under an eager or zero-list view, 0.0 never 
+g6pcut route: route: cross (start screen) at 86 s;route: the save-slot list runs; down x 3, cross (slot 4) at 92 s;route: cross (Continue) at 98 s;route: the load seen at 102 s;route: gameplay G = 112 s (the load at 102 s);route: no input after the load (N_NOWALK=1), 240 s from 112 s;; watchdog: watchdog: emulator 620700 ended; 177 samples, lowest available 779 MiB, highest PSI full 5 %
+g6pcut at ~104 s: avail,swap,io 931 531 0 0 0 | psi 0.00/0.00 1.01 | gtt 11846 
+g6pcut at ~60 s: avail,swap,io 971 531 0 0 1 | psi 0.03/0.03 1.29 | gtt 11860 
+g6pcut input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 35 at 50.149 s
+g6pcut (nozeroskip) ended at G+240 (after 353 s; G 112, load 102, list 92); 31.0 flips/s over 348 s, 27 s with a gap over 100 ms, longest 698 ms; kernel lines 0, crash lines 0, ledger lines 0
+g7p (lean) PASS: ran 120 s; RssAnon at the end 135496 kB; kernel lines 0, crash lines 0
+second title: all clean
+tag        build    mode      words                              | file-md5 non-zero | the next default start
+sv1        fe0933c0 astro/120 KYTY_BC5_SWITCH_DEFAULTS=0         | 1fa391a4    30095 | passes
+sv2        fe0933c0 astro/120 KYTY_BC5_SWITCH_DEFAULTS=0         | 1fa391a4    30095 | passes
+sv3        fe0933c0 astro/120 KYTY_BC5_SWITCH_DEFAULTS=0         | 1fa391a4    30095 | passes
+bv1        3baa8e39 astro/120 KYTY_BC5_SWITCH_DEFAULTS=0         | 1fa391a4    30095 | passes
+bv2        3baa8e39 astro/120 KYTY_BC5_SWITCH_DEFAULTS=0         | 1fa391a4    30095 | passes
+bd1        3baa8e39 astro/120 (defaults)                         | 1fa391a4    30095 | passes
+bd2        3baa8e39 astro/120 (defaults)                         | 1fa391a4    30095 | passes
+save0417 ended 15:06:41
+chk0417g ended 15:06:41
+chain lock released

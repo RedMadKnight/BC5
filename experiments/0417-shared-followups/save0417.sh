@@ -14,7 +14,7 @@ LIST=${1:?the list file}
 cd "$N" || exit 1
 . "$N/chainlock0417.inc"
 n=$(grep -c '^[^#]' "$LIST")
-chain_claim "exp 0417 save-memory counts: $n ASTRO BOT pairs on private test save directories" $((n * 3 + 5)) || { echo "save0417 ended $(date +%T): NOT STARTED"; exit 1; }
+[ -n "${CHAIN_LOCKLINE:-}" ] || chain_claim "exp 0417 save-memory counts: $n ASTRO BOT pairs on private test save directories" $((n * 3 + 5)) || { echo "save0417 ended $(date +%T): NOT STARTED"; exit 1; }
 KEEP=$WD/_SaveData.before-save0417-$$
 mv "$WD/_SaveData" "$KEEP" || { echo "cannot set the current private save directory aside"; exit 1; }
 back() { rm -rf "$WD/_SaveData"; mv "$KEEP" "$WD/_SaveData"; }
