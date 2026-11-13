@@ -2715,6 +2715,58 @@ separates our arrays from the rest.
   the guest's memory, at the price of 12 GiB of huge pages reserved up front by the system and never swappable:
   his decision too, and the opposite of what the wall needs. Not proposed.
 
+### 59. The catcher kit for the smaller offer and for compaction (tag ff412; laptop only, not built)
+
+The top session's order after sections 57 and 58 ("fixes first"). Written against the **shared tree** rebuilt on the
+laptop (upstream KytyPlus f266548 + the integrated patch 4651d1d3; `memory.cpp` eff24b4c and `libAmpr.cpp` a2d09d32
+match the integrator's list). `memfast/mkff0412.py` edits four units; every anchor is asserted once; outputs:
+`memory.cpp` 961da63a, `libAmpr.cpp` d88da83d, `hostException.cpp` e978e975, `bc5LleAgc.cpp` d8270884. The diff is
+in the shared notes (`exp0412-ff412-units.diff`, 550 lines). **Nothing of it has been compiled**: the laptop cannot
+build these units; the first compile is the box's.
+
+| switch (all default off) | what it does |
+|---|---|
+| `KYTY_BC5_MEM_FIRSTFAIL=1` | 18 memory calls of the host (allocate, release, map, reserve, protect, batch map, the pool calls, flexible map, munmap, the available-size query) are wrapped: a non-OK result is counted and the first 12 and every power-of-two-th are written in full: the call, the result, up to six arguments, the caller's address, the thread, and the direct memory's state (offered, free, runs, the largest run; flexible configured and available). The AMM auto pool's refused borrow is noted with the pool's maps, free bytes and largest free run; a failed AMM command with its kind, address and size. Before the exit on an access to a reserved AMM page the last 8 failures are printed. A catcher: no result changes |
+| `KYTY_BC5_TRAP_LOG=1` | a SIGTRAP is journaled (rip, rsp, thread), then takes its default action as before (exit status 133): it names the int3 of exp 0409's `rescue` runs |
+| `BC5_DIRECT_MAX_BO_MIB=<n>` | the largest import, never above the udmabuf module's own limit. With 16 the kernel's per-buffer arrays are 32 KiB (order 3) instead of 128 KiB (order 5): the test of section 58's source (iii) |
+
+CPU test `firstfail0412.cpp` (which failures print, the ring of the last eight against a model): 101,506 of 101,506
+on the laptop. `compact0412.sh`: the read-only collector of section 58's counters (kcompactd0 and kswapd0 CPU, the
+compaction, migration and kswapd counters of `/proc/vmstat` as deltas, free blocks of order 9 and 10, available
+memory), one line every 5 s beside a run; syntax-checked only.
+
+**The fix candidate for class (b) is already in the shared tree** ([C] for each piece of code, [I] for the chain between them): the death at 12,460–12,800
+is one thing: the AMM auto pool keeps contiguous runs (first fit) and, when no run fits, borrows a contiguous range
+of direct memory; when that is refused `MapAuto` returns EAGAIN, "the buffer stops here", the title goes on, and the
+next access to that address (the host's own APR read copying into it, or the title) hits a reserved AMM page, where
+`KernelHandleReservedRangeAccessViolation` exits with the misleading text "AMM virtual-memory unmap is
+unsupported". The pool was not empty then (212 MiB free on 11-03), only fragmented. The console's pool maps
+scattered pages (AnyPS5, cited in `libAmpr.cpp`), which is what `KYTY_BC5_AMM_SCATTER=rescue|first` (exp 0409)
+does. So no new fix is written: the runs test `rescue` and `first` with the catchers on, and the catchers say what
+the 3-of-7 freeze under `rescue` is. A host that survives a truly empty pool (failing the title's call instead of
+dying) is not written: I do not know the console's error for it (TODO(verify)).
+
+**Order-5 arrays: how often, and can they be reused** [C][I]. They live in the kernel, one set per udmabuf and per
+imported BO; user space cannot reuse them. They are made on every `import_memfd`: a first import of a filled chunk
+run, every merge (the merged buffer is a new udmabuf, the old ones are freed), and every cut by the orphan release
+(the surviving pieces are imported again). Only buffers above 16 MiB make requests the kernel calls costly (above
+order 3). How many imports of which size a load makes is not counted in my data; exp 0415's `ls415_import` counter
+has it per phase. **Exp 0415's counts** [M, its runs r6n1 and r6n2, build L5b, RT on; first imports and merges are
+counted together]: movies (33 s) 181 and 167 calls, 10.0 and 9.7 GiB, mean 57–59 MiB; menu load (13–15 s) 261 and
+280 calls, 4.8 and 5.7 GiB, mean 19–20 MiB; start screen and menus 19 and 7 calls; save load 22 and 23 calls,
+mean 56–80 MiB; play (64 s) 64 and 74 calls, 3.0 and 3.4 GiB, mean 47–48 MiB: about one call a second. In all about
+**550 imports and 21 GiB imported for a footprint of 12 GiB up to one minute of play**: every byte is imported about
+1.8 times (first as it fills, again when merged), and by the mean sizes most calls are above 16 MiB, so most make
+the costly-order arrays: on the order of 2,500 such requests a run [I, 5 arrays a call]. The candidates are: (1) `BC5_DIRECT_MAX_BO_MIB=16` (above): four times the buffers, each
+with order-3 arrays; the price is a longer BO list per submission; (2) no merge-then-cut: buffers made once at
+their final size, which needs the final size known at map time (R1 or option B).
+
+**Runs asked for** (one slot, RT on, the scripted route, stop at the first kernel error; a private build of the four
+units on the shared tree, the shared builds untouched): the offer 12,288 once (10 s: is the start death still there
+after exp 0413's guard?); 12,800 with `KYTY_BC5_AMM_SCATTER` unset, `rescue` and `first`, each with FIRSTFAIL,
+TRAP_LOG and `KYTY_BC5_AMM_TRACE=1`; and at 13,824 one pair `BC5_DIRECT_MAX_BO_MIB` unset against 16 with
+`compact0412.sh` beside each.
+
 ## Verdict
 
 - **Compaction (section 58, sources only):** kcompactd is driven by the kernel's own proactive compaction and by every
