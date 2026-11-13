@@ -43,7 +43,13 @@ template <typename Bos> inline void cover(uint64_t vva, uint64_t voff, uint64_t 
 			lo = e;
 		}
 	};
-	for (const auto& b: bos) {
+	// Start at the last range that begins at or before the view's start (the list is sorted and disjoint, so nothing
+	// before it can reach into the view). 2026-11-13: the walk from the list's start for each of 21,000 views cost
+	// 20 ms a rebuild and a 1 s stall in the menu (README section 78).
+	auto first = std::upper_bound(bos.begin(), bos.end(), cur, [](uint64_t o, const auto& b) { return o < b.off; });
+	if (first != bos.begin()) --first;
+	for (auto it = first; it != bos.end(); ++it) {
+		const auto& b = *it;
 		if (b.off + b.size <= cur) continue;
 		if (b.off >= vend) break;
 		if (b.off > cur) emit(cur, b.off < vend ? b.off : vend);

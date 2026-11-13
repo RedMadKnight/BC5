@@ -3616,6 +3616,63 @@ backend e96e5c73 / 28100ce5, the read of `BC5_DIRECT_ZERO_NAMES` given back. Che
 bodies verbatim, no replace form. E's sources of my chain are commit 0e2c7e56. After its chain I run three arms on
 its binary: ASTRO BOT 120 s, the cutscene arm to its end, the walk with the zero scan.
 
+### 78. E's private chain read: K1r's cover pass costs 20 ms a rebuild and stalls the menu for a second; the wall's first numbers (2026-11-13 19:14, reads only)
+
+The integrator (exp 0419) built candidate E from form 4 privately (binary 93188758, backend archive d4c4882e) and
+ran its chain with my arms inside; its report: ASTRO BOT 120 s PASS; the cutscene arm k2cut to G+320 with no fault
+and no record (K1r 406 covers / 808 MiB, kl412 110 chunks); the walk k4wall to G+560 clean. It flagged the longest
+frame gaps: 1,238 ms (k1, defaults) and 1,357 ms (k2cut) against 638 ms with `BC5_GUARD_K1R=0 BC5_GUARD_K1_FILTER=0`
+(k1off). Read on the top's GO (one lock line, greps only; the small results in `raw/readE/`).
+
+**The gaps [M]** (frame-profile lines over 500 ms; journals `play-20261113-1838` k1, `-1845` k1off, `-1851` k2cut,
+`-1901` k4wall):
+
+| run | t s | gap ms | where the frame profile puts it |
+|---|---|---|---|
+| k2cut | 39.6 | 1,357 | at the flip 1,287 |
+| k4wall | 39.4 | 1,076 | sync 1,029 (game thread) |
+| k1 | 249.2 | 1,238 | outside the host 1,122; sync 47, GPU 31 |
+| k1off | 99.2 | 638 | outside 427, at the flip 179 (the load; every run has it) |
+
+Both 39 s gaps are in the menu, 75 s before gameplay. The timing split's "want" step of the mapping rebuild:
+18.8-20.3 ms per full sync with K1r on (k4wall), 0.8 ms with it off (k1off) [M].
+
+**The cause [I, from the code]:** `k1r412::cover()` walked the list of imported buffers from its start for every
+view; with 21,000 views that is millions of steps a rebuild. Around 39 s the title maps its views and every change
+is a full rebuild, so the 20 ms add up to a second (in k2cut the game thread waits at the flip for the rebuild on
+another thread [I]). The 1.1 s "outside" of k1 at 249 s is not attributed: not sync, not GPU, one run. The 39 s
+stall is in 2 of 3 K1r-on runs here and in 0 of 1 off; my arms on g412zc/zd and his play had 356-722 ms at most.
+
+**The fix, form 5 (laptop, CPU test 17,742 of 17,742; not compiled):** `cover()` starts at the last buffer that
+begins at or before the view (binary search; the list is sorted and disjoint). Chain on B's unit: mkk1r ad75c63f,
+mkwa 416f7a93, mkcv 9a467d3c, mkk1f a0ee1521, mkkl **46219eed** (8 lines from form 4); backend as form 4 (e96e5c73,
+28100ce5). The pass mark on the box: "want" under 2 ms per full sync with K1r on, and k1 / k1off / k2cut twice each.
+**E is not ready for the swap until then; row 1 of FAULTS.md closes on the fixed E.**
+
+**The wall, first numbers [M]** (k4wall: the log-only zero scan at t 175, 295, 415, 535, 640 s over the 18 eager
+heaps, 17.0 GiB of spans; frame numbers of this arm are not comparable):
+
+| heap | span MiB | all-zero in every one of the 5 scans, MiB |
+|---|---|---|
+| RenderGpuWcLarge | 2,758 | 842 |
+| CommitIABufferAllocator | 2,736 | 274 |
+| RenderGpuRwLarge | 414 | 204 |
+| DynamicHeap (+ Small) | 328 (+54) | 160 (+22) |
+| AMM | 10,084 | 154 |
+| Physics | 192 | 116 |
+| ComponentHeap (+ Small) | 104 (+36) | 56 (+24) |
+| the other nine | | under 20 each |
+| **all** | 17,001 | **1,930** (per scan 2,118 / 2,002 / 2,058 / 2,044 / 1,966) |
+
+Option B's floor on this route is about 1.9 GiB of pinned 2 MiB chunks nobody wrote in ten minutes: over the plan's
+500 MiB gate. (The spans are reservations: the heaps' pinned size is smaller for AMM.)
+
+GTT at 615 s, 12,220 MiB, by client (`k4wall-snap.txt`, `k4wall-fdinfo.txt`) [M]: the emulator's direct client
+11,822; the emulator's second client (its Vulkan/present side) 245 GTT + 236 VRAM; plasma-keyboard 76; Xwayland 22;
+plasmashell 20. Available 657 MiB. For his play's 555 MiB beyond the guest this gives about 245 present side, about
+100 desktop clients, about 210 the direct path's own buffers [I: the split is k4wall's, the 555 is his play's].
+plasma-keyboard's 76 MiB can go in the lean session.
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over

@@ -58,11 +58,11 @@ step() { # <script> <mode or -> <in> <out> <sum>
   [ "$(m "$4")" = "$5" ] || die "the unit after $1 is $(m "$4"), not $5"
 }
 rm -f "$P"/e-u[1-6].cpp
-step mkk1r0412.py unit "$U" "$P/e-u1.cpp" 496a339c
-step mkwa0412.py - "$P/e-u1.cpp" "$P/e-u2.cpp" 3e5a6851
-step mkcv0412.py unit "$P/e-u2.cpp" "$P/e-u4.cpp" 3732021b
-step mkk1f0412.py - "$P/e-u4.cpp" "$P/e-u5.cpp" dcb7aa43
-step mkkl0412.py - "$P/e-u5.cpp" "$P/e-u6.cpp" 9a54eaa4
+step mkk1r0412.py unit "$U" "$P/e-u1.cpp" ad75c63f
+step mkwa0412.py - "$P/e-u1.cpp" "$P/e-u2.cpp" 416f7a93
+step mkcv0412.py unit "$P/e-u2.cpp" "$P/e-u4.cpp" 9a467d3c
+step mkk1f0412.py - "$P/e-u4.cpp" "$P/e-u5.cpp" a0ee1521
+step mkkl0412.py - "$P/e-u5.cpp" "$P/e-u6.cpp" 46219eed
 echo "$(date +%T) the private tree is brought to the shared tree's state"
 rsync -a --delete --exclude=.git "$K/" "$P/tree/" || die "rsync of the shared tree failed"
 [ "$(git -C "$P/tree" rev-parse HEAD)" = "$(git -C "$K" rev-parse HEAD)" ] || die "the private tree is not at the shared tree's commit"
