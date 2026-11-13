@@ -208,6 +208,21 @@ Against B on the same route today (exp 0417: 25.7-26.3 flips/s, longest gap 574-
 
 Not done here: the "taken" path of the title table with the new launchers; a play; the swap.
 
+### 11. The swap script for E, dry-run (prepared, not run on the box)
+
+`mkswap0419e.py` -> `int0419e.sh`: the tree 27b6416f -> 410273ca, exp 0412's two backend files into the shared backend
+source, the shared archive rebuilt (75e30335 -> d4c4882e expected, as the private build gave), both shared builds.
+Kept first and read back: both binaries, the archive (twice) and the two source files; a failure restores all of
+them and the tree and checks the restore. Its kit: `0001-new14.patch`, `0001-new17.patch`, `tree17.md5`,
+`backend-direct.hpp` (e96e5c73), `backend-direct.cpp` (28100ce5).
+
+`dryswap0419e.sh` on the laptop with stand-ins (`raw/dryswap0419e.out`): **40 of 40 checks in four cases**: the swap
+as expected (tree, archive, backend files, copies, "byte-identical to the private builds", lock released); the
+backend build fails; the rebuilt archive is not the expected one; the lean emulator build fails after the archive
+and the normal binary have changed. In each of the three failures the two source files, the archive, both binaries
+and the tree read back as before and the lock is released. Not covered by a dry run: the real builds, the real
+archive's sum, and whether the shared binaries equal the private ones (for B they did not).
+
 ## Decisions for the maintainer
 
 One "yes" covers the swap of E as a whole (the top session asks): both shared builds, the shared backend archive
@@ -228,5 +243,5 @@ to the trash directory. Still his to say separately, because they are behaviour 
 0417's save fix. Of the 266 names, 77 can no longer be set (29 deleted, 48 hardened), 189 remain: 69 diagnostics,
 63 without a verdict, 42 one title's, 13 configuration, 2 general defaults with an option.** 47 launcher words moved
 into the code (2 general, 45 for the second title) and 15 words got the one reading rule. The ASTRO BOT first-save fault is cured by the transferring-mount fix in its pair. Open before the swap: the longest
-frame gap with K1r on (one run each), the swap script's dry run, and the maintainer's one "yes" (`int0419e.sh`). The removal of the dead code behind the
+frame gap with K1r on (one run each), and the maintainer's one "yes" (`int0419e.sh`, dry-run 40 of 40, section 11). The removal of the dead code behind the
 77 words is the patch change after that.
