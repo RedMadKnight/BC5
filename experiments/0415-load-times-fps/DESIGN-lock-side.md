@@ -135,3 +135,43 @@ are open work for S1; none is done yet.
    under the mutex.
 5. **S5.** Before records are trusted for private memory, the read of `/proc/self/maps` stays as the comparison in
    `verify` over a long play, as in S1.
+
+## 8. S5 after the seventh slot: what was built, and the form without the read (2026-11-13)
+
+**Built and measured** (README section 16, build L5c, `KYTY_BC5_ANON_SYNC`): the walk on the submission path is a
+41-43 ms read of `/proc/self/maps` under the device mutex, 174-181 times a run, and found no anonymous guest VMA in
+708 walks [M]. With the walk left to a thread that reads the same file and compares a signature, the walk ran once a
+run, `anon_miss` was 0, and the share of frames over 50 ms fell from 17-25 % to 9-17 % in two pairs [M]. This answers
+review point 5 only in part: the comparison ran over 8 runs of 140 s, not over a long play.
+
+**What is still wrong with it**: the read is still made (2.5 s of one core a minute of play), it takes the address
+space's lock for reading while the title maps and unmaps, and an urgent call is served one pass late.
+
+**Where an anonymous readable guest mapping can come from** [C: read in the host tree at patch 4651d1d3]:
+- the guest's span is a process-lifetime reservation of `PROT_NONE` anonymous placeholders
+  (`src/kernel/memoryAddressSpace.inc`: four `mmap` sites, all `PROT_NONE`: the reservation, `RestorePlaceholder`,
+  `UnmapViewPreservePlaceholder`); real memory is a view of one of the two files, which the walk skips by rule;
+- `src/common/platform/sysLinuxVirtual.cpp`: the host allocator (`map_anonymous` and the fixed and aligned forms,
+  15 `mmap` sites with `MAP_ANON`), whose address can lie in the guest's span when the caller asks for it;
+- two `mprotect` sites in the whole host: `sysLinuxVirtual.cpp` (the protect call) and `libAmpr.cpp` (one helper);
+- `bc5LleAgc.cpp` itself: one 4 KiB anonymous page at an address the kernel chooses.
+
+**The form without the read** (stage S5b, to build next, switch value `KYTY_BC5_ANON_SYNC=events`, default off):
+1. one process-wide counter, bumped at each of those sites when the call makes anonymous memory readable inside the
+   guest's span: a `MAP_ANON` map with a readable protection, or a protect call that turns reading on. The protect
+   sites cannot tell a file view from a placeholder, so they bump for every such call in the span (too often is
+   safe, too rarely is not);
+2. the submission path walks only when the counter differs from its value at the last walk, or the last walk's list
+   was not empty (resident pages inside a readable anonymous VMA grow without any call), or after -EFAULT or a device
+   reopen. No thread, no periodic read on any path that holds a lock of the direct path;
+3. the check that a site was not missed is S1's maps check (`bc5-mapschk`, every 5 s, its own thread, counts only):
+   it gains one count, "a readable anonymous guest VMA exists while the counter says none was made".
+
+**Verify first** (the same build, `KYTY_BC5_ANON_SYNC=verify`): each walk also records whether the counter had
+moved; `anon_miss` then counts walks that found a change the counter did not announce. Also counted: how often the
+counter moves (if guest protect calls move it many times a second, rule 2 walks as often as today and the protect
+sites need the range table's knowledge of what lies there: a lookup, not a read of the file).
+
+**What it gives up**: nothing in time, since a change is walked at the first submission after the call that made it.
+What it adds is the duty that every future host site which maps or protects guest-span memory bumps the counter;
+the maps check is what catches a site that does not.
