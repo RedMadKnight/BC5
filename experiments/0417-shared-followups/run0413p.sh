@@ -53,7 +53,14 @@ WANT=$(m "$BIN")
 for f in sampler0412b.sh fuse0412.sh; do grep -qxF "$(m "$X/$f")  $f" "$X/tools.md5" || { echo "$f is not the installed one: not started"; exit 1; }; done
 [ -x "$X/wd0412.sh" ] && [ -f "$LEARN_SRC" ] && [ -d "$W/exp0330/wd" ] || { echo "no wd0412.sh, learned file or exp0330/wd: not started"; exit 1; }
 [ -d "$NS/PPSA03671" ] && [ ! -L "$NS" ] && [ -s "$NSF" ] || { echo "no named snapshot of exp 0412: not started"; exit 1; }
+# exp 0417, from exp 0412 section 64 (its run0412n.sh): N_SAVES=<dir holding PPSA03671> takes another read-only snapshot
+# (the cutscene arm: the maintainer's saves of 2026-11-13); only read, the private working copy is reset from it.
+if [ -n "${N_SAVES:-}" ]; then
+  NS=$N_SAVES; [ -d "$NS/PPSA03671" ] && [ ! -L "$NS" ] || { echo "N_SAVES holds no PPSA03671: not started"; exit 1; }
+  NSUM=$(sumof "$NS")
+else
 NSUM=$(sumof "$NS"); [ "$NSUM" = "$(cat "$NSF")" ] || { echo "the named snapshot reads $NSUM, not $(cat "$NSF"): not started"; exit 1; }
+fi
 [ -e "$R/$TAG-start.txt" ] && { echo "tag $TAG already used: not started"; exit 1; }
 mapfile -t WORDS < <(grep -v "^#" "${P_WORDS:?the words file}" | grep .) && [ "${#WORDS[@]}" -ge 3 ] || { echo "no words in $P_WORDS: not started"; exit 1; }
 WORDS+=("BC5_EMU=$BIN")
@@ -114,7 +121,7 @@ if [ ! -e "$WD" ]; then
 fi
 [ -d "$WD/_SaveData" ] && [ ! -L "$WD/_SaveData" ] && [ -d "$SDD" ] && [ ! -L "$SDD" ] || { echo "$WD/_SaveData or $SDD is not a private directory"; exit 1; }
 # 4. The save: the private copy reset from the named snapshot.
-rm -rf "$WD/_SaveData/PPSA03671" && cp -a "$NS/PPSA03671" "$WD/_SaveData/PPSA03671" || { echo "the saves could not be put in place"; exit 1; }
+{ [ ! -e "$WD/_SaveData/PPSA03671" ] || chmod -R u+w "$WD/_SaveData/PPSA03671"; } && rm -rf "$WD/_SaveData/PPSA03671" && cp -a "$NS/PPSA03671" "$WD/_SaveData/PPSA03671" && chmod -R u+w "$WD/_SaveData/PPSA03671" || { echo "the saves could not be put in place"; exit 1; }
 [ "$(sumof "$WD/_SaveData")" = "$NSUM" ] || { echo "the private copy does not read as the named snapshot: not started"; exit 1; }
 echo "$(date '+%F %T') $TAG the private copy reset from the named snapshot $NSUM" >> "$R/saves.txt"
 CMD=$N/in-$TAG.cmd
@@ -178,7 +185,8 @@ while [ -z "$ENDED" ] && [ $(($(date +%s) - T0)) -lt "$SECS" ]; do
       0) if [ "$FASTN" -ge 2 ]; then printf 'press cross\n' >> "$CMD"; RS=1; K=$NOW; echo "route: cross (start screen) at $NOW s" >> "$R/$TAG-start.txt"
          elif [ "$NOW" -ge 160 ]; then ENDED="ROUTE: the start screen did not run by 160 s"; fi ;;
       1) if [ "$NOW" -ge $((K + 6)) ] && [ "$FASTN" -ge 3 ]; then
-           LISTED=$NOW; printf 'press cross\n' >> "$CMD"; RS=2; K=$NOW; echo "route: the save-slot list runs; cross (slot 1) at $NOW s" >> "$R/$TAG-start.txt"
+           LISTED=$NOW; for _ in $(seq 2 "${N_SLOT:-1}"); do printf 'press down\nwait 500\n' >> "$CMD"; done   # exp 0412 section 64: N_SLOT=<n>
+           printf 'press cross\n' >> "$CMD"; RS=2; K=$NOW; echo "route: the save-slot list runs; down x $((${N_SLOT:-1} - 1)), cross (slot ${N_SLOT:-1}) at $NOW s" >> "$R/$TAG-start.txt"
          elif [ "$NOW" -ge $((K + 90)) ]; then ENDED="ROUTE: the save list did not run within 90 s of its cross"; fi ;;
       2) if [ "$NOW" -ge $((K + 6)) ] && [ "$FASTN" -ge 2 ]; then printf 'press cross\n' >> "$CMD"; RS=3; K=$NOW; echo "route: cross (Continue) at $NOW s" >> "$R/$TAG-start.txt"
          elif [ "$NOW" -ge $((K + 60)) ]; then ENDED="ROUTE: the Continue menu did not run within 60 s"; fi ;;
@@ -190,6 +198,7 @@ while [ -z "$ENDED" ] && [ $(($(date +%s) - T0)) -lt "$SECS" ]; do
     esac
     [ -n "$ENDED" ] && break
   fi
+  if [ -n "$G" ] && [ "$WALKED" = 0 ] && [ "${N_NOWALK:-0}" = 1 ]; then WALKED=1; echo "route: no input after the load (N_NOWALK=1), $PLAY s from $NOW s" >> "$R/$TAG-start.txt"; fi   # exp 0412 section 64
   if [ -n "$G" ] && [ "$WALKED" = 0 ]; then WALKED=1; echo "route: walk of $(wk) cycles ($PLAY s) queued at $NOW s" >> "$R/$TAG-start.txt"; fi
   [ -n "$G" ] && [ "$NOW" -ge $((G + PLAY)) ] && break
   if sudo -n dmesg 2> /dev/null | tail -n +"$((ND + 1))" | grep -qi "amdgpu.*\(timeout\|reset\|fault\)"; then
