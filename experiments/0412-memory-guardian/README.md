@@ -2957,8 +2957,68 @@ cover, `guard0412_want`, which maps the same zero BO read-write today). A write 
 address and is then a K1 bind-time case. Behind a default-off switch first; its test is this very place in his
 play (his save, about 285 s in).
 
+### 63. K1r, the read-only zero cover, and the one build that carries everything (2026-11-13, laptop; not compiled)
+
+**K1r** (tag k1r412: `memfast/k1r0412.inc`, `k1r0412.cpp`, `mkk1r0412.py`): `BC5_GUARD_K1R=1`, default off in the
+test build and meant to become the default. Every part of a view of direct memory that no imported buffer covers
+(a chunk the CPU never wrote, in a heap imported by data or lazily) is GPU-mapped **readable only** onto one shared
+2 MiB zero buffer of its own; nothing is pinned for it. In the code:
+- the mapping rebuild's want list gets the cover's pieces after the real mappings (`k1r412_want`); a piece never
+  exceeds a chunk and never crosses a chunk boundary of the file, so a chunk's later import replaces whole pieces;
+- a piece is mapped through a new backend call, `Device::map_shared(..., bool readonly)` (`AMDGPU_VM_PAGE_READABLE`
+  alone). **The backend changes**: `direct.hpp` and `direct.cpp`, 33 lines of diff; the test build uses a private copy
+  of the backend source and its own archive, the shared archive is only read;
+- a rebuild that changes the set of buffers replaces covers by real mappings (unmap, then map), so it now drains the
+  GPU first (`wait_jobs`), as a rebuild that retires buffers does. That is a new cost at every import (about 550 a
+  run, section 59) and the first thing to measure;
+- the fault path journals a fault under a cover as its own kind: a **write** is "K1w" (the job is lost; the cure is
+  the bind-time import of that target, which `BC5_GUARD_K1_STAT` counts), a read there is reported as a defect;
+- every 10 s at most the zero buffer is read back through a read-only CPU view and a non-zero word is journaled
+  ("IT MUST BE ZERO"); it cannot happen through the GPU, since no mapping of it has the write bit;
+- the cover is refused when the zero skip or the pin cap is set (they map their own buffer there), and it acts on
+  the direct-memory file only.
+
+The four points asked for, as the unit and its test have them:
+- (a) **ordering**: the CPU's first write is seen by the import's `SEEK_DATA` pass at the sync before a submission;
+  the chunk is imported and the same rebuild drops the cover and maps the real pages before that submission reaches
+  the kernel. Relied on: the title writes its data before it submits what reads it, and the sync runs before every
+  submission. A chunk written since the last sync is zero for the GPU until that sync; without the cover it was a
+  fault, never the data;
+- (b) a GPU **write** into a cover faults by name (E1 case 4), is journaled as K1w, and loses the job;
+- (c) an address under **no** view gets nothing and stays loud (the test: no page outside the view is covered);
+- (d) the zero buffer is shared and read-only for the GPU, so nothing can be written or aliased through it; the
+  test checks the pieces (exactly the uncovered pages of the view, each once), the code maps them only through the
+  read-only call, and the read-back catches the impossible.
+CPU test `k1r0412.cpp`: 17,742 of 17,742 on the laptop (a page-level model of a file, its imported ranges and a
+view, 3,000 layouts; after "the CPU writes one chunk" exactly that chunk's pieces go and every other piece is
+unchanged; the write bit of the two kernel status samples).
+
+**rl412's risk, and what e11 decided** [C]. Exp 0401's e11 chose that at "reopen: ok" the last pending write of each
+label of the jobs in flight goes to guest memory, unless memory already holds it or the label lies in no guest
+range. That tells the title "this work happened" for jobs whose GPU work did not run: the frame's picture or
+compute results can be wrong or stale for that frame, and a title that reads results back gets old data. The
+alternative, not writing them, is the freeze he saw. rl412 does not change that decision; it only makes it hold
+when two jobs time out together, which it did not (section 62). Whether the title's next frames repair the lost
+frame's state is what the test at the cutscene measures.
+
+**One build with everything** (`memfast/mk0412z.sh`, build g412z, binary beside as `bin-z`): from the shared tree's
+unit a81efd2c the chain nl412 `--keep-guards` (cfb7533e) → rl412 (0878903e) → k1r412 (843b40cb) → ff412 (9a954b2b),
+with `memory.cpp` 961da63a, `libAmpr.cpp` d88da83d, `hostException.cpp` e978e975, a private backend with
+`map_shared(readonly)`, and the four CPU tests first. Every sum is pinned in the script. Switches, all default off:
+`BC5_GUARD_K1R`, `BC5_DIRECT_RESET_LABELS_ADD`, `BC5_GUARD_K1_STAT`, `KYTY_BC5_MEM_FIRSTFAIL`, `KYTY_BC5_TRAP_LOG`,
+`BC5_DIRECT_MAX_BO_MIB`, `BC5_GUARD_MAP_RULE`, `BC5_GUARD_PRT_BG`. **Not compiled anywhere yet.**
+
+**Tests in the top session's order**: (a) the place of his fault, K1r on (expected: no fault there, the read
+returns zero), then K1r off with rl412 on (expected: the fault, a recovered reset, the labels written; whether the
+title then goes on is the measurement); (b) the scripted route to G+240 with K1r on: regressions, the pin, the cost
+of the extra drains; (c) the budget runs of section 59; (d) `e1-probe` case 6 last.
+
 ## Verdict
 
+- **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over
+  never-written memory the title mapped (nothing pinned; a GPU write there faults by name), and the freeze after
+  the reset gets the lost labels kept when two jobs time out together. One private build carries both with the
+  catchers.
 - **His first play without the learned file (section 62):** one GPU fault at 286 s in a cutscene; the reset succeeded but the title froze (the lost job's label writes were never written: our recovery's defect). The fault: a shader READ of
   a never-written chunk of `AssetHeap Large`. Its right answer was zero: the rule is a read-only zero cover over
   never-written chunks of by-data heaps (E1's measured case), not a window. The lean session worked in real play.
