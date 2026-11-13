@@ -1,8 +1,10 @@
-# HANDOFF — research state as of 2026-10-28
+# HANDOFF — research state as of 2026-11-13
 
 This is the working memory of the project: what has been established, from where, and what is still open. Update it whenever a question is answered. `README.md` is the public summary; this file is the detailed one.
 
-**State on 2026-11-02.** Both titles play on the shared builds, normal `4d2b1b1d` and lean `30d4be33` (F812). The sections below keep the record from 2026-10-28; changes since: the night water is fixed (F786), the job push wait came and went (F806, F811), switches were removed (F812), and the box runs kernel 7.2.11 and Mesa 26.2.4 (F810).
+**State on 2026-11-13.** Both titles play on the shared builds, normal `fe0933c0` and lean `711d6c0d`, from patch `4651d1d3` (F827); the box runs kernel 7.2.15, Mesa 26.2.6 and libdrm 2.4.134 (F829). Since 2026-11-02: the builds carry their own defaults (F827); ASTRO BOT's start-screen memory leak and its start crash on test builds were the host's and are fixed (F815, F816); the second title loads sooner (F817); the zero skip is out as unsound (F818); the learned windows are out of the launchers, and their first fault is the next thing to remove at its source (F819–F821); what the GPU does at a page without backing is measured (F822); the device mutex and the anonymous sync are measured by part (F823, F824). A candidate patch `c55174b1` (the learned path out of the code) is built privately and waits for one more fold.
+
+**State on 2026-11-02** (kept as written). Both titles play on the shared builds, normal `4d2b1b1d` and lean `30d4be33` (F812). The sections below keep the record from 2026-10-28; changes since: the night water is fixed (F786), the job push wait came and went (F806, F811), switches were removed (F812), and the box runs kernel 7.2.11 and Mesa 26.2.4 (F810).
 
 The second title's launcher:
 - runs every compute buffer on the GFX ring, the default since F812 (F412, F416);
@@ -20,17 +22,20 @@ With RT off the second title runs clean. With RT on, every hang and machine-down
 Since 2026-10-27 the box recovers by itself from a GPU death in about 40 s, through the SP5100 hardware watchdog, efi-pstore and bc5-gpu-watch (CLAUDE.md; F417, F420). GPU coredumps are copied to `~/bc5-data/captures/devcoredump/`.
 
 Open (§3):
-- the RT-on failures (Q20; F421);
-- the two hang classes of F813: F403 and the draw that never ends, with `ARGS_WB=all` on test;
+- of the RT-on failures of Q20, the refusals are answered by exp 0349's cut (F427, F431); the hang classes below stay;
+- the two hang classes of F813: F403 and the draw that never ends, with `ARGS_WB=all` on test. F403 came only with the zero skip on in exp 0401's arms, the skip is out (F818), and no counted series without it exists on the current builds;
+- the fault class of F820 (a shader's read of a mapped, never-written chunk) and the recovery defect of F821;
+- the memory wall: the second title leaves 300–500 MiB available on the scripted route (F817, F827; exp 0412);
+- the second title's deaths at smaller memory offers (F826);
 - the slowdown of F811, not measured with J on and off in one scene;
-- stray TCP writes (Q22);
+- stray TCP writes (Q22): answered at their target by F679 and F685, limit there;
 - memory in RT-on play: 495 MB available and 2.3 GB of swap a minute before the 19:22 failure (F420);
 - the CP check costs ~0.8 ms of GPU a frame with RT on, cheap protection, kept as is (Q23 answered, F439); presentation without a copy (Q18) measured and parked again (F434);
 - a host fatal on an AMM page with no mapping ended one RT-on run at 554 s (F438). The ledger build that traps it is exp 0356 (F442), which waits for a test play;
 - one S6N RT-on run in ten since the cut hung on a shader write fault, recovered by the ring reset (F443);
 - the title's recurring "read 0xc" crash at `eboot.bin+0x3d7eca0` ended the maintainer's fight scene five times. It is the title's frame-block pool, full at frame end, being reclaimed on the never-registered main thread (F444–F448). The owner thread helps with a worker-only job while the workers sit idle (F450). Neither the targeted wake nor host helpers at nice +5 held (F453, F454): the race is CPU throughput at the fight. The maintainer chose a game patch as a menu option, which held through his fight and is now in the shared builds (exp 0359, F457, F458). Exp 0360 then found that host CPU throughput is not what loses the race: the box is not saturated at the fight and two host speed-ups did not move the crash (F460–F464, F470–F471). The patch stays; the race needs another explanation (Q24).
 
-Experiments run to 0349.
+Experiments run to 0417 (0410 and 0411 were not used as directories; exp 0412's README says why). Findings F815–F829 are the ones from experiments 0401–0417.
 
 ## 1. Thesis
 
