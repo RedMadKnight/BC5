@@ -392,7 +392,7 @@ nor refuted: no arm came near the conditions of sA's fault with the catcher on.
 ### 16. Candidate G prepared on the laptop (2026-11-14, no box access, nothing built)
 
 Ordered by the top session for the night. `candidate-G.md` is the record: G = F + the library ports built in (22 words
-gone), ten words deleted with their code, one made a constant, twelve more with the option gone and the code still to
+gone), eight words deleted with their code (and the code of three whose options F had removed), one made a constant, twelve more with the option gone and the code still to
 cut, in all 43 words; patch `99f32d3b`, unit `dd30a593`, backend `direct.cpp` `9eb378e1`. Counted from the source
 (`words0419g.py`, `settable0419g.py`): B reads 264 words, F 247 (200 can be set), G 204 (**157** can be set). Checked:
 every edit matched once, braces balance, the library units pass `-fsyntax-only`, the defaults test, a dry run of the

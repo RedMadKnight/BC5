@@ -1,5 +1,7 @@
 # Experiment 0419: the candidate after F ("G"): every word's disposition, and the count
 
+**Superseded on 2026-11-14 by `candidate-G.md`** (G as made, and the counts taken from the source: F 200, G 157 words that can be set).
+
 The maintainer's decisions of 2026-11-13, relayed by the top session, with the owners' lines (`owners-verdicts.md`),
 the code reading (`launcher-words.md`) and the records (`undecided-plan.md`, its correction). Nothing here is built.
 G is made only when F's two open faults (README sections 13 and 14) are understood: G's base is F.
