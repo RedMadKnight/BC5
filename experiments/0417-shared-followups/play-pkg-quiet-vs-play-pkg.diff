@@ -1,0 +1,33 @@
+--- a/play-pkg.sh	2026-11-13 05:19:55.342170800 +0100
++++ new/play-pkg-quiet.sh	2026-11-13 05:19:55.553838000 +0100
+@@ -1,4 +1,5 @@
+ #!/usr/bin/env bash
++# BC5 play-pkg-quiet.sh: play-pkg.sh (157021e3) with the logging switch off (exp 0172) and the guest's printf written to a file (exp 0417's mklaunch0417.py)
+ # BC5 track B: play the maintainer's own second title from its PS5 package on the direct GPU path,
+ # with the latest build of the emulator and the settings in ~/bc5-work/bc5-run.env plus what this
+ # title needs (experiment 0036): the system module pack without the title's own libSceAmpr, its
+@@ -148,12 +149,12 @@
+ # 2026-10-16, for measuring play sessions: the direct path journal (frame profile, no buffer dumps)
+ # in ~/bc5-data/captures/play-<date>/gc/direct.log.
+ if [ "${BC5_LEAN:-0}" != 1 ]; then  # exp 0177: no journal with BC5_LEAN=1
+-  export BC5_GC_DUMP_DIR=$HOME/bc5-data/captures/play-$(date +%Y%m%d-%H%M)/gc BC5_DIRECT_TIMING=1 BC5_DIRECT_FRAME_PROFILE=1
++  export BC5_GC_DUMP_DIR=$HOME/bc5-data/captures/play-$(date +%Y%m%d-%H%M)/gc BC5_LOGGING=0  # play-pkg-quiet.sh (exp 0172): no journal, the logging switch off; no timing, no frame profile
+   mkdir -p "$BC5_GC_DUMP_DIR"
+ fi
+ # Experiment 0174: measurements that stay on with the logging switch off (one line a second each):
+ # the frame-time counter, the audio push rate, and a per-thread CPU sampler (cpu-last.txt).
+-[ "${BC5_LEAN:-0}" = 1 ] || export KYTY_BC5_FPS_COUNTER=1 KYTY_BC5_AUDIO_TRACE=1 KYTY_BC5_MEASURE=1  # exp 0177: none with BC5_LEAN=1
++# play-pkg-quiet.sh: no per-second counters (play-pkg.sh sets KYTY_BC5_FPS_COUNTER, KYTY_BC5_AUDIO_TRACE and KYTY_BC5_MEASURE here)
+ # Experiment 0177: the per-thread CPU sampler is opt-in (BC5_CPU_SAMPLER=1). It was suspected of the
+ # halved frame rate (start screen 41-50 -> 25 flips/s, runs 828 -> 830); an A/B with and without it
+ # showed no difference: the GPU clock had fallen to ~1050 MHz after the ring resets (F235).
+@@ -211,7 +212,8 @@
+ # the mount and the settings kept.
+ while :; do
+   # shellcheck disable=SC2086
+-  "$EMU" --game "$M" --printf-direction Silent --shader-log-direction Silent --command-buffer-dump false $PLAY_ARGS >> "$LOG" 2>&1
++  PRINTF_OUT=${BC5_GC_DUMP_DIR:+$BC5_GC_DUMP_DIR/../guest-printf.txt}; PRINTF_OUT=${PRINTF_OUT:-$HOME/bc5-work/play-pkg-guest-printf.txt}  # play-pkg-quiet.sh: the guest's printf (beside the capture; a fixed file with BC5_LEAN=1)
++  "$EMU" --game "$M" --printf-direction File --printf-output-file "$PRINTF_OUT" --shader-log-direction Silent --command-buffer-dump false $PLAY_ARGS >> "$LOG" 2>&1
+   RC=$?
+   [ "$RC" = 75 ] || break
+   echo "== $(date '+%F %T') restart requested from the F2 menu" >> "$LOG"
