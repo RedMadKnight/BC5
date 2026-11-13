@@ -2596,8 +2596,63 @@ a fault, one of them 15 minutes long and on the shared build. It is evidence for
 of the game; his own play (the pause menu, Photo Mode, the lake, fights) is where the windows were learned and is
 not covered by it.
 
+### 57. The smaller memory offer (12,800 MiB): what is on record, and the catcher that is missing (2026-11-13, laptop only)
+
+The top session's order: option A's largest unknown. A read of the records (a sub-agent's search over this branch
+and the main checkout, HEAD 4178a97a; I have not re-read every line it cites). `P` is patch 0001.
+
+**How the offer is set** [C]: `KYTY_GUEST_MEMORY_MB`, read once in `PhysicalMemory::TotalSize()` (P:21142); unset,
+the code's own value is the console's 12,800 MiB, capped by host RAM. Today's 13,824 comes from the launchers.
+`KernelGetDirectMemorySize` reports total minus flexible memory; the AMM auto pool borrows from that same direct
+memory when the title's pool is full (P:38832–38845).
+
+**Every recorded run with less than 13,824** [M, from the experiments' own files]:
+
+| offer | when, where | what happened | judged |
+|---|---|---|---|
+| 12,288 | exp 0330 arm D, 10-25 | stops 3 s after start: `condition (g_tls_main_program == nullptr)` in `runtimeLinker.cpp:1470` | "why it fails was not read further" |
+| 11,776 and 12,288 | 11-06 | "died at startup in the title's TLS setup": cited second-hand in exp 0409 only; no primary record found | none |
+| 12,460 (`MEMORY_FROM_PARAM`) | exp 0401 e2, 11-03 | play "very smooth but short"; host fatal `AMM virtual-memory unmap is unsupported` at 145 s, right after `auto pool exhausted: map of 0x4000000 bytes refused` | **ours** (a refused AMM borrow) |
+| 12,800 | exp 0409, 11-09, 5 runs | 5 of 5 died at 159–195 s: that fatal, or a host write into the unmapped AMM window (access violation at `runtimeLinker.cpp:1166`) | **ours**, the same class |
+| 12,800 + `KYTY_BC5_AMM_SCATTER=rescue` | exp 0409, 11-09, 7 runs | 4 of 7 reached G+600; 3 froze about 3 min after G with no log and no kernel line and exited 133 (SIGTRAP) | not known (a title int3 or a host trap) |
+| 12,800 | his play, 11-10 | exit 65 at 106 s in the load: access violation, write into the AMM window | the 11-03 class |
+
+**Two classes, then.** (1) **Start deaths at 12,288 and below** (3 s in, the main program's TLS): never read
+further; one primary record. (2) **Deaths in the load or early play at 12,460–12,800**: the host's AMM auto pool
+cannot borrow direct memory and the host then faults or gives up: **our defect**, not the title's reaction; exp 0409's
+`rescue` removes the load fatal and leaves an unexplained SIGTRAP in 3 of 7.
+
+**Exp 0413's set-buffer bug as a cause** [I]: all of these runs predate its guard (in the shared builds since
+11-12 18:02). It is a candidate for class (1) only by its nature (a page of the title zeroed by chance, depending on
+the binary and what a register happens to hold); against it, the second title took that call's "map flavour" 0 times
+in 2,304 calls of a 180 s trace. It does not explain class (2), which the trace lines tie to refused borrows. Nobody
+has run a smaller offer since the guard: one start at 12,288 on today's shared build answers it in 10 seconds.
+
+**How large the lever really is** [M, exp 0409]: at 12,800 the GTT maximum was only **190–220 MiB lower** than at
+13,824, and his 11-10 play at 12,800 still showed about 12.5 GiB of GTT. So the "about 1 GiB" of the offer does not
+arrive as 1 GiB less pinned: the title reserves 12,162 MiB at 13,824 and whether it sizes its heaps from the offer is
+not measured (README section 16, HANDOFF F622/F625 call it "not a lever" for that reason). Worth having if it costs
+nothing, but it is a 0.2 GiB item on the evidence, like the shell.
+
+**The catcher that is missing** (proposal; not built). Today a run at 12,800 says where it died, not which host call
+first went wrong. One private build on the shared tree, switches default off:
+1. `KYTY_BC5_MEM_FIRSTFAIL=1`: the first time ANY memory call of the host returns an error to the title or refuses
+   internally (allocate/map/reserve direct, flexible, pooled, the AMM borrow and scatter, `mmap` fixed over a live
+   range), one journal line: the call, its arguments, the error, the caller's guest return address and thread, and
+   the state then: direct total, allocated, largest free hole, flexible used, the AMM pool's maps and free bytes.
+   Later failures are counted, not printed.
+2. `KYTY_BC5_TRAP_LOG=1`: a SIGTRAP handler that journals rip, the thread's name and the guest module of the address,
+   then lets the default action happen (exp 0401 proposed it; it names the int3 of the `rescue` runs).
+3. The existing `KYTY_BC5_AMM_TRACE=1` and the set-buffer guard's own line stay on in those runs.
+Runs (his slot, RT on, the scripted route): 12,288 once (10 s: is the start death still there after the guard?);
+12,800 without and with `rescue`, three each, stop at the first kernel error. The answer wanted is one line: the
+first failing call and the pool state, per class.
+
 ## Verdict
 
+- **The 12,800 MiB offer (section 57):** the recorded deaths at 12,460–12,800 are ours (the AMM auto pool's refused
+  borrow), the start deaths at 12,288 and below were never read; all predate exp 0413's set-buffer guard. Measured
+  gain at 12,800: 190–220 MiB of GTT, not 1 GiB. A catcher naming the first failing memory call is proposed, not built.
 - **Without the learned file on the shared build (section 56):** 15 minutes of scripted play, no fault, nothing the
   catcher would have learned, 25.8 flips/s. The route does not need the file; his own play is not covered by this.
 - **E1 (section 55):** on gfx1013 a shader's read of a PRT page and of a read-only page gives zeros with no fault; a
