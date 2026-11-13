@@ -6,10 +6,10 @@
 #   - the new .desktop file is validated and put on the desktop.
 # Nothing else is touched: no other shortcut, no shared launcher, no save. No emulator is started (one dry run of the
 # wrapper, which starts nothing).
-# usage (on the box, kit in ~/bc5-work/exp0412/kit-k): bash install0412k.sh
+# usage (on the box, kit in ~/bc5-work/exp0412/kit-sc): bash install0412k.sh
 set -u
 export LC_ALL=C
-W=$HOME/bc5-work; E=$W/exp0412; KIT=$E/kit-k; LOCK=$W/BOX-LOCK
+W=$HOME/bc5-work; E=$W/exp0412; KIT=$E/kit-sc; LOCK=$W/BOX-LOCK
 OLDW=eb4feddcf2dde9ad3a3dde4c4f1a8631; NEWW=b1080e6f425de7895206ab3a11d0994c; BIN=be507cd56ea4e04448fb7e48811b00c5
 OLDN="BC5 emulator (0412 fast9 bez Plasmy)"; NEWN="BC5 emulator (0412 K1r test)"
 m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }

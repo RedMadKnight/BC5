@@ -3516,6 +3516,25 @@ switches off = B" on the box.
 The branch was not pushed: this session's permission classifier refused `git push`; the commits are on the local
 branch `exp/0412-memory-guardian`.
 
+### 74. The maintainer's test shortcut installed; candidates D and E checked against the chain (2026-11-13 17:16, box; laptop)
+
+His word, relayed by the top, to "Czy zamienic skrot fast9 na skrot testowy z K1r, zebys sprawdzil przerywnik z
+ostatniego zapisu?": "Tak, zamien". Installed with `install0412k.sh` (kit `~/bc5-work/exp0412/kit-sc`):
+"BC5 emulator (0412 K1r test)" (.desktop 0bd386b5; `BC5_0412_LEAN=1 ... play-guard-0412.sh k1rcut`), the old "BC5
+emulator (0412 fast9 bez Plasmy)" moved to `~/bc5-work/trash-20261113/pulpit`. Wrapper b1080e6f (the old eb4feddc
+kept beside it), launcher `play-pkg-0412-nolearn.sh` 6a0ae47b (his live saves, `ulimit -c 0`), binary g412zd be507cd5,
+RT on in `input.cfg`, fuse 13,000/2,048. The arm `k1rcut`, 77 words: e11 unpacked's 70 without the three reset-replay
+words, `BC5_DIRECT_LEARN_GUEST_ONLY`, `BC5_R3_DROP_CATCH`, `BC5_R3_REWIND_CATCH` and `BC5_DIRECT_ACB_INHERIT=journal`
+(the top's scope), plus fast9's arm words and `BC5_GUARD_K1R=1 BC5_GUARD_K1_FILTER=1 BC5_FAULT_RECORD=1
+BC5_DIRECT_TIMEOUT_PROBE=1`. Checked: the wrapper's dry run on the box. NOT run: this arm itself; the scripted arms
+of sections 71-72 had the seven removed words in. His play is its first run.
+
+The integrator's cleanup (exp 0419), laptop only, nothing compiled: on candidate D's unit 2c43382d every anchor of
+the chain matches once (full form ends at 4a1bdf0a, form 2 at 92cb76ff). It takes FORM 2 (no probe) for candidate
+E; E's unit c92f5913 holds the three rule bodies of k1r0412.inc, cover0412.inc and kl0412.inc verbatim, and differs
+inside my functions only in the K1r refusal (the zero-skip half is gone with the option). `memfast/mk0412ze.sh`
+builds form 2 on B privately (unit 2f4a3d63, backend 26519fcc/b1d27875, bin-e); not run yet: after his play.
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over
