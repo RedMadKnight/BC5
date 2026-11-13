@@ -927,6 +927,28 @@ out instead of copied (changed in place when nobody else holds it, else a copy, 
 `KYTY_BC5_ANON_SYNC_KICK=0`, a knob that with a long `KYTY_BC5_ANON_SYNC_MS` shows what the thread's own reads cost
 before the read is replaced.
 
+**Addendum to section 16 (the maintainer's rule of 2026-11-13: a GPU fault is a bug to remove at its source; state
+how the console behaves before calling a change a fix).**
+- **The console** [I, not cited: no public source read for it here]: CPU and GPU share one address space and one
+  memory; memory the title maps is visible to the GPU without any further step. There is no counterpart of the
+  anonymous sync on the console: it exists only because this host has to hand guest memory to `amdgpu` range by
+  range. The rule that mirrors the console is therefore "a mapping is on the GPU by the first submission after the
+  call that made it".
+- **`KYTY_BC5_ANON_SYNC=thread` does not keep that rule**, so it is not a fix and stays off. What could reach the GPU
+  unmapped with it: memory in a readable anonymous guest VMA made since the thread's last pass (up to its period,
+  or about 50 ms after an urgent call woke it). Two cases [C: `submit_now` and `sync_mappings` as read]:
+  an operand of the command buffer inside it is seen by the filter's probe, the packet is dropped as today
+  (`unmapped_drops`) and the call is urgent, but the walk that would map it is left out until the thread has
+  passed; memory only a shader reads is not seen by the probe at all and would fault on the GPU. The fault's
+  address would lie inside a VMA that `/proc/self/maps` shows as anonymous and readable in the guest's span and
+  that no mapping of the device covers; the journal would show an `anon_miss` line only at the next walk, and for a
+  dropped operand the existing line "remember unmapped: ... operand page 0x... stays unmapped after a forced sync".
+  How the fault record of the day names such an address I have not checked [not verified].
+  In 708 verify walks no such VMA existed at all, so the case did not occur; that is a count, not a proof.
+- **The form that keeps the rule** is DESIGN-lock-side.md section 8 (S5b, "events"): the walk runs at the first
+  submission after any host call that makes anonymous memory readable in the guest's span, with no delay, and never
+  otherwise. That is the candidate for a fix; `thread` was the measurement that showed what the walk costs.
+
 ## Verdict
 
 Part 1, first result. The largest cause of the long loads was ours: every APR read opened its file anew, the
