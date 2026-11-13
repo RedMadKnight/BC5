@@ -1,0 +1,42 @@
+--- play-guard-0412.sh (a547d77c, on the box)
++++ play-guard-0412.sh (with arm fast9; NOT installed)
+@@ -27,6 +27,7 @@
+ set -u
+ E=$HOME/bc5-work/exp0412
+ BIN=$E/bin/kyty_emulator; L=$E/play-pkg-0412.sh; GAME=/home/kjaniszewski/bc5-data/games/PPSA03671
++SHARED=$HOME/bc5-work/kytyplus-build/src/kyty_emulator; NOLEARN=0   # arm fast9
+ m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }
+ say() { echo "$*"; command -v notify-send > /dev/null 2>&1 && notify-send "BC5" "$*" 2> /dev/null; }
+ # The pins: mk0412b.sh writes built.md5 (the binary and the launcher), install0412b.sh writes tools.md5 (sampler, fuse).
+@@ -107,13 +108,30 @@
+   # "skipped" memory in every run). fast8 = fast7 without BC5_DIRECT_ZERO_SKIP and its poll; nothing else differs.
+   fast8)   WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
+              KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="13000 2048" ;;
++  # 2026-11-13 (README sections 52, 53, 56; prepared, NOT installed: it needs the maintainer's word): fast9 = fast8's words
++  # on the SHARED normal build (which holds exp 0412's switches since the integration of 2026-11-13) with NO learned
++  # file and the catcher on: BC5_GUARD_LEARN_LOG=1 journals every GPU fault that would have been learned ("would
++  # learn ..." in gc/direct.log) and keeps its window for that run only; nothing is written to the learned or alias
++  # file. A place of the game the learned file used to cover costs one 14 s stall per run, and is then named.
++  fast9)   WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
++             KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1 BC5_GUARD_LEARN_LOG=1 "BC5_EMU=$SHARED"); FUSE="13000 2048"; NOLEARN=1 ;;
+   zoe)     WORDS+=("${ORPH[@]}" "BC5_DIRECT_ZERO_SKIP=$ZL" KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="12400 2048" ;;
+-  *) say "0412: usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm|zscan|zsk|zo|zoc|zof|of|zoe|fast|fast2|fast3|fast4|fast5|fast6|fast7|fast8|lw7 [dry]; not started"; exit 1 ;;
++  *) say "0412: usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm|zscan|zsk|zo|zoc|zof|of|zoe|fast|fast2|fast3|fast4|fast5|fast6|fast7|fast8|fast9|lw7 [dry]; not started"; exit 1 ;;
+ esac
+ if [ "${LW:-}" = 1 ]; then
+   T=(); for x in "${WORDS[@]}"; do case "$x" in BC5_GUARD_LEDGER=* | BC5_DIRECT_TABLE_CATCHER=* | KYTY_BC5_EVENT_PENDING_LOG=* | BC5_DIRECT_RESET_LABEL_JOURNAL=* | BC5_DIRECT_JOURNAL_QUIET=* | BC5_DIRECT_ACB_INHERIT=journal) ;; *) T+=("$x") ;; esac; done
+   WORDS=("${T[@]}")
+ fi
++# Arm fast9: the shared build must know the catcher, and the launcher is derived with one line changed, the learned
++# file's path, to an empty file of this experiment (the pinned launcher exports the shared learned file itself).
++if [ "$NOLEARN" = 1 ]; then
++  grep -aqF BC5_GUARD_LEARN_LOG "$SHARED" || { say "0412: the shared build has no BC5_GUARD_LEARN_LOG; not started"; exit 1; }
++  : > "$E/learned-none.txt" || { say "0412: cannot make the empty learned file; not started"; exit 1; }
++  L2=$E/play-pkg-0412-nolearn.sh
++  sed 's#^export BC5_DIRECT_LEARNED=.*$#export BC5_DIRECT_LEARNED=$HOME/bc5-work/exp0412/learned-none.txt  \# exp 0412 fast9: no learned file#' "$L" > "$L2" && chmod 755 "$L2" || { say "0412: cannot derive the launcher; not started"; exit 1; }
++  [ "$(diff "$L" "$L2" | grep -c '^[<>]')" = 2 ] && [ "$(grep -c '^export BC5_DIRECT_LEARNED=\$HOME/bc5-work/exp0412/learned-none.txt' "$L2")" = 1 ] || { say "0412: the derived launcher differs by more than the learned file's line; not started"; exit 1; }
++  L=$L2
++fi
+ ARM=$1; DRY=${2:-}
+ # The catchers' env file (README section 23, the top session's order of 2026-11-11): $E/catchers.env with lines
+ # BC5_GUARD_GAP_STAT=<n> and/or BC5_GUARD_LOCK_STAT=<n>. Absent (the default): no catcher. They change no behaviour;

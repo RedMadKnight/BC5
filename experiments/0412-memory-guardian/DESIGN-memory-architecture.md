@@ -209,3 +209,21 @@ and a repeat of case 4 with the follow-up tried at once and every 100 ms). What 
    which is what makes B's net cheap in a frame; whether that is sound is E2's question.
 Each of these is a change to the shared direct path's recovery and needs its own switch and a test that injects a
 fault (E2's flip is that test).
+
+### 8.4 E2 and the readiness measurement, within the review's limits (2026-11-13; prepared, nothing run)
+
+- **E2 is a detector's test only.** The flip of 8.2 is observed, not repaired: after the fault the existing recovery
+  runs as it is, the chunk's mapping goes back to read-write, and **no job is replayed**. What is recorded is what
+  the title does next (does it flip again, after how long, does it wait for ever on the lost job's label or fence)
+  and what the journal says about the lost submission (its number, kind, the labels it should have written). The
+  result can be "the title survives a lost job at this point of the frame" or "it does not"; it cannot be "the
+  state is equivalent". One flip per run; the first run in the menu.
+- **Context readiness after a ring reset** (what case 4 could not show, because the tool slept 15 s): `e1-probe
+  --case 6` repeats case 4 and then tries a new context at once and every 100 ms, 12 tries, each with one clear of
+  a normal buffer checked through the CPU mapping; it prints the old context's reset state at every try and the time
+  of the first job that ran. One more recovered ring reset is the expected result; the stop lines are case 4's.
+  It is raw GPU submission again: its own slot. `e1run.sh` now claims the lock atomically and has an outer limit.
+- **The CPU's first write** into a chunk that is read-only for the GPU needs no GPU work to detect (the page is
+  absent from the file until written: `SEEK_DATA`, as the import does today); what is open is the order: the real
+  page must be imported and mapped for the GPU before a submission that could read what the CPU just wrote, which
+  is what the sync before every submission already does for "has data" chunks. Not built.

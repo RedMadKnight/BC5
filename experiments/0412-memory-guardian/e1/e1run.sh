@@ -22,8 +22,8 @@ case "${1:-}" in
     distrobox enter ubuntu -- "$E1/e1-probe" < /dev/null
     echo "built" ;;
   case)
-    N=${2:?a case 0..4}
-    case "$N" in [0-5]) ;; *) die "case 0..5" ;; esac
+    N=${2:?a case 0..6}
+    case "$N" in [0-6]) ;; *) die "case 0..6" ;; esac
     [ -x "$E1/e1-probe" ] || die "not built"
     [ -e "$R/case-$N.out" ] && die "case $N has been run (raw/case-$N.out); it is not run twice"
     pgrep '^kyty_emulator' > /dev/null && die "an emulator runs"
