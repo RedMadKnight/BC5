@@ -1,0 +1,122 @@
+diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
+index 74906e7..c37a3eb 100644
+--- a/src/libs/bc5LleAgc.cpp
++++ b/src/libs/bc5LleAgc.cpp
+@@ -13198,6 +13198,107 @@ static void frame_profile_flip(double drain_ms) {
+ 	g_fp.t_last_flip = now;
+ }
+ 
++#ifndef BC5_LEAN
++// Experiment 0418 result 4 (diagnostic, compiled out of the lean build): BC5_DIRECT_RSRC2_JOURNAL=1 reads the RSRC2
++// word of every shader stage as a title's buffer sets it (SET_SH_REG, SET_SH_REG_INDEX) or loads it from the title's
++// memory (LOAD_SH_REG's flat image, LOAD_SH_REG_INDEX's (offset, value) pairs; read when the buffer is submitted, the
++// values it will load), and writes to stderr ("[bc5-rsrc2]") each new combination of stage, source and trap bits, and
++// for every 2000th buffer that holds RSRC2 words the running totals. The bits: TRAP_PRESENT (bit 6) and the stage's
++// EXCP_EN field (Linux v7.2 gc_10_1_0_sh_mask.h: PS 0x01ff0000, VS 0x003fe000, GS 0x0000ff80, ES 0x0001ff00,
++// HS 0x0003fe00, LS 0x01ff0000, COMPUTE 0x7f006000 with EXCP_EN_MSB). The question: does any of the titles' shaders ask
++// for the trap handler that the console installs (0x80888123) and amdgpu's graphics VMIDs do not have? None of the 387
++// RSRC2 words SET in the captures did; the 729 loaded ones were unread (exp 0418 impl/README.md result 4). A
++// LOAD_SH_REG_INDEX in the offset format (DATA_FORMAT 0) that covers an RSRC2 is counted as unread.
++static void rsrc2_journal(const uint32_t* ib, uint32_t num_dwords, const std::vector<bc5::direct::Mapping>& maps) {
++	static const bool on = bc5::gc_trace::switch_on(BC5_DIAG_ENV("BC5_DIRECT_RSRC2_JOURNAL"));
++	if (!on) return;
++	struct Stage {
++		const char* name;
++		uint32_t    off;  // SH offset: mm + 0x1260 - 0x2c00 (gc_10_1_0_offset.h, BASE_IDX 0)
++		uint32_t    excp; // EXCP_EN mask
++	};
++	static constexpr Stage kStages[] = {{"PS", 0x00bu, 0x01ff0000u}, {"VS", 0x04bu, 0x003fe000u}, {"GS", 0x08bu, 0x0000ff80u}, {"ES", 0x0cbu, 0x0001ff00u},
++	                                    {"HS", 0x10bu, 0x0003fe00u}, {"LS", 0x14bu, 0x01ff0000u}, {"CS", 0x213u, 0x7f006000u}};
++	static constexpr uint32_t kN = sizeof(kStages) / sizeof(kStages[0]);
++	static std::mutex          m;
++	static std::set<uint64_t>  seen;          // stage << 40 | source << 32 | the trap bits
++	static uint64_t            words[kN][3];  // per stage: words, with TRAP_PRESENT, with an EXCP_EN bit
++	static uint64_t            unread = 0, bufs = 0;
++	static const char* const   kSource[] = {"set", "loaded", "loaded (pairs)"};
++	bool any = false;
++	auto stage_of = [](uint32_t off) -> int {
++		for (uint32_t s = 0; s < kN; s++)
++			if (kStages[s].off == off) return static_cast<int>(s);
++		return -1;
++	};
++	auto take = [&](uint32_t off, uint32_t v, uint32_t src) {
++		const int s = stage_of(off);
++		if (s < 0) return;
++		any = true;
++		const uint32_t bits = v & (0x40u | kStages[s].excp);
++		words[s][0]++;
++		if ((v & 0x40u) != 0) words[s][1]++;
++		if ((v & kStages[s].excp) != 0) words[s][2]++;
++		if (seen.insert((static_cast<uint64_t>(s) << 40u) | (static_cast<uint64_t>(src) << 32u) | bits).second)
++			std::fprintf(stderr, "[bc5-rsrc2] new: %s %s RSRC2 0x%08x: TRAP_PRESENT %u, EXCP_EN 0x%x\n", kStages[s].name, kSource[src], v, (v >> 6u) & 1u, v & kStages[s].excp);
++	};
++	std::lock_guard lk(m);
++	for (uint32_t i = 0; i < num_dwords;) {
++		const uint32_t h    = ib[i];
++		const uint32_t type = h >> 30u;
++		uint32_t       len  = 1;
++		if (type == 3 || type == 0) {
++			const uint32_t c = (h >> 16u) & 0x3fffu;
++			len              = c == 0x3fffu ? 1 : c + 2;
++		}
++		if (i + len > num_dwords) break;
++		const uint32_t  op = (h >> 8u) & 0xffu;
++		const uint32_t* p  = ib + i;
++		if (type == 3 && (op == 0x76 || op == 0x9b) && len >= 3) { // SET_SH_REG, SET_SH_REG_INDEX
++			const uint32_t base = p[1] & 0xffffu;
++			for (uint32_t k = 2; k < len; k++) take(base + k - 2, p[k], 0);
++		} else if (type == 3 && op == 0x5f && len >= 5) { // LOAD_SH_REG: base in dwords 1-2, (offset, count) pairs
++			const uint64_t a = (p[1] & ~3u) | (static_cast<uint64_t>(p[2] & 0xffffu) << 32u);
++			for (uint32_t k = 3; k + 1 < len; k += 2) {
++				const uint32_t lo = p[k] & 0xffffu, n = p[k + 1] & 0x3fffu;
++				for (uint32_t s = 0; s < kN; s++) {
++					const uint32_t r = kStages[s].off;
++					if (r < lo || r >= lo + n) continue;
++					const uint64_t at = a + static_cast<uint64_t>(r) * 4;
++					if (covered_sorted(maps, at, 4)) take(r, *reinterpret_cast<const volatile uint32_t*>(at), 1);
++					else unread++;
++				}
++			}
++		} else if (type == 3 && op == 0x63 && len >= 5) { // LOAD_SH_REG_INDEX
++			const uint64_t a = (p[1] & ~3u) | (static_cast<uint64_t>(p[2] & 0xffffu) << 32u);
++			const uint32_t n = p[4] & 0x3fffu;
++			if ((p[3] >> 31u) != 0) { // (offset, value) pairs
++				if (covered_sorted(maps, a, static_cast<uint64_t>(n) * 8)) {
++					const auto* t = reinterpret_cast<const volatile uint32_t*>(a);
++					for (uint32_t k = 0; k < n; k++) take(t[2 * k] & 0xffffu, t[2 * k + 1], 2);
++				} else {
++					unread++;
++				}
++			} else {
++				const uint32_t lo = p[3] & 0xffffu;
++				for (uint32_t s = 0; s < kN; s++)
++					if (kStages[s].off >= lo && kStages[s].off < lo + n) unread++;
++			}
++		}
++		i += len;
++	}
++	if (any && (bufs++ % 2000) == 0) {
++		std::string line;
++		char        w[96];
++		for (uint32_t s = 0; s < kN; s++) {
++			std::snprintf(w, sizeof(w), " %s %" PRIu64 "/%" PRIu64 "/%" PRIu64, kStages[s].name, words[s][0], words[s][1], words[s][2]);
++			line += w;
++		}
++		std::fprintf(stderr, "[bc5-rsrc2] totals after %" PRIu64 " buffers (words/TRAP_PRESENT/EXCP_EN):%s; unread %" PRIu64 "\n", bufs, line.c_str(), unread);
++	}
++}
++#endif // BC5_LEAN
++
+ // Experiment 0049: BC5_DIRECT_SHADER_DUMP=<dir> writes the code of every shader program a buffer
+ // points at, once, to <dir>/<address>.bin (64 KiB from the program's start, where mapped): the
+ // program registers SPI_SHADER_PGM_LO/HI_PS, _VS, _GS, _ES, _HS, _LS (SH offsets 0x08, 0x48, 0x88,
+@@ -13722,6 +13823,9 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+ 	}
+ 	std::shared_ptr<const std::vector<bc5::direct::Mapping>> maps_p = g_dev->sorted_mappings();
+ 	shader_dump(ib, num_dwords, *maps_p); // experiment 0049
++#ifndef BC5_LEAN
++	rsrc2_journal(ib, num_dwords, *maps_p); // experiment 0418 (BC5_DIRECT_RSRC2_JOURNAL=1)
++#endif
+ 	bc5::policy::FilterOptions opt;
+ 	opt.cu_mask       = g_cu_mask;
+ 	opt.clear_int_sel = true;

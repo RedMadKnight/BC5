@@ -439,7 +439,13 @@ The requests that were already named fit the names:
 
 - **A second trace run is not needed for the names.** All requests before the menu were caught.
 - **Whether the titles' shaders trap: none of the 387 set RSRC2 values does** (result 4). Open:
-  - the 729 values loaded by `LOAD_SH_REG`: the host's full-state tracker sees them, so a journal of the loaded RSRC2 words in one run would settle it;
+  - the 729 values loaded by `LOAD_SH_REG`. For this there is a one-off journal on candidate F (exp 0419, patch `d9af28ca`, unit `59d17cf5`), `kit/0418-rsrc2-on-d9af28ca.diff` (sha256 `78747c697a1cbe61`, md5 `1f8742c0`; one function and one call in `bc5LleAgc.cpp`, unit afterwards `877d6edc`).
+    - **What it does.** `BC5_DIRECT_RSRC2_JOURNAL=1` (diagnostic, not in lean) reads every stage's RSRC2 word in each submitted buffer, whether the buffer sets it, loads it flat (`LOAD_SH_REG`) or loads it as pairs (`LOAD_SH_REG_INDEX`). It writes `[bc5-rsrc2] new: …` for each new combination of stage, source and trap bits, and running totals every 2000 buffers. A `LOAD_SH_REG_INDEX` in the offset format is counted as unread.
+    - **Checked on the laptop:**
+      - the diff applies to a clean F tree;
+      - the syntax check of the region passes;
+      - `kit/rsrc2test.py` cuts the function out of the unit and runs it on synthetic buffers, with a set, a flat load, pairs and the offset format: the 5 new lines and the totals are as expected, and a second identical buffer adds no line.
+    - The integrator runs it in his chain on one second-title walk and one ASTRO BOT arm;
   - `s_trap` in the code: it needs a dump of the titles' shaders, and none was found.
 - **The table and the GS rings on both titles:** in the integrator's chain, after E (result 3).
 - **The memory wall in the menu.** It belongs to exp 0412/0417, not to 0418.
