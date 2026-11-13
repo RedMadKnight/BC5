@@ -108,3 +108,9 @@ Not named, of the chunks that turned non-zero in six minutes: RenderGpuWcLarge 1
 29, CommitIABufferAllocator 11 of 18 (the CPU is its expected writer; the catcher cannot tell), AMM 0 of 37.
 The order stands; RenderGpuRwLarge goes last of the three or gets a naming rule first. No step-3 arm before the
 hang of section 81 is explained.
+
+### Step 3 is prepared (2026-11-13 late evening, README section 82)
+
+The maintainer agreed to the scripted arms. One switch per heap: `BC5_GUARD_BYDATA_NAMES` (tag bd412). The
+catcher's CPU/GPU split: `BC5_GUARD_WRITERS=2` (tag wc412, the soft-dirty bit). Arms w0, b1-b4 in section 82.
+Nothing runs before the hang of section 81 is explained.

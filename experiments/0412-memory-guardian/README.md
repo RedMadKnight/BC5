@@ -3778,6 +3778,54 @@ force or packet operand had named (scans at 175, 295, 415, 535 s; the fifth neve
 A by-product, the cost of kl412's data scan [M]: 0.48-0.51 ms a scan (750 scans, 103,798 SEEK_DATA calls,
 384 ms by 229 s). That is about a third of the 1.6 ms K1r adds to a full sync (section 80).
 
+### 82. Prepared for option B's arms: one switch per heap (bd412) and the CPU/GPU split of the writers catcher (wc412) (2026-11-13 late evening, laptop; not compiled on the box, not run)
+
+The maintainer's word, relayed by the top ("jest moja zgoda"): scripted arms of option B, heap by heap, on a
+PRIVATE build and a private save copy, with a possible GPU fault or reboot. Not covered: shared builds,
+launchers, shortcuts, his live saves, runs while he plays. The top's conditions: the hang of section 81 is
+explained first; all heaps' rule in one build, one switch per heap, with a catcher that tells CPU from GPU
+writers if that can be done; one arm = one heap, CommitIABufferAllocator first, fault record on, stop and report
+after a reboot; each arm reports the MiB recovered at m5wall's points, flips/s and the longest gap.
+
+- **bd412, `BC5_GUARD_BYDATA_NAMES=name[,name...]`** (default unset: nothing changes). A heap named there is
+  not imported whole though `BC5_DIRECT_EAGER_NAMES` names it: `direct_eager_name` answers no for it, so it is
+  imported where the file holds data and where a hint, a force or a packet operand names a chunk; K1r covers
+  the rest. The zero scan and the catcher keep reading it (they asked for eager views only). `bd0412.inc`,
+  `bd0412.cpp` 27,008 of 27,008.
+- **wc412, `BC5_GUARD_WRITERS=2`** (=1 stays ww412 with its lines unchanged). Linux's soft-dirty bit
+  (/proc/self/pagemap bit 55, cleared by "4" into /proc/self/clear_refs; the kernel's
+  Documentation/admin-guide/mm/soft-dirty.rst) is set by a write through the process's page tables and not by a
+  write of the GPU. Per scan: the bits of every slot that was zero at the last scan, the clear, the scan, the
+  bits again for the slots that turned; a not-named chunk is then "written by the CPU" or "NO CPU write: a GPU
+  writer nobody named" (up to 64 of those are journaled by offset). The first scan tests the bit on a page of
+  its own and says so if it does not work on this kernel. `wc0412.inc`, `wc0412.cpp` 6,010 of 6,010.
+  Costs, not measured: the clear write-protects every page of the process, so an arm with =2 is a diagnostic
+  arm of its own; its gaps and flips/s do not compare with other arms.
+  TODO(verify): that this kernel is built with CONFIG_MEM_SOFT_DIRTY, and that the bit is kept for the shared
+  mappings of the direct file; the self-test answers the first, the first run's numbers the second (a heap
+  whose turned chunks are ALL "no CPU write", CommitIABufferAllocator above all, would mean the bit is not
+  kept there).
+- `mkbd0412.py` applies to a unit with ww412: candidate F's 59d17cf5 gives **8f07ccf6**, form 6 (b76dc93e)
+  gives 2dc64fc8. The glue passes a syntax check on the laptop against stand-in declarations (clang++
+  -fsyntax-only -Wall -Wextra -Werror); it has not been compiled on the box.
+- The box build script is NOT written: its base (F as it is, or F with exp 0418's rows off) follows from the
+  integrator's series on the hang.
+
+The arms, when the slot comes (each: F + bd412/wc412 private build, walk to G+560, RT on, fuse and watchdog,
+fault record on, private save copy; GTT and available memory read at 420 s and 600 s, where m5wall had 12,237
+and 12,331 MiB of GTT and 409 and 406 MiB available):
+
+| arm | switches | risk | answers |
+|---|---|---|---|
+| w0 | `BC5_GUARD_WRITERS=2`, zero scan as m5wall | none beyond a walk (a diagnostic; slower) | per heap: how many not-named chunks the CPU wrote, how many it did not |
+| b1 | `BC5_GUARD_BYDATA_NAMES=CommitIABufferAllocator` | GPU fault or reboot | the rule on a real heap; MiB recovered (floor 274) |
+| b2 | `...=RenderGpuWcLarge` | the same, higher | floor 842 |
+| b3 | `...=RenderGpuRwLarge` | the same, highest by ww412's count | floor 204 |
+| b4 | `...=DynamicHeap,ComponentHeap,Physics` one at a time | the same | floors 182, 80, 116 |
+
+An arm is run only after the one before it is read; a fault's record names the writer, and that writer's
+class gets an import rule before the heap is tried again.
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over
