@@ -3162,6 +3162,56 @@ straight into the scene lays the heap out differently; (b) the fault depends on 
 of his; (c) it is intermittent (one control so far). The K1 catcher's line carries a defect of mine (an unsigned
 underflow prints "17592186044412.0 MiB" for the windows' total in k1ra): the number is wrong, nothing depends on it.
 
+### 67. The morning's page, watched and read by the host: with K1r it reads zero (2026-11-13 10:25–10:45, box)
+
+The top's order after section 66: do not wait for chance; make the test deterministic at the address.
+
+**Two more controls** (K1r off, the same arm): k1rd on g412z, 354 s, 30.1 flips/s, 0 kernel lines; k1re on g412za,
+354 s, 30.3, 0 kernel lines. Three controls in all, none faulted.
+
+**The watched address** (tag wa412, `memfast/mkwa0412.py`, `BC5_GUARD_WATCH=<hex>[,<hex>...]`, a catcher, default
+unset; build **g412za `c4bb0bff`** = g412z + it). For each address the journal says, at every change and every 10 s:
+the view over it, whether the CPU has written its 2 MiB chunk of the direct file (SEEK_DATA), whether the chunk is
+imported, and what the GPU has there (no mapping, the title's memory, a read-only zero cover). Read on the
+submitting thread at the start of the per-submission sync.
+
+k1re [M], 0x1100000000 and 0x1100200000, from the first line to 350 s, never changed: under "AssetHeap Large" (by
+data; view 0x10d0000000+0x33000000, the address 0x30000000 into it; file chunk 0x91a00000): **the chunk never written
+by the CPU, not imported; GPU: NO MAPPING**. So the page is in the state of the morning's fault for the whole run:
+the route is not past it. The title does not read that page in these runs (three controls), which is why they are
+clean. Why it read it in his play is not known (candidates in section 66).
+
+**The host's read probe** (tag pr412, `memfast/mkpr0412.py`, `BC5_GUARD_K1R_PROBE=<hex address>[,<seconds after the
+emulator's start>]`, default unset; build **g412zb `65511824`** = g412za + it, first compile clean; private backend
+direct.hpp 2497a4ce, direct.cpp b183516e, archive ed63df2f). Once, at the first submission after the time,
+`Device::probe_read` submits jobs of the host's own **in a context of its own** (the title's context and its state
+are not touched; the address space belongs to the device file, so it is the title's): IGT's gfx10 buffer-copy
+program, as in `e1/e1-probe.cpp` (cited there), copies 16 KiB from a source to the probe's destination, which the
+host fills with 0xA5 first. Step 1 is a control (the source is the probe's own pattern; if it does not arrive whole
+the probe says it is not working and stops); step 2 journals the address's state; step 3 is the read. One 64 KiB
+buffer at 0xFDFF000000; a command slot is used once (E1's finding); at most four probes per run. No CPU test (it
+is a GPU job); the unit chain is nl412 → rl412 → k1r412 → fr412 0a4fa422 → wa412 5d763ab8 → pr412 dfa98a48 → ff412
+9d4de45e.
+
+**k1rf [M]: K1r on, the probe at 0x1100000000 at 200 s** (g412zb, the same arm, `BC5_FAULT_RECORD=1`):
+
+- the control ran in 2.04 ms and all 16,384 bytes matched the pattern;
+- the address before the read: under "AssetHeap Large", the chunk never written, not imported; **GPU: a read-only
+  zero cover (K1r)** (the watch shows the cover from 0.9 s on);
+- **the read ran in 0.03 ms: all 16,384 bytes zero, none of the destination's fill left; no fault**;
+- the run went on to G+240 (357 s, 30.6 flips/s), 0 kernel lines, no fault record.
+
+**What this shows.** On the page of the morning's fault, in the title's real layout and in the state the fault had
+(never written, not imported), a GPU read with K1r on returns zeros and does not fault. That is K1r's rule shown at
+the address, by a read of ours, not by the title's shader. **What it does not show:** the same read without K1r
+faulting in this build (E1's cases and the morning's fault say an unmapped page faults; the probe's own arm for it is
+a deliberate GPU fault and waits for the maintainer's word), the fault record, the save guard and exit 86 in the real
+build (they have still not fired), and the title's own read of that page (not reproduced).
+
+**Limits of the probe.** It reads 16 KiB (four pages) from the address, not 16 bytes. Its job is on the GFX ring in
+another context: it says what the address space returns, not what the title's shader would have done with zeros.
+The control's line counts 128 bytes "still holding the fill": those are pattern bytes that happen to equal 0xA5.
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over
