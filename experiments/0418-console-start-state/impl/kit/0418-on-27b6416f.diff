@@ -279,7 +279,7 @@ index 0000000..ea5cfe3
 +
 +} // namespace bc5::start_state
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
-index fbfe65f..6a340a1 100644
+index fbfe65f..2ec7a3c 100644
 --- a/src/libs/bc5LleAgc.cpp
 +++ b/src/libs/bc5LleAgc.cpp
 @@ -31,6 +31,15 @@
@@ -424,7 +424,7 @@ index fbfe65f..6a340a1 100644
  	return p;
  }
  static std::atomic<uint64_t> g_dry_bufs {0}, g_dry_splits {0}, g_dry_prefix {0}, g_dry_ns {0}, g_dry_max_ns {0}, g_dry_kept {0}, g_dry_ok {0},
-@@ -14059,6 +14110,108 @@ static void submit_raw(const uint32_t* dwords, uint32_t num, const char* kind) {
+@@ -14059,6 +14110,128 @@ static void submit_raw(const uint32_t* dwords, uint32_t num, const char* kind) {
  	}
  }
  
@@ -516,6 +516,26 @@ index fbfe65f..6a340a1 100644
 +		}
 +	}
 +	std::fprintf(stderr, "[bc5-gc-trace] ioctl 0x%08" PRIx64 " (size %u, %s%s) call %d:%s\n", request, size, in ? "in" : "", out ? "out" : "", call, line.c_str());
++	// Exp 0418 point 5: 0x80888123 is a table of address and size pairs (136 bytes: 8 pairs and a trailing quadword,
++	// exp 0189's trace, F787). Each address is named by the guest mapping it lies in, under the name the title's driver
++	// gave that mapping (KernelVirtualQuery), so the trace says which of the driver's areas the table lists.
++	if (request == 0x80888123u && in && argp != nullptr) {
++		const auto* q = static_cast<const uint64_t*>(argp);
++		for (uint32_t i = 0; i + 1 < size / 8; i += 2) {
++			if (q[i] == 0) continue;
++			LibKernel::Memory::VirtualQueryInfo vq {};
++			const int r = LibKernel::Memory::KernelVirtualQuery(reinterpret_cast<const void*>(static_cast<uintptr_t>(q[i])), 0, &vq, sizeof(vq));
++			char nm[sizeof(vq.name) + 1] = {};
++			std::memcpy(nm, vq.name, sizeof(vq.name));
++			if (r != 0) {
++				std::fprintf(stderr, "[bc5-gc-trace] 0x%08" PRIx64 " #%d pair %u 0x%016" PRIx64 " size 0x%" PRIx64 " (no mapping, %d)\n", request, call, i / 2, q[i], q[i + 1], r);
++				continue;
++			}
++			std::fprintf(stderr, "[bc5-gc-trace] 0x%08" PRIx64 " #%d pair %u 0x%016" PRIx64 " size 0x%" PRIx64 " mapping '%s' 0x%016" PRIx64 "-0x%016" PRIx64 " %s prot 0x%x\n",
++			             request, call, i / 2, q[i], q[i + 1], nm, static_cast<uint64_t>(vq.start), static_cast<uint64_t>(vq.end),
++			             vq.is_flexible != 0 ? "flexible" : vq.is_direct != 0 ? "direct" : "other", static_cast<unsigned>(vq.protection));
++		}
++	}
 +	const auto fp = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(frame));
 +	uint64_t   ret[bc5::gc_trace::kMaxFrames] = {};
 +	const int  nf = bc5::gc_trace::walk_frames(fp, [](uint64_t a, uint64_t* two) { return trace_read(a, two, 16); }, ret, bc5::gc_trace::kMaxFrames);
@@ -533,7 +553,7 @@ index fbfe65f..6a340a1 100644
  // Returns 0 on success or a positive errno (the libkernel wrapper turns it into -1/errno).
  static int gc_ioctl(uint64_t request, void* argp) {
  	switch (request) {
-@@ -14284,6 +14437,13 @@ static int gc_ioctl(uint64_t request, void* argp) {
+@@ -14284,6 +14457,13 @@ static int gc_ioctl(uint64_t request, void* argp) {
  		case 0xc00c8110: { // set gs ring sizes
  			auto* a = static_cast<uint32_t*>(argp);
  			LOGF("[bc5-gc] gs ring sizes: %u %u %u\n", a[0], a[1], a[2]);
@@ -547,7 +567,7 @@ index fbfe65f..6a340a1 100644
  			return 0;
  		}
  		case 0xc0848119: { // stats report control
-@@ -14403,6 +14563,9 @@ static KYTY_SYSV_ABI int Ioctl(int fd, uint64_t request, void* argp) {
+@@ -14403,6 +14583,9 @@ static KYTY_SYSV_ABI int Ioctl(int fd, uint64_t request, void* argp) {
  	int err = 0;
  	if (dev == "/dev/gc") {
  		Bc5Gc::Direct::init_once();

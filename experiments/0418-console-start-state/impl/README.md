@@ -29,8 +29,8 @@ The base is the shared tree: patch 0001 `4651d1d3` (main), and candidate B `27b6
 
 | Shared tree | Diff | sha256 (16 hex) | md5 | Sum list |
 |---|---|---|---|---|
-| patch 0001 `4651d1d3` (main, the shared builds of 2026-11-13) | `kit/0418-on-4651d1d3.diff` | `bf40cb55356cc9df` | `79fe2dd4` | `kit/tree-0418-on-4651d1d3.md5` |
-| candidate B `27b6416f` (exp 0417 section 9, after the integrator's swap) | `kit/0418-on-27b6416f.diff` | `7f9efd19c5f32c9e` | `808e2805` | `kit/tree-0418-on-27b6416f.md5` |
+| patch 0001 `4651d1d3` (main, the shared builds of 2026-11-13) | `kit/0418-on-4651d1d3.diff` | `8f946cb2874252de` | `d2a4b31b` | `kit/tree-0418-on-4651d1d3.md5` |
+| candidate B `27b6416f` (exp 0417 section 9, after the integrator's swap) | `kit/0418-on-27b6416f.diff` | `557656da0d691375` | `d857d736` | `kit/tree-0418-on-27b6416f.md5` |
 
 `mk0418.sh` picks the pair by `P_TREE` and refuses any other base. It also holds `kit/test418.cpp`, the box's CPU test.
 
@@ -100,6 +100,51 @@ They are now one switch away. The umr read decides whether the table changes any
 
 **Verdict of point 4: found one, now written (0xc00c8110). No other request with a zero or log-only answer has a register that Mesa, Linux or PAL names.**
 
+## Point 5: the seven unnamed requests against what a gfx10 driver must give the chip
+
+**The order.** The top session added, from the maintainer: "może w dokumentacji MESA będzie odpowiedź (lub bezposrednio w kodzie MESA)" — perhaps Mesa's documentation, or Mesa's code itself, has the answer.
+
+**The task.** Match the shape and values of F787's six requests and of 0xc0048114 against what Mesa, PAL and the kernel give a gfx10 chip. For each request: a candidate, its evidence, and a certainty. Reads only, on the laptop.
+
+**The rule.** No register is written on a shape match. The trace confirms or refutes each candidate.
+
+**Sources.** All fetched at the pinned commits into the laptop's scratch:
+
+- Mesa 0866ae7: `src/amd/common/ac_gpu_info.c`, `ac_cmdbuf.c`, `ac_pm4.c`, `ac_descriptors.c`, `src/amd/vulkan/radv_queue.c`, `radv_device.c`, `src/amd/registers/gfx10.json`.
+- Linux v7.2: `gfx_v10_0.c`, `amdgpu_gfx.c`, `include/uapi/drm/amdgpu_drm.h`, `gc_10_1_0_offset.h`, `gc_10_1_0_sh_mask.h`.
+- PAL c5e80007: `gfx9QueueContexts.cpp`, `settings_gfx9.json`.
+
+The values are from exp 0189's trace (`experiments/0189-ge-system-rings/raw/R0-ioctl-trace.txt`).
+
+| Request | What the title sends | Candidate | Evidence | Certainty |
+|---|---|---|---|---|
+| 0x80888123, pair 3 | 0xf00144000, size 0x1000000 (16 MiB) | **The HS offchip ring**: the buffer that `VGT_HS_OFFCHIP_PARAM` = 0x1ff sizes. 0x1ff means 512 buffers (bits 0-8 = buffers − 1) of 8K dwords each (bits 9-10 = 0 = `X_8K_DWORDS`); 512 × 8192 × 4 B = 16 MiB exactly | Mesa `ac_gpu_info.c:1382` (8192 dwords per workgroup), `:1433-1436` (gfx8-gfx10.1 encoding: buffering = workgroups − 1), `:1447` (ring size = workgroups × dwords × 4); `gfx10.json:933-938` (`X_8K_DWORDS` = 0); Linux `gc_10_1_0_sh_mask.h:7078-7081` (the two fields) | inferred: exact arithmetic, no name |
+| 0x80888123, the other five pairs | 0xf00000000 + 0x2400, 0xf00004000 + 0x4000, 0xf00008000 + 0xfc000, 0xc80008000 + 0x3bb00, 0xc80043d00 + 0xd00. Slots 5 and 6 are empty and the trailing quadword is 0: 8 slots and one more quadword make 136 bytes | **None of Mesa's preamble buffers fits.** Scratch and the ESGS/GSVS rings are sized per pipeline. The TF ring is the title's own, sent by 0x80108128 (0x3fff8 at 0x1120000000) and not in this table. RADV's border-colour table is 64 KiB, and its bases (`TA_BC_BASE_ADDR`, `TA_CS_BC_BASE_ADDR`) are written by the title's own stream (exp 0401's audit lists neither as unset) | `radv_queue.c:256-337` (the ring descriptors), `:870-940` (the buffers); `ac_cmdbuf.c:61-62`, `:529-530` (border-colour bases) | none |
+| 0xc010813b | 16 bytes in and out; in = ffffffff ×4; the host answers zeros | **A CU mask per shader engine**: four dwords for SE0-SE3, all ones = every CU. Either the masks the kernel puts in its compute queues' MQD, or the PS5 form of 0xc010810b ("get cu masks param", the same 16 bytes; request number 0x0b against 0x3b is a pattern, not evidence) | Linux `gfx_v10_0.c:6916` and `:6925-6928` (`gfx_v10_0_compute_mqd_init`: `compute_static_thread_mgmt_se0..3` = 0xffffffff); `amdgpu_gfx.c:506` (`amdgpu_gfx_mqd_symmetrically_map_cu_mask`); Mesa `ac_cmdbuf.c:52`, `:66-72` (the gfx10 compute preamble writes `COMPUTE_STATIC_THREAD_MGMT_SE0..3`, 0 for an absent SE); RPCSX `gc.cpp:322-337` | inferred: shape and value |
+| 0x80048126 | 4 bytes in, once, = 1 | **None.** The amdgpu UAPI's only single-integer per-context settings are the priority (NORMAL = 0) and the stable pstate (NONE 0, STANDARD 1). No item of Mesa's or PAL's start state is a lone flag outside a packet | `amdgpu_drm.h:246-251`, `:278`, `:288-289` | none |
+| 0x80048134 | 4 bytes in, once, = 0 | **None** (as above) | as above | none |
+| 0xc0108139, 0xc0088133 | 16 bytes {0, 1, 0, 0} and 8 bytes {0, 1}, in and out, around every submission header | **Bookkeeping per submission** (a ring, fence or context query), not start state. 16 bytes is the size of amdgpu's `drm_amdgpu_ctx` in/out, but amdgpu has no op 0 | `amdgpu_drm.h:246-251`, `:294-327` | none; not a register question |
+| 0xc0048114 | 4 bytes in and out; RPCSX's PS4 path; not in the second title's trace | **Wave limits.** Either per pipe, `SPI_WCL_PIPE_PERCENT_GFX/HP3D/CS0-7` (mm 0x1f67 onward, BASE_IDX 0, i.e. dword 0x31c7 onward, outside every `SET_*` range, so a user IB cannot write them; v7.2's `gfx_v10_0.c` never writes them). Or per stage, `WAVE_LIMIT` in `SPI_SHADER_PGM_RSRC3_*` (SH, user-writable; Mesa writes 0x3f, no limit) | `gc_10_1_0_offset.h:5179-5188`; `ac_cmdbuf.c:439-441`, `:483-485` | none: from the name only |
+
+**What the two candidates would need.**
+
+- **The 16 MiB offchip ring needs no register.** The ring's address goes into the shaders' buffer descriptors, which the title's own driver builds (RADV does the same, `radv_queue.c:306-312`). The one register, `VGT_HS_OFFCHIP_PARAM`, is already written from 0x8004812a (row `VGT_HS_OFFCHIP_PARAM`). Two things are left to check:
+  - that the 16 MiB is mapped for the GPU (the direct path maps the guest's GPU memory);
+  - and, for F785's open TODO, that the water's HS/TES descriptors point into it.
+- **The CU mask needs no register either.** The host already sets the CU registers in the title's stream (F7, F39a). Only the answer is open: zeros today, where 0xc010810b gets all ones. If the trace names a CU-mask export as the caller, answering with the input (all ones) becomes a candidate for its own default-off switch.
+
+**Mesa's documentation (docs.mesa3d.org) adds nothing.** `drivers/amd.html` does not exist (404).
+
+- `drivers/radv.html` covers none of the topics. It has only a general section on what RADV and the kernel each do.
+- `envvars.html` has no entry for the rings, scratch, the border colour, GDS/OA, CU masks or wave limits. Its "preamble" is freedreno's preamble shader, and "shadowregs" is CP register shadowing.
+- The code reads `AMD_CU_MASK` (`ac_gpu_info.c:82`, syntax at `:104`), which the page does not list.
+
+Checked by grepping both pages, fetched 2026-11-13, and by one reader agent.
+
+**The trace now names the table's areas.** For 0x80888123 the trace also prints, for each non-zero pair, the guest mapping the address lies in: its name as the title's driver gave it, its range, type and protection (`KernelVirtualQuery`). One run then says which of the driver's areas the table lists. The patch comments already know two such areas by name: the queue rings and the EOP pages. These lines stay in the run's log on the box; only roles go into a README.
+
+**Verdict of point 5: one candidate by exact arithmetic (16 MiB = the offchip ring of 0x1ff), one by shape (0xc010813b = CU masks), five with none.** Nothing is written on these matches. The trace (§3b), with the mapping names, decides them.
+
 ## The trace (§3b)
 
 **What it prints.** With `BC5_GC_IOCTL_TRACE=1`, the first 8 calls of each request code are printed:
@@ -107,6 +152,7 @@ They are now one switch away. The umr read decides whether the table changes any
 - The bytes passed in, the format of exp 0189's trace.
 - Up to 8 guest return addresses, found by the frame-pointer walk from the libkernel ioctl's own frame.
 - Up to 12 code addresses found by a scan of 64 stack quadwords above that frame.
+- For 0x80888123 only: the guest mapping each non-zero pair lies in (point 5).
 
 Each address comes with its module and the nearest exported function at or before it, by NID.
 
@@ -116,6 +162,7 @@ Each address comes with its module and the nearest exported function at or befor
 
 - Guest memory through `process_vm_readv` on its own pid, so a bad address is an error, not a fault.
 - The module's dynamic symbol table, which the loader has already parsed.
+- For 0x80888123, the host's own record of the guest's mappings (`KernelVirtualQuery`, which takes the memory lock while it reads). The trace holds no lock of its own at that point.
 
 It reads no code.
 
@@ -156,13 +203,13 @@ Under the fixes-first rule, everything above is in one build, each piece behind 
    After the integrator's swap to candidate B:
 
    ```bash
-   P_TREE=27b6416f P_ARCH=75e30335 P_DIFF=7f9efd19c5f32c9e bash ~/bc5-work/exp0418/kit/mk0418.sh
+   P_TREE=27b6416f P_ARCH=75e30335 P_DIFF=557656da0d691375 bash ~/bc5-work/exp0418/kit/mk0418.sh
    ```
 
    If the shared tree is still `4651d1d3`:
 
    ```bash
-   P_TREE=4651d1d3 P_ARCH=75e30335 P_DIFF=bf40cb55356cc9df bash ~/bc5-work/exp0418/kit/mk0418.sh
+   P_TREE=4651d1d3 P_ARCH=75e30335 P_DIFF=8f946cb2874252de bash ~/bc5-work/exp0418/kit/mk0418.sh
    ```
 
    - `P_ARCH` is the archive's md5 from the 2026-11-13 integration record; B keeps it (exp 0417 section 9). Check it on the box first.
