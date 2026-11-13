@@ -2596,8 +2596,133 @@ a fault, one of them 15 minutes long and on the shared build. It is evidence for
 of the game; his own play (the pause menu, Photo Mode, the lake, fights) is where the windows were learned and is
 not covered by it.
 
+### 57. The smaller memory offer (12,800 MiB): what is on record, and the catcher that is missing (2026-11-13, laptop only)
+
+The top session's order: option A's largest unknown. A read of the records (a sub-agent's search over this branch
+and the main checkout, HEAD 4178a97a; I have not re-read every line it cites). `P` is patch 0001.
+
+**How the offer is set** [C]: `KYTY_GUEST_MEMORY_MB`, read once in `PhysicalMemory::TotalSize()` (P:21142); unset,
+the code's own value is the console's 12,800 MiB, capped by host RAM. Today's 13,824 comes from the launchers.
+`KernelGetDirectMemorySize` reports total minus flexible memory; the AMM auto pool borrows from that same direct
+memory when the title's pool is full (P:38832–38845).
+
+**Every recorded run with less than 13,824** [M, from the experiments' own files]:
+
+| offer | when, where | what happened | judged |
+|---|---|---|---|
+| 12,288 | exp 0330 arm D, 10-25 | stops 3 s after start: `condition (g_tls_main_program == nullptr)` in `runtimeLinker.cpp:1470` | "why it fails was not read further" |
+| 11,776 and 12,288 | 11-06 | "died at startup in the title's TLS setup": cited second-hand in exp 0409 only; no primary record found | none |
+| 12,460 (`MEMORY_FROM_PARAM`) | exp 0401 e2, 11-03 | play "very smooth but short"; host fatal `AMM virtual-memory unmap is unsupported` at 145 s, right after `auto pool exhausted: map of 0x4000000 bytes refused` | **ours** (a refused AMM borrow) |
+| 12,800 | exp 0409, 11-09, 5 runs | 5 of 5 died at 159–195 s: that fatal, or a host write into the unmapped AMM window (access violation at `runtimeLinker.cpp:1166`) | **ours**, the same class |
+| 12,800 + `KYTY_BC5_AMM_SCATTER=rescue` | exp 0409, 11-09, 7 runs | 4 of 7 reached G+600; 3 froze about 3 min after G with no log and no kernel line and exited 133 (SIGTRAP) | not known (a title int3 or a host trap) |
+| 12,800 | his play, 11-10 | exit 65 at 106 s in the load: access violation, write into the AMM window | the 11-03 class |
+
+**Two classes, then.** (1) **Start deaths at 12,288 and below** (3 s in, the main program's TLS): never read
+further; one primary record. (2) **Deaths in the load or early play at 12,460–12,800**: the host's AMM auto pool
+cannot borrow direct memory and the host then faults or gives up: **our defect**, not the title's reaction; exp 0409's
+`rescue` removes the load fatal and leaves an unexplained SIGTRAP in 3 of 7.
+
+**Exp 0413's set-buffer bug as a cause** [I]: all of these runs predate its guard (in the shared builds since
+11-12 18:02). It is a candidate for class (1) only by its nature (a page of the title zeroed by chance, depending on
+the binary and what a register happens to hold); against it, the second title took that call's "map flavour" 0 times
+in 2,304 calls of a 180 s trace. It does not explain class (2), which the trace lines tie to refused borrows. Nobody
+has run a smaller offer since the guard: one start at 12,288 on today's shared build answers it in 10 seconds.
+
+**How large the lever really is** [M, exp 0409]: at 12,800 the GTT maximum was only **190–220 MiB lower** than at
+13,824, and his 11-10 play at 12,800 still showed about 12.5 GiB of GTT. So the "about 1 GiB" of the offer does not
+arrive as 1 GiB less pinned: the title reserves 12,162 MiB at 13,824 and whether it sizes its heaps from the offer is
+not measured (README section 16, HANDOFF F622/F625 call it "not a lever" for that reason). Worth having if it costs
+nothing, but it is a 0.2 GiB item on the evidence, like the shell.
+
+**The catcher that is missing** (proposal; not built). Today a run at 12,800 says where it died, not which host call
+first went wrong. One private build on the shared tree, switches default off:
+1. `KYTY_BC5_MEM_FIRSTFAIL=1`: the first time ANY memory call of the host returns an error to the title or refuses
+   internally (allocate/map/reserve direct, flexible, pooled, the AMM borrow and scatter, `mmap` fixed over a live
+   range), one journal line: the call, its arguments, the error, the caller's guest return address and thread, and
+   the state then: direct total, allocated, largest free hole, flexible used, the AMM pool's maps and free bytes.
+   Later failures are counted, not printed.
+2. `KYTY_BC5_TRAP_LOG=1`: a SIGTRAP handler that journals rip, the thread's name and the guest module of the address,
+   then lets the default action happen (exp 0401 proposed it; it names the int3 of the `rescue` runs).
+3. The existing `KYTY_BC5_AMM_TRACE=1` and the set-buffer guard's own line stay on in those runs.
+Runs (his slot, RT on, the scripted route): 12,288 once (10 s: is the start death still there after the guard?);
+12,800 without and with `rescue`, three each, stop at the first kernel error. The answer wanted is one line: the
+first failing call and the pool state, per class.
+
+### 58. What asks the kernel for compaction (kcompactd0's 80–100 s per run): a read of the sources (2026-11-13, laptop only)
+
+The top session's order, after exp 0415's numbers and section 53's (kcompactd0 80 and 100 s of CPU in a 4-minute
+run, kswapd0 8–12 s; more with every emulator start since boot). Nothing measured here. Sources: Linux v6.19
+(`drivers/dma-buf/udmabuf.c` read whole; the `mm/` files through a fetching sub-agent, whose quotes are marked
+[V] verbatim or [S] from its summary of a part it did not get verbatim: **[S] lines are unverified**), and the local
+copies of `ttm_pool.c`, `ttm_tt.c` used for the design study. The box runs 7.2: TODO(verify) against its source.
+
+**Who can wake kcompactd.**
+1. **kcompactd by itself: proactive compaction.** [V] `sysctl_compaction_proactiveness = 20` by default; every
+   `HPAGE_FRAG_CHECK_INTERVAL_MSEC` (500 ms) the thread asks `should_proactive_compact_node()`, which is false while
+   kswapd runs and otherwise true when the node's fragmentation score **at huge-page order** is above the high mark
+   (`fragmentation_score_wmark`: low = 100 − proactiveness = 80, high = 90); it then compacts until the score is
+   under 80. [S] When the score does not fall it backs off (`timeout << COMPACT_MAX_DEFER_SHIFT`, 6: 32 s). No
+   allocation of ours is needed for this: a machine whose free memory is scattered between pinned pages has a high
+   score all the time.
+2. **kswapd, on every pass.** [S] `balance_pgdat()` ends with `wakeup_kcompactd(pgdat, pageblock_order, ...)` and
+   `kswapd_try_to_sleep()` with the order kswapd was woken for. At the wall kswapd runs continuously (README
+   sections 16, 53), so kcompactd is woken continuously with the page-block order, whatever we ask for.
+3. **High-order requests on our import path** [V unless marked]:
+   - `udmabuf_create`: four arrays of one pointer or offset per page, `kvmalloc_array`/`kvcalloc` with `GFP_KERNEL`:
+     a temporary `folios`, then `ubuf->folios`, `ubuf->offsets`, `ubuf->pinned_folios`. For a 64 MiB buffer (16,384
+     pages, the module's default `size_limit_mb = 64`) each is **131,072 bytes: an order-5 request** before
+     `kvmalloc` falls back to vmalloc ([S] `kmalloc_gfp_adjust`: above a page it adds `__GFP_NOWARN` and drops
+     direct reclaim unless `__GFP_RETRY_MAYFAIL`; the request can still wake kswapd, and through it kcompactd).
+     `vmap_udmabuf` makes a fifth. For a 2 MiB buffer the arrays are 4 KiB: order 0.
+   - amdgpu's import: `ttm_sg_tt_alloc_page_directory`: `kvcalloc(num_pages, sizeof(*ttm->dma_address), GFP_KERNEL)`,
+     again 131,072 bytes per 64 MiB BO (local `ttm_tt.c:138`).
+   - `sg_alloc_table(sg, pagecount, GFP_KERNEL)` per buffer: chained page-sized pieces, order 0 [I].
+   - GPU-owned memory (page tables of the GPU VM, the driver's buffers): `__ttm_pool_alloc` starts at
+     `MAX_PAGE_ORDER` and walks down; for order > 0 it adds `__GFP_NORETRY | __GFP_NOWARN | __GFP_NOMEMALLOC`, and
+     above the device's "beneficial order" it drops direct reclaim (local `ttm_pool.c:149–158, 738`). Every miss
+     at a high order can wake kswapd.
+   - Pinning: [S] `memfd_pin_folios()` runs `check_and_migrate_movable_folios()` in a retry loop: folios that may not
+     be pinned long-term (ZONE_MOVABLE, CMA) are migrated first. The box has no CMA (`CmaTotal 0`, section 50's
+     snapshot); whether it has a movable zone is not known [TODO(verify): /proc/zoneinfo].
+4. **THP**: `enabled` is madvise, shmem never, `AnonHugePages 0` in every snapshot: nothing asks on our behalf [M
+   for the settings and the zero; that no library madvises is not checked].
+
+**Reading [I].** Two of the three sources need nothing from us: with 12 GiB pinned and unmovable, the huge-page
+fragmentation score is high for good, so the proactive thread and every kswapd pass send kcompactd to scan for
+pages it cannot move. That also fits the growth with boot age: each emulator start pins 12 GiB in a new pattern, the
+free pages left between runs are scattered over more page blocks, and the scans get longer for the same result.
+Our own part is the order-5 arrays: with imports made 2 MiB at a time, merged into 64 MiB buffers later and cut
+again by the orphan release, a run makes thousands of them (two to five per buffer per cycle). They do not cause
+the scanning, but each can start one.
+
+**How to tell them apart, read-only** (no root beyond what the sampler already has): per phase, the deltas of
+`/proc/vmstat` `compact_daemon_wake`, `compact_daemon_migrate_scanned`, `compact_daemon_free_scanned`,
+`compact_stall`, `compact_fail`, `compact_success`, `pgmigrate_success`/`_fail`, `kswapd_low_wmark_hit_quickly`,
+`pageoutrun`; `/proc/buddyinfo` at the phase's start and end (free blocks of order 9 and above); the value of
+`/proc/sys/vm/compaction_proactiveness`; kcompactd0's and kswapd0's CPU as exp 0415 already samples. A run of the
+shared build with the merge pass off (2 MiB buffers only, if a switch exists: TODO(verify)) against one with it on
+separates our arrays from the rest.
+
+**What could change, and who decides.**
+- `vm.compaction_proactiveness = 0` for the time of a play removes source 1. It is a system-wide setting: **his
+  decision and his command**, not ours (no sysctl changes by a session). The cheapest experiment there is: one
+  value, undone by writing 20 back.
+- Our path: make each heap's buffers **once, at their final size** when the title maps the heap, instead of
+  2 MiB → merge → cut. Fewer order-5 requests and far fewer create/import/free cycles; but "final size at map
+  time" is R1, which pins what is never written (section 53). With option B's read-only cover the two fit
+  together; not before.
+- A hugetlb memfd (udmabuf accepts it: `check_memfd_seals` allows `is_file_hugepages`) would end fragmentation for
+  the guest's memory, at the price of 12 GiB of huge pages reserved up front by the system and never swappable:
+  his decision too, and the opposite of what the wall needs. Not proposed.
+
 ## Verdict
 
+- **Compaction (section 58, sources only):** kcompactd is driven by the kernel's own proactive compaction and by every
+  kswapd pass once 12 GiB is pinned; our import adds order-5 array requests per 64 MiB buffer on every create,
+  merge and cut. The first is a system setting that only the maintainer can change; ours needs buffers made once.
+- **The 12,800 MiB offer (section 57):** the recorded deaths at 12,460–12,800 are ours (the AMM auto pool's refused
+  borrow), the start deaths at 12,288 and below were never read; all predate exp 0413's set-buffer guard. Measured
+  gain at 12,800: 190–220 MiB of GTT, not 1 GiB. A catcher naming the first failing memory call is proposed, not built.
 - **Without the learned file on the shared build (section 56):** 15 minutes of scripted play, no fault, nothing the
   catcher would have learned, 25.8 flips/s. The route does not need the file; his own play is not covered by this.
 - **E1 (section 55):** on gfx1013 a shader's read of a PRT page and of a read-only page gives zeros with no fault; a

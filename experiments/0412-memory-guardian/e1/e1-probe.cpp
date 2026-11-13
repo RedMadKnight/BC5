@@ -205,9 +205,9 @@ Job run(Gpu &g, amdgpu_context_handle ctx, Buf &cmd, const std::vector<std::uint
     // untouched and a buffer cleared by the CPU came back holding the earlier clear's value). Why the rewrite was
     // not seen is not known; a fresh buffer per job avoids the question.
     (void)cmd;
-    static Buf fresh[16];
+    static Buf fresh[32];
     static int used = 0;
-    if (used >= 16 || !make(g, fresh[used], "cmd+", 4096, AMDGPU_GEM_DOMAIN_GTT,
+    if (used >= 32 || !make(g, fresh[used], "cmd+", 4096, AMDGPU_GEM_DOMAIN_GTT,
                             AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_WRITEABLE | AMDGPU_VM_PAGE_EXECUTABLE)) {
         std::printf("job %s: no command buffer\n", what);
         j.rc = -1;
@@ -331,6 +331,44 @@ int submit(const std::string &node, int which) {
             std::printf("\n");
         }
         break;
+    case 6: {
+        // Case 4 again, measuring what case 4 could not (the tool slept 15 s there): how soon after the hung job's
+        // fence returns does a NEW context on the same device run a job? Tried at once and then every 100 ms, 12 tries.
+        // Each try is one clear of `real` in a context of its own; the reset state of the old context is printed too.
+        const auto tf = std::chrono::steady_clock::now();
+        first = run(g, ctx, cmd, clear_ib(sh_clear.va, zero.va), bos, "clear zero(read-only)");
+        const double hung_ms = ms_since(tf);
+        fault_line(g, "after the job");
+        if (first.rc == 0 && first.expired) {
+            std::printf("case 6: the write to the read-only page COMPLETED (not case 4's result); nothing more is tried\n");
+            return 3;
+        }
+        const auto t0 = std::chrono::steady_clock::now();
+        int ok_at = -1;
+        for (int i = 0; i < 12 && ok_at < 0; ++i) {
+            std::uint32_t state = 0, hangs = 0;
+            const int qrc = amdgpu_cs_query_reset_state(ctx, &state, &hangs);
+            amdgpu_context_handle c2 = nullptr;
+            const int crc = amdgpu_cs_ctx_create(g.dev, &c2);
+            std::printf("try %d at +%.0f ms after the hung fence returned (%.0f ms after its submit): old context rc %d state %u hangs %u; new context rc %d\n",
+                        i, ms_since(t0), hung_ms + ms_since(t0), qrc, state, hangs, crc);
+            if (crc == 0) {
+                std::memset(real.cpu, 0x5A, 65536);
+                const Job a = run(g, c2, cmd, clear_ib(sh_clear.va, real.va), bos, "readiness: clear real");
+                const auto *q = static_cast<const unsigned char *>(real.cpu);
+                const bool wrote = q[0] == 0x22 && q[kBytes - 1] == 0x22;
+                std::printf("try %d: %s at +%.0f ms\n", i, a.rc == 0 && a.expired && wrote ? "THE NEW CONTEXT RAN A JOB" : "not yet", ms_since(t0));
+                if (a.rc == 0 && a.expired && wrote) ok_at = i;
+                amdgpu_cs_ctx_free(c2);
+            }
+            std::fflush(stdout);
+            if (ok_at < 0) std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+        fault_line(g, "at the end");
+        show(zero);
+        std::printf("case 6: %s\n", ok_at >= 0 ? "a new context was usable (see the try's time)" : "NO NEW CONTEXT RAN A JOB IN 12 TRIES");
+        return ok_at >= 0 ? 2 : 4;
+    }
     default: std::fprintf(stderr, "no such case\n"); return 1;
     }
     const bool done = first.rc == 0 && first.expired;
@@ -399,7 +437,7 @@ int main(int argc, char **argv) {
         }
     }
     if (!prefix.empty()) return dump(prefix);
-    if (!do_submit || which < 0 || which > 5) {
+    if (!do_submit || which < 0 || which > 6) {
         std::puts("e1-probe: nothing done without --submit --case 0..4 (or --dump-ib <prefix>)");
         return 0;
     }
