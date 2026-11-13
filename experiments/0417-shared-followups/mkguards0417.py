@@ -37,5 +37,10 @@ new = b"""	if (!g_dev) return; // exp 0412 (tag nl412): no learned file
        else b"=0 makes no guard (the full nl412 variant's behaviour); unset: the guards of exp 0037.", cond)
 assert s.count(old) == 1
 s = s.replace(old, new)
+# exp 0412's once-only journal line said the guard "stays"; with the switch that is true only by default (its author's note)
+old = b"the 2 MiB zero guard behind each eager heap stays; a GPU fault"
+new = b"the 2 MiB zero guard behind each eager heap stays unless BC5_DIRECT_HEAP_GUARDS=0 (exp 0417; stderr says which); a GPU fault"
+assert s.count(old) == 1
+s = s.replace(old, new)
 open(dst, "wb").write(s)
 print("guards %s -> %s (%s)" % (md5[:8], hashlib.md5(s).hexdigest()[:8], "default off" if default_off else "default on"))
