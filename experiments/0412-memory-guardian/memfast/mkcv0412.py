@@ -53,10 +53,10 @@ def unit(src, out):
 def backend(src, out):
     p = os.path.join(src, "src/direct.cpp")
     s = open(p, "rb").read()
-    assert b"\r" not in s and b"map_shared_over" in s and b"tag cv412" not in s
+    assert b"\r" not in s and b"tag k1r412" in s and b"tag cv412" not in s
     s = once(s, b"    std::uint32_t id = 0;\n    amdgpu_bo_handle bo = nullptr;\n};\n",
              b"    std::uint32_t id = 0;\n    amdgpu_bo_handle bo = nullptr;\n    bool readonly = false; // exp 0412 (tag cv412): mapped readable only (a K1r cover)\n};\n")
-    s = once(s, b"SharedMap{gpu_va, size, bo_offset, id, b->bo}", b"SharedMap{gpu_va, size, bo_offset, id, b->bo, readonly}", 2)
+    s = once(s, b"SharedMap{gpu_va, size, bo_offset, id, b->bo}", b"SharedMap{gpu_va, size, bo_offset, id, b->bo, readonly}")
     s = once(s, b"out.push_back({m.va, m.size, false, true});", b"out.push_back({m.va, m.size, m.readonly, true});")
     s = once(s, b"out->push_back({m.va, m.size, false, true});", b"out->push_back({m.va, m.size, m.readonly, true});")
     open(os.path.join(out, "src/direct.cpp"), "wb").write(s)

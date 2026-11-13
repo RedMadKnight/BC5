@@ -272,7 +272,7 @@ def backend(src, out):
     for rel, fn in (("include/bc5/direct.hpp", lambda s: once(s, b"    void *code_area();\n", b"    void *code_area();\n" + HPP)),
                     ("src/direct.cpp", backend_cpp)):
         s = open(os.path.join(src, rel), "rb").read()
-        assert b"\r" not in s and b"tag pr412" not in s and b"map_shared_over" in s, "refused: not the backend after mkk1r0412.py backend, or already edited"
+        assert b"\r" not in s and b"tag pr412" not in s and b"tag k1r412" in s, "refused: not the backend after mkk1r0412.py backend, or already edited"
         s = fn(s)
         open(os.path.join(out, rel), "wb").write(s)
         print(f"{rel} {hashlib.md5(s).hexdigest()}")

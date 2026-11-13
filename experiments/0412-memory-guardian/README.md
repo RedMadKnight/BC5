@@ -3585,6 +3585,24 @@ What is left of this experiment's words in that unit:
 Not done: nothing of this is compiled or run; the maintainer's shortcut still runs g412zd (be507cd5) with its
 explicit words.
 
+### 77. Form 4 for candidate E: the replace form removed; the wall's first measurement joins E's walk arm (2026-11-13 evening, laptop; not compiled)
+
+The top: "K1R_REPLACE: usun, jesli nic go nie czyta poza testem". Nothing read it but run k1rg (section 68), where
+it was never shown faster. Removed from `mkk1r0412.py`: the switch, `k1r412_replace_on`, the kept-covers list, the
+drop pass's exception, and in the backend `Device::map_shared_over`; `k1r412_map` is now one line (a cover read-only,
+anything else as before). `mkcv0412.py` and `mkpr0412.py` follow (their marker of the k1r backend is the tag now).
+The chain on B's unit 8126c0aa: mkk1r 496a339c, mkwa 3e5a6851, mkcv 3732021b, mkk1f dcb7aa43, mkkl **9a54eaa4**
+(48 lines from form 3's 2824caf7); backend direct.hpp e96e5c73, direct.cpp 28100ce5. `mk0412ze.sh` and
+`kit-ze.sha256` follow. Section 76's table loses the `BC5_GUARD_K1R_REPLACE` row. Not compiled: this form changes
+the backend, so it gets a private build and the two arms before E goes anywhere.
+
+The wall's first measurement (PLAN-memory-wall.md, step 1) rides on E's walk arm, by the top's order, with these
+words: `BC5_DIRECT_ZEROSCAN_AT=<five times after gameplay starts>` and `BC5_DIRECT_ZERO_NAMES=<the launcher's
+BC5_DIRECT_EAGER_NAMES list>` (the scan reads only eager views of the named heaps and journals, per heap and scan,
+"zero now" and "zero in all N scans": the last line per heap is B's floor on that route), plus one `snap0412.sh`
+with the emulator's `fdinfo` near the end for the 555 MiB of host buffers. Log only; no skip, no list is used. No
+arm with a GPU write risk is prepared: that waits for the number and for his word.
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over
