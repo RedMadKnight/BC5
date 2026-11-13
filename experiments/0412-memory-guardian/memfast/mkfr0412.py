@@ -176,6 +176,9 @@ static void fr412_copy(const std::string& from, const std::string& to, long tail
 		             sg412::verdict(sg), sg.ops_at_request, sg.dirty_at_request, sg.last_op_age_ms, sg.waited_ms, sg.ops_left, sg.dirty_left, sg.held,
 		             sg_sync == 0 ? "done" : (sg_sync == -2 ? "not needed (no save directory was mounted)" : "FAILED"));
 		std::fprintf(f, "the capture directory of this run (the whole journal, the dumped buffers of the timed-out jobs): %s\\n", g_dump_dir.empty() ? "(none: logging was off)" : g_dump_dir.c_str());
+		std::fprintf(f, "the timed-out job's own buffer: %s\\n", BC5_DIAG_ENV("BC5_DIRECT_TIMEOUT_PROBE") != nullptr
+		                                                              ? "dumped in the capture directory as ib-timeout-<n>-<kind>-<dwords>.bin, with the probe's summary in the journal (BC5_DIRECT_TIMEOUT_PROBE was set)"
+		                                                              : "NOT KEPT: BC5_DIRECT_TIMEOUT_PROBE was not set in this run, so which packet the GPU was in cannot be read afterwards (the buffer is kept only with that variable: it costs a copy of every buffer)");
 		std::fprintf(f, "\\nin this directory: journal-tail.txt (the probe's summary of the timed-out jobs, the last submissions, the ledger, the frame lines), layout-views.txt, layout-buffers.txt,\\n"
 		                "layout-mappings.txt, meminfo.txt, pressure.txt, environment.txt (every BC5_* and KYTY_* variable), process.txt.\\n");
 		std::fprintf(f, "\\nNOT known to the emulator, added by the launcher when it can (dmesg.txt, build.txt): the kernel's own fault lines (client, RW, the ring), the devcoredump's path, the binary's md5.\\n"
