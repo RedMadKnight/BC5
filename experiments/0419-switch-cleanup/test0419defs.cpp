@@ -23,10 +23,16 @@ static const char* bc5_test_getenv(const char* n) {
 	return test_getenv(n);
 }
 } // namespace std
+static int test_unsetenv(const char* n) {
+	g_env.erase(n);
+	return 0;
+}
 #define setenv test_setenv
+#define unsetenv test_unsetenv
 #define getenv bc5_test_getenv
 #include "switch_defaults.hpp"
 #undef getenv
+#undef unsetenv
 #undef setenv
 
 static int g_fail = 0;
@@ -42,6 +48,8 @@ int main(int argc, char** argv) {
 	if (argc > 1 && std::strcmp(argv[1], "table") == 0) {
 		for (const Default* d = kFixes; d->name != nullptr; d++) std::printf("* %s %s\n", d->name, d->value);
 		for (const Default* d = kDefaults; d->name != nullptr; d++) std::printf("* %s %s\n", d->name, d->value);
+		for (const Default* d = kSoft; d->name != nullptr; d++) std::printf("* %s %s\n", d->name, d->value);
+		for (const char* const* n = kIgnored; *n != nullptr; n++) std::printf("- %s (ignored)\n", *n);
 		for (const TitleDefault* d = kTitleDefaults; d->name != nullptr; d++) std::printf("%s %s %s\n", d->title, d->name, d->value);
 		return 0;
 	}
@@ -81,19 +89,39 @@ int main(int argc, char** argv) {
 	}
 	expect("no title word in the general tables", !both);
 	bool chain = false, mode = false;
-	for (const Default* d = kDefaults; d->name != nullptr; d++) {
+	for (const Default* d = kSoft; d->name != nullptr; d++) {
 		chain = chain || (std::strcmp(d->name, "BC5_DIRECT_CHAIN") == 0 && std::strcmp(d->value, "2") == 0);
 		mode  = mode || (std::strcmp(d->name, "BC5_GC_MODE") == 0 && std::strcmp(d->value, "direct") == 0);
+		for (const TitleDefault* t = kTitleDefaults; t->name != nullptr; t++) both = both || std::strcmp(d->name, t->name) == 0;
 	}
-	expect("CHAIN=2 and GC_MODE=direct are general", chain && mode);
-	// Apply: KYTY_BC5_SWITCH_DEFAULTS=0 keeps the fixes and skips the rest
+	expect("CHAIN=2 and GC_MODE=direct are general, with their option", chain && mode && !both);
+	// Apply: the fixes and the long-standing defaults are forced, the ignored words are removed, the soft ones yield
 	g_env.clear();
-	g_env["KYTY_BC5_SWITCH_DEFAULTS"] = "0";
-	Apply();
-	expect("fixes with the table off", g_env.count("KYTY_BC5_APR_POSIX") == 1 && g_env.count("BC5_DIRECT_CHAIN") == 0);
-	g_env.clear();
+	g_env["KYTY_BC5_SWITCH_DEFAULTS"]  = "0";      // gone: ignored
+	g_env["KYTY_BC5_APR_POSIX"]        = "0";      // a fix: forced back
+	g_env["KYTY_BC5_FS_FIXES"]         = "0";      // a long-standing default: forced back
+	g_env["BC5_FAULT_RECORD"]          = "0";      // ignored: the read site sees "unset" (on)
+	g_env["KYTY_BC5_NP_SESSION_V2"]    = "0";
+	g_env["BC5_DIRECT_CHAIN"]          = "0";      // soft: the environment wins
+	g_env["BC5_DIRECT_JOURNAL_QUIET"]  = "0";      // soft
+	g_env["KYTY_BC5_SOMETHING_ELSE"]   = "kept";   // not ours
 	Apply(); // no /proc/self/cmdline here, or no --game: no title rows
-	expect("defaults", g_env["BC5_DIRECT_CHAIN"] == "2" && g_env.count("BC5_DIRECT_GPU_CHECK") == 0);
+	expect("the fix is forced", g_env["KYTY_BC5_APR_POSIX"] == "direct");
+	expect("the default is forced", g_env["KYTY_BC5_FS_FIXES"] == "1" && g_env["KYTY_BC5_AUDIO_FIXES"] == "set,room");
+	expect("the ignored words are gone", g_env.count("BC5_FAULT_RECORD") == 0 && g_env.count("KYTY_BC5_NP_SESSION_V2") == 0 &&
+	                                         g_env.count("KYTY_BC5_SWITCH_DEFAULTS") == 0);
+	expect("the soft defaults yield", g_env["BC5_DIRECT_CHAIN"] == "0" && g_env["BC5_DIRECT_JOURNAL_QUIET"] == "0" && g_env["BC5_GC_MODE"] == "direct");
+	expect("other words are untouched", g_env["KYTY_BC5_SOMETHING_ELSE"] == "kept");
+	expect("no title rows without a game", g_env.count("BC5_DIRECT_GPU_CHECK") == 0);
+	// no word is in two of the general tables or both forced and ignored
+	std::map<string, int> gen;
+	for (const Default* d = kFixes; d->name != nullptr; d++) gen[d->name]++;
+	for (const Default* d = kDefaults; d->name != nullptr; d++) gen[d->name]++;
+	for (const Default* d = kSoft; d->name != nullptr; d++) gen[d->name]++;
+	for (const char* const* n = kIgnored; *n != nullptr; n++) gen[*n]++;
+	bool dup = false;
+	for (const auto& [k, n]: gen) dup = dup || n != 1;
+	expect("no general word twice", !dup);
 	std::printf("test0419defs: %s\n", g_fail == 0 ? "all ok" : "FAILED");
 	return g_fail == 0 ? 0 : 1;
 }

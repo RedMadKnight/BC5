@@ -4,10 +4,11 @@
 #   k0a     ASTRO BOT 120 s, a fresh private save directory. The title table must NOT speak (no "exp 0419: title" line).
 #   k0x     ASTRO BOT 30 s on the kept bad save (wda/_SaveData.sm0), the fix off: the fault of exp 0417 section 15 is expected
 #   k0f     the same with KYTY_BC5_SAVEDATA_TRANSFER_FIX=1: the start must pass and name the transfer as NOT_FOUND
-#   k1off   the second title's walk to G+240, every new switch off: the control "all off = B" (K1R is off by default)
-#   k2cut   the cutscene arm (exp 0412's snapshot of 2026-11-13, slot 4, no input, 240 s), all off
+#   k1      the second title's walk to G+240 with E's defaults (K1R on since the maintainer's play of 2026-11-13)
+#   k1off   the same with BC5_GUARD_K1R=0 (the comparison with B itself is B's own run: exp 0417's g1ctl / sw1)
+#   k2cut   the cutscene arm (exp 0412's snapshot of 2026-11-13, slot 4, no input, 240 s), E's defaults
 #   k3l     lean 120 s
-# Each second-title run prints the title table's line (rows, taken, already set). K1r ON is exp 0412's own chain.
+# Each second-title run prints the title table's line (rows, taken, already set).
 # usage (on the box, detached): chk0419e.sh
 set -u
 ulimit -c 0
@@ -18,7 +19,7 @@ cd "$N" || exit 1
 PADS=()
 padstop() { [ ${#PADS[@]} = 0 ] || kill "${PADS[@]}" 2> /dev/null; PADS=(); }
 fin() { padstop; chain_release; }
-chain_claim "exp 0419 candidate E, private: ASTRO BOT (3 starts), the second title walk + cutscene arm with all new switches off, lean" 35 || { echo "chk0419e ended $(date +%T): NOT STARTED"; exit 1; }
+chain_claim "exp 0419 candidate E, private: ASTRO BOT (3 starts), the second title walk twice + cutscene arm, lean" 45 || { echo "chk0419e ended $(date +%T): NOT STARTED"; exit 1; }
 trap fin EXIT
 recs() { find "$FR" -mindepth 1 -maxdepth 1 -type d -newermt "@$1" 2> /dev/null | wc -l; }
 BN=$P/build-normal/src/kyty_emulator; BL=$P/build-lean/src/kyty_emulator; SN=$W/kytyplus-build/src/kyty_emulator
@@ -73,8 +74,9 @@ case "$line" in *"PASS: ran 30 s"*"crash lines 0"*) echo "k0f: the start PASSES 
 back
 [ "$KERN" = 0 ] || { echo "chk0419e ended $(date +%T): STOPPED (a kernel line in an ASTRO BOT start)"; exit 1; }
 title() { echo "$1 title table: $(grep -a 'exp 0419: title' "$R/$1-play.log" 2> /dev/null | head -1 | cut -c1-160)"; }
-second k1off "$BN" "$MN"; title k1off
-[ "$PADN" = 0 ] || echo "k1off: VOID as a measurement, a foreign pad key"
+second k1 "$BN" "$MN"; title k1
+[ "$PADN" = 0 ] || echo "k1: VOID as a measurement, a foreign pad key"
+if [ "$KERN" = 0 ]; then second k1off "$BN" "$MN" BC5_GUARD_K1R=0; title k1off; fi
 if [ "$KERN" = 0 ]; then second k2cut "$BN" "$MN" N_SAVES=$HOME/bc5-data/saves/PPSA03671-20261113-0914-cutscene N_SLOT=4 N_NOWALK=1; title k2cut; fi
 if [ "$KERN" = 0 ]; then
     line=$(P_BIN=$BL P_WANT=$ML P_WORDS=$N/words0413nz.txt bash ./start0413l.sh k3l lean 120 | grep "^k3l ")

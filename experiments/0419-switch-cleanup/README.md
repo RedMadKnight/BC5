@@ -135,22 +135,68 @@ cutscene arm with every new switch off (the control "all off = B"; each prints t
 K1r ON is exp 0412's own chain. Not covered: the new launchers (the private runner starts exp 0412's own launcher,
 which sets the words itself, so the table's "taken" path is exercised only for words that launcher lacks).
 
+### 9. After the maintainer's play on K1r (2026-11-13, "Przerywnik poszedł dalej. Był płynny. […] Pozbądź się zbędnych przełączników"): the options of the defaults go too; E's final form
+
+`mkhard0419.py`, in one place (`Apply()` of `src/bc5/switch_defaults.hpp`, at process start, before any read):
+
+| What | How | Words |
+|---|---|---|
+| the fixes and the long-standing defaults | forced (`setenv` with overwrite): the environment cannot change them | 35: the 5 of `kFixes`, 30 of `kDefaults` |
+| defaults that live at the read site | removed from the environment (`kIgnored`): the read always sees "unset" | 12: `BC5_FAULT_RECORD` (a GPU fault always ends the game with a record), `BC5_DIRECT_COMPUTE_RING`, `_IB_MAX_DW`, `_PREFIX_ALL`, `_SOFT_WAIT_MS`, `KYTY_BC5_AMM_SETBUFFER_GUARD`, `_APR_READAHEAD`, `_APR_SYNC`, `_AT9_VIBRATION`, `_NP_SESSION_V2`, `_PAD_PW_PROPS`, `_PAD_RUMBLE_FALLBACK` |
+| `KYTY_BC5_SWITCH_DEFAULTS` | gone (ignored); a control is a build of the older patch | 1 |
+| defaults that keep their option (`kSoft`) | `setenv` without overwrite | `BC5_DIRECT_JOURNAL_QUIET` (a launcher may ask for the full journal), `BC5_DIRECT_CHAIN`, `BC5_GC_MODE`, and `BC5_GUARD_K1R=1` (new default; its rules cv412 and kl412 act with it) |
+
+That is 48 of the inventory's 52 HARDEN rows. The other four are not behaviour defaults and stay: `JOURNAL_QUIET`
+(diagnostic) and `KYTY_BC5_NO_PAD_AUDIO`, `_PAD_SPEAKER`, `_PAUSE_ON_BACKGROUND` (the user's configuration). As with
+the deletes this is phase 1: the read sites and the old-path code behind them are still in the source and nothing can
+reach them; removing that code is the next patch change. Checked before forcing: no launcher, shortcut or script of
+experiments 0412-0418 sets one of these to another value, except closed test scripts that asked for the old path
+(`KYTY_BC5_APR_POSIX=0`, `_SWITCH_DEFAULTS=0`, `_AMM_SETBUFFER_GUARD=0`, `_FW_NET=0`, `_NP_SESSION_V2=0`,
+`_PHYSMAP_SORTED=verify`): on E those words do nothing, so such a control must be a build of B.
+`test0419defs.cpp` covers it (forced, ignored, soft, no word in two tables): all ok.
+
+**Candidate E, final form: patch e05212cc** (`tree-candidate-E-e05212cc.md5`), `switch_defaults.hpp` 448333f3;
+not compiled. Open with exp 0412: whether `BC5_GUARD_K1_FILTER` and `_LAZY_BY_DATA` are defaults too (asked; one rule
+for both titles).
+
+**The count.** The inventory had 266 names.
+
+| After E | n | |
+|---|---|---|
+| can no longer be set: deleted (refuted, superseded, answered) | 30 | 24 of the inventory's DELETE rows, exp 0415's 5 tuning words, and `BC5_DIRECT_LEARNED` (a launcher line read by nothing) |
+| can no longer be set: hardened (the tested behaviour, always) | 48 | above |
+| **still a word** | **188** | |
+| - diagnostics, traces, catchers, test hooks | 68 | off by default |
+| - no verdict | 63 | `undecided-list.md` + `KYTY_BC5_ANON_SYNC`, `BC5_GUARD_FORGET`, `BC5_GUARD_MAP_RULE`, `BC5_DIRECT_SPI_REQ_CTRL_PS`, `BC5_R3_SUBMIT_EOP_EVENT`, less exp 0415's four |
+| - one title's words, now in the code's table for that title or its data in the launcher | 42 | the inventory's 28 title-specific + 13 fixes with no ASTRO BOT run + `BC5_GUARD_LEARN_LOG` |
+| - configuration (paths, lists, user settings) | 13 | |
+| - general defaults that keep an option | 2 | `BC5_DIRECT_CHAIN`, `BC5_GC_MODE` |
+
+E adds 13 new words: exp 0412's K1r set (8, `BC5_GUARD_K1R` default on), exp 0417's save words (4, off) and
+`KYTY_BC5_TITLE_DEFAULTS`. So a build of E reads 201 names, of which 78 fewer than today can change its behaviour
+by accident. The next reductions are in the 63 without a verdict (each needs one run) and the 42 title words
+(each needs a run on ASTRO BOT to become general and then lose its option).
+
 ## Decisions for the maintainer
 
-1. D removes the recovery words and `alias_learn`. With `BC5_FAULT_RECORD=0` a GPU fault then goes on with no label
-   replay and no learned alias. Should `BC5_FAULT_RECORD` lose its `=0` too (a fault always ends the game with a record)?
-2. The fast9 and e10 shortcuts: change or retire them (they carry rejected words, and fast9 breaks with the new
-   launcher)? One shortcut per title would leave two.
-3. Install the new launchers together with D, or keep the old ones for one more round (they work on D)?
-4. `BC5_DIRECT_SHADOW_LABELS`' reading rule needs a change of the shared backend archive: with D, or later.
-5. `BC5_GUARD_FORGET` (kept), `BC5_GUARD_MAP_RULE` / `_PRT_BG` (kept, off), `BC5_DIRECT_SPI_REQ_CTRL_PS` (kept): each
-   waits for one run or for its owner.
+One "yes" covers the swap of E as a whole (the top session asks): both shared builds, the shared backend archive
+(exp 0412's two files), the launchers without the moved words (`play-pkg-0419.diff`, `play-astro-0419.diff`), and the
+desktop: one shortcut per title ("BC5 emulator" / "(lean)" through `play-any.sh`); "e10 menu", "0412 K1r test" and
+"Astro (0412 events cap)" carry words that E forces, ignores or has removed, so they become plain duplicates and go
+to the trash directory. Still his to say separately, because they are behaviour and not housekeeping:
+
+1. `BC5_GUARD_FORGET=10`, `BC5_DIRECT_LAZY_RELEASE=30,eager` + `BC5_GUARD_SPLIT=1`: in the title's table as today; each
+   needs one arm without it (exp 0412) before it is hardened or dropped.
+2. `BC5_DIRECT_SHADOW_LABELS`' reading rule (the backend) can ride on the archive change of this swap; it is not in E.
+3. E changes one line of `audio.cpp` (the reading rule of `KYTY_BC5_NO_PAD_AUDIO`), so by the rule of 2026-11-13 the
+   swap of E calls for one replug check; taking that line out of E avoids it.
 
 ## Verdict
 
-**Prepared, not built: candidate D (patch a4d49749) removes the option of 29 words, moves 47 launcher words into the
-code (2 general, 45 for the second title) and gives 15 words the one reading rule; the launchers without those words
-are made and not installed.** The generators' anchors all matched and the two laptop tests pass; the first compile
-is the private build on the box, then both titles (the title's table must show its line for the second title and no
-line for ASTRO BOT), then a play by the maintainer before any swap. 52 options wait for the swap after that; 62
-words have no verdict.
+**Prepared, not built: candidate E (patch e05212cc) = B + exp 0412's K1r (default on, no probe) + the cleanup + exp
+0417's save fix. Of the 266 names, 78 can no longer be set (30 deleted, 48 hardened), 188 remain: 68 diagnostics,
+63 without a verdict, 42 one title's, 13 configuration, 2 general defaults with an option.** 47 launcher words moved
+into the code (2 general, 45 for the second title) and 15 words got the one reading rule. Every generator's anchors
+matched and the laptop tests pass; the first compile is the private build on the box (`p0419e.sh`), then
+`chk0419e.sh` on both titles, then the swap on the maintainer's one "yes". The removal of the dead code behind the
+78 words is the patch change after that.
