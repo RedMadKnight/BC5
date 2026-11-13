@@ -1,0 +1,45 @@
+normal: d85d86176e3eb1cbe7b9f703809fc104, warnings 282
+gate back: #define KYTY_BC5_SETBUFFER_TEST_HOOK 0; the private lean build is still patch 4651d1d3's (not rebuilt)
+2026-11-13 07:08:17 done; normal d85d8617 (WITH the test hook: private only), lean not rebuilt
+lock released
+0417 binary (private, with the hook): normal d85d86176e3eb1cbe7b9f703809fc104
+n=0: h1x0 (astro) PASS: ran 30 s; RssAnon at the end 205852 kB; kernel lines 0, crash lines 0; guard lines 1
+h1x lines: exp 0412 physmap sorted: on (tag ps412)
+exp 0417 hook: KYTY_BC5_AMM_SETBUFFER_TEST mapped on set-buffer call 1 (test va 0x8ff0000000)
+exp 0417 hook: call 1 (cb 0x0000000300a82c40 va 0x0000000300a82820 len 0x400 a3 0x300a82c60 a4 0x9088e4e98): a4 forced to -1; the target is committed
+exp 0413: KYTY_BC5_AMM_SETBUFFER_GUARD on
+exp 0413: set-buffer with the map signature on mapped memory (cb 0x0000000300a82c40 va 0x0000000300a82820 len 0x400 a3 0x300a82c60 a4 0xffffffffffffffff a5 0x55e1e6143730): taken as the buffer flavour, nothing mapped
+exp 0415: APR reads by pread with POSIX_FADV_RANDOM, straight into the guest (tag ls415b)
+exp 0412 events: pending cap 64 (0: none), log off (tag ev412)
+n=0: h2x0 (astro) PASS: ran 30 s; RssAnon at the end 201932 kB; kernel lines 0, crash lines 0; guard lines 1
+h2x lines: exp 0412 physmap sorted: on (tag ps412)
+exp 0417 hook: KYTY_BC5_AMM_SETBUFFER_TEST mapped on set-buffer call 1 (test va 0x8ff0000000)
+exp 0417 hook: call 1 (cb 0x0000000300a80bc0 va 0x0000000300a807a0 len 0x400 a3 0x300a80be0 a4 0x9088e4e98): a4 forced to -1; the target is committed
+exp 0413: KYTY_BC5_AMM_SETBUFFER_GUARD on
+exp 0413: set-buffer with the map signature on mapped memory (cb 0x0000000300a80bc0 va 0x0000000300a807a0 len 0x400 a3 0x300a80be0 a4 0xffffffffffffffff a5 0x55be2a5b0730): taken as the buffer flavour, nothing mapped
+exp 0415: APR reads by pread with POSIX_FADV_RANDOM, straight into the guest (tag ls415b)
+exp 0412 events: pending cap 64 (0: none), log off (tag ev412)
+n=0: h3x0 (astro) PASS: ran 30 s; RssAnon at the end 208768 kB; kernel lines 0, crash lines 0; guard lines 0
+h3x lines: exp 0412 physmap sorted: on (tag ps412)
+exp 0417 hook: KYTY_BC5_AMM_SETBUFFER_TEST unmapped on set-buffer call 1 (test va 0x8ff0000000)
+exp 0413: KYTY_BC5_AMM_SETBUFFER_GUARD on
+exp 0416: set-buffer with the map signature that the guard did not take (target not mapped, or guard off) (cb 0x0000555a991fc110 va 0x0000008ff0000000 len 0x4000 a3 0x1 a4 0xffffffffffffffff a5 0x0): taken as the buffer flavour (K
+exp 0417 hook: before call 1, a synthetic set-buffer with the map signature on va 0x8ff0000000 len 0x4000 returned 0x00000000; committed before no, after no (nothing mapped)
+exp 0415: APR reads by pread with POSIX_FADV_RANDOM, straight into the guest (tag ls415b)
+exp 0412 events: pending cap 64 (0: none), log off (tag ev412)
+n=0: h4x0 (astro) PASS: ran 30 s; RssAnon at the end 204516 kB; kernel lines 0, crash lines 0; guard lines 0
+h4x lines: exp 0412 physmap sorted: on (tag ps412)
+exp 0417 hook: KYTY_BC5_AMM_SETBUFFER_TEST unmapped on set-buffer call 1 (test va 0x8ff0000000)
+exp 0413: KYTY_BC5_AMM_SETBUFFER_GUARD on
+exp 0417 hook: before call 1, a synthetic set-buffer with the map signature on va 0x8ff0000000 len 0x4000 returned 0x00000000; committed before no, after YES (mapped)
+exp 0415: APR reads by pread with POSIX_FADV_RANDOM, straight into the guest (tag ls415b)
+exp 0412 events: pending cap 64 (0: none), log off (tag ev412)
+n=0: h5x0 (astro) PASS: ran 30 s; RssAnon at the end 199248 kB; kernel lines 0, crash lines 0; guard lines 0
+h5x lines: exp 0412 physmap sorted: on (tag ps412)
+exp 0415: APR reads by pread with POSIX_FADV_RANDOM, straight into the guest (tag ls415b)
+exp 0412 events: pending cap 64 (0: none), log off (tag ev412)
+n=0: h6x0 (astro) PASS: ran 30 s; RssAnon at the end 209832 kB; kernel lines 0, crash lines 0; guard lines 0
+h6x lines: exp 0412 physmap sorted: on (tag ps412)
+exp 0415: APR reads by pread with POSIX_FADV_RANDOM, straight into the guest (tag ls415b)
+exp 0412 events: pending cap 64 (0: none), log off (tag ev412)
+chk0417 ended 07:12:30: all six starts made
