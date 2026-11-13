@@ -2924,6 +2924,20 @@ written and the title waits on them for ever. That is a defect of ours in the re
 not find the lost job's writes), apart from the mapping question: with it, **every** recovered fault in such a
 frame freezes the title, whatever caused the fault.
 
+**Why e11 saw 0 of the 14 label writes: read in the code** [C], and the fix candidate (tag rl412, not built).
+`m11_keep_lost()` copies the list of pending label writes at a timeout; it is called once for every timed-out job
+(the unit's completion loop), and each call is followed by `forget_label_writes(..., all)`, which empties the list.
+Here two jobs timed out in the same hang (#229185 and #229186): the first call kept both jobs' writes, the forget
+emptied the pending list, and the **second call copied the empty list over what had been kept**. The reopen then
+found "0 label writes of the lost jobs" and wrote nothing. Every one of the four hangs on record with a draw and a
+compute buffer timed out together (F260, sections 38 and 53, this one) goes through the same two calls [I: only this
+one has e11's line]. `memfast/rlabels0412.inc`, `mkrl0412.py`: **`BC5_DIRECT_RESET_LABELS_ADD=1`** (default off): a
+second keep for the same reopen adds to the kept list instead of replacing it, and journals what it did. CPU test
+`rlabels0412.cpp`: 4,970 of 4,970 on the laptop (the two-timeout case with the switch off reproduces the empty
+list; on, the first call's writes survive). On the shared unit a81efd2c the edit gives `1ae28d7c`; on nl412's
+keep-guards unit `0878903e`. Whether the title then goes on is not known: the labels are written, the lost job's
+work is not done (design section 8.2's question); it is the smallest thing between "a fault" and "a freeze".
+
 **What kind of miss this is, and its rule** [I]. The GPU **read** (a shader's data fetch) a 2 MiB chunk of a heap
 that the title mapped and the CPU had never written. Its content is zeros: the read was legitimate and its right
 answer was zero. The learned window answered it by pinning 96 MiB around the address for ever; "import at bind
