@@ -41,7 +41,10 @@ SECS=${N_CAP:-$((PLAY + 260))}; FUSE=${N_FUSE:-12400 1024}
 [ "$SECS" -ge 120 ] && [ "$SECS" -le 3000 ] || { echo "the cap is 120-3000 s"; exit 1; }
 BIN=${N_EMU:-$X/bin/kyty_emulator}; LAUNCH_SRC=$X/play-pkg-0412.sh; LAUNCH=$N/play-pkg-0412n.sh; LEARN_SRC=$W/direct-learned-pkg.txt; LEARN=$N/direct-learned-pkg.txt
 # N_EMU=<binary>: a build beside the one in place (the launcher takes it through BC5_EMU, exp 0177); it must be the one in built-w.md5.
-if [ -n "${N_EMU:-}" ]; then
+if [ -n "${N_EMU:-}" ] && [ -n "${N_SHARED_MD5:-}" ]; then
+  # exp 0412 section 56: the SHARED normal build, read only, named with its md5 by the caller (N_SHARED_MD5=<first 8 hex>).
+  [ "$BIN" = "$W/kytyplus-build/src/kyty_emulator" ] && [ "$(m "$BIN" | cut -c1-8)" = "$N_SHARED_MD5" ] || { echo "N_EMU is not the shared build $N_SHARED_MD5: not started"; exit 1; }
+elif [ -n "${N_EMU:-}" ]; then
   NS_=$(basename "$(dirname "$BIN")"); NS_=${NS_#bin-}   # bin-w -> w, bin-x -> x (exp 0412 section 53)
   case "$NS_" in [a-z]) ;; *) echo "N_EMU is not a bin-<letter> build: not started"; exit 1 ;; esac
   grep -qxF "$(m "$BIN")  bin-$NS_/kyty_emulator" "$X/built-$NS_.md5" && [ "$BIN" = "$X/bin-$NS_/kyty_emulator" ] || { echo "N_EMU is not the build in built-$NS_.md5: not started"; exit 1; }

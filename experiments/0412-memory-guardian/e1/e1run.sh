@@ -23,7 +23,7 @@ case "${1:-}" in
     echo "built" ;;
   case)
     N=${2:?a case 0..4}
-    case "$N" in [0-4]) ;; *) die "case 0..4" ;; esac
+    case "$N" in [0-5]) ;; *) die "case 0..5" ;; esac
     [ -x "$E1/e1-probe" ] || die "not built"
     [ -e "$R/case-$N.out" ] && die "case $N has been run (raw/case-$N.out); it is not run twice"
     pgrep '^kyty_emulator' > /dev/null && die "an emulator runs"

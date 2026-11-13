@@ -1,0 +1,3 @@
+clear IB 80 dwords, copy IB 80 dwords; they differ in [63] 22222222->00000000 [64] 22222222->00100003 [65] 22222222->00000400 [66] 22222222->1104bfac (4 dwords)
+wrote 80 dwords to /home/kjaniszewski/bc5-work/exp0412/e1/raw/ib-clear.bin
+wrote 80 dwords to /home/kjaniszewski/bc5-work/exp0412/e1/raw/ib-copy.bin

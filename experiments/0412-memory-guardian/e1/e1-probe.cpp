@@ -200,21 +200,37 @@ struct Job {
 Job run(Gpu &g, amdgpu_context_handle ctx, Buf &cmd, const std::vector<std::uint32_t> &ib,
         const std::vector<amdgpu_bo_handle> &bos, const char *what) {
     Job j;
-    if (ib.empty() || ib.size() * 4 > cmd.size) {
+    // A command buffer of its own for every job, never reused. Cases 0 and 5 of 04:50-04:53 showed why: with one
+    // buffer rewritten between jobs the GPU ran the PREVIOUS job's dwords again (a "copy" left its destination
+    // untouched and a buffer cleared by the CPU came back holding the earlier clear's value). Why the rewrite was
+    // not seen is not known; a fresh buffer per job avoids the question.
+    (void)cmd;
+    static Buf fresh[16];
+    static int used = 0;
+    if (used >= 16 || !make(g, fresh[used], "cmd+", 4096, AMDGPU_GEM_DOMAIN_GTT,
+                            AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_WRITEABLE | AMDGPU_VM_PAGE_EXECUTABLE)) {
+        std::printf("job %s: no command buffer\n", what);
+        j.rc = -1;
+        return j;
+    }
+    Buf &own = fresh[used++];
+    if (ib.empty() || ib.size() * 4 > own.size) {
         std::printf("job %s: no IB\n", what);
         j.rc = -1;
         return j;
     }
-    std::memcpy(cmd.cpu, ib.data(), ib.size() * 4);
+    std::memset(own.cpu, 0, 4096);
+    std::memcpy(own.cpu, ib.data(), ib.size() * 4);
     amdgpu_bo_list_handle list = nullptr;
     std::vector<amdgpu_bo_handle> l = bos;
+    l.push_back(own.bo);
     j.rc = amdgpu_bo_list_create(g.dev, static_cast<std::uint32_t>(l.size()), l.data(), nullptr, &list);
     if (j.rc != 0) {
         std::printf("job %s: bo list rc %d\n", what, j.rc);
         return j;
     }
     amdgpu_cs_ib_info info{};
-    info.ib_mc_address = cmd.va;
+    info.ib_mc_address = own.va;
     info.size = static_cast<std::uint32_t>(ib.size());
     amdgpu_cs_request req{};
     req.ip_type = AMDGPU_HW_IP_GFX;
@@ -222,7 +238,9 @@ Job run(Gpu &g, amdgpu_context_handle ctx, Buf &cmd, const std::vector<std::uint
     req.resources = list;
     req.number_of_ibs = 1;
     req.ibs = &info;
-    std::printf("job %s: submitting %zu dwords\n", what, ib.size());
+    std::printf("job %s: submitting %zu dwords; user data 0x240.. %08x %08x %08x %08x | 0x244.. %08x %08x %08x %08x\n", what, ib.size(),
+                ib.size() > 66 ? ib[57] : 0, ib.size() > 66 ? ib[58] : 0, ib.size() > 66 ? ib[59] : 0, ib.size() > 66 ? ib[60] : 0,
+                ib.size() > 66 ? ib[63] : 0, ib.size() > 66 ? ib[64] : 0, ib.size() > 66 ? ib[65] : 0, ib.size() > 66 ? ib[66] : 0);
     std::fflush(stdout);
     const auto t0 = std::chrono::steady_clock::now();
     j.rc = amdgpu_cs_submit(ctx, 0, &req, 1);
@@ -298,10 +316,30 @@ int submit(const std::string &node, int which) {
     case 2: first = run(g, ctx, cmd, copy_ib(sh_copy.va, zero.va, out.va), bos, "copy zero(read-only) -> out"); break;
     case 3: first = run(g, ctx, cmd, clear_ib(sh_clear.va, prt_va), bos, "clear prt"); break;
     case 4: first = run(g, ctx, cmd, clear_ib(sh_clear.va, zero.va), bos, "clear zero(read-only)"); break;
+    case 5:
+        // A second control (the copy left `out` untouched in case 0): is `out` writable by the GPU at all (clear out),
+        // and does the copy program store anything in the other direction (copy out -> real)? Normal mappings only.
+        first = run(g, ctx, cmd, clear_ib(sh_clear.va, out.va), bos, "clear out");
+        show(out);
+        std::memset(out.cpu, 0xA5, 65536);
+        if (first.rc == 0 && first.expired) first = run(g, ctx, cmd, copy_ib(sh_copy.va, out.va, real.va), bos, "copy out -> real");
+        if (first.rc == 0 && first.expired) first = run(g, ctx, cmd, copy_ib(sh_copy.va, real.va, real.va + 32768), bos, "copy real -> real+32K");
+        {
+            const auto *q = static_cast<const unsigned char *>(real.cpu) + 32768;
+            std::printf("content real+32K: first 16 bytes");
+            for (int i = 0; i < 16; ++i) std::printf(" %02x", q[i]);
+            std::printf("\n");
+        }
+        break;
     default: std::fprintf(stderr, "no such case\n"); return 1;
     }
     const bool done = first.rc == 0 && first.expired;
+    // The control's first run (04:50) read `out` unchanged right after the copy's fence: read it at once and again
+    // 200 ms later, so that "not written" and "not written yet" can be told apart.
     fault_line(g, "after the job");
+    show(out);
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    std::printf("200 ms later:\n");
     show(real);
     show(out);
     show(zero);
@@ -361,7 +399,7 @@ int main(int argc, char **argv) {
         }
     }
     if (!prefix.empty()) return dump(prefix);
-    if (!do_submit || which < 0 || which > 4) {
+    if (!do_submit || which < 0 || which > 5) {
         std::puts("e1-probe: nothing done without --submit --case 0..4 (or --dump-ib <prefix>)");
         return 0;
     }

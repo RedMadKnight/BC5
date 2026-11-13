@@ -2523,8 +2523,61 @@ explains no reset failure.
 **So:** MAP_RULE and PRT_BG stay off and are not to be run together again until R2 has a test of its own away from
 the wall, and the orphan release under R1 is looked at (it should not have 1.6 GiB to cut).
 
+### 55. E1: what gfx1013 does at a page without backing (2026-11-13 04:50–04:57)
+
+On the maintainer's "zgoda" to the question that named raw GPU submission and a possible reboot; the top session's
+slot after the integration. Plan `E1-plan.md`; tool `e1/e1-probe.cpp` (binary `e0351ced` at the cases that count),
+runner `e1/e1run.sh`; one process and one lock line per case, the kernel log streamed. Kernel 7.2.15-ogc1.1, DRM
+3.64, uptime 4.7 h, no emulator, Plasma's shell running. Data `e1/raw/case-N.out`, `case-N.dmesg`,
+`e1/raw/e1-kernel-stream.txt`. Programs: the backend's gfx10 buffer-clear and IGT's gfx10 buffer-copy
+(`lib/amdgpu/amd_shaders.c:321-324` @ 9d4b6ef, MIT), 16 KiB a job, GFX ring.
+
+| case | job | result [M] | kernel lines |
+|---|---|---|---|
+| 0 control | clear `real`; copy `real` to `out` | both as written; fences 0.05 and 0.03 ms | none |
+| 1 PRT read | copy from a PRT page to `out` | **`out` all zero**; 0.05 ms; fault register empty | none |
+| 2 read-only read | copy from a page mapped readable only to `out` | `out` all zero | none |
+| 3 PRT write | clear a PRT page | completed in 0.05 ms; fault register empty; the follow-up clear and copy ran | **none: the write vanishes without a sign** |
+| 4 read-only write | clear a page mapped readable only | **the job never completes**: fence timeout at 2.03 s; `AMDGPU_INFO_GPUVM_FAULT` = address 0x100a02000, status 0x00741041; the read-only BO still all zero; context reset state 3; a new context ran clear and copy correctly afterwards | `[gfxhub] page fault` at 0x100a00000–0x100a03000 (client TCP, `PERMISSION_FAULTS: 0x4`, `RW: 0x1`), 2.03 s later `ring gfx_0.0.0 timeout`, `Ring gfx_0.0.0 reset succeeded` 0.1 ms after it, `device wedged, but no recovery needed` |
+
+No `reset failed`, no GPU reset, no reboot; `bc5-gpu-watch` armed and disarmed. A devcoredump of case 4 was saved
+(`~/bc5-data/captures/devcoredump/20261113-045658-devcd1.txt`; our own test job, still not committed).
+
+**A fault of the tool found by the control, and fixed before the cases that count.** The first two control runs
+(kept as `case-0-first.out`, `case-0-second.out`, and `case-5-first.out`) used one command buffer for all jobs,
+rewritten between them: the "copy" left its destination untouched, also 200 ms later, and in `case-5-first` a
+buffer the CPU had refilled came back holding the earlier clear's value: **the GPU ran the previous job's dwords
+again**. With a command buffer of its own for every job the control is right. Why a rewritten buffer was not seen
+is not known (TODO(verify); the direct path rotates its buffer slots, so it is not known to be exposed).
+
+**What it decides** (design section 7 and `DESIGN-learned-windows.md`):
+- **Reads are safe on both kinds** [M]: a shader's read of a PRT page and of a read-only page gives zeros with no
+  fault and no cost. A never-written page can be shown to the GPU with no memory behind it, as far as reads go.
+- **A PRT page swallows writes silently** [M]. R2 therefore must never lie under memory the title mapped and we
+  chose not to import: a GPU write there is lost and nothing says so (the zero skip's defect, section 48, in
+  another form). Under addresses the title did not map it is the console's behaviour (F257).
+- **A read-only page is a write detector** [M]: a GPU write to it is a named fault (the address and status are
+  readable from user space), the page is intact, and the price is that job and one ring reset, about 2 s here.
+  That is outcome (b) of the plan in its mild form: not a free detector, but a sound one: no garbage, no lost
+  write that goes unnoticed, the box survives (one sample; the reset is the one that has failed three times under
+  the title's load, F260 and sections 38 and 53).
+- So option B has its net [I]: never-written chunks under a view can be mapped **read-only onto one zero BO** instead
+  of being created and pinned (reads are right, since the file holds zeros there; no aliasing problem, since
+  nothing can be written into the shared zero page). A GPU write then faults with its address; the host imports
+  that chunk for real, reopens and goes on, exactly as the learned windows do today but with nothing remembered
+  and nothing pinned in advance. The first write to each such chunk costs a 2 s stall (14 s with today's recovery
+  code, which sleeps 12 s): how many chunks the GPU writes first is the number that decides whether that is
+  bearable; section 51's 768 MiB of never-written chunks under views is the upper bound of what it could save on
+  the route, section 39's 3,571 MiB of all-zero pages the bound if written-zero pages are counted in.
+- Not answered: the cost of a large PRT or read-only span in page tables; whether the ring reset succeeds under
+  the title's own load.
+
 ## Verdict
 
+- **E1 (section 55):** on gfx1013 a shader's read of a PRT page and of a read-only page gives zeros with no fault; a
+  write to a PRT page vanishes silently; a write to a read-only page is a named page fault that costs the job and
+  one recovered ring reset (2 s) and leaves the page intact. A read-only zero mapping is therefore a sound cover
+  for never-written memory; a PRT page is one only where the title mapped nothing.
 - **The rule's first test (sections 52, 53):** the scripted route needs none of the 81 learned windows (three runs,
   1,022 s, no fault; 246 MiB less pinned). "Pin every view whole" (R1) reaches the memory wall in the menu and is not
   runnable today. The arm with R1 and the PRT background hung the GPU without a page fault and the box rebooted;
