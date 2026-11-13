@@ -2873,8 +2873,52 @@ is and is named for what it is: a remembered alias.
 a search of `~/bc5-work/*.sh` and the desktop shows: TODO(verify) on the box before they move): `run-pkg.sh`,
 `play-pkg-exp0155.sh`, `lean-backup-play-pkg.sh`.
 
+### 62. His first play without the learned file: one fault, classified (2026-11-13 08:54–09:02; observed read-only)
+
+He started "BC5 emulator (0412 fast9 bez Plasmy)" himself; this session only watched (a `pgrep` every 10 s, then
+reads after the emulator had ended). Journal `~/bc5-data/captures/play-20261113-0854/gc/direct.log` (on the box; the
+two dumped buffers beside it are the title's and are not committed).
+
+[M]
+- The emulator had `BC5_EMU` = the shared build, `BC5_DIRECT_LEARNED=…/exp0412/learned-none.txt`,
+  `BC5_GUARD_LEARN_LOG=2`. The shell was stopped at 08:54:37 and started again at 09:02:01 by the lean watcher
+  (plasmashell 0 during the play, running after it): **the lean session's first real run worked**.
+- The play lasted 441 s and ended with exit 0. At the last ledger line (430 s): pinned direct 11,764 MiB, available
+  873 MiB, PSI full 0.7 %.
+- **One GPU fault, at 285.9 s**: address **0x1100000000**. The kernel: client SQC (data), `PERMISSION_FAULTS: 0x3`,
+  **`RW: 0x0`: a read**. Ring timeout 2.0 s later, `Ring gfx_0.0.0 reset succeeded`, the host's "reopen: ok", and
+  the play went on for 155 s more. Two submissions timed out together (a draw buffer of 32,485 dwords and a compute
+  buffer of 32,335), both passed by the operand filter with `unmapped 0`.
+- The catcher's line: **K1, under a BY-DATA view, chunk never written by the CPU**: view `AssetHeap Large` (direct,
+  by data; 604 of 816 MiB of that heap were pinned at the end), chunk not imported, no GPU mapping, a guest range
+  yes. The window it would once have learned, 0x10fe000000+96 MiB, is one of the old file's 81 lines (HANDOFF F779 and
+  F781 record it being learned): the file did cover this place; the scripted route never goes there.
+- The old learned file was not created again; nothing was added.
+
+**What kind of miss this is, and its rule** [I]. The GPU **read** (a shader's data fetch) a 2 MiB chunk of a heap
+that the title mapped and the CPU had never written. Its content is zeros: the read was legitimate and its right
+answer was zero. The learned window answered it by pinning 96 MiB around the address for ever; "import at bind
+time" (K1 as section 7 states it) does not fit either, because the address did not come from a register the host
+parses (the filter saw nothing unmapped): the shader computed it or took it from a table. This is the case E1
+measured: **a never-written chunk under a view can be mapped read-only onto the zero BO**: this read then returns
+zero with no fault and no pinned page (E1 case 2), and if the GPU ever writes there instead, the fault names it
+(E1 case 4). So the first real sample asks for exactly the cover of design section 8 (option B's read side), not for
+a window and not for a bind-time import. It also says what that cover must be under: views imported by data
+(`AssetHeap`, `InitAllocator`, the small heaps), chunk by chunk, switched to the real page when the CPU first writes
+(the `SEEK_DATA` pass already sees that).
+
+**The rule to build next** (kind "K1r", a read of a never-written chunk): in the mapping rebuild, every chunk under
+a non-eager view that is not imported is mapped **readable only** onto the shared zero BO; when the chunk gets
+data it is imported and the real mapping replaces the cover (the rebuild already does that order for the pin cap's
+cover, `guard0412_want`, which maps the same zero BO read-write today). A write fault there is journaled with its
+address and is then a K1 bind-time case. Behind a default-off switch first; its test is this very place in his
+play (his save, about 285 s in).
+
 ## Verdict
 
+- **His first play without the learned file (section 62):** 441 s, one GPU fault at 286 s, recovered: a shader READ of
+  a never-written chunk of `AssetHeap Large`. Its right answer was zero: the rule is a read-only zero cover over
+  never-written chunks of by-data heaps (E1's measured case), not a window. The lean session worked in real play.
 - **No learned windows any more (section 60, the maintainer's order):** his shortcut (fast9, the shared build) and the
   three shared launchers of the second title run with an empty learned file and the catcher that only logs; the
   old file is in the trash directory. A fault is now a bug report with an address and a kind.
