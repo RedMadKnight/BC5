@@ -1,0 +1,15 @@
+--- /c/Users/kjani/AppData/Local/Temp/claude/7e70d624f1bff3f5/43cd6eac-dc2c-49c1-b603-e5283be4d569/scratchpad/int/box19/play-astro.sh	2026-10-25 20:27:24.000000000 +0100
++++ /c/Users/kjani/AppData/Local/Temp/claude/7e70d624f1bff3f5/43cd6eac-dc2c-49c1-b603-e5283be4d569/scratchpad/int/l19/play-astro.sh	2026-11-13 16:54:51.257355800 +0100
+@@ -52,12 +52,10 @@
+ # by default, as for the second title. Measured with tools/scripts/astro-route.sh (AC0/AC1): the title's
+ # 60-fps cap with and without, audio clean, no hang; 8 against 2 seconds with a frame gap over 70 ms.
+ # BC5_DIRECT_CHAIN=0 turns them off.
+-export BC5_DIRECT_CHAIN=${BC5_DIRECT_CHAIN:-2}
+ # BC5 (2026-10-23, exps 0227-0229, F286/F287): APR read-ahead is on again, with the fix that leaves
+ # large and parallel-run loading buffers to the worker. The slow loads of 10-22/23 were the near-full
+ # drive (F286), not read-ahead; the fix keeps loads equal and speeds the cutscene clock-voice reads.
+ # KYTY_BC5_APR_READAHEAD=0 turns it off.
+-export KYTY_BC5_APR_READAHEAD=${KYTY_BC5_APR_READAHEAD:-4}
+ # Experiment 0301 (the maintainer asked, 2026-10-25): MangoHud is part of the emulator: it loads hidden and
+ # Emulation > MangoHud shows its hardware figures and the title's frame rate (saved per title in the input
+ # configuration). KYTY_BC5_MANGOHUD=0 keeps MangoHud out, =1 shows it from the start; KYTY_BC5_OSD_FPS=1 the

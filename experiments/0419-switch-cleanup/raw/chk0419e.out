@@ -1,0 +1,45 @@
+chain lock: exp 0417 | chain: exp 0419 candidate E, private: ASTRO BOT (3 starts), the second title walk twice + cutscene arm to its end, lean, the wall walk to G+560, until about 19:40 | token 202611131835462323466 | 2026-11-13 18:35:46
+binaries: B normal 9318875830d82cf2763091e402c149e9, B lean 96a995c2a12c35dd2b687be6e8a71599, shared normal 51af1ed78e84291caf5ee042ea82c46d
+k0a (astro) PASS: ran 120 s; RssAnon at the end 207480 kB; kernel lines 0, crash lines 0
+k0a stderr: title line 0, sdt417 
+k0x (astro) ENDED BY ITSELF at 5 s; RssAnon at the end ? kB; kernel lines 0, crash lines 22
+k0x stderr: title line 0, sdt417 
+k0x: the fault is there without the fix, as expected
+k0f (astro) PASS: ran 30 s; RssAnon at the end 212820 kB; kernel lines 0, crash lines 0
+k0f stderr: title line 0, sdt417 [bc5] sdt417: transferring mount of PPSA01325/sce_sdmemory: no such save, NOT_FOUND (nothing created)
+k0f: the start PASSES with the fix
+k1 route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 93 s;route: cross (Continue) at 99 s;route: the load seen at 101 s;route: gameplay G = 116 s (the load at 101 s);route: walk of 14 cycles (240 s) queued at 116 s;; watchdog: watchdog: emulator 2
+k1 at ~104 s: avail,swap,io 845 546 0 46 2 | psi 2.37/2.37 1.40 | gtt 11734 
+k1 at ~60 s: avail,swap,io 930 543 0 0 1 | psi 0.19/0.19 1.75 | gtt 11874 
+k1 input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 35 at 50.792 s
+k1 (nozeroskip) ended at G+240 (after 358 s; G 116, load 101, list 93); 25.5 flips/s over 354 s, 67 s with a gap over 100 ms, longest 1238 ms; kernel lines 0, crash lines 0, ledger lines 0
+k1 title table: [bc5] exp 0419: title PPSA03671: 45 title defaults, 1 taken, 44 already set in the environment
+k1off route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 93 s;route: cross (Continue) at 99 s;route: the load seen at 103 s;route: gameplay G = 115 s (the load at 103 s);route: walk of 14 cycles (240 s) queued at 115 s;; watchdog: watchdog: emulato
+k1off at ~104 s: avail,swap,io 860 561 0 1 2 | psi 0.11/0.11 1.21 | gtt 11778 
+k1off at ~60 s: avail,swap,io 948 561 0 0 1 | psi 1.99/1.99 1.74 | gtt 11841 
+k1off input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 31 at 51.247 s
+k1off (nozeroskip) ended at G+240 (after 357 s; G 115, load 103, list 93); 26.1 flips/s over 352 s, 61 s with a gap over 100 ms, longest 638 ms; kernel lines 0, crash lines 0, ledger lines 0
+k1off title table: [bc5] exp 0419: title PPSA03671: 45 title defaults, 1 taken, 44 already set in the environment
+k2cut route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 3, cross (slot 4) at 93 s;route: cross (Continue) at 99 s;route: the load seen at 105 s;route: gameplay G = 114 s (the load at 105 s);route: no input after the load (N_NOWALK=1), 320 s from 114 s;; watchdog: watc
+k2cut at ~104 s: avail,swap,io 926 565 4 0 5 | psi 0.03/0.03 1.18 | gtt 11842 
+k2cut at ~60 s: avail,swap,io 930 566 1 0 1 | psi 2.58/2.58 1.79 | gtt 11862 
+k2cut input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 31 at 51.782 s
+k2cut (nozeroskip) ended at G+320 (after 437 s; G 114, load 105, list 93); 28.9 flips/s over 431 s, 53 s with a gap over 100 ms, longest 1357 ms; kernel lines 0, crash lines 0, ledger lines 0
+k2cut title table: [bc5] exp 0419: title PPSA03671: 45 title defaults, 1 taken, 44 already set in the environment
+k2cut last k1r line: k1r (exp 0412, tag k1r412): t 405 s: 406 read-only zero pieces cover 808.0 MiB of never-written memory under 15287 views (rebuild 1418); the zero buffer holds 0 non-zero words
+k2cut last kl412 line: k1r written chunks (exp 0412, tag kl412): t 405 s: 110 pieces under lazy views hold data and get NO cover (unmapped; a GPU read there faults by name); 110 chunks known written; 595 scans, 82253 SEEK_DATA calls, 844.4 ms 
+k3l (lean) PASS: ran 120 s; RssAnon at the end 133120 kB; kernel lines 0, crash lines 0
+k4wall route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 93 s;route: cross (Continue) at 99 s;route: the load seen at 103 s;route: gameplay G = 117 s (the load at 103 s);route: walk of 33 cycles (560 s) queued at 117 s;; watchdog: watchdog: emulat
+k4wall at ~104 s: avail,swap,io 907 592 13 9 14 | psi 0.20/0.20 1.40 | gtt 11677 
+k4wall at ~60 s: avail,swap,io 987 592 2 0 2 | psi 2.88/2.88 1.74 | gtt 11850 
+k4wall input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 33 at 53.207 s
+k4wall (nozeroskip) ended at G+560 (after 681 s; G 117, load 103, list 93); 24.9 flips/s over 677 s, 116 s with a gap over 100 ms, longest 1076 ms; kernel lines 0, crash lines 0, ledger lines 0
+k4wall (frame numbers not comparable): zero scan lines 88 in ~/bc5-data/captures/play-20261113-1901/gc/direct.log; snap 10808 bytes, fdinfo 829 lines
+zero scan 5 at t 640.0 s: ComponentHeap Small 36.0 MiB, zero now 24.0 MiB, zero in all 5 scans 24.0 MiB, listed 24.0 MiB in 1 runs of >= 8 MiB (1592 ms)
+zero scan 5 at t 640.0 s: MaterialHeap 20.0 MiB, zero now 8.0 MiB, zero in all 5 scans 8.0 MiB, listed 8.0 MiB in 1 runs of >= 8 MiB (1597 ms)
+zero scan 5 at t 640.0 s: DDLHeap 16.0 MiB, zero now 12.0 MiB, zero in all 5 scans 12.0 MiB, listed 12.0 MiB in 1 runs of >= 8 MiB (1601 ms)
+zero scan 5 at t 640.0 s: Physics query allocator 7.0 MiB, zero now 2.0 MiB, zero in all 5 scans 2.0 MiB, listed 0.0 MiB in 0 runs of >= 8 MiB (1602 ms)
+candidate E, private: all as expected
+chk0419e ended 19:12:42
+chain lock released
+

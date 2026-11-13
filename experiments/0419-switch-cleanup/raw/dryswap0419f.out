@@ -1,0 +1,24 @@
+--- ok (exit 0)
+tree: 132 patched files match; diff d9af28ca
+backend archive: 385febbbda4280aabbf63292f246955b (was c87da47e481a474e02baf9e03aec986c, kept as <scratch>
+undo: the archive from <scratch>
+lock released
+--- backend (exit 1)
+tree: 132 patched files match; diff d9af28ca
+error: stand-in backend build failure
+int0419f: FAILED (the backend build); restoring from <scratch>
+restored and read back: normal 7e25158f21fa1217eadf07a237d95e9e, lean 9467b57ef745403904438baaf11673ea, tree 27b6416f; the build directories' objects are newer than the t
+lock released
+--- badarch (exit 1)
+tree: 132 patched files match; diff d9af28ca
+int0419f: FAILED (the rebuilt archive is 06e6b757, not 385febbb (the private build's)); restoring from <scratch>
+restored and read back: normal 7e25158f21fa1217eadf07a237d95e9e, lean 9467b57ef745403904438baaf11673ea, tree 27b6416f; the build directories' objects are newer than the t
+lock released
+--- emu (exit 1)
+tree: 132 patched files match; diff d9af28ca
+backend archive: 385febbbda4280aabbf63292f246955b (was c87da47e481a474e02baf9e03aec986c, kept as <scratch>
+error: stand-in emulator build failure
+int0419f: FAILED (build lean); restoring from <scratch>
+restored and read back: normal 7e25158f21fa1217eadf07a237d95e9e, lean 9467b57ef745403904438baaf11673ea, tree 27b6416f; the build directories' objects are newer than the t
+lock released
+dryswap0419f: 40 passed, 0 failed

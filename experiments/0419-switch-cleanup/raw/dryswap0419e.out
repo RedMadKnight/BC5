@@ -1,0 +1,24 @@
+--- ok (exit 0)
+tree: 130 patched files match; diff 410273ca
+backend archive: 385febbbda4280aabbf63292f246955b (was c87da47e481a474e02baf9e03aec986c, kept as <scratch>
+undo: the archive from <work>/ok/bc5-work/backend-ubuntu/lib
+lock released
+--- backend (exit 1)
+tree: 130 patched files match; diff 410273ca
+error: stand-in backend build failure
+int0419e: FAILED (the backend build); restoring from <work>/
+restored and read back: normal 7e25158f21fa1217eadf07a237d95e9e, lean 9467b57ef745403904438baaf11673ea, tree 27b6416f; the build directories' objects are newer than the t
+lock released
+--- badarch (exit 1)
+tree: 130 patched files match; diff 410273ca
+int0419e: FAILED (the rebuilt archive is 06e6b757, not 385febbb (the private build's)); restoring from <scratch>
+restored and read back: normal 7e25158f21fa1217eadf07a237d95e9e, lean 9467b57ef745403904438baaf11673ea, tree 27b6416f; the build directories' objects are newer than the t
+lock released
+--- emu (exit 1)
+tree: 130 patched files match; diff 410273ca
+backend archive: 385febbbda4280aabbf63292f246955b (was c87da47e481a474e02baf9e03aec986c, kept as <scratch>
+error: stand-in emulator build failure
+int0419e: FAILED (build lean); restoring from <work>/emu/bc5
+restored and read back: normal 7e25158f21fa1217eadf07a237d95e9e, lean 9467b57ef745403904438baaf11673ea, tree 27b6416f; the build directories' objects are newer than the t
+lock released
+dryswap0419e: 40 passed, 0 failed

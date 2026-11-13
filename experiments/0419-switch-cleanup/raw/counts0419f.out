@@ -1,0 +1,202 @@
+chain lock: exp 0417 | chain: exp 0419: the second series for F's faults: nine walks to G+620 (F x3, shared B x2, F K1R off x2, F without exp 0418's rows x2), first-failure catchers on; about 2 hours, until about 00:11 | token 20261113220655405169 | 2026-11-13 22:06:55
+binaries: B normal 1a2900a08142311961050686395c4054, B lean 034bf107b7d93bc3a924a416b4bb2efb, shared normal 51af1ed78e84291caf5ee042ea82c46d
+== 22:06:55 dF1: KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1
+dF1 journal: would-learn 0, timeout-fault 0, fault record lines 0
+dF1 import: t 61 s: 11146.0 MiB imported: 9920.0 under eager views, 1222.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 4.0 under no view (2.0 last seen under an eager or zero-list view, 2.0 never seen und
+dF1 import: t 121 s: 11230.0 MiB imported: 9970.0 under eager views, 1252.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 8.0 under no view (6.0 last seen under an eager or zero-list view, 2.0 never seen un
+dF1 route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 93 s;route: cross (Continue) at 99 s;route: the load seen at 104 s;route: gameplay G = 115 s (the load at 104 s);route: walk of 37 cycles (620 s) queued at 115 s;; watchdog: watchdog: emulator 405568 ended; 368 samples, lowest available 419 MiB, highest PSI full 11 %
+dF1 at ~104 s: avail,swap,io 930 575 1 6 15 | psi 3.36/3.36 0.99 | gtt 11867 
+dF1 at ~60 s: avail,swap,io 1007 574 0 0 0 | psi 1.88/1.88 1.65 | gtt 11855 
+dF1 input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 34 at 52.711 s
+dF1 (nozeroskip) ended at G+620 (after 735 s; G 115, load 104, list 93); 25.2 flips/s over 731 s, 123 s with a gap over 100 ms, longest 872 ms; kernel lines 0, crash lines 0, ledger lines 0
+dF1 memory at 580-620 s:
+memory (exp 0401): t 580.0 s: available 444 MiB, swap used 696 MiB, psi some 0.00 full 0.00 (avg10, %), full total 246092 ms, gtt 12323 of 13312 MiB
+memory (exp 0401): t 590.0 s: available 443 MiB, swap used 696 MiB, psi some 0.00 full 0.00 (avg10, %), full total 246108 ms, gtt 12323 of 13312 MiB
+memory (exp 0401): t 600.0 s: available 435 MiB, swap used 696 MiB, psi some 0.00 full 0.00 (avg10, %), full total 246122 ms, gtt 12323 of 13312 MiB
+memory (exp 0401): t 610.0 s: available 439 MiB, swap used 696 MiB, psi some 0.00 full 0.00 (avg10, %), full total 246126 ms, gtt 12317 of 13312 MiB
+dF1 frame-profile lines over 500 ms: 2; last flip line t: frame profile: t 734.058 s, 33.4 ms sinc
+dF1 last memory lines:
+memory (exp 0401): t 710.0 s: available 601 MiB, swap used 821 MiB, psi some 0.00 full 0.00 (avg10, %), full total 246246 ms, gtt 12259 of 13312 MiB
+memory (exp 0401): t 720.0 s: available 592 MiB, swap used 821 MiB, psi some 0.00 full 0.00 (avg10, %), full total 246246 ms, gtt 12255 of 13312 MiB
+memory (exp 0401): t 730.0 s: available 599 MiB, swap used 837 MiB, psi some 1.18 full 1.18 (avg10, %), full total 246412 ms, gtt 12251 of 13312 MiB
+dF1 first-failure lines (exp 0412, ff412): ~/bc5-data/captures/play-20261113-2206/gc/direct.log:0 ~/bc5-work/exp0413/n/raw/dF1-play.log:1 
+[bc5] trap log (exp 0412, tag ff412): KYTY_BC5_TRAP_LOG on, sigaction(SIGTRAP) rc 0
+dF1 kernel lines: 0
+== 22:19:39 dB1: KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1
+dB1 journal: would-learn 0, timeout-fault 0, fault record lines 0
+dB1 import: t 61 s: 11144.0 MiB imported: 9906.0 under eager views, 1232.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 6.0 under no view (6.0 last seen under an eager or zero-list view, 0.0 never seen und
+dB1 import: t 121 s: 11240.0 MiB imported: 9964.0 under eager views, 1266.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 10.0 under no view (10.0 last seen under an eager or zero-list view, 0.0 never seen 
+dB1 route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 93 s;route: cross (Continue) at 99 s;route: the load seen at 103 s;route: gameplay G = 116 s (the load at 103 s);route: walk of 37 cycles (620 s) queued at 116 s;; watchdog: watchdog: emulator 579674 ended; 368 samples, lowest available 357 MiB, highest PSI full 9 %
+dB1 at ~104 s: avail,swap,io 947 637 82 1 88 | psi 2.21/2.21 1.32 | gtt 11911 
+dB1 at ~60 s: avail,swap,io 1064 639 22 0 25 | psi 2.34/2.34 1.86 | gtt 11838 
+dB1 input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 34 at 50.611 s
+dB1 (nozeroskip) ended at G+620 (after 736 s; G 116, load 103, list 93); 25.1 flips/s over 731 s, 120 s with a gap over 100 ms, longest 795 ms; kernel lines 0, crash lines 0, ledger lines 0
+dB1 memory at 580-620 s:
+memory (exp 0401): t 580.0 s: available 554 MiB, swap used 721 MiB, psi some 0.02 full 0.02 (avg10, %), full total 252309 ms, gtt 12184 of 13312 MiB
+memory (exp 0401): t 590.0 s: available 578 MiB, swap used 719 MiB, psi some 0.57 full 0.57 (avg10, %), full total 252475 ms, gtt 12212 of 13312 MiB
+memory (exp 0401): t 600.0 s: available 536 MiB, swap used 721 MiB, psi some 1.25 full 1.25 (avg10, %), full total 252636 ms, gtt 12252 of 13312 MiB
+memory (exp 0401): t 610.0 s: available 510 MiB, swap used 721 MiB, psi some 0.45 full 0.45 (avg10, %), full total 252649 ms, gtt 12252 of 13312 MiB
+dB1 frame-profile lines over 500 ms: 5; last flip line t: frame profile: t 734.098 s, 32.4 ms sinc
+dB1 last memory lines:
+memory (exp 0401): t 710.0 s: available 477 MiB, swap used 737 MiB, psi some 3.18 full 3.18 (avg10, %), full total 253605 ms, gtt 12292 of 13312 MiB
+memory (exp 0401): t 720.0 s: available 443 MiB, swap used 733 MiB, psi some 1.17 full 1.17 (avg10, %), full total 253617 ms, gtt 12238 of 13312 MiB
+memory (exp 0401): t 730.0 s: available 508 MiB, swap used 721 MiB, psi some 0.43 full 0.43 (avg10, %), full total 253683 ms, gtt 12274 of 13312 MiB
+dB1 first-failure lines (exp 0412, ff412): ~/bc5-data/captures/play-20261113-2219/gc/direct.log:0 ~/bc5-work/exp0413/n/raw/dB1-play.log:1 
+[bc5] trap log (exp 0412, tag ff412): KYTY_BC5_TRAP_LOG on, sigaction(SIGTRAP) rc 0
+dB1 kernel lines: 0
+== 22:32:23 dK1: BC5_GUARD_K1R=0 BC5_GUARD_K1_FILTER=0 KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1
+dK1 journal: would-learn 0, timeout-fault 0, fault record lines 0
+dK1 import: t 61 s: 11162.0 MiB imported: 9924.0 under eager views, 1224.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 14.0 under no view (10.0 last seen under an eager or zero-list view, 4.0 never seen u
+dK1 import: t 121 s: 11272.0 MiB imported: 9996.0 under eager views, 1260.0 under data views, 0.0 under lazy views, 2.0 forced and under no view, 14.0 under no view (14.0 last seen under an eager or zero-list view, 0.0 never seen 
+dK1 route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 93 s;route: cross (Continue) at 99 s;route: the load seen at 101 s;route: gameplay G = 116 s (the load at 101 s);route: walk of 37 cycles (620 s) queued at 116 s;; watchdog: watchdog: emulator 754341 ended; 370 samples, lowest available 348 MiB, highest PSI full 8 %
+dK1 at ~104 s: avail,swap,io 855 584 1 1 3 | psi 2.81/2.81 1.34 | gtt 11678 
+dK1 at ~60 s: avail,swap,io 987 584 0 0 4 | psi 0.72/0.72 1.61 | gtt 11866 
+dK1 input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 31 at 50.113 s
+dK1 (nozeroskip) ended at G+620 (after 740 s; G 116, load 101, list 93); 25.6 flips/s over 735 s, 97 s with a gap over 100 ms, longest 739 ms; kernel lines 0, crash lines 0, ledger lines 0
+dK1 memory at 580-620 s:
+memory (exp 0401): t 580.0 s: available 526 MiB, swap used 708 MiB, psi some 1.37 full 1.37 (avg10, %), full total 258461 ms, gtt 12255 of 13312 MiB
+memory (exp 0401): t 590.0 s: available 518 MiB, swap used 705 MiB, psi some 0.50 full 0.50 (avg10, %), full total 258468 ms, gtt 12256 of 13312 MiB
+memory (exp 0401): t 600.0 s: available 497 MiB, swap used 700 MiB, psi some 0.18 full 0.18 (avg10, %), full total 258483 ms, gtt 12272 of 13312 MiB
+memory (exp 0401): t 610.0 s: available 504 MiB, swap used 697 MiB, psi some 0.06 full 0.06 (avg10, %), full total 258498 ms, gtt 12280 of 13312 MiB
+dK1 frame-profile lines over 500 ms: 5; last flip line t: frame profile: t 738.283 s, 33.9 ms sinc
+dK1 last memory lines:
+memory (exp 0401): t 710.0 s: available 419 MiB, swap used 681 MiB, psi some 0.00 full 0.00 (avg10, %), full total 258633 ms, gtt 12318 of 13312 MiB
+memory (exp 0401): t 720.0 s: available 423 MiB, swap used 681 MiB, psi some 0.00 full 0.00 (avg10, %), full total 258634 ms, gtt 12310 of 13312 MiB
+memory (exp 0401): t 730.0 s: available 419 MiB, swap used 681 MiB, psi some 0.00 full 0.00 (avg10, %), full total 258649 ms, gtt 12276 of 13312 MiB
+dK1 first-failure lines (exp 0412, ff412): ~/bc5-data/captures/play-20261113-2232/gc/direct.log:0 ~/bc5-work/exp0413/n/raw/dK1-play.log:1 
+[bc5] trap log (exp 0412, tag ff412): KYTY_BC5_TRAP_LOG on, sigaction(SIGTRAP) rc 0
+dK1 kernel lines: 0
+== 22:45:11 dN1: BC5_DIRECT_START_STATE_SKIP=SPI_SHADER_REQ_CTRL_PS:GE_MIN_VTX_INDX:GE_MAX_VTX_INDX:VGT_INSTANCE_BASE_ID:VGT_GS_RINGS KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1
+dN1 journal: would-learn 0, timeout-fault 0, fault record lines 0
+dN1 import: t 61 s: 11150.0 MiB imported: 9906.0 under eager views, 1222.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 22.0 under no view (16.0 last seen under an eager or zero-list view, 6.0 never seen u
+dN1 import: t 121 s: 11252.0 MiB imported: 9944.0 under eager views, 1258.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 50.0 under no view (50.0 last seen under an eager or zero-list view, 0.0 never seen 
+dN1 route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 94 s;route: cross (Continue) at 100 s;route: the load seen at 105 s;route: gameplay G = 117 s (the load at 105 s);route: walk of 37 cycles (620 s) queued at 117 s;; watchdog: watchdog: emulator 927868 ended; 371 samples, lowest available 363 MiB, highest PSI full 8 %
+dN1 at ~104 s: avail,swap,io 870 584 0 0 0 | psi 0.32/0.32 1.10 | gtt 11877 
+dN1 at ~60 s: avail,swap,io 982 584 0 0 1 | psi 0.20/0.20 1.39 | gtt 11857 
+dN1 input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 34 at 50.303 s
+dN1 (nozeroskip) ended at G+620 (after 741 s; G 117, load 105, list 94); 25.4 flips/s over 736 s, 101 s with a gap over 100 ms, longest 677 ms; kernel lines 0, crash lines 0, ledger lines 0
+dN1 memory at 580-620 s:
+memory (exp 0401): t 580.0 s: available 462 MiB, swap used 659 MiB, psi some 0.16 full 0.16 (avg10, %), full total 263239 ms, gtt 12309 of 13312 MiB
+memory (exp 0401): t 590.0 s: available 451 MiB, swap used 658 MiB, psi some 0.05 full 0.05 (avg10, %), full total 263240 ms, gtt 12281 of 13312 MiB
+memory (exp 0401): t 600.0 s: available 457 MiB, swap used 658 MiB, psi some 0.02 full 0.02 (avg10, %), full total 263247 ms, gtt 12177 of 13312 MiB
+memory (exp 0401): t 610.0 s: available 389 MiB, swap used 661 MiB, psi some 0.15 full 0.15 (avg10, %), full total 263294 ms, gtt 12310 of 13312 MiB
+dN1 frame-profile lines over 500 ms: 4; last flip line t: frame profile: t 739.077 s, 33.0 ms sinc
+dN1 last memory lines:
+memory (exp 0401): t 710.0 s: available 536 MiB, swap used 684 MiB, psi some 0.59 full 0.59 (avg10, %), full total 263929 ms, gtt 12222 of 13312 MiB
+memory (exp 0401): t 720.0 s: available 531 MiB, swap used 682 MiB, psi some 0.21 full 0.21 (avg10, %), full total 263933 ms, gtt 12206 of 13312 MiB
+memory (exp 0401): t 730.0 s: available 378 MiB, swap used 665 MiB, psi some 0.07 full 0.07 (avg10, %), full total 263965 ms, gtt 12321 of 13312 MiB
+dN1 first-failure lines (exp 0412, ff412): ~/bc5-data/captures/play-20261113-2245/gc/direct.log:0 ~/bc5-work/exp0413/n/raw/dN1-play.log:1 
+[bc5] trap log (exp 0412, tag ff412): KYTY_BC5_TRAP_LOG on, sigaction(SIGTRAP) rc 0
+dN1 kernel lines: 0
+== 22:58:01 dF2: KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1
+dF2 journal: would-learn 0, timeout-fault 0, fault record lines 0
+dF2 import: t 61 s: 11134.0 MiB imported: 9902.0 under eager views, 1222.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 10.0 under no view (6.0 last seen under an eager or zero-list view, 4.0 never seen un
+dF2 import: t 121 s: 11264.0 MiB imported: 9978.0 under eager views, 1258.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 28.0 under no view (24.0 last seen under an eager or zero-list view, 4.0 never seen 
+dF2 route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 93 s;route: cross (Continue) at 99 s;route: the load seen at 104 s;route: gameplay G = 116 s (the load at 104 s);route: walk of 37 cycles (620 s) queued at 116 s;; watchdog: watchdog: emulator 1103797 ended; 370 samples, lowest available 392 MiB, highest PSI full 8 %
+dF2 at ~104 s: avail,swap,io 889 583 0 0 1 | psi 1.57/1.57 1.13 | gtt 11915 
+dF2 at ~60 s: avail,swap,io 954 583 0 0 1 | psi 0.70/0.70 1.47 | gtt 11859 
+dF2 input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 31 at 50.394 s
+dF2 (nozeroskip) ended at G+620 (after 740 s; G 116, load 104, list 93); 25.2 flips/s over 734 s, 95 s with a gap over 100 ms, longest 902 ms; kernel lines 0, crash lines 0, ledger lines 0
+dF2 memory at 580-620 s:
+memory (exp 0401): t 580.0 s: available 466 MiB, swap used 700 MiB, psi some 0.00 full 0.00 (avg10, %), full total 268818 ms, gtt 12209 of 13312 MiB
+memory (exp 0401): t 590.0 s: available 470 MiB, swap used 700 MiB, psi some 0.00 full 0.00 (avg10, %), full total 268819 ms, gtt 12193 of 13312 MiB
+memory (exp 0401): t 600.0 s: available 459 MiB, swap used 699 MiB, psi some 0.00 full 0.00 (avg10, %), full total 268831 ms, gtt 12217 of 13312 MiB
+memory (exp 0401): t 610.0 s: available 467 MiB, swap used 699 MiB, psi some 0.00 full 0.00 (avg10, %), full total 268840 ms, gtt 12221 of 13312 MiB
+dF2 frame-profile lines over 500 ms: 6; last flip line t: frame profile: t 737.640 s, 39.0 ms sinc
+dF2 last memory lines:
+memory (exp 0401): t 710.0 s: available 416 MiB, swap used 725 MiB, psi some 0.18 full 0.18 (avg10, %), full total 269358 ms, gtt 12375 of 13312 MiB
+memory (exp 0401): t 720.0 s: available 430 MiB, swap used 729 MiB, psi some 4.43 full 4.43 (avg10, %), full total 270011 ms, gtt 12369 of 13312 MiB
+memory (exp 0401): t 730.0 s: available 439 MiB, swap used 728 MiB, psi some 1.63 full 1.63 (avg10, %), full total 270023 ms, gtt 12369 of 13312 MiB
+dF2 first-failure lines (exp 0412, ff412): ~/bc5-data/captures/play-20261113-2258/gc/direct.log:0 ~/bc5-work/exp0413/n/raw/dF2-play.log:1 
+[bc5] trap log (exp 0412, tag ff412): KYTY_BC5_TRAP_LOG on, sigaction(SIGTRAP) rc 0
+dF2 kernel lines: 0
+== 23:10:48 dB2: KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1
+dB2 journal: would-learn 0, timeout-fault 0, fault record lines 0
+dB2 import: t 61 s: 11138.0 MiB imported: 9900.0 under eager views, 1224.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 14.0 under no view (4.0 last seen under an eager or zero-list view, 10.0 never seen u
+dB2 import: t 121 s: 11260.0 MiB imported: 9972.0 under eager views, 1260.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 28.0 under no view (14.0 last seen under an eager or zero-list view, 14.0 never seen
+dB2 route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 93 s;route: cross (Continue) at 99 s;route: the load seen at 103 s;route: gameplay G = 116 s (the load at 103 s);route: walk of 37 cycles (620 s) queued at 116 s;; watchdog: watchdog: emulator 1278386 ended; 370 samples, lowest available 351 MiB, highest PSI full 10 %
+dB2 at ~104 s: avail,swap,io 891 583 0 0 2 | psi 2.40/2.40 1.18 | gtt 11916 
+dB2 at ~60 s: avail,swap,io 940 583 0 0 0 | psi 0.74/0.74 1.75 | gtt 11847 
+dB2 input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 33 at 51.549 s
+dB2 (nozeroskip) ended at G+620 (after 740 s; G 116, load 103, list 93); 25.6 flips/s over 735 s, 101 s with a gap over 100 ms, longest 953 ms; kernel lines 0, crash lines 0, ledger lines 0
+dB2 memory at 580-620 s:
+memory (exp 0401): t 580.0 s: available 490 MiB, swap used 695 MiB, psi some 0.00 full 0.00 (avg10, %), full total 276293 ms, gtt 12229 of 13312 MiB
+memory (exp 0401): t 590.0 s: available 490 MiB, swap used 694 MiB, psi some 0.00 full 0.00 (avg10, %), full total 276311 ms, gtt 12264 of 13312 MiB
+memory (exp 0401): t 600.0 s: available 493 MiB, swap used 694 MiB, psi some 0.00 full 0.00 (avg10, %), full total 276323 ms, gtt 12228 of 13312 MiB
+memory (exp 0401): t 610.0 s: available 478 MiB, swap used 694 MiB, psi some 0.00 full 0.00 (avg10, %), full total 276332 ms, gtt 12272 of 13312 MiB
+dB2 frame-profile lines over 500 ms: 6; last flip line t: frame profile: t 738.500 s, 29.0 ms sinc
+dB2 last memory lines:
+memory (exp 0401): t 710.0 s: available 588 MiB, swap used 711 MiB, psi some 0.05 full 0.05 (avg10, %), full total 276566 ms, gtt 12214 of 13312 MiB
+memory (exp 0401): t 720.0 s: available 596 MiB, swap used 710 MiB, psi some 0.01 full 0.01 (avg10, %), full total 276568 ms, gtt 12216 of 13312 MiB
+memory (exp 0401): t 730.0 s: available 579 MiB, swap used 709 MiB, psi some 0.12 full 0.12 (avg10, %), full total 276590 ms, gtt 12220 of 13312 MiB
+dB2 first-failure lines (exp 0412, ff412): ~/bc5-data/captures/play-20261113-2310/gc/direct.log:0 ~/bc5-work/exp0413/n/raw/dB2-play.log:1 
+[bc5] trap log (exp 0412, tag ff412): KYTY_BC5_TRAP_LOG on, sigaction(SIGTRAP) rc 0
+dB2 kernel lines: 0
+== 23:23:37 dK2: BC5_GUARD_K1R=0 BC5_GUARD_K1_FILTER=0 KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1
+dK2 journal: would-learn 0, timeout-fault 0, fault record lines 0
+dK2 import: t 61 s: 11136.0 MiB imported: 9902.0 under eager views, 1222.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 12.0 under no view (8.0 last seen under an eager or zero-list view, 4.0 never seen un
+dK2 import: t 121 s: 11290.0 MiB imported: 9968.0 under eager views, 1258.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 64.0 under no view (62.0 last seen under an eager or zero-list view, 2.0 never seen 
+dK2 route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 93 s;route: cross (Continue) at 99 s;route: the load seen at 103 s;route: gameplay G = 115 s (the load at 103 s);route: walk of 37 cycles (620 s) queued at 115 s;; watchdog: watchdog: emulator 1452276 ended; 368 samples, lowest available 370 MiB, highest PSI full 8 %
+dK2 at ~104 s: avail,swap,io 858 583 0 0 0 | psi 0.25/0.25 1.19 | gtt 11925 
+dK2 at ~60 s: avail,swap,io 918 583 0 0 1 | psi 1.37/1.37 1.81 | gtt 11845 
+dK2 input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 35 at 52.472 s
+dK2 (nozeroskip) ended at G+620 (after 735 s; G 115, load 103, list 93); 25.3 flips/s over 730 s, 114 s with a gap over 100 ms, longest 736 ms; kernel lines 0, crash lines 0, ledger lines 0
+dK2 memory at 580-620 s:
+memory (exp 0401): t 580.0 s: available 447 MiB, swap used 671 MiB, psi some 0.03 full 0.03 (avg10, %), full total 282561 ms, gtt 12232 of 13312 MiB
+memory (exp 0401): t 590.0 s: available 456 MiB, swap used 671 MiB, psi some 0.01 full 0.01 (avg10, %), full total 282565 ms, gtt 12232 of 13312 MiB
+memory (exp 0401): t 600.0 s: available 444 MiB, swap used 671 MiB, psi some 0.00 full 0.00 (avg10, %), full total 282575 ms, gtt 12228 of 13312 MiB
+memory (exp 0401): t 610.0 s: available 444 MiB, swap used 671 MiB, psi some 0.00 full 0.00 (avg10, %), full total 282578 ms, gtt 12224 of 13312 MiB
+dK2 frame-profile lines over 500 ms: 2; last flip line t: frame profile: t 732.976 s, 98.7 ms sinc
+dK2 last memory lines:
+memory (exp 0401): t 710.0 s: available 411 MiB, swap used 659 MiB, psi some 0.00 full 0.00 (avg10, %), full total 282704 ms, gtt 12223 of 13312 MiB
+memory (exp 0401): t 720.0 s: available 394 MiB, swap used 659 MiB, psi some 0.00 full 0.00 (avg10, %), full total 282709 ms, gtt 12223 of 13312 MiB
+memory (exp 0401): t 730.0 s: available 406 MiB, swap used 659 MiB, psi some 0.19 full 0.19 (avg10, %), full total 282768 ms, gtt 12284 of 13312 MiB
+dK2 first-failure lines (exp 0412, ff412): ~/bc5-data/captures/play-20261113-2323/gc/direct.log:0 ~/bc5-work/exp0413/n/raw/dK2-play.log:1 
+[bc5] trap log (exp 0412, tag ff412): KYTY_BC5_TRAP_LOG on, sigaction(SIGTRAP) rc 0
+dK2 kernel lines: 0
+== 23:36:19 dN2: BC5_DIRECT_START_STATE_SKIP=SPI_SHADER_REQ_CTRL_PS:GE_MIN_VTX_INDX:GE_MAX_VTX_INDX:VGT_INSTANCE_BASE_ID:VGT_GS_RINGS KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1
+dN2 journal: would-learn 0, timeout-fault 0, fault record lines 0
+dN2 import: t 61 s: 11136.0 MiB imported: 9908.0 under eager views, 1218.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 10.0 under no view (2.0 last seen under an eager or zero-list view, 8.0 never seen un
+dN2 import: t 121 s: 11298.0 MiB imported: 9984.0 under eager views, 1252.0 under data views, 0.0 under lazy views, 14.0 forced and under no view, 48.0 under no view (40.0 last seen under an eager or zero-list view, 8.0 never seen
+dN2 route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 93 s;route: cross (Continue) at 100 s;route: the load seen at 104 s;route: gameplay G = 115 s (the load at 104 s);route: walk of 37 cycles (620 s) queued at 115 s;; watchdog: watchdog: emulator 1627977 ended; 367 samples, lowest available 435 MiB, highest PSI full 5 %
+dN2 at ~104 s: avail,swap,io 854 578 0 0 0 | psi 0.00/0.00 1.08 | gtt 11667 
+dN2 at ~60 s: avail,swap,io 970 578 0 0 4 | psi 0.15/0.15 1.18 | gtt 11848 
+dN2 input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 35 at 51.149 s
+dN2 (nozeroskip) ended at G+620 (after 735 s; G 115, load 104, list 93); 25.3 flips/s over 730 s, 86 s with a gap over 100 ms, longest 531 ms; kernel lines 0, crash lines 0, ledger lines 0
+dN2 memory at 580-620 s:
+memory (exp 0401): t 580.0 s: available 468 MiB, swap used 719 MiB, psi some 0.13 full 0.13 (avg10, %), full total 285561 ms, gtt 12210 of 13312 MiB
+memory (exp 0401): t 590.0 s: available 466 MiB, swap used 719 MiB, psi some 0.04 full 0.04 (avg10, %), full total 285563 ms, gtt 12184 of 13312 MiB
+memory (exp 0401): t 600.0 s: available 456 MiB, swap used 718 MiB, psi some 0.01 full 0.01 (avg10, %), full total 285574 ms, gtt 12216 of 13312 MiB
+memory (exp 0401): t 610.0 s: available 462 MiB, swap used 717 MiB, psi some 0.00 full 0.00 (avg10, %), full total 285582 ms, gtt 12228 of 13312 MiB
+dN2 frame-profile lines over 500 ms: 2; last flip line t: frame profile: t 732.432 s, 32.5 ms sinc
+dN2 last memory lines:
+memory (exp 0401): t 710.0 s: available 451 MiB, swap used 711 MiB, psi some 0.00 full 0.00 (avg10, %), full total 285720 ms, gtt 12341 of 13312 MiB
+memory (exp 0401): t 720.0 s: available 442 MiB, swap used 711 MiB, psi some 0.00 full 0.00 (avg10, %), full total 285727 ms, gtt 12341 of 13312 MiB
+memory (exp 0401): t 730.0 s: available 444 MiB, swap used 710 MiB, psi some 0.00 full 0.00 (avg10, %), full total 285736 ms, gtt 12301 of 13312 MiB
+dN2 first-failure lines (exp 0412, ff412): ~/bc5-data/captures/play-20261113-2336/gc/direct.log:0 ~/bc5-work/exp0413/n/raw/dN2-play.log:1 
+[bc5] trap log (exp 0412, tag ff412): KYTY_BC5_TRAP_LOG on, sigaction(SIGTRAP) rc 0
+dN2 kernel lines: 0
+== 23:49:02 dF3: KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1
+dF3 journal: would-learn 0, timeout-fault 0, fault record lines 0
+dF3 import: t 61 s: 11132.0 MiB imported: 9904.0 under eager views, 1220.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 8.0 under no view (6.0 last seen under an eager or zero-list view, 2.0 never seen und
+dF3 import: t 121 s: 11250.0 MiB imported: 9988.0 under eager views, 1254.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 8.0 under no view (8.0 last seen under an eager or zero-list view, 0.0 never seen un
+dF3 route: route: cross (start screen) at 88 s;route: the save-slot list runs; down x 0, cross (slot 1) at 94 s;route: cross (Continue) at 100 s;route: the load seen at 105 s;route: gameplay G = 117 s (the load at 105 s);route: walk of 37 cycles (620 s) queued at 117 s;; watchdog: watchdog: emulator 1806031 ended; 369 samples, lowest available 390 MiB, highest PSI full 5 %
+dF3 at ~104 s: avail,swap,io 877 578 0 0 0 | psi 0.07/0.07 1.27 | gtt 11824 
+dF3 at ~60 s: avail,swap,io 969 578 0 0 1 | psi 0.31/0.31 1.36 | gtt 11853 
+dF3 input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 35 at 50.124 s
+dF3 (nozeroskip) ended at G+620 (after 737 s; G 117, load 105, list 94); 25.5 flips/s over 732 s, 101 s with a gap over 100 ms, longest 608 ms; kernel lines 0, crash lines 0, ledger lines 0
+dF3 memory at 580-620 s:
+memory (exp 0401): t 580.0 s: available 442 MiB, swap used 665 MiB, psi some 0.00 full 0.00 (avg10, %), full total 288762 ms, gtt 12235 of 13312 MiB
+memory (exp 0401): t 590.0 s: available 536 MiB, swap used 681 MiB, psi some 1.45 full 1.45 (avg10, %), full total 289039 ms, gtt 12233 of 13312 MiB
+memory (exp 0401): t 600.0 s: available 556 MiB, swap used 681 MiB, psi some 1.02 full 1.02 (avg10, %), full total 289126 ms, gtt 12225 of 13312 MiB
+memory (exp 0401): t 610.0 s: available 559 MiB, swap used 688 MiB, psi some 0.37 full 0.37 (avg10, %), full total 289278 ms, gtt 12223 of 13312 MiB
+dF3 frame-profile lines over 500 ms: 3; last flip line t: frame profile: t 734.948 s, 57.8 ms sinc
+dF3 last memory lines:
+memory (exp 0401): t 710.0 s: available 433 MiB, swap used 686 MiB, psi some 0.65 full 0.65 (avg10, %), full total 290552 ms, gtt 12308 of 13312 MiB
+memory (exp 0401): t 720.0 s: available 405 MiB, swap used 684 MiB, psi some 0.24 full 0.24 (avg10, %), full total 290561 ms, gtt 12268 of 13312 MiB
+memory (exp 0401): t 730.0 s: available 414 MiB, swap used 691 MiB, psi some 0.45 full 0.45 (avg10, %), full total 290636 ms, gtt 12240 of 13312 MiB
+dF3 first-failure lines (exp 0412, ff412): ~/bc5-data/captures/play-20261113-2349/gc/direct.log:0 ~/bc5-work/exp0413/n/raw/dF3-play.log:1 
+[bc5] trap log (exp 0412, tag ff412): KYTY_BC5_TRAP_LOG on, sigaction(SIGTRAP) rc 0
+dF3 kernel lines: 0
+counts0419f ended 00:01:47: all nine arms ran
+chain lock released

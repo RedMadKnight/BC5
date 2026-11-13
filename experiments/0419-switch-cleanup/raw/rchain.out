@@ -1,0 +1,40 @@
+chain lock: exp 0417 | chain: exp 0419: after F's acceptance: the wall walk (exp 0412), a diagnostic build with exp 0418's RSRC2 journal and its two arms, then back to F; private dirs, until about 21:22 | token 202611132022553500986 | 2026-11-13 20:22:55
+F's binaries kept: ~/bc5-work/exp0413/kept/kyty_emulator-F-d9af28ca-1a2900a0, kyty_emulator-lean-F-d9af28ca-034bf107
+start-state lines of F's runs: 10 lines in ~/bc5-work/exp0413/n/raw/startstate-F.txt
+== 20:22:56 the wall walk
+binaries: B normal 1a2900a08142311961050686395c4054, B lean 034bf107b7d93bc3a924a416b4bb2efb, shared normal 51af1ed78e84291caf5ee042ea82c46d
+m5wall input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 36 at 52.378 s
+m5wall (nozeroskip) ended by itself at 605 s (after 605 s; G 117, load 104, list 94); 25.8 flips/s over 596 s, 83 s with a gap over 100 ms, longest 674 ms; kernel lines 11, crash lines 0, ledger lines 0
+m5wall: a NEW FAULT RECORD since it began: a finding, read record.txt under ~/bc5-data/captures/faults
+m5wall (frame numbers not comparable): zero scan lines 69 in ~/bc5-data/captures/play-20261113-2022/gc/direct.log; snap 26 bytes, fdinfo 2 lines
+zero scan 4 at t 535.0 s: ComponentHeap Small 36.0 MiB, zero now 24.0 MiB, zero in all 4 scans 24.0 MiB, listed 24.0 MiB in 1 runs of >= 8 MiB (1375 ms)
+zero scan 4 at t 535.0 s: MaterialHeap 20.0 MiB, zero now 8.0 MiB, zero in all 4 scans 8.0 MiB, listed 8.0 MiB in 1 runs of >= 8 MiB (1380 ms)
+zero scan 4 at t 535.0 s: DDLHeap 16.0 MiB, zero now 12.0 MiB, zero in all 4 scans 12.0 MiB, listed 12.0 MiB in 1 runs of >= 8 MiB (1383 ms)
+zero scan 4 at t 535.0 s: Physics query allocator 7.0 MiB, zero now 2.0 MiB, zero in all 4 scans 2.0 MiB, listed 0.0 MiB in 0 runs of >= 8 MiB (1384 ms)
+m5wall writers lines (exp 0412, tag ww412): 104
+writers (exp 0412, tag ww412): scan 4: MaterialHeap: 0 chunks (0 MiB) turned non-zero since the last scan: 0 named by a hint, force or packet operand, 0 NOT named (upper bound of unknown GPU writers: a CPU write and a ch
+writers (exp 0412, tag ww412): scan 4: DDLHeap: 0 chunks (0 MiB) turned non-zero since the last scan: 0 named by a hint, force or packet operand, 0 NOT named (upper bound of unknown GPU writers: a CPU write and a chunk t
+writers (exp 0412, tag ww412): scan 4: Physics query allocator: 0 chunks (0 MiB) turned non-zero since the last scan: 0 named by a hint, force or packet operand, 0 NOT named (upper bound of unknown GPU writers: a CPU wri
+wall0419f ended 20:33:10
+chain lock released
+== 20:33:10 the diagnostic build
+lock released
+r1 (nozeroskip) ended at G+240 (after 358 s; G 116, load 103, list 93); 25.8 flips/s over 353 s, 58 s with a gap over 100 ms, longest 793 ms; kernel lines 0, crash lines 0, ledger lines 0 (frame numbers not comparable)
+r1 [bc5-rsrc2] lines: 107; last totals: [bc5-rsrc2] totals after 188001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 4174715/0/0 VS 0/0/0 GS 4453233/0/0 ES 0/0/0 HS 445361/0/0 LS 0/0/0 CS 2755281/0/0; unread 0
+r0a (astro) PASS: ran 120 s; RssAnon at the end 208508 kB; kernel lines 0, crash lines 0 (frame numbers not comparable)
+r0a [bc5-rsrc2] lines: 39; last totals: [bc5-rsrc2] totals after 52001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 662298/0/0 VS 0/0/0 GS 1169993/0/0 ES 0/0/0 HS 82138/0/0 LS 0/0/0 CS 771515/0/0; unread 0
+== 20:47:58 back to F
+private builds now: normal 1a2900a08142311961050686395c4054, lean 034bf107b7d93bc3a924a416b4bb2efb (F's: 1a2900a08142311961050686395c4054, 034bf107b7d93bc3a924a416b4bb2efb: the SAME)
+rchain ended 20:54:23
+chain: the lock no longer holds our line, left as it is: 
+== m0a
+      1 bc5-direct: start state (exp 0418): rows on: CP_COHER_START_DELAY SPI_SHADER_REQ_CTRL_PS GE_MIN_VTX_INDX GE_MAX_VTX_INDX VGT_INSTANCE_BASE_ID VGT_TF_RING VGT_HS_OFFCHIP_PARAM VGT_GS_RINGS; skipped: none
+== m1a
+      1 bc5-direct: /dev/gc HS offchip 0x1ff (programmed, row VGT_HS_OFFCHIP_PARAM)
+      1 bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, row VGT_TF_RING)
+      1 bc5-direct: start state (exp 0418): rows on: CP_COHER_START_DELAY SPI_SHADER_REQ_CTRL_PS GE_MIN_VTX_INDX GE_MAX_VTX_INDX VGT_INSTANCE_BASE_ID VGT_TF_RING VGT_HS_OFFCHIP_PARAM VGT_GS_RINGS; skipped: none
+== m2cuta
+      1 bc5-direct: /dev/gc HS offchip 0x1ff (programmed, row VGT_HS_OFFCHIP_PARAM)
+      1 bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, row VGT_TF_RING)
+      1 bc5-direct: start state (exp 0418): rows on: CP_COHER_START_DELAY SPI_SHADER_REQ_CTRL_PS GE_MIN_VTX_INDX GE_MAX_VTX_INDX VGT_INSTANCE_BASE_ID VGT_TF_RING VGT_HS_OFFCHIP_PARAM VGT_GS_RINGS; skipped: none
+

@@ -1,0 +1,110 @@
+--- /c/Users/kjani/AppData/Local/Temp/claude/7e70d624f1bff3f5/43cd6eac-dc2c-49c1-b603-e5283be4d569/scratchpad/int/box19/play-pkg.sh	2026-11-13 08:17:43.000000000 +0100
++++ /c/Users/kjani/AppData/Local/Temp/claude/7e70d624f1bff3f5/43cd6eac-dc2c-49c1-b603-e5283be4d569/scratchpad/int/l19/play-pkg.sh	2026-11-13 19:23:39.637798200 +0100
+@@ -46,25 +46,14 @@
+ export SHADPS4_SYSMODULES_PACK_DIR=$HOME/bc5-data/sysmodules-pack-hle-ampr-noplaygo  # 2026-10-25 (exp 0298, the maintainer's yes): no libScePlayGo.sprx, the host answers PlayGo (100 chunks)
+ # Experiment 0042: also the heaps the GPU reads or writes before the CPU touches them
+ export BC5_DIRECT_EAGER_NAMES="RenderGpuWcLarge,RenderGpuWcSmall,RenderGpuRwLarge,RenderGpuRwSmall,CommitIABufferAllocator,AMM,RenderAlloc,Physics,Decal Job Scheduler,VisualEffectInstanceHeap,DynamicHeap,DynamicHeap Small,ComponentHeap,ComponentHeap Small,MaterialHeap,DDLHeap,Physics query allocator"
+-export BC5_DIRECT_LEARNED=$HOME/bc5-work/direct-learned-none.txt  # 2026-11-13, the maintainer's order (exp 0412 sections 52-56, 60): NO learned windows; an empty read-only file
+-export BC5_GUARD_LEARN_LOG=${BC5_GUARD_LEARN_LOG:-2}  # the catcher: a GPU fault is journaled ("would learn ..." in gc/direct.log) with its address and kind; nothing is written, nothing added
++# 2026-11-13, the maintainer's order (exp 0412 sections 52-56, 60): NO learned windows; an empty read-only file  [exp 0419: now in the emulator's table or read by nothing]
++# the catcher: a GPU fault is journaled ("would learn ..." in gc/direct.log) with its address and kind; nothing is written, nothing added  [exp 0419: now in the emulator's table or read by nothing]
+ export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/_SaveData-pkg-play
+ # exp 0413: the second title's own words, as the tested daily line fast7/lean7 (exp 0412) ran them; each can be
+ # overridden from the environment.
+-export BC5_DIRECT_CP_COHER_START_DELAY=${BC5_DIRECT_CP_COHER_START_DELAY:-1}  # on in every play since 11-03; never A/B'd
+-export BC5_DIRECT_LAZY_RELEASE=${BC5_DIRECT_LAZY_RELEASE:-30,eager}  # orphan release
+-export BC5_GUARD_SPLIT=${BC5_GUARD_SPLIT:-1} BC5_GUARD_FORGET=${BC5_GUARD_FORGET:-10}
+-# exp 0413: this title's switches that are not defaults in the emulator (audit rows A15, A16, A17, A21, A22 of patch
+-# 0001), as the daily line fast7/lean7 ran them. A value already in the environment wins; NAME=0 there turns one off.
+-for w in \
+-    KYTY_BC5_SAVEDATA_MEMORY_FIXES=1 KYTY_BC5_SAVEDATA_DELETE_BUSY=1 KYTY_BC5_SAVEDATA_ALIASES=1 KYTY_BC5_HTTP2_FIXES=1 \
+-    KYTY_BC5_PAD_OPEN_EXT=1 KYTY_BC5_JSON2_FIXES=1 KYTY_BC5_ULT_FIXES=1 KYTY_BC5_USERSERVICE_VALUES=1 \
+-    KYTY_BC5_SYSTEMSERVICE_VALUES=1 KYTY_BC5_SYSTEMSERVICE_PARAMS_7_1000=1 KYTY_BC5_AUDIOOUT_CHECKS=1 KYTY_BC5_AUDIOIN_CHECKS=1 \
+-    KYTY_BC5_NGS2_RACK_FIX=1 KYTY_BC5_FW_PAD=1 KYTY_BC5_LOAD_ZLIB=1 KYTY_BC5_LOAD_JPEG=1 \
+-    KYTY_BC5_LOAD_IME=1 KYTY_BC5_LOAD_NPCOMMON=1 KYTY_BC5_LOAD_NPMANAGER=1 KYTY_BC5_LOAD_NPTROPHY=1 \
+-    ; do
+-  n=${w%%=*}; [ -n "${!n+x}" ] || export "$w"
+-done
++# on in every play since 11-03; never A/B'd  [exp 0419: now in the emulator's table or read by nothing]
++# orphan release  [exp 0419: now in the emulator's table or read by nothing]
++# exp 0419: this title's twenty library words are in the emulator's own table for this title (src/bc5/switch_defaults.hpp)
+ # Optional, off here: export BC5_R3_SUBMIT_EOP_EVENT=1  (on in the daily line until 11-12; its global packet ring can be
+ # read after a wrap by a deferred callback, Codex's review of exp 0413; back on once the owned-packet fix is in)
+ # No zero skip (BC5_DIRECT_ZERO_SKIP): it hung the GPU in 5 of 8 runs without the ledger (exp 0412 section 47).
+@@ -72,20 +61,17 @@
+ # Experiment 0053: their arguments checked by the CP when it runs them, a CP DMA wait before a
+ # dispatch after an unsynced copy; with both the tree refit runs too (before: skipped,
+ # BC5_DIRECT_MEC_SKIP_PGM=909939900, which bc5-pkg.env can set again with GPU_CHECK unset).
+-export BC5_DIRECT_MEC_INDIRECT=1 BC5_DIRECT_GPU_CHECK=1 BC5_DIRECT_DMA_SYNC=1
+ # Experiment 0055: cross-queue waits a job already on the ring will satisfy are left to the GPU.
+ # 2026-10-14 (experiments 0080-0081): the title's menus need the multi-draw packets and the code
+ # aliases, and undeferred flips (deferred ones lose glyphs).
+ [ "${BC5_KEEP_FLIP_DEFER:-0}" = 1 ] || unset BC5_DIRECT_FLIP_DEFER  # exp 0171: BC5_KEEP_FLIP_DEFER=1 keeps the deferral of bc5-run.env
+ # Experiment 0103 (maintainer said yes, 2026-10-15): the post-flip sync walk skipped for pages
+ # known to stay unmapped. (0105 PACE_FIX removed 2026-10-15: the 1.7 came from ASTRO s timestamp scale, now per title.)
+-export BC5_DIRECT_REMEMBER_UNMAPPED=1
+ # Experiments 0112 and 0113 (maintainer said yes, 2026-10-15): APR reads of one buffer in parallel, and
+ # decoded package blocks kept on disk between starts (bc5-mount, at most 8 GiB).
+-export KYTY_BC5_APR_PARALLEL=8 BC5_MOUNT_DISK_CACHE=$HOME/bc5-data/cache/bc5-mount
++export BC5_MOUNT_DISK_CACHE=$HOME/bc5-data/cache/bc5-mount
+ # Experiment 0122 (maintainer said yes, 2026-10-15): the sources of graphics buffers DMA copies
+ # taken at submission (backend snapshot ring): no other uploads pictures in the menu text.
+-export BC5_DIRECT_DMA_SNAPSHOT=4096
+ # Experiment 0123 (maintainer said yes, 2026-10-15): New Game hung in the ray-traced-reflection
+ # traversal (F113-F116); with it skipped New Game reaches the start screen (no RT reflections).
+ # Pressing cross there (the game itself) works (maintainer, 2026-10-15, runs 527-528).
+@@ -97,8 +83,7 @@
+ # (BC5_DIRECT_GC_TF_RING=1): no geometry-engine reads at address 0 (F207/F208), the night scene's
+ # tessellated patches draw. With it a fourth traversal variant, 0x11d04bb900, enters the F234 loop and
+ # is skipped too. BC5_DIRECT_GC_TF_RING=0 and the old skip list restore the previous setup.
+-export BC5_DIRECT_GC_TF_RING=${BC5_DIRECT_GC_TF_RING:-1}
+-export BC5_DIRECT_GC_HS_OFFCHIP=1  # exp 0399: the title's own VGT_HS_OFFCHIP_PARAM, the water
++# exp 0399: the title's own VGT_HS_OFFCHIP_PARAM, the water  [exp 0419: now in the emulator's table or read by nothing]
+ # Experiment 0218 (the maintainer said yes, 2026-10-22: "Wygląda świetnie... w pełni grywalne"): the
+ # reflections are on by default. The traversal variants run with the flat-aperture fix
+ # (BC5_DIRECT_FLAT_APERTURE=1, F249-F251), the sparse AMM pages are backed (BC5_DIRECT_AMM_PRT=1, F257,
+@@ -108,9 +93,8 @@
+ # (11d049aa00,11d04a6000,909974400,11d04bb900) restore the previous setup (backup play-pkg.sh.bak-0218).
+ # The emulator turns PRT on whenever BC5_DIRECT_AMM_PRT is set at all (patch 0001 tests presence only),
+ # so =0 here unsets it.
+-export BC5_DIRECT_FLAT_APERTURE=${BC5_DIRECT_FLAT_APERTURE:-1}
+-if [ "${BC5_DIRECT_AMM_PRT-1}" = 0 ]; then unset BC5_DIRECT_AMM_PRT; else export BC5_DIRECT_AMM_PRT=${BC5_DIRECT_AMM_PRT:-1}; fi
+-export BC5_DIRECT_SKIP_PGM=${BC5_DIRECT_SKIP_PGM:-0}  # exp 0323: the compaction 909974400 runs with RT on (exp 0306+); 0 = nothing skipped
++# exp 0419: BC5_DIRECT_AMM_PRT is in the title's table; BC5_DIRECT_AMM_PRT=0 in the environment turns it off
++# exp 0323: the compaction 909974400 runs with RT on (exp 0306+); 0 = nothing skipped  [exp 0419: now in the emulator's table or read by nothing]
+ # Top session, 2026-10-24 (exp 0278/0280, F337-F340; the maintainer approved it): the BVH build work the Emulation >
+ # Ray tracing switch drops when it is off. The switch itself stays on unless the menu or KYTY_BC5_RT=0 says otherwise.
+ # 2026-10-25 (exp 0299, F362, the maintainer's yes): RT off also drops the reflection traversal 0x11d049aa00, 0x11d04a6000 and 0x11d04bb900, which with no BVH built whitens the lab.
+@@ -118,10 +102,8 @@
+ # Experiment 0182 (the maintainer, 2026-10-20: "with chains it is much better"): the submission chains
+ # across ioctls (ADR 0010; F224: the gameplay route 33 -> 48 fps) by default for this title, normal and
+ # lean build alike. BC5_DIRECT_CHAIN=0 turns them off.
+-export BC5_DIRECT_CHAIN=${BC5_DIRECT_CHAIN:-2}
+ # Top session, 2026-10-24 (F253, F254, F256, F266; the maintainer approved it): the compute-state prefix in front of
+ # graphics buffers that dispatch before setting their own program. BC5_DIRECT_CS_PREFIX=0 turns it off.
+-export BC5_DIRECT_CS_PREFIX=${BC5_DIRECT_CS_PREFIX:-1}
+ # BC5 (2026-10-23, exps 0227-0229, F286/F287): APR read-ahead is on again, with the fix that leaves
+ # large and parallel-run loading buffers to the worker. The slow loads of 10-22/23 were the near-full
+ # drive (F286), not read-ahead; the fix keeps loads equal and speeds the cutscene clock-voice reads.
+@@ -135,17 +117,15 @@
+ # exp 0160 (F208): at a fence timeout, dump the buffer the GPU ran and journal its draws/dispatches with the bases in force (cheap, only on a timeout).
+ [ "${BC5_NO_TIMEOUT_PROBE:-0}" = 1 ] || [ "${BC5_LEAN:-0}" = 1 ] || export BC5_DIRECT_TIMEOUT_PROBE=1  # exp 0175: BC5_NO_TIMEOUT_PROBE=1 for A/B
+ # exp 0160 (F208): one journal line per fast-launch point draw (arguments, GS user data) to compare with the one that hangs.
+-export BC5_DIRECT_INDIRECT_DRAWS=multi BC5_DIRECT_ALIASES=1
+ # Experiment 0129 (maintainer said yes, 2026-10-16): the compute buffers on kernel compute ring 0,
+ # the GFX ring waiting on the GPU for the labels they write (start screen 32-34 -> 41-42 fps).
+-export BC5_DIRECT_CROSS_RING_WAITS=all  # exp 0342 (F412, F415): one ring - every compute buffer on the GFX ring (was 0)
+-export BC5_DIRECT_GPU_CHECK_PRODUCT=1 BC5_DIRECT_SHADOW_LABELS=1  # exp 0342 (F414, F415): the RT-on guards - the product staircase in the CP check, host shadow labels
+-export BC5_DIRECT_HOST_INDIRECT=learn:1100000000 BC5_DIRECT_SOFT_WAIT_MS=8  # exp 0350 (F432): exp 0346 v3 (a GFX-form dispatch after the title zeroed base-1 resolved by the host, rewritten only to a page it read, else NOP-ed) + exp 0343 (soft-CP replay polls bounded at 8 ms); the exp 0349 cut is on by default
+-export BC5_DIRECT_RING_DEPS=dcb  # exp 0323 (F385): every GFX-ring job starts after the compute rings' last jobs - the BVH build's two-ring split hung 11/11 at ~2 min with RT on (exps 0320-0322); cost about the one-ring flip rate
++# exp 0342 (F412, F415): one ring - every compute buffer on the GFX ring (was 0)  [exp 0419: now in the emulator's table or read by nothing]
++# exp 0342 (F414, F415): the RT-on guards - the product staircase in the CP check, host shadow labels  [exp 0419: now in the emulator's table or read by nothing]
++# exp 0350 (F432): exp 0346 v3 (a GFX-form dispatch after the title zeroed base-1 resolved by the host, rewritten only to a page it read, else NOP-ed) + exp 0343 (soft-CP replay polls bounded at 8 ms); the exp 0349 cut is on by default  [exp 0419: now in the emulator's table or read by nothing]
++# exp 0323 (F385): every GFX-ring job starts after the compute rings' last jobs - the BVH build's two-ring split hung 11/11 at ~2 min with RT on (exps 0320-0322); cost about the one-ring flip rate  [exp 0419: now in the emulator's table or read by nothing]
+ # Experiment 0134 (2026-10-16): no ring dependencies; the black blocks of experiment 0132 were the
+ # compute heads dropping their waits on graphics (fixed in the host), not the order itself.
+ # Experiment 0133 (2026-10-16): the two-ring limit at 4 ms (ASTRO BOT geyser 32-34 fps against 30-31 at 8 ms).
+-export BC5_DIRECT_TWO_RING_WAIT_MS=4
+ # 2026-10-16, for measuring play sessions: the direct path journal (frame profile, no buffer dumps)
+ # in ~/bc5-data/captures/play-<date>/gc/direct.log.
+ if [ "${BC5_LEAN:-0}" != 1 ]; then  # exp 0177: no journal with BC5_LEAN=1
