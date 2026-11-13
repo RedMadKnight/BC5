@@ -3115,8 +3115,102 @@ stand-ins (a fake record, a fake kernel log) completed the record and did nothin
 shortcut's launcher: that follows the first clean test and his word.
 
 **The build's sums now** (`memfast/mk0412z.sh`, kit `kit-z.sha256`, 16 files): nl412 cfb7533e → rl412 0878903e → k1r412
-0d265595 → fr412 with the guard's call df69ba22 → ff412 169bd1df; sg412: fileSystem.cpp 9194fc38 → 3d2b9c0b,
+0d265595 → fr412 with the guard's call df69ba22 → ff412 169bd1df (as first written; as built: section 66); sg412: fileSystem.cpp 9194fc38 → 3d2b9c0b,
 libSaveData.cpp 0e0c5d40 → 090e32cb, the header 1f1585b4. Five CPU tests in the build script.
+
+### 66. g412z built; the cutscene arm three times: clean with K1r, and clean WITHOUT it (2026-11-13 09:56–10:21, box)
+
+**The build.** `mk0412z.sh`: the five CPU tests pass on the box (firstfail 101,506, maprule 15,281, rlabels 4,970,
+k1r 17,742, saveguard 178). The first compile failed in one place of mine: the save guard's header was included
+inside a namespace in `libSaveData.cpp` (and would have been in the main unit, where it would also have made a second,
+separate set of the guard's counters); both includes moved to the files' top level. Second compile: **g412z
+`e07e3414`**, 64 warnings, private backend archive 4c340f6d; the shared tree, builds, backend and archive only read.
+Sums as built: main unit nl412 cfb7533e → rl412 0878903e → k1r412 0d265595 → fr412 0a4fa422 → ff412 1c5d1ec2;
+fileSystem.cpp 3d2b9c0b, libSaveData.cpp 0bd91bb4, the header 1f1585b4; backend direct.hpp 26519fcc, direct.cpp 8f617378.
+
+**The arm** (`run0412n.sh`, `N_SAVES` = the snapshot of 09:14, `N_SLOT=4`, `N_NOWALK=1`, arm fast8's words plus
+`BC5_GUARD_LEARN_LOG=2 BC5_GUARD_K1_STAT=1 BC5_FAULT_RECORD=1`, RT on, fuse 13,000/2,048, 240 s after the load with no
+input). The slot list is walked by position; the title wrote `i38-slot4-game-autosave` in the runs where it could
+write, so the fourth entry is his slot 4 [M].
+
+| run | K1r | ended | flips/s | kernel lines | fault record | pinned direct max, lowest available |
+|---|---|---|---|---|---|---|
+| k1ra 10:01 | on | G+240, 354 s | 29.7 | 0 | none | 11,248 MiB, 685 MiB |
+| k1rb 10:08 | on | G+240, 355 s | 29.9 | 0 | none | 11,250 MiB, 727 MiB |
+| k1rc 10:14 | **off** | G+240, 356 s | 30.5 | 0 | none | 11,234 MiB, 970 MiB |
+
+(f9a this morning, the scripted walk on the shared build: 11,424 MiB and 501 MiB.) All three passed the 286th second,
+the time of the morning's fault, with 25–34 flips/s around it.
+
+- **K1r in k1ra** [M]: 942 read-only zero pieces over 1,870 MiB at the first rebuild; 512 pieces over 1,020 MiB at
+  289 s (about 430 pieces gave way to real pages as the CPU wrote them); the zero buffer held 0 non-zero words at
+  every one of the 12 checks; no line of a GPU write into a cover; the drain counted 0 in the journal's last timing
+  windows. Covers pin nothing: the pin is the same with and without them. The replace form was not run.
+- **The maintainer watched k1ra at the box** (relayed by the top; his observation of the picture, not a
+  measurement): "Bardzo stabilna gra była".
+- **k1ra ran on a read-only save copy** (my defect: `cp -a` kept the snapshot's read-only modes, the title could not
+  write; the next start failed on `rm`). Fixed in `run0412n.sh` (the private copy is made writable); k1rb and k1rc
+  ran with it and the title wrote its autosave.
+
+**What this does and does not show.** The control did not fault. So on this route **the morning's fault is not
+reproduced, and the two clean K1r runs do not show that K1r removes it.** K1r is shown only to run: 710 s of this
+scene with about 1 GiB under read-only zero covers, no fault, no write into a cover, the speed and the memory of
+the control. The fault record and the save guard were armed in all three and never called: untested in the real
+build. Why the control is clean is not known. Candidates [I]: (a) the morning's state came from four minutes of his
+play before the scene (the autosave of 08:58 was written in that play, the fault came a minute later), and a load
+straight into the scene lays the heap out differently; (b) the fault depends on what the scene does after an input
+of his; (c) it is intermittent (one control so far). The K1 catcher's line carries a defect of mine (an unsigned
+underflow prints "17592186044412.0 MiB" for the windows' total in k1ra): the number is wrong, nothing depends on it.
+
+### 67. The morning's page, watched and read by the host: with K1r it reads zero (2026-11-13 10:25–10:45, box)
+
+The top's order after section 66: do not wait for chance; make the test deterministic at the address.
+
+**Two more controls** (K1r off, the same arm): k1rd on g412z, 354 s, 30.1 flips/s, 0 kernel lines; k1re on g412za,
+354 s, 30.3, 0 kernel lines. Three controls in all, none faulted.
+
+**The watched address** (tag wa412, `memfast/mkwa0412.py`, `BC5_GUARD_WATCH=<hex>[,<hex>...]`, a catcher, default
+unset; build **g412za `c4bb0bff`** = g412z + it). For each address the journal says, at every change and every 10 s:
+the view over it, whether the CPU has written its 2 MiB chunk of the direct file (SEEK_DATA), whether the chunk is
+imported, and what the GPU has there (no mapping, the title's memory, a read-only zero cover). Read on the
+submitting thread at the start of the per-submission sync.
+
+k1re [M], 0x1100000000 and 0x1100200000, from the first line to 350 s, never changed: under "AssetHeap Large" (by
+data; view 0x10d0000000+0x33000000, the address 0x30000000 into it; file chunk 0x91a00000): **the chunk never written
+by the CPU, not imported; GPU: NO MAPPING**. So the page is in the state of the morning's fault for the whole run:
+the route is not past it. The title does not read that page in these runs (three controls), which is why they are
+clean. Why it read it in his play is not known (candidates in section 66).
+
+**The host's read probe** (tag pr412, `memfast/mkpr0412.py`, `BC5_GUARD_K1R_PROBE=<hex address>[,<seconds after the
+emulator's start>]`, default unset; build **g412zb `65511824`** = g412za + it, first compile clean; private backend
+direct.hpp 2497a4ce, direct.cpp b183516e, archive ed63df2f). Once, at the first submission after the time,
+`Device::probe_read` submits jobs of the host's own **in a context of its own** (the title's context and its state
+are not touched; the address space belongs to the device file, so it is the title's): IGT's gfx10 buffer-copy
+program, as in `e1/e1-probe.cpp` (cited there), copies 16 KiB from a source to the probe's destination, which the
+host fills with 0xA5 first. Step 1 is a control (the source is the probe's own pattern; if it does not arrive whole
+the probe says it is not working and stops); step 2 journals the address's state; step 3 is the read. One 64 KiB
+buffer at 0xFDFF000000; a command slot is used once (E1's finding); at most four probes per run. No CPU test (it
+is a GPU job); the unit chain is nl412 → rl412 → k1r412 → fr412 0a4fa422 → wa412 5d763ab8 → pr412 dfa98a48 → ff412
+9d4de45e.
+
+**k1rf [M]: K1r on, the probe at 0x1100000000 at 200 s** (g412zb, the same arm, `BC5_FAULT_RECORD=1`):
+
+- the control ran in 2.04 ms and all 16,384 bytes matched the pattern;
+- the address before the read: under "AssetHeap Large", the chunk never written, not imported; **GPU: a read-only
+  zero cover (K1r)** (the watch shows the cover from 0.9 s on);
+- **the read ran in 0.03 ms: all 16,384 bytes zero, none of the destination's fill left; no fault**;
+- the run went on to G+240 (357 s, 30.6 flips/s), 0 kernel lines, no fault record.
+
+**What this shows.** On the page of the morning's fault, in the title's real layout and in the state the fault had
+(never written, not imported), a GPU read with K1r on returns zeros and does not fault. That is K1r's rule shown at
+the address, by a read of ours, not by the title's shader. **What it does not show:** the same read without K1r
+faulting in this build (E1's cases and the morning's fault say an unmapped page faults; the probe's own arm for it is
+a deliberate GPU fault and waits for the maintainer's word), the fault record, the save guard and exit 86 in the real
+build (they have still not fired), and the title's own read of that page (not reproduced).
+
+**Limits of the probe.** It reads 16 KiB (four pages) from the address, not 16 bytes. Its job is on the GFX ring in
+another context: it says what the address space returns, not what the title's shader would have done with zeros.
+The control's line counts 128 bytes "still holding the fill": those are pattern bytes that happen to equal 0xA5.
 
 ## Verdict
 
