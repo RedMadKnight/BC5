@@ -37,3 +37,22 @@ Request: the unit hashes after NAMES_FAST / VMA_FAST / the spin words go (its ki
 | `BC5_FAULT_RECORD` (+ the save guard), `BC5_DIRECT_TIMEOUT_PROBE` | - | KEEP | the maintainer's rule for GPU faults |
 | the K1r chain (`BC5_GUARD_K1R*`, `_WATCH`, `_K1_FILTER`, `_LAZY_BY_DATA`) | not in B | keep, live, private | its scripts anchor on the text of `direct_sync_one`, the k1r hooks, `covered_sorted` and `direct_lazy_name` in 8126c0aa: the candidate unit goes to it before it goes shared |
 | `BC5_DIRECT_HEAP_GUARDS` | UNDECIDED | not its word | exp 0417's (this session): clean with and without; undecided |
+
+## exp 0412, second round (2026-11-13 evening): its line per word for the candidate after F
+
+Checked by it against F's unit 59d17cf5; none of this is the maintainer's word.
+
+| Word | Its line | Detail |
+|---|---|---|
+| `BC5_GUARD_MLOCK` | DELETE | never in a play; needs `ulimit -l` |
+| `BC5_GUARD_PIN_CAP`, `_CAP_ACT`, `_CAP_NAMES` | DELETE | the PIN_CAP half of K1r's "REFUSED" text and its getenv go with it |
+| `BC5_GUARD_FORGET` | one arm without, then constant or delete | its reason (264 MiB "forced and under no view" after 5 min) was measured when learned windows still forced chunks. Read on a walk to G+560: the ledger's orphans and GTT at 420 s and 600 s; under 100 MiB difference: delete, otherwise constant 10 |
+| `BC5_GUARD_MAP_RULE` + `BC5_GUARD_PRT_BG` | DELETE, confirmed | goes: `mr412::rule()`, `rule_for()` and its use in `direct_sync`, `mr412::prt_bg()`, `in_bg()`, `kBgLo`/`kBgHi`, `g_mr412_bg`, the background branch of `mr412_prt_open`, the `g_mr412_bg && mr412::in_bg` return. STAYS: `mr412_prt_open` itself (the AMM window's PRT mapping), `mr412::classify` (also used by the fault record), `mr412_would_learn` and its call |
+| `BC5_DIRECT_LAZY_RELEASE=30,eager` + `BC5_GUARD_SPLIT=1` | one arm without on both titles | CONSTANT if with them the direct pin or GTT at 420 s / 600 s is lower by 100 MiB or more on either title; read the longest gap too (the split runs inside the device mutex); if "without" is no worse by 100 MiB: delete both |
+| `BC5_GUARD_LAZY_BY_DATA` | stays off, its own | until its option B's first heap arm is read; then delete or constant in the candidate after that |
+| `BC5_DIRECT_MAX_BO_MIB` | stays, its own | until one pair unset against 16 on the walk; not run by the candidate after next: delete |
+| `BC5_GUARD_LEARN_LOG` | the word and `mr412::learn_log()` can go | with value 2's behaviour constant (the alias file is never written). Condition: its wrappers grep the binary for the string and refuse to start without it, so the wrapper check and the shortcuts change in the same swap, on the maintainer's own word |
+| diagnostics (`_WATCH`, `_K1_STAT`, `_LEDGER`, `_WRITERS`, `ZEROSCAN_AT`, `ZERO_NAMES`, `MEM_FIRSTFAIL`, `TRAP_LOG`, `TIMEOUT_PROBE`) | all stay | except `BC5_DIRECT_ZEROSCAN_OUT`, which can go (its only reader was the zero skip) |
+
+New on its side, private build only: `BC5_GUARD_WRITERS=2` (tag wc412) and `BC5_GUARD_BYDATA_NAMES` (tag bd412), for its
+memory-wall arms; not in any candidate.
