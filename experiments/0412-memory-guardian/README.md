@@ -3826,6 +3826,57 @@ and 12,331 MiB of GTT and 409 and 406 MiB available):
 An arm is run only after the one before it is read; a fault's record names the writer, and that writer's
 class gets an import rule before the heap is tried again.
 
+### 83. The series for F's hang, read for K1r; the cover pass old against new on generated layouts (2026-11-13 21:00-22:00 the integrator's five walks to G+620, exp 0419 README section 14; read here 22:1x, read only)
+
+| arm | build and switches | result [M, the integrator] |
+|---|---|---|
+| sA | F plain (K1r on) | **the title faulted on the CPU at 543 s**: read of 0x17fc at eboot+0x1b349f; no GPU fault, kernel lines 0 |
+| sB | F, `BC5_GUARD_K1R=0 BC5_GUARD_K1_FILTER=0` | clean, 26.3 flips/s, longest gap 739 ms |
+| sC | F without exp 0418's five new rows (K1r on) | clean, 25.9, 1,020 ms |
+| sD | shared B | clean, 26.1, 875 ms |
+| sE | F + zero scan + `BC5_GUARD_WRITERS=1` (m5wall again) | clean, 24.8, 573 ms |
+
+Long walks past G+320 so far: F with K1r on 2 failed of 4 (the GPU hang of section 81; this CPU fault), F with
+K1r off 0 of 1, E (form 4) 0 of 1, B 0 of 1.
+
+**What precedes the CPU fault in sA** (journal `~/bc5-data/captures/play-20261113-2100/gc/direct.log`,
+`~/bc5-work/exp0413/n/raw/sA-crash.txt`; on the box):
+- [M] The instruction is `movzx ebx, word [r11+r10-4]` in a loop that copies 16-bit words (rax = r8 = rdx =
+  0x200; the bytes before it compute r10 = 2*r10 + [rdi]). r10 is 0x1000 and r11 0x800: the base pointer read
+  from the title's own structure at 0x131c7bf580 was 0. A READ by the title's CPU through a null base.
+- [M] No K1r event before it: the k1r line is written when the number of covers changes (at most every 10 s);
+  its last line is at 152 s (380 pieces, 756 MiB), so the cover count did not change for 390 s. K1 at the
+  filter imported nothing in the whole run (0 lines, as in all five runs). No GPU fault, no "would learn", no
+  failed submission. Memory at 530 s: available 531 MiB, GTT 12,271.
+- [M] The lines of the last seconds are the ordinary ones (merges, "flip label still set", one
+  "cpu-wait WAIT_REG_MEM64 ... GIVEN UP after 16.3 ms"); the run has 96 of those, sB 99, sC 168, sD 44, sE 147.
+- [I] A CPU read cannot see a cover. sB ran the same route with K1r off and had no GPU fault, so on that run no
+  GPU read reached memory a cover would have hidden; that speaks against "zeros read through a cover" as the
+  source here. Why the title's pointer was null is NOT known.
+
+**Form 6 (F) against form 4 (E)**: form 5 changed one thing, the start of `k1r412::cover()`'s walk (a binary
+search for the last buffer that begins at or before the view's start); form 6 added ww412, which does nothing
+unless `BC5_GUARD_WRITERS` is set. F also carries exp 0417's save fix and exp 0418's diff, which E did not.
+- [M, the code] The search relies on the buffer list being sorted and disjoint. It is: the only insert into
+  `S.bos` goes through `std::upper_bound` on the offset, and the merge replaces a run by one buffer in place.
+- [M, laptop] `k1r0412.cpp`, now 209,746 of 209,746: on 4,000 generated layouts (0-12 buffers, adjacent or
+  with gaps) and 96,000 views placed on buffer edges, one page before and after them, inside and across
+  buffers, the two passes give the same pieces in every case (differ in 0); each view is also checked page by
+  page against a model (a page is covered exactly when no buffer holds it). I find no defect in form 5's pass.
+
+**The shortest series that decides** (scripted, long walks to G+620, no build needed): the kept F binary twice
+plain and twice without exp 0418's rows; E's kept private binary (form 4) twice if it still exists (only B and F
+are in `exp0413/kept`). Six walks, about 70 minutes. F plain fails again and "without rows" does not: exp 0418's
+rows. Both fail and E does not: forms 5/6 or exp 0417's fix. Nothing fails: the rate is under about one in
+four and only more walks tell.
+
+**ww412 from sE, all five scans** [M] (not named / turned non-zero, 175-640 s): RenderGpuWcLarge 11 of 98,
+RenderGpuRwLarge 30 of 35, CommitIABufferAllocator 10 of 20, AMM 1 of 60, VisualEffectInstanceHeap 1 of 1, the
+rest 0. As in section 81. Zero in all five scans: RenderGpuWcLarge 902 MiB, CommitIABufferAllocator 280,
+RenderGpuRwLarge 192, DynamicHeap 160 + 22, Physics 116, ComponentHeap 56 + 24; all listed heaps 1,828 MiB.
+
+Not updated: `kit-ze.sha256` (it names the old `k1r0412.cpp`; that kit was never sent).
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over

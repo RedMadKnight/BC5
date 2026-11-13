@@ -152,6 +152,70 @@ int main() {
 		check(same, "the pass with the binary search gives the same pieces as the walk from the list's start");
 		check(steps_old > 3'000'000, "the old pass costs millions of steps for 21,000 views (the 20 ms a rebuild of section 78)");
 		check(steps_new < 21000 * 6, "the new pass looks at a handful of entries per view");
+		// 2026-11-13 night (README section 83; the top's order after two faults on long walks with form 6): the two passes
+		// on generated layouts that sit on the edges: 0-12 buffers that touch or leave gaps of whole chunks, views that
+		// start and end ON buffer edges, one page before and one page after them, inside one buffer, across several, before
+		// the first and after the last. Checked three ways: the same pieces as the old pass; against a page-by-page model
+		// (a page of the view is in a piece exactly when no buffer holds it); and the pieces' form (ascending, disjoint,
+		// never across a chunk boundary of the file).
+		uint64_t layouts = 0, views_n = 0, differ = 0;
+		for (int it = 0; it < 4000; it++) {
+			std::vector<k1r412::Bo> bl;
+			std::vector<uint64_t>   edges = {0};
+			uint64_t                o     = (r2() % 3) * kChunk;
+			const int               nb    = static_cast<int>(r2() % 13);
+			for (int i = 0; i < nb; i++) {
+				const uint64_t n = (1 + r2() % 3) * kChunk;
+				bl.push_back({o, n});
+				edges.push_back(o);
+				edges.push_back(o + n);
+				o += n + (r2() % 3 == 0 ? 0 : (r2() % 3) * kChunk); // adjacent buffers are common
+			}
+			const uint64_t fend = o + 2 * kChunk;
+			edges.push_back(fend);
+			layouts++;
+			for (int v = 0; v < 24; v++) {
+				auto pick = [&]() -> uint64_t { // an edge, a page off an edge, or anywhere
+					const uint64_t e = edges[r2() % edges.size()];
+					switch (r2() % 4) {
+						case 0: return e;
+						case 1: return e >= kPage ? e - kPage : e;
+						case 2: return e + kPage;
+						default: return (r2() % (fend / kPage + 1)) * kPage;
+					}
+				};
+				uint64_t a = pick(), b = pick();
+				if (a > b) std::swap(a, b);
+				if (a == b) b = a + kPage * (1 + r2() % 3);
+				const uint64_t vva = 0x1000000000ull + (r2() % 64) * kPage; // the address is not the offset
+				std::vector<k1r412::Piece> po, pn;
+				uint64_t                   st = 0;
+				old_cover(vva, a, b - a, bl, kChunk, po, st);
+				k1r412::cover(vva, a, b - a, bl, kChunk, pn);
+				views_n++;
+				if (!(po == pn)) differ++;
+				bool     form = true;
+				uint64_t at   = vva;
+				std::vector<uint8_t> in_piece((b - a) / kPage, 0);
+				for (const auto& p: pn) {
+					form = form && p.size != 0 && p.va >= at && p.va % kPage == 0 && p.size % kPage == 0 && p.va + p.size <= vva + (b - a);
+					const uint64_t f0 = a + (p.va - vva);
+					form = form && f0 / kChunk == (f0 + p.size - 1) / kChunk;
+					for (uint64_t x = p.va; form && x < p.va + p.size; x += kPage) in_piece[(x - vva) / kPage] = 1;
+					at = p.va + p.size;
+				}
+				check(form, "generated layout: pieces ascending, disjoint, inside the view, never across a chunk boundary");
+				bool model = form;
+				for (uint64_t x = a; model && x < b; x += kPage) {
+					bool held = false;
+					for (const auto& q: bl) held = held || (x >= q.off && x < q.off + q.size);
+					model = in_piece[(x - a) / kPage] == (held ? 0 : 1);
+				}
+				check(model, "generated layout: a page is covered exactly when no buffer holds it");
+			}
+		}
+		std::printf("identity: %" PRIu64 " generated layouts, %" PRIu64 " views: the two passes differ in %" PRIu64 "\n", layouts, views_n, differ);
+		check(differ == 0, "generated layouts: the binary-search pass gives the same pieces as the walk from the list's start");
 	}
 	// the write bit of the fault status, the two kernel samples
 	check(k1r412::status_write(0x00741041u), "status 0x00741041 (E1 case 4, RW 1) is a write");
