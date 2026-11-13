@@ -3724,6 +3724,60 @@ Candidate E (the pass before the binary search): 18.8-20.3 ms. Longest gaps: K1r
   prepared; it would start from a split of `k1r412_want`'s time, as a diagnostic.
 - FAULTS.md row 1 closes on m2cuta and m2cutb: the cutscene ran to G+320 twice on the fixed build with no fault.
 
+### 81. The long walk on F with the zero scan and the writers catcher (arm m5wall): a GPU hang at 601 s; ww412's first numbers (2026-11-13 20:22-20:33, the integrator's run; read here 20:55-20:57, read only)
+
+Arm m5wall: F's private binary, walk to G+560, `BC5_DIRECT_ZEROSCAN_AT=175,295,415,535,640`,
+`BC5_GUARD_WRITERS=1`. **A GPU hang at 601 s**: the kernel's "ring gfx_0.0.0 timeout", reset succeeded, no
+reboot; the fault record ended the game (605 s). Record: `~/bc5-data/captures/faults/20261113-203301`; journal
+`~/bc5-data/captures/play-20261113-2022/gc/direct.log` (on the box; not copied: they hold the title's buffers).
+Section 80's verdict "F is ready for the swap" is **withdrawn** until this is explained or shown not to repeat.
+
+What the record says [M]:
+- No page fault (fault address 0, status 0). Two jobs timed out after 2 s: acb #522931 (816 dwords: 0 waits,
+  10 label writes, 20 dispatches, 18 of them indirect) and dcb #522934 (45,179 dwords: 32 waits, 30 kept for the
+  GPU, 421 label writes, 34 dispatches).
+- The frames up to 599.0 s are ordinary (33 ms a flip, GPU busy 25-32 ms). Memory at 600 s: available 406 MiB,
+  swap 665 MiB, GTT 12,331 of 13,312.
+- The probe finds nine waits "NOT met" in the dcb. All their labels (0x11e0270460 ... 0x11e0bd0950) lie in one
+  ordinary mapping, 0x11e0000000 + 0xe14000, of the eager heap RenderGpuRwLarge. An eager heap gets no K1r cover.
+  The probe reads the labels after the reset, when the memory was reused: "NOT met" there proves nothing.
+- K1r's last line before the hang (229 s): 378 zero pieces over 752 MiB; the zero buffer holds 0 non-zero words.
+
+Can ww412 or K1r be in it? [I]
+- ww412: by mechanism no. It reads packets and fills a set under its own mutex on the CPU; it changes no
+  mapping, no packet, no label. It adds CPU time to each submission (not measured).
+- K1r: no sign of it, and not excluded. Its two known failure kinds do not fit as seen: a GPU write into a cover
+  is a page fault (there is none); a wait on a label under a cover would hang without a fault, but the labels
+  found are not under a cover. What stays possible: a shader that reads zeros where the console has data and
+  does not finish. One run cannot tell.
+- What differs from E's clean walk of the same length (k4wall): form 6 for form 4, ww412 on, exp 0418's
+  start-state table. E ran at GTT 12,220 at 615 s; this run at 12,331 at 600 s.
+- The arms that tell them apart, in this order: the same walk on F with no scan and no catcher; if it hangs,
+  again with `BC5_GUARD_K1R=0 BC5_GUARD_K1_FILTER=0`; if it still hangs, with exp 0418's rows off. The
+  integrator proposed the first; all are scripted, on a private save copy, with the fault record on.
+
+ww412's first numbers [M]: chunks (2 MiB) that turned non-zero between two scans, and how many of them no hint,
+force or packet operand had named (scans at 175, 295, 415, 535 s; the fifth never ran):
+
+| heap | turned, scans 2 / 3 / 4 | NOT named | of all turned |
+|---|---|---|---|
+| RenderGpuWcLarge | 45 / 35 / 27 | 4 / 5 / 2 | 11 of 107 |
+| RenderGpuRwLarge | 22 / 6 / 1 | 16 / 6 / 1 | 23 of 29 |
+| CommitIABufferAllocator | 10 / 7 / 1 | 9 / 1 / 1 | 11 of 18 |
+| AMM | (span changed) / 28 / 9 | 0 / 0 | 0 of 37 |
+| the other thirteen heaps | 0 | 0 | 0 |
+
+- CommitIABufferAllocator is **not shown clean**: 11 chunks got data that nothing named. For this heap the CPU
+  is the expected writer, and a CPU write is seen by the data scan; the catcher cannot tell a CPU write from a
+  GPU write. The order of PLAN-memory-wall.md stands, with that limit.
+- RenderGpuWcLarge: 90 % of what turned was named. The 11 not named are the open risk of its arm.
+- RenderGpuRwLarge: mostly not named (23 of 29). It should go last of the three, or get a naming rule first.
+- AMM: everything that turned was named (37 of 37 in two intervals). That contradicts my "every catcher is
+  blind there"; the plan's row is corrected to "leave eager until the hang is understood".
+
+A by-product, the cost of kl412's data scan [M]: 0.48-0.51 ms a scan (750 scans, 103,798 SEEK_DATA calls,
+384 ms by 229 s). That is about a third of the 1.6 ms K1r adds to a full sync (section 80).
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over

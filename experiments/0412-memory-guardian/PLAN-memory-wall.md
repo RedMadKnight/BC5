@@ -90,7 +90,7 @@ private save copy, so no save of his is at risk; his desktop session is.
 | 2 | RenderGpuWcLarge | 842 / 2,758 | render targets and GPU-written textures | binds (named by hints); shader writes through descriptors (not named) | high; the largest gain; go only after ww412's count for it |
 | 3 | RenderGpuRwLarge | 204 / 414 | buffers both sides read and write | both | high |
 | 4 | DynamicHeap, ComponentHeap, Physics | 182, 80, 116 | CPU heaps that also hold image descriptors (section 39) | the CPU | low to medium |
-| 5 | AMM | 154 / 10,084 | the streaming pool, reached only through shaders | unknown: every catcher is blind there | leave eager |
+| 5 | AMM | 154 / 10,084 | the streaming pool, reached only through shaders | ww412 (section 81): all 37 chunks that turned non-zero were named | leave eager for now (the largest span, the smallest gain) |
 
 My order differs from the top's proposal (RenderGpuWcLarge first) in one thing: one low-risk heap first, to learn
 whether a by-data heap under K1r runs at all, before the heap where a fault is likely. If ww412 shows zero
@@ -101,3 +101,10 @@ not-named chunks for RenderGpuWcLarge on the walk route, it can go first.
 Stopped for the time of a play today: Plasma's shell (118 MiB of RAM). To add: `plasma-keyboard` (the virtual
 keyboard, 76 MiB of GTT and its RAM; nobody types on it in a play), stopped and started again as the shell is.
 Not measured: which unit or process owns it on his session and whether it restarts by itself.
+
+### ww412's first numbers (2026-11-13 20:33, README section 81; the run ended in a GPU hang at 601 s, source not known)
+
+Not named, of the chunks that turned non-zero in six minutes: RenderGpuWcLarge 11 of 107, RenderGpuRwLarge 23 of
+29, CommitIABufferAllocator 11 of 18 (the CPU is its expected writer; the catcher cannot tell), AMM 0 of 37.
+The order stands; RenderGpuRwLarge goes last of the three or gets a naming rule first. No step-3 arm before the
+hang of section 81 is explained.
