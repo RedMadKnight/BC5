@@ -118,7 +118,7 @@ The values are from exp 0189's trace (`experiments/0189-ge-system-rings/raw/R0-i
 
 | Request | What the title sends | Candidate | Evidence | Certainty |
 |---|---|---|---|---|
-| 0x80888123, pair 3 | 0xf00144000, size 0x1000000 (16 MiB) | **The HS offchip ring**: the buffer that `VGT_HS_OFFCHIP_PARAM` = 0x1ff sizes. 0x1ff means 512 buffers (bits 0-8 = buffers − 1) of 8K dwords each (bits 9-10 = 0 = `X_8K_DWORDS`); 512 × 8192 × 4 B = 16 MiB exactly | Mesa `ac_gpu_info.c:1382` (8192 dwords per workgroup), `:1433-1436` (gfx8-gfx10.1 encoding: buffering = workgroups − 1), `:1447` (ring size = workgroups × dwords × 4); `gfx10.json:933-938` (`X_8K_DWORDS` = 0); Linux `gc_10_1_0_sh_mask.h:7078-7081` (the two fields) | inferred: exact arithmetic, no name |
+| 0x80888123, pair 3 | 0xf00144000, size 0x1000000 (16 MiB) | **The HS offchip ring**: the buffer that `VGT_HS_OFFCHIP_PARAM` = 0x1ff sizes. 0x1ff means 512 buffers (bits 0-8 = buffers − 1) of 8K dwords each (bits 9-10 = 0 = `X_8K_DWORDS`); 512 × 8192 × 4 B = 16 MiB exactly | Mesa `ac_gpu_info.c:1382` (8192 dwords per workgroup), `:1433-1436` (gfx8-gfx10.1 encoding: buffering = workgroups − 1), `:1447` (ring size = workgroups × dwords × 4); `gfx10.json:933-938` (`X_8K_DWORDS` = 0); Linux `gc_10_1_0_sh_mask.h:7078-7081` (the two fields) | inferred: exact arithmetic, no name. **Refuted by the trace** (result 2): the trace names this area as the driver's CWSR (wave save/restore) area. The match was arithmetic only |
 | 0x80888123, the other five pairs | 0xf00000000 + 0x2400, 0xf00004000 + 0x4000, 0xf00008000 + 0xfc000, 0xc80008000 + 0x3bb00, 0xc80043d00 + 0xd00. Slots 5 and 6 are empty and the trailing quadword is 0: 8 slots and one more quadword make 136 bytes | **None of Mesa's preamble buffers fits.** Scratch and the ESGS/GSVS rings are sized per pipeline. The TF ring is the title's own, sent by 0x80108128 (0x3fff8 at 0x1120000000) and not in this table. RADV's border-colour table is 64 KiB, and its bases (`TA_BC_BASE_ADDR`, `TA_CS_BC_BASE_ADDR`) are written by the title's own stream (exp 0401's audit lists neither as unset) | `radv_queue.c:256-337` (the ring descriptors), `:870-940` (the buffers); `ac_cmdbuf.c:61-62`, `:529-530` (border-colour bases) | none |
 | 0xc010813b | 16 bytes in and out; in = ffffffff ×4; the host answers zeros | **A CU mask per shader engine**: four dwords for SE0-SE3, all ones = every CU. Either the masks the kernel puts in its compute queues' MQD, or the PS5 form of 0xc010810b ("get cu masks param", the same 16 bytes; request number 0x0b against 0x3b is a pattern, not evidence) | Linux `gfx_v10_0.c:6916` and `:6925-6928` (`gfx_v10_0_compute_mqd_init`: `compute_static_thread_mgmt_se0..3` = 0xffffffff); `amdgpu_gfx.c:506` (`amdgpu_gfx_mqd_symmetrically_map_cu_mask`); Mesa `ac_cmdbuf.c:52`, `:66-72` (the gfx10 compute preamble writes `COMPUTE_STATIC_THREAD_MGMT_SE0..3`, 0 for an absent SE); RPCSX `gc.cpp:322-337` | inferred: shape and value |
 | 0x80048126 | 4 bytes in, once, = 1 | **None.** The amdgpu UAPI's only single-integer per-context settings are the priority (NORMAL = 0) and the stable pstate (NONE 0, STANDARD 1). No item of Mesa's or PAL's start state is a lone flag outside a packet | `amdgpu_drm.h:246-251`, `:278`, `:288-289` | none |
@@ -144,6 +144,8 @@ Checked by grepping both pages, fetched 2026-11-13, and by one reader agent.
 **The trace now names the table's areas.** For 0x80888123 the trace also prints, for each non-zero pair, the guest mapping the address lies in: its name as the title's driver gave it, its range, type and protection (`KernelVirtualQuery`). One run then says which of the driver's areas the table lists. The patch comments already know two such areas by name: the queue rings and the EOP pages. These lines stay in the run's log on the box; only roles go into a README.
 
 **Verdict of point 5: one candidate by exact arithmetic (16 MiB = the offchip ring of 0x1ff), one by shape (0xc010813b = CU masks), five with none.** Nothing is written on these matches. The trace (§3b), with the mapping names, decides them.
+
+**After the trace** (result 2): the 16 MiB candidate is **refuted**; that area is CWSR. The rule held: a write made on the arithmetic would have been wrong.
 
 ## The trace (§3b)
 
@@ -289,9 +291,61 @@ The limits:
 - One sample in play, at t ≈ 135 s; whether the game was in the menu or in play then is not known.
 - The idle read follows a game, not a fresh boot.
 
+## Result 2: the build and the trace run (2026-11-13 evening)
+
+**The build.** `mk0418.sh` ran on candidate B (`P_TREE=27b6416f P_ARCH=75e30335 P_DIFF=557656da0d691375`) from 18:13 to 18:24, CPU only, under its own lock line.
+
+- The tree matched the laptop's: 3 files.
+- `test418`: 15 of 15.
+- Binaries: normal `6a0fab7b`, lean `7254438e`.
+- Warnings: 284 and 287, against 282 and 285 for B's own build (`exp0413/p`). The warnings in `bc5LleAgc.cpp` are the same five (eight in lean), moved by the inserted lines. The two extra warnings come from tracy and SDL, which this fresh build compiled and B's incremental build did not. **None comes from 0418's code.**
+
+**The run t418a.** `run0418.sh t418a 240` ran at 18:25:15: the second title, RT on, `BC5_GC_IOCTL_TRACE=1` only, through `run0413p.sh`, with one pad watched.
+
+- **It ended early.** At 18:26:09, 54 s in and during the menu import, the kernel ran a **global OOM** (`constraint=CONSTRAINT_NONE`, `global_oom`) and killed two "Web Content" processes of a flatpak browser that was running on the box. The emulator was not the victim.
+- **The laptop's stopper ended the emulator at 18:26:13.** It matched `amdgpu_gem_fault`, one line of that OOM's backtrace. That line is also why the runner's summary says "GPU HANG: kernel amdgpu line at 56 s, no reset line". No ring timeout or reset was printed, and no fault record was written (the newest is from 11:32).
+- Pad keys: 0. G was not reached.
+- After the run: no emulator, launcher or mount; MemAvailable 13.2 GB.
+- Not attributed to 0418: the trace's own memory is a few kilobytes. It is the menu's memory wall of exp 0417 section 10, here with a browser alive on the box. One run, so not shown either way.
+- The stopper's filter was wider than meant: an OOM backtrace stops the run too. That is the top session's rule (stop at the first kernel error), but it is noted for the next run.
+
+**What the run's log shows of 0418.** The start-state line reads `table off; rows on: CP_COHER_START_DELAY(alias) VGT_TF_RING(alias) VGT_HS_OFFCHIP_PARAM(alias)`: the launcher's three old switches turned on their rows, as designed. The TF ring (0x1120000000, 0x3fff8) and the offchip parameter 0x1ff were programmed, as before.
+
+**The trace.** 12 request codes and 47 calls, all before the OOM: 361 frame lines, 189 scan lines and 6 pair lines. The lines stay in the laptop's scratch and on the box (`~/bc5-work/exp0418/raw/t418a-trace.txt`), because they hold offsets into the title's code.
+
+- The NIDs were named by `nid-names.py` against `refs/`. Five have public names: shadPS4 60c42b9 `aerolib.inl`, KytyPlus `libAgcDriver.cpp`, and pcsx5 `nid_db.txt`.
+- Four have none: the driver's lowest export, under which its internal functions fall, and three others.
+
+| Request | Who sends it (the call chain, outermost first) | What it is | Register or resource | Can a user IB write it? |
+|---|---|---|---|---|
+| 0x80888123 | the driver's own initialisation: internal code of `libSceAgcDriver`, called from the host's loader (module start), with no exported API above it | **The table of the driver's system areas.** By the names the driver gave the mappings: pair 0 is trap-handler code (0x2400 of a 16 KiB area); pair 1 is trap-handler data (16 KiB); pair 2 is the CWSR area (16 MiB, wave save/restore); pair 4 is an area named "DDID" (1008 KiB, role unknown). Pairs 3 and 7 (0xc80008000, 0xc80043d00) lie in no guest mapping | The trap handler's base and memory, `SQ_SHADER_TBA_LO/HI` and `SQ_SHADER_TMA_LO/HI` (`gc_10_1_0_offset.h:2469-2475`), per VMID. The CWSR area is a per-queue context save area in the MQD (`cp_hqd_ctx_save_base_addr`, `kfd_mqd_manager_v10.c:133-140`) | **No.** Both are the kernel's, and in Linux only the KFD sets them: TBA/TMA by `kfd_ioctl_set_trap_handler` (`kfd_chardev.c:646-667`), CWSR from the queue's arguments (`:268-293`). The kernel enables traps only for the KFD's VMIDs (`gfx_v10_0.c:5175-5192`, called at `:5232`). Our path uses amdgpu's graphics VMIDs, so the title runs with no trap handler and no CWSR |
+| 0x80048126 = 1 | driver initialisation, as above | not named | none | — |
+| 0x80048134 = 0 | driver initialisation | not named | none | — |
+| 0xc010813b, ffffffff ×4 | driver initialisation | not named; the CU-mask candidate of point 5 stays a shape match | (CU masks, if so) | — |
+| 0xc0108139 {0,1,0,0} | the title → `sceAgcSuspendPoint` (libSceAgc) → (once `sceAgcSetSubmitMode`) → an unnamed driver export → `sceAgcDriverSubmitCommandBuffer` → internal | bookkeeping of the submission made at a suspend point | none (not state) | — |
+| 0xc0088133 {0,1} | the same chain, without `sceAgcSetSubmitMode` | as above, the other half of the pair | none | — |
+| 0xc0048114 | not sent (as in exp 0189's trace) | — | — | — |
+
+The requests that were already named fit the names:
+
+- 0xc0408121: `sceAgcDriverCreateQueue`.
+- 0xc0188132 and 0xc0488131: `sceAgcDriverSubmitCommandBuffer`, with `sceAgcDriverSetWorkloadStreamInactive`.
+- 0x80108128 and 0x8004812a: one unnamed export, called from the title's code.
+
+**What this answers.**
+
+- **The seven requests are named as far as public sources allow.** Two are the suspend point's submission bookkeeping, not registers. Four come from the driver's initialisation with no API name above them; the trace names one of their contents, 0x80888123's areas. 0xc0048114 is not sent.
+- **No register a user IB could write is missing.** The one new system resource, the trap handler and CWSR areas, is the kernel's, and on Linux only the KFD's. This is a lead, not a finding: on the console the title runs with its trap handler installed, and here with none.
+  - It is TODO(verify) whether the title's shaders ever trap: the `TRAP_PRESENT` and `EXCP_EN` bits of its `SPI_SHADER_PGM_RSRC2_*` and `COMPUTE_PGM_RSRC2` (`gc_10_1_0_sh_mask.h:15785-15798`, `:17169-17175`), and `s_trap` in its code.
+  - If they do, a GPU fault is a candidate cause, which the fault records could be checked against.
+- **Nothing is written on these names.**
+
 ## Open
 
-- The box build and the trace run: under way since 18:13 (this section is updated with their result).
+- **A second trace run is not needed for the names.** All requests before the menu were caught.
+- **Whether the title's shaders trap** (above): a check of the captured stream's `RSRC2` words, offline.
+- **The start-state table and the GS rings were not run on the box.** By result 1 the table's constant rows change nothing here. A run with `BC5_DIRECT_START_STATE=1` would check only that it does no harm.
+- **The memory wall in the menu.** It belongs to exp 0412/0417, not to 0418.
 - `0xc00c8110`'s unit on the PS5 (TODO(verify)). No title of ours sends it.
-- Whether the title's driver keeps frame pointers. The scan covers the case where it does not.
+- **Frame pointers.** The title's driver keeps them: frame walks through `libSceAgcDriver`, `libSceAgc` and `eboot.bin` came out whole.
 - **Integration.** The diff folds into patch 0001 when the top and the integrator decide. The two headers, their tests and `start-state.tsv` are on this branch. `backend/CMakeLists.txt` gains the two test files and the TSV's path.
