@@ -11,6 +11,8 @@
 #           marks in src/kernel/fileSystem.cpp and src/libs/libSaveData.cpp, the header src/bc5/save_guard0412.hpp
 #   pr412   BC5_GUARD_K1R_PROBE (mkpr0412.py unit + backend): the host's own read at one guest GPU address, in a
 #           context of its own; with K1r off at an unmapped address it is a DELIBERATE GPU FAULT (his word first)
+#   k1f412  BC5_GUARD_K1_FILTER (mkk1f0412.py): a packet's unmapped operand under a view is imported before the
+#           submission instead of the packet being dropped (K1 at the filter)
 #   cv412   (mkcv0412.py unit + backend, no switch: part of K1r) a K1r cover is invisible to the host's
 #           "is it mapped?" (the packet filter's operand check and every other use), as that memory was before K1r
 #   wa412   BC5_GUARD_WATCH (mkwa0412.py): the state of up to four guest addresses in the journal, a catcher
@@ -81,12 +83,14 @@ python3 -I "$KIT/mkpr0412.py" unit "$P/u-wa.cpp" "$P/u-pr.cpp" > "$R/mkpr.out" 2
 [ "$(m "$P/u-pr.cpp")" = dfa98a48 ] || die "the unit after pr412 is not dfa98a48"
 python3 -I "$KIT/mkcv0412.py" unit "$P/u-pr.cpp" "$P/u-cv.cpp" > "$R/mkcv.out" 2>&1 || die "mkcv0412.py unit: $(tail -1 "$R/mkcv.out")"
 [ "$(m "$P/u-cv.cpp")" = ec17e59f ] || die "the unit after cv412 is not ec17e59f"
+python3 -I "$KIT/mkk1f0412.py" "$P/u-cv.cpp" "$P/u-k1f.cpp" > "$R/mkk1f.out" 2>&1 || die "mkk1f0412.py: $(tail -1 "$R/mkk1f.out")"
+[ "$(m "$P/u-k1f.cpp")" = 4ef7faf7 ] || die "the unit after k1f412 is not 4ef7faf7"
 python3 -I "$KIT/mksg0412.py" "$K" "$P/sg-out" "$KIT/saveguard0412.inc" > "$R/mksg.out" 2>&1 || die "mksg0412.py: $(tail -1 "$R/mksg.out")"
 cat "$R/mksg.out"
-cp -p "$K/src/kernel/memory.cpp" "$S/src/kernel/" && cp -p "$K/src/libs/libAmpr.cpp" "$S/src/libs/" && cp -p "$K/src/common/hostException.cpp" "$S/src/common/" && cp "$P/u-cv.cpp" "$S/src/libs/bc5LleAgc.cpp" || die "staging"
+cp -p "$K/src/kernel/memory.cpp" "$S/src/kernel/" && cp -p "$K/src/libs/libAmpr.cpp" "$S/src/libs/" && cp -p "$K/src/common/hostException.cpp" "$S/src/common/" && cp "$P/u-k1f.cpp" "$S/src/libs/bc5LleAgc.cpp" || die "staging"
 python3 -I "$KIT/mkff0412.py" "$S" "$P/out" > "$R/mkff0412.out" 2> "$R/mkff0412.err" || die "mkff0412.py: $(tail -1 "$R/mkff0412.err")"
 cat "$R/mkff0412.out"
-for u in "src/kernel/memory.cpp 961da63a" "src/libs/libAmpr.cpp d88da83d" "src/common/hostException.cpp e978e975" "src/libs/bc5LleAgc.cpp 5706511b"; do
+for u in "src/kernel/memory.cpp 961da63a" "src/libs/libAmpr.cpp d88da83d" "src/common/hostException.cpp e978e975" "src/libs/bc5LleAgc.cpp 1dd0e35a"; do
   set -- $u; [ "$(m "$P/out/$1")" = "$2" ] || die "$1 is not the unit checked on the laptop ($2)"
   cp -p "$P/out/$1" "$P/tree/$1" || die "cannot put $1 into the private tree"
 done
@@ -124,7 +128,7 @@ distrobox enter ubuntu -- sh -c "cd '$B' && nice -n 19 ninja kyty_emulator" < /d
 b=$B/src/kyty_emulator
 [ -x "$b" ] || die "no binary"
 echo "normal: $(md5sum < "$b" | cut -d' ' -f1), warnings $(grep -c 'warning:' "$B.build.log")"
-for s in "tag cv412" BC5_GUARD_K1R_PROBE "tag pr412" BC5_GUARD_WATCH "tag wa412" BC5_FAULT_RECORD "tag fr412" "tag sg412" "MAY BE INCOMPLETE" BC5_GUARD_K1R_REPLACE KYTY_BC5_MEM_FIRSTFAIL KYTY_BC5_TRAP_LOG BC5_DIRECT_MAX_BO_MIB "tag ff412" BC5_GUARD_K1R "tag k1r412" BC5_DIRECT_RESET_LABELS_ADD "tag rl412" "tag nl412" BC5_GUARD_K1_STAT KYTY_BC5_AMM_SCATTER KYTY_BC5_AMM_SETBUFFER_GUARD; do
+for s in BC5_GUARD_K1_FILTER "tag k1f412" "tag cv412" BC5_GUARD_K1R_PROBE "tag pr412" BC5_GUARD_WATCH "tag wa412" BC5_FAULT_RECORD "tag fr412" "tag sg412" "MAY BE INCOMPLETE" BC5_GUARD_K1R_REPLACE KYTY_BC5_MEM_FIRSTFAIL KYTY_BC5_TRAP_LOG BC5_DIRECT_MAX_BO_MIB "tag ff412" BC5_GUARD_K1R "tag k1r412" BC5_DIRECT_RESET_LABELS_ADD "tag rl412" "tag nl412" BC5_GUARD_K1_STAT KYTY_BC5_AMM_SCATTER KYTY_BC5_AMM_SETBUFFER_GUARD; do
   grep -aqF -- "$s" "$b" || die "the binary lacks [$s]"
 done
 grep -aqF "direct-learned" "$b" && echo "note: the string direct-learned is still in the binary (another unit?)"
