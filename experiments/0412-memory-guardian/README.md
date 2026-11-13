@@ -2853,6 +2853,22 @@ The four junk lines need no replacement (they are K4). Before the list is remove
 in and its size (one line of a journal), (2) one run with the list reduced to its first line, (3) the rule in code.
 Not removed today, on the top session's word.
 
+**Where the 0x80 comes from is not established** (the top session's question: a fixed property of the console's GPU
+address space, cited, or read off this title?). It is read off this title: exp 0056 saw this title's function
+pointers carry it; F110 left "the PS5 GPU ignores those bits or maps code there too" as TODO(verify). I looked for a
+public statement and found none: the references on the laptop treat a guest GPU address as 48 bits, a 40-bit base in
+units of 256 bytes with an 8-bit extension register (AnyPS5 @ 27c88a8d75ca,
+`core/libs/prx/libSceAgcDriver/Graphics/src/GuestTextureResource.cpp:57-66`; KytyPlus
+`src/graphics/guest_gpu/command_processor/pm4Handlers.cpp:1000, 2648`), which says the bits exist, not that they
+are ignored. So a rule may not hard-code 0x80 or a heap address on today's knowledge. What settles it, read-only and
+without a new fault: (1) the tag byte of every function pointer in one of the title's constant buffers that hold
+them (the catcher's K4 line already prints what lies under the low 40 bits of a tagged fault address); if every
+code pointer of the title carries the same byte and nothing else does, the tag is a format of the pointer (to be
+looked for in the public shader-binary and AGC descriptions, `refs/OpenProspero_AGC`), and the rule is "the range
+that holds bound programs is also reachable with that format's byte"; (2) a second title's pointers (ASTRO BOT runs
+without aliases: either it has no such calls or its pointers carry no tag). Until then the one real line stays as it
+is and is named for what it is: a remembered alias.
+
 **Stale launchers that still name the old learned file** (for the cleanup; not called by anything current as far as
 a search of `~/bc5-work/*.sh` and the desktop shows: TODO(verify) on the box before they move): `run-pkg.sh`,
 `play-pkg-exp0155.sh`, `lean-backup-play-pkg.sh`.
