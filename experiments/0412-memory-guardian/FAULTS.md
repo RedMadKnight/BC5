@@ -33,3 +33,5 @@ Open, not a fault (README section 69): the packet filter drops a packet whose wr
 2026-11-13 18:00-18:06, his play on the K1r test shortcut (g412zd, README section 75): two plays of about two minutes, no fault, his word "Wszystko ok". Row 1 stays open until a shared build carries K1r (candidate E) and he has played on it.
 
 Row 1, 2026-11-13 evening: in his play on K1R (g412zd) the cutscene went past the point of the morning's fault and was smooth (his word, relayed by the top: "Przerywnik poszedl dalej. Byl plynny. Nic nie zacinalo"; the journal does not name the scene). To close row 1 one thing is missing: one scripted arm of the cutscene to its end (more than 300 s) on build E.
+
+Row 1, CLOSED 2026-11-13 20:21 (README section 80): on candidate F (K1r with the binary-search cover, kl412, cv412) the scripted cutscene ran to G+320 twice (m2cuta, m2cutb, the integrator's chain): kernel errors 0, no fault record, longest gap 408 and 678 ms. Source removed: never-written parts of views are mapped read-only onto the zero buffer, so the shader's read in `AssetHeap Large` has a page. Not yet in the shared builds: F's swap waits for his word.

@@ -3691,6 +3691,39 @@ written down; plasma-keyboard joins the lean list on paper.
 - `PLAN-memory-wall.md` has the first measurement's result, step 2, the order of the heaps with each arm's risk
   (no arm prepared), and the lean list's new line.
 
+### 80. Candidate F's acceptance chain, read for the cover pass's cost (2026-11-13 19:32-20:21; the integrator's runs and readings, exp 0419; nothing run by this experiment)
+
+F: patch d9af28ca, unit 59d17cf5 (form 6 of section 79; the four rule bodies are in it verbatim, checked on the
+laptop). Arms: m1a, m1b (walk, K1r on), m1offa, m1offb (`BC5_GUARD_K1R=0 BC5_GUARD_K1_FILTER=0`), m2cuta, m2cutb
+(cutscene to G+320, K1r on), ASTRO BOT 120 s three times, lean. Kernel errors 0, crashes 0, no fault record in all.
+Raw files on the box, not copied: `~/bc5-work/exp0413/n/raw/fchain.out`, `m*-journal.txt`.
+
+"want" per full sync = the timing-split line's "want" (a total in ms over 128 submissions, read in the unit)
+divided by its count of full syncs [M, the integrator's `want0419.sh` over every line with a full sync]:
+
+| arm | K1r | lines with a full sync | over 2 ms | largest three, ms (at t, s) |
+|---|---|---|---|---|
+| m1a | on | 1905 | 64 | 3.10 (63.4), 3.00 (52.0), 2.90 (65.9) |
+| m1b | on | 1955 | 103 | 3.30 (51.0), 3.20 (56.0), 3.15 (49.2) |
+| m2cuta | on | 2612 | 29 | 3.10 (50.6), 3.10 (46.1), 3.00 (51.1) |
+| m2cutb | on | 2444 | 48 | 2.90 (67.7), 2.80 (46.2), 2.75 (45.3) |
+| m1offa | off | 1911 | 0 | 1.50 (335.7), 1.20, 1.10 |
+| m1offb | off | 2013 | 0 | 1.40 (88.5), 1.20, 1.20 |
+
+Candidate E (the pass before the binary search): 18.8-20.3 ms. Longest gaps: K1r on 698, 695, 408, 678 ms, off
+879, 625 ms, all at 92-155 s (the load and after); none near 39 s, where E stalled for about 1 s.
+
+- The mark as I wrote it ("want under 2 ms per full sync with K1r on") is **not met** at the maxima: about 3 ms
+  at worst, all between 45 and 68 s (the menu), in 1-5 % of the windows. K1r adds at most about 1.6 ms to a full
+  sync there [M].
+- What the mark stood for, the stall, is **gone** [M]: no gap came with those windows, and K1r on and off have
+  the same longest gaps and the same flips/s (25.4-25.7 walk, 29.5-29.8 cutscene).
+- My verdict: **F is ready for the swap** from this experiment's side. The 2 ms was my guess at a safe number,
+  not a measured limit; 3 ms in a full sync is under a tenth of a frame at 30 flips/s.
+- Not known: where the remaining 1.6 ms goes (the cover pass itself, or kl412's data scan). A form 7 is not
+  prepared; it would start from a split of `k1r412_want`'s time, as a diagnostic.
+- FAULTS.md row 1 closes on m2cuta and m2cutb: the cutscene ran to G+320 twice on the fixed build with no fault.
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over
