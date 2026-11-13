@@ -1,0 +1,39 @@
+[bc5-rsrc2] new: CS set RSRC2 0x00000000: TRAP_PRESENT 0, EXCP_EN 0x0
+[bc5-rsrc2] totals after 1 buffers (words/TRAP_PRESENT/EXCP_EN): PS 0/0/0 VS 0/0/0 GS 0/0/0 ES 0/0/0 HS 0/0/0 LS 0/0/0 CS 1/0/0; unread 0
+[bc5-rsrc2] new: PS loaded RSRC2 0x00000000: TRAP_PRESENT 0, EXCP_EN 0x0
+[bc5-rsrc2] new: GS loaded RSRC2 0x00000000: TRAP_PRESENT 0, EXCP_EN 0x0
+[bc5-rsrc2] new: HS loaded RSRC2 0x00000000: TRAP_PRESENT 0, EXCP_EN 0x0
+[bc5-rsrc2] new: CS loaded RSRC2 0x00000000: TRAP_PRESENT 0, EXCP_EN 0x0
+[bc5-rsrc2] new: PS loaded (pairs) RSRC2 0x00000000: TRAP_PRESENT 0, EXCP_EN 0x0
+[bc5-rsrc2] new: GS loaded (pairs) RSRC2 0x00000000: TRAP_PRESENT 0, EXCP_EN 0x0
+[bc5-rsrc2] new: HS loaded (pairs) RSRC2 0x00000000: TRAP_PRESENT 0, EXCP_EN 0x0
+[bc5-rsrc2] new: CS loaded (pairs) RSRC2 0x00000000: TRAP_PRESENT 0, EXCP_EN 0x0
+[bc5-rsrc2] new: PS set RSRC2 0x00000000: TRAP_PRESENT 0, EXCP_EN 0x0
+[bc5-rsrc2] new: GS set RSRC2 0x00000000: TRAP_PRESENT 0, EXCP_EN 0x0
+[bc5-rsrc2] new: HS set RSRC2 0x00000000: TRAP_PRESENT 0, EXCP_EN 0x0
+[bc5-rsrc2] totals after 2001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 8905/0/0 VS 0/0/0 GS 13649/0/0 ES 0/0/0 HS 3050/0/0 LS 0/0/0 CS 18416/0/0; unread 0
+[bc5-rsrc2] totals after 4001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 18225/0/0 VS 0/0/0 GS 27645/0/0 ES 0/0/0 HS 6188/0/0 LS 0/0/0 CS 40944/0/0; unread 0
+[bc5-rsrc2] totals after 6001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 27869/0/0 VS 0/0/0 GS 41502/0/0 ES 0/0/0 HS 9205/0/0 LS 0/0/0 CS 70256/0/0; unread 0
+[bc5-rsrc2] totals after 8001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 37027/0/0 VS 0/0/0 GS 54623/0/0 ES 0/0/0 HS 11924/0/0 LS 0/0/0 CS 96897/0/0; unread 0
+[bc5-rsrc2] totals after 10001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 45833/0/0 VS 0/0/0 GS 67237/0/0 ES 0/0/0 HS 14542/0/0 LS 0/0/0 CS 122497/0/0; unread 0
+[bc5-rsrc2] totals after 12001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 59411/0/0 VS 0/0/0 GS 89479/0/0 ES 0/0/0 HS 17244/0/0 LS 0/0/0 CS 148115/0/0; unread 0
+[bc5-rsrc2] totals after 14001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 86184/0/0 VS 0/0/0 GS 137709/0/0 ES 0/0/0 HS 20235/0/0 LS 0/0/0 CS 178037/0/0; unread 0
+[bc5-rsrc2] totals after 16001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 112736/0/0 VS 0/0/0 GS 185343/0/0 ES 0/0/0 HS 23202/0/0 LS 0/0/0 CS 205678/0/0; unread 0
+[bc5-rsrc2] totals after 18001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 140116/0/0 VS 0/0/0 GS 234340/0/0 ES 0/0/0 HS 26216/0/0 LS 0/0/0 CS 233689/0/0; unread 0
+[bc5-rsrc2] totals after 20001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 167433/0/0 VS 0/0/0 GS 283187/0/0 ES 0/0/0 HS 29241/0/0 LS 0/0/0 CS 261921/0/0; unread 0
+[bc5-rsrc2] totals after 22001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 193807/0/0 VS 0/0/0 GS 330320/0/0 ES 0/0/0 HS 32200/0/0 LS 0/0/0 CS 289133/0/0; unread 0
+[bc5-rsrc2] totals after 24001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 226252/0/0 VS 0/0/0 GS 388527/0/0 ES 0/0/0 HS 35618/0/0 LS 0/0/0 CS 322422/0/0; unread 0
+[bc5-rsrc2] totals after 26001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 258448/0/0 VS 0/0/0 GS 446213/0/0 ES 0/0/0 HS 39038/0/0 LS 0/0/0 CS 355771/0/0; unread 0
+[bc5-rsrc2] totals after 28001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 290975/0/0 VS 0/0/0 GS 504578/0/0 ES 0/0/0 HS 42458/0/0 LS 0/0/0 CS 389114/0/0; unread 0
+[bc5-rsrc2] totals after 30001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 323225/0/0 VS 0/0/0 GS 562373/0/0 ES 0/0/0 HS 45878/0/0 LS 0/0/0 CS 422453/0/0; unread 0
+[bc5-rsrc2] totals after 32001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 355421/0/0 VS 0/0/0 GS 620110/0/0 ES 0/0/0 HS 49266/0/0 LS 0/0/0 CS 455502/0/0; unread 0
+[bc5-rsrc2] totals after 34001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 387737/0/0 VS 0/0/0 GS 678071/0/0 ES 0/0/0 HS 52677/0/0 LS 0/0/0 CS 488731/0/0; unread 0
+[bc5-rsrc2] totals after 36001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 413082/0/0 VS 0/0/0 GS 723304/0/0 ES 0/0/0 HS 55573/0/0 LS 0/0/0 CS 514987/0/0; unread 0
+[bc5-rsrc2] totals after 38001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 440511/0/0 VS 0/0/0 GS 772394/0/0 ES 0/0/0 HS 58602/0/0 LS 0/0/0 CS 543111/0/0; unread 0
+[bc5-rsrc2] totals after 40001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 471259/0/0 VS 0/0/0 GS 827477/0/0 ES 0/0/0 HS 61902/0/0 LS 0/0/0 CS 574839/0/0; unread 0
+[bc5-rsrc2] totals after 42001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 501371/0/0 VS 0/0/0 GS 881430/0/0 ES 0/0/0 HS 65134/0/0 LS 0/0/0 CS 605872/0/0; unread 0
+[bc5-rsrc2] totals after 44001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 533899/0/0 VS 0/0/0 GS 939786/0/0 ES 0/0/0 HS 68554/0/0 LS 0/0/0 CS 639211/0/0; unread 0
+[bc5-rsrc2] totals after 46001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 565980/0/0 VS 0/0/0 GS 997280/0/0 ES 0/0/0 HS 71962/0/0 LS 0/0/0 CS 672410/0/0; unread 0
+[bc5-rsrc2] totals after 48001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 597846/0/0 VS 0/0/0 GS 1054444/0/0 ES 0/0/0 HS 75322/0/0 LS 0/0/0 CS 705064/0/0; unread 0
+[bc5-rsrc2] totals after 50001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 629816/0/0 VS 0/0/0 GS 1111737/0/0 ES 0/0/0 HS 78728/0/0 LS 0/0/0 CS 738262/0/0; unread 0
+[bc5-rsrc2] totals after 52001 buffers (words/TRAP_PRESENT/EXCP_EN): PS 662298/0/0 VS 0/0/0 GS 1169993/0/0 ES 0/0/0 HS 82138/0/0 LS 0/0/0 CS 771515/0/0; unread 0

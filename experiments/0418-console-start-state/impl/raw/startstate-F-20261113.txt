@@ -1,0 +1,10 @@
+== m0a
+      1 bc5-direct: start state (exp 0418): rows on: CP_COHER_START_DELAY SPI_SHADER_REQ_CTRL_PS GE_MIN_VTX_INDX GE_MAX_VTX_INDX VGT_INSTANCE_BASE_ID VGT_TF_RING VGT_HS_OFFCHIP_PARAM VGT_GS_RINGS; skipped: none
+== m1a
+      1 bc5-direct: /dev/gc HS offchip 0x1ff (programmed, row VGT_HS_OFFCHIP_PARAM)
+      1 bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, row VGT_TF_RING)
+      1 bc5-direct: start state (exp 0418): rows on: CP_COHER_START_DELAY SPI_SHADER_REQ_CTRL_PS GE_MIN_VTX_INDX GE_MAX_VTX_INDX VGT_INSTANCE_BASE_ID VGT_TF_RING VGT_HS_OFFCHIP_PARAM VGT_GS_RINGS; skipped: none
+== m2cuta
+      1 bc5-direct: /dev/gc HS offchip 0x1ff (programmed, row VGT_HS_OFFCHIP_PARAM)
+      1 bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, row VGT_TF_RING)
+      1 bc5-direct: start state (exp 0418): rows on: CP_COHER_START_DELAY SPI_SHADER_REQ_CTRL_PS GE_MIN_VTX_INDX GE_MAX_VTX_INDX VGT_INSTANCE_BASE_ID VGT_TF_RING VGT_HS_OFFCHIP_PARAM VGT_GS_RINGS; skipped: none
