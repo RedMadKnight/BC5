@@ -80,7 +80,7 @@ int main() {
 		const uint64_t d = kl412::drop_written(p, vva, voff, C, k, true, [](uint64_t c) { return c == 0x8200000ull; });
 		check(d == 1 && p.size() == 2 && p[0].va == vva + 0x6800000ull && p[1].va == vva + 0x6c00000ull, "the written chunk of 15:32 gets no cover; its never-written neighbours keep theirs");
 	}
-	check(!kl412::cover_written() && kl412::period_ns() == 100'000'000ull, "the rule is on and the period 100 ms when the variables are unset");
+	check(kl412::kPeriodNs == 100'000'000ull, "the period is 100 ms (no switch)");
 	std::printf("kl0412: %" PRIu64 " of %" PRIu64 "; end\n", g_ok, g_checks);
 	return g_ok == g_checks ? 0 : 1;
 }

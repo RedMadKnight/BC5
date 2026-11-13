@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """BC5 experiment 0412, tag k1f412 (README section 70; the top's order of 2026-11-13): K1 AT THE FILTER.
-BC5_GUARD_K1_FILTER=1 (default off); =log names what the filter would drop and imports nothing. Today a packet whose memory operand is not GPU-mapped is DROPPED by the packet
+ON by default since 2026-11-13 (one rule for both titles); BC5_GUARD_K1_FILTER=0 turns it off, =log names what the filter would drop and imports nothing. Today a packet whose memory operand is not GPU-mapped is DROPPED by the packet
 filter. When that operand lies in memory the title mapped (under a view) whose chunk is merely not imported (never
 written by the CPU, or a lazy heap), the drop loses something the console does: there the memory exists and the
 command processor reads or writes it. The packet NAMES its operand, so the host knows the address before the GPU
@@ -22,11 +22,12 @@ T = b" // exp 0412 (tag k1f412)\n"
 
 GLUE = rb'''// Experiment 0412 (tag k1f412): BC5_GUARD_K1_FILTER, a packet's unmapped operand under a view is imported, not dropped.
 namespace k1f412 {
-// 0 off (unset, "0"), 1 import ("1" or anything else), 2 log only ("log"): name what the filter would drop, import nothing
+// 1 import (unset or anything else: the default), 0 off ("0"), 2 log only ("log"): name what the filter would drop, import nothing
 inline int mode() {
 	static const int v = [] {
 		const char* e = std::getenv("BC5_GUARD_K1_FILTER");
-		if (e == nullptr || e[0] == 0 || (e[0] == '0' && e[1] == 0)) return 0;
+		if (e == nullptr) return 1;
+		if (e[0] == '0' && e[1] == 0) return 0;
 		return std::strcmp(e, "log") == 0 ? 2 : 1;
 	}();
 	return v;

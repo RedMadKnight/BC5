@@ -3552,6 +3552,353 @@ His word after the play, relayed by the top: "Wszystko ok. Masz swoje pomiary". 
 - Not established from the files: that the slot-4 cutscene itself played (the journal names no slot or scene). What
   stands: his word, and no fault where the morning's play faulted at once.
 
+### 76. After his play: the defaults turned on and the options removed, for candidate E (2026-11-13 evening, laptop; not compiled)
+
+His words, relayed by the top: "Przerywnik poszedl dalej. Byl plynny. [...] Nic nie zacinalo. Rob dalej testy.
+Pozbadz sie zbednych przelacznikow". The top's order for candidate E: K1R + cv412 + kl412 ON by default with no
+option that restores the old behaviour; K1 at the filter one rule for both titles; variant (b) off, undecided.
+
+Done in the sources (the .inc files, so the CPU tests test what the unit holds):
+- `k1r0412.inc`: `BC5_GUARD_K1R` on unless "0".
+- `cover0412.inc`: `BC5_GUARD_K1R_COVERS_VISIBLE` removed; a read-only shared mapping is always a hole for the host
+  (the three-argument forms stay as the test's model of the state that faulted).
+- `kl0412.inc`, `mkkl0412.py`: `BC5_GUARD_K1R_COVER_WRITTEN` and `BC5_GUARD_K1R_WRITTEN_SCAN_MS` removed; the period
+  is the constant 100 ms.
+- `mkk1f0412.py`: `BC5_GUARD_K1_FILTER` on unless "0"; "log" names and imports nothing.
+CPU tests on the laptop: k1r0412 17,742, cover0412 640,008, kl0412 99,003. The chain on B's unit 8126c0aa (no
+probe): mkk1r 1a0ba9aa, mkwa 7aecbf99, mkcv 3c620459, mkk1f ab349ecb, mkkl **2824caf7** (44 lines from form 2's
+2f4a3d63); backend unchanged (26519fcc, b1d27875). `memfast/mk0412ze.sh` and `kit-ze.sha256` build it (bin-e).
+`mk0412zd.sh` no longer reproduces g412zd from this state of the scripts: g412zd's sources are commit 2ed121cb.
+
+What is left of this experiment's words in that unit:
+
+| word | state | why |
+|---|---|---|
+| `BC5_GUARD_K1R` | on; "0" off | the one off switch, for the control arm "all off = B" and for telling a K1r defect apart; remove when row 1 is closed on a shared build |
+| `BC5_GUARD_K1_FILTER` | on; "0" off, "log" | 2 MiB in ASTRO BOT, 0 in the second title; "log" is the catcher that names what the filter drops |
+| `BC5_GUARD_K1R_REPLACE` | off | the map-over form; ran once (k1rg), never shown faster: DELETE candidate, with `map_shared_over` in the backend |
+| `BC5_GUARD_LAZY_BY_DATA` | off, UNDECIDED | missing: a GPU read of written lazy memory (kl412's named fault is the proof and has not fired in four arms and his two plays); its price is +734 MiB (ASTRO BOT) and +194 MiB (second title), one run each |
+| `BC5_GUARD_WATCH` | off, diagnostic | the state of up to four addresses in the journal; found kl412's defect |
+| `BC5_GUARD_K1_STAT` | off, diagnostic | bind statistics |
+| removed | | `BC5_GUARD_K1R_COVERS_VISIBLE`, `_COVER_WRITTEN`, `_WRITTEN_SCAN_MS`, `BC5_GUARD_K1R_PROBE` (form 2) |
+
+Not done: nothing of this is compiled or run; the maintainer's shortcut still runs g412zd (be507cd5) with its
+explicit words.
+
+### 77. Form 4 for candidate E: the replace form removed; the wall's first measurement joins E's walk arm (2026-11-13 evening, laptop; not compiled)
+
+The top: "K1R_REPLACE: usun, jesli nic go nie czyta poza testem". Nothing read it but run k1rg (section 68), where
+it was never shown faster. Removed from `mkk1r0412.py`: the switch, `k1r412_replace_on`, the kept-covers list, the
+drop pass's exception, and in the backend `Device::map_shared_over`; `k1r412_map` is now one line (a cover read-only,
+anything else as before). `mkcv0412.py` and `mkpr0412.py` follow (their marker of the k1r backend is the tag now).
+The chain on B's unit 8126c0aa: mkk1r 496a339c, mkwa 3e5a6851, mkcv 3732021b, mkk1f dcb7aa43, mkkl **9a54eaa4**
+(48 lines from form 3's 2824caf7); backend direct.hpp e96e5c73, direct.cpp 28100ce5. `mk0412ze.sh` and
+`kit-ze.sha256` follow. Section 76's table loses the `BC5_GUARD_K1R_REPLACE` row. Not compiled: this form changes
+the backend, so it gets a private build and the two arms before E goes anywhere.
+
+The wall's first measurement (PLAN-memory-wall.md, step 1) rides on E's walk arm, by the top's order, with these
+words: `BC5_DIRECT_ZEROSCAN_AT=<five times after gameplay starts>` and `BC5_DIRECT_ZERO_NAMES=<the launcher's
+BC5_DIRECT_EAGER_NAMES list>` (the scan reads only eager views of the named heaps and journals, per heap and scan,
+"zero now" and "zero in all N scans": the last line per heap is B's floor on that route), plus one `snap0412.sh`
+with the emulator's `fdinfo` near the end for the 555 MiB of host buffers. Log only; no skip, no list is used. No
+arm with a GPU write risk is prepared: that waits for the number and for his word.
+
+Candidate E as the integrator made it (exp 0419, 2026-11-13 evening): from FORM 3, not form 4 (the messages crossed):
+my unit 2824caf7 plus its four generators gives unit 1215d7d7, patch 2dd4c95c; backend 26519fcc / b1d27875; the
+replace form stays in E until the next backend change. E's sources of my chain are commit 173a38b4. Checked on the
+laptop: the three rule bodies are in 1215d7d7 verbatim. In E the read of `BC5_DIRECT_ZERO_NAMES` is a constant, so
+the log-only zero scan sees its two default heaps (RenderGpuWcLarge, CommitIABufferAllocator) unless the read is
+given back (asked). Order agreed: the integrator builds E privately and runs its chain; then my two arms on that
+binary (ASTRO BOT 120 s; the cutscene arm to its end).
+
+Later the same evening the integrator regenerated E from FORM 4: unit 9a54eaa4 -> 449878ca, patch 410273ca, private
+backend e96e5c73 / 28100ce5, the read of `BC5_DIRECT_ZERO_NAMES` given back. Checked on the laptop: the three rule
+bodies verbatim, no replace form. E's sources of my chain are commit 0e2c7e56. After its chain I run three arms on
+its binary: ASTRO BOT 120 s, the cutscene arm to its end, the walk with the zero scan.
+
+### 78. E's private chain read: K1r's cover pass costs 20 ms a rebuild and stalls the menu for a second; the wall's first numbers (2026-11-13 19:14, reads only)
+
+The integrator (exp 0419) built candidate E from form 4 privately (binary 93188758, backend archive d4c4882e) and
+ran its chain with my arms inside; its report: ASTRO BOT 120 s PASS; the cutscene arm k2cut to G+320 with no fault
+and no record (K1r 406 covers / 808 MiB, kl412 110 chunks); the walk k4wall to G+560 clean. It flagged the longest
+frame gaps: 1,238 ms (k1, defaults) and 1,357 ms (k2cut) against 638 ms with `BC5_GUARD_K1R=0 BC5_GUARD_K1_FILTER=0`
+(k1off). Read on the top's GO (one lock line, greps only; the small results in `raw/readE/`).
+
+**The gaps [M]** (frame-profile lines over 500 ms; journals `play-20261113-1838` k1, `-1845` k1off, `-1851` k2cut,
+`-1901` k4wall):
+
+| run | t s | gap ms | where the frame profile puts it |
+|---|---|---|---|
+| k2cut | 39.6 | 1,357 | at the flip 1,287 |
+| k4wall | 39.4 | 1,076 | sync 1,029 (game thread) |
+| k1 | 249.2 | 1,238 | outside the host 1,122; sync 47, GPU 31 |
+| k1off | 99.2 | 638 | outside 427, at the flip 179 (the load; every run has it) |
+
+Both 39 s gaps are in the menu, 75 s before gameplay. The timing split's "want" step of the mapping rebuild:
+18.8-20.3 ms per full sync with K1r on (k4wall), 0.8 ms with it off (k1off) [M].
+
+**The cause [I, from the code]:** `k1r412::cover()` walked the list of imported buffers from its start for every
+view; with 21,000 views that is millions of steps a rebuild. Around 39 s the title maps its views and every change
+is a full rebuild, so the 20 ms add up to a second (in k2cut the game thread waits at the flip for the rebuild on
+another thread [I]). The 1.1 s "outside" of k1 at 249 s is not attributed: not sync, not GPU, one run. The 39 s
+stall is in 2 of 3 K1r-on runs here and in 0 of 1 off; my arms on g412zc/zd and his play had 356-722 ms at most.
+
+**The fix, form 5 (laptop, CPU test 17,742 of 17,742; not compiled):** `cover()` starts at the last buffer that
+begins at or before the view (binary search; the list is sorted and disjoint). Chain on B's unit: mkk1r ad75c63f,
+mkwa 416f7a93, mkcv 9a467d3c, mkk1f a0ee1521, mkkl **46219eed** (8 lines from form 4); backend as form 4 (e96e5c73,
+28100ce5). The pass mark on the box: "want" under 2 ms per full sync with K1r on, and k1 / k1off / k2cut twice each.
+**E is not ready for the swap until then; row 1 of FAULTS.md closes on the fixed E.**
+
+**The wall, first numbers [M]** (k4wall: the log-only zero scan at t 175, 295, 415, 535, 640 s over the 18 eager
+heaps, 17.0 GiB of spans; frame numbers of this arm are not comparable):
+
+| heap | span MiB | all-zero in every one of the 5 scans, MiB |
+|---|---|---|
+| RenderGpuWcLarge | 2,758 | 842 |
+| CommitIABufferAllocator | 2,736 | 274 |
+| RenderGpuRwLarge | 414 | 204 |
+| DynamicHeap (+ Small) | 328 (+54) | 160 (+22) |
+| AMM | 10,084 | 154 |
+| Physics | 192 | 116 |
+| ComponentHeap (+ Small) | 104 (+36) | 56 (+24) |
+| the other nine | | under 20 each |
+| **all** | 17,001 | **1,930** (per scan 2,118 / 2,002 / 2,058 / 2,044 / 1,966) |
+
+Option B's floor on this route is about 1.9 GiB of pinned 2 MiB chunks nobody wrote in ten minutes: over the plan's
+500 MiB gate. (The spans are reservations: the heaps' pinned size is smaller for AMM.)
+
+GTT at 615 s, 12,220 MiB, by client (`k4wall-snap.txt`, `k4wall-fdinfo.txt`) [M]: the emulator's direct client
+11,822; the emulator's second client (its Vulkan/present side) 245 GTT + 236 VRAM; plasma-keyboard 76; Xwayland 22;
+plasmashell 20. Available 657 MiB. For his play's 555 MiB beyond the guest this gives about 245 present side, about
+100 desktop clients, about 210 the direct path's own buffers [I: the split is k4wall's, the 555 is his play's].
+plasma-keyboard's 76 MiB can go in the lean session.
+
+### 79. For candidate F: the cover pass's cost in a CPU test; the catcher for unnamed writers; the heaps' order (2026-11-13 evening, laptop; not compiled)
+
+The top's order: form 5 goes into candidate F (E + form 5 + exp 0418's diff) with a CPU test that shows the old
+cover pass's cost; step 2 of the wall plan enters F as a diagnostic, off; the heaps' order and each arm's risk are
+written down; plasma-keyboard joins the lean list on paper.
+
+- **The cost test** (`k1r0412.cpp`, now 17,745 checks): 21,000 views over 600 imported buffers. The pass before
+  form 5, kept in the test as the reference, looks at 6,201,535 list entries; `k1r412::cover()` with the binary
+  search at 27,072; the pieces are identical. `cover()` got an optional step counter for this.
+- **ww412** (`BC5_GUARD_WRITERS=1`, default off, log only): `ww0412.inc`, `ww0412.cpp` 105,737 of 105,737,
+  `mkww0412.py`. Hooks: `direct_force` names every chunk a hint or force asks for; `ww412_packets` names the chunks
+  of every memory operand of a submission's main buffer; the zero scan's thread compares each heap's flags with the
+  last scan's and journals "turned non-zero: N named, M NOT named". Limits in the file's header.
+- **Form 6** on B's unit 8126c0aa: mkk1r dffb4216, mkwa 46f2cf87, mkcv 2d466d15, mkk1f 6944eaf8, mkkl 1a2535ee,
+  mkww **b76dc93e**; backend as form 4 (e96e5c73, 28100ce5). `mk0412ze.sh`, `kit-ze.sha256` follow.
+- `PLAN-memory-wall.md` has the first measurement's result, step 2, the order of the heaps with each arm's risk
+  (no arm prepared), and the lean list's new line.
+
+### 80. Candidate F's acceptance chain, read for the cover pass's cost (2026-11-13 19:32-20:21; the integrator's runs and readings, exp 0419; nothing run by this experiment)
+
+F: patch d9af28ca, unit 59d17cf5 (form 6 of section 79; the four rule bodies are in it verbatim, checked on the
+laptop). Arms: m1a, m1b (walk, K1r on), m1offa, m1offb (`BC5_GUARD_K1R=0 BC5_GUARD_K1_FILTER=0`), m2cuta, m2cutb
+(cutscene to G+320, K1r on), ASTRO BOT 120 s three times, lean. Kernel errors 0, crashes 0, no fault record in all.
+Raw files on the box, not copied: `~/bc5-work/exp0413/n/raw/fchain.out`, `m*-journal.txt`.
+
+"want" per full sync = the timing-split line's "want" (a total in ms over 128 submissions, read in the unit)
+divided by its count of full syncs [M, the integrator's `want0419.sh` over every line with a full sync]:
+
+| arm | K1r | lines with a full sync | over 2 ms | largest three, ms (at t, s) |
+|---|---|---|---|---|
+| m1a | on | 1905 | 64 | 3.10 (63.4), 3.00 (52.0), 2.90 (65.9) |
+| m1b | on | 1955 | 103 | 3.30 (51.0), 3.20 (56.0), 3.15 (49.2) |
+| m2cuta | on | 2612 | 29 | 3.10 (50.6), 3.10 (46.1), 3.00 (51.1) |
+| m2cutb | on | 2444 | 48 | 2.90 (67.7), 2.80 (46.2), 2.75 (45.3) |
+| m1offa | off | 1911 | 0 | 1.50 (335.7), 1.20, 1.10 |
+| m1offb | off | 2013 | 0 | 1.40 (88.5), 1.20, 1.20 |
+
+Candidate E (the pass before the binary search): 18.8-20.3 ms. Longest gaps: K1r on 698, 695, 408, 678 ms, off
+879, 625 ms, all at 92-155 s (the load and after); none near 39 s, where E stalled for about 1 s.
+
+- The mark as I wrote it ("want under 2 ms per full sync with K1r on") is **not met** at the maxima: about 3 ms
+  at worst, all between 45 and 68 s (the menu), in 1-5 % of the windows. K1r adds at most about 1.6 ms to a full
+  sync there [M].
+- What the mark stood for, the stall, is **gone** [M]: no gap came with those windows, and K1r on and off have
+  the same longest gaps and the same flips/s (25.4-25.7 walk, 29.5-29.8 cutscene).
+- My verdict: **F is ready for the swap** from this experiment's side. The 2 ms was my guess at a safe number,
+  not a measured limit; 3 ms in a full sync is under a tenth of a frame at 30 flips/s.
+- Not known: where the remaining 1.6 ms goes (the cover pass itself, or kl412's data scan). A form 7 is not
+  prepared; it would start from a split of `k1r412_want`'s time, as a diagnostic.
+- FAULTS.md row 1 closes on m2cuta and m2cutb: the cutscene ran to G+320 twice on the fixed build with no fault.
+
+### 81. The long walk on F with the zero scan and the writers catcher (arm m5wall): a GPU hang at 601 s; ww412's first numbers (2026-11-13 20:22-20:33, the integrator's run; read here 20:55-20:57, read only)
+
+Arm m5wall: F's private binary, walk to G+560, `BC5_DIRECT_ZEROSCAN_AT=175,295,415,535,640`,
+`BC5_GUARD_WRITERS=1`. **A GPU hang at 601 s**: the kernel's "ring gfx_0.0.0 timeout", reset succeeded, no
+reboot; the fault record ended the game (605 s). Record: `~/bc5-data/captures/faults/20261113-203301`; journal
+`~/bc5-data/captures/play-20261113-2022/gc/direct.log` (on the box; not copied: they hold the title's buffers).
+Section 80's verdict "F is ready for the swap" is **withdrawn** until this is explained or shown not to repeat.
+
+What the record says [M]:
+- No page fault (fault address 0, status 0). Two jobs timed out after 2 s: acb #522931 (816 dwords: 0 waits,
+  10 label writes, 20 dispatches, 18 of them indirect) and dcb #522934 (45,179 dwords: 32 waits, 30 kept for the
+  GPU, 421 label writes, 34 dispatches).
+- The frames up to 599.0 s are ordinary (33 ms a flip, GPU busy 25-32 ms). Memory at 600 s: available 406 MiB,
+  swap 665 MiB, GTT 12,331 of 13,312.
+- The probe finds nine waits "NOT met" in the dcb. All their labels (0x11e0270460 ... 0x11e0bd0950) lie in one
+  ordinary mapping, 0x11e0000000 + 0xe14000, of the eager heap RenderGpuRwLarge. An eager heap gets no K1r cover.
+  The probe reads the labels after the reset, when the memory was reused: "NOT met" there proves nothing.
+- K1r's last line before the hang (229 s): 378 zero pieces over 752 MiB; the zero buffer holds 0 non-zero words.
+
+Can ww412 or K1r be in it? [I]
+- ww412: by mechanism no. It reads packets and fills a set under its own mutex on the CPU; it changes no
+  mapping, no packet, no label. It adds CPU time to each submission (not measured).
+- K1r: no sign of it, and not excluded. Its two known failure kinds do not fit as seen: a GPU write into a cover
+  is a page fault (there is none); a wait on a label under a cover would hang without a fault, but the labels
+  found are not under a cover. What stays possible: a shader that reads zeros where the console has data and
+  does not finish. One run cannot tell.
+- What differs from E's clean walk of the same length (k4wall): form 6 for form 4, ww412 on, exp 0418's
+  start-state table. E ran at GTT 12,220 at 615 s; this run at 12,331 at 600 s.
+- The arms that tell them apart, in this order: the same walk on F with no scan and no catcher; if it hangs,
+  again with `BC5_GUARD_K1R=0 BC5_GUARD_K1_FILTER=0`; if it still hangs, with exp 0418's rows off. The
+  integrator proposed the first; all are scripted, on a private save copy, with the fault record on.
+
+ww412's first numbers [M]: chunks (2 MiB) that turned non-zero between two scans, and how many of them no hint,
+force or packet operand had named (scans at 175, 295, 415, 535 s; the fifth never ran):
+
+| heap | turned, scans 2 / 3 / 4 | NOT named | of all turned |
+|---|---|---|---|
+| RenderGpuWcLarge | 45 / 35 / 27 | 4 / 5 / 2 | 11 of 107 |
+| RenderGpuRwLarge | 22 / 6 / 1 | 16 / 6 / 1 | 23 of 29 |
+| CommitIABufferAllocator | 10 / 7 / 1 | 9 / 1 / 1 | 11 of 18 |
+| AMM | (span changed) / 28 / 9 | 0 / 0 | 0 of 37 |
+| the other thirteen heaps | 0 | 0 | 0 |
+
+- CommitIABufferAllocator is **not shown clean**: 11 chunks got data that nothing named. For this heap the CPU
+  is the expected writer, and a CPU write is seen by the data scan; the catcher cannot tell a CPU write from a
+  GPU write. The order of PLAN-memory-wall.md stands, with that limit.
+- RenderGpuWcLarge: 90 % of what turned was named. The 11 not named are the open risk of its arm.
+- RenderGpuRwLarge: mostly not named (23 of 29). It should go last of the three, or get a naming rule first.
+- AMM: everything that turned was named (37 of 37 in two intervals). That contradicts my "every catcher is
+  blind there"; the plan's row is corrected to "leave eager until the hang is understood".
+
+A by-product, the cost of kl412's data scan [M]: 0.48-0.51 ms a scan (750 scans, 103,798 SEEK_DATA calls,
+384 ms by 229 s). That is about a third of the 1.6 ms K1r adds to a full sync (section 80).
+
+### 82. Prepared for option B's arms: one switch per heap (bd412) and the CPU/GPU split of the writers catcher (wc412) (2026-11-13 late evening, laptop; not compiled on the box, not run)
+
+The maintainer's word, relayed by the top ("jest moja zgoda"): scripted arms of option B, heap by heap, on a
+PRIVATE build and a private save copy, with a possible GPU fault or reboot. Not covered: shared builds,
+launchers, shortcuts, his live saves, runs while he plays. The top's conditions: the hang of section 81 is
+explained first; all heaps' rule in one build, one switch per heap, with a catcher that tells CPU from GPU
+writers if that can be done; one arm = one heap, CommitIABufferAllocator first, fault record on, stop and report
+after a reboot; each arm reports the MiB recovered at m5wall's points, flips/s and the longest gap.
+
+- **bd412, `BC5_GUARD_BYDATA_NAMES=name[,name...]`** (default unset: nothing changes). A heap named there is
+  not imported whole though `BC5_DIRECT_EAGER_NAMES` names it: `direct_eager_name` answers no for it, so it is
+  imported where the file holds data and where a hint, a force or a packet operand names a chunk; K1r covers
+  the rest. The zero scan and the catcher keep reading it (they asked for eager views only). `bd0412.inc`,
+  `bd0412.cpp` 27,008 of 27,008.
+- **wc412, `BC5_GUARD_WRITERS=2`** (=1 stays ww412 with its lines unchanged). Linux's soft-dirty bit
+  (/proc/self/pagemap bit 55, cleared by "4" into /proc/self/clear_refs; the kernel's
+  Documentation/admin-guide/mm/soft-dirty.rst) is set by a write through the process's page tables and not by a
+  write of the GPU. Per scan: the bits of every slot that was zero at the last scan, the clear, the scan, the
+  bits again for the slots that turned; a not-named chunk is then "written by the CPU" or "NO CPU write: a GPU
+  writer nobody named" (up to 64 of those are journaled by offset). The first scan tests the bit on a page of
+  its own and says so if it does not work on this kernel. `wc0412.inc`, `wc0412.cpp` 6,010 of 6,010.
+  Costs, not measured: the clear write-protects every page of the process, so an arm with =2 is a diagnostic
+  arm of its own; its gaps and flips/s do not compare with other arms.
+  TODO(verify): that this kernel is built with CONFIG_MEM_SOFT_DIRTY, and that the bit is kept for the shared
+  mappings of the direct file; the self-test answers the first, the first run's numbers the second (a heap
+  whose turned chunks are ALL "no CPU write", CommitIABufferAllocator above all, would mean the bit is not
+  kept there).
+- `mkbd0412.py` applies to a unit with ww412: candidate F's 59d17cf5 gives **8f07ccf6**, form 6 (b76dc93e)
+  gives 2dc64fc8. The glue passes a syntax check on the laptop against stand-in declarations (clang++
+  -fsyntax-only -Wall -Wextra -Werror); it has not been compiled on the box.
+- The box build script is NOT written: its base (F as it is, or F with exp 0418's rows off) follows from the
+  integrator's series on the hang.
+
+The arms, when the slot comes (each: F + bd412/wc412 private build, walk to G+560, RT on, fuse and watchdog,
+fault record on, private save copy; GTT and available memory read at 420 s and 600 s, where m5wall had 12,237
+and 12,331 MiB of GTT and 409 and 406 MiB available):
+
+| arm | switches | risk | answers |
+|---|---|---|---|
+| w0 | `BC5_GUARD_WRITERS=2`, zero scan as m5wall | none beyond a walk (a diagnostic; slower) | per heap: how many not-named chunks the CPU wrote, how many it did not |
+| b1 | `BC5_GUARD_BYDATA_NAMES=CommitIABufferAllocator` | GPU fault or reboot | the rule on a real heap; MiB recovered (floor 274) |
+| b2 | `...=RenderGpuWcLarge` | the same, higher | floor 842 |
+| b3 | `...=RenderGpuRwLarge` | the same, highest by ww412's count | floor 204 |
+| b4 | `...=DynamicHeap,ComponentHeap,Physics` one at a time | the same | floors 182, 80, 116 |
+
+An arm is run only after the one before it is read; a fault's record names the writer, and that writer's
+class gets an import rule before the heap is tried again.
+
+### 83. The series for F's hang, read for K1r; the cover pass old against new on generated layouts (2026-11-13 21:00-22:00 the integrator's five walks to G+620, exp 0419 README section 14; read here 22:1x, read only)
+
+| arm | build and switches | result [M, the integrator] |
+|---|---|---|
+| sA | F plain (K1r on) | **the title faulted on the CPU at 543 s**: read of 0x17fc at eboot+0x1b349f; no GPU fault, kernel lines 0 |
+| sB | F, `BC5_GUARD_K1R=0 BC5_GUARD_K1_FILTER=0` | clean, 26.3 flips/s, longest gap 739 ms |
+| sC | F without exp 0418's five new rows (K1r on) | clean, 25.9, 1,020 ms |
+| sD | shared B | clean, 26.1, 875 ms |
+| sE | F + zero scan + `BC5_GUARD_WRITERS=1` (m5wall again) | clean, 24.8, 573 ms |
+
+Long walks past G+320 so far: F with K1r on 2 failed of 4 (the GPU hang of section 81; this CPU fault), F with
+K1r off 0 of 1, E (form 4) 0 of 1, B 0 of 1.
+
+**What precedes the CPU fault in sA** (journal `~/bc5-data/captures/play-20261113-2100/gc/direct.log`,
+`~/bc5-work/exp0413/n/raw/sA-crash.txt`; on the box):
+- [M] The instruction is `movzx ebx, word [r11+r10-4]` in a loop that copies 16-bit words (rax = r8 = rdx =
+  0x200; the bytes before it compute r10 = 2*r10 + [rdi]). r10 is 0x1000 and r11 0x800: the base pointer read
+  from the title's own structure at 0x131c7bf580 was 0. A READ by the title's CPU through a null base.
+- [M] No K1r event before it: the k1r line is written when the number of covers changes (at most every 10 s);
+  its last line is at 152 s (380 pieces, 756 MiB), so the cover count did not change for 390 s. K1 at the
+  filter imported nothing in the whole run (0 lines, as in all five runs). No GPU fault, no "would learn", no
+  failed submission. Memory at 530 s: available 531 MiB, GTT 12,271.
+- [M] The lines of the last seconds are the ordinary ones (merges, "flip label still set", one
+  "cpu-wait WAIT_REG_MEM64 ... GIVEN UP after 16.3 ms"); the run has 96 of those, sB 99, sC 168, sD 44, sE 147.
+- [I] A CPU read cannot see a cover. sB ran the same route with K1r off and had no GPU fault, so on that run no
+  GPU read reached memory a cover would have hidden; that speaks against "zeros read through a cover" as the
+  source here. Why the title's pointer was null is NOT known.
+
+**Form 6 (F) against form 4 (E)**: form 5 changed one thing, the start of `k1r412::cover()`'s walk (a binary
+search for the last buffer that begins at or before the view's start); form 6 added ww412, which does nothing
+unless `BC5_GUARD_WRITERS` is set. F also carries exp 0417's save fix and exp 0418's diff, which E did not.
+- [M, the code] The search relies on the buffer list being sorted and disjoint. It is: the only insert into
+  `S.bos` goes through `std::upper_bound` on the offset, and the merge replaces a run by one buffer in place.
+- [M, laptop] `k1r0412.cpp`, now 209,746 of 209,746: on 4,000 generated layouts (0-12 buffers, adjacent or
+  with gaps) and 96,000 views placed on buffer edges, one page before and after them, inside and across
+  buffers, the two passes give the same pieces in every case (differ in 0); each view is also checked page by
+  page against a model (a page is covered exactly when no buffer holds it). I find no defect in form 5's pass.
+
+**The shortest series that decides** (scripted, long walks to G+620, no build needed): the kept F binary twice
+plain and twice without exp 0418's rows; E's kept private binary (form 4) twice if it still exists (only B and F
+are in `exp0413/kept`). Six walks, about 70 minutes. F plain fails again and "without rows" does not: exp 0418's
+rows. Both fail and E does not: forms 5/6 or exp 0417's fix. Nothing fails: the rate is under about one in
+four and only more walks tell.
+
+**ww412 from sE, all five scans** [M] (not named / turned non-zero, 175-640 s): RenderGpuWcLarge 11 of 98,
+RenderGpuRwLarge 30 of 35, CommitIABufferAllocator 10 of 20, AMM 1 of 60, VisualEffectInstanceHeap 1 of 1, the
+rest 0. As in section 81. Zero in all five scans: RenderGpuWcLarge 902 MiB, CommitIABufferAllocator 280,
+RenderGpuRwLarge 192, DynamicHeap 160 + 22, Physics 116, ComponentHeap 56 + 24; all listed heaps 1,828 MiB.
+
+Not updated: `kit-ze.sha256` (it names the old `k1r0412.cpp`; that kit was never sent).
+
+### 84. The deciding series was run by the integrator: nine long walks, none failed (2026-11-13 22:06 - 2026-11-14 00:01; exp 0419 README section 15, 71d552d7; not read on the box by me)
+
+[M, the integrator] Nine walks to G+620, interleaved: F plain x3, shared B x2, F with `BC5_GUARD_K1R=0
+BC5_GUARD_K1_FILTER=0` x2, F without exp 0418's five new rows x2; `KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1`
+in all. All nine reached G+620 with 25.1-25.6 flips/s, 0 kernel lines, 0 crash lines, no new fault record.
+Lowest available memory in 580-620 s: 389 MiB; GTT 12,177-12,323 of 13,312. Raw:
+`~/bc5-work/exp0413/n/raw/counts0419f.out`, journals `~/bc5-data/captures/play-20261113-2206` to `-2349`.
+
+Long walks past G+320 now: F with K1r on 2 failed of 7 (the GPU hang at 601 s, the CPU fault at 543 s), F with
+K1r off 0 of 3, F without exp 0418's rows 0 of 3, B 0 of 3 (E's form-4 binary was not run).
+- [M, arithmetic] 2 of 7 against 0 of 3 (K1r off alone): p 0.47 (21 of 45). 2 of 7 against 0 of 9 (all other
+  arms together): p 0.175 (21 of 120). Neither separates.
+- [I] This is section 83's third outcome: nothing failed, so no arm is named. The two failures are of two kinds
+  (a GPU ring timeout without a page fault; a null pointer in the title's own structure), each seen once in 16
+  long walks; nothing shows they share a source, and nothing ties either to K1r beyond the arm they fell in.
+- NOT known: the source of either. The records of both stay the only evidence (`FAULTS.md`).
+
+What this leaves for option B's arms: the top's first condition ("the hang is explained first") is NOT met and
+cannot be met by more reading of these runs. Whether the arms start on F with the two faults open at about 1 in
+8 long walks each is the top's and the maintainer's call; an arm that hangs or faults the same way would then
+not be attributable to its heap without the fault record saying so.
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over

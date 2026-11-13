@@ -75,7 +75,7 @@ int main() {
 		check(!cv412::covered_sorted(maps, 0x3083ff000ull, 8192, false), "a range that starts in the cover and ends in real memory is not mapped");
 		check(!cv412::covered_sorted(maps, 0x3081ff000ull, 8192, false), "a range that starts in real memory and ends in the cover is not mapped");
 	}
-	check(!cv412::visible(), "the rule is on when the variable is unset");
+	check(cv412::hole(true, true) && !cv412::hole(true, false) && !cv412::hole(false, true), "the unit's form: a read-only shared mapping is always a hole (no switch)");
 	std::printf("cover0412: %" PRIu64 " of %" PRIu64 "; end\n", g_ok, g_checks);
 	return g_ok == g_checks ? 0 : 1;
 }

@@ -1,5 +1,5 @@
 // BC5 experiment 0412 (tag k1r412, README sections 62 and 63; design section 8): the read-only zero cover.
-// BC5_GUARD_K1R=1 (default off in the test build; meant to become the default). Every part of a view of direct
+// ON by default since 2026-11-13 (the top's order after the maintainer's play); BC5_GUARD_K1R=0 turns it off. Every part of a view of direct
 // memory that no imported buffer covers (a chunk the CPU has never written, in a heap that is imported by data or
 // lazily) is GPU-mapped READABLE ONLY onto one shared 2 MiB zero buffer of its own. Nothing is pinned for it.
 //   - a GPU READ there returns zeros, which is what the file holds there (E1 case 2; his play of 2026-11-13 faulted on
@@ -25,14 +25,15 @@ struct Piece {
 inline bool on() {
 	static const bool v = [] {
 		const char* e = std::getenv("BC5_GUARD_K1R");
-		return e != nullptr && e[0] != 0 && !(e[0] == '0' && e[1] == 0);
+		return e == nullptr || !(e[0] == '0' && e[1] == 0); // on unless "0"
 	}();
 	return v;
 }
 // The parts of the view [voff, voff + vsize) of the file, mapped at vva, that no imported range covers, cut at the
 // file's chunk boundaries (so that a piece never exceeds the zero buffer and a chunk's later import replaces whole
 // pieces). Appended to out in ascending address order.
-template <typename Bos> inline void cover(uint64_t vva, uint64_t voff, uint64_t vsize, const Bos& bos, uint64_t chunk, std::vector<Piece>& out) {
+// steps, when given, counts the list entries looked at (the CPU test's measure of the pass's cost).
+template <typename Bos> inline void cover(uint64_t vva, uint64_t voff, uint64_t vsize, const Bos& bos, uint64_t chunk, std::vector<Piece>& out, uint64_t* steps = nullptr) {
 	const uint64_t vend = voff + vsize;
 	uint64_t       cur  = voff;
 	auto           emit = [&](uint64_t lo, uint64_t hi) { // a gap [lo, hi) of the file under the view
@@ -43,7 +44,14 @@ template <typename Bos> inline void cover(uint64_t vva, uint64_t voff, uint64_t 
 			lo = e;
 		}
 	};
-	for (const auto& b: bos) {
+	// Start at the last range that begins at or before the view's start (the list is sorted and disjoint, so nothing
+	// before it can reach into the view). 2026-11-13: the walk from the list's start for each of 21,000 views cost
+	// 20 ms a rebuild and a 1 s stall in the menu (README section 78).
+	auto first = std::upper_bound(bos.begin(), bos.end(), cur, [](uint64_t o, const auto& b) { return o < b.off; });
+	if (first != bos.begin()) --first;
+	for (auto it = first; it != bos.end(); ++it) {
+		const auto& b = *it;
+		if (steps != nullptr) ++*steps;
 		if (b.off + b.size <= cur) continue;
 		if (b.off >= vend) break;
 		if (b.off > cur) emit(cur, b.off < vend ? b.off : vend);
