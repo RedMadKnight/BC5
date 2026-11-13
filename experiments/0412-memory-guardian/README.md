@@ -2767,8 +2767,57 @@ after exp 0413's guard?); 12,800 with `KYTY_BC5_AMM_SCATTER` unset, `rescue` and
 TRAP_LOG and `KYTY_BC5_AMM_TRACE=1`; and at 13,824 one pair `BC5_DIRECT_MAX_BO_MIB` unset against 16 with
 `compact0412.sh` beside each.
 
+### 60. The learned windows are out of the second title's launchers (2026-11-13 08:16–08:22)
+
+The maintainer's order, relayed verbatim by the top session: "masz się pozbyć wyuczonych okien! to jest coś chorego
+[...] to jest obejście a potrzebne jest rozwiązanie, które softwareowo gdzieś jest". It covers his shortcut and the
+shared launchers; no variant that keeps the file is offered again.
+
+**What was changed on the box** [M]:
+- **His shortcut:** `play-guard-0412.sh` has the arm `fast9` (`eb4feddc`; the old one kept as
+  `play-guard-0412.sh.before-fast9-a547d77c`): fast8's words on the **shared** normal build `fe0933c0`, the launcher
+  derived with one line changed (the learned file's path, to the empty `exp0412/learned-none.txt`), and
+  `BC5_GUARD_LEARN_LOG=2`: the catcher journals a GPU fault as "would learn ..." with its address and kind, **writes
+  nothing and adds nothing, not even for the run** (mode 1 would keep a window for the run, which is a remembered
+  window again). fast8's words read the same before and after (78), fast9 adds two. The desktop has "BC5 emulator
+  (0412 fast9 bez Plasmy)" (the shell is still stopped for the play); the fast8 shortcut is in
+  `~/bc5-work/trash-20261113/pulpit`.
+- **The shared launchers** (`nolearned0412.sh`): `play-pkg.sh` 157021e3 → **47426d8e**, `play-pkg-log.sh` 5080d2ce →
+  7d33409f, `play-pkg-quiet.sh` 48fa60ba → 4230882c: the one `export BC5_DIRECT_LEARNED=…` line became two (the path of
+  the empty read-only `~/bc5-work/direct-learned-none.txt`, and `BC5_GUARD_LEARN_LOG=${BC5_GUARD_LEARN_LOG:-2}`). Each
+  old file is beside as `<name>.before-nolearned`; `bash -n`; the diff is that one line.
+- **The learned file** `direct-learned-pkg.txt` (81 lines, cb30371e) was moved to `~/bc5-work/trash-20261113/`, not
+  deleted. `run0412n.sh` no longer needs it (its default source is an empty file).
+- Still naming the old file: `run-pkg.sh` (its default when `LEARNED` is unset), `play-pkg-exp0155.sh`,
+  `lean-backup-play-pkg.sh`; with the file gone they read nothing, and a fault there would **create it again**
+  unless `BC5_GUARD_LEARN_LOG` is set. Not changed (not in the order). ASTRO BOT's launcher names no learned file,
+  but the code's default path `~/bc5-work/direct-learned.txt` exists and is read when the variable is unset: also not
+  changed; the top session decides.
+
+**Shown to run** [M]:
+- fast9's words on the shared build, the scripted route to gameplay (run f9a, RT on, fuse and watchdog as always):
+  G+60 reached, 177 s, 28.1 flips/s, no kernel line, no "would learn" line, lowest available 503 MiB; the old file
+  was not created again.
+- `play-pkg.sh` with a stand-in for the emulator (it prints its environment and exits; no game, his log and saves
+  untouched): the emulator would get `BC5_DIRECT_LEARNED=…/direct-learned-none.txt` and `BC5_GUARD_LEARN_LOG=2`.
+  `play-pkg-log.sh` and `play-pkg-quiet.sh` ended with status 1 before they reached the stand-in (they do not take
+  it); they are checked by `bash -n` and by their one-line diff only.
+- **Not done:** a start of `play-pkg.sh` itself to gameplay. It runs on his live save directory, which a session
+  does not start a game on; the shortcut itself (with the shell stopped) has not been started with the game either.
+
+**What it means in play.** A place the windows used to cover is now a GPU fault: a 14 s stall with a "would learn"
+line naming the address and its kind, **every time that place is met in the run**, since nothing is added. If one
+scene faults on every frame it will not get past that scene until the cause is fixed in code. Each such line is a
+bug report (README section 61 will hold the rules by kind); none becomes a window.
+
+**Undo** (his word only): copy the three `.before-nolearned` files back, move the learned file back from the trash
+directory, and put the fast8 shortcut back from `trash-20261113/pulpit`.
+
 ## Verdict
 
+- **No learned windows any more (section 60, the maintainer's order):** his shortcut (fast9, the shared build) and the
+  three shared launchers of the second title run with an empty learned file and the catcher that only logs; the
+  old file is in the trash directory. A fault is now a bug report with an address and a kind.
 - **Compaction (section 58, sources only):** kcompactd is driven by the kernel's own proactive compaction and by every
   kswapd pass once 12 GiB is pinned; our import adds order-5 array requests per 64 MiB buffer on every create,
   merge and cut. The first is a system setting that only the maintainer can change; ours needs buffers made once.
