@@ -288,7 +288,7 @@ to the trash directory. Still his to say separately, because they are behaviour 
 F = B + exp 0412's K1r (form 6, default on, the cover pass fixed) + the cleanup + exp 0417's save fix + exp 0418's
 start-state table. E (410273ca) is withdrawn: its K1r stalled the menu for over a second. Of the inventory's 266
 names 77 can no longer be set (29 deleted, 48 hardened) and 189 remain: 69 diagnostics, 63 without a verdict, 42 one
-title's, 13 configuration, 2 general defaults with an option; exp 0418's change takes five more out (its three
-start-state words and two others are read by nothing in F). Before the swap: a swap script for F (E's `int0419e.sh`
-with F's pins and its dry run again), the maintainer's one "yes" (builds, backend archive, launchers, shortcuts), and
+title's, 13 configuration, 2 general defaults with an option; exp 0418's change takes four more of them out (`BC5_DIRECT_CP_COHER_START_DELAY`,
+`_SPI_REQ_CTRL_PS`, `_GC_TF_RING`, `_GC_HS_OFFCHIP` are read by nothing in F: 81 gone, 185 remain). The swap script for F is made and dry-run (`mkswap0419f.py` -> `int0419f.sh`,
+`dryswap0419f.sh`: 40 of 40, `raw/dryswap0419f.out`). Before the swap: the maintainer's one "yes" (builds, backend archive, launchers, shortcuts), and
 his play. The dead code behind the removed options is the patch change after that.
