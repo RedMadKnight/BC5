@@ -72,6 +72,33 @@ int main() {
 	CHECK(!can_skip(3, 5, false, 5)); // no walk stands (start, device reopen)
 	CHECK(!can_skip(3, 5, true, 6));  // the thread saw something else than the walk
 	CHECK(can_skip(3, 5, true, 5));
+	// tag as415c: the "events" form
+	CHECK(mode_of("events") == 3);
+	CHECK(mode_of("thread") == 2);
+	CHECK(mode_of("verify") == 1);
+	CHECK(mode_of("0") == 0);
+	{
+		const uint64_t e0 = events().load();
+		note(0x7f0000000000ull, 0x1000, true); // above the guest's span
+		note(0x1000, 0x1000, true);            // below it
+		note(0x200000, 0x1000, false);         // not readable
+		note(0x200000, 0, true);               // empty
+		CHECK(events().load() == e0);
+		note(0x200000, 0x1000, true);
+		CHECK(events().load() == e0 + 1);
+		note(0x3f000, 0x2000, true); // straddles the span's start
+		CHECK(events().load() == e0 + 2);
+		note(kGuestMax, 0x1000, true); // the span's last byte
+		CHECK(events().load() == e0 + 3);
+		note(kGuestMax + 1, 0x1000, true);
+		CHECK(events().load() == e0 + 3);
+	}
+	CHECK(events_moved(7, 7, false)); // no walk stands: walk
+	CHECK(events_moved(8, 7, true));  // the counter moved
+	CHECK(!events_moved(7, 7, true));
+	CHECK(events_skip(false, true));   // nothing new, nothing anonymous: leave the walk out
+	CHECK(!events_skip(true, true));   // the counter moved
+	CHECK(!events_skip(false, false)); // an anonymous VMA exists: the old timing
 	std::printf("test0415anon: %d of %d; end\n", g_n - g_bad, g_n);
 	return g_bad == 0 ? 0 : 1;
 }

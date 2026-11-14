@@ -1,0 +1,2095 @@
+diff --git a/src/bc5/anon_sync.hpp b/src/bc5/anon_sync.hpp
+index f74cbb1..7a2ae6f 100644
+--- a/src/bc5/anon_sync.hpp
++++ b/src/bc5/anon_sync.hpp
+@@ -3,6 +3,7 @@
+ // tested on any CPU (experiments/0415-load-times-fps/kit/test0415anon.cpp).
+ #pragma once
+ 
++#include <atomic>
+ #include <cinttypes>
+ #include <cstdint>
+ #include <cstdio>
+@@ -28,13 +29,46 @@ inline bool parse_line(const char* line, uint64_t* start, uint64_t* end, bool* r
+ }
+ 
+ // KYTY_BC5_ANON_SYNC: 0 off (unset, empty, "0"); 2 "thread" (the submission path leaves the walk out while the checking
+-// thread's last pass saw what the last walk saw); 1 anything else ("verify": the walk runs as before and
+-// is compared with what "thread" would have done).
++// thread's last pass saw what the last walk saw); 3 "events" (tag as415c: no thread; the walk runs at the first call
++// after a host call that made anonymous memory readable in the guest's span, and otherwise only while the last walk's
++// list was not empty); 1 anything else ("verify": the walk runs as before and is compared with what "thread" and
++// "events" would have done).
+ inline int mode_of(const char* e) {
+ 	if (e == nullptr || e[0] == '\0' || std::strcmp(e, "0") == 0) return 0;
++	if (std::strcmp(e, "events") == 0) return 3;
+ 	return std::strcmp(e, "thread") == 0 ? 2 : 1;
+ }
+ 
++// Tag as415c (DESIGN-lock-side.md section 8). One process-wide counter of the host calls that can make anonymous
++// memory readable inside the guest's span: an anonymous map with a readable protection, or a protect call that turns
++// reading on. The sites call note() AFTER the kernel call has succeeded, so a walk that read the counter before its
++// read of /proc/self/maps either sees the mapping or sees the counter move at the next call. A protect site cannot
++// tell a file view from an anonymous range, so it notes every readable protect in the span: too often is safe (one
++// walk more), too rarely is not. The console needs none of this: there a mapping is visible to the GPU when the call
++// that made it returns [inferred: one address space for CPU and GPU]; the rule kept here is "walked by the first
++// submission after the call".
++inline std::atomic<uint64_t>& events() {
++	static std::atomic<uint64_t> v {0};
++	return v;
++}
++inline bool in_span(uint64_t addr, uint64_t len) {
++	return len != 0 && addr <= kGuestMax && addr + len > kGuestMin;
++}
++inline void note(uint64_t addr, uint64_t len, bool readable) {
++	if (readable && in_span(addr, len)) events().fetch_add(1, std::memory_order_release);
++}
++// "events": must this call walk at once (whatever the time limits say)? Yes when no walk stands (start, device
++// reopen) or the counter has moved since the last walk read it.
++inline bool events_moved(uint64_t ev_now, uint64_t ev_at_walk, bool walk_valid) {
++	return !walk_valid || ev_now != ev_at_walk;
++}
++// "events": may this call leave the walk out altogether? Only when the counter has not moved and the last walk found
++// no anonymous guest VMA at all (inside such a VMA pages become resident without any call, so while one exists the
++// walk keeps its old timing).
++inline bool events_skip(bool moved, bool last_list_empty) {
++	return !moved && last_list_empty;
++}
++
+ // The signature of what a walk acts on: the list of VMAs and, inside each, the resident runs at the walk's 64 KiB grain.
+ // Two walks with the same signature (and the same mappings on the device) add and drop nothing.
+ inline constexpr uint64_t kSigEmpty = 0x9e3779b97f4a7c15ull;
+diff --git a/src/bc5/load_stat.hpp b/src/bc5/load_stat.hpp
+index 7fbcc29..9bd3443 100644
+--- a/src/bc5/load_stat.hpp
++++ b/src/bc5/load_stat.hpp
+@@ -97,6 +97,13 @@ enum Cause : unsigned {
+ 	kAnonMiss,       // ... of those, walks that "thread" mode would have left out (the thread's last pass matched the walk before): n
+ 	kAnonSkip,       // KYTY_BC5_ANON_SYNC=thread: walks left out: n
+ 	kAnonThread,     // the checking thread's passes: n, time, items = anonymous guest VMAs found
++	kViewsClone,     // tag mr415d: KYTY_BC5_MAP_RECORDS=views: record applications that had to copy the kept list first (someone still held it): n, items = views
++	kAnonEvents,     // tag as415c: walks (or, in "events", calls) at which the map/protect counter had moved since the last walk: n, items = how far
++	kAnonEvMiss,     // ... KYTY_BC5_ANON_SYNC=verify: walks that found something although the counter had not moved and the last list was empty ("events" would have left them out): n
++	kAnonEvCalls,    // ... KYTY_BC5_ANON_SYNC=verify: calls of the anonymous sync that found the counter moved since the call before: the walks "events" would make for events: n
++	kWaitGaveUp,     // tag wg415: CPU-side label waits that ended unserved (given up at the limit, a timeout, or a broken cycle): n, time waited, items = broken cycles
++	kSemaWake,       // tag sw415 (F451): from a signal making a semaphore waiter ready to that waiter holding the mutex again: n, time
++	kSemaWokeIdle,   // ... a blocked semaphore waiter woke and was not ready (a broadcast meant for another, or its poll period): n
+ 	kCount
+ };
+ 
+@@ -108,7 +115,9 @@ inline constexpr const char* kNames[kCount] = {
+     "apr_fallback", "hold_probe", "hold_hints",   "hold_pre",  "dev_call",    "dev_prepare", "dev_list",        "dev_cs",
+     "ds_views", "ds_scan",    "ds_merge",         "ds_drain",  "ds_maps",     "fast_diff",   "learned_apply",   "learned_changed",
+     "map_record", "rec_mismatch", "rec_overflow",    "maps_check", "maps_uncovered",
+-    "anon_read", "anon_urgent", "anon_needed",     "anon_miss", "anon_skip",   "anon_thread"};
++    "anon_read", "anon_urgent", "anon_needed",     "anon_miss", "anon_skip",   "anon_thread",
++    "views_clone", "anon_events", "anon_ev_miss",  "anon_ev_calls", "wait_gave_up",
++    "sema_wake", "sema_woke_idle"};
+ 
+ static_assert(kNames[kCount - 1] != nullptr, "a name per cause");
+ 
+diff --git a/src/bc5/save_guard0412.hpp b/src/bc5/save_guard0412.hpp
+new file mode 100644
+index 0000000..d3d8b9f
+--- /dev/null
++++ b/src/bc5/save_guard0412.hpp
+@@ -0,0 +1,165 @@
++// BC5 experiment 0412 (tag sg412): the save guard of the fault record. GPL-2.0.
++// The fault record (tag fr412, BC5_FAULT_RECORD) ends the game at a GPU fault. The title's saves are written through
++// the host's own calls (the save-data library and the file calls on a save mount, "/savedata<n>/..."), so the host
++// knows when a save is being written. Before the exit:
++//   1. DRAIN (bounded): a save already being written goes on to its end (the host calls on a mount that has been
++//      written since it was mounted go on); nothing new starts (a first write on a clean mount, a new mount, a call of
++//      the save-data library that writes: the caller is held and never returns);
++//   2. FINAL: every guarded call is held; the caller then flushes and syncs and exits.
++// "A save being written" is: a guarded call in flight, or a save mount that has been written and is not unmounted yet
++// (the title mounts, writes its files and unmounts). The outcome of the wait is returned for the record.
++// Without a close() nothing here changes any call: two atomic adds per guarded call.
++// Portable C++20 (no POSIX): the CPU test saveguard0412.cpp builds on the laptop and on the box.
++#pragma once
++#include <atomic>
++#include <chrono>
++#include <cstddef>
++#include <cstdint>
++#include <thread>
++
++namespace sg412 {
++
++inline constexpr int kSlots = 16; // save mounts "/savedata0" .. "/savedata15"
++inline constexpr int kLib   = 16; // the save-data library's own writers (no mount)
++inline constexpr int kNone  = -1; // not save storage: not guarded
++
++enum : int { kOpen = 0, kDraining = 1, kFinal = 2 };
++enum : int { kUnmounted = 0, kClean = 1, kDirty = 2 };
++
++inline std::atomic<int>     g_phase{kOpen};
++inline std::atomic<int>     g_ops{0};
++inline std::atomic<int>     g_slot[kSlots]{};
++inline std::atomic<int64_t> g_last_ms{-1};  // the last guarded call's start, ms on the steady clock
++inline std::atomic<int>     g_held{0};      // callers held since the close began
++inline void (*g_hold_hook)() = nullptr;     // the CPU test's stand-in for "held for ever" (it throws)
++
++inline int64_t now_ms() {
++	return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
++}
++
++// "/savedata<n>" or "/savedata<n>/..." -> n, anything else -> kNone.
++inline int slot_of(const char* path) {
++	if (path == nullptr) return kNone;
++	static const char pre[] = "/savedata";
++	int               i     = 0;
++	for (; pre[i] != 0; i++) {
++		if (path[i] != pre[i]) return kNone;
++	}
++	if (path[i] < '0' || path[i] > '9') return kNone;
++	int n = 0;
++	for (; path[i] >= '0' && path[i] <= '9'; i++) {
++		n = n * 10 + (path[i] - '0');
++		if (n >= kSlots) return kNone;
++	}
++	return (path[i] == 0 || path[i] == '/') ? n : kNone;
++}
++
++inline int dirty_mounts() {
++	int n = 0;
++	for (const auto& s: g_slot) n += s.load() == kDirty ? 1 : 0;
++	return n;
++}
++
++[[noreturn]] inline void hold() {
++	g_held.fetch_add(1);
++	if (g_hold_hook != nullptr) g_hold_hook();
++	for (;;) std::this_thread::sleep_for(std::chrono::hours(1));
++}
++
++// May this call start now? (the phase is read after the call was counted, so close() never misses it)
++inline bool allowed(int slot, bool writes) {
++	const int phase = g_phase.load();
++	if (phase == kOpen) return true;
++	if (phase == kFinal) return false;
++	// draining: a save already being written goes on; a call that writes nothing (close, sync) goes on
++	if (!writes) return true;
++	return slot >= 0 && slot < kSlots && g_slot[slot].load() == kDirty;
++}
++
++// One guarded host call. slot: slot_of(path), kLib, or kNone (then nothing is done). writes: the call changes the save.
++struct Op {
++	bool counted = false;
++	Op(int slot, bool writes) {
++		if (slot == kNone) return;
++		g_ops.fetch_add(1);
++		if (!allowed(slot, writes)) {
++			g_ops.fetch_sub(1);
++			hold();
++		}
++		counted = true;
++		g_last_ms.store(now_ms());
++		if (writes && slot >= 0 && slot < kSlots) {
++			int clean = kClean;
++			g_slot[slot].compare_exchange_strong(clean, kDirty);
++		}
++	}
++	~Op() {
++		if (counted) g_ops.fetch_sub(1);
++	}
++	Op(const Op&)            = delete;
++	Op& operator=(const Op&) = delete;
++};
++
++// The host directory of the first save mount of the run (every save of the title lies on its file system): what
++// the exit syncs. Written once.
++inline char              g_root[1024] = "";
++inline std::atomic<bool> g_root_claimed{false};
++inline std::atomic<bool> g_root_set{false};
++inline void              note_root(const char* dir) {
++	if (dir == nullptr || dir[0] == 0 || g_root_claimed.exchange(true)) return;
++	size_t i = 0;
++	for (; dir[i] != 0 && i + 1 < sizeof(g_root); i++) g_root[i] = dir[i];
++	g_root[i] = 0;
++	g_root_set.store(dir[i] == 0); // a name too long to keep is not used
++}
++
++inline void mounted(int slot) {
++	if (slot >= 0 && slot < kSlots) g_slot[slot].store(kClean);
++}
++inline void unmounted(int slot) {
++	if (slot >= 0 && slot < kSlots) g_slot[slot].store(kUnmounted);
++}
++
++struct Closed {
++	int     ops_at_request   = 0;  // guarded calls in flight when the exit was asked for
++	int     dirty_at_request = 0;  // save mounts written and not yet unmounted then
++	int64_t last_op_age_ms   = -1; // how long before the request the last guarded call began (-1: there was none)
++	int64_t waited_ms        = 0;
++	int     ops_left         = 0;
++	int     dirty_left       = 0;
++	int     held             = 0;  // callers refused and held
++	bool    in_flight        = false; // a save was being written at the request
++	bool    complete         = false; // nothing was left in flight when the wait ended
++};
++
++// Called once, by the thread that is about to end the process. After it every guarded call is held.
++inline Closed close(int64_t timeout_ms) {
++	Closed        c;
++	const int64_t t0 = now_ms();
++	g_phase.store(kDraining);
++	c.ops_at_request   = g_ops.load();
++	c.dirty_at_request = dirty_mounts();
++	const int64_t last = g_last_ms.load();
++	c.last_op_age_ms   = last < 0 ? -1 : t0 - last;
++	c.in_flight        = c.ops_at_request != 0 || c.dirty_at_request != 0;
++	while ((g_ops.load() != 0 || dirty_mounts() != 0) && now_ms() - t0 < timeout_ms) std::this_thread::sleep_for(std::chrono::milliseconds(2));
++	g_phase.store(kFinal);
++	// calls that were counted before the phase changed end here (bounded: a quarter of the time on top)
++	const int64_t t1 = now_ms();
++	while (g_ops.load() != 0 && now_ms() - t1 < timeout_ms / 4) std::this_thread::sleep_for(std::chrono::milliseconds(2));
++	c.waited_ms  = now_ms() - t0;
++	c.ops_left   = g_ops.load();
++	c.dirty_left = dirty_mounts();
++	c.held       = g_held.load();
++	c.complete   = c.ops_left == 0 && c.dirty_left == 0;
++	return c;
++}
++
++// The record's words for the outcome.
++inline const char* verdict(const Closed& c) {
++	if (!c.in_flight) return "no save was being written when the game was ended";
++	if (c.complete) return "a save was being written; it was let finish before the game was ended";
++	return "A SAVE WAS BEING WRITTEN AND DID NOT FINISH IN THE TIME ALLOWED: THAT SAVE MAY BE INCOMPLETE";
++}
++
++} // namespace sg412
+diff --git a/src/bc5/setbuffer_test.hpp b/src/bc5/setbuffer_test.hpp
+new file mode 100644
+index 0000000..b17c620
+--- /dev/null
++++ b/src/bc5/setbuffer_test.hpp
+@@ -0,0 +1,8 @@
++// Experiment 0417: the compile-time gate of the set-buffer test hook (libAmpr.cpp, KYTY_BC5_AMM_SETBUFFER_TEST).
++// 0 here: no shared build has the hook. A private build's kit sets it to 1 (this file or -D).
++#ifndef KYTY_BC5_SETBUFFER_TEST_HOOK
++#define KYTY_BC5_SETBUFFER_TEST_HOOK 0
++#endif
++#if KYTY_BC5_SETBUFFER_TEST_HOOK
++#include <atomic>
++#endif
+diff --git a/src/common/hostException.cpp b/src/common/hostException.cpp
+index 5e62c75..7a57555 100644
+--- a/src/common/hostException.cpp
++++ b/src/common/hostException.cpp
+@@ -395,6 +395,46 @@ static void SignalHandler(int signal_number, siginfo_t* signal_info, void* nativ
+ 
+ #endif
+ 
++#if KYTY_PLATFORM != KYTY_PLATFORM_WINDOWS && !defined(__APPLE__)
++// Experiment 0412 (tag ff412): KYTY_BC5_TRAP_LOG=1. A SIGTRAP (an int3 of the title, or a trap of the host) is
++// journaled with its address and thread; then the default action happens as it did before (the process ends with
++// status 133). stdio in a handler is not async-signal-safe: accepted for a process that is about to die.
++static void Bc5TrapLog(int sig, siginfo_t* si, void* uctx) {
++	const auto* uc  = static_cast<const ucontext_t*>(uctx);
++	const auto  rip = static_cast<unsigned long long>(uc->uc_mcontext.gregs[REG_RIP]);
++	const auto  rsp = static_cast<unsigned long long>(uc->uc_mcontext.gregs[REG_RSP]);
++	char        name[32] = "?";
++	char        path[64];
++	std::snprintf(path, sizeof(path), "/proc/self/task/%d/comm", static_cast<int>(gettid()));
++	if (FILE* f = std::fopen(path, "r")) {
++		if (std::fgets(name, sizeof(name), f) != nullptr) {
++			for (char* c = name; *c != 0; c++) {
++				if (*c == '\n') *c = 0;
++			}
++		}
++		std::fclose(f);
++	}
++	std::fprintf(stderr, "[bc5] trap log (exp 0412, tag ff412): signal %d code %d at rip 0x%llx (the byte before it is the int3 if this is one), rsp 0x%llx, fault address %p, tid %d (%s); the default action follows\n",
++	             sig, si != nullptr ? si->si_code : 0, rip, rsp, si != nullptr ? si->si_addr : nullptr, static_cast<int>(gettid()), name);
++	std::fflush(stderr);
++	struct sigaction dfl {};
++	dfl.sa_handler = SIG_DFL;
++	sigemptyset(&dfl.sa_mask);
++	::sigaction(sig, &dfl, nullptr);
++	::raise(sig);
++}
++static void Bc5TrapLogInstall() {
++	const char* e = std::getenv("KYTY_BC5_TRAP_LOG");
++	if (e == nullptr || e[0] == 0 || (e[0] == '0' && e[1] == 0)) return;
++	struct sigaction sa {};
++	sa.sa_sigaction = Bc5TrapLog;
++	sigemptyset(&sa.sa_mask);
++	sa.sa_flags = SA_SIGINFO;
++	const int rc = ::sigaction(SIGTRAP, &sa, nullptr);
++	std::fprintf(stderr, "[bc5] trap log (exp 0412, tag ff412): KYTY_BC5_TRAP_LOG on, sigaction(SIGTRAP) rc %d\n", rc);
++}
++#endif
++
+ bool InstallHandler(Handler handler) {
+ 	if (handler == nullptr) {
+ 		return false;
+@@ -441,6 +481,7 @@ bool InstallHandler(Handler handler) {
+ 	// Fault resolution needs the normal thread stack.
+ 	action.sa_flags = SA_SIGINFO | SA_RESTART;
+ 
++	Bc5TrapLogInstall(); // exp 0412 (tag ff412)
+ 	for (const int signal_number: {SIGSEGV, SIGBUS, SIGILL}) {
+ 		if (::sigaction(signal_number, &action, nullptr) != 0) {
+ 			g_handler.store(nullptr, std::memory_order_release);
+diff --git a/src/common/platform/sysLinuxVirtual.cpp b/src/common/platform/sysLinuxVirtual.cpp
+index 5403083..4bd352c 100644
+--- a/src/common/platform/sysLinuxVirtual.cpp
++++ b/src/common/platform/sysLinuxVirtual.cpp
+@@ -8,6 +8,7 @@
+ #include "common/assert.h"
+ #include "common/platform/sysVirtual.h"
+ #include "common/virtualMemory.h"
++#include "bc5/anon_sync.hpp" // experiment 0415 (as415c)
+ 
+ #include <atomic>
+ #include <map>
+@@ -126,10 +127,18 @@ static uintptr_t align_up_to(uintptr_t addr, uint64_t alignment) {
+ }
+ #endif
+ 
++// Experiment 0415 (tag as415c): every map this file makes goes through here, so that an anonymous readable map inside
++// the guest's span is counted for the anonymous sync (bc5/anon_sync.hpp). The call itself is unchanged.
++static void* as415_mmap(void* addr, size_t size, int protect, int flags, int fd, off_t offset) {
++	void* ptr = mmap(addr, size, protect, flags, fd, offset); // NOLINT
++	if (ptr != MAP_FAILED && fd < 0) bc5::anon_sync::note(reinterpret_cast<uint64_t>(ptr), size, (protect & PROT_READ) != 0);
++	return ptr;
++}
++
+ // Freed arena addresses are not reused while GPU caches remain keyed by address.
+ static void* map_anonymous(uintptr_t addr, size_t size, int protect, int flags) {
+ 	if (addr != 0) {
+-		return mmap(reinterpret_cast<void*>(addr), size, protect, flags, -1, 0); // NOLINT
++		return as415_mmap(reinterpret_cast<void*>(addr), size, protect, flags, -1, 0); // NOLINT
+ 	}
+ 
+ #ifdef KYTY_FIXED_NOREPLACE
+@@ -140,7 +149,7 @@ static void* map_anonymous(uintptr_t addr, size_t size, int protect, int flags)
+ 			break;
+ 		}
+ 		const auto hint = (top - step) & ~(LOW_ARENA_GRAIN - 1);
+-		void* ptr = mmap(reinterpret_cast<void*>(hint), size, protect, flags | MAP_FIXED_NOREPLACE,
++		void* ptr = as415_mmap(reinterpret_cast<void*>(hint), size, protect, flags | MAP_FIXED_NOREPLACE,
+ 		                 -1, 0); // NOLINT
+ 		if (ptr != MAP_FAILED) {
+ 			return ptr;
+@@ -148,7 +157,7 @@ static void* map_anonymous(uintptr_t addr, size_t size, int protect, int flags)
+ 	}
+ #endif
+ 
+-	return mmap(nullptr, size, protect, flags, -1, 0); // NOLINT
++	return as415_mmap(nullptr, size, protect, flags, -1, 0); // NOLINT
+ }
+ 
+ uint64_t SysVirtualAlloc(uint64_t address, uint64_t size, VirtualMemory::Mode mode) {
+@@ -209,7 +218,7 @@ uint64_t SysVirtualAllocAligned(uint64_t address, uint64_t size, VirtualMemory::
+ 			// destroyed by the MAP_FIXED. Other platforms keep the original path below.
+ 			auto aligned_addr = align_up(ret_addr, alignment);
+ 			// NOLINTNEXTLINE
+-			void* fixed = mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
++			void* fixed = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
+ 			                   MAP_FIXED | MAP_PRIVATE | MAP_ANON, -1, 0);
+ 			if (fixed == MAP_FAILED) {
+ 				munmap(ptr, size + alignment);
+@@ -232,11 +241,11 @@ uint64_t SysVirtualAllocAligned(uint64_t address, uint64_t size, VirtualMemory::
+ 			auto aligned_addr = align_up(ret_addr, alignment);
+ #ifdef KYTY_FIXED_NOREPLACE
+ 			// NOLINTNEXTLINE
+-			ptr = mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
++			ptr = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
+ 			           MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANON, -1, 0);
+ #else
+ 			// NOLINTNEXTLINE
+-			ptr = mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
++			ptr = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
+ 			           MAP_FIXED | MAP_PRIVATE | MAP_ANON, -1, 0);
+ #endif
+ 			ret_addr = reinterpret_cast<uintptr_t>(ptr);
+@@ -320,13 +329,13 @@ bool SysVirtualAllocFixed(uint64_t address, uint64_t size, VirtualMemory::Mode m
+ 
+ #ifdef KYTY_FIXED_NOREPLACE
+ 	// NOLINTNEXTLINE
+-	void* ptr = mmap(reinterpret_cast<void*>(addr), size, protect,
++	void* ptr = as415_mmap(reinterpret_cast<void*>(addr), size, protect,
+ 	                 MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANON, -1, 0);
+ #else
+ 	// NOLINTNEXTLINE
+ 	void* ptr = (is_mapped(reinterpret_cast<void*>(addr), size)
+ 	                 ? MAP_FAILED
+-	                 : mmap(reinterpret_cast<void*>(addr), size, protect,
++	                 : as415_mmap(reinterpret_cast<void*>(addr), size, protect,
+ 	                        MAP_FIXED | MAP_PRIVATE | MAP_ANON, -1, 0));
+ #endif
+ 
+@@ -390,7 +399,7 @@ uint64_t SysVirtualReserveAligned(uint64_t address, uint64_t size, uint64_t alig
+ 			// destroy its mapping. Other platforms keep the original path below.
+ 			auto aligned_addr = align_up(ret_addr, alignment);
+ 			// NOLINTNEXTLINE
+-			void* fixed = mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
++			void* fixed = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
+ 			                   MAP_FIXED | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0);
+ 			if (fixed == MAP_FAILED) {
+ 				munmap(ptr, size + alignment);
+@@ -413,11 +422,11 @@ uint64_t SysVirtualReserveAligned(uint64_t address, uint64_t size, uint64_t alig
+ 			auto aligned_addr = align_up(ret_addr, alignment);
+ #ifdef KYTY_FIXED_NOREPLACE
+ 			// NOLINTNEXTLINE
+-			ptr = mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
++			ptr = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
+ 			           MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0);
+ #else
+ 			// NOLINTNEXTLINE
+-			ptr = mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
++			ptr = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
+ 			           MAP_FIXED | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0);
+ #endif
+ 			ret_addr = reinterpret_cast<uintptr_t>(ptr);
+@@ -448,13 +457,13 @@ bool SysVirtualReserveFixed(uint64_t address, uint64_t size) {
+ 
+ #ifdef KYTY_FIXED_NOREPLACE
+ 	// NOLINTNEXTLINE
+-	void* ptr = mmap(reinterpret_cast<void*>(addr), size, PROT_NONE,
++	void* ptr = as415_mmap(reinterpret_cast<void*>(addr), size, PROT_NONE,
+ 	                 MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0);
+ #else
+ 	// NOLINTNEXTLINE
+ 	void* ptr = (is_mapped(reinterpret_cast<void*>(addr), size)
+ 	                 ? MAP_FAILED
+-	                 : mmap(reinterpret_cast<void*>(addr), size, PROT_NONE,
++	                 : as415_mmap(reinterpret_cast<void*>(addr), size, PROT_NONE,
+ 	                        MAP_FIXED | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0));
+ #endif
+ 
+@@ -611,6 +620,7 @@ bool SysVirtualProtect(uint64_t address, uint64_t size, VirtualMemory::Mode mode
+ 	uintptr_t page_end   = (addr + size - 1) >> 12u;
+ 	if (mprotect(reinterpret_cast<void*>(page_start << 12u), (page_end - page_start + 1) << 12u,
+ 	             get_protection_flag(mode)) == 0) {
++		bc5::anon_sync::note(static_cast<uint64_t>(page_start) << 12u, static_cast<uint64_t>(page_end - page_start + 1) << 12u, (get_protection_flag(mode) & PROT_READ) != 0); // experiment 0415 (as415c)
+ 		pthread_mutex_lock(&g_virtual_mutex);
+ 		for (uintptr_t page = page_start; page <= page_end; page++) {
+ 			(*g_protects)[page] = get_protection_flag(mode);
+diff --git a/src/kernel/fileSystem.cpp b/src/kernel/fileSystem.cpp
+index 8916d6f..1ba782e 100644
+--- a/src/kernel/fileSystem.cpp
++++ b/src/kernel/fileSystem.cpp
+@@ -1,6 +1,7 @@
+ #include "bc5/load_stat.hpp" // experiment 0415 (ls415)
+ #include <cstdlib>
+ #include "kernel/fileSystem.h"
++#include "bc5/save_guard0412.hpp" // exp 0412 (tag sg412): the save guard of the fault record
+ 
+ #include "common/assert.h"
+ #include "common/common.h"
+@@ -108,6 +109,12 @@ private:
+ 
+ static MountPoints*     g_mount_points = nullptr;
+ static FileDescriptors* g_files        = nullptr;
++// Experiment 0412 (tag sg412): the save mount a descriptor's file lies on, or sg412::kNone.
++static int Bc5SgFd(int d) {
++	if (g_files == nullptr || d < DESCRIPTOR_MIN) return sg412::kNone;
++	auto* file = g_files->GetFile(d);
++	return (file != nullptr && file->opened) ? sg412::slot_of(file->name.c_str()) : sg412::kNone;
++}
+ 
+ static bool IsRandomDevice(const std::string& path) {
+ 	return path == "/dev/random" || path == "/dev/urandom";
+@@ -692,6 +699,7 @@ std::filesystem::path GetRealFilename(const std::string& mounted_file_name) {
+ int KYTY_SYSV_ABI KernelOpen(const char* path, int flags, uint16_t mode) {
+ 	bc5::load_stat::Scope ls_scope(bc5::load_stat::kFileOpen); // experiment 0415 (ls415)
+ 	PRINT_NAME();
++	sg412::Op sg_op(sg412::slot_of(path), (static_cast<uint32_t>(flags) & 0x0603u) != 0); // FreeBSD: O_WRONLY 1, O_RDWR 2, O_CREAT 0x200, O_TRUNC 0x400 // exp 0412 (tag sg412)
+ 
+ 	if (path == nullptr) {
+ 		return KERNEL_ERROR_EINVAL;
+@@ -866,6 +874,7 @@ int KYTY_SYSV_ABI KernelOpen(const char* path, int flags, uint16_t mode) {
+ 
+ int KYTY_SYSV_ABI KernelClose(int d) {
+ 	PRINT_NAME();
++	sg412::Op sg_op(Bc5SgFd(d), false); // exp 0412 (tag sg412)
+ 
+ 	if (d < DESCRIPTOR_MIN) {
+ 		return KERNEL_ERROR_EPERM;
+@@ -966,6 +975,7 @@ int64_t KYTY_SYSV_ABI KernelRead(int d, void* buf, size_t nbytes) {
+ 
+ int64_t KYTY_SYSV_ABI KernelWrite(int d, const void* buf, size_t nbytes) {
+ 	PRINT_NAME();
++	sg412::Op sg_op(Bc5SgFd(d), true); // exp 0412 (tag sg412)
+ 
+ 	if (buf == nullptr) {
+ 		return KERNEL_ERROR_EFAULT;
+@@ -1110,6 +1120,7 @@ int64_t KYTY_SYSV_ABI KernelPread(int d, void* buf, size_t nbytes, int64_t offse
+ 
+ int64_t KYTY_SYSV_ABI KernelPwrite(int d, const void* buf, size_t nbytes, int64_t offset) {
+ 	PRINT_NAME();
++	sg412::Op sg_op(Bc5SgFd(d), true); // exp 0412 (tag sg412)
+ 
+ 	if (d < DESCRIPTOR_MIN) {
+ 		return KERNEL_ERROR_EPERM;
+@@ -1363,6 +1374,7 @@ int KYTY_SYSV_ABI KernelFstat(int d, FileStat* sb) {
+ 
+ int KYTY_SYSV_ABI KernelFtruncate(int d, int64_t length) {
+ 	PRINT_NAME();
++	sg412::Op sg_op(Bc5SgFd(d), true); // exp 0412 (tag sg412)
+ 
+ 	if (d < DESCRIPTOR_MIN) {
+ 		return KERNEL_ERROR_EBADF;
+@@ -1477,6 +1489,7 @@ std::filesystem::perms HostPermsFor(uint16_t mode) {
+ 
+ int KYTY_SYSV_ABI KernelTruncate(const char* path, int64_t length) {
+ 	PRINT_NAME();
++	sg412::Op sg_op(sg412::slot_of(path), true); // exp 0412 (tag sg412)
+ 
+ 	if (const int check = CheckGuestPath(path); check != OK) {
+ 		return check;
+@@ -1627,6 +1640,7 @@ int KYTY_SYSV_ABI KernelUtimes(const char* path, const LibKernel::KernelTimeval*
+ // descriptor, EINVAL for a socket, the host's error when the sync fails.
+ int KYTY_SYSV_ABI KernelFsync(int d) {
+ 	PRINT_NAME();
++	sg412::Op sg_op(Bc5SgFd(d), false); // exp 0412 (tag sg412)
+ 
+ 	if (d < DESCRIPTOR_MIN) {
+ 		return KERNEL_ERROR_EBADF;
+@@ -1706,6 +1720,7 @@ int KYTY_SYSV_ABI KernelFcntl(int d, int cmd, int arg) {
+ 
+ int KYTY_SYSV_ABI KernelUnlink(const char* path) {
+ 	PRINT_NAME();
++	sg412::Op sg_op(sg412::slot_of(path), true); // exp 0412 (tag sg412)
+ 
+ 	if (path == nullptr) {
+ 		return KERNEL_ERROR_EINVAL;
+@@ -1805,6 +1820,7 @@ static int Bc5RenameFixed(const char* from, const char* to, const std::filesyste
+ 
+ int KYTY_SYSV_ABI KernelRename(const char* from, const char* to) {
+ 	PRINT_NAME();
++	sg412::Op sg_op(sg412::slot_of(to) != sg412::kNone ? sg412::slot_of(to) : sg412::slot_of(from), true); // exp 0412 (tag sg412)
+ 
+ 	if (from == nullptr || to == nullptr) {
+ 		return KERNEL_ERROR_EINVAL;
+@@ -1977,6 +1993,7 @@ int KYTY_SYSV_ABI KernelGetdents(int fd, char* buf, int nbytes) {
+ 
+ int KYTY_SYSV_ABI KernelMkdir(const char* path, uint16_t mode) {
+ 	PRINT_NAME();
++	sg412::Op sg_op(sg412::slot_of(path), true); // exp 0412 (tag sg412)
+ 
+ 	if (path == nullptr) {
+ 		return KERNEL_ERROR_EINVAL;
+@@ -2016,6 +2033,7 @@ int KYTY_SYSV_ABI KernelMkdir(const char* path, uint16_t mode) {
+ 
+ int KYTY_SYSV_ABI KernelRmdir(const char* path) {
+ 	PRINT_NAME();
++	sg412::Op sg_op(sg412::slot_of(path), true); // exp 0412 (tag sg412)
+ 
+ 	if (path == nullptr) {
+ 		return KERNEL_ERROR_EINVAL;
+diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
+index 9dec9c9..aabead9 100644
+--- a/src/kernel/memory.cpp
++++ b/src/kernel/memory.cpp
+@@ -552,8 +552,10 @@ public:
+ 		// instead of at the table's first element (28,000 ranges while the second title streams). The ranges are sorted
+ 		// by start and do not overlap, so every range before that one ends at or before `start` and the loop below skipped it.
+ 		static const bool fast412 = [] {
+-			const char* e = std::getenv("KYTY_BC5_RANGES_FAST");
+-			return e != nullptr && e[0] != 0 && !(e[0] == '0' && e[1] == 0);
++			const char* e  = std::getenv("KYTY_BC5_RANGES_FAST");
++			const bool  on = e != nullptr && e[0] != 0 && !(e[0] == '0' && e[1] == 0);
++			std::fprintf(stderr, "[bc5] exp 0412 ranges fast: %s (tag mf412)\n", on ? "on" : "off"); // exp 0417: said once, either way
++			return on;
+ 		}();
+ 		auto first412 = m_ranges.begin();
+ 		if (fast412) {
+@@ -1036,7 +1038,10 @@ template <class V> bool sound(const V& v) {
+ static int Pm412Mode() {
+ 	static const int mode = [] {
+ 		const char* e = std::getenv("KYTY_BC5_PHYSMAP_SORTED");
+-		if (e == nullptr || e[0] == 0 || (e[0] == '0' && e[1] == 0)) return 0;
++		if (e == nullptr || e[0] == 0 || (e[0] == '0' && e[1] == 0)) {
++			std::fprintf(stderr, "[bc5] exp 0412 physmap sorted: off (tag ps412)\n"); // exp 0417: said once, also when off
++			return 0;
++		}
+ 		const int m = std::strcmp(e, "verify") == 0 ? 2 : std::strcmp(e, "1") == 0 ? 1 : 0;
+ 		std::fprintf(stderr, "[bc5] exp 0412 physmap sorted: %s (tag ps412)\n", m == 2 ? "verify" : m == 1 ? "on" : "value not understood, off");
+ 		return m;
+@@ -1068,6 +1073,16 @@ public:
+ 		m_free.emplace(0, Size());
+ 	}
+ 	virtual ~PhysicalMemory() = default;
++	// exp 0412 (tag ff412): the free list in numbers, for the catcher's state line (the caller holds the memory lock).
++	void Bc5FreeStats(uint64_t* total, uint64_t* largest, uint64_t* runs) const {
++		*total = 0;
++		*largest = 0;
++		*runs = m_free.size();
++		for (const auto& r: m_free) {
++			*total += r.second;
++			if (r.second > *largest) *largest = r.second;
++		}
++	}
+ 
+ 	KYTY_CLASS_NO_COPY(PhysicalMemory);
+ 
+@@ -1404,6 +1419,125 @@ static std::atomic<uint64_t>              g_memory_pool_committed = 0;
+ static void                               MemoryPoolSubtractCommitted(uint64_t len);
+ // Keep host mappings, physical blocks, placeholders, and virtual ranges in step.
+ static std::recursive_mutex g_memory_operation_mutex;
++// BC5 experiment 0412 (tag ff412, README sections 57 and 59): which host memory call fails first when the title is
++// offered less memory. KYTY_BC5_MEM_FIRSTFAIL=1 (unset, empty or 0: off; one test of a constant on a path that has
++// already failed). A catcher: it changes no result.
++//   - every wrapped memory call that returns an error is counted per call; the first kFull failures and then every
++//     failure whose number is a power of two are written in full (the call, its result, up to six arguments, the
++//     caller's address, the thread) with the state of the direct memory at that moment;
++//   - the last kRing failures are kept and printed again when the host is about to die on an access to a reserved
++//     AMM page (the exit "AMM virtual-memory unmap is unsupported"), so the death is tied to what failed before it.
++// The decisions (when to print, the ring) are here, free of the host, and tested by firstfail0412.cpp; the host's part
++// (wrappers, the state line) is pasted by mkff0412.py.
++namespace ff412 {
++static constexpr uint64_t kFull = 12;
++static constexpr unsigned kRing = 8;
++struct Fail {
++	const char* call = "";
++	int         result = 0;
++	uint64_t    n = 0; // its number among all failures, from 1
++	uint64_t    a[6] = {0, 0, 0, 0, 0, 0};
++	unsigned    args = 0;
++};
++// Is the n-th failure (from 1) written in full?
++inline bool full(uint64_t n) { return n != 0 && (n <= kFull || (n & (n - 1)) == 0); }
++struct Ring {
++	Fail     e[kRing];
++	uint64_t count = 0;
++	void     push(const Fail& f) { e[count++ % kRing] = f; }
++	// The kept failures, oldest first.
++	unsigned list(const Fail** out) const {
++		const unsigned n = count < kRing ? static_cast<unsigned>(count) : kRing;
++		for (unsigned i = 0; i < n; i++) out[i] = &e[(count - n + i) % kRing];
++		return n;
++	}
++};
++inline bool on() {
++	static const bool v = [] {
++		const char* e = std::getenv("KYTY_BC5_MEM_FIRSTFAIL");
++		return e != nullptr && e[0] != 0 && !(e[0] == '0' && e[1] == 0);
++	}();
++	return v;
++}
++template <class T> inline uint64_t u(T v) {
++	if constexpr (std::is_pointer_v<T>) return reinterpret_cast<uint64_t>(v);
++	else return static_cast<uint64_t>(v);
++}
++} // namespace ff412
++// Experiment 0412 (tag ff412): KYTY_BC5_MEM_FIRSTFAIL, the host's part. One mutex around the counters and the ring;
++// the state line takes the memory lock (recursive: a failing call may still hold it).
++static ff412::Ring g_ff412_ring;
++static std::mutex  g_ff412_mutex;
++static void ff412_thread(char* out, size_t cap) {
++	std::snprintf(out, cap, "tid %d", static_cast<int>(gettid()));
++	char path[64];
++	std::snprintf(path, sizeof(path), "/proc/self/task/%d/comm", static_cast<int>(gettid()));
++	if (FILE* f = std::fopen(path, "r")) {
++		char name[32] = "";
++		if (std::fgets(name, sizeof(name), f) != nullptr) {
++			name[std::strcspn(name, "\n")] = 0;
++			std::snprintf(out, cap, "tid %d (%s)", static_cast<int>(gettid()), name);
++		}
++		std::fclose(f);
++	}
++}
++static void ff412_state_line() {
++	std::scoped_lock memory_lock(g_memory_operation_mutex);
++	uint64_t total = 0, largest = 0, runs = 0;
++	if (g_physical_memory) g_physical_memory->Bc5FreeStats(&total, &largest, &runs);
++	std::fprintf(stderr, "[bc5] mem firstfail (exp 0412, tag ff412):   direct memory: offered %" PRIu64 " MiB, free %" PRIu64 " MiB in %" PRIu64 " runs, the largest %" PRIu64 " MiB; flexible: configured %" PRIu64 " MiB, available %" PRIu64 " MiB\n",
++	             static_cast<uint64_t>(PhysicalMemory::Size() >> 20u), total >> 20u, runs, largest >> 20u, static_cast<uint64_t>(FlexibleMemory::Size() >> 20u),
++	             g_flexible_memory ? static_cast<uint64_t>(g_flexible_memory->Available() >> 20u) : 0);
++}
++static void ff412_report(const char* call, int result, const void* caller, std::initializer_list<uint64_t> args) {
++	if (!ff412::on()) return;
++	ff412::Fail f;
++	f.call   = call;
++	f.result = result;
++	for (const uint64_t a: args) {
++		if (f.args < 6) f.a[f.args++] = a;
++	}
++	bool print = false;
++	{
++		std::scoped_lock lk(g_ff412_mutex);
++		f.n = g_ff412_ring.count + 1;
++		g_ff412_ring.push(f);
++		print = ff412::full(f.n);
++	}
++	if (!print) return;
++	char who[64];
++	ff412_thread(who, sizeof(who));
++	std::fprintf(stderr, "[bc5] mem firstfail (exp 0412, tag ff412): failure %" PRIu64 ": %s -> 0x%08x; args", f.n, call, static_cast<unsigned>(result));
++	for (unsigned i = 0; i < f.args; i++) std::fprintf(stderr, " 0x%" PRIx64, f.a[i]);
++	std::fprintf(stderr, "; caller %p; %s\n", caller, who);
++	ff412_state_line();
++	std::fflush(stderr);
++}
++extern "C" void bc5_mem_firstfail_note(const char* call, int result, uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3) {
++	ff412_report(call, result, __builtin_return_address(0), {a0, a1, a2, a3});
++}
++// The host is about to exit on an access to a reserved AMM page: what failed before it.
++static void ff412_death(uint64_t vaddr) {
++	if (!ff412::on()) return;
++	const ff412::Fail* kept[ff412::kRing];
++	unsigned           n = 0;
++	uint64_t           all = 0;
++	{
++		std::scoped_lock lk(g_ff412_mutex);
++		n   = g_ff412_ring.list(kept);
++		all = g_ff412_ring.count;
++		char who[64];
++		ff412_thread(who, sizeof(who));
++		std::fprintf(stderr, "[bc5] mem firstfail (exp 0412, tag ff412): access to the reserved AMM page 0x%016" PRIx64 " on %s; %" PRIu64 " memory calls failed before it, the last %u:\n", vaddr, who, all, n);
++		for (unsigned i = 0; i < n; i++) {
++			std::fprintf(stderr, "[bc5] mem firstfail (exp 0412, tag ff412):   failure %" PRIu64 ": %s -> 0x%08x; args", kept[i]->n, kept[i]->call, static_cast<unsigned>(kept[i]->result));
++			for (unsigned k = 0; k < kept[i]->args; k++) std::fprintf(stderr, " 0x%" PRIx64, kept[i]->a[k]);
++			std::fprintf(stderr, "\n");
++		}
++	}
++	ff412_state_line();
++	std::fflush(stderr);
++}
+ 
+ // The base address the PS5 kernel hands out for hint-less user mappings. Guest code can
+ // assume mappings it did not place explicitly are at or above this (Sony's libc rejects a
+@@ -3026,7 +3160,13 @@ int32_t KYTY_SYSV_ABI KernelMapNamedFlexibleMemory(void** addr_in_out, size_t le
+ 	return OK;
+ }
+ 
+-int KYTY_SYSV_ABI KernelMapFlexibleMemory(void** addr_in_out, size_t len, int prot, int flags) {
++static int Bc5Ff_KernelMapFlexibleMemory(void** addr_in_out, size_t len, int prot, int flags); // exp 0412 (tag ff412)
++int KYTY_SYSV_ABI KernelMapFlexibleMemory(void** addr_in_out, size_t len, int prot, int flags) { // exp 0412 (tag ff412)
++	const int bc5_ff_result = Bc5Ff_KernelMapFlexibleMemory(addr_in_out, len, prot, flags);
++	if (bc5_ff_result != OK) [[unlikely]] ff412_report("KernelMapFlexibleMemory", bc5_ff_result, __builtin_return_address(0), {ff412::u(addr_in_out), ff412::u(len), ff412::u(prot), ff412::u(flags)});
++	return bc5_ff_result;
++}
++static int Bc5Ff_KernelMapFlexibleMemory(void** addr_in_out, size_t len, int prot, int flags) {
+ 	return KernelMapNamedFlexibleMemory(addr_in_out, len, prot, flags, "");
+ }
+ 
+@@ -3260,7 +3400,13 @@ static int Bc5MunmapHoles(uint64_t vaddr, size_t len) {
+ 	return OK;
+ }
+ 
+-int KYTY_SYSV_ABI KernelMunmap(uint64_t vaddr, size_t len) {
++static int Bc5Ff_KernelMunmap(uint64_t vaddr, size_t len); // exp 0412 (tag ff412)
++int KYTY_SYSV_ABI KernelMunmap(uint64_t vaddr, size_t len) { // exp 0412 (tag ff412)
++	const int bc5_ff_result = Bc5Ff_KernelMunmap(vaddr, len);
++	if (bc5_ff_result != OK) [[unlikely]] ff412_report("KernelMunmap", bc5_ff_result, __builtin_return_address(0), {ff412::u(vaddr), ff412::u(len)});
++	return bc5_ff_result;
++}
++static int Bc5Ff_KernelMunmap(uint64_t vaddr, size_t len) {
+ 	PRINT_NAME();
+ 
+ 	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+@@ -3289,7 +3435,17 @@ size_t KYTY_SYSV_ABI KernelGetDirectMemorySize() {
+ 	return PhysicalMemory::Size();
+ }
+ 
++static int Bc5Ff_KernelAvailableDirectMemorySize(int64_t search_start, int64_t search_end,
++                                                  size_t alignment, int64_t* phys_addr_out,
++                                                  size_t* size_out); // exp 0412 (tag ff412)
+ int KYTY_SYSV_ABI KernelAvailableDirectMemorySize(int64_t search_start, int64_t search_end,
++                                                  size_t alignment, int64_t* phys_addr_out,
++                                                  size_t* size_out) { // exp 0412 (tag ff412)
++	const int bc5_ff_result = Bc5Ff_KernelAvailableDirectMemorySize(search_start, search_end, alignment, phys_addr_out, size_out);
++	if (bc5_ff_result != OK) [[unlikely]] ff412_report("KernelAvailableDirectMemorySize", bc5_ff_result, __builtin_return_address(0), {ff412::u(search_start), ff412::u(search_end), ff412::u(alignment), ff412::u(phys_addr_out), ff412::u(size_out)});
++	return bc5_ff_result;
++}
++static int Bc5Ff_KernelAvailableDirectMemorySize(int64_t search_start, int64_t search_end,
+                                                   size_t alignment, int64_t* phys_addr_out,
+                                                   size_t* size_out) {
+ 	PRINT_NAME();
+@@ -3456,7 +3612,17 @@ int KYTY_SYSV_ABI KernelDirectMemoryQuery(int64_t offset, int flags, void* info,
+ 	return OK;
+ }
+ 
++static int Bc5Ff_KernelAllocateDirectMemory(int64_t search_start, int64_t search_end, size_t len,
++                                             size_t alignment, int memory_type,
++                                             int64_t* phys_addr_out); // exp 0412 (tag ff412)
+ int KYTY_SYSV_ABI KernelAllocateDirectMemory(int64_t search_start, int64_t search_end, size_t len,
++                                             size_t alignment, int memory_type,
++                                             int64_t* phys_addr_out) { // exp 0412 (tag ff412)
++	const int bc5_ff_result = Bc5Ff_KernelAllocateDirectMemory(search_start, search_end, len, alignment, memory_type, phys_addr_out);
++	if (bc5_ff_result != OK) [[unlikely]] ff412_report("KernelAllocateDirectMemory", bc5_ff_result, __builtin_return_address(0), {ff412::u(search_start), ff412::u(search_end), ff412::u(len), ff412::u(alignment), ff412::u(memory_type), ff412::u(phys_addr_out)});
++	return bc5_ff_result;
++}
++static int Bc5Ff_KernelAllocateDirectMemory(int64_t search_start, int64_t search_end, size_t len,
+                                              size_t alignment, int memory_type,
+                                              int64_t* phys_addr_out) {
+ 	PRINT_NAME();
+@@ -3490,7 +3656,15 @@ int KYTY_SYSV_ABI KernelAllocateDirectMemory(int64_t search_start, int64_t searc
+ 	return OK;
+ }
+ 
++static int Bc5Ff_KernelAllocateMainDirectMemory(size_t len, size_t alignment, int memory_type,
++                                                 int64_t* phys_addr_out); // exp 0412 (tag ff412)
+ int KYTY_SYSV_ABI KernelAllocateMainDirectMemory(size_t len, size_t alignment, int memory_type,
++                                                 int64_t* phys_addr_out) { // exp 0412 (tag ff412)
++	const int bc5_ff_result = Bc5Ff_KernelAllocateMainDirectMemory(len, alignment, memory_type, phys_addr_out);
++	if (bc5_ff_result != OK) [[unlikely]] ff412_report("KernelAllocateMainDirectMemory", bc5_ff_result, __builtin_return_address(0), {ff412::u(len), ff412::u(alignment), ff412::u(memory_type), ff412::u(phys_addr_out)});
++	return bc5_ff_result;
++}
++static int Bc5Ff_KernelAllocateMainDirectMemory(size_t len, size_t alignment, int memory_type,
+                                                  int64_t* phys_addr_out) {
+ 	PRINT_NAME();
+ 
+@@ -3658,7 +3832,13 @@ static void Bc5ReleaseDirectMemoryHoles(int64_t start, size_t len) {
+ 	}
+ }
+ 
+-int KYTY_SYSV_ABI KernelReleaseDirectMemory(int64_t start, size_t len) {
++static int Bc5Ff_KernelReleaseDirectMemory(int64_t start, size_t len); // exp 0412 (tag ff412)
++int KYTY_SYSV_ABI KernelReleaseDirectMemory(int64_t start, size_t len) { // exp 0412 (tag ff412)
++	const int bc5_ff_result = Bc5Ff_KernelReleaseDirectMemory(start, len);
++	if (bc5_ff_result != OK) [[unlikely]] ff412_report("KernelReleaseDirectMemory", bc5_ff_result, __builtin_return_address(0), {ff412::u(start), ff412::u(len)});
++	return bc5_ff_result;
++}
++static int Bc5Ff_KernelReleaseDirectMemory(int64_t start, size_t len) {
+ 	PRINT_NAME();
+ 
+ 	LOGF("\t start = 0x%016" PRIx64 "\n"
+@@ -3678,7 +3858,13 @@ int KYTY_SYSV_ABI KernelReleaseDirectMemory(int64_t start, size_t len) {
+ 	return OK;
+ }
+ 
+-int KYTY_SYSV_ABI KernelCheckedReleaseDirectMemory(int64_t start, size_t len) {
++static int Bc5Ff_KernelCheckedReleaseDirectMemory(int64_t start, size_t len); // exp 0412 (tag ff412)
++int KYTY_SYSV_ABI KernelCheckedReleaseDirectMemory(int64_t start, size_t len) { // exp 0412 (tag ff412)
++	const int bc5_ff_result = Bc5Ff_KernelCheckedReleaseDirectMemory(start, len);
++	if (bc5_ff_result != OK) [[unlikely]] ff412_report("KernelCheckedReleaseDirectMemory", bc5_ff_result, __builtin_return_address(0), {ff412::u(start), ff412::u(len)});
++	return bc5_ff_result;
++}
++static int Bc5Ff_KernelCheckedReleaseDirectMemory(int64_t start, size_t len) {
+ 	PRINT_NAME();
+ 
+ 	LOGF("\t start = 0x%016" PRIx64 "\n"
+@@ -3694,7 +3880,15 @@ int KYTY_SYSV_ABI KernelCheckedReleaseDirectMemory(int64_t start, size_t len) {
+ 	return result == KERNEL_ERROR_EACCES ? KERNEL_ERROR_ENOENT : result;
+ }
+ 
++static int Bc5Ff_KernelMapDirectMemory(void** addr, size_t len, int prot, int flags,
++                                        int64_t direct_memory_start, size_t alignment); // exp 0412 (tag ff412)
+ int KYTY_SYSV_ABI KernelMapDirectMemory(void** addr, size_t len, int prot, int flags,
++                                        int64_t direct_memory_start, size_t alignment) { // exp 0412 (tag ff412)
++	const int bc5_ff_result = Bc5Ff_KernelMapDirectMemory(addr, len, prot, flags, direct_memory_start, alignment);
++	if (bc5_ff_result != OK) [[unlikely]] ff412_report("KernelMapDirectMemory", bc5_ff_result, __builtin_return_address(0), {ff412::u(addr), ff412::u(len), ff412::u(prot), ff412::u(flags), ff412::u(direct_memory_start), ff412::u(alignment)});
++	return bc5_ff_result;
++}
++static int Bc5Ff_KernelMapDirectMemory(void** addr, size_t len, int prot, int flags,
+                                         int64_t direct_memory_start, size_t alignment) {
+ 	PRINT_NAME();
+ 
+@@ -3876,7 +4070,15 @@ int KYTY_SYSV_ABI KernelMapDirectMemory(void** addr, size_t len, int prot, int f
+ 	return OK;
+ }
+ 
++static int Bc5Ff_KernelMapDirectMemory2(void** addr, size_t len, int type, int prot, int flags,
++                                         int64_t direct_memory_start, size_t alignment); // exp 0412 (tag ff412)
+ int KYTY_SYSV_ABI KernelMapDirectMemory2(void** addr, size_t len, int type, int prot, int flags,
++                                         int64_t direct_memory_start, size_t alignment) { // exp 0412 (tag ff412)
++	const int bc5_ff_result = Bc5Ff_KernelMapDirectMemory2(addr, len, type, prot, flags, direct_memory_start, alignment);
++	if (bc5_ff_result != OK) [[unlikely]] ff412_report("KernelMapDirectMemory2", bc5_ff_result, __builtin_return_address(0), {ff412::u(addr), ff412::u(len), ff412::u(type), ff412::u(prot), ff412::u(flags), ff412::u(direct_memory_start)});
++	return bc5_ff_result;
++}
++static int Bc5Ff_KernelMapDirectMemory2(void** addr, size_t len, int type, int prot, int flags,
+                                          int64_t direct_memory_start, size_t alignment) {
+ 	PRINT_NAME();
+ 
+@@ -3894,7 +4096,17 @@ int KYTY_SYSV_ABI KernelMapDirectMemory2(void** addr, size_t len, int type, int
+ 	return ret;
+ }
+ 
++static int Bc5Ff_KernelMapNamedDirectMemory(void** addr, size_t len, int prot, int flags,
++                                             int64_t direct_memory_start, size_t alignment,
++                                             const char* name); // exp 0412 (tag ff412)
+ int KYTY_SYSV_ABI KernelMapNamedDirectMemory(void** addr, size_t len, int prot, int flags,
++                                             int64_t direct_memory_start, size_t alignment,
++                                             const char* name) { // exp 0412 (tag ff412)
++	const int bc5_ff_result = Bc5Ff_KernelMapNamedDirectMemory(addr, len, prot, flags, direct_memory_start, alignment, name);
++	if (bc5_ff_result != OK) [[unlikely]] ff412_report("KernelMapNamedDirectMemory", bc5_ff_result, __builtin_return_address(0), {ff412::u(addr), ff412::u(len), ff412::u(prot), ff412::u(flags), ff412::u(direct_memory_start), ff412::u(alignment)});
++	return bc5_ff_result;
++}
++static int Bc5Ff_KernelMapNamedDirectMemory(void** addr, size_t len, int prot, int flags,
+                                              int64_t direct_memory_start, size_t alignment,
+                                              const char* name) {
+ 	PRINT_NAME();
+@@ -4169,7 +4381,13 @@ static bool ReplaceFixedRangeWithReserved(uint64_t start, uint64_t size) {
+ 	return true;
+ }
+ 
+-int KYTY_SYSV_ABI KernelReserveVirtualRange(void** addr, size_t len, int flags, size_t alignment) {
++static int Bc5Ff_KernelReserveVirtualRange(void** addr, size_t len, int flags, size_t alignment); // exp 0412 (tag ff412)
++int KYTY_SYSV_ABI KernelReserveVirtualRange(void** addr, size_t len, int flags, size_t alignment) { // exp 0412 (tag ff412)
++	const int bc5_ff_result = Bc5Ff_KernelReserveVirtualRange(addr, len, flags, alignment);
++	if (bc5_ff_result != OK) [[unlikely]] ff412_report("KernelReserveVirtualRange", bc5_ff_result, __builtin_return_address(0), {ff412::u(addr), ff412::u(len), ff412::u(flags), ff412::u(alignment)});
++	return bc5_ff_result;
++}
++static int Bc5Ff_KernelReserveVirtualRange(void** addr, size_t len, int flags, size_t alignment) {
+ 	PRINT_NAME();
+ 
+ 	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+@@ -4283,6 +4501,7 @@ bool KernelHandleReservedRangeAccessViolation(uint64_t vaddr) {
+ 	// Experiment 0035 tried committing such pages lazily (removed in cleanup batch 3): the AMM
+ 	// failures seen were the fixed window reservation wiping the game's mappings, not pages it
+ 	// expected to appear.
++	ff412_death(vaddr); // exp 0412 (tag ff412)
+ 	EXIT("AMM virtual-memory unmap is unsupported: addr=0x%016" PRIx64 "\n", vaddr);
+ 	return false;
+ }
+@@ -4900,7 +5119,13 @@ static int Bc5MprotectGaps(uint64_t vaddr, size_t len, int prot, bool require_ma
+ 	return OK;
+ }
+ 
+-int KYTY_SYSV_ABI KernelMprotect(const void* addr, size_t len, int prot) {
++static int Bc5Ff_KernelMprotect(const void* addr, size_t len, int prot); // exp 0412 (tag ff412)
++int KYTY_SYSV_ABI KernelMprotect(const void* addr, size_t len, int prot) { // exp 0412 (tag ff412)
++	const int bc5_ff_result = Bc5Ff_KernelMprotect(addr, len, prot);
++	if (bc5_ff_result != OK) [[unlikely]] ff412_report("KernelMprotect", bc5_ff_result, __builtin_return_address(0), {ff412::u(addr), ff412::u(len), ff412::u(prot)});
++	return bc5_ff_result;
++}
++static int Bc5Ff_KernelMprotect(const void* addr, size_t len, int prot) {
+ 	PRINT_NAME();
+ 
+ 	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+@@ -4966,7 +5191,13 @@ int KYTY_SYSV_ABI KernelMprotect(const void* addr, size_t len, int prot) {
+ 	return OK;
+ }
+ 
+-int KYTY_SYSV_ABI KernelMtypeprotect(const void* addr, size_t len, int type, int prot) {
++static int Bc5Ff_KernelMtypeprotect(const void* addr, size_t len, int type, int prot); // exp 0412 (tag ff412)
++int KYTY_SYSV_ABI KernelMtypeprotect(const void* addr, size_t len, int type, int prot) { // exp 0412 (tag ff412)
++	const int bc5_ff_result = Bc5Ff_KernelMtypeprotect(addr, len, type, prot);
++	if (bc5_ff_result != OK) [[unlikely]] ff412_report("KernelMtypeprotect", bc5_ff_result, __builtin_return_address(0), {ff412::u(addr), ff412::u(len), ff412::u(type), ff412::u(prot)});
++	return bc5_ff_result;
++}
++static int Bc5Ff_KernelMtypeprotect(const void* addr, size_t len, int type, int prot) {
+ 	PRINT_NAME();
+ 
+ 	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+@@ -4981,7 +5212,15 @@ int KYTY_SYSV_ABI KernelMtypeprotect(const void* addr, size_t len, int type, int
+ 	return KernelMprotect(addr, len, prot);
+ }
+ 
++static int Bc5Ff_KernelBatchMap2(KernelBatchMapEntry* entries, int num_entries,
++                                  int* num_entries_out, int flags); // exp 0412 (tag ff412)
+ int KYTY_SYSV_ABI KernelBatchMap2(KernelBatchMapEntry* entries, int num_entries,
++                                  int* num_entries_out, int flags) { // exp 0412 (tag ff412)
++	const int bc5_ff_result = Bc5Ff_KernelBatchMap2(entries, num_entries, num_entries_out, flags);
++	if (bc5_ff_result != OK) [[unlikely]] ff412_report("KernelBatchMap2", bc5_ff_result, __builtin_return_address(0), {ff412::u(entries), ff412::u(num_entries), ff412::u(num_entries_out), ff412::u(flags)});
++	return bc5_ff_result;
++}
++static int Bc5Ff_KernelBatchMap2(KernelBatchMapEntry* entries, int num_entries,
+                                   int* num_entries_out, int flags) {
+ 	PRINT_NAME();
+ 
+@@ -5092,7 +5331,15 @@ static void MemoryPoolSubtractCommitted(uint64_t len) {
+ 	}
+ }
+ 
++static int Bc5Ff_KernelMemoryPoolExpand(int64_t search_start, int64_t search_end, size_t len,
++                                         size_t alignment, int64_t* phys_addr_out); // exp 0412 (tag ff412)
+ int KYTY_SYSV_ABI KernelMemoryPoolExpand(int64_t search_start, int64_t search_end, size_t len,
++                                         size_t alignment, int64_t* phys_addr_out) { // exp 0412 (tag ff412)
++	const int bc5_ff_result = Bc5Ff_KernelMemoryPoolExpand(search_start, search_end, len, alignment, phys_addr_out);
++	if (bc5_ff_result != OK) [[unlikely]] ff412_report("KernelMemoryPoolExpand", bc5_ff_result, __builtin_return_address(0), {ff412::u(search_start), ff412::u(search_end), ff412::u(len), ff412::u(alignment), ff412::u(phys_addr_out)});
++	return bc5_ff_result;
++}
++static int Bc5Ff_KernelMemoryPoolExpand(int64_t search_start, int64_t search_end, size_t len,
+                                          size_t alignment, int64_t* phys_addr_out) {
+ 	PRINT_NAME();
+ 
+@@ -5130,7 +5377,15 @@ int KYTY_SYSV_ABI KernelMemoryPoolExpand(int64_t search_start, int64_t search_en
+ 	return OK;
+ }
+ 
++static int Bc5Ff_KernelMemoryPoolReserve(void* addr_in, size_t len, size_t alignment, int flags,
++                                          void** addr_out); // exp 0412 (tag ff412)
+ int KYTY_SYSV_ABI KernelMemoryPoolReserve(void* addr_in, size_t len, size_t alignment, int flags,
++                                          void** addr_out) { // exp 0412 (tag ff412)
++	const int bc5_ff_result = Bc5Ff_KernelMemoryPoolReserve(addr_in, len, alignment, flags, addr_out);
++	if (bc5_ff_result != OK) [[unlikely]] ff412_report("KernelMemoryPoolReserve", bc5_ff_result, __builtin_return_address(0), {ff412::u(addr_in), ff412::u(len), ff412::u(alignment), ff412::u(flags), ff412::u(addr_out)});
++	return bc5_ff_result;
++}
++static int Bc5Ff_KernelMemoryPoolReserve(void* addr_in, size_t len, size_t alignment, int flags,
+                                           void** addr_out) {
+ 	PRINT_NAME();
+ 
+@@ -5181,7 +5436,13 @@ int KYTY_SYSV_ABI KernelMemoryPoolReserve(void* addr_in, size_t len, size_t alig
+ 	return ret;
+ }
+ 
+-int KYTY_SYSV_ABI KernelMemoryPoolCommit(void* addr, size_t len, int type, int prot, int flags) {
++static int Bc5Ff_KernelMemoryPoolCommit(void* addr, size_t len, int type, int prot, int flags); // exp 0412 (tag ff412)
++int KYTY_SYSV_ABI KernelMemoryPoolCommit(void* addr, size_t len, int type, int prot, int flags) { // exp 0412 (tag ff412)
++	const int bc5_ff_result = Bc5Ff_KernelMemoryPoolCommit(addr, len, type, prot, flags);
++	if (bc5_ff_result != OK) [[unlikely]] ff412_report("KernelMemoryPoolCommit", bc5_ff_result, __builtin_return_address(0), {ff412::u(addr), ff412::u(len), ff412::u(type), ff412::u(prot), ff412::u(flags)});
++	return bc5_ff_result;
++}
++static int Bc5Ff_KernelMemoryPoolCommit(void* addr, size_t len, int type, int prot, int flags) {
+ 	PRINT_NAME();
+ 
+ 	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+@@ -5317,7 +5578,13 @@ static int DecommitMemoryPoolRange(uint64_t vaddr, size_t len) {
+ 	return OK;
+ }
+ 
+-int KYTY_SYSV_ABI KernelMemoryPoolDecommit(void* addr, size_t len, int flags) {
++static int Bc5Ff_KernelMemoryPoolDecommit(void* addr, size_t len, int flags); // exp 0412 (tag ff412)
++int KYTY_SYSV_ABI KernelMemoryPoolDecommit(void* addr, size_t len, int flags) { // exp 0412 (tag ff412)
++	const int bc5_ff_result = Bc5Ff_KernelMemoryPoolDecommit(addr, len, flags);
++	if (bc5_ff_result != OK) [[unlikely]] ff412_report("KernelMemoryPoolDecommit", bc5_ff_result, __builtin_return_address(0), {ff412::u(addr), ff412::u(len), ff412::u(flags)});
++	return bc5_ff_result;
++}
++static int Bc5Ff_KernelMemoryPoolDecommit(void* addr, size_t len, int flags) {
+ 	PRINT_NAME();
+ 
+ 	bc5::load_stat::CountedLock<std::recursive_mutex> memory_operation_lock(g_memory_operation_mutex, bc5::load_stat::kMemLockWait); // exp 0415 (ls415): a lock_guard with the wait counted
+diff --git a/src/kernel/semaphore.cpp b/src/kernel/semaphore.cpp
+index bd43388..3540226 100644
+--- a/src/kernel/semaphore.cpp
++++ b/src/kernel/semaphore.cpp
+@@ -61,6 +61,7 @@ private:
+ 		Result result     = Result::TimedOut;
+ 		bool   ready      = false;
+ 		Common::CondVar* own_cond = nullptr; // BC5 KYTY_BC5_SEMA_TARGETED_WAKE: this waiter's own condition variable
++		uint64_t ready_ns = 0;               // BC5 exp 0415 (sw415): when a signal made it ready (0: counters off)
+ 	};
+ 
+ 	void AddWaiter(WaitingThread* waiter);
+@@ -271,8 +272,9 @@ void KernelSemaPrivate::WakeWaiters() {
+ 	for (auto* waiter: m_waiting_threads) {
+ 		if (!waiter->ready && waiter->need_count <= m_count) {
+ 			m_count -= waiter->need_count;
+-			waiter->result = Result::Ok;
+-			waiter->ready  = true;
++			waiter->result   = Result::Ok;
++			waiter->ready    = true;
++			waiter->ready_ns = bc5::load_stat::begin(); // experiment 0415 (sw415)
+ 			if (waiter->own_cond != nullptr) {
+ 				waiter->own_cond->Signal();
+ 			}
+@@ -347,7 +349,9 @@ KernelSemaPrivate::Result KernelSemaPrivate::Wait(int need_count, uint32_t* ptr_
+ 		m_mutex.Lock();
+ 
+ 		elapsed = static_cast<uint32_t>(t.GetTimeS() * 1000000.0);
++		if (!waiter.ready) bc5::load_stat::count(bc5::load_stat::kSemaWokeIdle); // experiment 0415 (sw415)
+ 	}
++	if (waiter.ready_ns != 0) bc5::load_stat::add(bc5::load_stat::kSemaWake, bc5::load_stat::now_ns() - waiter.ready_ns); // experiment 0415 (sw415)
+ 
+ 	RemoveWaiter(&waiter);
+ 
+diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
+index 7aaef29..cc24a4e 100644
+--- a/src/libs/bc5LleAgc.cpp
++++ b/src/libs/bc5LleAgc.cpp
+@@ -29,6 +29,7 @@
+ #include "libs/agc.h"
+ #include "libs/errno.h"
+ #include "libs/libs.h"
++#include "bc5/save_guard0412.hpp" // exp 0412 (tag sg412): the save guard of the fault record
+ #include "loader/symbolDatabase.h"
+ 
+ #if defined(KYTY_BC5_DIRECT)
+@@ -2283,6 +2284,11 @@ static const uint64_t kDMaxBo = [] {
+ 		if (std::fscanf(f, "%lu", &mb) != 1) mb = 32;
+ 		std::fclose(f);
+ 	}
++	if (const char* e = std::getenv("BC5_DIRECT_MAX_BO_MIB"); e != nullptr && e[0] != 0) { // exp 0412 (tag ff412): never above the module's limit
++		const unsigned long want = std::strtoul(e, nullptr, 10);
++		if (want >= 2 && want < mb) mb = want;
++		std::fprintf(stderr, "[bc5] exp 0412 (tag ff412): BC5_DIRECT_MAX_BO_MIB=%s: the largest import is %lu MiB\n", e, mb);
++	}
+ 	if (mb < 2) mb = 2;
+ 	if (mb > 1024) mb = 1024;
+ 	return (static_cast<uint64_t>(mb) << 20u) & ~((2ull << 20u) - 1);
+@@ -2551,16 +2557,20 @@ static void mr415_verify() {
+ // records, both titles); the list is rebuilt from every range only every KYTY_BC5_MAP_RECORDS_CHECK_MS (2,000 when
+ // unset), and at that moment the kept list is compared with it and with the old builder's list (rec_mismatch) and
+ // replaced by it. If the record log reports a gap the list is rebuilt at once. Called under direct_views' mutex.
++// Tag mr415d (build L5d): build L5b copied the kept list (12,500-28,000 views, a string each) into every new snapshot
++// and so saved nothing (README section 15). The kept list is now the object handed out: records are applied to it in
++// place when nobody else holds it (direct_views lets go of its own reference first), and only otherwise to a copy
++// (views_clone). A holder never sees its list change: it holds a reference, so the count is above one.
+ // If a record were missing, a view would be absent (its memory not on the GPU) or would stay after the guest unmapped
+ // it (the GPU reads pages the guest gave back) until the next check, at most the check period.
+-static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_out) {
++static std::shared_ptr<DViews> mr415_views(const DState& S, uint64_t* gen_out) {
+ 	struct R {
+ 		uint64_t    start, size, offset;
+ 		int         type;
+ 		std::string name;
+ 	};
+-	static std::vector<DView> kept;
+-	static bool               have       = false;
++	static std::shared_ptr<DViews> kept_p = std::make_shared<DViews>();
++	static bool                    have   = false;
+ 	static uint64_t           checked_ns = 0;
+ 	static const uint64_t     period_ns  = bc5::load_stat::env_num("KYTY_BC5_MAP_RECORDS_CHECK_MS", 2000, 600'000) * 1'000'000ull;
+ 	auto make = [](const R& r, DView* v) {
+@@ -2583,11 +2593,15 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
+ 		        &lists, &gen, &spans, &complete) &&
+ 		    complete) {
+ 			lists.resize(spans.size());
++			if (kept_p.use_count() > 1) { // someone still reads the list: leave theirs alone
++				bc5::load_stat::count(bc5::load_stat::kViewsClone, kept_p->v.size());
++				kept_p = std::make_shared<DViews>(*kept_p);
++			}
++			std::vector<DView>& kept = kept_p->v;
+ 			for (size_t i = 0; i < spans.size(); i++) bc5::map_records::apply(kept, lists[i], spans[i].first, bc5::map_records::end_of(spans[i].first, spans[i].second), make);
+ 			bc5::load_stat::count(bc5::load_stat::kMapRecord, spans.size());
+-			*out     = kept;
+ 			*gen_out = gen;
+-			return;
++			return kept_p;
+ 		}
+ 		bc5::load_stat::count(bc5::load_stat::kRecOverflow);
+ 		have = false; // the log had a gap: the kept list is not to be compared, only replaced
+@@ -2599,8 +2613,9 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
+ 		        static_cast<std::vector<R>*>(p)->push_back({start, size, offset, type, name != nullptr ? name : ""});
+ 	        },
+ 	        &ranges, &gen, &spans, &complete)) {
+-		*out = direct_views_build(S);
+-		return;
++		auto d = std::make_shared<DViews>();
++		d->v   = direct_views_build(S);
++		return d;
+ 	}
+ 	std::vector<DView> full;
+ 	for (const R& r: ranges) {
+@@ -2616,6 +2631,8 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
+ 	};
+ 	static int logged = 0;
+ 	if (have && complete) {
++		if (kept_p.use_count() > 1) kept_p = std::make_shared<DViews>(*kept_p);
++		std::vector<DView>& kept = kept_p->v;
+ 		for (const auto& [start, size]: spans) bc5::map_records::apply(kept, ranges, start, bc5::map_records::end_of(start, size), make);
+ 		bc5::load_stat::count(bc5::load_stat::kMapRecord, spans.size());
+ 		if (!same(kept, full)) {
+@@ -2631,11 +2648,12 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
+ 			if (logged++ < 8) journal("map records (exp 0415, mr415c): the snapshot's list differs from the old builder's at generation %" PRIu64 ": %zu against %zu views\n", gen, full.size(), old.size());
+ 		}
+ 	}
+-	kept       = std::move(full);
++	kept_p     = std::make_shared<DViews>();
++	kept_p->v  = std::move(full);
+ 	have       = true;
+ 	checked_ns = now;
+-	*out       = kept;
+ 	*gen_out   = gen;
++	return kept_p;
+ }
+ 
+ static std::shared_ptr<const DViews> direct_views(const DState& S) {
+@@ -2653,14 +2671,17 @@ static std::shared_ptr<const DViews> direct_views(const DState& S) {
+ 	if (g != 0 && g == gen[k] && cache[k] != nullptr && (k == 0 || now - built_ns[k] < 1'000'000'000ull)) return cache[k];
+ 	built_ns[k] = now;
+ 	g_views_builds++;
+-	auto d = std::make_shared<DViews>();
+-	uint64_t g_used = g;
++	std::shared_ptr<DViews> d;
++	uint64_t                g_used = g;
+ 	if (k == 0 && mr415_mode() == 2) { // experiment 0415 (mr415c), stage S2: the list kept from the change records
+-		mr415_views(S, &d->v, &g_used);
++		cache[k].reset();              // mr415d: so that the kept list can change in place when no caller holds it
++		d = mr415_views(S, &g_used);
+ 	} else {
++		d    = std::make_shared<DViews>();
+ 		d->v = direct_views_build(S);
+ 		if (k == 0) mr415_verify(); // experiment 0415 (mr415)
+ 	}
++	d->sorted = true;
+ 	uint64_t sig = 1469598103934665603ull;
+ 	for (size_t i = 0; i < d->v.size(); i++) {
+ 		const auto& v = d->v[i];
+@@ -4180,11 +4201,19 @@ static uint64_t direct_force(uint64_t lo, uint64_t hi) {
+ // What "thread" gives up: an anonymous guest VMA that appears is walked at the first call after the thread's next pass
+ // instead of at once for an urgent call (operands on it are dropped by the filter until then, as they are today for a
+ // non-urgent call for up to a second). So it stays off until "verify" shows no miss.
++//   "events" (tag as415c, DESIGN-lock-side.md section 8): no thread and no read on a schedule. The host's map and
++//             protect sites count the calls that can make anonymous memory readable in the guest's span
++//             (bc5::anon_sync::note). A call here walks at once, whatever the time limits say, when that counter has
++//             moved since the last walk read it, after -EFAULT and after a device reopen; it leaves the walk out when
++//             the counter has not moved and the last walk found no anonymous guest VMA; while such a VMA exists the
++//             walk keeps its old timing (its pages become resident without any call). "verify" counts what this rule
++//             would have missed (anon_ev_miss) and how often the counter moves (anon_events).
+ static std::mutex              g_as415_mu;
+ static std::condition_variable g_as415_cv;
+ static uint64_t                g_as415_sig    = 0;     // the thread's last pass: its signature
+ static uint64_t                g_as415_walk_sig   = 0; // the last walk's signature (the submission path, under the device mutex)
+ static bool                    g_as415_walk_valid = false;
++static uint64_t                g_as415_walk_ev    = 0; // as415c: the map/protect counter as the last walk read it (before its read of the maps)
+ static uint64_t                g_as415_passes = 0;     // passes finished
+ static bool                    g_as415_kick   = false; // an urgent call asks for a pass now
+ 
+@@ -4242,32 +4271,56 @@ static void as415_thread() {
+ // operand of the IB is unmapped, -EFAULT from a submission) always walk.
+ static void sync_mappings(bool force = false, bool urgent = false, bool must = false) { // must (exp 0415, as415): after -EFAULT, never left out
+ 	const uint64_t now = SoftCp::now_ns();
+-	if (!force && now - g_last_sync_ns < 50'000'000ull) { // at most every 50 ms
++	// Experiment 0415 (as415, as415c), KYTY_BC5_ANON_SYNC: see as415_thread.
++	const int      as_mode       = as415_mode();
++	const uint64_t as_ev         = bc5::anon_sync::events().load(std::memory_order_acquire); // read BEFORE the maps are read
++	const bool     as_ev_moved   = bc5::anon_sync::events_moved(as_ev, g_as415_walk_ev, g_as415_walk_valid);
++	const bool     as_prev_empty = g_vmas.empty();
++	bool           as_ev_now     = false; // "events": this call walks whatever the time limits say
++	if (as_mode == 1) { // "verify": how many calls "events" would turn into walks
++		static uint64_t seen_ev = 0;
++		if (as_ev != seen_ev) {
++			seen_ev = as_ev;
++			bc5::load_stat::count(bc5::load_stat::kAnonEvCalls);
++		}
++	}
++	if (as_mode == 3) {
++		if (!must && bc5::anon_sync::events_skip(as_ev_moved, as_prev_empty)) {
++			if (urgent) bc5::load_stat::count(bc5::load_stat::kAnonUrgent);
++			bc5::load_stat::count(bc5::load_stat::kAnonSkip);
++			t_fs415_ds[7] |= urgent ? 6 : 4;
++			return;
++		}
++		as_ev_now = must || as_ev_moved;
++	}
++	if (!as_ev_now && !force && now - g_last_sync_ns < 50'000'000ull) { // at most every 50 ms
+ 		return;
+ 	}
+ 	static constexpr uint64_t anon_min_ns = 100ull * 1'000'000ull;
+-	if (force && !urgent && g_last_sync_ns != 0 && now - g_last_sync_ns < anon_min_ns) {
++	if (!as_ev_now && force && !urgent && g_last_sync_ns != 0 && now - g_last_sync_ns < anon_min_ns) {
+ 		return;
+ 	}
+ 	// With private guest memory in a file as well (experiment 0023) the walk should find nothing
+ 	// anonymous in the guest's range; it stays as a check, once a second.
+-	if (!urgent && g_last_sync_ns != 0 && Libs::LibKernel::Memory::Bc5PrivateMemoryFd() >= 0 && now - g_last_sync_ns < 1'000'000'000ull) {
++	if (!as_ev_now && !urgent && g_last_sync_ns != 0 && Libs::LibKernel::Memory::Bc5PrivateMemoryFd() >= 0 && now - g_last_sync_ns < 1'000'000'000ull) {
+ 		return;
+ 	}
+ 	g_last_sync_ns = now;
+-	// Experiment 0415 (as415), KYTY_BC5_ANON_SYNC: see as415_thread.
+-	const int as_mode    = as415_mode();
+-	bool      as_skip_ok = false;
++	bool as_skip_ok = false;
++	if (as_mode != 0 && as_ev_moved) bc5::load_stat::count(bc5::load_stat::kAnonEvents, g_as415_walk_valid ? as_ev - g_as415_walk_ev : 0);
+ 	if (urgent) {
+ 		bc5::load_stat::count(bc5::load_stat::kAnonUrgent);
+ 		t_fs415_ds[7] |= 2;
+ 	}
+-	if (as_mode != 0) {
++	if (as_mode == 1 || as_mode == 2) { // "events" has no thread
+ 		static std::once_flag once;
+ 		std::call_once(once, [] { std::thread(as415_thread).detach(); });
+ 		std::lock_guard lk(g_as415_mu);
+ 		as_skip_ok = bc5::anon_sync::can_skip(g_as415_passes, g_as415_sig, g_as415_walk_valid, g_as415_walk_sig);
+-		if (urgent && !g_as415_kick) {
++		// KYTY_BC5_ANON_SYNC_KICK=0 (as415b, a measuring knob): urgent calls do not wake the thread, so that with a long
++		// KYTY_BC5_ANON_SYNC_MS the cost of the thread's own reads can be told from the rest.
++		static const bool kick = bc5::load_stat::env_num("KYTY_BC5_ANON_SYNC_KICK", 1, 1) != 0;
++		if (urgent && kick && !g_as415_kick) {
+ 			g_as415_kick = true;
+ 			g_as415_cv.notify_one();
+ 		}
+@@ -4278,6 +4331,13 @@ static void sync_mappings(bool force = false, bool urgent = false, bool must = f
+ 		return;
+ 	}
+ 	t_fs415_ds[7] |= 1;
++	if (as_mode != 0) {
++		static std::once_flag said;
++		std::call_once(said, [as_mode] {
++			journal("anon sync (exp 0415, as415c): KYTY_BC5_ANON_SYNC is %s\n", as_mode == 3 ? "\"events\": the walk runs after a counted map or protect call, after -EFAULT and a reopen, and on its old timing while an anonymous guest VMA exists"
++			                                                                          : (as_mode == 2 ? "\"thread\"" : "\"verify\": the walk runs as before; anon_miss and anon_ev_miss count what the other forms would have left out"));
++		});
++	}
+ 	bc5::load_stat::Scope ls_scope(bc5::load_stat::kAnonSync); // experiment 0415 (ls415)
+ 	constexpr uint64_t kPage = 4096, kGrain = 65536;
+ 
+@@ -4446,8 +4506,17 @@ static void sync_mappings(bool force = false, bool urgent = false, bool must = f
+ 	const bool as_same = g_as415_walk_valid && g_as415_walk_sig == as_sig; // experiment 0415 (as415)
+ 	g_as415_walk_sig   = as_sig;
+ 	g_as415_walk_valid = true;
++	g_as415_walk_ev    = as_ev;
+ 	if (as_mode != 0 && (as_changed || added != 0 || removed != 0 || !as_same)) {
+ 		bc5::load_stat::count(bc5::load_stat::kAnonNeeded, vmas.size());
++		if (as_mode == 1 && !must && bc5::anon_sync::events_skip(as_ev_moved, as_prev_empty)) { // as415c: "events" would have left this walk out
++			bc5::load_stat::count(bc5::load_stat::kAnonEvMiss);
++			static int ev_logged = 0;
++			if (ev_logged++ < 8) {
++				journal("anon sync (exp 0415, as415c): EVENT MISS: %zu VMAs, list %s, signature %s, +%d -%d mappings, %s, while the map/protect counter stood at %" PRIu64 " and the list before was empty: a site is not counted\n",
++				        vmas.size(), as_changed ? "changed" : "same", as_same ? "same" : "changed", added, removed, urgent ? "urgent" : "not urgent", as_ev);
++			}
++		}
+ 		if (as_skip_ok) {
+ 			bc5::load_stat::count(bc5::load_stat::kAnonMiss);
+ 			static int logged = 0;
+@@ -4485,23 +4554,9 @@ static bool covered_sorted(const std::vector<bc5::direct::Mapping>& maps, uint64
+ // one "0x<addr> 0x<bytes>" per line): mapped like hint windows before every submit. A fault
+ // under a draw (a texture the CPU never touched) wedges the run; the next run maps the region
+ // from the start. Written from Direct::submit on a timeout that reports a fault address.
+-static std::vector<std::pair<uint64_t, uint64_t>> g_learned;
+-static const char* learned_path() {
+-	static std::string p = std::getenv("BC5_DIRECT_LEARNED") ? std::getenv("BC5_DIRECT_LEARNED")
+-	                     : std::string(std::getenv("HOME") ? std::getenv("HOME") : ".") + "/bc5-work/direct-learned.txt";
+-	return p.c_str();
+-}
+-static void learned_load() {
+-	static bool done = false;
+-	if (done) return;
+-	done = true;
+-	if (FILE* f = std::fopen(learned_path(), "r")) {
+-		unsigned long long a = 0, n = 0;
+-		while (std::fscanf(f, "%llx %llx", &a, &n) == 2) g_learned.emplace_back(a, n);
+-		std::fclose(f);
+-	}
+-	LOGF("[bc5-direct] learned regions: %zu from %s\n", g_learned.size(), learned_path());
+-}
++// g_learned: removed with the learned windows // exp 0412 (tag nl412)
++// learned_path(): removed with the learned file // exp 0412 (tag nl412)
++// learned_load(): removed; no learned file is read // exp 0412 (tag nl412)
+ // Experiment 0056 (BC5_DIRECT_ALIASES=1): the guest's memory also mapped under a non-zero address
+ // byte 47:40. The title's faults have a valid address in their low 40 bits and junk above
+ // (experiment 0055: its programs at 0x11d03xxxxx fetched at 0x8011d03xxxxx) — as if the PS5 GPU
+@@ -4627,7 +4682,7 @@ static void m11_head_check(std::vector<SoftCp::GpuDone>& marks, uint64_t& reopen
+ // Experiment 0412 (tag mr412): BC5_GUARD_LEARN_LOG. What lay at the address of a GPU fault that would be learned: one
+ // journal line per fault, the sample the rule's design asks for. Called before the learning, on the thread that learns.
+ static void mr412_would_learn(uint64_t fault, uint32_t status) {
+-	if (mr412::learn_log() == 0 || fault == 0) return;
++	if (fault == 0) return; // exp 0412 (tag nl412): always; BC5_GUARD_LEARN_LOG no longer decides
+ 	const bool     junk = (fault >> 40u) != 0;
+ 	const uint64_t page = (junk ? fault & ((1ull << 40u) - 1) : fault) & ~0xfffull;
+ 	std::vector<std::pair<uint64_t, uint64_t>> guest;
+@@ -4653,81 +4708,19 @@ static void mr412_would_learn(uint64_t fault, uint32_t status) {
+ 	}
+ 	const bool     mapped = g_dev && covered_sorted(*g_dev->sorted_mappings(), page, 4);
+ 	const uint64_t lo     = (fault & ~0x3ffffffull) > 0x2000000ull ? (fault & ~0x3ffffffull) - 0x2000000ull : 0;
+-	bool           listed = false;
+-	for (const auto& [a, b]: g_learned) {
+-		if (a == lo && b == 0x6000000ull) listed = true;
+-	}
+-	journal("would learn (exp 0412, tag mr412): t %.3f s: fault 0x%" PRIx64 " status 0x%08x: %s; guest range %s; view %s%s%s; chunk %s%s; GPU mapping %s; PRT background %s; window 0x%" PRIx64 "+0x6000000 %s; mode %d, no file written\n",
++	journal("would learn (exp 0412, tag mr412): t %.3f s: fault 0x%" PRIx64 " status 0x%08x: %s; guest range %s; view %s%s%s; chunk %s%s; GPU mapping %s; PRT background %s; the window it would once have learned 0x%" PRIx64 "+0x6000000; nothing is added or written (tag nl412)\n",
+ 	        timing_now(), fault, status, mr412::classify(junk, !guest.empty(), under, lazy, eager, imported, mapped), guest.empty() ? "no" : "yes", under ? name.c_str() : "none",
+ 	        under ? (kind == 0 ? " (direct" : " (private") : "", under ? (eager ? ", eager)" : (lazy ? ", lazy)" : ", by data)")) : "", imported ? "imported" : "not imported", forced ? ", forced" : "",
+-	        mapped ? "yes" : "no", g_mr412_bg ? "on" : "off", lo, listed ? "already on this run's list" : "new", mr412::learn_log());
+-}
+-static void learned_add(uint64_t fault_addr) {
+-	const uint64_t lo = (fault_addr & ~0x3ffffffull) > 0x2000000ull ? (fault_addr & ~0x3ffffffull) - 0x2000000ull : 0; // 64 MiB aligned, 32 MiB before
+-	const uint64_t n  = 0x6000000ull; // 96 MiB
+-	if (m11_learn_refused(fault_addr, lo, n)) return; // exp 0401 e11 (tag m11): BC5_DIRECT_LEARN_GUEST_ONLY
+-	if (mr412::learn_log() == 2) return; // exp 0412 (tag mr412): BC5_GUARD_LEARN_LOG=2, the line is written, nothing is added
+-	for (const auto& [a, b]: g_learned) {
+-		if (a == lo && b == n) return;
+-	}
+-	g_learned.emplace_back(lo, n);
+-	g_layout_gen++;
+-	if (FILE* f = mr412::learn_log() != 0 ? nullptr : std::fopen(learned_path(), "a")) { // exp 0412 (tag mr412): the catcher writes no file
+-		std::fprintf(f, "0x%llx 0x%llx\n", static_cast<unsigned long long>(lo), static_cast<unsigned long long>(n));
+-		std::fclose(f);
+-	}
+-	journal("learned: fault 0x%" PRIx64 " -> region 0x%" PRIx64 "+0x%" PRIx64 " (saved)\n", fault_addr, lo, n);
++	        mapped ? "yes" : "no", g_mr412_bg ? "on" : "off", lo);
+ }
++// learned_add(): removed; a GPU fault adds no window and writes no file (mr412_would_learn journals it) // exp 0412 (tag nl412)
+ // Experiment 0156: the mapping list a learned pass works on stays sorted by address, so
+ // scratch_fill finds a window's holes in one pass instead of sorting the list per window.
+ static void have_insert(std::vector<bc5::direct::Mapping>& have, bc5::direct::Mapping m) {
+ 	have.insert(std::upper_bound(have.begin(), have.end(), m, [](const bc5::direct::Mapping& a, const bc5::direct::Mapping& b) { return a.va < b.va; }), m);
+ }
+ 
+-static void map_window(uint64_t lo, uint64_t hi, std::vector<bc5::direct::Mapping>& have, const char* what, uint64_t addr) {
+-	const ZLearned zlearned(std::strcmp(what, "learned") == 0); // experiment 0379: a learned window leaves skipped chunks skipped
+-	if (const uint64_t asked = direct_force(lo, hi); asked != 0) {
+-		journal("%s 0x%" PRIx64 ": window 0x%" PRIx64 "+0x%" PRIx64 ", direct memory +%.1f MiB\n", what, addr, lo, hi - lo, static_cast<double>(asked) / 1048576.0);
+-		have = g_dev->mappings();
+-		std::sort(have.begin(), have.end(), [](const bc5::direct::Mapping& a, const bc5::direct::Mapping& b) { return a.va < b.va; });
+-	}
+-	std::vector<std::pair<uint64_t, uint64_t>> pieces;
+-	for (const auto& v: g_vmas) { // clip to rw VMAs (the window may span several)
+-		if (v.readonly || v.end <= lo || v.start >= hi) continue;
+-		pieces.emplace_back(v.start > lo ? v.start : lo, v.end < hi ? v.end : hi);
+-	}
+-	// Experiment 0415 (ls415d), KYTY_BC5_WINDOW_FAST (default off; "verify" runs both). A STOPGAP for the device
+-	// mutex's hold: the learned windows themselves are to be replaced by a rule (the maintainer, 2026-11-12; exp 0412).
+-	// The pieces lie inside [lo, hi), so a mapping that does not touch [lo, hi) leaves them as they are; the old loop
+-	// rebuilt the piece list once per mapping (21,300 mappings x 81 windows on every layout change: 4.8 s a run).
+-	// If this were wrong, a piece already mapped would be mapped again, or a window's piece would stay unmapped (the
+-	// GPU fault the window was learned from).
+-	static const int window_fast = bc5::sync_fast::mode_of(std::getenv("KYTY_BC5_WINDOW_FAST"));
+-	if (window_fast == 0) {
+-		bc5::sync_fast::subtract_old(pieces, have);
+-	} else if (window_fast == 2) {
+-		auto old_pieces = pieces;
+-		bc5::sync_fast::subtract_old(old_pieces, have);
+-		bc5::sync_fast::subtract_fast(pieces, have, lo, hi);
+-		if (pieces != old_pieces) {
+-			bc5::load_stat::count(bc5::load_stat::kFastDiff);
+-			pieces = old_pieces;
+-		}
+-	} else {
+-		bc5::sync_fast::subtract_fast(pieces, have, lo, hi);
+-	}
+-	uint64_t added = 0;
+-	for (const auto& [pa, pb]: pieces) {
+-		if (pb <= pa) continue;
+-		if (g_dev->map_userptr(pa, pb - pa)) {
+-			added += pb - pa;
+-			g_bytes_mapped += pb - pa;
+-			have_insert(have, {pa, pb - pa});
+-		}
+-	}
+-	if (added != 0) journal("%s 0x%" PRIx64 ": window 0x%" PRIx64 "+0x%" PRIx64 ", mapped +%.1f MiB\n", what, addr, lo, hi - lo, static_cast<double>(added) / 1048576.0);
+-	if (added != 0) bc5::load_stat::count(bc5::load_stat::kLearnedChanged, added); // experiment 0415 (ls415d): a window that mapped something
+-}
++// map_window(): removed; no window is forced or mapped for a past fault // exp 0412 (tag nl412)
+ // Experiment 0037: a learned fault window may cover addresses the guest has no range at all in:
+ // one title's GPU reads up to 24 KiB past the end of a 2.7 GiB heap, and a fault is a 14 s freeze
+ // and sometimes a stuck game. Such holes get a 2 MiB zero buffer of our own mapped over them (the
+@@ -5594,8 +5587,15 @@ static void guard0412_synced(const DState& S) {
+ 
+ static void learned_apply() {
+ 	bc5::load_stat::Scope ls_scope(bc5::load_stat::kLearned); // experiment 0415 (ls415)
+-	learned_load();
+-	if (!g_dev) return;
++	if (!g_dev) return; // exp 0412 (tag nl412): no learned file
++	// Experiment 0417: BC5_DIRECT_HEAP_GUARDS. =0 makes no guard (the full nl412 variant's behaviour); unset: the guards of exp 0037.
++	static const bool heap_guards = [] {
++		const char* e  = std::getenv("BC5_DIRECT_HEAP_GUARDS");
++		const bool  on = !(e != nullptr && e[0] == '0' && e[1] == '\0');
++		std::fprintf(stderr, "[bc5] exp 0417: the zero guards behind the eager heaps are %s (BC5_DIRECT_HEAP_GUARDS)\n", on ? "on" : "off");
++		return on;
++	}();
++	if (!heap_guards) return; // nothing was ever put into g_scratch, so there is nothing to give back either
+ 	static uint64_t applied_gen = 0;
+ 	if (applied_gen == g_layout_gen) return; // same views, VMAs and learned list as last time
+ 	applied_gen = g_layout_gen;
+@@ -5615,14 +5615,13 @@ static void learned_apply() {
+ 	std::vector<bc5::direct::Mapping> have = g_dev->mappings();
+ 	std::sort(have.begin(), have.end(), [](const bc5::direct::Mapping& a, const bc5::direct::Mapping& b) { return a.va < b.va; });
+ 	const uint64_t la_t2 = SoftCp::now_ns();
+-	for (auto& S: g_d) {
+-		if (dstate_fd(S) >= 0) t_pinned_views[S.kind == 0 ? 0 : 1] = direct_views(S);
+-	}
+-	for (const auto& [a, n]: g_learned) map_window(a, a + n, have, "learned", a);
+-	for (auto& pin: t_pinned_views) pin.reset();
++	// exp 0412 (tag nl412): no window is forced or mapped for a past fault
+ 	const uint64_t la_t3 = SoftCp::now_ns();
+-	for (const auto& [a, n]: g_learned) scratch_fill(a, a + n, have);
++	// exp 0412 (tag nl412): no zero buffer over a past fault's window; only the guards behind the eager heaps below
+ 	const uint64_t la_t4 = SoftCp::now_ns();
++	// exp 0412 (tag nl412): what follows is a RULE, not a learned window: it comes from the title's behaviour and is
++	// applied to every eager heap from the layout, with no memory of a fault. Its proper form is the K3 rule (the
++	// console's behaviour over true holes, DESIGN-learned-windows.md section 7); this guard goes when that rule is in.
+ 	// Experiment 0037: the GPU reads up to 64 KiB past the end of the title's GPU heaps (four
+ 	// faults so far, each just past one heap's end), so the hole after every view of an eagerly
+ 	// imported heap of 32 MiB or more gets the zero buffer from the start (2048 KiB;
+@@ -5678,6 +5677,45 @@ static void main_pass_track(const HintCtx& ctx) {
+ 	}
+ }
+ 
++// Experiment 0412 (tag nl412): the K1 catcher, BC5_GUARD_K1_STAT=1 (default off; no behaviour changes). The rule that
++// replaces the learned windows for GPU-written memory is "import exactly what the title binds, when it binds it". This
++// counts how far today's hint is from that: for every new target base, was its own chunk imported at bind time, and
++// how much did the +-32 MiB window around it pin.
++static bool k1412_on() {
++	static const bool on = [] {
++		const char* e = std::getenv("BC5_GUARD_K1_STAT");
++		return e != nullptr && e[0] != 0 && !(e[0] == '0' && e[1] == 0);
++	}();
++	return on;
++}
++// 1: the 2 MiB chunk of the direct or private file under this guest address is imported; 0: it is under a view and
++// not imported; -1: no view holds the address.
++static int k1412_imported(uint64_t va) {
++	for (auto& S: g_d) {
++		if (dstate_fd(S) < 0) continue;
++		const auto views_p = direct_views(S);
++		for (const auto& v: views_p->v) {
++			if (va < v.va || va >= v.va + v.size) continue;
++			return direct_covered_end(S, (v.off + (va - v.va)) & ~(kDChunk - 1)) != 0 ? 1 : 0;
++		}
++	}
++	return -1;
++}
++static void k1412_note(const char* name, uint64_t addr, int before, uint64_t window_bytes) {
++	static uint64_t binds = 0, base_missing = 0, no_view = 0, window_total = 0, lines = 0;
++	binds++;
++	if (before == 0) base_missing++;
++	if (before < 0) no_view++;
++	window_total += window_bytes;
++	if ((before == 0 || window_bytes != 0) && lines++ < 200) {
++		journal("k1 stat (exp 0412, tag nl412): t %.3f s: %s base 0x%" PRIx64 " bound: its own chunk was %s; the +-32 MiB window pinned %.1f MiB more\n", timing_now(), name, addr,
++		        before > 0 ? "imported" : (before == 0 ? "NOT imported (a K1 case: the bind is what brought it in)" : "under no view"), static_cast<double>(window_bytes) / 1048576.0);
++	}
++	if ((binds & 63u) == 0) {
++		journal("k1 stat (exp 0412, tag nl412): t %.0f s: %" PRIu64 " new target bases; own chunk not imported at the bind %" PRIu64 ", under no view %" PRIu64 "; the windows pinned %.1f MiB in all\n",
++		        timing_now(), binds, base_missing, no_view, static_cast<double>(window_total) / 1048576.0);
++	}
++}
+ static void hint_targets(const uint32_t* ib, uint32_t num_dwords) {
+ 	std::vector<uint64_t>& hinted = g_hinted;
+ 	static constexpr uint64_t window = 32ull << 20u;
+@@ -5749,7 +5787,10 @@ static void hint_targets(const uint32_t* ib, uint32_t num_dwords) {
+ 			}
+ 			if (vma == nullptr) { // a target in direct memory (ADR 0006)
+ 				const uint64_t dlo = lo > below ? lo - below : 0;
++				const int      k1_before = k1412_on() ? k1412_imported(lo) : -1; // exp 0412 (tag nl412)
++				const uint64_t k1_bytes  = g_d[0].bytes + g_d[1].bytes;
+ 				const uint64_t asked = direct_force(dlo, lo + window);
++				if (k1412_on()) k1412_note(b.name, addr, k1_before, g_d[0].bytes + g_d[1].bytes - k1_bytes); // exp 0412 (tag nl412)
+ 				journal("hint %s 0x%" PRIx64 ": window 0x%" PRIx64 "+0x%" PRIx64 ", direct memory +%.1f MiB\n", b.name, addr, dlo, lo + window - dlo, static_cast<double>(asked) / 1048576.0);
+ 				have_p = g_dev->sorted_mappings();
+ 				continue;
+@@ -6444,6 +6485,7 @@ struct ChainSoft {
+ 	uint32_t        n;
+ 	const char*     kind;
+ 	std::shared_ptr<const std::vector<uint32_t>> owned {}; // host-generated replay only; captured by value with e
++	uint64_t pub = 0; // exp 0417 (BC5_R3_EOP_STAT): the running number of this chained EOP publication, 0 when not counted
+ };
+ // ADR 0013 (experiment 0226): a wait a held chain carries for the GPU, released when
+ // its label is satisfied or its writer is on a ring.
+@@ -6681,6 +6723,27 @@ static bool ib_cond_past_end(const uint32_t* ib, uint32_t n, bool* any) {
+ // Posts the slot's pending soft-CP replays behind the chain's fence item, each with the marks gathered so
+ // far (section B.4). Caller holds slot.mu. The marks stay while the owner is inside Direct::submit: the
+ // buffer being split there gets its replay later, with the marks of every chain that carried a piece of it.
++// Experiment 0417: BC5_R3_EOP_STAT=1, measurement only. How many chained EOP publications fall between one
++// publication's push and its deferred callback; the ring that exp 0416 removed was wrong from 4,096 on.
++static std::atomic<uint64_t> g_eop_stat_pub {0}, g_eop_stat_max {0}, g_eop_stat_seen {0};
++static bool eop_stat_on() {
++	static const bool on = [] {
++		const char* e = std::getenv("BC5_R3_EOP_STAT");
++		return e != nullptr && e[0] != '\0' && !(e[0] == '0' && e[1] == '\0');
++	}();
++	return on;
++}
++static void eop_stat_callback(uint64_t pub) {
++	const uint64_t d = g_eop_stat_pub.load(std::memory_order_relaxed) - pub;
++	const uint64_t n = g_eop_stat_seen.fetch_add(1, std::memory_order_relaxed) + 1;
++	uint64_t       m = g_eop_stat_max.load(std::memory_order_relaxed);
++	while (d > m && !g_eop_stat_max.compare_exchange_weak(m, d, std::memory_order_relaxed)) {
++	}
++	if (d > m || n == 1) {
++		journal("eop stat (exp 0417): %" PRIu64 " chained EOP publications between a push and its callback (%s; %" PRIu64 " callbacks so far; the old ring wrapped at 4096)\n", d,
++		        d > m ? "a new maximum" : "the first callback", n);
++	}
++}
+ static void chain_post_soft_locked(ChainSlot& s) {
+ 	if (s.soft.empty()) return;
+ 	auto marks = std::make_shared<std::vector<SoftCp::GpuDone>>(s.marks);
+@@ -6688,6 +6751,7 @@ static void chain_post_soft_locked(ChainSlot& s) {
+ 		post([e, marks](bool failed) {
+ 			if (failed) journal("soft-cp: %s %u dwords at %p replayed in full after a failed submission\n", e.kind, e.n, static_cast<const void*>(e.dwords));
+ 			SoftCp::t_gpu_done = failed ? std::vector<SoftCp::GpuDone>() : *marks;
++			if (e.pub != 0) eop_stat_callback(e.pub); // exp 0417
+ 			SoftCp::submit(e.dwords, e.n, e.kind);
+ 			SoftCp::t_gpu_done.clear();
+ 		});
+@@ -6835,7 +6899,7 @@ static void chain_soft_push_copy(const uint32_t* dwords, uint32_t n, const char*
+ 	auto owned = std::make_shared<const std::vector<uint32_t>>(dwords, dwords + n);
+ 	ChainSlot& s = g_chain_tl;
+ 	std::lock_guard lk(s.mu);
+-	s.soft.push_back({owned->data(), n, kind, owned});
++	s.soft.push_back({owned->data(), n, kind, owned, eop_stat_on() ? g_eop_stat_pub.fetch_add(1, std::memory_order_relaxed) + 1 : 0}); // exp 0417: its running number
+ 	if (s.c.segs.empty() && !s.in_submit) chain_post_soft_locked(s);
+ }
+ // Appends `pre` (host-built, may be empty) then `ib` to the thread's chain, closing it first if the buffer
+@@ -7620,8 +7684,10 @@ static void acb_cs_track(const uint32_t* part, uint32_t n) {
+ static bool acb_restore_on() {
+ 	static const bool        on = bc5::env_on(std::getenv("BC5_DIRECT_ACB_STATE_RESTORE"));
+ 	static std::atomic<bool> told {false};
+-	if (!told.exchange(true))
++	if (!told.exchange(true)) {
+ 		journal("exp 0401: acb state restore (exp 0381) %s\n", on ? "on (a graphics buffer that dispatches gets the graphics queue's tracked compute registers in front)" : "off");
++		std::fprintf(stderr, "[bc5] exp 0401: acb state restore (exp 0381) %s\n", on ? "on" : "off"); // exp 0417: also in the play log (lean has no journal)
++	}
+ 	return on;
+ }
+ static bool acb_restore_wants(const uint32_t* ib, uint32_t num_dwords) {
+@@ -7865,11 +7931,41 @@ static void forget_label_writes(uint64_t seq, int ring, bool all) {
+ // BC5_DIRECT_RESET_LABEL_JOURNAL; the switches are in m11's block above learned_add).
+ static std::vector<PendingLabelWrite> g_m11_lost;         // under g_plw_mutex
+ static uint64_t                       g_m11_lost_for = 0; // the reopen they belong to (g_m11_reopens + 1 when kept)
++// BC5 experiment 0412 (tag rl412, README section 62): the lost jobs' label writes when TWO jobs time out in one hang.
++// m11_keep_lost() (exp 0401 e11) copies the pending label writes at a timeout so that the reopen can write them
++// (BC5_DIRECT_RESET_LABELS). It is called once per timed-out job, and each call is followed by a forget of ALL
++// pending writes. With two jobs timed out together (a draw buffer and a compute buffer: his play of 2026-11-13, and
++// the pairs of F260, sections 38 and 53) the second call copied the list the first call's forget had just emptied,
++// over the kept one: "0 label writes of the lost jobs", nothing written, and the title waited for ever on labels of
++// the lost compute buffer. BC5_DIRECT_RESET_LABELS_ADD=1 (default off): a second keep for the SAME reopen adds to
++// what is kept instead of replacing it. This text is included by the main unit and by the CPU test rlabels0412.cpp.
++namespace rl412 {
++inline bool on() {
++	static const bool v = [] {
++		const char* e = std::getenv("BC5_DIRECT_RESET_LABELS_ADD");
++		return e != nullptr && e[0] != 0 && !(e[0] == '0' && e[1] == 0);
++	}();
++	return v;
++}
++// kept, kept_for: what is held for a reopen and which reopen; pending: the list at this timeout; for_reopen: the
++// reopen this timeout leads to. add = the switch.
++template <typename V> inline void keep(V& kept, uint64_t& kept_for, const V& pending, uint64_t for_reopen, bool add) {
++	if (add && kept_for == for_reopen) {
++		kept.insert(kept.end(), pending.begin(), pending.end());
++	} else {
++		kept = pending;
++	}
++	kept_for = for_reopen;
++}
++} // namespace rl412
+ static void m11_keep_lost() {
+ 	if (!m11_on(1) && !m11_on(3)) return;
+ 	std::lock_guard lk(g_plw_mutex);
+-	g_m11_lost     = g_plw;
+-	g_m11_lost_for = g_m11_reopens.load() + 1;
++	const size_t rl_before = g_m11_lost.size(); // exp 0412 (tag rl412)
++	const bool   rl_same   = g_m11_lost_for == g_m11_reopens.load() + 1;
++	rl412::keep(g_m11_lost, g_m11_lost_for, g_plw, g_m11_reopens.load() + 1, rl412::on());
++	if (rl_same) journal("e11: a second timed-out job before reopen %" PRIu64 ": %zu label writes were kept, %zu are pending now; kept after this call %zu (BC5_DIRECT_RESET_LABELS_ADD %s; exp 0412, tag rl412)\n",
++	                    g_m11_lost_for, rl_before, g_plw.size(), g_m11_lost.size(), rl412::on() ? "on" : "off: the earlier ones are dropped");
+ }
+ static uint64_t m11_read(uint64_t a, bool is64) {
+ 	return is64 ? *reinterpret_cast<const volatile uint64_t*>(a) : *reinterpret_cast<const volatile uint32_t*>(a);
+@@ -8447,6 +8543,7 @@ static void submit_split(const uint32_t* ib, uint32_t num_dwords, const char* ki
+ 					}
+ 					if (!ok) journal("cpu-wait %s at %u on 0x%" PRIx64 ": %s after %.1f ms\n", op == 0x93 ? "WAIT_REG_MEM64" : "WAIT_REG_MEM", i, label, broken ? "CYCLE" : (limit < 1'000'000'000ull ? "GIVEN UP" : "TIMEOUT"), static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
+ 					if (!ok) t_wait_given_up = true;
++					if (!ok && bc5::load_stat::on()) bc5::load_stat::add(bc5::load_stat::kWaitGaveUp, SoftCp::now_ns() - t0, broken ? 1 : 0); // experiment 0415 (wg415)
+ 					if (dry_here) (ok ? g_dry_ok : g_dry_failed)++;
+ 					frame_profile_wait(on_game_thread(), false, static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
+ 					static const bool timing_waits_env = BC5_DIAG_ENV("BC5_DIRECT_TIMING") != nullptr;
+@@ -9566,6 +9663,171 @@ static void umr_watchdog_start() {
+ 	});
+ }
+ 
++// Experiment 0412 (tag fr412): BC5_FAULT_RECORD. A GPU fault is a bug to remove at its source: write what is needed to
++// find it, then end the game. No reopen, no recovery.
++namespace fr412 {
++inline bool on() {
++	static const bool v = [] {
++		const char* e = std::getenv("BC5_FAULT_RECORD");
++		return e == nullptr || !(e[0] == '0' && e[1] == 0); // exp 0412 (mkdef0412.py): on by default, "0" turns it off
++	}();
++	return v;
++}
++} // namespace fr412
++static void fr412_copy(const std::string& from, const std::string& to, long tail_bytes) {
++	FILE* in = std::fopen(from.c_str(), "rb");
++	if (in == nullptr) return;
++	FILE* out = std::fopen(to.c_str(), "wb");
++	if (out != nullptr) {
++		if (tail_bytes > 0 && std::fseek(in, 0, SEEK_END) == 0) {
++			const long size = std::ftell(in);
++			std::fseek(in, size > tail_bytes ? size - tail_bytes : 0, SEEK_SET);
++		}
++		char   buf[65536];
++		size_t n = 0;
++		while ((n = std::fread(buf, 1, sizeof(buf), in)) != 0) std::fwrite(buf, 1, n, out);
++		std::fclose(out);
++	}
++	std::fclose(in);
++}
++[[noreturn]] static void fr412_record_and_exit(uint64_t fault, uint32_t status, bool timed_out, int rc) {
++	const double t = timing_now();
++	{ // one record: a second thread that arrives here while the first writes is held
++		static std::atomic<bool> once {false};
++		if (once.exchange(true)) {
++			for (;;) std::this_thread::sleep_for(std::chrono::hours(1));
++		}
++	}
++	// The save guard (tag sg412): the exit must not cut a save. A save being written through the host's calls is let
++	// finish (5 s at most), nothing new starts, then what was written is flushed and synced. The outcome goes into
++	// the record.
++	const sg412::Closed sg      = sg412::close(5000);
++	int                 sg_sync = -2; // -2 no save directory was mounted in this run, -1 it could not be opened, else syncfs's result
++	if (sg.complete) std::fflush(nullptr);
++	if (sg412::g_root_set.load()) {
++		const int fd = ::open(sg412::g_root, O_RDONLY | O_DIRECTORY | O_CLOEXEC);
++		sg_sync      = fd < 0 ? -1 : ::syncfs(fd);
++		if (fd >= 0) ::close(fd);
++	}
++	char         stamp[32] = "unknown";
++	{
++		const time_t now = std::time(nullptr);
++		struct tm    tm {};
++		if (localtime_r(&now, &tm) != nullptr) std::strftime(stamp, sizeof(stamp), "%Y%m%d-%H%M%S", &tm);
++	}
++	const std::string home = std::getenv("HOME") != nullptr ? std::getenv("HOME") : ".";
++	const std::string base = home + "/bc5-data/captures/faults";
++	const std::string dir  = base + "/" + stamp;
++	mkdir(base.c_str(), 0700);
++	mkdir(dir.c_str(), 0700);
++	// what lay at the address (the catcher's questions)
++	const bool     junk = (fault >> 40u) != 0;
++	const uint64_t page = (junk ? fault & ((1ull << 40u) - 1) : fault) & ~0xfffull;
++	std::vector<std::pair<uint64_t, uint64_t>> guest;
++	if (fault != 0) Libs::LibKernel::Memory::Bc5GuestRangesIn(page, page + 0x1000ull, &guest);
++	bool        under = false, lazy = false, eager = false, imported = false;
++	int         kind = -1;
++	std::string name;
++	uint64_t    view_va = 0, view_size = 0;
++	if (FILE* fv = std::fopen((dir + "/layout-views.txt").c_str(), "w")) {
++		std::fprintf(fv, "# file (0 direct, 1 private) va size file_offset flags(E eager, L lazy, D by data) name\n");
++		for (auto& S: g_d) {
++			if (dstate_fd(S) < 0) continue;
++			const auto views_p = direct_views(S);
++			for (const auto& v: views_p->v) {
++				std::fprintf(fv, "%d 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " %s %s\n", S.kind, v.va, v.size, v.off, v.eager ? "E" : (v.lazy ? "L" : "D"), v.name.c_str());
++				if (fault != 0 && !under && page >= v.va && page < v.va + v.size) {
++					under     = true;
++					lazy      = v.lazy;
++					eager     = v.eager;
++					kind      = S.kind;
++					name      = v.name;
++					view_va   = v.va;
++					view_size = v.size;
++					imported  = direct_covered_end(S, (v.off + (page - v.va)) & ~(kDChunk - 1)) != 0;
++				}
++			}
++		}
++		std::fclose(fv);
++	}
++	if (FILE* fb = std::fopen((dir + "/layout-buffers.txt").c_str(), "w")) {
++		std::fprintf(fb, "# file (0 direct, 1 private) file_offset size\n");
++		for (auto& S: g_d) {
++			for (const auto& b: S.bos) std::fprintf(fb, "%d 0x%" PRIx64 " 0x%" PRIx64 "\n", S.kind, b.off, b.size);
++		}
++		std::fclose(fb);
++	}
++	bool   mapped = false;
++	size_t n_maps = 0;
++	if (g_dev) {
++		const auto maps = g_dev->mappings();
++		n_maps          = maps.size();
++		if (FILE* fm = std::fopen((dir + "/layout-mappings.txt").c_str(), "w")) {
++			std::fprintf(fm, "# gpu_va size\n");
++			for (const auto& m: maps) {
++				std::fprintf(fm, "0x%" PRIx64 " 0x%" PRIx64 "\n", static_cast<uint64_t>(m.va), static_cast<uint64_t>(m.size));
++				if (fault != 0 && page >= m.va && page < m.va + m.size) mapped = true;
++			}
++			std::fclose(fm);
++		}
++	}
++	fr412_copy("/proc/meminfo", dir + "/meminfo.txt", 0);
++	fr412_copy("/proc/pressure/memory", dir + "/pressure.txt", 0);
++	if (FILE* fe = std::fopen((dir + "/environment.txt").c_str(), "w")) {
++		for (char** e = environ; e != nullptr && *e != nullptr; e++) {
++			if (std::strncmp(*e, "BC5", 3) == 0 || std::strncmp(*e, "KYTY", 4) == 0) std::fprintf(fe, "%s\n", *e);
++		}
++		std::fclose(fe);
++	}
++	if (FILE* fp = std::fopen((dir + "/process.txt").c_str(), "w")) {
++		char    exe[1024] = "";
++		ssize_t k = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
++		if (k > 0) exe[k] = 0;
++		std::fprintf(fp, "binary %s\npid %d\ncommand line:", exe, static_cast<int>(getpid()));
++		if (FILE* fc = std::fopen("/proc/self/cmdline", "rb")) {
++			int c = 0;
++			while ((c = std::fgetc(fc)) != EOF) std::fputc(c == 0 ? ' ' : c, fp);
++			std::fclose(fc);
++		}
++		std::fprintf(fp, "\n");
++		std::fclose(fp);
++	}
++	if (!g_dump_dir.empty()) fr412_copy(g_dump_dir + "/direct.log", dir + "/journal-tail.txt", 4l << 20);
++	if (FILE* f = std::fopen((dir + "/record.txt").c_str(), "w")) {
++		std::fprintf(f, "BC5 GPU fault record (exp 0412, tag fr412). A GPU fault is a bug to remove at its source; the game was ended here.\n\n");
++		std::fprintf(f, "when: %s, %.3f s after the emulator's start\n", stamp, t);
++		std::fprintf(f, "what the host saw: a submission %s (rc %d); the kernel's last fault address 0x%" PRIx64 ", status 0x%08x (%s)\n", timed_out ? "timed out after 2 s" : "failed", rc, fault, status,
++		             fault == 0 ? "no fault address: a hang without a page fault" : ((status & (1u << 18u)) != 0 ? "a WRITE, by the status' bit 18" : "a READ, by the status' bit 18"));
++		if (fault != 0) {
++			std::fprintf(f, "kind: %s\n", mr412::classify(junk, !guest.empty(), under, lazy, eager, imported, mapped));
++			std::fprintf(f, "the address: %s; guest range there: %s; under a view: %s", junk ? "a bit above 40 is set (the facts below are for its low 40 bits)" : "a plain guest address", guest.empty() ? "no" : "yes",
++			             under ? "yes" : "NO");
++			if (under) {
++				std::fprintf(f, ": \"%s\" (%s file, %s), view 0x%" PRIx64 "+0x%" PRIx64 ", the address is 0x%" PRIx64 " into it; its 2 MiB chunk %s", name.c_str(), kind == 0 ? "direct" : "private",
++				             eager ? "eager" : (lazy ? "lazy" : "by data"), view_va, view_size, page - view_va, imported ? "is imported" : "is NOT imported (the CPU never wrote it, or its heap is lazy)");
++			}
++			std::fprintf(f, "; a GPU mapping at the address: %s\n", mapped ? "yes" : "no");
++		}
++		std::fprintf(f, "memory: pinned direct %.1f MiB in %zu buffers, private %.1f MiB in %zu; %zu GPU mappings (meminfo.txt, pressure.txt)\n", static_cast<double>(g_d[0].bytes) / 1048576.0, g_d[0].bos.size(),
++		             static_cast<double>(g_d[1].bytes) / 1048576.0, g_d[1].bos.size(), n_maps);
++		std::fprintf(f, "saves (tag sg412): %s. At the request: %d save call(s) of the host in flight, %d save mount(s) written and not yet unmounted, the last save call began %" PRId64 " ms before (-1: none in this run). "
++		                "Waited %" PRId64 " ms (5000 at most); left then: %d call(s), %d mount(s); %d caller(s) held from starting something new. Sync of the save directory: %s.\n",
++		             sg412::verdict(sg), sg.ops_at_request, sg.dirty_at_request, sg.last_op_age_ms, sg.waited_ms, sg.ops_left, sg.dirty_left, sg.held,
++		             sg_sync == 0 ? "done" : (sg_sync == -2 ? "not needed (no save directory was mounted)" : "FAILED"));
++		std::fprintf(f, "the capture directory of this run (the whole journal, the dumped buffers of the timed-out jobs): %s\n", g_dump_dir.empty() ? "(none: logging was off)" : g_dump_dir.c_str());
++		std::fprintf(f, "\nin this directory: journal-tail.txt (the probe's summary of the timed-out jobs, the last submissions, the ledger, the frame lines), layout-views.txt, layout-buffers.txt,\n"
++		                "layout-mappings.txt, meminfo.txt, pressure.txt, environment.txt (every BC5_* and KYTY_* variable), process.txt.\n");
++		std::fprintf(f, "\nNOT known to the emulator, added by the launcher when it can (dmesg.txt, build.txt): the kernel's own fault lines (client, RW, the ring), the devcoredump's path, the binary's md5.\n"
++		                "Nothing here is read by a later run.\n");
++		std::fclose(f);
++	}
++	journal("fault record (exp 0412, tag fr412): written to %s; the game ends here (BC5_FAULT_RECORD)\n", dir.c_str());
++	std::fprintf(stderr, "[bc5] GPU FAULT at 0x%" PRIx64 " (status 0x%08x), %.1f s after the start: the record is in %s; the game ends here (exit 86). A GPU fault is a bug to fix, not something to get up from. Saves: %s.\n", fault,
++	             status, t, dir.c_str(), sg412::verdict(sg));
++	if (sg.complete) std::fflush(nullptr); // not when a save call is still in flight: it may hold a stream
++	else std::fflush(stderr);
++	_exit(86);
++}
+ static void recover_after_timeout(const bc5::direct::SubmitResult& r) {
+ 		LOGF_COLOR(Log::Color::Red, "[bc5-direct] fence timeout: fault 0x%" PRIx64 " status 0x%08x\n", r.fault_addr, r.fault_status);
+ 		journal("timeout: fault 0x%" PRIx64 " status 0x%08x\n", r.fault_addr, r.fault_status);
+@@ -9593,8 +9855,9 @@ static void recover_after_timeout(const bc5::direct::SubmitResult& r) {
+ 			}
+ 		}
+ 		mr412_would_learn(r.fault_addr, static_cast<uint32_t>(r.fault_status)); // exp 0412 (tag mr412)
++		if (fr412::on()) fr412_record_and_exit(r.fault_addr, static_cast<uint32_t>(r.fault_status), r.timed_out, r.rc); // exp 0412 (tag fr412)
+ 		if (r.fault_addr != 0 && (r.fault_addr >> 40u) != 0 && aliases_on()) alias_learn(r.fault_addr); // experiment 0056
+-		else if (r.fault_addr != 0) learned_add(r.fault_addr);
++		// exp 0412 (tag nl412): no learned_add; the line above (mr412_would_learn) is all that happens for a fault
+ 		// After the kernel's ring reset (F28) the process opens a fresh device and goes on; the
+ 		// mappings are rebuilt by the next sync, the learned region is in. After any timeout: the
+ 		// kernel's ring reset recovers shader stalls too (run 41).
+@@ -12862,6 +13125,13 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+ 	const uint64_t t1 = SoftCp::now_ns();
+ 	uint64_t       fs_ds[8]; // experiment 0415 (fs415d): the parts of the two syncs of this submission
+ 	for (int k = 0; k < 8; k++) fs_ds[k] = t_fs415_ds[k];
++	{ // exp 0412 (tag nl412): say once what is left of the learned pass
++		static bool nl412_said = false;
++		if (!nl412_said) {
++			nl412_said = true;
++			journal("learned windows: removed from this build (exp 0412, tag nl412, guards kept): no file is read, no window is applied; the 2 MiB zero guard behind each eager heap stays unless BC5_DIRECT_HEAP_GUARDS=0 (exp 0417; stderr says which); a GPU fault is journaled as \"would learn\" and adds nothing\n");
++		}
++	}
+ 	if (!guard0412_defer_apply()) learned_apply(); // exp 0412 (tag g412): BC5_GUARD_APPLY_MIN_MS
+ 	const uint64_t tc = SoftCp::now_ns();
+ 	if (tc - t1 > 20'000'000ull) { // experiment 0156: a long learned_apply call, with its thread
+diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
+index 6fb7951..bf8ed98 100644
+--- a/src/libs/libAmpr.cpp
++++ b/src/libs/libAmpr.cpp
+@@ -33,7 +33,9 @@
+ #include <vector>
+ #include <sys/mman.h> // experiment 0401 series e4: mprotect of the AMM PRT zero pages
+ #include "bc5/load_stat.hpp" // experiment 0415 (ls415)
++#include "bc5/anon_sync.hpp" // experiment 0415 (as415c)
+ #include "bc5/apr_posix.hpp" // experiment 0415 (ls415b/c): KYTY_BC5_APR_POSIX
++#include "bc5/setbuffer_test.hpp" // experiment 0417: the gate of the set-buffer test hook (0 in shared builds)
+ 
+ #ifdef min
+ #undef min
+@@ -1915,6 +1917,7 @@ static int Bc5MapAutoScattered(uint64_t va, uint64_t size, int memory_type, int3
+ }
+ // ---- END pool0401_impl.inc ----
+ 
++extern "C" void bc5_mem_firstfail_note(const char* call, int result, uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3); // memory.cpp, exp 0412 (tag ff412)
+ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t* dmem_offset) {
+ 	if (dmem_offset == nullptr || size == 0) {
+ 		return false;
+@@ -1931,6 +1934,15 @@ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t
+ 	if (LibKernel::Memory::KernelAllocateDirectMemory(
+ 	        0, LibKernel::Memory::KernelGetDirectMemorySize(), size, AMM_PAGE_SIZE, memory_type,
+ 	        &allocated) != OK) {
++		{ // exp 0412 (tag ff412): KYTY_BC5_MEM_FIRSTFAIL
++			uint64_t ff_free = 0, ff_largest = 0;
++			for (const auto& r: g_amm_auto_free) {
++				ff_free += r.second;
++				if (r.second > ff_largest) ff_largest = r.second;
++			}
++			bc5_mem_firstfail_note("AMM auto pool: borrow of direct memory refused (args: size, maps holding the pool, pool free bytes, its largest free run)",
++			                       LibKernel::KERNEL_ERROR_EAGAIN, size, static_cast<uint64_t>(g_amm_auto_maps.size()), ff_free, ff_largest);
++		}
+ 		if (AmmTrace()) {
+ 			uint64_t free_bytes = 0;
+ 			for (const auto& r: g_amm_auto_free) {
+@@ -2467,6 +2479,7 @@ static bool RunOrderedAprCommands(uint64_t command_buffer, const CommandBufferSt
+ 					                              static_cast<uint32_t>(command.kind), command.va, command.size, static_cast<unsigned>(result));
+ 				}
+ 				if (result != OK) {
++					bc5_mem_firstfail_note("AMM command failed and its buffer stops (args: kind, va, size, 0)", result, static_cast<uint64_t>(command.kind), command.va, command.size, 0); // exp 0412 (tag ff412)
+ 					LOGF("\tAMM submit command failed: kind=%u va=0x%016" PRIx64
+ 					     " dmem=0x%016" PRIx64 " size=0x%016" PRIx64 " type=%" PRId32
+ 					     " prot=0x%08" PRIx32 " result=0x%08" PRIx32 "\n",
+@@ -3126,13 +3139,88 @@ static bool Bc5SetBufferMapAllowed(uint64_t cb, uint64_t va, uint32_t size, uint
+ 	if (told < 16) {
+ 		told++;
+ 		std::fprintf(stderr,
+-		             "[bc5] exp 0416: set-buffer with the map signature on a target that is not mapped (cb 0x%016" PRIx64 " va 0x%016" PRIx64
++		             "[bc5] exp 0416: set-buffer with the map signature that the guard did not take (target not mapped, or guard off) (cb 0x%016" PRIx64 " va 0x%016" PRIx64
+ 		             " len 0x%x a3 0x%" PRIx64 " a4 0x%" PRIx64 " a5 0x%" PRIx64 "): taken as the buffer flavour (KYTY_BC5_AMM_SETBUFFER_MAP=1 maps)\n",
+ 		             cb, va, size, a3, a4, a5);
+ 	}
+ 	return false;
+ }
+ 
++#if KYTY_BC5_SETBUFFER_TEST_HOOK
++// Experiment 0417, private builds only (bc5/setbuffer_test.hpp): KYTY_BC5_AMM_SETBUFFER_TEST=mapped[:N]|unmapped[:N].
++// No title of ours passes a4 = -1 on purpose, and chance stopped producing it (exp 0416), so the guard and the map
++// opt-in are exercised by forcing the signature on the Nth call (mapped) or by one synthetic call before it (unmapped).
++struct Bc5SbTest {
++	int      mode = 0; // 0 off, 1 mapped, 2 unmapped
++	int      nth  = 1;
++	uint64_t va   = 0x8ff0000000ull;
++};
++static const Bc5SbTest& Bc5SbTestCfg() {
++	static const Bc5SbTest cfg = [] {
++		Bc5SbTest   t;
++		const char* e = std::getenv("KYTY_BC5_AMM_SETBUFFER_TEST");
++		if (e == nullptr || e[0] == '\0' || std::strcmp(e, "0") == 0) {
++			return t;
++		}
++		if (std::strncmp(e, "unmapped", 8) == 0) {
++			t.mode = 2;
++			e += 8;
++		} else if (std::strncmp(e, "mapped", 6) == 0) {
++			t.mode = 1;
++			e += 6;
++		} else {
++			std::fprintf(stderr, "[bc5] exp 0417 hook: KYTY_BC5_AMM_SETBUFFER_TEST not understood, off\n");
++			return t;
++		}
++		if (e[0] == ':' && std::atoi(e + 1) >= 1) {
++			t.nth = std::atoi(e + 1);
++		}
++		if (const char* v = std::getenv("KYTY_BC5_AMM_SETBUFFER_TEST_VA"); v != nullptr && v[0] != '\0') {
++			t.va = std::strtoull(v, nullptr, 16) & ~(AMM_PAGE_SIZE - 1u);
++		}
++		std::fprintf(stderr, "[bc5] exp 0417 hook: KYTY_BC5_AMM_SETBUFFER_TEST %s on set-buffer call %d (test va 0x%" PRIx64 ")\n", t.mode == 1 ? "mapped" : "unmapped",
++		             t.nth, t.va);
++		return t;
++	}();
++	return cfg;
++}
++static int KYTY_SYSV_ABI CommandBufferSetBuffer(void* cb, void* buffer, uint32_t size, uint64_t a3, uint64_t a4, uint64_t a5); // defined below
++static bool Bc5SbTestCommitted(uint64_t va) {
++	LibKernel::Memory::VirtualQueryInfo info {};
++	return LibKernel::Memory::KernelVirtualQuery(reinterpret_cast<const void*>(va), 0, &info, sizeof(info)) == OK && info.is_committed != 0;
++}
++static void Bc5SbTestApply(uint64_t cb, uint64_t va, uint32_t size, uint64_t* a3, uint64_t* a4) {
++	const Bc5SbTest& c = Bc5SbTestCfg();
++	if (c.mode == 0) {
++		return;
++	}
++	static thread_local bool inside = false; // the synthetic call below comes through here again
++	static std::atomic<int>  calls {0};
++	if (inside || ++calls != c.nth) {
++		return;
++	}
++	if (c.mode == 1) {
++		std::fprintf(stderr, "[bc5] exp 0417 hook: call %d (cb 0x%016" PRIx64 " va 0x%016" PRIx64 " len 0x%x a3 0x%" PRIx64 " a4 0x%" PRIx64 "): a4 forced to -1%s; the target is %s\n",
++		             c.nth, cb, va, size, *a3, *a4, *a3 == va ? ", a3 changed" : "", Bc5SbTestCommitted(va & ~(AMM_PAGE_SIZE - 1u)) ? "committed" : "NOT committed");
++		if (*a3 == va) {
++			*a3 = va ^ 0x10u;
++		}
++		*a4 = ~0ull;
++		return;
++	}
++	if (Bc5SbTestCommitted(c.va)) {
++		std::fprintf(stderr, "[bc5] exp 0417 hook: the test va 0x%" PRIx64 " is committed, nothing done (set KYTY_BC5_AMM_SETBUFFER_TEST_VA)\n", c.va);
++		return;
++	}
++	alignas(16) static unsigned char header[0x100] = {}; // a scratch command-buffer header: the buffer flavour may write its pointers here
++	inside        = true;
++	const int rc  = CommandBufferSetBuffer(header, reinterpret_cast<void*>(c.va), static_cast<uint32_t>(AMM_PAGE_SIZE), 1, ~0ull, 0);
++	inside        = false;
++	std::fprintf(stderr, "[bc5] exp 0417 hook: before call %d, a synthetic set-buffer with the map signature on va 0x%" PRIx64 " len 0x%x returned 0x%08x; committed before no, after %s\n",
++	             c.nth, c.va, static_cast<unsigned>(AMM_PAGE_SIZE), static_cast<unsigned>(rc), Bc5SbTestCommitted(c.va) ? "YES (mapped)" : "no (nothing mapped)");
++}
++#endif
++
+ static int KYTY_SYSV_ABI CommandBufferSetBuffer(void* command_buffer, void* buffer, uint32_t size,
+                                                 uint64_t a3, uint64_t a4, uint64_t a5) {
+ 	PRINT_NAME();
+@@ -3142,6 +3230,9 @@ static int KYTY_SYSV_ABI CommandBufferSetBuffer(void* command_buffer, void* buff
+ 	}
+ 
+ 	const auto va = reinterpret_cast<uint64_t>(buffer);
++#if KYTY_BC5_SETBUFFER_TEST_HOOK
++	Bc5SbTestApply(reinterpret_cast<uint64_t>(command_buffer), va, size, &a3, &a4); // experiment 0417
++#endif
+ 	if (AmmTrace()) {
+ 		AmmTraceStamp(), std::fprintf(stderr, "amm trace: set-buffer cb 0x%016" PRIx64 " va 0x%016" PRIx64 " len 0x%x a3 0x%" PRIx64 " a4 0x%" PRIx64 " a5 0x%" PRIx64 "\n",
+ 		             reinterpret_cast<uint64_t>(command_buffer), va, size, a3, a4, a5);
+@@ -4332,7 +4423,9 @@ static void Bc5PrtParts(uint64_t start, uint64_t end, std::vector<std::pair<uint
+ // or unreadable again. MapBacking's MAP_FIXED view replaces either; nothing else in the host reads the placeholder's mode.
+ static bool Bc5HostReadable(uint64_t va, uint64_t size, bool readable) {
+ #if defined(__linux__)
+-	return mprotect(reinterpret_cast<void*>(va), static_cast<size_t>(size), readable ? PROT_READ : PROT_NONE) == 0;
++	const bool done = mprotect(reinterpret_cast<void*>(va), static_cast<size_t>(size), readable ? PROT_READ : PROT_NONE) == 0;
++	if (done) bc5::anon_sync::note(va, size, readable); // experiment 0415 (as415c): an anonymous placeholder made readable
++	return done;
+ #else
+ 	(void)va;
+ 	(void)size;
+diff --git a/src/libs/libSaveData.cpp b/src/libs/libSaveData.cpp
+index 6357db0..865cd88 100644
+--- a/src/libs/libSaveData.cpp
++++ b/src/libs/libSaveData.cpp
+@@ -12,6 +12,7 @@
+ #include "libs/saveDataMountSlots.h"
+ #include "loader/symbolDatabase.h"
+ #include "loader/systemContent.h"
++#include "bc5/save_guard0412.hpp" // exp 0412 (tag sg412): the save guard of the fault record
+ 
+ #include <algorithm>
+ #include <cstddef>
+@@ -898,6 +899,8 @@ static int mount_save_data(int slot, std::string_view dir_name, const std::strin
+ 	const std::string mount_point = SaveDataMountSlots::MountPoint(static_cast<size_t>(slot));
+ 	LibKernel::FileSystem::Mount(directory, mount_point);
+ 	g_mount_slots.Mount(static_cast<size_t>(slot), dir_name);
++	sg412::note_root(directory.c_str()); // exp 0412 (tag sg412)
++	sg412::mounted(slot); // exp 0412 (tag sg412)
+ 	std::snprintf(result->mount_point.data, sizeof(result->mount_point.data), "%s",
+ 	              mount_point.c_str());
+ 	result->required_blocks = 0;
+@@ -1063,6 +1066,7 @@ int KYTY_SYSV_ABI SaveDataDirNameSearch(const SaveDataDirNameSearchCond* cond,
+ 
+ int KYTY_SYSV_ABI SaveDataMount3(const SaveDataMount3* mount, SaveDataMountResult* mount_result) {
+ 	PRINT_NAME();
++	sg412::Op sg_op(sg412::kLib, true); // exp 0412 (tag sg412)
+ 
+ 	EXIT_NOT_IMPLEMENTED(mount == nullptr);
+ 	EXIT_NOT_IMPLEMENTED(mount_result == nullptr);
+@@ -1288,6 +1292,7 @@ int KYTY_SYSV_ABI SaveDataGetSaveDataMemory2(SaveDataMemoryGet2* get_param) {
+ 
+ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param) {
+ 	PRINT_NAME();
++	sg412::Op sg_op(sg412::kLib, true); // exp 0412 (tag sg412)
+ 
+ 	if (set_param == nullptr) {
+ 		return SAVE_DATA_ERROR_PARAMETER;
+@@ -1328,6 +1333,7 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
+ int KYTY_SYSV_ABI SaveDataTransferringMount(const SaveDataTransferringMount* mount,
+                                             SaveDataMountResult*             mount_result) {
+ 	PRINT_NAME();
++	sg412::Op sg_op(sg412::kLib, true); // exp 0412 (tag sg412)
+ 
+ 	if (mount == nullptr || mount_result == nullptr || mount->dir_name == nullptr) {
+ 		return SAVE_DATA_ERROR_PARAMETER;
+@@ -1383,6 +1389,7 @@ int KYTY_SYSV_ABI SaveDataUmount2(uint32_t mode, const SaveDataMountPoint* mount
+ 	}
+ 	LibKernel::FileSystem::Umount(point);
+ 	g_mount_slots.Release(static_cast<size_t>(slot));
++	sg412::unmounted(slot); // exp 0412 (tag sg412)
+ 
+ 	return OK;
+ }
+@@ -1423,6 +1430,7 @@ int KYTY_SYSV_ABI SaveDataCommit(const SaveDataCommitParam* param) {
+ 
+ int KYTY_SYSV_ABI SaveDataDelete(const SaveDataDelete* del) {
+ 	PRINT_NAME();
++	sg412::Op sg_op(sg412::kLib, true); // exp 0412 (tag sg412)
+ 
+ 	if (del == nullptr || del->dir_name == nullptr) {
+ 		return SAVE_DATA_ERROR_PARAMETER;
+@@ -1530,6 +1538,7 @@ int KYTY_SYSV_ABI SaveDataLoadIcon(const SaveDataMountPoint* mount_point, SaveDa
+ 
+ int KYTY_SYSV_ABI SaveDataSaveIconByPath(const SaveDataMountPoint* mount_point, const char* path) {
+ 	PRINT_NAME();
++	sg412::Op sg_op(mount_point != nullptr ? sg412::slot_of(mount_point->data) : sg412::kNone, true); // a part of the save on that mount // exp 0412 (tag sg412)
+ 
+ 	if (mount_point == nullptr || path == nullptr) {
+ 		return SAVE_DATA_ERROR_PARAMETER;
+@@ -1584,6 +1593,7 @@ static int bc5_sync_save_data_memory(const Bc5SaveDataMemorySync* sync_param) {
+ 
+ int KYTY_SYSV_ABI SaveDataSyncSaveDataMemory(const void* sync_param) {
+ 	PRINT_NAME();
++	sg412::Op sg_op(sg412::kLib, true); // exp 0412 (tag sg412)
+ 
+ 	LOGF("\t sync_param = 0x%016" PRIx64 "\n", reinterpret_cast<uint64_t>(sync_param));
+ 
+@@ -1657,6 +1667,7 @@ int KYTY_SYSV_ABI SaveDataBackup(const SaveDataBackup* backup) {
+ int KYTY_SYSV_ABI SaveDataSetParam(const SaveDataMountPoint* mount_point, uint32_t param_type,
+                                    const void* param_buf, size_t param_buf_size) {
+ 	PRINT_NAME();
++	sg412::Op sg_op(mount_point != nullptr ? sg412::slot_of(mount_point->data) : sg412::kNone, true); // a part of the save on that mount // exp 0412 (tag sg412)
+ 
+ 	EXIT_NOT_IMPLEMENTED(mount_point == nullptr);
+ 

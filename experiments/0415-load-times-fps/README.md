@@ -949,6 +949,81 @@ how the console behaves before calling a change a fix).**
   submission after any host call that makes anonymous memory readable in the guest's span, with no delay, and never
   otherwise. That is the candidate for a fix; `thread` was the measurement that showed what the walk costs.
 
+### 17. Prepared for the slot of 2026-11-14 (laptop only; nothing below was built or run on the box)
+
+**Base.** The shared builds are candidate B (patch `27b6416f`, normal `51af1ed7`, lean `59894428`; the top
+session's words). B holds build L5c's stages and has no learned windows. The private tree on the box holds L5c.
+
+**Build L6** (`kit/0415-l6.diff` from the L5c tree, sha256 `67f71062299c01d2`; `kit/0415-l6-on-B.diff` is the same
+change read against B, 511 lines; `kit/mk0415l.sh`; `kit/tree-l6.md5`) = B plus, each default off:
+- kit L5d: `KYTY_BC5_MAP_RECORDS=views` without the copy (tag mr415d), `KYTY_BC5_ANON_SYNC_KICK`;
+- tag as415c, stage S5 without the read (DESIGN-lock-side.md section 8): `KYTY_BC5_ANON_SYNC=events`. A counter is
+  bumped after every anonymous readable map of `sysLinuxVirtual.cpp` (all 13 `mmap` calls of the file go through
+  one helper), after its protect call and after `libAmpr.cpp`'s placeholder protect, when the range lies in the
+  guest's span. The anonymous sync walks at once when the counter has moved since the last walk read it, after
+  -EFAULT and after a device reopen; it is left out when the counter stands and the last walk found no anonymous
+  guest VMA; while such a VMA exists the old timing stays. No thread. `verify` now also counts `anon_ev_miss` (a walk
+  that found something this rule would have left out), `anon_events` and `anon_ev_calls` (how many calls the rule
+  would turn into walks).
+  The console [I, not cited]: a mapping is visible to the GPU when the call that made it returns; the rule kept
+  here is "walked by the first submission after the call".
+  Not counted, by reading [C]: the four `PROT_NONE` placeholder maps of `memoryAddressSpace.inc` (never readable),
+  file views, and `bc5LleAgc.cpp`'s one 4 KiB page mapped at start (before the first walk, which always runs).
+- tag wg415: counter `wait_gave_up` (CPU-side label waits that ended unserved: count, time waited, broken cycles);
+- tag sw415 (F451): counters `sema_wake` (from a signal making a semaphore waiter ready to that waiter holding the
+  semaphore's mutex again) and `sema_woke_idle` (a blocked waiter woke and was not ready).
+With no 0415 word set L6 runs B's code, plus one atomic increment at the counted sites.
+CPU test on the laptop [M]: `test0415anon` 46 of 46 (15 new checks for the events rule and the span test),
+`test0415rec` 11 of 11, `test0415sync` 15 of 15 against the L6 tree. The diff applies to the local copy of the L5c
+tree and gives the 12 checksums of `tree-l6.md5` [M]. **L6 has not been compiled**: the laptop cannot build the
+host; the box build is its first compile.
+
+**Not ready: S3 and S4.** Neither is written. S3 has to be written against exp 0412's K1r text in the mapping
+rebuild, which is not in B.
+
+**Runner** `kit/run0415i.sh` (from `run0415h.sh`), series `kit/series0415.sh`, `kit/getb0415.sh`, `arms0415.py`:
+- no learned file in any arm: the launcher's own empty `direct-learned-none.txt` and `BC5_GUARD_LEARN_LOG=2`,
+  checked in the emulator's environment;
+- `R_BIN=-b` runs private copies of the two shared B binaries (`getb0415.sh`, checked by md5): the control of
+  lesson R51;
+- extra words are exported in the derived launcher after its settings file is read (that loop exports every line
+  of `bc5-run.env` over the environment); the emulator's environment is checked for each word;
+- R51: `evtest` records pad key presses beside the run; a press marks the run "NOT A MEASUREMENT" and stops the
+  series. If `evtest` is missing the summary says "none pads watched";
+- R54: GPU kernel lines and OOM lines are told apart; tested on a sample [M]: 3 GPU lines (ring timeout, page
+  fault, reset), 2 OOM lines, the stack frame `amdgpu_gem_fault+0x95/0x100` and the RA24 line not counted;
+- R55: the run ends on a GPU line, an OOM line or the stop file `~/bc5-work/exp0415/STOP`; the series stops at the
+  first run that is not clean and before a run when its local stop file exists; tested dry on the laptop [M]
+  (`DRY=1`: two specs printed; with the stop file: "SERIES STOPPED by the stop file", exit 2). Nothing is copied
+  from the box between runs.
+`arms0415.py` was run on the old runs r7a4, r7t4, r7a1 [M] and prints, for the last N seconds: flips/s, the time
+between flips (mean, median, p99, longest, counts over 50 and 100 ms, from the frame file's line per flip), label
+waits (count, total, longest), unserved waits, and any named cause.
+
+**Plan of runs** (lean, RT on, the snapshot copy, `KYTY_BC5_FRAME_STAT` on, arms interleaved, two runs an arm;
+first a read-only look at the launcher and `bc5-run.env` for the values of the two words in use today):
+
+| step | arms | play | what is read | min |
+|---|---|---|---|---|
+| 0 | look, send the kit, `getb0415.sh`, build L6 (both variants, CPU tests) | | first compile of L6 | 20-30 |
+| A | B copy x2, L6 without words x2 | 60 s | load times as the new base without a learned file; L6 against B; the learned part of the long frames (8 ms in section 16) must read 0 | 11 |
+| B | L6 `ANON_SYNC=verify` x2; then `events` x2 only if `anon_ev_miss` is 0 and `anon_ev_calls` is below the walks of today | 60 s | misses, event rate; then long frames and flips/s against A | 11 |
+| C | L6 `MAP_RECORDS=views` x2 | 60 s | the view list's time under the mutex, `views_clone`, `rec_mismatch` | 6 |
+| D | `BC5_DIRECT_DCB_WAIT_MS` 8 x2 and 100 x2 | 180 s | unserved waits, time between flips, longest gap, label waits | 19 |
+| E | `BC5_DIRECT_CHAIN_HOLD_US` 500 x2 (2000 is D's 8-ms pair if the launcher runs 2000 today) | 180 s | the same, and jobs per frame | 10 |
+| F | `KYTY_BC5_SEMA_TARGETED_WAKE=1` x2 against D's base pair | 180 s | `sema_wake` per wake, `sema_woke_idle`, flips/s, long frames | 10 |
+
+About 100 minutes with the fetch; 110 asked. With an hour: steps 0, A, D, F. Two runs an arm give a spread, not a
+proof: a verdict "constant, the word goes" is given only where the two arms differ by more than the two runs of
+one arm do, and otherwise the result is "no difference seen at this resolution".
+
+**F451, the measurement proposed** [I]: the convoy F451 describes is the time between a signal handing a count to
+a waiter and that waiter running again, with every other waiter of the semaphore woken in between. `sema_wake`
+measures that time and `sema_woke_idle` counts the needless wakes; both are in L6, where the word
+`KYTY_BC5_SEMA_TARGETED_WAKE` still exists (B's code). Expected if the convoy is real: with the word on,
+`sema_woke_idle` falls to the poll-period wakes alone and the mean `sema_wake` falls. Whether that moves frame
+time is read from the same runs. What it does not measure: which waiter the console would have picked.
+
 ## Verdict
 
 Part 1, first result. The largest cause of the long loads was ours: every APR read opened its file anew, the
