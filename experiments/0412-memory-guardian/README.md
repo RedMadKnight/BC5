@@ -4374,6 +4374,53 @@ What would get the record: more walks of the same chain (each ~13 min; the hang 
 catchers armed in the maintainer's own play (longer than a walk, so more runs of the same work per session).
 Both are his decision; nothing further was run.
 
+### 92. The second chain: stopped in its second walk by the title's CPU fault at eboot+0x1b349f, seen for the second time; no GPU hang; what grew in n9F3 (2026-11-14 10:14 – 10:37; the top session's GO under the same yes)
+
+Chain `memfast/night0412h.sh` (made by `memfast/mkh0412.py` from night0412g.sh): the same binary b413a916 and
+conditions, tags n10F1..n10F8, odd arms with `BC5_DISPATCH_COUNT=1`, even arms with `=0` (tl412, ph412 and the
+snapshot armed in all), stop file `STOP-n10`, dry-checked before the start. Output `~/bc5-work/exp0412/n8/chain4.out`.
+
+| arm | dc412 | end | flips/s | longest gap ms | avail / GTT MiB at 420 s | kernel lines |
+|---|---|---|---|---|---|---|
+| n10F1 | on | G+620, clean | 25.6 | 643 | 690 / 12,204 | 0 |
+| n10F2 | off | **the title faulted on the CPU at 588 s of the run (the journal's last line t 581.7 s)** | 25.9 | 766 | 791 / 12,192 | 0 |
+
+- [M] n10F2: access violation, read of 0x27fc at eboot.bin+0x1b349f, thread 39; exit 65; `ulimit -c 0`, no stall.
+  No kernel line, no timeout, no fault record, no tl412 file, first-failure 0 lines, pad 0 presses. Memory at
+  t 580 s: 681 MiB available, GTT 12,288 of 13,312. The chain stopped itself; after it: no emulator, lock empty,
+  no claim mutex, same boot. Files: `raw/n10F2-crash.txt`, `raw/n10F2-play.log` (lines 2367–2413),
+  journal `~/bc5-data/captures/play-20261114-1026/gc/direct.log` (not committed).
+- [M] It is the fault of arm sA (section 83; 2026-11-13 21:09, F plain, 543 s): the same instruction, then a
+  read of 0x17fc. The instruction is `movzx ebx, word [r11 + r10 - 4]` with r11 = 0x800 (4 x rax, rax = 0x200)
+  and r10 = 0x2000; r10 was just loaded as a sum that ends with `add r10, [rdi]`, and the record at
+  rdi = 0x131c6e0f80 begins with 0x2000. The record after it (0x131c6e0fb0, rbx) begins with a pointer,
+  0x1314071d80, and has the same shape otherwise (…3102, 0x200, 1.0f, 0xbb80).
+- [I] The title indexes 16-bit samples through a field that holds a small number (0x2000 now, 0x1000-like then)
+  where its neighbour holds a buffer pointer. 0xbb80 = 48,000 and 0x200 look like an audio block (48 kHz, 512
+  frames); the dump names the ATRAC9 decoder. Not a GPU matter and not in memory the guard touches: 0x131c… does
+  not occur in the direct journal at all.
+- [unknown] Who writes that field (the title alone, or one of the host's audio libraries handing it a record),
+  and why it is a size there. Does the PS5 do this: not known. dc412 was off in this arm and did not exist in
+  sA's build, so dc412 is not its cause. Seen twice now, both on F, both late in a long
+  walk (543 s, 588 s).
+- [M] The alternation gave one arm each way before the stop, so it says nothing yet about dc412 and the hang.
+  Flip rate with dc412 off 25.9, on 25.6: inside the spread of section 91.
+
+**What grew in n9F3** (section 91: 61.3 million dispatches against 40.2–43.9 million), from the arms' last dc412
+reports, no run: 18.7 of the 19.6 million extra are four programs in the range 0x9099…, each 57–61% above n9F2:
+
+| program | initiator | n9F1 | n9F2 | n9F3 | n9F4 |
+|---|---|---|---|---|---|
+| 0x909936c00 | 0x61 indirect | 12,552,700 | 12,459,489 | 19,589,322 | 13,015,968 |
+| 0x909939900 | 0x61 indirect | 6,427,601 | 6,365,799 | 10,221,826 | 6,652,311 |
+| 0x909939700 | 0x61 direct | 6,427,601 | 6,365,799 | 10,221,826 | 6,652,311 |
+| 0x909939400 | 0x61 direct | 6,427,601 | 6,365,799 | 10,221,826 | 6,652,311 |
+
+- [M] The last three have the same count to the unit in every arm: they run as a set. The title's programs in
+  0x11d0… grew by at most 415,125 (0x11d04f3600: 1,393,742 to 1,808,867).
+- [unknown] What these four are and what drove them up in one walk of eight at the same flip rate. The program of
+  the 601 s hang, 0x90992af00, is in the same address range.
+
 ## Verdict
 
 (The header above was dropped by mistake in commit 8cfa4549, section 87, and is restored here; the text below is unchanged.)
