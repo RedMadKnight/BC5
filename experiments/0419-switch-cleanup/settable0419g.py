@@ -18,6 +18,8 @@ def tab(n):
 fix, dfl, soft, ign, title = tab("kFixes"), tab("kDefaults"), tab("kSoft"), tab("kIgnored"), tab("kTitleDefaults")
 read = set(open(names, encoding="utf-8").read().split())
 forced = set(fix) | set(dfl)
+if "kTitleForced[] = {" in s:  # step i: title rows set with overwrite after the word is unset at start
+    forced |= set(tab("kTitleForced"))
 print("read %d; forced at start %d (read: %d); unset at start %d (read: %d); defaults with an option %d; one title's rows %d" % (
     len(read), len(forced), len(forced & read), len(ign), len(set(ign) & read), len(soft), len(set(title))))
 print("can still be set: %d" % len(read - forced - set(ign)))

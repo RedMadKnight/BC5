@@ -1,17 +1,17 @@
-# Experiment 0419: the ONE test build T (patch ad96ead6), put together on the laptop on 2026-11-14, NOT built
+# Experiment 0419: the ONE test build T (patch fec3d656), put together on the laptop on 2026-11-14, NOT built
 
 Ordered by the top session (the rule "all fixes and catchers first, each behind its switch, then test"). Private paths
 only; nothing shared is replaced. With every switch below unset, T behaves as candidate G.
 
 | Piece | Value |
 |---|---|
-| patch 0001 (against KytyPlus f266548) | `ad96ead6` (`0001-new23.patch`), 133 patched files |
+| patch 0001 (against KytyPlus f266548) | `fec3d656` (`0001-new23.patch`), 133 patched files |
 | main unit `src/libs/bc5LleAgc.cpp` | `c8c5d5ce` (G: 8a930481; `7cb02bac` before step h) |
 | `src/kernel/memory.cpp` | `afc69dfe` (G and F: f51c803e) |
 | backend | as G: `direct.cpp` aeec4c09, `direct.hpp` e96e5c73 |
-| tree list | `tree-test-build-T-ad96ead6.md5` |
+| tree list | `tree-test-build-T-fec3d656.md5` |
 | kit | shared notes folder, `exp0419-test-build-T/` (`p0419t.sh`, both patches, both tree lists, the backend files, `G-to-T.diff`) |
-| build | on the box, in this experiment's slot: `P_NEW23=ad96ead6 bash p0419t.sh` (F's private tree d9af28ca must be in place) |
+| build | on the box, in this experiment's slot: `P_NEW23=fec3d656 bash p0419t.sh` (F's private tree d9af28ca must be in place) |
 
 ## What is in it, in the order applied
 
@@ -28,6 +28,7 @@ only; nothing shared is replaced. With every switch below unset, T behaves as ca
 | 9 | dt412: descriptor targets imported before the submit (the gap of arm b1) | `mkdt0412.py` | `BC5_GUARD_DESC_TARGETS=1` (import), `=2` (log only) | laptop syntax check only |
 | 10 | the arming line of the memory first-failure catcher | `mkkc0412.py memory` | `KYTY_BC5_MEM_FIRSTFAIL=1` (exists) | ran, as 5 |
 | 12 | two live timing words become the constants they always had: `BC5_DIRECT_CHAIN_HOLD_US` (2 ms), `BC5_DIRECT_DCB_WAIT_MS` (8 ms); the top session's decision of 2026-11-14 | `mkg0419_h.py` | none (the words are gone) | never compiled; behaviour unchanged, both were unset everywhere |
+| 13 | the guardian's verdicts (exp 0412 section 95): `BC5_DIRECT_LAZY_RELEASE=30,eager` and `BC5_GUARD_SPLIT=1` are forced rows of the second title (unset at start, set by the title's row with overwrite; another title runs without them, as today); `BC5_GUARD_FORGET` is out (row gone, unset at start; its code is dead until phase 2) | `mkg0419_i.py` | none | CPU test `test0419diag.cpp` all ok; `switch_defaults.hpp` only |
 | 11 | a diagnostic: one forced default left unapplied (for the arm without `KYTY_BC5_APR_POSIX=direct`) | `mkdiag0419.py` | `KYTY_BC5_DIAG_UNFORCE=<NAME>[,...]` | CPU test `test0419diag.cpp` all ok; never compiled in the host |
 
 Steps 5 to 10 are exp 0412's generators (branch `exp/0412-memory-guardian`, commit 656e703d), run unchanged on G's
@@ -42,7 +43,7 @@ files in the guardian's order 1, 2, 3, 4, 6 on the unit and 5 on `memory.cpp`.
   the names G deleted occurs in the added lines.
 - The dry run of the box step on a clean tree at F (`git apply -R 0001-new18`, `git apply 0001-new23`): 133 of 133
   files match the tree list. `grep -c 'exp 0372'` = 5. `bash -n p0419t.sh`.
-- Words: T reads 207 (`words-test-build-T.txt`), 160 can be set: G's 202 and 155, plus the guardian's six switches and `KYTY_BC5_DIAG_UNFORCE`, less the two timing words. `switch_defaults.hpp` is 01398100.
+- Words: T reads 207 (`words-test-build-T.txt`), **157** can be set after step i (160 before it): G's 202 and 155, plus the guardian's six switches and `KYTY_BC5_DIAG_UNFORCE`, less the two timing words. `switch_defaults.hpp` is 1e881727.
 
 ## NOT checked
 
