@@ -4679,6 +4679,61 @@ At 15:25:46 the stop file was set (the walk in flight ran to its end); the chain
 - The restart: `memfast/night0412u.sh` (`mku0412.py`): arms tA, tJ, tP in turn, tags n13…, counters from one for
   the new binary, stop file `STOP-n13`. It waits for the integrator's binary and md5 and the top's start.
 
+### 98. The series on build U: eleven clean walks, the twelfth (arm tP) ended by a GPU READ page fault in the lazy heap "FileSystem"; every catcher wrote its file (2026-11-14 16:07 – 18:40)
+
+Build U of exp 0419 (T + the dead-code round), `~/bc5-work/exp0419/bin-U/normal/kyty_emulator` b85a756d, words
+21a23e5c; runner `memfast/night0412u.sh`, dry-checked at 16:07; output `~/bc5-work/exp0412/n8/chainU.out`.
+n12J2 of section 97, read now: 24.9 flips/s, 761 ms.
+
+| walk | arm | flips/s | longest gap ms | GTT MiB at 420 s / 600 s | AJM ids given out while alive |
+|---|---|---|---|---|---|
+| n13A1 | tA, dc412 on | 25.3 | 748 | 12,280 / 12,199 | 0 |
+| n13J1 … n13P2 (walks 2–6) | tJ, tP, tA, tJ, tP | clean; lines in chainU.out | | | |
+| n13A3 | tA, dc412 on | 25.5 | 725 | 12,126 / 12,151 | 2 |
+| n13J3 | tJ | 25.3 | 575 | 12,136 / 12,303 | 0 |
+| n13P3 | tP | 25.1 | 674 | 12,206 / 12,268 | 0 |
+| n13A4 | tA, dc412 off | 25.6 | 727 | 12,171 / 12,208 | 2 |
+| n13J4 | tJ | 25.9 | 724 | 12,331 / 12,297 | 0 |
+| **n13P4** | tP (`KYTY_BC5_APR_POSIX=0`) | 25.4 until the fault | 710 | 12,256 / 12,212 | 1 |
+
+**n13P4** [M] (record `~/bc5-data/captures/faults/20261114-184017`; capture
+`~/bc5-data/captures/play-20261114-1828/gc`; devcoredump `…/devcoredump/20261114-184017-devcd1.txt`; the laptop's
+kernel stream; none committed):
+- 731.2 s into the run (G+615, five seconds before the walk's end): two GPU page faults, **reads** (RW 0,
+  PERMISSION_FAULTS 0x3, client TCP), at 0x11125f2000 and 0x1112a78000, thread bc5-ring; 2 s later "ring
+  gfx_0.0.0 timeout", **reset succeeded**, no reboot (same boot). The chain stopped at once (R55); lock empty.
+- The address lies in the title's heap **"FileSystem"**: a LAZY view of the direct file, 0x1110000000+0x3400000;
+  its 2 MiB chunk was not imported and had no GPU mapping. The record's kind: "K1 under a LAZY view, chunk not
+  imported". K1r's own line calls it a defect: a read where its zero cover should have served ("was the cover
+  mapped at that moment?").
+- Timed-out jobs: acb #660539 (11,809 dwords, 766 dispatches) and dcb #660540 (15,897 dwords, 24 dispatches, the
+  last packets draws). tl412 wrote both layouts before the probe (23.4 and 25.6 ms; 21,630 views) and the
+  snapshot of 0x11a5ae8000 is on the disk. **No compute dispatch of either buffer is given an address in
+  FileSystem**, at the first or the second level (0 lines "NOT imported", 0 "GPU mapping NO"): the reader is not
+  a compute dispatch's user data as tl412 follows it.
+- ph412: 3,780 words of the title's memory point into the faulted chunk (39 plain pointers; the rest
+  descriptor-like words in InitAllocator, DynamicHeap, AssetHeap Small, …), 12.2 GiB read in 5.9 s.
+- kl412 at 148 s: 120 pieces under lazy views hold data and so get no cover ("a GPU read there faults by name").
+- [I] This is **not the hang** of sections 86–90 (those had no page fault and stood after a compute dispatch).
+  It is the class kl412 was written to name: the GPU reads memory under a lazy view that the host never mapped,
+  because the heap is lazy. On the console every page of the title is the GPU's to read, so the read is the
+  title's right and the lazy rule for this heap is ours to fix ("does the PS5 do this": yes).
+- [I] The reader is most likely a draw of dcb #660540 (client TCP is the texture path; the buffer ends in draws
+  whose user data hold buffer descriptors), reaching FileSystem through a descriptor that is not in a compute
+  user-data register. The probe's dump of that buffer and ph412's list are the material; not decoded yet.
+- [unknown] Whether arm tP's word matters. `KYTY_BC5_APR_POSIX=0` gives the old fread path for the title's file
+  reads, and the heap is called FileSystem; it faulted in the fourth tP walk on U (three clean before, and
+  n12P1 on T). One fault in five tP walks against none in the 13 others on T and U: not enough to say.
+- [unknown] Why at 731 s and not before: whether that chunk was written just then (then the cover gave way and
+  nothing was mapped in its place: kl412's case) or was never written (then the cover should have been there).
+  The journal's cover-log lines around 731 s and a SEEK_DATA look at the file offset would tell; not read yet.
+
+- [M] The tally: U (b85a756d) 11 long walks clean, 1 ended by this GPU read fault, 0 hangs of the old kind, 0
+  CPU faults. T: 6 clean. b413a916: 21 clean, 1 CPU fault. The hang of 601 s / 532 s has not come back in 40
+  long walks since f8cb77ad.
+- The switch that exists for this class: `BC5_GUARD_LAZY_BY_DATA=1` (written lazy memory imported; +194 MiB on
+  the second title, section 72), parked on 2026-11-14 with "goes on only if that named fault fires". It fired.
+
 ## Verdict
 
 (The header above was dropped by mistake in commit 8cfa4549, section 87, and is restored here; the text below is unchanged.)
