@@ -98,7 +98,12 @@ fn main() {
             std::process::exit(0);
         }
         if e.to_string().contains("destination") && e.to_string().contains("already exists") {
-            eprintln!("bc5-mount: {} already exists (use --resume)", e.to_string().replace("destination ", "").replace(" (use --resume to skip matching files)", ""));
+            eprintln!(
+                "bc5-mount: {} already exists (use --resume)",
+                e.to_string()
+                    .replace("destination ", "")
+                    .replace(" (use --resume to skip matching files)", "")
+            );
             std::process::exit(2);
         }
         eprintln!("bc5-mount: {e}");
@@ -387,12 +392,7 @@ fn mount(_path: &PathBuf, _mountpoint: &Path, _allow_other: bool) -> anyhow::Res
     bail!("mount is only available on Linux builds with the `fuse` feature; use ls/cat/verify here")
 }
 
-fn install(
-    path: &PathBuf,
-    dest: &Path,
-    resume: bool,
-    verify: bool,
-) -> anyhow::Result<()> {
+fn install(path: &Path, dest: &Path, resume: bool, verify: bool) -> anyhow::Result<()> {
     let info = bc5_mount::install::install(path, dest, resume, verify)
         .with_context(|| format!("installing {}", path.display()))?;
     println!(
@@ -410,7 +410,7 @@ fn install(
 }
 
 /// Adopt an already-unpacked directory: verify sizes against the image, optionally sha256, write .bc5-install.json.
-fn adopt(path: &PathBuf, dest: &Path, verify: bool) -> anyhow::Result<()> {
+fn adopt(path: &Path, dest: &Path, verify: bool) -> anyhow::Result<()> {
     if !dest.exists() {
         bail!("destination {} does not exist", dest.display());
     }
@@ -437,25 +437,33 @@ fn adopt(path: &PathBuf, dest: &Path, verify: bool) -> anyhow::Result<()> {
         match fs::metadata(&file_path) {
             Ok(meta) => {
                 if meta.len() != *img_size {
-                    size_mismatches.push(format!("{}: {} bytes on disk vs {} bytes in image", rel_path, meta.len(), img_size));
+                    size_mismatches.push(format!(
+                        "{}: {} bytes on disk vs {} bytes in image",
+                        rel_path,
+                        meta.len(),
+                        img_size
+                    ));
                 }
             }
             Err(e) => {
-                size_mismatches.push(format!("{}: {}", rel_path, e));
+                size_mismatches.push(format!("{rel_path}: {e}"));
             }
         }
     }
 
     if !size_mismatches.is_empty() {
-        bail!("size mismatches (use `install` to copy):\n  {}", size_mismatches.join("\n  "));
+        bail!(
+            "size mismatches (use `install` to copy):\n  {}",
+            size_mismatches.join("\n  ")
+        );
     }
 
     // Optionally verify sha256.
     if verify {
-        let disk_hashes = bc5_mount::verify::hash_directory(dest)
-            .with_context(|| "hashing directory")?;
-        let image_hashes = bc5_mount::verify::hash_volume(tree, |_| {})
-            .with_context(|| "hashing image")?;
+        let disk_hashes =
+            bc5_mount::verify::hash_directory(dest).with_context(|| "hashing directory")?;
+        let image_hashes =
+            bc5_mount::verify::hash_volume(tree, |_| {}).with_context(|| "hashing image")?;
         let diffs = bc5_mount::verify::diff(&image_hashes, &disk_hashes);
         if !diffs.is_empty() {
             bail!("verification failed: {}", diffs.join(", "));
@@ -466,8 +474,8 @@ fn adopt(path: &PathBuf, dest: &Path, verify: bool) -> anyhow::Result<()> {
     // Build InstallInfo from what we have.
     let file_count = files.len();
     let total_bytes: u64 = files.iter().map(|f| f.2).sum();
-    let hashes = bc5_mount::verify::hash_directory(dest)
-        .with_context(|| "hashing directory for json")?;
+    let hashes =
+        bc5_mount::verify::hash_directory(dest).with_context(|| "hashing directory for json")?;
 
     let info = bc5_mount::install::InstallInfo {
         file_count,
@@ -478,6 +486,11 @@ fn adopt(path: &PathBuf, dest: &Path, verify: bool) -> anyhow::Result<()> {
     bc5_mount::install::write_install_json(dest, path, &info)
         .with_context(|| "writing .bc5-install.json")?;
 
-    println!("adopted {} files, {} bytes from {}", file_count, total_bytes, path.display());
+    println!(
+        "adopted {} files, {} bytes from {}",
+        file_count,
+        total_bytes,
+        path.display()
+    );
     Ok(())
 }

@@ -6,11 +6,10 @@
 //! then tests refuse, resume, and verify paths.
 
 use std::fs;
-use std::io::Write;
 use std::path::PathBuf;
 
 use bc5_mount::fixture::{build_to_path, Content, DirSpec, Spec};
-use bc5_mount::install::{install, write_install_json, InstallInfo};
+use bc5_mount::install::{install, write_install_json};
 use bc5_mount::verify::{diff, hash_directory, hash_volume, FileHash};
 
 fn tmp(name: &str) -> PathBuf {
@@ -67,7 +66,10 @@ fn install_basic() {
 
     let info = install(&container_path, &dest, false, false).unwrap();
     assert_eq!(info.file_count, spec.files().len());
-    assert_eq!(info.total_bytes, spec.files().iter().map(|(_, c)| c.len()).sum::<u64>());
+    assert_eq!(
+        info.total_bytes,
+        spec.files().iter().map(|(_, c)| c.len()).sum::<u64>()
+    );
 
     // Compare installed files with spec.
     let installed = hash_directory(&dest).unwrap();
@@ -185,7 +187,7 @@ fn install_large_sparse_file() {
 
     build_to_path(&spec, &container_path).unwrap();
 
-    let info = install(&container_path, &dest, false, false).unwrap();
+    install(&container_path, &dest, false, false).unwrap();
 
     // Check the large file specifically.
     let large_path = dest.join("large_sparse.bin");
@@ -194,7 +196,11 @@ fn install_large_sparse_file() {
 
     // Verify its content matches the spec.
     let files = spec.files();
-    let content = files.iter().find(|(p, _)| p == "large_sparse.bin").unwrap().1;
+    let content = files
+        .iter()
+        .find(|(p, _)| p == "large_sparse.bin")
+        .unwrap()
+        .1;
     let mut buf = vec![0u8; 1 << 20];
     let mut off = 0u64;
     while off < content.len() {

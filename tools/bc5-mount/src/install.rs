@@ -11,7 +11,7 @@
 //! Uses `posix_fadvise` for sequential reads and DONTNEED after fsync.
 
 use std::fs::{self, File, OpenOptions};
-use std::io::{self, Read, Write};
+use std::io::{Read, Write};
 use std::path::Path;
 use std::time::SystemTime;
 use std::time::{Duration, Instant};
@@ -37,12 +37,16 @@ pub struct InstallInfo {
 }
 
 /// Open a container or package from a path.
+#[derive(Debug)]
 pub enum OpenedImage {
+    /// An `.ffpfsc` container.
     Ffpfsc(Box<Container<FileSource>>),
+    /// A package image.
     Pkg(Box<PkgImage<FileSource>>),
 }
 
 impl OpenedImage {
+    /// Opens `path` as a package when it starts with the package magic, else as a container.
     pub fn open(path: &Path) -> anyhow::Result<Self> {
         let mut head = [0u8; 4];
         let n = File::open(path)
@@ -59,6 +63,7 @@ impl OpenedImage {
         }
     }
 
+    /// The image's file tree.
     pub fn tree(&self) -> &dyn crate::tree::FileTree {
         match self {
             OpenedImage::Ffpfsc(c) => c.as_ref(),
@@ -84,15 +89,14 @@ impl OpenedImage {
 }
 
 /// Check available free space at `dest`'s parent directory.
-/// Returns (required_bytes, free_bytes).
+/// Returns `(required_bytes, free_bytes)`.
+// Off unix `dest` is not read and nothing can fail; the unix branch needs both.
+#[cfg_attr(not(unix), allow(unused_variables, clippy::unnecessary_wraps))]
 fn check_free_space(dest: &Path, required_extra: u64) -> anyhow::Result<(u64, u64)> {
     // Use statvfs if available (Unix), otherwise fall back.
     #[cfg(unix)]
     {
-        let parent = dest
-            .parent()
-            .map(Path::new)
-            .unwrap_or(Path::new("."));
+        let parent = dest.parent().unwrap_or_else(|| Path::new("."));
         let vfs = nix::sys::statvfs::statvfs(parent)
             .with_context(|| format!("statvfs {}", parent.display()))?;
         let free = vfs.blocks_free() * vfs.block_size();
@@ -117,6 +121,8 @@ struct ProgressPrinter {
     bytes_total: u64,
 }
 
+// Progress figures are rounded for display; a u64 byte count loses nothing that is shown.
+#[allow(clippy::cast_precision_loss)]
 impl ProgressPrinter {
     fn new(files_total: usize, bytes_total: u64) -> Self {
         let now = Instant::now();
@@ -130,9 +136,9 @@ impl ProgressPrinter {
         }
     }
 
-    fn maybe_print(&mut self) -> io::Result<()> {
+    fn maybe_print(&mut self) {
         if self.last_print.elapsed() < Duration::from_secs(5) {
-            return Ok(());
+            return;
         }
         let elapsed = self.last_print.elapsed();
         let secs = elapsed.as_secs_f64();
@@ -145,24 +151,18 @@ impl ProgressPrinter {
         let gb_total = self.bytes_total as f64 / (1024.0 * 1024.0 * 1024.0);
         eprintln!(
             "[bc5-install] {}/{} files, {:.2}/{:.2} GiB, {:.1} MB/s ({:.0}s elapsed)",
-            self.files_done,
-            self.files_total,
-            gb_done,
-            gb_total,
-            mb_per_sec,
-            secs,
+            self.files_done, self.files_total, gb_done, gb_total, mb_per_sec, secs,
         );
         self.last_print = Instant::now();
-        Ok(())
     }
 
-    fn file_done(&mut self, bytes: u64) -> io::Result<()> {
+    fn file_done(&mut self, bytes: u64) {
         self.files_done += 1;
         self.bytes_done += bytes;
-        self.maybe_print()
+        self.maybe_print();
     }
 
-    fn finish(&mut self) -> io::Result<()> {
+    fn finish(&mut self) {
         let elapsed = self.last_print.elapsed();
         let secs = elapsed.as_secs_f64();
         let mb_per_sec = if secs > 0.0 {
@@ -178,7 +178,6 @@ impl ProgressPrinter {
             mb_per_sec,
             secs,
         );
-        Ok(())
     }
 }
 
@@ -228,7 +227,10 @@ pub fn install(
 
     // Refuse if dest exists (unless resume).
     if dest.exists() && !resume {
-        bail!("destination {} already exists (use --resume to skip matching files)", dest.display());
+        bail!(
+            "destination {} already exists (use --resume to skip matching files)",
+            dest.display()
+        );
     }
 
     // Create destination directory.
@@ -251,20 +253,19 @@ pub fn install(
             if let Ok(meta) = fs::metadata(&file_path) {
                 if meta.len() == *size {
                     // File size matches; skip.
-                    progress.maybe_print()?;
+                    progress.maybe_print();
                     continue;
                 }
             }
         }
 
         // Read file from image.
-        let tree_file = TreeFile::new(tree, *idx)
-            .with_context(|| format!("reading file {} from image", path))?;
+        let tree_file =
+            TreeFile::new(tree, *idx).with_context(|| format!("reading file {path} from image"))?;
 
         // Create parent directories.
         if let Some(parent) = Path::new(&partial_path).parent() {
-            fs::create_dir_all(parent)
-                .with_context(|| format!("creating {}", parent.display()))?;
+            fs::create_dir_all(parent).with_context(|| format!("creating {}", parent.display()))?;
         }
 
         // Stream to file.
@@ -273,7 +274,7 @@ pub fn install(
             .write(true)
             .truncate(true)
             .open(&partial_path)
-            .with_context(|| format!("creating {}", partial_path))?;
+            .with_context(|| format!("creating {partial_path}"))?;
 
         let mut buf = vec![0u8; 1 << 20]; // 1 MiB buffer
         let mut off = 0u64;
@@ -285,14 +286,14 @@ pub fn install(
                 break;
             }
             out.write_all(&buf[..n])
-                .with_context(|| format!("writing to {}", partial_path))?;
+                .with_context(|| format!("writing to {partial_path}"))?;
             file_hash.update(&buf[..n]);
             off += n as u64;
         }
 
         // fsync the file.
         out.sync_all()
-            .with_context(|| format!("syncing {}", partial_path))?;
+            .with_context(|| format!("syncing {partial_path}"))?;
 
         // POSIX_FADV_DONTNEED on the written range.
         #[cfg(target_os = "linux")]
@@ -320,10 +321,10 @@ pub fn install(
         file_count += 1;
         total_bytes += *size;
 
-        progress.file_done(*size)?;
+        progress.file_done(*size);
     }
 
-    progress.finish()?;
+    progress.finish();
 
     // Sort hashes by path.
     hashes.sort_by(|a, b| a.path.cmp(&b.path));
@@ -351,29 +352,41 @@ pub fn write_install_json(
     image_path: &Path,
     info: &InstallInfo,
 ) -> anyhow::Result<()> {
+    // Writing to a String cannot fail.
+    use std::fmt::Write as _;
     let mut json = String::new();
     json.push_str("{\n");
-    json.push_str(&format!("  \"image\": \"{}\",\n", image_path.display()));
-    json.push_str(&format!("  \"image_size\": {},\n", fs::metadata(image_path)?.len()));
-    json.push_str(&format!("  \"file_count\": {},\n", info.file_count));
-    json.push_str(&format!("  \"total_bytes\": {},\n", info.total_bytes));
+    let _ = writeln!(json, "  \"image\": \"{}\",", image_path.display());
+    let _ = writeln!(
+        json,
+        "  \"image_size\": {},",
+        fs::metadata(image_path)?.len()
+    );
+    let _ = writeln!(json, "  \"file_count\": {},", info.file_count);
+    let _ = writeln!(json, "  \"total_bytes\": {},", info.total_bytes);
     json.push_str("  \"sha256\": {\n");
     for (i, h) in info.hashes.iter().enumerate() {
-        json.push_str(&format!("    \"{}\": \"{}\"", h.path, h.hex()));
+        let _ = write!(json, "    \"{}\": \"{}\"", h.path, h.hex());
         if i < info.hashes.len() - 1 {
             json.push(',');
         }
         json.push('\n');
     }
     json.push_str("  },\n");
-    json.push_str(&format!("  \"date\": \"{}\"\n", SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default().as_secs()));
+    let _ = writeln!(
+        json,
+        "  \"date\": \"{}\"",
+        SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs()
+    );
     json.push_str("}\n");
 
     let json_path = dest.join(".bc5-install.json");
     let mut tmp = json_path.clone();
     tmp.set_extension("partial");
-    fs::write(&tmp, &json)
-        .with_context(|| format!("writing {}", tmp.display()))?;
+    fs::write(&tmp, &json).with_context(|| format!("writing {}", tmp.display()))?;
     fs::rename(&tmp, &json_path)
         .with_context(|| format!("renaming {} to {}", tmp.display(), json_path.display()))?;
 
