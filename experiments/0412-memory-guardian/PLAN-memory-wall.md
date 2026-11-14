@@ -118,3 +118,37 @@ Nothing runs before the hang of section 81 is explained.
 ### `BC5_GUARD_LAZY_BY_DATA`: verdict (2026-11-14, asked by the top; no run)
 
 It stays as an arm, off: option B does not replace it, because B moves EAGER heaps to "by data + cover" to pin less, while this switch moves LAZY heaps to the same rule and pins more (+734 MiB ASTRO BOT, +194 MiB second title, README section 72), for a fault (a GPU read of written lazy memory, kl412) that has not fired in four arms, two plays and the long walks of 2026-11-14 [M]; it goes on only if that named fault fires, or last, when B has recovered more than it costs and one rule for every heap is wanted [I].
+
+## The GPU read fault in a lazy heap (n13P4, 2026-11-14 18:40): the cure proposed, no code (asked by the top; laptop)
+
+**What happened** (README sections 98–99) [M]: a shader read two pages of the title's heap "FileSystem". The heap is
+in `BC5_DIRECT_LAZY_NAMES`, so nothing of it is imported; its written chunks get no zero cover on purpose (kl412)
+and stay unmapped. 24 of its 26 chunks were written. Once in 40 long walks, in the arm with the old file-read path.
+
+**Three ways to cure it, by cost.**
+
+| | what | pinned more | new code | catches n13P4 |
+|---|---|---|---|---|
+| 1 | `BC5_GUARD_LAZY_BY_DATA=1`: no heap is lazy, every written chunk is imported | +194 MiB measured (section 72; kl412 counts 120 written chunks under lazy views = at most 240 MiB) | none | yes |
+| **2** | **"FileSystem" leaves `BC5_DIRECT_LAZY_NAMES`**: this one heap goes by data (written chunks imported, the rest under K1r's cover) | **at most 48 MiB** (24 written chunks of a 52 MiB heap) [I, from the record's mappings] | none: the list is a word (`direct_lazy_name()` reads it at start) | yes |
+| 3 | import at the submit only what a descriptor names (dt412's idea, narrowed to addresses under lazy views) | a few MiB | yes | **not shown**: tl412 followed the user data of every compute dispatch of both timed-out buffers over two levels and found no FileSystem address; dt412 as written cost 5 flips/s |
+
+**Proposal: 2.** It is the rule the fault record itself names (a heap the GPU reads cannot be lazy), it costs a
+quarter of 1 at most, and it needs no walk over buffers at the submit. 3 would be the right shape only if the reader
+were a descriptor the host can see before the submit, and the one record we have says it was not. 1 stays what it
+is in this file: an arm, for the day a second lazy heap faults.
+
+**What is not known and decides between "the title hands this to the GPU" and "a stray pointer"** [unknown]: the
+reader. 3,780 words of the title's memory point into the one faulted chunk, most of them descriptor-like words
+repeated in DynamicHeap and InitAllocator [M]; that many references look like data in use, not one stray pointer
+[I]. The decode of the devcoredump's buffer at the CP's stop (about dword 1,280) names the draw; it is a read of
+files on the box and waits for the end of the night series (no copy of them is on the laptop).
+
+**What one arm has to measure** (after the reader is named, on the top's GO; not prepared):
+- the words of tP (the arm that faulted) with "FileSystem" taken out of `BC5_DIRECT_LAZY_NAMES`; first check where
+  the list is set for the second title on build U (a launcher word, or a forced row of `switch_defaults.hpp`: a
+  forced row needs `KYTY_BC5_DIAG_UNFORCE` or a build);
+- GTT and the pin at 420 s and 600 s against tA: the price, expected under +48 MiB;
+- kl412's line: the written chunks under lazy views fall by FileSystem's (120 to about 96);
+- no fault. With one fault in five tP walks, ten clean tP walks leave a chance of about one in nine that the fault
+  is merely absent; so the arm shows the price at once and the cure only with numbers.

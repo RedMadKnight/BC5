@@ -4734,6 +4734,41 @@ kernel stream; none committed):
 - The switch that exists for this class: `BC5_GUARD_LAZY_BY_DATA=1` (written lazy memory imported; +194 MiB on
   the second title, section 72), parked on 2026-11-14 with "goes on only if that named fault fires". It fired.
 
+### 99. n13P4's fault read further: not a K1r gap, the chunk was written and is left unmapped on purpose (kl412); the reader not named; the series resumed without tP (2026-11-14 18:43 – 18:48, reads only, then the top's order)
+
+Asked by the top: which draw, and above all why the chunk had neither an import nor K1r's zero cover.
+
+- [M] K1r's cover pass (`k1r412_want` in the unit) covers every part of a view that no buffer backs, with one
+  exception written for kl412: under a LAZY view a 2 MiB chunk that holds data in the direct file (SEEK_DATA)
+  gets **no** cover, so that it stays unmapped and "a GPU read there faults by name" instead of reading zeros
+  where the title has data (section 72).
+- [M] The fault record's layout of the heap "FileSystem" (view 0x1110000000+0x3400000, 26 chunks): **two** GPU
+  mappings in the whole view, at 0x1112800000 and 0x1113200000, 2 MiB each, and neither lies in an imported
+  buffer (layout-buffers.txt): they are zero covers. The other 24 chunks have no mapping at all, the two faulted
+  ones (0x1112400000, 0x1112a00000) among them.
+- [I] So the faulted chunks held the CPU's data and were left unmapped by that rule: 24 of the heap's 26 chunks
+  are written, 2 never were. **This is not a gap of K1r**; it is kl412's case exactly, a GPU read of written
+  memory in a lazy heap. The direct file is gone with the process, so "held data" is read from the mappings and
+  the code, not from a SEEK_DATA of the chunk itself. K1r's own line in the journal ("a READ although the cover
+  serves reads: a defect") is wrong for this case: it does not know kl412's exception. Its text should say so
+  (a wording fix, not done tonight).
+- [M] Where the CP stood: the devcoredump's IB #0 is 71,832 dwords at 0x101b00000000 with CP_IB1_BUFSZ 0x11398
+  (70,552 left), so about dword 1,280 of the submitted buffer, near its start.
+- [unknown] **The reader is not named.** The probe's summary of the two timed-out buffers names no address in
+  FileSystem (0 lines in 0x1110000000–0x11133fffff besides the fault's own), tl412's two levels neither. What is
+  left to do, reads only: decode IB #0 of the devcoredump around dword 1,280 (as section 88 did for the hangs)
+  and match the draw's descriptors against ph412's 3,780 words (the repeated 0x0a00001112568d7b in DynamicHeap
+  and 0x0201041112434403 in InitAllocator first). Not done inside the 30 minutes the top gave.
+- [I] What it means for the rule: the lazy rule keeps a heap out of the GPU's reach on the bet that the GPU
+  never reads it. For FileSystem the bet lost once in 40 walks, in the arm with the old file-read path. The
+  cure is an import of what was read (this heap by data, or `BC5_GUARD_LAZY_BY_DATA`), not a cover. No fix or
+  catcher is prepared tonight (the top).
+
+**The series resumed** at 18:47:45 on the same boot, without tP: `memfast/night0412v.sh` (`mkv0412.py`), arms tA
+and tJ in turn, tags n14A<k>, n14J<k> (their own prefix: this boot had the GPU reset of 18:40), stop file
+`STOP-n14`, until 06:45 or 60 walks, R55 as before; dry-checked before the start. Output
+`~/bc5-work/exp0412/n8/chainV.out`.
+
 ## Verdict
 
 (The header above was dropped by mistake in commit 8cfa4549, section 87, and is restored here; the text below is unchanged.)
