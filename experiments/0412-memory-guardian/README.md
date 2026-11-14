@@ -4324,6 +4324,56 @@ The deciding arm of section 89 is still the way to (1) and (2), with tl412 exten
 `BC5_DIRECT_SNAP_ON_TIMEOUT` (experiment 0140, already in the host) set to the 1.5 MiB buffer both candidates
 share (0x11a5ae8000:1572864), so that what the shader was reading is on the disk. It waits for the maintainer.
 
+### 91. The deciding chain: eight long walks on F with tl412, dc412 and ph412 armed, all clean; the hang did not come (2026-11-14 08:29 – 10:11; the maintainer's "tak", relayed by the top session)
+
+Build g412zg (`memfast/mk0412zg.sh`, made by `memfast/mkzg0412.py`): g412zf plus ph412 (unit 4a8d5211), tl412 with
+the second level and dc412 (`memfast/mkdw0412.py`, unit a53e98b7), every CPU test passed on the box, binary
+`~/bc5-work/exp0412/bin-g/kyty_emulator` b413a916 (bin-n f8cb77ad untouched). Chain `memfast/night0412g.sh`: F with
+no extra word, K1r as F has it, RT on, the long walk to G+620, a private copy of the save, fuse and watchdog, memory
+every 10 s, pad events logged, `ulimit -c 0`, the kernel log streamed to the laptop; catchers
+`KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1 BC5_GUARD_COVER_LOG=1 BC5_TIMEOUT_LAYOUT=1 BC5_DISPATCH_COUNT=1
+BC5_FAULT_POINTERS=1 BC5_DIRECT_SNAP_ON_TIMEOUT=11a5ae8000:1572864`; stop at the first arm that is not clean; the
+lock claimed inside the common mutex; the stop command is a touch of `STOP-n9`, checked dry before the first arm.
+Output: `~/bc5-work/exp0412/n8/chain3.out` and `raw/n9F*-*` on the box (not committed).
+
+| arm | start | flips/s | longest gap ms | s with a gap > 100 ms | avail / GTT MiB at 420 s | at 600 s | lowest avail | dispatches in 720 s (kinds) |
+|---|---|---|---|---|---|---|---|---|
+| n9F1 | 08:29 | 26.0 | 568 | 82 | 557 / 12,278 | 493 / 12,215 | 448 | 42,155,009 (290) |
+| n9F2 | 08:41 | 25.3 | 672 | 119 | 596 / 12,298 | 587 / 12,308 | 543 | 41,698,821 (290) |
+| n9F3 | 08:54 | 25.9 | 684 | 71 | 718 / 12,258 | 659 / 12,280 | 652 | 61,336,362 (290) |
+| n9F4 | 09:07 | 25.4 | 858 | 96 | 649 / 12,275 | 568 / 12,323 | 525 | 42,997,917 (289) |
+| n9F5 | 09:20 | 25.2 | 772 | 120 | 650 / 12,203 | 604 / 12,179 | 476 | 43,870,388 (294) |
+| n9F6 | 09:32 | 24.9 | 735 | 102 | 694 / 12,200 | 635 / 12,312 | 562 | 40,275,036 (294) |
+| n9F7 | 09:45 | 24.9 | 727 | 115 | 733 / 12,246 | 656 / 12,229 | 488 | 40,210,172 (290) |
+| n9F8 | 09:58 | 25.3 | 634 | 120 | 607 / 12,288 | 593 / 12,282 | 511 | 40,243,525 (290) |
+
+- [M] All eight ended at G+620 with 0 kernel lines, 0 crash lines, 0 ledger lines, 0 first-failure lines, no
+  timeout (0 tl412 lines, 0 `timeout-*` files), no new fault record. The laptop's kernel stream over the whole
+  chain holds no amdgpu line. Boot id unchanged (d8962c5d…); after the chain: no emulator, lock empty, no claim
+  mutex, no stop file.
+- [M] Cost of dc412 (it walks every submitted buffer on the submitting thread): not visible. 24.9–26.0 flips/s
+  and 568–858 ms against the night's F on f8cb77ad (25.1–26.4 flips/s, 566–765 ms; section 86). The 858 ms of
+  n9F4 is the longest gap of all sixteen long F walks; one arm, not separable from the walk's own spread.
+- [M] The hung dispatches' programs are common work, not rare (n9F1, 720 s, 42.2 million dispatches of 290
+  kinds): program 0x11d0423100 (0x8041) 37,628 times, 0x11d0415c00 (0x8041) 37,628 times, 0x90992af00 (0x8061,
+  indirect; the 601 s hang) 200,629 times. So about 52 runs a second each of the pair n8F8 stopped at.
+- [M] n9F3 counted 61.3 million dispatches, half as many again as the other seven (40.2–43.9 million), at the
+  same flip rate. Not looked into; the rarest-300 lists of the arms are in their journals.
+- [I] The hang is a rare event inside ordinary per-frame work. With the pair run ~37,600 times a walk and one
+  hang in the eight long F walks of the night, the order is one in a few hundred thousand runs of that pair, if
+  it is that pair at all.
+- [I] Eight clean walks do not say the hang is gone. On f8cb77ad F ran seven clean walks before the hang in the
+  eighth; at one hang in eight walks, eight clean in a row come out about one time in three. The three catchers
+  change nothing in a buffer or a mapping, but dc412 adds work per submit, so a timing effect cannot be ruled
+  out either.
+- [unknown] Everything section 90 left open: the second level, the content and ordering of the eager buffers,
+  the chip or kernel with 40 CU and 32-lane waves. No tl412 file and no snapshot exists yet, because no timeout
+  came. Tally of long F walks now: f8cb77ad 7 clean then the hang; b413a916 8 clean.
+
+What would get the record: more walks of the same chain (each ~13 min; the hang may reboot the box again), or the
+catchers armed in the maintainer's own play (longer than a walk, so more runs of the same work per session).
+Both are his decision; nothing further was run.
+
 ## Verdict
 
 (The header above was dropped by mistake in commit 8cfa4549, section 87, and is restored here; the text below is unchanged.)

@@ -98,6 +98,23 @@ static void tl412_record(const uint32_t* ib, uint32_t n, const char* kind, uint6
 			    const bool     mapped   = covered_sorted(*pm, a & ~0xfffull, 4);
 			    std::fprintf(f, "  ud%u %c 0x%" PRIx64 ": \"%s\" (%s file) %s, 0x%" PRIx64 " into the view 0x%" PRIx64 "+0x%" PRIx64 ", chunk %s, GPU mapping %s\n", k, form, a, v.name.c_str(),
 			                 r->kind == 0 ? "direct" : "private", v.eager ? "E" : (v.lazy ? "L" : "D"), a - v.va, v.va, v.size, imported ? "imported" : "NOT imported", mapped ? "yes" : "NO");
+			    if (form != 'b' || !mapped || !covered_sorted(*pm, a, 64)) return;
+			    // the second level (README section 90): the first 16 dwords there, and the views of what they may hold
+			    dw412::Dispatch in;
+			    const auto*     w = reinterpret_cast<const volatile uint32_t*>(a);
+			    for (int j = 0; j < 16; j++) in.ud[j] = w[j];
+			    in.ud_known = 0xffffu;
+			    std::fprintf(f, "    its first 16 dwords:");
+			    for (int j = 0; j < 16; j++) std::fprintf(f, " %08x", in.ud[j]);
+			    std::fprintf(f, "\n");
+			    dw412::candidates(in, [&](uint32_t k2, char form2, uint64_t a2) {
+				    const VRef* r2 = find(a2);
+				    if (r2 == nullptr) return;
+				    const DView& v2   = *r2->v;
+				    const bool   imp2 = direct_covered_end(g_d[r2->kind], (v2.off + (a2 - v2.va)) & ~(kDChunk - 1)) != 0;
+				    std::fprintf(f, "    -> dword %u %c 0x%" PRIx64 ": \"%s\" (%s file) %s, chunk %s, GPU mapping %s\n", k2, form2, a2, v2.name.c_str(), r2->kind == 0 ? "direct" : "private",
+				                 v2.eager ? "E" : (v2.lazy ? "L" : "D"), imp2 ? "imported" : "NOT imported", covered_sorted(*pm, a2 & ~0xfffull, 4) ? "yes" : "NO");
+			    });
 		    });
 	    });
 	std::fprintf(f, "# %u dispatches%s; this part took %.1f ms\n", n_disp, whole ? "" : "; the walk STOPPED at a packet running past the end", (timing_now() - t0) * 1000.0);
