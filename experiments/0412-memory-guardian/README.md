@@ -4524,6 +4524,67 @@ cover came from a shader's store through a buffer descriptor, a class the host d
   dw0412.inc's texture reading (base >> 8 in one dword) could be added the same way; not done, because it has
   far more false readings and b1's write was to a buffer heap.
 
+### 95. The launcher words `BC5_GUARD_FORGET` and `BC5_DIRECT_LAZY_RELEASE` + `BC5_GUARD_SPLIT`: four walks that tested nothing, then one walk each with the word at 0; the on-screen keyboard (2026-11-14 12:16 – 13:40; the top's slot, the maintainer's yes to the switch proposals)
+
+All on b413a916, the long walk to G+620, catchers armed as in section 91 (dc412 on), stop rule of section 93.
+
+**Four walks without the words in the launcher's list** (`memfast/night0412j.sh`, `mkj0412.py`; private word files
+made from the checked one, 21a23e5c, and compared with it; n11Fg1, n11Fl1, n11Fg2, n11Fl2, 12:16–13:07): all clean,
+and **the words were in effect in all four** [M]: 47 "lazy release" lines and 16 "guard forget" lines in every
+journal, as in a plain F walk (n10F8: 47 and 16). Cause [M]: candidate F's binary sets
+`BC5_DIRECT_LAZY_RELEASE=30,eager`, `BC5_GUARD_SPLIT=1` and `BC5_GUARD_FORGET=10` for the second title itself when
+the environment does not hold them (`src/bc5/switch_defaults.hpp` 6fbfb8a5 in the build tree, the title's rows,
+`setenv(name, value, 0)`; "a value in the environment wins, NAME=0 turns one off"). I had not looked where the
+build takes the words from before the start; 51 minutes of the slot went on arms that were plain F walks. They
+count as such for the hang tally (25.0–25.7 flips/s, GTT 12,219–12,297 at 420 s, 12,263–12,306 at 600 s).
+
+**One walk each with the word set to 0** (`memfast/night0412k.sh`, `mkk0412.py`, arms by `N11_ARMS`):
+
+| | GTT MiB at 420 s | at 600 s | direct memory pinned at the end, MiB | flips/s, longest gap | the function |
+|---|---|---|---|---|---|
+| today's clean F walks (n9F1–8, n10F1, n10F4–8; 14, for the pin 13) | mean 12,249 (12,196–12,313) | mean 12,273 (12,179–12,325) | mean 11,469 (11,402–11,544) | 24.4–26.3, 568–858 ms | on |
+| n11Fl3: `BC5_DIRECT_LAZY_RELEASE=0 BC5_GUARD_SPLIT=0` | 12,339 (**+90**) | 12,358 (**+85**) | 11,564 (**+95**) | 25.6, 792 ms | off: 1 "lazy release" line (the notice) |
+| n11Fg3: `BC5_GUARD_FORGET=0` | 12,330 (+81) | 12,321 (+48) | 11,524 (+55) | 24.7, 700 ms | off: 0 "guard forget" lines; lazy release 46 |
+
+Both clean (0 kernel lines, no timeout, no fault record).
+
+- [M] The pair off: above every one of the clean walks in all three measures (by 26, 33 and 20 MiB over the
+  highest), and 85–95 MiB above their mean. Under the mark of 100 MiB, inside its ±20 band; one walk.
+- [M] FORGET off: inside the clean walks' range at 600 s and in the pin, 17 MiB over the highest at 420 s.
+- **Verdict, `BC5_DIRECT_LAZY_RELEASE` + `BC5_GUARD_SPLIT`: a constant** [I]. It gives about 90 MiB on this route
+  at no cost seen in flips or gaps, the box plays at 450–650 MiB available, and the build already carries it as a
+  default; the option can go, the function stays. By the mark alone it is a borderline case (in the band); the
+  other evidence is that it is the only arm of today that left the clean range in every measure.
+- **Verdict, `BC5_GUARD_FORGET`: remove** by the mark [I]: no effect that leaves the spread of clean walks. What
+  the walk does not measure: FORGET lets chunks leave the forced set (45–263 a walk, 2 MiB each) so that the lazy
+  release may cut them; over a play of hours that could add up where a 10-minute walk shows nothing. No such run
+  exists.
+- **All three words can leave the launchers today without any change** [M]: the build sets them.
+- Not run: ASTRO BOT for the pair (skipped by the top once the second title gave a result; the title's rows of
+  the defaults table do not apply to ASTRO BOT anyway).
+- The hang tally on b413a916 after this slot: 21 long F walks clean (4 of them plain F by accident, 2 with a word
+  off), 1 ended by the title's CPU fault, 0 GPU hangs.
+
+**The on-screen keyboard in the lean session** (the maintainer's "Wyłączyć", relayed by the top; no game run):
+- [M] `plasma-keyboard` is a child of `kwin_wayland`, no systemd unit. Before: GTT 117 MiB, VRAM 219 MiB in use
+  on the idle desktop; its own fdinfo 44.5 MiB GTT and 51.7 MiB VRAM. After one SIGTERM: GTT 74, VRAM 167 (**43 +
+  52 = 95 MiB of GPU memory**, 12 MiB of RAM), and KWin did **not** start it again in 25 s.
+- [M] It cannot be brought back without a change of KWin's settings or a new login: `org.kde.KWin.reconfigure`
+  and `VirtualKeyboard.forceActivate` start nothing, and `plasma-keyboard` started by hand exits at once (KWin
+  hands the input-method connection only to the process it starts itself).
+- So: stopping works, the restore after a game does not. `lean0412.sh` is **not changed**: its rule is that
+  everything stopped comes back when the launcher is gone, and this cannot keep it. **The keyboard is off on his
+  desktop since 13:38 until the next login or reboot**; that was my test's doing. Making it part of the lean
+  session needs either his word for "stays off until the next login" or a KWin setting (kwinrc `InputMethod`),
+  which is outside what I may change.
+
+**Parked** (the top, on the maintainer's "start with the simplest, the list is growing instead of shrinking"):
+the four programs at 0x9099…, AMM by data, the 12 KiB host page, where K1r's 1.6 ms go, and every further heap of
+the memory wall (dt412's arm b1 included): put aside, taken up again only if a fault record points there or the
+night series gives a result for arm tD. `BC5_GUARD_LAZY_BY_DATA`: stays an arm, off (PLAN-memory-wall.md). No new
+catcher or arm is prepared. What stays open here: the runner of the night series on test build T
+(`memfast/night0412t.sh`, `mkt0412.py`; syntax-checked, not run) and the reading of its results.
+
 ## Verdict
 
 (The header above was dropped by mistake in commit 8cfa4549, section 87, and is restored here; the text below is unchanged.)
