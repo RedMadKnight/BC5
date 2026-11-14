@@ -33,5 +33,7 @@ rep('done < "$HERE/tree14.md5"\n[ "$bad" = 0 ] || die "$bad files differ from th
 rep('echo "tree: $(wc -l < "$HERE/tree14.md5") patched files match the laptop\'s (0001-new14)"',
     'echo "tree: $(wc -l < "$HERE/tree15.md5") patched files match the laptop\'s (0001-new15)"')
 rep("BC5_FAULT_RECORD BC5_R3_EOP_STAT BC5_DIRECT_RESET_LABELS_ADD", "BC5_FAULT_RECORD BC5_R3_EOP_STAT BC5_DIRECT_RESET_LABELS_ADD KYTY_BC5_SAVEDATA_MEMORY_SLOTS KYTY_BC5_SAVEDATA_MEMORY_PARAM KYTY_BC5_SAVEDATA_MEMORY_LOG")
+# the shared tree is candidate B since the swap of 2026-11-13 15:47 (the script only checks that it is the pinned one)
+rep('= 4651d1d3 ] || stop "the shared tree is not 0001 4651d1d3"', '= 27b6416f ] || stop "the shared tree is not 0001 27b6416f"')
 open(out + "/p0417f.sh", "w", encoding="utf-8", newline="\n").write(s)
 print("p0417f.sh ok")

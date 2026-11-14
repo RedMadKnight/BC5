@@ -442,6 +442,75 @@ shown, one run each. Not explained: after three ASTRO BOT starts in a row the sa
 the 1fa391a4 of a single first start (both chains; the count of non-zero bytes was not taken, and every one of the
 starts on it passed). Not done: the replug series on the new shared binaries and the maintainer's own start.
 
+## 15. ASTRO BOT's first save, run (2026-11-13 16:57-17:15): the three candidates are refuted, the save path is clean
+
+`sdmchain.sh` on the box: candidate C built privately (normal cfd35639, lean 709224df: the unit of section 13
+compiles), then `sdm0417run.sh sdm0417-list1.txt`, five arms, no real pad key in any (`raw/sdmchain.out`).
+
+| Arm | Words | File after 120 s with five crosses | The next start |
+|---|---|---|---|
+| sm0 | the call log only | 97fb2aba, 164,965 bytes | ends by itself at 5 s |
+| sm1 | `KYTY_BC5_SAVEDATA_MEMORY_FIXES=existed` | the same | at 6 s |
+| sm2 | `KYTY_BC5_SAVEDATA_MEMORY_SLOTS=1` | the same | at 6 s |
+| sm3 | `KYTY_BC5_SAVEDATA_MEMORY_PARAM=1` | the same | at 6 s |
+| sm4 | all three | the same | at 6 s |
+
+What the call log shows, the same in every arm:
+
+- one slot only (slot 0): H1 (two slots over each other) does not apply to this title;
+- `existed_memory_size` answered 0 (sm1, sm4) or 2 MiB makes no difference to what is written: H2 is not the cause;
+- no call passes parameters or an icon (param 0, icon 0 in every Set and Get): H3 does not apply;
+- 20 Sets in the first run, at three offsets: 0 (13,397 bytes three times, then 148,267 once the keys took the title
+  into the game), 393,216 (about 3.3 KiB, five times) and 1,179,648 (13,397 bytes once); the next start does one Setup
+  and four Gets of 393,216 bytes at offsets 393,216, 0, 786,432 and 1,179,648, and each Get returns the non-zero
+  counts that were set (3,303 / 148,266 / 0 / 13,396). **The title gets back what it stored.**
+
+So the defect is not in the save data memory (H4). The crash itself, from the host's register dump of the failing
+start (`~/bc5-work/exp0413/n/raw/sm0n-crash.txt`, not committed): a read at 0xfefdf1b58 at eboot+0x29c385, in an
+instruction that indexes a stack array with `rax*8` where `eax` = 0xffffffff; the bytes before it decrement a
+32-bit counter that was 0 and load `esi` = 0x2f ('/') for a call. Reading of those bytes (ours, of the dump's 64
+code bytes; not checked further): the title splits a path at '/' and a count of 0 underflows. A title that has a
+real save asks the host for something whose answer is a path or name, and ours is empty or has no '/'.
+
+Next (one 30 s start on the kept directory `wda/_SaveData.sm0` with the runner's `astrolog` kind, which writes the
+emulator's own call log): the host calls between the fourth Get and the fault. No fix is proposed until that is
+read. The three switches stay off; `KYTY_BC5_SAVEDATA_MEMORY_LOG` did its job, `_SLOTS` and `_PARAM` have no title
+that needs them (disposition: no verdict; missing: a title that uses a second slot or reads parameters back).
+
+Also in this slot: the software replug check on the new shared normal build 51af1ed7, R10: PASS, three pulls
+(`experiments/0413-np-session-v2-shared/integration/replug/raw/R10-*`). By the maintainer's rule of the same day it
+was not needed (B changes no audio or pad code) and is not repeated.
+
+## 16. The cause: `sceSaveDataTransferringMount` for another title's save (2026-11-13 18:07)
+
+`al0417.sh al1`: one 30 s start of candidate C's private build on the kept bad directory (`wda/_SaveData.sm0`) with
+the emulator's call log (`~/bc5-work/exp0413/n/raw/al1-calls.log`, 9,243 lines; it holds the title's own strings and
+is not committed). The start ended by itself at 5 s with the same fault. The last host calls of the faulting thread:
+
+    SaveDataGetSaveDataMemory2   x4      (the four reads of section 15)
+    PthreadMutexInitNamed
+    SaveDataTransferringMount            user_id 1000, title_id PPSA01325, dir_name sce_sdmemory
+
+and then, before the fault, a read of 65,536 bytes of `_SaveData/PPSA21564/sce_sdmemory/memory.dat` through the file
+calls. The title asks for the save of ANOTHER title (PPSA01325). `SaveDataTransferringMount` in
+`src/libs/libSaveData.cpp` ignores `title_id`: it takes the directory of that name under the RUNNING title, which is
+the title's own save data memory directory, creates it when it is absent, mounts it and answers OK with status
+"created". The title then reads our `memory.dat` as the other title's save and faults in its own parsing (the path
+split of section 15). With no key the title never has a save of its own and (not checked) does not ask.
+
+Fix behind a switch, written and not run: `mksdt0417.py` (unit a01e4b64 -> 164c0869),
+`KYTY_BC5_SAVEDATA_TRANSFER_FIX=1`: the directory is the one of the title the call names; a directory that does not
+exist is not created and the call answers `SAVE_DATA_ERROR_NOT_FOUND` (0x809F0008); one that exists is mounted with
+status 0. `TODO(verify)`: the console's own answer for a transfer source that does not exist. Off by default; it is
+folded into exp 0419's candidate E, whose private chain has the pair for it (the kept bad save with the fix off:
+the fault; with the fix on: the start must pass and name the transfer).
+
+Dispositions of this experiment's switches: `KYTY_BC5_SAVEDATA_TRANSFER_FIX`: promote when its pair passes and one
+ASTRO BOT play has gone over a first save; `KYTY_BC5_SAVEDATA_MEMORY_LOG`: diagnostic; `_MEMORY_SLOTS`, `_MEMORY_PARAM`:
+no verdict (missing: a title that uses a second slot or reads parameters back); `BC5_R3_EOP_STAT`: diagnostic;
+`BC5_DIRECT_HEAP_GUARDS`: no verdict (clean with and without; missing: the maintainer's play with it off);
+`KYTY_BC5_SETBUFFER_TEST_HOOK`: a compile-time gate, stays 0.
+
 ## Open items carried from the integration (not worked on here)
 
 | # | Item | Needs |
