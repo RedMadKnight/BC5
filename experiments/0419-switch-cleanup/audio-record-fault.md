@@ -114,7 +114,7 @@ function it is in, +0x1d23df, +0x19fe14) to find the store into the record's fir
 is one read-only pass on the maintainer's own file, no emulator, and it decides between (a), (b) and (c) of section
 2 without waiting for a third fault. It needs the top's GO for the box.
 
-## 6. Written for the next private build (2026-11-14, tag ajt; candidate G is now patch `f32bb923`)
+## 6. Written for the next private build (2026-11-14, tag ajt; candidate G is now patch `372ac258`; it was `f32bb923` before the followed pointers of section 8 were added to the dump)
 
 `ajm/mkajm0419.py` edits `src/libs/ajm.cpp` and the guest fault handler and adds `src/bc5/ajm_trail.hpp`. Three
 switches, all off by default; with all three unset every call does what it did (the job's work, then the append).
@@ -179,3 +179,40 @@ is visible on this path so far; the two AJM candidates of section 6 are neither 
 **What decides it next, without more reading:** one fault with `KYTY_BC5_AUDIO_TRAIL=1` (the pointer at object+0x8 and
 its table), or a targeted read of the tables in the title's data segment that hold +0x1c2d40's caller (a second
 read-only pass, about ten minutes).
+
+## 8. The second pass: the chain behind the fill (2026-11-14 12:10, box, read only, one lock line per run)
+
+`eread0419b.sh` reads the disassembly on the box and the title's relocation records (the image is position
+independent: its function tables are filled by relative relocations) and prints, for a function, its direct callers
+and the tables it sits in. Then one function was read (the stream fetch). The top session's slot message of 12:09.
+
+| Finding | Mark |
+|---|---|
+| +0x1d5570 (the step that calls the upstream fill, section 7) has one direct caller chain: +0x1d2390, +0x19fd20, +0x1a1a40. These are the dumps' return addresses +0x1d23df, +0x19fe14, +0x1a1a69 | M |
+| +0x18b5a0 is reached only through a function table (0x8ef8438). It asks an inner object at its +0xc8, through that object's table offset 0x30, to fill a local record, then copies that record's pointer and frame counts into the caller's record: **a file source's "get buffer" that delegates to a codec object** | M |
+| +0x1c2d40 (the block decoder to interleaved 16-bit) and +0x1c2ce0 (frees and zeroes its two buffers) are slots +0x30 and +0x20 of one table (0x8ef95a8): **one codec's "decode" and "release"**. Neither has a direct caller | M |
+| +0x18cf50, called at the start of that decode when the codec has no input left: it takes the next piece of the sound's data. Two ways: (a) flag bits 0x38 of the source's byte +0x52 equal 8: pointer = `[source+0x10] + [source+0x30]`, size = `[source+0x24] - [source+0x30]` (data held in memory: a base plus a data offset); (b) otherwise it calls the stream object's table offset 0x80 with the address of a pointer and of a size and accepts states 0x2d and 0x11. If the size is not 0 it hands pointer and size on (+0x18d150) | M |
+| **Neither way checks the pointer.** A null base in (a) gives "the data offset" as the pointer; a null pointer with a size from the stream in (b) is passed on as it is | M |
+
+[I] Three places can now produce "a small number where a pointer belongs", in the order the code reaches them:
+1. the in-memory base at source+0x10 is null (the sound's memory copy is gone or was never set) and the pointer is
+   the data offset, later advanced by what was consumed;
+2. the stream object returns "ready" with a size and a null pointer; the stream object reads the title's files
+   through our file calls, but the buffer memory is the engine's own;
+3. the codec's output buffer at codec+0x18 is released (+0x1c2ce0) between its allocation and its reload in the same
+   decode, which needs another thread.
+
+For a 16-bit stereo sound that needs no decoding the pointer of 1 or 2 goes to the pitch step unchanged, plus what
+was consumed: both observed values, 0x1000 and 0x2000, are whole multiples of one block (0x800), which fits 1 and 2
+better than 3 (where the added skip is in frames of a block decoder). [?] Which of the three; whether the faulting
+voice is a plain 16-bit sound or the block decoder (the codec table that holds the plain-PCM "decode" was not
+looked for); what makes the base or the stream pointer null. Our side can enter only through 2 (what the engine's
+stream manager gets from our file layer: sizes, positions, completion order), and through timing for 3. Of the file
+layer, `KYTY_BC5_APR_POSIX=direct` became a forced default on 2026-11-13 01:50 (patch 4651d1d3, also in B), 19 hours
+before the first fault: a coincidence in time, nothing more is known.
+
+**The catcher was extended for exactly this:** with `KYTY_BC5_AUDIO_TRAIL=1` the handler now also follows the pointer
+at rcx-8 (the upstream source) and the pointer at its +0xc8 (the codec) and prints 0x200 to 0x400 bytes of each. One
+fault then shows the source's table (its class), its flag byte +0x52, the base at +0x10, the stream pointer and size
+at +0x18 and +0x20, and the codec's buffers: enough to pick between 1, 2 and 3. G is patch `372ac258` and the test
+build T is `5421b734` with this; the unit is unchanged (7cb02bac), so the guardian's test result stands.

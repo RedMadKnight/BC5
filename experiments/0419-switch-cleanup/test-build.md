@@ -1,17 +1,17 @@
-# Experiment 0419: the ONE test build T (patch 3bcdb08e), put together on the laptop on 2026-11-14, NOT built
+# Experiment 0419: the ONE test build T (patch 5421b734), put together on the laptop on 2026-11-14, NOT built
 
 Ordered by the top session (the rule "all fixes and catchers first, each behind its switch, then test"). Private paths
 only; nothing shared is replaced. With every switch below unset, T behaves as candidate G.
 
 | Piece | Value |
 |---|---|
-| patch 0001 (against KytyPlus f266548) | `3bcdb08e` (`0001-new23.patch`), 133 patched files |
+| patch 0001 (against KytyPlus f266548) | `5421b734` (`0001-new23.patch`), 133 patched files |
 | main unit `src/libs/bc5LleAgc.cpp` | `7cb02bac` (G: 8a930481) |
 | `src/kernel/memory.cpp` | `afc69dfe` (G and F: f51c803e) |
 | backend | as G: `direct.cpp` aeec4c09, `direct.hpp` e96e5c73 |
-| tree list | `tree-test-build-T-3bcdb08e.md5` |
+| tree list | `tree-test-build-T-5421b734.md5` |
 | kit | shared notes folder, `exp0419-test-build-T/` (`p0419t.sh`, both patches, both tree lists, the backend files, `G-to-T.diff`) |
-| build | on the box, in this experiment's slot: `P_NEW23=3bcdb08e bash p0419t.sh` (F's private tree d9af28ca must be in place) |
+| build | on the box, in this experiment's slot: `P_NEW23=5421b734 bash p0419t.sh` (F's private tree d9af28ca must be in place) |
 
 ## What is in it, in the order applied
 

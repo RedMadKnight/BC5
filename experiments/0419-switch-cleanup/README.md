@@ -418,7 +418,7 @@ or the backend, the link, any run. HANDOFF's F403 and F813 rows carry the note a
 `audio-record-fault.md` is the record. The bad record is the title's own sound-engine buffer with a null base, not a
 structure of ours; F's audio libraries are B's; who drove the engine there is not known. Two candidates in our AJM
 library, read in the source and not shown to be the cause: jobs run when added instead of at the batch start, and
-instance ids that wrap after 16,384 creates onto a live instance. For the next private build G (now patch `f32bb923`,
+instance ids that wrap after 16,384 creates onto a live instance. For the next private build G (now patch `372ac258`,
 133 files) carries a catcher and both fix candidates, each behind its own switch, all off: `KYTY_BC5_AUDIO_TRAIL`,
 `KYTY_BC5_AJM_DEFER`, `KYTY_BC5_AJM_LIVE_IDS` (`ajm/`). The dumps are not in git: the guardian's copies are in the
 shared notes folder (`exp0412-cpufault/`), the originals on the box under `~/bc5-work/exp0413/n/raw/sA-*` and
