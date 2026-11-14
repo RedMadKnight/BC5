@@ -50,6 +50,12 @@ files in the guardian's order 1, 2, 3, 4, 6 on the unit and 5 on `memory.cpp`.
 - Exp 0412's CPU tests against T's unit. G's step e changed code inside the block those tests compile (the parser no
   longer reads `BC5_GUARD_MAP_RULE`, `_PRT_BG`, `_MLOCK`, the cap words), so a test that sets those words is expected
   to differ; the guardian has the unit (`exp0419-test-build-T/unit-bc5LleAgc.cpp`) and is asked to run them.
+  **The guardian's answer (2026-11-14, its report, not repeated here):** all 14 of its CPU tests pass against the
+  pure blocks taken out of T's unit 7cb02bac (laptop, VS clang++ `-O1 -Wall -Wextra -Werror`); twelve blocks are the
+  same as in its own unit, three differ through G's cuts (the guard's `Cfg` reader, `mr412`, `rl412`) and their
+  tests still pass (72 of 72, 15,281 of 15,281, 4,970 of 4,970). Its limit: no test sets those environment words, so
+  the three changed one-line readers are covered by no test; twelve of its tags are not in the unit and were not
+  checked.
 - `p0419t.sh` is `p0419g.sh`'s text with the new pins; its messages still say "candidate G". Its list of words the
   binaries must hold does not include the nine new switches: read them with `strings` after the build.
 
