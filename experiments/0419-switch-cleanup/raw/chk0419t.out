@@ -1,0 +1,54 @@
+chain lock: exp 0417 | chain: exp 0419 test build T, private: ASTRO BOT x4, the second title x6 (walk, walk K1R off, cutscene arm; twice each), lean, until about 14:48 | token 202611141348283943238 | 2026-11-14 13:48:28
+binaries: B normal b0abc4719f00ceae7e3e3bd542605e96, B lean b19b3e743c11f3d65ecc01bbec444681, shared normal 51af1ed78e84291caf5ee042ea82c46d
+t0a (astro) PASS: ran 120 s; RssAnon at the end 209244 kB; kernel lines 0, crash lines 0
+t0a stderr: title line 0, sdt417 
+t0b (astro) PASS: ran 120 s; RssAnon at the end 212152 kB; kernel lines 0, crash lines 0
+t0b stderr: title line 0, sdt417 
+t0c (astro) PASS: ran 120 s; RssAnon at the end 212044 kB; kernel lines 0, crash lines 0
+t0c stderr: title line 0, sdt417 
+ASTRO BOT start-state lines (exp 0418): 1; first: bc5-direct: start state (exp 0418): rows on: CP_COHER_START_DELAY SPI_SHADER_REQ_CTRL_PS GE_MIN_VTX_INDX GE_MAX_VTX_INDX VGT_INSTANCE_BASE_ID VGT_TF_RING VGT_HS_OFFCHIP_PARAM VGT_GS_RINGS; skipped: no
+t0f (astro) PASS: ran 30 s; RssAnon at the end 210284 kB; kernel lines 0, crash lines 0
+t0f stderr: title line 0, sdt417 [bc5] sdt417: transferring mount of PPSA01325/sce_sdmemory: no such save, NOT_FOUND (nothing created)
+t0f: the start PASSES with the fix
+t1a journal: would-learn 0, timeout-fault 0, fault record lines 0
+t1a import: t 61 s: 10940.0 MiB imported: 9722.0 under eager views, 1218.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 0.0 under no view (0.0 last seen under an eager or zero-list view, 0.0 never seen und
+t1a import: t 121 s: 11254.0 MiB imported: 9982.0 under eager views, 1256.0 under data views, 0.0 under lazy views, 4.0 forced and under no view, 12.0 under no view (12.0 last seen under an eager or zero-list view, 0.0 never seen 
+t1a route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 93 s;route: cross (Continue) at 99 s;route: the load seen at 103 s;route: gameplay G = 118 s (the load at 103 s);route: walk of 14 cycles (240 s) queued at 118 s;; watchdog: watchdog: emulator 4028783 ended; 180 samples, lowest available 436 MiB, highest PSI full 10 %
+t1a at ~104 s: avail,swap,io 1040 631 194 1569 196 | psi 7.98/7.98 1.83 | gtt 11755 
+t1a at ~60 s: avail,swap,io 1243 553 0 0 2 | psi 0.14/0.08 1.94 | gtt 11564 
+t1a input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 16 at 53.883 s
+t1a (nozeroskip) ended at G+240 (after 360 s; G 118, load 103, list 93); 25.7 flips/s over 356 s, 57 s with a gap over 100 ms, longest 796 ms; kernel lines 0, crash lines 0, ledger lines 0
+t1a title table: [bc5] exp 0419: title PPSA03671: 38 title defaults, 3 taken, 35 already set in the environment
+t1a start state: ~/bc5-data/captures/play-20261114-1355/gc/direct.log:start state (exp 0418): 15 dwords of constant rows in every prefix (rows 0xff, skipped 0x0)
+t1a last timing split: timing split over 128 submissions: probe 1.7 ms, anon sync 0.1, direct sync 0.8 (views 0.1; 0 full, 130 fast; scan 0.0, merge 0.0, drain 0.0 in 0, maps 0.0 = want 0.0 + drop 0.0 + zero 0.0 + add 0.0), learned 0.1, hints 1.3
+t1a frame-profile lines over 500 ms: 4; the largest: frame profile: t 111.426 s, 614.8 ms since the last flip; game thread inside the host 369.6 ms (sync 62.6, hints 0.7, prepare 7.2, list 0.2, cs 1.9, fence 0.0, cap 123.1, label waits 174.0, event wait;frame profile: t 100.803 s, 796.5 ms since the last flip; game thread inside the host 158.4 ms (sync 157.0, hints 0.4, prepare 0.4, list 0.1, cs 0.4, fence 0.0, cap 0.0, label waits 0.0, event waits 0;
+t2cuta journal: would-learn 0, timeout-fault 0, fault record lines 0
+t2cuta import: t 61 s: 11136.0 MiB imported: 9902.0 under eager views, 1222.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 12.0 under no view (6.0 last seen under an eager or zero-list view, 6.0 never seen
+t2cuta import: t 121 s: 11168.0 MiB imported: 9032.0 under eager views, 1246.0 under data views, 0.0 under lazy views, 56.0 forced and under no view, 834.0 under no view (824.0 last seen under an eager or zero-list view, 0.0 never
+t2cuta route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 3, cross (slot 4) at 94 s;route: cross (Continue) at 100 s;route: the load seen at 102 s;route: gameplay G = 114 s (the load at 102 s);route: no input after the load (N_NOWALK=1), 320 s from 114 s;; watchdog: watchdog: emulator 4125516 ended; 218 samples, lowest available 839 MiB, highest PSI full 2 %
+t2cuta at ~104 s: avail,swap,io 1034 553 0 0 0 | psi 0.00/0.00 1.11 | gtt 11525 
+t2cuta at ~60 s: avail,swap,io 1008 553 0 0 1 | psi 0.58/0.58 1.41 | gtt 11775 
+t2cuta input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 34 at 51.611 s
+t2cuta (nozeroskip) ended at G+320 (after 436 s; G 114, load 102, list 94); 29.8 flips/s over 431 s, 37 s with a gap over 100 ms, longest 616 ms; kernel lines 0, crash lines 0, ledger lines 0
+t2cuta title table: [bc5] exp 0419: title PPSA03671: 38 title defaults, 3 taken, 35 already set in the environment
+t2cuta start state: ~/bc5-data/captures/play-20261114-1402/gc/direct.log:start state (exp 0418): 15 dwords of constant rows in every prefix (rows 0xff, skipped 0x0)
+t2cuta last timing split: timing split over 128 submissions: probe 1.9 ms, anon sync 0.0, direct sync 1.2 (views 0.1; 2 full, 142 fast; scan 0.4, merge 0.1, drain 0.0 in 0, maps 0.0 = want 0.0 + drop 0.0 + zero 0.0 + add 0.0), learned 0.0, hints 1.5
+t2cuta frame-profile lines over 500 ms: 1; the largest: frame profile: t 104.762 s, 615.5 ms since the last flip; game thread inside the host 108.5 ms (sync 99.8, hints 3.4, prepare 0.3, list 0.1, cs 4.9, fence 0.0, cap 0.0, label waits 0.0, event waits 0.;
+t3l (lean) PASS: ran 120 s; RssAnon at the end 127552 kB; kernel lines 0, crash lines 0
+test build T, private: all runs clean (the pass marks are in the lines above)
+chk0419t ended 14:11:42
+chain lock released
+======
+claimed: exp 0413 | token 17946600753931806 | exp 0419: private rebuild of candidate G (tree and a private backend) under exp0413/p, CPU only, no emulator, until 14:21 | 2026-11-14 13:41:15
+2026-11-14 13:41:15 start; archive 75e30335
+tree: 133 patched files match the laptop's (0001-new23)
+recipe check: the untouched shared backend source built with these options gives 75e30335; the shared archive is 75e30335 (the SAME: a rebuild reproduces it)
+== 13:41:23 backend
+private backend archive 9aab722c9127033f970dcedf6802b626 (the shared one 75e30335 untouched; exp 0412's with the probe was ed63df2f; this one has no probe)
+backend tests: PASS: 100% tests passed, 0 tests failed out of 121
+== 13:42:04 build normal
+normal: b0abc4719f00ceae7e3e3bd542605e96, warnings 284
+== 13:44:56 build lean
+lean: b19b3e743c11f3d65ecc01bbec444681, warnings 284
+2026-11-14 13:47:42 done; normal b0abc471, lean b19b3e74
+lock released
