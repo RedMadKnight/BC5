@@ -951,6 +951,8 @@ how the console behaves before calling a change a fix).**
 
 ### 17. Prepared for the slot of 2026-11-14 (laptop only; nothing below was built or run on the box)
 
+**State, 2026-11-14: the slot was called off (the top session's word); ready to run when a slot returns: kit L6 (not compiled), runner `run0415i.sh` and the plan of runs below, about 110 minutes; steps D, E and F are cancelled (the two launcher words were closed as constants 8 ms and 2 ms, the F451 measurement was dropped), and S3 and S4 are not to be written.**
+
 **Base.** The shared builds are candidate B (patch `27b6416f`, normal `51af1ed7`, lean `59894428`; the top
 session's words). B holds build L5c's stages and has no learned windows. The private tree on the box holds L5c.
 
