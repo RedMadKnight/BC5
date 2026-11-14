@@ -120,6 +120,11 @@ as it did for the timing words (the goal is 0):
 | `BC5_R3_SUBMIT_EOP_EVENT` | delete: the route never reaches its path and no scene is known that does |
 | `KYTY_BC5_PAD_TOUCH` | the maintainer's own test word (his finger on the pad): his to keep or drop |
 
+**The top session's verdicts on the six (2026-11-14):** the proposals are accepted: `MAX_BO_MIB` and
+`SUBMIT_EOP_EVENT` are deleted (in phase 2, T's binary is not changed today), `AMM_SCATTER` and `AMM_SETBUFFER_MAP` are
+diagnostics that stay off, `ANON_SYNC` keeps `verify` as a diagnostic and loses its `thread` form, and
+`KYTY_BC5_PAD_TOUCH` is asked of the maintainer: **1 word without a verdict.** Order and scripts: `phase2-plan.md`.
+
 **NOT done: phase 2 of the dead code.** The 20 "option removed" markers are the ends of about a dozen features woven
 through the unit (the acb CS prefix, acb inherit, the sampler, the VMA fast path, ...); even the three smallest
 (`KYTY_BC5_LOAD_DELAY`, `_MIN_FLIP_RATE`, `_MEMORY_FROM_PARAM`) have callers to follow. Every cut changes the binary
