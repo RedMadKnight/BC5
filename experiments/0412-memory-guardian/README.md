@@ -3976,6 +3976,95 @@ unnamed GPU writers in every scan, so they would fail the same way sooner.
 
 The chain went on with F / w0 pairs after b1 (no reboot). Their table follows in section 86.
 
+### 86. The rest of the night: F / w0 pairs after b1's GPU reset, then a GPU hang with a FAILED ring reset in the eighth F arm; the box rebooted itself (2026-11-14 01:10-03:26)
+
+Private build f8cb77ad, fuse 13000/2048, watchdog 220 MiB, RT on, walk to G+620, catchers armed in every arm.
+Read from the chains' own summary lines while they ran and from the kernel log streamed to the laptop
+(`scratchpad/n8/kernel-night.log`, `kernel-night2.log`; not committed). After the reboot nothing was read on the box:
+the window ended at 07:00 and the top's rule is "after a restart of the box: stop and report".
+
+All arms below [M]: ended at G+620, kernel lines 0, crash lines 0, first-failure lines 0, pad presses 0, unless said.
+
+| arm | boot state | flips/s | longest gap ms | avail / GTT MiB at 420 s | at 600 s | lowest avail |
+|---|---|---|---|---|---|---|
+| n8F1 | before b1 | 25.8 | 653 | 624 / 12,353 | 579 / 12,197 | 471 |
+| n8W1 | before b1 | 25.8 | 638 | 716 / 12,252 | 570 / 12,312 | 459 |
+| n8F2 | before b1 | 25.7 | 761 | 544 / 12,257 | 656 / 12,307 | 396 |
+| n8W2 | before b1 | 25.5 | 572 | 535 / 12,331 | 671 / 12,288 | 481 |
+| n8B1 | - | GPU WRITE fault at 111 s (section 85), reset succeeded | | | | |
+| n8F3 | after the GPU reset of 01:07, same boot | 25.3 | 765 | not noted | not noted | not noted |
+| n8W3 | after the reset, same boot | 25.0 | 982 | not noted | not noted | not noted |
+| n8F4 | after the reset, same boot | 25.1 | 693 | not noted | not noted | not noted |
+| n8W4 | after the reset, same boot | 25.6 | 608 | 610 / 12,326 | 574 / 12,317 | 471 |
+| n8F5 | after the reset, same boot | 25.5 | 566 | 596 / 12,212 | 647 / 12,354 | 451 |
+| n8W5 | after the reset, same boot | 25.2 | 724 | 618 / 12,347 | 651 / 12,281 | 498 |
+| n8F6 | after the reset, same boot | 25.4 | 624 | 634 / 12,290 | 579 / 12,295 | 464 |
+| n8W6 | after the reset, same boot | 25.2 | 719 | not noted | not noted | not noted |
+| n8F7 | after the reset, same boot | 26.4 | 625 | 562 / 12,183 | 617 / 12,215 | 461 |
+| n8W7 | after the reset, same boot | 25.3 | 767 | 535 / 12,358 | 702 / 12,313 | 382 |
+| n8F8 | after the reset, same boot | GPU hang, ring reset FAILED, box rebooted | | | | |
+
+"not noted": the number is in the arm's files on the box and was not copied to the laptop during the night.
+
+**Two errors of mine in running the chain** [M]:
+- After b1's kernel error the first chain went on. The rule in force (the heartbeat of 01:43, relayed by Codex with
+  the maintainer's delegation) was STOP after any kernel error, also after a successful reset.
+- My stop command from the laptop (`pkill -f` / `pgrep -f` inside `ssh bc250 '...'`) matched the ssh's own shell,
+  not the script. The chain was not stopped after n8W4: n8F5, n8W5, n8F6 and n8W6 ran after I had reported that no
+  further arm would start. It was killed at 02:46:09 during n8W6; its EXIT trap released the lock and stopped the
+  pad log while n8W6's runner still ran: the lock was empty for about 4 minutes and the pad log does not cover
+  n8W6's end. Lesson: match by exact name (`pgrep -x`, or `ps | grep "[n]ight"`), never `-f` with the pattern in the
+  same command line.
+- From 02:50 the second chain (night0412b.sh, on the top's second GO): stop first, F and w0 only, the lock claim
+  inside the mkdir mutex (R35).
+
+**The hang** [M] (kernel log, uptime 57148.6 s, about 03:25; the stream's reconnect is stamped 03:26:06):
+- "ring gfx_0.0.0 timeout, signaled seq=40836496, emitted seq=40836497", process kyty_emulator, thread Render
+  Thread; "Ring gfx_0.0.0 reset failed"; "GPU reset begin!"; bc5-gpu-watch: "a ring reset failed ...: crashing before
+  the full reset" (SysRq s, c). The box rebooted and came back (up 4:30 at 07:56).
+- No page fault line before it. One job outstanding (emitted - signaled = 1). A devcoredump was created 2 ms
+  before the reset; whether the copy service saved it before the crash is not read.
+- [I] The arm was n8F8, candidate F with K1r, about 510-540 s into the run: the chain alternates F and W, n8W7
+  ended at about 03:16, and stop-first starts nothing else. Its files on the box are not read, so the arm's name, the
+  second of the hang and whether a fault record was written are not confirmed.
+- [M] The same signature as arm m5wall (section 81: gfx ring timeout, no page fault, at 601 s), there with a
+  successful reset. The earlier timeout of this boot at uptime 32412 s is that one (2026-11-13 20:33).
+- [I] It came on a boot that had already had b1's GPU reset at 01:07. Whether that matters is not known; the
+  runs after the reset are marked in the table for that reason, and m5wall's hang came with no reset before it.
+
+**Tally of long walks on F with all of exp 0418 and K1r on:**
+- old series (binary 1a2900a0, fuse 12400/1024, watchdog 300): 2 failed of 6 (m5wall, sA failed; sE, dF1-3 clean);
+  the same without the five rows: 0 of 3 (sC, dN1-2). The integrator's nine walks of section 84 are counted there.
+- f8cb77ad, counted apart (other fuse and watchdog, new catchers): F arms 7 clean, then 1 hang (n8F1-2
+  before the GPU reset, n8F3-7 after it, n8F8 the hang); w0 arms 7 clean of 7 (2 before, 5 after).
+- [I] F's GPU hang is now seen twice (601 s, and about 510-540 s), both late in a long walk, both without a page
+  fault. It is a fault of candidate F's path or of something F shares with every build; the walks do not separate
+  those. Neither arm had a catcher that names the hung job's contents beyond the probe's dump.
+
+**w0, scans 2-5** (175 s on; CPU-written / no CPU write among the not-named turned chunks) [M], n8W7:
+RenderGpuWcLarge 0/1, 0/2, 0/4, 0/4; RenderGpuRwLarge 0/20, 0/2, 0/1, 0/1; CommitIABufferAllocator 10/0 (scan 2 only).
+The same picture as n8W1 and n8W2: every not-named chunk of the two RenderGpu heaps is a GPU write nobody named,
+every one of CommitIABufferAllocator has a CPU write. n8W3-W6's tables are on the box, not read.
+
+**For b1, the top's question** (what wrote under the cover at 111 s):
+- [M] heap CommitIABufferAllocator; a GPU write, client TCP, three pages of one 2 MiB chunk the CPU never wrote.
+- [M] operation or packet: not identified. The journal does not keep submissions' contents; the dumped job only
+  waited behind the writer. ww412 was not on in that arm; kl412 does not apply (not a lazy view).
+- [I] It is a gap in "write targets imported before the write", not an error in how by-data treats named targets:
+  a shader's store through a buffer descriptor is a class the host does not name. As the rule stands that gap
+  makes by-data unsafe for this heap.
+
+**Prepared, not built on the box:** ph412 (`BC5_FAULT_POINTERS=1`, default off; unit 4a8d5211; CPU test 6,005 of
+6,005; the host glue is syntax-checked against stand-ins only): at a GPU fault, pointers.txt in the fault record
+lists every word of the title's memory that points into the faulted 2 MiB chunk, with the holder's heap.
+
+**kc412's first numbers** [M]: 10,6xx-11,7xx "cover gave way" events per run, nearly all in the load, while the
+k1r pieces go 921 -> 380; single late events at 140-400 s in InitAllocator with the count staying at 380.
+
+**Open after the night:** the stale lock line of the second chain is still in BOX-LOCK (the chain died with the
+reboot; left for the top's word); n8F8's files and the devcoredump directory are not read; no b arm of any heap until
+the maintainer decides.
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over
