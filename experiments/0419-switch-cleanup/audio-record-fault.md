@@ -114,7 +114,7 @@ function it is in, +0x1d23df, +0x19fe14) to find the store into the record's fir
 is one read-only pass on the maintainer's own file, no emulator, and it decides between (a), (b) and (c) of section
 2 without waiting for a third fault. It needs the top's GO for the box.
 
-## 6. Written for the next private build (2026-11-14, tag ajt; candidate G is now patch `f32bb923`)
+## 6. Written for the next private build (2026-11-14, tag ajt; candidate G is now patch `372ac258`; it was `f32bb923` before the followed pointers of section 8 were added to the dump)
 
 `ajm/mkajm0419.py` edits `src/libs/ajm.cpp` and the guest fault handler and adds `src/bc5/ajm_trail.hpp`. Three
 switches, all off by default; with all three unset every call does what it did (the job's work, then the append).
@@ -150,3 +150,69 @@ deferred jobs' order, drop and run-once) all ok; `ajm/chkblock0419.cpp` compiles
 against stand-ins with `-Wall -Wextra -Werror -Wshadow`; every edit matched once, braces balance; the dry run F -> G on
 a clean tree, 133 of 133 files. NOT compiled: `ajm.cpp` as a whole (it needs the ffmpeg headers) and the handler
 (Linux only); their first compile is G's build on the box. G reads 202 words now, 155 can be set.
+
+## 7. The title's code at the return addresses (2026-11-14 12:00, box, read only; the top session's GO)
+
+`eread0419.sh`: no emulator, BOX-LOCK empty before and after, one lock line, nice 19. It read the maintainer's own
+`eboot.bin` of the second title (a container; its first segment is stored plain), cut the code range +0x110000 to
++0x1e2000 and disassembled it into `~/bc5-work/exp0419/eread/` on the box (mode 700; nothing of it is in git or on the
+laptop). The disassembly's line at +0x1b349f is the faulting instruction of both dumps. A few follow-up reads of that
+one file were made right after the script, when its lock line was already released (the lock stayed empty, about
+three minutes); they should have been inside it.
+
+| Finding | Mark |
+|---|---|
+| +0x1b3460 (the faulting function) computes the source address as `[rdi] + 4 * [rcx+0x28]`: the record's first field plus an input offset kept in the resampler's state. That offset was 0 both times, so the first field itself was 0x1000 / 0x2000 | M |
+| +0x1b3110 (its caller) loops over a table of conversion functions indexed by sample format and channel count until the input has no frames left or the output is full | M |
+| +0x1d5600, the function of the return address +0x1d58a6: an object with an upstream object at +0x8 (called through its table), the input record at +0x80, the output record at +0xb0. When its input record has no valid frames (+0x92), it **copies the 0x30-byte record its caller passed in (rsi) into +0x80**; nothing in this function writes the first field otherwise, except the three places that clear the record to 0 with state 0x2b after the upstream object's "release" call | M |
+| +0x1d5570, the entry before it: it calls the upstream object's function at table offset 0x40 with that same record, then falls into +0x1d5600. **So the bad first field was written by the upstream object's "get buffer" call**, one step before the copy | M for the order of calls; I that the call at offset 0x40 is the fill |
+| The stack value 0x1000 / 0x2000 (slot 11) is not a variable of +0x1d5600: that slot (rbp-0x50) is never written there. It is left over from an earlier, deeper call | M |
+| Which class the upstream object is: **not in the dumps.** The pointer to it is at object+0x8 (0x131c6e0f08 in n10F2), 8 bytes before the 64 bytes the handler printed from rcx. The wider dump of `KYTY_BC5_AUDIO_TRAIL` (0x100 bytes before each register) contains it; its table address then names the class from this same disassembly | M |
+| Candidates read in the range, each a "fill" that stores a data pointer, the frame counts and returns state 0x2d: +0x1c2d40 (a block decoder to interleaved 16-bit: its data pointer is the object's own output buffer at +0x18, allocated on first use and freed and zeroed by +0x1c2ce0, plus an optional skip of `frames * channels * 2`), +0x18b5xx (takes the pointer from an inner object's call), +0x18c4xx (24-bit to float, not this format) | M for what each does; ? which one fed the faulting step |
+
+[I] The picture agrees with section 3: an engine-owned buffer pointer that is null at the moment of the fill, plus an
+offset or skip the fill adds. In the block decoder the pointer is reloaded from the object after the decode, so a
+release of that buffer between the allocation and the reload (another thread, or a callback inside the decode) gives
+exactly "null plus skip". [?] Whether the faulting voice is that decoder, and what released the buffer. No AJM call
+is visible on this path so far; the two AJM candidates of section 6 are neither supported nor refuted by this read.
+
+**What decides it next, without more reading:** one fault with `KYTY_BC5_AUDIO_TRAIL=1` (the pointer at object+0x8 and
+its table), or a targeted read of the tables in the title's data segment that hold +0x1c2d40's caller (a second
+read-only pass, about ten minutes).
+
+## 8. The second pass: the chain behind the fill (2026-11-14 12:10, box, read only, one lock line per run)
+
+`eread0419b.sh` reads the disassembly on the box and the title's relocation records (the image is position
+independent: its function tables are filled by relative relocations) and prints, for a function, its direct callers
+and the tables it sits in. Then one function was read (the stream fetch). The top session's slot message of 12:09.
+
+| Finding | Mark |
+|---|---|
+| +0x1d5570 (the step that calls the upstream fill, section 7) has one direct caller chain: +0x1d2390, +0x19fd20, +0x1a1a40. These are the dumps' return addresses +0x1d23df, +0x19fe14, +0x1a1a69 | M |
+| +0x18b5a0 is reached only through a function table (0x8ef8438). It asks an inner object at its +0xc8, through that object's table offset 0x30, to fill a local record, then copies that record's pointer and frame counts into the caller's record: **a file source's "get buffer" that delegates to a codec object** | M |
+| +0x1c2d40 (the block decoder to interleaved 16-bit) and +0x1c2ce0 (frees and zeroes its two buffers) are slots +0x30 and +0x20 of one table (0x8ef95a8): **one codec's "decode" and "release"**. Neither has a direct caller | M |
+| +0x18cf50, called at the start of that decode when the codec has no input left: it takes the next piece of the sound's data. Two ways: (a) flag bits 0x38 of the source's byte +0x52 equal 8: pointer = `[source+0x10] + [source+0x30]`, size = `[source+0x24] - [source+0x30]` (data held in memory: a base plus a data offset); (b) otherwise it calls the stream object's table offset 0x80 with the address of a pointer and of a size and accepts states 0x2d and 0x11. If the size is not 0 it hands pointer and size on (+0x18d150) | M |
+| **Neither way checks the pointer.** A null base in (a) gives "the data offset" as the pointer; a null pointer with a size from the stream in (b) is passed on as it is | M |
+
+[I] Three places can now produce "a small number where a pointer belongs", in the order the code reaches them:
+1. the in-memory base at source+0x10 is null (the sound's memory copy is gone or was never set) and the pointer is
+   the data offset, later advanced by what was consumed;
+2. the stream object returns "ready" with a size and a null pointer; the stream object reads the title's files
+   through our file calls, but the buffer memory is the engine's own;
+3. the codec's output buffer at codec+0x18 is released (+0x1c2ce0) between its allocation and its reload in the same
+   decode, which needs another thread.
+
+For a 16-bit stereo sound that needs no decoding the pointer of 1 or 2 goes to the pitch step unchanged, plus what
+was consumed: both observed values, 0x1000 and 0x2000, are whole multiples of one block (0x800), which fits 1 and 2
+better than 3 (where the added skip is in frames of a block decoder). [?] Which of the three; whether the faulting
+voice is a plain 16-bit sound or the block decoder (the codec table that holds the plain-PCM "decode" was not
+looked for); what makes the base or the stream pointer null. Our side can enter only through 2 (what the engine's
+stream manager gets from our file layer: sizes, positions, completion order), and through timing for 3. Of the file
+layer, `KYTY_BC5_APR_POSIX=direct` became a forced default on 2026-11-13 01:50 (patch 4651d1d3, also in B), 19 hours
+before the first fault: a coincidence in time, nothing more is known.
+
+**The catcher was extended for exactly this:** with `KYTY_BC5_AUDIO_TRAIL=1` the handler now also follows the pointer
+at rcx-8 (the upstream source) and the pointer at its +0xc8 (the codec) and prints 0x200 to 0x400 bytes of each. One
+fault then shows the source's table (its class), its flag byte +0x52, the base at +0x10, the stream pointer and size
+at +0x18 and +0x20, and the codec's buffers: enough to pick between 1, 2 and 3. G is patch `372ac258` and the test
+build T is `5421b734` with this; the unit is unchanged (7cb02bac), so the guardian's test result stands.

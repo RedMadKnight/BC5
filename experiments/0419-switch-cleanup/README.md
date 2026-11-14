@@ -418,11 +418,36 @@ or the backend, the link, any run. HANDOFF's F403 and F813 rows carry the note a
 `audio-record-fault.md` is the record. The bad record is the title's own sound-engine buffer with a null base, not a
 structure of ours; F's audio libraries are B's; who drove the engine there is not known. Two candidates in our AJM
 library, read in the source and not shown to be the cause: jobs run when added instead of at the batch start, and
-instance ids that wrap after 16,384 creates onto a live instance. For the next private build G (now patch `f32bb923`,
+instance ids that wrap after 16,384 creates onto a live instance. For the next private build G (now patch `372ac258`,
 133 files) carries a catcher and both fix candidates, each behind its own switch, all off: `KYTY_BC5_AUDIO_TRAIL`,
 `KYTY_BC5_AJM_DEFER`, `KYTY_BC5_AJM_LIVE_IDS` (`ajm/`). The dumps are not in git: the guardian's copies are in the
 shared notes folder (`exp0412-cpufault/`), the originals on the box under `~/bc5-work/exp0413/n/raw/sA-*` and
 `~/bc5-work/exp0412/n8/raw/n10F2-*`.
+
+### 19. Corrections and two records of 2026-11-14
+
+- **Section 15's count corrected** (Codex, 2026-11-14 01:43 UTC; checked against section 14's arm table): sC is "F
+  without exp 0418's five new rows" and was counted under "F, K1r on" as well. Disjoint variants: F with all rows
+  **2 / 6** (m5wall, sA, sE, dF1-3), F without the five rows 0 / 3 (sC, dN1-2), F with K1r off 0 / 3, B 0 / 3. All
+  K1r-on runs together are 2 / 9 and are not one variant. Fisher's exact test for 2 / 6 against 0 / 3 is p = 0.42.
+  The conclusion stands: the counts do not separate F from B.
+- **The runners' stop rule** (the same entry and LESSONS R55): `series0419f.sh` and `counts0419f.sh` went on to the
+  next arm after a kernel line and stopped only on a failed reset. No kernel line occurred in either series. Both
+  scripts and `mkseries0419f.py` now stop before the next arm; not run since.
+- **Cleanup on the box** (2026-11-14 12:02, the standing cleanup approval, the top session's order): `play-pkg-log.sh`
+  (7d33409f) and `play-pkg-quiet.sh` (4230882c) are in `~/bc5-work/trash-20261114/` with a note; `play-pkg.sh` is the
+  second title's only launcher. No shortcut or current script named them: only `route.sh`, `bisect.sh`,
+  `int-cleanup-20261025.sh` and the 230 `run573..run838.sh` they generated, none touched since 2026-10-19 (left in
+  place; they would fail now). CLAUDE.md on main still lists the two files and "the three second-title launchers":
+  that paragraph is the top session's to change. The desktop holds two shortcuts, both `play-any.sh` (the lean one
+  with `BC5_LEAN=1`): the empty emulator window, whose File menu (Open game image / Open package / Recent) starts
+  either title; ASTRO BOT is started there through its image, which goes to `play-astro.sh` (read on the box:
+  `play-any.sh` 4da8ce07).
+- **The title's code at the fault's return addresses** was read on the box (`eread0419.sh`, read only):
+  `audio-record-fault.md` section 7. The bad field is written by the upstream object's fill call, one step before
+  the copy; which class that object is, the present dumps do not hold.
+- `codex-20261114-0143-verdicts.md`: that entry point by point. `f403-f813-series.md`: a counted series that gives
+  F403 and F813 a rate (proposal, nothing run).
 
 ## Decisions for the maintainer
 
@@ -430,7 +455,8 @@ One "yes" covers the swap of E as a whole (the top session asks): both shared bu
 (exp 0412's two files), the launchers without the moved words (`play-pkg-0419.diff`, `play-astro-0419.diff`), and the
 desktop: one shortcut per title ("BC5 emulator" / "(lean)" through `play-any.sh`); "e10 menu", "0412 K1r test" and
 "Astro (0412 events cap)" carry words that E forces, ignores or has removed, so they become plain duplicates and go
-to the trash directory. Still his to say separately, because they are behaviour and not housekeeping:
+to the trash directory. (Done apart from any swap: the top session moved those three shortcuts on 2026-11-14 under
+the standing cleanup approval; the desktop holds "BC5 emulator" and "BC5 emulator (lean)" only.) Still his to say separately, because they are behaviour and not housekeeping:
 
 1. `BC5_GUARD_FORGET=10`, `BC5_DIRECT_LAZY_RELEASE=30,eager` + `BC5_GUARD_SPLIT=1`: in the title's table as today; each
    needs one arm without it (exp 0412) before it is hardened or dropped.

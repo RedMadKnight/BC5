@@ -73,6 +73,9 @@ arm() {  # tag, binary, md5, words...
         grep -a -i -m6 'timed out\|acb #\|dcb #' "$d/journal-tail.txt" | cut -c1-260
     done
     echo "$tag kernel lines: $(grep -c . "$R/$tag-dmesg-after.txt" 2> /dev/null)"; grep -i 'timeout\|reset' "$R/$tag-dmesg-after.txt" 2> /dev/null | cut -c1-160 | head -4
+    # R55 / Codex 2026-11-13 20:13 and 21:13 UTC: no next arm after a kernel line, a new fault record or an unknown end,
+    # also when the reset succeeded (added 2026-11-14; the runs of sections 14 and 15 were made without this line)
+    [ "$KERN" = 0 ] || { echo "series0419f STOP after $tag: kernel error, new fault record, or unknown run status"; echo "series0419f ended $(date +%T): STOPPED"; exit 1; }
     if grep -qi 'reset.*fail\|fail.*reset' "$R/$tag-dmesg-after.txt" 2> /dev/null; then echo "series0419f STOP after $tag: the kernel reports a failed reset"; echo "series0419f ended $(date +%T): STOPPED"; exit 1; fi
     [ "$(cat /proc/sys/kernel/random/boot_id)" = "$BOOT" ] || { echo "series0419f STOP: the boot id changed"; exit 1; }
     sleep 10

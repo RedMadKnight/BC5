@@ -294,6 +294,17 @@ g.sub('\t\tdump_guest_qwords("guest r15", info->r15);\n',
 			wide("wide rcx", info->rcx);
 			wide("wide r13", info->r13);
 			wide("wide r15", info->r15);
+			// The fault at eboot+0x1b349f (audio-record-fault.md section 8): rcx is the resampler state at object+0x10, the
+			// object's upstream source is the pointer at object+0x8, and the source's codec is the pointer at source+0xc8.
+			// Followed for any fault: 0x200 bytes of what [rcx-8] points to (from 0x100 before it), then of [that+0xc8].
+			if (info->rcx > 0x10000 && IsReadableRange(info->rcx - 8, 8)) {
+				const uint64_t up = *reinterpret_cast<const uint64_t*>(info->rcx - 8);
+				wide("wide [rcx-8]", up);
+				wide("wide [rcx-8]+0x100", up + 0x200);
+				if (up > 0x10000 && IsReadableRange(up + 0xc8, 8)) {
+					wide("wide [[rcx-8]+0xc8]", *reinterpret_cast<const uint64_t*>(up + 0xc8));
+				}
+			}
 			Libs::Audio::Ajm::Bc5AjmTrailDump(Bc5CrashLog);
 		}
 ''')

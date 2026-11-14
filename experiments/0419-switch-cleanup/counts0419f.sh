@@ -77,6 +77,9 @@ arm() {  # tag, binary, md5, words...
 ' ' ')"; grep -a -h -i 'first fail\|firstfail\|ff412' "$J" "$R/$tag-play.log" 2> /dev/null | head -4 | cut -c1-240
     [ -s "$R/$tag-crash.txt" ] && { echo "$tag crash text:"; grep -a -m3 'exception_address\|Access violation\|access_violation_vaddr' "$R/$tag-crash.txt" | cut -c1-160; }
     echo "$tag kernel lines: $(grep -c . "$R/$tag-dmesg-after.txt" 2> /dev/null)"; grep -i 'timeout\|reset' "$R/$tag-dmesg-after.txt" 2> /dev/null | cut -c1-160 | head -4
+    # R55 / Codex 2026-11-13 20:13 and 21:13 UTC: no next arm after a kernel line, a new fault record or an unknown end,
+    # also when the reset succeeded (added 2026-11-14; the runs of sections 14 and 15 were made without this line)
+    [ "$KERN" = 0 ] || { echo "counts0419f STOP after $tag: kernel error, new fault record, or unknown run status"; echo "counts0419f ended $(date +%T): STOPPED"; exit 1; }
     if grep -qi 'reset.*fail\|fail.*reset' "$R/$tag-dmesg-after.txt" 2> /dev/null; then echo "counts0419f STOP after $tag: the kernel reports a failed reset"; echo "counts0419f ended $(date +%T): STOPPED"; exit 1; fi
     [ "$(cat /proc/sys/kernel/random/boot_id)" = "$BOOT" ] || { echo "counts0419f STOP: the boot id changed"; exit 1; }
     sleep 10
