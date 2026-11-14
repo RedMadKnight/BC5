@@ -39,7 +39,7 @@ def main():
     s = rep(s, b'echo "binary $MD (bin-g);', b'echo "binary $MD ($BIN); words $WORDS; walks $TFIRST..$TMAX;')
     s = rep(s, b"CATCH=(KYTY_BC5_MEM_FIRSTFAIL=1 ", b"CATCH=(KYTY_BC5_AUDIO_TRAIL=1 KYTY_BC5_MEM_FIRSTFAIL=1 ")
     a = b'''    echo "$tag dispatch count: '''
-    s = rep(s, a, b'''    echo "$tag desc targets: $(grep -a '^desc targets (exp 0412, tag dt412): t [0-9]* s: mode' "$J" 2> /dev/null | tail -1 | cut -c1-220)"\n''' + a)
+    s = rep(s, a, b'''    echo "$tag desc targets: $(grep -a '^desc targets (exp 0412, tag dt412): t [0-9]* s: mode' "$J" 2> /dev/null | tail -1 | cut -c1-220)"\n    echo "$tag audio trail: $(grep -a -c 'exp 0419 ajt:' "$R/$tag-play.log" 2> /dev/null) line(s); the last: $(grep -a 'exp 0419 ajt:' "$R/$tag-play.log" 2> /dev/null | tail -1 | cut -c1-200)"\n''' + a)
     s = rep(s, b"night0412i: the stop file is there", b"night0412t: the stop file is there")
     i = s.index(b"FCLEAN=0; FKNOWN=0\n")
     s = s[:i] + b'''FCLEAN=0; FKNOWN=0; K=$TFIRST
