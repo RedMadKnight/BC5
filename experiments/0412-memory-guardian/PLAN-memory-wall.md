@@ -114,3 +114,7 @@ hang of section 81 is explained.
 The maintainer agreed to the scripted arms. One switch per heap: `BC5_GUARD_BYDATA_NAMES` (tag bd412). The
 catcher's CPU/GPU split: `BC5_GUARD_WRITERS=2` (tag wc412, the soft-dirty bit). Arms w0, b1-b4 in section 82.
 Nothing runs before the hang of section 81 is explained.
+
+### `BC5_GUARD_LAZY_BY_DATA`: verdict (2026-11-14, asked by the top; no run)
+
+It stays as an arm, off: option B does not replace it, because B moves EAGER heaps to "by data + cover" to pin less, while this switch moves LAZY heaps to the same rule and pins more (+734 MiB ASTRO BOT, +194 MiB second title, README section 72), for a fault (a GPU read of written lazy memory, kl412) that has not fired in four arms, two plays and the long walks of 2026-11-14 [M]; it goes on only if that named fault fires, or last, when B has recovered more than it costs and one rule for every heap is wanted [I].

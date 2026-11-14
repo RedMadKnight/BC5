@@ -4421,6 +4421,109 @@ reports, no run: 18.7 of the 19.6 million extra are four programs in the range 0
 - [unknown] What these four are and what drove them up in one walk of eight at the same flip rate. The program of
   the 601 s hang, 0x90992af00, is in the same address range.
 
+### 93. The second chain resumed: six more long walks, all clean; no hang, no CPU fault; the four programs at 0x9099… (2026-11-14 10:40 – 11:57; the top session's GO)
+
+Chain `memfast/night0412i.sh` (`memfast/mki0412.py` from night0412h.sh): arms n10F3..n10F8, the same binary
+b413a916 and alternation. One change of the stop rule, by the top's GO: the title's known CPU fault
+(eboot.bin+0x1b349f, exit 65, 0 kernel lines, no timeout, no new fault record) is recorded
+(`raw/<tag>-cpufault.txt`) and does not stop the chain; anything else stops it as before. The detector was run dry
+over n10F2's files (known) and n10F1's (not) before the start, with the stop-file path. Output
+`~/bc5-work/exp0412/n8/chain5.out`.
+
+| arm | dc412 | flips/s | longest gap ms | s with a gap > 100 ms | avail / GTT MiB at 420 s | at 600 s | lowest avail |
+|---|---|---|---|---|---|---|---|
+| n10F3 | on | 25.0 | 686 | 114 | 833 / 12,209 | 730 / 12,290 | 640 |
+| n10F4 | off | 26.3 | 580 | 72 | 565 / 12,231 | 554 / 12,305 | 472 |
+| n10F5 | on | 24.8 | 709 | 111 | 561 / 12,286 | 517 / 12,294 | 451 |
+| n10F6 | off | 24.4 | 830 | 122 | 715 / 12,313 | 672 / 12,305 | 497 |
+| n10F7 | on | 25.6 | 789 | 87 | 525 / 12,203 | 753 / 12,247 | 441 |
+| n10F8 | off | 24.9 | 786 | 132 | 631 / 12,196 | 671 / 12,325 | 586 |
+
+- [M] All six ended at G+620: 0 kernel lines, 0 crash lines, no timeout, no tl412 file, no fault record, no CPU
+  fault. The laptop's kernel stream holds no amdgpu line. After it: no emulator, lock empty, no claim mutex.
+- **My error, n10F3 disturbed** [M]: at 10:42–10:44, while n10F3 ran, a copy command of mine for the integrator
+  (the CPU-fault dumps) looked for arm sA's file in the wrong directory, got an empty path, and a `tar` on the box
+  packed the whole of `~/bc5-work/exp0412/` for about two minutes (2.9 GiB to the laptop). I killed it by its
+  process id, removed its three files in /tmp and emptied the notes subfolder. n10F3's flip rate and gaps were
+  measured under that load and are not to be compared; its end state is not affected. No copy from the box during
+  a run again (the top's R55); a path built from a search is checked for being non-empty before it is used.
+- [M] dc412 on against off, the arms of both chains without n10F3 and the crashed n10F2: on (n10F1, F5, F7)
+  25.6, 24.8, 25.6 flips/s and 643, 709, 789 ms; off (n10F4, F6, F8) 26.3, 24.4, 24.9 and 580, 830, 786 ms.
+  No difference to see. No hang in either, so the alternation says nothing about dc412 and the hang.
+- [M] The tally of long F walks on b413a916: 15 clean, 1 ended by the title's CPU fault, 0 GPU hangs
+  (n9F1–8, n10F1–8). On f8cb77ad: 7 clean, then the hang. On the old series: the hang of 601 s and sA's CPU fault
+  in 6. **The hang did not come back in 16 walks with the catchers armed; no record of it exists yet.**
+- [I] At one hang in eight walks 16 without one would come out about one time in eight; at the night's rate over
+  all F walks before today (2 hangs in about 17) about one in seven. So "gone" is not shown, and a cause is not
+  shown either: b413a916 differs from f8cb77ad only by the three catchers.
+
+**The four programs at 0x9099…** [M] (the last dc412 report of each arm with dc412 on, t 720 s):
+
+| arm | sets T (0x909939400, …9700 direct; …9900 indirect, each T times) | groups of each direct one | 0x909936c00 indirect, times | "gpu check: dispatches left to the CP that the host would have dropped" (the journal's last line) |
+|---|---|---|---|---|
+| n9F1 | 6,427,601 | 12,552,700 | 12,552,700 | 13,369,345 |
+| n9F2 | 6,365,799 | 12,459,489 | 12,459,489 | 13,369,345 |
+| n9F3 | 10,221,826 | 19,589,322 | 19,589,322 | 20,643,841 |
+| n9F4 | 6,652,311 | 13,015,968 | 13,015,968 | 13,893,633 |
+| n9F5 | 6,766,943 | 13,291,354 | 13,291,354 | 14,221,313 |
+| n9F6 | 6,129,137 | 11,967,573 | 11,967,573 | 12,779,521 |
+| n9F7 | 6,086,577 | 11,855,274 | 11,855,274 | 12,713,985 |
+| n9F8 | 6,097,408 | 11,852,991 | 11,852,991 | 12,779,521 |
+| n10F1 | 6,614,813 | 12,937,783 | 12,937,783 | 13,762,561 |
+| n10F3 | 6,834,024 | 13,314,924 | 13,314,924 | 14,221,313 |
+| n10F5 | 5,780,599 | 11,282,202 | 11,282,202 | 12,255,233 |
+| n10F7 | 7,782,207 | 15,213,233 | 15,213,233 | 16,056,321 |
+
+- [M] The address range is the title's own image: eboot.bin is loaded at 0x900000000 (the crash dump's module
+  line), so these are programs built into the executable; the title's other compute programs lie in 0x11d0….
+- [M] They run as one unit: two direct dispatches (0x909939400, 0x909939700) with the same group count, one
+  indirect (0x909939900), and then 0x909936c00 indirectly exactly as many times as the direct ones had groups
+  (equal to the unit in all twelve arms; 1.95 groups a set). About 9,400 sets a second, some 370 a frame.
+- [M] The host's "gpu check" counter (indirect dispatches it would have dropped and now leaves to the CP,
+  printed every 65,536) follows 0x909936c00's count in every arm, 4–8 % above it at a later time of the run.
+- [I] So the bulk of 0x909936c00's runs are indirect dispatches the host used to drop on the CPU (their group
+  count read as zero or not readable) and that the CP now decides. They are the title's per-item work with mostly
+  empty items.
+- [M] The number of sets is the run's own: 5.78 to 7.78 million in eleven arms, 10.22 million in n9F3, on the
+  same scripted route and at the same flip rate; the title's programs in 0x11d0… do not move with it (the pair
+  n8F8 stopped at: 33,716 to 37,628 runs in every arm).
+- [unknown] What sets the number of sets in a run (what the title counts as an item). The journals hold dc412's
+  report every 60 s, so when in the walk n9F3's surplus arose can be read without a run; not read yet. Whether a
+  high count goes with a hang: n8F8 had no dc412.
+- [M] The program of the 601 s hang, 0x90992af00 (0x8061, indirect): 190,498 to 201,069 runs in every arm, from
+  t 3.7 s on, so from the first frames; about 270 a second.
+
+### 94. Prepared for the next heaps: the buffers a shader is given by a descriptor are imported before the submit (tag dt412, `BC5_GUARD_DESC_TARGETS`, default off; laptop, not compiled on the box, not run)
+
+Asked by the top as the condition for further heap arms (section 85: arm b1's GPU WRITE under the read-only
+cover came from a shader's store through a buffer descriptor, a class the host does not name).
+
+- `memfast/dt0412.inc` (namespace dt412), CPU test `memfast/dt0412.cpp`: **7,048 of 7,048** on the laptop
+  (VS clang++ -O1 -Wall -Wextra -Werror).
+- `memfast/mkdt0412.py`, after `mkdw0412.py`: unit a53e98b7 -> **c68a3cc4**. The glue passes a syntax check
+  against a stand-in of the host's declarations on the laptop; it has not been compiled in the host.
+- `BC5_GUARD_DESC_TARGETS=1`: in `submit_now`, right after K1 at the filter and before the mappings are synced,
+  the command buffer's user data is walked: every pair of neighbouring user-data registers set by SET_SH_REG,
+  SET_SH_REG_INDEX or a loaded table (all six graphics stages and compute; offsets from Mesa's gfx10.json,
+  94ad3c5e) that reads as a buffer descriptor or a plain pointer is taken. A descriptor's span is stride x records
+  (layout as read from arm n8F8's own buffer, section 89: `a5ae8000 03000011 00000800`), cut at 256 MiB; a plain
+  pointer's page, and the descriptors and pointers in the first 64 dwords it leads to (the second level of
+  section 90). Each is given to `direct_force`, the import the bind hints and K1 at the filter already use; an
+  address under no view costs nothing. The same buffer is looked up again at most once a second; a table only
+  when its 64 dwords changed.
+- `BC5_GUARD_DESC_TARGETS=2`: log only. Nothing is imported; the journal counts the buffers that are not imported
+  and the MiB mode 1 would add (a line per buffer for the first 200, a total every 60 s).
+- [I] What it costs: a descriptor does not say whether the shader reads or writes, so read-only inputs are
+  imported too, zero chunks included. On a by-data heap that gives back part of what the cover saves. Mode 2 on a
+  walk gives that number before any heap arm.
+- [unknown] Whether it names b1's writer. The level of that descriptor is not known (the job that timed out held
+  no dispatch; ph412 was not in that build), 64 dwords of a table may be too few, and a descriptor reached
+  through a third level or held in a constant buffer the shader indexes is not seen. The test is arm b1 again
+  with mode 1 and ph412 armed: clean past the load, or a fault record whose pointers.txt names the place.
+- Not covered: image descriptors (a texture a compute shader writes; the bind hints name render targets only).
+  dw0412.inc's texture reading (base >> 8 in one dword) could be added the same way; not done, because it has
+  far more false readings and b1's write was to a buffer heap.
+
 ## Verdict
 
 (The header above was dropped by mistake in commit 8cfa4549, section 87, and is restored here; the text below is unchanged.)
