@@ -8,6 +8,7 @@ d92092ef5cc4a669c7a8b13aea9d251e  3rdparty/vgmstream-atrac9/src/coding/libs/atra
 03e6bc438c40512902f57c326c70eccc  3rdparty/vgmstream-atrac9/src/coding/libs/atrac9_internal_data.h
 7a21a92b7bf2c6cf6a0831893ca5954b  3rdparty/vgmstream-atrac9/src/util/bitstream_msb.h
 81fe0e8f2fe73d5dacfc5acec275bf6f  src/CMakeLists.txt
+d4d0bfd973d227666940ed595c834e73  src/bc5/ajm_trail.hpp
 058bb712963c48461da94fc8d97fd187  src/bc5/anon_sync.hpp
 2578c1a23acc00b611b5835dd4c9f5a0  src/bc5/apr_posix.hpp
 2c65b3f94eaf30635de7d1664ecb9afc  src/bc5/env_rule.hpp
@@ -67,7 +68,7 @@ bafb6902b575b535839ac3a020096171  src/kernel/syncOnAddress.cpp
 b595887fc668c13c7a197fecc6e39a94  src/kernel/syncOnAddress.h
 8a77aa450820d60c757c815cd38b3dd8  src/libs/agc.cpp
 a150b476b162ea6e3086d06c89a3abb0  src/libs/agc.h
-d1a470236ca8b685eacebe7a5b8933ef  src/libs/ajm.cpp
+8afb714dca830b94456f5fc54da59baf  src/libs/ajm.cpp
 f24cfa28025a1cacc9e32a3715df68dd  src/libs/ajm/atrac9_decoder.h
 0e7afffb9de3801db6fdcfca59e1f5c7  src/libs/ajm/opus_decoder.h
 d2c222c74a7156fc1d0e65c9d6bbf253  src/libs/audio.cpp
@@ -126,7 +127,7 @@ de049788bb974feb7a4ddc4042a02642  src/libs/saveDataMountSlots.h
 d8e964827553d2cd6aedc4de0ed44b71  src/libs/systemService.h
 eb8cce4c1b0de6a061b555ff584d9bed  src/loader/gamePatch.cpp
 7da6a067fff9769dbce770d0b9854100  src/loader/gamePatch.h
-aba94c24ad35a1c944ad3bd5843b13ef  src/loader/runtimeLinker.cpp
+6dcf713c792c5be45f3fdb78a99af00e  src/loader/runtimeLinker.cpp
 4e33b30a4acf89481942cec435b76c37  src/loader/systemContent.cpp
 2b2b21eb1faf35c2a538917049aea85e  src/loader/systemContent.h
 1d89851b85af41cb0fd94b6e60892b0e  src/main.cpp

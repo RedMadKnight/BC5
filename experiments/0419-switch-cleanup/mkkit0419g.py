@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """BC5 experiment 0419: the private build script of candidate G, from the generated p0419f.sh by exact replacements.
-G = F (d9af28ca) + mklibs0419g.py + mkg0419_a.py .. mkg0419_e.py and mkg0419_g.py on the tree, and mkg0419_f.py (with `all`) on the backend's
+G = F (d9af28ca) + mklibs0419g.py + mkg0419_a.py .. mkg0419_e.py, mkg0419_g.py and ajm/mkajm0419.py on the tree, and mkg0419_f.py (with `all`) on the backend's
 direct.cpp (28100ce5 -> aeec4c09; direct.hpp e96e5c73 as in F). The private tree goes from 0001-new18 (F) to
-0001-new21 (P_NEW21). Made on the laptop on 2026-11-14 without a build: this script's run on the box is G's FIRST
+0001-new22 (P_NEW22). Made on the laptop on 2026-11-14 without a build: this script's run on the box is G's FIRST
 compile (the main unit cannot be compiled on the laptop), so a compile error there is an expected kind of result.
 usage: mkkit0419g.py <p0419f.sh as generated> <out dir>"""
 import sys
@@ -19,19 +19,19 @@ def rep(old, new, n=1):
 
 
 rep("# p0419f (exp 0419, candidate F):",
-    "# p0419g (exp 0419, candidate G): the private tree goes from 0001-new18 (d9af28ca, F) to 0001-new21 (P_NEW21); the\n"
-    "# private backend gets direct.cpp aeec4c09 (seven option reads gone). usage: P_NEW21=<patch md5> bash p0419g.sh\n"
+    "# p0419g (exp 0419, candidate G): the private tree goes from 0001-new18 (d9af28ca, F) to 0001-new22 (P_NEW22); the\n"
+    "# private backend gets direct.cpp aeec4c09 (seven option reads gone). usage: P_NEW22=<patch md5> bash p0419g.sh\n"
     "# p0419f (exp 0419, candidate F):")
 rep('[ "$(m "$HERE/0001-new17.patch")" = 410273ca ] && [ "$(m "$HERE/0001-new18.patch")" = "${P_NEW18:?the new patch md5}" ]',
-    '[ "$(m "$HERE/0001-new18.patch")" = d9af28ca ] && [ "$(m "$HERE/0001-new21.patch")" = "${P_NEW21:?the new patch md5}" ]')
+    '[ "$(m "$HERE/0001-new18.patch")" = d9af28ca ] && [ "$(m "$HERE/0001-new22.patch")" = "${P_NEW22:?the new patch md5}" ]')
 rep("private rebuild of candidate F (tree and a private backend)", "private rebuild of candidate G (tree and a private backend)")
 rep('done < "$HERE/tree17.md5"\n[ "$bad" = 0 ] || die "$bad files of the private tree are not 410273ca\'s"',
     'done < "$HERE/treeF.md5"\n[ "$bad" = 0 ] || die "$bad files of the private tree are not d9af28ca\'s"')
 rep('git apply -R --whitespace=nowarn "$HERE/0001-new17.patch" && git apply --whitespace=nowarn "$HERE/0001-new18.patch"',
-    'git apply -R --whitespace=nowarn "$HERE/0001-new18.patch" && git apply --whitespace=nowarn "$HERE/0001-new21.patch"')
-rep("tree18.md5", "tree21.md5", 2)
+    'git apply -R --whitespace=nowarn "$HERE/0001-new18.patch" && git apply --whitespace=nowarn "$HERE/0001-new22.patch"')
+rep("tree18.md5", "tree22.md5", 2)
 rep("treeF.md5", "tree18.md5")
-rep("(0001-new18)", "(0001-new21)")
+rep("(0001-new18)", "(0001-new22)")
 rep('[ "$(m "$HERE/backend-direct-noprobe.hpp")" = e96e5c73 ] && [ "$(m "$HERE/backend-direct-noprobe.cpp")" = 28100ce5 ] || die "the kit\'s backend files are not e96e5c73 / 28100ce5"',
     '[ "$(m "$HERE/backend-direct-noprobe.hpp")" = e96e5c73 ] && [ "$(m "$HERE/backend-direct-g.cpp")" = aeec4c09 ] || die "the kit\'s backend files are not e96e5c73 / aeec4c09"')
 rep('cp "$HERE/backend-direct-noprobe.cpp" "$PB/src/direct.cpp"', 'cp "$HERE/backend-direct-g.cpp" "$PB/src/direct.cpp"')

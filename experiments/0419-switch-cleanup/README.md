@@ -413,6 +413,17 @@ Checked again on the laptop: every edit matched once, braces balance, no new unu
 `p0419g.sh`, the dry run F -> G on a clean tree (132 of 132 files). Still NOT checked: any compile of the main unit
 or the backend, the link, any run. HANDOFF's F403 and F813 rows carry the note and where the words can be taken from.
 
+### 18. The title's CPU fault at eboot+0x1b349f (2026-11-14, laptop only)
+
+`audio-record-fault.md` is the record. The bad record is the title's own sound-engine buffer with a null base, not a
+structure of ours; F's audio libraries are B's; who drove the engine there is not known. Two candidates in our AJM
+library, read in the source and not shown to be the cause: jobs run when added instead of at the batch start, and
+instance ids that wrap after 16,384 creates onto a live instance. For the next private build G (now patch `f32bb923`,
+133 files) carries a catcher and both fix candidates, each behind its own switch, all off: `KYTY_BC5_AUDIO_TRAIL`,
+`KYTY_BC5_AJM_DEFER`, `KYTY_BC5_AJM_LIVE_IDS` (`ajm/`). The dumps are not in git: the guardian's copies are in the
+shared notes folder (`exp0412-cpufault/`), the originals on the box under `~/bc5-work/exp0413/n/raw/sA-*` and
+`~/bc5-work/exp0412/n8/raw/n10F2-*`.
+
 ## Decisions for the maintainer
 
 One "yes" covers the swap of E as a whole (the top session asks): both shared builds, the shared backend archive
