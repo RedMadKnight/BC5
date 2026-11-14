@@ -215,4 +215,4 @@ before the first fault: a coincidence in time, nothing more is known.
 at rcx-8 (the upstream source) and the pointer at its +0xc8 (the codec) and prints 0x200 to 0x400 bytes of each. One
 fault then shows the source's table (its class), its flag byte +0x52, the base at +0x10, the stream pointer and size
 at +0x18 and +0x20, and the codec's buffers: enough to pick between 1, 2 and 3. G is patch `372ac258` and the test
-build T is `5421b734` with this; the unit is unchanged (7cb02bac), so the guardian's test result stands.
+build T is `5f2df896` with this; the unit is unchanged (7cb02bac), so the guardian's test result stands.
