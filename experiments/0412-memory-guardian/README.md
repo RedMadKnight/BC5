@@ -3962,8 +3962,9 @@ for the whole process, 110-133 ms with the reads; flips/s as in the F arms). Not
   ACQUIRE_MEM, one compute user-data block. It waited behind the faulting job; the writer is an earlier submission
   and is NOT identified. Its target is not a packet operand, a hint or a force: TCP is the client of a shader's own
   loads and stores, so the address came from a buffer descriptor the shader was given.
-- memory: at the fault 1,330 MiB available and GTT 11,464 MiB against about 11,2xx at the same second of the other
-  arms is NOT a like-for-like number (the load was not over); "MiB recovered at 420 s and 600 s" was not reached.
+- memory: at 110 s the journal has 1,330 MiB available and GTT 11,464 MiB; arm n8F2 at the same second 857 and
+  11,954 (490 MiB less GTT, 473 more available). One pair, in the load: NOT the steady-state number; "MiB
+  recovered at 420 s and 600 s" was not reached.
 - no failed memory call before it (first-failure lines 0, armed).
 
 [I] What it means for the rule: "by data + cover + named write targets" is not safe for CommitIABufferAllocator as
