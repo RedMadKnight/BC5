@@ -7,8 +7,8 @@
 #      against tree.md5 (made from the laptop's replay tree)
 #   3. configure and build normal and lean (bc5-build.sh's options, the shared backend paths), nice 19
 #   4. checks on the binaries; the archive unchanged; the lock released
-# p0419g (exp 0419, candidate G): the private tree goes from 0001-new18 (d9af28ca, F) to 0001-new20 (P_NEW20); the
-# private backend gets direct.cpp 9eb378e1 (four option reads gone). usage: P_NEW20=<patch md5> bash p0419g.sh
+# p0419g (exp 0419, candidate G): the private tree goes from 0001-new18 (d9af28ca, F) to 0001-new21 (P_NEW21); the
+# private backend gets direct.cpp aeec4c09 (seven option reads gone). usage: P_NEW21=<patch md5> bash p0419g.sh
 # p0419f (exp 0419, candidate F): the private tree goes from 0001-new17 (410273ca, E) to 0001-new18 (P_NEW18); the
 # private backend is made again from the same two files. usage: P_NEW18=<patch md5> bash p0419f.sh
 # p0419e (exp 0419, candidate E): the private tree goes from 0001-new15 (1689b7da) to 0001-new17 (P_NEW17); the private
@@ -66,7 +66,7 @@ release() {
 die() { echo "p0413 STOP: $*"; release; exit 1; }
 pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
 [ "$(git -C "$K" diff --no-color f266548 | md5sum | cut -c1-8)" = 27b6416f ] || stop "the shared tree is not 0001 27b6416f"
-[ "$(m "$HERE/0001-new18.patch")" = d9af28ca ] && [ "$(m "$HERE/0001-new20.patch")" = "${P_NEW20:?the new patch md5}" ] || stop "the kit's patches are not the pins"
+[ "$(m "$HERE/0001-new18.patch")" = d9af28ca ] && [ "$(m "$HERE/0001-new21.patch")" = "${P_NEW21:?the new patch md5}" ] || stop "the kit's patches are not the pins"
 [ "$(m "$ARCH")" = 75e30335 ] || stop "the archive is not 75e30335"
 [ -d "$BSRC/include/bc5" ] || stop "no backend include dir at $BSRC"
 claim "exp 0419: private rebuild of candidate G (tree and a private backend) under exp0413/p, CPU only" 40
@@ -74,15 +74,15 @@ echo "$(date '+%F %T') start; archive $(m "$ARCH")"
 bad=0
 while read -r sum f; do [ "$(md5sum < "$P/tree/$f" | cut -d' ' -f1)" = "$sum" ] || { echo "differs before: $f"; bad=$((bad + 1)); }; done < "$HERE/tree18.md5"
 [ "$bad" = 0 ] || die "$bad files of the private tree are not d9af28ca's"
-(cd "$P/tree" && git apply -R --whitespace=nowarn "$HERE/0001-new18.patch" && git apply --whitespace=nowarn "$HERE/0001-new20.patch") || die "reapplying"
+(cd "$P/tree" && git apply -R --whitespace=nowarn "$HERE/0001-new18.patch" && git apply --whitespace=nowarn "$HERE/0001-new21.patch") || die "reapplying"
 bad=0
-while read -r sum f; do [ "$(md5sum < "$P/tree/$f" | cut -d' ' -f1)" = "$sum" ] || { echo "differs: $f"; bad=$((bad + 1)); }; done < "$HERE/tree20.md5"
+while read -r sum f; do [ "$(md5sum < "$P/tree/$f" | cut -d' ' -f1)" = "$sum" ] || { echo "differs: $f"; bad=$((bad + 1)); }; done < "$HERE/tree21.md5"
 [ "$bad" = 0 ] || die "$bad files differ from the laptop's tree"
-echo "tree: $(wc -l < "$HERE/tree20.md5") patched files match the laptop's (0001-new20)"
+echo "tree: $(wc -l < "$HERE/tree21.md5") patched files match the laptop's (0001-new21)"
 # exp 0417 (the K1r fold): the PRIVATE backend. The shared source copied, exp 0412's two files put in, its own build dir.
 PB=$P/backend-src; BB=$P/backend-build; BT=$P/backend-test
 [ "$(m "$BSRC/include/bc5/direct.hpp")" = a9fcb26b ] && [ "$(m "$BSRC/src/direct.cpp")" = 51279eae ] || die "the shared backend source is not a9fcb26b / 51279eae"
-[ "$(m "$HERE/backend-direct-noprobe.hpp")" = e96e5c73 ] && [ "$(m "$HERE/backend-direct-g.cpp")" = 9eb378e1 ] || die "the kit's backend files are not e96e5c73 / 9eb378e1"
+[ "$(m "$HERE/backend-direct-noprobe.hpp")" = e96e5c73 ] && [ "$(m "$HERE/backend-direct-g.cpp")" = aeec4c09 ] || die "the kit's backend files are not e96e5c73 / aeec4c09"
 rm -rf "$PB" "$BB" "$BT" && cp -a "$BSRC" "$PB" || die "cannot copy the backend source"
 cp "$HERE/backend-direct-noprobe.hpp" "$PB/include/bc5/direct.hpp" && cp "$HERE/backend-direct-g.cpp" "$PB/src/direct.cpp" || die "cannot put the two backend files in"
 [ "$(diff -rq "$BSRC" "$PB" | grep -c .)" = 2 ] || die "the private backend differs from the shared one by more than direct.hpp and direct.cpp: $(diff -rq "$BSRC" "$PB" | head -4 | tr '\n' ' ')"
@@ -133,7 +133,7 @@ for v in normal lean; do
         grep -aqF -- "$s" "$b" || die "$v lacks [$s]"
     done
     grep -aqF -- "KYTY_BC5_AMM_SETBUFFER_TEST" "$b" && die "$v holds the set-buffer test hook (the gate is not 0)"
-    for s in BC5_GUARD_K1R_PROBE KYTY_BC5_NAMES_FAST KYTY_BC5_MIN_FLIP_RATE BC5_GUARD_ZSKIP_POLL_SUBMIT BC5_DIRECT_CP_COHER_START_DELAY BC5_DIRECT_GC_HS_OFFCHIP KYTY_BC5_EVENT_COALESCE_SAME KYTY_BC5_SEMA_TARGETED_WAKE BC5_DIRECT_TF_DEFAULT BC5_DIRECT_CROSS_RING_WAITS BC5_DIRECT_RING_DEPS BC5_DIRECT_TWO_RING_WAIT_MS BC5_DIRECT_PIECES_NO_CLEAR KYTY_BC5_RING_SPIN_US KYTY_BC5_MUTEX_SPIN_US KYTY_BC5_TIMERSLACK_NS BC5_DIRECT_GPU_CHECK_ZERO BC5_DIRECT_FORCE_START_000; do   # exp 0419: no probe; removed options
+    for s in BC5_GUARD_K1R_PROBE KYTY_BC5_NAMES_FAST KYTY_BC5_MIN_FLIP_RATE BC5_GUARD_ZSKIP_POLL_SUBMIT BC5_DIRECT_CP_COHER_START_DELAY BC5_DIRECT_GC_HS_OFFCHIP KYTY_BC5_EVENT_COALESCE_SAME KYTY_BC5_SEMA_TARGETED_WAKE BC5_DIRECT_TF_DEFAULT BC5_DIRECT_CROSS_RING_WAITS BC5_DIRECT_RING_DEPS BC5_DIRECT_TWO_RING_WAIT_MS BC5_DIRECT_PIECES_NO_CLEAR KYTY_BC5_RING_SPIN_US KYTY_BC5_MUTEX_SPIN_US KYTY_BC5_TIMERSLACK_NS BC5_DIRECT_GPU_CHECK_ZERO BC5_DIRECT_FORCE_START_000 BC5_DIRECT_ARGS_WB BC5_DIRECT_ARGS_FLUSH BC5_DIRECT_FL_SERIAL BC5_DIRECT_FL_VGT_FLUSH; do   # exp 0419: no probe; removed options
         grep -aqF -- "$s" "$b" && die "$v holds [$s]"
     done
     for n in eVU3cXIJz0w BY1jyWLZrcA JiY4sfHkV34 LbhH9NeB93I XuVY56j7GM0 fIzsqjyD5oY sRn6qePT54Q -0Vv7HKZaBM yl3T9brJay4 xjVhrq2KPJA; do

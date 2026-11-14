@@ -33,24 +33,26 @@ Trzy słowa z tej samej grupy okazały się martwe na jednym ringu (`BC5_DIRECT_
 | `KYTY_BC5_AMM_PRT_CMDS`, `KYTY_BC5_AMM_EXTRA_CMDS` | Dodatkowe polecenia AMM. | Audyt, wiersz A6: mutex i węzeł mapy na każdą stronę 16 KiB przy każdym wywołaniu; drugi tytuł ich nie importuje. | Opcja zdjęta; kod jeszcze jest. |
 | `BC5_DIRECT_HEAP_GUARDS` | Bufor zer 2 MiB za każdą dużą stertą (exp 0037/0417). | F820: trasa skryptowa czysta z osłonami i bez, po dwa przebiegi. | Stała „włączone". |
 
-## 3. Jedna rzecz wraca do Ciebie
+## 3. Pięć słów polowania — rozstrzygnięte 2026-11-14: usunięte
 
 „Próby z polowania na dawne zawieszenia => usunąć z kodu" zatwierdziłeś na moim opisie, że te zawieszenia już nie
 wracają. To był mój błąd: w HANDOFF klasy F403 i F813 są OTWARTE, a kandydat F zawiesił GPU 13 listopada w sposób,
 który te klasy opisują. Dlatego w G usunąłem tylko to, co same zapisy odrzucają (`GPU_CHECK_YZ`, `GPU_CHECK_ZERO`,
-`FORCE_START_000`, `ARGS_COPY`, `PIECES_NO_CLEAR`), a pięć słów zostawiłem:
+`FORCE_START_000`, `ARGS_COPY`, `PIECES_NO_CLEAR`), a pięć słów zostawiłem i zapytałem jeszcze raz. Odpowiedziałeś
+„Usuń", wiedząc powyższe, więc w G (patch `0dcd4357`) tych pięciu słów też już nie da się ustawić:
 
-| Słowo | Dlaczego czeka |
+| Słowo | Co o nim wiadomo (żadne nie miało własnego rozstrzygającego przebiegu) |
 |---|---|
 | `BC5_DIRECT_ARGS_WB` | Jedyne z pomiarem na korzyść: 36,6 minuty gry bez F403; „druga długa rozgrywka jest decydującym krokiem" — nigdy jej nie było. |
 | `BC5_DIRECT_FL_SERIAL` | Kandydat na poprawkę F813: 0 zawieszeń na 8 z nim, 0 na 10 bez, około 3 % wolniej. |
 | `BC5_DIRECT_FL_VGT_FLUSH`, `BC5_DIRECT_ARGS_FLUSH`, `BC5_DIRECT_ARGS_FLUSH_DRAWS` | Zbudowane, nigdy nie uruchomione na GPU. |
 
-Jeśli potwierdzisz usunięcie całej piątki, wiedząc to — znikają jednym krokiem (skrypt jest gotowy).
+Uczciwie: na razie zniknęła opcja, a kod za nią jest martwy i jeszcze siedzi w źródle (tak samo jak przy czterech
+odrzuconych słowach); wytnę go w drugiej fazie, z kompilatorem pod ręką. W HANDOFF przy F403 i F813 jest dopisane,
+że te słowa usunięto bez przebiegu i skąd je odtworzyć (patch `27b6416f` z commita d04d41f3, backend z a7e63069).
 
 ## 4. Liczby
 
 Policzone ze źródeł (nie z list): build wspólny B czyta 264 słowa; kandydat F 247, z czego 200 da się ustawić;
-kandydat G 204, z czego **157** da się ustawić (39 to wiersze jednego tytułu, 3 to ustawienia domyślne z opcją,
-115 pozostałych, głównie diagnostyka i łapacze). Bez werdyktu po G: 16; 11 po potwierdzeniu piątki z punktu 3;
-10 po ramieniu dla `FORGET`.
+kandydat G 199, z czego **152** da się ustawić (39 to wiersze jednego tytułu, 3 to ustawienia domyślne z opcją,
+110 pozostałych, głównie diagnostyka i łapacze). Bez werdyktu po G: 11; 10 po ramieniu dla `FORGET`.
