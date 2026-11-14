@@ -1,4 +1,4 @@
-# Experiment 0419: candidate G (patch 0dcd4357), made on the laptop on 2026-11-14, NOT built
+# Experiment 0419: candidate G (patch f32bb923), made on the laptop on 2026-11-14, NOT built
 
 Ordered by the top session for the night of 2026-11-13/14 with no box access. G's base is candidate F (d9af28ca).
 F is not cleared for the swap (README sections 13 to 15: two rare, unexplained faults), so G is prepared, not proposed.
@@ -7,11 +7,11 @@ F is not cleared for the swap (README sections 13 to 15: two rare, unexplained f
 
 | Piece | Value |
 |---|---|
-| patch 0001 (against KytyPlus f266548) | `0dcd4357` (`0001-new21.patch`), 132 patched files as F; 28 files differ from F, +105 / -705 lines. The first form of G, `99f32d3b` (`0001-new20.patch`, repository commit 779bb4f4), kept five hang-hunt words; this one removes them (the maintainer, 2026-11-14) |
+| patch 0001 (against KytyPlus f266548) | `f32bb923` (`0001-new22.patch`), 133 patched files (F: 132); 31 files differ from F. It adds exp 0419's three AJM switches (`audio-record-fault.md` section 6) to `0dcd4357` (`0001-new21.patch`, repository commit d62839a1), which had +105 / -705 lines against F. The first form of G, `99f32d3b` (`0001-new20.patch`, repository commit 779bb4f4), kept five hang-hunt words; this one removes them (the maintainer, 2026-11-14) |
 | main unit `src/libs/bc5LleAgc.cpp` | `8a930481` (F: 59d17cf5; the first form: dd30a593) |
 | `src/bc5/switch_defaults.hpp` | `acd74fe6` (39 rows for the second title; F: 42) |
 | backend `src/direct.cpp` | `aeec4c09` (F: exp 0412's 28100ce5; the first form: 9eb378e1); `direct.hpp` e96e5c73 as F: a new private archive is needed |
-| tree list | `tree-candidate-G-0dcd4357.md5` |
+| tree list | `tree-candidate-G-f32bb923.md5` |
 | kit | shared notes folder, `exp0419-candidate-G/` (both patches, both tree lists, the two backend files, `p0419g.sh`, `F-to-G.diff`) |
 
 Made by, in this order on F's tree: `mklibs0419g.py`, `mkg0419_a.py` to `mkg0419_e.py` and `mkg0419_g.py` (editor `ed0419g.py`: every
@@ -96,7 +96,7 @@ no emulator), or after G's first build shows the method holds.
 |---|---|---|---|
 | shared build B | 264 | - | 264 |
 | candidate F | 247 | 47 | **200** |
-| candidate G (`0dcd4357`) | 199 | 47 | **152** (39 one title's rows, 3 general defaults with an option, 110 other) |
+| candidate G (`f32bb923`) | 202 | 47 | **155** (39 one title's rows, 3 general defaults with an option, 113 other: 152 after the cleanup and the three AJM switches of `audio-record-fault.md`) |
 | G's first form (`99f32d3b`, with the five hang-hunt words) | 204 | 47 | 157 |
 
 The earlier figures (197 for F, 155 for G) were sums of lists; these are counted from the trees and replace them.

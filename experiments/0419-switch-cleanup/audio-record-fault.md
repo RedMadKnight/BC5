@@ -113,3 +113,40 @@ stream it shows that it is not AJM, and the file trail would be the next part.
 function it is in, +0x1d23df, +0x19fe14) to find the store into the record's first field and what it adds up. That
 is one read-only pass on the maintainer's own file, no emulator, and it decides between (a), (b) and (c) of section
 2 without waiting for a third fault. It needs the top's GO for the box.
+
+## 6. Written for the next private build (2026-11-14, tag ajt; candidate G is now patch `f32bb923`)
+
+`ajm/mkajm0419.py` edits `src/libs/ajm.cpp` and the guest fault handler and adds `src/bc5/ajm_trail.hpp`. Three
+switches, all off by default; with all three unset every call does what it did (the job's work, then the append).
+
+| Switch | Kind | What it does |
+|---|---|---|
+| `KYTY_BC5_AUDIO_TRAIL=1` | catcher | The last 256 AJM calls in a ring (decodes with both buffers and the result, the split decode's guest pieces, instance creates and destroys, batch starts and cancels). When the guest faults, the handler prints 0x200 bytes around rdi, rsi, rbx, rcx, r13 and r15, names every value that lies in an AJM buffer of the ring, then prints the ring and the counters. Every 4,096 creates it prints the number of instances created and destroyed with the time |
+| `KYTY_BC5_AJM_DEFER=1` | fix candidate | A batch's jobs run inside `sceAjmBatchStart`, in the order they were added; a job that did not fit into the batch does not run; jobs of a buffer initialised again without a start are dropped and counted; the split jobs' buffer lists are copied when the job is made |
+| `KYTY_BC5_AJM_LIVE_IDS=1` | fix candidate | An instance id that is still alive is not given out again |
+
+Always on, one line each for the first 8 cases: an instance id given out while still alive, and a job on an instance
+that does not exist.
+
+**The candidate "we decode when the job is added" [M, from the source]:** yes, the title can see a job's result before
+`sceAjmBatchStart`: all thirteen job calls that read or change an instance wrote their PCM, result and sideband before
+returning, and the start and the wait did nothing. Whether this title reads them that early is [?]. The change to the
+console's order is small: the thirteen calls' bodies become callables (about 40 changed lines), run at the start.
+Running them inside the start, not on another thread, is one of the orders the console allows (results are due at
+`sceAjmBatchWait`).
+
+**A second candidate found while writing it [M, from the source; I for the link to the fault]:** an instance id is
+`(codec << 14) | slot`, the slot a counter masked to 14 bits. After 16,384 creates of one codec the counter wraps and
+`sceAjmInstanceCreate` stores the new instance under an id that may still be alive: the older voice's decoder is
+replaced by the new one's, the older voice then decodes another voice's stream with the wrong state, and whichever is
+destroyed first takes the other's instance with it (its jobs then return "invalid parameter" with 0 bytes, appended
+as good jobs). That needs a long-lived voice and about 16,000 creates: at 30 creates a second it is reached near
+550 s, which is where both faults came, and it would not depend on F. [?] The title's create rate is not known; the
+trail's counter line gives it in one ordinary walk, and the always-on line names the first reuse. If the rate is far
+lower, this candidate is out.
+
+Checked on the laptop: `ajm/test0419ajm.cpp` (the ring, the id rule with and without the fix including the wrap, the
+deferred jobs' order, drop and run-once) all ok; `ajm/chkblock0419.cpp` compiles the block that goes into `ajm.cpp`
+against stand-ins with `-Wall -Wextra -Werror -Wshadow`; every edit matched once, braces balance; the dry run F -> G on
+a clean tree, 133 of 133 files. NOT compiled: `ajm.cpp` as a whole (it needs the ffmpeg headers) and the handler
+(Linux only); their first compile is G's build on the box. G reads 202 words now, 155 can be set.
