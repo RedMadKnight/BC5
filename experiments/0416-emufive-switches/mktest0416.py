@@ -95,6 +95,11 @@ public:
 namespace LibKernel { static void KernelDispatchPendingSignalForCurrentThread() {} }
 static thread_local int t_priority = 700;
 namespace Libs::LibKernel { static int PthreadGetCurrentPriorityForKernel() { return t_priority; } }
+namespace bc5::load_stat { // exp 0415's counters (in the unit since the integration of 2026-11-13): stand-ins that count nothing
+enum Id { kSemaSignal, kSemaWait };
+[[maybe_unused]] static void count(Id, size_t) {}
+struct Scope { explicit Scope(Id) {} ~Scope() {} };
+} // namespace bc5::load_stat
 static constexpr uint32_t BC5_SEMA_FIX_SIGNAL = 2u;
 static bool Bc5SemaFix(uint32_t) { return false; }
 static constexpr uint32_t SIGNAL_APC_POLL_MICROS = 10u * 1000u * 1000u; // stretched: a lost wake-up shows as a stall
