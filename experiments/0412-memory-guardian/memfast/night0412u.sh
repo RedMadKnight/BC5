@@ -114,6 +114,7 @@ arm() {  # tag, kind (F, W, B), words...
     echo "$tag cover-log lines: $(grep -a -c '^cover log (exp 0412, tag kc412): t ' "$J" 2> /dev/null); the last two:"; grep -a '^cover log (exp 0412, tag kc412): t ' "$J" 2> /dev/null | tail -2 | cut -c1-260
     echo "$tag k1r, last line: $(grep -a '^k1r (exp 0412, tag k1r412): t ' "$J" 2> /dev/null | tail -1 | cut -c1-200)"
     echo "$tag desc targets: $(grep -a '^desc targets (exp 0412, tag dt412): t [0-9]* s: mode' "$J" 2> /dev/null | tail -1 | cut -c1-220)"
+    echo "$tag AJM ids given out while still alive: $(grep -a -c 'given out while still alive' "$R/$tag-play.log" 2> /dev/null) line(s); the first: $(grep -a -m1 'given out while still alive' "$R/$tag-play.log" 2> /dev/null | cut -c1-220)"
     echo "$tag audio trail: $(grep -a -c 'exp 0419 ajt:' "$R/$tag-play.log" 2> /dev/null) line(s); the last: $(grep -a 'exp 0419 ajt:' "$R/$tag-play.log" 2> /dev/null | tail -1 | cut -c1-200)"
     echo "$tag dispatch count: $(grep -a '^dispatch count (exp 0412, tag dc412): t ' "$J" 2> /dev/null | tail -1 | cut -c1-240)"
     echo "$tag timeout layout: $(grep -a -c 'tag tl412' "$J" 2> /dev/null) line(s); files: $(ls "$(dirname "$J")" 2> /dev/null | grep -c '^timeout-')"

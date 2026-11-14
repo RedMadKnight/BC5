@@ -39,6 +39,8 @@ def main():
         2) arm "n13P$RND" F BC5_DISPATCH_COUNT=1 KYTY_BC5_DIAG_UNFORCE=KYTY_BC5_APR_POSIX KYTY_BC5_APR_POSIX=0 ;;
     esac
 ''')
+    a = b'''    echo "$tag audio trail: '''
+    s = rep(s, a, b'''    echo "$tag AJM ids given out while still alive: $(grep -a -c 'given out while still alive' "$R/$tag-play.log" 2> /dev/null) line(s); the first: $(grep -a -m1 'given out while still alive' "$R/$tag-play.log" 2> /dev/null | cut -c1-220)"\n''' + a)
     assert b"n12" not in s.split(b"\nset -u\n", 1)[1] and b"DESC_TARGETS" not in s.split(b"\nset -u\n", 1)[1]
     open(sys.argv[2], "wb").write(s)
     print("ok")
