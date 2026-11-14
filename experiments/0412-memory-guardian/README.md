@@ -4646,6 +4646,39 @@ once it is done on the box):
 - Tomorrow on the top's GO: dry on the box, apply, then the two tests (start and leave: the desktop is back;
   the emulator killed: the desktop is back), and the top's line for CLAUDE.md.
 
+### 97. The night series on test build T: six walks, all clean, then stopped by the stop file for exp 0419's dead-code round; arm tD dropped (2026-11-14 14:14 – 15:31; the top's "start", then the maintainer's order of 15:25 relayed by the top)
+
+Runner `memfast/night0412t.sh` (`mkt0412.py`; dry-checked on the box at 14:14: stop file, the known-fault
+detector, a wrong md5 refused). Test build T of exp 0419 (patch fec3d656, unit c8c5d5ce), binary
+`~/bc5-work/exp0419/bin-T/normal/kyty_emulator` b0abc471, words 21a23e5c, launcher as today's chains; every arm
+with `KYTY_BC5_AUDIO_TRAIL=1` and the log-only set of section 91. Output `~/bc5-work/exp0412/n8/chainT.out`.
+At 15:25:46 the stop file was set (the walk in flight ran to its end); the chain released the lock at 15:31:34.
+
+| walk | arm | flips/s | longest gap ms | s with a gap > 100 ms | avail / GTT MiB at 420 s | at 600 s | lowest avail | AJM instances created / destroyed (last trail line) |
+|---|---|---|---|---|---|---|---|---|
+| n12A1 | tA, dc412 on | 26.3 | 589 | 78 | 438 / 12,249 | 802 / 12,197 | 408 | 36,864 / 36,784 at 685.8 s |
+| n12J1 | tJ (`AJM_DEFER`, `AJM_LIVE_IDS`) | 25.0 | 804 | 116 | 815 / 12,165 | 680 / 12,254 | 564 | 40,960 / 40,883 at 706.0 s |
+| n12P1 | tP (`APR_POSIX=0`) | 25.2 | 744 | 127 | 591 / 12,126 | 632 / 12,163 | 451 | 36,864 / 36,784 at 712.2 s |
+| n12D1 | tD (`BC5_GUARD_DESC_TARGETS=2`) | **20.5** | 832 | **240** | 695 / 12,163 | 757 / 12,184 | 548 | 40,960 / 40,882 at 719.8 s |
+| n12A2 | tA, dc412 off | 25.1 | 788 | 104 | 740 / 12,209 | 699 / 12,262 | 564 | 40,960 / 40,887 at 720.6 s |
+| n12J2 | tJ | clean; its flips line not read before the box was handed over | | | 732 / 12,221 | 732 / 12,229 | 535 | 40,960 / 40,870 at 699.0 s |
+
+- [M] All six ended at G+620 with 0 kernel lines, no timeout, no fault record, no CPU fault. T behaves as F in
+  flips, gaps and GTT (F today: 24.4–26.3 flips/s, 568–858 ms, GTT mean 12,249 and 12,273).
+- [M] The hang tally: T (b0abc471) 6 long walks clean, 0 hangs; with b413a916's 21 clean, 1 CPU fault, 0 hangs.
+- **dt412 in log mode costs 5 flips/s and its number is not usable** [M]: n12D1 20.5 flips/s and 240 s with a gap
+  against 25.0–26.3 and 78–127 in the five others; the only difference is the switch. In 720 s it looked at
+  158,204,317 buffers and read 21,765,716 tables on the submitting thread. Its "would be imported" total,
+  8,004,840 MiB, is not a size of anything: mode 2 imports nothing, so the same buffers are found not imported
+  and counted again every second. That is my error in mode 2 (the once-a-second memo was written for mode 1,
+  where the import makes the next look-up find nothing).
+- **So dt412 in this form goes no further** (the top's rule), and arm tD is dropped from the restarted series
+  rather than run every fourth round: one more run would repeat a number that answers nothing. What a usable
+  version would need (not done, heaps are parked): the walk only for buffers under by-data views, a set of
+  chunks already counted in mode 2, and no table read for a table seen unchanged.
+- The restart: `memfast/night0412u.sh` (`mku0412.py`): arms tA, tJ, tP in turn, tags n13…, counters from one for
+  the new binary, stop file `STOP-n13`. It waits for the integrator's binary and md5 and the top's start.
+
 ## Verdict
 
 (The header above was dropped by mistake in commit 8cfa4549, section 87, and is restored here; the text below is unchanged.)
