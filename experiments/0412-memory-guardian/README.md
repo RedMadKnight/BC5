@@ -4285,6 +4285,45 @@ imported, and loops without end) [unknown]: neither supported nor refuted by wha
   glue is syntax-checked against stand-ins only, as ph412's). The walk reads the buffer as the timeout probe
   does; run on n8F8's dump by hand it is not (the dump is the title's and stays out of the test).
 
+### 90. Step 1 of section 89 done: every input of the two candidate dispatches lies in an eager view, imported and mapped; the cover hypothesis falls for them without a run (2026-11-14, one read on the top's GO)
+
+Read under a lock line (taken inside the claim mutex, released after; the lock is empty): `layout-views.txt`,
+`layout-buffers.txt`, `layout-mappings.txt` of records `~/bc5-data/captures/faults/20261114-010740` (arm b1,
+f8cb77ad, 111 s) and `20261113-203301` (arm m5wall, 1a2900a0, 601 s). Not copied into git.
+
+[M] The same answer in both records, two binaries and two runs apart:
+
+| address | given to | view | flag | its chunks over the descriptor's span |
+|---|---|---|---|---|
+| 0x11a5ae8000 (1.5 MiB) | both candidates | RenderGpuWcLarge, 0x1120000000+0xac600000 | E (eager) | 2 of 2 imported, 2 of 2 mapped |
+| 0x11a53e8000 (6 MiB) | the 90 groups | RenderGpuWcLarge | E | 4 of 4, 4 of 4 |
+| 0x11a59e8000 (1 MiB) | the 90 groups | RenderGpuWcLarge | E | 2 of 2, 2 of 2 |
+| 0x1163060000 (texture, 64 MiB window) | the 39 groups | RenderGpuWcLarge | E | 33 of 33, 33 of 33 |
+| 0x11e0d2c810, 0x11e0d2c710 (tables) | one each | RenderGpuRwLarge, 0x11e0000000+0xe14000 | E | imported, mapped |
+| 0x11871ed420 (arguments), 0x11873a4120 (user data) | the dispatch of 601 s | RenderGpuWcLarge | E | imported, mapped |
+
+- [M] The two heaps are at the same addresses and eager in both records. In candidate F an eager view is
+  imported whole; K1r covers never-written chunks of by-data views only; the lazy release cuts only chunks under
+  no view (n8F8's journal: "an imported chunk ... under no view for 30 s"), and these lie under one view each.
+- [I] So for n8F8 too (no layout of its own) these inputs were the title's memory itself, shared with the GPU,
+  not a zero cover, not a lazy view, not a missing import. **The hypothesis "the hung shader read its input
+  through our cover or a lazy view" falls for the inputs the dispatch is given directly, in both hangs, without a
+  run.**
+- [unknown] What is one step further: the buffers the two tables in RenderGpuRwLarge point to (their contents are
+  not in any dump), and the textures or buffers the shader reaches through them. If one of those lies in a
+  by-data heap the hypothesis could still hold at the second level. tl412 as prepared lists only the first level;
+  to close this it has to follow the tables it is given (read 16 dwords at each table address and list the
+  views of what they hold). Not written yet.
+- [I] What is left for the cause, in the order the facts allow: (1) the CONTENT of an eager buffer at that
+  moment (a count, a list or a tree written by an earlier GPU job or by the CPU later than the PS5 would have it:
+  ordering between jobs, which the host does change: "ring order", "pieces", "chains" in the journal); (2) the
+  second level above; (3) the chip or the kernel under 40 CU with 32-lane compute waves. Nothing measured yet
+  separates these.
+
+The deciding arm of section 89 is still the way to (1) and (2), with tl412 extended by the second level and with
+`BC5_DIRECT_SNAP_ON_TIMEOUT` (experiment 0140, already in the host) set to the 1.5 MiB buffer both candidates
+share (0x11a5ae8000:1572864), so that what the shader was reading is on the disk. It waits for the maintainer.
+
 ## Verdict
 
 (The header above was dropped by mistake in commit 8cfa4549, section 87, and is restored here; the text below is unchanged.)
