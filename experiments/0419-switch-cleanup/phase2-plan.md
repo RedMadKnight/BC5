@@ -137,3 +137,36 @@ showed no joystick device and no DualSense in PipeWire, so the pad was off or as
 acceptance: one joystick watched). The run under it was clean (420 s, 0 kernel lines, 0 crash lines), but that is
 not a replug check. **Owed:** one software replug of U with the DualSense on, before U goes anywhere shared. No
 physical replug is asked for.
+
+## Batch 3 as rounds (a list only, 2026-11-14; nothing written or run; the top session's order)
+
+Base: build U (patch 5b185960). A round is one generator with independent steps, one build and one acceptance, as
+the round above. The sizes are counts of lines that name the feature in U's tree (`grep -c`), a measure of how far
+it is woven in, not of the lines that would go; none of these blocks has been read for cutting yet.
+
+| Round | What | Where | Size | Needs with it | Risk |
+|---|---|---|---|---|---|
+| **1** | the constant `if (Bc5...On())` branches left by the built-in library ports, and the stub paths behind them | 23 files of `src/libs` | 589 sites | one generator, each file its own step (a file that fails is left as it is); `libAudio.cpp` is among them (the Voice ports, not the pad's audio: no replug by the rule, but say so in the record) | low per site, wide |
+| 1 | the AMM PRT and extra commands | `libAmpr.cpp` | 13 | none | low |
+| **2** | the R3 block's dead members `submit_eop`, `rewind`, `drop` and their code at the ioctl sites | unit | 26 | none | low |
+| 2 | ADR 0013's consumer side (`hold_release`, the `hold` vectors) | unit | 12 | none | low |
+| 2 | the acb CS prefix | unit | 13 | none | low |
+| 2 | the four reset switches (`m11_on` and what it guards) | unit | 63 | none | medium: the recovery path's neighbours |
+| 2 | the meshlet sampler | unit | 51 | its part of the seams with `flx0401.cpp` | medium |
+| **3** | `g412::forget_step`; the guardian's mlock and cap code; `MAP_RULE` and `PRT_BG` (`mr412::rule`, `rule_for`, `prt_bg`, `in_bg` and their uses) | unit, exp 0412's blocks | 1 + 51 + 31 | the guardian: its CPU tests (`test0412.cpp`, `maprule0412.cpp`) change with the cut, and it names what must stay (`mr412_prt_open`, `mr412::classify`, `mr412_would_learn`) | medium: the blocks its tests compile |
+| **4** | the zero skip of exp 0379 (`lzr_zero_skip`, `zskip_path`, the canary and take-back code) | unit | 129 | its CPU test `zsk0401.cpp` goes or shrinks | high: the widest block |
+| 4 | acb inherit | unit | 106 | its scan include and test | high |
+| 4 | the five hang-hunt words' code: `FlDraw::flush/serial`, `flx_heads`, the F1/F2 inserts, their seams | unit | 32 | `flx0401.cpp` | medium |
+| 4 | the same words' code and step f's four checks in the backend's `indirect_check` | backend `direct.cpp` | 20 | the backend's Catch2 tests change; a new private archive and its 121 tests | medium |
+| **5** | `ControllerTouch` and the pad state's touch fields | `controller.cpp`, `controller.h` | 25 | **pad code: one software replug with the DualSense on**; done together with the replug that U still owes | low, but gated by the pad |
+
+**Five rounds.** Rounds 1 and 2 touch different files and can be one round if a slot is short (then four). Round 3
+is the guardian's to prepare with this experiment building; round 4 is the only one where a cut taken back is
+likely, so it goes last of the unit rounds and alone; round 5 waits for the pad.
+
+Not a cut, stays by verdict: `KYTY_BC5_ANON_SYNC`'s checking thread (it serves `verify`), `KYTY_BC5_AMM_SCATTER`,
+`KYTY_BC5_AMM_SETBUFFER_MAP` (diagnostics, off).
+
+After the night series, before any of these rounds: `KYTY_BC5_AJM_LIVE_IDS` becomes the fixed behaviour (the top
+session's decision of 2026-11-14, on the series' result) and `KYTY_BC5_AJM_DEFER` gets its verdict from arm tJ; both
+are one small step that can ride in round 1.
