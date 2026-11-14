@@ -76,3 +76,14 @@ that does not compile or fails acceptance is not walked.
   `f403-f813-series.md` already assumes).
 - **Owed to the guardian after T is built:** the path of T's binary and of its md5, the words file's path and md5,
   and the launcher T's walks use.
+
+## The top session's decisions (2026-11-14, after the agreement above; these replace what differs)
+
+1. **R55 stands.** The runner stops at the first kernel GPU line, also after a successful reset. No "3 GPU hangs"
+   rule: after a stop the files are read and reported, and the chain is resumed only on the top session's GO; the
+   count is summed over resumptions. (The restart of 03:25 came on a boot that had had a reset before.)
+2. **No fifth arm.** In arm tA `BC5_DISPATCH_COUNT` alternates 1 / 0 (odd / even walks of tA), as in the guardian's
+   n10 chain; in tJ, tP and tD dc412 is on. tA's two halves are reported apart.
+3. **The series ends** when 60 walks are done, at 07:00, or on the maintainer's word that he wants the box (the stop
+   file, after the walk in progress), whichever comes first. The order tA tJ tP tD is kept so that an interruption
+   leaves equal counts.
