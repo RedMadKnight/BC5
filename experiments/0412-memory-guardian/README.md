@@ -4142,6 +4142,74 @@ n8W6: no summary (the chain was killed during it).
   named). In n8W2 and n8W3 AMM's not-named chunks were CPU-written. So AMM has GPU writers nobody names as well, at
   least late in the walk; AMM by data would need the same class named as CommitIABufferAllocator at the load.
 
+### 88. Both hangs decoded at the CP's stop: each stands just after a compute dispatch of the title, at its CS_PARTIAL_FLUSH (2026-11-14 morning, laptop; one copy read from the box, no runs)
+
+Source: the kernel's devcoredumps hold the submitted buffer whole ("IB #0", 5,936 dwords for n8F8, 2,408 for the
+hang of 601 s) and the CP's registers; the host's probe dumped the title's buffers (5,791 and 816 dwords). Decoded
+with a small PM4 reader in the scratchpad (not committed; the dumps are the title's command buffers and stay out of
+git). Packet names by opcode as in Mesa's `sid.h` (from memory: TODO(verify) the names of 0x58, 0x63, 0x9f and of
+bit 15 of the dispatch initiator against the file).
+
+Where the CP stood [M]: CP_IB1_BUFSZ is what was left to fetch, so the fetch position is the size minus it.
+
+| | n8F8 (532 s) | m5wall (601 s) |
+|---|---|---|
+| submitted buffer | the dcb #454733, 5,936 dwords | the acb #522931, 2,408 dwords (the dcb #522934 timed out behind it) |
+| fetch position | 5,280 (0x290 left) | 832 (0x628 left) |
+| the dispatch last before it | DISPATCH_DIRECT at 5,274 (title's 5,143): 39 x 1 x 1 groups, initiator 0x8041, program 0x11d0423100 | DISPATCH_INDIRECT at 777 (title's 249): arguments at 0x11871ed420 (24,178 x 1 x 1 by the probe), initiator 0x8061, program 0x90992af00 |
+| the dispatch before that | at 5,228 (title's 5,097): 90 groups, 0x8041, program 0x11d0415c00 | at 667 (title's 227): the same program and arguments, marked "DROPPED" by the probe |
+| what follows the dispatch | EVENT_WRITE 0x407 (CS_PARTIAL_FLUSH), ACQUIRE_MEM | EVENT_WRITE 0x407, ACQUIRE_MEM |
+| PFP's last eight headers | ACQUIRE_MEM, EVENT_WRITE, op 0x63, op 0x9f only | ACQUIRE_MEM, EVENT_WRITE, SET_BASE, COND_EXEC, PFP_SYNC_ME, WRITE_DATA |
+| ME's last eight headers | EVENT_WRITE, ACQUIRE_MEM, op 0x63, 0x53, 0x0c | EVENT_WRITE, SET_BASE, PFP_SYNC_ME, WRITE_DATA, COND_WRITE |
+| page fault | none | none |
+
+- [M] The same kind of place in both: the fetch stands 6 and 55 dwords after a compute dispatch, and the packets
+  right after that dispatch are the title's flush of compute (EVENT_WRITE 0x407) and ACQUIRE_MEM. Neither stands
+  at a WAIT_REG_MEM, a label wait or an end-of-pipe event.
+- [M] Both dispatches have bit 15 of the initiator set (0x8041, 0x8061). In n8F8's buffer 6 of 31 dispatches have
+  it (the others 0x41); in the acb of 601 s the first three have 0x61 and the later ones 0x8061.
+- [I] The reading: the CP started a compute dispatch and waits for compute to drain; the shader of that dispatch
+  (or of the one before) never finishes. The header registers keep eight entries in a ring with no mark of the
+  newest, and the fetch runs ahead of execution, so "the dispatch at 5,274 or the one at 5,228" is as far as the
+  dump goes for n8F8, and "the one at 777 or at 667" for 601 s.
+- [M] Not the same shader: programs 0x11d0423100 / 0x11d0415c00 against 0x90992af00; 39 or 90 groups against
+  24,178; direct against indirect; a draw buffer against a compute buffer.
+
+**Does the PS5 do this, or did our host add it?** [M], by comparing the submitted buffer with the title's, packet by packet:
+- n8F8: from the title's 5,041 to 5,150 (three dispatches and their flushes) the submitted buffer is the title's,
+  word for word, shifted by 131 dwords; no NOP, no host packet in between. The head of the buffer is the title's
+  as well (CONTEXT_CONTROL, CLEAR_STATE: its own). The host's additions in this buffer are elsewhere: guards
+  around the title's seven DRAW_INDIRECT (COND_WRITE, COND_EXEC, PFP_SYNC_ME at 4,351-4,572, the draws themselves
+  NOP-ed) and one DMA_DATA at the end. The nearest is 700 dwords before the stop and the CP was past it.
+- 601 s: the hung dispatch is the title's, but the host wraps every DISPATCH_INDIRECT in its own check (the
+  `BC5_DIRECT_GPU_CHECK` family: 2 WRITE_DATA, 6 COND_WRITE, PFP_SYNC_ME, and a COND_EXEC directly in front of the
+  dispatch; 88 dwords per dispatch, 36 COND_EXEC in the buffer). The check let this dispatch through. The fetch
+  position (832) is inside the NEXT dispatch's check, after its PFP_SYNC_ME at 797.
+- K1r, the cover and exp 0418's start table add no packet to either buffer [M]. Whether the dispatch's shader read
+  or wrote memory under a cover is not visible in a command buffer [unknown]; no page fault was raised in either.
+- [I] So in n8F8 the packet the CP stands at is the game's own and nothing of ours is near it; in 601 s the
+  host's check is around it but the same kind of place is reached without the check in n8F8. The command stream
+  does not point at the host. What can still differ from the PS5 with the same stream is the shader's input: the
+  memory the dispatch reads, which here comes from our mappings.
+
+**The same rare work in the seconds before both?** Not measurable from what is recorded [unknown]: with the quiet
+journal the per-submission lines are not written (453,972 and 516,428 of them held back), and no line names a
+dispatch's program outside the timeout probe. In the clean arm n8F7's journal there is nothing to count programs
+by. What is measured: the two hung dispatches do not share a program (above), so "the same pair of compute
+shaders" is refuted for these two. To count how often programs 0x11d04231, 0x11d0415c and 0x90992af00 run in a
+clean walk, a catcher has to log dispatch programs (a counter per program and initiator, written every 10 s);
+not built.
+
+**Unknown, and what would settle it:** which of the two candidate dispatches hung in each case (the ME header ring
+has no newest mark); what the shader was reading (the user data of the dispatch at 5,274 is in the dump: 15 dwords
+at COMPUTE_USER_DATA_0 with buffer descriptors into 0x11a5ae8000, 0x11a53e8000, 0x11a59e8000 and a table at
+0x11e0d2c710; the heap names and whether those chunks were covered or imported at that second need the layout of
+that run, which was not written because no fault record was made).
+
+## Verdict
+
+(The header above was dropped by mistake in commit 8cfa4549, section 87, and is restored here; the text below is unchanged.)
+
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over
   never-written memory the title mapped (nothing pinned; a GPU write there faults by name), and the freeze after
   the reset gets the lost labels kept when two jobs time out together. One private build carries both with the
