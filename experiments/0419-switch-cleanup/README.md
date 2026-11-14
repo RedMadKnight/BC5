@@ -402,6 +402,17 @@ their delete knowing that F403 and F813 are open; `dla-maintainera-slowa.md` (Po
 F and G still change three lines of `audio.cpp` (the reading rule of `KYTY_BC5_NO_PAD_AUDIO`), so their swap gets one
 software replug check.
 
+### 17. The five hang-hunt words go too (2026-11-14, the maintainer: "Usuń")
+
+Asked with F403 and F813 named as open and F's GPU hang of 2026-11-13, the maintainer said to remove
+`BC5_DIRECT_ARGS_WB`, `_ARGS_FLUSH`, `_ARGS_FLUSH_DRAWS`, `_FL_SERIAL` and `_FL_VGT_FLUSH`. G is now patch `0dcd4357`
+(unit `8a930481`, backend `direct.cpp` `aeec4c09`; steps `mkg0419_f.py <direct.cpp> all` and the new `mkg0419_g.py`);
+section 16's hashes are G's first form. 48 words gone against F; G reads 199 words, **152** can be set; 11 are without
+a verdict. The five lost their option only: the code behind them is unreachable and still in the source (phase 2).
+Checked again on the laptop: every edit matched once, braces balance, no new unused name in the unit, `bash -n` of
+`p0419g.sh`, the dry run F -> G on a clean tree (132 of 132 files). Still NOT checked: any compile of the main unit
+or the backend, the link, any run. HANDOFF's F403 and F813 rows carry the note and where the words can be taken from.
+
 ## Decisions for the maintainer
 
 One "yes" covers the swap of E as a whole (the top session asks): both shared builds, the shared backend archive
