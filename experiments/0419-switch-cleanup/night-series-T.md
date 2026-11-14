@@ -42,9 +42,9 @@ record) does not stop the chain: it is the event the series is looking for. Any 
 
 - Fixed before the start: 60 walks (20 per arm) or 3 GPU hangs, whichever comes first; the same 60 walks are the
   count of `f403-f813-series.md`, with the arms kept apart in the table.
-- The CPU fault has come 2 times in about 36 long walks of the F family (12 of this experiment, 26 of the guardian's
-  on b413a916 by its section 93, less the two that faulted). At that rate 20 walks of one arm show it once on
-  average, and 0 of 20 against 1 or 2 of 20 separates nothing. **The arms give a direction, not a verdict.**
+- The CPU fault has come 2 times in 28 long walks of the F family (12 of this experiment, 16 of the guardian's on
+  b413a916 by its parts note). At that rate 20 walks of one arm show it once or twice on average, and 0 of 20
+  against 1 or 2 of 20 separates nothing. **The arms give a direction, not a verdict.**
 - What does decide something: (a) one fault in any arm with the trail on answers "which of the three places"
   (section 8) from the dump alone; (b) the trail's counter line in the very first walk gives the title's rate of AJM
   instance creates. If it stays far below 16,384 in 620 s the id-wrap candidate is out and `KYTY_BC5_AJM_LIVE_IDS`
