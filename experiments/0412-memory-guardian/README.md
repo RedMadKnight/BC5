@@ -4585,6 +4585,67 @@ night series gives a result for arm tD. `BC5_GUARD_LAZY_BY_DATA`: stays an arm, 
 catcher or arm is prepared. What stays open here: the runner of the night series on test build T
 (`memfast/night0412t.sh`, `mkt0412.py`; syntax-checked, not run) and the reading of its results.
 
+### 96. Prepared for the day after the night series, nothing on the box yet: the on-screen keyboard off for good; the lean session in the shared launcher (2026-11-14 afternoon, laptop; two decisions of the maintainer, relayed by the top)
+
+**1. The on-screen keyboard, "klawiatura ekranowa może być domyślnie zawsze wyłączona".**
+What KWin does, from its source (invent.kde.org/plasma/kwin, `src/main_wayland.cpp` on master, Plasma/6.5 and
+Plasma/6.6, the same text in all three; `src/inputmethod.cpp` on master; read 2026-11-14):
+- the process is chosen by kwinrc, group `Wayland`, key `InputMethod`: the path of a .desktop file whose `Exec` is
+  the command (`ApplicationWayland::refreshSettings`). An empty or absent value gives an empty command:
+  `startInputMethod()` stops a running one and starts nothing;
+- `VirtualKeyboardEnabled` and `VirtualKeyboardMode` decide only whether the keyboard is SHOWN; they do not keep
+  the process from starting. So `VirtualKeyboardEnabled=false` would not free the memory;
+- a change of `InputMethod` is taken at once (a KConfigWatcher), without a new login, when the writer notifies;
+- KWin starts the process again only after a crash exit (up to four times, the count forgotten after 20 s). My
+  SIGTERM of 13:38 ended it with a normal exit, which is why it stayed away (section 95);
+- `kwin_wayland --inputmethod <command>` on the command line is used at the start INSTEAD of the key.
+- [unknown] Where this box's value comes from. The source has no default: with the key absent nothing would
+  start, yet `plasma-keyboard` ran with no `InputMethod` in `~/.config/kwinrc` or `/etc/xdg` (the top's check). So
+  it is either a vendor kwinrc in another directory of `XDG_CONFIG_DIRS` (then a user value overrides it) or the
+  `--inputmethod` argument (then the key does not help at login). The first step on the box decides which.
+
+On the box, in his session, after the series (each line is read first, then run):
+```
+ps -o args= -p "$(pgrep -x kwin_wayland)" | tr ' ' '\n' | grep -n -A1 -i inputmethod     # an --inputmethod argument?
+kreadconfig6 --file kwinrc --group Wayland --key InputMethod                             # the value KWin sees
+echo "$XDG_CONFIG_DIRS"; grep -rns InputMethod ~/.config/kwinrc /etc/xdg /usr/share/kde-settings 2> /dev/null
+kwriteconfig6 --help | grep -i notify                                                    # is --notify there?
+cp -p ~/.config/kwinrc ~/bc5-work/kwinrc.before-keyboard-20261115
+kwriteconfig6 --file kwinrc --group Wayland --key InputMethod --notify ""                # off: an empty user value
+```
+Undo: `kwriteconfig6 --file kwinrc --group Wayland --key InputMethod --notify --delete` (the vendor value counts
+again), or copy the saved kwinrc back and log in again. Test after a new login: `pgrep -x plasma-keyboard` prints
+nothing; `mem_info_gtt_used` and `mem_info_vram_used` of the idle desktop against 117 / 219 MiB with it and
+74 / 167 without (section 95). If the first line shows `--inputmethod`, the key is not enough and I stop there
+and report (the argument comes from the session's start files, not from a setting).
+
+Text for CLAUDE.md, "Machine context", the memory paragraph, after the Baloo sentence (to be pasted by the top
+once it is done on the box):
+> Since 2026-11-15 Plasma's on-screen keyboard (`plasma-keyboard`, started by KWin as its input method; 95 MiB of
+> GPU memory: 43 GTT + 52 VRAM, and 12 MiB of RAM) is off for good: `kwinrc` `[Wayland]` `InputMethod` is empty
+> in `~/.config/kwinrc` (the maintainer: "klawiatura ekranowa może być domyślnie zawsze wyłączona"; exp 0412
+> sections 95–96). Undo: `kwriteconfig6 --file kwinrc --group Wayland --key InputMethod --notify --delete`, or
+> copy `~/bc5-work/kwinrc.before-keyboard-20261115` back and log in again.
+
+**2. "Czy BC5 emulator (lean) ma zatrzymywać powłokę Plazmy na czas gry?" — "tak".**
+- `lean-session.sh`: `lean0412.sh` with shared paths (`~/bc5-work/lean-session.state`, `.log`), nothing else
+  changed: stops `plasma-plasmashell.service` if it is active, starts a watcher of its own (setsid, outside the
+  launcher's process group) that starts it again when the launcher's process is gone, whatever ended it.
+- `install-lean-session.sh [dry | apply | undo]`: dry (the default) prints the diff and runs
+  `lean-session.sh dry`; apply keeps `play-any.sh.before-lean`, copies `lean-session.sh` to `~/bc5-work` and
+  inserts three lines before the launcher's `if [ "${BC5_LEAN:-0}" = 1 ]; then` (which must be there exactly
+  once): `if [ "${BC5_LEAN:-0}" = 1 ] && [ -x "$HOME/bc5-work/lean-session.sh" ]; then /usr/bin/bash
+  "$HOME/bc5-work/lean-session.sh" stop $$; fi` and two comment lines; refuses while an emulator runs. The plain
+  "BC5 emulator" shortcut runs the same file with `BC5_LEAN` unset and does nothing new.
+- [M] On the laptop against the repository's last copy of the launcher (experiments/0177-lean-build/play-any.sh,
+  d89ac237, a stand-in: the live file is newer and was not read during the series): dry shows 3 lines added,
+  apply gives a file that parses, a second apply does nothing, undo gives the old file back byte for byte.
+- [unknown] Whether the live `play-any.sh` still has that anchor line once; the installer says so in its dry run
+  and changes nothing otherwise. One thing to look at in the live file before apply: the shell goes away when
+  the launcher STARTS, so if the launcher shows its title menu first, the panel is gone during the menu too.
+- Tomorrow on the top's GO: dry on the box, apply, then the two tests (start and leave: the desktop is back;
+  the emulator killed: the desktop is back), and the top's line for CLAUDE.md.
+
 ## Verdict
 
 (The header above was dropped by mistake in commit 8cfa4549, section 87, and is restored here; the text below is unchanged.)
