@@ -21,10 +21,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ed0419g import File
 
 root = sys.argv[1]
-steps = sys.argv[2:] or ["bo", "eop", "names", "vma", "delay", "flip", "mem"]
+steps = sys.argv[2:] or ["bo", "eop", "names", "vma", "forget", "anonthread", "delay", "flip", "mem", "touch"]
 P = lambda *a: os.path.join(root, "src", *a)
 
-if {"bo", "eop", "names", "vma"} & set(steps):
+if {"bo", "eop", "names", "vma", "forget", "anonthread"} & set(steps):
     f = File(P("libs", "bc5LleAgc.cpp"))
     if "bo" in steps:
         f.cut('\tif (const char* e = std::getenv("BC5_DIRECT_MAX_BO_MIB"); e != nullptr && e[0] != 0) {',
@@ -40,6 +40,16 @@ if {"bo", "eop", "names", "vma"} & set(steps):
               "\t// exp 0419 phase 2: KYTY_BC5_VMA_FAST is gone; the walk over every VMA, as when it was unset\n"
               "\tauto inside_vma = [&](uint64_t a, uint64_t b, bool readonly) { return bc5::sync_fast::inside_old(vmas, a, b, readonly); };\n")
         f.gone("vma_fast", "vma_ok")
+    if "forget" in steps:  # BC5_GUARD_FORGET (the guardian's verdict): the caller, the declaration and the function
+        f.sub("static void guard0412_forget(DState& S, const std::vector<DView>& views, uint64_t sig, uint64_t now); // exp 0412 (tag g412d)\n", "")
+        f.sub("\tguard0412_forget(S, views, sig, now); // exp 0412 (tag g412d): BC5_GUARD_FORGET\n", "")
+        f.cut("// BC5_GUARD_FORGET (g412d): at the start of a full sync of the direct file, at most every 2 s.\n",
+              "idle / 1'000'000'000ull, total, S.forced.size(), since.size());\n    }\n}\n\n")
+        f.gone("guard0412_forget", 'getenv("BC5_GUARD_FORGET")')
+    if "anonthread" in steps:  # KYTY_BC5_ANON_SYNC: the `thread` form goes, `verify` stays (any set value is verify)
+        f.sub('\tstatic const int mode = bc5::anon_sync::mode_of(std::getenv("KYTY_BC5_ANON_SYNC"));\n',
+              '\tstatic const int mode = bc5::anon_sync::mode_of(std::getenv("KYTY_BC5_ANON_SYNC")) != 0 ? 1 : 0; // exp 0419 phase 2: verify only\n')
+        f.sub("\tif (as_mode == 2 && as_skip_ok && !must) {\n\t\tbc5::load_stat::count(bc5::load_stat::kAnonSkip);\n\t\tt_fs415_ds[7] |= 4;\n\t\treturn;\n\t}\n", "")
     if "eop" in steps:
         f.sub('\t\tv.submit_eop = take("BC5_R3_SUBMIT_EOP_EVENT");\n',
               "\t\tv.submit_eop = false; /* exp 0419: option removed (the walk never reaches its path) */\n")
@@ -74,4 +84,12 @@ if "mem" in steps:
     f.sub('\t\t             on ? "on" : "off", total / mib,', '\t\t             "off", total / mib,')
     f.cut("\t\tif (on) {\n\t\t\tstd::fprintf(stderr, \"; today's total would be", "\t\t}\n")
     f.gone("Bc5MemoryFromParam", "g_bc5_today_total", "BC5_GUEST_MEMORY_BUDGET", "BC5_RESERVED_CACHE_SIZE", "BC5_INCLUDED_TABLE_MEMORY", "Bc5TableOverhead")
+    f.save()
+
+
+if "touch" in steps:  # KYTY_BC5_PAD_TOUCH (the maintainer, 2026-11-14: "usun"): the forwarding of touch points goes
+    f = File(P("graphics", "presentation", "window", "window.cpp"))  # the touchpad CLICK (a button, F252) is another event
+    f.cut("\t\tcase SDL_CONTROLLERTOUCHPADUP: { // BC5 (experiment 0193): fingers on the pad's touchpad\n", "\t\t\tbreak;\n\t\t}\n",
+          "\t\tcase SDL_CONTROLLERTOUCHPADUP: // exp 0419 phase 2: KYTY_BC5_PAD_TOUCH is gone; touch points are not forwarded\n\t\t\tbreak;\n")
+    f.gone("getenv(\"KYTY_BC5_PAD_TOUCH\")", "ControllerTouch")
     f.save()
