@@ -22,6 +22,7 @@ build)
     box 'pgrep "^kyty_emulator" > /dev/null && { echo "an emulator runs"; exit 1; }; mkdir -p ~/bc5-work/exp0419/p3' || exit 1
     scp -q "$HERE/mkfold0419.py" "$HERE/mkv0419.py" "$HERE/ed0419g.py" "$HERE/p3build0419.sh" "$HERE/fold-levels.txt" "$HERE/chk0419v.sh" bc250:bc5-work/exp0419/p3/ || exit 1
     scp -q "$HERE/tree-build-U-5b185960.md5" bc250:bc5-work/exp0419/p3/tree24.md5 || exit 1
+    scp -q "$HERE"/tree-build-V-*.md5 bc250:bc5-work/exp0419/p3/ || exit 1
     box "cd ~/bc5-work/exp0419/p3 && FOLD=${FOLD:-1} bash p3build0419.sh $* 2>&1 | tee p3build.out | cut -c1-260"
     ;;
 accept)

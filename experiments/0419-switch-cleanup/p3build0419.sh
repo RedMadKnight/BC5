@@ -40,6 +40,12 @@ if [ "${1:-}" != none ]; then
     python3 "$HERE/mkv0419.py" "$P/tree" "$@" || { echo "p3build0419 STOP: mkv0419.py refused"; exit 1; }
 fi
 for f in $FILES; do echo "  $(m "$P/tree/$f")  $f"; done
+for t in "$HERE"/tree-build-V-*.md5; do
+    [ -f "$t" ] || continue
+    bad=0
+    while read -r sum f; do [ "$(md5sum < "$P/tree/$f" | cut -d' ' -f1)" = "$sum" ] || bad=$((bad + 1)); done < "$t"
+    echo "against $(basename "$t"): $bad of $(wc -l < "$t") files differ$([ "$bad" = 0 ] && echo " (the tree IS this variant, as made on the laptop)")"
+done
 for v in normal lean; do
     d=$P/build-$v
     echo "== $(date +%T) build $v"
