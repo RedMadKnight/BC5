@@ -35,25 +35,24 @@ names file and line) and build again; (3) `strings` word list against the source
 | `flip` | `KYTY_BC5_MIN_FLIP_RATE`: `Bc5MinFlipRate` goes; the interval is `max(flip_rate, 0) + 1` | `videoOut.cpp`, -14 | edits matched once (file not compilable here) |
 | `mem` | `KYTY_BC5_MEMORY_FROM_PARAM`: three constants, three functions, the saved total; the init line keeps its text with "off" | `memory.cpp`, -44 | edits matched once, every removed name gone (file not compilable here) |
 
-All five together on T's tree: 5 insertions, 95 deletions in four files; braces balance; no new unused name in the unit.
+All seven steps (with batch 2's two) together on T's tree: four files, about 120 lines less; braces balance; no new unused name in the unit.
 
-## Batch 2: option-only cuts whose code is local (to write next; each about as small as batch 1's)
+## Batch 2: two more steps of the same script, read and dry-run on T's tree
 
-Named by their marker text `/* exp 0419: option removed */` in T's unit:
-
-| Marker | Feature | Cut |
+| Step | What goes | Lines |
 |---|---|---|
-| `static const int mode = 0;` | a mode switch read once | fold the constant, drop the branches on it |
-| `static const bool on = false;` and the `const char* e = nullptr;` after it (lazy-release block) | two readers next to `Lzr0401` | fold |
-| `static const char* p = nullptr;` (F767's reader) | a path word | fold, drop its use |
-| `static const int vma_fast = 0;` | the VMA fast path | drop the `if (vma_fast)` branches |
-| `false /* ... */};` (an initializer's last field) | one flag of a struct | drop the field if nothing else sets it |
-| `smp_parse(nullptr, &bad)` | the meshlet sampler's period | sampler off: its block goes with batch 3 |
+| `names` | `KYTY_BC5_NAMES_FAST` (option gone since E, mode was the constant 0): the memo path of `ls415_name_class`; the name's class is asked as when unset | unit, -10 |
+| `vma` | `KYTY_BC5_VMA_FAST` (option gone since E, the constant 0): the binary-search path of `inside_vma`; the walk stays | unit, -12 |
+
+Read and NOT local, so moved to batch 3: the zero skip's two readers (`lzr_zero_skip`, `zskip_path`: the whole
+exp 0379 zero-skip block hangs on them), the four reset switches of `m11_on`, and the meshlet sampler's period.
 
 ## Batch 3: features woven through the unit (each a session of reading before any cut)
 
 In rising order of size, with what must be read first:
 
+0. The zero skip of exp 0379 (`lzr_zero_skip`, `zskip_path` and what hangs on them), the four reset switches
+   (`m11_on`), the meshlet sampler.
 1. `BC5_GUARD_FORGET` (the guardian's block and its test `test0412.cpp`: with the guardian).
 2. The R3 block's dead members: `rewind`, `drop`, `submit_eop` and their code at the ioctl sites.
 3. `KYTY_BC5_ANON_SYNC`'s `thread` form (`bc5/anon_sync.hpp` and its mode reader).
@@ -67,4 +66,4 @@ In rising order of size, with what must be read first:
 9. ADR 0013's consumer side (`hold_release`, the `hold` vectors).
 
 Batch 3 cannot be promised for one round: items 4 to 6 each change the unit by hundreds of lines. The proposal for
-tomorrow is batches 1 and 2 in the one round; batch 3 item by item afterwards, each with its own compile.
+tomorrow is batches 1 and 2 (seven steps, one script) in the one round; batch 3 item by item afterwards, each with its own compile.

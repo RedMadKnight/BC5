@@ -12,6 +12,8 @@ Steps (the two deletions are the top session's verdicts of 2026-11-14):
          still never below 0
   mem    KYTY_BC5_MEMORY_FROM_PARAM (option gone since E): the alternative sizing goes (its constants, three functions,
          the saved "today's total"); the init line keeps its text with "off"
+  names  KYTY_BC5_NAMES_FAST (option gone since E): the memo path goes, the name's class is asked as when unset
+  vma    KYTY_BC5_VMA_FAST (option gone since E): the binary-search path goes, the walk stays
 Every edit must match exactly once."""
 import os, sys
 
@@ -19,15 +21,25 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ed0419g import File
 
 root = sys.argv[1]
-steps = sys.argv[2:] or ["bo", "eop", "delay", "flip", "mem"]
+steps = sys.argv[2:] or ["bo", "eop", "names", "vma", "delay", "flip", "mem"]
 P = lambda *a: os.path.join(root, "src", *a)
 
-if "bo" in steps or "eop" in steps:
+if {"bo", "eop", "names", "vma"} & set(steps):
     f = File(P("libs", "bc5LleAgc.cpp"))
     if "bo" in steps:
         f.cut('\tif (const char* e = std::getenv("BC5_DIRECT_MAX_BO_MIB"); e != nullptr && e[0] != 0) {',
               'the largest import is %lu MiB\\n", e, mb);\n\t}\n')
         f.gone("BC5_DIRECT_MAX_BO_MIB")
+    if "names" in steps:  # batch 2: KYTY_BC5_NAMES_FAST (option gone since E; mode was the constant 0)
+        f.cut("static bool ls415_name_class(const char* name, bool eager) {\n", "\treturn f;\n}\n",
+              "static bool ls415_name_class(const char* name, bool eager) { // exp 0419 phase 2: KYTY_BC5_NAMES_FAST is gone\n"
+              "\treturn eager ? direct_eager_name(name) : direct_lazy_name(name);\n}\n")
+        f.gone("NameMemo memo")
+    if "vma" in steps:  # batch 2: KYTY_BC5_VMA_FAST (option gone since E; vma_fast was the constant 0)
+        f.cut("\t// Experiment 0415 (ls415d), KYTY_BC5_VMA_FAST (default off; \"verify\" runs both)", "\t\treturn f;\n\t};\n",
+              "\t// exp 0419 phase 2: KYTY_BC5_VMA_FAST is gone; the walk over every VMA, as when it was unset\n"
+              "\tauto inside_vma = [&](uint64_t a, uint64_t b, bool readonly) { return bc5::sync_fast::inside_old(vmas, a, b, readonly); };\n")
+        f.gone("vma_fast", "vma_ok")
     if "eop" in steps:
         f.sub('\t\tv.submit_eop = take("BC5_R3_SUBMIT_EOP_EVENT");\n',
               "\t\tv.submit_eop = false; /* exp 0419: option removed (the walk never reaches its path) */\n")
