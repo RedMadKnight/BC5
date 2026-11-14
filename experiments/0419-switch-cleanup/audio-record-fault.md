@@ -216,3 +216,29 @@ at rcx-8 (the upstream source) and the pointer at its +0xc8 (the codec) and prin
 fault then shows the source's table (its class), its flag byte +0x52, the base at +0x10, the stream pointer and size
 at +0x18 and +0x20, and the codec's buffers: enough to pick between 1, 2 and 3. G is patch `372ac258` and the test
 build T is `fec3d656` with this; the unit is unchanged (7cb02bac), so the guardian's test result stands.
+
+## 9. First result of the trail: the AJM instance-id wrap is real (2026-11-14, six long walks of T, the guardian's chain)
+
+From the play logs of the night series' first six walks on T (`~/bc5-work/exp0412/n8/raw/n12*-play.log` on the box,
+not in git; the counter lines relayed by the guardian, the two id lines read by this experiment at 15:32).
+
+| Fact | Mark |
+|---|---|
+| The title creates and destroys an AJM instance about 62 times a second in the walk: 4,096 at 180 s of the run, 16,384 at 379 s, 32,768 at 626 s, 36,864 to 40,960 by 686 to 721 s; 60 to 90 instances are alive at a time (created less destroyed) | M (all six walks, the counter line of `KYTY_BC5_AUDIO_TRAIL`) |
+| So the 14-bit slot wraps for the first time about 380 s into a run and a second time about 625 s | M |
+| **In walk n12A1 an instance id was given out while still alive twice**: 0x000600bd at create 16,573 (about 382 s) and 0x00062074 at create 24,692 (about 517 s). The always-on line says what happens then: the older instance's decoder is replaced by the new one's | M |
+| The second of them is an instance created at about 250 s and still alive 265 s later: the title has voices that live for minutes | M (slot 8,308 of the second lap is create 8,308 of the first) |
+| None of the six walks faulted, n12A1 included; the other five show no reuse (two of them ran with `KYTY_BC5_AJM_LIVE_IDS=1`, where no id was passed over either) | M |
+| No "job on an instance that does not exist" line in any of the six | M |
+
+[I] This is a defect of ours whatever its link to the fault: after the wrap two live voices of the title share one
+decoder object, the older voice decodes with the newer voice's stream state, and when either is destroyed the other
+loses its instance. It can only happen from about 380 s of a run on, which is where both CPU faults lie (543 s,
+588 s), and it does not depend on F against B: the code is KytyPlus's own in both. One reuse in six walks is of the
+same order as the fault's rate (2 in 28). [?] Whether it IS the fault's cause: n12A1 had two reuses and did not
+fault, and the faulting runs had no trail. `KYTY_BC5_AJM_LIVE_IDS=1` removes the defect; whether the faults stop with
+it is what the series' arm tJ counts.
+
+**Proposal (not done; a change of T's defaults is the top session's and the maintainer's call):** make
+`KYTY_BC5_AJM_LIVE_IDS` the default behaviour. It is the smallest fix of a measured defect: an id that is alive is
+skipped, nothing else changes, CPU test `ajm/test0419ajm.cpp` covers the wrap.

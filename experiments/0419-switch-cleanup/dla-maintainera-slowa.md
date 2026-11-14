@@ -56,3 +56,12 @@ odrzuconych słowach); wytnę go w drugiej fazie, z kompilatorem pod ręką. W H
 Policzone ze źródeł (nie z list): build wspólny B czyta 264 słowa; kandydat F 247, z czego 200 da się ustawić;
 kandydat G 199, z czego **152** da się ustawić (39 to wiersze jednego tytułu, 3 to ustawienia domyślne z opcją,
 110 pozostałych, głównie diagnostyka i łapacze). Bez werdyktu po G: 11; 10 po ramieniu dla `FORGET`.
+
+## 5. Stan po buildzie testowym T (2026-11-14)
+
+Build T (patch `fec3d656`) jest zbudowany i odebrany: czyta 207 słów, da się ustawić **157** (wspólny B: 264).
+`CHAIN_HOLD_US` i `DCB_WAIT_MS` są stałymi; `LAZY_RELEASE` + `SPLIT` są na stałe włączone dla drugiego tytułu;
+`FORGET` jest wyłączone (werdykt strażnika). Z sześciu pozostałych słów pięć ma werdykt sesji głównej
+(`MAX_BO_MIB` i `SUBMIT_EOP_EVENT` do usunięcia, `AMM_SCATTER`, `AMM_SETBUFFER_MAP` i `ANON_SYNC` jako diagnostyka).
+**Bez werdyktu zostaje jedno słowo: `KYTY_BC5_PAD_TOUCH`** — Twoje słowo testowe dla panelu dotykowego pada:
+zostawić czy usunąć?
