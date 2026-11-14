@@ -150,3 +150,32 @@ deferred jobs' order, drop and run-once) all ok; `ajm/chkblock0419.cpp` compiles
 against stand-ins with `-Wall -Wextra -Werror -Wshadow`; every edit matched once, braces balance; the dry run F -> G on
 a clean tree, 133 of 133 files. NOT compiled: `ajm.cpp` as a whole (it needs the ffmpeg headers) and the handler
 (Linux only); their first compile is G's build on the box. G reads 202 words now, 155 can be set.
+
+## 7. The title's code at the return addresses (2026-11-14 12:00, box, read only; the top session's GO)
+
+`eread0419.sh`: no emulator, BOX-LOCK empty before and after, one lock line, nice 19. It read the maintainer's own
+`eboot.bin` of the second title (a container; its first segment is stored plain), cut the code range +0x110000 to
++0x1e2000 and disassembled it into `~/bc5-work/exp0419/eread/` on the box (mode 700; nothing of it is in git or on the
+laptop). The disassembly's line at +0x1b349f is the faulting instruction of both dumps. A few follow-up reads of that
+one file were made right after the script, when its lock line was already released (the lock stayed empty, about
+three minutes); they should have been inside it.
+
+| Finding | Mark |
+|---|---|
+| +0x1b3460 (the faulting function) computes the source address as `[rdi] + 4 * [rcx+0x28]`: the record's first field plus an input offset kept in the resampler's state. That offset was 0 both times, so the first field itself was 0x1000 / 0x2000 | M |
+| +0x1b3110 (its caller) loops over a table of conversion functions indexed by sample format and channel count until the input has no frames left or the output is full | M |
+| +0x1d5600, the function of the return address +0x1d58a6: an object with an upstream object at +0x8 (called through its table), the input record at +0x80, the output record at +0xb0. When its input record has no valid frames (+0x92), it **copies the 0x30-byte record its caller passed in (rsi) into +0x80**; nothing in this function writes the first field otherwise, except the three places that clear the record to 0 with state 0x2b after the upstream object's "release" call | M |
+| +0x1d5570, the entry before it: it calls the upstream object's function at table offset 0x40 with that same record, then falls into +0x1d5600. **So the bad first field was written by the upstream object's "get buffer" call**, one step before the copy | M for the order of calls; I that the call at offset 0x40 is the fill |
+| The stack value 0x1000 / 0x2000 (slot 11) is not a variable of +0x1d5600: that slot (rbp-0x50) is never written there. It is left over from an earlier, deeper call | M |
+| Which class the upstream object is: **not in the dumps.** The pointer to it is at object+0x8 (0x131c6e0f08 in n10F2), 8 bytes before the 64 bytes the handler printed from rcx. The wider dump of `KYTY_BC5_AUDIO_TRAIL` (0x100 bytes before each register) contains it; its table address then names the class from this same disassembly | M |
+| Candidates read in the range, each a "fill" that stores a data pointer, the frame counts and returns state 0x2d: +0x1c2d40 (a block decoder to interleaved 16-bit: its data pointer is the object's own output buffer at +0x18, allocated on first use and freed and zeroed by +0x1c2ce0, plus an optional skip of `frames * channels * 2`), +0x18b5xx (takes the pointer from an inner object's call), +0x18c4xx (24-bit to float, not this format) | M for what each does; ? which one fed the faulting step |
+
+[I] The picture agrees with section 3: an engine-owned buffer pointer that is null at the moment of the fill, plus an
+offset or skip the fill adds. In the block decoder the pointer is reloaded from the object after the decode, so a
+release of that buffer between the allocation and the reload (another thread, or a callback inside the decode) gives
+exactly "null plus skip". [?] Whether the faulting voice is that decoder, and what released the buffer. No AJM call
+is visible on this path so far; the two AJM candidates of section 6 are neither supported nor refuted by this read.
+
+**What decides it next, without more reading:** one fault with `KYTY_BC5_AUDIO_TRAIL=1` (the pointer at object+0x8 and
+its table), or a targeted read of the tables in the title's data segment that hold +0x1c2d40's caller (a second
+read-only pass, about ten minutes).

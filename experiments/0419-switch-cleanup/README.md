@@ -434,6 +434,18 @@ shared notes folder (`exp0412-cpufault/`), the originals on the box under `~/bc5
 - **The runners' stop rule** (the same entry and LESSONS R55): `series0419f.sh` and `counts0419f.sh` went on to the
   next arm after a kernel line and stopped only on a failed reset. No kernel line occurred in either series. Both
   scripts and `mkseries0419f.py` now stop before the next arm; not run since.
+- **Cleanup on the box** (2026-11-14 12:02, the standing cleanup approval, the top session's order): `play-pkg-log.sh`
+  (7d33409f) and `play-pkg-quiet.sh` (4230882c) are in `~/bc5-work/trash-20261114/` with a note; `play-pkg.sh` is the
+  second title's only launcher. No shortcut or current script named them: only `route.sh`, `bisect.sh`,
+  `int-cleanup-20261025.sh` and the 230 `run573..run838.sh` they generated, none touched since 2026-10-19 (left in
+  place; they would fail now). CLAUDE.md on main still lists the two files and "the three second-title launchers":
+  that paragraph is the top session's to change. The desktop holds two shortcuts, both `play-any.sh` (the lean one
+  with `BC5_LEAN=1`): the empty emulator window, whose File menu (Open game image / Open package / Recent) starts
+  either title; ASTRO BOT is started there through its image, which goes to `play-astro.sh` (read on the box:
+  `play-any.sh` 4da8ce07).
+- **The title's code at the fault's return addresses** was read on the box (`eread0419.sh`, read only):
+  `audio-record-fault.md` section 7. The bad field is written by the upstream object's fill call, one step before
+  the copy; which class that object is, the present dumps do not hold.
 - `codex-20261114-0143-verdicts.md`: that entry point by point. `f403-f813-series.md`: a counted series that gives
   F403 and F813 a rate (proposal, nothing run).
 
