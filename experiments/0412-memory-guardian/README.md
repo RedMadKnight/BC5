@@ -3899,6 +3899,82 @@ cannot be met by more reading of these runs. Whether the arms start on F with th
 8 long walks each is the top's and the maintainer's call; an arm that hangs or faults the same way would then
 not be attributable to its heap without the fault record saying so.
 
+### 85. The night of 2026-11-14: build g412zf, the first pairs F / w0, and arm b1 (CommitIABufferAllocator by data): a GPU WRITE nobody named, at the load
+
+The top's GO (00:0x): the box until 07:00 for long walks on F with catchers, arm w0, and b1 once after two clean
+w0. Its own condition "the hang is explained first" was withdrawn by it; the maintainer's word for the wall's arms
+stands ("jest moja zgoda": scripted, private build, private save copy, heap by heap).
+
+**Build g412zf** (`mk0412zf.sh`, kit-zf; private copies only; exp 0413's private tree and backend source read and
+checked against its `tree18.md5`): candidate F's unit 59d17cf5 -> `mkbd0412.py` 8f07ccf6 -> `mkkc0412.py unit`
+7af3f752; `memory.cpp` f51c803e -> `mkkc0412.py memory` afc69dfe. Binary **f8cb77ad** (`~/bc5-work/exp0412/bin-n`),
+17 build steps, no new warning in the two files. CPU tests on the box: bd0412 27,008, wc0412 6,010, kc0412 48,009,
+ww0412 105,737, k1r0412 209,746, all of all. New, both default off:
+- **kc412, `BC5_GUARD_COVER_LOG=1`**: one journal line for every mapping rebuild in which a K1r cover gave way to
+  the title's data (count, MiB, first address, heap). Log only. `kc0412.inc`, `kc0412.cpp`.
+- **the arming line of ff412**: `KYTY_BC5_MEM_FIRSTFAIL` says "armed" at the process's start (a static initialiser in
+  memory.cpp that asks the catcher's own switch), so "it printed nothing" now means "no wrapped call failed".
+
+**The chain** (`night0412.sh`, runner `run0412p.sh` = exp 0413's run0413p.sh with exp 0412's directory, by
+`mkrun0412p.py`): one lock line; every arm a walk to G+620 from the named snapshot's private copy, RT on,
+`N_FUSE="13000 2048"`, `N_WD_MIB=220` (the sixteen earlier long walks ran with 12,400/1,024 and 300),
+`KYTY_BC5_MEM_FIRSTFAIL=1 KYTY_BC5_TRAP_LOG=1 BC5_GUARD_COVER_LOG=1`, the fault record on, sampler every 5 s, pad
+keys recorded (0 in every arm). Kernel 7.2.15-ogc1.1 (CLAUDE.md records 7.2.11: not re-read for Mesa/libdrm here).
+
+| arm | words beyond the catchers | result [M] | flips/s, longest gap | avail / GTT MiB at 420 s; at 600 s; lowest avail |
+|---|---|---|---|---|
+| n8F1 | none | clean to G+620 | 25.8, 653 ms | 624 / 12,353; 579 / 12,197; 471 |
+| n8W1 | w0: `BC5_GUARD_WRITERS=2`, zero scan at 175,295,415,535,640 | clean | 25.8, 638 ms | 716 / 12,252; 570 / 12,312; 459 |
+| n8F2 | none | clean | 25.7, 761 ms | 544 / 12,257; 656 / 12,307; 396 |
+| n8W2 | w0 | clean | 25.5, 572 ms | 535 / 12,331; 671 / 12,288; 481 |
+| n8B1 | b1: `BC5_GUARD_BYDATA_NAMES=CommitIABufferAllocator` | **GPU page fault, a WRITE, at 111 s (in the load, before G)**; ring reset succeeded, no reboot | - | at 108 s: 1,361 / 11,430 |
+
+In all five: the three catchers armed (1 line each), first-failure lines 0, trap lines 0, k1f imports 0 in the F and
+W arms.
+
+**w0, what the soft-dirty split says** [M] (it works on this kernel: the self-test passed, the clear takes 49-67 ms
+for the whole process, 110-133 ms with the reads; flips/s as in the F arms). Not-named chunks that turned non-zero,
+"written by the CPU" / "NO CPU write", scans 2-5:
+
+| heap | n8W1 | n8W2 |
+|---|---|---|
+| RenderGpuWcLarge | 0 / 13 | 0 / 8 |
+| RenderGpuRwLarge | 0 / 16 | 0 / 13 |
+| CommitIABufferAllocator | 1 / 0 | 8 / 0 |
+| AMM | - | 1 / 0 |
+| VisualEffectInstanceHeap | 1 / 0 | - |
+
+- [M] Every not-named chunk of the two RenderGpu heaps is a GPU write nobody named; every one of
+  CommitIABufferAllocator, AMM and VisualEffectInstanceHeap had a CPU write.
+- [I] So the scans from 175 s on show no unnamed GPU writer in CommitIABufferAllocator, and b1 was started on that.
+  The scans do not cover the load (the first is at 175 s, G is at 115 s). That gap is where b1 failed.
+
+**b1** [M] (record `~/bc5-data/captures/faults/20261114-010740`, journal
+`~/bc5-data/captures/play-20261114-0105/gc/direct.log`; neither is copied):
+- kernel: page faults at 0x121a807000, 0x121a802000, 0x121a801000, client TCP (0x8), RW 1,
+  status 0x00741041, PERMISSION_FAULTS 0x4; the host's line: "under the read-only zero cover: a GPU WRITE (kind
+  K1w)"; view "CommitIABufferAllocator" 0x1210000000+0xab000000, the address 0xa807000 into it, chunk never written
+  by the CPU.
+- before it: k1r at 106 s 748 pieces, 1,492 MiB covered (the F arms have 380 pieces, 756 MiB from 152 s on); the
+  cover log's last lines at 109.24 and 109.26 s are covers in CommitIABufferAllocator giving way to CPU data, as
+  intended; K1 at the filter imported 5 operands (op 0x50, 20 MiB), the F arms 0.
+- the job that timed out (#91068, an acb of 84 dwords, dumped by the probe) holds no dispatch: label writes, one
+  ACQUIRE_MEM, one compute user-data block. It waited behind the faulting job; the writer is an earlier submission
+  and is NOT identified. Its target is not a packet operand, a hint or a force: TCP is the client of a shader's own
+  loads and stores, so the address came from a buffer descriptor the shader was given.
+- memory: at the fault 1,330 MiB available and GTT 11,464 MiB against about 11,2xx at the same second of the other
+  arms is NOT a like-for-like number (the load was not over); "MiB recovered at 420 s and 600 s" was not reached.
+- no failed memory call before it (first-failure lines 0, armed).
+
+[I] What it means for the rule: "by data + cover + named write targets" is not safe for CommitIABufferAllocator as
+the host names targets today. The class missing is a buffer a shader writes through its descriptor (bound by user
+data, not by a packet operand). The next attempt needs that class named BEFORE the write: either the import of
+every buffer descriptor a dispatch or draw is given, or a catcher that lists them first (log only) so that the
+size of the class is known. b2 and later arms are not started (the top reads this first); the RenderGpu heaps have
+unnamed GPU writers in every scan, so they would fail the same way sooner.
+
+The chain went on with F / w0 pairs after b1 (no reboot). Their table follows in section 86.
+
 ## Verdict
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over
