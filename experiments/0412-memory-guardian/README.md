@@ -4147,8 +4147,8 @@ n8W6: no summary (the chain was killed during it).
 Source: the kernel's devcoredumps hold the submitted buffer whole ("IB #0", 5,936 dwords for n8F8, 2,408 for the
 hang of 601 s) and the CP's registers; the host's probe dumped the title's buffers (5,791 and 816 dwords). Decoded
 with a small PM4 reader in the scratchpad (not committed; the dumps are the title's command buffers and stay out of
-git). Packet names by opcode as in Mesa's `sid.h` (from memory: TODO(verify) the names of 0x58, 0x63, 0x9f and of
-bit 15 of the dispatch initiator against the file).
+git). Packet names by opcode as in Mesa's `sid.h` (written from memory here; checked against the file in section
+89: 0x58, 0x63, 0x9f were right, bit 15 of the dispatch initiator is CS_W32_EN).
 
 Where the CP stood [M]: CP_IB1_BUFSZ is what was left to fetch, so the fetch position is the size minus it.
 
@@ -4205,6 +4205,85 @@ has no newest mark); what the shader was reading (the user data of the dispatch 
 at COMPUTE_USER_DATA_0 with buffer descriptors into 0x11a5ae8000, 0x11a53e8000, 0x11a59e8000 and a table at
 0x11e0d2c710; the heap names and whether those chunks were covered or imported at that second need the layout of
 that run, which was not written because no fault record was made).
+
+### 89. After section 88: the names checked in Mesa; the six wave32 dispatches are one class; what the two candidate dispatches are given; three catchers prepared (2026-11-14, laptop only; nothing built or run on the box)
+
+**Names, checked** [M] against Mesa main 94ad3c5e, `src/amd/common/sid.h` and `src/amd/registers/gfx10.json` (fetched
+from gitlab.freedesktop.org): PKT3_ACQUIRE_MEM 0x58, PKT3_LOAD_SH_REG_INDEX 0x63, PKT3_LOAD_CONTEXT_REG_INDEX 0x9F,
+PKT3_ATOMIC_MEM 0x1E, PKT3_EVENT_WRITE 0x46, event CS_PARTIAL_FLUSH = 7. COMPUTE_DISPATCH_INITIATOR: bit 0
+COMPUTE_SHADER_EN, bit 5 USE_THREAD_DIMENSIONS, bit 6 ORDER_MODE, bit 13 TUNNEL_ENABLE, bit 14 RESTORE, bit 15
+CS_W32_EN. So 0x8041 / 0x8061 against 0x41 / 0x61 is a compute shader compiled for 32-lane waves. Section 88's
+names stand. Opcode 0x64 (13 packets in the title's buffer) is not in `sid.h`; 0x53 and 0x0c of the ME's header
+ring are not either (the CP's own, not the stream's).
+
+**The six wave32 dispatches of n8F8's buffer are one class of the title's work** [M]: two programs, run as a
+pair three times, each pair over the same count:
+
+| order in the buffer | program | groups | title's offset |
+|---|---|---|---|
+| 3rd | 0x11d0423100 | 90 | 4,756 |
+| 14th | 0x11d0415c00 | 90 | 5,097 |
+| 15th | 0x11d0423100 | 39 | 5,143 |
+| 22nd | 0x11d0415c00 | 39 | 5,374 |
+| 23rd | 0x11d0423100 | 47 | 5,420 |
+| 30th | 0x11d0415c00 | 47 | 5,651 |
+
+Between the two of a pair run 5 to 10 small dispatches with initiator 0x41 (4 or 8 groups; programs 0x11d042ba00,
+0x11d042b100, 0x11d042b700). The CP stood between the 14th and the 15th, or just after the 15th: at the seam of
+the first and the second pair. [I] It looks like one pass of the frame done for three sets (90, 39, 47 items).
+
+**What the two candidates are given** [M] (COMPUTE_USER_DATA_0.. as set just before each, from the submitted buffer):
+- the 14th (0x11d0415c00, 90 groups): three buffer descriptors, base 0x11a5ae8000 (stride 0x300, 0x800 records),
+  0x11a53e8000 (stride 0x10, 0x60000 records), 0x11a59e8000 (stride 8, 0x20000 records), and a pointer 0x11e0d2c810;
+- the 15th (0x11d0423100, 39 groups): a texture descriptor with base 0x1163060000, the buffer 0x11a5ae8000 again,
+  and a pointer 0x11e0d2c710. 0x1163060000 is a colour target of this run (the journal: "hint CB0 0x1163060000:
+  window 0x1161060000+0x4000000"), so the hint had imported it.
+- the heaps of 0x11a5ae8000, 0x11a53e8000, 0x11a59e8000 and 0x11e0d2c7xx: NOT known here. No line of n8F8's
+  journal names a view at those addresses, and no layout was written. The journal has a colour-target hint at
+  0x11a5c90000, 2 MiB above, so [I] this is a render heap; whether its views are eager, lazy or by data, and
+  whether those chunks were imported at 532 s, is exactly what is missing.
+
+**The hypothesis** (a compute shader reads its input through our mapping: a zero cover, a lazy view or a chunk not
+imported, and loops without end) [unknown]: neither supported nor refuted by what is on the laptop.
+- [M] For it: nothing yet. Against it: no K1r or cover event in the 349 s before n8F8's hang; the count of covered
+  pieces is flat (380-383) from 152 s on.
+- [I] A zero where the title has data can make a loop endless (a count or a stride of zero, a list that never
+  ends); a GPU page fault cannot be the cause (none was raised, L2 status 0), so the read succeeded and returned
+  something. That fits the cover (reads zeros) and does not fit an unmapped address.
+- [M] The host already has a tool for shaders that loop: `BC5_DIRECT_LOOP_BOUND` (experiment 0137) copies a program
+  and bounds its back-edges. It is a diagnostic here, not a fix: with the program known it can show whether the
+  hang is a loop.
+
+**Two steps that settle it, the cheap one first:**
+1. No run: read `layout-views.txt` and `layout-buffers.txt` of record `~/bc5-data/captures/faults/20261114-010740`
+   (b1, the same binary, the same save, the same boot) and of 20261113-203301, and look up the six addresses. If
+   the heaps' addresses are the same in both records (to be checked there), n8F8's were the same. If the three
+   buffers lie in an eager view (imported whole), the hypothesis is refuted for n8F8 without a run. If they lie
+   in a by-data or lazy view, step 2 is needed. One read of two existing files; it needs the top's GO.
+2. One arm, repeated until the hang comes again (it came in 2 of about 18 long walks of F with K1r): F plain, the
+   long walk to G+620, RT on, stop first, on a private build with the three catchers below switched on
+   (`BC5_TIMEOUT_LAYOUT=1 BC5_DISPATCH_COUNT=1 BC5_FAULT_POINTERS=1`). At the hang the file of tl412 says, for each
+   dispatch of the hung buffer and each address it is given: the view, eager / lazy / by data, chunk imported or
+   not, GPU mapping or not. "By data, NOT imported, GPU mapping yes" is the zero cover. A candidate dispatch with
+   such an input confirms that the input came from the cover; all inputs imported refutes it. The counter says
+   whether those programs are rare (how many times each ran in the 500 s before). Cost: about 13 minutes a walk,
+   8 walks expected for one hang; no change to a mapping or a buffer.
+
+**Prepared (code and CPU tests; default off; not built on the box):**
+- a) tl412, `BC5_TIMEOUT_LAYOUT=1`: the first thing at a timeout, before the probe's own files: one file
+  `timeout-layout-<job>-<kind>.txt` in the capture directory with the dispatches and their addresses' views, fsync,
+  then the whole view list, fsync, then the directory. bc5-gpu-watch is not touched; the file is simply earlier
+  than the 0.2 s in which n8F8's kernel was crashed (the probe's dump and 290 journal lines made it then).
+  What is measured: nothing on the box; the time it takes with 21,000 views is unknown until a run.
+- b) dc412, `BC5_DISPATCH_COUNT=1`: every submitted buffer's dispatches counted by program, initiator and kind;
+  every 60 s the 300 rarest to the journal; tl412's file gives each hung dispatch's count. One more pass over
+  each buffer on the game thread: its cost is not measured.
+- c) ph412, `BC5_FAULT_POINTERS=1` (section 86).
+- `memfast/dw0412.inc` (the walk, the address readings, the counter), `dw0412.cpp` (CPU test, 11,672 of 11,672:
+  4,000 generated buffers against the generator's record, cut buffers, tables that cannot be read, both readings
+  of an address, the counter), `mkdw0412.py` (the host glue; unit 4a8d5211 -> f73b5377; every anchor once; the
+  glue is syntax-checked against stand-ins only, as ph412's). The walk reads the buffer as the timeout probe
+  does; run on n8F8's dump by hand it is not (the dump is the title's and stays out of the test).
 
 ## Verdict
 
