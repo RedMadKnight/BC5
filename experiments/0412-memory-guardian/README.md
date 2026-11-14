@@ -4065,7 +4065,82 @@ k1r pieces go 921 -> 380; single late events at 140-400 s in InitAllocator with 
 reboot; left for the top's word); n8F8's files and the devcoredump directory are not read; no b arm of any heap until
 the maintainer decides.
 
-## Verdict
+### 87. n8F8 read on the box: the hang at 532 s, one draw buffer; compared with the hang of 601 s (2026-11-14 08:00-08:10, reads only, on the top's GO)
+
+The stale lock line (token 202611140250444142741) was removed inside the claim mutex, with a line in BOX-QUEUE; the
+lock is empty. Nothing was run or built. Files cited by path, none copied: journal
+`~/bc5-data/captures/play-20261114-0316/gc/direct.log`, the dumped buffer `ib-timeout-00454733-dcb-5791.bin` beside
+it, devcoredump `~/bc5-data/captures/devcoredump/20261114-032517-devcd3.txt`, the emulator's output
+`~/bc5-work/exp0412/n8/play-last.log`, the arm's files `~/bc5-work/exp0412/n8/raw/n8F8-*`.
+
+**n8F8** [M] (confirms section 86's inference of the arm; the second is 532, not 510-540 from the start line):
+- candidate F plain (no extra word), binary f8cb77ad, fuse 13000/2048, started 03:16:20, boot 48cf6bf1 (the boot
+  with b1's GPU reset of 01:07). G = 116 s, walk queued at 116 s; the hang is G+416.
+- the hung job: dcb #454733, 5,791 dwords, submitted at t 532.030 s, "FAILED rc 0 TIMEOUT 2011.73 ms". The probe:
+  3 waits (2 kept for the GPU), 66 label writes, 31 dispatches, none indirect, the largest grid 1,296 groups; 10
+  draws. The jobs before it (#454724-#454732) all completed within 12 ms. The next (#454734, acb 28 dwords) failed
+  rc -1 at once. The kernel names the thread "Render Thread".
+- no fault record: the kernel was crashed by bc5-gpu-watch 0.2 s after the failed ring reset, before the host
+  could write one. The journal and the dump survived (the emergency sync).
+- memory at 530 s: available 551 MiB, swap used 805 MiB, GTT 12,364 of 13,312 MiB, PSI full 0.02 %; the sampler's
+  last rows (494-530 s): available 505-568, cgroup 12,415-12,563 of 13,000 MiB, cgroup swap 190-203 of 2,048. Not at a
+  limit: the same numbers as the clean arms at that second.
+- catchers: first-failure armed 1, lines 0; TRAP_LOG armed 1; k1f 0, would-learn 0; K1r's last line t 183 s, 382
+  pieces, 760 MiB (no change in the 349 s before the hang); the cover log's last event t 174.54 s (InitAllocator),
+  10,641 since the start. Nothing of the guard happened near the hang.
+- pad: 0 lines in every arm of the night (n8F1-F8, n8W1-W7, n8B1).
+- the flips went on: the fps counter has 26-27 flips/s at 532.7 and 533.7 s.
+
+**The two hangs side by side** [M]:
+
+| | 2026-11-13 20:33, arm m5wall | 2026-11-14 03:25, arm n8F8 |
+|---|---|---|
+| binary | 1a2900a0 | f8cb77ad |
+| arm's extra words | zero scan, WRITERS=1 | none |
+| second, G | 601.2 s, G 117 (G+484) | 532.0 s, G 116 (G+416) |
+| jobs timed out | two: acb #522931 (816 dwords, 20 dispatches, 18 indirect, largest grid 24,960) and dcb #522934 (45,179 dwords, 34 dispatches, 32 waits) | one: dcb #454733 (5,791 dwords, 31 dispatches, 0 indirect, largest grid 1,296) |
+| kernel's thread | bc5-ring | Render Thread |
+| ring reset | succeeded | FAILED, then the box rebooted |
+| page fault | none (L2 fault status 0) | none (L2 fault status 0) |
+| GRBM_STATUS / STATUS3 | 0xa0403028 / 0 | 0xa2712028 / 0x2000 |
+| CP_BUSY_STAT, CP_CPF_STATUS | 0x00400000, 0xb4000263 | 0x00048400, 0xb4000063 |
+| CP_IB1 base hi, BUFSZ, CMD_BUFSZ | 0x1013, 0x628, 0x968 | 0x100d, 0x290, 0x1730 |
+| CP_IB2 base, CMD_BUFSZ, BUFSZ | 0x8001_00015000, 0xa8, 0 | 0x8001_00015000, 0xa8, 0 |
+| GPU reset earlier on the boot | no | yes (01:07) |
+
+- [M] Not the same job: another kind and size, another submitting thread, other shaders at the top of the probe's
+  list (n8F8: compute 0x11d042ba, 0x11d042b1, 0x11d0287b; 601 s: compute 0x11d036b1, 0x11d04cc3). Two draw shaders
+  are in both lists (es 0x11d00f8d, ps 0x11d01ba0); they are in many draws of a frame, so that says little.
+- [M] The same in both: the gfx ring, no page fault, CP_IB2 at the same base with nothing left in it, CP_IB1 not
+  finished (BUFSZ 0x628 and 0x290 dwords left).
+- [I] IB1 left with 0x290 = 656 dwords of 0x1730 = 5,936 means the CP stopped about 5,280 dwords into the buffer
+  (if CMD_BUFSZ counts the host's prefix with the 5,791 dwords); the probe has dispatches at 5,651 and 5,695 and
+  label writes up to 5,783 there. Which packet that is needs the dump decoded against the submitted buffer, not done.
+- [I] The same place of the walk? The walk is 37 cycles in 620 s (16.76 s each). G+484 is 14.8 s into a cycle,
+  G+416 is 13.8 s into one. Close, with G known to 1 s only; two points do not make a place.
+- [I] What the pair says: a GPU hang without a page fault on the gfx ring, in candidate F builds, in long walks only
+  (601 s and 532 s; none in the runs of 240-320 s), with and without the scan words. The failed reset is the one new
+  thing, and that boot had a reset before.
+
+**The rows of section 86's table that were "not noted"** [M] (avail / GTT MiB at 420 s; at 600 s; lowest avail):
+n8F3 623 / 12,316; 617 / 12,317; 411. n8W3 619 / 12,289; 762 / 12,219; 462. n8F4 607 / 12,289; 565 / 12,239; 513.
+n8W6: no summary (the chain was killed during it).
+
+**w0, n8W3-W6, scans 2-5** [M] (not-named turned chunks: CPU-written / no CPU write):
+
+| heap | n8W3 | n8W4 | n8W5 | n8W6 |
+|---|---|---|---|---|
+| RenderGpuWcLarge | 0/2, -, 0/20, 0/5 | 0/1, 0/9, 0/1, 0/3 | 0/3, 0/6, 0/2, 0/3 | 0/5, 0/7, 0/0, 0/2 |
+| RenderGpuRwLarge | 0/3, 0/1, 0/1, - | 0/10, 0/7, -, 0/1 | 0/9, -, -, 0/4 | 0/13, 0/5, 0/1, 0/3 |
+| CommitIABufferAllocator | 8/0 (scan 2) | 9/0 (scan 2) | 8/0 (scan 2) | 8/0 (scan 2) |
+| AMM | 3/0 (scan 5) | - | - | **0/10 (scan 5)** |
+| Decal Job Scheduler | - | - | 1/0 (scan 2) | - |
+
+- [M] In seven w0 arms every not-named chunk of CommitIABufferAllocator had a CPU write (1, 8, 8, 9, 8, 8, 10
+  chunks, all at scan 2), and every one of the two RenderGpu heaps had none.
+- [M] New in n8W6, scan 5 (640 s): 10 chunks of AMM turned non-zero with no CPU write and no name (23 turned, 13
+  named). In n8W2 and n8W3 AMM's not-named chunks were CPU-written. So AMM has GPU writers nobody names as well, at
+  least late in the walk; AMM by data would need the same class named as CommitIABufferAllocator at the load.
 
 - **K1r and rl412 (sections 62, 63; not compiled):** the fault of his play gets a read-only zero cover over
   never-written memory the title mapped (nothing pinned; a GPU write there faults by name), and the freeze after
