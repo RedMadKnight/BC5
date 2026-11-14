@@ -1,17 +1,17 @@
-# Experiment 0419: the ONE test build T (patch 5f2df896), put together on the laptop on 2026-11-14, NOT built
+# Experiment 0419: the ONE test build T (patch ad96ead6), put together on the laptop on 2026-11-14, NOT built
 
 Ordered by the top session (the rule "all fixes and catchers first, each behind its switch, then test"). Private paths
 only; nothing shared is replaced. With every switch below unset, T behaves as candidate G.
 
 | Piece | Value |
 |---|---|
-| patch 0001 (against KytyPlus f266548) | `5f2df896` (`0001-new23.patch`), 133 patched files |
-| main unit `src/libs/bc5LleAgc.cpp` | `7cb02bac` (G: 8a930481) |
+| patch 0001 (against KytyPlus f266548) | `ad96ead6` (`0001-new23.patch`), 133 patched files |
+| main unit `src/libs/bc5LleAgc.cpp` | `c8c5d5ce` (G: 8a930481; `7cb02bac` before step h) |
 | `src/kernel/memory.cpp` | `afc69dfe` (G and F: f51c803e) |
 | backend | as G: `direct.cpp` aeec4c09, `direct.hpp` e96e5c73 |
-| tree list | `tree-test-build-T-5f2df896.md5` |
+| tree list | `tree-test-build-T-ad96ead6.md5` |
 | kit | shared notes folder, `exp0419-test-build-T/` (`p0419t.sh`, both patches, both tree lists, the backend files, `G-to-T.diff`) |
-| build | on the box, in this experiment's slot: `P_NEW23=5f2df896 bash p0419t.sh` (F's private tree d9af28ca must be in place) |
+| build | on the box, in this experiment's slot: `P_NEW23=ad96ead6 bash p0419t.sh` (F's private tree d9af28ca must be in place) |
 
 ## What is in it, in the order applied
 
@@ -27,6 +27,7 @@ only; nothing shared is replaced. With every switch below unset, T behaves as ca
 | 8 | tl412, dc412 | `mkdw0412.py` | `BC5_TIMEOUT_LAYOUT=1`, `BC5_DISPATCH_COUNT=1` | ran, as 5 |
 | 9 | dt412: descriptor targets imported before the submit (the gap of arm b1) | `mkdt0412.py` | `BC5_GUARD_DESC_TARGETS=1` (import), `=2` (log only) | laptop syntax check only |
 | 10 | the arming line of the memory first-failure catcher | `mkkc0412.py memory` | `KYTY_BC5_MEM_FIRSTFAIL=1` (exists) | ran, as 5 |
+| 12 | two live timing words become the constants they always had: `BC5_DIRECT_CHAIN_HOLD_US` (2 ms), `BC5_DIRECT_DCB_WAIT_MS` (8 ms); the top session's decision of 2026-11-14 | `mkg0419_h.py` | none (the words are gone) | never compiled; behaviour unchanged, both were unset everywhere |
 | 11 | a diagnostic: one forced default left unapplied (for the arm without `KYTY_BC5_APR_POSIX=direct`) | `mkdiag0419.py` | `KYTY_BC5_DIAG_UNFORCE=<NAME>[,...]` | CPU test `test0419diag.cpp` all ok; never compiled in the host |
 
 Steps 5 to 10 are exp 0412's generators (branch `exp/0412-memory-guardian`, commit 656e703d), run unchanged on G's
@@ -41,7 +42,7 @@ files in the guardian's order 1, 2, 3, 4, 6 on the unit and 5 on `memory.cpp`.
   the names G deleted occurs in the added lines.
 - The dry run of the box step on a clean tree at F (`git apply -R 0001-new18`, `git apply 0001-new23`): 133 of 133
   files match the tree list. `grep -c 'exp 0372'` = 5. `bash -n p0419t.sh`.
-- Words: T reads 209 (G 202): the guardian's six switches and `KYTY_BC5_DIAG_UNFORCE`. `switch_defaults.hpp` is 01398100.
+- Words: T reads 207 (`words-test-build-T.txt`), 160 can be set: G's 202 and 155, plus the guardian's six switches and `KYTY_BC5_DIAG_UNFORCE`, less the two timing words. `switch_defaults.hpp` is 01398100.
 
 ## NOT checked
 
@@ -52,7 +53,7 @@ files in the guardian's order 1, 2, 3, 4, 6 on the unit and 5 on `memory.cpp`.
   longer reads `BC5_GUARD_MAP_RULE`, `_PRT_BG`, `_MLOCK`, the cap words), so a test that sets those words is expected
   to differ; the guardian has the unit (`exp0419-test-build-T/unit-bc5LleAgc.cpp`) and is asked to run them.
   **The guardian's answer (2026-11-14, its report, not repeated here):** all 14 of its CPU tests pass against the
-  pure blocks taken out of T's unit 7cb02bac (laptop, VS clang++ `-O1 -Wall -Wextra -Werror`); twelve blocks are the
+  pure blocks taken out of T's unit as it was before step h (7cb02bac; step h changes two lines outside those blocks) (laptop, VS clang++ `-O1 -Wall -Wextra -Werror`); twelve blocks are the
   same as in its own unit, three differ through G's cuts (the guard's `Cfg` reader, `mr412`, `rl412`) and their
   tests still pass (72 of 72, 15,281 of 15,281, 4,970 of 4,970). Its limit: no test sets those environment words, so
   the three changed one-line readers are covered by no test; twelve of its tags are not in the unit and were not

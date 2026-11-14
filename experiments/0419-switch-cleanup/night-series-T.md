@@ -1,6 +1,6 @@
 # The night series on the test build T: arms (proposal of 2026-11-14, to be agreed with the guardian; nothing run)
 
-Asked by the top session. T is `test-build.md` (patch 5f2df896, not built yet). The series is the long walk of the
+Asked by the top session. T is `test-build.md` (patch ad96ead6, not built yet). The series is the long walk of the
 second title to G+620, RT on, a private copy of the save, no pad key, as the walks of README sections 14 and 15 and
 exp 0412's sections 91 to 93.
 
