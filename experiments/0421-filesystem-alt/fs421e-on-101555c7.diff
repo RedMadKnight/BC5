@@ -1,0 +1,17 @@
+--- a/src/libs/bc5LleAgc.cpp (patch 101555c7, blob 358419d)
++++ b/src/libs/bc5LleAgc.cpp (+ mk0421.py)
+@@ -2398,6 +2398,14 @@
+ 				}
+ 			}
+ 		}
++		// Exp 0421 (tag fs421e): the title's heap "FileSystem" is always eager: imported whole when its view appears, as
++		// the heaps of BC5_DIRECT_EAGER_NAMES are. The title keeps GPU-written buffers there (F443, F468, F472) and the
++		// GPU read its CPU-written chunks (fault record 20261114-184017); on the console every page of it is the GPU's
++		// from the map call. One import of the view instead of one per freshly written 2 MiB chunk during the loads.
++		if (std::find(v.begin(), v.end(), std::string("FileSystem")) == v.end()) v.push_back("FileSystem");
++#ifndef BC5_LEAN
++		std::fprintf(stderr, "[bc5] exp 0421 (tag fs421e): \"FileSystem\" is eager (imported whole when its view appears)\n");
++#endif
+ 		return v;
+ 	}();
+ 	if (bd412_name(name)) return false; // exp 0412 (tag bd412): this heap is imported by data

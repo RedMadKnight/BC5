@@ -1,0 +1,130 @@
+--- a/src/libs/bc5LleAgc.cpp (T unit c8c5d5ce + mkv0419.py lazyfs)
++++ b/src/libs/bc5LleAgc.cpp (+ mk0421.py, a8f86104)
+@@ -48,6 +48,7 @@
+ #include "bc5/sync_fast.hpp" // experiment 0415 (ls415d)
+ #include "bc5/map_records.hpp" // experiment 0415 (mr415)
+ #include "bc5/anon_sync.hpp" // experiment 0415 (as415)
++#include "bc5/late_import.hpp" // exp 0421 (tag fs421): BC5_DIRECT_FS_LATE
+ #include <sys/resource.h> // experiment 0379 (exp 0401 e7, mkzsk0401.py): setpriority, for the zero scan and the canary
+ #include <sys/syscall.h>  // experiment 0379: SYS_gettid
+ // ---- experiment 0379's backend/include/bc5/zero_skip.hpp (782ca0e9) lines 13-228, inlined by exp 0401's mkzsk0401.py ----
+@@ -2311,6 +2312,7 @@
+ // a hint or a learned fault region asks. Everything a draw's BO list names has to sit in the
+ // driver's GTT domain at once, and that domain is half of the machine's RAM by default (run 96:
+ // -ENOMEM at 6.8 GiB imported, experiment 0020); memory the GPU never reads should not count.
++static uint64_t fs421_late_ns(); // exp 0421 (tag fs421): BC5_DIRECT_FS_LATE, 0 when off
+ static bool direct_lazy_name(const char* name) {
+ 	static const std::vector<std::string> names = [] {
+ 		std::vector<std::string> v;
+@@ -2328,7 +2330,7 @@
+ 		}
+ 		// exp 0419 (build V) for exp 0412: "FileSystem" is never lazy (fault record 20261114-184017: a shader read two
+ 		// of its written pages, which a lazy heap does not import). BC5_DIAG_LAZY_FILESYSTEM=1 keeps the old list.
+-		if (!bc5::env_on(std::getenv("BC5_DIAG_LAZY_FILESYSTEM"))) {
++		if (!bc5::env_on(std::getenv("BC5_DIAG_LAZY_FILESYSTEM")) && fs421_late_ns() == 0) { // exp 0421: BC5_DIRECT_FS_LATE keeps it lazy, imported late
+ 			const auto it = std::find(v.begin(), v.end(), std::string("FileSystem"));
+ 			if (it != v.end()) {
+ 				v.erase(it);
+@@ -4392,6 +4394,64 @@
+ 	}
+ 	if (tick) last_ns = now;
+ }
++// Exp 0421 (tag fs421), BC5_DIRECT_FS_LATE (default off): the GPU read fault of arm n13P4 (fault record
++// 20261114-184017) read two written chunks of the lazy heap "FileSystem" 580 s after they were written. Build V/W
++// imports the heap by data instead, at the moment of each write, and W's loads gained in-host stalls (exp 0412
++// section 102; the link is inferred). With the switch on the heap stays lazy and each written chunk is imported once
++// it has been written for the delay, one chunk a pass: no import of it during the load that wrote it.
++static uint64_t fs421_late_ns() {
++	static const uint64_t ns = [] {
++		const uint64_t v = bc5::late_import::delay_of(std::getenv("BC5_DIRECT_FS_LATE"));
++#ifndef KYTY_BC5_LEAN
++		if (v != 0)
++			std::fprintf(stderr, "[bc5] exp 0421 (tag fs421): BC5_DIRECT_FS_LATE on: \"FileSystem\" stays lazy; a written chunk of it is imported %.0f s after it is first seen, "
++			                     "one chunk a pass, passes 250 ms apart\n", static_cast<double>(v) / 1e9);
++#endif
++		return v;
++	}();
++	return ns;
++}
++static bc5::late_import::State g_fs421[2]; // per DState kind
++// The data chunks of a late view that no import covers (the by-data walk of direct_sync_one, for one view).
++static void fs421_scan(const DState& S, const DView& v, int fd, std::vector<uint64_t>& out) {
++	const uint64_t end = v.off + v.size;
++	uint64_t       pos = v.off & ~(kDChunk - 1);
++	while (pos < end) {
++		if (const uint64_t ce = direct_covered_end(S, pos); ce != 0) { pos = ce; continue; }
++		const off_t d = lseek(fd, static_cast<off_t>(pos), SEEK_DATA);
++		if (d < 0 || static_cast<uint64_t>(d) >= end) break;
++		const uint64_t c = static_cast<uint64_t>(d) & ~(kDChunk - 1);
++		if (direct_covered_end(S, c) == 0) out.push_back(c);
++		pos = c + kDChunk;
++	}
++}
++static void fs421_pick(const DState& S, const std::vector<uint64_t>& written, uint64_t now, std::vector<uint64_t>& need) {
++	std::vector<uint64_t> w;
++	w.reserve(written.size());
++	for (const uint64_t c: written) {
++		if (S.failed.count(c) == 0 && c + kDChunk <= S.file_size) w.push_back(c);
++	}
++	bc5::late_import::Limits L;
++	L.delay_ns = fs421_late_ns();
++	auto& st = g_fs421[S.kind == 0 ? 0 : 1];
++#ifndef KYTY_BC5_LEAN
++	std::vector<std::pair<uint64_t, uint64_t>> first; // the chunks about to be picked, with when they were first seen
++	for (const auto& [c, t]: st.seen) first.emplace_back(c, t);
++#endif
++	const std::vector<uint64_t> got = bc5::late_import::pick(st, std::move(w), now, L);
++	for (const uint64_t c: got) need.push_back(c);
++#ifndef KYTY_BC5_LEAN
++	static uint64_t lines = 0;
++	for (const uint64_t c: got) {
++		uint64_t t0 = now;
++		for (const auto& [fc, ft]: first) if (fc == c) t0 = ft;
++		if (lines++ < 64)
++			journal("fs421 late import (exp 0421): %s chunk 0x%" PRIx64 " of \"FileSystem\", seen written %.1f s ago; %" PRIu64 " late chunks so far, %zu waiting\n", S.label, c,
++			        static_cast<double>(now - t0) / 1e9, st.imported, st.seen.size() - got.size());
++	}
++#endif
++}
++
+ static void direct_sync_one(DState& S, bool force) {
+ 	if (!g_dev) return;
+ 	const uint64_t now = SoftCp::now_ns();
+@@ -4427,7 +4487,8 @@
+ 		struct stat st {};
+ 		const uint64_t blocks = fstat(fd, &st) == 0 ? static_cast<uint64_t>(st.st_blocks) : ~0ull;
+ 		const bool merge_due = now - S.merge_ns > 250'000'000ull;
+-		if (blocks != ~0ull && blocks == S.blocks && sig == S.views_sig && S.forced.size() == S.forced_seen && S.bos.size() == S.bos_mapped && !merge_due) {
++		if (blocks != ~0ull && blocks == S.blocks && sig == S.views_sig && S.forced.size() == S.forced_seen && S.bos.size() == S.bos_mapped && !merge_due &&
++		    !bc5::late_import::due(g_fs421[S.kind == 0 ? 0 : 1], now)) { // exp 0421: a late chunk whose time has come
+ 			g_dprof_fast++;
+ 			return; // nothing new in the file, no new view, nothing forced, nothing to merge yet
+ 		}
+@@ -4442,6 +4503,7 @@
+ 	const bool zskip_on = S.kind == 0 && !g_zskip.empty();
+ 	// 1. chunks to import: data inside a view, and the forced ones
+ 	std::vector<uint64_t> need;
++	std::vector<uint64_t> fs421_written; // exp 0421 (tag fs421): written chunks of "FileSystem" while it is lazy
+ 	for (const auto& v: views) {
+ 		if (v.eager || mr412::rule_for(S.kind)) { // BC5_DIRECT_EAGER_NAMES: every chunk of the view; exp 0412 (tag mr412): BC5_GUARD_MAP_RULE, of every view
+ 			for (uint64_t c = v.off & ~(kDChunk - 1); c < v.off + v.size; c += kDChunk) {
+@@ -4450,7 +4512,10 @@
+ 			}
+ 			continue;
+ 		}
+-		if (v.lazy) continue; // BC5_DIRECT_LAZY_NAMES: only what is forced
++		if (v.lazy) { // BC5_DIRECT_LAZY_NAMES: only what is forced
++			if (fs421_late_ns() != 0 && v.name == "FileSystem") fs421_scan(S, v, fd, fs421_written); // exp 0421: BC5_DIRECT_FS_LATE
++			continue;
++		}
+ 		const uint64_t end = v.off + v.size;
+ 		uint64_t pos = v.off & ~(kDChunk - 1);
+ 		while (pos < end) {
+@@ -4466,6 +4531,7 @@
+ 		if (zskip_on && g_zskip.contains(c)) continue; // experiment 0379: forced only by a learned window
+ 		if (direct_covered_end(S, c) == 0) need.push_back(c);
+ 	}
++	if (fs421_late_ns() != 0) fs421_pick(S, fs421_written, now, need); // exp 0421 (tag fs421): at most one late chunk a pass
+ 	std::sort(need.begin(), need.end());
+ 	need.erase(std::unique(need.begin(), need.end()), need.end());
+ 	guard0412_cap(S, views, need); // exp 0412 (tag g412b): BC5_GUARD_CAP_ACT puts soft chunks over the cap off
