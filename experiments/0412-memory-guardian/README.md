@@ -4863,6 +4863,11 @@ wyłączona"):
   No emulator and no watcher left. "Leaving" was a SIGTERM to the emulator, not the menu's own exit.
 - [M] The shell goes away when the launcher starts, so it is gone during the emulator's menu too.
 - Undo: `bash ~/bc5-work/exp0412/lean-shared/install-lean-session.sh undo`.
+- [M] 2026-11-15 07:54 (the top's GO, between build V's replug and W's compile): `~/bc5-work/lean-session.sh`
+  replaced by the fixed version **88ea3fa7** (a unit it could not start stays in the state file, restore returns
+  non-zero, the watcher tries six times; `test-lean-session.sh` 10 of 10, the old file 4 of 10); the old one,
+  bb39e855, kept as `lean-session.sh.before-20261115`. One check on the live file: the lean command stopped the
+  shell, SIGKILL of the emulator, the shell active again within 2 s, the state file moved to .done.
 
 Text for CLAUDE.md, "Machine context", the memory paragraph (after the Baloo sentence):
 > Since 2026-11-15 Plasma's on-screen keyboard (`plasma-keyboard`, started by KWin as its input method from the
