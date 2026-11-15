@@ -153,7 +153,8 @@ so the GPU figure can exceed 1,000 ms/s):
 | V c / W c | 4.963 / 4.829 | 1,338.4 / 1,145.7 |
 | mean V / W | **4.951 / 4.915** | **1,340.8 / 1,283.4** |
 
-No slowdown: W's figures are V's within the run-to-run spread (W c's lower GPU time is one run; without it W's mean
+No clear rise in measured CPU/GPU use; lean fps/frametime not measured (CPU s/s and GPU ms/s are use, not render
+speed: LESSONS R13, Codex 2026-11-15 10:07). W's figures are V's within the run-to-run spread (W c's lower GPU time is one run; without it W's mean
 is 1,352). The start screen with no input is all this measures; a walk on the lean build is not measured (the route
 needs the flip lines lean does not print).
 
