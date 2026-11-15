@@ -8,6 +8,52 @@ PC emulators have to translate a console's graphics for a different GPU. BC5 doe
 
 <sub>Sources: [HANDOFF](docs/HANDOFF.md) F1, F13, F63, D13 and [ADR 0012](docs/decisions/0012-no-firmware-hle-host.md).</sub>
 
+## How to start
+
+From a BC-250 with nothing on it to the lean emulator, the build meant for playing, in one script.
+
+**You need:**
+
+- **The board:** an AMD BC-250 with the community CPU and GPU unlocks (16 threads, 40 CUs) and the BIOS's dynamic VRAM split at 512 MiB. The [Build](#build) section has the details.
+- **The system:** [Bazzite](https://bazzite.gg/) with its KDE desktop, which is what BC5 is developed on. Another Linux works if it has `distrobox`, `podman` and a Mesa that knows `gfx1013`.
+- **Space and network:** about 15 GB free and a network connection for the first install. The lean install itself takes about 3 GB; your games come on top.
+- **A controller:** a DualSense on USB, or a DualShock 4.
+- **Your own games,** dumped on your own PS5: a `.ffpfsc` image or a `.pkg`. The second title also needs three modules (`libSceAgc`, `libSceAgcDriver`, `libScePsml`) from another game's dump; ASTRO BOT's has them.
+
+**Install:**
+
+1. Get the repository:
+   ```bash
+   git clone https://github.com/RedMadKnight/BC5.git ~/src/bc5
+   ```
+2. Check the machine. This changes nothing:
+   ```bash
+   bash ~/src/bc5/tools/scripts/bc5-install.sh check
+   ```
+   BC5 needs two kernel arguments: `ttm.pages_limit=3407872`, so the GPU can hold 13 GiB of game memory, and `udmabuf.size_limit_mb=1024`. If the check reports them missing, add them, reboot, and run the check again:
+   ```bash
+   bash ~/src/bc5/tools/scripts/bc5-install.sh kargs
+   ```
+   On Bazzite this runs `rpm-ostree kargs` and asks for your password. On other systems it prints what to add.
+3. Install:
+   ```bash
+   bash ~/src/bc5/tools/scripts/bc5-install.sh
+   ```
+   The script:
+   - creates an Ubuntu 26.04 container named `ubuntu` with `distrobox`, so the system itself stays untouched;
+   - builds the lean emulator and `bc5-mount` in it, from KytyPlus at its pinned commit plus this repository's patch;
+   - puts the launchers in `~/bc5-work`;
+   - adds a **BC5 emulator (lean)** shortcut to the desktop and the application menu.
+
+   On the BC-250 the first run took about 10 minutes on 2026-11-15, most of it the build; a slower connection adds to that. A later run updates the repository and rebuilds only what changed. A launcher you have edited is kept next to the new one as `*.bak-<time>`.
+4. **Play.** Start *BC5 emulator (lean)*. Then either:
+   - *File › Open game…* plays a `.ffpfsc` image or a `.pkg`, mounted read-only;
+   - *File › Install game…* unpacks one into `~/bc5-data/games/` once, which makes later loads faster. Installed games are listed under *File › Installed games*. The install from this menu is new and has been tried less than *Open game*.
+
+   For the second title, install ASTRO BOT first, or run `bash ~/src/bc5/tools/scripts/bc5-install.sh pack <ASTRO BOT image>`, to provide the three modules.
+
+While a game runs, the lean shortcut stops the Plasma panel and desktop to free memory, and starts them again when the game ends. *F1* or the pad's PS button opens the menu, and *F2* opens the settings (controls, resolution). Before you play, read [Run](#run): a bad command buffer can hang the GPU or restart the machine. `BC5_INSTALL_NORMAL=1` also builds the normal emulator, with its measurements and logs, and adds its shortcut. The header of [`bc5-install.sh`](tools/scripts/bc5-install.sh) lists every option.
+
 ### What it can do today
 
 - **ASTRO BOT is fully playable**, at about 60 fps in its first level, with the DualSense's motion, haptics and adaptive triggers, and with saves.
@@ -17,7 +63,7 @@ PC emulators have to translate a console's graphics for a different GPU. BC5 doe
 
 ### How you start it
 
-On the maintainer's box a desktop shortcut, *BC5 emulator*, opens the emulator window. *File › Open* picks a game dump or a game package; a launcher script mounts it read-only and starts the game. The shortcuts do not yet start an installed (unpacked) game, and the second title is installed that way, so today it starts only from its launcher script with `BC5_GAME_DIR` set (F827); a menu for installed games is being built and is not in the shared builds. One more shortcut, *lean*, starts the build with all measuring compiled out, for playing; since 2026-11-15 it also stops the Plasma shell for the time of a play and starts it again after (D23). Every build carries MangoHud's on-screen overlay for recordings, off until *Emulation › MangoHud* switches it on.
+A desktop shortcut opens the emulator window (see [How to start](#how-to-start)). *File › Open game…* picks a game dump or a game package; a launcher script mounts it read-only and starts the game. Since 2026-11-15 the same menu also installs a game into a folder, lists the installed games and uninstalls them (experiment 0420). The second title runs from such a folder. *BC5 emulator (lean)* is the build with all measuring compiled out, for playing. It also stops the Plasma shell for the time of a play and starts it again after (D23). On 2026-11-15 the maintainer played the lean build of the current shared builds and called it very stable, with very little memory growth and brief frame-rate dips. *BC5 emulator* is the build with the measurements. Every build carries MangoHud's on-screen overlay for recordings, off until *Emulation › MangoHud* switches it on.
 
 ### What is still broken
 
@@ -140,7 +186,7 @@ Requirements:
 - `ttm.pages_limit` raised on the kernel command line so `amdgpu`'s GTT holds the game's memory (D12: 13 GiB on a 16 GB board), and the `udmabuf` device (ADR 0006).
 - A DualSense on USB.
 
-Everything builds inside an Ubuntu 26.04 distrobox named `ubuntu`, so the host system stays untouched. One idempotent script clones or fast-forwards this repository into `~/src/bc5`, clones KytyPlus at `f266548` into `~/src/KytyPlus` and applies the patch, then builds the backend and `kyty_emulator`:
+Everything builds inside an Ubuntu 26.04 distrobox named `ubuntu`, so the host system stays untouched. [`bc5-install.sh`](tools/scripts/bc5-install.sh) ([How to start](#how-to-start)) creates that container, runs the build below and installs the launchers. One idempotent script clones or fast-forwards this repository into `~/src/bc5`, clones KytyPlus at `f266548` into `~/src/KytyPlus` and applies the patch, then builds the backend and `kyty_emulator`:
 
 ```bash
 bash ~/src/bc5/tools/scripts/bc5-build.sh
@@ -152,7 +198,7 @@ It builds a normal emulator (`~/bc5-work/kytyplus-build/src/kyty_emulator`, the 
 
 > **Direct mode sends raw command buffers to the GPU. A bad one can hang the display or reset the machine (F25, F27, F28). Save your work before every run.**
 
-Games start from launcher scripts on the dev box, one per kind of image: `play-astro.sh` for a `.ffpfsc` dump, `play-pkg.sh` for a package. `play-any.sh` (the *BC5 emulator* shortcut) runs the empty window and hands the chosen image to the right one; it does not start an installed (unpacked) game yet, which `play-pkg.sh` runs from its directory when `BC5_GAME_DIR` names it (F827). A launcher mounts the image with `bc5-mount`, exports the shared settings of `bc5-run.env` plus the title's own switches (D15), and runs the emulator. `BC5_LEAN=1` makes them start the lean build. Committed snapshots: [`experiments/0177-lean-build/`](experiments/0177-lean-build/) (all three) and [`experiments/0188-audioout2-advanced-grains/`](experiments/0188-audioout2-advanced-grains/) (`play-pkg.sh`); the live copies on the box are newer.
+Games start from launcher scripts on the dev box, one per kind of image: `play-astro.sh` for a `.ffpfsc` dump, `play-pkg.sh` for a package. `play-any.sh` (the *BC5 emulator* shortcuts) runs the empty window and hands the chosen image, or an installed game's folder (`BC5_GAME_DIR`, F827), to the right one. It also runs `bc5-mount install` and `uninstall` for the menu (experiment 0420). A launcher mounts the image with `bc5-mount`, exports the shared settings of `bc5-run.env` plus the title's own switches (D15), and runs the emulator. `BC5_LEAN=1` makes them start the lean build. The launchers that `bc5-install.sh` installs are in [`tools/scripts/launchers/`](tools/scripts/launchers/): the dev box's copies of 2026-11-15, with two additions for a fresh machine. An installed game's own `fakelib/` serves as its module pack, and the second title's module pack is made from an installed game that has the three modules.
 
 - **The window** (ADR 0011, D17): `kyty_emulator --menu` opens it with no game. The menu bar has *File* (open image or package, recent, close session, quit), *Emulation* (pause/resume, restart, settings, fullscreen, logging on/off, ray tracing on/off, MangoHud on/off) and *Help*. During play F1 or the pad's PS button shows and hides it. The host never mounts anything itself: it exits with code 76 (open), 77 (close) or 75 (restart) and the launcher acts on it.
 - **F2** opens the settings menu: control bindings, ASTRO BOT's 3D resolution, saved to the input file (D14, F101). `KYTY_BC5_INPUT_CONFIG=<file>` names that file; [`input.example.cfg`](backend/kytyplus-patches/input.example.cfg) lists the names.

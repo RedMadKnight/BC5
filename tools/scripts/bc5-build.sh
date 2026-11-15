@@ -19,7 +19,8 @@
 # running emulator before replacing its binary, 0 = forever), BC5_BUILD_KEEP_KYTY=1 (build the
 # KytyPlus tree as it is, for host-side experiments), BC5_BUILD_MOUNT=1 (also build bc5-mount with
 # cargo; off by default because cargo may need the network for crates and overwrites a binary a
-# running mount may use), BC5_BUILD_LEAN=0 (skip the lean variant).
+# running mount may use), BC5_BUILD_LEAN=0 (skip the lean variant), BC5_BUILD_NORMAL=0 (skip the normal
+# emulator: lean only, as bc5-install.sh does by default; the backend is built either way).
 set -euo pipefail
 
 BC5_SRC=${BC5_SRC:-$HOME/src/bc5}
@@ -40,6 +41,8 @@ EMU_BUILD=$WORK/kytyplus-build
 EMU=$EMU_BUILD/src/kyty_emulator
 LEAN_BUILD=$WORK/kytyplus-build-lean
 BC5_BUILD_LEAN=${BC5_BUILD_LEAN:-1}
+BC5_BUILD_NORMAL=${BC5_BUILD_NORMAL:-1}
+[ "$BC5_BUILD_NORMAL" = 1 ] || [ "$BC5_BUILD_LEAN" = 1 ] || { echo "bc5-build: BC5_BUILD_NORMAL=0 and BC5_BUILD_LEAN=0 build no emulator" >&2; exit 1; }
 
 # The script may live inside the checkout it fast-forwards; run from a copy so that git cannot
 # change the file bash is reading.
@@ -61,7 +64,7 @@ say "start $TS  host=$(hostname)  user=$USER  args: $*"
 
 step prerequisites
 for t in git distrobox df mktemp tar; do command -v "$t" >/dev/null || fail "$t is not installed on the host"; done
-distrobox list --no-color 2>/dev/null | awk -F'|' 'NR>1 {gsub(/^ +| +$/, "", $2); print $2}' | grep -qx "$BOX" || fail "no distrobox named '$BOX' (README: How to start, 2)"
+distrobox list --no-color 2>/dev/null | awk -F'|' 'NR>1 {gsub(/^ +| +$/, "", $2); print $2}' | grep -qx "$BOX" || fail "no distrobox named '$BOX' (bc5-install.sh creates it; README: How to start)"
 avail_gb=$(( $(df --output=avail -B1 "$WORK" | tail -1) / 1024 / 1024 / 1024 ))
 say "free space on $WORK: ${avail_gb} GB (minimum ${MIN_FREE_GB})"
 [ "$avail_gb" -ge "$MIN_FREE_GB" ] || fail "only ${avail_gb} GB free, below the ${MIN_FREE_GB} GB minimum; free space first (nothing is deleted by this script)"
@@ -165,7 +168,7 @@ while pgrep -x kyty_emulator >/dev/null; do
   [ $((waited % 300)) -eq 0 ] && say "kyty_emulator is running (pid $(pgrep -x kyty_emulator | head -1)); waiting before the binary is replaced (${waited} s)"
   sleep 30; waited=$((waited + 30))
 done
-if [ -x "$EMU" ]; then
+if [ "$BC5_BUILD_NORMAL" = 1 ] && [ -x "$EMU" ]; then
   cp -p "$EMU" "$EMU.prev"
   say "previous binary kept as $EMU.prev ($(stat -c '%y %s' "$EMU.prev"))"
 fi
@@ -179,7 +182,8 @@ say() { printf '[bc5-build %s] %s\n' "\$(date +%H:%M:%S)" "\$*"; }
 # The package list of README "How to start", 2 (the KytyPlus and BC5 build dependencies).
 PKGS="git cmake pkg-config cargo fuse3 libfuse3-dev libdrm-dev clang lld ninja-build glslang-tools libasound2-dev libdbus-1-dev libgl1-mesa-dev libpulse-dev libpipewire-0.3-dev libpipewire-0.3-modules pipewire-bin libudev-dev libwayland-dev libx11-dev libxcursor-dev libxext-dev libxfixes-dev libxi-dev libxkbcommon-dev libxrandr-dev libxss-dev wayland-protocols libedit-dev libevdev-dev libjack-dev libopenal-dev libpng-dev libsdl2-dev libsndio-dev libssl-dev libvulkan-dev zlib1g-dev mangohud"
 say "apt packages (no-op when installed)"
-if ! sudo apt-get install --no-install-recommends --yes \$PKGS > "$WORK/bc5-build-apt.log" 2>&1; then
+# A fresh container may hold no package lists yet: on a failure, update them once and try again.
+if ! sudo apt-get install --no-install-recommends --yes \$PKGS > "$WORK/bc5-build-apt.log" 2>&1    && ! { sudo apt-get update >> "$WORK/bc5-build-apt.log" 2>&1 && sudo DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends --yes \$PKGS >> "$WORK/bc5-build-apt.log" 2>&1; }; then
   say "apt-get install failed (no network?); continuing with what is installed, see $WORK/bc5-build-apt.log"
 fi
 for t in cmake ninja clang clang++; do command -v \$t >/dev/null || { say "\$t missing in the $BOX distrobox"; exit 1; }; done
@@ -189,6 +193,7 @@ cmake -S "$BC5_SRC/backend" -B "$BACKEND_BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Rele
   || { tail -30 "$WORK/bc5-build-backend-configure.log"; say "backend configure failed"; exit 1; }
 say "backend: build"
 cmake --build "$BACKEND_BUILD" -j$JOBS
+if [ "$BC5_BUILD_NORMAL" = 1 ]; then
 say "emulator: cmake configure"
 cmake -S "$KYTY_SRC" -B "$EMU_BUILD" -U "*PIPEWIRE*" -G Ninja -DCMAKE_BUILD_TYPE=Release \\
   -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DKYTY_BUILD_LAUNCHER=OFF \\
@@ -196,6 +201,7 @@ cmake -S "$KYTY_SRC" -B "$EMU_BUILD" -U "*PIPEWIRE*" -G Ninja -DCMAKE_BUILD_TYPE
   || { tail -30 "$WORK/bc5-build-emulator-configure.log"; say "emulator configure failed"; exit 1; }
 say "emulator: build kyty_emulator -j$JOBS"
 cmake --build "$EMU_BUILD" --target kyty_emulator -j$JOBS
+fi
 if [ "$BC5_BUILD_LEAN" = 1 ]; then
   # Experiment 0177: the same tree without tracing, journals and measurements, next to the normal
   # build (the "BC5 emulator (lean)" shortcut, BC5_LEAN=1 in the play-*.sh launchers).
@@ -217,13 +223,17 @@ distrobox enter "$BOX" -- bash "$INNER" || fail "build inside the $BOX distrobox
 say "build finished in $(( $(date +%s) - t0 )) s"
 
 step report
-[ -x "$EMU" ] || fail "$EMU was not produced"
-if [ -x "$EMU.prev" ] && cmp -s "$EMU" "$EMU.prev"; then
-  say "binary unchanged (identical to $EMU.prev)"
+if [ "$BC5_BUILD_NORMAL" = 1 ]; then
+  [ -x "$EMU" ] || fail "$EMU was not produced"
+  if [ -x "$EMU.prev" ] && cmp -s "$EMU" "$EMU.prev"; then
+    say "binary unchanged (identical to $EMU.prev)"
+  fi
+  say "emulator: $EMU"
+  say "  built:   $(stat -c %y "$EMU")"
+  say "  size:    $(stat -c %s "$EMU") bytes"
+else
+  say "emulator: not built (BC5_BUILD_NORMAL=0)"
 fi
-say "emulator: $EMU"
-say "  built:   $(stat -c %y "$EMU")"
-say "  size:    $(stat -c %s "$EMU") bytes"
 say "  bc5:     $BC5_HEAD ($(git -C "$BC5_SRC" log -1 --format=%s | cut -c1-70))"
 say "  kytyplus: $(git -C "$KYTY_SRC" rev-parse HEAD) + $PATCH_REL (sha256 $PATCH_SHA...)"
 say "  backend: $BACKEND_BUILD   emulator build: $EMU_BUILD"
