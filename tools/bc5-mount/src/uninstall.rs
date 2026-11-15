@@ -261,17 +261,13 @@ fn make_dirs_writable(dir: &Path) -> std::io::Result<()> {
     Ok(())
 }
 
-#[cfg(not(unix))]
-fn make_dirs_writable(_dir: &Path) -> std::io::Result<()> {
-    Ok(())
-}
-
 /// Checks `dir`, then removes it unless `dry_run`.
 pub fn uninstall(dir: &Path, root: &Path, dry_run: bool) -> anyhow::Result<Removed> {
     let checked = check(dir, root)?;
     let (bytes, entries) = measure(&checked.dir)?;
     let image_present = Path::new(&checked.record.image).is_file();
     if !dry_run {
+        #[cfg(unix)]
         make_dirs_writable(&checked.dir)?;
         fs::remove_dir_all(&checked.dir)?;
     }
