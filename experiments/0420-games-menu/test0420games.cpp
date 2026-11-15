@@ -43,6 +43,8 @@ int main() {
 	CHECK(json_field("{\"titleName\": \"Some \\u00e9 Game\"}", "titleName") == "Some \xc3\xa9 Game");
 	CHECK(json_field("{\"titleId\": 5, \"x\": {\"titleId\": \"AB\"}}", "titleId") == "AB");
 	CHECK(json_field("{}", "titleId").empty());
+	CHECK(json_field_ascii("{\"pl-PL\": {\"titleName\": \"Gra \\u00e9\"}, \"en-US\": {\"titleName\": \"The Game\"}}", "titleName") == "The Game");
+	CHECK(json_field_ascii("{\"titleName\": \"\\u00e9\"}", "titleName").empty());
 	CHECK(human_size(196702588158ull) == "196.7 GB" && human_size(52000000) == "52.0 MB" && human_size(10) == "10 bytes");
 
 	// a synthetic games root

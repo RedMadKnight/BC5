@@ -106,6 +106,27 @@ inline std::string json_field(const std::string& text, const std::string& key) {
 	return {};
 }
 
+// The first string value of "key" that is printable ASCII (the menu's font has no other glyphs; param.json gives a
+// titleName per language, and the first one is often not the English one). Empty when there is none.
+inline std::string json_field_ascii(const std::string& text, const std::string& key) {
+	const std::string needle = "\"" + key + "\"";
+	for (size_t k = text.find(needle); k != std::string::npos; k = text.find(needle, k + 1)) {
+		size_t c = k + needle.size();
+		while (c < text.size() && (text[c] == ' ' || text[c] == '\t' || text[c] == '\r' || text[c] == '\n')) c++;
+		if (c >= text.size() || text[c] != ':') continue;
+		c++;
+		while (c < text.size() && (text[c] == ' ' || text[c] == '\t' || text[c] == '\r' || text[c] == '\n')) c++;
+		size_t end = 0;
+		bool   ok  = false;
+		const std::string v = json_string_at(text, c, &end, &ok);
+		if (!ok || v.empty()) continue;
+		bool ascii = true;
+		for (const char ch: v) ascii = ascii && ch >= 0x20 && ch < 0x7f;
+		if (ascii) return v;
+	}
+	return {};
+}
+
 // A top-level key of the record: it sits at the start of a line, two spaces in (as bc5-mount writes it), so a file
 // named like a key inside the sha256 map is not taken for it. The text after the colon, white space skipped.
 inline bool record_value(const std::string& text, const std::string& key, size_t* at) {
@@ -160,7 +181,7 @@ inline std::vector<Installed> scan(const std::filesystem::path& root) {
 		g.dir                    = e.path();
 		const std::string param  = read_small(e.path() / "sce_sys" / "param.json", 1u << 20);
 		g.title_id               = json_field(param, "titleId");
-		g.name                   = json_field(param, "titleName");
+		g.name                   = json_field_ascii(param, "titleName");
 		if (g.title_id.empty()) g.title_id = e.path().filename().string();
 		if (g.name.empty()) g.name = g.title_id;
 		std::error_code iec;
