@@ -648,7 +648,7 @@ TEST_CASE("indirect_check: a GL2 write-back before the check (experiment 0380)",
     const auto count = [&acquire](const std::vector<std::uint32_t> &o) {
         std::size_t n = 0;
         for (std::size_t j = 0; j + acquire.size() <= o.size(); ++j)
-            n += std::equal(acquire.begin(), acquire.end(), o.begin() + static_cast<std::ptrdiff_t>(j)) ? 1 : 0;
+            n += std::equal(acquire.begin(), acquire.end(), o.begin() + static_cast<std::ptrdiff_t>(j)) ? 1u : 0u;
         return n;
     };
     SECTION("first: only the first dispatch after the INDEX_BASE, at the start of its check") {
@@ -705,7 +705,7 @@ TEST_CASE("indirect_check: a CS_PARTIAL_FLUSH before the check (experiment 0380,
     const auto count = [](const std::vector<std::uint32_t> &o) {
         std::size_t n = 0;
         for (std::size_t j = 0; j + 1 < o.size(); ++j)
-            n += (o[j] == 0xC0004600u && o[j + 1] == 0x407u) ? 1 : 0;
+            n += (o[j] == 0xC0004600u && o[j + 1] == 0x407u) ? 1u : 0u;
         return n;
     };
     const auto run = [&ib](indirect_check::ArgsFlush f, bool draws, indirect_check::Stats &s, bool wb = false) {
@@ -778,8 +778,8 @@ TEST_CASE("indirect_check: the copy at a low GPU VA (experiment 0380, F574)", "[
     for (std::size_t j = 0; j + 8 < out.size(); ++j) {
         if (out[j] != 0xC0074500u) continue;
         polls++;
-        slot_polls += out[j + 2] >= 0x80012000u && out[j + 2] <= 0x80012008u && out[j + 3] == 0u ? 1 : 0;
-        flag_polls += out[j + 3] == 0x1000u ? 1 : 0; // the flag area is only the COND_WRITEs' target
+        slot_polls += out[j + 2] >= 0x80012000u && out[j + 2] <= 0x80012008u && out[j + 3] == 0u ? 1u : 0u;
+        flag_polls += out[j + 3] == 0x1000u ? 1u : 0u; // the flag area is only the COND_WRITEs' target
     }
     CHECK(polls == 3);
     CHECK(slot_polls == 3);
