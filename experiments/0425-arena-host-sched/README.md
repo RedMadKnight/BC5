@@ -1,8 +1,8 @@
 # 0425 — The job-arena race at its source in the host's scheduling model
 
-**Date.** 2026-11-15. **Branch.** `exp/0425-arena-host-sched`, base main `8846a2a0` (patch 0001 `4945ef1b`, the shared
-builds' patch). **Status.** Prepared on the laptop. The private build and the runs wait for the top session's GO and
-slot. No box access so far.
+**Date.** 2026-11-15 to 11-16. **Branch.** `exp/0425-arena-host-sched`, base main `8846a2a0` (patch 0001 `4945ef1b`, the shared
+builds' patch). **Status.** The playgo set ran on 2026-11-16 (no conclusion by the rule: see Result). The sched set waits for
+the top session's word.
 
 ## Question
 
@@ -370,10 +370,69 @@ ssh bc250 journalctl -k -f -n 0 -o short-precise | tee raw/kern-0425.txt
   stopped as it should, and the rule printed OPEN for the partial set. On the box this is `run0413p.sh`'s own
   environment check, which exps 0413 and 0423 have used there.
 
-## Result
+## Result: the private build and CHAIN_SET=playgo (2026-11-16 00:00–00:53, the top session's GO)
 
-Not run. Waiting for the top session's GO and slot.
+**Inputs.**
+- `exp0358/saves-live-47aefd45` and `exp0360/fight1450-play.cmd` were no longer in `~/bc5-work`: they went into the
+  NAS archives of 2026-11-08 and 2026-11-12. They were copied from there into the private `exp0425/inputs/`, and both
+  pins held: route sum 9347496fbaf30f25, record md5 b0f9ad5c. The named snapshot holds 102 files, sum
+  `adaec9c23a463195` (`raw/saves-named.sum`).
 
-## Verdict
+**The build** (`raw/build-box.txt`).
+- Private normal `13b7b4a4f3189eb2d5d6c125e45c55ff`, from the shared tree's four units at their pins. Shared normal
+  9da2a9d5 unchanged before and after.
+- 0 errors and 5 warnings, none in exp 0425's code:
+  - four are the shared header `stringUtils.h`'s `wstring_convert` deprecation;
+  - one is `sec_to_timeval`, unused, at the same line in the unpatched `pthread.cpp`.
+- No lean build was made.
 
-None yet.
+**The runs.** The box ran kernel 7.3.3-ogc1.1.fc45, boot b348813a.
+- 15 of 15 routed: slot 4, G at 107–109 s, the record's 100 lines queued at G.
+- No kernel GPU line in any run (the runner's dmesg gate). The laptop's kernel stream is empty.
+- No real pad key. The chain lock was released at 00:53.
+
+| arm | runs | TARGET (site) | NO_CRASH | crash-type jobs the owner took, per run (catcher) |
+|---|---|---|---|---|
+| C, control | C1 C2 C3 | 1 (C2) | 2 | 0, 1, 1 |
+| L, P1 locus slow | L1–L4 | 2 (L1, L4) | 2 | 2, 0, 2, 3 |
+| F, P2 prefetch 500 ms | F1–F4 | 3 (F1, F3, F4) | 1 | 2, 0, 2, 3 |
+| K, P3 call cost 200 µs | K1–K4 | 0 | 4 | 0, 0, 1, 1 |
+
+- Every TARGET ended 8–10 s after G (after = 117–118 s), as in F792.
+- **Flips/s over each run: 35.5–37.1 in every arm.** No difference is seen between the arms. That is not a
+  measured zero cost (R13).
+
+**The rule's output: "control 1 of 3 at the site: NO CONCLUSION".** By the rule fixed before the runs, no arm can be
+judged from this set.
+
+**What the runs still show, apart from the rule.**
+- **P1 and P2 do not remove the crash.** They crashed at the site with the candidate on, 2 of 4 and 3 of 4. That
+  needs no control.
+- **P3 had 0 of 4 at the site.** Against the other 11 runs of the set pooled (6 of 11), the one-sided Fisher exact
+  test gives 126/1365 ≈ 0.09, assuming exchangeable runs. That is a hint, not a result (R13).
+- The controls crashed less often than in the history (1 of 3 against 7 of 9, F799). Either the route's rate on this
+  build is lower, or this is chance: three runs cannot tell (F798 already saw a clean control).
+- **The catcher (descriptive, R11).**
+  - Its crash-type identity holds: every run that crashed shows owner-taken crash-type jobs (2–3), and the crash
+    followed the last of them.
+  - Taking such a job does not always crash: in 5 clean runs the owner took 1 or 2 and the game went on.
+  - At 13 of the 19 crash-type takes, at least one woken `Job Hi` waiter had not yet run again.
+  - Over all owner help calls, about 74 % found such a waiter (C1: 11,915 of 16,000).
+  - These counts are global and unpaired (README limits): they say the owner often runs while woken Hi workers
+    wait for a CPU, not that one of them would have taken that job.
+- Raw files: `raw/chain0425-playgo.out`, `raw/n/chain-rows-playgo.txt`, `raw/n/raw/*` (summaries, start, route, end,
+  dmesg; crash excerpts with the code-byte lines removed), `raw/catcher-lines-playgo.txt`. The play logs stay on the
+  box in `~/bc5-work/exp0425/n/raw/`.
+
+## Verdict (CHAIN_SET=playgo)
+
+**No conclusion by the rule: the control crashed 1 time of 3.**
+
+- P1 (locus slow) and P2 (prefetch delay) do not remove the crash: both crashed at the site with the candidate on.
+- P3 (a 200 µs cost on every PlayGo call) was clean 4 of 4. That is a hint only: p ≈ 0.09 against the set's other
+  runs, with an uninformative control.
+- `JobArenaFix` stays.
+
+What this suggests next, the top session's decision:
+- a repeat of C against K with more runs (for example 6 + 6), to separate P3 from chance;
+- then the sched set (C1–C3).

@@ -1,0 +1,13 @@
+patched src/kernel/semaphore.cpp: 9 edits, CRLF, sha256 3caaac649b2f75e134071bac1ed688905c6cee8022fade92e760cdf8245846c9
+patched src/kernel/pthread.cpp: 1 edits, CRLF, sha256 ccaa343719d82e0c1ccb00f4d649b510c7cf7667a0e4d612ff25bf4b14d046da
+patched src/loader/gamePatch.cpp: 5 edits, LF, sha256 f74ec05ea68825cd8760e7027c8da166c411ff7009e08cf95ed5939550870751
+patched src/libs/libPlayGo.cpp: 5 edits, LF, sha256 74f6bfae9217afcdc48b4a1f194b78bbdd7965df4cde52f0a539200767381bbd
+patch0425: done
+build rc 0; errors 0; warnings 5
+3:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+12:[0m[1m/home/kjaniszewski/bc5-work/exp0425/src/src/kernel/pthread.cpp:1424:13: [0m[0;1;35mwarning: [0m[1munused function 'sec_to_timeval' [-Wunused-function][0m
+18:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+30:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+42:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+private binary 13b7b4a4f3189eb2d5d6c125e45c55ff, shared before 9da2a9d58fa9776427735f3b4b56aaf2, after 9da2a9d58fa9776427735f3b4b56aaf2
+rc 0
