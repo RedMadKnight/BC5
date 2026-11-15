@@ -8,11 +8,12 @@
 #   (b) two stops at once: one owner (one exit 0, one exit 3), the state names the shell, one restore when the
 #       owner ends
 #   (c) a dead owner is taken over and the unit it noted (and could not start again) is kept in the state
-# usage: bash test-lean-race.sh   (prints "test-lean-race: N of N", exit 0 when every check holds)
+# usage: bash test-lean-race.sh   or   LAUNCHER=<launcher> bash test-lean-race.sh
+#          (prints "test-lean-race: N of N", exit 0 when every check holds)
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd)
-LEAN=$HERE/../0412-memory-guardian/lean-session.sh
-LAUNCHER=$HERE/play-any.sh
+LEAN=${LEAN:-$HERE/../0412-memory-guardian/lean-session.sh}   # LEAN=<file>: another lean-session.sh
+LAUNCHER=${LAUNCHER:-$HERE/play-any.sh}   # LAUNCHER=<file>: another launcher (the shared one made by fix-lean-race.sh make)
 T=$(mktemp -d) || exit 1
 KIDS=""
 trap 'for k in $KIDS; do kill "$k" 2> /dev/null; done; rm -rf "$T"' EXIT
@@ -43,6 +44,8 @@ for _ in $(seq 1 300); do [ -e "$HOME/emu.release" ] && break; sleep 0.1; done
 rm -f "$HOME/emu.running"; exit 0
 EOF
 cp "$T/emu-lean" "$T/emu"
+mkdir -p "$T/home/bc5-work/kytyplus-build-lean/src"; cp "$T/emu-lean" "$T/home/bc5-work/kytyplus-build-lean/src/kyty_emulator"   # the shared launcher's fixed path
+chmod +x "$T/home/bc5-work/kytyplus-build-lean/src/kyty_emulator"
 chmod +x "$T"/bin/* "$T/emu-lean" "$T/emu"
 cp "$LEAN" "$T/home/bc5-work/lean-session.sh"; chmod +x "$T/home/bc5-work/lean-session.sh"
 printf 'VIDEO_DRIVER=wayland\n' > "$T/bc5-run.env"

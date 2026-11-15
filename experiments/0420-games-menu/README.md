@@ -94,3 +94,11 @@ in the n15 series).
   4 of 14 on the old two scripts; `test-lean-session.sh` 11 of 11; `test-play-any.sh` 14 of 14; `bash -n` on each.
 - Deployment (the shared `~/bc5-work/play-any.sh` and `~/bc5-work/lean-session.sh`) only on the maintainer's word and
   not while a lean session is active.
+- The shared launcher (the guardian read it from the code: 92c090c5 has the same order, stop at line 29 and `pgrep -x
+  kyty_emulator` at line 42; the box was not read): `fix-lean-race.sh`, a proposal for the maintainer's word. Dry by
+  default; `apply` only on the exact 92c090c5, refuses while an emulator runs or a lean session is active (a live
+  owner, or a state not restored yet), moves the three lines after `mkdir -p "$KYTY_BC5_MENU_DIR"` (3 lines out, 8
+  in; the result `1cd59817` on the reference copy `box/play-any.sh.box`), puts the one-owner `lean-session.sh` in
+  place, and keeps both old files as `*.before-race`; `undo` puts them back. On stand-ins: `test-lean-race.sh` with
+  `LAUNCHER=` the changed shared launcher 14 of 14; with the unchanged shared launcher and the old lean-session.sh
+  (`LEAN=`) 4 of 14, A's end not restoring the shell (the defect reproduced).
