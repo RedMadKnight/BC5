@@ -31,6 +31,7 @@ pub mod pkg;
 pub mod preload;
 pub mod stats;
 pub mod tree;
+pub mod uninstall;
 pub mod verify;
 
 #[cfg(all(feature = "fuse", target_os = "linux"))]

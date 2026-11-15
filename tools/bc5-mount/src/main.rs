@@ -78,6 +78,18 @@ enum Cmd {
         #[arg(long)]
         verify: bool,
     },
+    /// Remove one installed game: a directory directly under the games root that holds
+    /// .bc5-install.json. Anything else is refused (exit 2). Never touches the source image or saves.
+    Uninstall {
+        /// The installed game's directory.
+        dir: PathBuf,
+        /// The games root (default: ~/bc5-data/games).
+        #[arg(long)]
+        games: Option<PathBuf>,
+        /// Check and report only, remove nothing.
+        #[arg(long)]
+        dry_run: bool,
+    },
     /// Adopt an already-unpacked directory: verify sizes and optionally sha256, write .bc5-install.json.
     Adopt {
         /// Path to the .ffpfsc or .pkg file.
@@ -104,6 +116,10 @@ fn main() {
                     .replace("destination ", "")
                     .replace(" (use --resume to skip matching files)", "")
             );
+            std::process::exit(2);
+        }
+        if e.downcast_ref::<bc5_mount::uninstall::Refused>().is_some() {
+            eprintln!("bc5-mount: {e}");
             std::process::exit(2);
         }
         eprintln!("bc5-mount: {e}");
@@ -138,6 +154,11 @@ fn run() -> anyhow::Result<()> {
             dest,
             verify,
         } => adopt(&container, &dest, verify),
+        Cmd::Uninstall {
+            dir,
+            games,
+            dry_run,
+        } => uninstall(&dir, games, dry_run),
     }
 }
 
@@ -406,6 +427,35 @@ fn install(path: &Path, dest: &Path, resume: bool, verify: bool) -> anyhow::Resu
         bc5_mount::install::write_install_json(dest, path, &info)
             .with_context(|| "writing .bc5-install.json")?;
     }
+    Ok(())
+}
+
+/// Remove one installed game (experiment 0420). One line on stdout for the launcher and the menu:
+/// `uninstalled <dir>: <bytes> bytes in <entries> entries freed; image present|missing: <path>`.
+fn uninstall(dir: &Path, games: Option<PathBuf>, dry_run: bool) -> anyhow::Result<()> {
+    let root = match games {
+        Some(r) => r,
+        None => bc5_mount::uninstall::default_root().context("no HOME: give --games")?,
+    };
+    let r = bc5_mount::uninstall::uninstall(dir, &root, dry_run)?;
+    println!(
+        "{} {}: {} bytes in {} entries {}; image {}: {}",
+        if dry_run {
+            "would uninstall"
+        } else {
+            "uninstalled"
+        },
+        r.dir.display(),
+        r.bytes,
+        r.entries,
+        if dry_run { "would be freed" } else { "freed" },
+        if r.image_present {
+            "present"
+        } else {
+            "missing"
+        },
+        r.record.image
+    );
     Ok(())
 }
 
