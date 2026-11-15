@@ -23,10 +23,25 @@ launcher gave, with one line on stderr. The journal's "lazy names:" line still p
 |---|---|---|---|
 | V with `KYTY_BC5_AJM_LIVE_IDS` fixed on (step `liveids`) | `c4504857` | `tree-build-V-liveids-fixed-c4504857.md5` | 203 / **154** |
 | V with it still a switch | `f85fb913` | `tree-build-V-liveids-switch-f85fb913.md5` | 204 / **155** |
+| **V as decided on 2026-11-15: both AJM fixes fixed on** (steps `liveids defer`) | `c44a94e8` | `tree-build-V-ajm-fixed-c44a94e8.md5` | 202 / **153** |
 
 Both: 133 patched files, 20 (19) files changed against U, about 360 lines added and 855 removed. Against U the word
 lists differ by `BC5_DIAG_LAZY_FILESYSTEM` (new, a diagnostic) and, in the first variant, `KYTY_BC5_AJM_LIVE_IDS`
 (gone). Words without a verdict: 0, with one to come: `KYTY_BC5_AJM_DEFER` gets its verdict from arm tJ.
+
+## The decision after the night series (the top session, 2026-11-15)
+
+The series on U (exp 0412 README section 100): 57 long walks, all clean; the line "instance id ... given out while
+still alive" in 11 of 29 walks of arm tA and in 0 of 28 of arm tJ (which set both AJM switches); smoothness and
+memory without a difference. Decided: `KYTY_BC5_AJM_LIVE_IDS` fixed on; `KYTY_BC5_AJM_DEFER` fixed on too unless
+this experiment objects; `KYTY_BC5_AUDIO_TRAIL` stays a diagnostic switch.
+
+This experiment's answer on `KYTY_BC5_AJM_DEFER`: **no objection, with two things said.** (1) The series shows it is
+harmless on the second title's walk (28 walks), not that it cures anything: the defect the series measured is the
+id reuse, and `liveids` alone removes it. Its ground is that the console runs a batch's jobs after the start. (2)
+ASTRO BOT has never run with it; V's acceptance (three starts and the bad save) is its first run there, and a failure
+there takes `defer` out of V (the step is left out, the same round). So V is built with `touchfn lazyfs liveids
+defer`; `words-build-V.txt` is that variant's list.
 
 ## The library folds in numbers (`fold-levels.txt`, decided by `mklevels0419.sh`)
 

@@ -11,6 +11,7 @@ independent and each left out by not naming it:
            ids keep the values upstream gave them). PAD CODE: the round runs one software replug.
   liveids  KYTY_BC5_AJM_LIVE_IDS becomes the fixed behaviour (an instance id that is alive is never given out again);
            the word goes. Named only in the variant the top session picks after the night series.
+  defer    KYTY_BC5_AJM_DEFER becomes the fixed behaviour (a batch's jobs run at sceAjmBatchStart); the word goes
 Every edit must match exactly once."""
 import os, sys
 
@@ -70,4 +71,15 @@ if "lazyfs" in steps:
           "\t\t\t}\n"
           "\t\t}\n"
           "\t\treturn v;\n\t}();\n\tstatic const bool by_data = [] { // exp 0412 (tag kl412): BC5_GUARD_LAZY_BY_DATA=1, no view is lazy\n")
+    f.save()
+
+if "defer" in steps:
+    # KYTY_BC5_AJM_DEFER fixed on (the top session, 2026-11-15, after the night series on U: arm tJ ran with both AJM
+    # switches in 28 long walks, clean, with no difference in smoothness or memory): a batch's jobs run at
+    # sceAjmBatchStart, the console's order. What the series does NOT show: that this cures anything (the measured
+    # defect was the id reuse, which `liveids` removes), and ASTRO BOT never ran with it before V's acceptance.
+    f = File(P("libs", "ajm.cpp"))
+    f.cut("static bool Bc5AjmDeferOn() {\n", "\treturn on;\n}\n",
+          "static bool Bc5AjmDeferOn() { // exp 0419: fixed (the night series of 2026-11-14/15, arm tJ); the word is gone\n\treturn true;\n}\n")
+    f.gone("KYTY_BC5_AJM_DEFER\"")
     f.save()

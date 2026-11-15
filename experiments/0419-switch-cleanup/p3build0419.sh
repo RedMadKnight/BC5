@@ -8,7 +8,7 @@
 # A build error stops it with the error lines. The failing part is then left out by running this again with it taken
 # away (a file's line set to level 0 in the levels file, or a step not named); the saved files are put back first, so
 # it is the same round.
-# usage (on the box): [FOLD=0] p3build0419.sh [step ...]     steps: touchfn lazyfs liveids; "none" for no step
+# usage (on the box): [FOLD=0] p3build0419.sh [step ...]     steps: touchfn lazyfs liveids defer; "none" for no step
 set -u
 ulimit -c 0
 export LC_ALL=C LANGUAGE=C
