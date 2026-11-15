@@ -349,7 +349,26 @@ ssh bc250 journalctl -k -f -n 0 -o short-precise | tee raw/kern-0425.txt
   - the build's pins, patch, string gate and `binary.md5`;
   - the earlier binary kept aside;
   - a unit off its pin stops the build.
-- **`test_chain0425.sh`: the chain dry run on stand-ins.** RESULT_PENDING.
+- **`test_chain0425.sh`: the chain dry run on stand-ins** (the real chain, runner and rule; the stand-ins are a virtual
+  clock, a fake emulator that is a copy of bash.exe, the launcher's anchors, and a stand-in chain lock). Three
+  suites ran. Every scenario but the two full sets passed in every suite:
+  - the 6 rule cases;
+  - a TARGET without `CHAIN_TARGET_OK` stops the chain;
+  - each run's class and exposure;
+  - the fix is off in the private input.cfg;
+  - G comes from the journal gate;
+  - slot 4 and the record are queued at G;
+  - the lock is released;
+  - the named snapshot is made;
+  - a kernel line stops the chain after that run (R55);
+  - a STOP file stops the chain before the next run;
+  - NOT_ROUTED gets one replacement, then the chain stops.
+- **The two full sets.** Each has completed once on stand-ins: `sched` 15 of 15, with three HOLDS and the exposure
+  right; `playgo` got through 14 runs, with each arm's exposure right and none of the candidates' in the control. In
+  the other attempts a run ended as SETUP at 0 s: "the emulator's environment lacks …". The cause is in the harness:
+  Git Bash's `/proc/<pid>/environ` of a just-started stand-in child sometimes comes back incomplete. The chain then
+  stopped as it should, and the rule printed OPEN for the partial set. On the box this is `run0413p.sh`'s own
+  environment check, which exps 0413 and 0423 have used there.
 
 ## Result
 
