@@ -1,0 +1,15 @@
+fault pages 10
+page 1113edf000: dispatch at 687 pgm 909939900 ud4 13edfc00 ud5 00000000 | indirect base1 1213edf000 + 0xc80 -> args at 0x1213edfc80 | V# 12c1289100
+page 1113edf000: dispatch at 68183 pgm 909939900 ud4 13edf700 ud5 00000000 | indirect base1 1213edf000 + 0x780 -> args at 0x1213edf780 | V# 12c105f300
+page 1113779000: dispatch at 895 pgm 909939900 ud4 13779d00 ud5 00000000 | indirect base1 1213779000 + 0xd80 -> args at 0x1213779d80 | V# 12c1289300
+page 1114393000: dispatch at 999 pgm 909939900 ud4 14393100 ud5 00000000 | indirect base1 1214393000 + 0x180 -> args at 0x1214393180 | V# 12c1289400
+page 1113cfe000: dispatch at 1207 pgm 909939900 ud4 13cfe700 ud5 00000000 | indirect base1 1213cfe000 + 0x780 -> args at 0x1213cfe780 | V# 12c1289600
+page 111405c000: dispatch at 1311 pgm 909939900 ud4 1405c800 ud5 00000000 | indirect base1 121405c000 + 0x880 -> args at 0x121405c880 | V# 12c1289700
+page 1114090000: dispatch at 1415 pgm 909939900 ud4 14090b00 ud5 00000000 | indirect base1 1214090000 + 0xb80 -> args at 0x1214090b80 | V# 12c1289800
+page 111405f000: dispatch at 1623 pgm 909939900 ud4 1405f000 ud5 00000000 | indirect base1 121405f000 + 0x80 -> args at 0x121405f080 | V# 12c1289a00
+page 11139b6000: dispatch at 1727 pgm 909939900 ud4 139b6d00 ud5 00000000 | indirect base1 12139b6000 + 0xd80 -> args at 0x12139b6d80 | V# 12c1289b00
+page 1114469000: dispatch at 1831 pgm 909939900 ud4 14469b00 ud5 00000000 | indirect base1 1214469000 + 0xb80 -> args at 0x1214469b80 | V# 12c1289c00
+page 111439f000: dispatch at 2039 pgm 909939900 ud4 1439f300 ud5 00000000 | indirect base1 121439f000 + 0x380 -> args at 0x121439f380 | V# 12c1289e00
+refit dispatches 727 with ud4 == the args address low 32 (to 256 B): 727
+args base hi values [18]
+ud4 - args low32 (bytes), first 10: ['0xffffff80', '0xffffff80', '0xffffff80', '0xffffff80', '0xffffff80', '0xffffff80', '0xffffff80', '0xffffff80', '0xffffff80', '0xffffff80']

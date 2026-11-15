@@ -1,0 +1,26 @@
+chain lock: exp 0417 | chain: exp 0424: private test build, the second title: 4 walks to G+240 (fix off/ON/off/ON) + lean ON 420 s, until about 22:10 | token 202611152125102253296 | 2026-11-15 21:25:10
+binaries: private normal dbe0d21a, private lean e1aeb11b
+a424f1 (fix off): a424f1 (nozeroskip) ended at G+240 (after 359 s; G 117, load 105, list 94); 25.6 flips/s over 353 s, 60 s with a gap over 100 ms, longest 1289 ms; kernel lines 0, crash lines 0, ledger lines 0; real pad keys 0; new fault records 0
+a424f1 switch line: [bc5] exp 0424 (tag aq424): acb queue state off
+a424f1 catcher, last: [bc5] exp 0424 (tag aq424c): t 353.2 s: refit 0x909939900 dispatches 3314774: USER_DATA_5 low 16 = argument high 347575, MISMATCH 2204922 (first: USER_DATA_5 01000012 against high 11), unknown 0, no SET_BASE 762277; acb queue state off, 0 parts given it, 0 with no tracked queue
+a424f1 catcher lines: 32
+a424f1 route: route: cross (start screen) at 88 s;route: the save-slot list runs; down x 0, cross (slot 1) at 94 s;route: cross (Continue) at 100 s;route: the load seen at 105 s;route: gameplay G = 117 s (the load at 105 s);route: walk of 14 cycles (240 s) queued at 117 s;
+a424n1 (fix ON): a424n1 (nozeroskip) ended at G+240 (after 358 s; G 117, load 103, list 93); 22.3 flips/s over 352 s, 78 s with a gap over 100 ms, longest 1492 ms; kernel lines 0, crash lines 0, ledger lines 0; real pad keys 0; new fault records 0
+a424n1 switch line: [bc5] exp 0424 (tag aq424): acb queue state ON (every acb part that dispatches gets its queue's compute registers in fro
+a424n1 catcher, last: [bc5] exp 0424 (tag aq424c): t 352.2 s: refit 0x909939900 dispatches 2344314: USER_DATA_5 low 16 = argument high 278741, MISMATCH 1604492 (first: USER_DATA_5 01000012 against high 11), unknown 0, no SET_BASE 461081; acb queue state ON, 108006 parts given it, 0 with no tracked queue
+a424n1 catcher lines: 32
+a424n1 route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 93 s;route: cross (Continue) at 99 s;route: the load seen at 103 s;route: gameplay G = 117 s (the load at 103 s);route: walk of 14 cycles (240 s) queued at 117 s;
+a424f2 (fix off): a424f2 (nozeroskip) ended at G+240 (after 356 s; G 115, load 103, list 93); 25.0 flips/s over 351 s, 61 s with a gap over 100 ms, longest 3217 ms; kernel lines 0, crash lines 0, ledger lines 0; real pad keys 0; new fault records 0
+a424f2 switch line: [bc5] exp 0424 (tag aq424): acb queue state off
+a424f2 catcher, last: [bc5] exp 0424 (tag aq424c): t 352.3 s: refit 0x909939900 dispatches 2963611: USER_DATA_5 low 16 = argument high 330369, MISMATCH 1867524 (first: USER_DATA_5 01000012 against high 11), unknown 0, no SET_BASE 765718; acb queue state off, 0 parts given it, 0 with no tracked queue
+a424f2 catcher lines: 32
+a424f2 route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 93 s;route: cross (Continue) at 99 s;route: the load seen at 103 s;route: gameplay G = 115 s (the load at 103 s);route: walk of 14 cycles (240 s) queued at 115 s;
+a424n2 (fix ON): a424n2 (nozeroskip) ended at G+240 (after 361 s; G 119, load 103, list 92); 22.1 flips/s over 356 s, 81 s with a gap over 100 ms, longest 3980 ms; kernel lines 0, crash lines 0, ledger lines 0; real pad keys 0; new fault records 0
+a424n2 switch line: [bc5] exp 0424 (tag aq424): acb queue state ON (every acb part that dispatches gets its queue's compute registers in fro
+a424n2 catcher, last: [bc5] exp 0424 (tag aq424c): t 354.0 s: refit 0x909939900 dispatches 2169672: USER_DATA_5 low 16 = argument high 274329, MISMATCH 1530646 (first: USER_DATA_5 01000012 against high 11), unknown 0, no SET_BASE 364697; acb queue state ON, 107643 parts given it, 0 with no tracked queue
+a424n2 catcher lines: 32
+a424n2 route: route: cross (start screen) at 86 s;route: the save-slot list runs; down x 0, cross (slot 1) at 92 s;route: cross (Continue) at 98 s;route: the load seen at 103 s;route: gameplay G = 119 s (the load at 103 s);route: walk of 14 cycles (240 s) queued at 119 s;
+a424l (lean, fix ON): a424l (lean) PASS: ran 420 s; RssAnon at the end 176256 kB; kernel lines 0, crash lines 0; real pad keys 0; key lines done 51 of 51; BC5_DIRECT_ACB_QUEUE_STATE=1 in its environment: 1
+t0424: all runs done
+t0424 ended 21:57:44
+chain lock released

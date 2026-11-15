@@ -1,0 +1,14 @@
+fault pages 10
+page 1113c50000: no dispatch with that ud4 page
+page 1113c53000: no dispatch with that ud4 page
+page 1113913000: dispatch at 32139 pgm 909939900 ud4 13913500 ud5 00000000 | indirect base1 1213913000 + 0x580 -> args at 0x1213913580 | V# 12c43ade00
+page 11139b7000: dispatch at 5203 pgm 909939900 ud4 139b7b00 ud5 00000000 | indirect base1 12139b7000 + 0xb80 -> args at 0x12139b7b80 | V# 12c4431300
+page 111399c000: dispatch at 11651 pgm 909939900 ud4 1399c300 ud5 00000000 | indirect base1 121399c000 + 0x380 -> args at 0x121399c380 | V# 12c4433100
+page 11139df000: no dispatch with that ud4 page
+page 111391f000: dispatch at 50131 pgm 909939900 ud4 1391fd00 ud5 00000000 | indirect base1 121391f000 + 0xd80 -> args at 0x121391fd80 | V# 12c443a900
+page 11139a8000: dispatch at 43891 pgm 909939900 ud4 139a8b00 ud5 00000000 | indirect base1 12139a8000 + 0xb80 -> args at 0x12139a8b80 | V# 12c4436b00
+page 11139b2000: dispatch at 47531 pgm 909939900 ud4 139b2b00 ud5 00000000 | indirect base1 12139b2000 + 0xb80 -> args at 0x12139b2b80 | V# 12c4439000
+page 1113927000: no dispatch with that ud4 page
+refit dispatches 754 with ud4 == the args address low 32 (to 256 B): 754
+args base hi values [18]
+ud4 - args low32 (bytes), first 10: ['0xffffff80', '0xffffff80', '0xffffff80', '0xffffff80', '0xffffff80', '0xffffff80', '0xffffff80', '0xffffff80', '0xffffff80', '0xffffff80']
