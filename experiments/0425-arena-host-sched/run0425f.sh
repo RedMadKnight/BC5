@@ -30,7 +30,7 @@ m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }
 mkdir -p "$R" || exit 1
 pgrep '^kyty_emulator' > /dev/null && { echo "an emulator is running: not started"; exit 1; }
 if [ "${MODE:-}" = name ]; then  # exp 0425: the named snapshot of F464's route save, made once from exp 0358's copy
-  RS0=$W/exp0358/saves-live-47aefd45
+  RS0=$W/exp0425/inputs/saves-live-47aefd45  # exp 0358's copy, restored from the NAS archive of 2026-11-08
   [ ! -e "$NS" ] || { echo "$NS exists ($(cat "$NSF" 2> /dev/null)): not made again"; exit 0; }
   [ -d "$RS0" ] && [ ! -L "$RS0" ] || { echo "no $RS0"; exit 1; }
   r0=$(cd "$RS0" && find . -type f -exec md5sum {} + | sort -k2 | md5sum | cut -c1-16)
@@ -79,7 +79,7 @@ if [ -s "$al" ]; then mv -fT "$al" "$LOCK"; rm -f "$tl"; echo "a foreign line ar
 rm -f "$al" "$tl"
 fi
 [ "$(cat "$LOCK")" = "$LINE" ] || { echo "the lock does not read back as ours: not started"; exit 1; }
-PLAYCMD=$W/exp0360/fight1450-play.cmd  # exp 0425: F464's gameplay part of the 14:50 record (exp 0388's pin)
+PLAYCMD=$W/exp0425/inputs/fight1450-play.cmd  # exp 0425: F464's gameplay part of the 14:50 record (exp 0388's pin; exp 0360's copy, from the NAS archive of 2026-11-12)
 [ "$(m "$PLAYCMD")" = b0f9ad5c017a8b43295b3d96a6e78c39 ] || { echo "$PLAYCMD is not exp 0388's b0f9ad5c: not started"; exit 1; }
 printf '%s\n' "exp 0425 | claimed: private run $TAG, token $T | $(date '+%F %T')" >> "$W/BOX-QUEUE"
 release() {

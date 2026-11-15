@@ -22,6 +22,7 @@ WANT=$(cat "$W/exp0425/binary.md5"); MB=$(md5sum < "$BIN" | cut -d' ' -f1)
 [ "$MB" = "$WANT" ] || { say "NOT STARTED, the binary is ${MB:0:8}, not ${WANT:0:8}"; exit 1; }
 [ -s "$WORDS" ] && [ -f "$LOCKINC" ] || { say "NOT STARTED, no $WORDS or $LOCKINC"; exit 1; }
 [ -d "$W/exp0425/saves-named/PPSA03671" ] || { say "NOT STARTED, no named snapshot (MODE=name bash run0425f.sh first)"; exit 1; }
+[ -s "$W/exp0425/inputs/fight1450-play.cmd" ] || { say "NOT STARTED, no exp0425/inputs/fight1450-play.cmd"; exit 1; }
 case "$SET" in
   playgo) TAGS="f425C1 f425L1 f425F1 f425K1 f425L2 f425F2 f425K2 f425C2 f425L3 f425F3 f425K3 f425C3 f425L4 f425F4 f425K4" ;;
   sched) TAGS="f425C4 f425S1 f425Y1 f425D1 f425S2 f425Y2 f425D2 f425C5 f425S3 f425Y3 f425D3 f425C6 f425S4 f425Y4 f425D4" ;;

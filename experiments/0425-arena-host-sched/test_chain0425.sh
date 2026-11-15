@@ -19,7 +19,7 @@ setup() {  # a fresh world in $T
   T=$(mktemp -d "${TMPDIR:-/tmp}/d19-test-0425.XXXXXX") || exit 1
   export FAKE_T=$T HOME=$T/home XDG_RUNTIME_DIR=$T/run USER=tester
   W=$HOME/bc5-work; X=$W/exp0412
-  mkdir -p "$T/bin" "$T/run" "$X" "$W/exp0425" "$W/exp0413/n" "$W/exp0358/saves-live-47aefd45/sdata" "$W/exp0360" "$W/exp0330/wd" "$T/chain"
+  mkdir -p "$T/bin" "$T/run" "$X" "$W/exp0425" "$W/exp0413/n" "$W/exp0425/inputs/saves-live-47aefd45/sdata" "$W/exp0330/wd" "$T/chain"
   : > "$T/run/wayland-1"; date +%s > "$T/clock"; : > "$T/dmesg.txt"
   # --- stand-ins
   cat > "$T/bin/date" << 'EOF'
@@ -80,8 +80,8 @@ EOF
 chain_claim() { LOCK=$HOME/bc5-work/BOX-LOCK; [ -s "$LOCK" ] && return 1; CHAIN_LOCKLINE="stand-in chain | $1 | $2 min"; printf '%s\n' "$CHAIN_LOCKLINE" > "$LOCK"; export CHAIN_LOCKLINE; }
 chain_release() { grep -qxF -- "$CHAIN_LOCKLINE" "$HOME/bc5-work/BOX-LOCK" && : > "$HOME/bc5-work/BOX-LOCK"; echo "chain lock released" >> "$FAKE_T/released"; }
 EOF
-  echo "save" > "$W/exp0358/saves-live-47aefd45/sdata/file.bin"
-  printf 'press cross\nwait 500\n' > "$W/exp0360/fight1450-play.cmd"; echo "FIGHTMARK" >> "$W/exp0360/fight1450-play.cmd"
+  echo "save" > "$W/exp0425/inputs/saves-live-47aefd45/sdata/file.bin"
+  printf 'press cross\nwait 500\n' > "$W/exp0425/inputs/fight1450-play.cmd"; echo "FIGHTMARK" >> "$W/exp0425/inputs/fight1450-play.cmd"
   cp /usr/bin/bash.exe "$W/exp0425/kyty_emulator"; md5sum < "$W/exp0425/kyty_emulator" | cut -d' ' -f1 > "$W/exp0425/binary.md5"
   # --- the fake emulator, one plan word per start: crash | clean | kernel | other | noroute | stop (clean + a STOP file)
   cat > "$T/emu.sh" << 'EOF'
@@ -124,8 +124,8 @@ while :; do
 done
 EOF
   cp "$HERE/chain0425.sh" "$HERE/check0425.py" "$T/chain/"
-  sed -e 's/b0f9ad5c017a8b43295b3d96a6e78c39/'"$(md5sum < "$W/exp0360/fight1450-play.cmd" | cut -d' ' -f1)"'/' \
-      -e 's/9347496fbaf30f25/'"$(cd "$W/exp0358/saves-live-47aefd45" && find . -type f -exec md5sum {} + | LC_ALL=C sort -k2 | md5sum | cut -c1-16)"'/' \
+  sed -e 's/b0f9ad5c017a8b43295b3d96a6e78c39/'"$(md5sum < "$W/exp0425/inputs/fight1450-play.cmd" | cut -d' ' -f1)"'/' \
+      -e 's/9347496fbaf30f25/'"$(cd "$W/exp0425/inputs/saves-live-47aefd45" && find . -type f -exec md5sum {} + | LC_ALL=C sort -k2 | md5sum | cut -c1-16)"'/' \
       "$HERE/run0425f.sh" > "$T/chain/run0425f.sh"
   [ "$(diff "$HERE/run0425f.sh" "$T/chain/run0425f.sh" | grep -c '^>')" = 2 ] || { echo "the test copy differs in more than the two pins"; exit 1; }
   export PATH="$T/bin:$PATH"
