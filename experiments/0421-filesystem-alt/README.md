@@ -92,6 +92,53 @@ The reads that would tell, without a new run except the next one already planned
    `compact_stall`, `pgmajfault`, `pswpin` and buddyinfo as deltas around each stall.
 3. The `shmem_enabled` value on this boot.
 
+### 1c. After the guardian's PSI reading (relayed by the top; old logs)
+
+The reading as relayed [M]:
+- PSI memory "full" avg10 was 4–14 in W's stall seconds and 0.1–2.3 on W walks without stalls.
+- U had PSI 4–8 at load and no stall.
+- Free memory on the stalling W walks was not lower than on U.
+
+The guardian's inference, "W's import work **in prepare** meets a reclaim or compaction stall", needs one
+correction from code:
+- [read] There is no import or pin in "prepare". The import (`import_memfd`) is a separate device call under the
+  same mutex, booked as "sync"/"hints" (section 1).
+- What "prepare" itself asks of the kernel:
+  - (i) **`scratch_reserve`**. There are 128 slots in rotation, and each slot's GTT BO is freed and allocated again,
+    larger, when a job does not fit it (`amdgpu_bo_alloc` + VA map + CPU map). New, larger jobs at a load therefore
+    cost up to one allocation per slot as the rotation reaches it.
+  - (ii) The 64 MiB write-combined **snapshot ring**, allocated once at the first `dcb` `DMA_DATA` of 4 KiB or more
+    (TTM pool, high orders first).
+  - (iii) Page faults on unpinned guest memory read by the filter, the nested copies or the snapshot copies.
+- All three wait when the kernel reclaims or compacts. None of them is FileSystem's.
+
+[I] A reading that fits every number relayed so far:
+1. W's sync pass (the same submission, just before its prepare) imports FileSystem chunks.
+2. Each import allocates shmem pages and kernel arrays and so starts reclaim or compaction.
+3. That submission's prepare (or the next) then needs a GTT allocation or a faulted page in the same moment, and
+   waits.
+4. U had the pressure but not the extra allocations.
+
+Not proven: PSI "full" may be the stall's effect, and the prepare split of the stall frames has still not been read.
+If the split shows the time in "copy", it is (i) or (ii). If it shows it in "filter" or "nested", it is (iii).
+
+**Option E, title-independent and complementary:**
+- Take the kernel allocations out of "prepare": each slot's scratch BO grows only in large steps (for example to
+  the next power of two, at least 1 MiB) and never shrinks; the snapshot ring is allocated at device open, not at
+  the first copy.
+- The PS5 has no such step (its command buffers are the title's own memory), so this is about our host only.
+- Cost: up to about 128 MiB of GTT at worst if every slot reaches 1 MiB. A smaller step, or growth only for the
+  slots of the GFX pool, would cost less.
+- It is not prepared as code: whether it addresses the stall at all depends on the split read. It is a backend
+  change (`direct.cpp`), shared by both titles.
+
+On the peer's suggestion "async or background import, or import only what the GPU references":
+- Moving imports off the game thread does not shorten its prepare directly. A submitting thread already waits for
+  the device mutex while another thread imports.
+- It helps only by moving the allocation burst away from the game thread's own allocations.
+- B (late import) does that in time instead of by thread, without a new thread or locking. C (import by reference)
+  is still blocked by section 101: the address came from a record deeper than any level we follow.
+
 ## 2. Alternatives: less pinning work at load (none removes the cause of the fault: the title gives the GPU an address in FileSystem)
 
 After n16A2 the aim is put as "less allocation and pinning work during the loads, when memory is tightest", not as
