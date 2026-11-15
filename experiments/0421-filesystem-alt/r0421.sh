@@ -16,7 +16,7 @@ run)
     : "${PIN_OLD:?}"
     box "cd ~/bc5-work/exp0421 && (PIN_OLD=$PIN_OLD setsid nohup bash int0421.sh > int0421.out 2>&1 < /dev/null &); sleep 5; head -3 int0421.out | cut -c1-240" || exit 1
     for _ in $(seq 1 200); do
-        o=$(box 'tail -1 ~/bc5-work/exp0421/int0421.out; pgrep -f "bash int0421.sh" > /dev/null && echo RUNNING' 2> /dev/null)
+        o=$(box 'tail -1 ~/bc5-work/exp0421/int0421.out; pgrep -f "bash int042[1].sh" > /dev/null && echo RUNNING' 2> /dev/null)
         case "$o" in *RUNNING*) sleep 10 ;; *) break ;; esac
     done
     box 'cut -c1-300 ~/bc5-work/exp0421/int0421.out'
