@@ -1,0 +1,11 @@
+chain lock: exp 0417 | chain: exp 0424: corrected catcher, private normal rebuilt under exp0424, then 1 walk of the second title to G+240 (fix off), until about 23:32 | token 202611152302192745020 | 2026-11-15 23:02:19
+mk0424b: 11e0de65 -> aadd0b36
+== 23:02:19 build normal
+normal: 48b366ca, warnings 7, in bc5LleAgc: 6; catcher text 1, old catcher text 0
+a424q1 (fix off): a424q1 (nozeroskip) ended at G+240 (after 357 s; G 115, load 102, list 94); 26.2 flips/s over 349 s, 49 s with a gap over 100 ms, longest 569 ms; kernel lines 0, crash lines 0, ledger lines 0; real pad keys 0; new fault records 0
+a424q1 switch line: [bc5] exp 0424 (tag aq424): acb queue state off
+a424q1 catcher lines: 31
+a424q1 catcher, last: [bc5] exp 0424 (tag aq424q): t 343.6 s: refit 0x909939900 RING view: dispatches 3368849, USER_DATA_5 low 16 = argument high 3368849, MISMATCH 0 (written by: the same queue 0, another queue 0, a host prefix 0, no acb part 0), unknown 0; first mismatch since the last line: refit queue -9, USER_DATA_5 00000000 written by queue -9, argument high 0. QUEUE view: dispatches 3368849, match 3368849, MISMATCH 0 (carried 0, set in the part 0), unknown 0; first mismatch since the last line: queue -9, USER_DATA_5 00000000 (set in the part), argument high 0. acb queue state off, 0 parts given it
+a424q1 route: route: cross (start screen) at 88 s;route: the save-slot list runs; down x 0, cross (slot 1) at 94 s;route: cross (Continue) at 100 s;route: the load seen at 102 s;route: gameplay G = 115 s (the load at 102 s);route: walk of 14 cycles (240 s) queued at 115 s;
+t0424b ended 23:09:15
+chain lock released

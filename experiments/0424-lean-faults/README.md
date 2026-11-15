@@ -304,3 +304,43 @@ The fix as built costs about 3 flips/s (25.6 and 25.0 off, 22.3 and 22.1 ON) and
 benefit. It should not go into a shared build in this form.
 
 The K4/K3 misclassification of the fault record stays a separate item (Open, last point) and was not touched here.
+
+## The corrected catcher (aq424q): one walk, fix off (the top session's GO after the re-check)
+
+### Setup
+
+- `mk0424b.py` changes the private unit from `11e0de65` to `aadd0b36` and replaces aq424c with aq424q. The new
+  catcher:
+  - takes the argument high from the packet itself: dword 2 & 0xffff for the 4-dword compute form, or
+    (`SET_BASE` 1 + dword 1) >> 32 for the 3-dword form;
+  - has a **ring view** in `submit_now`, which also names who wrote each `USER_DATA_5`: the chain segment's guest
+    queue, a host prefix, or a buffer that is no acb part;
+  - has a **queue view**, a shadow per guest queue that only that queue's own acb parts update. It runs for every acb
+    part, whether the switch is on or off.
+  - Packets 0x5f/0x63/0x3f, which the catcher does not follow, count as unknown.
+- `t0424b.sh` takes one BOX-LOCK line, 23:02–23:09. It rebuilds the private normal in place (`48b366ca`; 7
+  warnings, the 6 in `bc5LleAgc` on the old lines), then walks a424q1 to G+240 with `BC5_DIRECT_ACB_QUEUE_STATE=0`.
+  RT was on, with exp 0412's named save snapshot and `ulimit -c 0` (`raw/t0424b.out`, `raw/a424q1-catcher.txt`).
+
+### Result
+
+| Run | Flips/s | s with a gap > 100 ms | Longest gap | Faults | Refit dispatches | Ring: match / MISMATCH / unknown | Queue: match / MISMATCH / unknown |
+|---|---|---|---|---|---|---|---|
+| a424q1 | 26.2 | 49 | 569 ms | 0 | 3,368,849 | 3,368,849 / 0 / 0 | 3,368,849 / 0 / 0 |
+
+All 31 lines show MISMATCH 0 and unknown 0 in both views. The laptop's kernel stream (`raw/kern-0424b-test.txt`)
+holds no lines, there was no real pad key, and there was no fault record.
+
+- **In this walk, every one of 3.37 million refits had `USER_DATA_5` low 16 equal to its argument's high half.**
+  That held on the ring, where the GPU reads it, and in the refit's own queue.
+- **So the queue's value is right, but so is the ring's.** In a normal container walk the carried value is never
+  wrong. The narrowed fix (the queue's `USER_DATA_5` in front of a refit part) would hand over the value the ring
+  already has, and an OFF/ON test could show only its cost. The catcher does not count who wrote the matching values.
+- **The 0x11 high in the two fault records is therefore a rare state, not the steady one.** Its cause is open; one
+  walk cannot rule anything out (R13). Fault 2 came 81 s into the play, before gameplay, on the host's lean build.
+  This walk ran in the container on the normal build and passed the same load.
+- **Limits (kept from the Verdict above).**
+  - The ring's `USER_DATA_5` at the moment of a fault is not measured: no faulting run has had the catcher yet.
+  - How the shader forms the high half stays TODO(verify).
+  - That the addresses agree (the 0x11_`USER_DATA_4` pages, the 0x12 argument high) supports the hypothesis; it does
+    not close the cause.
