@@ -1,0 +1,10 @@
+chain lock: exp 0417 | chain: exp 0422: the second title on the shared builds after the save fix, walk normal to G+240 + lean 420 s by time, until about 17:49 | token 202611151724151053421 | 2026-11-15 17:24:15
+binaries: normal 9da2a9d5, lean f942676c; the named snapshot /home/kjaniszewski/bc5-work/exp0412/night/saves-named: 1151e79071c72b17
+w1nb (nozeroskip) ended at G+240 (after 358 s; G 116, load 104, list 94); 25.6 flips/s over 353 s, 60 s with a gap over 100 ms, longest 1338 ms; kernel lines 0, crash lines 0, ledger lines 0; real pad keys 0
+w1nb route: route: cross (start screen) at 88 s;route: the save-slot list runs; down x 0, cross (slot 1) at 94 s;route: cross (Continue) at 100 s;route: the load seen at 104 s;route: gameplay G = 116 s (the load at 104 s);route: walk of 14 cycles (240 s) queued at 116 s;
+w1nb: clean to G+240
+w2lb (lean) PASS: ran 420 s; RssAnon at the end 139600 kB; kernel lines 0, crash lines 0; real pad keys 0; key lines done 51 of 51
+w2lb: PASS (ran 420 s, the timed route and the walk)
+walk0422: ALL PASS
+walk0422 ended 17:37:44
+chain lock released

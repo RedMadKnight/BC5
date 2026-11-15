@@ -3,7 +3,8 @@
 # (BOX-LOCK.nas; chk0422.sh's w1n and w2l were blocked on purpose at 16:26 by tag files, so they never started).
 #   w1nb  the walk to G+240 on the shared normal build (run0413p.sh, the journal-gated route)
 #   w2lb  the shared lean build, 420 s, the route by time (a cross at 90, 100, 108 s, the walk from 170 s)
-# One BOX-LOCK line; refuses while BOX-LOCK.nas exists. RT on, ulimit -c 0, the private save copies of the start scripts.
+# One BOX-LOCK line; refuses while BOX-LOCK.nas exists. RT on, ulimit -c 0; the private save copies are reset from
+# exp 0412's named snapshot (R45), the live saves are never read.
 # usage (on the box, detached, in ~/bc5-work/exp0422): bash walk0422.sh
 set -u
 ulimit -c 0
@@ -17,8 +18,13 @@ for t in w1nb w2lb; do { [ -e "$R/$t-end.txt" ] || [ -e "$R/$t-start.txt" ]; } &
 case "$MN$ML" in 9da2a9d5*f942676c*) ;; *) echo "walk0422 ended $(date +%T): NOT STARTED, the shared binaries are not exp 0422's (${MN:0:8} ${ML:0:8})"; exit 1 ;; esac
 . "$N/chainlock0417.inc"
 chain_claim "exp 0422: the second title on the shared builds after the save fix, walk normal to G+240 + lean 420 s by time" 25 || { echo "walk0422 ended $(date +%T): NOT STARTED"; exit 1; }
-livesum() { (cd "$W/_SaveData" && find . -type f -exec md5sum {} + | sort -k2 | md5sum | cut -c1-16); }
-L0=$(livesum); echo "binaries: normal ${MN:0:8}, lean ${ML:0:8}; live saves $L0"
+# The save (LESSONS R45): exp 0412's ONE named snapshot of the second title's saves, hashed here by its own method
+# (LC_ALL=C, find PPSA03671 | sort -k2 | md5sum); both start scripts reset their private copy from it and check that
+# sum. The live saves are not read, compared or restored.
+NS=$W/exp0412/night/saves-named; NSF=$NS.sum
+sumof() { (cd "$1" && find PPSA03671 -type f -exec md5sum {} + | sort -k2 | md5sum | cut -c1-16); }
+NSUM=$(sumof "$NS"); [ "$NSUM" = "$(cat "$NSF")" ] || { echo "walk0422 ended $(date +%T): NOT STARTED, the named snapshot reads $NSUM, not $(cat "$NSF")"; exit 1; }
+echo "binaries: normal ${MN:0:8}, lean ${ML:0:8}; the named snapshot $NS: $NSUM"
 PADS=(); PADN=0
 padon() { : > "$R/$1-pad.txt"; local d; for d in /dev/input/by-id/*-event-joystick; do [ -e "$d" ] || continue; stdbuf -oL evtest "$d" 2> /dev/null | grep --line-buffered 'EV_KEY.*value 1' >> "$R/$1-pad.txt" & PADS+=($!); done; }
 padoff() { [ ${#PADS[@]} = 0 ] || kill "${PADS[@]}" 2> /dev/null; PADS=(); pkill -u "$USER" -x evtest 2> /dev/null; PADN=$(wc -l < "$R/$1-pad.txt"); }
@@ -41,6 +47,5 @@ if [ "$KOK" = 1 ] && [ "$PADN" = 0 ]; then
     padoff w2lb; echo "${line:-w2lb: no result line}; real pad keys $PADN; key lines done $(cat "$CMD.done" 2> /dev/null || echo '?') of $(wc -l < "$CMD")"
     case "$line" in *"PASS: ran 420 s"*"kernel lines 0, crash lines 0"*) echo "w2lb: PASS (ran 420 s, the timed route and the walk)" ;; *) echo "w2lb: NOT A PASS"; OK=0 ;; esac
 else echo "w2lb: not run (kernel line or pad key in w1nb)"; OK=0; fi
-L1=$(livesum); echo "live saves after: $L1 ($([ "$L1" = "$L0" ] && echo unchanged || echo CHANGED))"
 echo "walk0422: $([ "$OK" = 1 ] && echo "ALL PASS" || echo "NOT ALL PASS")"
 echo "walk0422 ended $(date +%T)"

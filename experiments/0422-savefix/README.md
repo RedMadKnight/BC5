@@ -44,8 +44,13 @@ taken, with no switch, do the shared normal and lean builds:
 - **`undo0422.sh`**: back to `e3fd8b55` (normal `50d0885e`, lean `7998d6a4`), checked by md5. It chains before
   exp 0421's `undo0421.sh`.
 - **`chk0422.sh`**: runs on the swapped shared binaries with no switch set, RT on, `ulimit -c 0`, private save
-  directories only. The maintainer's live saves are copied first (`~/bc5-work/exp0422/saves-live-before`) and their
-  sums are read before and after. A real pad key (evtest) stops the chain.
+  directories only. A real pad key (evtest) stops the chain.
+  - ASTRO BOT runs on the private `exp0413/n/wda` copies.
+  - The second title's runs reset their private copy from exp 0412's one named snapshot
+    (`exp0412/night/saves-named`, hashed by its own method under LC_ALL=C; LESSONS R45).
+  - Corrected after the run (Codex, 15:40 UTC). The version that ran also copied the maintainer's live saves and
+    compared their sums before and after, against R45. Both are removed from `chk0422.sh` and `walk0422.sh`. The copy
+    `~/bc5-work/exp0422/saves-live-before` was made and is not used.
   - `a1n`, `a1l`: 30 s on the kept bad save (`wda/_SaveData.sm0`), normal and lean.
   - `a2l`, `a2n`: 120 s from an empty save directory with a cross at 30, 45, 60, 75 and 90 s (exp 0417's
     `save0417k.sh`, the way F833's large first save is written), then a 30 s second start (`a2ln`, `a2nn`).
@@ -91,15 +96,29 @@ Raw output: `raw/chain0422.out`.
 - No kernel line and no crash text in any of the six runs. The laptop's kernel stream holds one `perf: interrupt
   took too long` line and nothing from amdgpu.
 - No real pad key in any run.
-- The live saves read `a4f3c9e0745aaf37` before and after (LC_ALL=C), unchanged.
+- The two live-save sums in `raw/chain0422.out` come from the comparison that R45 forbids. They are no result of this
+  experiment.
 
-### The second title: not run yet
+### The second title: `walk0422.sh`, 17:24:15–17:37:44, after the NAS reinstall
 
 At 16:26 the top session reported that the maintainer was reinstalling the second title from the NAS
-(`BOX-LOCK.nas`). Its note said: run the walk only after that lock is gone. The two runs w1n and w2l were therefore
-blocked on purpose by tag files in `exp0413/n/raw`, and `run0413p.sh` refused to start w1n. The "stopped: a kernel
-line in w1n" in `chain0422.out` is only the empty result line of that refused run; no emulator started. They run
-later as `walk0422.sh` (tags w1nb, w2lb), which refuses while `BOX-LOCK.nas` exists.
+(`BOX-LOCK.nas`). Its note said: run the walk only after that lock is gone. chk0422.sh's runs w1n and w2l were
+therefore blocked on purpose by tag files in `exp0413/n/raw`, and `run0413p.sh` refused to start w1n. The "stopped: a
+kernel line in w1n" in `chain0422.out` is only the empty result line of that refused run; no emulator started.
+
+The lock was gone at 17:24, and `walk0422.sh` ran then (raw: `raw/walk0422.out`). The private copies were reset from
+exp 0412's named snapshot `1151e79071c72b17`; the live saves were not read.
+
+| Run | Build | Result |
+|---|---|---|
+| w1nb | normal `9da2a9d5` | clean to G+240 (G at 116 s, load at 104 s); 25.6 flips/s over 353 s, 60 s with a gap over 100 ms, longest gap 1338 ms |
+| w2lb | lean `f942676c` | PASS: ran 420 s, all 51 key lines done |
+
+- Both runs: no kernel line, no crash text, no real pad key. The laptop's kernel stream (`raw/kern-0422-walk.txt`) is
+  empty.
+- w1nb's longest gap (1338 ms) is above the four build-W walks of exp 0419 (625–879 ms). This is one run on a build
+  that also carries exp 0421, so no comparison is drawn from it.
+- The lean run shows that the start, the menus and the timed load did not end the title. It gives no frame numbers.
 
 ## Verdict
 
@@ -109,7 +128,8 @@ F833's case passes on lean and on normal:
 1. a first save from an empty directory, taken past the first screen, writes the same large file as before;
 2. the next start runs, where before it ended at 5 s.
 
-The kept bad save passes on both builds with no switch. Not yet shown: the second title on the new builds (walk0422.sh).
+The kept bad save passes on both builds with no switch. The second title runs clean on both new builds: the walk to
+G+240 on normal, and 420 s with the timed route on lean.
 
 Undo, newest first:
 
