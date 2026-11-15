@@ -344,3 +344,35 @@ holds no lines, there was no real pad key, and there was no fault record.
   - How the shader forms the high half stays TODO(verify).
   - That the addresses agree (the 0x11_`USER_DATA_4` pages, the 0x12 argument high) supports the hypothesis; it does
     not close the cause.
+
+## Final verdict (the track is parked; the top session's decision, 2026-11-15)
+
+1. **The mechanism is supported, not proven.** In both fault records the faulting pages are the BVH refit
+   0x909939900's `USER_DATA_4` read with a high half of 0x11: 10 of 10 pages in fault 1 and 6 of 10 in fault 2.
+   Each refit's own argument address has high half 0x12, and its `USER_DATA_4` is that address minus 0x80
+   (1,481 of 1,481 dispatches).
+2. **In a normal container walk the carried `USER_DATA_5` is never wrong.** With the corrected catcher, 0 of
+   3,368,849 refits mismatched, on the ring and in the refit's own queue (a424q1, fix off).
+3. **The 0x11 state is rare, and its cause is open.** Both faults came in the maintainer's lean plays on the host. One
+   walk rules nothing out (R13).
+4. **The fix candidates are not for the shared builds:**
+   - aq424, the queue's whole compute state in front of every dispatching acb part, costs about 3 flips/s with no
+     shown benefit;
+   - the narrowed form (the queue's `USER_DATA_5` before a refit part) would hand over the value the ring already
+     has in a normal walk.
+
+   Neither was built into a shared build. The OFF/ON test of the narrowed form was skipped, since it could not show
+   a benefit.
+
+Limits:
+- The ring's `USER_DATA_5` at the moment of a fault is not measured: no faulting run had the catcher. The lean build
+  carries no diagnostics, by the maintainer's rule, so it gets no catcher.
+- How the shader forms the high half stays TODO(verify).
+
+Separate small item, not touched here: **the fault record misclassifies fault 1 as "K4 junk"** (0xeb0edf4ac000).
+The record takes the kernel's *last* fault address, which is also in devcd1/2, while the kernel's first fault lines
+show 0x1113…. The record should classify the first fault line, not only the last register value.
+
+**Next cheap step, queued after exp 0425's box runs (not taken now):** 2–3 walks of the private normal build
+(`48b366ca`, catcher aq424q, fix off) on the host, with `P_HOST=1` as in exp 0423, since both faults came in host
+plays. If those show 0 mismatches too, the track stays parked until a fault comes again.
