@@ -7198,10 +7198,10 @@ index 14608a6..bf3cbd8 100644
  	if (result != vk::Result::eSuccess) {
 diff --git a/src/graphics/presentation/hostMenu.cpp b/src/graphics/presentation/hostMenu.cpp
 new file mode 100644
-index 0000000..a5dd073
+index 0000000..9ab12cf
 --- /dev/null
 +++ b/src/graphics/presentation/hostMenu.cpp
-@@ -0,0 +1,868 @@
+@@ -0,0 +1,880 @@
 +#include "graphics/presentation/hostMenu.h"
 +
 +#include "SDL.h"
@@ -7520,7 +7520,19 @@ index 0000000..a5dd073
 +	}
 +	s.recent_loaded = true;
 +	if (MenuDir() != nullptr) {
-+		s.recent = ReadLines(MenuFile("recent.txt"));
++		// experiment 0420: a path that no longer exists is dropped from the list and from recent.txt
++		auto         lines  = ReadLines(MenuFile("recent.txt"));
++		const size_t before = lines.size();
++		lines.erase(std::remove_if(lines.begin(), lines.end(),
++		                           [](const std::string& p) {
++			                           std::error_code ec;
++			                           return !std::filesystem::exists(p, ec);
++		                           }),
++		            lines.end());
++		if (lines.size() != before) {
++			WriteLines(MenuFile("recent.txt"), lines);
++		}
++		s.recent = std::move(lines);
 +	}
 +}
 +
