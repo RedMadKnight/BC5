@@ -37,16 +37,21 @@ case "${1:-}" in
     done < "$STATE" ;;
   restore)
     [ -s "$STATE" ] || { say "nothing to restore"; exit 0; }
+    # A unit that could not be started stays in the state file, so that a later restore tries it again (2026-11-15,
+    # Codex's review: the file used to go to .done whatever happened, and the next restore said "nothing to restore").
+    : > "$STATE.left" || exit 1
     while read -r u; do
       [ -n "$u" ] || continue
       if [ "$(systemctl --user is-active "$u" 2> /dev/null)" = active ]; then say "$u is active already"; else
-        systemctl --user start "$u" && say "started $u" || say "COULD NOT START $u (by hand: systemctl --user start $u)"
+        if systemctl --user start "$u"; then say "started $u"; else say "COULD NOT START $u (kept for the next restore; by hand: systemctl --user start $u)"; echo "$u" >> "$STATE.left"; fi
       fi
     done < "$STATE"
-    mv -fT "$STATE" "$STATE.done" ;;
+    if [ -s "$STATE.left" ]; then mv -fT "$STATE.left" "$STATE"; exit 1; fi
+    rm -f "$STATE.left"; mv -fT "$STATE" "$STATE.done" ;;
   watch)
     PID=${2:?the launcher pid}
     while [ -d "/proc/$PID" ]; do sleep 1; done
-    exec /usr/bin/bash "$0" restore ;;
+    for _ in 1 2 3 4 5 6; do /usr/bin/bash "$0" restore && exit 0; sleep "${LEAN_RETRY_S:-5}"; done   # a failed start is tried again
+    say "the watcher gives up after six tries; the state file keeps what is left"; exit 1 ;;
   *) echo "usage: lean-session.sh dry | stop <launcher pid> | restore"; exit 1 ;;
 esac

@@ -4792,7 +4792,7 @@ walk would have started after 06:45). Lock empty, no emulator after it. The lapt
   submitting thread only and should not touch audio.
 - [M] The tally of long walks on the second title since f8cb77ad's hang, all with the catchers armed:
   b413a916 21 clean + 1 CPU fault; T 6 clean; U 11 clean + 1 GPU read fault (arm tP) before the reset, 57 clean
-  after it. **96 clean, no GPU hang of the old kind (601 s, 532 s), one CPU fault at eboot+0x1b349f, one GPU read
+  after it. **95 clean, no GPU hang of the old kind (601 s, 532 s), one CPU fault at eboot+0x1b349f, one GPU read
   fault in the lazy heap FileSystem.**
 - [I] The old hang: 1 in 8 walks on f8cb77ad, 0 in 97 since. Chance alone no longer explains that (at 1 in 8,
   97 clean walks have a probability under one in 400,000); what changed between f8cb77ad and b413a916 is only
@@ -4804,6 +4804,16 @@ walk would have started after 06:45). Lock empty, no emulator after it. The lapt
   words were on in 34 of those; in the other 53 nothing kept it away, so its rate is simply low or T/U
   changed something that matters. Not separated.
 - [unknown] The reader of n13P4's fault: the dumps are read after this report, on the top's GO.
+- **Correction (2026-11-15, Codex with the user's delegation, entry 06:08 UTC; checked here):** the [I] line on
+  the old hang above claims more than the walks give. (7/8)^97 = 2.4e-6 is right only for a rate of 1 in 8 known
+  beforehand; here that rate is itself one event in eight walks. For the table 1 of 8 against 0 of 97 Fisher's
+  exact test gives 8/105 = 0.076, and even that needs walks that are comparable and independent, which three
+  binaries and shared boots are not. So **chance is not excluded**, the causes are not narrowed to the two
+  readings named there, and 20 clean walks without dc412 do not clear dc412. All 57 walks of n14 ran after the
+  reset of 18:40 on one boot, so "after a reset" does not separate the groups either. The count is 95 clean +
+  1 CPU fault + 1 GPU read fault = 97 walks (the bold line said 96 clean; corrected). tJ is two words
+  (`AJM_DEFER`, `AJM_LIVE_IDS`): 0 of 28 against 11 of 29 supports the pair on this route, not each word, and
+  equal means are "no difference seen", not "no cost".
 
 ### 101. n13P4's reader narrowed to a per-item compute dispatch, the buffer not named; the on-screen keyboard off for good; the lean session in the shared launcher (2026-11-15 07:00 – 07:07, the top's slot)
 
@@ -4853,6 +4863,11 @@ wyłączona"):
   No emulator and no watcher left. "Leaving" was a SIGTERM to the emulator, not the menu's own exit.
 - [M] The shell goes away when the launcher starts, so it is gone during the emulator's menu too.
 - Undo: `bash ~/bc5-work/exp0412/lean-shared/install-lean-session.sh undo`.
+- [M] 2026-11-15 07:54 (the top's GO, between build V's replug and W's compile): `~/bc5-work/lean-session.sh`
+  replaced by the fixed version **88ea3fa7** (a unit it could not start stays in the state file, restore returns
+  non-zero, the watcher tries six times; `test-lean-session.sh` 10 of 10, the old file 4 of 10); the old one,
+  bb39e855, kept as `lean-session.sh.before-20261115`. One check on the live file: the lean command stopped the
+  shell, SIGKILL of the emulator, the shell active again within 2 s, the state file moved to .done.
 
 Text for CLAUDE.md, "Machine context", the memory paragraph (after the Baloo sentence):
 > Since 2026-11-15 Plasma's on-screen keyboard (`plasma-keyboard`, started by KWin as its input method from the
