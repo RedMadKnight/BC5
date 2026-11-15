@@ -232,3 +232,67 @@ After n16A2:
 - Run `compact0412.sh` beside the walks.
 
 **Verdict.** Not yet: a design and a prepared step; nothing measured on the box.
+
+## 4. Review of the old experiments and the decision (2026-11-15 afternoon; the maintainer: "przejrzyj wszystkie stare eksperymenty – sprawdź czy Twoje wnioski są słuszne – jeżeli tak – od razu wprowadzić rozwiązanie zamiast W")
+
+A sweep of `experiments/*/README.md`, `docs/HANDOFF.md` and the 0412 branch, each fact checked against its line:
+
+| My claim | Verdict | Evidence |
+|---|---|---|
+| "prepare" holds no import; imports are "sync"/"hints" | **holds** | backend `direct.cpp` `t_enter`…`r.prepare_ms`; 0412 §102 now says the same; no experiment puts an import in prepare |
+| `scratch_reserve` is booked as "copy", the DMA snapshot as "filter" | holds (code) | `direct.cpp` around `scratch_reserve`; the snapshot is a filter callback |
+| The named parts do not cover all of prepare | **added** | the BO vector's build is inside prepare in none of them (exp 0170 README lines 11–12, 28) |
+| FileSystem is CPU-only, so lazy or late is safe | **wrong** | F443 (HANDOFF line 497): a TCP **write** fault at 0x1110e1d000, inside FileSystem (0x1110000000+0x3400000), then a hang at 107 s. F468: never imported because lazy. F472 (exp 0364): a dispatch's user-data pointer lands in FileSystem. F443's pointer was later tied to a garbage high dword (F679/F685), but the title does give the GPU FileSystem addresses |
+| A window of written-but-unmapped memory is harmless | **not safe** | 0412 §33: the zero skip's 59–149 ms blind window ended in a ring timeout; there a canary was mapped, but it is the same class of risk |
+| The stalls are the price of FileSystem's import | not shown | n16A2 (fresh boot: 1 frame against 32), PSI full 4–14 at W's stalls, and U at PSI 4–8 without stalls point to memory state plus import work at the same moment [I] |
+
+**So B (late import) is dropped.** Its 30 s window would leave GPU writes and reads into written FileSystem chunks
+unmapped, and the title is known to aim GPU work there. **A (eager) is the step**, written in code so that the
+launcher is not touched:
+- the name is added where `BC5_DIRECT_EAGER_NAMES` is read;
+- the whole view (52 MiB) is imported once, when it appears, as one buffer;
+- after that, writes to it cost no import, merge or remap.
+
+The PS5 does this: every page of the heap is the GPU's from the map call. Cost: +4 MiB pinned against W (the two
+never-written chunks), and no pinning work for this heap during the later loads.
+
+B's files stay here, unused: `mk0421b-late.py`, `late_import.hpp`, `test0421late.cpp`, `standin0421b-late.cpp`,
+`fs421b-late-on-T-lazyfs.diff`, `b0421b-late.sh`.
+
+**One correction to the rules as relayed**: the lean build defines `BC5_LEAN` (`add_compile_definitions(BC5_LEAN=1)`
+under `if(KYTY_BC5_LEAN)`). A `#ifndef KYTY_BC5_LEAN` guard would leave its code in lean. Both generators use
+`#ifndef BC5_LEAN`.
+
+### The step (tag fs421e)
+
+- `mk0421.py <tree root>`: 2 edits of the main unit. It refuses a tree without V's lazyfs step or one that already has
+  the step.
+- `BC5_DIRECT_FS_EAGER` is **on by default**; `=0` gives W's way (imported by data, never lazy).
+- `BC5_GUARD_BYDATA_NAMES` still wins (bd412). The stderr line is under `#ifndef BC5_LEAN`.
+- [M] It was applied to the unit cut from the shared patch `101555c7` (the integrator's laptop kit, blob `358419d`)
+  → `5956804d`; the diff is `fs421e-on-101555c7.diff`, 35 lines.
+- [M] `standin0421.cpp` (the changed region with stand-ins for `bc5::env_on` and `BC5_DIAG_ENV`) builds in both modes
+  (`-Wall -Wextra -Werror`) and runs as intended:
+
+| | eager(FileSystem) | lazy(FileSystem) | stderr line | `fs421e` text in the binary |
+|---|---|---|---|---|
+| normal, default | 1 | 0 | yes | 1 |
+| normal, `=0` | 0 | 0 | yes | 1 |
+| lean, default | 1 | 0 | none | 0 |
+| lean, `=0` | 0 | 0 | none | 0 |
+
+### The shared swap (the top's GO after the integrator's swap to 101555c7)
+
+`int0421.sh` (kit: `mk0421.py`, `undo0421.sh`, and `ed0419g.py` from exp 0419), with
+`PIN_OLD=101555c7`:
+1. Checks: no emulator, and the shared tree's diff is `PIN_OLD`. Takes the lock (one line).
+2. Copies under `~/bc5-work/exp0421/swap`: both binaries, the unit and the patch (`*.before-0421`), read back.
+3. Runs `mk0421.py` and makes the new patch with `git diff f266548`. The new patch must keep:
+   - `exp 0372` lines = 5;
+   - the same file list;
+   - the same counts of `BC5_GUARD_MAP_RULE`, `BC5_GUARD_PRT_BG` and `learned` lines.
+4. Rebuilds normal and lean in place; the backend archive must not change.
+5. `strings`: lean gains only the word `BC5_DIRECT_FS_EAGER` and no `fs421e` text; normal has the text.
+
+Any failure runs the undo, `bash ~/bc5-work/exp0421/undo0421.sh`: the unit and both binaries go back and are checked
+by md5; the unit is touched so that the next ninja recompiles it.

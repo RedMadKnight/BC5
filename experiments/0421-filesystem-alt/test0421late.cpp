@@ -84,7 +84,7 @@ int main() {
 		CHECK(s.next_due_ns == 1 * S + 1);
 	}
 	{ // the switch's value
-		CHECK(delay_of(nullptr) == 0 && delay_of("") == 0 && delay_of("0") == 0);
+		CHECK(delay_of(nullptr) == 30 * S && delay_of("") == 30 * S && delay_of("0") == 0); // on by default
 		CHECK(delay_of("1") == 30 * S && delay_of("on") == 30 * S);
 		CHECK(delay_of("5") == 5 * S && delay_of("60") == 60 * S && delay_of("3600") == 3600 * S);
 		CHECK(delay_of("4") == 30 * S && delay_of("3601") == 30 * S && delay_of("20s") == 30 * S && delay_of("00") == 30 * S);

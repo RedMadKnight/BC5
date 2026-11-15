@@ -71,10 +71,12 @@ inline bool due(const State& s, uint64_t now) {
 	return s.next_due_ns != 0 && now >= s.next_due_ns;
 }
 
-// The switch's value: unset, empty or "0" is off (0); "1" or "on" is 30 s; a number of seconds from 5 to 3600 is
-// that; anything else is 30 s.
+// The switch's value (on by default since the maintainer's order of 2026-11-15: it replaces build W's "FileSystem is
+// never lazy"): "0" is off (W's way: imported by data at once); unset, empty, "1" or "on" is 30 s; a number of
+// seconds from 5 to 3600 is that; anything else is 30 s.
 inline uint64_t delay_of(const char* e) {
-	if (e == nullptr || e[0] == 0 || (e[0] == '0' && e[1] == 0)) return 0;
+	if (e != nullptr && e[0] == '0' && e[1] == 0) return 0;
+	if (e == nullptr || e[0] == 0) return 30'000'000'000ull;
 	uint64_t v = 0;
 	const char* p = e;
 	for (; *p >= '0' && *p <= '9'; p++) {

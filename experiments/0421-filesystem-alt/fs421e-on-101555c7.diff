@@ -1,0 +1,35 @@
+--- a/src/libs/bc5LleAgc.cpp (patch 101555c7, blob 358419d)
++++ b/src/libs/bc5LleAgc.cpp (+ mk0421.py)
+@@ -2307,6 +2307,24 @@
+ // a hint or a learned fault region asks. Everything a draw's BO list names has to sit in the
+ // driver's GTT domain at once, and that domain is half of the machine's RAM by default (run 96:
+ // -ENOMEM at 6.8 GiB imported, experiment 0020); memory the GPU never reads should not count.
++// Exp 0421 (tag fs421e), BC5_DIRECT_FS_EAGER (default ON; "0" is build W's way, the heap imported by data): the
++// title's heap "FileSystem" is imported whole when its view appears, as the heaps of BC5_DIRECT_EAGER_NAMES are. The
++// title keeps GPU-written buffers there (F443, F468, F472) and the GPU read its CPU-written chunks (fault record
++// 20261114-184017); on the console every page of it is the GPU's from the map call. Eager makes one import of the
++// view instead of one per freshly written 2 MiB chunk during the loads.
++static bool fs421_eager_on() {
++	static const bool on = [] {
++		const char* e = std::getenv("BC5_DIRECT_FS_EAGER");
++		const bool  v = !(e != nullptr && e[0] == '0' && e[1] == 0);
++#ifndef BC5_LEAN
++		std::fprintf(stderr, "[bc5] exp 0421 (tag fs421e): \"FileSystem\" %s\n",
++		             v ? "is eager (imported whole when its view appears); BC5_DIRECT_FS_EAGER=0 gives build W's way"
++		               : "is imported by data (BC5_DIRECT_FS_EAGER=0, build W's way)");
++#endif
++		return v;
++	}();
++	return on;
++}
+ static bool direct_lazy_name(const char* name) {
+ 	static const std::vector<std::string> names = [] {
+ 		std::vector<std::string> v;
+@@ -2398,6 +2416,7 @@
+ 				}
+ 			}
+ 		}
++		if (fs421_eager_on() && std::find(v.begin(), v.end(), std::string("FileSystem")) == v.end()) v.push_back("FileSystem"); // exp 0421 (tag fs421e)
+ 		return v;
+ 	}();
+ 	if (bd412_name(name)) return false; // exp 0412 (tag bd412): this heap is imported by data

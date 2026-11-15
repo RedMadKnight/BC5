@@ -1,78 +1,137 @@
-#include <cinttypes>
-#include <cstdint>
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
-#include <set>
 #include <string>
-#include <utility>
 #include <vector>
-#include "late_import.hpp"
-typedef long long off_t2;
-#define off_t off_t2
-#define SEEK_DATA 3
-static off_t lseek(int, off_t o, int) { return o; }
-static void journal(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
-static void journal(const char*, ...) {}
-constexpr uint64_t kDChunk = 2ull << 20u;
-struct DView { uint64_t va, size, off; std::string name; bool lazy; bool eager; };
-struct DState { int kind; const char* label; std::set<uint64_t> failed; uint64_t file_size = 0; };
-static uint64_t direct_covered_end(const DState&, uint64_t) { return 0; }
-// Exp 0421 (tag fs421), BC5_DIRECT_FS_LATE (default off): the GPU read fault of arm n13P4 (fault record
-// 20261114-184017) read two written chunks of the lazy heap "FileSystem" 580 s after they were written. Build V/W
-// imports the heap by data instead, at the moment of each write, and W's loads gained in-host stalls (exp 0412
-// section 102; the link is inferred). With the switch on the heap stays lazy and each written chunk is imported once
-// it has been written for the delay, one chunk a pass: no import of it during the load that wrote it.
-static uint64_t fs421_late_ns() {
-	static const uint64_t ns = [] {
-		const uint64_t v = bc5::late_import::delay_of(std::getenv("BC5_DIRECT_FS_LATE"));
-#ifndef KYTY_BC5_LEAN
-		if (v != 0)
-			std::fprintf(stderr, "[bc5] exp 0421 (tag fs421): BC5_DIRECT_FS_LATE on: \"FileSystem\" stays lazy; a written chunk of it is imported %.0f s after it is first seen, "
-			                     "one chunk a pass, passes 250 ms apart\n", static_cast<double>(v) / 1e9);
+namespace bc5 { inline bool env_on(const char* e) { return e != nullptr && e[0] != 0 && !(e[0] == '0' && e[1] == 0); } }
+#ifdef BC5_LEAN
+#define BC5_DIAG_ENV(w) static_cast<const char*>(nullptr)
+#else
+#define BC5_DIAG_ENV(w) std::getenv(w)
+#endif
+// Exp 0421 (tag fs421e), BC5_DIRECT_FS_EAGER (default ON; "0" is build W's way, the heap imported by data): the
+// title's heap "FileSystem" is imported whole when its view appears, as the heaps of BC5_DIRECT_EAGER_NAMES are. The
+// title keeps GPU-written buffers there (F443, F468, F472) and the GPU read its CPU-written chunks (fault record
+// 20261114-184017); on the console every page of it is the GPU's from the map call. Eager makes one import of the
+// view instead of one per freshly written 2 MiB chunk during the loads.
+static bool fs421_eager_on() {
+	static const bool on = [] {
+		const char* e = std::getenv("BC5_DIRECT_FS_EAGER");
+		const bool  v = !(e != nullptr && e[0] == '0' && e[1] == 0);
+#ifndef BC5_LEAN
+		std::fprintf(stderr, "[bc5] exp 0421 (tag fs421e): \"FileSystem\" %s\n",
+		             v ? "is eager (imported whole when its view appears); BC5_DIRECT_FS_EAGER=0 gives build W's way"
+		               : "is imported by data (BC5_DIRECT_FS_EAGER=0, build W's way)");
 #endif
 		return v;
 	}();
-	return ns;
+	return on;
 }
-static bc5::late_import::State g_fs421[2]; // per DState kind
-// The data chunks of a late view that no import covers (the by-data walk of direct_sync_one, for one view).
-static void fs421_scan(const DState& S, const DView& v, int fd, std::vector<uint64_t>& out) {
-	const uint64_t end = v.off + v.size;
-	uint64_t       pos = v.off & ~(kDChunk - 1);
-	while (pos < end) {
-		if (const uint64_t ce = direct_covered_end(S, pos); ce != 0) { pos = ce; continue; }
-		const off_t d = lseek(fd, static_cast<off_t>(pos), SEEK_DATA);
-		if (d < 0 || static_cast<uint64_t>(d) >= end) break;
-		const uint64_t c = static_cast<uint64_t>(d) & ~(kDChunk - 1);
-		if (direct_covered_end(S, c) == 0) out.push_back(c);
-		pos = c + kDChunk;
-	}
-}
-static void fs421_pick(const DState& S, const std::vector<uint64_t>& written, uint64_t now, std::vector<uint64_t>& need) {
-	std::vector<uint64_t> w;
-	w.reserve(written.size());
-	for (const uint64_t c: written) {
-		if (S.failed.count(c) == 0 && c + kDChunk <= S.file_size) w.push_back(c);
-	}
-	bc5::late_import::Limits L;
-	L.delay_ns = fs421_late_ns();
-	auto& st = g_fs421[S.kind == 0 ? 0 : 1];
-#ifndef KYTY_BC5_LEAN
-	std::vector<std::pair<uint64_t, uint64_t>> first; // the chunks about to be picked, with when they were first seen
-	for (const auto& [c, t]: st.seen) first.emplace_back(c, t);
-#endif
-	const std::vector<uint64_t> got = bc5::late_import::pick(st, std::move(w), now, L);
-	for (const uint64_t c: got) need.push_back(c);
-#ifndef KYTY_BC5_LEAN
-	static uint64_t lines = 0;
-	for (const uint64_t c: got) {
-		uint64_t t0 = now;
-		for (const auto& [fc, ft]: first) if (fc == c) t0 = ft;
-		if (lines++ < 64)
-			journal("fs421 late import (exp 0421): %s chunk 0x%" PRIx64 " of \"FileSystem\", seen written %.1f s ago; %" PRIu64 " late chunks so far, %zu waiting\n", S.label, c,
-			        static_cast<double>(now - t0) / 1e9, st.imported, st.seen.size() - got.size());
-	}
-#endif
+static bool direct_lazy_name(const char* name) {
+	static const std::vector<std::string> names = [] {
+		std::vector<std::string> v;
+		if (const char* e = std::getenv("BC5_DIRECT_LAZY_NAMES"); e != nullptr) {
+			std::string cur;
+			for (const char* c = e;; c++) {
+				if (*c == ',' || *c == 0) {
+					if (!cur.empty()) v.push_back(cur);
+					cur.clear();
+					if (*c == 0) break;
+				} else {
+					cur.push_back(*c);
+				}
+			}
+		}
+		// exp 0419 (build V) for exp 0412: "FileSystem" is never lazy (fault record 20261114-184017: a shader read two
+		// of its written pages, which a lazy heap does not import). BC5_DIAG_LAZY_FILESYSTEM=1 keeps the old list.
+		if (!bc5::env_on(BC5_DIAG_ENV("BC5_DIAG_LAZY_FILESYSTEM"))) {
+			const auto it = std::find(v.begin(), v.end(), std::string("FileSystem"));
+			if (it != v.end()) {
+				v.erase(it);
+				std::fprintf(stderr, "[bc5] exp 0419: FileSystem taken out of BC5_DIRECT_LAZY_NAMES (fault record 20261114-184017); "
+				                     "BC5_DIAG_LAZY_FILESYSTEM=1 keeps the old list\n");
+			}
+		}
+		return v;
+	}();
+	static const bool by_data = [] { // exp 0412 (tag kl412): BC5_GUARD_LAZY_BY_DATA=1, no view is lazy
+		const char* e = BC5_DIAG_ENV("BC5_GUARD_LAZY_BY_DATA");
+		const bool  v = e != nullptr && e[0] != 0 && !(e[0] == '0' && e[1] == 0);
+		if (v) std::fprintf(stderr, "[bc5] exp 0412 (tag kl412): BC5_GUARD_LAZY_BY_DATA on: BC5_DIRECT_LAZY_NAMES is ignored, every view of direct memory is imported where it holds data\n");
+		return v;
+	}();
+	if (by_data) return false;
+	if (name == nullptr || names.empty()) return false;
+	return std::find(names.begin(), names.end(), name) != names.end();
 }
 
-int main() { DState S{0,"direct",{},64ull<<20}; DView v{0,8ull<<20,0,"FileSystem",true,false}; std::vector<uint64_t> w, need; fs421_scan(S, v, 3, w); fs421_pick(S, w, 1, need); return (int)need.size(); }
+// Experiment 0412 (tag bd412): bd0412.inc, BC5_GUARD_BYDATA_NAMES, option B's rule per heap.
+namespace bd412 {
+inline std::vector<std::string> parse(const char* e) {
+	std::vector<std::string> v;
+	if (e == nullptr) return v;
+	std::string cur;
+	for (const char* c = e;; c++) {
+		if (*c == ',' || *c == 0) {
+			if (!cur.empty() && std::find(v.begin(), v.end(), cur) == v.end()) v.push_back(cur);
+			cur.clear();
+			if (*c == 0) break;
+		} else {
+			cur.push_back(*c);
+		}
+	}
+	return v;
+}
+inline bool has(const std::vector<std::string>& names, const char* name) {
+	return name != nullptr && std::find(names.begin(), names.end(), name) != names.end();
+}
+} // namespace bd412
+static const std::vector<std::string>& bd412_names() {
+	static const std::vector<std::string> v = [] {
+		auto n = bd412::parse(BC5_DIAG_ENV("BC5_GUARD_BYDATA_NAMES"));
+		for (const auto& s: n) std::fprintf(stderr, "[bc5] exp 0412 (tag bd412): BC5_GUARD_BYDATA_NAMES: the heap \"%s\" is imported by data, not whole\n", s.c_str());
+		return n;
+	}();
+	return v;
+}
+static bool bd412_name(const char* name) {
+	const auto& n = bd412_names();
+	return !n.empty() && bd412::has(n, name);
+}
+// BC5_DIRECT_EAGER_NAMES=name[,name...]: views with these names are imported in full as soon as
+// they exist, data or not. The game's GPU heaps hold render targets and GPU-written textures no
+// CPU ever touches; the first draw into one faulted, and a fault is a 14 s freeze (2 s fence
+// timeout, 12 s for the kernel's reset; run 103: opening the pause menu). 17 of the 18 regions learned
+// from faults so far lie in those two heaps.
+static bool direct_eager_name(const char* name) {
+	static const std::vector<std::string> names = [] {
+		std::vector<std::string> v;
+		if (const char* e = std::getenv("BC5_DIRECT_EAGER_NAMES"); e != nullptr) {
+			std::string cur;
+			for (const char* c = e;; c++) {
+				if (*c == ',' || *c == 0) {
+					if (!cur.empty()) v.push_back(cur);
+					cur.clear();
+					if (*c == 0) break;
+				} else {
+					cur.push_back(*c);
+				}
+			}
+		}
+		if (fs421_eager_on() && std::find(v.begin(), v.end(), std::string("FileSystem")) == v.end()) v.push_back("FileSystem"); // exp 0421 (tag fs421e)
+		return v;
+	}();
+	if (bd412_name(name)) return false; // exp 0412 (tag bd412): this heap is imported by data
+	if (name == nullptr || names.empty()) return false;
+	return std::find(names.begin(), names.end(), name) != names.end();
+}
+
+// Experiment 0415 (ls415d), KYTY_BC5_NAMES_FAST (default off; "verify" asks the old function too): the lazy and eager
+// class of a range's name remembered per name. Both lists are read once from the environment, so a name's class never
+// changes. Used only from direct_views_build, which runs under direct_views' mutex. If this were wrong, a heap would
+// be imported eagerly or lazily against its list: memory pinned that should not be, or a GPU fault on a heap that
+// should have been imported whole.
+int main() {
+	std::printf("eager(FileSystem)=%d lazy(FileSystem)=%d eager(Other)=%d\n", direct_eager_name("FileSystem"), direct_lazy_name("FileSystem"), direct_eager_name("Other"));
+	return 0;
+}
