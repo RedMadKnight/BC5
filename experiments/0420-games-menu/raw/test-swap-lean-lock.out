@@ -1,0 +1,10 @@
+flock: /tmp/tmp.IKUGFfBhgB/bin/flock (flock (stand-in)), works
+lean-session.sh now: 189885ea; the new one: 1f1be812
+dry: nothing changed
+an emulator runs: nothing done
+the state /tmp/tmp.IKUGFfBhgB/home/bc5-work/lean-session.state names units not restored yet: x : nothing done
+applied: lean-session.sh 1f1be812; the old one is /tmp/tmp.IKUGFfBhgB/home/bc5-work/lean-session.sh.before-lock (189885ea); undo: bash /tmp/tmp.IKUGFfBhgB/k/swap-lean-lock.sh undo
+lean-session.sh is 1f1be812, not 189885ea: nothing done
+undone: lean-session.sh 189885ea
+189885ead2bdca322af7a78d675a8c71 */tmp/tmp.IKUGFfBhgB/home/bc5-work/lean-session.sh
+189885ead2bdca322af7a78d675a8c71 */tmp/tmp.IKUGFfBhgB/home/bc5-work/lean-session.sh.before-lock

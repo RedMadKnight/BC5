@@ -178,3 +178,25 @@ Prepared on the laptop only; each box step waits for the top's GO after the nigh
   `hostMenu.cpp`); shared tree **ba617454**, normal **fd3d0ed2**, lean **480656cc** (were bab1ce79 / c4aca9af); the
   lock released at 13:05:36. Undo: `bash ~/bc5-work/exp0420/swapR/swap0420r.sh undo`. Not looked at on the screen
   yet (the change only reads the file system when the list is read).
+- **The lean session's second race** (Codex 2026-11-15 10:37 and 15:40 UTC, LESSONS R56 second occurrence; the top
+  confirmed both in 189885ea): (1) the watcher read the owner, a stop took the dead launcher's session over, then the
+  watcher wrote its pid into the new claim and restored during the new play; (2) a failed restore released the claim
+  and the watcher's retry ran unclaimed. `../0412-memory-guardian/lean-session.sh` **1f1be812**: every read and
+  write of the owner and the state and every unit start or stop run under one `flock` (command form with `-o`, so
+  the watcher never inherits the lock), the owner's token ("pid starttime") is checked again right before each; the
+  watcher takes the claim inside the lock and keeps it through its retries (a stop meanwhile is refused, exit 3),
+  releasing it after a successful restore or when it gives up; a restore by hand while another live process owns
+  the session is refused (exit 3) instead of starting the shell during a play; without flock a stop refuses (the
+  play runs with the desktop) and a restore runs unlocked. `LEAN_TEST_BARRIER=<dir>` points (stop-before-lock,
+  watch-gone, handover-locked, watch-owned, watch-retry) let the tests force each interleaving.
+  Tests on the laptop, stand-ins only (systemctl, pgrep, setsid, `flock-standin.sh`: mkdir mutex):
+  `test-lean-race.sh` 29 of 29 (`raw/test-lean-race-locked.out`; (d), (d2), (e), (e2) new, (c2) changed to the
+  refusal), `test-lean-session.sh` 11 of 11 (`raw/test-lean-session-locked.out`; restores by hand now name the
+  owner, the watcher takes the launcher's start time). The old 189885ea under the same test: 16 of 29
+  (`raw/test-lean-race-old-189885ea.out`; it has no barrier points, so its (d)/(e) failures are not forced
+  interleavings, only a record that it does not behave as the new checks require).
+  `swap-lean-lock.sh` (dry, apply, undo) changes only the shared helper (189885ea -> 1f1be812), keeps it as
+  `lean-session.sh.before-lock` (`.before-race` stays), checks that flock works on the box, refuses while an emulator
+  runs or a lean session is active; its stand-in run is `raw/test-swap-lean-lock.out`. **Not installed**: the top
+  picks the moment and puts it to the maintainer; `tools/scripts/launchers/lean-session.sh` on main stays 189885ea
+  until then.

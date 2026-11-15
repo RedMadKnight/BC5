@@ -1,0 +1,31 @@
+ok   (a) A runs: the shell is stopped, noted, A owns the session
+ok   (a) B is refused by pgrep
+ok   (a) B changed nothing: the state names the shell, A owns it, one stop
+ok   (a) a direct stop for another live pid: exit 3, nothing changed
+ok   (a) A ended: the watcher started the shell once
+ok   (a) and the claim is gone
+ok   (b) one owner: exits 0 and 3
+ok   (b) the winner owns it and the state names the shell (not empty)
+ok   (b) the loser's end restores nothing
+ok   (b) the winner's end: one restore, the claim is gone
+ok   (c) taken over, the noted shell is kept
+ok   (c) its end starts the shell again
+ok   (c2) a restore by hand while the owner lives: exit 3, the shell stays stopped, the owner keeps it
+ok   (c2) the owner's end restores and releases it
+ok   (d) B takes the dead launcher's session over, the state names the shell
+ok   (d) watcher A ends without a start: the shell stays stopped during B's play, B owns it
+ok   (d) B's end: one start, the claim is gone
+ok   (d2) stop B waits on the lock while A's watcher holds it
+ok   (d2) the watcher owns it now: B is refused (exit 3) and stopped nothing
+ok   (d2) A's watcher restores once and releases
+ok   (d2) then B's stop works
+ok   (d2) and nothing starts the shell during B's play
+ok   (e) a failed start: the watcher still owns the session and the state keeps the shell
+ok   (e) between the tries a stop and a restore by hand are refused, nothing changes
+ok   (e) the retry starts the shell and only then releases
+ok   (e) a stop after that works, and no late retry starts the shell during it
+ok   (e2) six tries, then the claim goes and the state keeps the shell
+ok   (e2) the next stop takes it with the shell kept
+ok   (e2) and its end starts the shell
+test-lean-race: 29 of 29
+rc=0

@@ -7,7 +7,13 @@
 #       shell again, then the claim is gone
 #   (b) two stops at once: one owner (one exit 0, one exit 3), the state names the shell, one restore when the
 #       owner ends
-#   (c) a dead owner is taken over and the unit it noted (and could not start again) is kept in the state
+#   (c) a dead owner is taken over and the unit it noted (and could not start again) is kept in the state;
+#       (c2) a restore by hand while the owner lives is refused (exit 3)
+#   forced by LEAN_TEST_BARRIER points (Codex 15.11 10:37 and 15:40 UTC, LESSONS R56 second occurrence; flock is the
+#   stand-in flock-standin.sh): (d) a stop takes the session over between the watcher's look and its handover: the
+#   watcher ends with no start; (d2) the watcher holds the lock: the stop waits, then is refused; (e) between the
+#   watcher's tries the claim stays its own: a stop and a restore by hand are refused, no late start during a later
+#   play; (e2) after six failed tries the claim goes and the next stop keeps the noted shell
 # usage: bash test-lean-race.sh   or   LAUNCHER=<launcher> bash test-lean-race.sh
 #          (prints "test-lean-race: N of N", exit 0 when every check holds)
 set -u
@@ -36,6 +42,7 @@ esac
 EOF
 printf '#!/usr/bin/env bash\n[ -e "$HOME/emu.running" ] && { cat "$HOME/emu.running"; exit 0; }; exit 1\n' > "$T/bin/pgrep"
 printf '#!/usr/bin/env bash\nexec "$@"\n' > "$T/bin/setsid"
+cp "$HERE/flock-standin.sh" "$T/bin/flock"   # Git Bash has no flock
 # the lean emulator: says it runs, waits for emu.release
 cat > "$T/emu-lean" << 'EOF'
 #!/usr/bin/env bash
@@ -99,13 +106,75 @@ check '[ "$r3" = 0 ] && [ "$(cut -d" " -f1 "$O/pid")" = "$P3" ] && [ "$(cat "$S"
 kill "$P3"
 waitfor '[ ! -e "$O" ] && [ "$(cat "$FAKE_UNITS/$U")" = active ]'
 check '[ "$(cat "$FAKE_UNITS/$U")" = active ] && [ ! -e "$O" ]' "(c) its end starts the shell again"
-# (c2) a restore by hand while the owner lives keeps the claim
+# (c2) a restore by hand while the owner lives is refused (it would start the shell during a lean play)
 fresh
 sleep 300 & P4=$!; KIDS="$KIDS $P4"
-bash "$LS" stop "$P4" > /dev/null 2>&1; bash "$LS" restore > /dev/null 2>&1
-check '[ "$(cat "$FAKE_UNITS/$U")" = active ] && [ "$(cut -d" " -f1 "$O/pid")" = "$P4" ]' "(c2) a restore by hand starts the shell, the live owner keeps the claim"
+bash "$LS" stop "$P4" > /dev/null 2>&1; bash "$LS" restore > /dev/null 2>&1; r4=$?
+check '[ "$r4" = 3 ] && [ "$(cat "$FAKE_UNITS/$U")" = inactive ] && [ "$(cut -d" " -f1 "$O/pid")" = "$P4" ]' "(c2) a restore by hand while the owner lives: exit 3, the shell stays stopped, the owner keeps it"
 kill "$P4"; waitfor '[ ! -e "$O" ]'
-check '[ ! -e "$O" ]' "(c2) the owner's end releases it"
+check '[ ! -e "$O" ] && [ "$(cat "$FAKE_UNITS/$U")" = active ]' "(c2) the owner's end restores and releases it"
+
+# Forced interleavings (Codex 15.11 10:37 and 15:40 UTC, LESSONS R56 second occurrence), by LEAN_TEST_BARRIER points.
+B=$T/bar; LOGF=$HOME/bc5-work/lean-session.log
+bar() { rm -rf "$B"; mkdir -p "$B"; for g in "$@"; do touch "$B/$g.go"; done; }
+starts() { awk '/^start/ { n++ } END { print n + 0 }' "$FAKE_UNITS/calls" 2> /dev/null || echo 0; }
+# (d) race 1: watcher A has seen its launcher gone, and stop B takes the dead launcher's session over before A locks
+fresh; bar stop-before-lock handover-locked watch-owned
+sleep 300 & A=$!; KIDS="$KIDS $A"
+LEAN_TEST_BARRIER=$B bash "$LS" stop "$A" > /dev/null 2>&1
+kill "$A"; waitfor '[ -e "$B/watch-gone.reached" ]'
+sleep 300 & P5=$!; KIDS="$KIDS $P5"
+bash "$LS" stop "$P5" > "$T/d.out" 2>&1; r5=$?
+check '[ "$r5" = 0 ] && grep -q "takes the session over" "$T/d.out" && [ "$(cut -d" " -f1 "$O/pid")" = "$P5" ] && [ "$(cat "$S")" = "$U" ]' "(d) B takes the dead launcher's session over, the state names the shell"
+touch "$B/watch-gone.go"; waitfor 'grep -q "of $A was taken over" "$LOGF"'
+sleep 1
+check 'grep -q "of $A was taken over" "$LOGF" && [ "$(cat "$FAKE_UNITS/$U")" = inactive ] && [ "$(starts)" = 0 ] && [ "$(cut -d" " -f1 "$O/pid")" = "$P5" ]' "(d) watcher A ends without a start: the shell stays stopped during B's play, B owns it"
+kill "$P5"; waitfor '[ ! -e "$O" ] && [ "$(cat "$FAKE_UNITS/$U")" = active ]'
+check '[ "$(cat "$FAKE_UNITS/$U")" = active ] && [ "$(starts)" = 1 ] && [ ! -e "$O" ]' "(d) B's end: one start, the claim is gone"
+# (d2) the other order: watcher A holds the lock for its handover while stop B waits on the lock, then is refused
+fresh; bar stop-before-lock
+sleep 300 & A=$!; KIDS="$KIDS $A"
+LEAN_TEST_BARRIER=$B bash "$LS" stop "$A" > /dev/null 2>&1
+kill "$A"; touch "$B/watch-gone.go"; waitfor '[ -e "$B/handover-locked.reached" ]'
+sleep 300 & P6=$!; KIDS="$KIDS $P6"
+bash "$LS" stop "$P6" > "$T/d2.out" 2>&1 & J6=$!
+sleep 1
+check 'kill -0 "$J6" 2> /dev/null && [ "$(cut -d" " -f1 "$O/pid")" = "$A" ]' "(d2) stop B waits on the lock while A's watcher holds it"
+touch "$B/handover-locked.go"; wait "$J6"; r6=$?
+check '[ "$r6" = 3 ] && [ -e "$B/watch-owned.reached" ] && [ "$(cat "$FAKE_UNITS/$U")" = inactive ]' "(d2) the watcher owns it now: B is refused (exit 3) and stopped nothing"
+touch "$B/watch-owned.go"; waitfor '[ ! -e "$O" ] && [ "$(cat "$FAKE_UNITS/$U")" = active ]'
+check '[ "$(cat "$FAKE_UNITS/$U")" = active ] && [ "$(starts)" = 1 ] && [ ! -e "$O" ]' "(d2) A's watcher restores once and releases"
+bash "$LS" stop "$P6" > /dev/null 2>&1; r6b=$?
+check '[ "$r6b" = 0 ] && [ "$(cat "$FAKE_UNITS/$U")" = inactive ] && [ "$(cut -d" " -f1 "$O/pid")" = "$P6" ]' "(d2) then B's stop works"
+sleep 1; check '[ "$(cat "$FAKE_UNITS/$U")" = inactive ] && [ "$(starts)" = 1 ]' "(d2) and nothing starts the shell during B's play"
+kill "$P6"; waitfor '[ ! -e "$O" ] && [ "$(cat "$FAKE_UNITS/$U")" = active ]'
+# (e) race 2: the watcher's first restore fails; between its tries it keeps the claim
+fresh; echo 1 > "$FAKE_UNITS/$U.fail"; bar stop-before-lock watch-gone handover-locked watch-owned
+sleep 300 & A=$!; KIDS="$KIDS $A"
+LEAN_TEST_BARRIER=$B bash "$LS" stop "$A" > /dev/null 2>&1
+kill "$A"; waitfor '[ -e "$B/watch-retry.reached" ]'
+W=$(cut -d" " -f1 "$O/pid" 2> /dev/null)
+check '[ -n "$W" ] && [ "$W" != "$A" ] && [ "$(cat "$S")" = "$U" ] && [ "$(starts)" = 1 ] && [ "$(cat "$FAKE_UNITS/$U")" = inactive ]' "(e) a failed start: the watcher still owns the session and the state keeps the shell"
+sleep 300 & P7=$!; KIDS="$KIDS $P7"
+bash "$LS" stop "$P7" > /dev/null 2>&1; r7=$?
+bash "$LS" restore > /dev/null 2>&1; r7r=$?
+check '[ "$r7" = 3 ] && [ "$r7r" = 3 ] && [ "$(cut -d" " -f1 "$O/pid")" = "$W" ] && [ "$(cat "$S")" = "$U" ] && [ "$(grep -c "^stop" "$FAKE_UNITS/calls")" = 1 ]' "(e) between the tries a stop and a restore by hand are refused, nothing changes"
+touch "$B/watch-retry.go"; waitfor '[ ! -e "$O" ] && [ "$(cat "$FAKE_UNITS/$U")" = active ]'
+check '[ "$(cat "$FAKE_UNITS/$U")" = active ] && [ "$(starts)" = 2 ] && [ ! -e "$O" ] && [ -e "$S.done" ]' "(e) the retry starts the shell and only then releases"
+bash "$LS" stop "$P7" > /dev/null 2>&1; r7b=$?; sleep 1
+check '[ "$r7b" = 0 ] && [ "$(cat "$FAKE_UNITS/$U")" = inactive ] && [ "$(starts)" = 2 ]' "(e) a stop after that works, and no late retry starts the shell during it"
+kill "$P7"; waitfor '[ ! -e "$O" ] && [ "$(cat "$FAKE_UNITS/$U")" = active ]'
+# (e2) the watcher gives up after six failed tries: it releases, the state keeps the shell, the next stop keeps it
+fresh; echo 99 > "$FAKE_UNITS/$U.fail"
+sleep 300 & A=$!; KIDS="$KIDS $A"
+bash "$LS" stop "$A" > /dev/null 2>&1; kill "$A"
+waitfor '[ ! -e "$O" ]'
+check '[ ! -e "$O" ] && [ "$(cat "$S")" = "$U" ] && [ "$(starts)" = 6 ]' "(e2) six tries, then the claim goes and the state keeps the shell"
+echo 0 > "$FAKE_UNITS/$U.fail"; sleep 300 & P8=$!; KIDS="$KIDS $P8"
+bash "$LS" stop "$P8" > /dev/null 2>&1; r8=$?
+check '[ "$r8" = 0 ] && [ "$(cat "$S")" = "$U" ] && [ "$(cut -d" " -f1 "$O/pid")" = "$P8" ]' "(e2) the next stop takes it with the shell kept"
+kill "$P8"; waitfor '[ ! -e "$O" ] && [ "$(cat "$FAKE_UNITS/$U")" = active ]'
+check '[ "$(cat "$FAKE_UNITS/$U")" = active ]' "(e2) and its end starts the shell"
 
 echo "test-lean-race: $OK of $N"
 [ "$OK" = "$N" ]
