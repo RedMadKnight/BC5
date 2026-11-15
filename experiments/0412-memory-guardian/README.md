@@ -4882,6 +4882,41 @@ Text for CLAUDE.md, "Machine context", the memory paragraph (after the Baloo sen
 > unchanged. Undo: `bash ~/bc5-work/exp0412/lean-shared/install-lean-session.sh undo` (the old launcher is
 > `~/bc5-work/play-any.sh.before-lean`).
 
+### 102. The series on build W, arms tA and tP: 16 long walks, all clean; FileSystem imported (kl412 120 → 96); longer gaps than on U, the cause not isolated (2026-11-15 08:47 – 12:12)
+
+Build W of exp 0419 (V's AJM fixes on for good and FileSystem never lazy, plus its other changes),
+`~/bc5-work/exp0419/bin-W/normal/kyty_emulator` 04e986fb, words 21a23e5c; runner `memfast/night0412w.sh`
+(`mkw0412.py`), output `~/bc5-work/exp0412/n8/chainW.out`. A new boot (497fb3f3, up since about 07:20; the
+reboot before 08:47 was not this experiment's, cause unknown). Arms in turn: tA (the words as they are, dc412 on
+in odd rounds, off in even ones) and tP (`KYTY_BC5_DIAG_UNFORCE=KYTY_BC5_APR_POSIX KYTY_BC5_APR_POSIX=0`, the arm
+of n13P4). Planned to 06:45 or 60 walks; **ended after walk 16** by the stop file, the maintainer's word ("tak,
+kończ na 16"), written at 12:02:35 during walk 16, read by the runner after it. Lock empty and no emulator after it.
+
+| arm | walks | flips/s | longest gap ms | s with a gap > 100 ms | GTT MiB at 420 s | at 600 s | lowest avail | pinned at the end MiB | kl412 pieces |
+|---|---|---|---|---|---|---|---|---|---|
+| W tA | 8 | 24.3–26.1 (25.27) | 636–3,091 (2,013) | 77–143 (102) | 12,169–12,344 (12,253) | 12,185–12,297 (12,243) | 673 | 11,464–11,610 (11,557) | 96 |
+| W tA, dc412 on / off | 4 / 4 | (24.98) / (25.57) | | | (12,262) / (12,243) | (12,261) / (12,226) | | | |
+| W tP | 8 | 24.3–25.1 (24.81) | 555–3,860 (1,854) | 97–136 (111) | 12,198–12,322 (12,253) | 12,201–12,344 (12,260) | 523 | 11,532–11,640 (11,574) | 96–97 |
+| U tA (section 100) | 29 | 24.9–26.5 (25.71) | 532–734 | 60–113 | 12,103–12,358 (12,196) | 12,111–12,272 (12,200) | 478 | | 120 (n13P4) |
+| U tP (n13P3, n13P4) | 2 | 25.1, 25.4 | 674, 710 | | 12,206, 12,256 | 12,268, 12,212 | | | |
+
+Per walk, longest gap ms: A 1,820 636 1,861 2,816 2,886 832 2,162 3,091; P 3,860 3,475 1,026 2,303 624 702 555
+2,286.
+
+- [M] All 16 ended at G+620: 0 kernel lines, 0 crash lines, no timeout, no fault record, no CPU fault of the
+  title, 0 AJM "id given out while still alive" lines. The laptop's kernel stream of the whole boot holds no
+  page fault, ring timeout or reset (one clocksource watchdog line at 1,092 s, before the series).
+- [M] kl412 counts 96 pieces under lazy views with data where U counted 120: the 24 written chunks of
+  FileSystem are no longer lazy. That is the mechanism of W's cure, seen working.
+- [M] The longest gap is much longer on W: 11 of 16 walks over 1 s, up to 3,860 ms, against at most 734 ms in
+  U's 29 tA walks (881 in tJ). Flips are lower (tA 25.27 against 25.71); GTT means are about 45–55 MiB higher
+  and four walks lie above U's highest at 600 s; lowest available is higher (the fresh boot).
+- [unknown] When in the walk the long gaps fall: the per-second lines in the walks' journals were not read.
+- [I] What 8 walks per arm cannot tell: W changes more than FileSystem's list and runs on another boot, so the
+  longer gaps and the higher GTT belong to "W on this boot", not to FileSystem's price. No verdict on that
+  cost (Codex 10:07, R13). tP: 0 faults in 8 walks on W against 1 in 5 on T and U, in line with the cure but
+  chance not excluded.
+
 ## Verdict
 
 (The header above was dropped by mistake in commit 8cfa4549, section 87, and is restored here; the text below is unchanged.)
