@@ -102,3 +102,67 @@ in the n15 series).
   place, and keeps both old files as `*.before-race`; `undo` puts them back. On stand-ins: `test-lean-race.sh` with
   `LAUNCHER=` the changed shared launcher 14 of 14; with the unchanged shared launcher and the old lean-session.sh
   (`LEAN=`) 4 of 14, A's end not restoring the shell (the defect reproduced).
+
+## Addendum, 2026-11-15: the shared swap to W with the games menu, prepared (the maintainer's "tak", via the top)
+
+Prepared on the laptop only; each box step waits for the top's GO after the night series. Driver: `round0420w.sh`
+(race, pad, replug, kit, swapdry, swap, smoke, undo).
+
+- **The patch** (the laptop's replay; the kit is in the session's scratchpad, not committed: 3.9 MB): f266548 from a
+  local clone + main's patch 0001 gives `27b6416f` exactly (B); exp 0419's W tree (`tree-build-W-ten.md5`, 133 of 133
+  files) over it, then `mkmenu0420.py` (`hostMenu.cpp` `0f324fa4`, as on the box) and `games_list.hpp` (`24776450`,
+  with the name fix): **`0001-W-menu.patch` `101555c7`**, 134 patched files listed in `tree-W-menu.md5` (`e7f6224a`);
+  `grep -c 'exp 0372'` = 5 and `src/bc5/pad_audio_route.hpp` is in it. W over B: 56 files.
+- **Audio and pad code**: W changes `audio.cpp` (9 lines: reads of `KYTY_BC5_PAD_PW_PROPS`, `KYTY_BC5_NO_PAD_AUDIO`,
+  `KYTY_BC5_PAD_RUMBLE_FALLBACK` through exp 0419's reading rule), `controller.cpp`/`.h` (86 + 4 lines, V's touch
+  code cut), `hostInput.cpp`, `libAudio.cpp`, `libAudio2.cpp` against B, and against V `audio.cpp`, `controller.cpp`,
+  `hostInput.cpp`, `libAudio2.cpp` (exp 0419's lean rewrite; build-W.md said "no pad or audio code", which holds for
+  what the code does in the normal build, not for the files). So the software replug runs on W first (step b, on the
+  private W+menu normal build `10e3ef15`). Replug results so far: V's R12 passed (3 pulls of 3, private normal
+  `c25e4d2b`); none for W.
+- **`swap0420w.sh`** (dry, apply, undo): the shared tree B -> W+menu (checked against the list), the backend source
+  files the private W source differs in and the archive rebuilt (it must equal the private one), both emulators
+  rebuilt in place, then `play-any.sh` (`fc7a1395`, with the race order), `lean-session.sh` (`189885ea`),
+  `play-astro.sh` (`e943bd8f`), the shared bc5-mount (`be372d39`); every replaced file kept under
+  `~/bc5-work/exp0420/before-W` and read back; a failure restores and checks the restore (the lock is kept if it does
+  not read back); `undo` puts everything back from the copies. Refuses while an emulator, a launcher or a lean session
+  runs. Not touched: `play-pkg.sh`, `bc5-run.env`, the shortcuts, the saves; no launcher of the kit names
+  `BC5_GUARD_MAP_RULE`, `BC5_GUARD_PRT_BG` or the learned windows (checked). `test-swap0420w.sh` (stand-ins: a
+  small git tree, two small patches, stand-in distrobox and ninja): 13 of 13 (dry, apply, a second apply refused,
+  undo, a failed lean build restored, refusals for a lean state, a changed launcher, a patch without the route).
+- **`smoke0420w.sh`** (step d): the menu normal and lean through the shared `play-any.sh` (a screenshot each; lean:
+  the shell active again, the state empty); the second title from the installed list as the menu's click does it
+  (`play-any.sh <folder>`, so its script runs with `BC5_GAME_DIR`), 120 s, with a private copy of the shared
+  `play-pkg.sh` whose working and save directories are exp 0413's private `wd`, reset from exp 0412's named snapshot:
+  the live saves are not used. No install, no uninstall.
+- `raw/swapW-dry-laptop.txt`: the patch's size and the two launcher diffs as the laptop sees them.
+- After the swap, on main: patch 0001 becomes `101555c7` (only if the swap's checks pass), and `backend/` gets the
+  private W backend source files the swap copied (D19: main matches what the shared builds are built from).
+- **Step (a) done, 2026-11-15 12:18** (the top's GO after n15; the maintainer's "Yes, after it"): `round0420w.sh race`
+  (`install-race0420.sh`, one lock line, released): the shared `play-any.sh` 92c090c5 -> **1cd59817**, `lean-session.sh`
+  88ea3fa7 -> **189885ea**; `.before-race` copies read back (92c090c5, 88ea3fa7); no emulator, launcher or lean state
+  at the time; `bash -n` both; `lean-session.sh dry` sees the shell active. Undo: `bash
+  ~/bc5-work/exp0420/race-107e307a/fix-lean-race.sh undo`. Raw: `raw/race-install-20261115-1218.out`. Steps (b)-(d)
+  are on hold (the guardian's longer pauses on W).
+- **Steps (c) and (d) done, 2026-11-15 12:47 to 13:00** (the top's GO; the maintainer: "Wymaga to Twojego jednego
+  „tak“ => tak" and "Yes, install"). Step (b), the replug, was not run: the top read W's normal build as V's
+  (`env_rule.hpp`, the defaults' diff) and V's R12 covers the touch cut; from the code W's normal `audio.cpp` differs
+  only when `KYTY_BC5_NO_PAD_AUDIO` is set to "0" (now off, before on), which no launcher sets.
+  - Dry run (`raw/swapW-dry.out`): only the expected files; the backend source `direct.hpp` a9fcb26b -> e96e5c73,
+    `direct.cpp` 51279eae -> aeec4c09 (the laptop's copy of W's backend file is the same); the lean order of the
+    race fix kept; no line with `ulimit` removed (neither old launcher had one; `play-pkg.sh` is not touched).
+  - The swap (`raw/swapW-apply.out`, 12:47:37 to 12:53:28, one lock line, released): tree 101555c7 (134 of 134
+    files), archive **9aab722c** (= the private one), normal **bab1ce79**, lean **c4aca9af**: not byte-identical to
+    the private builds (10e3ef15 / 98ba9468; other build directories, as in exp 0413's swaps); the BC5 word lists of
+    the shared and the private binaries are the same (normal 616 words, lean 490), the sizes differ by about 47 KB;
+    `play-any.sh` **fc7a1395**, `play-astro.sh` **e943bd8f**, `lean-session.sh` 189885ea, bc5-mount **be372d39**.
+    Copies: `~/bc5-work/exp0420/before-W`. Undo: `bash ~/bc5-work/exp0420/swapW/swap0420w.sh undo`.
+  - Smoke (`raw/swapW-smoke.out`, `raw/swapW-smoke-d2.out`; screenshots seen, not committed): the start page in
+    both builds with Open game, Install game, "Installed games: Marvel's Wolverine (PPSA03671) 196.7 GB" and
+    Recent; lean: the shell stopped for the window and active again, the state done. The second title from the
+    list's path (`play-any.sh ~/bc5-data/games/PPSA03671`, as the menu's click), normal and lean: the emulator from
+    the shared build, `--game` the installed folder, alive at 90 and 120 s, the title screen ("press X") at 40 and
+    42 fps, then quit; saves: a private copy of exp 0412's named snapshot, no pad key. 0 kernel lines. The first d2
+    attempt stopped before starting (the check of the private launcher's save paths caught a word name; fixed).
+    The lean run's line "state file NOT-EMPTY" was read while the watcher was still restoring: a minute later the
+    state was done, no owner left, the shell active.
