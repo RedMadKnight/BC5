@@ -1,0 +1,54 @@
+chain lock: exp 0417 | chain: exp 0420: bc5-mount build and tests, the launcher's tests, the menu applied to the private tree and one rebuild (CPU only, no emulator), until about 09:22 | token 20261115084235940142 | 2026-11-15 08:42:35
+== 08:42:35 bc5-mount: test, build
+test fixture::pfsc_writer::tests::corrupted_block_is_rejected_not_panicked ... ok
+test result: ok. 68 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.54s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.72s
+test corruption_is_reported_not_panicked ... ok
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+test corruption_is_reported_not_panicked ... ok
+test result: ok. 10 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 1.73s
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+warning: unused variable: `e`
+bc5-mount: be372d39 at ~/bc5-work/exp0420/bc5-tools/release/bc5-mount; uninstall: present
+== 08:43:47 the launcher's tests
+ok   pkg, not installed: play-pkg.sh with BC5_PKG
+ok   ffpfsc, not installed: play-astro.sh
+ok   installed second title: play-pkg.sh with BC5_GAME_DIR
+ok   installed other title: play-astro.sh with BC5_GAME_DIR
+ok   pkg of an installed title: from the folder
+ok   menu 76: opens choice.txt, back to the menu, quit
+ok   menu 78 install: installed, result written, action.txt gone
+ok   install of an installed title: refused
+ok   install without a title id: refused
+ok   menu 78 uninstall: removed through bc5-mount, the image stays
+ok   uninstall outside the games root: refused
+ok   uninstall during an install: refused
+ok   78 without an action: back to the menu
+ok   BC5_LEAN=1: the lean emulator's menu
+test-play-any: 14 passed, 0 failed
+graphics/presentation/hostMenu.cpp: 25 edits, brace balance +0
+  0f324fa4  src/graphics/presentation/hostMenu.cpp
+  d4bf09bf  src/bc5/games_list.hpp
+== 08:44:02 build normal
+normal: f5d46c8376d9a76021799c5cc662c9ca, warnings 0, in hostMenu.cpp: 
+== 08:44:14 build lean
+lean: ad212304c79ee20708875eadc9bcccf6, warnings 0, in hostMenu.cpp: 
+round0420 done 08:44:26
+chain lock released
+=====
+test fixture::pfsc_writer::tests::corrupted_block_is_rejected_not_panicked ... ok
+test result: ok. 68 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.54s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.72s
+test corruption_is_reported_not_panicked ... ok
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+test corruption_is_reported_not_panicked ... ok
+test result: ok. 10 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 1.73s
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+warning: unused variable: `e`
+warning: `oozextract` (lib) generated 1 warning (run `cargo fix --lib -p oozextract` to apply 1 suggestion)

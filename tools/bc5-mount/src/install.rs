@@ -96,7 +96,11 @@ fn check_free_space(dest: &Path, required_extra: u64) -> anyhow::Result<(u64, u6
     // Use statvfs if available (Unix), otherwise fall back.
     #[cfg(unix)]
     {
-        let parent = dest.parent().unwrap_or_else(|| Path::new("."));
+        // A destination without a directory part (`game`) has the empty parent: that is `.`.
+        let parent = match dest.parent() {
+            Some(p) if !p.as_os_str().is_empty() => p,
+            _ => Path::new("."),
+        };
         let vfs = nix::sys::statvfs::statvfs(parent)
             .with_context(|| format!("statvfs {}", parent.display()))?;
         let free = vfs.blocks_free() * vfs.block_size();
@@ -299,11 +303,15 @@ pub fn install(
         #[cfg(target_os = "linux")]
         {
             use nix::fcntl::{posix_fadvise, PosixFadviseAdvice};
-            use std::os::unix::io::IntoRawFd;
-            if let Ok(f) = File::open(&partial_path) {
-                let fd = f.into_raw_fd();
-                let _ = posix_fadvise(fd, 0, 0, PosixFadviseAdvice::POSIX_FADV_DONTNEED);
-            }
+            use std::os::unix::io::AsRawFd;
+            // The written file's own descriptor: `out` is still open and is closed when it drops
+            // (the old code opened a second one and leaked it through `into_raw_fd`).
+            let _ = posix_fadvise(
+                out.as_raw_fd(),
+                0,
+                0,
+                PosixFadviseAdvice::POSIX_FADV_DONTNEED,
+            );
         }
 
         // Rename partial to final.
@@ -356,7 +364,11 @@ pub fn write_install_json(
     use std::fmt::Write as _;
     let mut json = String::new();
     json.push_str("{\n");
-    let _ = writeln!(json, "  \"image\": \"{}\",", image_path.display());
+    let _ = writeln!(
+        json,
+        "  \"image\": \"{}\",",
+        json_escape(&image_path.display().to_string())
+    );
     let _ = writeln!(
         json,
         "  \"image_size\": {},",
@@ -366,7 +378,7 @@ pub fn write_install_json(
     let _ = writeln!(json, "  \"total_bytes\": {},", info.total_bytes);
     json.push_str("  \"sha256\": {\n");
     for (i, h) in info.hashes.iter().enumerate() {
-        let _ = write!(json, "    \"{}\": \"{}\"", h.path, h.hex());
+        let _ = write!(json, "    \"{}\": \"{}\"", json_escape(&h.path), h.hex());
         if i < info.hashes.len() - 1 {
             json.push(',');
         }
@@ -391,6 +403,27 @@ pub fn write_install_json(
         .with_context(|| format!("renaming {} to {}", tmp.display(), json_path.display()))?;
 
     Ok(())
+}
+
+/// A JSON string's body: quotes, backslashes and control characters escaped (experiment 0420: a
+/// name with a quote broke the record that `uninstall` and the menu read).
+pub fn json_escape(s: &str) -> String {
+    use std::fmt::Write as _;
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            c if (c as u32) < 0x20 => {
+                let _ = write!(out, "\\u{:04x}", c as u32);
+            }
+            c => out.push(c),
+        }
+    }
+    out
 }
 
 /// Lower-case hex encoding.
