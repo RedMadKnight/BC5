@@ -1,0 +1,86 @@
+chain lock: exp 0417 | chain: exp 0419 build W (V + the lean build without diagnostic switches), private: ASTRO BOT x4, the second title x6 (walk, walk K1R off, cutscene arm; twice each), lean, until about 09:00 | token 20261115080057393103 | 2026-11-15 08:00:57
+binaries: B normal 04e986fb42a5a388d4d643eaf97c4889, B lean 5670ab773661b4aa1cdbca16d35ea48b, shared normal 51af1ed78e84291caf5ee042ea82c46d
+x0a (astro) PASS: ran 120 s; RssAnon at the end 209140 kB; kernel lines 0, crash lines 0
+x0a stderr: title line 0, sdt417 
+x0b (astro) PASS: ran 120 s; RssAnon at the end 211564 kB; kernel lines 0, crash lines 0
+x0b stderr: title line 0, sdt417 
+x0c (astro) PASS: ran 120 s; RssAnon at the end 212188 kB; kernel lines 0, crash lines 0
+x0c stderr: title line 0, sdt417 
+ASTRO BOT start-state lines (exp 0418): 1; first: bc5-direct: start state (exp 0418): rows on: CP_COHER_START_DELAY SPI_SHADER_REQ_CTRL_PS GE_MIN_VTX_INDX GE_MAX_VTX_INDX VGT_INSTANCE_BASE_ID VGT_TF_RING VGT_HS_OFFCHIP_PARAM VGT_GS_RINGS; skipped: no
+x0f (astro) PASS: ran 30 s; RssAnon at the end 211180 kB; kernel lines 0, crash lines 0
+x0f stderr: title line 0, sdt417 [bc5] sdt417: transferring mount of PPSA01325/sce_sdmemory: no such save, NOT_FOUND (nothing created)
+x0f: the start PASSES with the fix
+x1a journal: would-learn 0, timeout-fault 0, fault record lines 0
+x1a import: t 61 s: 11194.0 MiB imported: 9910.0 under eager views, 1268.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 16.0 under no view (14.0 last seen under an eager or zero-list view, 2.0 never seen u
+x1a import: t 122 s: 11298.0 MiB imported: 9968.0 under eager views, 1302.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 28.0 under no view (28.0 last seen under an eager or zero-list view, 0.0 never seen 
+x1a route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 93 s;route: cross (Continue) at 99 s;route: the load seen at 103 s;route: gameplay G = 117 s (the load at 103 s);route: walk of 14 cycles (240 s) queued at 117 s;; watchdog: watchdog: emulator 478438 ended; 179 samples, lowest available 730 MiB, highest PSI full 6 %
+x1a at ~104 s: avail,swap,io 1153 281 0 0 5 | psi 1.81/1.81 1.15 | gtt 11846 
+x1a at ~60 s: avail,swap,io 1213 282 0 0 1 | psi 1.84/1.84 1.84 | gtt 11812 
+x1a input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 34 at 50.465 s
+x1a (nozeroskip) ended at G+240 (after 358 s; G 117, load 103, list 93); 25.5 flips/s over 355 s, 74 s with a gap over 100 ms, longest 833 ms; kernel lines 0, crash lines 0, ledger lines 0
+x1a title table: [bc5] exp 0419: title PPSA03671: 38 title defaults, 3 taken, 35 already set in the environment
+x1a start state: ~/bc5-data/captures/play-20261115-0808/gc/direct.log:start state (exp 0418): 15 dwords of constant rows in every prefix (rows 0xff, skipped 0x0)
+x1a last timing split: timing split over 128 submissions: probe 1.6 ms, anon sync 0.0, direct sync 1.6 (views 0.1; 2 full, 132 fast; scan 0.6, merge 0.2, drain 0.0 in 0, maps 0.0 = want 0.0 + drop 0.0 + zero 0.0 + add 0.0), learned 0.1, hints 1.2
+x1a frame-profile lines over 500 ms: 5; the largest: frame profile: t 100.900 s, 677.5 ms since the last flip; game thread inside the host 149.3 ms (sync 147.8, hints 0.7, prepare 0.3, list 0.2, cs 0.3, fence 0.0, cap 0.0, label waits 0.0, event waits 0;frame profile: t 41.767 s, 832.9 ms since the last flip; game thread inside the host 729.0 ms (sync 8.2, hints 1.9, prepare 690.4, list 0.6, cs 11.6, fence 0.0, cap 0.0, label waits 16.2, event waits ;
+x2cuta journal: would-learn 0, timeout-fault 0, fault record lines 0
+x2cuta import: t 62 s: 11194.0 MiB imported: 9918.0 under eager views, 1268.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 8.0 under no view (4.0 last seen under an eager or zero-list view, 4.0 never seen 
+x2cuta import: t 123 s: 11228.0 MiB imported: 9162.0 under eager views, 1294.0 under data views, 0.0 under lazy views, 24.0 forced and under no view, 748.0 under no view (738.0 last seen under an eager or zero-list view, 0.0 never
+x2cuta route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 3, cross (slot 4) at 93 s;route: cross (Continue) at 99 s;route: the load seen at 103 s;route: gameplay G = 111 s (the load at 103 s);route: no input after the load (N_NOWALK=1), 320 s from 111 s;; watchdog: watchdog: emulator 577759 ended; 217 samples, lowest available 1125 MiB, highest PSI full 9 %
+x2cuta at ~104 s: avail,swap,io 1262 393 0 0 0 | psi 0.05/0.05 1.11 | gtt 11803 
+x2cuta at ~60 s: avail,swap,io 1286 393 0 0 1 | psi 3.52/3.45 1.56 | gtt 11803 
+x2cuta input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 32 at 50.650 s
+x2cuta (nozeroskip) ended at G+320 (after 433 s; G 111, load 103, list 93); 29.9 flips/s over 429 s, 34 s with a gap over 100 ms, longest 1860 ms; kernel lines 0, crash lines 0, ledger lines 0
+x2cuta title table: [bc5] exp 0419: title PPSA03671: 38 title defaults, 3 taken, 35 already set in the environment
+x2cuta start state: ~/bc5-data/captures/play-20261115-0814/gc/direct.log:start state (exp 0418): 15 dwords of constant rows in every prefix (rows 0xff, skipped 0x0)
+x2cuta last timing split: timing split over 128 submissions: probe 1.8 ms, anon sync 0.0, direct sync 1.6 (views 0.1; 3 full, 139 fast; scan 0.7, merge 0.1, drain 0.0 in 0, maps 0.0 = want 0.0 + drop 0.0 + zero 0.0 + add 0.0), learned 0.0, hints 1.5
+x2cuta frame-profile lines over 500 ms: 2; the largest: frame profile: t 44.731 s, 1228.3 ms since the last flip; game thread inside the host 1203.4 ms (sync 134.7, hints 1.9, prepare 1048.6, list 0.7, cs 2.6, fence 0.0, cap 0.0, label waits 14.8, event wa;frame profile: t 39.332 s, 1859.6 ms since the last flip; game thread inside the host 1646.6 ms (sync 1.8, hints 0.5, prepare 1637.3, list 0.1, cs 6.9, fence 0.0, cap 0.0, label waits 0.0, event waits;
+x3l (lean) PASS: ran 120 s; RssAnon at the end 126620 kB; kernel lines 0, crash lines 0
+x4l (ASTRO BOT, lean) x4l (astro) PASS: ran 120 s; RssAnon at the end 212132 kB; kernel lines 0, crash lines 0
+build W (V + the lean build without diagnostic switches), private: all runs clean (the pass marks are in the lines above)
+chk0419x ended 08:26:18
+chain lock released
+=====BUILD
+chain lock: exp 0417 | chain: exp 0419 build W: the lean build without diagnostic switches; the private tree rewritten, one rebuild of normal and lean (CPU only, no emulator), until about 08:28 | token 20261115075853391459 | 2026-11-15 07:58:53
+main.cpp: 1 edits, brace balance +0
+libs/bc5LleAgc.cpp: 2 edits, brace balance +0
+bc5/env_rule.hpp: 1 edits, brace balance +0
+files changed: 27; words rewritten: 93 (sites 101); rows out of the lean tables: 39 of 49
+LEFT (still named in the lean binary): 12
+  D BC5_DIRECT_DRAW_ARGS_JOURNAL: (backend) direct.cpp
+  U BC5_DIRECT_IB_MAX_DW: (backend) direct.cpp
+  F BC5_R3_DMQ_END: memory.cpp
+  F BC5_R3_EXEC_EINVAL: memory.cpp
+  F BC5_R3_FLEX_HINT: memory.cpp
+  F BC5_R3_MPROTECT_GAPS: memory.cpp
+  F BC5_R3_MUNMAP_HOLES: memory.cpp
+  F BC5_R3_NULL_ARGS: memory.cpp
+  F BC5_R3_QUERY_SIZE: memory.cpp
+  F BC5_R3_RELEASE_HOLES: memory.cpp
+  F KYTY_BC5_FW_AUDIO: audio.cpp
+  D KYTY_BC5_MAP_RECORDS_CHECK_MS: bc5LleAgc.cpp
+against the laptop's W: 0 of 133 files differ
+== 07:58:55 build normal
+normal: 04e986fb42a5a388d4d643eaf97c4889, warnings 54
+== 07:59:54 build lean
+lean: 5670ab773661b4aa1cdbca16d35ea48b, warnings 58
+lean binary: of the words V's source reads (202), still in it: 72; normal: 196
+lean binary, in it and NOT meant to be read by lean: BC5_DIRECT_DRAW_ARGS_JOURNAL BC5_DIRECT_IB_MAX_DW BC5_R3_DMQ_END BC5_R3_EXEC_EINVAL BC5_R3_FLEX_HINT BC5_R3_MPROTECT_GAPS BC5_R3_MUNMAP_HOLES BC5_R3_NULL_ARGS BC5_R3_QUERY_SIZE BC5_R3_RELEASE_HOLES KYTY_BC5_FW_AUDIO KYTY_BC5_MAP_RECORDS_CHECK_MS 
+lean binary, meant to be read and NOT in it: 
+p4build0419 done 08:00:47: normal 04e986fb, lean 5670ab77
+chain lock released
+=====SPEED
+chain lock: exp 0417 | chain: exp 0419 build W: six lean starts of the second title, V against W (CPU and GPU time per second); about 16 minutes, until about 08:51 | token 20261115082632733665 | 2026-11-15 08:26:32
+lsVa (lean) PASS: ran 120 s; RssAnon at the end 139644 kB; kernel lines 0, crash lines 0
+lsVa speed: CPU 4.964 s/s, GPU 1362.0 ms/s (60..115 s)
+lsWa (lean) PASS: ran 120 s; RssAnon at the end 137756 kB; kernel lines 0, crash lines 0
+lsWa speed: CPU 4.993 s/s, GPU 1368.3 ms/s (60..115 s)
+lsVb (lean) PASS: ran 120 s; RssAnon at the end 132116 kB; kernel lines 0, crash lines 0
+lsVb speed: CPU 4.926 s/s, GPU 1322.1 ms/s (60..115 s)
+lsWb (lean) PASS: ran 120 s; RssAnon at the end 128328 kB; kernel lines 0, crash lines 0
+lsWb speed: CPU 4.923 s/s, GPU 1336.3 ms/s (60..115 s)
+lsVc (lean) PASS: ran 120 s; RssAnon at the end 139460 kB; kernel lines 0, crash lines 0
+lsVc speed: CPU 4.963 s/s, GPU 1338.4 ms/s (60..115 s)
+lsWc (lean) PASS: ran 120 s; RssAnon at the end 128464 kB; kernel lines 0, crash lines 0
+lsWc speed: CPU 4.829 s/s, GPU 1145.7 ms/s (60..115 s)
+leanspeed0419 ended 08:40:00: six runs
+chain lock released

@@ -1,4 +1,4 @@
-# Experiment 0419: build W = V + the lean build without its diagnostic switches, prepared 2026-11-15 on the laptop, NOT built
+# Experiment 0419: build W = V + the lean build without its diagnostic switches, prepared 2026-11-15 on the laptop; built and accepted the same morning
 
 The maintainer, through the top session: "pamiętasz aby wersja lean miała wywalona z kodu wszystkie przełączniki
 diagnostyczne?" and, on the one exception, "ok - możesz zostawić zapis błędu GPU". In build U the lean binary still
@@ -105,3 +105,57 @@ binaries, rewrites, rebuilds normal and lean, then lists the lean binary's words
 it and not meant to be, what is meant to be and is not). Then the acceptance of both builds as for V, and for the
 speed question three lean walks of the second title on W's lean binary against three on V's lean binary, interleaved
 (flips a second, the longest gap; the lean build writes no journal, so the launcher's own lines are the measure).
+
+## Built and accepted (2026-11-15 07:58 to 08:40, the box)
+
+**The variant built** (no ruling had come by then; the top session's order said "W dokończ bez zmian"): the nine
+opt-in words out of lean as proposed (`lean-classes-ten.tsv`, `lean-keep-ten.txt`); `BC5_DIRECT_FLIP_DEFER` stays in
+lean, because `~/bc5-work/bc5-run.env` sets it (`=1`) for the menu and ASTRO BOT. The four reset names and
+`KYTY_BC5_ANON_SYNC_MS` are cut from lean too. Raw: `raw/chk0419x.out` (acceptance, build, speed).
+
+**Build** (`VARIANT=ten v0419round.sh buildw`, 07:58:53 to 08:00:47): **compiled at the first attempt**; the box's
+tree is the laptop's (0 of 133 files differ). Normal `04e986fb` (54 warnings in the rebuilt files), lean `5670ab77`
+(58). Copies: `~/bc5-work/exp0419/bin-W/`.
+
+**Words in the binaries** (`strings`, against the 202 words V's source reads):
+
+| | V | W |
+|---|---|---|
+| normal build | 196 | **196** (unchanged) |
+| lean build | 190 | **72** = the 60 words lean is meant to read (`lean-keep-ten.txt`: 38 title rows, 3 defaults with an option, 14 configuration words, `FLIP_DEFER`, 3 user settings, `KYTY_BC5_INPUT_CMD`) + 12 named leftovers |
+
+Every word lean is meant to read is in the lean binary; nothing else is, except the 12 named: the 8 forced
+`BC5_R3_*` and `KYTY_BC5_FW_AUDIO` (forced on by their rows, read through a table or a helper), the two words the
+backend reads (one archive for both builds; `BC5_DIRECT_DRAW_ARGS_JOURNAL` is unset at the lean build's start,
+`BC5_DIRECT_IB_MAX_DW` is unset by its row), and `KYTY_BC5_MAP_RECORDS_CHECK_MS` (its helper; `MAP_RECORDS` itself
+is not read in lean, so it has no effect).
+
+**Acceptance** (`chk0419x.sh`, 08:01 to 08:26, every switch unset, RT on, no pad key):
+
+| Run | Result |
+|---|---|
+| x0a, x0b, x0c: ASTRO BOT 120 s, fresh save directory | PASS three times, 0 kernel lines, 0 crash lines |
+| x0f: ASTRO BOT 30 s on the kept bad save | PASS |
+| x1a: the second title's walk to G+240 | clean: 25.5 flips/s over 355 s, longest gap 833 ms, 0 kernel lines |
+| x2cuta: the cutscene arm to G+320 | clean: 29.9 flips/s; longest gap 1,860 ms (V: 407 ms). The frame profile puts a 1,228 ms frame at 44.7 s, during the load (gameplay began at 111 s), with the game thread 1,203 ms inside the host; one run, not followed |
+| x3l: the second title on the lean build, 120 s | PASS |
+| **x4l: ASTRO BOT on the lean build, 120 s (new)** | PASS |
+
+**Did lean get slower?** Six lean starts of the second title, interleaved V W V W V W, 120 s each, measured between
+60 s and 115 s of each run (`leanspeed0419.sh`; the lean build has no flip counter, so the measure is the process's
+CPU time and its GPU time on the gfx and compute engines, both per second of wall time; the two engines are summed,
+so the GPU figure can exceed 1,000 ms/s):
+
+| Run | CPU s/s | GPU ms/s |
+|---|---|---|
+| V a / W a | 4.964 / 4.993 | 1,362.0 / 1,368.3 |
+| V b / W b | 4.926 / 4.923 | 1,322.1 / 1,336.3 |
+| V c / W c | 4.963 / 4.829 | 1,338.4 / 1,145.7 |
+| mean V / W | **4.951 / 4.915** | **1,340.8 / 1,283.4** |
+
+No slowdown: W's figures are V's within the run-to-run spread (W c's lower GPU time is one run; without it W's mean
+is 1,352). The start screen with no input is all this measures; a walk on the lean build is not measured (the route
+needs the flip lines lean does not print).
+
+**Not done:** the software replug of W. W changes no pad or audio code (its edits are reads of words; the pad files
+are V's, whose replug R12 passed), so by the rule of 2026-11-13 none is owed.
