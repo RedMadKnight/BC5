@@ -14,6 +14,7 @@ T=$(mktemp -d) || exit 1
 trap 'kill "${P:-}" 2> /dev/null; rm -rf "$T"' EXIT
 mkdir -p "$T/bin" "$T/home/bc5-work" "$T/units"
 printf '#!/usr/bin/env bash\nexec "$@"\n' > "$T/bin/setsid"; chmod +x "$T/bin/setsid"   # the laptop has none
+cp "$HERE/../0420-games-menu/flock-standin.sh" "$T/bin/flock"; chmod +x "$T/bin/flock"   # nor flock
 cat > "$T/bin/systemctl" <<'EOF'
 #!/usr/bin/env bash
 # stand-in: systemctl --user is-active|start|stop|show <unit>
@@ -41,23 +42,23 @@ run() { bash "$HERE/lean-session.sh" "$@" > "$T/out" 2>&1; }
 echo active > "$T/units/$U"; echo 1 > "$T/units/$U.fail"
 sleep 30 & P=$!   # a pid that lives: the watcher must not restore yet
 run stop "$P"; check '[ "$(cat "$T/units/$U")" = inactive ] && grep -qx "$U" "$S"' "stop notes and stops the unit"
-run restore; rc=$?
+run restore "$P"; rc=$?
 check '[ "$rc" != 0 ]' "a failed start returns non-zero"
 check 'grep -qx "$U" "$S" && [ ! -e "$S.done" ]' "the failed unit stays in the state file"
 check '[ "$(cat "$T/units/$U")" = inactive ]' "and is still inactive"
-run restore; rc=$?
-check '[ "$rc" = 0 ] && [ "$(cat "$T/units/$U")" = active ]' "the next restore starts it"
+run restore "$P"; rc=$?
+check '[ "$rc" = 0 ] && [ "$(cat "$T/units/$U")" = active ]' "the next restore (by the owner) starts it"
 check '[ ! -e "$S" ] && [ -e "$S.done" ] && [ ! -e "$S.left" ]' "then the state file is done"
 # 2
 run restore; rc=$?
 check '[ "$rc" = 0 ] && grep -q "nothing to restore" "$T/out"' "nothing noted: returns 0"
 # 3: the watcher, with a pid that is already gone, and two failing starts
 rm -f "$S.done"; echo inactive > "$T/units/$U"; echo "$U" > "$S"; echo 2 > "$T/units/$U.fail"; mkdir -p "$S.owner"; echo "999999999 1" > "$S.owner/pid"   # the launcher owns it
-run watch 999999999; rc=$?
+run watch 999999999 1; rc=$?
 check '[ "$rc" = 0 ] && [ "$(cat "$T/units/$U")" = active ] && [ ! -e "$S" ] && [ ! -e "$S.owner" ]' "the watcher tries again until the start succeeds, then releases the claim"
 # 3b: it gives up after six tries and keeps the file
 rm -f "$S.done"; echo inactive > "$T/units/$U"; echo "$U" > "$S"; echo 99 > "$T/units/$U.fail"; mkdir -p "$S.owner"; echo "999999999 1" > "$S.owner/pid"
-run watch 999999999; rc=$?
+run watch 999999999 1; rc=$?
 check '[ "$rc" != 0 ] && grep -qx "$U" "$S" && [ "$(cat "$T/units/$U.fail")" = 93 ]' "six tries, then it gives up and keeps the unit"
 check '[ ! -e "$S.owner" ]' "and releases the claim (the next stop keeps the unit)"
 # 4: two units, one fails
