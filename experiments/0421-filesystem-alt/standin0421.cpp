@@ -9,24 +9,6 @@ namespace bc5 { inline bool env_on(const char* e) { return e != nullptr && e[0] 
 #else
 #define BC5_DIAG_ENV(w) std::getenv(w)
 #endif
-// Exp 0421 (tag fs421e), BC5_DIRECT_FS_EAGER (default ON; "0" is build W's way, the heap imported by data): the
-// title's heap "FileSystem" is imported whole when its view appears, as the heaps of BC5_DIRECT_EAGER_NAMES are. The
-// title keeps GPU-written buffers there (F443, F468, F472) and the GPU read its CPU-written chunks (fault record
-// 20261114-184017); on the console every page of it is the GPU's from the map call. Eager makes one import of the
-// view instead of one per freshly written 2 MiB chunk during the loads.
-static bool fs421_eager_on() {
-	static const bool on = [] {
-		const char* e = std::getenv("BC5_DIRECT_FS_EAGER");
-		const bool  v = !(e != nullptr && e[0] == '0' && e[1] == 0);
-#ifndef BC5_LEAN
-		std::fprintf(stderr, "[bc5] exp 0421 (tag fs421e): \"FileSystem\" %s\n",
-		             v ? "is eager (imported whole when its view appears); BC5_DIRECT_FS_EAGER=0 gives build W's way"
-		               : "is imported by data (BC5_DIRECT_FS_EAGER=0, build W's way)");
-#endif
-		return v;
-	}();
-	return on;
-}
 static bool direct_lazy_name(const char* name) {
 	static const std::vector<std::string> names = [] {
 		std::vector<std::string> v;
@@ -118,7 +100,14 @@ static bool direct_eager_name(const char* name) {
 				}
 			}
 		}
-		if (fs421_eager_on() && std::find(v.begin(), v.end(), std::string("FileSystem")) == v.end()) v.push_back("FileSystem"); // exp 0421 (tag fs421e)
+		// Exp 0421 (tag fs421e): the title's heap "FileSystem" is always eager: imported whole when its view appears, as
+		// the heaps of BC5_DIRECT_EAGER_NAMES are. The title keeps GPU-written buffers there (F443, F468, F472) and the
+		// GPU read its CPU-written chunks (fault record 20261114-184017); on the console every page of it is the GPU's
+		// from the map call. One import of the view instead of one per freshly written 2 MiB chunk during the loads.
+		if (std::find(v.begin(), v.end(), std::string("FileSystem")) == v.end()) v.push_back("FileSystem");
+#ifndef BC5_LEAN
+		std::fprintf(stderr, "[bc5] exp 0421 (tag fs421e): \"FileSystem\" is eager (imported whole when its view appears)\n");
+#endif
 		return v;
 	}();
 	if (bd412_name(name)) return false; // exp 0412 (tag bd412): this heap is imported by data
@@ -132,6 +121,6 @@ static bool direct_eager_name(const char* name) {
 // be imported eagerly or lazily against its list: memory pinned that should not be, or a GPU fault on a heap that
 // should have been imported whole.
 int main() {
-	std::printf("eager(FileSystem)=%d lazy(FileSystem)=%d eager(Other)=%d\n", direct_eager_name("FileSystem"), direct_lazy_name("FileSystem"), direct_eager_name("Other"));
+	std::printf("eager(FileSystem)=%d lazy(FileSystem)=%d eager(Other)=%d eager(Gpu)=%d\n", direct_eager_name("FileSystem"), direct_lazy_name("FileSystem"), direct_eager_name("Other"), direct_eager_name("Gpu"));
 	return 0;
 }
