@@ -27,7 +27,7 @@ jobs:
       run:
         working-directory: tools
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -47,7 +47,7 @@ jobs:
       run:
         working-directory: tools
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
@@ -65,7 +65,7 @@ jobs:
       matrix:
         amdgpu: [OFF, ON]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: libdrm headers (build only; nothing is submitted)
         if: matrix.amdgpu == 'ON'
         run: sudo apt-get update && sudo apt-get install -y libdrm-dev pkg-config
@@ -77,7 +77,7 @@ jobs:
     name: dispatch-min IB decodes cleanly with bc5-agc
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -99,7 +99,7 @@ jobs:
     env:
       RPCSX_COMMIT: e8ae1481ab7ba04d5c6bef89dd852aabba2c88ff
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: bc5
       - name: Fetch the pinned RPCSX commit
@@ -125,13 +125,13 @@ jobs:
     needs: rust-linux
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: tools
       # Ubuntu 24.04's system Python refuses pip installs (PEP 668); use a managed one.
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: FUSE userspace tools and the MkPFS oracle (GPL-3.0, run as a separate process)
@@ -142,7 +142,7 @@ jobs:
         run: experiments/0002-bc5-mount-gate/run.sh one-small "$RUNNER_TEMP/gate"
       - name: experiments/0002 run.sh on the multi-block preset
         run: experiments/0002-bc5-mount-gate/run.sh mixed-compress "$RUNNER_TEMP/gate2"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: gate-smoke-log
