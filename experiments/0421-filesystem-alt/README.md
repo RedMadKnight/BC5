@@ -60,7 +60,42 @@ Reading the split:
 - "filter" points to the snapshot copies or page faults.
 - If the import lines fall inside the stall windows, path (b) is likely.
 
-## 2. Alternatives (none removes the cause of the fault: the title gives the GPU an address in FileSystem)
+### 1b. After n16A2 (the guardian's measurement relayed by the top, 12:41; one walk, chance not excluded)
+
+The setting:
+- [M] (as relayed) W with FileSystem imported, 3 minutes after a fresh boot.
+- 1 frame with prepare >200 ms, against 32 in n15's 16 walks on a boot hours old.
+- The longest gap was 589 ms. Lowest available memory was 963 MiB, against 673–857 in n15.
+- So the premise moves: the stalls are not a fixed price of the import. They look like a price of the system's state.
+
+Costs that grow with memory pressure or fragmentation, as the code places them:
+
+| Where | What can grow with pressure | Booked as | Source |
+|---|---|---|---|
+| `Device::import_memfd` (`UDMABUF_CREATE` + `amdgpu_bo_import`) **under the device mutex** | holes in the chunk are allocated by shmem at pin time (order 0, direct reclaim near the wall); `memfd_pin_folios`' migrate loop; four or five `kvmalloc` arrays per buffer, order 5 for 64 MiB (merges), order 0 for a 2 MiB import | "sync" on the importing thread; **every other submitter waits at the device mutex before `t_enter`**, so not in its "prepare" | backend `import_memfd`; exp 0412 §58 (3) |
+| merge pass (`ls415_import` of up to 64 MiB runs, every 250 ms after a 3 s settle) | the order-5 arrays above, a new pin of already-pinned pages, up to 512 remaps | "sync" | unit `direct_sync_one` 1b; §58 |
+| `wait_jobs()` after a new BO with K1r on | not pressure itself; the GPU drain lengthens with what is in flight | "sync" | unit `direct_sync_one` 2 |
+| **inside "prepare"**: `scratch_reserve` (a job larger than its slot: `amdgpu_bo_alloc` GTT + VA map + CPU map), the snapshot ring's first allocation | TTM pool: high orders with `__GFP_NORETRY`, then **order 0 with direct reclaim**; page-table BOs for the VA map | "prepare" (copy part) | backend `scratch_reserve`, `snapshot`; §58 (TTM) |
+| **inside "prepare"**: CPU reads of guest memory (filter, DMA snapshot copies of ≥4 KiB `dcb` sources, nested IBs, host-indirect and tracker loads) | a swapped-out or reclaimed shmem page (unpinned memory: zram swap-in); `mmap_lock` held by another thread's mapper | "prepare" (filter, nested, copy) | backend `submit`; unit `opt.mapped` |
+| THP | none: the guest memfd has no huge pages (`shmem_enabled` `never`, ShmemHugePages 0, exp 0412 near line 798); not re-read on today's boot | — | |
+
+[I] So a 1–4 s "prepare" fits a game thread that waits in the kernel for memory at the wall:
+- either in its own `scratch_reserve`, or in a page fault on unpinned guest memory;
+- while imports, merges and the title's own loading compete for the same free pages.
+
+FileSystem's import would then be one more allocator at the worst moment, not the stall's own path. That is not
+shown.
+
+The reads that would tell, without a new run except the next one already planned:
+1. The prepare split of the stall frames (as above).
+2. Beside the next walks, the read-only collector `compact0412.sh` (exp 0412 §59): `allocstall_*`,
+   `compact_stall`, `pgmajfault`, `pswpin` and buddyinfo as deltas around each stall.
+3. The `shmem_enabled` value on this boot.
+
+## 2. Alternatives: less pinning work at load (none removes the cause of the fault: the title gives the GPU an address in FileSystem)
+
+After n16A2 the aim is put as "less allocation and pinning work during the loads, when memory is tightest", not as
+"FileSystem's import is the cause". Each option below is judged by what it moves out of the load windows.
 
 | | What | Does the PS5 do this? | Cures n13P4's case | Load stalls (under the FileSystem hypothesis) | Risk / cost |
 |---|---|---|---|---|---|
@@ -69,11 +104,18 @@ Reading the split:
 | C | **Import on reference**: dt412 (`BC5_GUARD_DESC_TARGETS`, section 94) extended to scan the record a buffer descriptor points to for addresses in lazy views | No: the console has no import step; this guesses the GPU's reach | **unknown**: section 101 shows the address came from inside the 0x78-byte item record or deeper; the depth is not known | no import at load unless a load's submissions name it | a scan per submission (766 dispatches in one acb); false positives import more; misses deeper levels |
 | D | Async pin: udmabuf creation on a worker, the mapping in the next sync | Not applicable | as W | only the udmabuf create moves off the path; the drain and the mapping rebuild stay under the device mutex | a large change to the direct path; not proposed |
 
-**Chosen for the code step: B.** It is the only option that keeps every FileSystem import and mapping change out of
-the load that wrote the chunk, whatever the path from FileSystem to the stall is. That makes it both a fix
-candidate and the discriminator: if W's stalls stay with B on, FileSystem is not their cause, and W's plain fix can
-stand. **A needs no code** and is the more console-like answer, so it can run as a fourth arm in the same series by
-its launcher word alone.
+**Chosen for the code step: B.** It keeps every FileSystem import, merge and mapping change out of the load that
+wrote the chunk, when free memory is lowest. About 24 udmabuf creates and their merges then run in quieter seconds.
+The pin at the end is W's: B saves no memory, it moves the work.
+
+What B decides:
+- If W's stalls stay with B on, FileSystem's import work is not their trigger, and W's plain fix can stand.
+- If they go, the import work at load is the trigger, even though the mechanism is memory pressure.
+- After n16A2, the arms must also run on a comparable boot age, or the boot's state decides the comparison.
+
+**A needs no code.** It is the more console-like answer and is section 58's "buffers made once, at their final size"
+for this one heap: one buffer of 52 MiB, whose arrays are 104 KiB (order 5) once, instead of 2 MiB imports
+followed by merges into 64 MiB runs. It can run as a fourth arm by its launcher word alone.
 
 ## 3. The step (tag fs421), behind one switch
 
@@ -136,5 +178,10 @@ Measures, per walk:
 
 Late imports land at about 67–146 s, inside a walk to G+60. If B's arm has the stalls at the loads, FileSystem is
 not their cause.
+
+After n16A2:
+- Run the arms interleaved on one boot that is already hours old (n15's state), or record the boot's age and
+  lowest available memory per walk and compare like with like. A fresh boot hides the stalls (1 frame against 32).
+- Run `compact0412.sh` beside the walks.
 
 **Verdict.** Not yet: a design and a prepared step; nothing measured on the box.
