@@ -71150,10 +71150,10 @@ index 8a4c59a..203feba 100644
  	g_event_arg     = arg;
  
 diff --git a/src/libs/libSaveData.cpp b/src/libs/libSaveData.cpp
-index 08aa121..1d8781a 100644
+index 08aa121..921cb85 100644
 --- a/src/libs/libSaveData.cpp
 +++ b/src/libs/libSaveData.cpp
-@@ -1,949 +1,2129 @@
+@@ -1,949 +1,2117 @@
 -#include "common/abi.h"
 -#include "common/assert.h"
 -#include "common/common.h"
@@ -73651,17 +73651,6 @@ index 08aa121..1d8781a 100644
 +	return OK;
 +}
 +
-+// Experiment 0417 (tag sdt417): KYTY_BC5_SAVEDATA_TRANSFER_FIX, see the function below.
-+static bool bc5_sdt_on() {
-+	static const bool on = [] {
-+		const char* e = BC5_DIAG_ENV("KYTY_BC5_SAVEDATA_TRANSFER_FIX");
-+		const bool  v = e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
-+		std::fprintf(stderr, "[bc5] exp 0417: savedata transferring mount fix %s\n", v ? "on" : "off");
-+		return v;
-+	}();
-+	return on;
-+}
-+
 +int KYTY_SYSV_ABI SaveDataTransferringMount(const SaveDataTransferringMount* mount,
 +                                            SaveDataMountResult*             mount_result) {
 +	PRINT_NAME();
@@ -73681,11 +73670,12 @@ index 08aa121..1d8781a 100644
 +
 +	Common::LockGuard lock(g_mount_mutex);
 +	const std::string dir_name = mount->dir_name->data;
-+	// exp 0417 (tag sdt417): the save of the title the call names, never created here. Off: the old code, which took
-+	// the running title's directory of that name, created it and answered "created".
-+	const bool  bc5_fix   = bc5_sdt_on();
++	// exp 0417 (tag sdt417), always on since exp 0422 (tag sdt422): the save of the title the call names, never created
++	// here. ASTRO BOT asks for ANOTHER title's save (PPSA01325/sce_sdmemory); the old code took the running title's
++	// directory of that name, created it and answered "created", and the title then faulted reading its own file as the
++	// other title's save: every start after a first save from an empty directory ended at 5 s (F833, F835).
 +	std::string bc5_title = get_title_id();
-+	if (bc5_fix && mount->title_id != nullptr && mount->title_id->data[0] != '\0') {
++	if (mount->title_id != nullptr && mount->title_id->data[0] != '\0') {
 +		bc5_title.assign(mount->title_id->data, strnlen(mount->title_id->data, sizeof(mount->title_id->data)));
 +		if (bc5_title.find('/') != std::string::npos || bc5_title.find('.') != std::string::npos) {
 +			return SAVE_DATA_ERROR_PARAMETER;
@@ -73693,9 +73683,11 @@ index 08aa121..1d8781a 100644
 +	}
 +	const std::string mount_dir =
 +	    std::string(SAVE_DATA_DIR) + "/" + bc5_title + "/" + dir_name;
-+	if (bc5_fix && !Common::File::IsDirectoryExisting(mount_dir)) {
++	if (!Common::File::IsDirectoryExisting(mount_dir)) {
++#ifndef BC5_LEAN
 +		std::fprintf(stderr, "[bc5] sdt417: transferring mount of %s/%s: no such save, NOT_FOUND (nothing created)\n", bc5_title.c_str(),
 +		             dir_name.c_str());
++#endif
 +		return SAVE_DATA_ERROR_NOT_FOUND;
 +	}
 +	const int slot = g_mount_slots.FindAvailable(dir_name);
@@ -73705,15 +73697,11 @@ index 08aa121..1d8781a 100644
 +	if (slot == SaveDataMountSlots::FULL) {
 +		return SAVE_DATA_ERROR_MOUNT_FULL;
 +	}
++#ifndef BC5_LEAN
++	std::fprintf(stderr, "[bc5] sdt417: transferring mount of %s/%s: mounted, not created\n", bc5_title.c_str(), dir_name.c_str());
++#endif
 +
-+	if (!Common::File::IsDirectoryExisting(mount_dir)) {
-+		Common::File::CreateDirectories(mount_dir);
-+	}
-+	if (bc5_fix) {
-+		std::fprintf(stderr, "[bc5] sdt417: transferring mount of %s/%s: mounted, not created\n", bc5_title.c_str(), dir_name.c_str());
-+	}
-+
-+	return mount_save_data(slot, dir_name, mount_dir, bc5_fix ? 0u : 1u, mount_result);
++	return mount_save_data(slot, dir_name, mount_dir, 0u, mount_result);
 +}
 +
 +int KYTY_SYSV_ABI SaveDataUmount2(uint32_t mode, const SaveDataMountPoint* mount_point) {
