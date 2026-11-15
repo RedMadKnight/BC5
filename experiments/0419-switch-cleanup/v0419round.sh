@@ -8,6 +8,9 @@
 #                                     end lines when it is over, about 25 minutes)
 #   v0419round.sh replug <tag>        pins the private normal build and runs ONE software replug (go0391.sh, pulls)
 #   v0419round.sh words               the binaries' md5s and word lists (strings) against words-build-V.txt
+#   [VARIANT=ten|plain] v0419round.sh buildw     build W on V's tree (p4build0419.sh), the lean binary's words checked
+#   v0419round.sh acceptw             W's acceptance (chk0419x.sh), with an ASTRO BOT start on the lean build
+#   v0419round.sh speed <prefix>      six lean starts, V against W, CPU and GPU time per second (leanspeed0419.sh)
 # Every stage checks "no emulator" and takes its own lock line on the box through the scripts it runs.
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -46,6 +49,35 @@ replug)
 words)
     scp -q "$HERE/words-build-V.txt" bc250:bc5-work/exp0419/p3/ || exit 1
     box 'set -u; W=$HOME/bc5-work; P=$W/exp0413/p; N=$W/exp0413/n; B=$W/exp0419/bin-V; pgrep "^kyty_emulator" > /dev/null && { echo EMU; exit 1; }; [ -s $W/BOX-LOCK ] && { echo LOCKED; exit 1; }; . $N/chainlock0417.inc; chain_claim "exp 0419: copy of build V binaries and their word lists (no emulator; 2 minutes)" 5 > /dev/null || exit 1; trap "chain_release > /dev/null" EXIT; mkdir -p $B/normal $B/lean && cp -p $P/build-normal/src/kyty_emulator $B/normal/ && cp -p $P/build-lean/src/kyty_emulator $B/lean/ && (cd $B && md5sum normal/kyty_emulator lean/kyty_emulator > md5.txt && cat md5.txt); for v in normal lean; do nice -n 19 strings $B/$v/kyty_emulator | grep -x "\(KYTY_\)\?BC5_[A-Z0-9_]*" | LC_ALL=C sort -u > $B/words-$v.txt; echo "$v: of the source list ($(wc -l < $W/exp0419/p3/words-build-V.txt)) missing in the binary: $(LC_ALL=C comm -23 $W/exp0419/p3/words-build-V.txt $B/words-$v.txt | wc -l)"; done'
+    ;;
+buildw)
+    # build W on V's private tree. VARIANT=ten (the ten opt-in words out of lean) or plain; default ten.
+    v=${VARIANT:-ten}; cl=lean-classes.tsv; kp=lean-keep.txt
+    [ "$v" = ten ] && { cl=lean-classes-ten.tsv; kp=lean-keep-ten.txt; }
+    box 'pgrep "^kyty_emulator" > /dev/null && { echo "an emulator runs"; exit 1; }; mkdir -p ~/bc5-work/exp0419/p4' || exit 1
+    scp -q "$HERE/mklean0419.py" "$HERE/ed0419g.py" "$HERE/p4build0419.sh" "$HERE/words-build-V.txt" "$HERE/chk0419x.sh" "$HERE/leanspeed0419.sh" bc250:bc5-work/exp0419/p4/ || exit 1
+    scp -q "$HERE/$cl" bc250:bc5-work/exp0419/p4/lean-classes.tsv && scp -q "$HERE/$kp" bc250:bc5-work/exp0419/p4/lean-keep.txt || exit 1
+    scp -q "$HERE/tree-build-V-ajm-fixed-c44a94e8.md5" bc250:bc5-work/exp0419/p4/treeV.md5 && scp -q "$HERE/tree-build-W-$v.md5" bc250:bc5-work/exp0419/p4/treeW.md5 || exit 1
+    box "cd ~/bc5-work/exp0419/p4 && echo 'variant: $v' && bash p4build0419.sh 2>&1 | tee p4build.out | cut -c1-300"
+    ;;
+acceptw)
+    box 'cp ~/bc5-work/exp0419/p4/chk0419x.sh ~/bc5-work/exp0413/n/ && cd ~/bc5-work/exp0413/n && (setsid nohup bash chk0419x.sh > raw/chk0419x.out 2>&1 < /dev/null &); sleep 10; head -2 raw/chk0419x.out | cut -c1-200' || exit 1
+    for _ in $(seq 1 400); do
+        o=$(box 'tail -2 ~/bc5-work/exp0413/n/raw/chk0419x.out' 2> /dev/null)
+        case "$o" in *"chk0419x ended"*) break ;; esac
+        sleep 6
+    done
+    box 'grep -a "PASS\|FAIL\|ended at\|NOT\|all runs\|chk0419x ended\|STOP\|VOID\|x4l" ~/bc5-work/exp0413/n/raw/chk0419x.out | cut -c1-300'
+    ;;
+speed)
+    pfx=${2:?a tag prefix of letters not used before, e.g. ls}
+    box "cp ~/bc5-work/exp0419/p4/leanspeed0419.sh ~/bc5-work/exp0413/n/ && cd ~/bc5-work/exp0413/n && (setsid nohup bash leanspeed0419.sh $pfx > raw/leanspeed-$pfx.out 2>&1 < /dev/null &); sleep 5; head -1 raw/leanspeed-$pfx.out | cut -c1-200" || exit 1
+    for _ in $(seq 1 300); do
+        o=$(box "tail -2 ~/bc5-work/exp0413/n/raw/leanspeed-$pfx.out" 2> /dev/null)
+        case "$o" in *"leanspeed0419 ended"*|*"STOP"*) break ;; esac
+        sleep 6
+    done
+    box "cat ~/bc5-work/exp0413/n/raw/leanspeed-$pfx.out | cut -c1-260"
     ;;
 *)
     sed -n '2,13p' "$0"
