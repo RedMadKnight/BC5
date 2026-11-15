@@ -1,0 +1,44 @@
+the top's waiting line taken out (16:25:41)
+chain lock: exp 0417 | chain: exp 0422: the save fix fixed on, shared swap (normal+lean) and its checks (ASTRO BOT x6, the second title walk normal + lean), until about 17:15 | token 20261115162541954310 | 2026-11-15 16:25:41
+== 16:25:41 int0422
+before: PIN_OLD=e3fd8b55 NORMAL=50d0885e LEAN=7998d6a4 UNIT=f8345e06 ARCH=9aab722c 
+libs/libSaveData.cpp: 1 edits, brace balance +0
+the patch: e3fd8b55 -> 4945ef1b, 40 lines differ, exp 0372 lines 5
+== 16:25:49 build normal
+normal: 9da2a9d5, warnings 1, of them in libSaveData: 0; compiled: 1 step(s) on libSaveData
+== 16:26:02 build lean
+lean: f942676c, warnings 2, of them in libSaveData: 1; compiled: 1 step(s) on libSaveData
+normal words: +[] -[KYTY_BC5_SAVEDATA_TRANSFER_FIX ]; text 'sdt417: transferring mount': 2, 'transferring mount fix': 0
+lean words: +[] -[]; text 'sdt417: transferring mount': 0, 'transferring mount fix': 0
+int0422 done 16:26:27: patch 4945ef1b, normal 9da2a9d5, lean f942676c; undo: bash /home/kjaniszewski/bc5-work/exp0422/undo0422.sh
+== 16:26:28 chk0422
+binaries: shared normal 9da2a9d58fa9776427735f3b4b56aaf2, shared lean f942676c9521b0e95c59aa3b2f12369b
+live saves (all titles, LC_ALL=C): a4f3c9e0745aaf37; copy /home/kjaniszewski/bc5-work/exp0422/saves-live-before (25M)
+a1n (astro) PASS: ran 30 s; RssAnon at the end 209712 kB; kernel lines 0, crash lines 0
+a1n: sdt417 lines 1:       1 [bc5] sdt417: transferring mount of PPSA01325/sce_sdmemory: no such save, NOT_FOUND (nothing created);; memory.dat 83dce7e2, 164965 non-zero bytes; real pad keys 0
+a1n: PASS
+a1l (astro) PASS: ran 30 s; RssAnon at the end 209180 kB; kernel lines 0, crash lines 0
+a1l: sdt417 lines 0: ; memory.dat 83dce7e2, 164965 non-zero bytes; real pad keys 0
+a1l: PASS
+a2l (astro) PASS: ran 120 s; RssAnon at the end 73244 kB; kernel lines 0, crash lines 0
+a2l: sdt417 lines 0: ; memory.dat 97fb2aba, 164965 non-zero bytes; real pad keys 0
+a2l: PASS
+a2l: 5 cross presses sent
+a2ln (astro) PASS: ran 30 s; RssAnon at the end 209536 kB; kernel lines 0, crash lines 0
+a2ln: sdt417 lines 0: ; memory.dat 83dce7e2, 164965 non-zero bytes; real pad keys 0
+a2ln: PASS
+a2n (astro) PASS: ran 120 s; RssAnon at the end 166948 kB; kernel lines 0, crash lines 0
+a2n: sdt417 lines 1:       1 [bc5] sdt417: transferring mount of PPSA01325/sce_sdmemory: no such save, NOT_FOUND (nothing created);; memory.dat 97fb2aba, 164965 non-zero bytes; real pad keys 0
+a2n: PASS
+a2n: 5 cross presses sent
+a2nn (astro) PASS: ran 30 s; RssAnon at the end 210312 kB; kernel lines 0, crash lines 0
+a2nn: sdt417 lines 1:       1 [bc5] sdt417: transferring mount of PPSA01325/sce_sdmemory: no such save, NOT_FOUND (nothing created);; memory.dat 83dce7e2, 164965 non-zero bytes; real pad keys 0
+a2nn: PASS
+; real pad keys 0
+w1n route: 
+w1n: NOT clean
+live saves after: a4f3c9e0745aaf37 (unchanged)
+chk0422: NOT ALL PASS (stopped: a kernel line in w1n)
+chk0422 ended 16:34:02
+chain0422 ended 16:34:02
+chain lock released
