@@ -4805,6 +4805,68 @@ walk would have started after 06:45). Lock empty, no emulator after it. The lapt
   changed something that matters. Not separated.
 - [unknown] The reader of n13P4's fault: the dumps are read after this report, on the top's GO.
 
+### 101. n13P4's reader narrowed to a per-item compute dispatch, the buffer not named; the on-screen keyboard off for good; the lean session in the shared launcher (2026-11-15 07:00 – 07:07, the top's slot)
+
+**The reader** (six dump files copied to the laptop's scratch folder, not committed; 20 minutes):
+- [M] Where the CP stood: dword 1,280 of the submitted buffer (IB #0, 71,832 dwords), between two indirect
+  compute dispatches with initiator 0x61 inside the host's COND_EXEC check (at 1,178 and 1,282): the title's
+  per-item set of section 93. The one before the stop was given, in COMPUTE_USER_DATA, a buffer descriptor
+  0x12c2435e00 (stride 0x78, one record; heap RenderAlloc, eager) and a pointer 0x121384e500
+  (CommitIABufferAllocator, eager); the next one the record 0x100 further.
+- [M] No word of IB #0, of dcb #660540 or of acb #660539 reads as an address in FileSystem (buffer form or
+  texture form). So the address the shader read came from inside that 0x78-byte item record or from deeper.
+- [M] ph412's 3,780 words: 2,259 distinct targets, most of them odd byte offsets, holders spread over
+  CommitIABufferAllocator 1,175, AMM 896, AssetHeap Large 643, RenderGpuWcLarge 511 and others; five point into
+  the fault page; none lies in the item records' chunk or in the dispatch's arguments. [I] Mostly data that
+  happens to look like an address; the list does not name the reader.
+- **Closed as: the reader is a per-item compute dispatch of the title (initiator 0x61); the buffer it reached is
+  not named**, because the item record was not dumped (tl412's second level follows plain pointers, not the
+  record a descriptor points to). Whether the title hands FileSystem memory to the GPU on purpose or through a
+  stale record is therefore not decided. The cure goes in by the lazy list in exp 0419's build V (FileSystem
+  out of `BC5_DIRECT_LAZY_NAMES`); its price is read from V's first walks against tA.
+
+**The on-screen keyboard, off for good** (the maintainer: "klawiatura ekranowa może być domyślnie zawsze
+wyłączona"):
+- [M] Where the value came from: `/usr/share/kde-settings/kde-profile/default/xdg/kwinrc`, `InputMethod[$e]=
+  /usr/share/applications/org.kde.plasma.keyboard.desktop` (the distribution's profile; KWin 6.8.2 has no
+  `--inputmethod` argument on this box). So a value in the user's kwinrc decides.
+- [M] Done: `~/.config/kwinrc` saved as `~/bc5-work/kwinrc.before-keyboard-20261115` (bd26ade0), then
+  `kwriteconfig6 --file kwinrc --group Wayland --key InputMethod --notify ""`; the file gained `[Wayland]` /
+  `InputMethod=` and nothing else. KWin took it at once: `VirtualKeyboard.available` went from true to false.
+  No `plasma-keyboard` process (it was already stopped since 2026-11-14 13:38).
+- [not done] The test after a new login. The box's autologin has no `Relogin`, so a logout would leave it at the
+  greeter with nobody to log in, and a reboot is not mine to do. To check at the next boot or login:
+  `pgrep -x plasma-keyboard` prints nothing; GTT / VRAM of the idle desktop near 74 / 167 MiB.
+
+**The lean session in the shared launcher** (the maintainer's "tak"):
+- [M] `install-lean-session.sh` on the live `~/bc5-work/play-any.sh` (4da8ce07): dry showed the anchor once and
+  three lines added; applied: 92c090c5, the old file kept as `play-any.sh.before-lean`,
+  `~/bc5-work/lean-session.sh` bb39e855.
+- [M] Three starts of the shortcuts' own commands (the emulator's menu, no game), under the box lock:
+
+| start | emulator | shell while it ran | ended by | shell after 2 s |
+|---|---|---|---|---|
+| lean (`BC5_LEAN=1`) | kytyplus-build-lean | **inactive** (stopped at 07:06:08) | SIGTERM | **active** (started 07:06:17) |
+| lean | kytyplus-build-lean | **inactive** | SIGKILL | **active** |
+| plain | kytyplus-build | active | SIGTERM | active; no state file written |
+
+  No emulator and no watcher left. "Leaving" was a SIGTERM to the emulator, not the menu's own exit.
+- [M] The shell goes away when the launcher starts, so it is gone during the emulator's menu too.
+- Undo: `bash ~/bc5-work/exp0412/lean-shared/install-lean-session.sh undo`.
+
+Text for CLAUDE.md, "Machine context", the memory paragraph (after the Baloo sentence):
+> Since 2026-11-15 Plasma's on-screen keyboard (`plasma-keyboard`, started by KWin as its input method from the
+> distribution's profile `/usr/share/kde-settings/kde-profile/default/xdg/kwinrc`; 95 MiB of GPU memory: 43 GTT +
+> 52 VRAM, and 12 MiB of RAM) is off for good: `~/.config/kwinrc` has `[Wayland]` `InputMethod=` (empty; the
+> maintainer: "klawiatura ekranowa może być domyślnie zawsze wyłączona"; exp 0412 sections 95, 96, 101). Undo:
+> `kwriteconfig6 --file kwinrc --group Wayland --key InputMethod --notify --delete`, or copy
+> `~/bc5-work/kwinrc.before-keyboard-20261115` back and log in again. Since the same day the "BC5 emulator (lean)"
+> shortcut stops the Plasma shell for the time of a play: `play-any.sh` calls `~/bc5-work/lean-session.sh stop`
+> when `BC5_LEAN=1` (`plasma-plasmashell.service`, about 156 MiB of RAM and its GPU buffers), and a watcher of
+> its own starts the shell again when the launcher is gone, also after a crash or a kill; the plain shortcut is
+> unchanged. Undo: `bash ~/bc5-work/exp0412/lean-shared/install-lean-session.sh undo` (the old launcher is
+> `~/bc5-work/play-any.sh.before-lean`).
+
 ## Verdict
 
 (The header above was dropped by mistake in commit 8cfa4549, section 87, and is restored here; the text below is unchanged.)
