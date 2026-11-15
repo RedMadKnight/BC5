@@ -236,12 +236,43 @@ fn measure(dir: &Path) -> std::io::Result<(u64, u64)> {
     Ok((bytes, entries))
 }
 
+/// Gives the owner write permission on every directory of the tree that lacks it, links not
+/// followed, so that `remove_dir_all` can unlink their entries. A tree copied from a read-only
+/// mount keeps the image's modes (directories 0555): the maintainer's adopted install of
+/// 2026-11-09 had them, and its uninstall stopped at the first one with EACCES (2026-11-15).
+/// Files need no change: unlinking depends on the directory's mode only.
+#[cfg(unix)]
+fn make_dirs_writable(dir: &Path) -> std::io::Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+    let m = fs::symlink_metadata(dir)?;
+    if !m.is_dir() {
+        return Ok(());
+    }
+    let mode = m.permissions().mode();
+    if mode & 0o300 != 0o300 {
+        fs::set_permissions(dir, fs::Permissions::from_mode(mode | 0o700))?;
+    }
+    for e in fs::read_dir(dir)? {
+        let e = e?;
+        if e.file_type()?.is_dir() {
+            make_dirs_writable(&e.path())?;
+        }
+    }
+    Ok(())
+}
+
+#[cfg(not(unix))]
+fn make_dirs_writable(_dir: &Path) -> std::io::Result<()> {
+    Ok(())
+}
+
 /// Checks `dir`, then removes it unless `dry_run`.
 pub fn uninstall(dir: &Path, root: &Path, dry_run: bool) -> anyhow::Result<Removed> {
     let checked = check(dir, root)?;
     let (bytes, entries) = measure(&checked.dir)?;
     let image_present = Path::new(&checked.record.image).is_file();
     if !dry_run {
+        make_dirs_writable(&checked.dir)?;
         fs::remove_dir_all(&checked.dir)?;
     }
     Ok(Removed {

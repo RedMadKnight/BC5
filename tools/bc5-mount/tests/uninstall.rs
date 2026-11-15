@@ -62,6 +62,32 @@ fn removes_a_valid_install_and_counts_what_it_freed() {
     assert!(root.exists(), "the root stays");
 }
 
+/// An install copied from a read-only mount keeps the image's modes: directories 0555, files 0444
+/// (the maintainer's adopted install, 2026-11-15). It must still be removed, and a link inside it
+/// must not lend its target write permission.
+#[cfg(unix)]
+#[test]
+fn removes_an_install_with_read_only_directories() {
+    use std::os::unix::fs::PermissionsExt;
+    let root = tmp("readonly");
+    let outside = root.join("outside");
+    fs::create_dir_all(&outside).unwrap();
+    fs::set_permissions(&outside, fs::Permissions::from_mode(0o555)).unwrap();
+    let d = make_install(&root, "PPSA00009", "/nowhere/game.pkg");
+    std::os::unix::fs::symlink(&outside, d.join("sub").join("link")).unwrap();
+    for f in [d.join("a.bin"), d.join("sub").join("b.bin")] {
+        fs::set_permissions(&f, fs::Permissions::from_mode(0o444)).unwrap();
+    }
+    fs::set_permissions(d.join("sub"), fs::Permissions::from_mode(0o555)).unwrap();
+    let r = uninstall(&d, &root, false).unwrap();
+    assert!(!d.exists());
+    assert_eq!(r.entries, 6); // the directory, sub, a.bin, b.bin, the link, the record
+    assert!(outside.exists(), "a link's target stays");
+    let mode = fs::metadata(&outside).unwrap().permissions().mode() & 0o777;
+    assert_eq!(mode, 0o555, "a link's target keeps its mode");
+    fs::set_permissions(&outside, fs::Permissions::from_mode(0o755)).unwrap();
+}
+
 #[test]
 fn dry_run_removes_nothing() {
     let root = tmp("dry");
