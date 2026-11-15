@@ -290,5 +290,24 @@ f.sub("\tLoadRecent(s);\n\n\tif (ImGui::BeginMainMenuBar()) {\n",
       "\tLoadRecent(s);\n\tif (launcher) {\n\t\tLoadInstalled(s); // experiment 0420: the launcher page's list, the install progress and the launcher's result\n\t}\n\n\tif (ImGui::BeginMainMenuBar()) {\n")
 f.sub("\tDrawRestartPopup(s, scale);\n\tDrawAboutPopup(s, scale);\n}\n",
       "\tDrawRestartPopup(s, scale);\n\tDrawUninstallPopup(s, scale); // experiment 0420\n\tDrawAboutPopup(s, scale);\n}\n")
+# Recent lists only paths that exist (the maintainer, 2026-11-15 13:05: "recent nie może być elementów, które nie
+# istnieją"): a moved or deleted image, a package gone, an uninstalled game's folder are dropped when the list is read,
+# and recent.txt is written without them.
+f.sub("\tif (MenuDir() != nullptr) {\n\t\ts.recent = ReadLines(MenuFile(\"recent.txt\"));\n\t}\n}\n",
+      "\tif (MenuDir() != nullptr) {\n"
+      "\t\t// experiment 0420: a path that no longer exists is dropped from the list and from recent.txt\n"
+      "\t\tauto         lines  = ReadLines(MenuFile(\"recent.txt\"));\n"
+      "\t\tconst size_t before = lines.size();\n"
+      "\t\tlines.erase(std::remove_if(lines.begin(), lines.end(),\n"
+      "\t\t                           [](const std::string& p) {\n"
+      "\t\t\t                           std::error_code ec;\n"
+      "\t\t\t                           return !std::filesystem::exists(p, ec);\n"
+      "\t\t                           }),\n"
+      "\t\t            lines.end());\n"
+      "\t\tif (lines.size() != before) {\n"
+      "\t\t\tWriteLines(MenuFile(\"recent.txt\"), lines);\n"
+      "\t\t}\n"
+      "\t\ts.recent = std::move(lines);\n"
+      "\t}\n}\n")
 f.gone('"Open package (.pkg)..."', "installed.txt")
 f.save()
