@@ -7,8 +7,10 @@
 #   w2l        the second title on lean, 420 s: lean writes no journal, so the route is by time (a cross at 90, 100
 #              and 108 s, then exp 0379's walk from 170 s for 240 s); pass = still running at the end, no kernel line,
 #              no crash text. It shows no regression of the start, the menus and the load, not frame numbers.
-# All RT on (the private input.cfg copies of the start scripts), ulimit -c 0, private save directories only; the
-# maintainer's live saves are copied once first and their sums read before and after (LC_ALL=C).
+# All RT on (the private input.cfg copies of the start scripts), ulimit -c 0, private save directories only.
+# Corrected after the run (Codex 15:40 UTC, LESSONS R45): the version that ran also copied the maintainer's live saves
+# and compared their sums before and after; that is removed. ASTRO BOT's saves are the private wda copies; the second
+# title's runs reset their private copy from exp 0412's named snapshot.
 # A real pad key (evtest) marks a run VOID: the maintainer is at the box; the chain stops there.
 # usage (on the box, detached, in ~/bc5-work/exp0422): bash chk0422.sh
 set -u
@@ -29,10 +31,6 @@ fi
 for t in a1n a1l a2n a2nn a2l a2ln w1n w2l; do [ -e "$R/$t-end.txt" ] || [ -e "$R/$t-start.txt" ] && { echo "chk0422 ended $(date +%T): NOT STARTED, tag $t used"; exit 1; }; done
 echo "binaries: shared normal $MN, shared lean $ML"
 [ -d "$WD/_SaveData.sm0" ] || { echo "chk0422 ended $(date +%T): NOT STARTED, no kept bad save $WD/_SaveData.sm0"; exit 1; }
-livesum() { (cd "$W/_SaveData" && find . -type f -exec md5sum {} + | sort -k2 | md5sum | cut -c1-16); }
-L0=$(livesum)
-if [ ! -e "$HERE/saves-live-before" ]; then cp -a "$W/_SaveData" "$HERE/saves-live-before" || { echo "chk0422: the copy of the live saves failed"; exit 1; }; fi
-echo "live saves (all titles, LC_ALL=C): $L0; copy $HERE/saves-live-before ($(du -sh "$HERE/saves-live-before" | cut -f1))"
 PADS=(); PADN=0
 padon() { : > "$R/$1-pad.txt"; local d; for d in /dev/input/by-id/*-event-joystick; do [ -e "$d" ] || continue; stdbuf -oL evtest "$d" 2> /dev/null | grep --line-buffered 'EV_KEY.*value 1' >> "$R/$1-pad.txt" & PADS+=($!); done; }
 padoff() { [ ${#PADS[@]} = 0 ] || kill "${PADS[@]}" 2> /dev/null; PADS=(); pkill -u "$USER" -x evtest 2> /dev/null; PADN=$(wc -l < "$R/$1-pad.txt"); }
@@ -96,7 +94,5 @@ if [ -z "$STOP" ]; then
     [ "$PADN" = 0 ] || OK=0
     case "$line" in *"PASS: ran 420 s"*"kernel lines 0, crash lines 0"*) echo "w2l: PASS (ran 420 s, the timed route and the walk)" ;; *) echo "w2l: NOT A PASS"; OK=0 ;; esac
 fi
-L1=$(livesum)
-echo "live saves after: $L1 ($([ "$L1" = "$L0" ] && echo unchanged || echo "CHANGED: the maintainer saved, or a run wrote them"))"
 echo "chk0422: $([ "$OK" = 1 ] && echo "ALL PASS" || echo "NOT ALL PASS${STOP:+ (stopped: $STOP)}")"
 echo "chk0422 ended $(date +%T)"

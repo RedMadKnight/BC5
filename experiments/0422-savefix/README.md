@@ -44,8 +44,13 @@ taken, with no switch, do the shared normal and lean builds:
 - **`undo0422.sh`**: back to `e3fd8b55` (normal `50d0885e`, lean `7998d6a4`), checked by md5. It chains before
   exp 0421's `undo0421.sh`.
 - **`chk0422.sh`**: runs on the swapped shared binaries with no switch set, RT on, `ulimit -c 0`, private save
-  directories only. The maintainer's live saves are copied first (`~/bc5-work/exp0422/saves-live-before`) and their
-  sums are read before and after. A real pad key (evtest) stops the chain.
+  directories only. A real pad key (evtest) stops the chain.
+  - ASTRO BOT runs on the private `exp0413/n/wda` copies.
+  - The second title's runs reset their private copy from exp 0412's one named snapshot
+    (`exp0412/night/saves-named`, hashed by its own method under LC_ALL=C; LESSONS R45).
+  - Corrected after the run (Codex, 15:40 UTC). The version that ran also copied the maintainer's live saves and
+    compared their sums before and after, against R45. Both are removed from `chk0422.sh` and `walk0422.sh`. The copy
+    `~/bc5-work/exp0422/saves-live-before` was made and is not used.
   - `a1n`, `a1l`: 30 s on the kept bad save (`wda/_SaveData.sm0`), normal and lean.
   - `a2l`, `a2n`: 120 s from an empty save directory with a cross at 30, 45, 60, 75 and 90 s (exp 0417's
     `save0417k.sh`, the way F833's large first save is written), then a 30 s second start (`a2ln`, `a2nn`).
@@ -91,7 +96,8 @@ Raw output: `raw/chain0422.out`.
 - No kernel line and no crash text in any of the six runs. The laptop's kernel stream holds one `perf: interrupt
   took too long` line and nothing from amdgpu.
 - No real pad key in any run.
-- The live saves read `a4f3c9e0745aaf37` before and after (LC_ALL=C), unchanged.
+- The two live-save sums in `raw/chain0422.out` come from the comparison that R45 forbids. They are no result of this
+  experiment.
 
 ### The second title: not run yet
 
