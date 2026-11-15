@@ -4925,9 +4925,12 @@ Per walk, longest gap ms: A 1,820 636 1,861 2,816 2,886 832 2,162 3,091; P 3,860
   the host. W has the same 98–100 s gaps outside the host.
 - [M] No journal line names FileSystem near the gaps; W's journal still prints "lazy names: …FileSystem…" (the
   variable as given; whether W's code skips it was not read).
-- [I] New on W: in-host "prepare" stalls of 0.5–3.9 s at loads. "Prepare" is the host's work before a submission,
-  where a heap that is no longer lazy has its freshly written memory imported; FileSystem is written hardest at
-  loads (file reads land there). The AJM fixes ran on U in tJ without such stalls (881 ms at most). So FileSystem's
+- [I] New on W: in-host "prepare" stalls of 0.5–3.9 s at loads. Corrected after exp 0421's reading (a99382b7), checked
+  here in `backend/src/direct.cpp:1541-1542`: "prepare" is `Device::submit`'s own work up to the BO list
+  (`prepare_ms = t_list - t_enter`), and it imports nothing; the imports (`direct_sync_one` → `import_memfd`)
+  run before it and are booked as "sync". What fits is that W's extra imports at loads (FileSystem is written
+  hardest there; file reads land in it) bring on reclaim, and prepare's own allocations and page faults then
+  wait. The AJM fixes ran on U in tJ without such stalls (881 ms at most). So FileSystem's
   import is the likely cause, not proven. One comparison would decide it (proposed, not run, the maintainer's
   call): W plain against W with `BC5_DIAG_LAZY_FILESYSTEM=1`, four walks each in turn, short (to G+60: every stall
   is before G+5), measured by frames with prepare over 200 ms and the longest gap before G; the DIAG arm brings
@@ -4951,7 +4954,7 @@ Per walk, longest gap ms: A 1,820 636 1,861 2,816 2,886 832 2,162 3,091; P 3,860
   MiB on n15, 550 on U, 0 on n16A2. PSI memory full (avg10) is high in the seconds of n15's stalls (n15A8 14.1 at
   100 s for the stall at 93 s; n15A5 10.1; n15A7 7.9 and 12.7; n15P4 9.9), low in the n15 walks without one (at
   most 0.1–2.3 at the loads, one 4.9); U reaches 4–8 at the loads without any prepare stall; n16A2 at most 0.88.
-- [I] So a stall wants both: import work in "prepare" (W; on U FileSystem was lazy, so even a high PSI gave none)
+- [I] So a stall wants both: W's extra imports (booked as "sync", not "prepare"; on U FileSystem was lazy, so even a high PSI gave none)
   and the host held on memory (reclaim or compaction, seen as PSI full) at that moment, which the boot of five
   hours (swap 530 MiB) had at loads and the fresh boot did not. Not a shortage of free memory (there was more);
   fragmentation fits better. A hypothesis: PSI may be the stall's effect rather than its cause, and the fresh
