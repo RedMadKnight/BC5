@@ -316,3 +316,28 @@ This supersedes the switch described above.
 - `int0421.sh` step 5 now requires both binaries' switch words to be unchanged.
 - The top's condition "`=0` must give exactly W's way" no longer applies: there is no `=0`. Going back is
   `undo0421.sh`.
+
+## 5. The shared swap (2026-11-15 13:06–13:07, the top session's GO; compile only)
+
+`r0421.sh kit` then `PIN_OLD=ba617454 r0421.sh run`. One lock line, taken at 13:06:17 and released.
+
+| | before | after |
+|---|---|---|
+| patch 0001 (tree diff against f266548) | `ba617454` (W + menu + Recent fix) | **`e3fd8b55`** (12 lines differ; unit blob `747709d`, as predicted on the laptop) |
+| shared normal `~/bc5-work/kytyplus-build` | `fd3d0ed2` | **`50d0885e`** (7 warnings, none naming fs421) |
+| shared lean `~/bc5-work/kytyplus-build-lean` | `480656cc` | **`7998d6a4`** (8 warnings, none naming fs421) |
+| backend archive | `9aab722c` | `9aab722c` (unchanged) |
+
+Checks, all [M] by the script:
+- `exp 0372` lines: 5.
+- The patch's file list is the same.
+- The counts of `BC5_GUARD_MAP_RULE`, `BC5_GUARD_PRT_BG` and `learned` lines are unchanged.
+- Switch words: no word gained or lost, in either binary.
+- The `fs421e` text: 1 in normal, 0 in lean.
+
+What was not done: no emulator start and no walk. The maintainer asked for a compile check only.
+
+- Copies: `~/bc5-work/exp0421/swap/*.before-0421`.
+- **Undo:** `bash ~/bc5-work/exp0421/undo0421.sh`. It restores the unit and both binaries and checks them by md5;
+  `0001` on main then goes back to `ba617454` (git revert of 0affa36f).
+- Main: 0affa36f, patch 0001 = `e3fd8b55`.
