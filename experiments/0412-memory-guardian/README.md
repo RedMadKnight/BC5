@@ -4911,7 +4911,29 @@ Per walk, longest gap ms: A 1,820 636 1,861 2,816 2,886 832 2,162 3,091; P 3,860
 - [M] The longest gap is much longer on W: 11 of 16 walks over 1 s, up to 3,860 ms, against at most 734 ms in
   U's 29 tA walks (881 in tJ). Flips are lower (tA 25.27 against 25.71); GTT means are about 45–55 MiB higher
   and four walks lie above U's highest at 600 s; lowest available is higher (the fresh boot).
-- [unknown] When in the walk the long gaps fall: the per-second lines in the walks' journals were not read.
+- [M] When the long gaps fall (read afterwards, the top's GO, from `n8/raw/<tag>-fps.txt`, `-frames.txt` and the
+  journals). The route: start-screen cross at 87 s, slot 93, Continue 99, load seen 101–106, G 114–122. Every W gap
+  over 1 s except one (n15A8 96.7 s, 2,890 ms outside the host) is the game thread **inside the host, in
+  "prepare"**: n15P1 115.3 s 3,860 ms (prepare 3,755), n15A8 93.6 s 3,091 (2,961), n15P2 114.2 s 3,475 (3,364),
+  n15A4 109.7 s 2,816 (2,703), n15A5 95.9 s 2,886 (2,761). 32 frames with prepare over 200 ms in the 16 walks
+  (none in n15A6, n15P5). They fall in three loading phases only: 37–51 s (before the start screen; exp 0419's
+  acceptance x2cuta had 1,228 ms at 44.7 s with 1,203 in the host), 92–96 s (start screen, save list) and
+  109–116 s (the scene load, just before G). During the walk: two in-host frames under 1 s (247 s 718 ms,
+  639 s 833 ms) and a few outside the host.
+- [M] U tA (29 walks): every gap over 500 ms is at most 734 ms, nearly all at 98–100 s (save list, Continue) with
+  at most 171 ms in the host and the rest "outside" (the title); no U frame over 500 ms has more than 497 ms in
+  the host. W has the same 98–100 s gaps outside the host.
+- [M] No journal line names FileSystem near the gaps; W's journal still prints "lazy names: …FileSystem…" (the
+  variable as given; whether W's code skips it was not read).
+- [I] New on W: in-host "prepare" stalls of 0.5–3.9 s at loads. "Prepare" is the host's work before a submission,
+  where a heap that is no longer lazy has its freshly written memory imported; FileSystem is written hardest at
+  loads (file reads land there). The AJM fixes ran on U in tJ without such stalls (881 ms at most). So FileSystem's
+  import is the likely cause, not proven. One comparison would decide it (proposed, not run, the maintainer's
+  call): W plain against W with `BC5_DIAG_LAZY_FILESYSTEM=1`, four walks each in turn, short (to G+60: every stall
+  is before G+5), measured by frames with prepare over 200 ms and the longest gap before G; the DIAG arm brings
+  back n13P4's condition, which a short walk limits (that fault came at 731 s).
+- [M] The box was rebooted at 12:25:52 by `systemctl reboot` from an SSH session logged in by password from the
+  LAN (journal of boot -1), during these reads, not by them; the reads' lock line was removed after the reboot.
 - [I] What 8 walks per arm cannot tell: W changes more than FileSystem's list and runs on another boot, so the
   longer gaps and the higher GTT belong to "W on this boot", not to FileSystem's price. No verdict on that
   cost (Codex 10:07, R13). tP: 0 faults in 8 walks on W against 1 in 5 on T and U, in line with the cure but
