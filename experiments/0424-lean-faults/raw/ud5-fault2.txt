@@ -1,0 +1,15 @@
+first refit dispatch at dword 3227
+writes of COMPUTE_USER_DATA_5 (SH 0x245): 13
+  at 81701 value 00010011 (SET_SH_REG from 0x240, 8 regs)
+  at 81738 value 00000000 (SET_SH_REG from 0x240, 6 regs)
+  at 81773 value 00005204 (SET_SH_REG from 0x240, 14 regs)
+  at 81826 value 00040011 (SET_SH_REG from 0x240, 16 regs)
+  at 81918 value 00000004 (SET_SH_REG from 0x240, 8 regs)
+  at 81992 value 00100011 (SET_SH_REG from 0x240, 15 regs)
+  at 82152 value 00000000 (SET_SH_REG from 0x240, 9 regs)
+  at 82190 value 00000011 (SET_SH_REG from 0x240, 12 regs)
+  at 83306 value 00000000 (SET_SH_REG from 0x240, 6 regs)
+  at 83480 value 00000000 (SET_SH_REG from 0x242, 13 regs)
+  at 84991 value 00040011 (SET_SH_REG from 0x240, 14 regs)
+  at 85139 value 00080011 (SET_SH_REG from 0x240, 16 regs)
+before the first refit: 0
