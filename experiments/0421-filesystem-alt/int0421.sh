@@ -7,7 +7,7 @@
 #   3. mk0421.py on ~/src/KytyPlus; the new patch = git diff f266548; checks on it (exp 0372 = 5, only the main unit
 #      changed, BC5_GUARD_MAP_RULE / BC5_GUARD_PRT_BG / learned-window lines as before)
 #   4. normal and lean rebuilt in place (ninja kyty_emulator, nice 19); the backend archive must stay the same
-#   5. strings: lean gains only BC5_DIRECT_FS_EAGER and no fs421e text; normal gains the word and the text
+#   5. strings: neither binary gains or loses a switch word; lean holds no fs421e text, normal holds it
 # Any failure after step 2 runs undo0421.sh (tree and both binaries back, checked by md5).
 # usage (on the box, in ~/bc5-work/exp0421): PIN_OLD=<8 hex of the shared patch's md5> bash int0421.sh
 set -u
@@ -66,8 +66,9 @@ for v in normal lean; do
     nice -n 19 strings "$b" | grep -x '\(KYTY_\)\?BC5_[A-Z0-9_]*' | sort -u > "$X/words-$v.after"
     echo "$v words: +[$(comm -13 "$X/words-$v.before" "$X/words-$v.after" | tr '\n' ' ')] -[$(comm -23 "$X/words-$v.before" "$X/words-$v.after" | tr '\n' ' ')]; text fs421e: $(nice -n 19 strings "$b" | grep -c 'fs421e')"
 done
-[ "$(comm -13 "$X/words-lean.before" "$X/words-lean.after" | tr '\n' ' ')" = "BC5_DIRECT_FS_EAGER " ] || undo "lean gained other words than BC5_DIRECT_FS_EAGER"
-[ -z "$(comm -23 "$X/words-lean.before" "$X/words-lean.after")" ] || undo "lean lost words"
+for v in normal lean; do
+    [ -z "$(comm -3 "$X/words-$v.before" "$X/words-$v.after")" ] || undo "$v: the switch words changed"
+done
 [ "$(nice -n 19 strings "$LB" | grep -c 'fs421e')" = 0 ] || undo "lean holds the fs421e text"
 [ "$(nice -n 19 strings "$NB" | grep -c 'fs421e')" -ge 1 ] || undo "normal lacks the fs421e text"
 echo "int0421 done $(date +%T): patch $(m8 "$P"), normal $(m8 "$NB"), lean $(m8 "$LB"); undo: bash $HERE/undo0421.sh"

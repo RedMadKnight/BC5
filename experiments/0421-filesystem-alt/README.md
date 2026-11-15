@@ -292,7 +292,27 @@ under `if(KYTY_BC5_LEAN)`). A `#ifndef KYTY_BC5_LEAN` guard would leave its code
    - the same file list;
    - the same counts of `BC5_GUARD_MAP_RULE`, `BC5_GUARD_PRT_BG` and `learned` lines.
 4. Rebuilds normal and lean in place; the backend archive must not change.
-5. `strings`: lean gains only the word `BC5_DIRECT_FS_EAGER` and no `fs421e` text; normal has the text.
+5. `strings`: no switch word gained or lost in either build; no `fs421e` text in lean, present in normal.
 
 Any failure runs the undo, `bash ~/bc5-work/exp0421/undo0421.sh`: the unit and both binaries go back and are checked
 by md5; the unit is touched so that the next ninja recompiles it.
+
+### Fixed, no switch (the maintainer, 2026-11-15: "BC5_DIRECT_FS_EAGER => wbudowany w kod a nie przełącznik i włączony")
+
+This supersedes the switch described above.
+
+- `mk0421.py` now makes one edit: "FileSystem" is always added to the eager list where `BC5_DIRECT_EAGER_NAMES` is
+  read. `BC5_DIRECT_FS_EAGER` does not exist.
+- V's lazyfs step is unchanged, so FileSystem is never lazy. `BC5_GUARD_BYDATA_NAMES=FileSystem` (bd412) is the only
+  word that still makes it by data.
+- [M] On the unit of 101555c7 (blob `358419d`) the result is `747709d3`. A second run is refused. The diff is
+  `fs421e-on-101555c7.diff` (17 lines).
+- [M] `standin0421.cpp`, normal and lean, `-Wall -Wextra -Werror`:
+  - eager(FileSystem) = 1 and lazy(FileSystem) = 0 in three cases: with the launcher's eager list, without it, and
+    with `BC5_DIRECT_FS_EAGER=0` set (ignored);
+  - other names are unchanged;
+  - the `fs421e` text is in normal only;
+  - no new switch word in either binary.
+- `int0421.sh` step 5 now requires both binaries' switch words to be unchanged.
+- The top's condition "`=0` must give exactly W's way" no longer applies: there is no `=0`. Going back is
+  `undo0421.sh`.
