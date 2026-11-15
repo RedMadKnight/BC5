@@ -4934,6 +4934,29 @@ Per walk, longest gap ms: A 1,820 636 1,861 2,816 2,886 832 2,162 3,091; P 3,860
   back n13P4's condition, which a short walk limits (that fault came at 731 s).
 - [M] The box was rebooted at 12:25:52 by `systemctl reboot` from an SSH session logged in by password from the
   LAN (journal of boot -1), during these reads, not by them; the reads' lock line was removed after the reboot.
+
+**One walk on the fresh boot** (the maintainer: "robię restart, a Ty masz jeden bieg W aby zweryfikować czasy na
+świeżym systemie"): boot b348813a (up 12:26:13), runner `night0412x.sh` (night0412w.sh with tags n16, stop file
+`STOP-n16`; `T_FIRST=3 T_MAX=3`, one arm), tag **n16A2**: tA, dc412 off, 12:29:02 – 12:41:51, output
+`~/bc5-work/exp0412/n8/chainX.out`.
+- [M] Clean to G+620: **26.2 flips/s, longest gap 589 ms**, 76 s with a gap over 100 ms; GTT 12,268 / 12,282 at
+  420 / 600 s; lowest available 963 MiB; pinned 11,574; kl412 96; 0 kernel, crash and AJM lines; the kernel
+  stream holds no amdgpu line after the boot. The play log's line "[bc5] exp 0419: FileSystem taken out of
+  BC5_DIRECT_LAZY_NAMES …" is there, as in n15A1: FileSystem imported in both.
+- [M] Gaps over 500 ms: 44 s (527 ms, 433 in the host, prepare 418), 101 s (552 ms, outside the host, the gap
+  U and W share) and 324 s (589 ms, 486 in the host). One frame with prepare over 200 ms (n15: 32 in 16 walks);
+  nothing at the scene load.
+- [M] Memory lines of the journals (exp 0401, every 10 s, 30–120 s): available at the loads was **higher** on the
+  n15 walks (about 1,050–1,420 MiB) than on U (750–1,150) or n16A2 (980–1,130); swap at a walk's start about 530
+  MiB on n15, 550 on U, 0 on n16A2. PSI memory full (avg10) is high in the seconds of n15's stalls (n15A8 14.1 at
+  100 s for the stall at 93 s; n15A5 10.1; n15A7 7.9 and 12.7; n15P4 9.9), low in the n15 walks without one (at
+  most 0.1–2.3 at the loads, one 4.9); U reaches 4–8 at the loads without any prepare stall; n16A2 at most 0.88.
+- [I] So a stall wants both: import work in "prepare" (W; on U FileSystem was lazy, so even a high PSI gave none)
+  and the host held on memory (reclaim or compaction, seen as PSI full) at that moment, which the boot of five
+  hours (swap 530 MiB) had at loads and the fresh boot did not. Not a shortage of free memory (there was more);
+  fragmentation fits better. A hypothesis: PSI may be the stall's effect rather than its cause, and the fresh
+  boot gave one walk. Deciding it would take a few W walks on a fresh boot and, if the maintainer wants, W
+  against `BC5_DIAG_LAZY_FILESYSTEM=1` on an older boot; neither run.
 - [I] What 8 walks per arm cannot tell: W changes more than FileSystem's list and runs on another boot, so the
   longer gaps and the higher GTT belong to "W on this boot", not to FileSystem's price. No verdict on that
   cost (Codex 10:07, R13). tP: 0 faults in 8 walks on W against 1 in 5 on T and U, in line with the cure but
