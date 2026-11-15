@@ -178,3 +178,129 @@ Not a fix:
 - The fault record classed fault 1 as "K4 junk" (0xeb0edf4ac000, the kernel's *last* fault address, also in
   devcd1/2). The kernel's lines show 0x1113… first. The record should classify the first fault line, not only the
   last register value (small, separate).
+
+## Test build (the top session's GO, 2026-11-15 21:06) and its re-check
+
+### Build and runs
+
+- `mk0424.py` turns patch `4945ef1b`'s unit (`3e847e03`) into `11e0de65`:
+  - the fix `aq424`, behind `BC5_DIRECT_ACB_QUEUE_STATE` (off by default; lean reads it too): every acb part that
+    dispatches gets its guest queue's tracked SH 0x204–0x3ff, without `COMPUTE_VMID`, in front;
+  - the catcher `aq424c`, in `submit_now`, normal build only.
+- `b0424.sh` built both on the box in private directories (`~/bc5-work/exp0424`), from a copy of the shared tree
+  without `.git`:
+  - private normal `dbe0d21a`, private lean `e1aeb11b`;
+  - no new warnings in the edited lines;
+  - the ffmpeg prebuilt is the shared build's own `ffmpeg-94dde08.zip`, placed under the name that a tree without
+    `.git` looks for; nothing was downloaded;
+  - the shared builds were not touched.
+- `t0424.sh` ran the second title, RT on, from exp 0412's named save snapshot, 21:25–21:58 (`raw/t0424.out`). The
+  laptop's kernel stream `raw/kern-0424-test.txt` holds no lines.
+
+| Run | Fix | Flips/s | s with a gap > 100 ms | Longest gap | Faults | Refit dispatches | "match" | "MISMATCH" | "no SET_BASE" |
+|---|---|---|---|---|---|---|---|---|---|
+| a424f1 | off | 25.6 | 60 | 1289 ms | 0 | 3,314,774 | 347,575 | 2,204,922 | 762,277 |
+| a424n1 | ON | 22.3 | 78 | 1492 ms | 0 | 2,344,314 | 278,741 | 1,604,492 | 461,081 |
+| a424f2 | off | 25.0 | 61 | 3217 ms | 0 | 2,963,611 | 330,369 | 1,867,524 | 765,718 |
+| a424n2 | ON | 22.1 | 81 | 3980 ms | 0 | 2,169,672 | 274,329 | 1,530,646 | 364,697 |
+
+- With ON, 108,006 and 107,643 parts got their queue's state; none found its queue untracked.
+- The lean walk `a424l` passed: fix ON, 420 s by time, 51 of 51 key lines, the switch read back from its
+  environment. It had no kernel or crash line and ended at RssAnon 176,256 kB.
+- No run had a real pad key.
+
+### 1. The catcher compared against the wrong address
+
+The title's acbs use the compute-queue form of `DISPATCH_INDIRECT`: 4 dwords, the argument address in the packet
+(dwords 1–2), and no `SET_BASE`. The host rebuilds that form for the GFX ring in `submit_now`, *after* the point
+where the catcher runs. In unit `3e847e03` this is the "mec rebuild" (`is_mec`: op 0x16 with length 4). It puts three
+things in the packet's place:
+- a `SET_BASE` 1 of the address's 4 KiB page;
+- a `PFP_SYNC_ME`;
+- the GFX form, with the offset in that page.
+
+The devcoredumps show only the rebuilt form (`setbase.py`, `raw/setbase-faults.txt`): every `DISPATCH_INDIRECT`
+has length 3, and each has its own `SET_BASE` 1 16 packets before it (755 of 755 and 782 of 782), with the host's
+gpu check (exp 0052) in between. So the analysis above (`match.py`, "1,481 of 1,481") read the right address.
+
+The catcher did not. It read the title's 4-dword packet as the GFX form, `SET_BASE` 1 + dword 1. But dword 1 is the
+address's low half, and `SET_BASE` 1 was whatever the ring's last GFX-form buffer (a dcb) had set.
+
+What follows from this:
+- **"MISMATCH" and "match" compare `USER_DATA_5` with a dcb's stale base, not with the refit's argument.** The counts
+  say nothing about the fault mechanism, whether the fix is on or off. That is why they barely move: off 66.5 % and
+  63.0 % of the dispatches, ON 68.4 % and 70.5 %.
+- **"no SET_BASE"** counts refits seen while the catcher's shadow of the ring had no GFX-form base yet. Why that is
+  16.8–25.8 % was not looked at; it stops mattering once the reference is fixed.
+- **The first mismatch runs opposite to the faults because of this error.** `USER_DATA_5` 0x01000012 has the right
+  0x12 for an argument in `CommitIABufferAllocator`; the "high 0x11" was a dcb's base.
+- **The counts do not conflict with "2 faults in 3 plays".** The catcher never counted real mismatches. The 0 faults
+  in 4 walks and 1 lean walk give no signal for or against the fix (R13).
+
+The correct reference is the address the rebuild itself uses:
+- for a 4-dword 0x16, `dword 2 & 0xffff`;
+- for a 3-dword 0x16, (`SET_BASE` 1 + dword 1) >> 32.
+
+### 2. Did the queue state move `USER_DATA_5`? Not shown either way
+
+Because the catcher's reference is wrong, this test cannot say whether ON changed the refit's `USER_DATA_5`. The code
+and the dumps do say the following.
+
+**Nothing overwrites the prefix before the refit.**
+- The prefix sits in the same chain segment, directly in front of the part (`chain_append(pre, part)`, or one job when
+  the chain is off). A dcb cannot come between them.
+- In both fault IBs, nothing writes `COMPUTE_USER_DATA_5` before the first refit dispatch (`raw/ud5-fault*.txt`).
+- The refit's own `SET_SH_REG` covers `USER_DATA_0..4`.
+- The dcb restore (exp 0381) goes only in front of dcbs.
+
+**What the prefix hands over is the queue's own last `USER_DATA_5`, and that may itself be 0x…0011.**
+- In the fault IBs the later dispatches write descriptor-like values, 0x00010011 to 0x00080011; the last write in
+  fault 1 is 0x00080011.
+- If those dispatches belong to the refit's own queue and end its previous buffer, the queue's state, and the PS5
+  too, would give the refit 0x11. Then either the pointer is not `{USER_DATA_5:USER_DATA_4}` as assumed, or the 0x11
+  comes from elsewhere.
+- The dumps do not say which queue each part of the chain came from, so this stays open.
+- This is the weakest point of the verdict above. It rested on the queue keeping 0x12, which was an inference ("the
+  title never loses its `USER_DATA_5`").
+
+**ON gave fewer refit dispatches per flip:** 299 and 276, against 367 and 338 off. That is two runs each, a route by
+journal, and work that varies with the scene, so it is a hint, not a result (R13).
+
+**One run settles points 1 and 2 without turning the fix on.** The corrected catcher keeps a cheap per-queue shadow
+of `USER_DATA_5` for every acb part, whatever the switch: `SET_SH_REG` 0x245 sets it, and 0x5f/0x63/0x3f make it
+unknown. For each 0x909939900 dispatch it takes the argument high from the packet itself and records:
+- the ring's value at the dispatch, against that argument high;
+- the queue's value, against the same;
+- a histogram of the low 16 bits.
+
+That shows whether the ring's value is wrong, and whether the queue's value would be right.
+
+### 3. The cost: every dispatching acb part, plus the full tracker on every acb part
+
+- **The prefix** goes on every acb part with a `DISPATCH_*` or an `INDIRECT_BUFFER` (`acb_restore_wants`). That was
+  about 307 parts/s, about 14 per flip. Each prefix carries every register the queue's tracker holds in 0x204–0x3ff,
+  at most 508 registers, as one `SET_SH_REG` per run.
+- **CPU work that only ON adds:**
+  - `acb_cs_track` returns at once when off; when ON it runs `full_state::Tracker::apply` over every acb part, under
+    `g_acb_cs_mutex`, with a reader that follows `LOAD_SH_REG` tables in guest memory;
+  - `cs_inherit_at` still walks each part, though its result is now only journalled;
+  - `acb_restore_runs` makes 508 lookups per part.
+- The fault IBs are chains of about 80,000 dwords, so these walks are long. Which of them costs the 3 flips/s was not
+  measured. That the CPU work outweighs the GPU's extra register writes is an inference.
+- **The prefix can be narrowed to the refit, and should be.**
+  - Only a part with a 0x909939900 dispatch before any write of 0x245 in that part would get it.
+  - It would be a 3-dword `SET_SH_REG` 0x245, taken from the queue's shadow of that one register.
+  - The full tracker and `cs_inherit_at` then drop out.
+  - This is worth building only if the corrected catcher shows that the ring's value is wrong and the queue's value
+    is right (point 2). If the queue's value is 0x…0011 too, no prefix will help. The next step would then be the
+    shader's disassembly (TODO(verify) in Open).
+
+### Verdict of the test
+
+The test build ran clean: 4 walks and 1 lean walk, with no fault and no kernel line. But it did not test the theory,
+because the catcher compared against a stale dcb base instead of the refit's argument address.
+
+The fix as built costs about 3 flips/s (25.6 and 25.0 off, 22.3 and 22.1 ON) and gives longer gaps, with no shown
+benefit. It should not go into a shared build in this form.
+
+The K4/K3 misclassification of the fault record stays a separate item (Open, last point) and was not touched here.
