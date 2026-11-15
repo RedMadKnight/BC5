@@ -1,0 +1,16 @@
+chain lock: exp 0417 | chain: exp 0423: the second title, host vs container, 4 walks to G+240 (C H C H) on the shared normal, until about 18:58 | token 202611151818181279890 | 2026-11-15 18:18:18
+binary normal 9da2a9d5; host Mesa mesa-vulkan-drivers-26.2.6-2.fc45.x86_64; container Mesa 26.0.8-1ubuntu0.3
+q423c1 CONTAINER: q423c1 (nozeroskip) ended at G+240 (after 359 s; G 117, load 103, list 94); 25.8 flips/s over 354 s, 59 s with a gap over 100 ms, longest 1012 ms; kernel lines 0, crash lines 0, ledger lines 0; real pad keys 0
+q423c1 exp 0423 place: container (distrobox enter ubuntu);maps at 31 s: 00:4f 1252242 /usr/lib/x86_64-linux-gnu/libvulkan_radeon.so;00:4f 5423732 /usr/lib/x86_64-linux-gnu/mangohud/libMangoHud.so;;
+q423c1 route: route: cross (start screen) at 88 s;route: the save-slot list runs; down x 0, cross (slot 1) at 94 s;route: cross (Continue) at 100 s;route: the load seen at 103 s;route: gameplay G = 117 s (the load at 103 s);route: walk of 14 cycles (240 s) queued at 117 s;
+q423h1 HOST: q423h1 (nozeroskip) ended at G+240 (after 357 s; G 115, load 103, list 93); 26.7 flips/s over 352 s, 51 s with a gap over 100 ms, longest 708 ms; kernel lines 0, crash lines 0, ledger lines 0; real pad keys 0
+q423h1 exp 0423 place: HOST (no distrobox);maps at 31 s: 00:2b 32629 /usr/lib64/libvulkan_radeon.so;00:2b 75993 /usr/lib64/mangohud/libMangoHud.so;;
+q423h1 route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 93 s;route: cross (Continue) at 99 s;route: the load seen at 103 s;route: gameplay G = 115 s (the load at 103 s);route: walk of 14 cycles (240 s) queued at 115 s;
+q423c2 CONTAINER: q423c2 (nozeroskip) ended at G+240 (after 357 s; G 116, load 103, list 93); 26.0 flips/s over 352 s, 67 s with a gap over 100 ms, longest 1003 ms; kernel lines 0, crash lines 0, ledger lines 0; real pad keys 0
+q423c2 exp 0423 place: container (distrobox enter ubuntu);maps at 30 s: 00:4f 1252242 /usr/lib/x86_64-linux-gnu/libvulkan_radeon.so;00:4f 5423732 /usr/lib/x86_64-linux-gnu/mangohud/libMangoHud.so;;
+q423c2 route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 93 s;route: cross (Continue) at 99 s;route: the load seen at 103 s;route: gameplay G = 116 s (the load at 103 s);route: walk of 14 cycles (240 s) queued at 116 s;
+q423h2 HOST: q423h2 (nozeroskip) ended at G+240 (after 357 s; G 116, load 102, list 93); 26.4 flips/s over 353 s, 50 s with a gap over 100 ms, longest 2204 ms; kernel lines 0, crash lines 0, ledger lines 0; real pad keys 0
+q423h2 exp 0423 place: HOST (no distrobox);maps at 30 s: 00:2b 32629 /usr/lib64/libvulkan_radeon.so;00:2b 75993 /usr/lib64/mangohud/libMangoHud.so;;
+q423h2 route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 93 s;route: cross (Continue) at 99 s;route: the load seen at 102 s;route: gameplay G = 116 s (the load at 102 s);route: walk of 14 cycles (240 s) queued at 116 s;
+chain0423 ended 18:43:39
+chain lock released
