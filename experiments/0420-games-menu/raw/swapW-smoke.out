@@ -1,0 +1,5 @@
+chain lock: exp 0417 | chain: exp 0420: smoke test of the shared W with the games menu: the menu normal and lean, the second title from the installed list on private saves, 120 s, until about 13:09 | token 20261115125407190871 | 2026-11-15 12:54:07
+smoke0420w: d1 normal: the menu ran 20 s, screenshot /home/kjaniszewski/bc5-work/exp0420/smoke/d1-normal-125428.png; the menu log: [2026-11-15 12:54:08.972] [MANGOHUD] [error] [shared_x11.cpp:45] XOpenDisplay failed to open display ':0'
+smoke0420w: d1 lean: the menu ran 20 s, screenshot /home/kjaniszewski/bc5-work/exp0420/smoke/d1-lean-125454.png, the shell during the window: inactive, after: active, state file empty, owner none; the menu log: [2026-11-15 12:54:34.512] [MANGOHUD] [error] [shared_x11.cpp:45] XOpenDisplay failed to open display ':0'
+smoke0420w: d2: the private launcher still names another save path: 60:    KYTY_BC5_SAVEDATA_MEMORY_FIXES=1 KYTY_BC5_SAVEDATA_DELETE_BUSY=1 KYTY_BC5_SAVEDATA_ALIASES=1 KYTY_BC5_HTTP2_FIXES=1 \ 176:mkdir -p "$M" "$KYTY_BC5_SAVEDATA_DIR" : NOT RUN
+chain lock released

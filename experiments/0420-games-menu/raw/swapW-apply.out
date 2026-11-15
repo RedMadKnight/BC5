@@ -1,0 +1,11 @@
+chain lock: exp 0417 | chain: exp 0420: the shared swap to W with the games menu (patch 101555c7, the backend archive, both emulators, the launchers, bc5-mount; CPU only, no emulator), until about 13:32 | token 20261115124737182840 | 2026-11-15 12:47:37
+2026-11-15 12:47:37 before: shared now: normal 51af1ed7, lean 59894428, archive 75e30335, tree diff 27b6416f; play-any 1cd59817, play-astro 48238ccd, lean-session 189885ea, bc5-mount a59ef623
+copies in /home/kjaniszewski/bc5-work/exp0420/before-W, read back
+tree: 134 patched files match; diff 101555c7
+== 12:47:39 backend
+backend archive: 9aab722c (the private one; was 75e30335)
+== 12:47:45 normal
+== 12:50:41 lean
+2026-11-15 12:53:28 after: normal bab1ce79, lean c4aca9af (DIFFERENT from the private builds (10e3ef15 / 98ba9468)), archive 9aab722c, tree 101555c7; play-any fc7a1395, play-astro e943bd8f, lean-session 189885ea, bc5-mount be372d39
+undo: bash /home/kjaniszewski/bc5-work/exp0420/swapW/swap0420w.sh undo (puts back every file from /home/kjaniszewski/bc5-work/exp0420/before-W; then rebuild before the next change)
+chain lock released

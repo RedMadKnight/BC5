@@ -1,0 +1,7 @@
+chain lock: exp 0417 | chain: exp 0420: smoke test of the shared W with the games menu: the menu normal and lean, the second title from the installed list on private saves, 120 s, until about 13:11 | token 20261115125604192711 | 2026-11-15 12:56:04
+smoke0420w: d2 normal: /home/kjaniszewski/bc5-data/games/PPSA03671 from the list's path (play-any.sh <folder>): emulator 193001 (/home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator) alive at 90 s yes, at 120 s yes, --game /home/kjaniszewski/bc5-data/games/PPSA03671; screenshot /home/kjaniszewski/bc5-work/exp0420/smoke/d2-normal-125735.png; the launcher's last line: 
+smoke0420w: d2 lean: /home/kjaniszewski/bc5-data/games/PPSA03671 from the list's path (play-any.sh <folder>): emulator 224986 (/home/kjaniszewski/bc5-work/kytyplus-build-lean/src/kyty_emulator) alive at 90 s yes, at 120 s yes, --game /home/kjaniszewski/bc5-data/games/PPSA03671; screenshot /home/kjaniszewski/bc5-work/exp0420/smoke/d2-lean-125945.png, the shell after: active, state file NOT-EMPTY; the launcher's last line: 2026-11-15 12:58:14 lean: stopped plasma-plasmashell.service
+smoke0420w: d2: saves used: /home/kjaniszewski/bc5-work/exp0413/n/wd/_SaveData/PPSA03671 (a copy of the named snapshot, reset before each run); no pad key sent, so no save is loaded into gameplay
+smoke0420w: kernel lines since the start: 0
+smoke0420w: done 13:00:24
+chain lock released

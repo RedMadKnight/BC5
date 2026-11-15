@@ -70,26 +70,36 @@ if [ "$STEP" = all ] || [ "$STEP" = d2 ]; then
   sed -i -e 's#^cd ~/bc5-work$#cd ~/bc5-work/exp0413/n/wd  \# exp 0420 smoke: the private working directory (its own _SaveData)#' \
          -e 's#^export KYTY_BC5_SAVEDATA_DIR=\$HOME/bc5-work/_SaveData-pkg-play$#export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0413/n/wd/_SaveData-pkg-play  \# exp 0420 smoke: private#' "$L" || exit 1
   [ "$(diff "$SRC" "$L" | grep -c '^>')" = 2 ] && [ "$(diff "$SRC" "$L" | grep -c '^<')" = 2 ] || { say "d2: the private launcher is not 2 lines changed: NOT RUN"; exit 1; }
-  grep -n '_SaveData\|SAVEDATA' "$L" | grep -v 'exp0413/n/wd' | grep -v '^[0-9]*: *#' > "$X/d2-save-lines.txt"
+  grep -nE '_SaveData|SAVEDATA_DIR=' "$L" | grep -v 'exp0413/n/wd' | grep -v '^[0-9]*: *#' > "$X/d2-save-lines.txt"
   [ -s "$X/d2-save-lines.txt" ] && { say "d2: the private launcher still names another save path: $(head -2 "$X/d2-save-lines.txt" | tr '\n' ' ' | cut -c1-200): NOT RUN"; exit 1; }
   bash -n "$L" && chmod +x "$L" || exit 1
   WD=$N/wd
   [ -d "$WD/_SaveData" ] && [ ! -L "$WD/_SaveData" ] && [ -d "$NS/PPSA03671" ] || { say "d2: no private working directory or no named snapshot: NOT RUN"; exit 1; }
   mkdir -p "$WD/_SaveData-pkg-play" && rm -rf "$WD/_SaveData/PPSA03671" && cp -a "$NS/PPSA03671" "$WD/_SaveData/PPSA03671" || { say "d2: the private save copy failed: NOT RUN"; exit 1; }
-  t0=$(date +%s)
-  distrobox enter ubuntu -- env WAYLAND_DISPLAY="$WL" BC5_PKG_SCRIPT="$L" bash "$W/play-any.sh" "$GD" < /dev/null > "$X/d2.out" 2>&1 &
-  LP=$!
-  started || { say "d2: no emulator after 30 s: $(tail -3 "$X/d2.out" | tr '\n' ' ' | cut -c1-200)"; kill "$LP" 2> /dev/null; exit 1; }
-  EP=$(pgrep -o '^kyty_emulator')
-  sleep 90
-  s=$(shot "$X/d2-$(date +%H%M%S).png")
-  alive=no; [ -d "/proc/$EP" ] && alive=yes
-  sleep 30
-  alive2=no; [ -d "/proc/$EP" ] && alive2=yes
-  game=$(tr '\0' ' ' < "/proc/$EP/cmdline" 2> /dev/null | grep -o -- "--game [^ ]*" | head -1)
-  endrun "$LP"
-  say "d2: $GD through play-any.sh: emulator $EP alive at 90 s $alive, at 120 s $alive2, $game; screenshot $s; the launcher's last line: $(tail -1 "$X/d2.out" | cut -c1-160)"
-  say "d2: saves used: $WD/_SaveData/PPSA03671 (a copy of the named snapshot); the live ~/bc5-work/_SaveData was not named by the launcher"
+  for v in normal lean; do
+    lean=0; [ "$v" = lean ] && lean=1
+    rm -rf "$WD/_SaveData/PPSA03671" && cp -a "$NS/PPSA03671" "$WD/_SaveData/PPSA03671" || { say "d2 $v: the private save copy failed: NOT RUN"; exit 1; }
+    distrobox enter ubuntu -- env WAYLAND_DISPLAY="$WL" BC5_LEAN=$lean BC5_LOGS=1 BC5_PKG_SCRIPT="$L" bash "$W/play-any.sh" "$GD" < /dev/null > "$X/d2-$v.out" 2>&1 &
+    LP=$!
+    started || { say "d2 $v: no emulator after 30 s: $(tail -3 "$X/d2-$v.out" | tr '\n' ' ' | cut -c1-200)"; kill "$LP" 2> /dev/null; continue; }
+    EP=$(pgrep -o '^kyty_emulator')
+    game=$(tr '\0' ' ' < "/proc/$EP/cmdline" 2> /dev/null | grep -o -- "--game [^ ]*" | head -1)
+    bin=$(readlink "/proc/$EP/exe" 2> /dev/null)
+    sleep 90
+    s=$(shot "$X/d2-$v-$(date +%H%M%S).png")
+    alive=no; [ -d "/proc/$EP" ] && alive=yes
+    sleep 30
+    alive2=no; [ -d "/proc/$EP" ] && alive2=yes
+    endrun "$LP"
+    ps_state=""
+    if [ "$v" = lean ]; then
+      for _ in $(seq 1 30); do [ "$(systemctl --user is-active plasma-plasmashell.service 2> /dev/null)" = active ] && break; sleep 1; done
+      ps_state=", the shell after: $(systemctl --user is-active plasma-plasmashell.service 2>&1), state file $([ -s "$W/lean-session.state" ] && echo NOT-EMPTY || echo empty)"
+    fi
+    say "d2 $v: $GD from the list's path (play-any.sh <folder>): emulator $EP ($bin) alive at 90 s $alive, at 120 s $alive2, $game; screenshot $s$ps_state; the launcher's last line: $(tail -1 "$X/d2-$v.out" | cut -c1-160)"
+    sleep 5
+  done
+  say "d2: saves used: $WD/_SaveData/PPSA03671 (a copy of the named snapshot, reset before each run); no pad key sent, so no save is loaded into gameplay"
 fi
 say "kernel lines since the start: $(sudo -n dmesg 2> /dev/null | tail -n +$((K0 + 1)) | grep -c -i 'amdgpu.*\(timeout\|fault\|reset\)')"
 say "done $(date +%T)"
