@@ -1,0 +1,122 @@
+# exp 0419, build W: the class of every word build V reads, for the LEAN build (mklean0419.py).
+# D diagnostic, catcher or test hook: not read in lean. K kept. F and U are taken from switch_defaults.hpp (forced, unset).
+# Rows of one title and the three defaults with an option are K by their tables and are not listed.
+BC5_DIAG_LAZY_FILESYSTEM	D	new since the inventory
+BC5_DIRECT_BREAKDOWN	D	diagnostic/trace/catcher
+BC5_DIRECT_BVH_MISS	D	test hook
+BC5_DIRECT_DISPATCH_JOURNAL	D	diagnostic/trace/catcher
+BC5_DIRECT_DRAW_ARGS_JOURNAL	D	diagnostic/trace/catcher
+BC5_DIRECT_DRAW_JOURNAL	D	diagnostic/trace/catcher
+BC5_DIRECT_DRAW_JOURNAL_ACB	D	diagnostic/trace/catcher
+BC5_DIRECT_DRAW_JOURNAL_FIND	D	diagnostic/trace/catcher
+BC5_DIRECT_DRAW_JOURNAL_WATCH	D	diagnostic/trace/catcher
+BC5_DIRECT_DROP_TALLY	D	diagnostic/trace/catcher
+BC5_DIRECT_EAGER_NAMES	K	configuration
+BC5_DIRECT_FIND_VA	D	diagnostic/trace/catcher
+BC5_DIRECT_FLIP_DEFER	K	opt-in behaviour
+BC5_DIRECT_FL_CRUMBS	D	diagnostic/trace/catcher
+BC5_DIRECT_FL_CRUMBS_MESHLET	D	diagnostic/trace/catcher
+BC5_DIRECT_FL_MESHLET_PROBE	D	diagnostic/trace/catcher
+BC5_DIRECT_FL_PROBE_STATE	D	diagnostic/trace/catcher
+BC5_DIRECT_FRAME_PROFILE	D	diagnostic/trace/catcher
+BC5_DIRECT_GE_PROBE	D	diagnostic/trace/catcher
+BC5_DIRECT_IB_DUMP	D	diagnostic/trace/catcher
+BC5_DIRECT_JOB_TS	D	diagnostic/trace/catcher
+BC5_DIRECT_JOURNAL	D	diagnostic/trace/catcher
+BC5_DIRECT_JOURNAL_QUIET	D	diagnostic/trace/catcher
+BC5_DIRECT_LAZY_NAMES	K	configuration
+BC5_DIRECT_LEARN_GUEST_ONLY	D	fix/behaviour
+BC5_DIRECT_LOOP_BOUND	D	test hook
+BC5_DIRECT_MEM_LINE	D	diagnostic/trace/catcher
+BC5_DIRECT_OFFCHIP_SECOND	D	test hook
+BC5_DIRECT_OPS_DUMP	D	diagnostic/trace/catcher
+BC5_DIRECT_RESET_LABELS	D	fix/behaviour
+BC5_DIRECT_RESET_LABEL_JOURNAL	D	diagnostic/trace/catcher
+BC5_DIRECT_RESET_REPLAY_ACB	D	fix/behaviour
+BC5_DIRECT_RT_DUMP	D	diagnostic/trace/catcher
+BC5_DIRECT_RT_DUMP_EVERY	D	diagnostic/trace/catcher
+BC5_DIRECT_SELFTEST	D	diagnostic/trace/catcher
+BC5_DIRECT_SHADER_DUMP	D	diagnostic/trace/catcher
+BC5_DIRECT_SKIP_PGM	D	test hook
+BC5_DIRECT_SNAP_ON_TIMEOUT	D	diagnostic/trace/catcher
+BC5_DIRECT_START_STATE_SKIP	D	new since the inventory
+BC5_DIRECT_TABLE_CATCHER	D	diagnostic/trace/catcher
+BC5_DIRECT_TIMEOUT_PROBE	D	diagnostic/trace/catcher
+BC5_DIRECT_TIMING	D	diagnostic/trace/catcher
+BC5_DIRECT_UMR_ON_TIMEOUT	D	diagnostic/trace/catcher
+BC5_DIRECT_WAIT_TRACE	D	diagnostic/trace/catcher
+BC5_DIRECT_ZEROSCAN_AT	D	diagnostic/trace/catcher
+BC5_DIRECT_ZEROSCAN_OUT	D	diagnostic/trace/catcher
+BC5_DIRECT_ZERO_MIN_MIB	D	diagnostic/trace/catcher
+BC5_DIRECT_ZERO_NAMES	D	fix/behaviour
+BC5_DISPATCH_COUNT	D	new since the inventory
+BC5_FAULT_POINTERS	D	new since the inventory
+BC5_FAULT_RECORD	D	diagnostic/trace/catcher
+BC5_GC_DUMP_DIR	D	diagnostic/trace/catcher
+BC5_GC_DUMP_LIMIT	D	diagnostic/trace/catcher
+BC5_GC_IOCTL_TRACE	D	new since the inventory
+BC5_GC_LOG	D	diagnostic/trace/catcher
+BC5_GC_MODE	K	configuration
+BC5_GUARD_BYDATA_NAMES	D	new since the inventory
+BC5_GUARD_COVER_LOG	D	new since the inventory
+BC5_GUARD_DESC_TARGETS	D	new since the inventory
+BC5_GUARD_K1R	K	kill switch of a default (K1r)
+BC5_GUARD_K1_FILTER	K	kill switch of a default (K1r's filter)
+BC5_GUARD_K1_STAT	D	diagnostic/trace/catcher
+BC5_GUARD_LAZY_BY_DATA	K	opt-in behaviour (the guardian's, under its verdict)
+BC5_GUARD_LEARN_LOG	D	diagnostic/trace/catcher
+BC5_GUARD_LEDGER	D	diagnostic/trace/catcher
+BC5_GUARD_WATCH	D	new since the inventory
+BC5_GUARD_WRITERS	D	new since the inventory
+BC5_LOGGING	D	kill-switch (turns a default OFF)
+BC5_R3_EOP_STAT	D	diagnostic/trace/catcher
+BC5_TIMEOUT_LAYOUT	D	new since the inventory
+KYTY_BC5_AMM_SCATTER	D	fix/behaviour
+KYTY_BC5_AMM_SETBUFFER_MAP	D	fix/behaviour
+KYTY_BC5_AMM_SETBUFFER_TEST	D	test hook
+KYTY_BC5_AMM_SETBUFFER_TEST_VA	D	test hook
+KYTY_BC5_AMM_TRACE	D	diagnostic/trace/catcher
+KYTY_BC5_ANON_SYNC	D	fix/behaviour
+KYTY_BC5_ANON_SYNC_MS	D	fix/behaviour
+KYTY_BC5_APP0_OVERRIDE	D	test hook
+KYTY_BC5_APR_FILE_JOURNAL	D	diagnostic/trace/catcher
+KYTY_BC5_AUDIO_TRACE	D	diagnostic/trace/catcher
+KYTY_BC5_AUDIO_TRAIL	D	new since the inventory
+KYTY_BC5_DIAG_UNFORCE	D	new since the inventory
+KYTY_BC5_EVENT_PENDING_LOG	D	diagnostic/trace/catcher
+KYTY_BC5_FLIP_TIMING	D	diagnostic/trace/catcher
+KYTY_BC5_FPS_COUNTER	D	diagnostic/trace/catcher
+KYTY_BC5_FRAME_STAT	D	diagnostic/trace/catcher
+KYTY_BC5_FRAME_STAT_WIN	D	diagnostic/trace/catcher
+KYTY_BC5_HAPTIC_GAIN	K	configuration
+KYTY_BC5_INPUT_CMD	K	test hook KEPT: the scripted route needs it, without it the lean build cannot be measured on the walk
+KYTY_BC5_INPUT_CONFIG	K	configuration
+KYTY_BC5_INPUT_RECORD	D	diagnostic/trace/catcher
+KYTY_BC5_INPUT_TRACE	D	diagnostic/trace/catcher
+KYTY_BC5_JOB_ARENA_FIX	K	opt-in behaviour
+KYTY_BC5_KEY_MIN_HOLD_MS	K	configuration
+KYTY_BC5_LOAD_STAT	D	diagnostic/trace/catcher
+KYTY_BC5_LOGIN_USERS	K	configuration
+KYTY_BC5_MANGOHUD	K	configuration
+KYTY_BC5_MAP_RECORDS	K	opt-in behaviour
+KYTY_BC5_MAP_RECORDS_CHECK_MS	K	opt-in behaviour
+KYTY_BC5_MEASURE	D	diagnostic/trace/catcher
+KYTY_BC5_MEM_FIRSTFAIL	D	diagnostic/trace/catcher
+KYTY_BC5_MENU_DIR	K	configuration
+KYTY_BC5_NO_PAD_AUDIO	K	user setting
+KYTY_BC5_PAD_AUDIO_DEVICE	K	configuration
+KYTY_BC5_PAD_SPEAKER	K	user setting
+KYTY_BC5_PAUSE_ON_BACKGROUND	K	user setting
+KYTY_BC5_PHYSMAP_CHECK	D	diagnostic/trace/catcher
+KYTY_BC5_RT	K	configuration
+KYTY_BC5_RT_BUILD_PGM	K	configuration
+KYTY_BC5_SAVEDATA_DIR	K	configuration
+KYTY_BC5_SAVEDATA_MEMORY_LOG	D	new since the inventory
+KYTY_BC5_SAVEDATA_MEMORY_PARAM	K	opt-in behaviour
+KYTY_BC5_SAVEDATA_MEMORY_SLOTS	K	opt-in behaviour
+KYTY_BC5_SAVEDATA_TRANSFER_FIX	K	opt-in fix
+KYTY_BC5_SAVE_TRACE	D	diagnostic/trace/catcher
+KYTY_BC5_SETTINGS_OPEN	D	test hook
+KYTY_BC5_TRAP_LOG	D	diagnostic/trace/catcher
+KYTY_BC5_TRIGGER_DEADZONE	K	configuration
+KYTY_BC5_USBD_ALLOW	K	configuration
