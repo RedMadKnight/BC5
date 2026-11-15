@@ -4769,6 +4769,42 @@ and tJ in turn, tags n14A<k>, n14J<k> (their own prefix: this boot had the GPU r
 `STOP-n14`, until 06:45 or 60 walks, R55 as before; dry-checked before the start. Output
 `~/bc5-work/exp0412/n8/chainV.out`.
 
+### 100. The night on build U, arms tA and tJ: 57 long walks, all clean; the AJM id line in 11 of 29 tA walks and in none of 28 tJ walks (2026-11-14 18:47 – 2026-11-15 06:56)
+
+`memfast/night0412v.sh` on b85a756d, the boot that had the GPU reset of 18:40; ended by its time limit (the 58th
+walk would have started after 06:45). Lock empty, no emulator after it. The laptop's kernel stream (one reconnect,
+23:04) holds no amdgpu line after 18:40.
+
+| arm | walks | flips/s (mean) | longest gap ms | s with a gap > 100 ms | GTT MiB at 420 s (mean) | at 600 s (mean) | lowest avail | AJM "id given out while still alive" |
+|---|---|---|---|---|---|---|---|---|
+| tA, all | 29 | 24.9–26.5 (25.71) | 532–734 | 60–113 | 12,103–12,358 (12,196) | 12,111–12,272 (12,200) | 478 | 22 lines in 11 walks (at most 3 a walk) |
+| tA, dc412 on | 15 | 25.2–26.5 (25.80) | 532–729 | 63–101 | (12,191) | (12,192) | 486 | 17 lines in 8 walks |
+| tA, dc412 off | 14 | 24.9–26.3 (25.61) | 550–734 | 60–113 | (12,202) | (12,209) | 478 | 5 lines in 3 walks |
+| tJ (`AJM_DEFER`, `AJM_LIVE_IDS`) | 28 | 25.2–26.1 (25.71) | 546–881 | 62–113 | 12,070–12,279 (12,184) | 12,093–12,294 (12,204) | 477 | **0 lines in 28 walks** |
+
+- [M] All 57: ended at G+620, 0 kernel lines, 0 crash lines, no timeout, no fault record, no CPU fault of the
+  title. Per walk the id lines of tA: 0 1 2 0 0 0 0 0 2 0 0 0 3 2 0 2 0 0 0 0 1 0 2 0 2 0 2 0 3.
+- [M] tJ against tA: the same flips (mean 25.71 both), gaps and GTT; tJ's words cost nothing seen here and take
+  the id line away in every walk (0 of 28 against 11 of 29).
+- [M] dc412 on against off inside tA: 25.80 against 25.61 flips/s, the same gaps and GTT. No cost, as in
+  section 93. The id lines differ (8 of 15 walks against 3 of 14); two-sided chance of that or more with no real
+  difference is about one in eight, so not shown, but worth the integrator's look, since dc412 adds work on the
+  submitting thread only and should not touch audio.
+- [M] The tally of long walks on the second title since f8cb77ad's hang, all with the catchers armed:
+  b413a916 21 clean + 1 CPU fault; T 6 clean; U 11 clean + 1 GPU read fault (arm tP) before the reset, 57 clean
+  after it. **96 clean, no GPU hang of the old kind (601 s, 532 s), one CPU fault at eboot+0x1b349f, one GPU read
+  fault in the lazy heap FileSystem.**
+- [I] The old hang: 1 in 8 walks on f8cb77ad, 0 in 97 since. Chance alone no longer explains that (at 1 in 8,
+  97 clean walks have a probability under one in 400,000); what changed between f8cb77ad and b413a916 is only
+  the three catchers (ph412, tl412, dc412), and T and U changed much more. Two readings are left, and the walks
+  do not separate them: the hang needs a state those eight night walks had and later ones did not (that night's
+  boot had arm b1's GPU reset an hour before, at 01:07), or a catcher's presence moves it. dc412 off in 14 tA
+  walks and 6 earlier ones (n10F4, F6, F8, n12A2, n13A2, n13A4) also gave no hang, so dc412's work per submit is not what hides it.
+- [I] The CPU fault at eboot+0x1b349f: seen twice up to n10F2 (sA on the old series, n10F2), 0 in the 87 long walks since. tJ's
+  words were on in 34 of those; in the other 53 nothing kept it away, so its rate is simply low or T/U
+  changed something that matters. Not separated.
+- [unknown] The reader of n13P4's fault: the dumps are read after this report, on the top's GO.
+
 ## Verdict
 
 (The header above was dropped by mistake in commit 8cfa4549, section 87, and is restored here; the text below is unchanged.)
