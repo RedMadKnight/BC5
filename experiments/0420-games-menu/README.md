@@ -166,3 +166,15 @@ Prepared on the laptop only; each box step waits for the top's GO after the nigh
     attempt stopped before starting (the check of the private launcher's save paths caught a word name; fixed).
     The lean run's line "state file NOT-EMPTY" was read while the watcher was still restoring: a minute later the
     state was done, no owner left, the shell active.
+- **Recent without missing paths** (the maintainer, 2026-11-15 13:05, directly: "recent nie może być elementów, które
+  nie istnieją"; the start page listed `~/bc5-data/pkg/game.pkg`, which is gone): `mkmenu0420.py`'s 26th edit,
+  `LoadRecent` drops a path that does not exist and writes `recent.txt` without it (an uninstalled game's folder too).
+  `hostMenu.cpp` 0f324fa4 -> a6314317, patch 0001 101555c7 -> **ba617454** (`tree-W-menu-r.md5`), `exp 0372` = 5.
+  `swap0420r.sh` (dry, private, apply, undo): the private build first as the compile check, then the shared tree's
+  one file and both shared emulators, copies under `~/bc5-work/exp0420/before-R`. Waiting for a box slot.
+- `CLAUDE-md-0420.diff`: the proposed CLAUDE.md lines for the shared W (hashes, record, undo, kernel 7.3.3-ogc1.1,
+  launchers); not applied: CLAUDE.md changes on the maintainer's own word.
+  **Done 2026-11-15 13:04 to 13:05** (the top's GO): private normal f965b9ec, lean e19e2e3c (0 warnings in
+  `hostMenu.cpp`); shared tree **ba617454**, normal **fd3d0ed2**, lean **480656cc** (were bab1ce79 / c4aca9af); the
+  lock released at 13:05:36. Undo: `bash ~/bc5-work/exp0420/swapR/swap0420r.sh undo`. Not looked at on the screen
+  yet (the change only reads the file system when the list is read).
