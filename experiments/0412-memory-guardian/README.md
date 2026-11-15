@@ -4882,6 +4882,89 @@ Text for CLAUDE.md, "Machine context", the memory paragraph (after the Baloo sen
 > unchanged. Undo: `bash ~/bc5-work/exp0412/lean-shared/install-lean-session.sh undo` (the old launcher is
 > `~/bc5-work/play-any.sh.before-lean`).
 
+### 102. The series on build W, arms tA and tP: 16 long walks, all clean; FileSystem imported (kl412 120 → 96); longer gaps than on U, the cause not isolated (2026-11-15 08:47 – 12:12)
+
+Build W of exp 0419 (V's AJM fixes on for good and FileSystem never lazy, plus its other changes),
+`~/bc5-work/exp0419/bin-W/normal/kyty_emulator` 04e986fb, words 21a23e5c; runner `memfast/night0412w.sh`
+(`mkw0412.py`), output `~/bc5-work/exp0412/n8/chainW.out`. A new boot (497fb3f3, up since about 07:20; the
+reboot before 08:47 was not this experiment's, cause unknown). Arms in turn: tA (the words as they are, dc412 on
+in odd rounds, off in even ones) and tP (`KYTY_BC5_DIAG_UNFORCE=KYTY_BC5_APR_POSIX KYTY_BC5_APR_POSIX=0`, the arm
+of n13P4). Planned to 06:45 or 60 walks; **ended after walk 16** by the stop file, the maintainer's word ("tak,
+kończ na 16"), written at 12:02:35 during walk 16, read by the runner after it. Lock empty and no emulator after it.
+
+| arm | walks | flips/s | longest gap ms | s with a gap > 100 ms | GTT MiB at 420 s | at 600 s | lowest avail | pinned at the end MiB | kl412 pieces |
+|---|---|---|---|---|---|---|---|---|---|
+| W tA | 8 | 24.3–26.1 (25.27) | 636–3,091 (2,013) | 77–143 (102) | 12,169–12,344 (12,253) | 12,185–12,297 (12,243) | 673 | 11,464–11,610 (11,557) | 96 |
+| W tA, dc412 on / off | 4 / 4 | (24.98) / (25.57) | | | (12,262) / (12,243) | (12,261) / (12,226) | | | |
+| W tP | 8 | 24.3–25.1 (24.81) | 555–3,860 (1,854) | 97–136 (111) | 12,198–12,322 (12,253) | 12,201–12,344 (12,260) | 523 | 11,532–11,640 (11,574) | 96–97 |
+| U tA (section 100) | 29 | 24.9–26.5 (25.71) | 532–734 | 60–113 | 12,103–12,358 (12,196) | 12,111–12,272 (12,200) | 478 | | 120 (n13P4) |
+| U tP (n13P3, n13P4) | 2 | 25.1, 25.4 | 674, 710 | | 12,206, 12,256 | 12,268, 12,212 | | | |
+
+Per walk, longest gap ms: A 1,820 636 1,861 2,816 2,886 832 2,162 3,091; P 3,860 3,475 1,026 2,303 624 702 555
+2,286.
+
+- [M] All 16 ended at G+620: 0 kernel lines, 0 crash lines, no timeout, no fault record, no CPU fault of the
+  title, 0 AJM "id given out while still alive" lines. The laptop's kernel stream of the whole boot holds no
+  page fault, ring timeout or reset (one clocksource watchdog line at 1,092 s, before the series).
+- [M] kl412 counts 96 pieces under lazy views with data where U counted 120: the 24 written chunks of
+  FileSystem are no longer lazy. That is the mechanism of W's cure, seen working.
+- [M] The longest gap is much longer on W: 11 of 16 walks over 1 s, up to 3,860 ms, against at most 734 ms in
+  U's 29 tA walks (881 in tJ). Flips are lower (tA 25.27 against 25.71); GTT means are about 45–55 MiB higher
+  and four walks lie above U's highest at 600 s; lowest available is higher (the fresh boot).
+- [M] When the long gaps fall (read afterwards, the top's GO, from `n8/raw/<tag>-fps.txt`, `-frames.txt` and the
+  journals). The route: start-screen cross at 87 s, slot 93, Continue 99, load seen 101–106, G 114–122. Every W gap
+  over 1 s except one (n15A8 96.7 s, 2,890 ms outside the host) is the game thread **inside the host, in
+  "prepare"**: n15P1 115.3 s 3,860 ms (prepare 3,755), n15A8 93.6 s 3,091 (2,961), n15P2 114.2 s 3,475 (3,364),
+  n15A4 109.7 s 2,816 (2,703), n15A5 95.9 s 2,886 (2,761). 32 frames with prepare over 200 ms in the 16 walks
+  (none in n15A6, n15P5). They fall in three loading phases only: 37–51 s (before the start screen; exp 0419's
+  acceptance x2cuta had 1,228 ms at 44.7 s with 1,203 in the host), 92–96 s (start screen, save list) and
+  109–116 s (the scene load, just before G). During the walk: two in-host frames under 1 s (247 s 718 ms,
+  639 s 833 ms) and a few outside the host.
+- [M] U tA (29 walks): every gap over 500 ms is at most 734 ms, nearly all at 98–100 s (save list, Continue) with
+  at most 171 ms in the host and the rest "outside" (the title); no U frame over 500 ms has more than 497 ms in
+  the host. W has the same 98–100 s gaps outside the host.
+- [M] No journal line names FileSystem near the gaps; W's journal still prints "lazy names: …FileSystem…" (the
+  variable as given; whether W's code skips it was not read).
+- [I] New on W: in-host "prepare" stalls of 0.5–3.9 s at loads. Corrected after exp 0421's reading (a99382b7), checked
+  here in `backend/src/direct.cpp:1541-1542`: "prepare" is `Device::submit`'s own work up to the BO list
+  (`prepare_ms = t_list - t_enter`), and it imports nothing; the imports (`direct_sync_one` → `import_memfd`)
+  run before it and are booked as "sync". What fits is that W's extra imports at loads (FileSystem is written
+  hardest there; file reads land in it) bring on reclaim, and prepare's own allocations and page faults then
+  wait. The AJM fixes ran on U in tJ without such stalls (881 ms at most). So FileSystem's
+  import is the likely cause, not proven. One comparison would decide it (proposed, not run, the maintainer's
+  call): W plain against W with `BC5_DIAG_LAZY_FILESYSTEM=1`, four walks each in turn, short (to G+60: every stall
+  is before G+5), measured by frames with prepare over 200 ms and the longest gap before G; the DIAG arm brings
+  back n13P4's condition, which a short walk limits (that fault came at 731 s).
+- [M] The box was rebooted at 12:25:52 by `systemctl reboot` from an SSH session logged in by password from the
+  LAN (journal of boot -1), during these reads, not by them; the reads' lock line was removed after the reboot.
+
+**One walk on the fresh boot** (the maintainer: "robię restart, a Ty masz jeden bieg W aby zweryfikować czasy na
+świeżym systemie"): boot b348813a (up 12:26:13), runner `night0412x.sh` (night0412w.sh with tags n16, stop file
+`STOP-n16`; `T_FIRST=3 T_MAX=3`, one arm), tag **n16A2**: tA, dc412 off, 12:29:02 – 12:41:51, output
+`~/bc5-work/exp0412/n8/chainX.out`.
+- [M] Clean to G+620: **26.2 flips/s, longest gap 589 ms**, 76 s with a gap over 100 ms; GTT 12,268 / 12,282 at
+  420 / 600 s; lowest available 963 MiB; pinned 11,574; kl412 96; 0 kernel, crash and AJM lines; the kernel
+  stream holds no amdgpu line after the boot. The play log's line "[bc5] exp 0419: FileSystem taken out of
+  BC5_DIRECT_LAZY_NAMES …" is there, as in n15A1: FileSystem imported in both.
+- [M] Gaps over 500 ms: 44 s (527 ms, 433 in the host, prepare 418), 101 s (552 ms, outside the host, the gap
+  U and W share) and 324 s (589 ms, 486 in the host). One frame with prepare over 200 ms (n15: 32 in 16 walks);
+  nothing at the scene load.
+- [M] Memory lines of the journals (exp 0401, every 10 s, 30–120 s): available at the loads was **higher** on the
+  n15 walks (about 1,050–1,420 MiB) than on U (750–1,150) or n16A2 (980–1,130); swap at a walk's start about 530
+  MiB on n15, 550 on U, 0 on n16A2. PSI memory full (avg10) is high in the seconds of n15's stalls (n15A8 14.1 at
+  100 s for the stall at 93 s; n15A5 10.1; n15A7 7.9 and 12.7; n15P4 9.9), low in the n15 walks without one (at
+  most 0.1–2.3 at the loads, one 4.9); U reaches 4–8 at the loads without any prepare stall; n16A2 at most 0.88.
+- [I] So a stall wants both: W's extra imports (booked as "sync", not "prepare"; on U FileSystem was lazy, so even a high PSI gave none)
+  and the host held on memory (reclaim or compaction, seen as PSI full) at that moment, which the boot of five
+  hours (swap 530 MiB) had at loads and the fresh boot did not. Not a shortage of free memory (there was more);
+  fragmentation fits better. A hypothesis: PSI may be the stall's effect rather than its cause, and the fresh
+  boot gave one walk. Deciding it would take a few W walks on a fresh boot and, if the maintainer wants, W
+  against `BC5_DIAG_LAZY_FILESYSTEM=1` on an older boot; neither run.
+- [I] What 8 walks per arm cannot tell: W changes more than FileSystem's list and runs on another boot, so the
+  longer gaps and the higher GTT belong to "W on this boot", not to FileSystem's price. No verdict on that
+  cost (Codex 10:07, R13). tP: 0 faults in 8 walks on W against 1 in 5 on T and U, in line with the cure but
+  chance not excluded.
+
 ## Verdict
 
 (The header above was dropped by mistake in commit 8cfa4549, section 87, and is restored here; the text below is unchanged.)
