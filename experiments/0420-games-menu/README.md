@@ -174,3 +174,7 @@ Prepared on the laptop only; each box step waits for the top's GO after the nigh
   one file and both shared emulators, copies under `~/bc5-work/exp0420/before-R`. Waiting for a box slot.
 - `CLAUDE-md-0420.diff`: the proposed CLAUDE.md lines for the shared W (hashes, record, undo, kernel 7.3.3-ogc1.1,
   launchers); not applied: CLAUDE.md changes on the maintainer's own word.
+  **Done 2026-11-15 13:04 to 13:05** (the top's GO): private normal f965b9ec, lean e19e2e3c (0 warnings in
+  `hostMenu.cpp`); shared tree **ba617454**, normal **fd3d0ed2**, lean **480656cc** (were bab1ce79 / c4aca9af); the
+  lock released at 13:05:36. Undo: `bash ~/bc5-work/exp0420/swapR/swap0420r.sh undo`. Not looked at on the screen
+  yet (the change only reads the file system when the list is read).
