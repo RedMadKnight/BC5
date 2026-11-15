@@ -1,0 +1,110 @@
+chain lock: exp 0417 | chain: exp 0419 build V (U + the library folds and V's steps), private: ASTRO BOT x4, the second title x6 (walk, walk K1R off, cutscene arm; twice each), lean, until about 08:22 | token 202611150722055964 | 2026-11-15 07:22:05
+binaries: B normal c25e4d2b3a524016d50868c0ed4045b7, B lean 08e88b0817329a265b0c35b758263362, shared normal 51af1ed78e84291caf5ee042ea82c46d
+w0a (astro) PASS: ran 120 s; RssAnon at the end 209016 kB; kernel lines 0, crash lines 0
+w0a stderr: title line 0, sdt417 
+w0b (astro) PASS: ran 120 s; RssAnon at the end 211660 kB; kernel lines 0, crash lines 0
+w0b stderr: title line 0, sdt417 
+w0c (astro) PASS: ran 120 s; RssAnon at the end 213608 kB; kernel lines 0, crash lines 0
+w0c stderr: title line 0, sdt417 
+ASTRO BOT start-state lines (exp 0418): 1; first: bc5-direct: start state (exp 0418): rows on: CP_COHER_START_DELAY SPI_SHADER_REQ_CTRL_PS GE_MIN_VTX_INDX GE_MAX_VTX_INDX VGT_INSTANCE_BASE_ID VGT_TF_RING VGT_HS_OFFCHIP_PARAM VGT_GS_RINGS; skipped: no
+w0f (astro) PASS: ran 30 s; RssAnon at the end 213380 kB; kernel lines 0, crash lines 0
+w0f stderr: title line 0, sdt417 [bc5] sdt417: transferring mount of PPSA01325/sce_sdmemory: no such save, NOT_FOUND (nothing created)
+w0f: the start PASSES with the fix
+w1a journal: would-learn 0, timeout-fault 0, fault record lines 0
+w1a import: t 61 s: 11186.0 MiB imported: 9904.0 under eager views, 1270.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 12.0 under no view (8.0 last seen under an eager or zero-list view, 4.0 never seen un
+w1a import: t 121 s: 11322.0 MiB imported: 9988.0 under eager views, 1304.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 30.0 under no view (26.0 last seen under an eager or zero-list view, 4.0 never seen 
+w1a route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 0, cross (slot 1) at 93 s;route: cross (Continue) at 99 s;route: the load seen at 103 s;route: gameplay G = 115 s (the load at 103 s);route: walk of 14 cycles (240 s) queued at 115 s;; watchdog: watchdog: emulator 91906 ended; 178 samples, lowest available 720 MiB, highest PSI full 5 %
+w1a at ~104 s: avail,swap,io 1137 305 0 162 2 | psi 0.13/0.13 1.14 | gtt 11732 
+w1a at ~60 s: avail,swap,io 1199 261 1 0 1 | psi 0.21/0.21 1.87 | gtt 11797 
+w1a input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 34 at 52.017 s
+w1a (nozeroskip) ended at G+240 (after 356 s; G 115, load 103, list 93); 26.5 flips/s over 351 s, 44 s with a gap over 100 ms, longest 714 ms; kernel lines 0, crash lines 0, ledger lines 0
+w1a title table: [bc5] exp 0419: title PPSA03671: 38 title defaults, 3 taken, 35 already set in the environment
+w1a start state: ~/bc5-data/captures/play-20261115-0729/gc/direct.log:start state (exp 0418): 15 dwords of constant rows in every prefix (rows 0xff, skipped 0x0)
+w1a last timing split: timing split over 128 submissions: probe 1.7 ms, anon sync 37.5, direct sync 7.8 (views 3.9; 2 full, 135 fast; scan 0.4, merge 0.1, drain 0.0 in 1, maps 2.7 = want 1.6 + drop 0.9 + zero 0.0 + add 0.2), learned 0.5, hints 1.5
+w1a frame-profile lines over 500 ms: 3; the largest: frame profile: t 100.441 s, 669.7 ms since the last flip; game thread inside the host 152.8 ms (sync 151.5, hints 0.4, prepare 0.4, list 0.2, cs 0.5, fence 0.0, cap 0.0, label waits 0.0, event waits 0;frame profile: t 123.159 s, 713.7 ms since the last flip; game thread inside the host 18.3 ms (sync 1.2, hints 0.4, prepare 3.0, list 0.1, cs 1.7, fence 0.0, cap 0.0, label waits 12.0, event waits 0.0;
+w2cuta journal: would-learn 0, timeout-fault 0, fault record lines 0
+w2cuta import: t 61 s: 11184.0 MiB imported: 9912.0 under eager views, 1268.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 4.0 under no view (4.0 last seen under an eager or zero-list view, 0.0 never seen 
+w2cuta import: t 121 s: 11214.0 MiB imported: 9140.0 under eager views, 1294.0 under data views, 0.0 under lazy views, 12.0 forced and under no view, 768.0 under no view (760.0 last seen under an eager or zero-list view, 0.0 never
+w2cuta route: route: cross (start screen) at 87 s;route: the save-slot list runs; down x 3, cross (slot 4) at 93 s;route: cross (Continue) at 99 s;route: the load seen at 103 s;route: gameplay G = 112 s (the load at 103 s);route: no input after the load (N_NOWALK=1), 320 s from 112 s;; watchdog: watchdog: emulator 184429 ended; 217 samples, lowest available 1070 MiB, highest PSI full 3 %
+w2cuta at ~104 s: avail,swap,io 1174 331 0 0 0 | psi 0.00/0.00 1.05 | gtt 11580 
+w2cuta at ~60 s: avail,swap,io 1222 331 4 0 23 | psi 0.60/0.60 1.62 | gtt 11796 
+w2cuta input: 1 joystick(s) watched, pad key presses 0; lowest flips/s in 50..84 s: 34 at 50.469 s
+w2cuta (nozeroskip) ended at G+320 (after 434 s; G 112, load 103, list 93); 29.9 flips/s over 429 s, 35 s with a gap over 100 ms, longest 407 ms; kernel lines 0, crash lines 0, ledger lines 0
+w2cuta title table: [bc5] exp 0419: title PPSA03671: 38 title defaults, 3 taken, 35 already set in the environment
+w2cuta start state: ~/bc5-data/captures/play-20261115-0735/gc/direct.log:start state (exp 0418): 15 dwords of constant rows in every prefix (rows 0xff, skipped 0x0)
+w2cuta last timing split: timing split over 128 submissions: probe 1.5 ms, anon sync 0.0, direct sync 0.6 (views 0.1; 1 full, 135 fast; scan 0.0, merge 0.0, drain 0.0 in 0, maps 0.0 = want 0.0 + drop 0.0 + zero 0.0 + add 0.0), learned 0.0, hints 1.2
+w2cuta frame-profile lines over 500 ms: 0; the largest: 
+w3l (lean) PASS: ran 120 s; RssAnon at the end 139408 kB; kernel lines 0, crash lines 0
+build V (U + the library folds and V's steps), private: all runs clean (the pass marks are in the lines above)
+chk0419w ended 07:45:15
+chain lock released
+=====
+chain lock: exp 0417 | chain: exp 0419 build V: the library folds and V's steps applied to the private tree, one rebuild of normal and lean (CPU only, no emulator), until about 07:38 | token 20261115070811154089 | 2026-11-15 07:08:11
+libs/libAudio.cpp 7 {'neg': 0, 'pos': 5, 'else': 0, 'tail': 0, 'left': 0}
+libs/libCamera.cpp 7 {'neg': 0, 'pos': 50, 'else': 0, 'tail': 50, 'left': 0}
+libs/libCompanion.cpp 7 {'neg': 0, 'pos': 10, 'else': 0, 'tail': 9, 'left': 0}
+libs/libDiscMap.cpp 7 {'neg': 0, 'pos': 2, 'else': 0, 'tail': 0, 'left': 0}
+libs/libGameLiveStreaming.cpp 5 {'neg': 0, 'pos': 13, 'else': 0, 'tail': 12, 'left': 25}
+libs/libHmd.cpp 7 {'neg': 0, 'pos': 12, 'else': 0, 'tail': 12, 'left': 0}
+libs/libInvitationDialog.cpp 5 {'neg': 0, 'pos': 5, 'else': 0, 'tail': 2, 'left': 2}
+libs/libMove.cpp 7 {'neg': 0, 'pos': 11, 'else': 0, 'tail': 11, 'left': 0}
+libs/libNet.cpp 0 {}
+libs/libNp.cpp 5 {'neg': 0, 'pos': 155, 'else': 0, 'tail': 154, 'left': 18}
+libs/libScreenShot.cpp 7 {'neg': 0, 'pos': 5, 'else': 0, 'tail': 4, 'left': 0}
+libs/libSharePlay.cpp 5 {'neg': 0, 'pos': 2, 'else': 0, 'tail': 2, 'left': 20}
+libs/libUlobjmgr.cpp 7 {'neg': 0, 'pos': 2, 'else': 0, 'tail': 2, 'left': 0}
+libs/libUsbd.cpp 5 {'neg': 0, 'pos': 61, 'else': 0, 'tail': 7, 'left': 4}
+libs/libVoice.cpp 7 {'neg': 0, 'pos': 2, 'else': 0, 'tail': 1, 'left': 0}
+libs/libVrTracker.cpp 7 {'neg': 0, 'pos': 10, 'else': 0, 'tail': 10, 'left': 0}
+libs/libWebBrowserDialog.cpp 5 {'neg': 0, 'pos': 7, 'else': 0, 'tail': 7, 'left': 4}
+steps: touchfn lazyfs liveids defer
+libs/controller.cpp: 9 edits, brace balance +0
+libs/controller.h: 1 edits, brace balance +0
+libs/ajm.cpp: 1 edits, brace balance +0
+libs/bc5LleAgc.cpp: 1 edits, brace balance +0
+libs/ajm.cpp: 1 edits, brace balance +0
+  d2570ef3  src/libs/controller.cpp
+  8732e807  src/libs/controller.h
+  e86b8991  src/libs/ajm.cpp
+  aa9f7a18  src/libs/bc5LleAgc.cpp
+  09d0d249  src/libs/libAudio.cpp
+  7f47b8db  src/libs/libCamera.cpp
+  e5688900  src/libs/libCompanion.cpp
+  d672ed2d  src/libs/libDiscMap.cpp
+  b1993a0e  src/libs/libGameLiveStreaming.cpp
+  8be91b93  src/libs/libHmd.cpp
+  2d09e61c  src/libs/libInvitationDialog.cpp
+  5368048e  src/libs/libMove.cpp
+  150d60ef  src/libs/libNet.cpp
+  e98f4eb1  src/libs/libNp.cpp
+  760134a8  src/libs/libScreenShot.cpp
+  1f31d874  src/libs/libSharePlay.cpp
+  b13edf34  src/libs/libUlobjmgr.cpp
+  37a233cd  src/libs/libUsbd.cpp
+  e9d2866c  src/libs/libVoice.cpp
+  c4f02f00  src/libs/libVrTracker.cpp
+  a8821ffa  src/libs/libWebBrowserDialog.cpp
+against tree-build-V-ajm-fixed-c44a94e8.md5: 0 of 133 files differ (the tree IS this variant, as made on the laptop)
+against tree-build-V-liveids-fixed-c4504857.md5: 1 of 133 files differ
+against tree-build-V-liveids-switch-f85fb913.md5: 1 of 133 files differ
+== 07:08:16 build normal
+normal: c25e4d2b3a524016d50868c0ed4045b7, warnings 34
+== 07:09:08 build lean
+lean: 08e88b0817329a265b0c35b758263362, warnings 34
+p3build0419 done 07:09:57: normal c25e4d2b, lean 08e88b08
+chain lock released
+=====INTERRUPTED
+chain lock: exp 0417 | chain: exp 0419 build V (U + the library folds and V's steps), private: ASTRO BOT x4, the second title x6 (walk, walk K1R off, cutscene arm; twice each), lean, until about 08:10 | token 20261115071007156860 | 2026-11-15 07:10:07
+binaries: B normal c25e4d2b3a524016d50868c0ed4045b7, B lean 08e88b0817329a265b0c35b758263362, shared normal 51af1ed78e84291caf5ee042ea82c46d
+v0a (astro) PASS: ran 120 s; RssAnon at the end 208536 kB; kernel lines 0, crash lines 0
+v0a stderr: title line 0, sdt417 
+v0b (astro) PASS: ran 120 s; RssAnon at the end 210364 kB; kernel lines 0, crash lines 0
+v0b stderr: title line 0, sdt417 
+v0c (astro) PASS: ran 120 s; RssAnon at the end 210368 kB; kernel lines 0, crash lines 0
+v0c stderr: title line 0, sdt417 
+ASTRO BOT start-state lines (exp 0418): 1; first: bc5-direct: start state (exp 0418): rows on: CP_COHER_START_DELAY SPI_SHADER_REQ_CTRL_PS GE_MIN_VTX_INDX GE_MAX_VTX_INDX VGT_INSTANCE_BASE_ID VGT_TF_RING VGT_HS_OFFCHIP_PARAM VGT_GS_RINGS; skipped: no
+v0f (astro) PASS: ran 30 s; RssAnon at the end 209464 kB; kernel lines 0, crash lines 0
+v0f stderr: title line 0, sdt417 [bc5] sdt417: transferring mount of PPSA01325/sce_sdmemory: no such save, NOT_FOUND (nothing created)
+v0f: the start PASSES with the fix
+Terminated                 sleep 1
+chain lock released

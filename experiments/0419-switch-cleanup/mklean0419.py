@@ -119,6 +119,20 @@ for d, _, fs in os.walk(SRC):
             open(p, "wb").write(t)
             files += 1
 
+# two more, by hand (the top session, 2026-11-15: "wytnij przy okazji, jeśli to jeden krok bez ryzyka"):
+# the four reset switches' names (a table for one journal line; the switches are constant off since E) and the period
+# of the ANON_SYNC thread (its default 1000 ms is env_num's own "unset" answer).
+f = File(os.path.join(SRC, "libs", "bc5LleAgc.cpp"))
+f.sub('static const char* const kM11Names[4] = {"BC5_DIRECT_RESET_REPLAY_ACB", "BC5_DIRECT_RESET_LABELS", "BC5_DIRECT_LEARN_GUEST_ONLY", "BC5_DIRECT_RESET_LABEL_JOURNAL"};\n',
+      '#ifdef BC5_LEAN\nstatic const char* const kM11Names[4] = {"", "", "", ""}; // exp 0419 (build W): the names are not in the lean binary\n#else\n'
+      'static const char* const kM11Names[4] = {"BC5_DIRECT_RESET_REPLAY_ACB", "BC5_DIRECT_RESET_LABELS", "BC5_DIRECT_LEARN_GUEST_ONLY", "BC5_DIRECT_RESET_LABEL_JOURNAL"};\n#endif\n')
+f.sub('bc5::load_stat::env_num("KYTY_BC5_ANON_SYNC_MS", 1000, 60\'000)', 'BC5_LEAN_OR(1000, bc5::load_stat::env_num("KYTY_BC5_ANON_SYNC_MS", 1000, 60\'000))')
+f.save()
+for w in ("BC5_DIRECT_RESET_REPLAY_ACB", "BC5_DIRECT_RESET_LABELS", "BC5_DIRECT_LEARN_GUEST_ONLY", "BC5_DIRECT_RESET_LABEL_JOURNAL", "KYTY_BC5_ANON_SYNC_MS"):
+    if left.get(w) == {"bc5LleAgc.cpp"}:
+        del left[w]
+        done[w] = done.get(w, 0) + 1
+
 f = File(os.path.join(SRC, "bc5", "env_rule.hpp"))
 f.sub("#pragma once\n",
       "#pragma once\n\n#include <cstdlib>\n\n"

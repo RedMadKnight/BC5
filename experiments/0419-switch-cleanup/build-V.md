@@ -1,4 +1,4 @@
-# Experiment 0419: build V, prepared on the laptop in the night of 2026-11-14/15, NOT built
+# Experiment 0419: build V, prepared on the laptop in the night of 2026-11-14/15; built and accepted on 2026-11-15
 
 Ordered by the top session (the maintainer: "kontynuuj"): tomorrow morning ONE compile and ONE acceptance of
 V = build U (patch 5b185960; normal b85a756d, lean e8c3d935) + everything that could be put together safely. The box
@@ -112,3 +112,40 @@ Each needs a compile of its own; none is in V because it sits in the hot path or
 
 Eight groups of dead code stay after V (the ninth row is not dead); before V there were ten, with the libraries'
 branches whole and the pad's touch code.
+
+## Built and accepted (2026-11-15 07:08 to 07:51, the box)
+
+V is the variant decided after the night series: steps `touchfn lazyfs liveids defer` with the library folds, patch
+`c44a94e8`. Raw: `raw/chk0419w.out` (the acceptance, then the build's output, then the acceptance the reboot cut).
+
+**Build** (`v0419round.sh build touchfn lazyfs liveids defer`, 07:08:16 to 07:09:57): **every part compiled at the
+first attempt, nothing was taken back.** The box's tree is the laptop's variant (0 of 133 files differ from
+`tree-build-V-ajm-fixed-c44a94e8.md5`). Normal `c25e4d2b`, lean `08e88b08`, 34 warnings in the rebuilt files.
+Copies with md5s and word lists: `~/bc5-work/exp0419/bin-V/`.
+
+**The pad check** at 07:07 said NO PAD (no joystick, no DualSense card); the maintainer then rebooted the box at
+07:19:48 and connected the pad. The acceptance begun at 07:10 was cut by the reboot and is void (its four ASTRO BOT
+starts had passed). A second start at 07:21 ran nothing: the start script refused the used tags `v*`. The
+acceptance was run a third time with tags `w*` (`chk0419w.sh`).
+
+**Acceptance** (`chk0419w.sh`, 07:22 to 07:45, every switch unset, RT on, no pad key):
+
+| Run | Result |
+|---|---|
+| w0a, w0b, w0c: ASTRO BOT 120 s from a fresh save directory | PASS three times, 0 kernel lines, 0 crash lines (the first ASTRO BOT runs with `defer` fixed on) |
+| w0f: ASTRO BOT 30 s on the kept bad save | PASS |
+| w1a: the second title, menu, load, walk to G+240 | clean: 26.5 flips/s over 351 s, longest gap 714 ms, 0 kernel lines, 0 crash lines |
+| w2cuta: the cutscene arm, 320 s without input | clean to G+320: 29.9 flips/s, longest gap 407 ms, 0 kernel lines |
+| w3l: the lean build 120 s | PASS |
+
+Read in w1a's play log: "FileSystem taken out of BC5_DIRECT_LAZY_NAMES (fault record 20261114-184017)" (the n13P4
+fix acts) and "1 live instance id(s) passed over, 0x000600ea given (create #16617)" (the AJM id fix acts where U gave
+out a live id). Memory figures are not comparable with runs before 2026-11-14 13:38 (the on-screen keyboard is off).
+
+**The software replug R12** (07:51, the private normal build, pins `pins0391-V-private.env`; raw `R12-*` in
+`../0413-np-session-v2-shared/integration/replug/raw/`): **PASS**, 3 pulls of 3, each closed and reopened the pad's
+stream on the DualSense, sequence done, the profile restored, 0 kernel lines, 0 crash lines. This also discharges
+the software replug that U owed (V contains U).
+
+**Words** (from the binaries, `strings`): the normal build holds 196 of the 202 words the source reads, the lean
+build 190. From the source: 202 read, **153 can be set**; without a verdict 0.
