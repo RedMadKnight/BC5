@@ -1,0 +1,76 @@
+chain lock: exp 0417 | chain: exp 0420: install of the lean-session race fix in the shared play-any.sh and lean-session.sh (maintainer's yes; no launch, no GPU), until about 12:23 | token 202611151218363736605 | 2026-11-15 12:18:36
+== 2026-11-15 12:18:36 kit: fix-lean-race.sh c3ea5d46, lean-session.sh 189885ea
+shared play-any.sh: 92c090c5; lean-session.sh: 88ea3fa7
+== dry
+play-any.sh now: 92c090c5; with the change: 1cd59817
+lean-session.sh now: 88ea3fa7; the new one: 189885ea
+--- /home/kjaniszewski/bc5-work/play-any.sh	2026-11-15 07:05:35.598627640 +0100
++++ /home/kjaniszewski/bc5-work/play-any.sh.race-new	2026-11-15 12:18:36.597791451 +0100
+@@ -24,9 +24,6 @@
+ # Experiment 0177: BC5_LEAN=1 (the "BC5 emulator (lean)" shortcut) runs the emulator built with
+ # KYTY_BC5_LEAN in ~/bc5-work/kytyplus-build-lean: no tracing, journal, counters, recorder or
+ # samplers, inside or outside; its own log file. The title scripts take the same switch.
+-# exp 0412 (2026-11-14, the maintainer: the lean shortcut stops the Plasma shell for the play): lean-session.sh stops
+-# plasma-plasmashell.service now and starts it again when this launcher is gone, whatever ended it.
+-if [ "${BC5_LEAN:-0}" = 1 ] && [ -x "$HOME/bc5-work/lean-session.sh" ]; then /usr/bin/bash "$HOME/bc5-work/lean-session.sh" stop $$; fi
+ if [ "${BC5_LEAN:-0}" = 1 ]; then
+   EMU=~/bc5-work/kytyplus-build-lean/src/kyty_emulator LOG=~/bc5-work/play-menu-lean-last.log
+ fi
+@@ -43,6 +40,14 @@
+ [ -x "$EMU" ] || { say "No emulator build at $EMU"; exit 1; }
+ [ -r "$ENVF" ] || { say "No settings file at $ENVF"; exit 1; }
+ mkdir -p "$KYTY_BC5_MENU_DIR"
++# exp 0412 (2026-11-14, the maintainer: the lean shortcut stops the Plasma shell for the play): lean-session.sh stops
++# plasma-plasmashell.service now and starts it again when this launcher is gone, whatever ended it. It comes after
++# every check that can refuse the start (2026-11-15, Codex 10:07 UTC, LESSONS R56: a second click used to stop the
++# shell and rewrite the state before pgrep refused it); a stop that finds a live lean session (exit 3) refuses too.
++if [ "${BC5_LEAN:-0}" = 1 ] && [ -x "$HOME/bc5-work/lean-session.sh" ]; then
++  /usr/bin/bash "$HOME/bc5-work/lean-session.sh" stop $$
++  [ $? = 3 ] && { say "A lean session is already running."; exit 1; }
++fi
+ 
+ # The empty window: the settings of bc5-run.env (the input file, Fullscreen=, the video driver),
+ # no game, no captures.
+dry: nothing changed
+== conditions
+no emulator, no launcher, no lean state: ok
+== apply
+play-any.sh now: 92c090c5; with the change: 1cd59817
+lean-session.sh now: 88ea3fa7; the new one: 189885ea
+--- /home/kjaniszewski/bc5-work/play-any.sh	2026-11-15 07:05:35.598627640 +0100
++++ /home/kjaniszewski/bc5-work/play-any.sh.race-new	2026-11-15 12:18:36.662791400 +0100
+@@ -24,9 +24,6 @@
+ # Experiment 0177: BC5_LEAN=1 (the "BC5 emulator (lean)" shortcut) runs the emulator built with
+ # KYTY_BC5_LEAN in ~/bc5-work/kytyplus-build-lean: no tracing, journal, counters, recorder or
+ # samplers, inside or outside; its own log file. The title scripts take the same switch.
+-# exp 0412 (2026-11-14, the maintainer: the lean shortcut stops the Plasma shell for the play): lean-session.sh stops
+-# plasma-plasmashell.service now and starts it again when this launcher is gone, whatever ended it.
+-if [ "${BC5_LEAN:-0}" = 1 ] && [ -x "$HOME/bc5-work/lean-session.sh" ]; then /usr/bin/bash "$HOME/bc5-work/lean-session.sh" stop $$; fi
+ if [ "${BC5_LEAN:-0}" = 1 ]; then
+   EMU=~/bc5-work/kytyplus-build-lean/src/kyty_emulator LOG=~/bc5-work/play-menu-lean-last.log
+ fi
+@@ -43,6 +40,14 @@
+ [ -x "$EMU" ] || { say "No emulator build at $EMU"; exit 1; }
+ [ -r "$ENVF" ] || { say "No settings file at $ENVF"; exit 1; }
+ mkdir -p "$KYTY_BC5_MENU_DIR"
++# exp 0412 (2026-11-14, the maintainer: the lean shortcut stops the Plasma shell for the play): lean-session.sh stops
++# plasma-plasmashell.service now and starts it again when this launcher is gone, whatever ended it. It comes after
++# every check that can refuse the start (2026-11-15, Codex 10:07 UTC, LESSONS R56: a second click used to stop the
++# shell and rewrite the state before pgrep refused it); a stop that finds a live lean session (exit 3) refuses too.
++if [ "${BC5_LEAN:-0}" = 1 ] && [ -x "$HOME/bc5-work/lean-session.sh" ]; then
++  /usr/bin/bash "$HOME/bc5-work/lean-session.sh" stop $$
++  [ $? = 3 ] && { say "A lean session is already running."; exit 1; }
++fi
+ 
+ # The empty window: the settings of bc5-run.env (the input file, Fullscreen=, the video driver),
+ # no game, no captures.
+applied: play-any.sh 1cd59817, lean-session.sh 189885ea; the old ones are /home/kjaniszewski/bc5-work/play-any.sh.before-race and /home/kjaniszewski/bc5-work/lean-session.sh.before-race
+== checks
+bash -n play-any.sh: ok
+bash -n lean-session.sh: ok
+play-any.sh 1cd59817 (expected 1cd59817), lean-session.sh 189885ea (expected 189885ea)
+kept: 92c090c5 /home/kjaniszewski/bc5-work/play-any.sh.before-race; 88ea3fa7 /home/kjaniszewski/bc5-work/lean-session.sh.before-race
+dry: would stop plasma-plasmashell.service (now active, memory 132 MiB) and start it again when the launcher is gone
+dry: nothing stopped
+install-race0420 done 12:18:36
+chain lock released

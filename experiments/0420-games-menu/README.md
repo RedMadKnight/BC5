@@ -138,3 +138,9 @@ Prepared on the laptop only; each box step waits for the top's GO after the nigh
 - `raw/swapW-dry-laptop.txt`: the patch's size and the two launcher diffs as the laptop sees them.
 - After the swap, on main: patch 0001 becomes `101555c7` (only if the swap's checks pass), and `backend/` gets the
   private W backend source files the swap copied (D19: main matches what the shared builds are built from).
+- **Step (a) done, 2026-11-15 12:18** (the top's GO after n15; the maintainer's "Yes, after it"): `round0420w.sh race`
+  (`install-race0420.sh`, one lock line, released): the shared `play-any.sh` 92c090c5 -> **1cd59817**, `lean-session.sh`
+  88ea3fa7 -> **189885ea**; `.before-race` copies read back (92c090c5, 88ea3fa7); no emulator, launcher or lean state
+  at the time; `bash -n` both; `lean-session.sh dry` sees the shell active. Undo: `bash
+  ~/bc5-work/exp0420/race-107e307a/fix-lean-race.sh undo`. Raw: `raw/race-install-20261115-1218.out`. Steps (b)-(d)
+  are on hold (the guardian's longer pauses on W).
