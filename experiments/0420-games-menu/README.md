@@ -197,6 +197,7 @@ Prepared on the laptop only; each box step waits for the top's GO after the nigh
   interleavings, only a record that it does not behave as the new checks require).
   `swap-lean-lock.sh` (dry, apply, undo) changes only the shared helper (189885ea -> 1f1be812), keeps it as
   `lean-session.sh.before-lock` (`.before-race` stays), checks that flock works on the box, refuses while an emulator
-  runs or a lean session is active; its stand-in run is `raw/test-swap-lean-lock.out`. **Not installed**: the top
-  picks the moment and puts it to the maintainer; `tools/scripts/launchers/lean-session.sh` on main stays 189885ea
-  until then.
+  runs or a lean session is active; its stand-in run is `raw/test-swap-lean-lock.out`. **Installed** 2026-11-15
+  17:21 on the maintainer's word ("1 i 2 - tak"): `swap-lean-lock.sh apply`, the real flock works on the box, the
+  shared helper is 1f1be812 (the old one is `lean-session.sh.before-lock`, 189885ea); merged to main c7405568, where
+  `tools/scripts/launchers/lean-session.sh` is 1f1be812 too. Undo: `bash ~/bc5-work/exp0420/lock/swap-lean-lock.sh undo`.
