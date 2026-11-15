@@ -48,9 +48,6 @@ IMAGE_SCRIPT=${BC5_IMAGE_SCRIPT:-$HOME/bc5-work/play-astro.sh}
 GAMES_DIR=${BC5_GAMES_DIR:-$HOME/bc5-data/games}
 BM=${BC5_MOUNT_BIN:-$HOME/bc5-work/bc5-tools-ubuntu/release/bc5-mount}
 SECOND_TITLE=PPSA03671
-# exp 0412 (2026-11-14, the maintainer: the lean shortcut stops the Plasma shell for the play): lean-session.sh stops
-# plasma-plasmashell.service now and starts it again when this launcher is gone, whatever ended it.
-if [ "${BC5_LEAN:-0}" = 1 ] && [ -x "$HOME/bc5-work/lean-session.sh" ]; then /usr/bin/bash "$HOME/bc5-work/lean-session.sh" stop $$; fi
 
 say() { echo "$*"; command -v notify-send >/dev/null 2>&1 && notify-send "BC5" "$*" 2>/dev/null; }
 result() { printf '%s\n' "$*" > "$KYTY_BC5_MENU_DIR/result.txt"; echo "$*"; }
@@ -59,6 +56,14 @@ if pgrep '^kyty_emulator' >/dev/null; then say "The emulator is already running.
 [ -x "$EMU" ] || { say "No emulator build at $EMU"; exit 1; }
 [ -r "$ENVF" ] || { say "No settings file at $ENVF"; exit 1; }
 mkdir -p "$KYTY_BC5_MENU_DIR" "$GAMES_DIR"
+# exp 0412 (2026-11-14, the maintainer: the lean shortcut stops the Plasma shell for the play): lean-session.sh stops
+# plasma-plasmashell.service now and starts it again when this launcher is gone, whatever ended it. It comes after
+# every check that can refuse the start (2026-11-15, Codex 10:07 UTC, LESSONS R56: a second click used to stop the
+# shell and rewrite the state before pgrep refused it); a stop that finds a live lean session (exit 3) refuses too.
+if [ "${BC5_LEAN:-0}" = 1 ] && [ -x "$HOME/bc5-work/lean-session.sh" ]; then
+  /usr/bin/bash "$HOME/bc5-work/lean-session.sh" stop $$
+  [ $? = 3 ] && { say "A lean session is already running."; exit 1; }
+fi
 
 # ---- titles and installed games ----
 
