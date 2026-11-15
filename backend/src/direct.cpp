@@ -58,6 +58,7 @@ struct SharedMap {
     std::uint64_t bo_offset = 0;
     std::uint32_t id = 0;
     amdgpu_bo_handle bo = nullptr;
+    bool readonly = false; // exp 0412 (tag cv412): mapped readable only (a K1r cover)
 };
 
 struct ScratchBo {
@@ -516,37 +517,6 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
         if (end != e && x > 1) d->impl_->product.x_limit = static_cast<std::uint32_t>(x);
         if (end != nullptr && *end == ':') d->impl_->product.yz_min = static_cast<std::uint32_t>(std::strtoul(end + 1, nullptr, 0));
     }
-    if (const char *e = std::getenv("BC5_DIRECT_GPU_CHECK_ZERO"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
-        d->impl_->env_zero = true; // experiment 0380
-        std::fprintf(stderr, "bc5-direct: experiment 0380 switch: the CP check also skips an indirect dispatch whose x, y or z argument is 0\n");
-    }
-    if (const char *e = std::getenv("BC5_DIRECT_ARGS_WB"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
-        d->impl_->env_args_wb = std::strcmp(e, "all") == 0 ? indirect_check::ArgsWb::all : indirect_check::ArgsWb::first_after_index_base; // experiment 0380 (F570)
-        std::fprintf(stderr, "bc5-direct: experiment 0380 switch: a GL2 write-back before the check of %s\n",
-                     d->impl_->env_args_wb == indirect_check::ArgsWb::all ? "every checked indirect dispatch" : "the first indirect dispatch after an INDEX_BASE");
-    }
-    if (const char *e = std::getenv("BC5_DIRECT_ARGS_FLUSH"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
-        d->impl_->env_args_flush = std::strcmp(e, "all") == 0 ? indirect_check::ArgsFlush::all : indirect_check::ArgsFlush::first_after_index_base; // experiment 0380 (F617)
-        std::fprintf(stderr, "bc5-direct: experiment 0380 switch: a CS_PARTIAL_FLUSH before the check of %s\n",
-                     d->impl_->env_args_flush == indirect_check::ArgsFlush::all ? "every checked indirect dispatch" : "the first indirect dispatch after an INDEX_BASE");
-    }
-    if (const char *e = std::getenv("BC5_DIRECT_ARGS_FLUSH_DRAWS"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
-        d->impl_->env_flush_draws = true; // experiment 0380 (F617)
-        std::fprintf(stderr, "bc5-direct: experiment 0380 switch: a CS_PARTIAL_FLUSH before the check of every checked indirect draw\n");
-    }
-    if (const char *e = std::getenv("BC5_DIRECT_ARGS_COPY"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
-        d->impl_->env_args_copy = true; // experiment 0380 (F566)
-        std::fprintf(stderr, "bc5-direct: experiment 0380 switch: every checked GFX-form indirect dispatch runs from the CP's copy of its arguments, the copy the check reads\n");
-    }
-    if (indirect_check::parse_yz_limit(std::getenv("BC5_DIRECT_GPU_CHECK_YZ"), d->impl_->yz)) { // experiment 0380
-        d->impl_->env_yz = true;
-        std::fprintf(stderr, "bc5-direct: experiment 0380 switch: the CP check refuses an indirect dispatch with y > %u or z > %u (never above the host's limits)\n",
-                     d->impl_->yz.y, d->impl_->yz.z);
-    }
-    if (const char *e = std::getenv("BC5_DIRECT_FORCE_START_000"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
-        d->impl_->env_force_start = true; // experiment 0380
-        std::fprintf(stderr, "bc5-direct: experiment 0380 switch: every indirect dispatch the GPU check pass sees gets FORCE_START_AT_000 in its initiator\n");
-    }
     if (const char *e = std::getenv("BC5_DIRECT_HOST_INDIRECT"); env_on(e)) { // experiment 0346
         d->impl_->env_host_indirect = true;
         if (std::strncmp(e, "learn", 5) == 0) {
@@ -794,7 +764,7 @@ std::vector<Mapping> Device::mappings() const {
     std::lock_guard lock(impl_->mutex);
     std::vector<Mapping> out;
     for (const auto &u : impl_->userptrs) out.push_back({u.va, u.size, u.readonly, false});
-    for (const auto &m : impl_->shared_maps) out.push_back({m.va, m.size, false, true});
+    for (const auto &m : impl_->shared_maps) out.push_back({m.va, m.size, m.readonly, true});
     return out;
 }
 
@@ -814,7 +784,7 @@ std::shared_ptr<const std::vector<Mapping>> Device::sorted_mappings() const {
         auto u = users.begin();
         for (const auto &m : impl_->shared_maps) {
             while (u != users.end() && u->va < m.va) out->push_back(*u++);
-            out->push_back({m.va, m.size, false, true});
+            out->push_back({m.va, m.size, m.readonly, true});
         }
         out->insert(out->end(), u, users.end());
         impl_->sorted = std::move(out);
@@ -863,12 +833,17 @@ std::uint32_t Device::import_memfd(int memfd, std::uint64_t offset, std::uint64_
 }
 
 bool Device::map_shared(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t size, std::uint64_t gpu_va) {
+    return map_shared(id, bo_offset, size, gpu_va, false); // exp 0412 (tag k1r412)
+}
+
+bool Device::map_shared(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t size, std::uint64_t gpu_va, bool readonly) {
     std::lock_guard lock(impl_->mutex);
     if (size == 0 || ((bo_offset | size | gpu_va) & 0xfff) != 0) return false;
     SharedBo *b = impl_->shared_bo_locked(id);
     if (b == nullptr || bo_offset + size > b->size) return false;
     const int rc = impl_->va_map(b->bo, bo_offset, size, gpu_va,
-                                 AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_WRITEABLE | AMDGPU_VM_PAGE_EXECUTABLE);
+                                 readonly ? AMDGPU_VM_PAGE_READABLE // exp 0412 (tag k1r412)
+                                          : AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_WRITEABLE | AMDGPU_VM_PAGE_EXECUTABLE);
     if (rc != 0) {
         std::fprintf(stderr, "bc5-direct: shared map at 0x%llx+0x%llx: %d\n",
                      static_cast<unsigned long long>(gpu_va), static_cast<unsigned long long>(size), rc);
@@ -877,7 +852,7 @@ bool Device::map_shared(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t
     // Experiment 0170: kept sorted by address (after any equal address, as push_back did).
     const auto at = std::upper_bound(impl_->shared_maps.begin(), impl_->shared_maps.end(), gpu_va,
                                      [](std::uint64_t va, const SharedMap &m) { return va < m.va; });
-    impl_->shared_maps.insert(at, SharedMap{gpu_va, size, bo_offset, id, b->bo});
+    impl_->shared_maps.insert(at, SharedMap{gpu_va, size, bo_offset, id, b->bo, readonly});
     b->maps++;
     impl_->list_gen++;
     return true;

@@ -120,6 +120,9 @@ public:
     // Maps [bo_offset, bo_offset + size) of an imported range at gpu_va (all page aligned). One
     // range may be mapped at several addresses (the guest's aliases of one physical range).
     bool map_shared(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t size, std::uint64_t gpu_va);
+    // exp 0412 (tag k1r412): readonly = the GPU may read these pages and not write them (AMDGPU_VM_PAGE_READABLE
+    // alone): a GPU write is a page fault with the address (exp 0412 E1, case 4). For the read-only zero cover.
+    bool map_shared(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t size, std::uint64_t gpu_va, bool readonly);
     // Experiment 0102: maps [va, va + size) as PRT pages (AMDGPU_VM_PAGE_PRT without a BO: reads
     // return 0, writes are dropped), for a window the title leaves partly unbacked on purpose
     // (the AMM window, F161). Later userptr and shared mappings inside it replace the PRT pages,
