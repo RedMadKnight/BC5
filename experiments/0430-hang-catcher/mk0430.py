@@ -11,6 +11,7 @@
 #                            NOPASSWD line on the box) into the capture directory, at most 2 per run; dedicated runs only
 #                            (F229: a halt at a stall that would have recovered is followed by a reset)
 import hashlib
+import os
 import sys
 
 BASE_MD5 = "0cda79b5"
@@ -447,6 +448,31 @@ def main() -> int:
         c = text.count(old)
         if c != 1:
             print(f"mk0430: anchor {i} matches {c} times")
+            return 1
+        text = text.replace(old, new)
+    # exp 0430 F2 + G (tag ho430): the code from ho430.cpp beside this script, and its four hooks
+    here = os.path.dirname(os.path.abspath(__file__))
+    ho = open(os.path.join(here, "ho430.cpp"), encoding="utf-8").read()
+    ho_edits = [
+        ("static void forget_label_writes(uint64_t seq, int ring, bool all) {\n\tstd::lock_guard lk(g_plw_mutex);\n",
+         ho + "static void forget_label_writes(uint64_t seq, int ring, bool all) {\n\tstd::lock_guard lk(g_plw_mutex);\n"
+         "\tho430::job_done(seq, ring, all); // exp 0430 (tag ho430)\n"),
+        ("\tif (!wait_satisfied(p, op == 0x93)) chain_flush(1); // ADR 0010: what the chain holds may write this label\n",
+         "\tho430::at_wait(p, op == 0x93, label, kind, job_ring(kind), ib, num_dwords, i); // exp 0430 (tag ho430): F2 and G\n"
+         "\t\t\t\t\tif (!wait_satisfied(p, op == 0x93)) chain_flush(1); // ADR 0010: what the chain holds may write this label\n"),
+        ("\t\tregister_label_writes(ib, num_dwords, r.executed_offsets, r.seq_no, r.ring); // experiment 0055\n",
+         "\t\tregister_label_writes(ib, num_dwords, r.executed_offsets, r.seq_no, r.ring); // experiment 0055\n"
+         "\t\tho430::job_submitted(ib, num_dwords, r.executed_offsets, r.seq_no, r.ring, kind); // exp 0430 (tag ho430)\n"),
+        ("\tif (!ok) t_wait_given_up = true;\n",
+         "\tif (!ok) t_wait_given_up = true;\n"
+         "\t\t\t\t\tif (!ok) ho430::given_up(broken, label, kind, job_ring(kind), i); // exp 0430 (tag ho430): G counts it\n"),
+        ("\tif (tables_on()) tab_dump(k, n);\n}",
+         "\tif (tables_on()) tab_dump(k, n);\n\tho430::dump(k); // exp 0430 (tag ho430)\n}"),
+    ]
+    for i, (old, new) in enumerate(ho_edits):
+        c = text.count(old)
+        if c != 1:
+            print(f"mk0430: ho430 anchor {i} matches {c} times")
             return 1
         text = text.replace(old, new)
     out = text.encode("utf-8", "surrogateescape")
