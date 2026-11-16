@@ -5933,10 +5933,10 @@ index 0000000..6567205
 +} // namespace bc5::start_state
 diff --git a/src/bc5/switch_defaults.hpp b/src/bc5/switch_defaults.hpp
 new file mode 100644
-index 0000000..b022ec9
+index 0000000..47709cc
 --- /dev/null
 +++ b/src/bc5/switch_defaults.hpp
-@@ -0,0 +1,351 @@
+@@ -0,0 +1,354 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +// Experiment 0413: the defaults of switches that went from the private test builds (exps 0401, 0405, 0409, 0412) into
 +// both shared builds. Each row is applied at process start with setenv(name, value, 0), before any static initializer
@@ -6069,6 +6069,9 @@ index 0000000..b022ec9
 +    // the two words both titles run with every day, until now only through a launcher or bc5-run.env
 +    {"BC5_DIRECT_CHAIN", "2"}, // F224
 +    {"BC5_GC_MODE", "direct"},
++    // exp 0425 C1 (2026-11-16, the maintainer's word): a 200 us EEVDF wake slice for guest threads below priority
++    // 733 (pthread.cpp). Soft, so KYTY_BC5_0425_WAKE_SLICE_US=0 turns it off.
++    {"KYTY_BC5_0425_WAKE_SLICE_US", "200"},
 +    {nullptr, nullptr}};
 +
 +// exp 0419: words whose option is removed and whose code default (the value when unset) is the tested behaviour.
@@ -29247,7 +29250,7 @@ index 9ea25b0..64784a7 100644
  			EXIT_IF(!AddMappedUnlocked(vaddr, size, MappingType::Private));
  			return true;
 diff --git a/src/kernel/pthread.cpp b/src/kernel/pthread.cpp
-index 5f87e6b..ada8136 100644
+index 5f87e6b..3bade10 100644
 --- a/src/kernel/pthread.cpp
 +++ b/src/kernel/pthread.cpp
 @@ -1,3 +1,5 @@
@@ -29800,7 +29803,7 @@ index 5f87e6b..ada8136 100644
  		}
  	}
  	CondRemoveWaiter(cond_value, thread);
-@@ -3381,10 +3690,52 @@ static void CleanupThread(void* arg) {
+@@ -3381,10 +3690,132 @@ static void CleanupThread(void* arg) {
  	thread->almost_done = true;
  }
  
@@ -29826,6 +29829,85 @@ index 5f87e6b..ada8136 100644
 +	return 0;
 +}
 +
++// ---- experiment 0425 C1: KYTY_BC5_0425_WAKE_SLICE_US=<100..3000> -----------------------------------------------------
++// Shared since 2026-11-16 (the maintainer's word): on by default at 200 us for every title, through kSoft in
++// bc5/switch_defaults.hpp; KYTY_BC5_0425_WAKE_SLICE_US=0 turns it off. Exp 0425: with JobArenaFix off, the
++// second title's fight crashed 0 of 10 with it against 6 of 15 controls (a rule-passing 4/4 vs 3/3, R13).
++// The console schedules a title's threads by fixed priority, so a woken game thread on a free core runs at once
++// (TODO(verify): no console measurement; the PS5 kernel is FreeBSD-derived). On this host the woken job workers
++// arrived 0.7-1.4 ms after the owner's signal (F453, F454), at nice 0 beside the host's own threads. EEVDF lets a
++// task request a shorter slice (sched_setattr, SCHED_OTHER with sched_runtime; Linux 6.12, clamped to 0.1-100 ms by
++// the kernel, TODO(verify) on the box's 7.3 kernel: the read-back line below is the exposure), and a woken task with a
++// shorter slice may preempt the running one (PREEMPT_SHORT). Applied at thread start and on Setprio to guest threads
++// below the background band (guest priority < 733); the thread's policy and nice are kept as read.
++struct Bc5SchedAttr {
++	uint32_t size;
++	uint32_t sched_policy;
++	uint64_t sched_flags;
++	int32_t  sched_nice;
++	uint32_t sched_priority;
++	uint64_t sched_runtime;
++	uint64_t sched_deadline;
++	uint64_t sched_period;
++};
++static_assert(sizeof(Bc5SchedAttr) == 48, "SCHED_ATTR_SIZE_VER0");
++
++static int Bc5WakeSliceUs() {
++	static const int v = [] {
++		const char* e = std::getenv("KYTY_BC5_0425_WAKE_SLICE_US");
++		int         us = 0;
++		if (bc5::env_rule::on(e)) {
++			char*      end = nullptr;
++			const long x   = std::strtol(e, &end, 10);
++			if (end != e && x > 0) {
++				us = static_cast<int>(std::clamp(x, 100L, 3000L));
++			}
++		}
++#ifndef BC5_LEAN
++		std::fprintf(stderr, "[bc5] exp 0425: C1 wake slice %s (%d us)\n", us > 0 ? "ON" : "off", us);
++#endif
++		return us;
++	}();
++	return v;
++}
++
++static void Bc5ApplyWakeSlice(Pthread thread, const char* why) {
++	const int us = Bc5WakeSliceUs();
++	if (us == 0 || thread == nullptr || thread->attr == nullptr || thread->host_thread_id == 0 ||
++	    thread->attr->guest_priority >= 733) {
++		return;
++	}
++	const auto   tid = static_cast<pid_t>(thread->host_thread_id);
++	Bc5SchedAttr cur {};
++	const long   rc0 = syscall(SYS_sched_getattr, tid, &cur, static_cast<unsigned>(sizeof(cur)), 0u);
++	long         rc1 = -1;
++	int          err = 0;
++	Bc5SchedAttr after {};
++	if (rc0 == 0 && (cur.sched_policy == SCHED_OTHER || cur.sched_policy == SCHED_BATCH)) {
++		Bc5SchedAttr a {};
++		a.size          = sizeof(a);
++		a.sched_policy  = cur.sched_policy;
++		a.sched_nice    = cur.sched_nice;
++		a.sched_runtime = static_cast<uint64_t>(us) * 1000u;
++		rc1             = syscall(SYS_sched_setattr, tid, &a, 0u);
++		err             = rc1 == 0 ? 0 : errno;
++		syscall(SYS_sched_getattr, tid, &after, static_cast<unsigned>(sizeof(after)), 0u);
++	}
++#ifndef BC5_LEAN
++	static std::atomic<int> logged {0};
++	if (logged.fetch_add(1, std::memory_order_relaxed) < 256) {
++		std::fprintf(stderr,
++		             "[bc5] exp 0425 slice: %s tid %d '%s' prio %d policy %u nice %d: set rc %ld errno %d, read back runtime %llu ns nice %d\n",
++		             why, static_cast<int>(tid), thread->name.c_str(), thread->attr->guest_priority, cur.sched_policy, cur.sched_nice, rc1,
++		             err, static_cast<unsigned long long>(after.sched_runtime), after.sched_nice);
++	}
++#else
++	(void)why;
++	(void)err;
++#endif
++}
++// ---- end of experiment 0425 C1 ------------------------------------------------------------------------------------
++
 +static void Bc5ApplyGuestPriority(Pthread thread, const char* why) {
 +	if (thread == nullptr || thread->attr == nullptr || thread->host_thread_id == 0) {
 +		return;
@@ -29834,6 +29916,7 @@ index 5f87e6b..ada8136 100644
 +	if (nice != 0 || why[0] == 's') { // a Setprio may also return a thread to 0
 +		SDL_LinuxSetThreadPriority(static_cast<Sint64>(thread->host_thread_id), nice);
 +	}
++	Bc5ApplyWakeSlice(thread, why); // experiment 0425 C1 (after the nice, which it keeps)
 +}
 +#endif
 +
@@ -29853,7 +29936,7 @@ index 5f87e6b..ada8136 100644
  	thread->unique_id = Common::Thread::GetThreadIdUnique();
  
  	g_pthread_self = thread;
-@@ -3396,6 +3747,20 @@ static void* RunThread(void* arg) {
+@@ -3396,6 +3827,20 @@ static void* RunThread(void* arg) {
  	os_thread_id = GetHostThreadId();
  #endif
  	thread->host_thread_id = os_thread_id;
@@ -29874,7 +29957,7 @@ index 5f87e6b..ada8136 100644
  
  	LOGF("\tPthread run begin: %s, id = %d, os_thread_id = %" PRIu64 ", entry = 0x%016" PRIx64
  	     ", arg = 0x%016" PRIx64 ", stack_addr = 0x%016" PRIx64 ", stack_size = %" PRIu64 "\n",
-@@ -3549,6 +3914,9 @@ int KYTY_SYSV_ABI PthreadCancel(Pthread thread) {
+@@ -3549,6 +3994,9 @@ int KYTY_SYSV_ABI PthreadCancel(Pthread thread) {
  	if (thread == nullptr) {
  		return KERNEL_ERROR_EINVAL;
  	}
@@ -29884,7 +29967,7 @@ index 5f87e6b..ada8136 100644
  
  	int result = pthread_cancel(thread->p);
  
-@@ -3650,6 +4018,9 @@ int KYTY_SYSV_ABI PthreadGetprio(Pthread thread, int* prio) {
+@@ -3650,6 +4098,9 @@ int KYTY_SYSV_ABI PthreadGetprio(Pthread thread, int* prio) {
  	if (thread == nullptr) {
  		return KERNEL_ERROR_ESRCH;
  	}
@@ -29894,7 +29977,7 @@ index 5f87e6b..ada8136 100644
  
  	EXIT_NOT_IMPLEMENTED(prio == nullptr);
  
-@@ -3670,6 +4041,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
+@@ -3670,6 +4121,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
  	if (thread == nullptr) {
  		return KERNEL_ERROR_ESRCH;
  	}
@@ -29904,7 +29987,7 @@ index 5f87e6b..ada8136 100644
  
  	sched_param param {};
  	int         pol = 0;
-@@ -3695,6 +4069,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
+@@ -3695,6 +4149,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
  #endif
  
  	thread->attr->guest_priority = prio;
@@ -29914,7 +29997,7 @@ index 5f87e6b..ada8136 100644
  	LOGF("\t PthreadSetprio: %d, %d\n", thread->unique_id, prio);
  	return OK;
  }
-@@ -3791,6 +4168,10 @@ int KYTY_SYSV_ABI PthreadRename(Pthread thread, const char* name) {
+@@ -3791,6 +4248,10 @@ int KYTY_SYSV_ABI PthreadRename(Pthread thread, const char* name) {
  	}
  
  	thread->name = std::string(name);
@@ -29925,7 +30008,7 @@ index 5f87e6b..ada8136 100644
  
  	return OK;
  }
-@@ -3850,6 +4231,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
+@@ -3850,6 +4311,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
  
  	int special_error = OK;
  	if (KernelClockGettimeSpecial(clock_id, tp, &special_error)) {
@@ -29933,7 +30016,7 @@ index 5f87e6b..ada8136 100644
  		return special_error;
  	}
  
-@@ -3867,6 +4249,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
+@@ -3867,6 +4329,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
  	tp->tv_nsec = t.tv_nsec;
  
  	if (result == 0) {
@@ -29941,7 +30024,7 @@ index 5f87e6b..ada8136 100644
  		return OK;
  	}
  	return KERNEL_ERROR_EINVAL;
-@@ -3994,7 +4377,7 @@ uint64_t KYTY_SYSV_ABI KernelGetTscFrequency() {
+@@ -3994,7 +4457,7 @@ uint64_t KYTY_SYSV_ABI KernelGetTscFrequency() {
  }
  
  uint64_t KYTY_SYSV_ABI KernelReadTsc() {
@@ -29950,7 +30033,7 @@ index 5f87e6b..ada8136 100644
  }
  
  uint64_t KYTY_SYSV_ABI KernelGetProcessTime() {
-@@ -4294,6 +4677,12 @@ void KYTY_SYSV_ABI pthread_yield() {
+@@ -4294,6 +4757,12 @@ void KYTY_SYSV_ABI pthread_yield() {
  	LibKernel::PthreadYield();
  }
  
@@ -29963,7 +30046,7 @@ index 5f87e6b..ada8136 100644
  int KYTY_SYSV_ABI sched_get_priority_max(int policy) {
  	PRINT_NAME();
  
-@@ -4431,6 +4820,11 @@ int KYTY_SYSV_ABI pthread_cond_signal(LibKernel::PthreadCond* cond) {
+@@ -4431,6 +4900,11 @@ int KYTY_SYSV_ABI pthread_cond_signal(LibKernel::PthreadCond* cond) {
  	return POSIX_PTHREAD_CALL(LibKernel::PthreadCondSignal(cond));
  }
  
@@ -29975,7 +30058,7 @@ index 5f87e6b..ada8136 100644
  int KYTY_SYSV_ABI pthread_cond_init(LibKernel::PthreadCond*           cond,
                                      const LibKernel::PthreadCondattr* attr) {
  	PRINT_NAME();
-@@ -4540,6 +4934,12 @@ int KYTY_SYSV_ABI pthread_rwlock_wrlock(LibKernel::PthreadRwlock* rwlock) {
+@@ -4540,6 +5014,12 @@ int KYTY_SYSV_ABI pthread_rwlock_wrlock(LibKernel::PthreadRwlock* rwlock) {
  	return POSIX_PTHREAD_CALL(LibKernel::PthreadRwlockWrlock(rwlock));
  }
  

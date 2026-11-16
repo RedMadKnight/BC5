@@ -719,3 +719,58 @@ This is a play, not a measured run. Under BOX-LOCK, files only: no emulator was 
 - The play journal: `~/bc5-data/captures/play-<date>-<time>/gc/direct.log`.
 - A GPU fault record, if any: `~/bc5-data/captures/faults/`.
 - The arena crash shows as an access violation at address `0xc` near the end of `play-last.log`.
+
+## The shared swap: C1 on by default (2026-11-16 11:04–11:12)
+
+The maintainer told the top session: "na razie wdróż to rozwiązanie do wszystkich wersji - najwyżej później
+wycofasz" ("roll this solution out to all versions for now; you can withdraw it later"). Top gave the GO.
+
+**What changed.** `mkc1.py` on the shared tree at patch 4945ef1b, applied by `int0425.sh` under one BOX-LOCK line.
+- `src/kernel/pthread.cpp` gets the private build's C1 block, unchanged in code: a 200 µs EEVDF slice request for
+  guest threads below priority 733.
+  - Its two stderr lines are under `#ifndef BC5_LEAN`.
+  - The switch itself is read in both builds.
+- `src/bc5/switch_defaults.hpp` gets the row `{"KYTY_BC5_0425_WAKE_SLICE_US", "200"}`.
+  - It is in **kSoft**, not kFixes, a deviation from the request. Since exp 0419, kFixes rows are set with
+    overwrite, so `=0` could not turn them off. kSoft is set without overwrite, so
+    `KYTY_BC5_0425_WAKE_SLICE_US=0` in the environment turns C1 off with no build, as asked.
+  - It applies to every title, normal and lean.
+- Not in it: the catcher, C2, C3, P1–P3. JobArenaFix stays as shared had it.
+- Launchers and shortcuts are unchanged. The C1 test shortcut was moved from `~/Pulpit` to
+  `~/bc5-work/trash-20261111/pulpit`.
+
+**Result** (`raw/swap/int0425.out`).
+- Patch: 4945ef1b → **700fd4c2**. 115 lines differ, all of them in the two files.
+  - `exp 0372` lines: 5; the pad_audio_route header is in.
+  - The file list is the same.
+  - The guard, learned-window and JobArenaFix lines are as before; no catcher, C2, C3 or PlayGo word.
+- Builds: normal 9da2a9d5 → **1be1cc1d**; lean f942676c → **b7fb337f**. The backend archive 9aab722c is unchanged.
+  - 3 warnings each, all already there before: two `wstring_convert` deprecations and the unused `sec_to_timeval`.
+- Switch words: both builds gained exactly `KYTY_BC5_0425_WAKE_SLICE_US` and lost none.
+  - Normal holds the "C1 wake slice" line.
+  - Lean holds no "exp 0425" text.
+
+**Smoke on lean** (`smoke0425.sh`; RT on, `ulimit -c 0`; `raw/swap/smoke0425.out`, `raw/swap/smoke/`).
+
+| tag | what | result |
+|---|---|---|
+| s425a | ASTRO BOT 45 s | PASS. No kernel line, no crash text, no pad key. |
+| s425t | the second title 300 s on lean, by time | PASS. Details below. |
+
+- s425t setup: exp 0412's named snapshot; crosses at 90, 100 and 108 s, then a walk from 170 s.
+- s425t result: ran 300 s, all 33 key lines done; no kernel line, no crash text, no pad key.
+- **Exposure on lean.** At 150 s, `/proc/<tid>/sched` `se.slice` showed 83 of the emulator's threads at
+  200000 ns and 14 at the default 2800000 ns. C1 is active in the lean build, which prints nothing.
+- The box's `dmesg` has amdgpu lines only from 2026-11-15 20:08, before this work.
+
+**Undo.**
+- Rollback without a build: `KYTY_BC5_0425_WAKE_SLICE_US=0` in the environment.
+- Full rollback: `bash ~/bc5-work/exp0425/undo0425.sh`, back to patch 4945ef1b (normal 9da2a9d5, lean f942676c).
+  Further back is exp 0422's undo, run after this one.
+- **The undo was fixed after the swap** (Codex, 10:07 UTC, confirmed).
+  - The bug: the first undo named the source paths `U1`/`U2`, and the pins file it sources sets `U1=`/`U2=` to md5s.
+    Its copies would have gone to files named by those sums.
+  - `test_undo0425.sh` reproduces it: the first version fails 7 of 9 checks and leaves two such files. The fixed
+    one (0d5ab7f2) passes 9 of 9, covering run alone, run from int and an incomplete pins file.
+  - The fixed undo also takes its own BOX-LOCK slot when run alone.
+  - It is installed on the box and has not been run there; nothing failed in the swap.
