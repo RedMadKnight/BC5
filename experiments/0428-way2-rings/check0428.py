@@ -31,6 +31,11 @@ def main():
     rs, st = rows(sys.argv[2]), sys.argv[3]
     for r in rs:
         print("row %-9s arm %s %-12s fps %s gaps %s" % (r["tag"], r["arm"], r["cls"], r["fps"], r["gaps"]))
+    if st == "long":  # iteration 3: PASS if every L row is NO_CRASH (the counters' split check is read beside it, README)
+        l = [r for r in rs if r["arm"] == "L"]
+        ok = len(l) == 3 and all(r["cls"] == "NO_CRASH" for r in l)
+        print("RULE long: %s (%s)" % ("PASS" if ok else ("OPEN" if len(l) < 3 and all(r["cls"] in ("NO_CRASH", "NOT_ROUTED") for r in l) else "FAIL"), ", ".join("%s %s" % (r["tag"], r["cls"]) for r in l)))
+        return 0
     if st in ("smoke", "smoke2"):
         q = [r for r in rs if r["arm"] == "Q"]
         if len(q) != 1:

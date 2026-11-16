@@ -183,6 +183,24 @@ f.sub("""					// Run 123: the compute queue's blocked buffer waits for a
 					// goes at once (its label writes may be what the compute queue waits for), then the wait is kept for the GPU as soon
 					// as its writer is on a ring, or satisfied on the CPU, within 8 ms; otherwise the path below and its limit.
 					if (w428_rings() > 0 && on_game_thread() && std::strcmp(kind, "dcb") == 0 && (!g_dev || !g_dev->wedged()) && !wait_satisfied(p, op == 0x93)) {
+						// exp 0428 iteration 3 (BC5_DIRECT_ACB_SPLIT_LATE, std::getenv: lean too): the 15:09 hang of the maintainer's
+						// play (GE stall at a partial flush, all compute rings idle) was in a split piece behind a full state prefix, and
+						// iteration 2 split ~18 k times per run although ~97 % of those waits were then kept for the GPU anyway. With the
+						// switch, a wait whose writer is already on a ring is kept at once, with no split: the head before it is in the
+						// same IB, so it runs first and its label writes land before the wait blocks the ME. Split only otherwise.
+						static const bool split_late = [] {
+							const char* e = std::getenv("BC5_DIRECT_ACB_SPLIT_LATE");
+							return e != nullptr && e[0] != 0 && std::strcmp(e, "0") != 0;
+						}();
+						if (split_late && ring_will_satisfy(p, op == 0x93, bc5::direct::kGfxRing)) {
+#ifndef BC5_LEAN
+							g_w428_two[4]++;
+#endif
+							t_keep_waits.push_back(p);
+							SoftCp::set_gpu_executed(p, len, {0});
+							i += len;
+							continue;
+						}
 						bool split = false;
 						if (dry_here && i > start) {
 							if ((start > 0 || prefix_all() || cs_used) && !full_prefix.empty()) submit_prefixed(full_prefix, ib + start, i - start);
@@ -212,6 +230,7 @@ f.sub("""					// Run 123: the compute queue's blocked buffer waits for a
 							journal("two rings (exp 0428): %s %u dwords waits at %u on 0x%" PRIx64 ": %s after %.2f ms%s\\n", kind, num_dwords, i, label,
 							        kept ? "kept for the GPU" : (ok ? "satisfied" : "NOT served"), static_cast<double>(SoftCp::now_ns() - t1) / 1e6, split ? ", head split off" : "");
 #endif
+						(void)split; // only the normal build's counters read it
 						if (kept) {
 							t_keep_waits.push_back(p);
 							SoftCp::set_gpu_executed(p, len, {0});
@@ -233,7 +252,7 @@ f.sub("""					// Run 123: the compute queue's blocked buffer waits for a
 f.sub("""static std::atomic<uint64_t> g_full_pieces {0}, g_full_ok {0}, g_full_failed {0};
 """, """static std::atomic<uint64_t> g_full_pieces {0}, g_full_ok {0}, g_full_failed {0};
 #ifndef BC5_LEAN
-static std::atomic<uint64_t> g_w428_two[4] = {}; // exp 0428 (tag w428c): dcb waits on two rings: kept for the GPU, satisfied, not served; heads split
+static std::atomic<uint64_t> g_w428_two[5] = {}; // exp 0428 (tag w428c): dcb waits on two rings: kept for the GPU, satisfied, not served; heads split; kept with no split (iteration 3)
 #endif
 """)
 
@@ -319,9 +338,9 @@ f.sub("""	if (qring != bc5::direct::kGfxRing && (g_comp_jobs++ & 0xffffu) == 0) 
 			std::fprintf(stderr,
 			             "[bc5] exp 0428 (tag w428c): t %.1f s: jobs gfx %" PRIu64 " comp0 %" PRIu64 " comp1 %" PRIu64 " comp2 %" PRIu64 " comp3 %" PRIu64
 			             "; acbs kept on gfx:%s; queue->ring:%s; dcb waits on two rings: kept %" PRIu64 " satisfied %" PRIu64 " NOT served %" PRIu64
-			             " heads split %" PRIu64 "; aq424 %s, parts given state %" PRIu64 ", parts with no tracked queue %" PRIu64 "; mec-indirect switch %s, acbs moved %" PRIu64 "\\n",
+			             " heads split %" PRIu64 " kept-without-split %" PRIu64 "; aq424 %s, parts given state %" PRIu64 ", parts with no tracked queue %" PRIu64 "; mec-indirect switch %s, acbs moved %" PRIu64 "\\n",
 			             timing_now(), jobs[4].load(), jobs[0].load(), jobs[1].load(), jobs[2].load(), jobs[3].load(), why.empty() ? " none" : why.c_str(),
-			             q.empty() ? " none" : q.c_str(), g_w428_two[0].load(), g_w428_two[1].load(), g_w428_two[2].load(), g_w428_two[3].load(),
+			             q.empty() ? " none" : q.c_str(), g_w428_two[0].load(), g_w428_two[1].load(), g_w428_two[2].load(), g_w428_two[3].load(), g_w428_two[4].load(),
 			             aq424_on() ? "ON" : "off", g_aq424_parts.load(), g_aq424_none.load(), w428_mec_ok() ? "ON" : "off", g_w428_mec_moved.load());
 		}
 	}
