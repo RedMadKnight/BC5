@@ -174,7 +174,9 @@ else
   [ "$(md5sum < "/proc/$EP/exe" | cut -d' ' -f1)" = "$WANT" ] || ENDED="SETUP: the emulator is not md5 $WANT"
   for w in "${WORDS[@]}" "${EXTRA[@]}" "KYTY_BC5_SAVEDATA_DIR=$SDD" "BC5_DIRECT_LEARNED=$LEARN" "KYTY_BC5_INPUT_CONFIG=$CFG"; do envof "$EP" | grep -qxF -- "$w" || { ENDED="SETUP: the emulator's environment lacks $w"; break; }; done
   [ "$(readlink -f "/proc/$EP/cwd")" = "$(readlink -f "$WD")" ] || ENDED="SETUP: the emulator's working directory is not $WD"
-  setsid nohup bash "$X/wd0412.sh" "$EP" "$R/$TAG-watchdog.txt" "${N_WD_MIB:-300}" 60 > /dev/null 2>&1 < /dev/null &
+  if [ "${N_NOWD:-0}" = 1 ]; then echo "exp 0428: no memory watchdog (N_NOWD=1, diagnostics only)" > "$R/$TAG-watchdog.txt"
+  else setsid nohup bash "$X/wd0412.sh" "$EP" "$R/$TAG-watchdog.txt" "${N_WD_MIB:-300}" 60 > /dev/null 2>&1 < /dev/null &
+  fi
   CGC=/sys/fs/cgroup$(cut -d: -f3 "/proc/$EP/cgroup" 2> /dev/null | head -1); OK0=$(awk '$1 == "oom_kill" { print $2 }' "$CGC/memory.events" 2> /dev/null); OK0=${OK0:-0}
 fi
 gate() {
