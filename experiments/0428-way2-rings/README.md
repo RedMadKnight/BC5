@@ -256,6 +256,22 @@ Both classes occur with way 2 off. The maintainer then stopped the comparison: m
 again, and JobArenaFix is off in every run from now on (relayed by the top session, 16:3x). The `longab` set ended
 with the machine-down. The stale lock line of its token was released at 16:36.
 
+### The unnecessary dcb splits (the maintainer's first item after the hangs)
+
+Both runs: fight route to G+120, RT on, way 2 on, JobArenaFix off.
+
+| run | build | splits | kept with no split | other |
+|---|---|---|---|---|
+| w428L10 | iteration 5, `SPLIT_LATE=2` | 18,625 | 2 (after the chain flush; 0 found in the IB) | 17,881 kept right after the split; 15 not served |
+| w428L11 | iteration 6, `SPLIT_LATE=3`, unit `0cda79b5`, build `185a18f8` | **69** | 18,784 by the poll | polled first: 75 satisfied, 0 cycle splits, 69 after 8 ms; 0 not served |
+
+Both runs: NO_CRASH, 43.9 flips/s, 0 kernel lines.
+
+The cause of the splits: the wait's writer is the ring thread's later acb, another thread. It reaches a ring within the
+poll. Exp 0132's form split the head before polling. Iteration 6 polls first, keeps the wait once its writer is on a
+ring, and splits only on exp 0132's cycle (the ring thread blocked on a label this buffer wrote before the wait; 0 seen)
+or after 8 ms (69). GFX jobs fell from about 92 k to about 74 k per run.
+
 ## Verdict
 
 **Way 2 works and is deployed for the second title.**

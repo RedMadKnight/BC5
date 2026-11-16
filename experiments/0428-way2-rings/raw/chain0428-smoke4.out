@@ -1,0 +1,9 @@
+chain lock: exp 0417 | chain: exp 0428 set smoke4: way 2 (compute rings + per-queue state) on the second title's fight route, private normal 185a18f8, until about 17:46 | token 2026111616463977982 | 2026-11-16 16:46:39
+chain0428 16:46:39: binary 185a18f8; kernel 7.3.3-ogc1.1.fc45.x86_64; boot 50210144
+chain0428 16:50:40: w428L11: w428L11 (L) ended at G+120 (after 229 s; G 108, load 102, list 94); 43.9 flips/s over 224 s, 11 s with a gap over 100 ms, longest 288 ms; kernel lines 0, crash lines 0, ledger lines 0; CLASS NO_CRASH; exposure w428-switch [[bc5] exp 0428 (tag w428): acb rings 4 (compute rings, one per guest queue, cross-ring waits kept for the GPU)] aq424-switch [[bc5] exp 0424 (tag aq424): acb queue state ON (every acb part that dispatches gets its queue's compute registers in fro] w428c-last [[bc5] exp 0428 (tag w428c): t 221.0 s: jobs gfx 73914 comp0 119 comp1 211217 comp2 21855 comp3 0; acbs kept on gfx: none; queue->ring: 0->1(1415331) 8->2(133328) moves 2 not-idle-in-2s 0; dcb waits on two rings: kept 51 satisfied 18 NOT served 0 heads split 69 kept-without-split 2 (on a ring 0, in the IB 0, after the chain 2, still split 18928; polled first: kept 18784 satisfied 75 cycle-split 0 timeout-split 69); aq424 ON, parts given state 134040, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 79043]; real pad keys 0
+row w428L11   arm L NO_CRASH     fps 43.9 gaps 11
+RULE smoke: PASS (class NO_CRASH)
+chain0428 16:50:50: ended
+chain lock released
+
+[exited with code 0]
