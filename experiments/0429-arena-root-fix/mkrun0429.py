@@ -57,6 +57,9 @@ ch = ch[:a] + '''#!/usr/bin/env bash
 #   (the first build's arms A and H and its smoke h429X1, with AFFINITY=1, are gone with that build)
 #   CHAIN_SET=smoke2:  h429M1 (once: the 13-CPU model runs, the trace shows the map and the masks applied)
 #   CHAIN_SET=smoke3:  h429M4 (build 3, the run-time CPU mapping; every arm also BC5_0430_G=0: exp 0430's catcher off for timing)
+#     Z  M + KYTY_BC5_0429_PRIO_ORDER=2 (the job-worker band 450-549 at nice -3, lower priorities below it)
+#   every arm from build 4 on also KYTY_BC5_0429_WAITS=1 (the wait catcher: where each thread is at the fault)
+#   CHAIN_SET=screen3: h429C1 h429Z1 h429M5 h429C2 h429Z2 h429M6 (or one or two at a time: rep<k> with REP_TAGS)
 #   CHAIN_SET=screen2: h429C1 h429M2 h429Y1 h429X2 h429C2 h429M3 h429Y2 h429X3
 #   CHAIN_SET=rep<k>: set by REP_TAGS (the arms that survived, with controls between)
 # TARGET (the crash at the site) and KERNEL do not stop the chain. Stops: a real pad key (R51), the STOP file
@@ -71,10 +74,11 @@ ch = one(ch, 'WANT=$(cat "$W/exp0428/binary.md5")', 'WANT=$(cat "$W/exp0429/norm
 a = ch.index('case "$SET" in\n'); b = ch.index('esac\n', a) + 5
 ch = ch[:a] + '''case "$SET" in
   smoke2) TAGS="h429M1" ;;
-  smoke3) TAGS="h429M4" ;;  # build 3: the run-time CPU mapping, on exp 0430's fix object
+  smoke3) TAGS="h429M4" ;;
+  screen3) TAGS="h429C1 h429Z1 h429M5 h429C2 h429Z2 h429M6" ;;  # build 4: + the wait catcher in every arm, arm Z  # build 3: the run-time CPU mapping, on exp 0430's fix object
   screen2) TAGS="h429C1 h429M2 h429Y1 h429X2 h429C2 h429M3 h429Y2 h429X3" ;;
   rep[0-9]*) TAGS=${REP_TAGS:?REP_TAGS for a rep set} ;;
-  *) say "NOT STARTED, CHAIN_SET is smoke2, smoke3, screen2 or rep<k>"; exit 1 ;;
+  *) say "NOT STARTED, CHAIN_SET is smoke2, smoke3, screen2, screen3 or rep<k>"; exit 1 ;;
 esac
 ''' + ch[b:]
 ch = one(ch, '[ -e "$HERE/STOP" ] && { say "NOT STARTED, $HERE/STOP exists"; exit 1; }',
@@ -82,10 +86,11 @@ ch = one(ch, '[ -e "$HERE/STOP" ] && { say "NOT STARTED, $HERE/STOP exists"; exi
 a = ch.index('armwords() {'); b = ch.index('\n}\n', a) + 3
 ch = ch[:a] + '''armwords() {
   case "$1" in
-    h429C*) echo "KYTY_BC5_0429_TRACE=1 BC5_0430_G=0" ;;
-    h429M*) echo "KYTY_BC5_0429_TRACE=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1" ;;
-    h429Y*) echo "KYTY_BC5_0429_TRACE=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_PRIO_ORDER=1" ;;
-    h429X*) echo "KYTY_BC5_0429_TRACE=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_PRIO_ORDER=1 KYTY_BC5_0425_HANDOFF_US=300" ;;
+    h429C*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0" ;;
+    h429M*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1" ;;
+    h429Y*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_PRIO_ORDER=1" ;;
+    h429Z*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_PRIO_ORDER=2" ;;
+    h429X*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_PRIO_ORDER=1 KYTY_BC5_0425_HANDOFF_US=300" ;;
     *) return 1 ;;
   esac
 }

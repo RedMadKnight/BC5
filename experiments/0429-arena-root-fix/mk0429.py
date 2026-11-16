@@ -108,6 +108,11 @@ def gp_h(lines):
 
 
 def rl_cpp(lines):
+    i = idx(lines, 'EXIT("Access violation: %s [%016" PRIx64 "] %s\\n",', 'runtimeLinker access violation')
+    ind = lines[i][:len(lines[i]) - len(lines[i].lstrip())]
+    lines[i:i] = ['#ifndef BC5_LEAN', ind + 'bc5_0429_dump_waits(); // exp 0429 catcher: where every thread is at the fault', '#endif']
+    j = idx(lines, 'static Program*              g_tls_main_program        = nullptr;', 'runtimeLinker file scope')
+    lines[j + 1:j + 1] = ['#ifndef BC5_LEAN', 'extern "C" void bc5_0429_dump_waits(); // kernel/semaphore.cpp, exp 0429 catcher', '#endif']
     del lines[idx(lines, 'extern "C" int bc5_title_switch_job_arena_fix();', 'runtimeLinker extern')]
     i = idx(lines, '// BC5 (experiment 0359): the current thread\'s thread control block', 'runtimeLinker tcb')
     if lines[i + 1] != 'extern "C" uint8_t* bc5_tls_main_tcb() {' or lines[i + 3] != '}' or lines[i + 4] != '':
@@ -168,14 +173,17 @@ PRIO_FN = '''// ---- experiment 0429: KYTY_BC5_0429_PRIO_ORDER=1, the console's 
 // The console runs a title's threads by fixed priority (TODO(verify): no console measurement; FreeBSD-derived kernel):
 // a lower number always wins. Here 300-732 were all nice 0, so the title's Hi job workers (500) shared the CPU equally
 // with its Lo workers (600), physics (550, 700), video and IO threads (exp 0360 F471: the Hi workers 156-205 ms a
-// second in the run queue at the fight). On: 550-599 +1, 600-649 +2, 650-699 +3, 700-732 +4; the rest as before.
-static bool Bc5PrioOrder() {
-	static const bool v = [] {
-		const bool on = bc5::env_rule::on(std::getenv("KYTY_BC5_0429_PRIO_ORDER"));
+// second in the run queue at the fight). 1: 550-599 +1, 600-649 +2, 650-699 +3, 700-732 +4; 2: as 1, and 450-549 (the
+// band of the job workers and what ranks with them) -3, above the host's own threads at 0. The rest as before. One rule
+// over the console's priority range, no title rows.
+static int Bc5PrioOrder() {
+	static const int v = [] {
+		const char* e = std::getenv("KYTY_BC5_0429_PRIO_ORDER");
+		const int   m = bc5::env_rule::on(e) ? (e[0] == '2' ? 2 : 1) : 0;
 #ifndef BC5_LEAN
-		std::fprintf(stderr, "[bc5] exp 0429: prio order %s\\n", on ? "ON" : "off");
+		std::fprintf(stderr, "[bc5] exp 0429: prio order %s (%d)\\n", m != 0 ? "ON" : "off", m);
 #endif
-		return on;
+		return m;
 	}();
 	return v;
 }
@@ -187,12 +195,16 @@ static int Bc5GuestNice(int guest_priority) {
 	if (guest_priority >= 733) {
 		return 5;
 	}
-	if (guest_priority >= 550 && Bc5PrioOrder()) {
+	if (guest_priority >= 550 && Bc5PrioOrder() != 0) {
 		return std::min(4, (guest_priority - 500) / 50);
+	}
+	if (guest_priority >= 450 && Bc5PrioOrder() == 2) {
+		return -3;
 	}
 	return 0;
 }'''
 
+WAITS_BLOCK = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'waits0429.cpp'), encoding='utf-8').read()
 AFF_BLOCK = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'affinity0429.cpp'), encoding='utf-8').read()
 
 
@@ -244,6 +256,22 @@ def semaphore(path):
         stop('%s is not its pin' % path)
     for old, new in patch0425.SEMA:
         text = one(text, old, new, 'semaphore (exp 0425)')
+    # exp 0429's wait catcher (normal build only): waits0429.cpp after exp 0425's helpers, and its four hooks
+    end_h = "// ---- end of experiment 0425's helpers ------------------------------------------------------------------------------\n"
+    text = one(text, end_h, end_h + WAITS_BLOCK, 'semaphore catcher block')
+    text = one(text, '\t\tstd::atomic<uint32_t> bc5_waking {0}; // exp 0425 C3: 1 while a waker has still to wake this waiter\n',
+               '\t\tstd::atomic<uint32_t> bc5_waking {0}; // exp 0425 C3: 1 while a waker has still to wake this waiter\n'
+               '\t\tint                   bc5_w = -1;       // exp 0429 catcher: the wait slot\n', 'semaphore waiter field')
+    text = one(text, '\tm_bc5_readied++;\n', '\tm_bc5_readied++;\n#ifndef BC5_LEAN\n\tbc5_0429w::OnReady(waiter->bc5_w); // exp 0429 catcher\n#endif\n',
+               'semaphore ready hook')
+    text = one(text, '\tAddWaiter(&waiter);\n\n\twhile (!waiter.ready) {\n',
+               '\tAddWaiter(&waiter);\n#ifndef BC5_LEAN\n\tif (bc5_0429w::On()) {\n\t\twaiter.bc5_w = bc5_0429w::OnWait(m_name); // exp 0429 catcher\n\t}\n#endif\n\n\twhile (!waiter.ready) {\n',
+               'semaphore wait hook')
+    text = one(text, '\t\t\tRemoveWaiter(&waiter);\n\t\t\t*ptr_micros = 0;\n\t\t\treturn Result::TimedOut;\n',
+               '\t\t\tRemoveWaiter(&waiter);\n#ifndef BC5_LEAN\n\t\t\tbc5_0429w::OnEnd(waiter.bc5_w, false); // exp 0429 catcher\n#endif\n\t\t\t*ptr_micros = 0;\n\t\t\treturn Result::TimedOut;\n',
+               'semaphore timeout hook')
+    text = one(text, '\tBc5Resumed(&waiter); // exp 0425\n',
+               '\tBc5Resumed(&waiter); // exp 0425\n#ifndef BC5_LEAN\n\tbc5_0429w::OnEnd(waiter.bc5_w, true); // exp 0429 catcher\n#endif\n', 'semaphore resume hook')
     save(path, text, crlf)
 
 

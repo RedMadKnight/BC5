@@ -74,6 +74,8 @@ build() {
         for v in normal lean; do strings "$E/$v/kyty_emulator" | grep -qxF "$w" || stop "$w is not in $v"; done
     done
     strings "$E/normal/kyty_emulator" | grep -qxF KYTY_BC5_0429_TRACE || stop "KYTY_BC5_0429_TRACE is not in normal"
+    strings "$E/normal/kyty_emulator" | grep -qxF KYTY_BC5_0429_WAITS || stop "KYTY_BC5_0429_WAITS is not in normal"
+    strings "$E/lean/kyty_emulator" | grep -qF KYTY_BC5_0429_WAITS && stop "lean holds KYTY_BC5_0429_WAITS"
     if [ "${BASE0430:-0}" = 1 ]; then strings "$E/normal/kyty_emulator" | grep -qxF BC5_0430_F3 || stop "BC5_0430_F3 is not in normal (BASE0430=1)"; fi
     strings "$E/lean/kyty_emulator" | grep -qF KYTY_BC5_0429_TRACE && stop "lean holds KYTY_BC5_0429_TRACE"
     for v in normal lean; do
