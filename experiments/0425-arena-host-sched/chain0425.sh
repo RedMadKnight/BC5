@@ -6,11 +6,13 @@
 #                    K P3 call cost 200 us x4
 #   CHAIN_SET=p3rep (2026-11-16): C x6 against K (P3 call cost 200 us) x6, interleaved C K C K ...
 #   CHAIN_SET=sched:  C control x3, S C1 wake slice 200 us x4, Y C2 handoff 300 us x4, D C3 direct wake x4
+#   CHAIN_SET=confirm (2026-11-16, top's GO): C x6, S (C1) x6, Y (C2) x6, the order rotated per round:
+#     C S Y / S Y C / Y C S, twice
 # Each run: run0425f.sh, slot 4, the 14:50 record's gameplay at G, G+120 s. The rule is check0425.py's, fixed before
 # the runs (README). Stops (R55): a kernel GPU line, a real pad key (R51), any class but TARGET/NO_CRASH/NOT_ROUTED,
 # a second NOT_ROUTED, a STOP file ($HERE/STOP, read before each run). A TARGET run (the known crash, no kernel line)
 # continues the chain only with CHAIN_TARGET_OK=1, which the top session sets by name when it starts the chain.
-# usage (on the box, detached, in ~/bc5-work/exp0425): CHAIN_SET=playgo|sched CHAIN_TARGET_OK=1 bash chain0425.sh
+# usage (on the box, detached, in ~/bc5-work/exp0425): CHAIN_SET=playgo|p3rep|sched|confirm CHAIN_TARGET_OK=1 bash chain0425.sh
 set -u
 ulimit -c 0
 export LC_ALL=C
@@ -28,7 +30,8 @@ case "$SET" in
   playgo) TAGS="f425C1 f425L1 f425F1 f425K1 f425L2 f425F2 f425K2 f425C2 f425L3 f425F3 f425K3 f425C3 f425L4 f425F4 f425K4" ;;
   p3rep) TAGS="f425C7 f425K5 f425C8 f425K6 f425C9 f425K7 f425C10 f425K8 f425C11 f425K9 f425C12 f425K10" ;;  # 2026-11-16, top's GO: C against P3, 6+6
   sched) TAGS="f425C4 f425S1 f425Y1 f425D1 f425S2 f425Y2 f425D2 f425C5 f425S3 f425Y3 f425D3 f425C6 f425S4 f425Y4 f425D4" ;;
-  *) say "NOT STARTED, CHAIN_SET is playgo, p3rep or sched"; exit 1 ;;
+  confirm) TAGS="f425C13 f425S5 f425Y5 f425S6 f425Y6 f425C14 f425Y7 f425C15 f425S7 f425C16 f425S8 f425Y8 f425S9 f425Y9 f425C17 f425Y10 f425C18 f425S10" ;;  # 2026-11-16, top's GO
+  *) say "NOT STARTED, CHAIN_SET is playgo, p3rep, sched or confirm"; exit 1 ;;
 esac
 mkdir -p "$R" || exit 1
 for t in $TAGS; do { [ -e "$R/$t-start.txt" ] || [ -e "$R/$t-end.txt" ] || [ -e "$R/${t}R-start.txt" ]; } && { say "NOT STARTED, tag $t used"; exit 1; }; done

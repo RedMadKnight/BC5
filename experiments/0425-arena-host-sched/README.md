@@ -577,3 +577,33 @@ What this suggests next, the top session's decision:
 - the maintainer's own play with one of them and `JobArenaFix` off;
 - the costs measured on lean;
 - only then a shared-build decision.
+
+## CHAIN_SET=confirm: C1 and C2 against interleaved controls (the top session's GO, 2026-11-16; fixed before the runs)
+
+**Setup.** As in the sched set; only the tags and the counts change.
+- The private normal 81e8d0f7, the named snapshot, slot 4, the 14:50 record, RT on, `ulimit -c 0`.
+- One BOX-LOCK line for the chain.
+- `JobArenaFix` off in every arm (`KYTY_BC5_JOB_ARENA_FIX=0`, as in all of this experiment's runs), with the catcher
+  on. Otherwise there is no crash to prevent.
+- 18 runs, the order rotated per round:
+  - C13 S5 Y5 / S6 Y6 C14 / Y7 C15 S7 / C16 S8 Y8 / S9 Y9 C17 / Y10 C18 S10;
+  - C is the control, S is C1 (wake slice 200 µs), Y is C2 (handoff 300 µs).
+- Before the start: no `kyty_emulator` runs, and the maintainer is not playing.
+- The chain stops after the current run on:
+  - a real pad key, i.e. the maintainer plays;
+  - a kernel GPU line;
+  - a class other than NO_CRASH or TARGET;
+  - a second NOT_ROUTED;
+  - a STOP file.
+
+**Rule** (`check0425.py rule <rows> confirm`):
+- The control needs at least 3 of 6 at the site, or the set has **no conclusion**.
+- Each of C1 and C2:
+  - **HOLDS** at 6 of 6 NO_CRASH, each run exposed (C1: `C1-hi-ok` > 0; C2: `C2-lines` > 0);
+  - is **REFUTED** by any TARGET;
+  - is **NO TEST** if a run lacks its exposure;
+  - is **OPEN** otherwise.
+- A run without fix-off, pass-through and catcher lines counts as no test.
+- The one-sided Fisher exact p against the control is printed as information only: exchangeable runs assumed, not a
+  probability of the cause (R13).
+- The catcher's crash-type takes are reported as description only (R11).

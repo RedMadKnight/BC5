@@ -4,6 +4,8 @@
     C2-lines <n> C3-on <n> crash-type-taken <n>
 usage: check0425.py rule <rows> [set]
 The set p3rep (fixed 2026-11-16 before its runs): the control needs at least 3 of 6 at the site, P3 holds at 6 of 6.
+The set confirm (fixed 2026-11-16 before its runs): the control needs at least 3 of 6 at the site, C1 and C2 each
+hold at 6 of 6.
 One-sided Fisher exact p of each arm against the control is printed as information only (R13)."""
 import sys
 from math import comb
@@ -42,7 +44,7 @@ def fisher_le(a_hit, a_n, c_hit, c_n):
 
 def rule(path, set_name=""):
     rows = parse(path)
-    need = 3 if set_name == "p3rep" else 2
+    need = 3 if set_name in ("p3rep", "confirm") else 2
     by = {a: [r for r in rows if r[0][4] == a and r[1] != "NOT_ROUTED"] for a in ARMS}
     # every counted run must show the fix off and the catcher armed (the pass-through hook), or the run tested nothing
     bad = [r[0] for r in rows if r[1] in ("TARGET", "NO_CRASH") and (num(r[2], "fix-off") < 1 or num(r[2], "pass-through") < 1
@@ -59,6 +61,8 @@ def rule(path, set_name=""):
         if a == "C":
             continue
         if set_name == "p3rep" and a == "K":
+            want = 6
+        if set_name == "confirm" and a in ("S", "Y"):
             want = 6
         rs = [r for r in by[a] if r[0] not in bad]
         if not rs and not any(r[0][4] == a for r in rows):
