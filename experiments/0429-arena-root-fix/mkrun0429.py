@@ -50,12 +50,13 @@ ch = ch[:a] + '''#!/usr/bin/env bash
 # named snapshot; the private normal build of exp 0429 (one binary; only the switches differ). One BOX-LOCK line.
 #   arms (every run also KYTY_BC5_0429_TRACE=1):
 #     C  none of the candidates (exp 0425 C1 and exp 0428's way 2 as the shared defaults have them)
-#     P  KYTY_BC5_0429_PRIO_ORDER=1
-#     A  KYTY_BC5_0429_AFFINITY=1
-#     H  KYTY_BC5_0425_HANDOFF_US=300 (exp 0425 C2)
-#     X  P + A + H
-#   CHAIN_SET=smoke:  h429X1 (once: the build runs, the trace shows the title's masks)
-#   CHAIN_SET=screen: h429C1 h429X2 h429P1 h429A1 h429H1 h429C2 h429X3 h429P2 h429A2 h429H2
+#     P  KYTY_BC5_0429_PRIO_ORDER=1 (not in screen2: it adds to M as Y)
+#     M  KYTY_BC5_0429_CPU13=1 (the title's 13-CPU model, its masks applied)
+#     Y  M + P
+#     X  M + P + KYTY_BC5_0425_HANDOFF_US=300 (exp 0425 C2)
+#   (the first build's arms A and H and its smoke h429X1, with AFFINITY=1, are gone with that build)
+#   CHAIN_SET=smoke2:  h429M1 (once: the 13-CPU model runs, the trace shows the map and the masks applied)
+#   CHAIN_SET=screen2: h429C1 h429M2 h429Y1 h429X2 h429C2 h429M3 h429Y2 h429X3
 #   CHAIN_SET=rep<k>: set by REP_TAGS (the arms that survived, with controls between)
 # TARGET (the crash at the site) and KERNEL do not stop the chain. Stops: a real pad key (R51), the STOP file
 # ($HERE/STOP or ~/bc5-work/exp0429/STOP, read before each run), any other class, a second NOT_ROUTED.
@@ -68,10 +69,10 @@ ch = one(ch, '[ -x "$BIN" ] && [ -s "$W/exp0428/binary.md5" ]', '[ -x "$BIN" ] &
 ch = one(ch, 'WANT=$(cat "$W/exp0428/binary.md5")', 'WANT=$(cat "$W/exp0429/normal/binary.md5")', 'md5 file 2')
 a = ch.index('case "$SET" in\n'); b = ch.index('esac\n', a) + 5
 ch = ch[:a] + '''case "$SET" in
-  smoke) TAGS="h429X1" ;;
-  screen) TAGS="h429C1 h429X2 h429P1 h429A1 h429H1 h429C2 h429X3 h429P2 h429A2 h429H2" ;;
+  smoke2) TAGS="h429M1" ;;
+  screen2) TAGS="h429C1 h429M2 h429Y1 h429X2 h429C2 h429M3 h429Y2 h429X3" ;;
   rep[0-9]*) TAGS=${REP_TAGS:?REP_TAGS for a rep set} ;;
-  *) say "NOT STARTED, CHAIN_SET is smoke, screen or rep<k>"; exit 1 ;;
+  *) say "NOT STARTED, CHAIN_SET is smoke2, screen2 or rep<k>"; exit 1 ;;
 esac
 ''' + ch[b:]
 ch = one(ch, '[ -e "$HERE/STOP" ] && { say "NOT STARTED, $HERE/STOP exists"; exit 1; }',
@@ -80,10 +81,9 @@ a = ch.index('armwords() {'); b = ch.index('\n}\n', a) + 3
 ch = ch[:a] + '''armwords() {
   case "$1" in
     h429C*) echo "KYTY_BC5_0429_TRACE=1" ;;
-    h429P*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_PRIO_ORDER=1" ;;
-    h429A*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_AFFINITY=1" ;;
-    h429H*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0425_HANDOFF_US=300" ;;
-    h429X*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_PRIO_ORDER=1 KYTY_BC5_0429_AFFINITY=1 KYTY_BC5_0425_HANDOFF_US=300" ;;
+    h429M*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_CPU13=1" ;;
+    h429Y*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_CPU13=1 KYTY_BC5_0429_PRIO_ORDER=1" ;;
+    h429X*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_CPU13=1 KYTY_BC5_0429_PRIO_ORDER=1 KYTY_BC5_0425_HANDOFF_US=300" ;;
     *) return 1 ;;
   esac
 }

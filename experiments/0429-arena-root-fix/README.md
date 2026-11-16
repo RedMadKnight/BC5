@@ -155,3 +155,14 @@ and shared them with Havok and Bink. This smoke therefore says nothing for or ag
 entry, as exp 0388 arm A did without pinning, F791), and each guest CPU i mapped to one host logical CPU, SMT siblings
 paired as the console pairs them (TODO(verify): the console's CPU numbering; the box's sibling list must be read).
 That puts the owner on its own host CPU apart from the Hi workers, and leaves host CPUs for the emulator's own threads.
+
+## Second build, prepared on the laptop (2026-11-16 22:2x)
+
+`mk0429.py` now carries `KYTY_BC5_0429_CPU13=1` in place of AFFINITY: the default thread mask 0x1fff (PthreadAttrInit,
+so the title reads 13 CPUs and makes 8 workers per entry), and every guest mask applied at start and at Setaffinity
+with guest CPU i (0–12) as one host logical CPU, guest 2k and 2k+1 the two SMT threads of host core k (siblings from
+`/sys`). With the title's masks that puts MainThread (guest 8) on host core 4, the Render Thread (guest 10) on core 5,
+the Hi workers (guest 0–7) on cores 0–3, and leaves the second thread of core 6 and all of core 7 without a title
+thread unless one asks. The trace prints the map once. Exp 0388 arm A (0x1fff without pinning) crashed 3 of 3 (F791),
+so the new element is the pinning. Arms of `screen2`: C, M (CPU13), Y (M + PRIO_ORDER), X (Y + C2 300 µs); `smoke2`
+is h429M1. Not built yet; the box is exp 0430's.
