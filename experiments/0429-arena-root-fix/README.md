@@ -213,3 +213,21 @@ candidates. Its records stay on the box for exp 0430, untouched by this experime
   base, if its units do not overlap ours (asked 22:5x); (2) build 3 + smoke2 (h429M1 is used: rename to h429M4 or
   higher, the chain refuses a used tag); (3) screen2; (4) rep sets of the survivors.
 - **Tags used so far:** h429X1 (TARGET, first build), h429M1 (KERNEL, build 2).
+
+## Build 3 changed again before it was built: no fixed CPU count (the maintainer, 2026-11-16 ~23:00)
+
+"13 procesorów => a jak w innej grze będzie 14? musisz ustalić to dynamicznie dla dowolnej gry." CPU13 is gone.
+`KYTY_BC5_0429_GUEST_CPUS=1` (`affinity0429.cpp`, inserted by `mk0429.py`) derives everything at run time, for any
+title:
+
+- the host CPU list: every CPU whose topology `/sys` shows, in SMT sibling-group order (0,1,2,3,… on this box, where
+  siblings are numbered next to each other; 0,8,1,9,… on a machine that numbers them apart);
+- the default mask of a new thread: one guest CPU per host CPU in that list (16 here). The title's own masks then
+  narrow it as it asks;
+- every guest mask, at thread start and at Setaffinity: guest CPU i → the i-th host CPU of the list (modulo its
+  length), so the title's split of its threads (its owner on a CPU of its own, its workers on others) is kept;
+- logged in the normal build only: the list and the default mask once, each growth of the union of CPUs the title has
+  asked for (with the thread that asked), and with `KYTY_BC5_0429_TRACE=1` each thread's mask, priority and nice.
+
+`KYTY_BC5_0429_PRIO_ORDER` stays as it was: one rule over the console's priority range (lower number → lower nice,
+the job-worker band at nice 0), no title rows. The arms of `screen2` use `GUEST_CPUS` where they used CPU13.

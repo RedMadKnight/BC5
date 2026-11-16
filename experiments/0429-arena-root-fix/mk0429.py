@@ -17,9 +17,10 @@ place, and the crash must be solved by the host.
    - KYTY_BC5_0429_PRIO_ORDER=1 (pthread.cpp, Bc5GuestNice): guest priorities 550-732 keep their order as nice +1..+4
      below the job workers (550-599 +1, 600-649 +2, 650-699 +3, 700-732 +4); up to 299 -15, 300-549 0, from 733 +5 as
      before;
-   - KYTY_BC5_0429_CPU13=1 (pthread.cpp): the title's 13-CPU model: the default mask 0x1fff, and each guest CPU 0-12 as
-     one host logical CPU (guest 2k, 2k+1 = the SMT threads of host core k), applied at start and at Setaffinity
-     (exp 0429's second build; the first build's AFFINITY=1|2 read the bits as cores and is gone);
+   - KYTY_BC5_0429_GUEST_CPUS=1 (pthread.cpp, affinity0429.cpp): the title's own CPU requests on this host, for any
+     title, all derived at run time: the host CPU list in SMT sibling order from /sys, the default mask one guest CPU
+     per host CPU, and every guest mask applied with guest CPU i -> the i-th host CPU of the list (exp 0429's third
+     build; the first build's AFFINITY and the second's CPU13, a fixed 13-CPU model, are gone);
    - exp 0425's semaphore edits unchanged (patch0425.SEMA): C2 KYTY_BC5_0425_HANDOFF_US, C3 KYTY_BC5_0425_DIRECT_WAKE,
      and its counters (KYTY_BC5_0425_CATCH, normal only, now read by nothing).
 3. Catcher, normal build only: KYTY_BC5_0429_TRACE=1 logs each guest thread's mask, priority and nice at start and at
@@ -192,140 +193,7 @@ static int Bc5GuestNice(int guest_priority) {
 	return 0;
 }'''
 
-AFF_BLOCK = '''
-// ---- experiment 0429: KYTY_BC5_0429_CPU13=1, the title's 13-CPU model with its masks applied --------------------
-// The title's masks use guest CPUs 0-12 (exp 0429's smoke trace: Job Hi 0xff, Job Lo/Bk 0x1ff, MainThread 0x100 or
-// 0x800, Render Thread 0x400, IO and audio 0x800-0x1a00), but the host's default mask was 0x7f, so the title counted 7
-// CPUs (F790) and every mask was only stored. On: the default mask is 0x1fff (13 CPUs; the title then makes 8 workers per
-// entry), and at thread start and at Setaffinity each guest CPU i (0-12) becomes one host logical CPU: guest CPUs 2k and
-// 2k+1 are the two SMT threads of host core k (TODO(verify): the console's CPU numbering; host siblings from
-// /sys/devices/system/cpu/cpu<k>/topology/thread_siblings_list). Guest CPUs 0-12 use host cores 0-6 and the first
-// thread of core 6; the rest of the host's CPUs carry no title thread unless the title asks. A mask with no bit in 0-12
-// is left alone. KYTY_BC5_0429_TRACE=1 (normal build) logs each guest thread's mask, priority and nice at start,
-// Setaffinity and Setprio (the first 400 lines) and the CPU map once.
-static int Bc5Cpu13() {
-	static const int v = [] {
-		const bool on = bc5::env_rule::on(std::getenv("KYTY_BC5_0429_CPU13"));
-#ifndef BC5_LEAN
-		std::fprintf(stderr, "[bc5] exp 0429: 13-CPU model %s\\n", on ? "ON" : "off");
-#endif
-		return on ? 1 : 0;
-	}();
-	return v;
-}
-
-static bool Bc5AffinityTrace() {
-#ifndef BC5_LEAN
-	static const bool v = bc5::env_rule::on(std::getenv("KYTY_BC5_0429_TRACE"));
-	return v;
-#else
-	return false;
-#endif
-}
-
-struct Bc5CpuMap {
-	int host[13];
-};
-
-static const Bc5CpuMap& Bc5Map() {
-	static const Bc5CpuMap v = [] {
-		Bc5CpuMap m {};
-		// Host core k is the k-th distinct sibling group in CPU order (the box numbers SMT siblings next to each other,
-		// 0-1, 2-3, ...: exp 0429's smoke h429M1, whose first map took CPU k for core k and folded 13 CPUs onto 7).
-		for (int k = 0; k < 7; k++) {
-			m.host[2 * k] = 2 * k; // fallback without /sys: adjacent siblings
-			if (2 * k + 1 < 13) {
-				m.host[2 * k + 1] = 2 * k + 1;
-			}
-		}
-		for (int c = 0, k = 0; c < 64 && k < 7; c++) {
-			int  sib[2] = {c, c};
-			int  n      = 0;
-			char path[96];
-			std::snprintf(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/topology/thread_siblings_list", c);
-			FILE* f = std::fopen(path, "r");
-			if (f != nullptr) {
-				char line[128] = {};
-				if (std::fgets(line, sizeof(line), f) != nullptr) {
-					const char* p = line;
-					while (*p >= '0' && *p <= '9' && n < 2) { // "a,b" or "a-b"
-						char*      end = nullptr;
-						const long a   = std::strtol(p, &end, 10);
-						long       b   = a;
-						p              = end;
-						if (*p == '-') {
-							b = std::strtol(p + 1, &end, 10);
-							p = end;
-						}
-						for (long c = a; c <= b && n < 2; c++) {
-							sib[n++] = static_cast<int>(c);
-						}
-						if (*p == ',') {
-							p++;
-						}
-					}
-				}
-				std::fclose(f);
-			}
-			if (n == 0 || sib[0] != c) {
-				continue; // not readable, or not the first CPU of its group
-			}
-			if (n < 2) {
-				sib[1] = sib[0]; // no sibling: both guest CPUs on the one host CPU
-			}
-			m.host[2 * k] = sib[0];
-			if (2 * k + 1 < 13) {
-				m.host[2 * k + 1] = sib[1];
-			}
-			k++;
-		}
-#ifndef BC5_LEAN
-		if (Bc5AffinityTrace()) {
-			std::fprintf(stderr, "[bc5] exp 0429 cpu map (guest:host):");
-			for (int i = 0; i < 13; i++) {
-				std::fprintf(stderr, " %d:%d", i, m.host[i]);
-			}
-			std::fprintf(stderr, "\\n");
-		}
-#endif
-		return m;
-	}();
-	return v;
-}
-
-static void Bc5ApplyAffinity(Pthread thread, const char* why) {
-	if (thread == nullptr || thread->attr == nullptr || thread->host_thread_id == 0) {
-		return;
-	}
-	const uint64_t mask = thread->attr->affinity;
-	int            rc   = -1; // not applied
-	if (Bc5Cpu13() != 0 && (mask & 0x1fffu) != 0) {
-		cpu_set_t set;
-		CPU_ZERO(&set);
-		for (int i = 0; i < 13; i++) {
-			if (((mask >> i) & 1u) != 0) {
-				CPU_SET(Bc5Map().host[i], &set);
-			}
-		}
-		rc = sched_setaffinity(static_cast<pid_t>(thread->host_thread_id), sizeof(set), &set) == 0 ? 0 : errno;
-	}
-#ifndef BC5_LEAN
-	if (Bc5AffinityTrace()) {
-		static std::atomic<int> logged {0};
-		if (logged.fetch_add(1, std::memory_order_relaxed) < 400) {
-			std::fprintf(stderr, "[bc5] exp 0429 thread: %s tid %d '%s' prio %d nice %d mask 0x%llx applied %s\\n", why,
-			             static_cast<int>(thread->host_thread_id), thread->name.c_str(), thread->attr->guest_priority,
-			             Bc5GuestNice(thread->attr->guest_priority), static_cast<unsigned long long>(mask),
-			             rc == -1 ? "no" : rc == 0 ? "yes" : "FAILED");
-		}
-	}
-#else
-	(void)why;
-	(void)rc;
-#endif
-}
-// ---- end of experiment 0429 affinity -------------------------------------------------------------------------------
-'''
+AFF_BLOCK = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'affinity0429.cpp'), encoding='utf-8').read()
 
 
 def pthread(path):
@@ -342,10 +210,10 @@ def pthread(path):
     end_c1 = '// ---- end of experiment 0425 C1 ------------------------------------------------------------------------------------\n'
     text = one(text, end_c1, end_c1 + AFF_BLOCK, 'pthread after C1')
     text = one(text, '\t(*attr)->affinity       = 0x7f;\n',
-               '\t(*attr)->affinity       = Bc5Cpu13() != 0 ? 0x1fff : 0x7f; // experiment 0429: the title\'s 13-CPU model\n',
+               '\t(*attr)->affinity       = Bc5GuestDefaultMask(); // experiment 0429: one guest CPU per host CPU when mapping\n',
                'pthread attr init')
     text = one(text, 'int KYTY_SYSV_ABI PthreadAttrInit(PthreadAttr* attr) {\n',
-               'static int Bc5Cpu13(); // experiment 0429, defined with its affinity block\n\nint KYTY_SYSV_ABI PthreadAttrInit(PthreadAttr* attr) {\n',
+               'static uint64_t Bc5GuestDefaultMask(); // experiment 0429, defined with its guest CPU block\n\nint KYTY_SYSV_ABI PthreadAttrInit(PthreadAttr* attr) {\n',
                'pthread forward')
     text = one(text, '\tBc5ApplyGuestPriority(thread, "start");\n#endif\n',
                '\tBc5ApplyGuestPriority(thread, "start");\n\tBc5ApplyAffinity(thread, "start"); // experiment 0429\n#endif\n',
