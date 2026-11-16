@@ -259,3 +259,28 @@ names are not plain strings in its own binary either. Checked instead: a symbol 
 Exp 0430's h430Y1 (its build 6 `b2770458` = the shared unit + its fix, way 2, no JobArenaFix, the fight route) ended in
 this experiment's crash at 294 s (G+187), 0 kernel lines: the crash comes on 0430's fix build without any candidate of
 this experiment, as expected.
+
+## h429Z1 (2026-11-17 00:52–00:54, a gap of exp 0430's chain Y): arm Z out, and the catcher's first picture
+
+Build 4, arm Z (`GUEST_CPUS=1`, `PRIO_ORDER=2`, catcher on, `BC5_0430_G=0`): **CLASS TARGET at 119 s = G+10**, 39.0
+flips/s, no kernel line. Exposure: "guest CPU mapping ON", "prio order ON (2)", "wait catcher ON". Arm Z is OUT by the
+rule. Raw: `raw/n/h429Z1-waits.txt` (the band lines and the 113 per-thread lines at the fault).
+
+What the catcher shows (one crash, descriptive):
+
+- **At the fault every Hi worker was asleep on `JobLoaderSema`, but each had gone to sleep only 7–146 µs before** (two
+  entered their wait during the dump itself). So they were busy until just before the fault and found nothing left: the
+  owner had the crash job. The fault comes some time after the owner took the job (the job's own loop runs first), so
+  this is after the push, not at it; it fits F454 (workers busy at the push), not sleeping workers.
+- **The semaphore's wake is not slow.** Over 1.35 million wakes of `JobLoaderSema`: 461k under 20 µs, 421k 20–100 µs,
+  218k 0.1–0.5 ms, 21k 0.5–2 ms, 38 over 2 ms, none over 8 ms. Other semaphores alike.
+- **Run time and run-queue time per group** (/proc schedstat at the fault, about 119 s of process life): the 8 Hi workers
+  ran 65.6 s and waited 40.9 s for a CPU over 393k slices each, about 13 µs per wake. The Lo workers ran 28.7 s, waited
+  57.3 s. MainThread (host name game-main) ran 37.7 s on its own CPU 8 and was the only thread running at the fault. The
+  CPUs 0–7 the Hi workers may use were far from full. So the workers lose by microseconds per wake-up, not by
+  starvation, and a nice level cannot buy that back.
+
+Next (to be checked in the title's code at the next gap): whether the title's worker spins before it sleeps on its
+semaphore, and how it bounds that spin (a time read through an import, or a count). A spin bounded by a host time
+source that runs at the wrong rate would end the spin too soon on this host and send the worker to sleep where the
+console's worker would still be spinning when the owner pushes. That would be a host fix for every title.

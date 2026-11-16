@@ -1,0 +1,147 @@
+   h429Z1:TARGET
+chain0429 00:54:39: ended
+LOCK: 
+[bc5] exp 0429: guest CPU mapping ON
+[bc5] exp 0429: prio order ON (2)
+[bc5] exp 0429: wait catcher ON
+[bc5] exp 0429 waits: 50000 resumes; ready-to-run JobLoaderSema <20us 9438 <100us 25419 <500us 3112 <2ms 15 <8ms 4 >=8ms 0; other <20us 8533 <100us 3037 <500us 439 <2ms 4 <8ms 0 >=8ms 0
+[bc5] exp 0429 waits: 100000 resumes; ready-to-run JobLoaderSema <20us 21149 <100us 49318 <500us 6002 <2ms 18 <8ms 4 >=8ms 0; other <20us 17027 <100us 5671 <500us 807 <2ms 4 <8ms 0 >=8ms 0
+[bc5] exp 0429 waits: 150000 resumes; ready-to-run JobLoaderSema <20us 46108 <100us 64270 <500us 6667 <2ms 20 <8ms 4 >=8ms 0; other <20us 26086 <100us 6015 <500us 822 <2ms 8 <8ms 0 >=8ms 0
+[bc5] exp 0429 waits: 200000 resumes; ready-to-run JobLoaderSema <20us 64185 <100us 79959 <500us 12497 <2ms 567 <8ms 4 >=8ms 0; other <20us 33574 <100us 7273 <500us 1864 <2ms 77 <8ms 0 >=8ms 0
+[bc5] exp 0429 waits: 250000 resumes; ready-to-run JobLoaderSema <20us 77829 <100us 96671 <500us 21929 <2ms 1580 <8ms 10 >=8ms 0; other <20us 38828 <100us 9092 <500us 3738 <2ms 323 <8ms 0 >=8ms 0
+[bc5] exp 0429 waits: 300000 resumes; ready-to-run JobLoaderSema <20us 93208 <100us 112949 <500us 31316 <2ms 2522 <8ms 11 >=8ms 0; other <20us 43186 <100us 10652 <500us 5556 <2ms 600 <8ms 0 >=8ms 0
+[bc5] exp 0429 waits: 350000 resumes; ready-to-run JobLoaderSema <20us 109978 <100us 127954 <500us 40857 <2ms 3467 <8ms 12 >=8ms 0; other <20us 47503 <100us 12091 <500us 7267 <2ms 871 <8ms 0 >=8ms 0
+[bc5] exp 0429 waits: 400000 resumes; ready-to-run JobLoaderSema <20us 127542 <100us 142539 <500us 50180 <2ms 4351 <8ms 12 >=8ms 0; other <20us 51599 <100us 13553 <500us 9080 <2ms 1144 <8ms 0 >=8ms 0
+[bc5] exp 0429 waits: 450000 resumes; ready-to-run JobLoaderSema <20us 145056 <100us 156759 <500us 59711 <2ms 5216 <8ms 13 >=8ms 0; other <20us 55860 <100us 14991 <500us 10960 <2ms 1434 <8ms 0 >=8ms 0
+[bc5] exp 0429 waits: 500000 resumes; ready-to-run JobLoaderSema <20us 162874 <100us 170903 <500us 69007 <2ms 6131 <8ms 13 >=8ms 0; other <20us 60174 <100us 16454 <500us 12740 <2ms 1704 <8ms 0 >=8ms 0
+[bc5] exp 0429 waits: 550000 resumes; ready-to-run JobLoaderSema <20us 180473 <100us 185205 <500us 78532 <2ms 7009 <8ms 13 >=8ms 0; other <20us 64235 <100us 17841 <500us 14695 <2ms 1997 <8ms 0 >=8ms 0
+[bc5] exp 0429 waits: 600000 resumes; ready-to-run JobLoaderSema <20us 198321 <100us 199464 <500us 87908 <2ms 7894 <8ms 13 >=8ms 0; other <20us 68394 <100us 19267 <500us 16456 <2ms 2283 <8ms 0 >=8ms 0
+[bc5] exp 0429 waits: 650000 resumes; ready-to-run JobLoaderSema <20us 215945 <100us 213650 <500us 97443 <2ms 8873 <8ms 15 >=8ms 0; other <20us 72510 <100us 20744 <500us 18239 <2ms 2581 <8ms 0 >=8ms 0
+[bc5] exp 0429 waits: 700000 resumes; ready-to-run JobLoaderSema <20us 233422 <100us 228009 <500us 107017 <2ms 9739 <8ms 16 >=8ms 0; other <20us 76785 <100us 22198 <500us 19958 <2ms 2855 <8ms 1 >=8ms 0
+[bc5] exp 0429 waits: 750000 resumes; ready-to-run JobLoaderSema <20us 251115 <100us 242217 <500us 116450 <2ms 10663 <8ms 16 >=8ms 0; other <20us 80958 <100us 23625 <500us 21802 <2ms 3153 <8ms 1 >=8ms 0
+[bc5] exp 0429 waits: 800000 resumes; ready-to-run JobLoaderSema <20us 268642 <100us 256444 <500us 126015 <2ms 11545 <8ms 18 >=8ms 0; other <20us 85133 <100us 25159 <500us 23608 <2ms 3435 <8ms 1 >=8ms 0
+[bc5] exp 0429 waits: 850000 resumes; ready-to-run JobLoaderSema <20us 284191 <100us 272583 <500us 135478 <2ms 12428 <8ms 18 >=8ms 0; other <20us 89344 <100us 26728 <500us 25521 <2ms 3708 <8ms 1 >=8ms 0
+[bc5] exp 0429 waits: 900000 resumes; ready-to-run JobLoaderSema <20us 300443 <100us 288025 <500us 145053 <2ms 13371 <8ms 18 >=8ms 0; other <20us 93573 <100us 28205 <500us 27311 <2ms 4000 <8ms 1 >=8ms 0
+[bc5] exp 0429 waits: 950000 resumes; ready-to-run JobLoaderSema <20us 317974 <100us 302466 <500us 154506 <2ms 14305 <8ms 20 >=8ms 0; other <20us 97810 <100us 29600 <500us 29038 <2ms 4280 <8ms 1 >=8ms 0
+[bc5] exp 0429 waits: 1000000 resumes; ready-to-run JobLoaderSema <20us 335401 <100us 316503 <500us 164398 <2ms 15247 <8ms 24 >=8ms 0; other <20us 102122 <100us 30999 <500us 30735 <2ms 4570 <8ms 1 >=8ms 0
+[bc5] exp 0429 waits: 1050000 resumes; ready-to-run JobLoaderSema <20us 352706 <100us 330852 <500us 174116 <2ms 16191 <8ms 24 >=8ms 0; other <20us 106426 <100us 32473 <500us 32341 <2ms 4870 <8ms 1 >=8ms 0
+[bc5] exp 0429 waits: 1100000 resumes; ready-to-run JobLoaderSema <20us 370379 <100us 344889 <500us 183693 <2ms 17102 <8ms 25 >=8ms 0; other <20us 110789 <100us 33870 <500us 34066 <2ms 5186 <8ms 1 >=8ms 0
+[bc5] exp 0429 waits: 1150000 resumes; ready-to-run JobLoaderSema <20us 393965 <100us 360106 <500us 185684 <2ms 17242 <8ms 25 >=8ms 0; other <20us 118981 <100us 34403 <500us 34364 <2ms 5229 <8ms 1 >=8ms 0
+[bc5] exp 0429 waits: 1200000 resumes; ready-to-run JobLoaderSema <20us 417538 <100us 375029 <500us 187554 <2ms 17385 <8ms 25 >=8ms 0; other <20us 127656 <100us 35012 <500us 34550 <2ms 5250 <8ms 1 >=8ms 0
+[bc5] exp 0429 waits: 1250000 resumes; ready-to-run JobLoaderSema <20us 432600 <100us 390575 <500us 197134 <2ms 18418 <8ms 28 >=8ms 0; other <20us 132739 <100us 36676 <500us 36334 <2ms 5495 <8ms 1 >=8ms 0
+[bc5] exp 0429 waits: 1300000 resumes; ready-to-run JobLoaderSema <20us 447081 <100us 406160 <500us 207655 <2ms 19546 <8ms 32 >=8ms 0; other <20us 137266 <100us 38161 <500us 38247 <2ms 5849 <8ms 3 >=8ms 0
+[bc5] exp 0429 waits: 1350000 resumes; ready-to-run JobLoaderSema <20us 461064 <100us 421312 <500us 217585 <2ms 20635 <8ms 38 >=8ms 0; other <20us 142697 <100us 40167 <500us 40405 <2ms 6092 <8ms 5 >=8ms 0
+[bc5] exp 0429 waits at the fault: crashing tid 1976775, 43 slots
+[bc5] exp 0429 thread at fault: tid 1976540 'kyty_emulator' state S cpu 4 syscall 7 schedstat [2702723298 203542431 110124]
+[bc5] exp 0429 thread at fault: tid 1976566 'kyty-thread' state S cpu 3 syscall 230 schedstat [175478 185751 13]
+[bc5] exp 0429 thread at fault: tid 1976593 'bc5-input-cmd' state S cpu 8 syscall 230 schedstat [331686932 12890112 5443]
+[bc5] exp 0429 thread at fault: tid 1976669 'kyty_em:disk$0' state S cpu 15 syscall 202 schedstat [531555 159205 17]
+[bc5] exp 0429 thread at fault: tid 1976670 'kyty_em:disk$0' state S cpu 2 syscall 202 schedstat [49292 8701 3]
+[bc5] exp 0429 thread at fault: tid 1976677 'mangohud-amdgpu' state S cpu 14 syscall 230 schedstat [417478953 16028839 4767]
+[bc5] exp 0429 thread at fault: tid 1976726 'kyty-cmdsched' state S cpu 13 syscall 202 schedstat [32162 0 1]
+[bc5] exp 0429 thread at fault: tid 1976729 'kyty-cmdsched' state S cpu 9 syscall 202 schedstat [34803 0 1]
+[bc5] exp 0429 thread at fault: tid 1976733 'kyty-present' state S cpu 10 syscall 230 schedstat [5670192688 208836694 11756]
+[bc5] exp 0429 thread at fault: tid 1976734 'kyty-gpu' state S cpu 14 syscall 202 schedstat [10707324877 220078880 56719]
+[bc5] exp 0429 thread at fault: tid 1976735 'kyty-present' state S cpu 14 syscall 202 schedstat [240230578 8511692 4830]
+[bc5] exp 0429 thread at fault: tid 1976752 'mangohud-hwinfo' state S cpu 10 syscall 202 schedstat [43533328 1186140 257]
+[bc5] exp 0429 thread at fault: tid 1976775 'game-main' state R cpu 8 syscall 0 schedstat [37726826798 2545934238 165036] | sema 'hkSemaphore' not waiting; 0.000 ms, last ready-to-run 0.014 ms, max 2.722 ms, waits 17557
+[bc5] exp 0429 thread at fault: tid 1976776 'HIDAPI Rumble' state S cpu 9 syscall 202 schedstat [352811 2084 10]
+[bc5] exp 0429 thread at fault: tid 1976779 'bc5-ring' state R cpu 13 syscall running
+[bc5] exp 0429 thread at fault: tid 1976780 'Job Lo 0' state S cpu 2 syscall 202 schedstat [3597509057 7129794036 196807] | sema 'JobLoaderSema' asleep for 2.124 ms, last ready-to-run 0.041 ms, max 2.092 ms, waits 54330
+[bc5] exp 0429 thread at fault: tid 1976781 'Job Lo 1' state S cpu 7 syscall 202 schedstat [3571695293 7197450949 195982] | sema 'JobLoaderSema' asleep for 2.133 ms, last ready-to-run 0.057 ms, max 2.229 ms, waits 54118
+[bc5] exp 0429 thread at fault: tid 1976782 'Job Lo 2' state S cpu 7 syscall 202 schedstat [3594892459 7113357656 196562] | sema 'JobLoaderSema' asleep for 2.127 ms, last ready-to-run 0.030 ms, max 2.409 ms, waits 54292
+[bc5] exp 0429 thread at fault: tid 1976783 'Job Lo 3' state S cpu 7 syscall 202 schedstat [3588875431 7173057444 196178] | sema 'JobLoaderSema' asleep for 2.137 ms, last ready-to-run 0.027 ms, max 2.448 ms, waits 53950
+[bc5] exp 0429 thread at fault: tid 1976784 'Job Lo 4' state S cpu 2 syscall 202 schedstat [3536237365 7228745542 196442] | sema 'JobLoaderSema' asleep for 2.141 ms, last ready-to-run 0.016 ms, max 2.444 ms, waits 54167
+[bc5] exp 0429 thread at fault: tid 1976785 'Job Lo 5' state S cpu 7 syscall 202 schedstat [3582390388 7170871225 196696] | sema 'JobLoaderSema' asleep for 2.149 ms, last ready-to-run 0.008 ms, max 2.235 ms, waits 54292
+[bc5] exp 0429 thread at fault: tid 1976786 'Job Lo 6' state S cpu 7 syscall 202 schedstat [3588672019 7111451124 196060] | sema 'JobLoaderSema' asleep for 2.143 ms, last ready-to-run 0.015 ms, max 2.734 ms, waits 54162
+[bc5] exp 0429 thread at fault: tid 1976787 'Job Lo 7' state S cpu 7 syscall 202 schedstat [3591732245 7156590015 196552] | sema 'JobLoaderSema' asleep for 2.155 ms, last ready-to-run 0.175 ms, max 2.985 ms, waits 54172
+[bc5] exp 0429 thread at fault: tid 1976788 'Job Hi 0' state S cpu 6 syscall 202 schedstat [8175996098 5123890545 393191] | sema 'JobLoaderSema' asleep for 0.146 ms, last ready-to-run 0.525 ms, max 2.030 ms, waits 95453
+[bc5] exp 0429 thread at fault: tid 1976789 'Job Hi 1' state S cpu 7 syscall 202 schedstat [8209892128 5095555935 392912] | sema 'JobLoaderSema' asleep for 0.085 ms, last ready-to-run 0.148 ms, max 2.328 ms, waits 95794
+[bc5] exp 0429 thread at fault: tid 1976790 'Job Hi 2' state S cpu 0 syscall 202 schedstat [8199637574 5117832074 392754] | sema 'JobLoaderSema' asleep for 0.060 ms, last ready-to-run 0.010 ms, max 2.298 ms, waits 95513
+[bc5] exp 0429 thread at fault: tid 1976791 'Job Hi 3' state S cpu 6 syscall 202 schedstat [8216632372 5110461844 393032] | sema 'JobLoaderSema' asleep for 0.007 ms, last ready-to-run 0.699 ms, max 1.690 ms, waits 95764
+[bc5] exp 0429 thread at fault: tid 1976792 'Job Hi 4' state S cpu 4 syscall 202 schedstat [8174136200 5135854731 393694] | sema 'JobLoaderSema' asleep for 0.139 ms, last ready-to-run 1.118 ms, max 1.659 ms, waits 95640
+[bc5] exp 0429 thread at fault: tid 1976793 'Job Hi 5' state S cpu 1 syscall 202 schedstat [8221433954 5124915042 392269] | sema 'JobLoaderSema' asleep for 18446744073709.344 ms, last ready-to-run 0.629 ms, max 1.761 ms, waits 95638
+[bc5] exp 0429 thread at fault: tid 1976794 'Job Hi 6' state S cpu 2 syscall 202 schedstat [8198848054 5117575663 393183] | sema 'JobLoaderSema' asleep for 18446744073709.516 ms, last ready-to-run 1.340 ms, max 1.686 ms, waits 95751
+[bc5] exp 0429 thread at fault: tid 1976795 'Job Hi 7' state S cpu 7 syscall 202 schedstat [8209401759 5105955192 392771] | sema 'JobLoaderSema' asleep for 0.074 ms, last ready-to-run 0.632 ms, max 1.732 ms, waits 95693
+[bc5] exp 0429 thread at fault: tid 1976796 'Job Bk 0' state R cpu 7 syscall running
+[bc5] exp 0429 thread at fault: tid 1976797 'Job Bk 1' state R cpu 1 syscall running
+[bc5] exp 0429 thread at fault: tid 1976798 'Job Bk 2' state R cpu 1 syscall running
+[bc5] exp 0429 thread at fault: tid 1976799 'Job Bk 3' state R cpu 2 syscall running
+[bc5] exp 0429 thread at fault: tid 1976800 'Job Bk 4' state R cpu 6 syscall running
+[bc5] exp 0429 thread at fault: tid 1976801 'Job Bk 5' state R cpu 3 syscall running
+[bc5] exp 0429 thread at fault: tid 1976802 'Job Bk 6' state R cpu 0 syscall running
+[bc5] exp 0429 thread at fault: tid 1976803 'Job Bk 7' state R cpu 8 syscall running
+[bc5] exp 0429 thread at fault: tid 1976818 'Archive Asset I' state S cpu 11 syscall 202 schedstat [883628765 1136338040 30291]
+[bc5] exp 0429 thread at fault: tid 1976819 'Archive Loose I' state S cpu 11 syscall 202 schedstat [203018964 425176438 13971]
+[bc5] exp 0429 thread at fault: tid 1976820 'Archive Resolve' state S cpu 11 syscall 202 schedstat [2561574044 4362523257 714422]
+[bc5] exp 0429 thread at fault: tid 1976821 'bc5-ring' state S cpu 6 syscall 230 schedstat [3596737 294025 14]
+[bc5] exp 0429 thread at fault: tid 1976822 'Render Thread' state S cpu 10 syscall 202 schedstat [53011110396 822576795 545201]
+[bc5] exp 0429 thread at fault: tid 1976823 'bc5-chainwd' state S cpu 15 syscall 202 schedstat [7277710494 289915414 241446]
+[bc5] exp 0429 thread at fault: tid 1976920 'bc5-cq1' state S cpu 2 syscall 202 schedstat [2003417429 197133197 96225]
+[bc5] exp 0429 thread at fault: tid 1976942 'bc5-cq0' state S cpu 6 syscall 202 schedstat [3320297170 62123077 56470]
+[bc5] exp 0429 thread at fault: tid 1976943 'Havok Solve' state S cpu 4 syscall 202 schedstat [212937950 807294805 18068] | sema 'hkSemaphore' asleep for 44.632 ms, last ready-to-run 0.141 ms, max 1.666 ms, waits 9096
+[bc5] exp 0429 thread at fault: tid 1976944 'Havok Solve' state S cpu 3 syscall 202 schedstat [220422085 825817078 18840] | sema 'hkSemaphore' asleep for 44.643 ms, last ready-to-run 0.130 ms, max 1.688 ms, waits 9765
+[bc5] exp 0429 thread at fault: tid 1976945 'Havok Solve' state S cpu 3 syscall 202 schedstat [218400460 799151595 17518] | sema 'hkSemaphore' asleep for 44.640 ms, last ready-to-run 0.064 ms, max 1.676 ms, waits 8517
+[bc5] exp 0429 thread at fault: tid 1976946 'Havok Solve' state S cpu 6 syscall 202 schedstat [234319272 830864762 19357] | sema 'hkSemaphore' asleep for 44.638 ms, last ready-to-run 0.142 ms, max 1.675 ms, waits 10140
+[bc5] exp 0429 thread at fault: tid 1976947 'Havok Solve' state S cpu 5 syscall 202 schedstat [259695461 845176085 20222] | sema 'hkSemaphore' asleep for 44.641 ms, last ready-to-run 0.057 ms, max 1.686 ms, waits 10763
+[bc5] exp 0429 thread at fault: tid 1976948 'Havok Solve' state S cpu 2 syscall 202 schedstat [338999064 965229024 21758] | sema 'hkSemaphore' asleep for 44.637 ms, last ready-to-run 0.074 ms, max 1.607 ms, waits 11835
+[bc5] exp 0429 thread at fault: tid 1976949 'Havok Solve' state S cpu 2 syscall 202 schedstat [501783267 979485362 26217] | sema 'hkSemaphore' asleep for 44.640 ms, last ready-to-run 0.073 ms, max 1.565 ms, waits 15273
+[bc5] exp 0429 thread at fault: tid 1976950 'Havok Solve' state S cpu 0 syscall 202 schedstat [660594950 978275921 22692] | sema 'hkSemaphore' asleep for 44.635 ms, last ready-to-run 0.192 ms, max 1.704 ms, waits 11968
+[bc5] exp 0429 thread at fault: tid 1976964 'Havok Queries a' state S cpu 7 syscall 202 schedstat [1059795763 1064729570 25771] | sema 'hkSemaphore' asleep for 4.553 ms, last ready-to-run 0.011 ms, max 2.171 ms, waits 13484
+[bc5] exp 0429 thread at fault: tid 1976965 'Havok Queries a' state S cpu 0 syscall 202 schedstat [1126615359 1052490152 26226] | sema 'hkSemaphore' asleep for 4.554 ms, last ready-to-run 0.070 ms, max 1.924 ms, waits 13450
+[bc5] exp 0429 thread at fault: tid 1976966 'Havok Queries a' state S cpu 6 syscall 202 schedstat [1161007356 1050356330 26591] | sema 'hkSemaphore' asleep for 4.565 ms, last ready-to-run 0.062 ms, max 1.991 ms, waits 13479
+[bc5] exp 0429 thread at fault: tid 1976967 'Havok Queries a' state S cpu 3 syscall 202 schedstat [1208252545 1143916175 27056] | sema 'hkSemaphore' asleep for 4.569 ms, last ready-to-run 0.010 ms, max 2.239 ms, waits 13872
+[bc5] exp 0429 thread at fault: tid 1976968 'Havok Queries a' state S cpu 2 syscall 202 schedstat [1336194054 1639918727 30345] | sema 'hkSemaphore' asleep for 4.564 ms, last ready-to-run 0.009 ms, max 1.789 ms, waits 16839
+[bc5] exp 0429 thread at fault: tid 1976969 'Havok Queries a' state S cpu 0 syscall 202 schedstat [1381956051 1637651496 30478] | sema 'hkSemaphore' asleep for 4.562 ms, last ready-to-run 0.011 ms, max 1.768 ms, waits 16862
+[bc5] exp 0429 thread at fault: tid 1976970 'Havok Queries a' state S cpu 5 syscall 202 schedstat [1408901936 1798086805 31524] | sema 'hkSemaphore' asleep for 4.564 ms, last ready-to-run 0.016 ms, max 1.943 ms, waits 16881
+[bc5] exp 0429 thread at fault: tid 1976971 'Havok Queries a' state S cpu 6 syscall 202 schedstat [1657939527 2147395972 36060] | sema 'hkSemaphore' asleep for 4.573 ms, last ready-to-run 0.011 ms, max 1.781 ms, waits 20427
+[bc5] exp 0429 thread at fault: tid 1977016 'AK::IOThread' state S cpu 11 syscall 202 schedstat [104805277 240466960 11811] | sema 'AkSemaphore' not waiting; 0.000 ms, last ready-to-run 0.004 ms, max 0.005 ms, waits 2
+[bc5] exp 0429 thread at fault: tid 1977017 'AK::JobWrkr-Acm' state S cpu 11 syscall 202 schedstat [69548371 68049819 11050]
+[bc5] exp 0429 thread at fault: tid 1977018 'AK::BankMgr' state S cpu 9 syscall 202 schedstat [485190342 49133122 11597]
+[bc5] exp 0429 thread at fault: tid 1977019 'AK::Suspended' state S cpu 12 syscall 202 schedstat [88619698 171380731 11034]
+[bc5] exp 0429 thread at fault: tid 1977020 'AK::AudioMgr' state R cpu 12 syscall running
+[bc5] exp 0429 thread at fault: tid 1977021 'Coherent Thread' state S cpu 9 syscall 202 schedstat [3600095398 364991490 25743]
+[bc5] exp 0429 thread at fault: tid 1977022 'Coherent Resour' state S cpu 9 syscall 202 schedstat [312303000 151556178 13639]
+[bc5] exp 0429 thread at fault: tid 1977023 'Coherent Layout' state S cpu 9 syscall 202 schedstat [1176406834 330913636 29834]
+[bc5] exp 0429 thread at fault: tid 1977024 'UXAnalytics::Up' state S cpu 11 syscall 202 schedstat [62595233 170235436 11013]
+[bc5] exp 0429 thread at fault: tid 1977026 'EntitlementSysP' state S cpu 11 syscall 202 schedstat [75157802 43295048 11023]
+[bc5] exp 0429 thread at fault: tid 1977027 'File Video Stre' state S cpu 11 syscall running
+[bc5] exp 0429 thread at fault: tid 1977028 'File Video Stre' state S cpu 11 syscall 202 schedstat [69708260 170975549 11013]
+[bc5] exp 0429 thread at fault: tid 1977029 'File Video Stre' state S cpu 11 syscall 202 schedstat [65951447 157931870 11009]
+[bc5] exp 0429 thread at fault: tid 1977030 'File Video Stre' state S cpu 11 syscall 202 schedstat [72461380 166177882 11014]
+[bc5] exp 0429 thread at fault: tid 1977031 'File Video Stre' state S cpu 11 syscall 202 schedstat [67103095 178471866 11012]
+[bc5] exp 0429 thread at fault: tid 1977032 'Save Thread' state S cpu 9 syscall 202 schedstat [110779726 44527088 11099]
+[bc5] exp 0429 thread at fault: tid 1977033 'User UDS Thread' state S cpu 11 syscall 202 schedstat [61536948 168760227 11018]
+[bc5] exp 0429 thread at fault: tid 1977036 'bc5-apr-q5' state S cpu 11 syscall 202 schedstat [856812475 1779589490 19555]
+[bc5] exp 0429 thread at fault: tid 1977037 'bc5-apr-r5-0' state S cpu 11 syscall 202 schedstat [37175599 520525311 10098]
+[bc5] exp 0429 thread at fault: tid 1977038 'bc5-apr-r5-1' state S cpu 11 syscall 202 schedstat [36792623 537860992 10085]
+[bc5] exp 0429 thread at fault: tid 1977039 'bc5-apr-r5-2' state S cpu 11 syscall 202 schedstat [36562441 527117431 10074]
+[bc5] exp 0429 thread at fault: tid 1977040 'bc5-apr-r5-3' state S cpu 11 syscall 202 schedstat [37460206 527363297 10149]
+[bc5] exp 0429 thread at fault: tid 1977043 'bc5-fliplabel' state S cpu 10 syscall 202 schedstat [129509463 858121781 19413]
+[bc5] exp 0429 thread at fault: tid 1977251 'AK::AudioOutThr' state S cpu 9 syscall 230 schedstat [898702893 256979628 170485] | sema 'AkSemaphore' not waiting; 0.000 ms, last ready-to-run 0.010 ms, max 0.014 ms, waits 10
+[bc5] exp 0429 thread at fault: tid 1977266 'module-rt' state S cpu 12 syscall 232 schedstat [203870 229259 7]
+[bc5] exp 0429 thread at fault: tid 1977276 'SDLAudioHotplug' state S cpu 12 syscall 232 schedstat [17824449 59607899 953]
+[bc5] exp 0429 thread at fault: tid 1977289 'module-rt' state S cpu 12 syscall 232 schedstat [183778 248059 5]
+[bc5] exp 0429 thread at fault: tid 1977292 'module-rt' state S cpu 12 syscall 232 schedstat [140697 144829 5]
+[bc5] exp 0429 thread at fault: tid 1977300 'SDLAudioP0' state S cpu 12 syscall 232 schedstat [392376488 260057685 13661]
+[bc5] exp 0429 thread at fault: tid 1977483 'bc5-apr-q3' state S cpu 11 syscall 202 schedstat [523279085 1200894489 12587]
+[bc5] exp 0429 thread at fault: tid 1977484 'bc5-apr-r3-0' state S cpu 11 syscall 202 schedstat [36809793 516316439 9723]
+[bc5] exp 0429 thread at fault: tid 1977485 'bc5-apr-r3-1' state S cpu 11 syscall 202 schedstat [35962799 511929404 9742]
+[bc5] exp 0429 thread at fault: tid 1977486 'bc5-apr-r3-2' state S cpu 11 syscall 202 schedstat [35632986 495387106 9774]
+[bc5] exp 0429 thread at fault: tid 1977487 'bc5-apr-r3-3' state S cpu 11 syscall 202 schedstat [36393641 510377193 9725]
+[bc5] exp 0429 thread at fault: tid 1978962 'bc5-apr-q1' state S cpu 11 syscall 202 schedstat [76657555 558966707 9397]
+[bc5] exp 0429 thread at fault: tid 1978963 'bc5-apr-r1-0' state S cpu 11 syscall 202 schedstat [40861109 483348208 8954]
+[bc5] exp 0429 thread at fault: tid 1978964 'bc5-apr-r1-1' state S cpu 11 syscall 202 schedstat [40724028 485761073 8994]
+[bc5] exp 0429 thread at fault: tid 1978965 'bc5-apr-r1-2' state S cpu 11 syscall 202 schedstat [42633879 494321592 9021]
+[bc5] exp 0429 thread at fault: tid 1978966 'bc5-apr-r1-3' state S cpu 11 syscall 202 schedstat [41247737 486562733 9066]
+[bc5] exp 0429 thread at fault: tid 1984428 'module-rt' state S cpu 12 syscall 232 schedstat [154713 170761 5]
+[bc5] exp 0429 thread at fault: tid 1984429 'module-rt' state S cpu 12 syscall 232 schedstat [254054 790458 6]
+[bc5] exp 0429 thread at fault: tid 1984430 'SDLAudioP53' state S cpu 12 syscall 232 schedstat [213337422 377315841 9973]
+[bc5] exp 0429 thread at fault: tid 1984438 'module-rt' state S cpu 12 syscall 232 schedstat [126329 247403 5]
+[bc5] exp 0429 thread at fault: tid 1984439 'module-rt' state S cpu 12 syscall 232 schedstat [148572 173816 7]
+[bc5] exp 0429 thread at fault: tid 1984447 'SDLAudioP53' state S cpu 12 syscall 232 schedstat [193710939 363871353 8055]
+[bc5] exp 0429 thread at fault: tid 2006633 'Bink IO' state S cpu 5 syscall 202 schedstat [9245882 59532744 1154]
+[bc5] exp 0429 thread at fault: tid 2010423 'bc5-apr-q3' state R cpu 11 syscall running
+[bc5] exp 0429 thread at fault: tid 2010424 'bc5-apr-q3' state D cpu 11 syscall 17 schedstat [2058660 5110842 12]
+[bc5] exp 0429 thread at fault: tid 2010425 'bc5-apr-q3' state D cpu 11 syscall 17 schedstat [1257057 4646361 7]
+[bc5] exp 0429 thread at fault: tid 2010426 'bc5-apr-q3' state R cpu 11 syscall running
