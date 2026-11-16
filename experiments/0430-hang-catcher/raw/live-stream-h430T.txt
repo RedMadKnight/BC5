@@ -1,0 +1,62 @@
+20:59:24.399 | avail 13411 act 972 inact 2154 dirty 131 swapfree 7589 | psi mem 0.00/0.00 io 0.90/0.75 | - | D: 143115:journalctl:folio_wait_bit_common 
+20:59:25.453 | avail 13411 act 972 inact 2380 dirty 131 swapfree 7589 | psi mem 0.00/0.00 io 3.82/3.69 | - | D: none
+20:59:26.506 | avail 13411 act 972 inact 2380 dirty 131 swapfree 7589 | psi mem 0.00/0.00 io 3.82/3.69 | - | D: none
+20:59:27.559 | avail 13414 act 972 inact 2380 dirty 129 swapfree 7589 | psi mem 0.00/0.00 io 5.30/5.20 | - | D: none
+20:59:28.612 | avail 13416 act 972 inact 2380 dirty 129 swapfree 7589 | psi mem 0.00/0.00 io 5.30/5.20 | - | D: none
+20:59:29.665 | avail 13417 act 972 inact 2380 dirty 129 swapfree 7589 | psi mem 0.00/0.00 io 4.34/4.25 | - | D: none
+20:59:30.715 | avail 13416 act 976 inact 2381 dirty 0 swapfree 7589 | psi mem 0.00/0.00 io 4.27/4.21 | - | D: none
+20:59:31.767 | avail 13414 act 979 inact 2386 dirty 1 swapfree 7589 | psi mem 0.00/0.00 io 4.27/4.21 | - | D: 143469:md5sum:- 
+20:59:32.822 | avail 13371 act 1000 inact 2418 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 4.04/3.99 | emu 143763 D rss 16M Dthreads 0 | D: 143763:kyty_emulator:folio_wait_bit_common 
+20:59:33.886 | avail 13185 act 1161 inact 2627 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 4.04/3.99 | emu 143763 D rss 238M Dthreads 0 | D: none
+20:59:34.938 | avail 10208 act 4113 inact 2745 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 5.66/5.44 | emu 143763 S rss 517M Dthreads 0 | D: none
+20:59:35.991 | avail 6115 act 8159 inact 2747 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 5.66/5.44 | emu 143763 S rss 539M Dthreads 1 | D: none
+20:59:37.050 | avail 4899 act 9347 inact 3170 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 6.09/5.72 | emu 143763 S rss 1307M Dthreads 0 | D: none
+20:59:38.112 | avail 4445 act 9750 inact 3789 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 6.09/5.72 | emu 143763 S rss 1905M Dthreads 8 | D: none
+20:59:39.178 | avail 4440 act 9768 inact 3912 dirty 1 swapfree 7589 | psi mem 0.00/0.00 io 8.61/7.94 | emu 143763 S rss 2059M Dthreads 1 | D: 138:kworker/u65:3+events_unbound:- 
+20:59:40.240 | avail 4398 act 9799 inact 3914 dirty 1 swapfree 7589 | psi mem 0.00/0.00 io 8.61/7.94 | emu 143763 S rss 2117M Dthreads 0 | D: none
+20:59:41.299 | avail 4395 act 9801 inact 3916 dirty 1 swapfree 7589 | psi mem 0.00/0.00 io 7.23/6.50 | emu 143763 S rss 2122M Dthreads 0 | D: none
+20:59:42.363 | avail 4391 act 9801 inact 3916 dirty 1 swapfree 7589 | psi mem 0.00/0.00 io 7.23/6.50 | emu 143763 S rss 2126M Dthreads 0 | D: none
+20:59:43.427 | avail 4391 act 9801 inact 3917 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 5.92/5.32 | emu 143763 S rss 2128M Dthreads 0 | D: none
+20:59:44.490 | avail 4393 act 9802 inact 3917 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 5.92/5.32 | emu 143763 S rss 2132M Dthreads 0 | D: none
+20:59:45.555 | avail 4400 act 9801 inact 3917 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 4.84/4.36 | emu 143763 S rss 2135M Dthreads 0 | D: none
+20:59:46.621 | avail 4402 act 9801 inact 3917 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 4.84/4.36 | emu 143763 S rss 2135M Dthreads 0 | D: none
+20:59:47.681 | avail 4408 act 9801 inact 3917 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 3.97/3.57 | emu 143763 S rss 2137M Dthreads 0 | D: none
+20:59:48.745 | avail 4408 act 9801 inact 3917 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 3.25/2.92 | emu 143763 S rss 2138M Dthreads 0 | D: none
+20:59:49.807 | avail 4410 act 9801 inact 3917 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 3.25/2.92 | emu 143763 S rss 2138M Dthreads 0 | D: none
+20:59:50.867 | avail 4412 act 9801 inact 3917 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 2.66/2.39 | emu 143763 S rss 2139M Dthreads 0 | D: none
+20:59:51.931 | avail 4416 act 9801 inact 3917 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 2.66/2.39 | emu 143763 S rss 2139M Dthreads 0 | D: none
+20:59:52.992 | avail 4416 act 9801 inact 3917 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 2.17/1.96 | emu 143763 S rss 2139M Dthreads 0 | D: none
+20:59:54.051 | avail 4419 act 9801 inact 3917 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 2.17/1.96 | emu 143763 S rss 2139M Dthreads 0 | D: none
+20:59:55.114 | avail 4425 act 9799 inact 3917 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 1.78/1.60 | emu 143763 S rss 2141M Dthreads 0 | D: none
+20:59:56.177 | avail 4428 act 9798 inact 3919 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 1.78/1.60 | emu 143763 S rss 2144M Dthreads 0 | D: none
+20:59:57.242 | avail 4425 act 9798 inact 3919 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 1.46/1.31 | emu 143763 S rss 2144M Dthreads 0 | D: none
+20:59:58.305 | avail 4425 act 9798 inact 3919 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 1.46/1.31 | emu 143763 S rss 2144M Dthreads 0 | D: none
+20:59:59.370 | avail 4426 act 9798 inact 3919 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 1.19/1.07 | emu 143763 S rss 2144M Dthreads 0 | D: none
+21:00:00.436 | avail 4427 act 9798 inact 3919 dirty 2 swapfree 7589 | psi mem 0.00/0.00 io 1.19/1.07 | emu 143763 S rss 2144M Dthreads 0 | D: none
+21:00:01.498 | avail 4431 act 9798 inact 3919 dirty 1 swapfree 7589 | psi mem 0.00/0.00 io 0.97/0.88 | emu 143763 S rss 2144M Dthreads 0 | D: none
+21:00:02.561 | avail 4429 act 9798 inact 3919 dirty 1 swapfree 7589 | psi mem 0.00/0.00 io 0.97/0.88 | emu 143763 S rss 2144M Dthreads 0 | D: none
+21:00:03.629 | avail 4428 act 9799 inact 3919 dirty 1 swapfree 7589 | psi mem 0.00/0.00 io 0.80/0.72 | emu 143763 S rss 2144M Dthreads 0 | D: none
+21:00:04.690 | avail 4427 act 9798 inact 3919 dirty 1 swapfree 7589 | psi mem 0.00/0.00 io 0.80/0.72 | emu 143763 R rss 2144M Dthreads 0 | D: none
+21:00:05.760 | avail 4423 act 9804 inact 3924 dirty 1 swapfree 7589 | psi mem 0.00/0.00 io 0.65/0.59 | emu 143763 S rss 2155M Dthreads 4 | D: none
+21:00:06.866 | avail 4035 act 10352 inact 3439 dirty 0 swapfree 7540 | psi mem 0.36/0.36 io 2.52/2.11 | emu 143763 S rss 2500M Dthreads 1 | D: none
+21:00:07.933 | avail 3946 act 10478 inact 3539 dirty 0 swapfree 7528 | psi mem 0.36/0.36 io 2.52/2.11 | emu 143763 R rss 3092M Dthreads 1 | D: none
+21:00:09.002 | avail 3639 act 10762 inact 3241 dirty 0 swapfree 7525 | psi mem 0.47/0.47 io 4.97/3.90 | emu 143763 S rss 3533M Dthreads 0 | D: none
+21:00:10.076 | avail 3461 act 10936 inact 3007 dirty 0 swapfree 7523 | psi mem 0.47/0.47 io 4.97/3.90 | emu 143763 S rss 3823M Dthreads 0 | D: none
+21:00:11.165 | avail 2965 act 11369 inact 2400 dirty 0 swapfree 7502 | psi mem 0.75/0.75 io 6.06/4.82 | emu 143763 S rss 4273M Dthreads 2 | D: none
+21:00:12.233 | avail 2596 act 11827 inact 2030 dirty 0 swapfree 7484 | psi mem 0.75/0.75 io 6.06/4.82 | emu 143763 S rss 4727M Dthreads 0 | D: none
+21:00:13.302 | avail 2590 act 11831 inact 2031 dirty 1 swapfree 7484 | psi mem 0.79/0.79 io 6.41/5.22 | emu 143763 S rss 4730M Dthreads 3 | D: none
+21:00:14.367 | avail 2566 act 11747 inact 2139 dirty 1 swapfree 7484 | psi mem 0.79/0.79 io 6.41/5.22 | emu 143763 S rss 4731M Dthreads 0 | D: none
+21:00:15.434 | avail 2564 act 11748 inact 2139 dirty 1 swapfree 7484 | psi mem 0.65/0.65 io 5.43/4.27 | emu 143763 S rss 4731M Dthreads 0 | D: none
+21:00:16.501 | avail 2570 act 11748 inact 2140 dirty 1 swapfree 7484 | psi mem 0.65/0.65 io 5.43/4.27 | emu 143763 S rss 4732M Dthreads 0 | D: none
+21:00:17.572 | avail 2569 act 11748 inact 2140 dirty 1 swapfree 7484 | psi mem 0.53/0.53 io 4.44/3.50 | emu 143763 S rss 4732M Dthreads 0 | D: none
+21:00:18.643 | avail 2577 act 11746 inact 2140 dirty 2 swapfree 7484 | psi mem 0.53/0.53 io 4.44/3.50 | emu 143763 S rss 4732M Dthreads 0 | D: none
+21:00:19.712 | avail 2580 act 11746 inact 2140 dirty 2 swapfree 7484 | psi mem 0.43/0.43 io 3.64/2.86 | emu 143763 S rss 4734M Dthreads 0 | D: none
+21:00:20.780 | avail 2578 act 11746 inact 2140 dirty 2 swapfree 7484 | psi mem 0.35/0.35 io 2.98/2.34 | emu 143763 R rss 4734M Dthreads 0 | D: none
+21:00:21.847 | avail 2584 act 11747 inact 2140 dirty 2 swapfree 7484 | psi mem 0.35/0.35 io 2.98/2.34 | emu 143763 S rss 4734M Dthreads 0 | D: none
+21:00:22.915 | avail 2586 act 11746 inact 2140 dirty 2 swapfree 7484 | psi mem 0.29/0.29 io 2.44/1.92 | emu 143763 S rss 4734M Dthreads 0 | D: none
+21:00:23.983 | avail 2586 act 11747 inact 2140 dirty 2 swapfree 7484 | psi mem 0.29/0.29 io 2.44/1.92 | emu 143763 S rss 4734M Dthreads 0 | D: none
+21:00:25.053 | avail 2585 act 11747 inact 2141 dirty 2 swapfree 7484 | psi mem 0.24/0.24 io 1.99/1.57 | emu 143763 S rss 4734M Dthreads 0 | D: none
+21:00:26.123 | avail 2578 act 11747 inact 2143 dirty 2 swapfree 7484 | psi mem 0.24/0.24 io 1.99/1.57 | emu 143763 S rss 4734M Dthreads 0 | D: none
+21:00:27.193 | avail 2577 act 11747 inact 2143 dirty 2 swapfree 7484 | psi mem 0.19/0.19 io 1.63/1.28 | emu 143763 S rss 4734M Dthreads 0 | D: none
+21:00:28.261 | avail 2575 act 11747 inact 2143 dirty 2 swapfree 7484 | psi mem 0.19/0.19 io 1.63/1.28 | emu 143763 R rss 4734M Dthreads 0 | D: none
+21:00:29.330 | avail 2573 act 11746 inact 2144 dirty 2 swapfree 7484 | psi mem 0.16/0.16 io 1.34/1.05 | emu 143763 S rss 4736M Dthreads 0 | D: none

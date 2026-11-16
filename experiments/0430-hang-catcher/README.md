@@ -207,3 +207,10 @@ alone (one PRT mapping under the guest's span, unimported parts of views cleared
 faults),
 and catcher (e): the snapshot keyed to the stalled submission's dispatches, with 4 KiB at each of their table
 pointers. `BC5_GUARD_PRT_BG` is banned from launchers (CLAUDE.md; exp 0412 §53–54), so F1 needs the decision first.
+
+## Build 3a (`394d1d89`, unit `d811b666`) and chain T
+
+The top session (20:5x): F1 waits for the maintainer's word; catcher (e) alone goes ahead. (e) replaces (d): at each dump,
+every dispatch of the stalled submission itself (any ring), with 4 KiB at each user-data pointer and at an indirect
+dispatch's argument page (`snap0430-<k>.txt` the index, `snap0430-<k>.bin` the bytes; each address once). Chain T
+(`h430T*`) started 20:59:31, otherwise as chain S.

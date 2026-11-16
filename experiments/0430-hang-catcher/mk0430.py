@@ -5,7 +5,7 @@
 # once, or nothing is written. Three switches, normal build only (BC5_DIAG_ENV, nullptr in the lean build):
 #   BC5_0430_DJ=1        (b) per-ring in-memory dispatch journal, written to files at a stall, a timeout
 #   BC5_0430_ARGS=1      (c) indirect dispatch arguments read at submit: garbage triples journaled ("args0430:")
-#   BC5_0430_SNAP=1      (d) with each dump, 512 B at the user-data pointers of the last 16 dispatches per ring
+#   BC5_0430_SNAP=1      (e) with each dump, 4 KiB at the user-data pointers and argument pages of the stalled submission
 #   BC5_0430_WAVES_MS=n  (a) at a completion wait of n ms (>= 500), one `umr -O halt_waves -wa none` (the exact
 #                            NOPASSWD line on the box) into the capture directory, at most 2 per run; dedicated runs only
 #                            (F229: a halt at a stall that would have recovered is followed by a reset)
@@ -101,7 +101,7 @@ inline void dump(const char* why, uint64_t n, const char* kind) {
 	if (f == nullptr) return;
 	std::fprintf(f, "dj430 dump %d: %s, submission #%" PRIu64 " %s, t %.3f s; per ring the last %u dispatches the host submitted, oldest first\n", k, why, n, kind != nullptr ? kind : "-", timing_now(), kN);
 	std::fprintf(f, "columns: #submission kind offset op pgm args x y z flags(1 indirect 2 garbage 4 unreadable) ud0..ud15\n");
-	std::vector<Rec> last; // (d): the last 16 per ring
+	std::vector<Rec> last; // (e): the dispatches of submission n
 	for (uint32_t s = 0; s < kSlots; s++) {
 		Ring&       g = rings()[s];
 		std::lock_guard lk(g.m);
@@ -109,7 +109,7 @@ inline void dump(const char* why, uint64_t n, const char* kind) {
 		if (g.r.size() != kN) continue;
 		for (uint64_t i = g.total > kN ? g.total - kN : 0; i < g.total; i++) {
 			const Rec& x = g.r[i % kN];
-			if (i + 16 >= g.total) last.push_back(x);
+			if (x.n == n) last.push_back(x); // (e): the stalled submission's own dispatches
 			std::fprintf(f, "#%" PRIu64 " %s %u %02x 0x%" PRIx64 " 0x%" PRIx64 " %u %u %u %u", x.n, x.kind, x.q, x.op, x.pgm, x.args, x.v[0], x.v[1], x.v[2], x.flags);
 			for (uint32_t u = 0; u < 16; u++) std::fprintf(f, " %08x", x.ud[u]);
 			std::fputc('\n', f);
@@ -153,39 +153,59 @@ inline void waves(int cq, uint64_t n, const char* kind, uint64_t waited_ns) {
 		fsync(fileno(f));
 	}
 }
-// (d) BC5_0430_SNAP=1: with each dump, 512 bytes at every 64-bit user-data pointer (ud k, k+1) of the last 16 dispatches of
-// each ring, read with process_vm_readv (an unmapped address gives EFAULT, not a crash). The memory as it is at the dump,
-// not at the dispatch's run (R13).
+// (d)/(e) BC5_0430_SNAP=1: with each dump, the memory behind the stalled submission's own dispatches (h430S1: the ring's
+// newest 16 were later submissions). For every dispatch of submission n (any ring), 4 KiB at each 64-bit user-data
+// pointer (ud k, k+1) and at an indirect dispatch's argument address, read with process_vm_readv (an unmapped address
+// gives EFAULT, not a crash); each address once. snap0430-<k>.txt is the index (which dispatch named which address),
+// snap0430-<k>.bin the bytes: per address a u64 address, a u32 count of bytes read (0: unreadable), then those bytes.
+// The memory as it is at the dump, not at the dispatch's run (R13).
 inline bool snap_on() {
 	static const bool v = BC5_DIAG_ENV("BC5_0430_SNAP") != nullptr;
 	return v;
 }
-inline void snap(int k, const std::vector<Rec>& last) {
-	char name[640];
+inline void snap(int k, const std::vector<Rec>& mine) {
+	char name[640], bname[640];
 	std::snprintf(name, sizeof(name), "%s/snap0430-%d.txt", out_dir().c_str(), k);
+	std::snprintf(bname, sizeof(bname), "%s/snap0430-%d.bin", out_dir().c_str(), k);
 	FILE* f = std::fopen(name, "w");
-	if (f == nullptr) return;
-	std::fprintf(f, "snap0430 %d at t %.3f s: 512 bytes at the user-data pointers of the last dispatches per ring (memory now, not at the run)\n", k, timing_now());
-	std::set<uint64_t> seen;
-	for (const Rec& x: last) {
-		for (uint32_t u = 0; u + 1 < 16; u++) {
-			const uint64_t a = x.ud[u] | (static_cast<uint64_t>(x.ud[u + 1] & 0xffffu) << 32u);
-			if (a < 0x100000000ull || a >= 0x10000000000ull || (a & 3u) != 0 || !seen.insert(a).second) continue;
-			uint32_t     buf[128];
-			struct iovec l {buf, sizeof(buf)}, r {reinterpret_cast<void*>(a), sizeof(buf)};
-			const ssize_t got = process_vm_readv(getpid(), &l, 1, &r, 1, 0);
-			std::fprintf(f, "#%" PRIu64 " %s %u pgm 0x%" PRIx64 " ud%u 0x%" PRIx64 ":", x.n, x.kind, x.q, x.pgm, u, a);
-			if (got <= 0) {
-				std::fprintf(f, " unreadable\n");
-				continue;
-			}
-			for (ssize_t w = 0; w < got / 4; w++) std::fprintf(f, "%s%08x", (w & 7) == 0 ? "\n  " : " ", buf[w]);
-			std::fputc('\n', f);
-		}
+	FILE* b = std::fopen(bname, "wb");
+	if (f == nullptr || b == nullptr) {
+		if (f != nullptr) std::fclose(f);
+		if (b != nullptr) std::fclose(b);
+		return;
 	}
+	std::fprintf(f, "snap0430 %d at t %.3f s: %zu dispatches of the stalled submission; 4 KiB at each user-data pointer and argument address (memory now, not at the run); bytes in snap0430-%d.bin\n", k, timing_now(), mine.size(), k);
+	std::set<uint64_t>  seen;
+	std::vector<uint8_t> buf(4096);
+	uint64_t            bytes = 0;
+	auto one = [&](const Rec& x, const char* what, uint64_t a) {
+		if (a < 0x100000000ull || a >= 0x10000000000ull) return;
+		std::fprintf(f, "#%" PRIu64 " %s %u op %02x pgm 0x%" PRIx64 " %s 0x%" PRIx64 "%s\n", x.n, x.kind, x.q, x.op, x.pgm, what, a, seen.count(a) != 0 ? " (above)" : "");
+		if (!seen.insert(a).second || seen.size() > 16384) return;
+		struct iovec  l {buf.data(), buf.size()}, r {reinterpret_cast<void*>(a), buf.size()};
+		ssize_t       got = process_vm_readv(getpid(), &l, 1, &r, 1, 0);
+		if (got < 0) got = 0;
+		const uint32_t g32 = static_cast<uint32_t>(got);
+		std::fwrite(&a, 8, 1, b);
+		std::fwrite(&g32, 4, 1, b);
+		if (got > 0) std::fwrite(buf.data(), 1, static_cast<size_t>(got), b);
+		bytes += static_cast<uint64_t>(got);
+	};
+	for (const Rec& x: mine) {
+		char what[8];
+		for (uint32_t u = 0; u + 1 < 16; u++) {
+			std::snprintf(what, sizeof(what), "ud%u", u);
+			one(x, what, x.ud[u] | (static_cast<uint64_t>(x.ud[u + 1] & 0xffffu) << 32u));
+		}
+		if (x.args != 0) one(x, "args", x.args & ~0xfffull);
+	}
+	std::fprintf(f, "%zu addresses, %" PRIu64 " bytes read\n", seen.size(), bytes);
 	std::fflush(f);
+	std::fflush(b);
 	fsync(fileno(f));
+	fsync(fileno(b));
 	std::fclose(f);
+	std::fclose(b);
 }
 struct Wait {
 	std::atomic<uint64_t>    since {0};
