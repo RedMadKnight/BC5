@@ -103,6 +103,46 @@ static int                      w428_queue_ring() {
 #ifndef BC5_LEAN
 static std::map<std::string, uint64_t> g_w428_refused; // exp 0428 (tag w428c): acbs kept on the GFX ring, by reason
 #endif
+// Exp 0428 step 2: BC5_DIRECT_ACB_MEC_INDIRECT (read with std::getenv: lean too). The backend refuses every compute-form
+// DISPATCH_INDIRECT on the MEC (exp 0290, kMecIndirectCheckVerified = false) because the CP's argument check was not
+// verified there. Exp 0428's userdata-rings --cp-check ran the check (indirect_check::apply, compute_ring = true, the
+// default limits) around 18 REAL compute-form DISPATCH_INDIRECTs on compute rings 0..2 on kernel 7.3.3: 6 sane triples
+// ran, 12 over-limit triples were skipped, 0 kernel lines (raw/cp-run.txt). With the switch on, a buffer refused ONLY for
+// that reason goes to its compute ring; the refusal is asked again with every DISPATCH_INDIRECT NOP-ed, so any other
+// reason (graphics-only packet, a PARTIAL_TG_EN dispatch, checked here for the NOP-ed ones) still keeps it on the GFX ring.
+static bool w428_mec_ok() {
+	static const bool v = [] {
+		const char* e = std::getenv("BC5_DIRECT_ACB_MEC_INDIRECT");
+		return e != nullptr && e[0] != 0 && std::strcmp(e, "0") != 0;
+	}();
+	return v;
+}
+#ifndef BC5_LEAN
+static std::atomic<uint64_t> g_w428_mec_moved {0}; // exp 0428 (tag w428c): acbs sent to a compute ring by the switch
+#endif
+static const char* w428_mec_refusal(const uint32_t* ib, uint32_t n, const char* why) {
+	if (why == nullptr || !w428_mec_ok() || std::strcmp(why, "indirect dispatch (MEC check unverified)") != 0) return why;
+	std::vector<uint32_t> c(ib, ib + n);
+	for (uint32_t i = 0; i < n;) {
+		const uint32_t h = c[i], type = h >> 30u;
+		uint32_t       len = 1;
+		if (type == 3 || type == 0) {
+			const uint32_t k = (h >> 16u) & 0x3fffu;
+			len              = k == 0x3fffu ? 1 : k + 2;
+		}
+		if (i + len > n) break;
+		if (type == 3 && ((h >> 8u) & 0xffu) == 0x16u) {
+			if (len >= 4 && (c[i + 3] & 0x2u) != 0 && (c[i + 3] & 0x20u) == 0) return "PARTIAL_TG_EN dispatch";
+			c[i] = 0xC0000000u | (h & 0x3fff0000u) | (0x10u << 8u); // a NOP of the same length
+		}
+		i += len;
+	}
+	const char* rest = bc5::policy::compute_ring_refusal(std::span<const uint32_t>(c.data(), c.size()));
+#ifndef BC5_LEAN
+	if (rest == nullptr) g_w428_mec_moved++;
+#endif
+	return rest;
+}
 static int compute_ring_env() {
 	static const int v = [] {
 		if (w428_rings() > 0) return 0; // exp 0428 (tag w428)
@@ -118,6 +158,7 @@ static int                   acb_ring(const uint32_t* ib, uint32_t num_dwords) {
 	if (ring < 0) return bc5::direct::kGfxRing;
 	if (w428_rings() > 1) ring = w428_queue_ring(); // exp 0428 (tag w428): this guest queue's ring index
 	const char* why = bc5::policy::compute_ring_refusal(std::span<const uint32_t>(ib, num_dwords));
+	why             = w428_mec_refusal(ib, num_dwords, why); // exp 0428 step 2 (BC5_DIRECT_ACB_MEC_INDIRECT)
 	if (why == nullptr) return ring;
 #ifndef BC5_LEAN
 	if (w428_rings() > 0) {
@@ -233,7 +274,13 @@ f.sub("""	const int at = cs_inherit_at(part, n, *g_dev->sorted_mappings());
 	// and USER_DATA_0..4 but keeps the queue's USER_DATA_5 (on the shared GFX ring it got another queue's, high half 0x11 for
 	// 0x12: exp 0424). The set is SH 0x204-0x3ff without COMPUTE_VMID (acb_restore_runs).
 	if (!acb_restore_wants(part, n)) return {};
-	const int             at  = cs_inherit_at(part, n, *g_dev->sorted_mappings());
+	// exp 0428 (cost candidate, BC5_DIRECT_ACB_STATE_NO_WALK, std::getenv: lean too): `at` only names the inheriting
+	// dispatch in the journal line below, so the walk can go; -1 is printed then.
+	static const bool     no_walk = [] {
+		const char* e = std::getenv("BC5_DIRECT_ACB_STATE_NO_WALK");
+		return e != nullptr && e[0] != 0 && std::strcmp(e, "0") != 0;
+	}();
+	const int             at  = no_walk ? -1 : cs_inherit_at(part, n, *g_dev->sorted_mappings());
 	uint64_t              pgm = 0;
 	std::vector<uint32_t> cs;
 	{
@@ -272,10 +319,10 @@ f.sub("""	if (qring != bc5::direct::kGfxRing && (g_comp_jobs++ & 0xffffu) == 0) 
 			std::fprintf(stderr,
 			             "[bc5] exp 0428 (tag w428c): t %.1f s: jobs gfx %" PRIu64 " comp0 %" PRIu64 " comp1 %" PRIu64 " comp2 %" PRIu64 " comp3 %" PRIu64
 			             "; acbs kept on gfx:%s; queue->ring:%s; dcb waits on two rings: kept %" PRIu64 " satisfied %" PRIu64 " NOT served %" PRIu64
-			             " heads split %" PRIu64 "; aq424 %s, parts given state %" PRIu64 ", parts with no tracked queue %" PRIu64 "\\n",
+			             " heads split %" PRIu64 "; aq424 %s, parts given state %" PRIu64 ", parts with no tracked queue %" PRIu64 "; mec-indirect switch %s, acbs moved %" PRIu64 "\\n",
 			             timing_now(), jobs[4].load(), jobs[0].load(), jobs[1].load(), jobs[2].load(), jobs[3].load(), why.empty() ? " none" : why.c_str(),
 			             q.empty() ? " none" : q.c_str(), g_w428_two[0].load(), g_w428_two[1].load(), g_w428_two[2].load(), g_w428_two[3].load(),
-			             aq424_on() ? "ON" : "off", g_aq424_parts.load(), g_aq424_none.load());
+			             aq424_on() ? "ON" : "off", g_aq424_parts.load(), g_aq424_none.load(), w428_mec_ok() ? "ON" : "off", g_w428_mec_moved.load());
 		}
 	}
 #endif

@@ -4,7 +4,8 @@
 # One set per start, one BOX-LOCK line (exp 0413's chain lock):
 #   CHAIN_SET=smoke:  w428Q1 (way 2 once, first: a compute-ring hang without a successful reset ends the track for the day)
 #   CHAIN_SET=series: w428C1 w428Q2 w428Q3 w428C2 w428C3 w428Q4 w428Q5 w428C4 (interleaved C Q Q C C Q Q C)
-#   arms: C BC5_DIRECT_ACB_RINGS=0 BC5_DIRECT_ACB_QUEUE_STATE=0; Q BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1
+#   CHAIN_SET=smoke2: w428Q6 (iteration 2, the build with the busy-queue map, BC5_DIRECT_ACB_MEC_INDIRECT, BC5_DIRECT_ACB_STATE_NO_WALK)
+#   arms: C every exp 0428 switch off; Q BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_INDIRECT=1 BC5_DIRECT_ACB_STATE_NO_WALK=1
 # Each run: run0428f.sh, slot 4, the 14:50 record's gameplay at G, G+120 s. The rule is check0428.py's, fixed before the
 # runs. Stops (R55): a kernel GPU line, a real pad key (R51), any class but NO_CRASH/NOT_ROUTED, a second NOT_ROUTED, a
 # STOP file ($HERE/STOP, read before each run).
@@ -24,8 +25,9 @@ WANT=$(cat "$W/exp0428/binary.md5"); MB=$(md5sum < "$BIN" | cut -d' ' -f1)
 [ -s "$W/exp0425/inputs/fight1450-play.cmd" ] || { say "NOT STARTED, no exp0425/inputs/fight1450-play.cmd"; exit 1; }
 case "$SET" in
   smoke) TAGS="w428Q1" ;;
+  smoke2) TAGS="w428Q6" ;;  # iteration 2: busy-queue map, MEC indirect allowed, no inherit walk
   series) TAGS="w428C1 w428Q2 w428Q3 w428C2 w428C3 w428Q4 w428Q5 w428C4" ;;
-  *) say "NOT STARTED, CHAIN_SET is smoke or series"; exit 1 ;;
+  *) say "NOT STARTED, CHAIN_SET is smoke, smoke2 or series"; exit 1 ;;
 esac
 mkdir -p "$R" || exit 1
 for t in $TAGS; do { [ -e "$R/$t-start.txt" ] || [ -e "$R/$t-end.txt" ] || [ -e "$R/${t}R-start.txt" ]; } && { say "NOT STARTED, tag $t used"; exit 1; }; done
@@ -34,7 +36,7 @@ for t in $TAGS; do { [ -e "$R/$t-start.txt" ] || [ -e "$R/$t-end.txt" ] || [ -e 
 armwords() {
   case "$1" in
     w428C*) echo "BC5_DIRECT_ACB_RINGS=0 BC5_DIRECT_ACB_QUEUE_STATE=0" ;;
-    w428Q*) echo "BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1" ;;
+    w428Q*) echo "BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_INDIRECT=1 BC5_DIRECT_ACB_STATE_NO_WALK=1" ;;
     *) return 1 ;;
   esac
 }

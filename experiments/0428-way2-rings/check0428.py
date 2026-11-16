@@ -31,7 +31,7 @@ def main():
     rs, st = rows(sys.argv[2]), sys.argv[3]
     for r in rs:
         print("row %-9s arm %s %-12s fps %s gaps %s" % (r["tag"], r["arm"], r["cls"], r["fps"], r["gaps"]))
-    if st == "smoke":
+    if st in ("smoke", "smoke2"):
         q = [r for r in rs if r["arm"] == "Q"]
         if len(q) != 1:
             print("RULE smoke: OPEN (%d Q rows)" % len(q))
