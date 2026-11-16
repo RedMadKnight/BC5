@@ -37,7 +37,7 @@ inline bool f3_on() {
 	static const bool v = on_env("BC5_0430_F3");
 	return v;
 }
-enum : uint8_t { kWait = 1, kWrite = 2, kDropped = 3, kF2Waited = 4, kF2Cycle = 5, kF2Bound = 6, kGivenUp = 7, kCycle = 8, kF3Preset = 9, kF3Refused = 10, kF3First = 11, kF3NotStale = 12 };
+enum : uint8_t { kWait = 1, kWrite = 2, kDropped = 3, kF2Waited = 4, kF2Cycle = 5, kF2Bound = 6, kGivenUp = 7, kCycle = 8, kF3Preset = 9, kF3Refused = 10, kF3First = 11, kF3NotStale = 12, kF3Met = 13 };
 constexpr uint32_t kTypes = 16;
 struct Cross {
 	uint64_t v         = 0; // the released value the waits wait for (== v)
@@ -66,6 +66,7 @@ struct Store {
 	uint64_t                                   total = 0;
 	std::map<std::pair<int, uint64_t>, std::vector<uint64_t>> job_waits; // (ring, seq) -> the labels of its kept GPU waits
 	std::map<uint64_t, Cross>                  cross;                    // F3: the cross-queue labels, in memory only
+	std::map<uint64_t, uint64_t>               preset_at;                // F3: label -> SoftCp::now_ns() of a preset whose release has not been seen yet
 	uint64_t                                   c[kTypes] {};
 	uint64_t                                   waited_ns = 0;
 };
@@ -144,8 +145,8 @@ inline void job_submitted(const uint32_t* ib, uint32_t num_dwords, const std::ve
 	if (g_on() && now - last_line > 30'000'000'000ull) {
 		last_line = now;
 		journal("ho430 (exp 0430): t %.1f s: waits seen %" PRIu64 ", writes registered %" PRIu64 ", writes DROPPED by the host %" PRIu64 "; F3 cross-queue labels %zu, presets %" PRIu64 ", refused %" PRIu64 ", not stale %" PRIu64
-		        ", first seen (to F2) %" PRIu64 "; F2 waited %" PRIu64 " (%.1f ms in all), refused as a cycle %" PRIu64 ", bound reached %" PRIu64 "; unsatisfied waits dropped: GIVEN UP %" PRIu64 ", CYCLE %" PRIu64 "\n",
-		        timing_now(), s.c[kWait], s.c[kWrite], s.c[kDropped], s.cross.size(), s.c[kF3Preset], s.c[kF3Refused], s.c[kF3NotStale], s.c[kF3First], s.c[kF2Waited], static_cast<double>(s.waited_ns) / 1e6,
+		        ", first seen (to F2) %" PRIu64 ", waits meeting a preset before its release %" PRIu64 "; F2 waited %" PRIu64 " (%.1f ms in all), refused as a cycle %" PRIu64 ", bound reached %" PRIu64 "; unsatisfied waits dropped: GIVEN UP %" PRIu64 ", CYCLE %" PRIu64 "\n",
+		        timing_now(), s.c[kWait], s.c[kWrite], s.c[kDropped], s.cross.size(), s.c[kF3Preset], s.c[kF3Refused], s.c[kF3NotStale], s.c[kF3First], s.c[kF3Met], s.c[kF2Waited], static_cast<double>(s.waited_ns) / 1e6,
 		        s.c[kF2Cycle], s.c[kF2Bound], s.c[kGivenUp], s.c[kCycle]);
 	}
 	static bool         at_done = false; // BC5_0430_G_AT: one dump in a clean run
@@ -205,6 +206,23 @@ inline void at_wait(const uint32_t* p, bool is64, uint64_t label, const char* ki
 			it->second.have_nonv = true;
 		}
 		if (first && sat && !others.empty()) s.c[kF3First]++; // the writer was submitted before the label was known: F2 below
+		// The top session's guard (2): a wait that meets a preset label before its release has landed. Waits kept for the GPU
+		// and the host's CPU-side waits on the title's behalf both pass here; the title's own CPU reads of the label do not
+		// reach the host and are not seen.
+		const auto pa = s.preset_at.find(label);
+		if (pa != s.preset_at.end()) {
+			if (it != s.cross.end() && value == it->second.v) {
+				s.preset_at.erase(pa); // the release has landed
+			} else if (SoftCp::now_ns() - pa->second > 2'000'000'000ull) {
+				s.preset_at.erase(pa);
+			} else {
+				s.c[kF3Met]++;
+				static uint64_t n_m = 0;
+				if (n_m++ < 128 || (n_m & 0x3ffu) == 0)
+					journal("ho430 F3: %s on ring %d waits at %u on 0x%" PRIx64 " %.2f ms after its preset, before the release (value 0x%" PRIx64 ", reference 0x%" PRIx64 "; %" PRIu64 " so far)\n", kind, ring, off, label,
+					        static_cast<double>(SoftCp::now_ns() - pa->second) / 1e6, value, ref, n_m);
+			}
+		}
 	}
 	if (g_on()) {
 		Ev x    = ev(kWait, label, kind, ring, off);
@@ -324,10 +342,17 @@ inline void f3_before_submit(const uint32_t* ib, uint32_t num_dwords, const std:
 					else if (std::find(waited.begin(), waited.end(), a) != waited.end()) why = "this buffer waits on the label itself";
 					else if (!covered_sorted(maps, a, w64 ? 8 : 4)) why = "the label is not mapped";
 					else {
-						Store&          s = st();
-						std::lock_guard lk(s.m);
-						for (const auto& [job, labels]: s.job_waits)
-							if (job.first != ring && std::find(labels.begin(), labels.end(), a) != labels.end()) why = "a job in flight on another ring holds a kept wait on it";
+						{ // the top session's guard (1): no job submitted and not completed, on any ring, still writes the label ...
+							std::lock_guard lk(g_plw_mutex);
+							for (const auto& pw: g_plw)
+								if (pw.label == a) why = "a job in flight still writes the label (F2 stays the fallback)";
+						}
+						if (why == nullptr) { // ... or reads it through a kept wait
+							Store&          s = st();
+							std::lock_guard lk(s.m);
+							for (const auto& [job, labels]: s.job_waits)
+								if (std::find(labels.begin(), labels.end(), a) != labels.end()) why = "a job in flight holds a kept wait on the label (F2 stays the fallback)";
+						}
 					}
 					const uint64_t now = w64 ? *reinterpret_cast<const volatile uint64_t*>(a & ~7ull) : *reinterpret_cast<const volatile uint32_t*>(a & ~3ull);
 					if (why == nullptr && now != v) {
@@ -347,6 +372,11 @@ inline void f3_before_submit(const uint32_t* ib, uint32_t num_dwords, const std:
 						x.value = set;
 						x.ref   = v;
 						add(x);
+						{
+							Store&          s = st();
+							std::lock_guard lk(s.m);
+							s.preset_at[a] = SoftCp::now_ns();
+						}
 						static std::atomic<uint64_t> n_p {0};
 						const uint64_t               k = n_p++;
 						if (k < 256 || (k & 0x3ffu) == 0) journal("ho430 F3: %s on ring %d releases 0x%" PRIx64 " with 0x%" PRIx64 " at %u while it already holds that value: set to 0x%" PRIx64 " first (%" PRIu64 " so far)\n", kind, ring, a, v, q, set, k + 1);
@@ -373,7 +403,7 @@ inline void dump(int k) {
 	std::snprintf(name, sizeof(name), "%s/g0430-%d.txt", dir.c_str(), k);
 	FILE* f = std::fopen(name, "w");
 	if (f == nullptr) return;
-	static const char* const tn[kTypes] = {"-", "wait", "write", "DROPPED-WRITE", "F2-waited", "F2-cycle", "F2-bound", "GIVEN-UP", "CYCLE", "F3-preset", "F3-refused", "F3-first-seen", "F3-not-stale", "?", "?", "?"};
+	static const char* const tn[kTypes] = {"-", "wait", "write", "DROPPED-WRITE", "F2-waited", "F2-cycle", "F2-bound", "GIVEN-UP", "CYCLE", "F3-preset", "F3-refused", "F3-first-seen", "F3-not-stale", "F3-wait-met-preset", "?", "?"};
 	std::fprintf(f, "g0430 %d at t %.3f s: the last %zu label events, oldest first; counts: waits %" PRIu64 " writes %" PRIu64 " dropped writes %" PRIu64 " F2 waited %" PRIu64 " cycle %" PRIu64 " bound %" PRIu64 " given up %" PRIu64 " cycle-broken %" PRIu64 "\n", k,
 	             timing_now(), all.size(), c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8]);
 	std::fprintf(f, "columns: t_s type label kind ring about#n offset | wait: value ref func satisfied pending | write: value job_seq op\n");
