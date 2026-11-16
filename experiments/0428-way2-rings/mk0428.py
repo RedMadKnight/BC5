@@ -220,7 +220,7 @@ f.sub("""					// Run 123: the compute queue's blocked buffer waits for a
 							if (n_left++ < 40) {
 								char pend[160];
 								describe_pending(label, pend, sizeof(pend));
-								journal("two rings (exp 0428 split-late): %s %u dwords, wait at %u on 0x%" PRIx64 " still splits: %s\n", kind, num_dwords, i, label, pend);
+								journal("two rings (exp 0428 split-late): %s %u dwords, wait at %u on 0x%" PRIx64 " still splits: %s\\n", kind, num_dwords, i, label, pend);
 							}
 #endif
 						}
