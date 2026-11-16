@@ -231,3 +231,18 @@ title:
 
 `KYTY_BC5_0429_PRIO_ORDER` stays as it was: one rule over the console's priority range (lower number → lower nice,
 the job-worker band at nice 0), no title rows. The arms of `screen2` use `GUEST_CPUS` where they used CPU13.
+
+## Build 3 and smoke h429M4 (2026-11-16 23:48–23:59, the slot after exp 0430's X1)
+
+Build 3 under BOX-LOCK: exp 0430's build-5 object copied and pinned (`~/bc5-work/exp0429/base0430`, object
+`f92257718c821cabce9ba4c6fcd11482`, source `96920f82`), linked into normal only. **Normal
+`0d7ab42723fed584d4ecdce97cc03f8a`, lean `576c13dd778adacac98257dce36d3d59`**, 0 errors, the same 8 warnings,
+the shared binaries unchanged.
+
+Smoke h429M4, arm M (`GUEST_CPUS=1`, trace, `BC5_0430_G=0`, exp 0430's F2/F3 on as built), long route: **CLASS TARGET
+at 502 s = G+393**, in the walk after the fight; 47.0 flips/s, no kernel line, no pad key. Exposure: "guest CPU mapping
+ON"; the host list 0–15 in order (siblings adjacent); default mask 0xffff; the union of what the title asked grew
+0x1ff → 0x9ff → 0xdff → 0xfff → 0x1fff by its own masks, then 0xffff by Bink Snd, which takes the default mask;
+MainThread 0x100 and the Render Thread 0x400 applied, Job Hi 0xff applied, no FAILED. One run: the crash came far later
+than in the runs of the first builds and exp 0425 (G+10 to G+120), but it came, so the title's own CPU split alone
+does not remove it. Not yet read (the box went to exp 0431): the crash's frames and the job-thread count at 0xffff.
