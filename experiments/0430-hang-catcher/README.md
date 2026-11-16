@@ -171,3 +171,39 @@ that inherits the emulator's close-on-exec DRM fd. At `exec` the kernel closes i
 reset, and the tool it was to start (umr) never runs. Seen in h430R2 (20:25:48.9, the live sampler), and it likely
 explains exp 0058's dumps that came after the reset (F112). **Rule:** start the helper process before any stall, while
 the GPU is healthy, and only signal it at the stall (a pipe line). Never fork from the stalled process.
+
+## Result 2: h430S1, the hang of 20:47:54 (build 2, `104cbf66`)
+
+Chain S started 20:39:22. h430S1 hung at 20:47:54, 8.5 min in: `comp_1.0.1` and `gfx_0.0.0` timed out, and both ring
+resets succeeded (the box stayed up). Fault record `~/bc5-data/captures/faults/20261116-204756` (exit 86); captures
+`play-20261116-2039/gc/` (`waves0430-0/1.txt`, `dj0430-0..3.txt`, `snap0430-0..3.txt`, two ib-timeout bins); the
+laptop streams `raw/*-h430S.txt`. The chain stopped (class KERNEL).
+
+- **Catcher (a) worked.** The helper's halt ran at the 901-ms stall (`waves0430.log`: 0.32 s), before the reset. Two
+  waves, both on ME 0 (the GFX ring; `SQ_WAVE_HW_ID2` 0x071f0006), vmid 7, at PC 0x90997395c and 0x909973d68,
+  `SQ_WAVE_TRAPSTS` 0x50000100 (the memory-violation bit set, TODO(verify) the field layout against the gfx10 header),
+  `INST_DW0` 0xbf810000. They are halted by a memory violation, not looping (as F249).
+- **What they wrote.** One wave's s[8:11] is a buffer descriptor with base 0x11_de0bf180, stride 16, 0x11548 records.
+  The kernel's first fault: page 0x11de0bf000, a TCP WRITE, status 0x00741050 (permission 5, no mapping error: no PTE,
+  as F257 decodes ring:40). The descriptor was loaded through s[4:5] = 0x118c68c900, a per-object table in
+  RenderGpuWcLarge.
+- **The pass.** The BVH passes over the per-object "PSR_BVHL" trees (that ASCII is in their user data; the F234 family):
+  per object, 0x909973900/b00/d00/f00, then 0x909974400 (the compaction), 0x909977100 and 0x90997a500, all on one
+  user-data block (ud3: the arguments at 0x118c68cd00; ud4: the table at 0x118c68c900).
+- **The addresses.** Neither h430R2's write (0x11cc847000) nor h430S1's (0x11de0bf000) has a guest range, a view or a
+  GPU mapping (the fault record's layout files; R2's catcher line: "K3 no guest range (a hole)"). Both lie past the
+  end of an eager GPU heap: R2's is 2.3 MB past RenderGpuWcLarge's end (0x11cc600000), just past exp 0037's 2 MiB zero
+  guard; S1's is about 115 MB past RenderGpuWcSmall's end (0x11d6e00000). S1's host-side last fault is K4
+  (0xce0871333000).
+- **So** both hangs are the title's BVH shaders writing through descriptors into true holes. The console drops such
+  writes and reads zero there (F257; `experiments/0412-memory-guardian/DESIGN-learned-windows.md` §7, the K3/K4
+  rule). Here they fault, halt the waves and hang the ring. Open: whether those descriptors point into holes on the
+  console too (writes silently dropped there) or only here (stale or uninitialised table contents).
+- **Catcher (d) missed:** it took the newest 16 dispatches per ring, which belonged to later submissions, not the
+  stalled one.
+
+**Proposed build 3** (sent to the top session, waiting for its decision): F1 `BC5_0430_HOLES=1`, the §7 K3/K4 rule
+alone (one PRT mapping under the guest's span, unimported parts of views cleared so that a missed import still
+faults),
+and catcher (e): the snapshot keyed to the stalled submission's dispatches, with 4 KiB at each of their table
+pointers. `BC5_GUARD_PRT_BG` is banned from launchers (CLAUDE.md; exp 0412 §53–54), so F1 needs the decision first.
