@@ -162,3 +162,12 @@ stall the watchdog writes one line to its pipe, and the helper, which holds no D
 `BC5_0430_SNAP=1`: with each dump, 512 bytes at every 64-bit user-data pointer of the last 16 dispatches per ring
 (`snap0430-<k>.txt`), read with `process_vm_readv`. That is the memory at the dump, not at the run (R13). Chain S
 (`h430S*`) started 20:39:22 with `BC5_0430_WAVES_MS=900 BC5_0430_SNAP=1` and the rest as before.
+
+### Lesson (for LESSONS.md, the top session's call)
+
+**A diagnostic that forks at a GPU hang never runs.** `std::system`, `popen` and `fork + exec` at a stall create a child
+that inherits the emulator's close-on-exec DRM fd. At `exec` the kernel closes it, and amdgpu's flush on close
+(`drm_sched_entity_flush`) waits for the context's jobs, which are the hung ones. The child stands in D state until the
+reset, and the tool it was to start (umr) never runs. Seen in h430R2 (20:25:48.9, the live sampler), and it likely
+explains exp 0058's dumps that came after the reset (F112). **Rule:** start the helper process before any stall, while
+the GPU is healthy, and only signal it at the stall (a pipe line). Never fork from the stalled process.
