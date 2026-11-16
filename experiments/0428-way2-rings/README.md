@@ -160,6 +160,56 @@ Lean smoke, 14:38–14:44:
 - ASTRO BOT's run ended before the 150-s sample. It has no way-2 row, so its behaviour is the shared one before the
   swap.
 
+### The maintainer's play on the swapped lean build: a GPU hang at 15:09:18 (8.5 min into the play)
+
+His words, via the top session: "Grało się świetnie. Ale wystąpił crash GPU".
+
+Records, all read on the box (the devcoredump holds the title's buffers and stays private):
+- the devcoredump `~/bc5-data/captures/devcoredump/20261116-150919-devcd4.txt`;
+- the stall sampler `~/bc5-data/captures/gpu-stall/event-20261116-150918-gfx_0.0.0`: 5 samples over 1.4 s;
+- pstore.
+
+**What happened.** `gfx_0.0.0` timed out (signaled 29225651, emitted 29225652; thread bc5-ring). Its ring reset failed, a
+GPU reset began, and `bc5-gpu-watch` crashed the kernel for a reboot. The box was up again at 15:09:49.
+
+**It is not a cross-ring wait:**
+- In all 5 sampler samples every compute ring had signaled == emitted. All compute work had finished; only the GFX
+  job was pending.
+- The ME was not at a `WAIT_REG_MEM`. `CP_STALLED_STAT2` 0x18000 = `ME_WAITING_ON_PARTIAL_FLUSH` (+
+  `MEQ_TO_ME_NOT_RDY_TO_RCV`). `GRBM_STATUS` 0xa0210028 = `GE_BUSY`, `GE_BUSY_NO_DMA`, `CP_BUSY`, `GUI_ACTIVE`: no SPI,
+  PA, SX, CB, DB or TA busy, and `SPI_CSQ_WF_ACTIVE_STATUS` was 0. Decoded with Linux v7.3 `gc_10_1_0_sh_mask.h`.
+- The CP's IB1 had 0x1888 of 0x2008 dwords left. The PFP's history ends at the backend's `WAIT_REG_MEM` (dword 1988)
+  and two `ACQUIRE_MEM`. The ME was at an `EVENT_WRITE` partial flush (1944) behind `DRAW_INDEX_AUTO` draws
+  (1700–1910). The geometry engine never drained.
+- No page fault was part of it. The devcoredump's "Page fault observed 0x1113c50000" is the kernel's stored last fault,
+  exp 0424's of 2026-11-15 20:08 (pasid 109; this process was 304). The pstore holds no fault line near 96185 s.
+
+**Conditions of his play.** He had turned JobArenaFix off in the shared `~/bc5-work/input.cfg`
+(`JobArenaFix.PPSA03671=off`; the file's mtime is 15:01:06, 13 s after the lean play began; no launcher holds it). C1
+was on.
+- The smokes and the series (12:43–14:33) ran with JobArenaFix on: their private copies of `input.cfg` read "on".
+- The `long` set inherits off from the shared file: his play's conditions.
+- The 15:09 event is a GPU geometry-engine stall, not the arena crash, which is a CPU access violation at a known site
+  (exp 0425's TARGET class).
+
+**It is F588's class:** 10-29 18:08, one ring, before way 2. `GRBM_STATUS2` 0x50000008 is identical; it was the same
+partial-flush wait, its ring reset also failed, and it also ended in a gpu-watch reboot. F588's cause is still open.
+
+**Its link to way 2, a suspect and not proven.** The hung IB opens with `CONTEXT_CONTROL`, `CLEAR_STATE` and about 950
+dwords of `SET_CONTEXT_REG` / `SET_SH_REG`: a split piece behind a full state prefix. Iteration 2's two-ring dcb wait
+split about 18 k times per 225-s run, and about 97 % of those waits were then kept for the GPU anyway (17.7 k). One
+ring splits rarely. A piece whose prefix misses state the geometry engine needs is the leading suspect.
+
+**Iteration 3** (unit `40f01680`, build `547833bb`) adds `BC5_DIRECT_ACB_SPLIT_LATE`:
+- A two-ring dcb wait whose writer is already on a ring is kept for the GPU at once, with no split. The head before it
+  is in the same IB, so it runs first and its label writes land before the wait blocks the ME.
+- It splits only when the writer is not yet submitted.
+- It also removes lean's `split` warning.
+
+Test: the `long` set, three runs of the fight then exp 0379's walk to G+1500, RT on, every way-2 switch plus SPLIT_LATE.
+The rule (`check0428.py long`, fixed before the runs): PASS if all three are NO_CRASH. The counters must show the
+splits cut by at least 90 %.
+
 ## Verdict
 
 **Way 2 works and is deployed for the second title.**
