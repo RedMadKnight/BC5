@@ -272,6 +272,25 @@ poll. Exp 0132's form split the head before polling. Iteration 6 polls first, ke
 ring, and splits only on exp 0132's cycle (the ring thread blocked on a label this buffer wrote before the wait; 0 seen)
 or after 8 ms (69). GFX jobs fell from about 92 k to about 74 k per run.
 
+**The piece prefix against what the GE needs (the top session's item 3).** `full_state::Tracker` (the source of a
+piece's prefix) follows:
+- `SET_*_REG` and `SET_*_REG_INDEX` in all four spaces;
+- `LOAD_CONTEXT/SH/UCONFIG_REG(_INDEX)` through the reader;
+- `INDIRECT_BUFFER` (4 deep);
+- `CLEAR_STATE`, `SET_BASE`, `INDEX_BASE`, `INDEX_BUFFER_SIZE`, `INDEX_TYPE`, `NUM_INSTANCES`, `CONTEXT_CONTROL`
+  (`backend/src/full_state.cpp`).
+
+The opcodes of the two hung GFX IBs (devcd4 of 15:09, devcd3 of 15:47) that it does not follow are 0x1e, 0x22
+`COND_EXEC`, 0x37 `WRITE_DATA` (DST_SEL 2/5, memory), 0x3c/0x93 `WAIT_REG_MEM(64)`, 0x42 `PFP_SYNC_ME`, 0x45 `COND_WRITE`,
+0x46 `EVENT_WRITE`, 0x49 `RELEASE_MEM`, 0x50 `DMA_DATA`, 0x58 `ACQUIRE_MEM`. These are sync and memory packets; none sets
+a GPU state register. There is no `DRAW_PREAMBLE`, `CONTEXT_REG_RMW`, `SET_PREDICATION` or streamout packet. The GE's
+registers come by `SET_UCONFIG_REG(_INDEX)` / `LOAD_UCONFIG_REG_INDEX`, which are tracked.
+
+So on these IBs nothing points at a prefix without GE state. Two modelling limits remain, relevant only to the 69
+pieces per run left after iteration 6:
+- `COND_EXEC` ranges are followed as if taken (3 and 16 in these IBs);
+- an unreadable `LOAD_*` table leaves its registers out (`Stats::unreadable_tables`).
+
 ## Verdict
 
 **Way 2 works and is deployed for the second title.**
