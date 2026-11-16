@@ -607,3 +607,72 @@ What this suggests next, the top session's decision:
 - The one-sided Fisher exact p against the control is printed as information only: exchangeable runs assumed, not a
   probability of the cause (R13).
 - The catcher's crash-type takes are reported as description only (R11).
+
+## Result: CHAIN_SET=confirm (2026-11-16 02:59–04:13, the top session's GO)
+
+**The runs.**
+- Build and conditions as in the sched set:
+  - private normal 81e8d0f7, kernel 7.3.3-ogc1.1.fc45, boot b348813a, slot 4;
+  - RT on, the named snapshot, `JobArenaFix` off (top confirmed it), the catcher on.
+- Before the start no emulator ran and the lock was free.
+- 18 counted runs:
+  - C13 did not route (no load within 40 s of Continue);
+  - the chain's one replacement, C13R, did.
+- **Kernel.** No kernel GPU line in any run.
+  - The laptop's stream `raw/kern-0425-confirm.txt` holds only two SELinux "context is not valid" lines, at 04:13 and
+    04:15.
+- No real pad key and no STOP; the chain lock was released at 04:13:27.
+- The lock line says "15 runs": that is the chain's fixed text, and the set ran 18.
+- Stand-in dry run before the start (`test_chain0425.sh rule target-stop kernel stopfile noroute`): 15 passed, 2
+  failed.
+  - Both failures are in the kernel scenario: its first run is SETUP, because of the known Git Bash `/proc` environ
+    race.
+  - The set's rule was also checked on synthetic rows: HOLDS, REFUTED, NO CONCLUSION and NO TEST.
+
+| arm | runs | TARGET (site) | NO_CRASH | crash-type takes per run (catcher) |
+|---|---|---|---|---|
+| C, control | C13R C14 C15 C16 C17 C18 | 2 (C16, C18) | 4 | 2, 2, 2, 4, 0, 2 |
+| S, C1 wake slice 200 µs | S5–S10 | 0 | 6 | 0, 0, 1, 0, 0, 1 |
+| Y, C2 handoff 300 µs | Y5–Y10 | 0 | 6 | 0, 0, 0, 1, 0, 0 |
+
+- Both TARGETs ended 9–10 s after G (after 117–118 s), as in F792.
+- Exposure held in every run:
+  - S: 66 threads took the slice, 5 of them Hi;
+  - Y: 594–626 handoff lines.
+- Flips/s 35.0–37.7 in every arm (not a measured zero cost, R13).
+
+**The rule's output: "control 2 of 6 at the site (want at least 3): NO CONCLUSION".** By the rule fixed before the
+runs, the confirmation does not judge C1 or C2.
+
+**What the runs show apart from the rule.**
+- C1 and C2 were clean 6 of 6 each. Against this set's control (2 of 6), the one-sided Fisher p is 0.23.
+- **On build 81e8d0f7, all sets together:**
+  - controls 6 of 15 at the site (p3rep 1/6, sched 3/3, confirm 2/6);
+  - C1 0 of 10; C2 0 of 10.
+  - One-sided Fisher: C1 alone 0.028; C1 and C2 together (0 of 20) about 0.003.
+  - These are illustrations under exchangeable runs, not estimates of a rate or a cause (R13). The control's rate
+    moved between sets.
+- **The catcher (R11).** The sched set's "no crash-type take under C1 or C2" does not hold as an absolute:
+  - S7, S10 and Y8 each took one and went on without a crash.
+  - Runs with a take: 5 of the 6 controls against 3 of the 12 C1 and C2 runs (Fisher about 0.03, the same
+    illustration).
+  - C2 again halves the owner's help calls (last sums at 8000 against 14000–16000), and its Hi-pending share is
+    about 49 %.
+  - C1 again leaves that share at about 73 %.
+- Raw files:
+  - `raw/chain0425-confirm.out`, `raw/n/chain-rows-confirm.txt`;
+  - `raw/n/raw/*` for C13–C18, S5–S10, Y5–Y10, crash excerpts with the code-byte lines removed;
+  - `raw/catcher-lines-confirm.txt`.
+
+## Verdict (CHAIN_SET=confirm)
+
+- **No conclusion by the rule: the control crashed 2 of 6.**
+- C1 and C2 were clean in all 12 of their runs here, and in 20 of 20 on this build. That is consistent with both
+  removing or strongly lowering the crash, but it is not shown by a rule that passed (R13).
+- `JobArenaFix` stays; nothing shared changed.
+- The control's low and moving rate (6 of 15 on this build, 7 of 9 in the history) is what limits every set. A rule
+  that waits for 3 of 6 control crashes will often say nothing at this rate.
+- Next is the top session's decision. Options:
+  - a longer set;
+  - a rule fixed on the pooled control;
+  - the maintainer's own play with C1 or C2 and `JobArenaFix` off.
