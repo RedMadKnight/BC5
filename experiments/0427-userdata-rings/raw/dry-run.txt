@@ -1,0 +1,26 @@
+userdata-rings dry run: 23 jobs, placeholder VAs, no device
+program: b90af818 d7460004 04010c08 7e000204 7e020205 7e040206 7e06020a e01c2000 80000004 bf810000
+job  0 block 0 set   comp0 wait  72 dwords  ok  ud4..6 40000000 50000000 60000000
+job  1 block 0 set   comp1 wait  72 dwords  ok  ud4..6 40000101 50000101 60000101
+job  2 block 0 set   comp2 wait  72 dwords  ok  ud4..6 40000202 50000202 60000202
+job  3 block 0 probe comp0 wait  72 dwords  ok
+job  4 block 0 probe comp1 wait  72 dwords  ok
+job  5 block 0 probe comp2 wait  72 dwords  ok
+job  6 block 1 set   comp2 wait  72 dwords  ok  ud4..6 40000602 50000602 60000602
+job  7 block 1 set   comp1 wait  72 dwords  ok  ud4..6 40000701 50000701 60000701
+job  8 block 1 set   comp0 wait  72 dwords  ok  ud4..6 40000800 50000800 60000800
+job  9 block 1 probe comp2 wait  72 dwords  ok
+job 10 block 1 probe comp0 wait  72 dwords  ok
+job 11 block 2 set   comp1 wait  72 dwords  ok  ud4..6 40000b01 50000b01 60000b01
+job 12 block 2 set   comp0 wait  72 dwords  ok  ud4..6 40000c00 50000c00 60000c00
+job 13 block 2 set   comp2 wait  72 dwords  ok  ud4..6 40000d02 50000d02 60000d02
+job 14 block 2 probe comp1 wait  72 dwords  ok
+job 15 block 3 set   comp0 wait  72 dwords  ok  ud4..6 40000f00 50000f00 60000f00
+job 16 block 3 set   gfx   wait  80 dwords  ok  ud4..6 4000100f 5000100f 6000100f
+job 17 block 3 probe comp0 wait  72 dwords  ok
+job 18 block 3 probe gfx   wait  72 dwords  ok
+job 19 block 4 set   comp0 pipe  72 dwords  ok  ud4..6 40001300 50001300 60001300
+job 20 block 4 probe comp0 wait  72 dwords  ok
+job 21 block 4 set   comp1 pipe  72 dwords  ok  ud4..6 40001501 50001501 60001501
+job 22 block 4 probe comp1 wait  72 dwords  ok
+dry run: 0 bad IB(s)

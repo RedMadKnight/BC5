@@ -1,0 +1,57 @@
+kernel: 7.3.3-ogc1.1.fc45.x86_64
+num_kcq=-1
+gpu_recovery=-1
+compute_multipipe=-1
+sched_policy=0
+cwsr_enable=1
+mes=n/a
+lockup_timeout=
+/proc/cmdline: BOOT_IMAGE=(hd0,gpt2)/ostree/default-19789134923d9907dcb4bdf7c3ca8fe85518aa4f1f27df4cfd8daf14a637734d/vmlinuz-7.3.3-ogc1.1.fc45.x86_64 ostree=/ostree/boot.0/default/19789134923d9907dcb4bdf7c3ca8fe85518aa4f1f27df4cfd8daf14a637734d/0 rhgb quiet root=UUID=e212b78a-b5c7-49ad-aba3-6441c650ce69 vconsole.keymap=pl rootflags=subvol=root rw bluetooth.disable_ertm=1 amd_iommu=off iommu=soft mitigations=off ttm.pages_limit=3407872 udmabuf.size_limit_mb=1024 efi_pstore.pstore_disable=0
+-- dmesg: compute/gfx rings and kfd
+[    6.954035] amdgpu 0000:01:00.0: kiq ring mec 2 pipe 1 q 0
+[    7.458450] kfd kfd: Allocated 3969056 bytes on gart
+[    7.458487] kfd kfd: Total number of KFD nodes to be created: 1
+[    7.962641] kfd kfd: added device 1002:13fe
+[    7.962666] amdgpu 0000:01:00.0: ring gfx_0.0.0 uses VM inv eng 0 on hub 0
+[    7.962670] amdgpu 0000:01:00.0: ring comp_1.0.0 uses VM inv eng 1 on hub 0
+[    7.962673] amdgpu 0000:01:00.0: ring comp_1.1.0 uses VM inv eng 4 on hub 0
+[    7.962675] amdgpu 0000:01:00.0: ring comp_1.2.0 uses VM inv eng 5 on hub 0
+[    7.962678] amdgpu 0000:01:00.0: ring comp_1.3.0 uses VM inv eng 6 on hub 0
+[    7.962680] amdgpu 0000:01:00.0: ring comp_1.0.1 uses VM inv eng 7 on hub 0
+[    7.962682] amdgpu 0000:01:00.0: ring comp_1.1.1 uses VM inv eng 8 on hub 0
+[    7.962685] amdgpu 0000:01:00.0: ring comp_1.2.1 uses VM inv eng 9 on hub 0
+[    7.962687] amdgpu 0000:01:00.0: ring comp_1.3.1 uses VM inv eng 10 on hub 0
+[    7.962690] amdgpu 0000:01:00.0: ring kiq_0.2.1.0 uses VM inv eng 11 on hub 0
+[    7.962693] amdgpu 0000:01:00.0: ring sdma0 uses VM inv eng 12 on hub 0
+[    7.962695] amdgpu 0000:01:00.0: ring sdma1 uses VM inv eng 13 on hub 0
+[27614.151368] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=8049232, emitted seq=8049234
+[27614.151374] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+[27614.151654] amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+[27614.159891] bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=8049232, emitted seq=8049234
+[27614.164451] bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+[27616.199361] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=8049247, emitted seq=8049249
+[27616.199365] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+[27616.199455] amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+[27616.202505] bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=8049247, emitted seq=8049249
+[27616.209035] bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+[27717.703630] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=8107843, emitted seq=8107845
+[27717.703635] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+[27717.704270] amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+[27717.707474] bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=8107843, emitted seq=8107845
+[27717.711945] bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+-- dmesg tail (last 15 lines)
+[27715.644169] amdgpu 0000:01:00.0:  Process kyty_emulator pid 1910423 thread bc5-ring pid 1910471
+[27715.644170] amdgpu 0000:01:00.0:   in page starting at address 0x0000001113927000 from client 0x1b (UTCL2)
+[27717.701515] amdgpu 0000:01:00.0: Dumping IP State
+[27717.703611] amdgpu 0000:01:00.0: Dumping IP State Completed
+[27717.703625] amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+[27717.703628] amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+[27717.703630] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=8107843, emitted seq=8107845
+[27717.703633] amdgpu 0000:01:00.0:  Process kyty_emulator pid 1910423 thread bc5-ring pid 1910471
+[27717.703635] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+[27717.704270] amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+[27717.704279] amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+[27717.707474] bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=8107843, emitted seq=8107845
+[27717.711945] bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+[56819.784309] SELinux:  Context system_u:object_r:invalid_bootcinstall_testlabel_t:s0 is not valid (left unmapped).
+[56943.176154] SELinux:  Context system_u:object_r:systemd_clonesetup_generator_exec_t:s0 is not valid (left unmapped).
