@@ -210,6 +210,40 @@ Test: the `long` set, three runs of the fight then exp 0379's walk to G+1500, RT
 The rule (`check0428.py long`, fixed before the runs): PASS if all three are NO_CRASH. The counters must show the
 splits cut by at least 90 %.
 
+### Iterations 4–5 and the hangs of the afternoon
+
+**`w428L4`** (iteration 4, JobArenaFix on in its private copy, way 2 on). At 415 s (about G+300):
+- a TCP WRITE fault at the junk address 0x171d720ad000, then a `comp_1.0.1` timeout, its reset succeeded, then a
+  `gfx_0.0.0` timeout and reset;
+- fault record `faults/20261116-153436`: K4, junk;
+- the timed-out acb (991 dw, `ib-timeout-00595506`) holds only direct dispatches with ordinary `0x11_…` descriptors, plus
+  aq424's prefixes;
+- the same timeout's dcb shows the BVH program 0x909974200's indirect dispatches with garbage triples (3.2e9 × 1.1e9 …);
+- this is F399/F403's family (garbage pointers in RT/BVH data).
+
+Iteration 4's split fix barely acted (still split 28,571; kept in the IB 0, after the chain 1). The journal said "no
+pending write" at the check; the writer was in this buffer's own head. The scan gave up at the first IB2, so iteration
+5 (unit `e6be6ffa`, build `0b42eb2c`) scans as `register_label_writes` does, IB2s not followed (a standalone test 3/3).
+
+**`w428C5`, the one-ring control of the `longab` set** (way 2 OFF on the same private binary). At 15:47:55, about 8.5
+min into the run:
+- `gfx_0.0.0` timed out, its reset failed, `bc5-gpu-watch` rebooted the box (boot 15:48:28);
+- devcoredump `20261116-154755-devcd3`, stall event `event-20261116-154755-gfx_0.0.0`;
+- the ME at a partial flush (`CP_STALLED_STAT2` 0x18000, `EVENT_WRITE`), `GRBM_STATUS` 0xa0407028: SPI, TA, TCP busy, GE
+  idle, no compute waves. That is F589's F403 signature on the GFX ring.
+
+**The day's four hangs:**
+
+| time | run | way 2 | class | end |
+|---|---|---|---|---|
+| 15:09 | his play | on | GE stall at a partial flush (F588) | reset failed, reboot |
+| 15:35 | w428L4 | on | junk-pointer write by compute (F403 family) | ring resets succeeded |
+| 15:47 | w428C5 | OFF | shader stuck in memory reads on GFX (F403 signature) | reset failed, reboot |
+
+Both classes occur with way 2 off. The maintainer then stopped the comparison: multi-ring is decided, no one-ring arm
+again, and JobArenaFix is off in every run from now on (relayed by the top session, 16:3x). The `longab` set ended
+with the machine-down. The stale lock line of its token was released at 16:36.
+
 ## Verdict
 
 **Way 2 works and is deployed for the second title.**
