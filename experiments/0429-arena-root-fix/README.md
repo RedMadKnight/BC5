@@ -166,3 +166,23 @@ the Hi workers (guest 0–7) on cores 0–3, and leaves the second thread of cor
 thread unless one asks. The trace prints the map once. Exp 0388 arm A (0x1fff without pinning) crashed 3 of 3 (F791),
 so the new element is the pinning. Arms of `screen2`: C, M (CPU13), Y (M + PRIO_ORDER), X (Y + C2 300 µs); `smoke2`
 is h429M1. Not built yet; the box is exp 0430's.
+
+## Build 2 and smoke h429M1 (2026-11-16 22:29–22:34, the top's slot between exp 0430's runs)
+
+Build 2 under BOX-LOCK (22:29:44–22:31): **normal `10cd55a2c564a20261d84d1a18ff91e6`, lean
+`70983f923903e94fb4bf623e8b02f6e4`**, 0 errors, the same 8 warnings; the shared binaries unchanged. Smoke h429M1
+(arm M, CPU13 on, trace): **CLASS KERNEL**: a GPU page fault at 119 s (G+5), TCP write, address 0x1551d16000, ring reset
+succeeded, record `~/bc5-data/captures/faults/20261116-223404`; 30.7 flips/s, no arena crash before it. **Not a test of
+the arena crash**, and not a clean run either: the chain saw 3 real pad keys at 22:33:56–22:34:03 (BTN_TR2,
+BTN_NORTH) and stopped (R51).
+
+**The map was wrong.** The trace printed `0:0 1:1 2:0 3:1 4:2 5:3 6:2 7:3 8:4 9:5 10:4 11:5 12:6`: the box numbers SMT
+siblings next to each other (cpu0's list is 0-1), and the code took host CPU k as core k, so the 13 guest CPUs were
+folded onto host CPUs 0–6 and the five Hi workers onto CPUs 0–3. The masks themselves were applied as asked
+(MainThread 0x100, Render Thread 0x400, Job Hi 0xff, Job Lo 0x1ff, AK 0x1000; no FAILED). Whether the squeeze caused
+the GPU fault is not known; F847's F403-family faults also come without it.
+
+**Fixed in `mk0429.py` (build 3, not built):** host core k is the k-th distinct sibling group in CPU order. Checked on
+two layouts by a Python copy of the loop: adjacent siblings give guest i → host i (0–12), the "i, i+8" layout gives
+0:0 1:8 2:1 3:9 … 12:6. On this box the title then has host CPUs 0–12, MainThread on CPU 8 apart from the Hi workers
+on 0–7, and CPUs 13–15 carry no title thread.

@@ -230,11 +230,19 @@ struct Bc5CpuMap {
 static const Bc5CpuMap& Bc5Map() {
 	static const Bc5CpuMap v = [] {
 		Bc5CpuMap m {};
+		// Host core k is the k-th distinct sibling group in CPU order (the box numbers SMT siblings next to each other,
+		// 0-1, 2-3, ...: exp 0429's smoke h429M1, whose first map took CPU k for core k and folded 13 CPUs onto 7).
 		for (int k = 0; k < 7; k++) {
-			int  sib[2] = {k, k};
+			m.host[2 * k] = 2 * k; // fallback without /sys: adjacent siblings
+			if (2 * k + 1 < 13) {
+				m.host[2 * k + 1] = 2 * k + 1;
+			}
+		}
+		for (int c = 0, k = 0; c < 64 && k < 7; c++) {
+			int  sib[2] = {c, c};
 			int  n      = 0;
 			char path[96];
-			std::snprintf(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/topology/thread_siblings_list", k);
+			std::snprintf(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/topology/thread_siblings_list", c);
 			FILE* f = std::fopen(path, "r");
 			if (f != nullptr) {
 				char line[128] = {};
@@ -259,13 +267,17 @@ static const Bc5CpuMap& Bc5Map() {
 				}
 				std::fclose(f);
 			}
+			if (n == 0 || sib[0] != c) {
+				continue; // not readable, or not the first CPU of its group
+			}
 			if (n < 2) {
-				sib[1] = sib[0]; // no sibling known: both guest CPUs on the one host CPU
+				sib[1] = sib[0]; // no sibling: both guest CPUs on the one host CPU
 			}
 			m.host[2 * k] = sib[0];
 			if (2 * k + 1 < 13) {
 				m.host[2 * k + 1] = sib[1];
 			}
+			k++;
 		}
 #ifndef BC5_LEAN
 		if (Bc5AffinityTrace()) {
