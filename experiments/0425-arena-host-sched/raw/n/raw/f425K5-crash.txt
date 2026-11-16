@@ -1,0 +1,21 @@
+kyty_exception_handler: 0000000903d7eca0
+=== HOST EXCEPTION REGISTER DUMP ===
+exception_address=0x0x903d7eca0
+native_code=0x0xb
+access_violation_vaddr=0x0xc
+rax=0x0x17a3b rbx=0x0x17130 rcx=0x0x90b rdx=0x0x0
+rsi=0x0xffffffffffffc001 rdi=0x0x0 rbp=0x0x10367fb5d0 rsp=0x0x10367fb450
+r8 =0x0x1017ba9e40 r9 =0x0x1 r10=0x0x0 r11=0x0x0
+r12=0x0x505 r13=0x0x10babca530 r14=0x0x50a r15=0x0x10babca430
+exception: type=AccessViolation, av_type=Read, av_addr=000000000000000c, native_code=0000000b
+regs: rax=0000000000017a3b rbx=0000000000017130 rcx=000000000000090b rdx=0000000000000000
+regs: rsi=ffffffffffffc001 rdi=0000000000000000 rbp=00000010367fb5d0 rsp=00000010367fb450
+regs: r8 =0000001017ba9e40 r9 =0000000000000001 r10=0000000000000000 r11=0000000000000000
+regs: r12=0000000000000505 r13=00000010babca530 r14=000000000000050a r15=00000010babca430
+--
+Source build f266548-dirty
+--- Stack Trace ---
+--- Error ---
+Access violation: Read [000000000000000c] 
+ in /home/kjaniszewski/src/KytyPlus/src/loader/runtimeLinker.cpp:1210
+== 2026-11-16 01:07:37 exit 65

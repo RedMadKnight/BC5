@@ -475,3 +475,105 @@ What this suggests next, the top session's decision:
 
 **Order.** `both0425.sh` runs p3rep, then sched, each under its own chain lock line. Sched starts only if p3rep
 ended without a STOP, no STOP file exists, the lock is free and no emulator runs.
+
+## Result: CHAIN_SET=p3rep and CHAIN_SET=sched (2026-11-16 01:01–02:40, the top session's GO)
+
+**The build.**
+- Private normal `81e8d0f7b6c97e97ec0739a9bd0241ef`: the first build plus the sharpened catcher, nothing else.
+- Shared normal 9da2a9d5 unchanged; the build lock was released before the chains.
+
+**The runs.** Same as the playgo set: kernel 7.3.3-ogc1.1.fc45, boot b348813a, slot 4, RT on, the named snapshot.
+- 27 of 27 routed: G at 106–118 s.
+- No kernel GPU line in any run: the runner's dmesg gate, and the laptop's stream `raw/kern-0425-p3rep-sched.txt` is
+  empty.
+- No real pad key; no STOP. Each chain released its lock (01:44:47 and 02:40:47).
+
+| set | arm | runs | TARGET (site) | NO_CRASH | crash-type jobs the owner took, per run (catcher) |
+|---|---|---|---|---|---|
+| p3rep | C, control | C7–C12 | 1 (C11) | 5 | 0, 4, 0, 3, 1, 1 |
+| p3rep | K, P3 call cost 200 µs | K5–K10 | 3 (K5, K6, K7) | 3 | 2, 2, 2, 1, 1, 0 |
+| sched | C, control | C4 C5 C6 | 3 (all) | 0 | 1, 2, 1 |
+| sched | S, C1 wake slice 200 µs | S1–S4 | 0 | 4 | 0, 0, 0, 0 |
+| sched | Y, C2 handoff 300 µs | Y1–Y4 | 0 | 4 | 0, 0, 0, 0 |
+| sched | D, C3 direct wake | D1–D4 | 1 (D2) | 3 | 1, 3, 1, 1 |
+
+- Every TARGET ended 8–10 s after G, as in F792, except C5 (158 s, G 108: about G+50 s).
+- Exposure held in every run:
+  - S: 66 threads took the slice, 5 of them Hi;
+  - Y: 607–619 handoff lines;
+  - D: the direct-wake line.
+- Flips/s 31.6–36.7; no arm stands apart from its control (not a measured zero cost, R13).
+
+**The rule's output.**
+- p3rep: "control 1 of 6 at the site (want at least 3): **NO CONCLUSION**."
+- sched: control 3 of 3.
+  - C1 (S) **HOLDS**: 4 of 4 clean and exposed. One-sided Fisher 0.029.
+  - C2 (Y) **HOLDS**: 4 of 4. Fisher 0.029.
+  - C3 (D) **REFUTED**: D2 crashed at the site. Fisher 0.114.
+  - The Fisher lines are information only: exchangeable runs assumed (R13).
+
+**What the runs show apart from the rule.**
+- **P3 does not remove the crash.** It crashed 3 of 6 with the candidate on; that needs no control. Its 0 of 4 in the
+  playgo set was chance; across both sets P3 is 3 of 10.
+- **The control's rate moves between sets on the same build:** 1 of 6 in p3rep, 3 of 3 in sched. Pooled on
+  81e8d0f7 it is 4 of 9.
+  - Against that pooled control, C1 and C2 together (0 of 8) give a one-sided Fisher 1287/24310 ≈ 0.053.
+  - That is again an illustration under exchangeable runs, not an estimate (R13).
+  - C1 and C2 hold by the rule fixed for their set; the evidence is still 4 runs each.
+- **The catcher (descriptive, R11).**
+  - In the 8 S and Y runs, the owner took no crash-type job at all.
+  - In the 9 controls on this build it took one or more in 7; in P3's runs in 5 of 6; in C3's in 4 of 4.
+  - As a count, 0 of 8 against 7 of 9 gives a one-sided Fisher 45/24310 ≈ 0.002. That is the same illustration, not
+    a probability (R13).
+  - C2 also halves the owner's help: its last sums are at 8000 owner calls, against 14000–16000 in the other arms'
+    full runs. Its share of calls with a Hi waiter pending is about 48 %, against 70–78 % elsewhere.
+  - C1 does not change that share (70–72 %) and still shows no crash-type take. **The catcher does not show how C1
+    acts.** This is one global, unpaired counter (README limits).
+- Raw files:
+  - `raw/chain0425-p3rep.out`, `raw/chain0425-sched.out`, `raw/both0425.out`;
+  - `raw/n/chain-rows-p3rep.txt`, `raw/n/chain-rows-sched.txt`;
+  - `raw/n/raw/*`: summary, start, route, end, pad, dmesg, and crash excerpts with the code-byte lines removed;
+  - `raw/catcher-lines-p3rep-sched.txt`, `raw/pgrate-p3rep-sched.txt` (from `pgrate0425.py`).
+  - The play logs stay on the box in `~/bc5-work/exp0425/n/`.
+
+## Who calls PlayGo, and how often near G+9 s (the second build's catcher, all 27 runs)
+
+- **The owner is `game-main`.** In every run, the owner hook's first help call names it.
+- **`game-main` is also the main PlayGo caller.** Each run makes the same 451 calls:
+  - 446 are GetLocus; the other five kinds are called once each;
+  - by thread: `game-main` 376, `Archive Asset I` 72, `AK::IOThread` 3.
+- **Almost all of them come at the load.**
+  - `game-main` makes 375 calls before the log's first fps line (t ≈ 4 s), then exactly one more, at fps t 100–112 s.
+  - `Archive Asset I` makes 55 near t 31 s and about 14 near t 100 s.
+- **Near G+9 s PlayGo is almost silent.** In the window G..G+14 s, every run has one call, on `AK::IOThread`: about
+  0.07 calls per second. No run has a `game-main` call in that window.
+  - This is placed with the fps clock, 1 s resolution, taken as the launch clock within a few seconds
+    (`pgrate0425.py`).
+- **Said plainly: the owner is the caller, so P3 is the same lever as exp 0388's spin**: a delay on the owner thread,
+  not a PlayGo answer.
+  - Its 200 µs per call costs the owner about 75 ms during the load and nothing near the crash.
+  - That fits P3's 3 crashes of 6.
+
+## Verdict (CHAIN_SET=p3rep and CHAIN_SET=sched)
+
+- **P3: no conclusion by the p3rep rule** (control 1 of 6).
+  - It crashed 3 of 6, so it is not a fix.
+  - It is an owner delay at the load, not a PlayGo answer.
+  - All three PlayGo arms (P1, P2, P3) are now seen to crash with the candidate on.
+- **C1 (a 200 µs EEVDF wake slice for guest threads below priority 733) HOLDS by the sched rule:** 4 of 4 clean
+  against a 3 of 3 control.
+- **C2 (the signaller yields up to 300 µs until the woken waiter runs) HOLDS by the sched rule:** 4 of 4 clean.
+- **C3 (the futex direct wake) is REFUTED:** D2 crashed at the site.
+- In all 8 C1 and C2 runs the owner never took a crash-type job (descriptive).
+- **Not shown:**
+  - that C1 or C2 removes the crash in general: 4 runs each, the control's rate varies between sets, R13;
+  - their cost: flips/s are not lower in these runs, but that is no measured zero;
+  - C1's mechanism;
+  - any lean-build behaviour.
+- `JobArenaFix` stays; nothing shared changed.
+
+What this suggests next, the top session's decision:
+- a confirmation of C1 and C2 against interleaved controls with more runs each;
+- the maintainer's own play with one of them and `JobArenaFix` off;
+- the costs measured on lean;
+- only then a shared-build decision.

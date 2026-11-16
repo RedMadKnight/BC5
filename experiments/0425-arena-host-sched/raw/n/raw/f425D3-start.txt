@@ -1,0 +1,15 @@
+2026-11-16 02:21:48
+arm f425D3 (D), cap 380 s, play 120 s, binary /home/kjaniszewski/bc5-work/exp0425/kyty_emulator md5 81e8d0f7b6c97e97ec0739a9bd0241ef, launcher 7eef2685, fuse 12400 1024
+the arm's words: BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 BC5_0412N_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0425/n/input-f425D3.cfg 
+extra: KYTY_BC5_JOB_ARENA_FIX=0 KYTY_BC5_0425_CATCH=1 KYTY_BC5_0425_DIRECT_WAKE=1
+boot b348813a, up since 2026-11-15 12:26:13
+MemAvailable:   13917124 kB SwapTotal:       7778300 kB SwapFree:        7249728 kB 
+emulator pid 313756 exe /home/kjaniszewski/bc5-work/exp0425/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0425/n/wd
+route: cross (start screen) at 86 s
+route: the save-slot list runs; down x 3, cross (slot 4) at 92 s
+route: cross (Continue) at 98 s
+route: the load seen at 101 s
+route: gameplay G = 107 s (the load at 101 s)
+route: the 14:50 record's gameplay (100 lines) queued at 107 s
+launcher gone: yes; launcher exit 0
+catch: [bc5] exp 0425 catch sum: owner calls 16000, with Hi pending 12541; crash-type 1, with Hi pending 1; Hi readied 1051562
