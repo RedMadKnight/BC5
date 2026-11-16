@@ -436,3 +436,42 @@ judged from this set.
 What this suggests next, the top session's decision:
 - a repeat of C against K with more runs (for example 6 + 6), to separate P3 from chance;
 - then the sched set (C1–C3).
+
+## Who calls PlayGo, from the playgo set's catcher (asked by the top session)
+
+- **All 90 PlayGo lines** of the 15 runs are on the thread named `game-main`.
+  - They come from six kinds: Initialize, Open, GetChunkId, GetInstallChunkId, GetLocus and Prefetch, each once per
+    run in the log.
+  - No kind reached its 1000th call in any run, so each kind was called fewer than 1000 times per run.
+- **That catcher cannot say more.** It logged only the first and every 1000th call, so it cannot tell how often
+  PlayGo is called near G+9 s, or whether `game-main` is the job system's owner.
+- **If the owner is the caller, P3 is the same lever as exp 0388's spin:** a delay on the owner thread, not a PlayGo
+  answer. The second build's catcher is there to settle both points.
+
+## Second build and CHAIN_SET=p3rep, then CHAIN_SET=sched (the top session's GO, 2026-11-16; fixed before the runs)
+
+**The catcher, sharpened** (fixes first, then test; nothing else changes):
+- Every PlayGo call is logged, up to 3000 lines in all, then each kind's every 1000th. Its place among the log's
+  `fps counter t … s` lines dates it.
+- The owner hook's first call also names its thread: `the owner's first help call is on '<name>'`.
+- Laptop checks: `test0425.py` 85 of 85; `libPlayGo.cpp` passes the syntax check in normal and lean.
+
+**CHAIN_SET=p3rep.**
+- 12 runs: C7 K5 C8 K6 C9 K7 C10 K8 C11 K9 C12 K10, the same route, pins and stops as the playgo set.
+- C is the control; K is P3 at 200 µs.
+- **Rule** (`check0425.py rule <rows> p3rep`):
+  - the control needs at least 3 of 6 at the site, or no conclusion;
+  - P3 HOLDS at 6 of 6 NO_CRASH with its exposure;
+  - P3 is REFUTED by any TARGET;
+  - OPEN otherwise.
+- The one-sided Fisher exact p against the control is printed as information only: exchangeable runs assumed, not
+  a probability of the cause (R13).
+
+**CHAIN_SET=sched.** As fixed above:
+- C4 S1 Y1 D1 S2 Y2 D2 C5 S3 Y3 D3 C6 S4 Y4 D4;
+- the control needs at least 2 of 3 at the site;
+- each arm HOLDS at 4 of 4 clean and exposed and is REFUTED by any TARGET;
+- the Fisher line is printed as information only.
+
+**Order.** `both0425.sh` runs p3rep, then sched, each under its own chain lock line. Sched starts only if p3rep
+ended without a STOP, no STOP file exists, the lock is free and no emulator runs.

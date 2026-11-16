@@ -696,6 +696,13 @@ static void Bc5CatchOwnerCall(uint64_t base, bc5_guest_block_fn fn, int32_t inde
 		             static_cast<unsigned long long>(t), pending, static_cast<unsigned long long>(n), static_cast<unsigned long long>(nh),
 		             static_cast<unsigned long long>(th), bc5_0425_hi_marked());
 	}
+	if (n == 1) {
+		char tn[16] = {};
+#ifdef __linux__
+		pthread_getname_np(pthread_self(), tn, sizeof(tn));
+#endif
+		std::fprintf(stderr, "[bc5] exp 0425 catch: the owner's first help call is on '%s'\n", tn);
+	}
 	if (n == 1 || n % 2000 == 0) {
 		std::fprintf(stderr,
 		             "[bc5] exp 0425 catch sum: owner calls %llu, with Hi pending %llu; crash-type %llu, with Hi pending %llu; Hi readied %llu\n",
@@ -755,6 +762,9 @@ GP.append((r'''#include "bc5/job_arena_fix.hpp" // BC5 (experiment 0359)
 ''', r'''#include "bc5/job_arena_fix.hpp" // BC5 (experiment 0359)
 #include "bc5/env_rule.hpp"      // BC5 (experiment 0425): the switch rule
 #include <cstdlib>               // experiment 0425: std::getenv
+#ifdef __linux__
+#include <pthread.h> // experiment 0425 catcher: the owner's thread name
+#endif
 '''))
 
 # ------------------------------------------------------------------------------------------------- libPlayGo.cpp
@@ -790,8 +800,9 @@ PG.append((r'''static uint32_t g_chunks_num = 0;
 //   KYTY_BC5_0425_PLAYGO_LOCUS=slow       P1: GetLocus answers "local slow" (2) for every valid chunk
 //   KYTY_BC5_0425_PLAYGO_PREFETCH_MS=<n>  P2: Prefetch blocks the caller n ms (1..5000) before its OK
 //   KYTY_BC5_0425_PLAYGO_CALL_US=<n>      P3: every PlayGo call blocks the caller n us (1..20000) before it answers
-//   KYTY_BC5_0425_CATCH=1                 catcher (normal build only): each kind's first call and every 1000th, with the
-//                                         calling thread's name
+//   KYTY_BC5_0425_CATCH=1                 catcher (normal build only): every call up to 3000 lines in all, then each
+//                                         kind's every 1000th, with the calling thread's name (its place among the log's
+//                                         fps counter lines dates it)
 namespace bc5_0425pg {
 static long ReadNum(const char* name, long lo, long hi) {
 	const char* e = std::getenv(name);
@@ -840,7 +851,8 @@ static bool CatchOn() {
 }
 static void Count(const char* fn, std::atomic<uint64_t>& n) {
 	const uint64_t k = n.fetch_add(1, std::memory_order_relaxed) + 1;
-	if (k == 1 || k % 1000 == 0) {
+	static std::atomic<int> lines {0}; // every call while under 3000 lines in all, then each kind's every 1000th
+	if (k == 1 || k % 1000 == 0 || lines.fetch_add(1, std::memory_order_relaxed) < 3000) {
 		char name[16] = {};
 #ifdef __linux__
 		pthread_getname_np(pthread_self(), name, sizeof(name));

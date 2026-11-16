@@ -4,6 +4,7 @@
 # 0413's chain lock):
 #   CHAIN_SET=playgo (first: the regression lead): C control x3, L P1 locus slow x4, F P2 prefetch 500 ms x4,
 #                    K P3 call cost 200 us x4
+#   CHAIN_SET=p3rep (2026-11-16): C x6 against K (P3 call cost 200 us) x6, interleaved C K C K ...
 #   CHAIN_SET=sched:  C control x3, S C1 wake slice 200 us x4, Y C2 handoff 300 us x4, D C3 direct wake x4
 # Each run: run0425f.sh, slot 4, the 14:50 record's gameplay at G, G+120 s. The rule is check0425.py's, fixed before
 # the runs (README). Stops (R55): a kernel GPU line, a real pad key (R51), any class but TARGET/NO_CRASH/NOT_ROUTED,
@@ -25,8 +26,9 @@ WANT=$(cat "$W/exp0425/binary.md5"); MB=$(md5sum < "$BIN" | cut -d' ' -f1)
 [ -s "$W/exp0425/inputs/fight1450-play.cmd" ] || { say "NOT STARTED, no exp0425/inputs/fight1450-play.cmd"; exit 1; }
 case "$SET" in
   playgo) TAGS="f425C1 f425L1 f425F1 f425K1 f425L2 f425F2 f425K2 f425C2 f425L3 f425F3 f425K3 f425C3 f425L4 f425F4 f425K4" ;;
+  p3rep) TAGS="f425C7 f425K5 f425C8 f425K6 f425C9 f425K7 f425C10 f425K8 f425C11 f425K9 f425C12 f425K10" ;;  # 2026-11-16, top's GO: C against P3, 6+6
   sched) TAGS="f425C4 f425S1 f425Y1 f425D1 f425S2 f425Y2 f425D2 f425C5 f425S3 f425Y3 f425D3 f425C6 f425S4 f425Y4 f425D4" ;;
-  *) say "NOT STARTED, CHAIN_SET is playgo or sched"; exit 1 ;;
+  *) say "NOT STARTED, CHAIN_SET is playgo, p3rep or sched"; exit 1 ;;
 esac
 mkdir -p "$R" || exit 1
 for t in $TAGS; do { [ -e "$R/$t-start.txt" ] || [ -e "$R/$t-end.txt" ] || [ -e "$R/${t}R-start.txt" ]; } && { say "NOT STARTED, tag $t used"; exit 1; }; done
@@ -81,5 +83,5 @@ for t in $TAGS; do
   fi
   sleep 10
 done
-python3 "$HERE/check0425.py" rule "$OUT"
+python3 "$HERE/check0425.py" rule "$OUT" "$SET"
 say "ended"
