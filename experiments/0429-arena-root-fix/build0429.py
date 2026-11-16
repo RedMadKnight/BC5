@@ -12,7 +12,13 @@ UNITS = {
     "src/CMakeFiles/kyty_emulator.dir/graphics/presentation/hostMenu.cpp.o": "src/graphics/presentation/hostMenu.cpp",
     "src/CMakeFiles/kyty_emulator.dir/graphics/presentation/window/hostInput.cpp.o": "src/graphics/presentation/window/hostInput.cpp",
 }
+PREBUILT = {}  # exp 0429: "<unit .o>=<object path>": link this object in place of the shared one, no compile
 for rel in EXTRA:
+    if "=" in rel:
+        unit, path = rel.split("=", 1)
+        assert os.path.isfile(path), f"no prebuilt object {path}"
+        PREBUILT[unit] = path
+        continue
     UNITS["src/CMakeFiles/kyty_emulator.dir/" + rel[len("src/"):] + ".o"] = rel
 def clean_compile(cmd):
     argv, clean, skip = shlex.split(cmd), [], 0
@@ -39,8 +45,9 @@ for unit, rel in UNITS.items():
     if run(comp) != 0:
         print("== COMPILE FAILED:", rel, flush=True); sys.exit(2)
     objs[unit] = obj
+objs.update(PREBUILT)
 argv = [a for a in shlex.split(link) if a not in (":", "&&")]
-seen = {u: 0 for u in UNITS}
+seen = {u: 0 for u in list(UNITS) + list(PREBUILT)}
 for k, a in enumerate(argv):
     if a in objs: argv[k] = objs[a]; seen[a] += 1
     elif a.startswith("-Wl,-Map="): argv[k] = "-Wl,-Map=" + out_bin + ".map"

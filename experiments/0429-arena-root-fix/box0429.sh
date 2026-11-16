@@ -59,7 +59,12 @@ build() {
         mkdir -p "$E/$v"; rm -rf "$E/$v/obj"
         [ -f "$bin" ] && mv "$bin" "$bin.$(md5sum < "$bin" | cut -c1-8)"
         distrobox enter ubuntu -- sh -c "cd '$b' && ninja -t compdb -x" > "$E/$v/compdb.json" 2> "$R/compdb-$v.err" < /dev/null || stop "compdb $v failed"
-        distrobox enter ubuntu -- env LC_ALL=C LANGUAGE=C python3 -I "$HERE/build0429.py" "$E/$v/compdb.json" "$S" "$E/$v" "$b" "$bin" > "$R/build-$v.out" 2>&1 < /dev/null
+        local pre=""  # exp 0429: BASE0430=1 links exp 0430's fix object (a copy, pinned) into the normal build only
+        if [ "${BASE0430:-0}" = 1 ] && [ $v = normal ]; then
+            pre="src/CMakeFiles/kyty_emulator.dir/libs/bc5LleAgc.cpp.o=$E/base0430/bc5LleAgc.cpp.o"
+            [ "$(md5sum < "$E/base0430/bc5LleAgc.cpp.o" | cut -d' ' -f1)" = "$(cat "$E/base0430/object.md5")" ] || stop "the exp 0430 object copy is not its pin"
+        fi
+        distrobox enter ubuntu -- env LC_ALL=C LANGUAGE=C python3 -I "$HERE/build0429.py" "$E/$v/compdb.json" "$S" "$E/$v" "$b" "$bin" $pre > "$R/build-$v.out" 2>&1 < /dev/null
         rc=$?; echo "$v: build rc $rc; errors $(grep -c 'error:' "$R/build-$v.out"); warnings $(grep -c 'warning:' "$R/build-$v.out")"
         grep -n "error:\|warning:\|undefined\|COMPILE FAILED" "$R/build-$v.out" | head -20
         [ "$rc" = 0 ] && [ -x "$bin" ] || stop "build $v failed: $R/build-$v.out"
@@ -69,6 +74,7 @@ build() {
         for v in normal lean; do strings "$E/$v/kyty_emulator" | grep -qxF "$w" || stop "$w is not in $v"; done
     done
     strings "$E/normal/kyty_emulator" | grep -qxF KYTY_BC5_0429_TRACE || stop "KYTY_BC5_0429_TRACE is not in normal"
+    if [ "${BASE0430:-0}" = 1 ]; then strings "$E/normal/kyty_emulator" | grep -qxF BC5_0430_F3 || stop "BC5_0430_F3 is not in normal (BASE0430=1)"; fi
     strings "$E/lean/kyty_emulator" | grep -qF KYTY_BC5_0429_TRACE && stop "lean holds KYTY_BC5_0429_TRACE"
     for v in normal lean; do
         for w in KYTY_BC5_JOB_ARENA_FIX "job-arena fix" "Game fixes" "Job-arena fix" bc5_job_arena_owner_help; do
@@ -79,9 +85,17 @@ build() {
     echo "shared normal before $sn after $(md5sum < "$W/kytyplus-build/src/kyty_emulator" | cut -d' ' -f1); lean before $sl after $(md5sum < "$W/kytyplus-build-lean/src/kyty_emulator" | cut -d' ' -f1)"
     [ "$sn" = "$(md5sum < "$W/kytyplus-build/src/kyty_emulator" | cut -d' ' -f1)" ] && [ "$sl" = "$(md5sum < "$W/kytyplus-build-lean/src/kyty_emulator" | cut -d' ' -f1)" ] || stop "a shared binary changed"
 }
+base() {  # copies exp 0430's newest fix object (its next build removes obj/); pins it by md5
+    local o=$W/exp0430/obj/bc5LleAgc.cpp.o
+    [ -f "$o" ] || stop "no $o"
+    mkdir -p "$E/base0430" && cp -p "$o" "$E/base0430/bc5LleAgc.cpp.o" && cp -p "$W/exp0430/src/src/libs/bc5LleAgc.cpp" "$E/base0430/bc5LleAgc.cpp" || stop "copy failed"
+    md5sum < "$E/base0430/bc5LleAgc.cpp.o" | cut -d' ' -f1 > "$E/base0430/object.md5"
+    echo "exp 0430 object $(cat "$E/base0430/object.md5"), its source $(md5sum < "$E/base0430/bc5LleAgc.cpp" | cut -c1-8)"
+}
 case "${1:-}" in
+    base) base ;;
     claim) claim "${2:-private build}" "${3:-15}" ;;
     build) build ;;
     release) release ;;
-    *) stop "usage: box0429.sh claim|build|release" ;;
+    *) stop "usage: box0429.sh claim|base|build|release" ;;
 esac
