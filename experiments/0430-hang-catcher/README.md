@@ -214,3 +214,16 @@ The top session (20:5x): F1 waits for the maintainer's word; catcher (e) alone g
 every dispatch of the stalled submission itself (any ring), with 4 KiB at each user-data pointer and at an indirect
 dispatch's argument page (`snap0430-<k>.txt` the index, `snap0430-<k>.bin` the bytes; each address once). Chain T
 (`h430T*`) started 20:59:31, otherwise as chain S.
+
+## His play: the test shortcut (2026-11-16 21:10)
+
+The maintainer wanted to play and trigger the hang himself (his plays hit it at about 8.5 min). Chain T was ended at
+once: h430T1 stopped at 424 s by a TERM to its own emulator (no hang in it; class OTHER), STOP left in place. Build 3b
+(`bfde29b6`, unit `69ff539a`: catchers (a), (b), (c), (e) and (f)) went behind one private shortcut,
+"BC5 test 0430 (hang catcher)": `~/bc5-work/exp0430/play-0430.sh` (`06081a80`), made by `mkplay0430.py` from
+`play-pkg.sh` `47426d8e` (shared launchers untouched). It keeps his saves, his input.cfg (RT on), the empty learned
+file and `ulimit -c 0`, with `BC5_GUARD_MAP_RULE` and `BC5_GUARD_PRT_BG` unset, no fuse or kill, and way 2 as the build's
+title defaults. It sets `BC5_0430_DJ=1 BC5_0430_ARGS=1 BC5_0430_WAVES_MS=900 BC5_0430_SNAP=1 BC5_0430_TABLES=1` and the
+table program list. Checks: `desktop-file-validate`, `bash -n`, and a dry run of the launcher's environment in the
+distrobox, cut before the pad watcher and the emulator (all words present, nothing banned). Laptop streams:
+`raw/*-play.txt`.
