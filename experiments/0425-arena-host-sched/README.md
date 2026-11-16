@@ -676,3 +676,46 @@ runs, the confirmation does not judge C1 or C2.
   - a longer set;
   - a rule fixed on the pooled control;
   - the maintainer's own play with C1 or C2 and `JobArenaFix` off.
+
+## The maintainer's C1 test shortcut (2026-11-16 07:43–07:45; his "Tak, zrób mi skrót", through the top session)
+
+This is a play, not a measured run. Under BOX-LOCK, files only: no emulator was started.
+
+**The shortcut.** `~/Pulpit/BC5 test 0425 C1 (wake slice).desktop`, md5 `f9dd1821`.
+- `desktop-file-validate` reports it valid.
+- `Exec=/usr/bin/distrobox enter ubuntu -- /home/kjaniszewski/bc5-work/exp0425/play-0425-c1.sh`.
+- No other second-title test shortcut was on `~/Pulpit`, so nothing was moved.
+
+**The launcher.** `~/bc5-work/exp0425/play-0425-c1.sh`, md5 `f6e93a4c`.
+- It is a copy of the shared `play-pkg.sh` 47426d8e, made by `mkplay0425.py` (here).
+- Its changes:
+  - the private normal build `exp0425/kyty_emulator`; the launcher refuses to start unless its md5 begins
+    81e8d0f7;
+  - its own logs; no lean; no `BC5_EMU` override;
+  - the unpacked game `~/bc5-data/games/PPSA03671`, as in the S runs;
+  - after the title's 20 words: `KYTY_BC5_JOB_ARENA_FIX=0 KYTY_BC5_0425_CATCH=1 KYTY_BC5_0425_WAKE_SLICE_US=200`;
+  - `BC5_GUARD_MAP_RULE` and `BC5_GUARD_PRT_BG` unset.
+- Everything else is as in his play:
+  - his saves `~/bc5-work/_SaveData-pkg-play`;
+  - no learned windows (the empty `direct-learned-none.txt`);
+  - RT on: nothing turns it off, and the BVH build is not skipped;
+  - `ulimit -c 0`;
+  - the play journal `~/bc5-data/captures/play-<date>/gc/`.
+- `play-pkg.sh`, `play-any.sh` and the shared builds are unchanged (47426d8e, fc7a1395, 9da2a9d5).
+
+**Checks.**
+- `bash -n` passes.
+- A dry copy cut before the pad watcher, with no capture directory made, exported:
+  - the 20 title words;
+  - `BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 BC5_GUARD_LEARN_LOG=2`, as `play-pkg.sh` sets them; the S runs had the
+    first two;
+  - the three arm words above;
+  - his saves directory and the empty learned file.
+
+**What a play leaves.**
+- The emulator's log: `~/bc5-work/exp0425/play-c1/play-last.log`. The previous play's log is kept as
+  `play-last-<date>.log`.
+- The catcher's lines in that log: `exp 0425 catch: owner takes crash-type job …` and the sums.
+- The play journal: `~/bc5-data/captures/play-<date>-<time>/gc/direct.log`.
+- A GPU fault record, if any: `~/bc5-data/captures/faults/`.
+- The arena crash shows as an access violation at address `0xc` near the end of `play-last.log`.
