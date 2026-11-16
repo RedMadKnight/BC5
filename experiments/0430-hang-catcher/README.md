@@ -86,3 +86,35 @@ none to pass; the record of one caught hang is the result.
 - A piece's state prefix covers every state-setting packet of the hung IBs. The "split piece" route to the GE stall is
   thin.
 - The CP's indirect check works on real MEC dispatches (18/18).
+
+## Setup (this session, 2026-11-16 evening)
+
+**Build.** `box0430.sh build`: the shared tree's unit at patch `a8717e53` (md5 `0cda79b5`, the same file as exp 0428's swap
+unit; it is also what the `src/libs/bc5LleAgc.cpp` hunk of main's patch holds) edited by `mk0430.py` (8 anchored edits,
+md5 `20c0e644`), compiled with the shared normal build's command and relinked with the shared objects (`build0430.py`,
+a copy of `build0428.py`). Private binary `~/bc5-work/exp0430/kyty_emulator`, md5 `9b0a5317`; the shared binary stayed
+`dae7bf0b`. Built 19:48–19:50 under its own BOX-LOCK line; 7 warnings, all at lines the base already had.
+
+**The catchers (tag dj430), normal build only (`BC5_DIAG_ENV`), each off unless set:**
+- (a) `BC5_0430_WAVES_MS=<ms>` (≥ 500): when a completion queue has waited that long for one job (from its submission),
+  one `sudo -n /usr/bin/umr -O halt_waves -wa none` (every wave on the GPU, no ring named; the exact NOPASSWD line of the
+  box's sudoers, per the top session) into `<capture dir>/waves0430-<k>.txt`, synced; at most 2 per run. The halt runs
+  directly, not through `bc5-gpu-hang-dump`: exp 0370 K2 found that path's 27 register reads before the halt landed
+  after the reset (F112). Dedicated runs only: F229 (a halt at a 0.6-s stall that would have recovered was followed by a
+  ring reset). The runs use 1100 ms. Per completion queue (2), not exp 0058's single `g_fence_wait_since`, which the
+  other queue's thread overwrites.
+- (b) `BC5_0430_DJ=1`: per hardware ring (GFX + 4 compute), an in-memory journal of the last 4096 dispatches the host
+  submitted (submission, kind, offset, op, program, COMPUTE_USER_DATA_0..15, an indirect dispatch's argument address and
+  the triple read at submit), written to `<capture dir>/dj0430-<k>.txt` (fsync; at most 8) at the same stall and at
+  every host timeout. Nothing is written while the GPU runs well (exp 0381's journal grew to 38 GB).
+- (c) `BC5_0430_ARGS=1`: an indirect dispatch whose triple at submit is over the host check's limit (65536 × 64 per axis
+  or as a product) is journaled as `args0430:` (ring, program, address, triple), the first 256, then every 4096th.
+  Separate reads (R13): the triple at submit (here and in (b)) and the timeout probe's read at the timeout.
+
+**Runs.** `chain0430.sh` (MAX=6): `run0430f.sh` (= `run0428f.sh` with exp 0430's private directory and lock lines; 9 lines
+differ), slot 4, the 14:50 record's gameplay at G, then exp 0379's walk to G+1500 s. Way 2's words named explicitly
+(`BC5_DIRECT_ACB_RINGS=4`, `_QUEUE_STATE=1`, `_MEC_INDIRECT=1`, `_STATE_NO_WALK=1`, `_SPLIT_LATE=3`), JobArenaFix off in
+each run's private input.cfg (`N_ARENA=off`), RT on, `N_FUSE=0 N_NOWD=1`, catchers `BC5_0430_DJ=1 BC5_0430_ARGS=1
+BC5_0430_WAVES_MS=1100 BC5_DIRECT_TIMEOUT_PROBE=1`. The chain stops at any class but NO_CRASH (R55; its STOP file was
+tested dry before the first run), at a second NOT_ROUTED, or at an emulator that is not its own. The kernel log
+(`journalctl -k -f`) and `live0428.sh` (1-s memory/PSI/D-state) stream to the laptop (`raw/`). Chain started 19:51:34.

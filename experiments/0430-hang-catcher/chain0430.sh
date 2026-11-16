@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# BC5 exp 0430: fight + walk runs on the private catcher build until a GPU hang is caught (the top session's GO for the whole
+# 0430 chain, 2026-11-16). Way 2 on (the title rows, named here too), JobArenaFix OFF in each run's private input.cfg
+# (N_ARENA=off), RT on, no fuse and no memory watchdog (N_FUSE=0 N_NOWD=1: diagnostics only), ulimit -c 0 (the launcher).
+# Each run: run0430f.sh, slot 4, the 14:50 record's gameplay at G, then exp 0379's walk to G+1500 s; each run takes and frees
+# its own BOX-LOCK line. Catchers on: BC5_0430_DJ=1 BC5_0430_ARGS=1 BC5_0430_WAVES_MS=1100 BC5_DIRECT_TIMEOUT_PROBE=1.
+# Stops: any class but NO_CRASH (KERNEL = a hang caught: the records are the result), a second NOT_ROUTED, MAX runs,
+# a STOP file beside this script (read before each run), or a running emulator that is not ours.
+# usage (on the box, detached, in ~/bc5-work/exp0430): MAX=<n> bash chain0430.sh
+set -u
+ulimit -c 0
+export LC_ALL=C
+W=$HOME/bc5-work; E=$W/exp0430; N=$E/n; R=$N/raw; HERE=$(cd "$(dirname "$0")" && pwd)
+BIN=$E/kyty_emulator; WORDS=$W/exp0413/n/words0413nz.txt; MAX=${MAX:-6}
+say() { echo "chain0430 $(date +%T): $*"; }
+[ -x "$BIN" ] && [ -s "$E/binary.md5" ] || { say "NOT STARTED, no private binary"; exit 1; }
+WANT=$(cat "$E/binary.md5"); [ "$(md5sum < "$BIN" | cut -d' ' -f1)" = "$WANT" ] || { say "NOT STARTED, the binary is not ${WANT:0:8}"; exit 1; }
+[ -s "$WORDS" ] || { say "NOT STARTED, no $WORDS"; exit 1; }
+mkdir -p "$R" || exit 1
+OUT=$N/chain-rows.txt
+AW="BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_INDIRECT=1 BC5_DIRECT_ACB_STATE_NO_WALK=1 BC5_DIRECT_ACB_SPLIT_LATE=3 BC5_0430_DJ=1 BC5_0430_ARGS=1 BC5_0430_WAVES_MS=1100 BC5_DIRECT_TIMEOUT_PROBE=1"
+say "binary ${WANT:0:8}; kernel $(uname -r); boot $(cut -c1-8 /proc/sys/kernel/random/boot_id); max $MAX runs"
+NR=0; k=0
+while [ "$k" -lt "$MAX" ]; do
+  k=$((k + 1))
+  t=h430R$k
+  while [ -e "$R/$t-start.txt" ]; do t=${t}b; done
+  [ -e "$HERE/STOP" ] && { say "STOP file before $t"; break; }
+  pgrep '^kyty_emulator' > /dev/null && { say "an emulator runs before $t (not ours): stop"; break; }
+  say "run $t"
+  # shellcheck disable=SC2086
+  line=$(N_ARENA=off N_WALK_AFTER=1 N_SLOT=4 N_FUSE=0 N_NOWD=1 P_BIN=$BIN P_WANT=$WANT P_WORDS=$WORDS bash "$HERE/run0430f.sh" "$t" h 1500 $AW | grep "^$t ")
+  CLASS=$(printf '%s\n' "$line" | sed -n 's/.*; CLASS \([A-Z_]*\);.*/\1/p')
+  echo "$t ${CLASS:-NONE} $(printf '%s\n' "$line" | cut -c1-400)" >> "$OUT"
+  say "$t: ${CLASS:-NONE}"
+  ls "$(ls -td ~/bc5-data/captures/play-*/gc 2> /dev/null | head -1)" 2> /dev/null | grep -E 'dj0430|waves0430' | sed "s/^/$t catcher file: /" >> "$OUT"
+  case "${CLASS:-NONE}" in
+    NO_CRASH) ;;
+    NOT_ROUTED) NR=$((NR + 1)); [ "$NR" -ge 2 ] && { say "a second NOT_ROUTED: stop"; break; } ;;
+    *) say "class ${CLASS:-NONE}: stop (the records are the result)"; break ;;
+  esac
+done
+say "chain ended after $k run(s)"
