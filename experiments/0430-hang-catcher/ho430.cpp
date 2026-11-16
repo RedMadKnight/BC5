@@ -20,23 +20,39 @@
 // console. Not done (counted) when the release may not run (inside a COND_EXEC range, among the host's drops, its label not
 // mapped), when the buffer itself waits on the label, or when a job in flight on another ring already holds a kept wait
 // on it. A label first seen at a wait whose writer is already submitted falls back to F2 (counted).
+// HO430_SHARED (the shared patch, mkswap0430.py): the fix alone. F2 and F3 read std::getenv (the lean build too) under the
+// shared names BC5_DIRECT_XQ_PENDING (F2) and BC5_DIRECT_XQ_ACQUIRE (F3), each on unless "0"; G is compiled off. They act
+// only on a wait whose label has a pending write on ANOTHER ring, so with one ring (way 2 off) they do nothing.
 namespace ho430 {
-inline bool on_env(const char* name) {
-	const char* e = BC5_DIAG_ENV(name);
+inline bool not0(const char* e) {
 	return e == nullptr || !(e[0] == '0' && e[1] == 0);
 }
+#ifdef HO430_SHARED
 inline bool f2_on() {
-	static const bool v = on_env("BC5_0430_F2");
+	static const bool v = not0(std::getenv("BC5_DIRECT_XQ_PENDING"));
 	return v;
 }
 inline bool g_on() {
-	static const bool v = on_env("BC5_0430_G");
+	return false;
+}
+inline bool f3_on() {
+	static const bool v = not0(std::getenv("BC5_DIRECT_XQ_ACQUIRE"));
+	return v;
+}
+#else
+inline bool f2_on() {
+	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F2"));
+	return v;
+}
+inline bool g_on() {
+	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_G"));
 	return v;
 }
 inline bool f3_on() {
-	static const bool v = on_env("BC5_0430_F3");
+	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F3"));
 	return v;
 }
+#endif
 enum : uint8_t { kWait = 1, kWrite = 2, kDropped = 3, kF2Waited = 4, kF2Cycle = 5, kF2Bound = 6, kGivenUp = 7, kCycle = 8, kF3Preset = 9, kF3Refused = 10, kF3First = 11, kF3NotStale = 12, kF3Met = 13 };
 constexpr uint32_t kTypes = 16;
 struct Cross {
@@ -149,6 +165,7 @@ inline void job_submitted(const uint32_t* ib, uint32_t num_dwords, const std::ve
 		        timing_now(), s.c[kWait], s.c[kWrite], s.c[kDropped], s.cross.size(), s.c[kF3Preset], s.c[kF3Refused], s.c[kF3NotStale], s.c[kF3First], s.c[kF3Met], s.c[kF2Waited], static_cast<double>(s.waited_ns) / 1e6,
 		        s.c[kF2Cycle], s.c[kF2Bound], s.c[kGivenUp], s.c[kCycle]);
 	}
+#ifndef HO430_SHARED
 	static bool         at_done = false; // BC5_0430_G_AT: one dump in a clean run
 	static const double g_at    = [] {
 		const char* e = BC5_DIAG_ENV("BC5_0430_G_AT");
@@ -159,6 +176,7 @@ inline void job_submitted(const uint32_t* ib, uint32_t num_dwords, const std::ve
 		lk.unlock();
 		dump(90);
 	}
+#endif
 }
 inline void job_done(uint64_t seq, int ring, bool all) {
 	if (!f2_on() && !f3_on()) return;
