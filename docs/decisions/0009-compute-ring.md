@@ -1,6 +1,8 @@
 # ADR 0009 — The title's asynchronous compute buffers on a kernel compute ring
 
-**Status:** accepted and in play (updated 2026-10-24): the second title's `play-pkg.sh` runs its compute buffers on compute ring 0 (`BC5_DIRECT_COMPUTE_RING=0 BC5_DIRECT_CROSS_RING_WAITS=all`, with `BC5_DIRECT_RING_ORDER_WAITS=1` and `BC5_DIRECT_MEC_INDIRECT=1 BC5_DIRECT_GPU_CHECK=1 BC5_DIRECT_DMA_SYNC=1`); ASTRO BOT's `play-astro.sh` stays on one ring (`BC5_DIRECT_RINGS=1` in `bc5-run.env`), `play-astro-compute.sh` uses two (F181, F315). Originally proposed 2026-10-15, when nothing of it was in the play settings. Each GPU step needs the
+**Status (2026-11-16):** superseded in play by exp 0428's way 2 (F846): since 2026-11-16 14:37 the second title's acbs run on compute rings through `BC5_DIRECT_ACB_RINGS` with each guest queue's own state in front of every acb part; from 2026-10-27 to then every acb ran on the GFX ring (F412, F415). A libdrm compute ring index is not a fixed hardware queue (exp 0427, F845). The status below is the October one, kept for history.
+
+**Earlier status:** accepted and in play (updated 2026-10-24): the second title's `play-pkg.sh` runs its compute buffers on compute ring 0 (`BC5_DIRECT_COMPUTE_RING=0 BC5_DIRECT_CROSS_RING_WAITS=all`, with `BC5_DIRECT_RING_ORDER_WAITS=1` and `BC5_DIRECT_MEC_INDIRECT=1 BC5_DIRECT_GPU_CHECK=1 BC5_DIRECT_DMA_SYNC=1`); ASTRO BOT's `play-astro.sh` stays on one ring (`BC5_DIRECT_RINGS=1` in `bc5-run.env`), `play-astro-compute.sh` uses two (F181, F315). Originally proposed 2026-10-15, when nothing of it was in the play settings. Each GPU step needs the
 maintainer at the box.
 
 ## Context
