@@ -160,6 +160,118 @@ Lean smoke, 14:38–14:44:
 - ASTRO BOT's run ended before the 150-s sample. It has no way-2 row, so its behaviour is the shared one before the
   swap.
 
+### The maintainer's play on the swapped lean build: a GPU hang at 15:09:18 (8.5 min into the play)
+
+His words, via the top session: "Grało się świetnie. Ale wystąpił crash GPU".
+
+Records, all read on the box (the devcoredump holds the title's buffers and stays private):
+- the devcoredump `~/bc5-data/captures/devcoredump/20261116-150919-devcd4.txt`;
+- the stall sampler `~/bc5-data/captures/gpu-stall/event-20261116-150918-gfx_0.0.0`: 5 samples over 1.4 s;
+- pstore.
+
+**What happened.** `gfx_0.0.0` timed out (signaled 29225651, emitted 29225652; thread bc5-ring). Its ring reset failed, a
+GPU reset began, and `bc5-gpu-watch` crashed the kernel for a reboot. The box was up again at 15:09:49.
+
+**It is not a cross-ring wait:**
+- In all 5 sampler samples every compute ring had signaled == emitted. All compute work had finished; only the GFX
+  job was pending.
+- The ME was not at a `WAIT_REG_MEM`. `CP_STALLED_STAT2` 0x18000 = `ME_WAITING_ON_PARTIAL_FLUSH` (+
+  `MEQ_TO_ME_NOT_RDY_TO_RCV`). `GRBM_STATUS` 0xa0210028 = `GE_BUSY`, `GE_BUSY_NO_DMA`, `CP_BUSY`, `GUI_ACTIVE`: no SPI,
+  PA, SX, CB, DB or TA busy, and `SPI_CSQ_WF_ACTIVE_STATUS` was 0. Decoded with Linux v7.3 `gc_10_1_0_sh_mask.h`.
+- The CP's IB1 had 0x1888 of 0x2008 dwords left. The PFP's history ends at the backend's `WAIT_REG_MEM` (dword 1988)
+  and two `ACQUIRE_MEM`. The ME was at an `EVENT_WRITE` partial flush (1944) behind `DRAW_INDEX_AUTO` draws
+  (1700–1910). The geometry engine never drained.
+- No page fault was part of it. The devcoredump's "Page fault observed 0x1113c50000" is the kernel's stored last fault,
+  exp 0424's of 2026-11-15 20:08 (pasid 109; this process was 304). The pstore holds no fault line near 96185 s.
+
+**Conditions of his play.** He had turned JobArenaFix off in the shared `~/bc5-work/input.cfg`
+(`JobArenaFix.PPSA03671=off`; the file's mtime is 15:01:06, 13 s after the lean play began; no launcher holds it). C1
+was on.
+- The smokes and the series (12:43–14:33) ran with JobArenaFix on: their private copies of `input.cfg` read "on".
+- The `long` set inherits off from the shared file: his play's conditions.
+- The 15:09 event is a GPU geometry-engine stall, not the arena crash, which is a CPU access violation at a known site
+  (exp 0425's TARGET class).
+
+**It is F588's class:** 10-29 18:08, one ring, before way 2. `GRBM_STATUS2` 0x50000008 is identical; it was the same
+partial-flush wait, its ring reset also failed, and it also ended in a gpu-watch reboot. F588's cause is still open.
+
+**Its link to way 2, a suspect and not proven.** The hung IB opens with `CONTEXT_CONTROL`, `CLEAR_STATE` and about 950
+dwords of `SET_CONTEXT_REG` / `SET_SH_REG`: a split piece behind a full state prefix. Iteration 2's two-ring dcb wait
+split about 18 k times per 225-s run, and about 97 % of those waits were then kept for the GPU anyway (17.7 k). One
+ring splits rarely. A piece whose prefix misses state the geometry engine needs is the leading suspect.
+
+**Iteration 3** (unit `40f01680`, build `547833bb`) adds `BC5_DIRECT_ACB_SPLIT_LATE`:
+- A two-ring dcb wait whose writer is already on a ring is kept for the GPU at once, with no split. The head before it
+  is in the same IB, so it runs first and its label writes land before the wait blocks the ME.
+- It splits only when the writer is not yet submitted.
+- It also removes lean's `split` warning.
+
+Test: the `long` set, three runs of the fight then exp 0379's walk to G+1500, RT on, every way-2 switch plus SPLIT_LATE.
+The rule (`check0428.py long`, fixed before the runs): PASS if all three are NO_CRASH. The counters must show the
+splits cut by at least 90 %.
+
+### Iterations 4–5 and the hangs of the afternoon
+
+**`w428L4`** (iteration 4, JobArenaFix on in its private copy, way 2 on). At 415 s (about G+300):
+- a TCP WRITE fault at the junk address 0x171d720ad000, then a `comp_1.0.1` timeout, its reset succeeded, then a
+  `gfx_0.0.0` timeout and reset;
+- fault record `faults/20261116-153436`: K4, junk;
+- the timed-out acb (991 dw, `ib-timeout-00595506`) holds only direct dispatches with ordinary `0x11_…` descriptors, plus
+  aq424's prefixes;
+- the same timeout's dcb shows the BVH program 0x909974200's indirect dispatches with garbage triples (3.2e9 × 1.1e9 …);
+- this is F399/F403's family (garbage pointers in RT/BVH data).
+
+Iteration 4's split fix barely acted (still split 28,571; kept in the IB 0, after the chain 1). The journal said "no
+pending write" at the check; the writer was in this buffer's own head. The scan gave up at the first IB2, so iteration
+5 (unit `e6be6ffa`, build `0b42eb2c`) scans as `register_label_writes` does, IB2s not followed (a standalone test 3/3).
+
+**`w428C5`, the one-ring control of the `longab` set** (way 2 OFF on the same private binary). At 15:47:55, about 8.5
+min into the run:
+- `gfx_0.0.0` timed out, its reset failed, `bc5-gpu-watch` rebooted the box (boot 15:48:28);
+- devcoredump `20261116-154755-devcd3`, stall event `event-20261116-154755-gfx_0.0.0`;
+- the ME at a partial flush (`CP_STALLED_STAT2` 0x18000, `EVENT_WRITE`), `GRBM_STATUS` 0xa0407028: SPI, TA, TCP busy, GE
+  idle, no compute waves. That is F589's F403 signature on the GFX ring.
+
+**The day's four hangs:**
+
+| time | run | way 2 | class | end |
+|---|---|---|---|---|
+| 15:09 | his play | on | GE stall at a partial flush (F588) | reset failed, reboot |
+| 15:35 | w428L4 | on | junk-pointer write by compute (F403 family) | ring resets succeeded |
+| 15:47 | w428C5 | OFF | shader stuck in memory reads on GFX (F403 signature) | reset failed, reboot |
+
+C5's IB (`devcd3`, IB #0, 10,216 dw) opens with the same full state prefix (`CONTEXT_CONTROL`, `CLEAR_STATE`, ~950
+dwords) on one ring, so that shape does not mark a two-ring split piece. The 15:09 "split piece" suspect is weakened.
+
+The work at its stall is the backend's indirect check (exp 0052: `COND_WRITE` ×5, `PFP_SYNC_ME`, `COND_EXEC`) around a
+GFX-form `DISPATCH_INDIRECT` at dword 1845:
+- arguments at `SET_BASE` 1 = 0x11d0571b00, which passed the check;
+- program from `LOAD_SH_REG_INDEX` at 1730 (table 0x11e08efb0c);
+- user data set at 1735: V# 0x115a2400…, table 0x11e08ef8ec;
+- then `EVENT_WRITE` 0x410 at 1853, where the ME waits while SPI, TA and TCP stay busy.
+
+The dispatch's waves hang in memory reads. Without a wave dump these records cannot say whether they loop or wait.
+
+Both classes occur with way 2 off. The maintainer then stopped the comparison: multi-ring is decided, no one-ring arm
+again, and JobArenaFix is off in every run from now on (relayed by the top session, 16:3x). The `longab` set ended
+with the machine-down. The stale lock line of its token was released at 16:36.
+
+### The unnecessary dcb splits (the maintainer's first item after the hangs)
+
+Both runs: fight route to G+120, RT on, way 2 on, JobArenaFix off.
+
+| run | build | splits | kept with no split | other |
+|---|---|---|---|---|
+| w428L10 | iteration 5, `SPLIT_LATE=2` | 18,625 | 2 (after the chain flush; 0 found in the IB) | 17,881 kept right after the split; 15 not served |
+| w428L11 | iteration 6, `SPLIT_LATE=3`, unit `0cda79b5`, build `185a18f8` | **69** | 18,784 by the poll | polled first: 75 satisfied, 0 cycle splits, 69 after 8 ms; 0 not served |
+
+Both runs: NO_CRASH, 43.9 flips/s, 0 kernel lines.
+
+The cause of the splits: the wait's writer is the ring thread's later acb, another thread. It reaches a ring within the
+poll. Exp 0132's form split the head before polling. Iteration 6 polls first, keeps the wait once its writer is on a
+ring, and splits only on exp 0132's cycle (the ring thread blocked on a label this buffer wrote before the wait; 0 seen)
+or after 8 ms (69). GFX jobs fell from about 92 k to about 74 k per run.
+
 ## Verdict
 
 **Way 2 works and is deployed for the second title.**

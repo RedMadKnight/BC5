@@ -1,0 +1,16 @@
+chain lock: exp 0417 | chain: exp 0428: second shared swap, the split fix (SPLIT_LATE=3) for the second title, patch 2c82a979 + 0428b; normal and lean rebuilt (CPU only, no emulator), until about 17:33 | token 20261116165353138227 | 2026-11-16 16:53:53
+before: PIN_OLD=2c82a979 NORMAL=3f22e0e1 LEAN=35a3753d U1=f16eb3f3 U2=3b41711e ARCH=9aab722c 
+libs/bc5LleAgc.cpp: 7 edits, brace balance +0
+bc5/switch_defaults.hpp: 1 edits, brace balance +0
+the patch: 2c82a979 -> a8717e53, 156 lines differ, exp 0372 lines 5, pad_audio_route header in
+== 16:53:57 build normal
+normal: dae7bf0b, warnings 8, of them in bc5LleAgc.cpp: 6; steps 4
+== 16:54:40 build lean
+lean: 819f3b05, warnings 9, of them in bc5LleAgc.cpp: 7; steps 4
+normal words: +[BC5_DIRECT_ACB_SPLIT_LATE ] -[]; 'tag w428c': 1, 'exp 0428': 4
+lean words: +[BC5_DIRECT_ACB_SPLIT_LATE ] -[]; 'tag w428c': 0, 'exp 0428': 0
+int0428b done 16:55:25: patch a8717e53, normal dae7bf0b, lean 819f3b05; undo: bash /home/kjaniszewski/bc5-work/exp0428/undo0428b.sh (then undo0428.sh for way 2 itself); rollback without a build: BC5_DIRECT_ACB_SPLIT_LATE=0
+chain lock released
+lean0428 18:10:49: lean 819f3b05, tag s428v
+s428v (lean) PASS: ran 300 s; RssAnon at the end 118796 kB; kernel lines 0, crash lines 0
+lean0428 18:16:00: ended; JobArenaFix in its config: JobArenaFix.PPSA03671=off

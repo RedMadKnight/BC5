@@ -1,0 +1,58 @@
+lis 16 15:30:15.146643 bazzite kernel: clocksource: Watchdog remote CPU 1 read timed out
+lis 16 15:34:34.272796 bazzite kernel: gmc_v10_0_process_interrupt: 18 callbacks suppressed
+lis 16 15:34:34.273021 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:7 pasid:28)
+lis 16 15:34:34.273966 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 65195 thread bc5-ring pid 65409
+lis 16 15:34:34.274148 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x0000171d720ad000 from client 0x1b (UTCL2)
+lis 16 15:34:34.274305 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00741050
+lis 16 15:34:34.274452 bazzite kernel: amdgpu 0000:01:00.0:          Faulty UTCL2 client ID: TCP (0x8)
+lis 16 15:34:34.274600 bazzite kernel: amdgpu 0000:01:00.0:          MORE_FAULTS: 0x0
+lis 16 15:34:34.274753 bazzite kernel: amdgpu 0000:01:00.0:          WALKER_ERROR: 0x0
+lis 16 15:34:34.274900 bazzite kernel: amdgpu 0000:01:00.0:          PERMISSION_FAULTS: 0x5
+lis 16 15:34:34.275039 bazzite kernel: amdgpu 0000:01:00.0:          MAPPING_ERROR: 0x0
+lis 16 15:34:34.275183 bazzite kernel: amdgpu 0000:01:00.0:          RW: 0x1
+lis 16 15:34:36.323626 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+lis 16 15:34:36.325627 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+lis 16 15:34:36.326049 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+lis 16 15:34:36.326267 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+lis 16 15:34:36.326436 bazzite kernel: amdgpu 0000:01:00.0: ring comp_1.0.1 timeout, signaled seq=216738, emitted seq=216740
+lis 16 15:34:36.326592 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 65195 thread bc5-ring pid 65409
+lis 16 15:34:36.326756 bazzite kernel: amdgpu 0000:01:00.0: Starting comp_1.0.1 ring reset
+lis 16 15:34:36.326919 bazzite kernel: amdgpu 0000:01:00.0: Ring comp_1.0.1 reset succeeded
+lis 16 15:34:36.327073 bazzite kernel: amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+lis 16 15:34:36.327216 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+lis 16 15:34:36.327360 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+lis 16 15:34:36.327502 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=348885, emitted seq=348887
+lis 16 15:34:36.327661 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 65195 thread bc5-ring pid 65409
+lis 16 15:34:36.327801 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+lis 16 15:34:36.328625 bazzite bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring comp_1.0.1 timeout, signaled seq=216738, emitted seq=216740
+lis 16 15:34:36.329631 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+lis 16 15:34:36.329934 bazzite kernel: amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+lis 16 15:34:36.332637 bazzite bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring comp_1.0.1 reset succeeded
+lis 16 15:34:36.334624 bazzite bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=348885, emitted seq=348887
+lis 16 15:34:36.340636 bazzite bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+lis 16 15:34:38.370632 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+lis 16 15:34:38.372639 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+lis 16 15:34:38.373196 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+lis 16 15:34:38.373775 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+lis 16 15:34:38.374395 bazzite kernel: amdgpu 0000:01:00.0: ring comp_1.0.1 timeout, signaled seq=216741, emitted seq=216744
+lis 16 15:34:38.375053 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 65195 thread bc5-ring pid 65409
+lis 16 15:34:38.375607 bazzite kernel: amdgpu 0000:01:00.0: Starting comp_1.0.1 ring reset
+lis 16 15:34:38.376147 bazzite kernel: amdgpu 0000:01:00.0: Ring comp_1.0.1 reset succeeded
+lis 16 15:34:38.376720 bazzite kernel: amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+lis 16 15:34:38.377275 bazzite bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring comp_1.0.1 timeout, signaled seq=216741, emitted seq=216744
+lis 16 15:34:38.385630 bazzite bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring comp_1.0.1 reset succeeded
+lis 16 15:47:55.682631 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+lis 16 15:47:55.872056 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+lis 16 15:47:55.872495 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+lis 16 15:47:55.872696 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+lis 16 15:47:55.872857 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=1003532, emitted seq=1003534
+lis 16 15:47:55.873026 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 162474 thread bc5-ring pid 162680
+lis 16 15:47:55.873184 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+lis 16 15:47:55.873337 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed
+lis 16 15:47:55.873506 bazzite kernel: amdgpu 0000:01:00.0: GPU reset begin!. Source:  1
+lis 16 15:47:55.875631 bazzite bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=1003532, emitted seq=1003534
+lis 16 15:47:55.878633 bazzite bc5-gpu-watch: a ring reset failed [amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed]: crashing before the full reset: syncing and crashing the kernel for a reboot (SysRq s, c)
+lis 16 15:47:55.879272 bazzite kernel: sysrq: Emergency Sync
+lis 16 15:47:55.898632 bazzite kernel: Emergency Sync complete
+Read from remote host 100.88.23.35: Connection reset by peer
+client_loop: send disconnect: Connection reset by peer
