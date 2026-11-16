@@ -193,3 +193,23 @@ cross-ring wait passed on a stale label), not the arena crash. It counts neither
 candidates. Its records stay on the box for exp 0430, untouched by this experiment: the fault record
 `~/bc5-data/captures/faults/20261116-223404`, the run's devcoredump and gc directory, and
 `~/bc5-work/exp0429/n/play-last.log` (the next run of this chain overwrites that log; copy it first if 0430 needs it).
+
+## Handover (2026-11-16 22:5x, for this session after a context reset or for another session)
+
+- **Task (the top session, the maintainer's word):** JobArenaFix removed from everything; a host fix by console-like
+  scheduling; long routes (fight, then walk to G+600) until a form survives repeated runs; no shared swap tonight
+  (the top brings the result and the removal to the maintainer in the morning). Unattended box work is allowed tonight
+  until 07:30; exp 0430 (local_0f8d7c32-5a0d-4c82-a91b-680e4487bdaf) has priority and gives slots between its runs
+  (its STOP file `~/bc5-work/exp0430/STOP`); exp 0431 (local_228b97d5-fa31-4190-b766-2473b7d010b6) also needs slots.
+  A GPU hang in a run of this experiment is exp 0430's data, not a result here. Report each stage to the top
+  (local_60d88c3d-6710-42fe-a07e-1ecae2f445a3) in a few lines; never mention turning JobArenaFix on.
+- **Kit (this directory, copied to `~/bc5-work/exp0429`):** `mk0429.py` (the edits, needs `patch0425.py` beside it),
+  `units.sha256` (9 shared units at a8717e53), `build0429.py`, `box0429.sh claim|build|release` (normal + lean into
+  `~/bc5-work/exp0429/{normal,lean}`, the words checks), `mkrun0429.py` → `run0429f.sh` + `chain0429.sh`
+  (`CHAIN_SET=smoke2|screen2|rep<k>`, `REP_TAGS=` for rep), `check0429.py`. Start a chain detached:
+  `cd ~/bc5-work/exp0429 && CHAIN_SET=… setsid nohup bash chain0429.sh > chain0429-<set>.out 2>&1 < /dev/null &`.
+  The chain takes its own lock line and releases it; a TARGET or KERNEL run does not stop it.
+- **State:** build 3 (the fixed CPU map) is in `mk0429.py` and not built. Next: (1) exp 0430's newest fix build as the
+  base, if its units do not overlap ours (asked 22:5x); (2) build 3 + smoke2 (h429M1 is used: rename to h429M4 or
+  higher, the chain refuses a used tag); (3) screen2; (4) rep sets of the survivors.
+- **Tags used so far:** h429X1 (TARGET, first build), h429M1 (KERNEL, build 2).
