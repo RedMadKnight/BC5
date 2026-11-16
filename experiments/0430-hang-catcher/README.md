@@ -118,3 +118,47 @@ each run's private input.cfg (`N_ARENA=off`), RT on, `N_FUSE=0 N_NOWD=1`, catche
 BC5_0430_WAVES_MS=1100 BC5_DIRECT_TIMEOUT_PROBE=1`. The chain stops at any class but NO_CRASH (R55; its STOP file was
 tested dry before the first run), at a second NOT_ROUTED, or at an emulator that is not its own. The kernel log
 (`journalctl -k -f`) and `live0428.sh` (1-s memory/PSI/D-state) stream to the laptop (`raw/`). Chain started 19:51:34.
+
+## Result 1: h430R2, the hang of 20:25:47 (build 1, `9b0a5317`)
+
+Chain 1 (`h430R*`): h430R1 NO_CRASH (19:51–20:18); h430R2 started 20:18:42 and hung at 20:25:47, 7 min in. Records:
+`~/bc5-data/captures/play-20261116-2018/gc/` (`dj0430-0.txt`, `dj0430-1.txt`, `ib-timeout-00587477-dcb-175614.bin`,
+`ib-timeout-00587478-acb-14667.bin`, `direct.log`), devcoredump `20261116-202549-devcd1.txt`, pstore
+`dmesg-efi_pstore-179485715004001`, the laptop streams `raw/kernel-stream-h430R.txt` and `raw/live-stream-h430R.txt`.
+The box went down: `comp_1.0.1` timed out, its ring reset failed, and `bc5-gpu-watch` crashed the kernel (SysRq s, c)
+at 20:25:49.63.
+
+- **The kernel:** TCP page faults from 20:25:47.405 (ring 24, vmid 7, thread bc5-chainwd): READs at address 0
+  (`GCVM_L2_PROTECTION_FAULT_STATUS` 0x00701031), many (96 callbacks suppressed). The host's last fault: 0x11cc847000,
+  status 0x00741051, a TCP WRITE (client and RW fields as in Linux v7.3 `gc_10_1_0_sh_mask.h`).
+- **Where the compute queue stood** (devcoredump): MEC queue 2, IB base 0x1041_00000000, `CP_HQD_IB_RPTR` 0x9f3b
+  (dword 40,763). The ring's INDIRECT_BUFFER for that base is 0xa448 = 42,056 dwords. The host's buffer was acb
+  #587478, 14,667 dwords with 652 checked indirect dispatches (14,667 + 652 × 42 + 5 = 42,056). The read pointer maps
+  exactly onto the end of the indirect dispatch at original dword 14047, before an EVENT_WRITE at 14051. The MEC's
+  header dump holds the check pattern and the dispatch (37, 45 ×3, 37, 22, 16, 46): a partial flush waits for the
+  waves of a checked dispatch, the F403 signature.
+- **The dispatch:** program 0x90985c800, arguments at 0x11871ed440, user data 0-1 a table at 0x11872d9920. Its triple at
+  submit (journal (b)): −15580, −3940, 2300, stale. At the timeout (the probe): 12220 × 1 × 1. In between it was written
+  by GPU work in the same buffer: the direct dispatch 0x909875600 at dword 14002 (13,440 groups, user data 12-13 =
+  0x11871ed400). So the CP check passed a legal count, and the dispatch's waves faulted and did not end.
+- **Ruled out by this record:** (1) the per-axis-only check on the compute ring (`backend/src/indirect_check.cpp:145`:
+  no product staircase when `compute_ring`). 241 of the acb's 652 indirect dispatches pass the per-axis limits at the
+  timeout, and none has more than 2^22 groups. (2) A host drop in this buffer: the only drop was a label wait already met
+  at submit. (3) "Garbage at submit" as a sign by itself: 981 of 985 indirect dispatches of 0x909936c00 have garbage
+  triples at submit in every buffer of the window, healthy ones included (GPU-written later; R13).
+- **Open candidates:** (A) the table at 0x11872d9920, or the lists the 12,220 counts, hold null or stale entries when the
+  dispatch runs; (B) the scratch page 0x11871ed400 is shared by several passes (acbs #587469 and #587470 use it through
+  0x11d04f2500, 0x11d04f2f00 and 0x11d04f3400, on the same ring). No dispatch on another ring used the page in the
+  window, so this record does not implicate way 2's ordering.
+- **Catcher (a) failed, and why:** the watchdog fired, but `std::system`'s forked child (pid 654388, named after the
+  thread, `bc5-dj430`) stood in D state in `drm_sched_entity_flush` at 20:25:48.9 (live sampler). At exec, closing the
+  close-on-exec DRM fd runs amdgpu's flush, which waits for the context's jobs, which were the hung ones. So no umr ran.
+  This is likely also why exp 0058's dumps landed after the reset (F112). Build 2 spawns the helper while the GPU is healthy.
+
+## Build 2 (`104cbf66`, unit `51f7e7b5`) and chain S
+
+(a) The wave reader is a helper shell started by `popen` when the watchdog thread starts (at the first job wait). At the
+stall the watchdog writes one line to its pipe, and the helper, which holds no DRM fd, runs the halt. (d)
+`BC5_0430_SNAP=1`: with each dump, 512 bytes at every 64-bit user-data pointer of the last 16 dispatches per ring
+(`snap0430-<k>.txt`), read with `process_vm_readv`. That is the memory at the dump, not at the run (R13). Chain S
+(`h430S*`) started 20:39:22 with `BC5_0430_WAVES_MS=900 BC5_0430_SNAP=1` and the rest as before.

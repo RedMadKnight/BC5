@@ -18,12 +18,12 @@ WANT=$(cat "$E/binary.md5"); [ "$(md5sum < "$BIN" | cut -d' ' -f1)" = "$WANT" ] 
 [ -s "$WORDS" ] || { say "NOT STARTED, no $WORDS"; exit 1; }
 mkdir -p "$R" || exit 1
 OUT=$N/chain-rows.txt
-AW="BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_INDIRECT=1 BC5_DIRECT_ACB_STATE_NO_WALK=1 BC5_DIRECT_ACB_SPLIT_LATE=3 BC5_0430_DJ=1 BC5_0430_ARGS=1 BC5_0430_WAVES_MS=1100 BC5_DIRECT_TIMEOUT_PROBE=1"
+AW="BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_INDIRECT=1 BC5_DIRECT_ACB_STATE_NO_WALK=1 BC5_DIRECT_ACB_SPLIT_LATE=3 BC5_0430_DJ=1 BC5_0430_ARGS=1 BC5_0430_WAVES_MS=${WAVES_MS:-900} BC5_0430_SNAP=1 BC5_DIRECT_TIMEOUT_PROBE=1"
 say "binary ${WANT:0:8}; kernel $(uname -r); boot $(cut -c1-8 /proc/sys/kernel/random/boot_id); max $MAX runs"
 NR=0; k=0
 while [ "$k" -lt "$MAX" ]; do
   k=$((k + 1))
-  t=h430R$k
+  t=${TAGP:-h430R}$k
   while [ -e "$R/$t-start.txt" ]; do t=${t}b; done
   [ -e "$HERE/STOP" ] && { say "STOP file before $t"; break; }
   pgrep '^kyty_emulator' > /dev/null && { say "an emulator runs before $t (not ours): stop"; break; }
@@ -33,7 +33,7 @@ while [ "$k" -lt "$MAX" ]; do
   CLASS=$(printf '%s\n' "$line" | sed -n 's/.*; CLASS \([A-Z_]*\);.*/\1/p')
   echo "$t ${CLASS:-NONE} $(printf '%s\n' "$line" | cut -c1-400)" >> "$OUT"
   say "$t: ${CLASS:-NONE}"
-  ls "$(ls -td ~/bc5-data/captures/play-*/gc 2> /dev/null | head -1)" 2> /dev/null | grep -E 'dj0430|waves0430' | sed "s/^/$t catcher file: /" >> "$OUT"
+  ls "$(ls -td ~/bc5-data/captures/play-*/gc 2> /dev/null | head -1)" 2> /dev/null | grep -E 'dj0430|waves0430|snap0430' | sed "s/^/$t catcher file: /" >> "$OUT"
   case "${CLASS:-NONE}" in
     NO_CRASH) ;;
     NOT_ROUTED) NR=$((NR + 1)); [ "$NR" -ge 2 ] && { say "a second NOT_ROUTED: stop"; break; } ;;

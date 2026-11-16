@@ -5,6 +5,7 @@
 # once, or nothing is written. Three switches, normal build only (BC5_DIAG_ENV, nullptr in the lean build):
 #   BC5_0430_DJ=1        (b) per-ring in-memory dispatch journal, written to files at a stall, a timeout
 #   BC5_0430_ARGS=1      (c) indirect dispatch arguments read at submit: garbage triples journaled ("args0430:")
+#   BC5_0430_SNAP=1      (d) with each dump, 512 B at the user-data pointers of the last 16 dispatches per ring
 #   BC5_0430_WAVES_MS=n  (a) at a completion wait of n ms (>= 500), one `umr -O halt_waves -wa none` (the exact
 #                            NOPASSWD line on the box) into the capture directory, at most 2 per run; dedicated runs only
 #                            (F229: a halt at a stall that would have recovered is followed by a reset)
@@ -28,6 +29,7 @@ NS = r'''
 //     `sudo -n /usr/bin/umr -O halt_waves -wa none` (every wave of the GPU, no ring named; the exact line the box's sudoers
 //     allows) into <capture dir>/waves0430-<k>.txt, synced; at most 2 per run, the journal first. Only in dedicated runs:
 //     F229 and exp 0370 K2 (a halt at a 0.6-s stall that would have recovered was followed by a ring reset).
+#include <sys/uio.h> // exp 0430 (d): process_vm_readv
 namespace dj430 {
 struct Rec {
 	uint64_t n    = 0;
@@ -83,6 +85,8 @@ inline void commit(int qring, uint64_t n, std::vector<Rec>& recs) {
 	}
 	recs.clear();
 }
+inline bool snap_on();
+inline void snap(int k, const std::vector<Rec>& last);
 inline std::string out_dir() {
 	return g_dump_dir.empty() ? std::string(std::getenv("HOME") ? std::getenv("HOME") : ".") + "/bc5-work" : g_dump_dir;
 }
@@ -97,6 +101,7 @@ inline void dump(const char* why, uint64_t n, const char* kind) {
 	if (f == nullptr) return;
 	std::fprintf(f, "dj430 dump %d: %s, submission #%" PRIu64 " %s, t %.3f s; per ring the last %u dispatches the host submitted, oldest first\n", k, why, n, kind != nullptr ? kind : "-", timing_now(), kN);
 	std::fprintf(f, "columns: #submission kind offset op pgm args x y z flags(1 indirect 2 garbage 4 unreadable) ud0..ud15\n");
+	std::vector<Rec> last; // (d): the last 16 per ring
 	for (uint32_t s = 0; s < kSlots; s++) {
 		Ring&       g = rings()[s];
 		std::lock_guard lk(g.m);
@@ -104,6 +109,7 @@ inline void dump(const char* why, uint64_t n, const char* kind) {
 		if (g.r.size() != kN) continue;
 		for (uint64_t i = g.total > kN ? g.total - kN : 0; i < g.total; i++) {
 			const Rec& x = g.r[i % kN];
+			if (i + 16 >= g.total) last.push_back(x);
 			std::fprintf(f, "#%" PRIu64 " %s %u %02x 0x%" PRIx64 " 0x%" PRIx64 " %u %u %u %u", x.n, x.kind, x.q, x.op, x.pgm, x.args, x.v[0], x.v[1], x.v[2], x.flags);
 			for (uint32_t u = 0; u < 16; u++) std::fprintf(f, " %08x", x.ud[u]);
 			std::fputc('\n', f);
@@ -113,24 +119,73 @@ inline void dump(const char* why, uint64_t n, const char* kind) {
 	fsync(fileno(f));
 	std::fclose(f);
 	journal("dj430: %s: the dispatch journal written to %s\n", why, name);
+	if (snap_on()) snap(k, last);
+}
+// (a) the wave reader is a helper shell spawned when the watchdog starts, while the GPU is healthy: a process forked at the
+// stall blocks in its exec, because closing the close-on-exec DRM fd runs amdgpu's flush, which waits for the hung jobs
+// (h430R2, 20:25:48.9: the child "bc5-dj430" in D state in drm_sched_entity_flush; no umr ran). At the stall one line goes
+// down the pipe and the helper, which holds no DRM fd, runs the halt.
+inline FILE*& helper() {
+	static FILE* h = nullptr;
+	return h;
+}
+inline void helper_start() {
+	if (waves_ns() == 0 || helper() != nullptr) return;
+	const std::string dir = out_dir();
+	char              cmd[1400];
+	std::snprintf(cmd, sizeof(cmd),
+	              "while read k; do t0=$(date +%%s.%%N); "
+	              "if [ -e /run/.containerenv ]; then distrobox-host-exec sudo -n /usr/bin/umr -O halt_waves -wa none; else sudo -n /usr/bin/umr -O halt_waves -wa none; fi > %s/waves0430-$k.txt 2>&1; "
+	              "rc=$?; sync; echo \"waves $k rc $rc from $t0 to $(date +%%s.%%N)\" >> %s/waves0430.log; sync; done",
+	              dir.c_str(), dir.c_str());
+	helper() = popen(cmd, "w");
+	journal("dj430: wave helper %s (umr -O halt_waves -wa none at a stall of %.0f ms)\n", helper() != nullptr ? "started" : "NOT started", static_cast<double>(waves_ns()) / 1e6);
 }
 inline void waves(int cq, uint64_t n, const char* kind, uint64_t waited_ns) {
 	static std::atomic<int> runs {0};
 	const int               k = runs++;
-	if (k >= 2) return;
-	const std::string dir = out_dir();
-	char              cmd[1024];
-	std::snprintf(cmd, sizeof(cmd),
-	              "if [ -e /run/.containerenv ]; then distrobox-host-exec sudo -n /usr/bin/umr -O halt_waves -wa none; else sudo -n /usr/bin/umr -O halt_waves -wa none; fi > %s/waves0430-%d.txt 2>&1; sync",
-	              dir.c_str(), k);
-	const double t0 = timing_now();
-	const int    rc = std::system(cmd);
+	if (k >= 2 || helper() == nullptr) return;
+	std::fprintf(helper(), "%d\n", k);
+	std::fflush(helper());
 	if (FILE* f = journal_min_file(true); f != nullptr) {
-		std::fprintf(f, "dj430: completion queue %d waited %.0f ms for #%" PRIu64 " %s: waves dumped to %s/waves0430-%d.txt (rc %d, %.0f ms)\n", cq, static_cast<double>(waited_ns) / 1e6, n, kind,
-		             dir.c_str(), k, rc, (timing_now() - t0) * 1e3);
+		std::fprintf(f, "dj430: completion queue %d waited %.0f ms for #%" PRIu64 " %s: wave read %d asked of the helper at t %.3f s\n", cq, static_cast<double>(waited_ns) / 1e6, n, kind, k, timing_now());
 		std::fflush(f);
 		fsync(fileno(f));
 	}
+}
+// (d) BC5_0430_SNAP=1: with each dump, 512 bytes at every 64-bit user-data pointer (ud k, k+1) of the last 16 dispatches of
+// each ring, read with process_vm_readv (an unmapped address gives EFAULT, not a crash). The memory as it is at the dump,
+// not at the dispatch's run (R13).
+inline bool snap_on() {
+	static const bool v = BC5_DIAG_ENV("BC5_0430_SNAP") != nullptr;
+	return v;
+}
+inline void snap(int k, const std::vector<Rec>& last) {
+	char name[640];
+	std::snprintf(name, sizeof(name), "%s/snap0430-%d.txt", out_dir().c_str(), k);
+	FILE* f = std::fopen(name, "w");
+	if (f == nullptr) return;
+	std::fprintf(f, "snap0430 %d at t %.3f s: 512 bytes at the user-data pointers of the last dispatches per ring (memory now, not at the run)\n", k, timing_now());
+	std::set<uint64_t> seen;
+	for (const Rec& x: last) {
+		for (uint32_t u = 0; u + 1 < 16; u++) {
+			const uint64_t a = x.ud[u] | (static_cast<uint64_t>(x.ud[u + 1] & 0xffffu) << 32u);
+			if (a < 0x100000000ull || a >= 0x10000000000ull || (a & 3u) != 0 || !seen.insert(a).second) continue;
+			uint32_t     buf[128];
+			struct iovec l {buf, sizeof(buf)}, r {reinterpret_cast<void*>(a), sizeof(buf)};
+			const ssize_t got = process_vm_readv(getpid(), &l, 1, &r, 1, 0);
+			std::fprintf(f, "#%" PRIu64 " %s %u pgm 0x%" PRIx64 " ud%u 0x%" PRIx64 ":", x.n, x.kind, x.q, x.pgm, u, a);
+			if (got <= 0) {
+				std::fprintf(f, " unreadable\n");
+				continue;
+			}
+			for (ssize_t w = 0; w < got / 4; w++) std::fprintf(f, "%s%08x", (w & 7) == 0 ? "\n  " : " ", buf[w]);
+			std::fputc('\n', f);
+		}
+	}
+	std::fflush(f);
+	fsync(fileno(f));
+	std::fclose(f);
 }
 struct Wait {
 	std::atomic<uint64_t>    since {0};
@@ -147,6 +202,7 @@ inline void watchdog_start() {
 	std::call_once(once, [] {
 		std::thread([] {
 			pthread_setname_np(pthread_self(), "bc5-dj430");
+			helper_start(); // (a): before any stall
 			const uint64_t limit = waves_ns() != 0 ? waves_ns() : 900'000'000ull;
 			uint64_t       done[8] {};
 			for (;;) {
