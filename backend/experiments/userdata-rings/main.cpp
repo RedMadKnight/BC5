@@ -23,9 +23,12 @@
 // What the job sequence avoids (the 0427 brief): no waits on labels, no map or unmap while a job
 // runs (all BOs are mapped before the first submit and unmapped after the last fence), no
 // CONTEXT_CONTROL on a compute ring (F31, exp 0127).
+#include "bc5/indirect_check.hpp"
 #include "bc5/pm4.hpp"
+#include "bc5/policy.hpp"
 
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -194,6 +197,41 @@ std::vector<std::uint32_t> build_ib(const Job &j, std::uint64_t shader_va, std::
     return b.dwords();
 }
 
+// Experiment 0428, --cp-check: the CP's indirect-count check (bc5/indirect_check.hpp, compute_ring = true, the
+// FilterOptions default limits x <= 2^20, y, z <= 2^10) around a REAL compute-form DISPATCH_INDIRECT (op 0x16: address
+// lo, hi, initiator) of the probe program on a compute ring. Exp 0129 verified the check's packets on the MEC with the
+// dispatch replaced by a WRITE_DATA; exp 0290 then kept every indirect dispatch off the MEC after F332's machine-down.
+// The triples a failed check would let through are only just over a limit: the program's V# holds 64 records
+// (kThreads), so groups past the first store out of range and the hardware drops those stores (buffer bounds with
+// idxen); a dispatch of 2^20 + 1 groups that should have been skipped then ends in milliseconds instead of hanging.
+struct CpCase {
+    std::uint32_t x, y, z;
+    bool runs;
+};
+constexpr CpCase kCpCases[] = {
+    {1, 1, 1, true},          {64, 1, 1, true},         {(1u << 20) + 1, 1, 1, false},
+    {1, (1u << 10) + 1, 1, false}, {1, 1, (1u << 10) + 1, false}, {1u << 20, 1, 1, true},
+};
+
+// The IB of one case: the S-job state (USER_DATA_0..7 set), the dispatch as the compute form of DISPATCH_INDIRECT at
+// args_va, through indirect_check::apply on the compute ring; flag_va receives the check's flag and confirm words.
+std::vector<std::uint32_t> build_cp_ib(const Job &j, std::uint64_t shader_va, std::uint64_t slot_va, std::uint64_t args_va,
+                                       std::uint64_t flag_va, bc5::indirect_check::Stats &st) {
+    auto ib = build_ib(j, shader_va, slot_va);
+    // replace the DISPATCH_DIRECT (header 0xC0031502, 4 payload dwords) by the compute form of DISPATCH_INDIRECT
+    std::size_t at = ib.size();
+    for (std::size_t i = 0; i + 4 < ib.size(); ++i)
+        if (ib[i] == 0xC0031502u) at = i;
+    std::vector<std::uint32_t> in(ib.begin(), ib.begin() + static_cast<std::ptrdiff_t>(at));
+    in.insert(in.end(), {0xC0021602u, lo32(args_va), hi32(args_va), 1u});
+    const bc5::policy::FilterOptions defaults;
+    std::vector<std::size_t> refs;
+    auto out = bc5::indirect_check::apply(in, 0, defaults.gpu_check_max, defaults.gpu_check_draw_max, refs, st, true);
+    bc5::indirect_check::patch(out, refs, flag_va);
+    while (out.size() % 8 != 0) out.push_back(bc5::pm4::kNopFiller);
+    return out;
+}
+
 // Dry-run checks over one built IB.
 bool check_ib(const Job &j, const std::vector<std::uint32_t> &ib) {
     bool ok = ib.size() % 8 == 0 && ib.size() * 4 <= kIbStride;
@@ -241,6 +279,40 @@ int dry_run() {
         std::printf("\n");
     }
     std::printf("dry run: %d bad IB(s)\n", bad);
+    return bad == 0 ? 0 : 1;
+}
+
+// The --cp-check jobs: every case on compute ring indices 0, 1 and 2, each an S job (its own slot, args and flag).
+std::vector<std::pair<Job, CpCase>> cp_jobs() {
+    std::vector<std::pair<Job, CpCase>> v;
+    const Target ts[] = {Target::C0, Target::C1, Target::C2};
+    for (Target t: ts) {
+        for (const CpCase &c: kCpCases) {
+            Job j;
+            j.step = {Kind::Set, t, true};
+            j.id = static_cast<std::uint32_t>(v.size());
+            const std::uint32_t low = (j.id << 8) | tag(t);
+            j.ud47 = {0x40000000u | low, 0x50000000u | low, 0x60000000u | low, 0x70000000u | low};
+            v.emplace_back(j, c);
+        }
+    }
+    return v;
+}
+
+int cp_dry() {
+    int bad = 0;
+    for (const auto &[j, c]: cp_jobs()) {
+        bc5::indirect_check::Stats st;
+        const auto ib = build_cp_ib(j, 0x1'0000'0000ull, 0x1'0010'0000ull + std::uint64_t{j.id} * kSlotBytes,
+                                    0x1'0020'0000ull + std::uint64_t{j.id} * 64, 0x1'0030'0000ull + std::uint64_t{j.id} * 64, st);
+        bool cc = false;
+        for (std::uint32_t w: ib) cc = cc || (w & 0xffffff00u) == 0xC0012800u;
+        const bool ok = st.checked == 1 && st.conditional == 0 && !cc && ib.size() * 4 <= kIbStride;
+        bad += ok ? 0 : 1;
+        std::printf("cp job %2u %-5s triple %u %u %u (%s): %3zu dwords, checked %u, inserted %u  %s\n", j.id, name(j.step.target),
+                    c.x, c.y, c.z, c.runs ? "runs" : "skipped", ib.size(), st.checked, st.inserted_dwords, ok ? "ok" : "BAD");
+    }
+    std::printf("cp-check dry run: %d bad IB(s)\n", bad);
     return bad == 0 ? 0 : 1;
 }
 
@@ -470,6 +542,94 @@ int submit(const std::string &node) {
     return rc;
 }
 
+int cp_check(const std::string &node) {
+    std::fprintf(stderr, "userdata-rings --cp-check: real DISPATCH_INDIRECTs under the CP check on compute rings 0..2. A bad "
+                         "submission can hang or reset the machine.\n");
+    const auto jobs = cp_jobs();
+    Device d;
+    if (!open_device(node, d)) return 1;
+    Bo shader, cmd, dst, args;
+    if (!alloc(d.dev, 4096, AMDGPU_GEM_DOMAIN_VRAM, shader) ||
+        !alloc(d.dev, std::uint64_t{kIbStride} * jobs.size(), AMDGPU_GEM_DOMAIN_GTT, cmd) ||
+        !alloc(d.dev, (std::uint64_t{kSlotBytes} * jobs.size() + 4095) / 4096 * 4096, AMDGPU_GEM_DOMAIN_GTT, dst) ||
+        !alloc(d.dev, 4096 * 2, AMDGPU_GEM_DOMAIN_GTT, args)) {
+        std::fprintf(stderr, "buffer allocation failed\n");
+        return 1;
+    }
+    std::memset(shader.cpu, 0, 4096);
+    std::memcpy(shader.cpu, kProbeCs.data(), sizeof(kProbeCs));
+    std::memset(dst.cpu, 0, static_cast<std::size_t>(dst.size));
+    std::memset(cmd.cpu, 0, static_cast<std::size_t>(cmd.size));
+    auto *aw = static_cast<std::uint32_t *>(args.cpu); // per job: args at 16 dwords * id, flag at 4096 + 16 dwords * id
+    for (std::size_t k = 0; k < 2048; ++k) aw[k] = 0xdeadu;
+    std::vector<std::uint32_t> n_dw(jobs.size());
+    for (const auto &[j, c]: jobs) {
+        aw[j.id * 16 + 0] = c.x;
+        aw[j.id * 16 + 1] = c.y;
+        aw[j.id * 16 + 2] = c.z;
+        bc5::indirect_check::Stats st;
+        const auto ib = build_cp_ib(j, shader.va, dst.va + std::uint64_t{j.id} * kSlotBytes, args.va + std::uint64_t{j.id} * 64,
+                                    args.va + 4096 + std::uint64_t{j.id} * 64, st);
+        if (st.checked != 1 || ib.size() * 4 > kIbStride) {
+            std::fprintf(stderr, "cp job %u: IB check failed; nothing submitted\n", j.id);
+            return 1;
+        }
+        std::memcpy(static_cast<char *>(cmd.cpu) + std::size_t{j.id} * kIbStride, ib.data(), ib.size() * 4);
+        n_dw[j.id] = static_cast<std::uint32_t>(ib.size());
+    }
+    amdgpu_context_handle ctx = nullptr;
+    if (amdgpu_cs_ctx_create(d.dev, &ctx) != 0) return 1;
+    std::vector<amdgpu_bo_handle> list_bos = {shader.bo, cmd.bo, dst.bo, args.bo};
+    amdgpu_bo_list_handle list = nullptr;
+    if (amdgpu_bo_list_create(d.dev, 4, list_bos.data(), nullptr, &list) != 0) return 1;
+    int rc = 0, wrong = 0;
+    std::size_t done = 0;
+    for (const auto &[j, c]: jobs) {
+        const std::uint32_t ring = j.step.target == Target::C1 ? 1u : j.step.target == Target::C2 ? 2u : 0u;
+        amdgpu_cs_ib_info ibi{};
+        ibi.ib_mc_address = cmd.va + std::uint64_t{j.id} * kIbStride;
+        ibi.size = n_dw[j.id];
+        amdgpu_cs_request req{};
+        req.ip_type = AMDGPU_HW_IP_COMPUTE;
+        req.ring = ring;
+        req.resources = list;
+        req.number_of_ibs = 1;
+        req.ibs = &ibi;
+        const auto t0 = std::chrono::steady_clock::now();
+        if (amdgpu_cs_submit(ctx, 0, &req, 1) != 0) {
+            std::fprintf(stderr, "cp job %u: submit failed; stopping\n", j.id);
+            rc = 1;
+            break;
+        }
+        amdgpu_cs_fence f{};
+        f.context = ctx;
+        f.ip_type = AMDGPU_HW_IP_COMPUTE;
+        f.ring = ring;
+        f.fence = req.seq_no;
+        std::uint32_t expired = 0;
+        if (amdgpu_cs_query_fence_status(&f, 2'000'000'000ull, 0, &expired) != 0 || expired == 0) {
+            std::fprintf(stderr, "cp job %u: fence not signalled within 2 s; stopping\n", j.id);
+            rc = 3;
+            break;
+        }
+        const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+        done = j.id + 1u;
+        const auto *s = static_cast<const std::uint32_t *>(dst.cpu) + std::size_t{j.id} * (kSlotBytes / 4);
+        const bool wrote = s[0] == j.ud47[0];
+        const std::uint32_t flag = aw[1024 + j.id * 16], confirm = aw[1024 + j.id * 16 + 1];
+        const bool ok = wrote == c.runs && flag == (c.runs ? 1u : 0u) && confirm == 0u;
+        wrong += ok ? 0 : 1;
+        std::printf("cp job %2u %-5s triple %u %u %u: expected %s; slot %s (record 0: %08x, hw_id2 %08x), flag 0x%x confirm 0x%x, "
+                    "%.2f ms -> %s\n",
+                    j.id, name(j.step.target), c.x, c.y, c.z, c.runs ? "runs" : "skipped", wrote ? "WRITTEN" : "untouched", s[0], s[3],
+                    flag, confirm, ms, ok ? "as expected" : "WRONG");
+    }
+    amdgpu_bo_list_destroy(list);
+    amdgpu_cs_ctx_free(ctx);
+    std::printf("cp-check summary: %zu of %zu jobs ran, %d wrong\n", done, jobs.size(), wrong);
+    return rc != 0 ? rc : (wrong == 0 ? 0 : 1);
+}
+
 #endif // BC5_WITH_AMDGPU
 
 } // namespace
@@ -483,18 +643,24 @@ int main(int argc, char **argv) {
             mode = "info";
         } else if (a == "--submit") {
             mode = "submit";
+        } else if (a == "--cp-dry") {
+            mode = "cpdry";
+        } else if (a == "--cp-check") {
+            mode = "cpcheck";
         } else if (a == "--render-node" && i + 1 < argc) {
             node = argv[++i];
         } else {
-            std::fputs("usage: userdata-rings [--info | --submit] [--render-node PATH]\n"
+            std::fputs("usage: userdata-rings [--info | --submit | --cp-dry | --cp-check] [--render-node PATH]\n"
                        "  (no option: dry run, no device)\n",
                        stderr);
             return 2;
         }
     }
     if (mode == "dry") return dry_run();
+    if (mode == "cpdry") return cp_dry();
 #ifdef BC5_WITH_AMDGPU
     if (mode == "info") return info(node);
+    if (mode == "cpcheck") return cp_check(node);
     return submit(node);
 #else
     (void)node;

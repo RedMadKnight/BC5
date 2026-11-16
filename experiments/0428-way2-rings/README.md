@@ -16,6 +16,17 @@ Background:
   machine-down was a `comp_1.2.0` timeout whose reset never came. Build W (exp 0419) removed the October cross-ring
   waits and ADR 0013's held tail with it.
 
+Stale statements, noted here; the top session fixes CLAUDE.md on main:
+- ADR 0009's status header ("the second title's `play-pkg.sh` runs its compute buffers on compute ring 0");
+- CLAUDE.md's "the direct path uses compute ring 0 for the second title".
+
+Both are stale since 10-27: the patch's `kIgnored` holds `BC5_DIRECT_COMPUTE_RING`, `compute_ring_env()` defaults to
+the GFX ring, and F412/F415 record the change.
+
+F412 found that one ring costs no fps with RT off. So this experiment measures RT on, and says plainly if way 2's
+overlap gains nothing there. By the maintainer's words, that would be a reason to keep looking for a working form, not
+to deploy a slower one.
+
 ## Setup
 
 **Private test build.** The relink pattern of exps 0425/0388:

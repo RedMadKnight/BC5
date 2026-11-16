@@ -65,15 +65,40 @@ static int w428_rings() {
 	}();
 	return v;
 }
-static std::mutex         g_w428_mu;
-static std::map<int, int> g_w428_qring; // guest queue (t_queue_idx) -> libdrm compute ring index
-static int                w428_queue_ring() {
-	std::lock_guard lk(g_w428_mu);
-	const auto      it = g_w428_qring.find(t_queue_idx);
-	if (it != g_w428_qring.end()) return it->second;
-	const int r = static_cast<int>(g_w428_qring.size()) % w428_rings();
-	g_w428_qring.emplace(t_queue_idx, r);
-	return r;
+// Iteration 2 (the smoke w428Q1: the title touches 56 guest queue slots at start, so an index map put its busy queues
+// together on ring 0, 169,922 jobs against 14 on each other ring): every queue starts on ring 0; a queue whose acb count
+// reaches 256 is busy and moves ONCE to the next ring of the rotation 1, 2, 3, 0, ... Before the move this thread's
+// chain is flushed and every ring is waited idle (2 s at most), so the queue's earlier jobs on ring 0 are done before
+// its first job on the new ring (its order holds). One move per busy queue, so the wait is paid a few times per run.
+struct W428Queue {
+	uint64_t n    = 0;
+	int      ring = 0;
+	bool     busy = false;
+};
+static std::mutex               g_w428_mu;
+static std::map<int, W428Queue> g_w428_qring; // guest queue (t_queue_idx) -> its count and libdrm compute ring index
+static int                      g_w428_busy = 0;
+static std::atomic<uint64_t>    g_w428_moves {0}, g_w428_move_late {0};
+static void                     chain_flush(int why); // ADR 0010, defined below
+static int                      w428_queue_ring() {
+	int prev = 0, now = 0;
+	{
+		std::lock_guard lk(g_w428_mu);
+		W428Queue&      e = g_w428_qring[t_queue_idx];
+		e.n++;
+		if (e.busy || e.n < 256) return e.ring;
+		e.busy = true;
+		prev   = e.ring;
+		e.ring = (++g_w428_busy) % w428_rings();
+		now    = e.ring;
+	}
+	if (now != prev) {
+		chain_flush(2); // ring/class
+		const bool idle = !g_dev || g_dev->wait_idle(2'000'000'000ull);
+		g_w428_moves++;
+		if (!idle) g_w428_move_late++;
+	}
+	return now;
 }
 #ifndef BC5_LEAN
 static std::map<std::string, uint64_t> g_w428_refused; // exp 0428 (tag w428c): acbs kept on the GFX ring, by reason
@@ -239,7 +264,9 @@ f.sub("""	if (qring != bc5::direct::kGfxRing && (g_comp_jobs++ & 0xffffu) == 0) 
 			std::string q, why;
 			{
 				std::lock_guard lk(g_w428_mu);
-				for (const auto& [k, v]: g_w428_qring) q += " " + std::to_string(k) + "->" + std::to_string(v);
+				for (const auto& [k, v]: g_w428_qring)
+					if (v.busy) q += " " + std::to_string(k) + "->" + std::to_string(v.ring) + "(" + std::to_string(v.n) + ")";
+				q += " moves " + std::to_string(g_w428_moves.load()) + " not-idle-in-2s " + std::to_string(g_w428_move_late.load());
 				for (const auto& [k, v]: g_w428_refused) why += " " + k + ":" + std::to_string(v);
 			}
 			std::fprintf(stderr,
