@@ -61,6 +61,11 @@ target_link_libraries(piece-check PRIVATE bc5_warnings)
 add_executable(prepare-bench experiments/prepare-bench/main.cpp)
 target_link_libraries(prepare-bench PRIVATE bc5_backend bc5_warnings)
 
+# userdata-rings: experiment 0427, COMPUTE_USER_DATA kept per compute ring or per hardware queue.
+# Dry run (no device) everywhere; --info and --submit only with BC5_WITH_AMDGPU, as dispatch-min.
+add_executable(userdata-rings experiments/userdata-rings/main.cpp)
+target_link_libraries(userdata-rings PRIVATE bc5_backend bc5_warnings)
+
 if(BC5_WITH_AMDGPU)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(LIBDRM_AMDGPU REQUIRED IMPORTED_TARGET libdrm_amdgpu)
@@ -70,6 +75,7 @@ if(BC5_WITH_AMDGPU)
     target_link_libraries(bc5_backend PUBLIC PkgConfig::LIBDRM_AMDGPU PkgConfig::LIBDRM)
     target_compile_definitions(bc5_backend PUBLIC BC5_WITH_AMDGPU=1)
     target_link_libraries(dispatch-min PRIVATE PkgConfig::LIBDRM_AMDGPU)
+    target_link_libraries(userdata-rings PRIVATE PkgConfig::LIBDRM_AMDGPU)
     target_link_libraries(userptr-min PRIVATE PkgConfig::LIBDRM_AMDGPU PkgConfig::LIBDRM)
     # direct-selftest: the bc5::direct submission path with synthetic and recorded IBs, no host.
     add_executable(direct-selftest experiments/direct-selftest/main.cpp)
