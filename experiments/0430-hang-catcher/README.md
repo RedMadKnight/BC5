@@ -264,3 +264,21 @@ still using it, by another GPU job.
   the label 0x12004b4fc8 is not in this record.
 
 Reported to the top session for his decision; no fix proposed (his order: the descriptor question first).
+
+### The label behind the dropped wait (after his "Tak, zleć poprawkę")
+
+`labscan.py` over the two hung buffers: the label the sort waited on (0x12004b4fc8, `== 0`, 64-bit) is written by the
+graphics buffer itself: dcb #1980428, dword 19839, RELEASE_MEM with 64-bit data 0, after its BVH passes (dwords
+~12,460–18,390). The protocol: the dcb releases the shared memory by writing 0 when its BVH work is done, and the
+compute sort waits for 0. In normal frames the label is non-zero when the acb is submitted, and the host keeps the
+wait for the GPU because the dcb's pending write of 0 satisfies it (837,633 "ring order ... keeps its wait at 0 on
+0x12004b4fc8" in the play). In the hang frame it was already 0 at the acb's submit, a stale 0 from the previous
+frame's release, so the host dropped the wait as met. Neither hung buffer writes a non-zero value to that label.
+
+So keeping a satisfied wait for the GPU would not have prevented this hang: the GPU reads the same stale 0 and passes
+too. The waits are value-based on the console as well. The missing piece is the per-frame step that makes the label
+non-zero (the title's CPU, an earlier submission, or a packet the host dropped or delayed). Every drop path in
+`submit_split` and the acb head and hold-tail paths share the rule "satisfied when the host looks, then dropped"; the
+GIVEN UP and CYCLE paths drop unsatisfied waits. Proposed to the top session: F2 (a wait on a label with a pending
+write from a not-yet-completed job on another ring is ordered after that job through a submit dependency) and catcher
+G (per-wait value, pending writes and decision at submit), waiting for the decision.
