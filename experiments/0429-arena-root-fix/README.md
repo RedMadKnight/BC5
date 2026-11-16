@@ -1,7 +1,7 @@
 # 0429 — The job-arena crash at its root, so that JobArenaFix can leave the code
 
 **Date.** 2026-11-16. **Branch.** `exp/0429-arena-root-fix`, base main `0f335e5b` (shared patch `2c82a979`, way 2 on).
-**Status.** Open: reading the title's code; no build, no run yet.
+**Status.** Open: the private build is made (2026-11-16 21:11–21:20); no run yet.
 
 ## Question
 
@@ -61,17 +61,63 @@ at all, what does the console do differently, and which host change ends the cra
 - Exp 0425 C1 attacks the same wait with a shorter slice. It lowered the rate (0 of 10 in G..G+120) but w428L1 shows
   it does not remove it.
 
-## Proposed private build (fixes first, then test; not built)
+## The maintainer's decision (2026-11-16, through the top session)
 
-On the shared tree at patch `2c82a979` (C1 on, way 2 on), `JobArenaFix` off in every run, no title code patched by
-any arm (no pass-through hook, unlike exp 0425's catcher runs):
+"JobArenaFix ma zniknąć z menu, z przełączników i wszystkich miejsc - miałeś zbudować rozwiązanie problemu." No
+title-code patch. The workaround leaves the code entirely, and the host's scheduling must keep the Hi workers ahead.
+
+## The private build (fixes first, then test)
+
+`mk0429.py` on copies of nine units of the shared tree at patch `a8717e53` (pins in `units.sha256`), six of them
+compiled, linked with the shared builds' other objects (`build0429.py`, `box0429.sh build`), normal and lean.
+Built 2026-11-16 21:11–21:20 under BOX-LOCK, CPU only: **normal `5af774e4dce1a337893d67e981e3f314`, lean
+`8c81bb1ca965ad72b40e72f6c9fc0ef3`**, 0 errors, 8 warnings each, all of them in the unchanged code (the same
+`wstring_convert`, `sec_to_timeval`, lambda-return and format warnings). The shared binaries stayed `dae7bf0b` and
+`819f3b05`.
+
+**1. The removal, in both builds, with no switch.** The hook and its patcher (`loader/gamePatch.cpp` and `.h` are
+back to f266548's text), the call at load and its helper (`loader/runtimeLinker.cpp`), the "Game fixes" menu
+(`hostMenu.cpp`, it held only this item), the input.cfg key, its member, accessors and `KYTY_BC5_JOB_ARENA_FIX`
+(`hostInput.cpp` and `.h`), and `src/bc5/job_arena_fix.hpp`. An old `JobArenaFix.<TITLE_ID>=...` line in input.cfg is
+accepted silently and not written back. The build checks that neither binary holds `KYTY_BC5_JOB_ARENA_FIX`,
+"job-arena fix", "Game fixes" or the hook's name.
+
+**2. The candidates, each behind its own switch, default off.**
 
 | switch | does |
 |---|---|
-| `KYTY_BC5_0429_PRIO_ORDER=1` | guest priorities 300–732 keep their order as nice levels below the job workers: 300–549 → 0, 550–599 → +1, 600–649 → +2, 650–699 → +3, 700–732 → +4 (≤299 −15 and ≥733 +5 as now). The Hi workers then win the CPU against every lower-priority title thread, as by fixed priority |
-| `KYTY_BC5_0425_HANDOFF_US=<us>` | exp 0425 C2, unchanged: after a semaphore signal wakes a waiter, the signaller yields its CPU for up to this long |
+| `KYTY_BC5_0429_PRIO_ORDER=1` | guest priorities keep their order as nice levels below the job workers: 550–599 +1, 600–649 +2, 650–699 +3, 700–732 +4; up to 299 −15, 300–549 0, from 733 +5 as before |
+| `KYTY_BC5_0429_AFFINITY=1` or `2` | the guest's CPU mask on the host thread at start and at Setaffinity: guest CPU i → host core i with its SMT sibling (`/sys` topology). 1 every mask (the default 0x7f then keeps the title on cores 0–6, core 7 for the host), 2 only masks narrower than 0x7f |
+| `KYTY_BC5_0425_HANDOFF_US=300` | exp 0425 C2, unchanged (`patch0425.py`'s semaphore edits; C3 `KYTY_BC5_0425_DIRECT_WAKE` is in the build too) |
 
-Test: the long route, the fight record from G and exp 0379's walk after it, to G+600 s, RT on, the named snapshot.
-Arms control (the shared state), PRIO_ORDER, C2 and both, three runs each, interleaved. A crash at the site in any arm
-is reported against the control's count. Since the bug is the title's, a clean arm lowers the rate; it cannot prove
-the crash gone.
+**3. The catcher, normal build only.** `KYTY_BC5_0429_TRACE=1` logs each guest thread's mask, priority and nice at
+start, Setaffinity and Setprio (the first 400 lines), so the title's requests are on record.
+
+**Fixed-priority behaviour without root.** The console's rule is "a lower number always wins". Linux offers that only
+in SCHED_FIFO/RR, which needs RLIMIT_RTPRIO or rtkit; rtkit grants a bounded RR level per thread with RLIMIT_RTTIME,
+and the title's threads spin on `pause` (the owner's wait above), so a spinning RR thread would starve the host's own
+threads until the kernel's RT throttling or rtkit's canary demotes it. Not used. Without privilege, nice (down to −15
+through the path the build already uses) and SCHED_BATCH/IDLE are possible; PRIO_ORDER uses nice. TODO(verify): the
+box's `ulimit -e`/`-r` and rtkit's limits were not read (the box was busy).
+
+## Test, fixed before the runs
+
+- `chain0429.sh` (from exp 0428's chain by `mkrun0429.py`), one BOX-LOCK line per set, the private normal binary.
+  Each run: `run0429f.sh` (exp 0428's runner with exp0429 paths, and no JobArenaFix line in its private input.cfg),
+  slot 4, the named snapshot, RT on, the 14:50 record's gameplay at G, then exp 0379's walk, to G+600 s.
+- Arms, every run with `KYTY_BC5_0429_TRACE=1`: C none, P `PRIO_ORDER=1`, A `AFFINITY=1`, H `HANDOFF_US=300`, X all
+  three.
+- Sets: `smoke` h429X1; `screen` h429C1 h429X2 h429P1 h429A1 h429H1 h429C2 h429X3 h429P2 h429A2 h429H2; `rep<k>` the
+  survivors with controls between.
+- A crash at the site (TARGET) or a GPU line (KERNEL) does not stop the chain. Stops: a real pad key, a STOP file
+  (`~/bc5-work/exp0429/STOP`), any other class, a second NOT_ROUTED.
+- **Rule** (`check0429.py`): an arm is OUT at its first TARGET; it survives a set when every counted run (NO_CRASH to
+  G+600) is clean. KERNEL and NOT_ROUTED runs are not counted and are listed. A form goes to the shared swap only after
+  repeated sets with no TARGET while the control keeps crashing; the counts are reported as counts (R13). Since the bug
+  is the title's, a clean form lowers the rate; it cannot prove the crash gone.
+
+## Shared files that name the workaround (read 2026-11-16 21:20)
+
+Only `~/bc5-work/input.cfg` line 3, `JobArenaFix.PPSA03671=off`. The three launchers (`play-pkg.sh`, `play-astro.sh`,
+`play-any.sh`) and the words files under `exp0413/n` do not name it. The experiment runners' directories were not read
+(an emulator started). With the new build the line is ignored and dropped at the next save of input.cfg.
