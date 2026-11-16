@@ -26,9 +26,10 @@ WANT=$(cat "$W/exp0428/binary.md5"); MB=$(md5sum < "$BIN" | cut -d' ' -f1)
 case "$SET" in
   smoke) TAGS="w428Q1" ;;
   smoke2) TAGS="w428Q6" ;;  # iteration 2: busy-queue map, MEC indirect allowed, no inherit walk
-  long) TAGS="w428L4 w428L5 w428L6" ;;  # (w428L1 ran iteration 3: the arena crash at 228 s, JobArenaFix off; kept-without-split 0)  # iteration 3 (after the 15:09 hang): + BC5_DIRECT_ACB_SPLIT_LATE, fight then walk, G+1500
+  long) TAGS="w428L4 w428L5 w428L6" ;;
+  longab) TAGS="w428C5 w428L7 w428L8 w428C6 w428C7 w428L9" ;;  # iteration 5: one ring (C) against way 2 (L), fight + walk to G+1500, interleaved  # (w428L1 ran iteration 3: the arena crash at 228 s, JobArenaFix off; kept-without-split 0)  # iteration 3 (after the 15:09 hang): + BC5_DIRECT_ACB_SPLIT_LATE, fight then walk, G+1500
   series) TAGS="w428C1 w428Q2 w428Q3 w428C2 w428C3 w428Q4 w428Q5 w428C4" ;;
-  *) say "NOT STARTED, CHAIN_SET is smoke, smoke2, series or long"; exit 1 ;;
+  *) say "NOT STARTED, CHAIN_SET is smoke, smoke2, series, long or longab"; exit 1 ;;
 esac
 mkdir -p "$R" || exit 1
 for t in $TAGS; do { [ -e "$R/$t-start.txt" ] || [ -e "$R/$t-end.txt" ] || [ -e "$R/${t}R-start.txt" ]; } && { say "NOT STARTED, tag $t used"; exit 1; }; done
@@ -59,7 +60,7 @@ one() {  # tag. Sets CLASS; returns 1 when the chain must stop
   [ -e "$HERE/STOP" ] && { say "STOP: $HERE/STOP before $t"; return 1; }
   padon "$t"
   # shellcheck disable=SC2086
-  local play=120 walk=0 arena=""; [ "$SET" = long ] && { play=1500; walk=1; arena=on; }  # long: JobArenaFix on in the private copy (the GPU hang is the target)
+  local play=120 walk=0 arena=""; case "$SET" in long | longab) play=1500; walk=1; arena=on ;; esac  # long: JobArenaFix on in the private copy (the GPU hang is the target)
   line=$(N_ARENA=$arena N_WALK_AFTER=$walk N_SLOT=4 P_BIN=$BIN P_WANT=$WANT P_WORDS=$WORDS bash "$HERE/run0428f.sh" "$t" "${t:4:1}" "$play" $aw | grep "^$t ")
   padoff "$t"
   CLASS=$(printf '%s\n' "$line" | sed -n 's/.*; CLASS \([A-Z_]*\);.*/\1/p')
@@ -69,6 +70,7 @@ one() {  # tag. Sets CLASS; returns 1 when the chain must stop
   [ "$PADN" = 0 ] || { say "STOP: a real pad key in $t (the maintainer is at the box)"; return 1; }
   case "${CLASS:-NONE}" in
     NO_CRASH | NOT_ROUTED) return 0 ;;
+    KERNEL) [ "$SET" = longab ] && return 0; say "STOP: $t is KERNEL"; return 1 ;;  # longab counts hangs per arm; a failed reset ends the chain by itself
     *) say "STOP: $t is ${CLASS:-NONE}"; return 1 ;;
   esac
 }

@@ -280,13 +280,15 @@ static std::atomic<uint64_t> g_w428_two[5] = {}; // exp 0428 (tag w428c): dcb wa
 #ifndef BC5_LEAN
 static std::atomic<uint64_t> g_w428_late[4] = {}; // exp 0428 iteration 4: still split; kept: writer on a ring, written earlier in the IB, on a ring after the chain went
 #endif
-// Exp 0428 iteration 4: does this IB write the wait's label before dword `at` with a value that satisfies the wait? The
-// last such write counts. WRITE_DATA (0x37: control, address lo, hi, data...) and RELEASE_MEM (0x49: event, DATA_SEL in
-// bits 31:29 of dword 2 (1: 32-bit, 2: 64-bit), address lo, hi, data lo, hi), as the unit's own label scans read them;
-// a RELEASE_MEM with another DATA_SEL or anything not followed (INDIRECT_BUFFER) makes the answer "no".
+// Exp 0428 iterations 4-5: does this IB write the wait's label before dword `at` with a value that satisfies the wait? The
+// last such write counts. The packets and fields are exactly register_label_writes' (exp 0055), which decides "kept for the
+// GPU" once a job is submitted: top-level RELEASE_MEM 0x49 (DATA_SEL dword 2 bits 31:29, address 3/4, data 5/6),
+// EVENT_WRITE_EOP 0x47 (DATA_SEL dword 3, address 2/3, data 4/5) and WRITE_DATA 0x37 to memory (DST_SEL dword 1 bits 11:8 =
+// 1, 2 or 5; address 2/3, data from 4); IB2s are not followed, as register does not follow them (iteration 4 gave up at
+// the first IB2, and w428L4 kept none). A RELEASE_MEM / EOP with another DATA_SEL is not a write here, as there.
 static bool w428_ib_writes_satisfy(const uint32_t* ib, uint32_t at, const uint32_t* p, bool is64) {
 	const uint64_t a     = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
-	bool           found = false, known = false;
+	bool           found = false, known = true;
 	uint64_t       v     = 0;
 	for (uint32_t k = 0; k < at;) {
 		const uint32_t h = ib[k], t = h >> 30u;
@@ -298,16 +300,22 @@ static bool w428_ib_writes_satisfy(const uint32_t* ib, uint32_t at, const uint32
 		if (k + lk > at) break;
 		if (t == 3) {
 			const uint32_t  op = (h >> 8u) & 0xffu;
-			const uint32_t* q  = ib + k;
-			if (op == 0x3f || op == 0x33) return false; // an IB2 may write it: not followed
-			if (op == 0x37 && lk >= 5 && ((q[2] & ~3u) | (static_cast<uint64_t>(q[3] & 0xffffu) << 32u)) == a) {
-				found = known = true;
-				v             = q[4] | (lk >= 6 ? static_cast<uint64_t>(q[5]) << 32u : 0ull);
-			} else if (op == 0x49 && lk >= 7 && ((q[3] & ~3u) | (static_cast<uint64_t>(q[4] & 0xffffu) << 32u)) == a) {
-				const uint32_t ds = q[2] >> 29u;
-				found             = true;
-				known             = ds == 1 || ds == 2;
-				v                 = q[5] | (ds == 2 ? static_cast<uint64_t>(q[6]) << 32u : 0ull);
+			const uint32_t* w  = ib + k;
+			auto addr = [w](int lo, int hi) { return (static_cast<uint64_t>(w[lo]) & ~3ull) | (static_cast<uint64_t>(w[hi] & 0xffffu) << 32u); };
+			if (op == 0x49 && lk >= 8 && addr(3, 4) == a) {
+				const uint32_t ds = w[2] >> 29u;
+				if (ds == 1) { found = true; v = w[5]; }
+				if (ds == 2) { found = true; v = w[5] | (static_cast<uint64_t>(w[6]) << 32u); }
+			} else if (op == 0x47 && lk >= 6 && addr(2, 3) == a) {
+				const uint32_t ds = w[3] >> 29u;
+				if (ds == 1) { found = true; v = w[4]; }
+				if (ds == 2) { found = true; v = w[4] | (static_cast<uint64_t>(w[5]) << 32u); }
+			} else if (op == 0x37 && lk >= 5 && addr(2, 3) == a) {
+				const uint32_t dst = (w[1] >> 8u) & 0xfu;
+				if (dst == 1 || dst == 2 || dst == 5) {
+					found = true;
+					v     = lk >= 6 ? (w[4] | (static_cast<uint64_t>(w[5]) << 32u)) : w[4];
+				}
 			}
 		}
 		k += lk;

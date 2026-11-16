@@ -31,6 +31,19 @@ def main():
     rs, st = rows(sys.argv[2]), sys.argv[3]
     for r in rs:
         print("row %-9s arm %s %-12s fps %s gaps %s" % (r["tag"], r["arm"], r["cls"], r["fps"], r["gaps"]))
+    if st == "longab":  # iteration 5: one ring (C) against way 2 (L), 3 + 3 long runs; descriptive (R13)
+        import statistics as S
+        c = [r for r in rs if r["arm"] == "C"]; l = [r for r in rs if r["arm"] == "L"]
+        hc = sum(1 for r in c if r["cls"] == "KERNEL"); hl = sum(1 for r in l if r["cls"] == "KERNEL")
+        other = [r for r in rs if r["cls"] not in ("NO_CRASH", "KERNEL", "NOT_ROUTED")]
+        if len(c) < 3 or len(l) < 3:
+            print("RULE longab: OPEN (%d C, %d L rows)" % (len(c), len(l))); return 0
+        fc = [r["fps"] for r in c if r["fps"] is not None]; fl = [r["fps"] for r in l if r["fps"] is not None]
+        mc = S.median(fc) if fc else 0; ml = S.median(fl) if fl else 0
+        ok = hl <= hc and ml >= mc - 0.5 and not other
+        print("RULE longab: COMPLETE; hangs C %d of %d, L %d of %d; median flips/s C %.2f, L %.2f; other classes: %s; L not worse %s" % (hc, len(c), hl, len(l), mc, ml, ", ".join(r["tag"] + " " + r["cls"] for r in other) or "none", "HOLDS" if ok else "FAILS"))
+        print("(descriptive, R13: 3 runs per arm cannot measure a rare hang's rate)")
+        return 0
     if st == "long":  # iteration 3: PASS if every L row is NO_CRASH (the counters' split check is read beside it, README)
         l = [r for r in rs if r["arm"] == "L"]
         ok = len(l) == 3 and all(r["cls"] == "NO_CRASH" for r in l)
