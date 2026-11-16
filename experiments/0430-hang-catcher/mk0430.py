@@ -4,6 +4,7 @@
 # The base is patch a8717e53's unit (md5 0cda79b5, the same file as exp 0428's swap). Every anchor must match exactly
 # once, or nothing is written. Three switches, normal build only (BC5_DIAG_ENV, nullptr in the lean build):
 #   BC5_0430_DJ=1        (b) per-ring in-memory dispatch journal, written to files at a stall, a timeout
+#   BC5_0430_TABLES=1    (f) with BC5_0430_TABLE_PGMS=<hex list>: 256 B at those dispatches' ud4-5 table, copied at submit
 #   BC5_0430_ARGS=1      (c) indirect dispatch arguments read at submit: garbage triples journaled ("args0430:")
 #   BC5_0430_SNAP=1      (e) with each dump, 4 KiB at the user-data pointers and argument pages of the stalled submission
 #   BC5_0430_WAVES_MS=n  (a) at a completion wait of n ms (>= 500), one `umr -O halt_waves -wa none` (the exact
@@ -87,6 +88,8 @@ inline void commit(int qring, uint64_t n, std::vector<Rec>& recs) {
 }
 inline bool snap_on();
 inline void snap(int k, const std::vector<Rec>& last);
+inline bool tables_on();
+inline void tab_dump(int k, uint64_t n);
 inline std::string out_dir() {
 	return g_dump_dir.empty() ? std::string(std::getenv("HOME") ? std::getenv("HOME") : ".") + "/bc5-work" : g_dump_dir;
 }
@@ -120,6 +123,7 @@ inline void dump(const char* why, uint64_t n, const char* kind) {
 	std::fclose(f);
 	journal("dj430: %s: the dispatch journal written to %s\n", why, name);
 	if (snap_on()) snap(k, last);
+	if (tables_on()) tab_dump(k, n);
 }
 // (a) the wave reader is a helper shell spawned when the watchdog starts, while the GPU is healthy: a process forked at the
 // stall blocks in its exec, because closing the close-on-exec DRM fd runs amdgpu's flush, which waits for the hung jobs
@@ -207,6 +211,98 @@ inline void snap(int k, const std::vector<Rec>& mine) {
 	std::fclose(f);
 	std::fclose(b);
 }
+// (f) BC5_0430_TABLES=1 with BC5_0430_TABLE_PGMS=<hex list>: for every dispatch of a listed program, the 256 bytes at its
+// user data 4-5 (the BVH passes' per-object table, h430S1) are copied at submit into a ring of the last kTabN. At each dump,
+// tab0430-<k>.txt lists, for every table address the stalled submission named, each copy the ring holds (earlier frames
+// first, then this submission's) and the bytes there now: whether the descriptor was already wrong at submit, and since
+// which submission. A copy at submit is what the CPU sees then; a GPU writer later in the same submission is not in it.
+struct Tab {
+	uint64_t n    = 0;
+	uint64_t pgm  = 0;
+	uint64_t addr = 0;
+	uint32_t q    = 0;
+	uint8_t  ok   = 0;
+	char     kind[8] {};
+	uint32_t w[64] {};
+};
+constexpr uint32_t kTabN = 16384;
+inline bool        tables_on() {
+	static const bool v = BC5_DIAG_ENV("BC5_0430_TABLES") != nullptr;
+	return v;
+}
+inline const std::set<uint64_t>& table_pgms() {
+	static const std::set<uint64_t> v = [] {
+		std::set<uint64_t> r;
+		if (const char* e = BC5_DIAG_ENV("BC5_0430_TABLE_PGMS"); e != nullptr) {
+			for (const char* c = e; *c != 0;) {
+				char*          end = nullptr;
+				const uint64_t x   = std::strtoull(c, &end, 16);
+				if (end == c) break;
+				r.insert(x);
+				c = (*end == ',') ? end + 1 : end;
+			}
+		}
+		return r;
+	}();
+	return v;
+}
+struct TabRing {
+	std::mutex       m;
+	std::vector<Tab> r;
+	uint64_t         total = 0;
+};
+inline TabRing& tabs() {
+	static TabRing t;
+	return t;
+}
+inline void tab_commit(uint64_t n, std::vector<Tab>& v) {
+	if (v.empty()) return;
+	TabRing&        g = tabs();
+	std::lock_guard lk(g.m);
+	if (g.r.size() != kTabN) g.r.assign(kTabN, Tab {});
+	for (Tab& t: v) {
+		t.n                  = n;
+		g.r[g.total % kTabN] = t;
+		g.total++;
+	}
+	v.clear();
+}
+inline void tab_dump(int k, uint64_t n) {
+	std::vector<Tab> all;
+	{
+		TabRing&        g = tabs();
+		std::lock_guard lk(g.m);
+		if (g.r.size() != kTabN) return;
+		for (uint64_t i = g.total > kTabN ? g.total - kTabN : 0; i < g.total; i++) all.push_back(g.r[i % kTabN]);
+	}
+	std::set<uint64_t> named;
+	for (const Tab& t: all)
+		if (t.n == n) named.insert(t.addr);
+	char name[640];
+	std::snprintf(name, sizeof(name), "%s/tab0430-%d.txt", out_dir().c_str(), k);
+	FILE* f = std::fopen(name, "w");
+	if (f == nullptr) return;
+	std::fprintf(f, "tab0430 %d at t %.3f s: submission #%" PRIu64 " named %zu table addresses; per address every copy at submit the ring holds (%zu copies in all), then the bytes now\n", k, timing_now(), n,
+	             named.size(), all.size());
+	uint32_t now[64];
+	for (const uint64_t a: named) {
+		std::fprintf(f, "table 0x%" PRIx64 ":\n", a);
+		for (const Tab& t: all) {
+			if (t.addr != a) continue;
+			std::fprintf(f, "  at submit #%" PRIu64 " %s %u pgm 0x%" PRIx64 "%s:", t.n, t.kind, t.q, t.pgm, t.ok != 0 ? "" : " (not readable at submit)");
+			for (uint32_t w = 0; w < 64 && t.ok != 0; w++) std::fprintf(f, " %08x", t.w[w]);
+			std::fputc('\n', f);
+		}
+		struct iovec  l {now, sizeof(now)}, r {reinterpret_cast<void*>(a), sizeof(now)};
+		const ssize_t got = process_vm_readv(getpid(), &l, 1, &r, 1, 0);
+		std::fprintf(f, "  now:");
+		for (ssize_t w = 0; w < got / 4; w++) std::fprintf(f, " %08x", now[w]);
+		std::fprintf(f, "%s\n", got <= 0 ? " unreadable" : "");
+	}
+	std::fflush(f);
+	fsync(fileno(f));
+	std::fclose(f);
+}
 struct Wait {
 	std::atomic<uint64_t>    since {0};
 	std::atomic<uint64_t>    n {0};
@@ -279,6 +375,8 @@ EDITS = [
     ("\tconst bool             catch_on = table_catcher_on(); // experiment 0401 series e: the table catcher's slots of this buffer\n",
      "\tstatic thread_local std::vector<dj430::Rec> dj_recs; // exp 0430 (tag dj430): this buffer's dispatches, committed with its number\n"
      "\tdj_recs.clear();\n"
+     "\tstatic thread_local std::vector<dj430::Tab> dj_tabs; // exp 0430 (f)\n"
+     "\tdj_tabs.clear();\n"
      "\tconst bool             catch_on = table_catcher_on(); // experiment 0401 series e: the table catcher's slots of this buffer\n"),
     ("\t\t\tif (type == 3 && (op == 0x15 || op == 0x16)) flat_aperture_fix(pgm, *maps_p); // experiment 0190\n",
      "\t\t\tif (type == 3 && (op == 0x15 || op == 0x16)) flat_aperture_fix(pgm, *maps_p); // experiment 0190\n"
@@ -312,10 +410,23 @@ EDITS = [
      "\t\t\t\t\t}\n"
      "\t\t\t\t}\n"
      "\t\t\t\tif (dj430::on()) dj_recs.push_back(x);\n"
+     "\t\t\t\tif (dj430::tables_on() && dj430::table_pgms().count(pgm) != 0) { // (f): the table at submit\n"
+     "\t\t\t\t\tdj430::Tab t;\n"
+     "\t\t\t\t\tt.pgm  = pgm;\n"
+     "\t\t\t\t\tt.q    = q;\n"
+     "\t\t\t\t\tt.addr = ud[4] | (static_cast<uint64_t>(ud[5] & 0xffffu) << 32u);\n"
+     "\t\t\t\t\tstd::snprintf(t.kind, sizeof(t.kind), \"%s\", kind);\n"
+     "\t\t\t\t\tif (t.addr != 0 && covered_sorted(*maps_p, t.addr, sizeof(t.w))) {\n"
+     "\t\t\t\t\t\tconst auto* tw = reinterpret_cast<const volatile uint32_t*>(t.addr);\n"
+     "\t\t\t\t\t\tfor (uint32_t w = 0; w < 64; w++) t.w[w] = tw[w];\n"
+     "\t\t\t\t\t\tt.ok = 1;\n"
+     "\t\t\t\t\t}\n"
+     "\t\t\t\t\tdj_tabs.push_back(t);\n"
+     "\t\t\t\t}\n"
      "\t\t\t}\n"),
     # the commit, with the submission's number
     ("\tconst uint64_t n = g_submits.fetch_add(1);\n\t// Crash journal: a hang takes the machine down before any buffered log reaches the disk, so\n",
-     "\tconst uint64_t n = g_submits.fetch_add(1);\n\tif (dj430::on()) dj430::commit(qring, n, dj_recs); // exp 0430 (tag dj430)\n"
+     "\tconst uint64_t n = g_submits.fetch_add(1);\n\tif (dj430::on()) dj430::commit(qring, n, dj_recs); // exp 0430 (tag dj430)\n\tif (dj430::tables_on()) dj430::tab_commit(n, dj_tabs); // exp 0430 (f)\n"
      "\t// Crash journal: a hang takes the machine down before any buffered log reaches the disk, so\n"),
 ]
 
