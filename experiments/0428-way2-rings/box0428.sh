@@ -2,7 +2,7 @@
 # BC5 experiment 0428, on the box (exp 0425's box0425.sh, adapted). The top session's GO for the whole way-2 chain, 2026-11-16.
 #   box0428.sh claim [what] [minutes]  takes BOX-LOCK as coordination/d19/d19box.sh does: the line appears by a hard link
 #   box0428.sh build      private test build: the unit bc5LleAgc.cpp of the shared tree (patch 700fd4c2, md5 3e847e03)
-#                         edited by mk0428.py (md5 40f01680), compiled with the shared normal build's command and relinked
+#                         edited by mk0428.py (md5 e72f4ef2), compiled with the shared normal build's command and relinked
 #                         with the shared objects otherwise (CPU only, nice 19); writes ~/bc5-work/exp0428/kyty_emulator
 #                         and binary.md5
 #   box0428.sh release    clears the lock only if it holds this experiment's exact line
@@ -65,7 +65,7 @@ build() {
     cp "$BASE" "$S/$U" || stop "copy $U"
     python3 -I "$HERE/mk0428.py" "$S" > "$R/mk.out" 2>&1 || { cat "$R/mk.out"; stop "mk0428.py refused"; }
     cat "$R/mk.out"
-    [ "$(m8 "$S/$U")" = 40f01680 ] || stop "the edited unit is $(m8 "$S/$U"), not the laptop's 40f01680"
+    [ "$(m8 "$S/$U")" = e72f4ef2 ] || stop "the edited unit is $(m8 "$S/$U"), not the laptop's e72f4ef2"
     distrobox enter ubuntu -- sh -c "cd '$B' && ninja -t compdb -x" > "$E/compdb.json" 2> "$R/compdb.err" < /dev/null || stop "compdb failed"
     bin=$E/kyty_emulator
     [ -f "$bin" ] && mv "$bin" "$bin.$(m8 "$bin")"

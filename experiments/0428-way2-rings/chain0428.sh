@@ -26,7 +26,7 @@ WANT=$(cat "$W/exp0428/binary.md5"); MB=$(md5sum < "$BIN" | cut -d' ' -f1)
 case "$SET" in
   smoke) TAGS="w428Q1" ;;
   smoke2) TAGS="w428Q6" ;;  # iteration 2: busy-queue map, MEC indirect allowed, no inherit walk
-  long) TAGS="w428L1 w428L2 w428L3" ;;  # iteration 3 (after the 15:09 hang): + BC5_DIRECT_ACB_SPLIT_LATE, fight then walk, G+1500
+  long) TAGS="w428L4 w428L5 w428L6" ;;  # (w428L1 ran iteration 3: the arena crash at 228 s, JobArenaFix off; kept-without-split 0)  # iteration 3 (after the 15:09 hang): + BC5_DIRECT_ACB_SPLIT_LATE, fight then walk, G+1500
   series) TAGS="w428C1 w428Q2 w428Q3 w428C2 w428C3 w428Q4 w428Q5 w428C4" ;;
   *) say "NOT STARTED, CHAIN_SET is smoke, smoke2, series or long"; exit 1 ;;
 esac
@@ -38,7 +38,7 @@ armwords() {
   case "$1" in
     w428C*) echo "BC5_DIRECT_ACB_RINGS=0 BC5_DIRECT_ACB_QUEUE_STATE=0" ;;
     w428Q*) echo "BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_INDIRECT=1 BC5_DIRECT_ACB_STATE_NO_WALK=1" ;;
-    w428L*) echo "BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_INDIRECT=1 BC5_DIRECT_ACB_STATE_NO_WALK=1 BC5_DIRECT_ACB_SPLIT_LATE=1" ;;
+    w428L*) echo "BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_INDIRECT=1 BC5_DIRECT_ACB_STATE_NO_WALK=1 BC5_DIRECT_ACB_SPLIT_LATE=2" ;;
     *) return 1 ;;
   esac
 }
@@ -59,8 +59,8 @@ one() {  # tag. Sets CLASS; returns 1 when the chain must stop
   [ -e "$HERE/STOP" ] && { say "STOP: $HERE/STOP before $t"; return 1; }
   padon "$t"
   # shellcheck disable=SC2086
-  local play=120 walk=0; [ "$SET" = long ] && { play=1500; walk=1; }
-  line=$(N_WALK_AFTER=$walk N_SLOT=4 P_BIN=$BIN P_WANT=$WANT P_WORDS=$WORDS bash "$HERE/run0428f.sh" "$t" "${t:4:1}" "$play" $aw | grep "^$t ")
+  local play=120 walk=0 arena=""; [ "$SET" = long ] && { play=1500; walk=1; arena=on; }  # long: JobArenaFix on in the private copy (the GPU hang is the target)
+  line=$(N_ARENA=$arena N_WALK_AFTER=$walk N_SLOT=4 P_BIN=$BIN P_WANT=$WANT P_WORDS=$WORDS bash "$HERE/run0428f.sh" "$t" "${t:4:1}" "$play" $aw | grep "^$t ")
   padoff "$t"
   CLASS=$(printf '%s\n' "$line" | sed -n 's/.*; CLASS \([A-Z_]*\);.*/\1/p')
   fps=$(printf '%s\n' "$line" | sed -n 's/.*; \([0-9.]*\) flips\/s over .*/\1/p'); gaps=$(printf '%s\n' "$line" | sed -n 's/.*s, \([0-9]*\) s with a gap over 100 ms.*/\1/p')

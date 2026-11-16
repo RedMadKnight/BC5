@@ -98,7 +98,11 @@ trap cleanup EXIT
 trap 'echo "$(date "+%F %T") $TAG aborted" >> "$R/saves.txt"; exit 1' HUP INT TERM
 # 1. The private input configuration (RT on, JobArenaFix OFF: exp 0425) and the private learned file.
 CFG=$N/input-$TAG.cfg
-{ grep -v -i "^RayTracing\.PPSA03671=" "$W/input.cfg"; echo "RayTracing.PPSA03671=on"; } > "$CFG" || exit 1  # exp 0428: JobArenaFix as the shared input.cfg has it
+if [ -n "${N_ARENA:-}" ]; then  # exp 0428: N_ARENA=on|off sets JobArenaFix in this private copy only
+  { grep -v -i -e '^RayTracing\.PPSA03671=' -e '^JobArenaFix\.PPSA03671=' "$W/input.cfg"; echo "RayTracing.PPSA03671=on"; echo "JobArenaFix.PPSA03671=$N_ARENA"; } > "$CFG" || exit 1
+else  # exp 0428: JobArenaFix as the shared input.cfg has it
+  { grep -v -i '^RayTracing\.PPSA03671=' "$W/input.cfg"; echo "RayTracing.PPSA03671=on"; } > "$CFG" || exit 1
+fi
 cp -pf "$LEARN_SRC" "$LEARN" && chmod u+w "$LEARN" || exit 1  # exp 0417: the source may be read-only
 # 2. The derived launcher: four lines changed and one added, checked by anchor and by diff size.
 cp "$LAUNCH_SRC" "$LAUNCH" || exit 1

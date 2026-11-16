@@ -183,23 +183,46 @@ f.sub("""					// Run 123: the compute queue's blocked buffer waits for a
 					// goes at once (its label writes may be what the compute queue waits for), then the wait is kept for the GPU as soon
 					// as its writer is on a ring, or satisfied on the CPU, within 8 ms; otherwise the path below and its limit.
 					if (w428_rings() > 0 && on_game_thread() && std::strcmp(kind, "dcb") == 0 && (!g_dev || !g_dev->wedged()) && !wait_satisfied(p, op == 0x93)) {
-						// exp 0428 iteration 3 (BC5_DIRECT_ACB_SPLIT_LATE, std::getenv: lean too): the 15:09 hang of the maintainer's
-						// play (GE stall at a partial flush, all compute rings idle) was in a split piece behind a full state prefix, and
-						// iteration 2 split ~18 k times per run although ~97 % of those waits were then kept for the GPU anyway. With the
-						// switch, a wait whose writer is already on a ring is kept at once, with no split: the head before it is in the
-						// same IB, so it runs first and its label writes land before the wait blocks the ME. Split only otherwise.
-						static const bool split_late = [] {
+						// exp 0428 iterations 3-4 (BC5_DIRECT_ACB_SPLIT_LATE, std::getenv: lean too). The 15:09 hang of the maintainer's play
+						// (a GE stall at a partial flush, all compute rings idle) was in a split piece behind a full state prefix, and
+						// iteration 2 split ~18 k times per run although ~97 % of those waits were kept for the GPU right after. Iteration
+						// 3 (=1) kept a wait whose writer was already on a ring: 0 such waits in w428L1 (17,591 splits), so the writer is the
+						// thread's own earlier GFX work, held in its chain or earlier in this IB, which reaches a ring only with the split.
+						// Iteration 4 (=2): (a) this IB writes the label before the wait (WRITE_DATA, or RELEASE_MEM with 32/64-bit data)
+						// with a value that satisfies it: the GFX ring runs that write first, so the wait is kept with no split and no
+						// flush; (b) else the thread's held chain (its earlier buffers) is submitted, with no split of this buffer, and the
+						// wait is kept if its writer is now on a ring. Only otherwise the split below. Both are in GPU order on one ring.
+						static const int split_late = [] {
 							const char* e = std::getenv("BC5_DIRECT_ACB_SPLIT_LATE");
-							return e != nullptr && e[0] != 0 && std::strcmp(e, "0") != 0;
+							return e != nullptr && e[0] != 0 ? std::atoi(e) : 0;
 						}();
-						if (split_late && ring_will_satisfy(p, op == 0x93, bc5::direct::kGfxRing)) {
+						if (split_late >= 1) {
+							int how = 0; // 1 writer on a ring, 2 written earlier in this IB, 3 writer on a ring after the chain went
+							if (ring_will_satisfy(p, op == 0x93, bc5::direct::kGfxRing)) how = 1;
+							else if (split_late >= 2 && w428_ib_writes_satisfy(ib, i, p, op == 0x93)) how = 2;
+							else if (split_late >= 2) {
+								chain_flush(1); // ADR 0010: the thread's earlier buffers go; this one is not split
+								if (ring_will_satisfy(p, op == 0x93, bc5::direct::kGfxRing)) how = 3;
+							}
+							if (how != 0) {
 #ifndef BC5_LEAN
-							g_w428_two[4]++;
+								g_w428_two[4]++;
+								g_w428_late[how]++;
 #endif
-							t_keep_waits.push_back(p);
-							SoftCp::set_gpu_executed(p, len, {0});
-							i += len;
-							continue;
+								t_keep_waits.push_back(p);
+								SoftCp::set_gpu_executed(p, len, {0});
+								i += len;
+								continue;
+							}
+#ifndef BC5_LEAN
+							g_w428_late[0]++;
+							static std::atomic<uint32_t> n_left {0};
+							if (n_left++ < 40) {
+								char pend[160];
+								describe_pending(label, pend, sizeof(pend));
+								journal("two rings (exp 0428 split-late): %s %u dwords, wait at %u on 0x%" PRIx64 " still splits: %s\n", kind, num_dwords, i, label, pend);
+							}
+#endif
 						}
 						bool split = false;
 						if (dry_here && i > start) {
@@ -254,6 +277,58 @@ f.sub("""static std::atomic<uint64_t> g_full_pieces {0}, g_full_ok {0}, g_full_f
 #ifndef BC5_LEAN
 static std::atomic<uint64_t> g_w428_two[5] = {}; // exp 0428 (tag w428c): dcb waits on two rings: kept for the GPU, satisfied, not served; heads split; kept with no split (iteration 3)
 #endif
+#ifndef BC5_LEAN
+static std::atomic<uint64_t> g_w428_late[4] = {}; // exp 0428 iteration 4: still split; kept: writer on a ring, written earlier in the IB, on a ring after the chain went
+#endif
+// Exp 0428 iteration 4: does this IB write the wait's label before dword `at` with a value that satisfies the wait? The
+// last such write counts. WRITE_DATA (0x37: control, address lo, hi, data...) and RELEASE_MEM (0x49: event, DATA_SEL in
+// bits 31:29 of dword 2 (1: 32-bit, 2: 64-bit), address lo, hi, data lo, hi), as the unit's own label scans read them;
+// a RELEASE_MEM with another DATA_SEL or anything not followed (INDIRECT_BUFFER) makes the answer "no".
+static bool w428_ib_writes_satisfy(const uint32_t* ib, uint32_t at, const uint32_t* p, bool is64) {
+	const uint64_t a     = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
+	bool           found = false, known = false;
+	uint64_t       v     = 0;
+	for (uint32_t k = 0; k < at;) {
+		const uint32_t h = ib[k], t = h >> 30u;
+		uint32_t       lk = 1;
+		if (t == 3 || t == 0) {
+			const uint32_t c = (h >> 16u) & 0x3fffu;
+			lk               = c == 0x3fffu ? 1 : c + 2;
+		}
+		if (k + lk > at) break;
+		if (t == 3) {
+			const uint32_t  op = (h >> 8u) & 0xffu;
+			const uint32_t* q  = ib + k;
+			if (op == 0x3f || op == 0x33) return false; // an IB2 may write it: not followed
+			if (op == 0x37 && lk >= 5 && ((q[2] & ~3u) | (static_cast<uint64_t>(q[3] & 0xffffu) << 32u)) == a) {
+				found = known = true;
+				v             = q[4] | (lk >= 6 ? static_cast<uint64_t>(q[5]) << 32u : 0ull);
+			} else if (op == 0x49 && lk >= 7 && ((q[3] & ~3u) | (static_cast<uint64_t>(q[4] & 0xffffu) << 32u)) == a) {
+				const uint32_t ds = q[2] >> 29u;
+				found             = true;
+				known             = ds == 1 || ds == 2;
+				v                 = q[5] | (ds == 2 ? static_cast<uint64_t>(q[6]) << 32u : 0ull);
+			}
+		}
+		k += lk;
+	}
+	if (!found || !known) return false;
+	const uint32_t function = p[1] & 7u;
+	if (is64) {
+		const uint64_t ref = p[4] | (static_cast<uint64_t>(p[5]) << 32u), mask = p[6] | (static_cast<uint64_t>(p[7]) << 32u);
+		const uint64_t vm = v & mask, rm = ref & mask;
+		switch (function) {
+			case 1: return vm < rm;
+			case 2: return vm <= rm;
+			case 3: return vm == rm;
+			case 4: return vm != rm;
+			case 5: return vm >= rm;
+			case 6: return vm > rm;
+			default: return false;
+		}
+	}
+	return SoftCp::compare(function, static_cast<uint32_t>(v), p[5], p[4]);
+}
 """)
 
 # ---- 4. aq424 (exp 0424 mk0424.py 1a and 1b, unchanged) -----------------------------------------------------------------
@@ -338,9 +413,9 @@ f.sub("""	if (qring != bc5::direct::kGfxRing && (g_comp_jobs++ & 0xffffu) == 0) 
 			std::fprintf(stderr,
 			             "[bc5] exp 0428 (tag w428c): t %.1f s: jobs gfx %" PRIu64 " comp0 %" PRIu64 " comp1 %" PRIu64 " comp2 %" PRIu64 " comp3 %" PRIu64
 			             "; acbs kept on gfx:%s; queue->ring:%s; dcb waits on two rings: kept %" PRIu64 " satisfied %" PRIu64 " NOT served %" PRIu64
-			             " heads split %" PRIu64 " kept-without-split %" PRIu64 "; aq424 %s, parts given state %" PRIu64 ", parts with no tracked queue %" PRIu64 "; mec-indirect switch %s, acbs moved %" PRIu64 "\\n",
+			             " heads split %" PRIu64 " kept-without-split %" PRIu64 " (on a ring %" PRIu64 ", in the IB %" PRIu64 ", after the chain %" PRIu64 ", still split %" PRIu64 "); aq424 %s, parts given state %" PRIu64 ", parts with no tracked queue %" PRIu64 "; mec-indirect switch %s, acbs moved %" PRIu64 "\\n",
 			             timing_now(), jobs[4].load(), jobs[0].load(), jobs[1].load(), jobs[2].load(), jobs[3].load(), why.empty() ? " none" : why.c_str(),
-			             q.empty() ? " none" : q.c_str(), g_w428_two[0].load(), g_w428_two[1].load(), g_w428_two[2].load(), g_w428_two[3].load(), g_w428_two[4].load(),
+			             q.empty() ? " none" : q.c_str(), g_w428_two[0].load(), g_w428_two[1].load(), g_w428_two[2].load(), g_w428_two[3].load(), g_w428_two[4].load(), g_w428_late[1].load(), g_w428_late[2].load(), g_w428_late[3].load(), g_w428_late[0].load(),
 			             aq424_on() ? "ON" : "off", g_aq424_parts.load(), g_aq424_none.load(), w428_mec_ok() ? "ON" : "off", g_w428_mec_moved.load());
 		}
 	}
