@@ -14,7 +14,7 @@
 set -u
 ulimit -c 0
 export LC_ALL=C LANGUAGE=C
-W=$HOME/bc5-work; N=$W/exp0413/n; K=$HOME/src/KytyPlus; HERE=$(cd "$(dirname "$0")" && pwd); X=$W/exp0428/swap2; BASE=$W/exp0428/swap/bc5LleAgc.cpp.before-0428b
+W=$HOME/bc5-work; N=$W/exp0413/n; K=$HOME/src/KytyPlus; HERE=$(cd "$(dirname "$0")" && pwd); X=$W/exp0428/swap2; BASE=$W/exp0428/swap/bc5LleAgc.cpp.before-0428
 NB=$W/kytyplus-build/src/kyty_emulator; LB=$W/kytyplus-build-lean/src/kyty_emulator; ARCH=$W/backend-ubuntu/libbc5_backend.a
 U1=$K/src/libs/bc5LleAgc.cpp; U2=$K/src/bc5/switch_defaults.hpp
 PIN_OLD=2c82a979; NORMAL_OLD=3f22e0e1; LEAN_OLD=35a3753d; U1_OLD=f16eb3f3; U2_OLD=3b41711e; U1_NEW=0cda79b5; U2_NEW=554e0139
