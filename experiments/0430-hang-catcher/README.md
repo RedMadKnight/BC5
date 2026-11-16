@@ -304,3 +304,28 @@ whole writer job completes; the console's wait ends at the release write inside 
 at dword 19839 of 33286). Proposed to the top session: an A/B of F2 alone, then F3, a precise form with a host shadow
 slot written right after the writer's release and the waiter's wait redirected to it on the GPU (like exp 0341's
 `bc5/shadow_labels.hpp`, but across jobs; a backend change).
+
+## Build 5 (`a90ec52f`, unit `96920f82`): F3, the missing acquire; W1 and X1
+
+`ho430.cpp` gains **F3** (`BC5_0430_F3`, on unless "0"), with the top session's guards. It keeps a runtime set of
+cross-queue labels, in memory only: a label a buffer waited on with == V while a job on another ring had a pending
+write of V. At the submit of a buffer that releases such a label while the label already holds V (the stale case of
+the 21:38 hang), the host first sets it to the last other value a wait saw (else V xor 1). No preset when the release
+may not run (a COND_EXEC range, the host's drops, the label not mapped), when the buffer waits on the label itself, or
+when any job in flight still writes the label or holds a kept wait on it; F2 is the fallback there and for labels seen
+first. Every wait that meets a preset label before its release is counted. `BC5_0430_G_AT=<s>` dumps G once at that
+time. The chain's `CATCH=0` arm runs the fix alone (F3, F2, the timeout probe; G and every catcher off).
+
+**h430W1** (22:42:46, CATCH=0): NO_CRASH to G+1500, 0 kernel lines; **46.7 flips/s** over 1603 s, 15 s with a gap over
+100 ms, longest 264 ms (h430R1, build 1 with catchers and without the fix: 43.8, 13 s, 869 ms; one run each, R13).
+GFX side (w428c at 1601 s): dcb two-ring waits not served 0, timeout splits 518. F3 preset 186 times by ~8 min; F2
+waited about 14,300 times. So V1's −18 % came mostly from the catchers.
+
+**h430X1** (23:20:29, every catcher, G at 300 s), the label history (`gan.py` over `g0430-90.txt`; 32,768 events over
+0.58 s, 25 labels waited on): the cross-queue labels are released by GPU RELEASE_MEMs of 0 (0x12004b37c8 and 0x12004b77c8
+by the dcb, waited for by the acb; 0x12004b5c38 and 0x12004b6038 the other way round). Between releases the waiters see
+non-zero values (0x9076d6d8c, 0x907616589) that no registered GPU write and no host-dropped write carries (24 dropped
+writes in the window, none to these labels). **So the acquire is the title's CPU** marking the label busy; the host
+loses no packet. The 21:38 hang frame is one where that mark had not been made when the waiter arrived. F3 imitates
+the mark at the writer's submit; F2 holds a waiter while a writer job on another ring is pending (in this title the
+release then lands about 0.5 ms later).
