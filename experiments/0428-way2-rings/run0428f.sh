@@ -98,7 +98,11 @@ trap cleanup EXIT
 trap 'echo "$(date "+%F %T") $TAG aborted" >> "$R/saves.txt"; exit 1' HUP INT TERM
 # 1. The private input configuration (RT on, JobArenaFix OFF: exp 0425) and the private learned file.
 CFG=$N/input-$TAG.cfg
-{ grep -v -i "^RayTracing\.PPSA03671=" "$W/input.cfg"; echo "RayTracing.PPSA03671=on"; } > "$CFG" || exit 1  # exp 0428: JobArenaFix as the shared input.cfg has it
+if [ -n "${N_ARENA:-}" ]; then  # exp 0428: N_ARENA=on|off sets JobArenaFix in this private copy only
+  { grep -v -i -e '^RayTracing\.PPSA03671=' -e '^JobArenaFix\.PPSA03671=' "$W/input.cfg"; echo "RayTracing.PPSA03671=on"; echo "JobArenaFix.PPSA03671=$N_ARENA"; } > "$CFG" || exit 1
+else  # exp 0428: JobArenaFix as the shared input.cfg has it
+  { grep -v -i '^RayTracing\.PPSA03671=' "$W/input.cfg"; echo "RayTracing.PPSA03671=on"; } > "$CFG" || exit 1
+fi
 cp -pf "$LEARN_SRC" "$LEARN" && chmod u+w "$LEARN" || exit 1  # exp 0417: the source may be read-only
 # 2. The derived launcher: four lines changed and one added, checked by anchor and by diff size.
 cp "$LAUNCH_SRC" "$LAUNCH" || exit 1
@@ -170,7 +174,9 @@ else
   [ "$(md5sum < "/proc/$EP/exe" | cut -d' ' -f1)" = "$WANT" ] || ENDED="SETUP: the emulator is not md5 $WANT"
   for w in "${WORDS[@]}" "${EXTRA[@]}" "KYTY_BC5_SAVEDATA_DIR=$SDD" "BC5_DIRECT_LEARNED=$LEARN" "KYTY_BC5_INPUT_CONFIG=$CFG"; do envof "$EP" | grep -qxF -- "$w" || { ENDED="SETUP: the emulator's environment lacks $w"; break; }; done
   [ "$(readlink -f "/proc/$EP/cwd")" = "$(readlink -f "$WD")" ] || ENDED="SETUP: the emulator's working directory is not $WD"
-  setsid nohup bash "$X/wd0412.sh" "$EP" "$R/$TAG-watchdog.txt" "${N_WD_MIB:-300}" 60 > /dev/null 2>&1 < /dev/null &
+  if [ "${N_NOWD:-0}" = 1 ]; then echo "exp 0428: no memory watchdog (N_NOWD=1, diagnostics only)" > "$R/$TAG-watchdog.txt"
+  else setsid nohup bash "$X/wd0412.sh" "$EP" "$R/$TAG-watchdog.txt" "${N_WD_MIB:-300}" 60 > /dev/null 2>&1 < /dev/null &
+  fi
   CGC=/sys/fs/cgroup$(cut -d: -f3 "/proc/$EP/cgroup" 2> /dev/null | head -1); OK0=$(awk '$1 == "oom_kill" { print $2 }' "$CGC/memory.events" 2> /dev/null); OK0=${OK0:-0}
 fi
 gate() {
@@ -210,7 +216,7 @@ while [ -z "$ENDED" ] && [ $(($(date +%s) - T0)) -lt "$SECS" ]; do
     [ -n "$ENDED" ] && break
   fi
   if [ -n "$G" ] && [ "$WALKED" = 0 ] && [ "${N_NOWALK:-0}" = 1 ]; then WALKED=1; echo "route: no input after the load (N_NOWALK=1), $PLAY s from $NOW s" >> "$R/$TAG-start.txt"; fi   # exp 0412 section 64
-  if [ -n "$G" ] && [ "$WALKED" = 0 ]; then WALKED=1; cat "$PLAYCMD" >> "$CMD"; echo "route: the 14:50 record's gameplay ($(grep -c . "$PLAYCMD") lines) queued at $NOW s" >> "$R/$TAG-start.txt"; fi  # exp 0425
+  if [ -n "$G" ] && [ "$WALKED" = 0 ]; then WALKED=1; cat "$PLAYCMD" >> "$CMD"; echo "route: the 14:50 record's gameplay ($(grep -c . "$PLAYCMD") lines) queued at $NOW s" >> "$R/$TAG-start.txt"; [ "${N_WALK_AFTER:-0}" = 1 ] && echo "route: exp 0379's walk queued after it ($(wk) cycles; exp 0428 long set)" >> "$R/$TAG-start.txt"; fi  # exp 0425
   [ -n "$G" ] && [ "$NOW" -ge $((G + PLAY)) ] && break
   if sudo -n dmesg 2> /dev/null | tail -n +"$((ND + 1))" | grep -i amdgpu | grep -v -E '[A-Za-z_][A-Za-z0-9_.]*\+0x[0-9a-f]+/0x[0-9a-f]+' | grep -qi "timeout\|reset\|fault"; then
     sleep 25
