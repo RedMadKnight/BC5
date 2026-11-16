@@ -282,3 +282,25 @@ non-zero (the title's CPU, an earlier submission, or a packet the host dropped o
 GIVEN UP and CYCLE paths drop unsatisfied waits. Proposed to the top session: F2 (a wait on a label with a pending
 write from a not-yet-completed job on another ring is ordered after that job through a submit dependency) and catcher
 G (per-wait value, pending writes and decision at submit), waiting for the decision.
+
+## Build 4 (`85a77956`, unit `540d9d3d`): F2 and G, chain V
+
+`ho430.cpp` (tag ho430), applied by `mk0430.py` with four hooks: the wait in `submit_split`, the job's submit
+(`register_label_writes`), its completion (`forget_label_writes`) and the GIVEN UP / CYCLE line. **F2** (`BC5_0430_F2`,
+on unless "0"): a wait satisfied when the host looks, while a not-yet-completed job on another ring has a registered
+pending write to that label, waits on its own submitting thread until that job completes (at most 250 ms); refused when
+the writer job holds a kept GPU wait on a label this buffer writes (a cycle). **G** (`BC5_0430_G`, on unless "0"): a
+32k ring of label events (waits seen with value and pending writes, writes registered, writes the filter dropped, F2
+events, given-up and cycle drops), dumped as `g0430-<k>.txt` with each stall dump, and a count line every 30 s.
+
+**h430V1** (22:01:56, F2 + G + every catcher): NO_CRASH to G+1500, 0 kernel lines. At t 391 s: F2 waited 13,315 times
+(10.6 s in all, 0.8 ms on average, all acb waits for a GFX-ring job), cycles refused 0, bound reached 0. So "satisfied
+at submit with a pending GFX-ring write" is the normal case, about 34 a second (mostly label 0x12004b37c8). G: 16,049
+label writes dropped by the host's filter in 391 s; 2 given-up unsatisfied waits.
+
+**Cost (one run each, not separated):** 35.7 flips/s against 43.8 in h430R1 (build 1, the same route, without F2, G,
+the table copies and the snapshot), 118 s with a frame gap over 100 ms against 13. F2 as built holds the acb until the
+whole writer job completes; the console's wait ends at the release write inside it (dcb #1980428's RELEASE_MEM sits
+at dword 19839 of 33286). Proposed to the top session: an A/B of F2 alone, then F3, a precise form with a host shadow
+slot written right after the writer's release and the waiter's wait redirected to it on the GPU (like exp 0341's
+`bc5/shadow_labels.hpp`, but across jobs; a backend change).
