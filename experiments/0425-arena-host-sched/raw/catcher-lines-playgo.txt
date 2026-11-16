@@ -1,0 +1,297 @@
+f425C1 [bc5] exp 0425: C1 wake slice off (0 us)
+f425C1 [bc5] exp 0425: C3 direct wake off
+f425C1 [bc5] exp 0425 playgo: PlayGoInitialize call #1 on 'game-main'
+f425C1 [bc5] exp 0425: P3 call cost off (0 us)
+f425C1 [bc5] exp 0425 playgo: PlayGoOpen call #1 on 'game-main'
+f425C1 [bc5] exp 0425 playgo: PlayGoGetInstallChunkId call #1 on 'game-main'
+f425C1 [bc5] exp 0425 playgo: PlayGoGetChunkId call #1 on 'game-main'
+f425C1 [bc5] exp 0425 playgo: PlayGoGetLocus call #1 on 'game-main'
+f425C1 [bc5] exp 0425: P1 locus off (local fast)
+f425C1 [bc5] exp 0425 playgo: PlayGoPrefetch call #1 on 'game-main'
+f425C1 [bc5] exp 0425: P2 prefetch delay off (0 ms)
+f425C1 [bc5] exp 0425: C2 handoff off (0 us)
+f425C1 [bc5] exp 0425 catch sum: owner calls 1, with Hi pending 1; crash-type 0, with Hi pending 0; Hi readied 71353
+f425C1 [bc5] exp 0425 catch sum: owner calls 2000, with Hi pending 1521; crash-type 0, with Hi pending 0; Hi readied 213656
+f425C1 [bc5] exp 0425 catch sum: owner calls 4000, with Hi pending 2973; crash-type 0, with Hi pending 0; Hi readied 364539
+f425C1 [bc5] exp 0425 catch sum: owner calls 6000, with Hi pending 4462; crash-type 0, with Hi pending 0; Hi readied 501207
+f425C1 [bc5] exp 0425 catch sum: owner calls 8000, with Hi pending 5937; crash-type 0, with Hi pending 0; Hi readied 609917
+f425C1 [bc5] exp 0425 catch sum: owner calls 10000, with Hi pending 7413; crash-type 0, with Hi pending 0; Hi readied 713382
+f425C1 [bc5] exp 0425 catch sum: owner calls 12000, with Hi pending 8940; crash-type 0, with Hi pending 0; Hi readied 813704
+f425C1 [bc5] exp 0425 catch sum: owner calls 14000, with Hi pending 10415; crash-type 0, with Hi pending 0; Hi readied 919152
+f425C1 [bc5] exp 0425 catch sum: owner calls 16000, with Hi pending 11915; crash-type 0, with Hi pending 0; Hi readied 1024167
+f425L1 [bc5] exp 0425: C1 wake slice off (0 us)
+f425L1 [bc5] exp 0425: C3 direct wake off
+f425L1 [bc5] exp 0425 playgo: PlayGoInitialize call #1 on 'game-main'
+f425L1 [bc5] exp 0425: P3 call cost off (0 us)
+f425L1 [bc5] exp 0425 playgo: PlayGoOpen call #1 on 'game-main'
+f425L1 [bc5] exp 0425 playgo: PlayGoGetInstallChunkId call #1 on 'game-main'
+f425L1 [bc5] exp 0425 playgo: PlayGoGetChunkId call #1 on 'game-main'
+f425L1 [bc5] exp 0425 playgo: PlayGoGetLocus call #1 on 'game-main'
+f425L1 [bc5] exp 0425: P1 locus SLOW ON
+f425L1 [bc5] exp 0425 playgo: PlayGoPrefetch call #1 on 'game-main'
+f425L1 [bc5] exp 0425: P2 prefetch delay off (0 ms)
+f425L1 [bc5] exp 0425: C2 handoff off (0 us)
+f425L1 [bc5] exp 0425 catch sum: owner calls 1, with Hi pending 1; crash-type 0, with Hi pending 0; Hi readied 70482
+f425L1 [bc5] exp 0425 catch sum: owner calls 2000, with Hi pending 1467; crash-type 0, with Hi pending 0; Hi readied 217467
+f425L1 [bc5] exp 0425 catch sum: owner calls 4000, with Hi pending 2964; crash-type 0, with Hi pending 0; Hi readied 364815
+f425L1 [bc5] exp 0425 catch: owner takes crash-type job #1, Hi readied-not-running 3 (owner calls 4846, with Hi pending 3566; crash-type with Hi pending 1; Hi readied 434913)
+f425L1 [bc5] exp 0425 catch: owner takes crash-type job #2, Hi readied-not-running 2 (owner calls 4847, with Hi pending 3567; crash-type with Hi pending 2; Hi readied 434913)
+f425F1 [bc5] exp 0425: C1 wake slice off (0 us)
+f425F1 [bc5] exp 0425: C3 direct wake off
+f425F1 [bc5] exp 0425 playgo: PlayGoInitialize call #1 on 'game-main'
+f425F1 [bc5] exp 0425: P3 call cost off (0 us)
+f425F1 [bc5] exp 0425 playgo: PlayGoOpen call #1 on 'game-main'
+f425F1 [bc5] exp 0425 playgo: PlayGoGetInstallChunkId call #1 on 'game-main'
+f425F1 [bc5] exp 0425 playgo: PlayGoGetChunkId call #1 on 'game-main'
+f425F1 [bc5] exp 0425 playgo: PlayGoGetLocus call #1 on 'game-main'
+f425F1 [bc5] exp 0425: P1 locus off (local fast)
+f425F1 [bc5] exp 0425 playgo: PlayGoPrefetch call #1 on 'game-main'
+f425F1 [bc5] exp 0425: P2 prefetch delay ON (500 ms)
+f425F1 [bc5] exp 0425: C2 handoff off (0 us)
+f425F1 [bc5] exp 0425 catch sum: owner calls 1, with Hi pending 1; crash-type 0, with Hi pending 0; Hi readied 67973
+f425F1 [bc5] exp 0425 catch sum: owner calls 2000, with Hi pending 1429; crash-type 0, with Hi pending 0; Hi readied 209333
+f425F1 [bc5] exp 0425 catch: owner takes crash-type job #1, Hi readied-not-running 0 (owner calls 3009, with Hi pending 2200; crash-type with Hi pending 0; Hi readied 280448)
+f425F1 [bc5] exp 0425 catch sum: owner calls 4000, with Hi pending 2964; crash-type 1, with Hi pending 0; Hi readied 353290
+f425F1 [bc5] exp 0425 catch: owner takes crash-type job #2, Hi readied-not-running 2 (owner calls 4910, with Hi pending 3554; crash-type with Hi pending 1; Hi readied 434077)
+f425K1 [bc5] exp 0425: C1 wake slice off (0 us)
+f425K1 [bc5] exp 0425: C3 direct wake off
+f425K1 [bc5] exp 0425 playgo: PlayGoInitialize call #1 on 'game-main'
+f425K1 [bc5] exp 0425: P3 call cost ON (200 us)
+f425K1 [bc5] exp 0425 playgo: PlayGoOpen call #1 on 'game-main'
+f425K1 [bc5] exp 0425 playgo: PlayGoGetInstallChunkId call #1 on 'game-main'
+f425K1 [bc5] exp 0425 playgo: PlayGoGetChunkId call #1 on 'game-main'
+f425K1 [bc5] exp 0425 playgo: PlayGoGetLocus call #1 on 'game-main'
+f425K1 [bc5] exp 0425: P1 locus off (local fast)
+f425K1 [bc5] exp 0425 playgo: PlayGoPrefetch call #1 on 'game-main'
+f425K1 [bc5] exp 0425: P2 prefetch delay off (0 ms)
+f425K1 [bc5] exp 0425: C2 handoff off (0 us)
+f425K1 [bc5] exp 0425 catch sum: owner calls 1, with Hi pending 1; crash-type 0, with Hi pending 0; Hi readied 69096
+f425K1 [bc5] exp 0425 catch sum: owner calls 2000, with Hi pending 1469; crash-type 0, with Hi pending 0; Hi readied 213392
+f425K1 [bc5] exp 0425 catch sum: owner calls 4000, with Hi pending 2944; crash-type 0, with Hi pending 0; Hi readied 362614
+f425K1 [bc5] exp 0425 catch sum: owner calls 6000, with Hi pending 4420; crash-type 0, with Hi pending 0; Hi readied 490178
+f425K1 [bc5] exp 0425 catch sum: owner calls 8000, with Hi pending 5978; crash-type 0, with Hi pending 0; Hi readied 589262
+f425K1 [bc5] exp 0425 catch sum: owner calls 10000, with Hi pending 7389; crash-type 0, with Hi pending 0; Hi readied 689570
+f425K1 [bc5] exp 0425 catch sum: owner calls 12000, with Hi pending 8848; crash-type 0, with Hi pending 0; Hi readied 788194
+f425K1 [bc5] exp 0425 catch sum: owner calls 14000, with Hi pending 10254; crash-type 0, with Hi pending 0; Hi readied 893428
+f425K1 [bc5] exp 0425 catch sum: owner calls 16000, with Hi pending 11701; crash-type 0, with Hi pending 0; Hi readied 995551
+f425L2 [bc5] exp 0425: C1 wake slice off (0 us)
+f425L2 [bc5] exp 0425: C3 direct wake off
+f425L2 [bc5] exp 0425 playgo: PlayGoInitialize call #1 on 'game-main'
+f425L2 [bc5] exp 0425: P3 call cost off (0 us)
+f425L2 [bc5] exp 0425 playgo: PlayGoOpen call #1 on 'game-main'
+f425L2 [bc5] exp 0425 playgo: PlayGoGetInstallChunkId call #1 on 'game-main'
+f425L2 [bc5] exp 0425 playgo: PlayGoGetChunkId call #1 on 'game-main'
+f425L2 [bc5] exp 0425 playgo: PlayGoGetLocus call #1 on 'game-main'
+f425L2 [bc5] exp 0425: P1 locus SLOW ON
+f425L2 [bc5] exp 0425 playgo: PlayGoPrefetch call #1 on 'game-main'
+f425L2 [bc5] exp 0425: P2 prefetch delay off (0 ms)
+f425L2 [bc5] exp 0425: C2 handoff off (0 us)
+f425L2 [bc5] exp 0425 catch sum: owner calls 1, with Hi pending 1; crash-type 0, with Hi pending 0; Hi readied 66489
+f425L2 [bc5] exp 0425 catch sum: owner calls 2000, with Hi pending 1427; crash-type 0, with Hi pending 0; Hi readied 210279
+f425L2 [bc5] exp 0425 catch sum: owner calls 4000, with Hi pending 3003; crash-type 0, with Hi pending 0; Hi readied 353700
+f425L2 [bc5] exp 0425 catch sum: owner calls 6000, with Hi pending 4470; crash-type 0, with Hi pending 0; Hi readied 474773
+f425L2 [bc5] exp 0425 catch sum: owner calls 8000, with Hi pending 5913; crash-type 0, with Hi pending 0; Hi readied 579313
+f425L2 [bc5] exp 0425 catch sum: owner calls 10000, with Hi pending 7449; crash-type 0, with Hi pending 0; Hi readied 683488
+f425L2 [bc5] exp 0425 catch sum: owner calls 12000, with Hi pending 8980; crash-type 0, with Hi pending 0; Hi readied 783805
+f425L2 [bc5] exp 0425 catch sum: owner calls 14000, with Hi pending 10488; crash-type 0, with Hi pending 0; Hi readied 883761
+f425L2 [bc5] exp 0425 catch sum: owner calls 16000, with Hi pending 12019; crash-type 0, with Hi pending 0; Hi readied 993061
+f425F2 [bc5] exp 0425: C1 wake slice off (0 us)
+f425F2 [bc5] exp 0425: C3 direct wake off
+f425F2 [bc5] exp 0425 playgo: PlayGoInitialize call #1 on 'game-main'
+f425F2 [bc5] exp 0425: P3 call cost off (0 us)
+f425F2 [bc5] exp 0425 playgo: PlayGoOpen call #1 on 'game-main'
+f425F2 [bc5] exp 0425 playgo: PlayGoGetInstallChunkId call #1 on 'game-main'
+f425F2 [bc5] exp 0425 playgo: PlayGoGetChunkId call #1 on 'game-main'
+f425F2 [bc5] exp 0425 playgo: PlayGoGetLocus call #1 on 'game-main'
+f425F2 [bc5] exp 0425: P1 locus off (local fast)
+f425F2 [bc5] exp 0425 playgo: PlayGoPrefetch call #1 on 'game-main'
+f425F2 [bc5] exp 0425: P2 prefetch delay ON (500 ms)
+f425F2 [bc5] exp 0425: C2 handoff off (0 us)
+f425F2 [bc5] exp 0425 catch sum: owner calls 1, with Hi pending 1; crash-type 0, with Hi pending 0; Hi readied 68738
+f425F2 [bc5] exp 0425 catch sum: owner calls 2000, with Hi pending 1455; crash-type 0, with Hi pending 0; Hi readied 207636
+f425F2 [bc5] exp 0425 catch sum: owner calls 4000, with Hi pending 2874; crash-type 0, with Hi pending 0; Hi readied 356364
+f425F2 [bc5] exp 0425 catch sum: owner calls 6000, with Hi pending 4330; crash-type 0, with Hi pending 0; Hi readied 487536
+f425F2 [bc5] exp 0425 catch sum: owner calls 8000, with Hi pending 5795; crash-type 0, with Hi pending 0; Hi readied 590761
+f425F2 [bc5] exp 0425 catch sum: owner calls 10000, with Hi pending 7329; crash-type 0, with Hi pending 0; Hi readied 691865
+f425F2 [bc5] exp 0425 catch sum: owner calls 12000, with Hi pending 8860; crash-type 0, with Hi pending 0; Hi readied 787981
+f425F2 [bc5] exp 0425 catch sum: owner calls 14000, with Hi pending 10315; crash-type 0, with Hi pending 0; Hi readied 885697
+f425F2 [bc5] exp 0425 catch sum: owner calls 16000, with Hi pending 11735; crash-type 0, with Hi pending 0; Hi readied 989355
+f425K2 [bc5] exp 0425: C1 wake slice off (0 us)
+f425K2 [bc5] exp 0425: C3 direct wake off
+f425K2 [bc5] exp 0425 playgo: PlayGoInitialize call #1 on 'game-main'
+f425K2 [bc5] exp 0425: P3 call cost ON (200 us)
+f425K2 [bc5] exp 0425 playgo: PlayGoOpen call #1 on 'game-main'
+f425K2 [bc5] exp 0425 playgo: PlayGoGetInstallChunkId call #1 on 'game-main'
+f425K2 [bc5] exp 0425 playgo: PlayGoGetChunkId call #1 on 'game-main'
+f425K2 [bc5] exp 0425 playgo: PlayGoGetLocus call #1 on 'game-main'
+f425K2 [bc5] exp 0425: P1 locus off (local fast)
+f425K2 [bc5] exp 0425 playgo: PlayGoPrefetch call #1 on 'game-main'
+f425K2 [bc5] exp 0425: P2 prefetch delay off (0 ms)
+f425K2 [bc5] exp 0425: C2 handoff off (0 us)
+f425K2 [bc5] exp 0425 catch sum: owner calls 1, with Hi pending 1; crash-type 0, with Hi pending 0; Hi readied 66584
+f425K2 [bc5] exp 0425 catch sum: owner calls 2000, with Hi pending 1453; crash-type 0, with Hi pending 0; Hi readied 217405
+f425K2 [bc5] exp 0425 catch sum: owner calls 4000, with Hi pending 2892; crash-type 0, with Hi pending 0; Hi readied 395004
+f425K2 [bc5] exp 0425 catch sum: owner calls 6000, with Hi pending 4356; crash-type 0, with Hi pending 0; Hi readied 493518
+f425K2 [bc5] exp 0425 catch sum: owner calls 8000, with Hi pending 5798; crash-type 0, with Hi pending 0; Hi readied 597796
+f425K2 [bc5] exp 0425 catch sum: owner calls 10000, with Hi pending 7270; crash-type 0, with Hi pending 0; Hi readied 704592
+f425K2 [bc5] exp 0425 catch sum: owner calls 12000, with Hi pending 8782; crash-type 0, with Hi pending 0; Hi readied 806282
+f425K2 [bc5] exp 0425 catch sum: owner calls 14000, with Hi pending 10291; crash-type 0, with Hi pending 0; Hi readied 909372
+f425K2 [bc5] exp 0425 catch sum: owner calls 16000, with Hi pending 11772; crash-type 0, with Hi pending 0; Hi readied 1015884
+f425C2 [bc5] exp 0425: C1 wake slice off (0 us)
+f425C2 [bc5] exp 0425: C3 direct wake off
+f425C2 [bc5] exp 0425 playgo: PlayGoInitialize call #1 on 'game-main'
+f425C2 [bc5] exp 0425: P3 call cost off (0 us)
+f425C2 [bc5] exp 0425 playgo: PlayGoOpen call #1 on 'game-main'
+f425C2 [bc5] exp 0425 playgo: PlayGoGetInstallChunkId call #1 on 'game-main'
+f425C2 [bc5] exp 0425 playgo: PlayGoGetChunkId call #1 on 'game-main'
+f425C2 [bc5] exp 0425 playgo: PlayGoGetLocus call #1 on 'game-main'
+f425C2 [bc5] exp 0425: P1 locus off (local fast)
+f425C2 [bc5] exp 0425 playgo: PlayGoPrefetch call #1 on 'game-main'
+f425C2 [bc5] exp 0425: P2 prefetch delay off (0 ms)
+f425C2 [bc5] exp 0425: C2 handoff off (0 us)
+f425C2 [bc5] exp 0425 catch sum: owner calls 1, with Hi pending 1; crash-type 0, with Hi pending 0; Hi readied 71970
+f425C2 [bc5] exp 0425 catch sum: owner calls 2000, with Hi pending 1559; crash-type 0, with Hi pending 0; Hi readied 217469
+f425C2 [bc5] exp 0425 catch sum: owner calls 4000, with Hi pending 3046; crash-type 0, with Hi pending 0; Hi readied 359686
+f425C2 [bc5] exp 0425 catch: owner takes crash-type job #1, Hi readied-not-running 2 (owner calls 4844, with Hi pending 3652; crash-type with Hi pending 1; Hi readied 430993)
+f425L3 [bc5] exp 0425: C1 wake slice off (0 us)
+f425L3 [bc5] exp 0425: C3 direct wake off
+f425L3 [bc5] exp 0425 playgo: PlayGoInitialize call #1 on 'game-main'
+f425L3 [bc5] exp 0425: P3 call cost off (0 us)
+f425L3 [bc5] exp 0425 playgo: PlayGoOpen call #1 on 'game-main'
+f425L3 [bc5] exp 0425 playgo: PlayGoGetInstallChunkId call #1 on 'game-main'
+f425L3 [bc5] exp 0425 playgo: PlayGoGetChunkId call #1 on 'game-main'
+f425L3 [bc5] exp 0425 playgo: PlayGoGetLocus call #1 on 'game-main'
+f425L3 [bc5] exp 0425: P1 locus SLOW ON
+f425L3 [bc5] exp 0425 playgo: PlayGoPrefetch call #1 on 'game-main'
+f425L3 [bc5] exp 0425: P2 prefetch delay off (0 ms)
+f425L3 [bc5] exp 0425: C2 handoff off (0 us)
+f425L3 [bc5] exp 0425 catch sum: owner calls 1, with Hi pending 0; crash-type 0, with Hi pending 0; Hi readied 67531
+f425L3 [bc5] exp 0425 catch: owner takes crash-type job #1, Hi readied-not-running 0 (owner calls 1858, with Hi pending 1348; crash-type with Hi pending 0; Hi readied 204161)
+f425L3 [bc5] exp 0425 catch sum: owner calls 2000, with Hi pending 1450; crash-type 1, with Hi pending 0; Hi readied 214028
+f425L3 [bc5] exp 0425 catch sum: owner calls 4000, with Hi pending 2888; crash-type 1, with Hi pending 0; Hi readied 365574
+f425L3 [bc5] exp 0425 catch: owner takes crash-type job #2, Hi readied-not-running 3 (owner calls 4878, with Hi pending 3499; crash-type with Hi pending 1; Hi readied 437696)
+f425L3 [bc5] exp 0425 catch sum: owner calls 6000, with Hi pending 4363; crash-type 2, with Hi pending 1; Hi readied 491499
+f425L3 [bc5] exp 0425 catch sum: owner calls 8000, with Hi pending 5782; crash-type 2, with Hi pending 1; Hi readied 597994
+f425L3 [bc5] exp 0425 catch sum: owner calls 10000, with Hi pending 7283; crash-type 2, with Hi pending 1; Hi readied 700783
+f425L3 [bc5] exp 0425 catch sum: owner calls 12000, with Hi pending 8819; crash-type 2, with Hi pending 1; Hi readied 797924
+f425L3 [bc5] exp 0425 catch sum: owner calls 14000, with Hi pending 10330; crash-type 2, with Hi pending 1; Hi readied 895880
+f425L3 [bc5] exp 0425 catch sum: owner calls 16000, with Hi pending 11797; crash-type 2, with Hi pending 1; Hi readied 998409
+f425F3 [bc5] exp 0425: C1 wake slice off (0 us)
+f425F3 [bc5] exp 0425: C3 direct wake off
+f425F3 [bc5] exp 0425 playgo: PlayGoInitialize call #1 on 'game-main'
+f425F3 [bc5] exp 0425: P3 call cost off (0 us)
+f425F3 [bc5] exp 0425 playgo: PlayGoOpen call #1 on 'game-main'
+f425F3 [bc5] exp 0425 playgo: PlayGoGetInstallChunkId call #1 on 'game-main'
+f425F3 [bc5] exp 0425 playgo: PlayGoGetChunkId call #1 on 'game-main'
+f425F3 [bc5] exp 0425 playgo: PlayGoGetLocus call #1 on 'game-main'
+f425F3 [bc5] exp 0425: P1 locus off (local fast)
+f425F3 [bc5] exp 0425 playgo: PlayGoPrefetch call #1 on 'game-main'
+f425F3 [bc5] exp 0425: P2 prefetch delay ON (500 ms)
+f425F3 [bc5] exp 0425: C2 handoff off (0 us)
+f425F3 [bc5] exp 0425 catch sum: owner calls 1, with Hi pending 1; crash-type 0, with Hi pending 0; Hi readied 67139
+f425F3 [bc5] exp 0425 catch: owner takes crash-type job #1, Hi readied-not-running 1 (owner calls 1949, with Hi pending 1435; crash-type with Hi pending 1; Hi readied 209019)
+f425F3 [bc5] exp 0425 catch sum: owner calls 2000, with Hi pending 1468; crash-type 1, with Hi pending 1; Hi readied 213191
+f425F3 [bc5] exp 0425 catch sum: owner calls 4000, with Hi pending 2822; crash-type 1, with Hi pending 1; Hi readied 364098
+f425F3 [bc5] exp 0425 catch: owner takes crash-type job #2, Hi readied-not-running 3 (owner calls 4889, with Hi pending 3478; crash-type with Hi pending 2; Hi readied 433273)
+f425K3 [bc5] exp 0425: C1 wake slice off (0 us)
+f425K3 [bc5] exp 0425: C3 direct wake off
+f425K3 [bc5] exp 0425 playgo: PlayGoInitialize call #1 on 'game-main'
+f425K3 [bc5] exp 0425: P3 call cost ON (200 us)
+f425K3 [bc5] exp 0425 playgo: PlayGoOpen call #1 on 'game-main'
+f425K3 [bc5] exp 0425 playgo: PlayGoGetInstallChunkId call #1 on 'game-main'
+f425K3 [bc5] exp 0425 playgo: PlayGoGetChunkId call #1 on 'game-main'
+f425K3 [bc5] exp 0425 playgo: PlayGoGetLocus call #1 on 'game-main'
+f425K3 [bc5] exp 0425: P1 locus off (local fast)
+f425K3 [bc5] exp 0425 playgo: PlayGoPrefetch call #1 on 'game-main'
+f425K3 [bc5] exp 0425: P2 prefetch delay off (0 ms)
+f425K3 [bc5] exp 0425: C2 handoff off (0 us)
+f425K3 [bc5] exp 0425 catch sum: owner calls 1, with Hi pending 0; crash-type 0, with Hi pending 0; Hi readied 56694
+f425K3 [bc5] exp 0425 catch sum: owner calls 2000, with Hi pending 1472; crash-type 0, with Hi pending 0; Hi readied 205468
+f425K3 [bc5] exp 0425 catch sum: owner calls 4000, with Hi pending 2823; crash-type 0, with Hi pending 0; Hi readied 382531
+f425K3 [bc5] exp 0425 catch: owner takes crash-type job #1, Hi readied-not-running 4 (owner calls 5053, with Hi pending 3599; crash-type with Hi pending 1; Hi readied 434732)
+f425K3 [bc5] exp 0425 catch sum: owner calls 6000, with Hi pending 4320; crash-type 1, with Hi pending 1; Hi readied 483699
+f425K3 [bc5] exp 0425 catch sum: owner calls 8000, with Hi pending 5765; crash-type 1, with Hi pending 1; Hi readied 594663
+f425K3 [bc5] exp 0425 catch sum: owner calls 10000, with Hi pending 7264; crash-type 1, with Hi pending 1; Hi readied 699356
+f425K3 [bc5] exp 0425 catch sum: owner calls 12000, with Hi pending 8813; crash-type 1, with Hi pending 1; Hi readied 804508
+f425K3 [bc5] exp 0425 catch sum: owner calls 14000, with Hi pending 10337; crash-type 1, with Hi pending 1; Hi readied 911002
+f425K3 [bc5] exp 0425 catch sum: owner calls 16000, with Hi pending 11847; crash-type 1, with Hi pending 1; Hi readied 1016058
+f425C3 [bc5] exp 0425: C1 wake slice off (0 us)
+f425C3 [bc5] exp 0425: C3 direct wake off
+f425C3 [bc5] exp 0425 playgo: PlayGoInitialize call #1 on 'game-main'
+f425C3 [bc5] exp 0425: P3 call cost off (0 us)
+f425C3 [bc5] exp 0425 playgo: PlayGoOpen call #1 on 'game-main'
+f425C3 [bc5] exp 0425 playgo: PlayGoGetInstallChunkId call #1 on 'game-main'
+f425C3 [bc5] exp 0425 playgo: PlayGoGetChunkId call #1 on 'game-main'
+f425C3 [bc5] exp 0425 playgo: PlayGoGetLocus call #1 on 'game-main'
+f425C3 [bc5] exp 0425: P1 locus off (local fast)
+f425C3 [bc5] exp 0425 playgo: PlayGoPrefetch call #1 on 'game-main'
+f425C3 [bc5] exp 0425: P2 prefetch delay off (0 ms)
+f425C3 [bc5] exp 0425: C2 handoff off (0 us)
+f425C3 [bc5] exp 0425 catch sum: owner calls 1, with Hi pending 1; crash-type 0, with Hi pending 0; Hi readied 59599
+f425C3 [bc5] exp 0425 catch sum: owner calls 2000, with Hi pending 1481; crash-type 0, with Hi pending 0; Hi readied 201792
+f425C3 [bc5] exp 0425 catch sum: owner calls 4000, with Hi pending 2900; crash-type 0, with Hi pending 0; Hi readied 348894
+f425C3 [bc5] exp 0425 catch: owner takes crash-type job #1, Hi readied-not-running 3 (owner calls 5066, with Hi pending 3660; crash-type with Hi pending 1; Hi readied 433284)
+f425C3 [bc5] exp 0425 catch sum: owner calls 6000, with Hi pending 4378; crash-type 1, with Hi pending 1; Hi readied 476275
+f425C3 [bc5] exp 0425 catch sum: owner calls 8000, with Hi pending 5850; crash-type 1, with Hi pending 1; Hi readied 582636
+f425C3 [bc5] exp 0425 catch sum: owner calls 10000, with Hi pending 7295; crash-type 1, with Hi pending 1; Hi readied 687567
+f425C3 [bc5] exp 0425 catch sum: owner calls 12000, with Hi pending 8834; crash-type 1, with Hi pending 1; Hi readied 791108
+f425C3 [bc5] exp 0425 catch sum: owner calls 14000, with Hi pending 10393; crash-type 1, with Hi pending 1; Hi readied 896185
+f425C3 [bc5] exp 0425 catch sum: owner calls 16000, with Hi pending 11888; crash-type 1, with Hi pending 1; Hi readied 1004372
+f425L4 [bc5] exp 0425: C1 wake slice off (0 us)
+f425L4 [bc5] exp 0425: C3 direct wake off
+f425L4 [bc5] exp 0425 playgo: PlayGoInitialize call #1 on 'game-main'
+f425L4 [bc5] exp 0425: P3 call cost off (0 us)
+f425L4 [bc5] exp 0425 playgo: PlayGoOpen call #1 on 'game-main'
+f425L4 [bc5] exp 0425 playgo: PlayGoGetInstallChunkId call #1 on 'game-main'
+f425L4 [bc5] exp 0425 playgo: PlayGoGetChunkId call #1 on 'game-main'
+f425L4 [bc5] exp 0425 playgo: PlayGoGetLocus call #1 on 'game-main'
+f425L4 [bc5] exp 0425: P1 locus SLOW ON
+f425L4 [bc5] exp 0425 playgo: PlayGoPrefetch call #1 on 'game-main'
+f425L4 [bc5] exp 0425: P2 prefetch delay off (0 ms)
+f425L4 [bc5] exp 0425: C2 handoff off (0 us)
+f425L4 [bc5] exp 0425 catch sum: owner calls 1, with Hi pending 1; crash-type 0, with Hi pending 0; Hi readied 67239
+f425L4 [bc5] exp 0425 catch sum: owner calls 2000, with Hi pending 1469; crash-type 0, with Hi pending 0; Hi readied 208609
+f425L4 [bc5] exp 0425 catch: owner takes crash-type job #1, Hi readied-not-running 0 (owner calls 3207, with Hi pending 2342; crash-type with Hi pending 0; Hi readied 291775)
+f425L4 [bc5] exp 0425 catch sum: owner calls 4000, with Hi pending 2937; crash-type 1, with Hi pending 0; Hi readied 350309
+f425L4 [bc5] exp 0425 catch: owner takes crash-type job #2, Hi readied-not-running 0 (owner calls 4067, with Hi pending 2981; crash-type with Hi pending 0; Hi readied 355505)
+f425L4 [bc5] exp 0425 catch: owner takes crash-type job #3, Hi readied-not-running 4 (owner calls 5004, with Hi pending 3672; crash-type with Hi pending 1; Hi readied 432014)
+f425F4 [bc5] exp 0425: C1 wake slice off (0 us)
+f425F4 [bc5] exp 0425: C3 direct wake off
+f425F4 [bc5] exp 0425 playgo: PlayGoInitialize call #1 on 'game-main'
+f425F4 [bc5] exp 0425: P3 call cost off (0 us)
+f425F4 [bc5] exp 0425 playgo: PlayGoOpen call #1 on 'game-main'
+f425F4 [bc5] exp 0425 playgo: PlayGoGetInstallChunkId call #1 on 'game-main'
+f425F4 [bc5] exp 0425 playgo: PlayGoGetChunkId call #1 on 'game-main'
+f425F4 [bc5] exp 0425 playgo: PlayGoGetLocus call #1 on 'game-main'
+f425F4 [bc5] exp 0425: P1 locus off (local fast)
+f425F4 [bc5] exp 0425 playgo: PlayGoPrefetch call #1 on 'game-main'
+f425F4 [bc5] exp 0425: P2 prefetch delay ON (500 ms)
+f425F4 [bc5] exp 0425: C2 handoff off (0 us)
+f425F4 [bc5] exp 0425 catch sum: owner calls 1, with Hi pending 0; crash-type 0, with Hi pending 0; Hi readied 64552
+f425F4 [bc5] exp 0425 catch: owner takes crash-type job #1, Hi readied-not-running 1 (owner calls 629, with Hi pending 477; crash-type with Hi pending 1; Hi readied 106261)
+f425F4 [bc5] exp 0425 catch sum: owner calls 2000, with Hi pending 1456; crash-type 1, with Hi pending 1; Hi readied 212497
+f425F4 [bc5] exp 0425 catch: owner takes crash-type job #2, Hi readied-not-running 0 (owner calls 3929, with Hi pending 2910; crash-type with Hi pending 1; Hi readied 348241)
+f425F4 [bc5] exp 0425 catch sum: owner calls 4000, with Hi pending 2951; crash-type 2, with Hi pending 1; Hi readied 352553
+f425F4 [bc5] exp 0425 catch: owner takes crash-type job #3, Hi readied-not-running 2 (owner calls 4842, with Hi pending 3562; crash-type with Hi pending 2; Hi readied 422243)
+f425K4 [bc5] exp 0425: C1 wake slice off (0 us)
+f425K4 [bc5] exp 0425: C3 direct wake off
+f425K4 [bc5] exp 0425 playgo: PlayGoInitialize call #1 on 'game-main'
+f425K4 [bc5] exp 0425: P3 call cost ON (200 us)
+f425K4 [bc5] exp 0425 playgo: PlayGoOpen call #1 on 'game-main'
+f425K4 [bc5] exp 0425 playgo: PlayGoGetInstallChunkId call #1 on 'game-main'
+f425K4 [bc5] exp 0425 playgo: PlayGoGetChunkId call #1 on 'game-main'
+f425K4 [bc5] exp 0425 playgo: PlayGoGetLocus call #1 on 'game-main'
+f425K4 [bc5] exp 0425: P1 locus off (local fast)
+f425K4 [bc5] exp 0425 playgo: PlayGoPrefetch call #1 on 'game-main'
+f425K4 [bc5] exp 0425: P2 prefetch delay off (0 ms)
+f425K4 [bc5] exp 0425: C2 handoff off (0 us)
+f425K4 [bc5] exp 0425 catch: owner takes crash-type job #1, Hi readied-not-running 2 (owner calls 1, with Hi pending 1; crash-type with Hi pending 1; Hi readied 56607)
+f425K4 [bc5] exp 0425 catch sum: owner calls 1, with Hi pending 1; crash-type 1, with Hi pending 1; Hi readied 56607
+f425K4 [bc5] exp 0425 catch sum: owner calls 2000, with Hi pending 1518; crash-type 1, with Hi pending 1; Hi readied 219864
+f425K4 [bc5] exp 0425 catch sum: owner calls 4000, with Hi pending 3007; crash-type 1, with Hi pending 1; Hi readied 362877
+f425K4 [bc5] exp 0425 catch sum: owner calls 6000, with Hi pending 4457; crash-type 1, with Hi pending 1; Hi readied 490625
+f425K4 [bc5] exp 0425 catch sum: owner calls 8000, with Hi pending 5889; crash-type 1, with Hi pending 1; Hi readied 599219
+f425K4 [bc5] exp 0425 catch sum: owner calls 10000, with Hi pending 7376; crash-type 1, with Hi pending 1; Hi readied 704871
+f425K4 [bc5] exp 0425 catch sum: owner calls 12000, with Hi pending 8912; crash-type 1, with Hi pending 1; Hi readied 808379
+f425K4 [bc5] exp 0425 catch sum: owner calls 14000, with Hi pending 10435; crash-type 1, with Hi pending 1; Hi readied 911157
+f425K4 [bc5] exp 0425 catch sum: owner calls 16000, with Hi pending 11945; crash-type 1, with Hi pending 1; Hi readied 1014892

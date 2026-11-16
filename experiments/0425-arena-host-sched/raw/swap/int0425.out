@@ -1,0 +1,14 @@
+chain lock: exp 0417 | chain: exp 0425: shared swap, C1 (wake slice 200 us) on by default, patch 4945ef1b + C1; normal and lean rebuilt (CPU only, no emulator), until about 11:34 | token 202611161104131590534 | 2026-11-16 11:04:13
+before: PIN_OLD=4945ef1b NORMAL=9da2a9d5 LEAN=f942676c U1=83a44091 U2=83ac7f15 ARCH=9aab722c 
+mkc1: /home/kjaniszewski/src/KytyPlus/src/kernel/pthread.cpp CRLF, sha256 4e30e573b5d5838b
+mkc1: /home/kjaniszewski/src/KytyPlus/src/bc5/switch_defaults.hpp LF, sha256 0a6cd165e97a0da1
+mkc1: done
+the patch: 4945ef1b -> 700fd4c2, 115 lines differ, exp 0372 lines 5, pad_audio_route header in
+== 11:04:18 build normal
+normal: 1be1cc1d, warnings 3, of them in pthread.cpp: 1; steps 4
+== 11:04:30 build lean
+lean: b7fb337f, warnings 3, of them in pthread.cpp: 1; steps 4
+normal words: +[KYTY_BC5_0425_WAKE_SLICE_US ] -[]; 'C1 wake slice': 1, 'exp 0425': 2
+lean words: +[KYTY_BC5_0425_WAKE_SLICE_US ] -[]; 'C1 wake slice': 0, 'exp 0425': 0
+int0425 done 11:04:51: patch 700fd4c2, normal 1be1cc1d, lean b7fb337f; undo: bash /home/kjaniszewski/bc5-work/exp0425/undo0425.sh
+chain lock released

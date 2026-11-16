@@ -1,0 +1,15 @@
+2026-11-16 03:39:44
+arm f425C16 (C), cap 380 s, play 120 s, binary /home/kjaniszewski/bc5-work/exp0425/kyty_emulator md5 81e8d0f7b6c97e97ec0739a9bd0241ef, launcher 7eef2685, fuse 12400 1024
+the arm's words: BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 BC5_0412N_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0425/n/input-f425C16.cfg 
+extra: KYTY_BC5_JOB_ARENA_FIX=0 KYTY_BC5_0425_CATCH=1
+boot b348813a, up since 2026-11-15 12:26:13
+MemAvailable:   14013208 kB SwapTotal:       7778300 kB SwapFree:        7249316 kB 
+emulator pid 1052017 exe /home/kjaniszewski/bc5-work/exp0425/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0425/n/wd
+route: cross (start screen) at 87 s
+route: the save-slot list runs; down x 3, cross (slot 4) at 93 s
+route: cross (Continue) at 99 s
+route: the load seen at 101 s
+route: gameplay G = 108 s (the load at 101 s)
+route: the 14:50 record's gameplay (100 lines) queued at 108 s
+launcher gone: yes; launcher exit 65
+catch: [bc5] exp 0425 catch: owner takes crash-type job #4, Hi readied-not-running 3 (owner calls 4877, with Hi pending 3533; crash-type with Hi pending 1; Hi readied 438719)

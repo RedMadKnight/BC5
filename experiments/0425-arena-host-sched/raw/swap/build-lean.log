@@ -1,0 +1,30 @@
+[0/2] Re-checking globbed directories...
+[1/4] Building CXX object src/CMakeFiles/kyty_emulator.dir/kernel/pthread.cpp.o
+In file included from /home/kjaniszewski/src/KytyPlus/src/kernel/pthread.cpp:11:
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+/home/kjaniszewski/src/KytyPlus/src/kernel/pthread.cpp:1424:13: warning: unused function 'sec_to_timeval' [-Wunused-function]
+ 1424 | static void sec_to_timeval(KernelTimeval* ts, double sec) {
+      |             ^~~~~~~~~~~~~~
+2 warnings generated.
+[2/4] Building CXX object src/CMakeFiles/kyty_emulator.dir/main.cpp.o
+In file included from /home/kjaniszewski/src/KytyPlus/src/main.cpp:6:
+In file included from /home/kjaniszewski/src/KytyPlus/src/common/debug.h:5:
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+1 warning generated.
+[3/4] Linking CXX executable src/kyty_emulator
