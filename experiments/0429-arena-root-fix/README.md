@@ -186,3 +186,10 @@ the GPU fault is not known; F847's F403-family faults also come without it.
 two layouts by a Python copy of the loop: adjacent siblings give guest i → host i (0–12), the "i, i+8" layout gives
 0:0 1:8 2:1 3:9 … 12:6. On this box the title then has host CPUs 0–12, MainThread on CPU 8 apart from the Hi workers
 on 0–7, and CPUs 13–15 carry no title thread.
+
+**The top session's reading of h429M1's hang (2026-11-16, from exp 0430's laptop stream):** a compute write fault at
+0x1551d16000 (thread bc5-ring), then comp_1.3.0 and gfx_0.0.0 timeouts, both resets succeeded: exp 0430's class (a
+cross-ring wait passed on a stale label), not the arena crash. It counts neither for nor against the scheduling
+candidates. Its records stay on the box for exp 0430, untouched by this experiment: the fault record
+`~/bc5-data/captures/faults/20261116-223404`, the run's devcoredump and gc directory, and
+`~/bc5-work/exp0429/n/play-last.log` (the next run of this chain overwrites that log; copy it first if 0430 needs it).
