@@ -227,3 +227,40 @@ title defaults. It sets `BC5_0430_DJ=1 BC5_0430_ARGS=1 BC5_0430_WAVES_MS=900 BC5
 table program list. Checks: `desktop-file-validate`, `bash -n`, and a dry run of the launcher's environment in the
 distrobox, cut before the pad watcher and the emulator (all words present, nothing banned). Laptop streams:
 `raw/*-play.txt`.
+
+## Result 3: the maintainer's play, the hang of 21:38:40 (build 3b, `bfde29b6`)
+
+He played from 21:12 (the emulator in the live stream) and hit the hang at 21:38:40. `comp_1.1.0` timed out and its
+reset succeeded; `gfx_0.0.0` timed out, its reset failed, and `bc5-gpu-watch` rebooted the box (SysRq s, c, 21:38:42.9).
+The fault record was written in time (`faults/20261116-213843`, exit 86 at 1584.1 s). Records:
+`~/bc5-data/captures/play-20261116-2112/gc/` (`waves0430-0/1.txt`, `dj0430-0..3.txt`, `snap0430-*`, `tab0430-*`,
+two ib-timeout bins), devcoredump `20261116-213842-devcd2.txt`; laptop streams `raw/*-play.txt`.
+
+**His question: was the faulting descriptor already wrong in the title's table?** No. It is not stored in a table: the
+shader builds it from per-object BVH data. That data was correct at submit and was overwritten, while the BVH pass was
+still using it, by another GPU job.
+
+- **The fault:** two waves halted by a memory violation (`TRAPSTS` 0x50000100) at PC 0x909977ae4, program 0x909977100
+  (the BVH chain's third pass), on the GFX ring (`HW_ID2` 0x06000006, vmid 6), dcb #1980428. Their s[80:83] is the
+  descriptor they wrote through: base 0x5ab6_9e48e5a4 (the other wave 0x5b26_9e48f814), stride 20, 30 records. The low
+  word is a plausible heap address; the high word should be 0x0011. The kernel's first fault (0x5ab69e48e000, TCP WRITE)
+  is that address.
+- **The bad high word:** each wave's s[4:5] points at its object's BVH block (0x118c64ab00, 0x118c64b200); s[106:107]
+  holds 0x5aa4 (0x5b14), and the high word is that plus 0x12 in both waves.
+- **The block at submit** (catcher (f): 8 copies within #1980428, one per BVH pass, identical): a BVH node (child
+  indices, float bounds, 0xffffffff and ±inf sentinels). **At the stall:** 16-byte records {key_lo, 0x283b3xxx, i, i}
+  with i counting up. All 91 blocks the submission named differ between submit and stall. Record i lies at
+  0x118c5f0100 + 16·i in both faulting blocks: one array laid over the whole block area 0x118c5f0000–0x118c64b2xx. The
+  wave read record 0x5aa4 as node data.
+- **The writer:** the only dispatches in the journal window that name 0x118c5f0100 are a sort pipeline in every frame's
+  acb on compute ring 1 (#1980369, #1980398, #1980431): 0x90996d700, 0x90996e500, 0x90996ec00 and 0x909970800 eight
+  times (radix passes, by shape), ud2-3 = 0x118c5f0100, ud4-5 = 0x118c66e100. The title uses that memory in turns:
+  BVH object blocks for the graphics queue, a key/index array for the compute queue's sort.
+- **When:** acb #1980431, submitted three submissions after dcb #1980428, while the dcb's BVH passes ran (both timed
+  out together). Its cross-queue wait at dword 62 (WAIT_REG_MEM64, label 0x12004b4fc8 == 0) was dropped by the host
+  as met at submit ("now 0x0 (met) DROPPED"; "2 waits (0 kept for the GPU)"). Through the rest of the play the host
+  kept that wait for the GPU ("ring order: acb ... keeps its wait at 0 on 0x12004b4fc8 for the GPU", 837,633 times).
+- **Not proven (R13):** the moment of the overwrite is inferred from the copies at submit and at the stall. Who writes
+  the label 0x12004b4fc8 is not in this record.
+
+Reported to the top session for his decision; no fix proposed (his order: the descriptor question first).
