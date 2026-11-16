@@ -1,0 +1,15 @@
+2026-11-16 21:55:38
+arm h429X1 (X), cap 860 s, play 600 s, binary /home/kjaniszewski/bc5-work/exp0429/normal/kyty_emulator md5 5af774e4dce1a337893d67e981e3f314, launcher 4f831339, fuse 12400 1024
+the arm's words: BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 BC5_0412N_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0429/n/input-h429X1.cfg 
+extra: KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_PRIO_ORDER=1 KYTY_BC5_0429_AFFINITY=1 KYTY_BC5_0425_HANDOFF_US=300
+boot fd9b6f4d, up since 2026-11-16 21:39:13
+MemAvailable:   13544644 kB SwapTotal:       7778300 kB SwapFree:        7512832 kB 
+emulator pid 63722 exe /home/kjaniszewski/bc5-work/exp0429/normal/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0429/n/wd
+route: cross (start screen) at 87 s
+route: the save-slot list runs; down x 3, cross (slot 4) at 93 s
+route: cross (Continue) at 99 s
+route: the load seen at 101 s
+route: gameplay G = 108 s (the load at 101 s)
+route: the 14:50 record's gameplay (100 lines) queued at 108 s
+route: exp 0379's walk queued after it (36 cycles; exp 0428 long set)
+launcher gone: yes; launcher exit 65

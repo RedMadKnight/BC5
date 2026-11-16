@@ -1,7 +1,7 @@
 # 0429 — The job-arena crash at its root, so that JobArenaFix can leave the code
 
 **Date.** 2026-11-16. **Branch.** `exp/0429-arena-root-fix`, base main `0f335e5b` (shared patch `2c82a979`, way 2 on).
-**Status.** Open: the private build is made (2026-11-16 21:11–21:20); no run yet.
+**Status.** Open: the build is made; the smoke (all candidates on) crashed at the site; the affinity model is being redone.
 
 ## Question
 
@@ -121,3 +121,37 @@ box's `ulimit -e`/`-r` and rtkit's limits were not read (the box was busy).
 Only `~/bc5-work/input.cfg` line 3, `JobArenaFix.PPSA03671=off`. The three launchers (`play-pkg.sh`, `play-astro.sh`,
 `play-any.sh`) and the words files under `exp0413/n` do not name it. The experiment runners' directories were not read
 (an emulator started). With the new build the line is ignored and dropped at the next save of input.cfg.
+
+## Smoke h429X1 (2026-11-16 21:55–21:57, the top's GO, BOX-LOCK, no person at the pad)
+
+Arm X (PRIO_ORDER, AFFINITY=1, C2 300 µs, trace), private normal `5af774e4`, way 2 on, RT on, no JobArenaFix
+anywhere. **CLASS TARGET at 118 s = G+10**: the access violation at eboot+0x3d7eca0 with the owner's help call on the
+stack (frames +0x46621ba, +0x3cca882), 39.9 flips/s, no kernel line, no pad key. Exposure: "affinity ON (1)", "prio
+order ON", "C2 handoff ON (300 us)", C1 on, and 96 trace lines. Raw: `raw/chain0429-smoke.out`, `raw/n/` (start, end,
+summary, route, dmesg, pad, the trace lines, the crash excerpt without code bytes). The laptop's kernel stream
+recorded nothing (0 lines); the box's dmesg-after has no amdgpu line.
+
+**What the title asks for (the trace, descriptive).** The masks use bits 0–12, a 13-CPU model, while the host's
+default mask is 0x7f (7 CPUs, so the title makes 5 workers per entry, F790):
+
+| thread | priority | mask |
+|---|---|---|
+| Job Hi 0–4 | 500 | 0xff (CPUs 0–7) |
+| Job Lo 0–4, Job Bk 0–4 | 600, 750 | 0x1ff (CPUs 0–8) |
+| MainThread | 300 | Setaffinity 0x100 (CPU 8) ×5, 0x3f ×4, 0x800 (CPU 11) ×2 |
+| Render Thread | 300 | 0x400 (CPU 10) |
+| Havok Solve / Queries | 700 → 450 / 550 | 0xab |
+| Bink | 700 | 0x1, 0x3, 0x7f |
+| IO, save, UDS, trophy, Coherent, AK | 256–700 | 0x800, 0xa00, 0x1000, 0x1a00 |
+
+So on the console the owner (MainThread, mostly CPU 8 or 11) never shares a CPU with the Hi workers (CPUs 0–7), and
+the render thread has its own CPU 10. That is the console's scheduling difference in the title's own words.
+
+**AFFINITY=1 modelled it wrongly.** It took the bits as cores 0–7 with both SMT threads and ignored bits from 8 up, so
+MainThread, the Render Thread and the IO threads stayed unpinned while the workers were spread over all 16 host CPUs
+and shared them with Havok and Bink. This smoke therefore says nothing for or against the title's own affinity.
+
+**Next (not built).** A 13-CPU model: the default mask 0x1fff (the title then reads 13 CPUs and makes 8 workers per
+entry, as exp 0388 arm A did without pinning, F791), and each guest CPU i mapped to one host logical CPU, SMT siblings
+paired as the console pairs them (TODO(verify): the console's CPU numbering; the box's sibling list must be read).
+That puts the owner on its own host CPU apart from the Hi workers, and leaves host CPUs for the emulator's own threads.
