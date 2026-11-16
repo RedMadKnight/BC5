@@ -84,7 +84,59 @@ Sets:
 
 ## Result
 
-(pending)
+### Iteration 1: smoke `w428Q1`, build `64fa2359` (2026-11-16 12:07)
+
+NO_CRASH at 36.9 flips/s, 0 kernel lines. The counters show it was not way 2 yet:
+- 169,922 compute jobs went to ring 0, against 14 on each other ring. The title touches 56 guest queue slots at start,
+  so the map by index put its busy queues together.
+- 65,268 acbs stayed on the GFX ring, refused by the backend as "indirect dispatch (MEC check unverified)" (exp 0290,
+  F332).
+
+### Step 2: the CP's indirect check on real MEC dispatches (12:38; `raw/cp-run.txt`, `raw/cp-dry.txt`)
+
+`userdata-rings --cp-check` ran 18 compute-form `DISPATCH_INDIRECT`s of the probe program on compute rings 0..2. Each
+was wrapped by `indirect_check::apply(compute_ring = true)` with the FilterOptions default limits:
+- 6 sane triples ran: 1, 64 and 2^20 groups; 2^20 took 0.59 ms.
+- All 12 triples just over a limit were skipped: x = 2^20+1, y = 2^10+1, z = 2^10+1. The flag words were right.
+- 0 new dmesg lines.
+
+Exp 0129 had checked the same packets with a `WRITE_DATA` in place of the dispatch; this is the real dispatch.
+
+### Iteration 2: build `9e53ae43` (unit `f16eb3f3`)
+
+Changes, each behind its own switch:
+- the busy-queue map: a queue moves once to the next ring, after a chain flush and a wait for all rings to be idle;
+- `BC5_DIRECT_ACB_MEC_INDIRECT`;
+- `BC5_DIRECT_ACB_STATE_NO_WALK`.
+
+Smoke `w428Q6`: NO_CRASH at 42.3 flips/s, 0 kernel lines.
+
+**Series** (`raw/chain0428-series.out`), 14:00–14:33. All 8 runs NO_CRASH, 0 kernel lines, 0 pad keys:
+
+| run | arm | flips/s | s with a gap > 100 ms | longest gap |
+|---|---|---|---|---|
+| w428C1 | C | 35.8 | 12 | 292 ms |
+| w428Q2 | Q | 41.8 | 9 | 272 ms |
+| w428Q3 | Q | 42.1 | 11 | 278 ms |
+| w428C2 | C | 36.6 | 11 | 258 ms |
+| w428C3 | C | 36.0 | 12 | 753 ms |
+| w428Q4 | Q | 42.1 | 10 | 300 ms |
+| w428Q5 | Q | 42.9 | 9 | 302 ms |
+| w428C4 | C | 36.1 | 12 | 293 ms |
+
+**Rule: COMPLETE.** Median flips/s C 36.05, Q 42.10 (Q − C = +6.05): "not slower" HOLDS. Every Q run was above every C
+run.
+
+Descriptive (R13: 4 runs per arm, nothing about rare events):
+- The Q runs' counters were nearly the same each time:
+  - jobs: gfx ~89 k, comp1 ~201 k, comp2 ~21 k, comp0 ~120, comp3 0;
+  - busy queues: 0 → ring 1 and 8 → ring 2, 2 moves, both idle within 2 s;
+  - acbs kept on GFX: none;
+  - about 75 k acbs moved by the MEC switch;
+  - dcb waits on two rings: about 17.7 k kept for the GPU, about 700 satisfied, 7–11 not served;
+  - aq424 gave state to about 128 k parts, with 0 untracked queues.
+- Only two of the title's guest queues are busy on this route, so ring 3 was idle and the ring count did not limit it.
+- With RT on, way 2's overlap gains here. F412's one-ring finding was RT off.
 
 ## Verdict
 
