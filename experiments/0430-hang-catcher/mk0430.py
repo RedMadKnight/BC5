@@ -466,6 +466,9 @@ def main() -> int:
         ("\tif (!ok) t_wait_given_up = true;\n",
          "\tif (!ok) t_wait_given_up = true;\n"
          "\t\t\t\t\tif (!ok) ho430::given_up(broken, label, kind, job_ring(kind), i); // exp 0430 (tag ho430): G counts it\n"),
+        ("\tauto r = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, true, qring);\n",
+         "\tif (sub_ib == ib) ho430::f3_before_submit(ib, num_dwords, opt.drop_offsets, qring, kind, *maps_p); // exp 0430 (tag ho430): F3, the buffer as the title gave it\n"
+         "\tauto r = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, true, qring);\n"),
         ("\tif (tables_on()) tab_dump(k, n);\n}",
          "\tif (tables_on()) tab_dump(k, n);\n\tho430::dump(k); // exp 0430 (tag ho430)\n}"),
     ]
