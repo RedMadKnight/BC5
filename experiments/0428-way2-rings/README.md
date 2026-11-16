@@ -138,6 +138,47 @@ Descriptive (R13: 4 runs per arm, nothing about rare events):
 - Only two of the title's guest queues are busy on this route, so ring 3 was idle and the ring count did not limit it.
 - With RT on, way 2's overlap gains here. F412's one-ring finding was RT off.
 
+### The shared swap (`int0428.sh`, 14:35–14:37; `raw/int0428.out`) and the lean smoke (`raw/smoke0428.out`)
+
+The swap:
+- patch 700fd4c2 → `2c82a979` (241 lines; `exp 0372` lines 5; the pad audio header in; the file list unchanged);
+- normal `1be1cc1d` → `3f22e0e1`, lean `b7fb337f` → `35a3753d`; the backend archive `9aab722c` is unchanged;
+- each build gained exactly the four words `BC5_DIRECT_ACB_MEC_INDIRECT`, `BC5_DIRECT_ACB_QUEUE_STATE`,
+  `BC5_DIRECT_ACB_RINGS`, `BC5_DIRECT_ACB_STATE_NO_WALK`, and lost none;
+- lean holds no "exp 0428" text; normal holds the w428c line.
+
+Warnings: the same old ones, plus one in lean on a new line: `split` set but not used, since only lean's compiled-out
+counters read it. It is harmless; a tidy-up for the next change.
+
+Undo: `undo0428.sh` passed its stand-in test 9 of 9 on the laptop and on the box (alone, inside int, bad pins).
+
+Lean smoke, 14:38–14:44:
+- ASTRO BOT 45 s: PASS, 0 kernel lines.
+- The second title 300 s, RT on, route by time: PASS, 0 kernel lines.
+- At 150 s its render fds showed `drm-engine-compute` 31.06 s against `drm-engine-gfx` 65.2 s, so way 2 is active on
+  lean.
+- ASTRO BOT's run ended before the 150-s sample. It has no way-2 row, so its behaviour is the shared one before the
+  swap.
+
 ## Verdict
 
-(pending)
+**Way 2 works and is deployed for the second title.**
+- The title's acbs run on compute rings, with each busy guest queue on its own ring and its compute state put in front
+  of its dispatching acb parts from its own tracker.
+- Indirect dispatches run on the MEC under the CP's check, which is now verified on real dispatches.
+- With RT on, on the fight route, it ran 42.10 against 36.05 flips/s (median of 4 each, interleaved, all clean).
+
+Limits:
+- 4 runs per arm and one route. Rare events (the machine-down class of F332, and F412's 10-26 compute-ring timeout) are
+  not ruled out by this (R13).
+- The maintainer's own plays are the next evidence.
+- ASTRO BOT has no way-2 runs and keeps the GFX ring.
+
+Rollback:
+- `BC5_DIRECT_ACB_RINGS=0` in the environment turns way 2 off with no build;
+- `bash ~/bc5-work/exp0428/undo0428.sh` goes back to patch 700fd4c2's binaries (normal `1be1cc1d`, lean `b7fb337f`).
+
+Not done here:
+- CLAUDE.md, the shortcuts' notes, and ADR 0009's status (the top session's, on main);
+- the lean `split` warning;
+- an ASTRO BOT way-2 set.
