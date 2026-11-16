@@ -1,0 +1,25 @@
+userdata-rings: --submit runs shaders on compute rings 0..2 and the GFX ring. A bad submission can hang or reset the machine.
+job  0 blk 0 set   comp0 hw_id2 06000110 (me 1 pipe 1 queue 0)  ud4..6 40000000 50000000 60000000  threads differing 0  own values
+job  1 blk 0 set   comp1 hw_id2 06000120 (me 1 pipe 2 queue 0)  ud4..6 40000101 50000101 60000101  threads differing 0  own values
+job  2 blk 0 set   comp2 hw_id2 06000130 (me 1 pipe 3 queue 0)  ud4..6 40000202 50000202 60000202  threads differing 0  own values
+job  3 blk 0 probe comp0 hw_id2 06000101 (me 1 pipe 0 queue 1)  ud4..6 00000000 00000000 00000000  threads differing 0  ring-premise FAIL (last on comp0: job 0)  hwq-premise n/a (first job on this queue)
+job  4 blk 0 probe comp1 hw_id2 06000110 (me 1 pipe 1 queue 0)  ud4..6 40000000 50000000 60000000  threads differing 0  ring-premise FAIL (last on comp1: job 1)  hwq-premise PASS
+job  5 blk 0 probe comp2 hw_id2 06000120 (me 1 pipe 2 queue 0)  ud4..6 40000101 50000101 60000101  threads differing 0  ring-premise FAIL (last on comp2: job 2)  hwq-premise PASS
+job  6 blk 1 set   comp2 hw_id2 06000130 (me 1 pipe 3 queue 0)  ud4..6 40000602 50000602 60000602  threads differing 0  own values
+job  7 blk 1 set   comp1 hw_id2 06000120 (me 1 pipe 2 queue 0)  ud4..6 40000701 50000701 60000701  threads differing 0  own values
+job  8 blk 1 set   comp0 hw_id2 06000110 (me 1 pipe 1 queue 0)  ud4..6 40000800 50000800 60000800  threads differing 0  own values
+job  9 blk 1 probe comp2 hw_id2 06000101 (me 1 pipe 0 queue 1)  ud4..6 00000000 00000000 00000000  threads differing 0  ring-premise FAIL (last on comp2: job 6)  hwq-premise PASS
+job 10 blk 1 probe comp0 hw_id2 06000130 (me 1 pipe 3 queue 0)  ud4..6 40000602 50000602 60000602  threads differing 0  ring-premise FAIL (last on comp0: job 8)  hwq-premise PASS
+job 11 blk 2 set   comp1 hw_id2 06000110 (me 1 pipe 1 queue 0)  ud4..6 40000b01 50000b01 60000b01  threads differing 0  own values
+job 12 blk 2 set   comp0 hw_id2 06000120 (me 1 pipe 2 queue 0)  ud4..6 40000c00 50000c00 60000c00  threads differing 0  own values
+job 13 blk 2 set   comp2 hw_id2 06000130 (me 1 pipe 3 queue 0)  ud4..6 40000d02 50000d02 60000d02  threads differing 0  own values
+job 14 blk 2 probe comp1 hw_id2 06000101 (me 1 pipe 0 queue 1)  ud4..6 00000000 00000000 00000000  threads differing 0  ring-premise FAIL (last on comp1: job 11)  hwq-premise PASS
+job 15 blk 3 set   comp0 hw_id2 06000110 (me 1 pipe 1 queue 0)  ud4..6 40000f00 50000f00 60000f00  threads differing 0  own values
+job 16 blk 3 set   gfx   hw_id2 061d0006 (me 0 pipe 0 queue 6)  ud4..6 4000100f 5000100f 6000100f  threads differing 0  own values
+job 17 blk 3 probe comp0 hw_id2 06000120 (me 1 pipe 2 queue 0)  ud4..6 40000c00 50000c00 60000c00  threads differing 0  ring-premise FAIL (last on comp0: job 15)  hwq-premise PASS
+job 18 blk 3 probe gfx   hw_id2 06020006 (me 0 pipe 0 queue 6)  ud4..6 4000100f 5000100f 6000100f  threads differing 0  ring-premise PASS (last on gfx: job 16)  hwq-premise PASS
+job 19 blk 4 set   comp0 hw_id2 06000110 (me 1 pipe 1 queue 0)  ud4..6 40001300 50001300 60001300  threads differing 0  own values
+job 20 blk 4 probe comp0 hw_id2 06000110 (me 1 pipe 1 queue 0)  ud4..6 40001300 50001300 60001300  threads differing 0  ring-premise PASS (last on comp0: job 19)  hwq-premise PASS
+job 21 blk 4 set   comp1 hw_id2 06000120 (me 1 pipe 2 queue 0)  ud4..6 40001501 50001501 60001501  threads differing 0  own values
+job 22 blk 4 probe comp1 hw_id2 06000120 (me 1 pipe 2 queue 0)  ud4..6 40001501 50001501 60001501  threads differing 0  ring-premise PASS (last on comp1: job 21)  hwq-premise PASS
+summary: 23 of 23 jobs ran; probes: ring-premise 3 pass 7 fail; hwq-premise 9 pass 0 fail 1 n/a

@@ -1,0 +1,19 @@
+cp job  0 comp0 triple 1 1 1 (runs): 120 dwords, checked 1, inserted 42  ok
+cp job  1 comp0 triple 64 1 1 (runs): 120 dwords, checked 1, inserted 42  ok
+cp job  2 comp0 triple 1048577 1 1 (skipped): 120 dwords, checked 1, inserted 42  ok
+cp job  3 comp0 triple 1 1025 1 (skipped): 120 dwords, checked 1, inserted 42  ok
+cp job  4 comp0 triple 1 1 1025 (skipped): 120 dwords, checked 1, inserted 42  ok
+cp job  5 comp0 triple 1048576 1 1 (runs): 120 dwords, checked 1, inserted 42  ok
+cp job  6 comp1 triple 1 1 1 (runs): 120 dwords, checked 1, inserted 42  ok
+cp job  7 comp1 triple 64 1 1 (runs): 120 dwords, checked 1, inserted 42  ok
+cp job  8 comp1 triple 1048577 1 1 (skipped): 120 dwords, checked 1, inserted 42  ok
+cp job  9 comp1 triple 1 1025 1 (skipped): 120 dwords, checked 1, inserted 42  ok
+cp job 10 comp1 triple 1 1 1025 (skipped): 120 dwords, checked 1, inserted 42  ok
+cp job 11 comp1 triple 1048576 1 1 (runs): 120 dwords, checked 1, inserted 42  ok
+cp job 12 comp2 triple 1 1 1 (runs): 120 dwords, checked 1, inserted 42  ok
+cp job 13 comp2 triple 64 1 1 (runs): 120 dwords, checked 1, inserted 42  ok
+cp job 14 comp2 triple 1048577 1 1 (skipped): 120 dwords, checked 1, inserted 42  ok
+cp job 15 comp2 triple 1 1025 1 (skipped): 120 dwords, checked 1, inserted 42  ok
+cp job 16 comp2 triple 1 1 1025 (skipped): 120 dwords, checked 1, inserted 42  ok
+cp job 17 comp2 triple 1048576 1 1 (runs): 120 dwords, checked 1, inserted 42  ok
+cp-check dry run: 0 bad IB(s)

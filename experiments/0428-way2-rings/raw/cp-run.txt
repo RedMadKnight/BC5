@@ -1,0 +1,20 @@
+userdata-rings --cp-check: real DISPATCH_INDIRECTs under the CP check on compute rings 0..2. A bad submission can hang or reset the machine.
+cp job  0 comp0 triple 1 1 1: expected runs; slot WRITTEN (record 0: 40000000, hw_id2 071f0110), flag 0x1 confirm 0x0, 0.05 ms -> as expected
+cp job  1 comp0 triple 64 1 1: expected runs; slot WRITTEN (record 0: 40000100, hw_id2 07000120), flag 0x1 confirm 0x0, 0.03 ms -> as expected
+cp job  2 comp0 triple 1048577 1 1: expected skipped; slot untouched (record 0: 00000000, hw_id2 00000000), flag 0x0 confirm 0x0, 0.03 ms -> as expected
+cp job  3 comp0 triple 1 1025 1: expected skipped; slot untouched (record 0: 00000000, hw_id2 00000000), flag 0x0 confirm 0x0, 0.03 ms -> as expected
+cp job  4 comp0 triple 1 1 1025: expected skipped; slot untouched (record 0: 00000000, hw_id2 00000000), flag 0x0 confirm 0x0, 0.02 ms -> as expected
+cp job  5 comp0 triple 1048576 1 1: expected runs; slot WRITTEN (record 0: 40000500, hw_id2 07000120), flag 0x1 confirm 0x0, 0.59 ms -> as expected
+cp job  6 comp1 triple 1 1 1: expected runs; slot WRITTEN (record 0: 40000601, hw_id2 07000110), flag 0x1 confirm 0x0, 0.03 ms -> as expected
+cp job  7 comp1 triple 64 1 1: expected runs; slot WRITTEN (record 0: 40000701, hw_id2 07000130), flag 0x1 confirm 0x0, 0.03 ms -> as expected
+cp job  8 comp1 triple 1048577 1 1: expected skipped; slot untouched (record 0: 00000000, hw_id2 00000000), flag 0x0 confirm 0x0, 0.03 ms -> as expected
+cp job  9 comp1 triple 1 1025 1: expected skipped; slot untouched (record 0: 00000000, hw_id2 00000000), flag 0x0 confirm 0x0, 0.03 ms -> as expected
+cp job 10 comp1 triple 1 1 1025: expected skipped; slot untouched (record 0: 00000000, hw_id2 00000000), flag 0x0 confirm 0x0, 0.02 ms -> as expected
+cp job 11 comp1 triple 1048576 1 1: expected runs; slot WRITTEN (record 0: 40000b01, hw_id2 07000130), flag 0x1 confirm 0x0, 0.59 ms -> as expected
+cp job 12 comp2 triple 1 1 1: expected runs; slot WRITTEN (record 0: 40000c02, hw_id2 071f0110), flag 0x1 confirm 0x0, 0.02 ms -> as expected
+cp job 13 comp2 triple 64 1 1: expected runs; slot WRITTEN (record 0: 40000d02, hw_id2 07000101), flag 0x1 confirm 0x0, 0.02 ms -> as expected
+cp job 14 comp2 triple 1048577 1 1: expected skipped; slot untouched (record 0: 00000000, hw_id2 00000000), flag 0x0 confirm 0x0, 0.02 ms -> as expected
+cp job 15 comp2 triple 1 1025 1: expected skipped; slot untouched (record 0: 00000000, hw_id2 00000000), flag 0x0 confirm 0x0, 0.02 ms -> as expected
+cp job 16 comp2 triple 1 1 1025: expected skipped; slot untouched (record 0: 00000000, hw_id2 00000000), flag 0x0 confirm 0x0, 0.02 ms -> as expected
+cp job 17 comp2 triple 1048576 1 1: expected runs; slot WRITTEN (record 0: 40001102, hw_id2 07000101), flag 0x1 confirm 0x0, 0.59 ms -> as expected
+cp-check summary: 18 of 18 jobs ran, 0 wrong

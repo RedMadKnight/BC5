@@ -1,0 +1,13 @@
+chain lock: exp 0417 | chain: exp 0428: shared swap, way 2 for the second title (4 compute rings + per-queue state), patch 700fd4c2 + 0428; normal and lean rebuilt (CPU only, no emulator), until about 15:15 | token 202611161435592269686 | 2026-11-16 14:35:59
+before: PIN_OLD=700fd4c2 NORMAL=1be1cc1d LEAN=b7fb337f U1=3e847e03 U2=2d8ca3d8 ARCH=9aab722c 
+libs/bc5LleAgc.cpp: 7 edits, brace balance +0
+bc5/switch_defaults.hpp: 1 edits, brace balance +0
+the patch: 700fd4c2 -> 2c82a979, 241 lines differ, exp 0372 lines 5, pad_audio_route header in
+== 14:36:04 build normal
+normal: 3f22e0e1, warnings 8, of them in bc5LleAgc.cpp: 6; steps 4
+== 14:36:47 build lean
+lean: 35a3753d, warnings 10, of them in bc5LleAgc.cpp: 8; steps 4
+normal words: +[BC5_DIRECT_ACB_MEC_INDIRECT BC5_DIRECT_ACB_QUEUE_STATE BC5_DIRECT_ACB_RINGS BC5_DIRECT_ACB_STATE_NO_WALK ] -[]; 'tag w428c': 1, 'exp 0428': 3
+lean words: +[BC5_DIRECT_ACB_MEC_INDIRECT BC5_DIRECT_ACB_QUEUE_STATE BC5_DIRECT_ACB_RINGS BC5_DIRECT_ACB_STATE_NO_WALK ] -[]; 'tag w428c': 0, 'exp 0428': 0
+int0428 done 14:37:32: patch 2c82a979, normal 3f22e0e1, lean 35a3753d; undo: bash /home/kjaniszewski/bc5-work/exp0428/undo0428.sh; rollback without a build: BC5_DIRECT_ACB_RINGS=0
+chain lock released
