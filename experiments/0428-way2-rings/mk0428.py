@@ -216,6 +216,42 @@ f.sub("""					// Run 123: the compute queue's blocked buffer waits for a
 							}
 #ifndef BC5_LEAN
 							g_w428_late[0]++;
+#endif
+						}
+						// exp 0428 iteration 6 (SPLIT_LATE=3): w428L10 still split 18,625 times with nothing found in the head or the chain,
+						// and the poll after the split then kept 17,881: the writer is later work of ANOTHER thread (the ring thread's
+						// acb), which arrives within the poll. So poll first, without splitting: the wait is kept once its writer is on a
+						// ring, or goes on once satisfied. Split only when the ring thread is blocked on a label this buffer has written
+						// before the wait (exp 0132's cycle: that acb cannot come before our head) or after 8 ms (as before).
+						if (split_late >= 3) {
+							const uint64_t t2  = SoftCp::now_ns();
+							int            res = 0; // 1 kept, 2 satisfied, 3 cycle, 4 timeout
+							for (;;) {
+								if (wait_satisfied(p, op == 0x93)) { res = 2; break; }
+								if (ring_will_satisfy(p, op == 0x93, bc5::direct::kGfxRing)) { res = 1; break; }
+								const uint64_t blocked = g_unready_label.load();
+								if (blocked != 0 && std::find(written.begin(), written.end(), blocked) != written.end()) { res = 3; break; }
+								if (SoftCp::now_ns() - t2 >= 8'000'000ull) { res = 4; break; }
+								std::this_thread::sleep_for(std::chrono::microseconds(20));
+							}
+#ifndef BC5_LEAN
+							g_w428_poll[res]++;
+#endif
+							if (res == 1) {
+								t_keep_waits.push_back(p);
+								SoftCp::set_gpu_executed(p, len, {0});
+								i += len;
+								continue;
+							}
+							if (res == 2) {
+								ok = true;
+								SoftCp::set_gpu_executed(p, len, {0});
+								i += len;
+								continue;
+							}
+						}
+						if (split_late >= 1) {
+#ifndef BC5_LEAN
 							static std::atomic<uint32_t> n_left {0};
 							if (n_left++ < 40) {
 								char pend[160];
@@ -278,6 +314,7 @@ f.sub("""static std::atomic<uint64_t> g_full_pieces {0}, g_full_ok {0}, g_full_f
 static std::atomic<uint64_t> g_w428_two[5] = {}; // exp 0428 (tag w428c): dcb waits on two rings: kept for the GPU, satisfied, not served; heads split; kept with no split (iteration 3)
 #endif
 #ifndef BC5_LEAN
+static std::atomic<uint64_t> g_w428_poll[5] = {}; // exp 0428 iteration 6: polled first: -, kept, satisfied, split for a cycle, split after 8 ms
 static std::atomic<uint64_t> g_w428_late[4] = {}; // exp 0428 iteration 4: still split; kept: writer on a ring, written earlier in the IB, on a ring after the chain went
 #endif
 // Exp 0428 iterations 4-5: does this IB write the wait's label before dword `at` with a value that satisfies the wait? The
@@ -421,9 +458,9 @@ f.sub("""	if (qring != bc5::direct::kGfxRing && (g_comp_jobs++ & 0xffffu) == 0) 
 			std::fprintf(stderr,
 			             "[bc5] exp 0428 (tag w428c): t %.1f s: jobs gfx %" PRIu64 " comp0 %" PRIu64 " comp1 %" PRIu64 " comp2 %" PRIu64 " comp3 %" PRIu64
 			             "; acbs kept on gfx:%s; queue->ring:%s; dcb waits on two rings: kept %" PRIu64 " satisfied %" PRIu64 " NOT served %" PRIu64
-			             " heads split %" PRIu64 " kept-without-split %" PRIu64 " (on a ring %" PRIu64 ", in the IB %" PRIu64 ", after the chain %" PRIu64 ", still split %" PRIu64 "); aq424 %s, parts given state %" PRIu64 ", parts with no tracked queue %" PRIu64 "; mec-indirect switch %s, acbs moved %" PRIu64 "\\n",
+			             " heads split %" PRIu64 " kept-without-split %" PRIu64 " (on a ring %" PRIu64 ", in the IB %" PRIu64 ", after the chain %" PRIu64 ", still split %" PRIu64 "; polled first: kept %" PRIu64 " satisfied %" PRIu64 " cycle-split %" PRIu64 " timeout-split %" PRIu64 "); aq424 %s, parts given state %" PRIu64 ", parts with no tracked queue %" PRIu64 "; mec-indirect switch %s, acbs moved %" PRIu64 "\\n",
 			             timing_now(), jobs[4].load(), jobs[0].load(), jobs[1].load(), jobs[2].load(), jobs[3].load(), why.empty() ? " none" : why.c_str(),
-			             q.empty() ? " none" : q.c_str(), g_w428_two[0].load(), g_w428_two[1].load(), g_w428_two[2].load(), g_w428_two[3].load(), g_w428_two[4].load(), g_w428_late[1].load(), g_w428_late[2].load(), g_w428_late[3].load(), g_w428_late[0].load(),
+			             q.empty() ? " none" : q.c_str(), g_w428_two[0].load(), g_w428_two[1].load(), g_w428_two[2].load(), g_w428_two[3].load(), g_w428_two[4].load(), g_w428_late[1].load(), g_w428_late[2].load(), g_w428_late[3].load(), g_w428_late[0].load(), g_w428_poll[1].load(), g_w428_poll[2].load(), g_w428_poll[3].load(), g_w428_poll[4].load(),
 			             aq424_on() ? "ON" : "off", g_aq424_parts.load(), g_aq424_none.load(), w428_mec_ok() ? "ON" : "off", g_w428_mec_moved.load());
 		}
 	}

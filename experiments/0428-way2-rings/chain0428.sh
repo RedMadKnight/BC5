@@ -27,9 +27,11 @@ case "$SET" in
   smoke) TAGS="w428Q1" ;;
   smoke2) TAGS="w428Q6" ;;  # iteration 2: busy-queue map, MEC indirect allowed, no inherit walk
   long) TAGS="w428L4 w428L5 w428L6" ;;
+  smoke3) TAGS="w428L10" ;;
+  smoke4) TAGS="w428L11" ;;  # iteration 6 once (SPLIT_LATE=3, poll first), JobArenaFix off  # iteration 5 once, way 2 on, JobArenaFix as the shared input.cfg has it (off): the split counters
   longab) TAGS="w428C5 w428L7 w428L8 w428C6 w428C7 w428L9" ;;  # iteration 5: one ring (C) against way 2 (L), fight + walk to G+1500, interleaved  # (w428L1 ran iteration 3: the arena crash at 228 s, JobArenaFix off; kept-without-split 0)  # iteration 3 (after the 15:09 hang): + BC5_DIRECT_ACB_SPLIT_LATE, fight then walk, G+1500
   series) TAGS="w428C1 w428Q2 w428Q3 w428C2 w428C3 w428Q4 w428Q5 w428C4" ;;
-  *) say "NOT STARTED, CHAIN_SET is smoke, smoke2, series, long or longab"; exit 1 ;;
+  *) say "NOT STARTED, CHAIN_SET is smoke, smoke2, smoke3, smoke4, series, long or longab"; exit 1 ;;
 esac
 mkdir -p "$R" || exit 1
 for t in $TAGS; do { [ -e "$R/$t-start.txt" ] || [ -e "$R/$t-end.txt" ] || [ -e "$R/${t}R-start.txt" ]; } && { say "NOT STARTED, tag $t used"; exit 1; }; done
@@ -39,7 +41,7 @@ armwords() {
   case "$1" in
     w428C*) echo "BC5_DIRECT_ACB_RINGS=0 BC5_DIRECT_ACB_QUEUE_STATE=0" ;;
     w428Q*) echo "BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_INDIRECT=1 BC5_DIRECT_ACB_STATE_NO_WALK=1" ;;
-    w428L*) echo "BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_INDIRECT=1 BC5_DIRECT_ACB_STATE_NO_WALK=1 BC5_DIRECT_ACB_SPLIT_LATE=2" ;;
+    w428L*) echo "BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_INDIRECT=1 BC5_DIRECT_ACB_STATE_NO_WALK=1 BC5_DIRECT_ACB_SPLIT_LATE=3" ;;  # iteration 6: poll first
     *) return 1 ;;
   esac
 }

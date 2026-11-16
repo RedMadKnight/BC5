@@ -49,8 +49,8 @@ def main():
         ok = len(l) == 3 and all(r["cls"] == "NO_CRASH" for r in l)
         print("RULE long: %s (%s)" % ("PASS" if ok else ("OPEN" if len(l) < 3 and all(r["cls"] in ("NO_CRASH", "NOT_ROUTED") for r in l) else "FAIL"), ", ".join("%s %s" % (r["tag"], r["cls"]) for r in l)))
         return 0
-    if st in ("smoke", "smoke2"):
-        q = [r for r in rs if r["arm"] == "Q"]
+    if st in ("smoke", "smoke2", "smoke3", "smoke4"):
+        q = [r for r in rs if r["arm"] in ("Q", "L")]
         if len(q) != 1:
             print("RULE smoke: OPEN (%d Q rows)" % len(q))
             return 0
