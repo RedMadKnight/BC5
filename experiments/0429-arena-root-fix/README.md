@@ -246,3 +246,16 @@ ON"; the host list 0–15 in order (siblings adjacent); default mask 0xffff; the
 MainThread 0x100 and the Render Thread 0x400 applied, Job Hi 0xff applied, no FAILED. One run: the crash came far later
 than in the runs of the first builds and exp 0425 (G+10 to G+120), but it came, so the title's own CPU split alone
 does not remove it. Not yet read (the box went to exp 0431): the crash's frames and the job-thread count at 0xffff.
+
+## Build 4 (2026-11-17 00:15–00:17, the first gap of exp 0430's chain Y)
+
+Exp 0430's build-6 object (object `58c76fcccd51c3c54299d19b69994273`, source `42f9f976`) copied, pinned and linked into
+normal. **Normal `2aa1e673945ae5b23f88d5973357c262`, lean `dc5d3c637b4a53a47b131b4cf0cbb1d2`**, 0 errors, the same 8
+warnings, the shared binaries unchanged (`dae7bf0b`, `819f3b05`); `KYTY_BC5_0429_WAITS` in normal and not in lean; no
+workaround word. `box0429.sh` stopped at its last check, which looked for `BC5_0430_F3` as a string: exp 0430's switch
+names are not plain strings in its own binary either. Checked instead: a symbol only exp 0430's object defines
+(`__cxx_global_array_dtor.1047`) is in build 4's normal and not in the shared normal. The check is now that symbol test.
+
+Exp 0430's h430Y1 (its build 6 `b2770458` = the shared unit + its fix, way 2, no JobArenaFix, the fight route) ended in
+this experiment's crash at 294 s (G+187), 0 kernel lines: the crash comes on 0430's fix build without any candidate of
+this experiment, as expected.

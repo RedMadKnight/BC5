@@ -76,7 +76,11 @@ build() {
     strings "$E/normal/kyty_emulator" | grep -qxF KYTY_BC5_0429_TRACE || stop "KYTY_BC5_0429_TRACE is not in normal"
     strings "$E/normal/kyty_emulator" | grep -qxF KYTY_BC5_0429_WAITS || stop "KYTY_BC5_0429_WAITS is not in normal"
     strings "$E/lean/kyty_emulator" | grep -qF KYTY_BC5_0429_WAITS && stop "lean holds KYTY_BC5_0429_WAITS"
-    if [ "${BASE0430:-0}" = 1 ]; then strings "$E/normal/kyty_emulator" | grep -qxF BC5_0430_F3 || stop "BC5_0430_F3 is not in normal (BASE0430=1)"; fi
+    if [ "${BASE0430:-0}" = 1 ]; then  # exp 0430's switch names are not plain strings: check a symbol only its object defines
+        local u0430
+        u0430=$(comm -23 <(nm --defined-only "$E/base0430/bc5LleAgc.cpp.o" | awk '{print $3}' | sort -u) <(nm --defined-only "$W/kytyplus-build/src/CMakeFiles/kyty_emulator.dir/libs/bc5LleAgc.cpp.o" | awk '{print $3}' | sort -u) | grep -v '^\.L' | head -1)
+        [ -n "$u0430" ] && nm "$E/normal/kyty_emulator" | grep -qF "$u0430" || stop "exp 0430's object is not in normal (BASE0430=1)"
+    fi
     strings "$E/lean/kyty_emulator" | grep -qF KYTY_BC5_0429_TRACE && stop "lean holds KYTY_BC5_0429_TRACE"
     for v in normal lean; do
         for w in KYTY_BC5_JOB_ARENA_FIX "job-arena fix" "Game fixes" "Job-arena fix" bc5_job_arena_owner_help; do
