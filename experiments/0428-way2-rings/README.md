@@ -240,6 +240,18 @@ min into the run:
 | 15:35 | w428L4 | on | junk-pointer write by compute (F403 family) | ring resets succeeded |
 | 15:47 | w428C5 | OFF | shader stuck in memory reads on GFX (F403 signature) | reset failed, reboot |
 
+C5's IB (`devcd3`, IB #0, 10,216 dw) opens with the same full state prefix (`CONTEXT_CONTROL`, `CLEAR_STATE`, ~950
+dwords) on one ring, so that shape does not mark a two-ring split piece. The 15:09 "split piece" suspect is weakened.
+
+The work at its stall is the backend's indirect check (exp 0052: `COND_WRITE` ×5, `PFP_SYNC_ME`, `COND_EXEC`) around a
+GFX-form `DISPATCH_INDIRECT` at dword 1845:
+- arguments at `SET_BASE` 1 = 0x11d0571b00, which passed the check;
+- program from `LOAD_SH_REG_INDEX` at 1730 (table 0x11e08efb0c);
+- user data set at 1735: V# 0x115a2400…, table 0x11e08ef8ec;
+- then `EVENT_WRITE` 0x410 at 1853, where the ME waits while SPI, TA and TCP stay busy.
+
+The dispatch's waves hang in memory reads. Without a wave dump these records cannot say whether they loop or wait.
+
 Both classes occur with way 2 off. The maintainer then stopped the comparison: multi-ring is decided, no one-ring arm
 again, and JobArenaFix is off in every run from now on (relayed by the top session, 16:3x). The `longab` set ended
 with the machine-down. The stale lock line of its token was released at 16:36.
