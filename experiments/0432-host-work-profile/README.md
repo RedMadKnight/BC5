@@ -396,6 +396,27 @@ the game with the record); V on in run 1 with its check's second build removed.
   a comp-ring timeout with a successful reset at 16:12 on the boot before. One event. The records went to exp 0430.
   The series stopped there (LESSONS R55), and the box needs a reboot before any next run (the top session's rule).
 
+### Result 6 (2026-11-17, laptop, from the per-job records of d432S7 and d432T14): the device mutex is held 17-18 ms of every 30 ms frame
+
+Gameplay only (from 130 s on), the 1-in-8 frame sample, per frame. "Held" is from the lock taken to the end of the
+device call; the mutex is exclusive, so these add up across threads.
+
+| per frame | shared d432S7 | build 3 d432T14 |
+|---|---|---|
+| jobs | 31.5 (23.3 acb of ~1,270 dwords, 8.2 dcb of ~10,000) | 31.5 |
+| lock held | 18.4 ms | 16.7 ms |
+| lock wait | 7.6 ms | 6.3 ms |
+| acb: syncs / device call (prepare, list, cs) | 3.20 / 4.38 (0.64, 0.46, 2.98) ms | 3.20 / 4.77 (0.66, 0.56, 3.23) |
+| dcb: probe / syncs / device call (prepare, list, cs) | 1.20 / 3.14 / 4.40 (2.25, 0.04, 1.81) ms | 0.73 / 1.61 / 4.55 (2.21, 0.12, 1.92) |
+
+- Waits for the mutex are mostly short: 34,037 of 38,356 under 0.1 ms, 359 between 5 and 20 ms, 65 over 20 ms (shared).
+- By part, shared: the kernel submit call 4.8 ms a frame (31.5 calls of about 0.15 ms), the syncs 6.3 ms (3.2 of it
+  for the 23 acbs, about 0.14 ms each although nothing changes for most of them), the backend's prepare 2.9 ms, the
+  probe 1.3 ms.
+- Build 3 halves the dcb's syncs (3.14 to 1.61 ms: W and M) and leaves the acb's 3.20 ms as it is.
+- Not known from these records: what the 0.14 ms of an acb's sync is spent on (both memfds are looked at for every
+  job with a dispatch); the perf profile of step 1 is the tool for that and has not been run yet.
+
 **For the memory line (the top session's note, 2026-11-17):** the title's start is under memory pressure on this box.
 In d432T14 (build 3, the 09:46 save) MemAvailable fell from 3,508 to 1,449 MiB and GTT in use rose from 9,915 to
 11,860 MiB between t 36 and 47 s, with 1,076 pages a second swapped out at t 42 s and PSI memory "full" at 0.6-1.6 %;
