@@ -24,6 +24,16 @@
 // shared names BC5_DIRECT_XQ_PENDING (F2), BC5_DIRECT_XQ_ACQUIRE (F3) and BC5_DIRECT_XQ_FENCE (F4, F2's order done by the
 // kernel: a CS dependency instead of the CPU wait), each on unless "0"; G is compiled off. They act
 // only on a wait whose label has a pending write on ANOTHER ring, so with one ring (way 2 off) they do nothing.
+// F5, "the precise form" (2026-11-17, the top session's main line after the maintainer's slow play on build 8):
+// BC5_0430_F5 / shared BC5_DIRECT_XQ_PRECISE, on unless "0". F2 and F4 hold a waiter until the WHOLE writer job has
+// completed, but the console's wait ends at the writer's release, inside the job. F3 already learns, at the writer's
+// submit, whether the stale case is excluded for each cross-queue label the writer releases. It is excluded when F3
+// preset the label, or found it not holding the released value, with no other job in flight writing it or holding a
+// kept wait on it. For such a writer job, the label can reach the released value only through that job's own release.
+// So a wait found satisfied while the job is still pending means the release has already run on the GPU, and needs no
+// order. F5 drops those writer jobs from F2's and F4's list. A writer job whose stale case was not excluded keeps F2/F4:
+// COND_EXEC, a host drop, the label unknown at its submit, a rebuilt buffer, or another writer in flight.
+// No packet is inserted and no buffer is rewritten. Counted as F5-skipped.
 namespace ho430 {
 inline bool not0(const char* e) {
 	return e == nullptr || !(e[0] == '0' && e[1] == 0);
@@ -44,6 +54,10 @@ inline bool f4_on() {
 	static const bool v = not0(std::getenv("BC5_DIRECT_XQ_FENCE"));
 	return v;
 }
+inline bool f5_on() {
+	static const bool v = not0(std::getenv("BC5_DIRECT_XQ_PRECISE"));
+	return v;
+}
 #else
 inline bool f2_on() {
 	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F2"));
@@ -61,8 +75,12 @@ inline bool f4_on() {
 	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F4"));
 	return v;
 }
+inline bool f5_on() {
+	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F5"));
+	return v;
+}
 #endif
-enum : uint8_t { kWait = 1, kWrite = 2, kDropped = 3, kF2Waited = 4, kF2Cycle = 5, kF2Bound = 6, kGivenUp = 7, kCycle = 8, kF3Preset = 9, kF3Refused = 10, kF3First = 11, kF3NotStale = 12, kF3Met = 13, kF4Fence = 14 };
+enum : uint8_t { kWait = 1, kWrite = 2, kDropped = 3, kF2Waited = 4, kF2Cycle = 5, kF2Bound = 6, kGivenUp = 7, kCycle = 8, kF3Preset = 9, kF3Refused = 10, kF3First = 11, kF3NotStale = 12, kF3Met = 13, kF4Fence = 14, kF5Skip = 15 };
 constexpr uint32_t kTypes = 16;
 struct Cross {
 	uint64_t v         = 0; // the released value the waits wait for (== v)
@@ -92,9 +110,14 @@ struct Store {
 	std::map<std::pair<int, uint64_t>, std::vector<uint64_t>> job_waits; // (ring, seq) -> the labels of its kept GPU waits
 	std::map<uint64_t, Cross>                  cross;                    // F3: the cross-queue labels, in memory only
 	std::map<uint64_t, uint64_t>               preset_at;                // F3: label -> SoftCp::now_ns() of a preset whose release has not been seen yet
+	std::map<std::pair<int, uint64_t>, std::vector<uint64_t>> job_safe; // F5: (ring, seq) -> labels whose stale case F3 excluded at its submit
 	uint64_t                                   c[kTypes] {};
 	uint64_t                                   waited_ns = 0;
 };
+// F5: what F3 found for the buffer it was just given, handed to job_submitted on the same thread (same buffer and length)
+inline thread_local const uint32_t*  t_f5_ib = nullptr;
+inline thread_local uint32_t         t_f5_n  = 0;
+inline thread_local std::vector<uint64_t> t_f5_safe;
 inline void dump(int k);
 inline Store& st() {
 	static Store s;
@@ -122,6 +145,10 @@ inline Ev ev(uint8_t type, uint64_t label, const char* kind, int ring, uint32_t 
 // One pass over a submitted job: its kept waits (for F2's cycle check), its registered writes and the writes the filter
 // dropped (G). executed: the offsets the filter kept, in order.
 inline void job_submitted(const uint32_t* ib, uint32_t num_dwords, const std::vector<uint32_t>& executed, uint64_t seq, int ring, const char* kind) {
+	std::vector<uint64_t> safe; // F5: only when F3 saw this very buffer just before its submit
+	if (t_f5_ib == ib && t_f5_n == num_dwords) safe.swap(t_f5_safe);
+	t_f5_ib = nullptr;
+	t_f5_safe.clear();
 	if (!f2_on() && !g_on() && !f3_on()) return;
 	std::vector<uint64_t> waits;
 	std::vector<Ev>       evs;
@@ -159,6 +186,10 @@ inline void job_submitted(const uint32_t* ib, uint32_t num_dwords, const std::ve
 		s.job_waits[{ring, seq}] = std::move(waits);
 		if (s.job_waits.size() > 4096) s.job_waits.erase(s.job_waits.begin());
 	}
+	if (f5_on() && f3_on() && !safe.empty()) {
+		s.job_safe[{ring, seq}] = std::move(safe);
+		if (s.job_safe.size() > 4096) s.job_safe.erase(s.job_safe.begin());
+	}
 	if (s.r.size() != kEvN) s.r.assign(kEvN, Ev {});
 	for (const Ev& x: evs) {
 		s.r[s.total % kEvN] = x;
@@ -170,9 +201,15 @@ inline void job_submitted(const uint32_t* ib, uint32_t num_dwords, const std::ve
 	if (g_on() && now - last_line > 30'000'000'000ull) {
 		last_line = now;
 		journal("ho430 (exp 0430): t %.1f s: waits seen %" PRIu64 ", writes registered %" PRIu64 ", writes DROPPED by the host %" PRIu64 "; F3 cross-queue labels %zu, presets %" PRIu64 ", refused %" PRIu64 ", not stale %" PRIu64
-		        ", first seen (to F2) %" PRIu64 ", waits meeting a preset before its release %" PRIu64 "; F2 waited %" PRIu64 " (%.1f ms in all), refused as a cycle %" PRIu64 ", bound reached %" PRIu64 "; unsatisfied waits dropped: GIVEN UP %" PRIu64 ", CYCLE %" PRIu64 "\n",
+		        ", first seen (to F2) %" PRIu64 ", waits meeting a preset before its release %" PRIu64 "; F2 waited %" PRIu64 " (%.1f ms in all), refused as a cycle %" PRIu64 ", bound reached %" PRIu64 ", F4 fences %" PRIu64 ", F5 skipped %" PRIu64 "; unsatisfied waits dropped: GIVEN UP %" PRIu64 ", CYCLE %" PRIu64 "\n",
 		        timing_now(), s.c[kWait], s.c[kWrite], s.c[kDropped], s.cross.size(), s.c[kF3Preset], s.c[kF3Refused], s.c[kF3NotStale], s.c[kF3First], s.c[kF3Met], s.c[kF2Waited], static_cast<double>(s.waited_ns) / 1e6,
-		        s.c[kF2Cycle], s.c[kF2Bound], s.c[kGivenUp], s.c[kCycle]);
+		        s.c[kF2Cycle], s.c[kF2Bound], s.c[kF4Fence], s.c[kF5Skip], s.c[kGivenUp], s.c[kCycle]);
+	}
+	static uint64_t last_f5 = 0; // F5's line without G (the shared form too): the orders kept against the orders skipped
+	if (!g_on() && f3_on() && now - last_f5 > 60'000'000'000ull) {
+		last_f5 = now;
+		journal("ho430 F5 (exp 0430): t %.1f s: F3 presets %" PRIu64 ", not stale %" PRIu64 ", refused %" PRIu64 "; F4 fences %" PRIu64 ", F2 waited %" PRIu64 ", F5 skipped %" PRIu64 " (precise %s)\n", timing_now(), s.c[kF3Preset], s.c[kF3NotStale], s.c[kF3Refused],
+		        s.c[kF4Fence], s.c[kF2Waited], s.c[kF5Skip], f5_on() ? "on" : "off");
 	}
 #ifndef HO430_SHARED
 	static bool         at_done = false; // BC5_0430_G_AT: one dump in a clean run
@@ -191,8 +228,13 @@ inline void job_done(uint64_t seq, int ring, bool all) {
 	if (!f2_on() && !f3_on()) return;
 	Store&          s = st();
 	std::lock_guard lk(s.m);
-	if (all) s.job_waits.clear();
-	else s.job_waits.erase({ring, seq});
+	if (all) {
+		s.job_waits.clear();
+		s.job_safe.clear();
+	} else {
+		s.job_waits.erase({ring, seq});
+		s.job_safe.erase({ring, seq});
+	}
 }
 inline void given_up(bool cycle, uint64_t label, const char* kind, int ring, uint32_t off) {
 	if (g_on()) add(ev(cycle ? kCycle : kGivenUp, label, kind, ring, off));
@@ -261,6 +303,25 @@ inline void at_wait(const uint32_t* p, bool is64, uint64_t label, const char* ki
 		add(x);
 	}
 	if (!f2_on() || !sat || others.empty()) return;
+	if (f5_on() && f3_on()) { // F5: a writer job whose stale case F3 excluded has released already; it needs no order
+		std::vector<std::pair<int, uint64_t>> need;
+		{
+			Store&          s = st();
+			std::lock_guard lk(s.m);
+			for (const auto& o: others) {
+				const auto it = s.job_safe.find(o);
+				if (it == s.job_safe.end() || std::find(it->second.begin(), it->second.end(), label) == it->second.end()) need.push_back(o);
+			}
+		}
+		if (need.empty()) {
+			Ev x    = ev(kF5Skip, label, kind, ring, off);
+			x.value = value;
+			x.ref   = others.front().second;
+			add(x);
+			return;
+		}
+		others.swap(need);
+	}
 	// The cycle check: a writer job holding a kept GPU wait on a label this buffer writes cannot complete before this buffer runs.
 	std::vector<uint64_t> mine;
 	for (uint32_t q = 0; q < num_dwords;) {
@@ -342,6 +403,9 @@ inline void at_wait(const uint32_t* p, bool is64, uint64_t label, const char* ki
 // submitted (no rebuilt copy: the caller passes it only when the host did not rebuild it), drops the host's drop offsets.
 inline void f3_before_submit(const uint32_t* ib, uint32_t num_dwords, const std::vector<uint32_t>& drops, int ring, const char* kind, const std::vector<bc5::direct::Mapping>& maps) {
 	if (!f3_on()) return;
+	t_f5_ib = ib; // F5: this buffer's excluded labels, for job_submitted after the device call
+	t_f5_n  = num_dwords;
+	t_f5_safe.clear();
 	{
 		Store&          s = st();
 		std::lock_guard lk(s.m);
@@ -397,6 +461,7 @@ inline void f3_before_submit(const uint32_t* ib, uint32_t num_dwords, const std:
 					const uint64_t now = w64 ? *reinterpret_cast<const volatile uint64_t*>(a & ~7ull) : *reinterpret_cast<const volatile uint32_t*>(a & ~3ull);
 					if (why == nullptr && now != v) {
 						add(ev(kF3NotStale, a, kind, ring, q));
+						t_f5_safe.push_back(a); // F5: not stale, no other writer or kept wait in flight
 					} else if (why != nullptr) {
 						Ev x    = ev(kF3Refused, a, kind, ring, q);
 						x.value = now;
@@ -412,6 +477,7 @@ inline void f3_before_submit(const uint32_t* ib, uint32_t num_dwords, const std:
 						x.value = set;
 						x.ref   = v;
 						add(x);
+						t_f5_safe.push_back(a); // F5: preset, so only this job's release brings the value back
 						{
 							Store&          s = st();
 							std::lock_guard lk(s.m);
@@ -443,7 +509,7 @@ inline void dump(int k) {
 	std::snprintf(name, sizeof(name), "%s/g0430-%d.txt", dir.c_str(), k);
 	FILE* f = std::fopen(name, "w");
 	if (f == nullptr) return;
-	static const char* const tn[kTypes] = {"-", "wait", "write", "DROPPED-WRITE", "F2-waited", "F2-cycle", "F2-bound", "GIVEN-UP", "CYCLE", "F3-preset", "F3-refused", "F3-first-seen", "F3-not-stale", "F3-wait-met-preset", "F4-fence", "?"};
+	static const char* const tn[kTypes] = {"-", "wait", "write", "DROPPED-WRITE", "F2-waited", "F2-cycle", "F2-bound", "GIVEN-UP", "CYCLE", "F3-preset", "F3-refused", "F3-first-seen", "F3-not-stale", "F3-wait-met-preset", "F4-fence", "F5-skipped"};
 	std::fprintf(f, "g0430 %d at t %.3f s: the last %zu label events, oldest first; counts: waits %" PRIu64 " writes %" PRIu64 " dropped writes %" PRIu64 " F2 waited %" PRIu64 " cycle %" PRIu64 " bound %" PRIu64 " given up %" PRIu64 " cycle-broken %" PRIu64 "\n", k,
 	             timing_now(), all.size(), c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8]);
 	std::fprintf(f, "columns: t_s type label kind ring about#n offset | wait: value ref func satisfied pending | write: value job_seq op\n");

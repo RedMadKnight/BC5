@@ -54,14 +54,20 @@ build() {
     pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
     local shared bin rc
     # the shared tree is patch a8717e53; its unit is 0cda79b5 (exp 0428's swap unit), and the shared objects are that build's
-    [ "$(git -C "$TREE" diff --no-color f266548 | md5sum | cut -c1-8)" = a8717e53 ] || stop "the shared tree is not patch a8717e53"
     BASE=$TREE/$U
+    if [ "${MODE:-}" = f5 ]; then  # F5 (2026-11-17): the shared unit as the 07:10 swap left it, the current shared tree and objects
+        [ "$(m8 "$BASE")" = b8afba59 ] || stop "the base unit $BASE is not b8afba59"
+        echo "the shared tree: diff $(git -C "$TREE" diff --no-color f266548 | md5sum | cut -c1-8), normal $(m8 "$B/src/kyty_emulator")"
+    else
+    [ "$(git -C "$TREE" diff --no-color f266548 | md5sum | cut -c1-8)" = a8717e53 ] || stop "the shared tree is not patch a8717e53"
     [ "$(m8 "$BASE")" = 0cda79b5 ] || stop "the base unit $BASE is not 0cda79b5"
+    fi
     shared=$(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)
     rm -rf "$S" "$E/obj"; mkdir -p "$S/src/libs" "$R"
     cp "$BASE" "$S/$U" || stop "copy $U"
     # MODE=swap (build 6 on): the shared form, mkswap0430.py's unit (the fix alone, no catcher), as the swap will ship it
-    if [ "${MODE:-}" = swap ]; then MKS=mkswap0430.py; EXP=b8afba59; WANTW="BC5_DIRECT_ACB_RINGS BC5_DIRECT_ACB_SPLIT_LATE BC5_DIRECT_XQ_PENDING BC5_DIRECT_XQ_ACQUIRE BC5_DIRECT_XQ_FENCE"
+    if [ "${MODE:-}" = f5 ]; then MKS=mkf5.py; EXP=574301e4; WANTW="BC5_DIRECT_XQ_PRECISE BC5_DIRECT_XQ_FENCE BC5_DIRECT_XQ_ACQUIRE"
+    elif [ "${MODE:-}" = swap ]; then MKS=mkswap0430.py; EXP=b8afba59; WANTW="BC5_DIRECT_ACB_RINGS BC5_DIRECT_ACB_SPLIT_LATE BC5_DIRECT_XQ_PENDING BC5_DIRECT_XQ_ACQUIRE BC5_DIRECT_XQ_FENCE"
     else MKS=mk0430.py; EXP=17a88ee8; WANTW=""; fi
     python3 -I "$HERE/$MKS" "$S" > "$R/mk.out" 2>&1 || { cat "$R/mk.out"; stop "$MKS refused"; }
     cat "$R/mk.out"
