@@ -386,6 +386,6 @@ All three crashes were at eboot+0x3d7eca0. In the T runs the fast mutex was on: 
 (T1) and 22,973 of 40,000 (T2), with a mean sleep of about 220 µs.
 
 **Verdict: candidate S/T is OUT.** Under the stressor the fast guest mutex crashed 2 of 2, the control 1 of 2, so it
-does not keep the workers ahead of the owner. The stressor works: the control crashed again (now M 3 crashes, 1 clean,
-across builds 3, 4 and 6). R13: counts only. The guest mutex's inner `std::mutex` is not the cause, or not the whole of
+does not keep the workers ahead of the owner. The stressor works: the control crashed again (with `GUEST_CPUS=1` and no
+mutex change: M4, Z1 and M6 crashed, M5 was clean, on builds 3, 4 and 6). R13: counts only. The guest mutex's inner `std::mutex` is not the cause, or not the whole of
 it. No candidate of this experiment survives. The removal is unaffected; it needs no candidate to be swapped.
