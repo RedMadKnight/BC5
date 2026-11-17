@@ -1,0 +1,7 @@
+chain lock: exp 0417 | chain: exp 0431: ASTRO BOT on the shared builds, way 2 (a431X1:x:W), until about 22:44 | token 20261116223555541083 | 2026-11-16 22:35:55
+22:35:55 == a431X1: private /home/kjaniszewski/bc5-work/exp0430/kyty_emulator 85a77956, arm W (BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_INDIRECT=1 BC5_DIRECT_ACB_STATE_NO_WALK=1 BC5_DIRECT_ACB_SPLIT_LATE=3; extra: BC5_0430_DJ=1 BC5_0430_ARGS=1 BC5_0430_WAVES_MS=900 BC5_0430_SNAP=1 BC5_0430_F2=1 BC5_0430_G=1 BC5_DIRECT_TIMEOUT_PROBE=1), 200 s
+a431X1 (astro) PASS: ran 200 s; RssAnon at the end 248068 kB; kernel lines 0, crash lines 0; real pad keys 2; shots 5
+a431X1 w428c lines 20; the last: [bc5] exp 0428 (tag w428c): t 190.6 s: jobs gfx 20144 comp0 4107 comp1 41242 comp2 28416 comp3 447; acbs kept on gfx: none; queue->ring: 26->3(2040) 32->1(420226) 38->0(15440) 40->2(107580) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 127 satisfied 21 NOT served 1449 heads split 1597 kept-without-split 3 (on a ring 1, in the IB 0, after the chain 2, still split 16841; polled first: kept 15244 satisfied 0 cycle-split 37 timeout-split 1560); aq424 ON, parts given state 22356, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 408330
+22:39:27 a431X1: PASS
+22:39:32 astro0431 ended
+chain lock released

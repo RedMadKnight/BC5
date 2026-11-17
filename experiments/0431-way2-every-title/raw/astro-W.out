@@ -1,0 +1,8 @@
+21:40:55 named snapshot made from /home/kjaniszewski/bc5-work/_SaveData/PPSA21564: 8898850cc13a23a6
+chain lock: exp 0417 | chain: exp 0431: ASTRO BOT on the shared builds, way 2 (a431W1:n:W a431W2:l:W), until about 21:53 | token 202611162140554720 | 2026-11-16 21:40:55
+21:40:55 == a431W1: normal dae7bf0b, arm W (BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_INDIRECT=1 BC5_DIRECT_ACB_STATE_NO_WALK=1 BC5_DIRECT_ACB_SPLIT_LATE=3), 200 s
+a431W1 (astro) GPU: kernel amdgpu line at 196 s; RssAnon at the end 182944 kB; kernel lines 79, crash lines 0; real pad keys 2; shots 5
+a431W1 w428c lines 20; the last: [bc5] exp 0428 (tag w428c): t 190.6 s: jobs gfx 22109 comp0 6759 comp1 53636 comp2 35694 comp3 447; acbs kept on gfx: none; queue->ring: 26->3(2040) 32->1(361095) 38->0(26084) 40->2(115543) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 73 satisfied 16 NOT served 0 heads split 89 kept-without-split 0 (on a ring 0, in the IB 0, after the chain 0, still split 18557; polled first: kept 18466 satisfied 2 cycle-split 29 timeout-split 60); aq424 ON, parts given state 28536, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 313429
+21:44:23 a real pad key in a431W1: VOID, chain stopped
+21:44:23 astro0431 ended
+chain lock released

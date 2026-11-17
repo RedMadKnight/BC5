@@ -5933,10 +5933,10 @@ index 0000000..6567205
 +} // namespace bc5::start_state
 diff --git a/src/bc5/switch_defaults.hpp b/src/bc5/switch_defaults.hpp
 new file mode 100644
-index 0000000..d65ab9b
+index 0000000..32ae952
 --- /dev/null
 +++ b/src/bc5/switch_defaults.hpp
-@@ -0,0 +1,364 @@
+@@ -0,0 +1,365 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +// Experiment 0413: the defaults of switches that went from the private test builds (exps 0401, 0405, 0409, 0412) into
 +// both shared builds. Each row is applied at process start with setenv(name, value, 0), before any static initializer
@@ -6072,6 +6072,17 @@ index 0000000..d65ab9b
 +    // exp 0425 C1 (2026-11-16, the maintainer's word): a 200 us EEVDF wake slice for guest threads below priority
 +    // 733 (pthread.cpp). Soft, so KYTY_BC5_0425_WAKE_SLICE_US=0 turns it off.
 +    {"KYTY_BC5_0425_WAKE_SLICE_US", "200"},
++    // exp 0428 way 2, for every title since exp 0431 (the maintainer, 2026-11-16: "ma byc w dowolnej grze"; until then
++    // PPSA03671's rows): the acbs on kernel compute rings, one libdrm ring per busy guest queue; each acb part that
++    // dispatches gets its own guest queue's tracked compute state in front; indirect dispatches on the MEC under the CP's
++    // check (verified on real dispatches, exp 0428 step 2). BC5_DIRECT_ACB_RINGS=0 in the environment turns way 2 off.
++    {"BC5_DIRECT_ACB_RINGS", "4"},
++    {"BC5_DIRECT_ACB_QUEUE_STATE", "1"},
++    {"BC5_DIRECT_ACB_MEC_INDIRECT", "1"},
++    {"BC5_DIRECT_ACB_STATE_NO_WALK", "1"},
++    // exp 0428 iteration 6: a two-ring dcb wait polls first and splits only on exp 0132's cycle or after 8 ms (18,625 -> 69
++    // splits per run, w428L11). BC5_DIRECT_ACB_SPLIT_LATE=0 in the environment turns it off.
++    {"BC5_DIRECT_ACB_SPLIT_LATE", "3"},
 +    {nullptr, nullptr}};
 +
 +// exp 0419: words whose option is removed and whose code default (the value when unset) is the tested behaviour.
@@ -6154,16 +6165,6 @@ index 0000000..d65ab9b
 +    {BC5_T2, "KYTY_BC5_LOAD_NPCOMMON", "1"},
 +    {BC5_T2, "KYTY_BC5_LOAD_NPMANAGER", "1"},
 +    {BC5_T2, "KYTY_BC5_LOAD_NPTROPHY", "1"},
-+    // exp 0428 (way 2, the maintainer's consent through deployment, 2026-11-16): the title's acbs on compute rings, each
-+    // guest queue's compute state in front of its dispatching acb parts, indirect dispatches on the MEC under the CP's
-+    // check (verified on real dispatches, exp 0428 step 2). BC5_DIRECT_ACB_RINGS=0 in the environment is the rollback.
-+    {BC5_T2, "BC5_DIRECT_ACB_RINGS", "4"},
-+    {BC5_T2, "BC5_DIRECT_ACB_QUEUE_STATE", "1"},
-+    {BC5_T2, "BC5_DIRECT_ACB_MEC_INDIRECT", "1"},
-+    {BC5_T2, "BC5_DIRECT_ACB_STATE_NO_WALK", "1"},
-+    // exp 0428 iteration 6: a two-ring dcb wait polls first and splits only on exp 0132's cycle or after 8 ms (18,625 -> 69
-+    // splits per run, w428L11). BC5_DIRECT_ACB_SPLIT_LATE=0 in the environment is the rollback.
-+    {BC5_T2, "BC5_DIRECT_ACB_SPLIT_LATE", "3"},
 +    {nullptr, nullptr, nullptr}};
 +#undef BC5_T2
 +
