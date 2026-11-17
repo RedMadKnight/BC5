@@ -51,6 +51,12 @@ sub('sleep 3; [ -n "$SP" ] && kill "$SP" 2> /dev/null; SP=""\n',
     'sleep 3; [ -n "$SP" ] && kill "$SP" 2> /dev/null; SP=""\n'
     'if [ -n "$SIDEP" ]; then for _ in $(seq 1 90); do [ -d "/proc/$SIDEP" ] || break; sleep 1; done; [ -d "/proc/$SIDEP" ] && kill "$SIDEP" 2> /dev/null; SIDEP=""; fi  # exp 0432: the profiler writes its report first\n')
 
+# a refused submission ends the run at once (2026-11-17: build 2's slot change made Device::submit return -EBUSY, the
+# host lost 142 jobs and the GPU hung 45 s into run d432T13; the journal had the lines from submission 18 on)
+sub('  [ -n "$G" ] && [ "$NOW" -ge $((G + PLAY)) ] && break\n',
+    '  if [ -n "$J" ] && tail -c 4000000 "$J" 2> /dev/null | grep -aq "FAILED rc -16"; then ENDED="REFUSED: the journal has a submission FAILED rc -16 at $NOW s"; break; fi  # exp 0432\n'
+    '  [ -n "$G" ] && [ "$NOW" -ge $((G + PLAY)) ] && break\n')
+
 # the route by time
 sub('  if [ -z "$J" ] && [ "$NOW" -ge 60 ]; then\n', '  if [ "${N_TIMED:-0}" != 1 ] && [ -z "$J" ] && [ "$NOW" -ge 60 ]; then\n')
 sub('  if [ -n "$J" ] && [ "$RS" -lt 4 ] && [ "$NOW" -ge 85 ]; then\n',

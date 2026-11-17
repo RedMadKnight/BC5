@@ -528,26 +528,6 @@ struct Device::Impl {
         }();
         return v;
     }
-    void s432_pick(std::uint64_t bytes, int ring, bool async) {
-        static std::uint64_t moved = 0, grown = 0;
-        if (!async || !s432_prealloc() || (slots[cur].bo != nullptr && slots[cur].size >= bytes)) return;
-        const int first = pool_first(ring), n = pool_size(ring);
-        int best = -1;
-        for (int k = first; k < first + n; ++k) {
-            if (k == cur || slot_seq[k].load() != 0 || slots[k].bo == nullptr || slots[k].size < bytes) continue;
-            if (best < 0 || slots[k].size < slots[best].size) best = k;
-        }
-        if (best >= 0) {
-            cur = best;
-            slot_ring[cur] = ring;
-            moved++;
-        } else {
-            grown++;
-        }
-        if (((moved + grown) & 1023u) == 1)
-            std::fprintf(stderr, "bc5-direct: exp 0432 (tag s432): slot prealloc ON; jobs moved to a larger free slot %llu, no free slot large enough (the slot grows) %llu\n",
-                         static_cast<unsigned long long>(moved), static_cast<unsigned long long>(grown));
-    }
 
     void scratch_free() {
         ScratchBo &scratch = slots[cur];
@@ -695,15 +675,12 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
     if (Impl::s432_prealloc()) { // exp 0432 (tag s432): the large slot buffers, once, before the title maps anything
         const double t0 = now_ms();
         int made = 0, failed = 0;
-        for (int ring = kGfxRing; ring < kComputeRings; ++ring) {
-            const int last = Impl::pool_first(ring) + Impl::pool_size(ring) - 1;
-            for (int j = 0; j < 8; ++j) {
-                d->impl_->cur = last - j;
-                (d->impl_->scratch_reserve(j < 2 ? (4u << 20) : (512u << 10)) ? made : failed)++;
-            }
+        for (int k = 0; k < Impl::kSlots; ++k) {
+            d->impl_->cur = k;
+            (d->impl_->scratch_reserve(512u << 10) ? made : failed)++;
         }
         d->impl_->cur = Impl::pool_first(kGfxRing);
-        std::fprintf(stderr, "bc5-direct: exp 0432 (tag s432): slot prealloc: %d buffers made (%d failed) in %.1f ms: per ring 2 of 4 MiB and 6 of 512 KiB\n", made, failed,
+        std::fprintf(stderr, "bc5-direct: exp 0432 (tag s432): slot prealloc: %d buffers made (%d failed) in %.1f ms: every slot 512 KiB\n", made, failed,
                      now_ms() - t0);
     }
     return d;
@@ -1393,7 +1370,6 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     const std::uint64_t bytes = end_off * sizeof(std::uint32_t);
     r.prep_nested_ms = now_ms() - t_phase; // the survey; the nested filters are added below
     t_phase = now_ms();
-    impl_->s432_pick(bytes, ring, async_); // exp 0432 (tag s432)
     if (!impl_->scratch_reserve(bytes)) {
         r.rc = -2;
         return r;

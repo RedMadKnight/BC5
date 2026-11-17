@@ -78,11 +78,14 @@ sub("        if (amdgpu_bo_cpu_map(scratch.bo, &scratch.cpu) != 0) return false;
     "                             static_cast<unsigned long long>(s432_bytes >> 10));\n"
     "        }\n"
     "        return true;\n")
-# Item P (tag s432, BC5_DIRECT_SLOT_PREALLOC; on unless "0"). Found in the T runs of 2026-11-17: "slot 0 resize 524288 ->
-# 4194304 bytes took 683.0 ms: unmap+free 0.1, alloc 682.7, gpu map 0.1, cpu map 0.0": the stall is amdgpu_bo_alloc in
-# the middle of play. So at Device::open each ring's pool gets 2 slots of 4 MiB and 6 of 512 KiB (55 MiB of GTT in all),
-# and a job that does not fit its slot takes the smallest free slot of its pool that holds it instead of allocating.
-# Only when none is free does the slot grow as before (counted and timed).
+# Item P (tag s432, BC5_DIRECT_SLOT_PREALLOC; on unless "0"). Found in build 1's runs: "slot 0 resize 524288 -> 4194304
+# bytes took 683.0 ms: unmap+free 0.1, alloc 682.7, ...": the stall is amdgpu_bo_alloc in the middle of play. Build 2
+# (a4ee7fd6) also moved a job that did not fit its slot to a free larger slot of its pool. THAT WAS A BUG AND IS REMOVED:
+# the rotation later reached such a slot while it was busy, Device::submit returned -EBUSY and the host lost the job
+# (142 submissions "FAILED rc -16" in 45 s), a later job waited for work that never ran, the gfx ring timed out, its
+# reset failed and the box rebooted (run d432T13, 2026-11-17 16:15:24, fault record 20261117-161524). Build 3: every
+# slot's buffer is made once at Device::open with 512 KiB (64 MiB of GTT for the 128 slots); no job changes its slot;
+# a job over 512 KiB grows its slot as before (counted and timed).
 sub("    void scratch_free() {\n",
     "    // exp 0432 (tag s432): see mkbe432.py, item P\n"
     "    static bool s432_prealloc() {\n"
@@ -92,31 +95,8 @@ sub("    void scratch_free() {\n",
     "        }();\n"
     "        return v;\n"
     "    }\n"
-    "    void s432_pick(std::uint64_t bytes, int ring, bool async) {\n"
-    "        static std::uint64_t moved = 0, grown = 0;\n"
-    "        if (!async || !s432_prealloc() || (slots[cur].bo != nullptr && slots[cur].size >= bytes)) return;\n"
-    "        const int first = pool_first(ring), n = pool_size(ring);\n"
-    "        int best = -1;\n"
-    "        for (int k = first; k < first + n; ++k) {\n"
-    "            if (k == cur || slot_seq[k].load() != 0 || slots[k].bo == nullptr || slots[k].size < bytes) continue;\n"
-    "            if (best < 0 || slots[k].size < slots[best].size) best = k;\n"
-    "        }\n"
-    "        if (best >= 0) {\n"
-    "            cur = best;\n"
-    "            slot_ring[cur] = ring;\n"
-    "            moved++;\n"
-    "        } else {\n"
-    "            grown++;\n"
-    "        }\n"
-    "        if (((moved + grown) & 1023u) == 1)\n"
-    "            std::fprintf(stderr, \"bc5-direct: exp 0432 (tag s432): slot prealloc ON; jobs moved to a larger free slot %llu, no free slot large enough (the slot grows) %llu\\n\",\n"
-    "                         static_cast<unsigned long long>(moved), static_cast<unsigned long long>(grown));\n"
-    "    }\n"
     "\n"
     "    void scratch_free() {\n")
-sub("    if (!impl_->scratch_reserve(bytes)) {\n",
-    "    impl_->s432_pick(bytes, ring, async_); // exp 0432 (tag s432)\n"
-    "    if (!impl_->scratch_reserve(bytes)) {\n")
 sub("        if (wrc != 0) d->impl_->gws = nullptr;\n"
     "    }\n"
     "    return d;\n",
@@ -125,15 +105,12 @@ sub("        if (wrc != 0) d->impl_->gws = nullptr;\n"
     "    if (Impl::s432_prealloc()) { // exp 0432 (tag s432): the large slot buffers, once, before the title maps anything\n"
     "        const double t0 = now_ms();\n"
     "        int made = 0, failed = 0;\n"
-    "        for (int ring = kGfxRing; ring < kComputeRings; ++ring) {\n"
-    "            const int last = Impl::pool_first(ring) + Impl::pool_size(ring) - 1;\n"
-    "            for (int j = 0; j < 8; ++j) {\n"
-    "                d->impl_->cur = last - j;\n"
-    "                (d->impl_->scratch_reserve(j < 2 ? (4u << 20) : (512u << 10)) ? made : failed)++;\n"
-    "            }\n"
+    "        for (int k = 0; k < Impl::kSlots; ++k) {\n"
+    "            d->impl_->cur = k;\n"
+    "            (d->impl_->scratch_reserve(512u << 10) ? made : failed)++;\n"
     "        }\n"
     "        d->impl_->cur = Impl::pool_first(kGfxRing);\n"
-    "        std::fprintf(stderr, \"bc5-direct: exp 0432 (tag s432): slot prealloc: %d buffers made (%d failed) in %.1f ms: per ring 2 of 4 MiB and 6 of 512 KiB\\n\", made, failed,\n"
+    "        std::fprintf(stderr, \"bc5-direct: exp 0432 (tag s432): slot prealloc: %d buffers made (%d failed) in %.1f ms: every slot 512 KiB\\n\", made, failed,\n"
     "                     now_ms() - t0);\n"
     "    }\n"
     "    return d;\n")

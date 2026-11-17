@@ -233,6 +233,7 @@ while [ -z "$ENDED" ] && [ $(($(date +%s) - T0)) -lt "$SECS" ]; do
     nohup bash "$N_SIDE" "$EP" "$R/$TAG-prof" "$((PLAY > 60 ? PLAY - 20 : PLAY))" > "$R/$TAG-prof.out" 2>&1 < /dev/null & SIDEP=$!
     echo "side: $N_SIDE started at $NOW s as pid $SIDEP" >> "$R/$TAG-start.txt"
   fi
+  if [ -n "$J" ] && tail -c 4000000 "$J" 2> /dev/null | grep -aq "FAILED rc -16"; then ENDED="REFUSED: the journal has a submission FAILED rc -16 at $NOW s"; break; fi  # exp 0432
   [ -n "$G" ] && [ "$NOW" -ge $((G + PLAY)) ] && break
   if sudo -n dmesg 2> /dev/null | tail -n +"$((ND + 1))" | grep -i amdgpu | grep -v -E '[A-Za-z_][A-Za-z0-9_.]*\+0x[0-9a-f]+/0x[0-9a-f]+' | grep -qi "timeout\|reset\|fault"; then
     sleep 25
