@@ -8,7 +8,7 @@
 // RR 1-20 with RLIMIT_RTTIME up to 200 ms, read 2026-11-17) at its first sleep on a guest semaphore, with an RR priority
 // in the guest's order (a lower guest number, a higher RR priority). For any title; no title rows.
 // Bounds (the box runs with RT throttling off, sched_rt_runtime_us = period):
-//   1. RLIMIT_RTTIME on the process: soft 50 ms of RR time without blocking -> SIGXCPU, whose handler drops the running
+//   1. RLIMIT_RTTIME on the process: soft 20 ms of RR time without blocking -> SIGXCPU, whose handler drops the running
 //      RR thread back to SCHED_OTHER for good (a spinner); hard 200 ms -> the kernel ends the emulator (never the box);
 //   2. a watchdog thread every 5 ms: an RR thread that ran 100 ms with no new time slice is dropped for good;
 //   3. at most (online CPUs - 2) guest threads hold RR at once, so host threads always have two CPUs.
@@ -30,7 +30,7 @@ static bool On() {
 	return v;
 }
 constexpr int     kMaxSlots   = 64;
-constexpr int64_t kSoftUs     = 50000;
+constexpr int64_t kSoftUs     = 20000;
 constexpr int64_t kHardUs     = 200000;
 constexpr int     kRrMax      = 20; // rtkit's MaxRealtimePriority on the box (2026-11-17)
 static std::atomic<int> g_tid[kMaxSlots];      // RR threads (0: free)
