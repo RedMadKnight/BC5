@@ -202,6 +202,7 @@ struct Store {
 	uint64_t                                   f8_calls = 0, f8_chains = 0, f8_ns = 0, f8_busy = 0, f8_gone = 0, f8_bound = 0; // F8: observe points taken, other threads' chains submitted, time
 	uint64_t                                   f7_same = 0;  // F7: not held, the waiter's thread is the one that registers the release
 	uint64_t                                   f7_hist[6] {}; // F7: holds < 1, < 5, < 20, < 50, < 250 ms, bound
+	uint64_t                                   f7_cls[3] {};  // F7: holds where a title submit call was running at the start / began during it / neither
 	uint64_t                                   f7_mark[6] {}; // F7: in a hold, the title's busy mark after the hold's start: < 0.1, < 1, < 5, < 20 ms, later, none
 	uint64_t                                   c[kTypes] {};
 	uint64_t                                   waited_ns = 0;
@@ -347,10 +348,10 @@ inline void job_submitted(const uint32_t* ib, uint32_t num_dwords, const std::ve
 	static uint64_t last_f5 = 0; // F5's line without G (the shared form too): the orders kept against the orders skipped
 	if (!g_on() && f3_on() && now - last_f5 > 60'000'000'000ull) {
 		last_f5 = now;
-		journal("ho430 F5 (exp 0430): t %.1f s: F3 presets %" PRIu64 ", not stale %" PRIu64 ", refused %" PRIu64 "; F4 fences %" PRIu64 ", F2 waited %" PRIu64 ", F5 skipped %" PRIu64 " (precise %s), F6 kept %" PRIu64 " (keep %s), F6 kept waits not back in 1 s %" PRIu64 ", F6 labels %zu, not kept on a shared ring %" PRIu64 "; F7 labels %zu, held %" PRIu64 " (%.1f ms), bounds %" PRIu64 ", same thread %" PRIu64 ", holds <1/<5/<20/<50/<250 ms/bound %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", marks <0.1/<1/<5/<20 ms/later/none %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "; F8 observe points %" PRIu64 ", chains made due %" PRIu64 " (%.1f ms), gone within 2 ms %" PRIu64 ", bound %" PRIu64 ", could not look %" PRIu64 "\n", timing_now(), s.c[kF3Preset], s.c[kF3NotStale], s.c[kF3Refused],
+		journal("ho430 F5 (exp 0430): t %.1f s: F3 presets %" PRIu64 ", not stale %" PRIu64 ", refused %" PRIu64 "; F4 fences %" PRIu64 ", F2 waited %" PRIu64 ", F5 skipped %" PRIu64 " (precise %s), F6 kept %" PRIu64 " (keep %s), F6 kept waits not back in 1 s %" PRIu64 ", F6 labels %zu, not kept on a shared ring %" PRIu64 "; F7 labels %zu, held %" PRIu64 " (%.1f ms), bounds %" PRIu64 ", same thread %" PRIu64 ", holds <1/<5/<20/<50/<250 ms/bound %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", marks <0.1/<1/<5/<20 ms/later/none %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "; F8 observe points %" PRIu64 ", chains made due %" PRIu64 " (%.1f ms), gone within 2 ms %" PRIu64 ", bound %" PRIu64 ", could not look %" PRIu64 "; F7 holds with a title submit call running/begun during/neither %" PRIu64 "/%" PRIu64 "/%" PRIu64 "\n", timing_now(), s.c[kF3Preset], s.c[kF3NotStale], s.c[kF3Refused],
 		        s.c[kF4Fence], s.c[kF2Waited], s.c[kF5Skip], f5_on() ? "on" : "off", s.c[kF6Kept], f6_on() ? "on" : "off", s.f6_long, s.f6_by_label.size(), s.f6_shared, s.f7.size(), s.f7_held, static_cast<double>(s.f7_ns) / 1e6, s.f7_bound, s.f7_same,
 		        s.f7_hist[0], s.f7_hist[1], s.f7_hist[2], s.f7_hist[3], s.f7_hist[4], s.f7_hist[5], s.f7_mark[0], s.f7_mark[1], s.f7_mark[2], s.f7_mark[3], s.f7_mark[4], s.f7_mark[5],
-		        s.f8_calls, s.f8_chains, static_cast<double>(s.f8_ns) / 1e6, s.f8_gone, s.f8_bound, s.f8_busy);
+		        s.f8_calls, s.f8_chains, static_cast<double>(s.f8_ns) / 1e6, s.f8_gone, s.f8_bound, s.f8_busy, s.f7_cls[0], s.f7_cls[1], s.f7_cls[2]);
 	}
 #ifndef HO430_SHARED
 	static bool         at_done = false; // BC5_0430_G_AT: one dump in a clean run
@@ -472,6 +473,8 @@ inline void f7_wait(uint64_t label, uint64_t ref, int ring, const uint32_t* ib, 
 		std::snprintf(rname, sizeof(rname), "%s", c.rname);
 	}
 	const uint64_t t0     = SoftCp::now_ns();
+	const int      run0   = g_xq_in_submit.load();      // the title's submit calls already running when the acb was taken
+	const uint64_t ent0   = g_xq_submit_entries.load(); // and begun so far (one beginning during the hold: the title called it after)
 	bool           done   = false;
 	uint64_t       mark_t = 0; // when the label first held a value other than ref (the title's mark, or F3's preset at the writer's submit)
 	while (SoftCp::now_ns() - t0 < 250'000'000ull && (!g_dev || !g_dev->wedged())) {
@@ -484,9 +487,12 @@ inline void f7_wait(uint64_t label, uint64_t ref, int ring, const uint32_t* ib, 
 		std::this_thread::sleep_for(std::chrono::microseconds(50));
 	}
 	const uint64_t waited = SoftCp::now_ns() - t0;
+	const uint64_t began  = g_xq_submit_entries.load() - ent0;
+	const int      cls    = run0 > 0 ? 0 : began > 0 ? 1 : 2; // 0: a submit call was running; 1: one began during the hold; 2: neither
 	uint64_t       n      = 0;
 	{
 		std::lock_guard lk(s.m);
+		s.f7_cls[cls]++;
 		Store::Cnt&     c = s.f7[label];
 		if (done) {
 			c.bal--;
@@ -511,8 +517,8 @@ inline void f7_wait(uint64_t label, uint64_t ref, int ring, const uint32_t* ib, 
 	{
 		char wname[16] {};
 		pthread_getname_np(pthread_self(), wname, sizeof(wname));
-		journal("ho430 F7: %s on ring %d at %u (thread %s): its wait on 0x%" PRIx64 " (== 0x%" PRIx64 ") came before its release; %s after %.2f ms; the label marked %s%.2f ms in; the last release came from thread %s (%" PRIu64 " %s)\n", kind, ring, off, wname, label, ref,
-		        done ? "held until the release was submitted" : "BOUND REACHED, the label resyncs", static_cast<double>(waited) / 1e6, mark_t == 0 ? "never, " : "", mark_t == 0 ? 0.0 : static_cast<double>(mark_t - t0) / 1e6, rname, n, done ? "held" : "bounds");
+		journal("ho430 F7: %s on ring %d at %u (thread %s): its wait on 0x%" PRIx64 " (== 0x%" PRIx64 ") came before its release; %s after %.2f ms; the label marked %s%.2f ms in; the last release came from thread %s; title submit calls running at the start %d, begun during the hold %" PRIu64 " (%" PRIu64 " %s)\n", kind, ring, off, wname, label, ref,
+		        done ? "held until the release was submitted" : "BOUND REACHED, the label resyncs", static_cast<double>(waited) / 1e6, mark_t == 0 ? "never, " : "", mark_t == 0 ? 0.0 : static_cast<double>(mark_t - t0) / 1e6, rname, run0, began, n, done ? "held" : "bounds");
 	}
 }
 // At a wait of a buffer about to be submitted (submit_split), before the host decides it.
