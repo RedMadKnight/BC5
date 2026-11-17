@@ -547,3 +547,26 @@ R has not crashed yet, and the stressed control crashes in most runs. Two runs a
   - Before any swap: an ASTRO BOT smoke with R on (normal and lean, `astro0431.sh` with `XWORDS=KYTY_BC5_0429_RR=1`),
     the flips/s against the same run without R, and the screen shots. R stays off by default until the maintainer
     decides.
+
+## Is the crash host blocking? (the top's question, 2026-11-17 13:xx, offline, from h429Z1's dump at the fault)
+
+h429Z1 is the one crash whose per-thread state at the fault is on the laptop (`raw/n/h429Z1-waits.txt`). The dumps of
+M4, M6, M7 and M11, also with the catcher on, are in their play logs on the box, not read yet. At Z1's fault (G+10):
+- **No job thread and not the owner is inside a host call.**
+  - All 8 Job Hi and 8 Job Lo workers are in `futex` (202), asleep on `JobLoaderSema`. The Hi workers went to sleep
+    7–146 µs before, and their last wakes waited 0.01–1.34 ms for a CPU (Hi 6 1.34 ms, Hi 4 1.12 ms).
+  - The owner (`game-main`) is running the fault handler on CPU 8.
+  - No guest thread is in mmap, munmap or ioctl. Neither submit thread is blocked: one `bc5-ring` is running on CPU 13,
+    the other is in `nanosleep`.
+- **What is running instead: all 8 `Job Bk` workers** (guest priority 750, the background band), state R on CPUs 0, 1,
+  1, 2, 3, 6, 7 and 8. Those are the Hi workers' CPUs 0–7 and the owner's CPU 8. The file readers are busy too:
+  `bc5-apr-q3`, two of them in D state in `pread64` (17), so the title is loading.
+- **So the slow wakes line up with CPU contention from the title's own background workers at a load, not with host
+  blocking.** The wake bands have no timestamps, so a single slow wake cannot be matched to a host event offline, and
+  no maps or drain line is in this record.
+- **What this means:**
+  - 0432's D (the drain before an unmap) would not change this picture.
+  - It fits R exactly: on the console a woken Hi worker (500) preempts a Bk worker (750) on its CPU at once.
+  - It also explains why the crashes cluster at G+10: the load wakes all the Bk workers at once.
+- **To confirm across crashes** (one read-only minute on the box): the "thread at fault" lines of M4, M6, M7 and M11.
+  Are the Bk workers running there too, and is any job thread in a host call?
