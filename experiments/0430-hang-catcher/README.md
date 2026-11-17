@@ -577,3 +577,33 @@ not look". v1 is kept as `ho430.f8v1.cpp`.
 F224's hold across ioctls (the shared default is 2). The shared binary has no F7 sensor, so X runs on the F7 binary
 d894ec3b with `BC5_DIRECT_CHAIN=1`. If the hold is the reordering, F7's holds in X drop to about zero.
 `ab0430.sh` takes a third arm X (`XBIN`, `XTAG`, `XWORDS`).
+
+### What can go once the reordering is gone (the maintainer's question, 2026-11-17 20:00)
+
+Counters are per 1,560-s route run: P2 (F5), Q1 (broad F6), K1 (F7), E1 (F8 v2, 660 s), Z1 (X: F7 with
+`BC5_DIRECT_CHAIN=1`). The decisive pair is K1 (hold on) and Z1 (hold off), with the same binary and route.
+
+| Piece | What it does | Cost per run (counters) | Still needed without the reordering? | Simplest end state |
+|---|---|---|---|---|
+| F2 (`XQ_PENDING`) | CPU wait for a pending writer at a satisfied wait | waited 0 in every run (F4 acts first) | no | remove |
+| F3 (`XQ_ACQUIRE`) | preset a stale label at the writer's submit | ~600 presets with the hold; **0 in Z1** | no, if F9 runs show 0 presets as Z1 does; F5 uses its per-buffer result | remove with F4/F5, after the check below |
+| F4 (`XQ_FENCE`) | kernel CS dependency on a pending writer job | 232–358 fences; **393 in Z1** | unclear: it still acts with the hold off; on what is not yet known | test off on F9 (below); remove if no hold or hang appears |
+| F5 (`XQ_PRECISE`) | spares F4 when F3 excluded the stale case | 55 k (Z1) – 216 k skips | only to make F4 cheap | goes with F4 |
+| F6 / F6b (`XQ_KEEP`, `XQ_KEEP_ALL`) | keep a satisfied cross-queue wait for the GPU | 511 k keeps (Q1), one 1.1-s hold; off since | no (V15: a GPU-side decision does not close the window) | remove, with its 1-s watch |
+| F7 (`XQ_COUNT`) | hold an acb whose release is not yet submitted | 330 holds, 130 ms (K1); **0 in Z1** | no; it is the sensor proving F9 | keep as the sensor until F9 is shipped, then remove |
+| F8 v1 / v2 (`XQ_ORDER`) | flush other threads' chains at an acb's wait | v1 deadlocked; v2 36 s of `bc5-ring` per 660 s, no effect | no | remove |
+| F9 (`XQ_FLUSH`) | submit a chain at the call's end when it carries a memory write | measured in its runs | the fix | ship |
+| ring-order keep (exp 0132, 0428) | keep an unsatisfied wait whose writer is pending for the GPU | 330 k–1.4 M keeps | **yes**: real cross-queue waits | stays |
+| `g_plw` registry (exp 0055) | the writes of submitted jobs, for `ring_will_satisfy` | one registration per submission | **yes**: the keep test reads it | stays |
+| timeout probe | decodes the stalled buffers at a ring timeout | only at a stall | yes, diagnostics | stays |
+| ho430 hooks | `at_wait`, `job_submitted` (a PM4 parse of every submitted job: ~2.3 M a run), `job_done`, `given_up`, `f3_before_submit` (a scan of every writer: ~1.6 M a run), `keep_cross`, `XqSubmitCount` | the parses above | only for F3/F4/F5/F7 | with F2–F8 gone the whole ho430 block goes; F9 is two hooks in the chain code |
+
+**The path to the end state** (no swap before it):
+1. F9 runs with F7 on as the sensor must show F7 holds 0 and F3 presets 0, as Z1 does.
+2. One F9 run with F2–F8 off by words, F7 still sensing. It must show holds 0 and no hang. F4's 393 fences per run without the hold are the open item.
+3. Then the shared form is F9 alone, its two hooks in the chain code. ho430 leaves the shared unit, and the per-submission parses and scans go with it.
+
+**Pooled runs, not repeated (the top's rule):**
+- S on the route (0de9349b, the swap words): C4 (hang), C5 44.2, C6 (GPU fault), C7 42.9. C8 is dropped.
+- F7 on the route (d894ec3b): K1 42.0 and K3.
+- X (d894ec3b + `BC5_DIRECT_CHAIN=1`): Z1 37.2. A second X (Z2) only if a speed comparison needs it.
