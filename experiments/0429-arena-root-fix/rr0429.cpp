@@ -13,22 +13,32 @@
 //   2. a watchdog thread every 5 ms: an RR thread that ran 100 ms with no new time slice is dropped for good;
 //   3. at most (online CPUs - 2) guest threads hold RR at once, so host threads always have two CPUs.
 // A dropped thread is never promoted again (rtkit also limits its calls to 25 per 20 s per user, TODO(verify)).
-// Off: nothing here runs. Normal build: every promotion, drop and refusal is logged (the first 200).
+// Off: nothing here runs. Normal build: every promotion, drop and refusal is logged (the first 200). Both builds
+// (build 11): one count line a minute.
 #if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <sys/resource.h>
 namespace bc5_0429r {
-static bool On() {
-	static const bool v = [] {
-		const bool on = bc5::env_rule::on(std::getenv("KYTY_BC5_0429_RR"));
+// KYTY_BC5_0429_RR: 0 or unset off; 1 any guest sleeper below 700; 2 (build 11) only a sleeper on a pool semaphore,
+// one that two or more distinct threads have slept on (a worker pool: the job system's, not a lone audio thread's)
+static int Mode() {
+	static const int v = [] {
+		const char* e = std::getenv("KYTY_BC5_0429_RR");
+		int         m = 0;
+		if (e != nullptr && e[0] == '2' && e[1] == 0) {
+			m = 2;
+		} else if (bc5::env_rule::on(e)) {
+			m = 1;
+		}
 #ifndef BC5_LEAN
-		std::fprintf(stderr, "[bc5] exp 0429: R (RR for the guest's sleepers) %s\n", on ? "ON" : "off");
+		std::fprintf(stderr, "[bc5] exp 0429: R (RR for the guest's sleepers) %s\n", m == 2 ? "ON, pool sleepers only" : m == 1 ? "ON" : "off");
 #endif
-		return on;
+		return m;
 	}();
 	return v;
 }
+static bool On() { return Mode() != 0; }
 constexpr int     kMaxSlots   = 64;
 constexpr int64_t kSoftUs     = 20000;
 constexpr int64_t kHardUs     = 200000;
@@ -43,6 +53,20 @@ static std::atomic<int> g_calls {0};           // rtkit calls made
 static std::atomic<int> g_logged {0};
 #endif
 static std::atomic<int> g_spinner_tid[kMaxSlots]; // dropped for good
+// build 11: counters in both builds (lean too: one stderr line a minute from the watchdog thread, for this experiment
+// only; it goes from lean before any swap), and the last 16 losses as kind and guest priority
+enum Ev { kPromoted, kRefused, kCapDenied, kBudgetDenied, kEvicted, kDropXcpu, kDropWatchdog, kDropPrio, kDropGone, kEvN };
+static const char       kEvName[kEvN] = {'P', 'R', 'C', 'B', 'E', 'X', 'W', 'H', 'G'};
+static std::atomic<int> g_ev[kEvN];
+static std::atomic<int> g_last[16];
+static std::atomic<int> g_last_n {0};
+static void Count(Ev e, int prio) { // async-signal-safe
+	g_ev[e].fetch_add(1, std::memory_order_relaxed);
+	if (e == kPromoted || e == kCapDenied) {
+		return; // the ring keeps the losses: drops, evictions, refusals, budget denials
+	}
+	g_last[g_last_n.fetch_add(1, std::memory_order_relaxed) & 15].store(e * 10000 + (prio < 0 ? 9999 : prio), std::memory_order_relaxed);
+}
 static int              g_cap = 0;
 
 static long RawSyscall3(long n, long a, long b, long c) { // no errno: the handler may run on any thread
@@ -84,18 +108,20 @@ static void MarkSpinner(int tid) {
 }
 // Drops tid back to SCHED_OTHER (an unprivileged thread may always lower its policy; rtkit sets RESET_ON_FORK, kept).
 // Async-signal-safe: raw syscalls and atomics only.
-static bool Drop(int tid) {
-	for (auto& s: g_tid) {
-		int t = tid;
+static int Drop(int tid) { // the dropped thread's guest priority, or -1 when it held no slot
+	for (int i = 0; i < kMaxSlots; i++) {
+		auto& s = g_tid[i];
+		int   t = tid;
 		if (s.compare_exchange_strong(t, 0)) {
+			const int gp = g_slot_prio[i].load(std::memory_order_relaxed);
 			struct { int prio; } p {0};
 			RawSyscall3(SYS_sched_setscheduler, tid, SCHED_OTHER | 0x40000000 /* SCHED_RESET_ON_FORK */, reinterpret_cast<long>(&p));
 			g_held.fetch_sub(1, std::memory_order_relaxed);
 			MarkSpinner(tid);
-			return true;
+			return gp;
 		}
 	}
-	return false;
+	return -1;
 }
 static void ResetSoft() {
 	rlimit r {static_cast<rlim_t>(kSoftUs), static_cast<rlim_t>(kHardUs)};
@@ -103,8 +129,9 @@ static void ResetSoft() {
 }
 static void OnXcpu(int) { // bound 1: the kernel sends SIGXCPU to the RR thread that passed the soft limit
 	const int self = static_cast<int>(RawSyscall3(SYS_gettid, 0, 0, 0));
-	if (Drop(self)) {
+	if (const int gp = Drop(self); gp >= 0) {
 		g_xcpu_tid.store(self, std::memory_order_relaxed);
+		Count(kDropXcpu, gp);
 	}
 	ResetSoft(); // the kernel raised the soft limit by a second; put it back below the hard one
 }
@@ -115,8 +142,21 @@ static void Watchdog() { // bound 2
 		uint64_t run, slices, since_ns;
 	};
 	Seen seen[kMaxSlots] {};
-	for (;;) {
+	for (int tick = 1;; tick++) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(5));
+		if (tick % 12000 == 0) { // about a minute
+			char      last[16 * 6 + 1];
+			int       o = 0;
+			const int n = g_last_n.load();
+			for (int k = (n > 16 ? n - 16 : 0); k < n; k++) {
+				const int v = g_last[k & 15].load();
+				o += std::snprintf(last + o, sizeof(last) - o, "%c%d ", kEvName[v / 10000], v % 10000);
+			}
+			last[o] = 0;
+			std::fprintf(stderr, "[bc5] exp 0429 R count: held %d calls %d P %d R %d C %d B %d E %d X %d W %d H %d G %d | last %s\n", g_held.load(),
+			             g_calls.load(), g_ev[kPromoted].load(), g_ev[kRefused].load(), g_ev[kCapDenied].load(), g_ev[kBudgetDenied].load(),
+			             g_ev[kEvicted].load(), g_ev[kDropXcpu].load(), g_ev[kDropWatchdog].load(), g_ev[kDropPrio].load(), g_ev[kDropGone].load(), last);
+		}
 		if (const int x = g_xcpu_tid.exchange(0); x != 0) {
 			Log("dropped by SIGXCPU (20 ms without blocking)", x, "", 0, 0, 0);
 		}
@@ -131,7 +171,9 @@ static void Watchdog() { // bound 2
 			std::snprintf(path, sizeof(path), "/proc/self/task/%d/schedstat", tid);
 			const int fd = open(path, O_RDONLY | O_CLOEXEC);
 			if (fd < 0) {
-				Drop(tid); // the thread is gone
+				if (const int gp = Drop(tid); gp >= 0) { // the thread is gone
+					Count(kDropGone, gp);
+				}
 				continue;
 			}
 			const ssize_t r = read(fd, buf, sizeof(buf) - 1);
@@ -142,8 +184,9 @@ static void Watchdog() { // bound 2
 			if (seen[i].tid != tid || seen[i].slices != slices) {
 				seen[i] = {tid, run, slices, now};
 			} else if (run - seen[i].run >= 95000000ull && now - seen[i].since_ns >= 100000000ull) {
-				if (Drop(tid)) {
-					Log("dropped by the watchdog (100 ms in one slice)", tid, "", 0, 0, 0);
+				if (const int gp = Drop(tid); gp >= 0) {
+					Count(kDropWatchdog, gp);
+					Log("dropped by the watchdog (100 ms in one slice)", tid, "", gp, 0, 0);
 				}
 			}
 		}
@@ -277,7 +320,7 @@ static void Apply(Pthread thread, bool sleeper) {
 		held = held || s.load(std::memory_order_relaxed) == tid;
 	}
 	if (held && prio >= 700) {
-		Drop(tid); // not a spinner, but the rule says out; it stays out (rtkit's budget)
+		Count(kDropPrio, Drop(tid)); // not a spinner, but the rule says out; it stays out (rtkit's budget)
 		Log("dropped (priority 700 or above)", tid, thread->name.c_str(), prio, 0, 0);
 		return;
 	}
@@ -305,10 +348,12 @@ static void Apply(Pthread thread, bool sleeper) {
 				vprio  = p;
 			}
 		}
-		if (victim == 0 || !Drop(victim)) {
+		if (victim == 0 || Drop(victim) < 0) {
+			Count(kCapDenied, prio);
 			Log("not promoted (the cap, no holder of a lower priority)", tid, thread->name.c_str(), prio, 0, 0);
 			return;
 		}
+		Count(kEvicted, vprio);
 		Log("evicted for a higher priority", victim, "", vprio, 0, 0);
 		evicted = true;
 		if (g_held.fetch_add(1) >= g_cap) {
@@ -318,6 +363,7 @@ static void Apply(Pthread thread, bool sleeper) {
 	}
 	if (g_calls.load() >= 24 || (g_rtkit_full.load() && !evicted)) {
 		g_held.fetch_sub(1);
+		Count(kBudgetDenied, prio);
 		Log("not promoted (rtkit's budget)", tid, thread->name.c_str(), prio, 0, 0);
 		return;
 	}
@@ -326,6 +372,7 @@ static void Apply(Pthread thread, bool sleeper) {
 	if (rc != 0) {
 		g_held.fetch_sub(1);
 		g_rtkit_full.store(true);
+		Count(kRefused, prio);
 		Log("rtkit refused", tid, thread->name.c_str(), prio, rr, rc);
 		return;
 	}
@@ -333,6 +380,7 @@ static void Apply(Pthread thread, bool sleeper) {
 		int z = 0;
 		if (g_tid[i].compare_exchange_strong(z, tid)) {
 			g_slot_prio[i].store(prio, std::memory_order_relaxed);
+			Count(kPromoted, prio);
 			Log("promoted", tid, thread->name.c_str(), prio, rr, rc);
 			return;
 		}
@@ -347,13 +395,52 @@ static void Bc5RrApply(Pthread thread, const char* /*why*/) {
 	bc5_0429r::Apply(thread, thread != nullptr && thread->bc5_rr_sleeper);
 }
 
-// The first sleep of a guest thread on a guest semaphore (kernel/semaphore.cpp, after the resume): mark it a sleeper.
-extern "C" void bc5_0429_r_on_sleep() {
+// A guest thread's sleep on a guest semaphore (kernel/semaphore.cpp, after the resume): mark it a sleeper. Mode 2: only
+// when the semaphore is a pool, slept on by two or more distinct threads (a table of semaphores by address, open
+// addressing; with the table full no one more is promoted). A thread that slept on it first is marked at its next sleep.
+namespace bc5_0429r {
+constexpr int kPools = 512;
+struct PoolSlot {
+	std::atomic<uintptr_t> sem {0};
+	std::atomic<int>       first {0};
+	std::atomic<bool>      pool {false};
+};
+static PoolSlot g_pools[kPools];
+static bool     IsPool(const void* sem, int tid) {
+	const auto a = reinterpret_cast<uintptr_t>(sem);
+	int        i = static_cast<int>(((a >> 4) * 2654435761ull) % kPools);
+	for (int k = 0; k < kPools; k++, i = (i + 1) % kPools) {
+		uintptr_t cur = g_pools[i].sem.load(std::memory_order_acquire);
+		if (cur == 0) {
+			uintptr_t z = 0;
+			cur         = g_pools[i].sem.compare_exchange_strong(z, a) ? a : z;
+		}
+		if (cur != a) {
+			continue; // another semaphore's slot
+		}
+		auto& s = g_pools[i];
+		if (s.pool.load(std::memory_order_relaxed)) {
+			return true;
+		}
+		int f = 0;
+		if (s.first.compare_exchange_strong(f, tid) || f == tid) {
+			return false; // the only sleeper so far
+		}
+		s.pool.store(true, std::memory_order_relaxed);
+		return true;
+	}
+	return false;
+}
+} // namespace bc5_0429r
+extern "C" void bc5_0429_r_on_sleep(const void* sem) {
 	if (!bc5_0429r::On()) {
 		return;
 	}
 	Pthread self = g_pthread_self;
 	if (self == nullptr || self->bc5_rr_sleeper) {
+		return;
+	}
+	if (bc5_0429r::Mode() == 2 && !bc5_0429r::IsPool(sem, static_cast<int>(self->host_thread_id))) {
 		return;
 	}
 	self->bc5_rr_sleeper = true;

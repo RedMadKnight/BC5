@@ -619,3 +619,45 @@ SIGXCPU drop. The watchdog dropped 4 and 5 threads, all `Havok Solve`. No Job Hi
 
 **libdbus on the host:** `/usr/lib64/libdbus-1.so.3 -> libdbus-1.so.3.38.3` (364832 bytes), so R's dlopen has a
 library on the Bazzite host.
+
+## Build 11 (offline, 2026-11-17 evening): lean counters, the pool rule, the R/C pairs and the ASTRO smoke
+
+The top's three points after the 16:17 slot. Not built or run yet (the next slot builds it).
+1. **The lean Hi 0/6 cause.** `rr0429.cpp` now counts in both builds:
+   - the counts: promotions (P), rtkit refusals (R), cap denials (C), budget denials (B), evictions (E), drops by
+     SIGXCPU (X), by the watchdog (W), by a priority of 700 or above (H), and of a gone thread (G);
+   - the last 16 losses as kind and guest priority (e.g. `W500` is a Job Hi worker dropped by the watchdog);
+   - one stderr line a minute from the watchdog thread, `exp 0429 R count: ...`.
+   - This line is in lean too, for this experiment only: it must leave lean before any swap (lean has no diagnostics).
+   - `check0429l.sh` also records the policy of the Job Hi and AK threads every 10 s, so a Hi worker that leaves RR
+     (a drop) shows apart from one that never got it (budget or cap).
+2. **The AK audio threads.** Their guest priorities, from the R logs of K2, G7 and G8:
+   - AK::AudioOutThread 256 (rtkit RR 13, above the Hi workers' 6);
+   - AK::AudioMgr 450 (RR 7).
+   - Both are below 700, so rule 1 promotes them: an RR audio thread preempts the host's own GPU threads (bc5-ring,
+     kyty-present, SCHED_OTHER) on its CPU.
+   - New mode `KYTY_BC5_0429_RR=2`, still no title rows: only a sleeper on a **pool** semaphore, one that two or more
+     distinct threads have slept on (by address, a table of 512). A thread that slept there first is marked at its next
+     sleep.
+   - The job workers share their semaphore (JobLoaderSema in Z1's dump); a lone audio thread's semaphore has one
+     sleeper. Whether the AK threads sleep alone is what the check with RRMODE=2 shows.
+   - `RR=1` is unchanged.
+3. **Prepared runs:**
+   - `chain0429.sh` arms:
+     - H: G with RR=2;
+     - P: the plain control, `KYTY_BC5_0429_RR=0` only, no stressor, no trace, no catcher;
+     - Q: `KYTY_BC5_0429_RR=${RRMODE:-1}` only.
+   - P and Q are the fps pairs on the long route.
+   - `astro0429.sh <prefix>`: ASTRO BOT through exp 0431's `astro0431.sh` on the private build, 4 runs of 200 s:
+     normal RR=0, normal RR=$RRMODE, lean RR=0, lean RR=$RRMODE. Screen shots stay on the box.
+   - `check0429r.sh` and `check0429l.sh` take `RRMODE`.
+
+Next slot, in order:
+1. `box0429.sh build` (build 11).
+2. The checks:
+   - `check0429r.sh h429K5` (normal, RR=1);
+   - `RRMODE=2 check0429r.sh h429K6` (do the AK threads stay TS? are all 8 Hi RR?);
+   - `check0429l.sh h429K7` (lean, RR=1, with the counts);
+   - `RRMODE=2 check0429l.sh h429K8`.
+3. The R/C pairs `CHAIN_SET=rep13 REP_TAGS="h429Q1 h429P1 h429Q2 h429P2"`, with RRMODE as the checks decide.
+4. `astro0429.sh a429B`.

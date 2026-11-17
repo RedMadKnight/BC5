@@ -18,6 +18,7 @@
 #   CHAIN_SET=screen3: h429C1 h429Z1 h429M5 h429C2 h429Z2 h429M6 (or one or two at a time: rep<k> with REP_TAGS)
 #   CHAIN_SET=screen2: h429C1 h429M2 h429Y1 h429X2 h429C2 h429M3 h429Y2 h429X3
 #   CHAIN_SET=rep<k>: set by REP_TAGS (the arms that survived, with controls between)
+#   build 11: arms H (G with RR=2), P (plain: RR=0 only) and Q (RR=${RRMODE:-1} only); P and Q are the fps pairs
 # TARGET (the crash at the site) and KERNEL do not stop the chain. Stops: a real pad key (R51), the STOP file
 # ($HERE/STOP or ~/bc5-work/exp0429/STOP, read before each run), any other class, a second NOT_ROUTED.
 # usage (on the box, detached, in ~/bc5-work/exp0429): CHAIN_SET=smoke|screen|rep1.. bash chain0429.sh
@@ -58,6 +59,9 @@ armwords() {
     h429T*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_FAST_MUTEX=2" ;;
     h429G*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_RR=1" ;;
     h429R*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_RR=1" ;;
+    h429H*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_RR=2" ;;  # build 11: G with pool sleepers only
+    h429P*) echo "KYTY_BC5_0429_RR=0" ;;  # build 11: the plain control for fps, no stressor and no diagnostics (the shared settings)
+    h429Q*) echo "KYTY_BC5_0429_RR=${RRMODE:-1}" ;;  # build 11: R alone for fps, no stressor and no diagnostics; RRMODE=2 pool sleepers only
     h429X*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_PRIO_ORDER=1 KYTY_BC5_0425_HANDOFF_US=300" ;;
     *) return 1 ;;
   esac

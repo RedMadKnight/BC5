@@ -291,7 +291,7 @@ def semaphore(path):
         text = one(text, old, new, 'semaphore (exp 0425)')
     # exp 0429's wait catcher (normal build only): waits0429.cpp after exp 0425's helpers, and its four hooks
     end_h = "// ---- end of experiment 0425's helpers ------------------------------------------------------------------------------\n"
-    text = one(text, end_h, end_h + WAITS_BLOCK + '#ifdef __linux__\nextern "C" void bc5_0429_r_on_sleep(); // kernel/pthread.cpp, exp 0429 R\n#endif\n', 'semaphore catcher block')
+    text = one(text, end_h, end_h + WAITS_BLOCK + '#ifdef __linux__\nextern "C" void bc5_0429_r_on_sleep(const void* sem); // kernel/pthread.cpp, exp 0429 R\n#endif\n', 'semaphore catcher block')
     text = one(text, '\t\tstd::atomic<uint32_t> bc5_waking {0}; // exp 0425 C3: 1 while a waker has still to wake this waiter\n',
                '\t\tstd::atomic<uint32_t> bc5_waking {0}; // exp 0425 C3: 1 while a waker has still to wake this waiter\n'
                '\t\tint                   bc5_w = -1;       // exp 0429 catcher: the wait slot\n', 'semaphore waiter field')
@@ -304,8 +304,8 @@ def semaphore(path):
                '\t\t\tRemoveWaiter(&waiter);\n#ifndef BC5_LEAN\n\t\t\tbc5_0429w::OnEnd(waiter.bc5_w, false); // exp 0429 catcher\n#endif\n\t\t\t*ptr_micros = 0;\n\t\t\treturn Result::TimedOut;\n',
                'semaphore timeout hook')
     text = one(text, '\tBc5Resumed(&waiter); // exp 0425\n',
-               '\tBc5Resumed(&waiter); // exp 0425\n#ifndef BC5_LEAN\n\tbc5_0429w::OnEnd(waiter.bc5_w, true); // exp 0429 catcher\n#endif\n#ifdef __linux__\n\tbc5_0429_r_on_sleep(); // exp 0429 R: a guest thread that slept here is a sleeper\n#endif\n', 'semaphore resume hook')
-    if text.count('bc5_0429_r_on_sleep();') != 2:
+               '\tBc5Resumed(&waiter); // exp 0425\n#ifndef BC5_LEAN\n\tbc5_0429w::OnEnd(waiter.bc5_w, true); // exp 0429 catcher\n#endif\n#ifdef __linux__\n\tbc5_0429_r_on_sleep(this); // exp 0429 R: a guest thread that slept here is a sleeper\n#endif\n', 'semaphore resume hook')
+    if text.count('bc5_0429_r_on_sleep(') != 2:
         stop('semaphore.cpp: R hook not placed')
     save(path, text, crlf)
 
