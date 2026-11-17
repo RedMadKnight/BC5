@@ -3,7 +3,7 @@
 // On the console a woken job worker takes its CPU at once from any lower-priority thread there (TODO(verify): the
 // console's kernel; the title's own priorities and masks, exp 0429's trace). Here a woken worker waited behind threads
 // of lower guest priority (h429Z1: 18 % of the job-semaphore wakes took 0.1-2 ms) while the owner's help took the job.
-// On: a guest thread whose priority is below 700 (TODO(verify): the console's default thread priority) gets SCHED_RR
+// On: a guest thread (never the runtime's main thread, which runs the owner's help) whose priority is below 700 (TODO(verify): the console's default thread priority) gets SCHED_RR
 // from RealtimeKit1 (rtkit, the system bus; no system setting changed: on the box his RLIMIT_RTPRIO is 0, rtkit grants
 // RR 1-20 with RLIMIT_RTTIME up to 200 ms, read 2026-11-17) at its first sleep on a guest semaphore, with an RR priority
 // in the guest's order (a lower guest number, a higher RR priority). For any title; no title rows.
@@ -282,6 +282,13 @@ static void Apply(Pthread thread, bool sleeper) {
 		return;
 	}
 	if (held || !sleeper || prio >= 700 || IsSpinner(tid)) {
+		return;
+	}
+	if (thread->bc5_rr_main) { // the title's main thread runs the owner's help: the race R is meant to win, never promoted
+		static std::atomic<int> once {0};
+		if (once.fetch_add(1) == 0) {
+			Log("not promoted (the runtime's main thread)", tid, thread->name.c_str(), prio, 0, 0);
+		}
 		return;
 	}
 	// a place under the cap, reserved atomically; when the cap is full, the holder with the numerically highest guest

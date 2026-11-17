@@ -225,8 +225,11 @@ def pthread(path):
     text = one(text, end_c1, end_c1 + AFF_BLOCK + RR_BLOCK, 'pthread after C1')
     # candidate R (rr0429.cpp): a field, and the hook in Bc5ApplyGuestPriority
     text = one(text, '\tstd::atomic<uint64_t> pending_signal_mask {0};\n',
-               '\tstd::atomic<uint64_t> pending_signal_mask {0};\n\tbool                  bc5_rr_sleeper = false; // experiment 0429 R: slept on a guest semaphore\n',
+               '\tstd::atomic<uint64_t> pending_signal_mask {0};\n\tbool                  bc5_rr_sleeper = false; // experiment 0429 R: slept on a guest semaphore\n\tbool                  bc5_rr_main    = false; // experiment 0429 R: the runtime main thread\n',
                'pthread R field')
+    text = one(text, '\tg_pthread_self->name            = "MainThread";\n',
+               '\tg_pthread_self->name            = "MainThread";\n\tg_pthread_self->bc5_rr_main     = true; // experiment 0429 R: the runtime main thread is never promoted\n',
+               'pthread R main mark')
     text = one(text, '\tBc5ApplyWakeSlice(thread, why); // experiment 0425 C1 (after the nice, which it keeps)\n}\n',
                '\tBc5ApplyWakeSlice(thread, why); // experiment 0425 C1 (after the nice, which it keeps)\n\tBc5RrApply(thread, why);        // experiment 0429 R\n}\n',
                'pthread R hook')
