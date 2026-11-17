@@ -469,9 +469,10 @@ in the sampled journal 43 acb against 53 dcb (the journal samples the first 64 a
     frame profile: t 559.141 s, 1117.8 ms since the last flip; game thread inside the host 1073.2 ms (sync 0.7, hints 0.4, prepare 1070.2, list 0.1, cs 1.7, ...)
     direct: 16331 views; +0 BOs (69, 11120.0 MiB pinned); maps +0 -6 (16851)
 
-**For exp 0432 (the top's hand-over):** the host's submit preparation blocked the game thread 1,070 ms. It looks like a
-remap (6 views unmapped) waiting for GPU idleness, behind GFX work held by a kept wait whose writer the same thread had
-yet to submit. The console has no such CPU-side dependency; only a ~1 s bound in that wait kept it from a TDR. It is a
+**For exp 0432 (the top's hand-over):** the host's submit preparation blocked the game thread 1,070 ms. That frame's
+breakdown reads `prepare = filter 2.1 + tracker 0.3 + cu 1.1 + nested 2.7 + copy 1063.8`: the backend's copy step (a
+slot buffer resize, exp 0432's reading, checked here), not the remap the next line shows, as first written here. It
+waited behind GFX work held by a kept wait whose writer the same thread had yet to submit. The console has no such CPU-side dependency; only a ~1 s bound in that wait kept it from a TDR. It is a
 stutter source of its own. Log: `~/bc5-data/captures/play-20261117-1245/gc/direct.log` near t 558–559 s.
 
 **P'' (13:20, the top's order):** F6 for compute-ring waiters (acb) only (unit efef7e1d, binary 40890474, `p7/`;
