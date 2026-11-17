@@ -45,6 +45,16 @@
 // label has not come back within 1 s, with no writer in flight, is journaled (it holds its ring until the TDR).
 // Compute-ring waiters (acb) only, since h430Q1: a kept gfx dcb wait held the GFX ring 1.1 s while the host's own submit
 // preparation (a remap waiting for GPU idle) blocked the game thread that was to submit the writer acb.
+// F7, "count, not look" (2026-11-17 after h430C4, h430C6 and exp 0432's d432V15): BC5_0430_F7 / shared
+// BC5_DIRECT_XQ_COUNT, on unless "0". The title's busy mark of a cross-queue label is a plain CPU store, and in the
+// failures the compute buffer was submitted before that mark and before its writer, so no look at the label's value, on
+// the host or on the GPU (V15: kept, passed early), can tell the stale 0 from the released one. The submission order can:
+// per label, releases (writes of the waited value registered at a writer's submit on another ring) and waiting
+// submissions strictly alternate (x1: 0x12004b4fc8 24/24). F7 keeps the balance releases - waiting submissions per label
+// (acb waiters, == waits) from a release on; after 32 events in {0, 1} the label is stable 1:1. A waiting submission that
+// would take a stable label's balance below 0 has its release still to come: its submitting thread waits (at most 250 ms)
+// until the next release is registered; then F3/F4/F5 and the host's keep test see the writer pending. A bound reached is
+// counted and journaled and the label resyncs. Labels that are not stable 1:1 (0x12004b37c8: 4 waits a release) are left.
 namespace ho430 {
 inline bool not0(const char* e) {
 	return e == nullptr || !(e[0] == '0' && e[1] == 0);
@@ -77,6 +87,10 @@ inline bool f6b_on() {
 	static const bool v = not0(std::getenv("BC5_DIRECT_XQ_KEEP_ALL"));
 	return v;
 }
+inline bool f7_on() {
+	static const bool v = not0(std::getenv("BC5_DIRECT_XQ_COUNT"));
+	return v;
+}
 #else
 inline bool f2_on() {
 	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F2"));
@@ -106,9 +120,13 @@ inline bool f6b_on() {
 	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F6B"));
 	return v;
 }
+inline bool f7_on() {
+	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F7"));
+	return v;
+}
 #endif
-enum : uint8_t { kWait = 1, kWrite = 2, kDropped = 3, kF2Waited = 4, kF2Cycle = 5, kF2Bound = 6, kGivenUp = 7, kCycle = 8, kF3Preset = 9, kF3Refused = 10, kF3First = 11, kF3NotStale = 12, kF3Met = 13, kF4Fence = 14, kF5Skip = 15, kF6Kept = 16 };
-constexpr uint32_t kTypes = 17;
+enum : uint8_t { kWait = 1, kWrite = 2, kDropped = 3, kF2Waited = 4, kF2Cycle = 5, kF2Bound = 6, kGivenUp = 7, kCycle = 8, kF3Preset = 9, kF3Refused = 10, kF3First = 11, kF3NotStale = 12, kF3Met = 13, kF4Fence = 14, kF5Skip = 15, kF6Kept = 16, kF7Held = 17, kF7Bound = 18 };
+constexpr uint32_t kTypes = 19;
 struct Cross {
 	uint64_t v         = 0; // the released value the waits wait for (== v)
 	uint64_t nonv      = 0; // the last other value a wait saw on the label
@@ -148,6 +166,16 @@ struct Store {
 	uint64_t                                   f6_long = 0; // F6: kept waits whose label did not come back within 1 s with no writer in flight
 	std::map<uint64_t, uint64_t>               f6_by_label;  // F6: kept waits per label (how many distinct labels it covers)
 	uint64_t                                   f6_shared = 0; // F6: not kept because the waiter's host ring carries more than one guest queue
+	struct Cnt {
+		uint64_t ref     = 0;
+		int      wring   = -100; // the waiters' ring
+		bool     synced  = false; // counting since a release
+		int64_t  bal     = 0;     // releases registered minus waiting submissions since the sync
+		uint32_t ok      = 0;     // consecutive events with bal in {0, 1}
+		uint64_t rel     = 0;     // releases registered (a hold waits for this to move)
+	};
+	std::map<uint64_t, Cnt>                    f7;           // F7: label -> its release/wait count
+	uint64_t                                   f7_held = 0, f7_bound = 0, f7_ns = 0;
 	uint64_t                                   c[kTypes] {};
 	uint64_t                                   waited_ns = 0;
 };
@@ -218,6 +246,7 @@ inline void job_submitted(const uint32_t* ib, uint32_t num_dwords, const std::ve
 	if (!f2_on() && !g_on() && !f3_on()) return;
 	std::vector<uint64_t> waits;
 	std::vector<Ev>       evs;
+	std::vector<std::pair<uint64_t, uint64_t>> rels; // F7: (label, value) written by this job (ran), once per label
 	size_t                e = 0;
 	for (uint32_t q = 0; q < num_dwords;) {
 		const uint32_t h = ib[q], type = h >> 30u;
@@ -236,6 +265,7 @@ inline void job_submitted(const uint32_t* ib, uint32_t num_dwords, const std::ve
 			else if (op == 0x47 && len >= 6 && (w[3] >> 29u) != 0) { a = addr(2, 3); v = w[4] | (static_cast<uint64_t>(w[5]) << 32u); wr = true; }
 			else if (op == 0x37 && len >= 5 && (((w[1] >> 8u) & 0xfu) == 1 || ((w[1] >> 8u) & 0xfu) == 2 || ((w[1] >> 8u) & 0xfu) == 5)) { a = addr(2, 3); v = w[4] | (len >= 6 ? static_cast<uint64_t>(w[5]) << 32u : 0); wr = true; }
 			else if ((op == 0x3c || op == 0x93) && len >= 4 && ((w[1] >> 4u) & 1u) != 0 && ran) waits.push_back(addr(2, 3));
+			if (wr && ran && f7_on() && std::none_of(rels.begin(), rels.end(), [a](const auto& x) { return x.first == a; })) rels.emplace_back(a, v);
 			if (wr && g_on() && a >= 0x100000000ull) {
 				Ev x  = ev(ran ? kWrite : kDropped, a, kind, ring, q);
 				x.value = v;
@@ -251,6 +281,20 @@ inline void job_submitted(const uint32_t* ib, uint32_t num_dwords, const std::ve
 	if ((f2_on() || f3_on()) && !waits.empty()) {
 		s.job_waits[{ring, seq}] = std::move(waits);
 		if (s.job_waits.size() > 4096) s.job_waits.erase(s.job_waits.begin());
+	}
+	for (const auto& [a, v]: rels) { // F7: a release on another ring than the label's waiters
+		const auto it = s.f7.find(a);
+		if (it == s.f7.end() || it->second.ref != v || it->second.wring == ring) continue;
+		Store::Cnt& c = it->second;
+		c.rel++;
+		if (!c.synced) {
+			c.synced = true;
+			c.bal    = 1;
+			c.ok     = 0;
+		} else {
+			c.bal++;
+			c.ok = (c.bal == 0 || c.bal == 1) ? c.ok + 1 : 0;
+		}
 	}
 	if (f5_on() && f3_on() && !safe.empty()) {
 		s.job_safe[{ring, seq}] = std::move(safe);
@@ -274,8 +318,8 @@ inline void job_submitted(const uint32_t* ib, uint32_t num_dwords, const std::ve
 	static uint64_t last_f5 = 0; // F5's line without G (the shared form too): the orders kept against the orders skipped
 	if (!g_on() && f3_on() && now - last_f5 > 60'000'000'000ull) {
 		last_f5 = now;
-		journal("ho430 F5 (exp 0430): t %.1f s: F3 presets %" PRIu64 ", not stale %" PRIu64 ", refused %" PRIu64 "; F4 fences %" PRIu64 ", F2 waited %" PRIu64 ", F5 skipped %" PRIu64 " (precise %s), F6 kept %" PRIu64 " (keep %s), F6 kept waits not back in 1 s %" PRIu64 ", F6 labels %zu, not kept on a shared ring %" PRIu64 "\n", timing_now(), s.c[kF3Preset], s.c[kF3NotStale], s.c[kF3Refused],
-		        s.c[kF4Fence], s.c[kF2Waited], s.c[kF5Skip], f5_on() ? "on" : "off", s.c[kF6Kept], f6_on() ? "on" : "off", s.f6_long, s.f6_by_label.size(), s.f6_shared);
+		journal("ho430 F5 (exp 0430): t %.1f s: F3 presets %" PRIu64 ", not stale %" PRIu64 ", refused %" PRIu64 "; F4 fences %" PRIu64 ", F2 waited %" PRIu64 ", F5 skipped %" PRIu64 " (precise %s), F6 kept %" PRIu64 " (keep %s), F6 kept waits not back in 1 s %" PRIu64 ", F6 labels %zu, not kept on a shared ring %" PRIu64 "; F7 labels %zu, held %" PRIu64 " (%.1f ms), bounds %" PRIu64 "\n", timing_now(), s.c[kF3Preset], s.c[kF3NotStale], s.c[kF3Refused],
+		        s.c[kF4Fence], s.c[kF2Waited], s.c[kF5Skip], f5_on() ? "on" : "off", s.c[kF6Kept], f6_on() ? "on" : "off", s.f6_long, s.f6_by_label.size(), s.f6_shared, s.f7.size(), s.f7_held, static_cast<double>(s.f7_ns) / 1e6, s.f7_bound);
 	}
 #ifndef HO430_SHARED
 	static bool         at_done = false; // BC5_0430_G_AT: one dump in a clean run
@@ -305,9 +349,75 @@ inline void job_done(uint64_t seq, int ring, bool all) {
 inline void given_up(bool cycle, uint64_t label, const char* kind, int ring, uint32_t off) {
 	if (g_on()) add(ev(cycle ? kCycle : kGivenUp, label, kind, ring, off));
 }
+// F7 at the first wait of a submission on a label: count it; hold a stale one until its release is registered.
+inline void f7_wait(uint64_t label, uint64_t ref, int ring, const uint32_t* ib, uint32_t off, const char* kind) {
+	static thread_local const uint32_t*  last_ib  = nullptr;
+	static thread_local uint32_t         last_off = 0;
+	static thread_local std::vector<uint64_t> seen;
+	if (ib != last_ib || off <= last_off) seen.clear(); // a new submission (the same buffer may come again next frame)
+	last_ib  = ib;
+	last_off = off;
+	if (std::find(seen.begin(), seen.end(), label) != seen.end()) return;
+	seen.push_back(label);
+	Store&   s    = st();
+	uint64_t rel0 = 0;
+	{
+		std::lock_guard lk(s.m);
+		Store::Cnt&     c = s.f7[label];
+		if (c.ref != ref || (c.wring != -100 && c.wring != ring)) { // a new reference, or waiters on two rings: start over
+			c       = Store::Cnt {};
+			c.ref   = ref;
+			c.wring = ring;
+			return;
+		}
+		c.wring = ring;
+		if (!c.synced) return;
+		if (c.bal >= 1 || c.ok < 32) {
+			c.bal--;
+			c.ok = (c.bal == 0 || c.bal == 1) ? c.ok + 1 : 0;
+			return;
+		}
+		rel0 = c.rel; // stable 1:1 and no release since the last waiter: this one's release is still to come
+	}
+	const uint64_t t0   = SoftCp::now_ns();
+	bool           done = false;
+	while (SoftCp::now_ns() - t0 < 250'000'000ull && (!g_dev || !g_dev->wedged())) {
+		{
+			std::lock_guard lk(s.m);
+			if (s.f7[label].rel != rel0) done = true;
+		}
+		if (done) break;
+		std::this_thread::sleep_for(std::chrono::microseconds(50));
+	}
+	const uint64_t waited = SoftCp::now_ns() - t0;
+	uint64_t       n      = 0;
+	{
+		std::lock_guard lk(s.m);
+		Store::Cnt&     c = s.f7[label];
+		if (done) {
+			c.bal--;
+			c.ok = (c.bal == 0 || c.bal == 1) ? c.ok + 1 : 0;
+			n    = ++s.f7_held;
+		} else {
+			c.synced = false; // resync at the next release
+			c.ok     = 0;
+			n        = ++s.f7_bound;
+		}
+		s.f7_ns += waited;
+	}
+	Ev x    = ev(done ? kF7Held : kF7Bound, label, kind, ring, off);
+	x.value = waited;
+	x.ref   = ref;
+	add(x);
+	if (!done || n <= 256 || (n & 0x3ffu) == 0)
+		journal("ho430 F7: %s on ring %d at %u: its wait on 0x%" PRIx64 " (== 0x%" PRIx64 ") came before its release; %s after %.2f ms (%" PRIu64 " %s)\n", kind, ring, off, label, ref,
+		        done ? "held until the release was submitted" : "BOUND REACHED, the label resyncs", static_cast<double>(waited) / 1e6, n, done ? "held" : "bounds");
+}
 // At a wait of a buffer about to be submitted (submit_split), before the host decides it.
 inline void at_wait(const uint32_t* p, bool is64, uint64_t label, const char* kind, int ring, const uint32_t* ib, uint32_t num_dwords, uint32_t off) {
 	if (!f2_on() && !g_on() && !f3_on()) return;
+	if (f7_on() && (p[1] & 7u) == 3u && kind != nullptr && std::strncmp(kind, "acb", 3) == 0) // F7 first: the rest sees the writer pending
+		f7_wait(label, is64 ? (p[4] | (static_cast<uint64_t>(p[5]) << 32u)) : p[4], ring, ib, off, kind);
 	const bool     sat   = wait_satisfied(p, is64);
 	const uint64_t value = is64 ? *reinterpret_cast<const volatile uint64_t*>(label & ~7ull) : *reinterpret_cast<const volatile uint32_t*>(label & ~3ull);
 	const uint64_t ref   = is64 ? (p[4] | (static_cast<uint64_t>(p[5]) << 32u)) : p[4];
@@ -627,7 +737,7 @@ inline void dump(int k) {
 	std::snprintf(name, sizeof(name), "%s/g0430-%d.txt", dir.c_str(), k);
 	FILE* f = std::fopen(name, "w");
 	if (f == nullptr) return;
-	static const char* const tn[kTypes] = {"-", "wait", "write", "DROPPED-WRITE", "F2-waited", "F2-cycle", "F2-bound", "GIVEN-UP", "CYCLE", "F3-preset", "F3-refused", "F3-first-seen", "F3-not-stale", "F3-wait-met-preset", "F4-fence", "F5-skipped", "F6-kept"};
+	static const char* const tn[kTypes] = {"-", "wait", "write", "DROPPED-WRITE", "F2-waited", "F2-cycle", "F2-bound", "GIVEN-UP", "CYCLE", "F3-preset", "F3-refused", "F3-first-seen", "F3-not-stale", "F3-wait-met-preset", "F4-fence", "F5-skipped", "F6-kept", "F7-held", "F7-bound"};
 	std::fprintf(f, "g0430 %d at t %.3f s: the last %zu label events, oldest first; counts: waits %" PRIu64 " writes %" PRIu64 " dropped writes %" PRIu64 " F2 waited %" PRIu64 " cycle %" PRIu64 " bound %" PRIu64 " given up %" PRIu64 " cycle-broken %" PRIu64 "\n", k,
 	             timing_now(), all.size(), c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8]);
 	std::fprintf(f, "columns: t_s type label kind ring about#n offset | wait: value ref func satisfied pending | write: value job_seq op\n");
