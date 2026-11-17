@@ -365,3 +365,34 @@ succeeded. The acb's only wait (0x12004b53c8 == 0, at its head) was kept for the
 that acb never ran past its head: its timeout is a consequence of the dcb's. The GFX CP stood 372,480 dwords into the
 506,064-dword IB. Without waves, a snapshot or label events, the class is open: an earlier acb overlapping through a
 label the fix does not cover, or another bug. Build 8 (F4 + every catcher) is for that.
+
+### Build 7's runs and the decision (the night, continued)
+
+h430F2 NO_CRASH 42.5 flips/s (15 s > 100 ms, longest 1032 ms, splits 603); h430F3 NOT_ROUTED (no load within 40 s
+of Continue, not a run); h430F4 NO_CRASH 41.5 (20 s, 1289 ms, splits 702). Build 7 over three clean runs: 45.1, 42.5,
+41.5 (mean 43.0); the shared control C1 46.5 (one run). The gate (two more runs each ≥ 43.8) was missed, so there is
+no swap tonight (the top session's decision, R13: the gate is not changed after the fact). An interleaved A/B of the
+control against build 7 follows until 07:15.
+
+**Why F4 costs:** F4 (and F2) hold the waiter until the whole writer job has finished, while the console's wait ends
+at the release write inside that job (in his hang frame at about 60 % of the dcb). F4's 213 thousand dependencies
+are not many different ones: each acb carries four waits on the same label, and without a CPU wait all four add the
+same dependency. Deduplicating them is cosmetic (`dedup.py` over X1's history: 30 events, one per submission, none
+covering an earlier writer job on the same waiter ring).
+
+**F5, the precise form (a design for the morning, not built):** order the waiter at the writer's release point
+instead of its end.
+1. At the writer's submit (`submit_now`, the buffer as submitted), for each release (RELEASE_MEM / WRITE_DATA) of a
+   label in F3's runtime cross-queue set, insert right after it a copy of the same packet that writes a host-owned
+   shadow slot for that label (one 8-byte slot per label in a host BO mapped at a fixed host VA, a rising sequence
+   value). It runs at the same pipeline point as the release, so the shadow changes exactly when the label is
+   released. The host already rebuilds buffers with offset maps (exp 0038's MEC rebuild, exp 0404's crumbs): the drop
+   list in, the executed offsets out, COND_EXEC counts grown (`indirect_check::insert_before`); F5 uses the same.
+2. At the waiter's wait, when F3/F4 would act (the label is stale-satisfied, a writer job on another ring is
+   pending), rewrite the wait to poll the shadow slot `>=` the sequence value the pending writer will write, and keep
+   it for the GPU. The waiter then starts as soon as the release executes, as on the console; no CPU wait, no
+   job-end dependency.
+3. Guards: as F3/F4 (no COND_EXEC around the release, not among the drops, the cycle check); a label whose writer was
+   submitted before it entered the set keeps F4.
+Cost to expect: one extra 8-dword packet per release of a cross-queue label (a few hundred per second). The risk is
+the offset-map plumbing; it gets the stand-in tests the MEC rebuild has.
