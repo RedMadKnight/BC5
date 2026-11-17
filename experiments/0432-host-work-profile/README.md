@@ -411,11 +411,16 @@ device call; the mutex is exclusive, so these add up across threads.
 
 - Waits for the mutex are mostly short: 34,037 of 38,356 under 0.1 ms, 359 between 5 and 20 ms, 65 over 20 ms (shared).
 - By part, shared: the kernel submit call 4.8 ms a frame (31.5 calls of about 0.15 ms), the syncs 6.3 ms (3.2 of it
-  for the 23 acbs, about 0.14 ms each although nothing changes for most of them), the backend's prepare 2.9 ms, the
+  charged to the 23 acbs; see the correction below), the backend's prepare 2.9 ms, the
   probe 1.3 ms.
 - Build 3 halves the dcb's syncs (3.14 to 1.61 ms: W and M) and leaves the acb's 3.20 ms as it is.
-- Not known from these records: what the 0.14 ms of an acb's sync is spent on (both memfds are looked at for every
-  job with a dispatch); the perf profile of step 1 is the tool for that and has not been run yet.
+- Corrected the same evening: the acb's 3.2 ms a frame is NOT 0.14 ms for each job. In d432S7's gameplay 23,169 of the
+  28,342 acb jobs sync in under 10 us and 4,854 more in under 100 us (116 ms together); 259 jobs over 1 ms carry
+  3,731 of the 3,888 ms, 151 of them over 10 ms (3,026 ms). By part: the anonymous walk 1,077 ms, the view list
+  1,021, the mapping rebuild 1,304, scan 178, merge 157. So the fast path already costs nothing; the time is the walk
+  (item W) and the full rebuild at a layout change, charged to whichever job comes next (three in four are acbs). The
+  dcbs show the same shape (340 jobs over 1 ms carry 3,687 of 3,823 ms). In d432T14 the acbs' anonymous part is
+  11 ms, their maps 593 ms, their views 3,131 ms (item V on).
 
 **For the memory line (the top session's note, 2026-11-17):** the title's start is under memory pressure on this box.
 In d432T14 (build 3, the 09:46 save) MemAvailable fell from 3,508 to 1,449 MiB and GTT in use rose from 9,915 to
