@@ -315,6 +315,20 @@ What the long sync parts are (`fs0432.py` on the per-job records; a sample of 64
 - By item: D takes the drain from 149 to 9 ms; M halves the mapping rebuild (3,490 to 1,683 ms); V makes the view
   list slower (2,414 to 4,152 ms, single builds of 104-114 ms): its 2 s check builds the whole list twice.
 
+Correction to the list above (same day, from the same records): the 852 and 585 ms imports are the first two
+submissions of the process (frame 0, +0.0 and +0.9 s of the record) in every run: start-up, not play. In gameplay only
+(from 130 s on, shared run d432S7, the same 1-in-8 sample): 80 jobs have sync+hints over 20 ms, 3,571 ms in all; by
+their largest part: the anonymous walk 49 jobs / 2,826 ms (79 %, about 58 ms each), the probe 17 / 363 ms, merge
+5 / 154, maps 3 / 80, views 3 / 63, learned 1 / 32, imports 1 / 31, drain 1 / 22. Lock wait in that window: 9,208 ms
+in all, 424 waits over 5 ms, 65 over 20 ms. In d432A12 (T, A off) the views lead 46 of 88 long jobs (1,782 ms): item
+V's check, changed in build 2.
+
+**Build 2 (prepared, not compiled):** D, M and S as in build 1; A off unless "1"; P (`BC5_DIRECT_SLOT_PREALLOC`: per
+ring 2 slots of 4 MiB and 6 of 512 KiB made at Device::open, 55 MiB of GTT; a job that does not fit its slot takes the
+smallest free slot of its pool that holds it); W (`BC5_DIRECT_ANON_THREAD`: the once-a-second anonymous check on a
+thread that takes no lock and only sets a flag; urgent and must walks unchanged); V's check without the old builder's
+second full build. `t432.diff` 10e40228, `be/direct.cpp` 83d58ac6.
+
 (pending: the A/B of the test build in his scene and on the route; the perf profile of the normal and lean builds)
 
 ## Verdict
