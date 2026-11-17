@@ -14,7 +14,8 @@ for arm in ${ORDER:-C F C}; do
   if [ "$arm" = C ]; then bin=$W/kytyplus-build/src/kyty_emulator; tp=h430C; k0=$KC; KC=$((KC + 1))
   else bin=${FBIN:-$E/b7/kyty_emulator}; tp=${FTAG:-h430F}; k0=$KF; KF=$((KF + 1)); fi
   echo "ab0430 $(date +%T): arm $arm, ${tp}$((k0 + 1)), $(md5sum < "$bin" | cut -c1-8)"
-  CHAIN_BIN=$bin CATCH=swap TAGP=$tp K0=$k0 MAX=1 bash "$HERE/chain0430.sh" > "$E/n/chain-ab-${tp}$((k0 + 1)).out" 2>&1
+  ew=""; [ "$arm" = C ] || ew=${FWORDS:-}  # FWORDS: words for the F arm only
+  EXTRA_W=$ew CHAIN_BIN=$bin CATCH=swap TAGP=$tp K0=$k0 MAX=1 bash "$HERE/chain0430.sh" > "$E/n/chain-ab-${tp}$((k0 + 1)).out" 2>&1
   tail -2 "$E/n/chain-ab-${tp}$((k0 + 1)).out"
   grep -q ": NO_CRASH$" "$E/n/chain-ab-${tp}$((k0 + 1)).out" || { echo "ab0430 $(date +%T): not NO_CRASH, stop"; break; }
 done

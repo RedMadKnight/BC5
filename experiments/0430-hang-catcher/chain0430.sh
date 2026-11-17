@@ -27,6 +27,7 @@ WAY2="BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_IND
 if [ "${CATCH:-1}" = swap ]; then AW="$WAY2 BC5_DIRECT_XQ_PENDING=1 BC5_DIRECT_XQ_ACQUIRE=1 BC5_DIRECT_TIMEOUT_PROBE=1"  # build 6: the shared form (MODE=swap build)
 elif [ "${CATCH:-1}" = 0 ]; then AW="$WAY2 BC5_0430_F3=1 BC5_0430_F2=1 BC5_0430_G=0 BC5_DIRECT_TIMEOUT_PROBE=1"
 else AW="$WAY2 BC5_0430_DJ=1 BC5_0430_ARGS=1 BC5_0430_WAVES_MS=${WAVES_MS:-900} BC5_0430_SNAP=1 BC5_0430_F3=1 BC5_0430_F2=1 BC5_0430_F4=${F4:-1} BC5_0430_G=1 BC5_0430_G_AT=300 BC5_0430_TABLES=1 BC5_0430_TABLE_PGMS=909973900,909973b00,909973d00,909973f00,909974400,909977100,90997a500 BC5_DIRECT_TIMEOUT_PROBE=1"; fi
+AW="$AW ${EXTRA_W:-}"  # 2026-11-17: more words for one arm (ab0430.sh FWORDS: the F7 arm with F6/F6b off)
 say "binary ${WANT:0:8}; kernel $(uname -r); boot $(cut -c1-8 /proc/sys/kernel/random/boot_id); max $MAX runs"
 NR=0; k=${K0:-0}; MAX=$((k + MAX))  # K0: the first run is number K0+1 (a chain restarted between runs)
 while [ "$k" -lt "$MAX" ]; do
