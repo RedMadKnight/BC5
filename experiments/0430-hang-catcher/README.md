@@ -553,3 +553,27 @@ present): at an acb's first wait, every other thread's held chain is submitted f
 does not block on ADR 0013 holds (empty since build W). The existing paths then decide with the writers registered. No
 stamps, no counting, no labels, nothing learned. The 60-s line counts the observe points, the chains submitted and
 their time. Run with F7 on as a check: if F8 restores the order, F7's holds go to about zero.
+
+### F8 v1 froze h430K2; the lesson; v2
+
+**h430K2 (F8 v1, b7d20e5c) froze at t 38.914 s on the start screen.** After that only the memory thread logged until the
+160-s route cap (NOT_ROUTED). There was no kernel line and no GPU reset: an unbounded host deadlock. v1, on `bc5-ring`,
+held `g_chains_mu` while calling `chain_submit` on another thread's slot. Its try_lock/unlock of the slot's `flush_mu`
+left a window in which the owner took `flush_mu`, so `chain_submit` blocked while `bc5-ring` still held `g_chains_mu`.
+
+**Lesson (for LESSONS.md, the top session's call).** "This is the same pattern as the watchdog, so it is safe" was
+wrong. The watchdog can block on a slot because nothing waits for the watchdog. `bc5-ring` is the compute queue's
+consumer: the owner's own path, or the title, can wait for its progress, so any blocking lock it takes on another
+thread's state can close a cycle. On a consumer thread, take only try_locks, never submit another thread's work, and
+bound every wait. A pattern is safe only on a thread nothing depends on.
+
+**v2** (unit dda5852f, binary a456d555, `p11/`): `bc5-ring` takes only try_locks (`g_chains_mu`, each slot's `mu`) and
+never submits another thread's chain. It counts the other threads' held chains (not in submit, no ADR 0013 hold), sets
+their open time back so `bc5-chainwd` finds them due, wakes it, and polls every 20 µs for at most 2 ms (the hold bound)
+until none is held. The 60-s line counts observe points, chains made due, gone within 2 ms, bound reached, and "could
+not look". v1 is kept as `ho430.f8v1.cpp`.
+
+**Arm X** (the top's root-cause control, no build): `BC5_DIRECT_CHAIN=1` closes a chain within each ioctl, as before
+F224's hold across ioctls (the shared default is 2). The shared binary has no F7 sensor, so X runs on the F7 binary
+d894ec3b with `BC5_DIRECT_CHAIN=1`. If the hold is the reordering, F7's holds in X drop to about zero.
+`ab0430.sh` takes a third arm X (`XBIN`, `XTAG`, `XWORDS`).
