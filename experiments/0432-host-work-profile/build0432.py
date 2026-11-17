@@ -7,7 +7,11 @@ UNITS = {
     "src/CMakeFiles/kyty_emulator.dir/libs/bc5LleAgc.cpp.o": "src/libs/bc5LleAgc.cpp",
 }
 for rel in EXTRA:
-    UNITS["src/CMakeFiles/kyty_emulator.dir/" + rel[len("src/"):] + ".o"] = rel
+    if "=" in rel:  # exp 0432: <object as the compdb names it>=<source>, for a unit that is linked through a static library
+        obj_name, rel = rel.split("=", 1)
+        UNITS[obj_name] = rel
+    else:
+        UNITS["src/CMakeFiles/kyty_emulator.dir/" + rel[len("src/"):] + ".o"] = rel
 def clean_compile(cmd):
     argv, clean, skip = shlex.split(cmd), [], 0
     for a in argv:
@@ -42,6 +46,12 @@ for k, a in enumerate(argv):
     elif a.startswith("-Wl,-Map="): argv[k] = "-Wl,-Map=" + out_bin + ".map"
     elif a.startswith("--dependency-file="): argv[k] = "--dependency-file=" + out_bin + ".d"
 for u, n in seen.items():
+    if n == 0:  # exp 0432: a library member: the private object goes in front of every object and library, so its
+        # definitions are taken first and the library's member with the same symbols is not pulled in
+        first = next(k for k, a in enumerate(argv) if a.endswith(".o"))
+        argv.insert(first, objs[u])
+        print("library member:", u, "-> the private object in front of the link's objects", flush=True)
+        continue
     assert n == 1, f"{u} appears {n} times in the link command"
 argv[argv.index("-o") + 1] = out_bin
 # exp 0430 F4: BC5_0430_ARCHIVE=<a private libbc5_backend.a> replaces the shared backend archive in the link (exactly once)
