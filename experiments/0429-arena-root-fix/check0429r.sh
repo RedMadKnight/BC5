@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # BC5 exp 0429: the check of candidate R before any set (the top session, 2026-11-17 11:0x): one short run of arm G on
 # the private build (play 40 s after G, about 150 s in all), and at G+25 s every thread of the emulator with its policy
-# and RR priority (ps cls/rtprio). PASS: every 'Job Hi' thread is RR, and R's log shows promotions and no rtkit refusal.
+# and RR priority (ps cls/rtprio). PASS: every 'Job Hi' thread is RR, the main thread is not, and R's log shows promotions.
 # The demotion of spinners is reported (dropped lines, and the RR threads at the end); MainThread's pause loop is the
 # expected one. One BOX-LOCK line (chainlock0417.inc). usage (on the box): bash ~/bc5-work/exp0429/check0429r.sh <tag>
 set -u
@@ -28,4 +28,6 @@ echo "check $T: Job Hi threads $hi, of them RR $hirr; promoted $prom, refused $r
 grep ' RR \|MainThread' "$HERE/check-$T.ps" 2> /dev/null | head -20
 grep -a 'exp 0429 R: dropped\|exp 0429 R: rtkit refused' "$L" | head -8
 tail -1 "$HERE/check-$T.run" | cut -c1-200
-[ "$hi" -ge 1 ] && [ "$hi" = "$hirr" ] && [ "$ref" = 0 ] && [ "$prom" -ge 1 ] && echo "check $T: PASS" || echo "check $T: FAIL"
+mainrr=$(grep -E " (game-main|MainThread)$" "$HERE/check-$T.ps" 2> /dev/null | grep -c " RR ")
+echo "check $T: the main thread RR: $mainrr (must be 0); rtkit refusals $ref (reported only: rtkit has a per-user limit)"
+[ "$hi" -ge 1 ] && [ "$hi" = "$hirr" ] && [ "$mainrr" = 0 ] && [ "$prom" -ge 1 ] && echo "check $T: PASS" || echo "check $T: FAIL"
