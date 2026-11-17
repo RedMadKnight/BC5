@@ -170,6 +170,8 @@ static long RtkitMakeRealtime(uint64_t tid, uint32_t prio) {
 		void (*err_free)(void*);
 		int (*threads_init)();
 		void (*no_exit)(void*, unsigned);
+		void* (*open_private)(const char*, void*);
+		int (*bus_register)(void*, void*);
 		bool ok = false;
 	};
 	static Api api = [] {
@@ -188,7 +190,9 @@ static long RtkitMakeRealtime(uint64_t tid, uint32_t prio) {
 		a.err_free     = reinterpret_cast<void (*)(void*)>(dlsym(h, "dbus_error_free"));
 		a.threads_init = reinterpret_cast<int (*)()>(dlsym(h, "dbus_threads_init_default"));
 		a.no_exit      = reinterpret_cast<void (*)(void*, unsigned)>(dlsym(h, "dbus_connection_set_exit_on_disconnect"));
-		a.ok = a.bus_get && a.new_call && a.append && a.send_block && a.unref && a.err_init && a.err_set && a.err_free && a.threads_init && a.no_exit;
+		a.open_private = reinterpret_cast<void* (*)(const char*, void*)>(dlsym(h, "dbus_connection_open_private"));
+		a.bus_register = reinterpret_cast<int (*)(void*, void*)>(dlsym(h, "dbus_bus_register"));
+		a.ok = a.bus_get && a.new_call && a.append && a.send_block && a.unref && a.err_init && a.err_set && a.err_free && a.threads_init && a.no_exit && a.open_private && a.bus_register;
 		if (a.ok) {
 			a.threads_init();
 		}
@@ -203,6 +207,20 @@ static long RtkitMakeRealtime(uint64_t tid, uint32_t prio) {
 	api.err_init(err);
 	static void* conn = [&] { // a private connection of our own, kept; a lost bus must not end the emulator
 		void* c = api.bus_get(1 /* DBUS_BUS_SYSTEM */, err);
+		// inside the distrobox (the normal build) the host's system bus is at /run/host/run/dbus (read 2026-11-17); the
+		// container shares the host's PID namespace, so rtkit takes our pid and tid as they are
+		const char* paths[] = {std::getenv("DBUS_SYSTEM_BUS_ADDRESS"), "unix:path=/run/host/run/dbus/system_bus_socket"};
+		for (const char* a: paths) {
+			if (c != nullptr || a == nullptr || a[0] == 0) {
+				continue;
+			}
+			api.err_free(err);
+			api.err_init(err);
+			c = api.open_private(a, err);
+			if (c != nullptr && api.bus_register(c, err) == 0) {
+				c = nullptr; // TODO: the connection is leaked on a failed hello; once per process
+			}
+		}
 		if (c != nullptr) {
 			api.no_exit(c, 0);
 		}
