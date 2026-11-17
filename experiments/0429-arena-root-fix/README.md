@@ -389,3 +389,56 @@ All three crashes were at eboot+0x3d7eca0. In the T runs the fast mutex was on: 
 does not keep the workers ahead of the owner. The stressor works: the control crashed again (with `GUEST_CPUS=1` and no
 mutex change: M4, Z1 and M6 crashed, M5 was clean, on builds 3, 4 and 6). R13: counts only. The guest mutex's inner `std::mutex` is not the cause, or not the whole of
 it. No candidate of this experiment survives. The removal is unaffected; it needs no candidate to be swapped.
+
+## The removal swap kit (2026-11-17 08:4x, held: the maintainer plays from about 09:00)
+
+`mkswap0429.py`: the removal only, none of the candidates or catchers. It edits seven units and deletes
+`src/bc5/job_arena_fix.hpp`, and each unit is first checked against its pin in `pins-swap0429.txt`, taken at patch
+9e7c4514. All eight units are byte-identical in patches a8717e53 and 9e7c4514, so these exact removal edits already
+compiled in builds 1–6. On a laptop tree of f266548 + 9e7c4514 (the diff reproduces 9e7c4514) the new patch is
+**fcedb6cd**:
+- exp 0372 lines 5;
+- gamePatch.cpp and .h back to f266548;
+- 8 files changed, 4 insertions, 256 deletions;
+- JOB_ARENA, job-arena, "Game fixes" and ApplyJobArenaFix: 0 lines;
+- `JobArenaFix` appears once, on the silent-accept line for old input.cfg lines.
+
+`int0429.sh` adapts exp 0431's int0431.sh. It checks the patch and the words in both builds; the only word allowed to
+go is `KYTY_BC5_JOB_ARENA_FIX`, and no word may be added. It also removes the JobArenaFix line from
+`~/bc5-work/input.cfg` after keeping a copy. `undo0429.sh` puts back the units, the header, both binaries and
+input.cfg. If the menu has rewritten input.cfg since the swap, it only adds the removed line back. Its stand-in test
+`test_undo0429.sh` passes 17 of 17 on the laptop (6 worlds). Not yet run on the box: the stand-in test, the builds and
+the swap. They wait for the top's go after his play.
+
+## Offline: the worker's spin before its sleep, against the console's scheduler (2026-11-17 09:xx, no box)
+
+From the code already read (above) and the catcher of h429Z1:
+- **The Hi worker has no spin before its sleep.** When its cursor reaches the end of the pending list it waits on the
+  entry's semaphore straight away, with an 8000 µs timeout. The only bounded spin is in the lock wrapper (a count kept
+  in the mutex object, rounds of 16 `pause` and a trylock), and the fast mutex has just shown that the lock is not where
+  the race is lost. The idea of a spin cut short by a host clock has nothing to act on.
+  TODO(verify), at the next box read: the exact instructions between the cursor's end and the wait call (a yield, a
+  short spin or a re-check).
+- **The race is the owner's help against the worker's wake.**
+  - The owner pushes, signals, and enters its `pause` loop that calls the help, which takes any job.
+  - A worker that was just asleep (7–146 µs in h429Z1) has to be woken and get a CPU first.
+  - On the host 18 % of `JobLoaderSema` wakes took 0.1–2 ms (h429Z1: 218k + 21k of 1.35M). The Hi workers waited about
+    13 µs per wake for a CPU on average.
+- **What the console does differently** (from the title's own requests; the console's kernel is TODO(verify)):
+  - The owner (priority 300) runs on its own CPU (8 or 11); the Hi workers (500) are on CPUs 0–7.
+  - "A lower number wins" means a woken Hi worker takes its CPU at once from the Lo workers (600), Havok (550/700),
+    Bink and the background (750) that share those CPUs.
+  - The host has no such preemption: equal nice, or nice steps (PRIO_ORDER), only change shares.
+  - This also fits the stressor: GUEST_CPUS pins the Hi workers onto CPUs 0–7 together with the Lo workers (0x1ff)
+    without the console's priority, so a woken worker waits behind them, and those runs crash more (M4, Z1, M6, T1, T2).
+- **Candidate R (next build, for any title, derived at run time; not built):** strict preemption for the guest's top
+  worker band on the host.
+  - Guest threads get SCHED_RR in the order of their guest priority, through RLIMIT_RTPRIO or rtkit (RealtimeKit1,
+    which the host already falls back to for nice).
+  - Pure spinners must not get it. The owner's wait is a `pause` loop, and an RR spinner would starve its CPU until the
+    kernel's RT throttling stops it. One rule: a thread that has just slept on a guest semaphore or wait counts as a
+    sleeper; RR goes only to sleepers, and is taken back from a thread that ran a whole slice without sleeping.
+  - Combined with GUEST_CPUS, it is the console's model: the title's own CPU split plus "a lower number wins".
+  - It needs one read on the box first: `ulimit -r` and `ulimit -e` for his user, and rtkit's limits (MaxRealtimePriority,
+    RTTimeUSecMax, the per-user thread cap). A simpler, weaker fallback without privilege: SCHED_IDLE for guest
+    threads of the background band (priority above the Lo workers' band), so that any woken normal thread preempts them.
