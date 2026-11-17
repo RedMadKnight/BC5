@@ -639,3 +639,25 @@ because F3 records only buffers the host submits unchanged.
   bounds so far. It carries the ho430 machinery.
 - **(b)** turn the hold off for the second title, one word in its title row: no reordering and no fix code. About 11 %
   slower until exp 0432's speed work wins it back.
+
+### F10, the targeted flush (2026-11-17/18): G1 misses the gate
+
+He asked whether the hold could be fixed instead of choosing (a) or (b). F10 (switch `BC5_DIRECT_XQ_TARGET`, on unless
+"0"; ho430 `b08c0c1f`, unit `0222c4ba`, binary `878ff785` in `p15`) keeps the hold but records, per open dcb chain,
+the addresses its packets write (RELEASE_MEM/EOP data, WRITE_DATA). At a compute buffer's wait on label L, every other
+thread's open chain that writes L goes to the device first: it is made due for the watchdog, or flushed by its owner at
+the call's end if it is mid-submit. bc5-ring then polls, at most 2 ms and with try_locks only (R62), until no such chain
+is open or in flight. A chain counts as in flight from the swap until submit_now has registered its writes. Nothing is
+learned or kept between runs.
+
+The top's gate for a swap: three clean route runs, F7's sensor at 0 in all of them, no GPU hang or fault, and a mean of
+at least 42.75 flips/s.
+
+| Run | Result | flips/s | F7 sensor (stale, not held) | F10: waits / with a writing chain / reached the device within 2 ms / bound / could not look |
+|---|---|---|---|---|
+| h430G1 | NO_CRASH at G+1500, 0 kernel lines | 42.7 | **182** | 863,311 / 1,756 / 1,756 / 0 / 18,024 |
+
+F10 does what it targets: every chain it found reached the device within 2 ms. But 182 stale waits still got through,
+so there was no G2 and no swap. The box went to exp 0432. Open question: where the 182 come from. The candidates are
+the 18,024 waits where F10's try_lock found the chain list busy, chains under the ADR 0013 hold (F10 skips them), and
+compute chains (their writes are not recorded). The next step is counters only, to split the 182 by cause.
