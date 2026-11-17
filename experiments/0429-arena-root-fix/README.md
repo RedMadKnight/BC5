@@ -363,3 +363,7 @@ crashes reliably (the earlier 180 s fight route crashed 7 of 9 in exp 0388 on ol
 
 Tally on build 6: C 2 clean (h429C3, h429C4), S 3 clean (h429S1, S2, S3). With build 4, the controls on the long route
 are 3 of 3 clean. R13: the crash does not show on this route on these builds, so S cannot be told from C here.
+
+## Morning note (2026-11-17 05:5x)
+
+See `MORNING-NOTE.md`: every crash of this experiment ran with an arm that changed the guest CPU mask; proposed A/B arm M (stressed control) against new arm T (M + FAST_MUTEX=2).
