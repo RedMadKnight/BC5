@@ -37,6 +37,7 @@ for arm in ${ORDER:-D S D S O}; do
     *) echo "scene0432: arm $arm?"; break ;;
   esac
   t=d432$arm$k; while [ -e "$N/raw/$t-start.txt" ]; do t=${t}b; done
+  [ "${FS:-0}" = 1 ] && aw="$aw KYTY_BC5_FRAME_STAT=$N/raw/$t-fs.txt"  # FS=1: exp 0415's per-job record (64 of every 512 frames), the same word in every arm
   want=$(md5sum < "$bin" | cut -d' ' -f1)
   echo "scene0432 $(date +%T): arm $arm, $t, ${want:0:8}"
   # shellcheck disable=SC2086
