@@ -724,3 +724,32 @@ game-main stayed TS. AK::AudioOutThread was not promoted.
 
 Files: raw/n/check-h429K10.out, check-h429K12.out, check-h429K12.series, chain-rep13.out, astro-a429B.out (ASTRO
 screenshots stay on the box).
+
+## Build 13 (offline, 2026-11-18 night): the worker-family rule (RR=3) and rtkit's room
+
+**rtkit's refusals, read in its journal (read-only, 00:25 in a slot gap).** All 23 refusals since 22:40 are
+"Reached maximum concurrent threads limit for user '1000'", none is the burst limit. rtkit serves at most 25 threads per
+user at a time (`--threads-per-user-max`, default 25, `--help`; rtkit runs with no arguments). From rtkit's public source
+(rtkit-daemon.c, GitHub mirror heftig/rtkit, read through a fetch; TODO(verify) against the box's 0.14): the count is
+every thread of the user rtkit made RT or high priority that still is (RR/FIFO, or nice < 0), swept at every D-Bus call;
+a known thread asking again reuses its place. Besides PipeWire (4 threads), the emulator itself asks rtkit for high
+priority (nice -10/-15) for many of its threads: 3 at h429K10's start, 16 at a429BA2's (from a library it links, not
+from our code: no tracked file asks rtkit apart from R; which one is TODO(verify), the checks now list the nice < 0
+threads). So:
+- in K10 R's 14 RR threads came first and rtkit refused 4 of the emulator's own later requests (22:42:44, 3 at 22:43:13;
+  R's own count shows 0 refusals): R took places other parts of the emulator wanted;
+- in ASTRO the emulator's 16 requests came first and left R room for 2 (R 7 and 4 refusals).
+
+**Build 13 (commits e1982999, 1fdb382b), offline, not yet built:**
+- `KYTY_BC5_0429_RR=3`: a sleeper is promoted only on a semaphore where two or more distinct threads of its own name
+  family slept (the guest name without its trailing index: "Job Hi 0".."Job Hi 7" are one family). A lone name such as
+  AK::AudioMgr, which got RR under RR=2 in K10 and K12 because it shares a semaphore with other threads, is out. No title
+  rows. RR=2 stays as it was for comparison.
+- rtkit's room: the watchdog counts the user's RR/FIFO and nice < 0 threads once a second (/proc, what rtkit counts), reads
+  rtkit's limit from its command line (default 25), and R promotes only while count + 1 + 4 (a reserve for the emulator's
+  own and others' requests) fits. A thread denied for room or budget now waits and is promoted at a later sleep (before,
+  a budget denial lost it for good: ASTRO B 7 and 10). New count `N` (room denials) and `user U of M` in the count line.
+- The normal build logs rtkit's D-Bus error text on a refusal.
+- check0429r.sh / check0429l.sh: with RRMODE=3 a check also fails if an AK thread is RR; both print the nice < 0 threads.
+
+Next slot (after exp 0432's): build 13, checks K13 (normal) and K14 (lean) with RRMODE=3, then 2 pairs Q/P with RRMODE=3.
