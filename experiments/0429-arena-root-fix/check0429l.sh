@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# BC5 exp 0429: the lean check of candidate R. check0429r.sh cannot drive lean: run0429f.sh gates on the journal's frame
+# profiles, which lean compiles out. This one runs the private lean build through exp 0428's start0428l.sh (its own
+# BOX-LOCK line; RT on; input.cfg as shared) with lean0428.sh's key route by time, 200 s, words of arm G
+# (GUEST_CPUS=1 RR=1, BC5_0430_G=0), and at 150 s takes every thread's policy (ps cls/rtprio). Lean logs nothing, so the
+# verdict is the ps picture alone. PASS: every 'Job Hi' thread is RR, the main thread is not, the run did not crash.
+# usage (on the box, in ~/bc5-work/exp0413/n): bash ~/bc5-work/exp0429/check0429l.sh <tag>
+set -u
+ulimit -c 0
+export LC_ALL=C
+W=$HOME/bc5-work; N=$W/exp0413/n; HERE=$W/exp0429; T=${1:?a tag}
+BIN=$HERE/lean/kyty_emulator; WANT=$(cat "$HERE/lean/binary.md5")
+[ "$(md5sum < "$BIN" | cut -d' ' -f1)" = "$WANT" ] || { echo "the lean binary is not its pin"; exit 1; }
+cd "$N" || exit 1
+CMD=$N/cmd-$T.txt
+{ printf 'wait 90000\npress cross\nwait 10000\npress cross\nwait 8000\npress cross\nwait 62000\n'
+  c=0; while [ $c -lt 8 ]; do s=255; [ $(((c / 4) % 2)) = 1 ] && s=0; printf 'stick l 128 0 15000\nstick r %d 128 1200\nwait 300\n' "$s"; c=$((c + 1)); done
+  printf 'stick l 128 128\nstick r 128 128\n'; } > "$CMD"
+P_BIN=$BIN P_WANT=$WANT P_WORDS=$N/words0413nz.txt bash "$W/exp0428/start0428l.sh" "$T" lean 200 KYTY_BC5_INPUT_CMD="$CMD" \
+  BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_RR=1 > "$HERE/check-$T.run" 2>&1 &
+RP=$!
+sleep 150
+P=$(pgrep -n '^kyty_emulator')
+[ -n "$P" ] && ps -L -o tid,cls,rtprio,comm -p "$P" > "$HERE/check-$T.ps"
+wait $RP
+hi=$(grep -c ' Job Hi' "$HERE/check-$T.ps" 2> /dev/null); hi=${hi:-0}
+hirr=$(grep ' Job Hi' "$HERE/check-$T.ps" 2> /dev/null | grep -c ' RR '); hirr=${hirr:-0}
+mainrr=$(grep -E " (game-main|MainThread)$" "$HERE/check-$T.ps" 2> /dev/null | grep -c " RR "); mainrr=${mainrr:-0}
+end=$(grep "^$T " "$HERE/check-$T.run" | tail -1)
+echo "check $T (lean $WANT): Job Hi threads $hi, of them RR $hirr; the main thread RR $mainrr; RR threads at 150 s: $(grep -c ' RR ' "$HERE/check-$T.ps" 2> /dev/null)"
+grep ' RR \|game-main\|MainThread' "$HERE/check-$T.ps" 2> /dev/null | head -24
+echo "$end" | cut -c1-220
+[ "$hi" -ge 1 ] && [ "$hi" = "$hirr" ] && [ "$mainrr" = 0 ] && echo "$end" | grep -q 'PASS' && echo "check $T: PASS" || echo "check $T: FAIL"

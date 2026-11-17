@@ -570,3 +570,52 @@ M4, M6, M7 and M11, also with the catcher on, are in their play logs on the box,
   - It also explains why the crashes cluster at G+10: the load wakes all the Bk workers at once.
 - **To confirm across crashes** (one read-only minute on the box): the "thread at fault" lines of M4, M6, M7 and M11.
   Are the Bk workers running there too, and is any job thread in a host call?
+
+## Slot 16:17–16:55 (2026-11-17): the dumps at the fault, the set G M G M, the lean check
+
+Box: boot 66e113e1, a fresh boot after the 16:15 reboot (0432's hang), no GPU reset on it. Build 10 (normal c8ea1061,
+lean 13c3ac84), all runs with the stressor and RT on.
+
+**The dumps at the fault** (`faultread0429.sh`, read-only; `raw/n/faultread-1655.txt`):
+
+| run | Job Bk running | job thread or owner in a host call | D state |
+|---|---|---|---|
+| M4 | no dump (build 3, no catcher) | – | – |
+| M6 | 8, CPUs 0–7 | none | none |
+| M7 | 8, CPUs 0–7 (Hi 6 shares CPU 5 with Bk 6) | none | bc5-apr pread |
+| M11 | 8, CPUs 0–7 (Hi 0, 4, 6 and Bk 4 all on CPU 7) | none | none |
+| G1 (R inactive) | **0**; all Hi asleep | none | none |
+| G2 (R inactive) | 8, CPUs 0–7 | none | 2 bc5-apr pread |
+| G3 (R inactive) | 8, CPUs 0–7 | none | none |
+
+The owner (`game-main`) runs the fault on CPU 8 in every one. 5 of 6 dumps match Z1, and no dump shows a host call:
+the top's D (host blocking) is out for this crash. G1 is the exception that Bk contention does not explain.
+
+**The set rep12** (chain0429.sh; `raw/n/h429*-summary.txt`):
+
+| run | arm | end | flips/s |
+|---|---|---|---|
+| G7 | G (R on) | G+600, no crash | 45.9 |
+| M12 | M | the target crash at 108 s | 40.2 |
+| G8 | G (R on) | G+600, no crash | 44.0 |
+| M13 | M | the target crash at 117 s | 39.9 |
+
+Totals, counts only: G with R active 4 clean of 4 (G5–G8). M and Z without R 7 crashes of 9 (M4, Z1, M6, M7, M11,
+M12, M13; M5 and M10 clean). R in G7/G8 (`raw/n/h429G7-r.txt`, `h429G8-r.txt`): 22 and 20 promotions, cap 14, no
+SIGXCPU drop. The watchdog dropped 4 and 5 threads, all `Havok Solve`. No Job Hi worker was dropped.
+
+**The lean check: FAIL.**
+- h429K3 (`check0429r.sh` with `CHECK_LEAN=1`) ended as CLASS SETUP. `run0429f.sh` gates on the journal's frame
+  profiles (`direct.log`), which lean compiles out, so that harness cannot drive lean.
+- New `check0429l.sh`: the private lean build through exp 0428's `start0428l.sh` with lean0428's key route, 200 s,
+  arm G's words, ps at 150 s.
+- h429K4 (`raw/n/check-h429K4.ps`, `.run`): the run passed (200 s, no crash), and the main thread is not RR.
+- But **only 6 of the 8 Job Hi threads are RR**: Hi 0 and Hi 6 are TS. Also RR: AK::AudioMgr (rtkit priority 7) and
+  AK::AudioOutThread (13). No Lo and no Havok thread is RR.
+- Lean logs nothing, so the cause is open. Two suspects:
+  - the watchdog dropped them (100 ms in one slice; a dropped thread stays TS for good);
+  - the 24-call rtkit budget ran out before they slept.
+- By the check-first rule, no lean set runs until this is understood offline.
+
+**libdbus on the host:** `/usr/lib64/libdbus-1.so.3 -> libdbus-1.so.3.38.3` (364832 bytes), so R's dlopen has a
+library on the Bazzite host.
