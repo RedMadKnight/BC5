@@ -500,3 +500,22 @@ From the code already read (above) and the catcher of h429Z1:
   - NO_CRASH to G+40, 40.3 flips/s.
 
   The set (G against M, the long route) waits for the end of exp 0430's A/B (about 13:50).
+
+## The R set (2026-11-17 12:03–12:42, build 10, the top's order after exp 0430's hang and reboot at 11:59)
+
+The long route, slot 4, the named snapshot, RT on, the catcher on, no pad key, no kernel line. Arm G
+(`GUEST_CPUS=1` + `RR=1`) against arm M (`GUEST_CPUS=1`, the stressed control).
+
+| run | arm | result | flips/s | R |
+|---|---|---|---|---|
+| h429G5 | G | NO_CRASH to G+600 | 48.1 | 22 promoted, 8 of them Job Hi; 0 refused; 7 Lo evicted; 4 dropped |
+| h429M10 | M | NO_CRASH to G+600 | 47.9 | – |
+| h429G6 | G | NO_CRASH to G+600 | 44.4 | 20 promoted, 8 Job Hi; 0 refused; 5 evicted; 5 dropped |
+| h429M11 | M | **TARGET at 117 s = G+10** (eboot+0x3d7eca0) | 39.5 | – |
+
+**Tally with the stressor (R13: counts, not rates):**
+- Without R, M and Z: M4, Z1, M6, M7 and M11 crashed, M5 and M10 were clean.
+- G1–G3 also crashed. Their R was inactive (builds 7 and 8), so they ran as M.
+- With R active: G5 and G6 clean, 2 of 2.
+
+R has not crashed yet, and the stressed control crashes in most runs. Two runs are not enough to call it a fix: more G runs are needed, then R alone against C, and an fps check.
