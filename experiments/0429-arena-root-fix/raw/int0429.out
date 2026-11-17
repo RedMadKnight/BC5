@@ -1,0 +1,22 @@
+chain lock: exp 0417 | chain: exp 0429: shared swap, the JobArenaFix removal, patch 9e7c4514 + 0429; normal and lean rebuilt (CPU only, no emulator), until about 10:28 | token 202611170948472519138 | 2026-11-17 09:48:47
+before: PIN_OLD=9e7c4514 NORMAL=6044be08 LEAN=d239d4bf ARCH=1423af83 CFG_MD5=28d3366a 
+mkswap0429: src/loader/gamePatch.cpp eb8cce4c -> 8c1cd621
+mkswap0429: src/loader/gamePatch.h 7da6a067 -> d6c79fb7
+mkswap0429: src/loader/runtimeLinker.cpp 0cd7ca0f -> e5b24df1
+mkswap0429: src/graphics/presentation/hostMenu.cpp a6314317 -> 34546c89
+mkswap0429: src/graphics/presentation/window/hostInput.cpp 59779728 -> 42521a95
+mkswap0429: src/graphics/presentation/window/hostInput.h 4f6178db -> 8fc3edb9
+mkswap0429: src/kernel/pthread.cpp e224bb33 -> 7517411f
+mkswap0429: removed src/bc5/job_arena_fix.hpp; done
+the patch: 9e7c4514 -> bc39a035, 471 lines differ, exp 0372 lines 5, pad_audio_route header in
+== 09:48:52 build normal
+normal: 0de9349b, warnings 9, steps 10
+== 09:49:12 build lean
+lean: 63fda02d, warnings 9, steps 10
+normal words: +[] -[KYTY_BC5_JOB_ARENA_FIX ]
+normal: 'JobArenaFix.' literal (the silent accept of an old input.cfg line): 0
+lean words: +[] -[]
+lean: 'JobArenaFix.' literal (the silent accept of an old input.cfg line): 0
+input.cfg: 28d3366a -> 6b966137, JobArenaFix lines left 0
+int0429 done 09:49:38: patch bc39a035, normal 0de9349b, lean 63fda02d; undo: bash /home/kjaniszewski/bc5-work/exp0429/undo0429.sh (then exp0431/undo0431.sh further back)
+chain lock released

@@ -1,0 +1,462 @@
+[bc5] exp 0429: affinity ON (1)
+[bc5] exp 0429: prio order ON
+[bc5] exp 0429 thread: setaffinity tid 63965 'MainThread' prio 700 nice 4 mask 0x0 applied no
+[bc5] exp 0425: C1 wake slice ON (200 us)
+[bc5] exp 0425 slice: setprio tid 63965 'MainThread' prio 300 policy 0 nice 0: set rc 0 errno 0, read back runtime 200000 ns nice 0
+[bc5] exp 0429 thread: setprio tid 63965 'MainThread' prio 300 nice 0 mask 0x0 applied no
+[bc5] exp 0425: C3 direct wake off
+[bc5] exp 0425 slice: start tid 63970 'Job Lo 0' prio 600 policy 0 nice 2: set rc 0 errno 0, read back runtime 200000 ns nice 2
+[bc5] exp 0429 thread: start tid 63970 'Job Lo 0' prio 600 nice 2 mask 0x1ff applied yes
+[bc5] exp 0425 slice: start tid 63971 'Job Lo 1' prio 600 policy 0 nice 2: set rc 0 errno 0, read back runtime 200000 ns nice 2
+[bc5] exp 0429 thread: start tid 63971 'Job Lo 1' prio 600 nice 2 mask 0x1ff applied yes
+[bc5] exp 0425 slice: start tid 63972 'Job Lo 2' prio 600 policy 0 nice 2: set rc 0 errno 0, read back runtime 200000 ns nice 2
+[bc5] exp 0429 thread: start tid 63972 'Job Lo 2' prio 600 nice 2 mask 0x1ff applied yes
+[bc5] exp 0425 slice: start tid 63973 'Job Lo 3' prio 600 policy 0 nice 2: set rc 0 errno 0, read back runtime 200000 ns nice 2
+[bc5] exp 0429 thread: start tid 63973 'Job Lo 3' prio 600 nice 2 mask 0x1ff applied yes
+[bc5] exp 0425 slice: start tid 63974 'Job Lo 4' prio 600 policy 0 nice 2: set rc 0 errno 0, read back runtime 200000 ns nice 2
+[bc5] exp 0429 thread: start tid 63974 'Job Lo 4' prio 600 nice 2 mask 0x1ff applied yes
+[bc5] exp 0425 slice: start tid 63975 'Job Hi 0' prio 500 policy 0 nice 0: set rc 0 errno 0, read back runtime 200000 ns nice 0
+[bc5] exp 0429 thread: start tid 63975 'Job Hi 0' prio 500 nice 0 mask 0xff applied yes
+[bc5] exp 0425 slice: start tid 63976 'Job Hi 1' prio 500 policy 0 nice 0: set rc 0 errno 0, read back runtime 200000 ns nice 0
+[bc5] exp 0429 thread: start tid 63976 'Job Hi 1' prio 500 nice 0 mask 0xff applied yes
+[bc5] exp 0425 slice: start tid 63977 'Job Hi 2' prio 500 policy 0 nice 0: set rc 0 errno 0, read back runtime 200000 ns nice 0
+[bc5] exp 0429 thread: start tid 63977 'Job Hi 2' prio 500 nice 0 mask 0xff applied yes
+[bc5] exp 0425 slice: start tid 63978 'Job Hi 3' prio 500 policy 0 nice 0: set rc 0 errno 0, read back runtime 200000 ns nice 0
+[bc5] exp 0429 thread: start tid 63978 'Job Hi 3' prio 500 nice 0 mask 0xff applied yes
+[bc5] exp 0425 slice: start tid 63979 'Job Hi 4' prio 500 policy 0 nice 0: set rc 0 errno 0, read back runtime 200000 ns nice 0
+[bc5] exp 0429 thread: start tid 63979 'Job Hi 4' prio 500 nice 0 mask 0xff applied yes
+[bc5] exp 0429 thread: start tid 63980 'Job Bk 0' prio 750 nice 5 mask 0x1ff applied yes
+[bc5] exp 0429 thread: start tid 63981 'Job Bk 1' prio 750 nice 5 mask 0x1ff applied yes
+[bc5] exp 0429 thread: start tid 63982 'Job Bk 2' prio 750 nice 5 mask 0x1ff applied yes
+[bc5] exp 0429 thread: start tid 63983 'Job Bk 3' prio 750 nice 5 mask 0x1ff applied yes
+[bc5] exp 0429 thread: start tid 63984 'Job Bk 4' prio 750 nice 5 mask 0x1ff applied yes
+[bc5] exp 0425 slice: start tid 63987 'Archive Asset IO' prio 600 policy 0 nice 2: set rc 0 errno 0, read back runtime 200000 ns nice 2
+[bc5] exp 0429 thread: start tid 63987 'Archive Asset IO' prio 600 nice 2 mask 0x800 applied no
+[bc5] exp 0425 slice: start tid 63988 'Archive Loose IO' prio 600 policy 0 nice 2: set rc 0 errno 0, read back runtime 200000 ns nice 2
+[bc5] exp 0429 thread: start tid 63988 'Archive Loose IO' prio 600 nice 2 mask 0x800 applied no
+[bc5] exp 0425 slice: start tid 63989 'Archive Resolve IO' prio 600 policy 0 nice 2: set rc 0 errno 0, read back runtime 200000 ns nice 2
+[bc5] exp 0429 thread: start tid 63989 'Archive Resolve IO' prio 600 nice 2 mask 0x800 applied no
+[bc5] exp 0425 slice: start tid 63993 'Render Thread' prio 300 policy 0 nice 0: set rc 0 errno 0, read back runtime 200000 ns nice 0
+[bc5] exp 0429 thread: start tid 63993 'Render Thread' prio 300 nice 0 mask 0x400 applied no
+[bc5] exp 0429 thread: setaffinity tid 63993 'Render Thread' prio 300 nice 0 mask 0x400 applied no
+[bc5] exp 0425 slice: start tid 64079 'Havok Solve' prio 700 policy 0 nice 4: set rc 0 errno 0, read back runtime 200000 ns nice 4
+[bc5] exp 0429 thread: start tid 64079 'Havok Solve' prio 700 nice 4 mask 0xab applied yes
+[bc5] exp 0425 slice: start tid 64080 'Havok Solve' prio 700 policy 0 nice 4: set rc 0 errno 0, read back runtime 200000 ns nice 4
+[bc5] exp 0429 thread: start tid 64080 'Havok Solve' prio 700 nice 4 mask 0xab applied yes
+[bc5] exp 0425 slice: start tid 64081 'Havok Solve' prio 700 policy 0 nice 4: set rc 0 errno 0, read back runtime 200000 ns nice 4
+[bc5] exp 0429 thread: start tid 64081 'Havok Solve' prio 700 nice 4 mask 0xab applied yes
+[bc5] exp 0425 slice: start tid 64082 'Havok Solve' prio 700 policy 0 nice 4: set rc 0 errno 0, read back runtime 200000 ns nice 4
+[bc5] exp 0429 thread: start tid 64082 'Havok Solve' prio 700 nice 4 mask 0xab applied yes
+[bc5] exp 0425 slice: start tid 64083 'Havok Solve' prio 700 policy 0 nice 4: set rc 0 errno 0, read back runtime 200000 ns nice 4
+[bc5] exp 0429 thread: start tid 64083 'Havok Solve' prio 700 nice 4 mask 0xab applied yes
+[bc5] exp 0425: C2 handoff ON (300 us)
+[bc5] exp 0425 handoff: 1 handoffs, 1 ended by the resume, 0 at the bound, mean 4.0 us
+[bc5] exp 0425 slice: setprio tid 64079 'Havok Solve' prio 450 policy 0 nice 0: set rc -1 errno 1, read back runtime 200000 ns nice 0
+[bc5] exp 0429 thread: setprio tid 64079 'Havok Solve' prio 450 nice 0 mask 0xab applied yes
+[bc5] exp 0425 slice: setprio tid 64080 'Havok Solve' prio 450 policy 0 nice 0: set rc -1 errno 1, read back runtime 200000 ns nice 0
+[bc5] exp 0429 thread: setprio tid 64080 'Havok Solve' prio 450 nice 0 mask 0xab applied yes
+[bc5] exp 0425 slice: setprio tid 64081 'Havok Solve' prio 450 policy 0 nice 0: set rc -1 errno 1, read back runtime 200000 ns nice 0
+[bc5] exp 0429 thread: setprio tid 64081 'Havok Solve' prio 450 nice 0 mask 0xab applied yes
+[bc5] exp 0425 slice: setprio tid 64082 'Havok Solve' prio 450 policy 0 nice 0: set rc -1 errno 1, read back runtime 200000 ns nice 0
+[bc5] exp 0429 thread: setprio tid 64082 'Havok Solve' prio 450 nice 0 mask 0xab applied yes
+[bc5] exp 0425 slice: setprio tid 64083 'Havok Solve' prio 450 policy 0 nice 0: set rc -1 errno 1, read back runtime 200000 ns nice 0
+[bc5] exp 0429 thread: setprio tid 64083 'Havok Solve' prio 450 nice 0 mask 0xab applied yes
+[bc5] exp 0425 slice: start tid 64089 'Havok Queries and Cloth' prio 700 policy 0 nice 4: set rc 0 errno 0, read back runtime 200000 ns nice 4
+[bc5] exp 0429 thread: start tid 64089 'Havok Queries and Cloth' prio 700 nice 4 mask 0xab applied yes
+[bc5] exp 0425 slice: start tid 64090 'Havok Queries and Cloth' prio 700 policy 0 nice 4: set rc 0 errno 0, read back runtime 200000 ns nice 4
+[bc5] exp 0429 thread: start tid 64090 'Havok Queries and Cloth' prio 700 nice 4 mask 0xab applied yes
+[bc5] exp 0425 slice: start tid 64091 'Havok Queries and Cloth' prio 700 policy 0 nice 4: set rc 0 errno 0, read back runtime 200000 ns nice 4
+[bc5] exp 0429 thread: start tid 64091 'Havok Queries and Cloth' prio 700 nice 4 mask 0xab applied yes
+[bc5] exp 0425 slice: start tid 64092 'Havok Queries and Cloth' prio 700 policy 0 nice 4: set rc 0 errno 0, read back runtime 200000 ns nice 4
+[bc5] exp 0429 thread: start tid 64092 'Havok Queries and Cloth' prio 700 nice 4 mask 0xab applied yes
+[bc5] exp 0425 slice: start tid 64093 'Havok Queries and Cloth' prio 700 policy 0 nice 4: set rc 0 errno 0, read back runtime 200000 ns nice 4
+[bc5] exp 0429 thread: start tid 64093 'Havok Queries and Cloth' prio 700 nice 4 mask 0xab applied yes
+[bc5] exp 0425 slice: setprio tid 64089 'Havok Queries and Cloth' prio 550 policy 0 nice 1: set rc -1 errno 1, read back runtime 200000 ns nice 1
+[bc5] exp 0429 thread: setprio tid 64089 'Havok Queries and Cloth' prio 550 nice 1 mask 0xab applied yes
+[bc5] exp 0425 slice: setprio tid 64090 'Havok Queries and Cloth' prio 550 policy 0 nice 1: set rc -1 errno 1, read back runtime 200000 ns nice 1
+[bc5] exp 0429 thread: setprio tid 64090 'Havok Queries and Cloth' prio 550 nice 1 mask 0xab applied yes
+[bc5] exp 0425 slice: setprio tid 64091 'Havok Queries and Cloth' prio 550 policy 0 nice 1: set rc -1 errno 1, read back runtime 200000 ns nice 1
+[bc5] exp 0429 thread: setprio tid 64091 'Havok Queries and Cloth' prio 550 nice 1 mask 0xab applied yes
+[bc5] exp 0425 slice: setprio tid 64092 'Havok Queries and Cloth' prio 550 policy 0 nice 1: set rc -1 errno 1, read back runtime 200000 ns nice 1
+[bc5] exp 0429 thread: setprio tid 64092 'Havok Queries and Cloth' prio 550 nice 1 mask 0xab applied yes
+[bc5] exp 0425 slice: setprio tid 64093 'Havok Queries and Cloth' prio 550 policy 0 nice 1: set rc -1 errno 1, read back runtime 200000 ns nice 1
+[bc5] exp 0429 thread: setprio tid 64093 'Havok Queries and Cloth' prio 550 nice 1 mask 0xab applied yes
+[bc5] exp 0425 slice: start tid 64099 'AK::IOThread' prio 700 policy 0 nice 4: set rc 0 errno 0, read back runtime 200000 ns nice 4
+[bc5] exp 0429 thread: start tid 64099 'AK::IOThread' prio 700 nice 4 mask 0x800 applied no
+[bc5] exp 0425 slice: start tid 64101 'AK::BankMgr' prio 600 policy 0 nice 2: set rc 0 errno 0, read back runtime 200000 ns nice 2
+[bc5] exp 0429 thread: start tid 64101 'AK::BankMgr' prio 600 nice 2 mask 0xa00 applied no
+[bc5] exp 0425 slice: start tid 64102 'AK::Suspended' prio 450 policy 0 nice 0: set rc 0 errno 0, read back runtime 200000 ns nice 0
+[bc5] exp 0429 thread: start tid 64102 'AK::Suspended' prio 450 nice 0 mask 0x1000 applied no
+[bc5] exp 0425 slice: start tid 64103 'AK::AudioMgr' prio 450 policy 0 nice 0: set rc 0 errno 0, read back runtime 200000 ns nice 0
+[bc5] exp 0429 thread: start tid 64103 'AK::AudioMgr' prio 450 nice 0 mask 0x1000 applied no
+[bc5] exp 0425 slice: start tid 64104 'Coherent Thread' prio 600 policy 0 nice 2: set rc 0 errno 0, read back runtime 200000 ns nice 2
+[bc5] exp 0429 thread: start tid 64104 'Coherent Thread' prio 600 nice 2 mask 0xa00 applied no
+[bc5] exp 0425 slice: start tid 64105 'Coherent Resource Worker Thread' prio 650 policy 0 nice 3: set rc 0 errno 0, read back runtime 200000 ns nice 3
+[bc5] exp 0429 thread: start tid 64105 'Coherent Resource Worker Thread' prio 650 nice 3 mask 0xa00 applied no
+[bc5] exp 0425 slice: start tid 64106 'Coherent Layout Worker Thread' prio 600 policy 0 nice 2: set rc 0 errno 0, read back runtime 200000 ns nice 2
+[bc5] exp 0429 thread: start tid 64106 'Coherent Layout Worker Thread' prio 600 nice 2 mask 0xa00 applied no
+[bc5] exp 0425 slice: start tid 64107 'UXAnalytics::UploadThread' prio 650 policy 0 nice 3: set rc 0 errno 0, read back runtime 200000 ns nice 3
+[bc5] exp 0429 thread: start tid 64107 'UXAnalytics::UploadThread' prio 650 nice 3 mask 0x800 applied no
+[bc5] exp 0425 slice: start tid 64100 'AK::JobWrkr-AcmQueue' prio 256 policy 0 nice -15: set rc -1 errno 1, read back runtime 200000 ns nice -15
+[bc5] exp 0429 thread: start tid 64100 'AK::JobWrkr-AcmQueue' prio 256 nice -15 mask 0x800 applied no
+[bc5] exp 0425 slice: start tid 64109 'EntitlementSysPPR::QueryThread' prio 650 policy 0 nice 3: set rc 0 errno 0, read back runtime 200000 ns nice 3
+[bc5] exp 0429 thread: start tid 64109 'EntitlementSysPPR::QueryThread' prio 650 nice 3 mask 0xa00 applied no
+[bc5] exp 0425 slice: start tid 64110 'File Video Stream' prio 650 policy 0 nice 3: set rc 0 errno 0, read back runtime 200000 ns nice 3
+[bc5] exp 0429 thread: start tid 64110 'File Video Stream' prio 650 nice 3 mask 0x800 applied no
+[bc5] exp 0425 slice: start tid 64111 'File Video Stream' prio 650 policy 0 nice 3: set rc 0 errno 0, read back runtime 200000 ns nice 3
+[bc5] exp 0429 thread: start tid 64111 'File Video Stream' prio 650 nice 3 mask 0x800 applied no
+[bc5] exp 0425 slice: start tid 64112 'File Video Stream' prio 650 policy 0 nice 3: set rc 0 errno 0, read back runtime 200000 ns nice 3
+[bc5] exp 0429 thread: start tid 64112 'File Video Stream' prio 650 nice 3 mask 0x800 applied no
+[bc5] exp 0425 slice: start tid 64113 'File Video Stream' prio 650 policy 0 nice 3: set rc 0 errno 0, read back runtime 200000 ns nice 3
+[bc5] exp 0429 thread: start tid 64113 'File Video Stream' prio 650 nice 3 mask 0x800 applied no
+[bc5] exp 0425 slice: start tid 64114 'File Video Stream' prio 650 policy 0 nice 3: set rc 0 errno 0, read back runtime 200000 ns nice 3
+[bc5] exp 0429 thread: start tid 64114 'File Video Stream' prio 650 nice 3 mask 0x800 applied no
+[bc5] exp 0425 slice: start tid 64115 'Save Thread' prio 650 policy 0 nice 3: set rc 0 errno 0, read back runtime 200000 ns nice 3
+[bc5] exp 0429 thread: start tid 64115 'Save Thread' prio 650 nice 3 mask 0xa00 applied no
+[bc5] exp 0429 thread: setaffinity tid 63965 'MainThread' prio 300 nice 0 mask 0x100 applied no
+[bc5] exp 0425 slice: start tid 64116 'User UDS Thread' prio 650 policy 0 nice 3: set rc 0 errno 0, read back runtime 200000 ns nice 3
+[bc5] exp 0429 thread: start tid 64116 'User UDS Thread' prio 650 nice 3 mask 0x800 applied no
+[bc5] exp 0425 slice: start tid 64117 'User Trophy Thread' prio 650 policy 0 nice 3: set rc 0 errno 0, read back runtime 200000 ns nice 3
+[bc5] exp 0429 thread: start tid 64117 'User Trophy Thread' prio 650 nice 3 mask 0x800 applied no
+[bc5] exp 0425 slice: start tid 64521 'AK::AudioOutThread' prio 256 policy 0 nice -15: set rc -1 errno 1, read back runtime 200000 ns nice -15
+[bc5] exp 0429 thread: start tid 64521 'AK::AudioOutThread' prio 256 nice -15 mask 0x1a00 applied no
+[bc5] exp 0429 thread: setaffinity tid 63965 'MainThread' prio 300 nice 0 mask 0x800 applied no
+[bc5] exp 0429 thread: setaffinity tid 63965 'MainThread' prio 300 nice 0 mask 0x3f applied yes
+[bc5] exp 0429 thread: setaffinity tid 63965 'MainThread' prio 300 nice 0 mask 0x800 applied no
+[bc5] exp 0425 slice: start tid 65126 'Bink Snd' prio 700 policy 0 nice 4: set rc 0 errno 0, read back runtime 200000 ns nice 4
+[bc5] exp 0429 thread: setaffinity tid 63965 'MainThread' prio 300 nice 0 mask 0x100 applied no
+[bc5] exp 0429 thread: start tid 65126 'Bink Snd' prio 700 nice 4 mask 0x7f applied yes
+[bc5] exp 0429 thread: setaffinity tid 65126 'Bink Snd' prio 510 nice 0 mask 0x3f applied yes
+[bc5] exp 0429 thread: setaffinity tid 63965 'MainThread' prio 300 nice 0 mask 0x3f applied yes
+[bc5] exp 0429 thread: setaffinity tid 63965 'MainThread' prio 300 nice 0 mask 0x100 applied no
+[bc5] exp 0425 slice: start tid 65179 'BinkAsy0' prio 700 policy 0 nice 4: set rc 0 errno 0, read back runtime 200000 ns nice 4
+[bc5] exp 0429 thread: setaffinity tid 65179 'BinkAsy0' prio 700 nice 4 mask 0x1 applied yes
+[bc5] exp 0429 thread: start tid 65179 'BinkAsy0' prio 700 nice 4 mask 0x1 applied yes
+[bc5] exp 0429 thread: setaffinity tid 63965 'MainThread' prio 300 nice 0 mask 0x3f applied yes
+[bc5] exp 0429 thread: setaffinity tid 65179 'BinkAsy0' prio 512 nice 0 mask 0x3f applied yes
+[bc5] exp 0429 thread: setaffinity tid 63965 'MainThread' prio 300 nice 0 mask 0x100 applied no
+[bc5] exp 0429 thread: setaffinity tid 65179 'BinkAsy0' prio 512 nice 0 mask 0x3 applied yes
+[bc5] exp 0425 slice: start tid 65187 'BinkAsy1' prio 700 policy 0 nice 4: set rc 0 errno 0, read back runtime 200000 ns nice 4
+[bc5] exp 0429 thread: start tid 65187 'BinkAsy1' prio 700 nice 4 mask 0x3 applied yes
+[bc5] exp 0429 thread: setaffinity tid 65187 'BinkAsy1' prio 700 nice 4 mask 0x3 applied yes
+[bc5] exp 0429 thread: setaffinity tid 65187 'BinkAsy1' prio 512 nice 0 mask 0x3f applied yes
+[bc5] exp 0425 slice: setprio tid 65179 'BinkAsy0' prio 500 policy 0 nice 0: set rc -1 errno 1, read back runtime 200000 ns nice 0
+[bc5] exp 0429 thread: setprio tid 65179 'BinkAsy0' prio 500 nice 0 mask 0x3 applied yes
+[bc5] exp 0429 thread: setaffinity tid 65179 'BinkAsy0' prio 500 nice 0 mask 0x840 applied yes
+[bc5] exp 0425 slice: setprio tid 65187 'BinkAsy1' prio 500 policy 0 nice 0: set rc -1 errno 1, read back runtime 200000 ns nice 0
+[bc5] exp 0429 thread: setprio tid 65187 'BinkAsy1' prio 500 nice 0 mask 0x3f applied yes
+[bc5] exp 0429 thread: setaffinity tid 65187 'BinkAsy1' prio 500 nice 0 mask 0x880 applied yes
+[bc5] exp 0429 thread: setaffinity tid 65126 'Bink Snd' prio 510 nice 0 mask 0x1000 applied no
+[bc5] exp 0425 slice: setprio tid 65126 'Bink Snd' prio 450 policy 0 nice 0: set rc -1 errno 1, read back runtime 200000 ns nice 0
+[bc5] exp 0429 thread: setprio tid 65126 'Bink Snd' prio 450 nice 0 mask 0x1000 applied no
+[bc5] exp 0425 handoff: 2000 handoffs, 1996 ended by the resume, 4 at the bound, mean 13.5 us
+[bc5] exp 0425 slice: start tid 67324 'Unknown Animset' prio 650 policy 0 nice 3: set rc 0 errno 0, read back runtime 200000 ns nice 3
+[bc5] exp 0429 thread: start tid 67324 'Unknown Animset' prio 650 nice 3 mask 0xff applied yes
+[bc5] exp 0425 slice: start tid 67325 'Unknown Animset' prio 650 policy 0 nice 3: set rc 0 errno 0, read back runtime 200000 ns nice 3
+[bc5] exp 0429 thread: start tid 67325 'Unknown Animset' prio 650 nice 3 mask 0xff applied yes
+[bc5] exp 0425 slice: start tid 67326 'Unknown Animset' prio 650 policy 0 nice 3: set rc 0 errno 0, read back runtime 200000 ns nice 3
+[bc5] exp 0429 thread: start tid 67326 'Unknown Animset' prio 650 nice 3 mask 0xff applied yes
+[bc5] exp 0425 slice: start tid 67327 'Unknown Animset' prio 650 policy 0 nice 3: set rc 0 errno 0, read back runtime 200000 ns nice 3
+[bc5] exp 0429 thread: start tid 67327 'Unknown Animset' prio 650 nice 3 mask 0xff applied yes
+[bc5] exp 0425 handoff: 4000 handoffs, 3989 ended by the resume, 11 at the bound, mean 20.3 us
+[bc5] exp 0425 handoff: 6000 handoffs, 5987 ended by the resume, 13 at the bound, mean 20.4 us
+[bc5] exp 0425 handoff: 8000 handoffs, 7983 ended by the resume, 17 at the bound, mean 21.3 us
+[bc5] exp 0425 handoff: 10000 handoffs, 9983 ended by the resume, 17 at the bound, mean 19.4 us
+[bc5] exp 0425 handoff: 12000 handoffs, 11983 ended by the resume, 17 at the bound, mean 18.2 us
+[bc5] exp 0425 handoff: 14000 handoffs, 13983 ended by the resume, 17 at the bound, mean 17.4 us
+[bc5] exp 0425 handoff: 16000 handoffs, 15983 ended by the resume, 17 at the bound, mean 16.7 us
+[bc5] exp 0425 handoff: 18000 handoffs, 17983 ended by the resume, 17 at the bound, mean 16.2 us
+[bc5] exp 0425 handoff: 20000 handoffs, 19983 ended by the resume, 17 at the bound, mean 16.0 us
+[bc5] exp 0425 handoff: 22000 handoffs, 21981 ended by the resume, 19 at the bound, mean 15.9 us
+[bc5] exp 0425 handoff: 24000 handoffs, 23980 ended by the resume, 20 at the bound, mean 15.9 us
+[bc5] exp 0425 handoff: 26000 handoffs, 25980 ended by the resume, 20 at the bound, mean 15.8 us
+[bc5] exp 0425 handoff: 28000 handoffs, 27979 ended by the resume, 21 at the bound, mean 15.8 us
+[bc5] exp 0425 handoff: 30000 handoffs, 29979 ended by the resume, 21 at the bound, mean 15.8 us
+[bc5] exp 0425 handoff: 32000 handoffs, 31979 ended by the resume, 21 at the bound, mean 15.7 us
+[bc5] exp 0425 handoff: 34000 handoffs, 33979 ended by the resume, 21 at the bound, mean 15.6 us
+[bc5] exp 0425 handoff: 36000 handoffs, 35979 ended by the resume, 21 at the bound, mean 15.4 us
+[bc5] exp 0425 handoff: 38000 handoffs, 37979 ended by the resume, 21 at the bound, mean 15.3 us
+[bc5] exp 0425 handoff: 40000 handoffs, 39979 ended by the resume, 21 at the bound, mean 15.2 us
+[bc5] exp 0425 handoff: 42000 handoffs, 41979 ended by the resume, 21 at the bound, mean 15.1 us
+[bc5] exp 0425 handoff: 44000 handoffs, 43979 ended by the resume, 21 at the bound, mean 15.2 us
+[bc5] exp 0425 handoff: 46000 handoffs, 45979 ended by the resume, 21 at the bound, mean 15.2 us
+[bc5] exp 0425 handoff: 48000 handoffs, 47978 ended by the resume, 22 at the bound, mean 15.0 us
+[bc5] exp 0425 handoff: 50000 handoffs, 49978 ended by the resume, 22 at the bound, mean 14.7 us
+[bc5] exp 0425 handoff: 52000 handoffs, 51978 ended by the resume, 22 at the bound, mean 14.4 us
+[bc5] exp 0425 handoff: 54000 handoffs, 53978 ended by the resume, 22 at the bound, mean 14.2 us
+[bc5] exp 0425 handoff: 56000 handoffs, 55978 ended by the resume, 22 at the bound, mean 14.0 us
+[bc5] exp 0425 handoff: 58000 handoffs, 57978 ended by the resume, 22 at the bound, mean 13.8 us
+[bc5] exp 0425 handoff: 60000 handoffs, 59977 ended by the resume, 23 at the bound, mean 13.6 us
+[bc5] exp 0425 handoff: 62000 handoffs, 61977 ended by the resume, 23 at the bound, mean 13.4 us
+[bc5] exp 0425 handoff: 64000 handoffs, 63975 ended by the resume, 25 at the bound, mean 13.3 us
+[bc5] exp 0425 handoff: 66000 handoffs, 65973 ended by the resume, 27 at the bound, mean 13.1 us
+[bc5] exp 0425 handoff: 68000 handoffs, 67971 ended by the resume, 29 at the bound, mean 13.0 us
+[bc5] exp 0425 handoff: 70000 handoffs, 69970 ended by the resume, 30 at the bound, mean 13.0 us
+[bc5] exp 0425 handoff: 72000 handoffs, 71970 ended by the resume, 30 at the bound, mean 12.9 us
+[bc5] exp 0425 handoff: 74000 handoffs, 73969 ended by the resume, 31 at the bound, mean 12.8 us
+[bc5] exp 0425 handoff: 76000 handoffs, 75969 ended by the resume, 31 at the bound, mean 12.7 us
+[bc5] exp 0425 handoff: 78000 handoffs, 77968 ended by the resume, 32 at the bound, mean 12.5 us
+[bc5] exp 0425 handoff: 80000 handoffs, 79968 ended by the resume, 32 at the bound, mean 12.4 us
+[bc5] exp 0425 handoff: 82000 handoffs, 81968 ended by the resume, 32 at the bound, mean 12.3 us
+[bc5] exp 0425 handoff: 84000 handoffs, 83967 ended by the resume, 33 at the bound, mean 12.2 us
+[bc5] exp 0425 handoff: 86000 handoffs, 85962 ended by the resume, 38 at the bound, mean 12.4 us
+[bc5] exp 0425 slice: start tid 74813 'Unknown Animset' prio 650 policy 0 nice 3: set rc 0 errno 0, read back runtime 200000 ns nice 3
+[bc5] exp 0429 thread: start tid 74813 'Unknown Animset' prio 650 nice 3 mask 0xff applied yes
+[bc5] exp 0425 slice: start tid 74814 'Unknown Animset' prio 650 policy 0 nice 3: set rc 0 errno 0, read back runtime 200000 ns nice 3
+[bc5] exp 0429 thread: start tid 74814 'Unknown Animset' prio 650 nice 3 mask 0xff applied yes
+[bc5] exp 0425 slice: start tid 74815 'Unknown Animset' prio 650 policy 0 nice 3: set rc 0 errno 0, read back runtime 200000 ns nice 3
+[bc5] exp 0429 thread: start tid 74815 'Unknown Animset' prio 650 nice 3 mask 0xff applied yes
+[bc5] exp 0425 handoff: 88000 handoffs, 87933 ended by the resume, 67 at the bound, mean 14.0 us
+[bc5] exp 0425 handoff: 90000 handoffs, 89925 ended by the resume, 75 at the bound, mean 14.5 us
+[bc5] exp 0425 handoff: 92000 handoffs, 91911 ended by the resume, 89 at the bound, mean 15.0 us
+[bc5] exp 0425 handoff: 94000 handoffs, 93904 ended by the resume, 96 at the bound, mean 15.4 us
+[bc5] exp 0425 handoff: 96000 handoffs, 95897 ended by the resume, 103 at the bound, mean 15.7 us
+[bc5] exp 0425 handoff: 98000 handoffs, 97885 ended by the resume, 115 at the bound, mean 16.2 us
+[bc5] exp 0425 handoff: 100000 handoffs, 99877 ended by the resume, 123 at the bound, mean 16.8 us
+[bc5] exp 0425 handoff: 102000 handoffs, 101863 ended by the resume, 137 at the bound, mean 17.3 us
+[bc5] exp 0425 handoff: 104000 handoffs, 103853 ended by the resume, 147 at the bound, mean 17.8 us
+[bc5] exp 0425 handoff: 106000 handoffs, 105842 ended by the resume, 158 at the bound, mean 18.5 us
+[bc5] exp 0425 handoff: 108000 handoffs, 107836 ended by the resume, 164 at the bound, mean 19.0 us
+[bc5] exp 0425 handoff: 110000 handoffs, 109823 ended by the resume, 177 at the bound, mean 19.4 us
+[bc5] exp 0425 handoff: 112000 handoffs, 111815 ended by the resume, 185 at the bound, mean 19.8 us
+[bc5] exp 0425 handoff: 114000 handoffs, 113804 ended by the resume, 196 at the bound, mean 20.1 us
+[bc5] exp 0425 handoff: 116000 handoffs, 115791 ended by the resume, 209 at the bound, mean 20.4 us
+[bc5] exp 0425 handoff: 118000 handoffs, 117776 ended by the resume, 224 at the bound, mean 20.7 us
+[bc5] exp 0425 handoff: 120000 handoffs, 119764 ended by the resume, 236 at the bound, mean 21.0 us
+[bc5] exp 0425 handoff: 122000 handoffs, 121750 ended by the resume, 250 at the bound, mean 21.2 us
+[bc5] exp 0425 handoff: 124000 handoffs, 123741 ended by the resume, 259 at the bound, mean 21.5 us
+[bc5] exp 0425 handoff: 126000 handoffs, 125732 ended by the resume, 268 at the bound, mean 21.7 us
+[bc5] exp 0425 handoff: 128000 handoffs, 127726 ended by the resume, 274 at the bound, mean 21.9 us
+[bc5] exp 0425 handoff: 130000 handoffs, 129718 ended by the resume, 282 at the bound, mean 22.1 us
+[bc5] exp 0425 handoff: 132000 handoffs, 131711 ended by the resume, 289 at the bound, mean 22.3 us
+[bc5] exp 0425 handoff: 134000 handoffs, 133701 ended by the resume, 299 at the bound, mean 22.5 us
+[bc5] exp 0425 handoff: 136000 handoffs, 135692 ended by the resume, 308 at the bound, mean 22.7 us
+[bc5] exp 0425 handoff: 138000 handoffs, 137678 ended by the resume, 322 at the bound, mean 22.9 us
+[bc5] exp 0425 handoff: 140000 handoffs, 139670 ended by the resume, 330 at the bound, mean 23.1 us
+[bc5] exp 0425 handoff: 142000 handoffs, 141662 ended by the resume, 338 at the bound, mean 23.2 us
+[bc5] exp 0425 handoff: 144000 handoffs, 143648 ended by the resume, 352 at the bound, mean 23.4 us
+[bc5] exp 0425 handoff: 146000 handoffs, 145641 ended by the resume, 359 at the bound, mean 23.6 us
+[bc5] exp 0425 handoff: 148000 handoffs, 147637 ended by the resume, 363 at the bound, mean 23.7 us
+[bc5] exp 0425 handoff: 150000 handoffs, 149628 ended by the resume, 372 at the bound, mean 23.9 us
+[bc5] exp 0425 handoff: 152000 handoffs, 151620 ended by the resume, 380 at the bound, mean 24.0 us
+[bc5] exp 0425 handoff: 154000 handoffs, 153608 ended by the resume, 392 at the bound, mean 24.1 us
+[bc5] exp 0425 handoff: 156000 handoffs, 155602 ended by the resume, 398 at the bound, mean 24.3 us
+[bc5] exp 0425 handoff: 158000 handoffs, 157593 ended by the resume, 407 at the bound, mean 24.4 us
+[bc5] exp 0425 handoff: 160000 handoffs, 159587 ended by the resume, 413 at the bound, mean 24.5 us
+[bc5] exp 0425 handoff: 162000 handoffs, 161580 ended by the resume, 420 at the bound, mean 24.7 us
+[bc5] exp 0425 handoff: 164000 handoffs, 163570 ended by the resume, 430 at the bound, mean 24.8 us
+[bc5] exp 0425 handoff: 166000 handoffs, 165560 ended by the resume, 440 at the bound, mean 24.9 us
+[bc5] exp 0425 handoff: 168000 handoffs, 167552 ended by the resume, 448 at the bound, mean 25.0 us
+[bc5] exp 0425 handoff: 170000 handoffs, 169543 ended by the resume, 457 at the bound, mean 25.1 us
+[bc5] exp 0425 handoff: 172000 handoffs, 171538 ended by the resume, 462 at the bound, mean 25.2 us
+[bc5] exp 0425 handoff: 174000 handoffs, 173527 ended by the resume, 473 at the bound, mean 25.3 us
+[bc5] exp 0425 handoff: 176000 handoffs, 175519 ended by the resume, 481 at the bound, mean 25.4 us
+[bc5] exp 0425 handoff: 178000 handoffs, 177511 ended by the resume, 489 at the bound, mean 25.5 us
+[bc5] exp 0425 handoff: 180000 handoffs, 179498 ended by the resume, 502 at the bound, mean 25.6 us
+[bc5] exp 0425 handoff: 182000 handoffs, 181489 ended by the resume, 511 at the bound, mean 25.7 us
+[bc5] exp 0425 handoff: 184000 handoffs, 183475 ended by the resume, 525 at the bound, mean 25.8 us
+[bc5] exp 0425 handoff: 186000 handoffs, 185454 ended by the resume, 546 at the bound, mean 26.0 us
+[bc5] exp 0425 handoff: 188000 handoffs, 187446 ended by the resume, 554 at the bound, mean 26.1 us
+[bc5] exp 0425 handoff: 190000 handoffs, 189435 ended by the resume, 565 at the bound, mean 26.2 us
+[bc5] exp 0425 handoff: 192000 handoffs, 191427 ended by the resume, 573 at the bound, mean 26.3 us
+[bc5] exp 0425 handoff: 194000 handoffs, 193417 ended by the resume, 583 at the bound, mean 26.4 us
+[bc5] exp 0425 handoff: 196000 handoffs, 195407 ended by the resume, 593 at the bound, mean 26.5 us
+[bc5] exp 0425 handoff: 198000 handoffs, 197396 ended by the resume, 604 at the bound, mean 26.6 us
+[bc5] exp 0425 handoff: 200000 handoffs, 199383 ended by the resume, 617 at the bound, mean 26.7 us
+[bc5] exp 0425 handoff: 202000 handoffs, 201371 ended by the resume, 629 at the bound, mean 26.8 us
+[bc5] exp 0425 handoff: 204000 handoffs, 203359 ended by the resume, 641 at the bound, mean 26.9 us
+[bc5] exp 0425 handoff: 206000 handoffs, 205348 ended by the resume, 652 at the bound, mean 27.0 us
+[bc5] exp 0425 handoff: 208000 handoffs, 207338 ended by the resume, 662 at the bound, mean 27.1 us
+[bc5] exp 0425 handoff: 210000 handoffs, 209330 ended by the resume, 670 at the bound, mean 27.2 us
+[bc5] exp 0425 handoff: 212000 handoffs, 211323 ended by the resume, 677 at the bound, mean 27.3 us
+[bc5] exp 0425 handoff: 214000 handoffs, 213316 ended by the resume, 684 at the bound, mean 27.3 us
+[bc5] exp 0425 handoff: 216000 handoffs, 215309 ended by the resume, 691 at the bound, mean 27.4 us
+[bc5] exp 0425 handoff: 218000 handoffs, 217297 ended by the resume, 703 at the bound, mean 27.5 us
+[bc5] exp 0425 handoff: 220000 handoffs, 219282 ended by the resume, 718 at the bound, mean 27.6 us
+[bc5] exp 0425 handoff: 222000 handoffs, 221268 ended by the resume, 732 at the bound, mean 27.7 us
+[bc5] exp 0425 handoff: 224000 handoffs, 223254 ended by the resume, 746 at the bound, mean 27.8 us
+[bc5] exp 0425 handoff: 226000 handoffs, 225235 ended by the resume, 765 at the bound, mean 27.9 us
+[bc5] exp 0425 handoff: 228000 handoffs, 227220 ended by the resume, 780 at the bound, mean 28.0 us
+[bc5] exp 0425 handoff: 230000 handoffs, 229207 ended by the resume, 793 at the bound, mean 28.1 us
+[bc5] exp 0425 handoff: 232000 handoffs, 231193 ended by the resume, 807 at the bound, mean 28.1 us
+[bc5] exp 0425 handoff: 234000 handoffs, 233181 ended by the resume, 819 at the bound, mean 28.2 us
+[bc5] exp 0425 handoff: 236000 handoffs, 235169 ended by the resume, 831 at the bound, mean 28.3 us
+[bc5] exp 0425 handoff: 238000 handoffs, 237160 ended by the resume, 840 at the bound, mean 28.4 us
+[bc5] exp 0425 handoff: 240000 handoffs, 239148 ended by the resume, 852 at the bound, mean 28.4 us
+[bc5] exp 0425 handoff: 242000 handoffs, 241134 ended by the resume, 866 at the bound, mean 28.5 us
+[bc5] exp 0425 handoff: 244000 handoffs, 243125 ended by the resume, 875 at the bound, mean 28.6 us
+[bc5] exp 0425 handoff: 246000 handoffs, 245119 ended by the resume, 881 at the bound, mean 28.6 us
+[bc5] exp 0425 handoff: 248000 handoffs, 247111 ended by the resume, 889 at the bound, mean 28.7 us
+[bc5] exp 0425 handoff: 250000 handoffs, 249101 ended by the resume, 899 at the bound, mean 28.7 us
+[bc5] exp 0425 handoff: 252000 handoffs, 251093 ended by the resume, 907 at the bound, mean 28.8 us
+[bc5] exp 0425 handoff: 254000 handoffs, 253086 ended by the resume, 914 at the bound, mean 28.8 us
+[bc5] exp 0425 handoff: 256000 handoffs, 255076 ended by the resume, 924 at the bound, mean 28.9 us
+[bc5] exp 0425 handoff: 258000 handoffs, 257072 ended by the resume, 928 at the bound, mean 28.9 us
+[bc5] exp 0425 handoff: 260000 handoffs, 259061 ended by the resume, 939 at the bound, mean 29.0 us
+[bc5] exp 0425 handoff: 262000 handoffs, 261046 ended by the resume, 954 at the bound, mean 29.0 us
+[bc5] exp 0425 handoff: 264000 handoffs, 263034 ended by the resume, 966 at the bound, mean 29.1 us
+[bc5] exp 0425 handoff: 266000 handoffs, 265023 ended by the resume, 977 at the bound, mean 29.2 us
+[bc5] exp 0425 handoff: 268000 handoffs, 267014 ended by the resume, 986 at the bound, mean 29.2 us
+[bc5] exp 0425 handoff: 270000 handoffs, 269006 ended by the resume, 994 at the bound, mean 29.3 us
+[bc5] exp 0425 handoff: 272000 handoffs, 270995 ended by the resume, 1005 at the bound, mean 29.3 us
+[bc5] exp 0425 handoff: 274000 handoffs, 272983 ended by the resume, 1017 at the bound, mean 29.4 us
+[bc5] exp 0425 handoff: 276000 handoffs, 274974 ended by the resume, 1026 at the bound, mean 29.4 us
+[bc5] exp 0425 handoff: 278000 handoffs, 276966 ended by the resume, 1034 at the bound, mean 29.4 us
+[bc5] exp 0425 handoff: 280000 handoffs, 278957 ended by the resume, 1043 at the bound, mean 29.5 us
+[bc5] exp 0425 handoff: 282000 handoffs, 280941 ended by the resume, 1059 at the bound, mean 29.5 us
+[bc5] exp 0425 handoff: 284000 handoffs, 282929 ended by the resume, 1071 at the bound, mean 29.6 us
+[bc5] exp 0425 handoff: 286000 handoffs, 284914 ended by the resume, 1086 at the bound, mean 29.6 us
+[bc5] exp 0425 handoff: 288000 handoffs, 286903 ended by the resume, 1097 at the bound, mean 29.7 us
+[bc5] exp 0425 handoff: 290000 handoffs, 288896 ended by the resume, 1104 at the bound, mean 29.7 us
+[bc5] exp 0425 handoff: 292000 handoffs, 290884 ended by the resume, 1116 at the bound, mean 29.7 us
+[bc5] exp 0425 handoff: 294000 handoffs, 292875 ended by the resume, 1125 at the bound, mean 29.8 us
+[bc5] exp 0425 handoff: 296000 handoffs, 294865 ended by the resume, 1135 at the bound, mean 29.8 us
+[bc5] exp 0425 handoff: 298000 handoffs, 296853 ended by the resume, 1147 at the bound, mean 29.9 us
+[bc5] exp 0425 handoff: 300000 handoffs, 298844 ended by the resume, 1156 at the bound, mean 29.9 us
+[bc5] exp 0425 handoff: 302000 handoffs, 300836 ended by the resume, 1164 at the bound, mean 29.9 us
+[bc5] exp 0425 handoff: 304000 handoffs, 302822 ended by the resume, 1178 at the bound, mean 29.9 us
+[bc5] exp 0425 handoff: 306000 handoffs, 304809 ended by the resume, 1191 at the bound, mean 30.0 us
+[bc5] exp 0425 handoff: 308000 handoffs, 306798 ended by the resume, 1202 at the bound, mean 30.0 us
+[bc5] exp 0425 handoff: 310000 handoffs, 308789 ended by the resume, 1211 at the bound, mean 30.0 us
+[bc5] exp 0425 handoff: 312000 handoffs, 310780 ended by the resume, 1220 at the bound, mean 30.1 us
+[bc5] exp 0425 handoff: 314000 handoffs, 312768 ended by the resume, 1232 at the bound, mean 30.1 us
+[bc5] exp 0425 handoff: 316000 handoffs, 314762 ended by the resume, 1238 at the bound, mean 30.1 us
+[bc5] exp 0425 handoff: 318000 handoffs, 316749 ended by the resume, 1251 at the bound, mean 30.1 us
+[bc5] exp 0425 handoff: 320000 handoffs, 318746 ended by the resume, 1254 at the bound, mean 30.2 us
+[bc5] exp 0425 handoff: 322000 handoffs, 320733 ended by the resume, 1267 at the bound, mean 30.2 us
+[bc5] exp 0425 handoff: 324000 handoffs, 322723 ended by the resume, 1277 at the bound, mean 30.2 us
+[bc5] exp 0425 handoff: 326000 handoffs, 324713 ended by the resume, 1287 at the bound, mean 30.2 us
+[bc5] exp 0425 handoff: 328000 handoffs, 326707 ended by the resume, 1293 at the bound, mean 30.3 us
+[bc5] exp 0425 handoff: 330000 handoffs, 328699 ended by the resume, 1301 at the bound, mean 30.3 us
+[bc5] exp 0425 handoff: 332000 handoffs, 330685 ended by the resume, 1315 at the bound, mean 30.4 us
+[bc5] exp 0425 handoff: 334000 handoffs, 332675 ended by the resume, 1325 at the bound, mean 30.4 us
+[bc5] exp 0425 handoff: 336000 handoffs, 334665 ended by the resume, 1335 at the bound, mean 30.4 us
+[bc5] exp 0425 handoff: 338000 handoffs, 336654 ended by the resume, 1346 at the bound, mean 30.5 us
+[bc5] exp 0425 handoff: 340000 handoffs, 338643 ended by the resume, 1357 at the bound, mean 30.5 us
+[bc5] exp 0425 handoff: 342000 handoffs, 340628 ended by the resume, 1372 at the bound, mean 30.6 us
+[bc5] exp 0425 handoff: 344000 handoffs, 342618 ended by the resume, 1382 at the bound, mean 30.6 us
+[bc5] exp 0425 handoff: 346000 handoffs, 344610 ended by the resume, 1390 at the bound, mean 30.7 us
+[bc5] exp 0425 handoff: 348000 handoffs, 346599 ended by the resume, 1401 at the bound, mean 30.7 us
+[bc5] exp 0425 handoff: 350000 handoffs, 348591 ended by the resume, 1409 at the bound, mean 30.8 us
+[bc5] exp 0425 handoff: 352000 handoffs, 350579 ended by the resume, 1421 at the bound, mean 30.8 us
+[bc5] exp 0425 handoff: 354000 handoffs, 352567 ended by the resume, 1433 at the bound, mean 30.8 us
+[bc5] exp 0425 handoff: 356000 handoffs, 354566 ended by the resume, 1434 at the bound, mean 30.8 us
+[bc5] exp 0425 handoff: 358000 handoffs, 356556 ended by the resume, 1444 at the bound, mean 30.9 us
+[bc5] exp 0425 handoff: 360000 handoffs, 358547 ended by the resume, 1453 at the bound, mean 30.9 us
+[bc5] exp 0425 handoff: 362000 handoffs, 360536 ended by the resume, 1464 at the bound, mean 30.9 us
+[bc5] exp 0425 handoff: 364000 handoffs, 362531 ended by the resume, 1469 at the bound, mean 31.0 us
+[bc5] exp 0425 handoff: 366000 handoffs, 364517 ended by the resume, 1483 at the bound, mean 31.0 us
+[bc5] exp 0425 handoff: 368000 handoffs, 366504 ended by the resume, 1496 at the bound, mean 31.1 us
+[bc5] exp 0425 handoff: 370000 handoffs, 368492 ended by the resume, 1508 at the bound, mean 31.1 us
+[bc5] exp 0425 handoff: 372000 handoffs, 370484 ended by the resume, 1516 at the bound, mean 31.1 us
+[bc5] exp 0425 handoff: 374000 handoffs, 372474 ended by the resume, 1526 at the bound, mean 31.1 us
+[bc5] exp 0425 handoff: 376000 handoffs, 374464 ended by the resume, 1536 at the bound, mean 31.1 us
+[bc5] exp 0425 handoff: 378000 handoffs, 376459 ended by the resume, 1541 at the bound, mean 31.1 us
+[bc5] exp 0425 handoff: 380000 handoffs, 378449 ended by the resume, 1551 at the bound, mean 31.1 us
+[bc5] exp 0425 handoff: 382000 handoffs, 380445 ended by the resume, 1555 at the bound, mean 31.2 us
+[bc5] exp 0425 handoff: 384000 handoffs, 382438 ended by the resume, 1562 at the bound, mean 31.2 us
+[bc5] exp 0425 handoff: 386000 handoffs, 384431 ended by the resume, 1569 at the bound, mean 31.2 us
+[bc5] exp 0425 handoff: 388000 handoffs, 386421 ended by the resume, 1579 at the bound, mean 31.2 us
+[bc5] exp 0425 handoff: 390000 handoffs, 388411 ended by the resume, 1589 at the bound, mean 31.3 us
+[bc5] exp 0425 handoff: 392000 handoffs, 390406 ended by the resume, 1594 at the bound, mean 31.3 us
+[bc5] exp 0425 handoff: 394000 handoffs, 392393 ended by the resume, 1607 at the bound, mean 31.3 us
+[bc5] exp 0425 handoff: 396000 handoffs, 394387 ended by the resume, 1613 at the bound, mean 31.3 us
+[bc5] exp 0425 handoff: 398000 handoffs, 396382 ended by the resume, 1618 at the bound, mean 31.3 us
+[bc5] exp 0425 handoff: 400000 handoffs, 398377 ended by the resume, 1623 at the bound, mean 31.3 us
+[bc5] exp 0425 handoff: 402000 handoffs, 400374 ended by the resume, 1626 at the bound, mean 31.4 us
+[bc5] exp 0425 handoff: 404000 handoffs, 402371 ended by the resume, 1629 at the bound, mean 31.4 us
+[bc5] exp 0425 handoff: 406000 handoffs, 404356 ended by the resume, 1644 at the bound, mean 31.4 us
+[bc5] exp 0425 handoff: 408000 handoffs, 406338 ended by the resume, 1662 at the bound, mean 31.4 us
+[bc5] exp 0425 handoff: 410000 handoffs, 408329 ended by the resume, 1671 at the bound, mean 31.4 us
+[bc5] exp 0425 handoff: 412000 handoffs, 410319 ended by the resume, 1681 at the bound, mean 31.4 us
+[bc5] exp 0425 handoff: 414000 handoffs, 412313 ended by the resume, 1687 at the bound, mean 31.4 us
+[bc5] exp 0425 handoff: 416000 handoffs, 414305 ended by the resume, 1695 at the bound, mean 31.5 us
+[bc5] exp 0425 handoff: 418000 handoffs, 416298 ended by the resume, 1702 at the bound, mean 31.5 us
+[bc5] exp 0425 handoff: 420000 handoffs, 418287 ended by the resume, 1713 at the bound, mean 31.5 us
+[bc5] exp 0425 handoff: 422000 handoffs, 420274 ended by the resume, 1726 at the bound, mean 31.6 us
+[bc5] exp 0425 handoff: 424000 handoffs, 422261 ended by the resume, 1739 at the bound, mean 31.6 us
+[bc5] exp 0425 handoff: 426000 handoffs, 424251 ended by the resume, 1749 at the bound, mean 31.6 us
+[bc5] exp 0425 handoff: 428000 handoffs, 426241 ended by the resume, 1759 at the bound, mean 31.7 us
+[bc5] exp 0425 handoff: 430000 handoffs, 428228 ended by the resume, 1772 at the bound, mean 31.7 us
+[bc5] exp 0425 handoff: 432000 handoffs, 430220 ended by the resume, 1780 at the bound, mean 31.7 us
+[bc5] exp 0425 handoff: 434000 handoffs, 432212 ended by the resume, 1788 at the bound, mean 31.7 us
+[bc5] exp 0425 handoff: 436000 handoffs, 434202 ended by the resume, 1798 at the bound, mean 31.8 us
+[bc5] exp 0425 handoff: 438000 handoffs, 436196 ended by the resume, 1804 at the bound, mean 31.8 us
+[bc5] exp 0425 handoff: 440000 handoffs, 438187 ended by the resume, 1813 at the bound, mean 31.8 us
+[bc5] exp 0425 handoff: 442000 handoffs, 440179 ended by the resume, 1821 at the bound, mean 31.8 us
+[bc5] exp 0425 handoff: 444000 handoffs, 442172 ended by the resume, 1828 at the bound, mean 31.8 us
+[bc5] exp 0425 handoff: 446000 handoffs, 444163 ended by the resume, 1837 at the bound, mean 31.8 us
+[bc5] exp 0425 handoff: 448000 handoffs, 446150 ended by the resume, 1850 at the bound, mean 31.8 us
+[bc5] exp 0425 handoff: 450000 handoffs, 448145 ended by the resume, 1855 at the bound, mean 31.9 us
+[bc5] exp 0425 handoff: 452000 handoffs, 450135 ended by the resume, 1865 at the bound, mean 31.9 us
+[bc5] exp 0425 handoff: 454000 handoffs, 452128 ended by the resume, 1872 at the bound, mean 31.9 us
+[bc5] exp 0425 handoff: 456000 handoffs, 454113 ended by the resume, 1887 at the bound, mean 31.9 us
+[bc5] exp 0425 handoff: 458000 handoffs, 456104 ended by the resume, 1896 at the bound, mean 31.9 us
+[bc5] exp 0425 handoff: 460000 handoffs, 458098 ended by the resume, 1902 at the bound, mean 31.9 us
+[bc5] exp 0425 handoff: 462000 handoffs, 460089 ended by the resume, 1911 at the bound, mean 32.0 us
+[bc5] exp 0425 handoff: 464000 handoffs, 462079 ended by the resume, 1921 at the bound, mean 32.0 us
+[bc5] exp 0425 handoff: 466000 handoffs, 464077 ended by the resume, 1923 at the bound, mean 32.0 us
+[bc5] exp 0425 handoff: 468000 handoffs, 466064 ended by the resume, 1936 at the bound, mean 32.0 us
+[bc5] exp 0425 handoff: 470000 handoffs, 468059 ended by the resume, 1941 at the bound, mean 32.0 us
+[bc5] exp 0425 handoff: 472000 handoffs, 470044 ended by the resume, 1956 at the bound, mean 32.0 us
+[bc5] exp 0425 handoff: 474000 handoffs, 472029 ended by the resume, 1971 at the bound, mean 32.0 us
+[bc5] exp 0425 handoff: 476000 handoffs, 474014 ended by the resume, 1986 at the bound, mean 32.1 us
+[bc5] exp 0425 handoff: 478000 handoffs, 476012 ended by the resume, 1988 at the bound, mean 32.0 us
+[bc5] exp 0425 handoff: 480000 handoffs, 478012 ended by the resume, 1988 at the bound, mean 31.9 us
+[bc5] exp 0425 handoff: 482000 handoffs, 480012 ended by the resume, 1988 at the bound, mean 31.8 us
+[bc5] exp 0425 handoff: 484000 handoffs, 482011 ended by the resume, 1989 at the bound, mean 31.7 us
+[bc5] exp 0425 handoff: 486000 handoffs, 484011 ended by the resume, 1989 at the bound, mean 31.7 us
+[bc5] exp 0425 handoff: 488000 handoffs, 486011 ended by the resume, 1989 at the bound, mean 31.6 us
+[bc5] exp 0425 handoff: 490000 handoffs, 488010 ended by the resume, 1990 at the bound, mean 31.5 us
+[bc5] exp 0425 handoff: 492000 handoffs, 490009 ended by the resume, 1991 at the bound, mean 31.4 us
+[bc5] exp 0425 handoff: 494000 handoffs, 492009 ended by the resume, 1991 at the bound, mean 31.3 us
+[bc5] exp 0425 handoff: 496000 handoffs, 494005 ended by the resume, 1995 at the bound, mean 31.2 us
+[bc5] exp 0425 handoff: 498000 handoffs, 495999 ended by the resume, 2001 at the bound, mean 31.1 us
+[bc5] exp 0425 handoff: 500000 handoffs, 497999 ended by the resume, 2001 at the bound, mean 31.1 us
+[bc5] exp 0425 handoff: 502000 handoffs, 499996 ended by the resume, 2004 at the bound, mean 31.0 us
+[bc5] exp 0425 handoff: 504000 handoffs, 501994 ended by the resume, 2006 at the bound, mean 30.9 us
+[bc5] exp 0425 handoff: 506000 handoffs, 503994 ended by the resume, 2006 at the bound, mean 30.8 us
+[bc5] exp 0425 handoff: 508000 handoffs, 505994 ended by the resume, 2006 at the bound, mean 30.7 us
+[bc5] exp 0425 handoff: 510000 handoffs, 507994 ended by the resume, 2006 at the bound, mean 30.6 us
+[bc5] exp 0425 handoff: 512000 handoffs, 509994 ended by the resume, 2006 at the bound, mean 30.5 us
+[bc5] exp 0425 handoff: 514000 handoffs, 511994 ended by the resume, 2006 at the bound, mean 30.4 us
+[bc5] exp 0425 handoff: 516000 handoffs, 513994 ended by the resume, 2006 at the bound, mean 30.3 us
+[bc5] exp 0429 thread: setaffinity tid 63965 'MainThread' prio 300 nice 0 mask 0x3f applied yes
+[bc5] exp 0429 thread: setaffinity tid 63965 'MainThread' prio 300 nice 0 mask 0x100 applied no
+[bc5] exp 0425 slice: start tid 93583 'Bink IO' prio 700 policy 0 nice 4: set rc 0 errno 0, read back runtime 200000 ns nice 4
+[bc5] exp 0429 thread: start tid 93583 'Bink IO' prio 700 nice 4 mask 0x7f applied yes
+[bc5] exp 0429 thread: setaffinity tid 93583 'Bink IO' prio 511 nice 0 mask 0x3f applied yes
+[bc5] exp 0425 handoff: 518000 handoffs, 515985 ended by the resume, 2015 at the bound, mean 30.3 us
+[bc5] exp 0425 handoff: 520000 handoffs, 517974 ended by the resume, 2026 at the bound, mean 30.4 us
+[bc5] exp 0425 handoff: 522000 handoffs, 519964 ended by the resume, 2036 at the bound, mean 30.4 us
+[bc5] exp 0425 handoff: 524000 handoffs, 521954 ended by the resume, 2046 at the bound, mean 30.4 us
+[bc5] exp 0425 handoff: 526000 handoffs, 523946 ended by the resume, 2054 at the bound, mean 30.5 us
+[bc5] exp 0425 handoff: 528000 handoffs, 525935 ended by the resume, 2065 at the bound, mean 30.5 us
+[bc5] exp 0425 handoff: 530000 handoffs, 527908 ended by the resume, 2092 at the bound, mean 30.6 us
+[bc5] exp 0425 handoff: 532000 handoffs, 529886 ended by the resume, 2114 at the bound, mean 30.6 us
+[bc5] exp 0425 handoff: 534000 handoffs, 531865 ended by the resume, 2135 at the bound, mean 30.7 us
+[bc5] exp 0425 handoff: 536000 handoffs, 533841 ended by the resume, 2159 at the bound, mean 30.7 us
+[bc5] exp 0425 handoff: 538000 handoffs, 535823 ended by the resume, 2177 at the bound, mean 30.8 us
+[bc5] exp 0425 handoff: 540000 handoffs, 537810 ended by the resume, 2190 at the bound, mean 30.8 us
+[bc5] exp 0425 handoff: 542000 handoffs, 539793 ended by the resume, 2207 at the bound, mean 30.9 us
+[bc5] exp 0425 handoff: 544000 handoffs, 541778 ended by the resume, 2222 at the bound, mean 30.9 us
+[bc5] exp 0425 handoff: 546000 handoffs, 543764 ended by the resume, 2236 at the bound, mean 31.0 us
+[bc5] exp 0425 handoff: 548000 handoffs, 545748 ended by the resume, 2252 at the bound, mean 31.0 us
+[bc5] exp 0425 handoff: 550000 handoffs, 547730 ended by the resume, 2270 at the bound, mean 31.1 us
+[bc5] exp 0425 handoff: 552000 handoffs, 549714 ended by the resume, 2286 at the bound, mean 31.1 us
+[bc5] exp 0425 handoff: 554000 handoffs, 551699 ended by the resume, 2301 at the bound, mean 31.2 us
+[bc5] exp 0425 handoff: 556000 handoffs, 553688 ended by the resume, 2312 at the bound, mean 31.2 us
+[bc5] exp 0425 handoff: 558000 handoffs, 555669 ended by the resume, 2331 at the bound, mean 31.3 us
+[bc5] exp 0425 handoff: 560000 handoffs, 557663 ended by the resume, 2337 at the bound, mean 31.3 us
+[bc5] exp 0425 handoff: 562000 handoffs, 559654 ended by the resume, 2346 at the bound, mean 31.3 us
+[bc5] exp 0425 handoff: 564000 handoffs, 561636 ended by the resume, 2364 at the bound, mean 31.4 us
+[bc5] exp 0425 handoff: 566000 handoffs, 563625 ended by the resume, 2375 at the bound, mean 31.4 us
+[bc5] exp 0425 handoff: 568000 handoffs, 565606 ended by the resume, 2394 at the bound, mean 31.5 us
+[bc5] exp 0425 handoff: 570000 handoffs, 567587 ended by the resume, 2413 at the bound, mean 31.6 us
+[bc5] exp 0425 handoff: 572000 handoffs, 569578 ended by the resume, 2422 at the bound, mean 31.6 us
+[bc5] exp 0425 handoff: 574000 handoffs, 571565 ended by the resume, 2435 at the bound, mean 31.7 us
+[bc5] exp 0425 handoff: 576000 handoffs, 573548 ended by the resume, 2452 at the bound, mean 31.7 us
+[bc5] exp 0425 handoff: 578000 handoffs, 575536 ended by the resume, 2464 at the bound, mean 31.8 us
+[bc5] exp 0425 handoff: 580000 handoffs, 577509 ended by the resume, 2491 at the bound, mean 31.8 us
+[bc5] exp 0425 handoff: 582000 handoffs, 579487 ended by the resume, 2513 at the bound, mean 31.9 us
+[bc5] exp 0425 handoff: 584000 handoffs, 581462 ended by the resume, 2538 at the bound, mean 31.9 us
