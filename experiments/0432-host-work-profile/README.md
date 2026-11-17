@@ -449,7 +449,7 @@ compares (a difference is counted, journaled, and the next sync rebuilds the old
 build 4 with `verify`, arm Y with "1". It goes on by default only after a verify run with 0 mismatches and a speed
 run no slower than T.
 
-Checked on the laptop: `test_x432.sh` cuts the body out of the edited unit (f80560e3) and runs it against the whole
+Checked on the laptop: `test_x432.sh` cuts the body out of the edited unit (f80560e3 then; 019d826f with the reason counters of result 7) and runs it against the whole
 rebuild on 20,000 random pairs of view lists with a device model that counts a map over a live mapping or an unmap
 of nothing: PASS (mappings kept 485,212, dropped 91,328, added 84,344). The unit itself has not been compiled.
 

@@ -196,10 +196,10 @@ index 5403083..4bd352c 100644
  		for (uintptr_t page = page_start; page <= page_end; page++) {
  			(*g_protects)[page] = get_protection_flag(mode);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
-index 6118f2d..e8ac18e 100644
+index 6118f2d..3195cf8 100644
 --- a/src/libs/bc5LleAgc.cpp
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -2129,6 +2129,63 @@ static std::shared_mutex g_finish_mutex; // shared: waiting for a job on g_dev;
+@@ -2129,6 +2129,64 @@ static std::shared_mutex g_finish_mutex; // shared: waiting for a job on g_dev;
  // (the kernel clears the page-table entries at once, whatever is still running): waits until
  // everything queued so far has run. Defined with the completion queue.
  static void wait_jobs();
@@ -251,6 +251,7 @@ index 6118f2d..e8ac18e 100644
 +	return v;
 +}
 +inline std::atomic<uint64_t> g_x_diff {0}, g_x_full {0}, g_x_views {0}, g_x_mismatch {0};
++inline std::atomic<uint64_t> g_x_why[11]; // which condition sent a rebuild the old way (the first that failed)
 +inline std::atomic<uint64_t> g_rebuilds {0}, g_busy {0}, g_unmaps_busy {0}, g_bos_busy {0}, g_unmaps {0}, g_drains {0}, g_drain_ns {0}, g_drain_max_ns {0},
 +    g_prep_max_ns {0}, g_prep_over20 {0}, g_last_ns {0}, g_anon_walks {0}, g_anon_skips {0}, g_anon_ev {0}, g_anon_ev_miss {0}, g_anon_vmas {0}, g_views_clone {0},
 +    g_rec_mismatch {0}, g_sync_ns {0};
@@ -263,7 +264,7 @@ index 6118f2d..e8ac18e 100644
  static Stage                                g_stage = Stage::Off;
  static constexpr uint32_t                   g_cu_mask = 0xffffffffu;
  static constexpr const char*                kRenderNode = "/dev/dri/renderD128";
-@@ -2504,6 +2561,7 @@ static void mr415_maps_check_thread() {
+@@ -2504,6 +2562,7 @@ static void mr415_maps_check_thread() {
  // 1 anything else ("verify": stage S1, the kept list is only compared).
  static int mr415_mode() {
  	static const int mode = [] {
@@ -271,7 +272,7 @@ index 6118f2d..e8ac18e 100644
  		const char* e = BC5_DIAG_ENV("KYTY_BC5_MAP_RECORDS");
  		if (!bc5::load_stat::env_set(e)) return 0;
  		return std::strcmp(e, "views") == 0 ? 2 : 1;
-@@ -2555,6 +2613,7 @@ static void mr415_verify() {
+@@ -2555,6 +2614,7 @@ static void mr415_verify() {
  		bc5::load_stat::count(bc5::load_stat::kMapRecord, spans.size());
  		if (!same) {
  			bc5::load_stat::count(bc5::load_stat::kRecMismatch);
@@ -279,7 +280,7 @@ index 6118f2d..e8ac18e 100644
  			static int logged = 0;
  			if (logged++ < 8) {
  				journal("map records (exp 0415, mr415): MISMATCH at generation %" PRIu64 " after %zu records: kept %zu views, rebuilt %zu, first difference at index %zu\n", gen,
-@@ -2572,16 +2631,20 @@ static void mr415_verify() {
+@@ -2572,16 +2632,20 @@ static void mr415_verify() {
  // records, both titles); the list is rebuilt from every range only every KYTY_BC5_MAP_RECORDS_CHECK_MS (2,000 when
  // unset), and at that moment the kept list is compared with it and with the old builder's list (rec_mismatch) and
  // replaced by it. If the record log reports a gap the list is rebuilt at once. Called under direct_views' mutex.
@@ -303,7 +304,7 @@ index 6118f2d..e8ac18e 100644
  	static uint64_t           checked_ns = 0;
  	static const uint64_t     period_ns  = bc5::load_stat::env_num("KYTY_BC5_MAP_RECORDS_CHECK_MS", 2000, 600'000) * 1'000'000ull;
  	auto make = [](const R& r, DView* v) {
-@@ -2604,11 +2667,15 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
+@@ -2604,11 +2668,15 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
  		        &lists, &gen, &spans, &complete) &&
  		    complete) {
  			lists.resize(spans.size());
@@ -321,7 +322,7 @@ index 6118f2d..e8ac18e 100644
  		}
  		bc5::load_stat::count(bc5::load_stat::kRecOverflow);
  		have = false; // the log had a gap: the kept list is not to be compared, only replaced
-@@ -2620,8 +2687,9 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
+@@ -2620,8 +2688,9 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
  		        static_cast<std::vector<R>*>(p)->push_back({start, size, offset, type, name != nullptr ? name : ""});
  	        },
  	        &ranges, &gen, &spans, &complete)) {
@@ -333,7 +334,7 @@ index 6118f2d..e8ac18e 100644
  	}
  	std::vector<DView> full;
  	for (const R& r: ranges) {
-@@ -2637,26 +2705,31 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
+@@ -2637,26 +2706,31 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
  	};
  	static int logged = 0;
  	if (have && complete) {
@@ -368,7 +369,7 @@ index 6118f2d..e8ac18e 100644
  }
  
  static std::shared_ptr<const DViews> direct_views(const DState& S) {
-@@ -2674,14 +2747,17 @@ static std::shared_ptr<const DViews> direct_views(const DState& S) {
+@@ -2674,14 +2748,17 @@ static std::shared_ptr<const DViews> direct_views(const DState& S) {
  	if (g != 0 && g == gen[k] && cache[k] != nullptr && (k == 0 || now - built_ns[k] < 1'000'000'000ull)) return cache[k];
  	built_ns[k] = now;
  	g_views_builds++;
@@ -389,7 +390,7 @@ index 6118f2d..e8ac18e 100644
  	uint64_t sig = 1469598103934665603ull;
  	for (size_t i = 0; i < d->v.size(); i++) {
  		const auto& v = d->v[i];
-@@ -3298,6 +3374,7 @@ static LzrPass lzr_pass(DState& S, const std::vector<DView>& views, uint64_t sig
+@@ -3298,6 +3375,7 @@ static LzrPass lzr_pass(DState& S, const std::vector<DView>& views, uint64_t sig
  }
  static void lzr_confirm(DState& S, LzrPass& pass, std::vector<uint32_t>& retired) {
  	if (pass.done.empty() || !g_dev) return;
@@ -397,7 +398,7 @@ index 6118f2d..e8ac18e 100644
  	if (g_dev->wait_idle(0)) return;
  	uint64_t back = 0;
  	size_t   n    = 0;
-@@ -4555,12 +4632,24 @@ static void direct_sync_one(DState& S, bool force) {
+@@ -4555,12 +4633,24 @@ static void direct_sync_one(DState& S, bool force) {
  	LzrPass lzr = lzr_pass(S, views, sig, fd, now, merged, retired, remaps, merge_map_cap);
  	// 2. the views' addresses: every (view, imported range) intersection is one GPU mapping
  	const uint64_t t_drain0 = SoftCp::now_ns(); // experiment 0169
@@ -424,7 +425,7 @@ index 6118f2d..e8ac18e 100644
  	}
  	const uint64_t t_maps0 = SoftCp::now_ns();
  	g_dprof_drain_ns += t_maps0 - t_drain0;
-@@ -4569,6 +4658,118 @@ static void direct_sync_one(DState& S, bool force) {
+@@ -4569,6 +4659,129 @@ static void direct_sync_one(DState& S, bool force) {
  	lzr_confirm(S, lzr, retired); // experiment 0401 series e7 (lzr): a cut stands only when every ring is idle after the drain
  	uint32_t mapped = 0, unmapped = 0, map_failed = 0;
  	if (sig != S.views_sig || S.bos.size() != S.bos_mapped || !retired.empty() || guard0412_cap_changed(S)) { // exp 0412 (tag g412b)
@@ -540,10 +541,21 @@ index 6118f2d..e8ac18e 100644
 +		}
 +		if (!x432_done) {
 +		d432::g_x_full++;
++		if (d432::maps_diff() != 0) { // result 7: X was never taken and nothing said why
++			const bool x432_c[11] = {!retired.empty(), S.bos.size() != S.bos_mapped, guard0412_cap_changed(S), k1r412::on(), !g_zskip.empty(), zskip_new, !x432_plain[x432_k],
++			                         x432_prev[x432_k] == nullptr, x432_prev[x432_k] != nullptr && x432_prev[x432_k]->sig != S.views_sig,
++			                         x432_prev[x432_k] != nullptr && !x432_prev[x432_k]->sorted, !views_p->sorted};
++			for (int x432_i = 0; x432_i < 11; x432_i++) {
++				if (x432_c[x432_i]) {
++					d432::g_x_why[x432_i]++;
++					break;
++				}
++			}
++		}
  		std::vector<DMap> want;
  		for (const auto& v: views) {
  			const uint64_t vend = v.off + v.size;
-@@ -4581,15 +4782,44 @@ static void direct_sync_one(DState& S, bool force) {
+@@ -4581,15 +4794,44 @@ static void direct_sync_one(DState& S, bool force) {
  				want.push_back({v.va + (lo - v.off), hi - lo, lo - it->off, it->id});
  			}
  		}
@@ -590,7 +602,7 @@ index 6118f2d..e8ac18e 100644
  			if (w != want.end() && *w == m) {
  				next.push_back(m);
  			} else {
-@@ -4637,15 +4867,27 @@ static void direct_sync_one(DState& S, bool force) {
+@@ -4637,15 +4879,27 @@ static void direct_sync_one(DState& S, bool force) {
  		}
  		g_dprof_scratch_ns += scratch_ns;
  		g_dprof_add_ns += SoftCp::now_ns() - t_drop - scratch_ns;
@@ -618,7 +630,7 @@ index 6118f2d..e8ac18e 100644
  	for (const uint32_t id: retired) g_dev->free_shared(id);
  	guard0412_after_cuts(lzr.done.size()); // exp 0412 (tag g412c): BC5_GUARD_SPLIT
  	guard0412_synced(S); // exp 0412 (tag g412b): the ledger's view of what is imported
-@@ -4731,16 +4973,24 @@ static uint64_t direct_force(uint64_t lo, uint64_t hi) {
+@@ -4731,16 +4985,24 @@ static uint64_t direct_force(uint64_t lo, uint64_t hi) {
  // What "thread" gives up: an anonymous guest VMA that appears is walked at the first call after the thread's next pass
  // instead of at once for an urgent call (operands on it are dropped by the filter until then, as they are today for a
  // non-urgent call for up to a second). So it stays off until "verify" shows no miss.
@@ -644,7 +656,7 @@ index 6118f2d..e8ac18e 100644
  	return mode;
  }
  
-@@ -4785,6 +5035,20 @@ static void as415_thread() {
+@@ -4785,6 +5047,20 @@ static void as415_thread() {
  	}
  }
  
@@ -665,7 +677,7 @@ index 6118f2d..e8ac18e 100644
  // force: before a submission whose shaders may read memory the filter does not see. With the
  // direct memory on the dma-buf path (ADR 0006) what is left here are the anonymous VMAs (module
  // data, stacks, flexible memory), walked through /proc/self/maps and mincore — 0.9 ms a call,
-@@ -4793,32 +5057,66 @@ static void as415_thread() {
+@@ -4793,32 +5069,66 @@ static void as415_thread() {
  // operand of the IB is unmapped, -EFAULT from a submission) always walk.
  static void sync_mappings(bool force = false, bool urgent = false, bool must = false) { // must (exp 0415, as415): after -EFAULT, never left out
  	const uint64_t now = SoftCp::now_ns();
@@ -740,7 +752,7 @@ index 6118f2d..e8ac18e 100644
  			g_as415_kick = true;
  			g_as415_cv.notify_one();
  		}
-@@ -4842,6 +5140,7 @@ static void sync_mappings(bool force = false, bool urgent = false, bool must = f
+@@ -4842,6 +5152,7 @@ static void sync_mappings(bool force = false, bool urgent = false, bool must = f
  		g_layout_gen++;
  	}
  	g_vmas = vmas;
@@ -748,7 +760,7 @@ index 6118f2d..e8ac18e 100644
  	// exp 0419 phase 2: KYTY_BC5_VMA_FAST is gone; the walk over every VMA, as when it was unset
  	auto inside_vma = [&](uint64_t a, uint64_t b, bool readonly) { return bc5::sync_fast::inside_old(vmas, a, b, readonly); };
  
-@@ -4976,8 +5275,17 @@ static void sync_mappings(bool force = false, bool urgent = false, bool must = f
+@@ -4976,8 +5287,17 @@ static void sync_mappings(bool force = false, bool urgent = false, bool must = f
  	const bool as_same = g_as415_walk_valid && g_as415_walk_sig == as_sig; // experiment 0415 (as415)
  	g_as415_walk_sig   = as_sig;
  	g_as415_walk_valid = true;
@@ -766,7 +778,7 @@ index 6118f2d..e8ac18e 100644
  		if (as_skip_ok) {
  			bc5::load_stat::count(bc5::load_stat::kAnonMiss);
  			static int logged = 0;
-@@ -14846,6 +15154,30 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+@@ -14846,6 +15166,33 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
  	}
  	hint_targets(ib, num_dwords);
  	const uint64_t t2 = SoftCp::now_ns();
@@ -776,12 +788,14 @@ index 6118f2d..e8ac18e 100644
 +		if (t2 - t0 > 20'000'000ull) d432::g_prep_over20++;
 +		uint64_t was = d432::g_last_ns.load(std::memory_order_relaxed);
 +		if (t2 - was >= 10'000'000'000ull && d432::g_last_ns.compare_exchange_strong(was, t2)) {
-+			char line[1200];
++			char line[1600];
 +			std::snprintf(line, sizeof(line),
 +			              "exp 0432 (tag d432): t %.1f s: unmap-nowait %s, anon-events %s, anon-thread %s, views-kept %s; sync+hints of all submissions %.1f s, longest %.1f ms, over 20 ms %" PRIu64
 +			              "; rebuilds that change mappings %" PRIu64 ", with a ring busy %" PRIu64 "; mappings dropped %" PRIu64 ", while busy %" PRIu64 ", BOs retired while busy %" PRIu64
 +			              "; blocking drains %" PRIu64 ", %.1f ms in all, longest %.1f ms; anon walks %" PRIu64 " (asked by the counter %" PRIu64 "), left out %" PRIu64 ", event misses %" PRIu64
-+			              ", anonymous guest VMAs %" PRIu64 "; view builds %" PRIu64 ", list copies %" PRIu64 ", record mismatches %" PRIu64 "; maps-fast %s: merged %" PRIu64 ", sorted %" PRIu64 "; maps-diff %s: by diff %" PRIu64 ", the old way %" PRIu64 ", views changed %" PRIu64 ", mismatches %" PRIu64,
++			              ", anonymous guest VMAs %" PRIu64 "; view builds %" PRIu64 ", list copies %" PRIu64 ", record mismatches %" PRIu64 "; maps-fast %s: merged %" PRIu64 ", sorted %" PRIu64 "; maps-diff %s: by diff %" PRIu64 ", the old way %" PRIu64 ", views changed %" PRIu64 ", mismatches %" PRIu64
++			              " (the old way because: retired %" PRIu64 ", new BOs %" PRIu64 ", cap %" PRIu64 ", k1r %" PRIu64 ", zero list %" PRIu64 ", zero new %" PRIu64
++			              ", not plain %" PRIu64 ", no list %" PRIu64 ", sig %" PRIu64 ", old unsorted %" PRIu64 ", new unsorted %" PRIu64 ")",
 +			              timing_now(), d432::on() ? "ON" : "off", d432::anon_events() ? "ON" : "off", d432::anon_thread() ? "ON" : "off", d432::views_kept() ? "ON" : "off",
 +			              static_cast<double>(d432::g_sync_ns.load()) / 1e9, static_cast<double>(d432::g_prep_max_ns.load()) / 1e6, d432::g_prep_over20.load(), d432::g_rebuilds.load(),
 +			              d432::g_busy.load(), d432::g_unmaps.load(), d432::g_unmaps_busy.load(), d432::g_bos_busy.load(), d432::g_drains.load(),
@@ -789,7 +803,8 @@ index 6118f2d..e8ac18e 100644
 +			              d432::g_anon_skips.load(), d432::g_anon_ev_miss.load(), d432::g_anon_vmas.load(), static_cast<uint64_t>(g_views_builds), d432::g_views_clone.load(),
 +			              d432::g_rec_mismatch.load(), d432::maps_fast() ? "ON" : "off", d432::g_maps_fast.load(), d432::g_maps_sorted.load(),
 +			              d432::maps_diff() == 2 ? "VERIFY" : d432::maps_diff() == 1 ? "ON" : "off", d432::g_x_diff.load(), d432::g_x_full.load(), d432::g_x_views.load(),
-+			              d432::g_x_mismatch.load());
++			              d432::g_x_mismatch.load(), d432::g_x_why[0].load(), d432::g_x_why[1].load(), d432::g_x_why[2].load(), d432::g_x_why[3].load(), d432::g_x_why[4].load(),
++			              d432::g_x_why[5].load(), d432::g_x_why[6].load(), d432::g_x_why[7].load(), d432::g_x_why[8].load(), d432::g_x_why[9].load(), d432::g_x_why[10].load());
 +			std::fprintf(stderr, "[bc5] %s\n", line);
 +			journal("%s\n", line);
 +		}
@@ -797,7 +812,7 @@ index 6118f2d..e8ac18e 100644
  	if (bc5::load_stat::on()) { // experiment 0415 (ls415c): the hold by part
  		bc5::load_stat::add(bc5::load_stat::kHoldProbe, ta - t0);
  		bc5::load_stat::add(bc5::load_stat::kHoldHints, t2 - tc);
-@@ -15617,6 +15949,13 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+@@ -15617,6 +15964,13 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
  		mec_back(r.executed_offsets);
  		fl_back(r.executed_offsets); // experiment 0404
  	}

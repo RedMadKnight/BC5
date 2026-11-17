@@ -96,36 +96,40 @@ buildt() {
     own || stop "no lock held by 0432"
     pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
     [ -s "$E/be-build/libbc5_backend.a" ] || stop "no private archive: run buildbe first"
-    local shared bin rc f T=$E/t TS=$E/t/src
+    local shared bin rc f T=$E/t TS=$E/t/src WANT=0de9349b CDB=$E/compdb.json X=t
+    # LEAN=1: the same sources with the shared lean build's commands and objects, into ~/bc5-work/exp0432/tl
+    if [ "${LEAN:-0}" = 1 ]; then B=$W/kytyplus-build-lean; T=$E/tl; TS=$E/tl/src; WANT=63fda02d; CDB=$E/compdb-lean.json; X=tl; fi
     shared=$(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)
-    [ "${shared:0:8}" = 0de9349b ] || stop "the shared normal build is ${shared:0:8}, not 0de9349b"
+    [ "${shared:0:8}" = "$WANT" ] || stop "the shared build in $B is ${shared:0:8}, not $WANT"
     rm -rf "$T"; mkdir -p "$TS" "$R"
     while read -r base want f; do
         [ "$(m8 "$TREE/$f")" = "$base" ] || stop "the shared tree's $f is $(m8 "$TREE/$f"), not $base"
         mkdir -p "$TS/$(dirname "$f")" && cp "$TREE/$f" "$TS/$f" || stop "copy $f"
     done <<'EOT'
-b8afba59 f80560e3 src/libs/bc5LleAgc.cpp
+b8afba59 019d826f src/libs/bc5LleAgc.cpp
 2dcd6db3 1262d6f3 src/common/platform/sysLinuxVirtual.cpp
 5b2016ed a9a2143a src/libs/libAmpr.cpp
 058bb712 478ff14c src/bc5/anon_sync.hpp
 EOT
-    (cd "$TS" && git apply --whitespace=nowarn "$HERE/t432.diff") > "$R/t-patch.out" 2>&1  # the host has no patch(1); git apply works on plain files || { cat "$R/t-patch.out"; stop "t432.diff does not apply"; }
+    (cd "$TS" && git apply --whitespace=nowarn "$HERE/t432.diff") > "$R/$X-patch.out" 2>&1  # the host has no patch(1); git apply works on plain files || { cat "$R/$X-patch.out"; stop "t432.diff does not apply"; }
     while read -r base want f; do
         [ "$(m8 "$TS/$f")" = "$want" ] || stop "the edited $f is $(m8 "$TS/$f"), not $want as made on the laptop"
     done <<'EOT'
-b8afba59 f80560e3 src/libs/bc5LleAgc.cpp
+b8afba59 019d826f src/libs/bc5LleAgc.cpp
 2dcd6db3 1262d6f3 src/common/platform/sysLinuxVirtual.cpp
 5b2016ed a9a2143a src/libs/libAmpr.cpp
 058bb712 478ff14c src/bc5/anon_sync.hpp
 EOT
-    [ -s "$E/compdb.json" ] || distrobox enter ubuntu -- sh -c "cd '$B' && ninja -t compdb -x" > "$E/compdb.json" 2> "$R/compdb.err" < /dev/null || stop "compdb failed"
+    [ -s "$CDB" ] || distrobox enter ubuntu -- sh -c "cd '$B' && ninja -t compdb -x" > "$CDB" 2> "$R/compdb.err" < /dev/null || stop "compdb failed"
     bin=$T/kyty_emulator
-    distrobox enter ubuntu -- env LC_ALL=C LANGUAGE=C BC5_0430_ARCHIVE="$E/be-build/libbc5_backend.a" python3 -I "$HERE/build0432.py" "$E/compdb.json" "$TS" "$T" "$B" "$bin" src/common/CMakeFiles/common.dir/platform/sysLinuxVirtual.cpp.o=src/common/platform/sysLinuxVirtual.cpp src/libs/libAmpr.cpp > "$R/t-build.out" 2>&1 < /dev/null
-    rc=$?; echo "build rc $rc; errors $(grep -c 'error:' "$R/t-build.out"); warnings $(grep -c 'warning:' "$R/t-build.out")"
-    grep -n "error:\|undefined\|multiple definition\|COMPILE FAILED\|archive:\|library member\|Error" "$R/t-build.out" | head -30
-    [ "$rc" = 0 ] && [ -x "$bin" ] || stop "build failed: $R/t-build.out"
+    distrobox enter ubuntu -- env LC_ALL=C LANGUAGE=C BC5_0430_ARCHIVE="$E/be-build/libbc5_backend.a" python3 -I "$HERE/build0432.py" "$CDB" "$TS" "$T" "$B" "$bin" src/common/CMakeFiles/common.dir/platform/sysLinuxVirtual.cpp.o=src/common/platform/sysLinuxVirtual.cpp src/libs/libAmpr.cpp > "$R/$X-build.out" 2>&1 < /dev/null
+    rc=$?; echo "build rc $rc; errors $(grep -c 'error:' "$R/$X-build.out"); warnings $(grep -c 'warning:' "$R/$X-build.out")"
+    grep -n "error:\|undefined\|multiple definition\|COMPILE FAILED\|archive:\|library member\|Error" "$R/$X-build.out" | head -30
+    [ "$rc" = 0 ] && [ -x "$bin" ] || stop "build failed: $R/$X-build.out"
     for w in BC5_DIRECT_REFUSED_ENDS BC5_DIRECT_ANON_THREAD BC5_DIRECT_MAPS_FAST BC5_DIRECT_UNMAP_NOWAIT BC5_DIRECT_ANON_EVENTS BC5_DIRECT_VIEWS_KEPT BC5_DIRECT_SLOT_GROW BC5_DIRECT_SLOT_PREALLOC "tag d432" "tag s432" BC5_DIRECT_ACB_RINGS BC5_DIRECT_XQ_FENCE; do
-        strings "$bin" | grep -qF "$w" || stop "$w is not in the binary"
+        strings "$bin" | grep -qF "$w" && continue
+        [ "${LEAN:-0}" = 1 ] && { echo "lean: $w is not in the binary"; continue; }  # the lean build compiles traces out: said, not fatal
+        stop "$w is not in the binary"
     done
     md5sum < "$bin" | cut -d' ' -f1 > "$T/binary.md5"
     echo "test binary $(cat "$T/binary.md5"), shared before $shared, after $(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)"

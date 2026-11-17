@@ -38,6 +38,8 @@ for arm in ${ORDER:-D S D S O}; do
     G) bin=${TBIN:?the test build}; aw="BC5_DIRECT_SLOT_GROW=0" ;;           # ... without item S
     M) bin=${TBIN:?the test build}; aw="BC5_DIRECT_MAPS_FAST=0" ;;           # ... without item M
     Z) bin=${TBIN:?the test build}; aw="BC5_DIRECT_ANON_THREAD=0 BC5_DIRECT_SLOT_PREALLOC=0 BC5_DIRECT_MAPS_FAST=0 BC5_DIRECT_UNMAP_NOWAIT=0 BC5_DIRECT_ANON_EVENTS=0 BC5_DIRECT_VIEWS_KEPT=0 BC5_DIRECT_SLOT_GROW=0 KYTY_BC5_ANON_SYNC=verify" ;;  # every item off, exp 0415's verify counting event misses
+    L) bin=${LBIN:?the lean test build}; aw="" ;;                            # the test build made with the lean build's commands (box0432.sh, LEAN=1)
+    K) bin=$W/kytyplus-build-lean/src/kyty_emulator; aw="" ;;                # the shared lean build as it is
     *) echo "scene0432: arm $arm?"; break ;;
   esac
   t=d432$arm$k; while [ -e "$N/raw/$t-start.txt" ]; do t=${t}b; done

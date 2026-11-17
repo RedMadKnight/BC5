@@ -51,6 +51,7 @@ inline int maps_diff() { // item X: 0 off, 1 on, 2 on and checked against the ol
 ~return v;
 }
 inline std::atomic<uint64_t> g_x_diff {0}, g_x_full {0}, g_x_views {0}, g_x_mismatch {0};
+inline std::atomic<uint64_t> g_x_why[11]; // which condition sent a rebuild the old way (the first that failed)
 """))
 
 sub("\t\tstd::vector<DMap> want;\n\t\tfor (const auto& v: views) {\n\t\t\tconst uint64_t vend = v.off + v.size;\n", cpp("""~~// exp 0432 (tag x432), BC5_DIRECT_MAPS_DIFF: see mkx432.py. x432_prev is the view list S.maps was made from;
@@ -165,6 +166,17 @@ sub("\t\tstd::vector<DMap> want;\n\t\tfor (const auto& v: views) {\n\t\t\tconst 
 ~~}
 ~~if (!x432_done) {
 ~~d432::g_x_full++;
+~~if (d432::maps_diff() != 0) { // result 7: X was never taken and nothing said why
+~~~const bool x432_c[11] = {!retired.empty(), S.bos.size() != S.bos_mapped, guard0412_cap_changed(S), k1r412::on(), !g_zskip.empty(), zskip_new, !x432_plain[x432_k],
+~~~                         x432_prev[x432_k] == nullptr, x432_prev[x432_k] != nullptr && x432_prev[x432_k]->sig != S.views_sig,
+~~~                         x432_prev[x432_k] != nullptr && !x432_prev[x432_k]->sorted, !views_p->sorted};
+~~~for (int x432_i = 0; x432_i < 11; x432_i++) {
+~~~~if (x432_c[x432_i]) {
+~~~~~d432::g_x_why[x432_i]++;
+~~~~~break;
+~~~~}
+~~~}
+~~}
 ~~std::vector<DMap> want;
 ~~for (const auto& v: views) {
 ~~~const uint64_t vend = v.off + v.size;
@@ -187,12 +199,15 @@ sub("\t\tS.maps.swap(next);\n\t\tif (S.kind == 0 && (zskip_new || sig != S.views
 """))
 
 # the line
-sub("\t\t\tchar line[900];\n", "\t\t\tchar line[1200];\n")
+sub("\t\t\tchar line[900];\n", "\t\t\tchar line[1600];\n")
 sub("\"; maps-fast %s: merged %\" PRIu64 \", sorted %\" PRIu64,\n",
-    "\"; maps-fast %s: merged %\" PRIu64 \", sorted %\" PRIu64 \"; maps-diff %s: by diff %\" PRIu64 \", the old way %\" PRIu64 \", views changed %\" PRIu64 \", mismatches %\" PRIu64,\n")
+    "\"; maps-fast %s: merged %\" PRIu64 \", sorted %\" PRIu64 \"; maps-diff %s: by diff %\" PRIu64 \", the old way %\" PRIu64 \", views changed %\" PRIu64 \", mismatches %\" PRIu64\n"
+    "\t\t\t              \" (the old way because: retired %\" PRIu64 \", new BOs %\" PRIu64 \", cap %\" PRIu64 \", k1r %\" PRIu64 \", zero list %\" PRIu64 \", zero new %\" PRIu64\n"
+    "\t\t\t              \", not plain %\" PRIu64 \", no list %\" PRIu64 \", sig %\" PRIu64 \", old unsorted %\" PRIu64 \", new unsorted %\" PRIu64 \")\",\n")
 sub("d432::maps_fast() ? \"ON\" : \"off\", d432::g_maps_fast.load(), d432::g_maps_sorted.load());\n",
     "d432::maps_fast() ? \"ON\" : \"off\", d432::g_maps_fast.load(), d432::g_maps_sorted.load(),\n"
     "\t\t\t              d432::maps_diff() == 2 ? \"VERIFY\" : d432::maps_diff() == 1 ? \"ON\" : \"off\", d432::g_x_diff.load(), d432::g_x_full.load(), d432::g_x_views.load(),\n"
-    "\t\t\t              d432::g_x_mismatch.load());\n")
+    "\t\t\t              d432::g_x_mismatch.load(), d432::g_x_why[0].load(), d432::g_x_why[1].load(), d432::g_x_why[2].load(), d432::g_x_why[3].load(), d432::g_x_why[4].load(),\n"
+    "\t\t\t              d432::g_x_why[5].load(), d432::g_x_why[6].load(), d432::g_x_why[7].load(), d432::g_x_why[8].load(), d432::g_x_why[9].load(), d432::g_x_why[10].load());\n")
 open(p, "w", encoding="utf-8", newline="\n").write(s)
 print("edited", p, "(item X)")
