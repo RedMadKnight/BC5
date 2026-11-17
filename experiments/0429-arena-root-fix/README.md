@@ -284,3 +284,41 @@ Next (to be checked in the title's code at the next gap): whether the title's wo
 semaphore, and how it bounds that spin (a time read through an import, or a count). A spin bounded by a host time
 source that runs at the wrong rate would end the spin too soon on this host and send the worker to sleep where the
 console's worker would still be spinning when the owner pushes. That would be a host fix for every title.
+
+## The title's worker loop, the host's guest mutex, and candidate F (2026-11-17 01:2x–01:41)
+
+**Read on the box** (offsets and meaning only). The Hi worker's loop (+0x3ccbfe0–+0x3ccc2b0) keeps its own cursor into its
+entry's pending list and scans it **while holding a per-entry guest mutex**. It releases the mutex (import stub
++0x5f1f8b0) before it runs a job and takes it again after (+0x3978ba0). When its cursor reaches the end it sets an
+8000 µs timeout and waits on the entry's semaphore (import +0x5f202a0). A worker that claims a multi-block job may
+signal the semaphore for more workers (import +0x5f20260). The title's lock wrapper +0x3978ba0 spins up to a count kept
+in the mutex object, each round 16 `pause` and a trylock (import +0x5f1f890), then takes the blocking lock (import
++0x5f1f8a0). The owner's help (+0x3cca600) scans the same list with no mutex. Exp 0358's import resolver does not read
+this SELF's layout (no PT_DYNAMIC entry), so the imports are named by their use (trylock, lock, unlock, wait, signal).
+TODO(verify): their NIDs.
+
+**The host's guest mutex** (`pthread.cpp`, NativeMutexLock/Trylock/Unlock): a `std::mutex` and a condition variable
+inside each guest mutex. Every trylock, lock and unlock takes that inner `std::mutex` first, so the eight workers'
+spinning trylocks can block in the kernel behind the holder's unlock, and a blocked locker is woken through the
+condition variable. On a FreeBSD-derived kernel (TODO(verify): the console's libkernel) a trylock is one atomic
+operation in user space.
+
+**Candidate F, `KYTY_BC5_0429_FAST_MUTEX=1`** (`fastmutex0429.cpp`; read once per process, so all mutexes use one
+scheme): the guest mutex as a word in user space (0 free, 1 locked, 2 locked with sleepers; Drepper's futex mutex);
+trylock and an uncontended lock or unlock are one atomic operation; a contended lock spins 64 `pause`, then sleeps on
+the word through the futex with the old signal poll; unlock wakes one sleeper only when there is one. Owner and count
+are written only by the holder. The normal build with `KYTY_BC5_0429_WAITS=1` counts contended locks and their sleeps.
+For every title, not just this one.
+
+**Stand-in test** (`test_fm0429.cpp`, the block with minimal stand-in types, g++ -O2 -Werror in the box's ubuntu
+container, under BOX-LOCK): 13 of 13: 8 threads × 200,000 rounds (half as the title's wrapper, half by lock) end with an
+exact counter and a free word; recursive takes, EPERM for a non-owner, the timed lock's bound, a zero timeout, and a
+hand-over to a timed waiter. It does not cover the condition-variable waits that unlock and relock through
+NativeMutexUnlock(recurse) and NativeMutexLockRecurse; those are in build 5 only.
+
+**h429C1** (build 4, control arm, 01:25–01:37): **NO_CRASH to G+600** (711 s), 40.4 flips/s, no kernel line. The
+control does not always crash on the long route; the counts must be read with that.
+
+**Build 5** (01:38–01:41, BOX-LOCK, CPU only, exp 0430's build-6 object as in build 4): **normal
+`41669d9aed6454baee3cdbea95cf23ce`, lean `4bf6c7e90f94a0cb4803991b43666a32`**, 0 errors, the same 8 warnings, the
+shared binaries unchanged. Arm F (`FAST_MUTEX=1`, catcher on) runs next.
