@@ -55,6 +55,10 @@
 // would take a stable label's balance below 0 has its release still to come: its submitting thread waits (at most 250 ms)
 // until the next release is registered; then F3/F4/F5 and the host's keep test see the writer pending. A bound reached is
 // counted and journaled and the label resyncs. Labels that are not stable 1:1 (0x12004b37c8: 4 waits a release) are left.
+// In-process only: the counts live in this store and die with the process; nothing is written to a file or carried
+// between runs (the maintainer's rule against learned windows). Never held when the waiter's thread is the one that
+// registered the label's last release (it would submit the release itself after the hold: counted as same thread).
+// A hold also records when the label first stops holding ref (the busy mark) and both threads' names, for the record.
 namespace ho430 {
 inline bool not0(const char* e) {
 	return e == nullptr || !(e[0] == '0' && e[1] == 0);
@@ -173,9 +177,14 @@ struct Store {
 		int64_t  bal     = 0;     // releases registered minus waiting submissions since the sync
 		uint32_t ok      = 0;     // consecutive events with bal in {0, 1}
 		uint64_t rel     = 0;     // releases registered (a hold waits for this to move)
+		int      rtid    = 0;     // the thread that registered the last release
+		char     rname[16] {};    // its name
 	};
 	std::map<uint64_t, Cnt>                    f7;           // F7: label -> its release/wait count
 	uint64_t                                   f7_held = 0, f7_bound = 0, f7_ns = 0;
+	uint64_t                                   f7_same = 0;  // F7: not held, the waiter's thread is the one that registers the release
+	uint64_t                                   f7_hist[6] {}; // F7: holds < 1, < 5, < 20, < 50, < 250 ms, bound
+	uint64_t                                   f7_mark[6] {}; // F7: in a hold, the title's busy mark after the hold's start: < 0.1, < 1, < 5, < 20 ms, later, none
 	uint64_t                                   c[kTypes] {};
 	uint64_t                                   waited_ns = 0;
 };
@@ -287,6 +296,8 @@ inline void job_submitted(const uint32_t* ib, uint32_t num_dwords, const std::ve
 		if (it == s.f7.end() || it->second.ref != v || it->second.wring == ring) continue;
 		Store::Cnt& c = it->second;
 		c.rel++;
+		c.rtid = static_cast<int>(syscall(SYS_gettid));
+		pthread_getname_np(pthread_self(), c.rname, sizeof(c.rname));
 		if (!c.synced) {
 			c.synced = true;
 			c.bal    = 1;
@@ -318,8 +329,9 @@ inline void job_submitted(const uint32_t* ib, uint32_t num_dwords, const std::ve
 	static uint64_t last_f5 = 0; // F5's line without G (the shared form too): the orders kept against the orders skipped
 	if (!g_on() && f3_on() && now - last_f5 > 60'000'000'000ull) {
 		last_f5 = now;
-		journal("ho430 F5 (exp 0430): t %.1f s: F3 presets %" PRIu64 ", not stale %" PRIu64 ", refused %" PRIu64 "; F4 fences %" PRIu64 ", F2 waited %" PRIu64 ", F5 skipped %" PRIu64 " (precise %s), F6 kept %" PRIu64 " (keep %s), F6 kept waits not back in 1 s %" PRIu64 ", F6 labels %zu, not kept on a shared ring %" PRIu64 "; F7 labels %zu, held %" PRIu64 " (%.1f ms), bounds %" PRIu64 "\n", timing_now(), s.c[kF3Preset], s.c[kF3NotStale], s.c[kF3Refused],
-		        s.c[kF4Fence], s.c[kF2Waited], s.c[kF5Skip], f5_on() ? "on" : "off", s.c[kF6Kept], f6_on() ? "on" : "off", s.f6_long, s.f6_by_label.size(), s.f6_shared, s.f7.size(), s.f7_held, static_cast<double>(s.f7_ns) / 1e6, s.f7_bound);
+		journal("ho430 F5 (exp 0430): t %.1f s: F3 presets %" PRIu64 ", not stale %" PRIu64 ", refused %" PRIu64 "; F4 fences %" PRIu64 ", F2 waited %" PRIu64 ", F5 skipped %" PRIu64 " (precise %s), F6 kept %" PRIu64 " (keep %s), F6 kept waits not back in 1 s %" PRIu64 ", F6 labels %zu, not kept on a shared ring %" PRIu64 "; F7 labels %zu, held %" PRIu64 " (%.1f ms), bounds %" PRIu64 ", same thread %" PRIu64 ", holds <1/<5/<20/<50/<250 ms/bound %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", marks <0.1/<1/<5/<20 ms/later/none %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "\n", timing_now(), s.c[kF3Preset], s.c[kF3NotStale], s.c[kF3Refused],
+		        s.c[kF4Fence], s.c[kF2Waited], s.c[kF5Skip], f5_on() ? "on" : "off", s.c[kF6Kept], f6_on() ? "on" : "off", s.f6_long, s.f6_by_label.size(), s.f6_shared, s.f7.size(), s.f7_held, static_cast<double>(s.f7_ns) / 1e6, s.f7_bound, s.f7_same,
+		        s.f7_hist[0], s.f7_hist[1], s.f7_hist[2], s.f7_hist[3], s.f7_hist[4], s.f7_hist[5], s.f7_mark[0], s.f7_mark[1], s.f7_mark[2], s.f7_mark[3], s.f7_mark[4], s.f7_mark[5]);
 	}
 #ifndef HO430_SHARED
 	static bool         at_done = false; // BC5_0430_G_AT: one dump in a clean run
@@ -361,6 +373,7 @@ inline void f7_wait(uint64_t label, uint64_t ref, int ring, const uint32_t* ib, 
 	seen.push_back(label);
 	Store&   s    = st();
 	uint64_t rel0 = 0;
+	char     rname[16] {};
 	{
 		std::lock_guard lk(s.m);
 		Store::Cnt&     c = s.f7[label];
@@ -377,11 +390,20 @@ inline void f7_wait(uint64_t label, uint64_t ref, int ring, const uint32_t* ib, 
 			c.ok = (c.bal == 0 || c.bal == 1) ? c.ok + 1 : 0;
 			return;
 		}
+		if (c.rtid == static_cast<int>(syscall(SYS_gettid))) { // the top's check: this thread submits the release later itself
+			c.bal--;
+			c.ok = 0;
+			s.f7_same++;
+			return;
+		}
 		rel0 = c.rel; // stable 1:1 and no release since the last waiter: this one's release is still to come
+		std::snprintf(rname, sizeof(rname), "%s", c.rname);
 	}
-	const uint64_t t0   = SoftCp::now_ns();
-	bool           done = false;
+	const uint64_t t0     = SoftCp::now_ns();
+	bool           done   = false;
+	uint64_t       mark_t = 0; // when the label first held a value other than ref (the title's mark, or F3's preset at the writer's submit)
 	while (SoftCp::now_ns() - t0 < 250'000'000ull && (!g_dev || !g_dev->wedged())) {
+		if (mark_t == 0 && *reinterpret_cast<const volatile uint64_t*>(label & ~7ull) != ref) mark_t = SoftCp::now_ns();
 		{
 			std::lock_guard lk(s.m);
 			if (s.f7[label].rel != rel0) done = true;
@@ -404,14 +426,22 @@ inline void f7_wait(uint64_t label, uint64_t ref, int ring, const uint32_t* ib, 
 			n        = ++s.f7_bound;
 		}
 		s.f7_ns += waited;
+		const double ms = static_cast<double>(waited) / 1e6;
+		s.f7_hist[!done ? 5 : ms < 1 ? 0 : ms < 5 ? 1 : ms < 20 ? 2 : ms < 50 ? 3 : 4]++;
+		const double mk = mark_t == 0 ? -1.0 : static_cast<double>(mark_t - t0) / 1e6;
+		s.f7_mark[mk < 0 ? 5 : mk < 0.1 ? 0 : mk < 1 ? 1 : mk < 5 ? 2 : mk < 20 ? 3 : 4]++;
 	}
 	Ev x    = ev(done ? kF7Held : kF7Bound, label, kind, ring, off);
 	x.value = waited;
 	x.ref   = ref;
 	add(x);
 	if (!done || n <= 256 || (n & 0x3ffu) == 0)
-		journal("ho430 F7: %s on ring %d at %u: its wait on 0x%" PRIx64 " (== 0x%" PRIx64 ") came before its release; %s after %.2f ms (%" PRIu64 " %s)\n", kind, ring, off, label, ref,
-		        done ? "held until the release was submitted" : "BOUND REACHED, the label resyncs", static_cast<double>(waited) / 1e6, n, done ? "held" : "bounds");
+	{
+		char wname[16] {};
+		pthread_getname_np(pthread_self(), wname, sizeof(wname));
+		journal("ho430 F7: %s on ring %d at %u (thread %s): its wait on 0x%" PRIx64 " (== 0x%" PRIx64 ") came before its release; %s after %.2f ms; the label marked %s%.2f ms in; the last release came from thread %s (%" PRIu64 " %s)\n", kind, ring, off, wname, label, ref,
+		        done ? "held until the release was submitted" : "BOUND REACHED, the label resyncs", static_cast<double>(waited) / 1e6, mark_t == 0 ? "never, " : "", mark_t == 0 ? 0.0 : static_cast<double>(mark_t - t0) / 1e6, rname, n, done ? "held" : "bounds");
+	}
 }
 // At a wait of a buffer about to be submitted (submit_split), before the host decides it.
 inline void at_wait(const uint32_t* p, bool is64, uint64_t label, const char* kind, int ring, const uint32_t* ib, uint32_t num_dwords, uint32_t off) {

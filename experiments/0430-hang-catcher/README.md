@@ -479,3 +479,51 @@ stutter source of its own. Log: `~/bc5-data/captures/play-20261117-1245/gc/direc
 `IN_CHAIN=1` builds inside this experiment's own run lock at nice 19). From h430Q2 the A/B's F arm is P''; h430Q1
 stays the record of the broad F6 (`ho430.f6broad.cpp`). The gate for a P'' swap: no hang, mean ≥ S − 1 flips/s, no F6
 hold over 500 ms.
+
+### h430C6, exp 0432's d432V15, and F7 (2026-11-17 16:12–18:00)
+
+**h430C6** (the shared control, 16:11:57): TCP READ faults at junk addresses (K4), then comp_1.0.1 timeout, reset
+succeeded (fault record `captures/faults/20261117-161159`). The timed-out acb #1868453 has one wait, dword 88, label
+0x12004b77c8 == 0, met → dropped: the F848 pattern on a slot of the label family that F3 had never learned (it learns a
+label only when a wait on it meets a pending writer on another ring). **d432V15** (exp 0432's build 3, his scene,
+17:06:42): acb #93564's wait at dword 58 on the same 0x12004b77c8 was KEPT for the GPU ("ring order … keeps its wait")
+and the acb still ran junk grids. The GPU executed the wait while the label still held the last frame's 0. So no look at
+the label's value, on the host at submit or on the GPU at the packet (F6/F6b), closes this window. P''' (F5 + F6b) is
+built-ready (`ho430.p3.cpp`, unit bf8ffc67) and not tested.
+
+**Who writes the busy value, and in what order.** In X1's G record (300 s) all 234 GPU writes registered to the
+0x12004b…c8 labels write 0, F3 made no preset, and 123 waits saw 0x9076d6d8c: the busy mark is a plain CPU store by the
+title. The title's order per label and frame: mark → the dcb with the release (RELEASE_MEM 0) submitted → the acb with
+WAIT == 0 submitted. Releases and waiting submissions strictly alternate (0x12004b4fc8: 24 releases, 24 waits, never
+two waits without a release between). 0x12004b37c8 takes 4 waits a release. The xx38 labels (the acb releases, the
+dcb waits) alternate with a rare harmless swap. In X1 (build 5, slower) the mark always landed before the dcb's
+submit; in today's faster shared runs F3 had to preset at the dcb's submit 243 times (h430C4). In the failures the acb
+came before both the mark and its dcb: a CPU-side race between title threads.
+
+**F7, "count, not look"** (`BC5_DIRECT_XQ_COUNT` / `BC5_0430_F7`; unit 23c50de2 with F5, F6, F6b and F7; mkf6.py):
+- **Count:** per label, for acb waiters on == waits, the balance of releases (writes of the waited value registered
+  at a writer's submit on another ring) minus waiting submissions, counted from a release on. A label is stable 1:1
+  after 32 events with the balance in {0, 1}.
+- **Hold:** a waiting submission that would take a stable label below 0 has its release still to come. Its submitting
+  thread is held, at most 250 ms, until the next release is registered. Then F3/F4/F5 and the host's keep test see the
+  writer pending.
+- **Limits (the top session's):**
+  - In process only: a map in the in-memory store, no file, nothing carried between runs.
+  - Never held when the waiter's thread registered the label's last release (counted as "same thread").
+  - A bound reached is counted and journaled, and the label resyncs.
+  - The 60-s line shows the labels, the holds with a histogram (< 1, < 5, < 20, < 50, < 250 ms, bound), and the
+    same-thread refusals.
+- **Gate (the top's):** no GPU hang or fault, mean ≥ S − 1, F7 bounds 0, no hold over 50 ms on the game's critical
+  path.
+
+**The open question: how long after the acb's submit the mark lands.** It cannot be read from C4, C6 or V15: the shared
+runs carry no G, and the probe sees the label only at the stall. F7 measures it at run time: each hold records when the
+label first stops holding the waited value, as a histogram (< 0.1, < 1, < 5, < 20 ms, later, never) and in the hold's
+journal line. That time also counts F3's preset at the writer's submit, which comes just before the release is
+registered. If the mark lands within microseconds, the console's own submit-to-fetch latency is what hides the window,
+and the faithful fix is ordering, not counting.
+
+**The title's threads.** The records name only the host side: the kernel attributes every job to the host thread
+`bc5-ring`. Which guest threads mark the label, submit the dcb and submit the acb, and at what guest priorities, is not
+in the records. F7's hold line names the waiter's thread and the thread that registered the last release, so the first
+F7 run answers it for the two submits (for exp 0429's R). The mark is a store; its thread stays unseen.
