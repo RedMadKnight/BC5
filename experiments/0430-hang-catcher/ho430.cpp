@@ -73,6 +73,10 @@ inline bool f6_on() {
 	static const bool v = not0(std::getenv("BC5_DIRECT_XQ_KEEP"));
 	return v;
 }
+inline bool f6b_on() {
+	static const bool v = not0(std::getenv("BC5_DIRECT_XQ_KEEP_ALL"));
+	return v;
+}
 #else
 inline bool f2_on() {
 	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F2"));
@@ -96,6 +100,10 @@ inline bool f5_on() {
 }
 inline bool f6_on() {
 	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F6"));
+	return v;
+}
+inline bool f6b_on() {
+	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F6B"));
 	return v;
 }
 #endif
@@ -466,8 +474,11 @@ inline bool keep_cross(const uint32_t* p, bool is64, uint64_t label, const char*
 		Store&          s = st();
 		std::lock_guard lk(s.m);
 		const auto      it = s.cross.find(label);
-		if (it == s.cross.end() || it->second.v != ref || it->second.is64 != is64) return false;
-		if (it->second.wring == ring) return false; // the writer runs on this ring after the wait: the GPU would deadlock
+		const bool      known = it != s.cross.end() && it->second.v == ref && it->second.is64 == is64;
+		// F6b (h430C6, 16:11: the same drop on 0x12004b77c8, a slot of the title's label family that F3 had never learned):
+		// with BC5_DIRECT_XQ_KEEP_ALL / BC5_0430_F6B every satisfied == wait of an acb is a candidate, learned or not
+		if (!known && !f6b_on()) return false;
+		if (it != s.cross.end() && it->second.wring == ring) return false; // the writer runs on this ring after the wait: the GPU would deadlock
 	}
 	{
 		std::lock_guard lk(g_plw_mutex);

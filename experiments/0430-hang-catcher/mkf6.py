@@ -41,7 +41,7 @@ def main() -> int:
         if n != 1:
             print(f"mkf6: {what} is found {n} times, not once")
             return 1
-    if "BC5_DIRECT_XQ_PRECISE" not in new or "keep_cross" not in new or "BC5_DIRECT_XQ_KEEP" not in new:
+    if "BC5_DIRECT_XQ_PRECISE" not in new or "keep_cross" not in new or "BC5_DIRECT_XQ_KEEP" not in new or "BC5_DIRECT_XQ_KEEP_ALL" not in new:
         print("mkf6: ho430.cpp has no F5 or no F6")
         return 1
     text = text.replace(old, new).replace(KEEP_OLD, KEEP_NEW)
