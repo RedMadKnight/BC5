@@ -54,6 +54,10 @@ sub("static void wait_jobs();\n",
     "\tstatic const bool v = word_on(\"BC5_DIRECT_ANON_THREAD\");\n"
     "\treturn v;\n"
     "}\n"
+    "inline bool refused_ends() { // item R\n"
+    "\tstatic const bool v = word_on(\"BC5_DIRECT_REFUSED_ENDS\");\n"
+    "\treturn v;\n"
+    "}\n"
     "inline bool views_kept() { // item V\n"
     "\tstatic const bool v = word_on(\"BC5_DIRECT_VIEWS_KEPT\");\n"
     "\treturn v;\n"
@@ -208,6 +212,20 @@ sub("\tif (!as_ev_now && !force && now - g_last_sync_ns < 50'000'000ull) { // at
 # item V's check: the old builder's second full build belongs to exp 0415's verify stage; not while the kept list is in use
 sub("\tif (const uint64_t g2 = Libs::LibKernel::Memory::Bc5MappedRangesGeneration(); g2 == gen) {\n",
     "\tif (const uint64_t g2 = Libs::LibKernel::Memory::Bc5MappedRangesGeneration(); g2 == gen && !d432::views_kept()) { // exp 0432: build 1 showed this second build in single calls of 104-114 ms\n")
+
+# item R (tag r432), BC5_DIRECT_REFUSED_ENDS: a submission the device refuses is never dropped silently. Until now a
+# refusal (any rc that is not a timeout and is left after the -EFAULT retry) was journaled as "FAILED rc N" and the job
+# was lost; a later job can then wait for work that never ran (run d432T13: 142 jobs lost to -EBUSY, a GPU hang). It
+# is a host bug, so the game ends with the diagnostic record of a GPU fault (exit 86), saying "failed (rc N)".
+sub("\tif (!catch_slots.empty() && (r.timed_out || !r.pending)) catch_check(catch_slots, r.timed_out, n, kind); // experiment 0401 series e\n",
+    "\tif (!r.ok && !r.timed_out && !r.pending && r.rc != 0 && d432::refused_ends()) { // exp 0432 (tag r432)\n"
+    "\t\tjournal(\"exp 0432 (tag r432): submit #%\" PRIu64 \" %s %u dwords on ring %d was REFUSED by the device (rc %d%s): a host bug; the game ends here with a record\\n\", n, kind, num_dwords,\n"
+    "\t\t        qring, r.rc, retried ? \", after the -EFAULT retry\" : \"\");\n"
+    "\t\tstd::fprintf(stderr, \"[bc5] exp 0432 (tag r432): submit #%\" PRIu64 \" %s %u dwords on ring %d was REFUSED by the device (rc %d): the game ends here with a record\\n\", n, kind,\n"
+    "\t\t             num_dwords, qring, r.rc);\n"
+    "\t\tfr412_record_and_exit(0, 0, false, r.rc);\n"
+    "\t}\n"
+    "\tif (!catch_slots.empty() && (r.timed_out || !r.pending)) catch_check(catch_slots, r.timed_out, n, kind); // experiment 0401 series e\n")
 
 # the line
 sub("\thint_targets(ib, num_dwords);\n"

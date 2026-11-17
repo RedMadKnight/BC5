@@ -84,8 +84,8 @@ sub("        if (amdgpu_bo_cpu_map(scratch.bo, &scratch.cpu) != 0) return false;
 # the rotation later reached such a slot while it was busy, Device::submit returned -EBUSY and the host lost the job
 # (142 submissions "FAILED rc -16" in 45 s), a later job waited for work that never ran, the gfx ring timed out, its
 # reset failed and the box rebooted (run d432T13, 2026-11-17 16:15:24, fault record 20261117-161524). Build 3: every
-# slot's buffer is made once at Device::open with 512 KiB (64 MiB of GTT for the 128 slots); no job changes its slot;
-# a job over 512 KiB grows its slot as before (counted and timed).
+# slot's buffer is made once at Device::open with 256 KiB (32 MiB of GTT for the 128 slots; the top session, 2026-11-17: 64 MiB is too much on this box); no job changes its slot;
+# a job over 256 KiB grows its slot as before (counted and timed).
 sub("    void scratch_free() {\n",
     "    // exp 0432 (tag s432): see mkbe432.py, item P\n"
     "    static bool s432_prealloc() {\n"
@@ -107,10 +107,10 @@ sub("        if (wrc != 0) d->impl_->gws = nullptr;\n"
     "        int made = 0, failed = 0;\n"
     "        for (int k = 0; k < Impl::kSlots; ++k) {\n"
     "            d->impl_->cur = k;\n"
-    "            (d->impl_->scratch_reserve(512u << 10) ? made : failed)++;\n"
+    "            (d->impl_->scratch_reserve(256u << 10) ? made : failed)++;\n"
     "        }\n"
     "        d->impl_->cur = Impl::pool_first(kGfxRing);\n"
-    "        std::fprintf(stderr, \"bc5-direct: exp 0432 (tag s432): slot prealloc: %d buffers made (%d failed) in %.1f ms: every slot 512 KiB\\n\", made, failed,\n"
+    "        std::fprintf(stderr, \"bc5-direct: exp 0432 (tag s432): slot prealloc: %d buffers made (%d failed) in %.1f ms: every slot 256 KiB\\n\", made, failed,\n"
     "                     now_ms() - t0);\n"
     "    }\n"
     "    return d;\n")

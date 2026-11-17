@@ -677,10 +677,10 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
         int made = 0, failed = 0;
         for (int k = 0; k < Impl::kSlots; ++k) {
             d->impl_->cur = k;
-            (d->impl_->scratch_reserve(512u << 10) ? made : failed)++;
+            (d->impl_->scratch_reserve(256u << 10) ? made : failed)++;
         }
         d->impl_->cur = Impl::pool_first(kGfxRing);
-        std::fprintf(stderr, "bc5-direct: exp 0432 (tag s432): slot prealloc: %d buffers made (%d failed) in %.1f ms: every slot 512 KiB\n", made, failed,
+        std::fprintf(stderr, "bc5-direct: exp 0432 (tag s432): slot prealloc: %d buffers made (%d failed) in %.1f ms: every slot 256 KiB\n", made, failed,
                      now_ms() - t0);
     }
     return d;

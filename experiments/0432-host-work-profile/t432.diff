@@ -196,10 +196,10 @@ index 5403083..4bd352c 100644
  		for (uintptr_t page = page_start; page <= page_end; page++) {
  			(*g_protects)[page] = get_protection_flag(mode);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
-index 6118f2d..09fce9b 100644
+index 6118f2d..57167e1 100644
 --- a/src/libs/bc5LleAgc.cpp
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -2129,6 +2129,46 @@ static std::shared_mutex g_finish_mutex; // shared: waiting for a job on g_dev;
+@@ -2129,6 +2129,50 @@ static std::shared_mutex g_finish_mutex; // shared: waiting for a job on g_dev;
  // (the kernel clears the page-table entries at once, whatever is still running): waits until
  // everything queued so far has run. Defined with the completion queue.
  static void wait_jobs();
@@ -225,6 +225,10 @@ index 6118f2d..09fce9b 100644
 +	static const bool v = word_on("BC5_DIRECT_ANON_THREAD");
 +	return v;
 +}
++inline bool refused_ends() { // item R
++	static const bool v = word_on("BC5_DIRECT_REFUSED_ENDS");
++	return v;
++}
 +inline bool views_kept() { // item V
 +	static const bool v = word_on("BC5_DIRECT_VIEWS_KEPT");
 +	return v;
@@ -246,7 +250,7 @@ index 6118f2d..09fce9b 100644
  static Stage                                g_stage = Stage::Off;
  static constexpr uint32_t                   g_cu_mask = 0xffffffffu;
  static constexpr const char*                kRenderNode = "/dev/dri/renderD128";
-@@ -2504,6 +2544,7 @@ static void mr415_maps_check_thread() {
+@@ -2504,6 +2548,7 @@ static void mr415_maps_check_thread() {
  // 1 anything else ("verify": stage S1, the kept list is only compared).
  static int mr415_mode() {
  	static const int mode = [] {
@@ -254,7 +258,7 @@ index 6118f2d..09fce9b 100644
  		const char* e = BC5_DIAG_ENV("KYTY_BC5_MAP_RECORDS");
  		if (!bc5::load_stat::env_set(e)) return 0;
  		return std::strcmp(e, "views") == 0 ? 2 : 1;
-@@ -2555,6 +2596,7 @@ static void mr415_verify() {
+@@ -2555,6 +2600,7 @@ static void mr415_verify() {
  		bc5::load_stat::count(bc5::load_stat::kMapRecord, spans.size());
  		if (!same) {
  			bc5::load_stat::count(bc5::load_stat::kRecMismatch);
@@ -262,7 +266,7 @@ index 6118f2d..09fce9b 100644
  			static int logged = 0;
  			if (logged++ < 8) {
  				journal("map records (exp 0415, mr415): MISMATCH at generation %" PRIu64 " after %zu records: kept %zu views, rebuilt %zu, first difference at index %zu\n", gen,
-@@ -2572,16 +2614,20 @@ static void mr415_verify() {
+@@ -2572,16 +2618,20 @@ static void mr415_verify() {
  // records, both titles); the list is rebuilt from every range only every KYTY_BC5_MAP_RECORDS_CHECK_MS (2,000 when
  // unset), and at that moment the kept list is compared with it and with the old builder's list (rec_mismatch) and
  // replaced by it. If the record log reports a gap the list is rebuilt at once. Called under direct_views' mutex.
@@ -286,7 +290,7 @@ index 6118f2d..09fce9b 100644
  	static uint64_t           checked_ns = 0;
  	static const uint64_t     period_ns  = bc5::load_stat::env_num("KYTY_BC5_MAP_RECORDS_CHECK_MS", 2000, 600'000) * 1'000'000ull;
  	auto make = [](const R& r, DView* v) {
-@@ -2604,11 +2650,15 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
+@@ -2604,11 +2654,15 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
  		        &lists, &gen, &spans, &complete) &&
  		    complete) {
  			lists.resize(spans.size());
@@ -304,7 +308,7 @@ index 6118f2d..09fce9b 100644
  		}
  		bc5::load_stat::count(bc5::load_stat::kRecOverflow);
  		have = false; // the log had a gap: the kept list is not to be compared, only replaced
-@@ -2620,8 +2670,9 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
+@@ -2620,8 +2674,9 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
  		        static_cast<std::vector<R>*>(p)->push_back({start, size, offset, type, name != nullptr ? name : ""});
  	        },
  	        &ranges, &gen, &spans, &complete)) {
@@ -316,7 +320,7 @@ index 6118f2d..09fce9b 100644
  	}
  	std::vector<DView> full;
  	for (const R& r: ranges) {
-@@ -2637,26 +2688,31 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
+@@ -2637,26 +2692,31 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
  	};
  	static int logged = 0;
  	if (have && complete) {
@@ -351,7 +355,7 @@ index 6118f2d..09fce9b 100644
  }
  
  static std::shared_ptr<const DViews> direct_views(const DState& S) {
-@@ -2674,14 +2730,17 @@ static std::shared_ptr<const DViews> direct_views(const DState& S) {
+@@ -2674,14 +2734,17 @@ static std::shared_ptr<const DViews> direct_views(const DState& S) {
  	if (g != 0 && g == gen[k] && cache[k] != nullptr && (k == 0 || now - built_ns[k] < 1'000'000'000ull)) return cache[k];
  	built_ns[k] = now;
  	g_views_builds++;
@@ -372,7 +376,7 @@ index 6118f2d..09fce9b 100644
  	uint64_t sig = 1469598103934665603ull;
  	for (size_t i = 0; i < d->v.size(); i++) {
  		const auto& v = d->v[i];
-@@ -3298,6 +3357,7 @@ static LzrPass lzr_pass(DState& S, const std::vector<DView>& views, uint64_t sig
+@@ -3298,6 +3361,7 @@ static LzrPass lzr_pass(DState& S, const std::vector<DView>& views, uint64_t sig
  }
  static void lzr_confirm(DState& S, LzrPass& pass, std::vector<uint32_t>& retired) {
  	if (pass.done.empty() || !g_dev) return;
@@ -380,7 +384,7 @@ index 6118f2d..09fce9b 100644
  	if (g_dev->wait_idle(0)) return;
  	uint64_t back = 0;
  	size_t   n    = 0;
-@@ -4555,12 +4615,24 @@ static void direct_sync_one(DState& S, bool force) {
+@@ -4555,12 +4619,24 @@ static void direct_sync_one(DState& S, bool force) {
  	LzrPass lzr = lzr_pass(S, views, sig, fd, now, merged, retired, remaps, merge_map_cap);
  	// 2. the views' addresses: every (view, imported range) intersection is one GPU mapping
  	const uint64_t t_drain0 = SoftCp::now_ns(); // experiment 0169
@@ -407,7 +411,7 @@ index 6118f2d..09fce9b 100644
  	}
  	const uint64_t t_maps0 = SoftCp::now_ns();
  	g_dprof_drain_ns += t_maps0 - t_drain0;
-@@ -4581,15 +4653,44 @@ static void direct_sync_one(DState& S, bool force) {
+@@ -4581,15 +4657,44 @@ static void direct_sync_one(DState& S, bool force) {
  				want.push_back({v.va + (lo - v.off), hi - lo, lo - it->off, it->id});
  			}
  		}
@@ -454,7 +458,7 @@ index 6118f2d..09fce9b 100644
  			if (w != want.end() && *w == m) {
  				next.push_back(m);
  			} else {
-@@ -4646,6 +4747,11 @@ static void direct_sync_one(DState& S, bool force) {
+@@ -4646,6 +4751,11 @@ static void direct_sync_one(DState& S, bool force) {
  	t_fs415_ds[4] += SoftCp::now_ns() - t_maps0; // experiment 0415 (fs415d)
  	if (bc5::load_stat::on()) bc5::load_stat::add(bc5::load_stat::kDsMaps, SoftCp::now_ns() - t_maps0); // experiment 0415 (ls415c)
  	if (imported != 0) S.blocks = ~0ull; // pinning may have allocated pages: look once more
@@ -466,7 +470,7 @@ index 6118f2d..09fce9b 100644
  	for (const uint32_t id: retired) g_dev->free_shared(id);
  	guard0412_after_cuts(lzr.done.size()); // exp 0412 (tag g412c): BC5_GUARD_SPLIT
  	guard0412_synced(S); // exp 0412 (tag g412b): the ledger's view of what is imported
-@@ -4731,16 +4837,24 @@ static uint64_t direct_force(uint64_t lo, uint64_t hi) {
+@@ -4731,16 +4841,24 @@ static uint64_t direct_force(uint64_t lo, uint64_t hi) {
  // What "thread" gives up: an anonymous guest VMA that appears is walked at the first call after the thread's next pass
  // instead of at once for an urgent call (operands on it are dropped by the filter until then, as they are today for a
  // non-urgent call for up to a second). So it stays off until "verify" shows no miss.
@@ -492,7 +496,7 @@ index 6118f2d..09fce9b 100644
  	return mode;
  }
  
-@@ -4785,6 +4899,20 @@ static void as415_thread() {
+@@ -4785,6 +4903,20 @@ static void as415_thread() {
  	}
  }
  
@@ -513,7 +517,7 @@ index 6118f2d..09fce9b 100644
  // force: before a submission whose shaders may read memory the filter does not see. With the
  // direct memory on the dma-buf path (ADR 0006) what is left here are the anonymous VMAs (module
  // data, stacks, flexible memory), walked through /proc/self/maps and mincore — 0.9 ms a call,
-@@ -4793,32 +4921,66 @@ static void as415_thread() {
+@@ -4793,32 +4925,66 @@ static void as415_thread() {
  // operand of the IB is unmapped, -EFAULT from a submission) always walk.
  static void sync_mappings(bool force = false, bool urgent = false, bool must = false) { // must (exp 0415, as415): after -EFAULT, never left out
  	const uint64_t now = SoftCp::now_ns();
@@ -588,7 +592,7 @@ index 6118f2d..09fce9b 100644
  			g_as415_kick = true;
  			g_as415_cv.notify_one();
  		}
-@@ -4842,6 +5004,7 @@ static void sync_mappings(bool force = false, bool urgent = false, bool must = f
+@@ -4842,6 +5008,7 @@ static void sync_mappings(bool force = false, bool urgent = false, bool must = f
  		g_layout_gen++;
  	}
  	g_vmas = vmas;
@@ -596,7 +600,7 @@ index 6118f2d..09fce9b 100644
  	// exp 0419 phase 2: KYTY_BC5_VMA_FAST is gone; the walk over every VMA, as when it was unset
  	auto inside_vma = [&](uint64_t a, uint64_t b, bool readonly) { return bc5::sync_fast::inside_old(vmas, a, b, readonly); };
  
-@@ -4976,8 +5139,17 @@ static void sync_mappings(bool force = false, bool urgent = false, bool must = f
+@@ -4976,8 +5143,17 @@ static void sync_mappings(bool force = false, bool urgent = false, bool must = f
  	const bool as_same = g_as415_walk_valid && g_as415_walk_sig == as_sig; // experiment 0415 (as415)
  	g_as415_walk_sig   = as_sig;
  	g_as415_walk_valid = true;
@@ -614,7 +618,7 @@ index 6118f2d..09fce9b 100644
  		if (as_skip_ok) {
  			bc5::load_stat::count(bc5::load_stat::kAnonMiss);
  			static int logged = 0;
-@@ -14846,6 +15018,28 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+@@ -14846,6 +15022,28 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
  	}
  	hint_targets(ib, num_dwords);
  	const uint64_t t2 = SoftCp::now_ns();
@@ -643,6 +647,20 @@ index 6118f2d..09fce9b 100644
  	if (bc5::load_stat::on()) { // experiment 0415 (ls415c): the hold by part
  		bc5::load_stat::add(bc5::load_stat::kHoldProbe, ta - t0);
  		bc5::load_stat::add(bc5::load_stat::kHoldHints, t2 - tc);
+@@ -15617,6 +15815,13 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+ 		mec_back(r.executed_offsets);
+ 		fl_back(r.executed_offsets); // experiment 0404
+ 	}
++	if (!r.ok && !r.timed_out && !r.pending && r.rc != 0 && d432::refused_ends()) { // exp 0432 (tag r432)
++		journal("exp 0432 (tag r432): submit #%" PRIu64 " %s %u dwords on ring %d was REFUSED by the device (rc %d%s): a host bug; the game ends here with a record\n", n, kind, num_dwords,
++		        qring, r.rc, retried ? ", after the -EFAULT retry" : "");
++		std::fprintf(stderr, "[bc5] exp 0432 (tag r432): submit #%" PRIu64 " %s %u dwords on ring %d was REFUSED by the device (rc %d): the game ends here with a record\n", n, kind,
++		             num_dwords, qring, r.rc);
++		fr412_record_and_exit(0, 0, false, r.rc);
++	}
+ 	if (!catch_slots.empty() && (r.timed_out || !r.pending)) catch_check(catch_slots, r.timed_out, n, kind); // experiment 0401 series e
+ 	if (r.timed_out && fl_plan.crumbs) fl_probe(fl_plan, n, kind, true); // experiment 0404: first, before the long probe
+ 	if (!r.timed_out && r.ok && !r.pending && fl_plan.crumbs) fl_keep_done(fl_plan, n); // exp 0401 e7 (flx) A1: the last done draw, for a later timeout
 diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
 index 47cd905..4163fe4 100644
 --- a/src/libs/libAmpr.cpp
