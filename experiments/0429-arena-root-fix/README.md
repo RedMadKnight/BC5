@@ -330,3 +330,17 @@ shared binaries unchanged. Arm F (`FAST_MUTEX=1`, catcher on) runs next.
 `~/bc5-data/captures/faults/20261117-021855`), exp 0430's data; 42.3 flips/s. No arena crash before it, but by the rule a
 KERNEL run is not counted. Exposure: "fast guest mutex ON"; the mutex counter at 100,000 contended locks: 49,340 slept,
 mean sleep 100.8 µs, max 25.6 ms. Half of the contended locks still sleep, about 0.1 ms each.
+
+## Build 6 and h429S1 (2026-11-17 02:50–03:05)
+
+Exp 0430's build 7 copied and pinned to `~/bc5-work/exp0429/base0430b` (source `b8afba59`, object `a823c32e`, its private
+backend archive `1423af83`, which the object needs); `BASE0430=2` links both into normal only (`build0429.py`
+`ARCHIVE=`). Stand-in test with `FM_MODE=2`: 0 failed. **Build 6: normal `0fc7f2516bc367e5bc407b40035e79f7`, lean
+`3153793dc446b8c138361561cd4b86ac`**, 0 errors, the same 8 warnings, the shared binaries unchanged.
+
+**h429S1** (arm S, `FAST_MUTEX=2`, catcher on): **NO_CRASH to G+600** (712 s), 42.4 flips/s, no kernel line. The mutex
+counter at 140,000 contended locks: 43,959 slept (31 %, against 49 % with mode 1 in h429F1), mean sleep 120.6 µs, max
+41 ms. One clean run; the control was clean once too (h429C1), so this says nothing yet.
+
+Tally on the long route so far (counted runs only; R13: counts, not rates): C 1 clean (h429C1); Z 1 crash (h429Z1, G+10);
+M 1 crash (h429M4, G+393, build 3); X 1 crash (h429X1, G+10, build 1); S 1 clean (h429S1); F 0 counted (h429F1 KERNEL).
