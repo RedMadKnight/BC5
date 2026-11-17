@@ -488,3 +488,15 @@ From the code already read (above) and the catcher of h429Z1:
     good to make room (the console's "a lower number wins");
   - after the first rtkit refusal, rtkit is asked again only to replace an evicted thread;
   - SIGXCPU drops are logged through the watchdog.
+- **Build 10** (normal c8ea1061, lean 13c3ac84; 11:35, in a gap of exp 0430's A/B): the fixes above, plus the top's
+  remark: the runtime's main thread (`PthreadInitSelfForMainThread`, which runs the owner's help) is never promoted,
+  for any title.
+- **Check h429K2, PASS** (11:37–11:40, raw `raw/n/h429K2-r.txt`):
+  - all 8 Job Hi workers were RR (priority 6) at G+25, and the main thread was not (one "not promoted" line);
+  - 21 promotions, 0 rtkit refusals;
+  - 7 Lo workers (600) were evicted for the Hi workers;
+  - the watchdog dropped 5 threads that ran 100 ms in one slice (Havok, AK);
+  - 9 RR threads at G+25 (the 8 Hi workers and AK::AudioOutThread);
+  - NO_CRASH to G+40, 40.3 flips/s.
+
+  The set (G against M, the long route) waits for the end of exp 0430's A/B (about 13:50).
