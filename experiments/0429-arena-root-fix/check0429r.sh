@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# BC5 exp 0429: the check of candidate R before any set (the top session, 2026-11-17 11:0x): one short run of arm G on
+# the private build (play 40 s after G, about 150 s in all), and at G+25 s every thread of the emulator with its policy
+# and RR priority (ps cls/rtprio). PASS: every 'Job Hi' thread is RR, and R's log shows promotions and no rtkit refusal.
+# The demotion of spinners is reported (dropped lines, and the RR threads at the end); MainThread's pause loop is the
+# expected one. One BOX-LOCK line (chainlock0417.inc). usage (on the box): bash ~/bc5-work/exp0429/check0429r.sh <tag>
+set -u
+ulimit -c 0
+W=$HOME/bc5-work; HERE=$W/exp0429; T=${1:?a tag}
+BIN=$W/exp0429/normal/kyty_emulator; WORDS=$W/exp0413/n/words0413nz.txt
+WANT=$(cat "$W/exp0429/normal/binary.md5")
+. "$W/exp0413/n/chainlock0417.inc"
+chain_claim "exp 0429: R check $T (one short run, arm G, about 3 min)" 6 || { echo "no lock"; exit 1; }
+trap chain_release EXIT
+N_WALK_AFTER=1 N_SLOT=4 P_BIN=$BIN P_WANT=$WANT P_WORDS=$WORDS bash "$HERE/run0429f.sh" "$T" G 40 \
+  KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_RR=1 > "$HERE/check-$T.run" 2>&1 &
+RP=$!
+sleep 133
+P=$(pgrep -n '^kyty_emulator')
+if [ -n "$P" ]; then
+  ps -L -o tid,cls,rtprio,comm -p "$P" > "$HERE/check-$T.ps"
+fi
+wait $RP
+L=$HERE/n/raw/$T-play.log; [ -s "$L" ] || L=$HERE/n/play-last.log
+hi=$(grep -c ' Job Hi' "$HERE/check-$T.ps" 2> /dev/null); hirr=$(grep ' Job Hi' "$HERE/check-$T.ps" 2> /dev/null | grep -c ' RR ')
+prom=$(grep -ac 'exp 0429 R: promoted' "$L"); ref=$(grep -ac 'exp 0429 R: rtkit refused' "$L"); drop=$(grep -ac 'exp 0429 R: dropped' "$L")
+echo "check $T: Job Hi threads $hi, of them RR $hirr; promoted $prom, refused $ref, dropped $drop; RR threads at G+25: $(grep -c ' RR ' "$HERE/check-$T.ps" 2> /dev/null)"
+grep ' RR \|MainThread' "$HERE/check-$T.ps" 2> /dev/null | head -20
+grep -a 'exp 0429 R: dropped\|exp 0429 R: rtkit refused' "$L" | head -8
+tail -1 "$HERE/check-$T.run" | cut -c1-200
+[ "$hi" -ge 1 ] && [ "$hi" = "$hirr" ] && [ "$ref" = 0 ] && [ "$prom" -ge 1 ] && echo "check $T: PASS" || echo "check $T: FAIL"

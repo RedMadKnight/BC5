@@ -465,3 +465,26 @@ From the code already read (above) and the catcher of h429Z1:
     `raw/int0429-try1.out`.
 - `backend/kytyplus-patches/0001-bc5-lle-agc.patch` on this branch is the new shared patch bc39a035 (main's 9e7c4514
   plus the removal; at a merge, this branch's version of that file is the right one).
+
+## Candidate R on the box (2026-11-17 10:39–11:07)
+
+- **Build 7** (normal 6ba312b8): R's sleep hook was missing, because the edit that adds it to semaphore.cpp failed
+  unnoticed. R switched on but promoted nothing. Runs h429G1 (TARGET G+76) and h429G2 (TARGET G+56) therefore did
+  not test R. The control in between, **h429M7** (arm M, valid), crashed at G+95.
+- **Build 8** (normal e564f440, with the hook): every rtkit call failed with "no system bus". The normal build runs in
+  the distrobox, which has no `/run/dbus`; the host's socket is at `/run/host/run/dbus/system_bus_socket`, and the
+  container shares the host's PID namespace (checked with busctl and /proc/self/ns/pid). Run h429G3 (TARGET G+313) did
+  not test R either. mk0429.py now stops if the hook did not land.
+- **Build 9** (normal 5b082c6a, lean 6095973a, the host-bus fallback). The top's rule: a check run of at most 3 minutes
+  before any set. **Check h429K1, FAIL** (raw `raw/n/h429K1-r.txt`):
+  - rtkit granted RR 17 times. MainThread was promoted and was back to SCHED_OTHER by G+25 (SIGXCPU, so the spinner's
+    demotion works). The watchdog dropped two Havok Solve threads.
+  - 7 of 8 Job Hi workers were RR. Job Hi 5 arrived when the cap of 14 was reached (the Lo workers arrived first).
+  - 16 threads were held at once: the cap check raced.
+  - After 17 grants rtkit refused (its per-user limit with the desktop's own RT threads, TODO(verify) its value).
+- **Fixed offline, for build 10:**
+  - the cap is reserved atomically;
+  - when the cap is full, the holder with the numerically highest guest priority above the newcomer's is dropped for
+    good to make room (the console's "a lower number wins");
+  - after the first rtkit refusal, rtkit is asked again only to replace an evicted thread;
+  - SIGXCPU drops are logged through the watchdog.

@@ -34,9 +34,14 @@ constexpr int64_t kSoftUs     = 20000;
 constexpr int64_t kHardUs     = 200000;
 constexpr int     kRrMax      = 20; // rtkit's MaxRealtimePriority on the box (2026-11-17)
 static std::atomic<int> g_tid[kMaxSlots];      // RR threads (0: free)
+static std::atomic<int> g_slot_prio[kMaxSlots]; // their guest priorities
+static std::atomic<int>  g_xcpu_tid {0};       // the last thread SIGXCPU dropped (logged by the watchdog)
+static std::atomic<bool> g_rtkit_full {false};   // rtkit refused once: ask again only to replace an evicted thread
 static std::atomic<int> g_held {0};            // how many hold RR now
 static std::atomic<int> g_calls {0};           // rtkit calls made
+#ifndef BC5_LEAN
 static std::atomic<int> g_logged {0};
+#endif
 static std::atomic<int> g_spinner_tid[kMaxSlots]; // dropped for good
 static int              g_cap = 0;
 
@@ -98,7 +103,9 @@ static void ResetSoft() {
 }
 static void OnXcpu(int) { // bound 1: the kernel sends SIGXCPU to the RR thread that passed the soft limit
 	const int self = static_cast<int>(RawSyscall3(SYS_gettid, 0, 0, 0));
-	Drop(self);
+	if (Drop(self)) {
+		g_xcpu_tid.store(self, std::memory_order_relaxed);
+	}
 	ResetSoft(); // the kernel raised the soft limit by a second; put it back below the hard one
 }
 static void Watchdog() { // bound 2
@@ -110,6 +117,9 @@ static void Watchdog() { // bound 2
 	Seen seen[kMaxSlots] {};
 	for (;;) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(5));
+		if (const int x = g_xcpu_tid.exchange(0); x != 0) {
+			Log("dropped by SIGXCPU (20 ms without blocking)", x, "", 0, 0, 0);
+		}
 		const auto now = static_cast<uint64_t>(std::chrono::steady_clock::now().time_since_epoch().count());
 		for (int i = 0; i < kMaxSlots; i++) {
 			const int tid = g_tid[i].load(std::memory_order_relaxed);
@@ -274,28 +284,55 @@ static void Apply(Pthread thread, bool sleeper) {
 	if (held || !sleeper || prio >= 700 || IsSpinner(tid)) {
 		return;
 	}
-	if (g_held.load() >= g_cap || g_calls.load() >= 24) {
-		static std::atomic<int> once {0};
-		if (once.fetch_add(1) < 4) {
-			Log("not promoted (cap or rtkit budget)", tid, thread->name.c_str(), prio, 0, 0);
+	// a place under the cap, reserved atomically; when the cap is full, the holder with the numerically highest guest
+	// priority above ours is dropped for good to make room (the console's order: a lower number wins)
+	bool evicted = false;
+	if (g_held.fetch_add(1) >= g_cap) {
+		g_held.fetch_sub(1);
+		int victim = 0, vprio = prio;
+		for (int i = 0; i < kMaxSlots; i++) {
+			const int t = g_tid[i].load(std::memory_order_relaxed);
+			const int p = g_slot_prio[i].load(std::memory_order_relaxed);
+			if (t != 0 && p > vprio) {
+				victim = t;
+				vprio  = p;
+			}
 		}
+		if (victim == 0 || !Drop(victim)) {
+			Log("not promoted (the cap, no holder of a lower priority)", tid, thread->name.c_str(), prio, 0, 0);
+			return;
+		}
+		Log("evicted for a higher priority", victim, "", vprio, 0, 0);
+		evicted = true;
+		if (g_held.fetch_add(1) >= g_cap) {
+			g_held.fetch_sub(1);
+			return;
+		}
+	}
+	if (g_calls.load() >= 24 || (g_rtkit_full.load() && !evicted)) {
+		g_held.fetch_sub(1);
+		Log("not promoted (rtkit's budget)", tid, thread->name.c_str(), prio, 0, 0);
 		return;
 	}
 	const int  rr = RrOf(prio);
 	const long rc = RtkitMakeRealtime(static_cast<uint64_t>(tid), static_cast<uint32_t>(rr));
 	if (rc != 0) {
+		g_held.fetch_sub(1);
+		g_rtkit_full.store(true);
 		Log("rtkit refused", tid, thread->name.c_str(), prio, rr, rc);
 		return;
 	}
-	for (auto& s: g_tid) {
+	for (int i = 0; i < kMaxSlots; i++) {
 		int z = 0;
-		if (s.compare_exchange_strong(z, tid)) {
-			g_held.fetch_add(1, std::memory_order_relaxed);
+		if (g_tid[i].compare_exchange_strong(z, tid)) {
+			g_slot_prio[i].store(prio, std::memory_order_relaxed);
 			Log("promoted", tid, thread->name.c_str(), prio, rr, rc);
 			return;
 		}
 	}
-	Drop(tid); // no slot: give it back
+	g_held.fetch_sub(1);
+	struct { int prio; } p0 {0};
+	RawSyscall3(SYS_sched_setscheduler, tid, SCHED_OTHER | 0x40000000, reinterpret_cast<long>(&p0)); // no slot: give it back
 }
 } // namespace bc5_0429r
 
