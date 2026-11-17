@@ -146,6 +146,8 @@ struct Store {
 	};
 	std::map<uint64_t, Kept>                   f6_kept; // F6: label -> the last wait kept for the GPU, watched until the label holds ref again
 	uint64_t                                   f6_long = 0; // F6: kept waits whose label did not come back within 1 s with no writer in flight
+	std::map<uint64_t, uint64_t>               f6_by_label;  // F6: kept waits per label (how many distinct labels it covers)
+	uint64_t                                   f6_shared = 0; // F6: not kept because the waiter's host ring carries more than one guest queue
 	uint64_t                                   c[kTypes] {};
 	uint64_t                                   waited_ns = 0;
 };
@@ -272,8 +274,8 @@ inline void job_submitted(const uint32_t* ib, uint32_t num_dwords, const std::ve
 	static uint64_t last_f5 = 0; // F5's line without G (the shared form too): the orders kept against the orders skipped
 	if (!g_on() && f3_on() && now - last_f5 > 60'000'000'000ull) {
 		last_f5 = now;
-		journal("ho430 F5 (exp 0430): t %.1f s: F3 presets %" PRIu64 ", not stale %" PRIu64 ", refused %" PRIu64 "; F4 fences %" PRIu64 ", F2 waited %" PRIu64 ", F5 skipped %" PRIu64 " (precise %s), F6 kept %" PRIu64 " (keep %s), F6 kept waits not back in 1 s %" PRIu64 "\n", timing_now(), s.c[kF3Preset], s.c[kF3NotStale], s.c[kF3Refused],
-		        s.c[kF4Fence], s.c[kF2Waited], s.c[kF5Skip], f5_on() ? "on" : "off", s.c[kF6Kept], f6_on() ? "on" : "off", s.f6_long);
+		journal("ho430 F5 (exp 0430): t %.1f s: F3 presets %" PRIu64 ", not stale %" PRIu64 ", refused %" PRIu64 "; F4 fences %" PRIu64 ", F2 waited %" PRIu64 ", F5 skipped %" PRIu64 " (precise %s), F6 kept %" PRIu64 " (keep %s), F6 kept waits not back in 1 s %" PRIu64 ", F6 labels %zu, not kept on a shared ring %" PRIu64 "\n", timing_now(), s.c[kF3Preset], s.c[kF3NotStale], s.c[kF3Refused],
+		        s.c[kF4Fence], s.c[kF2Waited], s.c[kF5Skip], f5_on() ? "on" : "off", s.c[kF6Kept], f6_on() ? "on" : "off", s.f6_long, s.f6_by_label.size(), s.f6_shared);
 	}
 #ifndef HO430_SHARED
 	static bool         at_done = false; // BC5_0430_G_AT: one dump in a clean run
@@ -485,6 +487,21 @@ inline bool keep_cross(const uint32_t* p, bool is64, uint64_t label, const char*
 		for (const auto& w: g_plw)
 			if (w.label == label) return false; // a writer in flight: F2/F4/F5 decide
 	}
+	{ // the top's guard (2): only when the waiter's guest queue has its host ring to itself (way 2's queue -> ring map); a kept
+	  // wait must not block another guest queue's writer that shares the ring (the console runs those queues apart)
+		int sharing = 0;
+		{
+			std::lock_guard lq(g_w428_mu);
+			for (const auto& [q, e]: g_w428_qring)
+				if (e.n > 0 && e.ring == ring) sharing++;
+		}
+		if (sharing != 1) {
+			Store&          s = st();
+			std::lock_guard lk(s.m);
+			s.f6_shared++;
+			return false;
+		}
+	}
 	Ev x    = ev(kF6Kept, label, kind, ring, off);
 	x.value = ref;
 	add(x);
@@ -492,6 +509,7 @@ inline bool keep_cross(const uint32_t* p, bool is64, uint64_t label, const char*
 		Store&          s = st();
 		std::lock_guard lk(s.m);
 		s.f6_kept[label] = Store::Kept {SoftCp::now_ns(), ref, is64, ring};
+		s.f6_by_label[label]++;
 	}
 	static std::atomic<uint64_t> n_k {0};
 	const uint64_t               k = n_k++;
