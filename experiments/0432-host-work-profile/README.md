@@ -172,7 +172,93 @@ default, one-ring arms, recovery as a fix.
 
 ## Result
 
-(pending: the profile slot is after exp 0430's A/B and exp 0429's set, about 14:45 on 2026-11-17)
+### Result 1 (2026-11-17, laptop, from the journals of two runs): the 1.07 s block is not the unmap wait
+
+Read on the box in exp 0430's gap: the `frame profile`, `timing split` and `direct:` lines of
+`~/bc5-data/captures/play-20261117-0908/gc/direct.log` (the maintainer's play, 2,183 s) and of `play-20261117-1245`
+(exp 0430's Q1 run, 1,612 s), copied once and analysed with `an0432.py`. A first count on the box used a broken awk
+function; its numbers are not used.
+
+- The frame at t 559.141 of the 12:45 run: 1,117.8 ms since the last flip, "sync 0.7, hints 0.4, prepare 1070.2",
+  "prepare = filter 2.1 + tracker 0.3 + cu 1.1 + nested 2.7 + copy 1063.8"; the timing line beside it "drain 0.0 in 1".
+  The time is in the backend's copy part (`backend/src/direct.cpp` 1320-1373), whose only system calls are those of
+  `Impl::scratch_reserve` (446-489): a slot whose buffer is too small is CPU-unmapped, GPU-unmapped, freed, allocated
+  at the exact new size, GPU-mapped at the same address and CPU-mapped. The 128 slots are used round-robin and grow one
+  by one. Which call blocks is not known. Same second in the journal: "ho430 F6: a wait kept on ring -1 ... 1089 ms ago".
+- A copy part over 200 ms: his play 4 times (491, 1118, 590, 243 ms, at t 42-65 s), the 12:45 run twice (744 ms at
+  162 s, 1064 ms at 559 s).
+- The unmap wait (item D): his play 4.5 s in 37,856 drains (0.2 % of the run; largest 128-submission window 26.4 ms);
+  the 12:45 run 0.9 s in 4,689 (0.06 %; 23.1 ms).
+
+| | his play 09:08 | 12:45 route run |
+|---|---|---|
+| frames, flips/s | 52,843 parsed, 24.2 | 68,530 parsed, 42.5 |
+| frames over 100 ms | 1,684 (217 s) | 19 (4.4 s) |
+| frame time: outside the host / GPU busy | 1,221 s (56 %) / 788 s (36 %) | 902 s (56 %) / 968 s (60 %) |
+| game thread in the host | 643 s (30 %) | 382 s (24 %) |
+| - sync | 341 s | 63 s |
+| - hints | 56 s | 22 s |
+| - prepare (of it copy) | 134 s (16 s) | 161 s (18 s) |
+| - cs | 101 s | 135 s |
+| at the flip (drain) | 311 s | 323 s |
+| frames with sync over 20 ms | 2,976 (145 s, max 141 ms) | 636 (17 s, max 84 ms) |
+| timing split, all threads: probe | 91 s | 34 s |
+| - anonymous sync | 158 s | 38 s |
+| - direct sync: views / scan / merge / drain / maps | 162 / 31 / 17 / 4.5 / 200 s | 12 / 7 / 3 / 0.9 / 12.5 s |
+| - maps: want / drop / add | 99 / 68 / 32 s | 6.9 / 3.9 / 1.5 s |
+| - learned / hints | 58 / 24 s | 4 / 22 s |
+| mapping rebuilds ("direct:" lines) | 37,839 (17 a second), up to 30,631 views | 4,670, up to 16,543 views |
+
+72-75 frame lines per file did not parse (cut lines) and are left out. The 09:08 play ran on a build with exp 0430's
+catchers (as the top session described it), so its absolute figures carry their cost; the parts above are the host's own.
+
+Reading: in his play the host's sync is 15.7 % of frame time and the unmap wait 0.2 %. A layout change (17 a second)
+rebuilds the view list (4.3 ms each) and the mapping list (5.3 ms) over every view, and the anonymous walk and the
+probe add 158 s and 91 s. The route run shows almost none of it, which is why route numbers do not show his stutter.
+
+### Result 2 (2026-11-17 13:43-14:21, box): item D alone in his scene
+
+Private build `eb96f4e5` (the shared unit b8afba59 + `mkd432.py`, edited unit 0bdd223b; 0 errors; the shared binary
+0de9349b unchanged), `scene0432.sh`, order D S D S O, the 09:46 snapshot (91bb80e5fd85ca56), slot 4, no input, RT on,
+300 s from G. Kernel 7.3.3-ogc1.1.fc45, boot 212971ac. All five NO_CRASH, 0 kernel lines in the laptop's stream, no new
+fault record. The first start of the series ended before any run on a launch-line bug of `scene0432.sh` (fixed).
+
+| run | arm | flips/s from G+10 s | seconds with a gap over 100 ms (of ~292) | drains | unmaps with a ring busy |
+|---|---|---|---|---|---|
+| d432D1 | D | 34.4 | 76 | 0 | 5,354 (74 BOs retired) |
+| d432S2 | shared | 31.9 | 98 | not counted | - |
+| d432D3 | D | 33.0 | 89 | 0 | 5,661 (8 BOs) |
+| d432S4 | shared | 31.0 | 114 | not counted | - |
+| d432O5 | the D binary, switch 0 | 34.3 | 76 | 4,474: 529.5 ms in all, longest 21.0 ms | 0 |
+
+- The switch shows no effect on speed (D against O), as Result 1 predicted (0.13 % of the run in O).
+- Mappings went and BOs were freed while a ring was busy about 5,500 times a run with no fault: the kernel's deferral
+  held in these two runs. Two runs are not a proof.
+- The 2-3 flips/s between the private binary and the shared one is not explained: two runs each, S always after D,
+  and inside the spread earlier notes give for one build (41.5-46.7 on the route). Not a result.
+- In every arm the sync + hints part of one submission reached 828-864 ms and was over 20 ms 631-765 times in the run;
+  about 283 of 292 gameplay seconds have a gap over 50 ms.
+
+### The ONE test build (prepared 2026-11-17, not compiled yet)
+
+`t432.diff` (1ccb514f; `mktree432.sh`, `mkt432.py`) and `be/direct.cpp` (9975d8ee; `mkbe432.py`), built by
+`box0432.sh buildbe` and `buildt`. Each item is on unless its word is "0":
+
+| Item | Word | What |
+|---|---|---|
+| D | `BC5_DIRECT_UNMAP_NOWAIT` | no wait for an idle GPU before a mapping change |
+| S | `BC5_DIRECT_SLOT_GROW` | a slot buffer grows to the next power of two (at least 64 KiB); every resize timed by step, printed over 20 ms |
+| A | `BC5_DIRECT_ANON_EVENTS` | exp 0415's "events" form (tag as415c, its kit L6, never compiled): the anonymous walk only after a counted map or protect call, -EFAULT or a reopen, and on the old timing while an anonymous guest VMA exists |
+| V | `BC5_DIRECT_VIEWS_KEPT` | exp 0415's kept view list (tag mr415d, kit L6): change records applied in place, the full build as a check every 2 s |
+| M | `BC5_DIRECT_MAPS_FAST` | the mapping rebuild merges its two ordered runs instead of sorting and finds dropped mappings by one forward walk; `test_m432.cpp` 20,000 cases PASS on the laptop (a hand copy of the statements) |
+
+Exp 0415's L6 diff was ported to patch bc39a035 on a local tree (KytyPlus f266548 + the patch; the unit reads
+b8afba59). Left out: its semaphore statistics, its new load_stat causes (that header is included by units this build
+does not recompile; the counts go to this build's own line) and two rejected hunks (a journal line, a statistic).
+Not in this build: the mapping rebuild for changed ranges only (three per-view passes, one depending on what the title
+has written); a second build, sized by what the timing lines show is left after M.
+
+(pending: the A/B of the test build in his scene and on the route; the perf profile of the normal and lean builds)
 
 ## Verdict
 
