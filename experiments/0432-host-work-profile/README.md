@@ -506,6 +506,33 @@ Ways to get the time back without holding a buffer, by what the records support:
 Not known: the real count of game-thread submissions per frame without the hold (exp 0430's Z1 journal has it); how
 much of the 3.1 ms is the mutex wait growing with more acquisitions. One run per arm stands behind the 11 %.
 
+### Note 8 (2026-11-17 evening, laptop, a design, nothing built): the kernel submit outside the device mutex
+
+Two mutexes cover a whole submission today: the host's `g_dev_mutex` (`submit_now`: probe, syncs, hints, then
+`Device::submit`) and the backend's `Impl::mutex` (`Device::submit`, `backend/src/direct.cpp`, from the filter to
+after `amdgpu_cs_submit`). The kernel call is 0.13-0.15 ms of the 0.36 ms an acb holds them and 0.23 of the 1.0-1.2 ms
+of a dcb chain (note 7), so the two submitting threads (the game thread on the GFX ring, `bc5-ring` on the compute
+rings) wait for each other's kernel calls.
+
+What the kernel call relies on that the mutexes give it today, and what would give it instead:
+
+| relied on | why | without the mutex |
+|---|---|---|
+| order of jobs on one ring | a job is prepared against the state the ring's last job left (`hi_reg`, the tracker), and its slot comes from the ring's pool by rotation | a lock per ring, taken first and held from the prepare to the kernel call's return; never taken while a device mutex is held |
+| the mappings a prepared job reads are still there | item D: the kernel orders a page-table clear only behind jobs it already has | a shared lock held from the prepare to the call's return; a rebuild that drops a mapping or frees a buffer takes it exclusively (about 17 a second against about 1,000 submissions); adding mappings needs nothing |
+| the kept buffer list's handle | another submission replaces and destroys `full_list` when the buffers changed | the list is destroyed only when no job in flight uses it (a count on the handle) |
+| the slot's records (`slot_seq`, `last_seq`, the snapshot commit) | written after the call from its `seq_no` | the backend's mutex taken again for these few lines |
+
+Size, before anything is built: the game thread waits 3.0-3.4 ms a frame for the mutex with the hold (note 7). Only
+the part of that spent behind another thread's kernel call goes: about 40 % of an acb's hold, so about 1.2-1.4 ms a
+frame for the game thread (4-5 %), and the like for `bc5-ring`. That is under half of the hold's 3.1 ms. The rest
+of the wait is behind the other thread's sync and prepare, which items W, M and X shorten. These are estimates from
+averages; the run without the hold (exp 0430's h430Z1) is to be read in the next slot to replace them.
+
+Risk: it changes the path that submits to the GPU, in the backend and the host at once. A mistake in the second row
+is a GPU page fault; in the first, a job run against the wrong state. It goes into a build only behind a switch,
+off by default, after the profile shows the kernel call where these averages put it.
+
 ## Verdict
 
 (pending)
