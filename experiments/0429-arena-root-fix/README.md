@@ -322,3 +322,11 @@ control does not always crash on the long route; the counts must be read with th
 **Build 5** (01:38–01:41, BOX-LOCK, CPU only, exp 0430's build-6 object as in build 4): **normal
 `41669d9aed6454baee3cdbea95cf23ce`, lean `4bf6c7e90f94a0cb4803991b43666a32`**, 0 errors, the same 8 warnings, the
 shared binaries unchanged. Arm F (`FAST_MUTEX=1`, catcher on) runs next.
+
+## h429F1 (2026-11-17 02:10–02:19, build 5, arm F)
+
+`FAST_MUTEX=1`, catcher on: **CLASS KERNEL**, a GPU page fault at 526 s = G+418 (thread bc5-ring, address
+0x18f22df4b000, status 0x006C1071, ring reset succeeded, 120 kernel lines, record
+`~/bc5-data/captures/faults/20261117-021855`), exp 0430's data; 42.3 flips/s. No arena crash before it, but by the rule a
+KERNEL run is not counted. Exposure: "fast guest mutex ON"; the mutex counter at 100,000 contended locks: 49,340 slept,
+mean sleep 100.8 µs, max 25.6 ms. Half of the contended locks still sleep, about 0.1 ms each.
