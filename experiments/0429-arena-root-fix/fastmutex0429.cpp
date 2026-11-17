@@ -12,15 +12,21 @@
 // build: KYTY_BC5_0429_WAITS=1 also prints, every 20,000 contended locks, how many slept and their mean and max sleep.
 #ifdef __linux__
 #include <linux/futex.h>
-static bool Bc5FastMutex() {
-	static const bool v = [] {
-		const bool on = bc5::env_rule::on(std::getenv("KYTY_BC5_0429_FAST_MUTEX"));
+// 1: a contended lock spins 64 `pause` before it sleeps; 2: up to 4096 `pause` (tens of microseconds) while the word is
+// held, as an adaptive mutex spins while its holder runs (h429F1: with 1, half the contended locks slept, 0.1 ms each).
+static int Bc5FastMutexMode() {
+	static const int v = [] {
+		const char* e = std::getenv("KYTY_BC5_0429_FAST_MUTEX");
+		const int   m = bc5::env_rule::on(e) ? (e[0] == '2' ? 2 : 1) : 0;
 #ifndef BC5_LEAN
-		std::fprintf(stderr, "[bc5] exp 0429: fast guest mutex %s\n", on ? "ON" : "off");
+		std::fprintf(stderr, "[bc5] exp 0429: fast guest mutex %s (%d)\n", m != 0 ? "ON" : "off", m);
 #endif
-		return on;
+		return m;
 	}();
 	return v;
+}
+static bool Bc5FastMutex() {
+	return Bc5FastMutexMode() != 0;
 }
 
 #ifndef BC5_LEAN
@@ -94,7 +100,8 @@ static int Bc5FastMutexLock(PthreadMutexPrivate* mutex, Pthread self, KernelUsec
 		bool     slept = false;
 		uint64_t t0    = 0;
 		bool     got   = false;
-		for (int i = 0; i < 64 && !got; i++) { // a short spin while the holder is likely running
+		const int spins = Bc5FastMutexMode() == 2 ? 4096 : 64;
+		for (int i = 0; i < spins && !got; i++) { // a spin while the holder is likely running
 			_mm_pause();
 			expected = 0;
 			got      = w.load(std::memory_order_relaxed) == 0 &&

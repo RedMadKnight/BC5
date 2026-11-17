@@ -45,7 +45,7 @@ static void check(bool ok, const char* what) {
 }
 
 int main() {
-	setenv("KYTY_BC5_0429_FAST_MUTEX", "1", 1);
+	setenv("KYTY_BC5_0429_FAST_MUTEX", std::getenv("FM_MODE") != nullptr ? std::getenv("FM_MODE") : "1", 1);
 	setenv("KYTY_BC5_0429_WAITS", "1", 1);
 	check(Bc5FastMutex(), "the switch reads on");
 	PthreadMutexPrivate m;

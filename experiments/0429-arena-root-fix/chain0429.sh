@@ -13,6 +13,7 @@
 #   CHAIN_SET=smoke3:  h429M4 (build 3, the run-time CPU mapping; every arm also BC5_0430_G=0: exp 0430's catcher off for timing)
 #     Z  M + KYTY_BC5_0429_PRIO_ORDER=2 (the job-worker band 450-549 at nice -3, lower priorities below it)
 #     F  KYTY_BC5_0429_FAST_MUTEX=1 (build 5: the guest mutex as a user-space lock word, futex only when contended)
+#     S  KYTY_BC5_0429_FAST_MUTEX=2 (build 6: F with an adaptive spin of up to 4096 pause before the futex sleep)
 #   every arm from build 4 on also KYTY_BC5_0429_WAITS=1 (the wait catcher: where each thread is at the fault)
 #   CHAIN_SET=screen3: h429C1 h429Z1 h429M5 h429C2 h429Z2 h429M6 (or one or two at a time: rep<k> with REP_TAGS)
 #   CHAIN_SET=screen2: h429C1 h429M2 h429Y1 h429X2 h429C2 h429M3 h429Y2 h429X3
@@ -36,10 +37,11 @@ WANT=$(cat "$W/exp0429/normal/binary.md5"); MB=$(md5sum < "$BIN" | cut -d' ' -f1
 case "$SET" in
   smoke2) TAGS="h429M1" ;;
   smoke3) TAGS="h429M4" ;;
+  night) TAGS="h429S1 h429C3 h429F2 h429S2 h429C4 h429F3 h429S3" ;;  # the 03:00 piece, build 6
   screen3) TAGS="h429C1 h429Z1 h429M5 h429C2 h429Z2 h429M6" ;;  # build 4: + the wait catcher in every arm, arm Z  # build 3: the run-time CPU mapping, on exp 0430's fix object
   screen2) TAGS="h429C1 h429M2 h429Y1 h429X2 h429C2 h429M3 h429Y2 h429X3" ;;
   rep[0-9]*) TAGS=${REP_TAGS:?REP_TAGS for a rep set} ;;
-  *) say "NOT STARTED, CHAIN_SET is smoke2, smoke3, screen2, screen3 or rep<k>"; exit 1 ;;
+  *) say "NOT STARTED, CHAIN_SET is smoke2, smoke3, screen2, screen3, night or rep<k>"; exit 1 ;;
 esac
 mkdir -p "$R" || exit 1
 for t in $TAGS; do { [ -e "$R/$t-start.txt" ] || [ -e "$R/$t-end.txt" ] || [ -e "$R/${t}R-start.txt" ]; } && { say "NOT STARTED, tag $t used"; exit 1; }; done
@@ -52,6 +54,7 @@ armwords() {
     h429Y*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_PRIO_ORDER=1" ;;
     h429Z*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_PRIO_ORDER=2" ;;
     h429F*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_FAST_MUTEX=1" ;;
+    h429S*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_FAST_MUTEX=2" ;;
     h429X*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_PRIO_ORDER=1 KYTY_BC5_0425_HANDOFF_US=300" ;;
     *) return 1 ;;
   esac
