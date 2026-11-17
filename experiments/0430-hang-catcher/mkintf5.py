@@ -38,7 +38,7 @@ r('undo() { echo "int0430: FAILED: $*; undoing"; UNDO_IN_INT=1 bash "$HERE/undo0
   'undo() { echo "int0430f5: FAILED: $*; undoing"; UNDO_IN_INT=1 X=$X bash "$HERE/undo0430.sh"; exit 1; }')
 r('stop() { echo "int0430 STOP: $*"; exit 1; }', 'stop() { echo "int0430f5 STOP: $*"; exit 1; }')
 r("for f in mkswap0430.py ho430.cpp undo0430.sh be/direct.cpp be/direct.hpp; do",
-  "for f in mkf5.py ho430.cpp ho430.b8.cpp undo0430.sh; do")
+  "for f in mkf5.py ho430.f5.cpp ho430.b8.cpp undo0430.sh; do")
 r('chain_claim "exp 0430: shared swap, the hang fix (ho430: F3 + F4, F2 fallback; the backend archive rebuilt), patch $PIN_OLD + 0430; normal and lean rebuilt (CPU only, no emulator)" 40',
   'chain_claim "exp 0430: shared swap of F5 (the precise form, BC5_DIRECT_XQ_PRECISE), patch $PIN_OLD + F5; normal and lean rebuilt (CPU only, no emulator)" 30')
 r('python3 -I "$HERE/mkswap0430.py" "$K" || undo "mkswap0430.py refused"', 'python3 -I "$HERE/mkf5.py" "$K" || undo "mkf5.py refused"')

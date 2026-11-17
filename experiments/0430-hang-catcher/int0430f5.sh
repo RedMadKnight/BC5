@@ -27,7 +27,7 @@ stop() { echo "int0430f5 STOP: $*"; exit 1; }
 undo() { echo "int0430f5: FAILED: $*; undoing"; UNDO_IN_INT=1 X=$X bash "$HERE/undo0430.sh"; exit 1; }
 # 1
 pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
-for f in mkf5.py ho430.cpp ho430.b8.cpp undo0430.sh; do [ -s "$HERE/$f" ] || stop "kit: $f missing"; done
+for f in mkf5.py ho430.f5.cpp ho430.b8.cpp undo0430.sh; do [ -s "$HERE/$f" ] || stop "kit: $f missing"; done
 [ "$(m8 "$U3")" = "$U3_OLD" ] && [ "$(m8 "$U4")" = "$U4_OLD" ] || stop "the shared backend source is $(m8 "$U3") / $(m8 "$U4"), not $U3_OLD / $U4_OLD"
 [ "$(m8 "$ARCH")" = "$ARCH_OLD" ] || stop "the shared archive is $(m8 "$ARCH"), not $ARCH_OLD"
 for b in kytyplus-build kytyplus-build-lean; do distrobox enter ubuntu -- sh -c "cd '$W/$b' && ninja -t compdb -x" < /dev/null 2> /dev/null | grep -q "$BES/include" || stop "the KytyPlus build $b does not include $BES/include"; done
