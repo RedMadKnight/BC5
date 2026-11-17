@@ -20,7 +20,7 @@ export LC_ALL=C LANGUAGE=C
 W=$HOME/bc5-work; N=$W/exp0413/n; K=$HOME/src/KytyPlus; HERE=$(cd "$(dirname "$0")" && pwd); X=$W/exp0429/swap
 NB=$W/kytyplus-build/src/kyty_emulator; LB=$W/kytyplus-build-lean/src/kyty_emulator; ARCH=$W/backend-ubuntu/libbc5_backend.a
 CFG=$W/input.cfg
-PIN_OLD=9e7c4514; NORMAL_OLD=6044be08; LEAN_OLD=d239d4bf; PIN_NEW=fcedb6cd
+PIN_OLD=9e7c4514; NORMAL_OLD=6044be08; LEAN_OLD=d239d4bf; PIN_NEW=bc39a035
 m8() { md5sum < "$1" | cut -c1-8; }
 tdiff() { git -C "$K" diff --no-color f266548 | md5sum | cut -c1-8; }
 stop() { echo "int0429 STOP: $*"; exit 1; }

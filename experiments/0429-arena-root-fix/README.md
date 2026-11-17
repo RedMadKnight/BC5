@@ -442,3 +442,26 @@ From the code already read (above) and the catcher of h429Z1:
   - It needs one read on the box first: `ulimit -r` and `ulimit -e` for his user, and rtkit's limits (MaxRealtimePriority,
     RTTimeUSecMax, the per-user thread cap). A simpler, weaker fallback without privilege: SCHED_IDLE for guest
     threads of the background band (priority above the Lo workers' band), so that any woken normal thread preempts them.
+
+## The shared swap (2026-11-17 09:46–09:50, the top's GO after his play at 09:45)
+
+- **Before the swap:** the stand-in test of undo0429.sh on the box passed 17 of 17. BOX-LOCK still held exp 0430's
+  line, which itself said "released" (08:54, written when it stopped D2 for his play), so it was emptied with a
+  BOX-QUEUE note.
+- **Try 1 (09:46):** int0429 stopped by itself after mkswap and undid everything (patch 9e7c4514, normal 6044be08,
+  lean d239d4bf back, input.cfg untouched). The patch check had found "job-arena" in this experiment's own comment on
+  the silent-accept line. The comment now reads "the workaround of exp 0359 is gone".
+- **Try 2 (09:48–09:49):** passed every check.
+  - **Patch 9e7c4514 → bc39a035:** exp 0372 lines 5, the pad_audio_route header in, the file list less gamePatch.cpp/.h
+    and job_arena_fix.hpp. JOB_ARENA, job-arena, Game fixes and ApplyJobArenaFix: 0 lines; JobArenaFix 1 line (the
+    silent accept).
+  - **Builds:** normal 6044be08 → **0de9349b**, lean d239d4bf → **63fda02d**, 9 warnings each, the archive 1423af83
+    unchanged.
+  - **Words:** normal lost only `KYTY_BC5_JOB_ARENA_FIX`, lean none, neither gained one. Neither binary holds any
+    JobArenaFix, job-arena fix, Game fixes or hook string; the silent accept's literal is not a plain string in either.
+  - **`~/bc5-work/input.cfg`:** 28d3366a → 6b966137, its line `JobArenaFix.PPSA03671=off` removed; the copy is in
+    `~/bc5-work/exp0429/swap/input.cfg.before-0429`.
+  - **Undo:** `bash ~/bc5-work/exp0429/undo0429.sh` (then exp 0431's undo further back). Raw: `raw/int0429.out`,
+    `raw/int0429-try1.out`.
+- `backend/kytyplus-patches/0001-bc5-lle-agc.patch` on this branch is the new shared patch bc39a035 (main's 9e7c4514
+  plus the removal; at a merge, this branch's version of that file is the right one).

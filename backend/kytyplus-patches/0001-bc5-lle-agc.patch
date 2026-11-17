@@ -4881,117 +4881,6 @@ index 0000000..a7d791e
 +}
 +
 +} // namespace bc5::gc_trace
-diff --git a/src/bc5/job_arena_fix.hpp b/src/bc5/job_arena_fix.hpp
-new file mode 100644
-index 0000000..7d2c08d
---- /dev/null
-+++ b/src/bc5/job_arena_fix.hpp
-@@ -0,0 +1,105 @@
-+// SPDX-License-Identifier: GPL-2.0-only
-+// Experiment 0359: the job-arena fix for the second title (PPSA03671) — a TEMPORARY game-code workaround.
-+//
-+// What it is (experiments 0358, F447–F454): at the end of a frame the title's main thread ("the owner" of its job
-+// system) waits for a job and, while waiting, runs pending jobs itself. One kind of job looks its per-thread frame
-+// arena up by the thread's worker slots in thread-local storage; the owner is never a registered worker, so on the
-+// owner that lookup yields a null arena and the job dereferences it (eboot.bin+0x3d7eca0). The title's other inline
-+// path (the "override window") sets the special index and a stack arena around the call and the lookup honours
-+// them; the owner's help loop does not. On the console the race is won by the workers, which take the job before
-+// the owner gets to it; on this host it is lost at the fight because the box's cores are saturated (F454).
-+//
-+// The fix: the owner's help call `call [r15+0x80]` (eboot.bin+0x3cca87b, 7 bytes) is redirected through an 8-byte
-+// slot in a padding cave (eboot.bin+0x3cca4c8, eight int3 after a __stack_chk_fail stub) to a host hook, which wraps
-+// the title's own call in the title's own override window (the special index into the thread's slot, a stack arena
-+// built as the title builds it into image+0xb064018) and restores both after. Nothing else of the title changes.
-+//
-+// It is a change to the title's code, kept behind a per-title switch (input.cfg JobArenaFix.<TITLE_ID>=on|off,
-+// the Emulation menu's "Game fixes"), and is to be REMOVED once the host's throughput at the fight is fixed
-+// (docs/HANDOFF.md Q24). This header holds the pure parts (constants, the encoding, the arena layout) so they can be
-+// unit-tested; the host side (the hook, the writes) lives in the KytyPlus unit loader/gamePatch.cpp.
-+#pragma once
-+
-+#include <array>
-+#include <cstddef>
-+#include <cstdint>
-+#include <cstring>
-+
-+namespace bc5::job_arena_fix {
-+
-+inline constexpr const char* kTitleId = "PPSA03671";
-+
-+// The call site in the owner's help loop and the slot cave, as offsets from the image base.
-+inline constexpr std::uint64_t kSiteOffset = 0x3cca87b;
-+inline constexpr std::uint64_t kSlotOffset = 0x3cca4c8;
-+// The title's globals the override window uses: the special index (N, the worker count) and the override arena.
-+inline constexpr std::uint64_t kSpecialIndexOffset  = 0xb064020;
-+inline constexpr std::uint64_t kOverrideArenaOffset = 0xb064018;
-+// The thread-local worker index the job's arena lookup reads (an offset from the thread control block).
-+inline constexpr std::int64_t kIndexSlotFromTcb = -0x104;
-+// The two constants the title's override window copies into its stack arena.
-+inline constexpr std::uint64_t kArenaConstsOffset = 0x77f9c30; // 16 bytes
-+inline constexpr std::uint64_t kArenaTailOffset   = 0x7555574; // a pointer stored at +0x30
-+
-+// The minimal expected bytes: the instruction at the site and the padding at the slot.
-+inline constexpr std::array<std::uint8_t, 7> kSiteExpected {0x41, 0xff, 0x97, 0x80, 0x00, 0x00, 0x00}; // call [r15+0x80]
-+inline constexpr std::array<std::uint8_t, 8> kSlotExpected {0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc};
-+
-+// The replacement at the site: call [rip+disp32] (6 bytes) through the slot, then a nop.
-+inline bool encode_site(std::uint64_t site, std::uint64_t slot, std::array<std::uint8_t, 7>* out) {
-+    const std::int64_t disp = static_cast<std::int64_t>(slot) - static_cast<std::int64_t>(site + 6);
-+    if (disp < INT32_MIN || disp > INT32_MAX) {
-+        return false;
-+    }
-+    const auto d = static_cast<std::uint32_t>(static_cast<std::int32_t>(disp));
-+    (*out)[0] = 0xff;
-+    (*out)[1] = 0x15;
-+    (*out)[2] = static_cast<std::uint8_t>(d & 0xffu);
-+    (*out)[3] = static_cast<std::uint8_t>((d >> 8u) & 0xffu);
-+    (*out)[4] = static_cast<std::uint8_t>((d >> 16u) & 0xffu);
-+    (*out)[5] = static_cast<std::uint8_t>((d >> 24u) & 0xffu);
-+    (*out)[6] = 0x90;
-+    return true;
-+}
-+
-+inline bool site_matches(const std::uint8_t* site) {
-+    return std::memcmp(site, kSiteExpected.data(), kSiteExpected.size()) == 0;
-+}
-+
-+inline bool slot_matches(const std::uint8_t* slot) {
-+    return std::memcmp(slot, kSlotExpected.data(), kSlotExpected.size()) == 0;
-+}
-+
-+// The stack arena the title's override window builds (0x38 bytes): the block, its size, 16 bytes of constants,
-+// a zero, 16 zero bytes, the tail pointer.
-+struct OverrideArena {
-+    std::uint64_t block;
-+    std::uint32_t size;
-+    std::uint8_t  consts[16];
-+    std::uint32_t zero;
-+    std::uint8_t  zeros[16];
-+    std::uint64_t tail;
-+};
-+static_assert(sizeof(OverrideArena) == 0x38, "the override arena is 0x38 bytes");
-+static_assert(offsetof(OverrideArena, size) == 0x8, "size at +0x8");
-+static_assert(offsetof(OverrideArena, consts) == 0xc, "constants at +0xc");
-+static_assert(offsetof(OverrideArena, zero) == 0x1c, "zero at +0x1c");
-+static_assert(offsetof(OverrideArena, zeros) == 0x20, "zeros at +0x20");
-+static_assert(offsetof(OverrideArena, tail) == 0x30, "tail at +0x30");
-+
-+inline void build_arena(OverrideArena* arena, std::uint64_t block, std::uint32_t size, const std::uint8_t* consts16,
-+                        std::uint64_t tail) {
-+    arena->block = block;
-+    arena->size  = size;
-+    std::memcpy(arena->consts, consts16, sizeof(arena->consts));
-+    arena->zero = 0;
-+    std::memset(arena->zeros, 0, sizeof(arena->zeros));
-+    arena->tail = tail;
-+}
-+
-+// Only a thread without a worker slot (the owner, index -1) needs the window; a registered worker keeps its own.
-+inline bool wrap_needed(std::int32_t index) {
-+    return index == -1;
-+}
-+
-+} // namespace bc5::job_arena_fix
 diff --git a/src/bc5/load_stat.hpp b/src/bc5/load_stat.hpp
 new file mode 100644
 index 0000000..8b8af04
@@ -5933,10 +5822,10 @@ index 0000000..6567205
 +} // namespace bc5::start_state
 diff --git a/src/bc5/switch_defaults.hpp b/src/bc5/switch_defaults.hpp
 new file mode 100644
-index 0000000..d65ab9b
+index 0000000..32ae952
 --- /dev/null
 +++ b/src/bc5/switch_defaults.hpp
-@@ -0,0 +1,364 @@
+@@ -0,0 +1,365 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +// Experiment 0413: the defaults of switches that went from the private test builds (exps 0401, 0405, 0409, 0412) into
 +// both shared builds. Each row is applied at process start with setenv(name, value, 0), before any static initializer
@@ -6072,6 +5961,17 @@ index 0000000..d65ab9b
 +    // exp 0425 C1 (2026-11-16, the maintainer's word): a 200 us EEVDF wake slice for guest threads below priority
 +    // 733 (pthread.cpp). Soft, so KYTY_BC5_0425_WAKE_SLICE_US=0 turns it off.
 +    {"KYTY_BC5_0425_WAKE_SLICE_US", "200"},
++    // exp 0428 way 2, for every title since exp 0431 (the maintainer, 2026-11-16: "ma byc w dowolnej grze"; until then
++    // PPSA03671's rows): the acbs on kernel compute rings, one libdrm ring per busy guest queue; each acb part that
++    // dispatches gets its own guest queue's tracked compute state in front; indirect dispatches on the MEC under the CP's
++    // check (verified on real dispatches, exp 0428 step 2). BC5_DIRECT_ACB_RINGS=0 in the environment turns way 2 off.
++    {"BC5_DIRECT_ACB_RINGS", "4"},
++    {"BC5_DIRECT_ACB_QUEUE_STATE", "1"},
++    {"BC5_DIRECT_ACB_MEC_INDIRECT", "1"},
++    {"BC5_DIRECT_ACB_STATE_NO_WALK", "1"},
++    // exp 0428 iteration 6: a two-ring dcb wait polls first and splits only on exp 0132's cycle or after 8 ms (18,625 -> 69
++    // splits per run, w428L11). BC5_DIRECT_ACB_SPLIT_LATE=0 in the environment turns it off.
++    {"BC5_DIRECT_ACB_SPLIT_LATE", "3"},
 +    {nullptr, nullptr}};
 +
 +// exp 0419: words whose option is removed and whose code default (the value when unset) is the tested behaviour.
@@ -6154,16 +6054,6 @@ index 0000000..d65ab9b
 +    {BC5_T2, "KYTY_BC5_LOAD_NPCOMMON", "1"},
 +    {BC5_T2, "KYTY_BC5_LOAD_NPMANAGER", "1"},
 +    {BC5_T2, "KYTY_BC5_LOAD_NPTROPHY", "1"},
-+    // exp 0428 (way 2, the maintainer's consent through deployment, 2026-11-16): the title's acbs on compute rings, each
-+    // guest queue's compute state in front of its dispatching acb parts, indirect dispatches on the MEC under the CP's
-+    // check (verified on real dispatches, exp 0428 step 2). BC5_DIRECT_ACB_RINGS=0 in the environment is the rollback.
-+    {BC5_T2, "BC5_DIRECT_ACB_RINGS", "4"},
-+    {BC5_T2, "BC5_DIRECT_ACB_QUEUE_STATE", "1"},
-+    {BC5_T2, "BC5_DIRECT_ACB_MEC_INDIRECT", "1"},
-+    {BC5_T2, "BC5_DIRECT_ACB_STATE_NO_WALK", "1"},
-+    // exp 0428 iteration 6: a two-ring dcb wait polls first and splits only on exp 0132's cycle or after 8 ms (18,625 -> 69
-+    // splits per run, w428L11). BC5_DIRECT_ACB_SPLIT_LATE=0 in the environment is the rollback.
-+    {BC5_T2, "BC5_DIRECT_ACB_SPLIT_LATE", "3"},
 +    {nullptr, nullptr, nullptr}};
 +#undef BC5_T2
 +
@@ -7211,10 +7101,10 @@ index 14608a6..bf3cbd8 100644
  	if (result != vk::Result::eSuccess) {
 diff --git a/src/graphics/presentation/hostMenu.cpp b/src/graphics/presentation/hostMenu.cpp
 new file mode 100644
-index 0000000..9ab12cf
+index 0000000..0a07b6f
 --- /dev/null
 +++ b/src/graphics/presentation/hostMenu.cpp
-@@ -0,0 +1,880 @@
+@@ -0,0 +1,864 @@
 +#include "graphics/presentation/hostMenu.h"
 +
 +#include "SDL.h"
@@ -8040,22 +7930,6 @@ index 0000000..9ab12cf
 +				if (g_hud_lost.load(std::memory_order_acquire) && ImGui::IsItemHovered()) {
 +					ImGui::SetTooltip("MangoHud is not loaded: only the game's frame rate is shown.");
 +				}
-+			}
-+			// Experiment 0359: game fixes - TEMPORARY game-code workarounds, per title, saved like the switches above;
-+			// applied at load, so a change takes effect at the next start.
-+			if (ImGui::BeginMenu("Game fixes")) {
-+				const int  v  = HostInputJobArenaFix();
-+				const bool on = v == 1 || (v < 0 && HostInputTitleId() == "PPSA03671");
-+				if (ImGui::MenuItem("Job-arena fix (temporary, next start)", nullptr, on, !launcher)) {
-+					HostInputSetJobArenaFix(on ? 0 : 1);
-+					SaveTitleSwitch("JobArenaFix", "job-arena fix", !on);
-+				}
-+				if (ImGui::IsItemHovered()) {
-+					ImGui::SetTooltip("Wraps the title's frame-end job run on its main thread in the title's own arena window\n"
-+					                  "(experiment 0359): a workaround for the null-arena crash at the fight. Takes effect at the\n"
-+					                  "next start. To be removed once the host's throughput at the fight is fixed.");
-+				}
-+				ImGui::EndMenu();
 +			}
 +			ImGui::EndMenu();
 +		}
@@ -13251,7 +13125,7 @@ index f70995a..8bc9175 100644
  } // namespace Libs::Graphics
  
 diff --git a/src/graphics/presentation/window/hostInput.cpp b/src/graphics/presentation/window/hostInput.cpp
-index edcfdaf..5e15d6e 100644
+index edcfdaf..7b5e96b 100644
 --- a/src/graphics/presentation/window/hostInput.cpp
 +++ b/src/graphics/presentation/window/hostInput.cpp
 @@ -1,4 +1,8 @@
@@ -13421,7 +13295,7 @@ index edcfdaf..5e15d6e 100644
  	switch (key) {
  		case SDLK_RSHIFT: return SDLK_LSHIFT;
  		case SDLK_RCTRL: return SDLK_LCTRL;
-@@ -83,110 +202,555 @@ SDL_Keycode NormalizeKey(SDL_Keycode key) {
+@@ -83,110 +202,539 @@ SDL_Keycode NormalizeKey(SDL_Keycode key) {
  	}
  }
  
@@ -13482,7 +13356,10 @@ index edcfdaf..5e15d6e 100644
 +	std::string spec(name.substr(4));
 +	std::transform(spec.begin(), spec.end(), spec.begin(),
 +	               [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-+
+ 
+-	const auto button = std::find_if(buttons.begin(), buttons.end(),
+-	                                 [name](const auto& item) { return item.first == name; });
+-	return button != buttons.end() ? button->second : 0;
 +	const auto button = SDL_GameControllerGetButtonFromString(spec.c_str());
 +	if (button != SDL_CONTROLLER_BUTTON_INVALID) {
 +		out->kind       = SourceKind::PadButton;
@@ -13508,11 +13385,12 @@ index edcfdaf..5e15d6e 100644
 +	out->pad_axis  = axis;
 +	out->axis_sign = sign;
 +	return true;
-+}
+ }
  
--	const auto button = std::find_if(buttons.begin(), buttons.end(),
--	                                 [name](const auto& item) { return item.first == name; });
--	return button != buttons.end() ? button->second : 0;
+-int GamepadButtonFromName(std::string_view name) {
+-	if (!name.starts_with("Pad:")) return -1;
+-	return static_cast<int>(
+-	    SDL_GameControllerGetButtonFromString(std::string(name.substr(4)).c_str()));
 +bool SourceFromName(std::string_view name, Source* out) {
 +	*out = Source {};
 +	if (name.starts_with("Mouse:")) {
@@ -13529,8 +13407,13 @@ index edcfdaf..5e15d6e 100644
 +	}
 +	out->kind = SourceKind::Key;
 +	return true;
-+}
-+
+ }
+ 
+-bool Conflicts(const Binding& first, const Binding& second) {
+-	return first.control == second.control ||
+-	       (first.key != SDLK_UNKNOWN && first.key == second.key) ||
+-	       (first.mouse_button != 0 && first.mouse_button == second.mouse_button) ||
+-	       (first.gamepad_button >= 0 && first.gamepad_button == second.gamepad_button);
 +std::string SourceToName(const Source& s) {
 +	switch (s.kind) {
 +		case SourceKind::Key: return SDL_GetKeyName(s.key);
@@ -13557,12 +13440,8 @@ index edcfdaf..5e15d6e 100644
 +		case SourceKind::PadAxis: return a.pad_axis == b.pad_axis && a.axis_sign == b.axis_sign;
 +		default: return false;
 +	}
- }
- 
--int GamepadButtonFromName(std::string_view name) {
--	if (!name.starts_with("Pad:")) return -1;
--	return static_cast<int>(
--	    SDL_GameControllerGetButtonFromString(std::string(name.substr(4)).c_str()));
++}
++
 +// Experiment 0337: the system languages in SystemServiceParamGetInt's numbering (PARAM_ID_LANG), as KytyPlus's
 +// launcher lists them (launcher/src/configurationEditDialog.cpp CONSOLE_LANGUAGE_NAMES at f266548;
 +// Config::MAX_CONSOLE_LANGUAGE is 29).
@@ -13581,13 +13460,8 @@ index edcfdaf..5e15d6e 100644
 +		if (std::isalnum(static_cast<unsigned char>(c)) != 0) k.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
 +	}
 +	return k;
- }
- 
--bool Conflicts(const Binding& first, const Binding& second) {
--	return first.control == second.control ||
--	       (first.key != SDLK_UNKNOWN && first.key == second.key) ||
--	       (first.mouse_button != 0 && first.mouse_button == second.mouse_button) ||
--	       (first.gamepad_button >= 0 && first.gamepad_button == second.gamepad_button);
++}
++
 +// A number 0..29, or a name compared on its letters and digits, any case ("Polish", "polish", "english-united-states");
 +// -1 if neither.
 +int LanguageFromName(std::string_view s) {
@@ -13669,18 +13543,16 @@ index edcfdaf..5e15d6e 100644
 +		std::vector<std::string> out;
 +		if (m_fullscreen >= 0) {
 +			out.emplace_back(m_fullscreen == 1 ? "Fullscreen=on" : "Fullscreen=off");
- 		}
--		Add(binding);
++		}
 +		if (m_system_language >= 0) out.emplace_back(std::string("SystemLanguage=") + LANGUAGE_NAMES[m_system_language]); // experiment 0337
 +		if (m_render_scale > 0.0) {
 +			char b[64];
 +			std::snprintf(b, sizeof(b), "RenderScale.%s=%.2f", HostInputTitleId().c_str(), m_render_scale);
 +			out.emplace_back(b);
- 		}
++		}
 +		for (const auto& other: m_other_title_scales) out.push_back(other);
 +		if (m_ray_tracing >= 0) out.emplace_back("RayTracing." + HostInputTitleId() + (m_ray_tracing == 1 ? "=on" : "=off")); // experiment 0273
 +		if (m_mangohud >= 0) out.emplace_back("MangoHud." + HostInputTitleId() + (m_mangohud == 1 ? "=on" : "=off")); // experiment 0301
-+		if (m_job_arena_fix >= 0) out.emplace_back("JobArenaFix." + HostInputTitleId() + (m_job_arena_fix == 1 ? "=on" : "=off")); // experiment 0359
 +		if (!m_default_keys) {
 +			out.emplace_back("DefaultKeys=off");
 +		}
@@ -13697,10 +13569,11 @@ index edcfdaf..5e15d6e 100644
 +				                 SDL_GameControllerGetStringForAxis(static_cast<SDL_GameControllerAxis>(i)) +
 +				                 "=none");
 +			}
-+		}
+ 		}
+-		Add(binding);
 +		for (const auto& b: m_bindings) {
 +			out.emplace_back(std::string(Info(b.control).name) + "=" + SourceToName(b.source));
-+		}
+ 		}
 +		return out;
  	}
 +
@@ -13709,8 +13582,6 @@ index edcfdaf..5e15d6e 100644
 +	[[nodiscard]] double RenderScale() const { return m_render_scale; }
 +	[[nodiscard]] int    RayTracing() const { return m_ray_tracing; } // experiment 0273: -1 not set, 0 off, 1 on
 +	[[nodiscard]] int    MangoHud() const { return m_mangohud; } // experiment 0301: -1 not set, 0 off, 1 on
-+	[[nodiscard]] int    JobArenaFix() const { return m_job_arena_fix; } // experiment 0359: -1 not set, 0 off, 1 on
-+	void                 SetJobArenaFix(int v) { m_job_arena_fix = v; }
 +	[[nodiscard]] int    Fullscreen() const { return m_fullscreen; }
 +	[[nodiscard]] int    SystemLanguage() const { return m_system_language; } // experiment 0337: -1 not set
 +
@@ -13753,13 +13624,8 @@ index edcfdaf..5e15d6e 100644
 +			}
 +		}
 +		return INVALID_CONTROL;
- 	}
- 
--	[[nodiscard]] std::size_t FindGamepadButton(int button) const {
--		const auto binding = std::find_if(
--		    m_bindings.begin(), m_bindings.begin() + m_size,
--		    [button](const auto& item) { return item.gamepad_button == button; });
--		return binding != m_bindings.begin() + m_size ? binding->control : INVALID_CONTROL;
++	}
++
 +	[[nodiscard]] std::size_t FindPadButton(int button) const {
 +		for (const auto& b: m_bindings) {
 +			if (b.source.kind == SourceKind::PadButton && b.source.pad_button == button) {
@@ -13767,8 +13633,13 @@ index edcfdaf..5e15d6e 100644
 +			}
 +		}
 +		return INVALID_CONTROL;
-+	}
-+
+ 	}
+ 
+-	[[nodiscard]] std::size_t FindGamepadButton(int button) const {
+-		const auto binding = std::find_if(
+-		    m_bindings.begin(), m_bindings.begin() + m_size,
+-		    [button](const auto& item) { return item.gamepad_button == button; });
+-		return binding != m_bindings.begin() + m_size ? binding->control : INVALID_CONTROL;
 +	// Axis sources: every binding on this axis whose state changed, with its new state.
 +	template <typename F>
 +	void UpdatePadAxis(int axis, int value, F&& on_change) {
@@ -13838,16 +13709,13 @@ index edcfdaf..5e15d6e 100644
 +			const std::string id(left.substr(12));
 +			if (EqualNoCase(id, HostInputTitleId())) {
 +				m_render_scale = k;
- 			} else {
--				index++;
++			} else {
 +				char b[64];
 +				std::snprintf(b, sizeof(b), "RenderScale.%s=%.2f", id.c_str(), k);
 +				m_other_title_scales.emplace_back(b);
- 			}
++			}
 +			return true;
- 		}
--		EXIT_IF(m_size >= m_bindings.size());
--		m_bindings[m_size++] = binding;
++		}
 +
 +		if (left.size() > 11 && EqualNoCase(left.substr(0, 11), "RayTracing.")) { // experiment 0273, per title
 +			int v = -1;
@@ -13885,21 +13753,9 @@ index edcfdaf..5e15d6e 100644
 +			return true;
 +		}
 +
-+		if (left.size() > 12 && EqualNoCase(left.substr(0, 12), "JobArenaFix.")) { // experiment 0359, per title (a temporary game fix)
-+			int v = -1;
-+			if (EqualNoCase(right, "on") || EqualNoCase(right, "true") || right == "1") {
-+				v = 1;
-+			} else if (EqualNoCase(right, "off") || EqualNoCase(right, "false") || right == "0") {
-+				v = 0;
-+			} else {
-+				return Fail(error, where + ": JobArenaFix takes on or off, got: " + std::string(right));
-+			}
-+			const std::string id(left.substr(12));
-+			if (EqualNoCase(id, HostInputTitleId())) {
-+				m_job_arena_fix = v;
-+			} else {
-+				m_other_title_scales.emplace_back("JobArenaFix." + id + (v == 1 ? "=on" : "=off")); // another title's line, kept
-+			}
++		if (left.size() > 12 && EqualNoCase(left.substr(0, 12), "JobArenaFix.")) {
++			// Experiment 0429: the workaround of exp 0359 is gone; an old line of its key is accepted silently
++			// and not written back.
 +			return true;
 +		}
 +
@@ -13930,11 +13786,14 @@ index edcfdaf..5e15d6e 100644
 +			}
 +			if (source.kind == SourceKind::PadButton) {
 +				m_disabled_buttons |= 1u << source.pad_button;
-+			} else {
+ 			} else {
+-				index++;
 +				m_disabled_axes |= 1u << source.pad_axis;
-+			}
+ 			}
 +			return true;
-+		}
+ 		}
+-		EXIT_IF(m_size >= m_bindings.size());
+-		m_bindings[m_size++] = binding;
 +
 +		Binding binding;
 +		binding.control = ControlFromName(left);
@@ -13973,7 +13832,6 @@ index edcfdaf..5e15d6e 100644
 +	double               m_render_scale     = 0.0; // 0: not set (timestamps untouched)
 +	int                  m_ray_tracing      = -1;  // experiment 0273: -1 not set (the environment decides), 0 off, 1 on
 +	int                  m_mangohud         = -1;  // experiment 0301: -1 not set (off, or KYTY_BC5_MANGOHUD=1), 0 off, 1 on
-+	int                  m_job_arena_fix    = -1;  // experiment 0359: -1 not set (on for PPSA03671), 0 off, 1 on; a temporary game fix
 +	std::vector<std::string> m_other_title_scales;   // RenderScale.<id> lines of other titles, kept
 +	int                  m_fullscreen       = -1;  // -1: not set (--fullscreen or windowed)
 +	int                  m_system_language  = -1;  // experiment 0337: -1 not set (--console-language, English (United States) by default)
@@ -14043,7 +13901,7 @@ index edcfdaf..5e15d6e 100644
  void SetButton(uint32_t button, bool down) {
  	if (button == Controller::PAD_BUTTON_L2) {
  		Controller::ControllerAxis(Controller::HOST_INPUT_CONTROLLER_ID,
-@@ -199,40 +763,17 @@ void SetButton(uint32_t button, bool down) {
+@@ -199,40 +747,17 @@ void SetButton(uint32_t button, bool down) {
  	}
  }
  
@@ -14090,7 +13948,7 @@ index edcfdaf..5e15d6e 100644
  void SetControl(std::size_t control, bool down) {
  	if (control == INVALID_CONTROL) {
  		return;
-@@ -240,93 +781,319 @@ void SetControl(std::size_t control, bool down) {
+@@ -240,93 +765,308 @@ void SetControl(std::size_t control, bool down) {
  
  	const auto& info = Info(control);
  	if (info.button != 0) {
@@ -14156,9 +14014,9 @@ index edcfdaf..5e15d6e 100644
 -			return;
 -		default: SetButton(DefaultKeyboardButton(key_code), down); return;
 +		g_axes[axis].negative = down;
-+	}
+ 	}
 +	SetStickAxis(info.axis, g_axes[axis].negative, g_axes[axis].positive);
-+}
+ }
 +
 +void ReleaseAll() {
 +	for (std::size_t c = 0; c < CONTROL_INFO.size(); c++) {
@@ -14241,8 +14099,8 @@ index edcfdaf..5e15d6e 100644
 +				++it;
 +			}
 +		}
- 	}
- }
++	}
++}
 +
 +void StartReleaseThread() {
 +	if (!g_release_thread_started) {
@@ -14301,7 +14159,7 @@ index edcfdaf..5e15d6e 100644
 +		g_down_at[key_code] = now;
 +		SetControl(control, true);
 +		return;
-+	}
+ 	}
 +	const auto   it   = g_down_at.find(key_code);
 +	const double held = it != g_down_at.end() ? (now - it->second) * 1000.0 : 1e9;
 +	if (held < MinHoldMs()) {
@@ -14314,7 +14172,7 @@ index edcfdaf..5e15d6e 100644
 +			std::fflush(stderr);
 +		}
 +		return;
- 	}
++	}
 +	SetControl(control, false);
  }
  
@@ -14343,9 +14201,9 @@ index edcfdaf..5e15d6e 100644
 +	if (map.Custom() && gamepad_axis >= 0) {
 +		map.UpdatePadAxis(gamepad_axis, value,
 +		                  [](std::size_t control, bool down) { SetControl(control, down); });
- 	}
- }
- 
++	}
++}
++
 +bool HostInputPadButtonDisabled(int gamepad_button) {
 +	std::lock_guard<std::mutex> lock(g_input_mutex);
 +	return Map().PadButtonDisabled(gamepad_button);
@@ -14360,7 +14218,7 @@ index edcfdaf..5e15d6e 100644
 +	std::vector<std::string> names;
 +	for (const auto& c: CONTROL_INFO) {
 +		names.emplace_back(c.name);
-+	}
+ 	}
 +	return names;
 +}
 +
@@ -14430,17 +14288,6 @@ index edcfdaf..5e15d6e 100644
 +
 +// Experiment 0337: the title may ask for the language before the window builds the map, so before it exists only the file
 +// is read here, without the map's side effects (a bad line leaves -1 here; Map() reports it when it is built).
-+// BC5 (experiment 0359): the job-arena fix switch, JobArenaFix.<TITLE_ID>=on|off; KYTY_BC5_JOB_ARENA_FIX=0|1 overrides it.
-+int HostInputJobArenaFix() {
-+	if (const char* e = BC5_DIAG_ENV("KYTY_BC5_JOB_ARENA_FIX"); e != nullptr && *e != 0) return *e == '0' ? 0 : 1;
-+	return g_map != nullptr ? g_map->JobArenaFix() : -1;
-+}
-+void HostInputSetJobArenaFix(int v) {
-+	if (g_map != nullptr) g_map->SetJobArenaFix(v);
-+}
-+extern "C" int bc5_title_switch_job_arena_fix() { // for loader/runtimeLinker.cpp
-+	return HostInputJobArenaFix();
-+}
 +
 +int HostInputSystemLanguage() {
 +	std::lock_guard<std::mutex> lock(g_input_mutex);
@@ -14467,11 +14314,11 @@ index edcfdaf..5e15d6e 100644
 +
 +int HostInputLanguageFromName(const std::string& name) {
 +	return LanguageFromName(name);
-+}
-+
+ }
+ 
  } // namespace Libs::Graphics
 diff --git a/src/graphics/presentation/window/hostInput.h b/src/graphics/presentation/window/hostInput.h
-index c0ac585..9840c05 100644
+index c0ac585..6990cf3 100644
 --- a/src/graphics/presentation/window/hostInput.h
 +++ b/src/graphics/presentation/window/hostInput.h
 @@ -2,6 +2,8 @@
@@ -14483,7 +14330,7 @@ index c0ac585..9840c05 100644
  
  namespace Libs::Graphics {
  
-@@ -9,6 +11,37 @@ void HostInputInit();
+@@ -9,6 +11,33 @@ void HostInputInit();
  void HostInputKey(int key_code, bool down);
  void HostInputMouseButton(uint8_t mouse_button, bool down);
  void HostInputGamepadButton(int gamepad_button, bool down);
@@ -14497,10 +14344,6 @@ index c0ac585..9840c05 100644
 +std::vector<std::string> HostInputControlNames();
 +// The running title's TITLE_ID (param.sfo), "UNKNOWN" without one: per-title entries use it.
 +std::string HostInputTitleId();
-+// BC5 (experiment 0359): the job-arena fix switch (JobArenaFix.<TITLE_ID>=on|off): -1 not set, 0 off, 1 on;
-+// KYTY_BC5_JOB_ARENA_FIX=0|1 overrides the file.
-+int  HostInputJobArenaFix();
-+void HostInputSetJobArenaFix(int v);
 +// The live configuration as statements, one per line, in the file's grammar.
 +std::vector<std::string> HostInputStatements();
 +// The file the configuration was read from (--input-config / KYTY_BC5_INPUT_CONFIG), or "".
@@ -29260,7 +29103,7 @@ index 9ea25b0..64784a7 100644
  			EXIT_IF(!AddMappedUnlocked(vaddr, size, MappingType::Private));
  			return true;
 diff --git a/src/kernel/pthread.cpp b/src/kernel/pthread.cpp
-index 5f87e6b..3bade10 100644
+index 5f87e6b..96225a8 100644
 --- a/src/kernel/pthread.cpp
 +++ b/src/kernel/pthread.cpp
 @@ -1,3 +1,5 @@
@@ -29841,7 +29684,7 @@ index 5f87e6b..3bade10 100644
 +
 +// ---- experiment 0425 C1: KYTY_BC5_0425_WAKE_SLICE_US=<100..3000> -----------------------------------------------------
 +// Shared since 2026-11-16 (the maintainer's word): on by default at 200 us for every title, through kSoft in
-+// bc5/switch_defaults.hpp; KYTY_BC5_0425_WAKE_SLICE_US=0 turns it off. Exp 0425: with JobArenaFix off, the
++// bc5/switch_defaults.hpp; KYTY_BC5_0425_WAKE_SLICE_US=0 turns it off. Exp 0425: the
 +// second title's fight crashed 0 of 10 with it against 6 of 15 controls (a rule-passing 4/4 vs 3/3, R13).
 +// The console schedules a title's threads by fixed priority, so a woken game thread on a free core runs at once
 +// (TODO(verify): no console measurement; the PS5 kernel is FreeBSD-derived). On this host the woken job workers
@@ -33755,10 +33598,10 @@ index 6df0a95..eca6d2d 100644
  		    static_cast<uint32_t>(src->crop_right + (pitch - src->width));
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..639e34f
+index 0000000..6118f2d
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,16599 @@
+@@ -0,0 +1,17066 @@
 +#include "bc5/env_rule.hpp" // exp 0419 (build W): BC5_DIAG_ENV, BC5_FIXED_ENV, BC5_LEAN_OR
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
@@ -42545,8 +42388,471 @@ index 0000000..639e34f
 +	g_plw.insert(g_plw.end(), found.begin(), found.end());
 +}
 +
++// BC5 experiment 0430 (tag ho430, the shared form): the fix of the second title's GPU hang of 2026-11-16 21:38.
++#define HO430_SHARED 1
++// Experiment 0430 (tag ho430): F2 and G, after the maintainer's "Tak, zleć poprawkę" (2026-11-16 ~22:00). His play's hang of
++// 21:38:40: the compute sort (acb #1980431) waited for label 0x12004b4fc8 == 0, which the graphics buffer dcb #1980428 writes
++// (RELEASE_MEM, 0) after its BVH passes. The label held a stale 0 when the acb was submitted, so the wait was dropped as
++// met and the sort overwrote memory the running BVH passes still read. Keeping such a wait for the GPU would not help (the GPU
++// reads the same stale 0).
++// F2, BC5_0430_F2 (on unless "0"): a wait that is satisfied when the host looks, while a job not yet completed on ANOTHER
++// ring has a registered pending write to the same label, is not decided until that job has completed: this buffer's own
++// submitting thread waits for it on the CPU, at most 250 ms. Refused (and counted) when the writer job holds a kept GPU
++// wait on a label this buffer writes (a cycle). The bound running out is counted and journaled. Nothing becomes a GPU wait.
++// G, BC5_0430_G (on unless "0"): a ring of label events (waits seen with value and pending writes, writes registered at
++// submit, writes the host's filter DROPPED, the F2 events), dumped as g0430-<k>.txt with every dj430 dump; a 30-s summary
++// line with the counts, including the GIVEN UP / CYCLE drops of unsatisfied waits. BC5_0430_G_AT=<s>: one more dump at
++// that time of the run (g0430-90.txt), for a clean run, which has no stall dump.
++// F3, BC5_0430_F3 (on unless "0"), "the missing acquire" (the top session's GO of 2026-11-16 ~22:40 for the precise form):
++// a runtime set, in memory only, of cross-queue labels: a label some buffer waited on with == V while a job on another ring
++// had a pending write of V to it. At the submit of a buffer that releases such a label (a RELEASE_MEM or WRITE_DATA of V)
++// while the label already holds V (the stale case of the 21:38 hang), the host first sets the label to a value that is not
++// V: the last such value a wait saw in this run, else V xor 1. The waiter then finds its wait unsatisfied with a pending
++// write that satisfies it, and the existing path keeps it for the GPU: it starts when the release executes, as on the
++// console. Not done (counted) when the release may not run (inside a COND_EXEC range, among the host's drops, its label not
++// mapped), when the buffer itself waits on the label, or when a job in flight on another ring already holds a kept wait
++// on it. A label first seen at a wait whose writer is already submitted falls back to F2 (counted).
++// HO430_SHARED (the shared patch, mkswap0430.py): the fix alone. F2 and F3 read std::getenv (the lean build too) under the
++// shared names BC5_DIRECT_XQ_PENDING (F2), BC5_DIRECT_XQ_ACQUIRE (F3) and BC5_DIRECT_XQ_FENCE (F4, F2's order done by the
++// kernel: a CS dependency instead of the CPU wait), each on unless "0"; G is compiled off. They act
++// only on a wait whose label has a pending write on ANOTHER ring, so with one ring (way 2 off) they do nothing.
++namespace ho430 {
++inline bool not0(const char* e) {
++	return e == nullptr || !(e[0] == '0' && e[1] == 0);
++}
++#ifdef HO430_SHARED
++inline bool f2_on() {
++	static const bool v = not0(std::getenv("BC5_DIRECT_XQ_PENDING"));
++	return v;
++}
++inline bool g_on() {
++	return false;
++}
++inline bool f3_on() {
++	static const bool v = not0(std::getenv("BC5_DIRECT_XQ_ACQUIRE"));
++	return v;
++}
++inline bool f4_on() {
++	static const bool v = not0(std::getenv("BC5_DIRECT_XQ_FENCE"));
++	return v;
++}
++#else
++inline bool f2_on() {
++	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F2"));
++	return v;
++}
++inline bool g_on() {
++	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_G"));
++	return v;
++}
++inline bool f3_on() {
++	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F3"));
++	return v;
++}
++inline bool f4_on() {
++	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F4"));
++	return v;
++}
++#endif
++enum : uint8_t { kWait = 1, kWrite = 2, kDropped = 3, kF2Waited = 4, kF2Cycle = 5, kF2Bound = 6, kGivenUp = 7, kCycle = 8, kF3Preset = 9, kF3Refused = 10, kF3First = 11, kF3NotStale = 12, kF3Met = 13, kF4Fence = 14 };
++constexpr uint32_t kTypes = 16;
++struct Cross {
++	uint64_t v         = 0; // the released value the waits wait for (== v)
++	uint64_t nonv      = 0; // the last other value a wait saw on the label
++	bool     is64      = false;
++	bool     have_nonv = false;
++};
++struct Ev {
++	uint64_t t_ns  = 0;
++	uint64_t label = 0;
++	uint64_t value = 0; // the label's value (waits) or the value written
++	uint64_t ref   = 0; // a wait's reference; a write's job seq
++	uint64_t n     = 0; // the submission count when it happened
++	uint32_t off   = 0;
++	int32_t  ring  = 0;
++	uint8_t  type  = 0;
++	uint8_t  func  = 0;
++	uint8_t  sat   = 0; // a wait: satisfied when seen
++	uint8_t  pend  = 0; // a wait: pending writes to the label (capped at 255)
++	char     kind[4] {};
++};
++constexpr uint32_t kEvN = 32768;
++struct Store {
++	std::mutex                                 m;
++	std::vector<Ev>                            r;
++	uint64_t                                   total = 0;
++	std::map<std::pair<int, uint64_t>, std::vector<uint64_t>> job_waits; // (ring, seq) -> the labels of its kept GPU waits
++	std::map<uint64_t, Cross>                  cross;                    // F3: the cross-queue labels, in memory only
++	std::map<uint64_t, uint64_t>               preset_at;                // F3: label -> SoftCp::now_ns() of a preset whose release has not been seen yet
++	uint64_t                                   c[kTypes] {};
++	uint64_t                                   waited_ns = 0;
++};
++inline void dump(int k);
++inline Store& st() {
++	static Store s;
++	return s;
++}
++inline void add(const Ev& e) {
++	Store&          s = st();
++	std::lock_guard lk(s.m);
++	if (s.r.size() != kEvN) s.r.assign(kEvN, Ev {});
++	s.r[s.total % kEvN] = e;
++	s.total++;
++	if (e.type < kTypes) s.c[e.type]++;
++}
++inline Ev ev(uint8_t type, uint64_t label, const char* kind, int ring, uint32_t off) {
++	Ev e;
++	e.t_ns  = SoftCp::now_ns();
++	e.type  = type;
++	e.label = label;
++	e.ring  = ring;
++	e.off   = off;
++	e.n     = g_submits.load();
++	std::snprintf(e.kind, sizeof(e.kind), "%s", kind != nullptr ? kind : "-");
++	return e;
++}
++// One pass over a submitted job: its kept waits (for F2's cycle check), its registered writes and the writes the filter
++// dropped (G). executed: the offsets the filter kept, in order.
++inline void job_submitted(const uint32_t* ib, uint32_t num_dwords, const std::vector<uint32_t>& executed, uint64_t seq, int ring, const char* kind) {
++	if (!f2_on() && !g_on() && !f3_on()) return;
++	std::vector<uint64_t> waits;
++	std::vector<Ev>       evs;
++	size_t                e = 0;
++	for (uint32_t q = 0; q < num_dwords;) {
++		const uint32_t h = ib[q], type = h >> 30u;
++		uint32_t       len = 1;
++		if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++		if (q + len > num_dwords) break;
++		while (e < executed.size() && executed[e] < q) e++;
++		const bool ran = e < executed.size() && executed[e] == q;
++		if (type == 3) {
++			const uint32_t  op = (h >> 8u) & 0xffu;
++			const uint32_t* w  = ib + q;
++			auto addr = [w](int lo, int hi) { return (static_cast<uint64_t>(w[lo]) & ~3ull) | (static_cast<uint64_t>(w[hi] & 0xffffu) << 32u); };
++			uint64_t a = 0, v = 0;
++			bool     wr = false;
++			if (op == 0x49 && len >= 8 && (w[2] >> 29u) != 0) { a = addr(3, 4); v = w[5] | (static_cast<uint64_t>(w[6]) << 32u); wr = true; }
++			else if (op == 0x47 && len >= 6 && (w[3] >> 29u) != 0) { a = addr(2, 3); v = w[4] | (static_cast<uint64_t>(w[5]) << 32u); wr = true; }
++			else if (op == 0x37 && len >= 5 && (((w[1] >> 8u) & 0xfu) == 1 || ((w[1] >> 8u) & 0xfu) == 2 || ((w[1] >> 8u) & 0xfu) == 5)) { a = addr(2, 3); v = w[4] | (len >= 6 ? static_cast<uint64_t>(w[5]) << 32u : 0); wr = true; }
++			else if ((op == 0x3c || op == 0x93) && len >= 4 && ((w[1] >> 4u) & 1u) != 0 && ran) waits.push_back(addr(2, 3));
++			if (wr && g_on() && a >= 0x100000000ull) {
++				Ev x  = ev(ran ? kWrite : kDropped, a, kind, ring, q);
++				x.value = v;
++				x.ref   = seq;
++				x.func  = static_cast<uint8_t>(op);
++				evs.push_back(x);
++			}
++		}
++		q += len;
++	}
++	Store&           s = st();
++	std::unique_lock lk(s.m);
++	if ((f2_on() || f3_on()) && !waits.empty()) {
++		s.job_waits[{ring, seq}] = std::move(waits);
++		if (s.job_waits.size() > 4096) s.job_waits.erase(s.job_waits.begin());
++	}
++	if (s.r.size() != kEvN) s.r.assign(kEvN, Ev {});
++	for (const Ev& x: evs) {
++		s.r[s.total % kEvN] = x;
++		s.total++;
++		s.c[x.type]++;
++	}
++	static uint64_t last_line = 0;
++	const uint64_t  now       = SoftCp::now_ns();
++	if (g_on() && now - last_line > 30'000'000'000ull) {
++		last_line = now;
++		journal("ho430 (exp 0430): t %.1f s: waits seen %" PRIu64 ", writes registered %" PRIu64 ", writes DROPPED by the host %" PRIu64 "; F3 cross-queue labels %zu, presets %" PRIu64 ", refused %" PRIu64 ", not stale %" PRIu64
++		        ", first seen (to F2) %" PRIu64 ", waits meeting a preset before its release %" PRIu64 "; F2 waited %" PRIu64 " (%.1f ms in all), refused as a cycle %" PRIu64 ", bound reached %" PRIu64 "; unsatisfied waits dropped: GIVEN UP %" PRIu64 ", CYCLE %" PRIu64 "\n",
++		        timing_now(), s.c[kWait], s.c[kWrite], s.c[kDropped], s.cross.size(), s.c[kF3Preset], s.c[kF3Refused], s.c[kF3NotStale], s.c[kF3First], s.c[kF3Met], s.c[kF2Waited], static_cast<double>(s.waited_ns) / 1e6,
++		        s.c[kF2Cycle], s.c[kF2Bound], s.c[kGivenUp], s.c[kCycle]);
++	}
++#ifndef HO430_SHARED
++	static bool         at_done = false; // BC5_0430_G_AT: one dump in a clean run
++	static const double g_at    = [] {
++		const char* e = BC5_DIAG_ENV("BC5_0430_G_AT");
++		return e != nullptr ? std::atof(e) : 0.0;
++	}();
++	if (g_on() && !at_done && g_at > 0 && timing_now() >= g_at) {
++		at_done = true;
++		lk.unlock();
++		dump(90);
++	}
++#endif
++}
++inline void job_done(uint64_t seq, int ring, bool all) {
++	if (!f2_on() && !f3_on()) return;
++	Store&          s = st();
++	std::lock_guard lk(s.m);
++	if (all) s.job_waits.clear();
++	else s.job_waits.erase({ring, seq});
++}
++inline void given_up(bool cycle, uint64_t label, const char* kind, int ring, uint32_t off) {
++	if (g_on()) add(ev(cycle ? kCycle : kGivenUp, label, kind, ring, off));
++}
++// At a wait of a buffer about to be submitted (submit_split), before the host decides it.
++inline void at_wait(const uint32_t* p, bool is64, uint64_t label, const char* kind, int ring, const uint32_t* ib, uint32_t num_dwords, uint32_t off) {
++	if (!f2_on() && !g_on() && !f3_on()) return;
++	const bool     sat   = wait_satisfied(p, is64);
++	const uint64_t value = is64 ? *reinterpret_cast<const volatile uint64_t*>(label & ~7ull) : *reinterpret_cast<const volatile uint32_t*>(label & ~3ull);
++	const uint64_t ref   = is64 ? (p[4] | (static_cast<uint64_t>(p[5]) << 32u)) : p[4];
++	const uint32_t func  = p[1] & 7u;
++	std::vector<std::pair<int, uint64_t>> others; // (ring, seq) of pending writes to this label on another ring
++	uint32_t                              pend      = 0;
++	bool                                  other_ref = false; // a pending write of exactly ref on another ring
++	{
++		std::lock_guard lk(g_plw_mutex);
++		for (const auto& w: g_plw) {
++			if (w.label != label) continue;
++			pend++;
++			if (w.ring != ring && w.value == ref && w.is64 == is64) other_ref = true;
++			if (w.ring != ring && std::find(others.begin(), others.end(), std::make_pair(w.ring, w.seq)) == others.end()) others.emplace_back(w.ring, w.seq);
++		}
++	}
++	if (f3_on() && func == 3) { // F3: the cross-queue label set, in memory only
++		bool            first = false;
++		Store&          s     = st();
++		std::lock_guard lk(s.m);
++		auto            it = s.cross.find(label);
++		if (it == s.cross.end() && other_ref) {
++			Cross c;
++			c.v    = ref;
++			c.is64 = is64;
++			it     = s.cross.emplace(label, c).first;
++			first  = true;
++		}
++		if (it != s.cross.end() && value != it->second.v) {
++			it->second.nonv      = value;
++			it->second.have_nonv = true;
++		}
++		if (first && sat && !others.empty()) s.c[kF3First]++; // the writer was submitted before the label was known: F2 below
++		// The top session's guard (2): a wait that meets a preset label before its release has landed. Waits kept for the GPU
++		// and the host's CPU-side waits on the title's behalf both pass here; the title's own CPU reads of the label do not
++		// reach the host and are not seen.
++		const auto pa = s.preset_at.find(label);
++		if (pa != s.preset_at.end()) {
++			if (it != s.cross.end() && value == it->second.v) {
++				s.preset_at.erase(pa); // the release has landed
++			} else if (SoftCp::now_ns() - pa->second > 2'000'000'000ull) {
++				s.preset_at.erase(pa);
++			} else {
++				s.c[kF3Met]++;
++				static uint64_t n_m = 0;
++				if (n_m++ < 128 || (n_m & 0x3ffu) == 0)
++					journal("ho430 F3: %s on ring %d waits at %u on 0x%" PRIx64 " %.2f ms after its preset, before the release (value 0x%" PRIx64 ", reference 0x%" PRIx64 "; %" PRIu64 " so far)\n", kind, ring, off, label,
++					        static_cast<double>(SoftCp::now_ns() - pa->second) / 1e6, value, ref, n_m);
++			}
++		}
++	}
++	if (g_on()) {
++		Ev x    = ev(kWait, label, kind, ring, off);
++		x.value = value;
++		x.ref   = ref;
++		x.func  = static_cast<uint8_t>(func);
++		x.sat   = sat ? 1 : 0;
++		x.pend  = static_cast<uint8_t>(std::min<uint32_t>(pend, 255));
++		add(x);
++	}
++	if (!f2_on() || !sat || others.empty()) return;
++	// The cycle check: a writer job holding a kept GPU wait on a label this buffer writes cannot complete before this buffer runs.
++	std::vector<uint64_t> mine;
++	for (uint32_t q = 0; q < num_dwords;) {
++		const uint32_t h = ib[q], type = h >> 30u;
++		uint32_t       len = 1;
++		if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++		if (q + len > num_dwords) break;
++		const uint32_t op = (h >> 8u) & 0xffu;
++		if (type == 3 && ((op == 0x49 && len >= 6) || (op == 0x37 && len >= 4) || (op == 0x47 && len >= 4))) {
++			const int lo = op == 0x49 ? 3 : 2;
++			mine.push_back((static_cast<uint64_t>(ib[q + lo]) & ~3ull) | (static_cast<uint64_t>(ib[q + lo + 1] & 0xffffu) << 32u));
++		}
++		q += len;
++	}
++	bool cycle = false;
++	{
++		Store&          s = st();
++		std::lock_guard lk(s.m);
++		for (const auto& o: others) {
++			const auto it = s.job_waits.find(o);
++			if (it == s.job_waits.end()) continue;
++			for (const uint64_t l: it->second)
++				if (std::find(mine.begin(), mine.end(), l) != mine.end()) cycle = true;
++		}
++	}
++	if (cycle) {
++		Ev x    = ev(kF2Cycle, label, kind, ring, off);
++		x.value = value;
++		x.ref   = others.front().second;
++		add(x);
++		static std::atomic<uint64_t> n_c {0};
++		const uint64_t               k = n_c++;
++		if (k < 64 || (k & 0xfffu) == 0) journal("ho430 F2: %s wait at %u on 0x%" PRIx64 " (value 0x%" PRIx64 ", satisfied) has a pending write from job %" PRIu64 " on ring %d, which waits on a label this buffer writes: a cycle, F2 refused (%" PRIu64 " so far)\n", kind, off, label, value, others.front().second, others.front().first, k + 1);
++		return;
++	}
++	if (f4_on()) { // F4: the same order through the kernel's scheduler: this buffer's next submission depends on the writer jobs
++		for (const auto& o: others) bc5::direct::Device::add_next_submit_dependency(o.first, o.second);
++		Ev x    = ev(kF4Fence, label, kind, ring, off);
++		x.value = value;
++		x.ref   = others.front().second;
++		add(x);
++		static std::atomic<uint64_t> n_f {0};
++		const uint64_t               k = n_f++;
++		if (k < 64 || (k & 0x3fffu) == 0)
++			journal("ho430 F4: %s wait at %u on 0x%" PRIx64 " was satisfied (value 0x%" PRIx64 ") with a pending write from job %" PRIu64 " on ring %d (%zu such jobs): the submission depends on it (%" PRIu64 " so far)\n", kind, off, label, value,
++			        others.front().second, others.front().first, others.size(), k + 1);
++		return;
++	}
++	const uint64_t t0 = SoftCp::now_ns();
++	bool           done = false;
++	while (SoftCp::now_ns() - t0 < 250'000'000ull && (!g_dev || !g_dev->wedged())) {
++		bool left = false;
++		{
++			std::lock_guard lk(g_plw_mutex);
++			for (const auto& w: g_plw)
++				if (w.label == label && std::find(others.begin(), others.end(), std::make_pair(w.ring, w.seq)) != others.end()) left = true;
++		}
++		if (!left) { done = true; break; }
++		std::this_thread::sleep_for(std::chrono::microseconds(50));
++	}
++	const uint64_t waited = SoftCp::now_ns() - t0;
++	Ev             x      = ev(done ? kF2Waited : kF2Bound, label, kind, ring, off);
++	x.value               = value;
++	x.ref                 = others.front().second;
++	add(x);
++	{
++		Store&          s = st();
++		std::lock_guard lk(s.m);
++		s.waited_ns += waited;
++	}
++	static std::atomic<uint64_t> n_w {0};
++	const uint64_t               k = n_w++;
++	if (!done || k < 256 || (k & 0x3ffu) == 0)
++		journal("ho430 F2: %s wait at %u on 0x%" PRIx64 " was satisfied (value 0x%" PRIx64 ") with a pending write from job %" PRIu64 " on ring %d (%zu such jobs): %s after %.2f ms (%" PRIu64 " so far)\n", kind, off, label, value,
++		        others.front().second, others.front().first, others.size(), done ? "waited for it" : "BOUND REACHED, decided as before", static_cast<double>(waited) / 1e6, k + 1);
++}
++// F3 at the submit of a buffer (submit_now, before the device call): for each release of a cross-queue label in it, the
++// stale case (the label already holds the released value) gets the label set to another value first. ib is the buffer as
++// submitted (no rebuilt copy: the caller passes it only when the host did not rebuild it), drops the host's drop offsets.
++inline void f3_before_submit(const uint32_t* ib, uint32_t num_dwords, const std::vector<uint32_t>& drops, int ring, const char* kind, const std::vector<bc5::direct::Mapping>& maps) {
++	if (!f3_on()) return;
++	{
++		Store&          s = st();
++		std::lock_guard lk(s.m);
++		if (s.cross.empty()) return;
++	}
++	std::vector<std::pair<uint32_t, uint32_t>> conds; // COND_EXEC ranges [from, to)
++	std::vector<uint64_t>                      waited; // labels this buffer waits on before the position
++	std::vector<uint64_t>                      done;
++	for (uint32_t q = 0; q < num_dwords;) {
++		const uint32_t h = ib[q], type = h >> 30u;
++		uint32_t       len = 1;
++		if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++		if (q + len > num_dwords) break;
++		if (type == 3) {
++			const uint32_t  op = (h >> 8u) & 0xffu;
++			const uint32_t* w  = ib + q;
++			auto addr = [w](int lo, int hi) { return (static_cast<uint64_t>(w[lo]) & ~3ull) | (static_cast<uint64_t>(w[hi] & 0xffffu) << 32u); };
++			if (op == 0x22 && len >= 5) conds.emplace_back(q + len, q + len + (w[4] & 0x3fffu));
++			if ((op == 0x3c || op == 0x93) && len >= 4 && ((w[1] >> 4u) & 1u) != 0) waited.push_back(addr(2, 3));
++			uint64_t a = 0, v = 0;
++			bool     wr = false, w64 = false;
++			if (op == 0x49 && len >= 8 && ((w[2] >> 29u) == 1 || (w[2] >> 29u) == 2)) { a = addr(3, 4); w64 = (w[2] >> 29u) == 2; v = w64 ? (w[5] | (static_cast<uint64_t>(w[6]) << 32u)) : w[5]; wr = true; }
++			else if (op == 0x37 && len >= 5 && (((w[1] >> 8u) & 0xfu) == 1 || ((w[1] >> 8u) & 0xfu) == 2 || ((w[1] >> 8u) & 0xfu) == 5)) { a = addr(2, 3); w64 = len >= 6; v = w64 ? (w[4] | (static_cast<uint64_t>(w[5]) << 32u)) : w[4]; wr = true; }
++			if (wr && std::find(done.begin(), done.end(), a) == done.end()) {
++				Cross c;
++				bool  known = false;
++				{
++					Store&          s = st();
++					std::lock_guard lk(s.m);
++					const auto      it = s.cross.find(a);
++					if (it != s.cross.end()) { c = it->second; known = true; }
++				}
++				if (known && c.v == v && c.is64 == w64) {
++					done.push_back(a);
++					const char* why = nullptr;
++					if (std::find(drops.begin(), drops.end(), q) != drops.end()) why = "the host drops the release";
++					else if (std::any_of(conds.begin(), conds.end(), [q](const auto& r) { return q >= r.first && q < r.second; })) why = "the release is inside a COND_EXEC range";
++					else if (std::find(waited.begin(), waited.end(), a) != waited.end()) why = "this buffer waits on the label itself";
++					else if (!covered_sorted(maps, a, w64 ? 8 : 4)) why = "the label is not mapped";
++					else {
++						{ // the top session's guard (1): no job submitted and not completed, on any ring, still writes the label ...
++							std::lock_guard lk(g_plw_mutex);
++							for (const auto& pw: g_plw)
++								if (pw.label == a) why = "a job in flight still writes the label (F2 stays the fallback)";
++						}
++						if (why == nullptr) { // ... or reads it through a kept wait
++							Store&          s = st();
++							std::lock_guard lk(s.m);
++							for (const auto& [job, labels]: s.job_waits)
++								if (std::find(labels.begin(), labels.end(), a) != labels.end()) why = "a job in flight holds a kept wait on the label (F2 stays the fallback)";
++						}
++					}
++					const uint64_t now = w64 ? *reinterpret_cast<const volatile uint64_t*>(a & ~7ull) : *reinterpret_cast<const volatile uint32_t*>(a & ~3ull);
++					if (why == nullptr && now != v) {
++						add(ev(kF3NotStale, a, kind, ring, q));
++					} else if (why != nullptr) {
++						Ev x    = ev(kF3Refused, a, kind, ring, q);
++						x.value = now;
++						add(x);
++						static std::atomic<uint64_t> n_r {0};
++						const uint64_t               k = n_r++;
++						if (k < 64 || (k & 0x3ffu) == 0) journal("ho430 F3: %s release of 0x%" PRIx64 " (value 0x%" PRIx64 ") at %u, label now 0x%" PRIx64 ": no preset, %s (%" PRIu64 " so far)\n", kind, a, v, q, now, why, k + 1);
++					} else {
++						const uint64_t set = c.have_nonv ? c.nonv : (v ^ 1ull);
++						if (w64) *reinterpret_cast<volatile uint64_t*>(a & ~7ull) = set;
++						else *reinterpret_cast<volatile uint32_t*>(a & ~3ull) = static_cast<uint32_t>(set);
++						Ev x    = ev(kF3Preset, a, kind, ring, q);
++						x.value = set;
++						x.ref   = v;
++						add(x);
++						{
++							Store&          s = st();
++							std::lock_guard lk(s.m);
++							s.preset_at[a] = SoftCp::now_ns();
++						}
++						static std::atomic<uint64_t> n_p {0};
++						const uint64_t               k = n_p++;
++						if (k < 256 || (k & 0x3ffu) == 0) journal("ho430 F3: %s on ring %d releases 0x%" PRIx64 " with 0x%" PRIx64 " at %u while it already holds that value: set to 0x%" PRIx64 " first (%" PRIu64 " so far)\n", kind, ring, a, v, q, set, k + 1);
++					}
++				}
++			}
++		}
++		q += len;
++	}
++}
++inline void dump(int k) {
++	if (!g_on()) return;
++	std::vector<Ev> all;
++	uint64_t        c[kTypes] {};
++	{
++		Store&          s = st();
++		std::lock_guard lk(s.m);
++		if (s.r.size() == kEvN)
++			for (uint64_t i = s.total > kEvN ? s.total - kEvN : 0; i < s.total; i++) all.push_back(s.r[i % kEvN]);
++		std::memcpy(c, s.c, sizeof(c));
++	}
++	const std::string dir = g_dump_dir.empty() ? std::string(std::getenv("HOME") ? std::getenv("HOME") : ".") + "/bc5-work" : g_dump_dir;
++	char              name[640];
++	std::snprintf(name, sizeof(name), "%s/g0430-%d.txt", dir.c_str(), k);
++	FILE* f = std::fopen(name, "w");
++	if (f == nullptr) return;
++	static const char* const tn[kTypes] = {"-", "wait", "write", "DROPPED-WRITE", "F2-waited", "F2-cycle", "F2-bound", "GIVEN-UP", "CYCLE", "F3-preset", "F3-refused", "F3-first-seen", "F3-not-stale", "F3-wait-met-preset", "F4-fence", "?"};
++	std::fprintf(f, "g0430 %d at t %.3f s: the last %zu label events, oldest first; counts: waits %" PRIu64 " writes %" PRIu64 " dropped writes %" PRIu64 " F2 waited %" PRIu64 " cycle %" PRIu64 " bound %" PRIu64 " given up %" PRIu64 " cycle-broken %" PRIu64 "\n", k,
++	             timing_now(), all.size(), c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8]);
++	std::fprintf(f, "columns: t_s type label kind ring about#n offset | wait: value ref func satisfied pending | write: value job_seq op\n");
++	for (const Ev& e: all) {
++		std::fprintf(f, "%.6f %s 0x%" PRIx64 " %s %d #%" PRIu64 " %u", static_cast<double>(e.t_ns) / 1e9, e.type < kTypes ? tn[e.type] : "?", e.label, e.kind, e.ring, e.n, e.off);
++		if (e.type == kWait) std::fprintf(f, " | value 0x%" PRIx64 " ref 0x%" PRIx64 " func %u %s pending %u\n", e.value, e.ref, e.func, e.sat != 0 ? "SATISFIED" : "unsatisfied", e.pend);
++		else std::fprintf(f, " | value 0x%" PRIx64 " job %" PRIu64 " op %02x\n", e.value, e.ref, e.func);
++	}
++	std::fflush(f);
++	fsync(fileno(f));
++	std::fclose(f);
++}
++} // namespace ho430
++
 +static void forget_label_writes(uint64_t seq, int ring, bool all) {
 +	std::lock_guard lk(g_plw_mutex);
++	ho430::job_done(seq, ring, all); // exp 0430 (tag ho430)
 +	if (all) {
 +		g_plw.clear();
 +		return;
@@ -42922,6 +43228,7 @@ index 0000000..639e34f
 +			else if ((op == 0x3c || op == 0x93) && len >= 4 && ((p[1] >> 4u) & 1u) != 0) {
 +				const uint64_t label = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
 +				if (std::find(written.begin(), written.end(), label) == written.end()) {
++					ho430::at_wait(p, op == 0x93, label, kind, job_ring(kind), ib, num_dwords, i); // exp 0430 (tag ho430): F2 and F3
 +					if (!wait_satisfied(p, op == 0x93)) chain_flush(1); // ADR 0010: what the chain holds may write this label
 +					// No split (run 44: pieces of one IB interleave with other processes' submissions,
 +					// which leave their own SH state behind — a dispatch after a split ran with a
@@ -43199,6 +43506,7 @@ index 0000000..639e34f
 +					}
 +					if (!ok) journal("cpu-wait %s at %u on 0x%" PRIx64 ": %s after %.1f ms\n", op == 0x93 ? "WAIT_REG_MEM64" : "WAIT_REG_MEM", i, label, broken ? "CYCLE" : (limit < 1'000'000'000ull ? "GIVEN UP" : "TIMEOUT"), static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
 +					if (!ok) t_wait_given_up = true;
++					if (!ok) ho430::given_up(broken, label, kind, job_ring(kind), i); // exp 0430 (tag ho430)
 +					if (dry_here) (ok ? g_dry_ok : g_dry_failed)++;
 +					frame_profile_wait(on_game_thread(), false, static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
 +					static const bool timing_waits_env = BC5_DIAG_ENV("BC5_DIRECT_TIMING") != nullptr;
@@ -48797,6 +49105,7 @@ index 0000000..639e34f
 +		offsets.swap(back);
 +	};
 +	const uint64_t ls_t3 = SoftCp::now_ns(); // experiment 0415 (ls415c)
++	if (sub_ib == ib) ho430::f3_before_submit(ib, num_dwords, opt.drop_offsets, qring, kind, *maps_p); // exp 0430 (tag ho430): F3
 +	auto r = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, true, qring);
 +	if (bc5::load_stat::on()) { // experiment 0415 (ls415c): the hold by part
 +		bc5::load_stat::add(bc5::load_stat::kHoldPre, ls_t3 - t2);
@@ -48961,6 +49270,7 @@ index 0000000..639e34f
 +		frame_profile_job(t_cq == 0, r.prepare_ms, r.list_ms, r.cs_ms);
 +		frame_profile_prep(t_cq == 0, r.prep_filter_ms, r.prep_tracker_ms, r.prep_cu_ms, r.prep_nested_ms, r.prep_copy_ms);
 +		register_label_writes(ib, num_dwords, r.executed_offsets, r.seq_no, r.ring); // experiment 0055
++		ho430::job_submitted(ib, num_dwords, r.executed_offsets, r.seq_no, r.ring, kind); // exp 0430 (tag ho430)
 +		cq_push(std::move(it));
 +		return;
 +	}
@@ -90085,129 +90395,8 @@ index 0000000..5d9456f
 +} // namespace Libs::SystemService
 +
 +#endif
-diff --git a/src/loader/gamePatch.cpp b/src/loader/gamePatch.cpp
-index b751549..ecc6c4e 100644
---- a/src/loader/gamePatch.cpp
-+++ b/src/loader/gamePatch.cpp
-@@ -6,6 +6,13 @@
- #include "loader/elf.h"
- #include "loader/runtimeLinker.h"
- #include "loader/systemContent.h"
-+#include "bc5/job_arena_fix.hpp" // BC5 (experiment 0359)
-+#include "common/abi.h"
-+
-+#include <array>
-+#include <atomic>
-+#include <cinttypes>
-+#include <cstdint>
- 
- #include <algorithm>
- #include <charconv>
-@@ -216,6 +223,87 @@ bool ApplyWrites(Plan* plan, std::string* error) {
- 
- } // namespace
- 
-+// BC5 (experiment 0359): the job-arena fix, a TEMPORARY game-code workaround for the second title. What and why:
-+// bc5/job_arena_fix.hpp. The hook replaces the owner's help call `call [r15+0x80]` (eboot.bin+0x3cca87b) and
-+// wraps the title's own call in the title's own override window: the special index into the thread's worker slot
-+// and a stack arena, built as the title builds it, into image+0xb064018; both restored after. To be REMOVED once
-+// the host's throughput at the fight is fixed (docs/HANDOFF.md Q24).
-+extern "C" uint8_t* bc5_tls_main_tcb(); // loader/runtimeLinker.cpp: the current thread's tcb of the main program
-+static uint64_t              g_bc5_jaf_base = 0;
-+static std::atomic<uint64_t> g_bc5_jaf_calls {0};
-+static std::atomic<uint64_t> g_bc5_jaf_wrapped {0};
-+using bc5_guest_block_fn = void (KYTY_SYSV_ABI*)(void* job, void* block, uint64_t size, uint32_t n1);
-+extern "C" KYTY_SYSV_ABI void bc5_job_arena_owner_help(void* job, void* block, uint64_t size, uint32_t n1) {
-+	using namespace bc5::job_arena_fix;
-+	const uint64_t base = g_bc5_jaf_base;
-+	const auto     fn   = *reinterpret_cast<const bc5_guest_block_fn*>(static_cast<uint8_t*>(job) + 0x80);
-+	uint8_t*       tcb  = bc5_tls_main_tcb();
-+	auto*          index = reinterpret_cast<int32_t*>(tcb + kIndexSlotFromTcb);
-+	auto*          slot  = reinterpret_cast<uint64_t*>(base + kOverrideArenaOffset);
-+	const int32_t  old_index = *index;
-+	const uint64_t old_slot  = *slot;
-+	const bool     wrap      = wrap_needed(old_index);
-+	alignas(16) OverrideArena arena {};
-+	if (wrap) {
-+		build_arena(&arena, reinterpret_cast<uint64_t>(block), static_cast<uint32_t>(size), reinterpret_cast<const uint8_t*>(base + kArenaConstsOffset),
-+		            base + kArenaTailOffset);
-+		*slot  = reinterpret_cast<uint64_t>(&arena);
-+		*index = *reinterpret_cast<const int32_t*>(base + kSpecialIndexOffset);
-+	}
-+	const uint64_t n = g_bc5_jaf_calls.fetch_add(1, std::memory_order_relaxed) + 1;
-+	const uint64_t w = wrap ? g_bc5_jaf_wrapped.fetch_add(1, std::memory_order_relaxed) + 1 : g_bc5_jaf_wrapped.load(std::memory_order_relaxed);
-+	if (n == 1 || n % 1000 == 0) {
-+		std::fprintf(stderr, "game fix: job-arena hook call %" PRIu64 " (%" PRIu64 " wrapped), thread index %d%s\n", n, w, old_index, wrap ? " -> the window" : "");
-+	}
-+	fn(job, block, size, n1);
-+	if (wrap) {
-+		*slot  = old_slot;
-+		*index = old_index;
-+	}
-+}
-+
-+bool ApplyJobArenaFix(Program* program, int setting) {
-+	using namespace bc5::job_arena_fix;
-+	std::string title;
-+	SystemContentParamSfoGetString("TITLE_ID", &title);
-+	const bool  title_ok = Common::EqualNoCase(title, kTitleId);
-+	const char* src      = setting == 1 ? "input.cfg on" : setting == 0 ? "input.cfg off" : "not set, on for that title";
-+	const bool  on       = setting == 1 || (setting < 0 && title_ok);
-+	std::fprintf(stderr, "game fix (temporary, exp 0359): job-arena fix %s for %s (%s)\n", on ? "ON" : "OFF", title.c_str(), src);
-+	if (!on) return false;
-+	if (!title_ok) {
-+		std::fprintf(stderr, "game fix: not applied, the fix is for %s only\n", kTitleId);
-+		return false;
-+	}
-+	if (program == nullptr || program->elf == nullptr || program->base_vaddr == 0) {
-+		std::fprintf(stderr, "game fix: not applied, the main executable is not loaded\n");
-+		return false;
-+	}
-+	const uint64_t base = program->base_vaddr;
-+	auto*          site = reinterpret_cast<uint8_t*>(base + kSiteOffset);
-+	auto*          slot = reinterpret_cast<uint8_t*>(base + kSlotOffset);
-+	if (!site_matches(site) || !slot_matches(slot)) {
-+		std::fprintf(stderr, "game fix: not applied, the bytes at +0x%" PRIx64 " or +0x%" PRIx64 " are not the expected ones (another build of the title?)\n", kSiteOffset, kSlotOffset);
-+		return false;
-+	}
-+	std::array<uint8_t, 7> enc {};
-+	if (!encode_site(base + kSiteOffset, base + kSlotOffset, &enc)) {
-+		std::fprintf(stderr, "game fix: not applied, the slot is out of reach\n");
-+		return false;
-+	}
-+	g_bc5_jaf_base      = base;
-+	const uint64_t hook = reinterpret_cast<uint64_t>(&bc5_job_arena_owner_help);
-+	std::memcpy(slot, &hook, sizeof(hook));
-+	std::memcpy(site, enc.data(), enc.size());
-+	if (!Common::VirtualMemory::FlushInstructionCache(reinterpret_cast<uint64_t>(site), enc.size()) ||
-+	    !Common::VirtualMemory::FlushInstructionCache(reinterpret_cast<uint64_t>(slot), sizeof(hook))) {
-+		std::fprintf(stderr, "game fix: the instruction cache flush failed after the write\n");
-+	}
-+	std::fprintf(stderr, "game fix: job-arena fix APPLIED: site +0x%" PRIx64 " -> slot +0x%" PRIx64 " -> host hook %p (temporary; input.cfg JobArenaFix.%s=off turns it off)\n",
-+	             kSiteOffset, kSlotOffset, reinterpret_cast<void*>(hook), kTitleId);
-+	return true;
-+}
-+
- bool Apply(const std::filesystem::path& plan_path, Program* program) {
- 	Plan        plan;
- 	std::string error;
-diff --git a/src/loader/gamePatch.h b/src/loader/gamePatch.h
-index 80a1bcb..1b35962 100644
---- a/src/loader/gamePatch.h
-+++ b/src/loader/gamePatch.h
-@@ -13,6 +13,10 @@ namespace GamePatch {
- 
- bool Apply(const std::filesystem::path& plan_path, Program* program);
- 
-+// BC5 (experiment 0359): the job-arena fix for PPSA03671, a TEMPORARY game-code workaround (bc5/job_arena_fix.hpp).
-+// setting: the title's switch, -1 not set (on for that title), 0 off, 1 on. True when applied.
-+bool ApplyJobArenaFix(Program* program, int setting);
-+
- } // namespace GamePatch
- 
- } // namespace Loader
 diff --git a/src/loader/runtimeLinker.cpp b/src/loader/runtimeLinker.cpp
-index 343045e..b048a79 100644
+index 343045e..01140c1 100644
 --- a/src/loader/runtimeLinker.cpp
 +++ b/src/loader/runtimeLinker.cpp
 @@ -1,4 +1,12 @@
@@ -90285,15 +90474,7 @@ index 343045e..b048a79 100644
  		if (record_id < g_stubbed_imports.size()) {
  			const auto& record = g_stubbed_imports[record_id];
  			LOGF("Unresolved import stub called [%u]: patch_vaddr=0x%016" PRIx64
-@@ -351,6 +398,7 @@ static uint64_t g_desired_base_addr = SYSTEM_RESERVED + CODE_BASE_OFFSET;
- static uint64_t g_invalid_memory    = 0;
- 
- static Program*              g_tls_main_program        = nullptr;
-+extern "C" int bc5_title_switch_job_arena_fix(); // graphics/presentation/window/hostInput.cpp, BC5 (experiment 0359)
- static thread_local Program* g_tls_cached_main_program = nullptr;
- static thread_local uint8_t* g_tls_cached_main_tcb     = nullptr;
- 
-@@ -797,6 +845,31 @@ static bool IsDumpableRange(uint64_t addr, uint64_t size) {
+@@ -797,6 +844,31 @@ static bool IsDumpableRange(uint64_t addr, uint64_t size) {
  #endif
  }
  
@@ -90325,7 +90506,7 @@ index 343045e..b048a79 100644
  static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exception_info) {
  	const auto* info = &exception_info;
  
-@@ -820,21 +893,48 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+@@ -820,21 +892,48 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
  			EXIT("invalid access type for page fault at 0x%016" PRIx64 "\n",
  			     info->access_violation_vaddr);
  		}();
@@ -90376,7 +90557,7 @@ index 343045e..b048a79 100644
  	// DumpExceptionInfo degrades instead of crashing.
  	Common::HostException::DumpExceptionInfo(*info);
  #if KYTY_PLATFORM == KYTY_PLATFORM_WINDOWS
-@@ -845,14 +945,14 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+@@ -845,14 +944,14 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
  	    owner_module != nullptr) {
  		char module_name[MAX_PATH] = {};
  		if (GetModuleFileNameA(owner_module, module_name, MAX_PATH) != 0) {
@@ -90393,7 +90574,7 @@ index 343045e..b048a79 100644
  	}
  #endif
  	if (info->exception_address != 0) {
-@@ -868,53 +968,53 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+@@ -868,53 +967,53 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
  			const auto dump_size =
  			    (dump_start + 64 <= region_end ? 64u
  			                                   : static_cast<uint32_t>(region_end - dump_start));
@@ -90465,7 +90646,7 @@ index 343045e..b048a79 100644
  	}
  
  	auto dump_guest_code = [](const char* name, uint64_t addr) {
-@@ -942,15 +1042,18 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+@@ -942,15 +1041,18 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
  		}
  #endif
  
@@ -90487,7 +90668,7 @@ index 343045e..b048a79 100644
  	dump_guest_code("guest rax[0]", info->rax);
  	dump_guest_code("guest rbx[0]", info->rbx);
  	dump_guest_code("guest rcx[0]", info->rcx);
-@@ -970,12 +1073,12 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+@@ -970,12 +1072,12 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
  			int   depth = 20;
  			SysStackWalkX86(info->rbp, info->rsp, stack, &depth);
  
@@ -90502,7 +90683,7 @@ index 343045e..b048a79 100644
  				     (p == nullptr ? 0 : vaddr - p->base_vaddr),
  				     (p == nullptr ? "???"
  				                   : Common::FilenameWithoutDirectory(
-@@ -986,7 +1089,7 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+@@ -986,7 +1088,7 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
  
  		auto dump_guest_qwords = [](const char* name, uint64_t addr) {
  			if (addr == 0) {
@@ -90511,7 +90692,7 @@ index 343045e..b048a79 100644
  				return;
  			}
  
-@@ -994,18 +1097,18 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+@@ -994,18 +1096,18 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
  			MEMORY_BASIC_INFORMATION mbi {};
  			if (VirtualQuery(reinterpret_cast<const void*>(addr), &mbi, sizeof(mbi)) == 0 ||
  			    mbi.State != MEM_COMMIT || (mbi.Protect & (PAGE_NOACCESS | PAGE_GUARD)) != 0) {
@@ -90533,7 +90714,7 @@ index 343045e..b048a79 100644
  			     " %016" PRIx64 " %016" PRIx64 " %016" PRIx64 " %016" PRIx64 "\n",
  			     name, addr, q[0], q[1], q[2], q[3], q[4], q[5], q[6], q[7]);
  		};
-@@ -1023,6 +1126,44 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+@@ -1023,6 +1125,44 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
  		dump_guest_qwords("guest r13", info->r13);
  		dump_guest_qwords("guest r14", info->r14);
  		dump_guest_qwords("guest r15", info->r15);
@@ -90578,7 +90759,7 @@ index 343045e..b048a79 100644
  	// KytyPlus: detect host-pointer leaks at the HLE boundary. A guest register holding a
  	// pointer above the guest VA range (guest mappings live below ~4 GB + a small runtime
  	// window) but in the host user range means an HLE implementation passed a host pointer
-@@ -1042,7 +1183,7 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+@@ -1042,7 +1182,7 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
  		if (info->rsi > guest_max && info->rsi < 0x800000000ull) { leaked = "rsi"; leaked_val = info->rsi; }
  		if (info->rdi > guest_max && info->rdi < 0x800000000ull) { leaked = "rdi"; leaked_val = info->rdi; }
  		if (leaked != nullptr) {
@@ -90587,7 +90768,7 @@ index 343045e..b048a79 100644
  			           leaked, leaked_val);
  		}
  	}
-@@ -1053,7 +1194,7 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+@@ -1053,7 +1193,7 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
  		const size_t start     = g_stubbed_imports.size() - dump_count;
  		for (size_t i = 0; i < dump_count; ++i) {
  			const auto& record = g_stubbed_imports[start + i];
@@ -90596,15 +90777,10 @@ index 343045e..b048a79 100644
  		}
  	}
  
-@@ -1386,6 +1527,226 @@ static KYTY_MS_ABI uint8_t* TlsMainGetAddr() {
+@@ -1386,6 +1526,221 @@ static KYTY_MS_ABI uint8_t* TlsMainGetAddr() {
  	return g_tls_cached_main_tcb;
  }
  
-+// BC5 (experiment 0359): the current thread's thread control block of the main program, for the job-arena hook.
-+extern "C" uint8_t* bc5_tls_main_tcb() {
-+	return TlsMainGetAddr();
-+}
-+
 +// ---- experiment 0401 series e5: KYTY_BC5_TLS_FIXES, the patched TLS loads (exp 0405 KL01, KL02) -------------------
 +// A main program's `mov <reg>,qword ptr fs:[0]` (64 48 8B /r 25 00 00 00 00, after up to three 0x66 bytes) becomes, at
 +// load time, a call of the TLS handler that SetupTlsHandler writes (Jit::SafeCall, which calls TlsMainGetAddr, and a
@@ -90823,7 +90999,7 @@ index 343045e..b048a79 100644
  static void PatchProgram(Program* program, uint64_t address, uint64_t size) {
  	EXIT_IF(program == nullptr);
  	EXIT_IF(program->elf == nullptr);
-@@ -1414,7 +1775,23 @@ static void PatchProgram(Program* program, uint64_t address, uint64_t size) {
+@@ -1414,7 +1769,23 @@ static void PatchProgram(Program* program, uint64_t address, uint64_t size) {
  		}
  	}
  
@@ -90847,7 +91023,7 @@ index 343045e..b048a79 100644
  		// Replace:
  		//   66 66 66
  		//   mov <reg>, qword ptr fs:[0x00]
-@@ -1453,8 +1830,8 @@ static void PatchProgram(Program* program, uint64_t address, uint64_t size) {
+@@ -1453,8 +1824,8 @@ static void PatchProgram(Program* program, uint64_t address, uint64_t size) {
  
  				auto* code = new (ptr) Jit::Call9;
  				code->SetFunc(reg == 0
@@ -90858,16 +91034,7 @@ index 343045e..b048a79 100644
  				if (inst_size > Jit::Call9::GetSize()) {
  					std::memset(ptr + Jit::Call9::GetSize(), 0x90,
  					            inst_size - Jit::Call9::GetSize());
-@@ -1685,6 +2062,8 @@ void RuntimeLinker::Execute(const std::filesystem::path& game_patch) {
- 	if (!game_patch.empty()) {
- 		GamePatch::Apply(game_patch, m_programs.empty() ? nullptr : m_programs.front());
- 	}
-+	// BC5 (experiment 0359): the job-arena fix (a temporary game-code workaround), per the title's switch.
-+	GamePatch::ApplyJobArenaFix(m_programs.empty() ? nullptr : m_programs.front(), bc5_title_switch_job_arena_fix());
- 	StartAllModules();
- 
- 	LOGF_COLOR(Log::Color::BrightYellow, "---\n--- Execute: %s\n---\n", "Main");
-@@ -1731,6 +2110,10 @@ void RuntimeLinker::Clear() {
+@@ -1731,6 +2102,10 @@ void RuntimeLinker::Clear() {
  	m_relocated = false;
  }
  
@@ -90878,7 +91045,7 @@ index 343045e..b048a79 100644
  void RuntimeLinker::Resolve(const std::string& name, SymbolType type, Program* program,
                              SymbolRecord* out_info, bool* bind_self) {
  	KYTY_PROFILER_FUNCTION();
-@@ -2999,29 +3382,54 @@ void RuntimeLinker::CreateSymbolDatabase(Program* program) {
+@@ -2999,29 +3374,54 @@ void RuntimeLinker::CreateSymbolDatabase(Program* program) {
  	syms(program, program->import_symbols.get(), false);
  }
  

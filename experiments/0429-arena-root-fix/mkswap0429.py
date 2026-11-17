@@ -97,7 +97,7 @@ def input_cpp(lines):
     ind = lines[i][:len(lines[i]) - len(lines[i].lstrip())]
     lines[i:e + 1] = [
         ind + 'if (left.size() > 12 && EqualNoCase(left.substr(0, 12), "JobArenaFix.")) {',
-        ind + '\t// Experiment 0429: the job-arena workaround of exp 0359 is gone; an old line of its key is accepted silently',
+        ind + '\t// Experiment 0429: the workaround of exp 0359 is gone; an old line of its key is accepted silently',
         ind + '\t// and not written back.',
         ind + '\treturn true;',
         ind + '}',
