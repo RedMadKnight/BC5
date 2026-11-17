@@ -25,18 +25,21 @@
 #include <sys/resource.h>
 namespace bc5_0429r {
 // KYTY_BC5_0429_RR: 0 or unset off; 1 any guest sleeper below 700; 2 (build 11) only a sleeper on a pool semaphore,
-// one that two or more distinct threads have slept on (a worker pool: the job system's, not a lone audio thread's)
+// one that two or more distinct threads have slept on (a worker pool: the job system's, not a lone audio thread's);
+// 3 (build 13) only a sleeper of a worker family on its family's semaphore: two or more distinct threads of one name
+// family (the guest name without its trailing index: "Job Hi 0".."Job Hi 7" -> "Job Hi") slept on it, and the sleeper
+// is of that family. h429K10/K12: under 2, AK::AudioMgr (a lone name) shared a semaphore with other threads and got RR.
 static int Mode() {
 	static const int v = [] {
 		const char* e = std::getenv("KYTY_BC5_0429_RR");
 		int         m = 0;
-		if (e != nullptr && e[0] == '2' && e[1] == 0) {
-			m = 2;
+		if (e != nullptr && (e[0] == '2' || e[0] == '3') && e[1] == 0) {
+			m = e[0] - '0';
 		} else if (bc5::env_rule::on(e)) {
 			m = 1;
 		}
 #ifndef BC5_LEAN
-		std::fprintf(stderr, "[bc5] exp 0429: R (RR for the guest's sleepers) %s\n", m == 2 ? "ON, pool sleepers only" : m == 1 ? "ON" : "off");
+		std::fprintf(stderr, "[bc5] exp 0429: R (RR for the guest's sleepers) %s\n", m == 3 ? "ON, worker-family sleepers only" : m == 2 ? "ON, pool sleepers only" : m == 1 ? "ON" : "off");
 #endif
 		return m;
 	}();
@@ -58,6 +61,9 @@ static std::atomic<int64_t> g_full_until {0};  // rtkit refused: no new promotio
 static std::atomic<int>     g_evicted_tid[kMaxSlots]; // evicted, waiting to come back (not spinners)
 static std::atomic<int>     g_evicted_n {0};
 static std::atomic<int> g_held {0};            // how many hold RR now
+#ifndef BC5_LEAN
+static char             g_rtkit_err[200] {};   // build 13: the last refusal's D-Bus error, name: message
+#endif
 static std::atomic<int> g_calls {0};           // rtkit calls made
 #ifndef BC5_LEAN
 static std::atomic<int> g_logged {0};
@@ -351,6 +357,11 @@ static long RtkitMakeRealtime(uint64_t tid, uint32_t prio) {
 	long rc = 0;
 	if (reply == nullptr || api.err_set(err)) {
 		rc = -1003;
+#ifndef BC5_LEAN
+		struct DbusErr { const char* name; const char* message; }; // DBusError's first two fields (dbus-errors.h)
+		const auto* e = reinterpret_cast<const DbusErr*>(err);
+		std::snprintf(g_rtkit_err, sizeof(g_rtkit_err), "%s: %s", e->name != nullptr ? e->name : "?", e->message != nullptr ? e->message : "?");
+#endif
 	}
 	if (reply != nullptr) {
 		api.unref(reply);
@@ -430,6 +441,9 @@ static void Apply(Pthread thread, bool sleeper) {
 		g_full_until.store(g_win_start.load() + kWindowMs);
 		Count(kRefused, prio);
 		Log("rtkit refused", tid, thread->name.c_str(), prio, rr, rc);
+#ifndef BC5_LEAN
+		std::fprintf(stderr, "[bc5] exp 0429 R: rtkit's reason: %s\n", g_rtkit_err);
+#endif
 		return;
 	}
 	for (int i = 0; i < kMaxSlots; i++) {
@@ -463,6 +477,71 @@ struct PoolSlot {
 	std::atomic<bool>      pool {false};
 };
 static PoolSlot g_pools[kPools];
+// build 13, mode 3: a semaphore's worker family. Up to kCands (thread, family) pairs are kept until two distinct threads
+// of one family meet; then that family owns the semaphore and only its threads are promoted there.
+constexpr int kCands = 6;
+struct FamSlot {
+	std::atomic<uintptr_t> sem {0};
+	std::atomic<int>       tid[kCands] {};
+	std::atomic<uint32_t>  key[kCands] {};
+	std::atomic<uint32_t>  owner {0};
+};
+static FamSlot  g_fams[kPools];
+static uint32_t FamilyKey(const std::string& name) { // FNV-1a of the name without its trailing index; 0 for none
+	size_t n = name.size();
+	while (n > 0 && ((name[n - 1] >= '0' && name[n - 1] <= '9') || name[n - 1] == ' ' || name[n - 1] == '_' || name[n - 1] == '-' ||
+	                 name[n - 1] == '#')) {
+		n--;
+	}
+	uint32_t h = 2166136261u;
+	for (size_t i = 0; i < n; i++) {
+		h = (h ^ static_cast<uint8_t>(name[i])) * 16777619u;
+	}
+	return n == 0 ? 0 : (h == 0 ? 1 : h);
+}
+static bool IsFamilyPool(const void* sem, int tid, uint32_t key) {
+	if (key == 0) {
+		return false;
+	}
+	const auto a = reinterpret_cast<uintptr_t>(sem);
+	int        i = static_cast<int>(((a >> 4) * 2654435761ull) % kPools);
+	for (int k = 0; k < kPools; k++, i = (i + 1) % kPools) {
+		uintptr_t cur = g_fams[i].sem.load(std::memory_order_acquire);
+		if (cur == 0) {
+			uintptr_t z = 0;
+			cur         = g_fams[i].sem.compare_exchange_strong(z, a) ? a : z;
+		}
+		if (cur != a) {
+			continue;
+		}
+		auto&          f = g_fams[i];
+		const uint32_t o = f.owner.load(std::memory_order_relaxed);
+		if (o != 0) {
+			return o == key;
+		}
+		for (int c = 0; c < kCands; c++) {
+			int t = f.tid[c].load(std::memory_order_relaxed);
+			if (t == 0) {
+				int z = 0;
+				if (f.tid[c].compare_exchange_strong(z, tid)) {
+					f.key[c].store(key, std::memory_order_relaxed);
+					return false; // recorded; a second thread of this family makes it a pool
+				}
+				t = z;
+			}
+			if (t == tid) {
+				return false;
+			}
+			if (f.key[c].load(std::memory_order_relaxed) == key) {
+				uint32_t z = 0;
+				f.owner.compare_exchange_strong(z, key);
+				return f.owner.load(std::memory_order_relaxed) == key;
+			}
+		}
+		return false; // kCands threads of other families: no pool of this one here
+	}
+	return false;
+}
 static bool     IsPool(const void* sem, int tid) {
 	const auto a = reinterpret_cast<uintptr_t>(sem);
 	int        i = static_cast<int>(((a >> 4) * 2654435761ull) % kPools);
@@ -505,6 +584,9 @@ extern "C" void bc5_0429_r_on_sleep(const void* sem) {
 		return;
 	}
 	if (bc5_0429r::Mode() == 2 && !bc5_0429r::IsPool(sem, static_cast<int>(self->host_thread_id))) {
+		return;
+	}
+	if (bc5_0429r::Mode() == 3 && !bc5_0429r::IsFamilyPool(sem, static_cast<int>(self->host_thread_id), bc5_0429r::FamilyKey(self->name))) {
 		return;
 	}
 	self->bc5_rr_sleeper = true;

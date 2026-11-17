@@ -27,9 +27,11 @@ hi=$(grep -c ' Job Hi' "$HERE/check-$T.ps" 2> /dev/null); hirr=$(grep ' Job Hi' 
 prom=$(grep -ac 'exp 0429 R: promoted' "$L"); ref=$(grep -ac 'exp 0429 R: rtkit refused' "$L"); drop=$(grep -ac 'exp 0429 R: dropped' "$L")
 echo "check $T: Job Hi threads $hi, of them RR $hirr; promoted $prom, refused $ref, dropped $drop; RR threads at G+25: $(grep -c ' RR ' "$HERE/check-$T.ps" 2> /dev/null)"
 grep ' RR \|MainThread' "$HERE/check-$T.ps" 2> /dev/null | head -20
-grep -a 'exp 0429 R: dropped\|exp 0429 R: rtkit refused' "$L" | head -8
+grep -a 'exp 0429 R: dropped\|exp 0429 R: rtkit refused\|rtkit.s reason' "$L" | head -8
 tail -1 "$HERE/check-$T.run" | cut -c1-200
 grep -a "exp 0429 R count\|exp 0429: R (RR" "$L" | tail -4 | cut -c1-260
 mainrr=$(grep -E " (game-main|MainThread)$" "$HERE/check-$T.ps" 2> /dev/null | grep -c " RR ")
 echo "check $T: the main thread RR: $mainrr (must be 0); rtkit refusals $ref (reported only: rtkit has a per-user limit)"
-{ [ "$prom" -ge 1 ] || [ $V = lean ]; } && [ "$hi" -ge 1 ] && [ "$hi" = "$hirr" ] && [ "$mainrr" = 0 ] && echo "check $T: PASS" || echo "check $T: FAIL"
+akrr=$(grep ' AK::' "$HERE/check-$T.ps" 2> /dev/null | grep -c ' RR '); akrr=${akrr:-0}  # build 13: mode 3 keeps lone threads (audio) out
+echo "check $T: AK threads RR at the snapshot: $akrr (mode 3: must be 0)"
+{ [ "${RRMODE:-1}" != 3 ] || [ "$akrr" = 0 ]; } && { [ "$prom" -ge 1 ] || [ $V = lean ]; } && [ "$hi" -ge 1 ] && [ "$hi" = "$hirr" ] && [ "$mainrr" = 0 ] && echo "check $T: PASS" || echo "check $T: FAIL"
