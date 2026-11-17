@@ -29,7 +29,8 @@ for arm in ${ORDER:-D S D S O}; do
     O) bin=$DBIN; aw="BC5_DIRECT_UNMAP_NOWAIT=0" ;;
     T) bin=${TBIN:?the test build}; aw="" ;;                                 # the ONE test build, every item on
     U) bin=${TBIN:?the test build}; aw="BC5_DIRECT_UNMAP_NOWAIT=0" ;;        # ... without item D
-    A) bin=${TBIN:?the test build}; aw="BC5_DIRECT_ANON_EVENTS=0" ;;         # ... without item A
+    A) bin=${TBIN:?the test build}; aw="BC5_DIRECT_ANON_EVENTS=0" ;;         # ... item A off (its default since build 2)
+    P) bin=${TBIN:?the test build}; aw="BC5_DIRECT_SLOT_PREALLOC=0" ;;       # ... without item P
     V) bin=${TBIN:?the test build}; aw="BC5_DIRECT_VIEWS_KEPT=0" ;;          # ... without item V
     G) bin=${TBIN:?the test build}; aw="BC5_DIRECT_SLOT_GROW=0" ;;           # ... without item S
     M) bin=${TBIN:?the test build}; aw="BC5_DIRECT_MAPS_FAST=0" ;;           # ... without item M
