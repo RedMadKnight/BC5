@@ -11,10 +11,13 @@ set -u
 ulimit -c 0
 export LC_ALL=C
 W=$HOME/bc5-work; E=$W/exp0430; N=$E/n; R=$N/raw; HERE=$(cd "$(dirname "$0")" && pwd)
-BIN=$E/kyty_emulator; WORDS=$W/exp0413/n/words0413nz.txt; MAX=${MAX:-6}
+BIN=${CHAIN_BIN:-$E/kyty_emulator}; WORDS=$W/exp0413/n/words0413nz.txt; MAX=${MAX:-6}  # CHAIN_BIN: a control binary (its md5 is taken as is)
 say() { echo "chain0430 $(date +%T): $*"; }
+if [ -n "${CHAIN_BIN:-}" ]; then [ -x "$BIN" ] || { say "NOT STARTED, no $BIN"; exit 1; }; WANT=$(md5sum < "$BIN" | cut -d' ' -f1)
+else
 [ -x "$BIN" ] && [ -s "$E/binary.md5" ] || { say "NOT STARTED, no private binary"; exit 1; }
 WANT=$(cat "$E/binary.md5"); [ "$(md5sum < "$BIN" | cut -d' ' -f1)" = "$WANT" ] || { say "NOT STARTED, the binary is not ${WANT:0:8}"; exit 1; }
+fi
 [ -s "$WORDS" ] || { say "NOT STARTED, no $WORDS"; exit 1; }
 mkdir -p "$R" || exit 1
 OUT=$N/chain-rows.txt
