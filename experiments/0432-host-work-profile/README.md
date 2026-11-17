@@ -327,7 +327,33 @@ V's check, changed in build 2.
 ring 2 slots of 4 MiB and 6 of 512 KiB made at Device::open, 55 MiB of GTT; a job that does not fit its slot takes the
 smallest free slot of its pool that holds it); W (`BC5_DIRECT_ANON_THREAD`: the once-a-second anonymous check on a
 thread that takes no lock and only sets a flag; urgent and must walks unchanged); V's check without the old builder's
-second full build. `t432.diff` 10e40228, `be/direct.cpp` 83d58ac6.
+second full build. `t432.diff` 10e40228, `be/direct.cpp` 83d58ac6. Build 2 hung the GPU: Result 4.
+
+### Result 4 (2026-11-17 16:13-16:16, box): build 2 hung the GPU 45.9 s into its first run; the box rebooted. This experiment's bug.
+
+Build 2 (`a4ee7fd6`: units 305760dd / 1262d6f3 / a9a2143a, private archive 4d5efea1 from `be/direct.cpp` 83d58ac6; 0
+errors) started as run d432T13 at 16:14:35 (his scene, the first of a pair T, V). The boot (212971ac) had already had a
+GPU reset at 16:12 in exp 0430's shared control run. At 16:15:24, on the start screen and before any key, the laptop's
+kernel stream reads "ring gfx_0.0.0 timeout, signaled seq=5679705, emitted seq=5679707", "Process kyty_emulator ...
+thread bc5-ring", "Ring gfx_0.0.0 reset failed", then `bc5-gpu-watch` crashed the kernel for a reboot. Up again at
+16:15:54 (boot 66e113e1). The fault record `~/bc5-data/captures/faults/20261117-161524` says "a hang without a page
+fault", 45.942 s after the start; devcoredump `20261117-161524-devcd2.txt`; journal `play-20261117-1614`. The
+maintainer's live saves read 91bb80e5fd85ca56 before and after (the runs use a private copy).
+
+**Cause (read from the run's journal and the code):** build 2's item P moved a job that did not fit its slot to the
+smallest free preallocated slot of its pool. A slot that had no buffer yet also "did not fit", so nearly every job
+was moved (the build's own line: 12,277 moved in 45 s) onto the 8 preallocated slots at the end of each pool. The
+backend picks a job's slot by rotation and refuses the submission when that slot is still in use
+(`Device::submit`: "the host lets fewer jobs fly than there are slots", `-EBUSY`). The rotation now met slots that
+moved jobs were using; the journal has 142 lines "submit #N acb ... FAILED rc -16" from submission 18 on. The host
+drops a refused job, so a later job waited for work that never ran, and the gfx ring timed out. Not exp 0430's class
+(no dropped wait on a label), no page fault, no sign of memory corruption.
+
+What went wrong in the work: the change altered which slot a job uses without reading the rule the rotation relies
+on, and the run had nothing that stopped at a refused submission. Both are fixed for build 3: the slot switch is
+removed (every slot gets a 512 KiB buffer once at `Device::open`, 64 MiB of GTT; no job changes its slot; a job over
+512 KiB grows its slot as before), and `run0432f.sh` ends a run at the first "FAILED rc -16" in the journal.
+Build 2's other items (D, M, W, V's changed check) were not tested by this run.
 
 (pending: the A/B of the test build in his scene and on the route; the perf profile of the normal and lean builds)
 
