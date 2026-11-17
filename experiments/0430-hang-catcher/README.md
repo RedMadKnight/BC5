@@ -329,3 +329,39 @@ writes in the window, none to these labels). **So the acquire is the title's CPU
 loses no packet. The 21:38 hang frame is one where that mark had not been made when the waiter arrived. F3 imitates
 the mark at the writer's submit; F2 holds a waiter while a writer job on another ring is pending (in this title the
 release then lands about 0.5 ms later).
+
+## The night of 2026-11-16/17: the shared form, F4, the control (catchers off unless said)
+
+The maintainer did not play; the top session's night plan put the box on this work with exp 0429's and 0431's runs in
+the gaps. All on the fight route + walk to G+1500, slot 4, way 2 on, JobArenaFix off, RT on.
+
+| run | binary | what | result | flips/s | gap>100 ms s | longest ms | NOT served / timeout splits |
+|---|---|---|---|---|---|---|---|
+| h430Y1 | build 6 `b2770458` | the shared form (F3 + F2, `mkswap0430.py` unit `42f9f976`) | job-arena crash at 294 s (TARGET) | (40.0) | | | 1 / 164 |
+| h430Y2 | build 6 | same | NO_CRASH | 41.5 | 18 | 529 | 1 / 744 |
+| h430Y3 | build 6 | same | NO_CRASH | 41.4 | 16 | 331 | 0 / 1,045 |
+| h430C1 | the shared `dae7bf0b` | control, no fix | NO_CRASH | 46.5 | 11 | 281 | 1 / 465 |
+| h430F1 | build 7 `3fe98919` | F3 + F4 (shared form `b8afba59` + private archive `1423af83`) | NO_CRASH | 45.1 | 11 | 298 | 1 / 640 |
+
+Build 5's runs earlier: W1 (fix alone) 46.7 / 518 splits, X1 (every catcher) 40.5 / 979. Counters per run
+(journal): F2 waited about 55–61 thousand times in every F2 run (V1: 47.0 s in all, X1: 38.7 s), F3 preset a few
+hundred times, F4 added about 213 thousand dependencies in F1. One or two runs per arm (R13).
+
+ASTRO BOT (exp 0431's runs, 200 s, same snapshot and route): shared W1 58.2 flips/s, 0 / 60; build 4 with every
+catcher X1 44.4, 1,449 / 1,560; build 5 fix alone Y1 57.4, 0 / 49 and Y2 58.8, 0 / 62. So the starvation in X1 was
+the catchers.
+
+**F4** (`BC5_0430_F4`, shared `BC5_DIRECT_XQ_FENCE`, on unless "0"): where F2 would wait on the CPU, the host adds the
+writer jobs as CS dependencies of this buffer's next submission (`bc5::direct::Device::add_next_submit_dependency`, a
+per-thread list consumed by the next `submit()`, beside the ring-order mask's dependencies; `backend/src/direct.cpp`
+and `include/bc5/direct.hpp`, from the shared archive's own source `d19/export/backend`). The kernel's scheduler
+orders the job; no host thread blocks. Built as a private archive (`box0430.sh buildbe`, the shared build's compiler
+and flags, `-Werror`) and linked in place of the shared one (`BE=1`).
+
+**A hang with F3 + F2 (exp 0429's h429F1, 02:18):** its normal build linked my build-6 object, so the fix was on (F3
+presets and F2 waits in its journal). At 526 s (G+418) a GFX-side TCP write (kernel status 0x006C1071, permission 7)
+at junk 0x18f22df4b000; host fault 0xe65ef0c34000 (K4). dcb #713595 and acb #713602 timed out together; resets
+succeeded. The acb's only wait (0x12004b53c8 == 0, at its head) was kept for the GPU and still unmet (0x9076d6d8c), so
+that acb never ran past its head: its timeout is a consequence of the dcb's. The GFX CP stood 372,480 dwords into the
+506,064-dword IB. Without waves, a snapshot or label events, the class is open: an earlier acb overlapping through a
+label the fix does not cover, or another bug. Build 8 (F4 + every catcher) is for that.
