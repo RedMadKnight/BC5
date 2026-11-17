@@ -129,8 +129,43 @@ this could not happen: such waits were served on the CPU before the submit.
 Risk: a mapping kept one frame longer names pages the guest has freed; the memfd keeps them alive while a BO imports
 them, so a late GPU read sees old data, not a fault.
 
-In the test build this is switch `BC5_0432_RETIRE` with three levels (1: no drain for additions only; 2: + retire at
-the flip; 0: today's code), each counted on stderr.
+**What was built (`mkd432.py`, `d432.diff`):** not a host retire list. The wait is dropped and the kernel defers the
+unmap; switch `BC5_DIRECT_UNMAP_NOWAIT` (unset or not "0": no wait; "0": the old `wait_jobs()`), counters on stderr and
+in the journal at most every 10 s. The three cases above collapse into one: additions, drops and replacements at the
+same address are all ordered by the kernel behind the jobs in flight.
+
+**Two checks before the first D run (the top session's order, 2026-11-17).**
+
+1. *Why the wait exists.* It came with commit 01113ae7 (2026-10-01, exp 0024, run 110). `experiments/0024-jobs-in-flight/README.md`
+   lines 81-90: "A second fault of the design, found by reading rather than by a symptom: the direct mapper replaced mappings
+   (merged imports, views gone) while jobs that might use them were still running; the kernel clears the page-table entries
+   of an unmapped range at once." No fault and no corruption was seen; the premise was not sourced. The driver's code says
+   the opposite (below).
+2. *The kernel, at tag v7.3* (torvalds/linux, read 2026-11-17 through raw.githubusercontent.com; the box runs 7.3.3-ogc, a
+   vendor build whose own source was not read):
+   - `amdgpu_vm.c` `amdgpu_vm_clear_freed()`: "Implicitly sync to command submissions in the same VM before unmapping",
+     `amdgpu_sync_resv(adev, &sync, vm->root.bo->tbo.base.resv, AMDGPU_SYNC_EQ_OWNER, vm)`, then
+     `amdgpu_vm_update_range(adev, vm, false, false, true, false, &sync, ...)`: the clear is a job that depends on the VM's
+     earlier submissions.
+   - `amdgpu_cs.c`: every submission locks the root page directory (`amdgpu_vm_lock_pd`) and every BO of its list, and
+     `amdgpu_cs_submit()` adds the job's fence to each of them (`dma_resv_add_fence`).
+   - `amdgpu_gem.c` `amdgpu_gem_va_update_vm()`: `amdgpu_vm_clear_freed(adev, vm, &vm->last_update)`; the ioctl does not
+     wait; `amdgpu_cs_vm_handling()` makes later jobs depend on `vm->last_update`.
+   - `ttm_bo.c` `ttm_bo_release()`: a BO whose reservation object has unsignaled fences is not destroyed, it goes to
+     `delayed_delete`, which waits for them.
+   - The gap: the VA unmap's fence is NOT put on the unmapped BO, and `amdgpu_gem_object_close()` adds a fence only if the
+     close itself unmapped something. So a BO that a running job reads but that is not in that job's BO list could be
+     destroyed before the job ends.
+3. *The backing memory on our side.* `backend/src/direct.cpp` 1456-1521: a job with a draw or a dispatch gets the full
+   list (every userptr BO and every imported BO with a mapping); a job without them gets the short list, the BOs of the
+   operands the filter accepted, which are all it can read. So every BO a job can read is in its list, carries its fence,
+   and outlives it (TTM's delayed delete); the imported pages stay pinned by the BO until then. `free_shared` right after
+   the unmap is therefore safe for jobs in flight, and no host retire list is needed. Not covered, and not changed by D:
+   the title's own reuse of a range it freed (the pages stay the memfd's; a late job reads what the title wrote since, as
+   before, because the old wait ran at the next submission's sync, not at the title's unmap); the userptr path of
+   `sync_mappings`, which keeps its wait.
+   Inferred, not read: that a submission's fence owner is its VM (amdgpu_job.c), and that the page-table jobs of one VM
+   run in the order they were queued (one scheduler entity), which orders a later map at the same address behind the clear.
 
 Not to be tried again (earlier verdicts): the zero skip, learned windows, flip defer, `ANON_SYNC=thread` as a
 default, one-ring arms, recovery as a fix.
