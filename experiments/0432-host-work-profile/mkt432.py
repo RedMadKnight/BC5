@@ -50,6 +50,10 @@ sub("static void wait_jobs();\n",
     "\t}();\n"
     "\treturn v;\n"
     "}\n"
+    "inline bool anon_thread() { // item W\n"
+    "\tstatic const bool v = word_on(\"BC5_DIRECT_ANON_THREAD\");\n"
+    "\treturn v;\n"
+    "}\n"
     "inline bool views_kept() { // item V\n"
     "\tstatic const bool v = word_on(\"BC5_DIRECT_VIEWS_KEPT\");\n"
     "\treturn v;\n"
@@ -165,6 +169,46 @@ sub("\t\tfor (const auto& m: S.maps) { // drop what no view asks for any more, b
     "\t\tuint64_t m432_prev = 0;\n"
     "\t\tfor (const auto& m: S.maps) { // drop what no view asks for any more, before adding (addresses get reused)\n")
 
+# item W (tag w432), BC5_DIRECT_ANON_THREAD: the once-a-second CHECK of the anonymous sync on a thread of its own.
+# Found in build 1's runs: that check reads /proc/self/maps for about 50 ms a second on the submitting thread under the
+# device mutex and finds nothing. While the last walk found no anonymous guest VMA (and the private memory is a file), a
+# call that is neither urgent (an unmapped operand) nor "must" (-EFAULT) leaves the walk out; the thread reads the maps
+# once a second and, if it sees an anonymous guest VMA, makes the next call walk at once. Urgent and must calls, the
+# first walk and the walk after a device reopen stay on the submitting thread as they are. The bound is today's: a new
+# anonymous region is seen within a second, or at once when an operand needs it. Not exp 0415's "thread" form, which
+# also left urgent walks to its thread.
+sub("// force: before a submission whose shaders may read memory the filter does not see.",
+    "// exp 0432 (tag w432): see mkt432.py, item W\n"
+    "static std::atomic<bool>     g_w432_found {false};\n"
+    "static std::atomic<uint64_t> g_w432_passes {0};\n"
+    "static void w432_thread() {\n"
+    "\tpthread_setname_np(pthread_self(), \"bc5-anonchk\");\n"
+    "\tfor (;;) {\n"
+    "\t\tstd::this_thread::sleep_for(std::chrono::milliseconds(1000));\n"
+    "\t\tstd::vector<Vma> vmas;\n"
+    "\t\tanon_vmas_read(&vmas);\n"
+    "\t\tg_w432_passes++;\n"
+    "\t\tif (!vmas.empty()) g_w432_found.store(true, std::memory_order_release);\n"
+    "\t}\n"
+    "}\n"
+    "\n"
+    "// force: before a submission whose shaders may read memory the filter does not see.")
+sub("\tif (!as_ev_now && !force && now - g_last_sync_ns < 50'000'000ull) { // at most every 50 ms\n",
+    "\tif (d432::anon_thread() && as_mode != 3 && !urgent && !must) { // exp 0432 (tag w432)\n"
+    "\t\tif (g_w432_found.exchange(false, std::memory_order_acq_rel)) {\n"
+    "\t\t\tas_ev_now = true; // the thread saw an anonymous guest VMA: walk now, whatever the time limits say\n"
+    "\t\t} else if (g_last_sync_ns != 0 && g_as415_walk_valid && as_prev_empty && Libs::LibKernel::Memory::Bc5PrivateMemoryFd() >= 0) {\n"
+    "\t\t\tstatic std::once_flag w432_once;\n"
+    "\t\t\tstd::call_once(w432_once, [] { std::thread(w432_thread).detach(); });\n"
+    "\t\t\td432::g_anon_skips++;\n"
+    "\t\t\treturn;\n"
+    "\t\t}\n"
+    "\t}\n"
+    "\tif (!as_ev_now && !force && now - g_last_sync_ns < 50'000'000ull) { // at most every 50 ms\n")
+# item V's check: the old builder's second full build belongs to exp 0415's verify stage; not while the kept list is in use
+sub("\tif (const uint64_t g2 = Libs::LibKernel::Memory::Bc5MappedRangesGeneration(); g2 == gen) {\n",
+    "\tif (const uint64_t g2 = Libs::LibKernel::Memory::Bc5MappedRangesGeneration(); g2 == gen && !d432::views_kept()) { // exp 0432: build 1 showed this second build in single calls of 104-114 ms\n")
+
 # the line
 sub("\thint_targets(ib, num_dwords);\n"
     "\tconst uint64_t t2 = SoftCp::now_ns();\n",
@@ -178,11 +222,11 @@ sub("\thint_targets(ib, num_dwords);\n"
     "\t\tif (t2 - was >= 10'000'000'000ull && d432::g_last_ns.compare_exchange_strong(was, t2)) {\n"
     "\t\t\tchar line[900];\n"
     "\t\t\tstd::snprintf(line, sizeof(line),\n"
-    "\t\t\t              \"exp 0432 (tag d432): t %.1f s: unmap-nowait %s, anon-events %s, views-kept %s; sync+hints of all submissions %.1f s, longest %.1f ms, over 20 ms %\" PRIu64\n"
+    "\t\t\t              \"exp 0432 (tag d432): t %.1f s: unmap-nowait %s, anon-events %s, anon-thread %s, views-kept %s; sync+hints of all submissions %.1f s, longest %.1f ms, over 20 ms %\" PRIu64\n"
     "\t\t\t              \"; rebuilds that change mappings %\" PRIu64 \", with a ring busy %\" PRIu64 \"; mappings dropped %\" PRIu64 \", while busy %\" PRIu64 \", BOs retired while busy %\" PRIu64\n"
     "\t\t\t              \"; blocking drains %\" PRIu64 \", %.1f ms in all, longest %.1f ms; anon walks %\" PRIu64 \" (asked by the counter %\" PRIu64 \"), left out %\" PRIu64 \", event misses %\" PRIu64\n"
     "\t\t\t              \", anonymous guest VMAs %\" PRIu64 \"; view builds %\" PRIu64 \", list copies %\" PRIu64 \", record mismatches %\" PRIu64 \"; maps-fast %s: merged %\" PRIu64 \", sorted %\" PRIu64,\n"
-    "\t\t\t              timing_now(), d432::on() ? \"ON\" : \"off\", d432::anon_events() ? \"ON\" : \"off\", d432::views_kept() ? \"ON\" : \"off\",\n"
+    "\t\t\t              timing_now(), d432::on() ? \"ON\" : \"off\", d432::anon_events() ? \"ON\" : \"off\", d432::anon_thread() ? \"ON\" : \"off\", d432::views_kept() ? \"ON\" : \"off\",\n"
     "\t\t\t              static_cast<double>(d432::g_sync_ns.load()) / 1e9, static_cast<double>(d432::g_prep_max_ns.load()) / 1e6, d432::g_prep_over20.load(), d432::g_rebuilds.load(),\n"
     "\t\t\t              d432::g_busy.load(), d432::g_unmaps.load(), d432::g_unmaps_busy.load(), d432::g_bos_busy.load(), d432::g_drains.load(),\n"
     "\t\t\t              static_cast<double>(d432::g_drain_ns.load()) / 1e6, static_cast<double>(d432::g_drain_max_ns.load()) / 1e6, d432::g_anon_walks.load(), d432::g_anon_ev.load(),\n"

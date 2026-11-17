@@ -31,10 +31,11 @@ for arm in ${ORDER:-D S D S O}; do
     U) bin=${TBIN:?the test build}; aw="BC5_DIRECT_UNMAP_NOWAIT=0" ;;        # ... without item D
     A) bin=${TBIN:?the test build}; aw="BC5_DIRECT_ANON_EVENTS=0" ;;         # ... item A off (its default since build 2)
     P) bin=${TBIN:?the test build}; aw="BC5_DIRECT_SLOT_PREALLOC=0" ;;       # ... without item P
+    W) bin=${TBIN:?the test build}; aw="BC5_DIRECT_ANON_THREAD=0" ;;         # ... without item W
     V) bin=${TBIN:?the test build}; aw="BC5_DIRECT_VIEWS_KEPT=0" ;;          # ... without item V
     G) bin=${TBIN:?the test build}; aw="BC5_DIRECT_SLOT_GROW=0" ;;           # ... without item S
     M) bin=${TBIN:?the test build}; aw="BC5_DIRECT_MAPS_FAST=0" ;;           # ... without item M
-    Z) bin=${TBIN:?the test build}; aw="BC5_DIRECT_MAPS_FAST=0 BC5_DIRECT_UNMAP_NOWAIT=0 BC5_DIRECT_ANON_EVENTS=0 BC5_DIRECT_VIEWS_KEPT=0 BC5_DIRECT_SLOT_GROW=0 KYTY_BC5_ANON_SYNC=verify" ;;  # every item off, exp 0415's verify counting event misses
+    Z) bin=${TBIN:?the test build}; aw="BC5_DIRECT_ANON_THREAD=0 BC5_DIRECT_SLOT_PREALLOC=0 BC5_DIRECT_MAPS_FAST=0 BC5_DIRECT_UNMAP_NOWAIT=0 BC5_DIRECT_ANON_EVENTS=0 BC5_DIRECT_VIEWS_KEPT=0 BC5_DIRECT_SLOT_GROW=0 KYTY_BC5_ANON_SYNC=verify" ;;  # every item off, exp 0415's verify counting event misses
     *) echo "scene0432: arm $arm?"; break ;;
   esac
   t=d432$arm$k; while [ -e "$N/raw/$t-start.txt" ]; do t=${t}b; done
