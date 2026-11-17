@@ -85,6 +85,53 @@ GPU side, one ring: an ordinary frame was 34 ms with 24-26 ms of our jobs on the
 jobs running were 5.7-7.2 ms before `submit_now` (4.4-5.3 the title, 1.2-1.3 our chain) and 2.2-4.2 ms inside it
 under the mutex (exp 0415 sections 13-14; the earlier "5.4-6.5 ms idle" figure was withdrawn there, LESSONS R13).
 
+### Item D (from exp 0430, 2026-11-17): the submit path waits for an idle GPU before a mapping change
+
+Reported by the top session from exp 0430's Q1 run (t 559, `play-20261117-1245` on the box, not read by me): the game
+thread stood 1.07 s in submit preparation at a "maps +0 -6" change.
+
+**Where it waits** (code, patch bc39a035, extracted `bc5LleAgc.cpp`):
+- `direct_sync_one` 4561-4564 calls `wait_jobs()` when BOs were retired (a merge, every 250 ms at most; a lazy-release
+  cut), when the view set's signature changed (any guest map or unmap, additions included), or on a guard change.
+- `wait_jobs()` 14283-14288 flushes the thread's chain and calls `Device::wait_idle(2 s)`; `wait_idle`
+  (`backend/src/direct.cpp` 1658-1667) waits for the LAST submitted job of the GFX ring and of each of the 4 compute
+  rings in turn, up to 2 s each.
+- It runs on the submitting thread inside `submit_now`, under `g_dev_mutex` (14734), for every buffer with a draw,
+  dispatch or nested IB. `sync_mappings` pass 1 has a second call site per stale anonymous mapping (exp 0415 C3).
+- The wait is for the whole device, not for the 6 mappings that go.
+
+**Why 1 s is possible now and was not before** (my inference, not shown by a log): while the thread waits it holds
+`g_dev_mutex`, so no other thread can submit. Since exp 0428 (`ACB_SPLIT_LATE=3`) a dcb job can sit on the GPU in a
+WAIT_REG_MEM for a label that an acb of another queue writes; if that acb is not yet submitted, its submitter needs the
+mutex the waiter holds. The wait then ends only when the label is met some other way or at the 2 s limit. On one ring
+this could not happen: such waits were served on the CPU before the submit.
+
+**How often, how long** (existing records; all on one ring, none under way 2):
+- exp 0415 README section "C3" and line 379: `wait_jobs` 0.03-0.07 s in every load phase, "C3 is refuted as a cost";
+  per-job window: the drain 0.3-0.6 ms (line 914).
+- exp 0412 README about line 3220: 1,482 and 1,674 drains counted in two runs.
+- His scene and the route on today's builds: not on the laptop. The profile slot's normal runs write
+  `KYTY_BC5_FRAME_STAT` lines, whose field ds[3] is this wait per submission; that gives count, total and the longest
+  per scene with no extra run.
+
+**Can a deferred unmap replace it?** Split by what changes:
+1. Additions only ("maps +N -0"): nothing in flight can name a mapping that did not exist. No wait is needed. Today
+   the signature test drains anyway. Simplest cut, no new mechanism.
+2. Drops with no reuse of the address ("-M", the guest unmapped or a lazy cut): keep the mapping and the BO on a
+   retire list and take them out at the next point where nothing is in flight. The flip's `drain()` (14265-14271) is
+   already such a point every frame, so the retire costs no new wait. Memory comes back at most one frame later.
+3. A wanted mapping at an address still on the retire list, and merges (the same address moves to a new BO): the
+   address is reused, so the old mapping must go first. Options: the blocking wait as today (counted, expected rare),
+   or `AMDGPU_VA_OP_REPLACE` for the merge, where the pages behind the address do not change. TODO(verify): that the
+   box's kernel orders the page-table update of a VA unmap/replace against the VM's in-flight jobs (amdgpu_vm.c);
+   until it is read, form 3 keeps the wait.
+`lzr_confirm` (a cut stands only when every ring is idle) moves to the same retire point.
+Risk: a mapping kept one frame longer names pages the guest has freed; the memfd keeps them alive while a BO imports
+them, so a late GPU read sees old data, not a fault.
+
+In the test build this is switch `BC5_0432_RETIRE` with three levels (1: no drain for additions only; 2: + retire at
+the flip; 0: today's code), each counted on stderr.
+
 Not to be tried again (earlier verdicts): the zero skip, learned windows, flip defer, `ANON_SYNC=thread` as a
 default, one-ring arms, recovery as a fix.
 
