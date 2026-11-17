@@ -344,3 +344,14 @@ counter at 140,000 contended locks: 43,959 slept (31 %, against 49 % with mode 1
 
 Tally on the long route so far (counted runs only; R13: counts, not rates): C 1 clean (h429C1); Z 1 crash (h429Z1, G+10);
 M 1 crash (h429M4, G+393, build 3); X 1 crash (h429X1, G+10, build 1); S 1 clean (h429S1); F 0 counted (h429F1 KERNEL).
+
+## h429C3 and h429S2 (2026-11-17 03:40–04:04, build 6)
+
+**h429C3** (control): NO_CRASH to G+600, 47.1 flips/s, no kernel line. **h429S2** (`FAST_MUTEX=2`): NO_CRASH to
+G+600, 40.1 flips/s, one 3.4 s gap, no kernel line; mutex counter at 140,000 contended locks: 48,720 slept, mean 127 µs.
+
+Tally on build 6 (exp 0430's build 7 underneath): C 1 clean, S 2 clean. With build 4 (exp 0430's build 6): C 1 clean,
+Z 1 crash. **The controls of builds 4 and 6 are 2 of 2 clean on the long route**, so these runs cannot show an effect
+of S or F: the crash on this route has become rare on these builds (exp 0430's own build 6 still crashed once, h430Y1,
+G+187). R13: two and three runs are no rate. A test of S needs either many more runs or a route on which the control
+crashes reliably (the earlier 180 s fight route crashed 7 of 9 in exp 0388 on older builds; not re-measured on these).
