@@ -258,6 +258,63 @@ does not recompile; the counts go to this build's own line) and two rejected hun
 Not in this build: the mapping rebuild for changed ranges only (three per-view passes, one depending on what the title
 has written); a second build, sized by what the timing lines show is left after M.
 
+### Result 3 (2026-11-17 14:48-15:46, box): test build 1 (D, S, A, V, M) in his scene: three times slower, because of item A
+
+Test binary `893e3db0` (units 9df1186a / 1262d6f3 / a9a2143a, header 478ff14c; private archive 16345982 from
+`be/direct.cpp` 9975d8ee; 0 errors; the shared binary unchanged). First compile on the box: the host has no `patch`
+(now `git apply`), and `sysLinuxVirtual.cpp` is a member of the static library `common` (its private object now goes in
+front of the link's objects; the link map names the private object). `test_m432` PASS with the container's g++.
+Series `T S S T T S` then one `A` (T with `BC5_DIRECT_ANON_EVENTS=0`), the same scene, 300 s from G, exp 0415's per-job
+record on in every arm (`FS=1`). 7 of 7 NO_CRASH, 0 kernel lines.
+
+| run | arm | flips/s from G+10 s | seconds with a gap over 100 ms / 50 ms (of ~292) | sync+hints of all submissions; over 20 ms |
+|---|---|---|---|---|
+| d432T6 | T | 11.2 | 223 / 277 | 312.2 s; 5,191 |
+| d432S7 | shared | 33.9 | 81 / 283 | not counted by the build |
+| d432S8 | shared | 33.4 | 90 / 283 | |
+| d432T9 | T | 10.8 | 242 / 275 | 310.2 s; 5,096 |
+| d432T10 | T | 10.6 | 251 / 276 | 309.6 s; 4,975 |
+| d432S11 | shared | 30.7 | 109 / 284 | |
+| d432A12 | T, item A off | 34.0 | 97 / 282 | 102.2 s; 1,002 |
+
+- **Item A is a regression here and is off by default from build 2.** Its rule walks at once whenever the map/protect
+  counter has moved; in this scene that was 6,454-6,664 walks in 440 s (15 a second) against one a second before, and
+  every walk found nothing (anonymous guest VMAs 0, event misses 0). Exp 0415's plan had said: verify first, turn it on
+  only if the event rate is below the walks of today. That step was skipped here; the error is this experiment's.
+- With A off, T is level with the shared build (one run): D, S, V and M together give no visible flips/s in this
+  no-input scene.
+- Item S found the slot stall: "slot 0 resize 524288 -> 4194304 bytes (asked 3274408) took 683.0 ms: unmap+free 0.1,
+  alloc 682.7, gpu map 0.1, cpu map 0.0" and "slot 26 resize 262144 -> 2097152 bytes took 385.2 ms: ... alloc 382.2":
+  it is `amdgpu_bo_alloc` in the middle of play. Growing by powers of two still allocates then.
+- Kept view list: 0 record mismatches in all four runs. No-wait unmap: 2,009-3,912 mappings dropped and up to 44 BOs
+  retired per run while a ring was busy, no fault.
+
+What the long sync parts are (`fs0432.py` on the per-job records; a sample of 64 of every 512 frames, in ms):
+
+| | shared d432S7 | T, A off d432A12 | T d432T9 |
+|---|---|---|---|
+| job lines | 53,381 | 53,715 | 19,907 |
+| lock wait (for the device mutex) | 13,534 | 13,096 | 34,370 |
+| probe | 2,009 | 1,320 | 838 |
+| anonymous sync (its maps read) | 3,174 (3,142) | 2,716 (2,684) | 29,223 (29,067) |
+| direct sync | 8,802 | 8,515 | 7,101 |
+| - views | 2,414 | 4,152 | 3,887 |
+| - scan (imports) | 2,109 (1,876) | 2,069 (1,843) | 1,932 (1,780) |
+| - merge / drain | 331 / 149 | 306 / 9 | 176 / 5 |
+| - maps | 3,490 | 1,683 | 1,005 |
+| learned / hints / before the device call | 888 / 633 / 1,674 | 888 / 585 / 1,649 | 415 / 251 / 720 |
+| device call | 15,436 | 15,197 | 5,225 |
+| jobs with sync+hints over 20 ms | 122 | 136 | 615 |
+
+- The two longest (852 and 585 ms; the same two jobs in every run of every arm: an acb of 57 dwords, a dcb of 3,496)
+  are imports inside the scan: 845 and 584 ms in `ls415_import`. This is the "longest 828-864 ms" of every arm.
+- The once-a-second anonymous walk reads the maps for about 50 ms each time (3.1 s of the sample, about 25 s of a run),
+  on the submitting thread under the device mutex, and finds nothing. One such hold a second fits "283 of 292 seconds
+  with a gap over 50 ms" in every arm (a fit, not shown per second).
+- Threads wait for the device mutex about as long as the device call takes (13.5 s against 15.4 s in the sample).
+- By item: D takes the drain from 149 to 9 ms; M halves the mapping rebuild (3,490 to 1,683 ms); V makes the view
+  list slower (2,414 to 4,152 ms, single builds of 104-114 ms): its 2 s check builds the whole list twice.
+
 (pending: the A/B of the test build in his scene and on the route; the perf profile of the normal and lean builds)
 
 ## Verdict
