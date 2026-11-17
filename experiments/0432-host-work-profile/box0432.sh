@@ -96,9 +96,11 @@ buildt() {
     own || stop "no lock held by 0432"
     pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
     [ -s "$E/be-build/libbc5_backend.a" ] || stop "no private archive: run buildbe first"
-    local shared bin rc f T=$E/t TS=$E/t/src WANT=0de9349b CDB=$E/compdb.json X=t
+    local shared bin rc f T=$E/t TS=$E/t/src WANT=0de9349b CDB=$E/compdb.json X=t UW=019d826f DF=t432.diff
+    # SWAP=1: the swap form of the unit (mkswap432.py, swap432.diff), into ~/bc5-work/exp0432/sw (lean: swl)
+    if [ "${SWAP:-0}" = 1 ]; then UW=4505c40c; DF=swap432.diff; T=$E/sw; TS=$E/sw/src; X=sw; fi
     # LEAN=1: the same sources with the shared lean build's commands and objects, into ~/bc5-work/exp0432/tl
-    if [ "${LEAN:-0}" = 1 ]; then B=$W/kytyplus-build-lean; T=$E/tl; TS=$E/tl/src; WANT=63fda02d; CDB=$E/compdb-lean.json; X=tl; fi
+    if [ "${LEAN:-0}" = 1 ]; then B=$W/kytyplus-build-lean; T=${T}l; TS=$T/src; WANT=63fda02d; CDB=$E/compdb-lean.json; X=${X}l; fi
     shared=$(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)
     [ "${shared:0:8}" = "$WANT" ] || stop "the shared build in $B is ${shared:0:8}, not $WANT"
     rm -rf "$T"; mkdir -p "$TS" "$R"
@@ -111,8 +113,9 @@ b8afba59 019d826f src/libs/bc5LleAgc.cpp
 5b2016ed a9a2143a src/libs/libAmpr.cpp
 058bb712 478ff14c src/bc5/anon_sync.hpp
 EOT
-    (cd "$TS" && git apply --whitespace=nowarn "$HERE/t432.diff") > "$R/$X-patch.out" 2>&1  # the host has no patch(1); git apply works on plain files || { cat "$R/$X-patch.out"; stop "t432.diff does not apply"; }
+    (cd "$TS" && git apply --whitespace=nowarn "$HERE/$DF") > "$R/$X-patch.out" 2>&1  # the host has no patch(1); git apply works on plain files || { cat "$R/$X-patch.out"; stop "t432.diff does not apply"; }
     while read -r base want f; do
+        [ "$f" = "$U" ] && want=$UW
         [ "$(m8 "$TS/$f")" = "$want" ] || stop "the edited $f is $(m8 "$TS/$f"), not $want as made on the laptop"
     done <<'EOT'
 b8afba59 019d826f src/libs/bc5LleAgc.cpp
