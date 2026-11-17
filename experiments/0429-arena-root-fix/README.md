@@ -355,3 +355,11 @@ Z 1 crash. **The controls of builds 4 and 6 are 2 of 2 clean on the long route**
 of S or F: the crash on this route has become rare on these builds (exp 0430's own build 6 still crashed once, h430Y1,
 G+187). R13: two and three runs are no rate. A test of S needs either many more runs or a route on which the control
 crashes reliably (the earlier 180 s fight route crashed 7 of 9 in exp 0388 on older builds; not re-measured on these).
+
+## h429S3 and h429C4 (2026-11-17 05:16–05:40, build 6)
+
+**h429S3** (`FAST_MUTEX=2`): NO_CRASH to G+600, 46.1 flips/s, longest gap 267 ms, no kernel line. **h429C4**
+(control): NO_CRASH to G+600, 39.9 flips/s, longest gap 472 ms, no kernel line. Real pad keys 0 in both.
+
+Tally on build 6: C 2 clean (h429C3, h429C4), S 3 clean (h429S1, S2, S3). With build 4, the controls on the long route
+are 3 of 3 clean. R13: the crash does not show on this route on these builds, so S cannot be told from C here.
