@@ -519,3 +519,31 @@ The long route, slot 4, the named snapshot, RT on, the catcher on, no pad key, n
 - With R active: G5 and G6 clean, 2 of 2.
 
 R has not crashed yet, and the stressed control crashes in most runs. Two runs are not enough to call it a fix: more G runs are needed, then R alone against C, and an fps check.
+
+## R offline (2026-11-17 13:xx): lean, the host shortcut, ASTRO BOT
+
+- **Lean carries R.**
+  - In lean, `BC5_LEAN` removes only R's log lines and the catcher.
+  - The sleep hook in semaphore.cpp sits after the catcher's `#endif`, under `#ifdef __linux__` only.
+  - The promotion, the bounds and the rtkit call all compile in.
+  - Build 10's check found `KYTY_BC5_0429_RR` in both binaries.
+  - Lean has not run with R yet: a lean check (h429K-) belongs in the next slot.
+- **The host-lean shortcut (no distrobox).**
+  - On the host the system bus is at its usual `/run/dbus/system_bus_socket` (read 09:59: `busctl` reached rtkit
+    there), so `dbus_bus_get_private` takes the first path; the `/run/host` fallback is for the container only.
+  - TODO(verify) at the next slot: `libdbus-1.so.3` on the host, normally `/usr/lib64` from Fedora's dbus-libs.
+    If it is missing, R refuses every promotion with rc −1000 and logs it; the title runs on as without R.
+- **ASTRO BOT.**
+  - R is for every title, with no title rows. For ASTRO BOT it promotes, at their first sleep on a guest semaphore,
+    the threads below 700 except the runtime's main thread. The highest priorities win when more than the cap (online
+    CPUs − 2 = 14) want RR or rtkit's limit is reached.
+  - Its threads and priorities have not been read. The trace (`KYTY_BC5_0429_TRACE=1`) lists them, and so does R's own
+    log.
+  - The risks are the same as here:
+    - a thread that runs long under RR is dropped (20 ms without blocking by SIGXCPU, 100 ms in one slice by the
+      watchdog);
+    - its audio thread may become RR (here AK::AudioOutThread, 256, stayed RR at rtkit priority 13), and so may its
+      render-side guest threads, which then preempt the host's own GPU threads on their CPU.
+  - Before any swap: an ASTRO BOT smoke with R on (normal and lean, `astro0431.sh` with `XWORDS=KYTY_BC5_0429_RR=1`),
+    the flips/s against the same run without R, and the screen shots. R stays off by default until the maintainer
+    decides.
