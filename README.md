@@ -69,7 +69,7 @@ A desktop shortcut opens the emulator window (see [How to start](#how-to-start))
 
 Only what is confirmed to fail on the shared builds of 2026-11-16:
 
-- **GPU hangs in the second title's longer plays.** About every 8–30 minutes of play a ray-tracing (BVH) shader writes through an address built from data that another GPU job has just overwritten, the ring hangs, and when the reset fails the box restarts by itself. The cause is a host synchronisation bug: a wait between the graphics and the compute queue is passed on a stale value (F847, F848). The fix for that wait is in the shared builds since 2026-11-17 (experiment 0430, F849: no GPU hang in 6 night runs, against 1 in 3 without it). One more hang class, a graphics-side write to a junk address seen once with an earlier form of the fix, is still being hunted, and a cheaper form of the fix (waiting only for the release point, not the whole graphics job) is being designed.
+- **GPU hangs in the second title's longer plays.** About every 8–30 minutes of play a ray-tracing (BVH) shader writes through an address built from data that another GPU job has just overwritten, the ring hangs, and when the reset fails the box restarts by itself. The cause is a host synchronisation bug: a wait between the graphics and the compute queue is passed on a stale value (F847, F848). The fix for that wait is in the shared builds since 2026-11-17 (experiment 0430, F849: no GPU hang in 6 night runs, against 1 in 3 without it). It does not cover the reverse order: on 2026-11-17 11:58 the shared build hung when the waiting compute buffer was sent before the graphics job that releases the label (F852). The console's GPU decides such a wait when it reaches it; the host decided it at submit. A fix that keeps those waits for the GPU (experiment 0430, F6) and a cheaper form of the first fix (F5) are in test.
 - **A CPU crash in the second title's job system, mostly in one fight scene.** The game's main thread, helping its job workers, runs a job that needs a worker's data, and the emulator ends with a read at address 0xc. On the night of 11-16/17 it ended a few of the long runs, at 3 to 20 minutes; with more job workers per core it came in most runs. The title-code workaround (JobArenaFix) is removed from the code, menu and switches since 2026-11-17 (experiment 0429): the fix is to come from console-like thread scheduling, derived at run time for any title. A 200 µs wake slice (experiment 0425) and a faster guest mutex did not remove it; real-time priority for the job workers in the console's order is next (F444–F458, F851).
 
 ASTRO BOT's first-save failure of 2026-11-15 (F833, F835) is fixed in the shared builds since 2026-11-15 16:26 (experiment 0422).
@@ -122,7 +122,7 @@ Since 2026-11-13 the builds set their own defaults in code (F827), so a launcher
 | Audio grain model and display-event coalescing | The second title's sound and timeline at real speed (1.00× for 10 minutes), no 30-fps cap needed | F246, F247 |
 | Tessellation-factor ring, second title | The night scene's tessellated draws are drawn; the geometry engine's reads at address 0 are gone | F248 |
 
-**The research so far:** 741 finding rows (F1–F851; the numbering has gaps) in `docs/HANDOFF.md`, experiment directories 0001–0431 in `experiments/`, 14 architecture decision records in `docs/decisions/`.
+**The research so far:** 742 finding rows (F1–F852; the numbering has gaps) in `docs/HANDOFF.md`, experiment directories 0001–0431 in `experiments/`, 14 architecture decision records in `docs/decisions/`.
 
 ### Known issues
 
