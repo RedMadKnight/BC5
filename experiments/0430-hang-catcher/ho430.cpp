@@ -59,6 +59,15 @@
 // between runs (the maintainer's rule against learned windows). Never held when the waiter's thread is the one that
 // registered the label's last release (it would submit the release itself after the hold: counted as same thread).
 // A hold also records when the label first stops holding ref (the busy mark) and both threads' names, for the record.
+// F8, "the acb is an observe point" (2026-11-17, from F7's first holds and the code): BC5_0430_F8 / shared
+// BC5_DIRECT_XQ_ORDER, on unless "0". The acbs come through the title's compute queues, which bc5-ring polls and
+// submits at once; the dcbs go through the title's submit call and, with BC5_DIRECT_CHAIN=2, are held in that thread's
+// chain (ADR 0010 section B) for up to 2 ms, unsubmitted and their writes unregistered. bc5-ring's own chain_flush
+// does not touch another thread's chain, so an acb the title submitted after a dcb could reach the device before it
+// and decide its wait on the last frame's label: F848's whole family, and F7's holds ended exactly when that chain went.
+// F8: at an acb's first wait, every other thread's held chain is submitted first (chain_submit, foreign, why 11: the
+// non-blocking path the watchdog uses; a chain whose owner is inside its own submit is left to it). Then the existing
+// paths decide with the writers registered. No stamps, no counting, no labels.
 namespace ho430 {
 inline bool not0(const char* e) {
 	return e == nullptr || !(e[0] == '0' && e[1] == 0);
@@ -95,6 +104,10 @@ inline bool f7_on() {
 	static const bool v = not0(std::getenv("BC5_DIRECT_XQ_COUNT"));
 	return v;
 }
+inline bool f8_on() {
+	static const bool v = not0(std::getenv("BC5_DIRECT_XQ_ORDER"));
+	return v;
+}
 #else
 inline bool f2_on() {
 	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F2"));
@@ -126,6 +139,10 @@ inline bool f6b_on() {
 }
 inline bool f7_on() {
 	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F7"));
+	return v;
+}
+inline bool f8_on() {
+	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F8"));
 	return v;
 }
 #endif
@@ -182,6 +199,7 @@ struct Store {
 	};
 	std::map<uint64_t, Cnt>                    f7;           // F7: label -> its release/wait count
 	uint64_t                                   f7_held = 0, f7_bound = 0, f7_ns = 0;
+	uint64_t                                   f8_calls = 0, f8_chains = 0, f8_ns = 0; // F8: observe points taken, other threads' chains submitted, time
 	uint64_t                                   f7_same = 0;  // F7: not held, the waiter's thread is the one that registers the release
 	uint64_t                                   f7_hist[6] {}; // F7: holds < 1, < 5, < 20, < 50, < 250 ms, bound
 	uint64_t                                   f7_mark[6] {}; // F7: in a hold, the title's busy mark after the hold's start: < 0.1, < 1, < 5, < 20 ms, later, none
@@ -329,9 +347,10 @@ inline void job_submitted(const uint32_t* ib, uint32_t num_dwords, const std::ve
 	static uint64_t last_f5 = 0; // F5's line without G (the shared form too): the orders kept against the orders skipped
 	if (!g_on() && f3_on() && now - last_f5 > 60'000'000'000ull) {
 		last_f5 = now;
-		journal("ho430 F5 (exp 0430): t %.1f s: F3 presets %" PRIu64 ", not stale %" PRIu64 ", refused %" PRIu64 "; F4 fences %" PRIu64 ", F2 waited %" PRIu64 ", F5 skipped %" PRIu64 " (precise %s), F6 kept %" PRIu64 " (keep %s), F6 kept waits not back in 1 s %" PRIu64 ", F6 labels %zu, not kept on a shared ring %" PRIu64 "; F7 labels %zu, held %" PRIu64 " (%.1f ms), bounds %" PRIu64 ", same thread %" PRIu64 ", holds <1/<5/<20/<50/<250 ms/bound %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", marks <0.1/<1/<5/<20 ms/later/none %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "\n", timing_now(), s.c[kF3Preset], s.c[kF3NotStale], s.c[kF3Refused],
+		journal("ho430 F5 (exp 0430): t %.1f s: F3 presets %" PRIu64 ", not stale %" PRIu64 ", refused %" PRIu64 "; F4 fences %" PRIu64 ", F2 waited %" PRIu64 ", F5 skipped %" PRIu64 " (precise %s), F6 kept %" PRIu64 " (keep %s), F6 kept waits not back in 1 s %" PRIu64 ", F6 labels %zu, not kept on a shared ring %" PRIu64 "; F7 labels %zu, held %" PRIu64 " (%.1f ms), bounds %" PRIu64 ", same thread %" PRIu64 ", holds <1/<5/<20/<50/<250 ms/bound %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", marks <0.1/<1/<5/<20 ms/later/none %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "; F8 observe points %" PRIu64 ", chains submitted %" PRIu64 " (%.1f ms)\n", timing_now(), s.c[kF3Preset], s.c[kF3NotStale], s.c[kF3Refused],
 		        s.c[kF4Fence], s.c[kF2Waited], s.c[kF5Skip], f5_on() ? "on" : "off", s.c[kF6Kept], f6_on() ? "on" : "off", s.f6_long, s.f6_by_label.size(), s.f6_shared, s.f7.size(), s.f7_held, static_cast<double>(s.f7_ns) / 1e6, s.f7_bound, s.f7_same,
-		        s.f7_hist[0], s.f7_hist[1], s.f7_hist[2], s.f7_hist[3], s.f7_hist[4], s.f7_hist[5], s.f7_mark[0], s.f7_mark[1], s.f7_mark[2], s.f7_mark[3], s.f7_mark[4], s.f7_mark[5]);
+		        s.f7_hist[0], s.f7_hist[1], s.f7_hist[2], s.f7_hist[3], s.f7_hist[4], s.f7_hist[5], s.f7_mark[0], s.f7_mark[1], s.f7_mark[2], s.f7_mark[3], s.f7_mark[4], s.f7_mark[5],
+		        s.f8_calls, s.f8_chains, static_cast<double>(s.f8_ns) / 1e6);
 	}
 #ifndef HO430_SHARED
 	static bool         at_done = false; // BC5_0430_G_AT: one dump in a clean run
@@ -360,6 +379,36 @@ inline void job_done(uint64_t seq, int ring, bool all) {
 }
 inline void given_up(bool cycle, uint64_t label, const char* kind, int ring, uint32_t off) {
 	if (g_on()) add(ev(cycle ? kCycle : kGivenUp, label, kind, ring, off));
+}
+// F8 at the first wait of an acb: submit the other threads' held chains first (ADR 0010's observe point).
+inline void f8_observe(const uint32_t* ib, uint32_t off) {
+	static thread_local const uint32_t* last_ib  = nullptr;
+	static thread_local uint32_t        last_off = 0;
+	const bool                          fresh    = ib != last_ib || off <= last_off;
+	last_ib  = ib;
+	last_off = off;
+	if (!fresh || g_chain_mode < 2) return;
+	const uint64_t t0 = SoftCp::now_ns();
+	uint64_t       n  = 0;
+	{
+		std::lock_guard lk(g_chains_mu);
+		for (ChainSlot* cs: g_chains) {
+			if (cs == &g_chain_tl) continue;
+			bool held = false;
+			{
+				std::lock_guard sl(cs->mu);
+				held = !cs->c.segs.empty() && !cs->in_submit;
+			}
+			if (!held) continue;
+			chain_submit(*cs, 11, true);
+			n++;
+		}
+	}
+	Store&          s = st();
+	std::lock_guard lk(s.m);
+	s.f8_calls++;
+	s.f8_chains += n;
+	s.f8_ns += SoftCp::now_ns() - t0;
 }
 // F7 at the first wait of a submission on a label: count it; hold a stale one until its release is registered.
 inline void f7_wait(uint64_t label, uint64_t ref, int ring, const uint32_t* ib, uint32_t off, const char* kind) {
@@ -446,6 +495,7 @@ inline void f7_wait(uint64_t label, uint64_t ref, int ring, const uint32_t* ib, 
 // At a wait of a buffer about to be submitted (submit_split), before the host decides it.
 inline void at_wait(const uint32_t* p, bool is64, uint64_t label, const char* kind, int ring, const uint32_t* ib, uint32_t num_dwords, uint32_t off) {
 	if (!f2_on() && !g_on() && !f3_on()) return;
+	if (f8_on() && kind != nullptr && std::strncmp(kind, "acb", 3) == 0) f8_observe(ib, off); // F8 first: the title's earlier dcbs go first
 	if (f7_on() && (p[1] & 7u) == 3u && kind != nullptr && std::strncmp(kind, "acb", 3) == 0) // F7 first: the rest sees the writer pending
 		f7_wait(label, is64 ? (p[4] | (static_cast<uint64_t>(p[5]) << 32u)) : p[4], ring, ib, off, kind);
 	const bool     sat   = wait_satisfied(p, is64);

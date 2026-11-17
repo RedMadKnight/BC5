@@ -527,3 +527,29 @@ and the faithful fix is ordering, not counting.
 `bc5-ring`. Which guest threads mark the label, submit the dcb and submit the acb, and at what guest priorities, is not
 in the records. F7's hold line names the waiter's thread and the thread that registered the last release, so the first
 F7 run answers it for the two submits (for exp 0429's R). The mark is a store; its thread stays unseen.
+
+### The root: the host's chain hold reorders the title's dcb and acb (F848 reinterpreted), and F8
+
+F7's first holds in h430K1 named the threads: every held acb came from `bc5-ring` (the host's queue consumer), and every
+release was registered from the title's `Render Thread` (once from `bc5-chainwd`). The code of the shared unit
+(b8afba59) shows why:
+- **acbs:** the title writes them into its hardware-style compute queues. `queue_consumer_thread` (`bc5-ring`) polls
+  the write pointers at 1 kHz and runs `submit_split` on what it finds, at once.
+- **dcbs:** they go through the title's submit call on its own thread. With `BC5_DIRECT_CHAIN=2` they are appended to
+  that thread's chain, which ADR 0010 section B holds open across ioctls for up to 2,000 µs. It is submitted by the
+  owner's next flush, the watchdog `bc5-chainwd`, or `chain_observe()` at the title's observe points.
+- **At an acb's wait,** `submit_split` calls `chain_flush(1)` only when the wait is not satisfied, and that flushes the
+  calling thread's own chain only.
+
+So a dcb carrying the release can sit unsubmitted in Render Thread's held chain, its writes not yet registered, while
+`bc5-ring` decides the acb's wait. F2/F4 then see no pending writer, F3 has not preset, and the label holds the last
+frame's 0. **The "late mark" of F848, C4, C6 and V15 was this host-made reordering, not the title's timing.** The
+title's own order (dcb, then acb) is inverted by the chain hold, which is why the console never shows it. F7's holds
+(7 of 8 under 1 ms) ended exactly when that chain was submitted.
+
+**F8** (`BC5_DIRECT_XQ_ORDER` / `BC5_0430_F8`; unit 470daa2c, binary cffa67a3 in `p9/`, with F5, F6, F6b and F7
+present): at an acb's first wait, every other thread's held chain is submitted first. It calls `chain_submit(slot,
+11, true)`, the non-blocking foreign path the watchdog uses: it skips a chain whose owner is inside its own submit and
+does not block on ADR 0013 holds (empty since build W). The existing paths then decide with the writers registered. No
+stamps, no counting, no labels, nothing learned. The 60-s line counts the observe points, the chains submitted and
+their time. Run with F7 on as a check: if F8 restores the order, F7's holds go to about zero.
