@@ -13,7 +13,7 @@ ok() { if [ "$2" = 1 ]; then PASS=$((PASS + 1)); echo "ok   $1"; else FAIL=$((FA
 m8() { md5sum < "$1" | cut -c1-8; }
 world() {
   T=$BASE/$1; mkdir -p "$T/bin" "$T/src/KytyPlus/src/libs" "$T/src/KytyPlus/src/bc5" "$T/bc5-work/exp0430/swap" "$T/bc5-work/exp0413/n" \
-    "$T/bc5-work/kytyplus-build/src" "$T/bc5-work/kytyplus-build-lean/src" "$T/cwd"
+    "$T/bc5-work/kytyplus-build/src" "$T/bc5-work/kytyplus-build-lean/src" "$T/cwd" "$T/bc5-work/d19/export/backend/src" "$T/bc5-work/d19/export/backend/include/bc5" "$T/bc5-work/backend-ubuntu"
   printf '#!/bin/sh\nexit 1\n' > "$T/bin/pgrep"; chmod +x "$T/bin/pgrep"
   printf 'chain_claim() { echo "CLAIM" >> "%s/lock.log"; }\nchain_release() { echo RELEASE >> "%s/lock.log"; }\n' "$T" "$T" > "$T/bc5-work/exp0413/n/chainlock0417.inc"
   K=$T/src/KytyPlus; X=$T/bc5-work/exp0430/swap
@@ -23,15 +23,20 @@ world() {
   printf 'p1 700fd4c2\r\n' > "$K/src/libs/bc5LleAgc.cpp"; printf 's1 700fd4c2\n' > "$K/src/bc5/switch_defaults.hpp"
   cp "$K/src/libs/bc5LleAgc.cpp" "$X/bc5LleAgc.cpp.before-0430"; cp "$K/src/bc5/switch_defaults.hpp" "$X/switch_defaults.hpp.before-0430"
   echo N0 > "$X/kyty_emulator.normal.before-0430"; echo L0 > "$X/kyty_emulator.lean.before-0430"
+  BE=$T/bc5-work/d19/export/backend; echo D0 > "$BE/src/direct.cpp"; echo H0 > "$BE/include/bc5/direct.hpp"; echo A0 > "$T/bc5-work/backend-ubuntu/libbc5_backend.a"
+  cp "$BE/src/direct.cpp" "$X/direct.cpp.before-0430"; cp "$BE/include/bc5/direct.hpp" "$X/direct.hpp.before-0430"; cp "$T/bc5-work/backend-ubuntu/libbc5_backend.a" "$X/libbc5_backend.a.before-0430"
   { echo "PIN_OLD=$(git -C "$K" diff --no-color f266548 | md5sum | cut -c1-8)"; echo "NORMAL=$(m8 "$X/kyty_emulator.normal.before-0430")"
-    echo "LEAN=$(m8 "$X/kyty_emulator.lean.before-0430")"; echo "U1=$(m8 "$K/src/libs/bc5LleAgc.cpp")"; echo "U2=$(m8 "$K/src/bc5/switch_defaults.hpp")"; echo "ARCH=9aab722c"; } > "$X/pins.before-0430"
+    echo "LEAN=$(m8 "$X/kyty_emulator.lean.before-0430")"; echo "U1=$(m8 "$K/src/libs/bc5LleAgc.cpp")"; echo "U2=$(m8 "$K/src/bc5/switch_defaults.hpp")"; echo "ARCH=$(m8 "$X/libbc5_backend.a.before-0430")"; echo "U3=$(m8 "$X/direct.cpp.before-0430")"; echo "U4=$(m8 "$X/direct.hpp.before-0430")"; } > "$X/pins.before-0430"
   P1=$(m8 "$K/src/libs/bc5LleAgc.cpp"); P2=$(m8 "$K/src/bc5/switch_defaults.hpp")
   printf 'p2 w2\r\n' > "$K/src/libs/bc5LleAgc.cpp"; printf 's2 w2\n' > "$K/src/bc5/switch_defaults.hpp"
   echo N2 > "$T/bc5-work/kytyplus-build/src/kyty_emulator"; echo L2 > "$T/bc5-work/kytyplus-build-lean/src/kyty_emulator"
+  echo D2 > "$BE/src/direct.cpp"; echo H2 > "$BE/include/bc5/direct.hpp"; echo A2 > "$T/bc5-work/backend-ubuntu/libbc5_backend.a"
 }
 back() {  # 1 if both sources and both binaries are the before-copies
   [ "$(m8 "$K/src/libs/bc5LleAgc.cpp")" = "$P1" ] && [ "$(m8 "$K/src/bc5/switch_defaults.hpp")" = "$P2" ] \
-    && [ "$(cat "$T/bc5-work/kytyplus-build/src/kyty_emulator")" = N0 ] && [ "$(cat "$T/bc5-work/kytyplus-build-lean/src/kyty_emulator")" = L0 ] && echo 1 || echo 0
+    && [ "$(cat "$T/bc5-work/kytyplus-build/src/kyty_emulator")" = N0 ] && [ "$(cat "$T/bc5-work/kytyplus-build-lean/src/kyty_emulator")" = L0 ] \
+    && [ "$(cat "$T/bc5-work/d19/export/backend/src/direct.cpp")" = D0 ] && [ "$(cat "$T/bc5-work/d19/export/backend/include/bc5/direct.hpp")" = H0 ] \
+    && [ "$(cat "$T/bc5-work/backend-ubuntu/libbc5_backend.a")" = A0 ] && echo 1 || echo 0
 }
 stray() { ls "$T/cwd" | grep -cE '^[0-9a-f]{8}$'; }
 
