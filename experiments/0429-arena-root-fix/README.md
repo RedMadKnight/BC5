@@ -367,3 +367,25 @@ are 3 of 3 clean. R13: the crash does not show on this route on these builds, so
 ## Morning note (2026-11-17 05:5x)
 
 See `MORNING-NOTE.md`: every crash of this experiment ran with an arm that changed the guest CPU mask; proposed A/B arm M (stressed control) against new arm T (M + FAST_MUTEX=2).
+
+## Morning A/B: stressed control M against T (2026-11-17 07:40–08:33, build 6, the top's GO)
+
+Both arms ran with `GUEST_CPUS=1` (the guest CPU mask widened and pinned) as a stressor. T adds `FAST_MUTEX=2`. The
+setup was the long route, slot 4, the named snapshot, RT on, the catcher on, no pad key in any run, no kernel line. The
+box had rebooted before the set (boot 735f9153). The chain paused after h429M5 for exp 0431's smoke of the swapped
+shared builds (07:52–08:09); `rep8` ran the rest.
+
+| run | arm | result | flips/s |
+|---|---|---|---|
+| h429M5 | M | NO_CRASH to G+600 | 44.5 |
+| h429T1 | T | **TARGET at 341 s = G+232** | 43.9 |
+| h429M6 | M | **TARGET at 118 s = G+10** | 39.1 |
+| h429T2 | T | **TARGET at 119 s = G+10** | 39.5 |
+
+All three crashes were at eboot+0x3d7eca0. In the T runs the fast mutex was on: 47,061 of 80,000 contended locks slept
+(T1) and 22,973 of 40,000 (T2), with a mean sleep of about 220 µs.
+
+**Verdict: candidate S/T is OUT.** Under the stressor the fast guest mutex crashed 2 of 2, the control 1 of 2, so it
+does not keep the workers ahead of the owner. The stressor works: the control crashed again (now M 3 crashes, 1 clean,
+across builds 3, 4 and 6). R13: counts only. The guest mutex's inner `std::mutex` is not the cause, or not the whole of
+it. No candidate of this experiment survives. The removal is unaffected; it needs no candidate to be swapped.
