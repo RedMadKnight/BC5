@@ -27,6 +27,43 @@ CIS_NEW = ("// exp 0430 (tag ho430): the title's submit calls (Direct::submit, n
            "\t~XqSubmitCount() {\n\t\tif (on) g_xq_in_submit--;\n\t}\n};\n" + CIS_OLD)
 SUB_OLD = "\tconst ChainInSubmit in_submit(chain_cross()); // ADR 0010 section B\n"
 SUB_NEW = SUB_OLD + "\tconst XqSubmitCount xq_count(kind); // exp 0430 (tag ho430)\n"
+APP_OLD = "static void chain_append(const uint32_t* pre, uint32_t pre_n, const uint32_t* ib, uint32_t n, const char* kind, bool host_built) {\n\tChainSlot& s       = g_chain_tl;\n"
+APP_NEW = ("// exp 0430 F9 (BC5_DIRECT_XQ_FLUSH, on unless \"0\"; the top session's root fix, 2026-11-17 19:45): a chain held across the\n"
+           "// title's submit calls (ADR 0010 section B) let bc5-ring take an acb before the dcb whose release it waits for (h430Z1:\n"
+           "// with BC5_DIRECT_CHAIN=1, F7 held 0 against 330). A chain that carries a GPU memory write another queue could wait on\n"
+           "// (RELEASE_MEM or EVENT_WRITE_EOP with data, WRITE_DATA to memory) is submitted at the end of the call, as mode 1 does;\n"
+           "// a chain without one is held as before. No label set, nothing learned.\n"
+           "static bool f9_on() {\n\tstatic const bool v = [] {\n\t\tconst char* e = std::getenv(\"BC5_DIRECT_XQ_FLUSH\");\n\t\treturn e == nullptr || !(e[0] == '0' && e[1] == 0);\n\t}();\n\treturn v;\n}\n"
+           "static thread_local bool     t_f9_write = false; // this thread's open chain carries such a write\n"
+           "static std::atomic<uint64_t> g_f9_flushed {0}, g_f9_held {0}, g_f9_ended {0};\n"
+           "static bool f9_writes(const uint32_t* ib, uint32_t n) {\n"
+           "\tfor (uint32_t q = 0; q < n;) {\n"
+           "\t\tconst uint32_t h = ib[q], type = h >> 30u;\n"
+           "\t\tuint32_t       len = 1;\n"
+           "\t\tif (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }\n"
+           "\t\tif (q + len > n) break;\n"
+           "\t\tif (type == 3) {\n"
+           "\t\t\tconst uint32_t op = (h >> 8u) & 0xffu;\n"
+           "\t\t\tif (op == 0x49 && len >= 8 && (ib[q + 2] >> 29u) != 0) return true;\n"
+           "\t\t\tif (op == 0x47 && len >= 6 && (ib[q + 3] >> 29u) != 0) return true;\n"
+           "\t\t\tif (op == 0x37 && len >= 5) { const uint32_t d = (ib[q + 1] >> 8u) & 0xfu; if (d == 1 || d == 2 || d == 5) return true; }\n"
+           "\t\t}\n"
+           "\t\tq += len;\n"
+           "\t}\n"
+           "\treturn false;\n"
+           "}\n" + APP_OLD.replace("\tChainSlot& s       = g_chain_tl;\n", "") +
+           "\tif (f9_on() && !t_f9_write && ib != nullptr && std::strncmp(kind, \"acb\", 3) != 0 && f9_writes(ib, n)) t_f9_write = true; // exp 0430 F9\n"
+           "\tChainSlot& s       = g_chain_tl;\n")
+END_OLD = "\t\t\tover = !s.c.segs.empty() && s.hold.empty() && SoftCp::now_ns() >= s.open_ns + chain_hold_ns();\n\t\t\tif (s.c.segs.empty() && !s.in_submit) chain_post_soft_locked(s);\n\t\t}\n\t\tif (over) chain_flush(10);\n"
+END_NEW = ("\t\t\tover = !s.c.segs.empty() && s.hold.empty() && SoftCp::now_ns() >= s.open_ns + chain_hold_ns();\n"
+           "\t\t\tif (s.c.segs.empty()) t_f9_write = false; // exp 0430 F9: submitted meanwhile (the watchdog, an observe point)\n"
+           "\t\t\telse if (f9_on()) {\n"
+           "\t\t\t\tg_f9_ended++;\n"
+           "\t\t\t\tif (!over && t_f9_write && s.hold.empty()) { over = true; g_f9_flushed++; }\n"
+           "\t\t\t\telse if (!over) g_f9_held++;\n"
+           "\t\t\t}\n"
+           "\t\t\tif (s.c.segs.empty() && !s.in_submit) chain_post_soft_locked(s);\n\t\t}\n"
+           "\t\tif (over) {\n\t\t\tchain_flush(10);\n\t\t\tt_f9_write = false;\n\t\t}\n")
 KEEP_NEW = ("\t\t\t\t\tif ((!wait_satisfied(p, op == 0x93) && ring_will_satisfy(p, op == 0x93, job_ring(kind))) ||\n"
             "\t\t\t\t\t    ho430::keep_cross(p, op == 0x93, label, kind, job_ring(kind), i)) { // exp 0430 (tag ho430): F6\n"
             "\t\t\t\t\t\tstatic std::atomic<uint64_t> n_kept {0};\n")
@@ -49,17 +86,17 @@ def main() -> int:
     if hashlib.md5(old.encode()).hexdigest()[:8] != "c7dbe70b":
         print("mkf6: ho430.b8.cpp is not the deployed c7dbe70b")
         return 1
-    for what, n in (("the deployed ho430 block", text.count(old)), ("the keep test", text.count(KEEP_OLD)), ("ChainInSubmit", text.count(CIS_OLD)), ("submit's ChainInSubmit", text.count(SUB_OLD))):
+    for what, n in (("the deployed ho430 block", text.count(old)), ("the keep test", text.count(KEEP_OLD)), ("ChainInSubmit", text.count(CIS_OLD)), ("submit's ChainInSubmit", text.count(SUB_OLD)), ("chain_append", text.count(APP_OLD)), ("chain_end's hold test", text.count(END_OLD))):
         if n != 1:
             print(f"mkf6: {what} is found {n} times, not once")
             return 1
     if "BC5_DIRECT_XQ_PRECISE" not in new or "keep_cross" not in new or "BC5_DIRECT_XQ_KEEP" not in new or "BC5_DIRECT_XQ_KEEP_ALL" not in new:
         print("mkf6: ho430.cpp has no F5 or no F6")
         return 1
-    text = text.replace(old, new).replace(KEEP_OLD, KEEP_NEW).replace(CIS_OLD, CIS_NEW).replace(SUB_OLD, SUB_NEW)
+    text = text.replace(old, new).replace(KEEP_OLD, KEEP_NEW).replace(CIS_OLD, CIS_NEW).replace(SUB_OLD, SUB_NEW).replace(APP_OLD, APP_NEW).replace(END_OLD, END_NEW)
     out = text.encode("utf-8", "surrogateescape")
     open(path, "wb").write(out)
-    print(f"mkf6: {BASE_MD5} -> {hashlib.md5(out).hexdigest()[:8]} (ho430 {hashlib.md5(new.encode()).hexdigest()[:8]}, 3 hooks)")
+    print(f"mkf6: {BASE_MD5} -> {hashlib.md5(out).hexdigest()[:8]} (ho430 {hashlib.md5(new.encode()).hexdigest()[:8]}, 5 hooks)")
     return 0
 
 
