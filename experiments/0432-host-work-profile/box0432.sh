@@ -104,7 +104,7 @@ buildt() {
         [ "$(m8 "$TREE/$f")" = "$base" ] || stop "the shared tree's $f is $(m8 "$TREE/$f"), not $base"
         mkdir -p "$TS/$(dirname "$f")" && cp "$TREE/$f" "$TS/$f" || stop "copy $f"
     done <<'EOT'
-b8afba59 74311888 src/libs/bc5LleAgc.cpp
+b8afba59 f80560e3 src/libs/bc5LleAgc.cpp
 2dcd6db3 1262d6f3 src/common/platform/sysLinuxVirtual.cpp
 5b2016ed a9a2143a src/libs/libAmpr.cpp
 058bb712 478ff14c src/bc5/anon_sync.hpp
@@ -113,7 +113,7 @@ EOT
     while read -r base want f; do
         [ "$(m8 "$TS/$f")" = "$want" ] || stop "the edited $f is $(m8 "$TS/$f"), not $want as made on the laptop"
     done <<'EOT'
-b8afba59 74311888 src/libs/bc5LleAgc.cpp
+b8afba59 f80560e3 src/libs/bc5LleAgc.cpp
 2dcd6db3 1262d6f3 src/common/platform/sysLinuxVirtual.cpp
 5b2016ed a9a2143a src/libs/libAmpr.cpp
 058bb712 478ff14c src/bc5/anon_sync.hpp

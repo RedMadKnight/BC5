@@ -33,6 +33,8 @@ for arm in ${ORDER:-D S D S O}; do
     P) bin=${TBIN:?the test build}; aw="BC5_DIRECT_SLOT_PREALLOC=0" ;;       # ... without item P
     W) bin=${TBIN:?the test build}; aw="BC5_DIRECT_ANON_THREAD=0" ;;         # ... without item W
     V) bin=${TBIN:?the test build}; aw="BC5_DIRECT_VIEWS_KEPT=1" ;;          # ... WITH item V (off by default since build 4)
+    X) bin=${TBIN:?the test build}; aw="BC5_DIRECT_MAPS_DIFF=verify" ;;      # ... WITH item X, checked against the old rebuild at every use (off by default)
+    Y) bin=${TBIN:?the test build}; aw="BC5_DIRECT_MAPS_DIFF=1" ;;           # ... WITH item X, unchecked (only after an X run with 0 mismatches)
     G) bin=${TBIN:?the test build}; aw="BC5_DIRECT_SLOT_GROW=0" ;;           # ... without item S
     M) bin=${TBIN:?the test build}; aw="BC5_DIRECT_MAPS_FAST=0" ;;           # ... without item M
     Z) bin=${TBIN:?the test build}; aw="BC5_DIRECT_ANON_THREAD=0 BC5_DIRECT_SLOT_PREALLOC=0 BC5_DIRECT_MAPS_FAST=0 BC5_DIRECT_UNMAP_NOWAIT=0 BC5_DIRECT_ANON_EVENTS=0 BC5_DIRECT_VIEWS_KEPT=0 BC5_DIRECT_SLOT_GROW=0 KYTY_BC5_ANON_SYNC=verify" ;;  # every item off, exp 0415's verify counting event misses

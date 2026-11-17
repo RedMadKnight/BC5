@@ -430,6 +430,33 @@ In d432T14 (build 3, the 09:46 save) MemAvailable fell from 3,508 to 1,449 MiB a
 
 (pending: the A/B of the test build in his scene and on the route; the perf profile of the normal and lean builds)
 
+### Item X (2026-11-17 evening, laptop; not yet compiled on the box): the mapping rebuild for the changed views only
+
+Why: results 1 and 6. A mapping rebuild runs about 17 times a second in play; each one walks every view (up to
+30,631) against the imported buffers, orders the list and walks every mapping twice, though a rebuild caused by the
+guest's ranges changes a handful of views. Item M halved the passes; item X leaves them out.
+
+What (`mkx432.py`, switch `BC5_DIRECT_MAPS_DIFF`, tag x432): when the only cause of a rebuild is a new view list
+(no buffer retired or imported since the last rebuild, no cap change, no cover and no zero-list mappings), the new
+list is compared with the list the mappings were made from. A view with the same address, size and offset keeps its
+mappings; every other old or new view gives an address interval, inside which old mappings are dropped unless a
+changed new view asks for the same one, and the changed views' mappings are added by the old add pass's steps. Every
+other cause takes the old rebuild. No change records are used (item V's source), only two snapshots, so a missed
+record cannot hurt it.
+
+Off unless the word is "1" or "verify"; "verify" makes the whole list the old way after each such rebuild and
+compares (a difference is counted, journaled, and the next sync rebuilds the old way). Arm X of `scene0432.sh` is
+build 4 with `verify`, arm Y with "1". It goes on by default only after a verify run with 0 mismatches and a speed
+run no slower than T.
+
+Checked on the laptop: `test_x432.sh` cuts the body out of the edited unit (f80560e3) and runs it against the whole
+rebuild on 20,000 random pairs of view lists with a device model that counts a map over a live mapping or an unmap
+of nothing: PASS (mappings kept 485,212, dropped 91,328, added 84,344). The unit itself has not been compiled.
+
+What it does not touch: the view list's own build (162 s of his 09:08 play, more than the mappings' passes after M).
+Item V was to remove that and is slower; why is not known. The perf profile of the next slot is to show where a view
+build spends its time before anything is written for it.
+
 ## Verdict
 
 (pending)
