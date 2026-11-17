@@ -19,7 +19,7 @@ RP=$!
 sleep 133
 P=$(pgrep -n '^kyty_emulator')
 if [ -n "$P" ]; then
-  ps -L -o tid,cls,rtprio,comm -p "$P" > "$HERE/check-$T.ps"
+  ps -L -o tid,cls,rtprio,ni,comm -p "$P" > "$HERE/check-$T.ps"
 fi
 wait $RP
 L=$HERE/n/raw/$T-play.log; [ -s "$L" ] || L=$HERE/n/play-last.log
@@ -32,6 +32,7 @@ tail -1 "$HERE/check-$T.run" | cut -c1-200
 grep -a "exp 0429 R count\|exp 0429: R (RR" "$L" | tail -4 | cut -c1-260
 mainrr=$(grep -E " (game-main|MainThread)$" "$HERE/check-$T.ps" 2> /dev/null | grep -c " RR ")
 echo "check $T: the main thread RR: $mainrr (must be 0); rtkit refusals $ref (reported only: rtkit has a per-user limit)"
+echo "check $T: threads with nice < 0 (rtkit high priority; build 13): $(awk 'NR > 1 && $4 ~ /^-[0-9]/ {print $5" "$6" "$7"("$4")"}' "$HERE/check-$T.ps" | sort | uniq -c | tr '\n' ';')"
 akrr=$(grep ' AK::' "$HERE/check-$T.ps" 2> /dev/null | grep -c ' RR '); akrr=${akrr:-0}  # build 13: mode 3 keeps lone threads (audio) out
 echo "check $T: AK threads RR at the snapshot: $akrr (mode 3: must be 0)"
 { [ "${RRMODE:-1}" != 3 ] || [ "$akrr" = 0 ]; } && { [ "$prom" -ge 1 ] || [ $V = lean ]; } && [ "$hi" -ge 1 ] && [ "$hi" = "$hirr" ] && [ "$mainrr" = 0 ] && echo "check $T: PASS" || echo "check $T: FAIL"

@@ -17,12 +17,23 @@
 // Job Hi 2, 500, for good, and the places the watchdog freed went unused). rtkit's calls: at most 15 per 20 s window
 // (rtkit's defaults on the box, read 2026-11-17: 25 actions per 20 s per user, max rtprio 20); a refusal stops
 // new promotions until the window turns, except to replace an evicted thread.
+// rtkit's room (build 13): rtkit serves at most --threads-per-user-max threads of one user at a time (default 25, its
+// --help on the box), counting every thread of the user it made RT or high priority (nice < 0) that still is (rtkit's
+// thread_relevant, rtkit-daemon.c; it sweeps dead and lowered threads at every call). The emulator itself asks rtkit
+// for high priority for many threads (h429K10: 3, a429BA2: 16), and PipeWire holds 4. Under build 12, R's 14 RR
+// threads made rtkit refuse 4 of the emulator's own later requests (K10), and in ASTRO the emulator's requests left R
+// room for 2. Now the watchdog counts the user's RT and nice < 0 threads every second (/proc), and R promotes only
+// while that count + 1 + kReserve fits under rtkit's limit (read from rtkit's command line); a thread denied for room
+// or budget waits and is promoted at a later sleep when there is room (it was lost for good before).
 // Off: nothing here runs. Normal build: every promotion, drop and refusal is logged (the first 200). Both builds
 // (build 11): one count line a minute.
 #if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
+#include <dirent.h>
 #include <dlfcn.h>
 #include <fcntl.h>
+#include <cstring>
 #include <sys/resource.h>
+#include <sys/stat.h>
 namespace bc5_0429r {
 // KYTY_BC5_0429_RR: 0 or unset off; 1 any guest sleeper below 700; 2 (build 11) only a sleeper on a pool semaphore,
 // one that two or more distinct threads have slept on (a worker pool: the job system's, not a lone audio thread's);
@@ -61,6 +72,9 @@ static std::atomic<int64_t> g_full_until {0};  // rtkit refused: no new promotio
 static std::atomic<int>     g_evicted_tid[kMaxSlots]; // evicted, waiting to come back (not spinners)
 static std::atomic<int>     g_evicted_n {0};
 static std::atomic<int> g_held {0};            // how many hold RR now
+constexpr int           kReserve = 4;          // build 13: rtkit places left for the emulator's own and others' requests
+static std::atomic<int> g_user_rt {-1};        // the user's RT or nice < 0 threads (rtkit's count), -1 before the first scan
+static int              g_rtkit_max = 25;      // rtkit's --threads-per-user-max (its default 25)
 #ifndef BC5_LEAN
 static char             g_rtkit_err[200] {};   // build 13: the last refusal's D-Bus error, name: message
 #endif
@@ -71,14 +85,14 @@ static std::atomic<int> g_logged {0};
 static std::atomic<int> g_spinner_tid[kMaxSlots]; // dropped for good
 // build 11: counters in both builds (lean too: one stderr line a minute from the watchdog thread, for this experiment
 // only; it goes from lean before any swap), and the last 16 losses as kind and guest priority
-enum Ev { kPromoted, kRefused, kCapDenied, kBudgetDenied, kEvicted, kDropXcpu, kDropWatchdog, kDropPrio, kDropGone, kEvN };
-static const char       kEvName[kEvN] = {'P', 'R', 'C', 'B', 'E', 'X', 'W', 'H', 'G'};
+enum Ev { kPromoted, kRefused, kCapDenied, kBudgetDenied, kEvicted, kDropXcpu, kDropWatchdog, kDropPrio, kDropGone, kRoomDenied, kEvN };
+static const char       kEvName[kEvN] = {'P', 'R', 'C', 'B', 'E', 'X', 'W', 'H', 'G', 'N'};
 static std::atomic<int> g_ev[kEvN];
 static std::atomic<int> g_last[16];
 static std::atomic<int> g_last_n {0};
 static void Count(Ev e, int prio) { // async-signal-safe
 	g_ev[e].fetch_add(1, std::memory_order_relaxed);
-	if (e == kPromoted || e == kCapDenied) {
+	if (e == kPromoted || e == kCapDenied || e == kRoomDenied) {
 		return; // the ring keeps the losses: drops, evictions, refusals, budget denials
 	}
 	g_last[g_last_n.fetch_add(1, std::memory_order_relaxed) & 15].store(e * 10000 + (prio < 0 ? 9999 : prio), std::memory_order_relaxed);
@@ -196,6 +210,114 @@ static void OnXcpu(int) { // bound 1: the kernel sends SIGXCPU to the RR thread 
 	}
 	ResetSoft(); // the kernel raised the soft limit by a second; put it back below the hard one
 }
+static bool ReadSmall(const char* path, char* buf, size_t n) { // a small /proc file, NUL-terminated (NULs in it kept)
+	const int fd = open(path, O_RDONLY | O_CLOEXEC);
+	if (fd < 0) {
+		return false;
+	}
+	const ssize_t r = read(fd, buf, n - 1);
+	close(fd);
+	buf[r > 0 ? r : 0] = 0;
+	return r > 0;
+}
+static int UserRtThreads() { // threads of our user that are RR/FIFO or have nice < 0: what rtkit counts for the user
+	const uid_t uid = getuid();
+	DIR*        d   = opendir("/proc");
+	if (d == nullptr) {
+		return -1;
+	}
+	int n = 0;
+	for (dirent* e; (e = readdir(d)) != nullptr;) {
+		if (e->d_name[0] < '1' || e->d_name[0] > '9') {
+			continue;
+		}
+		char        path[96];
+		struct stat st {};
+		std::snprintf(path, sizeof(path), "/proc/%s/task", e->d_name);
+		if (stat(path, &st) != 0 || st.st_uid != uid) {
+			continue;
+		}
+		DIR* t = opendir(path);
+		if (t == nullptr) {
+			continue;
+		}
+		for (dirent* f; (f = readdir(t)) != nullptr;) {
+			if (f->d_name[0] < '1' || f->d_name[0] > '9') {
+				continue;
+			}
+			char sp[128], buf[640];
+			std::snprintf(sp, sizeof(sp), "/proc/%s/task/%s/stat", e->d_name, f->d_name);
+			if (!ReadSmall(sp, buf, sizeof(buf))) {
+				continue;
+			}
+			const char* q = std::strrchr(buf, ')'); // after the name: field 3 (state) on
+			if (q == nullptr) {
+				continue;
+			}
+			long v[40] {};
+			int  k = 0;
+			for (char* c = const_cast<char*>(q + 2); k < 40 && *c != 0;) {
+				v[k++] = std::strtol(c, &c, 10);
+				while (*c == ' ') {
+					c++;
+				}
+				if (k == 1) { // field 3, the state, is a letter
+					while (*c != 0 && *c != ' ') {
+						c++;
+					}
+					while (*c == ' ') {
+						c++;
+					}
+				}
+			}
+			// v[k] is field k + 3 (field 3 counted as v[0]): nice is field 19 -> v[16], policy field 41 -> v[38]
+			if (k > 38 && (v[38] == SCHED_FIFO || v[38] == SCHED_RR || v[16] < 0)) {
+				n++;
+			}
+		}
+		closedir(t);
+	}
+	closedir(d);
+	return n;
+}
+static int RtkitThreadsMax() { // rtkit's --threads-per-user-max from its command line, else its default 25
+	DIR* d = opendir("/proc");
+	if (d == nullptr) {
+		return 25;
+	}
+	int m = 25;
+	for (dirent* e; (e = readdir(d)) != nullptr;) {
+		if (e->d_name[0] < '1' || e->d_name[0] > '9') {
+			continue;
+		}
+		char path[96], buf[512];
+		std::snprintf(path, sizeof(path), "/proc/%s/comm", e->d_name);
+		if (!ReadSmall(path, buf, sizeof(buf)) || std::strncmp(buf, "rtkit-daemon", 12) != 0) {
+			continue;
+		}
+		std::snprintf(path, sizeof(path), "/proc/%s/cmdline", e->d_name);
+		const int fd = open(path, O_RDONLY | O_CLOEXEC);
+		if (fd >= 0) {
+			const ssize_t r = read(fd, buf, sizeof(buf) - 1);
+			close(fd);
+			for (ssize_t i = 0; i < r;) { // arguments are NUL-separated
+				const char* a = buf + i;
+				buf[r]        = 0;
+				if (std::strncmp(a, "--threads-per-user-max=", 23) == 0) {
+					m = std::max(1, std::atoi(a + 23));
+				}
+				i += static_cast<ssize_t>(std::strlen(a)) + 1;
+			}
+		}
+		break;
+	}
+	closedir(d);
+	return m;
+}
+static bool RoomOk() { // one more RR thread leaves kReserve of rtkit's places
+	const int u = g_user_rt.load(std::memory_order_relaxed);
+	return u >= 0 && u + 1 + kReserve <= g_rtkit_max;
+}
 static void Watchdog() { // bound 2
 	pthread_setname_np(pthread_self(), "bc5-rr-watch");
 	struct Seen {
@@ -203,8 +325,17 @@ static void Watchdog() { // bound 2
 		uint64_t run, slices, since_ns;
 	};
 	Seen seen[kMaxSlots] {};
+	g_rtkit_max = RtkitThreadsMax();
+	g_user_rt.store(UserRtThreads());
+#ifndef BC5_LEAN
+	std::fprintf(stderr, "[bc5] exp 0429 R: rtkit serves %d threads per user; the user has %d RT or high-priority threads now; reserve %d\n",
+	             g_rtkit_max, g_user_rt.load(), kReserve);
+#endif
 	for (int tick = 1;; tick++) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(5));
+		if (tick % 200 == 0) { // build 13: rtkit's count of the user, once a second
+			g_user_rt.store(UserRtThreads());
+		}
 		if (tick % 12000 == 0) { // about a minute
 			char      last[16 * 6 + 1];
 			int       o = 0;
@@ -214,9 +345,10 @@ static void Watchdog() { // bound 2
 				o += std::snprintf(last + o, sizeof(last) - o, "%c%d ", kEvName[v / 10000], v % 10000);
 			}
 			last[o] = 0;
-			std::fprintf(stderr, "[bc5] exp 0429 R count: held %d calls %d P %d R %d C %d B %d E %d X %d W %d H %d G %d | last %s\n", g_held.load(),
+			std::fprintf(stderr, "[bc5] exp 0429 R count: held %d calls %d P %d R %d C %d B %d E %d X %d W %d H %d G %d N %d user %d of %d | last %s\n", g_held.load(),
 			             g_calls.load(), g_ev[kPromoted].load(), g_ev[kRefused].load(), g_ev[kCapDenied].load(), g_ev[kBudgetDenied].load(),
-			             g_ev[kEvicted].load(), g_ev[kDropXcpu].load(), g_ev[kDropWatchdog].load(), g_ev[kDropPrio].load(), g_ev[kDropGone].load(), last);
+			             g_ev[kEvicted].load(), g_ev[kDropXcpu].load(), g_ev[kDropWatchdog].load(), g_ev[kDropPrio].load(), g_ev[kDropGone].load(), g_ev[kRoomDenied].load(),
+			             g_user_rt.load(), g_rtkit_max, last);
 		}
 		if (const int x = g_xcpu_tid.exchange(0); x != 0) {
 			Log("dropped by SIGXCPU (20 ms without blocking)", x, "", 0, 0, 0);
@@ -428,9 +560,20 @@ static void Apply(Pthread thread, bool sleeper) {
 			return;
 		}
 	}
+	if (evicted) {
+		g_user_rt.fetch_sub(1); // the victim went back to SCHED_OTHER: rtkit frees its place at the next call
+	}
+	if (!RoomOk()) {
+		g_held.fetch_sub(1);
+		Count(kRoomDenied, prio);
+		MarkEvicted(tid); // build 13: waits for room, promoted at a later sleep
+		Log("not promoted (rtkit's room for the user)", tid, thread->name.c_str(), prio, 0, 0);
+		return;
+	}
 	if (!BudgetOk(evicted)) {
 		g_held.fetch_sub(1);
 		Count(kBudgetDenied, prio);
+		MarkEvicted(tid); // build 13: waits, promoted at a later sleep (it was lost for good before)
 		Log("not promoted (rtkit's budget)", tid, thread->name.c_str(), prio, 0, 0);
 		return;
 	}
@@ -452,6 +595,7 @@ static void Apply(Pthread thread, bool sleeper) {
 			g_slot_prio[i].store(prio, std::memory_order_relaxed);
 			Count(kPromoted, prio);
 			Unevict(tid);
+			g_user_rt.fetch_add(1);
 			Log("promoted", tid, thread->name.c_str(), prio, rr, rc);
 			return;
 		}
@@ -578,7 +722,8 @@ extern "C" void bc5_0429_r_on_sleep(const void* sem) {
 	}
 	if (self->bc5_rr_sleeper) { // build 12: an evicted sleeper comes back when a place is free
 		if (bc5_0429r::g_evicted_n.load(std::memory_order_relaxed) > 0 && bc5_0429r::g_held.load(std::memory_order_relaxed) < bc5_0429r::g_cap &&
-		    bc5_0429r::IsEvicted(static_cast<int>(self->host_thread_id))) {
+		    bc5_0429r::RoomOk() && bc5_0429r::NowMs() >= bc5_0429r::g_full_until.load(std::memory_order_relaxed) &&
+		    bc5_0429r::g_win_calls.load(std::memory_order_relaxed) < bc5_0429r::kWindowMax && bc5_0429r::IsEvicted(static_cast<int>(self->host_thread_id))) {
 			bc5_0429r::Apply(self, true);
 		}
 		return;

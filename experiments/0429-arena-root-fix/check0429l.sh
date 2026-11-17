@@ -25,7 +25,7 @@ for s in $(seq 10 10 190); do  # build 11: the policy of the job and audio threa
   sleep 10
   P=$(pgrep -n '^kyty_emulator') || continue
   echo "$s $(ps -L -o cls,comm -p "$P" | grep -E ' (Job Hi|AK::)' | awk '{print $1}' | tr '\n' ' ')" >>"$HERE/check-$T.series"
-  [ "$s" = 150 ] && ps -L -o tid,cls,rtprio,comm -p "$P" > "$HERE/check-$T.ps"
+  [ "$s" = 150 ] && ps -L -o tid,cls,rtprio,ni,comm -p "$P" > "$HERE/check-$T.ps"
 done
 wait $RP
 hi=$(grep -c ' Job Hi' "$HERE/check-$T.ps" 2> /dev/null); hi=${hi:-0}
@@ -37,6 +37,7 @@ grep ' RR \|game-main\|MainThread' "$HERE/check-$T.ps" 2> /dev/null | head -24
 echo "$end" | cut -c1-220
 echo "the Job Hi and AK policies every 10 s (Hi 0-7 first, then the AK threads):"; cat "$HERE/check-$T.series"
 grep -a "exp 0429 R count\|exp 0429: R (RR" "$N/raw/$T-play.log" 2> /dev/null | cut -c1-260
+echo "check $T: threads with nice < 0 (rtkit high priority; build 13): $(awk 'NR > 1 && $4 ~ /^-[0-9]/ {print $5" "$6" "$7"("$4")"}' "$HERE/check-$T.ps" | sort | uniq -c | tr '\n' ';')"
 akrr=$(grep ' AK::' "$HERE/check-$T.ps" 2> /dev/null | grep -c ' RR '); akrr=${akrr:-0}  # build 13: mode 3 keeps lone threads (audio) out
 echo "check $T: AK threads RR at the snapshot: $akrr (mode 3: must be 0)"
 { [ "${RRMODE:-1}" != 3 ] || [ "$akrr" = 0 ]; } && [ "$hi" -ge 1 ] && [ "$hi" = "$hirr" ] && [ "$mainrr" = 0 ] && echo "$end" | grep -q 'PASS' && echo "check $T: PASS" || echo "check $T: FAIL"
