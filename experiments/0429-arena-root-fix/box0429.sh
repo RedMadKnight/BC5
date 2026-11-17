@@ -48,10 +48,16 @@ build() {
     own || stop "no lock held by 0429"
     pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
     local u v b bin rc sn sl
-    (cd "$TREE" && sha256sum -c "$HERE/units.sha256") > "$R/units.txt" 2>&1 || { cat "$R/units.txt"; stop "the shared tree's units are not the pins"; }
     sn=$(md5sum < "$W/kytyplus-build/src/kyty_emulator" | cut -d' ' -f1); sl=$(md5sum < "$W/kytyplus-build-lean/src/kyty_emulator" | cut -d' ' -f1)
     rm -rf "$S"; mkdir -p "$S"
-    for u in $UNITS; do mkdir -p "$S/$(dirname "$u")"; cp "$TREE/$u" "$S/$u" || stop "copy $u"; done
+    # since 2026-11-17 09:49 the shared tree carries this experiment's removal (int0429.sh): a unit it changed comes from
+    # the swap's copy of it before the swap (patch 9e7c4514, the same text as at a8717e53), the others from the tree
+    for u in $UNITS; do
+        mkdir -p "$S/$(dirname "$u")"
+        if [ -s "$E/swap/units/$(basename "$u").before-0429" ]; then cp "$E/swap/units/$(basename "$u").before-0429" "$S/$u" || stop "copy $u"
+        else cp "$TREE/$u" "$S/$u" || stop "copy $u"; fi
+    done
+    (cd "$S" && sha256sum -c "$HERE/units.sha256") > "$R/units.txt" 2>&1 || { cat "$R/units.txt"; stop "the units are not the pins"; }
     python3 -I "$HERE/mk0429.py" "$S" > "$R/patch.out" 2>&1 || { cat "$R/patch.out"; stop "mk0429 failed"; }
     cat "$R/patch.out"
     for v in normal lean; do
@@ -74,7 +80,7 @@ build() {
         [ "$rc" = 0 ] && [ -x "$bin" ] || stop "build $v failed: $R/build-$v.out"
         md5sum < "$bin" | cut -d' ' -f1 > "$E/$v/binary.md5"
     done
-    for w in KYTY_BC5_0429_PRIO_ORDER KYTY_BC5_0429_GUEST_CPUS KYTY_BC5_0429_FAST_MUTEX KYTY_BC5_0425_HANDOFF_US KYTY_BC5_0425_DIRECT_WAKE KYTY_BC5_0425_WAKE_SLICE_US; do
+    for w in KYTY_BC5_0429_PRIO_ORDER KYTY_BC5_0429_GUEST_CPUS KYTY_BC5_0429_FAST_MUTEX KYTY_BC5_0429_RR KYTY_BC5_0425_HANDOFF_US KYTY_BC5_0425_DIRECT_WAKE KYTY_BC5_0425_WAKE_SLICE_US; do
         for v in normal lean; do strings "$E/$v/kyty_emulator" | grep -qxF "$w" || stop "$w is not in $v"; done
     done
     strings "$E/normal/kyty_emulator" | grep -qxF KYTY_BC5_0429_TRACE || stop "KYTY_BC5_0429_TRACE is not in normal"
