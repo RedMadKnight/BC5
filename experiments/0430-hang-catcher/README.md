@@ -607,3 +607,35 @@ Counters are per 1,560-s route run: P2 (F5), Q1 (broad F6), K1 (F7), E1 (F8 v2, 
 - S on the route (0de9349b, the swap words): C4 (hang), C5 44.2, C6 (GPU fault), C7 42.9. C8 is dropped.
 - F7 on the route (d894ec3b): K1 42.0 and K3.
 - X (d894ec3b + `BC5_DIRECT_CHAIN=1`): Z1 37.2. A second X (Z2) only if a speed comparison needs it.
+
+### The (a)/(b) data (2026-11-17 19:08–21:25)
+
+All on the route: 1500 s of play, RT on, way 2.
+
+| Run | Build and words | flips/s | Result | F7 |
+|---|---|---|---|---|
+| Z1 | X: F7 d894ec3b + `BC5_DIRECT_CHAIN=1` | 37.2 | clean | 0 holds |
+| K3 | F7 d894ec3b (hold on) | 45.9 | clean | (pooled with K1: 330 holds) |
+| L1 | F9 d0846b90 (F5 + F7 sensor + F9) | 36.1 | clean | 0 holds; F9 flushed 2,885,826 of 2,885,828 chains |
+| U1 | (b) as it would ship: 5ffa6c83, `BC5_DIRECT_CHAIN=1`, every ho430 fix off, F7 count-only sensor | 39.4 | clean | sensor 0 |
+| U2 | the same | 42.1 | clean | sensor 0 |
+
+**F9 ≈ mode 1:** nearly every chain the title submits carries a GPU memory write another queue could wait on, so
+flushing on such a write flushes almost all of them. A narrower F9 would need a label set, which is ruled out.
+
+**F4 with the hold off** (Z1 393 fences, L1 445) acts on satisfied waits whose writer job is still running on the other
+ring: acbs on the c8 family behind a gfx writer, dcbs on the xx38 family behind a compute writer. With F7 at 0 and F3
+presets at 0, these are the writer's own release already executed, so the fences are redundant. F5 cannot skip them
+because F3 records only buffers the host submits unchanged.
+
+**Pooled speed (no repeated runs, the top's rule):**
+- Hold on: C5 44.2, C7 42.9, K1 42.0, K3 45.9; mean 43.75, spread 42.0–45.9. S also had a hang (C4) and a GPU fault
+  (C6) in its 4 route runs today.
+- Hold off: Z1 37.2, L1 36.1, U1 39.4, U2 42.1; mean 38.7, spread 36.1–42.1.
+- Difference: about 5 flips/s, about 11.5 %; the spreads touch.
+
+**The choice (the maintainer's, through the top session):**
+- **(a)** keep the hold and ship F7: the stale cases are caught by counting, for about 0.08 % of run time, with 0
+  bounds so far. It carries the ho430 machinery.
+- **(b)** turn the hold off for the second title, one word in its title row: no reordering and no fix code. About 11 %
+  slower until exp 0432's speed work wins it back.
