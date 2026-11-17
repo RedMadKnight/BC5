@@ -376,9 +376,18 @@ the game with the record); V on in run 1 with its check's second build removed.
   50 ms fall from 275-284 (every earlier arm, shared included) to 195. One run.
 - **M** as before: maps 1,443 ms of the sample against 3,490. **D**: drain 9 ms.
 - **V is still slower than off** (views 4,182 ms against 2,414): off by default from here, as the top session required.
-- **P does not remove the long stall:** "slot 16 resize 262144 -> 4194304 bytes (asked 4100104) took 958.5 ms:
-  unmap+free 0.1, alloc 958.3" and "slot 24 ... took 1354.1 ms: ... alloc 1353.9" in gameplay (and one of 67.4 ms). A
-  4 MiB allocation costs about a second under play; the buffers for jobs that large have to exist before play.
+- **P and the long allocations (corrected the same evening):** the two long ones quoted at first for this run ("slot
+  16 ... 958.5 ms", "slot 24 ... 1354.1 ms") belong to d432V15, not to d432T14: the reading took the last lines of the
+  wrong log. d432T14 has one resize over 20 ms (slot 27 to 4 MiB, 67.4 ms, at t 41-51 s). d432V15 has six, all between
+  t 40.9 and 50.9 s: 21.9, 499.3, 758.9, 175.9, 958.5 and 1354.1 ms, each almost wholly `amdgpu_bo_alloc`. Build 1's two
+  (683.0 ms in d432T10, 385.2 ms in d432A12) were not placed in time. **When:** t 40-50 s is the title's start, before
+  the start screen: the sampler of d432T14 shows GTT in use going from 9,915 to 11,860 MiB and MemAvailable from 3,508
+  to 1,449 MiB between t 36 and 47 s, 1,076 pages a second swapped out at t 42 s, and PSI memory "full" at 0.6-1.6 %.
+  So the allocation is slow while the box reclaims and swaps to make room for the title's first pins: a
+  memory-pressure symptom at start-up, not a gameplay stall in these runs. Not read: /proc/vmstat (the sampler does not
+  record it), so "reclaim" is from the swap-out and PSI figures, not from the kernel's own counters. Elsewhere the copy
+  part was over 200 ms at t 42-65 s of his play (four times) and at 162 s and 559 s of the 12:45 run; those two later
+  ones are the only ones seen after start-up.
 - **d432V15:** 17:06:42 "ring comp_1.3.0 timeout, signaled seq=410120, emitted seq=410122 ... reset succeeded", then
   gfx_0.0.0 the same; the game ended with fault record `20261117-170642` ("a hang without a page fault"), journal
   `play-20261117-1704`, 0 refused submissions. The probe's summary: "acb #93564 2047 dwords: 1 waits (1 kept for the
