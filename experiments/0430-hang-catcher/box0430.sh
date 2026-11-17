@@ -61,15 +61,15 @@ build() {
     rm -rf "$S" "$E/obj"; mkdir -p "$S/src/libs" "$R"
     cp "$BASE" "$S/$U" || stop "copy $U"
     # MODE=swap (build 6 on): the shared form, mkswap0430.py's unit (the fix alone, no catcher), as the swap will ship it
-    if [ "${MODE:-}" = swap ]; then MKS=mkswap0430.py; EXP=42f9f976; WANTW="BC5_DIRECT_ACB_RINGS BC5_DIRECT_ACB_SPLIT_LATE BC5_DIRECT_XQ_PENDING BC5_DIRECT_XQ_ACQUIRE"
-    else MKS=mk0430.py; EXP=cf1ca4d0; WANTW=""; fi
+    if [ "${MODE:-}" = swap ]; then MKS=mkswap0430.py; EXP=b8afba59; WANTW="BC5_DIRECT_ACB_RINGS BC5_DIRECT_ACB_SPLIT_LATE BC5_DIRECT_XQ_PENDING BC5_DIRECT_XQ_ACQUIRE BC5_DIRECT_XQ_FENCE"
+    else MKS=mk0430.py; EXP=17a88ee8; WANTW=""; fi
     python3 -I "$HERE/$MKS" "$S" > "$R/mk.out" 2>&1 || { cat "$R/mk.out"; stop "$MKS refused"; }
     cat "$R/mk.out"
     [ "$(m8 "$S/$U")" = "$EXP" ] || stop "the edited unit is $(m8 "$S/$U"), not the laptop's $EXP"
     distrobox enter ubuntu -- sh -c "cd '$B' && ninja -t compdb -x" > "$E/compdb.json" 2> "$R/compdb.err" < /dev/null || stop "compdb failed"
     bin=$E/kyty_emulator
     [ -f "$bin" ] && mv "$bin" "$bin.$(m8 "$bin")"
-    distrobox enter ubuntu -- env LC_ALL=C LANGUAGE=C python3 -I "$HERE/build0430.py" "$E/compdb.json" "$S" "$E" "$B" "$bin" > "$R/build.out" 2>&1 < /dev/null
+    distrobox enter ubuntu -- env LC_ALL=C LANGUAGE=C ${BE:+BC5_0430_ARCHIVE=$E/be-build/libbc5_backend.a BC5_0430_INCLUDE=$E/be-src/include} python3 -I "$HERE/build0430.py" "$E/compdb.json" "$S" "$E" "$B" "$bin" > "$R/build.out" 2>&1 < /dev/null
     rc=$?; echo "build rc $rc; errors $(grep -c 'error:' "$R/build.out"); warnings $(grep -c 'warning:' "$R/build.out")"
     grep -n "error:\|warning:\|undefined\|COMPILE FAILED" "$R/build.out" | head -30
     [ "$rc" = 0 ] && [ -x "$bin" ] || stop "build failed: $R/build.out"
@@ -81,9 +81,25 @@ build() {
     echo "private binary $(cat "$E/binary.md5"), shared before $shared, after $(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)"
     [ "$shared" = "$(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)" ] || stop "the shared binary changed"
 }
+# exp 0430 F4: the private backend archive: the shared archive's source (d19/export/backend, direct.cpp aeec4c09, direct.hpp
+# e96e5c73) with this experiment's two files (be/direct.cpp, be/direct.hpp beside this script), the shared build's
+# compiler and flags (clang++, Release, -Werror), into $E/be-build/libbc5_backend.a. Nothing shared is written.
+buildbe() {
+    own || stop "no lock held by 0430"
+    local SRC=$W/d19/export/backend D=$E/be-src O=$E/be-build
+    [ "$(m8 "$SRC/src/direct.cpp")" = aeec4c09 ] && [ "$(m8 "$SRC/include/bc5/direct.hpp")" = e96e5c73 ] || stop "the shared backend source is not aeec4c09 / e96e5c73"
+    [ "$(m8 "$W/backend-ubuntu/libbc5_backend.a")" = 9aab722c ] || stop "the shared archive is not 9aab722c"
+    rm -rf "$D" "$O"; cp -a "$SRC" "$D" || stop "copy the source"
+    cp "$HERE/be/direct.cpp" "$D/src/direct.cpp" && cp "$HERE/be/direct.hpp" "$D/include/bc5/direct.hpp" || stop "copy the two files"
+    distrobox enter ubuntu -- sh -c "cmake -S '$D' -B '$O' -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DCMAKE_C_COMPILER=clang -DBC5_BUILD_TESTS=OFF -DBC5_WITH_AMDGPU=ON > '$O.cmake.log' 2>&1 && nice -n 19 ninja -C '$O' bc5_backend" > "$R/be-build.out" 2>&1 < /dev/null
+    local rc=$?; echo "backend build rc $rc; errors $(grep -c 'error' "$R/be-build.out")"; grep -n "error" "$R/be-build.out" | head -20
+    [ "$rc" = 0 ] && [ -s "$O/libbc5_backend.a" ] || stop "the backend build failed: $R/be-build.out"
+    echo "private archive $(m8 "$O/libbc5_backend.a") (shared 9aab722c)"
+}
 case "${1:-}" in
     claim) claim "${2:-private build}" "${3:-15}" ;;
     build) build ;;
+    buildbe) buildbe ;;
     release) release ;;
     *) stop "usage: box0430.sh claim|build|release" ;;
 esac

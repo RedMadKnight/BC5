@@ -30,6 +30,8 @@ for unit, rel in UNITS.items():
     comp[comp.index("-o") + 1] = obj
     comp[comp.index("-c") + 1] = os.path.join(src_root, rel)
     comp.insert(1, "-I" + os.path.join(src_root, "src"))
+    if os.environ.get("BC5_0430_INCLUDE"):  # exp 0430 F4: the private backend's headers before the shared ones
+        comp.insert(1, "-I" + os.environ["BC5_0430_INCLUDE"])
     if run(comp) != 0:
         print("== COMPILE FAILED:", rel, flush=True); sys.exit(2)
     objs[unit] = obj
@@ -42,4 +44,11 @@ for k, a in enumerate(argv):
 for u, n in seen.items():
     assert n == 1, f"{u} appears {n} times in the link command"
 argv[argv.index("-o") + 1] = out_bin
+# exp 0430 F4: BC5_0430_ARCHIVE=<a private libbc5_backend.a> replaces the shared backend archive in the link (exactly once)
+arch = os.environ.get("BC5_0430_ARCHIVE")
+if arch:
+    hits = [k for k, a in enumerate(argv) if a.endswith("/libbc5_backend.a")]
+    assert len(hits) == 1, f"the backend archive appears {len(hits)} times in the link command"
+    print("archive:", argv[hits[0]], "->", arch, flush=True)
+    argv[hits[0]] = arch
 sys.exit(run(argv))

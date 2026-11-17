@@ -21,7 +21,8 @@
 // mapped), when the buffer itself waits on the label, or when a job in flight on another ring already holds a kept wait
 // on it. A label first seen at a wait whose writer is already submitted falls back to F2 (counted).
 // HO430_SHARED (the shared patch, mkswap0430.py): the fix alone. F2 and F3 read std::getenv (the lean build too) under the
-// shared names BC5_DIRECT_XQ_PENDING (F2) and BC5_DIRECT_XQ_ACQUIRE (F3), each on unless "0"; G is compiled off. They act
+// shared names BC5_DIRECT_XQ_PENDING (F2), BC5_DIRECT_XQ_ACQUIRE (F3) and BC5_DIRECT_XQ_FENCE (F4, F2's order done by the
+// kernel: a CS dependency instead of the CPU wait), each on unless "0"; G is compiled off. They act
 // only on a wait whose label has a pending write on ANOTHER ring, so with one ring (way 2 off) they do nothing.
 namespace ho430 {
 inline bool not0(const char* e) {
@@ -39,6 +40,10 @@ inline bool f3_on() {
 	static const bool v = not0(std::getenv("BC5_DIRECT_XQ_ACQUIRE"));
 	return v;
 }
+inline bool f4_on() {
+	static const bool v = not0(std::getenv("BC5_DIRECT_XQ_FENCE"));
+	return v;
+}
 #else
 inline bool f2_on() {
 	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F2"));
@@ -52,8 +57,12 @@ inline bool f3_on() {
 	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F3"));
 	return v;
 }
+inline bool f4_on() {
+	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F4"));
+	return v;
+}
 #endif
-enum : uint8_t { kWait = 1, kWrite = 2, kDropped = 3, kF2Waited = 4, kF2Cycle = 5, kF2Bound = 6, kGivenUp = 7, kCycle = 8, kF3Preset = 9, kF3Refused = 10, kF3First = 11, kF3NotStale = 12, kF3Met = 13 };
+enum : uint8_t { kWait = 1, kWrite = 2, kDropped = 3, kF2Waited = 4, kF2Cycle = 5, kF2Bound = 6, kGivenUp = 7, kCycle = 8, kF3Preset = 9, kF3Refused = 10, kF3First = 11, kF3NotStale = 12, kF3Met = 13, kF4Fence = 14 };
 constexpr uint32_t kTypes = 16;
 struct Cross {
 	uint64_t v         = 0; // the released value the waits wait for (== v)
@@ -287,6 +296,19 @@ inline void at_wait(const uint32_t* p, bool is64, uint64_t label, const char* ki
 		if (k < 64 || (k & 0xfffu) == 0) journal("ho430 F2: %s wait at %u on 0x%" PRIx64 " (value 0x%" PRIx64 ", satisfied) has a pending write from job %" PRIu64 " on ring %d, which waits on a label this buffer writes: a cycle, F2 refused (%" PRIu64 " so far)\n", kind, off, label, value, others.front().second, others.front().first, k + 1);
 		return;
 	}
+	if (f4_on()) { // F4: the same order through the kernel's scheduler: this buffer's next submission depends on the writer jobs
+		for (const auto& o: others) bc5::direct::Device::add_next_submit_dependency(o.first, o.second);
+		Ev x    = ev(kF4Fence, label, kind, ring, off);
+		x.value = value;
+		x.ref   = others.front().second;
+		add(x);
+		static std::atomic<uint64_t> n_f {0};
+		const uint64_t               k = n_f++;
+		if (k < 64 || (k & 0x3fffu) == 0)
+			journal("ho430 F4: %s wait at %u on 0x%" PRIx64 " was satisfied (value 0x%" PRIx64 ") with a pending write from job %" PRIu64 " on ring %d (%zu such jobs): the submission depends on it (%" PRIu64 " so far)\n", kind, off, label, value,
+			        others.front().second, others.front().first, others.size(), k + 1);
+		return;
+	}
 	const uint64_t t0 = SoftCp::now_ns();
 	bool           done = false;
 	while (SoftCp::now_ns() - t0 < 250'000'000ull && (!g_dev || !g_dev->wedged())) {
@@ -421,7 +443,7 @@ inline void dump(int k) {
 	std::snprintf(name, sizeof(name), "%s/g0430-%d.txt", dir.c_str(), k);
 	FILE* f = std::fopen(name, "w");
 	if (f == nullptr) return;
-	static const char* const tn[kTypes] = {"-", "wait", "write", "DROPPED-WRITE", "F2-waited", "F2-cycle", "F2-bound", "GIVEN-UP", "CYCLE", "F3-preset", "F3-refused", "F3-first-seen", "F3-not-stale", "F3-wait-met-preset", "?", "?"};
+	static const char* const tn[kTypes] = {"-", "wait", "write", "DROPPED-WRITE", "F2-waited", "F2-cycle", "F2-bound", "GIVEN-UP", "CYCLE", "F3-preset", "F3-refused", "F3-first-seen", "F3-not-stale", "F3-wait-met-preset", "F4-fence", "?"};
 	std::fprintf(f, "g0430 %d at t %.3f s: the last %zu label events, oldest first; counts: waits %" PRIu64 " writes %" PRIu64 " dropped writes %" PRIu64 " F2 waited %" PRIu64 " cycle %" PRIu64 " bound %" PRIu64 " given up %" PRIu64 " cycle-broken %" PRIu64 "\n", k,
 	             timing_now(), all.size(), c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8]);
 	std::fprintf(f, "columns: t_s type label kind ring about#n offset | wait: value ref func satisfied pending | write: value job_seq op\n");
