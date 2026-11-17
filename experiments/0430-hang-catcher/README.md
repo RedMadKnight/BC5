@@ -396,3 +396,16 @@ instead of its end.
    submitted before it entered the set keeps F4.
 Cost to expect: one extra 8-dword packet per release of a cross-queue label (a few hundred per second). The risk is
 the offset-map plumbing; it gets the stand-in tests the MEC rebuild has.
+
+### The control hung: h430C2 (the shared build, 05:44:56)
+
+The A/B's first arm, the shared build `dae7bf0b` (way 2 on, no fix), hung 2.7 min into the run: kernel TCP READs at
+0x0 (status 0x00601031), then `comp_1.3.0` timeout (reset succeeded) and `gfx_0.0.0` timeout, reset failed;
+`bc5-gpu-watch` crashed the kernel for a reboot (SysRq s, c, 05:44:58.71). Records: `play-20261117-0542/gc`
+(journal, two ib-timeout bins), devcoredump `20261117-054458-devcd6.txt`; no fault record (the box went down first).
+The timed-out acb #202571 (6,432 dwords) has one wait, at dword 62: label 0x12004b4fc8 == 0, "now 0x0 (met)
+DROPPED", the same wait, dword and label as the 21:38 hang's acb #1980431. The host's last fault 0x11cc88a000
+(TCP WRITE) is K3, a hole just past RenderGpuWcLarge's end, like h430R2's 0x11cc847000. The acb runs the BVH refits
+and the build family's steps (0x909969100, 0x909969d00, 0x90996a000, 0x90996cc00, 0x909971300), not the sort pipeline
+of the 21:38 frame. So it is the same mechanism's precondition (the wait on the dcb's release label dropped as met at
+submit) on the build without the fix; which memory was overwritten is not shown (no catchers).

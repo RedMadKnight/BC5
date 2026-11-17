@@ -1717,5 +1717,5 @@
 03:39:24.634 | avail 13682 act 283 inact 1526 dirty 0 swapfree 7085 | psi mem 0.00/0.00 io 0.30/0.30 | - | D: none
 03:39:25.690 | avail 13682 act 283 inact 1526 dirty 0 swapfree 7085 | psi mem 0.00/0.00 io 0.30/0.30 | - | D: none
 03:39:26.747 | avail 13682 act 283 inact 1526 dirty 0 swapfree 7085 | psi mem 0.00/0.00 io 0.24/0.24 | - | D: none
-Read from remote host 100.88.23.35: Connection reset by peer
+Read from remote host <box>: Connection reset by peer
 client_loop: send disconnect: Connection reset by peer
