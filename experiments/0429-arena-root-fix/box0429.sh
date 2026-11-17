@@ -70,7 +70,7 @@ build() {
         [ "$rc" = 0 ] && [ -x "$bin" ] || stop "build $v failed: $R/build-$v.out"
         md5sum < "$bin" | cut -d' ' -f1 > "$E/$v/binary.md5"
     done
-    for w in KYTY_BC5_0429_PRIO_ORDER KYTY_BC5_0429_GUEST_CPUS KYTY_BC5_0425_HANDOFF_US KYTY_BC5_0425_DIRECT_WAKE KYTY_BC5_0425_WAKE_SLICE_US; do
+    for w in KYTY_BC5_0429_PRIO_ORDER KYTY_BC5_0429_GUEST_CPUS KYTY_BC5_0429_FAST_MUTEX KYTY_BC5_0425_HANDOFF_US KYTY_BC5_0425_DIRECT_WAKE KYTY_BC5_0425_WAKE_SLICE_US; do
         for v in normal lean; do strings "$E/$v/kyty_emulator" | grep -qxF "$w" || stop "$w is not in $v"; done
     done
     strings "$E/normal/kyty_emulator" | grep -qxF KYTY_BC5_0429_TRACE || stop "KYTY_BC5_0429_TRACE is not in normal"

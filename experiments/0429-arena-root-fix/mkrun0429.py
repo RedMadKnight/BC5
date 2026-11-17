@@ -58,6 +58,7 @@ ch = ch[:a] + '''#!/usr/bin/env bash
 #   CHAIN_SET=smoke2:  h429M1 (once: the 13-CPU model runs, the trace shows the map and the masks applied)
 #   CHAIN_SET=smoke3:  h429M4 (build 3, the run-time CPU mapping; every arm also BC5_0430_G=0: exp 0430's catcher off for timing)
 #     Z  M + KYTY_BC5_0429_PRIO_ORDER=2 (the job-worker band 450-549 at nice -3, lower priorities below it)
+#     F  KYTY_BC5_0429_FAST_MUTEX=1 (build 5: the guest mutex as a user-space lock word, futex only when contended)
 #   every arm from build 4 on also KYTY_BC5_0429_WAITS=1 (the wait catcher: where each thread is at the fault)
 #   CHAIN_SET=screen3: h429C1 h429Z1 h429M5 h429C2 h429Z2 h429M6 (or one or two at a time: rep<k> with REP_TAGS)
 #   CHAIN_SET=screen2: h429C1 h429M2 h429Y1 h429X2 h429C2 h429M3 h429Y2 h429X3
@@ -90,6 +91,7 @@ ch = ch[:a] + '''armwords() {
     h429M*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1" ;;
     h429Y*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_PRIO_ORDER=1" ;;
     h429Z*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_PRIO_ORDER=2" ;;
+    h429F*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_FAST_MUTEX=1" ;;
     h429X*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_PRIO_ORDER=1 KYTY_BC5_0425_HANDOFF_US=300" ;;
     *) return 1 ;;
   esac

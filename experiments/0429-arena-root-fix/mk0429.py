@@ -204,6 +204,7 @@ static int Bc5GuestNice(int guest_priority) {
 	return 0;
 }'''
 
+FM_BLOCK = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fastmutex0429.cpp'), encoding='utf-8').read()
 WAITS_BLOCK = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'waits0429.cpp'), encoding='utf-8').read()
 AFF_BLOCK = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'affinity0429.cpp'), encoding='utf-8').read()
 
@@ -245,6 +246,27 @@ def pthread(path):
     text = one(text, '\tBc5ApplyGuestPriority(thread, "setprio");\n#endif\n',
                '\tBc5ApplyGuestPriority(thread, "setprio");\n\tif (Bc5AffinityTrace()) {\n\t\tBc5ApplyAffinity(thread, "setprio"); // experiment 0429: the trace line; the mask is unchanged\n\t}\n#endif\n',
                'pthread setprio')
+    # candidate F, the guest mutex as a lock word (fastmutex0429.cpp)
+    text = one(text, '\tint                     pprotocol = PTHREAD_PRIO_NONE;\n};\n\nstruct PthreadMutexattrPrivate {',
+               '\tint                     pprotocol = PTHREAD_PRIO_NONE;\n\tstd::atomic<uint32_t>   bc5_word {0}; // experiment 0429 F: 0 free, 1 locked, 2 locked with sleepers\n};\n\nstruct PthreadMutexattrPrivate {',
+               'pthread mutex field')
+    head = 'static int NativeMutexLock(PthreadMutexPrivate* mutex, KernelUseconds* timeout_us) {\n'
+    text = one(text, head, FM_BLOCK + '\n' + head, 'pthread fast mutex block')
+    lines = text.split('\n')
+    for fn, call in [('static int NativeMutexLock(PthreadMutexPrivate* mutex, KernelUseconds* timeout_us) {', 'return Bc5FastMutexLock(mutex, self, timeout_us);'),
+                     ('static int NativeMutexTrylock(PthreadMutexPrivate* mutex) {', 'return Bc5FastMutexTrylock(mutex, self);'),
+                     ('static int NativeMutexUnlock(PthreadMutexPrivate* mutex, uint32_t* recurse = nullptr) {', 'return Bc5FastMutexUnlock(mutex, self, recurse);')]:
+        f = idx(lines, fn, 'pthread ' + fn[:30])
+        k = f + 1
+        while 'EXIT_NOT_IMPLEMENTED(self == nullptr);' not in lines[k]:
+            k += 1
+            if k > f + 8:
+                stop('pthread: no self check in ' + fn)
+        lines[k + 1:k + 1] = ['#ifdef __linux__', '\tif (Bc5FastMutex()) { // experiment 0429 F', '\t\t' + call, '\t}', '#endif']
+    text = '\n'.join(lines)
+    text = one(text, '\tif (result == OK) {\n\t\tstd::lock_guard lock(mutex->m);\n\t\tmutex->count = std::max<uint32_t>(recurse, 1);\n\t}\n',
+               '\tif (result == OK) {\n#ifdef __linux__\n\t\tif (Bc5FastMutex()) { // experiment 0429 F: the holder alone writes count\n\t\t\tmutex->count = std::max<uint32_t>(recurse, 1);\n\t\t\treturn result;\n\t\t}\n#endif\n\t\tstd::lock_guard lock(mutex->m);\n\t\tmutex->count = std::max<uint32_t>(recurse, 1);\n\t}\n',
+               'pthread lock recurse')
     if 'JobArenaFix' in text or 'job_arena' in text.lower():
         stop('pthread.cpp still names the workaround')
     save(path, text, crlf)
