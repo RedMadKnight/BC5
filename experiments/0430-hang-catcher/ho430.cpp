@@ -40,7 +40,9 @@
 // to order on and F3 (at the writer's submit) came too late; the host dropped the wait as met. The console decides a
 // WAIT_REG_MEM when its queue reaches the packet, not at submit. F6 keeps such a wait for the GPU, as the host keeps an
 // unsatisfied one with a pending writer: a wait (== V) on a label of F3's cross-queue set, satisfied when the host looks,
-// with no job in flight writing the label. No memory is written. Counted as F6-kept.
+// with no job in flight writing the label. No memory is written. Counted as F6-kept. Not when the writer seen when the
+// label was learned runs on the waiter's own ring (it would sit behind the kept wait: a deadlock). A kept wait whose
+// label has not come back within 1 s, with no writer in flight, is journaled (it holds its ring until the TDR).
 namespace ho430 {
 inline bool not0(const char* e) {
 	return e == nullptr || !(e[0] == '0' && e[1] == 0);
@@ -102,6 +104,7 @@ struct Cross {
 	uint64_t nonv      = 0; // the last other value a wait saw on the label
 	bool     is64      = false;
 	bool     have_nonv = false;
+	int      wring     = -100; // F6: the ring of the writer seen when the label was learned (-100: unknown)
 };
 struct Ev {
 	uint64_t t_ns  = 0;
@@ -126,6 +129,13 @@ struct Store {
 	std::map<uint64_t, Cross>                  cross;                    // F3: the cross-queue labels, in memory only
 	std::map<uint64_t, uint64_t>               preset_at;                // F3: label -> SoftCp::now_ns() of a preset whose release has not been seen yet
 	std::map<std::pair<int, uint64_t>, std::vector<uint64_t>> job_safe; // F5: (ring, seq) -> labels whose stale case F3 excluded at its submit
+	struct Kept {
+		uint64_t t_ns = 0, ref = 0;
+		bool     is64 = false;
+		int      ring = 0;
+	};
+	std::map<uint64_t, Kept>                   f6_kept; // F6: label -> the last wait kept for the GPU, watched until the label holds ref again
+	uint64_t                                   f6_long = 0; // F6: kept waits whose label did not come back within 1 s with no writer in flight
 	uint64_t                                   c[kTypes] {};
 	uint64_t                                   waited_ns = 0;
 };
@@ -157,6 +167,34 @@ inline Ev ev(uint8_t type, uint64_t label, const char* kind, int ring, uint32_t 
 	std::snprintf(e.kind, sizeof(e.kind), "%s", kind != nullptr ? kind : "-");
 	return e;
 }
+// F6: a kept wait whose label does not come back holds its ring until the TDR: say so. At most every 100 ms. The two locks
+// are taken one after the other, never nested (job_done runs under g_plw_mutex and takes the store's lock).
+inline void f6_watch() {
+	static std::atomic<uint64_t> last {0};
+	const uint64_t               now = SoftCp::now_ns();
+	uint64_t                     was = last.load();
+	if (!f6_on() || now - was < 100'000'000ull || !last.compare_exchange_strong(was, now)) return;
+	std::vector<uint64_t> busy; // labels a job in flight writes
+	{
+		std::lock_guard lw(g_plw_mutex);
+		for (const auto& w: g_plw) busy.push_back(w.label);
+	}
+	Store&          s = st();
+	std::lock_guard lk(s.m);
+	for (auto it = s.f6_kept.begin(); it != s.f6_kept.end();) {
+		const uint64_t a = it->first;
+		const uint64_t v = it->second.is64 ? *reinterpret_cast<const volatile uint64_t*>(a & ~7ull) : *reinterpret_cast<const volatile uint32_t*>(a & ~3ull);
+		if (v == it->second.ref) { it = s.f6_kept.erase(it); continue; }
+		if (now - it->second.t_ns > 1'000'000'000ull && std::find(busy.begin(), busy.end(), a) == busy.end()) {
+			s.f6_long++;
+			journal("ho430 F6: a wait kept on ring %d for 0x%" PRIx64 " (== 0x%" PRIx64 ") %.0f ms ago: the label holds 0x%" PRIx64 " and no writer is in flight (%" PRIu64 " such)\n", it->second.ring, a, it->second.ref,
+			        static_cast<double>(now - it->second.t_ns) / 1e6, v, s.f6_long);
+			it = s.f6_kept.erase(it);
+			continue;
+		}
+		++it;
+	}
+}
 // One pass over a submitted job: its kept waits (for F2's cycle check), its registered writes and the writes the filter
 // dropped (G). executed: the offsets the filter kept, in order.
 inline void job_submitted(const uint32_t* ib, uint32_t num_dwords, const std::vector<uint32_t>& executed, uint64_t seq, int ring, const char* kind) {
@@ -164,6 +202,7 @@ inline void job_submitted(const uint32_t* ib, uint32_t num_dwords, const std::ve
 	if (t_f5_ib == ib && t_f5_n == num_dwords) safe.swap(t_f5_safe);
 	t_f5_ib = nullptr;
 	t_f5_safe.clear();
+	f6_watch(); // F6 (no lock held here)
 	if (!f2_on() && !g_on() && !f3_on()) return;
 	std::vector<uint64_t> waits;
 	std::vector<Ev>       evs;
@@ -223,8 +262,8 @@ inline void job_submitted(const uint32_t* ib, uint32_t num_dwords, const std::ve
 	static uint64_t last_f5 = 0; // F5's line without G (the shared form too): the orders kept against the orders skipped
 	if (!g_on() && f3_on() && now - last_f5 > 60'000'000'000ull) {
 		last_f5 = now;
-		journal("ho430 F5 (exp 0430): t %.1f s: F3 presets %" PRIu64 ", not stale %" PRIu64 ", refused %" PRIu64 "; F4 fences %" PRIu64 ", F2 waited %" PRIu64 ", F5 skipped %" PRIu64 " (precise %s), F6 kept %" PRIu64 " (keep %s)\n", timing_now(), s.c[kF3Preset], s.c[kF3NotStale], s.c[kF3Refused],
-		        s.c[kF4Fence], s.c[kF2Waited], s.c[kF5Skip], f5_on() ? "on" : "off", s.c[kF6Kept], f6_on() ? "on" : "off");
+		journal("ho430 F5 (exp 0430): t %.1f s: F3 presets %" PRIu64 ", not stale %" PRIu64 ", refused %" PRIu64 "; F4 fences %" PRIu64 ", F2 waited %" PRIu64 ", F5 skipped %" PRIu64 " (precise %s), F6 kept %" PRIu64 " (keep %s), F6 kept waits not back in 1 s %" PRIu64 "\n", timing_now(), s.c[kF3Preset], s.c[kF3NotStale], s.c[kF3Refused],
+		        s.c[kF4Fence], s.c[kF2Waited], s.c[kF5Skip], f5_on() ? "on" : "off", s.c[kF6Kept], f6_on() ? "on" : "off", s.f6_long);
 	}
 #ifndef HO430_SHARED
 	static bool         at_done = false; // BC5_0430_G_AT: one dump in a clean run
@@ -264,12 +303,13 @@ inline void at_wait(const uint32_t* p, bool is64, uint64_t label, const char* ki
 	std::vector<std::pair<int, uint64_t>> others; // (ring, seq) of pending writes to this label on another ring
 	uint32_t                              pend      = 0;
 	bool                                  other_ref = false; // a pending write of exactly ref on another ring
+	int                                   oring     = -100; // F6: that writer's ring
 	{
 		std::lock_guard lk(g_plw_mutex);
 		for (const auto& w: g_plw) {
 			if (w.label != label) continue;
 			pend++;
-			if (w.ring != ring && w.value == ref && w.is64 == is64) other_ref = true;
+			if (w.ring != ring && w.value == ref && w.is64 == is64) { other_ref = true; oring = w.ring; }
 			if (w.ring != ring && std::find(others.begin(), others.end(), std::make_pair(w.ring, w.seq)) == others.end()) others.emplace_back(w.ring, w.seq);
 		}
 	}
@@ -280,8 +320,9 @@ inline void at_wait(const uint32_t* p, bool is64, uint64_t label, const char* ki
 		auto            it = s.cross.find(label);
 		if (it == s.cross.end() && other_ref) {
 			Cross c;
-			c.v    = ref;
-			c.is64 = is64;
+			c.v     = ref;
+			c.is64  = is64;
+			c.wring = oring;
 			it     = s.cross.emplace(label, c).first;
 			first  = true;
 		}
@@ -422,6 +463,7 @@ inline bool keep_cross(const uint32_t* p, bool is64, uint64_t label, const char*
 		std::lock_guard lk(s.m);
 		const auto      it = s.cross.find(label);
 		if (it == s.cross.end() || it->second.v != ref || it->second.is64 != is64) return false;
+		if (it->second.wring == ring) return false; // the writer runs on this ring after the wait: the GPU would deadlock
 	}
 	{
 		std::lock_guard lk(g_plw_mutex);
@@ -431,6 +473,11 @@ inline bool keep_cross(const uint32_t* p, bool is64, uint64_t label, const char*
 	Ev x    = ev(kF6Kept, label, kind, ring, off);
 	x.value = ref;
 	add(x);
+	{
+		Store&          s = st();
+		std::lock_guard lk(s.m);
+		s.f6_kept[label] = Store::Kept {SoftCp::now_ns(), ref, is64, ring};
+	}
 	static std::atomic<uint64_t> n_k {0};
 	const uint64_t               k = n_k++;
 	if (k < 64 || (k & 0x3fffu) == 0) journal("ho430 F6: %s on ring %d keeps its satisfied wait at %u on 0x%" PRIx64 " (== 0x%" PRIx64 ") for the GPU: no writer in flight (%" PRIu64 " so far)\n", kind, ring, off, label, ref, k + 1);
