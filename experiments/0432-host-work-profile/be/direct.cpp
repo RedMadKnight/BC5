@@ -675,7 +675,7 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
     if (Impl::s432_prealloc()) { // exp 0432 (tag s432): the large slot buffers, once, before the title maps anything
         const double t0 = now_ms();
         int made = 0, failed = 0;
-        std::uint64_t gfx_kib = 4096, comp_kib = 256, total_kib = 0; // BC5_DIRECT_SLOT_PREALLOC=<GFX KiB>:<other KiB> sets other sizes
+        std::uint64_t gfx_kib = 256, comp_kib = 256, total_kib = 0; // BC5_DIRECT_SLOT_PREALLOC=<GFX KiB>:<other KiB> sets other sizes
         if (const char *e = std::getenv("BC5_DIRECT_SLOT_PREALLOC"); e != nullptr) {
             unsigned long long a = 0, b = 0;
             if (std::sscanf(e, "%llu:%llu", &a, &b) == 2 && a <= 16384 && b <= 16384) {

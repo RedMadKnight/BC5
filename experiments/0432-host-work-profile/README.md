@@ -396,6 +396,12 @@ the game with the record); V on in run 1 with its check's second build removed.
   a comp-ring timeout with a successful reset at 16:12 on the boot before. One event. The records went to exp 0430.
   The series stopped there (LESSONS R55), and the box needs a reboot before any next run (the top session's rule).
 
+**For the memory line (the top session's note, 2026-11-17):** the title's start is under memory pressure on this box.
+In d432T14 (build 3, the 09:46 save) MemAvailable fell from 3,508 to 1,449 MiB and GTT in use rose from 9,915 to
+11,860 MiB between t 36 and 47 s, with 1,076 pages a second swapped out at t 42 s and PSI memory "full" at 0.6-1.6 %;
+4 MiB GTT allocations made in that window took 0.2-1.4 s. Slot prealloc default from build 4: 256 KiB for every slot
+(32 MiB); `BC5_DIRECT_SLOT_PREALLOC=2048:256` is kept for a later test.
+
 (pending: the A/B of the test build in his scene and on the route; the perf profile of the normal and lean builds)
 
 ## Verdict
