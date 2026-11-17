@@ -12,7 +12,11 @@
 //      RR thread back to SCHED_OTHER for good (a spinner); hard 200 ms -> the kernel ends the emulator (never the box);
 //   2. a watchdog thread every 5 ms: an RR thread that ran 100 ms with no new time slice is dropped for good;
 //   3. at most (online CPUs - 2) guest threads hold RR at once, so host threads always have two CPUs.
-// A dropped thread is never promoted again (rtkit also limits its calls to 25 per 20 s per user, TODO(verify)).
+// A thread dropped by bound 1 or 2 is never promoted again. A thread evicted for a higher priority (the cap) is not a
+// spinner: it is promoted again at a later sleep once a place is free (build 12; h429K5: AK::AudioMgr, 450, evicted
+// Job Hi 2, 500, for good, and the places the watchdog freed went unused). rtkit's calls: at most 15 per 20 s window
+// (rtkit limits its actions per burst, TODO(verify) the box's ActionsPerBurst / ActionsPerBurstSec); a refusal stops
+// new promotions until the window turns, except to replace an evicted thread.
 // Off: nothing here runs. Normal build: every promotion, drop and refusal is logged (the first 200). Both builds
 // (build 11): one count line a minute.
 #if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
@@ -46,7 +50,13 @@ constexpr int     kRrMax      = 20; // rtkit's MaxRealtimePriority on the box (2
 static std::atomic<int> g_tid[kMaxSlots];      // RR threads (0: free)
 static std::atomic<int> g_slot_prio[kMaxSlots]; // their guest priorities
 static std::atomic<int>  g_xcpu_tid {0};       // the last thread SIGXCPU dropped (logged by the watchdog)
-static std::atomic<bool> g_rtkit_full {false};   // rtkit refused once: ask again only to replace an evicted thread
+constexpr int64_t        kWindowMs  = 20000; // build 12: the rtkit budget per window
+constexpr int            kWindowMax = 15;
+static std::atomic<int64_t> g_win_start {0};   // ms, steady clock
+static std::atomic<int>     g_win_calls {0};
+static std::atomic<int64_t> g_full_until {0};  // rtkit refused: no new promotion before this (ms), only replacements
+static std::atomic<int>     g_evicted_tid[kMaxSlots]; // evicted, waiting to come back (not spinners)
+static std::atomic<int>     g_evicted_n {0};
 static std::atomic<int> g_held {0};            // how many hold RR now
 static std::atomic<int> g_calls {0};           // rtkit calls made
 #ifndef BC5_LEAN
@@ -68,6 +78,49 @@ static void Count(Ev e, int prio) { // async-signal-safe
 	g_last[g_last_n.fetch_add(1, std::memory_order_relaxed) & 15].store(e * 10000 + (prio < 0 ? 9999 : prio), std::memory_order_relaxed);
 }
 static int              g_cap = 0;
+static int64_t NowMs() {
+	return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+static bool BudgetOk(bool replacing) { // one rtkit call may be made now
+	const int64_t now = NowMs();
+	int64_t       w   = g_win_start.load();
+	if (now - w >= kWindowMs && g_win_start.compare_exchange_strong(w, now)) {
+		g_win_calls.store(0);
+	}
+	if (now < g_full_until.load() && !replacing) {
+		return false;
+	}
+	return g_win_calls.fetch_add(1) < kWindowMax || (g_win_calls.fetch_sub(1), false);
+}
+static bool IsEvicted(int tid) {
+	for (auto& s: g_evicted_tid) {
+		if (s.load(std::memory_order_relaxed) == tid) {
+			return true;
+		}
+	}
+	return false;
+}
+static void MarkEvicted(int tid) {
+	for (auto& s: g_evicted_tid) {
+		int z = 0;
+		if (s.load(std::memory_order_relaxed) == tid) {
+			return;
+		}
+		if (s.compare_exchange_strong(z, tid)) {
+			g_evicted_n.fetch_add(1);
+			return;
+		}
+	}
+}
+static void Unevict(int tid) {
+	for (auto& s: g_evicted_tid) {
+		int t = tid;
+		if (s.compare_exchange_strong(t, 0)) {
+			g_evicted_n.fetch_sub(1);
+			return;
+		}
+	}
+}
 
 static long RawSyscall3(long n, long a, long b, long c) { // no errno: the handler may run on any thread
 	long ret;
@@ -108,7 +161,7 @@ static void MarkSpinner(int tid) {
 }
 // Drops tid back to SCHED_OTHER (an unprivileged thread may always lower its policy; rtkit sets RESET_ON_FORK, kept).
 // Async-signal-safe: raw syscalls and atomics only.
-static int Drop(int tid) { // the dropped thread's guest priority, or -1 when it held no slot
+static int Drop(int tid, bool spinner = true) { // the dropped thread's guest priority, or -1 when it held no slot
 	for (int i = 0; i < kMaxSlots; i++) {
 		auto& s = g_tid[i];
 		int   t = tid;
@@ -117,7 +170,9 @@ static int Drop(int tid) { // the dropped thread's guest priority, or -1 when it
 			struct { int prio; } p {0};
 			RawSyscall3(SYS_sched_setscheduler, tid, SCHED_OTHER | 0x40000000 /* SCHED_RESET_ON_FORK */, reinterpret_cast<long>(&p));
 			g_held.fetch_sub(1, std::memory_order_relaxed);
-			MarkSpinner(tid);
+			if (spinner) {
+				MarkSpinner(tid);
+			}
 			return gp;
 		}
 	}
@@ -348,12 +403,13 @@ static void Apply(Pthread thread, bool sleeper) {
 				vprio  = p;
 			}
 		}
-		if (victim == 0 || Drop(victim) < 0) {
+		if (victim == 0 || Drop(victim, false) < 0) {
 			Count(kCapDenied, prio);
 			Log("not promoted (the cap, no holder of a lower priority)", tid, thread->name.c_str(), prio, 0, 0);
 			return;
 		}
 		Count(kEvicted, vprio);
+		MarkEvicted(victim); // build 12: it comes back at a later sleep when a place is free
 		Log("evicted for a higher priority", victim, "", vprio, 0, 0);
 		evicted = true;
 		if (g_held.fetch_add(1) >= g_cap) {
@@ -361,7 +417,7 @@ static void Apply(Pthread thread, bool sleeper) {
 			return;
 		}
 	}
-	if (g_calls.load() >= 24 || (g_rtkit_full.load() && !evicted)) {
+	if (!BudgetOk(evicted)) {
 		g_held.fetch_sub(1);
 		Count(kBudgetDenied, prio);
 		Log("not promoted (rtkit's budget)", tid, thread->name.c_str(), prio, 0, 0);
@@ -371,7 +427,7 @@ static void Apply(Pthread thread, bool sleeper) {
 	const long rc = RtkitMakeRealtime(static_cast<uint64_t>(tid), static_cast<uint32_t>(rr));
 	if (rc != 0) {
 		g_held.fetch_sub(1);
-		g_rtkit_full.store(true);
+		g_full_until.store(g_win_start.load() + kWindowMs);
 		Count(kRefused, prio);
 		Log("rtkit refused", tid, thread->name.c_str(), prio, rr, rc);
 		return;
@@ -381,6 +437,7 @@ static void Apply(Pthread thread, bool sleeper) {
 		if (g_tid[i].compare_exchange_strong(z, tid)) {
 			g_slot_prio[i].store(prio, std::memory_order_relaxed);
 			Count(kPromoted, prio);
+			Unevict(tid);
 			Log("promoted", tid, thread->name.c_str(), prio, rr, rc);
 			return;
 		}
@@ -437,7 +494,14 @@ extern "C" void bc5_0429_r_on_sleep(const void* sem) {
 		return;
 	}
 	Pthread self = g_pthread_self;
-	if (self == nullptr || self->bc5_rr_sleeper) {
+	if (self == nullptr) {
+		return;
+	}
+	if (self->bc5_rr_sleeper) { // build 12: an evicted sleeper comes back when a place is free
+		if (bc5_0429r::g_evicted_n.load(std::memory_order_relaxed) > 0 && bc5_0429r::g_held.load(std::memory_order_relaxed) < bc5_0429r::g_cap &&
+		    bc5_0429r::IsEvicted(static_cast<int>(self->host_thread_id))) {
+			bc5_0429r::Apply(self, true);
+		}
 		return;
 	}
 	if (bc5_0429r::Mode() == 2 && !bc5_0429r::IsPool(sem, static_cast<int>(self->host_thread_id))) {

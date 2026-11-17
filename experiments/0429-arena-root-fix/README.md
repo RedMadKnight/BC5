@@ -661,3 +661,22 @@ Next slot, in order:
    - `RRMODE=2 check0429l.sh h429K8`.
 3. The R/C pairs `CHAIN_SET=rep13 REP_TAGS="h429Q1 h429P1 h429Q2 h429P2"`, with RRMODE as the checks decide.
 4. `astro0429.sh a429B`.
+
+## Slot 17:44 (2026-11-17): build 11, check K5 FAIL; build 12 (offline)
+
+Box: rebooted by the maintainer at about 17:42 after a GPU reset at 17:06. Up 1 min at the start. The only amdgpu
+dmesg line was bc5-gpu-watch's own start line.
+- **Build 11:** normal 47bc95e1, lean 2f9d01e5. No new warnings; the shared binaries are unchanged.
+- **h429K5** (normal, RR=1, arm G 40 s; `raw/n/check-h429K5.out`):
+  - The run was clean (42.2 flips/s).
+  - **7 of 8 Job Hi RR: FAIL**, and the slot stopped there (K6–K8, the pairs and ASTRO did not run).
+  - The count line: `P 21 R 0 C 11 B 0 E 7 X 0 W 5 | last E600 ×6 E500 W450 ×5`.
+- **The log:** once the cap of 14 was full, **AK::AudioMgr (450) evicted Job Hi 2 (500)**.
+  - An eviction used Drop, which marks the thread a spinner, so Hi 2 never came back.
+  - Then the watchdog dropped all five Havok Solve (450). The freed places went unused, while 600s and 550s were
+    refused.
+  - The same is very likely lean's Hi 0/6 at h429K4.
+- **Build 12** (rr0429.cpp, offline, not built):
+  - An eviction is no longer a spin drop. An evicted sleeper is promoted again at a later sleep once a place is free.
+  - rtkit's budget is 15 calls per 20 s window, not 24 per lifetime. A refusal blocks new promotions until the window
+    turns, but not the replacement of an evicted thread.
