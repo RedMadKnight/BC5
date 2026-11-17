@@ -15,7 +15,7 @@
 // A thread dropped by bound 1 or 2 is never promoted again. A thread evicted for a higher priority (the cap) is not a
 // spinner: it is promoted again at a later sleep once a place is free (build 12; h429K5: AK::AudioMgr, 450, evicted
 // Job Hi 2, 500, for good, and the places the watchdog freed went unused). rtkit's calls: at most 15 per 20 s window
-// (rtkit limits its actions per burst, TODO(verify) the box's ActionsPerBurst / ActionsPerBurstSec); a refusal stops
+// (rtkit's defaults on the box, read 2026-11-17: 25 actions per 20 s per user, max rtprio 20); a refusal stops
 // new promotions until the window turns, except to replace an evicted thread.
 // Off: nothing here runs. Normal build: every promotion, drop and refusal is logged (the first 200). Both builds
 // (build 11): one count line a minute.

@@ -680,3 +680,47 @@ dmesg line was bc5-gpu-watch's own start line.
   - An eviction is no longer a spin drop. An evicted sleeper is promoted again at a later sleep once a place is free.
   - rtkit's budget is 15 calls per 20 s window, not 24 per lifetime. A refusal blocks new promotions until the window
     turns, but not the replacement of an evicted thread.
+
+## Slot 22:39–23:53 (2026-11-17): build 12 with RR=2; checks K10 and K12 PASS, pairs and ASTRO clean
+
+Box: up about 5 h, no amdgpu reset since boot (only bc5-gpu-watch's start line), BOX-LOCK empty. Build 12 (c1090952):
+private normal `40051afd`, lean `91081355`, 0 errors, the same 8 warnings; shared builds unchanged (md5 before = after).
+
+**rtkit's limits (read only, the box).** `rtkit-daemon` runs with no arguments, so its defaults hold (rtkit-0.14-2.fc45,
+`--help`): actions-burst-sec 20, actions-per-burst-max 25, max-realtime-priority 20, min-nice -15, and RLIMIT_RTTIME
+required (`--rttime-usec-max`). Build 12's own budget, 15 calls per 20 s, is under rtkit's 25 (which is per user, so
+other users of rtkit, e.g. PipeWire, share it). This replaces the TODO(verify) in rr0429.cpp's head comment.
+
+| run | build | R | result | R count at the end |
+|---|---|---|---|---|
+| h429K10 check | normal | 2 | PASS: Job Hi 8 of 8 RR, main thread TS, NO_CRASH, 39.5 flips/s | held 14, P 21, R 0, C 4, E 7 (Lo 600 evicted) |
+| h429K12 check | lean | 2 | PASS: Job Hi 8 of 8 RR at every 10 s sample, 10–190 s; main TS | held 14, P 21, R 0, C 5, E 7 |
+| h429Q1 (G+600) | normal | 2 | NO_CRASH, 42.6 flips/s, longest gap 260 ms | held 12, P 12, R 2 (550, 450), B 3 |
+| h429P1 | normal | 0 | NO_CRASH, 41.3 flips/s, longest gap 316 ms | — |
+| h429Q2 | normal | 2 | NO_CRASH, 39.2 flips/s, longest gap 278 ms | held 12, P 12, R 2, B 2 |
+| h429P2 | normal | 0 | NO_CRASH, 41.4 flips/s, longest gap 277 ms | — |
+| a429BA1 ASTRO | normal | 0 | PASS, 60–61 fps, longest gap ~17 ms | — |
+| a429BA2 ASTRO | normal | 2 | PASS, 60–61 fps, longest gap ~17 ms | held 2, P 2, R 7 (478), B 7 |
+| a429BA3 ASTRO | lean | 0 | PASS (lean has no fps line) | — |
+| a429BA4 ASTRO | lean | 2 | PASS | held 2, P 2, R 4 (478), B 10 |
+
+0 kernel lines, 0 crash lines, 0 GPU hangs in all ten runs; no reboot was needed.
+
+**The RR threads with R on (K10, K12 ps):** Job Hi 0–7 (rtprio 6), five "Havok Queries" (5), AK::AudioMgr (7);
+game-main stayed TS. AK::AudioOutThread was not promoted.
+
+**Notes, counts only:**
+- The build-11 K4/K5 failure is gone: no Hi worker left RR in K10 or K12 (lean K4 had 0 of 6).
+- The pool rule does not keep all audio out: AK::AudioMgr (450) sleeps on a semaphore shared by two or more threads and
+  became RR (rtprio 7) in both checks (in lean at about 50 s). Bounded like every RR thread (RLIMIT_RTTIME, watchdog;
+  W 0 in all runs).
+- fps: R on 42.6 and 39.2 flips/s, R off 41.3 and 41.4 on the long route (two runs each: no difference shown beyond
+  run-to-run spread); ASTRO 60–61 with R on and off.
+- rtkit refused calls in the Q runs (2 each) and in ASTRO (7 and 4, all for guest priority 478). The refusal reason is
+  not logged; ASTRO held 2 RR threads. Open: why rtkit refuses there (per-user burst shared with other clients, or a
+  per-thread rule).
+- Not shown: anything about the crash rate on the job-arena route. Q and P were 2 clean runs each; earlier, without R,
+  7 of 9 runs crashed under the stressor (arm M/Z), which these pairs do not use.
+
+Files: raw/n/check-h429K10.out, check-h429K12.out, check-h429K12.series, chain-rep13.out, astro-a429B.out (ASTRO
+screenshots stay on the box).

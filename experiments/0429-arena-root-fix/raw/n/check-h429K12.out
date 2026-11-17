@@ -1,0 +1,41 @@
+check h429K12 (lean 91081355e3499f6ea8e9225c117ca92c): Job Hi threads 8, of them RR 8; the main thread RR 0; RR threads at 150 s: 14
+3700985  TS      - game-main
+3700999  RR      6 Job Hi 0
+3701000  RR      6 Job Hi 1
+3701001  RR      6 Job Hi 2
+3701002  RR      6 Job Hi 3
+3701003  RR      6 Job Hi 4
+3701004  RR      6 Job Hi 5
+3701005  RR      6 Job Hi 6
+3701006  RR      6 Job Hi 7
+3701061  RR      5 Havok Queries a
+3701062  RR      5 Havok Queries a
+3701064  RR      5 Havok Queries a
+3701065  RR      5 Havok Queries a
+3701066  RR      5 Havok Queries a
+3701071  RR      7 AK::AudioMgr
+h429K12 (lean) PASS: ran 200 s; RssAnon at the end 165240 kB; kernel lines 0, crash lines 0
+the Job Hi and AK policies every 10 s (Hi 0-7 first, then the AK threads):
+10 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+20 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+30 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+40 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+50 RR RR RR RR RR RR RR RR TS TS TS TS RR TS 
+60 RR RR RR RR RR RR RR RR TS TS TS TS RR TS 
+70 RR RR RR RR RR RR RR RR TS TS TS TS RR TS 
+80 RR RR RR RR RR RR RR RR TS TS TS TS RR TS 
+90 RR RR RR RR RR RR RR RR TS TS TS TS RR TS 
+100 RR RR RR RR RR RR RR RR TS TS TS TS RR TS 
+110 RR RR RR RR RR RR RR RR TS TS TS TS RR TS 
+120 RR RR RR RR RR RR RR RR TS TS TS TS RR TS 
+130 RR RR RR RR RR RR RR RR TS TS TS TS RR TS 
+140 RR RR RR RR RR RR RR RR TS TS TS TS RR TS 
+150 RR RR RR RR RR RR RR RR TS TS TS TS RR TS 
+160 RR RR RR RR RR RR RR RR TS TS TS TS RR TS 
+170 RR RR RR RR RR RR RR RR TS TS TS TS RR TS 
+180 RR RR RR RR RR RR RR RR TS TS TS TS RR TS 
+190 RR RR RR RR RR RR RR RR TS TS TS TS RR TS 
+[bc5] exp 0429 R count: held 14 calls 21 P 21 R 0 C 5 B 0 E 7 X 0 W 0 H 0 G 0 | last E600 E600 E600 E600 E600 E600 E550 
+[bc5] exp 0429 R count: held 14 calls 21 P 21 R 0 C 5 B 0 E 7 X 0 W 0 H 0 G 0 | last E600 E600 E600 E600 E600 E600 E550 
+[bc5] exp 0429 R count: held 14 calls 21 P 21 R 0 C 5 B 0 E 7 X 0 W 0 H 0 G 0 | last E600 E600 E600 E600 E600 E600 E550 
+check h429K12: PASS
