@@ -200,6 +200,11 @@ public:
     // doesn't wait for it"). The console stream leaves 12 MB copies without CP_SYNC behind
     // (experiment 0017: video frames; the machine went down with the next IB). On by default.
     void set_dma_idle(bool v) { dma_idle_ = v; }
+    // Experiment 0430 (F4): one more CS dependency for the NEXT submit() made by the calling thread:
+    // the kernel's scheduler starts that job only after the job seq_no on `ring` (kGfxRing or a
+    // compute ring, as SubmitResult::ring names it) has finished. No CPU wait. The list is
+    // per thread and is consumed (cleared) by that submit(); at most 8 are kept.
+    static void add_next_submit_dependency(int ring, std::uint64_t seq_no);
     // ADR 0009, experiment 0129: order between the rings through the kernel's scheduler (a CS
     // dependency on the other ring's last job, no CPU wait). Bit 0: a compute-ring job starts after
     // the GFX ring's last job; bit 1: a GFX-ring job after every compute ring's last job. 0

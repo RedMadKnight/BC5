@@ -1,0 +1,65 @@
+lis 16 21:12:25.315995 bazzite kernel: usb 6-2: USB disconnect, device number 3
+lis 16 21:12:51.318283 bazzite kernel: usb 6-1.4.3: new high-speed USB device number 5 using xhci_hcd
+lis 16 21:12:51.408279 bazzite kernel: usb 6-1.4.3: New USB device found, idVendor=054c, idProduct=0ce6, bcdDevice= 1.00
+lis 16 21:12:51.413279 bazzite kernel: usb 6-1.4.3: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+lis 16 21:12:51.414381 bazzite kernel: usb 6-1.4.3: Product: DualSense Wireless Controller
+lis 16 21:12:51.414950 bazzite kernel: usb 6-1.4.3: Manufacturer: Sony Interactive Entertainment
+lis 16 21:12:51.436281 bazzite kernel: playstation 0003:054C:0CE6.0004: hidraw2: USB HID v1.11 Gamepad [Sony Interactive Entertainment DualSense Wireless Controller] on usb-0000:00:10.0-1.4.3/input3
+lis 16 21:12:51.488283 bazzite kernel: input: Sony Interactive Entertainment DualSense Wireless Controller as /devices/pci0000:00/0000:00:10.0/usb6/6-1/6-1.4/6-1.4.3/6-1.4.3:1.3/0003:054C:0CE6.0004/input/input14
+lis 16 21:12:51.488442 bazzite kernel: input: Sony Interactive Entertainment DualSense Wireless Controller Motion Sensors as /devices/pci0000:00/0000:00:10.0/usb6/6-1/6-1.4/6-1.4.3/6-1.4.3:1.3/0003:054C:0CE6.0004/input/input15
+lis 16 21:12:51.488502 bazzite kernel: input: Sony Interactive Entertainment DualSense Wireless Controller Touchpad as /devices/pci0000:00/0000:00:10.0/usb6/6-1/6-1.4/6-1.4.3/6-1.4.3:1.3/0003:054C:0CE6.0004/input/input16
+lis 16 21:12:51.488553 bazzite kernel: input: Sony Interactive Entertainment DualSense Wireless Controller Headset Jack as /devices/pci0000:00/0000:00:10.0/usb6/6-1/6-1.4/6-1.4.3/6-1.4.3:1.3/0003:054C:0CE6.0004/input/input17
+lis 16 21:12:51.491279 bazzite kernel: playstation 0003:054C:0CE6.0004: Registered DualSense controller hw_version=0x00000313 fw_version=0x0110002a
+lis 16 21:38:40.666585 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:6 pasid:30)
+lis 16 21:38:40.675693 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 257347 thread bc5-ring pid 257475
+lis 16 21:38:40.676432 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00005ab69e48e000 from client 0x1b (UTCL2)
+lis 16 21:38:40.676613 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00641051
+lis 16 21:38:40.682415 bazzite kernel: amdgpu 0000:01:00.0:          Faulty UTCL2 client ID: TCP (0x8)
+lis 16 21:38:40.682739 bazzite kernel: amdgpu 0000:01:00.0:          MORE_FAULTS: 0x1
+lis 16 21:38:40.682915 bazzite kernel: amdgpu 0000:01:00.0:          WALKER_ERROR: 0x0
+lis 16 21:38:40.683065 bazzite kernel: amdgpu 0000:01:00.0:          PERMISSION_FAULTS: 0x5
+lis 16 21:38:40.683216 bazzite kernel: amdgpu 0000:01:00.0:          MAPPING_ERROR: 0x0
+lis 16 21:38:40.683363 bazzite kernel: amdgpu 0000:01:00.0:          RW: 0x1
+lis 16 21:38:40.683563 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:6 pasid:30)
+lis 16 21:38:40.683720 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 257347 thread bc5-ring pid 257475
+lis 16 21:38:40.683867 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00005ab69e48e000 from client 0x1b (UTCL2)
+lis 16 21:38:40.684007 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00641050
+lis 16 21:38:40.684155 bazzite kernel: amdgpu 0000:01:00.0:          Faulty UTCL2 client ID: TCP (0x8)
+lis 16 21:38:40.684303 bazzite kernel: amdgpu 0000:01:00.0:          MORE_FAULTS: 0x0
+lis 16 21:38:40.684446 bazzite kernel: amdgpu 0000:01:00.0:          WALKER_ERROR: 0x0
+lis 16 21:38:40.684578 bazzite kernel: amdgpu 0000:01:00.0:          PERMISSION_FAULTS: 0x5
+lis 16 21:38:40.684716 bazzite kernel: amdgpu 0000:01:00.0:          MAPPING_ERROR: 0x0
+lis 16 21:38:40.684858 bazzite kernel: amdgpu 0000:01:00.0:          RW: 0x1
+lis 16 21:38:40.685010 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:6 pasid:30)
+lis 16 21:38:40.685146 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 257347 thread bc5-ring pid 257475
+lis 16 21:38:40.685290 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00005b269e48f000 from client 0x1b (UTCL2)
+lis 16 21:38:40.685434 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:6 pasid:30)
+lis 16 21:38:40.685570 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 257347 thread bc5-ring pid 257475
+lis 16 21:38:40.685704 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00005b269e48f000 from client 0x1b (UTCL2)
+lis 16 21:38:40.685841 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:6 pasid:30)
+lis 16 21:38:40.685980 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 257347 thread bc5-ring pid 257475
+lis 16 21:38:40.686124 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00005b769e490000 from client 0x1b (UTCL2)
+lis 16 21:38:42.716288 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+lis 16 21:38:42.718283 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+lis 16 21:38:42.718673 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+lis 16 21:38:42.718881 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+lis 16 21:38:42.719061 bazzite kernel: amdgpu 0000:01:00.0: ring comp_1.1.0 timeout, signaled seq=644663, emitted seq=644665
+lis 16 21:38:42.719304 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 257347 thread bc5-ring pid 257475
+lis 16 21:38:42.719478 bazzite kernel: amdgpu 0000:01:00.0: Starting comp_1.1.0 ring reset
+lis 16 21:38:42.719655 bazzite kernel: amdgpu 0000:01:00.0: Ring comp_1.1.0 reset succeeded
+lis 16 21:38:42.719902 bazzite kernel: amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+lis 16 21:38:42.720151 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+lis 16 21:38:42.720335 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+lis 16 21:38:42.720507 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=1155470, emitted seq=1155472
+lis 16 21:38:42.720685 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 257347 thread bc5-ring pid 257475
+lis 16 21:38:42.720852 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+lis 16 21:38:42.721284 bazzite bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring comp_1.1.0 timeout, signaled seq=644663, emitted seq=644665
+lis 16 21:38:42.725283 bazzite bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring comp_1.1.0 reset succeeded
+lis 16 21:38:42.727273 bazzite bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=1155470, emitted seq=1155472
+lis 16 21:38:42.908359 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed
+lis 16 21:38:42.908750 bazzite kernel: amdgpu 0000:01:00.0: GPU reset begin!. Source:  1
+lis 16 21:38:42.908975 bazzite bc5-gpu-watch: a ring reset failed [amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed]: crashing before the full reset: syncing and crashing the kernel for a reboot (SysRq s, c)
+lis 16 21:38:42.909021 bazzite kernel: sysrq: Emergency Sync
+lis 16 21:38:43.180412 bazzite kernel: Emergency Sync complete
+Read from remote host <box>: Connection reset by peer
+client_loop: send disconnect: Connection reset by peer

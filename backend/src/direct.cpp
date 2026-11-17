@@ -1025,6 +1025,13 @@ void nested_targets(std::span<const std::uint32_t> ib, const policy::FilterOptio
 
 } // namespace
 
+// Experiment 0430 (F4): the calling thread's extra CS dependencies for its next submit(), consumed by it.
+constexpr std::uint32_t kMaxNextDeps = 8;
+static thread_local std::vector<std::pair<int, std::uint64_t>> t_next_deps;
+void Device::add_next_submit_dependency(int ring, std::uint64_t seq_no) {
+    if (t_next_deps.size() < kMaxNextDeps) t_next_deps.emplace_back(ring, seq_no);
+}
+
 SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::FilterOptions &opt,
                             std::uint64_t timeout_ns, bool with_gds, int ring) {
     SubmitResult r;
@@ -1550,18 +1557,24 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     req.resources = list;
     req.number_of_ibs = n_ibs;
     req.ibs = ib_info;
-    amdgpu_cs_fence deps[kComputeRings]{};
+    amdgpu_cs_fence deps[kComputeRings + kMaxNextDeps]{};
+    std::uint32_t n_deps = 0;
     if ((ring_deps_ & (comp ? 1 : 2)) != 0) { // set_ring_deps
-        std::uint32_t n = 0;
         if (comp) {
-            if (const std::uint64_t seq = impl_->last_seq.load(); seq != 0) deps[n++] = impl_->fence_of(kGfxRing, seq);
+            if (const std::uint64_t seq = impl_->last_seq.load(); seq != 0) deps[n_deps++] = impl_->fence_of(kGfxRing, seq);
         } else {
             for (int k = 0; k < kComputeRings; ++k) {
-                if (const std::uint64_t seq = impl_->last_seq_comp[k].load(); seq != 0) deps[n++] = impl_->fence_of(k, seq);
+                if (const std::uint64_t seq = impl_->last_seq_comp[k].load(); seq != 0) deps[n_deps++] = impl_->fence_of(k, seq);
             }
         }
-        req.number_of_dependencies = n;
-        req.dependencies = n != 0 ? deps : nullptr;
+    }
+    for (const auto &[dring, dseq] : t_next_deps) { // experiment 0430 (F4): add_next_submit_dependency
+        if (dseq != 0 && n_deps < kComputeRings + kMaxNextDeps) deps[n_deps++] = impl_->fence_of(dring, dseq);
+    }
+    t_next_deps.clear();
+    if (n_deps != 0) {
+        req.number_of_dependencies = n_deps;
+        req.dependencies = deps;
     }
 
     const double t0 = now_ms();
