@@ -7,10 +7,11 @@
 set -u
 ulimit -c 0
 W=$HOME/bc5-work; HERE=$W/exp0429; T=${1:?a tag}
-BIN=$W/exp0429/normal/kyty_emulator; WORDS=$W/exp0413/n/words0413nz.txt
-WANT=$(cat "$W/exp0429/normal/binary.md5")
+V=normal; [ "${CHECK_LEAN:-0}" = 1 ] && V=lean  # lean: R logs nothing, so the check is the ps picture alone
+BIN=$W/exp0429/$V/kyty_emulator; WORDS=$W/exp0413/n/words0413nz.txt
+WANT=$(cat "$W/exp0429/$V/binary.md5")
 . "$W/exp0413/n/chainlock0417.inc"
-chain_claim "exp 0429: R check $T (one short run, arm G, about 3 min)" 6 || { echo "no lock"; exit 1; }
+chain_claim "exp 0429: R check $T ($V, one short run, arm G, about 3 min)" 6 || { echo "no lock"; exit 1; }
 trap chain_release EXIT
 N_WALK_AFTER=1 N_SLOT=4 P_BIN=$BIN P_WANT=$WANT P_WORDS=$WORDS bash "$HERE/run0429f.sh" "$T" G 40 \
   KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_RR=1 > "$HERE/check-$T.run" 2>&1 &
@@ -30,4 +31,4 @@ grep -a 'exp 0429 R: dropped\|exp 0429 R: rtkit refused' "$L" | head -8
 tail -1 "$HERE/check-$T.run" | cut -c1-200
 mainrr=$(grep -E " (game-main|MainThread)$" "$HERE/check-$T.ps" 2> /dev/null | grep -c " RR ")
 echo "check $T: the main thread RR: $mainrr (must be 0); rtkit refusals $ref (reported only: rtkit has a per-user limit)"
-[ "$hi" -ge 1 ] && [ "$hi" = "$hirr" ] && [ "$mainrr" = 0 ] && [ "$prom" -ge 1 ] && echo "check $T: PASS" || echo "check $T: FAIL"
+{ [ "$prom" -ge 1 ] || [ $V = lean ]; } && [ "$hi" -ge 1 ] && [ "$hi" = "$hirr" ] && [ "$mainrr" = 0 ] && echo "check $T: PASS" || echo "check $T: FAIL"
