@@ -84,8 +84,14 @@ sub("        if (amdgpu_bo_cpu_map(scratch.bo, &scratch.cpu) != 0) return false;
 # the rotation later reached such a slot while it was busy, Device::submit returned -EBUSY and the host lost the job
 # (142 submissions "FAILED rc -16" in 45 s), a later job waited for work that never ran, the gfx ring timed out, its
 # reset failed and the box rebooted (run d432T13, 2026-11-17 16:15:24, fault record 20261117-161524). Build 3: every
-# slot's buffer is made once at Device::open with 256 KiB (32 MiB of GTT for the 128 slots; the top session, 2026-11-17: 64 MiB is too much on this box); no job changes its slot;
-# a job over 256 KiB grows its slot as before (counted and timed).
+# slot's buffer is made once at Device::open; no job changes its slot.
+# Build 3 made every slot 256 KiB: the small allocations went, but a job of 3.3-4.1 MB still allocated in play
+# ("slot 16 resize 262144 -> 4194304 bytes took 958.5 ms: ... alloc 958.3", "slot 24 ... 1354.1 ms"). Every such resize
+# seen in builds 1 and 3 was on a GFX-ring slot (0, 16, 24, 26, 27). Build 4: the 32 GFX-ring slots get 4 MiB each and
+# the 96 compute-ring slots 256 KiB each: 152 MiB of GTT, said on stderr. The slots never shrink, so a long play of
+# the shared build grows towards the same size, one stall at a time. BC5_DIRECT_SLOT_PREALLOC=<GFX KiB>:<other KiB>
+# sets other sizes; "0" turns the item off.
+# A job larger than its slot grows it as before (counted and timed).
 sub("    void scratch_free() {\n",
     "    // exp 0432 (tag s432): see mkbe432.py, item P\n"
     "    static bool s432_prealloc() {\n"
@@ -105,13 +111,25 @@ sub("        if (wrc != 0) d->impl_->gws = nullptr;\n"
     "    if (Impl::s432_prealloc()) { // exp 0432 (tag s432): the large slot buffers, once, before the title maps anything\n"
     "        const double t0 = now_ms();\n"
     "        int made = 0, failed = 0;\n"
+    "        std::uint64_t gfx_kib = 4096, comp_kib = 256, total_kib = 0; // BC5_DIRECT_SLOT_PREALLOC=<GFX KiB>:<other KiB> sets other sizes\n"
+    "        if (const char *e = std::getenv(\"BC5_DIRECT_SLOT_PREALLOC\"); e != nullptr) {\n"
+    "            unsigned long long a = 0, b = 0;\n"
+    "            if (std::sscanf(e, \"%llu:%llu\", &a, &b) == 2 && a <= 16384 && b <= 16384) {\n"
+    "                gfx_kib = a;\n"
+    "                comp_kib = b;\n"
+    "            }\n"
+    "        }\n"
     "        for (int k = 0; k < Impl::kSlots; ++k) {\n"
     "            d->impl_->cur = k;\n"
-    "            (d->impl_->scratch_reserve(256u << 10) ? made : failed)++;\n"
+    "            const std::uint64_t want = k < Impl::kGfxSlots ? gfx_kib : comp_kib;\n"
+    "            if (want == 0) continue;\n"
+    "            (d->impl_->scratch_reserve(want << 10) ? made : failed)++;\n"
+    "            total_kib += want;\n"
     "        }\n"
     "        d->impl_->cur = Impl::pool_first(kGfxRing);\n"
-    "        std::fprintf(stderr, \"bc5-direct: exp 0432 (tag s432): slot prealloc: %d buffers made (%d failed) in %.1f ms: every slot 256 KiB\\n\", made, failed,\n"
-    "                     now_ms() - t0);\n"
+    "        std::fprintf(stderr, \"bc5-direct: exp 0432 (tag s432): slot prealloc: %d buffers made (%d failed) in %.1f ms: %llu KiB for each of the %d GFX-ring slots, %llu KiB for each of the others, %llu MiB of GTT in all\\n\", made, failed,\n"
+    "                     now_ms() - t0, static_cast<unsigned long long>(gfx_kib), Impl::kGfxSlots, static_cast<unsigned long long>(comp_kib),\n"
+    "                     static_cast<unsigned long long>(total_kib >> 10));\n"
     "    }\n"
     "    return d;\n")
 open(dst, "w", encoding="utf-8", newline="\n").write(s)

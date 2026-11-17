@@ -675,13 +675,25 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
     if (Impl::s432_prealloc()) { // exp 0432 (tag s432): the large slot buffers, once, before the title maps anything
         const double t0 = now_ms();
         int made = 0, failed = 0;
+        std::uint64_t gfx_kib = 4096, comp_kib = 256, total_kib = 0; // BC5_DIRECT_SLOT_PREALLOC=<GFX KiB>:<other KiB> sets other sizes
+        if (const char *e = std::getenv("BC5_DIRECT_SLOT_PREALLOC"); e != nullptr) {
+            unsigned long long a = 0, b = 0;
+            if (std::sscanf(e, "%llu:%llu", &a, &b) == 2 && a <= 16384 && b <= 16384) {
+                gfx_kib = a;
+                comp_kib = b;
+            }
+        }
         for (int k = 0; k < Impl::kSlots; ++k) {
             d->impl_->cur = k;
-            (d->impl_->scratch_reserve(256u << 10) ? made : failed)++;
+            const std::uint64_t want = k < Impl::kGfxSlots ? gfx_kib : comp_kib;
+            if (want == 0) continue;
+            (d->impl_->scratch_reserve(want << 10) ? made : failed)++;
+            total_kib += want;
         }
         d->impl_->cur = Impl::pool_first(kGfxRing);
-        std::fprintf(stderr, "bc5-direct: exp 0432 (tag s432): slot prealloc: %d buffers made (%d failed) in %.1f ms: every slot 256 KiB\n", made, failed,
-                     now_ms() - t0);
+        std::fprintf(stderr, "bc5-direct: exp 0432 (tag s432): slot prealloc: %d buffers made (%d failed) in %.1f ms: %llu KiB for each of the %d GFX-ring slots, %llu KiB for each of the others, %llu MiB of GTT in all\n", made, failed,
+                     now_ms() - t0, static_cast<unsigned long long>(gfx_kib), Impl::kGfxSlots, static_cast<unsigned long long>(comp_kib),
+                     static_cast<unsigned long long>(total_kib >> 10));
     }
     return d;
 }

@@ -82,7 +82,7 @@ buildbe() {
     local SRC=$W/d19/export/backend D=$E/be-src O=$E/be-build
     [ "$(m8 "$SRC/src/direct.cpp")" = 5016c2a4 ] && [ "$(m8 "$SRC/include/bc5/direct.hpp")" = 24988c4e ] || stop "the shared backend source is $(m8 "$SRC/src/direct.cpp") / $(m8 "$SRC/include/bc5/direct.hpp"), not 5016c2a4 / 24988c4e"
     [ "$(m8 "$W/backend-ubuntu/libbc5_backend.a")" = 1423af83 ] || stop "the shared archive is not 1423af83"
-    [ "$(m8 "$HERE/be/direct.cpp")" = b583e2df ] || stop "be/direct.cpp is not b583e2df"
+    [ "$(m8 "$HERE/be/direct.cpp")" = 187d98a6 ] || stop "be/direct.cpp is not 187d98a6"
     rm -rf "$D" "$O"; cp -a "$SRC" "$D" || stop "copy the source"
     cp "$HERE/be/direct.cpp" "$D/src/direct.cpp" || stop "copy direct.cpp"
     mkdir -p "$R"
