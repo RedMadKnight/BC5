@@ -51,6 +51,11 @@ sub("static void wait_jobs();\n",
     "\tstatic const bool v = word_on(\"BC5_DIRECT_VIEWS_KEPT\");\n"
     "\treturn v;\n"
     "}\n"
+    "inline bool maps_fast() { // item M\n"
+    "\tstatic const bool v = word_on(\"BC5_DIRECT_MAPS_FAST\");\n"
+    "\treturn v;\n"
+    "}\n"
+    "inline std::atomic<uint64_t> g_maps_fast {0}, g_maps_sorted {0};\n"
     "inline std::atomic<uint64_t> g_rebuilds {0}, g_busy {0}, g_unmaps_busy {0}, g_bos_busy {0}, g_unmaps {0}, g_drains {0}, g_drain_ns {0}, g_drain_max_ns {0},\n"
     "    g_prep_max_ns {0}, g_prep_over20 {0}, g_last_ns {0}, g_anon_walks {0}, g_anon_skips {0}, g_anon_ev {0}, g_anon_ev_miss {0}, g_anon_vmas {0}, g_views_clone {0},\n"
     "    g_rec_mismatch {0}, g_sync_ns {0};\n"
@@ -116,6 +121,47 @@ sub("\tfor (const uint32_t id: retired) g_dev->free_shared(id);\n"
     "\tfor (const uint32_t id: retired) g_dev->free_shared(id);\n"
     "\tguard0412_after_cuts(lzr.done.size()); // exp 0412 (tag g412c): BC5_GUARD_SPLIT\n")
 
+# item M (tag m432): the mapping rebuild's passes over every wanted mapping, same result with less work
+sub("\t\tguard0412_want(S, views, want); // exp 0412 (tag g412b): the zero buffer under the views of put-off chunks\n",
+    "\t\tconst size_t m432_n1 = want.size(); // exp 0432 (tag m432): the views' own mappings end here\n"
+    "\t\tguard0412_want(S, views, want); // exp 0412 (tag g412b): the zero buffer under the views of put-off chunks\n")
+sub("\t\tstd::sort(want.begin(), want.end(), [](const DMap& a, const DMap& b) { return a.va < b.va; });\n",
+    "\t\t// exp 0432 (tag m432), BC5_DIRECT_MAPS_FAST: the list is two runs that are nearly always in order already (the views'\n"
+    "\t\t// mappings, then the covers); they are merged instead of sorted when each run is strictly rising, and the result is\n"
+    "\t\t// taken only if it is strictly rising too (then it is the one order a sort can give). Otherwise the old sort.\n"
+    "\t\tconst auto m432_less = [](const DMap& a, const DMap& b) { return a.va < b.va; };\n"
+    "\t\tconst auto m432_rising = [&want](size_t from, size_t to) {\n"
+    "\t\t\tfor (size_t i = from + 1; i < to; i++) {\n"
+    "\t\t\t\tif (want[i - 1].va >= want[i].va) return false;\n"
+    "\t\t\t}\n"
+    "\t\t\treturn true;\n"
+    "\t\t};\n"
+    "\t\tbool m432_fast = d432::maps_fast() && m432_rising(0, m432_n1) && m432_rising(m432_n1, want.size());\n"
+    "\t\tif (m432_fast) {\n"
+    "\t\t\tstd::inplace_merge(want.begin(), want.begin() + static_cast<std::ptrdiff_t>(m432_n1), want.end(), m432_less);\n"
+    "\t\t\tm432_fast = m432_rising(0, want.size());\n"
+    "\t\t}\n"
+    "\t\tif (!m432_fast) std::sort(want.begin(), want.end(), m432_less);\n"
+    "\t\t(m432_fast ? d432::g_maps_fast : d432::g_maps_sorted)++;\n")
+sub("\t\t\tconst auto w = std::lower_bound(want.begin(), want.end(), m.va, [](const DMap& a, uint64_t va) { return a.va < va; });\n"
+    "\t\t\tif (w != want.end() && *w == m) {\n",
+    "\t\t\t// exp 0432 (tag m432): both lists rise by address, so the place of m in `want` only moves forward; a step back in\n"
+    "\t\t\t// S.maps (never seen) takes the old search\n"
+    "\t\t\tauto w = want.end();\n"
+    "\t\t\tif (m432_fast && m.va >= m432_prev) {\n"
+    "\t\t\t\twhile (m432_k < want.size() && want[m432_k].va < m.va) m432_k++;\n"
+    "\t\t\t\tw = want.begin() + static_cast<std::ptrdiff_t>(m432_k);\n"
+    "\t\t\t} else {\n"
+    "\t\t\t\tw = std::lower_bound(want.begin(), want.end(), m.va, [](const DMap& a, uint64_t va) { return a.va < va; });\n"
+    "\t\t\t\tm432_k = static_cast<size_t>(w - want.begin());\n"
+    "\t\t\t}\n"
+    "\t\t\tm432_prev = m.va;\n"
+    "\t\t\tif (w != want.end() && *w == m) {\n")
+sub("\t\tfor (const auto& m: S.maps) { // drop what no view asks for any more, before adding (addresses get reused)\n",
+    "\t\tsize_t   m432_k    = 0; // exp 0432 (tag m432)\n"
+    "\t\tuint64_t m432_prev = 0;\n"
+    "\t\tfor (const auto& m: S.maps) { // drop what no view asks for any more, before adding (addresses get reused)\n")
+
 # the line
 sub("\thint_targets(ib, num_dwords);\n"
     "\tconst uint64_t t2 = SoftCp::now_ns();\n",
@@ -132,13 +178,13 @@ sub("\thint_targets(ib, num_dwords);\n"
     "\t\t\t              \"exp 0432 (tag d432): t %.1f s: unmap-nowait %s, anon-events %s, views-kept %s; sync+hints of all submissions %.1f s, longest %.1f ms, over 20 ms %\" PRIu64\n"
     "\t\t\t              \"; rebuilds that change mappings %\" PRIu64 \", with a ring busy %\" PRIu64 \"; mappings dropped %\" PRIu64 \", while busy %\" PRIu64 \", BOs retired while busy %\" PRIu64\n"
     "\t\t\t              \"; blocking drains %\" PRIu64 \", %.1f ms in all, longest %.1f ms; anon walks %\" PRIu64 \" (asked by the counter %\" PRIu64 \"), left out %\" PRIu64 \", event misses %\" PRIu64\n"
-    "\t\t\t              \", anonymous guest VMAs %\" PRIu64 \"; view builds %\" PRIu64 \", list copies %\" PRIu64 \", record mismatches %\" PRIu64,\n"
+    "\t\t\t              \", anonymous guest VMAs %\" PRIu64 \"; view builds %\" PRIu64 \", list copies %\" PRIu64 \", record mismatches %\" PRIu64 \"; maps-fast %s: merged %\" PRIu64 \", sorted %\" PRIu64,\n"
     "\t\t\t              timing_now(), d432::on() ? \"ON\" : \"off\", d432::anon_events() ? \"ON\" : \"off\", d432::views_kept() ? \"ON\" : \"off\",\n"
     "\t\t\t              static_cast<double>(d432::g_sync_ns.load()) / 1e9, static_cast<double>(d432::g_prep_max_ns.load()) / 1e6, d432::g_prep_over20.load(), d432::g_rebuilds.load(),\n"
     "\t\t\t              d432::g_busy.load(), d432::g_unmaps.load(), d432::g_unmaps_busy.load(), d432::g_bos_busy.load(), d432::g_drains.load(),\n"
     "\t\t\t              static_cast<double>(d432::g_drain_ns.load()) / 1e6, static_cast<double>(d432::g_drain_max_ns.load()) / 1e6, d432::g_anon_walks.load(), d432::g_anon_ev.load(),\n"
     "\t\t\t              d432::g_anon_skips.load(), d432::g_anon_ev_miss.load(), d432::g_anon_vmas.load(), static_cast<uint64_t>(g_views_builds), d432::g_views_clone.load(),\n"
-    "\t\t\t              d432::g_rec_mismatch.load());\n"
+    "\t\t\t              d432::g_rec_mismatch.load(), d432::maps_fast() ? \"ON\" : \"off\", d432::g_maps_fast.load(), d432::g_maps_sorted.load());\n"
     "\t\t\tstd::fprintf(stderr, \"[bc5] %s\\n\", line);\n"
     "\t\t\tjournal(\"%s\\n\", line);\n"
     "\t\t}\n"

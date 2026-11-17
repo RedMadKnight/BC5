@@ -104,7 +104,7 @@ buildt() {
         [ "$(m8 "$TREE/$f")" = "$base" ] || stop "the shared tree's $f is $(m8 "$TREE/$f"), not $base"
         mkdir -p "$TS/$(dirname "$f")" && cp "$TREE/$f" "$TS/$f" || stop "copy $f"
     done <<'EOT'
-b8afba59 6a73b628 src/libs/bc5LleAgc.cpp
+b8afba59 9df1186a src/libs/bc5LleAgc.cpp
 2dcd6db3 1262d6f3 src/common/platform/sysLinuxVirtual.cpp
 5b2016ed a9a2143a src/libs/libAmpr.cpp
 058bb712 478ff14c src/bc5/anon_sync.hpp
@@ -113,7 +113,7 @@ EOT
     while read -r base want f; do
         [ "$(m8 "$TS/$f")" = "$want" ] || stop "the edited $f is $(m8 "$TS/$f"), not $want as made on the laptop"
     done <<'EOT'
-b8afba59 6a73b628 src/libs/bc5LleAgc.cpp
+b8afba59 9df1186a src/libs/bc5LleAgc.cpp
 2dcd6db3 1262d6f3 src/common/platform/sysLinuxVirtual.cpp
 5b2016ed a9a2143a src/libs/libAmpr.cpp
 058bb712 478ff14c src/bc5/anon_sync.hpp
@@ -124,7 +124,7 @@ EOT
     rc=$?; echo "build rc $rc; errors $(grep -c 'error:' "$R/t-build.out"); warnings $(grep -c 'warning:' "$R/t-build.out")"
     grep -n "error:\|undefined\|COMPILE FAILED\|archive:" "$R/t-build.out" | head -30
     [ "$rc" = 0 ] && [ -x "$bin" ] || stop "build failed: $R/t-build.out"
-    for w in BC5_DIRECT_UNMAP_NOWAIT BC5_DIRECT_ANON_EVENTS BC5_DIRECT_VIEWS_KEPT BC5_DIRECT_SLOT_GROW "tag d432" "tag s432" BC5_DIRECT_ACB_RINGS BC5_DIRECT_XQ_FENCE; do
+    for w in BC5_DIRECT_MAPS_FAST BC5_DIRECT_UNMAP_NOWAIT BC5_DIRECT_ANON_EVENTS BC5_DIRECT_VIEWS_KEPT BC5_DIRECT_SLOT_GROW "tag d432" "tag s432" BC5_DIRECT_ACB_RINGS BC5_DIRECT_XQ_FENCE; do
         strings "$bin" | grep -qF "$w" || stop "$w is not in the binary"
     done
     md5sum < "$bin" | cut -d' ' -f1 > "$T/binary.md5"
