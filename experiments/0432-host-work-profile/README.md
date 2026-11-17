@@ -457,6 +457,55 @@ What it does not touch: the view list's own build (162 s of his 09:08 play, more
 Item V was to remove that and is slower; why is not known. The perf profile of the next slot is to show where a view
 build spends its time before anything is written for it.
 
+### Note 7 (2026-11-17 evening, laptop, no new run): what the chain hold (`BC5_DIRECT_CHAIN=2`, ADR 0010 B) saves, and other ways to the same time
+
+The maintainer's question through the top session: exp 0430's K1/Z1 give 42.0 against 37.2 flips/s (one run each)
+for the hold; if the hold goes, can the ~11 % come back another way? Source: the per-job records of d432S7 (shared
+`0de9349b`) and d432T14 (build 3), both with the hold on, frames after 200, a sample of 64 of every 512 frames.
+No run without the hold is in this experiment's records, so the count of submissions without it is an estimate.
+
+What 11 % is: 23.8 against 26.9 ms a frame, 3.1 ms.
+
+What the game thread's submissions look like with the hold (per frame; S7 / T14):
+
+| | S7 | T14 |
+|---|---|---|
+| dcb submissions (chains) | 8.05 | 8.01 |
+| buffers (segments) in them | 57.7 | 54.8 |
+| a chain closed by: a wait served on the CPU / the flip / the 2 ms bound (codes 9 and 10) | 63 % / 12 % / 25 % | 65 % / 13 % / 23 % |
+| waiting for the device mutex, per dcb submission | 0.42 ms | 0.37 ms |
+| under the mutex, per dcb submission | 1.19 ms | 0.99 ms |
+| of that: kernel submit / prepare / sync / probe | 0.23 / 0.28 / 0.36 / 0.13 ms | 0.24 / 0.29 / 0.18 / 0.09 ms |
+| game thread in dcb submissions, mutex wait included | 12.9 ms | 10.9 ms |
+
+The fixed cost of one more submission, read from the small acb jobs (57 dwords, so nearly all of it is fixed):
+0.36 ms under the mutex (kernel submit 0.13-0.15, sync 0.11-0.13, prepare 0.03, list 0.02) plus 0.12-0.17 ms waiting
+for the mutex. Prepare scales with dwords and does not change with the hold.
+
+So the hold saves submissions, not work per buffer: 57.7 buffers leave in 8 submissions. The commonest chains have 4
+and 2 segments, so a submit call seems to carry 2-4 segments (cc, hib, dcb); without the hold that is about 15-25
+submissions a frame, 7-17 more, at 0.36-0.5 ms each on the game thread: 2.5-8 ms. The measured 3.1 ms lies at the low
+end. Two thirds of the chains already end at a CPU-served wait, not at the bound: the hold is cut short most of the
+time, and only a quarter of the chains use the 2 ms.
+
+Ways to get the time back without holding a buffer, by what the records support:
+
+1. **The device mutex.** The game thread waits 3.0-3.4 ms a frame for it today (8 x 0.37-0.42), as much as the
+   hold's whole gain, because the ring thread's 23 acbs a frame hold it 0.36 ms each (8.2-8.4 ms a frame), kernel
+   call included. Taking the kernel submit (0.13-0.24 ms) out of the mutex, and not taking it for a sync that has
+   nothing to do, attacks this directly and helps with or without the hold. Not built; this experiment's next item
+   after W (the top session's order).
+2. **A cheaper submission.** Items W, M and X cut the sync part (dcb sync 0.36 ms in S7, 0.18 in T14 with W and M;
+   one run each). With 7-17 more submissions a frame, each 0.1 ms off a submission is 0.7-1.7 ms. The kernel submit
+   itself (0.13-0.24 ms) is not ours to shorten except by a shorter buffer list.
+3. **Several buffers in one kernel submission without waiting for them.** Inside one submit call the chain already
+   does this (mode 1). Across calls it needs either the hold or a submitting thread that takes whatever has queued
+   up while it was in the kernel; the second keeps a window, shorter than 2 ms, in which a dcb is behind an acb of
+   another thread, so it is the same reorder question exp 0430 is working on, not a way round it.
+
+Not known: the real count of game-thread submissions per frame without the hold (exp 0430's Z1 journal has it); how
+much of the 3.1 ms is the mutex wait growing with more acquisitions. One run per arm stands behind the 11 %.
+
 ## Verdict
 
 (pending)
