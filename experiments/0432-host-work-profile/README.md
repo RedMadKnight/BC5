@@ -533,6 +533,48 @@ Risk: it changes the path that submits to the GPU, in the backend and the host a
 is a GPU page fault; in the first, a job run against the wrong state. It goes into a build only behind a switch,
 off by default, after the profile shows the kernel call where these averages put it.
 
+### Note 9 (2026-11-17 21:30, from exp 0430's journals, read-only): the hold measured, not estimated
+
+exp 0430's route runs h430K1 (hold on, 42.0 flips/s) and h430Z1 (`BC5_DIRECT_CHAIN=1`, 37.2), the same binary
+`d894ec3b`, one run each. Means of every "frame profile" line after t 200 s (59,365 and 52,093 frames), ms a frame,
+game thread:
+
+| | K1, hold | Z1, no hold | difference |
+|---|---|---|---|
+| frame period | 23.62 | 26.98 | +3.36 |
+| game-thread jobs | 9.1 | 51.7 | +42.6 |
+| inside the host | 5.85 | 10.92 | +5.07 |
+| - kernel submit (cs) | 2.02 | 5.40 | +3.38 |
+| - buffer list | 0.01 | 0.77 | +0.76 |
+| - sync | 1.00 | 1.81 | +0.81 |
+| - prepare | 2.47 | 2.55 | +0.08 |
+| at the flip | 4.23 | 1.88 | -2.35 |
+| outside the host | 13.54 | 14.17 | +0.63 |
+| jobs from the ring thread | 24.8 | 20.1 | |
+
+This replaces note 7's estimate (7-17 more submissions): it is 43 more, at 0.08 ms of kernel submit each, and the
+flip's drain gives 2.35 ms back because the work reached the GPU earlier. The hold's gain is kernel submit time on
+the game thread (3.4 ms), a buffer list made and destroyed per job (0.8 ms) and the sync's fixed part (0.8 ms).
+Note 8's lock change does not touch the first two: they are the game thread's own calls, not waits for another
+thread. Its size stays as estimated there or less.
+
+Ways back without the hold, sized against Z1:
+
+1. **The buffer list in the submit call itself** (0.77 ms a frame): a job with a short list makes a list
+   (`amdgpu_bo_list_create`), submits, destroys it: three kernel calls. The kernel takes the handles inside the
+   submit call (`AMDGPU_CHUNK_ID_BO_HANDLES`, `include/uapi/drm/amdgpu_drm.h`; libdrm `amdgpu_cs_submit_raw2`). One
+   call instead of three, backend only, order untouched. TODO(verify): the chunk's cost against a kept list on this
+   kernel.
+2. **The sync's fixed part** (0.81 ms): items W, M, X and the probe.
+3. **The kernel submit off the game thread** (5.4 ms a frame in Z1, more than the hold's whole gain): jobs are
+   prepared on the title's threads in their order under the device mutex, as now, and one thread makes the kernel
+   calls in that order, at once, holding nothing back. An acb then cannot pass a dcb handed over before it: the
+   order is the title's. It needs the job's sequence number later than today (the fence dependencies of exp 0430 and
+   the completion queue take it from the call's result), so it is the largest of the three and touches exp 0430's
+   code.
+
+1 and 2 together are about 1.6 of the 3.4 ms. One run per arm.
+
 ## Verdict
 
 (pending)
