@@ -43,6 +43,8 @@
 // with no job in flight writing the label. No memory is written. Counted as F6-kept. Not when the writer seen when the
 // label was learned runs on the waiter's own ring (it would sit behind the kept wait: a deadlock). A kept wait whose
 // label has not come back within 1 s, with no writer in flight, is journaled (it holds its ring until the TDR).
+// Compute-ring waiters (acb) only, since h430Q1: a kept gfx dcb wait held the GFX ring 1.1 s while the host's own submit
+// preparation (a remap waiting for GPU idle) blocked the game thread that was to submit the writer acb.
 namespace ho430 {
 inline bool not0(const char* e) {
 	return e == nullptr || !(e[0] == '0' && e[1] == 0);
@@ -457,6 +459,8 @@ inline void at_wait(const uint32_t* p, bool is64, uint64_t label, const char* ki
 // F6 at a wait of a buffer about to be submitted (submit_split's keep test): true keeps a satisfied wait for the GPU.
 inline bool keep_cross(const uint32_t* p, bool is64, uint64_t label, const char* kind, int ring, uint32_t off) {
 	if (!f6_on() || !f3_on() || (p[1] & 7u) != 3u || !wait_satisfied(p, is64)) return false;
+	if (kind == nullptr || std::strncmp(kind, "acb", 3) != 0) return false; // compute-ring waiters only (the top, 13:20): the host's own
+	                                                                       // prepare can wait behind a kept gfx wait (h430Q1, 1.07 s)
 	const uint64_t ref = is64 ? (p[4] | (static_cast<uint64_t>(p[5]) << 32u)) : p[4];
 	{
 		Store&          s = st();

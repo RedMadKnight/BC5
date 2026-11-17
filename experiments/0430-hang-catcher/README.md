@@ -438,3 +438,43 @@ then exp 0428's `undo0428b.sh`.
 Lean smoke (`smoke0430.sh`, 07:29–07:35): s430c ASTRO BOT 45 s PASS. s430u, the second title, 300 s by time, RT on:
 PASS, key lines 33 of 33, compute engine time 31.9 s at 150 s (way 2 on). Kernel and crash lines 0 in both, and no
 real pad keys. The first start at 07:19 refused because LEAN_WANT needs the full md5, not 8 characters.
+
+### The scene A/B, the route A/B of F5, the shared control's hang h430C4, F6 (2026-11-17 10:00–13:30)
+
+**His scene** (his slot-4 save, a read-only snapshot `~/bc5-data/saves/PPSA03671-20261117-0946-play`, no input after
+the load, 600 s; `scene0430.sh`, `scenewin.py`). From G: S h430S1b (shared 0de9349b, fix on) 30.4 flips/s; N h430N1
+(the same binary, `BC5_DIRECT_XQ_ACQUIRE=0 BC5_DIRECT_XQ_FENCE=0 BC5_DIRECT_XQ_PENDING=0`) 30.5; P h430P1 (F5,
+e7759205) 33.5. One run each, all clean. In this scene the fix costs nothing, and F5 removed ~99.8 % of F4's fences
+(79,448 skipped, 130 left).
+
+**F5** (`mkf5.py`, unit 574301e4 on the shared b8afba59): F2/F4 skip a writer job whose stale case F3 excluded at
+its submit (a preset, or not stale with no other writer or kept wait in flight). Route h430P2: 43.0 flips/s, clean,
+F5 skipped 209,811, F4 fences 358.
+
+**h430C4, the shared control (fix on) hung at 11:58:59**: gfx_0.0.0 timeout (reset ok), then comp_1.3.0 timeout, reset
+failed, bc5-gpu-watch rebooted the box. No VM fault before it. The timed-out acb #1531372's one wait: dword 62,
+0x12004b4fc8 == 0, met → DROPPED (F848's label). It then ran indirect dispatches with junk grids. Its writer for this
+frame was not yet submitted: the label still held the last frame's 0, nothing pending, so F2/F4 had no job to order
+on, and F3 (at the writer's submit) came too late. The gfx dcb #1531383's three kept waits are a consequence: one
+of them, 0x12004b5038, is written by the stalled acb. Records: `~/bc5-data/captures/play-20261117-1140/gc`,
+devcoredump `20261117-115900-devcd1.txt`.
+
+**F6** (`mkf6.py`, one hook in submit_split's keep test): a satisfied wait on a cross-queue label with no writer in
+flight is kept for the GPU, so the GPU decides it when its queue reaches the packet, as on the console. Guards: not
+when the label's writer (as learned) runs on the waiter's own ring; a kept wait whose label does not come back within
+1 s with no writer in flight is journaled. P' (F5 + F6, d4072b15) h430Q1: 42.6 flips/s, clean. F6 kept 510,926 waits;
+in the sampled journal 43 acb against 53 dcb (the journal samples the first 64 and every 16,384th). One hold of 1.1 s:
+
+    ho430 F6: a wait kept on ring -1 for 0x12004b5038 (== 0x0) 1089 ms ago: the label holds 0x907616589 and no writer is in flight (1 such)
+    frame profile: t 559.141 s, 1117.8 ms since the last flip; game thread inside the host 1073.2 ms (sync 0.7, hints 0.4, prepare 1070.2, list 0.1, cs 1.7, ...)
+    direct: 16331 views; +0 BOs (69, 11120.0 MiB pinned); maps +0 -6 (16851)
+
+**For exp 0432 (the top's hand-over):** the host's submit preparation blocked the game thread 1,070 ms. It looks like a
+remap (6 views unmapped) waiting for GPU idleness, behind GFX work held by a kept wait whose writer the same thread had
+yet to submit. The console has no such CPU-side dependency; only a ~1 s bound in that wait kept it from a TDR. It is a
+stutter source of its own. Log: `~/bc5-data/captures/play-20261117-1245/gc/direct.log` near t 558–559 s.
+
+**P'' (13:20, the top's order):** F6 for compute-ring waiters (acb) only (unit efef7e1d, binary 40890474, `p7/`;
+`IN_CHAIN=1` builds inside this experiment's own run lock at nice 19). From h430Q2 the A/B's F arm is P''; h430Q1
+stays the record of the broad F6 (`ho430.f6broad.cpp`). The gate for a P'' swap: no hang, mean ≥ S − 1 flips/s, no F6
+hold over 500 ms.

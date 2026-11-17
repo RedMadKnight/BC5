@@ -50,8 +50,13 @@ release() {
     fi
 }
 build() {
+    # IN_CHAIN=1 (2026-11-17 13:20, the top's order): a CPU-only build at nice 19 while this experiment's own chain run holds
+    # the lock and its emulator runs; the output goes to $E/kyty_emulator only (the chain's arms use their own copies)
+    if [ "${IN_CHAIN:-0}" = 1 ]; then grep -q '^exp 0430 | private run h430' "$LOCK" || stop "IN_CHAIN: the lock is not this experiment's run"
+    else
     own || stop "no lock held by 0430"
     pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
+    fi
     local shared bin rc
     # the shared tree is patch a8717e53; its unit is 0cda79b5 (exp 0428's swap unit), and the shared objects are that build's
     BASE=$TREE/$U
@@ -66,7 +71,7 @@ build() {
     rm -rf "$S" "$E/obj"; mkdir -p "$S/src/libs" "$R"
     cp "$BASE" "$S/$U" || stop "copy $U"
     # MODE=swap (build 6 on): the shared form, mkswap0430.py's unit (the fix alone, no catcher), as the swap will ship it
-    if [ "${MODE:-}" = f6 ]; then MKS=mkf6.py; EXP=cc597a13; WANTW="BC5_DIRECT_XQ_KEEP BC5_DIRECT_XQ_PRECISE BC5_DIRECT_XQ_FENCE"
+    if [ "${MODE:-}" = f6 ]; then MKS=mkf6.py; EXP=efef7e1d; WANTW="BC5_DIRECT_XQ_KEEP BC5_DIRECT_XQ_PRECISE BC5_DIRECT_XQ_FENCE"
     elif [ "${MODE:-}" = f5 ]; then MKS=mkf5.py; EXP=574301e4; WANTW="BC5_DIRECT_XQ_PRECISE BC5_DIRECT_XQ_FENCE BC5_DIRECT_XQ_ACQUIRE"
     elif [ "${MODE:-}" = swap ]; then MKS=mkswap0430.py; EXP=b8afba59; WANTW="BC5_DIRECT_ACB_RINGS BC5_DIRECT_ACB_SPLIT_LATE BC5_DIRECT_XQ_PENDING BC5_DIRECT_XQ_ACQUIRE BC5_DIRECT_XQ_FENCE"
     else MKS=mk0430.py; EXP=17a88ee8; WANTW=""; fi
