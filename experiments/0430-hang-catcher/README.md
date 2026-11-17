@@ -409,3 +409,32 @@ DROPPED", the same wait, dword and label as the 21:38 hang's acb #1980431. The h
 and the build family's steps (0x909969100, 0x909969d00, 0x90996a000, 0x90996cc00, 0x909971300), not the sort pipeline
 of the 21:38 frame. So it is the same mechanism's precondition (the wait on the dcb's release label dropped as met at
 submit) on the build without the fix; which memory was overwritten is not shown (no catchers).
+
+### The A/B's last two arms and the swap (2026-11-17 06:16–07:35)
+
+| run | build | class | flips/s | s with a gap > 100 ms (longest) | NOT served |
+|---|---|---|---|---|---|
+| h430F5 | build 7 `3fe98919` | NO_CRASH (1613 s) | 44.6 | 8 (326 ms) | 1 |
+| h430C3 | shared `dae7bf0b` | NO_CRASH (1607 s) | 42.9 | 14 (511 ms) | 0 |
+| h430F6 | build 7 `3fe98919` | exit 65 at 1208 s | 43.0 | 15 (232 ms) | 1 |
+
+h430F6 ended on the title's job-arena crash, "read 0xc" at `eboot.bin+0x3d7eca0` (F444/F449), with JobArenaFix off
+as ruled. Kernel lines 0, no amdgpu fault or reset since boot: a CPU-side class that F3/F4 do not touch (exp 0429
+hunts it). The per-arm flips/s overlap; no speed difference is claimed. Over the night, build 7 had no GPU hang or
+fault in 5 routed runs (F1, F2, F4, F5, F6; F3 not routed). Build 8 had none in 1 (D1). The shared control hung in 1
+of 3 (C2).
+
+The top session's GO (07:06): swap. `int0430.sh` (`U2_PIN=554e0139`, stand-in test 9 of 9 on the box first) ran
+07:08:38–07:10:13 under one BOX-LOCK line. Patch `a8717e53` → `a7c1653d` (471 lines differ, exp 0372 lines 5, the
+pad_audio_route header in). Shared unit `0cda79b5` → `b8afba59`. Backend archive `9aab722c` → `1423af83`, rebuilt from
+`d19/export/backend` with `be/direct.cpp` `5016c2a4` and `be/direct.hpp` `24988c4e`. Normal `dae7bf0b` → `bf3f5f00`,
+lean `819f3b05` → `0fb7bed5`. Both builds gained exactly `BC5_DIRECT_XQ_ACQUIRE BC5_DIRECT_XQ_FENCE
+BC5_DIRECT_XQ_PENDING` and lost no word.
+
+Rollback without a build: `BC5_DIRECT_XQ_ACQUIRE=0 BC5_DIRECT_XQ_FENCE=0 BC5_DIRECT_XQ_PENDING=0`. int0430's own end
+line names only two of the three words, but F4 has its own switch too. Undo: `bash ~/bc5-work/exp0430/undo0430.sh`,
+then exp 0428's `undo0428b.sh`.
+
+Lean smoke (`smoke0430.sh`, 07:29–07:35): s430c ASTRO BOT 45 s PASS. s430u, the second title, 300 s by time, RT on:
+PASS, key lines 33 of 33, compute engine time 31.9 s at 150 s (way 2 on). Kernel and crash lines 0 in both, and no
+real pad keys. The first start at 07:19 refused because LEAN_WANT needs the full md5, not 8 characters.
