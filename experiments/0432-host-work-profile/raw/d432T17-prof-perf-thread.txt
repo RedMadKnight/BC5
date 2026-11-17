@@ -1,0 +1,80 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 216K of event 'cpu-clock:u'
+# Event count (approx.): 1087416949500
+#
+# Overhead  Command        
+# ........  ...............
+#
+    15.51%  game-main      
+    12.73%  Render Thread  
+     7.24%  AK::AudioMgr   
+     6.90%  Havok Queries a
+     5.19%  Job Hi 2       
+     5.18%  Job Hi 3       
+     5.18%  Job Hi 4       
+     5.17%  Job Hi 1       
+     5.17%  Job Hi 0       
+     4.33%  bc5-ring       
+     3.00%  Job Lo 4       
+     3.00%  Job Lo 1       
+     2.99%  Job Lo 0       
+     2.99%  Job Lo 3       
+     2.98%  Job Lo 2       
+     1.35%  kyty-gpu       
+     1.16%  bc5-chainwd    
+     1.02%  kyty-present   
+     0.80%  bc5-anonchk    
+     0.73%  Havok Solve    
+     0.72%  bc5-cq0        
+     0.65%  Job Bk 1       
+     0.65%  Job Bk 3       
+     0.64%  Job Bk 2       
+     0.64%  Job Bk 0       
+     0.64%  Job Bk 4       
+     0.53%  Coherent Thread
+     0.50%  bc5-cq1        
+     0.44%  kyty_emulator  
+     0.39%  Coherent Layout
+     0.38%  Archive Resolve
+     0.28%  AK::AudioOutThr
+     0.25%  Archive Asset I
+     0.14%  SDLAudioP53    
+     0.12%  Archive Loose I
+     0.07%  AK::IOThread   
+     0.07%  SDLAudioP0     
+     0.05%  Coherent Resour
+     0.03%  File Video Stre
+     0.02%  mangohud-amdgpu
+     0.01%  bc5-apr-r1-2   
+     0.01%  AK::Suspended  
+     0.01%  AK::BankMgr    
+     0.01%  Save Thread    
+     0.01%  AK::JobWrkr-Acm
+     0.01%  bc5-apr-r3-1   
+     0.01%  bc5-apr-q1     
+     0.01%  bc5-apr-r0-1   
+     0.01%  bc5-apr-r3-3   
+     0.01%  bc5-fliplabel  
+     0.01%  bc5-apr-q3     
+     0.01%  bc5-apr-r0-2   
+     0.01%  bc5-apr-r3-0   
+     0.01%  UXAnalytics::Up
+     0.01%  bc5-apr-r1-0   
+     0.01%  bc5-input-cmd  
+     0.01%  bc5-apr-r1-3   
+     0.01%  bc5-apr-r5-0   
+     0.01%  bc5-apr-r1-1   
+     0.01%  bc5-apr-r5-3   
+     0.01%  EntitlementSysP
+     0.01%  User UDS Thread
+     0.01%  bc5-apr-r0-3   
+     0.01%  bc5-apr-r5-2   
+     0.00%  bc5-apr-r3-2   
+     0.00%  bc5-apr-q5     
+     0.00%  bc5-apr-q0     
+     0.00%  bc5-apr-r0-0   
+     0.00%  bc5-apr-r5-1   

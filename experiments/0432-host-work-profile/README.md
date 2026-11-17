@@ -575,6 +575,85 @@ Ways back without the hold, sized against Z1:
 
 1 and 2 together are about 1.6 of the 3.4 ms. One run per arm.
 
+### Result 7 (2026-11-17 21:27-22:20, box, boot up since 17:42, no GPU reset): the profile, and build 4 against shared
+
+Build 4: binary `a23d2f2e` (unit f80560e3, private archive 6eac453e; 0 errors, 12 warnings not read). D, M, W, R, S on,
+P = 256:256 KiB (32 MiB), A and V off, X off except in d432X22 (`verify`). Shared: `0de9349b`. His slot-4 scene from
+the read-only snapshot, RT on, no input, 300 s of play. Seven runs, all NO_CRASH, 0 kernel lines, 0 refused
+submissions. Records: `raw/d432{S16,T17,T18,S19,T20,T21,X22}-*`; reader of the profile: `prof_an0432.py`.
+
+**The profile** (d432S16 shared, d432T17 build 4; `prof0432.sh` beside the run from about G+10 s to the end, 275-279 s).
+perf is `cpu-clock:u` at 199 Hz: user mode only and without call graphs; kernel time is from `/proc/<pid>/task/*/stat`.
+
+| | shared d432S16 | build 4 d432T17 |
+|---|---|---|
+| all threads, user / system CPU s | 958 / 158 | 1017 / 171 |
+| cores busy (of 16) | 4.00 | 4.32 |
+| game-main, share of one core | 61.7 % | 60.8 % |
+| Render Thread | 51.5 % | 54.8 % |
+| bc5-ring (2 threads), CPU s user / system | 53.4 / 39.1 | 44.3 / 43.8 |
+| bc5-chainwd, CPU s | 21.3 | 19.3 |
+| bc5-anonchk (item W's thread), CPU s | - | 14.3 |
+| GPU: GFX ring busy (DRM fdinfo) | 38.6 % | 40.0 % |
+| GPU: compute rings busy (sum of the client's) | 29.9 % | 31.2 % |
+
+- **Nothing is saturated.** The busiest thread uses 62 % of a core, the GFX ring runs 39-40 % of the time, 12 of 16
+  hardware threads are idle. The frame time is spent waiting between the game's threads, the host's locks and the
+  GPU, not computing. So removing host CPU work helps only where that work sits inside a wait someone else is in
+  (the device mutex, result 6; the kernel submit, note 9).
+- **User samples by object** (the reports are cut at 300 lines and cover 48 % of the samples; the tail is small
+  symbols, most of them guest addresses by their look, not counted): guest code 28.6 %, `kyty_emulator` 10.2 %, libc
+  8.3 %, libstdc++ 0.9 % of all samples in shared.
+- **Top host symbols, shared, % of all user samples** (build 4 in brackets where it differs): `memmove` 4.07 (3.62;
+  1.89 of it on game-main, 0.83 on the Render Thread, 0.43 on bc5-ring, 0.33 on kyty-gpu; the callers are NOT known
+  without call graphs), `submit_now` 1.17, `pthread_mutex_lock` 1.01, `Loader::TlsMainGetAddr` 0.86,
+  `std::_Rb_tree_increment` 0.86 (map walks on bc5-ring and bc5-chainwd), `direct_sync_one` 0.76 (0.45),
+  `__vfscanf_internal` 0.65 (the `/proc/self/maps` reads: on bc5-ring and bc5-chainwd in shared, 0.49 on bc5-anonchk
+  in build 4), `KernelGetProcessTimeCounter` 0.58, `Tracker::emit_prefix` 0.54, `std::map::operator[]` 0.47 (all on
+  kyty-gpu), `policy::filter` 0.45, `SoftCp::execute` 0.43, the sort of the mappings 0.43 (gone in build 4: item M),
+  `Tracker::apply_level` 0.41, `Device::submit` 0.35, `pthread_mutex_unlock` 0.33, `malloc` 0.32,
+  `indirect_check::apply` 0.29, `_int_malloc` 0.28, `strtoull` 0.22.
+- **Candidates the profile adds:** bc5-chainwd costs 19-21 CPU s of 279 (7 % of a core) for a watchdog; bc5-anonchk
+  14 s (5 %); the four bc5-apr-q threads 11-14 s of system time; `memmove` on game-main (about 18 s). None is on a
+  saturated core, so each is a cleanup, not a speed item, until shown to sit inside a lock.
+- Not done: call graphs, kernel-side samples, a full-length report. The `perf.data` files stay on the box
+  (`~/bc5-work/exp0432/n/raw/d432{S16,T17}-prof-perf.data`) for the next slot.
+
+**Build 4 against shared**, from G+10 s. Shared runs pooled over the day: the same binary, words and scene (the top
+session's rule; d432S2-S11 are in results 2-5, without a sampler).
+
+| run | arm | flips/s | seconds with a gap over 100 / 50 ms (of 283-285) | MemAvailable min / median MiB | PSI memory "some" mean / max % |
+|---|---|---|---|---|---|
+| d432S2, S4, S7, S8, S11 | shared, earlier | 31.9, 31.0, 33.9, 33.4, 30.7 | 98, 114, 81, 90, 109 / every second | - | - |
+| d432S16 (with perf) | shared | 32.6 | 99 / 285 | 972 / 1075 | 0.82 / 3.85 |
+| d432S19 | shared | 32.3 | 98 / 284 | 986 / 1092 | 0.39 / 3.38 |
+| d432T17 (with perf) | build 4 | 35.2 | 60 / 195 | 892 / 1015 | 0.65 / 5.22 |
+| d432T18 | build 4 | 34.7 | 56 / 207 | 868 / 1077 | 0.50 / 3.63 |
+| d432T20 | build 4 | 35.7 | 63 / 205 | 986 / 1100 | 0.81 / 5.95 |
+| d432T21 | build 4 | 34.1 | 73 / 217 | 826 / 926 | 0.37 / 3.22 |
+| d432X22 | build 4, X `verify` (never taken, below) | 33.5 | 63 / 215 | 983 / 1067 | 0.44 / 5.26 |
+
+- **Flips:** shared 30.7-33.9 (7 runs, median 32.3); build 4 34.1-35.7 (4 runs, median 35.0), 33.5-35.7 with d432X22,
+  which ran the same code path. The four plain runs do not overlap shared; with d432X22 they overlap by one run.
+  About +2.6 flips/s (+8 %) at the medians.
+- **Gaps:** seconds with a gap over 50 ms fall from every second to 195-217 of 284; over 100 ms from 81-114 to 56-73.
+- **Memory (P's 32 MiB):** no difference outside the run-to-run spread in MemAvailable or PSI; d432T21 is the lowest
+  (826 / 926 MiB) with the least swap in use (530 MiB against 702-914), so it reads as swap state, not as the build.
+- **Per-job sample** (64 of every 512 frames; ms; d432S19 against d432T18, T20, T21): anonymous sync 3,241 against
+  874-1,074 (W); maps 3,132 against 1,805-2,152 (M); drain 111 against 11-12 (D); wait for the device mutex 13,498
+  against 10,419-11,118; jobs with sync + hints over 20 ms 105 against 38-44. Views 2,245 against 2,530-2,699: not
+  better (more frames, and nothing in build 4 touches it with V off).
+- **What is left over 20 ms in every run, both builds:** one acb with 845-854 ms and one dcb with 575-583 ms of
+  import scanning (the gameplay imports, next on the list), and a dcb of 8,153 dwords with 83-104 ms of maps.
+- **Item X was never taken:** d432X22's line reads "maps-diff VERIFY: by diff 0, the old way 5147, views changed 0,
+  mismatches 0". One of its conditions fails at every rebuild in this scene; which one is NOT known (the build counts
+  no reason). So X is neither tested nor refuted in play; the laptop test (20,000 cases) is all there is. Next build:
+  a counter per failed condition.
+
+Open after this result: the route A/B (3 runs each), the lean variant of build 4, per-item arms (the gain is of D, M,
+W together), build 4's 12 compiler warnings, and the owner of d432V15's hang (build 3; with exp 0430). Six of six
+build 4 runs were clean.
+
 ## Verdict
 
 (pending)

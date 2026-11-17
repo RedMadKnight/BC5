@@ -1,0 +1,80 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 198K of event 'cpu-clock:u'
+# Event count (approx.): 998768719375
+#
+# Overhead  Command        
+# ........  ...............
+#
+    16.94%  game-main      
+    13.08%  Render Thread  
+     7.21%  AK::AudioMgr   
+     6.82%  Havok Queries a
+     5.58%  bc5-ring       
+     4.92%  Job Hi 4       
+     4.91%  Job Hi 0       
+     4.91%  Job Hi 1       
+     4.91%  Job Hi 3       
+     4.89%  Job Hi 2       
+     2.86%  Job Lo 4       
+     2.85%  Job Lo 1       
+     2.85%  Job Lo 2       
+     2.85%  Job Lo 3       
+     2.84%  Job Lo 0       
+     1.42%  bc5-chainwd    
+     1.32%  kyty-gpu       
+     1.02%  kyty-present   
+     0.74%  Havok Solve    
+     0.68%  bc5-cq0        
+     0.59%  Job Bk 4       
+     0.58%  Job Bk 0       
+     0.58%  Job Bk 1       
+     0.58%  Job Bk 3       
+     0.58%  Job Bk 2       
+     0.51%  Coherent Thread
+     0.48%  kyty_emulator  
+     0.47%  bc5-cq1        
+     0.41%  Archive Resolve
+     0.34%  Coherent Layout
+     0.30%  AK::AudioOutThr
+     0.27%  Archive Asset I
+     0.15%  SDLAudioP53    
+     0.12%  Archive Loose I
+     0.06%  AK::IOThread   
+     0.06%  SDLAudioP0     
+     0.05%  Coherent Resour
+     0.03%  File Video Stre
+     0.02%  mangohud-amdgpu
+     0.01%  AK::BankMgr    
+     0.01%  Save Thread    
+     0.01%  bc5-apr-q3     
+     0.01%  AK::JobWrkr-Acm
+     0.01%  bc5-apr-r1-3   
+     0.01%  bc5-fliplabel  
+     0.01%  bc5-input-cmd  
+     0.01%  bc5-apr-r0-1   
+     0.01%  bc5-apr-r1-1   
+     0.01%  AK::Suspended  
+     0.01%  bc5-apr-r0-2   
+     0.01%  bc5-apr-r3-3   
+     0.01%  EntitlementSysP
+     0.01%  bc5-apr-r3-0   
+     0.01%  bc5-apr-r3-1   
+     0.01%  bc5-apr-r5-2   
+     0.01%  UXAnalytics::Up
+     0.01%  bc5-apr-q0     
+     0.01%  bc5-apr-q1     
+     0.01%  bc5-apr-r0-3   
+     0.01%  User UDS Thread
+     0.01%  bc5-apr-r1-0   
+     0.01%  bc5-apr-r5-3   
+     0.01%  bc5-apr-r1-2   
+     0.01%  bc5-apr-r5-0   
+     0.01%  bc5-apr-r5-1   
+     0.00%  bc5-apr-r0-0   
+     0.00%  bc5-apr-q5     
+     0.00%  bc5-apr-r3-2   
+     0.00%  mangohud-hwinfo
