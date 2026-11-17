@@ -1,0 +1,22 @@
+lis 17 17:06:42.027775 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+lis 17 17:06:42.029777 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+lis 17 17:06:42.030142 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+lis 17 17:06:42.030306 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+lis 17 17:06:42.030464 bazzite kernel: amdgpu 0000:01:00.0: ring comp_1.3.0 timeout, signaled seq=410120, emitted seq=410122
+lis 17 17:06:42.030654 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 580188 thread bc5-ring pid 580417
+lis 17 17:06:42.030826 bazzite kernel: amdgpu 0000:01:00.0: Starting comp_1.3.0 ring reset
+lis 17 17:06:42.030980 bazzite kernel: amdgpu 0000:01:00.0: Ring comp_1.3.0 reset succeeded
+lis 17 17:06:42.031179 bazzite kernel: amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+lis 17 17:06:42.032774 bazzite bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring comp_1.3.0 timeout, signaled seq=410120, emitted seq=410122
+lis 17 17:06:42.036772 bazzite bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring comp_1.3.0 reset succeeded
+lis 17 17:06:42.155791 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+lis 17 17:06:42.157778 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+lis 17 17:06:42.158082 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+lis 17 17:06:42.158244 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+lis 17 17:06:42.158395 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=1102259, emitted seq=1102261
+lis 17 17:06:42.158544 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 580188 thread bc5-ring pid 580417
+lis 17 17:06:42.158686 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+lis 17 17:06:42.158849 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+lis 17 17:06:42.158996 bazzite kernel: amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+lis 17 17:06:42.160775 bazzite bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=1102259, emitted seq=1102261
+lis 17 17:06:42.164776 bazzite bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded

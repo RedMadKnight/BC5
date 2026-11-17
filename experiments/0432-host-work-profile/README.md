@@ -355,6 +355,38 @@ removed (every slot gets a 512 KiB buffer once at `Device::open`, 64 MiB of GTT;
 512 KiB grows its slot as before), and `run0432f.sh` ends a run at the first "FAILED rc -16" in the journal.
 Build 2's other items (D, M, W, V's changed check) were not tested by this run.
 
+### Result 5 (2026-11-17 16:55-17:07, box, boot 66e113e1): build 3: one clean run with fewer 50 ms gaps, then a GPU hang of unknown owner
+
+Before the build, a count asked for by the top session: "FAILED rc" lines by rc in the 65 journals of 2026-11-17
+(`~/bc5-data/captures/play-20261117-*/gc/direct.log`). 60 have none; four have one or two "FAILED rc 0" beside their
+TIMEOUT lines (the timed-out job itself: play-0210, -0542, -1140, -1546); the only non-zero rc is build 2's run
+play-1614 (140 lines rc -16). No shared-build run lost a job.
+
+Build 3 (`0ee07b18`: unit 2bd281ac, private archive ef7e673b from `be/direct.cpp` b583e2df; 0 errors): D, M, S, W on;
+A off; P = every slot 256 KiB at `Device::open` (128 buffers in 6.9 ms), no slot switch; R (a refused submission ends
+the game with the record); V on in run 1 with its check's second build removed.
+
+| run | arm | result | flips/s from G+10 s | seconds with a gap over 100 / 50 ms (of 292) |
+|---|---|---|---|---|
+| d432T14 | build 3, every item on | NO_CRASH, 0 kernel lines | 35.5 | 73 / 195 |
+| d432V15 | build 3, `BC5_DIRECT_VIEWS_KEPT=0` | GPU hang at 112.8 s (in the load after Continue) | - | - |
+
+- **W works in d432T14:** 149 anonymous walks in the run (about 500 before), 433,200 calls left out, 0 event misses; the
+  per-job sample has 880 ms of anonymous sync against 3,174 in the shared run d432S7; and the seconds with a gap over
+  50 ms fall from 275-284 (every earlier arm, shared included) to 195. One run.
+- **M** as before: maps 1,443 ms of the sample against 3,490. **D**: drain 9 ms.
+- **V is still slower than off** (views 4,182 ms against 2,414): off by default from here, as the top session required.
+- **P does not remove the long stall:** "slot 16 resize 262144 -> 4194304 bytes (asked 4100104) took 958.5 ms:
+  unmap+free 0.1, alloc 958.3" and "slot 24 ... took 1354.1 ms: ... alloc 1353.9" in gameplay (and one of 67.4 ms). A
+  4 MiB allocation costs about a second under play; the buffers for jobs that large have to exist before play.
+- **d432V15:** 17:06:42 "ring comp_1.3.0 timeout, signaled seq=410120, emitted seq=410122 ... reset succeeded", then
+  gfx_0.0.0 the same; the game ended with fault record `20261117-170642` ("a hang without a page fault"), journal
+  `play-20261117-1704`, 0 refused submissions. The probe's summary: "acb #93564 2047 dwords: 1 waits (1 kept for the
+  GPU), 15 label writes, 140 dispatches (80 indirect; the largest grid 17765411481442058240 groups, at 842)". Whose
+  bug it is is NOT known: the same binary ran clean eight minutes before; exp 0430's shared control run h430C6 showed
+  a comp-ring timeout with a successful reset at 16:12 on the boot before. One event. The records went to exp 0430.
+  The series stopped there (LESSONS R55), and the box needs a reboot before any next run (the top session's rule).
+
 (pending: the A/B of the test build in his scene and on the route; the perf profile of the normal and lean builds)
 
 ## Verdict
