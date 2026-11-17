@@ -216,6 +216,8 @@ struct Store {
 	uint64_t                                   f8_calls = 0, f8_chains = 0, f8_ns = 0, f8_busy = 0, f8_gone = 0, f8_bound = 0; // F8: observe points taken, other threads' chains submitted, time
 	uint64_t                                   f10_calls = 0, f10_hit = 0, f10_owner_wanted = 0, f10_gone = 0, f10_bound = 0, f10_busy = 0, f10_ns = 0; // F10
 	uint64_t                                   f7_would = 0; // F7 as a sensor: stale waits seen and not held
+	uint64_t                                   f11_cause[7] {}; // F11: sensor counts by F10's finding at the same wait: could not look / bound / held chain only / compute chain / dcb chain / no chain / no F10 look at this wait
+	uint64_t                                   f11_retry = 0, f11_saved = 0; // F11: looks that met a busy lock / that the bounded retry completed
 	uint64_t                                   f7_same = 0;  // F7: not held, the waiter's thread is the one that registers the release
 	uint64_t                                   f7_hist[6] {}; // F7: holds < 1, < 5, < 20, < 50, < 250 ms, bound
 	uint64_t                                   f7_cls[3] {};  // F7: holds where a title submit call was running at the start / began during it / neither
@@ -227,6 +229,13 @@ struct Store {
 inline thread_local const uint32_t*  t_f5_ib = nullptr;
 inline thread_local uint32_t         t_f5_n  = 0;
 inline thread_local std::vector<uint64_t> t_f5_safe;
+// F11 (2026-11-18): what F10 found at this thread's last acb wait, read by F7's sensor at the same wait
+inline thread_local uint64_t t_f10_label = 0;
+inline thread_local int      t_f10_cause = 6;
+inline bool f11_on() { // BC5_DIRECT_XQ_LOOK, on unless "0": F10 does not decide blind when a lock is busy; it retries for up to 200 us
+	static const bool v = not0(std::getenv("BC5_DIRECT_XQ_LOOK"));
+	return v;
+}
 inline void dump(int k);
 inline Store& st() {
 	static Store s;
@@ -364,11 +373,12 @@ inline void job_submitted(const uint32_t* ib, uint32_t num_dwords, const std::ve
 	static uint64_t last_f5 = 0; // F5's line without G (the shared form too): the orders kept against the orders skipped
 	if (!g_on() && (f3_on() || f7_on() || f10_on()) && now - last_f5 > 60'000'000'000ull) {
 		last_f5 = now;
-		journal("ho430 F5 (exp 0430): t %.1f s: F3 presets %" PRIu64 ", not stale %" PRIu64 ", refused %" PRIu64 "; F4 fences %" PRIu64 ", F2 waited %" PRIu64 ", F5 skipped %" PRIu64 " (precise %s), F6 kept %" PRIu64 " (keep %s), F6 kept waits not back in 1 s %" PRIu64 ", F6 labels %zu, not kept on a shared ring %" PRIu64 "; F7 labels %zu, held %" PRIu64 " (%.1f ms), bounds %" PRIu64 ", sensor (not held) %" PRIu64 ", same thread %" PRIu64 ", holds <1/<5/<20/<50/<250 ms/bound %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", marks <0.1/<1/<5/<20 ms/later/none %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "; F8 observe points %" PRIu64 ", chains made due %" PRIu64 " (%.1f ms), gone within 2 ms %" PRIu64 ", bound %" PRIu64 ", could not look %" PRIu64 "; F7 holds with a title submit call running/begun during/neither %" PRIu64 "/%" PRIu64 "/%" PRIu64 "; F9 chains at a call's end %" PRIu64 ": flushed (a memory write) %" PRIu64 ", held %" PRIu64 "; F10 acb waits %" PRIu64 ", with a chain writing the label %" PRIu64 " (owner flushes wanted %" PRIu64 ", owner flushed %" PRIu64 "), gone %" PRIu64 ", bound %" PRIu64 ", could not look %" PRIu64 " (%.1f ms)\n", timing_now(), s.c[kF3Preset], s.c[kF3NotStale], s.c[kF3Refused],
+		journal("ho430 F5 (exp 0430): t %.1f s: F3 presets %" PRIu64 ", not stale %" PRIu64 ", refused %" PRIu64 "; F4 fences %" PRIu64 ", F2 waited %" PRIu64 ", F5 skipped %" PRIu64 " (precise %s), F6 kept %" PRIu64 " (keep %s), F6 kept waits not back in 1 s %" PRIu64 ", F6 labels %zu, not kept on a shared ring %" PRIu64 "; F7 labels %zu, held %" PRIu64 " (%.1f ms), bounds %" PRIu64 ", sensor (not held) %" PRIu64 ", same thread %" PRIu64 ", holds <1/<5/<20/<50/<250 ms/bound %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", marks <0.1/<1/<5/<20 ms/later/none %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "; F8 observe points %" PRIu64 ", chains made due %" PRIu64 " (%.1f ms), gone within 2 ms %" PRIu64 ", bound %" PRIu64 ", could not look %" PRIu64 "; F7 holds with a title submit call running/begun during/neither %" PRIu64 "/%" PRIu64 "/%" PRIu64 "; F9 chains at a call's end %" PRIu64 ": flushed (a memory write) %" PRIu64 ", held %" PRIu64 "; F10 acb waits %" PRIu64 ", with a chain writing the label %" PRIu64 " (owner flushes wanted %" PRIu64 ", owner flushed %" PRIu64 "), gone %" PRIu64 ", bound %" PRIu64 ", could not look %" PRIu64 " (%.1f ms); F11 looks retried %" PRIu64 ", saved by the retry %" PRIu64 ", sensor by F10 finding could not look/bound/held only/compute chain/dcb chain/no chain/no look %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "\n", timing_now(), s.c[kF3Preset], s.c[kF3NotStale], s.c[kF3Refused],
 		        s.c[kF4Fence], s.c[kF2Waited], s.c[kF5Skip], f5_on() ? "on" : "off", s.c[kF6Kept], f6_on() ? "on" : "off", s.f6_long, s.f6_by_label.size(), s.f6_shared, s.f7.size(), s.f7_held, static_cast<double>(s.f7_ns) / 1e6, s.f7_bound, s.f7_would, s.f7_same,
 		        s.f7_hist[0], s.f7_hist[1], s.f7_hist[2], s.f7_hist[3], s.f7_hist[4], s.f7_hist[5], s.f7_mark[0], s.f7_mark[1], s.f7_mark[2], s.f7_mark[3], s.f7_mark[4], s.f7_mark[5],
 		        s.f8_calls, s.f8_chains, static_cast<double>(s.f8_ns) / 1e6, s.f8_gone, s.f8_bound, s.f8_busy, s.f7_cls[0], s.f7_cls[1], s.f7_cls[2], g_f9_ended.load(), g_f9_flushed.load(), g_f9_held.load(),
-		        s.f10_calls, s.f10_hit, s.f10_owner_wanted, g_f10_owner.load(), s.f10_gone, s.f10_bound, s.f10_busy, static_cast<double>(s.f10_ns) / 1e6);
+		        s.f10_calls, s.f10_hit, s.f10_owner_wanted, g_f10_owner.load(), s.f10_gone, s.f10_bound, s.f10_busy, static_cast<double>(s.f10_ns) / 1e6,
+		        s.f11_retry, s.f11_saved, s.f11_cause[0], s.f11_cause[1], s.f11_cause[2], s.f11_cause[3], s.f11_cause[4], s.f11_cause[5], s.f11_cause[6]);
 	}
 #ifndef HO430_SHARED
 	static bool         at_done = false; // BC5_0430_G_AT: one dump in a clean run
@@ -475,26 +485,37 @@ inline bool f10_pending(uint64_t label, const std::vector<ChainSlot*>& mine, boo
 	return pending;
 }
 inline void f10_observe(uint64_t label) {
+	t_f10_label = label;
+	t_f10_cause = 6;
 	if (g_chain_mode < 2) return;
 	const uint64_t          t0 = SoftCp::now_ns();
-	std::vector<ChainSlot*> mine;
+	std::vector<ChainSlot*> mine, seen;
 	uint32_t                wanted = 0;
-	bool                    busy   = false;
-	if (!g_chains_mu.try_lock()) busy = true;
-	else {
-		for (ChainSlot* cs: g_chains) {
-			if (cs == &g_chain_tl) continue;
-			if (!cs->mu.try_lock()) { busy = true; continue; }
-			if (!cs->c.segs.empty() && cs->hold.empty() && std::find(cs->f10_writes.begin(), cs->f10_writes.end(), label) != cs->f10_writes.end()) {
-				mine.push_back(cs);
-				if (cs->in_submit) { cs->f10_wanted = true; wanted++; }
-				else cs->open_ns = 1; // due now for the watchdog
-			} else if (std::find(cs->f10_flight.begin(), cs->f10_flight.end(), label) != cs->f10_flight.end()) {
-				mine.push_back(cs); // being submitted now: wait for its writes' registration
+	bool                    busy = false, met_busy = false, held = false, comp = false;
+	for (;;) { // F11: a slot (or the list) that was busy is looked at again, at most 200 us; seen slots are not looked at twice
+		busy = false;
+		if (!g_chains_mu.try_lock()) busy = true;
+		else {
+			for (ChainSlot* cs: g_chains) {
+				if (cs == &g_chain_tl || std::find(seen.begin(), seen.end(), cs) != seen.end()) continue;
+				if (!cs->mu.try_lock()) { busy = true; continue; }
+				seen.push_back(cs);
+				const bool writes = !cs->c.segs.empty() && std::find(cs->f10_writes.begin(), cs->f10_writes.end(), label) != cs->f10_writes.end();
+				if (writes && cs->hold.empty()) {
+					mine.push_back(cs);
+					if (cs->c.compute) comp = true;
+					if (cs->in_submit) { cs->f10_wanted = true; wanted++; }
+					else cs->open_ns = 1; // due now for the watchdog
+				} else if (std::find(cs->f10_flight.begin(), cs->f10_flight.end(), label) != cs->f10_flight.end()) {
+					mine.push_back(cs); // being submitted now: wait for its writes' registration
+				} else if (writes) held = true; // under the ADR 0013 hold: left to it
+				cs->mu.unlock();
 			}
-			cs->mu.unlock();
+			g_chains_mu.unlock();
 		}
-		g_chains_mu.unlock();
+		if (busy) met_busy = true;
+		if (!busy || !f11_on() || SoftCp::now_ns() - t0 >= 200'000ull) break;
+		std::this_thread::yield();
 	}
 	bool gone = false, bound = false;
 	if (!mine.empty()) {
@@ -506,6 +527,7 @@ inline void f10_observe(uint64_t label) {
 			std::this_thread::sleep_for(std::chrono::microseconds(20));
 		}
 	}
+	t_f10_cause = busy ? 0 : bound ? 1 : (held && mine.empty()) ? 2 : comp ? 3 : !mine.empty() ? 4 : 5;
 	Store&          s = st();
 	std::lock_guard lk(s.m);
 	s.f10_calls++;
@@ -514,6 +536,8 @@ inline void f10_observe(uint64_t label) {
 	if (gone) s.f10_gone++;
 	if (bound) s.f10_bound++;
 	if (busy) s.f10_busy++;
+	if (met_busy) s.f11_retry++;
+	if (met_busy && !busy) s.f11_saved++;
 	s.f10_ns += SoftCp::now_ns() - t0;
 }
 // F7 at the first wait of a submission on a label: count it; hold a stale one until its release is registered.
@@ -554,6 +578,7 @@ inline void f7_wait(uint64_t label, uint64_t ref, int ring, const uint32_t* ib, 
 		if (f7_sensor()) { // count it, hold nothing: the waiter takes the next release (bal -1 until it comes), ok kept
 			c.bal--;
 			const uint64_t k = ++s.f7_would;
+			s.f11_cause[t_f10_label == label ? t_f10_cause : 6]++; // F11: what F10 found at this very wait
 			if (k <= 256 || (k & 0x3ffu) == 0)
 				journal("ho430 F7 sensor: %s on ring %d at %u: its wait on 0x%" PRIx64 " (== 0x%" PRIx64 ") came before its release, not held (%" PRIu64 " so far)\n", kind, ring, off, label, ref, k);
 			return;

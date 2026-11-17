@@ -35,6 +35,7 @@ APP_NEW = ("// exp 0430 F9 (BC5_DIRECT_XQ_FLUSH, on unless \"0\"; the top sessio
            "// a chain without one is held as before. No label set, nothing learned.\n"
            "static bool f9_on() {\n\tstatic const bool v = [] {\n\t\tconst char* e = std::getenv(\"BC5_DIRECT_XQ_FLUSH\");\n\t\treturn e == nullptr || !(e[0] == '0' && e[1] == 0);\n\t}();\n\treturn v;\n}\n"
            "static bool f10_on() {\n\tstatic const bool v = [] {\n\t\tconst char* e = std::getenv(\"BC5_DIRECT_XQ_TARGET\");\n\t\treturn e == nullptr || !(e[0] == '0' && e[1] == 0);\n\t}();\n\treturn v;\n}\n"
+           "static bool f10_acb_on() { // exp 0430 F11b: BC5_DIRECT_XQ_TARGET_ACB, on unless \"0\": compute chains' writes recorded too\n\tstatic const bool v = [] {\n\t\tconst char* e = std::getenv(\"BC5_DIRECT_XQ_TARGET_ACB\");\n\t\treturn e == nullptr || !(e[0] == '0' && e[1] == 0);\n\t}();\n\treturn v;\n}\n"
            "static std::atomic<uint64_t> g_f10_owner {0}; // exp 0430 F10: chains their owner flushed at its call's end because an acb waited\n"
            "static void f10_note(std::vector<uint64_t>& out, const uint32_t* ib, uint32_t n) { // exp 0430 F10: the write addresses of ib\n"
            "\tfor (uint32_t q = 0; q < n;) {\n"
@@ -95,7 +96,7 @@ SWAP_NEW = SWAP_OLD + "\t\ts.f10_flight.swap(s.f10_writes); // exp 0430 F10: in 
 SUBN_OLD = "\tsubmit_now(mine.buf.data(), static_cast<uint32_t>(mine.buf.size()), mine.compute ? \"acb\" : \"dcb\", mine.ring, &mine);\n"
 SUBN_NEW = SUBN_OLD + "\t{ // exp 0430 F10: its writes are registered now\n\t\tstd::lock_guard lk(s.mu);\n\t\ts.f10_flight.clear();\n\t}\n"
 NOTE_OLD = "\t\t\t\tif (!s.hold.empty()) hold_note_writes(s, ib, n); // ADR 0013\n"
-NOTE_NEW = NOTE_OLD + "\t\t\t\tif (f10_on() && !compute) f10_note(s.f10_writes, ib, n); // exp 0430 F10\n"
+NOTE_NEW = NOTE_OLD + "\t\t\t\tif (f10_on() && (!compute || f10_acb_on())) f10_note(s.f10_writes, ib, n); // exp 0430 F10 (F11b: compute chains too)\n"
 KEEP_NEW = ("\t\t\t\t\tif ((!wait_satisfied(p, op == 0x93) && ring_will_satisfy(p, op == 0x93, job_ring(kind))) ||\n"
             "\t\t\t\t\t    ho430::keep_cross(p, op == 0x93, label, kind, job_ring(kind), i)) { // exp 0430 (tag ho430): F6\n"
             "\t\t\t\t\t\tstatic std::atomic<uint64_t> n_kept {0};\n")
