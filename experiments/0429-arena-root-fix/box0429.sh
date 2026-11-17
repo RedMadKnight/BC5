@@ -64,6 +64,10 @@ build() {
             pre="src/CMakeFiles/kyty_emulator.dir/libs/bc5LleAgc.cpp.o=$E/base0430/bc5LleAgc.cpp.o"
             [ "$(md5sum < "$E/base0430/bc5LleAgc.cpp.o" | cut -d' ' -f1)" = "$(cat "$E/base0430/object.md5")" ] || stop "the exp 0430 object copy is not its pin"
         fi
+        if [ "${BASE0430:-0}" = 2 ] && [ $v = normal ]; then  # exp 0430 build 7: its object AND its backend archive
+            pre="src/CMakeFiles/kyty_emulator.dir/libs/bc5LleAgc.cpp.o=$E/base0430b/bc5LleAgc.cpp.o ARCHIVE=$E/base0430b/libbc5_backend.a"
+            [ "$(md5sum < "$E/base0430b/bc5LleAgc.cpp.o" | cut -d' ' -f1)" = "$(cat "$E/base0430b/object.md5")" ] && [ "$(md5sum < "$E/base0430b/libbc5_backend.a" | cut -d' ' -f1)" = "$(cat "$E/base0430b/archive.md5")" ] || stop "the exp 0430 build-7 copies are not their pins"
+        fi
         distrobox enter ubuntu -- env LC_ALL=C LANGUAGE=C python3 -I "$HERE/build0429.py" "$E/$v/compdb.json" "$S" "$E/$v" "$b" "$bin" $pre > "$R/build-$v.out" 2>&1 < /dev/null
         rc=$?; echo "$v: build rc $rc; errors $(grep -c 'error:' "$R/build-$v.out"); warnings $(grep -c 'warning:' "$R/build-$v.out")"
         grep -n "error:\|warning:\|undefined\|COMPILE FAILED" "$R/build-$v.out" | head -20
@@ -76,9 +80,10 @@ build() {
     strings "$E/normal/kyty_emulator" | grep -qxF KYTY_BC5_0429_TRACE || stop "KYTY_BC5_0429_TRACE is not in normal"
     strings "$E/normal/kyty_emulator" | grep -qxF KYTY_BC5_0429_WAITS || stop "KYTY_BC5_0429_WAITS is not in normal"
     strings "$E/lean/kyty_emulator" | grep -qF KYTY_BC5_0429_WAITS && stop "lean holds KYTY_BC5_0429_WAITS"
-    if [ "${BASE0430:-0}" = 1 ]; then  # exp 0430's switch names are not plain strings: check a symbol only its object defines
+    if [ "${BASE0430:-0}" = 1 ] || [ "${BASE0430:-0}" = 2 ]; then  # exp 0430's switch names are not plain strings: check a symbol only its object defines
         local u0430
-        u0430=$(comm -23 <(nm --defined-only "$E/base0430/bc5LleAgc.cpp.o" | awk '{print $3}' | sort -u) <(nm --defined-only "$W/kytyplus-build/src/CMakeFiles/kyty_emulator.dir/libs/bc5LleAgc.cpp.o" | awk '{print $3}' | sort -u) | grep -v '^\.L' | head -1)
+        local bdir=$E/base0430; [ "${BASE0430:-0}" = 2 ] && bdir=$E/base0430b
+        u0430=$(comm -23 <(nm --defined-only "$bdir/bc5LleAgc.cpp.o" | awk '{print $3}' | sort -u) <(nm --defined-only "$W/kytyplus-build/src/CMakeFiles/kyty_emulator.dir/libs/bc5LleAgc.cpp.o" | awk '{print $3}' | sort -u) | grep -v '^\.L' | head -1)
         [ -n "$u0430" ] && nm "$E/normal/kyty_emulator" | grep -qF "$u0430" || stop "exp 0430's object is not in normal (BASE0430=1)"
     fi
     strings "$E/lean/kyty_emulator" | grep -qF KYTY_BC5_0429_TRACE && stop "lean holds KYTY_BC5_0429_TRACE"

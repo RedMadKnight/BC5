@@ -13,7 +13,12 @@ UNITS = {
     "src/CMakeFiles/kyty_emulator.dir/graphics/presentation/window/hostInput.cpp.o": "src/graphics/presentation/window/hostInput.cpp",
 }
 PREBUILT = {}  # exp 0429: "<unit .o>=<object path>": link this object in place of the shared one, no compile
+ARCHIVE = None  # exp 0429: "ARCHIVE=<path>": link this backend archive in place of every libbc5_backend.a
 for rel in EXTRA:
+    if rel.startswith("ARCHIVE="):
+        ARCHIVE = rel[len("ARCHIVE="):]
+        assert os.path.isfile(ARCHIVE), f"no archive {ARCHIVE}"
+        continue
     if "=" in rel:
         unit, path = rel.split("=", 1)
         assert os.path.isfile(path), f"no prebuilt object {path}"
@@ -54,5 +59,11 @@ for k, a in enumerate(argv):
     elif a.startswith("--dependency-file="): argv[k] = "--dependency-file=" + out_bin + ".d"
 for u, n in seen.items():
     assert n == 1, f"{u} appears {n} times in the link command"
+if ARCHIVE is not None:
+    n = 0
+    for k, a in enumerate(argv):
+        if os.path.basename(a) == "libbc5_backend.a":
+            argv[k] = ARCHIVE; n += 1
+    assert n >= 1, "no libbc5_backend.a in the link command"
 argv[argv.index("-o") + 1] = out_bin
 sys.exit(run(argv))
