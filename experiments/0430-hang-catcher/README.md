@@ -696,3 +696,21 @@ is held across real submit ioctls. That is exactly when the chain carrying the r
 F13 (`BC5_DIRECT_XQ_REGISTRY`, on unless "0"; three more unit hooks, 12 in all) gives F10 its own registry of the slots.
 Its mutex is taken only by `chain_register`, `~ChainSlot` and F10, and nothing submits under it. F10's look and its
 pending check use it instead of `g_chains_mu`.
+
+### F13 (2026-11-18): F10's own registry; no blind looks left
+
+Build: ho430 `42ba6b94`, unit `6e8e1492` (12 hooks), binary `7c0bd18d` in `p18`; `BC5_DIRECT_XQ_REGISTRY` on and
+`BC5_DIRECT_XQ_LOOK_LONG` kept as a fallback. A busy slot is waited for as a pending write, never skipped. The
+conditions met in code:
+- Lifetime: F10 holds the registry mutex across every slot try_lock and read. `~ChainSlot` takes it before the slot's
+  memory goes.
+- Lock order: the registry mutex is a leaf. `chain_register` and `~ChainSlot` take `g_chains_mu` and then the
+  registry; F10 try_locks the registry and then a slot. bc5-chainwd and `chain_flush_all` never take the registry.
+- In flight: `chain_submit` holds only `flush_mu` around `submit_now`, so a slot mid-ioctl is lockable and its
+  `f10_flight` set answers "write pending, wait".
+
+| Run | Result | flips/s | Sensor | Blind | Busy-slot waits / in-flight hits | Chains found / reached the device in time / bound | F10 time |
+|---|---|---|---|---|---|---|---|
+| h430H3 | NO_CRASH at G+1500, 0 kernel lines | **45.3** | **1** (at the bound) | 0 | 13,577 / 1,735 | 15,312 / 15,305 / 7 | 2,001 ms over 1,603 s |
+
+The night's sensor: G1 182, H1 99, H2 7, H3 1. Next: why 7 found chains did not reach the device within 2 ms.
