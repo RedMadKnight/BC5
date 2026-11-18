@@ -810,3 +810,5 @@ ho430 `115af6e9`, unit `c30922e6` on f574f460 (`6d074404` on b8afba59). Not buil
 - **E1 needs both switches.** F4 acts only with F2 on: at_wait returns before F4 when `BC5_DIRECT_XQ_PENDING` is 0. So E1's words are `BC5_DIRECT_XQ_PENDING=1 BC5_DIRECT_XQ_FENCE=1`. F4 returns before F2's own CPU wait, so F2 adds no wait.
 
 **Separate open question (not this fix's target): H5's junk-grid dcb.** In h430H5 a dcb's indirect dispatches read float data as their arguments (at 0x118c5f0940 and on), with every one of its waits kept and met. Which job writes those arguments, and why they were not written in time, is not known. F17 and F10 + F4 do not address it.
+
+**Base for D1/E1 (top's decision C, 2026-11-18).** D1 and E1 run on the shared tree as 0429's R swap leaves it: patch ef2ff54f, R on by default (`KYTY_BC5_0429_RR`), exp 0425's wake slice removed. This is the form that ships. bc5LleAgc.cpp is unchanged by that swap (still f574f460, 940e8f36's GPU side), so the build applies as before. D1 against E1 is the comparison: both share this base. H4/H5 (940e8f36, wake slice on, no R) are not on exactly the same base.
