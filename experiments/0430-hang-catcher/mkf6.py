@@ -11,7 +11,7 @@ import hashlib
 import os
 import sys
 
-BASE_MD5 = "b8afba59"
+BASE_MD5 = ("b8afba59", "f574f460")  # the shared unit at patch bc39a035, and at exp 0432 build 5 (patch 940e8f36)
 U = "src/libs/bc5LleAgc.cpp"
 KEEP_OLD = ("\t\t\t\t\tif (!wait_satisfied(p, op == 0x93) && ring_will_satisfy(p, op == 0x93, job_ring(kind))) {\n"
             "\t\t\t\t\t\tstatic std::atomic<uint64_t> n_kept {0};\n")
@@ -116,8 +116,8 @@ def main() -> int:
     path = os.path.join(sys.argv[1], U)
     data = open(path, "rb").read()
     md5 = hashlib.md5(data).hexdigest()[:8]
-    if md5 != BASE_MD5:
-        print(f"mkf6: {path} is {md5}, not the base {BASE_MD5}")
+    if md5 not in BASE_MD5:
+        print(f"mkf6: {path} is {md5}, not a base {BASE_MD5}")
         return 1
     text = data.decode("utf-8", "surrogateescape")
     here = os.path.dirname(os.path.abspath(__file__))
@@ -136,7 +136,7 @@ def main() -> int:
     text = text.replace(old, new).replace(KEEP_OLD, KEEP_NEW).replace(CIS_OLD, CIS_NEW).replace(SUB_OLD, SUB_NEW).replace(APP_OLD, APP_NEW).replace(END_OLD, END_NEW).replace(SLOT_OLD, SLOT_NEW).replace(SWAP_OLD, SWAP_NEW).replace(NOTE_OLD, NOTE_NEW).replace(SUBN_OLD, SUBN_NEW).replace(REGD_OLD, REGD_NEW).replace(REGA_OLD, REGA_NEW).replace(REGE_OLD, REGE_NEW)
     out = text.encode("utf-8", "surrogateescape")
     open(path, "wb").write(out)
-    print(f"mkf6: {BASE_MD5} -> {hashlib.md5(out).hexdigest()[:8]} (ho430 {hashlib.md5(new.encode()).hexdigest()[:8]}, 12 hooks)")
+    print(f"mkf6: {md5} -> {hashlib.md5(out).hexdigest()[:8]} (ho430 {hashlib.md5(new.encode()).hexdigest()[:8]}, 12 hooks)")
     return 0
 
 
