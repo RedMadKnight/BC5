@@ -782,3 +782,84 @@ slots that grow and are made ahead, R: a refused submission ends the game with a
   whose owner is open.
 Items A, V and X bring nothing as built: A and V are off (V cost speed, A was ordered off), X is never taken while
 `k1r` is on. The swap form is the shared build since 2026-11-18 06:21 (Result 10).
+
+## After the verdict (2026-11-18): exp 0430's h430H4 GPU hang on patch 940e8f36
+
+h430H4 (exp 0430's F13+F14 binary `f61d5986` on this experiment's patch) hung the GPU at 06:55, t = 1427.27 s on the
+journal's clock: comp_1.2.0 timeout (reset ok), gfx_0.0.0 timeout, gfx reset failed, the box rebooted itself. Record:
+`experiments/0430-hang-catcher/README.md` (H4). The capture stays private: `~/bc5-data/captures/play-20261118-0631/gc`
+on the box (direct.log `9f58dad1`, the two ib-timeout dumps), a copy on the laptop outside the repo.
+
+What the journal of that run says about item D (no wait before an unmap):
+- The hung dcb (161,891 dwords) and acb (8,706 dwords) were submitted at t 1427.266-1427.278 s.
+- The mapper dropped 6 mappings in the 0.65 s before (t 1426.62: 1, 1426.67: 3, 1427.09: 2). No BO was retired or
+  merged then (72 BOs throughout the last 6 s).
+- From t 1351 s to 1421 s "mappings dropped while busy" rose by 2 (5,350 to 5,352) and "BOs retired while busy" stayed
+  at 47. The counters' last line is at 1421.0 s, so the last 6.3 s are not covered.
+- The timeout probe: every probed op of both buffers ran, the acb's one wait was met, no "timeout snapshot ... not
+  mapped" line. The filter's "unmapped 1" on the hung dcb is ordinary: submissions that ended OK in the same run show
+  0 to 3, and so do timeout records from before this experiment.
+- "HS user data address 0x0 at 1061 not mapped" is exp 0189's probe line for a register pair set to 0; the same line
+  is in the hang records of exps 0204, 0265, 0290 and 0300.
+- H4's counts are ordinary: this experiment's clean scene runs (411 s) show 3,016-6,684 mappings dropped while busy and
+  23-130 BOs retired while busy; d432T23, T25 and T27 ran 1,500 s each with item D on and ended clean.
+- The longest sync+hints (853 ms) is not new: with the old wait back on, the same scene shows 864.3 ms and 631 over
+  20 ms, against 860-900 ms and 246-325 with item D.
+
+Not shown either way: the addresses of the dropped mappings were counted, not recorded, so they cannot be compared with
+the dumps; whether a ring was busy at the last 6 drops is unknown; the devcoredump was not analysed; the box kernel's
+own source was not read.
+
+The sync+hints time of that run, from its 15,484 "timing split" lines (108 s in 1,421 s): direct sync 42.4 s (views
+12.4, scan 7.6, maps 7.5, merge 2.9), probe 30.4 s (a steady 1.4 ms per 128 submissions), hints 19.7 s, anon sync
+11.8 s, "learned" 4.0 s. Of 53,611 frames after t 130 s, 1,331 have sync+hints of 6-10 ms, more than the 617 with
+3-6 ms: in the last seconds those are the frames with a full view build (views 4.7-6.8 ms per 128 submissions) plus
+the wanted-mappings pass. Exp 0430 found 5 of 10 late F10 chains next to such a frame. Not followed further here.
+
+**Next build (`mklog432.py`, `box0432.sh buildl`; unit `80b46755` from the shared `f574f460`; built on the laptop for
+syntax only, of the new block alone, normal and lean):**
+1. a record of the last 4,096 dropped mappings and retired BOs (time, address, size, BO id, ring busy at that
+   rebuild), kept in memory and written to the journal by the timeout probe; normal build only;
+2. `KYTY_BC5_ANON_SYNC_KICK` no longer read in the lean build;
+3. temporary, the maintainer's "tak, a po wyjaśnieniu, usuń": `BC5_DIRECT_UNMAP_NOWAIT` is read in the lean build too
+   ("0" = the old wait), to be put back to on-without-a-word when the hang is cleared up.
+Not built on the box and not run yet.
+
+### The build with the drop record, built and smoked (2026-11-18 12:12–12:34)
+
+Base: the shared patch `ef2ff54f` (exp 0429's R on by default with the wake slice removed, swapped in at 12:11;
+normal `a9b4f00b`, lean `abf5fb17`, archive `6eac453e`). That swap left `src/libs/bc5LleAgc.cpp` at `f574f460`, so
+`mklog432.py` applied unchanged (edited unit `80b46755`, as made on the laptop). `box0432.sh buildl` with
+`WANT_SHARED=a9b4f00b` (normal) and `LEAN=1 WANT_SHARED=abf5fb17`: one unit compiled, linked with the shared objects
+and archive. Private binaries, nothing shared written (both shared md5s read before and after):
+
+| build | binary | word checks |
+|---|---|---|
+| normal, `~/bc5-work/exp0432/lg` | `4186b41d` | `BC5_DIRECT_UNMAP_NOWAIT` and "exp 0432 drops" present |
+| lean, `~/bc5-work/exp0432/lgl` | `8a63b45e` | `BC5_DIRECT_UNMAP_NOWAIT` present (temporary); "exp 0432 drops" and `KYTY_BC5_ANON_SYNC_KICK` absent |
+
+Compiler warnings 7 (normal) and 8 (lean), none at the new lines.
+
+Smokes (`smokel432.sh 7`, RT on, record `raw/lg/smokel432-7.out`), 4 of 4 clean, kernel amdgpu timeout/reset lines
+1 before and 1 after (the one line predates these runs), oom lines 0:
+
+| tag | title, build | result |
+|---|---|---|
+| a432L7 | ASTRO BOT, lean `8a63b45e`, 200 s | PASS, kernel lines 0, crash lines 0 |
+| a432N7 | ASTRO BOT, normal `4186b41d`, 200 s | PASS, kernel lines 0, crash lines 0 |
+| l432L7 | second title, lean, 300 s by time | PASS, kernel lines 0, crash lines 0 |
+| d432T47 | second title, normal, the 09:46 scene, G+300 | NO_CRASH, 31.8 flips/s; sync+hints longest 863.5 ms, 346 over 20 ms; dropped while busy 6,278, BOs retired while busy 56 |
+
+d432T47's counters sit where build 5's scene runs sat (longest 860–900 ms, dropped while busy 3,016–6,684, BOs retired
+while busy 23–130; 346 frames over 20 ms against 246–325). One run each: a smoke, not a measurement.
+
+Not shown: the drop record's output. It is written only by the timeout probe and no timeout occurred, so its lines
+have not been seen from a real run. The lean build's `BC5_DIRECT_UNMAP_NOWAIT=0` was not run either. Neither build is
+shared; a swap is the top session's decision.
+
+### Closed (top, 2026-11-18 evening)
+
+The drop-record build (normal `4186b41d`, lean `8a63b45e`) was never swapped and will not be.
+- **Drop record:** its question, whether item D's unmap drops caused H4, is settled. H4 is F852 (exp 0430), so the record is left out.
+- **NOWAIT in lean:** it was readable only in this private lean build. The shared lean keeps item D on without a word, as the maintainer asked once the hang was explained.
+- **`KYTY_BC5_ANON_SYNC_KICK`:** taken out of lean in exp 0430's bake (patch `d1388db0`).

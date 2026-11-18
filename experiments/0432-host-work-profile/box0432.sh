@@ -138,8 +138,46 @@ EOT
     echo "test binary $(cat "$T/binary.md5"), shared before $shared, after $(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)"
     [ "$shared" = "$(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)" ] || stop "the shared binary changed"
 }
+# After the h430H4 hang (2026-11-18): the shared unit f574f460 edited by mklog432.py (drop record, KICK out of lean,
+# NOWAIT readable in lean), compiled with the shared build's commands and linked with the shared objects and archive,
+# into ~/bc5-work/exp0432/lg (LEAN=1: lgl). Nothing shared is written. After another shared swap (exp 0429's R on by
+# default, 2026-11-18) the pins come from the caller: WANT_SHARED (the shared binary of this flavour) and WANT_AR (the
+# archive), as that swap's owner announced them; the unit must still be f574f460.
+buildl() {
+    own || stop "no lock held by 0432"
+    pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
+    local shared bin rc T=$E/lg WANT=${WANT_SHARED:-4e0c00a2} AR=${WANT_AR:-6eac453e} CDB=$E/compdb-lg.json X=lg UW=80b46755
+    if [ "${LEAN:-0}" = 1 ]; then B=$W/kytyplus-build-lean; T=$E/lgl; WANT=${WANT_SHARED:-272685ee}; CDB=$E/compdb-lgl.json; X=lgl; fi
+    shared=$(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)
+    [ "${shared:0:8}" = "$WANT" ] || stop "the shared build in $B is ${shared:0:8}, not $WANT"
+    [ "$(m8 "$TREE/$U")" = f574f460 ] || stop "the shared tree's unit is $(m8 "$TREE/$U"), not f574f460"
+    [ "$(m8 "$W/backend-ubuntu/libbc5_backend.a")" = "$AR" ] || stop "the shared archive is $(m8 "$W/backend-ubuntu/libbc5_backend.a"), not $AR"
+    rm -rf "$T"; mkdir -p "$T/src/src/libs" "$R"
+    cp "$TREE/$U" "$T/src/$U" || stop "copy the unit"
+    python3 -I "$HERE/mklog432.py" "$T/src/$U" > "$R/$X-mk.out" 2>&1 || { cat "$R/$X-mk.out"; stop "mklog432.py refused"; }
+    [ "$(m8 "$T/src/$U")" = "$UW" ] || stop "the edited unit is $(m8 "$T/src/$U"), not $UW as made on the laptop"
+    distrobox enter ubuntu -- sh -c "cd '$B' && ninja -t compdb -x" > "$CDB" 2> "$R/compdb.err" < /dev/null || stop "compdb failed"
+    bin=$T/kyty_emulator
+    distrobox enter ubuntu -- env LC_ALL=C LANGUAGE=C python3 -I "$HERE/build0432.py" "$CDB" "$T/src" "$T" "$B" "$bin" > "$R/$X-build.out" 2>&1 < /dev/null
+    rc=$?; echo "build rc $rc; errors $(grep -c 'error:' "$R/$X-build.out"); warnings $(grep -c 'warning:' "$R/$X-build.out")"
+    grep -n "error:\|undefined\|multiple definition\|COMPILE FAILED\|Error" "$R/$X-build.out" | head -30
+    [ "$rc" = 0 ] && [ -x "$bin" ] || stop "build failed: $R/$X-build.out"
+    strings "$bin" > "$T/words.txt"
+    grep -qF BC5_DIRECT_UNMAP_NOWAIT "$T/words.txt" || stop "BC5_DIRECT_UNMAP_NOWAIT is not in the binary"
+    if [ "${LEAN:-0}" = 1 ]; then
+        grep -qF "exp 0432 drops" "$T/words.txt" && stop "the drop record is in the lean binary"
+        grep -qF KYTY_BC5_ANON_SYNC_KICK "$T/words.txt" && stop "KYTY_BC5_ANON_SYNC_KICK is still in the lean binary"
+    else
+        grep -qF "exp 0432 drops" "$T/words.txt" || stop "the drop record is not in the normal binary"
+    fi
+    rm -f "$T/words.txt"
+    md5sum < "$bin" | cut -d' ' -f1 > "$T/binary.md5"
+    echo "$X binary $(cat "$T/binary.md5"), shared before $shared, after $(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)"
+    [ "$shared" = "$(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)" ] || stop "the shared binary changed"
+}
 case "${1:-}" in
     claim) claim "${2:-private build and runs}" "${3:-20}" ;;
+    buildl) buildl ;;
     build) build ;;
     buildbe) buildbe ;;
     buildt) buildt ;;
