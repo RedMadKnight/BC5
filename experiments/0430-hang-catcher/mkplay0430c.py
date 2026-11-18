@@ -46,11 +46,15 @@ rep('[ -n "${BC5_EMU:-}" ] && EMU=$BC5_EMU  # exp 0177: another binary (A/B agai
     '[ "$(md5sum < "$EMU" | cut -c1-8)" = ' + BIN + ' ] || { echo "exp 0430: $EMU is not the build ' + BIN + '"; exit 1; }\n')
 anchor = '  n=${w%%=*}; [ -n "${!n+x}" ] || export "$w"\ndone\n'
 rep(anchor, anchor +
-    '# exp 0430 F18 test: the M runs\' words (chain0430.sh CATCH=0, ab0430b.sh FWORDS of h430M*) and F18 on\n'
+    '# exp 0430 F18 test: the M runs\' effective words and F18 on. This build compiles ho430\'s HO430_SHARED branch, so its\n'
+    '# switches are the BC5_DIRECT_XQ_* words alone (the BC5_0430_F2/F3/G words of the runs\' CATCH=0 are not read; left out).\n'
+    '# F10 the targeted flush (TARGET, with F11-F14 LOOK/LOOK_LONG/REGISTRY/TARGET_ACB at their default on), F2 the pending\n'
+    '# writers (PENDING, needed by F4), F4 the kernel fence (FENCE), F16 the in-flight wait (FLIGHT_WAIT), F18 the busy-bound\n'
+    '# wait (BUSY_WAIT); F7\'s counting (COUNT) and F17\'s sensor (STALE, default on) only count; F3/F5/F6/F8/F9 off.\n'
     'export BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_INDIRECT=1 BC5_DIRECT_ACB_STATE_NO_WALK=1 BC5_DIRECT_ACB_SPLIT_LATE=3\n'
-    'export BC5_0430_F3=1 BC5_0430_F2=1 BC5_0430_G=0 BC5_DIRECT_TIMEOUT_PROBE=1\n'
-    'export BC5_DIRECT_XQ_PENDING=1 BC5_DIRECT_XQ_ACQUIRE=0 BC5_DIRECT_XQ_FENCE=1 BC5_DIRECT_XQ_PRECISE=0 BC5_DIRECT_XQ_KEEP=0 BC5_DIRECT_XQ_KEEP_ALL=0\n'
-    'export BC5_DIRECT_XQ_ORDER=0 BC5_DIRECT_XQ_FLUSH=0 BC5_DIRECT_XQ_COUNT=2 BC5_DIRECT_XQ_FLIGHT_WAIT=1 BC5_DIRECT_XQ_BUSY_WAIT=1\n'
+    'export BC5_DIRECT_TIMEOUT_PROBE=1\n'
+    'export BC5_DIRECT_XQ_TARGET=1 BC5_DIRECT_XQ_PENDING=1 BC5_DIRECT_XQ_FENCE=1 BC5_DIRECT_XQ_FLIGHT_WAIT=1 BC5_DIRECT_XQ_BUSY_WAIT=1\n'
+    'export BC5_DIRECT_XQ_ACQUIRE=0 BC5_DIRECT_XQ_PRECISE=0 BC5_DIRECT_XQ_KEEP=0 BC5_DIRECT_XQ_KEEP_ALL=0 BC5_DIRECT_XQ_ORDER=0 BC5_DIRECT_XQ_FLUSH=0 BC5_DIRECT_XQ_COUNT=2\n'
     'unset BC5_GUARD_MAP_RULE BC5_GUARD_PRT_BG  # CLAUDE.md: never set in a launcher\n')
 assert 'learned-none' in s and 'direct-learned-pkg' not in s
 assert 'ulimit -c 0' in s
