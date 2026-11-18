@@ -92,7 +92,8 @@ SLOT_NEW = SLOT_OLD + ("\tstd::vector<uint64_t>        f10_writes; // exp 0430 F
                        "\tstd::vector<uint64_t>        f10_flight; // exp 0430 F10: the write set of the chain being submitted now (its writes not registered yet)\n"
                        "\tbool                         f10_wanted = false; // exp 0430 F10: an acb waits on one of them; the owner flushes at its call's end\n"
                        "\tstd::atomic<uint64_t>        f16_done {0}; // exp 0430 F16: bumped when a submit_now of this slot's chain has returned (after its f10_flight is cleared)\n"
-                       "\tstd::atomic<int>             f16_phase {0}; // exp 0430 F16: 0 idle, 1 in chain_submit before the device lock (back-pressure), 2 asking for g_dev_mutex, 3 holding it, 4 draining the GPU (wait_jobs)\n")
+                       "\tstd::atomic<int>             f16_phase {0}; // exp 0430 F16: 0 idle, 1 in chain_submit before the device lock (back-pressure), 2 asking for g_dev_mutex, 3 holding it, 4 draining the GPU (wait_jobs)\n"
+                       "\tstd::atomic<int>             f18_in_hold {0}; // exp 0430 F18: threads inside hold_release on this slot (it takes mu per round)\n")
 SWAP_OLD = "\t\ts.hold_writes.clear(); // ADR 0013\n"
 SWAP_NEW = SWAP_OLD + "\t\ts.f10_flight.swap(s.f10_writes); // exp 0430 F10: in flight until submit_now has registered its writes\n\t\ts.f10_writes.clear();\n\t\ts.f10_wanted = false;\n"
 SUBN_OLD = "\tsubmit_now(mine.buf.data(), static_cast<uint32_t>(mine.buf.size()), mine.compute ? \"acb\" : \"dcb\", mine.ring, &mine);\n"
@@ -103,6 +104,8 @@ DEVL_OLD = "\tconst uint64_t  fs_ask = fs415_file() != nullptr ? SoftCp::now_ns(
 DEVL_NEW = ("\tif (t_f16_slot != nullptr) t_f16_slot->f16_phase.store(2); // exp 0430 F16: past the back-pressure, asking for the device\n" + DEVL_OLD +
             "\tif (t_f16_slot != nullptr) t_f16_slot->f16_phase.store(3); // exp 0430 F16\n")
 WJ_OLD = "static void wait_jobs() {\n\tchain_flush(5); // ADR 0010\n"
+HR_OLD = "static bool hold_release(ChainSlot& s, bool block) {\n"
+HR_NEW = HR_OLD + "\tstruct F18H { // exp 0430 F18: counts the threads in here, for F18's classification of a busy slot\n\t\tChainSlot& s;\n\t\texplicit F18H(ChainSlot& x): s(x) { s.f18_in_hold.fetch_add(1); }\n\t\t~F18H() { s.f18_in_hold.fetch_sub(1); }\n\t} f18h(s);\n"
 WJ_NEW = "static void wait_jobs() {\n\tif (t_f16_slot != nullptr) t_f16_slot->f16_phase.store(4); // exp 0430 F16: a submit drains the GPU: no waiter may wait on it\n\tchain_flush(5); // ADR 0010\n"
 NOTE_OLD = "\t\t\t\tif (!s.hold.empty()) hold_note_writes(s, ib, n); // ADR 0013\n"
 NOTE_NEW = NOTE_OLD + "\t\t\t\tif (f10_on() && (!compute || f10_acb_on())) f10_note(s.f10_writes, ib, n); // exp 0430 F10 (F11b: compute chains too)\n"
@@ -136,17 +139,17 @@ def main() -> int:
     if hashlib.md5(old.encode()).hexdigest()[:8] != "c7dbe70b":
         print("mkf6: ho430.b8.cpp is not the deployed c7dbe70b")
         return 1
-    for what, n in (("the deployed ho430 block", text.count(old)), ("the keep test", text.count(KEEP_OLD)), ("ChainInSubmit", text.count(CIS_OLD)), ("submit's ChainInSubmit", text.count(SUB_OLD)), ("chain_append", text.count(APP_OLD)), ("chain_end's hold test", text.count(END_OLD)), ("ChainSlot's hold_writes", text.count(SLOT_OLD)), ("chain_submit's swap", text.count(SWAP_OLD)), ("chain_append's hold note", text.count(NOTE_OLD)), ("chain_submit's submit_now", text.count(SUBN_OLD)), ("g_chains", text.count(REGD_OLD)), ("chain_register's push", text.count(REGA_OLD)), ("~ChainSlot's erase", text.count(REGE_OLD)), ("submit_now's device lock", text.count(DEVL_OLD)), ("wait_jobs", text.count(WJ_OLD))):
+    for what, n in (("the deployed ho430 block", text.count(old)), ("the keep test", text.count(KEEP_OLD)), ("ChainInSubmit", text.count(CIS_OLD)), ("submit's ChainInSubmit", text.count(SUB_OLD)), ("chain_append", text.count(APP_OLD)), ("chain_end's hold test", text.count(END_OLD)), ("ChainSlot's hold_writes", text.count(SLOT_OLD)), ("chain_submit's swap", text.count(SWAP_OLD)), ("chain_append's hold note", text.count(NOTE_OLD)), ("chain_submit's submit_now", text.count(SUBN_OLD)), ("g_chains", text.count(REGD_OLD)), ("chain_register's push", text.count(REGA_OLD)), ("~ChainSlot's erase", text.count(REGE_OLD)), ("submit_now's device lock", text.count(DEVL_OLD)), ("wait_jobs", text.count(WJ_OLD)), ("hold_release", text.count(HR_OLD))):
         if n != 1:
             print(f"mkf6: {what} is found {n} times, not once")
             return 1
     if "BC5_DIRECT_XQ_PRECISE" not in new or "keep_cross" not in new or "BC5_DIRECT_XQ_KEEP" not in new or "BC5_DIRECT_XQ_KEEP_ALL" not in new:
         print("mkf6: ho430.cpp has no F5 or no F6")
         return 1
-    text = text.replace(old, new).replace(KEEP_OLD, KEEP_NEW).replace(CIS_OLD, CIS_NEW).replace(SUB_OLD, SUB_NEW).replace(APP_OLD, APP_NEW).replace(END_OLD, END_NEW).replace(SLOT_OLD, SLOT_NEW).replace(SWAP_OLD, SWAP_NEW).replace(NOTE_OLD, NOTE_NEW).replace(SUBN_OLD, SUBN_NEW).replace(REGD_OLD, REGD_NEW).replace(REGA_OLD, REGA_NEW).replace(REGE_OLD, REGE_NEW).replace(DEVL_OLD, DEVL_NEW).replace(WJ_OLD, WJ_NEW)
+    text = text.replace(old, new).replace(KEEP_OLD, KEEP_NEW).replace(CIS_OLD, CIS_NEW).replace(SUB_OLD, SUB_NEW).replace(APP_OLD, APP_NEW).replace(END_OLD, END_NEW).replace(SLOT_OLD, SLOT_NEW).replace(SWAP_OLD, SWAP_NEW).replace(NOTE_OLD, NOTE_NEW).replace(SUBN_OLD, SUBN_NEW).replace(REGD_OLD, REGD_NEW).replace(REGA_OLD, REGA_NEW).replace(REGE_OLD, REGE_NEW).replace(DEVL_OLD, DEVL_NEW).replace(WJ_OLD, WJ_NEW).replace(HR_OLD, HR_NEW)
     out = text.encode("utf-8", "surrogateescape")
     open(path, "wb").write(out)
-    print(f"mkf6: {md5} -> {hashlib.md5(out).hexdigest()[:8]} (ho430 {hashlib.md5(new.encode()).hexdigest()[:8]}, 14 hooks)")
+    print(f"mkf6: {md5} -> {hashlib.md5(out).hexdigest()[:8]} (ho430 {hashlib.md5(new.encode()).hexdigest()[:8]}, 15 hooks)")
     return 0
 
 

@@ -872,3 +872,5 @@ Counted from the journaled F14 bound lines (the first 64 per run; the 60-s total
 3. **Count.** Record waited / released / 50 ms bound / given up by phase, as F16 does. Journal any bound that still ends with the wait satisfied, so the swap rule's sensor covers this gate too.
 
 A slot that does not write L is released at once, so F18 costs nothing there.
+
+**F18 written (2026-11-18 evening, offline; top: one switch, fix and catcher together, next build).** The switch is `BC5_DIRECT_XQ_BUSY_WAIT`, on unless "0"; ho430 `fb3330bb`, mkf6 `bb9b9ff1` (15 hooks: `hold_release` counts its threads per slot), unit `178d8890` on f574f460 (`8428183d` on b8afba59); dry-run applies on both, not built yet. At a bound F16 did not settle, it re-looks at each pending slot for up to 200 µs. An open writer of L is made due and waited for, a slot still busy is waited for as a possible writer, and a non-writer is dropped. The wait runs up to 50 ms with F16's phase gate. Lines say "THE BOUND STANDS" when the wait is still decided as before. Count for the swap sensor: F18's "50 ms bound" + "not waited" in the 60-s line.
