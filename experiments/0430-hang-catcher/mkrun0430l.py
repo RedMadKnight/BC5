@@ -52,8 +52,8 @@ sub('ENVS=("${WORDS[@]}" "${EXTRA[@]}" BC5_0412N_INPUT_CONFIG="$CFG" KYTY_BC5_IN
 # the host
 sub("setsid nohup bash -c 'distrobox enter ubuntu -- /usr/bin/bash -c '\\''ulimit -l unlimited 2> /dev/null; exec /usr/bin/env \"$@\"'\\'' guard0412n \"$@\"; echo \"launcher exit $?\"' _ \"${ENVS[@]}\" \"$LAUNCH\" < /dev/null > \"$R/$TAG-launch.out\" 2>&1 &\n",
     "if [ \"${P_HOST:-0}\" = 1 ]; then  # exp 0430: on the Bazzite host (exp 0423)\n"
-    "  echo \"place: the Bazzite host (P_HOST=1), no distrobox\" >> \"$R/$TAG-start.txt\"\n"
-    "  setsid nohup bash -c '/usr/bin/bash -c '\\''ulimit -l unlimited 2> /dev/null; exec /usr/bin/env \"$@\"'\\'' guard0412n \"$@\"; echo \"launcher exit $?\"' _ \"${ENVS[@]}\" \"$LAUNCH\" < /dev/null > \"$R/$TAG-launch.out\" 2>&1 &\n"
+    "  echo \"place: the Bazzite host (P_HOST=1), no distrobox, under the user manager (systemd-run --user --scope: rtkit's polkit refuses a process of the ssh session, hn430H1; the desktop session and the user manager are allowed)\" >> \"$R/$TAG-start.txt\"\n"
+    "  setsid nohup bash -c 'systemd-run --user --scope --quiet --collect /usr/bin/bash -c'\\''ulimit -l unlimited 2> /dev/null; exec /usr/bin/env \"$@\"'\\'' guard0412n \"$@\"; echo \"launcher exit $?\"' _ \"${ENVS[@]}\" \"$LAUNCH\" < /dev/null > \"$R/$TAG-launch.out\" 2>&1 &\n"
     "else\n"
     "  echo \"place: the ubuntu distrobox\" >> \"$R/$TAG-start.txt\"\n"
     "  setsid nohup bash -c 'distrobox enter ubuntu -- /usr/bin/bash -c '\\''ulimit -l unlimited 2> /dev/null; exec /usr/bin/env \"$@\"'\\'' guard0412n \"$@\"; echo \"launcher exit $?\"' _ \"${ENVS[@]}\" \"$LAUNCH\" < /dev/null > \"$R/$TAG-launch.out\" 2>&1 &\n"
@@ -96,7 +96,7 @@ sub('  [ -n "$G" ] && [ "$NOW" -ge $((G + PLAY)) ] && break\n',
     '    { echo "at G+60 ($NOW s): plasmashell $SHELL_RUN"\n'
     '      for t in /proc/$EP/task/*; do n=$(cat "$t/comm" 2> /dev/null); case "$n" in *Job*|*job*) echo "[$n] $(chrt -p "${t##*/}" 2> /dev/null | sed \'s/.*: //\' | tr \'\\n\' \' \')";; esac; done | sort | uniq -c | head -40\n'
     '      echo "pad files: $(ls -l /proc/$EP/fd 2> /dev/null | grep -o \'/dev/\\(hidraw\\|input/event\\|input/js\\)[0-9]*\' | sort -u | tr \'\\n\' \' \')"\n'
-    '      echo "sound streams of the emulator: $(pactl list sink-inputs 2> /dev/null | grep -c "application.process.binary = \\"kyty_emulator\\"")"\n'
+    '      echo "sound: sink inputs of SDL $(pactl list sink-inputs 2> /dev/null | grep -c "application.name = \\"SDL Application\\""), PipeWire objects of kyty_emulator $(pw-dump 2> /dev/null | grep -c "\\"application.process.binary\\": \\"kyty_emulator\\"")"\n'
     '      echo "gpu driver: $(grep -o \'/[^ ]*libvulkan_radeon\\.so[^ ]*\' /proc/$EP/maps 2> /dev/null | sort -u | tr \'\\n\' \' \')"; } >> "$R/$TAG-start.txt"\n'
     '  fi\n'
     '  [ -n "$G" ] && [ "$NOW" -ge $((G + PLAY)) ] && break\n')
