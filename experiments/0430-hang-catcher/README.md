@@ -661,3 +661,21 @@ F10 does what it targets: every chain it found reached the device within 2 ms. B
 so there was no G2 and no swap. The box went to exp 0432. Open question: where the 182 come from. The candidates are
 the 18,024 waits where F10's try_lock found the chain list busy, chains under the ADR 0013 hold (F10 skips them), and
 compute chains (their writes are not recorded). The next step is counters only, to split the 182 by cause.
+
+### F11 (2026-11-18): the 182 split by cause, and the look retry
+
+Build: ho430 `2a1e7113`, unit `ffa4da98`, binary `074ae399` in `p16`. F7's sensor now books each count under what F10
+found at the same wait. Two fixes, each with a switch, both on:
+- `BC5_DIRECT_XQ_LOOK`: a busy chain-list or slot lock is retried with try_locks for up to 200 us before F10 decides.
+- `BC5_DIRECT_XQ_TARGET_ACB`: compute chains' writes are recorded and flushed too.
+
+| Run | Result | flips/s | Sensor | Sensor by F10 finding: could not look / bound / held only / compute / dcb / no chain / no look | Looks retried / completed by the retry / still blind |
+|---|---|---|---|---|---|
+| h430H1 | NO_CRASH at G+1500, 0 GPU kernel lines (two SELinux lines) | 42.5 | 99 | **99** / 0 / 0 / 0 / 0 / 0 / 0 | 17,082 / 15,864 / 1,218 |
+
+Every remaining stale wait is one where a lock stayed busy for more than 200 us. Compute chains never wrote a waited
+label, and every chain F10 found reached the device in time. Reading: the lock is busy while its holder flushes or
+submits the very chain that carries the release.
+
+Next build (F12, ho430 after F11): `BC5_DIRECT_XQ_LOOK_LONG` (on unless "0") stretches the retry to F10's 2 ms bound.
+Counters say which lock was still busy (the list or a slot).
