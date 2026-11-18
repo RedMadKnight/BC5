@@ -741,6 +741,34 @@ over 100 ms. The ranges do not overlap. MemAvailable is the same within the spre
 The laptop's kernel stream failed again (`sudo -n stdbuf` is not in sudoers); the evidence for "no kernel line" is
 the per-run check and the `dmesg` read at the end of the series (LESSONS R63).
 
+## Result 10: the shared swap (2026-11-18, 06:19-06:30)
+
+The top session's GO after Result 9. `int0432.sh` on the box, one lock line, CPU only:
+
+| | before | after |
+|---|---|---|
+| patch (git diff f266548) | bc39a035 | 940e8f36 (the 0001 patch on this branch; 701 lines differ) |
+| normal | 0de9349b | 4e0c00a2 (12 warnings, all in older code) |
+| lean | 63fda02d | 272685ee |
+| backend archive | 1423af83 | 6eac453e |
+
+Words gained, none lost. Normal: the seven host words (`BC5_DIRECT_UNMAP_NOWAIT`, `_MAPS_FAST`, `_ANON_THREAD`,
+`_REFUSED_ENDS`, `_ANON_EVENTS`, `_VIEWS_KEPT`, `_MAPS_DIFF`), the backend's two (`BC5_DIRECT_SLOT_GROW`,
+`_SLOT_PREALLOC`) and `KYTY_BC5_ANON_SYNC_KICK`. Lean: the backend's two and `KYTY_BC5_ANON_SYNC_KICK`.
+That last word is a measuring knob of exp 0415's thread code (`anon_sync.hpp`, read through `load_stat::env_num`);
+in the lean build it should be compiled out by exp 0419's rule and is not. A follow-up, not fixed here.
+
+Lean smokes on the swapped shared lean build (`raw/smoke0432.out`): ASTRO BOT 200 s PASS (a432S1), the second title
+300 s by time PASS (l432S2); 0 kernel lines and 0 crash lines in both; no new OOM line. No number and no look at the
+picture in either (the lean build prints no fps).
+
+Undo: `bash ~/bc5-work/exp0432/undo0432.sh` (copies under `~/bc5-work/exp0432/swap`, back to bc39a035 / 0de9349b /
+63fda02d / 1423af83, each checked by md5; tested before the swap on a stand-in tree on the laptop). Per run, with no
+build, the normal build takes `BC5_DIRECT_UNMAP_NOWAIT=0 BC5_DIRECT_ANON_THREAD=0 BC5_DIRECT_MAPS_FAST=0
+BC5_DIRECT_SLOT_GROW=0 BC5_DIRECT_SLOT_PREALLOC=0`; the lean build has only the last two.
+The in-place binaries are not the privately linked `0db6fc7c` / `89ee1225` of Result 9 (another link order); the
+sources are the same. The scene A/B was not repeated on `4e0c00a2`.
+
 ## Verdict
 
 Measured first: on the shared build nothing is saturated (4 of 16 cores busy, the GFX ring 39 % busy); the time goes
@@ -753,4 +781,4 @@ slots that grow and are made ahead, R: a refused submission ends the game with a
 - no crash, no GPU fault in 17 runs of builds 4, 5 and the swap form; one OOM kill of the Plasma shell during a load
   whose owner is open.
 Items A, V and X bring nothing as built: A and V are off (V cost speed, A was ordered off), X is never taken while
-`k1r` is on. The swap form is built and smoked on both titles; whether it becomes the shared build is top's decision.
+`k1r` is on. The swap form is the shared build since 2026-11-18 06:21 (Result 10).
