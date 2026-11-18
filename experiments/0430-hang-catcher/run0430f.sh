@@ -31,6 +31,11 @@ sumof() { (cd "$1" && find PPSA03671 -type f -exec md5sum {} + | sort -k2 | md5s
 m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }
 mkdir -p "$R" || exit 1
 pgrep '^kyty_emulator' > /dev/null && { echo "an emulator is running: not started"; exit 1; }
+# The top session's rule of 2026-11-17 16:20 (exp 0432's run hung the GFX ring at 16:15, three minutes after h430C6's
+# successful compute ring reset): no run after a GPU reset, even a successful one, until the box has been rebooted.
+if sudo -n dmesg 2> /dev/null | grep -E 'amdgpu [0-9a-f]{4}:[0-9a-f]{2}:' | grep -qiE 'ring .* timeout|reset (succeeded|failed)|GPU reset|device wedged'; then
+  echo "a GPU reset or ring timeout since this boot (sudo dmesg): reboot the box first: not started"; exit 1
+fi
 if [ "${MODE:-}" = name ]; then  # exp 0425: the named snapshot of F464's route save, made once from exp 0358's copy
   RS0=$W/exp0425/inputs/saves-live-47aefd45  # exp 0358's copy, restored from the NAS archive of 2026-11-08
   [ ! -e "$NS" ] || { echo "$NS exists ($(cat "$NSF" 2> /dev/null)): not made again"; exit 0; }

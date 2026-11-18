@@ -438,3 +438,488 @@ then exp 0428's `undo0428b.sh`.
 Lean smoke (`smoke0430.sh`, 07:29–07:35): s430c ASTRO BOT 45 s PASS. s430u, the second title, 300 s by time, RT on:
 PASS, key lines 33 of 33, compute engine time 31.9 s at 150 s (way 2 on). Kernel and crash lines 0 in both, and no
 real pad keys. The first start at 07:19 refused because LEAN_WANT needs the full md5, not 8 characters.
+
+### The scene A/B, the route A/B of F5, the shared control's hang h430C4, F6 (2026-11-17 10:00–13:30)
+
+**His scene** (his slot-4 save, a read-only snapshot `~/bc5-data/saves/PPSA03671-20261117-0946-play`, no input after
+the load, 600 s; `scene0430.sh`, `scenewin.py`). From G: S h430S1b (shared 0de9349b, fix on) 30.4 flips/s; N h430N1
+(the same binary, `BC5_DIRECT_XQ_ACQUIRE=0 BC5_DIRECT_XQ_FENCE=0 BC5_DIRECT_XQ_PENDING=0`) 30.5; P h430P1 (F5,
+e7759205) 33.5. One run each, all clean. In this scene the fix costs nothing, and F5 removed ~99.8 % of F4's fences
+(79,448 skipped, 130 left).
+
+**F5** (`mkf5.py`, unit 574301e4 on the shared b8afba59): F2/F4 skip a writer job whose stale case F3 excluded at
+its submit (a preset, or not stale with no other writer or kept wait in flight). Route h430P2: 43.0 flips/s, clean,
+F5 skipped 209,811, F4 fences 358.
+
+**h430C4, the shared control (fix on) hung at 11:58:59**: gfx_0.0.0 timeout (reset ok), then comp_1.3.0 timeout, reset
+failed, bc5-gpu-watch rebooted the box. No VM fault before it. The timed-out acb #1531372's one wait: dword 62,
+0x12004b4fc8 == 0, met → DROPPED (F848's label). It then ran indirect dispatches with junk grids. Its writer for this
+frame was not yet submitted: the label still held the last frame's 0, nothing pending, so F2/F4 had no job to order
+on, and F3 (at the writer's submit) came too late. The gfx dcb #1531383's three kept waits are a consequence: one
+of them, 0x12004b5038, is written by the stalled acb. Records: `~/bc5-data/captures/play-20261117-1140/gc`,
+devcoredump `20261117-115900-devcd1.txt`.
+
+**F6** (`mkf6.py`, one hook in submit_split's keep test): a satisfied wait on a cross-queue label with no writer in
+flight is kept for the GPU, so the GPU decides it when its queue reaches the packet, as on the console. Guards: not
+when the label's writer (as learned) runs on the waiter's own ring; a kept wait whose label does not come back within
+1 s with no writer in flight is journaled. P' (F5 + F6, d4072b15) h430Q1: 42.6 flips/s, clean. F6 kept 510,926 waits;
+in the sampled journal 43 acb against 53 dcb (the journal samples the first 64 and every 16,384th). One hold of 1.1 s:
+
+    ho430 F6: a wait kept on ring -1 for 0x12004b5038 (== 0x0) 1089 ms ago: the label holds 0x907616589 and no writer is in flight (1 such)
+    frame profile: t 559.141 s, 1117.8 ms since the last flip; game thread inside the host 1073.2 ms (sync 0.7, hints 0.4, prepare 1070.2, list 0.1, cs 1.7, ...)
+    direct: 16331 views; +0 BOs (69, 11120.0 MiB pinned); maps +0 -6 (16851)
+
+**For exp 0432 (the top's hand-over):** the host's submit preparation blocked the game thread 1,070 ms. That frame's
+breakdown reads `prepare = filter 2.1 + tracker 0.3 + cu 1.1 + nested 2.7 + copy 1063.8`: the backend's copy step (a
+slot buffer resize, exp 0432's reading, checked here), not the remap the next line shows, as first written here. It
+waited behind GFX work held by a kept wait whose writer the same thread had yet to submit. The console has no such CPU-side dependency; only a ~1 s bound in that wait kept it from a TDR. It is a
+stutter source of its own. Log: `~/bc5-data/captures/play-20261117-1245/gc/direct.log` near t 558–559 s.
+
+**P'' (13:20, the top's order):** F6 for compute-ring waiters (acb) only (unit efef7e1d, binary 40890474, `p7/`;
+`IN_CHAIN=1` builds inside this experiment's own run lock at nice 19). From h430Q2 the A/B's F arm is P''; h430Q1
+stays the record of the broad F6 (`ho430.f6broad.cpp`). The gate for a P'' swap: no hang, mean ≥ S − 1 flips/s, no F6
+hold over 500 ms.
+
+### h430C6, exp 0432's d432V15, and F7 (2026-11-17 16:12–18:00)
+
+**h430C6** (the shared control, 16:11:57): TCP READ faults at junk addresses (K4), then comp_1.0.1 timeout, reset
+succeeded (fault record `captures/faults/20261117-161159`). The timed-out acb #1868453 has one wait, dword 88, label
+0x12004b77c8 == 0, met → dropped: the F848 pattern on a slot of the label family that F3 had never learned (it learns a
+label only when a wait on it meets a pending writer on another ring). **d432V15** (exp 0432's build 3, his scene,
+17:06:42): acb #93564's wait at dword 58 on the same 0x12004b77c8 was KEPT for the GPU ("ring order … keeps its wait")
+and the acb still ran junk grids. The GPU executed the wait while the label still held the last frame's 0. So no look at
+the label's value, on the host at submit or on the GPU at the packet (F6/F6b), closes this window. P''' (F5 + F6b) is
+built-ready (`ho430.p3.cpp`, unit bf8ffc67) and not tested.
+
+**Who writes the busy value, and in what order.** In X1's G record (300 s) all 234 GPU writes registered to the
+0x12004b…c8 labels write 0, F3 made no preset, and 123 waits saw 0x9076d6d8c: the busy mark is a plain CPU store by the
+title. The title's order per label and frame: mark → the dcb with the release (RELEASE_MEM 0) submitted → the acb with
+WAIT == 0 submitted. Releases and waiting submissions strictly alternate (0x12004b4fc8: 24 releases, 24 waits, never
+two waits without a release between). 0x12004b37c8 takes 4 waits a release. The xx38 labels (the acb releases, the
+dcb waits) alternate with a rare harmless swap. In X1 (build 5, slower) the mark always landed before the dcb's
+submit; in today's faster shared runs F3 had to preset at the dcb's submit 243 times (h430C4). In the failures the acb
+came before both the mark and its dcb: a CPU-side race between title threads.
+
+**F7, "count, not look"** (`BC5_DIRECT_XQ_COUNT` / `BC5_0430_F7`; unit 23c50de2 with F5, F6, F6b and F7; mkf6.py):
+- **Count:** per label, for acb waiters on == waits, the balance of releases (writes of the waited value registered
+  at a writer's submit on another ring) minus waiting submissions, counted from a release on. A label is stable 1:1
+  after 32 events with the balance in {0, 1}.
+- **Hold:** a waiting submission that would take a stable label below 0 has its release still to come. Its submitting
+  thread is held, at most 250 ms, until the next release is registered. Then F3/F4/F5 and the host's keep test see the
+  writer pending.
+- **Limits (the top session's):**
+  - In process only: a map in the in-memory store, no file, nothing carried between runs.
+  - Never held when the waiter's thread registered the label's last release (counted as "same thread").
+  - A bound reached is counted and journaled, and the label resyncs.
+  - The 60-s line shows the labels, the holds with a histogram (< 1, < 5, < 20, < 50, < 250 ms, bound), and the
+    same-thread refusals.
+- **Gate (the top's):** no GPU hang or fault, mean ≥ S − 1, F7 bounds 0, no hold over 50 ms on the game's critical
+  path.
+
+**The open question: how long after the acb's submit the mark lands.** It cannot be read from C4, C6 or V15: the shared
+runs carry no G, and the probe sees the label only at the stall. F7 measures it at run time: each hold records when the
+label first stops holding the waited value, as a histogram (< 0.1, < 1, < 5, < 20 ms, later, never) and in the hold's
+journal line. That time also counts F3's preset at the writer's submit, which comes just before the release is
+registered. If the mark lands within microseconds, the console's own submit-to-fetch latency is what hides the window,
+and the faithful fix is ordering, not counting.
+
+**The title's threads.** The records name only the host side: the kernel attributes every job to the host thread
+`bc5-ring`. Which guest threads mark the label, submit the dcb and submit the acb, and at what guest priorities, is not
+in the records. F7's hold line names the waiter's thread and the thread that registered the last release, so the first
+F7 run answers it for the two submits (for exp 0429's R). The mark is a store; its thread stays unseen.
+
+### The root: the host's chain hold reorders the title's dcb and acb (F848 reinterpreted), and F8
+
+F7's first holds in h430K1 named the threads: every held acb came from `bc5-ring` (the host's queue consumer), and every
+release was registered from the title's `Render Thread` (once from `bc5-chainwd`). The code of the shared unit
+(b8afba59) shows why:
+- **acbs:** the title writes them into its hardware-style compute queues. `queue_consumer_thread` (`bc5-ring`) polls
+  the write pointers at 1 kHz and runs `submit_split` on what it finds, at once.
+- **dcbs:** they go through the title's submit call on its own thread. With `BC5_DIRECT_CHAIN=2` they are appended to
+  that thread's chain, which ADR 0010 section B holds open across ioctls for up to 2,000 µs. It is submitted by the
+  owner's next flush, the watchdog `bc5-chainwd`, or `chain_observe()` at the title's observe points.
+- **At an acb's wait,** `submit_split` calls `chain_flush(1)` only when the wait is not satisfied, and that flushes the
+  calling thread's own chain only.
+
+So a dcb carrying the release can sit unsubmitted in Render Thread's held chain, its writes not yet registered, while
+`bc5-ring` decides the acb's wait. F2/F4 then see no pending writer, F3 has not preset, and the label holds the last
+frame's 0. **The "late mark" of F848, C4, C6 and V15 was this host-made reordering, not the title's timing.** The
+title's own order (dcb, then acb) is inverted by the chain hold, which is why the console never shows it. F7's holds
+(7 of 8 under 1 ms) ended exactly when that chain was submitted.
+
+**F8** (`BC5_DIRECT_XQ_ORDER` / `BC5_0430_F8`; unit 470daa2c, binary cffa67a3 in `p9/`, with F5, F6, F6b and F7
+present): at an acb's first wait, every other thread's held chain is submitted first. It calls `chain_submit(slot,
+11, true)`, the non-blocking foreign path the watchdog uses: it skips a chain whose owner is inside its own submit and
+does not block on ADR 0013 holds (empty since build W). The existing paths then decide with the writers registered. No
+stamps, no counting, no labels, nothing learned. The 60-s line counts the observe points, the chains submitted and
+their time. Run with F7 on as a check: if F8 restores the order, F7's holds go to about zero.
+
+### F8 v1 froze h430K2; the lesson; v2
+
+**h430K2 (F8 v1, b7d20e5c) froze at t 38.914 s on the start screen.** After that only the memory thread logged until the
+160-s route cap (NOT_ROUTED). There was no kernel line and no GPU reset: an unbounded host deadlock. v1, on `bc5-ring`,
+held `g_chains_mu` while calling `chain_submit` on another thread's slot. Its try_lock/unlock of the slot's `flush_mu`
+left a window in which the owner took `flush_mu`, so `chain_submit` blocked while `bc5-ring` still held `g_chains_mu`.
+
+**Lesson (for LESSONS.md, the top session's call).** "This is the same pattern as the watchdog, so it is safe" was
+wrong. The watchdog can block on a slot because nothing waits for the watchdog. `bc5-ring` is the compute queue's
+consumer: the owner's own path, or the title, can wait for its progress, so any blocking lock it takes on another
+thread's state can close a cycle. On a consumer thread, take only try_locks, never submit another thread's work, and
+bound every wait. A pattern is safe only on a thread nothing depends on.
+
+**v2** (unit dda5852f, binary a456d555, `p11/`): `bc5-ring` takes only try_locks (`g_chains_mu`, each slot's `mu`) and
+never submits another thread's chain. It counts the other threads' held chains (not in submit, no ADR 0013 hold), sets
+their open time back so `bc5-chainwd` finds them due, wakes it, and polls every 20 µs for at most 2 ms (the hold bound)
+until none is held. The 60-s line counts observe points, chains made due, gone within 2 ms, bound reached, and "could
+not look". v1 is kept as `ho430.f8v1.cpp`.
+
+**Arm X** (the top's root-cause control, no build): `BC5_DIRECT_CHAIN=1` closes a chain within each ioctl, as before
+F224's hold across ioctls (the shared default is 2). The shared binary has no F7 sensor, so X runs on the F7 binary
+d894ec3b with `BC5_DIRECT_CHAIN=1`. If the hold is the reordering, F7's holds in X drop to about zero.
+`ab0430.sh` takes a third arm X (`XBIN`, `XTAG`, `XWORDS`).
+
+### What can go once the reordering is gone (the maintainer's question, 2026-11-17 20:00)
+
+Counters are per 1,560-s route run: P2 (F5), Q1 (broad F6), K1 (F7), E1 (F8 v2, 660 s), Z1 (X: F7 with
+`BC5_DIRECT_CHAIN=1`). The decisive pair is K1 (hold on) and Z1 (hold off), with the same binary and route.
+
+| Piece | What it does | Cost per run (counters) | Still needed without the reordering? | Simplest end state |
+|---|---|---|---|---|
+| F2 (`XQ_PENDING`) | CPU wait for a pending writer at a satisfied wait | waited 0 in every run (F4 acts first) | no | remove |
+| F3 (`XQ_ACQUIRE`) | preset a stale label at the writer's submit | ~600 presets with the hold; **0 in Z1** | no, if F9 runs show 0 presets as Z1 does; F5 uses its per-buffer result | remove with F4/F5, after the check below |
+| F4 (`XQ_FENCE`) | kernel CS dependency on a pending writer job | 232–358 fences; **393 in Z1** | unclear: it still acts with the hold off; on what is not yet known | test off on F9 (below); remove if no hold or hang appears |
+| F5 (`XQ_PRECISE`) | spares F4 when F3 excluded the stale case | 55 k (Z1) – 216 k skips | only to make F4 cheap | goes with F4 |
+| F6 / F6b (`XQ_KEEP`, `XQ_KEEP_ALL`) | keep a satisfied cross-queue wait for the GPU | 511 k keeps (Q1), one 1.1-s hold; off since | no (V15: a GPU-side decision does not close the window) | remove, with its 1-s watch |
+| F7 (`XQ_COUNT`) | hold an acb whose release is not yet submitted | 330 holds, 130 ms (K1); **0 in Z1** | no; it is the sensor proving F9 | keep as the sensor until F9 is shipped, then remove |
+| F8 v1 / v2 (`XQ_ORDER`) | flush other threads' chains at an acb's wait | v1 deadlocked; v2 36 s of `bc5-ring` per 660 s, no effect | no | remove |
+| F9 (`XQ_FLUSH`) | submit a chain at the call's end when it carries a memory write | measured in its runs | the fix | ship |
+| ring-order keep (exp 0132, 0428) | keep an unsatisfied wait whose writer is pending for the GPU | 330 k–1.4 M keeps | **yes**: real cross-queue waits | stays |
+| `g_plw` registry (exp 0055) | the writes of submitted jobs, for `ring_will_satisfy` | one registration per submission | **yes**: the keep test reads it | stays |
+| timeout probe | decodes the stalled buffers at a ring timeout | only at a stall | yes, diagnostics | stays |
+| ho430 hooks | `at_wait`, `job_submitted` (a PM4 parse of every submitted job: ~2.3 M a run), `job_done`, `given_up`, `f3_before_submit` (a scan of every writer: ~1.6 M a run), `keep_cross`, `XqSubmitCount` | the parses above | only for F3/F4/F5/F7 | with F2–F8 gone the whole ho430 block goes; F9 is two hooks in the chain code |
+
+**The path to the end state** (no swap before it):
+1. F9 runs with F7 on as the sensor must show F7 holds 0 and F3 presets 0, as Z1 does.
+2. One F9 run with F2–F8 off by words, F7 still sensing. It must show holds 0 and no hang. F4's 393 fences per run without the hold are the open item.
+3. Then the shared form is F9 alone, its two hooks in the chain code. ho430 leaves the shared unit, and the per-submission parses and scans go with it.
+
+**Pooled runs, not repeated (the top's rule):**
+- S on the route (0de9349b, the swap words): C4 (hang), C5 44.2, C6 (GPU fault), C7 42.9. C8 is dropped.
+- F7 on the route (d894ec3b): K1 42.0 and K3.
+- X (d894ec3b + `BC5_DIRECT_CHAIN=1`): Z1 37.2. A second X (Z2) only if a speed comparison needs it.
+
+### The (a)/(b) data (2026-11-17 19:08–21:25)
+
+All on the route: 1500 s of play, RT on, way 2.
+
+| Run | Build and words | flips/s | Result | F7 |
+|---|---|---|---|---|
+| Z1 | X: F7 d894ec3b + `BC5_DIRECT_CHAIN=1` | 37.2 | clean | 0 holds |
+| K3 | F7 d894ec3b (hold on) | 45.9 | clean | (pooled with K1: 330 holds) |
+| L1 | F9 d0846b90 (F5 + F7 sensor + F9) | 36.1 | clean | 0 holds; F9 flushed 2,885,826 of 2,885,828 chains |
+| U1 | (b) as it would ship: 5ffa6c83, `BC5_DIRECT_CHAIN=1`, every ho430 fix off, F7 count-only sensor | 39.4 | clean | sensor 0 |
+| U2 | the same | 42.1 | clean | sensor 0 |
+
+**F9 ≈ mode 1:** nearly every chain the title submits carries a GPU memory write another queue could wait on, so
+flushing on such a write flushes almost all of them. A narrower F9 would need a label set, which is ruled out.
+
+**F4 with the hold off** (Z1 393 fences, L1 445) acts on satisfied waits whose writer job is still running on the other
+ring: acbs on the c8 family behind a gfx writer, dcbs on the xx38 family behind a compute writer. With F7 at 0 and F3
+presets at 0, these are the writer's own release already executed, so the fences are redundant. F5 cannot skip them
+because F3 records only buffers the host submits unchanged.
+
+**Pooled speed (no repeated runs, the top's rule):**
+- Hold on: C5 44.2, C7 42.9, K1 42.0, K3 45.9; mean 43.75, spread 42.0–45.9. S also had a hang (C4) and a GPU fault
+  (C6) in its 4 route runs today.
+- Hold off: Z1 37.2, L1 36.1, U1 39.4, U2 42.1; mean 38.7, spread 36.1–42.1.
+- Difference: about 5 flips/s, about 11.5 %; the spreads touch.
+
+**The choice (the maintainer's, through the top session):**
+- **(a)** keep the hold and ship F7: the stale cases are caught by counting, for about 0.08 % of run time, with 0
+  bounds so far. It carries the ho430 machinery.
+- **(b)** turn the hold off for the second title, one word in its title row: no reordering and no fix code. About 11 %
+  slower until exp 0432's speed work wins it back.
+
+### F10, the targeted flush (2026-11-17/18): G1 misses the gate
+
+He asked whether the hold could be fixed instead of choosing (a) or (b). F10 (switch `BC5_DIRECT_XQ_TARGET`, on unless
+"0"; ho430 `b08c0c1f`, unit `0222c4ba`, binary `878ff785` in `p15`) keeps the hold but records, per open dcb chain,
+the addresses its packets write (RELEASE_MEM/EOP data, WRITE_DATA). At a compute buffer's wait on label L, every other
+thread's open chain that writes L goes to the device first: it is made due for the watchdog, or flushed by its owner at
+the call's end if it is mid-submit. bc5-ring then polls, at most 2 ms and with try_locks only (R62), until no such chain
+is open or in flight. A chain counts as in flight from the swap until submit_now has registered its writes. Nothing is
+learned or kept between runs.
+
+The top's gate for a swap: three clean route runs, F7's sensor at 0 in all of them, no GPU hang or fault, and a mean of
+at least 42.75 flips/s.
+
+| Run | Result | flips/s | F7 sensor (stale, not held) | F10: waits / with a writing chain / reached the device within 2 ms / bound / could not look |
+|---|---|---|---|---|
+| h430G1 | NO_CRASH at G+1500, 0 kernel lines | 42.7 | **182** | 863,311 / 1,756 / 1,756 / 0 / 18,024 |
+
+F10 does what it targets: every chain it found reached the device within 2 ms. But 182 stale waits still got through,
+so there was no G2 and no swap. The box went to exp 0432. Open question: where the 182 come from. The candidates are
+the 18,024 waits where F10's try_lock found the chain list busy, chains under the ADR 0013 hold (F10 skips them), and
+compute chains (their writes are not recorded). The next step is counters only, to split the 182 by cause.
+
+### F11 (2026-11-18): the 182 split by cause, and the look retry
+
+Build: ho430 `2a1e7113`, unit `ffa4da98`, binary `074ae399` in `p16`. F7's sensor now books each count under what F10
+found at the same wait. Two fixes, each with a switch, both on:
+- `BC5_DIRECT_XQ_LOOK`: a busy chain-list or slot lock is retried with try_locks for up to 200 us before F10 decides.
+- `BC5_DIRECT_XQ_TARGET_ACB`: compute chains' writes are recorded and flushed too.
+
+| Run | Result | flips/s | Sensor | Sensor by F10 finding: could not look / bound / held only / compute / dcb / no chain / no look | Looks retried / completed by the retry / still blind |
+|---|---|---|---|---|---|
+| h430H1 | NO_CRASH at G+1500, 0 GPU kernel lines (two SELinux lines) | 42.5 | 99 | **99** / 0 / 0 / 0 / 0 / 0 / 0 | 17,082 / 15,864 / 1,218 |
+
+Every remaining stale wait is one where a lock stayed busy for more than 200 us. Compute chains never wrote a waited
+label, and every chain F10 found reached the device in time. Reading: the lock is busy while its holder flushes or
+submits the very chain that carries the release.
+
+Next build (F12, ho430 after F11): `BC5_DIRECT_XQ_LOOK_LONG` (on unless "0") stretches the retry to F10's 2 ms bound.
+Counters say which lock was still busy (the list or a slot).
+
+### F12 (2026-11-18): the 2 ms look; the list lock is held across submits
+
+Build: ho430 `0983721c`, unit `94b237ed`, binary `0eec154a` in `p17`. Switch `BC5_DIRECT_XQ_LOOK_LONG` (on): the look
+retries up to 2 ms. New counters: which lock was still busy, and bc5-ring's retry time.
+
+| Run | Result | flips/s | Sensor | Looks retried / completed / still blind (list busy / slot busy) | Retry time, longest |
+|---|---|---|---|---|---|
+| h430H2 | NO_CRASH at G+1500, 0 kernel lines | 42.1 | 7 (all blind looks) | 13,673 / 13,644 / 29 (29 / 0) | 1,040.8 ms over 1,604 s, 2.71 ms |
+
+Every blind look met the chain-list lock `g_chains_mu` busy. Patch 0001: `chainwd_thread` calls
+`chain_submit(*s, 9, true)` and `chain_flush_all` calls `chain_submit` for every chain while holding that lock, so it
+is held across real submit ioctls. That is exactly when the chain carrying the release is on its way to the device.
+
+F13 (`BC5_DIRECT_XQ_REGISTRY`, on unless "0"; three more unit hooks, 12 in all) gives F10 its own registry of the slots.
+Its mutex is taken only by `chain_register`, `~ChainSlot` and F10, and nothing submits under it. F10's look and its
+pending check use it instead of `g_chains_mu`.
+
+### F13 (2026-11-18): F10's own registry; no blind looks left
+
+Build: ho430 `42ba6b94`, unit `6e8e1492` (12 hooks), binary `7c0bd18d` in `p18`; `BC5_DIRECT_XQ_REGISTRY` on and
+`BC5_DIRECT_XQ_LOOK_LONG` kept as a fallback. A busy slot is waited for as a pending write, never skipped. The
+conditions met in code:
+- Lifetime: F10 holds the registry mutex across every slot try_lock and read. `~ChainSlot` takes it before the slot's
+  memory goes.
+- Lock order: the registry mutex is a leaf. `chain_register` and `~ChainSlot` take `g_chains_mu` and then the
+  registry; F10 try_locks the registry and then a slot. bc5-chainwd and `chain_flush_all` never take the registry.
+- In flight: `chain_submit` holds only `flush_mu` around `submit_now`, so a slot mid-ioctl is lockable and its
+  `f10_flight` set answers "write pending, wait".
+
+| Run | Result | flips/s | Sensor | Blind | Busy-slot waits / in-flight hits | Chains found / reached the device in time / bound | F10 time |
+|---|---|---|---|---|---|---|---|
+| h430H3 | NO_CRASH at G+1500, 0 kernel lines | **45.3** | **1** (at the bound) | 0 | 13,577 / 1,735 | 15,312 / 15,305 / 7 | 2,001 ms over 1,603 s |
+
+The night's sensor: G1 182, H1 99, H2 7, H3 1. Next: why 7 found chains did not reach the device within 2 ms.
+
+### H4 (2026-11-18 06:31): F13 + F14 on 0432's patch 940e8f36 (binary `f61d5986`, unit `8a326d6c`): a GPU hang
+
+**Build.** F14 counts, at each 2 ms bound, what every still-pending chain is doing: slot busy / in flight / open in submit / held / waiting for the watchdog / could not look / gone. It is counters only.
+
+**Result.** h430H4 hung the GPU at 06:55:26, 1,381 s in:
+- the kernel shows comp_1.2.0 timing out (its ring reset succeeded), then gfx_0.0.0 timing out on thread bc5-ring;
+- the gfx reset failed, and bc5-gpu-watch rebooted the box (SysRq s, c);
+- the kernel stream has no VM or page-fault lines.
+
+Streams: [raw/kernel-stream-h4.txt](raw/kernel-stream-h4.txt), [raw/live-stream-h4.txt](raw/live-stream-h4.txt).
+
+**Corrected the same day: this IS the F852 pattern (first written as "not the F848 family", which was wrong).**
+- The hung acb #1981977 has one wait, at dword 62 on 0x12004b4fc8 == 0: "now 0x0 (met) DROPPED", with 0 kept for the GPU. F852 had the same label at the same dword.
+- "met" is read at probe time. "DROPPED" means the host judged the wait satisfied on the value at submit, which can be the stale "free" 0.
+- Then come indirect dispatches whose arguments are floats (largest grid 1.8e19), and comp_1.2.0 timed out first: as in F852/F853.
+- The F7 sensor did not count this wait.
+- "HS user data address 0x0 at 106x not mapped" is not a signature: older probes have it too (private dumps of 2026-10-27, exp 0294).
+
+The same run had 0432's build 5 on: mappings dropped while a ring was busy 5,352; BOs retired while busy 47; sync+hints longest 853 ms. Whether that played a part is open.
+
+**Counters at 1,380.9 s:**
+
+| Counter | Value |
+|---|---|
+| Sensor | **3**, all at the bound |
+| Blind / could not look | 0 / 0 |
+| F10: chains found / gone / bound | 13,047 / 13,033 / 14 |
+| F13: busy-slot waits / in-flight hits | 10,816 / 2,231 |
+| **F14 at the bound**: busy / flight / in submit / held / watchdog / no look / gone | **0 / 13 / 0 / 0 / 0 / 0 / 1** |
+
+**What F14 shows.** Every bound case is a chain still in flight: it is being submitted, and its writes are not yet registered after 2 ms. The remaining late cases come from how long the submit takes, not from locking.
+
+**Next (off-box idea, F15).** Register a chain's write set at the swap, before submit_now. An acb wait then sees the writes as soon as the chain exists.
+
+**Swap rule.** Not met (a hang, and the sensor is not 0). No swap; the shared builds are unchanged.
+
+### H5 (2026-11-18 10:14): H4 repeated with 0432's no-wait unmap off: a GPU hang again
+
+**Setup.** h430H5 used H4's binary (`f61d5986`) and H4's words plus `BC5_DIRECT_UNMAP_NOWAIT=0`. Its d432 line confirms "unmap-nowait off". The box was idle, with 0 reset lines before the start.
+
+**Result.** The run hung the GPU at 10:31:31, about 17 minutes in:
+- only gfx_0.0.0 timed out (H4 also had comp_1.2.0);
+- the ring reset failed, and bc5-gpu-watch rebooted the box at 10:32.
+
+Streams: [raw/kernel-stream-h5.txt](raw/kernel-stream-h5.txt), [raw/live-stream-h5.txt](raw/live-stream-h5.txt).
+
+**Probes:**
+- the hung dcb #1453653 (101,387 dwords) has 10 waits, all met and run; the acb #1453664 has 1 wait, met;
+- so, as in H4, no stale cross-queue wait was involved;
+- the same two lines as in H4 appear: "HS user data address 0x0 at 1061 not mapped" (the same offset), and a garbage "largest grid" (18,445,907,058,222,237,802 groups);
+- checked afterwards: the HS line is a common probe artefact (older probes have it). The junk grid is the real marker (0 of 4 older dcb probes and 1 of 6 acb probes had one). H5's acb wait was kept for the GPU; the detail of the H5 hang needs its direct.log, which is still only on the box.
+
+Turning the no-wait unmap off did not stop the hang. In that run, d432 counted 2,856 blocking drains (582 ms) and 0 mappings dropped while busy.
+
+**F10 family at 960.9 s:**
+
+| Counter | Value |
+|---|---|
+| Sensor | 5, all at the bound |
+| F14 at the bound: in flight | 10 of 10 |
+| F10: found / gone / bound | 8,717 / 8,707 / 10 |
+
+This is the same picture as H4.
+
+**F16 build** (made after H5, top's order). F16 is the in-flight wait: at F10's bound, wait for the writer's submit_now to return, with a 50 ms bound, and do not wait on a writer that is in back-pressure or draining the GPU. Binary `1e8b5557` (`~/bc5-work/exp0430/p20`), unit `5facf181`, ho430 `ae58d23a`, 14 hooks. The shared build was `4e0c00a2` before and after. F16 has not run yet; its slot comes from top.
+
+### H5's hung jobs, F17 (the F852 sensor), and the F852 options (2026-11-18 midday, offline)
+
+**H5's probes** (log copied to the laptop at `data-0430/h430H5-direct.log.gz`; not committed):
+- The acb #1453664's single wait, at dword 58 on 0x12004b53c8 == 0, was kept for the GPU and is "NOT met": the label still holds the busy mark 0x9076d6d8c. The acb is waiting for a release that never came.
+- The hung dcb #1453653's 10 waits were all kept and met. Its indirect dispatches read float data as arguments (at 0x118c5f0940 and on; largest grid 1.8e19), and only gfx timed out.
+- So H5 is a junk-grid hang in a dcb, not the F852 drop in an acb. Who should have written those arguments is open.
+
+**Why F7's sensor missed H4's wait.** It starts over whenever a label's waiters change rings, and it absorbs every imbalance while a label is "learning" (fewer than 32 clean waits). F17 (`BC5_DIRECT_XQ_STALE`, on unless "0", counters and lines only) has neither:
+- per acb == wait label, it counts the releases of its reference registered from any ring since the label's last acb wait;
+- a wait that passes at submit with none counts as "the F852 pattern";
+- each line gives the label, the ring, the time since the last release, and F10's finding (off / no writer chain / a writer chain).
+Labels with several waits per release (0x12004b37c8 takes 4) show as candidates too; the lines tell them apart.
+ho430 `115af6e9`, unit `c30922e6` on f574f460 (`6d074404` on b8afba59). Not built yet.
+
+**The F852 options as they stand.** The title's order per label and frame is: CPU mark → dcb with the release submitted → acb with WAIT == 0 submitted (see above).
+- **Why the acb overtakes.** The hold keeps the dcb's release in Render Thread's open chain, while the acb goes straight to its compute ring. If the CPU mark is late (243 presets in h430C4), the acb's wait sees the previous frame's 0, on the host and on the GPU alike (V15).
+- **(b) Hold off** (`BC5_DIRECT_CHAIN=1`): no reordering; about 11 % slower (U1 39.4, Z1 37.2).
+- **F6/F6b (keep the wait for the GPU):** failed in V15, because the GPU too reads the stale 0 when the mark is late. Keeping alone cannot close it.
+- **F3 (preset at the writer's submit):** acts too late with the hold, because the writer's submit is the delayed thing.
+- **F10 (flush the chain that writes L before the acb):** gets the dcb to the device first, but the two rings run independently, so the acb's wait can still read the stale 0.
+- **New, F10 + F4 together (never tested; F4 was off in every F10 run):** F10 makes the held writer a submitted job before the acb goes, and F4 then gives the acb a kernel CS dependency on that job, so the acb cannot start before the release has run. This is top's "flush the releasing dcb before the acb" made binding on the GPU. It is workable when the writer is in an open chain, which the title's order guarantees: the dcb is issued before the acb. It does not need to know the writer in advance; the label's write set in the open chains (F10) finds it. Cost: F4's fences (232–445 a run before).
+- **A hold that never holds a chain writing a label of the family.** Close a dcb chain at once when it holds a RELEASE_MEM to a label an acb has waited on. Simple and narrow, but it needs the family learned at run time (F3's way, missed 0x12004b77c8 in h430C6) or every label an acb waits on (the F17 map).
+
+**F17 extended for E1, and the F10 + F4 assumption** (ho430 `ec257bad`, unit `3a6dbd3b` on f574f460, `100e70db` on b8afba59):
+- **The assumption.** Under the title's order (CPU mark, then the dcb with the release, then the acb), F10 makes the writer a submitted job and F4 makes the acb depend on it. The acb's == 0 can then be met only by this frame's release, **provided the title's CPU mark lands before the acb's submit**. If the mark is later than that, the wait reads the previous frame's 0 at submit, and the pending writer F4 sees can only be an older release.
+- **Counting the failures.** F17 now runs after the pending-writer lookup. A stale candidate that F4 will fence (F2 and F4 on, satisfied, a pending writer on another ring) is counted as "fenced by F4", and its line says the assumption failed. "Fenced" ignores F5's skips and F2's cycle refusals, which are off or journaled in these arms.
+- **E1 needs both switches.** F4 acts only with F2 on: at_wait returns before F4 when `BC5_DIRECT_XQ_PENDING` is 0. So E1's words are `BC5_DIRECT_XQ_PENDING=1 BC5_DIRECT_XQ_FENCE=1`. F4 returns before F2's own CPU wait, so F2 adds no wait.
+
+**Separate open question (not this fix's target): H5's junk-grid dcb.** In h430H5 a dcb's indirect dispatches read float data as their arguments (at 0x118c5f0940 and on), with every one of its waits kept and met. Which job writes those arguments, and why they were not written in time, is not known. F17 and F10 + F4 do not address it.
+
+**Base for D1/E1 (top's decision C, 2026-11-18).** D1 and E1 run on the shared tree as 0429's R swap leaves it: patch ef2ff54f, R on by default (`KYTY_BC5_0429_RR`), exp 0425's wake slice removed. This is the form that ships. bc5LleAgc.cpp is unchanged by that swap (still f574f460, 940e8f36's GPU side), so the build applies as before. D1 against E1 is the comparison: both share this base. H4/H5 (940e8f36, wake slice on, no R) are not on exactly the same base.
+
+### D1 (h430I1, h430I2) and E1's first run (h430J1), 2026-11-18 14:18–15:39
+
+Binary `034e3b24` (p21: ho430 `ec257bad`, unit `3a6dbd3b`), on the R-on swapped tree (shared normal `a9b4f00b` unchanged by the build). The tags D/E were already used on 11-17, so D1 runs as h430I*, E1 as h430J*.
+
+| Run | Arm | End | flips/s | gaps >100 ms (s), longest | Kernel | F17 stale / acb == waits | F17 by F10 finding | F4-fenced |
+|---|---|---|---|---|---|---|---|---|
+| h430I1 | D1: F10–F14, F16 off, COUNT=2 | NO_CRASH, G+1500, 1609 s | 38.0 | 82, 2651 ms | 0 | 186,332 / 788,217 | all "off" | 0 |
+| h430I2 | D1 | NO_CRASH, G+1500, 1608 s | 39.2 | 18, 2059 ms | 0 | 177,145 / 788,658 | all "off" | 0 |
+| h430J1 | E1: PENDING=1, FENCE=1, F10–F14 on, F16 off | **GPU fault** at t 1432.97 s (15:38:51) | – | – | gfxhub TCP write permission faults, then comp_1.1.0 timeout, ring reset failed, bc5-gpu-watch reboot | 152,616 / 681,145 | no chain 150,980 / chain 1,616 / other 20 | 90,112 |
+
+**F17 is too blunt.** About 23 % of all acb == waits count as stale in every arm, at a steady rate. The journaled hits sit almost all on 0x12004b37c8, where several acbs wait on one release: the first wait takes the count, the rest look stale. The total cannot single out F852. Top's decision: no rebuild in this slot; a sharper F17 (stale only when the same acb position, ring plus IB offset, waits again with no release in between) is written offline for the next build.
+
+**h430J1's fault: the F852 class, ending in a write fault.** Evidence on the laptop at `data-0430/h430J1/` (fault record `faults/20261118-153853`, the run's `direct.log` and timed-out IBs, `n/raw`, the journal of boot −1; not committed):
+- Kernel: `GCVM_L2_PROTECTION_FAULT_STATUS 0x00541051`, client TCP, PERMISSION_FAULTS 0x5, RW 1 (writes), at 0x142e90b000 and 0x142e9a9000, thread bc5-chainwd (the chain watchdog had submitted the dcb). Then `ring comp_1.1.0 timeout`, `Ring comp_1.1.0 reset failed`; bc5-gpu-watch synced and crashed the kernel; the box rebooted 15:39.
+- Fault record: K3, no guest range at the address (a hole), no view, no GPU mapping. The address was never mapped, so this is not a use-after-unmap. Nothing on the host freed it.
+- The timed-out dcb #1865879 (126,082 dwords, 14 waits, all kept): 4,580 indirect dispatches, the largest grid 18,420,016,569,817,491,384 groups. These are H4's junk grids. Its compute dispatches take a V# at 0x122e90b100 whose data begins "PSR_BVHL" (a BVH header) and indirect arguments at 0x118c5f0900, the same region H5's junk-grid dcb read (0x118c5f0940). The faulting pages are each 8 GiB above that BVH buffer (0x142e9xxxxx against 0x122e9xxxxx): a write through a junk offset.
+- The probe: `wait op 93 at 88: label 0x12004b4fc8 function 3 reference 0x0 ...; now 0x0 (met) DROPPED`. This is H4's label and H4's signature.
+- The cause in the log, at t ≈ 1430.9 s, 2 s before the timeout: `ho430 F14: bound on 0x12004b4fc8 after 2.018 ms: pending chains busy/flight/in submit/held/watchdog/no look/gone 0/1/0/0/0/0/0`, followed by `F7 sensor: acb on ring 1 at 28: its wait on 0x12004b4fc8 (== 0x0) came before its release`. F10 found the writer chain **in flight**: inside its submit_now, so not yet a pending job. F4 had no job to fence on, the acb's == 0 passed on the previous frame's 0, and the wait was dropped. F16 (wait for the in-flight writer's submit to return) is the switch made for exactly this case, and it was off in E1 by design.
+
+**Classification.** This is the F848/F852 class (H4), not something E1's code introduced:
+- F4 only adds a kernel CS dependency on a job that is already pending; it frees and unmaps nothing.
+- The fault address never had a mapping.
+- The failing path is the one F14 counts as "flight", which E1 leaves open.
+
+J1 also shows H5's dcb buffer (0x118c5f09xx) in the same failure. **H5's junk-grid class may therefore be downstream of the same dropped wait** rather than separate; this is unverified.
+
+**E1 so far**: 1 GPU fault in 1 run. D1: 0 in 2. The numbers are small. The data says E1 as built does not close F852: a writer in flight at the 2 ms bound passes the gate. The arm that covers that path is F10 + F4 + F16.
+
+**After the fault.** The box rebooted itself (R60 met by the watchdog reboot, 0 reset lines after). I cleared my stale h430J1 lock line at 16:57 (exact line checked, no emulator), logged in BOX-QUEUE. My watcher had not caught the reboot: it looked only for "done" and box loss, and the box was back within 5 minutes. It now records the boot id and ends on a change, or when the emulator is gone 3 minutes without "done" (R64). h430J2 (E1 repeated, top's GO) started 16:58.
+
+### F10's "busy" bounds: can they let a stale wait through? (2026-11-18 evening, offline, top's question)
+
+**What "busy" means.** F10 polls `f10_pending` every 20 µs for up to 2 ms. A slot whose `mu` try_lock fails counts as pending, and so does a slot whose open chain writes L or whose in-flight set holds L. At the bound, F14 takes one more look. "busy" means that one try_lock failed: the slot's state at the bound is **unknown**. It may hold L's write (open, or about to swap it into flight), or it may be an F13 `slot_wait` slot that never wrote L at all (F13 adds every slot that was busy at the look, without knowing its contents).
+
+**Who holds a slot's `mu`.** The unit (f574f460) takes it in:
+- `chain_append`, `chain_end` and the soft-push paths, all short;
+- `chain_submit`'s two short blocks. `submit_now` itself runs **without** `mu`, so a busy slot is never "in submit_now".
+- `hold_release`, which per iteration evaluates every ADR 0013 hold condition under `mu` (`wait_satisfied`, `ring_will_satisfy`). With `block`, it does so in a loop until the holds clear or `hold_ns` passes.
+
+A slot that stays busy at the 2 ms mark is therefore most likely a chain polling its own holds. Such a chain would also be the label's writer if it holds L's release behind its own kept wait. This is inference: F14 does not record which holder it met.
+
+**Mechanism: yes, it can.** At a bound, the wait is decided as before. If the slot was a writer of L whose release is still unsubmitted, an acb wait that reads the previous frame's 0 passes at submit. That is the same drop as J1's, through a different gate.
+
+**Data: it has not happened yet.** The F7 sensor line ("its wait came before its release") follows a bound only when the wait really overtook its release.
+
+| Run | busy bounds | busy bounds followed by an F7 sensor line | flight bounds | flight bounds followed by an F7 sensor line |
+|---|---|---|---|---|
+| J1 | 9 | 0 | 28 | 4 (the last of them on 0x12004b4fc8 → the fault) |
+| J2 | 12 | 0 | 35 | 2 |
+| M1 | 8 | 0 | 0 journaled (F16 waited out all 23, so none stayed a bound) | – |
+
+Counted from the journaled F14 bound lines (the first 64 per run; the 60-s totals can lag the last lines). Busy: 0 of 29 followed by the sensor. Flight, without F16: 6 of 63. That does not rule busy out. It is a lower-rate path, or one that mostly meets slots that don't write L.
+
+**What would cover it (next build, not this slot): F18, one switch, catcher and fix together.**
+1. **Classify.** At a bound with a busy slot, retry its try_lock for up to 200 µs (R62: try_locks only, bounded). Record whether the slot, once seen, writes L (open, held by ADR 0013, or in flight) or not. Also record whether its owner is inside `hold_release` (an atomic flag set around the lock there). This answers the inference above.
+2. **Wait.** For a busy slot that turns out to write L, and for an open writer of L, continue F10's `f10_pending` poll past 2 ms up to F16's 50 ms. Use F16's phase gate: give up when the writer's `f16_phase` is 1 (back-pressure) or 4 (draining the GPU) for 2 ms, since those may wait on bc5-ring. bc5-ring holds no lock here (R62), and `mu` is never held across `submit_now`, so the wait cannot close a cycle through `mu`. A writer held by its own ADR 0013 hold is bounded by `hold_ns`, after which `hold_release` gives the hold up and the chain goes.
+3. **Count.** Record waited / released / 50 ms bound / given up by phase, as F16 does. Journal any bound that still ends with the wait satisfied, so the swap rule's sensor covers this gate too.
+
+A slot that does not write L is released at once, so F18 costs nothing there.
+
+**F18 written (2026-11-18 evening, offline; top: one switch, fix and catcher together, next build).** The switch is `BC5_DIRECT_XQ_BUSY_WAIT`, on unless "0"; ho430 `fb3330bb`, mkf6 `bb9b9ff1` (15 hooks: `hold_release` counts its threads per slot), unit `178d8890` on f574f460 (`8428183d` on b8afba59); dry-run applies on both, not built yet. At a bound F16 did not settle, it re-looks at each pending slot for up to 200 µs. An open writer of L is made due and waited for, a slot still busy is waited for as a possible writer, and a non-writer is dropped. The wait runs up to 50 ms with F16's phase gate. Lines say "THE BOUND STANDS" when the wait is still decided as before. Count for the swap sensor: F18's "50 ms bound" + "not waited" in the 60-s line.
+
+### The F16 arm (h430M1–M3) and the F18 play build (2026-11-18 17:26–18:55)
+
+| Run | End | flips/s | gaps >100 ms (s), longest | DROPPED | kernel | F10 bounds (F14 busy/flight/gone) | F16 waits: returned / 50 ms / not waited | busy bounds → F7 sensor |
+|---|---|---|---|---|---|---|---|---|
+| h430M1 | NO_CRASH, 1612 s | 38.6 | 16, 355 ms | 0 | 0 | 8 (8/23/0) | 23 / 0 / 0 | 0 |
+| h430M2 | NO_CRASH, 1609 s | 41.7 | 12, 1944 ms | 0 | 0 | 12 (11/37/1) | 37 / 0 / 0 | 0 |
+| h430M3 | NO_CRASH, 1608 s | 39.1 | 13, 1883 ms | 0 | 0 | 28 (27/42/1) | 42 / 0 / 0 | 0 |
+
+F10 + F4 + F16 (binary `034e3b24`) is clean in 3 of 3 runs by the swap rule (0 DROPPED, 0 kernel lines, F16 never at its 50 ms bound or given up); F16's waits returned within 7.1 ms at most. The F10 bounds left are F14 "busy" (F18's target). Against the arms before it on the same tree: D1 0 faults in 2, E1 1 in 2 (J1).
+
+**F18 build for the maintainer's long play** (his words via top: "F18 - ja przetestuję na dłuższej grze"): binary `7e85b4fe` (unit `178d8890`, ho430 `fb3330bb`) in `~/bc5-work/exp0430/p22`; the shortcut "BC5 test 0430 (F18)" on ~/Pulpit runs `exp0430/play-0430f18.sh` (`96396107`, made by mkplay0430c.py from play-pkg.sh `47426d8e`, which stays as it is). The old "build 8, catchers" test shortcut moved to `~/bc5-work/trash-20261111/pulpit`. Shared builds (normal `a9b4f00b`) and the shared shortcuts unchanged. The launcher's words are the M runs' effective words plus BUSY_WAIT; the build compiles HO430_SHARED, which reads only the `BC5_DIRECT_XQ_*` words (the runs' `BC5_0430_F2/F3/G` words were never read and are left out).
+
+### The maintainer's F18 play (2026-11-18 19:00–19:57, binary `7e85b4fe`, shortcut "BC5 test 0430 (F18)")
+
+His verdict (via top): fine, apart from brief, sharp fps drops. Top stopped the emulator at 19:57 at his request. Capture `~/bc5-data/captures/play-20261118-1900/gc/direct.log` and `exp0430/play-f18/play-last.log`, copied to the laptop (`data-0430/play-f18/`, not committed). 3,155 s, 112,988 flips, 35.8 flips/s, his own route and pad, RT on. Two Space-key pauses (2761 s, 3062 s); the first is the 96-s "gap".
+
+| | Count |
+|---|---|
+| Fault records / amdgpu reset, timeout, fault lines since 19:00 | 0 / 0 (top) |
+| F10 acb waits / writing chain / bounds | 1,525,291 / 40,554 / 0; 5,047.5 ms in all, at most 148 ms in any minute |
+| F14 at bounds busy / flight | 10 / 32 |
+| F16 in-flight waits | 32, all returned, longest 16.1 ms, 33.5 ms in all |
+| F18 bounds looked at | 10: writers went 4, no writer of the label among the pending slots 6; slots not a writer / still busy 6 / 4, in hold_release 0; 50 ms bound 0, not waited 0; 3.7 ms in all, longest 0.999 ms |
+| THE BOUND STANDS / F7 sensor | 0 / 0 |
+| acb-probe DROPPED (the F852 form) | 0 |
+| Game-thread waits given up / indirect draws DROPPED after one | 39 / 1 |
+
+**The one DROPPED is not F852.** At t 229.9 s: `cpu-wait WAIT_REG_MEM64 at 379 on 0x12004b3c38: GIVEN UP after 35.0 ms` (function 3, value 0x907616589, reference 0), then `indirect draw op 24 at 1454 after a given-up wait: DROPPED (1 so far)`. This is a graphics buffer's wait on the game thread, bounded by the host, and the patch's indirect-draw guard dropping the next indirect draw (its arguments may not be written yet; exps 0052, 0054). The label and value are F262/F263's: armed by the Render Thread, released by GPU compute work that the host submits late (F279, F282, F283). F852 is an acb's wait on 0x12004b4fc8 that passes at submit on an old 0 and shows as the probe's `wait op 93 ... DROPPED`. The give-ups touch 0x12004b3c38 (13), 0x12004b5438 (12), 0x12004b7838 (9), 0x12004b4438 (4), 0x12004b4c38 (1). **Correction to the D1 row:** h430I1 (F16 and F18 off) had the same pair, at the same offsets (wait at 379 on 0x12004b3c38, indirect draw op 24 at 1454), and 8 give-ups. I missed it when I wrote the row. I2, J2 and M1–M3 have 0 give-ups and 0 DROPPED, so the swap rule's count for the M arm stands. The path does not depend on F10/F4/F16/F18. On the console the CP keeps polling a WAIT_REG_MEM until it is met; the packet has no give-up (TODO(verify): cite the PM4 packet layout, e.g. Mesa `src/amd/common/sid.h` WAIT_REG_MEM fields). So each give-up is our bug (the late writer of F279–F283), recorded here, not a fix.
+
+**The fps drops.** 446 frames over 100 ms (69 over 200 ms, 11 over 500 ms). The scripted runs had 12–23 per 1,600 s on the fight route; this was his own route, more than twice as long, with tighter memory (available 690–790 MiB after 10 min, swap 380 → 1,160 MiB). Classed by the frame profile lines (scratchpad `cls18.py`):
+
+| Class | Gaps | Time | Longest |
+|---|---|---|---|
+| Loading (t < 100 s) | 70 | 19.7 s | 4.85 s |
+| Game thread outside the host, no memory stall in the window | 155 | 26.9 s | 2.40 s at t 232.6 (and 1.14 s at 227.6, the DROPPED's area) |
+| Host sync (views/maps) ≥ 40 % of the gap | 102 | 12.2 s | 0.20 s |
+| Outside the host, PSI full ≥ 50 ms in the window | 68 | 12.0 s | 1.35 s at t 2210.7 |
+| A game-thread label wait ≥ 25 ms (30 of the 39 give-ups sit in one) | 50 | 9.8 s | 0.45 s at t 772.3 |
+| His pause | 1 | 96.2 s | – |
+
+F10, F16 and F18 are not the drops. F10's 5 s is µs per wait, at most 148 ms in any minute. F16 and F18 together waited 37 ms in the whole play, and only 2 F18 looks fell inside a gap. The drops are the title's own CPU time (the largest share), our host's sync, memory stalls, and the given-up label waits. There is no A/B on his route. His verdict on the lean `e3fd8b55` build also named brief fps dips.
+
+**Verdict.**
+- F18 did what it was built for: 10 of 10 bounds were settled, 0 stood, and it cost 3.7 ms. In 6 of the 10 the busy slot did not write the label at all.
+- The play is clean of the F852 class and of GPU faults over 57 minutes.
+- The swap candidate stays F10 + F4 + F16, clean in 3 of 3.
+- F18 has no scripted run. Its target case caused no fault in any run (busy bounds followed by the sensor: 0 of 29 before, 0 here). Adding it to the swap is top's call.
+- The given-up game-thread wait (F262 family) is an older, separate open bug.

@@ -1,0 +1,116 @@
+lis 18 10:31:29.019762 bazzite kernel: gmc_v10_0_process_interrupt: 151 callbacks suppressed
+lis 18 10:31:29.019994 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:46)
+lis 18 10:31:29.020705 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 873198 thread bc5-ring pid 873470
+lis 18 10:31:29.020888 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000011cd7a7000 from client 0x1b (UTCL2)
+lis 18 10:31:29.021078 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00701031
+lis 18 10:31:29.021228 bazzite kernel: amdgpu 0000:01:00.0:          Faulty UTCL2 client ID: TCP (0x8)
+lis 18 10:31:29.021391 bazzite kernel: amdgpu 0000:01:00.0:          MORE_FAULTS: 0x1
+lis 18 10:31:29.021545 bazzite kernel: amdgpu 0000:01:00.0:          WALKER_ERROR: 0x0
+lis 18 10:31:29.021701 bazzite kernel: amdgpu 0000:01:00.0:          PERMISSION_FAULTS: 0x3
+lis 18 10:31:29.021856 bazzite kernel: amdgpu 0000:01:00.0:          MAPPING_ERROR: 0x0
+lis 18 10:31:29.022008 bazzite kernel: amdgpu 0000:01:00.0:          RW: 0x0
+lis 18 10:31:29.022163 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:46)
+lis 18 10:31:29.022317 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 873198 thread bc5-ring pid 873470
+lis 18 10:31:29.022462 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000011cd7a9000 from client 0x1b (UTCL2)
+lis 18 10:31:29.022623 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00701031
+lis 18 10:31:29.022811 bazzite kernel: amdgpu 0000:01:00.0:          Faulty UTCL2 client ID: TCP (0x8)
+lis 18 10:31:29.022972 bazzite kernel: amdgpu 0000:01:00.0:          MORE_FAULTS: 0x1
+lis 18 10:31:29.023133 bazzite kernel: amdgpu 0000:01:00.0:          WALKER_ERROR: 0x0
+lis 18 10:31:29.023280 bazzite kernel: amdgpu 0000:01:00.0:          PERMISSION_FAULTS: 0x3
+lis 18 10:31:29.023426 bazzite kernel: amdgpu 0000:01:00.0:          MAPPING_ERROR: 0x0
+lis 18 10:31:29.023563 bazzite kernel: amdgpu 0000:01:00.0:          RW: 0x0
+lis 18 10:31:29.023715 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:46)
+lis 18 10:31:29.023869 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 873198 thread bc5-ring pid 873470
+lis 18 10:31:29.024007 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000011cd7a8000 from client 0x1b (UTCL2)
+lis 18 10:31:29.024167 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00701031
+lis 18 10:31:29.024322 bazzite kernel: amdgpu 0000:01:00.0:          Faulty UTCL2 client ID: TCP (0x8)
+lis 18 10:31:29.024477 bazzite kernel: amdgpu 0000:01:00.0:          MORE_FAULTS: 0x1
+lis 18 10:31:29.024620 bazzite kernel: amdgpu 0000:01:00.0:          WALKER_ERROR: 0x0
+lis 18 10:31:29.024770 bazzite kernel: amdgpu 0000:01:00.0:          PERMISSION_FAULTS: 0x3
+lis 18 10:31:29.024916 bazzite kernel: amdgpu 0000:01:00.0:          MAPPING_ERROR: 0x0
+lis 18 10:31:29.025085 bazzite kernel: amdgpu 0000:01:00.0:          RW: 0x0
+lis 18 10:31:29.025223 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:46)
+lis 18 10:31:29.025369 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 873198 thread bc5-ring pid 873470
+lis 18 10:31:29.025512 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000011cd7ab000 from client 0x1b (UTCL2)
+lis 18 10:31:29.025668 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00701031
+lis 18 10:31:29.025812 bazzite kernel: amdgpu 0000:01:00.0:          Faulty UTCL2 client ID: TCP (0x8)
+lis 18 10:31:29.025959 bazzite kernel: amdgpu 0000:01:00.0:          MORE_FAULTS: 0x1
+lis 18 10:31:29.026113 bazzite kernel: amdgpu 0000:01:00.0:          WALKER_ERROR: 0x0
+lis 18 10:31:29.026254 bazzite kernel: amdgpu 0000:01:00.0:          PERMISSION_FAULTS: 0x3
+lis 18 10:31:29.026395 bazzite kernel: amdgpu 0000:01:00.0:          MAPPING_ERROR: 0x0
+lis 18 10:31:29.026526 bazzite kernel: amdgpu 0000:01:00.0:          RW: 0x0
+lis 18 10:31:29.026666 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:46)
+lis 18 10:31:29.026800 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 873198 thread bc5-ring pid 873470
+lis 18 10:31:29.026947 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000011cd7a6000 from client 0x1b (UTCL2)
+lis 18 10:31:29.027105 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00701031
+lis 18 10:31:29.027259 bazzite kernel: amdgpu 0000:01:00.0:          Faulty UTCL2 client ID: TCP (0x8)
+lis 18 10:31:29.027400 bazzite kernel: amdgpu 0000:01:00.0:          MORE_FAULTS: 0x1
+lis 18 10:31:29.027548 bazzite kernel: amdgpu 0000:01:00.0:          WALKER_ERROR: 0x0
+lis 18 10:31:29.027677 bazzite kernel: amdgpu 0000:01:00.0:          PERMISSION_FAULTS: 0x3
+lis 18 10:31:29.027822 bazzite kernel: amdgpu 0000:01:00.0:          MAPPING_ERROR: 0x0
+lis 18 10:31:29.027965 bazzite kernel: amdgpu 0000:01:00.0:          RW: 0x0
+lis 18 10:31:29.028123 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:46)
+lis 18 10:31:29.028261 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 873198 thread bc5-ring pid 873470
+lis 18 10:31:29.028404 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000011cd7ad000 from client 0x1b (UTCL2)
+lis 18 10:31:29.028563 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00701031
+lis 18 10:31:29.028713 bazzite kernel: amdgpu 0000:01:00.0:          Faulty UTCL2 client ID: TCP (0x8)
+lis 18 10:31:29.028847 bazzite kernel: amdgpu 0000:01:00.0:          MORE_FAULTS: 0x1
+lis 18 10:31:29.028983 bazzite kernel: amdgpu 0000:01:00.0:          WALKER_ERROR: 0x0
+lis 18 10:31:29.029144 bazzite kernel: amdgpu 0000:01:00.0:          PERMISSION_FAULTS: 0x3
+lis 18 10:31:29.029298 bazzite kernel: amdgpu 0000:01:00.0:          MAPPING_ERROR: 0x0
+lis 18 10:31:29.029442 bazzite kernel: amdgpu 0000:01:00.0:          RW: 0x0
+lis 18 10:31:29.029570 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:46)
+lis 18 10:31:29.029712 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 873198 thread bc5-ring pid 873470
+lis 18 10:31:29.029862 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000011cd7af000 from client 0x1b (UTCL2)
+lis 18 10:31:29.030032 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00701031
+lis 18 10:31:29.030179 bazzite kernel: amdgpu 0000:01:00.0:          Faulty UTCL2 client ID: TCP (0x8)
+lis 18 10:31:29.030325 bazzite kernel: amdgpu 0000:01:00.0:          MORE_FAULTS: 0x1
+lis 18 10:31:29.030464 bazzite kernel: amdgpu 0000:01:00.0:          WALKER_ERROR: 0x0
+lis 18 10:31:29.030619 bazzite kernel: amdgpu 0000:01:00.0:          PERMISSION_FAULTS: 0x3
+lis 18 10:31:29.030756 bazzite kernel: amdgpu 0000:01:00.0:          MAPPING_ERROR: 0x0
+lis 18 10:31:29.030893 bazzite kernel: amdgpu 0000:01:00.0:          RW: 0x0
+lis 18 10:31:29.031064 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:46)
+lis 18 10:31:29.031219 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 873198 thread bc5-ring pid 873470
+lis 18 10:31:29.031360 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000011cd7b1000 from client 0x1b (UTCL2)
+lis 18 10:31:29.031526 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00701031
+lis 18 10:31:29.031675 bazzite kernel: amdgpu 0000:01:00.0:          Faulty UTCL2 client ID: TCP (0x8)
+lis 18 10:31:29.031829 bazzite kernel: amdgpu 0000:01:00.0:          MORE_FAULTS: 0x1
+lis 18 10:31:29.031985 bazzite kernel: amdgpu 0000:01:00.0:          WALKER_ERROR: 0x0
+lis 18 10:31:29.032151 bazzite kernel: amdgpu 0000:01:00.0:          PERMISSION_FAULTS: 0x3
+lis 18 10:31:29.032282 bazzite kernel: amdgpu 0000:01:00.0:          MAPPING_ERROR: 0x0
+lis 18 10:31:29.032432 bazzite kernel: amdgpu 0000:01:00.0:          RW: 0x0
+lis 18 10:31:29.032576 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:46)
+lis 18 10:31:29.032735 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 873198 thread bc5-ring pid 873470
+lis 18 10:31:29.032874 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000011cd7ae000 from client 0x1b (UTCL2)
+lis 18 10:31:29.033031 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00701031
+lis 18 10:31:29.033187 bazzite kernel: amdgpu 0000:01:00.0:          Faulty UTCL2 client ID: TCP (0x8)
+lis 18 10:31:29.033333 bazzite kernel: amdgpu 0000:01:00.0:          MORE_FAULTS: 0x1
+lis 18 10:31:29.033472 bazzite kernel: amdgpu 0000:01:00.0:          WALKER_ERROR: 0x0
+lis 18 10:31:29.033608 bazzite kernel: amdgpu 0000:01:00.0:          PERMISSION_FAULTS: 0x3
+lis 18 10:31:29.033762 bazzite kernel: amdgpu 0000:01:00.0:          MAPPING_ERROR: 0x0
+lis 18 10:31:29.033915 bazzite kernel: amdgpu 0000:01:00.0:          RW: 0x0
+lis 18 10:31:29.034069 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:46)
+lis 18 10:31:29.034218 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 873198 thread bc5-ring pid 873470
+lis 18 10:31:29.034355 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000011cd7ab000 from client 0x1b (UTCL2)
+lis 18 10:31:29.034503 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00701031
+lis 18 10:31:29.034644 bazzite kernel: amdgpu 0000:01:00.0:          Faulty UTCL2 client ID: TCP (0x8)
+lis 18 10:31:29.034798 bazzite kernel: amdgpu 0000:01:00.0:          MORE_FAULTS: 0x1
+lis 18 10:31:29.034928 bazzite kernel: amdgpu 0000:01:00.0:          WALKER_ERROR: 0x0
+lis 18 10:31:29.035077 bazzite kernel: amdgpu 0000:01:00.0:          PERMISSION_FAULTS: 0x3
+lis 18 10:31:29.035227 bazzite kernel: amdgpu 0000:01:00.0:          MAPPING_ERROR: 0x0
+lis 18 10:31:29.035373 bazzite kernel: amdgpu 0000:01:00.0:          RW: 0x0
+lis 18 10:31:31.012039 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+lis 18 10:31:31.199842 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+lis 18 10:31:31.200324 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+lis 18 10:31:31.200568 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+lis 18 10:31:31.200786 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=2330627, emitted seq=2330629
+lis 18 10:31:31.201315 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 873198 thread bc5-ring pid 873470
+lis 18 10:31:31.201492 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+lis 18 10:31:31.201654 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed
+lis 18 10:31:31.201799 bazzite kernel: amdgpu 0000:01:00.0: GPU reset begin!. Source:  1
+lis 18 10:31:31.203031 bazzite bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=2330627, emitted seq=2330629
+lis 18 10:31:31.208040 bazzite bc5-gpu-watch: a ring reset failed [amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed]: crashing before the full reset: syncing and crashing the kernel for a reboot (SysRq s, c)
+lis 18 10:31:31.208186 bazzite kernel: sysrq: Emergency Sync
+lis 18 10:31:31.264040 bazzite kernel: Emergency Sync complete
+Read from remote host <box>: Connection reset by peer
+client_loop: send disconnect: Connection reset by peer

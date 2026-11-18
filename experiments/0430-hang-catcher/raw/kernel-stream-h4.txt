@@ -1,0 +1,24 @@
+lis 18 06:55:26.748322 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+lis 18 06:55:26.749210 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+lis 18 06:55:26.749390 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+lis 18 06:55:26.749546 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+lis 18 06:55:26.749701 bazzite kernel: amdgpu 0000:01:00.0: ring comp_1.2.0 timeout, signaled seq=8565870, emitted seq=8565872
+lis 18 06:55:26.749893 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 514556 thread bc5-ring pid 514858
+lis 18 06:55:26.750043 bazzite kernel: amdgpu 0000:01:00.0: Starting comp_1.2.0 ring reset
+lis 18 06:55:26.750195 bazzite kernel: amdgpu 0000:01:00.0: Ring comp_1.2.0 reset succeeded
+lis 18 06:55:26.751101 bazzite kernel: amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+lis 18 06:55:26.751339 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+lis 18 06:55:26.751540 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+lis 18 06:55:26.751697 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=30229912, emitted seq=30229914
+lis 18 06:55:26.751881 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 514556 thread bc5-ring pid 514858
+lis 18 06:55:26.752554 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+lis 18 06:55:26.753792 bazzite bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring comp_1.2.0 timeout, signaled seq=8565870, emitted seq=8565872
+lis 18 06:55:26.758767 bazzite bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring comp_1.2.0 reset succeeded
+lis 18 06:55:26.760760 bazzite bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=30229912, emitted seq=30229914
+lis 18 06:55:26.939854 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed
+lis 18 06:55:26.940183 bazzite kernel: amdgpu 0000:01:00.0: GPU reset begin!. Source:  1
+lis 18 06:55:26.981438 bazzite bc5-gpu-watch: a ring reset failed [amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed]: crashing before the full reset: syncing and crashing the kernel for a reboot (SysRq s, c)
+lis 18 06:55:26.981557 bazzite kernel: sysrq: Emergency Sync
+lis 18 06:55:27.102761 bazzite kernel: Emergency Sync complete
+Read from remote host <box>: Connection reset by peer
+client_loop: send disconnect: Connection reset by peer

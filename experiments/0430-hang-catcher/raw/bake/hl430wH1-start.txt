@@ -1,0 +1,47 @@
+2026-11-18 23:28:34
+arm hl430wH1 (h), cap 1160 s, play 900 s, binary /home/kjaniszewski/bc5-work/exp0430/lean/kyty_emulator md5 85befb72da21ebe3b6e7d40009e1b890, launcher fc06c3d5, fuse 0
+the arm's words: BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 BC5_0412N_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0430/n/input-hl430wH1.cfg 
+extra: BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_INDIRECT=1 BC5_DIRECT_ACB_STATE_NO_WALK=1 BC5_DIRECT_ACB_SPLIT_LATE=3
+boot 40a8312e, up since 2026-11-18 15:39:24
+MemAvailable:   14185040 kB SwapTotal:       7778300 kB SwapFree:        7389112 kB 
+place: the Bazzite host (P_HOST=1), no distrobox, under the user manager (systemd-run --user --scope: rtkit's polkit refuses a process of the ssh session, hn430H1; the desktop session and the user manager are allowed)
+emulator pid 3993632 exe /var/home/kjaniszewski/bc5-work/exp0430/lean/kyty_emulator cwd /var/home/kjaniszewski/bc5-work/exp0430/n/wd
+maps at 30 s: /usr/lib64/libpipewire-0.3.so.0.1611.0
+maps at 30 s: /usr/lib64/libvulkan_radeon.so
+maps at 30 s: /usr/lib64/mangohud/libMangoHud.so
+maps at 30 s: /usr/lib64/pipewire-0.3/libpipewire-module-adapter.so
+maps at 30 s: /usr/lib64/pipewire-0.3/libpipewire-module-client-device.so
+maps at 30 s: /usr/lib64/pipewire-0.3/libpipewire-module-client-node.so
+maps at 30 s: /usr/lib64/pipewire-0.3/libpipewire-module-metadata.so
+maps at 30 s: /usr/lib64/pipewire-0.3/libpipewire-module-protocol-native.so
+maps at 30 s: /usr/lib64/pipewire-0.3/libpipewire-module-rt.so
+maps at 30 s: /usr/lib64/pipewire-0.3/libpipewire-module-session-manager.so
+route (timed): cross (start screen) at 90 s
+route (timed): down x 3, cross (slot 4) at 100 s
+route (timed): cross (Continue) at 109 s
+route (timed): G = 134 s BY TIME
+route: the 14:50 record's gameplay (100 lines) queued at 134 s
+route: exp 0379's walk queued after it (54 cycles; exp 0428 long set)
+at G+60 (195 s): plasmashell inactive
+      1 [AK::JobWrkr-Acm] SCHED_OTHER|SCHED_RESET_ON_FORK 0 2800000 
+      1 [Job Bk 0] SCHED_OTHER 0 2800000 
+      1 [Job Bk 1] SCHED_OTHER 0 2800000 
+      1 [Job Bk 2] SCHED_OTHER 0 2800000 
+      1 [Job Bk 3] SCHED_OTHER 0 2800000 
+      1 [Job Bk 4] SCHED_OTHER 0 2800000 
+      1 [Job Hi 0] SCHED_RR|SCHED_RESET_ON_FORK 6 
+      1 [Job Hi 1] SCHED_RR|SCHED_RESET_ON_FORK 6 
+      1 [Job Hi 2] SCHED_RR|SCHED_RESET_ON_FORK 6 
+      1 [Job Hi 3] SCHED_RR|SCHED_RESET_ON_FORK 6 
+      1 [Job Hi 4] SCHED_RR|SCHED_RESET_ON_FORK 6 
+      1 [Job Lo 0] SCHED_OTHER|SCHED_RESET_ON_FORK 0 2800000 
+      1 [Job Lo 1] SCHED_RR|SCHED_RESET_ON_FORK 3 
+      1 [Job Lo 2] SCHED_RR|SCHED_RESET_ON_FORK 3 
+      1 [Job Lo 3] SCHED_RR|SCHED_RESET_ON_FORK 3 
+      1 [Job Lo 4] SCHED_RR|SCHED_RESET_ON_FORK 3 
+pad files: /dev/hidraw2 
+sound: sink inputs of SDL 3, PipeWire objects of kyty_emulator 4
+gpu driver: /usr/lib64/libvulkan_radeon.so 
+lean session: stop exit 0; shell during the run: inactive; restore exit 0; shell after: active
+launcher gone: yes; launcher exit 0
+MangoHud log /home/kjaniszewski/bc5-work/exp0430/n/raw/hl430wH1-mh/kyty_emulator_2026-11-18_23-28-38.csv: 838 seconds from G

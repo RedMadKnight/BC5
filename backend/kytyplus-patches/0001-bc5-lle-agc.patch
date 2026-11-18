@@ -34444,10 +34444,10 @@ index 6df0a95..eca6d2d 100644
  		    static_cast<uint32_t>(src->crop_right + (pitch - src->width));
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..4828919
+index 0000000..901e904
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,17438 @@
+@@ -0,0 +1,17401 @@
 +#include "bc5/env_rule.hpp" // exp 0419 (build W): BC5_DIAG_ENV, BC5_FIXED_ENV, BC5_LEAN_OR
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
@@ -39593,7 +39593,7 @@ index 0000000..4828919
 +		as_skip_ok = bc5::anon_sync::can_skip(g_as415_passes, g_as415_sig, g_as415_walk_valid, g_as415_walk_sig);
 +		// KYTY_BC5_ANON_SYNC_KICK=0 (as415b, a measuring knob): urgent calls do not wake the thread, so that with a long
 +		// KYTY_BC5_ANON_SYNC_MS the cost of the thread's own reads can be told from the rest.
-+		static const bool kick = bc5::load_stat::env_num("KYTY_BC5_ANON_SYNC_KICK", 1, 1) != 0;
++		static const bool kick = BC5_LEAN_OR(true, bc5::load_stat::env_num("KYTY_BC5_ANON_SYNC_KICK", 1, 1) != 0); // exp 0430: a measuring knob, not in lean
 +		if (urgent && kick && !g_as415_kick) {
 +			g_as415_kick = true;
 +			g_as415_cv.notify_one();
@@ -42152,6 +42152,11 @@ index 0000000..4828919
 +	std::vector<SoftCp::GpuDone> marks; // the marks of the chains that carried the pending replays' buffers
 +	std::vector<HoldCond>        hold;        // ADR 0013: the conditions the chain waits for before it may go
 +	std::vector<uint64_t>        hold_writes; // ADR 0013: the labels the held chain's segments write
++	std::vector<uint64_t>        f10_writes; // exp 0430 F10: the memory addresses the open chain's packets write (RELEASE_MEM/EOP data, WRITE_DATA)
++	std::vector<uint64_t>        f10_flight; // exp 0430 F10: the write set of the chain being submitted now (its writes not registered yet)
++	bool                         f10_wanted = false; // exp 0430 F10: an acb waits on one of them; the owner flushes at its call's end
++	std::atomic<uint64_t>        f16_done {0}; // exp 0430 F16: bumped when a submit_now of this slot's chain has returned (after its f10_flight is cleared)
++	std::atomic<int>             f16_phase {0}; // exp 0430 F16: 0 idle, 1 in chain_submit before the device lock (back-pressure), 2 asking for g_dev_mutex, 3 holding it, 4 draining the GPU (wait_jobs)
 +	~ChainSlot();
 +};
 +static thread_local ChainSlot g_chain_tl;
@@ -42162,6 +42167,9 @@ index 0000000..4828919
 +static thread_local uint32_t t_fs415_segs    = 0;
 +static std::mutex             g_chains_mu;
 +static std::vector<ChainSlot*> g_chains; // the registered (cross) slots, for the watchdog and the observe points
++static std::mutex              g_f10_reg_mu; // exp 0430 F10: its own registry of the slots; only chain_register and ~ChainSlot take it, nothing submits under it
++static std::vector<ChainSlot*> g_f10_reg;
++static thread_local ChainSlot*  t_f16_slot = nullptr; // exp 0430 F16: the slot whose chain this thread's submit_now carries
 +static const int g_chain_mode = [] {
 +	const char* e = std::getenv("BC5_DIRECT_CHAIN");
 +	if (e == nullptr) return 0;
@@ -42353,6 +42361,9 @@ index 0000000..4828919
 +		fs_open      = s.open_ns;
 +		s.open_ns    = 0;
 +		s.hold_writes.clear(); // ADR 0013
++		s.f10_flight.swap(s.f10_writes); // exp 0430 F10: in flight until submit_now has registered its writes
++		s.f10_writes.clear();
++		s.f10_wanted = false;
 +	}
 +	g_chain_flushes++;
 +	g_chain_segments += mine.segs.size();
@@ -42373,7 +42384,17 @@ index 0000000..4828919
 +	t_fs415_open_ns = fs_open; // experiment 0415 (fs415c)
 +	t_fs415_why     = why;
 +	t_fs415_segs    = static_cast<uint32_t>(mine.segs.size());
++	ChainSlot* const f16_prev = t_f16_slot; // exp 0430 F16
++	t_f16_slot = &s;
++	s.f16_phase.store(1);
 +	submit_now(mine.buf.data(), static_cast<uint32_t>(mine.buf.size()), mine.compute ? "acb" : "dcb", mine.ring, &mine);
++	{ // exp 0430 F10: its writes are registered now
++		std::lock_guard lk(s.mu);
++		s.f10_flight.clear();
++	}
++	s.f16_phase.store(0); // exp 0430 F16: after the clear, so a waiter that saw the flight set sees the bump
++	s.f16_done.fetch_add(1);
++	t_f16_slot = f16_prev;
 +	if (s.cross) { // section B.4: the marks this submission produced belong to the slot; replays wait for the chain to be empty
 +		std::lock_guard lk(s.mu);
 +		s.marks.insert(s.marks.end(), SoftCp::t_gpu_done.begin(), SoftCp::t_gpu_done.end());
@@ -42439,6 +42460,10 @@ index 0000000..4828919
 +	if (s.registered) return;
 +	g_chains.push_back(&s);
 +	s.registered = true;
++	{ // exp 0430 F10
++		std::lock_guard rk(g_f10_reg_mu);
++		g_f10_reg.push_back(&s);
++	}
 +	static std::once_flag started;
 +	std::call_once(started, [] {
 +		journal("chains: mode 2, a game thread's chain is held across its ioctls for up to %" PRIu64 " us\n", chain_hold_ns() / 1000);
@@ -42449,6 +42474,8 @@ index 0000000..4828919
 +	if (!registered) return;
 +	std::lock_guard lk(g_chains_mu);
 +	std::erase(g_chains, this);
++	std::lock_guard rk(g_f10_reg_mu); // exp 0430 F10 holds it while it touches this slot
++	std::erase(g_f10_reg, this);
 +}
 +// Every registered chain is submitted now (the flip's drain, the observe points of section B.2).
 +static void chain_flush_all(int why) {
@@ -42475,6 +42502,32 @@ index 0000000..4828919
 +}
 +// Appends `pre` (host-built, may be empty) then `ib` to the thread's chain, closing it first if the buffer
 +// cannot share it. host_built: no soft-CP marks for `ib` (a state prefix submitted on its own).
++// exp 0430 F10: the memory addresses ib's packets write (RELEASE_MEM / EVENT_WRITE_EOP with data, WRITE_DATA to memory)
++static void f10_note(std::vector<uint64_t>& out, const uint32_t* ib, uint32_t n) {
++	for (uint32_t q = 0; q < n;) {
++		const uint32_t h = ib[q], type = h >> 30u;
++		uint32_t       len = 1;
++		if (type == 3 || type == 0) {
++			const uint32_t c = (h >> 16u) & 0x3fffu;
++			len = c == 0x3fffu ? 1 : c + 2;
++		}
++		if (q + len > n) break;
++		if (type == 3) {
++			const uint32_t* w  = ib + q;
++			const uint32_t  op = (h >> 8u) & 0xffu;
++			auto addr = [w](int lo, int hi) { return (static_cast<uint64_t>(w[lo]) & ~3ull) | (static_cast<uint64_t>(w[hi] & 0xffffu) << 32u); };
++			uint64_t a = 0;
++			if (op == 0x49 && len >= 8 && (w[2] >> 29u) != 0) a = addr(3, 4);
++			else if (op == 0x47 && len >= 6 && (w[3] >> 29u) != 0) a = addr(2, 3);
++			else if (op == 0x37 && len >= 5) {
++				const uint32_t d = (w[1] >> 8u) & 0xfu;
++				if (d == 1 || d == 2 || d == 5) a = addr(2, 3);
++			}
++			if (a != 0 && std::find(out.begin(), out.end(), a) == out.end()) out.push_back(a);
++		}
++		q += len;
++	}
++}
 +static void chain_append(const uint32_t* pre, uint32_t pre_n, const uint32_t* ib, uint32_t n, const char* kind, bool host_built) {
 +	ChainSlot& s       = g_chain_tl;
 +	const bool compute = std::strncmp(kind, "acb", 3) == 0;
@@ -42508,6 +42561,7 @@ index 0000000..4828919
 +				c.buf.insert(c.buf.end(), ib, ib + n);
 +				c.segs.push_back(std::move(seg));
 +				if (!s.hold.empty()) hold_note_writes(s, ib, n); // ADR 0013
++				f10_note(s.f10_writes, ib, n); // exp 0430 F10 (graphics and compute chains)
 +				break;
 +			}
 +		}
@@ -42535,6 +42589,7 @@ index 0000000..4828919
 +		{
 +			std::lock_guard lk(s.mu);
 +			over = !s.c.segs.empty() && s.hold.empty() && SoftCp::now_ns() >= s.open_ns + chain_hold_ns();
++			if (!over && !s.c.segs.empty() && s.f10_wanted && s.hold.empty()) over = true; // exp 0430 F10: an acb waits on one of its writes
 +			if (s.c.segs.empty() && !s.in_submit) chain_post_soft_locked(s);
 +		}
 +		if (over) chain_flush(10);
@@ -43570,468 +43625,373 @@ index 0000000..4828919
 +	g_plw.insert(g_plw.end(), found.begin(), found.end());
 +}
 +
-+// BC5 experiment 0430 (tag ho430, the shared form): the fix of the second title's GPU hang of 2026-11-16 21:38.
-+#define HO430_SHARED 1
-+// Experiment 0430 (tag ho430): F2 and G, after the maintainer's "Tak, zleć poprawkę" (2026-11-16 ~22:00). His play's hang of
-+// 21:38:40: the compute sort (acb #1980431) waited for label 0x12004b4fc8 == 0, which the graphics buffer dcb #1980428 writes
-+// (RELEASE_MEM, 0) after its BVH passes. The label held a stale 0 when the acb was submitted, so the wait was dropped as
-+// met and the sort overwrote memory the running BVH passes still read. Keeping such a wait for the GPU would not help (the GPU
-+// reads the same stale 0).
-+// F2, BC5_0430_F2 (on unless "0"): a wait that is satisfied when the host looks, while a job not yet completed on ANOTHER
-+// ring has a registered pending write to the same label, is not decided until that job has completed: this buffer's own
-+// submitting thread waits for it on the CPU, at most 250 ms. Refused (and counted) when the writer job holds a kept GPU
-+// wait on a label this buffer writes (a cycle). The bound running out is counted and journaled. Nothing becomes a GPU wait.
-+// G, BC5_0430_G (on unless "0"): a ring of label events (waits seen with value and pending writes, writes registered at
-+// submit, writes the host's filter DROPPED, the F2 events), dumped as g0430-<k>.txt with every dj430 dump; a 30-s summary
-+// line with the counts, including the GIVEN UP / CYCLE drops of unsatisfied waits. BC5_0430_G_AT=<s>: one more dump at
-+// that time of the run (g0430-90.txt), for a clean run, which has no stall dump.
-+// F3, BC5_0430_F3 (on unless "0"), "the missing acquire" (the top session's GO of 2026-11-16 ~22:40 for the precise form):
-+// a runtime set, in memory only, of cross-queue labels: a label some buffer waited on with == V while a job on another ring
-+// had a pending write of V to it. At the submit of a buffer that releases such a label (a RELEASE_MEM or WRITE_DATA of V)
-+// while the label already holds V (the stale case of the 21:38 hang), the host first sets the label to a value that is not
-+// V: the last such value a wait saw in this run, else V xor 1. The waiter then finds its wait unsatisfied with a pending
-+// write that satisfies it, and the existing path keeps it for the GPU: it starts when the release executes, as on the
-+// console. Not done (counted) when the release may not run (inside a COND_EXEC range, among the host's drops, its label not
-+// mapped), when the buffer itself waits on the label, or when a job in flight on another ring already holds a kept wait
-+// on it. A label first seen at a wait whose writer is already submitted falls back to F2 (counted).
-+// HO430_SHARED (the shared patch, mkswap0430.py): the fix alone. F2 and F3 read std::getenv (the lean build too) under the
-+// shared names BC5_DIRECT_XQ_PENDING (F2), BC5_DIRECT_XQ_ACQUIRE (F3) and BC5_DIRECT_XQ_FENCE (F4, F2's order done by the
-+// kernel: a CS dependency instead of the CPU wait), each on unless "0"; G is compiled off. They act
-+// only on a wait whose label has a pending write on ANOTHER ring, so with one ring (way 2 off) they do nothing.
++// BC5 experiment 0430 (tag ho430): the fix of the second title's cross-queue GPU hangs (F848, F852, F858), built in on
++// 2026-11-18 (the maintainer: "Wprowadzamy wszystkie 4 poprawki. Usuń przełączniki i wybuduj w kod."). No switch.
++// The hang: a compute buffer (acb) waits for a label == V that a graphics or compute buffer on another ring releases. The
++// host decides such a wait at submit. When the label still held last frame's V, the wait passed, the acb ran ahead of its
++// writer and overwrote memory the writer's passes still read (junk indirect grids, then a ring timeout). On the console
++// the queue decides the wait when it reaches the packet. Four parts, measured on the R-on tree (h430M1-M3 clean, the
++// maintainer's 57-minute play clean of the class; the arms without F16 faulted, h430J1):
++// - F10 (the targeted flush): at an acb's wait on L, every other thread's open chain (ADR 0010 section B) whose own packets
++//   write L goes to the device first: made due for the watchdog, or flushed by its owner at its call's end when the owner
++//   is inside its submit call; a chain being submitted is waited for until its writes are registered. bc5-ring polls, at
++//   most 2 ms, through F10's own registry of the slots (g_f10_reg_mu, which nothing submits under), with try_locks only
++//   (LESSONS R62); a busy list is looked at again, a busy slot is waited for as a possible writer.
++// - F2 + F4: a wait found satisfied while a job not yet completed on ANOTHER ring has a registered pending write to L is
++//   ordered behind that job by the kernel (a CS dependency of this buffer's submission), unless that job holds a kept GPU
++//   wait on a label this buffer writes (a cycle: left as it is).
++// - F16: at F10's bound, a writer in flight (inside its submit_now) is waited for until its submit returns, at most 50 ms;
++//   a writer in back-pressure (phase 1) or draining the GPU (phase 4) may wait on work only bc5-ring submits, so it is
++//   not waited for past 2 ms more.
++// - F18: a bound F16 did not settle: each pending slot is looked at again for up to 200 us; an open writer of L is made
++//   due and waited for, a slot still busy is waited for as a possible writer, a slot that writes nothing of L is dropped;
++//   50 ms bound and the same phase gate.
++// A bound that still stands decides the wait as before. The normal build counts all of it (a 60-s line, the first 64
++// waits of F16/F18 and every one that did not settle); the lean build has none of the counting.
 +namespace ho430 {
-+inline bool not0(const char* e) {
-+	return e == nullptr || !(e[0] == '0' && e[1] == 0);
-+}
-+#ifdef HO430_SHARED
-+inline bool f2_on() {
-+	static const bool v = not0(std::getenv("BC5_DIRECT_XQ_PENDING"));
-+	return v;
-+}
-+inline bool g_on() {
-+	return false;
-+}
-+inline bool f3_on() {
-+	static const bool v = not0(std::getenv("BC5_DIRECT_XQ_ACQUIRE"));
-+	return v;
-+}
-+inline bool f4_on() {
-+	static const bool v = not0(std::getenv("BC5_DIRECT_XQ_FENCE"));
-+	return v;
-+}
-+#else
-+inline bool f2_on() {
-+	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F2"));
-+	return v;
-+}
-+inline bool g_on() {
-+	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_G"));
-+	return v;
-+}
-+inline bool f3_on() {
-+	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F3"));
-+	return v;
-+}
-+inline bool f4_on() {
-+	static const bool v = not0(BC5_DIAG_ENV("BC5_0430_F4"));
-+	return v;
-+}
-+#endif
-+enum : uint8_t { kWait = 1, kWrite = 2, kDropped = 3, kF2Waited = 4, kF2Cycle = 5, kF2Bound = 6, kGivenUp = 7, kCycle = 8, kF3Preset = 9, kF3Refused = 10, kF3First = 11, kF3NotStale = 12, kF3Met = 13, kF4Fence = 14 };
-+constexpr uint32_t kTypes = 16;
-+struct Cross {
-+	uint64_t v         = 0; // the released value the waits wait for (== v)
-+	uint64_t nonv      = 0; // the last other value a wait saw on the label
-+	bool     is64      = false;
-+	bool     have_nonv = false;
-+};
-+struct Ev {
-+	uint64_t t_ns  = 0;
-+	uint64_t label = 0;
-+	uint64_t value = 0; // the label's value (waits) or the value written
-+	uint64_t ref   = 0; // a wait's reference; a write's job seq
-+	uint64_t n     = 0; // the submission count when it happened
-+	uint32_t off   = 0;
-+	int32_t  ring  = 0;
-+	uint8_t  type  = 0;
-+	uint8_t  func  = 0;
-+	uint8_t  sat   = 0; // a wait: satisfied when seen
-+	uint8_t  pend  = 0; // a wait: pending writes to the label (capped at 255)
-+	char     kind[4] {};
-+};
-+constexpr uint32_t kEvN = 32768;
 +struct Store {
-+	std::mutex                                 m;
-+	std::vector<Ev>                            r;
-+	uint64_t                                   total = 0;
-+	std::map<std::pair<int, uint64_t>, std::vector<uint64_t>> job_waits; // (ring, seq) -> the labels of its kept GPU waits
-+	std::map<uint64_t, Cross>                  cross;                    // F3: the cross-queue labels, in memory only
-+	std::map<uint64_t, uint64_t>               preset_at;                // F3: label -> SoftCp::now_ns() of a preset whose release has not been seen yet
-+	uint64_t                                   c[kTypes] {};
-+	uint64_t                                   waited_ns = 0;
++	std::mutex                                                m;
++	std::map<std::pair<int, uint64_t>, std::vector<uint64_t>> job_waits; // (ring, seq) -> the labels of its kept GPU waits (the cycle check)
++#ifndef BC5_LEAN
++	uint64_t f2_cycle = 0, f4_fence = 0;
++	uint64_t f10_calls = 0, f10_hit = 0, f10_gone = 0, f10_bound = 0, f10_busy = 0, f10_ns = 0;
++	uint64_t f16_wait = 0, f16_ok = 0, f16_bound = 0, f16_stop[5] {}, f16_ns = 0, f16_max = 0;
++	uint64_t f18_wait = 0, f18_ok = 0, f18_none = 0, f18_bound = 0, f18_stop[5] {}, f18_cls[3] {}, f18_ns = 0, f18_max = 0;
++	uint64_t stands = 0; // bounds that still stood after F16 and F18
++#endif
 +};
-+inline void dump(int k);
 +inline Store& st() {
 +	static Store s;
 +	return s;
 +}
-+inline void add(const Ev& e) {
-+	Store&          s = st();
-+	std::lock_guard lk(s.m);
-+	if (s.r.size() != kEvN) s.r.assign(kEvN, Ev {});
-+	s.r[s.total % kEvN] = e;
-+	s.total++;
-+	if (e.type < kTypes) s.c[e.type]++;
++inline uint32_t pkt_len(uint32_t h) {
++	const uint32_t type = h >> 30u;
++	if (type != 3 && type != 0) return 1;
++	const uint32_t c = (h >> 16u) & 0x3fffu;
++	return c == 0x3fffu ? 1 : c + 2;
 +}
-+inline Ev ev(uint8_t type, uint64_t label, const char* kind, int ring, uint32_t off) {
-+	Ev e;
-+	e.t_ns  = SoftCp::now_ns();
-+	e.type  = type;
-+	e.label = label;
-+	e.ring  = ring;
-+	e.off   = off;
-+	e.n     = g_submits.load();
-+	std::snprintf(e.kind, sizeof(e.kind), "%s", kind != nullptr ? kind : "-");
-+	return e;
-+}
-+// One pass over a submitted job: its kept waits (for F2's cycle check), its registered writes and the writes the filter
-+// dropped (G). executed: the offsets the filter kept, in order.
++// One pass over a submitted job: its kept GPU waits on memory, for the cycle check of the waits after it.
++// executed: the offsets the filter kept, in order.
 +inline void job_submitted(const uint32_t* ib, uint32_t num_dwords, const std::vector<uint32_t>& executed, uint64_t seq, int ring, const char* kind) {
-+	if (!f2_on() && !g_on() && !f3_on()) return;
++	(void)kind;
 +	std::vector<uint64_t> waits;
-+	std::vector<Ev>       evs;
 +	size_t                e = 0;
 +	for (uint32_t q = 0; q < num_dwords;) {
-+		const uint32_t h = ib[q], type = h >> 30u;
-+		uint32_t       len = 1;
-+		if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++		const uint32_t h = ib[q], len = pkt_len(h);
 +		if (q + len > num_dwords) break;
 +		while (e < executed.size() && executed[e] < q) e++;
 +		const bool ran = e < executed.size() && executed[e] == q;
-+		if (type == 3) {
++		if ((h >> 30u) == 3) {
 +			const uint32_t  op = (h >> 8u) & 0xffu;
 +			const uint32_t* w  = ib + q;
-+			auto addr = [w](int lo, int hi) { return (static_cast<uint64_t>(w[lo]) & ~3ull) | (static_cast<uint64_t>(w[hi] & 0xffffu) << 32u); };
-+			uint64_t a = 0, v = 0;
-+			bool     wr = false;
-+			if (op == 0x49 && len >= 8 && (w[2] >> 29u) != 0) { a = addr(3, 4); v = w[5] | (static_cast<uint64_t>(w[6]) << 32u); wr = true; }
-+			else if (op == 0x47 && len >= 6 && (w[3] >> 29u) != 0) { a = addr(2, 3); v = w[4] | (static_cast<uint64_t>(w[5]) << 32u); wr = true; }
-+			else if (op == 0x37 && len >= 5 && (((w[1] >> 8u) & 0xfu) == 1 || ((w[1] >> 8u) & 0xfu) == 2 || ((w[1] >> 8u) & 0xfu) == 5)) { a = addr(2, 3); v = w[4] | (len >= 6 ? static_cast<uint64_t>(w[5]) << 32u : 0); wr = true; }
-+			else if ((op == 0x3c || op == 0x93) && len >= 4 && ((w[1] >> 4u) & 1u) != 0 && ran) waits.push_back(addr(2, 3));
-+			if (wr && g_on() && a >= 0x100000000ull) {
-+				Ev x  = ev(ran ? kWrite : kDropped, a, kind, ring, q);
-+				x.value = v;
-+				x.ref   = seq;
-+				x.func  = static_cast<uint8_t>(op);
-+				evs.push_back(x);
-+			}
++			if ((op == 0x3c || op == 0x93) && len >= 4 && ((w[1] >> 4u) & 1u) != 0 && ran)
++				waits.push_back((static_cast<uint64_t>(w[2]) & ~3ull) | (static_cast<uint64_t>(w[3] & 0xffffu) << 32u));
 +		}
 +		q += len;
 +	}
-+	Store&           s = st();
-+	std::unique_lock lk(s.m);
-+	if ((f2_on() || f3_on()) && !waits.empty()) {
++	Store&          s = st();
++	std::lock_guard lk(s.m);
++	if (!waits.empty()) {
 +		s.job_waits[{ring, seq}] = std::move(waits);
 +		if (s.job_waits.size() > 4096) s.job_waits.erase(s.job_waits.begin());
 +	}
-+	if (s.r.size() != kEvN) s.r.assign(kEvN, Ev {});
-+	for (const Ev& x: evs) {
-+		s.r[s.total % kEvN] = x;
-+		s.total++;
-+		s.c[x.type]++;
-+	}
++#ifndef BC5_LEAN
 +	static uint64_t last_line = 0;
 +	const uint64_t  now       = SoftCp::now_ns();
-+	if (g_on() && now - last_line > 30'000'000'000ull) {
++	if (now - last_line > 60'000'000'000ull) {
 +		last_line = now;
-+		journal("ho430 (exp 0430): t %.1f s: waits seen %" PRIu64 ", writes registered %" PRIu64 ", writes DROPPED by the host %" PRIu64 "; F3 cross-queue labels %zu, presets %" PRIu64 ", refused %" PRIu64 ", not stale %" PRIu64
-+		        ", first seen (to F2) %" PRIu64 ", waits meeting a preset before its release %" PRIu64 "; F2 waited %" PRIu64 " (%.1f ms in all), refused as a cycle %" PRIu64 ", bound reached %" PRIu64 "; unsatisfied waits dropped: GIVEN UP %" PRIu64 ", CYCLE %" PRIu64 "\n",
-+		        timing_now(), s.c[kWait], s.c[kWrite], s.c[kDropped], s.cross.size(), s.c[kF3Preset], s.c[kF3Refused], s.c[kF3NotStale], s.c[kF3First], s.c[kF3Met], s.c[kF2Waited], static_cast<double>(s.waited_ns) / 1e6,
-+		        s.c[kF2Cycle], s.c[kF2Bound], s.c[kGivenUp], s.c[kCycle]);
-+	}
-+#ifndef HO430_SHARED
-+	static bool         at_done = false; // BC5_0430_G_AT: one dump in a clean run
-+	static const double g_at    = [] {
-+		const char* e = BC5_DIAG_ENV("BC5_0430_G_AT");
-+		return e != nullptr ? std::atof(e) : 0.0;
-+	}();
-+	if (g_on() && !at_done && g_at > 0 && timing_now() >= g_at) {
-+		at_done = true;
-+		lk.unlock();
-+		dump(90);
++		journal("ho430 (exp 0430): t %.1f s: F4 fences %" PRIu64 ", F2 cycles left as they are %" PRIu64 "; F10 acb waits %" PRIu64 ", with a chain writing the label %" PRIu64 ", gone %" PRIu64 ", bound %" PRIu64 ", list busy %" PRIu64 " (%.1f ms in all); "
++		        "F16 in-flight waits %" PRIu64 ": returned %" PRIu64 ", 50 ms bound %" PRIu64 ", not waited (back-pressure/draining) %" PRIu64 "/%" PRIu64 ", %.1f ms in all, longest %.3f ms; "
++		        "F18 bounds looked at %" PRIu64 ": writers went %" PRIu64 ", no writer %" PRIu64 ", 50 ms bound %" PRIu64 ", not waited (back-pressure/draining) %" PRIu64 "/%" PRIu64 ", slots open writer/not a writer/still busy %" PRIu64 "/%" PRIu64 "/%" PRIu64 ", %.1f ms in all, longest %.3f ms; "
++		        "bounds that stood %" PRIu64 "\n",
++		        timing_now(), s.f4_fence, s.f2_cycle, s.f10_calls, s.f10_hit, s.f10_gone, s.f10_bound, s.f10_busy, static_cast<double>(s.f10_ns) / 1e6,
++		        s.f16_wait, s.f16_ok, s.f16_bound, s.f16_stop[1], s.f16_stop[4], static_cast<double>(s.f16_ns) / 1e6, static_cast<double>(s.f16_max) / 1e6,
++		        s.f18_wait, s.f18_ok, s.f18_none, s.f18_bound, s.f18_stop[1], s.f18_stop[4], s.f18_cls[0], s.f18_cls[1], s.f18_cls[2], static_cast<double>(s.f18_ns) / 1e6, static_cast<double>(s.f18_max) / 1e6,
++		        s.stands);
 +	}
 +#endif
 +}
 +inline void job_done(uint64_t seq, int ring, bool all) {
-+	if (!f2_on() && !f3_on()) return;
 +	Store&          s = st();
 +	std::lock_guard lk(s.m);
 +	if (all) s.job_waits.clear();
 +	else s.job_waits.erase({ring, seq});
 +}
-+inline void given_up(bool cycle, uint64_t label, const char* kind, int ring, uint32_t off) {
-+	if (g_on()) add(ev(cycle ? kCycle : kGivenUp, label, kind, ring, off));
++// F10: true while one of `mine` still has L open (unsubmitted) or in flight (its writes not registered yet), or is busy.
++inline bool f10_pending(uint64_t label, const std::vector<ChainSlot*>& mine) {
++	if (!g_f10_reg_mu.try_lock()) return true;
++	bool pending = false;
++	for (ChainSlot* cs: mine) {
++		if (std::find(g_f10_reg.begin(), g_f10_reg.end(), cs) == g_f10_reg.end()) continue; // its thread is gone
++		if (!cs->mu.try_lock()) { pending = true; break; }
++		if ((!cs->c.segs.empty() && std::find(cs->f10_writes.begin(), cs->f10_writes.end(), label) != cs->f10_writes.end()) ||
++		    std::find(cs->f10_flight.begin(), cs->f10_flight.end(), label) != cs->f10_flight.end()) pending = true;
++		cs->mu.unlock();
++		if (pending) break;
++	}
++	g_f10_reg_mu.unlock();
++	return pending;
++}
++// The phase gate of F16 and F18: true when one of the slots has been in back-pressure (1) or draining the GPU (4) for 2 ms.
++inline bool phase_gate(const std::vector<ChainSlot*>& sl, uint64_t& t_ph, int& ph_out) {
++	if (!g_f10_reg_mu.try_lock()) return false;
++	int ph = 0;
++	for (ChainSlot* cs: sl)
++		if (std::find(g_f10_reg.begin(), g_f10_reg.end(), cs) != g_f10_reg.end()) {
++			const int p = cs->f16_phase.load();
++			if (p == 1 || p == 4) ph = p;
++		}
++	g_f10_reg_mu.unlock();
++	const uint64_t now = SoftCp::now_ns();
++	if (ph == 0) t_ph = 0;
++	else if (t_ph == 0) t_ph = now;
++	else if (now - t_ph >= 2'000'000ull) {
++		ph_out = ph;
++		return true;
++	}
++	return false;
++}
++inline void f10_observe(uint64_t label) {
++	if (g_chain_mode < 2) return;
++	const uint64_t          t0 = SoftCp::now_ns();
++	std::vector<ChainSlot*> mine, seen;
++	bool                    list_busy = false;
++	for (;;) { // a busy list is looked at again until F10's 2 ms bound; slots already seen are not looked at twice
++		list_busy = false;
++		if (!g_f10_reg_mu.try_lock()) list_busy = true;
++		else {
++			for (ChainSlot* cs: g_f10_reg) {
++				if (cs == &g_chain_tl || std::find(seen.begin(), seen.end(), cs) != seen.end()) continue;
++				seen.push_back(cs);
++				if (!cs->mu.try_lock()) { // mid-append or at its swap: its write may be pending, so it is waited for below
++					mine.push_back(cs);
++					continue;
++				}
++				const bool writes = !cs->c.segs.empty() && std::find(cs->f10_writes.begin(), cs->f10_writes.end(), label) != cs->f10_writes.end();
++				if (writes && cs->hold.empty()) {
++					mine.push_back(cs);
++					if (cs->in_submit) cs->f10_wanted = true; // its owner flushes at its call's end
++					else cs->open_ns = 1;                     // due now for the watchdog
++				} else if (std::find(cs->f10_flight.begin(), cs->f10_flight.end(), label) != cs->f10_flight.end()) {
++					mine.push_back(cs); // being submitted now: wait for its writes' registration
++				} // a writer under the ADR 0013 hold is left to it
++				cs->mu.unlock();
++			}
++			g_f10_reg_mu.unlock();
++		}
++		if (!list_busy || SoftCp::now_ns() - t0 >= 2'000'000ull) break;
++		std::this_thread::yield();
++	}
++	bool bound = false;
++	if (!mine.empty()) {
++		chainwd_wake();
++		for (;;) {
++			if (!f10_pending(label, mine)) break;
++			if (SoftCp::now_ns() - t0 >= 2'000'000ull) {
++				bound = true;
++				break;
++			}
++			std::this_thread::sleep_for(std::chrono::microseconds(20));
++		}
++	}
++	// F16: the writers still in flight at the bound: wait for their submit_now to return.
++	int      f16_res = 0, f16_ph = 0; // 1 returned, 2 50 ms bound, 3 given up by phase
++	uint64_t f16_t   = 0;
++	if (bound && g_f10_reg_mu.try_lock()) {
++		struct W {
++			ChainSlot* cs;
++			uint64_t   done;
++		};
++		std::vector<W>          fl;
++		std::vector<ChainSlot*> fls;
++		for (ChainSlot* cs: mine) {
++			if (std::find(g_f10_reg.begin(), g_f10_reg.end(), cs) == g_f10_reg.end() || !cs->mu.try_lock()) continue;
++			if (std::find(cs->f10_flight.begin(), cs->f10_flight.end(), label) != cs->f10_flight.end()) fl.push_back({cs, cs->f16_done.load()});
++			cs->mu.unlock();
++		}
++		g_f10_reg_mu.unlock();
++		if (!fl.empty()) {
++			const uint64_t t1   = SoftCp::now_ns();
++			uint64_t       t_ph = 0;
++			for (;;) {
++				if (g_f10_reg_mu.try_lock()) {
++					std::erase_if(fl, [](const W& w) { return std::find(g_f10_reg.begin(), g_f10_reg.end(), w.cs) == g_f10_reg.end() || w.cs->f16_done.load() != w.done; });
++					g_f10_reg_mu.unlock();
++					if (fl.empty()) {
++						f16_res = 1;
++						break;
++					}
++					fls.clear();
++					for (const W& w: fl) fls.push_back(w.cs);
++					if (phase_gate(fls, t_ph, f16_ph)) {
++						f16_res = 3;
++						break;
++					}
++				}
++				if (SoftCp::now_ns() - t1 >= 50'000'000ull) {
++					f16_res = 2;
++					break;
++				}
++				std::this_thread::sleep_for(std::chrono::microseconds(20));
++			}
++			f16_t = SoftCp::now_ns() - t1;
++			if (f16_res == 1) bound = false;
++		}
++	}
++	// F18: a bound still standing.
++	int      f18_res = 0, f18_ph = 0; // 1 the writers went, 2 50 ms bound, 3 given up by phase, 4 no writer of L left
++	uint64_t f18_t   = 0;
++	uint32_t c18[3] {};
++	if (bound) {
++		std::vector<ChainSlot*> left = mine, w18;
++		bool                    fl18 = false, due = false;
++		const uint64_t          t1   = SoftCp::now_ns();
++		for (;;) {
++			if (g_f10_reg_mu.try_lock()) {
++				std::erase_if(left, [&](ChainSlot* cs) {
++					if (std::find(g_f10_reg.begin(), g_f10_reg.end(), cs) == g_f10_reg.end()) return true; // its thread is gone
++					if (!cs->mu.try_lock()) return false;
++					const bool open = !cs->c.segs.empty() && std::find(cs->f10_writes.begin(), cs->f10_writes.end(), label) != cs->f10_writes.end();
++					const bool fl   = std::find(cs->f10_flight.begin(), cs->f10_flight.end(), label) != cs->f10_flight.end();
++					if (open && !cs->in_submit && cs->hold.empty()) {
++						cs->open_ns = 1; // due now for the watchdog
++						due         = true;
++					}
++					cs->mu.unlock();
++					if (open) {
++						w18.push_back(cs);
++						c18[0]++;
++					} else if (fl) fl18 = true; // F16's
++					else c18[1]++;
++					return true;
++				});
++				g_f10_reg_mu.unlock();
++			}
++			if (left.empty() || SoftCp::now_ns() - t1 >= 200'000ull) break;
++			std::this_thread::yield();
++		}
++		for (ChainSlot* cs: left) {
++			c18[2]++;
++			w18.push_back(cs);
++		}
++		if (due) chainwd_wake();
++		if (w18.empty()) f18_res = 4;
++		uint64_t t_ph = 0;
++		while (f18_res == 0) {
++			if (!f10_pending(label, w18)) {
++				f18_res = 1;
++				break;
++			}
++			if (phase_gate(w18, t_ph, f18_ph)) {
++				f18_res = 3;
++				break;
++			}
++			if (SoftCp::now_ns() - t1 >= 50'000'000ull) {
++				f18_res = 2;
++				break;
++			}
++			std::this_thread::sleep_for(std::chrono::microseconds(20));
++		}
++		f18_t = SoftCp::now_ns() - t1;
++		if ((f18_res == 1 || f18_res == 4) && !fl18) bound = false; // nothing of L pending any more
++	}
++#ifndef BC5_LEAN
++	Store&          s = st();
++	std::lock_guard lk(s.m);
++	s.f10_calls++;
++	if (!mine.empty()) s.f10_hit++;
++	if (!mine.empty() && !bound && f16_res == 0 && f18_res == 0) s.f10_gone++;
++	if (f16_res != 0 || f18_res != 0) s.f10_bound++;
++	if (list_busy) s.f10_busy++;
++	if (f16_res != 0) {
++		s.f16_wait++;
++		if (f16_res == 1) s.f16_ok++;
++		else if (f16_res == 2) s.f16_bound++;
++		else s.f16_stop[f16_ph]++;
++		s.f16_ns += f16_t;
++		if (f16_t > s.f16_max) s.f16_max = f16_t;
++		if (s.f16_wait <= 64 || f16_res != 1)
++			journal("ho430 F16: in-flight writer of 0x%" PRIx64 " %s after %.3f ms more (2 ms before)%s\n", label,
++			        f16_res == 1 ? "returned" : f16_res == 2 ? "STILL IN SUBMIT at the 50 ms bound" : "not waited on", static_cast<double>(f16_t) / 1e6,
++			        f16_res == 3 ? (f16_ph == 1 ? ": it is in back-pressure" : ": it drains the GPU") : "");
++	}
++	if (f18_res != 0) {
++		s.f18_wait++;
++		if (f18_res == 1) s.f18_ok++;
++		else if (f18_res == 4) s.f18_none++;
++		else if (f18_res == 2) s.f18_bound++;
++		else s.f18_stop[f18_ph]++;
++		for (int k = 0; k < 3; k++) s.f18_cls[k] += c18[k];
++		s.f18_ns += f18_t;
++		if (f18_t > s.f18_max) s.f18_max = f18_t;
++		if (s.f18_wait <= 64 || bound)
++			journal("ho430 F18: bound on 0x%" PRIx64 ": pending slots open writer/not a writer/still busy %u/%u/%u; %s after %.3f ms more%s\n", label, c18[0], c18[1], c18[2],
++			        f18_res == 1 ? "the writers went" : f18_res == 4 ? "no writer of the label among them" : f18_res == 2 ? "A WRITER STILL PENDING at the 50 ms bound" : "a writer not waited on", static_cast<double>(f18_t) / 1e6,
++			        f18_res == 3 ? (f18_ph == 1 ? ": it is in back-pressure" : ": it drains the GPU") : "");
++	}
++	if (bound) {
++		s.stands++;
++		journal("ho430: THE BOUND STANDS on 0x%" PRIx64 " after %.3f ms: the wait is decided as before (%" PRIu64 " so far)\n", label, static_cast<double>(SoftCp::now_ns() - t0) / 1e6, s.stands);
++	}
++	s.f10_ns += SoftCp::now_ns() - t0;
++#else
++	(void)f16_t;
++	(void)f18_t;
++	(void)f16_ph;
++	(void)f18_ph;
++#endif
 +}
 +// At a wait of a buffer about to be submitted (submit_split), before the host decides it.
 +inline void at_wait(const uint32_t* p, bool is64, uint64_t label, const char* kind, int ring, const uint32_t* ib, uint32_t num_dwords, uint32_t off) {
-+	if (!f2_on() && !g_on() && !f3_on()) return;
-+	const bool     sat   = wait_satisfied(p, is64);
-+	const uint64_t value = is64 ? *reinterpret_cast<const volatile uint64_t*>(label & ~7ull) : *reinterpret_cast<const volatile uint32_t*>(label & ~3ull);
-+	const uint64_t ref   = is64 ? (p[4] | (static_cast<uint64_t>(p[5]) << 32u)) : p[4];
-+	const uint32_t func  = p[1] & 7u;
++	(void)off;
++	if (kind != nullptr && std::strncmp(kind, "acb", 3) == 0) f10_observe(label); // F10: the chains that write this label go first
++	if (!wait_satisfied(p, is64)) return;
 +	std::vector<std::pair<int, uint64_t>> others; // (ring, seq) of pending writes to this label on another ring
-+	uint32_t                              pend      = 0;
-+	bool                                  other_ref = false; // a pending write of exactly ref on another ring
 +	{
 +		std::lock_guard lk(g_plw_mutex);
-+		for (const auto& w: g_plw) {
-+			if (w.label != label) continue;
-+			pend++;
-+			if (w.ring != ring && w.value == ref && w.is64 == is64) other_ref = true;
-+			if (w.ring != ring && std::find(others.begin(), others.end(), std::make_pair(w.ring, w.seq)) == others.end()) others.emplace_back(w.ring, w.seq);
-+		}
++		for (const auto& w: g_plw)
++			if (w.label == label && w.ring != ring && std::find(others.begin(), others.end(), std::make_pair(w.ring, w.seq)) == others.end()) others.emplace_back(w.ring, w.seq);
 +	}
-+	if (f3_on() && func == 3) { // F3: the cross-queue label set, in memory only
-+		bool            first = false;
-+		Store&          s     = st();
-+		std::lock_guard lk(s.m);
-+		auto            it = s.cross.find(label);
-+		if (it == s.cross.end() && other_ref) {
-+			Cross c;
-+			c.v    = ref;
-+			c.is64 = is64;
-+			it     = s.cross.emplace(label, c).first;
-+			first  = true;
-+		}
-+		if (it != s.cross.end() && value != it->second.v) {
-+			it->second.nonv      = value;
-+			it->second.have_nonv = true;
-+		}
-+		if (first && sat && !others.empty()) s.c[kF3First]++; // the writer was submitted before the label was known: F2 below
-+		// The top session's guard (2): a wait that meets a preset label before its release has landed. Waits kept for the GPU
-+		// and the host's CPU-side waits on the title's behalf both pass here; the title's own CPU reads of the label do not
-+		// reach the host and are not seen.
-+		const auto pa = s.preset_at.find(label);
-+		if (pa != s.preset_at.end()) {
-+			if (it != s.cross.end() && value == it->second.v) {
-+				s.preset_at.erase(pa); // the release has landed
-+			} else if (SoftCp::now_ns() - pa->second > 2'000'000'000ull) {
-+				s.preset_at.erase(pa);
-+			} else {
-+				s.c[kF3Met]++;
-+				static uint64_t n_m = 0;
-+				if (n_m++ < 128 || (n_m & 0x3ffu) == 0)
-+					journal("ho430 F3: %s on ring %d waits at %u on 0x%" PRIx64 " %.2f ms after its preset, before the release (value 0x%" PRIx64 ", reference 0x%" PRIx64 "; %" PRIu64 " so far)\n", kind, ring, off, label,
-+					        static_cast<double>(SoftCp::now_ns() - pa->second) / 1e6, value, ref, n_m);
-+			}
-+		}
-+	}
-+	if (g_on()) {
-+		Ev x    = ev(kWait, label, kind, ring, off);
-+		x.value = value;
-+		x.ref   = ref;
-+		x.func  = static_cast<uint8_t>(func);
-+		x.sat   = sat ? 1 : 0;
-+		x.pend  = static_cast<uint8_t>(std::min<uint32_t>(pend, 255));
-+		add(x);
-+	}
-+	if (!f2_on() || !sat || others.empty()) return;
++	if (others.empty()) return;
 +	// The cycle check: a writer job holding a kept GPU wait on a label this buffer writes cannot complete before this buffer runs.
-+	std::vector<uint64_t> mine;
++	std::vector<uint64_t> writes;
 +	for (uint32_t q = 0; q < num_dwords;) {
-+		const uint32_t h = ib[q], type = h >> 30u;
-+		uint32_t       len = 1;
-+		if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++		const uint32_t h = ib[q], len = pkt_len(h);
 +		if (q + len > num_dwords) break;
 +		const uint32_t op = (h >> 8u) & 0xffu;
-+		if (type == 3 && ((op == 0x49 && len >= 6) || (op == 0x37 && len >= 4) || (op == 0x47 && len >= 4))) {
++		if ((h >> 30u) == 3 && ((op == 0x49 && len >= 6) || (op == 0x37 && len >= 4) || (op == 0x47 && len >= 4))) {
 +			const int lo = op == 0x49 ? 3 : 2;
-+			mine.push_back((static_cast<uint64_t>(ib[q + lo]) & ~3ull) | (static_cast<uint64_t>(ib[q + lo + 1] & 0xffffu) << 32u));
++			writes.push_back((static_cast<uint64_t>(ib[q + lo]) & ~3ull) | (static_cast<uint64_t>(ib[q + lo + 1] & 0xffffu) << 32u));
 +		}
 +		q += len;
 +	}
-+	bool cycle = false;
-+	{
-+		Store&          s = st();
-+		std::lock_guard lk(s.m);
-+		for (const auto& o: others) {
-+			const auto it = s.job_waits.find(o);
-+			if (it == s.job_waits.end()) continue;
-+			for (const uint64_t l: it->second)
-+				if (std::find(mine.begin(), mine.end(), l) != mine.end()) cycle = true;
-+		}
-+	}
-+	if (cycle) {
-+		Ev x    = ev(kF2Cycle, label, kind, ring, off);
-+		x.value = value;
-+		x.ref   = others.front().second;
-+		add(x);
-+		static std::atomic<uint64_t> n_c {0};
-+		const uint64_t               k = n_c++;
-+		if (k < 64 || (k & 0xfffu) == 0) journal("ho430 F2: %s wait at %u on 0x%" PRIx64 " (value 0x%" PRIx64 ", satisfied) has a pending write from job %" PRIu64 " on ring %d, which waits on a label this buffer writes: a cycle, F2 refused (%" PRIu64 " so far)\n", kind, off, label, value, others.front().second, others.front().first, k + 1);
-+		return;
-+	}
-+	if (f4_on()) { // F4: the same order through the kernel's scheduler: this buffer's next submission depends on the writer jobs
-+		for (const auto& o: others) bc5::direct::Device::add_next_submit_dependency(o.first, o.second);
-+		Ev x    = ev(kF4Fence, label, kind, ring, off);
-+		x.value = value;
-+		x.ref   = others.front().second;
-+		add(x);
-+		static std::atomic<uint64_t> n_f {0};
-+		const uint64_t               k = n_f++;
-+		if (k < 64 || (k & 0x3fffu) == 0)
-+			journal("ho430 F4: %s wait at %u on 0x%" PRIx64 " was satisfied (value 0x%" PRIx64 ") with a pending write from job %" PRIu64 " on ring %d (%zu such jobs): the submission depends on it (%" PRIu64 " so far)\n", kind, off, label, value,
-+			        others.front().second, others.front().first, others.size(), k + 1);
-+		return;
-+	}
-+	const uint64_t t0 = SoftCp::now_ns();
-+	bool           done = false;
-+	while (SoftCp::now_ns() - t0 < 250'000'000ull && (!g_dev || !g_dev->wedged())) {
-+		bool left = false;
-+		{
-+			std::lock_guard lk(g_plw_mutex);
-+			for (const auto& w: g_plw)
-+				if (w.label == label && std::find(others.begin(), others.end(), std::make_pair(w.ring, w.seq)) != others.end()) left = true;
-+		}
-+		if (!left) { done = true; break; }
-+		std::this_thread::sleep_for(std::chrono::microseconds(50));
-+	}
-+	const uint64_t waited = SoftCp::now_ns() - t0;
-+	Ev             x      = ev(done ? kF2Waited : kF2Bound, label, kind, ring, off);
-+	x.value               = value;
-+	x.ref                 = others.front().second;
-+	add(x);
-+	{
-+		Store&          s = st();
-+		std::lock_guard lk(s.m);
-+		s.waited_ns += waited;
-+	}
-+	static std::atomic<uint64_t> n_w {0};
-+	const uint64_t               k = n_w++;
-+	if (!done || k < 256 || (k & 0x3ffu) == 0)
-+		journal("ho430 F2: %s wait at %u on 0x%" PRIx64 " was satisfied (value 0x%" PRIx64 ") with a pending write from job %" PRIu64 " on ring %d (%zu such jobs): %s after %.2f ms (%" PRIu64 " so far)\n", kind, off, label, value,
-+		        others.front().second, others.front().first, others.size(), done ? "waited for it" : "BOUND REACHED, decided as before", static_cast<double>(waited) / 1e6, k + 1);
-+}
-+// F3 at the submit of a buffer (submit_now, before the device call): for each release of a cross-queue label in it, the
-+// stale case (the label already holds the released value) gets the label set to another value first. ib is the buffer as
-+// submitted (no rebuilt copy: the caller passes it only when the host did not rebuild it), drops the host's drop offsets.
-+inline void f3_before_submit(const uint32_t* ib, uint32_t num_dwords, const std::vector<uint32_t>& drops, int ring, const char* kind, const std::vector<bc5::direct::Mapping>& maps) {
-+	if (!f3_on()) return;
-+	{
-+		Store&          s = st();
-+		std::lock_guard lk(s.m);
-+		if (s.cross.empty()) return;
-+	}
-+	std::vector<std::pair<uint32_t, uint32_t>> conds; // COND_EXEC ranges [from, to)
-+	std::vector<uint64_t>                      waited; // labels this buffer waits on before the position
-+	std::vector<uint64_t>                      done;
-+	for (uint32_t q = 0; q < num_dwords;) {
-+		const uint32_t h = ib[q], type = h >> 30u;
-+		uint32_t       len = 1;
-+		if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
-+		if (q + len > num_dwords) break;
-+		if (type == 3) {
-+			const uint32_t  op = (h >> 8u) & 0xffu;
-+			const uint32_t* w  = ib + q;
-+			auto addr = [w](int lo, int hi) { return (static_cast<uint64_t>(w[lo]) & ~3ull) | (static_cast<uint64_t>(w[hi] & 0xffffu) << 32u); };
-+			if (op == 0x22 && len >= 5) conds.emplace_back(q + len, q + len + (w[4] & 0x3fffu));
-+			if ((op == 0x3c || op == 0x93) && len >= 4 && ((w[1] >> 4u) & 1u) != 0) waited.push_back(addr(2, 3));
-+			uint64_t a = 0, v = 0;
-+			bool     wr = false, w64 = false;
-+			if (op == 0x49 && len >= 8 && ((w[2] >> 29u) == 1 || (w[2] >> 29u) == 2)) { a = addr(3, 4); w64 = (w[2] >> 29u) == 2; v = w64 ? (w[5] | (static_cast<uint64_t>(w[6]) << 32u)) : w[5]; wr = true; }
-+			else if (op == 0x37 && len >= 5 && (((w[1] >> 8u) & 0xfu) == 1 || ((w[1] >> 8u) & 0xfu) == 2 || ((w[1] >> 8u) & 0xfu) == 5)) { a = addr(2, 3); w64 = len >= 6; v = w64 ? (w[4] | (static_cast<uint64_t>(w[5]) << 32u)) : w[4]; wr = true; }
-+			if (wr && std::find(done.begin(), done.end(), a) == done.end()) {
-+				Cross c;
-+				bool  known = false;
-+				{
-+					Store&          s = st();
-+					std::lock_guard lk(s.m);
-+					const auto      it = s.cross.find(a);
-+					if (it != s.cross.end()) { c = it->second; known = true; }
-+				}
-+				if (known && c.v == v && c.is64 == w64) {
-+					done.push_back(a);
-+					const char* why = nullptr;
-+					if (std::find(drops.begin(), drops.end(), q) != drops.end()) why = "the host drops the release";
-+					else if (std::any_of(conds.begin(), conds.end(), [q](const auto& r) { return q >= r.first && q < r.second; })) why = "the release is inside a COND_EXEC range";
-+					else if (std::find(waited.begin(), waited.end(), a) != waited.end()) why = "this buffer waits on the label itself";
-+					else if (!covered_sorted(maps, a, w64 ? 8 : 4)) why = "the label is not mapped";
-+					else {
-+						{ // the top session's guard (1): no job submitted and not completed, on any ring, still writes the label ...
-+							std::lock_guard lk(g_plw_mutex);
-+							for (const auto& pw: g_plw)
-+								if (pw.label == a) why = "a job in flight still writes the label (F2 stays the fallback)";
-+						}
-+						if (why == nullptr) { // ... or reads it through a kept wait
-+							Store&          s = st();
-+							std::lock_guard lk(s.m);
-+							for (const auto& [job, labels]: s.job_waits)
-+								if (std::find(labels.begin(), labels.end(), a) != labels.end()) why = "a job in flight holds a kept wait on the label (F2 stays the fallback)";
-+						}
-+					}
-+					const uint64_t now = w64 ? *reinterpret_cast<const volatile uint64_t*>(a & ~7ull) : *reinterpret_cast<const volatile uint32_t*>(a & ~3ull);
-+					if (why == nullptr && now != v) {
-+						add(ev(kF3NotStale, a, kind, ring, q));
-+					} else if (why != nullptr) {
-+						Ev x    = ev(kF3Refused, a, kind, ring, q);
-+						x.value = now;
-+						add(x);
-+						static std::atomic<uint64_t> n_r {0};
-+						const uint64_t               k = n_r++;
-+						if (k < 64 || (k & 0x3ffu) == 0) journal("ho430 F3: %s release of 0x%" PRIx64 " (value 0x%" PRIx64 ") at %u, label now 0x%" PRIx64 ": no preset, %s (%" PRIu64 " so far)\n", kind, a, v, q, now, why, k + 1);
-+					} else {
-+						const uint64_t set = c.have_nonv ? c.nonv : (v ^ 1ull);
-+						if (w64) *reinterpret_cast<volatile uint64_t*>(a & ~7ull) = set;
-+						else *reinterpret_cast<volatile uint32_t*>(a & ~3ull) = static_cast<uint32_t>(set);
-+						Ev x    = ev(kF3Preset, a, kind, ring, q);
-+						x.value = set;
-+						x.ref   = v;
-+						add(x);
-+						{
-+							Store&          s = st();
-+							std::lock_guard lk(s.m);
-+							s.preset_at[a] = SoftCp::now_ns();
-+						}
-+						static std::atomic<uint64_t> n_p {0};
-+						const uint64_t               k = n_p++;
-+						if (k < 256 || (k & 0x3ffu) == 0) journal("ho430 F3: %s on ring %d releases 0x%" PRIx64 " with 0x%" PRIx64 " at %u while it already holds that value: set to 0x%" PRIx64 " first (%" PRIu64 " so far)\n", kind, ring, a, v, q, set, k + 1);
-+					}
-+				}
++	Store&           s = st();
++	std::unique_lock lk(s.m);
++	for (const auto& o: others) {
++		const auto it = s.job_waits.find(o);
++		if (it == s.job_waits.end()) continue;
++		for (const uint64_t l: it->second)
++			if (std::find(writes.begin(), writes.end(), l) != writes.end()) {
++#ifndef BC5_LEAN
++				const uint64_t k = s.f2_cycle++;
++				if (k < 64 || (k & 0xfffu) == 0)
++					journal("ho430 F2: %s wait at %u on 0x%" PRIx64 " (satisfied) has a pending write from job %" PRIu64 " on ring %d, which waits on a label this buffer writes: a cycle, not ordered (%" PRIu64 " so far)\n", kind, off, label, o.second, o.first, k + 1);
++#endif
++				return;
 +			}
-+		}
-+		q += len;
 +	}
-+}
-+inline void dump(int k) {
-+	if (!g_on()) return;
-+	std::vector<Ev> all;
-+	uint64_t        c[kTypes] {};
-+	{
-+		Store&          s = st();
-+		std::lock_guard lk(s.m);
-+		if (s.r.size() == kEvN)
-+			for (uint64_t i = s.total > kEvN ? s.total - kEvN : 0; i < s.total; i++) all.push_back(s.r[i % kEvN]);
-+		std::memcpy(c, s.c, sizeof(c));
-+	}
-+	const std::string dir = g_dump_dir.empty() ? std::string(std::getenv("HOME") ? std::getenv("HOME") : ".") + "/bc5-work" : g_dump_dir;
-+	char              name[640];
-+	std::snprintf(name, sizeof(name), "%s/g0430-%d.txt", dir.c_str(), k);
-+	FILE* f = std::fopen(name, "w");
-+	if (f == nullptr) return;
-+	static const char* const tn[kTypes] = {"-", "wait", "write", "DROPPED-WRITE", "F2-waited", "F2-cycle", "F2-bound", "GIVEN-UP", "CYCLE", "F3-preset", "F3-refused", "F3-first-seen", "F3-not-stale", "F3-wait-met-preset", "F4-fence", "?"};
-+	std::fprintf(f, "g0430 %d at t %.3f s: the last %zu label events, oldest first; counts: waits %" PRIu64 " writes %" PRIu64 " dropped writes %" PRIu64 " F2 waited %" PRIu64 " cycle %" PRIu64 " bound %" PRIu64 " given up %" PRIu64 " cycle-broken %" PRIu64 "\n", k,
-+	             timing_now(), all.size(), c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8]);
-+	std::fprintf(f, "columns: t_s type label kind ring about#n offset | wait: value ref func satisfied pending | write: value job_seq op\n");
-+	for (const Ev& e: all) {
-+		std::fprintf(f, "%.6f %s 0x%" PRIx64 " %s %d #%" PRIu64 " %u", static_cast<double>(e.t_ns) / 1e9, e.type < kTypes ? tn[e.type] : "?", e.label, e.kind, e.ring, e.n, e.off);
-+		if (e.type == kWait) std::fprintf(f, " | value 0x%" PRIx64 " ref 0x%" PRIx64 " func %u %s pending %u\n", e.value, e.ref, e.func, e.sat != 0 ? "SATISFIED" : "unsatisfied", e.pend);
-+		else std::fprintf(f, " | value 0x%" PRIx64 " job %" PRIu64 " op %02x\n", e.value, e.ref, e.func);
-+	}
-+	std::fflush(f);
-+	fsync(fileno(f));
-+	std::fclose(f);
++#ifndef BC5_LEAN
++	const uint64_t k = s.f4_fence++;
++#endif
++	lk.unlock();
++	for (const auto& o: others) bc5::direct::Device::add_next_submit_dependency(o.first, o.second); // F4: the kernel orders it
++#ifndef BC5_LEAN
++	if (k < 64 || (k & 0x3fffu) == 0)
++		journal("ho430 F4: %s wait at %u on 0x%" PRIx64 " was satisfied with a pending write from job %" PRIu64 " on ring %d (%zu such jobs): the submission depends on it (%" PRIu64 " so far)\n", kind, off, label,
++		        others.front().second, others.front().first, others.size(), k + 1);
++#endif
 +}
 +} // namespace ho430
-+
 +static void forget_label_writes(uint64_t seq, int ring, bool all) {
 +	std::lock_guard lk(g_plw_mutex);
 +	ho430::job_done(seq, ring, all); // exp 0430 (tag ho430)
@@ -44410,7 +44370,7 @@ index 0000000..4828919
 +			else if ((op == 0x3c || op == 0x93) && len >= 4 && ((p[1] >> 4u) & 1u) != 0) {
 +				const uint64_t label = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
 +				if (std::find(written.begin(), written.end(), label) == written.end()) {
-+					ho430::at_wait(p, op == 0x93, label, kind, job_ring(kind), ib, num_dwords, i); // exp 0430 (tag ho430): F2 and F3
++					ho430::at_wait(p, op == 0x93, label, kind, job_ring(kind), ib, num_dwords, i); // exp 0430 (tag ho430): F10, F2 + F4
 +					if (!wait_satisfied(p, op == 0x93)) chain_flush(1); // ADR 0010: what the chain holds may write this label
 +					// No split (run 44: pieces of one IB interleave with other processes' submissions,
 +					// which leave their own SH state behind — a dispatch after a split ran with a
@@ -44688,7 +44648,6 @@ index 0000000..4828919
 +					}
 +					if (!ok) journal("cpu-wait %s at %u on 0x%" PRIx64 ": %s after %.1f ms\n", op == 0x93 ? "WAIT_REG_MEM64" : "WAIT_REG_MEM", i, label, broken ? "CYCLE" : (limit < 1'000'000'000ull ? "GIVEN UP" : "TIMEOUT"), static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
 +					if (!ok) t_wait_given_up = true;
-+					if (!ok) ho430::given_up(broken, label, kind, job_ring(kind), i); // exp 0430 (tag ho430)
 +					if (dry_here) (ok ? g_dry_ok : g_dry_failed)++;
 +					frame_profile_wait(on_game_thread(), false, static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
 +					static const bool timing_waits_env = BC5_DIAG_ENV("BC5_DIRECT_TIMING") != nullptr;
@@ -48497,7 +48456,7 @@ index 0000000..4828919
 +	}
 +	journal("timeout layout (exp 0412, tag tl412): %u dispatches of %s #%" PRIu64 " and %zu views written and synced in %.1f ms: %s\n", n_disp, kind, job, vr.size(), (timing_now() - t0) * 1000.0, name);
 +}
-+static void timeout_probe(const uint32_t* sub_ib, uint32_t sub_n, const char* kind, uint64_t n, const std::vector<uint32_t>* ran, const std::vector<GeProbeSlot>* gep = nullptr) {
++[[maybe_unused]] static void timeout_probe(const uint32_t* sub_ib, uint32_t sub_n, const char* kind, uint64_t n, const std::vector<uint32_t>* ran, const std::vector<GeProbeSlot>* gep = nullptr) {
 +	tl412_record(sub_ib, sub_n, kind, n); // exp 0412 (tag tl412): first, before the probe's own files
 +	if (sub_ib == nullptr || sub_n == 0 || BC5_DIAG_ENV("BC5_DIRECT_TIMEOUT_PROBE") == nullptr || g_dump_dir.empty() || !g_dev) return;
 +	{
@@ -48995,7 +48954,9 @@ index 0000000..4828919
 +			if (r.timed_out && j.fl_plan.crumbs) fl_probe(j.fl_plan, j.n, j.kind, g_dev && j.dev_gen == g_dev_gen.load()); // experiment 0404: first, before the long probe
 +			if (!r.timed_out && r.ok && j.fl_plan.crumbs) fl_keep_done(j.fl_plan, j.n); // exp 0401 e7 (flx) A1: the last done draw, for a later timeout
 +			if (!r.timed_out && r.ok && j.fl_plan.crumbs) smp_sample(j.fl_plan, j.n, j.kind, g_dev && j.dev_gen == g_dev_gen.load()); // exp 0401 e8 (smp): the draws of a completed job, at most every N s
++#ifndef BC5_LEAN // exp 0430: the probe is a diagnostic; the lean build has none of it
 +			if (r.timed_out && !j.ib_copy.empty()) timeout_probe(j.ib_copy.data(), static_cast<uint32_t>(j.ib_copy.size()), j.kind, j.n, &j.ran_copy, &j.ge_probe); // experiment 0160
++#endif
 +			if (r.timed_out) {
 +				std::lock_guard lock(g_dev_mutex);
 +				if (j.dev_gen == g_dev_gen.load()) { // the other queue's thread may have been first
@@ -49067,6 +49028,7 @@ index 0000000..4828919
 +}
 +
 +static void wait_jobs() {
++	if (t_f16_slot != nullptr) t_f16_slot->f16_phase.store(4); // exp 0430 F16: a submit drains the GPU: no waiter may wait on it
 +	chain_flush(5); // ADR 0010
 +	if (!g_async || !g_dev) return;
 +	bc5::load_stat::Scope ls_scope(bc5::load_stat::kWaitJobs); // experiment 0415 (ls415)
@@ -49516,8 +49478,10 @@ index 0000000..4828919
 +	}
 +	bc5::load_stat::delay(bc5::load_stat::kDevLockWait); // experiment 0415 (ls415): a delay outside the lock, measurement only
 +	const uint64_t  ls_w0 = bc5::load_stat::begin();
++	if (t_f16_slot != nullptr) t_f16_slot->f16_phase.store(2); // exp 0430 F16: past the back-pressure, asking for the device
 +	const uint64_t  fs_ask = fs415_file() != nullptr ? SoftCp::now_ns() : 0; // experiment 0415 (fs415b)
 +	std::lock_guard lock(g_dev_mutex);
++	if (t_f16_slot != nullptr) t_f16_slot->f16_phase.store(3); // exp 0430 F16
 +	const uint64_t  fs_got = fs_ask != 0 ? SoftCp::now_ns() : 0;
 +	bc5::load_stat::end(bc5::load_stat::kDevLockWait, ls_w0);
 +	bc5::load_stat::Scope ls_hold(bc5::load_stat::kDevLockHold);
@@ -50316,7 +50280,6 @@ index 0000000..4828919
 +		offsets.swap(back);
 +	};
 +	const uint64_t ls_t3 = SoftCp::now_ns(); // experiment 0415 (ls415c)
-+	if (sub_ib == ib) ho430::f3_before_submit(ib, num_dwords, opt.drop_offsets, qring, kind, *maps_p); // exp 0430 (tag ho430): F3
 +	auto r = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, true, qring);
 +	if (bc5::load_stat::on()) { // experiment 0415 (ls415c): the hold by part
 +		bc5::load_stat::add(bc5::load_stat::kHoldPre, ls_t3 - t2);
@@ -50456,7 +50419,7 @@ index 0000000..4828919
 +		it.job.kind       = kind;
 +		it.job.num_dwords = num_dwords;
 +		it.job.ib         = ib;
-+		if (BC5_DIAG_ENV("BC5_DIRECT_TIMEOUT_PROBE") != nullptr) { if (fl_ib.empty()) it.job.ib_copy.assign(sub_ib, sub_ib + sub_n); else it.job.ib_copy.assign(ib, ib + num_dwords); it.job.ran_copy = r.executed_offsets; } // experiment 0160 (+ exp 0404: without the crumbs)
++		if (BC5_LEAN_OR(false, BC5_DIAG_ENV("BC5_DIRECT_TIMEOUT_PROBE") != nullptr)) { if (fl_ib.empty()) it.job.ib_copy.assign(sub_ib, sub_ib + sub_n); else it.job.ib_copy.assign(ib, ib + num_dwords); it.job.ran_copy = r.executed_offsets; } // experiment 0160 (+ exp 0404: without the crumbs)
 +		it.job.catch_slots.swap(catch_slots); // experiment 0401 series e
 +		it.job.fl_plan = std::move(fl_plan); // experiment 0404
 +		it.job.ge_probe.swap(t_ge_probe); t_ge_probe.clear(); // experiment 0160

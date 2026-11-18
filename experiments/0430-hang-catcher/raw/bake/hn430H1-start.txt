@@ -1,0 +1,27 @@
+2026-11-18 23:22:57
+arm hn430H1 (h), cap 500 s, play 240 s, binary /home/kjaniszewski/bc5-work/exp0430/kyty_emulator md5 717177a40aaac862241a86134106a847, launcher fc06c3d5, fuse 0
+the arm's words: BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 BC5_0412N_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0430/n/input-hn430H1.cfg 
+extra: BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_INDIRECT=1 BC5_DIRECT_ACB_STATE_NO_WALK=1 BC5_DIRECT_ACB_SPLIT_LATE=3
+boot 40a8312e, up since 2026-11-18 15:39:24
+MemAvailable:   14231996 kB SwapTotal:       7778300 kB SwapFree:        7390628 kB 
+place: the Bazzite host (P_HOST=1), no distrobox
+emulator pid 3956228 exe /var/home/kjaniszewski/bc5-work/exp0430/kyty_emulator cwd /var/home/kjaniszewski/bc5-work/exp0430/n/wd
+maps at 30 s: /usr/lib64/libpipewire-0.3.so.0.1611.0
+maps at 30 s: /usr/lib64/libvulkan_radeon.so
+maps at 30 s: /usr/lib64/mangohud/libMangoHud.so
+maps at 30 s: /usr/lib64/pipewire-0.3/libpipewire-module-adapter.so
+maps at 30 s: /usr/lib64/pipewire-0.3/libpipewire-module-client-device.so
+maps at 30 s: /usr/lib64/pipewire-0.3/libpipewire-module-client-node.so
+maps at 30 s: /usr/lib64/pipewire-0.3/libpipewire-module-metadata.so
+maps at 30 s: /usr/lib64/pipewire-0.3/libpipewire-module-protocol-native.so
+maps at 30 s: /usr/lib64/pipewire-0.3/libpipewire-module-rt.so
+maps at 30 s: /usr/lib64/pipewire-0.3/libpipewire-module-session-manager.so
+route: cross (start screen) at 87 s
+route: the save-slot list runs; down x 3, cross (slot 4) at 94 s
+route: cross (Continue) at 100 s
+route: the load seen at 103 s
+route: gameplay G = 108 s (the load at 103 s)
+route: the 14:50 record's gameplay (100 lines) queued at 108 s
+route: exp 0379's walk queued after it (14 cycles; exp 0428 long set)
+lean session: stop exit 0; shell during the run: not read; restore exit 0; shell after: active
+launcher gone: yes; launcher exit 65
