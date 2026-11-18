@@ -4371,15 +4371,16 @@ index 0000000..1b21c76
 +} // namespace bc5::ajm_trail
 diff --git a/src/bc5/anon_sync.hpp b/src/bc5/anon_sync.hpp
 new file mode 100644
-index 0000000..f74cbb1
+index 0000000..7a2ae6f
 --- /dev/null
 +++ b/src/bc5/anon_sync.hpp
-@@ -0,0 +1,73 @@
+@@ -0,0 +1,107 @@
 +// BC5 experiment 0415 (tag as415), stage S5 of experiments/0415-load-times-fps/DESIGN-lock-side.md: the pieces of the
 +// anonymous sync that the submission path and the checking thread share, kept apart from the device so that they can be
 +// tested on any CPU (experiments/0415-load-times-fps/kit/test0415anon.cpp).
 +#pragma once
 +
++#include <atomic>
 +#include <cinttypes>
 +#include <cstdint>
 +#include <cstdio>
@@ -4405,11 +4406,44 @@ index 0000000..f74cbb1
 +}
 +
 +// KYTY_BC5_ANON_SYNC: 0 off (unset, empty, "0"); 2 "thread" (the submission path leaves the walk out while the checking
-+// thread's last pass saw what the last walk saw); 1 anything else ("verify": the walk runs as before and
-+// is compared with what "thread" would have done).
++// thread's last pass saw what the last walk saw); 3 "events" (tag as415c: no thread; the walk runs at the first call
++// after a host call that made anonymous memory readable in the guest's span, and otherwise only while the last walk's
++// list was not empty); 1 anything else ("verify": the walk runs as before and is compared with what "thread" and
++// "events" would have done).
 +inline int mode_of(const char* e) {
 +	if (e == nullptr || e[0] == '\0' || std::strcmp(e, "0") == 0) return 0;
++	if (std::strcmp(e, "events") == 0) return 3;
 +	return std::strcmp(e, "thread") == 0 ? 2 : 1;
++}
++
++// Tag as415c (DESIGN-lock-side.md section 8). One process-wide counter of the host calls that can make anonymous
++// memory readable inside the guest's span: an anonymous map with a readable protection, or a protect call that turns
++// reading on. The sites call note() AFTER the kernel call has succeeded, so a walk that read the counter before its
++// read of /proc/self/maps either sees the mapping or sees the counter move at the next call. A protect site cannot
++// tell a file view from an anonymous range, so it notes every readable protect in the span: too often is safe (one
++// walk more), too rarely is not. The console needs none of this: there a mapping is visible to the GPU when the call
++// that made it returns [inferred: one address space for CPU and GPU]; the rule kept here is "walked by the first
++// submission after the call".
++inline std::atomic<uint64_t>& events() {
++	static std::atomic<uint64_t> v {0};
++	return v;
++}
++inline bool in_span(uint64_t addr, uint64_t len) {
++	return len != 0 && addr <= kGuestMax && addr + len > kGuestMin;
++}
++inline void note(uint64_t addr, uint64_t len, bool readable) {
++	if (readable && in_span(addr, len)) events().fetch_add(1, std::memory_order_release);
++}
++// "events": must this call walk at once (whatever the time limits say)? Yes when no walk stands (start, device
++// reopen) or the counter has moved since the last walk read it.
++inline bool events_moved(uint64_t ev_now, uint64_t ev_at_walk, bool walk_valid) {
++	return !walk_valid || ev_now != ev_at_walk;
++}
++// "events": may this call leave the walk out altogether? Only when the counter has not moved and the last walk found
++// no anonymous guest VMA at all (inside such a VMA pages become resident without any call, so while one exists the
++// walk keeps its old timing).
++inline bool events_skip(bool moved, bool last_list_empty) {
++	return !moved && last_list_empty;
 +}
 +
 +// The signature of what a walk acts on: the list of VMAs and, inside each, the resident runs at the walk's 64 KiB grain.
@@ -6524,7 +6558,7 @@ index 0a6ef8b..97b2614 100644
  
  // Pass access-pattern hints to the host.
 diff --git a/src/common/platform/sysLinuxVirtual.cpp b/src/common/platform/sysLinuxVirtual.cpp
-index 7225e2e..5403083 100644
+index 7225e2e..4bd352c 100644
 --- a/src/common/platform/sysLinuxVirtual.cpp
 +++ b/src/common/platform/sysLinuxVirtual.cpp
 @@ -1,3 +1,4 @@
@@ -6532,7 +6566,15 @@ index 7225e2e..5403083 100644
  #include "common/common.h"
  
  #if KYTY_PLATFORM != KYTY_PLATFORM_LINUX
-@@ -65,6 +66,9 @@ static int get_protection_flag(VirtualMemory::Mode mode) {
+@@ -7,6 +8,7 @@
+ #include "common/assert.h"
+ #include "common/platform/sysVirtual.h"
+ #include "common/virtualMemory.h"
++#include "bc5/anon_sync.hpp" // experiment 0415 (as415c)
+ 
+ #include <atomic>
+ #include <map>
+@@ -65,6 +67,9 @@ static int get_protection_flag(VirtualMemory::Mode mode) {
  		case VirtualMemory::Mode::NoAccess:
  		default: protect = PROT_NONE; break;
  	}
@@ -6542,6 +6584,130 @@ index 7225e2e..5403083 100644
  	return protect;
  }
  
+@@ -122,10 +127,18 @@ static uintptr_t align_up_to(uintptr_t addr, uint64_t alignment) {
+ }
+ #endif
+ 
++// Experiment 0415 (tag as415c): every map this file makes goes through here, so that an anonymous readable map inside
++// the guest's span is counted for the anonymous sync (bc5/anon_sync.hpp). The call itself is unchanged.
++static void* as415_mmap(void* addr, size_t size, int protect, int flags, int fd, off_t offset) {
++	void* ptr = mmap(addr, size, protect, flags, fd, offset); // NOLINT
++	if (ptr != MAP_FAILED && fd < 0) bc5::anon_sync::note(reinterpret_cast<uint64_t>(ptr), size, (protect & PROT_READ) != 0);
++	return ptr;
++}
++
+ // Freed arena addresses are not reused while GPU caches remain keyed by address.
+ static void* map_anonymous(uintptr_t addr, size_t size, int protect, int flags) {
+ 	if (addr != 0) {
+-		return mmap(reinterpret_cast<void*>(addr), size, protect, flags, -1, 0); // NOLINT
++		return as415_mmap(reinterpret_cast<void*>(addr), size, protect, flags, -1, 0); // NOLINT
+ 	}
+ 
+ #ifdef KYTY_FIXED_NOREPLACE
+@@ -136,7 +149,7 @@ static void* map_anonymous(uintptr_t addr, size_t size, int protect, int flags)
+ 			break;
+ 		}
+ 		const auto hint = (top - step) & ~(LOW_ARENA_GRAIN - 1);
+-		void* ptr = mmap(reinterpret_cast<void*>(hint), size, protect, flags | MAP_FIXED_NOREPLACE,
++		void* ptr = as415_mmap(reinterpret_cast<void*>(hint), size, protect, flags | MAP_FIXED_NOREPLACE,
+ 		                 -1, 0); // NOLINT
+ 		if (ptr != MAP_FAILED) {
+ 			return ptr;
+@@ -144,7 +157,7 @@ static void* map_anonymous(uintptr_t addr, size_t size, int protect, int flags)
+ 	}
+ #endif
+ 
+-	return mmap(nullptr, size, protect, flags, -1, 0); // NOLINT
++	return as415_mmap(nullptr, size, protect, flags, -1, 0); // NOLINT
+ }
+ 
+ uint64_t SysVirtualAlloc(uint64_t address, uint64_t size, VirtualMemory::Mode mode) {
+@@ -205,7 +218,7 @@ uint64_t SysVirtualAllocAligned(uint64_t address, uint64_t size, VirtualMemory::
+ 			// destroyed by the MAP_FIXED. Other platforms keep the original path below.
+ 			auto aligned_addr = align_up(ret_addr, alignment);
+ 			// NOLINTNEXTLINE
+-			void* fixed = mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
++			void* fixed = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
+ 			                   MAP_FIXED | MAP_PRIVATE | MAP_ANON, -1, 0);
+ 			if (fixed == MAP_FAILED) {
+ 				munmap(ptr, size + alignment);
+@@ -228,11 +241,11 @@ uint64_t SysVirtualAllocAligned(uint64_t address, uint64_t size, VirtualMemory::
+ 			auto aligned_addr = align_up(ret_addr, alignment);
+ #ifdef KYTY_FIXED_NOREPLACE
+ 			// NOLINTNEXTLINE
+-			ptr = mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
++			ptr = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
+ 			           MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANON, -1, 0);
+ #else
+ 			// NOLINTNEXTLINE
+-			ptr = mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
++			ptr = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
+ 			           MAP_FIXED | MAP_PRIVATE | MAP_ANON, -1, 0);
+ #endif
+ 			ret_addr = reinterpret_cast<uintptr_t>(ptr);
+@@ -316,13 +329,13 @@ bool SysVirtualAllocFixed(uint64_t address, uint64_t size, VirtualMemory::Mode m
+ 
+ #ifdef KYTY_FIXED_NOREPLACE
+ 	// NOLINTNEXTLINE
+-	void* ptr = mmap(reinterpret_cast<void*>(addr), size, protect,
++	void* ptr = as415_mmap(reinterpret_cast<void*>(addr), size, protect,
+ 	                 MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANON, -1, 0);
+ #else
+ 	// NOLINTNEXTLINE
+ 	void* ptr = (is_mapped(reinterpret_cast<void*>(addr), size)
+ 	                 ? MAP_FAILED
+-	                 : mmap(reinterpret_cast<void*>(addr), size, protect,
++	                 : as415_mmap(reinterpret_cast<void*>(addr), size, protect,
+ 	                        MAP_FIXED | MAP_PRIVATE | MAP_ANON, -1, 0));
+ #endif
+ 
+@@ -386,7 +399,7 @@ uint64_t SysVirtualReserveAligned(uint64_t address, uint64_t size, uint64_t alig
+ 			// destroy its mapping. Other platforms keep the original path below.
+ 			auto aligned_addr = align_up(ret_addr, alignment);
+ 			// NOLINTNEXTLINE
+-			void* fixed = mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
++			void* fixed = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
+ 			                   MAP_FIXED | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0);
+ 			if (fixed == MAP_FAILED) {
+ 				munmap(ptr, size + alignment);
+@@ -409,11 +422,11 @@ uint64_t SysVirtualReserveAligned(uint64_t address, uint64_t size, uint64_t alig
+ 			auto aligned_addr = align_up(ret_addr, alignment);
+ #ifdef KYTY_FIXED_NOREPLACE
+ 			// NOLINTNEXTLINE
+-			ptr = mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
++			ptr = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
+ 			           MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0);
+ #else
+ 			// NOLINTNEXTLINE
+-			ptr = mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
++			ptr = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
+ 			           MAP_FIXED | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0);
+ #endif
+ 			ret_addr = reinterpret_cast<uintptr_t>(ptr);
+@@ -444,13 +457,13 @@ bool SysVirtualReserveFixed(uint64_t address, uint64_t size) {
+ 
+ #ifdef KYTY_FIXED_NOREPLACE
+ 	// NOLINTNEXTLINE
+-	void* ptr = mmap(reinterpret_cast<void*>(addr), size, PROT_NONE,
++	void* ptr = as415_mmap(reinterpret_cast<void*>(addr), size, PROT_NONE,
+ 	                 MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0);
+ #else
+ 	// NOLINTNEXTLINE
+ 	void* ptr = (is_mapped(reinterpret_cast<void*>(addr), size)
+ 	                 ? MAP_FAILED
+-	                 : mmap(reinterpret_cast<void*>(addr), size, PROT_NONE,
++	                 : as415_mmap(reinterpret_cast<void*>(addr), size, PROT_NONE,
+ 	                        MAP_FIXED | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0));
+ #endif
+ 
+@@ -607,6 +620,7 @@ bool SysVirtualProtect(uint64_t address, uint64_t size, VirtualMemory::Mode mode
+ 	uintptr_t page_end   = (addr + size - 1) >> 12u;
+ 	if (mprotect(reinterpret_cast<void*>(page_start << 12u), (page_end - page_start + 1) << 12u,
+ 	             get_protection_flag(mode)) == 0) {
++		bc5::anon_sync::note(static_cast<uint64_t>(page_start) << 12u, static_cast<uint64_t>(page_end - page_start + 1) << 12u, (get_protection_flag(mode) & PROT_READ) != 0); // experiment 0415 (as415c)
+ 		pthread_mutex_lock(&g_virtual_mutex);
+ 		for (uintptr_t page = page_start; page <= page_end; page++) {
+ 			(*g_protects)[page] = get_protection_flag(mode);
 diff --git a/src/common/profiler.h b/src/common/profiler.h
 index a84e308..a13c65f 100644
 --- a/src/common/profiler.h
@@ -33598,10 +33764,10 @@ index 6df0a95..eca6d2d 100644
  		    static_cast<uint32_t>(src->crop_right + (pitch - src->width));
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..6118f2d
+index 0000000..4828919
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,17066 @@
+@@ -0,0 +1,17438 @@
 +#include "bc5/env_rule.hpp" // exp 0419 (build W): BC5_DIAG_ENV, BC5_FIXED_ENV, BC5_LEAN_OR
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
@@ -35733,6 +35899,80 @@ index 0000000..6118f2d
 +// (the kernel clears the page-table entries at once, whatever is still running): waits until
 +// everything queued so far has run. Defined with the completion queue.
 +static void wait_jobs();
++static void chain_flush(int why); // exp 0432 (tag d432)
++// exp 0432: the test build's three host switches (each on unless "0") and its counters.
++namespace d432 {
++#ifdef BC5_LEAN
++struct Cnt { // the lean build: a counter that is nothing
++	constexpr Cnt() = default;
++	explicit constexpr Cnt(int) {}
++	void     operator++(int) const {}
++	void     operator+=(uint64_t) const {}
++	void     operator=(uint64_t) const {}
++	uint64_t load() const { return 0; }
++};
++#else
++using Cnt = std::atomic<uint64_t>;
++#endif
++inline bool word_on(const char* name) {
++	const char* e = std::getenv(name);
++	return !(e != nullptr && e[0] == '0' && e[1] == 0);
++}
++inline bool on() { // item D: BC5_DIRECT_UNMAP_NOWAIT (the kernel orders the page-table clear behind this VM's submissions: amdgpu_vm_clear_freed, v7.3)
++	static const bool v = BC5_LEAN_OR(true, word_on("BC5_DIRECT_UNMAP_NOWAIT"));
++	return v;
++}
++inline bool anon_events() { // item A: OFF unless the word is "1" (the T runs of 2026-11-17: its counter moved 15 times a second in the maintainer's scene, and each move is a walk)
++	static const bool v = BC5_LEAN_OR(false, ([] {
++		const char* e = std::getenv("BC5_DIRECT_ANON_EVENTS");
++		return e != nullptr && e[0] == '1' && e[1] == 0;
++	}()));
++	return v;
++}
++inline bool anon_thread() { // item W
++	static const bool v = BC5_LEAN_OR(true, word_on("BC5_DIRECT_ANON_THREAD"));
++	return v;
++}
++inline bool refused_ends() { // item R
++	static const bool v = BC5_LEAN_OR(true, word_on("BC5_DIRECT_REFUSED_ENDS"));
++	return v;
++}
++inline bool views_kept() { // item V: OFF unless the word is "1" (builds 1 and 3: the view list cost 4,152 and 4,182 ms of the sample with it, 2,414 without)
++	static const bool v = BC5_LEAN_OR(false, ([] {
++		const char* e = std::getenv("BC5_DIRECT_VIEWS_KEPT");
++		return e != nullptr && e[0] == '1' && e[1] == 0;
++	}()));
++	return v;
++}
++inline bool maps_fast() { // item M
++	static const bool v = BC5_LEAN_OR(true, word_on("BC5_DIRECT_MAPS_FAST"));
++	return v;
++}
++inline Cnt g_maps_fast {0}, g_maps_sorted {0};
++inline int maps_diff() { // item X: 0 off, 1 on, 2 on and checked against the old rebuild; OFF unless the word is "1" or "verify"
++	static const int v = BC5_LEAN_OR(0, ([] {
++		const char* e = std::getenv("BC5_DIRECT_MAPS_DIFF");
++		if (e == nullptr) return 0;
++		if (std::strcmp(e, "verify") == 0) return 2;
++		return e[0] == '1' && e[1] == 0 ? 1 : 0;
++	}()));
++	return v;
++}
++inline Cnt g_x_diff {0}, g_x_full {0}, g_x_views {0}, g_x_mismatch {0};
++inline Cnt g_x_why[11]; // which condition sent a rebuild the old way (the first that failed)
++inline Cnt g_rebuilds {0}, g_busy {0}, g_unmaps_busy {0}, g_bos_busy {0}, g_unmaps {0}, g_drains {0}, g_drain_ns {0}, g_drain_max_ns {0},
++    g_prep_max_ns {0}, g_prep_over20 {0}, g_last_ns {0}, g_anon_walks {0}, g_anon_skips {0}, g_anon_ev {0}, g_anon_ev_miss {0}, g_anon_vmas {0}, g_views_clone {0},
++    g_rec_mismatch {0}, g_sync_ns {0};
++#ifdef BC5_LEAN
++inline void maxed(const Cnt&, uint64_t) {}
++#else
++inline void maxed(std::atomic<uint64_t>& m, uint64_t v) {
++	uint64_t was = m.load(std::memory_order_relaxed);
++	while (v > was && !m.compare_exchange_weak(was, v, std::memory_order_relaxed)) {
++	}
++}
++#endif
++} // namespace d432
 +static Stage                                g_stage = Stage::Off;
 +static constexpr uint32_t                   g_cu_mask = 0xffffffffu;
 +static constexpr const char*                kRenderNode = "/dev/dri/renderD128";
@@ -36108,6 +36348,7 @@ index 0000000..6118f2d
 +// 1 anything else ("verify": stage S1, the kept list is only compared).
 +static int mr415_mode() {
 +	static const int mode = [] {
++		if (d432::views_kept()) return 2; // exp 0432 (tag v432): BC5_DIRECT_VIEWS_KEPT
 +		const char* e = BC5_DIAG_ENV("KYTY_BC5_MAP_RECORDS");
 +		if (!bc5::load_stat::env_set(e)) return 0;
 +		return std::strcmp(e, "views") == 0 ? 2 : 1;
@@ -36159,6 +36400,7 @@ index 0000000..6118f2d
 +		bc5::load_stat::count(bc5::load_stat::kMapRecord, spans.size());
 +		if (!same) {
 +			bc5::load_stat::count(bc5::load_stat::kRecMismatch);
++			d432::g_rec_mismatch++; // exp 0432
 +			static int logged = 0;
 +			if (logged++ < 8) {
 +				journal("map records (exp 0415, mr415): MISMATCH at generation %" PRIu64 " after %zu records: kept %zu views, rebuilt %zu, first difference at index %zu\n", gen,
@@ -36176,16 +36418,20 @@ index 0000000..6118f2d
 +// records, both titles); the list is rebuilt from every range only every KYTY_BC5_MAP_RECORDS_CHECK_MS (2,000 when
 +// unset), and at that moment the kept list is compared with it and with the old builder's list (rec_mismatch) and
 +// replaced by it. If the record log reports a gap the list is rebuilt at once. Called under direct_views' mutex.
++// Tag mr415d (build L5d): build L5b copied the kept list (12,500-28,000 views, a string each) into every new snapshot
++// and so saved nothing (README section 15). The kept list is now the object handed out: records are applied to it in
++// place when nobody else holds it (direct_views lets go of its own reference first), and only otherwise to a copy
++// (views_clone). A holder never sees its list change: it holds a reference, so the count is above one.
 +// If a record were missing, a view would be absent (its memory not on the GPU) or would stay after the guest unmapped
 +// it (the GPU reads pages the guest gave back) until the next check, at most the check period.
-+static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_out) {
++static std::shared_ptr<DViews> mr415_views(const DState& S, uint64_t* gen_out) {
 +	struct R {
 +		uint64_t    start, size, offset;
 +		int         type;
 +		std::string name;
 +	};
-+	static std::vector<DView> kept;
-+	static bool               have       = false;
++	static std::shared_ptr<DViews> kept_p = std::make_shared<DViews>();
++	static bool                    have   = false;
 +	static uint64_t           checked_ns = 0;
 +	static const uint64_t     period_ns  = bc5::load_stat::env_num("KYTY_BC5_MAP_RECORDS_CHECK_MS", 2000, 600'000) * 1'000'000ull;
 +	auto make = [](const R& r, DView* v) {
@@ -36208,11 +36454,15 @@ index 0000000..6118f2d
 +		        &lists, &gen, &spans, &complete) &&
 +		    complete) {
 +			lists.resize(spans.size());
++			if (kept_p.use_count() > 1) { // someone still reads the list: leave theirs alone
++				d432::g_views_clone++; // exp 0432
++				kept_p = std::make_shared<DViews>(*kept_p);
++			}
++			std::vector<DView>& kept = kept_p->v;
 +			for (size_t i = 0; i < spans.size(); i++) bc5::map_records::apply(kept, lists[i], spans[i].first, bc5::map_records::end_of(spans[i].first, spans[i].second), make);
 +			bc5::load_stat::count(bc5::load_stat::kMapRecord, spans.size());
-+			*out     = kept;
 +			*gen_out = gen;
-+			return;
++			return kept_p;
 +		}
 +		bc5::load_stat::count(bc5::load_stat::kRecOverflow);
 +		have = false; // the log had a gap: the kept list is not to be compared, only replaced
@@ -36224,8 +36474,9 @@ index 0000000..6118f2d
 +		        static_cast<std::vector<R>*>(p)->push_back({start, size, offset, type, name != nullptr ? name : ""});
 +	        },
 +	        &ranges, &gen, &spans, &complete)) {
-+		*out = direct_views_build(S);
-+		return;
++		auto d = std::make_shared<DViews>();
++		d->v   = direct_views_build(S);
++		return d;
 +	}
 +	std::vector<DView> full;
 +	for (const R& r: ranges) {
@@ -36241,26 +36492,31 @@ index 0000000..6118f2d
 +	};
 +	static int logged = 0;
 +	if (have && complete) {
++		if (kept_p.use_count() > 1) kept_p = std::make_shared<DViews>(*kept_p);
++		std::vector<DView>& kept = kept_p->v;
 +		for (const auto& [start, size]: spans) bc5::map_records::apply(kept, ranges, start, bc5::map_records::end_of(start, size), make);
 +		bc5::load_stat::count(bc5::load_stat::kMapRecord, spans.size());
 +		if (!same(kept, full)) {
 +			bc5::load_stat::count(bc5::load_stat::kRecMismatch);
++			d432::g_rec_mismatch++; // exp 0432
 +			if (logged++ < 8) journal("map records (exp 0415, mr415c): MISMATCH of the list in use at generation %" PRIu64 ": kept %zu views, rebuilt %zu\n", gen, kept.size(), full.size());
 +		}
 +	}
 +	// the old builder's list, read a moment later: it can differ only if the ranges changed in between
-+	if (const uint64_t g2 = Libs::LibKernel::Memory::Bc5MappedRangesGeneration(); g2 == gen) {
++	if (const uint64_t g2 = Libs::LibKernel::Memory::Bc5MappedRangesGeneration(); g2 == gen && !d432::views_kept()) { // exp 0432: build 1 showed this second build in single calls of 104-114 ms
 +		const std::vector<DView> old = direct_views_build(S);
 +		if (Libs::LibKernel::Memory::Bc5MappedRangesGeneration() == gen && !same(old, full)) {
 +			bc5::load_stat::count(bc5::load_stat::kRecMismatch);
++			d432::g_rec_mismatch++; // exp 0432
 +			if (logged++ < 8) journal("map records (exp 0415, mr415c): the snapshot's list differs from the old builder's at generation %" PRIu64 ": %zu against %zu views\n", gen, full.size(), old.size());
 +		}
 +	}
-+	kept       = std::move(full);
++	kept_p     = std::make_shared<DViews>();
++	kept_p->v  = std::move(full);
 +	have       = true;
 +	checked_ns = now;
-+	*out       = kept;
 +	*gen_out   = gen;
++	return kept_p;
 +}
 +
 +static std::shared_ptr<const DViews> direct_views(const DState& S) {
@@ -36278,14 +36534,17 @@ index 0000000..6118f2d
 +	if (g != 0 && g == gen[k] && cache[k] != nullptr && (k == 0 || now - built_ns[k] < 1'000'000'000ull)) return cache[k];
 +	built_ns[k] = now;
 +	g_views_builds++;
-+	auto d = std::make_shared<DViews>();
-+	uint64_t g_used = g;
++	std::shared_ptr<DViews> d;
++	uint64_t                g_used = g;
 +	if (k == 0 && mr415_mode() == 2) { // experiment 0415 (mr415c), stage S2: the list kept from the change records
-+		mr415_views(S, &d->v, &g_used);
++		cache[k].reset();              // mr415d: so that the kept list can change in place when no caller holds it
++		d = mr415_views(S, &g_used);
 +	} else {
++		d    = std::make_shared<DViews>();
 +		d->v = direct_views_build(S);
 +		if (k == 0) mr415_verify(); // experiment 0415 (mr415)
 +	}
++	d->sorted = true;
 +	uint64_t sig = 1469598103934665603ull;
 +	for (size_t i = 0; i < d->v.size(); i++) {
 +		const auto& v = d->v[i];
@@ -36902,6 +37161,7 @@ index 0000000..6118f2d
 +}
 +static void lzr_confirm(DState& S, LzrPass& pass, std::vector<uint32_t>& retired) {
 +	if (pass.done.empty() || !g_dev) return;
++	if (d432::on()) return; // exp 0432 (tag d432): the cut stands, the kernel retires the old mappings behind the jobs in flight
 +	if (g_dev->wait_idle(0)) return;
 +	uint64_t back = 0;
 +	size_t   n    = 0;
@@ -38159,12 +38419,24 @@ index 0000000..6118f2d
 +	LzrPass lzr = lzr_pass(S, views, sig, fd, now, merged, retired, remaps, merge_map_cap);
 +	// 2. the views' addresses: every (view, imported range) intersection is one GPU mapping
 +	const uint64_t t_drain0 = SoftCp::now_ns(); // experiment 0169
++	bool           d432_busy = false;           // exp 0432 (tag d432)
 +	g_dprof_merge_ns += t_drain0 - t_merge0;
 +	t_fs415_ds[2] += t_drain0 - t_merge0; // experiment 0415 (fs415d)
 +	if (bc5::load_stat::on()) bc5::load_stat::add(bc5::load_stat::kDsMerge, t_drain0 - t_merge0); // experiment 0415 (ls415c)
 +	if (!retired.empty() || sig != S.views_sig || guard0412_cap_changed(S) || (k1r412::on() && S.kind == 0 && S.bos.size() != S.bos_mapped)) { // exp 0412 (tag g412b; k1r412: covers are about to be unmapped and replaced)
-+		wait_jobs(); // mappings are about to go or be replaced
-+		g_dprof_drains++;
++		d432::g_rebuilds++;
++		if (d432::on()) { // exp 0432 (tag d432): no wait; the chain is flushed as wait_jobs() did first
++			chain_flush(5);
++			d432_busy = !g_dev->wait_idle(0); // a count only: was anything in flight
++			if (d432_busy) d432::g_busy++;
++		} else {
++			wait_jobs(); // mappings are about to go or be replaced
++			g_dprof_drains++;
++			const uint64_t w = SoftCp::now_ns() - t_drain0;
++			d432::g_drains++;
++			d432::g_drain_ns += w;
++			d432::maxed(d432::g_drain_max_ns, w);
++		}
 +	}
 +	const uint64_t t_maps0 = SoftCp::now_ns();
 +	g_dprof_drain_ns += t_maps0 - t_drain0;
@@ -38173,6 +38445,129 @@ index 0000000..6118f2d
 +	lzr_confirm(S, lzr, retired); // experiment 0401 series e7 (lzr): a cut stands only when every ring is idle after the drain
 +	uint32_t mapped = 0, unmapped = 0, map_failed = 0;
 +	if (sig != S.views_sig || S.bos.size() != S.bos_mapped || !retired.empty() || guard0412_cap_changed(S)) { // exp 0412 (tag g412b)
++		// exp 0432 (tag x432), BC5_DIRECT_MAPS_DIFF: see mkx432.py. x432_prev is the view list S.maps was made from;
++		// x432_plain says that rebuild's wanted list held the views' own mappings only (no zero buffer, no cover).
++		static std::shared_ptr<const DViews> x432_prev[2];
++		static bool                          x432_plain[2] = {false, false};
++		const int                            x432_k        = S.kind == 0 ? 0 : 1;
++		bool                                 x432_done     = false, x432_bad = false;
++		if (d432::maps_diff() != 0 && retired.empty() && S.bos.size() == S.bos_mapped && !guard0412_cap_changed(S) && !k1r412::on() && g_zskip.empty() && !zskip_new &&
++		    x432_plain[x432_k] && x432_prev[x432_k] != nullptr && x432_prev[x432_k]->sig == S.views_sig && x432_prev[x432_k]->sorted && views_p->sorted) {
++			const std::vector<DView>&                   ov = x432_prev[x432_k]->v;
++			std::vector<std::pair<uint64_t, uint64_t>> iv; // the changed views' address intervals; their starts never fall
++			std::vector<const DView*>                  nv; // the changed views of the new list, rising
++			const auto put = [&iv](uint64_t a, uint64_t e) {
++				if (!iv.empty() && a <= iv.back().second) {
++					if (e > iv.back().second) iv.back().second = e;
++				} else {
++					iv.emplace_back(a, e);
++				}
++			};
++			for (size_t i = 0, j = 0; i < ov.size() || j < views.size();) {
++				if (i < ov.size() && j < views.size() && ov[i].va == views[j].va && ov[i].size == views[j].size && ov[i].off == views[j].off) {
++					i++;
++					j++;
++				} else if (j >= views.size() || (i < ov.size() && ov[i].va < views[j].va)) {
++					put(ov[i].va, ov[i].va + ov[i].size);
++					i++;
++				} else if (i >= ov.size() || views[j].va < ov[i].va) {
++					put(views[j].va, views[j].va + views[j].size);
++					nv.push_back(&views[j]);
++					j++;
++				} else { // the same address, another size or offset
++					put(ov[i].va, ov[i].va + ov[i].size);
++					put(views[j].va, views[j].va + views[j].size);
++					nv.push_back(&views[j]);
++					i++;
++					j++;
++				}
++			}
++			const auto x432_want = [&S](const DView& v, std::vector<DMap>& out) {
++				const uint64_t vend = v.off + v.size;
++				auto it = std::upper_bound(S.bos.begin(), S.bos.end(), v.off, [](uint64_t o, const DBo& b) { return o < b.off; });
++				if (it != S.bos.begin()) --it;
++				for (; it != S.bos.end() && it->off < vend; ++it) {
++					const uint64_t lo = it->off > v.off ? it->off : v.off;
++					const uint64_t hi = it->off + it->size < vend ? it->off + it->size : vend;
++					if (lo >= hi) continue;
++					out.push_back({v.va + (lo - v.off), hi - lo, lo - it->off, it->id});
++				}
++			};
++			std::vector<DMap> want; // of the changed new views only; rising
++			for (const DView* v: nv) x432_want(*v, want);
++			std::vector<DMap> next;
++			next.reserve(S.maps.size() + want.size());
++			size_t q = 0, wk = 0;
++			for (const auto& m: S.maps) { // drop before adding (addresses get reused)
++				while (q < iv.size() && iv[q].second <= m.va) q++;
++				if (q >= iv.size() || m.va < iv[q].first) {
++					next.push_back(m); // under an unchanged view
++					continue;
++				}
++				while (wk < want.size() && want[wk].va < m.va) wk++;
++				if (wk < want.size() && want[wk] == m) {
++					next.push_back(m);
++				} else {
++					g_dev->unmap_shared(m.va);
++					unmapped++;
++				}
++			}
++			std::vector<DMap> added;
++			{
++				size_t k = 0;
++				for (const auto& w: want) {
++					while (k < next.size() && next[k].va < w.va) k++;
++					if (k < next.size() && next[k] == w) continue;
++					if (!g_scratch.empty()) scratch_release(w.va, w.va + w.size);
++					if (!g_zpieces.empty()) zskip_release(w.va, w.va + w.size);
++					if (g_dev->map_shared(w.id, w.bo_off, w.size, w.va)) {
++						added.push_back(w);
++						mapped++;
++					} else {
++						map_failed++;
++					}
++				}
++			}
++			if (!added.empty()) {
++				std::vector<DMap> merged_maps;
++				merged_maps.reserve(next.size() + added.size());
++				std::merge(next.begin(), next.end(), added.begin(), added.end(), std::back_inserter(merged_maps), [](const DMap& a, const DMap& b) { return a.va < b.va; });
++				next.swap(merged_maps);
++			}
++			S.maps.swap(next);
++			d432::g_x_diff++;
++			d432::g_x_views += nv.size();
++			if (d432::maps_diff() == 2 && map_failed == 0) { // the whole list the old way, compared
++				std::vector<DMap> all;
++				all.reserve(S.maps.size());
++				for (const auto& v: views) x432_want(v, all);
++				size_t at = 0;
++				while (at < all.size() && at < S.maps.size() && all[at] == S.maps[at]) at++;
++				if (at != all.size() || at != S.maps.size()) {
++					x432_bad = true;
++					d432::g_x_mismatch++;
++					static int logged = 0;
++					if (logged++ < 8) {
++						journal("exp 0432 (tag x432): MISMATCH: the mappings by diff (%zu) and the old rebuild's list (%zu) differ at index %zu; %zu views changed; the next sync rebuilds the old way\n",
++						        S.maps.size(), all.size(), at, nv.size());
++					}
++				}
++			}
++			x432_done = true;
++		}
++		if (!x432_done) {
++		d432::g_x_full++;
++		if (d432::maps_diff() != 0) { // result 7: X was never taken and nothing said why
++			const bool x432_c[11] = {!retired.empty(), S.bos.size() != S.bos_mapped, guard0412_cap_changed(S), k1r412::on(), !g_zskip.empty(), zskip_new, !x432_plain[x432_k],
++			                         x432_prev[x432_k] == nullptr, x432_prev[x432_k] != nullptr && x432_prev[x432_k]->sig != S.views_sig,
++			                         x432_prev[x432_k] != nullptr && !x432_prev[x432_k]->sorted, !views_p->sorted};
++			for (int x432_i = 0; x432_i < 11; x432_i++) {
++				if (x432_c[x432_i]) {
++					d432::g_x_why[x432_i]++;
++					break;
++				}
++			}
++		}
 +		std::vector<DMap> want;
 +		for (const auto& v: views) {
 +			const uint64_t vend = v.off + v.size;
@@ -38185,15 +38580,44 @@ index 0000000..6118f2d
 +				want.push_back({v.va + (lo - v.off), hi - lo, lo - it->off, it->id});
 +			}
 +		}
++		const size_t m432_n1 = want.size(); // exp 0432 (tag m432): the views' own mappings end here
 +		guard0412_want(S, views, want); // exp 0412 (tag g412b): the zero buffer under the views of put-off chunks
 +		k1r412_want(S, views, want, fd); // exp 0412 (tag k1r412; kl412: fd)
-+		std::sort(want.begin(), want.end(), [](const DMap& a, const DMap& b) { return a.va < b.va; });
++		// exp 0432 (tag m432), BC5_DIRECT_MAPS_FAST: the list is two runs that are nearly always in order already (the views'
++		// mappings, then the covers); they are merged instead of sorted when each run is strictly rising, and the result is
++		// taken only if it is strictly rising too (then it is the one order a sort can give). Otherwise the old sort.
++		const auto m432_less = [](const DMap& a, const DMap& b) { return a.va < b.va; };
++		const auto m432_rising = [&want](size_t from, size_t to) {
++			for (size_t i = from + 1; i < to; i++) {
++				if (want[i - 1].va >= want[i].va) return false;
++			}
++			return true;
++		};
++		bool m432_fast = d432::maps_fast() && m432_rising(0, m432_n1) && m432_rising(m432_n1, want.size());
++		if (m432_fast) {
++			std::inplace_merge(want.begin(), want.begin() + static_cast<std::ptrdiff_t>(m432_n1), want.end(), m432_less);
++			m432_fast = m432_rising(0, want.size());
++		}
++		if (!m432_fast) std::sort(want.begin(), want.end(), m432_less);
++		(m432_fast ? d432::g_maps_fast : d432::g_maps_sorted)++;
 +		const uint64_t    t_want = SoftCp::now_ns(); // experiment 0169
 +		g_dprof_want_ns += t_want - t_maps0;
 +		std::vector<DMap> next;
 +		next.reserve(want.size());
++		size_t   m432_k    = 0; // exp 0432 (tag m432)
++		uint64_t m432_prev = 0;
 +		for (const auto& m: S.maps) { // drop what no view asks for any more, before adding (addresses get reused)
-+			const auto w = std::lower_bound(want.begin(), want.end(), m.va, [](const DMap& a, uint64_t va) { return a.va < va; });
++			// exp 0432 (tag m432): both lists rise by address, so the place of m in `want` only moves forward; a step back in
++			// S.maps (never seen) takes the old search
++			auto w = want.end();
++			if (m432_fast && m.va >= m432_prev) {
++				while (m432_k < want.size() && want[m432_k].va < m.va) m432_k++;
++				w = want.begin() + static_cast<std::ptrdiff_t>(m432_k);
++			} else {
++				w = std::lower_bound(want.begin(), want.end(), m.va, [](const DMap& a, uint64_t va) { return a.va < va; });
++				m432_k = static_cast<size_t>(w - want.begin());
++			}
++			m432_prev = m.va;
 +			if (w != want.end() && *w == m) {
 +				next.push_back(m);
 +			} else {
@@ -38241,15 +38665,27 @@ index 0000000..6118f2d
 +		}
 +		g_dprof_scratch_ns += scratch_ns;
 +		g_dprof_add_ns += SoftCp::now_ns() - t_drop - scratch_ns;
++		x432_plain[x432_k] = m432_n1 == want.size(); // exp 0432 (tag x432)
 +		S.maps.swap(next);
++		} // exp 0432 (tag x432): the old rebuild ends here
 +		if (S.kind == 0 && (zskip_new || sig != S.views_sig)) zskip_map(views); // experiment 0379
 +		S.views_sig  = sig;
 +		S.bos_mapped = map_failed == 0 ? S.bos.size() : 0; // a failure is retried at the next sync
++		x432_prev[x432_k] = views_p; // exp 0432 (tag x432)
++		if (x432_bad) { // the next sync takes the old rebuild, which drops and adds until the lists agree
++			x432_prev[x432_k].reset();
++			S.bos_mapped = 0;
++		}
 +	}
 +	g_dprof_maps_ns += SoftCp::now_ns() - t_maps0; // experiment 0169
 +	t_fs415_ds[4] += SoftCp::now_ns() - t_maps0; // experiment 0415 (fs415d)
 +	if (bc5::load_stat::on()) bc5::load_stat::add(bc5::load_stat::kDsMaps, SoftCp::now_ns() - t_maps0); // experiment 0415 (ls415c)
 +	if (imported != 0) S.blocks = ~0ull; // pinning may have allocated pages: look once more
++	d432::g_unmaps += unmapped; // exp 0432 (tag d432)
++	if (d432_busy) {
++		d432::g_unmaps_busy += unmapped;
++		d432::g_bos_busy += retired.size();
++	}
 +	for (const uint32_t id: retired) g_dev->free_shared(id);
 +	guard0412_after_cuts(lzr.done.size()); // exp 0412 (tag g412c): BC5_GUARD_SPLIT
 +	guard0412_synced(S); // exp 0412 (tag g412b): the ledger's view of what is imported
@@ -38335,16 +38771,24 @@ index 0000000..6118f2d
 +// What "thread" gives up: an anonymous guest VMA that appears is walked at the first call after the thread's next pass
 +// instead of at once for an urgent call (operands on it are dropped by the filter until then, as they are today for a
 +// non-urgent call for up to a second). So it stays off until "verify" shows no miss.
++//   "events" (tag as415c, DESIGN-lock-side.md section 8): no thread and no read on a schedule. The host's map and
++//             protect sites count the calls that can make anonymous memory readable in the guest's span
++//             (bc5::anon_sync::note). A call here walks at once, whatever the time limits say, when that counter has
++//             moved since the last walk read it, after -EFAULT and after a device reopen; it leaves the walk out when
++//             the counter has not moved and the last walk found no anonymous guest VMA; while such a VMA exists the
++//             walk keeps its old timing (its pages become resident without any call). "verify" counts what this rule
++//             would have missed (anon_ev_miss) and how often the counter moves (anon_events).
 +static std::mutex              g_as415_mu;
 +static std::condition_variable g_as415_cv;
 +static uint64_t                g_as415_sig    = 0;     // the thread's last pass: its signature
 +static uint64_t                g_as415_walk_sig   = 0; // the last walk's signature (the submission path, under the device mutex)
 +static bool                    g_as415_walk_valid = false;
++static uint64_t                g_as415_walk_ev    = 0; // as415c: the map/protect counter as the last walk read it (before its read of the maps)
 +static uint64_t                g_as415_passes = 0;     // passes finished
 +static bool                    g_as415_kick   = false; // an urgent call asks for a pass now
 +
 +static int as415_mode() {
-+	static const int mode = bc5::anon_sync::mode_of(BC5_DIAG_ENV("KYTY_BC5_ANON_SYNC")) != 0 ? 1 : 0; // exp 0419 phase 2: verify only
++	static const int mode = d432::anon_events() ? 3 : (bc5::anon_sync::mode_of(BC5_DIAG_ENV("KYTY_BC5_ANON_SYNC")) != 0 ? 1 : 0); // exp 0419 phase 2: verify only; exp 0432 (tag a432): BC5_DIRECT_ANON_EVENTS is "events"
 +	return mode;
 +}
 +
@@ -38389,6 +38833,20 @@ index 0000000..6118f2d
 +	}
 +}
 +
++// exp 0432 (tag w432): see mkt432.py, item W
++static std::atomic<bool>     g_w432_found {false};
++static std::atomic<uint64_t> g_w432_passes {0};
++static void w432_thread() {
++	pthread_setname_np(pthread_self(), "bc5-anonchk");
++	for (;;) {
++		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
++		std::vector<Vma> vmas;
++		anon_vmas_read(&vmas);
++		g_w432_passes++;
++		if (!vmas.empty()) g_w432_found.store(true, std::memory_order_release);
++	}
++}
++
 +// force: before a submission whose shaders may read memory the filter does not see. With the
 +// direct memory on the dma-buf path (ADR 0006) what is left here are the anonymous VMAs (module
 +// data, stacks, flexible memory), walked through /proc/self/maps and mincore — 0.9 ms a call,
@@ -38397,32 +38855,66 @@ index 0000000..6118f2d
 +// operand of the IB is unmapped, -EFAULT from a submission) always walk.
 +static void sync_mappings(bool force = false, bool urgent = false, bool must = false) { // must (exp 0415, as415): after -EFAULT, never left out
 +	const uint64_t now = SoftCp::now_ns();
-+	if (!force && now - g_last_sync_ns < 50'000'000ull) { // at most every 50 ms
++	// Experiment 0415 (as415, as415c), KYTY_BC5_ANON_SYNC: see as415_thread.
++	const int      as_mode       = as415_mode();
++	const uint64_t as_ev         = bc5::anon_sync::events().load(std::memory_order_acquire); // read BEFORE the maps are read
++	const bool     as_ev_moved   = bc5::anon_sync::events_moved(as_ev, g_as415_walk_ev, g_as415_walk_valid);
++	const bool     as_prev_empty = g_vmas.empty();
++	bool           as_ev_now     = false; // "events": this call walks whatever the time limits say
++	if (as_mode == 1) { // "verify": how many calls "events" would turn into walks
++		static uint64_t seen_ev = 0;
++		if (as_ev != seen_ev) {
++			seen_ev = as_ev;
++		}
++	}
++	if (as_mode == 3) {
++		if (!must && bc5::anon_sync::events_skip(as_ev_moved, as_prev_empty)) {
++			if (urgent) bc5::load_stat::count(bc5::load_stat::kAnonUrgent);
++			d432::g_anon_skips++; // exp 0432
++			t_fs415_ds[7] |= urgent ? 6 : 4;
++			return;
++		}
++		as_ev_now = must || as_ev_moved;
++	}
++	if (d432::anon_thread() && as_mode != 3 && !urgent && !must) { // exp 0432 (tag w432)
++		if (g_w432_found.exchange(false, std::memory_order_acq_rel)) {
++			as_ev_now = true; // the thread saw an anonymous guest VMA: walk now, whatever the time limits say
++		} else if (g_last_sync_ns != 0 && g_as415_walk_valid && as_prev_empty && Libs::LibKernel::Memory::Bc5PrivateMemoryFd() >= 0) {
++			static std::once_flag w432_once;
++			std::call_once(w432_once, [] { std::thread(w432_thread).detach(); });
++			d432::g_anon_skips++;
++			return;
++		}
++	}
++	if (!as_ev_now && !force && now - g_last_sync_ns < 50'000'000ull) { // at most every 50 ms
 +		return;
 +	}
 +	static constexpr uint64_t anon_min_ns = 100ull * 1'000'000ull;
-+	if (force && !urgent && g_last_sync_ns != 0 && now - g_last_sync_ns < anon_min_ns) {
++	if (!as_ev_now && force && !urgent && g_last_sync_ns != 0 && now - g_last_sync_ns < anon_min_ns) {
 +		return;
 +	}
 +	// With private guest memory in a file as well (experiment 0023) the walk should find nothing
 +	// anonymous in the guest's range; it stays as a check, once a second.
-+	if (!urgent && g_last_sync_ns != 0 && Libs::LibKernel::Memory::Bc5PrivateMemoryFd() >= 0 && now - g_last_sync_ns < 1'000'000'000ull) {
++	if (!as_ev_now && !urgent && g_last_sync_ns != 0 && Libs::LibKernel::Memory::Bc5PrivateMemoryFd() >= 0 && now - g_last_sync_ns < 1'000'000'000ull) {
 +		return;
 +	}
 +	g_last_sync_ns = now;
-+	// Experiment 0415 (as415), KYTY_BC5_ANON_SYNC: see as415_thread.
-+	const int as_mode    = as415_mode();
-+	bool      as_skip_ok = false;
++	bool as_skip_ok = false;
++	if (as_ev_moved) d432::g_anon_ev++; // exp 0432: walks that the map/protect counter asked for
++	d432::g_anon_walks++;
 +	if (urgent) {
 +		bc5::load_stat::count(bc5::load_stat::kAnonUrgent);
 +		t_fs415_ds[7] |= 2;
 +	}
-+	if (as_mode != 0) {
++	if (as_mode == 1 || as_mode == 2) { // "events" has no thread
 +		static std::once_flag once;
 +		std::call_once(once, [] { std::thread(as415_thread).detach(); });
 +		std::lock_guard lk(g_as415_mu);
 +		as_skip_ok = bc5::anon_sync::can_skip(g_as415_passes, g_as415_sig, g_as415_walk_valid, g_as415_walk_sig);
-+		if (urgent && !g_as415_kick) {
++		// KYTY_BC5_ANON_SYNC_KICK=0 (as415b, a measuring knob): urgent calls do not wake the thread, so that with a long
++		// KYTY_BC5_ANON_SYNC_MS the cost of the thread's own reads can be told from the rest.
++		static const bool kick = bc5::load_stat::env_num("KYTY_BC5_ANON_SYNC_KICK", 1, 1) != 0;
++		if (urgent && kick && !g_as415_kick) {
 +			g_as415_kick = true;
 +			g_as415_cv.notify_one();
 +		}
@@ -38446,6 +38938,7 @@ index 0000000..6118f2d
 +		g_layout_gen++;
 +	}
 +	g_vmas = vmas;
++	d432::g_anon_vmas = vmas.size(); // exp 0432
 +	// exp 0419 phase 2: KYTY_BC5_VMA_FAST is gone; the walk over every VMA, as when it was unset
 +	auto inside_vma = [&](uint64_t a, uint64_t b, bool readonly) { return bc5::sync_fast::inside_old(vmas, a, b, readonly); };
 +
@@ -38580,8 +39073,17 @@ index 0000000..6118f2d
 +	const bool as_same = g_as415_walk_valid && g_as415_walk_sig == as_sig; // experiment 0415 (as415)
 +	g_as415_walk_sig   = as_sig;
 +	g_as415_walk_valid = true;
++	g_as415_walk_ev    = as_ev;
 +	if (as_mode != 0 && (as_changed || added != 0 || removed != 0 || !as_same)) {
 +		bc5::load_stat::count(bc5::load_stat::kAnonNeeded, vmas.size());
++		if (as_mode == 1 && !must && bc5::anon_sync::events_skip(as_ev_moved, as_prev_empty)) { // as415c: "events" would have left this walk out
++			d432::g_anon_ev_miss++; // exp 0432
++			static int ev_logged = 0;
++			if (ev_logged++ < 8) {
++				journal("anon sync (exp 0415, as415c): EVENT MISS: %zu VMAs, list %s, signature %s, +%d -%d mappings, %s, while the map/protect counter stood at %" PRIu64 " and the list before was empty: a site is not counted\n",
++				        vmas.size(), as_changed ? "changed" : "same", as_same ? "same" : "changed", added, removed, urgent ? "urgent" : "not urgent", as_ev);
++			}
++		}
 +		if (as_skip_ok) {
 +			bc5::load_stat::count(bc5::load_stat::kAnonMiss);
 +			static int logged = 0;
@@ -48450,6 +48952,35 @@ index 0000000..6118f2d
 +	}
 +	hint_targets(ib, num_dwords);
 +	const uint64_t t2 = SoftCp::now_ns();
++#ifndef BC5_LEAN
++	{ // exp 0432: the sync + hints part of every submission ("prepare" here), and the counters at most every 10 s
++		d432::g_sync_ns += t2 - t0;
++		d432::maxed(d432::g_prep_max_ns, t2 - t0);
++		if (t2 - t0 > 20'000'000ull) d432::g_prep_over20++;
++		uint64_t was = d432::g_last_ns.load(std::memory_order_relaxed);
++		if (t2 - was >= 10'000'000'000ull && d432::g_last_ns.compare_exchange_strong(was, t2)) {
++			char line[1600];
++			std::snprintf(line, sizeof(line),
++			              "exp 0432 (tag d432): t %.1f s: unmap-nowait %s, anon-events %s, anon-thread %s, views-kept %s; sync+hints of all submissions %.1f s, longest %.1f ms, over 20 ms %" PRIu64
++			              "; rebuilds that change mappings %" PRIu64 ", with a ring busy %" PRIu64 "; mappings dropped %" PRIu64 ", while busy %" PRIu64 ", BOs retired while busy %" PRIu64
++			              "; blocking drains %" PRIu64 ", %.1f ms in all, longest %.1f ms; anon walks %" PRIu64 " (asked by the counter %" PRIu64 "), left out %" PRIu64 ", event misses %" PRIu64
++			              ", anonymous guest VMAs %" PRIu64 "; view builds %" PRIu64 ", list copies %" PRIu64 ", record mismatches %" PRIu64 "; maps-fast %s: merged %" PRIu64 ", sorted %" PRIu64 "; maps-diff %s: by diff %" PRIu64 ", the old way %" PRIu64 ", views changed %" PRIu64 ", mismatches %" PRIu64
++			              " (the old way because: retired %" PRIu64 ", new BOs %" PRIu64 ", cap %" PRIu64 ", k1r %" PRIu64 ", zero list %" PRIu64 ", zero new %" PRIu64
++			              ", not plain %" PRIu64 ", no list %" PRIu64 ", sig %" PRIu64 ", old unsorted %" PRIu64 ", new unsorted %" PRIu64 ")",
++			              timing_now(), d432::on() ? "ON" : "off", d432::anon_events() ? "ON" : "off", d432::anon_thread() ? "ON" : "off", d432::views_kept() ? "ON" : "off",
++			              static_cast<double>(d432::g_sync_ns.load()) / 1e9, static_cast<double>(d432::g_prep_max_ns.load()) / 1e6, d432::g_prep_over20.load(), d432::g_rebuilds.load(),
++			              d432::g_busy.load(), d432::g_unmaps.load(), d432::g_unmaps_busy.load(), d432::g_bos_busy.load(), d432::g_drains.load(),
++			              static_cast<double>(d432::g_drain_ns.load()) / 1e6, static_cast<double>(d432::g_drain_max_ns.load()) / 1e6, d432::g_anon_walks.load(), d432::g_anon_ev.load(),
++			              d432::g_anon_skips.load(), d432::g_anon_ev_miss.load(), d432::g_anon_vmas.load(), static_cast<uint64_t>(g_views_builds), d432::g_views_clone.load(),
++			              d432::g_rec_mismatch.load(), d432::maps_fast() ? "ON" : "off", d432::g_maps_fast.load(), d432::g_maps_sorted.load(),
++			              d432::maps_diff() == 2 ? "VERIFY" : d432::maps_diff() == 1 ? "ON" : "off", d432::g_x_diff.load(), d432::g_x_full.load(), d432::g_x_views.load(),
++			              d432::g_x_mismatch.load(), d432::g_x_why[0].load(), d432::g_x_why[1].load(), d432::g_x_why[2].load(), d432::g_x_why[3].load(), d432::g_x_why[4].load(),
++			              d432::g_x_why[5].load(), d432::g_x_why[6].load(), d432::g_x_why[7].load(), d432::g_x_why[8].load(), d432::g_x_why[9].load(), d432::g_x_why[10].load());
++			std::fprintf(stderr, "[bc5] %s\n", line);
++			journal("%s\n", line);
++		}
++	}
++#endif
 +	if (bc5::load_stat::on()) { // experiment 0415 (ls415c): the hold by part
 +		bc5::load_stat::add(bc5::load_stat::kHoldProbe, ta - t0);
 +		bc5::load_stat::add(bc5::load_stat::kHoldHints, t2 - tc);
@@ -49220,6 +49751,13 @@ index 0000000..6118f2d
 +		r       = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, true, qring);
 +		mec_back(r.executed_offsets);
 +		fl_back(r.executed_offsets); // experiment 0404
++	}
++	if (!r.ok && !r.timed_out && !r.pending && r.rc != 0 && d432::refused_ends()) { // exp 0432 (tag r432)
++		journal("exp 0432 (tag r432): submit #%" PRIu64 " %s %u dwords on ring %d was REFUSED by the device (rc %d%s): a host bug; the game ends here with a record\n", n, kind, num_dwords,
++		        qring, r.rc, retried ? ", after the -EFAULT retry" : "");
++		std::fprintf(stderr, "[bc5] exp 0432 (tag r432): submit #%" PRIu64 " %s %u dwords on ring %d was REFUSED by the device (rc %d): the game ends here with a record\n", n, kind,
++		             num_dwords, qring, r.rc);
++		fr412_record_and_exit(0, 0, false, r.rc);
 +	}
 +	if (!catch_slots.empty() && (r.timed_out || !r.pending)) catch_check(catch_slots, r.timed_out, n, kind); // experiment 0401 series e
 +	if (r.timed_out && fl_plan.crumbs) fl_probe(fl_plan, n, kind, true); // experiment 0404: first, before the long probe
@@ -53306,7 +53844,7 @@ index 5b0fc93..5b78760 100644
  	LOGF("\t target = %d\n"
  	     "\t msg    = 0x%016" PRIx64 "\n",
 diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
-index 073361d..47cd905 100644
+index 073361d..4163fe4 100644
 --- a/src/libs/libAmpr.cpp
 +++ b/src/libs/libAmpr.cpp
 @@ -1,3 +1,6 @@
@@ -53316,7 +53854,7 @@ index 073361d..47cd905 100644
  #include "common/abi.h"
  #include "common/dateTime.h"
  #include "common/file.h"
-@@ -11,14 +14,28 @@
+@@ -11,14 +14,29 @@
  #include "loader/symbolDatabase.h"
  
  #include <algorithm>
@@ -53340,12 +53878,13 @@ index 073361d..47cd905 100644
  #include <vector>
 +#include <sys/mman.h> // experiment 0401 series e4: mprotect of the AMM PRT zero pages
 +#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
++#include "bc5/anon_sync.hpp" // experiment 0415 (as415c)
 +#include "bc5/apr_posix.hpp" // experiment 0415 (ls415b/c): KYTY_BC5_APR_POSIX
 +#include "bc5/setbuffer_test.hpp" // experiment 0417: the gate of the set-buffer test hook (0 in shared builds)
  
  #ifdef min
  #undef min
-@@ -27,6 +44,92 @@
+@@ -27,6 +45,92 @@
  #undef max
  #endif
  
@@ -53438,7 +53977,7 @@ index 073361d..47cd905 100644
  namespace Libs {
  
  namespace AprShared {
-@@ -41,6 +144,7 @@ struct SubmissionState {
+@@ -41,6 +145,7 @@ struct SubmissionState {
  	uint64_t result           = 0;
  	int32_t  execution_result = 0;
  	uint32_t error_offset     = 0;
@@ -53446,7 +53985,7 @@ index 073361d..47cd905 100644
  };
  
  struct ResolvedPathInfo {
-@@ -54,6 +158,7 @@ struct ResolvedPathInfo {
+@@ -54,6 +159,7 @@ struct ResolvedPathInfo {
  static std::mutex                                        g_mutex;
  static uint32_t                                          g_next_submission_id = 1;
  static std::unordered_map<uint32_t, SubmissionState>     g_submissions;
@@ -53454,7 +53993,7 @@ index 073361d..47cd905 100644
  static std::unordered_map<uint32_t, std::string>         g_files;
  static std::unordered_map<uint32_t, uint64_t>            g_file_sizes;
  static std::unordered_map<std::string, ResolvedPathInfo> g_resolved_paths;
-@@ -468,12 +573,23 @@ static void SetSubmissionResult(uint32_t submission_id, int32_t execution_result
+@@ -468,12 +574,23 @@ static void SetSubmissionResult(uint32_t submission_id, int32_t execution_result
  	if (it != g_submissions.end()) {
  		it->second.execution_result = execution_result;
  		it->second.error_offset     = error_offset;
@@ -53480,7 +54019,7 @@ index 073361d..47cd905 100644
  	if (it == g_submissions.end()) {
  		return false;
  	}
-@@ -501,7 +617,8 @@ static int WriteResult(void* result, int32_t execution_result = 0, uint32_t erro
+@@ -501,7 +618,8 @@ static int WriteResult(void* result, int32_t execution_result = 0, uint32_t erro
  
  namespace LibAmpr::Ampr {
  static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_result,
@@ -53490,7 +54029,7 @@ index 073361d..47cd905 100644
  }
  
  namespace LibKernelApr {
-@@ -667,7 +784,7 @@ static int KYTY_SYSV_ABI ResolveFilepathsWithPrefixToIdsAndFileSizesForEach(
+@@ -667,7 +785,7 @@ static int KYTY_SYSV_ABI ResolveFilepathsWithPrefixToIdsAndFileSizesForEach(
  	    AprShared::ResolvePathsCommon(path_list, count, ids, sizes, nullptr, prefix_buf, results));
  }
  
@@ -53499,7 +54038,7 @@ index 073361d..47cd905 100644
                                                           void*     result,
                                                           uint32_t* out_submission_id) {
  	PRINT_NAME();
-@@ -683,11 +800,10 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
+@@ -683,11 +801,10 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto submit_result = LibAmpr::Ampr::ExecuteAprCommandBuffer(command_buffer_addr,
@@ -53512,7 +54051,7 @@ index 073361d..47cd905 100644
  
  	if (out_submission_id != nullptr) {
  		if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
-@@ -698,7 +814,7 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
+@@ -698,7 +815,7 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
  	return KernelSyscallResult(AprShared::WriteResult(result, execution_result, error_offset));
  }
  
@@ -53521,7 +54060,7 @@ index 073361d..47cd905 100644
  	PRINT_NAME();
  
  	if (command_buffer == nullptr) {
-@@ -708,10 +824,11 @@ static int KYTY_SYSV_ABI SubmitCommandBuffer(void* command_buffer, uint64_t) {
+@@ -708,10 +825,11 @@ static int KYTY_SYSV_ABI SubmitCommandBuffer(void* command_buffer, uint64_t) {
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	return KernelSyscallResult(LibAmpr::Ampr::ExecuteAprCommandBuffer(
@@ -53535,7 +54074,7 @@ index 073361d..47cd905 100644
                                                       uint32_t* out_submission_id) {
  	PRINT_NAME();
  
-@@ -725,11 +842,10 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetId(void*     command_buffer, u
+@@ -725,11 +843,10 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetId(void*     command_buffer, u
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto submit_result = LibAmpr::Ampr::ExecuteAprCommandBuffer(command_buffer_addr,
@@ -53548,7 +54087,7 @@ index 073361d..47cd905 100644
  
  	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
  		return KernelSyscallResult(LibKernel::KERNEL_ERROR_EFAULT);
-@@ -816,7 +932,11 @@ constexpr int      PROT_AMPR_READ                = 0x40;
+@@ -816,7 +933,11 @@ constexpr int      PROT_AMPR_READ                = 0x40;
  constexpr int      PROT_AMPR_WRITE               = 0x80;
  constexpr int      PROT_ACP_READ                 = 0x100;
  constexpr int      PROT_ACP_WRITE                = 0x200;
@@ -53561,7 +54100,7 @@ index 073361d..47cd905 100644
  constexpr uint64_t AMM_VA_SIZE                   = 0x0000001000000000ull;
  constexpr uint64_t APR_MAX_READ_LENGTH           = 0x0000000100000000ull;
  constexpr uint64_t APR_MAX_FILE_OFFSET           = 0x0000010000000000ull;
-@@ -829,6 +949,15 @@ enum class AmmCommandKind : uint32_t {
+@@ -829,6 +950,15 @@ enum class AmmCommandKind : uint32_t {
  	MapAuto,
  	MapDirect,
  	Unmap,
@@ -53577,7 +54116,7 @@ index 073361d..47cd905 100644
  };
  
  struct CommandBufferState {
-@@ -855,6 +984,13 @@ struct CommandBufferState {
+@@ -855,6 +985,13 @@ struct CommandBufferState {
  		uint64_t address       = 0;
  		uint64_t value         = 0;
  	};
@@ -53591,7 +54130,7 @@ index 073361d..47cd905 100644
  	struct AmmMapCommand {
  		uint64_t       record_offset = 0;
  		AmmCommandKind kind          = AmmCommandKind::MapAuto;
-@@ -864,21 +1000,44 @@ struct CommandBufferState {
+@@ -864,21 +1001,44 @@ struct CommandBufferState {
  		int32_t        type          = 0;
  		int32_t        prot          = 0;
  		uint8_t        gpu_mask_id   = 0;
@@ -53640,7 +54179,7 @@ index 073361d..47cd905 100644
  };
  
  struct AmmVirtualAddressRanges {
-@@ -902,7 +1061,8 @@ static std::mutex                                       g_command_buffer_mutex;
+@@ -902,7 +1062,8 @@ static std::mutex                                       g_command_buffer_mutex;
  static std::unordered_map<uint64_t, CommandBufferState> g_command_buffers;
  static std::unordered_map<uint64_t, uint64_t>           g_command_buffer_aliases;
  static std::mutex                                       g_amm_auto_pool_mutex;
@@ -53650,7 +54189,7 @@ index 073361d..47cd905 100644
  using CommandBufferIterator = std::unordered_map<uint64_t, CommandBufferState>::iterator;
  
  static bool HasQueuedCommands(const CommandBufferState& state) {
-@@ -925,6 +1085,12 @@ static void RegisterCommandBufferAliasLocked(uint64_t command_buffer, uint64_t b
+@@ -925,6 +1086,12 @@ static void RegisterCommandBufferAliasLocked(uint64_t command_buffer, uint64_t b
  }
  
  static void EraseCommandBufferStateLocked(uint64_t command_buffer) {
@@ -53663,7 +54202,7 @@ index 073361d..47cd905 100644
  	g_command_buffers.erase(command_buffer);
  	for (auto it = g_command_buffer_aliases.begin(); it != g_command_buffer_aliases.end();) {
  		if (it->first == command_buffer || it->second == command_buffer) {
-@@ -1078,6 +1244,16 @@ static uint64_t AprReadFileRecordSize(uint64_t file_offset) {
+@@ -1078,6 +1245,16 @@ static uint64_t AprReadFileRecordSize(uint64_t file_offset) {
  	return (file_offset >> 32u) != 0 ? READ_FILE_RECORD_SIZE_EXT : READ_FILE_RECORD_SIZE;
  }
  
@@ -53680,7 +54219,7 @@ index 073361d..47cd905 100644
  static uint64_t AprReadGatherRecordSize(uint64_t file_offset) {
  	return file_offset > 0x3ffffu ? READ_GATHER_RECORD_SIZE_EXT : READ_GATHER_RECORD_SIZE;
  }
-@@ -1151,6 +1327,8 @@ static bool WriteCommandBufferPointers(uint64_t command_buffer, uint64_t buffer,
+@@ -1151,6 +1328,8 @@ static bool WriteCommandBufferPointers(uint64_t command_buffer, uint64_t buffer,
  	state.kernel_event_commands.clear();
  	state.write_address_commands.clear();
  	state.amm_map_commands.clear();
@@ -53689,7 +54228,7 @@ index 073361d..47cd905 100644
  	state.gather_scatter_valid       = false;
  	state.gather_scatter_file_id     = 0;
  	state.gather_scatter_destination = 0;
-@@ -1256,6 +1434,9 @@ static bool AppendReadFileRecord(uint64_t command_buffer, uint8_t opcode, uint32
+@@ -1256,6 +1435,9 @@ static bool AppendReadFileRecord(uint64_t command_buffer, uint8_t opcode, uint32
  	            static_cast<size_t>(record_size));
  	std::memcpy(reinterpret_cast<void*>(state.buffer + record_offset), &opcode, sizeof(opcode));
  	state.read_file_commands.push_back({record_offset, file_id, destination, size, file_offset});
@@ -53699,7 +54238,7 @@ index 073361d..47cd905 100644
  	if (!CommitCommandBufferRecord(command_buffer, &state, record_size)) {
  		return false;
  	}
-@@ -1294,7 +1475,12 @@ static bool AppendKernelEventRecord(uint64_t command_buffer, uint64_t eq, int32_
+@@ -1294,7 +1476,12 @@ static bool AppendKernelEventRecord(uint64_t command_buffer, uint64_t eq, int32_
  	std::memcpy(reinterpret_cast<void*>(state.buffer + record_offset), record.data(),
  	            record.size());
  	state.kernel_event_commands.push_back({record_offset, eq, id, data});
@@ -53713,7 +54252,7 @@ index 073361d..47cd905 100644
  }
  
  static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address, uint64_t value,
-@@ -1314,7 +1500,37 @@ static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address,
+@@ -1314,7 +1501,37 @@ static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address,
  	std::memset(reinterpret_cast<void*>(state.buffer + record_offset), 0,
  	            static_cast<size_t>(record_size));
  	state.write_address_commands.push_back({record_offset, address, value});
@@ -53752,7 +54291,7 @@ index 073361d..47cd905 100644
  }
  
  static bool ValidateAmmMapArgs(uint64_t va, uint64_t size) {
-@@ -1358,26 +1574,383 @@ static int NormalizeAmmProtection(int prot) {
+@@ -1358,26 +1575,383 @@ static int NormalizeAmmProtection(int prot) {
  	return normalized;
  }
  
@@ -54144,7 +54683,7 @@ index 073361d..47cd905 100644
  		return false;
  	}
  
-@@ -1385,21 +1958,181 @@ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t
+@@ -1385,21 +1959,181 @@ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t
  	return true;
  }
  
@@ -54332,7 +54871,7 @@ index 073361d..47cd905 100644
  }
  
  static bool AppendAmmMapRecord(uint64_t                                 command_buffer,
-@@ -1425,68 +2158,194 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
+@@ -1425,68 +2159,194 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
  
  static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offset,
                                 uint64_t destination, uint64_t size, uint64_t* bytes_read);
@@ -54579,7 +55118,7 @@ index 073361d..47cd905 100644
  				const auto& command = state.read_file_commands[entry.index];
  				std::string host_path;
  				if (!AprShared::TryGetHostPath(command.file_id, &host_path)) {
-@@ -1494,56 +2353,131 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1494,56 +2354,131 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     command.file_id);
  					*execution_result = LibKernel::KERNEL_ERROR_ENOENT;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -54720,7 +55259,7 @@ index 073361d..47cd905 100644
  					LOGF("\tAMM submit command failed: kind=%u va=0x%016" PRIx64
  					     " dmem=0x%016" PRIx64 " size=0x%016" PRIx64 " type=%" PRId32
  					     " prot=0x%08" PRIx32 " result=0x%08" PRIx32 "\n",
-@@ -1552,24 +2486,469 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1552,24 +2487,469 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     static_cast<uint32_t>(result));
  					*execution_result = result;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -55199,7 +55738,7 @@ index 073361d..47cd905 100644
  		return false;
  	}
  
-@@ -1583,6 +2962,8 @@ static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offse
+@@ -1583,6 +2963,8 @@ static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offse
  	if (bytes_read == nullptr) {
  		return LibKernel::KERNEL_ERROR_EINVAL;
  	}
@@ -55208,7 +55747,7 @@ index 073361d..47cd905 100644
  
  	*bytes_read = 0;
  	if (size == 0) {
-@@ -1592,6 +2973,18 @@ static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offse
+@@ -1592,6 +2974,18 @@ static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offse
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
@@ -55227,7 +55766,7 @@ index 073361d..47cd905 100644
  	Common::File file;
  	if (!file.Open(host_path, Common::File::Mode::Read)) {
  		LOGF("\tAPR read missing host file: %s\n", host_path.c_str());
-@@ -1678,13 +3071,186 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
+@@ -1678,13 +3072,186 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
  	return OK;
  }
  
@@ -55415,7 +55954,7 @@ index 073361d..47cd905 100644
  	const auto command_buffer_addr = reinterpret_cast<uint64_t>(command_buffer);
  	if (!ValidateCommandBufferHeader(command_buffer_addr)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -1767,15 +3333,25 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
+@@ -1767,15 +3334,25 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
  	PRINT_NAME();
  
  	const auto destination_addr = reinterpret_cast<uint64_t>(destination);
@@ -55447,7 +55986,7 @@ index 073361d..47cd905 100644
  }
  
  static uint64_t AlignUp4(uint64_t value) {
-@@ -1811,11 +3387,11 @@ static uint64_t KYTY_SYSV_ABI MeasureCommandSizeFixed32(uint64_t, uint64_t, uint
+@@ -1811,11 +3388,11 @@ static uint64_t KYTY_SYSV_ABI MeasureCommandSizeFixed32(uint64_t, uint64_t, uint
  	return 0x20;
  }
  
@@ -55462,7 +56001,7 @@ index 073361d..47cd905 100644
  }
  
  static uint64_t KYTY_SYSV_ABI
-@@ -2111,27 +3687,45 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
+@@ -2111,27 +3688,45 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
  	return AppendNoOpCommand(command_buffer, sizeof(uint32_t));
  }
  
@@ -55515,7 +56054,7 @@ index 073361d..47cd905 100644
  	           ? OK
  	           : LibKernel::KERNEL_ERROR_EBUSY;
  }
-@@ -2139,8 +3733,12 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
+@@ -2139,8 +3734,12 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
  static int KYTY_SYSV_ABI CommandBufferWriteAddress(void* command_buffer, volatile uint64_t* address,
                                                     uint64_t value, uint32_t) {
  	PRINT_NAME();
@@ -55529,7 +56068,7 @@ index 073361d..47cd905 100644
  }
  
  static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*              command_buffer,
-@@ -2148,12 +3746,15 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*
+@@ -2148,12 +3747,15 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*
                                                                 uint64_t           value) {
  	PRINT_NAME();
  
@@ -55548,7 +56087,7 @@ index 073361d..47cd905 100644
  
  	return AppendNoOpCommand(command_buffer, 0x20);
  }
-@@ -2170,44 +3771,56 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromTimeCounter(void*
+@@ -2170,44 +3772,56 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromTimeCounter(void*
                                                                    uint32_t) {
  	PRINT_NAME();
  
@@ -55616,7 +56155,7 @@ index 073361d..47cd905 100644
  }
  
  static int KYTY_SYSV_ABI AprCommandBufferReadFileGather(void*    command_buffer, uint64_t, uint64_t,
-@@ -2314,15 +3927,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
+@@ -2314,15 +3928,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
  	return OK;
  }
  
@@ -55646,7 +56185,7 @@ index 073361d..47cd905 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2333,7 +3958,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
+@@ -2333,7 +3959,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
  
  static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, uint64_t va,
                                                          uint64_t dmem_offset, uint64_t size,
@@ -55655,7 +56194,7 @@ index 073361d..47cd905 100644
  	PRINT_NAME();
  
  	if (command_buffer == nullptr || !ValidateAmmMapArgs(va, size) ||
-@@ -2341,7 +3966,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
+@@ -2341,7 +3967,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
  		return LibKernel::KERNEL_ERROR_EINVAL;
  	}
  
@@ -55672,7 +56211,7 @@ index 073361d..47cd905 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2504,38 +4137,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
+@@ -2504,38 +4138,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
  	}
  
  	*dmem_offset = allocated;
@@ -55745,7 +56284,7 @@ index 073361d..47cd905 100644
  	}
  }
  
-@@ -2589,11 +4244,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
+@@ -2589,11 +4245,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto     submit_result =
@@ -55758,7 +56297,7 @@ index 073361d..47cd905 100644
  
  	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -2618,11 +4272,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
+@@ -2618,11 +4273,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto     submit_result =
@@ -55771,7 +56310,7 @@ index 073361d..47cd905 100644
  
  	if (out_submission_id != nullptr &&
  	    !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
-@@ -2648,57 +4301,1084 @@ static int KYTY_SYSV_ABI AmmWaitCommandBufferCompletion(uint32_t submission_id)
+@@ -2648,57 +4302,1086 @@ static int KYTY_SYSV_ABI AmmWaitCommandBufferCompletion(uint32_t submission_id)
  	return OK;
  }
  
@@ -55945,7 +56484,9 @@ index 073361d..47cd905 100644
 +// or unreadable again. MapBacking's MAP_FIXED view replaces either; nothing else in the host reads the placeholder's mode.
 +static bool Bc5HostReadable(uint64_t va, uint64_t size, bool readable) {
 +#if defined(__linux__)
-+	return mprotect(reinterpret_cast<void*>(va), static_cast<size_t>(size), readable ? PROT_READ : PROT_NONE) == 0;
++	const bool done = mprotect(reinterpret_cast<void*>(va), static_cast<size_t>(size), readable ? PROT_READ : PROT_NONE) == 0;
++	if (done) bc5::anon_sync::note(va, size, readable); // experiment 0415 (as415c): an anonymous placeholder made readable
++	return done;
 +#else
 +	(void)va;
 +	(void)size;
@@ -56906,7 +57447,7 @@ index 073361d..47cd905 100644
  	LIB_FUNC("ZFDZoN9IbVU", Ampr::MeasureAmmCommandSizeMapDirect);
  	LIB_FUNC("KUjtdPZJo5I", Ampr::MeasureAmmCommandSizeMapDirectWithGpuMaskId);
  	LIB_FUNC("Ayg6PIon2wA", Ampr::MeasureAmmCommandSizeUnmap);
-@@ -2743,6 +5423,40 @@ LIB_DEFINE(InitAmpr_1_Ampr) {
+@@ -2743,6 +5426,40 @@ LIB_DEFINE(InitAmpr_1_Ampr) {
  	LIB_FUNC("NnKhlMJtIsI", Ampr::AmmSubmitCommandBufferAndGetId);
  	LIB_FUNC("OJf3vCckPAM", Ampr::AmmSubmitCommandBufferAndGetResult);
  	LIB_FUNC("HXymib4T8gc", Ampr::AmmWaitCommandBufferCompletion);

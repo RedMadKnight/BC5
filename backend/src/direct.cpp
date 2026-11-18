@@ -446,16 +446,32 @@ struct Device::Impl {
     bool scratch_reserve(std::uint64_t bytes) {
         ScratchBo &scratch = slots[cur];
         if (scratch.bo != nullptr && scratch.size >= bytes) return true;
+        // exp 0432 (tag s432): the resize by step, and BC5_DIRECT_SLOT_GROW
+        static const bool s432_grow = [] {
+            const char *e = std::getenv("BC5_DIRECT_SLOT_GROW");
+            return !(e != nullptr && e[0] == '0' && e[1] == 0);
+        }();
+        static std::uint64_t s432_n = 0, s432_bytes = 0;
+        static double s432_total = 0, s432_max = 0;
+        const std::uint64_t s432_old = scratch.size;
+        double s432_t[4] = {now_ms(), 0, 0, 0};
         scratch_free();
+        s432_t[1] = now_ms();
         // Exactly the pages needed (dispatch-min's 4 KiB command BO is the configuration known
         // to work; a 1 MiB scratch hung the CP on the second fetch, experiment 0016).
         std::uint64_t size = (bytes + 4095) & ~std::uint64_t{4095};
         if (size == 0) size = 4096;
+        if (s432_grow) { // exp 0432 (tag s432): the next power of two, at least 64 KiB
+            std::uint64_t p = 65536;
+            while (p < size) p <<= 1;
+            size = p;
+        }
         amdgpu_bo_alloc_request req{};
         req.alloc_size = size;
         req.phys_alignment = 4096;
         req.preferred_heap = AMDGPU_GEM_DOMAIN_GTT;
         if (amdgpu_bo_alloc(dev, &req, &scratch.bo) != 0) return false;
+        s432_t[2] = now_ms();
         if (opts.legacy_scratch_va) {
             if (amdgpu_va_range_alloc(dev, amdgpu_gpu_va_range_general, size, 4096, 0, &scratch.va,
                                       &scratch.va_handle, 0) != 0)
@@ -483,9 +499,34 @@ struct Device::Impl {
                          static_cast<unsigned long long>(scratch.va));
             return false;
         }
+        s432_t[3] = now_ms();
         if (amdgpu_bo_cpu_map(scratch.bo, &scratch.cpu) != 0) return false;
         scratch.size = size;
+        { // exp 0432 (tag s432)
+            const double end = now_ms(), all = end - s432_t[0];
+            s432_n++;
+            s432_total += all;
+            s432_bytes += size;
+            if (all > s432_max) s432_max = all;
+            if (all > 20.0)
+                std::fprintf(stderr, "bc5-direct: exp 0432 (tag s432): slot %d resize %llu -> %llu bytes (asked %llu) took %.1f ms: unmap+free %.1f, alloc %.1f, gpu map %.1f, cpu map %.1f\n",
+                             cur, static_cast<unsigned long long>(s432_old), static_cast<unsigned long long>(size), static_cast<unsigned long long>(bytes), all,
+                             s432_t[1] - s432_t[0], s432_t[2] - s432_t[1], s432_t[3] - s432_t[2], end - s432_t[3]);
+            if (s432_n <= 2 || (s432_n & 63u) == 0)
+                std::fprintf(stderr, "bc5-direct: exp 0432 (tag s432): slot grow %s; %llu resizes, %.1f ms in all, longest %.1f ms, %llu KiB allocated in all\n",
+                             s432_grow ? "ON" : "off (exact size)", static_cast<unsigned long long>(s432_n), s432_total, s432_max,
+                             static_cast<unsigned long long>(s432_bytes >> 10));
+        }
         return true;
+    }
+
+    // exp 0432 (tag s432): see mkbe432.py, item P
+    static bool s432_prealloc() {
+        static const bool v = [] {
+            const char *e = std::getenv("BC5_DIRECT_SLOT_PREALLOC");
+            return !(e != nullptr && e[0] == '0' && e[1] == 0);
+        }();
+        return v;
     }
 
     void scratch_free() {
@@ -630,6 +671,29 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
         const int wrc = amdgpu_bo_alloc(d->impl_->dev, &req, &d->impl_->gws);
         std::fprintf(stderr, "bc5-direct: GWS BO %u: %s (%d)\n", opts.gws_count, wrc == 0 ? "ok" : "FAILED", wrc);
         if (wrc != 0) d->impl_->gws = nullptr;
+    }
+    if (Impl::s432_prealloc()) { // exp 0432 (tag s432): the large slot buffers, once, before the title maps anything
+        const double t0 = now_ms();
+        int made = 0, failed = 0;
+        std::uint64_t gfx_kib = 256, comp_kib = 256, total_kib = 0; // BC5_DIRECT_SLOT_PREALLOC=<GFX KiB>:<other KiB> sets other sizes
+        if (const char *e = std::getenv("BC5_DIRECT_SLOT_PREALLOC"); e != nullptr) {
+            unsigned long long a = 0, b = 0;
+            if (std::sscanf(e, "%llu:%llu", &a, &b) == 2 && a <= 16384 && b <= 16384) {
+                gfx_kib = a;
+                comp_kib = b;
+            }
+        }
+        for (int k = 0; k < Impl::kSlots; ++k) {
+            d->impl_->cur = k;
+            const std::uint64_t want = k < Impl::kGfxSlots ? gfx_kib : comp_kib;
+            if (want == 0) continue;
+            (d->impl_->scratch_reserve(want << 10) ? made : failed)++;
+            total_kib += want;
+        }
+        d->impl_->cur = Impl::pool_first(kGfxRing);
+        std::fprintf(stderr, "bc5-direct: exp 0432 (tag s432): slot prealloc: %d buffers made (%d failed) in %.1f ms: %llu KiB for each of the %d GFX-ring slots, %llu KiB for each of the others, %llu MiB of GTT in all\n", made, failed,
+                     now_ms() - t0, static_cast<unsigned long long>(gfx_kib), Impl::kGfxSlots, static_cast<unsigned long long>(comp_kib),
+                     static_cast<unsigned long long>(total_kib >> 10));
     }
     return d;
 }

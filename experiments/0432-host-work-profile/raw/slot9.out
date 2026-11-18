@@ -1,0 +1,16 @@
+== 03:32:51 ASTRO BOT, the lean swap form
+chain lock: exp 0417 | chain: exp 0431: ASTRO BOT on the shared builds, way 2 (a432L1:x:D), until about 03:41 | token 202611180332512372408 | 2026-11-18 03:32:51
+03:32:51 == a432L1: private /home/kjaniszewski/bc5-work/exp0432/swl/kyty_emulator 89ee1225, arm D (no words: the build defaults; extra: none), 200 s
+a432L1 (astro) PASS: ran 200 s; RssAnon at the end 108844 kB; kernel lines 0, crash lines 0; real pad keys 0; shots 5
+a432L1 w428c lines 0; the last: 
+03:36:28 a432L1: PASS
+03:36:33 astro0431 ended
+chain lock released
+== 03:36:33 the second title: lean swap form, then normal swap form
+scene0432 03:36:33: snapshot /home/kjaniszewski/bc5-data/saves/PPSA03671-20261117-0946-play (91bb80e5fd85ca56), play 300 s, order L T
+scene0432 03:36:33: arm L, d432L31, 89ee1225
+d432L31 (L) SETUP: no journal of this run by 60 s (after 60 s; G none, load none, list none); no fps lines; kernel lines 0, crash lines 0, ledger lines 0; CLASS SETUP; exposure w428-switch [] aq424-switch [] w428c-last []
+scene0432 03:37:47: d432L31 not NO_CRASH: stop (R55)
+scene0432 03:37:47: done
+slot9 ended 03:37:47
+[   13.874148] bc5-gpu-watch: watching the kernel log for amdgpu resets that do not finish (grace 60 s)

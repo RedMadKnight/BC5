@@ -1,0 +1,20 @@
+== 06:21:08 a432S1 ASTRO BOT lean 200 s (272685ee)
+chain lock: exp 0417 | chain: exp 0431: ASTRO BOT on the shared builds, way 2 (a432S1:l:D), until about 06:30 | token 20261118062108386401 | 2026-11-18 06:21:08
+06:21:08 == a432S1: lean 272685ee, arm D (no words: the build defaults; extra: none), 200 s
+a432S1 (astro) PASS: ran 200 s; RssAnon at the end 238160 kB; kernel lines 0, crash lines 0; real pad keys 0; shots 5
+a432S1 w428c lines 0; the last: 
+06:24:40 a432S1: PASS
+06:24:45 astro0431 ended
+chain lock released
+== 06:24:45 l432S2 second title lean 300 s
+lean0428 06:24:46: lean 272685ee, tag l432S2
+l432S2 (lean) PASS: ran 300 s; RssAnon at the end 105988 kB; kernel lines 0, crash lines 0
+lean0428 06:29:57: ended; JobArenaFix in its config: no line (the default)
+oom lines since boot: 1; amdgpu timeout/reset lines: 1
+smoke0432 ended 06:29:57: both PASS
+l432S2 (lean) PASS: ran 300 s; RssAnon at the end 105988 kB; kernel lines 0, crash lines 0
+lock: []
+4e0c00a2  /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator
+272685ee  /home/kjaniszewski/bc5-work/kytyplus-build-lean/src/kyty_emulator
+6eac453e  /home/kjaniszewski/bc5-work/backend-ubuntu/libbc5_backend.a
+940e8f36
