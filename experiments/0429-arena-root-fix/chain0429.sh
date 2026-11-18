@@ -61,7 +61,7 @@ armwords() {
     h429R*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_RR=1" ;;
     h429H*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_RR=2" ;;  # build 11: G with pool sleepers only
     h429P*) echo "KYTY_BC5_0429_RR=0" ;;  # build 11: the plain control for fps, no stressor and no diagnostics (the shared settings)
-    h429Q*) echo "KYTY_BC5_0429_RR=${RRMODE:-1}" ;;  # build 11: R alone for fps, no stressor and no diagnostics; RRMODE=2 pool sleepers only
+    h429Q*) echo "KYTY_BC5_0429_RR=${RRMODE:-1} KYTY_BC5_0429_RESERVE=${RESERVE:-4}" ;;  # build 11: R alone for fps, no stressor and no diagnostics; RRMODE=2 pool sleepers only
     h429X*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_PRIO_ORDER=1 KYTY_BC5_0425_HANDOFF_US=300" ;;
     *) return 1 ;;
   esac

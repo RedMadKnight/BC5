@@ -23,7 +23,7 @@
 // for high priority for many threads (h429K10: 3, a429BA2: 16), and PipeWire holds 4. Under build 12, R's 14 RR
 // threads made rtkit refuse 4 of the emulator's own later requests (K10), and in ASTRO the emulator's requests left R
 // room for 2. Now the watchdog counts the user's RT and nice < 0 threads every second (/proc), and R promotes only
-// while that count + 1 + kReserve fits under rtkit's limit (read from rtkit's command line); a thread denied for room
+// while that count + 1 + Reserve() fits under rtkit's limit (read from rtkit's command line); a thread denied for room
 // or budget waits and is promoted at a later sleep when there is room (it was lost for good before).
 // Build 14 (h429K13 FAIL, Job Hi 6 of 8: the scan counted kwin_wayland's 3 RT threads, which it sets itself with
 // CAP_SYS_NICE and rtkit does not count, and room-short promotions evicted no one, so Job Lo took the places first):
@@ -76,7 +76,13 @@ static std::atomic<int64_t> g_full_until {0};  // rtkit refused: no new promotio
 static std::atomic<int>     g_evicted_tid[kMaxSlots]; // evicted, waiting to come back (not spinners)
 static std::atomic<int>     g_evicted_n {0};
 static std::atomic<int> g_held {0};            // how many hold RR now
-constexpr int           kReserve = 4;          // build 13: rtkit places left for the emulator's own and others' requests
+static int Reserve() { // build 13: rtkit places left for the emulator's own and others' requests; build 14: KYTY_BC5_0429_RESERVE (0-10), default 4
+	static const int v = [] {
+		const char* e = std::getenv("KYTY_BC5_0429_RESERVE");
+		return (e != nullptr && e[0] >= '0' && e[0] <= '9') ? std::clamp(std::atoi(e), 0, 10) : 4;
+	}();
+	return v;
+}
 static std::atomic<int> g_user_rt {-1};        // the user's RT or nice < 0 threads (rtkit's count), -1 before the first scan
 static int              g_rtkit_max = 25;      // rtkit's --threads-per-user-max (its default 25)
 #ifndef BC5_LEAN
@@ -334,9 +340,9 @@ static bool HasWorseHolder(int prio) { // a holder of a numerically higher guest
 	}
 	return false;
 }
-static bool RoomOk() { // one more RR thread leaves kReserve of rtkit's places
+static bool RoomOk() { // one more RR thread leaves Reserve() of rtkit's places
 	const int u = g_user_rt.load(std::memory_order_relaxed);
-	return u >= 0 && u + 1 + kReserve <= g_rtkit_max;
+	return u >= 0 && u + 1 + Reserve() <= g_rtkit_max;
 }
 static void Watchdog() { // bound 2
 	pthread_setname_np(pthread_self(), "bc5-rr-watch");
@@ -349,7 +355,7 @@ static void Watchdog() { // bound 2
 	g_user_rt.store(UserRtThreads());
 #ifndef BC5_LEAN
 	std::fprintf(stderr, "[bc5] exp 0429 R: rtkit serves %d threads per user; the user has %d RT or high-priority threads now; reserve %d\n",
-	             g_rtkit_max, g_user_rt.load(), kReserve);
+	             g_rtkit_max, g_user_rt.load(), Reserve());
 #endif
 	for (int tick = 1;; tick++) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(5));
