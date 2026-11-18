@@ -57,10 +57,13 @@ build() {
     own || stop "no lock held by 0430"
     pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
     fi
-    local shared bin rc
+    local shared bin rc OUT=$E
+    # MODE=bake (2026-11-18 evening, the hang fix built in): mkbake0430.py; LEAN=1 builds the same sources with the shared
+    # lean build's commands and objects into $E/lean/kyty_emulator
+    if [ "${LEAN:-0}" = 1 ]; then B=$W/kytyplus-build-lean; OUT=$E/lean; mkdir -p "$OUT"; fi
     # the shared tree is patch a8717e53; its unit is 0cda79b5 (exp 0428's swap unit), and the shared objects are that build's
     BASE=$TREE/$U
-    if [ "${MODE:-}" = f5 ] || [ "${MODE:-}" = f6 ]; then  # F5/F6 (2026-11-17): the shared unit as the 07:10 swap left it, the current shared tree and objects
+    if [ "${MODE:-}" = f5 ] || [ "${MODE:-}" = f6 ] || [ "${MODE:-}" = bake ]; then  # F5/F6 (2026-11-17): the shared unit as the 07:10 swap left it, the current shared tree and objects
         { [ "$(m8 "$BASE")" = b8afba59 ] || [ "$(m8 "$BASE")" = f574f460 ]; } || stop "the base unit $BASE is not b8afba59 or f574f460 (patch bc39a035 or 940e8f36)"
         echo "the shared tree: diff $(git -C "$TREE" diff --no-color f266548 | md5sum | cut -c1-8), normal $(m8 "$B/src/kyty_emulator")"
     else
@@ -68,29 +71,33 @@ build() {
     [ "$(m8 "$BASE")" = 0cda79b5 ] || stop "the base unit $BASE is not 0cda79b5"
     fi
     shared=$(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)
-    rm -rf "$S" "$E/obj"; mkdir -p "$S/src/libs" "$R"
+    rm -rf "$S" "$OUT/obj"; mkdir -p "$S/src/libs" "$R"
     cp "$BASE" "$S/$U" || stop "copy $U"
     # MODE=swap (build 6 on): the shared form, mkswap0430.py's unit (the fix alone, no catcher), as the swap will ship it
-    if [ "${MODE:-}" = f6 ]; then MKS=mkf6.py; EXP=${EXP_F6:-178d8890}; WANTW="BC5_DIRECT_XQ_BUSY_WAIT BC5_DIRECT_XQ_STALE BC5_DIRECT_XQ_FLIGHT_WAIT BC5_DIRECT_XQ_REGISTRY BC5_DIRECT_XQ_LOOK_LONG BC5_DIRECT_XQ_LOOK BC5_DIRECT_XQ_TARGET_ACB BC5_DIRECT_XQ_TARGET BC5_DIRECT_XQ_FLUSH BC5_DIRECT_XQ_ORDER BC5_DIRECT_XQ_COUNT BC5_DIRECT_XQ_KEEP_ALL BC5_DIRECT_XQ_PRECISE"
+    if [ "${MODE:-}" = bake ]; then MKS=mkbake0430.py; EXP=${EXP_BAKE:?EXP_BAKE}; WANTW="ho430"
+    elif [ "${MODE:-}" = f6 ]; then MKS=mkf6.py; EXP=${EXP_F6:-178d8890}; WANTW="BC5_DIRECT_XQ_BUSY_WAIT BC5_DIRECT_XQ_STALE BC5_DIRECT_XQ_FLIGHT_WAIT BC5_DIRECT_XQ_REGISTRY BC5_DIRECT_XQ_LOOK_LONG BC5_DIRECT_XQ_LOOK BC5_DIRECT_XQ_TARGET_ACB BC5_DIRECT_XQ_TARGET BC5_DIRECT_XQ_FLUSH BC5_DIRECT_XQ_ORDER BC5_DIRECT_XQ_COUNT BC5_DIRECT_XQ_KEEP_ALL BC5_DIRECT_XQ_PRECISE"
     elif [ "${MODE:-}" = f5 ]; then MKS=mkf5.py; EXP=574301e4; WANTW="BC5_DIRECT_XQ_PRECISE BC5_DIRECT_XQ_FENCE BC5_DIRECT_XQ_ACQUIRE"
     elif [ "${MODE:-}" = swap ]; then MKS=mkswap0430.py; EXP=b8afba59; WANTW="BC5_DIRECT_ACB_RINGS BC5_DIRECT_ACB_SPLIT_LATE BC5_DIRECT_XQ_PENDING BC5_DIRECT_XQ_ACQUIRE BC5_DIRECT_XQ_FENCE"
     else MKS=mk0430.py; EXP=17a88ee8; WANTW=""; fi
     python3 -I "$HERE/$MKS" "$S" > "$R/mk.out" 2>&1 || { cat "$R/mk.out"; stop "$MKS refused"; }
     cat "$R/mk.out"
     [ "$(m8 "$S/$U")" = "$EXP" ] || stop "the edited unit is $(m8 "$S/$U"), not the laptop's $EXP"
-    distrobox enter ubuntu -- sh -c "cd '$B' && ninja -t compdb -x" > "$E/compdb.json" 2> "$R/compdb.err" < /dev/null || stop "compdb failed"
-    bin=$E/kyty_emulator
+    distrobox enter ubuntu -- sh -c "cd '$B' && ninja -t compdb -x" > "$OUT/compdb.json" 2> "$R/compdb.err" < /dev/null || stop "compdb failed"
+    bin=$OUT/kyty_emulator
     [ -f "$bin" ] && mv "$bin" "$bin.$(m8 "$bin")"
-    distrobox enter ubuntu -- env LC_ALL=C LANGUAGE=C ${BE:+BC5_0430_ARCHIVE=$E/be-build/libbc5_backend.a BC5_0430_INCLUDE=$E/be-src/include} python3 -I "$HERE/build0430.py" "$E/compdb.json" "$S" "$E" "$B" "$bin" > "$R/build.out" 2>&1 < /dev/null
+    distrobox enter ubuntu -- env LC_ALL=C LANGUAGE=C ${BE:+BC5_0430_ARCHIVE=$E/be-build/libbc5_backend.a BC5_0430_INCLUDE=$E/be-src/include} python3 -I "$HERE/build0430.py" "$OUT/compdb.json" "$S" "$OUT" "$B" "$bin" > "$R/build.out" 2>&1 < /dev/null
     rc=$?; echo "build rc $rc; errors $(grep -c 'error:' "$R/build.out"); warnings $(grep -c 'warning:' "$R/build.out")"
     grep -n "error:\|warning:\|undefined\|COMPILE FAILED" "$R/build.out" | head -30
     [ "$rc" = 0 ] && [ -x "$bin" ] || stop "build failed: $R/build.out"
-    if [ -n "$WANTW" ]; then set -- $WANTW; else set -- BC5_DIRECT_ACB_RINGS BC5_DIRECT_ACB_SPLIT_LATE BC5_0430_DJ BC5_0430_ARGS BC5_0430_WAVES_MS "args0430: " "halt_waves -wa none" BC5_0430_SNAP "wave helper" BC5_0430_TABLES tab0430 "ho430 F2" "ho430 F3" g0430; fi
+    if [ "${LEAN:-0}" = 1 ]; then  # lean: no word of the fix, no ho430 line, no XQ switch
+        for w in BC5_DIRECT_XQ_ "ho430 " "THE BOUND STANDS" KYTY_BC5_ANON_SYNC_KICK BC5_DIRECT_TIMEOUT_PROBE; do strings "$bin" | grep -qF "$w" && stop "lean: $w is in the binary"; done
+        set --
+    elif [ -n "$WANTW" ]; then set -- $WANTW; else set -- BC5_DIRECT_ACB_RINGS BC5_DIRECT_ACB_SPLIT_LATE BC5_0430_DJ BC5_0430_ARGS BC5_0430_WAVES_MS "args0430: " "halt_waves -wa none" BC5_0430_SNAP "wave helper" BC5_0430_TABLES tab0430 "ho430 F2" "ho430 F3" g0430; fi
     for w in "$@"; do
         strings "$bin" | grep -qF "$w" || stop "$w is not in the binary"
     done
-    md5sum < "$bin" | cut -d' ' -f1 > "$E/binary.md5"
-    echo "private binary $(cat "$E/binary.md5"), shared before $shared, after $(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)"
+    md5sum < "$bin" | cut -d' ' -f1 > "$OUT/binary.md5"
+    echo "private binary $(cat "$OUT/binary.md5"), shared before $shared, after $(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)"
     [ "$shared" = "$(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)" ] || stop "the shared binary changed"
 }
 # exp 0430 F4: the private backend archive: the shared archive's source (d19/export/backend, direct.cpp aeec4c09, direct.hpp

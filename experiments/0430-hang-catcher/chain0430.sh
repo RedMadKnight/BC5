@@ -24,7 +24,8 @@ OUT=$N/chain-rows.txt
 WAY2="BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_INDIRECT=1 BC5_DIRECT_ACB_STATE_NO_WALK=1 BC5_DIRECT_ACB_SPLIT_LATE=3"
 # exp 0430 build 5: CATCH=0 runs the fix alone (F3, F2 as its fallback, the timeout probe; G and every catcher off) for flips/s;
 # otherwise every catcher, G with a dump at t 600 s, and the fix
-if [ "${CATCH:-1}" = swap ]; then AW="$WAY2 BC5_DIRECT_XQ_PENDING=1 BC5_DIRECT_XQ_ACQUIRE=1 BC5_DIRECT_TIMEOUT_PROBE=1"  # build 6: the shared form (MODE=swap build)
+if [ "${CATCH:-1}" = bake ]; then AW="$WAY2 BC5_DIRECT_TIMEOUT_PROBE=1"  # 2026-11-18 evening: the hang fix built in (no switch); the probe for a fault's record
+elif [ "${CATCH:-1}" = swap ]; then AW="$WAY2 BC5_DIRECT_XQ_PENDING=1 BC5_DIRECT_XQ_ACQUIRE=1 BC5_DIRECT_TIMEOUT_PROBE=1"  # build 6: the shared form (MODE=swap build)
 elif [ "${CATCH:-1}" = 0 ]; then AW="$WAY2 BC5_0430_F3=1 BC5_0430_F2=1 BC5_0430_G=0 BC5_DIRECT_TIMEOUT_PROBE=1"
 else AW="$WAY2 BC5_0430_DJ=1 BC5_0430_ARGS=1 BC5_0430_WAVES_MS=${WAVES_MS:-900} BC5_0430_SNAP=1 BC5_0430_F3=1 BC5_0430_F2=1 BC5_0430_F4=${F4:-1} BC5_0430_G=1 BC5_0430_G_AT=300 BC5_0430_TABLES=1 BC5_0430_TABLE_PGMS=909973900,909973b00,909973d00,909973f00,909974400,909977100,90997a500 BC5_DIRECT_TIMEOUT_PROBE=1"; fi
 AW="$AW ${EXTRA_W:-}"  # 2026-11-17: more words for one arm (ab0430.sh FWORDS: the F7 arm with F6/F6b off)
