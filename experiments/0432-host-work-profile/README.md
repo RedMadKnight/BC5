@@ -654,6 +654,83 @@ Open after this result: the route A/B (3 runs each), the lean variant of build 4
 W together), build 4's 12 compiler warnings, and the owner of d432V15's hang (build 3; with exp 0430). Six of six
 build 4 runs were clean.
 
+## Result 8: the route A/B, item X's reasons, the swap form and its lean smokes (2026-11-18, 00:27-03:54)
+
+Build 5 (`0f52fd54`) is build 4 plus a counter per failed condition of item X (`mkx432.py`); nothing else changed.
+Shared is `0de9349b`. Twelve runs, every one that was routed ended NO_CRASH, no kernel GPU line, no reset.
+Records: `raw/slot8.out`, `slot9.out`, `slot10.out`, `raw/d432{T23..T33}-*`.
+
+**The route (fight record, then the walk; 1500 s from G; alternating T S T S T S; flips/s from G+10 s):**
+
+| | build 5 (T23, T25, T27) | shared (S24, S26, S28) |
+|---|---|---|
+| flips/s | 29.3, 29.4, 29.4 (mean 29.4) | 29.1, 29.0, 28.9 (mean 29.0) |
+| seconds with a gap over 100 ms | 4, 2, 3 | 2, 3, 3 |
+| seconds with a gap over 50 ms | 45, 51, 35 | 408, 446, 357 |
+| MemAvailable min / median, MiB | 1322-1383 / 1388-1432 | 1430-1459 / 1447-1529 |
+| PSI memory, highest | 0.20, 0.24, 0.07 | 0.00, 0.48, 4.21 |
+
+Build 5 is 0.4 flips/s above shared in each pair (1.3 %), and the seconds with a gap over 50 ms fall to about a
+ninth. MemAvailable is 50-110 MiB lower in build 5 (P's 32 MiB of slots explain a part; the rest is not attributed).
+No earlier route run of `0de9349b` matches these (the others ran other words or lengths), so nothing was pooled.
+
+**One kernel OOM kill, in d432T23** (`raw/d432T23-kernel-lines.txt`): about 30-40 s into the run, while the title
+imports its menu (GTT 8.8 -> 10.8 GiB in 10 s), `bc5-ring` asked for a page in `amdgpu_bo_list_create` and the kernel
+killed `plasmashell` (global OOM, `CONSTRAINT_NONE`) with 2.5 GiB reported available and 4.8 GiB of inactive file
+pages. The emulator ran on and the run ended NO_CRASH. The same kind of global OOM in the menu import is on record
+for another build (LESSONS, exp 0418, 2026-11-13 18:26), so one case does not point at build 5; it is not excluded
+either. The later runs of the night ran after this kill (whether the shell came back was not read).
+The laptop's kernel stream file stayed empty through it: `dmesg -W` through ssh buffers its output, so the stream
+shows nothing until 4 KiB are written. The per-run kernel check on the box is what caught it. The stream needs
+`stdbuf -oL` before it is relied on again.
+
+**Item X: not taken, and now it is known why.** d432X29 (`raw/d432X29-last-line.txt`): by diff 0, the old way
+5,122, mismatches 0; the first failed condition was `k1r` on 4,620 times, new BOs 394, retired 108. The title's
+default switches keep `k1r` on, and X's fast path excludes it. X stays off; it is untested in play. Making it work
+means carrying `k1r` through the diff, a new piece of work.
+
+**His scene, build 5 and the swap form** (300 s, no input; flips/s from G+10 s; the same snapshot):
+
+| run | flips/s | s with gap > 100 ms | > 50 ms | MemAvailable min / median |
+|---|---|---|---|---|
+| shared, 7 runs of Results 6-7 | 30.7-33.9, median 32.3 | 81-114 | every second | 972-986 / 1075-1092 |
+| build 4, 4 runs of Result 7 | 34.1-35.7, median 35.0 | 56-73 | 195-217 | 826-986 / 926-1100 |
+| d432X29 (build 5, X verify) | 34.1 | 56 | 210 | 876 / 993 |
+| d432T30 (build 5) | 33.3 | 66 | 209 | 846 / 1002 |
+| d432T33 (swap form, normal `0db6fc7c`) | 32.9 | 66 | 217 | 976 / 1079 |
+
+The fewer long gaps are kept (56-66 s against 81-114 s). The flips/s gain is smaller tonight: 32.9-34.1 against
+build 4's 34.1-35.7, and inside shared's own range. No shared scene run was made this night, so whether the night or
+the build moved is not known. Per-job sample of d432T30: anonymous sync 721 ms, maps 1,274, drain 7, lock wait 8,619,
+33 jobs over 20 ms (shared d432S19: 3,241, 3,132, 111, 13,498, 105), so the removed host work stays removed.
+
+**The swap form** (`mkswap432.py`, `swap432.diff` md5 `59bd42db`, unit `f574f460`): the tested code, with the lean
+build's rule applied: D, W, R, M on and A, V, X off without reading a word, counters without storage, no 10-second
+line. Built on the box with the shared builds' own commands (`SWAP=1 [LEAN=1] box0432.sh buildt`): normal `0db6fc7c`
+(0 errors), lean `89ee1225` (0 errors; one fix on the way, the lean counter's constructor made explicit). In the
+lean binary none of the host unit's words remain; `BC5_DIRECT_SLOT_PREALLOC` remains
+because the backend archive is one for both builds. Both link the private archive `6eac453e` (items S and P).
+
+Lean smokes of `89ee1225`:
+- ASTRO BOT, 200 s by exp 0431's `astro0431.sh` (a432L1): PASS, 0 kernel lines, 0 crash lines.
+- The second title, his scene by time (d432L32; cross at 90, 100, 108 s, G by time at 133 s, then 300 s): NO_CRASH,
+  0 kernel lines; at the end game-main, Render Thread and the audio thread each used 55-61 % of a core. The lean
+  build writes no fps line, so there is no number, and nobody looked at the picture.
+- d432L31 before it was my setup miss (the frame-gated route cannot start a lean build); not a result.
+
+Not done: per-item arms (the gain is of D, M, W, S, P together), the call-graph profile, the 12 compiler warnings
+(all in code that was there before), the gameplay imports (one acb ~870 ms, one dcb ~585 ms per run, unchanged).
+
 ## Verdict
 
-(pending)
+Measured first: on the shared build nothing is saturated (4 of 16 cores busy, the GFX ring 39 % busy); the time goes
+to waiting, and a part of that waiting was host work under the device mutex. Removing it (D: no blocking drain at
+unmap, W: the anonymous-map check on its own thread, M: the mapping merge instead of the sort, S and P: submission
+slots that grow and are made ahead, R: a refused submission ends the game with a record) gives:
+- on the route +0.4 flips/s (1.3 %) in 3 of 3 pairs, and seconds with a gap over 50 ms down from 357-446 to 35-51;
+- in his scene 56-73 seconds with a gap over 100 ms against 81-114 (of 285), and +0.6 to +3.4 flips/s over shared's median,
+  the upper part of that seen only on the first night;
+- no crash, no GPU fault in 14 runs of builds 4, 5 and the swap form; one OOM kill of the Plasma shell during a load
+  whose owner is open.
+Items A, V and X bring nothing as built: A and V are off (V cost speed, A was ordered off), X is never taken while
+`k1r` is on. The swap form is built and smoked on both titles; whether it becomes the shared build is top's decision.

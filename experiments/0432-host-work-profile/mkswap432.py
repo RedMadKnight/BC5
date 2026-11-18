@@ -53,7 +53,7 @@ sub("inline bool word_on(const char* name) {\n",
     "#ifdef BC5_LEAN\n"
     "struct Cnt { // the lean build: a counter that is nothing\n"
     "\tconstexpr Cnt() = default;\n"
-    "\tconstexpr Cnt(int) {}\n"
+    "\texplicit constexpr Cnt(int) {}\n"
     "\tvoid     operator++(int) const {}\n"
     "\tvoid     operator+=(uint64_t) const {}\n"
     "\tvoid     operator=(uint64_t) const {}\n"

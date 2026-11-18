@@ -98,7 +98,7 @@ buildt() {
     [ -s "$E/be-build/libbc5_backend.a" ] || stop "no private archive: run buildbe first"
     local shared bin rc f T=$E/t TS=$E/t/src WANT=0de9349b CDB=$E/compdb.json X=t UW=019d826f DF=t432.diff
     # SWAP=1: the swap form of the unit (mkswap432.py, swap432.diff), into ~/bc5-work/exp0432/sw (lean: swl)
-    if [ "${SWAP:-0}" = 1 ]; then UW=4505c40c; DF=swap432.diff; T=$E/sw; TS=$E/sw/src; X=sw; fi
+    if [ "${SWAP:-0}" = 1 ]; then UW=f574f460; DF=swap432.diff; T=$E/sw; TS=$E/sw/src; X=sw; fi
     # LEAN=1: the same sources with the shared lean build's commands and objects, into ~/bc5-work/exp0432/tl
     if [ "${LEAN:-0}" = 1 ]; then B=$W/kytyplus-build-lean; T=${T}l; TS=$T/src; WANT=63fda02d; CDB=$E/compdb-lean.json; X=${X}l; fi
     shared=$(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)

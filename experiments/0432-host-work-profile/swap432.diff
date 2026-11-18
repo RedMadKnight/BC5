@@ -196,7 +196,7 @@ index 5403083..4bd352c 100644
  		for (uintptr_t page = page_start; page <= page_end; page++) {
  			(*g_protects)[page] = get_protection_flag(mode);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
-index 6118f2d..7cc5798 100644
+index 6118f2d..4828919 100644
 --- a/src/libs/bc5LleAgc.cpp
 +++ b/src/libs/bc5LleAgc.cpp
 @@ -2129,6 +2129,80 @@ static std::shared_mutex g_finish_mutex; // shared: waiting for a job on g_dev;
@@ -209,7 +209,7 @@ index 6118f2d..7cc5798 100644
 +#ifdef BC5_LEAN
 +struct Cnt { // the lean build: a counter that is nothing
 +	constexpr Cnt() = default;
-+	constexpr Cnt(int) {}
++	explicit constexpr Cnt(int) {}
 +	void     operator++(int) const {}
 +	void     operator+=(uint64_t) const {}
 +	void     operator=(uint64_t) const {}
