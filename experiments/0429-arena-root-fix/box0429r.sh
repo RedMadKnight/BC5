@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # BC5 exp 0429, the private builds for the R swap (box0429.sh's build, on the shared tree at patch 940e8f36):
 #   box0429r.sh build swap   the swap form (mkswap0429r.py, no option): normal and lean, ~/bc5-work/exp0429/rs/{normal,lean}
-#   box0429r.sh build test   the stressed pair's build: --keep-slice --stressor, normal only, ~/bc5-work/exp0429/rt/normal
+#   box0429r.sh build test   the stressed runs' build: the swap form + --stressor (no slice), normal only, ~/bc5-work/exp0429/rt/normal
 # The units come from ~/src/KytyPlus (read only); the three edited ones are checked against pins-swap0429r.txt by
 # mkswap0429r.py. switch_defaults.hpp is included by pthread.cpp, main.cpp and libs/libAmpr.cpp, so those two are
 # compiled from the private copy too. Lock: box0429.sh claim/release (the caller's). Nothing shared is written.
@@ -10,7 +10,7 @@ export LC_ALL=C LANGUAGE=C
 W=$HOME/bc5-work; E=$W/exp0429; K=$HOME/src/KytyPlus; HERE=$(cd "$(dirname "$0")" && pwd)
 stop() { echo "0429r STOP: $*"; exit 1; }
 [ "${1:-}" = build ] || stop "usage: box0429r.sh build swap|test"
-V=${2:-}; case "$V" in swap) D=$E/rs; FL=""; VARS="normal lean" ;; test) D=$E/rt; FL="--keep-slice --stressor"; VARS="normal" ;; *) stop "swap or test" ;; esac
+V=${2:-}; case "$V" in swap) D=$E/rs; FL=""; VARS="normal lean" ;; test) D=$E/rt; FL="--stressor"; VARS="normal" ;; *) stop "swap or test" ;; esac
 [ -s "$E/lock.line" ] && [ "$(cat "$W/BOX-LOCK" 2> /dev/null)" = "$(cat "$E/lock.line")" ] || stop "no lock held by 0429"
 pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
 [ "$(git -C "$K" diff --no-color f266548 | md5sum | cut -c1-8)" = 940e8f36 ] || stop "the shared tree is not patch 940e8f36"
