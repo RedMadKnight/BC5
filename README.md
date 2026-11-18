@@ -124,7 +124,7 @@ Since 2026-11-13 the builds set their own defaults in code (F827), so a launcher
 | Audio grain model and display-event coalescing | The second title's sound and timeline at real speed (1.00× for 10 minutes), no 30-fps cap needed | F246, F247 |
 | Tessellation-factor ring, second title | The night scene's tessellated draws are drawn; the geometry engine's reads at address 0 are gone | F248 |
 
-**The research so far:** 747 finding rows (F1–F857; the numbering has gaps) in `docs/HANDOFF.md`, experiment directories 0001–0432 in `experiments/`, 14 architecture decision records in `docs/decisions/`.
+**The research so far:** 748 finding rows (F1–F858; the numbering has gaps) in `docs/HANDOFF.md`, experiment directories 0001–0432 in `experiments/`, 14 architecture decision records in `docs/decisions/`.
 
 ### Known issues
 
