@@ -721,6 +721,26 @@ Lean smokes of `89ee1225`:
 Not done: per-item arms (the gain is of D, M, W, S, P together), the call-graph profile, the 12 compiler warnings
 (all in code that was there before), the gameplay imports (one acb ~870 ms, one dcb ~585 ms per run, unchanged).
 
+## Result 9: the scene A/B of the swap form against shared, same night (2026-11-18, 04:58-05:44)
+
+Ordered by top after Result 8: swap form normal `0db6fc7c` against shared `0de9349b`, his scene, 300 s, alternating
+T S T S T S (d432T34 ... d432S39; `raw/slot11.out`). Six of six NO_CRASH, 0 kernel lines in every run, no new OOM
+line since boot (the count stayed at the one of d432T23), the Plasma shell alive at the end.
+
+| from G+10 s | swap form (T34, T36, T38) | shared (S35, S37, S39) |
+|---|---|---|
+| flips/s | 34.2, 34.5, 34.6 (mean 34.4) | 31.4, 32.6, 32.6 (mean 32.2) |
+| seconds with a gap over 100 ms | 58, 61, 60 | 97, 98, 91 |
+| seconds with a gap over 50 ms | 210, 203, 211 | 283, 284, 282 (every second) |
+| MemAvailable min / median, MiB | 808-904 / 969-1005 | 840-885 / 963-1027 |
+| PSI memory, highest | 5.78, 2.09, 3.54 | 2.62, 2.81, 1.98 |
+
+The swap form is above shared in each pair: +2.2 flips/s on the means (6.8 %), and 35-38 fewer seconds with a gap
+over 100 ms. The ranges do not overlap. MemAvailable is the same within the spread. So Result 8's lower numbers
+(32.9-34.1) were the night's spread, not a lost gain.
+The laptop's kernel stream failed again (`sudo -n stdbuf` is not in sudoers); the evidence for "no kernel line" is
+the per-run check and the `dmesg` read at the end of the series (LESSONS R63).
+
 ## Verdict
 
 Measured first: on the shared build nothing is saturated (4 of 16 cores busy, the GFX ring 39 % busy); the time goes
@@ -728,9 +748,9 @@ to waiting, and a part of that waiting was host work under the device mutex. Rem
 unmap, W: the anonymous-map check on its own thread, M: the mapping merge instead of the sort, S and P: submission
 slots that grow and are made ahead, R: a refused submission ends the game with a record) gives:
 - on the route +0.4 flips/s (1.3 %) in 3 of 3 pairs, and seconds with a gap over 50 ms down from 357-446 to 35-51;
-- in his scene 56-73 seconds with a gap over 100 ms against 81-114 (of 285), and +0.6 to +3.4 flips/s over shared's median,
-  the upper part of that seen only on the first night;
-- no crash, no GPU fault in 14 runs of builds 4, 5 and the swap form; one OOM kill of the Plasma shell during a load
+- in his scene 56-73 seconds with a gap over 100 ms against 81-114 (of 285) over all runs, and in the same-night
+  A/B of the swap form 34.4 against 32.2 flips/s (3 runs each, no overlap; Result 9);
+- no crash, no GPU fault in 17 runs of builds 4, 5 and the swap form; one OOM kill of the Plasma shell during a load
   whose owner is open.
 Items A, V and X bring nothing as built: A and V are off (V cost speed, A was ordered off), X is never taken while
 `k1r` is on. The swap form is built and smoked on both titles; whether it becomes the shared build is top's decision.
