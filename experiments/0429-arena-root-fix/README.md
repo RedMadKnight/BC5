@@ -800,3 +800,21 @@ where R yields (drops its lowest holders whenever fewer than 3 places are free, 
 about 7, i.e. 7 of 8 Hi. Under rtkit's default limit and these neighbours, R cannot have all 8 Hi workers and leave
 every audio request room. The clean way out is raising rtkit's `--threads-per-user-max`, a box system configuration
 change: the maintainer's decision only, not done.
+
+## rtkit's limits raised: the maintainer's decision, 2026-11-18 08:17
+
+He chose option (a). Since 08:17:22 rtkit-daemon runs with `--threads-per-user-max=64 --actions-per-burst-max=100`
+(the top session verified it: the unit is active and its argv shows both). The change is a systemd override,
+`/etc/systemd/system/rtkit-daemon.service.d/bc5-limits.conf`. It is a box system configuration change, done on his word.
+R reads the limit from rtkit-daemon's cmdline, so its room count follows the new limit with no build.
+
+Undo (on the box):
+`sudo rm /etc/systemd/system/rtkit-daemon.service.d/bc5-limits.conf && sudo systemctl daemon-reload && sudo systemctl restart rtkit-daemon`
+
+The plan for the next slot:
+- build 14 with the default reserve of 4 (no build 15);
+- K15 normal, then K16 lean, with RR=3;
+- if both pass, 2 fps pairs and an ASTRO run.
+
+Pass condition: Job Hi 8 of 8 on RR, 0 rtkit refusals of any kind (R's included), NO_CRASH. Both checks now require
+the run's total count of rtkit refusals in the journal to be 0. R stays off by default.
