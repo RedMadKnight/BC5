@@ -97,6 +97,13 @@ SUBN_OLD = "\tsubmit_now(mine.buf.data(), static_cast<uint32_t>(mine.buf.size())
 SUBN_NEW = SUBN_OLD + "\t{ // exp 0430 F10: its writes are registered now\n\t\tstd::lock_guard lk(s.mu);\n\t\ts.f10_flight.clear();\n\t}\n"
 NOTE_OLD = "\t\t\t\tif (!s.hold.empty()) hold_note_writes(s, ib, n); // ADR 0013\n"
 NOTE_NEW = NOTE_OLD + "\t\t\t\tif (f10_on() && (!compute || f10_acb_on())) f10_note(s.f10_writes, ib, n); // exp 0430 F10 (F11b: compute chains too)\n"
+REGD_OLD = "static std::vector<ChainSlot*> g_chains; // the registered (cross) slots, for the watchdog and the observe points\n"
+REGD_NEW = REGD_OLD + ("static std::mutex              g_f10_reg_mu; // exp 0430 F13: F10's own registry of the slots; only chain_register and ~ChainSlot take it, nothing submits under it\n"
+                       "static std::vector<ChainSlot*> g_f10_reg;\n")
+REGA_OLD = "\tg_chains.push_back(&s);\n\ts.registered = true;\n"
+REGA_NEW = REGA_OLD + "\t{ // exp 0430 F13\n\t\tstd::lock_guard rk(g_f10_reg_mu);\n\t\tg_f10_reg.push_back(&s);\n\t}\n"
+REGE_OLD = "\tstd::lock_guard lk(g_chains_mu);\n\tstd::erase(g_chains, this);\n"
+REGE_NEW = REGE_OLD + "\tstd::lock_guard rk(g_f10_reg_mu); // exp 0430 F13: F10 holds it while it touches this slot\n\tstd::erase(g_f10_reg, this);\n"
 KEEP_NEW = ("\t\t\t\t\tif ((!wait_satisfied(p, op == 0x93) && ring_will_satisfy(p, op == 0x93, job_ring(kind))) ||\n"
             "\t\t\t\t\t    ho430::keep_cross(p, op == 0x93, label, kind, job_ring(kind), i)) { // exp 0430 (tag ho430): F6\n"
             "\t\t\t\t\t\tstatic std::atomic<uint64_t> n_kept {0};\n")
@@ -119,17 +126,17 @@ def main() -> int:
     if hashlib.md5(old.encode()).hexdigest()[:8] != "c7dbe70b":
         print("mkf6: ho430.b8.cpp is not the deployed c7dbe70b")
         return 1
-    for what, n in (("the deployed ho430 block", text.count(old)), ("the keep test", text.count(KEEP_OLD)), ("ChainInSubmit", text.count(CIS_OLD)), ("submit's ChainInSubmit", text.count(SUB_OLD)), ("chain_append", text.count(APP_OLD)), ("chain_end's hold test", text.count(END_OLD)), ("ChainSlot's hold_writes", text.count(SLOT_OLD)), ("chain_submit's swap", text.count(SWAP_OLD)), ("chain_append's hold note", text.count(NOTE_OLD)), ("chain_submit's submit_now", text.count(SUBN_OLD))):
+    for what, n in (("the deployed ho430 block", text.count(old)), ("the keep test", text.count(KEEP_OLD)), ("ChainInSubmit", text.count(CIS_OLD)), ("submit's ChainInSubmit", text.count(SUB_OLD)), ("chain_append", text.count(APP_OLD)), ("chain_end's hold test", text.count(END_OLD)), ("ChainSlot's hold_writes", text.count(SLOT_OLD)), ("chain_submit's swap", text.count(SWAP_OLD)), ("chain_append's hold note", text.count(NOTE_OLD)), ("chain_submit's submit_now", text.count(SUBN_OLD)), ("g_chains", text.count(REGD_OLD)), ("chain_register's push", text.count(REGA_OLD)), ("~ChainSlot's erase", text.count(REGE_OLD))):
         if n != 1:
             print(f"mkf6: {what} is found {n} times, not once")
             return 1
     if "BC5_DIRECT_XQ_PRECISE" not in new or "keep_cross" not in new or "BC5_DIRECT_XQ_KEEP" not in new or "BC5_DIRECT_XQ_KEEP_ALL" not in new:
         print("mkf6: ho430.cpp has no F5 or no F6")
         return 1
-    text = text.replace(old, new).replace(KEEP_OLD, KEEP_NEW).replace(CIS_OLD, CIS_NEW).replace(SUB_OLD, SUB_NEW).replace(APP_OLD, APP_NEW).replace(END_OLD, END_NEW).replace(SLOT_OLD, SLOT_NEW).replace(SWAP_OLD, SWAP_NEW).replace(NOTE_OLD, NOTE_NEW).replace(SUBN_OLD, SUBN_NEW)
+    text = text.replace(old, new).replace(KEEP_OLD, KEEP_NEW).replace(CIS_OLD, CIS_NEW).replace(SUB_OLD, SUB_NEW).replace(APP_OLD, APP_NEW).replace(END_OLD, END_NEW).replace(SLOT_OLD, SLOT_NEW).replace(SWAP_OLD, SWAP_NEW).replace(NOTE_OLD, NOTE_NEW).replace(SUBN_OLD, SUBN_NEW).replace(REGD_OLD, REGD_NEW).replace(REGA_OLD, REGA_NEW).replace(REGE_OLD, REGE_NEW)
     out = text.encode("utf-8", "surrogateescape")
     open(path, "wb").write(out)
-    print(f"mkf6: {BASE_MD5} -> {hashlib.md5(out).hexdigest()[:8]} (ho430 {hashlib.md5(new.encode()).hexdigest()[:8]}, 9 hooks)")
+    print(f"mkf6: {BASE_MD5} -> {hashlib.md5(out).hexdigest()[:8]} (ho430 {hashlib.md5(new.encode()).hexdigest()[:8]}, 12 hooks)")
     return 0
 
 
