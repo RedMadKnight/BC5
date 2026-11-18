@@ -73,6 +73,33 @@ sub('grep -a "fps counter" "$R/$TAG-play.log" | sed -E \'s/.*t ([0-9.]+) s: ([0-
     '    echo "MangoHud log $MHF: $(wc -l < "$R/$TAG-fps.txt") seconds from G" >> "$R/$TAG-start.txt"\n'
     '  else echo "N_MH=1: no MangoHud log in $R/$TAG-mh" >> "$R/$TAG-start.txt"; fi\n'
     'fi\n')
+# N_LEANSESS=1: the Plasma shell is stopped for the run through the shared lean-session.sh, as the lean shortcuts do
+# (play-any.sh with BC5_LEAN=1), owned by this script's pid, and started again at the end (restore; its watcher too)
+sub('ND=$(sudo -n dmesg 2> /dev/null | wc -l)\n',
+    'ND=$(sudo -n dmesg 2> /dev/null | wc -l)\n'
+    'LSS=""\n'
+    'if [ "${N_LEANSESS:-0}" = 1 ]; then  # exp 0430: the lean session, as his lean shortcuts have it\n'
+    '  /usr/bin/bash "$W/lean-session.sh" stop $$ > /dev/null 2>&1; LSS=$?\n'
+    '  [ "$LSS" = 0 ] || { echo "lean-session.sh stop: exit $LSS: not started"; exit 1; }\n'
+    'fi\n')
+sub('LGONE=no; for _ in $(seq 1 60); do pgrep -f "exp0430/n/play-pkg-0425f.sh" > /dev/null || { LGONE=yes; break; }; sleep 1; done\n',
+    'LGONE=no; for _ in $(seq 1 60); do pgrep -f "exp0430/n/play-pkg-0425f.sh" > /dev/null || { LGONE=yes; break; }; sleep 1; done\n'
+    'if [ "${N_LEANSESS:-0}" = 1 ]; then  # exp 0430: the shell back before the next run\n'
+    '  /usr/bin/bash "$W/lean-session.sh" restore $$ > /dev/null 2>&1; LSR=$?\n'
+    '  echo "lean session: stop exit $LSS; shell during the run: ${SHELL_RUN:-not read}; restore exit $LSR; shell after: $(systemctl --user is-active plasma-plasmashell.service 2> /dev/null)" >> "$R/$TAG-start.txt"\n'
+    'fi\n')
+# at G+60: the shell's state, R's promotion (the scheduling of the title's Job workers), the pad's device files, the sound
+# streams and the Vulkan driver mapped
+sub('  [ -n "$G" ] && [ "$NOW" -ge $((G + PLAY)) ] && break\n',
+    '  if [ -n "$G" ] && [ "$NOW" -ge $((G + 60)) ] && [ -z "${HOSTCHK:-}" ]; then HOSTCHK=1  # exp 0430\n'
+    '    SHELL_RUN=$(systemctl --user is-active plasma-plasmashell.service 2> /dev/null)\n'
+    '    { echo "at G+60 ($NOW s): plasmashell $SHELL_RUN"\n'
+    '      for t in /proc/$EP/task/*; do n=$(cat "$t/comm" 2> /dev/null); case "$n" in *Job*|*job*) echo "[$n] $(chrt -p "${t##*/}" 2> /dev/null | sed \'s/.*: //\' | tr \'\\n\' \' \')";; esac; done | sort | uniq -c | head -40\n'
+    '      echo "pad files: $(ls -l /proc/$EP/fd 2> /dev/null | grep -o \'/dev/\\(hidraw\\|input/event\\|input/js\\)[0-9]*\' | sort -u | tr \'\\n\' \' \')"\n'
+    '      echo "sound streams of the emulator: $(pactl list sink-inputs 2> /dev/null | grep -c "application.process.id = \\"$EP\\"")"\n'
+    '      echo "gpu driver: $(grep -o \'/[^ ]*libvulkan_[a-z]*\\.so[^ ]*\' /proc/$EP/maps 2> /dev/null | sort -u | tr \'\\n\' \' \')"; } >> "$R/$TAG-start.txt"\n'
+    '  fi\n'
+    '  [ -n "$G" ] && [ "$NOW" -ge $((G + PLAY)) ] && break\n')
 s = ("#!/usr/bin/env bash\n# BC5 exp 0430: derived by mkrun0430l.py from run0430f.sh (N_TIMED, N_MH, P_HOST; see mkrun0430l.py).\n"
      + s.split("\n", 1)[1])
 open(dst, "w", encoding="utf-8", newline="\n").write(s)

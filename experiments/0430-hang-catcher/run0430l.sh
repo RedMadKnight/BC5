@@ -158,6 +158,11 @@ if [ "${N_MH:-0}" = 1 ]; then  # exp 0430: MangoHud's frame log, the counter for
   ENVS+=(MANGOHUD=1 MANGOHUD_CONFIG="no_display,autostart_log=1,log_interval=0,output_folder=$R/$TAG-mh${N_MHD:+,log_duration=$N_MHD}")  # N_MHD: seconds; MangoHud writes its log when it ends
 fi
 ND=$(sudo -n dmesg 2> /dev/null | wc -l)
+LSS=""
+if [ "${N_LEANSESS:-0}" = 1 ]; then  # exp 0430: the lean session, as his lean shortcuts have it
+  /usr/bin/bash "$W/lean-session.sh" stop $$ > /dev/null 2>&1; LSS=$?
+  [ "$LSS" = 0 ] || { echo "lean-session.sh stop: exit $LSS: not started"; exit 1; }
+fi
 { date '+%F %T'; echo "arm $TAG ($ARM), cap $SECS s, play $PLAY s, binary $BIN md5 $WANT, launcher $(m "$LAUNCH" | cut -c1-8), fuse $FUSE"
   echo "the arm's words: $(printf '%s\n' "${ENVS[@]}" | grep -E '^(BC5_GUARD_|BC5_DIRECT_LAZY_RELEASE|BC5_DIRECT_ZERO|BC5_0412)' | tr '\n' ' ')"; echo "extra: ${EXTRA[*]:-none}"
   echo "boot $(cut -c1-8 /proc/sys/kernel/random/boot_id), up since $(uptime -s)"; grep -E '^(MemAvailable|SwapFree|SwapTotal):' /proc/meminfo | tr '\n' ' '; echo; } > "$R/$TAG-start.txt"
@@ -244,6 +249,14 @@ while [ -z "$ENDED" ] && [ $(($(date +%s) - T0)) -lt "$SECS" ]; do
   if [ -n "$G" ] && [ "$WALKED" = 0 ] && [ "${N_NOWALK:-0}" = 1 ]; then WALKED=1; echo "route: no input after the load (N_NOWALK=1), $PLAY s from $NOW s" >> "$R/$TAG-start.txt"; fi   # exp 0412 section 64
   if [ -n "$G" ] && [ "$WALKED" = 0 ]; then WALKED=1; cat "$PLAYCMD" >> "$CMD"; echo "route: the 14:50 record's gameplay ($(grep -c . "$PLAYCMD") lines) queued at $NOW s" >> "$R/$TAG-start.txt"; [ "${N_WALK_AFTER:-0}" = 1 ] && echo "route: exp 0379's walk queued after it ($(wk) cycles; exp 0428 long set)" >> "$R/$TAG-start.txt"; fi  # exp 0425
   if [ "$NOW" -ge 30 ] && [ -z "${MAPS_DONE:-}" ]; then MAPS_DONE=1; grep -o '/[^ ]*\(libvulkan_radeon\|MangoHud\|libpipewire\|libpulse\|libSDL\)[^ ]*\.so[^ ]*' "/proc/$EP/maps" 2> /dev/null | sort -u | sed "s/^/maps at 30 s: /" >> "$R/$TAG-start.txt"; fi  # exp 0430
+  if [ -n "$G" ] && [ "$NOW" -ge $((G + 60)) ] && [ -z "${HOSTCHK:-}" ]; then HOSTCHK=1  # exp 0430
+    SHELL_RUN=$(systemctl --user is-active plasma-plasmashell.service 2> /dev/null)
+    { echo "at G+60 ($NOW s): plasmashell $SHELL_RUN"
+      for t in /proc/$EP/task/*; do n=$(cat "$t/comm" 2> /dev/null); case "$n" in *Job*|*job*) echo "[$n] $(chrt -p "${t##*/}" 2> /dev/null | sed 's/.*: //' | tr '\n' ' ')";; esac; done | sort | uniq -c | head -40
+      echo "pad files: $(ls -l /proc/$EP/fd 2> /dev/null | grep -o '/dev/\(hidraw\|input/event\|input/js\)[0-9]*' | sort -u | tr '\n' ' ')"
+      echo "sound streams of the emulator: $(pactl list sink-inputs 2> /dev/null | grep -c "application.process.id = \"$EP\"")"
+      echo "gpu driver: $(grep -o '/[^ ]*libvulkan_[a-z]*\.so[^ ]*' /proc/$EP/maps 2> /dev/null | sort -u | tr '\n' ' ')"; } >> "$R/$TAG-start.txt"
+  fi
   [ -n "$G" ] && [ "$NOW" -ge $((G + PLAY)) ] && break
   if sudo -n dmesg 2> /dev/null | tail -n +"$((ND + 1))" | grep -i amdgpu | grep -v -E '[A-Za-z_][A-Za-z0-9_.]*\+0x[0-9a-f]+/0x[0-9a-f]+' | grep -qi "timeout\|reset\|fault"; then
     sleep 25
@@ -260,6 +273,10 @@ DUR=$(($(date +%s) - T0))
 if [ -n "$EP" ] && [ -d "/proc/$EP" ]; then kill "$EP"; sleep 4; [ -d "/proc/$EP" ] && kill -9 "$EP" 2> /dev/null; fi
 sleep 3; [ -n "$SP" ] && kill "$SP" 2> /dev/null; SP=""
 LGONE=no; for _ in $(seq 1 60); do pgrep -f "exp0430/n/play-pkg-0425f.sh" > /dev/null || { LGONE=yes; break; }; sleep 1; done
+if [ "${N_LEANSESS:-0}" = 1 ]; then  # exp 0430: the shell back before the next run
+  /usr/bin/bash "$W/lean-session.sh" restore $$ > /dev/null 2>&1; LSR=$?
+  echo "lean session: stop exit $LSS; shell during the run: ${SHELL_RUN:-not read}; restore exit $LSR; shell after: $(systemctl --user is-active plasma-plasmashell.service 2> /dev/null)" >> "$R/$TAG-start.txt"
+fi
 sleep 3
 WHY=""; grep -q "KILLED" "$R/$TAG-watchdog.txt" 2> /dev/null && WHY="; THE WATCHDOG KILLED IT"
 OK1=$(awk '$1 == "oom_kill" { print $2 }' "${CGC:-/nonexistent}/memory.events" 2> /dev/null); OK1=${OK1:-0}
