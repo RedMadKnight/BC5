@@ -812,3 +812,33 @@ ho430 `115af6e9`, unit `c30922e6` on f574f460 (`6d074404` on b8afba59). Not buil
 **Separate open question (not this fix's target): H5's junk-grid dcb.** In h430H5 a dcb's indirect dispatches read float data as their arguments (at 0x118c5f0940 and on), with every one of its waits kept and met. Which job writes those arguments, and why they were not written in time, is not known. F17 and F10 + F4 do not address it.
 
 **Base for D1/E1 (top's decision C, 2026-11-18).** D1 and E1 run on the shared tree as 0429's R swap leaves it: patch ef2ff54f, R on by default (`KYTY_BC5_0429_RR`), exp 0425's wake slice removed. This is the form that ships. bc5LleAgc.cpp is unchanged by that swap (still f574f460, 940e8f36's GPU side), so the build applies as before. D1 against E1 is the comparison: both share this base. H4/H5 (940e8f36, wake slice on, no R) are not on exactly the same base.
+
+### D1 (h430I1, h430I2) and E1's first run (h430J1), 2026-11-18 14:18–15:39
+
+Binary `034e3b24` (p21: ho430 `ec257bad`, unit `3a6dbd3b`), on the R-on swapped tree (shared normal `a9b4f00b` unchanged by the build). The tags D/E were already used on 11-17, so D1 runs as h430I*, E1 as h430J*.
+
+| Run | Arm | End | flips/s | gaps >100 ms (s), longest | Kernel | F17 stale / acb == waits | F17 by F10 finding | F4-fenced |
+|---|---|---|---|---|---|---|---|---|
+| h430I1 | D1: F10–F14, F16 off, COUNT=2 | NO_CRASH, G+1500, 1609 s | 38.0 | 82, 2651 ms | 0 | 186,332 / 788,217 | all "off" | 0 |
+| h430I2 | D1 | NO_CRASH, G+1500, 1608 s | 39.2 | 18, 2059 ms | 0 | 177,145 / 788,658 | all "off" | 0 |
+| h430J1 | E1: PENDING=1, FENCE=1, F10–F14 on, F16 off | **GPU fault** at t 1432.97 s (15:38:51) | – | – | gfxhub TCP write permission faults, then comp_1.1.0 timeout, ring reset failed, bc5-gpu-watch reboot | 152,616 / 681,145 | no chain 150,980 / chain 1,616 / other 20 | 90,112 |
+
+**F17 is too blunt.** About 23 % of all acb == waits count as stale in every arm, at a steady rate. The journaled hits sit almost all on 0x12004b37c8, where several acbs wait on one release: the first wait takes the count, the rest look stale. The total cannot single out F852. Top's decision: no rebuild in this slot; a sharper F17 (stale only when the same acb position, ring plus IB offset, waits again with no release in between) is written offline for the next build.
+
+**h430J1's fault: the F852 class, ending in a write fault.** Evidence on the laptop at `data-0430/h430J1/` (fault record `faults/20261118-153853`, the run's `direct.log` and timed-out IBs, `n/raw`, the journal of boot −1; not committed):
+- Kernel: `GCVM_L2_PROTECTION_FAULT_STATUS 0x00541051`, client TCP, PERMISSION_FAULTS 0x5, RW 1 (writes), at 0x142e90b000 and 0x142e9a9000, thread bc5-chainwd (the chain watchdog had submitted the dcb). Then `ring comp_1.1.0 timeout`, `Ring comp_1.1.0 reset failed`; bc5-gpu-watch synced and crashed the kernel; the box rebooted 15:39.
+- Fault record: K3, no guest range at the address (a hole), no view, no GPU mapping. The address was never mapped, so this is not a use-after-unmap. Nothing on the host freed it.
+- The timed-out dcb #1865879 (126,082 dwords, 14 waits, all kept): 4,580 indirect dispatches, the largest grid 18,420,016,569,817,491,384 groups. These are H4's junk grids. Its compute dispatches take a V# at 0x122e90b100 whose data begins "PSR_BVHL" (a BVH header) and indirect arguments at 0x118c5f0900, the same region H5's junk-grid dcb read (0x118c5f0940). The faulting pages are each 8 GiB above that BVH buffer (0x142e9xxxxx against 0x122e9xxxxx): a write through a junk offset.
+- The probe: `wait op 93 at 88: label 0x12004b4fc8 function 3 reference 0x0 ...; now 0x0 (met) DROPPED`. This is H4's label and H4's signature.
+- The cause in the log, at t ≈ 1430.9 s, 2 s before the timeout: `ho430 F14: bound on 0x12004b4fc8 after 2.018 ms: pending chains busy/flight/in submit/held/watchdog/no look/gone 0/1/0/0/0/0/0`, followed by `F7 sensor: acb on ring 1 at 28: its wait on 0x12004b4fc8 (== 0x0) came before its release`. F10 found the writer chain **in flight**: inside its submit_now, so not yet a pending job. F4 had no job to fence on, the acb's == 0 passed on the previous frame's 0, and the wait was dropped. F16 (wait for the in-flight writer's submit to return) is the switch made for exactly this case, and it was off in E1 by design.
+
+**Classification.** This is the F848/F852 class (H4), not something E1's code introduced:
+- F4 only adds a kernel CS dependency on a job that is already pending; it frees and unmaps nothing.
+- The fault address never had a mapping.
+- The failing path is the one F14 counts as "flight", which E1 leaves open.
+
+J1 also shows H5's dcb buffer (0x118c5f09xx) in the same failure. **H5's junk-grid class may therefore be downstream of the same dropped wait** rather than separate; this is unverified.
+
+**E1 so far**: 1 GPU fault in 1 run. D1: 0 in 2. The numbers are small. The data says E1 as built does not close F852: a writer in flight at the 2 ms bound passes the gate. The arm that covers that path is F10 + F4 + F16.
+
+**After the fault.** The box rebooted itself (R60 met by the watchdog reboot, 0 reset lines after). I cleared my stale h430J1 lock line at 16:57 (exact line checked, no emulator), logged in BOX-QUEUE. My watcher had not caught the reboot: it looked only for "done" and box loss, and the box was back within 5 minutes. It now records the boot id and ends on a change, or when the emulator is gone 3 minutes without "done" (R64). h430J2 (E1 repeated, top's GO) started 16:58.
