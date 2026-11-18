@@ -172,7 +172,7 @@ nohup bash "$X/sampler0412b.sh" "$R/$TAG-sampler.txt" 120 $((SECS + 60)) > /dev/
 [ "$FUSE" = 0 ] || setsid nohup bash "$X/fuse0412.sh" set $FUSE "$R/$TAG-fuse.txt" > /dev/null 2>&1 < /dev/null &
 if [ "${P_HOST:-0}" = 1 ]; then  # exp 0430: on the Bazzite host (exp 0423)
   echo "place: the Bazzite host (P_HOST=1), no distrobox, under the user manager (systemd-run --user --scope: rtkit's polkit refuses a process of the ssh session, hn430H1; the desktop session and the user manager are allowed)" >> "$R/$TAG-start.txt"
-  setsid nohup bash -c 'systemd-run --user --scope --quiet --collect /usr/bin/bash -c'\''ulimit -l unlimited 2> /dev/null; exec /usr/bin/env "$@"'\'' guard0412n "$@"; echo "launcher exit $?"' _ "${ENVS[@]}" "$LAUNCH" < /dev/null > "$R/$TAG-launch.out" 2>&1 &
+  setsid nohup bash -c 'systemd-run --user --scope --quiet --collect /usr/bin/bash -c '\''ulimit -l unlimited 2> /dev/null; exec /usr/bin/env "$@"'\'' guard0412n "$@"; echo "launcher exit $?"' _ "${ENVS[@]}" "$LAUNCH" < /dev/null > "$R/$TAG-launch.out" 2>&1 &
 else
   echo "place: the ubuntu distrobox" >> "$R/$TAG-start.txt"
   setsid nohup bash -c 'distrobox enter ubuntu -- /usr/bin/bash -c '\''ulimit -l unlimited 2> /dev/null; exec /usr/bin/env "$@"'\'' guard0412n "$@"; echo "launcher exit $?"' _ "${ENVS[@]}" "$LAUNCH" < /dev/null > "$R/$TAG-launch.out" 2>&1 &

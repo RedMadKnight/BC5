@@ -53,7 +53,7 @@ sub('ENVS=("${WORDS[@]}" "${EXTRA[@]}" BC5_0412N_INPUT_CONFIG="$CFG" KYTY_BC5_IN
 sub("setsid nohup bash -c 'distrobox enter ubuntu -- /usr/bin/bash -c '\\''ulimit -l unlimited 2> /dev/null; exec /usr/bin/env \"$@\"'\\'' guard0412n \"$@\"; echo \"launcher exit $?\"' _ \"${ENVS[@]}\" \"$LAUNCH\" < /dev/null > \"$R/$TAG-launch.out\" 2>&1 &\n",
     "if [ \"${P_HOST:-0}\" = 1 ]; then  # exp 0430: on the Bazzite host (exp 0423)\n"
     "  echo \"place: the Bazzite host (P_HOST=1), no distrobox, under the user manager (systemd-run --user --scope: rtkit's polkit refuses a process of the ssh session, hn430H1; the desktop session and the user manager are allowed)\" >> \"$R/$TAG-start.txt\"\n"
-    "  setsid nohup bash -c 'systemd-run --user --scope --quiet --collect /usr/bin/bash -c'\\''ulimit -l unlimited 2> /dev/null; exec /usr/bin/env \"$@\"'\\'' guard0412n \"$@\"; echo \"launcher exit $?\"' _ \"${ENVS[@]}\" \"$LAUNCH\" < /dev/null > \"$R/$TAG-launch.out\" 2>&1 &\n"
+    "  setsid nohup bash -c 'systemd-run --user --scope --quiet --collect /usr/bin/bash -c '\\''ulimit -l unlimited 2> /dev/null; exec /usr/bin/env \"$@\"'\\'' guard0412n \"$@\"; echo \"launcher exit $?\"' _ \"${ENVS[@]}\" \"$LAUNCH\" < /dev/null > \"$R/$TAG-launch.out\" 2>&1 &\n"
     "else\n"
     "  echo \"place: the ubuntu distrobox\" >> \"$R/$TAG-start.txt\"\n"
     "  setsid nohup bash -c 'distrobox enter ubuntu -- /usr/bin/bash -c '\\''ulimit -l unlimited 2> /dev/null; exec /usr/bin/env \"$@\"'\\'' guard0412n \"$@\"; echo \"launcher exit $?\"' _ \"${ENVS[@]}\" \"$LAUNCH\" < /dev/null > \"$R/$TAG-launch.out\" 2>&1 &\n"
