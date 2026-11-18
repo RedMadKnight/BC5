@@ -1,0 +1,56 @@
+mkswap0429r: src/kernel/pthread.cpp md5 3c9c82e1
+mkswap0429r: src/kernel/semaphore.cpp md5 6b58e442
+mkswap0429r: src/bc5/switch_defaults.hpp md5 48ae1cd6
+mkswap0429r: done (the swap form)
+normal: build rc 0; errors 0; warnings 13
+3:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+12:[0m[1m/home/kjaniszewski/bc5-work/exp0429/rs/src/src/kernel/pthread.cpp:1427:13: [0m[0;1;35mwarning: [0m[1munused function 'sec_to_timeval' [-Wunused-function][0m
+18:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+30:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+43:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+52:[0m[1m/home/kjaniszewski/bc5-work/exp0429/rs/src/src/loader/runtimeLinker.cpp:894:3: [0m[0;1;35mwarning: [0m[1mnon-void lambda does not return a value in all control paths [-Wreturn-type][0m
+55:[0m[1m/home/kjaniszewski/bc5-work/exp0429/rs/src/src/loader/runtimeLinker.cpp:1138:69: [0m[0;1;35mwarning: [0m[1mformat specifies type 'unsigned long' but the argument has type 'unsigned long long' [-Wformat][0m
+63:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+76:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+88:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+97:[0m[1m/home/kjaniszewski/bc5-work/exp0429/rs/src/src/libs/libAmpr.cpp:2286:143: [0m[0;1;35mwarning: [0m[1mdata argument not used by format string [-Wformat-extra-args][0m
+102:[0m[1m/home/kjaniszewski/bc5-work/exp0429/rs/src/src/libs/libAmpr.cpp:2395:50: [0m[0;1;35mwarning: [0m[1mdata argument not used by format string [-Wformat-extra-args][0m
+108:[0m[1m/home/kjaniszewski/bc5-work/exp0429/rs/src/src/libs/libAmpr.cpp:1751:13: [0m[0;1;35mwarning: [0m[1munused function 'Bc5PoolFreeStats' [-Wunused-function][0m
+normal: /home/kjaniszewski/bc5-work/exp0429/rs/normal/kyty_emulator a4bbe73c
+lean: build rc 0; errors 0; warnings 14
+3:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+12:[0m[1m/home/kjaniszewski/bc5-work/exp0429/rs/src/src/kernel/pthread.cpp:1427:13: [0m[0;1;35mwarning: [0m[1munused function 'sec_to_timeval' [-Wunused-function][0m
+18:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+30:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+43:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+52:[0m[1m/home/kjaniszewski/bc5-work/exp0429/rs/src/src/loader/runtimeLinker.cpp:894:3: [0m[0;1;35mwarning: [0m[1mnon-void lambda does not return a value in all control paths [-Wreturn-type][0m
+55:[0m[1m/home/kjaniszewski/bc5-work/exp0429/rs/src/src/loader/runtimeLinker.cpp:1138:69: [0m[0;1;35mwarning: [0m[1mformat specifies type 'unsigned long' but the argument has type 'unsigned long long' [-Wformat][0m
+63:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+76:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+88:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+97:[0m[1m/home/kjaniszewski/bc5-work/exp0429/rs/src/src/libs/libAmpr.cpp:2286:143: [0m[0;1;35mwarning: [0m[1mdata argument not used by format string [-Wformat-extra-args][0m
+102:[0m[1m/home/kjaniszewski/bc5-work/exp0429/rs/src/src/libs/libAmpr.cpp:2395:50: [0m[0;1;35mwarning: [0m[1mdata argument not used by format string [-Wformat-extra-args][0m
+108:[0m[1m/home/kjaniszewski/bc5-work/exp0429/rs/src/src/libs/libAmpr.cpp:1751:13: [0m[0;1;35mwarning: [0m[1munused function 'Bc5PoolFreeStats' [-Wunused-function][0m
+111:[0m[1m/home/kjaniszewski/bc5-work/exp0429/rs/src/src/libs/libAmpr.cpp:2002:13: [0m[0;1;35mwarning: [0m[1munused function 'Bc5Exp0401Switch' [-Wunused-function][0m
+lean: /home/kjaniszewski/bc5-work/exp0429/rs/lean/kyty_emulator 35149f81
+box0429r build swap done 10:37:25
+mkswap0429r: src/kernel/pthread.cpp md5 924f83d6
+mkswap0429r: src/kernel/semaphore.cpp md5 6b58e442
+mkswap0429r: src/bc5/switch_defaults.hpp md5 48ae1cd6
+mkswap0429r: done (--stressor)
+normal: build rc 0; errors 0; warnings 13
+3:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+12:[0m[1m/home/kjaniszewski/bc5-work/exp0429/rt/src/src/kernel/pthread.cpp:1427:13: [0m[0;1;35mwarning: [0m[1munused function 'sec_to_timeval' [-Wunused-function][0m
+18:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+30:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+43:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+52:[0m[1m/home/kjaniszewski/bc5-work/exp0429/rt/src/src/loader/runtimeLinker.cpp:894:3: [0m[0;1;35mwarning: [0m[1mnon-void lambda does not return a value in all control paths [-Wreturn-type][0m
+55:[0m[1m/home/kjaniszewski/bc5-work/exp0429/rt/src/src/loader/runtimeLinker.cpp:1138:69: [0m[0;1;35mwarning: [0m[1mformat specifies type 'unsigned long' but the argument has type 'unsigned long long' [-Wformat][0m
+63:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+76:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+88:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+97:[0m[1m/home/kjaniszewski/bc5-work/exp0429/rt/src/src/libs/libAmpr.cpp:2286:143: [0m[0;1;35mwarning: [0m[1mdata argument not used by format string [-Wformat-extra-args][0m
+102:[0m[1m/home/kjaniszewski/bc5-work/exp0429/rt/src/src/libs/libAmpr.cpp:2395:50: [0m[0;1;35mwarning: [0m[1mdata argument not used by format string [-Wformat-extra-args][0m
+108:[0m[1m/home/kjaniszewski/bc5-work/exp0429/rt/src/src/libs/libAmpr.cpp:1751:13: [0m[0;1;35mwarning: [0m[1munused function 'Bc5PoolFreeStats' [-Wunused-function][0m
+normal: /home/kjaniszewski/bc5-work/exp0429/rt/normal/kyty_emulator 24aa5bdf
+box0429r build test done 10:38:35

@@ -4371,15 +4371,16 @@ index 0000000..1b21c76
 +} // namespace bc5::ajm_trail
 diff --git a/src/bc5/anon_sync.hpp b/src/bc5/anon_sync.hpp
 new file mode 100644
-index 0000000..f74cbb1
+index 0000000..7a2ae6f
 --- /dev/null
 +++ b/src/bc5/anon_sync.hpp
-@@ -0,0 +1,73 @@
+@@ -0,0 +1,107 @@
 +// BC5 experiment 0415 (tag as415), stage S5 of experiments/0415-load-times-fps/DESIGN-lock-side.md: the pieces of the
 +// anonymous sync that the submission path and the checking thread share, kept apart from the device so that they can be
 +// tested on any CPU (experiments/0415-load-times-fps/kit/test0415anon.cpp).
 +#pragma once
 +
++#include <atomic>
 +#include <cinttypes>
 +#include <cstdint>
 +#include <cstdio>
@@ -4405,11 +4406,44 @@ index 0000000..f74cbb1
 +}
 +
 +// KYTY_BC5_ANON_SYNC: 0 off (unset, empty, "0"); 2 "thread" (the submission path leaves the walk out while the checking
-+// thread's last pass saw what the last walk saw); 1 anything else ("verify": the walk runs as before and
-+// is compared with what "thread" would have done).
++// thread's last pass saw what the last walk saw); 3 "events" (tag as415c: no thread; the walk runs at the first call
++// after a host call that made anonymous memory readable in the guest's span, and otherwise only while the last walk's
++// list was not empty); 1 anything else ("verify": the walk runs as before and is compared with what "thread" and
++// "events" would have done).
 +inline int mode_of(const char* e) {
 +	if (e == nullptr || e[0] == '\0' || std::strcmp(e, "0") == 0) return 0;
++	if (std::strcmp(e, "events") == 0) return 3;
 +	return std::strcmp(e, "thread") == 0 ? 2 : 1;
++}
++
++// Tag as415c (DESIGN-lock-side.md section 8). One process-wide counter of the host calls that can make anonymous
++// memory readable inside the guest's span: an anonymous map with a readable protection, or a protect call that turns
++// reading on. The sites call note() AFTER the kernel call has succeeded, so a walk that read the counter before its
++// read of /proc/self/maps either sees the mapping or sees the counter move at the next call. A protect site cannot
++// tell a file view from an anonymous range, so it notes every readable protect in the span: too often is safe (one
++// walk more), too rarely is not. The console needs none of this: there a mapping is visible to the GPU when the call
++// that made it returns [inferred: one address space for CPU and GPU]; the rule kept here is "walked by the first
++// submission after the call".
++inline std::atomic<uint64_t>& events() {
++	static std::atomic<uint64_t> v {0};
++	return v;
++}
++inline bool in_span(uint64_t addr, uint64_t len) {
++	return len != 0 && addr <= kGuestMax && addr + len > kGuestMin;
++}
++inline void note(uint64_t addr, uint64_t len, bool readable) {
++	if (readable && in_span(addr, len)) events().fetch_add(1, std::memory_order_release);
++}
++// "events": must this call walk at once (whatever the time limits say)? Yes when no walk stands (start, device
++// reopen) or the counter has moved since the last walk read it.
++inline bool events_moved(uint64_t ev_now, uint64_t ev_at_walk, bool walk_valid) {
++	return !walk_valid || ev_now != ev_at_walk;
++}
++// "events": may this call leave the walk out altogether? Only when the counter has not moved and the last walk found
++// no anonymous guest VMA at all (inside such a VMA pages become resident without any call, so while one exists the
++// walk keeps its old timing).
++inline bool events_skip(bool moved, bool last_list_empty) {
++	return !moved && last_list_empty;
 +}
 +
 +// The signature of what a walk acts on: the list of VMAs and, inside each, the resident runs at the walk's 64 KiB grain.
@@ -5822,7 +5856,7 @@ index 0000000..6567205
 +} // namespace bc5::start_state
 diff --git a/src/bc5/switch_defaults.hpp b/src/bc5/switch_defaults.hpp
 new file mode 100644
-index 0000000..32ae952
+index 0000000..0c2277b
 --- /dev/null
 +++ b/src/bc5/switch_defaults.hpp
 @@ -0,0 +1,365 @@
@@ -5958,9 +5992,9 @@ index 0000000..32ae952
 +    // the two words both titles run with every day, until now only through a launcher or bc5-run.env
 +    {"BC5_DIRECT_CHAIN", "2"}, // F224
 +    {"BC5_GC_MODE", "direct"},
-+    // exp 0425 C1 (2026-11-16, the maintainer's word): a 200 us EEVDF wake slice for guest threads below priority
-+    // 733 (pthread.cpp). Soft, so KYTY_BC5_0425_WAKE_SLICE_US=0 turns it off.
-+    {"KYTY_BC5_0425_WAKE_SLICE_US", "200"},
++    // exp 0429 R (2026-11-18, the maintainer's word): SCHED_RR through rtkit for the guest's job-worker families
++    // (pthread.cpp), in place of exp 0425's wake slice. Soft, so KYTY_BC5_0429_RR=0 turns it off.
++    {"KYTY_BC5_0429_RR", "1"},
 +    // exp 0428 way 2, for every title since exp 0431 (the maintainer, 2026-11-16: "ma byc w dowolnej grze"; until then
 +    // PPSA03671's rows): the acbs on kernel compute rings, one libdrm ring per busy guest queue; each acb part that
 +    // dispatches gets its own guest queue's tracked compute state in front; indirect dispatches on the MEC under the CP's
@@ -6524,7 +6558,7 @@ index 0a6ef8b..97b2614 100644
  
  // Pass access-pattern hints to the host.
 diff --git a/src/common/platform/sysLinuxVirtual.cpp b/src/common/platform/sysLinuxVirtual.cpp
-index 7225e2e..5403083 100644
+index 7225e2e..4bd352c 100644
 --- a/src/common/platform/sysLinuxVirtual.cpp
 +++ b/src/common/platform/sysLinuxVirtual.cpp
 @@ -1,3 +1,4 @@
@@ -6532,7 +6566,15 @@ index 7225e2e..5403083 100644
  #include "common/common.h"
  
  #if KYTY_PLATFORM != KYTY_PLATFORM_LINUX
-@@ -65,6 +66,9 @@ static int get_protection_flag(VirtualMemory::Mode mode) {
+@@ -7,6 +8,7 @@
+ #include "common/assert.h"
+ #include "common/platform/sysVirtual.h"
+ #include "common/virtualMemory.h"
++#include "bc5/anon_sync.hpp" // experiment 0415 (as415c)
+ 
+ #include <atomic>
+ #include <map>
+@@ -65,6 +67,9 @@ static int get_protection_flag(VirtualMemory::Mode mode) {
  		case VirtualMemory::Mode::NoAccess:
  		default: protect = PROT_NONE; break;
  	}
@@ -6542,6 +6584,130 @@ index 7225e2e..5403083 100644
  	return protect;
  }
  
+@@ -122,10 +127,18 @@ static uintptr_t align_up_to(uintptr_t addr, uint64_t alignment) {
+ }
+ #endif
+ 
++// Experiment 0415 (tag as415c): every map this file makes goes through here, so that an anonymous readable map inside
++// the guest's span is counted for the anonymous sync (bc5/anon_sync.hpp). The call itself is unchanged.
++static void* as415_mmap(void* addr, size_t size, int protect, int flags, int fd, off_t offset) {
++	void* ptr = mmap(addr, size, protect, flags, fd, offset); // NOLINT
++	if (ptr != MAP_FAILED && fd < 0) bc5::anon_sync::note(reinterpret_cast<uint64_t>(ptr), size, (protect & PROT_READ) != 0);
++	return ptr;
++}
++
+ // Freed arena addresses are not reused while GPU caches remain keyed by address.
+ static void* map_anonymous(uintptr_t addr, size_t size, int protect, int flags) {
+ 	if (addr != 0) {
+-		return mmap(reinterpret_cast<void*>(addr), size, protect, flags, -1, 0); // NOLINT
++		return as415_mmap(reinterpret_cast<void*>(addr), size, protect, flags, -1, 0); // NOLINT
+ 	}
+ 
+ #ifdef KYTY_FIXED_NOREPLACE
+@@ -136,7 +149,7 @@ static void* map_anonymous(uintptr_t addr, size_t size, int protect, int flags)
+ 			break;
+ 		}
+ 		const auto hint = (top - step) & ~(LOW_ARENA_GRAIN - 1);
+-		void* ptr = mmap(reinterpret_cast<void*>(hint), size, protect, flags | MAP_FIXED_NOREPLACE,
++		void* ptr = as415_mmap(reinterpret_cast<void*>(hint), size, protect, flags | MAP_FIXED_NOREPLACE,
+ 		                 -1, 0); // NOLINT
+ 		if (ptr != MAP_FAILED) {
+ 			return ptr;
+@@ -144,7 +157,7 @@ static void* map_anonymous(uintptr_t addr, size_t size, int protect, int flags)
+ 	}
+ #endif
+ 
+-	return mmap(nullptr, size, protect, flags, -1, 0); // NOLINT
++	return as415_mmap(nullptr, size, protect, flags, -1, 0); // NOLINT
+ }
+ 
+ uint64_t SysVirtualAlloc(uint64_t address, uint64_t size, VirtualMemory::Mode mode) {
+@@ -205,7 +218,7 @@ uint64_t SysVirtualAllocAligned(uint64_t address, uint64_t size, VirtualMemory::
+ 			// destroyed by the MAP_FIXED. Other platforms keep the original path below.
+ 			auto aligned_addr = align_up(ret_addr, alignment);
+ 			// NOLINTNEXTLINE
+-			void* fixed = mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
++			void* fixed = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
+ 			                   MAP_FIXED | MAP_PRIVATE | MAP_ANON, -1, 0);
+ 			if (fixed == MAP_FAILED) {
+ 				munmap(ptr, size + alignment);
+@@ -228,11 +241,11 @@ uint64_t SysVirtualAllocAligned(uint64_t address, uint64_t size, VirtualMemory::
+ 			auto aligned_addr = align_up(ret_addr, alignment);
+ #ifdef KYTY_FIXED_NOREPLACE
+ 			// NOLINTNEXTLINE
+-			ptr = mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
++			ptr = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
+ 			           MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANON, -1, 0);
+ #else
+ 			// NOLINTNEXTLINE
+-			ptr = mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
++			ptr = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
+ 			           MAP_FIXED | MAP_PRIVATE | MAP_ANON, -1, 0);
+ #endif
+ 			ret_addr = reinterpret_cast<uintptr_t>(ptr);
+@@ -316,13 +329,13 @@ bool SysVirtualAllocFixed(uint64_t address, uint64_t size, VirtualMemory::Mode m
+ 
+ #ifdef KYTY_FIXED_NOREPLACE
+ 	// NOLINTNEXTLINE
+-	void* ptr = mmap(reinterpret_cast<void*>(addr), size, protect,
++	void* ptr = as415_mmap(reinterpret_cast<void*>(addr), size, protect,
+ 	                 MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANON, -1, 0);
+ #else
+ 	// NOLINTNEXTLINE
+ 	void* ptr = (is_mapped(reinterpret_cast<void*>(addr), size)
+ 	                 ? MAP_FAILED
+-	                 : mmap(reinterpret_cast<void*>(addr), size, protect,
++	                 : as415_mmap(reinterpret_cast<void*>(addr), size, protect,
+ 	                        MAP_FIXED | MAP_PRIVATE | MAP_ANON, -1, 0));
+ #endif
+ 
+@@ -386,7 +399,7 @@ uint64_t SysVirtualReserveAligned(uint64_t address, uint64_t size, uint64_t alig
+ 			// destroy its mapping. Other platforms keep the original path below.
+ 			auto aligned_addr = align_up(ret_addr, alignment);
+ 			// NOLINTNEXTLINE
+-			void* fixed = mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
++			void* fixed = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
+ 			                   MAP_FIXED | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0);
+ 			if (fixed == MAP_FAILED) {
+ 				munmap(ptr, size + alignment);
+@@ -409,11 +422,11 @@ uint64_t SysVirtualReserveAligned(uint64_t address, uint64_t size, uint64_t alig
+ 			auto aligned_addr = align_up(ret_addr, alignment);
+ #ifdef KYTY_FIXED_NOREPLACE
+ 			// NOLINTNEXTLINE
+-			ptr = mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
++			ptr = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
+ 			           MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0);
+ #else
+ 			// NOLINTNEXTLINE
+-			ptr = mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
++			ptr = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
+ 			           MAP_FIXED | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0);
+ #endif
+ 			ret_addr = reinterpret_cast<uintptr_t>(ptr);
+@@ -444,13 +457,13 @@ bool SysVirtualReserveFixed(uint64_t address, uint64_t size) {
+ 
+ #ifdef KYTY_FIXED_NOREPLACE
+ 	// NOLINTNEXTLINE
+-	void* ptr = mmap(reinterpret_cast<void*>(addr), size, PROT_NONE,
++	void* ptr = as415_mmap(reinterpret_cast<void*>(addr), size, PROT_NONE,
+ 	                 MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0);
+ #else
+ 	// NOLINTNEXTLINE
+ 	void* ptr = (is_mapped(reinterpret_cast<void*>(addr), size)
+ 	                 ? MAP_FAILED
+-	                 : mmap(reinterpret_cast<void*>(addr), size, PROT_NONE,
++	                 : as415_mmap(reinterpret_cast<void*>(addr), size, PROT_NONE,
+ 	                        MAP_FIXED | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0));
+ #endif
+ 
+@@ -607,6 +620,7 @@ bool SysVirtualProtect(uint64_t address, uint64_t size, VirtualMemory::Mode mode
+ 	uintptr_t page_end   = (addr + size - 1) >> 12u;
+ 	if (mprotect(reinterpret_cast<void*>(page_start << 12u), (page_end - page_start + 1) << 12u,
+ 	             get_protection_flag(mode)) == 0) {
++		bc5::anon_sync::note(static_cast<uint64_t>(page_start) << 12u, static_cast<uint64_t>(page_end - page_start + 1) << 12u, (get_protection_flag(mode) & PROT_READ) != 0); // experiment 0415 (as415c)
+ 		pthread_mutex_lock(&g_virtual_mutex);
+ 		for (uintptr_t page = page_start; page <= page_end; page++) {
+ 			(*g_protects)[page] = get_protection_flag(mode);
 diff --git a/src/common/profiler.h b/src/common/profiler.h
 index a84e308..a13c65f 100644
 --- a/src/common/profiler.h
@@ -29103,7 +29269,7 @@ index 9ea25b0..64784a7 100644
  			EXIT_IF(!AddMappedUnlocked(vaddr, size, MappingType::Private));
  			return true;
 diff --git a/src/kernel/pthread.cpp b/src/kernel/pthread.cpp
-index 5f87e6b..96225a8 100644
+index 5f87e6b..9e0aee5 100644
 --- a/src/kernel/pthread.cpp
 +++ b/src/kernel/pthread.cpp
 @@ -1,3 +1,5 @@
@@ -29202,7 +29368,16 @@ index 5f87e6b..96225a8 100644
  	return current_tsc >= initial_tsc ? current_tsc - initial_tsc : 0;
  }
  
-@@ -458,6 +518,106 @@ struct PthreadCondPrivate {
+@@ -399,6 +459,8 @@ struct PthreadPrivate {
+ 	uint64_t              cond_sequence = 0;
+ 	PthreadCondPrivate*   waiting_cond  = nullptr;
+ 	std::atomic<uint64_t> pending_signal_mask {0};
++	bool                  bc5_rr_sleeper = false; // experiment 0429 R: slept on its worker family's semaphore
++	bool                  bc5_rr_main    = false; // experiment 0429 R: the runtime main thread, never promoted
+ #if KYTY_PLATFORM == KYTY_PLATFORM_WINDOWS
+ 	uintptr_t guest_host_gs8;
+ 	uintptr_t guest_host_gs10;
+@@ -458,6 +520,106 @@ struct PthreadCondPrivate {
  	std::vector<Pthread>    waiters;
  };
  
@@ -29309,7 +29484,7 @@ index 5f87e6b..96225a8 100644
  static void CondAddWaiter(PthreadCondPrivate* cond, Pthread thread) {
  	EXIT_IF(cond == nullptr);
  	EXIT_IF(thread == nullptr);
-@@ -530,6 +690,10 @@ void PthreadWakeForSignal(Pthread thread) {
+@@ -530,6 +692,10 @@ void PthreadWakeForSignal(Pthread thread) {
  	{
  		std::lock_guard lock(cond->m);
  		notify = (thread->waiting_cond == cond);
@@ -29320,7 +29495,7 @@ index 5f87e6b..96225a8 100644
  	}
  	if (notify) {
  		cond->cv.notify_all();
-@@ -650,6 +814,7 @@ public:
+@@ -650,6 +816,7 @@ public:
  	Pthread Create();
  
  	void FreeDetachedThreads();
@@ -29328,7 +29503,15 @@ index 5f87e6b..96225a8 100644
  
  private:
  	std::vector<Pthread> m_threads;
-@@ -1135,6 +1300,7 @@ KYTY_SUBSYSTEM_INIT(Pthread) {
+@@ -1066,6 +1233,7 @@ void PthreadInitSelfForMainThread() {
+ 	UpdateCurrentThreadStackAttr(&g_pthread_self->attr);
+ 	g_pthread_self->p               = pthread_self();
+ 	g_pthread_self->name            = "MainThread";
++	g_pthread_self->bc5_rr_main     = true; // experiment 0429 R: the runtime main thread is never promoted
+ 	g_pthread_self->guest.thread_id = ++g_pthread_thread_id;
+ 	g_pthread_self->unique_id       = Common::Thread::GetThreadIdUnique();
+ 	g_pthread_self->free            = false;
+@@ -1135,6 +1303,7 @@ KYTY_SUBSYSTEM_INIT(Pthread) {
  	g_pthread_context->SetPthreadPool(new PthreadPool);
  	g_pthread_context->SetPthreadKeys(new PthreadKeys);
  	Common::CondVar::SetWaitPollCallback(KernelDispatchPendingSignalForCurrentThread);
@@ -29336,7 +29519,7 @@ index 5f87e6b..96225a8 100644
  
  	PthreadMutexattr  default_mutexattr  = nullptr;
  	PthreadRwlockattr default_rwlockattr = nullptr;
-@@ -1303,6 +1469,7 @@ static bool NativeClockGettime(KernelClockid clock_id, KernelTimespec* tp) {
+@@ -1303,6 +1472,7 @@ static bool NativeClockGettime(KernelClockid clock_id, KernelTimespec* tp) {
  
  	tp->tv_sec  = native_time.tv_sec;
  	tp->tv_nsec = native_time.tv_nsec;
@@ -29344,7 +29527,7 @@ index 5f87e6b..96225a8 100644
  	return true;
  }
  
-@@ -1337,6 +1504,11 @@ static int NativeMutexLock(PthreadMutexPrivate* mutex, KernelUseconds* timeout_u
+@@ -1337,6 +1507,11 @@ static int NativeMutexLock(PthreadMutexPrivate* mutex, KernelUseconds* timeout_u
  		return EDEADLK;
  	}
  
@@ -29356,7 +29539,7 @@ index 5f87e6b..96225a8 100644
  	if (timeout_us == nullptr) {
  		while (mutex->owner != nullptr) {
  			mutex->cv.wait_for(lock, std::chrono::microseconds(SIGNAL_APC_POLL_MICROS));
-@@ -1373,6 +1545,10 @@ static int NativeMutexLock(PthreadMutexPrivate* mutex, KernelUseconds* timeout_u
+@@ -1373,6 +1548,10 @@ static int NativeMutexLock(PthreadMutexPrivate* mutex, KernelUseconds* timeout_u
  		}
  	}
  
@@ -29367,7 +29550,7 @@ index 5f87e6b..96225a8 100644
  	mutex->owner = self;
  	mutex->count = 1;
  	return OK;
-@@ -1430,6 +1606,10 @@ static int NativeMutexUnlock(PthreadMutexPrivate* mutex, uint32_t* recurse = nul
+@@ -1430,6 +1609,10 @@ static int NativeMutexUnlock(PthreadMutexPrivate* mutex, uint32_t* recurse = nul
  
  	mutex->owner = nullptr;
  	mutex->count = 0;
@@ -29378,7 +29561,7 @@ index 5f87e6b..96225a8 100644
  	lock.unlock();
  	mutex->cv.notify_one();
  
-@@ -1597,6 +1777,30 @@ void PthreadPool::FreeDetachedThreads() {
+@@ -1597,6 +1780,30 @@ void PthreadPool::FreeDetachedThreads() {
  	}
  }
  
@@ -29409,7 +29592,7 @@ index 5f87e6b..96225a8 100644
  bool PthreadKeys::Create(int* key, pthread_key_destructor_func_t destructor) {
  	EXIT_IF(key == nullptr);
  
-@@ -2403,6 +2607,11 @@ int KYTY_SYSV_ABI PthreadRwlockDestroy(PthreadRwlock* rwlock) {
+@@ -2403,6 +2610,11 @@ int KYTY_SYSV_ABI PthreadRwlockDestroy(PthreadRwlock* rwlock) {
  		return KERNEL_ERROR_EINVAL;
  	}
  
@@ -29421,7 +29604,7 @@ index 5f87e6b..96225a8 100644
  	EXIT_NOT_IMPLEMENTED(*rwlock == nullptr);
  
  	{
-@@ -2449,6 +2658,53 @@ int KYTY_SYSV_ABI PthreadRwlockInit(PthreadRwlock* rwlock, const PthreadRwlockat
+@@ -2449,6 +2661,53 @@ int KYTY_SYSV_ABI PthreadRwlockInit(PthreadRwlock* rwlock, const PthreadRwlockat
  	return PthreadRwlockInitNamed(rwlock, attr, name);
  }
  
@@ -29475,7 +29658,7 @@ index 5f87e6b..96225a8 100644
  static PthreadRwlockPrivate::Reader* RwlockFindReader(PthreadRwlock rwlock, Pthread thread) {
  	EXIT_IF(rwlock == nullptr);
  
-@@ -2526,11 +2782,14 @@ static int RwlockLockCooperative(PthreadRwlock rwlock, bool write, KernelUsecond
+@@ -2526,11 +2785,14 @@ static int RwlockLockCooperative(PthreadRwlock rwlock, bool write, KernelUsecond
  					writer_wait_registered = true;
  				}
  			} else {
@@ -29491,7 +29674,7 @@ index 5f87e6b..96225a8 100644
  					return OK;
  				}
  			}
-@@ -2581,6 +2840,12 @@ int KYTY_SYSV_ABI PthreadRwlockTimedrdlock(PthreadRwlock* rwlock, KernelUseconds
+@@ -2581,6 +2843,12 @@ int KYTY_SYSV_ABI PthreadRwlockTimedrdlock(PthreadRwlock* rwlock, KernelUseconds
  		return KERNEL_ERROR_EINVAL;
  	}
  
@@ -29504,7 +29687,7 @@ index 5f87e6b..96225a8 100644
  	EXIT_NOT_IMPLEMENTED(*rwlock == nullptr);
  
  	return RwlockLockCooperative(*rwlock, false, &usec);
-@@ -2593,6 +2858,12 @@ int KYTY_SYSV_ABI PthreadRwlockTimedwrlock(PthreadRwlock* rwlock, KernelUseconds
+@@ -2593,6 +2861,12 @@ int KYTY_SYSV_ABI PthreadRwlockTimedwrlock(PthreadRwlock* rwlock, KernelUseconds
  		return KERNEL_ERROR_EINVAL;
  	}
  
@@ -29517,7 +29700,7 @@ index 5f87e6b..96225a8 100644
  	EXIT_NOT_IMPLEMENTED(*rwlock == nullptr);
  
  	return RwlockLockCooperative(*rwlock, true, &usec);
-@@ -2601,6 +2872,11 @@ int KYTY_SYSV_ABI PthreadRwlockTimedwrlock(PthreadRwlock* rwlock, KernelUseconds
+@@ -2601,6 +2875,11 @@ int KYTY_SYSV_ABI PthreadRwlockTimedwrlock(PthreadRwlock* rwlock, KernelUseconds
  int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
  	PRINT_NAME();
  
@@ -29529,7 +29712,7 @@ index 5f87e6b..96225a8 100644
  	if (rwlock == nullptr) {
  		return KERNEL_ERROR_EINVAL;
  	}
-@@ -2614,10 +2890,12 @@ int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
+@@ -2614,10 +2893,12 @@ int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
  
  	{
  		std::lock_guard lock((*rwlock)->m);
@@ -29543,7 +29726,7 @@ index 5f87e6b..96225a8 100644
  			return OK;
  		}
  	}
-@@ -2628,6 +2906,10 @@ int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
+@@ -2628,6 +2909,10 @@ int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
  int KYTY_SYSV_ABI PthreadRwlockTrywrlock(PthreadRwlock* rwlock) {
  	PRINT_NAME();
  
@@ -29554,7 +29737,7 @@ index 5f87e6b..96225a8 100644
  	if (rwlock == nullptr) {
  		return KERNEL_ERROR_EINVAL;
  	}
-@@ -2676,6 +2958,7 @@ int KYTY_SYSV_ABI PthreadRwlockUnlock(PthreadRwlock* rwlock) {
+@@ -2676,6 +2961,7 @@ int KYTY_SYSV_ABI PthreadRwlockUnlock(PthreadRwlock* rwlock) {
  	{
  		std::lock_guard lock((*rwlock)->m);
  		if (RwlockRemoveReader(*rwlock, self)) {
@@ -29562,7 +29745,7 @@ index 5f87e6b..96225a8 100644
  			(*rwlock)->cv.notify_all();
  			return OK;
  		}
-@@ -2842,6 +3125,7 @@ int KYTY_SYSV_ABI PthreadCondattrSetclock(PthreadCondattr* attr, KernelClockid c
+@@ -2842,6 +3128,7 @@ int KYTY_SYSV_ABI PthreadCondattrSetclock(PthreadCondattr* attr, KernelClockid c
  }
  
  int KYTY_SYSV_ABI PthreadCondBroadcast(PthreadCond* cond) {
@@ -29570,7 +29753,7 @@ index 5f87e6b..96225a8 100644
  	// PRINT_NAME();
  
  	auto* pthread_static_objects = g_pthread_context->GetPthreadStaticObjects();
-@@ -2864,6 +3148,10 @@ int KYTY_SYSV_ABI PthreadCondBroadcast(PthreadCond* cond) {
+@@ -2864,6 +3151,10 @@ int KYTY_SYSV_ABI PthreadCondBroadcast(PthreadCond* cond) {
  			CondClearWaiters(*cond);
  			notify = true;
  		}
@@ -29581,7 +29764,7 @@ index 5f87e6b..96225a8 100644
  	}
  	if (notify) {
  		(*cond)->cv.notify_all();
-@@ -2885,6 +3173,11 @@ int KYTY_SYSV_ABI PthreadCondDestroy(PthreadCond* cond) {
+@@ -2885,6 +3176,11 @@ int KYTY_SYSV_ABI PthreadCondDestroy(PthreadCond* cond) {
  		return KERNEL_ERROR_EINVAL;
  	}
  
@@ -29593,7 +29776,7 @@ index 5f87e6b..96225a8 100644
  	EXIT_NOT_IMPLEMENTED(*cond == nullptr);
  
  	int result = 0;
-@@ -2946,6 +3239,7 @@ int KYTY_SYSV_ABI PthreadCondInit(PthreadCond* cond, const PthreadCondattr* attr
+@@ -2946,6 +3242,7 @@ int KYTY_SYSV_ABI PthreadCondInit(PthreadCond* cond, const PthreadCondattr* attr
  }
  
  int KYTY_SYSV_ABI PthreadCondSignal(PthreadCond* cond) {
@@ -29601,7 +29784,7 @@ index 5f87e6b..96225a8 100644
  	// PRINT_NAME();
  
  	auto* pthread_static_objects = g_pthread_context->GetPthreadStaticObjects();
-@@ -2964,6 +3258,10 @@ int KYTY_SYSV_ABI PthreadCondSignal(PthreadCond* cond) {
+@@ -2964,6 +3261,10 @@ int KYTY_SYSV_ABI PthreadCondSignal(PthreadCond* cond) {
  	{
  		std::lock_guard lock((*cond)->m);
  		notify = CondWakeWaiter(*cond, nullptr);
@@ -29612,7 +29795,7 @@ index 5f87e6b..96225a8 100644
  	}
  	if (notify) {
  		(*cond)->cv.notify_all();
-@@ -2994,13 +3292,22 @@ int KYTY_SYSV_ABI PthreadCondSignalto(PthreadCond* cond, Pthread thread) {
+@@ -2994,13 +3295,22 @@ int KYTY_SYSV_ABI PthreadCondSignalto(PthreadCond* cond, Pthread thread) {
  
  	int  result = 0;
  	bool notify = false;
@@ -29635,7 +29818,7 @@ index 5f87e6b..96225a8 100644
  
  	// LOGF("\tcond signalto: %s(0x%016" PRIx64 "), %d\n", (*cond)->name.c_str(),
  	// reinterpret_cast<uint64_t>(cond), result);
-@@ -3184,6 +3491,7 @@ while (!ready()) {
+@@ -3184,6 +3494,7 @@ while (!ready()) {
  }
  
  int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
@@ -29643,7 +29826,7 @@ index 5f87e6b..96225a8 100644
  	PRINT_NAME();
  
  	auto* pthread_static_objects = g_pthread_context->GetPthreadStaticObjects();
-@@ -3238,9 +3546,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
+@@ -3238,9 +3549,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
  		if (cond_elapsed >= 10 &&
  		    std::chrono::steady_clock::now() - cond_wait_logged > std::chrono::seconds(1)) {
  			cond_wait_logged = std::chrono::steady_clock::now();
@@ -29656,7 +29839,7 @@ index 5f87e6b..96225a8 100644
  		}
  	}
  	CondRemoveWaiter(cond_value, thread);
-@@ -3381,10 +3690,132 @@ static void CleanupThread(void* arg) {
+@@ -3381,10 +3693,781 @@ static void CleanupThread(void* arg) {
  	thread->almost_done = true;
  }
  
@@ -29682,84 +29865,733 @@ index 5f87e6b..96225a8 100644
 +	return 0;
 +}
 +
-+// ---- experiment 0425 C1: KYTY_BC5_0425_WAKE_SLICE_US=<100..3000> -----------------------------------------------------
-+// Shared since 2026-11-16 (the maintainer's word): on by default at 200 us for every title, through kSoft in
-+// bc5/switch_defaults.hpp; KYTY_BC5_0425_WAKE_SLICE_US=0 turns it off. Exp 0425: the
-+// second title's fight crashed 0 of 10 with it against 6 of 15 controls (a rule-passing 4/4 vs 3/3, R13).
-+// The console schedules a title's threads by fixed priority, so a woken game thread on a free core runs at once
-+// (TODO(verify): no console measurement; the PS5 kernel is FreeBSD-derived). On this host the woken job workers
-+// arrived 0.7-1.4 ms after the owner's signal (F453, F454), at nice 0 beside the host's own threads. EEVDF lets a
-+// task request a shorter slice (sched_setattr, SCHED_OTHER with sched_runtime; Linux 6.12, clamped to 0.1-100 ms by
-+// the kernel, TODO(verify) on the box's 7.3 kernel: the read-back line below is the exposure), and a woken task with a
-+// shorter slice may preempt the running one (PREEMPT_SHORT). Applied at thread start and on Setprio to guest threads
-+// below the background band (guest priority < 733); the thread's policy and nice are kept as read.
-+struct Bc5SchedAttr {
-+	uint32_t size;
-+	uint32_t sched_policy;
-+	uint64_t sched_flags;
-+	int32_t  sched_nice;
-+	uint32_t sched_priority;
-+	uint64_t sched_runtime;
-+	uint64_t sched_deadline;
-+	uint64_t sched_period;
-+};
-+static_assert(sizeof(Bc5SchedAttr) == 48, "SCHED_ATTR_SIZE_VER0");
-+
-+static int Bc5WakeSliceUs() {
-+	static const int v = [] {
-+		const char* e = std::getenv("KYTY_BC5_0425_WAKE_SLICE_US");
-+		int         us = 0;
-+		if (bc5::env_rule::on(e)) {
-+			char*      end = nullptr;
-+			const long x   = std::strtol(e, &end, 10);
-+			if (end != e && x > 0) {
-+				us = static_cast<int>(std::clamp(x, 100L, 3000L));
-+			}
-+		}
++// ---- experiment 0429 R: the console's "a lower number wins" for the guest's job workers ----------------------------
++// Shared since 2026-11-18 (the maintainer's word), on by default for every title through kSoft in
++// bc5/switch_defaults.hpp; KYTY_BC5_0429_RR=0 turns it off with no build. It replaces exp 0359's JobArenaFix (removed
++// 2026-11-17) and exp 0425's wake slice (removed with this change).
++// On the console a woken job worker takes its CPU at once from any lower-priority thread there (TODO(verify): the
++// console's kernel; the title's own priorities and masks, exp 0429's trace). Here a woken worker waited behind threads
++// of lower guest priority (h429Z1: 18 % of the job-semaphore wakes took 0.1-2 ms) while the title's main thread ran the
++// job itself (the second title's fight crash at eboot+0x3d7eca0).
++// The rule, for any title and with no title rows: a guest thread of a worker family (two or more threads whose names
++// differ only by a trailing index, "Job Hi 0".."Job Hi 7") that sleeps on a guest semaphore its family shares gets
++// SCHED_RR from RealtimeKit1 (rtkit, the system bus; no privilege of our own), with an RR priority in the guest's order
++// (a lower guest number, a higher RR priority), if its guest priority is below 700. A lone thread (an audio manager) and
++// the runtime's main thread are never promoted.
++// Bounds (the box runs with RT throttling off, sched_rt_runtime_us = period):
++//   1. RLIMIT_RTTIME on the process: soft 20 ms of RR time without blocking -> SIGXCPU, whose handler drops the running
++//      RR thread back to SCHED_OTHER for good (a spinner); hard 200 ms -> the kernel ends the emulator (never the box);
++//   2. a watchdog thread every 5 ms: an RR thread that ran 100 ms with no new time slice is dropped for good;
++//   3. at most (online CPUs - 2) guest threads hold RR at once, so host threads always have two CPUs.
++// When the cap is full, the holder with the numerically highest guest priority above a newcomer's is evicted; it comes
++// back at a later sleep when a place is free. rtkit's calls: at most 15 per 20 s window; a refusal stops new promotions
++// until the window turns, except to replace an evicted thread.
++// rtkit's room: rtkit serves at most --threads-per-user-max threads of one user (read from its command line; 25 by
++// default, 64 on the box since 2026-11-18 08:17, the maintainer's word), counting every thread of the user it made RT or
++// nice < 0 that still is. The watchdog counts them once a second from /proc (processes with CAP_SYS_NICE, which set
++// their own priorities, left out), and R promotes only while that count + 1 + 4 fits, so 4 places stay for the
++// emulator's own audio threads and PipeWire. A thread denied for room or budget is promoted at a later sleep.
++// Tested on the box (exp 0429, 2026-11-17/18): under the crash stressor 4 of 4 clean with R against 7 of 9 crashed
++// without; all 8 Job Hi workers RR with 0 rtkit refusals (rtkit 64); fps with and without R within run-to-run spread on
++// both titles. Normal build: every promotion, drop and refusal is logged (the first 200) and one count line a minute;
++// the lean build logs nothing.
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++#include <dirent.h>
++#include <dlfcn.h>
++#include <fcntl.h>
++#include <cstring>
++#include <sys/resource.h>
++#include <sys/stat.h>
++namespace bc5_0429r {
++static bool On() { // KYTY_BC5_0429_RR, on unless "0" (kSoft gives "1")
++	static const bool v = [] {
++		const bool on = bc5::env_rule::on(std::getenv("KYTY_BC5_0429_RR"));
 +#ifndef BC5_LEAN
-+		std::fprintf(stderr, "[bc5] exp 0425: C1 wake slice %s (%d us)\n", us > 0 ? "ON" : "off", us);
++		std::fprintf(stderr, "[bc5] exp 0429: R (RR for the guest's worker-family sleepers) %s\n", on ? "ON" : "off");
 +#endif
-+		return us;
++		return on;
 +	}();
 +	return v;
 +}
-+
-+static void Bc5ApplyWakeSlice(Pthread thread, const char* why) {
-+	const int us = Bc5WakeSliceUs();
-+	if (us == 0 || thread == nullptr || thread->attr == nullptr || thread->host_thread_id == 0 ||
-+	    thread->attr->guest_priority >= 733) {
-+		return;
-+	}
-+	const auto   tid = static_cast<pid_t>(thread->host_thread_id);
-+	Bc5SchedAttr cur {};
-+	const long   rc0 = syscall(SYS_sched_getattr, tid, &cur, static_cast<unsigned>(sizeof(cur)), 0u);
-+	long         rc1 = -1;
-+	int          err = 0;
-+	Bc5SchedAttr after {};
-+	if (rc0 == 0 && (cur.sched_policy == SCHED_OTHER || cur.sched_policy == SCHED_BATCH)) {
-+		Bc5SchedAttr a {};
-+		a.size          = sizeof(a);
-+		a.sched_policy  = cur.sched_policy;
-+		a.sched_nice    = cur.sched_nice;
-+		a.sched_runtime = static_cast<uint64_t>(us) * 1000u;
-+		rc1             = syscall(SYS_sched_setattr, tid, &a, 0u);
-+		err             = rc1 == 0 ? 0 : errno;
-+		syscall(SYS_sched_getattr, tid, &after, static_cast<unsigned>(sizeof(after)), 0u);
-+	}
++constexpr int     kMaxSlots   = 64;
++constexpr int64_t kSoftUs     = 20000;
++constexpr int64_t kHardUs     = 200000;
++constexpr int     kRrMax      = 20; // rtkit's MaxRealtimePriority on the box (2026-11-17)
++static std::atomic<int> g_tid[kMaxSlots];      // RR threads (0: free)
++static std::atomic<int> g_slot_prio[kMaxSlots]; // their guest priorities
++static std::atomic<int>  g_xcpu_tid {0};       // the last thread SIGXCPU dropped (logged by the watchdog)
++constexpr int64_t        kWindowMs  = 20000; // the rtkit budget per window
++constexpr int            kWindowMax = 15;
++static std::atomic<int64_t> g_win_start {0};   // ms, steady clock
++static std::atomic<int>     g_win_calls {0};
++static std::atomic<int64_t> g_full_until {0};  // rtkit refused: no new promotion before this (ms), only replacements
++static std::atomic<int>     g_evicted_tid[kMaxSlots]; // evicted, waiting to come back (not spinners)
++static std::atomic<int>     g_evicted_n {0};
++static std::atomic<int> g_held {0};            // how many hold RR now
++constexpr int           kReserve = 4;          // rtkit places left for the emulator's own and others' requests
++static std::atomic<int> g_user_rt {-1};        // the user's RT or nice < 0 threads (rtkit's count), -1 before the first scan
++static int              g_rtkit_max = 25;      // rtkit's --threads-per-user-max (its default 25)
 +#ifndef BC5_LEAN
-+	static std::atomic<int> logged {0};
-+	if (logged.fetch_add(1, std::memory_order_relaxed) < 256) {
-+		std::fprintf(stderr,
-+		             "[bc5] exp 0425 slice: %s tid %d '%s' prio %d policy %u nice %d: set rc %ld errno %d, read back runtime %llu ns nice %d\n",
-+		             why, static_cast<int>(tid), thread->name.c_str(), thread->attr->guest_priority, cur.sched_policy, cur.sched_nice, rc1,
-+		             err, static_cast<unsigned long long>(after.sched_runtime), after.sched_nice);
++static char             g_rtkit_err[200] {};   // the last refusal's D-Bus error, name: message
++#endif
++static std::atomic<int> g_calls {0};           // rtkit calls made
++#ifndef BC5_LEAN
++static std::atomic<int> g_logged {0};
++#endif
++static std::atomic<int> g_spinner_tid[kMaxSlots]; // dropped for good
++// counters and the last 16 losses as kind and guest priority (normal build only: the count line a minute)
++enum Ev { kPromoted, kRefused, kCapDenied, kBudgetDenied, kEvicted, kDropXcpu, kDropWatchdog, kDropPrio, kDropGone, kRoomDenied, kEvN };
++#ifndef BC5_LEAN
++static const char       kEvName[kEvN] = {'P', 'R', 'C', 'B', 'E', 'X', 'W', 'H', 'G', 'N'};
++static std::atomic<int> g_ev[kEvN];
++static std::atomic<int> g_last[16];
++static std::atomic<int> g_last_n {0};
++#endif
++static void Count(Ev e, int prio) { // async-signal-safe
++#ifndef BC5_LEAN
++	g_ev[e].fetch_add(1, std::memory_order_relaxed);
++	if (e == kPromoted || e == kCapDenied || e == kRoomDenied) {
++		return; // the ring keeps the losses: drops, evictions, refusals, budget denials
 +	}
++	g_last[g_last_n.fetch_add(1, std::memory_order_relaxed) & 15].store(e * 10000 + (prio < 0 ? 9999 : prio), std::memory_order_relaxed);
 +#else
-+	(void)why;
-+	(void)err;
++	(void)e;
++	(void)prio;
 +#endif
 +}
-+// ---- end of experiment 0425 C1 ------------------------------------------------------------------------------------
++static int              g_cap = 0;
++static int64_t NowMs() {
++	return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
++}
++static bool BudgetOk(bool replacing) { // one rtkit call may be made now
++	const int64_t now = NowMs();
++	int64_t       w   = g_win_start.load();
++	if (now - w >= kWindowMs && g_win_start.compare_exchange_strong(w, now)) {
++		g_win_calls.store(0);
++	}
++	if (now < g_full_until.load() && !replacing) {
++		return false;
++	}
++	return g_win_calls.fetch_add(1) < kWindowMax || (g_win_calls.fetch_sub(1), false);
++}
++static bool IsEvicted(int tid) {
++	for (auto& s: g_evicted_tid) {
++		if (s.load(std::memory_order_relaxed) == tid) {
++			return true;
++		}
++	}
++	return false;
++}
++static void MarkEvicted(int tid) {
++	for (auto& s: g_evicted_tid) {
++		int z = 0;
++		if (s.load(std::memory_order_relaxed) == tid) {
++			return;
++		}
++		if (s.compare_exchange_strong(z, tid)) {
++			g_evicted_n.fetch_add(1);
++			return;
++		}
++	}
++}
++static void Unevict(int tid) {
++	for (auto& s: g_evicted_tid) {
++		int t = tid;
++		if (s.compare_exchange_strong(t, 0)) {
++			g_evicted_n.fetch_sub(1);
++			return;
++		}
++	}
++}
++
++static long RawSyscall3(long n, long a, long b, long c) { // no errno: the handler may run on any thread
++	long ret;
++	asm volatile("syscall" : "=a"(ret) : "a"(n), "D"(a), "S"(b), "d"(c) : "rcx", "r11", "memory");
++	return ret;
++}
++static long RawSyscall4(long n, long a, long b, long c, long d) {
++	long ret;
++	register long r10 asm("r10") = d;
++	asm volatile("syscall" : "=a"(ret) : "a"(n), "D"(a), "S"(b), "d"(c), "r"(r10) : "rcx", "r11", "memory");
++	return ret;
++}
++static void Log(const char* what, int tid, const char* name, int prio, int rr, long rc) {
++#ifndef BC5_LEAN
++	if (g_logged.fetch_add(1, std::memory_order_relaxed) < 200) {
++		std::fprintf(stderr, "[bc5] exp 0429 R: %s tid %d '%s' prio %d rr %d rc %ld (held %d, calls %d)\n", what, tid, name, prio, rr, rc,
++		             g_held.load(), g_calls.load());
++	}
++#else
++	(void)what; (void)tid; (void)name; (void)prio; (void)rr; (void)rc;
++#endif
++}
++static bool IsSpinner(int tid) {
++	for (auto& s: g_spinner_tid) {
++		if (s.load(std::memory_order_relaxed) == tid) {
++			return true;
++		}
++	}
++	return false;
++}
++static void MarkSpinner(int tid) {
++	for (auto& s: g_spinner_tid) {
++		int z = 0;
++		if (s.load(std::memory_order_relaxed) == tid || s.compare_exchange_strong(z, tid)) {
++			return;
++		}
++	}
++}
++// Drops tid back to SCHED_OTHER (an unprivileged thread may always lower its policy; rtkit sets RESET_ON_FORK, kept).
++// Async-signal-safe: raw syscalls and atomics only.
++static int Drop(int tid, bool spinner = true) { // the dropped thread's guest priority, or -1 when it held no slot
++	for (int i = 0; i < kMaxSlots; i++) {
++		auto& s = g_tid[i];
++		int   t = tid;
++		if (s.compare_exchange_strong(t, 0)) {
++			const int gp = g_slot_prio[i].load(std::memory_order_relaxed);
++			struct { int prio; } p {0};
++			RawSyscall3(SYS_sched_setscheduler, tid, SCHED_OTHER | 0x40000000 /* SCHED_RESET_ON_FORK */, reinterpret_cast<long>(&p));
++			g_held.fetch_sub(1, std::memory_order_relaxed);
++			if (spinner) {
++				MarkSpinner(tid);
++			}
++			return gp;
++		}
++	}
++	return -1;
++}
++static void ResetSoft() {
++	rlimit r {static_cast<rlim_t>(kSoftUs), static_cast<rlim_t>(kHardUs)};
++	RawSyscall4(SYS_prlimit64, 0, RLIMIT_RTTIME, reinterpret_cast<long>(&r), 0);
++}
++static void OnXcpu(int) { // bound 1: the kernel sends SIGXCPU to the RR thread that passed the soft limit
++	const int self = static_cast<int>(RawSyscall3(SYS_gettid, 0, 0, 0));
++	if (const int gp = Drop(self); gp >= 0) {
++		g_xcpu_tid.store(self, std::memory_order_relaxed);
++		Count(kDropXcpu, gp);
++	}
++	ResetSoft(); // the kernel raised the soft limit by a second; put it back below the hard one
++}
++static bool ReadSmall(const char* path, char* buf, size_t n) { // a small /proc file, NUL-terminated (NULs in it kept)
++	const int fd = open(path, O_RDONLY | O_CLOEXEC);
++	if (fd < 0) {
++		return false;
++	}
++	const ssize_t r = read(fd, buf, n - 1);
++	close(fd);
++	buf[r > 0 ? r : 0] = 0;
++	return r > 0;
++}
++static int UserRtThreads() { // threads of our user that are RR/FIFO or have nice < 0: what rtkit counts for the user
++	const uid_t uid = getuid();
++	DIR*        d   = opendir("/proc");
++	if (d == nullptr) {
++		return -1;
++	}
++	int n = 0;
++	for (dirent* e; (e = readdir(d)) != nullptr;) {
++		if (e->d_name[0] < '1' || e->d_name[0] > '9') {
++			continue;
++		}
++		char        path[96];
++		struct stat st {};
++		std::snprintf(path, sizeof(path), "/proc/%s/task", e->d_name);
++		if (stat(path, &st) != 0 || st.st_uid != uid) {
++			continue;
++		}
++		{ // a process with CAP_SYS_NICE sets its priorities without rtkit, and rtkit does not count it
++			char sp[96], buf[4096];
++			std::snprintf(sp, sizeof(sp), "/proc/%s/status", e->d_name);
++			const char* c = ReadSmall(sp, buf, sizeof(buf)) ? std::strstr(buf, "CapEff:") : nullptr;
++			if (c != nullptr && ((std::strtoull(c + 7, nullptr, 16) >> 23) & 1) != 0) { // CAP_SYS_NICE is 23
++				continue;
++			}
++		}
++		DIR* t = opendir(path);
++		if (t == nullptr) {
++			continue;
++		}
++		for (dirent* f; (f = readdir(t)) != nullptr;) {
++			if (f->d_name[0] < '1' || f->d_name[0] > '9') {
++				continue;
++			}
++			char sp[128], buf[640];
++			std::snprintf(sp, sizeof(sp), "/proc/%s/task/%s/stat", e->d_name, f->d_name);
++			if (!ReadSmall(sp, buf, sizeof(buf))) {
++				continue;
++			}
++			const char* q = std::strrchr(buf, ')'); // after the name: field 3 (state) on
++			if (q == nullptr) {
++				continue;
++			}
++			long v[40] {};
++			int  k = 0;
++			for (char* c = const_cast<char*>(q + 2); k < 40 && *c != 0;) {
++				v[k++] = std::strtol(c, &c, 10);
++				while (*c == ' ') {
++					c++;
++				}
++				if (k == 1) { // field 3, the state, is a letter
++					while (*c != 0 && *c != ' ') {
++						c++;
++					}
++					while (*c == ' ') {
++						c++;
++					}
++				}
++			}
++			// v[k] is field k + 3 (field 3 counted as v[0]): nice is field 19 -> v[16], policy field 41 -> v[38]
++			if (k > 38 && (v[38] == SCHED_FIFO || v[38] == SCHED_RR || v[16] < 0)) {
++				n++;
++			}
++		}
++		closedir(t);
++	}
++	closedir(d);
++	return n;
++}
++static int RtkitThreadsMax() { // rtkit's --threads-per-user-max from its command line, else its default 25
++	DIR* d = opendir("/proc");
++	if (d == nullptr) {
++		return 25;
++	}
++	int m = 25;
++	for (dirent* e; (e = readdir(d)) != nullptr;) {
++		if (e->d_name[0] < '1' || e->d_name[0] > '9') {
++			continue;
++		}
++		char path[96], buf[512];
++		std::snprintf(path, sizeof(path), "/proc/%s/comm", e->d_name);
++		if (!ReadSmall(path, buf, sizeof(buf)) || std::strncmp(buf, "rtkit-daemon", 12) != 0) {
++			continue;
++		}
++		std::snprintf(path, sizeof(path), "/proc/%s/cmdline", e->d_name);
++		const int fd = open(path, O_RDONLY | O_CLOEXEC);
++		if (fd >= 0) {
++			const ssize_t r = read(fd, buf, sizeof(buf) - 1);
++			close(fd);
++			for (ssize_t i = 0; i < r;) { // arguments are NUL-separated
++				const char* a = buf + i;
++				buf[r]        = 0;
++				if (std::strncmp(a, "--threads-per-user-max=", 23) == 0) {
++					m = std::max(1, std::atoi(a + 23));
++				}
++				i += static_cast<ssize_t>(std::strlen(a)) + 1;
++			}
++		}
++		break;
++	}
++	closedir(d);
++	return m;
++}
++static bool HasWorseHolder(int prio) { // a holder of a numerically higher guest priority
++	for (int i = 0; i < kMaxSlots; i++) {
++		if (g_tid[i].load(std::memory_order_relaxed) != 0 && g_slot_prio[i].load(std::memory_order_relaxed) > prio) {
++			return true;
++		}
++	}
++	return false;
++}
++static bool RoomOk() { // one more RR thread leaves kReserve of rtkit's places
++	const int u = g_user_rt.load(std::memory_order_relaxed);
++	return u >= 0 && u + 1 + kReserve <= g_rtkit_max;
++}
++static void Watchdog() { // bound 2
++	pthread_setname_np(pthread_self(), "bc5-rr-watch");
++	struct Seen {
++		int      tid;
++		uint64_t run, slices, since_ns;
++	};
++	Seen seen[kMaxSlots] {};
++	g_rtkit_max = RtkitThreadsMax();
++	g_user_rt.store(UserRtThreads());
++#ifndef BC5_LEAN
++	std::fprintf(stderr, "[bc5] exp 0429 R: rtkit serves %d threads per user; the user has %d RT or high-priority threads now; reserve %d\n",
++	             g_rtkit_max, g_user_rt.load(), kReserve);
++#endif
++	for (int tick = 1;; tick++) {
++		std::this_thread::sleep_for(std::chrono::milliseconds(5));
++		if (tick % 200 == 0) { // rtkit's count of the user, once a second
++			g_user_rt.store(UserRtThreads());
++		}
++#ifndef BC5_LEAN
++		if (tick % 12000 == 0) { // about a minute
++			char      last[16 * 6 + 1];
++			int       o = 0;
++			const int n = g_last_n.load();
++			for (int k = (n > 16 ? n - 16 : 0); k < n; k++) {
++				const int v = g_last[k & 15].load();
++				o += std::snprintf(last + o, sizeof(last) - o, "%c%d ", kEvName[v / 10000], v % 10000);
++			}
++			last[o] = 0;
++			std::fprintf(stderr, "[bc5] exp 0429 R count: held %d calls %d P %d R %d C %d B %d E %d X %d W %d H %d G %d N %d user %d of %d | last %s\n", g_held.load(),
++			             g_calls.load(), g_ev[kPromoted].load(), g_ev[kRefused].load(), g_ev[kCapDenied].load(), g_ev[kBudgetDenied].load(),
++			             g_ev[kEvicted].load(), g_ev[kDropXcpu].load(), g_ev[kDropWatchdog].load(), g_ev[kDropPrio].load(), g_ev[kDropGone].load(), g_ev[kRoomDenied].load(),
++			             g_user_rt.load(), g_rtkit_max, last);
++		}
++#endif
++		if (const int x = g_xcpu_tid.exchange(0); x != 0) {
++			Log("dropped by SIGXCPU (20 ms without blocking)", x, "", 0, 0, 0);
++		}
++		const auto now = static_cast<uint64_t>(std::chrono::steady_clock::now().time_since_epoch().count());
++		for (int i = 0; i < kMaxSlots; i++) {
++			const int tid = g_tid[i].load(std::memory_order_relaxed);
++			if (tid == 0) {
++				seen[i].tid = 0;
++				continue;
++			}
++			char path[64], buf[128];
++			std::snprintf(path, sizeof(path), "/proc/self/task/%d/schedstat", tid);
++			const int fd = open(path, O_RDONLY | O_CLOEXEC);
++			if (fd < 0) {
++				if (const int gp = Drop(tid); gp >= 0) { // the thread is gone
++					Count(kDropGone, gp);
++				}
++				continue;
++			}
++			const ssize_t r = read(fd, buf, sizeof(buf) - 1);
++			close(fd);
++			buf[r > 0 ? r : 0] = 0;
++			unsigned long long run = 0, wait = 0, slices = 0;
++			std::sscanf(buf, "%llu %llu %llu", &run, &wait, &slices);
++			if (seen[i].tid != tid || seen[i].slices != slices) {
++				seen[i] = {tid, run, slices, now};
++			} else if (run - seen[i].run >= 95000000ull && now - seen[i].since_ns >= 100000000ull) {
++				if (const int gp = Drop(tid); gp >= 0) {
++					Count(kDropWatchdog, gp);
++					Log("dropped by the watchdog (100 ms in one slice)", tid, "", gp, 0, 0);
++				}
++			}
++		}
++	}
++}
++static void Init() {
++	static std::once_flag once;
++	std::call_once(once, [] {
++		const long n = sysconf(_SC_NPROCESSORS_ONLN);
++		g_cap        = static_cast<int>(std::clamp<long>(n - 2, 1, kMaxSlots));
++		ResetSoft(); // rtkit requires RLIMIT_RTTIME with a hard limit within its RTTimeUSecMax
++		struct sigaction sa {};
++		sa.sa_handler = OnXcpu;
++		sigemptyset(&sa.sa_mask);
++		sa.sa_flags = SA_RESTART;
++		sigaction(SIGXCPU, &sa, nullptr);
++		std::thread(Watchdog).detach();
++#ifndef BC5_LEAN
++		std::fprintf(stderr, "[bc5] exp 0429 R: cap %d RR threads, RLIMIT_RTTIME soft %lld hard %lld us, watchdog on\n", g_cap,
++		             static_cast<long long>(kSoftUs), static_cast<long long>(kHardUs));
++#endif
++	});
++}
++// rtkit's MakeThreadRealtimeWithPID through libdbus, loaded at run time (no build dependency; the host has it).
++static long RtkitMakeRealtime(uint64_t tid, uint32_t prio) {
++	struct Api {
++		void* (*bus_get)(int, void*);
++		void* (*new_call)(const char*, const char*, const char*, const char*);
++		int (*append)(void*, int, ...);
++		void* (*send_block)(void*, void*, int, void*);
++		void (*unref)(void*);
++		void (*err_init)(void*);
++		int (*err_set)(const void*);
++		void (*err_free)(void*);
++		int (*threads_init)();
++		void (*no_exit)(void*, unsigned);
++		void* (*open_private)(const char*, void*);
++		int (*bus_register)(void*, void*);
++		bool ok = false;
++	};
++	static Api api = [] {
++		Api a {};
++		void* h = dlopen("libdbus-1.so.3", RTLD_NOW | RTLD_LOCAL);
++		if (h == nullptr) {
++			return a;
++		}
++		a.bus_get      = reinterpret_cast<void* (*)(int, void*)>(dlsym(h, "dbus_bus_get_private"));
++		a.new_call     = reinterpret_cast<void* (*)(const char*, const char*, const char*, const char*)>(dlsym(h, "dbus_message_new_method_call"));
++		a.append       = reinterpret_cast<int (*)(void*, int, ...)>(dlsym(h, "dbus_message_append_args"));
++		a.send_block   = reinterpret_cast<void* (*)(void*, void*, int, void*)>(dlsym(h, "dbus_connection_send_with_reply_and_block"));
++		a.unref        = reinterpret_cast<void (*)(void*)>(dlsym(h, "dbus_message_unref"));
++		a.err_init     = reinterpret_cast<void (*)(void*)>(dlsym(h, "dbus_error_init"));
++		a.err_set      = reinterpret_cast<int (*)(const void*)>(dlsym(h, "dbus_error_is_set"));
++		a.err_free     = reinterpret_cast<void (*)(void*)>(dlsym(h, "dbus_error_free"));
++		a.threads_init = reinterpret_cast<int (*)()>(dlsym(h, "dbus_threads_init_default"));
++		a.no_exit      = reinterpret_cast<void (*)(void*, unsigned)>(dlsym(h, "dbus_connection_set_exit_on_disconnect"));
++		a.open_private = reinterpret_cast<void* (*)(const char*, void*)>(dlsym(h, "dbus_connection_open_private"));
++		a.bus_register = reinterpret_cast<int (*)(void*, void*)>(dlsym(h, "dbus_bus_register"));
++		a.ok = a.bus_get && a.new_call && a.append && a.send_block && a.unref && a.err_init && a.err_set && a.err_free && a.threads_init && a.no_exit && a.open_private && a.bus_register;
++		if (a.ok) {
++			a.threads_init();
++		}
++		return a;
++	}();
++	if (!api.ok) {
++		return -1000;
++	}
++	static std::mutex m;
++	std::lock_guard   lk(m);
++	alignas(16) char  err[64] {}; // DBusError: two pointers, a bit field, a pointer
++	api.err_init(err);
++	static void* conn = [&] { // a private connection of our own, kept; a lost bus must not end the emulator
++		void* c = api.bus_get(1 /* DBUS_BUS_SYSTEM */, err);
++		// inside the distrobox (the normal build) the host's system bus is at /run/host/run/dbus (read 2026-11-17); the
++		// container shares the host's PID namespace, so rtkit takes our pid and tid as they are
++		const char* paths[] = {std::getenv("DBUS_SYSTEM_BUS_ADDRESS"), "unix:path=/run/host/run/dbus/system_bus_socket"};
++		for (const char* a: paths) {
++			if (c != nullptr || a == nullptr || a[0] == 0) {
++				continue;
++			}
++			api.err_free(err);
++			api.err_init(err);
++			c = api.open_private(a, err);
++			if (c != nullptr && api.bus_register(c, err) == 0) {
++				c = nullptr; // TODO: the connection is leaked on a failed hello; once per process
++			}
++		}
++		if (c != nullptr) {
++			api.no_exit(c, 0);
++		}
++		return c;
++	}();
++	if (conn == nullptr) {
++		api.err_free(err);
++		return -1001;
++	}
++	void* msg = api.new_call("org.freedesktop.RealtimeKit1", "/org/freedesktop/RealtimeKit1", "org.freedesktop.RealtimeKit1",
++	                         "MakeThreadRealtimeWithPID");
++	if (msg == nullptr) {
++		return -1002;
++	}
++	uint64_t pid = static_cast<uint64_t>(getpid());
++	api.append(msg, 't', &pid, 't', &tid, 'u', &prio, 0);
++	g_calls.fetch_add(1, std::memory_order_relaxed);
++	void* reply = api.send_block(conn, msg, 1000, err);
++	api.unref(msg);
++	long rc = 0;
++	if (reply == nullptr || api.err_set(err)) {
++		rc = -1003;
++#ifndef BC5_LEAN
++		struct DbusErr { const char* name; const char* message; }; // DBusError's first two fields (dbus-errors.h)
++		const auto* e = reinterpret_cast<const DbusErr*>(err);
++		std::snprintf(g_rtkit_err, sizeof(g_rtkit_err), "%s: %s", e->name != nullptr ? e->name : "?", e->message != nullptr ? e->message : "?");
++#endif
++	}
++	if (reply != nullptr) {
++		api.unref(reply);
++	}
++	api.err_free(err);
++	return rc;
++}
++static int RrOf(int guest_priority) {
++	return std::clamp(1 + (700 - guest_priority) * (kRrMax - 1) / 700, 1, kRrMax);
++}
++// Called from Bc5ApplyGuestPriority (start, setprio) and at a thread's first sleep. Promotes only a sleeper below 700
++// that is not a spinner, within the cap and rtkit's call budget; drops a thread whose priority went to 700 or above.
++static void Apply(Pthread thread, bool sleeper) {
++	if (!On() || thread == nullptr || thread->attr == nullptr || thread->host_thread_id == 0) {
++		return;
++	}
++	Init();
++	const int tid  = static_cast<int>(thread->host_thread_id);
++	const int prio = thread->attr->guest_priority;
++	bool      held = false;
++	for (auto& s: g_tid) {
++		held = held || s.load(std::memory_order_relaxed) == tid;
++	}
++	if (held && prio >= 700) {
++		Count(kDropPrio, Drop(tid)); // not a spinner, but the rule says out; it stays out (rtkit's budget)
++		Log("dropped (priority 700 or above)", tid, thread->name.c_str(), prio, 0, 0);
++		return;
++	}
++	if (held || !sleeper || prio >= 700 || IsSpinner(tid)) {
++		return;
++	}
++	if (thread->bc5_rr_main) { // the title's main thread runs the owner's help: the race R is meant to win, never promoted
++		static std::atomic<int> once {0};
++		if (once.fetch_add(1) == 0) {
++			Log("not promoted (the runtime's main thread)", tid, thread->name.c_str(), prio, 0, 0);
++		}
++		return;
++	}
++	// a place under the cap, reserved atomically; when the cap is full, the holder with the numerically highest guest
++	// priority above ours is dropped for good to make room (the console's order: a lower number wins)
++	bool       evicted  = false;
++	const bool cap_full = g_held.fetch_add(1) >= g_cap;
++	if (cap_full || !RoomOk()) { // a short rtkit room evicts like a full cap
++		g_held.fetch_sub(1);
++		int victim = 0, vprio = prio;
++		for (int i = 0; i < kMaxSlots; i++) {
++			const int t = g_tid[i].load(std::memory_order_relaxed);
++			const int p = g_slot_prio[i].load(std::memory_order_relaxed);
++			if (t != 0 && p > vprio) {
++				victim = t;
++				vprio  = p;
++			}
++		}
++		if (victim == 0 || Drop(victim, false) < 0) {
++			if (cap_full) {
++				Count(kCapDenied, prio);
++				Log("not promoted (the cap, no holder of a lower priority)", tid, thread->name.c_str(), prio, 0, 0);
++			} else {
++				Count(kRoomDenied, prio);
++				MarkEvicted(tid); // waits for room
++				Log("not promoted (rtkit's room, no holder of a lower priority)", tid, thread->name.c_str(), prio, 0, 0);
++			}
++			return;
++		}
++		Count(kEvicted, vprio);
++		MarkEvicted(victim); // it comes back at a later sleep when a place is free
++		Log("evicted for a higher priority", victim, "", vprio, 0, 0);
++		evicted = true;
++		g_user_rt.fetch_sub(1); // the victim went back to SCHED_OTHER: rtkit frees its place at the next call
++		if (g_held.fetch_add(1) >= g_cap) {
++			g_held.fetch_sub(1);
++			MarkEvicted(tid);
++			return;
++		}
++	}
++	if (!RoomOk()) {
++		g_held.fetch_sub(1);
++		Count(kRoomDenied, prio);
++		MarkEvicted(tid); // waits for room, promoted at a later sleep
++		Log("not promoted (rtkit's room for the user)", tid, thread->name.c_str(), prio, 0, 0);
++		return;
++	}
++	if (!BudgetOk(evicted)) {
++		g_held.fetch_sub(1);
++		Count(kBudgetDenied, prio);
++		MarkEvicted(tid); // waits, promoted at a later sleep
++		Log("not promoted (rtkit's budget)", tid, thread->name.c_str(), prio, 0, 0);
++		return;
++	}
++	const int  rr = RrOf(prio);
++	const long rc = RtkitMakeRealtime(static_cast<uint64_t>(tid), static_cast<uint32_t>(rr));
++	if (rc != 0) {
++		g_held.fetch_sub(1);
++		g_full_until.store(g_win_start.load() + kWindowMs);
++		Count(kRefused, prio);
++		Log("rtkit refused", tid, thread->name.c_str(), prio, rr, rc);
++#ifndef BC5_LEAN
++		std::fprintf(stderr, "[bc5] exp 0429 R: rtkit's reason: %s\n", g_rtkit_err);
++#endif
++		return;
++	}
++	for (int i = 0; i < kMaxSlots; i++) {
++		int z = 0;
++		if (g_tid[i].compare_exchange_strong(z, tid)) {
++			g_slot_prio[i].store(prio, std::memory_order_relaxed);
++			Count(kPromoted, prio);
++			Unevict(tid);
++			g_user_rt.fetch_add(1);
++			Log("promoted", tid, thread->name.c_str(), prio, rr, rc);
++			return;
++		}
++	}
++	g_held.fetch_sub(1);
++	struct { int prio; } p0 {0};
++	RawSyscall3(SYS_sched_setscheduler, tid, SCHED_OTHER | 0x40000000, reinterpret_cast<long>(&p0)); // no slot: give it back
++}
++} // namespace bc5_0429r
++
++static void Bc5RrApply(Pthread thread, const char* /*why*/) {
++	bc5_0429r::Apply(thread, thread != nullptr && thread->bc5_rr_sleeper);
++}
++
++// A guest thread's sleep on a guest semaphore (kernel/semaphore.cpp, after the resume, under the semaphore's lock): mark
++// it a sleeper when the semaphore belongs to its worker family. A thread that slept on it first is marked at its next
++// sleep there.
++namespace bc5_0429r {
++constexpr int kPools = 512;
++// A semaphore's worker family. Up to kCands (thread, family) pairs are kept until two distinct threads
++// of one family meet; then that family owns the semaphore and only its threads are promoted there.
++constexpr int kCands = 6;
++struct FamSlot {
++	std::atomic<uintptr_t> sem {0};
++	std::atomic<int>       tid[kCands] {};
++	std::atomic<uint32_t>  key[kCands] {};
++	std::atomic<uint32_t>  owner {0};
++};
++static FamSlot  g_fams[kPools];
++static uint32_t FamilyKey(const std::string& name) { // FNV-1a of the name without its trailing index; 0 for none
++	size_t n = name.size();
++	while (n > 0 && ((name[n - 1] >= '0' && name[n - 1] <= '9') || name[n - 1] == ' ' || name[n - 1] == '_' || name[n - 1] == '-' ||
++	                 name[n - 1] == '#')) {
++		n--;
++	}
++	uint32_t h = 2166136261u;
++	for (size_t i = 0; i < n; i++) {
++		h = (h ^ static_cast<uint8_t>(name[i])) * 16777619u;
++	}
++	return n == 0 ? 0 : (h == 0 ? 1 : h);
++}
++static bool IsFamilyPool(const void* sem, int tid, uint32_t key) {
++	if (key == 0) {
++		return false;
++	}
++	const auto a = reinterpret_cast<uintptr_t>(sem);
++	int        i = static_cast<int>(((a >> 4) * 2654435761ull) % kPools);
++	for (int k = 0; k < kPools; k++, i = (i + 1) % kPools) {
++		uintptr_t cur = g_fams[i].sem.load(std::memory_order_acquire);
++		if (cur == 0) {
++			uintptr_t z = 0;
++			cur         = g_fams[i].sem.compare_exchange_strong(z, a) ? a : z;
++		}
++		if (cur != a) {
++			continue;
++		}
++		auto&          f = g_fams[i];
++		const uint32_t o = f.owner.load(std::memory_order_relaxed);
++		if (o != 0) {
++			return o == key;
++		}
++		for (int c = 0; c < kCands; c++) {
++			int t = f.tid[c].load(std::memory_order_relaxed);
++			if (t == 0) {
++				int z = 0;
++				if (f.tid[c].compare_exchange_strong(z, tid)) {
++					f.key[c].store(key, std::memory_order_relaxed);
++					return false; // recorded; a second thread of this family makes it a pool
++				}
++				t = z;
++			}
++			if (t == tid) {
++				return false;
++			}
++			if (f.key[c].load(std::memory_order_relaxed) == key) {
++				uint32_t z = 0;
++				f.owner.compare_exchange_strong(z, key);
++				return f.owner.load(std::memory_order_relaxed) == key;
++			}
++		}
++		return false; // kCands threads of other families: no pool of this one here
++	}
++	return false;
++}
++} // namespace bc5_0429r
++extern "C" void bc5_0429_r_on_sleep(const void* sem) {
++	if (!bc5_0429r::On()) {
++		return;
++	}
++	Pthread self = g_pthread_self;
++	if (self == nullptr) {
++		return;
++	}
++	if (self->bc5_rr_sleeper) { // an evicted sleeper comes back when a place is free
++		if (bc5_0429r::g_evicted_n.load(std::memory_order_relaxed) > 0 && ((bc5_0429r::g_held.load(std::memory_order_relaxed) < bc5_0429r::g_cap && bc5_0429r::RoomOk()) ||
++		     (self->attr != nullptr && bc5_0429r::HasWorseHolder(self->attr->guest_priority))) &&
++		    bc5_0429r::NowMs() >= bc5_0429r::g_full_until.load(std::memory_order_relaxed) &&
++		    bc5_0429r::g_win_calls.load(std::memory_order_relaxed) < bc5_0429r::kWindowMax && bc5_0429r::IsEvicted(static_cast<int>(self->host_thread_id))) {
++			bc5_0429r::Apply(self, true);
++		}
++		return;
++	}
++	if (!bc5_0429r::IsFamilyPool(sem, static_cast<int>(self->host_thread_id), bc5_0429r::FamilyKey(self->name))) {
++		return;
++	}
++	self->bc5_rr_sleeper = true;
++	bc5_0429r::Apply(self, true);
++}
++#endif
++// ---- end of experiment 0429 R ----------------------------------------------------------------------------------
 +
 +static void Bc5ApplyGuestPriority(Pthread thread, const char* why) {
 +	if (thread == nullptr || thread->attr == nullptr || thread->host_thread_id == 0) {
@@ -29769,7 +30601,7 @@ index 5f87e6b..96225a8 100644
 +	if (nice != 0 || why[0] == 's') { // a Setprio may also return a thread to 0
 +		SDL_LinuxSetThreadPriority(static_cast<Sint64>(thread->host_thread_id), nice);
 +	}
-+	Bc5ApplyWakeSlice(thread, why); // experiment 0425 C1 (after the nice, which it keeps)
++	Bc5RrApply(thread, why); // experiment 0429 R
 +}
 +#endif
 +
@@ -29789,7 +30621,7 @@ index 5f87e6b..96225a8 100644
  	thread->unique_id = Common::Thread::GetThreadIdUnique();
  
  	g_pthread_self = thread;
-@@ -3396,6 +3827,20 @@ static void* RunThread(void* arg) {
+@@ -3396,6 +4479,20 @@ static void* RunThread(void* arg) {
  	os_thread_id = GetHostThreadId();
  #endif
  	thread->host_thread_id = os_thread_id;
@@ -29810,7 +30642,7 @@ index 5f87e6b..96225a8 100644
  
  	LOGF("\tPthread run begin: %s, id = %d, os_thread_id = %" PRIu64 ", entry = 0x%016" PRIx64
  	     ", arg = 0x%016" PRIx64 ", stack_addr = 0x%016" PRIx64 ", stack_size = %" PRIu64 "\n",
-@@ -3549,6 +3994,9 @@ int KYTY_SYSV_ABI PthreadCancel(Pthread thread) {
+@@ -3549,6 +4646,9 @@ int KYTY_SYSV_ABI PthreadCancel(Pthread thread) {
  	if (thread == nullptr) {
  		return KERNEL_ERROR_EINVAL;
  	}
@@ -29820,7 +30652,7 @@ index 5f87e6b..96225a8 100644
  
  	int result = pthread_cancel(thread->p);
  
-@@ -3650,6 +4098,9 @@ int KYTY_SYSV_ABI PthreadGetprio(Pthread thread, int* prio) {
+@@ -3650,6 +4750,9 @@ int KYTY_SYSV_ABI PthreadGetprio(Pthread thread, int* prio) {
  	if (thread == nullptr) {
  		return KERNEL_ERROR_ESRCH;
  	}
@@ -29830,7 +30662,7 @@ index 5f87e6b..96225a8 100644
  
  	EXIT_NOT_IMPLEMENTED(prio == nullptr);
  
-@@ -3670,6 +4121,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
+@@ -3670,6 +4773,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
  	if (thread == nullptr) {
  		return KERNEL_ERROR_ESRCH;
  	}
@@ -29840,7 +30672,7 @@ index 5f87e6b..96225a8 100644
  
  	sched_param param {};
  	int         pol = 0;
-@@ -3695,6 +4149,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
+@@ -3695,6 +4801,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
  #endif
  
  	thread->attr->guest_priority = prio;
@@ -29850,7 +30682,7 @@ index 5f87e6b..96225a8 100644
  	LOGF("\t PthreadSetprio: %d, %d\n", thread->unique_id, prio);
  	return OK;
  }
-@@ -3791,6 +4248,10 @@ int KYTY_SYSV_ABI PthreadRename(Pthread thread, const char* name) {
+@@ -3791,6 +4900,10 @@ int KYTY_SYSV_ABI PthreadRename(Pthread thread, const char* name) {
  	}
  
  	thread->name = std::string(name);
@@ -29861,7 +30693,7 @@ index 5f87e6b..96225a8 100644
  
  	return OK;
  }
-@@ -3850,6 +4311,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
+@@ -3850,6 +4963,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
  
  	int special_error = OK;
  	if (KernelClockGettimeSpecial(clock_id, tp, &special_error)) {
@@ -29869,7 +30701,7 @@ index 5f87e6b..96225a8 100644
  		return special_error;
  	}
  
-@@ -3867,6 +4329,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
+@@ -3867,6 +4981,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
  	tp->tv_nsec = t.tv_nsec;
  
  	if (result == 0) {
@@ -29877,7 +30709,7 @@ index 5f87e6b..96225a8 100644
  		return OK;
  	}
  	return KERNEL_ERROR_EINVAL;
-@@ -3994,7 +4457,7 @@ uint64_t KYTY_SYSV_ABI KernelGetTscFrequency() {
+@@ -3994,7 +5109,7 @@ uint64_t KYTY_SYSV_ABI KernelGetTscFrequency() {
  }
  
  uint64_t KYTY_SYSV_ABI KernelReadTsc() {
@@ -29886,7 +30718,7 @@ index 5f87e6b..96225a8 100644
  }
  
  uint64_t KYTY_SYSV_ABI KernelGetProcessTime() {
-@@ -4294,6 +4757,12 @@ void KYTY_SYSV_ABI pthread_yield() {
+@@ -4294,6 +5409,12 @@ void KYTY_SYSV_ABI pthread_yield() {
  	LibKernel::PthreadYield();
  }
  
@@ -29899,7 +30731,7 @@ index 5f87e6b..96225a8 100644
  int KYTY_SYSV_ABI sched_get_priority_max(int policy) {
  	PRINT_NAME();
  
-@@ -4431,6 +4900,11 @@ int KYTY_SYSV_ABI pthread_cond_signal(LibKernel::PthreadCond* cond) {
+@@ -4431,6 +5552,11 @@ int KYTY_SYSV_ABI pthread_cond_signal(LibKernel::PthreadCond* cond) {
  	return POSIX_PTHREAD_CALL(LibKernel::PthreadCondSignal(cond));
  }
  
@@ -29911,7 +30743,7 @@ index 5f87e6b..96225a8 100644
  int KYTY_SYSV_ABI pthread_cond_init(LibKernel::PthreadCond*           cond,
                                      const LibKernel::PthreadCondattr* attr) {
  	PRINT_NAME();
-@@ -4540,6 +5014,12 @@ int KYTY_SYSV_ABI pthread_rwlock_wrlock(LibKernel::PthreadRwlock* rwlock) {
+@@ -4540,6 +5666,12 @@ int KYTY_SYSV_ABI pthread_rwlock_wrlock(LibKernel::PthreadRwlock* rwlock) {
  	return POSIX_PTHREAD_CALL(LibKernel::PthreadRwlockWrlock(rwlock));
  }
  
@@ -29965,7 +30797,7 @@ index 3b39581..6b35a70 100644
  int KYTY_SYSV_ABI pthread_rwlock_init(LibKernel::PthreadRwlock*           rwlock,
                                        const LibKernel::PthreadRwlockattr* attr);
 diff --git a/src/kernel/semaphore.cpp b/src/kernel/semaphore.cpp
-index ed7c35b..d3acaf4 100644
+index ed7c35b..565e55e 100644
 --- a/src/kernel/semaphore.cpp
 +++ b/src/kernel/semaphore.cpp
 @@ -1,7 +1,12 @@
@@ -29981,15 +30813,19 @@ index ed7c35b..d3acaf4 100644
  #include "common/stringUtils.h"
  #include "common/threads.h"
  #include "common/timer.h"
-@@ -13,6 +18,7 @@
+@@ -13,6 +18,11 @@
  #include <limits>
  #include <unordered_map>
  #include <vector>
 +#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
++
++#ifdef __linux__
++extern "C" void bc5_0429_r_on_sleep(const void* sem); // kernel/pthread.cpp, experiment 0429 R
++#endif
  
  namespace Libs::LibKernel {
  void KernelDispatchPendingSignalForCurrentThread();
-@@ -72,6 +78,69 @@ private:
+@@ -72,6 +82,69 @@ private:
  	int                         m_max_count;
  };
  
@@ -30059,7 +30895,7 @@ index ed7c35b..d3acaf4 100644
  KernelSemaPrivate::~KernelSemaPrivate() {
  	Common::LockGuard lock(m_mutex);
  
-@@ -137,11 +206,16 @@ KernelSemaPrivate::Result KernelSemaPrivate::Signal(int signal_count) {
+@@ -137,11 +210,16 @@ KernelSemaPrivate::Result KernelSemaPrivate::Signal(int signal_count) {
  		return Result::Deleted;
  	}
  
@@ -30076,7 +30912,7 @@ index ed7c35b..d3acaf4 100644
  
  	WakeWaiters();
  
-@@ -181,6 +255,7 @@ void KernelSemaPrivate::WakeWaiters() {
+@@ -181,6 +259,7 @@ void KernelSemaPrivate::WakeWaiters() {
  }
  
  KernelSemaPrivate::Result KernelSemaPrivate::Wait(int need_count, uint32_t* ptr_micros) {
@@ -30084,7 +30920,17 @@ index ed7c35b..d3acaf4 100644
  	Common::LockGuard lock(m_mutex);
  
  	if (need_count < 1 || need_count > m_max_count) {
-@@ -257,6 +332,11 @@ int KYTY_SYSV_ABI KernelCreateSema(KernelSema* sem, const char* name, uint32_t a
+@@ -243,6 +322,9 @@ KernelSemaPrivate::Result KernelSemaPrivate::Wait(int need_count, uint32_t* ptr_
+ 	}
+ 
+ 	RemoveWaiter(&waiter);
++#ifdef __linux__
++	bc5_0429_r_on_sleep(this); // experiment 0429 R: a guest thread that slept here and was woken is a sleeper
++#endif
+ 
+ 	if (ptr_micros != nullptr) {
+ 		*ptr_micros = (elapsed >= micros ? 0 : micros - elapsed);
+@@ -257,6 +339,11 @@ int KYTY_SYSV_ABI KernelCreateSema(KernelSema* sem, const char* name, uint32_t a
  
  	EXIT_NOT_IMPLEMENTED(sem == nullptr);
  
@@ -30096,7 +30942,7 @@ index ed7c35b..d3acaf4 100644
  	if (name == nullptr || attr > 2 || init < 0 || max <= 0 || init > max) {
  		return KERNEL_ERROR_EINVAL;
  	}
-@@ -294,10 +374,6 @@ int KYTY_SYSV_ABI KernelWaitSema(KernelSema sem, int need, KernelUseconds* time)
+@@ -294,10 +381,6 @@ int KYTY_SYSV_ABI KernelWaitSema(KernelSema sem, int need, KernelUseconds* time)
  		return KERNEL_ERROR_ESRCH;
  	}
  
@@ -30107,7 +30953,7 @@ index ed7c35b..d3acaf4 100644
  	auto result = sem->Wait(need, time);
  
  	int ret = OK;
-@@ -341,6 +417,10 @@ int KYTY_SYSV_ABI KernelSignalSema(KernelSema sem, int count) {
+@@ -341,6 +424,10 @@ int KYTY_SYSV_ABI KernelSignalSema(KernelSema sem, int count) {
  	if (sem == nullptr) {
  		return KERNEL_ERROR_ESRCH;
  	}
@@ -33598,10 +34444,10 @@ index 6df0a95..eca6d2d 100644
  		    static_cast<uint32_t>(src->crop_right + (pitch - src->width));
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..6118f2d
+index 0000000..4828919
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,17066 @@
+@@ -0,0 +1,17438 @@
 +#include "bc5/env_rule.hpp" // exp 0419 (build W): BC5_DIAG_ENV, BC5_FIXED_ENV, BC5_LEAN_OR
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
@@ -35733,6 +36579,80 @@ index 0000000..6118f2d
 +// (the kernel clears the page-table entries at once, whatever is still running): waits until
 +// everything queued so far has run. Defined with the completion queue.
 +static void wait_jobs();
++static void chain_flush(int why); // exp 0432 (tag d432)
++// exp 0432: the test build's three host switches (each on unless "0") and its counters.
++namespace d432 {
++#ifdef BC5_LEAN
++struct Cnt { // the lean build: a counter that is nothing
++	constexpr Cnt() = default;
++	explicit constexpr Cnt(int) {}
++	void     operator++(int) const {}
++	void     operator+=(uint64_t) const {}
++	void     operator=(uint64_t) const {}
++	uint64_t load() const { return 0; }
++};
++#else
++using Cnt = std::atomic<uint64_t>;
++#endif
++inline bool word_on(const char* name) {
++	const char* e = std::getenv(name);
++	return !(e != nullptr && e[0] == '0' && e[1] == 0);
++}
++inline bool on() { // item D: BC5_DIRECT_UNMAP_NOWAIT (the kernel orders the page-table clear behind this VM's submissions: amdgpu_vm_clear_freed, v7.3)
++	static const bool v = BC5_LEAN_OR(true, word_on("BC5_DIRECT_UNMAP_NOWAIT"));
++	return v;
++}
++inline bool anon_events() { // item A: OFF unless the word is "1" (the T runs of 2026-11-17: its counter moved 15 times a second in the maintainer's scene, and each move is a walk)
++	static const bool v = BC5_LEAN_OR(false, ([] {
++		const char* e = std::getenv("BC5_DIRECT_ANON_EVENTS");
++		return e != nullptr && e[0] == '1' && e[1] == 0;
++	}()));
++	return v;
++}
++inline bool anon_thread() { // item W
++	static const bool v = BC5_LEAN_OR(true, word_on("BC5_DIRECT_ANON_THREAD"));
++	return v;
++}
++inline bool refused_ends() { // item R
++	static const bool v = BC5_LEAN_OR(true, word_on("BC5_DIRECT_REFUSED_ENDS"));
++	return v;
++}
++inline bool views_kept() { // item V: OFF unless the word is "1" (builds 1 and 3: the view list cost 4,152 and 4,182 ms of the sample with it, 2,414 without)
++	static const bool v = BC5_LEAN_OR(false, ([] {
++		const char* e = std::getenv("BC5_DIRECT_VIEWS_KEPT");
++		return e != nullptr && e[0] == '1' && e[1] == 0;
++	}()));
++	return v;
++}
++inline bool maps_fast() { // item M
++	static const bool v = BC5_LEAN_OR(true, word_on("BC5_DIRECT_MAPS_FAST"));
++	return v;
++}
++inline Cnt g_maps_fast {0}, g_maps_sorted {0};
++inline int maps_diff() { // item X: 0 off, 1 on, 2 on and checked against the old rebuild; OFF unless the word is "1" or "verify"
++	static const int v = BC5_LEAN_OR(0, ([] {
++		const char* e = std::getenv("BC5_DIRECT_MAPS_DIFF");
++		if (e == nullptr) return 0;
++		if (std::strcmp(e, "verify") == 0) return 2;
++		return e[0] == '1' && e[1] == 0 ? 1 : 0;
++	}()));
++	return v;
++}
++inline Cnt g_x_diff {0}, g_x_full {0}, g_x_views {0}, g_x_mismatch {0};
++inline Cnt g_x_why[11]; // which condition sent a rebuild the old way (the first that failed)
++inline Cnt g_rebuilds {0}, g_busy {0}, g_unmaps_busy {0}, g_bos_busy {0}, g_unmaps {0}, g_drains {0}, g_drain_ns {0}, g_drain_max_ns {0},
++    g_prep_max_ns {0}, g_prep_over20 {0}, g_last_ns {0}, g_anon_walks {0}, g_anon_skips {0}, g_anon_ev {0}, g_anon_ev_miss {0}, g_anon_vmas {0}, g_views_clone {0},
++    g_rec_mismatch {0}, g_sync_ns {0};
++#ifdef BC5_LEAN
++inline void maxed(const Cnt&, uint64_t) {}
++#else
++inline void maxed(std::atomic<uint64_t>& m, uint64_t v) {
++	uint64_t was = m.load(std::memory_order_relaxed);
++	while (v > was && !m.compare_exchange_weak(was, v, std::memory_order_relaxed)) {
++	}
++}
++#endif
++} // namespace d432
 +static Stage                                g_stage = Stage::Off;
 +static constexpr uint32_t                   g_cu_mask = 0xffffffffu;
 +static constexpr const char*                kRenderNode = "/dev/dri/renderD128";
@@ -36108,6 +37028,7 @@ index 0000000..6118f2d
 +// 1 anything else ("verify": stage S1, the kept list is only compared).
 +static int mr415_mode() {
 +	static const int mode = [] {
++		if (d432::views_kept()) return 2; // exp 0432 (tag v432): BC5_DIRECT_VIEWS_KEPT
 +		const char* e = BC5_DIAG_ENV("KYTY_BC5_MAP_RECORDS");
 +		if (!bc5::load_stat::env_set(e)) return 0;
 +		return std::strcmp(e, "views") == 0 ? 2 : 1;
@@ -36159,6 +37080,7 @@ index 0000000..6118f2d
 +		bc5::load_stat::count(bc5::load_stat::kMapRecord, spans.size());
 +		if (!same) {
 +			bc5::load_stat::count(bc5::load_stat::kRecMismatch);
++			d432::g_rec_mismatch++; // exp 0432
 +			static int logged = 0;
 +			if (logged++ < 8) {
 +				journal("map records (exp 0415, mr415): MISMATCH at generation %" PRIu64 " after %zu records: kept %zu views, rebuilt %zu, first difference at index %zu\n", gen,
@@ -36176,16 +37098,20 @@ index 0000000..6118f2d
 +// records, both titles); the list is rebuilt from every range only every KYTY_BC5_MAP_RECORDS_CHECK_MS (2,000 when
 +// unset), and at that moment the kept list is compared with it and with the old builder's list (rec_mismatch) and
 +// replaced by it. If the record log reports a gap the list is rebuilt at once. Called under direct_views' mutex.
++// Tag mr415d (build L5d): build L5b copied the kept list (12,500-28,000 views, a string each) into every new snapshot
++// and so saved nothing (README section 15). The kept list is now the object handed out: records are applied to it in
++// place when nobody else holds it (direct_views lets go of its own reference first), and only otherwise to a copy
++// (views_clone). A holder never sees its list change: it holds a reference, so the count is above one.
 +// If a record were missing, a view would be absent (its memory not on the GPU) or would stay after the guest unmapped
 +// it (the GPU reads pages the guest gave back) until the next check, at most the check period.
-+static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_out) {
++static std::shared_ptr<DViews> mr415_views(const DState& S, uint64_t* gen_out) {
 +	struct R {
 +		uint64_t    start, size, offset;
 +		int         type;
 +		std::string name;
 +	};
-+	static std::vector<DView> kept;
-+	static bool               have       = false;
++	static std::shared_ptr<DViews> kept_p = std::make_shared<DViews>();
++	static bool                    have   = false;
 +	static uint64_t           checked_ns = 0;
 +	static const uint64_t     period_ns  = bc5::load_stat::env_num("KYTY_BC5_MAP_RECORDS_CHECK_MS", 2000, 600'000) * 1'000'000ull;
 +	auto make = [](const R& r, DView* v) {
@@ -36208,11 +37134,15 @@ index 0000000..6118f2d
 +		        &lists, &gen, &spans, &complete) &&
 +		    complete) {
 +			lists.resize(spans.size());
++			if (kept_p.use_count() > 1) { // someone still reads the list: leave theirs alone
++				d432::g_views_clone++; // exp 0432
++				kept_p = std::make_shared<DViews>(*kept_p);
++			}
++			std::vector<DView>& kept = kept_p->v;
 +			for (size_t i = 0; i < spans.size(); i++) bc5::map_records::apply(kept, lists[i], spans[i].first, bc5::map_records::end_of(spans[i].first, spans[i].second), make);
 +			bc5::load_stat::count(bc5::load_stat::kMapRecord, spans.size());
-+			*out     = kept;
 +			*gen_out = gen;
-+			return;
++			return kept_p;
 +		}
 +		bc5::load_stat::count(bc5::load_stat::kRecOverflow);
 +		have = false; // the log had a gap: the kept list is not to be compared, only replaced
@@ -36224,8 +37154,9 @@ index 0000000..6118f2d
 +		        static_cast<std::vector<R>*>(p)->push_back({start, size, offset, type, name != nullptr ? name : ""});
 +	        },
 +	        &ranges, &gen, &spans, &complete)) {
-+		*out = direct_views_build(S);
-+		return;
++		auto d = std::make_shared<DViews>();
++		d->v   = direct_views_build(S);
++		return d;
 +	}
 +	std::vector<DView> full;
 +	for (const R& r: ranges) {
@@ -36241,26 +37172,31 @@ index 0000000..6118f2d
 +	};
 +	static int logged = 0;
 +	if (have && complete) {
++		if (kept_p.use_count() > 1) kept_p = std::make_shared<DViews>(*kept_p);
++		std::vector<DView>& kept = kept_p->v;
 +		for (const auto& [start, size]: spans) bc5::map_records::apply(kept, ranges, start, bc5::map_records::end_of(start, size), make);
 +		bc5::load_stat::count(bc5::load_stat::kMapRecord, spans.size());
 +		if (!same(kept, full)) {
 +			bc5::load_stat::count(bc5::load_stat::kRecMismatch);
++			d432::g_rec_mismatch++; // exp 0432
 +			if (logged++ < 8) journal("map records (exp 0415, mr415c): MISMATCH of the list in use at generation %" PRIu64 ": kept %zu views, rebuilt %zu\n", gen, kept.size(), full.size());
 +		}
 +	}
 +	// the old builder's list, read a moment later: it can differ only if the ranges changed in between
-+	if (const uint64_t g2 = Libs::LibKernel::Memory::Bc5MappedRangesGeneration(); g2 == gen) {
++	if (const uint64_t g2 = Libs::LibKernel::Memory::Bc5MappedRangesGeneration(); g2 == gen && !d432::views_kept()) { // exp 0432: build 1 showed this second build in single calls of 104-114 ms
 +		const std::vector<DView> old = direct_views_build(S);
 +		if (Libs::LibKernel::Memory::Bc5MappedRangesGeneration() == gen && !same(old, full)) {
 +			bc5::load_stat::count(bc5::load_stat::kRecMismatch);
++			d432::g_rec_mismatch++; // exp 0432
 +			if (logged++ < 8) journal("map records (exp 0415, mr415c): the snapshot's list differs from the old builder's at generation %" PRIu64 ": %zu against %zu views\n", gen, full.size(), old.size());
 +		}
 +	}
-+	kept       = std::move(full);
++	kept_p     = std::make_shared<DViews>();
++	kept_p->v  = std::move(full);
 +	have       = true;
 +	checked_ns = now;
-+	*out       = kept;
 +	*gen_out   = gen;
++	return kept_p;
 +}
 +
 +static std::shared_ptr<const DViews> direct_views(const DState& S) {
@@ -36278,14 +37214,17 @@ index 0000000..6118f2d
 +	if (g != 0 && g == gen[k] && cache[k] != nullptr && (k == 0 || now - built_ns[k] < 1'000'000'000ull)) return cache[k];
 +	built_ns[k] = now;
 +	g_views_builds++;
-+	auto d = std::make_shared<DViews>();
-+	uint64_t g_used = g;
++	std::shared_ptr<DViews> d;
++	uint64_t                g_used = g;
 +	if (k == 0 && mr415_mode() == 2) { // experiment 0415 (mr415c), stage S2: the list kept from the change records
-+		mr415_views(S, &d->v, &g_used);
++		cache[k].reset();              // mr415d: so that the kept list can change in place when no caller holds it
++		d = mr415_views(S, &g_used);
 +	} else {
++		d    = std::make_shared<DViews>();
 +		d->v = direct_views_build(S);
 +		if (k == 0) mr415_verify(); // experiment 0415 (mr415)
 +	}
++	d->sorted = true;
 +	uint64_t sig = 1469598103934665603ull;
 +	for (size_t i = 0; i < d->v.size(); i++) {
 +		const auto& v = d->v[i];
@@ -36902,6 +37841,7 @@ index 0000000..6118f2d
 +}
 +static void lzr_confirm(DState& S, LzrPass& pass, std::vector<uint32_t>& retired) {
 +	if (pass.done.empty() || !g_dev) return;
++	if (d432::on()) return; // exp 0432 (tag d432): the cut stands, the kernel retires the old mappings behind the jobs in flight
 +	if (g_dev->wait_idle(0)) return;
 +	uint64_t back = 0;
 +	size_t   n    = 0;
@@ -38159,12 +39099,24 @@ index 0000000..6118f2d
 +	LzrPass lzr = lzr_pass(S, views, sig, fd, now, merged, retired, remaps, merge_map_cap);
 +	// 2. the views' addresses: every (view, imported range) intersection is one GPU mapping
 +	const uint64_t t_drain0 = SoftCp::now_ns(); // experiment 0169
++	bool           d432_busy = false;           // exp 0432 (tag d432)
 +	g_dprof_merge_ns += t_drain0 - t_merge0;
 +	t_fs415_ds[2] += t_drain0 - t_merge0; // experiment 0415 (fs415d)
 +	if (bc5::load_stat::on()) bc5::load_stat::add(bc5::load_stat::kDsMerge, t_drain0 - t_merge0); // experiment 0415 (ls415c)
 +	if (!retired.empty() || sig != S.views_sig || guard0412_cap_changed(S) || (k1r412::on() && S.kind == 0 && S.bos.size() != S.bos_mapped)) { // exp 0412 (tag g412b; k1r412: covers are about to be unmapped and replaced)
-+		wait_jobs(); // mappings are about to go or be replaced
-+		g_dprof_drains++;
++		d432::g_rebuilds++;
++		if (d432::on()) { // exp 0432 (tag d432): no wait; the chain is flushed as wait_jobs() did first
++			chain_flush(5);
++			d432_busy = !g_dev->wait_idle(0); // a count only: was anything in flight
++			if (d432_busy) d432::g_busy++;
++		} else {
++			wait_jobs(); // mappings are about to go or be replaced
++			g_dprof_drains++;
++			const uint64_t w = SoftCp::now_ns() - t_drain0;
++			d432::g_drains++;
++			d432::g_drain_ns += w;
++			d432::maxed(d432::g_drain_max_ns, w);
++		}
 +	}
 +	const uint64_t t_maps0 = SoftCp::now_ns();
 +	g_dprof_drain_ns += t_maps0 - t_drain0;
@@ -38173,6 +39125,129 @@ index 0000000..6118f2d
 +	lzr_confirm(S, lzr, retired); // experiment 0401 series e7 (lzr): a cut stands only when every ring is idle after the drain
 +	uint32_t mapped = 0, unmapped = 0, map_failed = 0;
 +	if (sig != S.views_sig || S.bos.size() != S.bos_mapped || !retired.empty() || guard0412_cap_changed(S)) { // exp 0412 (tag g412b)
++		// exp 0432 (tag x432), BC5_DIRECT_MAPS_DIFF: see mkx432.py. x432_prev is the view list S.maps was made from;
++		// x432_plain says that rebuild's wanted list held the views' own mappings only (no zero buffer, no cover).
++		static std::shared_ptr<const DViews> x432_prev[2];
++		static bool                          x432_plain[2] = {false, false};
++		const int                            x432_k        = S.kind == 0 ? 0 : 1;
++		bool                                 x432_done     = false, x432_bad = false;
++		if (d432::maps_diff() != 0 && retired.empty() && S.bos.size() == S.bos_mapped && !guard0412_cap_changed(S) && !k1r412::on() && g_zskip.empty() && !zskip_new &&
++		    x432_plain[x432_k] && x432_prev[x432_k] != nullptr && x432_prev[x432_k]->sig == S.views_sig && x432_prev[x432_k]->sorted && views_p->sorted) {
++			const std::vector<DView>&                   ov = x432_prev[x432_k]->v;
++			std::vector<std::pair<uint64_t, uint64_t>> iv; // the changed views' address intervals; their starts never fall
++			std::vector<const DView*>                  nv; // the changed views of the new list, rising
++			const auto put = [&iv](uint64_t a, uint64_t e) {
++				if (!iv.empty() && a <= iv.back().second) {
++					if (e > iv.back().second) iv.back().second = e;
++				} else {
++					iv.emplace_back(a, e);
++				}
++			};
++			for (size_t i = 0, j = 0; i < ov.size() || j < views.size();) {
++				if (i < ov.size() && j < views.size() && ov[i].va == views[j].va && ov[i].size == views[j].size && ov[i].off == views[j].off) {
++					i++;
++					j++;
++				} else if (j >= views.size() || (i < ov.size() && ov[i].va < views[j].va)) {
++					put(ov[i].va, ov[i].va + ov[i].size);
++					i++;
++				} else if (i >= ov.size() || views[j].va < ov[i].va) {
++					put(views[j].va, views[j].va + views[j].size);
++					nv.push_back(&views[j]);
++					j++;
++				} else { // the same address, another size or offset
++					put(ov[i].va, ov[i].va + ov[i].size);
++					put(views[j].va, views[j].va + views[j].size);
++					nv.push_back(&views[j]);
++					i++;
++					j++;
++				}
++			}
++			const auto x432_want = [&S](const DView& v, std::vector<DMap>& out) {
++				const uint64_t vend = v.off + v.size;
++				auto it = std::upper_bound(S.bos.begin(), S.bos.end(), v.off, [](uint64_t o, const DBo& b) { return o < b.off; });
++				if (it != S.bos.begin()) --it;
++				for (; it != S.bos.end() && it->off < vend; ++it) {
++					const uint64_t lo = it->off > v.off ? it->off : v.off;
++					const uint64_t hi = it->off + it->size < vend ? it->off + it->size : vend;
++					if (lo >= hi) continue;
++					out.push_back({v.va + (lo - v.off), hi - lo, lo - it->off, it->id});
++				}
++			};
++			std::vector<DMap> want; // of the changed new views only; rising
++			for (const DView* v: nv) x432_want(*v, want);
++			std::vector<DMap> next;
++			next.reserve(S.maps.size() + want.size());
++			size_t q = 0, wk = 0;
++			for (const auto& m: S.maps) { // drop before adding (addresses get reused)
++				while (q < iv.size() && iv[q].second <= m.va) q++;
++				if (q >= iv.size() || m.va < iv[q].first) {
++					next.push_back(m); // under an unchanged view
++					continue;
++				}
++				while (wk < want.size() && want[wk].va < m.va) wk++;
++				if (wk < want.size() && want[wk] == m) {
++					next.push_back(m);
++				} else {
++					g_dev->unmap_shared(m.va);
++					unmapped++;
++				}
++			}
++			std::vector<DMap> added;
++			{
++				size_t k = 0;
++				for (const auto& w: want) {
++					while (k < next.size() && next[k].va < w.va) k++;
++					if (k < next.size() && next[k] == w) continue;
++					if (!g_scratch.empty()) scratch_release(w.va, w.va + w.size);
++					if (!g_zpieces.empty()) zskip_release(w.va, w.va + w.size);
++					if (g_dev->map_shared(w.id, w.bo_off, w.size, w.va)) {
++						added.push_back(w);
++						mapped++;
++					} else {
++						map_failed++;
++					}
++				}
++			}
++			if (!added.empty()) {
++				std::vector<DMap> merged_maps;
++				merged_maps.reserve(next.size() + added.size());
++				std::merge(next.begin(), next.end(), added.begin(), added.end(), std::back_inserter(merged_maps), [](const DMap& a, const DMap& b) { return a.va < b.va; });
++				next.swap(merged_maps);
++			}
++			S.maps.swap(next);
++			d432::g_x_diff++;
++			d432::g_x_views += nv.size();
++			if (d432::maps_diff() == 2 && map_failed == 0) { // the whole list the old way, compared
++				std::vector<DMap> all;
++				all.reserve(S.maps.size());
++				for (const auto& v: views) x432_want(v, all);
++				size_t at = 0;
++				while (at < all.size() && at < S.maps.size() && all[at] == S.maps[at]) at++;
++				if (at != all.size() || at != S.maps.size()) {
++					x432_bad = true;
++					d432::g_x_mismatch++;
++					static int logged = 0;
++					if (logged++ < 8) {
++						journal("exp 0432 (tag x432): MISMATCH: the mappings by diff (%zu) and the old rebuild's list (%zu) differ at index %zu; %zu views changed; the next sync rebuilds the old way\n",
++						        S.maps.size(), all.size(), at, nv.size());
++					}
++				}
++			}
++			x432_done = true;
++		}
++		if (!x432_done) {
++		d432::g_x_full++;
++		if (d432::maps_diff() != 0) { // result 7: X was never taken and nothing said why
++			const bool x432_c[11] = {!retired.empty(), S.bos.size() != S.bos_mapped, guard0412_cap_changed(S), k1r412::on(), !g_zskip.empty(), zskip_new, !x432_plain[x432_k],
++			                         x432_prev[x432_k] == nullptr, x432_prev[x432_k] != nullptr && x432_prev[x432_k]->sig != S.views_sig,
++			                         x432_prev[x432_k] != nullptr && !x432_prev[x432_k]->sorted, !views_p->sorted};
++			for (int x432_i = 0; x432_i < 11; x432_i++) {
++				if (x432_c[x432_i]) {
++					d432::g_x_why[x432_i]++;
++					break;
++				}
++			}
++		}
 +		std::vector<DMap> want;
 +		for (const auto& v: views) {
 +			const uint64_t vend = v.off + v.size;
@@ -38185,15 +39260,44 @@ index 0000000..6118f2d
 +				want.push_back({v.va + (lo - v.off), hi - lo, lo - it->off, it->id});
 +			}
 +		}
++		const size_t m432_n1 = want.size(); // exp 0432 (tag m432): the views' own mappings end here
 +		guard0412_want(S, views, want); // exp 0412 (tag g412b): the zero buffer under the views of put-off chunks
 +		k1r412_want(S, views, want, fd); // exp 0412 (tag k1r412; kl412: fd)
-+		std::sort(want.begin(), want.end(), [](const DMap& a, const DMap& b) { return a.va < b.va; });
++		// exp 0432 (tag m432), BC5_DIRECT_MAPS_FAST: the list is two runs that are nearly always in order already (the views'
++		// mappings, then the covers); they are merged instead of sorted when each run is strictly rising, and the result is
++		// taken only if it is strictly rising too (then it is the one order a sort can give). Otherwise the old sort.
++		const auto m432_less = [](const DMap& a, const DMap& b) { return a.va < b.va; };
++		const auto m432_rising = [&want](size_t from, size_t to) {
++			for (size_t i = from + 1; i < to; i++) {
++				if (want[i - 1].va >= want[i].va) return false;
++			}
++			return true;
++		};
++		bool m432_fast = d432::maps_fast() && m432_rising(0, m432_n1) && m432_rising(m432_n1, want.size());
++		if (m432_fast) {
++			std::inplace_merge(want.begin(), want.begin() + static_cast<std::ptrdiff_t>(m432_n1), want.end(), m432_less);
++			m432_fast = m432_rising(0, want.size());
++		}
++		if (!m432_fast) std::sort(want.begin(), want.end(), m432_less);
++		(m432_fast ? d432::g_maps_fast : d432::g_maps_sorted)++;
 +		const uint64_t    t_want = SoftCp::now_ns(); // experiment 0169
 +		g_dprof_want_ns += t_want - t_maps0;
 +		std::vector<DMap> next;
 +		next.reserve(want.size());
++		size_t   m432_k    = 0; // exp 0432 (tag m432)
++		uint64_t m432_prev = 0;
 +		for (const auto& m: S.maps) { // drop what no view asks for any more, before adding (addresses get reused)
-+			const auto w = std::lower_bound(want.begin(), want.end(), m.va, [](const DMap& a, uint64_t va) { return a.va < va; });
++			// exp 0432 (tag m432): both lists rise by address, so the place of m in `want` only moves forward; a step back in
++			// S.maps (never seen) takes the old search
++			auto w = want.end();
++			if (m432_fast && m.va >= m432_prev) {
++				while (m432_k < want.size() && want[m432_k].va < m.va) m432_k++;
++				w = want.begin() + static_cast<std::ptrdiff_t>(m432_k);
++			} else {
++				w = std::lower_bound(want.begin(), want.end(), m.va, [](const DMap& a, uint64_t va) { return a.va < va; });
++				m432_k = static_cast<size_t>(w - want.begin());
++			}
++			m432_prev = m.va;
 +			if (w != want.end() && *w == m) {
 +				next.push_back(m);
 +			} else {
@@ -38241,15 +39345,27 @@ index 0000000..6118f2d
 +		}
 +		g_dprof_scratch_ns += scratch_ns;
 +		g_dprof_add_ns += SoftCp::now_ns() - t_drop - scratch_ns;
++		x432_plain[x432_k] = m432_n1 == want.size(); // exp 0432 (tag x432)
 +		S.maps.swap(next);
++		} // exp 0432 (tag x432): the old rebuild ends here
 +		if (S.kind == 0 && (zskip_new || sig != S.views_sig)) zskip_map(views); // experiment 0379
 +		S.views_sig  = sig;
 +		S.bos_mapped = map_failed == 0 ? S.bos.size() : 0; // a failure is retried at the next sync
++		x432_prev[x432_k] = views_p; // exp 0432 (tag x432)
++		if (x432_bad) { // the next sync takes the old rebuild, which drops and adds until the lists agree
++			x432_prev[x432_k].reset();
++			S.bos_mapped = 0;
++		}
 +	}
 +	g_dprof_maps_ns += SoftCp::now_ns() - t_maps0; // experiment 0169
 +	t_fs415_ds[4] += SoftCp::now_ns() - t_maps0; // experiment 0415 (fs415d)
 +	if (bc5::load_stat::on()) bc5::load_stat::add(bc5::load_stat::kDsMaps, SoftCp::now_ns() - t_maps0); // experiment 0415 (ls415c)
 +	if (imported != 0) S.blocks = ~0ull; // pinning may have allocated pages: look once more
++	d432::g_unmaps += unmapped; // exp 0432 (tag d432)
++	if (d432_busy) {
++		d432::g_unmaps_busy += unmapped;
++		d432::g_bos_busy += retired.size();
++	}
 +	for (const uint32_t id: retired) g_dev->free_shared(id);
 +	guard0412_after_cuts(lzr.done.size()); // exp 0412 (tag g412c): BC5_GUARD_SPLIT
 +	guard0412_synced(S); // exp 0412 (tag g412b): the ledger's view of what is imported
@@ -38335,16 +39451,24 @@ index 0000000..6118f2d
 +// What "thread" gives up: an anonymous guest VMA that appears is walked at the first call after the thread's next pass
 +// instead of at once for an urgent call (operands on it are dropped by the filter until then, as they are today for a
 +// non-urgent call for up to a second). So it stays off until "verify" shows no miss.
++//   "events" (tag as415c, DESIGN-lock-side.md section 8): no thread and no read on a schedule. The host's map and
++//             protect sites count the calls that can make anonymous memory readable in the guest's span
++//             (bc5::anon_sync::note). A call here walks at once, whatever the time limits say, when that counter has
++//             moved since the last walk read it, after -EFAULT and after a device reopen; it leaves the walk out when
++//             the counter has not moved and the last walk found no anonymous guest VMA; while such a VMA exists the
++//             walk keeps its old timing (its pages become resident without any call). "verify" counts what this rule
++//             would have missed (anon_ev_miss) and how often the counter moves (anon_events).
 +static std::mutex              g_as415_mu;
 +static std::condition_variable g_as415_cv;
 +static uint64_t                g_as415_sig    = 0;     // the thread's last pass: its signature
 +static uint64_t                g_as415_walk_sig   = 0; // the last walk's signature (the submission path, under the device mutex)
 +static bool                    g_as415_walk_valid = false;
++static uint64_t                g_as415_walk_ev    = 0; // as415c: the map/protect counter as the last walk read it (before its read of the maps)
 +static uint64_t                g_as415_passes = 0;     // passes finished
 +static bool                    g_as415_kick   = false; // an urgent call asks for a pass now
 +
 +static int as415_mode() {
-+	static const int mode = bc5::anon_sync::mode_of(BC5_DIAG_ENV("KYTY_BC5_ANON_SYNC")) != 0 ? 1 : 0; // exp 0419 phase 2: verify only
++	static const int mode = d432::anon_events() ? 3 : (bc5::anon_sync::mode_of(BC5_DIAG_ENV("KYTY_BC5_ANON_SYNC")) != 0 ? 1 : 0); // exp 0419 phase 2: verify only; exp 0432 (tag a432): BC5_DIRECT_ANON_EVENTS is "events"
 +	return mode;
 +}
 +
@@ -38389,6 +39513,20 @@ index 0000000..6118f2d
 +	}
 +}
 +
++// exp 0432 (tag w432): see mkt432.py, item W
++static std::atomic<bool>     g_w432_found {false};
++static std::atomic<uint64_t> g_w432_passes {0};
++static void w432_thread() {
++	pthread_setname_np(pthread_self(), "bc5-anonchk");
++	for (;;) {
++		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
++		std::vector<Vma> vmas;
++		anon_vmas_read(&vmas);
++		g_w432_passes++;
++		if (!vmas.empty()) g_w432_found.store(true, std::memory_order_release);
++	}
++}
++
 +// force: before a submission whose shaders may read memory the filter does not see. With the
 +// direct memory on the dma-buf path (ADR 0006) what is left here are the anonymous VMAs (module
 +// data, stacks, flexible memory), walked through /proc/self/maps and mincore — 0.9 ms a call,
@@ -38397,32 +39535,66 @@ index 0000000..6118f2d
 +// operand of the IB is unmapped, -EFAULT from a submission) always walk.
 +static void sync_mappings(bool force = false, bool urgent = false, bool must = false) { // must (exp 0415, as415): after -EFAULT, never left out
 +	const uint64_t now = SoftCp::now_ns();
-+	if (!force && now - g_last_sync_ns < 50'000'000ull) { // at most every 50 ms
++	// Experiment 0415 (as415, as415c), KYTY_BC5_ANON_SYNC: see as415_thread.
++	const int      as_mode       = as415_mode();
++	const uint64_t as_ev         = bc5::anon_sync::events().load(std::memory_order_acquire); // read BEFORE the maps are read
++	const bool     as_ev_moved   = bc5::anon_sync::events_moved(as_ev, g_as415_walk_ev, g_as415_walk_valid);
++	const bool     as_prev_empty = g_vmas.empty();
++	bool           as_ev_now     = false; // "events": this call walks whatever the time limits say
++	if (as_mode == 1) { // "verify": how many calls "events" would turn into walks
++		static uint64_t seen_ev = 0;
++		if (as_ev != seen_ev) {
++			seen_ev = as_ev;
++		}
++	}
++	if (as_mode == 3) {
++		if (!must && bc5::anon_sync::events_skip(as_ev_moved, as_prev_empty)) {
++			if (urgent) bc5::load_stat::count(bc5::load_stat::kAnonUrgent);
++			d432::g_anon_skips++; // exp 0432
++			t_fs415_ds[7] |= urgent ? 6 : 4;
++			return;
++		}
++		as_ev_now = must || as_ev_moved;
++	}
++	if (d432::anon_thread() && as_mode != 3 && !urgent && !must) { // exp 0432 (tag w432)
++		if (g_w432_found.exchange(false, std::memory_order_acq_rel)) {
++			as_ev_now = true; // the thread saw an anonymous guest VMA: walk now, whatever the time limits say
++		} else if (g_last_sync_ns != 0 && g_as415_walk_valid && as_prev_empty && Libs::LibKernel::Memory::Bc5PrivateMemoryFd() >= 0) {
++			static std::once_flag w432_once;
++			std::call_once(w432_once, [] { std::thread(w432_thread).detach(); });
++			d432::g_anon_skips++;
++			return;
++		}
++	}
++	if (!as_ev_now && !force && now - g_last_sync_ns < 50'000'000ull) { // at most every 50 ms
 +		return;
 +	}
 +	static constexpr uint64_t anon_min_ns = 100ull * 1'000'000ull;
-+	if (force && !urgent && g_last_sync_ns != 0 && now - g_last_sync_ns < anon_min_ns) {
++	if (!as_ev_now && force && !urgent && g_last_sync_ns != 0 && now - g_last_sync_ns < anon_min_ns) {
 +		return;
 +	}
 +	// With private guest memory in a file as well (experiment 0023) the walk should find nothing
 +	// anonymous in the guest's range; it stays as a check, once a second.
-+	if (!urgent && g_last_sync_ns != 0 && Libs::LibKernel::Memory::Bc5PrivateMemoryFd() >= 0 && now - g_last_sync_ns < 1'000'000'000ull) {
++	if (!as_ev_now && !urgent && g_last_sync_ns != 0 && Libs::LibKernel::Memory::Bc5PrivateMemoryFd() >= 0 && now - g_last_sync_ns < 1'000'000'000ull) {
 +		return;
 +	}
 +	g_last_sync_ns = now;
-+	// Experiment 0415 (as415), KYTY_BC5_ANON_SYNC: see as415_thread.
-+	const int as_mode    = as415_mode();
-+	bool      as_skip_ok = false;
++	bool as_skip_ok = false;
++	if (as_ev_moved) d432::g_anon_ev++; // exp 0432: walks that the map/protect counter asked for
++	d432::g_anon_walks++;
 +	if (urgent) {
 +		bc5::load_stat::count(bc5::load_stat::kAnonUrgent);
 +		t_fs415_ds[7] |= 2;
 +	}
-+	if (as_mode != 0) {
++	if (as_mode == 1 || as_mode == 2) { // "events" has no thread
 +		static std::once_flag once;
 +		std::call_once(once, [] { std::thread(as415_thread).detach(); });
 +		std::lock_guard lk(g_as415_mu);
 +		as_skip_ok = bc5::anon_sync::can_skip(g_as415_passes, g_as415_sig, g_as415_walk_valid, g_as415_walk_sig);
-+		if (urgent && !g_as415_kick) {
++		// KYTY_BC5_ANON_SYNC_KICK=0 (as415b, a measuring knob): urgent calls do not wake the thread, so that with a long
++		// KYTY_BC5_ANON_SYNC_MS the cost of the thread's own reads can be told from the rest.
++		static const bool kick = bc5::load_stat::env_num("KYTY_BC5_ANON_SYNC_KICK", 1, 1) != 0;
++		if (urgent && kick && !g_as415_kick) {
 +			g_as415_kick = true;
 +			g_as415_cv.notify_one();
 +		}
@@ -38446,6 +39618,7 @@ index 0000000..6118f2d
 +		g_layout_gen++;
 +	}
 +	g_vmas = vmas;
++	d432::g_anon_vmas = vmas.size(); // exp 0432
 +	// exp 0419 phase 2: KYTY_BC5_VMA_FAST is gone; the walk over every VMA, as when it was unset
 +	auto inside_vma = [&](uint64_t a, uint64_t b, bool readonly) { return bc5::sync_fast::inside_old(vmas, a, b, readonly); };
 +
@@ -38580,8 +39753,17 @@ index 0000000..6118f2d
 +	const bool as_same = g_as415_walk_valid && g_as415_walk_sig == as_sig; // experiment 0415 (as415)
 +	g_as415_walk_sig   = as_sig;
 +	g_as415_walk_valid = true;
++	g_as415_walk_ev    = as_ev;
 +	if (as_mode != 0 && (as_changed || added != 0 || removed != 0 || !as_same)) {
 +		bc5::load_stat::count(bc5::load_stat::kAnonNeeded, vmas.size());
++		if (as_mode == 1 && !must && bc5::anon_sync::events_skip(as_ev_moved, as_prev_empty)) { // as415c: "events" would have left this walk out
++			d432::g_anon_ev_miss++; // exp 0432
++			static int ev_logged = 0;
++			if (ev_logged++ < 8) {
++				journal("anon sync (exp 0415, as415c): EVENT MISS: %zu VMAs, list %s, signature %s, +%d -%d mappings, %s, while the map/protect counter stood at %" PRIu64 " and the list before was empty: a site is not counted\n",
++				        vmas.size(), as_changed ? "changed" : "same", as_same ? "same" : "changed", added, removed, urgent ? "urgent" : "not urgent", as_ev);
++			}
++		}
 +		if (as_skip_ok) {
 +			bc5::load_stat::count(bc5::load_stat::kAnonMiss);
 +			static int logged = 0;
@@ -48450,6 +49632,35 @@ index 0000000..6118f2d
 +	}
 +	hint_targets(ib, num_dwords);
 +	const uint64_t t2 = SoftCp::now_ns();
++#ifndef BC5_LEAN
++	{ // exp 0432: the sync + hints part of every submission ("prepare" here), and the counters at most every 10 s
++		d432::g_sync_ns += t2 - t0;
++		d432::maxed(d432::g_prep_max_ns, t2 - t0);
++		if (t2 - t0 > 20'000'000ull) d432::g_prep_over20++;
++		uint64_t was = d432::g_last_ns.load(std::memory_order_relaxed);
++		if (t2 - was >= 10'000'000'000ull && d432::g_last_ns.compare_exchange_strong(was, t2)) {
++			char line[1600];
++			std::snprintf(line, sizeof(line),
++			              "exp 0432 (tag d432): t %.1f s: unmap-nowait %s, anon-events %s, anon-thread %s, views-kept %s; sync+hints of all submissions %.1f s, longest %.1f ms, over 20 ms %" PRIu64
++			              "; rebuilds that change mappings %" PRIu64 ", with a ring busy %" PRIu64 "; mappings dropped %" PRIu64 ", while busy %" PRIu64 ", BOs retired while busy %" PRIu64
++			              "; blocking drains %" PRIu64 ", %.1f ms in all, longest %.1f ms; anon walks %" PRIu64 " (asked by the counter %" PRIu64 "), left out %" PRIu64 ", event misses %" PRIu64
++			              ", anonymous guest VMAs %" PRIu64 "; view builds %" PRIu64 ", list copies %" PRIu64 ", record mismatches %" PRIu64 "; maps-fast %s: merged %" PRIu64 ", sorted %" PRIu64 "; maps-diff %s: by diff %" PRIu64 ", the old way %" PRIu64 ", views changed %" PRIu64 ", mismatches %" PRIu64
++			              " (the old way because: retired %" PRIu64 ", new BOs %" PRIu64 ", cap %" PRIu64 ", k1r %" PRIu64 ", zero list %" PRIu64 ", zero new %" PRIu64
++			              ", not plain %" PRIu64 ", no list %" PRIu64 ", sig %" PRIu64 ", old unsorted %" PRIu64 ", new unsorted %" PRIu64 ")",
++			              timing_now(), d432::on() ? "ON" : "off", d432::anon_events() ? "ON" : "off", d432::anon_thread() ? "ON" : "off", d432::views_kept() ? "ON" : "off",
++			              static_cast<double>(d432::g_sync_ns.load()) / 1e9, static_cast<double>(d432::g_prep_max_ns.load()) / 1e6, d432::g_prep_over20.load(), d432::g_rebuilds.load(),
++			              d432::g_busy.load(), d432::g_unmaps.load(), d432::g_unmaps_busy.load(), d432::g_bos_busy.load(), d432::g_drains.load(),
++			              static_cast<double>(d432::g_drain_ns.load()) / 1e6, static_cast<double>(d432::g_drain_max_ns.load()) / 1e6, d432::g_anon_walks.load(), d432::g_anon_ev.load(),
++			              d432::g_anon_skips.load(), d432::g_anon_ev_miss.load(), d432::g_anon_vmas.load(), static_cast<uint64_t>(g_views_builds), d432::g_views_clone.load(),
++			              d432::g_rec_mismatch.load(), d432::maps_fast() ? "ON" : "off", d432::g_maps_fast.load(), d432::g_maps_sorted.load(),
++			              d432::maps_diff() == 2 ? "VERIFY" : d432::maps_diff() == 1 ? "ON" : "off", d432::g_x_diff.load(), d432::g_x_full.load(), d432::g_x_views.load(),
++			              d432::g_x_mismatch.load(), d432::g_x_why[0].load(), d432::g_x_why[1].load(), d432::g_x_why[2].load(), d432::g_x_why[3].load(), d432::g_x_why[4].load(),
++			              d432::g_x_why[5].load(), d432::g_x_why[6].load(), d432::g_x_why[7].load(), d432::g_x_why[8].load(), d432::g_x_why[9].load(), d432::g_x_why[10].load());
++			std::fprintf(stderr, "[bc5] %s\n", line);
++			journal("%s\n", line);
++		}
++	}
++#endif
 +	if (bc5::load_stat::on()) { // experiment 0415 (ls415c): the hold by part
 +		bc5::load_stat::add(bc5::load_stat::kHoldProbe, ta - t0);
 +		bc5::load_stat::add(bc5::load_stat::kHoldHints, t2 - tc);
@@ -49220,6 +50431,13 @@ index 0000000..6118f2d
 +		r       = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, true, qring);
 +		mec_back(r.executed_offsets);
 +		fl_back(r.executed_offsets); // experiment 0404
++	}
++	if (!r.ok && !r.timed_out && !r.pending && r.rc != 0 && d432::refused_ends()) { // exp 0432 (tag r432)
++		journal("exp 0432 (tag r432): submit #%" PRIu64 " %s %u dwords on ring %d was REFUSED by the device (rc %d%s): a host bug; the game ends here with a record\n", n, kind, num_dwords,
++		        qring, r.rc, retried ? ", after the -EFAULT retry" : "");
++		std::fprintf(stderr, "[bc5] exp 0432 (tag r432): submit #%" PRIu64 " %s %u dwords on ring %d was REFUSED by the device (rc %d): the game ends here with a record\n", n, kind,
++		             num_dwords, qring, r.rc);
++		fr412_record_and_exit(0, 0, false, r.rc);
 +	}
 +	if (!catch_slots.empty() && (r.timed_out || !r.pending)) catch_check(catch_slots, r.timed_out, n, kind); // experiment 0401 series e
 +	if (r.timed_out && fl_plan.crumbs) fl_probe(fl_plan, n, kind, true); // experiment 0404: first, before the long probe
@@ -53306,7 +54524,7 @@ index 5b0fc93..5b78760 100644
  	LOGF("\t target = %d\n"
  	     "\t msg    = 0x%016" PRIx64 "\n",
 diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
-index 073361d..47cd905 100644
+index 073361d..4163fe4 100644
 --- a/src/libs/libAmpr.cpp
 +++ b/src/libs/libAmpr.cpp
 @@ -1,3 +1,6 @@
@@ -53316,7 +54534,7 @@ index 073361d..47cd905 100644
  #include "common/abi.h"
  #include "common/dateTime.h"
  #include "common/file.h"
-@@ -11,14 +14,28 @@
+@@ -11,14 +14,29 @@
  #include "loader/symbolDatabase.h"
  
  #include <algorithm>
@@ -53340,12 +54558,13 @@ index 073361d..47cd905 100644
  #include <vector>
 +#include <sys/mman.h> // experiment 0401 series e4: mprotect of the AMM PRT zero pages
 +#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
++#include "bc5/anon_sync.hpp" // experiment 0415 (as415c)
 +#include "bc5/apr_posix.hpp" // experiment 0415 (ls415b/c): KYTY_BC5_APR_POSIX
 +#include "bc5/setbuffer_test.hpp" // experiment 0417: the gate of the set-buffer test hook (0 in shared builds)
  
  #ifdef min
  #undef min
-@@ -27,6 +44,92 @@
+@@ -27,6 +45,92 @@
  #undef max
  #endif
  
@@ -53438,7 +54657,7 @@ index 073361d..47cd905 100644
  namespace Libs {
  
  namespace AprShared {
-@@ -41,6 +144,7 @@ struct SubmissionState {
+@@ -41,6 +145,7 @@ struct SubmissionState {
  	uint64_t result           = 0;
  	int32_t  execution_result = 0;
  	uint32_t error_offset     = 0;
@@ -53446,7 +54665,7 @@ index 073361d..47cd905 100644
  };
  
  struct ResolvedPathInfo {
-@@ -54,6 +158,7 @@ struct ResolvedPathInfo {
+@@ -54,6 +159,7 @@ struct ResolvedPathInfo {
  static std::mutex                                        g_mutex;
  static uint32_t                                          g_next_submission_id = 1;
  static std::unordered_map<uint32_t, SubmissionState>     g_submissions;
@@ -53454,7 +54673,7 @@ index 073361d..47cd905 100644
  static std::unordered_map<uint32_t, std::string>         g_files;
  static std::unordered_map<uint32_t, uint64_t>            g_file_sizes;
  static std::unordered_map<std::string, ResolvedPathInfo> g_resolved_paths;
-@@ -468,12 +573,23 @@ static void SetSubmissionResult(uint32_t submission_id, int32_t execution_result
+@@ -468,12 +574,23 @@ static void SetSubmissionResult(uint32_t submission_id, int32_t execution_result
  	if (it != g_submissions.end()) {
  		it->second.execution_result = execution_result;
  		it->second.error_offset     = error_offset;
@@ -53480,7 +54699,7 @@ index 073361d..47cd905 100644
  	if (it == g_submissions.end()) {
  		return false;
  	}
-@@ -501,7 +617,8 @@ static int WriteResult(void* result, int32_t execution_result = 0, uint32_t erro
+@@ -501,7 +618,8 @@ static int WriteResult(void* result, int32_t execution_result = 0, uint32_t erro
  
  namespace LibAmpr::Ampr {
  static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_result,
@@ -53490,7 +54709,7 @@ index 073361d..47cd905 100644
  }
  
  namespace LibKernelApr {
-@@ -667,7 +784,7 @@ static int KYTY_SYSV_ABI ResolveFilepathsWithPrefixToIdsAndFileSizesForEach(
+@@ -667,7 +785,7 @@ static int KYTY_SYSV_ABI ResolveFilepathsWithPrefixToIdsAndFileSizesForEach(
  	    AprShared::ResolvePathsCommon(path_list, count, ids, sizes, nullptr, prefix_buf, results));
  }
  
@@ -53499,7 +54718,7 @@ index 073361d..47cd905 100644
                                                           void*     result,
                                                           uint32_t* out_submission_id) {
  	PRINT_NAME();
-@@ -683,11 +800,10 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
+@@ -683,11 +801,10 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto submit_result = LibAmpr::Ampr::ExecuteAprCommandBuffer(command_buffer_addr,
@@ -53512,7 +54731,7 @@ index 073361d..47cd905 100644
  
  	if (out_submission_id != nullptr) {
  		if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
-@@ -698,7 +814,7 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
+@@ -698,7 +815,7 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
  	return KernelSyscallResult(AprShared::WriteResult(result, execution_result, error_offset));
  }
  
@@ -53521,7 +54740,7 @@ index 073361d..47cd905 100644
  	PRINT_NAME();
  
  	if (command_buffer == nullptr) {
-@@ -708,10 +824,11 @@ static int KYTY_SYSV_ABI SubmitCommandBuffer(void* command_buffer, uint64_t) {
+@@ -708,10 +825,11 @@ static int KYTY_SYSV_ABI SubmitCommandBuffer(void* command_buffer, uint64_t) {
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	return KernelSyscallResult(LibAmpr::Ampr::ExecuteAprCommandBuffer(
@@ -53535,7 +54754,7 @@ index 073361d..47cd905 100644
                                                       uint32_t* out_submission_id) {
  	PRINT_NAME();
  
-@@ -725,11 +842,10 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetId(void*     command_buffer, u
+@@ -725,11 +843,10 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetId(void*     command_buffer, u
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto submit_result = LibAmpr::Ampr::ExecuteAprCommandBuffer(command_buffer_addr,
@@ -53548,7 +54767,7 @@ index 073361d..47cd905 100644
  
  	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
  		return KernelSyscallResult(LibKernel::KERNEL_ERROR_EFAULT);
-@@ -816,7 +932,11 @@ constexpr int      PROT_AMPR_READ                = 0x40;
+@@ -816,7 +933,11 @@ constexpr int      PROT_AMPR_READ                = 0x40;
  constexpr int      PROT_AMPR_WRITE               = 0x80;
  constexpr int      PROT_ACP_READ                 = 0x100;
  constexpr int      PROT_ACP_WRITE                = 0x200;
@@ -53561,7 +54780,7 @@ index 073361d..47cd905 100644
  constexpr uint64_t AMM_VA_SIZE                   = 0x0000001000000000ull;
  constexpr uint64_t APR_MAX_READ_LENGTH           = 0x0000000100000000ull;
  constexpr uint64_t APR_MAX_FILE_OFFSET           = 0x0000010000000000ull;
-@@ -829,6 +949,15 @@ enum class AmmCommandKind : uint32_t {
+@@ -829,6 +950,15 @@ enum class AmmCommandKind : uint32_t {
  	MapAuto,
  	MapDirect,
  	Unmap,
@@ -53577,7 +54796,7 @@ index 073361d..47cd905 100644
  };
  
  struct CommandBufferState {
-@@ -855,6 +984,13 @@ struct CommandBufferState {
+@@ -855,6 +985,13 @@ struct CommandBufferState {
  		uint64_t address       = 0;
  		uint64_t value         = 0;
  	};
@@ -53591,7 +54810,7 @@ index 073361d..47cd905 100644
  	struct AmmMapCommand {
  		uint64_t       record_offset = 0;
  		AmmCommandKind kind          = AmmCommandKind::MapAuto;
-@@ -864,21 +1000,44 @@ struct CommandBufferState {
+@@ -864,21 +1001,44 @@ struct CommandBufferState {
  		int32_t        type          = 0;
  		int32_t        prot          = 0;
  		uint8_t        gpu_mask_id   = 0;
@@ -53640,7 +54859,7 @@ index 073361d..47cd905 100644
  };
  
  struct AmmVirtualAddressRanges {
-@@ -902,7 +1061,8 @@ static std::mutex                                       g_command_buffer_mutex;
+@@ -902,7 +1062,8 @@ static std::mutex                                       g_command_buffer_mutex;
  static std::unordered_map<uint64_t, CommandBufferState> g_command_buffers;
  static std::unordered_map<uint64_t, uint64_t>           g_command_buffer_aliases;
  static std::mutex                                       g_amm_auto_pool_mutex;
@@ -53650,7 +54869,7 @@ index 073361d..47cd905 100644
  using CommandBufferIterator = std::unordered_map<uint64_t, CommandBufferState>::iterator;
  
  static bool HasQueuedCommands(const CommandBufferState& state) {
-@@ -925,6 +1085,12 @@ static void RegisterCommandBufferAliasLocked(uint64_t command_buffer, uint64_t b
+@@ -925,6 +1086,12 @@ static void RegisterCommandBufferAliasLocked(uint64_t command_buffer, uint64_t b
  }
  
  static void EraseCommandBufferStateLocked(uint64_t command_buffer) {
@@ -53663,7 +54882,7 @@ index 073361d..47cd905 100644
  	g_command_buffers.erase(command_buffer);
  	for (auto it = g_command_buffer_aliases.begin(); it != g_command_buffer_aliases.end();) {
  		if (it->first == command_buffer || it->second == command_buffer) {
-@@ -1078,6 +1244,16 @@ static uint64_t AprReadFileRecordSize(uint64_t file_offset) {
+@@ -1078,6 +1245,16 @@ static uint64_t AprReadFileRecordSize(uint64_t file_offset) {
  	return (file_offset >> 32u) != 0 ? READ_FILE_RECORD_SIZE_EXT : READ_FILE_RECORD_SIZE;
  }
  
@@ -53680,7 +54899,7 @@ index 073361d..47cd905 100644
  static uint64_t AprReadGatherRecordSize(uint64_t file_offset) {
  	return file_offset > 0x3ffffu ? READ_GATHER_RECORD_SIZE_EXT : READ_GATHER_RECORD_SIZE;
  }
-@@ -1151,6 +1327,8 @@ static bool WriteCommandBufferPointers(uint64_t command_buffer, uint64_t buffer,
+@@ -1151,6 +1328,8 @@ static bool WriteCommandBufferPointers(uint64_t command_buffer, uint64_t buffer,
  	state.kernel_event_commands.clear();
  	state.write_address_commands.clear();
  	state.amm_map_commands.clear();
@@ -53689,7 +54908,7 @@ index 073361d..47cd905 100644
  	state.gather_scatter_valid       = false;
  	state.gather_scatter_file_id     = 0;
  	state.gather_scatter_destination = 0;
-@@ -1256,6 +1434,9 @@ static bool AppendReadFileRecord(uint64_t command_buffer, uint8_t opcode, uint32
+@@ -1256,6 +1435,9 @@ static bool AppendReadFileRecord(uint64_t command_buffer, uint8_t opcode, uint32
  	            static_cast<size_t>(record_size));
  	std::memcpy(reinterpret_cast<void*>(state.buffer + record_offset), &opcode, sizeof(opcode));
  	state.read_file_commands.push_back({record_offset, file_id, destination, size, file_offset});
@@ -53699,7 +54918,7 @@ index 073361d..47cd905 100644
  	if (!CommitCommandBufferRecord(command_buffer, &state, record_size)) {
  		return false;
  	}
-@@ -1294,7 +1475,12 @@ static bool AppendKernelEventRecord(uint64_t command_buffer, uint64_t eq, int32_
+@@ -1294,7 +1476,12 @@ static bool AppendKernelEventRecord(uint64_t command_buffer, uint64_t eq, int32_
  	std::memcpy(reinterpret_cast<void*>(state.buffer + record_offset), record.data(),
  	            record.size());
  	state.kernel_event_commands.push_back({record_offset, eq, id, data});
@@ -53713,7 +54932,7 @@ index 073361d..47cd905 100644
  }
  
  static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address, uint64_t value,
-@@ -1314,7 +1500,37 @@ static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address,
+@@ -1314,7 +1501,37 @@ static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address,
  	std::memset(reinterpret_cast<void*>(state.buffer + record_offset), 0,
  	            static_cast<size_t>(record_size));
  	state.write_address_commands.push_back({record_offset, address, value});
@@ -53752,7 +54971,7 @@ index 073361d..47cd905 100644
  }
  
  static bool ValidateAmmMapArgs(uint64_t va, uint64_t size) {
-@@ -1358,26 +1574,383 @@ static int NormalizeAmmProtection(int prot) {
+@@ -1358,26 +1575,383 @@ static int NormalizeAmmProtection(int prot) {
  	return normalized;
  }
  
@@ -54144,7 +55363,7 @@ index 073361d..47cd905 100644
  		return false;
  	}
  
-@@ -1385,21 +1958,181 @@ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t
+@@ -1385,21 +1959,181 @@ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t
  	return true;
  }
  
@@ -54332,7 +55551,7 @@ index 073361d..47cd905 100644
  }
  
  static bool AppendAmmMapRecord(uint64_t                                 command_buffer,
-@@ -1425,68 +2158,194 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
+@@ -1425,68 +2159,194 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
  
  static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offset,
                                 uint64_t destination, uint64_t size, uint64_t* bytes_read);
@@ -54579,7 +55798,7 @@ index 073361d..47cd905 100644
  				const auto& command = state.read_file_commands[entry.index];
  				std::string host_path;
  				if (!AprShared::TryGetHostPath(command.file_id, &host_path)) {
-@@ -1494,56 +2353,131 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1494,56 +2354,131 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     command.file_id);
  					*execution_result = LibKernel::KERNEL_ERROR_ENOENT;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -54720,7 +55939,7 @@ index 073361d..47cd905 100644
  					LOGF("\tAMM submit command failed: kind=%u va=0x%016" PRIx64
  					     " dmem=0x%016" PRIx64 " size=0x%016" PRIx64 " type=%" PRId32
  					     " prot=0x%08" PRIx32 " result=0x%08" PRIx32 "\n",
-@@ -1552,24 +2486,469 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1552,24 +2487,469 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     static_cast<uint32_t>(result));
  					*execution_result = result;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -55199,7 +56418,7 @@ index 073361d..47cd905 100644
  		return false;
  	}
  
-@@ -1583,6 +2962,8 @@ static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offse
+@@ -1583,6 +2963,8 @@ static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offse
  	if (bytes_read == nullptr) {
  		return LibKernel::KERNEL_ERROR_EINVAL;
  	}
@@ -55208,7 +56427,7 @@ index 073361d..47cd905 100644
  
  	*bytes_read = 0;
  	if (size == 0) {
-@@ -1592,6 +2973,18 @@ static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offse
+@@ -1592,6 +2974,18 @@ static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offse
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
@@ -55227,7 +56446,7 @@ index 073361d..47cd905 100644
  	Common::File file;
  	if (!file.Open(host_path, Common::File::Mode::Read)) {
  		LOGF("\tAPR read missing host file: %s\n", host_path.c_str());
-@@ -1678,13 +3071,186 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
+@@ -1678,13 +3072,186 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
  	return OK;
  }
  
@@ -55415,7 +56634,7 @@ index 073361d..47cd905 100644
  	const auto command_buffer_addr = reinterpret_cast<uint64_t>(command_buffer);
  	if (!ValidateCommandBufferHeader(command_buffer_addr)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -1767,15 +3333,25 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
+@@ -1767,15 +3334,25 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
  	PRINT_NAME();
  
  	const auto destination_addr = reinterpret_cast<uint64_t>(destination);
@@ -55447,7 +56666,7 @@ index 073361d..47cd905 100644
  }
  
  static uint64_t AlignUp4(uint64_t value) {
-@@ -1811,11 +3387,11 @@ static uint64_t KYTY_SYSV_ABI MeasureCommandSizeFixed32(uint64_t, uint64_t, uint
+@@ -1811,11 +3388,11 @@ static uint64_t KYTY_SYSV_ABI MeasureCommandSizeFixed32(uint64_t, uint64_t, uint
  	return 0x20;
  }
  
@@ -55462,7 +56681,7 @@ index 073361d..47cd905 100644
  }
  
  static uint64_t KYTY_SYSV_ABI
-@@ -2111,27 +3687,45 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
+@@ -2111,27 +3688,45 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
  	return AppendNoOpCommand(command_buffer, sizeof(uint32_t));
  }
  
@@ -55515,7 +56734,7 @@ index 073361d..47cd905 100644
  	           ? OK
  	           : LibKernel::KERNEL_ERROR_EBUSY;
  }
-@@ -2139,8 +3733,12 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
+@@ -2139,8 +3734,12 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
  static int KYTY_SYSV_ABI CommandBufferWriteAddress(void* command_buffer, volatile uint64_t* address,
                                                     uint64_t value, uint32_t) {
  	PRINT_NAME();
@@ -55529,7 +56748,7 @@ index 073361d..47cd905 100644
  }
  
  static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*              command_buffer,
-@@ -2148,12 +3746,15 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*
+@@ -2148,12 +3747,15 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*
                                                                 uint64_t           value) {
  	PRINT_NAME();
  
@@ -55548,7 +56767,7 @@ index 073361d..47cd905 100644
  
  	return AppendNoOpCommand(command_buffer, 0x20);
  }
-@@ -2170,44 +3771,56 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromTimeCounter(void*
+@@ -2170,44 +3772,56 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromTimeCounter(void*
                                                                    uint32_t) {
  	PRINT_NAME();
  
@@ -55616,7 +56835,7 @@ index 073361d..47cd905 100644
  }
  
  static int KYTY_SYSV_ABI AprCommandBufferReadFileGather(void*    command_buffer, uint64_t, uint64_t,
-@@ -2314,15 +3927,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
+@@ -2314,15 +3928,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
  	return OK;
  }
  
@@ -55646,7 +56865,7 @@ index 073361d..47cd905 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2333,7 +3958,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
+@@ -2333,7 +3959,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
  
  static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, uint64_t va,
                                                          uint64_t dmem_offset, uint64_t size,
@@ -55655,7 +56874,7 @@ index 073361d..47cd905 100644
  	PRINT_NAME();
  
  	if (command_buffer == nullptr || !ValidateAmmMapArgs(va, size) ||
-@@ -2341,7 +3966,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
+@@ -2341,7 +3967,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
  		return LibKernel::KERNEL_ERROR_EINVAL;
  	}
  
@@ -55672,7 +56891,7 @@ index 073361d..47cd905 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2504,38 +4137,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
+@@ -2504,38 +4138,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
  	}
  
  	*dmem_offset = allocated;
@@ -55745,7 +56964,7 @@ index 073361d..47cd905 100644
  	}
  }
  
-@@ -2589,11 +4244,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
+@@ -2589,11 +4245,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto     submit_result =
@@ -55758,7 +56977,7 @@ index 073361d..47cd905 100644
  
  	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -2618,11 +4272,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
+@@ -2618,11 +4273,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto     submit_result =
@@ -55771,7 +56990,7 @@ index 073361d..47cd905 100644
  
  	if (out_submission_id != nullptr &&
  	    !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
-@@ -2648,57 +4301,1084 @@ static int KYTY_SYSV_ABI AmmWaitCommandBufferCompletion(uint32_t submission_id)
+@@ -2648,57 +4302,1086 @@ static int KYTY_SYSV_ABI AmmWaitCommandBufferCompletion(uint32_t submission_id)
  	return OK;
  }
  
@@ -55945,7 +57164,9 @@ index 073361d..47cd905 100644
 +// or unreadable again. MapBacking's MAP_FIXED view replaces either; nothing else in the host reads the placeholder's mode.
 +static bool Bc5HostReadable(uint64_t va, uint64_t size, bool readable) {
 +#if defined(__linux__)
-+	return mprotect(reinterpret_cast<void*>(va), static_cast<size_t>(size), readable ? PROT_READ : PROT_NONE) == 0;
++	const bool done = mprotect(reinterpret_cast<void*>(va), static_cast<size_t>(size), readable ? PROT_READ : PROT_NONE) == 0;
++	if (done) bc5::anon_sync::note(va, size, readable); // experiment 0415 (as415c): an anonymous placeholder made readable
++	return done;
 +#else
 +	(void)va;
 +	(void)size;
@@ -56906,7 +58127,7 @@ index 073361d..47cd905 100644
  	LIB_FUNC("ZFDZoN9IbVU", Ampr::MeasureAmmCommandSizeMapDirect);
  	LIB_FUNC("KUjtdPZJo5I", Ampr::MeasureAmmCommandSizeMapDirectWithGpuMaskId);
  	LIB_FUNC("Ayg6PIon2wA", Ampr::MeasureAmmCommandSizeUnmap);
-@@ -2743,6 +5423,40 @@ LIB_DEFINE(InitAmpr_1_Ampr) {
+@@ -2743,6 +5426,40 @@ LIB_DEFINE(InitAmpr_1_Ampr) {
  	LIB_FUNC("NnKhlMJtIsI", Ampr::AmmSubmitCommandBufferAndGetId);
  	LIB_FUNC("OJf3vCckPAM", Ampr::AmmSubmitCommandBufferAndGetResult);
  	LIB_FUNC("HXymib4T8gc", Ampr::AmmWaitCommandBufferCompletion);

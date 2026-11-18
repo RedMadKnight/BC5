@@ -1,0 +1,22 @@
+== 11:57:24 a429R1 ASTRO BOT lean 200 s (rs lean)
+a429R1 w428c lines 0; the last: 
+12:00:56 a429R1: PASS
+12:01:01 astro0431 ended
+chain lock released
+== 12:01:11 h429K19 second title lean check (rs lean)
+check h429K19 (lean 35149f81d1c83ebc8dd0224f18a44b14): Job Hi threads 5, of them RR 5; the main thread RR 0; RR threads at 150 s: 14
+h429K19 (lean) PASS: ran 200 s; RssAnon at the end 156072 kB; kernel lines 0, crash lines 0
+check h429K19: threads with nice < 0 (rtkit high priority; build 13):       1 AK::AudioOutThr  (-15);      1 AK::JobWrkr-Acm  (-15);      1 HIDAPI Rumble (-10);      1 SDLAudioP0  (-15);      2 SDLAudioP53  (-15);
+check h429K19: rtkit refusals in the run 0, of them R's 0, others' 0 (must be 0); the emulator's own threads not high priority:       1 SDLAudioHotplug (0);
+check h429K19: AK threads RR at the snapshot: 0 (mode 3: must be 0)
+check h429K19: PASS
+== 12:04:57 h429K20 normal check (rs normal)
+chain lock: exp 0417 | chain: exp 0429: R check h429K20 (normal, RR=3, one short run, arm G, about 3 min), until about 12:10 | token 20261118120457578216 | 2026-11-18 12:04:57
+check h429K20: Job Hi threads 5, of them RR 5; promoted 15, refused 0, dropped 0; RR threads at G+25: 14
+h429K20 (G) ended at G+40 (after 147 s; G 107, load 101, list 93); 38.6 flips/s over 143 s, 9 s with a gap over 100 ms, longest 281 ms; kernel lines 0, crash lines 0, ledger lines 0; CLASS NO_CRASH; e
+check h429K20: the main thread RR: 0 (must be 0); rtkit refusals 0 (reported only: rtkit has a per-user limit)
+check h429K20: threads with nice < 0 (rtkit high priority; build 13):       1 AK::AudioOutThr  (-15);      1 AK::JobWrkr-Acm  (-15);      1 HIDAPI Rumble (-10);      1 SDLAudioP0  (-15);      2 SDLAudioP53  (-15);
+check h429K20: rtkit refusals in the run 0, of them R's 0, others' 0 (must be 0); the emulator's own threads not high priority:       1 SDLAudioHotplug (0);
+check h429K20: AK threads RR at the snapshot: 0 (mode 3: must be 0)
+check h429K20: PASS
+smoke0429r ended 12:07:40: all PASS

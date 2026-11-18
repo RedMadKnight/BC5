@@ -846,3 +846,56 @@ Raw: `raw/n/check-h429K17.{ps,run}`, `raw/n/check-h429K18.{ps,run,series,out}`, 
 `raw/n/astro-a429C.out`.
 Still open before any swap: the R count line leaves lean; whether R goes into the shared builds, and on by default, is
 the maintainer's decision.
+
+## The swap of R (2026-11-18 12:08): R on by default in the shared builds, exp 0425's wake slice removed
+
+The maintainer's word (11-18, through the top session): "Włączyć R domyślnie we wspólnych buildach => tak, od razu
+posprzątaj inne rzeczy, które po wprowadzeniu R stają się zbędne". It was made on the shared patch 940e8f36 (exp 0432's
+build 5).
+
+**The swap form** (`mkswap0429r.py`, the R block `rrshared0429.cpp` made by `mkrshared0429.py` from build 14's
+`rr0429.cpp`):
+- three files change: pthread.cpp, semaphore.cpp and switch_defaults.hpp;
+- R is on for every title through a kSoft row, `KYTY_BC5_0429_RR=1`, and `=0` turns it off with no build;
+- one rule only, the worker-family sleepers (build 13's mode 3, the one tested); modes 1 and 2 and the pool table are gone;
+- the reserve is fixed at 4 and the RESERVE switch is gone;
+- the lean build has no diagnostics: the count line, the counters and the event ring are normal-build only.
+
+**What else went, and why R covers it:**
+- **exp 0425 C1, the 200 µs wake slice** (Bc5SchedAttr, Bc5WakeSliceUs, Bc5ApplyWakeSlice, its call and its kSoft row).
+  The slice only acts on SCHED_OTHER threads, and R runs the woken Hi workers as RR. The data:
+  - R with the slice, under the stressor: 4 of 4 clean (G5–G8);
+  - R without the slice, under the stressor (arm V, test build rt `24aa5bdf` = the swap form + the stressor, no slice
+    code): **3 of 3 clean** (h429V1 45.9, V2 45.1, V3 42.7 flips/s);
+  - in each V run R held 14 and rtkit refused nothing; 0 kernel lines, 0 pad keys;
+  - the top session's rule was to remove the slice only after 3 of 3 clean V runs.
+- **0429's experiment switches** (AFFINITY, CPU13, GUEST_CPUS, PRIO_ORDER, FAST_MUTEX, WAITS, TRACE, exp 0425 C2/C3):
+  none was ever in the shared builds, and none goes in. The stressor GUEST_CPUS exists only in the private rt build.
+- **JobArenaFix:** it was removed on 11-17. The silent accept of an old `JobArenaFix.<id>=` line in input.cfg stays on
+  purpose: without it the parser fails such a line ("unknown control", hostInput.cpp).
+- **The fast guest mutex:** it was never shared, so there was nothing to remove.
+
+**Tests on the private swap-form builds** (rs normal `a4bbe73c`, rs lean `35149f81`):
+
+| Test | Result |
+|---|---|
+| a429R1, ASTRO BOT lean, 200 s, the build's defaults | PASS |
+| h429K19, second title lean check | PASS: Job Hi 5 of 5 RR, main RR 0, AK RR 0, rtkit refusals 0, 200 s, kernel 0 |
+| h429K20, normal check | PASS: Job Hi 5 of 5 RR, game-main TS, promoted 15, refused 0, NO_CRASH 38.6 flips/s, kernel 0 |
+
+The title makes 5 Job Hi workers, not 8, when nothing maps its CPU requests: the shared builds, the private rs builds
+and the Q/P pairs. The earlier checks ran with the stressor's mapping, which gives the title one guest CPU per host CPU,
+and there it makes 8 per class. All Hi workers were on RR in each case.
+
+**The swap** (`int0429r.sh`, 12:08):
+- the patch goes from 940e8f36 to **ef2ff54f** (the laptop's own build of it gives the same hash);
+- exp 0372 lines 5; the pad_audio_route header is in; the file list is unchanged;
+- normal 4e0c00a2 → **a9b4f00b**, lean 272685ee → **abf5fb17**; the archive stays 6eac453e;
+- in both builds the words change by exactly +KYTY_BC5_0429_RR −KYTY_BC5_0425_WAKE_SLICE_US;
+- the lean build holds 0 "exp 0429" and 0 "exp 0425" strings; the normal one holds 0 "exp 0425".
+
+Undo: `bash ~/bc5-work/exp0429/undo0429r.sh` returns to 940e8f36 / 4e0c00a2 / 272685ee / 6eac453e (dry-run on a
+laptop stand-in tree).
+
+Raw: `raw/n/chain-rep16.out`, `raw/n/smoke0429r.out`, `raw/n/check-h429K19.*`, `raw/n/check-h429K20.*`,
+`raw/n/int0429r.out`, `raw/n/buildr.out`.
