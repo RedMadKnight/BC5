@@ -748,3 +748,33 @@ The same run had 0432's build 5 on: mappings dropped while a ring was busy 5,352
 **Next (off-box idea, F15).** Register a chain's write set at the swap, before submit_now. An acb wait then sees the writes as soon as the chain exists.
 
 **Swap rule.** Not met (a hang, and the sensor is not 0). No swap; the shared builds are unchanged.
+
+### H5 (2026-11-18 10:14): H4 repeated with 0432's no-wait unmap off: a GPU hang again
+
+**Setup.** h430H5 used H4's binary (`f61d5986`) and H4's words plus `BC5_DIRECT_UNMAP_NOWAIT=0`. Its d432 line confirms "unmap-nowait off". The box was idle, with 0 reset lines before the start.
+
+**Result.** The run hung the GPU at 10:31:31, about 17 minutes in:
+- only gfx_0.0.0 timed out (H4 also had comp_1.2.0);
+- the ring reset failed, and bc5-gpu-watch rebooted the box at 10:32.
+
+Streams: [raw/kernel-stream-h5.txt](raw/kernel-stream-h5.txt), [raw/live-stream-h5.txt](raw/live-stream-h5.txt).
+
+**Probes:**
+- the hung dcb #1453653 (101,387 dwords) has 10 waits, all met and run; the acb #1453664 has 1 wait, met;
+- so, as in H4, no stale cross-queue wait was involved;
+- the same two lines as in H4 appear: "HS user data address 0x0 at 1061 not mapped" (the same offset), and a garbage "largest grid" (18,445,907,058,222,237,802 groups);
+- whether these two lines also appear in probes that did not hang has not been checked. They are a lead, not a finding.
+
+Turning the no-wait unmap off did not stop the hang. In that run, d432 counted 2,856 blocking drains (582 ms) and 0 mappings dropped while busy.
+
+**F10 family at 960.9 s:**
+
+| Counter | Value |
+|---|---|
+| Sensor | 5, all at the bound |
+| F14 at the bound: in flight | 10 of 10 |
+| F10: found / gone / bound | 8,717 / 8,707 / 10 |
+
+This is the same picture as H4.
+
+**F16 build** (made after H5, top's order). F16 is the in-flight wait: at F10's bound, wait for the writer's submit_now to return, with a 50 ms bound, and do not wait on a writer that is in back-pressure or draining the GPU. Binary `1e8b5557` (`~/bc5-work/exp0430/p20`), unit `5facf181`, ho430 `ae58d23a`, 14 hooks. The shared build was `4e0c00a2` before and after. F16 has not run yet; its slot comes from top.
