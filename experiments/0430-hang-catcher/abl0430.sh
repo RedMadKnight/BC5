@@ -20,7 +20,7 @@ for arm in ${ORDER:-S B H}; do
   host=0; bin=$SB; [ "$arm" = S ] || bin=$BB; [ "$arm" = H ] && host=1
   echo "abl0430 $(date +%T): run $t, arm $arm, $(md5sum < "$bin" | cut -c1-8), host $host"
   # shellcheck disable=SC2086
-  line=$(P_HOST=$host N_TIMED=1 N_T0=90 N_T1=10 N_T2=8 N_T3=25 N_MH=1 N_MHD=$((133 + PLAY - 15)) N_LEANSESS=1 N_ARENA=off N_WALK_AFTER=1 N_SLOT=4 N_FUSE=0 N_NOWD=1 \
+  line=$(P_HOST=$host N_TIMED=1 N_T0=90 N_T1=10 N_T2=8 N_T3=25 N_MH=1 N_MHD=$((133 + PLAY - 60)) N_LEANSESS=1 N_ARENA=off N_WALK_AFTER=1 N_SLOT=4 N_FUSE=0 N_NOWD=1 \
     P_BIN=$bin P_WANT=$(md5sum < "$bin" | cut -d' ' -f1) P_WORDS=$WORDS bash "$HERE/run0430l.sh" "$t" h "$PLAY" $WAY2 | grep "^$t ")
   echo "$line" | cut -c1-600
   printf '%s\n' "$line" | grep -q "; CLASS NO_CRASH;" || { echo "abl0430 $(date +%T): not NO_CRASH, stop"; break; }

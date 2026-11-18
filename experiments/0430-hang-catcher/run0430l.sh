@@ -155,7 +155,7 @@ WL=$(ls "$RUND/" 2> /dev/null | grep -m1 '^wayland-[0-9]*$')
 ENVS=("${WORDS[@]}" "${EXTRA[@]}" BC5_0412N_INPUT_CONFIG="$CFG" KYTY_BC5_INPUT_CMD="$CMD" WAYLAND_DISPLAY="$WL")
 if [ "${N_MH:-0}" = 1 ]; then  # exp 0430: MangoHud's frame log, the counter for a lean build
   mkdir -p "$R/$TAG-mh" || exit 1
-  ENVS+=(MANGOHUD=1 MANGOHUD_CONFIG="no_display,autostart_log=1,log_interval=0,output_folder=$R/$TAG-mh${N_MHD:+,log_duration=$N_MHD}")  # N_MHD: seconds; MangoHud writes its log when it ends
+  ENVS+=(MANGOHUD=1 MANGOHUD_CONFIG="fps_only=1,alpha=0,background_alpha=0,autostart_log=1,log_interval=0,output_folder=$R/$TAG-mh${N_MHD:+,log_duration=$N_MHD}")  # N_MHD: seconds; MangoHud writes its log when it ends
 fi
 ND=$(sudo -n dmesg 2> /dev/null | wc -l)
 LSS=""
@@ -254,8 +254,8 @@ while [ -z "$ENDED" ] && [ $(($(date +%s) - T0)) -lt "$SECS" ]; do
     { echo "at G+60 ($NOW s): plasmashell $SHELL_RUN"
       for t in /proc/$EP/task/*; do n=$(cat "$t/comm" 2> /dev/null); case "$n" in *Job*|*job*) echo "[$n] $(chrt -p "${t##*/}" 2> /dev/null | sed 's/.*: //' | tr '\n' ' ')";; esac; done | sort | uniq -c | head -40
       echo "pad files: $(ls -l /proc/$EP/fd 2> /dev/null | grep -o '/dev/\(hidraw\|input/event\|input/js\)[0-9]*' | sort -u | tr '\n' ' ')"
-      echo "sound streams of the emulator: $(pactl list sink-inputs 2> /dev/null | grep -c "application.process.id = \"$EP\"")"
-      echo "gpu driver: $(grep -o '/[^ ]*libvulkan_[a-z]*\.so[^ ]*' /proc/$EP/maps 2> /dev/null | sort -u | tr '\n' ' ')"; } >> "$R/$TAG-start.txt"
+      echo "sound streams of the emulator: $(pactl list sink-inputs 2> /dev/null | grep -c "application.process.binary = \"kyty_emulator\"")"
+      echo "gpu driver: $(grep -o '/[^ ]*libvulkan_radeon\.so[^ ]*' /proc/$EP/maps 2> /dev/null | sort -u | tr '\n' ' ')"; } >> "$R/$TAG-start.txt"
   fi
   [ -n "$G" ] && [ "$NOW" -ge $((G + PLAY)) ] && break
   if sudo -n dmesg 2> /dev/null | tail -n +"$((ND + 1))" | grep -i amdgpu | grep -v -E '[A-Za-z_][A-Za-z0-9_.]*\+0x[0-9a-f]+/0x[0-9a-f]+' | grep -qi "timeout\|reset\|fault"; then

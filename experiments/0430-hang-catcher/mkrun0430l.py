@@ -6,7 +6,7 @@ Changes:
   - N_TIMED=1: the route by time (exp 0432's mkrun0432.py hunk, unchanged): cross at N_T0 s, the slot keys N_T1 s later,
     Continue N_T2 s later, G taken N_T3 s after that. No journal is required.
   - N_MH=1: MangoHud's own frame log as the frame counter, the same for every binary: MANGOHUD=1 and a MANGOHUD_CONFIG of
-    no_display, autostart_log, every frame (log_interval=0), into $R/$TAG-mh/ (the emulator leaves a caller's config as
+    an invisible overlay (fps_only, alpha 0: MangoHud 0.8.1 logs nothing with no_display), autostart_log, every frame (log_interval=0), into $R/$TAG-mh/ (the emulator leaves a caller's config as
     it is). After the run the frames from G on are turned into $TAG-fps.txt's per-second lines (t, frames, 1, longest
     frame in ms), which the summary already reads.
   - P_HOST=1: the launcher runs on the Bazzite host, not in the ubuntu distrobox (exp 0423's P_HOST); the start file says
@@ -47,7 +47,7 @@ sub('ENVS=("${WORDS[@]}" "${EXTRA[@]}" BC5_0412N_INPUT_CONFIG="$CFG" KYTY_BC5_IN
     'ENVS=("${WORDS[@]}" "${EXTRA[@]}" BC5_0412N_INPUT_CONFIG="$CFG" KYTY_BC5_INPUT_CMD="$CMD" WAYLAND_DISPLAY="$WL")\n'
     'if [ "${N_MH:-0}" = 1 ]; then  # exp 0430: MangoHud\'s frame log, the counter for a lean build\n'
     '  mkdir -p "$R/$TAG-mh" || exit 1\n'
-    '  ENVS+=(MANGOHUD=1 MANGOHUD_CONFIG="no_display,autostart_log=1,log_interval=0,output_folder=$R/$TAG-mh${N_MHD:+,log_duration=$N_MHD}")  # N_MHD: seconds; MangoHud writes its log when it ends\n'
+    '  ENVS+=(MANGOHUD=1 MANGOHUD_CONFIG="fps_only=1,alpha=0,background_alpha=0,autostart_log=1,log_interval=0,output_folder=$R/$TAG-mh${N_MHD:+,log_duration=$N_MHD}")  # N_MHD: seconds; MangoHud writes its log when it ends\n'
     'fi\n')
 # the host
 sub("setsid nohup bash -c 'distrobox enter ubuntu -- /usr/bin/bash -c '\\''ulimit -l unlimited 2> /dev/null; exec /usr/bin/env \"$@\"'\\'' guard0412n \"$@\"; echo \"launcher exit $?\"' _ \"${ENVS[@]}\" \"$LAUNCH\" < /dev/null > \"$R/$TAG-launch.out\" 2>&1 &\n",
@@ -96,8 +96,8 @@ sub('  [ -n "$G" ] && [ "$NOW" -ge $((G + PLAY)) ] && break\n',
     '    { echo "at G+60 ($NOW s): plasmashell $SHELL_RUN"\n'
     '      for t in /proc/$EP/task/*; do n=$(cat "$t/comm" 2> /dev/null); case "$n" in *Job*|*job*) echo "[$n] $(chrt -p "${t##*/}" 2> /dev/null | sed \'s/.*: //\' | tr \'\\n\' \' \')";; esac; done | sort | uniq -c | head -40\n'
     '      echo "pad files: $(ls -l /proc/$EP/fd 2> /dev/null | grep -o \'/dev/\\(hidraw\\|input/event\\|input/js\\)[0-9]*\' | sort -u | tr \'\\n\' \' \')"\n'
-    '      echo "sound streams of the emulator: $(pactl list sink-inputs 2> /dev/null | grep -c "application.process.id = \\"$EP\\"")"\n'
-    '      echo "gpu driver: $(grep -o \'/[^ ]*libvulkan_[a-z]*\\.so[^ ]*\' /proc/$EP/maps 2> /dev/null | sort -u | tr \'\\n\' \' \')"; } >> "$R/$TAG-start.txt"\n'
+    '      echo "sound streams of the emulator: $(pactl list sink-inputs 2> /dev/null | grep -c "application.process.binary = \\"kyty_emulator\\"")"\n'
+    '      echo "gpu driver: $(grep -o \'/[^ ]*libvulkan_radeon\\.so[^ ]*\' /proc/$EP/maps 2> /dev/null | sort -u | tr \'\\n\' \' \')"; } >> "$R/$TAG-start.txt"\n'
     '  fi\n'
     '  [ -n "$G" ] && [ "$NOW" -ge $((G + PLAY)) ] && break\n')
 s = ("#!/usr/bin/env bash\n# BC5 exp 0430: derived by mkrun0430l.py from run0430f.sh (N_TIMED, N_MH, P_HOST; see mkrun0430l.py).\n"
