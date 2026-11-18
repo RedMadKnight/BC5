@@ -860,11 +860,11 @@ A slot that stays busy at the 2 ms mark is therefore most likely a chain polling
 
 | Run | busy bounds | busy bounds followed by an F7 sensor line | flight bounds | flight bounds followed by an F7 sensor line |
 |---|---|---|---|---|
-| J1 | 11 | 0 | 27 | 4 (the last of them on 0x12004b4fc8 → the fault) |
-| J2 | 11 | 0 | 32 | 2 |
-| M1 | 8 | 0 | 23 (all waited out by F16) | 0 |
+| J1 | 9 | 0 | 28 | 4 (the last of them on 0x12004b4fc8 → the fault) |
+| J2 | 12 | 0 | 35 | 2 |
+| M1 | 8 | 0 | 0 journaled (F16 waited out all 23, so none stayed a bound) | – |
 
-Only the first 64 bounds per run are journaled; all of these are within that. So there are 0 of 30 for busy against 6 of 82 for flight. That does not rule busy out. It is a lower-rate path, or one that mostly meets slots that don't write L.
+Counted from the journaled F14 bound lines (the first 64 per run; the 60-s totals can lag the last lines). Busy: 0 of 29 followed by the sensor. Flight, without F16: 6 of 63. That does not rule busy out. It is a lower-rate path, or one that mostly meets slots that don't write L.
 
 **What would cover it (next build, not this slot): F18, one switch, catcher and fix together.**
 1. **Classify.** At a bound with a busy slot, retry its try_lock for up to 200 µs (R62: try_locks only, bounded). Record whether the slot, once seen, writes L (open, held by ADR 0013, or in flight) or not. Also record whether its owner is inside `hold_release` (an atomic flag set around the lock there). This answers the inference above.
