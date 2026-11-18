@@ -779,3 +779,24 @@ places, or 8 with the reserve of 4.
 - a waiting thread comes back at a later sleep also when such a holder exists.
 
 Expected in the next check: R holds about 8, all of them Job Hi.
+
+## Slot 06:13–06:19 (2026-11-18): build 14, check K15 FAIL on the audio condition
+
+Box up 12:31 h, 0 amdgpu reset lines since boot. Build 14 (d6ac3656): private normal `d8a4ce2c`, lean `31dcc2c5`,
+0 errors, the same 8 warnings, shared builds unchanged.
+
+**h429K15 (normal, RR=3, RESERVE=2): FAIL.** The workers' part passed: Job Hi 8 of 8 RR (rtprio 6), six Havok Queries
+(5), main thread TS, AK threads RR 0, R refusals 0, NO_CRASH, 40.3 flips/s, 0 kernel lines. Count line:
+`held 14 P 21 R 0 C 4 E 7 N 2 user 25 of 25`. The audio condition failed (the top session's rule, 2026-11-18): rtkit
+refused 4 requests that were not R's, and SDLAudioP53 x2 and SDLAudioHotplug stayed at nice 0. rtkit's journal:
+the emulator's own high-priority requests at 06:15:43–45 (4 granted), 1 refused at 06:15:45.97, in the same second as
+R's promotions; 3 more came together at 06:16:14 and all were refused. When R began, the user had 8 such threads, so R
+filled to its cap of 14; the audio requests that came later found rtkit full. A reserve checked only when R promotes
+does not protect requests that come after. The slot stopped there (K16 and the pairs were not run).
+
+**What this means (desk numbers):** PipeWire's stack 7 + the emulator's own about 8 (AudioOutThread, JobWrkr-Acm, HIDAPI
+Rumble, SDLAudioP0, SDLAudioP53 x2, SDLAudioHotplug, and one more seen in K10) = 15 of rtkit's 25, leaving 10. A design
+where R yields (drops its lowest holders whenever fewer than 3 places are free, since the burst seen was 3) would hold
+about 7, i.e. 7 of 8 Hi. Under rtkit's default limit and these neighbours, R cannot have all 8 Hi workers and leave
+every audio request room. The clean way out is raising rtkit's `--threads-per-user-max`, a box system configuration
+change: the maintainer's decision only, not done.
