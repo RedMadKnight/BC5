@@ -69,7 +69,7 @@ build() {
     # backend: policy.cpp from the shared source, pinned, with the count
     (cd "$HOME/src/bc5" && sha256sum -c "$HERE/backend.sha256") > "$R/backend-pin.txt" 2>&1 || { cat "$R/backend-pin.txt"; stop "the shared backend's policy.cpp is not the pinned one"; }
     cp "$BTREE/src/policy.cpp" "$S/backend/src/policy.cpp" || stop "copy policy.cpp"
-    (cd "$S" && patch -p1 --no-backup-if-mismatch < "$HERE/policy0433.diff") > "$R/policy-apply.out" 2>&1 \
+    (cd "$S" && git apply -p1 "$HERE/policy0433.diff") > "$R/policy-apply.out" 2>&1 \
         || { cat "$R/policy-apply.out"; stop "policy0433.diff does not apply"; }
     distrobox enter ubuntu -- sh -c "cd '$BBUILD' && ninja -t compdb" > "$E/backend/compdb.json" 2> "$R/compdb-backend.err" < /dev/null || stop "backend compdb failed"
     distrobox enter ubuntu -- env LC_ALL=C LANGUAGE=C python3 -I "$HERE/build0433.py" archive "$E/backend/compdb.json" "$S/backend" "$E/backend" "$BBUILD" \

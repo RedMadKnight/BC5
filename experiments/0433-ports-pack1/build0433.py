@@ -31,16 +31,23 @@ def run(argv, cwd):
     return subprocess.run(["nice", "-n", "19"] + argv, cwd=cwd).returncode
 
 
-def entry_for(db, build, rel):
+def entry_out(e):
+    return e.get("output") or clean_compile(e["command"])[clean_compile(e["command"]).index("-o") + 1]
+
+
+def entry_for(db, build, rel, wanted):
+    # a unit can be compiled for several targets (the test programs compile eventQueue.cpp too): keep the entries whose
+    # object goes into the product being built (`wanted`), and require exactly one
     hits = [e for e in db if os.path.normpath(os.path.join(e.get("directory", build), e["file"])).endswith(os.sep + rel)]
-    assert len(hits) == 1, f"{rel}: {len(hits)} compdb entries"
+    hits = [e for e in hits if wanted(entry_out(e))]
+    assert len(hits) == 1, f"{rel}: {len(hits)} compdb entries for this product"
     return hits[0]
 
 
-def compile_units(db, build, src_root, out_dir, units, include_root):
+def compile_units(db, build, src_root, out_dir, units, include_root, wanted):
     objs = {}  # shared object path as written in the compdb output -> private object
     for rel in units:
-        e = entry_for(db, build, rel)
+        e = entry_for(db, build, rel, wanted)
         comp = e.get("arguments") or clean_compile(e["command"])
         comp = list(comp)
         out = e.get("output") or comp[comp.index("-o") + 1]
@@ -49,6 +56,8 @@ def compile_units(db, build, src_root, out_dir, units, include_root):
         comp[comp.index("-o") + 1] = obj
         comp[comp.index("-c") + 1] = os.path.join(src_root, rel)
         comp.insert(1, "-I" + os.path.join(src_root, include_root))
+        # quoted includes of headers beside the shared source (kernel/event_cap0412.hpp): its directory after the copy's own
+        comp.insert(2, "-iquote" + os.path.dirname(os.path.join(e.get("directory", build), e["file"])))
         if run(comp, e.get("directory", build)) != 0:
             print("== COMPILE FAILED:", rel, flush=True)
             sys.exit(2)
@@ -72,7 +81,8 @@ if mode == "archive":
     db_path, src_root, out_dir, build, shared_a, out_a = sys.argv[2:8]
     units = sys.argv[8:]
     db = json.load(open(db_path))
-    objs = compile_units(db, build, src_root, out_dir, units, "include")
+    members = set(subprocess.run(["ar", "t", shared_a], capture_output=True, text=True, check=True).stdout.split())
+    objs = compile_units(db, build, src_root, out_dir, units, "include", lambda o: os.path.basename(o) in members)
     replace_members(shared_a, out_a, {os.path.basename(k): v for k, v in objs.items()})
     sys.exit(0)
 
@@ -88,8 +98,14 @@ for a in sys.argv[7:]:
         units.append(a)
 db = json.load(open(db_path))
 link = next(e["command"] for e in db if e.get("output") == "src/kyty_emulator")
-objs = compile_units(db, build, src_root, out_dir, units, "src")
 argv = [a for a in shlex.split(link) if a not in (":", "&&")]
+lib_members = {}  # static library on the link line (not the backend's) -> its member names
+for a in argv:
+    if a.endswith(".a") and os.path.isfile(os.path.join(build, a)) and os.path.basename(a) != "libbc5_backend.a":
+        lib_members[a] = set(subprocess.run(["ar", "t", os.path.join(build, a)], capture_output=True, text=True).stdout.split())
+on_line = set(argv)
+objs = compile_units(db, build, src_root, out_dir, units, "src",
+                     lambda o: o in on_line or any(os.path.basename(o) in m for m in lib_members.values()))
 left = dict(objs)
 for k, a in enumerate(argv):
     if a in left:
@@ -99,12 +115,10 @@ libs = {}
 for out, obj in left.items():
     member = os.path.basename(out)
     owner = None
-    for a in argv:
-        if a.endswith(".a") and os.path.isfile(os.path.join(build, a)) and os.path.basename(a) != "libbc5_backend.a":
-            names = subprocess.run(["ar", "t", os.path.join(build, a)], capture_output=True, text=True).stdout.split()
-            if member in names:
-                assert owner is None, f"{member} is in two libraries"
-                owner = a
+    for a, names in lib_members.items():
+        if member in names:
+            assert owner is None, f"{member} is in two libraries"
+            owner = a
     assert owner is not None, f"{out} is neither on the link line nor in one of its libraries"
     libs.setdefault(owner, {})[member] = obj
 for lib, members in libs.items():
