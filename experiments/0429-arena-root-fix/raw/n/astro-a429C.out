@@ -1,0 +1,34 @@
+09:58:33 == a429CA1: private normal, KYTY_BC5_0429_RR=0
+a429CA1 (astro) PASS: ran 200 s; RssAnon at the end 235412 kB; kernel lines 0, crash lines 0; real pad keys 0; shots 5
+10:02:06 a429CA1: PASS
+10:02:11 astro0431 ended
+chain lock released
+fps counter: t 199.604 s: 61 flips in 1.017 s, longest gap 17.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 200.621 s: 61 flips in 1.017 s, longest gap 17.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 201.637 s: 61 flips in 1.016 s, longest gap 17.2 ms, gaps over 40 ms 0, over 70 ms 0
+[bc5] exp 0429: R (RR for the guest's sleepers) off
+10:02:11 == a429CA2: private normal, KYTY_BC5_0429_RR=3
+a429CA2 (astro) PASS: ran 200 s; RssAnon at the end 238096 kB; kernel lines 0, crash lines 0; real pad keys 0; shots 5
+10:05:42 a429CA2: PASS
+10:05:47 astro0431 ended
+chain lock released
+fps counter: t 199.425 s: 61 flips in 1.012 s, longest gap 17.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 200.426 s: 60 flips in 1.001 s, longest gap 17.2 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 201.427 s: 60 flips in 1.001 s, longest gap 17.0 ms, gaps over 40 ms 0, over 70 ms 0
+[bc5] exp 0429 R count: held 7 calls 7 P 7 R 0 C 0 B 0 E 0 X 0 W 0 H 0 G 0 N 0 user 30 of 64 | last 
+[bc5] exp 0429 R count: held 14 calls 14 P 14 R 0 C 0 B 0 E 0 X 0 W 0 H 0 G 0 N 0 user 37 of 64 | last 
+[bc5] exp 0429 R count: held 14 calls 14 P 14 R 0 C 0 B 0 E 0 X 0 W 0 H 0 G 0 N 0 user 37 of 64 | last 
+10:05:47 == a429CA3: private lean, KYTY_BC5_0429_RR=0
+a429CA3 (astro) PASS: ran 200 s; RssAnon at the end 235300 kB; kernel lines 0, crash lines 0; real pad keys 0; shots 5
+10:09:19 a429CA3: PASS
+10:09:24 astro0431 ended
+chain lock released
+10:09:24 == a429CA4: private lean, KYTY_BC5_0429_RR=3
+a429CA4 (astro) PASS: ran 200 s; RssAnon at the end 235824 kB; kernel lines 0, crash lines 0; real pad keys 0; shots 5
+10:12:55 a429CA4: PASS
+10:13:00 astro0431 ended
+chain lock released
+[bc5] exp 0429 R count: held 7 calls 7 P 7 R 0 C 0 B 0 E 0 X 0 W 0 H 0 G 0 N 0 user 30 of 64 | last 
+[bc5] exp 0429 R count: held 14 calls 14 P 14 R 0 C 0 B 0 E 0 X 0 W 0 H 0 G 0 N 0 user 37 of 64 | last 
+[bc5] exp 0429 R count: held 7 calls 14 P 14 R 0 C 0 B 0 E 0 X 0 W 7 H 0 G 0 N 0 user 30 of 64 | last W478 W478 W478 W478 W478 W478 W478 
+10:13:01 astro0429 ended

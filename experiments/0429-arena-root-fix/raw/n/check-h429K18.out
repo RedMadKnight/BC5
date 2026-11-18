@@ -1,0 +1,44 @@
+check h429K18 (lean 31dcc2c5898dda055ce0025b80a3b4d8): Job Hi threads 8, of them RR 8; the main thread RR 0; RR threads at 150 s: 14
+  60846  TS      -   0 game-main
+  60860  RR      6   - Job Hi 0
+  60861  RR      6   - Job Hi 1
+  60862  RR      6   - Job Hi 2
+  60863  RR      6   - Job Hi 3
+  60864  RR      6   - Job Hi 4
+  60865  RR      6   - Job Hi 5
+  60866  RR      6   - Job Hi 6
+  60867  RR      6   - Job Hi 7
+  60970  RR      5   - Havok Queries a
+  60971  RR      5   - Havok Queries a
+  60972  RR      5   - Havok Queries a
+  60973  RR      5   - Havok Queries a
+  60975  RR      5   - Havok Queries a
+  60976  RR      5   - Havok Queries a
+h429K18 (lean) PASS: ran 200 s; RssAnon at the end 156832 kB; kernel lines 0, crash lines 0
+the Job Hi and AK policies every 10 s (Hi 0-7 first, then the AK threads):
+10 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+20 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+30 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+40 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+50 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+60 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+70 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+80 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+90 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+100 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+110 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+120 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+130 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+140 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+150 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+160 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+170 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+180 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+190 RR RR RR RR RR RR RR RR TS TS TS TS TS TS 
+[bc5] exp 0429 R count: held 14 calls 21 P 21 R 0 C 3 B 0 E 7 X 0 W 0 H 0 G 0 N 0 user 27 of 64 | last E600 E600 E600 E600 E600 E600 E600 
+[bc5] exp 0429 R count: held 14 calls 21 P 21 R 0 C 3 B 0 E 7 X 0 W 0 H 0 G 0 N 0 user 27 of 64 | last E600 E600 E600 E600 E600 E600 E600 
+[bc5] exp 0429 R count: held 14 calls 21 P 21 R 0 C 3 B 0 E 7 X 0 W 0 H 0 G 0 N 0 user 27 of 64 | last E600 E600 E600 E600 E600 E600 E600 
+check h429K18: threads with nice < 0 (rtkit high priority; build 13):       1 AK::AudioOutThr  (-15);      1 AK::JobWrkr-Acm  (-15);      1 HIDAPI Rumble (-10);      1 SDLAudioP0  (-15);      2 SDLAudioP53  (-15);
+check h429K18: rtkit refusals in the run 0, of them R's 0, others' 0 (must be 0); the emulator's own threads not high priority:       1 SDLAudioHotplug (0);
+check h429K18: AK threads RR at the snapshot: 0 (mode 3: must be 0)
+check h429K18: PASS

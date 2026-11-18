@@ -5856,7 +5856,7 @@ index 0000000..6567205
 +} // namespace bc5::start_state
 diff --git a/src/bc5/switch_defaults.hpp b/src/bc5/switch_defaults.hpp
 new file mode 100644
-index 0000000..32ae952
+index 0000000..0c2277b
 --- /dev/null
 +++ b/src/bc5/switch_defaults.hpp
 @@ -0,0 +1,365 @@
@@ -5992,9 +5992,9 @@ index 0000000..32ae952
 +    // the two words both titles run with every day, until now only through a launcher or bc5-run.env
 +    {"BC5_DIRECT_CHAIN", "2"}, // F224
 +    {"BC5_GC_MODE", "direct"},
-+    // exp 0425 C1 (2026-11-16, the maintainer's word): a 200 us EEVDF wake slice for guest threads below priority
-+    // 733 (pthread.cpp). Soft, so KYTY_BC5_0425_WAKE_SLICE_US=0 turns it off.
-+    {"KYTY_BC5_0425_WAKE_SLICE_US", "200"},
++    // exp 0429 R (2026-11-18, the maintainer's word): SCHED_RR through rtkit for the guest's job-worker families
++    // (pthread.cpp), in place of exp 0425's wake slice. Soft, so KYTY_BC5_0429_RR=0 turns it off.
++    {"KYTY_BC5_0429_RR", "1"},
 +    // exp 0428 way 2, for every title since exp 0431 (the maintainer, 2026-11-16: "ma byc w dowolnej grze"; until then
 +    // PPSA03671's rows): the acbs on kernel compute rings, one libdrm ring per busy guest queue; each acb part that
 +    // dispatches gets its own guest queue's tracked compute state in front; indirect dispatches on the MEC under the CP's
@@ -29269,7 +29269,7 @@ index 9ea25b0..64784a7 100644
  			EXIT_IF(!AddMappedUnlocked(vaddr, size, MappingType::Private));
  			return true;
 diff --git a/src/kernel/pthread.cpp b/src/kernel/pthread.cpp
-index 5f87e6b..96225a8 100644
+index 5f87e6b..9e0aee5 100644
 --- a/src/kernel/pthread.cpp
 +++ b/src/kernel/pthread.cpp
 @@ -1,3 +1,5 @@
@@ -29368,7 +29368,16 @@ index 5f87e6b..96225a8 100644
  	return current_tsc >= initial_tsc ? current_tsc - initial_tsc : 0;
  }
  
-@@ -458,6 +518,106 @@ struct PthreadCondPrivate {
+@@ -399,6 +459,8 @@ struct PthreadPrivate {
+ 	uint64_t              cond_sequence = 0;
+ 	PthreadCondPrivate*   waiting_cond  = nullptr;
+ 	std::atomic<uint64_t> pending_signal_mask {0};
++	bool                  bc5_rr_sleeper = false; // experiment 0429 R: slept on its worker family's semaphore
++	bool                  bc5_rr_main    = false; // experiment 0429 R: the runtime main thread, never promoted
+ #if KYTY_PLATFORM == KYTY_PLATFORM_WINDOWS
+ 	uintptr_t guest_host_gs8;
+ 	uintptr_t guest_host_gs10;
+@@ -458,6 +520,106 @@ struct PthreadCondPrivate {
  	std::vector<Pthread>    waiters;
  };
  
@@ -29475,7 +29484,7 @@ index 5f87e6b..96225a8 100644
  static void CondAddWaiter(PthreadCondPrivate* cond, Pthread thread) {
  	EXIT_IF(cond == nullptr);
  	EXIT_IF(thread == nullptr);
-@@ -530,6 +690,10 @@ void PthreadWakeForSignal(Pthread thread) {
+@@ -530,6 +692,10 @@ void PthreadWakeForSignal(Pthread thread) {
  	{
  		std::lock_guard lock(cond->m);
  		notify = (thread->waiting_cond == cond);
@@ -29486,7 +29495,7 @@ index 5f87e6b..96225a8 100644
  	}
  	if (notify) {
  		cond->cv.notify_all();
-@@ -650,6 +814,7 @@ public:
+@@ -650,6 +816,7 @@ public:
  	Pthread Create();
  
  	void FreeDetachedThreads();
@@ -29494,7 +29503,15 @@ index 5f87e6b..96225a8 100644
  
  private:
  	std::vector<Pthread> m_threads;
-@@ -1135,6 +1300,7 @@ KYTY_SUBSYSTEM_INIT(Pthread) {
+@@ -1066,6 +1233,7 @@ void PthreadInitSelfForMainThread() {
+ 	UpdateCurrentThreadStackAttr(&g_pthread_self->attr);
+ 	g_pthread_self->p               = pthread_self();
+ 	g_pthread_self->name            = "MainThread";
++	g_pthread_self->bc5_rr_main     = true; // experiment 0429 R: the runtime main thread is never promoted
+ 	g_pthread_self->guest.thread_id = ++g_pthread_thread_id;
+ 	g_pthread_self->unique_id       = Common::Thread::GetThreadIdUnique();
+ 	g_pthread_self->free            = false;
+@@ -1135,6 +1303,7 @@ KYTY_SUBSYSTEM_INIT(Pthread) {
  	g_pthread_context->SetPthreadPool(new PthreadPool);
  	g_pthread_context->SetPthreadKeys(new PthreadKeys);
  	Common::CondVar::SetWaitPollCallback(KernelDispatchPendingSignalForCurrentThread);
@@ -29502,7 +29519,7 @@ index 5f87e6b..96225a8 100644
  
  	PthreadMutexattr  default_mutexattr  = nullptr;
  	PthreadRwlockattr default_rwlockattr = nullptr;
-@@ -1303,6 +1469,7 @@ static bool NativeClockGettime(KernelClockid clock_id, KernelTimespec* tp) {
+@@ -1303,6 +1472,7 @@ static bool NativeClockGettime(KernelClockid clock_id, KernelTimespec* tp) {
  
  	tp->tv_sec  = native_time.tv_sec;
  	tp->tv_nsec = native_time.tv_nsec;
@@ -29510,7 +29527,7 @@ index 5f87e6b..96225a8 100644
  	return true;
  }
  
-@@ -1337,6 +1504,11 @@ static int NativeMutexLock(PthreadMutexPrivate* mutex, KernelUseconds* timeout_u
+@@ -1337,6 +1507,11 @@ static int NativeMutexLock(PthreadMutexPrivate* mutex, KernelUseconds* timeout_u
  		return EDEADLK;
  	}
  
@@ -29522,7 +29539,7 @@ index 5f87e6b..96225a8 100644
  	if (timeout_us == nullptr) {
  		while (mutex->owner != nullptr) {
  			mutex->cv.wait_for(lock, std::chrono::microseconds(SIGNAL_APC_POLL_MICROS));
-@@ -1373,6 +1545,10 @@ static int NativeMutexLock(PthreadMutexPrivate* mutex, KernelUseconds* timeout_u
+@@ -1373,6 +1548,10 @@ static int NativeMutexLock(PthreadMutexPrivate* mutex, KernelUseconds* timeout_u
  		}
  	}
  
@@ -29533,7 +29550,7 @@ index 5f87e6b..96225a8 100644
  	mutex->owner = self;
  	mutex->count = 1;
  	return OK;
-@@ -1430,6 +1606,10 @@ static int NativeMutexUnlock(PthreadMutexPrivate* mutex, uint32_t* recurse = nul
+@@ -1430,6 +1609,10 @@ static int NativeMutexUnlock(PthreadMutexPrivate* mutex, uint32_t* recurse = nul
  
  	mutex->owner = nullptr;
  	mutex->count = 0;
@@ -29544,7 +29561,7 @@ index 5f87e6b..96225a8 100644
  	lock.unlock();
  	mutex->cv.notify_one();
  
-@@ -1597,6 +1777,30 @@ void PthreadPool::FreeDetachedThreads() {
+@@ -1597,6 +1780,30 @@ void PthreadPool::FreeDetachedThreads() {
  	}
  }
  
@@ -29575,7 +29592,7 @@ index 5f87e6b..96225a8 100644
  bool PthreadKeys::Create(int* key, pthread_key_destructor_func_t destructor) {
  	EXIT_IF(key == nullptr);
  
-@@ -2403,6 +2607,11 @@ int KYTY_SYSV_ABI PthreadRwlockDestroy(PthreadRwlock* rwlock) {
+@@ -2403,6 +2610,11 @@ int KYTY_SYSV_ABI PthreadRwlockDestroy(PthreadRwlock* rwlock) {
  		return KERNEL_ERROR_EINVAL;
  	}
  
@@ -29587,7 +29604,7 @@ index 5f87e6b..96225a8 100644
  	EXIT_NOT_IMPLEMENTED(*rwlock == nullptr);
  
  	{
-@@ -2449,6 +2658,53 @@ int KYTY_SYSV_ABI PthreadRwlockInit(PthreadRwlock* rwlock, const PthreadRwlockat
+@@ -2449,6 +2661,53 @@ int KYTY_SYSV_ABI PthreadRwlockInit(PthreadRwlock* rwlock, const PthreadRwlockat
  	return PthreadRwlockInitNamed(rwlock, attr, name);
  }
  
@@ -29641,7 +29658,7 @@ index 5f87e6b..96225a8 100644
  static PthreadRwlockPrivate::Reader* RwlockFindReader(PthreadRwlock rwlock, Pthread thread) {
  	EXIT_IF(rwlock == nullptr);
  
-@@ -2526,11 +2782,14 @@ static int RwlockLockCooperative(PthreadRwlock rwlock, bool write, KernelUsecond
+@@ -2526,11 +2785,14 @@ static int RwlockLockCooperative(PthreadRwlock rwlock, bool write, KernelUsecond
  					writer_wait_registered = true;
  				}
  			} else {
@@ -29657,7 +29674,7 @@ index 5f87e6b..96225a8 100644
  					return OK;
  				}
  			}
-@@ -2581,6 +2840,12 @@ int KYTY_SYSV_ABI PthreadRwlockTimedrdlock(PthreadRwlock* rwlock, KernelUseconds
+@@ -2581,6 +2843,12 @@ int KYTY_SYSV_ABI PthreadRwlockTimedrdlock(PthreadRwlock* rwlock, KernelUseconds
  		return KERNEL_ERROR_EINVAL;
  	}
  
@@ -29670,7 +29687,7 @@ index 5f87e6b..96225a8 100644
  	EXIT_NOT_IMPLEMENTED(*rwlock == nullptr);
  
  	return RwlockLockCooperative(*rwlock, false, &usec);
-@@ -2593,6 +2858,12 @@ int KYTY_SYSV_ABI PthreadRwlockTimedwrlock(PthreadRwlock* rwlock, KernelUseconds
+@@ -2593,6 +2861,12 @@ int KYTY_SYSV_ABI PthreadRwlockTimedwrlock(PthreadRwlock* rwlock, KernelUseconds
  		return KERNEL_ERROR_EINVAL;
  	}
  
@@ -29683,7 +29700,7 @@ index 5f87e6b..96225a8 100644
  	EXIT_NOT_IMPLEMENTED(*rwlock == nullptr);
  
  	return RwlockLockCooperative(*rwlock, true, &usec);
-@@ -2601,6 +2872,11 @@ int KYTY_SYSV_ABI PthreadRwlockTimedwrlock(PthreadRwlock* rwlock, KernelUseconds
+@@ -2601,6 +2875,11 @@ int KYTY_SYSV_ABI PthreadRwlockTimedwrlock(PthreadRwlock* rwlock, KernelUseconds
  int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
  	PRINT_NAME();
  
@@ -29695,7 +29712,7 @@ index 5f87e6b..96225a8 100644
  	if (rwlock == nullptr) {
  		return KERNEL_ERROR_EINVAL;
  	}
-@@ -2614,10 +2890,12 @@ int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
+@@ -2614,10 +2893,12 @@ int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
  
  	{
  		std::lock_guard lock((*rwlock)->m);
@@ -29709,7 +29726,7 @@ index 5f87e6b..96225a8 100644
  			return OK;
  		}
  	}
-@@ -2628,6 +2906,10 @@ int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
+@@ -2628,6 +2909,10 @@ int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
  int KYTY_SYSV_ABI PthreadRwlockTrywrlock(PthreadRwlock* rwlock) {
  	PRINT_NAME();
  
@@ -29720,7 +29737,7 @@ index 5f87e6b..96225a8 100644
  	if (rwlock == nullptr) {
  		return KERNEL_ERROR_EINVAL;
  	}
-@@ -2676,6 +2958,7 @@ int KYTY_SYSV_ABI PthreadRwlockUnlock(PthreadRwlock* rwlock) {
+@@ -2676,6 +2961,7 @@ int KYTY_SYSV_ABI PthreadRwlockUnlock(PthreadRwlock* rwlock) {
  	{
  		std::lock_guard lock((*rwlock)->m);
  		if (RwlockRemoveReader(*rwlock, self)) {
@@ -29728,7 +29745,7 @@ index 5f87e6b..96225a8 100644
  			(*rwlock)->cv.notify_all();
  			return OK;
  		}
-@@ -2842,6 +3125,7 @@ int KYTY_SYSV_ABI PthreadCondattrSetclock(PthreadCondattr* attr, KernelClockid c
+@@ -2842,6 +3128,7 @@ int KYTY_SYSV_ABI PthreadCondattrSetclock(PthreadCondattr* attr, KernelClockid c
  }
  
  int KYTY_SYSV_ABI PthreadCondBroadcast(PthreadCond* cond) {
@@ -29736,7 +29753,7 @@ index 5f87e6b..96225a8 100644
  	// PRINT_NAME();
  
  	auto* pthread_static_objects = g_pthread_context->GetPthreadStaticObjects();
-@@ -2864,6 +3148,10 @@ int KYTY_SYSV_ABI PthreadCondBroadcast(PthreadCond* cond) {
+@@ -2864,6 +3151,10 @@ int KYTY_SYSV_ABI PthreadCondBroadcast(PthreadCond* cond) {
  			CondClearWaiters(*cond);
  			notify = true;
  		}
@@ -29747,7 +29764,7 @@ index 5f87e6b..96225a8 100644
  	}
  	if (notify) {
  		(*cond)->cv.notify_all();
-@@ -2885,6 +3173,11 @@ int KYTY_SYSV_ABI PthreadCondDestroy(PthreadCond* cond) {
+@@ -2885,6 +3176,11 @@ int KYTY_SYSV_ABI PthreadCondDestroy(PthreadCond* cond) {
  		return KERNEL_ERROR_EINVAL;
  	}
  
@@ -29759,7 +29776,7 @@ index 5f87e6b..96225a8 100644
  	EXIT_NOT_IMPLEMENTED(*cond == nullptr);
  
  	int result = 0;
-@@ -2946,6 +3239,7 @@ int KYTY_SYSV_ABI PthreadCondInit(PthreadCond* cond, const PthreadCondattr* attr
+@@ -2946,6 +3242,7 @@ int KYTY_SYSV_ABI PthreadCondInit(PthreadCond* cond, const PthreadCondattr* attr
  }
  
  int KYTY_SYSV_ABI PthreadCondSignal(PthreadCond* cond) {
@@ -29767,7 +29784,7 @@ index 5f87e6b..96225a8 100644
  	// PRINT_NAME();
  
  	auto* pthread_static_objects = g_pthread_context->GetPthreadStaticObjects();
-@@ -2964,6 +3258,10 @@ int KYTY_SYSV_ABI PthreadCondSignal(PthreadCond* cond) {
+@@ -2964,6 +3261,10 @@ int KYTY_SYSV_ABI PthreadCondSignal(PthreadCond* cond) {
  	{
  		std::lock_guard lock((*cond)->m);
  		notify = CondWakeWaiter(*cond, nullptr);
@@ -29778,7 +29795,7 @@ index 5f87e6b..96225a8 100644
  	}
  	if (notify) {
  		(*cond)->cv.notify_all();
-@@ -2994,13 +3292,22 @@ int KYTY_SYSV_ABI PthreadCondSignalto(PthreadCond* cond, Pthread thread) {
+@@ -2994,13 +3295,22 @@ int KYTY_SYSV_ABI PthreadCondSignalto(PthreadCond* cond, Pthread thread) {
  
  	int  result = 0;
  	bool notify = false;
@@ -29801,7 +29818,7 @@ index 5f87e6b..96225a8 100644
  
  	// LOGF("\tcond signalto: %s(0x%016" PRIx64 "), %d\n", (*cond)->name.c_str(),
  	// reinterpret_cast<uint64_t>(cond), result);
-@@ -3184,6 +3491,7 @@ while (!ready()) {
+@@ -3184,6 +3494,7 @@ while (!ready()) {
  }
  
  int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
@@ -29809,7 +29826,7 @@ index 5f87e6b..96225a8 100644
  	PRINT_NAME();
  
  	auto* pthread_static_objects = g_pthread_context->GetPthreadStaticObjects();
-@@ -3238,9 +3546,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
+@@ -3238,9 +3549,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
  		if (cond_elapsed >= 10 &&
  		    std::chrono::steady_clock::now() - cond_wait_logged > std::chrono::seconds(1)) {
  			cond_wait_logged = std::chrono::steady_clock::now();
@@ -29822,7 +29839,7 @@ index 5f87e6b..96225a8 100644
  		}
  	}
  	CondRemoveWaiter(cond_value, thread);
-@@ -3381,10 +3690,132 @@ static void CleanupThread(void* arg) {
+@@ -3381,10 +3693,781 @@ static void CleanupThread(void* arg) {
  	thread->almost_done = true;
  }
  
@@ -29848,84 +29865,733 @@ index 5f87e6b..96225a8 100644
 +	return 0;
 +}
 +
-+// ---- experiment 0425 C1: KYTY_BC5_0425_WAKE_SLICE_US=<100..3000> -----------------------------------------------------
-+// Shared since 2026-11-16 (the maintainer's word): on by default at 200 us for every title, through kSoft in
-+// bc5/switch_defaults.hpp; KYTY_BC5_0425_WAKE_SLICE_US=0 turns it off. Exp 0425: the
-+// second title's fight crashed 0 of 10 with it against 6 of 15 controls (a rule-passing 4/4 vs 3/3, R13).
-+// The console schedules a title's threads by fixed priority, so a woken game thread on a free core runs at once
-+// (TODO(verify): no console measurement; the PS5 kernel is FreeBSD-derived). On this host the woken job workers
-+// arrived 0.7-1.4 ms after the owner's signal (F453, F454), at nice 0 beside the host's own threads. EEVDF lets a
-+// task request a shorter slice (sched_setattr, SCHED_OTHER with sched_runtime; Linux 6.12, clamped to 0.1-100 ms by
-+// the kernel, TODO(verify) on the box's 7.3 kernel: the read-back line below is the exposure), and a woken task with a
-+// shorter slice may preempt the running one (PREEMPT_SHORT). Applied at thread start and on Setprio to guest threads
-+// below the background band (guest priority < 733); the thread's policy and nice are kept as read.
-+struct Bc5SchedAttr {
-+	uint32_t size;
-+	uint32_t sched_policy;
-+	uint64_t sched_flags;
-+	int32_t  sched_nice;
-+	uint32_t sched_priority;
-+	uint64_t sched_runtime;
-+	uint64_t sched_deadline;
-+	uint64_t sched_period;
-+};
-+static_assert(sizeof(Bc5SchedAttr) == 48, "SCHED_ATTR_SIZE_VER0");
-+
-+static int Bc5WakeSliceUs() {
-+	static const int v = [] {
-+		const char* e = std::getenv("KYTY_BC5_0425_WAKE_SLICE_US");
-+		int         us = 0;
-+		if (bc5::env_rule::on(e)) {
-+			char*      end = nullptr;
-+			const long x   = std::strtol(e, &end, 10);
-+			if (end != e && x > 0) {
-+				us = static_cast<int>(std::clamp(x, 100L, 3000L));
-+			}
-+		}
++// ---- experiment 0429 R: the console's "a lower number wins" for the guest's job workers ----------------------------
++// Shared since 2026-11-18 (the maintainer's word), on by default for every title through kSoft in
++// bc5/switch_defaults.hpp; KYTY_BC5_0429_RR=0 turns it off with no build. It replaces exp 0359's JobArenaFix (removed
++// 2026-11-17) and exp 0425's wake slice (removed with this change).
++// On the console a woken job worker takes its CPU at once from any lower-priority thread there (TODO(verify): the
++// console's kernel; the title's own priorities and masks, exp 0429's trace). Here a woken worker waited behind threads
++// of lower guest priority (h429Z1: 18 % of the job-semaphore wakes took 0.1-2 ms) while the title's main thread ran the
++// job itself (the second title's fight crash at eboot+0x3d7eca0).
++// The rule, for any title and with no title rows: a guest thread of a worker family (two or more threads whose names
++// differ only by a trailing index, "Job Hi 0".."Job Hi 7") that sleeps on a guest semaphore its family shares gets
++// SCHED_RR from RealtimeKit1 (rtkit, the system bus; no privilege of our own), with an RR priority in the guest's order
++// (a lower guest number, a higher RR priority), if its guest priority is below 700. A lone thread (an audio manager) and
++// the runtime's main thread are never promoted.
++// Bounds (the box runs with RT throttling off, sched_rt_runtime_us = period):
++//   1. RLIMIT_RTTIME on the process: soft 20 ms of RR time without blocking -> SIGXCPU, whose handler drops the running
++//      RR thread back to SCHED_OTHER for good (a spinner); hard 200 ms -> the kernel ends the emulator (never the box);
++//   2. a watchdog thread every 5 ms: an RR thread that ran 100 ms with no new time slice is dropped for good;
++//   3. at most (online CPUs - 2) guest threads hold RR at once, so host threads always have two CPUs.
++// When the cap is full, the holder with the numerically highest guest priority above a newcomer's is evicted; it comes
++// back at a later sleep when a place is free. rtkit's calls: at most 15 per 20 s window; a refusal stops new promotions
++// until the window turns, except to replace an evicted thread.
++// rtkit's room: rtkit serves at most --threads-per-user-max threads of one user (read from its command line; 25 by
++// default, 64 on the box since 2026-11-18 08:17, the maintainer's word), counting every thread of the user it made RT or
++// nice < 0 that still is. The watchdog counts them once a second from /proc (processes with CAP_SYS_NICE, which set
++// their own priorities, left out), and R promotes only while that count + 1 + 4 fits, so 4 places stay for the
++// emulator's own audio threads and PipeWire. A thread denied for room or budget is promoted at a later sleep.
++// Tested on the box (exp 0429, 2026-11-17/18): under the crash stressor 4 of 4 clean with R against 7 of 9 crashed
++// without; all 8 Job Hi workers RR with 0 rtkit refusals (rtkit 64); fps with and without R within run-to-run spread on
++// both titles. Normal build: every promotion, drop and refusal is logged (the first 200) and one count line a minute;
++// the lean build logs nothing.
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++#include <dirent.h>
++#include <dlfcn.h>
++#include <fcntl.h>
++#include <cstring>
++#include <sys/resource.h>
++#include <sys/stat.h>
++namespace bc5_0429r {
++static bool On() { // KYTY_BC5_0429_RR, on unless "0" (kSoft gives "1")
++	static const bool v = [] {
++		const bool on = bc5::env_rule::on(std::getenv("KYTY_BC5_0429_RR"));
 +#ifndef BC5_LEAN
-+		std::fprintf(stderr, "[bc5] exp 0425: C1 wake slice %s (%d us)\n", us > 0 ? "ON" : "off", us);
++		std::fprintf(stderr, "[bc5] exp 0429: R (RR for the guest's worker-family sleepers) %s\n", on ? "ON" : "off");
 +#endif
-+		return us;
++		return on;
 +	}();
 +	return v;
 +}
-+
-+static void Bc5ApplyWakeSlice(Pthread thread, const char* why) {
-+	const int us = Bc5WakeSliceUs();
-+	if (us == 0 || thread == nullptr || thread->attr == nullptr || thread->host_thread_id == 0 ||
-+	    thread->attr->guest_priority >= 733) {
-+		return;
-+	}
-+	const auto   tid = static_cast<pid_t>(thread->host_thread_id);
-+	Bc5SchedAttr cur {};
-+	const long   rc0 = syscall(SYS_sched_getattr, tid, &cur, static_cast<unsigned>(sizeof(cur)), 0u);
-+	long         rc1 = -1;
-+	int          err = 0;
-+	Bc5SchedAttr after {};
-+	if (rc0 == 0 && (cur.sched_policy == SCHED_OTHER || cur.sched_policy == SCHED_BATCH)) {
-+		Bc5SchedAttr a {};
-+		a.size          = sizeof(a);
-+		a.sched_policy  = cur.sched_policy;
-+		a.sched_nice    = cur.sched_nice;
-+		a.sched_runtime = static_cast<uint64_t>(us) * 1000u;
-+		rc1             = syscall(SYS_sched_setattr, tid, &a, 0u);
-+		err             = rc1 == 0 ? 0 : errno;
-+		syscall(SYS_sched_getattr, tid, &after, static_cast<unsigned>(sizeof(after)), 0u);
-+	}
++constexpr int     kMaxSlots   = 64;
++constexpr int64_t kSoftUs     = 20000;
++constexpr int64_t kHardUs     = 200000;
++constexpr int     kRrMax      = 20; // rtkit's MaxRealtimePriority on the box (2026-11-17)
++static std::atomic<int> g_tid[kMaxSlots];      // RR threads (0: free)
++static std::atomic<int> g_slot_prio[kMaxSlots]; // their guest priorities
++static std::atomic<int>  g_xcpu_tid {0};       // the last thread SIGXCPU dropped (logged by the watchdog)
++constexpr int64_t        kWindowMs  = 20000; // the rtkit budget per window
++constexpr int            kWindowMax = 15;
++static std::atomic<int64_t> g_win_start {0};   // ms, steady clock
++static std::atomic<int>     g_win_calls {0};
++static std::atomic<int64_t> g_full_until {0};  // rtkit refused: no new promotion before this (ms), only replacements
++static std::atomic<int>     g_evicted_tid[kMaxSlots]; // evicted, waiting to come back (not spinners)
++static std::atomic<int>     g_evicted_n {0};
++static std::atomic<int> g_held {0};            // how many hold RR now
++constexpr int           kReserve = 4;          // rtkit places left for the emulator's own and others' requests
++static std::atomic<int> g_user_rt {-1};        // the user's RT or nice < 0 threads (rtkit's count), -1 before the first scan
++static int              g_rtkit_max = 25;      // rtkit's --threads-per-user-max (its default 25)
 +#ifndef BC5_LEAN
-+	static std::atomic<int> logged {0};
-+	if (logged.fetch_add(1, std::memory_order_relaxed) < 256) {
-+		std::fprintf(stderr,
-+		             "[bc5] exp 0425 slice: %s tid %d '%s' prio %d policy %u nice %d: set rc %ld errno %d, read back runtime %llu ns nice %d\n",
-+		             why, static_cast<int>(tid), thread->name.c_str(), thread->attr->guest_priority, cur.sched_policy, cur.sched_nice, rc1,
-+		             err, static_cast<unsigned long long>(after.sched_runtime), after.sched_nice);
++static char             g_rtkit_err[200] {};   // the last refusal's D-Bus error, name: message
++#endif
++static std::atomic<int> g_calls {0};           // rtkit calls made
++#ifndef BC5_LEAN
++static std::atomic<int> g_logged {0};
++#endif
++static std::atomic<int> g_spinner_tid[kMaxSlots]; // dropped for good
++// counters and the last 16 losses as kind and guest priority (normal build only: the count line a minute)
++enum Ev { kPromoted, kRefused, kCapDenied, kBudgetDenied, kEvicted, kDropXcpu, kDropWatchdog, kDropPrio, kDropGone, kRoomDenied, kEvN };
++#ifndef BC5_LEAN
++static const char       kEvName[kEvN] = {'P', 'R', 'C', 'B', 'E', 'X', 'W', 'H', 'G', 'N'};
++static std::atomic<int> g_ev[kEvN];
++static std::atomic<int> g_last[16];
++static std::atomic<int> g_last_n {0};
++#endif
++static void Count(Ev e, int prio) { // async-signal-safe
++#ifndef BC5_LEAN
++	g_ev[e].fetch_add(1, std::memory_order_relaxed);
++	if (e == kPromoted || e == kCapDenied || e == kRoomDenied) {
++		return; // the ring keeps the losses: drops, evictions, refusals, budget denials
 +	}
++	g_last[g_last_n.fetch_add(1, std::memory_order_relaxed) & 15].store(e * 10000 + (prio < 0 ? 9999 : prio), std::memory_order_relaxed);
 +#else
-+	(void)why;
-+	(void)err;
++	(void)e;
++	(void)prio;
 +#endif
 +}
-+// ---- end of experiment 0425 C1 ------------------------------------------------------------------------------------
++static int              g_cap = 0;
++static int64_t NowMs() {
++	return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
++}
++static bool BudgetOk(bool replacing) { // one rtkit call may be made now
++	const int64_t now = NowMs();
++	int64_t       w   = g_win_start.load();
++	if (now - w >= kWindowMs && g_win_start.compare_exchange_strong(w, now)) {
++		g_win_calls.store(0);
++	}
++	if (now < g_full_until.load() && !replacing) {
++		return false;
++	}
++	return g_win_calls.fetch_add(1) < kWindowMax || (g_win_calls.fetch_sub(1), false);
++}
++static bool IsEvicted(int tid) {
++	for (auto& s: g_evicted_tid) {
++		if (s.load(std::memory_order_relaxed) == tid) {
++			return true;
++		}
++	}
++	return false;
++}
++static void MarkEvicted(int tid) {
++	for (auto& s: g_evicted_tid) {
++		int z = 0;
++		if (s.load(std::memory_order_relaxed) == tid) {
++			return;
++		}
++		if (s.compare_exchange_strong(z, tid)) {
++			g_evicted_n.fetch_add(1);
++			return;
++		}
++	}
++}
++static void Unevict(int tid) {
++	for (auto& s: g_evicted_tid) {
++		int t = tid;
++		if (s.compare_exchange_strong(t, 0)) {
++			g_evicted_n.fetch_sub(1);
++			return;
++		}
++	}
++}
++
++static long RawSyscall3(long n, long a, long b, long c) { // no errno: the handler may run on any thread
++	long ret;
++	asm volatile("syscall" : "=a"(ret) : "a"(n), "D"(a), "S"(b), "d"(c) : "rcx", "r11", "memory");
++	return ret;
++}
++static long RawSyscall4(long n, long a, long b, long c, long d) {
++	long ret;
++	register long r10 asm("r10") = d;
++	asm volatile("syscall" : "=a"(ret) : "a"(n), "D"(a), "S"(b), "d"(c), "r"(r10) : "rcx", "r11", "memory");
++	return ret;
++}
++static void Log(const char* what, int tid, const char* name, int prio, int rr, long rc) {
++#ifndef BC5_LEAN
++	if (g_logged.fetch_add(1, std::memory_order_relaxed) < 200) {
++		std::fprintf(stderr, "[bc5] exp 0429 R: %s tid %d '%s' prio %d rr %d rc %ld (held %d, calls %d)\n", what, tid, name, prio, rr, rc,
++		             g_held.load(), g_calls.load());
++	}
++#else
++	(void)what; (void)tid; (void)name; (void)prio; (void)rr; (void)rc;
++#endif
++}
++static bool IsSpinner(int tid) {
++	for (auto& s: g_spinner_tid) {
++		if (s.load(std::memory_order_relaxed) == tid) {
++			return true;
++		}
++	}
++	return false;
++}
++static void MarkSpinner(int tid) {
++	for (auto& s: g_spinner_tid) {
++		int z = 0;
++		if (s.load(std::memory_order_relaxed) == tid || s.compare_exchange_strong(z, tid)) {
++			return;
++		}
++	}
++}
++// Drops tid back to SCHED_OTHER (an unprivileged thread may always lower its policy; rtkit sets RESET_ON_FORK, kept).
++// Async-signal-safe: raw syscalls and atomics only.
++static int Drop(int tid, bool spinner = true) { // the dropped thread's guest priority, or -1 when it held no slot
++	for (int i = 0; i < kMaxSlots; i++) {
++		auto& s = g_tid[i];
++		int   t = tid;
++		if (s.compare_exchange_strong(t, 0)) {
++			const int gp = g_slot_prio[i].load(std::memory_order_relaxed);
++			struct { int prio; } p {0};
++			RawSyscall3(SYS_sched_setscheduler, tid, SCHED_OTHER | 0x40000000 /* SCHED_RESET_ON_FORK */, reinterpret_cast<long>(&p));
++			g_held.fetch_sub(1, std::memory_order_relaxed);
++			if (spinner) {
++				MarkSpinner(tid);
++			}
++			return gp;
++		}
++	}
++	return -1;
++}
++static void ResetSoft() {
++	rlimit r {static_cast<rlim_t>(kSoftUs), static_cast<rlim_t>(kHardUs)};
++	RawSyscall4(SYS_prlimit64, 0, RLIMIT_RTTIME, reinterpret_cast<long>(&r), 0);
++}
++static void OnXcpu(int) { // bound 1: the kernel sends SIGXCPU to the RR thread that passed the soft limit
++	const int self = static_cast<int>(RawSyscall3(SYS_gettid, 0, 0, 0));
++	if (const int gp = Drop(self); gp >= 0) {
++		g_xcpu_tid.store(self, std::memory_order_relaxed);
++		Count(kDropXcpu, gp);
++	}
++	ResetSoft(); // the kernel raised the soft limit by a second; put it back below the hard one
++}
++static bool ReadSmall(const char* path, char* buf, size_t n) { // a small /proc file, NUL-terminated (NULs in it kept)
++	const int fd = open(path, O_RDONLY | O_CLOEXEC);
++	if (fd < 0) {
++		return false;
++	}
++	const ssize_t r = read(fd, buf, n - 1);
++	close(fd);
++	buf[r > 0 ? r : 0] = 0;
++	return r > 0;
++}
++static int UserRtThreads() { // threads of our user that are RR/FIFO or have nice < 0: what rtkit counts for the user
++	const uid_t uid = getuid();
++	DIR*        d   = opendir("/proc");
++	if (d == nullptr) {
++		return -1;
++	}
++	int n = 0;
++	for (dirent* e; (e = readdir(d)) != nullptr;) {
++		if (e->d_name[0] < '1' || e->d_name[0] > '9') {
++			continue;
++		}
++		char        path[96];
++		struct stat st {};
++		std::snprintf(path, sizeof(path), "/proc/%s/task", e->d_name);
++		if (stat(path, &st) != 0 || st.st_uid != uid) {
++			continue;
++		}
++		{ // a process with CAP_SYS_NICE sets its priorities without rtkit, and rtkit does not count it
++			char sp[96], buf[4096];
++			std::snprintf(sp, sizeof(sp), "/proc/%s/status", e->d_name);
++			const char* c = ReadSmall(sp, buf, sizeof(buf)) ? std::strstr(buf, "CapEff:") : nullptr;
++			if (c != nullptr && ((std::strtoull(c + 7, nullptr, 16) >> 23) & 1) != 0) { // CAP_SYS_NICE is 23
++				continue;
++			}
++		}
++		DIR* t = opendir(path);
++		if (t == nullptr) {
++			continue;
++		}
++		for (dirent* f; (f = readdir(t)) != nullptr;) {
++			if (f->d_name[0] < '1' || f->d_name[0] > '9') {
++				continue;
++			}
++			char sp[128], buf[640];
++			std::snprintf(sp, sizeof(sp), "/proc/%s/task/%s/stat", e->d_name, f->d_name);
++			if (!ReadSmall(sp, buf, sizeof(buf))) {
++				continue;
++			}
++			const char* q = std::strrchr(buf, ')'); // after the name: field 3 (state) on
++			if (q == nullptr) {
++				continue;
++			}
++			long v[40] {};
++			int  k = 0;
++			for (char* c = const_cast<char*>(q + 2); k < 40 && *c != 0;) {
++				v[k++] = std::strtol(c, &c, 10);
++				while (*c == ' ') {
++					c++;
++				}
++				if (k == 1) { // field 3, the state, is a letter
++					while (*c != 0 && *c != ' ') {
++						c++;
++					}
++					while (*c == ' ') {
++						c++;
++					}
++				}
++			}
++			// v[k] is field k + 3 (field 3 counted as v[0]): nice is field 19 -> v[16], policy field 41 -> v[38]
++			if (k > 38 && (v[38] == SCHED_FIFO || v[38] == SCHED_RR || v[16] < 0)) {
++				n++;
++			}
++		}
++		closedir(t);
++	}
++	closedir(d);
++	return n;
++}
++static int RtkitThreadsMax() { // rtkit's --threads-per-user-max from its command line, else its default 25
++	DIR* d = opendir("/proc");
++	if (d == nullptr) {
++		return 25;
++	}
++	int m = 25;
++	for (dirent* e; (e = readdir(d)) != nullptr;) {
++		if (e->d_name[0] < '1' || e->d_name[0] > '9') {
++			continue;
++		}
++		char path[96], buf[512];
++		std::snprintf(path, sizeof(path), "/proc/%s/comm", e->d_name);
++		if (!ReadSmall(path, buf, sizeof(buf)) || std::strncmp(buf, "rtkit-daemon", 12) != 0) {
++			continue;
++		}
++		std::snprintf(path, sizeof(path), "/proc/%s/cmdline", e->d_name);
++		const int fd = open(path, O_RDONLY | O_CLOEXEC);
++		if (fd >= 0) {
++			const ssize_t r = read(fd, buf, sizeof(buf) - 1);
++			close(fd);
++			for (ssize_t i = 0; i < r;) { // arguments are NUL-separated
++				const char* a = buf + i;
++				buf[r]        = 0;
++				if (std::strncmp(a, "--threads-per-user-max=", 23) == 0) {
++					m = std::max(1, std::atoi(a + 23));
++				}
++				i += static_cast<ssize_t>(std::strlen(a)) + 1;
++			}
++		}
++		break;
++	}
++	closedir(d);
++	return m;
++}
++static bool HasWorseHolder(int prio) { // a holder of a numerically higher guest priority
++	for (int i = 0; i < kMaxSlots; i++) {
++		if (g_tid[i].load(std::memory_order_relaxed) != 0 && g_slot_prio[i].load(std::memory_order_relaxed) > prio) {
++			return true;
++		}
++	}
++	return false;
++}
++static bool RoomOk() { // one more RR thread leaves kReserve of rtkit's places
++	const int u = g_user_rt.load(std::memory_order_relaxed);
++	return u >= 0 && u + 1 + kReserve <= g_rtkit_max;
++}
++static void Watchdog() { // bound 2
++	pthread_setname_np(pthread_self(), "bc5-rr-watch");
++	struct Seen {
++		int      tid;
++		uint64_t run, slices, since_ns;
++	};
++	Seen seen[kMaxSlots] {};
++	g_rtkit_max = RtkitThreadsMax();
++	g_user_rt.store(UserRtThreads());
++#ifndef BC5_LEAN
++	std::fprintf(stderr, "[bc5] exp 0429 R: rtkit serves %d threads per user; the user has %d RT or high-priority threads now; reserve %d\n",
++	             g_rtkit_max, g_user_rt.load(), kReserve);
++#endif
++	for (int tick = 1;; tick++) {
++		std::this_thread::sleep_for(std::chrono::milliseconds(5));
++		if (tick % 200 == 0) { // rtkit's count of the user, once a second
++			g_user_rt.store(UserRtThreads());
++		}
++#ifndef BC5_LEAN
++		if (tick % 12000 == 0) { // about a minute
++			char      last[16 * 6 + 1];
++			int       o = 0;
++			const int n = g_last_n.load();
++			for (int k = (n > 16 ? n - 16 : 0); k < n; k++) {
++				const int v = g_last[k & 15].load();
++				o += std::snprintf(last + o, sizeof(last) - o, "%c%d ", kEvName[v / 10000], v % 10000);
++			}
++			last[o] = 0;
++			std::fprintf(stderr, "[bc5] exp 0429 R count: held %d calls %d P %d R %d C %d B %d E %d X %d W %d H %d G %d N %d user %d of %d | last %s\n", g_held.load(),
++			             g_calls.load(), g_ev[kPromoted].load(), g_ev[kRefused].load(), g_ev[kCapDenied].load(), g_ev[kBudgetDenied].load(),
++			             g_ev[kEvicted].load(), g_ev[kDropXcpu].load(), g_ev[kDropWatchdog].load(), g_ev[kDropPrio].load(), g_ev[kDropGone].load(), g_ev[kRoomDenied].load(),
++			             g_user_rt.load(), g_rtkit_max, last);
++		}
++#endif
++		if (const int x = g_xcpu_tid.exchange(0); x != 0) {
++			Log("dropped by SIGXCPU (20 ms without blocking)", x, "", 0, 0, 0);
++		}
++		const auto now = static_cast<uint64_t>(std::chrono::steady_clock::now().time_since_epoch().count());
++		for (int i = 0; i < kMaxSlots; i++) {
++			const int tid = g_tid[i].load(std::memory_order_relaxed);
++			if (tid == 0) {
++				seen[i].tid = 0;
++				continue;
++			}
++			char path[64], buf[128];
++			std::snprintf(path, sizeof(path), "/proc/self/task/%d/schedstat", tid);
++			const int fd = open(path, O_RDONLY | O_CLOEXEC);
++			if (fd < 0) {
++				if (const int gp = Drop(tid); gp >= 0) { // the thread is gone
++					Count(kDropGone, gp);
++				}
++				continue;
++			}
++			const ssize_t r = read(fd, buf, sizeof(buf) - 1);
++			close(fd);
++			buf[r > 0 ? r : 0] = 0;
++			unsigned long long run = 0, wait = 0, slices = 0;
++			std::sscanf(buf, "%llu %llu %llu", &run, &wait, &slices);
++			if (seen[i].tid != tid || seen[i].slices != slices) {
++				seen[i] = {tid, run, slices, now};
++			} else if (run - seen[i].run >= 95000000ull && now - seen[i].since_ns >= 100000000ull) {
++				if (const int gp = Drop(tid); gp >= 0) {
++					Count(kDropWatchdog, gp);
++					Log("dropped by the watchdog (100 ms in one slice)", tid, "", gp, 0, 0);
++				}
++			}
++		}
++	}
++}
++static void Init() {
++	static std::once_flag once;
++	std::call_once(once, [] {
++		const long n = sysconf(_SC_NPROCESSORS_ONLN);
++		g_cap        = static_cast<int>(std::clamp<long>(n - 2, 1, kMaxSlots));
++		ResetSoft(); // rtkit requires RLIMIT_RTTIME with a hard limit within its RTTimeUSecMax
++		struct sigaction sa {};
++		sa.sa_handler = OnXcpu;
++		sigemptyset(&sa.sa_mask);
++		sa.sa_flags = SA_RESTART;
++		sigaction(SIGXCPU, &sa, nullptr);
++		std::thread(Watchdog).detach();
++#ifndef BC5_LEAN
++		std::fprintf(stderr, "[bc5] exp 0429 R: cap %d RR threads, RLIMIT_RTTIME soft %lld hard %lld us, watchdog on\n", g_cap,
++		             static_cast<long long>(kSoftUs), static_cast<long long>(kHardUs));
++#endif
++	});
++}
++// rtkit's MakeThreadRealtimeWithPID through libdbus, loaded at run time (no build dependency; the host has it).
++static long RtkitMakeRealtime(uint64_t tid, uint32_t prio) {
++	struct Api {
++		void* (*bus_get)(int, void*);
++		void* (*new_call)(const char*, const char*, const char*, const char*);
++		int (*append)(void*, int, ...);
++		void* (*send_block)(void*, void*, int, void*);
++		void (*unref)(void*);
++		void (*err_init)(void*);
++		int (*err_set)(const void*);
++		void (*err_free)(void*);
++		int (*threads_init)();
++		void (*no_exit)(void*, unsigned);
++		void* (*open_private)(const char*, void*);
++		int (*bus_register)(void*, void*);
++		bool ok = false;
++	};
++	static Api api = [] {
++		Api a {};
++		void* h = dlopen("libdbus-1.so.3", RTLD_NOW | RTLD_LOCAL);
++		if (h == nullptr) {
++			return a;
++		}
++		a.bus_get      = reinterpret_cast<void* (*)(int, void*)>(dlsym(h, "dbus_bus_get_private"));
++		a.new_call     = reinterpret_cast<void* (*)(const char*, const char*, const char*, const char*)>(dlsym(h, "dbus_message_new_method_call"));
++		a.append       = reinterpret_cast<int (*)(void*, int, ...)>(dlsym(h, "dbus_message_append_args"));
++		a.send_block   = reinterpret_cast<void* (*)(void*, void*, int, void*)>(dlsym(h, "dbus_connection_send_with_reply_and_block"));
++		a.unref        = reinterpret_cast<void (*)(void*)>(dlsym(h, "dbus_message_unref"));
++		a.err_init     = reinterpret_cast<void (*)(void*)>(dlsym(h, "dbus_error_init"));
++		a.err_set      = reinterpret_cast<int (*)(const void*)>(dlsym(h, "dbus_error_is_set"));
++		a.err_free     = reinterpret_cast<void (*)(void*)>(dlsym(h, "dbus_error_free"));
++		a.threads_init = reinterpret_cast<int (*)()>(dlsym(h, "dbus_threads_init_default"));
++		a.no_exit      = reinterpret_cast<void (*)(void*, unsigned)>(dlsym(h, "dbus_connection_set_exit_on_disconnect"));
++		a.open_private = reinterpret_cast<void* (*)(const char*, void*)>(dlsym(h, "dbus_connection_open_private"));
++		a.bus_register = reinterpret_cast<int (*)(void*, void*)>(dlsym(h, "dbus_bus_register"));
++		a.ok = a.bus_get && a.new_call && a.append && a.send_block && a.unref && a.err_init && a.err_set && a.err_free && a.threads_init && a.no_exit && a.open_private && a.bus_register;
++		if (a.ok) {
++			a.threads_init();
++		}
++		return a;
++	}();
++	if (!api.ok) {
++		return -1000;
++	}
++	static std::mutex m;
++	std::lock_guard   lk(m);
++	alignas(16) char  err[64] {}; // DBusError: two pointers, a bit field, a pointer
++	api.err_init(err);
++	static void* conn = [&] { // a private connection of our own, kept; a lost bus must not end the emulator
++		void* c = api.bus_get(1 /* DBUS_BUS_SYSTEM */, err);
++		// inside the distrobox (the normal build) the host's system bus is at /run/host/run/dbus (read 2026-11-17); the
++		// container shares the host's PID namespace, so rtkit takes our pid and tid as they are
++		const char* paths[] = {std::getenv("DBUS_SYSTEM_BUS_ADDRESS"), "unix:path=/run/host/run/dbus/system_bus_socket"};
++		for (const char* a: paths) {
++			if (c != nullptr || a == nullptr || a[0] == 0) {
++				continue;
++			}
++			api.err_free(err);
++			api.err_init(err);
++			c = api.open_private(a, err);
++			if (c != nullptr && api.bus_register(c, err) == 0) {
++				c = nullptr; // TODO: the connection is leaked on a failed hello; once per process
++			}
++		}
++		if (c != nullptr) {
++			api.no_exit(c, 0);
++		}
++		return c;
++	}();
++	if (conn == nullptr) {
++		api.err_free(err);
++		return -1001;
++	}
++	void* msg = api.new_call("org.freedesktop.RealtimeKit1", "/org/freedesktop/RealtimeKit1", "org.freedesktop.RealtimeKit1",
++	                         "MakeThreadRealtimeWithPID");
++	if (msg == nullptr) {
++		return -1002;
++	}
++	uint64_t pid = static_cast<uint64_t>(getpid());
++	api.append(msg, 't', &pid, 't', &tid, 'u', &prio, 0);
++	g_calls.fetch_add(1, std::memory_order_relaxed);
++	void* reply = api.send_block(conn, msg, 1000, err);
++	api.unref(msg);
++	long rc = 0;
++	if (reply == nullptr || api.err_set(err)) {
++		rc = -1003;
++#ifndef BC5_LEAN
++		struct DbusErr { const char* name; const char* message; }; // DBusError's first two fields (dbus-errors.h)
++		const auto* e = reinterpret_cast<const DbusErr*>(err);
++		std::snprintf(g_rtkit_err, sizeof(g_rtkit_err), "%s: %s", e->name != nullptr ? e->name : "?", e->message != nullptr ? e->message : "?");
++#endif
++	}
++	if (reply != nullptr) {
++		api.unref(reply);
++	}
++	api.err_free(err);
++	return rc;
++}
++static int RrOf(int guest_priority) {
++	return std::clamp(1 + (700 - guest_priority) * (kRrMax - 1) / 700, 1, kRrMax);
++}
++// Called from Bc5ApplyGuestPriority (start, setprio) and at a thread's first sleep. Promotes only a sleeper below 700
++// that is not a spinner, within the cap and rtkit's call budget; drops a thread whose priority went to 700 or above.
++static void Apply(Pthread thread, bool sleeper) {
++	if (!On() || thread == nullptr || thread->attr == nullptr || thread->host_thread_id == 0) {
++		return;
++	}
++	Init();
++	const int tid  = static_cast<int>(thread->host_thread_id);
++	const int prio = thread->attr->guest_priority;
++	bool      held = false;
++	for (auto& s: g_tid) {
++		held = held || s.load(std::memory_order_relaxed) == tid;
++	}
++	if (held && prio >= 700) {
++		Count(kDropPrio, Drop(tid)); // not a spinner, but the rule says out; it stays out (rtkit's budget)
++		Log("dropped (priority 700 or above)", tid, thread->name.c_str(), prio, 0, 0);
++		return;
++	}
++	if (held || !sleeper || prio >= 700 || IsSpinner(tid)) {
++		return;
++	}
++	if (thread->bc5_rr_main) { // the title's main thread runs the owner's help: the race R is meant to win, never promoted
++		static std::atomic<int> once {0};
++		if (once.fetch_add(1) == 0) {
++			Log("not promoted (the runtime's main thread)", tid, thread->name.c_str(), prio, 0, 0);
++		}
++		return;
++	}
++	// a place under the cap, reserved atomically; when the cap is full, the holder with the numerically highest guest
++	// priority above ours is dropped for good to make room (the console's order: a lower number wins)
++	bool       evicted  = false;
++	const bool cap_full = g_held.fetch_add(1) >= g_cap;
++	if (cap_full || !RoomOk()) { // a short rtkit room evicts like a full cap
++		g_held.fetch_sub(1);
++		int victim = 0, vprio = prio;
++		for (int i = 0; i < kMaxSlots; i++) {
++			const int t = g_tid[i].load(std::memory_order_relaxed);
++			const int p = g_slot_prio[i].load(std::memory_order_relaxed);
++			if (t != 0 && p > vprio) {
++				victim = t;
++				vprio  = p;
++			}
++		}
++		if (victim == 0 || Drop(victim, false) < 0) {
++			if (cap_full) {
++				Count(kCapDenied, prio);
++				Log("not promoted (the cap, no holder of a lower priority)", tid, thread->name.c_str(), prio, 0, 0);
++			} else {
++				Count(kRoomDenied, prio);
++				MarkEvicted(tid); // waits for room
++				Log("not promoted (rtkit's room, no holder of a lower priority)", tid, thread->name.c_str(), prio, 0, 0);
++			}
++			return;
++		}
++		Count(kEvicted, vprio);
++		MarkEvicted(victim); // it comes back at a later sleep when a place is free
++		Log("evicted for a higher priority", victim, "", vprio, 0, 0);
++		evicted = true;
++		g_user_rt.fetch_sub(1); // the victim went back to SCHED_OTHER: rtkit frees its place at the next call
++		if (g_held.fetch_add(1) >= g_cap) {
++			g_held.fetch_sub(1);
++			MarkEvicted(tid);
++			return;
++		}
++	}
++	if (!RoomOk()) {
++		g_held.fetch_sub(1);
++		Count(kRoomDenied, prio);
++		MarkEvicted(tid); // waits for room, promoted at a later sleep
++		Log("not promoted (rtkit's room for the user)", tid, thread->name.c_str(), prio, 0, 0);
++		return;
++	}
++	if (!BudgetOk(evicted)) {
++		g_held.fetch_sub(1);
++		Count(kBudgetDenied, prio);
++		MarkEvicted(tid); // waits, promoted at a later sleep
++		Log("not promoted (rtkit's budget)", tid, thread->name.c_str(), prio, 0, 0);
++		return;
++	}
++	const int  rr = RrOf(prio);
++	const long rc = RtkitMakeRealtime(static_cast<uint64_t>(tid), static_cast<uint32_t>(rr));
++	if (rc != 0) {
++		g_held.fetch_sub(1);
++		g_full_until.store(g_win_start.load() + kWindowMs);
++		Count(kRefused, prio);
++		Log("rtkit refused", tid, thread->name.c_str(), prio, rr, rc);
++#ifndef BC5_LEAN
++		std::fprintf(stderr, "[bc5] exp 0429 R: rtkit's reason: %s\n", g_rtkit_err);
++#endif
++		return;
++	}
++	for (int i = 0; i < kMaxSlots; i++) {
++		int z = 0;
++		if (g_tid[i].compare_exchange_strong(z, tid)) {
++			g_slot_prio[i].store(prio, std::memory_order_relaxed);
++			Count(kPromoted, prio);
++			Unevict(tid);
++			g_user_rt.fetch_add(1);
++			Log("promoted", tid, thread->name.c_str(), prio, rr, rc);
++			return;
++		}
++	}
++	g_held.fetch_sub(1);
++	struct { int prio; } p0 {0};
++	RawSyscall3(SYS_sched_setscheduler, tid, SCHED_OTHER | 0x40000000, reinterpret_cast<long>(&p0)); // no slot: give it back
++}
++} // namespace bc5_0429r
++
++static void Bc5RrApply(Pthread thread, const char* /*why*/) {
++	bc5_0429r::Apply(thread, thread != nullptr && thread->bc5_rr_sleeper);
++}
++
++// A guest thread's sleep on a guest semaphore (kernel/semaphore.cpp, after the resume, under the semaphore's lock): mark
++// it a sleeper when the semaphore belongs to its worker family. A thread that slept on it first is marked at its next
++// sleep there.
++namespace bc5_0429r {
++constexpr int kPools = 512;
++// A semaphore's worker family. Up to kCands (thread, family) pairs are kept until two distinct threads
++// of one family meet; then that family owns the semaphore and only its threads are promoted there.
++constexpr int kCands = 6;
++struct FamSlot {
++	std::atomic<uintptr_t> sem {0};
++	std::atomic<int>       tid[kCands] {};
++	std::atomic<uint32_t>  key[kCands] {};
++	std::atomic<uint32_t>  owner {0};
++};
++static FamSlot  g_fams[kPools];
++static uint32_t FamilyKey(const std::string& name) { // FNV-1a of the name without its trailing index; 0 for none
++	size_t n = name.size();
++	while (n > 0 && ((name[n - 1] >= '0' && name[n - 1] <= '9') || name[n - 1] == ' ' || name[n - 1] == '_' || name[n - 1] == '-' ||
++	                 name[n - 1] == '#')) {
++		n--;
++	}
++	uint32_t h = 2166136261u;
++	for (size_t i = 0; i < n; i++) {
++		h = (h ^ static_cast<uint8_t>(name[i])) * 16777619u;
++	}
++	return n == 0 ? 0 : (h == 0 ? 1 : h);
++}
++static bool IsFamilyPool(const void* sem, int tid, uint32_t key) {
++	if (key == 0) {
++		return false;
++	}
++	const auto a = reinterpret_cast<uintptr_t>(sem);
++	int        i = static_cast<int>(((a >> 4) * 2654435761ull) % kPools);
++	for (int k = 0; k < kPools; k++, i = (i + 1) % kPools) {
++		uintptr_t cur = g_fams[i].sem.load(std::memory_order_acquire);
++		if (cur == 0) {
++			uintptr_t z = 0;
++			cur         = g_fams[i].sem.compare_exchange_strong(z, a) ? a : z;
++		}
++		if (cur != a) {
++			continue;
++		}
++		auto&          f = g_fams[i];
++		const uint32_t o = f.owner.load(std::memory_order_relaxed);
++		if (o != 0) {
++			return o == key;
++		}
++		for (int c = 0; c < kCands; c++) {
++			int t = f.tid[c].load(std::memory_order_relaxed);
++			if (t == 0) {
++				int z = 0;
++				if (f.tid[c].compare_exchange_strong(z, tid)) {
++					f.key[c].store(key, std::memory_order_relaxed);
++					return false; // recorded; a second thread of this family makes it a pool
++				}
++				t = z;
++			}
++			if (t == tid) {
++				return false;
++			}
++			if (f.key[c].load(std::memory_order_relaxed) == key) {
++				uint32_t z = 0;
++				f.owner.compare_exchange_strong(z, key);
++				return f.owner.load(std::memory_order_relaxed) == key;
++			}
++		}
++		return false; // kCands threads of other families: no pool of this one here
++	}
++	return false;
++}
++} // namespace bc5_0429r
++extern "C" void bc5_0429_r_on_sleep(const void* sem) {
++	if (!bc5_0429r::On()) {
++		return;
++	}
++	Pthread self = g_pthread_self;
++	if (self == nullptr) {
++		return;
++	}
++	if (self->bc5_rr_sleeper) { // an evicted sleeper comes back when a place is free
++		if (bc5_0429r::g_evicted_n.load(std::memory_order_relaxed) > 0 && ((bc5_0429r::g_held.load(std::memory_order_relaxed) < bc5_0429r::g_cap && bc5_0429r::RoomOk()) ||
++		     (self->attr != nullptr && bc5_0429r::HasWorseHolder(self->attr->guest_priority))) &&
++		    bc5_0429r::NowMs() >= bc5_0429r::g_full_until.load(std::memory_order_relaxed) &&
++		    bc5_0429r::g_win_calls.load(std::memory_order_relaxed) < bc5_0429r::kWindowMax && bc5_0429r::IsEvicted(static_cast<int>(self->host_thread_id))) {
++			bc5_0429r::Apply(self, true);
++		}
++		return;
++	}
++	if (!bc5_0429r::IsFamilyPool(sem, static_cast<int>(self->host_thread_id), bc5_0429r::FamilyKey(self->name))) {
++		return;
++	}
++	self->bc5_rr_sleeper = true;
++	bc5_0429r::Apply(self, true);
++}
++#endif
++// ---- end of experiment 0429 R ----------------------------------------------------------------------------------
 +
 +static void Bc5ApplyGuestPriority(Pthread thread, const char* why) {
 +	if (thread == nullptr || thread->attr == nullptr || thread->host_thread_id == 0) {
@@ -29935,7 +30601,7 @@ index 5f87e6b..96225a8 100644
 +	if (nice != 0 || why[0] == 's') { // a Setprio may also return a thread to 0
 +		SDL_LinuxSetThreadPriority(static_cast<Sint64>(thread->host_thread_id), nice);
 +	}
-+	Bc5ApplyWakeSlice(thread, why); // experiment 0425 C1 (after the nice, which it keeps)
++	Bc5RrApply(thread, why); // experiment 0429 R
 +}
 +#endif
 +
@@ -29955,7 +30621,7 @@ index 5f87e6b..96225a8 100644
  	thread->unique_id = Common::Thread::GetThreadIdUnique();
  
  	g_pthread_self = thread;
-@@ -3396,6 +3827,20 @@ static void* RunThread(void* arg) {
+@@ -3396,6 +4479,20 @@ static void* RunThread(void* arg) {
  	os_thread_id = GetHostThreadId();
  #endif
  	thread->host_thread_id = os_thread_id;
@@ -29976,7 +30642,7 @@ index 5f87e6b..96225a8 100644
  
  	LOGF("\tPthread run begin: %s, id = %d, os_thread_id = %" PRIu64 ", entry = 0x%016" PRIx64
  	     ", arg = 0x%016" PRIx64 ", stack_addr = 0x%016" PRIx64 ", stack_size = %" PRIu64 "\n",
-@@ -3549,6 +3994,9 @@ int KYTY_SYSV_ABI PthreadCancel(Pthread thread) {
+@@ -3549,6 +4646,9 @@ int KYTY_SYSV_ABI PthreadCancel(Pthread thread) {
  	if (thread == nullptr) {
  		return KERNEL_ERROR_EINVAL;
  	}
@@ -29986,7 +30652,7 @@ index 5f87e6b..96225a8 100644
  
  	int result = pthread_cancel(thread->p);
  
-@@ -3650,6 +4098,9 @@ int KYTY_SYSV_ABI PthreadGetprio(Pthread thread, int* prio) {
+@@ -3650,6 +4750,9 @@ int KYTY_SYSV_ABI PthreadGetprio(Pthread thread, int* prio) {
  	if (thread == nullptr) {
  		return KERNEL_ERROR_ESRCH;
  	}
@@ -29996,7 +30662,7 @@ index 5f87e6b..96225a8 100644
  
  	EXIT_NOT_IMPLEMENTED(prio == nullptr);
  
-@@ -3670,6 +4121,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
+@@ -3670,6 +4773,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
  	if (thread == nullptr) {
  		return KERNEL_ERROR_ESRCH;
  	}
@@ -30006,7 +30672,7 @@ index 5f87e6b..96225a8 100644
  
  	sched_param param {};
  	int         pol = 0;
-@@ -3695,6 +4149,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
+@@ -3695,6 +4801,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
  #endif
  
  	thread->attr->guest_priority = prio;
@@ -30016,7 +30682,7 @@ index 5f87e6b..96225a8 100644
  	LOGF("\t PthreadSetprio: %d, %d\n", thread->unique_id, prio);
  	return OK;
  }
-@@ -3791,6 +4248,10 @@ int KYTY_SYSV_ABI PthreadRename(Pthread thread, const char* name) {
+@@ -3791,6 +4900,10 @@ int KYTY_SYSV_ABI PthreadRename(Pthread thread, const char* name) {
  	}
  
  	thread->name = std::string(name);
@@ -30027,7 +30693,7 @@ index 5f87e6b..96225a8 100644
  
  	return OK;
  }
-@@ -3850,6 +4311,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
+@@ -3850,6 +4963,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
  
  	int special_error = OK;
  	if (KernelClockGettimeSpecial(clock_id, tp, &special_error)) {
@@ -30035,7 +30701,7 @@ index 5f87e6b..96225a8 100644
  		return special_error;
  	}
  
-@@ -3867,6 +4329,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
+@@ -3867,6 +4981,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
  	tp->tv_nsec = t.tv_nsec;
  
  	if (result == 0) {
@@ -30043,7 +30709,7 @@ index 5f87e6b..96225a8 100644
  		return OK;
  	}
  	return KERNEL_ERROR_EINVAL;
-@@ -3994,7 +4457,7 @@ uint64_t KYTY_SYSV_ABI KernelGetTscFrequency() {
+@@ -3994,7 +5109,7 @@ uint64_t KYTY_SYSV_ABI KernelGetTscFrequency() {
  }
  
  uint64_t KYTY_SYSV_ABI KernelReadTsc() {
@@ -30052,7 +30718,7 @@ index 5f87e6b..96225a8 100644
  }
  
  uint64_t KYTY_SYSV_ABI KernelGetProcessTime() {
-@@ -4294,6 +4757,12 @@ void KYTY_SYSV_ABI pthread_yield() {
+@@ -4294,6 +5409,12 @@ void KYTY_SYSV_ABI pthread_yield() {
  	LibKernel::PthreadYield();
  }
  
@@ -30065,7 +30731,7 @@ index 5f87e6b..96225a8 100644
  int KYTY_SYSV_ABI sched_get_priority_max(int policy) {
  	PRINT_NAME();
  
-@@ -4431,6 +4900,11 @@ int KYTY_SYSV_ABI pthread_cond_signal(LibKernel::PthreadCond* cond) {
+@@ -4431,6 +5552,11 @@ int KYTY_SYSV_ABI pthread_cond_signal(LibKernel::PthreadCond* cond) {
  	return POSIX_PTHREAD_CALL(LibKernel::PthreadCondSignal(cond));
  }
  
@@ -30077,7 +30743,7 @@ index 5f87e6b..96225a8 100644
  int KYTY_SYSV_ABI pthread_cond_init(LibKernel::PthreadCond*           cond,
                                      const LibKernel::PthreadCondattr* attr) {
  	PRINT_NAME();
-@@ -4540,6 +5014,12 @@ int KYTY_SYSV_ABI pthread_rwlock_wrlock(LibKernel::PthreadRwlock* rwlock) {
+@@ -4540,6 +5666,12 @@ int KYTY_SYSV_ABI pthread_rwlock_wrlock(LibKernel::PthreadRwlock* rwlock) {
  	return POSIX_PTHREAD_CALL(LibKernel::PthreadRwlockWrlock(rwlock));
  }
  
@@ -30131,7 +30797,7 @@ index 3b39581..6b35a70 100644
  int KYTY_SYSV_ABI pthread_rwlock_init(LibKernel::PthreadRwlock*           rwlock,
                                        const LibKernel::PthreadRwlockattr* attr);
 diff --git a/src/kernel/semaphore.cpp b/src/kernel/semaphore.cpp
-index ed7c35b..d3acaf4 100644
+index ed7c35b..565e55e 100644
 --- a/src/kernel/semaphore.cpp
 +++ b/src/kernel/semaphore.cpp
 @@ -1,7 +1,12 @@
@@ -30147,15 +30813,19 @@ index ed7c35b..d3acaf4 100644
  #include "common/stringUtils.h"
  #include "common/threads.h"
  #include "common/timer.h"
-@@ -13,6 +18,7 @@
+@@ -13,6 +18,11 @@
  #include <limits>
  #include <unordered_map>
  #include <vector>
 +#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
++
++#ifdef __linux__
++extern "C" void bc5_0429_r_on_sleep(const void* sem); // kernel/pthread.cpp, experiment 0429 R
++#endif
  
  namespace Libs::LibKernel {
  void KernelDispatchPendingSignalForCurrentThread();
-@@ -72,6 +78,69 @@ private:
+@@ -72,6 +82,69 @@ private:
  	int                         m_max_count;
  };
  
@@ -30225,7 +30895,7 @@ index ed7c35b..d3acaf4 100644
  KernelSemaPrivate::~KernelSemaPrivate() {
  	Common::LockGuard lock(m_mutex);
  
-@@ -137,11 +206,16 @@ KernelSemaPrivate::Result KernelSemaPrivate::Signal(int signal_count) {
+@@ -137,11 +210,16 @@ KernelSemaPrivate::Result KernelSemaPrivate::Signal(int signal_count) {
  		return Result::Deleted;
  	}
  
@@ -30242,7 +30912,7 @@ index ed7c35b..d3acaf4 100644
  
  	WakeWaiters();
  
-@@ -181,6 +255,7 @@ void KernelSemaPrivate::WakeWaiters() {
+@@ -181,6 +259,7 @@ void KernelSemaPrivate::WakeWaiters() {
  }
  
  KernelSemaPrivate::Result KernelSemaPrivate::Wait(int need_count, uint32_t* ptr_micros) {
@@ -30250,7 +30920,17 @@ index ed7c35b..d3acaf4 100644
  	Common::LockGuard lock(m_mutex);
  
  	if (need_count < 1 || need_count > m_max_count) {
-@@ -257,6 +332,11 @@ int KYTY_SYSV_ABI KernelCreateSema(KernelSema* sem, const char* name, uint32_t a
+@@ -243,6 +322,9 @@ KernelSemaPrivate::Result KernelSemaPrivate::Wait(int need_count, uint32_t* ptr_
+ 	}
+ 
+ 	RemoveWaiter(&waiter);
++#ifdef __linux__
++	bc5_0429_r_on_sleep(this); // experiment 0429 R: a guest thread that slept here and was woken is a sleeper
++#endif
+ 
+ 	if (ptr_micros != nullptr) {
+ 		*ptr_micros = (elapsed >= micros ? 0 : micros - elapsed);
+@@ -257,6 +339,11 @@ int KYTY_SYSV_ABI KernelCreateSema(KernelSema* sem, const char* name, uint32_t a
  
  	EXIT_NOT_IMPLEMENTED(sem == nullptr);
  
@@ -30262,7 +30942,7 @@ index ed7c35b..d3acaf4 100644
  	if (name == nullptr || attr > 2 || init < 0 || max <= 0 || init > max) {
  		return KERNEL_ERROR_EINVAL;
  	}
-@@ -294,10 +374,6 @@ int KYTY_SYSV_ABI KernelWaitSema(KernelSema sem, int need, KernelUseconds* time)
+@@ -294,10 +381,6 @@ int KYTY_SYSV_ABI KernelWaitSema(KernelSema sem, int need, KernelUseconds* time)
  		return KERNEL_ERROR_ESRCH;
  	}
  
@@ -30273,7 +30953,7 @@ index ed7c35b..d3acaf4 100644
  	auto result = sem->Wait(need, time);
  
  	int ret = OK;
-@@ -341,6 +417,10 @@ int KYTY_SYSV_ABI KernelSignalSema(KernelSema sem, int count) {
+@@ -341,6 +424,10 @@ int KYTY_SYSV_ABI KernelSignalSema(KernelSema sem, int count) {
  	if (sem == nullptr) {
  		return KERNEL_ERROR_ESRCH;
  	}

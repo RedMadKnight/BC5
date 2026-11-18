@@ -1,0 +1,34 @@
+23:38:46 == a429BA1: private normal, KYTY_BC5_0429_RR=0
+a429BA1 (astro) PASS: ran 200 s; RssAnon at the end 238676 kB; kernel lines 0, crash lines 0; real pad keys 0; shots 5
+23:42:18 a429BA1: PASS
+23:42:23 astro0431 ended
+chain lock released
+fps counter: t 199.374 s: 61 flips in 1.017 s, longest gap 17.2 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 200.390 s: 61 flips in 1.016 s, longest gap 17.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 201.390 s: 60 flips in 1.000 s, longest gap 17.5 ms, gaps over 40 ms 0, over 70 ms 0
+[bc5] exp 0429: R (RR for the guest's sleepers) off
+23:42:23 == a429BA2: private normal, KYTY_BC5_0429_RR=2
+a429BA2 (astro) PASS: ran 200 s; RssAnon at the end 239632 kB; kernel lines 0, crash lines 0; real pad keys 0; shots 5
+23:45:54 a429BA2: PASS
+23:45:59 astro0431 ended
+chain lock released
+fps counter: t 198.492 s: 61 flips in 1.017 s, longest gap 17.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 199.493 s: 60 flips in 1.000 s, longest gap 17.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 200.509 s: 61 flips in 1.016 s, longest gap 17.0 ms, gaps over 40 ms 0, over 70 ms 0
+[bc5] exp 0429 R count: held 2 calls 7 P 2 R 5 C 0 B 2 E 0 X 0 W 0 H 0 G 0 | last R478 R478 R478 R478 R478 B478 B699 
+[bc5] exp 0429 R count: held 2 calls 9 P 2 R 7 C 0 B 7 E 0 X 0 W 0 H 0 G 0 | last R478 R478 R478 R478 R478 B478 B699 R478 R478 B478 B478 B478 B478 B478 
+[bc5] exp 0429 R count: held 2 calls 9 P 2 R 7 C 0 B 7 E 0 X 0 W 0 H 0 G 0 | last R478 R478 R478 R478 R478 B478 B699 R478 R478 B478 B478 B478 B478 B478 
+23:45:59 == a429BA3: private lean, KYTY_BC5_0429_RR=0
+a429BA3 (astro) PASS: ran 200 s; RssAnon at the end 234656 kB; kernel lines 0, crash lines 0; real pad keys 0; shots 5
+23:49:31 a429BA3: PASS
+23:49:36 astro0431 ended
+chain lock released
+23:49:36 == a429BA4: private lean, KYTY_BC5_0429_RR=2
+a429BA4 (astro) PASS: ran 200 s; RssAnon at the end 234444 kB; kernel lines 0, crash lines 0; real pad keys 0; shots 5
+23:53:07 a429BA4: PASS
+23:53:12 astro0431 ended
+chain lock released
+[bc5] exp 0429 R count: held 2 calls 3 P 2 R 1 C 0 B 6 E 0 X 0 W 0 H 0 G 0 | last R478 B478 B478 B478 B478 B478 B699 
+[bc5] exp 0429 R count: held 2 calls 6 P 2 R 4 C 0 B 10 E 0 X 0 W 0 H 0 G 0 | last R478 B478 B478 B478 B478 B478 B699 R478 R478 R478 B478 B478 B478 B478 
+[bc5] exp 0429 R count: held 2 calls 6 P 2 R 4 C 0 B 10 E 0 X 0 W 0 H 0 G 0 | last R478 B478 B478 B478 B478 B478 B699 R478 R478 R478 B478 B478 B478 B478 
+23:53:12 astro0429 ended

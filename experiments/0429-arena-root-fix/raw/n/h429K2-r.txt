@@ -1,0 +1,162 @@
+[bc5] exp 0429: R (RR for the guest's sleepers) ON
+[bc5] exp 0429 R: cap 14 RR threads, RLIMIT_RTTIME soft 20000 hard 200000 us, watchdog on
+[bc5] exp 0429 R: not promoted (the runtime's main thread) tid 3885842 'MainThread' prio 300 rr 0 rc 0 (held 0, calls 0)
+[bc5] exp 0429 R: promoted tid 3885869 'Job Lo 4' prio 600 rr 3 rc 0 (held 1, calls 1)
+[bc5] exp 0429 R: promoted tid 3885878 'Job Hi 5' prio 500 rr 6 rc 0 (held 3, calls 2)
+[bc5] exp 0429 R: promoted tid 3885871 'Job Lo 6' prio 600 rr 3 rc 0 (held 4, calls 3)
+[bc5] exp 0429 R: promoted tid 3885873 'Job Hi 0' prio 500 rr 6 rc 0 (held 5, calls 4)
+[bc5] exp 0429 R: promoted tid 3885868 'Job Lo 3' prio 600 rr 3 rc 0 (held 6, calls 5)
+[bc5] exp 0429 R: promoted tid 3885880 'Job Hi 7' prio 500 rr 6 rc 0 (held 7, calls 6)
+[bc5] exp 0429 R: promoted tid 3885872 'Job Lo 7' prio 600 rr 3 rc 0 (held 8, calls 7)
+[bc5] exp 0429 R: promoted tid 3885874 'Job Hi 1' prio 500 rr 6 rc 0 (held 9, calls 8)
+[bc5] exp 0429 R: promoted tid 3885865 'Job Lo 0' prio 600 rr 3 rc 0 (held 10, calls 9)
+[bc5] exp 0429 R: promoted tid 3885879 'Job Hi 6' prio 500 rr 6 rc 0 (held 11, calls 10)
+[bc5] exp 0429 R: promoted tid 3885870 'Job Lo 5' prio 600 rr 3 rc 0 (held 12, calls 11)
+[bc5] exp 0429 R: promoted tid 3885875 'Job Hi 2' prio 500 rr 6 rc 0 (held 13, calls 12)
+[bc5] exp 0429 R: promoted tid 3885866 'Job Lo 1' prio 600 rr 3 rc 0 (held 14, calls 13)
+[bc5] exp 0429 R: evicted for a higher priority tid 3885869 '' prio 600 rr 0 rc 0 (held 13, calls 14)
+[bc5] exp 0429 R: evicted for a higher priority tid 3885871 '' prio 600 rr 0 rc 0 (held 12, calls 14)
+[bc5] exp 0429 R: evicted for a higher priority tid 3885865 '' prio 600 rr 0 rc 0 (held 12, calls 14)
+[bc5] exp 0429 R: evicted for a higher priority tid 3885872 '' prio 600 rr 0 rc 0 (held 12, calls 14)
+[bc5] exp 0429 R: evicted for a higher priority tid 3885868 '' prio 600 rr 0 rc 0 (held 13, calls 14)
+[bc5] exp 0429 R: not promoted (the cap, no holder of a lower priority) tid 3885867 'Job Lo 2' prio 600 rr 0 rc 0 (held 14, calls 14)
+[bc5] exp 0429 R: promoted tid 3885876 'Job Hi 3' prio 500 rr 6 rc 0 (held 14, calls 14)
+[bc5] exp 0429 R: evicted for a higher priority tid 3885870 '' prio 600 rr 0 rc 0 (held 13, calls 15)
+[bc5] exp 0429 R: promoted tid 3886048 'Havok Solve' prio 450 rr 7 rc 0 (held 14, calls 15)
+[bc5] exp 0429 R: promoted tid 3886047 'Havok Solve' prio 450 rr 7 rc 0 (held 14, calls 16)
+[bc5] exp 0429 R: promoted tid 3886043 'Havok Solve' prio 450 rr 7 rc 0 (held 14, calls 17)
+[bc5] exp 0429 R: promoted tid 3886049 'Havok Solve' prio 450 rr 7 rc 0 (held 14, calls 18)
+[bc5] exp 0429 R: promoted tid 3886044 'Havok Solve' prio 450 rr 7 rc 0 (held 14, calls 19)
+[bc5] exp 0429 R: promoted tid 3885877 'Job Hi 4' prio 500 rr 6 rc 0 (held 14, calls 20)
+[bc5] exp 0429 R: evicted for a higher priority tid 3885866 '' prio 600 rr 0 rc 0 (held 13, calls 20)
+[bc5] exp 0429 R: promoted tid 3886333 'AK::AudioOutThread' prio 256 rr 13 rc 0 (held 14, calls 21)
+[bc5] exp 0429 R: not promoted (the cap, no holder of a lower priority) tid 3886058 'Havok Queries and Cloth' prio 550 rr 0 rc 0 (held 14, calls 21)
+[bc5] exp 0429 R: not promoted (the cap, no holder of a lower priority) tid 3886057 'Havok Queries and Cloth' prio 550 rr 0 rc 0 (held 14, calls 21)
+[bc5] exp 0429 R: not promoted (the cap, no holder of a lower priority) tid 3886054 'Havok Queries and Cloth' prio 550 rr 0 rc 0 (held 14, calls 21)
+[bc5] exp 0429 R: not promoted (the cap, no holder of a lower priority) tid 3886052 'Havok Queries and Cloth' prio 550 rr 0 rc 0 (held 14, calls 21)
+[bc5] exp 0429 R: not promoted (the cap, no holder of a lower priority) tid 3886056 'Havok Queries and Cloth' prio 550 rr 0 rc 0 (held 14, calls 21)
+[bc5] exp 0429 R: not promoted (the cap, no holder of a lower priority) tid 3886053 'Havok Queries and Cloth' prio 550 rr 0 rc 0 (held 14, calls 21)
+[bc5] exp 0429 R: not promoted (the cap, no holder of a lower priority) tid 3886051 'Havok Queries and Cloth' prio 550 rr 0 rc 0 (held 14, calls 21)
+[bc5] exp 0429 R: not promoted (the cap, no holder of a lower priority) tid 3886055 'Havok Queries and Cloth' prio 550 rr 0 rc 0 (held 14, calls 21)
+[bc5] exp 0429 R: dropped by the watchdog (100 ms in one slice) tid 3886048 '' prio 0 rr 0 rc 0 (held 13, calls 21)
+[bc5] exp 0429 R: dropped by the watchdog (100 ms in one slice) tid 3886047 '' prio 0 rr 0 rc 0 (held 12, calls 21)
+[bc5] exp 0429 R: dropped by the watchdog (100 ms in one slice) tid 3886043 '' prio 0 rr 0 rc 0 (held 11, calls 21)
+[bc5] exp 0429 R: dropped by the watchdog (100 ms in one slice) tid 3886049 '' prio 0 rr 0 rc 0 (held 10, calls 21)
+[bc5] exp 0429 R: dropped by the watchdog (100 ms in one slice) tid 3886044 '' prio 0 rr 0 rc 0 (held 9, calls 21)
+===PS
+    TID CLS RTPRIO COMMAND
+3885631  TS      - kyty_emulator
+3885633  TS      - kyty-thread
+3885673  TS      - bc5-input-cmd
+3885674   B      0 kyty_em:disk$0
+3885675   B      0 kyty_em:disk$0
+3885676  TS      - mangohud-amdgpu
+3885687  TS      - kyty-cmdsched
+3885688  TS      - kyty-cmdsched
+3885690  TS      - kyty-present
+3885691  TS      - kyty-gpu
+3885692  TS      - kyty-present
+3885712  TS      - mangohud-hwinfo
+3885842  TS      - game-main
+3885844  TS      - HIDAPI Rumble
+3885863  TS      - bc5-ring
+3885864  TS      - bc5-rr-watch
+3885865  TS      - Job Lo 0
+3885866  TS      - Job Lo 1
+3885867  TS      - Job Lo 2
+3885868  TS      - Job Lo 3
+3885869  TS      - Job Lo 4
+3885870  TS      - Job Lo 5
+3885871  TS      - Job Lo 6
+3885872  TS      - Job Lo 7
+3885873  RR      6 Job Hi 0
+3885874  RR      6 Job Hi 1
+3885875  RR      6 Job Hi 2
+3885876  RR      6 Job Hi 3
+3885877  RR      6 Job Hi 4
+3885878  RR      6 Job Hi 5
+3885879  RR      6 Job Hi 6
+3885880  RR      6 Job Hi 7
+3885881  TS      - Job Bk 0
+3885882  TS      - Job Bk 1
+3885883  TS      - Job Bk 2
+3885884  TS      - Job Bk 3
+3885885  TS      - Job Bk 4
+3885886  TS      - Job Bk 5
+3885887  TS      - Job Bk 6
+3885888  TS      - Job Bk 7
+3885889  TS      - Archive Asset I
+3885890  TS      - Archive Loose I
+3885891  TS      - Archive Resolve
+3885892  TS      - bc5-ring
+3885893  TS      - Render Thread
+3885894  TS      - bc5-chainwd
+3885992  TS      - bc5-cq1
+3886042  TS      - bc5-cq0
+3886043  TS      - Havok Solve
+3886044  TS      - Havok Solve
+3886045  TS      - Havok Solve
+3886046  TS      - Havok Solve
+3886047  TS      - Havok Solve
+3886048  TS      - Havok Solve
+3886049  TS      - Havok Solve
+3886050  TS      - Havok Solve
+3886051  TS      - Havok Queries a
+3886052  TS      - Havok Queries a
+3886053  TS      - Havok Queries a
+3886054  TS      - Havok Queries a
+3886055  TS      - Havok Queries a
+3886056  TS      - Havok Queries a
+3886057  TS      - Havok Queries a
+3886058  TS      - Havok Queries a
+3886059  TS      - AK::IOThread
+3886060  TS      - AK::JobWrkr-Acm
+3886061  TS      - AK::BankMgr
+3886062  TS      - AK::Suspended
+3886063  TS      - AK::AudioMgr
+3886064  TS      - Coherent Thread
+3886065  TS      - Coherent Resour
+3886066  TS      - Coherent Layout
+3886067  TS      - UXAnalytics::Up
+3886068  TS      - EntitlementSysP
+3886070  TS      - File Video Stre
+3886071  TS      - File Video Stre
+3886072  TS      - File Video Stre
+3886073  TS      - File Video Stre
+3886074  TS      - File Video Stre
+3886075  TS      - Save Thread
+3886076  TS      - User UDS Thread
+3886079  TS      - bc5-apr-q5
+3886080  TS      - bc5-apr-r5-0
+3886081  TS      - bc5-apr-r5-1
+3886082  TS      - bc5-apr-r5-2
+3886083  TS      - bc5-apr-r5-3
+3886106  TS      - bc5-fliplabel
+3886333  RR     13 AK::AudioOutThr
+3886343  TS      - module-rt
+3886357  TS      - SDLAudioHotplug
+3886362  TS      - module-rt
+3886366  TS      - module-rt
+3886374  TS      - SDLAudioP0
+3886582  TS      - bc5-apr-q3
+3886583  TS      - bc5-apr-r3-0
+3886584  TS      - bc5-apr-r3-1
+3886585  TS      - bc5-apr-r3-2
+3886586  TS      - bc5-apr-r3-3
+3888027  TS      - bc5-apr-q1
+3888028  TS      - bc5-apr-r1-0
+3888029  TS      - bc5-apr-r1-1
+3888030  TS      - bc5-apr-r1-2
+3888031  TS      - bc5-apr-r1-3
+3893508  TS      - module-rt
+3893510  TS      - module-rt
+3893511  TS      - SDLAudioP52
+3893532  TS      - module-rt
+3893534  TS      - module-rt
+3893539  TS      - SDLAudioP52
+3898371  TS      - bc5-apr-q0
+3898372  TS      - bc5-apr-r0-0
+3898373  TS      - bc5-apr-r0-1
+3898374  TS      - bc5-apr-r0-2
+3898375  TS      - bc5-apr-r0-3
+3916108  TS      - Bink IO

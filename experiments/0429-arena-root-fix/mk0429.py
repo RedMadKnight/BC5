@@ -207,6 +207,7 @@ static int Bc5GuestNice(int guest_priority) {
 FM_BLOCK = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fastmutex0429.cpp'), encoding='utf-8').read()
 WAITS_BLOCK = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'waits0429.cpp'), encoding='utf-8').read()
 AFF_BLOCK = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'affinity0429.cpp'), encoding='utf-8').read()
+RR_BLOCK = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'rr0429.cpp'), encoding='utf-8').read()
 
 
 def pthread(path):
@@ -221,7 +222,17 @@ def pthread(path):
     text = one(text, 'KYTY_BC5_0425_WAKE_SLICE_US=0 turns it off. Exp 0425: with JobArenaFix off, the\n',
                'KYTY_BC5_0425_WAKE_SLICE_US=0 turns it off. Exp 0425: the\n', 'pthread comment')
     end_c1 = '// ---- end of experiment 0425 C1 ------------------------------------------------------------------------------------\n'
-    text = one(text, end_c1, end_c1 + AFF_BLOCK, 'pthread after C1')
+    text = one(text, end_c1, end_c1 + AFF_BLOCK + RR_BLOCK, 'pthread after C1')
+    # candidate R (rr0429.cpp): a field, and the hook in Bc5ApplyGuestPriority
+    text = one(text, '\tstd::atomic<uint64_t> pending_signal_mask {0};\n',
+               '\tstd::atomic<uint64_t> pending_signal_mask {0};\n\tbool                  bc5_rr_sleeper = false; // experiment 0429 R: slept on a guest semaphore\n\tbool                  bc5_rr_main    = false; // experiment 0429 R: the runtime main thread\n',
+               'pthread R field')
+    text = one(text, '\tg_pthread_self->name            = "MainThread";\n',
+               '\tg_pthread_self->name            = "MainThread";\n\tg_pthread_self->bc5_rr_main     = true; // experiment 0429 R: the runtime main thread is never promoted\n',
+               'pthread R main mark')
+    text = one(text, '\tBc5ApplyWakeSlice(thread, why); // experiment 0425 C1 (after the nice, which it keeps)\n}\n',
+               '\tBc5ApplyWakeSlice(thread, why); // experiment 0425 C1 (after the nice, which it keeps)\n\tBc5RrApply(thread, why);        // experiment 0429 R\n}\n',
+               'pthread R hook')
     text = one(text, '\t(*attr)->affinity       = 0x7f;\n',
                '\t(*attr)->affinity       = Bc5GuestDefaultMask(); // experiment 0429: one guest CPU per host CPU when mapping\n',
                'pthread attr init')
@@ -280,7 +291,7 @@ def semaphore(path):
         text = one(text, old, new, 'semaphore (exp 0425)')
     # exp 0429's wait catcher (normal build only): waits0429.cpp after exp 0425's helpers, and its four hooks
     end_h = "// ---- end of experiment 0425's helpers ------------------------------------------------------------------------------\n"
-    text = one(text, end_h, end_h + WAITS_BLOCK, 'semaphore catcher block')
+    text = one(text, end_h, end_h + WAITS_BLOCK + '#ifdef __linux__\nextern "C" void bc5_0429_r_on_sleep(const void* sem); // kernel/pthread.cpp, exp 0429 R\n#endif\n', 'semaphore catcher block')
     text = one(text, '\t\tstd::atomic<uint32_t> bc5_waking {0}; // exp 0425 C3: 1 while a waker has still to wake this waiter\n',
                '\t\tstd::atomic<uint32_t> bc5_waking {0}; // exp 0425 C3: 1 while a waker has still to wake this waiter\n'
                '\t\tint                   bc5_w = -1;       // exp 0429 catcher: the wait slot\n', 'semaphore waiter field')
@@ -293,7 +304,9 @@ def semaphore(path):
                '\t\t\tRemoveWaiter(&waiter);\n#ifndef BC5_LEAN\n\t\t\tbc5_0429w::OnEnd(waiter.bc5_w, false); // exp 0429 catcher\n#endif\n\t\t\t*ptr_micros = 0;\n\t\t\treturn Result::TimedOut;\n',
                'semaphore timeout hook')
     text = one(text, '\tBc5Resumed(&waiter); // exp 0425\n',
-               '\tBc5Resumed(&waiter); // exp 0425\n#ifndef BC5_LEAN\n\tbc5_0429w::OnEnd(waiter.bc5_w, true); // exp 0429 catcher\n#endif\n', 'semaphore resume hook')
+               '\tBc5Resumed(&waiter); // exp 0425\n#ifndef BC5_LEAN\n\tbc5_0429w::OnEnd(waiter.bc5_w, true); // exp 0429 catcher\n#endif\n#ifdef __linux__\n\tbc5_0429_r_on_sleep(this); // exp 0429 R: a guest thread that slept here is a sleeper\n#endif\n', 'semaphore resume hook')
+    if text.count('bc5_0429_r_on_sleep(') != 2:
+        stop('semaphore.cpp: R hook not placed')
     save(path, text, crlf)
 
 

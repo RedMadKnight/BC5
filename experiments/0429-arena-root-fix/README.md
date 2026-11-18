@@ -465,3 +465,437 @@ From the code already read (above) and the catcher of h429Z1:
     `raw/int0429-try1.out`.
 - `backend/kytyplus-patches/0001-bc5-lle-agc.patch` on this branch is the new shared patch bc39a035 (main's 9e7c4514
   plus the removal; at a merge, this branch's version of that file is the right one).
+
+## Candidate R on the box (2026-11-17 10:39–11:07)
+
+- **Build 7** (normal 6ba312b8): R's sleep hook was missing, because the edit that adds it to semaphore.cpp failed
+  unnoticed. R switched on but promoted nothing. Runs h429G1 (TARGET G+76) and h429G2 (TARGET G+56) therefore did
+  not test R. The control in between, **h429M7** (arm M, valid), crashed at G+95.
+- **Build 8** (normal e564f440, with the hook): every rtkit call failed with "no system bus". The normal build runs in
+  the distrobox, which has no `/run/dbus`; the host's socket is at `/run/host/run/dbus/system_bus_socket`, and the
+  container shares the host's PID namespace (checked with busctl and /proc/self/ns/pid). Run h429G3 (TARGET G+313) did
+  not test R either. mk0429.py now stops if the hook did not land.
+- **Build 9** (normal 5b082c6a, lean 6095973a, the host-bus fallback). The top's rule: a check run of at most 3 minutes
+  before any set. **Check h429K1, FAIL** (raw `raw/n/h429K1-r.txt`):
+  - rtkit granted RR 17 times. MainThread was promoted and was back to SCHED_OTHER by G+25 (SIGXCPU, so the spinner's
+    demotion works). The watchdog dropped two Havok Solve threads.
+  - 7 of 8 Job Hi workers were RR. Job Hi 5 arrived when the cap of 14 was reached (the Lo workers arrived first).
+  - 16 threads were held at once: the cap check raced.
+  - After 17 grants rtkit refused (its per-user limit with the desktop's own RT threads, TODO(verify) its value).
+- **Fixed offline, for build 10:**
+  - the cap is reserved atomically;
+  - when the cap is full, the holder with the numerically highest guest priority above the newcomer's is dropped for
+    good to make room (the console's "a lower number wins");
+  - after the first rtkit refusal, rtkit is asked again only to replace an evicted thread;
+  - SIGXCPU drops are logged through the watchdog.
+- **Build 10** (normal c8ea1061, lean 13c3ac84; 11:35, in a gap of exp 0430's A/B): the fixes above, plus the top's
+  remark: the runtime's main thread (`PthreadInitSelfForMainThread`, which runs the owner's help) is never promoted,
+  for any title.
+- **Check h429K2, PASS** (11:37–11:40, raw `raw/n/h429K2-r.txt`):
+  - all 8 Job Hi workers were RR (priority 6) at G+25, and the main thread was not (one "not promoted" line);
+  - 21 promotions, 0 rtkit refusals;
+  - 7 Lo workers (600) were evicted for the Hi workers;
+  - the watchdog dropped 5 threads that ran 100 ms in one slice (Havok, AK);
+  - 9 RR threads at G+25 (the 8 Hi workers and AK::AudioOutThread);
+  - NO_CRASH to G+40, 40.3 flips/s.
+
+  The set (G against M, the long route) waits for the end of exp 0430's A/B (about 13:50).
+
+## The R set (2026-11-17 12:03–12:42, build 10, the top's order after exp 0430's hang and reboot at 11:59)
+
+The long route, slot 4, the named snapshot, RT on, the catcher on, no pad key, no kernel line. Arm G
+(`GUEST_CPUS=1` + `RR=1`) against arm M (`GUEST_CPUS=1`, the stressed control).
+
+| run | arm | result | flips/s | R |
+|---|---|---|---|---|
+| h429G5 | G | NO_CRASH to G+600 | 48.1 | 22 promoted, 8 of them Job Hi; 0 refused; 7 Lo evicted; 4 dropped |
+| h429M10 | M | NO_CRASH to G+600 | 47.9 | – |
+| h429G6 | G | NO_CRASH to G+600 | 44.4 | 20 promoted, 8 Job Hi; 0 refused; 5 evicted; 5 dropped |
+| h429M11 | M | **TARGET at 117 s = G+10** (eboot+0x3d7eca0) | 39.5 | – |
+
+**Tally with the stressor (R13: counts, not rates):**
+- Without R, M and Z: M4, Z1, M6, M7 and M11 crashed, M5 and M10 were clean.
+- G1–G3 also crashed. Their R was inactive (builds 7 and 8), so they ran as M.
+- With R active: G5 and G6 clean, 2 of 2.
+
+R has not crashed yet, and the stressed control crashes in most runs. Two runs are not enough to call it a fix: more G runs are needed, then R alone against C, and an fps check.
+
+## R offline (2026-11-17 13:xx): lean, the host shortcut, ASTRO BOT
+
+- **Lean carries R.**
+  - In lean, `BC5_LEAN` removes only R's log lines and the catcher.
+  - The sleep hook in semaphore.cpp sits after the catcher's `#endif`, under `#ifdef __linux__` only.
+  - The promotion, the bounds and the rtkit call all compile in.
+  - Build 10's check found `KYTY_BC5_0429_RR` in both binaries.
+  - Lean has not run with R yet: a lean check (h429K-) belongs in the next slot.
+- **The host-lean shortcut (no distrobox).**
+  - On the host the system bus is at its usual `/run/dbus/system_bus_socket` (read 09:59: `busctl` reached rtkit
+    there), so `dbus_bus_get_private` takes the first path; the `/run/host` fallback is for the container only.
+  - TODO(verify) at the next slot: `libdbus-1.so.3` on the host, normally `/usr/lib64` from Fedora's dbus-libs.
+    If it is missing, R refuses every promotion with rc −1000 and logs it; the title runs on as without R.
+- **ASTRO BOT.**
+  - R is for every title, with no title rows. For ASTRO BOT it promotes, at their first sleep on a guest semaphore,
+    the threads below 700 except the runtime's main thread. The highest priorities win when more than the cap (online
+    CPUs − 2 = 14) want RR or rtkit's limit is reached.
+  - Its threads and priorities have not been read. The trace (`KYTY_BC5_0429_TRACE=1`) lists them, and so does R's own
+    log.
+  - The risks are the same as here:
+    - a thread that runs long under RR is dropped (20 ms without blocking by SIGXCPU, 100 ms in one slice by the
+      watchdog);
+    - its audio thread may become RR (here AK::AudioOutThread, 256, stayed RR at rtkit priority 13), and so may its
+      render-side guest threads, which then preempt the host's own GPU threads on their CPU.
+  - Before any swap: an ASTRO BOT smoke with R on (normal and lean, `astro0431.sh` with `XWORDS=KYTY_BC5_0429_RR=1`),
+    the flips/s against the same run without R, and the screen shots. R stays off by default until the maintainer
+    decides.
+
+## Is the crash host blocking? (the top's question, 2026-11-17 13:xx, offline, from h429Z1's dump at the fault)
+
+h429Z1 is the one crash whose per-thread state at the fault is on the laptop (`raw/n/h429Z1-waits.txt`). The dumps of
+M4, M6, M7 and M11, also with the catcher on, are in their play logs on the box, not read yet. At Z1's fault (G+10):
+- **No job thread and not the owner is inside a host call.**
+  - All 8 Job Hi and 8 Job Lo workers are in `futex` (202), asleep on `JobLoaderSema`. The Hi workers went to sleep
+    7–146 µs before, and their last wakes waited 0.01–1.34 ms for a CPU (Hi 6 1.34 ms, Hi 4 1.12 ms).
+  - The owner (`game-main`) is running the fault handler on CPU 8.
+  - No guest thread is in mmap, munmap or ioctl. Neither submit thread is blocked: one `bc5-ring` is running on CPU 13,
+    the other is in `nanosleep`.
+- **What is running instead: all 8 `Job Bk` workers** (guest priority 750, the background band), state R on CPUs 0, 1,
+  1, 2, 3, 6, 7 and 8. Those are the Hi workers' CPUs 0–7 and the owner's CPU 8. The file readers are busy too:
+  `bc5-apr-q3`, two of them in D state in `pread64` (17), so the title is loading.
+- **So the slow wakes line up with CPU contention from the title's own background workers at a load, not with host
+  blocking.** The wake bands have no timestamps, so a single slow wake cannot be matched to a host event offline, and
+  no maps or drain line is in this record.
+- **What this means:**
+  - 0432's D (the drain before an unmap) would not change this picture.
+  - It fits R exactly: on the console a woken Hi worker (500) preempts a Bk worker (750) on its CPU at once.
+  - It also explains why the crashes cluster at G+10: the load wakes all the Bk workers at once.
+- **To confirm across crashes** (one read-only minute on the box): the "thread at fault" lines of M4, M6, M7 and M11.
+  Are the Bk workers running there too, and is any job thread in a host call?
+
+## Slot 16:17–16:55 (2026-11-17): the dumps at the fault, the set G M G M, the lean check
+
+Box: boot 66e113e1, a fresh boot after the 16:15 reboot (0432's hang), no GPU reset on it. Build 10 (normal c8ea1061,
+lean 13c3ac84), all runs with the stressor and RT on.
+
+**The dumps at the fault** (`faultread0429.sh`, read-only; `raw/n/faultread-1655.txt`):
+
+| run | Job Bk running | job thread or owner in a host call | D state |
+|---|---|---|---|
+| M4 | no dump (build 3, no catcher) | – | – |
+| M6 | 8, CPUs 0–7 | none | none |
+| M7 | 8, CPUs 0–7 (Hi 6 shares CPU 5 with Bk 6) | none | bc5-apr pread |
+| M11 | 8, CPUs 0–7 (Hi 0, 4, 6 and Bk 4 all on CPU 7) | none | none |
+| G1 (R inactive) | **0**; all Hi asleep | none | none |
+| G2 (R inactive) | 8, CPUs 0–7 | none | 2 bc5-apr pread |
+| G3 (R inactive) | 8, CPUs 0–7 | none | none |
+
+The owner (`game-main`) runs the fault on CPU 8 in every one. 5 of 6 dumps match Z1, and no dump shows a host call:
+the top's D (host blocking) is out for this crash. G1 is the exception that Bk contention does not explain.
+
+**The set rep12** (chain0429.sh; `raw/n/h429*-summary.txt`):
+
+| run | arm | end | flips/s |
+|---|---|---|---|
+| G7 | G (R on) | G+600, no crash | 45.9 |
+| M12 | M | the target crash at 108 s | 40.2 |
+| G8 | G (R on) | G+600, no crash | 44.0 |
+| M13 | M | the target crash at 117 s | 39.9 |
+
+Totals, counts only: G with R active 4 clean of 4 (G5–G8). M and Z without R 7 crashes of 9 (M4, Z1, M6, M7, M11,
+M12, M13; M5 and M10 clean). R in G7/G8 (`raw/n/h429G7-r.txt`, `h429G8-r.txt`): 22 and 20 promotions, cap 14, no
+SIGXCPU drop. The watchdog dropped 4 and 5 threads, all `Havok Solve`. No Job Hi worker was dropped.
+
+**The lean check: FAIL.**
+- h429K3 (`check0429r.sh` with `CHECK_LEAN=1`) ended as CLASS SETUP. `run0429f.sh` gates on the journal's frame
+  profiles (`direct.log`), which lean compiles out, so that harness cannot drive lean.
+- New `check0429l.sh`: the private lean build through exp 0428's `start0428l.sh` with lean0428's key route, 200 s,
+  arm G's words, ps at 150 s.
+- h429K4 (`raw/n/check-h429K4.ps`, `.run`): the run passed (200 s, no crash), and the main thread is not RR.
+- But **only 6 of the 8 Job Hi threads are RR**: Hi 0 and Hi 6 are TS. Also RR: AK::AudioMgr (rtkit priority 7) and
+  AK::AudioOutThread (13). No Lo and no Havok thread is RR.
+- Lean logs nothing, so the cause is open. Two suspects:
+  - the watchdog dropped them (100 ms in one slice; a dropped thread stays TS for good);
+  - the 24-call rtkit budget ran out before they slept.
+- By the check-first rule, no lean set runs until this is understood offline.
+
+**libdbus on the host:** `/usr/lib64/libdbus-1.so.3 -> libdbus-1.so.3.38.3` (364832 bytes), so R's dlopen has a
+library on the Bazzite host.
+
+## Build 11 (offline, 2026-11-17 evening): lean counters, the pool rule, the R/C pairs and the ASTRO smoke
+
+The top's three points after the 16:17 slot. Not built or run yet (the next slot builds it).
+1. **The lean Hi 0/6 cause.** `rr0429.cpp` now counts in both builds:
+   - the counts: promotions (P), rtkit refusals (R), cap denials (C), budget denials (B), evictions (E), drops by
+     SIGXCPU (X), by the watchdog (W), by a priority of 700 or above (H), and of a gone thread (G);
+   - the last 16 losses as kind and guest priority (e.g. `W500` is a Job Hi worker dropped by the watchdog);
+   - one stderr line a minute from the watchdog thread, `exp 0429 R count: ...`.
+   - This line is in lean too, for this experiment only: it must leave lean before any swap (lean has no diagnostics).
+   - `check0429l.sh` also records the policy of the Job Hi and AK threads every 10 s, so a Hi worker that leaves RR
+     (a drop) shows apart from one that never got it (budget or cap).
+2. **The AK audio threads.** Their guest priorities, from the R logs of K2, G7 and G8:
+   - AK::AudioOutThread 256 (rtkit RR 13, above the Hi workers' 6);
+   - AK::AudioMgr 450 (RR 7).
+   - Both are below 700, so rule 1 promotes them: an RR audio thread preempts the host's own GPU threads (bc5-ring,
+     kyty-present, SCHED_OTHER) on its CPU.
+   - New mode `KYTY_BC5_0429_RR=2`, still no title rows: only a sleeper on a **pool** semaphore, one that two or more
+     distinct threads have slept on (by address, a table of 512). A thread that slept there first is marked at its next
+     sleep.
+   - The job workers share their semaphore (JobLoaderSema in Z1's dump); a lone audio thread's semaphore has one
+     sleeper. Whether the AK threads sleep alone is what the check with RRMODE=2 shows.
+   - `RR=1` is unchanged.
+3. **Prepared runs:**
+   - `chain0429.sh` arms:
+     - H: G with RR=2;
+     - P: the plain control, `KYTY_BC5_0429_RR=0` only, no stressor, no trace, no catcher;
+     - Q: `KYTY_BC5_0429_RR=${RRMODE:-1}` only.
+   - P and Q are the fps pairs on the long route.
+   - `astro0429.sh <prefix>`: ASTRO BOT through exp 0431's `astro0431.sh` on the private build, 4 runs of 200 s:
+     normal RR=0, normal RR=$RRMODE, lean RR=0, lean RR=$RRMODE. Screen shots stay on the box.
+   - `check0429r.sh` and `check0429l.sh` take `RRMODE`.
+
+Next slot, in order:
+1. `box0429.sh build` (build 11).
+2. The checks:
+   - `check0429r.sh h429K5` (normal, RR=1);
+   - `RRMODE=2 check0429r.sh h429K6` (do the AK threads stay TS? are all 8 Hi RR?);
+   - `check0429l.sh h429K7` (lean, RR=1, with the counts);
+   - `RRMODE=2 check0429l.sh h429K8`.
+3. The R/C pairs `CHAIN_SET=rep13 REP_TAGS="h429Q1 h429P1 h429Q2 h429P2"`, with RRMODE as the checks decide.
+4. `astro0429.sh a429B`.
+
+## Slot 17:44 (2026-11-17): build 11, check K5 FAIL; build 12 (offline)
+
+Box: rebooted by the maintainer at about 17:42 after a GPU reset at 17:06. Up 1 min at the start. The only amdgpu
+dmesg line was bc5-gpu-watch's own start line.
+- **Build 11:** normal 47bc95e1, lean 2f9d01e5. No new warnings; the shared binaries are unchanged.
+- **h429K5** (normal, RR=1, arm G 40 s; `raw/n/check-h429K5.out`):
+  - The run was clean (42.2 flips/s).
+  - **7 of 8 Job Hi RR: FAIL**, and the slot stopped there (K6–K8, the pairs and ASTRO did not run).
+  - The count line: `P 21 R 0 C 11 B 0 E 7 X 0 W 5 | last E600 ×6 E500 W450 ×5`.
+- **The log:** once the cap of 14 was full, **AK::AudioMgr (450) evicted Job Hi 2 (500)**.
+  - An eviction used Drop, which marks the thread a spinner, so Hi 2 never came back.
+  - Then the watchdog dropped all five Havok Solve (450). The freed places went unused, while 600s and 550s were
+    refused.
+  - The same is very likely lean's Hi 0/6 at h429K4.
+- **Build 12** (rr0429.cpp, offline, not built):
+  - An eviction is no longer a spin drop. An evicted sleeper is promoted again at a later sleep once a place is free.
+  - rtkit's budget is 15 calls per 20 s window, not 24 per lifetime. A refusal blocks new promotions until the window
+    turns, but not the replacement of an evicted thread.
+
+## Slot 22:39–23:53 (2026-11-17): build 12 with RR=2; checks K10 and K12 PASS, pairs and ASTRO clean
+
+Box: up about 5 h, no amdgpu reset since boot (only bc5-gpu-watch's start line), BOX-LOCK empty. Build 12 (c1090952):
+private normal `40051afd`, lean `91081355`, 0 errors, the same 8 warnings; shared builds unchanged (md5 before = after).
+
+**rtkit's limits (read only, the box).** `rtkit-daemon` runs with no arguments, so its defaults hold (rtkit-0.14-2.fc45,
+`--help`): actions-burst-sec 20, actions-per-burst-max 25, max-realtime-priority 20, min-nice -15, and RLIMIT_RTTIME
+required (`--rttime-usec-max`). Build 12's own budget, 15 calls per 20 s, is under rtkit's 25 (which is per user, so
+other users of rtkit, e.g. PipeWire, share it). This replaces the TODO(verify) in rr0429.cpp's head comment.
+
+| run | build | R | result | R count at the end |
+|---|---|---|---|---|
+| h429K10 check | normal | 2 | PASS: Job Hi 8 of 8 RR, main thread TS, NO_CRASH, 39.5 flips/s | held 14, P 21, R 0, C 4, E 7 (Lo 600 evicted) |
+| h429K12 check | lean | 2 | PASS: Job Hi 8 of 8 RR at every 10 s sample, 10–190 s; main TS | held 14, P 21, R 0, C 5, E 7 |
+| h429Q1 (G+600) | normal | 2 | NO_CRASH, 42.6 flips/s, longest gap 260 ms | held 12, P 12, R 2 (550, 450), B 3 |
+| h429P1 | normal | 0 | NO_CRASH, 41.3 flips/s, longest gap 316 ms | — |
+| h429Q2 | normal | 2 | NO_CRASH, 39.2 flips/s, longest gap 278 ms | held 12, P 12, R 2, B 2 |
+| h429P2 | normal | 0 | NO_CRASH, 41.4 flips/s, longest gap 277 ms | — |
+| a429BA1 ASTRO | normal | 0 | PASS, 60–61 fps, longest gap ~17 ms | — |
+| a429BA2 ASTRO | normal | 2 | PASS, 60–61 fps, longest gap ~17 ms | held 2, P 2, R 7 (478), B 7 |
+| a429BA3 ASTRO | lean | 0 | PASS (lean has no fps line) | — |
+| a429BA4 ASTRO | lean | 2 | PASS | held 2, P 2, R 4 (478), B 10 |
+
+0 kernel lines, 0 crash lines, 0 GPU hangs in all ten runs; no reboot was needed.
+
+**The RR threads with R on (K10, K12 ps):** Job Hi 0–7 (rtprio 6), five "Havok Queries" (5), AK::AudioMgr (7);
+game-main stayed TS. AK::AudioOutThread was not promoted.
+
+**Notes, counts only:**
+- The build-11 K4/K5 failure is gone: no Hi worker left RR in K10 or K12 (lean K4 had 0 of 6).
+- The pool rule does not keep all audio out: AK::AudioMgr (450) sleeps on a semaphore shared by two or more threads and
+  became RR (rtprio 7) in both checks (in lean at about 50 s). Bounded like every RR thread (RLIMIT_RTTIME, watchdog;
+  W 0 in all runs).
+- fps: R on 42.6 and 39.2 flips/s, R off 41.3 and 41.4 on the long route (two runs each: no difference shown beyond
+  run-to-run spread); ASTRO 60–61 with R on and off.
+- rtkit refused calls in the Q runs (2 each) and in ASTRO (7 and 4, all for guest priority 478). The refusal reason is
+  not logged; ASTRO held 2 RR threads. Open: why rtkit refuses there (per-user burst shared with other clients, or a
+  per-thread rule).
+- Not shown: anything about the crash rate on the job-arena route. Q and P were 2 clean runs each; earlier, without R,
+  7 of 9 runs crashed under the stressor (arm M/Z), which these pairs do not use.
+
+Files: raw/n/check-h429K10.out, check-h429K12.out, check-h429K12.series, chain-rep13.out, astro-a429B.out (ASTRO
+screenshots stay on the box).
+
+## Build 13 (offline, 2026-11-18 night): the worker-family rule (RR=3) and rtkit's room
+
+**rtkit's refusals, read in its journal (read-only, 00:25 in a slot gap).** All 23 refusals since 22:40 are
+"Reached maximum concurrent threads limit for user '1000'", none is the burst limit. rtkit serves at most 25 threads per
+user at a time (`--threads-per-user-max`, default 25, `--help`; rtkit runs with no arguments). From rtkit's public source
+(rtkit-daemon.c, GitHub mirror heftig/rtkit, read through a fetch; TODO(verify) against the box's 0.14): the count is
+every thread of the user rtkit made RT or high priority that still is (RR/FIFO, or nice < 0), swept at every D-Bus call;
+a known thread asking again reuses its place. Besides PipeWire (4 threads), the emulator itself asks rtkit for high
+priority (nice -10/-15) for many of its threads: 3 at h429K10's start, 16 at a429BA2's (from a library it links, not
+from our code: no tracked file asks rtkit apart from R; which one is TODO(verify), the checks now list the nice < 0
+threads). So:
+- in K10 R's 14 RR threads came first and rtkit refused 4 of the emulator's own later requests (22:42:44, 3 at 22:43:13;
+  R's own count shows 0 refusals): R took places other parts of the emulator wanted;
+- in ASTRO the emulator's 16 requests came first and left R room for 2 (R 7 and 4 refusals).
+
+**Build 13 (commits e1982999, 1fdb382b), offline, not yet built:**
+- `KYTY_BC5_0429_RR=3`: a sleeper is promoted only on a semaphore where two or more distinct threads of its own name
+  family slept (the guest name without its trailing index: "Job Hi 0".."Job Hi 7" are one family). A lone name such as
+  AK::AudioMgr, which got RR under RR=2 in K10 and K12 because it shares a semaphore with other threads, is out. No title
+  rows. RR=2 stays as it was for comparison.
+- rtkit's room: the watchdog counts the user's RR/FIFO and nice < 0 threads once a second (/proc, what rtkit counts), reads
+  rtkit's limit from its command line (default 25), and R promotes only while count + 1 + 4 (a reserve for the emulator's
+  own and others' requests) fits. A thread denied for room or budget now waits and is promoted at a later sleep (before,
+  a budget denial lost it for good: ASTRO B 7 and 10). New count `N` (room denials) and `user U of M` in the count line.
+- The normal build logs rtkit's D-Bus error text on a refusal.
+- check0429r.sh / check0429l.sh: with RRMODE=3 a check also fails if an AK thread is RR; both print the nice < 0 threads.
+
+Next slot (after exp 0432's): build 13, checks K13 (normal) and K14 (lean) with RRMODE=3, then 2 pairs Q/P with RRMODE=3.
+
+## Slot 04:23–04:29 (2026-11-18): build 13, check K13 FAIL; build 14 (offline)
+
+Box up 10:41 h, 0 amdgpu reset lines since boot, BOX-LOCK empty. Build 13: private normal `4abfec5e`, lean `1a85bf66`,
+0 errors, the same 8 warnings, shared builds unchanged.
+
+**h429K13 (normal, RR=3): FAIL**, Job Hi 6 of 8 RR (Hi 2 and Hi 7 not), NO_CRASH, 40.4 flips/s, 0 kernel lines. The
+slot stopped there (the check rule). What worked: the family rule, AK threads RR 0 (AudioMgr out), main thread TS, rtkit
+refusals 0. RR threads: Job Hi 0, 1, 3–6 (rtprio 6), Job Lo 1, 3, 4, 5, 7 (3). Count line:
+`held 11 P 11 R 0 N 13 user 27 of 25`. The emulator's own rtkit high-priority threads at the snapshot:
+AK::AudioOutThread, AK::JobWrkr-Acm, HIDAPI Rumble, SDLAudioP0, SDLAudioP53 x2 (nice -15/-10; the audio engine and SDL).
+
+Cause (read after the run, read-only): the user's RT or nice < 0 threads with no emulator were kwin_wayland 3,
+pipewire 2, wireplumber 3, pipewire-pulse 2. kwin_wayland has CAP_SYS_NICE (CapEff bit 23) and sets its own RT threads
+without rtkit, so rtkit does not count them, and R's scan did: it saw 27 where rtkit had 24 (PipeWire's stack 7, the
+emulator's own 6, R's 11). So R's room ran out after 11 promotions. Room-short promotions evicted no one, so the Job Lo
+workers, which slept first, kept places the Hi workers needed. With rtkit's 25 and these neighbours, R has about 12
+places, or 8 with the reserve of 4.
+
+**Build 14 (offline, not yet built):**
+- the scan leaves out processes with CAP_SYS_NICE;
+- a short room evicts like a full cap: the holder with the numerically highest guest priority above the newcomer's
+  goes back and waits;
+- a waiting thread comes back at a later sleep also when such a holder exists.
+
+Expected in the next check: R holds about 8, all of them Job Hi.
+
+## Slot 06:13–06:19 (2026-11-18): build 14, check K15 FAIL on the audio condition
+
+Box up 12:31 h, 0 amdgpu reset lines since boot. Build 14 (d6ac3656): private normal `d8a4ce2c`, lean `31dcc2c5`,
+0 errors, the same 8 warnings, shared builds unchanged.
+
+**h429K15 (normal, RR=3, RESERVE=2): FAIL.** The workers' part passed: Job Hi 8 of 8 RR (rtprio 6), six Havok Queries
+(5), main thread TS, AK threads RR 0, R refusals 0, NO_CRASH, 40.3 flips/s, 0 kernel lines. Count line:
+`held 14 P 21 R 0 C 4 E 7 N 2 user 25 of 25`. The audio condition failed (the top session's rule, 2026-11-18): rtkit
+refused 4 requests that were not R's, and SDLAudioP53 x2 and SDLAudioHotplug stayed at nice 0. rtkit's journal:
+the emulator's own high-priority requests at 06:15:43–45 (4 granted), 1 refused at 06:15:45.97, in the same second as
+R's promotions; 3 more came together at 06:16:14 and all were refused. When R began, the user had 8 such threads, so R
+filled to its cap of 14; the audio requests that came later found rtkit full. A reserve checked only when R promotes
+does not protect requests that come after. The slot stopped there (K16 and the pairs were not run).
+
+**What this means (desk numbers):** PipeWire's stack 7 + the emulator's own about 8 (AudioOutThread, JobWrkr-Acm, HIDAPI
+Rumble, SDLAudioP0, SDLAudioP53 x2, SDLAudioHotplug, and one more seen in K10) = 15 of rtkit's 25, leaving 10. A design
+where R yields (drops its lowest holders whenever fewer than 3 places are free, since the burst seen was 3) would hold
+about 7, i.e. 7 of 8 Hi. Under rtkit's default limit and these neighbours, R cannot have all 8 Hi workers and leave
+every audio request room. The clean way out is raising rtkit's `--threads-per-user-max`, a box system configuration
+change: the maintainer's decision only, not done.
+
+## rtkit's limits raised: the maintainer's decision, 2026-11-18 08:17
+
+He chose option (a). Since 08:17:22 rtkit-daemon runs with `--threads-per-user-max=64 --actions-per-burst-max=100`
+(the top session verified it: the unit is active and its argv shows both). The change is a systemd override,
+`/etc/systemd/system/rtkit-daemon.service.d/bc5-limits.conf`. It is a box system configuration change, done on his word.
+R reads the limit from rtkit-daemon's cmdline, so its room count follows the new limit with no build.
+
+Undo (on the box):
+`sudo rm /etc/systemd/system/rtkit-daemon.service.d/bc5-limits.conf && sudo systemctl daemon-reload && sudo systemctl restart rtkit-daemon`
+
+The plan for the next slot:
+- build 14 with the default reserve of 4 (no build 15);
+- K15 normal, then K16 lean, with RR=3;
+- if both pass, 2 fps pairs and an ASTRO run.
+
+Pass condition: Job Hi 8 of 8 on RR, 0 rtkit refusals of any kind (R's included), NO_CRASH. Both checks now require
+the run's total count of rtkit refusals in the journal to be 0. R stays off by default.
+
+## Slot 08:19–10:13 (2026-11-18): build 14 under rtkit's new limits, all clean
+
+Box up since 06:56 (exp 0430's h430H4 GPU hang at 06:55 and the box's own reboot), 0 amdgpu reset lines; rtkit-daemon
+argv `--threads-per-user-max=64 --actions-per-burst-max=100`. Build 14 pins: normal `d8a4ce2c`, lean `31dcc2c5`.
+RR=3 and the default reserve of 4 throughout. The tags K15 and K16 were taken earlier, so the checks are K17 and K18.
+
+| Run | Build | R | Result | R's count line |
+|---|---|---|---|---|
+| h429K17 check | normal | on | PASS: Job Hi 8 of 8 RR, game-main TS, AK RR 0, rtkit refusals 0, NO_CRASH, 41.1 flips/s | held 14, P 20, N 0, user 27 of 64 |
+| h429K18 check | lean | on | PASS: Job Hi 8 of 8 RR at every 10 s mark to 190 s, main RR 0, AK RR 0, refusals 0, 200 s | held 14, P 21, N 0, user 27 of 64 |
+| h429Q3 (G+600) | normal | on | NO_CRASH, 40.9 flips/s, longest gap 584 ms | held 14, P 15, R 0 |
+| h429P3 | normal | off | NO_CRASH, 41.4 flips/s, longest gap 2533 ms | — |
+| h429Q4 | normal | on | NO_CRASH, 39.2 flips/s, longest gap 1145 ms | held 14, P 14, R 0 |
+| h429P4 | normal | off | NO_CRASH, 41.2 flips/s, longest gap 249 ms | — |
+| a429CA1–A4 ASTRO | normal/lean | off/on | 4 of 4 PASS, 0 kernel/crash lines, 0 pad keys; normal fps mean 59.3 (off), 59.1 (on) | lean A4: user 37 of 64, W 7 (prio 478) |
+
+- rtkit refused 0 requests in the whole slot.
+- In both checks the emulator's own 7 high-priority requests were all granted. SDLAudioHotplug never asks rtkit.
+- K17's ssh link dropped at the end of the run. Its verdict was recomputed from the saved ps, log and journal with the
+  check's own conditions.
+- fps with R on and off differ by no more than the run-to-run spread, with 2 runs per arm here and 2 more in the 22:39 slot.
+- 0 GPU faults or resets.
+
+Raw: `raw/n/check-h429K17.{ps,run}`, `raw/n/check-h429K18.{ps,run,series,out}`, `raw/n/chain-rep15.out`,
+`raw/n/astro-a429C.out`.
+Still open before any swap: the R count line leaves lean; whether R goes into the shared builds, and on by default, is
+the maintainer's decision.
+
+## The swap of R (2026-11-18 12:08): R on by default in the shared builds, exp 0425's wake slice removed
+
+The maintainer's word (11-18, through the top session): "Włączyć R domyślnie we wspólnych buildach => tak, od razu
+posprzątaj inne rzeczy, które po wprowadzeniu R stają się zbędne". It was made on the shared patch 940e8f36 (exp 0432's
+build 5).
+
+**The swap form** (`mkswap0429r.py`, the R block `rrshared0429.cpp` made by `mkrshared0429.py` from build 14's
+`rr0429.cpp`):
+- three files change: pthread.cpp, semaphore.cpp and switch_defaults.hpp;
+- R is on for every title through a kSoft row, `KYTY_BC5_0429_RR=1`, and `=0` turns it off with no build;
+- one rule only, the worker-family sleepers (build 13's mode 3, the one tested); modes 1 and 2 and the pool table are gone;
+- the reserve is fixed at 4 and the RESERVE switch is gone;
+- the lean build has no diagnostics: the count line, the counters and the event ring are normal-build only.
+
+**What else went, and why R covers it:**
+- **exp 0425 C1, the 200 µs wake slice** (Bc5SchedAttr, Bc5WakeSliceUs, Bc5ApplyWakeSlice, its call and its kSoft row).
+  The slice only acts on SCHED_OTHER threads, and R runs the woken Hi workers as RR. The data:
+  - R with the slice, under the stressor: 4 of 4 clean (G5–G8);
+  - R without the slice, under the stressor (arm V, test build rt `24aa5bdf` = the swap form + the stressor, no slice
+    code): **3 of 3 clean** (h429V1 45.9, V2 45.1, V3 42.7 flips/s);
+  - in each V run R held 14 and rtkit refused nothing; 0 kernel lines, 0 pad keys;
+  - the top session's rule was to remove the slice only after 3 of 3 clean V runs.
+- **0429's experiment switches** (AFFINITY, CPU13, GUEST_CPUS, PRIO_ORDER, FAST_MUTEX, WAITS, TRACE, exp 0425 C2/C3):
+  none was ever in the shared builds, and none goes in. The stressor GUEST_CPUS exists only in the private rt build.
+- **JobArenaFix:** it was removed on 11-17. The silent accept of an old `JobArenaFix.<id>=` line in input.cfg stays on
+  purpose: without it the parser fails such a line ("unknown control", hostInput.cpp).
+- **The fast guest mutex:** it was never shared, so there was nothing to remove.
+
+**Tests on the private swap-form builds** (rs normal `a4bbe73c`, rs lean `35149f81`):
+
+| Test | Result |
+|---|---|
+| a429R1, ASTRO BOT lean, 200 s, the build's defaults | PASS |
+| h429K19, second title lean check | PASS: Job Hi 5 of 5 RR, main RR 0, AK RR 0, rtkit refusals 0, 200 s, kernel 0 |
+| h429K20, normal check | PASS: Job Hi 5 of 5 RR, game-main TS, promoted 15, refused 0, NO_CRASH 38.6 flips/s, kernel 0 |
+
+The title makes 5 Job Hi workers, not 8, when nothing maps its CPU requests: the shared builds, the private rs builds
+and the Q/P pairs. The earlier checks ran with the stressor's mapping, which gives the title one guest CPU per host CPU,
+and there it makes 8 per class. All Hi workers were on RR in each case.
+
+**The swap** (`int0429r.sh`, 12:08):
+- the patch goes from 940e8f36 to **ef2ff54f** (the laptop's own build of it gives the same hash);
+- exp 0372 lines 5; the pad_audio_route header is in; the file list is unchanged;
+- normal 4e0c00a2 → **a9b4f00b**, lean 272685ee → **abf5fb17**; the archive stays 6eac453e;
+- in both builds the words change by exactly +KYTY_BC5_0429_RR −KYTY_BC5_0425_WAKE_SLICE_US;
+- the lean build holds 0 "exp 0429" and 0 "exp 0425" strings; the normal one holds 0 "exp 0425".
+
+Undo: `bash ~/bc5-work/exp0429/undo0429r.sh` returns to 940e8f36 / 4e0c00a2 / 272685ee / 6eac453e (dry-run on a
+laptop stand-in tree).
+
+Raw: `raw/n/chain-rep16.out`, `raw/n/smoke0429r.out`, `raw/n/check-h429K19.*`, `raw/n/check-h429K20.*`,
+`raw/n/int0429r.out`, `raw/n/buildr.out`.

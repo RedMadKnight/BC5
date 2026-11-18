@@ -1,0 +1,87 @@
+== h429M4: no dump (catcher off or another class)
+== h429M6: 109 threads; [bc5] exp 0429 waits at the fault: crashing tid 1625492, 43 slots
+   Job Bk running: 8 (CPUs 5 4 0 6 2 7 3 1 )
+   Hi workers: 0:S/cpu0/sc202/wake 0.895ms 1:S/cpu2/sc202/wake 0.991ms 2:S/cpu5/sc202/wake 1.155ms 3:S/cpu3/sc202/wake 1.163ms 4:S/cpu7/sc202/wake 0.882ms 5:S/cpu6/sc202/wake 0.018ms 6:S/cpu0/sc202/wake 0.200ms 7:S/cpu3/sc202/wake 0.331ms 
+   job threads or the owner not in futex:
+t: tid 1625492 'game-main' state R cpu 8 syscall 0  | sema 'hkSemaphore' not waiting; 0.000 ms, last ready-to-run 0.005 ms, max 2.014 ms, waits 17387
+t: tid 1625513 'Job Bk 0' state R cpu 5 syscall running
+t: tid 1625514 'Job Bk 1' state R cpu 4 syscall running
+t: tid 1625515 'Job Bk 2' state R cpu 0 syscall running
+t: tid 1625516 'Job Bk 3' state R cpu 6 syscall running
+t: tid 1625517 'Job Bk 4' state R cpu 2 syscall running
+t: tid 1625518 'Job Bk 5' state R cpu 7 syscall running
+t: tid 1625519 'Job Bk 6' state R cpu 3 syscall running
+t: tid 1625520 'Job Bk 7' state R cpu 1 syscall running
+   other running threads: game-main@8 bc5-ring@11 
+   D state: 
+== h429M7: 109 threads; [bc5] exp 0429 waits at the fault: crashing tid 3265781, 45 slots
+   Job Bk running: 8 (CPUs 2 7 6 3 0 4 5 1 )
+   Hi workers: 0:S/cpu1/sc202/wake 0.008ms 1:S/cpu6/sc202/wake 0.217ms 2:S/cpu3/sc202/wake 0.023ms 3:S/cpu5/sc202/wake 0.567ms 4:S/cpu3/sc202/wake 0.179ms 5:S/cpu1/sc202/wake 0.628ms [bc5] exp 0429 thread at fault: tid 3265865 'Job Hi 6' state R cpu 5 syscall running 7:S/cpu1/sc202/wake 0.126ms 
+   job threads or the owner not in futex:
+t: tid 3265781 'game-main' state R cpu 8 syscall 0  | sema 'hkSemaphore' not waiting; 0.000 ms, last ready-to-run 0.014 ms, max 2.756 ms, waits 40606
+t: tid 3265865 'Job Hi 6' state R cpu 5 syscall running
+t: tid 3265867 'Job Bk 0' state R cpu 2 syscall running
+t: tid 3265868 'Job Bk 1' state R cpu 7 syscall running
+t: tid 3265869 'Job Bk 2' state R cpu 6 syscall running
+t: tid 3265870 'Job Bk 3' state R cpu 3 syscall running
+t: tid 3265871 'Job Bk 4' state R cpu 0 syscall running
+t: tid 3265872 'Job Bk 5' state R cpu 4 syscall running
+t: tid 3265873 'Job Bk 6' state R cpu 5 syscall running
+t: tid 3265874 'Job Bk 7' state R cpu 1 syscall running
+   other running threads: game-main@8 AK::AudioMgr@12 
+   D state: bc5-apr-r1-3@11/sc17 
+== h429M11: 109 threads; [bc5] exp 0429 waits at the fault: crashing tid 495803, 43 slots
+   Job Bk running: 8 (CPUs 1 6 5 0 7 0 3 4 )
+   Hi workers: [bc5] exp 0429 thread at fault: tid 495854 'Job Hi 0' state R cpu 7 syscall running 1:S/cpu3/sc202/wake 1.132ms 2:S/cpu3/sc202/wake 1.101ms 3:S/cpu5/sc202/wake 0.026ms [bc5] exp 0429 thread at fault: tid 495858 'Job Hi 4' state R cpu 7 syscall running 5:S/cpu6/sc202/wake 1.110ms [bc5] exp 0429 thread at fault: tid 495860 'Job Hi 6' state R cpu 7 syscall running 7:S/cpu5/sc202/wake 0.110ms 
+   job threads or the owner not in futex:
+t: tid 495803 'game-main' state R cpu 8 syscall 0  | sema 'hkSemaphore' not waiting; 0.000 ms, last ready-to-run 0.010 ms, max 2.202 ms, waits 17339
+t: tid 495854 'Job Hi 0' state R cpu 7 syscall running
+t: tid 495858 'Job Hi 4' state R cpu 7 syscall running
+t: tid 495860 'Job Hi 6' state R cpu 7 syscall running
+t: tid 495862 'Job Bk 0' state R cpu 1 syscall running
+t: tid 495863 'Job Bk 1' state R cpu 6 syscall running
+t: tid 495864 'Job Bk 2' state R cpu 5 syscall running
+t: tid 495865 'Job Bk 3' state R cpu 0 syscall running
+t: tid 495866 'Job Bk 4' state R cpu 7 syscall running
+t: tid 495867 'Job Bk 5' state R cpu 0 syscall running
+t: tid 495868 'Job Bk 6' state R cpu 3 syscall running
+t: tid 495869 'Job Bk 7' state R cpu 4 syscall running
+   other running threads: game-main@8 bc5-chainwd@14 AK::AudioMgr@12 
+   D state: 
+== h429G1: 115 threads; [bc5] exp 0429 waits at the fault: crashing tid 3214019, 45 slots
+   Job Bk running: 0 (CPUs )
+   Hi workers: 0:S/cpu2/sc202/wake 0.245ms 1:S/cpu2/sc202/wake 0.003ms 2:S/cpu2/sc202/wake 1.097ms 3:S/cpu2/sc202/wake 1.083ms 4:S/cpu6/sc202/wake 1.116ms 5:S/cpu0/sc202/wake 1.073ms 6:S/cpu0/sc202/wake 0.313ms 7:S/cpu2/sc202/wake 1.112ms 
+   job threads or the owner not in futex:
+t: tid 3214019 'game-main' state R cpu 8 syscall 0  | sema 'hkSemaphore' not waiting; 0.000 ms, last ready-to-run 0.010 ms, max 1.986 ms, waits 34154
+   other running threads: kyty-present@13 game-main@8 SDLAudioP0@12 
+   D state: 
+== h429G2: 110 threads; [bc5] exp 0429 waits at the fault: crashing tid 3321372, 45 slots
+   Job Bk running: 8 (CPUs 1 2 7 4 5 3 0 6 )
+   Hi workers: 0:S/cpu6/sc202/wake 0.018ms 1:S/cpu5/sc202/wake 0.010ms 2:S/cpu4/sc202/wake 0.381ms 3:S/cpu4/sc202/wake 0.019ms 4:S/cpu5/sc202/wake 1.006ms 5:S/cpu4/sc202/wake 0.180ms 6:S/cpu0/sc202/wake 0.372ms 7:S/cpu0/sc202/wake 0.009ms 
+   job threads or the owner not in futex:
+t: tid 3321372 'game-main' state R cpu 8 syscall 0  | sema 'hkSemaphore' not waiting; 0.000 ms, last ready-to-run 0.213 ms, max 1.711 ms, waits 29618
+t: tid 3321438 'Job Bk 0' state R cpu 1 syscall running
+t: tid 3321439 'Job Bk 1' state R cpu 2 syscall running
+t: tid 3321440 'Job Bk 2' state R cpu 7 syscall running
+t: tid 3321441 'Job Bk 3' state R cpu 4 syscall running
+t: tid 3321442 'Job Bk 4' state R cpu 5 syscall running
+t: tid 3321443 'Job Bk 5' state R cpu 3 syscall running
+t: tid 3321444 'Job Bk 6' state R cpu 0 syscall running
+t: tid 3321445 'Job Bk 7' state R cpu 6 syscall running
+   other running threads: game-main@8 
+   D state: bc5-apr-r1-1@11/sc17 bc5-apr-r1-2@11/sc17 
+== h429G3: 110 threads; [bc5] exp 0429 waits at the fault: crashing tid 3371556, 45 slots
+   Job Bk running: 8 (CPUs 1 2 0 0 6 7 4 3 )
+   Hi workers: 0:S/cpu5/sc202/wake 1.012ms 1:S/cpu7/sc202/wake 0.977ms 2:S/cpu1/sc202/wake 0.955ms 3:S/cpu5/sc202/wake 0.015ms 4:S/cpu6/sc202/wake 0.025ms 5:S/cpu2/sc202/wake 0.021ms 6:S/cpu1/sc202/wake 0.670ms 7:S/cpu6/sc202/wake 0.426ms 
+   job threads or the owner not in futex:
+t: tid 3371556 'game-main' state R cpu 8 syscall 0  | sema 'hkSemaphore' not waiting; 0.000 ms, last ready-to-run 0.007 ms, max 2.840 ms, waits 93611
+t: tid 3371578 'Job Bk 0' state R cpu 1 syscall running
+t: tid 3371579 'Job Bk 1' state R cpu 2 syscall running
+t: tid 3371580 'Job Bk 2' state R cpu 0 syscall running
+t: tid 3371581 'Job Bk 3' state R cpu 0 syscall running
+t: tid 3371582 'Job Bk 4' state R cpu 6 syscall running
+t: tid 3371583 'Job Bk 5' state R cpu 7 syscall running
+t: tid 3371584 'Job Bk 6' state R cpu 4 syscall running
+t: tid 3371585 'Job Bk 7' state R cpu 3 syscall running
+   other running threads: game-main@8 Render Thread@10 Havok Solve@6 Havok Solve@2 
+   D state: 

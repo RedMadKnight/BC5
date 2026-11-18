@@ -71,3 +71,17 @@ Build 7 is build 6 plus R; the removal is already in it. Arms, on the long route
 The catcher stays: every promotion and demotion, the sleeper and spinner lists, and the job-semaphore wake bands. These
 show directly whether the 0.1–2 ms tail is gone. A form survives when RG is clean over repeated sets while M keeps
 crashing; then R alone is checked for fps against C. Counts are reported as counts (R13).
+
+## 6. The read (2026-11-17 09:59, read-only, after his play)
+- **His user:** `ulimit -r` 0 (no direct RR), `-e` 0, `-t` unlimited; RLIMIT_RTTIME unlimited by default.
+- **rtkit** (`rtkit-daemon`, active): MaxRealtimePriority **20**, MinNiceLevel −15, RTTimeUSecMax **200000**. RR comes
+  through rtkit with no system change; RR priorities 1–20.
+- **Kernel 7.3.3-ogc1.1.fc45:** `sched_rt_runtime_us` = `sched_rt_period_us` = 1000000, so **RT throttling is off** on
+  this box. Layer 3 of section 3 does not exist, and the design is changed accordingly:
+  - RLIMIT_RTTIME is enforced by the kernel's tick, needs no thread of ours, and the box survives it. Soft limit 20 ms
+    sends SIGXCPU and the handler demotes; the hard limit is rtkit's 200 ms, after which the kernel kills the emulator.
+  - The watchdog stays.
+  - **New:** at most (online CPUs − 2) guest threads hold RR at any time, so host threads always have two CPUs even if
+    every RR thread spins.
+  - `sched_rt_runtime_us` is not touched; it is the maintainer's setting.
+- `/etc/security/limits.d`: only `@pipewire` has rtprio 70, and his user's limits show 0, so he is not in that group.
