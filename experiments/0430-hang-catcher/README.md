@@ -886,3 +886,40 @@ A slot that does not write L is released at once, so F18 costs nothing there.
 F10 + F4 + F16 (binary `034e3b24`) is clean in 3 of 3 runs by the swap rule (0 DROPPED, 0 kernel lines, F16 never at its 50 ms bound or given up); F16's waits returned within 7.1 ms at most. The F10 bounds left are F14 "busy" (F18's target). Against the arms before it on the same tree: D1 0 faults in 2, E1 1 in 2 (J1).
 
 **F18 build for the maintainer's long play** (his words via top: "F18 - ja przetestuję na dłuższej grze"): binary `7e85b4fe` (unit `178d8890`, ho430 `fb3330bb`) in `~/bc5-work/exp0430/p22`; the shortcut "BC5 test 0430 (F18)" on ~/Pulpit runs `exp0430/play-0430f18.sh` (`96396107`, made by mkplay0430c.py from play-pkg.sh `47426d8e`, which stays as it is). The old "build 8, catchers" test shortcut moved to `~/bc5-work/trash-20261111/pulpit`. Shared builds (normal `a9b4f00b`) and the shared shortcuts unchanged. The launcher's words are the M runs' effective words plus BUSY_WAIT; the build compiles HO430_SHARED, which reads only the `BC5_DIRECT_XQ_*` words (the runs' `BC5_0430_F2/F3/G` words were never read and are left out).
+
+### The maintainer's F18 play (2026-11-18 19:00–19:57, binary `7e85b4fe`, shortcut "BC5 test 0430 (F18)")
+
+His verdict (via top): fine, apart from brief, sharp fps drops. Top stopped the emulator at 19:57 at his request. Capture `~/bc5-data/captures/play-20261118-1900/gc/direct.log` and `exp0430/play-f18/play-last.log`, copied to the laptop (`data-0430/play-f18/`, not committed). 3,155 s, 112,988 flips, 35.8 flips/s, his own route and pad, RT on. Two Space-key pauses (2761 s, 3062 s); the first is the 96-s "gap".
+
+| | Count |
+|---|---|
+| Fault records / amdgpu reset, timeout, fault lines since 19:00 | 0 / 0 (top) |
+| F10 acb waits / writing chain / bounds | 1,525,291 / 40,554 / 0; 5,047.5 ms in all, at most 148 ms in any minute |
+| F14 at bounds busy / flight | 10 / 32 |
+| F16 in-flight waits | 32, all returned, longest 16.1 ms, 33.5 ms in all |
+| F18 bounds looked at | 10: writers went 4, no writer of the label among the pending slots 6; slots not a writer / still busy 6 / 4, in hold_release 0; 50 ms bound 0, not waited 0; 3.7 ms in all, longest 0.999 ms |
+| THE BOUND STANDS / F7 sensor | 0 / 0 |
+| acb-probe DROPPED (the F852 form) | 0 |
+| Game-thread waits given up / indirect draws DROPPED after one | 39 / 1 |
+
+**The one DROPPED is not F852.** At t 229.9 s: `cpu-wait WAIT_REG_MEM64 at 379 on 0x12004b3c38: GIVEN UP after 35.0 ms` (function 3, value 0x907616589, reference 0), then `indirect draw op 24 at 1454 after a given-up wait: DROPPED (1 so far)`. This is a graphics buffer's wait on the game thread, bounded by the host, and the patch's indirect-draw guard dropping the next indirect draw (its arguments may not be written yet; exps 0052, 0054). The label and value are F262/F263's: armed by the Render Thread, released by GPU compute work that the host submits late (F279, F282, F283). F852 is an acb's wait on 0x12004b4fc8 that passes at submit on an old 0 and shows as the probe's `wait op 93 ... DROPPED`. The give-ups touch 0x12004b3c38 (13), 0x12004b5438 (12), 0x12004b7838 (9), 0x12004b4438 (4), 0x12004b4c38 (1). **Correction to the D1 row:** h430I1 (F16 and F18 off) had the same pair, at the same offsets (wait at 379 on 0x12004b3c38, indirect draw op 24 at 1454), and 8 give-ups. I missed it when I wrote the row. I2, J2 and M1–M3 have 0 give-ups and 0 DROPPED, so the swap rule's count for the M arm stands. The path does not depend on F10/F4/F16/F18. On the console the CP keeps polling a WAIT_REG_MEM until it is met; the packet has no give-up (TODO(verify): cite the PM4 packet layout, e.g. Mesa `src/amd/common/sid.h` WAIT_REG_MEM fields). So each give-up is our bug (the late writer of F279–F283), recorded here, not a fix.
+
+**The fps drops.** 446 frames over 100 ms (69 over 200 ms, 11 over 500 ms). The scripted runs had 12–23 per 1,600 s on the fight route; this was his own route, more than twice as long, with tighter memory (available 690–790 MiB after 10 min, swap 380 → 1,160 MiB). Classed by the frame profile lines (scratchpad `cls18.py`):
+
+| Class | Gaps | Time | Longest |
+|---|---|---|---|
+| Loading (t < 100 s) | 70 | 19.7 s | 4.85 s |
+| Game thread outside the host, no memory stall in the window | 155 | 26.9 s | 2.40 s at t 232.6 (and 1.14 s at 227.6, the DROPPED's area) |
+| Host sync (views/maps) ≥ 40 % of the gap | 102 | 12.2 s | 0.20 s |
+| Outside the host, PSI full ≥ 50 ms in the window | 68 | 12.0 s | 1.35 s at t 2210.7 |
+| A game-thread label wait ≥ 25 ms (30 of the 39 give-ups sit in one) | 50 | 9.8 s | 0.45 s at t 772.3 |
+| His pause | 1 | 96.2 s | – |
+
+F10, F16 and F18 are not the drops. F10's 5 s is µs per wait, at most 148 ms in any minute. F16 and F18 together waited 37 ms in the whole play, and only 2 F18 looks fell inside a gap. The drops are the title's own CPU time (the largest share), our host's sync, memory stalls, and the given-up label waits. There is no A/B on his route. His verdict on the lean `e3fd8b55` build also named brief fps dips.
+
+**Verdict.**
+- F18 did what it was built for: 10 of 10 bounds were settled, 0 stood, and it cost 3.7 ms. In 6 of the 10 the busy slot did not write the label at all.
+- The play is clean of the F852 class and of GPU faults over 57 minutes.
+- The swap candidate stays F10 + F4 + F16, clean in 3 of 3.
+- F18 has no scripted run. Its target case caused no fault in any run (busy bounds followed by the sensor: 0 of 29 before, 0 here). Adding it to the swap is top's call.
+- The given-up game-thread wait (F262 family) is an older, separate open bug.
