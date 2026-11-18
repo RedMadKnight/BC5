@@ -8,8 +8,8 @@ set -u
 ulimit -c 0
 W=$HOME/bc5-work; HERE=$W/exp0429; T=${1:?a tag}
 V=normal; [ "${CHECK_LEAN:-0}" = 1 ] && V=lean  # lean: R logs nothing, so the check is the ps picture alone
-BIN=$W/exp0429/$V/kyty_emulator; WORDS=$W/exp0413/n/words0413nz.txt
-WANT=$(cat "$W/exp0429/$V/binary.md5")
+BD=${CHECK_DIR:-$W/exp0429/$V}; BIN=$BD/kyty_emulator; WORDS=$W/exp0413/n/words0413nz.txt
+WANT=$(cat "$BD/binary.md5")
 . "$W/exp0413/n/chainlock0417.inc"
 chain_claim "exp 0429: R check $T ($V, RR=${RRMODE:-1}, one short run, arm G, about 3 min)" 6 || { echo "no lock"; exit 1; }
 trap chain_release EXIT

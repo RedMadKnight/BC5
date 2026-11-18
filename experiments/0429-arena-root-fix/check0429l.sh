@@ -10,7 +10,7 @@ set -u
 ulimit -c 0
 export LC_ALL=C
 W=$HOME/bc5-work; N=$W/exp0413/n; HERE=$W/exp0429; T=${1:?a tag}
-BIN=$HERE/lean/kyty_emulator; WANT=$(cat "$HERE/lean/binary.md5")
+BD=${CHECK_DIR:-$HERE/lean}; BIN=$BD/kyty_emulator; WANT=$(cat "$BD/binary.md5")
 [ "$(md5sum < "$BIN" | cut -d' ' -f1)" = "$WANT" ] || { echo "the lean binary is not its pin"; exit 1; }
 cd "$N" || exit 1
 CMD=$N/cmd-$T.txt

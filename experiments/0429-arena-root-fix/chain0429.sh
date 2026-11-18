@@ -18,6 +18,7 @@
 #   CHAIN_SET=screen3: h429C1 h429Z1 h429M5 h429C2 h429Z2 h429M6 (or one or two at a time: rep<k> with REP_TAGS)
 #   CHAIN_SET=screen2: h429C1 h429M2 h429Y1 h429X2 h429C2 h429M3 h429Y2 h429X3
 #   CHAIN_SET=rep<k>: set by REP_TAGS (the arms that survived, with controls between)
+#   R swap (2026-11-18): arms U (R + slice + stressor) and V (U with the slice off), CHAIN_DIR=~/bc5-work/exp0429/rt/normal
 #   build 11: arms H (G with RR=2), P (plain: RR=0 only) and Q (RR=${RRMODE:-1} only); P and Q are the fps pairs
 # TARGET (the crash at the site) and KERNEL do not stop the chain. Stops: a real pad key (R51), the STOP file
 # ($HERE/STOP or ~/bc5-work/exp0429/STOP, read before each run), any other class, a second NOT_ROUTED.
@@ -26,11 +27,11 @@ set -u
 ulimit -c 0
 export LC_ALL=C
 W=$HOME/bc5-work; N=$W/exp0429/n; R=$N/raw; HERE=$(cd "$(dirname "$0")" && pwd)
-BIN=$W/exp0429/normal/kyty_emulator; WORDS=$W/exp0413/n/words0413nz.txt; LOCKINC=$W/exp0413/n/chainlock0417.inc
+CD=${CHAIN_DIR:-$W/exp0429/normal}; BIN=$CD/kyty_emulator; WORDS=$W/exp0413/n/words0413nz.txt; LOCKINC=$W/exp0413/n/chainlock0417.inc
 SET=${CHAIN_SET:-}; OUT=$N/chain-rows-$SET.txt
 say() { echo "chain0429 $(date +%T): $*"; }
-[ -x "$BIN" ] && [ -s "$W/exp0429/normal/binary.md5" ] || { say "NOT STARTED, no private binary or binary.md5"; exit 1; }
-WANT=$(cat "$W/exp0429/normal/binary.md5"); MB=$(md5sum < "$BIN" | cut -d' ' -f1)
+[ -x "$BIN" ] && [ -s "$CD/binary.md5" ] || { say "NOT STARTED, no private binary or binary.md5"; exit 1; }
+WANT=$(cat "$CD/binary.md5"); MB=$(md5sum < "$BIN" | cut -d' ' -f1)
 [ "$MB" = "$WANT" ] || { say "NOT STARTED, the binary is ${MB:0:8}, not ${WANT:0:8}"; exit 1; }
 [ -s "$WORDS" ] && [ -f "$LOCKINC" ] || { say "NOT STARTED, no $WORDS or $LOCKINC"; exit 1; }
 [ -d "$W/exp0425/saves-named/PPSA03671" ] || { say "NOT STARTED, no named snapshot in exp0425"; exit 1; }
@@ -62,6 +63,8 @@ armwords() {
     h429H*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_RR=2" ;;  # build 11: G with pool sleepers only
     h429P*) echo "KYTY_BC5_0429_RR=0" ;;  # build 11: the plain control for fps, no stressor and no diagnostics (the shared settings)
     h429Q*) echo "KYTY_BC5_0429_RR=${RRMODE:-1} KYTY_BC5_0429_RESERVE=${RESERVE:-4}" ;;  # build 11: R alone for fps, no stressor and no diagnostics; RRMODE=2 pool sleepers only
+    h429U*) echo "KYTY_BC5_0429_TRACE=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_RR=1" ;;  # R swap test build (rt): R on, the wake slice on (its default 200 us), the stressor
+    h429V*) echo "KYTY_BC5_0429_TRACE=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_RR=1 KYTY_BC5_0425_WAKE_SLICE_US=0" ;;  # the same with the wake slice off
     h429X*) echo "KYTY_BC5_0429_TRACE=1 KYTY_BC5_0429_WAITS=1 BC5_0430_G=0 KYTY_BC5_0429_GUEST_CPUS=1 KYTY_BC5_0429_PRIO_ORDER=1 KYTY_BC5_0425_HANDOFF_US=300" ;;
     *) return 1 ;;
   esac
