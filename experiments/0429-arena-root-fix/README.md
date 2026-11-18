@@ -753,3 +753,29 @@ threads). So:
 - check0429r.sh / check0429l.sh: with RRMODE=3 a check also fails if an AK thread is RR; both print the nice < 0 threads.
 
 Next slot (after exp 0432's): build 13, checks K13 (normal) and K14 (lean) with RRMODE=3, then 2 pairs Q/P with RRMODE=3.
+
+## Slot 04:23–04:29 (2026-11-18): build 13, check K13 FAIL; build 14 (offline)
+
+Box up 10:41 h, 0 amdgpu reset lines since boot, BOX-LOCK empty. Build 13: private normal `4abfec5e`, lean `1a85bf66`,
+0 errors, the same 8 warnings, shared builds unchanged.
+
+**h429K13 (normal, RR=3): FAIL**, Job Hi 6 of 8 RR (Hi 2 and Hi 7 not), NO_CRASH, 40.4 flips/s, 0 kernel lines. The
+slot stopped there (the check rule). What worked: the family rule, AK threads RR 0 (AudioMgr out), main thread TS, rtkit
+refusals 0. RR threads: Job Hi 0, 1, 3–6 (rtprio 6), Job Lo 1, 3, 4, 5, 7 (3). Count line:
+`held 11 P 11 R 0 N 13 user 27 of 25`. The emulator's own rtkit high-priority threads at the snapshot:
+AK::AudioOutThread, AK::JobWrkr-Acm, HIDAPI Rumble, SDLAudioP0, SDLAudioP53 x2 (nice -15/-10; the audio engine and SDL).
+
+Cause (read after the run, read-only): the user's RT or nice < 0 threads with no emulator were kwin_wayland 3,
+pipewire 2, wireplumber 3, pipewire-pulse 2. kwin_wayland has CAP_SYS_NICE (CapEff bit 23) and sets its own RT threads
+without rtkit, so rtkit does not count them, and R's scan did: it saw 27 where rtkit had 24 (PipeWire's stack 7, the
+emulator's own 6, R's 11). So R's room ran out after 11 promotions. Room-short promotions evicted no one, so the Job Lo
+workers, which slept first, kept places the Hi workers needed. With rtkit's 25 and these neighbours, R has about 12
+places, or 8 with the reserve of 4.
+
+**Build 14 (offline, not yet built):**
+- the scan leaves out processes with CAP_SYS_NICE;
+- a short room evicts like a full cap: the holder with the numerically highest guest priority above the newcomer's
+  goes back and waits;
+- a waiting thread comes back at a later sleep also when such a holder exists.
+
+Expected in the next check: R holds about 8, all of them Job Hi.

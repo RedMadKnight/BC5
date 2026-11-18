@@ -25,6 +25,10 @@
 // room for 2. Now the watchdog counts the user's RT and nice < 0 threads every second (/proc), and R promotes only
 // while that count + 1 + kReserve fits under rtkit's limit (read from rtkit's command line); a thread denied for room
 // or budget waits and is promoted at a later sleep when there is room (it was lost for good before).
+// Build 14 (h429K13 FAIL, Job Hi 6 of 8: the scan counted kwin_wayland's 3 RT threads, which it sets itself with
+// CAP_SYS_NICE and rtkit does not count, and room-short promotions evicted no one, so Job Lo took the places first):
+// processes with CAP_SYS_NICE are left out of the count, and a short room evicts like a full cap, the holder with the
+// numerically highest guest priority above the newcomer's; a waiting thread also comes back when such a holder exists.
 // Off: nothing here runs. Normal build: every promotion, drop and refusal is logged (the first 200). Both builds
 // (build 11): one count line a minute.
 #if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
@@ -237,6 +241,14 @@ static int UserRtThreads() { // threads of our user that are RR/FIFO or have nic
 		if (stat(path, &st) != 0 || st.st_uid != uid) {
 			continue;
 		}
+		{ // build 14: a process with CAP_SYS_NICE sets its priorities without rtkit, and rtkit does not count it
+			char sp[96], buf[4096];
+			std::snprintf(sp, sizeof(sp), "/proc/%s/status", e->d_name);
+			const char* c = ReadSmall(sp, buf, sizeof(buf)) ? std::strstr(buf, "CapEff:") : nullptr;
+			if (c != nullptr && ((std::strtoull(c + 7, nullptr, 16) >> 23) & 1) != 0) { // CAP_SYS_NICE is 23
+				continue;
+			}
+		}
 		DIR* t = opendir(path);
 		if (t == nullptr) {
 			continue;
@@ -313,6 +325,14 @@ static int RtkitThreadsMax() { // rtkit's --threads-per-user-max from its comman
 	}
 	closedir(d);
 	return m;
+}
+static bool HasWorseHolder(int prio) { // a holder of a numerically higher guest priority (build 14)
+	for (int i = 0; i < kMaxSlots; i++) {
+		if (g_tid[i].load(std::memory_order_relaxed) != 0 && g_slot_prio[i].load(std::memory_order_relaxed) > prio) {
+			return true;
+		}
+	}
+	return false;
 }
 static bool RoomOk() { // one more RR thread leaves kReserve of rtkit's places
 	const int u = g_user_rt.load(std::memory_order_relaxed);
@@ -534,8 +554,9 @@ static void Apply(Pthread thread, bool sleeper) {
 	}
 	// a place under the cap, reserved atomically; when the cap is full, the holder with the numerically highest guest
 	// priority above ours is dropped for good to make room (the console's order: a lower number wins)
-	bool evicted = false;
-	if (g_held.fetch_add(1) >= g_cap) {
+	bool       evicted  = false;
+	const bool cap_full = g_held.fetch_add(1) >= g_cap;
+	if (cap_full || !RoomOk()) { // build 14: a short rtkit room evicts like a full cap
 		g_held.fetch_sub(1);
 		int victim = 0, vprio = prio;
 		for (int i = 0; i < kMaxSlots; i++) {
@@ -547,21 +568,26 @@ static void Apply(Pthread thread, bool sleeper) {
 			}
 		}
 		if (victim == 0 || Drop(victim, false) < 0) {
-			Count(kCapDenied, prio);
-			Log("not promoted (the cap, no holder of a lower priority)", tid, thread->name.c_str(), prio, 0, 0);
+			if (cap_full) {
+				Count(kCapDenied, prio);
+				Log("not promoted (the cap, no holder of a lower priority)", tid, thread->name.c_str(), prio, 0, 0);
+			} else {
+				Count(kRoomDenied, prio);
+				MarkEvicted(tid); // waits for room
+				Log("not promoted (rtkit's room, no holder of a lower priority)", tid, thread->name.c_str(), prio, 0, 0);
+			}
 			return;
 		}
 		Count(kEvicted, vprio);
 		MarkEvicted(victim); // build 12: it comes back at a later sleep when a place is free
 		Log("evicted for a higher priority", victim, "", vprio, 0, 0);
 		evicted = true;
+		g_user_rt.fetch_sub(1); // the victim went back to SCHED_OTHER: rtkit frees its place at the next call
 		if (g_held.fetch_add(1) >= g_cap) {
 			g_held.fetch_sub(1);
+			MarkEvicted(tid);
 			return;
 		}
-	}
-	if (evicted) {
-		g_user_rt.fetch_sub(1); // the victim went back to SCHED_OTHER: rtkit frees its place at the next call
 	}
 	if (!RoomOk()) {
 		g_held.fetch_sub(1);
@@ -721,8 +747,9 @@ extern "C" void bc5_0429_r_on_sleep(const void* sem) {
 		return;
 	}
 	if (self->bc5_rr_sleeper) { // build 12: an evicted sleeper comes back when a place is free
-		if (bc5_0429r::g_evicted_n.load(std::memory_order_relaxed) > 0 && bc5_0429r::g_held.load(std::memory_order_relaxed) < bc5_0429r::g_cap &&
-		    bc5_0429r::RoomOk() && bc5_0429r::NowMs() >= bc5_0429r::g_full_until.load(std::memory_order_relaxed) &&
+		if (bc5_0429r::g_evicted_n.load(std::memory_order_relaxed) > 0 && ((bc5_0429r::g_held.load(std::memory_order_relaxed) < bc5_0429r::g_cap && bc5_0429r::RoomOk()) ||
+		     (self->attr != nullptr && bc5_0429r::HasWorseHolder(self->attr->guest_priority))) &&
+		    bc5_0429r::NowMs() >= bc5_0429r::g_full_until.load(std::memory_order_relaxed) &&
 		    bc5_0429r::g_win_calls.load(std::memory_order_relaxed) < bc5_0429r::kWindowMax && bc5_0429r::IsEvicted(static_cast<int>(self->host_thread_id))) {
 			bc5_0429r::Apply(self, true);
 		}
