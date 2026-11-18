@@ -842,3 +842,33 @@ J1 also shows H5's dcb buffer (0x118c5f09xx) in the same failure. **H5's junk-gr
 **E1 so far**: 1 GPU fault in 1 run. D1: 0 in 2. The numbers are small. The data says E1 as built does not close F852: a writer in flight at the 2 ms bound passes the gate. The arm that covers that path is F10 + F4 + F16.
 
 **After the fault.** The box rebooted itself (R60 met by the watchdog reboot, 0 reset lines after). I cleared my stale h430J1 lock line at 16:57 (exact line checked, no emulator), logged in BOX-QUEUE. My watcher had not caught the reboot: it looked only for "done" and box loss, and the box was back within 5 minutes. It now records the boot id and ends on a change, or when the emulator is gone 3 minutes without "done" (R64). h430J2 (E1 repeated, top's GO) started 16:58.
+
+### F10's "busy" bounds: can they let a stale wait through? (2026-11-18 evening, offline, top's question)
+
+**What "busy" means.** F10 polls `f10_pending` every 20 µs for up to 2 ms. A slot whose `mu` try_lock fails counts as pending, and so does a slot whose open chain writes L or whose in-flight set holds L. At the bound, F14 takes one more look. "busy" means that one try_lock failed: the slot's state at the bound is **unknown**. It may hold L's write (open, or about to swap it into flight), or it may be an F13 `slot_wait` slot that never wrote L at all (F13 adds every slot that was busy at the look, without knowing its contents).
+
+**Who holds a slot's `mu`.** The unit (f574f460) takes it in:
+- `chain_append`, `chain_end` and the soft-push paths, all short;
+- `chain_submit`'s two short blocks. `submit_now` itself runs **without** `mu`, so a busy slot is never "in submit_now".
+- `hold_release`, which per iteration evaluates every ADR 0013 hold condition under `mu` (`wait_satisfied`, `ring_will_satisfy`). With `block`, it does so in a loop until the holds clear or `hold_ns` passes.
+
+A slot that stays busy at the 2 ms mark is therefore most likely a chain polling its own holds. Such a chain would also be the label's writer if it holds L's release behind its own kept wait. This is inference: F14 does not record which holder it met.
+
+**Mechanism: yes, it can.** At a bound, the wait is decided as before. If the slot was a writer of L whose release is still unsubmitted, an acb wait that reads the previous frame's 0 passes at submit. That is the same drop as J1's, through a different gate.
+
+**Data: it has not happened yet.** The F7 sensor line ("its wait came before its release") follows a bound only when the wait really overtook its release.
+
+| Run | busy bounds | busy bounds followed by an F7 sensor line | flight bounds | flight bounds followed by an F7 sensor line |
+|---|---|---|---|---|
+| J1 | 11 | 0 | 27 | 4 (the last of them on 0x12004b4fc8 → the fault) |
+| J2 | 11 | 0 | 32 | 2 |
+| M1 | 8 | 0 | 23 (all waited out by F16) | 0 |
+
+Only the first 64 bounds per run are journaled; all of these are within that. So there are 0 of 30 for busy against 6 of 82 for flight. That does not rule busy out. It is a lower-rate path, or one that mostly meets slots that don't write L.
+
+**What would cover it (next build, not this slot): F18, one switch, catcher and fix together.**
+1. **Classify.** At a bound with a busy slot, retry its try_lock for up to 200 µs (R62: try_locks only, bounded). Record whether the slot, once seen, writes L (open, held by ADR 0013, or in flight) or not. Also record whether its owner is inside `hold_release` (an atomic flag set around the lock there). This answers the inference above.
+2. **Wait.** For a busy slot that turns out to write L, and for an open writer of L, continue F10's `f10_pending` poll past 2 ms up to F16's 50 ms. Use F16's phase gate: give up when the writer's `f16_phase` is 1 (back-pressure) or 4 (draining the GPU) for 2 ms, since those may wait on bc5-ring. bc5-ring holds no lock here (R62), and `mu` is never held across `submit_now`, so the wait cannot close a cycle through `mu`. A writer held by its own ADR 0013 hold is bounded by `hold_ns`, after which `hold_release` gives the hold up and the chain goes.
+3. **Count.** Record waited / released / 50 ms bound / given up by phase, as F16 does. Journal any bound that still ends with the wait satisfied, so the swap rule's sensor covers this gate too.
+
+A slot that does not write L is released at once, so F18 costs nothing there.
