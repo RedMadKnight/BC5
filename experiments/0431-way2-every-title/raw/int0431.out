@@ -1,0 +1,12 @@
+chain lock: exp 0417 | chain: exp 0431: shared swap, way 2 for every title (five rows to kSoft), patch a7c1653d + 0431; normal and lean rebuilt (CPU only, no emulator), until about 08:18 | token 202611170738141154130 | 2026-11-17 07:38:14
+before: PIN_OLD=a7c1653d NORMAL=bf3f5f00 LEAN=0fb7bed5 U1=b8afba59 U2=554e0139 ARCH=1423af83 
+bc5/switch_defaults.hpp: 2 edits, brace balance +0
+the patch: a7c1653d -> 9e7c4514, 25 lines differ, exp 0372 lines 5, pad_audio_route header in
+== 07:38:19 build normal
+normal: 6044be08, warnings 8, steps 4
+== 07:39:03 build lean
+lean: d239d4bf, warnings 9, steps 4
+normal words: +[] -[]; 'tag w428c': 1, 'exp 0428': 4
+lean words: +[] -[]; 'tag w428c': 0, 'exp 0428': 0
+int0431 done 07:39:49: patch 9e7c4514, normal 6044be08, lean d239d4bf; undo: bash /home/kjaniszewski/bc5-work/exp0431/undo0431.sh (then exp0430/undo0430.sh further back); rollback without a build: BC5_DIRECT_ACB_RINGS=0
+chain lock released

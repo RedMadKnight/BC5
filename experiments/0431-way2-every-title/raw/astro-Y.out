@@ -1,0 +1,11 @@
+chain lock: exp 0417 | chain: exp 0431: ASTRO BOT on the shared builds, way 2 (a431Y1:x:W a431Y2:x:W), until about 00:12 | token 202611162359201442739 | 2026-11-16 23:59:20
+23:59:21 == a431Y1: private /home/kjaniszewski/bc5-work/exp0430/kyty_emulator a90ec52f, arm W (BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_INDIRECT=1 BC5_DIRECT_ACB_STATE_NO_WALK=1 BC5_DIRECT_ACB_SPLIT_LATE=3; extra: BC5_0430_F3=1 BC5_0430_F2=1 BC5_0430_G=0 BC5_DIRECT_TIMEOUT_PROBE=1), 200 s
+a431Y1 (astro) PASS: ran 200 s; RssAnon at the end 239612 kB; kernel lines 0, crash lines 0; real pad keys 0; shots 5
+a431Y1 w428c lines 20; the last: [bc5] exp 0428 (tag w428c): t 190.6 s: jobs gfx 21800 comp0 7221 comp1 52963 comp2 36022 comp3 447; acbs kept on gfx: none; queue->ring: 26->3(2040) 32->1(356697) 38->0(27944) 40->2(115303) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 69 satisfied 10 NOT served 0 heads split 79 kept-without-split 1 (on a ring 0, in the IB 0, after the chain 1, still split 21397; polled first: kept 21315 satisfied 2 cycle-split 30 timeout-split 49); aq424 ON, parts given state 28690, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 322167
+00:02:53 a431Y1: PASS
+00:02:58 == a431Y2: private /home/kjaniszewski/bc5-work/exp0430/kyty_emulator a90ec52f, arm W (BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_INDIRECT=1 BC5_DIRECT_ACB_STATE_NO_WALK=1 BC5_DIRECT_ACB_SPLIT_LATE=3; extra: BC5_0430_F3=1 BC5_0430_F2=1 BC5_0430_G=0 BC5_DIRECT_TIMEOUT_PROBE=1), 200 s
+a431Y2 (astro) PASS: ran 200 s; RssAnon at the end 236996 kB; kernel lines 0, crash lines 0; real pad keys 0; shots 5
+a431Y2 w428c lines 20; the last: [bc5] exp 0428 (tag w428c): t 190.6 s: jobs gfx 22283 comp0 7426 comp1 54181 comp2 35445 comp3 447; acbs kept on gfx: none; queue->ring: 26->3(2040) 32->1(303694) 38->0(28768) 40->2(115272) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 73 satisfied 17 NOT served 0 heads split 90 kept-without-split 0 (on a ring 0, in the IB 0, after the chain 0, still split 21897; polled first: kept 21804 satisfied 3 cycle-split 28 timeout-split 62); aq424 ON, parts given state 29381, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 268273
+00:06:29 a431Y2: PASS
+00:06:34 astro0431 ended
+chain lock released

@@ -1,0 +1,23 @@
+chain lock: exp 0417 | chain: exp 0429: R check h429K5 (normal, RR=1, one short run, arm G, about 3 min), until about 17:52 | token 202611171746356484 | 2026-11-17 17:46:35
+check h429K5: Job Hi threads 8, of them RR 7; promoted 21, refused 0, dropped 5; RR threads at G+25: 9
+   7086  RR      6 Job Hi 0
+   7087  RR      6 Job Hi 1
+   7089  RR      6 Job Hi 3
+   7090  RR      6 Job Hi 4
+   7091  RR      6 Job Hi 5
+   7092  RR      6 Job Hi 6
+   7093  RR      6 Job Hi 7
+   7171  RR      7 AK::AudioMgr
+   7381  RR     13 AK::AudioOutThr
+[bc5] exp 0429 R: dropped by the watchdog (100 ms in one slice) tid 7158 '' prio 450 rr 0 rc 0 (held 13, calls 21)
+[bc5] exp 0429 R: dropped by the watchdog (100 ms in one slice) tid 7153 '' prio 450 rr 0 rc 0 (held 12, calls 21)
+[bc5] exp 0429 R: dropped by the watchdog (100 ms in one slice) tid 7156 '' prio 450 rr 0 rc 0 (held 11, calls 21)
+[bc5] exp 0429 R: dropped by the watchdog (100 ms in one slice) tid 7152 '' prio 450 rr 0 rc 0 (held 10, calls 21)
+[bc5] exp 0429 R: dropped by the watchdog (100 ms in one slice) tid 7157 '' prio 450 rr 0 rc 0 (held 9, calls 21)
+h429K5 (G) ended at G+40 (after 149 s; G 109, load 101, list 93); 42.2 flips/s over 145 s, 8 s with a gap over 100 ms, longest 237 ms; kernel lines 0, crash lines 0, ledger lines 0; CLASS NO_CRASH; ex
+[bc5] exp 0429: R (RR for the guest's sleepers) ON
+[bc5] exp 0429 R count: held 9 calls 21 P 21 R 0 C 11 B 0 E 7 X 0 W 5 H 0 G 0 | last E600 E600 E600 E600 E600 E600 E500 W450 W450 W450 W450 W450 
+[bc5] exp 0429 R count: held 9 calls 21 P 21 R 0 C 11 B 0 E 7 X 0 W 5 H 0 G 0 | last E600 E600 E600 E600 E600 E600 E500 W450 W450 W450 W450 W450 
+check h429K5: the main thread RR: 0 (must be 0); rtkit refusals 0 (reported only: rtkit has a per-user limit)
+check h429K5: FAIL
+chain lock released

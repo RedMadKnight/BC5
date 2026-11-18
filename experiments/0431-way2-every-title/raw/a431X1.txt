@@ -1,0 +1,218 @@
+a431X1 (astro) PASS: ran 200 s; RssAnon at the end 248068 kB; kernel lines 0, crash lines 0
+[bc5] exp 0428 (tag w428c): t 0.5 s: jobs gfx 0 comp0 1 comp1 0 comp2 0 comp3 0; acbs kept on gfx: none; queue->ring: moves 0 not-idle-in-2s 0; dcb waits on two rings: kept 0 satisfied 0 NOT served 0 heads split 0 kept-without-split 0 (on a ring 0, in the IB 0, after the chain 0, still split 0; polled first: kept 0 satisfied 0 cycle-split 0 timeout-split 0); aq424 ON, parts given state 0, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 0
+fps counter: t 4.174 s: 44 flips in 1.011 s, longest gap 279.4 ms, gaps over 40 ms 2, over 70 ms 2
+fps counter: t 5.174 s: 60 flips in 1.000 s, longest gap 17.5 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 6.191 s: 61 flips in 1.017 s, longest gap 17.3 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 7.207 s: 61 flips in 1.016 s, longest gap 17.2 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 8.207 s: 60 flips in 1.000 s, longest gap 17.2 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 9.223 s: 61 flips in 1.016 s, longest gap 17.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 10.224 s: 60 flips in 1.000 s, longest gap 26.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 11.224 s: 60 flips in 1.000 s, longest gap 24.3 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 12.226 s: 60 flips in 1.002 s, longest gap 18.2 ms, gaps over 40 ms 0, over 70 ms 0
+[bc5] exp 0428 (tag w428c): t 10.5 s: jobs gfx 1069 comp0 185 comp1 2322 comp2 1510 comp3 0; acbs kept on gfx: none; queue->ring: 32->1(11114) 40->2(6050) moves 2 not-idle-in-2s 0; dcb waits on two rings: kept 2 satisfied 0 NOT served 0 heads split 2 kept-without-split 0 (on a ring 0, in the IB 0, after the chain 0, still split 1041; polled first: kept 1039 satisfied 0 cycle-split 0 timeout-split 2); aq424 ON, parts given state 1066, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 1563
+fps counter: t 13.240 s: 61 flips in 1.015 s, longest gap 27.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 14.240 s: 60 flips in 1.000 s, longest gap 21.5 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 15.240 s: 60 flips in 1.000 s, longest gap 42.6 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 16.257 s: 61 flips in 1.016 s, longest gap 28.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 17.257 s: 60 flips in 1.000 s, longest gap 28.3 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 18.274 s: 61 flips in 1.016 s, longest gap 29.4 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 19.274 s: 60 flips in 1.000 s, longest gap 45.1 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 20.274 s: 60 flips in 1.000 s, longest gap 17.2 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 21.274 s: 60 flips in 1.000 s, longest gap 42.1 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 22.274 s: 60 flips in 1.000 s, longest gap 17.1 ms, gaps over 40 ms 0, over 70 ms 0
+[bc5] exp 0428 (tag w428c): t 20.5 s: jobs gfx 2273 comp0 248 comp1 4863 comp2 3411 comp3 178; acbs kept on gfx: none; queue->ring: 26->3(964) 32->1(23526) 40->2(11856) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 5 satisfied 0 NOT served 0 heads split 5 kept-without-split 0 (on a ring 0, in the IB 0, after the chain 0, still split 2213; polled first: kept 2208 satisfied 0 cycle-split 0 timeout-split 5); aq424 ON, parts given state 2266, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 12774
+fps counter: t 23.274 s: 60 flips in 1.000 s, longest gap 17.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 24.274 s: 60 flips in 1.000 s, longest gap 51.9 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 25.290 s: 61 flips in 1.016 s, longest gap 17.4 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 26.291 s: 60 flips in 1.000 s, longest gap 17.5 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 27.291 s: 60 flips in 1.000 s, longest gap 17.3 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 28.291 s: 60 flips in 1.000 s, longest gap 17.5 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 29.300 s: 59 flips in 1.009 s, longest gap 19.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 30.315 s: 55 flips in 1.015 s, longest gap 22.4 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 31.324 s: 53 flips in 1.009 s, longest gap 24.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 32.341 s: 53 flips in 1.018 s, longest gap 23.5 ms, gaps over 40 ms 0, over 70 ms 0
+[bc5] exp 0428 (tag w428c): t 30.5 s: jobs gfx 3445 comp0 248 comp1 7430 comp2 5326 comp3 447; acbs kept on gfx: none; queue->ring: 26->3(2040) 32->1(39641) 40->2(18721) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 18 satisfied 5 NOT served 0 heads split 23 kept-without-split 0 (on a ring 0, in the IB 0, after the chain 0, still split 3342; polled first: kept 3319 satisfied 0 cycle-split 0 timeout-split 23); aq424 ON, parts given state 3420, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 27212
+fps counter: t 33.356 s: 51 flips in 1.015 s, longest gap 49.5 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 34.363 s: 54 flips in 1.007 s, longest gap 37.3 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 35.368 s: 52 flips in 1.005 s, longest gap 46.7 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 36.381 s: 58 flips in 1.013 s, longest gap 40.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 37.390 s: 56 flips in 1.008 s, longest gap 64.6 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 38.393 s: 56 flips in 1.003 s, longest gap 40.0 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 39.407 s: 59 flips in 1.014 s, longest gap 50.8 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 40.419 s: 59 flips in 1.012 s, longest gap 19.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 41.423 s: 60 flips in 1.004 s, longest gap 19.0 ms, gaps over 40 ms 0, over 70 ms 0
+[bc5] exp 0428 (tag w428c): t 40.5 s: jobs gfx 4584 comp0 248 comp1 10230 comp2 7450 comp3 447; acbs kept on gfx: none; queue->ring: 26->3(2040) 32->1(69692) 40->2(27021) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 34 satisfied 7 NOT served 0 heads split 41 kept-without-split 0 (on a ring 0, in the IB 0, after the chain 0, still split 4450; polled first: kept 4409 satisfied 0 cycle-split 0 timeout-split 41); aq424 ON, parts given state 4542, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 56077
+fps counter: t 42.437 s: 61 flips in 1.014 s, longest gap 32.4 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 43.445 s: 62 flips in 1.008 s, longest gap 17.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 44.446 s: 58 flips in 1.001 s, longest gap 57.2 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 45.458 s: 63 flips in 1.011 s, longest gap 17.5 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 46.458 s: 60 flips in 1.000 s, longest gap 17.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 47.474 s: 61 flips in 1.016 s, longest gap 18.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 48.475 s: 60 flips in 1.000 s, longest gap 18.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 49.475 s: 60 flips in 1.000 s, longest gap 17.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 50.492 s: 61 flips in 1.017 s, longest gap 18.2 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 51.508 s: 61 flips in 1.016 s, longest gap 17.2 ms, gaps over 40 ms 0, over 70 ms 0
+[bc5] exp 0428 (tag w428c): t 50.5 s: jobs gfx 5788 comp0 248 comp1 13239 comp2 9460 comp3 447; acbs kept on gfx: none; queue->ring: 26->3(2040) 32->1(86940) 40->2(32321) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 35 satisfied 7 NOT served 0 heads split 42 kept-without-split 1 (on a ring 0, in the IB 0, after the chain 1, still split 5645; polled first: kept 5602 satisfied 0 cycle-split 1 timeout-split 41); aq424 ON, parts given state 5746, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 72121
+fps counter: t 52.509 s: 60 flips in 1.001 s, longest gap 17.4 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 53.510 s: 60 flips in 1.001 s, longest gap 17.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 54.525 s: 61 flips in 1.015 s, longest gap 17.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 55.527 s: 60 flips in 1.002 s, longest gap 17.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 56.537 s: 59 flips in 1.011 s, longest gap 19.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 57.548 s: 58 flips in 1.010 s, longest gap 19.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 58.557 s: 61 flips in 1.009 s, longest gap 17.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 59.573 s: 61 flips in 1.016 s, longest gap 17.4 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 60.573 s: 60 flips in 1.000 s, longest gap 17.3 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 61.589 s: 61 flips in 1.016 s, longest gap 17.8 ms, gaps over 40 ms 0, over 70 ms 0
+[bc5] exp 0428 (tag w428c): t 60.5 s: jobs gfx 6983 comp0 248 comp1 16224 comp2 11646 comp3 447; acbs kept on gfx: none; queue->ring: 26->3(2040) 32->1(111870) 40->2(37642) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 35 satisfied 7 NOT served 0 heads split 42 kept-without-split 1 (on a ring 0, in the IB 0, after the chain 1, still split 6818; polled first: kept 6776 satisfied 0 cycle-split 1 timeout-split 41); aq424 ON, parts given state 6940, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 95857
+fps counter: t 62.591 s: 61 flips in 1.002 s, longest gap 18.4 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 63.607 s: 61 flips in 1.016 s, longest gap 17.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 64.608 s: 61 flips in 1.001 s, longest gap 17.5 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 65.623 s: 60 flips in 1.015 s, longest gap 41.8 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 66.625 s: 58 flips in 1.002 s, longest gap 21.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 67.636 s: 62 flips in 1.011 s, longest gap 19.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 68.644 s: 60 flips in 1.008 s, longest gap 29.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 70.100 s: 9 flips in 1.455 s, longest gap 1227.1 ms, gaps over 40 ms 2, over 70 ms 2
+fps counter: t 71.101 s: 61 flips in 1.001 s, longest gap 25.2 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 72.107 s: 58 flips in 1.006 s, longest gap 21.2 ms, gaps over 40 ms 0, over 70 ms 0
+[bc5] exp 0428 (tag w428c): t 70.5 s: jobs gfx 8024 comp0 354 comp1 18792 comp2 13551 comp3 447; acbs kept on gfx: none; queue->ring: 26->3(2040) 32->1(134398) 38->0(428) 40->2(42119) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 36 satisfied 9 NOT served 0 heads split 45 kept-without-split 2 (on a ring 0, in the IB 0, after the chain 2, still split 7834; polled first: kept 7789 satisfied 0 cycle-split 1 timeout-split 44); aq424 ON, parts given state 8084, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 116245
+fps counter: t 73.113 s: 57 flips in 1.006 s, longest gap 19.5 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 74.122 s: 53 flips in 1.009 s, longest gap 21.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 75.129 s: 52 flips in 1.007 s, longest gap 23.3 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 76.132 s: 51 flips in 1.003 s, longest gap 21.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 77.143 s: 53 flips in 1.011 s, longest gap 24.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 78.143 s: 55 flips in 1.001 s, longest gap 23.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 79.149 s: 57 flips in 1.005 s, longest gap 20.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 80.161 s: 56 flips in 1.012 s, longest gap 53.4 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 81.162 s: 56 flips in 1.001 s, longest gap 48.5 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 82.163 s: 57 flips in 1.001 s, longest gap 21.6 ms, gaps over 40 ms 0, over 70 ms 0
+[bc5] exp 0428 (tag w428c): t 80.5 s: jobs gfx 9145 comp0 897 comp1 21450 comp2 15605 comp3 447; acbs kept on gfx: none; queue->ring: 26->3(2040) 32->1(161115) 38->0(2600) 40->2(48272) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 66 satisfied 14 NOT served 0 heads split 80 kept-without-split 2 (on a ring 0, in the IB 0, after the chain 2, still split 8912; polled first: kept 8832 satisfied 0 cycle-split 28 timeout-split 52); aq424 ON, parts given state 9713, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 141823
+fps counter: t 83.171 s: 59 flips in 1.008 s, longest gap 25.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 84.174 s: 48 flips in 1.004 s, longest gap 24.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 85.179 s: 57 flips in 1.005 s, longest gap 57.9 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 86.185 s: 56 flips in 1.006 s, longest gap 60.2 ms, gaps over 40 ms 2, over 70 ms 0
+fps counter: t 87.194 s: 61 flips in 1.010 s, longest gap 19.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 88.210 s: 62 flips in 1.016 s, longest gap 19.2 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 89.210 s: 61 flips in 1.000 s, longest gap 17.3 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 90.211 s: 60 flips in 1.000 s, longest gap 18.4 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 91.213 s: 60 flips in 1.002 s, longest gap 20.2 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 92.228 s: 61 flips in 1.015 s, longest gap 18.3 ms, gaps over 40 ms 0, over 70 ms 0
+[bc5] exp 0428 (tag w428c): t 90.6 s: jobs gfx 10310 comp0 1479 comp1 24346 comp2 17731 comp3 447; acbs kept on gfx: none; queue->ring: 26->3(2040) 32->1(185414) 38->0(4928) 40->2(55163) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 67 satisfied 14 NOT served 0 heads split 81 kept-without-split 2 (on a ring 0, in the IB 0, after the chain 2, still split 10063; polled first: kept 9982 satisfied 0 cycle-split 28 timeout-split 53); aq424 ON, parts given state 11459, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 160026
+fps counter: t 93.231 s: 51 flips in 1.002 s, longest gap 33.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 94.242 s: 60 flips in 1.011 s, longest gap 20.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 95.242 s: 61 flips in 1.000 s, longest gap 17.2 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 96.256 s: 60 flips in 1.014 s, longest gap 54.5 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 97.258 s: 61 flips in 1.002 s, longest gap 17.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 98.275 s: 61 flips in 1.017 s, longest gap 17.4 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 99.275 s: 60 flips in 1.000 s, longest gap 17.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 100.278 s: 60 flips in 1.003 s, longest gap 19.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 101.294 s: 60 flips in 1.016 s, longest gap 19.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 102.294 s: 59 flips in 1.000 s, longest gap 20.0 ms, gaps over 40 ms 0, over 70 ms 0
+[bc5] exp 0428 (tag w428c): t 100.6 s: jobs gfx 11494 comp0 1520 comp1 27185 comp2 19710 comp3 447; acbs kept on gfx: none; queue->ring: 26->3(2040) 32->1(204966) 38->0(5092) 40->2(60218) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 73 satisfied 14 NOT served 0 heads split 87 kept-without-split 2 (on a ring 0, in the IB 0, after the chain 2, still split 11228; polled first: kept 11141 satisfied 0 cycle-split 30 timeout-split 57); aq424 ON, parts given state 12678, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 178399
+fps counter: t 103.298 s: 59 flips in 1.003 s, longest gap 20.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 104.305 s: 58 flips in 1.008 s, longest gap 31.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 105.331 s: 59 flips in 1.025 s, longest gap 49.0 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 106.350 s: 40 flips in 1.020 s, longest gap 41.6 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 107.364 s: 41 flips in 1.013 s, longest gap 40.7 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 108.368 s: 38 flips in 1.005 s, longest gap 62.6 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 109.377 s: 39 flips in 1.009 s, longest gap 41.1 ms, gaps over 40 ms 2, over 70 ms 0
+fps counter: t 110.381 s: 39 flips in 1.004 s, longest gap 42.7 ms, gaps over 40 ms 3, over 70 ms 0
+fps counter: t 111.394 s: 40 flips in 1.013 s, longest gap 33.3 ms, gaps over 40 ms 0, over 70 ms 0
+[bc5] exp 0428 (tag w428c): t 110.6 s: jobs gfx 12436 comp0 1799 comp1 29386 comp2 21190 comp3 447; acbs kept on gfx: none; queue->ring: 26->3(2040) 32->1(224628) 38->0(6208) 40->2(67840) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 100 satisfied 20 NOT served 0 heads split 120 kept-without-split 2 (on a ring 0, in the IB 0, after the chain 2, still split 11963; polled first: kept 11843 satisfied 0 cycle-split 30 timeout-split 90); aq424 ON, parts given state 13853, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 196967
+fps counter: t 112.411 s: 41 flips in 1.017 s, longest gap 42.0 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 113.415 s: 40 flips in 1.004 s, longest gap 38.4 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 114.433 s: 40 flips in 1.019 s, longest gap 38.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 115.469 s: 42 flips in 1.035 s, longest gap 36.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 116.488 s: 41 flips in 1.020 s, longest gap 45.0 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 117.503 s: 41 flips in 1.015 s, longest gap 38.5 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 118.515 s: 43 flips in 1.012 s, longest gap 34.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 119.527 s: 40 flips in 1.011 s, longest gap 39.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 120.529 s: 41 flips in 1.002 s, longest gap 49.6 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 121.551 s: 42 flips in 1.022 s, longest gap 35.2 ms, gaps over 40 ms 0, over 70 ms 0
+[bc5] exp 0428 (tag w428c): t 120.6 s: jobs gfx 13285 comp0 2205 comp1 31412 comp2 22406 comp3 447; acbs kept on gfx: none; queue->ring: 26->3(2040) 32->1(240239) 38->0(7832) 40->2(75740) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 116 satisfied 21 NOT served 0 heads split 137 kept-without-split 2 (on a ring 0, in the IB 0, after the chain 2, still split 12541; polled first: kept 12404 satisfied 0 cycle-split 32 timeout-split 105); aq424 ON, parts given state 15071, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 211767
+fps counter: t 122.573 s: 42 flips in 1.022 s, longest gap 36.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 123.577 s: 40 flips in 1.004 s, longest gap 36.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 124.601 s: 44 flips in 1.023 s, longest gap 35.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 125.630 s: 41 flips in 1.029 s, longest gap 40.8 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 126.631 s: 42 flips in 1.001 s, longest gap 37.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 127.648 s: 45 flips in 1.017 s, longest gap 35.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 128.659 s: 37 flips in 1.010 s, longest gap 46.3 ms, gaps over 40 ms 7, over 70 ms 0
+fps counter: t 129.687 s: 24 flips in 1.028 s, longest gap 44.9 ms, gaps over 40 ms 20, over 70 ms 0
+fps counter: t 130.703 s: 24 flips in 1.016 s, longest gap 45.2 ms, gaps over 40 ms 16, over 70 ms 0
+fps counter: t 131.721 s: 24 flips in 1.019 s, longest gap 46.3 ms, gaps over 40 ms 18, over 70 ms 0
+[bc5] exp 0428 (tag w428c): t 130.6 s: jobs gfx 14185 comp0 2550 comp1 33137 comp2 23443 comp3 447; acbs kept on gfx: none; queue->ring: 26->3(2040) 32->1(260922) 38->0(9212) 40->2(82285) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 118 satisfied 21 NOT served 96 heads split 235 kept-without-split 2 (on a ring 0, in the IB 0, after the chain 2, still split 13122; polled first: kept 12886 satisfied 0 cycle-split 32 timeout-split 204); aq424 ON, parts given state 16202, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 233221
+fps counter: t 132.758 s: 25 flips in 1.037 s, longest gap 45.6 ms, gaps over 40 ms 14, over 70 ms 0
+fps counter: t 133.784 s: 25 flips in 1.026 s, longest gap 45.3 ms, gaps over 40 ms 15, over 70 ms 0
+fps counter: t 134.812 s: 25 flips in 1.029 s, longest gap 44.8 ms, gaps over 40 ms 16, over 70 ms 0
+fps counter: t 135.841 s: 25 flips in 1.029 s, longest gap 43.9 ms, gaps over 40 ms 18, over 70 ms 0
+fps counter: t 136.843 s: 24 flips in 1.001 s, longest gap 45.2 ms, gaps over 40 ms 16, over 70 ms 0
+fps counter: t 137.883 s: 25 flips in 1.041 s, longest gap 45.3 ms, gaps over 40 ms 17, over 70 ms 0
+fps counter: t 138.907 s: 26 flips in 1.024 s, longest gap 44.1 ms, gaps over 40 ms 10, over 70 ms 0
+fps counter: t 139.908 s: 24 flips in 1.000 s, longest gap 44.8 ms, gaps over 40 ms 17, over 70 ms 0
+fps counter: t 140.940 s: 25 flips in 1.032 s, longest gap 45.8 ms, gaps over 40 ms 16, over 70 ms 0
+fps counter: t 141.948 s: 25 flips in 1.008 s, longest gap 44.0 ms, gaps over 40 ms 12, over 70 ms 0
+[bc5] exp 0428 (tag w428c): t 140.6 s: jobs gfx 15159 comp0 2793 comp1 34352 comp2 24175 comp3 447; acbs kept on gfx: none; queue->ring: 26->3(2040) 32->1(288053) 38->0(10184) 40->2(86247) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 118 satisfied 21 NOT served 340 heads split 479 kept-without-split 2 (on a ring 0, in the IB 0, after the chain 2, still split 13720; polled first: kept 13241 satisfied 0 cycle-split 32 timeout-split 447); aq424 ON, parts given state 17177, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 263340
+fps counter: t 142.971 s: 25 flips in 1.023 s, longest gap 45.6 ms, gaps over 40 ms 16, over 70 ms 0
+fps counter: t 143.995 s: 25 flips in 1.024 s, longest gap 44.7 ms, gaps over 40 ms 16, over 70 ms 0
+fps counter: t 145.008 s: 25 flips in 1.013 s, longest gap 44.5 ms, gaps over 40 ms 14, over 70 ms 0
+fps counter: t 146.017 s: 24 flips in 1.009 s, longest gap 88.5 ms, gaps over 40 ms 13, over 70 ms 1
+fps counter: t 147.038 s: 25 flips in 1.021 s, longest gap 46.0 ms, gaps over 40 ms 14, over 70 ms 0
+fps counter: t 148.063 s: 26 flips in 1.025 s, longest gap 44.8 ms, gaps over 40 ms 9, over 70 ms 0
+fps counter: t 149.075 s: 25 flips in 1.012 s, longest gap 44.6 ms, gaps over 40 ms 13, over 70 ms 0
+fps counter: t 150.100 s: 25 flips in 1.026 s, longest gap 45.1 ms, gaps over 40 ms 15, over 70 ms 0
+fps counter: t 151.125 s: 25 flips in 1.025 s, longest gap 45.4 ms, gaps over 40 ms 13, over 70 ms 0
+fps counter: t 152.164 s: 24 flips in 1.038 s, longest gap 46.6 ms, gaps over 40 ms 18, over 70 ms 0
+[bc5] exp 0428 (tag w428c): t 150.6 s: jobs gfx 16137 comp0 3037 comp1 35572 comp2 24909 comp3 447; acbs kept on gfx: none; queue->ring: 26->3(2040) 32->1(315338) 38->0(11160) 40->2(90209) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 119 satisfied 21 NOT served 584 heads split 724 kept-without-split 2 (on a ring 0, in the IB 0, after the chain 2, still split 14300; polled first: kept 13576 satisfied 0 cycle-split 32 timeout-split 692); aq424 ON, parts given state 18153, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 293611
+fps counter: t 153.200 s: 25 flips in 1.036 s, longest gap 46.3 ms, gaps over 40 ms 14, over 70 ms 0
+fps counter: t 154.213 s: 24 flips in 1.014 s, longest gap 46.7 ms, gaps over 40 ms 14, over 70 ms 0
+fps counter: t 155.253 s: 25 flips in 1.039 s, longest gap 45.7 ms, gaps over 40 ms 15, over 70 ms 0
+fps counter: t 156.294 s: 26 flips in 1.041 s, longest gap 44.3 ms, gaps over 40 ms 11, over 70 ms 0
+fps counter: t 157.308 s: 24 flips in 1.015 s, longest gap 70.8 ms, gaps over 40 ms 16, over 70 ms 1
+fps counter: t 158.339 s: 25 flips in 1.031 s, longest gap 44.7 ms, gaps over 40 ms 16, over 70 ms 0
+fps counter: t 159.344 s: 25 flips in 1.004 s, longest gap 44.8 ms, gaps over 40 ms 11, over 70 ms 0
+fps counter: t 160.354 s: 25 flips in 1.010 s, longest gap 44.6 ms, gaps over 40 ms 14, over 70 ms 0
+fps counter: t 161.367 s: 25 flips in 1.013 s, longest gap 43.5 ms, gaps over 40 ms 16, over 70 ms 0
+fps counter: t 162.367 s: 25 flips in 1.001 s, longest gap 43.7 ms, gaps over 40 ms 14, over 70 ms 0
+[bc5] exp 0428 (tag w428c): t 160.6 s: jobs gfx 17114 comp0 3281 comp1 36791 comp2 25642 comp3 447; acbs kept on gfx: none; queue->ring: 26->3(2040) 32->1(342504) 38->0(12136) 40->2(94188) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 120 satisfied 21 NOT served 828 heads split 969 kept-without-split 2 (on a ring 0, in the IB 0, after the chain 2, still split 14873; polled first: kept 13904 satisfied 0 cycle-split 32 timeout-split 937); aq424 ON, parts given state 19129, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 323780
+fps counter: t 163.378 s: 25 flips in 1.011 s, longest gap 43.9 ms, gaps over 40 ms 16, over 70 ms 0
+fps counter: t 164.404 s: 25 flips in 1.026 s, longest gap 44.4 ms, gaps over 40 ms 15, over 70 ms 0
+fps counter: t 165.410 s: 25 flips in 1.006 s, longest gap 44.0 ms, gaps over 40 ms 14, over 70 ms 0
+fps counter: t 166.431 s: 25 flips in 1.021 s, longest gap 44.7 ms, gaps over 40 ms 16, over 70 ms 0
+fps counter: t 167.459 s: 25 flips in 1.028 s, longest gap 43.8 ms, gaps over 40 ms 17, over 70 ms 0
+fps counter: t 168.466 s: 25 flips in 1.008 s, longest gap 44.4 ms, gaps over 40 ms 13, over 70 ms 0
+fps counter: t 169.492 s: 25 flips in 1.026 s, longest gap 44.7 ms, gaps over 40 ms 16, over 70 ms 0
+fps counter: t 170.525 s: 25 flips in 1.033 s, longest gap 44.7 ms, gaps over 40 ms 17, over 70 ms 0
+fps counter: t 171.542 s: 25 flips in 1.017 s, longest gap 44.8 ms, gaps over 40 ms 15, over 70 ms 0
+[bc5] exp 0428 (tag w428c): t 170.6 s: jobs gfx 18094 comp0 3526 comp1 38014 comp2 26378 comp3 447; acbs kept on gfx: none; queue->ring: 26->3(2040) 32->1(369626) 38->0(13116) 40->2(98188) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 120 satisfied 21 NOT served 1073 heads split 1214 kept-without-split 2 (on a ring 0, in the IB 0, after the chain 2, still split 15467; polled first: kept 14253 satisfied 0 cycle-split 32 timeout-split 1182); aq424 ON, parts given state 20109, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 353922
+fps counter: t 172.584 s: 25 flips in 1.042 s, longest gap 43.8 ms, gaps over 40 ms 18, over 70 ms 0
+fps counter: t 173.585 s: 28 flips in 1.002 s, longest gap 43.9 ms, gaps over 40 ms 11, over 70 ms 0
+fps counter: t 174.597 s: 49 flips in 1.012 s, longest gap 35.3 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 175.600 s: 53 flips in 1.003 s, longest gap 23.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 176.605 s: 59 flips in 1.005 s, longest gap 24.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 177.610 s: 60 flips in 1.005 s, longest gap 31.5 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 178.613 s: 49 flips in 1.004 s, longest gap 59.1 ms, gaps over 40 ms 4, over 70 ms 0
+fps counter: t 179.638 s: 26 flips in 1.025 s, longest gap 44.8 ms, gaps over 40 ms 12, over 70 ms 0
+fps counter: t 180.642 s: 25 flips in 1.004 s, longest gap 44.5 ms, gaps over 40 ms 14, over 70 ms 0
+fps counter: t 181.646 s: 24 flips in 1.004 s, longest gap 46.2 ms, gaps over 40 ms 14, over 70 ms 0
+[bc5] exp 0428 (tag w428c): t 180.6 s: jobs gfx 19141 comp0 3856 comp1 39988 comp2 27665 comp3 447; acbs kept on gfx: none; queue->ring: 26->3(2040) 32->1(392549) 38->0(14436) 40->2(103663) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 127 satisfied 21 NOT served 1198 heads split 1346 kept-without-split 3 (on a ring 1, in the IB 0, after the chain 2, still split 16252; polled first: kept 14905 satisfied 0 cycle-split 37 timeout-split 1309); aq424 ON, parts given state 21354, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 377739
+fps counter: t 182.668 s: 24 flips in 1.022 s, longest gap 46.6 ms, gaps over 40 ms 19, over 70 ms 0
+fps counter: t 183.706 s: 26 flips in 1.037 s, longest gap 45.3 ms, gaps over 40 ms 12, over 70 ms 0
+fps counter: t 184.738 s: 26 flips in 1.032 s, longest gap 44.3 ms, gaps over 40 ms 12, over 70 ms 0
+fps counter: t 185.741 s: 25 flips in 1.003 s, longest gap 44.1 ms, gaps over 40 ms 14, over 70 ms 0
+fps counter: t 186.781 s: 26 flips in 1.040 s, longest gap 44.9 ms, gaps over 40 ms 15, over 70 ms 0
+fps counter: t 187.801 s: 26 flips in 1.020 s, longest gap 43.2 ms, gaps over 40 ms 11, over 70 ms 0
+fps counter: t 188.812 s: 25 flips in 1.011 s, longest gap 45.5 ms, gaps over 40 ms 14, over 70 ms 0
+fps counter: t 189.823 s: 26 flips in 1.011 s, longest gap 44.9 ms, gaps over 40 ms 10, over 70 ms 0
+fps counter: t 190.824 s: 25 flips in 1.001 s, longest gap 43.4 ms, gaps over 40 ms 14, over 70 ms 0
+fps counter: t 191.827 s: 25 flips in 1.003 s, longest gap 44.8 ms, gaps over 40 ms 14, over 70 ms 0
+[bc5] exp 0428 (tag w428c): t 190.6 s: jobs gfx 20144 comp0 4107 comp1 41242 comp2 28416 comp3 447; acbs kept on gfx: none; queue->ring: 26->3(2040) 32->1(420226) 38->0(15440) 40->2(107580) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 127 satisfied 21 NOT served 1449 heads split 1597 kept-without-split 3 (on a ring 1, in the IB 0, after the chain 2, still split 16841; polled first: kept 15244 satisfied 0 cycle-split 37 timeout-split 1560); aq424 ON, parts given state 22356, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 408330
+fps counter: t 192.854 s: 26 flips in 1.027 s, longest gap 44.0 ms, gaps over 40 ms 12, over 70 ms 0
+fps counter: t 193.876 s: 26 flips in 1.023 s, longest gap 43.0 ms, gaps over 40 ms 12, over 70 ms 0
+fps counter: t 194.894 s: 26 flips in 1.018 s, longest gap 43.4 ms, gaps over 40 ms 11, over 70 ms 0
+fps counter: t 195.921 s: 26 flips in 1.027 s, longest gap 43.4 ms, gaps over 40 ms 13, over 70 ms 0
+fps counter: t 196.954 s: 26 flips in 1.033 s, longest gap 43.5 ms, gaps over 40 ms 15, over 70 ms 0
+fps counter: t 197.970 s: 26 flips in 1.016 s, longest gap 43.8 ms, gaps over 40 ms 9, over 70 ms 0
+fps counter: t 198.989 s: 26 flips in 1.019 s, longest gap 43.3 ms, gaps over 40 ms 11, over 70 ms 0
+fps counter: t 200.008 s: 26 flips in 1.019 s, longest gap 43.3 ms, gaps over 40 ms 13, over 70 ms 0
+fps counter: t 201.017 s: 25 flips in 1.008 s, longest gap 43.8 ms, gaps over 40 ms 16, over 70 ms 0
+Event: time 1794865048.673630, type 1 (EV_KEY), code 304 (BTN_SOUTH), value 1
+Event: time 1794865048.937629, type 1 (EV_KEY), code 304 (BTN_SOUTH), value 1

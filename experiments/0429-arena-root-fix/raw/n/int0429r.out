@@ -1,0 +1,17 @@
+chain lock: exp 0417 | chain: exp 0429: shared swap, R on by default and the wake slice removed, patch 940e8f36 + 0429 R; normal and lean rebuilt (CPU only, no emulator), until about 12:48 | token 20261118120817617064 | 2026-11-18 12:08:17
+before: PIN_OLD=940e8f36 NORMAL=4e0c00a2 LEAN=272685ee ARCH=6eac453e 
+mkswap0429r: src/kernel/pthread.cpp md5 3c9c82e1
+mkswap0429r: src/kernel/semaphore.cpp md5 6b58e442
+mkswap0429r: src/bc5/switch_defaults.hpp md5 48ae1cd6
+mkswap0429r: done (the swap form)
+the patch: 940e8f36 -> ef2ff54f, exp 0372 lines 5, pad_audio_route header in, file list unchanged
+== 12:08:20 build normal
+normal: a9b4f00b, warnings 4, steps 5
+== 12:08:34 build lean
+lean: abf5fb17, warnings 4, steps 5
+normal words: +[KYTY_BC5_0429_RR ] -[KYTY_BC5_0425_WAKE_SLICE_US ]
+normal: strings with 'exp 0425' 0, with 'exp 0429' 6
+lean words: +[KYTY_BC5_0429_RR ] -[KYTY_BC5_0425_WAKE_SLICE_US ]
+lean: strings with 'exp 0425' 0, with 'exp 0429' 0
+int0429r done 12:08:53: patch ef2ff54f, normal a9b4f00b, lean abf5fb17, archive 6eac453e; undo: bash /home/kjaniszewski/bc5-work/exp0429/undo0429r.sh (to 940e8f36 / 4e0c00a2 / 272685ee / 6eac453e)
+chain lock released

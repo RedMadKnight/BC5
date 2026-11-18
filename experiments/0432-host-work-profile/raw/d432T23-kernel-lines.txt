@@ -1,0 +1,14 @@
+[24338.231021] bc5-ring invoked oom-killer: gfp_mask=0x2dc2(GFP_KERNEL|__GFP_HIGHMEM|__GFP_ZERO|__GFP_NOWARN), order=0, oom_score_adj=0
+[24338.231061]  oom_kill_process.cold+0xa/0xba
+[24338.231096]  ? amdgpu_bo_list_create+0x71/0x3d0 [amdgpu]
+[24338.231608]  ? amdgpu_bo_list_create+0x71/0x3d0 [amdgpu]
+[24338.232035]  amdgpu_bo_list_create+0x71/0x3d0 [amdgpu]
+[24338.232423]  ? __pfx_amdgpu_bo_list_ioctl+0x10/0x10 [amdgpu]
+[24338.232795]  amdgpu_bo_list_ioctl+0xcc/0x2a0 [amdgpu]
+[24338.233167]  ? __pfx_amdgpu_bo_list_ioctl+0x10/0x10 [amdgpu]
+[24338.233540]  amdgpu_drm_ioctl+0x4a/0x80 [amdgpu]
+[24338.234045] Node 0 active_anon:9146500kB inactive_anon:106888kB active_file:166796kB inactive_file:4826864kB unevictable:44756kB isolated(anon):0kB isolated(file):0kB mapped:2301124kB dirty:180244kB writeback:0kB shmem:8915840kB shmem_thp:0kB shmem_pmdmapped:0kB anon_thp:0kB kernel_stack:14288kB pagetables:47208kB sec_pagetables:0kB all_unreclaimable? yes Balloon:0kB gpu_active:284640kB gpu_reclaim:7964kB
+[24338.234113] [  pid  ]   uid  tgid total_vm      rss rss_anon rss_file rss_shmem pgtables_bytes swapents oom_score_adj name
+[24338.234180] [    939]   963   939     2444     1212       48     1164         0    57344      118          -900 systemd-oomd
+[24338.235006] oom-kill:constraint=CONSTRAINT_NONE,nodemask=(null),cpuset=/,mems_allowed=0,global_oom,task_memcg=/user.slice/user-1000.slice/user@1000.service/session.slice/plasma-plasmashell.service,task=plasmashell,pid=3088,uid=1000
+[24338.235128] Out of memory: Killed process 3088 (plasmashell) total-vm:2541500kB, anon-rss:86952kB, file-rss:46272kB, shmem-rss:16kB, UID:1000 pgtables:1700kB oom_score_adj:200

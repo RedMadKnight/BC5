@@ -1,0 +1,21 @@
+== 07:52:17 a431S1 ASTRO lean
+chain lock: exp 0417 | chain: exp 0431: ASTRO BOT on the shared builds, way 2 (a431S1:l:D), until about 08:01 | token 202611170752171322959 | 2026-11-17 07:52:17
+07:52:17 == a431S1: lean d239d4bf, arm D (no words: the build defaults; extra: none), 200 s
+a431S1 (astro) PASS: ran 200 s; RssAnon at the end 236396 kB; kernel lines 0, crash lines 0; real pad keys 0; shots 5
+a431S1 w428c lines 0; the last: 
+07:55:49 a431S1: PASS
+07:55:54 astro0431 ended
+chain lock released
+== 07:55:54 l431S2 second title lean
+lean0428 07:55:55: lean d239d4bf, tag l431S2
+l431S2 (lean) PASS: ran 300 s; RssAnon at the end 151904 kB; kernel lines 0, crash lines 0
+lean0428 08:01:06: ended; JobArenaFix in its config: JobArenaFix.PPSA03671=off
+== 08:01:06 a431S3 ASTRO normal 480 s
+chain lock: exp 0417 | chain: exp 0431: ASTRO BOT on the shared builds, way 2 (a431S3:n:D), until about 08:14 | token 202611170801061440369 | 2026-11-17 08:01:06
+08:01:06 == a431S3: normal 6044be08, arm D (no words: the build defaults; extra: none), 480 s
+a431S3 (astro) PASS: ran 480 s; RssAnon at the end 237752 kB; kernel lines 0, crash lines 0; real pad keys 0; shots 8
+a431S3 w428c lines 49; the last: [bc5] exp 0428 (tag w428c): t 480.6 s: jobs gfx 57116 comp0 24848 comp1 141250 comp2 87915 comp3 447; acbs kept on gfx: none; queue->ring: 26->3(2040) 32->1(793032) 38->0(98452) 40->2(281038) moves 3 not-idle-in-2s 0; dcb waits on two rings: kept 83 satisfied 20 NOT served 0 heads split 103 kept-without-split 4 (on a ring 0, in the IB 0, after the chain 4, still split 48905; polled first: kept 48801 satisfied 1 cycle-split 47 timeout-split 56); aq424 ON, parts given state 81614, parts with no tracked queue 0; mec-indirect switch ON, acbs moved 721319
+08:09:19 a431S3: PASS
+08:09:24 astro0431 ended
+chain lock released
+smoke0431 ended 08:09:24

@@ -1,0 +1,22 @@
+chain lock: exp 0417 | chain: exp 0429: R check h429K13 (normal, RR=3, one short run, arm G, about 3 min), until about 04:31 | token 202611180425353036316 | 2026-11-18 04:25:35
+check h429K13: Job Hi threads 8, of them RR 6; promoted 11, refused 0, dropped 0; RR threads at G+25: 11
+3036987  RR      3   - Job Lo 1
+3036989  RR      3   - Job Lo 3
+3036990  RR      3   - Job Lo 4
+3036991  RR      3   - Job Lo 5
+3036993  RR      3   - Job Lo 7
+3036994  RR      6   - Job Hi 0
+3036995  RR      6   - Job Hi 1
+3036997  RR      6   - Job Hi 3
+3036998  RR      6   - Job Hi 4
+3036999  RR      6   - Job Hi 5
+3037000  RR      6   - Job Hi 6
+h429K13 (G) ended at G+40 (after 149 s; G 109, load 102, list 93); 40.4 flips/s over 145 s, 11 s with a gap over 100 ms, longest 262 ms; kernel lines 0, crash lines 0, ledger lines 0; CLASS NO_CRASH; 
+[bc5] exp 0429: R (RR for the guest's sleepers) ON, worker-family sleepers only
+[bc5] exp 0429 R count: held 11 calls 11 P 11 R 0 C 0 B 0 E 0 X 0 W 0 H 0 G 0 N 13 user 27 of 25 | last 
+[bc5] exp 0429 R count: held 11 calls 11 P 11 R 0 C 0 B 0 E 0 X 0 W 0 H 0 G 0 N 13 user 27 of 25 | last 
+check h429K13: the main thread RR: 0 (must be 0); rtkit refusals 0 (reported only: rtkit has a per-user limit)
+check h429K13: threads with nice < 0 (rtkit high priority; build 13):       1 AK::AudioOutThr  (-15);      1 AK::JobWrkr-Acm  (-15);      1 HIDAPI Rumble (-10);      1 SDLAudioP0  (-15);      2 SDLAudioP53  (-15);
+check h429K13: AK threads RR at the snapshot: 0 (mode 3: must be 0)
+check h429K13: FAIL
+chain lock released

@@ -1,0 +1,6 @@
+chain lock: exp 0417 | chain: exp 0431: shared swap, way 2 for every title (five rows to kSoft), patch a7c1653d + 0431; normal and lean rebuilt (CPU only, no emulator), until about 08:17 | token 202611170737281152786 | 2026-11-17 07:37:28
+before: PIN_OLD=a7c1653d NORMAL=bf3f5f00 LEAN=0fb7bed5 U1=b8afba59 U2=554e0139 ARCH=1423af83 
+bc5/switch_defaults.hpp: 2 edits, brace balance +0
+int0431: FAILED: not five kSoft ACB rows; undoing
+undo0431: back: patch a7c1653d, bc5LleAgc.cpp b8afba59, switch_defaults.hpp 554e0139, normal bf3f5f00, lean 0fb7bed5 (the units are touched, so the next ninja recompiles them); further back: bash /home/kjaniszewski/bc5-work/exp0430/undo0430.sh
+chain lock released

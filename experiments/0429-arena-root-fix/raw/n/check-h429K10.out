@@ -1,0 +1,23 @@
+chain lock: exp 0417 | chain: exp 0429: R check h429K10 (normal, RR=2, one short run, arm G, about 3 min), until about 22:48 | token 202611172242383661067 | 2026-11-17 22:42:38
+check h429K10: Job Hi threads 8, of them RR 8; promoted 21, refused 0, dropped 0; RR threads at G+25: 14
+3661661  RR      6 Job Hi 0
+3661662  RR      6 Job Hi 1
+3661663  RR      6 Job Hi 2
+3661664  RR      6 Job Hi 3
+3661665  RR      6 Job Hi 4
+3661666  RR      6 Job Hi 5
+3661667  RR      6 Job Hi 6
+3661668  RR      6 Job Hi 7
+3661725  RR      5 Havok Queries a
+3661726  RR      5 Havok Queries a
+3661728  RR      5 Havok Queries a
+3661729  RR      5 Havok Queries a
+3661731  RR      5 Havok Queries a
+3661737  RR      7 AK::AudioMgr
+h429K10 (G) ended at G+40 (after 150 s; G 109, load 102, list 94); 39.5 flips/s over 146 s, 19 s with a gap over 100 ms, longest 622 ms; kernel lines 0, crash lines 0, ledger lines 0; CLASS NO_CRASH; 
+[bc5] exp 0429: R (RR for the guest's sleepers) ON, pool sleepers only
+[bc5] exp 0429 R count: held 14 calls 20 P 20 R 0 C 4 B 0 E 6 X 0 W 0 H 0 G 0 | last E600 E600 E600 E600 E600 E600 
+[bc5] exp 0429 R count: held 14 calls 21 P 21 R 0 C 4 B 0 E 7 X 0 W 0 H 0 G 0 | last E600 E600 E600 E600 E600 E600 E600 
+check h429K10: the main thread RR: 0 (must be 0); rtkit refusals 0 (reported only: rtkit has a per-user limit)
+check h429K10: PASS
+chain lock released

@@ -1,0 +1,25 @@
+scene0432 00:27:33: snapshot /home/kjaniszewski/bc5-data/saves/PPSA03671-20261117-0946-play (91bb80e5fd85ca56), play 1500 s, order T S T S T S
+scene0432 00:27:33: arm T, d432T23, 0f52fd54
+d432T23 (T) ended at G+1500 (after 1608 s; G 108, load 101, list 93); 29.8 flips/s over 1604 s, 18 s with a gap over 100 ms, longest 282 ms; kernel lines 14, crash lines 0, ledger lines 0; CLASS NO_CRASH; exposure w428-switch [[bc5] exp 0428 (tag w428): acb ri
+[bc5] exp 0432 (tag d432): t 1601.6 s: unmap-nowait ON, anon-events off, anon-thread ON, views-kept off; sync+hints of all submissions 67.5 s, longest 844.1 ms, over 20 ms 94; rebuilds that change mappings 3068, with a ring busy 392; mappings dropped 29884, wh
+scene0432 00:54:56: arm S, d432S24, 0de9349b
+d432S24 (S) ended at G+1500 (after 1612 s; G 108, load 100, list 92); 29.5 flips/s over 1609 s, 17 s with a gap over 100 ms, longest 269 ms; kernel lines 0, crash lines 0, ledger lines 0; CLASS NO_CRASH; exposure w428-switch [[bc5] exp 0428 (tag w428): acb rin
+scene0432 01:22:23: arm T, d432T25, 0f52fd54
+d432T25 (T) ended at G+1500 (after 1613 s; G 109, load 103, list 93); 29.9 flips/s over 1609 s, 15 s with a gap over 100 ms, longest 278 ms; kernel lines 0, crash lines 0, ledger lines 0; CLASS NO_CRASH; exposure w428-switch [[bc5] exp 0428 (tag w428): acb rin
+[bc5] exp 0432 (tag d432): t 1611.7 s: unmap-nowait ON, anon-events off, anon-thread ON, views-kept off; sync+hints of all submissions 70.4 s, longest 868.1 ms, over 20 ms 56; rebuilds that change mappings 3138, with a ring busy 349; mappings dropped 31031, wh
+scene0432 01:49:51: arm S, d432S26, 0de9349b
+d432S26 (S) ended at G+1500 (after 1613 s; G 109, load 102, list 93); 29.5 flips/s over 1609 s, 15 s with a gap over 100 ms, longest 260 ms; kernel lines 0, crash lines 0, ledger lines 0; CLASS NO_CRASH; exposure w428-switch [[bc5] exp 0428 (tag w428): acb rin
+scene0432 02:17:19: arm T, d432T27, 0f52fd54
+d432T27 (T) ended at G+1500 (after 1614 s; G 110, load 102, list 94); 29.9 flips/s over 1610 s, 16 s with a gap over 100 ms, longest 268 ms; kernel lines 0, crash lines 0, ledger lines 0; CLASS NO_CRASH; exposure w428-switch [[bc5] exp 0428 (tag w428): acb rin
+[bc5] exp 0432 (tag d432): t 1611.7 s: unmap-nowait ON, anon-events off, anon-thread ON, views-kept off; sync+hints of all submissions 69.1 s, longest 875.3 ms, over 20 ms 57; rebuilds that change mappings 3165, with a ring busy 354; mappings dropped 30070, wh
+scene0432 02:44:47: arm S, d432S28, 0de9349b
+d432S28 (S) ended at G+1500 (after 1609 s; G 109, load 102, list 94); 29.4 flips/s over 1604 s, 16 s with a gap over 100 ms, longest 716 ms; kernel lines 0, crash lines 0, ledger lines 0; CLASS NO_CRASH; exposure w428-switch [[bc5] exp 0428 (tag w428): acb rin
+scene0432 03:12:09: done
+scene0432 03:12:09: snapshot /home/kjaniszewski/bc5-data/saves/PPSA03671-20261117-0946-play (91bb80e5fd85ca56), play 300 s, order X T
+scene0432 03:12:10: arm X, d432X29, 0f52fd54
+d432X29 (X) ended at G+300 (after 420 s; G 117, load 101, list 93); 32.4 flips/s over 416 s, 84 s with a gap over 100 ms, longest 2788 ms; kernel lines 0, crash lines 0, ledger lines 0; CLASS NO_CRASH; exposure w428-switch [[bc5] exp 0428 (tag w428): acb rings
+[bc5] exp 0432 (tag d432): t 411.3 s: unmap-nowait ON, anon-events off, anon-thread ON, views-kept off; sync+hints of all submissions 77.5 s, longest 873.0 ms, over 20 ms 246; rebuilds that change mappings 5122, with a ring busy 142; mappings dropped 80170, wh
+scene0432 03:19:43: arm T, d432T30, 0f52fd54
+d432T30 (T) ended at G+300 (after 422 s; G 119, load 101, list 93); 32.4 flips/s over 417 s, 91 s with a gap over 100 ms, longest 2810 ms; kernel lines 0, crash lines 0, ledger lines 0; CLASS NO_CRASH; exposure w428-switch [[bc5] exp 0428 (tag w428): acb rings
+[bc5] exp 0432 (tag d432): t 411.1 s: unmap-nowait ON, anon-events off, anon-thread ON, views-kept off; sync+hints of all submissions 77.3 s, longest 875.8 ms, over 20 ms 249; rebuilds that change mappings 5004, with a ring busy 151; mappings dropped 81934, wh
+scene0432 03:27:18: done

@@ -1,0 +1,26 @@
+chain lock: exp 0417 | chain: exp 0429: R check h429K15 (normal, RR=3, one short run, arm G, about 3 min), until about 06:21 | token 20261118061540339603 | 2026-11-18 06:15:40
+check h429K15: Job Hi threads 8, of them RR 8; promoted 21, refused 0, dropped 0; RR threads at G+25: 14
+ 340241  RR      6   - Job Hi 0
+ 340242  RR      6   - Job Hi 1
+ 340243  RR      6   - Job Hi 2
+ 340244  RR      6   - Job Hi 3
+ 340245  RR      6   - Job Hi 4
+ 340246  RR      6   - Job Hi 5
+ 340247  RR      6   - Job Hi 6
+ 340248  RR      6   - Job Hi 7
+ 340419  RR      5   - Havok Queries a
+ 340420  RR      5   - Havok Queries a
+ 340421  RR      5   - Havok Queries a
+ 340423  RR      5   - Havok Queries a
+ 340425  RR      5   - Havok Queries a
+ 340426  RR      5   - Havok Queries a
+h429K15 (G) ended at G+40 (after 150 s; G 110, load 102, list 94); 40.3 flips/s over 146 s, 11 s with a gap over 100 ms, longest 300 ms; kernel lines 0, crash lines 0, ledger lines 0; CLASS NO_CRASH; 
+[bc5] exp 0429: R (RR for the guest's sleepers) ON, worker-family sleepers only
+[bc5] exp 0429 R count: held 14 calls 21 P 21 R 0 C 4 B 0 E 7 X 0 W 0 H 0 G 0 N 2 user 25 of 25 | last E600 E600 E600 E600 E600 E600 E600 
+[bc5] exp 0429 R count: held 14 calls 21 P 21 R 0 C 4 B 0 E 7 X 0 W 0 H 0 G 0 N 2 user 25 of 25 | last E600 E600 E600 E600 E600 E600 E600 
+check h429K15: the main thread RR: 0 (must be 0); rtkit refusals 0 (reported only: rtkit has a per-user limit)
+check h429K15: threads with nice < 0 (rtkit high priority; build 13):       1 AK::AudioOutThr  (-15);      1 AK::JobWrkr-Acm  (-15);      1 HIDAPI Rumble (-10);      1 SDLAudioP0  (-15);
+check h429K15: rtkit refusals in the run 4, of them R's 0, others' 4 (must be 0); the emulator's own threads not high priority:       1 SDLAudioHotplug (0);      2 SDLAudioP53 (0);
+check h429K15: AK threads RR at the snapshot: 0 (mode 3: must be 0)
+check h429K15: FAIL
+chain lock released
