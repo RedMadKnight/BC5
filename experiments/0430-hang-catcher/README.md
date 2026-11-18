@@ -714,3 +714,37 @@ conditions met in code:
 | h430H3 | NO_CRASH at G+1500, 0 kernel lines | **45.3** | **1** (at the bound) | 0 | 13,577 / 1,735 | 15,312 / 15,305 / 7 | 2,001 ms over 1,603 s |
 
 The night's sensor: G1 182, H1 99, H2 7, H3 1. Next: why 7 found chains did not reach the device within 2 ms.
+
+### H4 (2026-11-18 06:31): F13 + F14 on 0432's patch 940e8f36 (binary `f61d5986`, unit `8a326d6c`): a GPU hang
+
+**Build.** F14 counts, at each 2 ms bound, what every still-pending chain is doing: slot busy / in flight / open in submit / held / waiting for the watchdog / could not look / gone. It is counters only.
+
+**Result.** h430H4 hung the GPU at 06:55:26, 1,381 s in:
+- the kernel shows comp_1.2.0 timing out (its ring reset succeeded), then gfx_0.0.0 timing out on thread bc5-ring;
+- the gfx reset failed, and bc5-gpu-watch rebooted the box (SysRq s, c);
+- the kernel stream has no VM or page-fault lines.
+
+Streams: [raw/kernel-stream-h4.txt](raw/kernel-stream-h4.txt), [raw/live-stream-h4.txt](raw/live-stream-h4.txt).
+
+**Not the F848 family.**
+- The hung acb's only wait (on 0x12004b4fc8 == 0) was met, and every op ran.
+- Every probed op in the dcb also ran. The one oddity is "HS user data address 0x0 at 1061 not mapped".
+- So no stale cross-queue wait was involved: the hang is inside GPU work.
+
+The same run had 0432's build 5 on: mappings dropped while a ring was busy 5,352; BOs retired while busy 47; sync+hints longest 853 ms. Whether that played a part is open.
+
+**Counters at 1,380.9 s:**
+
+| Counter | Value |
+|---|---|
+| Sensor | **3**, all at the bound |
+| Blind / could not look | 0 / 0 |
+| F10: chains found / gone / bound | 13,047 / 13,033 / 14 |
+| F13: busy-slot waits / in-flight hits | 10,816 / 2,231 |
+| **F14 at the bound**: busy / flight / in submit / held / watchdog / no look / gone | **0 / 13 / 0 / 0 / 0 / 0 / 1** |
+
+**What F14 shows.** Every bound case is a chain still in flight: it is being submitted, and its writes are not yet registered after 2 ms. The remaining late cases come from how long the submit takes, not from locking.
+
+**Next (off-box idea, F15).** Register a chain's write set at the swap, before submit_now. An acb wait then sees the writes as soon as the chain exists.
+
+**Swap rule.** Not met (a hang, and the sensor is not 0). No swap; the shared builds are unchanged.
