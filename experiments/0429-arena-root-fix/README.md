@@ -818,3 +818,31 @@ The plan for the next slot:
 
 Pass condition: Job Hi 8 of 8 on RR, 0 rtkit refusals of any kind (R's included), NO_CRASH. Both checks now require
 the run's total count of rtkit refusals in the journal to be 0. R stays off by default.
+
+## Slot 08:19–10:13 (2026-11-18): build 14 under rtkit's new limits, all clean
+
+Box up since 06:56 (exp 0430's h430H4 GPU hang at 06:55 and the box's own reboot), 0 amdgpu reset lines; rtkit-daemon
+argv `--threads-per-user-max=64 --actions-per-burst-max=100`. Build 14 pins: normal `d8a4ce2c`, lean `31dcc2c5`.
+RR=3 and the default reserve of 4 throughout. The tags K15 and K16 were taken earlier, so the checks are K17 and K18.
+
+| Run | Build | R | Result | R's count line |
+|---|---|---|---|---|
+| h429K17 check | normal | on | PASS: Job Hi 8 of 8 RR, game-main TS, AK RR 0, rtkit refusals 0, NO_CRASH, 41.1 flips/s | held 14, P 20, N 0, user 27 of 64 |
+| h429K18 check | lean | on | PASS: Job Hi 8 of 8 RR at every 10 s mark to 190 s, main RR 0, AK RR 0, refusals 0, 200 s | held 14, P 21, N 0, user 27 of 64 |
+| h429Q3 (G+600) | normal | on | NO_CRASH, 40.9 flips/s, longest gap 584 ms | held 14, P 15, R 0 |
+| h429P3 | normal | off | NO_CRASH, 41.4 flips/s, longest gap 2533 ms | — |
+| h429Q4 | normal | on | NO_CRASH, 39.2 flips/s, longest gap 1145 ms | held 14, P 14, R 0 |
+| h429P4 | normal | off | NO_CRASH, 41.2 flips/s, longest gap 249 ms | — |
+| a429CA1–A4 ASTRO | normal/lean | off/on | 4 of 4 PASS, 0 kernel/crash lines, 0 pad keys; normal fps mean 59.3 (off), 59.1 (on) | lean A4: user 37 of 64, W 7 (prio 478) |
+
+- rtkit refused 0 requests in the whole slot.
+- In both checks the emulator's own 7 high-priority requests were all granted. SDLAudioHotplug never asks rtkit.
+- K17's ssh link dropped at the end of the run. Its verdict was recomputed from the saved ps, log and journal with the
+  check's own conditions.
+- fps with R on and off differ by no more than the run-to-run spread, with 2 runs per arm here and 2 more in the 22:39 slot.
+- 0 GPU faults or resets.
+
+Raw: `raw/n/check-h429K17.{ps,run}`, `raw/n/check-h429K18.{ps,run,series,out}`, `raw/n/chain-rep15.out`,
+`raw/n/astro-a429C.out`.
+Still open before any swap: the R count line leaves lean; whether R goes into the shared builds, and on by default, is
+the maintainer's decision.
