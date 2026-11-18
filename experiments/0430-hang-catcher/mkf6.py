@@ -90,16 +90,26 @@ END_NEW = ("\t\t\tover = !s.c.segs.empty() && s.hold.empty() && SoftCp::now_ns()
 SLOT_OLD = "\tstd::vector<uint64_t>        hold_writes; // ADR 0013: the labels the held chain's segments write\n"
 SLOT_NEW = SLOT_OLD + ("\tstd::vector<uint64_t>        f10_writes; // exp 0430 F10: the memory addresses the open chain's packets write (RELEASE_MEM/EOP data, WRITE_DATA)\n"
                        "\tstd::vector<uint64_t>        f10_flight; // exp 0430 F10: the write set of the chain being submitted now (its writes not registered yet)\n"
-                       "\tbool                         f10_wanted = false; // exp 0430 F10: an acb waits on one of them; the owner flushes at its call's end\n")
+                       "\tbool                         f10_wanted = false; // exp 0430 F10: an acb waits on one of them; the owner flushes at its call's end\n"
+                       "\tstd::atomic<uint64_t>        f16_done {0}; // exp 0430 F16: bumped when a submit_now of this slot's chain has returned (after its f10_flight is cleared)\n"
+                       "\tstd::atomic<int>             f16_phase {0}; // exp 0430 F16: 0 idle, 1 in chain_submit before the device lock (back-pressure), 2 asking for g_dev_mutex, 3 holding it, 4 draining the GPU (wait_jobs)\n")
 SWAP_OLD = "\t\ts.hold_writes.clear(); // ADR 0013\n"
 SWAP_NEW = SWAP_OLD + "\t\ts.f10_flight.swap(s.f10_writes); // exp 0430 F10: in flight until submit_now has registered its writes\n\t\ts.f10_writes.clear();\n\t\ts.f10_wanted = false;\n"
 SUBN_OLD = "\tsubmit_now(mine.buf.data(), static_cast<uint32_t>(mine.buf.size()), mine.compute ? \"acb\" : \"dcb\", mine.ring, &mine);\n"
-SUBN_NEW = SUBN_OLD + "\t{ // exp 0430 F10: its writes are registered now\n\t\tstd::lock_guard lk(s.mu);\n\t\ts.f10_flight.clear();\n\t}\n"
+SUBN_NEW = ("\tChainSlot* const f16_prev = t_f16_slot; // exp 0430 F16\n\tt_f16_slot = &s;\n\ts.f16_phase.store(1);\n" + SUBN_OLD +
+            "\t{ // exp 0430 F10: its writes are registered now\n\t\tstd::lock_guard lk(s.mu);\n\t\ts.f10_flight.clear();\n\t}\n"
+            "\ts.f16_phase.store(0); // exp 0430 F16: after the clear, so a waiter that saw the flight set sees the bump\n\ts.f16_done.fetch_add(1);\n\tt_f16_slot = f16_prev;\n")
+DEVL_OLD = "\tconst uint64_t  fs_ask = fs415_file() != nullptr ? SoftCp::now_ns() : 0; // experiment 0415 (fs415b)\n\tstd::lock_guard lock(g_dev_mutex);\n"
+DEVL_NEW = ("\tif (t_f16_slot != nullptr) t_f16_slot->f16_phase.store(2); // exp 0430 F16: past the back-pressure, asking for the device\n" + DEVL_OLD +
+            "\tif (t_f16_slot != nullptr) t_f16_slot->f16_phase.store(3); // exp 0430 F16\n")
+WJ_OLD = "static void wait_jobs() {\n\tchain_flush(5); // ADR 0010\n"
+WJ_NEW = "static void wait_jobs() {\n\tif (t_f16_slot != nullptr) t_f16_slot->f16_phase.store(4); // exp 0430 F16: a submit drains the GPU: no waiter may wait on it\n\tchain_flush(5); // ADR 0010\n"
 NOTE_OLD = "\t\t\t\tif (!s.hold.empty()) hold_note_writes(s, ib, n); // ADR 0013\n"
 NOTE_NEW = NOTE_OLD + "\t\t\t\tif (f10_on() && (!compute || f10_acb_on())) f10_note(s.f10_writes, ib, n); // exp 0430 F10 (F11b: compute chains too)\n"
 REGD_OLD = "static std::vector<ChainSlot*> g_chains; // the registered (cross) slots, for the watchdog and the observe points\n"
 REGD_NEW = REGD_OLD + ("static std::mutex              g_f10_reg_mu; // exp 0430 F13: F10's own registry of the slots; only chain_register and ~ChainSlot take it, nothing submits under it\n"
-                       "static std::vector<ChainSlot*> g_f10_reg;\n")
+                       "static std::vector<ChainSlot*> g_f10_reg;\n"
+                       "static thread_local ChainSlot*  t_f16_slot = nullptr; // exp 0430 F16: the slot whose chain this thread's submit_now carries\n")
 REGA_OLD = "\tg_chains.push_back(&s);\n\ts.registered = true;\n"
 REGA_NEW = REGA_OLD + "\t{ // exp 0430 F13\n\t\tstd::lock_guard rk(g_f10_reg_mu);\n\t\tg_f10_reg.push_back(&s);\n\t}\n"
 REGE_OLD = "\tstd::lock_guard lk(g_chains_mu);\n\tstd::erase(g_chains, this);\n"
@@ -126,17 +136,17 @@ def main() -> int:
     if hashlib.md5(old.encode()).hexdigest()[:8] != "c7dbe70b":
         print("mkf6: ho430.b8.cpp is not the deployed c7dbe70b")
         return 1
-    for what, n in (("the deployed ho430 block", text.count(old)), ("the keep test", text.count(KEEP_OLD)), ("ChainInSubmit", text.count(CIS_OLD)), ("submit's ChainInSubmit", text.count(SUB_OLD)), ("chain_append", text.count(APP_OLD)), ("chain_end's hold test", text.count(END_OLD)), ("ChainSlot's hold_writes", text.count(SLOT_OLD)), ("chain_submit's swap", text.count(SWAP_OLD)), ("chain_append's hold note", text.count(NOTE_OLD)), ("chain_submit's submit_now", text.count(SUBN_OLD)), ("g_chains", text.count(REGD_OLD)), ("chain_register's push", text.count(REGA_OLD)), ("~ChainSlot's erase", text.count(REGE_OLD))):
+    for what, n in (("the deployed ho430 block", text.count(old)), ("the keep test", text.count(KEEP_OLD)), ("ChainInSubmit", text.count(CIS_OLD)), ("submit's ChainInSubmit", text.count(SUB_OLD)), ("chain_append", text.count(APP_OLD)), ("chain_end's hold test", text.count(END_OLD)), ("ChainSlot's hold_writes", text.count(SLOT_OLD)), ("chain_submit's swap", text.count(SWAP_OLD)), ("chain_append's hold note", text.count(NOTE_OLD)), ("chain_submit's submit_now", text.count(SUBN_OLD)), ("g_chains", text.count(REGD_OLD)), ("chain_register's push", text.count(REGA_OLD)), ("~ChainSlot's erase", text.count(REGE_OLD)), ("submit_now's device lock", text.count(DEVL_OLD)), ("wait_jobs", text.count(WJ_OLD))):
         if n != 1:
             print(f"mkf6: {what} is found {n} times, not once")
             return 1
     if "BC5_DIRECT_XQ_PRECISE" not in new or "keep_cross" not in new or "BC5_DIRECT_XQ_KEEP" not in new or "BC5_DIRECT_XQ_KEEP_ALL" not in new:
         print("mkf6: ho430.cpp has no F5 or no F6")
         return 1
-    text = text.replace(old, new).replace(KEEP_OLD, KEEP_NEW).replace(CIS_OLD, CIS_NEW).replace(SUB_OLD, SUB_NEW).replace(APP_OLD, APP_NEW).replace(END_OLD, END_NEW).replace(SLOT_OLD, SLOT_NEW).replace(SWAP_OLD, SWAP_NEW).replace(NOTE_OLD, NOTE_NEW).replace(SUBN_OLD, SUBN_NEW).replace(REGD_OLD, REGD_NEW).replace(REGA_OLD, REGA_NEW).replace(REGE_OLD, REGE_NEW)
+    text = text.replace(old, new).replace(KEEP_OLD, KEEP_NEW).replace(CIS_OLD, CIS_NEW).replace(SUB_OLD, SUB_NEW).replace(APP_OLD, APP_NEW).replace(END_OLD, END_NEW).replace(SLOT_OLD, SLOT_NEW).replace(SWAP_OLD, SWAP_NEW).replace(NOTE_OLD, NOTE_NEW).replace(SUBN_OLD, SUBN_NEW).replace(REGD_OLD, REGD_NEW).replace(REGA_OLD, REGA_NEW).replace(REGE_OLD, REGE_NEW).replace(DEVL_OLD, DEVL_NEW).replace(WJ_OLD, WJ_NEW)
     out = text.encode("utf-8", "surrogateescape")
     open(path, "wb").write(out)
-    print(f"mkf6: {md5} -> {hashlib.md5(out).hexdigest()[:8]} (ho430 {hashlib.md5(new.encode()).hexdigest()[:8]}, 12 hooks)")
+    print(f"mkf6: {md5} -> {hashlib.md5(out).hexdigest()[:8]} (ho430 {hashlib.md5(new.encode()).hexdigest()[:8]}, 14 hooks)")
     return 0
 
 

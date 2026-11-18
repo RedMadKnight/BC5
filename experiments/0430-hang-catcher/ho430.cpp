@@ -216,6 +216,7 @@ struct Store {
 	uint64_t                                   f8_calls = 0, f8_chains = 0, f8_ns = 0, f8_busy = 0, f8_gone = 0, f8_bound = 0; // F8: observe points taken, other threads' chains submitted, time
 	uint64_t                                   f10_calls = 0, f10_hit = 0, f10_owner_wanted = 0, f10_gone = 0, f10_bound = 0, f10_busy = 0, f10_ns = 0; // F10
 	uint64_t                                   f7_would = 0; // F7 as a sensor: stale waits seen and not held
+	uint64_t                                   f16_wait = 0, f16_ok = 0, f16_bound = 0, f16_stop[5] {}, f16_ns = 0, f16_max = 0, f16_hist[6] {}; // F16: bounds with an in-flight writer waited on / its submit returned / 50 ms reached / given up by phase (1 back-pressure, 4 draining) / time / longest / <1/<2/<5/<10/<20/<50 ms after the 2 ms
 	uint64_t                                   f14_bound[7] {}; // F14 (counters only): at a bound, the chains still pending: slot busy / in flight / open in submit / open, held / open, waiting for the watchdog / could not look / gone at the last look
 	uint64_t                                   f13_slot_wait = 0, f13_flight = 0; // F13: looks that waited on a busy slot (its write may be pending) / that met the label in a slot's in-flight set
 	uint64_t                                   f11_cause[9] {}; // F11: sensor counts by F10's finding at the same wait: could not look / bound / held chain only / compute chain / dcb chain / no chain / no F10 look at this wait
@@ -236,6 +237,10 @@ inline thread_local std::vector<uint64_t> t_f5_safe;
 // F11 (2026-11-18): what F10 found at this thread's last acb wait, read by F7's sensor at the same wait
 inline thread_local uint64_t t_f10_label = 0;
 inline thread_local int      t_f10_cause = 6;
+inline bool f16_on() { // BC5_DIRECT_XQ_FLIGHT_WAIT, on unless "0": at F10's 2 ms bound, a writer in flight is waited for until its submit_now returns (50 ms, logged)
+	static const bool v = not0(std::getenv("BC5_DIRECT_XQ_FLIGHT_WAIT"));
+	return v;
+}
 inline bool f13_on() { // BC5_DIRECT_XQ_REGISTRY, on unless "0": F10 looks through its own registry, not g_chains_mu (held across submits by bc5-chainwd and chain_flush_all)
 	static const bool v = not0(std::getenv("BC5_DIRECT_XQ_REGISTRY"));
 	return v;
@@ -385,13 +390,15 @@ inline void job_submitted(const uint32_t* ib, uint32_t num_dwords, const std::ve
 	static uint64_t last_f5 = 0; // F5's line without G (the shared form too): the orders kept against the orders skipped
 	if (!g_on() && (f3_on() || f7_on() || f10_on()) && now - last_f5 > 60'000'000'000ull) {
 		last_f5 = now;
-		journal("ho430 F5 (exp 0430): t %.1f s: F3 presets %" PRIu64 ", not stale %" PRIu64 ", refused %" PRIu64 "; F4 fences %" PRIu64 ", F2 waited %" PRIu64 ", F5 skipped %" PRIu64 " (precise %s), F6 kept %" PRIu64 " (keep %s), F6 kept waits not back in 1 s %" PRIu64 ", F6 labels %zu, not kept on a shared ring %" PRIu64 "; F7 labels %zu, held %" PRIu64 " (%.1f ms), bounds %" PRIu64 ", sensor (not held) %" PRIu64 ", same thread %" PRIu64 ", holds <1/<5/<20/<50/<250 ms/bound %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", marks <0.1/<1/<5/<20 ms/later/none %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "; F8 observe points %" PRIu64 ", chains made due %" PRIu64 " (%.1f ms), gone within 2 ms %" PRIu64 ", bound %" PRIu64 ", could not look %" PRIu64 "; F7 holds with a title submit call running/begun during/neither %" PRIu64 "/%" PRIu64 "/%" PRIu64 "; F9 chains at a call's end %" PRIu64 ": flushed (a memory write) %" PRIu64 ", held %" PRIu64 "; F10 acb waits %" PRIu64 ", with a chain writing the label %" PRIu64 " (owner flushes wanted %" PRIu64 ", owner flushed %" PRIu64 "), gone %" PRIu64 ", bound %" PRIu64 ", could not look %" PRIu64 " (%.1f ms); F11 looks retried %" PRIu64 ", saved by the retry %" PRIu64 ", still blind with the list/a slot busy %" PRIu64 "/%" PRIu64 " (look bound %s, registry %s; retry time %.1f ms, longest %.3f ms), sensor by F10 finding could not look/bound/held only/compute chain/dcb chain/no chain/no look/busy slot waited/in flight %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "; F13 looks waiting on a busy slot %" PRIu64 ", meeting an in-flight set %" PRIu64 "; F14 at bounds, pending chains busy/flight/in submit/held/watchdog/no look/gone %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "\n", timing_now(), s.c[kF3Preset], s.c[kF3NotStale], s.c[kF3Refused],
+		journal("ho430 F5 (exp 0430): t %.1f s: F3 presets %" PRIu64 ", not stale %" PRIu64 ", refused %" PRIu64 "; F4 fences %" PRIu64 ", F2 waited %" PRIu64 ", F5 skipped %" PRIu64 " (precise %s), F6 kept %" PRIu64 " (keep %s), F6 kept waits not back in 1 s %" PRIu64 ", F6 labels %zu, not kept on a shared ring %" PRIu64 "; F7 labels %zu, held %" PRIu64 " (%.1f ms), bounds %" PRIu64 ", sensor (not held) %" PRIu64 ", same thread %" PRIu64 ", holds <1/<5/<20/<50/<250 ms/bound %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", marks <0.1/<1/<5/<20 ms/later/none %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "; F8 observe points %" PRIu64 ", chains made due %" PRIu64 " (%.1f ms), gone within 2 ms %" PRIu64 ", bound %" PRIu64 ", could not look %" PRIu64 "; F7 holds with a title submit call running/begun during/neither %" PRIu64 "/%" PRIu64 "/%" PRIu64 "; F9 chains at a call's end %" PRIu64 ": flushed (a memory write) %" PRIu64 ", held %" PRIu64 "; F10 acb waits %" PRIu64 ", with a chain writing the label %" PRIu64 " (owner flushes wanted %" PRIu64 ", owner flushed %" PRIu64 "), gone %" PRIu64 ", bound %" PRIu64 ", could not look %" PRIu64 " (%.1f ms); F11 looks retried %" PRIu64 ", saved by the retry %" PRIu64 ", still blind with the list/a slot busy %" PRIu64 "/%" PRIu64 " (look bound %s, registry %s; retry time %.1f ms, longest %.3f ms), sensor by F10 finding could not look/bound/held only/compute chain/dcb chain/no chain/no look/busy slot waited/in flight %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "; F13 looks waiting on a busy slot %" PRIu64 ", meeting an in-flight set %" PRIu64 "; F14 at bounds, pending chains busy/flight/in submit/held/watchdog/no look/gone %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "; F16 (%s) in-flight waits %" PRIu64 ": returned %" PRIu64 ", 50 ms bound %" PRIu64 ", not waited (back-pressure/draining) %" PRIu64 "/%" PRIu64 ", %.1f ms in all, longest %.3f ms, returned after <1/<2/<5/<10/<20/<50 ms %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "\n", timing_now(), s.c[kF3Preset], s.c[kF3NotStale], s.c[kF3Refused],
 		        s.c[kF4Fence], s.c[kF2Waited], s.c[kF5Skip], f5_on() ? "on" : "off", s.c[kF6Kept], f6_on() ? "on" : "off", s.f6_long, s.f6_by_label.size(), s.f6_shared, s.f7.size(), s.f7_held, static_cast<double>(s.f7_ns) / 1e6, s.f7_bound, s.f7_would, s.f7_same,
 		        s.f7_hist[0], s.f7_hist[1], s.f7_hist[2], s.f7_hist[3], s.f7_hist[4], s.f7_hist[5], s.f7_mark[0], s.f7_mark[1], s.f7_mark[2], s.f7_mark[3], s.f7_mark[4], s.f7_mark[5],
 		        s.f8_calls, s.f8_chains, static_cast<double>(s.f8_ns) / 1e6, s.f8_gone, s.f8_bound, s.f8_busy, s.f7_cls[0], s.f7_cls[1], s.f7_cls[2], g_f9_ended.load(), g_f9_flushed.load(), g_f9_held.load(),
 		        s.f10_calls, s.f10_hit, s.f10_owner_wanted, g_f10_owner.load(), s.f10_gone, s.f10_bound, s.f10_busy, static_cast<double>(s.f10_ns) / 1e6,
 		        s.f11_retry, s.f11_saved, s.f12_list, s.f12_slot, f12_on() ? "2 ms" : "200 us", f13_on() ? "own" : "g_chains", static_cast<double>(s.f12_poll_ns) / 1e6, static_cast<double>(s.f12_poll_max) / 1e6, s.f11_cause[0], s.f11_cause[1], s.f11_cause[2], s.f11_cause[3], s.f11_cause[4], s.f11_cause[5], s.f11_cause[6], s.f11_cause[7], s.f11_cause[8], s.f13_slot_wait, s.f13_flight,
-		        s.f14_bound[0], s.f14_bound[1], s.f14_bound[2], s.f14_bound[3], s.f14_bound[4], s.f14_bound[5], s.f14_bound[6]);
+		        s.f14_bound[0], s.f14_bound[1], s.f14_bound[2], s.f14_bound[3], s.f14_bound[4], s.f14_bound[5], s.f14_bound[6],
+		        f16_on() ? "on" : "off", s.f16_wait, s.f16_ok, s.f16_bound, s.f16_stop[1], s.f16_stop[4], static_cast<double>(s.f16_ns) / 1e6, static_cast<double>(s.f16_max) / 1e6,
+		        s.f16_hist[0], s.f16_hist[1], s.f16_hist[2], s.f16_hist[3], s.f16_hist[4], s.f16_hist[5]);
 	}
 #ifndef HO430_SHARED
 	static bool         at_done = false; // BC5_0430_G_AT: one dump in a clean run
@@ -579,6 +586,51 @@ inline void f10_observe(uint64_t label) {
 			bmu.unlock();
 		}
 	}
+	// F16: the writers F14 found in flight: wait for their submit_now to return. bc5-ring holds no lock here (R62); a writer
+	// in back-pressure or draining the GPU may wait on work only bc5-ring submits, so it is not waited on past 2 ms more.
+	int      f16_res = 0, f16_ph = 0; // 1 returned, 2 50 ms bound, 3 given up by phase
+	uint64_t f16_t   = 0;
+	if (bound && f16_on() && why[1] != 0) {
+		std::mutex&                    bmu = f13_on() ? g_f10_reg_mu : g_chains_mu;
+		const std::vector<ChainSlot*>& bl  = f13_on() ? g_f10_reg : g_chains;
+		struct W {
+			ChainSlot* cs;
+			uint64_t   done;
+		};
+		std::vector<W> fl;
+		if (bmu.try_lock()) {
+			for (ChainSlot* cs: mine) {
+				if (std::find(bl.begin(), bl.end(), cs) == bl.end() || !cs->mu.try_lock()) continue;
+				if (std::find(cs->f10_flight.begin(), cs->f10_flight.end(), label) != cs->f10_flight.end()) fl.push_back({cs, cs->f16_done.load()});
+				cs->mu.unlock();
+			}
+			bmu.unlock();
+		}
+		const uint64_t t1 = SoftCp::now_ns();
+		uint64_t       t_ph = 0; // since when a writer is in phase 1 or 4
+		while (!fl.empty()) {
+			if (bmu.try_lock()) {
+				int ph = 0;
+				std::erase_if(fl, [&](const W& w) {
+					if (std::find(bl.begin(), bl.end(), w.cs) == bl.end() || w.cs->f16_done.load() != w.done) return true;
+					const int p = w.cs->f16_phase.load();
+					if (p == 1 || p == 4) ph = p;
+					return false;
+				});
+				bmu.unlock();
+				if (fl.empty()) { f16_res = 1; break; }
+				const uint64_t now = SoftCp::now_ns();
+				if (ph == 0) t_ph = 0;
+				else if (t_ph == 0) t_ph = now;
+				else if (now - t_ph >= 2'000'000ull) { f16_res = 3; f16_ph = ph; break; }
+			}
+			if (SoftCp::now_ns() - t1 >= 50'000'000ull) { f16_res = 2; break; }
+			std::this_thread::sleep_for(std::chrono::microseconds(20));
+		}
+		if (f16_res == 0) f16_res = 1; // nothing left in flight at the second look
+		f16_t = SoftCp::now_ns() - t1;
+		if (f16_res == 1) { bound = false; gone = true; }
+	}
 	t_f10_cause = busy ? 0 : bound ? 1 : (held && mine.empty()) ? 2 : comp ? 3 : slot_wait ? 7 : flight ? 8 : !mine.empty() ? 4 : 5;
 	Store&          s = st();
 	std::lock_guard lk(s.m);
@@ -593,6 +645,21 @@ inline void f10_observe(uint64_t label) {
 	if (busy) (list_busy ? s.f12_list : s.f12_slot)++;
 	if (slot_wait) s.f13_slot_wait++;
 	for (int k = 0; k < 7; k++) s.f14_bound[k] += why[k];
+	if (f16_res != 0) {
+		s.f16_wait++;
+		if (f16_res == 1) {
+			s.f16_ok++;
+			const double ms = static_cast<double>(f16_t) / 1e6;
+			s.f16_hist[ms < 1 ? 0 : ms < 2 ? 1 : ms < 5 ? 2 : ms < 10 ? 3 : ms < 20 ? 4 : 5]++;
+		} else if (f16_res == 2) s.f16_bound++;
+		else s.f16_stop[f16_ph]++;
+		s.f16_ns += f16_t;
+		if (f16_t > s.f16_max) s.f16_max = f16_t;
+		if (s.f16_wait <= 64 || f16_res != 1)
+			journal("ho430 F16: in-flight writer of 0x%" PRIx64 " %s after %.3f ms more (2 ms before)%s%s\n", label,
+			        f16_res == 1 ? "returned" : f16_res == 2 ? "STILL IN SUBMIT at the 50 ms bound" : "not waited on", static_cast<double>(f16_t) / 1e6,
+			        f16_res == 3 ? (f16_ph == 1 ? ": it is in back-pressure" : ": it drains the GPU") : "", f16_res == 1 ? "" : " (the wait goes to the GPU as it is)");
+	}
 	if (bound && s.f10_bound < 64)
 		journal("ho430 F14: bound on 0x%" PRIx64 " after %.3f ms: pending chains busy/flight/in submit/held/watchdog/no look/gone %u/%u/%u/%u/%u/%u/%u\n", label,
 		        static_cast<double>(SoftCp::now_ns() - t0) / 1e6, why[0], why[1], why[2], why[3], why[4], why[5], why[6]);
