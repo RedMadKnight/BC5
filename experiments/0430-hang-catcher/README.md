@@ -679,3 +679,20 @@ submits the very chain that carries the release.
 
 Next build (F12, ho430 after F11): `BC5_DIRECT_XQ_LOOK_LONG` (on unless "0") stretches the retry to F10's 2 ms bound.
 Counters say which lock was still busy (the list or a slot).
+
+### F12 (2026-11-18): the 2 ms look; the list lock is held across submits
+
+Build: ho430 `0983721c`, unit `94b237ed`, binary `0eec154a` in `p17`. Switch `BC5_DIRECT_XQ_LOOK_LONG` (on): the look
+retries up to 2 ms. New counters: which lock was still busy, and bc5-ring's retry time.
+
+| Run | Result | flips/s | Sensor | Looks retried / completed / still blind (list busy / slot busy) | Retry time, longest |
+|---|---|---|---|---|---|
+| h430H2 | NO_CRASH at G+1500, 0 kernel lines | 42.1 | 7 (all blind looks) | 13,673 / 13,644 / 29 (29 / 0) | 1,040.8 ms over 1,604 s, 2.71 ms |
+
+Every blind look met the chain-list lock `g_chains_mu` busy. Patch 0001: `chainwd_thread` calls
+`chain_submit(*s, 9, true)` and `chain_flush_all` calls `chain_submit` for every chain while holding that lock, so it
+is held across real submit ioctls. That is exactly when the chain carrying the release is on its way to the device.
+
+F13 (`BC5_DIRECT_XQ_REGISTRY`, on unless "0"; three more unit hooks, 12 in all) gives F10 its own registry of the slots.
+Its mutex is taken only by `chain_register`, `~ChainSlot` and F10, and nothing submits under it. F10's look and its
+pending check use it instead of `g_chains_mu`.
