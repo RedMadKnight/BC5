@@ -874,3 +874,15 @@ Counted from the journaled F14 bound lines (the first 64 per run; the 60-s total
 A slot that does not write L is released at once, so F18 costs nothing there.
 
 **F18 written (2026-11-18 evening, offline; top: one switch, fix and catcher together, next build).** The switch is `BC5_DIRECT_XQ_BUSY_WAIT`, on unless "0"; ho430 `fb3330bb`, mkf6 `bb9b9ff1` (15 hooks: `hold_release` counts its threads per slot), unit `178d8890` on f574f460 (`8428183d` on b8afba59); dry-run applies on both, not built yet. At a bound F16 did not settle, it re-looks at each pending slot for up to 200 µs. An open writer of L is made due and waited for, a slot still busy is waited for as a possible writer, and a non-writer is dropped. The wait runs up to 50 ms with F16's phase gate. Lines say "THE BOUND STANDS" when the wait is still decided as before. Count for the swap sensor: F18's "50 ms bound" + "not waited" in the 60-s line.
+
+### The F16 arm (h430M1–M3) and the F18 play build (2026-11-18 17:26–18:55)
+
+| Run | End | flips/s | gaps >100 ms (s), longest | DROPPED | kernel | F10 bounds (F14 busy/flight/gone) | F16 waits: returned / 50 ms / not waited | busy bounds → F7 sensor |
+|---|---|---|---|---|---|---|---|---|
+| h430M1 | NO_CRASH, 1612 s | 38.6 | 16, 355 ms | 0 | 0 | 8 (8/23/0) | 23 / 0 / 0 | 0 |
+| h430M2 | NO_CRASH, 1609 s | 41.7 | 12, 1944 ms | 0 | 0 | 12 (11/37/1) | 37 / 0 / 0 | 0 |
+| h430M3 | NO_CRASH, 1608 s | 39.1 | 13, 1883 ms | 0 | 0 | 28 (27/42/1) | 42 / 0 / 0 | 0 |
+
+F10 + F4 + F16 (binary `034e3b24`) is clean in 3 of 3 runs by the swap rule (0 DROPPED, 0 kernel lines, F16 never at its 50 ms bound or given up); F16's waits returned within 7.1 ms at most. The F10 bounds left are F14 "busy" (F18's target). Against the arms before it on the same tree: D1 0 faults in 2, E1 1 in 2 (J1).
+
+**F18 build for the maintainer's long play** (his words via top: "F18 - ja przetestuję na dłuższej grze"): binary `7e85b4fe` (unit `178d8890`, ho430 `fb3330bb`) in `~/bc5-work/exp0430/p22`; the shortcut "BC5 test 0430 (F18)" on ~/Pulpit runs `exp0430/play-0430f18.sh` (`96396107`, made by mkplay0430c.py from play-pkg.sh `47426d8e`, which stays as it is). The old "build 8, catchers" test shortcut moved to `~/bc5-work/trash-20261111/pulpit`. Shared builds (normal `a9b4f00b`) and the shared shortcuts unchanged. The launcher's words are the M runs' effective words plus BUSY_WAIT; the build compiles HO430_SHARED, which reads only the `BC5_DIRECT_XQ_*` words (the runs' `BC5_0430_F2/F3/G` words were never read and are left out).
