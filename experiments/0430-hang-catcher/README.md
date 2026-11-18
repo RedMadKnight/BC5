@@ -726,10 +726,12 @@ The night's sensor: G1 182, H1 99, H2 7, H3 1. Next: why 7 found chains did not 
 
 Streams: [raw/kernel-stream-h4.txt](raw/kernel-stream-h4.txt), [raw/live-stream-h4.txt](raw/live-stream-h4.txt).
 
-**Not the F848 family.**
-- The hung acb's only wait (on 0x12004b4fc8 == 0) was met, and every op ran.
-- Every probed op in the dcb also ran. The one oddity is "HS user data address 0x0 at 1061 not mapped".
-- So no stale cross-queue wait was involved: the hang is inside GPU work.
+**Corrected the same day: this IS the F852 pattern (first written as "not the F848 family", which was wrong).**
+- The hung acb #1981977 has one wait, at dword 62 on 0x12004b4fc8 == 0: "now 0x0 (met) DROPPED", with 0 kept for the GPU. F852 had the same label at the same dword.
+- "met" is read at probe time. "DROPPED" means the host judged the wait satisfied on the value at submit, which can be the stale "free" 0.
+- Then come indirect dispatches whose arguments are floats (largest grid 1.8e19), and comp_1.2.0 timed out first: as in F852/F853.
+- The F7 sensor did not count this wait.
+- "HS user data address 0x0 at 106x not mapped" is not a signature: older probes have it too (private dumps of 2026-10-27, exp 0294).
 
 The same run had 0432's build 5 on: mappings dropped while a ring was busy 5,352; BOs retired while busy 47; sync+hints longest 853 ms. Whether that played a part is open.
 
@@ -763,7 +765,7 @@ Streams: [raw/kernel-stream-h5.txt](raw/kernel-stream-h5.txt), [raw/live-stream-
 - the hung dcb #1453653 (101,387 dwords) has 10 waits, all met and run; the acb #1453664 has 1 wait, met;
 - so, as in H4, no stale cross-queue wait was involved;
 - the same two lines as in H4 appear: "HS user data address 0x0 at 1061 not mapped" (the same offset), and a garbage "largest grid" (18,445,907,058,222,237,802 groups);
-- whether these two lines also appear in probes that did not hang has not been checked. They are a lead, not a finding.
+- checked afterwards: the HS line is a common probe artefact (older probes have it). The junk grid is the real marker (0 of 4 older dcb probes and 1 of 6 acb probes had one). H5's acb wait was kept for the GPU; the detail of the H5 hang needs its direct.log, which is still only on the box.
 
 Turning the no-wait unmap off did not stop the hang. In that run, d432 counted 2,856 blocking drains (582 ms) and 0 mappings dropped while busy.
 
