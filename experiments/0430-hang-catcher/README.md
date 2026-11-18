@@ -780,3 +780,26 @@ Turning the no-wait unmap off did not stop the hang. In that run, d432 counted 2
 This is the same picture as H4.
 
 **F16 build** (made after H5, top's order). F16 is the in-flight wait: at F10's bound, wait for the writer's submit_now to return, with a 50 ms bound, and do not wait on a writer that is in back-pressure or draining the GPU. Binary `1e8b5557` (`~/bc5-work/exp0430/p20`), unit `5facf181`, ho430 `ae58d23a`, 14 hooks. The shared build was `4e0c00a2` before and after. F16 has not run yet; its slot comes from top.
+
+### H5's hung jobs, F17 (the F852 sensor), and the F852 options (2026-11-18 midday, offline)
+
+**H5's probes** (log copied to the laptop at `data-0430/h430H5-direct.log.gz`; not committed):
+- The acb #1453664's single wait, at dword 58 on 0x12004b53c8 == 0, was kept for the GPU and is "NOT met": the label still holds the busy mark 0x9076d6d8c. The acb is waiting for a release that never came.
+- The hung dcb #1453653's 10 waits were all kept and met. Its indirect dispatches read float data as arguments (at 0x118c5f0940 and on; largest grid 1.8e19), and only gfx timed out.
+- So H5 is a junk-grid hang in a dcb, not the F852 drop in an acb. Who should have written those arguments is open.
+
+**Why F7's sensor missed H4's wait.** It starts over whenever a label's waiters change rings, and it absorbs every imbalance while a label is "learning" (fewer than 32 clean waits). F17 (`BC5_DIRECT_XQ_STALE`, on unless "0", counters and lines only) has neither:
+- per acb == wait label, it counts the releases of its reference registered from any ring since the label's last acb wait;
+- a wait that passes at submit with none counts as "the F852 pattern";
+- each line gives the label, the ring, the time since the last release, and F10's finding (off / no writer chain / a writer chain).
+Labels with several waits per release (0x12004b37c8 takes 4) show as candidates too; the lines tell them apart.
+ho430 `115af6e9`, unit `c30922e6` on f574f460 (`6d074404` on b8afba59). Not built yet.
+
+**The F852 options as they stand.** The title's order per label and frame is: CPU mark → dcb with the release submitted → acb with WAIT == 0 submitted (see above).
+- **Why the acb overtakes.** The hold keeps the dcb's release in Render Thread's open chain, while the acb goes straight to its compute ring. If the CPU mark is late (243 presets in h430C4), the acb's wait sees the previous frame's 0, on the host and on the GPU alike (V15).
+- **(b) Hold off** (`BC5_DIRECT_CHAIN=1`): no reordering; about 11 % slower (U1 39.4, Z1 37.2).
+- **F6/F6b (keep the wait for the GPU):** failed in V15, because the GPU too reads the stale 0 when the mark is late. Keeping alone cannot close it.
+- **F3 (preset at the writer's submit):** acts too late with the hold, because the writer's submit is the delayed thing.
+- **F10 (flush the chain that writes L before the acb):** gets the dcb to the device first, but the two rings run independently, so the acb's wait can still read the stale 0.
+- **New, F10 + F4 together (never tested; F4 was off in every F10 run):** F10 makes the held writer a submitted job before the acb goes, and F4 then gives the acb a kernel CS dependency on that job, so the acb cannot start before the release has run. This is top's "flush the releasing dcb before the acb" made binding on the GPU. It is workable when the writer is in an open chain, which the title's order guarantees: the dcb is issued before the acb. It does not need to know the writer in advance; the label's write set in the open chains (F10) finds it. Cost: F4's fences (232–445 a run before).
+- **A hold that never holds a chain writing a label of the family.** Close a dcb chain at once when it holds a RELEASE_MEM to a label an acb has waited on. Simple and narrow, but it needs the family learned at run time (F3's way, missed 0x12004b77c8 in h430C6) or every label an acb waits on (the F17 map).
