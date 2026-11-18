@@ -1,0 +1,14 @@
+lazy release (exp 0401 e7): on (30 s, eager): an imported chunk of the direct memfd under no view for 30 s, not forced by a hint or learned window, eager-heap chunks too, zero-list chunks never, is cut out of its BO; a view over it again imports it before the mappings are built; passes every 7.5 s
+lazy release (exp 0401 e7): t 1 s: 3950.0 MiB imported: 3928.0 under eager views, 22.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 0.0 under no view (0.0 last seen under an eager or zero-list view, 0.0 never seen under one; 0.0 idle 30 s or more); cut 0.0 MiB in 0 BOs (0 whole, 0 split), back 0.0 MiB, 0 chunks released now, 0 undone, 0 imports failed, 0 BOs deferred, 0 not split (aliases); GTT 209.3 of 13312.0 MiB
+memory (exp 0401): t 10.0 s: available 4925 MiB, swap used 378 MiB, psi some 0.00 full 0.00 (avg10, %), full total 25942 ms, gtt 8743 of 13312 MiB
+memory (exp 0401): t 20.0 s: available 4949 MiB, swap used 378 MiB, psi some 0.00 full 0.00 (avg10, %), full total 25942 ms, gtt 8743 of 13312 MiB
+memory (exp 0401): t 30.0 s: available 4951 MiB, swap used 378 MiB, psi some 0.00 full 0.00 (avg10, %), full total 25942 ms, gtt 8743 of 13312 MiB
+memory (exp 0401): t 40.0 s: available 3048 MiB, swap used 379 MiB, psi some 0.76 full 0.76 (avg10, %), full total 26098 ms, gtt 10647 of 13312 MiB
+memory (exp 0401): t 50.0 s: available 3016 MiB, swap used 379 MiB, psi some 0.28 full 0.28 (avg10, %), full total 26098 ms, gtt 10647 of 13312 MiB
+memory (exp 0401): t 60.0 s: available 3022 MiB, swap used 379 MiB, psi some 0.10 full 0.10 (avg10, %), full total 26098 ms, gtt 10649 of 13312 MiB
+lazy release (exp 0401 e7): t 61 s: 10098.0 MiB imported: 9062.0 under eager views, 1036.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 0.0 under no view (0.0 last seen under an eager or zero-list view, 0.0 never seen under one; 0.0 idle 30 s or more); cut 0.0 MiB in 0 BOs (0 whole, 0 split), back 0.0 MiB, 0 chunks released now, 0 undone, 0 imports failed, 0 BOs deferred, 0 not split (aliases); GTT 10650.0 of 13312.0 MiB
+memory (exp 0401): t 70.0 s: available 3034 MiB, swap used 379 MiB, psi some 0.03 full 0.03 (avg10, %), full total 26098 ms, gtt 10649 of 13312 MiB
+memory (exp 0401): t 80.0 s: available 3023 MiB, swap used 379 MiB, psi some 0.01 full 0.01 (avg10, %), full total 26098 ms, gtt 10657 of 13312 MiB
+memory (exp 0401): t 90.0 s: available 3026 MiB, swap used 379 MiB, psi some 0.00 full 0.00 (avg10, %), full total 26098 ms, gtt 10665 of 13312 MiB
+memory (exp 0401): t 100.0 s: available 3010 MiB, swap used 379 MiB, psi some 0.00 full 0.00 (avg10, %), full total 26098 ms, gtt 10671 of 13312 MiB
+memory (exp 0401): t 110.0 s: available 2962 MiB, swap used 380 MiB, psi some 0.24 full 0.24 (avg10, %), full total 26187 ms, gtt 10714 of 13312 MiB

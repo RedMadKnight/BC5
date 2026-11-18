@@ -1,0 +1,15 @@
+2026-11-18 21:11:26
+arm hk430B2 (h), cap 1760 s, play 1500 s, binary /home/kjaniszewski/bc5-work/exp0430/kyty_emulator md5 717177a40aaac862241a86134106a847, launcher fc06c3d5, fuse 0
+the arm's words: BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 BC5_0412N_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0430/n/input-hk430B2.cfg 
+extra: BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_INDIRECT=1 BC5_DIRECT_ACB_STATE_NO_WALK=1 BC5_DIRECT_ACB_SPLIT_LATE=3 BC5_DIRECT_TIMEOUT_PROBE=1
+boot 40a8312e, up since 2026-11-18 15:39:24
+MemAvailable:   14068096 kB SwapTotal:       7778300 kB SwapFree:        7266520 kB 
+emulator pid 2527004 exe /home/kjaniszewski/bc5-work/exp0430/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0430/n/wd
+route: cross (start screen) at 87 s
+route: the save-slot list runs; down x 3, cross (slot 4) at 93 s
+route: cross (Continue) at 99 s
+route: the load seen at 104 s
+route: gameplay G = 108 s (the load at 104 s)
+route: the 14:50 record's gameplay (100 lines) queued at 108 s
+route: exp 0379's walk queued after it (90 cycles; exp 0428 long set)
+launcher gone: yes; launcher exit 0

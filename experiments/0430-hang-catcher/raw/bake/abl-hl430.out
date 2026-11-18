@@ -1,0 +1,8 @@
+abl0430 22:29:14: run hl430S1, arm S, abf5fb17, host 0
+hl430S1 (h) ended at G+900 (after 1035 s; G 133, load 108, list 100); 45.3 flips/s over 839 s, 0 s with a gap over 100 ms, longest 84 ms; kernel lines 0, crash lines 0, ledger lines 0; CLASS NO_CRASH; exposure w428-switch [] aq424-switch [] w428c-last []
+abl0430 22:46:41: run hl430B2, arm B, 85befb72, host 0
+hl430B2 (h) ended at G+900 (after 1035 s; G 133, load 108, list 100); 43.9 flips/s over 839 s, 2 s with a gap over 100 ms, longest 117 ms; kernel lines 0, crash lines 0, ledger lines 0; CLASS NO_CRASH; exposure w428-switch [] aq424-switch [] w428c-last []
+abl0430 23:04:10: run hl430H3, arm H, 85befb72, host 1
+hl430H3 (h) ended by itself at 1009 s (after 1009 s; G 133, load 108, list 100); 43.3 flips/s over 839 s, 0 s with a gap over 100 ms, longest 100 ms; kernel lines 0, crash lines 22, ledger lines 0; CLASS TARGET; exposure w428-switch [] aq424-switch [] w428c-last []
+abl0430 23:21:09: not NO_CRASH, stop
+abl0430 23:21:09: done
