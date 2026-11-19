@@ -85,8 +85,20 @@ Private build, 2026-11-19 14:32 (top's GO; `box0435.sh claim|build|release`, loc
   every file's size and mtime), the patch in `~/src/bc5`, the launchers, `bc5-run.env`, `input.cfg`, the four shortcuts.
 
 The combined test binary with exp 0434 is built by 0434 (its fix plus `apply0435.py`, md5 `54f4b48f`; no file
-overlap). His check through a test shortcut: pending.
+overlap).
+
+His check, 2026-11-19, on exp 0434's combined test binary (0434's fix plus this change), through a test shortcut
+arranged by the top session: "Wszystko ok, możesz wdrożyć i wypchnic i merge". Afterwards on the box (read by top):
+`~/bc5-work/menu/titles/PPSA03671/input.cfg`, and `PPSA21564/` with `input.cfg` and `window`, exist; the shared
+`~/bc5-work/input.cfg` is unchanged.
 
 ## Verdict
 
-(pending)
+Done. Each title keeps its own settings in `~/bc5-work/menu/titles/<TITLE_ID>/input.cfg` (seeded once from the shared
+file) and its last window mode in `…/window`, and gets both back on its next start; the shared `input.cfg` is no
+longer written by a title, and the empty menu window keeps using it. No launcher or shortcut changed. The maintainer
+accepted it and asked for deployment; exp 0434 puts both changes into the shared builds in one swap (top's decision),
+and the top session merges this branch to main after that swap.
+
+Switch disposition (LESSONS R52): `KYTY_BC5_TITLE_SETTINGS` — the shared swap is exp 0434's; whatever it bakes in
+(the `kSoft` row with `=0` for the old behaviour, or no switch) is recorded there and in the HANDOFF row.
