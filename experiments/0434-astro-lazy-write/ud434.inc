@@ -1,17 +1,10 @@
-// Experiment 0434 (tag ud434): BC5_DIRECT_UD_TARGETS, a buffer descriptor (V#) written into a shader stage's user-data
+// Experiment 0434 (tag ud434), built in with no switch: a buffer descriptor (V#) written into a shader stage's user-data
 // registers by SET_SH_REG names memory the shader reads or WRITES; under a view of direct memory that is not imported it
 // is imported before the submit, as k1f412 does for a packet's own operands. ASTRO BOT, Bathhouse Battle's load
 // (fault records 20261119-140627/-140758/-141432): COMPUTE_USER_DATA_4..7 held a V# of 16 bytes at 0x314cb62dc in a
 // never-written chunk of the lazy heap orbis_user_malloc; the dispatch's store hit K1r's read-only cover (TCP, RW 1).
-// Unset or anything but "0": on; "0": off. Read in the lean build too (a fix, not a diagnostic; std::getenv).
+// The maintainer, 2026-11-19, after his test on Bathhouse Battle: "Wszystko ok, możesz wdrożyć"; no switch.
 namespace ud434 {
-inline bool on() {
-	static const bool v = [] {
-		const char* e = std::getenv("BC5_DIRECT_UD_TARGETS");
-		return !(e != nullptr && e[0] == '0' && e[1] == 0);
-	}();
-	return v;
-}
 constexpr uint64_t kMaxSpan = 256ull << 20u; // a descriptor that claims more is cut to this
 // The first user-data register of the stage that register r belongs to, or ~0u: PS, VS, GS, ES, HS, LS (32 each,
 // SH offsets as in dt412::user_reg) and compute (COMPUTE_USER_DATA_0..15 at 0x240).
