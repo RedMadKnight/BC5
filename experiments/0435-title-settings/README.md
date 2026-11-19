@@ -73,7 +73,19 @@ Tests:
 
 ## Result
 
-(pending: private build, his check through a test shortcut)
+Private build, 2026-11-19 14:32 (top's GO; `box0435.sh claim|build|release`, lock held only for the build):
+
+- The tree pin matched (`raw/units.txt`), `apply0435.py` applied to the copies (`raw/apply.out`).
+- Normal and lean: build rc 0, 0 errors, 3 warnings each, all the existing `-Wdeprecated-declarations` of
+  `src/common/stringUtils.h:321` (`wstring_convert`), once per rebuilt unit; none from this change.
+- Private normal `14a70b84`, lean `763359fb` (`~/bc5-work/exp0435/{normal,lean}/kyty_emulator`); both carry
+  `KYTY_BC5_TITLE_SETTINGS` and the `Title settings (exp 0435)` line.
+- Shared normal `efc28a30` and lean `d8b75137` unchanged. `snap0435.sh` before and after (`raw/before.txt`,
+  `raw/after.txt`): identical — the tree (HEAD, status, every file under `src/`), both build directories (binaries, and
+  every file's size and mtime), the patch in `~/src/bc5`, the launchers, `bc5-run.env`, `input.cfg`, the four shortcuts.
+
+The combined test binary with exp 0434 is built by 0434 (its fix plus `apply0435.py`, md5 `54f4b48f`; no file
+overlap). His check through a test shortcut: pending.
 
 ## Verdict
 
