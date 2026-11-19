@@ -124,6 +124,13 @@ One binary pair with ud434 and exp 0435's per-title settings (`KYTY_BC5_TITLE_SE
   with `BC5_EMU` / `BC5_EMU_LEAN` set to the private binaries (`BC5_LEAN=1` picks the lean one, as in
   the shared shortcut). `BC5_DIRECT_UD_TARGETS=0` or `KYTY_BC5_TITLE_SETTINGS=0` turns either change
   off with no build.
+- **Correction (the top session, before the play):** `play-test.sh` would NOT have tested ASTRO BOT.
+  `play-astro.sh` hard-codes its emulator path and ignores `BC5_EMU`, so the title would have run the
+  shared binary. `play-pkg.sh` (line 25) lets `BC5_EMU` (normal) override lean. The test runs from the
+  top's `~/bc5-work/exp0434/top/play-test-0434.sh` instead: private copies of `play-astro.sh` and
+  `play-pkg.sh` with the emulator path replaced, passed in through `BC5_IMAGE_SCRIPT` /
+  `BC5_PKG_SCRIPT`, and `BC5_EMU` set only when not lean; a dry run picks the copy. His shortcut
+  "BC5 test 0434+0435 (lean, host)" points at it. LESSONS R66.
 
 ## Verdict
 
