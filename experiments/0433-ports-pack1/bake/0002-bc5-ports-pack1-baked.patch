@@ -1,17 +1,20 @@
 diff --git a/src/bc5/ports_pack1.hpp b/src/bc5/ports_pack1.hpp
 new file mode 100644
-index 0000000..890cf44
+index 0000000..c7cce2d
 --- /dev/null
 +++ b/src/bc5/ports_pack1.hpp
-@@ -0,0 +1,112 @@
+@@ -0,0 +1,99 @@
 +// SPDX-License-Identifier: GPL-2.0-only
-+// Ports pack 1 (2026-11-18, notes/ports-20261118.md): fixes ported from KytyPS5 (GPL-2.0) and AnyPS5 (GPL-2.0),
-+// each behind its own switch. A switch is ON unless its environment word is exactly "0" (the pack's rule: fixes
-+// first, then test; NAME=0 gives the old behaviour of that one fix with no build). The words are read in the lean
-+// build too: they are fix switches, not diagnostics.
++// Ports pack 1, BUILT IN (exp 0433, 2026-11-19): fixes ported from KytyPS5 (GPL-2.0) and AnyPS5 (GPL-2.0), every one
++// on, with no switch: the KYTY_BC5_P1_* words are gone and nothing reads the environment. A call site's
++// BC5_P1("KYTY_BC5_P1_<NAME>") is a constant `true`, so each site runs the path tested as arm P in exp 0433
++// (experiments/0433-ports-pack1/README.md: 12 fight runs and 2 ASTRO BOT runs, no cost outside run-to-run noise).
++// The site's old path is still in the source but can never be taken; the name is checked at compile time.
 +//
-+// Each word is read once per call site (a function-local static), after switch_defaults::Apply() has run.
-+// The first read prints every word of the pack and its state, once, to stderr.
++// Hit counts, normal build only (compiled out of the lean build with the rest of the diagnostics, exp 0419): a hit is
++// one pass of a fix's decision point, counted per thread and added to the global count in batches of 256 (the first 64
++// hits of a fix at once), so the count is a lower bound. A line is printed when a fix's count passes a power of two:
++//   [bc5] ports pack 1 hits: PTHREAD_KEYS 1024 (t 12.3 s)   (t: seconds since the first hit of any fix)
 +#pragma once
 +
 +#include <atomic>
@@ -23,60 +26,46 @@ index 0000000..890cf44
 +
 +namespace bc5::p1 {
 +
-+// The words of the pack, in the order of the per-fix table (experiments/0433-ports-pack1/README.md).
-+inline constexpr const char* kWords[] = {
-+    "KYTY_BC5_P1_EQ_WAKE_ALL",      // A1  AnyPS5 daad982457: equeue add/trigger wakes every waiter
-+    "KYTY_BC5_P1_NO_COND_REGISTRY", // A2  KytyPS5 18a1e0fa: no global CondVar waiter registry
-+    "KYTY_BC5_P1_FAULT_MASK",       // A3  KytyPS5 3b0a78a9: the fault handler masks the guest signal too
-+    "KYTY_BC5_P1_SEMA_UAF",         // A6  AnyPS5 ff9a68aed4: semaphore delete waits for its waiters to leave
-+    "KYTY_BC5_P1_AMPR_RESULT",      // B1  AnyPS5 23a0020ab1: submit does not overwrite the worker's result
-+    "KYTY_BC5_P1_APR_FILE_ID",      // K1  KytyPS5 e43aadf7: APR file ids from a counter, not a path hash
-+    "KYTY_BC5_P1_COND_SIGNAL_ONE",  // K2  KytyPS5 47b26e49: pthread_cond_signal wakes the chosen waiter only
-+    "KYTY_BC5_P1_ALTSTACK",         // K6  KytyPS5 21124245/b61360a0: per-thread signal stacks
-+    "KYTY_BC5_P1_PTHREAD_KEYS",     // K3  KytyPS5 733842ca: pthread key values per thread
-+    "KYTY_BC5_P1_PROT_RANGES",      // K4  KytyPS5 73363f12: no per-page protection map
-+    "KYTY_BC5_P1_FILE_UNBUFFERED",  // K7  KytyPS5 cbe5b629: unbuffered host file handles
-+    "KYTY_BC5_P1_AJM_GAPLESS",      // R2a KytyPS5 2e315a3c/1cc0ac7e: AJM gapless control before codec init
-+    "KYTY_BC5_P1_AMPR_FILTER",      // R2b KytyPS5 deb45a8b: APR completions on the AMPR filter (-25)
-+    "KYTY_BC5_P1_FATAL_TO_ERROR",   // C   AnyPS5: error codes in place of host exits
-+    nullptr};
++// The fixes of the pack, in the order of the per-fix table (experiments/0433-ports-pack1/README.md).
++inline constexpr const char* kNames[] = {
++    "EQ_WAKE_ALL",      // A1  AnyPS5 daad982457: equeue add/trigger wakes every waiter
++    "NO_COND_REGISTRY", // A2  KytyPS5 18a1e0fa: no global CondVar waiter registry
++    "FAULT_MASK",       // A3  KytyPS5 3b0a78a9: the fault handler masks the guest signal too
++    "SEMA_UAF",         // A6  AnyPS5 ff9a68aed4: semaphore delete waits for its waiters to leave
++    "AMPR_RESULT",      // B1  AnyPS5 23a0020ab1: submit does not overwrite the worker's result
++    "APR_FILE_ID",      // K1  KytyPS5 e43aadf7: APR file ids from a counter, not a path hash
++    "COND_SIGNAL_ONE",  // K2  KytyPS5 47b26e49: pthread_cond_signal wakes the chosen waiter only
++    "ALTSTACK",         // K6  KytyPS5 21124245/b61360a0: per-thread signal stacks
++    "PTHREAD_KEYS",     // K3  KytyPS5 733842ca: pthread key values per thread
++    "PROT_RANGES",      // K4  KytyPS5 73363f12: no per-page protection map
++    "FILE_UNBUFFERED",  // K7  KytyPS5 cbe5b629: unbuffered host file handles
++    "AJM_GAPLESS",      // R2a KytyPS5 2e315a3c/1cc0ac7e: AJM gapless control before codec init
++    "AMPR_FILTER",      // R2b KytyPS5 deb45a8b: APR completions on the AMPR filter (-25)
++    "FATAL_TO_ERROR",   // C   AnyPS5: error codes in place of host exits
++};
 +
-+inline bool Read(const char* name) {
-+	const char* e = std::getenv(name);
-+	return !(e != nullptr && e[0] == '0' && e[1] == 0);
-+}
++inline constexpr int kCount = static_cast<int>(sizeof(kNames) / sizeof(kNames[0]));
 +
-+inline void ReportOnce() {
-+	static std::atomic<bool> done {false};
-+	if (done.exchange(true)) return;
-+	std::fprintf(stderr, "[bc5] ports pack 1:");
-+	for (const char* const* w = kWords; *w != nullptr; w++) {
-+		std::fprintf(stderr, " %s=%s", *w + 12, Read(*w) ? "on" : "OFF");
++constexpr bool Same(const char* a, const char* b) {
++	while (*a != 0 && *a == *b) {
++		a++;
++		b++;
 +	}
-+	std::fprintf(stderr, "\n");
++	return *a == *b;
 +}
 +
-+inline bool On(const char* name) {
-+	ReportOnce();
-+	return Read(name);
-+}
-+
-+inline constexpr int kCount = static_cast<int>(sizeof(kWords) / sizeof(kWords[0])) - 1;
-+
-+inline int Index(const char* name) {
++// "KYTY_BC5_P1_<NAME>" -> its index, at compile time (the call site's string is not in the binary); -1 if unknown.
++constexpr int Index(const char* word) {
++	const char* const prefix = "KYTY_BC5_P1_";
++	for (int k = 0; k < 12; k++) {
++		if (word[k] != prefix[k]) return -1;
++	}
 +	for (int i = 0; i < kCount; i++) {
-+		if (std::strcmp(kWords[i], name) == 0) return i;
++		if (Same(kNames[i], word + 12)) return i;
 +	}
 +	return -1;
 +}
 +
-+// Hit counts (exp 0433, the top session's ask of 2026-11-19: evidence that each fix ran). A hit is one evaluation of
-+// BC5_P1(word) that returned ON: one pass of the fix's decision point (a short-circuit form such as
-+// `bad_arg && BC5_P1(...)` counts only the cases it changes). Counted per thread and added to the global count in
-+// batches of 256 (the first hits of a word go through at once), so the count is a lower bound: up to 255 hits per
-+// thread and word are not added when a thread ends. A line is printed when a word's count passes a power of two:
-+//   [bc5] ports pack 1 hits: PTHREAD_KEYS 1024 (t 12.3 s)   (t: seconds since the first hit of any word)
-+// KYTY_BC5_P1_HITS=0 turns the counting off. Compiled out in the lean build (no diagnostics there).
 +#ifdef BC5_LEAN
 +inline void Hit(int) {}
 +#else
@@ -90,34 +79,32 @@ index 0000000..890cf44
 +}
 +
 +inline void Hit(int i) {
-+	static const bool on = Read("KYTY_BC5_P1_HITS");
 +	static HitSlot g[kCount];
 +	thread_local uint32_t pend[kCount] {};
-+	if (!on || i < 0) return;
 +	uint32_t p = ++pend[i];
 +	if (p < 256 && g[i].n.load(std::memory_order_relaxed) >= 64) return;
 +	pend[i] = 0;
 +	uint64_t before = g[i].n.fetch_add(p, std::memory_order_relaxed);
 +	uint64_t after  = before + p;
 +	if (before == 0 || (63 - __builtin_clzll(before)) != (63 - __builtin_clzll(after))) {
-+		std::fprintf(stderr, "[bc5] ports pack 1 hits: %s %llu (t %.1f s)\n", kWords[i] + 12,
-+		             static_cast<unsigned long long>(after), Seconds());
++		std::fprintf(stderr, "[bc5] ports pack 1 hits: %s %llu (t %.1f s)\n", kNames[i], static_cast<unsigned long long>(after),
++		             Seconds());
 +	}
 +}
 +#endif
 +
 +} // namespace bc5::p1
 +
-+// One read per call site. `name` must be one of kWords. Each evaluation that returns ON is counted (Hit, above).
++// Always true: the fix is built in. `name` must be one of the pack's words (checked at compile time).
 +#define BC5_P1(name)                                                                                                   \
 +	([] {                                                                                                              \
-+		static const int  bc5_p1_i = ::bc5::p1::Index(name);                                                         \
-+		static const bool bc5_p1_v = ::bc5::p1::On(name);                                                            \
-+		if (bc5_p1_v) ::bc5::p1::Hit(bc5_p1_i);                                                                      \
-+		return bc5_p1_v;                                                                                             \
++		constexpr int bc5_p1_i = ::bc5::p1::Index(name);                                                              \
++		static_assert(bc5_p1_i >= 0, "BC5_P1: not a word of ports pack 1");                                           \
++		::bc5::p1::Hit(bc5_p1_i);                                                                                     \
++		return true;                                                                                                   \
 +	}())
 diff --git a/src/common/hostException.cpp b/src/common/hostException.cpp
-index 1eeb7b1..122d5fd 100644
+index 1eeb7b1..5c97232 100644
 --- a/src/common/hostException.cpp
 +++ b/src/common/hostException.cpp
 @@ -1,5 +1,6 @@
@@ -204,13 +191,13 @@ index 1eeb7b1..122d5fd 100644
 +	// ports pack 1, A3 (KytyPS5 3b0a78a9, GPL-2.0, hostException.cpp:235-237): the guest signal-dispatch signal
 +	// (SIGRTMIN+3 on Linux, libKernel.cpp SignalDispatchHostSignal) is blocked while a fault is resolved, so a
 +	// KernelRaiseException cannot run the guest's handler between the protection fix and the retry. Only the macOS
-+	// branch above had this (with SIGUSR1). KYTY_BC5_P1_FAULT_MASK=0: an empty mask as before.
++	// branch above had this (with SIGUSR1). Before the pack: an empty mask as before.
 +	if (BC5_P1("KYTY_BC5_P1_FAULT_MASK")) {
 +		sigaddset(&action.sa_mask, SIGRTMIN + 3);
 +	}
 +	// ports pack 1, K6 (KytyPS5 21124245, GPL-2.0, hostException.cpp:316-319): the fault handler runs on the thread's
 +	// alternate signal stack when it has one (InitializeThreadSignalStack, set up by each guest thread), so a fault
-+	// on an exhausted or read-only guest stack is still handled and recorded. KYTY_BC5_P1_ALTSTACK=0: no SA_ONSTACK.
++	// on an exhausted or read-only guest stack is still handled and recorded. Before the pack: no SA_ONSTACK.
 +	if (BC5_P1("KYTY_BC5_P1_ALTSTACK")) {
 +		action.sa_flags |= SA_ONSTACK;
 +	}
@@ -234,7 +221,7 @@ index 5464768..4f8575f 100644
  // Async-signal-safe raw formatter.
  //
 diff --git a/src/common/platform/sysLinuxFileIO.cpp b/src/common/platform/sysLinuxFileIO.cpp
-index 97b2614..a2a720e 100644
+index 97b2614..9406874 100644
 --- a/src/common/platform/sysLinuxFileIO.cpp
 +++ b/src/common/platform/sysLinuxFileIO.cpp
 @@ -8,6 +8,7 @@
@@ -252,7 +239,7 @@ index 97b2614..a2a720e 100644
 +// ports pack 1, K7 (KytyPS5 cbe5b629, GPL-2.0, sysLinuxFileIO.cpp:155-166 OpenHostFile): host files are opened
 +// unbuffered, so independent handles of one file see each other's writes and truncation at once (a stdio buffer let
 +// a second descriptor read stale bytes). Cost: every small fread/fwrite is a system call; APR reads do not come here
-+// (exp 0415's pread path). KYTY_BC5_P1_FILE_UNBUFFERED=0: stdio's default buffering as before.
++// (exp 0415's pread path). Before the pack: stdio's default buffering as before.
 +static void Bc5P1Unbuffered(FILE* f) {
 +	if (f != nullptr && BC5_P1("KYTY_BC5_P1_FILE_UNBUFFERED")) {
 +		setvbuf(f, nullptr, _IONBF, 0);
@@ -295,7 +282,7 @@ index 97b2614..a2a720e 100644
  
  	ret->f = f;
 diff --git a/src/common/platform/sysLinuxVirtual.cpp b/src/common/platform/sysLinuxVirtual.cpp
-index 4bd352c..75e275d 100644
+index 4bd352c..e94787a 100644
 --- a/src/common/platform/sysLinuxVirtual.cpp
 +++ b/src/common/platform/sysLinuxVirtual.cpp
 @@ -9,8 +9,10 @@
@@ -321,7 +308,7 @@ index 4bd352c..75e275d 100644
 +// guest's ProtectGuestMemory takes its old mode from its own range table, memory.cpp). With the switch on the map is
 +// not kept. BC5 change: upstream also drops the old_mode parameter; we keep it, and a caller that asks gets the answer
 +// from /proc/self/maps (Bc5P1KernelProt below), so the answer stays the real one.
-+// KYTY_BC5_P1_PROT_RANGES=0: the per-page map as before.
++// Before the pack: the per-page map as before.
 +static bool Bc5P1ProtRanges() {
 +	return BC5_P1("KYTY_BC5_P1_PROT_RANGES");
 +}
@@ -438,7 +425,7 @@ index 4bd352c..75e275d 100644
  		for (uintptr_t page = page_start; page <= page_end; page++) {
  			(*g_protects)[page] = get_protection_flag(mode);
 diff --git a/src/common/threads.cpp b/src/common/threads.cpp
-index 1870594..4ed7cc2 100644
+index 1870594..eb70aa3 100644
 --- a/src/common/threads.cpp
 +++ b/src/common/threads.cpp
 @@ -1,5 +1,6 @@
@@ -454,7 +441,7 @@ index 1870594..4ed7cc2 100644
  
 +// ports pack 1, A2 (KytyPS5 18a1e0fa, GPL-2.0): no global registry of CondVar waiters. Every wait took the registry's
 +// global mutex twice, and the registry deadlocked exception delivery upstream; the guest's own wake for a signal is
-+// PthreadWakeForSignal, which stays. KYTY_BC5_P1_NO_COND_REGISTRY=0: the registry and SignalThread as before.
++// PthreadWakeForSignal, which stays. Before the pack: the registry and SignalThread as before.
 +static bool Bc5P1NoRegistry() {
 +	return BC5_P1("KYTY_BC5_P1_NO_COND_REGISTRY");
 +}
@@ -485,7 +472,7 @@ index 1870594..4ed7cc2 100644
  	for (const auto& waiter: g_cond_waiters) {
  		if (waiter.first == thread_id) {
 diff --git a/src/kernel/eventQueue.cpp b/src/kernel/eventQueue.cpp
-index 944a1f8..0f31f02 100644
+index 944a1f8..2d205a3 100644
 --- a/src/kernel/eventQueue.cpp
 +++ b/src/kernel/eventQueue.cpp
 @@ -1,4 +1,5 @@
@@ -500,7 +487,7 @@ index 944a1f8..0f31f02 100644
  
 +// ports pack 1, A1 (AnyPS5 daad982457, GPL-2.0): an event added or triggered wakes EVERY thread waiting on this queue.
 +// With Signal() one waiter woke and the others slept to their timeout or for ever, though GetTriggeredEvents could hand
-+// each of them the event (several guest threads on one equeue). KYTY_BC5_P1_EQ_WAKE_ALL=0: the old wake-one.
++// each of them the event (several guest threads on one equeue). Before the pack: the old wake-one.
 +static void Bc5P1Wake(Common::CondVar* cv) {
 +	if (BC5_P1("KYTY_BC5_P1_EQ_WAKE_ALL")) {
 +		cv->SignalAll();
@@ -546,7 +533,7 @@ index 944a1f8..0f31f02 100644
 +// ports pack 1, exp 0405 R2 KK15 (KytyPS5 deb45a8b, GPL-2.0, eventQueue.h:21 KERNEL_EVFILT_AMPR = -25 and its use in
 +// KernelAddAmprEvent/KernelDeleteAmprEvent and libAmpr's completion trigger): AMPR completions carry EVFILT_AMPR (-25),
 +// so an AMPR id can no longer meet a user event with the same ident on the same queue (both on EVFILT_USER, the trigger
-+// or delete of one hit the other). KytyPS5 and AnyPS5 agree on -25. KYTY_BC5_P1_AMPR_FILTER=0: EVFILT_USER as before.
++// or delete of one hit the other). KytyPS5 and AnyPS5 agree on -25. Before the pack: EVFILT_USER as before.
  int16_t AmprEventFilter() {
 +	if (BC5_P1("KYTY_BC5_P1_AMPR_FILTER")) {
 +		return static_cast<int16_t>(-25);
@@ -578,7 +565,7 @@ index afd6c60..093a4a9 100644
  	}
  
 diff --git a/src/kernel/pthread.cpp b/src/kernel/pthread.cpp
-index 9e0aee5..fcb33e6 100644
+index 9e0aee5..d9b6ab4 100644
 --- a/src/kernel/pthread.cpp
 +++ b/src/kernel/pthread.cpp
 @@ -6,6 +6,8 @@
@@ -621,7 +608,7 @@ index 9e0aee5..fcb33e6 100644
 +// still polls every SIGNAL_APC_POLL_MICROS, so a missed notify costs at most that, never a hang.
 +// BC5 change: the waiter list, waiting_cond, the condvar's own sequence and cv stay (exp 0405's kk06 and signalto rely
 +// on them); cond->cv is still notified, with no sleeper on it while the switch is on.
-+// KYTY_BC5_P1_COND_SIGNAL_ONE=0: every waiter sleeps on cond->cv as before.
++// Before the pack: every waiter sleeps on cond->cv as before.
 +static bool Bc5P1CondOne() {
 +	return BC5_P1("KYTY_BC5_P1_COND_SIGNAL_ONE");
 +}
@@ -676,7 +663,7 @@ index 9e0aee5..fcb33e6 100644
 +// of every thread that ever set that key (pthread.cpp PthreadKeys::Get/Set).
 +// BC5 changes: the switch; the old PthreadKeys class stays and is the path when the switch is off (both paths never
 +// mix: the word is read once per process); the LOGF lines of KeyCreate/KeyDelete are kept.
-+// KYTY_BC5_P1_PTHREAD_KEYS=0: the old table under one mutex.
++// Before the pack: the old table under one mutex.
 +static bool Bc5P1Keys() {
 +	return BC5_P1("KYTY_BC5_P1_PTHREAD_KEYS");
 +}
@@ -801,7 +788,7 @@ index 9e0aee5..fcb33e6 100644
  
 +	// ports pack 1, C (AnyPS5 3acca27f27 "feat(libkernel): implement thread cancellation", GPL-2.0,
 +	// core/libs/prx/libkernel/Pthread/src/Thread.cpp:1637-1638 at 47bd2c6a1d): a state other than ENABLE (0) or
-+	// DISABLE (1) is EINVAL, returned before old_state is written. KYTY_BC5_P1_FATAL_TO_ERROR=0: the host exits.
++	// DISABLE (1) is EINVAL, returned before old_state is written. Before the pack: the host exits.
 +	if (state != 0 && state != 1 && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) {
 +		return KERNEL_ERROR_EINVAL;
 +	}
@@ -815,7 +802,7 @@ index 9e0aee5..fcb33e6 100644
  
 +	// ports pack 1, C (AnyPS5 3acca27f27, GPL-2.0, Pthread/src/Thread.cpp:1650-1651 at 47bd2c6a1d): a type other than
 +	// DEFERRED (0) or ASYNCHRONOUS (2) is EINVAL, returned before old_type is written.
-+	// KYTY_BC5_P1_FATAL_TO_ERROR=0: the host exits.
++	// Before the pack: the host exits.
 +	if (type != 0 && type != 2 && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) {
 +		return KERNEL_ERROR_EINVAL;
 +	}
@@ -921,7 +908,7 @@ index 9e0aee5..fcb33e6 100644
  
  	void* value = nullptr;
 diff --git a/src/kernel/semaphore.cpp b/src/kernel/semaphore.cpp
-index 565e55e..da2e074 100644
+index 565e55e..a778e3c 100644
 --- a/src/kernel/semaphore.cpp
 +++ b/src/kernel/semaphore.cpp
 @@ -1,5 +1,6 @@
@@ -1004,7 +991,7 @@ index 565e55e..da2e074 100644
 +// a POSIX semaphore is no longer deleted under a thread that is waiting on it, posting to it, or holds it between the
 +// lookup and the call. BC5 form, not upstream's code: GetSem hands out a counted reference (taken under the map lock),
 +// and destroy (or a re-init of the same guest object) erases the entry, marks the object destroyed, waits until every
-+// reference is dropped, and only then deletes it. KYTY_BC5_P1_SEMA_UAF=0: plain pointers and an immediate delete.
++// reference is dropped, and only then deletes it. Before the pack: plain pointers and an immediate delete.
 +static bool Bc5P1SemUaf() {
 +	return BC5_P1("KYTY_BC5_P1_SEMA_UAF");
 +}
@@ -1161,7 +1148,7 @@ index 565e55e..da2e074 100644
  		return KERNEL_ERROR_EINVAL;
  	}
 diff --git a/src/libs/ajm.cpp b/src/libs/ajm.cpp
-index 8ab204f..eef42e4 100644
+index 8ab204f..0d2f482 100644
 --- a/src/libs/ajm.cpp
 +++ b/src/libs/ajm.cpp
 @@ -1,5 +1,6 @@
@@ -1178,7 +1165,7 @@ index 8ab204f..eef42e4 100644
 +	// ports pack 1, R2a (exp 0405 R2 KA04; KytyPS5 2e315a3c, GPL-2.0, ajm.cpp:660-669): a control job that carries the
 +	// gapless sideband has it FIRST in its input: it is taken as the gapless setting and skipped, so the codec's
 +	// initialize parameters start after it. Before, the gapless bytes were handed to Initialize as codec parameters.
-+	// KYTY_BC5_P1_AJM_GAPLESS=0: the whole input goes to Initialize as before.
++	// Before the pack: the whole input goes to Initialize as before.
 +	if ((flags & AJM_FLAG_SIDEBAND_GAPLESS) != 0 && BC5_P1("KYTY_BC5_P1_AJM_GAPLESS")) {
 +		if (sideband_input == nullptr || sideband_input_size < AJM_SIDEBAND_GAPLESS_SIZE) {
 +			result.result = AJM_RESULT_INVALID_PARAMETER;
@@ -1197,7 +1184,7 @@ index 8ab204f..eef42e4 100644
  static AjmDecodeResult AjmSetGaplessDecode(uint32_t instance, const void* gapless_decode,
                                             int reset) {
 +	// ports pack 1, R2a (KytyPS5 1cc0ac7e, GPL-2.0, ajm.cpp:683-688): set-gapless goes through the control path, so a
-+	// reset also resets the decoder, as a control reset does. KYTY_BC5_P1_AJM_GAPLESS=0: the gapless state only.
++	// reset also resets the decoder, as a control reset does. Before the pack: the gapless state only.
 +	if (BC5_P1("KYTY_BC5_P1_AJM_GAPLESS")) {
 +		if (gapless_decode == nullptr) {
 +			AjmDecodeResult result {};
@@ -1233,7 +1220,7 @@ index d466218..8caaa73 100644
  	if (ControllerIndexFromHandle(handle) < 0) {
  		return PAD_ERROR_INVALID_HANDLE;
 diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
-index 4163fe4..bc4a85c 100644
+index 4163fe4..813eb8c 100644
 --- a/src/libs/libAmpr.cpp
 +++ b/src/libs/libAmpr.cpp
 @@ -1,4 +1,5 @@
@@ -1270,7 +1257,7 @@ index 4163fe4..bc4a85c 100644
 +				// allocated once per resolved path under the cache lock. The 31-bit FNV-1a hash of the guest path let
 +				// two paths share an id, and the second overwrote the first's entry in g_files, so APR read the wrong
 +				// file. BC5 change: ids stay below 2^31 (as the hash ids were), and a hash collision is logged in both
-+				// modes, so a run shows whether the old id would have collided. KYTY_BC5_P1_APR_FILE_ID=0: the hash id.
++				// modes, so a run shows whether the old id would have collided. Before the pack: the hash id.
 +				const auto bc5_h = g_bc5_hash_paths.emplace(info.file_id, path);
 +				if (!bc5_h.second && bc5_h.first->second != path) {
 +					bc5_collides_with = bc5_h.first->second;
@@ -1309,7 +1296,7 @@ index 4163fe4..bc4a85c 100644
 +// after ExecuteAprCommandBuffer returned, when the worker could already have run the buffer and written the real result
 +// (or the buffer itself wrote that memory), which the late write then overwrote. After the submit, the result is
 +// written again only when the submit itself failed or reported an error (then the worker did not run it).
-+// KYTY_BC5_P1_AMPR_RESULT=0: the old order.
++// Before the pack: the old order.
 +static bool Bc5P1ResultFirst() {
 +	return BC5_P1("KYTY_BC5_P1_AMPR_RESULT");
 +}

@@ -1,0 +1,280 @@
+[0/2] Re-checking globbed directories...
+[1/21] Building CXX object src/common/CMakeFiles/common.dir/hostException.cpp.o
+[2/21] Building CXX object src/common/CMakeFiles/common.dir/platform/sysLinuxVirtual.cpp.o
+/home/kjaniszewski/src/KytyPlus/src/common/platform/sysLinuxVirtual.cpp:341:13: warning: unused function 'is_mapped' [-Wunused-function]
+  341 | static bool is_mapped(void* ptr, size_t length) {
+      |             ^~~~~~~~~
+1 warning generated.
+[3/21] Building CXX object src/common/CMakeFiles/common.dir/threads.cpp.o
+In file included from /home/kjaniszewski/src/KytyPlus/src/common/threads.cpp:6:
+In file included from /home/kjaniszewski/src/KytyPlus/src/common/debug.h:5:
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+1 warning generated.
+[4/21] Building CXX object src/common/CMakeFiles/common.dir/platform/sysLinuxFileIO.cpp.o
+In file included from /home/kjaniszewski/src/KytyPlus/src/common/platform/sysLinuxFileIO.cpp:10:
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+1 warning generated.
+[5/21] Linking CXX static library src/common/libcommon.a
+[6/21] Building CXX object src/CMakeFiles/kyty_emulator.dir/libs/libUserService.cpp.o
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/libUserService.cpp:4:
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+1 warning generated.
+[7/21] Building CXX object src/CMakeFiles/kyty_emulator.dir/libs/libAppContent.cpp.o
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/libAppContent.cpp:7:
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+1 warning generated.
+[8/21] Building CXX object src/CMakeFiles/kyty_emulator.dir/libs/libNpCppWebApi.cpp.o
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/libNpCppWebApi.cpp:25:
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/libs.h:6:
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+/home/kjaniszewski/src/KytyPlus/src/libs/libNpCppWebApi.cpp:52:1: warning: function declared 'noreturn' should not return [-Winvalid-noreturn]
+   52 | }
+      | ^
+/home/kjaniszewski/src/KytyPlus/src/libs/libNpCppWebApi.cpp:129:30: warning: unused variable 'VectorReferenceCountOffset' [-Wunused-const-variable]
+  129 | static constexpr std::size_t VectorReferenceCountOffset = 0x30;
+      |                              ^~~~~~~~~~~~~~~~~~~~~~~~~~
+3 warnings generated.
+[9/21] Building CXX object src/CMakeFiles/kyty_emulator.dir/kernel/eventQueue.cpp.o
+In file included from /home/kjaniszewski/src/KytyPlus/src/kernel/eventQueue.cpp:15:
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+1 warning generated.
+[10/21] Building CXX object src/CMakeFiles/kyty_emulator.dir/libs/libSysmodule.cpp.o
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/libSysmodule.cpp:6:
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+1 warning generated.
+[11/21] Building CXX object src/CMakeFiles/kyty_emulator.dir/libs/controller.cpp.o
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/controller.cpp:15:
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+1 warning generated.
+[12/21] Building CXX object src/CMakeFiles/kyty_emulator.dir/kernel/semaphore.cpp.o
+In file included from /home/kjaniszewski/src/KytyPlus/src/kernel/semaphore.cpp:11:
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+1 warning generated.
+[13/21] Building CXX object src/CMakeFiles/kyty_emulator.dir/libs/ajm.cpp.o
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/ajm.cpp:8:
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/libs.h:6:
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+1 warning generated.
+[14/21] Building CXX object src/CMakeFiles/kyty_emulator.dir/kernel/pthread.cpp.o
+In file included from /home/kjaniszewski/src/KytyPlus/src/kernel/pthread.cpp:13:
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+/home/kjaniszewski/src/KytyPlus/src/kernel/pthread.cpp:1525:13: warning: unused function 'sec_to_timeval' [-Wunused-function]
+ 1525 | static void sec_to_timeval(KernelTimeval* ts, double sec) {
+      |             ^~~~~~~~~~~~~~
+2 warnings generated.
+[15/21] Building CXX object src/CMakeFiles/kyty_emulator.dir/libs/network.cpp.o
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/network.cpp:42:
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+/home/kjaniszewski/src/KytyPlus/src/libs/network.cpp:83:35: warning: unused variable 'g_ca_mutex' [-Wunused-variable]
+   83 | static std::mutex                 g_ca_mutex;
+      |                                   ^~~~~~~~~~
+/home/kjaniszewski/src/KytyPlus/src/libs/network.cpp:86:35: warning: unused variable 'g_ca_pool_size' [-Wunused-variable]
+   86 | static size_t                     g_ca_pool_size = 0;
+      |                                   ^~~~~~~~~~~~~~
+/home/kjaniszewski/src/KytyPlus/src/libs/network.cpp:1076:46: warning: unused variable 'g_winsock_initialized' [-Wunused-variable]
+ 1076 | static std::atomic_bool                      g_winsock_initialized = false;
+      |                                              ^~~~~~~~~~~~~~~~~~~~~
+/home/kjaniszewski/src/KytyPlus/src/libs/network.cpp:1079:20: warning: unused variable 'EPOLL_IN' [-Wunused-const-variable]
+ 1079 | constexpr uint32_t EPOLL_IN      = 0x00000001;
+      |                    ^~~~~~~~
+/home/kjaniszewski/src/KytyPlus/src/libs/network.cpp:1080:20: warning: unused variable 'EPOLL_OUT' [-Wunused-const-variable]
+ 1080 | constexpr uint32_t EPOLL_OUT     = 0x00000002;
+      |                    ^~~~~~~~~
+/home/kjaniszewski/src/KytyPlus/src/libs/network.cpp:1081:20: warning: unused variable 'EPOLL_ERR' [-Wunused-const-variable]
+ 1081 | constexpr uint32_t EPOLL_ERR     = 0x00000008;
+      |                    ^~~~~~~~~
+/home/kjaniszewski/src/KytyPlus/src/libs/network.cpp:1173:12: warning: unused function 'SetPosixSocketError' [-Wunused-function]
+ 1173 | static int SetPosixSocketError() {
+      |            ^~~~~~~~~~~~~~~~~~~
+/home/kjaniszewski/src/KytyPlus/src/libs/network.cpp:1189:12: warning: unused function 'ConvertSocketOptionLevel' [-Wunused-function]
+ 1189 | static int ConvertSocketOptionLevel(int level) {
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~
+/home/kjaniszewski/src/KytyPlus/src/libs/network.cpp:1193:12: warning: unused function 'ConvertMessageFlags' [-Wunused-function]
+ 1193 | static int ConvertMessageFlags(int flags) {
+      |            ^~~~~~~~~~~~~~~~~~~
+/home/kjaniszewski/src/KytyPlus/src/libs/network.cpp:1339:12: warning: unused function 'AllocSocketFd' [-Wunused-function]
+ 1339 | static int AllocSocketFd(NativeSocket socket) {
+      |            ^~~~~~~~~~~~~
+/home/kjaniszewski/src/KytyPlus/src/libs/network.cpp:1353:13: warning: unused function 'GuestFdIsSet' [-Wunused-function]
+ 1353 | static bool GuestFdIsSet(const void* fds, int fd) {
+      |             ^~~~~~~~~~~~
+/home/kjaniszewski/src/KytyPlus/src/libs/network.cpp:1362:13: warning: unused function 'GuestFdZero' [-Wunused-function]
+ 1362 | static void GuestFdZero(void* fds, int nfds) {
+      |             ^~~~~~~~~~~
+/home/kjaniszewski/src/KytyPlus/src/libs/network.cpp:1370:13: warning: unused function 'GuestFdSet' [-Wunused-function]
+ 1370 | static void GuestFdSet(void* fds, int fd) {
+      |             ^~~~~~~~~~
+/home/kjaniszewski/src/KytyPlus/src/libs/network.cpp:3887:13: warning: unused function 'CopyIpv4String' [-Wunused-function]
+ 3887 | static void CopyIpv4String(char* dst, size_t dst_size, const sockaddr* addr) {
+      |             ^~~~~~~~~~~~~~
+/home/kjaniszewski/src/KytyPlus/src/libs/network.cpp:3902:13: warning: unused function 'CopyIpv4Netmask' [-Wunused-function]
+ 3902 | static void CopyIpv4Netmask(char* dst, size_t dst_size, uint8_t prefix_len) {
+      |             ^~~~~~~~~~~~~~~
+16 warnings generated.
+[16/21] Building CXX object src/CMakeFiles/kyty_emulator.dir/libs/libSaveData.cpp.o
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/libSaveData.cpp:8:
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+1 warning generated.
+[17/21] Building CXX object src/CMakeFiles/kyty_emulator.dir/loader/runtimeLinker.cpp.o
+In file included from /home/kjaniszewski/src/KytyPlus/src/loader/runtimeLinker.cpp:4:
+In file included from /home/kjaniszewski/src/KytyPlus/src/loader/runtimeLinker.h:6:
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+/home/kjaniszewski/src/KytyPlus/src/loader/runtimeLinker.cpp:894:3: warning: non-void lambda does not return a value in all control paths [-Wreturn-type]
+  894 |                 }();
+      |                 ^
+/home/kjaniszewski/src/KytyPlus/src/loader/runtimeLinker.cpp:1138:69: warning: format specifies type 'unsigned long' but the argument has type 'unsigned long long' [-Wformat]
+ 1138 |                                                 Bc5CrashLog("%s%s %016" PRIx64 ":", i == 0 ? "" : "\n", name, a + 8ull * i);
+      |                                                                   ~~~~~~~~~~~~                                ^~~~~~~~~~~~
+3 warnings generated.
+[18/21] Building CXX object src/CMakeFiles/kyty_emulator.dir/libs/libAmpr.cpp.o
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/libAmpr.cpp:9:
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+/home/kjaniszewski/src/KytyPlus/src/libs/libAmpr.cpp:2344:143: warning: data argument not used by format string [-Wformat-extra-args]
+ 2343 |                                 AmmTraceStamp(), std::fprintf(stderr, "amm trace: read file 0x%08" PRIx32 " +0x%" PRIx64 " size 0x%" PRIx64 " -> 0x%016" PRIx64 " = 0x%08x (parallel)\n",
+      |                                                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 2344 |                                                               command.file_id, command.file_offset, command.size, command.destination, static_cast<unsigned>(results[k]), bytes_read, bytes_read >= 8 ? *reinterpret_cast<const uint64_t*>(command.destination) : 0);
+      |                                                                                                                                                                           ^
+/home/kjaniszewski/src/KytyPlus/src/libs/libAmpr.cpp:2453:50: warning: data argument not used by format string [-Wformat-extra-args]
+ 2451 |                                         AmmTraceStamp(), std::fprintf(stderr, "amm trace: read file 0x%08" PRIx32 " +0x%" PRIx64 " size 0x%" PRIx64 " -> 0x%016" PRIx64 " = 0x%08x\n",
+      |                                                                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 2452 |                                                      command.file_id, command.file_offset, command.size, command.destination,
+ 2453 |                                                      static_cast<unsigned>(result), bytes_read, bytes_read >= 8 ? *reinterpret_cast<const uint64_t*>(command.destination) : 0);
+      |                                                                                     ^
+/home/kjaniszewski/src/KytyPlus/src/libs/libAmpr.cpp:1809:13: warning: unused function 'Bc5PoolFreeStats' [-Wunused-function]
+ 1809 | static void Bc5PoolFreeStats(uint64_t* total, uint64_t* holes, uint64_t* largest) {
+      |             ^~~~~~~~~~~~~~~~
+4 warnings generated.
+[19/21] Building CXX object src/CMakeFiles/kyty_emulator.dir/kernel/memory.cpp.o
+In file included from /home/kjaniszewski/src/KytyPlus/src/kernel/memory.cpp:10:
+In file included from /home/kjaniszewski/src/KytyPlus/src/common/magicEnum.h:5:
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+1 warning generated.
+[20/21] Linking CXX executable src/kyty_emulator

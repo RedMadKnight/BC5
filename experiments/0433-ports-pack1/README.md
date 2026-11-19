@@ -254,3 +254,68 @@ Hit counts in P (lower bounds, about 400 s):
 - Both arms drift upward through the morning, and the drift (about 3 flips/s from first to last pair) is as large as the A–P gap.
 - **Verdict: not shown.** K7/R2b are not a cost above run-to-run noise at 3+3.
 - Over all 12 fight runs (P 6, C 3, A 3), the pack shows no cost outside the noise: P 37.8–42.1, C 39.3–40.2.
+
+## The shared swap kit: the pack built in (`bake/`, prepared 2026-11-19 offline; the swap waits for the maintainer's word)
+
+The top session asked for a shared form of the full pack with no switches, in the form of the 0430 bake. The lean build carries no hit counters. The 0x51 packet stays counted only.
+
+- **`ports_pack1.hpp` (baked).**
+  - `BC5_P1("KYTY_BC5_P1_<NAME>")` is now the constant `true`, so every site runs the path tested as arm P. Each site's old path is still in the source but can never be taken.
+  - The name is checked at compile time with a `static_assert`, so the site's string is not in the binary. Nothing reads the environment, and the `[bc5] ports pack 1: ...=on` line is gone.
+  - The hit counters stay in the normal build, always on (no `KYTY_BC5_P1_HITS` word), and are compiled out of lean.
+  - The sites' comments "`KYTY_BC5_P1_X=0`: ..." now read "Before the pack: ...".
+  - Syntax-checked, normal and `-DBC5_LEAN`, with clang++ `-std=c++20 -Wall -Wextra`: clean. A wrong name fails to compile.
+- **`0002-bc5-ports-pack1-baked.patch` (md5 e3124f5d).**
+  - The delta on the shared tree: 17 changed files and the new header.
+  - Shared patch 0001: d1388db0 → **59f00d27**. Its file list grows from 131 to 134. The exp 0372 lines stay at 5. The guard, learned and JOB_ARENA line counts do not change.
+- **`be/policy.cpp` (md5 107bb1b6).** main's policy.cpp (d5ae7298) plus `policy0433.diff`: the 0x51 count, with no change to the packet.
+- **`int0433.sh`.**
+  - Checks the shared state: patch d1388db0, normal eb85d32e, lean 364c6146, archive 6eac453e, policy.cpp d5ae7298, no `ports_pack1.hpp` in the tree, and both builds including the shared backend source.
+  - Takes one lock line and makes copies.
+  - Applies the delta and marks the new header with `git add -N`, then requires the diff to be 59f00d27.
+  - Puts `be/policy.cpp` in place and rebuilds the archive (it must change and carry the 0x51 line). Rebuilds normal and lean.
+  - Checks the strings:
+    - no `(KYTY_)BC5_` word gained or lost;
+    - no `KYTY_BC5_P1_` text;
+    - the 0x51 line in both builds;
+    - the hit-count line in normal only.
+  - Any failure after the copies runs `undo0433.sh`.
+- **`undo0433.sh`.**
+  - Restores the 17 units and removes the header (from the file system and the index).
+  - Restores policy.cpp, the archive and both binaries.
+  - Checks each by md5 and the tree's diff against d1388db0.
+  - Run alone, it takes its own lock line. The next step back is exp 0430's `undo0430b.sh`.
+- **`test_int0433.sh`: a dry run on a copy.**
+  - The world: a local tree that reproduces d1388db0, main's policy.cpp, and fake binaries, ninja and distrobox.
+  - Cases:
+    - success;
+    - undo alone;
+    - refusal while old copies exist;
+    - success again;
+    - a lean build failure that undoes by itself;
+    - a wrong tree that stops before the lock.
+  - Result: **20 of 20 passed**. The run tree is built by applying patch 0001 to f266548, so its diff is d1388db0, as on the box.
+
+## The shared swap (2026-11-19 12:12–12:26)
+
+The maintainer approved it, through the top session: "Tak i porządki na git". The swap ran as the user unit `bc5-0433-swap` (`bake/run-swap0433.sh`: `int0433.sh`, then `smoke0433.sh`). Raw files are in `raw/swap/`.
+
+- **Before:** patch d1388db0, normal eb85d32e, lean 364c6146, archive 6eac453e, policy.cpp d5ae7298.
+- **After:**
+  - **patch 0001 59f00d27** (131 → 134 files, exp 0372 lines 5, the pad_audio_route header in);
+  - **archive 51db2c91**, the same md5 as the private test archive, so the rebuild reproduced it;
+  - **normal efc28a30**, 21 steps, 40 warnings;
+  - **lean d8b75137**, 21 steps, 43 warnings.
+- **Words:** `+[] -[]` in both builds. The shared builds never carried a `KYTY_BC5_P1_*` word.
+  - The 15 words of the switch form are gone with the bake: the 14 fix words and `KYTY_BC5_P1_HITS`.
+  - No `KYTY_BC5_P1_` text is in either binary.
+  - The 0x51 count line is in both builds; the hit-count line is in normal only.
+- **Smokes, all PASS, every one with 0 kernel lines, 0 crash lines and 0 pad keys:**
+  - **s433sc:** ASTRO BOT, lean, 200 s.
+  - **s433su:** the second title, lean, 300 s, the route by time; all 33 of 33 key lines done. Way 2 shows as compute engine time.
+  - **s433sn:** ASTRO BOT, normal, 200 s.
+    - It printed hit lines for 12 fixes: ALTSTACK, AMPR_RESULT, APR_FILE_ID, COND_SIGNAL_ONE, EQ_WAKE_ALL, FATAL_TO_ERROR, FAULT_MASK, FILE_UNBUFFERED, NO_COND_REGISTRY, PROT_RANGES, PTHREAD_KEYS and SEMA_UAF.
+    - AJM_GAPLESS and AMPR_FILTER did not run in ASTRO BOT's first 200 s. They did run in the second title (step 3b).
+    - No switch line was printed.
+- **Undo:** `bash ~/bc5-work/exp0433/bake/undo0433.sh` returns to d1388db0 (copies in `~/bc5-work/exp0433/swap`). One step further back is `~/bc5-work/exp0430/kitb/undo0430b.sh`.
+- **Repository:** `backend/kytyplus-patches/0001-bc5-lle-agc.patch` is now 59f00d27, the patch the shared builds were built from (D19). The switch form `0002-bc5-ports-pack1.patch` is removed, since the pack lives in 0001; the switch form stays in this branch's history (4cb69cb2, 605b5ff0).

@@ -5482,6 +5482,111 @@ index 0000000..226a60e
 +}
 +
 +} // namespace bc5::pad_audio_route
+diff --git a/src/bc5/ports_pack1.hpp b/src/bc5/ports_pack1.hpp
+new file mode 100644
+index 0000000..c7cce2d
+--- /dev/null
++++ b/src/bc5/ports_pack1.hpp
+@@ -0,0 +1,99 @@
++// SPDX-License-Identifier: GPL-2.0-only
++// Ports pack 1, BUILT IN (exp 0433, 2026-11-19): fixes ported from KytyPS5 (GPL-2.0) and AnyPS5 (GPL-2.0), every one
++// on, with no switch: the KYTY_BC5_P1_* words are gone and nothing reads the environment. A call site's
++// BC5_P1("KYTY_BC5_P1_<NAME>") is a constant `true`, so each site runs the path tested as arm P in exp 0433
++// (experiments/0433-ports-pack1/README.md: 12 fight runs and 2 ASTRO BOT runs, no cost outside run-to-run noise).
++// The site's old path is still in the source but can never be taken; the name is checked at compile time.
++//
++// Hit counts, normal build only (compiled out of the lean build with the rest of the diagnostics, exp 0419): a hit is
++// one pass of a fix's decision point, counted per thread and added to the global count in batches of 256 (the first 64
++// hits of a fix at once), so the count is a lower bound. A line is printed when a fix's count passes a power of two:
++//   [bc5] ports pack 1 hits: PTHREAD_KEYS 1024 (t 12.3 s)   (t: seconds since the first hit of any fix)
++#pragma once
++
++#include <atomic>
++#include <chrono>
++#include <cstdint>
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++
++namespace bc5::p1 {
++
++// The fixes of the pack, in the order of the per-fix table (experiments/0433-ports-pack1/README.md).
++inline constexpr const char* kNames[] = {
++    "EQ_WAKE_ALL",      // A1  AnyPS5 daad982457: equeue add/trigger wakes every waiter
++    "NO_COND_REGISTRY", // A2  KytyPS5 18a1e0fa: no global CondVar waiter registry
++    "FAULT_MASK",       // A3  KytyPS5 3b0a78a9: the fault handler masks the guest signal too
++    "SEMA_UAF",         // A6  AnyPS5 ff9a68aed4: semaphore delete waits for its waiters to leave
++    "AMPR_RESULT",      // B1  AnyPS5 23a0020ab1: submit does not overwrite the worker's result
++    "APR_FILE_ID",      // K1  KytyPS5 e43aadf7: APR file ids from a counter, not a path hash
++    "COND_SIGNAL_ONE",  // K2  KytyPS5 47b26e49: pthread_cond_signal wakes the chosen waiter only
++    "ALTSTACK",         // K6  KytyPS5 21124245/b61360a0: per-thread signal stacks
++    "PTHREAD_KEYS",     // K3  KytyPS5 733842ca: pthread key values per thread
++    "PROT_RANGES",      // K4  KytyPS5 73363f12: no per-page protection map
++    "FILE_UNBUFFERED",  // K7  KytyPS5 cbe5b629: unbuffered host file handles
++    "AJM_GAPLESS",      // R2a KytyPS5 2e315a3c/1cc0ac7e: AJM gapless control before codec init
++    "AMPR_FILTER",      // R2b KytyPS5 deb45a8b: APR completions on the AMPR filter (-25)
++    "FATAL_TO_ERROR",   // C   AnyPS5: error codes in place of host exits
++};
++
++inline constexpr int kCount = static_cast<int>(sizeof(kNames) / sizeof(kNames[0]));
++
++constexpr bool Same(const char* a, const char* b) {
++	while (*a != 0 && *a == *b) {
++		a++;
++		b++;
++	}
++	return *a == *b;
++}
++
++// "KYTY_BC5_P1_<NAME>" -> its index, at compile time (the call site's string is not in the binary); -1 if unknown.
++constexpr int Index(const char* word) {
++	const char* const prefix = "KYTY_BC5_P1_";
++	for (int k = 0; k < 12; k++) {
++		if (word[k] != prefix[k]) return -1;
++	}
++	for (int i = 0; i < kCount; i++) {
++		if (Same(kNames[i], word + 12)) return i;
++	}
++	return -1;
++}
++
++#ifdef BC5_LEAN
++inline void Hit(int) {}
++#else
++struct alignas(64) HitSlot {
++	std::atomic<uint64_t> n {0};
++};
++
++inline double Seconds() {
++	static const auto t0 = std::chrono::steady_clock::now();
++	return std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
++}
++
++inline void Hit(int i) {
++	static HitSlot g[kCount];
++	thread_local uint32_t pend[kCount] {};
++	uint32_t p = ++pend[i];
++	if (p < 256 && g[i].n.load(std::memory_order_relaxed) >= 64) return;
++	pend[i] = 0;
++	uint64_t before = g[i].n.fetch_add(p, std::memory_order_relaxed);
++	uint64_t after  = before + p;
++	if (before == 0 || (63 - __builtin_clzll(before)) != (63 - __builtin_clzll(after))) {
++		std::fprintf(stderr, "[bc5] ports pack 1 hits: %s %llu (t %.1f s)\n", kNames[i], static_cast<unsigned long long>(after),
++		             Seconds());
++	}
++}
++#endif
++
++} // namespace bc5::p1
++
++// Always true: the fix is built in. `name` must be one of the pack's words (checked at compile time).
++#define BC5_P1(name)                                                                                                   \
++	([] {                                                                                                              \
++		constexpr int bc5_p1_i = ::bc5::p1::Index(name);                                                              \
++		static_assert(bc5_p1_i >= 0, "BC5_P1: not a word of ports pack 1");                                           \
++		::bc5::p1::Hit(bc5_p1_i);                                                                                     \
++		return true;                                                                                                   \
++	}())
 diff --git a/src/bc5/save_guard0412.hpp b/src/bc5/save_guard0412.hpp
 new file mode 100644
 index 0000000..d3d8b9f
@@ -6390,15 +6495,25 @@ index 15a98b9..0e3d63d 100644
  
  bool SpirvDebugPrintfEnabled() {
 diff --git a/src/common/hostException.cpp b/src/common/hostException.cpp
-index 5e62c75..1eeb7b1 100644
+index 5e62c75..5c97232 100644
 --- a/src/common/hostException.cpp
 +++ b/src/common/hostException.cpp
-@@ -1,3 +1,4 @@
+@@ -1,4 +1,6 @@
 +#include "bc5/env_rule.hpp" // exp 0419 (build W): BC5_DIAG_ENV, BC5_FIXED_ENV, BC5_LEAN_OR
  #include "common/hostException.h"
++#include "bc5/ports_pack1.hpp" // ports pack 1: A3, K6
  
  #include <atomic>
-@@ -395,6 +396,46 @@ static void SignalHandler(int signal_number, siginfo_t* signal_info, void* nativ
+ #include <cstdio>
+@@ -15,6 +17,7 @@
+ #include <csignal>
+ #include <initializer_list>
+ #include <sys/types.h>
++#include <atomic> // ports pack 1, K6
+ #include <ucontext.h> // IWYU pragma: keep
+ #include <unistd.h>
+ #endif
+@@ -395,6 +398,101 @@ static void SignalHandler(int signal_number, siginfo_t* signal_info, void* nativ
  
  #endif
  
@@ -6442,17 +6557,102 @@ index 5e62c75..1eeb7b1 100644
 +}
 +#endif
 +
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++// ports pack 1, K6 (KytyPS5 21124245, GPL-2.0, hostException.cpp:169-207): a per-thread alternate signal stack.
++// BC5 change: 256 KiB, not upstream's 64 KiB, because our fault path also writes exp 0412's fault record; and a
++// failure is reported once and the thread keeps running on its own stack (upstream ends the process).
++namespace {
++class Bc5ThreadSignalStack {
++public:
++	Bc5ThreadSignalStack() {
++		const auto page_size  = static_cast<size_t>(::getpagesize());
++		const auto want       = static_cast<size_t>(256 * 1024) > static_cast<size_t>(MINSIGSTKSZ) ? static_cast<size_t>(256 * 1024)
++		                                                                                       : static_cast<size_t>(MINSIGSTKSZ);
++		const auto stack_size = (want + page_size - 1) & ~(page_size - 1);
++		if (::posix_memalign(&m_memory, page_size, stack_size) != 0) {
++			m_memory = nullptr;
++			return;
++		}
++		stack_t stack {};
++		stack.ss_sp   = m_memory;
++		stack.ss_size = stack_size;
++		if (::sigaltstack(&stack, &m_previous) != 0) {
++			std::free(m_memory);
++			m_memory = nullptr;
++		}
++	}
++	~Bc5ThreadSignalStack() {
++		if (m_memory != nullptr && ::sigaltstack(&m_previous, nullptr) == 0) {
++			std::free(m_memory);
++		}
++	}
++	Bc5ThreadSignalStack(const Bc5ThreadSignalStack&)            = delete;
++	Bc5ThreadSignalStack& operator=(const Bc5ThreadSignalStack&) = delete;
++	[[nodiscard]] bool IsInitialized() const { return m_memory != nullptr; }
++
++private:
++	void*   m_memory = nullptr;
++	stack_t m_previous {};
++};
++} // namespace
++
++bool InitializeThreadSignalStack() {
++	if (!BC5_P1("KYTY_BC5_P1_ALTSTACK")) {
++		return true;
++	}
++	thread_local Bc5ThreadSignalStack signal_stack;
++	if (!signal_stack.IsInitialized()) {
++		static std::atomic<bool> told {false};
++		if (!told.exchange(true)) {
++			std::fprintf(stderr, "[bc5] ports pack 1 K6: sigaltstack failed for a thread; it handles faults on its own stack\n");
++		}
++		return false;
++	}
++	return true;
++}
++#endif
++
  bool InstallHandler(Handler handler) {
  	if (handler == nullptr) {
  		return false;
-@@ -441,6 +482,7 @@ bool InstallHandler(Handler handler) {
+@@ -440,7 +538,21 @@ bool InstallHandler(Handler handler) {
+ 	sigemptyset(&action.sa_mask);
  	// Fault resolution needs the normal thread stack.
  	action.sa_flags = SA_SIGINFO | SA_RESTART;
++	// ports pack 1, A3 (KytyPS5 3b0a78a9, GPL-2.0, hostException.cpp:235-237): the guest signal-dispatch signal
++	// (SIGRTMIN+3 on Linux, libKernel.cpp SignalDispatchHostSignal) is blocked while a fault is resolved, so a
++	// KernelRaiseException cannot run the guest's handler between the protection fix and the retry. Only the macOS
++	// branch above had this (with SIGUSR1). Before the pack: an empty mask as before.
++	if (BC5_P1("KYTY_BC5_P1_FAULT_MASK")) {
++		sigaddset(&action.sa_mask, SIGRTMIN + 3);
++	}
++	// ports pack 1, K6 (KytyPS5 21124245, GPL-2.0, hostException.cpp:316-319): the fault handler runs on the thread's
++	// alternate signal stack when it has one (InitializeThreadSignalStack, set up by each guest thread), so a fault
++	// on an exhausted or read-only guest stack is still handled and recorded. Before the pack: no SA_ONSTACK.
++	if (BC5_P1("KYTY_BC5_P1_ALTSTACK")) {
++		action.sa_flags |= SA_ONSTACK;
++	}
  
 +	Bc5TrapLogInstall(); // exp 0412 (tag ff412)
  	for (const int signal_number: {SIGSEGV, SIGBUS, SIGILL}) {
  		if (::sigaction(signal_number, &action, nullptr) != 0) {
  			g_handler.store(nullptr, std::memory_order_release);
+diff --git a/src/common/hostException.h b/src/common/hostException.h
+index 5464768..4f8575f 100644
+--- a/src/common/hostException.h
++++ b/src/common/hostException.h
+@@ -42,6 +42,11 @@ using Handler = bool (*)(const ExceptionInfo&);
+ 
+ bool InstallHandler(Handler handler);
+ 
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++// ports pack 1, K6 (KytyPS5 21124245): sets up this thread's alternate signal stack once; false if that failed.
++bool InitializeThreadSignalStack();
++#endif
++
+ // ---------------------------------------------------------------------------
+ // Async-signal-safe raw formatter.
+ //
 diff --git a/src/common/logging/log.cpp b/src/common/logging/log.cpp
 index e4e2434..7332d7a 100644
 --- a/src/common/logging/log.cpp
@@ -6545,10 +6745,18 @@ index 3ce29cf..0df082c 100644
  void      Write(fmt::text_style style, std::string_view text);
  void      WriteFatal(std::string_view text);
 diff --git a/src/common/platform/sysLinuxFileIO.cpp b/src/common/platform/sysLinuxFileIO.cpp
-index 0a6ef8b..97b2614 100644
+index 0a6ef8b..9406874 100644
 --- a/src/common/platform/sysLinuxFileIO.cpp
 +++ b/src/common/platform/sysLinuxFileIO.cpp
-@@ -53,7 +53,7 @@ struct sys_file_t {
+@@ -8,6 +8,7 @@
+ #include "common/platform/sysFileIO.h"
+ #include "common/platform/sysTimer.h"
+ #include "common/stringUtils.h"
++#include "bc5/ports_pack1.hpp" // ports pack 1: K7
+ 
+ #include <cerrno>
+ #include <cstdlib>
+@@ -53,7 +54,7 @@ struct sys_file_t {
  #endif
  
  static std::filesystem::path get_internal_name(const std::filesystem::path& name) {
@@ -6557,8 +6765,57 @@ index 0a6ef8b..97b2614 100644
  }
  
  // Pass access-pattern hints to the host.
+@@ -155,6 +156,16 @@ void SysFileWrite(uint32_t n, sys_file_t& f) {
+ 	SysFileWrite(&n, 4, f);
+ }
+ 
++// ports pack 1, K7 (KytyPS5 cbe5b629, GPL-2.0, sysLinuxFileIO.cpp:155-166 OpenHostFile): host files are opened
++// unbuffered, so independent handles of one file see each other's writes and truncation at once (a stdio buffer let
++// a second descriptor read stale bytes). Cost: every small fread/fwrite is a system call; APR reads do not come here
++// (exp 0415's pread path). Before the pack: stdio's default buffering as before.
++static void Bc5P1Unbuffered(FILE* f) {
++	if (f != nullptr && BC5_P1("KYTY_BC5_P1_FILE_UNBUFFERED")) {
++		setvbuf(f, nullptr, _IONBF, 0);
++	}
++}
++
+ sys_file_t* SysFileCreate(const std::filesystem::path& file_name) {
+ 	auto* ret = new sys_file_t;
+ 
+@@ -162,6 +173,7 @@ sys_file_t* SysFileCreate(const std::filesystem::path& file_name) {
+ 	auto real_name_str = real_name.string();
+ 
+ 	ret->f = fopen(real_name_str.c_str(), "w+");
++	Bc5P1Unbuffered(ret->f); // ports pack 1, K7
+ 
+ 	if (ret->f == nullptr) {
+ 		printf("can't create file: %s\n", real_name_str.c_str());
+@@ -186,6 +198,7 @@ sys_file_t* SysFileOpenR(const std::filesystem::path& file_name, sys_file_cache_
+ 		ret->type = SYS_FILE_ERROR;
+ 	}
+ 
++	Bc5P1Unbuffered(f); // ports pack 1, K7
+ 	apply_cache_hint(f, cache_type);
+ 
+ 	ret->f = f;
+@@ -231,6 +244,7 @@ sys_file_t* SysFileOpenW(const std::filesystem::path& file_name, sys_file_cache_
+ 		ret->type = SYS_FILE_FILE;
+ 	}
+ 
++	Bc5P1Unbuffered(f); // ports pack 1, K7
+ 	apply_cache_hint(f, cache_type);
+ 
+ 	ret->f = f;
+@@ -253,6 +267,7 @@ sys_file_t* SysFileOpenRw(const std::filesystem::path& file_name,
+ 		ret->type = SYS_FILE_FILE;
+ 	}
+ 
++	Bc5P1Unbuffered(f); // ports pack 1, K7
+ 	apply_cache_hint(f, cache_type);
+ 
+ 	ret->f = f;
 diff --git a/src/common/platform/sysLinuxVirtual.cpp b/src/common/platform/sysLinuxVirtual.cpp
-index 7225e2e..4bd352c 100644
+index 7225e2e..e94787a 100644
 --- a/src/common/platform/sysLinuxVirtual.cpp
 +++ b/src/common/platform/sysLinuxVirtual.cpp
 @@ -1,3 +1,4 @@
@@ -6566,15 +6823,19 @@ index 7225e2e..4bd352c 100644
  #include "common/common.h"
  
  #if KYTY_PLATFORM != KYTY_PLATFORM_LINUX
-@@ -7,6 +8,7 @@
+@@ -7,8 +8,11 @@
  #include "common/assert.h"
  #include "common/platform/sysVirtual.h"
  #include "common/virtualMemory.h"
 +#include "bc5/anon_sync.hpp" // experiment 0415 (as415c)
++#include "bc5/ports_pack1.hpp" // ports pack 1: K4
  
  #include <atomic>
++#include <cstdio> // ports pack 1, K4: /proc/self/maps
  #include <map>
-@@ -65,6 +67,9 @@ static int get_protection_flag(VirtualMemory::Mode mode) {
+ #include <pthread.h>
+ #include <sys/mman.h>
+@@ -65,9 +69,49 @@ static int get_protection_flag(VirtualMemory::Mode mode) {
  		case VirtualMemory::Mode::NoAccess:
  		default: protect = PROT_NONE; break;
  	}
@@ -6584,7 +6845,47 @@ index 7225e2e..4bd352c 100644
  	return protect;
  }
  
-@@ -122,10 +127,18 @@ static uintptr_t align_up_to(uintptr_t addr, uint64_t alignment) {
++// ports pack 1, K4 (KytyPS5 73363f12, GPL-2.0, "memory: remove per-page host protection bookkeeping",
++// src/common/platform/sysLinuxVirtual.cpp hunks @@-161, -251, -337, -516, -582): g_protects held one std::map node per
++// 4 KiB page, written on every alloc, protect and free under g_virtual_mutex (a 1 GiB alloc: 262,144 nodes, ~12 MiB
++// and the global lock held for the loop). Its only reader is SysVirtualProtect's old_mode, and no caller in this tree
++// asks for it (VirtualMemory::Protect is called with three arguments in memoryAddressSpace.inc:924 and :1035; the
++// guest's ProtectGuestMemory takes its old mode from its own range table, memory.cpp). With the switch on the map is
++// not kept. BC5 change: upstream also drops the old_mode parameter; we keep it, and a caller that asks gets the answer
++// from /proc/self/maps (Bc5P1KernelProt below), so the answer stays the real one.
++// Before the pack: the per-page map as before.
++static bool Bc5P1ProtRanges() {
++	return BC5_P1("KYTY_BC5_P1_PROT_RANGES");
++}
++
++// The protection of the page holding `addr` as the kernel has it, PROT_* bits; PROT_NONE when not mapped or unreadable.
++static int Bc5P1KernelProt(uintptr_t addr) {
++	int         prot = PROT_NONE;
++	std::FILE* f    = std::fopen("/proc/self/maps", "r");
++	if (f == nullptr) {
++		return prot;
++	}
++	char line[512];
++	while (std::fgets(line, sizeof(line), f) != nullptr) {
++		unsigned long long lo = 0;
++		unsigned long long hi = 0;
++		char               perms[5] {};
++		if (std::sscanf(line, "%llx-%llx %4s", &lo, &hi, perms) != 3) {
++			continue;
++		}
++		if (addr >= lo && addr < hi) {
++			prot = (perms[0] == 'r' ? PROT_READ : 0) | (perms[1] == 'w' ? PROT_WRITE : 0) | (perms[2] == 'x' ? PROT_EXEC : 0);
++			break;
++		}
++	}
++	std::fclose(f);
++	return prot;
++}
++
+ static VirtualMemory::Mode get_protection_flag(int mode) {
+ 	switch (mode) {
+ 		case PROT_NONE: return VirtualMemory::Mode::NoAccess;
+@@ -122,10 +166,18 @@ static uintptr_t align_up_to(uintptr_t addr, uint64_t alignment) {
  }
  #endif
  
@@ -6604,7 +6905,7 @@ index 7225e2e..4bd352c 100644
  	}
  
  #ifdef KYTY_FIXED_NOREPLACE
-@@ -136,7 +149,7 @@ static void* map_anonymous(uintptr_t addr, size_t size, int protect, int flags)
+@@ -136,7 +188,7 @@ static void* map_anonymous(uintptr_t addr, size_t size, int protect, int flags)
  			break;
  		}
  		const auto hint = (top - step) & ~(LOW_ARENA_GRAIN - 1);
@@ -6613,7 +6914,7 @@ index 7225e2e..4bd352c 100644
  		                 -1, 0); // NOLINT
  		if (ptr != MAP_FAILED) {
  			return ptr;
-@@ -144,7 +157,7 @@ static void* map_anonymous(uintptr_t addr, size_t size, int protect, int flags)
+@@ -144,7 +196,7 @@ static void* map_anonymous(uintptr_t addr, size_t size, int protect, int flags)
  	}
  #endif
  
@@ -6622,7 +6923,21 @@ index 7225e2e..4bd352c 100644
  }
  
  uint64_t SysVirtualAlloc(uint64_t address, uint64_t size, VirtualMemory::Mode mode) {
-@@ -205,7 +218,7 @@ uint64_t SysVirtualAllocAligned(uint64_t address, uint64_t size, VirtualMemory::
+@@ -161,11 +213,13 @@ uint64_t SysVirtualAlloc(uint64_t address, uint64_t size, VirtualMemory::Mode mo
+ 	if (ptr != MAP_FAILED) {
+ 		pthread_mutex_lock(&g_virtual_mutex);
+ 		record_alloc(ret_addr, size);
++		if (!Bc5P1ProtRanges()) { // ports pack 1, K4
+ 		uintptr_t page_start = ret_addr >> 12u;
+ 		uintptr_t page_end   = (ret_addr + size - 1) >> 12u;
+ 		for (uintptr_t page = page_start; page <= page_end; page++) {
+ 			(*g_protects)[page] = protect;
+ 		}
++		}
+ 		pthread_mutex_unlock(&g_virtual_mutex);
+ 	}
+ 
+@@ -205,7 +259,7 @@ uint64_t SysVirtualAllocAligned(uint64_t address, uint64_t size, VirtualMemory::
  			// destroyed by the MAP_FIXED. Other platforms keep the original path below.
  			auto aligned_addr = align_up(ret_addr, alignment);
  			// NOLINTNEXTLINE
@@ -6631,7 +6946,7 @@ index 7225e2e..4bd352c 100644
  			                   MAP_FIXED | MAP_PRIVATE | MAP_ANON, -1, 0);
  			if (fixed == MAP_FAILED) {
  				munmap(ptr, size + alignment);
-@@ -228,11 +241,11 @@ uint64_t SysVirtualAllocAligned(uint64_t address, uint64_t size, VirtualMemory::
+@@ -228,11 +282,11 @@ uint64_t SysVirtualAllocAligned(uint64_t address, uint64_t size, VirtualMemory::
  			auto aligned_addr = align_up(ret_addr, alignment);
  #ifdef KYTY_FIXED_NOREPLACE
  			// NOLINTNEXTLINE
@@ -6645,7 +6960,21 @@ index 7225e2e..4bd352c 100644
  			           MAP_FIXED | MAP_PRIVATE | MAP_ANON, -1, 0);
  #endif
  			ret_addr = reinterpret_cast<uintptr_t>(ptr);
-@@ -316,13 +329,13 @@ bool SysVirtualAllocFixed(uint64_t address, uint64_t size, VirtualMemory::Mode m
+@@ -251,11 +305,13 @@ uint64_t SysVirtualAllocAligned(uint64_t address, uint64_t size, VirtualMemory::
+ 
+ 	pthread_mutex_lock(&g_virtual_mutex);
+ 	record_alloc(ret_addr, size);
++	if (!Bc5P1ProtRanges()) { // ports pack 1, K4
+ 	uintptr_t page_start = ret_addr >> 12u;
+ 	uintptr_t page_end   = (ret_addr + size - 1) >> 12u;
+ 	for (uintptr_t page = page_start; page <= page_end; page++) {
+ 		(*g_protects)[page] = protect;
+ 	}
++	}
+ 	pthread_mutex_unlock(&g_virtual_mutex);
+ 
+ 	return ret_addr;
+@@ -316,13 +372,13 @@ bool SysVirtualAllocFixed(uint64_t address, uint64_t size, VirtualMemory::Mode m
  
  #ifdef KYTY_FIXED_NOREPLACE
  	// NOLINTNEXTLINE
@@ -6661,7 +6990,21 @@ index 7225e2e..4bd352c 100644
  	                        MAP_FIXED | MAP_PRIVATE | MAP_ANON, -1, 0));
  #endif
  
-@@ -386,7 +399,7 @@ uint64_t SysVirtualReserveAligned(uint64_t address, uint64_t size, uint64_t alig
+@@ -337,11 +393,13 @@ bool SysVirtualAllocFixed(uint64_t address, uint64_t size, VirtualMemory::Mode m
+ 	if (ptr != MAP_FAILED) {
+ 		pthread_mutex_lock(&g_virtual_mutex);
+ 		record_alloc(ret_addr, size);
++		if (!Bc5P1ProtRanges()) { // ports pack 1, K4
+ 		uintptr_t page_start = ret_addr >> 12u;
+ 		uintptr_t page_end   = (ret_addr + size - 1) >> 12u;
+ 		for (uintptr_t page = page_start; page <= page_end; page++) {
+ 			(*g_protects)[page] = protect;
+ 		}
++		}
+ 		pthread_mutex_unlock(&g_virtual_mutex);
+ 
+ 		return true;
+@@ -386,7 +444,7 @@ uint64_t SysVirtualReserveAligned(uint64_t address, uint64_t size, uint64_t alig
  			// destroy its mapping. Other platforms keep the original path below.
  			auto aligned_addr = align_up(ret_addr, alignment);
  			// NOLINTNEXTLINE
@@ -6670,7 +7013,7 @@ index 7225e2e..4bd352c 100644
  			                   MAP_FIXED | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0);
  			if (fixed == MAP_FAILED) {
  				munmap(ptr, size + alignment);
-@@ -409,11 +422,11 @@ uint64_t SysVirtualReserveAligned(uint64_t address, uint64_t size, uint64_t alig
+@@ -409,11 +467,11 @@ uint64_t SysVirtualReserveAligned(uint64_t address, uint64_t size, uint64_t alig
  			auto aligned_addr = align_up(ret_addr, alignment);
  #ifdef KYTY_FIXED_NOREPLACE
  			// NOLINTNEXTLINE
@@ -6684,7 +7027,7 @@ index 7225e2e..4bd352c 100644
  			           MAP_FIXED | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0);
  #endif
  			ret_addr = reinterpret_cast<uintptr_t>(ptr);
-@@ -444,13 +457,13 @@ bool SysVirtualReserveFixed(uint64_t address, uint64_t size) {
+@@ -444,13 +502,13 @@ bool SysVirtualReserveFixed(uint64_t address, uint64_t size) {
  
  #ifdef KYTY_FIXED_NOREPLACE
  	// NOLINTNEXTLINE
@@ -6700,11 +7043,46 @@ index 7225e2e..4bd352c 100644
  	                        MAP_FIXED | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0));
  #endif
  
-@@ -607,6 +620,7 @@ bool SysVirtualProtect(uint64_t address, uint64_t size, VirtualMemory::Mode mode
+@@ -517,6 +575,9 @@ bool SysVirtualFree(uint64_t address) {
+ 	}
+ 
+ 	if (munmap(reinterpret_cast<void*>(addr), size) == 0) {
++		if (Bc5P1ProtRanges()) { // ports pack 1, K4: no per-page map to clean
++			return true;
++		}
+ 		uintptr_t page_start = addr >> 12u;
+ 		uintptr_t page_end   = (addr + size - 1) >> 12u;
+ 		pthread_mutex_lock(&g_virtual_mutex);
+@@ -582,7 +643,7 @@ bool SysVirtualFreeRange(uint64_t address, uint64_t size) {
+ 	if (end < alloc_end) {
+ 		(*g_allocs)[end] = alloc_end - end;
+ 	}
+-	for (uintptr_t page = addr >> 12u; page <= (end - 1u) >> 12u; page++) {
++	for (uintptr_t page = addr >> 12u; !Bc5P1ProtRanges() && page <= (end - 1u) >> 12u; page++) { // ports pack 1, K4
+ 		g_protects->erase(page);
+ 	}
+ 	pthread_mutex_unlock(&g_virtual_mutex);
+@@ -593,8 +654,11 @@ bool SysVirtualProtect(uint64_t address, uint64_t size, VirtualMemory::Mode mode
+                        VirtualMemory::Mode* old_mode) {
+ 	auto addr = static_cast<uintptr_t>(address);
+ 
++	if (old_mode != nullptr && Bc5P1ProtRanges()) { // ports pack 1, K4: ask the kernel, not the map
++		*old_mode = get_protection_flag(Bc5P1KernelProt(addr));
++	}
+ 	pthread_mutex_lock(&g_virtual_mutex);
+-	if (old_mode != nullptr) {
++	if (old_mode != nullptr && !Bc5P1ProtRanges()) {
+ 		if (auto s = g_protects->find(addr >> 12u); s != g_protects->end()) {
+ 			*old_mode = get_protection_flag(s->second);
+ 		} else {
+@@ -607,6 +671,10 @@ bool SysVirtualProtect(uint64_t address, uint64_t size, VirtualMemory::Mode mode
  	uintptr_t page_end   = (addr + size - 1) >> 12u;
  	if (mprotect(reinterpret_cast<void*>(page_start << 12u), (page_end - page_start + 1) << 12u,
  	             get_protection_flag(mode)) == 0) {
 +		bc5::anon_sync::note(static_cast<uint64_t>(page_start) << 12u, static_cast<uint64_t>(page_end - page_start + 1) << 12u, (get_protection_flag(mode) & PROT_READ) != 0); // experiment 0415 (as415c)
++		if (Bc5P1ProtRanges()) { // ports pack 1, K4: no per-page map
++			return true;
++		}
  		pthread_mutex_lock(&g_virtual_mutex);
  		for (uintptr_t page = page_start; page <= page_end; page++) {
  			(*g_protects)[page] = get_protection_flag(mode);
@@ -6731,15 +7109,43 @@ index a84e308..a13c65f 100644
 +
  #endif /* KYTY_COMMON_PROFILER_H_ */
 diff --git a/src/common/threads.cpp b/src/common/threads.cpp
-index c0b4bbe..1870594 100644
+index c0b4bbe..eb70aa3 100644
 --- a/src/common/threads.cpp
 +++ b/src/common/threads.cpp
-@@ -1,3 +1,4 @@
+@@ -1,4 +1,6 @@
 +#include <pthread.h>
  #include "common/threads.h"
++#include "bc5/ports_pack1.hpp" // ports pack 1: A2
  
  #include "common/assert.h"
-@@ -234,6 +235,10 @@ struct ThreadPrivate {
+ #include "common/debug.h"
+@@ -212,12 +214,25 @@ static void WakeCondVar(CondVarPrivate* cond_var) {
+ #endif
+ }
+ 
++// ports pack 1, A2 (KytyPS5 18a1e0fa, GPL-2.0): no global registry of CondVar waiters. Every wait took the registry's
++// global mutex twice, and the registry deadlocked exception delivery upstream; the guest's own wake for a signal is
++// PthreadWakeForSignal, which stays. Before the pack: the registry and SignalThread as before.
++static bool Bc5P1NoRegistry() {
++	return BC5_P1("KYTY_BC5_P1_NO_COND_REGISTRY");
++}
++
+ static void RegisterCondWaiter(CondVarPrivate* cond_var) {
++	if (Bc5P1NoRegistry()) {
++		return;
++	}
+ 	std::lock_guard lock(g_cond_waiters_mutex);
+ 	g_cond_waiters.emplace_back(Thread::GetThreadIdUnique(), cond_var);
+ }
+ 
+ static void UnregisterCondWaiter(CondVarPrivate* cond_var) {
++	if (Bc5P1NoRegistry()) {
++		return;
++	}
+ 	const auto      thread_id = Thread::GetThreadIdUnique();
+ 	std::lock_guard lock(g_cond_waiters_mutex);
+ 
+@@ -234,6 +249,10 @@ struct ThreadPrivate {
  	ThreadPrivate(thread_func_t f, void* a): func(f), arg(a), m_thread(&Run, this) {}
  
  	static void Run(ThreadPrivate* t) {
@@ -6750,6 +7156,16 @@ index c0b4bbe..1870594 100644
  		t->unique_id = Thread::GetThreadIdUnique();
  		t->started   = true;
  		t->func(t->arg);
+@@ -454,6 +473,9 @@ void CondVar::SignalAll() {
+ }
+ 
+ void CondVar::SignalThread(int thread_id) {
++	if (Bc5P1NoRegistry()) {
++		return;
++	}
+ 	std::lock_guard lock(g_cond_waiters_mutex);
+ 	for (const auto& waiter: g_cond_waiters) {
+ 		if (waiter.first == thread_id) {
 diff --git a/src/emulator.cpp b/src/emulator.cpp
 index 1d2b7e1..84c37ac 100644
 --- a/src/emulator.cpp
@@ -15147,11 +15563,12 @@ index c729a98..15d002f 100644
  #if defined(__APPLE__)
  	// AppKit traps on title changes off the main thread; fire-and-forget keeps present pacing.
 diff --git a/src/kernel/eventQueue.cpp b/src/kernel/eventQueue.cpp
-index 14561b0..944a1f8 100644
+index 14561b0..2d205a3 100644
 --- a/src/kernel/eventQueue.cpp
 +++ b/src/kernel/eventQueue.cpp
-@@ -1,8 +1,16 @@
+@@ -1,8 +1,17 @@
 +#include "bc5/env_rule.hpp" // exp 0419 (build W): BC5_DIAG_ENV, BC5_FIXED_ENV, BC5_LEAN_OR
++#include "bc5/ports_pack1.hpp" // ports pack 1: A1, R2b
 +#include <atomic>
 +#include <chrono>
 +#include <cinttypes>
@@ -15167,7 +15584,7 @@ index 14561b0..944a1f8 100644
  #include "common/stringUtils.h"
  #include "common/threads.h"
  #include "common/timer.h"
-@@ -14,9 +22,16 @@
+@@ -14,9 +23,16 @@
  #include <fmt/format.h>
  #include <limits>
  #include <list>
@@ -15184,7 +15601,7 @@ index 14561b0..944a1f8 100644
  namespace Libs::LibKernel::EventQueue {
  
  LIB_NAME("libkernel", "libkernel");
-@@ -36,6 +51,87 @@ static std::unordered_map<KernelEqueue, KernelEqueueRef> g_equeues;
+@@ -36,6 +52,87 @@ static std::unordered_map<KernelEqueue, KernelEqueueRef> g_equeues;
  static Common::Mutex                                     g_equeues_mutex;
  static uint64_t                                          g_next_equeue = 1;
  
@@ -15272,7 +15689,7 @@ index 14561b0..944a1f8 100644
  class KernelEqueuePrivate {
  public:
  	explicit KernelEqueuePrivate(KernelEqueue handle): m_handle(handle) {}
-@@ -51,12 +147,14 @@ public:
+@@ -51,12 +148,14 @@ public:
  	int DeleteEvent(uintptr_t ident, int16_t filter);
  
  	int  GetTriggeredEvents(KernelEvent* ev, int num);
@@ -15287,7 +15704,7 @@ index 14561b0..944a1f8 100644
  
  	std::list<KernelEqueueEvent> m_events;
  	Common::Mutex                m_mutex;
-@@ -64,6 +162,9 @@ private:
+@@ -64,6 +163,9 @@ private:
  	std::string                  m_name;
  	KernelEqueue                 m_handle = KERNEL_EQUEUE_INVALID;
  	bool                         m_closed = false;
@@ -15297,7 +15714,7 @@ index 14561b0..944a1f8 100644
  };
  
  KernelEqueuePrivate::~KernelEqueuePrivate() {
-@@ -98,12 +199,13 @@ int KernelEqueuePrivate::GetTriggeredEvents(KernelEvent* ev, int num) {
+@@ -98,12 +200,13 @@ int KernelEqueuePrivate::GetTriggeredEvents(KernelEvent* ev, int num) {
  	TriggerExpiredTimers(MonotonicTimeNs());
  
  	int ret = 0;
@@ -15312,7 +15729,7 @@ index 14561b0..944a1f8 100644
  			if ((event.event.flags & EV_ONESHOT) != 0) {
  				erase = true;
  				break;
-@@ -121,6 +223,10 @@ int KernelEqueuePrivate::GetTriggeredEvents(KernelEvent* ev, int num) {
+@@ -121,6 +224,10 @@ int KernelEqueuePrivate::GetTriggeredEvents(KernelEvent* ev, int num) {
  				event.event = event.pending_events.front();
  				event.pending_events.pop_front();
  				event.triggered = true;
@@ -15323,7 +15740,7 @@ index 14561b0..944a1f8 100644
  			}
  
  			if (ret >= num) {
-@@ -137,6 +243,9 @@ int KernelEqueuePrivate::GetTriggeredEvents(KernelEvent* ev, int num) {
+@@ -137,6 +244,9 @@ int KernelEqueuePrivate::GetTriggeredEvents(KernelEvent* ev, int num) {
  }
  
  void KernelEqueuePrivate::TriggerExpiredTimers(uint64_t now_ns) {
@@ -15333,7 +15750,7 @@ index 14561b0..944a1f8 100644
  	for (auto& event: m_events) {
  		if (!event.triggered && event.deadline_ns != 0 && event.deadline_ns <= now_ns) {
  			event.triggered = true;
-@@ -144,6 +253,27 @@ void KernelEqueuePrivate::TriggerExpiredTimers(uint64_t now_ns) {
+@@ -144,6 +254,27 @@ void KernelEqueuePrivate::TriggerExpiredTimers(uint64_t now_ns) {
  	}
  }
  
@@ -15361,10 +15778,33 @@ index 14561b0..944a1f8 100644
  bool KernelEqueuePrivate::GetNextTimerWaitMicros(uint64_t now_ns, uint32_t* wait_micros) const {
  	EXIT_IF(wait_micros == nullptr);
  
-@@ -222,6 +352,35 @@ int KernelEqueuePrivate::AddEvent(const KernelEqueueEvent& event) {
- 	return OK;
+@@ -163,6 +294,17 @@ bool KernelEqueuePrivate::GetNextTimerWaitMicros(uint64_t now_ns, uint32_t* wait
+ 	return true;
  }
  
++// ports pack 1, A1 (AnyPS5 daad982457, GPL-2.0): an event added or triggered wakes EVERY thread waiting on this queue.
++// With Signal() one waiter woke and the others slept to their timeout or for ever, though GetTriggeredEvents could hand
++// each of them the event (several guest threads on one equeue). Before the pack: the old wake-one.
++static void Bc5P1Wake(Common::CondVar* cv) {
++	if (BC5_P1("KYTY_BC5_P1_EQ_WAKE_ALL")) {
++		cv->SignalAll();
++	} else {
++		cv->Signal();
++	}
++}
++
+ int KernelEqueuePrivate::WaitForEvents(KernelEvent* ev, int num, uint32_t micros) {
+ 	Common::LockGuard lock(m_mutex);
+ 
+@@ -218,7 +360,36 @@ int KernelEqueuePrivate::AddEvent(const KernelEqueueEvent& event) {
+ 		m_events.push_back(event);
+ 	}
+ 
+-	m_cond_var.Signal();
++	Bc5P1Wake(&m_cond_var);
++	return OK;
++}
++
 +// exp 0401 series e5 (eq0405, KYTY_BC5_EQUEUE_FIXES kk01; KytyPS5 dfec14a kernel/eventQueue.cpp:210-234): AddEvent for a
 +// periodic timer. A re-add of a live timer first counts the periods that ran out under its old setting, then takes the
 +// new deadline, period and udata; the period goes to the side table.
@@ -15390,14 +15830,20 @@ index 14561b0..944a1f8 100644
 +	}
 +	m_bc5_timer_period_ns[event.event.ident] = period_ns;
 +
-+	m_cond_var.Signal();
-+	return OK;
-+}
-+
- int KernelEqueuePrivate::TriggerEvent(uintptr_t ident, int16_t filter, void* trigger_data) {
- 	Common::LockGuard lock(m_mutex);
++	Bc5P1Wake(&m_cond_var);
+ 	return OK;
+ }
  
-@@ -255,12 +414,68 @@ static void UserEventTriggerFunc(KernelEqueueEvent* event, void* trigger_data) {
+@@ -240,7 +411,7 @@ int KernelEqueuePrivate::TriggerEvent(uintptr_t ident, int16_t filter, void* tri
+ 			event.triggered = true;
+ 		}
+ 
+-		m_cond_var.Signal();
++		Bc5P1Wake(&m_cond_var);
+ 
+ 		return OK;
+ 	}
+@@ -255,12 +426,75 @@ static void UserEventTriggerFunc(KernelEqueueEvent* event, void* trigger_data) {
  	event->event.udata = trigger_data;
  }
  
@@ -15405,7 +15851,14 @@ index 14561b0..944a1f8 100644
 +// AnyPS5 (github.com/boykopovar/AnyPS5 f145139, core/libs/prx/libkernel/Equeue/Equeue.hpp,
 +// GPL-2.0) uses EVFILT_AMPR = -25.
 +// TODO(verify): the console's value.
++// ports pack 1, exp 0405 R2 KK15 (KytyPS5 deb45a8b, GPL-2.0, eventQueue.h:21 KERNEL_EVFILT_AMPR = -25 and its use in
++// KernelAddAmprEvent/KernelDeleteAmprEvent and libAmpr's completion trigger): AMPR completions carry EVFILT_AMPR (-25),
++// so an AMPR id can no longer meet a user event with the same ident on the same queue (both on EVFILT_USER, the trigger
++// or delete of one hit the other). KytyPS5 and AnyPS5 agree on -25. Before the pack: EVFILT_USER as before.
 +int16_t AmprEventFilter() {
++	if (BC5_P1("KYTY_BC5_P1_AMPR_FILTER")) {
++		return static_cast<int16_t>(-25);
++	}
 +	return static_cast<int16_t>(KERNEL_EVFILT_USER);
 +}
 +
@@ -15467,7 +15920,7 @@ index 14561b0..944a1f8 100644
  	} else {
  		event->event     = triggered_event;
  		event->triggered = true;
-@@ -293,6 +508,9 @@ int KernelEqueuePrivate::DeleteEvent(uintptr_t ident, int16_t filter) {
+@@ -293,6 +527,9 @@ int KernelEqueuePrivate::DeleteEvent(uintptr_t ident, int16_t filter) {
  			event.filter.delete_event_func(m_handle, &event);
  		}
  
@@ -15477,7 +15930,7 @@ index 14561b0..944a1f8 100644
  		m_events.erase(it);
  
  		return OK;
-@@ -396,19 +614,20 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
+@@ -396,19 +633,20 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
  		return KERNEL_ERROR_EFAULT;
  	}
  
@@ -15505,7 +15958,7 @@ index 14561b0..944a1f8 100644
  	if (timo == nullptr) {
  		*out = owner->WaitForEvents(ev, num, 0);
  	}
-@@ -429,12 +648,6 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
+@@ -429,12 +667,6 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
  		return KERNEL_ERROR_ETIMEDOUT;
  	}
  
@@ -15518,7 +15971,7 @@ index 14561b0..944a1f8 100644
  	return OK;
  }
  
-@@ -541,16 +754,46 @@ int KYTY_SYSV_ABI KernelDeleteHRTimerEvent(KernelEqueue eq, int id) {
+@@ -541,16 +773,46 @@ int KYTY_SYSV_ABI KernelDeleteHRTimerEvent(KernelEqueue eq, int id) {
  	return KernelDeleteEvent(eq, static_cast<uintptr_t>(id), KERNEL_EVFILT_HRTIMER);
  }
  
@@ -15566,7 +16019,7 @@ index 14561b0..944a1f8 100644
  		event.event.flags         = EV_ADD | EV_CLEAR;
  		event.event.fflags        = 0;
  		event.event.data          = 0;
-@@ -578,7 +821,7 @@ int KYTY_SYSV_ABI KernelDeleteAmprEvent(KernelEqueue eq, int id) {
+@@ -578,7 +840,7 @@ int KYTY_SYSV_ABI KernelDeleteAmprEvent(KernelEqueue eq, int id) {
  	LOGF("\t AMPR event delete: eq = 0x%016" PRIx64 ", id = %d\n", static_cast<uint64_t>(eq), id);
  
  	if (eq != KERNEL_EQUEUE_INVALID) {
@@ -19125,10 +19578,10 @@ index bc73d18..fab34b4 100644
  
  #endif /* EMULATOR_INCLUDE_EMULATOR_KERNEL_FILESYSTEM_H_ */
 diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
-index 02fc0fc..afd6c60 100644
+index 02fc0fc..093a4a9 100644
 --- a/src/kernel/memory.cpp
 +++ b/src/kernel/memory.cpp
-@@ -1,4250 +1,5679 @@
+@@ -1,4250 +1,5686 @@
 -#include "kernel/memory.h"
 -
 -#include "common/assert.h"
@@ -23380,6 +23833,7 @@ index 02fc0fc..afd6c60 100644
 -
 -} // namespace Libs::LibKernel::Memory
 +#include "bc5/env_rule.hpp" // exp 0419 (build W): BC5_DIAG_ENV, BC5_FIXED_ENV, BC5_LEAN_OR
++#include "bc5/ports_pack1.hpp" // ports pack 1: C
 +#include <set>
 +#include <cinttypes>
 +#include <cstdio>
@@ -26397,6 +26851,12 @@ index 02fc0fc..afd6c60 100644
 +	GpuAccessMode       gpu_mode = GpuAccessMode::NoAccess;
 +
 +	if (!DecodeMemoryProtection(prot, &mode, &gpu_mode)) {
++		// ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libkernel/DirectMemory/Export.cpp:63-64, 394-395; dca5752e1b,
++		// measured EINVAL on fw 13.60): a protection this map cannot take is EINVAL, not a host exit.
++		if (BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) {
++			LOGF_COLOR(Log::Color::Red, "\t unknown prot = %d: EINVAL (ports pack 1)\n", prot);
++			return KERNEL_ERROR_EINVAL;
++		}
 +		EXIT("unknown prot: %d\n", prot);
 +	}
 +
@@ -29269,24 +29729,38 @@ index 9ea25b0..64784a7 100644
  			EXIT_IF(!AddMappedUnlocked(vaddr, size, MappingType::Private));
  			return true;
 diff --git a/src/kernel/pthread.cpp b/src/kernel/pthread.cpp
-index 5f87e6b..9e0aee5 100644
+index 5f87e6b..d9b6ab4 100644
 --- a/src/kernel/pthread.cpp
 +++ b/src/kernel/pthread.cpp
-@@ -1,3 +1,5 @@
+@@ -1,9 +1,13 @@
 +#include "bc5/env_rule.hpp" // exp 0419 (build W): BC5_DIAG_ENV, BC5_FIXED_ENV, BC5_LEAN_OR
 +#include <cstdio>
  #include "kernel/pthread.h"
  
  #include "common/assert.h"
-@@ -21,6 +23,7 @@
+ #include "common/common.h"
+ #include "common/dateTime.h"
+ #include "common/emulatorConfig.h"
++#include "common/hostException.h" // ports pack 1, K6
++#include "bc5/ports_pack1.hpp"     // ports pack 1: K2, K3
+ #include "common/logging/log.h"
+ #include "common/singleton.h"
+ #include "common/stringUtils.h"
+@@ -21,9 +25,13 @@
  #include <chrono>
  #include <condition_variable>
  #include <cstring>
 +#include <cstdlib> // experiment 0401 series e4: std::getenv
  #include <ctime>
++#include <memory> // ports pack 1, K3
  #include <mutex>
++#include <new>     // ports pack 1, K3: std::nothrow
  #include <thread>
-@@ -49,6 +52,7 @@
++#include <utility> // ports pack 1, K3: std::exchange
+ #include <vector>
+ 
+ #if KYTY_PLATFORM == KYTY_PLATFORM_WINDOWS
+@@ -49,6 +57,7 @@
  #elif !defined(__APPLE__)
  #include <sys/syscall.h>
  #include <unistd.h>
@@ -29294,7 +29768,7 @@ index 5f87e6b..9e0aee5 100644
  #endif
  
  #if KYTY_PLATFORM != KYTY_PLATFORM_WINDOWS
-@@ -57,6 +61,7 @@
+@@ -57,6 +66,7 @@
  
  #if KYTY_PLATFORM != KYTY_PLATFORM_WINDOWS && (defined(_M_X64) || defined(__x86_64__))
  #include <x86intrin.h>
@@ -29302,7 +29776,7 @@ index 5f87e6b..9e0aee5 100644
  #endif
  
  #ifdef pthread_attr_getguardsize
-@@ -180,9 +185,64 @@ static uint64_t KernelGetInitialTsc() {
+@@ -180,9 +190,64 @@ static uint64_t KernelGetInitialTsc() {
  	return initial_tsc;
  }
  
@@ -29368,16 +29842,17 @@ index 5f87e6b..9e0aee5 100644
  	return current_tsc >= initial_tsc ? current_tsc - initial_tsc : 0;
  }
  
-@@ -399,6 +459,8 @@ struct PthreadPrivate {
+@@ -399,6 +464,9 @@ struct PthreadPrivate {
  	uint64_t              cond_sequence = 0;
  	PthreadCondPrivate*   waiting_cond  = nullptr;
  	std::atomic<uint64_t> pending_signal_mask {0};
 +	bool                  bc5_rr_sleeper = false; // experiment 0429 R: slept on its worker family's semaphore
 +	bool                  bc5_rr_main    = false; // experiment 0429 R: the runtime main thread, never promoted
++	std::condition_variable bc5_cond_cv;          // ports pack 1, K2: this thread's own wake for a guest condvar wait
  #if KYTY_PLATFORM == KYTY_PLATFORM_WINDOWS
  	uintptr_t guest_host_gs8;
  	uintptr_t guest_host_gs10;
-@@ -458,6 +520,106 @@ struct PthreadCondPrivate {
+@@ -458,6 +526,106 @@ struct PthreadCondPrivate {
  	std::vector<Pthread>    waiters;
  };
  
@@ -29484,10 +29959,56 @@ index 5f87e6b..9e0aee5 100644
  static void CondAddWaiter(PthreadCondPrivate* cond, Pthread thread) {
  	EXIT_IF(cond == nullptr);
  	EXIT_IF(thread == nullptr);
-@@ -530,6 +692,10 @@ void PthreadWakeForSignal(Pthread thread) {
+@@ -482,6 +650,22 @@ static bool CondRemoveWaiter(PthreadCondPrivate* cond, Pthread thread) {
+ 	return true;
+ }
+ 
++// ports pack 1, K2 (KytyPS5 47b26e49, GPL-2.0, "pthread: fix per-thread wakeups"): a guest condvar waiter sleeps on its
++// own thread's condition variable, and signal/signalto wake the ONE chosen waiter there (under cond->m, as upstream).
++// Before, the chosen waiter's sequence was bumped and then every waiter was woken by cond->cv.notify_all(), only to
++// re-check and go back to sleep. Broadcast and the guest-signal wake notify each waiter's own variable. Every wait
++// still polls every SIGNAL_APC_POLL_MICROS, so a missed notify costs at most that, never a hang.
++// BC5 change: the waiter list, waiting_cond, the condvar's own sequence and cv stay (exp 0405's kk06 and signalto rely
++// on them); cond->cv is still notified, with no sleeper on it while the switch is on.
++// Before the pack: every waiter sleeps on cond->cv as before.
++static bool Bc5P1CondOne() {
++	return BC5_P1("KYTY_BC5_P1_COND_SIGNAL_ONE");
++}
++
++static std::condition_variable& Bc5P1CondCv(PthreadCondPrivate* cond, Pthread thread) {
++	return (Bc5P1CondOne() && thread != nullptr) ? thread->bc5_cond_cv : cond->cv;
++}
++
+ static bool CondWakeWaiter(PthreadCondPrivate* cond, Pthread thread) {
+ 	EXIT_IF(cond == nullptr);
+ 
+@@ -502,6 +686,9 @@ static bool CondWakeWaiter(PthreadCondPrivate* cond, Pthread thread) {
+ 		thread->waiting_cond = nullptr;
+ 	}
+ 	thread->cond_sequence++;
++	if (Bc5P1CondOne()) {
++		thread->bc5_cond_cv.notify_one(); // ports pack 1, K2: the chosen waiter only, under cond->m
++	}
+ 	return true;
+ }
+ 
+@@ -509,6 +696,9 @@ static void CondClearWaiters(PthreadCondPrivate* cond) {
+ 	EXIT_IF(cond == nullptr);
+ 
+ 	for (auto* thread: cond->waiters) {
++		if (thread != nullptr && Bc5P1CondOne()) {
++			thread->bc5_cond_cv.notify_one(); // ports pack 1, K2: broadcast wakes each waiter on its own variable
++		}
+ 		if (thread != nullptr && thread->waiting_cond == cond) {
+ 			thread->waiting_cond = nullptr;
+ 		}
+@@ -530,6 +720,13 @@ void PthreadWakeForSignal(Pthread thread) {
  	{
  		std::lock_guard lock(cond->m);
  		notify = (thread->waiting_cond == cond);
++		if (notify && Bc5P1CondOne()) {
++			thread->bc5_cond_cv.notify_all(); // ports pack 1, K2: the thread sleeps on its own variable
++		}
 +		if (Bc5ThreadSyncFix(BC5_THR_FIX_KK06) && notify) { // experiment 0405 kk06: notify while cond->m is held
 +			cond->cv.notify_all();
 +			notify = false;
@@ -29495,7 +30016,77 @@ index 5f87e6b..9e0aee5 100644
  	}
  	if (notify) {
  		cond->cv.notify_all();
-@@ -650,6 +816,7 @@ public:
+@@ -640,6 +837,69 @@ private:
+ 	Key           m_keys[KEYS_MAX];
+ };
+ 
++// ---- ports pack 1, K3 (KytyPS5 733842ca, GPL-2.0, "kernel: index pthread key values per thread") -------------------
++// Upstream src/kernel/pthread.cpp (at 733842ca) lines 619-632 (the tables), 1589-1620 (DestructPthreadSpecific),
++// 4002-4068 (KeyCreate, KeyDelete, Setspecific, Getspecific). Each thread keeps its key values in its own array of
++// KEYS_MAX slots (thread_local), stamped with the key's generation; a key's generation is odd while it is allocated and
++// a delete moves it to the next even one, so a stale value of a deleted and re-created key reads as NULL. getspecific
++// and setspecific take no lock and search nothing; before, every call took PthreadKeys::m_mutex and walked the values
++// of every thread that ever set that key (pthread.cpp PthreadKeys::Get/Set).
++// BC5 changes: the switch; the old PthreadKeys class stays and is the path when the switch is off (both paths never
++// mix: the word is read once per process); the LOGF lines of KeyCreate/KeyDelete are kept.
++// Before the pack: the old table under one mutex.
++static bool Bc5P1Keys() {
++	return BC5_P1("KYTY_BC5_P1_PTHREAD_KEYS");
++}
++
++struct Bc5P1SpecificValue {
++	uint64_t generation = 0;
++	void*    data       = nullptr;
++};
++
++struct Bc5P1KeyState {
++	// Odd generations are allocated; deletion advances to the next even generation.
++	std::atomic<uint64_t>         generation {0};
++	pthread_key_destructor_func_t destructor = nullptr;
++};
++
++static Bc5P1KeyState                                      g_bc5_p1_keys[KEYS_MAX];
++static std::mutex                                         g_bc5_p1_keys_mutex;
++static thread_local std::unique_ptr<Bc5P1SpecificValue[]> g_bc5_p1_specific;
++
++// Runs on the exiting thread (CleanupThread, pushed by RunThread's pthread_cleanup_push).
++static void Bc5P1DestructSpecific() {
++	if (g_bc5_p1_specific == nullptr) {
++		return;
++	}
++
++	std::unique_lock lock(g_bc5_p1_keys_mutex);
++	for (int iter = 0; iter < DESTRUCTOR_ITERATIONS; iter++) {
++		bool called = false;
++		for (int index = 0; index < KEYS_MAX; index++) {
++			const auto value = std::exchange(g_bc5_p1_specific[index], {});
++			if (value.data == nullptr) {
++				continue;
++			}
++
++			const auto& entry      = g_bc5_p1_keys[index];
++			const auto  generation = entry.generation.load(std::memory_order_relaxed);
++			if ((generation & 1u) == 0 || generation != value.generation || entry.destructor == nullptr) {
++				continue;
++			}
++			const auto destructor = entry.destructor;
++			lock.unlock();
++			destructor(value.data);
++			lock.lock();
++			called = true;
++		}
++		if (!called) {
++			break;
++		}
++	}
++	g_bc5_p1_specific.reset();
++}
++// ---- end of ports pack 1, K3 tables ------------------------------------------------------------------------------
++
+ class PthreadPool {
+ public:
+ 	PthreadPool() { EXIT_NOT_IMPLEMENTED(!Common::Thread::IsMainThread()); }
+@@ -650,6 +910,7 @@ public:
  	Pthread Create();
  
  	void FreeDetachedThreads();
@@ -29503,7 +30094,16 @@ index 5f87e6b..9e0aee5 100644
  
  private:
  	std::vector<Pthread> m_threads;
-@@ -1066,6 +1233,7 @@ void PthreadInitSelfForMainThread() {
+@@ -1061,11 +1322,16 @@ void PthreadDeleteStaticObjects(Loader::Program* program) {
+ void PthreadInitSelfForMainThread() {
+ 	EXIT_IF(g_pthread_self != nullptr);
+ 
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++	Common::HostException::InitializeThreadSignalStack(); // ports pack 1, K6 (KytyPS5 21124245)
++#endif
++
+ 	g_pthread_self = new PthreadPrivate {};
+ 	PthreadAttrInit(&g_pthread_self->attr);
  	UpdateCurrentThreadStackAttr(&g_pthread_self->attr);
  	g_pthread_self->p               = pthread_self();
  	g_pthread_self->name            = "MainThread";
@@ -29511,7 +30111,7 @@ index 5f87e6b..9e0aee5 100644
  	g_pthread_self->guest.thread_id = ++g_pthread_thread_id;
  	g_pthread_self->unique_id       = Common::Thread::GetThreadIdUnique();
  	g_pthread_self->free            = false;
-@@ -1135,6 +1303,7 @@ KYTY_SUBSYSTEM_INIT(Pthread) {
+@@ -1135,6 +1401,7 @@ KYTY_SUBSYSTEM_INIT(Pthread) {
  	g_pthread_context->SetPthreadPool(new PthreadPool);
  	g_pthread_context->SetPthreadKeys(new PthreadKeys);
  	Common::CondVar::SetWaitPollCallback(KernelDispatchPendingSignalForCurrentThread);
@@ -29519,7 +30119,7 @@ index 5f87e6b..9e0aee5 100644
  
  	PthreadMutexattr  default_mutexattr  = nullptr;
  	PthreadRwlockattr default_rwlockattr = nullptr;
-@@ -1303,6 +1472,7 @@ static bool NativeClockGettime(KernelClockid clock_id, KernelTimespec* tp) {
+@@ -1303,6 +1570,7 @@ static bool NativeClockGettime(KernelClockid clock_id, KernelTimespec* tp) {
  
  	tp->tv_sec  = native_time.tv_sec;
  	tp->tv_nsec = native_time.tv_nsec;
@@ -29527,7 +30127,7 @@ index 5f87e6b..9e0aee5 100644
  	return true;
  }
  
-@@ -1337,6 +1507,11 @@ static int NativeMutexLock(PthreadMutexPrivate* mutex, KernelUseconds* timeout_u
+@@ -1337,6 +1605,11 @@ static int NativeMutexLock(PthreadMutexPrivate* mutex, KernelUseconds* timeout_u
  		return EDEADLK;
  	}
  
@@ -29539,7 +30139,7 @@ index 5f87e6b..9e0aee5 100644
  	if (timeout_us == nullptr) {
  		while (mutex->owner != nullptr) {
  			mutex->cv.wait_for(lock, std::chrono::microseconds(SIGNAL_APC_POLL_MICROS));
-@@ -1373,6 +1548,10 @@ static int NativeMutexLock(PthreadMutexPrivate* mutex, KernelUseconds* timeout_u
+@@ -1373,6 +1646,10 @@ static int NativeMutexLock(PthreadMutexPrivate* mutex, KernelUseconds* timeout_u
  		}
  	}
  
@@ -29550,7 +30150,7 @@ index 5f87e6b..9e0aee5 100644
  	mutex->owner = self;
  	mutex->count = 1;
  	return OK;
-@@ -1430,6 +1609,10 @@ static int NativeMutexUnlock(PthreadMutexPrivate* mutex, uint32_t* recurse = nul
+@@ -1430,6 +1707,10 @@ static int NativeMutexUnlock(PthreadMutexPrivate* mutex, uint32_t* recurse = nul
  
  	mutex->owner = nullptr;
  	mutex->count = 0;
@@ -29561,7 +30161,7 @@ index 5f87e6b..9e0aee5 100644
  	lock.unlock();
  	mutex->cv.notify_one();
  
-@@ -1597,6 +1780,30 @@ void PthreadPool::FreeDetachedThreads() {
+@@ -1597,6 +1878,30 @@ void PthreadPool::FreeDetachedThreads() {
  	}
  }
  
@@ -29592,7 +30192,7 @@ index 5f87e6b..9e0aee5 100644
  bool PthreadKeys::Create(int* key, pthread_key_destructor_func_t destructor) {
  	EXIT_IF(key == nullptr);
  
-@@ -2403,6 +2610,11 @@ int KYTY_SYSV_ABI PthreadRwlockDestroy(PthreadRwlock* rwlock) {
+@@ -2403,6 +2708,11 @@ int KYTY_SYSV_ABI PthreadRwlockDestroy(PthreadRwlock* rwlock) {
  		return KERNEL_ERROR_EINVAL;
  	}
  
@@ -29604,7 +30204,7 @@ index 5f87e6b..9e0aee5 100644
  	EXIT_NOT_IMPLEMENTED(*rwlock == nullptr);
  
  	{
-@@ -2449,6 +2661,53 @@ int KYTY_SYSV_ABI PthreadRwlockInit(PthreadRwlock* rwlock, const PthreadRwlockat
+@@ -2449,6 +2759,53 @@ int KYTY_SYSV_ABI PthreadRwlockInit(PthreadRwlock* rwlock, const PthreadRwlockat
  	return PthreadRwlockInitNamed(rwlock, attr, name);
  }
  
@@ -29658,7 +30258,7 @@ index 5f87e6b..9e0aee5 100644
  static PthreadRwlockPrivate::Reader* RwlockFindReader(PthreadRwlock rwlock, Pthread thread) {
  	EXIT_IF(rwlock == nullptr);
  
-@@ -2526,11 +2785,14 @@ static int RwlockLockCooperative(PthreadRwlock rwlock, bool write, KernelUsecond
+@@ -2526,11 +2883,14 @@ static int RwlockLockCooperative(PthreadRwlock rwlock, bool write, KernelUsecond
  					writer_wait_registered = true;
  				}
  			} else {
@@ -29674,7 +30274,7 @@ index 5f87e6b..9e0aee5 100644
  					return OK;
  				}
  			}
-@@ -2581,6 +2843,12 @@ int KYTY_SYSV_ABI PthreadRwlockTimedrdlock(PthreadRwlock* rwlock, KernelUseconds
+@@ -2581,6 +2941,12 @@ int KYTY_SYSV_ABI PthreadRwlockTimedrdlock(PthreadRwlock* rwlock, KernelUseconds
  		return KERNEL_ERROR_EINVAL;
  	}
  
@@ -29687,7 +30287,7 @@ index 5f87e6b..9e0aee5 100644
  	EXIT_NOT_IMPLEMENTED(*rwlock == nullptr);
  
  	return RwlockLockCooperative(*rwlock, false, &usec);
-@@ -2593,6 +2861,12 @@ int KYTY_SYSV_ABI PthreadRwlockTimedwrlock(PthreadRwlock* rwlock, KernelUseconds
+@@ -2593,6 +2959,12 @@ int KYTY_SYSV_ABI PthreadRwlockTimedwrlock(PthreadRwlock* rwlock, KernelUseconds
  		return KERNEL_ERROR_EINVAL;
  	}
  
@@ -29700,7 +30300,7 @@ index 5f87e6b..9e0aee5 100644
  	EXIT_NOT_IMPLEMENTED(*rwlock == nullptr);
  
  	return RwlockLockCooperative(*rwlock, true, &usec);
-@@ -2601,6 +2875,11 @@ int KYTY_SYSV_ABI PthreadRwlockTimedwrlock(PthreadRwlock* rwlock, KernelUseconds
+@@ -2601,6 +2973,11 @@ int KYTY_SYSV_ABI PthreadRwlockTimedwrlock(PthreadRwlock* rwlock, KernelUseconds
  int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
  	PRINT_NAME();
  
@@ -29712,7 +30312,7 @@ index 5f87e6b..9e0aee5 100644
  	if (rwlock == nullptr) {
  		return KERNEL_ERROR_EINVAL;
  	}
-@@ -2614,10 +2893,12 @@ int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
+@@ -2614,10 +2991,12 @@ int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
  
  	{
  		std::lock_guard lock((*rwlock)->m);
@@ -29726,7 +30326,7 @@ index 5f87e6b..9e0aee5 100644
  			return OK;
  		}
  	}
-@@ -2628,6 +2909,10 @@ int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
+@@ -2628,6 +3007,10 @@ int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
  int KYTY_SYSV_ABI PthreadRwlockTrywrlock(PthreadRwlock* rwlock) {
  	PRINT_NAME();
  
@@ -29737,7 +30337,7 @@ index 5f87e6b..9e0aee5 100644
  	if (rwlock == nullptr) {
  		return KERNEL_ERROR_EINVAL;
  	}
-@@ -2676,6 +2961,7 @@ int KYTY_SYSV_ABI PthreadRwlockUnlock(PthreadRwlock* rwlock) {
+@@ -2676,6 +3059,7 @@ int KYTY_SYSV_ABI PthreadRwlockUnlock(PthreadRwlock* rwlock) {
  	{
  		std::lock_guard lock((*rwlock)->m);
  		if (RwlockRemoveReader(*rwlock, self)) {
@@ -29745,7 +30345,7 @@ index 5f87e6b..9e0aee5 100644
  			(*rwlock)->cv.notify_all();
  			return OK;
  		}
-@@ -2842,6 +3128,7 @@ int KYTY_SYSV_ABI PthreadCondattrSetclock(PthreadCondattr* attr, KernelClockid c
+@@ -2842,6 +3226,7 @@ int KYTY_SYSV_ABI PthreadCondattrSetclock(PthreadCondattr* attr, KernelClockid c
  }
  
  int KYTY_SYSV_ABI PthreadCondBroadcast(PthreadCond* cond) {
@@ -29753,7 +30353,7 @@ index 5f87e6b..9e0aee5 100644
  	// PRINT_NAME();
  
  	auto* pthread_static_objects = g_pthread_context->GetPthreadStaticObjects();
-@@ -2864,6 +3151,10 @@ int KYTY_SYSV_ABI PthreadCondBroadcast(PthreadCond* cond) {
+@@ -2864,6 +3249,10 @@ int KYTY_SYSV_ABI PthreadCondBroadcast(PthreadCond* cond) {
  			CondClearWaiters(*cond);
  			notify = true;
  		}
@@ -29764,7 +30364,7 @@ index 5f87e6b..9e0aee5 100644
  	}
  	if (notify) {
  		(*cond)->cv.notify_all();
-@@ -2885,6 +3176,11 @@ int KYTY_SYSV_ABI PthreadCondDestroy(PthreadCond* cond) {
+@@ -2885,6 +3274,11 @@ int KYTY_SYSV_ABI PthreadCondDestroy(PthreadCond* cond) {
  		return KERNEL_ERROR_EINVAL;
  	}
  
@@ -29776,7 +30376,7 @@ index 5f87e6b..9e0aee5 100644
  	EXIT_NOT_IMPLEMENTED(*cond == nullptr);
  
  	int result = 0;
-@@ -2946,6 +3242,7 @@ int KYTY_SYSV_ABI PthreadCondInit(PthreadCond* cond, const PthreadCondattr* attr
+@@ -2946,6 +3340,7 @@ int KYTY_SYSV_ABI PthreadCondInit(PthreadCond* cond, const PthreadCondattr* attr
  }
  
  int KYTY_SYSV_ABI PthreadCondSignal(PthreadCond* cond) {
@@ -29784,7 +30384,7 @@ index 5f87e6b..9e0aee5 100644
  	// PRINT_NAME();
  
  	auto* pthread_static_objects = g_pthread_context->GetPthreadStaticObjects();
-@@ -2964,6 +3261,10 @@ int KYTY_SYSV_ABI PthreadCondSignal(PthreadCond* cond) {
+@@ -2964,6 +3359,10 @@ int KYTY_SYSV_ABI PthreadCondSignal(PthreadCond* cond) {
  	{
  		std::lock_guard lock((*cond)->m);
  		notify = CondWakeWaiter(*cond, nullptr);
@@ -29795,7 +30395,7 @@ index 5f87e6b..9e0aee5 100644
  	}
  	if (notify) {
  		(*cond)->cv.notify_all();
-@@ -2994,13 +3295,22 @@ int KYTY_SYSV_ABI PthreadCondSignalto(PthreadCond* cond, Pthread thread) {
+@@ -2994,13 +3393,22 @@ int KYTY_SYSV_ABI PthreadCondSignalto(PthreadCond* cond, Pthread thread) {
  
  	int  result = 0;
  	bool notify = false;
@@ -29818,7 +30418,25 @@ index 5f87e6b..9e0aee5 100644
  
  	// LOGF("\tcond signalto: %s(0x%016" PRIx64 "), %d\n", (*cond)->name.c_str(),
  	// reinterpret_cast<uint64_t>(cond), result);
-@@ -3184,6 +3494,7 @@ while (!ready()) {
+@@ -3068,7 +3476,7 @@ int KYTY_SYSV_ABI PthreadCondTimedwait(PthreadCond* cond, PthreadMutex* mutex,
+ 			                            ? remaining
+ 			                            : std::chrono::steady_clock::duration(
+ 			                                  std::chrono::microseconds(SIGNAL_APC_POLL_MICROS)));
+-			cond_value->cv.wait_for(cond_lock, poll);
++			Bc5P1CondCv(cond_value, thread).wait_for(cond_lock, poll); // ports pack 1, K2
+ 
+ 			if (!ready()) {
+ 				cond_lock.unlock();
+@@ -3156,7 +3564,7 @@ while (!ready()) {
+ 		                            ? remaining
+ 		                            : std::chrono::steady_clock::duration(
+ 		                                  std::chrono::microseconds(SIGNAL_APC_POLL_MICROS)));
+-		cond_value->cv.wait_for(cond_lock, poll);
++		Bc5P1CondCv(cond_value, thread).wait_for(cond_lock, poll); // ports pack 1, K2
+ 
+ 		if (!ready()) {
+ 			cond_lock.unlock();
+@@ -3184,6 +3592,7 @@ while (!ready()) {
  }
  
  int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
@@ -29826,7 +30444,16 @@ index 5f87e6b..9e0aee5 100644
  	PRINT_NAME();
  
  	auto* pthread_static_objects = g_pthread_context->GetPthreadStaticObjects();
-@@ -3238,9 +3549,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
+@@ -3227,7 +3636,7 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
+ 	};
+ 
+ 	while (!ready()) {
+-		cond_value->cv.wait_for(cond_lock, std::chrono::microseconds(SIGNAL_APC_POLL_MICROS));
++		Bc5P1CondCv(cond_value, thread).wait_for(cond_lock, std::chrono::microseconds(SIGNAL_APC_POLL_MICROS)); // ports pack 1, K2
+ 		if (!ready()) {
+ 			cond_lock.unlock();
+ 			KernelDispatchPendingSignalForCurrentThread();
+@@ -3238,9 +3647,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
  		if (cond_elapsed >= 10 &&
  		    std::chrono::steady_clock::now() - cond_wait_logged > std::chrono::seconds(1)) {
  			cond_wait_logged = std::chrono::steady_clock::now();
@@ -29839,7 +30466,20 @@ index 5f87e6b..9e0aee5 100644
  		}
  	}
  	CondRemoveWaiter(cond_value, thread);
-@@ -3381,10 +3693,781 @@ static void CleanupThread(void* arg) {
+@@ -3373,7 +3783,11 @@ static void CleanupThread(void* arg) {
+ 		thread_dtors();
+ 	}
+ 
+-	g_pthread_context->GetPthreadKeys()->Destruct(thread->unique_id);
++	if (Bc5P1Keys()) {
++		Bc5P1DestructSpecific(); // ports pack 1, K3 (KytyPS5 733842ca)
++	} else {
++		g_pthread_context->GetPthreadKeys()->Destruct(thread->unique_id);
++	}
+ 
+ 	auto* rt = Common::Singleton<Loader::RuntimeLinker>::Instance();
+ 	rt->DeleteTlss(thread->unique_id);
+@@ -3381,10 +3795,785 @@ static void CleanupThread(void* arg) {
  	thread->almost_done = true;
  }
  
@@ -30609,6 +31249,10 @@ index 5f87e6b..9e0aee5 100644
  	auto* thread = static_cast<Pthread>(arg);
  	void* ret    = nullptr;
  
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++	Common::HostException::InitializeThreadSignalStack(); // ports pack 1, K6 (KytyPS5 21124245)
++#endif
++
 +#if defined(__x86_64__) || defined(_M_X64)
 +	// Experiment 0405 x87 (KYTY_BC5_THREAD_SYNC_FIXES): the FreeBSD thread start state of the x87 control word, 0x037f,
 +	// before any guest code (AnyPS5 8b626e307, Thread.cpp:891); off, the thread keeps the word its creator had.
@@ -30621,7 +31265,7 @@ index 5f87e6b..9e0aee5 100644
  	thread->unique_id = Common::Thread::GetThreadIdUnique();
  
  	g_pthread_self = thread;
-@@ -3396,6 +4479,20 @@ static void* RunThread(void* arg) {
+@@ -3396,6 +4585,20 @@ static void* RunThread(void* arg) {
  	os_thread_id = GetHostThreadId();
  #endif
  	thread->host_thread_id = os_thread_id;
@@ -30642,7 +31286,7 @@ index 5f87e6b..9e0aee5 100644
  
  	LOGF("\tPthread run begin: %s, id = %d, os_thread_id = %" PRIu64 ", entry = 0x%016" PRIx64
  	     ", arg = 0x%016" PRIx64 ", stack_addr = 0x%016" PRIx64 ", stack_size = %" PRIu64 "\n",
-@@ -3549,6 +4646,9 @@ int KYTY_SYSV_ABI PthreadCancel(Pthread thread) {
+@@ -3549,6 +4752,9 @@ int KYTY_SYSV_ABI PthreadCancel(Pthread thread) {
  	if (thread == nullptr) {
  		return KERNEL_ERROR_EINVAL;
  	}
@@ -30652,7 +31296,35 @@ index 5f87e6b..9e0aee5 100644
  
  	int result = pthread_cancel(thread->p);
  
-@@ -3650,6 +4750,9 @@ int KYTY_SYSV_ABI PthreadGetprio(Pthread thread, int* prio) {
+@@ -3591,6 +4797,13 @@ int KYTY_SYSV_ABI PthreadSetcancelstate(int state, int* old_state) {
+ 
+ 	int pstate = PTHREAD_CANCEL_DISABLE;
+ 
++	// ports pack 1, C (AnyPS5 3acca27f27 "feat(libkernel): implement thread cancellation", GPL-2.0,
++	// core/libs/prx/libkernel/Pthread/src/Thread.cpp:1637-1638 at 47bd2c6a1d): a state other than ENABLE (0) or
++	// DISABLE (1) is EINVAL, returned before old_state is written. Before the pack: the host exits.
++	if (state != 0 && state != 1 && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) {
++		return KERNEL_ERROR_EINVAL;
++	}
++
+ 	switch (state) {
+ 		case 0: pstate = PTHREAD_CANCEL_ENABLE; break;
+ 		case 1: pstate = PTHREAD_CANCEL_DISABLE; break;
+@@ -3620,6 +4833,13 @@ int KYTY_SYSV_ABI PthreadSetcanceltype(int type, int* old_type) {
+ 
+ 	int ptype = PTHREAD_CANCEL_DEFERRED;
+ 
++	// ports pack 1, C (AnyPS5 3acca27f27, GPL-2.0, Pthread/src/Thread.cpp:1650-1651 at 47bd2c6a1d): a type other than
++	// DEFERRED (0) or ASYNCHRONOUS (2) is EINVAL, returned before old_type is written.
++	// Before the pack: the host exits.
++	if (type != 0 && type != 2 && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) {
++		return KERNEL_ERROR_EINVAL;
++	}
++
+ 	switch (type) {
+ 		case 0: ptype = PTHREAD_CANCEL_DEFERRED; break;
+ 		case 2: ptype = PTHREAD_CANCEL_ASYNCHRONOUS; break;
+@@ -3650,6 +4870,9 @@ int KYTY_SYSV_ABI PthreadGetprio(Pthread thread, int* prio) {
  	if (thread == nullptr) {
  		return KERNEL_ERROR_ESRCH;
  	}
@@ -30662,7 +31334,7 @@ index 5f87e6b..9e0aee5 100644
  
  	EXIT_NOT_IMPLEMENTED(prio == nullptr);
  
-@@ -3670,6 +4773,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
+@@ -3670,6 +4893,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
  	if (thread == nullptr) {
  		return KERNEL_ERROR_ESRCH;
  	}
@@ -30672,7 +31344,7 @@ index 5f87e6b..9e0aee5 100644
  
  	sched_param param {};
  	int         pol = 0;
-@@ -3695,6 +4801,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
+@@ -3695,6 +4921,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
  #endif
  
  	thread->attr->guest_priority = prio;
@@ -30682,7 +31354,7 @@ index 5f87e6b..9e0aee5 100644
  	LOGF("\t PthreadSetprio: %d, %d\n", thread->unique_id, prio);
  	return OK;
  }
-@@ -3791,6 +4900,10 @@ int KYTY_SYSV_ABI PthreadRename(Pthread thread, const char* name) {
+@@ -3791,6 +5020,10 @@ int KYTY_SYSV_ABI PthreadRename(Pthread thread, const char* name) {
  	}
  
  	thread->name = std::string(name);
@@ -30693,7 +31365,7 @@ index 5f87e6b..9e0aee5 100644
  
  	return OK;
  }
-@@ -3850,6 +4963,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
+@@ -3850,6 +5083,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
  
  	int special_error = OK;
  	if (KernelClockGettimeSpecial(clock_id, tp, &special_error)) {
@@ -30701,7 +31373,7 @@ index 5f87e6b..9e0aee5 100644
  		return special_error;
  	}
  
-@@ -3867,6 +4981,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
+@@ -3867,6 +5101,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
  	tp->tv_nsec = t.tv_nsec;
  
  	if (result == 0) {
@@ -30709,7 +31381,7 @@ index 5f87e6b..9e0aee5 100644
  		return OK;
  	}
  	return KERNEL_ERROR_EINVAL;
-@@ -3994,7 +5109,7 @@ uint64_t KYTY_SYSV_ABI KernelGetTscFrequency() {
+@@ -3994,7 +5229,7 @@ uint64_t KYTY_SYSV_ABI KernelGetTscFrequency() {
  }
  
  uint64_t KYTY_SYSV_ABI KernelReadTsc() {
@@ -30718,7 +31390,104 @@ index 5f87e6b..9e0aee5 100644
  }
  
  uint64_t KYTY_SYSV_ABI KernelGetProcessTime() {
-@@ -4294,6 +5409,12 @@ void KYTY_SYSV_ABI pthread_yield() {
+@@ -4088,7 +5323,26 @@ int KYTY_SYSV_ABI PthreadKeyCreate(PthreadKey* key, pthread_key_destructor_func_
+ 		return KERNEL_ERROR_EINVAL;
+ 	}
+ 
+-	if (!g_pthread_context->GetPthreadKeys()->Create(key, destructor)) {
++	if (Bc5P1Keys()) { // ports pack 1, K3 (KytyPS5 733842ca, upstream pthread.cpp:4002-4018)
++		bool created = false;
++		{
++			std::lock_guard lock(g_bc5_p1_keys_mutex);
++			for (int index = 0; index < KEYS_MAX; index++) {
++				auto&      entry      = g_bc5_p1_keys[index];
++				const auto generation = entry.generation.load(std::memory_order_relaxed);
++				if ((generation & 1u) == 0) {
++					entry.destructor = destructor;
++					entry.generation.store(generation + 1, std::memory_order_release);
++					*key    = index;
++					created = true;
++					break;
++				}
++			}
++		}
++		if (!created) {
++			return KERNEL_ERROR_EAGAIN;
++		}
++	} else if (!g_pthread_context->GetPthreadKeys()->Create(key, destructor)) {
+ 		return KERNEL_ERROR_EAGAIN;
+ 	}
+ 
+@@ -4104,6 +5358,21 @@ int KYTY_SYSV_ABI PthreadKeyDelete(PthreadKey key) {
+ 
+ 	LOGF("\t key = %d\n", key);
+ 
++	if (Bc5P1Keys()) { // ports pack 1, K3 (KytyPS5 733842ca, upstream pthread.cpp:4021-4036)
++		if (key < 0 || key >= KEYS_MAX) {
++			return KERNEL_ERROR_EINVAL;
++		}
++		std::lock_guard lock(g_bc5_p1_keys_mutex);
++		auto&           entry      = g_bc5_p1_keys[key];
++		const auto      generation = entry.generation.load(std::memory_order_relaxed);
++		if ((generation & 1u) == 0) {
++			return KERNEL_ERROR_EINVAL;
++		}
++		entry.generation.store(generation + 1, std::memory_order_release);
++		entry.destructor = nullptr;
++		return OK;
++	}
++
+ 	if (!g_pthread_context->GetPthreadKeys()->Delete(key)) {
+ 		return KERNEL_ERROR_EINVAL;
+ 	}
+@@ -4114,6 +5383,27 @@ int KYTY_SYSV_ABI PthreadKeyDelete(PthreadKey key) {
+ int KYTY_SYSV_ABI PthreadSetspecific(PthreadKey key, void* value) {
+ 	// PRINT_NAME();
+ 
++	if (Bc5P1Keys()) { // ports pack 1, K3 (KytyPS5 733842ca, upstream pthread.cpp:4037-4056)
++		if (key < 0 || key >= KEYS_MAX) {
++			return KERNEL_ERROR_EINVAL;
++		}
++		const auto generation = g_bc5_p1_keys[key].generation.load(std::memory_order_acquire);
++		if ((generation & 1u) == 0) {
++			return KERNEL_ERROR_EINVAL;
++		}
++		if (g_bc5_p1_specific == nullptr) {
++			if (value == nullptr) {
++				return OK;
++			}
++			g_bc5_p1_specific.reset(new (std::nothrow) Bc5P1SpecificValue[KEYS_MAX] {});
++			if (g_bc5_p1_specific == nullptr) {
++				return KERNEL_ERROR_ENOMEM;
++			}
++		}
++		g_bc5_p1_specific[key] = {generation, value};
++		return OK;
++	}
++
+ 	int thread_id = Common::Thread::GetThreadIdUnique();
+ 
+ 	LOGF("\t key       = %d\n"
+@@ -4129,6 +5419,18 @@ int KYTY_SYSV_ABI PthreadSetspecific(PthreadKey key, void* value) {
+ }
+ 
+ void* KYTY_SYSV_ABI PthreadGetspecific(PthreadKey key) {
++	if (Bc5P1Keys()) { // ports pack 1, K3 (KytyPS5 733842ca, upstream pthread.cpp:4058-4068)
++		if (key < 0 || key >= KEYS_MAX || g_bc5_p1_specific == nullptr) {
++			return nullptr;
++		}
++		const auto  generation = g_bc5_p1_keys[key].generation.load(std::memory_order_acquire);
++		const auto& value      = g_bc5_p1_specific[key];
++		if ((generation & 1u) != 0 && generation == value.generation) {
++			return value.data;
++		}
++		return nullptr;
++	}
++
+ 	int thread_id = Common::Thread::GetThreadIdUnique();
+ 
+ 	void* value = nullptr;
+@@ -4294,6 +5596,12 @@ void KYTY_SYSV_ABI pthread_yield() {
  	LibKernel::PthreadYield();
  }
  
@@ -30731,7 +31500,7 @@ index 5f87e6b..9e0aee5 100644
  int KYTY_SYSV_ABI sched_get_priority_max(int policy) {
  	PRINT_NAME();
  
-@@ -4431,6 +5552,11 @@ int KYTY_SYSV_ABI pthread_cond_signal(LibKernel::PthreadCond* cond) {
+@@ -4431,6 +5739,11 @@ int KYTY_SYSV_ABI pthread_cond_signal(LibKernel::PthreadCond* cond) {
  	return POSIX_PTHREAD_CALL(LibKernel::PthreadCondSignal(cond));
  }
  
@@ -30743,7 +31512,7 @@ index 5f87e6b..9e0aee5 100644
  int KYTY_SYSV_ABI pthread_cond_init(LibKernel::PthreadCond*           cond,
                                      const LibKernel::PthreadCondattr* attr) {
  	PRINT_NAME();
-@@ -4540,6 +5666,12 @@ int KYTY_SYSV_ABI pthread_rwlock_wrlock(LibKernel::PthreadRwlock* rwlock) {
+@@ -4540,6 +5853,12 @@ int KYTY_SYSV_ABI pthread_rwlock_wrlock(LibKernel::PthreadRwlock* rwlock) {
  	return POSIX_PTHREAD_CALL(LibKernel::PthreadRwlockWrlock(rwlock));
  }
  
@@ -30797,12 +31566,13 @@ index 3b39581..6b35a70 100644
  int KYTY_SYSV_ABI pthread_rwlock_init(LibKernel::PthreadRwlock*           rwlock,
                                        const LibKernel::PthreadRwlockattr* attr);
 diff --git a/src/kernel/semaphore.cpp b/src/kernel/semaphore.cpp
-index ed7c35b..565e55e 100644
+index ed7c35b..a778e3c 100644
 --- a/src/kernel/semaphore.cpp
 +++ b/src/kernel/semaphore.cpp
-@@ -1,7 +1,12 @@
+@@ -1,7 +1,13 @@
 +#include "bc5/env_rule.hpp" // exp 0419 (build W): BC5_DIAG_ENV, BC5_FIXED_ENV, BC5_LEAN_OR
  #include "kernel/semaphore.h"
++#include "bc5/ports_pack1.hpp" // ports pack 1: A6
  
  #include "common/assert.h"
  #include "common/logging/log.h"
@@ -30813,7 +31583,7 @@ index ed7c35b..565e55e 100644
  #include "common/stringUtils.h"
  #include "common/threads.h"
  #include "common/timer.h"
-@@ -13,6 +18,11 @@
+@@ -13,6 +19,11 @@
  #include <limits>
  #include <unordered_map>
  #include <vector>
@@ -30825,7 +31595,7 @@ index ed7c35b..565e55e 100644
  
  namespace Libs::LibKernel {
  void KernelDispatchPendingSignalForCurrentThread();
-@@ -72,6 +82,69 @@ private:
+@@ -72,6 +83,69 @@ private:
  	int                         m_max_count;
  };
  
@@ -30895,7 +31665,7 @@ index ed7c35b..565e55e 100644
  KernelSemaPrivate::~KernelSemaPrivate() {
  	Common::LockGuard lock(m_mutex);
  
-@@ -137,11 +210,16 @@ KernelSemaPrivate::Result KernelSemaPrivate::Signal(int signal_count) {
+@@ -137,11 +211,16 @@ KernelSemaPrivate::Result KernelSemaPrivate::Signal(int signal_count) {
  		return Result::Deleted;
  	}
  
@@ -30912,7 +31682,7 @@ index ed7c35b..565e55e 100644
  
  	WakeWaiters();
  
-@@ -181,6 +259,7 @@ void KernelSemaPrivate::WakeWaiters() {
+@@ -181,6 +260,7 @@ void KernelSemaPrivate::WakeWaiters() {
  }
  
  KernelSemaPrivate::Result KernelSemaPrivate::Wait(int need_count, uint32_t* ptr_micros) {
@@ -30920,7 +31690,7 @@ index ed7c35b..565e55e 100644
  	Common::LockGuard lock(m_mutex);
  
  	if (need_count < 1 || need_count > m_max_count) {
-@@ -243,6 +322,9 @@ KernelSemaPrivate::Result KernelSemaPrivate::Wait(int need_count, uint32_t* ptr_
+@@ -243,6 +323,9 @@ KernelSemaPrivate::Result KernelSemaPrivate::Wait(int need_count, uint32_t* ptr_
  	}
  
  	RemoveWaiter(&waiter);
@@ -30930,7 +31700,7 @@ index ed7c35b..565e55e 100644
  
  	if (ptr_micros != nullptr) {
  		*ptr_micros = (elapsed >= micros ? 0 : micros - elapsed);
-@@ -257,6 +339,11 @@ int KYTY_SYSV_ABI KernelCreateSema(KernelSema* sem, const char* name, uint32_t a
+@@ -257,6 +340,11 @@ int KYTY_SYSV_ABI KernelCreateSema(KernelSema* sem, const char* name, uint32_t a
  
  	EXIT_NOT_IMPLEMENTED(sem == nullptr);
  
@@ -30942,7 +31712,7 @@ index ed7c35b..565e55e 100644
  	if (name == nullptr || attr > 2 || init < 0 || max <= 0 || init > max) {
  		return KERNEL_ERROR_EINVAL;
  	}
-@@ -294,10 +381,6 @@ int KYTY_SYSV_ABI KernelWaitSema(KernelSema sem, int need, KernelUseconds* time)
+@@ -294,10 +382,6 @@ int KYTY_SYSV_ABI KernelWaitSema(KernelSema sem, int need, KernelUseconds* time)
  		return KERNEL_ERROR_ESRCH;
  	}
  
@@ -30953,7 +31723,7 @@ index ed7c35b..565e55e 100644
  	auto result = sem->Wait(need, time);
  
  	int ret = OK;
-@@ -341,6 +424,10 @@ int KYTY_SYSV_ABI KernelSignalSema(KernelSema sem, int count) {
+@@ -341,6 +425,10 @@ int KYTY_SYSV_ABI KernelSignalSema(KernelSema sem, int count) {
  	if (sem == nullptr) {
  		return KERNEL_ERROR_ESRCH;
  	}
@@ -30964,6 +31734,235 @@ index ed7c35b..565e55e 100644
  
  	auto result = sem->Signal(count);
  
+@@ -416,7 +504,7 @@ public:
+ 		Common::Timer timer;
+ 		timer.Start();
+ 
+-		while (m_count <= 0) {
++		while (m_count <= 0 && !m_bc5_destroyed) {
+ 			if (timed_wait && elapsed >= *micros) {
+ 				SyncGuest();
+ 				return POSIX_ETIMEDOUT;
+@@ -438,6 +526,9 @@ public:
+ 			m_waiters--;
+ 			elapsed = static_cast<uint32_t>(timer.GetTimeS() * 1000000.0);
+ 		}
++		if (m_bc5_destroyed) { // ports pack 1, A6: destroyed while this thread waited
++			return POSIX_EINVAL;
++		}
+ 
+ 		m_count--;
+ 		SyncGuest();
+@@ -447,6 +538,9 @@ public:
+ 
+ 	int TryWait() {
+ 		Common::LockGuard lock(m_mutex);
++		if (m_bc5_destroyed) { // ports pack 1, A6
++			return POSIX_EINVAL;
++		}
+ 
+ 		if (m_count <= 0) {
+ 			SyncGuest();
+@@ -461,6 +555,9 @@ public:
+ 
+ 	int Post() {
+ 		Common::LockGuard lock(m_mutex);
++		if (m_bc5_destroyed) { // ports pack 1, A6
++			return POSIX_EINVAL;
++		}
+ 
+ 		if (m_count == POSIX_SEM_VALUE_MAX) {
+ 			return POSIX_EOVERFLOW;
+@@ -479,6 +576,15 @@ public:
+ 		return m_count;
+ 	}
+ 
++	// ports pack 1, A6: wakes every waiter with EINVAL; later calls through a reference taken before get EINVAL too.
++	void Bc5MarkDestroyed() {
++		Common::LockGuard lock(m_mutex);
++		m_bc5_destroyed = true;
++		m_cond_var.SignalAll();
++	}
++
++	std::atomic<int> m_bc5_users {0}; // ports pack 1, A6: references handed out by GetSem and not yet dropped
++
+ private:
+ 	void SyncGuest(uint32_t flags = std::numeric_limits<uint32_t>::max()) {
+ 		if (m_guest != nullptr) {
+@@ -497,6 +603,7 @@ private:
+ 	PosixSemGuest*  m_guest   = nullptr;
+ 	int             m_count   = 0;
+ 	uint32_t        m_waiters = 0;
++	bool            m_bc5_destroyed = false; // ports pack 1, A6
+ };
+ 
+ Common::Mutex                                        g_posix_sem_mutex;
+@@ -507,15 +614,66 @@ static int PosixToKernel(int posix_errno) {
+ 	                                               : LibKernel::KERNEL_ERROR_EINVAL);
+ }
+ 
+-static PosixSemPrivate* GetSem(void* sem) {
++// ports pack 1, A6 (AnyPS5 ff9a68aed4, GPL-2.0, core/libs/prx/libkernel/Pthread/src/Sem.cpp: resolveSem returns an
++// owning shared_ptr, destroy marks the object destroyed and wakes its waiters, wait/post/trywait then return EINVAL):
++// a POSIX semaphore is no longer deleted under a thread that is waiting on it, posting to it, or holds it between the
++// lookup and the call. BC5 form, not upstream's code: GetSem hands out a counted reference (taken under the map lock),
++// and destroy (or a re-init of the same guest object) erases the entry, marks the object destroyed, waits until every
++// reference is dropped, and only then deletes it. Before the pack: plain pointers and an immediate delete.
++static bool Bc5P1SemUaf() {
++	return BC5_P1("KYTY_BC5_P1_SEMA_UAF");
++}
++
++class SemRef {
++public:
++	SemRef() = default;
++	SemRef(PosixSemPrivate* p, bool counted): m_p(p), m_counted(counted) {}
++	SemRef(const SemRef&)            = delete;
++	SemRef& operator=(const SemRef&) = delete;
++	SemRef(SemRef&& o) noexcept: m_p(o.m_p), m_counted(o.m_counted) { o.m_p = nullptr; }
++	~SemRef() {
++		if (m_p != nullptr && m_counted) {
++			m_p->m_bc5_users.fetch_sub(1, std::memory_order_acq_rel);
++		}
++	}
++	PosixSemPrivate* operator->() const { return m_p; }
++	bool             operator==(std::nullptr_t) const { return m_p == nullptr; }
++	bool             operator!=(std::nullptr_t) const { return m_p != nullptr; }
++
++private:
++	PosixSemPrivate* m_p       = nullptr;
++	bool             m_counted = false;
++};
++
++static void Bc5RetireSem(PosixSemPrivate* obj) {
++	if (obj == nullptr) {
++		return;
++	}
++	if (Bc5P1SemUaf()) {
++		obj->Bc5MarkDestroyed();
++		while (obj->m_bc5_users.load(std::memory_order_acquire) != 0) {
++			Common::Thread::SleepMicro(10);
++		}
++	}
++	delete obj;
++}
++
++static SemRef GetSem(void* sem) {
+ 	if (sem == nullptr) {
+-		return nullptr;
++		return {};
+ 	}
+ 
+ 	Common::LockGuard lock(g_posix_sem_mutex);
+ 
+ 	const auto it = g_posix_sems.find(static_cast<PosixSemGuest*>(sem));
+-	return (it != g_posix_sems.end() ? it->second : nullptr);
++	if (it == g_posix_sems.end()) {
++		return {};
++	}
++	const bool counted = Bc5P1SemUaf();
++	if (counted) {
++		it->second->m_bc5_users.fetch_add(1, std::memory_order_acq_rel);
++	}
++	return {it->second, counted};
+ }
+ 
+ static int SetErrnoReturn(int posix_errno) {
+@@ -531,16 +689,22 @@ static int SemInitImpl(void* sem, int pshared, unsigned int value, const char* n
+ 	auto* guest = static_cast<PosixSemGuest*>(sem);
+ 	auto* obj   = new PosixSemPrivate(guest, value, static_cast<uint32_t>(pshared));
+ 
++	PosixSemPrivate* bc5_old = nullptr; // ports pack 1, A6: a re-initialised object is retired outside the map lock
+ 	{
+ 		Common::LockGuard lock(g_posix_sem_mutex);
+ 
+ 		if (auto it = g_posix_sems.find(guest); it != g_posix_sems.end()) {
+-			delete it->second;
++			if (Bc5P1SemUaf()) {
++				bc5_old = it->second;
++			} else {
++				delete it->second;
++			}
+ 			it->second = obj;
+ 		} else {
+ 			g_posix_sems.insert({guest, obj});
+ 		}
+ 	}
++	Bc5RetireSem(bc5_old);
+ 
+ 	static std::atomic<uint32_t> log_count {0};
+ 	const auto                   count = log_count.fetch_add(1);
+@@ -572,7 +736,7 @@ static int SemDestroyImpl(void* sem) {
+ 		g_posix_sems.erase(it);
+ 	}
+ 
+-	delete obj;
++	Bc5RetireSem(obj); // ports pack 1, A6: with the switch off, a plain delete as before
+ 	guest->magic       = 0;
+ 	guest->has_waiters = 0;
+ 	guest->count       = 0;
+@@ -582,7 +746,7 @@ static int SemDestroyImpl(void* sem) {
+ }
+ 
+ static int SemTimedwaitImpl(void* sem, uint32_t* micros) {
+-	auto* obj = GetSem(sem);
++	auto obj = GetSem(sem);
+ 	if (obj == nullptr) {
+ 		return POSIX_EINVAL;
+ 	}
+@@ -638,7 +802,7 @@ int KYTY_SYSV_ABI sem_wait(void* sem) {
+ }
+ 
+ int KYTY_SYSV_ABI sem_trywait(void* sem) {
+-	auto* obj = GetSem(sem);
++	auto obj = GetSem(sem);
+ 	if (obj == nullptr) {
+ 		return SetErrnoReturn(POSIX_EINVAL);
+ 	}
+@@ -663,7 +827,7 @@ int KYTY_SYSV_ABI sem_timedwait(void* sem, const LibKernel::KernelTimespec* abst
+ }
+ 
+ int KYTY_SYSV_ABI sem_post(void* sem) {
+-	auto* obj = GetSem(sem);
++	auto obj = GetSem(sem);
+ 	if (obj == nullptr) {
+ 		return SetErrnoReturn(POSIX_EINVAL);
+ 	}
+@@ -673,7 +837,7 @@ int KYTY_SYSV_ABI sem_post(void* sem) {
+ }
+ 
+ int KYTY_SYSV_ABI sem_getvalue(void* sem, int* value) {
+-	auto* obj = GetSem(sem);
++	auto obj = GetSem(sem);
+ 	if (obj == nullptr || value == nullptr) {
+ 		return SetErrnoReturn(POSIX_EINVAL);
+ 	}
+@@ -711,7 +875,7 @@ int KYTY_SYSV_ABI PthreadSemWait(void* sem) {
+ }
+ 
+ int KYTY_SYSV_ABI PthreadSemTrywait(void* sem) {
+-	auto* obj = Posix::GetSem(sem);
++	auto obj = Posix::GetSem(sem);
+ 	if (obj == nullptr) {
+ 		return KERNEL_ERROR_EINVAL;
+ 	}
+@@ -727,7 +891,7 @@ int KYTY_SYSV_ABI PthreadSemTimedwait(void* sem, KernelUseconds usec) {
+ }
+ 
+ int KYTY_SYSV_ABI PthreadSemPost(void* sem) {
+-	auto* obj = Posix::GetSem(sem);
++	auto obj = Posix::GetSem(sem);
+ 	if (obj == nullptr) {
+ 		return KERNEL_ERROR_EINVAL;
+ 	}
+@@ -737,7 +901,7 @@ int KYTY_SYSV_ABI PthreadSemPost(void* sem) {
+ }
+ 
+ int KYTY_SYSV_ABI PthreadSemGetvalue(void* sem, int* value) {
+-	auto* obj = Posix::GetSem(sem);
++	auto obj = Posix::GetSem(sem);
+ 	if (obj == nullptr || value == nullptr) {
+ 		return KERNEL_ERROR_EINVAL;
+ 	}
 diff --git a/src/kernel/syncOnAddress.cpp b/src/kernel/syncOnAddress.cpp
 index 1613ace..2494636 100644
 --- a/src/kernel/syncOnAddress.cpp
@@ -31155,12 +32154,13 @@ index 73e3ac9..b6beb82 100644
  int KYTY_SYSV_ABI      GraphicsDriverUnknownU9ueyEhSkF4();
  
 diff --git a/src/libs/ajm.cpp b/src/libs/ajm.cpp
-index 89473ad..8ab204f 100644
+index 89473ad..0d2f482 100644
 --- a/src/libs/ajm.cpp
 +++ b/src/libs/ajm.cpp
-@@ -1,15 +1,23 @@
+@@ -1,15 +1,24 @@
 +#include <map>
  #include "common/assert.h"
++#include "bc5/ports_pack1.hpp" // ports pack 1: R2a
  #include "common/common.h"
  #include "common/logging/log.h"
  #include "libs/audio.h"
@@ -31182,7 +32182,7 @@ index 89473ad..8ab204f 100644
  #include <cstring>
  #include <limits>
  #include <memory>
-@@ -183,7 +191,6 @@ constexpr uint64_t AJM_INSTANCE_FLAG_FORMAT_MASK      = 0x7u;
+@@ -183,7 +192,6 @@ constexpr uint64_t AJM_INSTANCE_FLAG_FORMAT_MASK      = 0x7u;
  constexpr uint64_t AJM_INSTANCE_FLAG_MAX_CHANNEL_MASK = 0x7fu;
  constexpr uint64_t AJM_INSTANCE_FLAG_CODEC_OFFSET     = 32u;
  constexpr uint32_t AJM_DEC_OPUS_MAX_CHANNELS_FOR_10CH = 10;
@@ -31190,7 +32190,7 @@ index 89473ad..8ab204f 100644
  
  static std::atomic_uint32_t g_ajm_next_instance {1};
  static std::atomic_uint32_t g_ajm_next_batch {1};
-@@ -313,6 +320,7 @@ protected:
+@@ -313,6 +321,7 @@ protected:
  #include "libs/ajm/aac_decoder.h"
  #include "libs/ajm/atrac9_decoder.h"
  #include "libs/ajm/mp3_decoder.h"
@@ -31198,7 +32198,7 @@ index 89473ad..8ab204f 100644
  
  namespace Libs::Audio::Ajm {
  
-@@ -332,6 +340,9 @@ int KYTY_SYSV_ABI AjmDecAt9ParseConfigData(const void*              config_data,
+@@ -332,6 +341,9 @@ int KYTY_SYSV_ABI AjmDecAt9ParseConfigData(const void*              config_data,
  
  	uint8_t config[ATRAC9_CONFIG_DATA_SIZE] {};
  	std::memcpy(config, config_data, sizeof(config));
@@ -31208,7 +32208,7 @@ index 89473ad..8ab204f 100644
  	Atrac9CodecInfo codec_info {};
  	const int       init_result = Atrac9InitDecoder(handle, config);
  	const int       info_result =
-@@ -354,134 +365,6 @@ int KYTY_SYSV_ABI AjmDecAt9ParseConfigData(const void*              config_data,
+@@ -354,134 +366,6 @@ int KYTY_SYSV_ABI AjmDecAt9ParseConfigData(const void*              config_data,
  	return OK;
  }
  
@@ -31343,7 +32343,7 @@ index 89473ad..8ab204f 100644
  struct AjmInstanceState {
  	uint32_t                    context = 0;
  	uint32_t                    codec   = 0;
-@@ -549,6 +432,132 @@ static AjmInstanceState* AjmFindInstanceLocked(uint32_t instance) {
+@@ -549,6 +433,132 @@ static AjmInstanceState* AjmFindInstanceLocked(uint32_t instance) {
  	return &it->second;
  }
  
@@ -31476,7 +32476,7 @@ index 89473ad..8ab204f 100644
  static uint8_t* AjmReserveJob(AjmBatchInfo* info, size_t job_size) {
  	EXIT_NOT_IMPLEMENTED(info == nullptr);
  
-@@ -733,11 +742,15 @@ static AjmDecodeResult AjmDecodeInstance(uint32_t instance, const void* input, s
+@@ -733,11 +743,15 @@ static AjmDecodeResult AjmDecodeInstance(uint32_t instance, const void* input, s
  	if (state == nullptr || state->decoder == nullptr) {
  		AjmDecodeResult result {};
  		result.result = AJM_RESULT_INVALID_PARAMETER;
@@ -31494,7 +32494,7 @@ index 89473ad..8ab204f 100644
  }
  
  static AjmDecodeResult AjmDecodeSplitInstance(uint32_t instance, const AjmBuffer* input_buffers,
-@@ -776,6 +789,7 @@ static AjmDecodeResult AjmDecodeSplitInstance(uint32_t instance, const AjmBuffer
+@@ -776,6 +790,7 @@ static AjmDecodeResult AjmDecodeSplitInstance(uint32_t instance, const AjmBuffer
  			std::memcpy(output_buffers[i].address, output.data() + output_offset, bytes);
  		}
  		output_offset += output_buffers[i].size;
@@ -31502,7 +32502,46 @@ index 89473ad..8ab204f 100644
  	}
  
  	return result;
-@@ -944,8 +958,16 @@ int KYTY_SYSV_ABI AjmInstanceCreate(uint32_t context, uint32_t codec, uint64_t f
+@@ -815,6 +830,20 @@ static AjmDecodeResult AjmControlInstance(uint32_t instance, uint64_t flags,
+ 	}
+ 
+ 	AjmDecodeResult result = decoder->MakeResult();
++	// ports pack 1, R2a (exp 0405 R2 KA04; KytyPS5 2e315a3c, GPL-2.0, ajm.cpp:660-669): a control job that carries the
++	// gapless sideband has it FIRST in its input: it is taken as the gapless setting and skipped, so the codec's
++	// initialize parameters start after it. Before, the gapless bytes were handed to Initialize as codec parameters.
++	// Before the pack: the whole input goes to Initialize as before.
++	if ((flags & AJM_FLAG_SIDEBAND_GAPLESS) != 0 && BC5_P1("KYTY_BC5_P1_AJM_GAPLESS")) {
++		if (sideband_input == nullptr || sideband_input_size < AJM_SIDEBAND_GAPLESS_SIZE) {
++			result.result = AJM_RESULT_INVALID_PARAMETER;
++			return result;
++		}
++		state->gapless.Set(*static_cast<const AjmSidebandGaplessDecode*>(sideband_input),
++		                   (flags & AJM_FLAG_CONTROL_RESET) != 0);
++		sideband_input = static_cast<const uint8_t*>(sideband_input) + AJM_SIDEBAND_GAPLESS_SIZE;
++		sideband_input_size -= AJM_SIDEBAND_GAPLESS_SIZE;
++	}
+ 	if ((flags & AJM_FLAG_CONTROL_RESET) != 0) {
+ 		state->gapless.Reset();
+ 		decoder->Reset();
+@@ -830,6 +859,17 @@ static AjmDecodeResult AjmControlInstance(uint32_t instance, uint64_t flags,
+ 
+ static AjmDecodeResult AjmSetGaplessDecode(uint32_t instance, const void* gapless_decode,
+                                            int reset) {
++	// ports pack 1, R2a (KytyPS5 1cc0ac7e, GPL-2.0, ajm.cpp:683-688): set-gapless goes through the control path, so a
++	// reset also resets the decoder, as a control reset does. Before the pack: the gapless state only.
++	if (BC5_P1("KYTY_BC5_P1_AJM_GAPLESS")) {
++		if (gapless_decode == nullptr) {
++			AjmDecodeResult result {};
++			result.result = AJM_RESULT_INVALID_PARAMETER;
++			return result;
++		}
++		const auto flags = AJM_FLAG_SIDEBAND_GAPLESS | (reset != 0 ? AJM_FLAG_CONTROL_RESET : 0);
++		return AjmControlInstance(instance, flags, gapless_decode, sizeof(AjmSidebandGaplessDecode), nullptr, nullptr);
++	}
+ 	std::scoped_lock lock(g_ajm_instances_mutex);
+ 	auto*            state = AjmFindInstanceLocked(instance);
+ 	if (state == nullptr || state->decoder == nullptr || gapless_decode == nullptr) {
+@@ -944,8 +984,16 @@ int KYTY_SYSV_ABI AjmInstanceCreate(uint32_t context, uint32_t codec, uint64_t f
  	EXIT_NOT_IMPLEMENTED(instance == nullptr);
  	const auto supported = AjmLogCodecSupport(codec);
  
@@ -31521,7 +32560,7 @@ index 89473ad..8ab204f 100644
  
  	auto state    = AjmInstanceState {};
  	state.context = context;
-@@ -974,8 +996,12 @@ int KYTY_SYSV_ABI AjmInstanceDestroy(uint32_t context, uint32_t instance) {
+@@ -974,8 +1022,12 @@ int KYTY_SYSV_ABI AjmInstanceDestroy(uint32_t context, uint32_t instance) {
  	PRINT_NAME();
  	LOGF("\t context = %" PRIu32 ", instance = 0x%08" PRIx32 "\n", context, instance);
  
@@ -31536,7 +32575,7 @@ index 89473ad..8ab204f 100644
  
  	return OK;
  }
-@@ -1005,6 +1031,9 @@ int KYTY_SYSV_ABI AjmBatchInitialize(void* buffer, size_t size, AjmBatchInfo* in
+@@ -1005,6 +1057,9 @@ int KYTY_SYSV_ABI AjmBatchInitialize(void* buffer, size_t size, AjmBatchInfo* in
  	info->size             = size;
  	info->last_good_job    = nullptr;
  	info->last_good_job_ra = nullptr;
@@ -31546,7 +32585,7 @@ index 89473ad..8ab204f 100644
  
  	return OK;
  }
-@@ -1024,6 +1053,11 @@ int KYTY_SYSV_ABI AjmBatchStart(uint32_t context, const AjmBatchInfo* info, int
+@@ -1024,6 +1079,11 @@ int KYTY_SYSV_ABI AjmBatchStart(uint32_t context, const AjmBatchInfo* info, int
  	}
  
  	*batch = g_ajm_next_batch.fetch_add(1, std::memory_order_relaxed);
@@ -31558,7 +32597,7 @@ index 89473ad..8ab204f 100644
  
  	return OK;
  }
-@@ -1044,6 +1078,7 @@ int KYTY_SYSV_ABI AjmBatchWait(uint32_t context, uint32_t batch, uint32_t timeou
+@@ -1044,6 +1104,7 @@ int KYTY_SYSV_ABI AjmBatchWait(uint32_t context, uint32_t batch, uint32_t timeou
  int KYTY_SYSV_ABI AjmBatchCancel(uint32_t context, uint32_t batch) {
  	PRINT_NAME();
  	LOGF("\t context = %" PRIu32 ", batch = %" PRIu32 "\n", context, batch);
@@ -31566,7 +32605,7 @@ index 89473ad..8ab204f 100644
  	return OK;
  }
  
-@@ -1061,6 +1096,7 @@ int KYTY_SYSV_ABI AjmBatchJobInitialize(AjmBatchInfo* info, uint32_t instance,
+@@ -1061,6 +1122,7 @@ int KYTY_SYSV_ABI AjmBatchJobInitialize(AjmBatchInfo* info, uint32_t instance,
                                          void* result) {
  	PRINT_NAME();
  	EXIT_NOT_IMPLEMENTED(info == nullptr);
@@ -31574,7 +32613,7 @@ index 89473ad..8ab204f 100644
  
  	const auto decode_result =
  	    AjmInitializeInstance(instance, codec_parameters, codec_parameters_size);
-@@ -1070,12 +1106,13 @@ int KYTY_SYSV_ABI AjmBatchJobInitialize(AjmBatchInfo* info, uint32_t instance,
+@@ -1070,12 +1132,13 @@ int KYTY_SYSV_ABI AjmBatchJobInitialize(AjmBatchInfo* info, uint32_t instance,
  	     "\n",
  	     instance, reinterpret_cast<uint64_t>(codec_parameters),
  	     static_cast<uint64_t>(codec_parameters_size));
@@ -31589,7 +32628,7 @@ index 89473ad..8ab204f 100644
  
  	AjmDecodeResult decode_result {};
  	{
-@@ -1092,7 +1129,7 @@ int KYTY_SYSV_ABI AjmBatchJobClearContext(AjmBatchInfo* info, uint32_t instance,
+@@ -1092,7 +1155,7 @@ int KYTY_SYSV_ABI AjmBatchJobClearContext(AjmBatchInfo* info, uint32_t instance,
  
  	AjmWriteResult(result, AJM_SIDEBAND_RESULT_SIZE, decode_result);
  	LOGF("\t instance = 0x%08" PRIx32 "\n", instance);
@@ -31598,7 +32637,7 @@ index 89473ad..8ab204f 100644
  }
  
  int KYTY_SYSV_ABI AjmBatchJobDecode(AjmBatchInfo* info, uint32_t instance,
-@@ -1100,6 +1137,7 @@ int KYTY_SYSV_ABI AjmBatchJobDecode(AjmBatchInfo* info, uint32_t instance,
+@@ -1100,6 +1163,7 @@ int KYTY_SYSV_ABI AjmBatchJobDecode(AjmBatchInfo* info, uint32_t instance,
                                      void* pcm_output, size_t pcm_output_size, void* result) {
  	PRINT_NAME();
  	EXIT_NOT_IMPLEMENTED(info == nullptr);
@@ -31606,7 +32645,7 @@ index 89473ad..8ab204f 100644
  
  	const auto decode_result = AjmDecodeInstance(instance, bitstream_input, bitstream_input_size,
  	                                             pcm_output, pcm_output_size, true);
-@@ -1112,7 +1150,7 @@ int KYTY_SYSV_ABI AjmBatchJobDecode(AjmBatchInfo* info, uint32_t instance,
+@@ -1112,7 +1176,7 @@ int KYTY_SYSV_ABI AjmBatchJobDecode(AjmBatchInfo* info, uint32_t instance,
  	     instance, reinterpret_cast<uint64_t>(bitstream_input),
  	     static_cast<uint64_t>(bitstream_input_size), reinterpret_cast<uint64_t>(pcm_output),
  	     static_cast<uint64_t>(pcm_output_size));
@@ -31615,7 +32654,7 @@ index 89473ad..8ab204f 100644
  }
  
  int KYTY_SYSV_ABI AjmBatchJobDecodeSingle(AjmBatchInfo* info, uint32_t instance,
-@@ -1120,6 +1158,7 @@ int KYTY_SYSV_ABI AjmBatchJobDecodeSingle(AjmBatchInfo* info, uint32_t instance,
+@@ -1120,6 +1184,7 @@ int KYTY_SYSV_ABI AjmBatchJobDecodeSingle(AjmBatchInfo* info, uint32_t instance,
                                            void* pcm_output, size_t pcm_output_size, void* result) {
  	PRINT_NAME();
  	EXIT_NOT_IMPLEMENTED(info == nullptr);
@@ -31623,7 +32662,7 @@ index 89473ad..8ab204f 100644
  
  	const auto decode_result = AjmDecodeInstance(instance, bitstream_input, bitstream_input_size,
  	                                             pcm_output, pcm_output_size, false);
-@@ -1127,7 +1166,7 @@ int KYTY_SYSV_ABI AjmBatchJobDecodeSingle(AjmBatchInfo* info, uint32_t instance,
+@@ -1127,7 +1192,7 @@ int KYTY_SYSV_ABI AjmBatchJobDecodeSingle(AjmBatchInfo* info, uint32_t instance,
  	                     false);
  
  	LOGF("\t instance = 0x%08" PRIx32 "\n", instance);
@@ -31632,7 +32671,7 @@ index 89473ad..8ab204f 100644
  }
  
  int KYTY_SYSV_ABI AjmBatchJobDecodeSplit(AjmBatchInfo* info, uint32_t instance,
-@@ -1136,9 +1175,13 @@ int KYTY_SYSV_ABI AjmBatchJobDecodeSplit(AjmBatchInfo* info, uint32_t instance,
+@@ -1136,9 +1201,13 @@ int KYTY_SYSV_ABI AjmBatchJobDecodeSplit(AjmBatchInfo* info, uint32_t instance,
                                           void* result) {
  	PRINT_NAME();
  	EXIT_NOT_IMPLEMENTED(info == nullptr);
@@ -31648,7 +32687,7 @@ index 89473ad..8ab204f 100644
  	AjmWriteStreamResult(
  	    result, AJM_SIDEBAND_RESULT_SIZE + AJM_SIDEBAND_STREAM_SIZE + AJM_SIDEBAND_MFRAME_SIZE,
  	    decode_result, true);
-@@ -1146,10 +1189,10 @@ int KYTY_SYSV_ABI AjmBatchJobDecodeSplit(AjmBatchInfo* info, uint32_t instance,
+@@ -1146,10 +1215,10 @@ int KYTY_SYSV_ABI AjmBatchJobDecodeSplit(AjmBatchInfo* info, uint32_t instance,
  	LOGF("\t instance = 0x%08" PRIx32 ", input_buffers = 0x%016" PRIx64
  	     ", input_num = 0x%016" PRIx64 ", output_buffers = 0x%016" PRIx64
  	     ", output_num = 0x%016" PRIx64 "\n",
@@ -31662,7 +32701,7 @@ index 89473ad..8ab204f 100644
  }
  
  int KYTY_SYSV_ABI AjmBatchJobEncode(AjmBatchInfo* info, uint32_t instance, const void* pcm_input,
-@@ -1179,6 +1222,7 @@ int KYTY_SYSV_ABI AjmBatchJobEncode(AjmBatchInfo* info, uint32_t instance, const
+@@ -1179,6 +1248,7 @@ int KYTY_SYSV_ABI AjmBatchJobEncode(AjmBatchInfo* info, uint32_t instance, const
  int KYTY_SYSV_ABI AjmBatchJobGetInfo(AjmBatchInfo* info, uint32_t instance, void* result) {
  	PRINT_NAME();
  	EXIT_NOT_IMPLEMENTED(info == nullptr);
@@ -31670,7 +32709,7 @@ index 89473ad..8ab204f 100644
  
  	AjmDecodeResult decode_result {};
  	const auto      format = AjmGetInstanceFormat(instance, &decode_result);
-@@ -1186,13 +1230,14 @@ int KYTY_SYSV_ABI AjmBatchJobGetInfo(AjmBatchInfo* info, uint32_t instance, void
+@@ -1186,13 +1256,14 @@ int KYTY_SYSV_ABI AjmBatchJobGetInfo(AjmBatchInfo* info, uint32_t instance, void
  	               decode_result);
  
  	LOGF("\t instance = 0x%08" PRIx32 "\n", instance);
@@ -31686,7 +32725,7 @@ index 89473ad..8ab204f 100644
  
  	AjmDecodeResult decode_result {};
  	AjmDecoder*     decoder = nullptr;
-@@ -1202,23 +1247,25 @@ int KYTY_SYSV_ABI AjmBatchJobGetCodecInfo(AjmBatchInfo* info, uint32_t instance,
+@@ -1202,23 +1273,25 @@ int KYTY_SYSV_ABI AjmBatchJobGetCodecInfo(AjmBatchInfo* info, uint32_t instance,
  
  	LOGF("\t instance = 0x%08" PRIx32 ", result_size = 0x%016" PRIx64 "\n", instance,
  	     static_cast<uint64_t>(result_size));
@@ -31714,7 +32753,7 @@ index 89473ad..8ab204f 100644
  
  	AjmDecodeResult          decode_result {};
  	AjmSidebandGaplessDecode gapless_decode {};
-@@ -1231,7 +1278,7 @@ int KYTY_SYSV_ABI AjmBatchJobGetGaplessDecode(AjmBatchInfo* info, uint32_t insta
+@@ -1231,7 +1304,7 @@ int KYTY_SYSV_ABI AjmBatchJobGetGaplessDecode(AjmBatchInfo* info, uint32_t insta
  	}
  
  	LOGF("\t instance = 0x%08" PRIx32 "\n", instance);
@@ -31723,7 +32762,7 @@ index 89473ad..8ab204f 100644
  }
  
  int KYTY_SYSV_ABI AjmBatchJobSetResampleParameters(AjmBatchInfo* info, uint32_t instance,
-@@ -1261,6 +1308,7 @@ int KYTY_SYSV_ABI AjmBatchJobSetResampleParametersEx(AjmBatchInfo* info, uint32_
+@@ -1261,6 +1334,7 @@ int KYTY_SYSV_ABI AjmBatchJobSetResampleParametersEx(AjmBatchInfo* info, uint32_
  int KYTY_SYSV_ABI AjmBatchJobGetResampleInfo(AjmBatchInfo* info, uint32_t instance, void* result) {
  	PRINT_NAME();
  	EXIT_NOT_IMPLEMENTED(info == nullptr);
@@ -31731,7 +32770,7 @@ index 89473ad..8ab204f 100644
  
  	AjmDecodeResult decode_result {};
  	(void)AjmGetInstanceFormat(instance, &decode_result);
-@@ -1272,7 +1320,7 @@ int KYTY_SYSV_ABI AjmBatchJobGetResampleInfo(AjmBatchInfo* info, uint32_t instan
+@@ -1272,7 +1346,7 @@ int KYTY_SYSV_ABI AjmBatchJobGetResampleInfo(AjmBatchInfo* info, uint32_t instan
  		resample->ratio = 1.0f;
  	}
  	LOGF("\t instance = 0x%08" PRIx32 "\n", instance);
@@ -31740,7 +32779,7 @@ index 89473ad..8ab204f 100644
  }
  
  int KYTY_SYSV_ABI AjmBatchJobGetStatistics(AjmBatchInfo* info, float interval, void* result) {
-@@ -1288,6 +1336,7 @@ int KYTY_SYSV_ABI AjmBatchJobControl(AjmBatchInfo* info, uint32_t instance, uint
+@@ -1288,6 +1362,7 @@ int KYTY_SYSV_ABI AjmBatchJobControl(AjmBatchInfo* info, uint32_t instance, uint
                                       void* sideband_output, size_t sideband_output_size) {
  	PRINT_NAME();
  	EXIT_NOT_IMPLEMENTED(info == nullptr);
@@ -31748,7 +32787,7 @@ index 89473ad..8ab204f 100644
  
  	AjmDecoder*      decoder       = nullptr;
  	AjmGaplessState* gapless       = nullptr;
-@@ -1301,7 +1350,7 @@ int KYTY_SYSV_ABI AjmBatchJobControl(AjmBatchInfo* info, uint32_t instance, uint
+@@ -1301,7 +1376,7 @@ int KYTY_SYSV_ABI AjmBatchJobControl(AjmBatchInfo* info, uint32_t instance, uint
  	     instance, flags, reinterpret_cast<uint64_t>(sideband_input),
  	     static_cast<uint64_t>(sideband_input_size), reinterpret_cast<uint64_t>(sideband_output),
  	     static_cast<uint64_t>(sideband_output_size));
@@ -31757,7 +32796,7 @@ index 89473ad..8ab204f 100644
  }
  
  int KYTY_SYSV_ABI AjmBatchJobRun(AjmBatchInfo* info, uint32_t instance, uint64_t flags,
-@@ -1310,6 +1359,7 @@ int KYTY_SYSV_ABI AjmBatchJobRun(AjmBatchInfo* info, uint32_t instance, uint64_t
+@@ -1310,6 +1385,7 @@ int KYTY_SYSV_ABI AjmBatchJobRun(AjmBatchInfo* info, uint32_t instance, uint64_t
                                   size_t sideband_output_size) {
  	PRINT_NAME();
  	EXIT_NOT_IMPLEMENTED(info == nullptr);
@@ -31765,7 +32804,7 @@ index 89473ad..8ab204f 100644
  
  	auto decode_result =
  	    AjmDecodeInstance(instance, data_input, data_input_size, data_output, data_output_size,
-@@ -1325,7 +1375,7 @@ int KYTY_SYSV_ABI AjmBatchJobRun(AjmBatchInfo* info, uint32_t instance, uint64_t
+@@ -1325,7 +1401,7 @@ int KYTY_SYSV_ABI AjmBatchJobRun(AjmBatchInfo* info, uint32_t instance, uint64_t
  	     instance, flags, reinterpret_cast<uint64_t>(data_input),
  	     static_cast<uint64_t>(data_input_size), reinterpret_cast<uint64_t>(data_output),
  	     static_cast<uint64_t>(data_output_size));
@@ -31774,7 +32813,7 @@ index 89473ad..8ab204f 100644
  }
  
  int KYTY_SYSV_ABI AjmBatchJobRunSplit(AjmBatchInfo* info, uint32_t instance, uint64_t flags,
-@@ -1334,9 +1384,13 @@ int KYTY_SYSV_ABI AjmBatchJobRunSplit(AjmBatchInfo* info, uint32_t instance, uin
+@@ -1334,9 +1410,13 @@ int KYTY_SYSV_ABI AjmBatchJobRunSplit(AjmBatchInfo* info, uint32_t instance, uin
                                        void* sideband_output, size_t sideband_output_size) {
  	PRINT_NAME();
  	EXIT_NOT_IMPLEMENTED(info == nullptr);
@@ -31789,7 +32828,7 @@ index 89473ad..8ab204f 100644
  	                           output_buffers_num, (flags & AJM_FLAG_RUN_MULTIPLE_FRAMES) != 0);
  	AjmDecoder*      decoder = nullptr;
  	AjmGaplessState* gapless = nullptr;
-@@ -1346,10 +1400,10 @@ int KYTY_SYSV_ABI AjmBatchJobRunSplit(AjmBatchInfo* info, uint32_t instance, uin
+@@ -1346,10 +1426,10 @@ int KYTY_SYSV_ABI AjmBatchJobRunSplit(AjmBatchInfo* info, uint32_t instance, uin
  	LOGF("\t instance = 0x%08" PRIx32 ", flags = 0x%016" PRIx64 ", input_buffers = 0x%016" PRIx64
  	     ", input_num = 0x%016" PRIx64 ", output_buffers = 0x%016" PRIx64
  	     ", output_num = 0x%016" PRIx64 "\n",
@@ -51850,10 +52889,10 @@ index 0000000..901e904
 +
 +} // namespace Libs
 diff --git a/src/libs/controller.cpp b/src/libs/controller.cpp
-index 55718eb..d466218 100644
+index 55718eb..8caaa73 100644
 --- a/src/libs/controller.cpp
 +++ b/src/libs/controller.cpp
-@@ -1,787 +1,1400 @@
+@@ -1,787 +1,1406 @@
 -#include "libs/controller.h"
 -
 -#include "common/assert.h"
@@ -52642,6 +53681,7 @@ index 55718eb..d466218 100644
 -
 -} // namespace Libs::Controller
 +#include "bc5/env_rule.hpp" // exp 0419 (build W): BC5_DIAG_ENV, BC5_FIXED_ENV, BC5_LEAN_OR
++#include "bc5/ports_pack1.hpp" // ports pack 1: C
 +#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
 +#include <pthread.h>
 +#include "libs/controller.h"
@@ -53946,6 +54986,11 @@ index 55718eb..d466218 100644
 +int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
 +	PRINT_NAME();
 +
++	// ports pack 1, C (AnyPS5 6843151af3, core/libs/prx/libScePad/Export.cpp scePadRead, l. 412): the arguments are checked before
++	// the handle, and a null output or a count outside 1..64 is PAD_ERROR_INVALID_ARG, not a host exit.
++	if ((data == nullptr || num < 1 || num > 64) && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) {
++		return PAD_ERROR_INVALID_ARG;
++	}
 +	EXIT_NOT_IMPLEMENTED(num < 1 || num > 64);
 +	if (ControllerIndexFromHandle(handle) < 0) {
 +		return PAD_ERROR_INVALID_HANDLE;
@@ -54487,17 +55532,18 @@ index 5b0fc93..5b78760 100644
  	LOGF("\t target = %d\n"
  	     "\t msg    = 0x%016" PRIx64 "\n",
 diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
-index 073361d..4163fe4 100644
+index 073361d..813eb8c 100644
 --- a/src/libs/libAmpr.cpp
 +++ b/src/libs/libAmpr.cpp
-@@ -1,3 +1,6 @@
+@@ -1,3 +1,7 @@
 +#include "bc5/env_rule.hpp" // exp 0419: the one reading rule
++#include "bc5/ports_pack1.hpp" // ports pack 1: K1, B1
 +#include <atomic>
 +#include <ctime>
  #include "common/abi.h"
  #include "common/dateTime.h"
  #include "common/file.h"
-@@ -11,14 +14,29 @@
+@@ -11,14 +15,29 @@
  #include "loader/symbolDatabase.h"
  
  #include <algorithm>
@@ -54527,7 +55573,7 @@ index 073361d..4163fe4 100644
  
  #ifdef min
  #undef min
-@@ -27,6 +45,92 @@
+@@ -27,6 +46,92 @@
  #undef max
  #endif
  
@@ -54620,7 +55666,7 @@ index 073361d..4163fe4 100644
  namespace Libs {
  
  namespace AprShared {
-@@ -41,6 +145,7 @@ struct SubmissionState {
+@@ -41,6 +146,7 @@ struct SubmissionState {
  	uint64_t result           = 0;
  	int32_t  execution_result = 0;
  	uint32_t error_offset     = 0;
@@ -54628,7 +55674,7 @@ index 073361d..4163fe4 100644
  };
  
  struct ResolvedPathInfo {
-@@ -54,6 +159,7 @@ struct ResolvedPathInfo {
+@@ -54,9 +160,13 @@ struct ResolvedPathInfo {
  static std::mutex                                        g_mutex;
  static uint32_t                                          g_next_submission_id = 1;
  static std::unordered_map<uint32_t, SubmissionState>     g_submissions;
@@ -54636,7 +55682,61 @@ index 073361d..4163fe4 100644
  static std::unordered_map<uint32_t, std::string>         g_files;
  static std::unordered_map<uint32_t, uint64_t>            g_file_sizes;
  static std::unordered_map<std::string, ResolvedPathInfo> g_resolved_paths;
-@@ -468,12 +574,23 @@ static void SetSubmissionResult(uint32_t submission_id, int32_t execution_result
++// ports pack 1, K1: the next counter file id, and the first guest path seen for each path hash (for the collision log)
++static uint32_t                                          g_bc5_next_file_id = 1;
++static std::unordered_map<uint32_t, std::string>         g_bc5_hash_paths;
+ 
+ static bool IsValidGuestRange(uint64_t addr, uint64_t size, bool write = false) {
+ 	(void)write;
+@@ -341,14 +451,33 @@ static int ResolveOnePath(const char* guest_path, uint32_t* id, uint64_t* size)
+ 			info.result = LibKernel::KERNEL_ERROR_ENOENT;
+ 		}
+ 
+-		bool log_missing = false;
++		bool        log_missing = false;
++		std::string bc5_collides_with; // ports pack 1, K1: the earlier path with the same hash, if any
+ 		{
+ 			std::scoped_lock lock(g_mutex);
+ 			auto [it, inserted] = g_resolved_paths.emplace(path, info);
+ 			if (!inserted) {
+ 				info = it->second;
+ 			} else if (info.result == OK) {
+-				RegisterHostPathLocked(info.file_id, info.host_path, info.file_size, info.is_dir);
++				// ports pack 1, K1 (KytyPS5 e43aadf7, GPL-2.0, libAmpr.cpp:214-221): the file id comes from a counter,
++				// allocated once per resolved path under the cache lock. The 31-bit FNV-1a hash of the guest path let
++				// two paths share an id, and the second overwrote the first's entry in g_files, so APR read the wrong
++				// file. BC5 change: ids stay below 2^31 (as the hash ids were), and a hash collision is logged in both
++				// modes, so a run shows whether the old id would have collided. Before the pack: the hash id.
++				const auto bc5_h = g_bc5_hash_paths.emplace(info.file_id, path);
++				if (!bc5_h.second && bc5_h.first->second != path) {
++					bc5_collides_with = bc5_h.first->second;
++				}
++				if (BC5_P1("KYTY_BC5_P1_APR_FILE_ID")) {
++					if (g_bc5_next_file_id >= static_cast<uint32_t>(std::numeric_limits<int32_t>::max())) {
++						info.result = it->second.result = LibKernel::KERNEL_ERROR_ENFILE;
++					} else {
++						info.file_id = it->second.file_id = g_bc5_next_file_id++;
++					}
++				}
++				if (info.result == OK) {
++					RegisterHostPathLocked(info.file_id, info.host_path, info.file_size, info.is_dir);
++				}
+ 			} else if (info.result == LibKernel::KERNEL_ERROR_ENOENT) {
+ 				log_missing = true;
+ 			}
+@@ -356,6 +485,11 @@ static int ResolveOnePath(const char* guest_path, uint32_t* id, uint64_t* size)
+ 		if (log_missing) {
+ 			LOGF("\tAPR resolve missing path: %s -> %s\n", guest_path, info.host_path.c_str());
+ 		}
++		if (!bc5_collides_with.empty()) {
++			std::fprintf(stderr, "[bc5] ports pack 1 K1: APR path hash 0x%08x shared by %s and %s; %s\n", AprShared::ComputeFileId(guest_path),
++			             bc5_collides_with.c_str(), guest_path,
++			             BC5_P1("KYTY_BC5_P1_APR_FILE_ID") ? "counter ids keep them apart" : "the second OVERWRITES the first (hash ids)");
++		}
+ 	} else if (info.result == OK) {
+ 		AprShared::RegisterHostPath(info.file_id, info.host_path, info.file_size, info.is_dir);
+ 	}
+@@ -468,12 +602,23 @@ static void SetSubmissionResult(uint32_t submission_id, int32_t execution_result
  	if (it != g_submissions.end()) {
  		it->second.execution_result = execution_result;
  		it->second.error_offset     = error_offset;
@@ -54662,7 +55762,21 @@ index 073361d..4163fe4 100644
  	if (it == g_submissions.end()) {
  		return false;
  	}
-@@ -501,7 +618,8 @@ static int WriteResult(void* result, int32_t execution_result = 0, uint32_t erro
+@@ -497,11 +642,22 @@ static int WriteResult(void* result, int32_t execution_result = 0, uint32_t erro
+ 	return OK;
+ }
+ 
++// ports pack 1, B1 (AnyPS5 23a0020ab1, GPL-2.0, core/libs/prx/libkernel/Apr/src/Apr.cpp:827-834 and _submitGuest): the
++// submission id and the "submitted" result are written to the guest BEFORE the commands are queued. They were written
++// after ExecuteAprCommandBuffer returned, when the worker could already have run the buffer and written the real result
++// (or the buffer itself wrote that memory), which the late write then overwrote. After the submit, the result is
++// written again only when the submit itself failed or reported an error (then the worker did not run it).
++// Before the pack: the old order.
++static bool Bc5P1ResultFirst() {
++	return BC5_P1("KYTY_BC5_P1_AMPR_RESULT");
++}
++
+ } // namespace AprShared
  
  namespace LibAmpr::Ampr {
  static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_result,
@@ -54672,7 +55786,7 @@ index 073361d..4163fe4 100644
  }
  
  namespace LibKernelApr {
-@@ -667,7 +785,7 @@ static int KYTY_SYSV_ABI ResolveFilepathsWithPrefixToIdsAndFileSizesForEach(
+@@ -667,7 +823,7 @@ static int KYTY_SYSV_ABI ResolveFilepathsWithPrefixToIdsAndFileSizesForEach(
  	    AprShared::ResolvePathsCommon(path_list, count, ids, sizes, nullptr, prefix_buf, results));
  }
  
@@ -54681,9 +55795,20 @@ index 073361d..4163fe4 100644
                                                           void*     result,
                                                           uint32_t* out_submission_id) {
  	PRINT_NAME();
-@@ -683,11 +801,10 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
+@@ -682,12 +838,27 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
+ 
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
++	const bool bc5_first      = AprShared::Bc5P1ResultFirst(); // ports pack 1, B1
++	if (bc5_first) {
++		if (out_submission_id != nullptr && !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
++			return KernelSyscallResult(LibKernel::KERNEL_ERROR_EFAULT);
++		}
++		const int pre = AprShared::WriteResult(result, OK, 0);
++		if (pre != OK) {
++			return KernelSyscallResult(pre);
++		}
++	}
  	auto submit_result = LibAmpr::Ampr::ExecuteAprCommandBuffer(command_buffer_addr,
 -	                                                            &execution_result, &error_offset);
 +	                                                            &execution_result, &error_offset, static_cast<uint32_t>(priority), id, reinterpret_cast<uint64_t>(result));
@@ -54691,10 +55816,16 @@ index 073361d..4163fe4 100644
  		return KernelSyscallResult(submit_result);
  	}
 -	AprShared::SetSubmissionResult(id, execution_result, error_offset);
++	if (bc5_first) {
++		if (execution_result == OK && error_offset == 0) {
++			return OK;
++		}
++		return KernelSyscallResult(AprShared::WriteResult(result, execution_result, error_offset));
++	}
  
  	if (out_submission_id != nullptr) {
  		if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
-@@ -698,7 +815,7 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
+@@ -698,7 +869,7 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
  	return KernelSyscallResult(AprShared::WriteResult(result, execution_result, error_offset));
  }
  
@@ -54703,7 +55834,7 @@ index 073361d..4163fe4 100644
  	PRINT_NAME();
  
  	if (command_buffer == nullptr) {
-@@ -708,10 +825,11 @@ static int KYTY_SYSV_ABI SubmitCommandBuffer(void* command_buffer, uint64_t) {
+@@ -708,10 +879,11 @@ static int KYTY_SYSV_ABI SubmitCommandBuffer(void* command_buffer, uint64_t) {
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	return KernelSyscallResult(LibAmpr::Ampr::ExecuteAprCommandBuffer(
@@ -54717,9 +55848,14 @@ index 073361d..4163fe4 100644
                                                       uint32_t* out_submission_id) {
  	PRINT_NAME();
  
-@@ -725,11 +843,10 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetId(void*     command_buffer, u
+@@ -724,14 +896,17 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetId(void*     command_buffer, u
+ 
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
++	const bool bc5_first      = AprShared::Bc5P1ResultFirst(); // ports pack 1, B1
++	if (bc5_first && !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
++		return KernelSyscallResult(LibKernel::KERNEL_ERROR_EFAULT);
++	}
  	auto submit_result = LibAmpr::Ampr::ExecuteAprCommandBuffer(command_buffer_addr,
 -	                                                            &execution_result, &error_offset);
 +	                                                            &execution_result, &error_offset, static_cast<uint32_t>(priority), id, 0);
@@ -54728,9 +55864,12 @@ index 073361d..4163fe4 100644
  	}
 -	AprShared::SetSubmissionResult(id, execution_result, error_offset);
  
- 	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
+-	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
++	if (!bc5_first && !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
  		return KernelSyscallResult(LibKernel::KERNEL_ERROR_EFAULT);
-@@ -816,7 +933,11 @@ constexpr int      PROT_AMPR_READ                = 0x40;
+ 	}
+ 
+@@ -816,7 +991,11 @@ constexpr int      PROT_AMPR_READ                = 0x40;
  constexpr int      PROT_AMPR_WRITE               = 0x80;
  constexpr int      PROT_ACP_READ                 = 0x100;
  constexpr int      PROT_ACP_WRITE                = 0x200;
@@ -54743,7 +55882,7 @@ index 073361d..4163fe4 100644
  constexpr uint64_t AMM_VA_SIZE                   = 0x0000001000000000ull;
  constexpr uint64_t APR_MAX_READ_LENGTH           = 0x0000000100000000ull;
  constexpr uint64_t APR_MAX_FILE_OFFSET           = 0x0000010000000000ull;
-@@ -829,6 +950,15 @@ enum class AmmCommandKind : uint32_t {
+@@ -829,6 +1008,15 @@ enum class AmmCommandKind : uint32_t {
  	MapAuto,
  	MapDirect,
  	Unmap,
@@ -54759,7 +55898,7 @@ index 073361d..4163fe4 100644
  };
  
  struct CommandBufferState {
-@@ -855,6 +985,13 @@ struct CommandBufferState {
+@@ -855,6 +1043,13 @@ struct CommandBufferState {
  		uint64_t address       = 0;
  		uint64_t value         = 0;
  	};
@@ -54773,7 +55912,7 @@ index 073361d..4163fe4 100644
  	struct AmmMapCommand {
  		uint64_t       record_offset = 0;
  		AmmCommandKind kind          = AmmCommandKind::MapAuto;
-@@ -864,21 +1001,44 @@ struct CommandBufferState {
+@@ -864,21 +1059,44 @@ struct CommandBufferState {
  		int32_t        type          = 0;
  		int32_t        prot          = 0;
  		uint8_t        gpu_mask_id   = 0;
@@ -54822,7 +55961,7 @@ index 073361d..4163fe4 100644
  };
  
  struct AmmVirtualAddressRanges {
-@@ -902,7 +1062,8 @@ static std::mutex                                       g_command_buffer_mutex;
+@@ -902,7 +1120,8 @@ static std::mutex                                       g_command_buffer_mutex;
  static std::unordered_map<uint64_t, CommandBufferState> g_command_buffers;
  static std::unordered_map<uint64_t, uint64_t>           g_command_buffer_aliases;
  static std::mutex                                       g_amm_auto_pool_mutex;
@@ -54832,7 +55971,7 @@ index 073361d..4163fe4 100644
  using CommandBufferIterator = std::unordered_map<uint64_t, CommandBufferState>::iterator;
  
  static bool HasQueuedCommands(const CommandBufferState& state) {
-@@ -925,6 +1086,12 @@ static void RegisterCommandBufferAliasLocked(uint64_t command_buffer, uint64_t b
+@@ -925,6 +1144,12 @@ static void RegisterCommandBufferAliasLocked(uint64_t command_buffer, uint64_t b
  }
  
  static void EraseCommandBufferStateLocked(uint64_t command_buffer) {
@@ -54845,7 +55984,7 @@ index 073361d..4163fe4 100644
  	g_command_buffers.erase(command_buffer);
  	for (auto it = g_command_buffer_aliases.begin(); it != g_command_buffer_aliases.end();) {
  		if (it->first == command_buffer || it->second == command_buffer) {
-@@ -1078,6 +1245,16 @@ static uint64_t AprReadFileRecordSize(uint64_t file_offset) {
+@@ -1078,6 +1303,16 @@ static uint64_t AprReadFileRecordSize(uint64_t file_offset) {
  	return (file_offset >> 32u) != 0 ? READ_FILE_RECORD_SIZE_EXT : READ_FILE_RECORD_SIZE;
  }
  
@@ -54862,7 +56001,7 @@ index 073361d..4163fe4 100644
  static uint64_t AprReadGatherRecordSize(uint64_t file_offset) {
  	return file_offset > 0x3ffffu ? READ_GATHER_RECORD_SIZE_EXT : READ_GATHER_RECORD_SIZE;
  }
-@@ -1151,6 +1328,8 @@ static bool WriteCommandBufferPointers(uint64_t command_buffer, uint64_t buffer,
+@@ -1151,6 +1386,8 @@ static bool WriteCommandBufferPointers(uint64_t command_buffer, uint64_t buffer,
  	state.kernel_event_commands.clear();
  	state.write_address_commands.clear();
  	state.amm_map_commands.clear();
@@ -54871,7 +56010,7 @@ index 073361d..4163fe4 100644
  	state.gather_scatter_valid       = false;
  	state.gather_scatter_file_id     = 0;
  	state.gather_scatter_destination = 0;
-@@ -1256,6 +1435,9 @@ static bool AppendReadFileRecord(uint64_t command_buffer, uint8_t opcode, uint32
+@@ -1256,6 +1493,9 @@ static bool AppendReadFileRecord(uint64_t command_buffer, uint8_t opcode, uint32
  	            static_cast<size_t>(record_size));
  	std::memcpy(reinterpret_cast<void*>(state.buffer + record_offset), &opcode, sizeof(opcode));
  	state.read_file_commands.push_back({record_offset, file_id, destination, size, file_offset});
@@ -54881,7 +56020,7 @@ index 073361d..4163fe4 100644
  	if (!CommitCommandBufferRecord(command_buffer, &state, record_size)) {
  		return false;
  	}
-@@ -1294,7 +1476,12 @@ static bool AppendKernelEventRecord(uint64_t command_buffer, uint64_t eq, int32_
+@@ -1294,7 +1534,12 @@ static bool AppendKernelEventRecord(uint64_t command_buffer, uint64_t eq, int32_
  	std::memcpy(reinterpret_cast<void*>(state.buffer + record_offset), record.data(),
  	            record.size());
  	state.kernel_event_commands.push_back({record_offset, eq, id, data});
@@ -54895,7 +56034,7 @@ index 073361d..4163fe4 100644
  }
  
  static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address, uint64_t value,
-@@ -1314,7 +1501,37 @@ static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address,
+@@ -1314,7 +1559,37 @@ static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address,
  	std::memset(reinterpret_cast<void*>(state.buffer + record_offset), 0,
  	            static_cast<size_t>(record_size));
  	state.write_address_commands.push_back({record_offset, address, value});
@@ -54934,7 +56073,7 @@ index 073361d..4163fe4 100644
  }
  
  static bool ValidateAmmMapArgs(uint64_t va, uint64_t size) {
-@@ -1358,26 +1575,383 @@ static int NormalizeAmmProtection(int prot) {
+@@ -1358,26 +1633,383 @@ static int NormalizeAmmProtection(int prot) {
  	return normalized;
  }
  
@@ -55326,7 +56465,7 @@ index 073361d..4163fe4 100644
  		return false;
  	}
  
-@@ -1385,21 +1959,181 @@ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t
+@@ -1385,21 +2017,181 @@ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t
  	return true;
  }
  
@@ -55514,7 +56653,7 @@ index 073361d..4163fe4 100644
  }
  
  static bool AppendAmmMapRecord(uint64_t                                 command_buffer,
-@@ -1425,68 +2159,194 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
+@@ -1425,68 +2217,194 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
  
  static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offset,
                                 uint64_t destination, uint64_t size, uint64_t* bytes_read);
@@ -55761,7 +56900,7 @@ index 073361d..4163fe4 100644
  				const auto& command = state.read_file_commands[entry.index];
  				std::string host_path;
  				if (!AprShared::TryGetHostPath(command.file_id, &host_path)) {
-@@ -1494,56 +2354,131 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1494,56 +2412,131 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     command.file_id);
  					*execution_result = LibKernel::KERNEL_ERROR_ENOENT;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -55902,7 +57041,7 @@ index 073361d..4163fe4 100644
  					LOGF("\tAMM submit command failed: kind=%u va=0x%016" PRIx64
  					     " dmem=0x%016" PRIx64 " size=0x%016" PRIx64 " type=%" PRId32
  					     " prot=0x%08" PRIx32 " result=0x%08" PRIx32 "\n",
-@@ -1552,24 +2487,469 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1552,20 +2545,465 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     static_cast<uint32_t>(result));
  					*execution_result = result;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -55913,11 +57052,17 @@ index 073361d..4163fe4 100644
  			} break;
  		}
  	}
+-
+-	return OK;
 +	*next = ordered.size();
 +	return true;
-+}
+ }
  
--	return OK;
+-static bool AdvanceCommandBuffer(uint64_t command_buffer, uint64_t record_size) {
+-	std::scoped_lock      lock(g_command_buffer_mutex);
+-	CommandBufferIterator it;
+-	if (!GetOrCreateCommandBufferStateLocked(command_buffer, &it)) {
+-		return false;
 +// The APR engine runs submissions in order; one stopped at a wait holds those behind it. AMM
 +// submissions (maps only) run at once: they are what the waits wait for.
 +// BC5 (experiment 0156): a submission's result, once it has run, for the title's WaitCommandBuffer
@@ -55936,13 +57081,8 @@ index 073361d..4163fe4 100644
 +	if (b.result_ptr != 0) {
 +		(void)AprShared::WriteResult(reinterpret_cast<void*>(b.result_ptr), result, offset);
 +	}
- }
- 
--static bool AdvanceCommandBuffer(uint64_t command_buffer, uint64_t record_size) {
--	std::scoped_lock      lock(g_command_buffer_mutex);
--	CommandBufferIterator it;
--	if (!GetOrCreateCommandBufferStateLocked(command_buffer, &it)) {
--		return false;
++}
++
 +static void PumpParkedAprBuffersLocked() {
 +	for (auto& queue: g_apr_parked) {
 +		while (!queue.empty()) {
@@ -55959,11 +57099,9 @@ index 073361d..4163fe4 100644
 +			}
 +			queue.pop_front();
 +		}
- 	}
++	}
 +}
- 
--	auto& state = it->second;
--	if (!EnsureCommandBufferRecordSpace(command_buffer, &state, record_size)) {
++
 +// BC5 (experiment 0156): the console's APR engine is asynchronous: a submit returns at once and the
 +// title learns of completion through the buffer's events, its address writes and WaitCommandBuffer.
 +// The host ran every submission's reads on the submitting title thread, and the parked ones on
@@ -56374,14 +57512,10 @@ index 073361d..4163fe4 100644
 +	CommandBufferIterator it;
 +	if (!GetOrCreateCommandBufferStateLocked(command_buffer, &it)) {
 +		return false;
-+	}
-+
-+	auto& state = it->second;
-+	if (!EnsureCommandBufferRecordSpace(command_buffer, &state, record_size)) {
- 		return false;
  	}
  
-@@ -1583,6 +2963,8 @@ static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offse
+ 	auto& state = it->second;
+@@ -1583,6 +3021,8 @@ static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offse
  	if (bytes_read == nullptr) {
  		return LibKernel::KERNEL_ERROR_EINVAL;
  	}
@@ -56390,7 +57524,7 @@ index 073361d..4163fe4 100644
  
  	*bytes_read = 0;
  	if (size == 0) {
-@@ -1592,6 +2974,18 @@ static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offse
+@@ -1592,6 +3032,18 @@ static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offse
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
@@ -56409,7 +57543,7 @@ index 073361d..4163fe4 100644
  	Common::File file;
  	if (!file.Open(host_path, Common::File::Mode::Read)) {
  		LOGF("\tAPR read missing host file: %s\n", host_path.c_str());
-@@ -1678,13 +3072,186 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
+@@ -1678,13 +3130,186 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
  	return OK;
  }
  
@@ -56597,7 +57731,7 @@ index 073361d..4163fe4 100644
  	const auto command_buffer_addr = reinterpret_cast<uint64_t>(command_buffer);
  	if (!ValidateCommandBufferHeader(command_buffer_addr)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -1767,15 +3334,25 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
+@@ -1767,15 +3392,25 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
  	PRINT_NAME();
  
  	const auto destination_addr = reinterpret_cast<uint64_t>(destination);
@@ -56629,7 +57763,7 @@ index 073361d..4163fe4 100644
  }
  
  static uint64_t AlignUp4(uint64_t value) {
-@@ -1811,11 +3388,11 @@ static uint64_t KYTY_SYSV_ABI MeasureCommandSizeFixed32(uint64_t, uint64_t, uint
+@@ -1811,11 +3446,11 @@ static uint64_t KYTY_SYSV_ABI MeasureCommandSizeFixed32(uint64_t, uint64_t, uint
  	return 0x20;
  }
  
@@ -56644,7 +57778,7 @@ index 073361d..4163fe4 100644
  }
  
  static uint64_t KYTY_SYSV_ABI
-@@ -2111,27 +3688,45 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
+@@ -2111,27 +3746,45 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
  	return AppendNoOpCommand(command_buffer, sizeof(uint32_t));
  }
  
@@ -56697,7 +57831,7 @@ index 073361d..4163fe4 100644
  	           ? OK
  	           : LibKernel::KERNEL_ERROR_EBUSY;
  }
-@@ -2139,8 +3734,12 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
+@@ -2139,8 +3792,12 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
  static int KYTY_SYSV_ABI CommandBufferWriteAddress(void* command_buffer, volatile uint64_t* address,
                                                     uint64_t value, uint32_t) {
  	PRINT_NAME();
@@ -56711,7 +57845,7 @@ index 073361d..4163fe4 100644
  }
  
  static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*              command_buffer,
-@@ -2148,12 +3747,15 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*
+@@ -2148,12 +3805,15 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*
                                                                 uint64_t           value) {
  	PRINT_NAME();
  
@@ -56730,7 +57864,7 @@ index 073361d..4163fe4 100644
  
  	return AppendNoOpCommand(command_buffer, 0x20);
  }
-@@ -2170,44 +3772,56 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromTimeCounter(void*
+@@ -2170,44 +3830,56 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromTimeCounter(void*
                                                                    uint32_t) {
  	PRINT_NAME();
  
@@ -56798,7 +57932,7 @@ index 073361d..4163fe4 100644
  }
  
  static int KYTY_SYSV_ABI AprCommandBufferReadFileGather(void*    command_buffer, uint64_t, uint64_t,
-@@ -2314,15 +3928,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
+@@ -2314,15 +3986,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
  	return OK;
  }
  
@@ -56828,7 +57962,7 @@ index 073361d..4163fe4 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2333,7 +3959,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
+@@ -2333,7 +4017,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
  
  static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, uint64_t va,
                                                          uint64_t dmem_offset, uint64_t size,
@@ -56837,7 +57971,7 @@ index 073361d..4163fe4 100644
  	PRINT_NAME();
  
  	if (command_buffer == nullptr || !ValidateAmmMapArgs(va, size) ||
-@@ -2341,7 +3967,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
+@@ -2341,7 +4025,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
  		return LibKernel::KERNEL_ERROR_EINVAL;
  	}
  
@@ -56854,7 +57988,7 @@ index 073361d..4163fe4 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2504,38 +4138,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
+@@ -2504,38 +4196,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
  	}
  
  	*dmem_offset = allocated;
@@ -56927,9 +58061,14 @@ index 073361d..4163fe4 100644
  	}
  }
  
-@@ -2589,11 +4245,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
+@@ -2588,14 +4302,17 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
+ 
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
++	const bool bc5_first      = AprShared::Bc5P1ResultFirst(); // ports pack 1, B1
++	if (bc5_first && !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
++		return LibKernel::KERNEL_ERROR_EFAULT;
++	}
  	auto     submit_result =
 -	    ExecuteAprCommandBuffer(command_buffer_addr, &execution_result, &error_offset);
 +	    ExecuteAprCommandBuffer(command_buffer_addr, &execution_result, &error_offset, 0, id, 0);
@@ -56938,11 +58077,25 @@ index 073361d..4163fe4 100644
  	}
 -	AprShared::SetSubmissionResult(id, execution_result, error_offset);
  
- 	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
+-	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
++	if (!bc5_first && !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -2618,11 +4273,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
+ 	}
+ 
+@@ -2617,12 +4334,27 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
+ 
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
++	const bool bc5_first      = AprShared::Bc5P1ResultFirst(); // ports pack 1, B1
++	if (bc5_first) {
++		if (out_submission_id != nullptr && !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
++			return LibKernel::KERNEL_ERROR_EFAULT;
++		}
++		const int pre = AprShared::WriteResult(result, OK, 0);
++		if (pre != OK) {
++			return pre;
++		}
++	}
  	auto     submit_result =
 -	    ExecuteAprCommandBuffer(command_buffer_addr, &execution_result, &error_offset);
 +	    ExecuteAprCommandBuffer(command_buffer_addr, &execution_result, &error_offset, 0, id, reinterpret_cast<uint64_t>(result));
@@ -56950,10 +58103,16 @@ index 073361d..4163fe4 100644
  		return submit_result;
  	}
 -	AprShared::SetSubmissionResult(id, execution_result, error_offset);
++	if (bc5_first) {
++		if (execution_result == OK && error_offset == 0) {
++			return OK;
++		}
++		return AprShared::WriteResult(result, execution_result, error_offset);
++	}
  
  	if (out_submission_id != nullptr &&
  	    !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
-@@ -2648,57 +4302,1086 @@ static int KYTY_SYSV_ABI AmmWaitCommandBufferCompletion(uint32_t submission_id)
+@@ -2648,35 +4380,1064 @@ static int KYTY_SYSV_ABI AmmWaitCommandBufferCompletion(uint32_t submission_id)
  	return OK;
  }
  
@@ -56988,28 +58147,6 @@ index 073361d..4163fe4 100644
 -	LIB_FUNC("jK+yuYCI7MA", Ampr::CommandBufferWriteCounter);
 -	LIB_FUNC("3wn42MWTzTs", Ampr::CommandBufferWriteCounterOnCompletion);
 -	LIB_FUNC("bt3LHR9xjK4", Ampr::CommandBufferWriteAddressFromTimeCounter);
--	LIB_FUNC("FI2JD0jAHCs", Ampr::CommandBufferWriteAddressFromTimeCounterOnCompletion);
--	LIB_FUNC("t4ExS+SwLjs", Ampr::CommandBufferWriteAddressFromCounter);
--	LIB_FUNC("gSF5OsXdfIg", Ampr::CommandBufferWriteAddressFromCounterOnCompletion);
--	LIB_FUNC("enZm-6GjWqw", Ampr::CommandBufferWriteAddressFromCounterPair);
--	LIB_FUNC("ZLWtNUP6R5E", Ampr::CommandBufferWriteAddressFromCounterPairOnCompletion);
--	LIB_FUNC("vWU-odnS+fU", Ampr::MeasureCommandSizeReadFile);
--	LIB_FUNC("sSAUCCU1dv4", Ampr::MeasureCommandSizeWriteKernelEventQueue);
--	LIB_FUNC("Zi3dBUjgyXI", Ampr::MeasureCommandSizeWriteKernelEventQueue);
--	LIB_FUNC("C+IEj+BsAFM", Ampr::MeasureCommandSizeWriteAddressOnCompletion);
--	LIB_FUNC("x7SQEXfeovg", Ampr::MeasureCommandSizeWriteAddressFromTimeCounterOnCompletion);
--	LIB_FUNC("32AcaTaBPSY", Ampr::MeasureCommandSizeWriteAddressFromCounterOnCompletion);
--	LIB_FUNC("vxC58+DRk-U", Ampr::MeasureCommandSizeWriteAddressFromCounterPairOnCompletion);
--	LIB_FUNC("4muPEJ-x5N8", Ampr::MeasureCommandSizeWriteCounterOnCompletion);
--	LIB_FUNC("0BMj1hgG+kE", Ampr::MeasureCommandSizeFixed32);
--	LIB_FUNC("ClnsFLLLcss", Ampr::MeasureCommandSizeFixed32);
--	LIB_FUNC("4fgtGfXDrFc", Ampr::MeasureCommandSizeFixed32);
--	LIB_FUNC("gAtc79UTt5E", Ampr::MeasureCommandSizeFixed32);
--	LIB_FUNC("JYd9g9L+TmE", Ampr::MeasureCommandSizeFixed32);
--	LIB_FUNC("2Hw8gjMdwSY", Ampr::MeasureCommandSizeFixed32);
--	LIB_FUNC("I-Qm+MEso5c", Ampr::MeasureCommandSizeFixed32);
--	LIB_FUNC("6hbai6KIXkk", Ampr::MeasureAmmCommandSizeMap);
--	LIB_FUNC("m+fYyX8oFqw", Ampr::MeasureAmmCommandSizeMapWithGpuMaskId);
 +struct Bc5AmmPage {
 +	uint64_t dmem  = 0; // the direct memory behind the page
 +	int32_t  type  = 0;
@@ -58065,32 +59202,27 @@ index 073361d..4163fe4 100644
 +		LIB_FUNC("3wn42MWTzTs", Ampr::CommandBufferWriteCounterOnCompletion);
 +	}
 +	LIB_FUNC("bt3LHR9xjK4", Ampr::CommandBufferWriteAddressFromTimeCounter);
-+	LIB_FUNC("FI2JD0jAHCs", Ampr::CommandBufferWriteAddressFromTimeCounterOnCompletion);
-+	LIB_FUNC("t4ExS+SwLjs", Ampr::CommandBufferWriteAddressFromCounter);
-+	LIB_FUNC("gSF5OsXdfIg", Ampr::CommandBufferWriteAddressFromCounterOnCompletion);
-+	LIB_FUNC("enZm-6GjWqw", Ampr::CommandBufferWriteAddressFromCounterPair);
-+	LIB_FUNC("ZLWtNUP6R5E", Ampr::CommandBufferWriteAddressFromCounterPairOnCompletion);
-+	LIB_FUNC("vWU-odnS+fU", Ampr::MeasureCommandSizeReadFile);
-+	LIB_FUNC("sSAUCCU1dv4", Ampr::MeasureCommandSizeWriteKernelEventQueue);
-+	LIB_FUNC("Zi3dBUjgyXI", Ampr::MeasureCommandSizeWriteKernelEventQueue);
+ 	LIB_FUNC("FI2JD0jAHCs", Ampr::CommandBufferWriteAddressFromTimeCounterOnCompletion);
+ 	LIB_FUNC("t4ExS+SwLjs", Ampr::CommandBufferWriteAddressFromCounter);
+ 	LIB_FUNC("gSF5OsXdfIg", Ampr::CommandBufferWriteAddressFromCounterOnCompletion);
+@@ -2685,14 +5446,14 @@ LIB_DEFINE(InitAmpr_1_Ampr) {
+ 	LIB_FUNC("vWU-odnS+fU", Ampr::MeasureCommandSizeReadFile);
+ 	LIB_FUNC("sSAUCCU1dv4", Ampr::MeasureCommandSizeWriteKernelEventQueue);
+ 	LIB_FUNC("Zi3dBUjgyXI", Ampr::MeasureCommandSizeWriteKernelEventQueue);
+-	LIB_FUNC("C+IEj+BsAFM", Ampr::MeasureCommandSizeWriteAddressOnCompletion);
 +	LIB_FUNC("C+IEj+BsAFM", Ampr::MeasureCommandSizeWriteAddress);
-+	LIB_FUNC("x7SQEXfeovg", Ampr::MeasureCommandSizeWriteAddressFromTimeCounterOnCompletion);
-+	LIB_FUNC("32AcaTaBPSY", Ampr::MeasureCommandSizeWriteAddressFromCounterOnCompletion);
-+	LIB_FUNC("vxC58+DRk-U", Ampr::MeasureCommandSizeWriteAddressFromCounterPairOnCompletion);
-+	LIB_FUNC("4muPEJ-x5N8", Ampr::MeasureCommandSizeWriteCounterOnCompletion);
-+	LIB_FUNC("0BMj1hgG+kE", Ampr::MeasureCommandSizeFixed32);
-+	LIB_FUNC("ClnsFLLLcss", Ampr::MeasureCommandSizeFixed32);
+ 	LIB_FUNC("x7SQEXfeovg", Ampr::MeasureCommandSizeWriteAddressFromTimeCounterOnCompletion);
+ 	LIB_FUNC("32AcaTaBPSY", Ampr::MeasureCommandSizeWriteAddressFromCounterOnCompletion);
+ 	LIB_FUNC("vxC58+DRk-U", Ampr::MeasureCommandSizeWriteAddressFromCounterPairOnCompletion);
+ 	LIB_FUNC("4muPEJ-x5N8", Ampr::MeasureCommandSizeWriteCounterOnCompletion);
+ 	LIB_FUNC("0BMj1hgG+kE", Ampr::MeasureCommandSizeFixed32);
+ 	LIB_FUNC("ClnsFLLLcss", Ampr::MeasureCommandSizeFixed32);
+-	LIB_FUNC("4fgtGfXDrFc", Ampr::MeasureCommandSizeFixed32);
 +	LIB_FUNC("4fgtGfXDrFc", Ampr::MeasureCommandSizeWriteAddress); // KytyPlus 41beda43
-+	LIB_FUNC("gAtc79UTt5E", Ampr::MeasureCommandSizeFixed32);
-+	LIB_FUNC("JYd9g9L+TmE", Ampr::MeasureCommandSizeFixed32);
-+	LIB_FUNC("2Hw8gjMdwSY", Ampr::MeasureCommandSizeFixed32);
-+	LIB_FUNC("I-Qm+MEso5c", Ampr::MeasureCommandSizeFixed32);
-+	LIB_FUNC("6hbai6KIXkk", Ampr::MeasureAmmCommandSizeMap);
-+	LIB_FUNC("m+fYyX8oFqw", Ampr::MeasureAmmCommandSizeMapWithGpuMaskId);
- 	LIB_FUNC("ZFDZoN9IbVU", Ampr::MeasureAmmCommandSizeMapDirect);
- 	LIB_FUNC("KUjtdPZJo5I", Ampr::MeasureAmmCommandSizeMapDirectWithGpuMaskId);
- 	LIB_FUNC("Ayg6PIon2wA", Ampr::MeasureAmmCommandSizeUnmap);
-@@ -2743,6 +5426,40 @@ LIB_DEFINE(InitAmpr_1_Ampr) {
+ 	LIB_FUNC("gAtc79UTt5E", Ampr::MeasureCommandSizeFixed32);
+ 	LIB_FUNC("JYd9g9L+TmE", Ampr::MeasureCommandSizeFixed32);
+ 	LIB_FUNC("2Hw8gjMdwSY", Ampr::MeasureCommandSizeFixed32);
+@@ -2743,6 +5504,40 @@ LIB_DEFINE(InitAmpr_1_Ampr) {
  	LIB_FUNC("NnKhlMJtIsI", Ampr::AmmSubmitCommandBufferAndGetId);
  	LIB_FUNC("OJf3vCckPAM", Ampr::AmmSubmitCommandBufferAndGetResult);
  	LIB_FUNC("HXymib4T8gc", Ampr::AmmWaitCommandBufferCompletion);
@@ -58132,10 +59264,15 @@ index 073361d..4163fe4 100644
  
  } // namespace LibAmpr
 diff --git a/src/libs/libAppContent.cpp b/src/libs/libAppContent.cpp
-index 6c36a4e..4c8ad53 100644
+index 6c36a4e..ad890e2 100644
 --- a/src/libs/libAppContent.cpp
 +++ b/src/libs/libAppContent.cpp
-@@ -6,6 +6,7 @@
+@@ -1,3 +1,4 @@
++#include "bc5/ports_pack1.hpp" // ports pack 1: C
+ #include "common/abi.h"
+ #include "common/assert.h"
+ #include "common/common.h"
+@@ -6,6 +7,7 @@
  #include "common/stringUtils.h"
  #include "libs/errno.h"
  #include "libs/libs.h"
@@ -58143,7 +59280,7 @@ index 6c36a4e..4c8ad53 100644
  #include "loader/symbolDatabase.h"
  #include "loader/systemContent.h"
  
-@@ -96,6 +97,7 @@ int KYTY_SYSV_ABI AppContentInitialize(const AppContentInitParam* init_param,
+@@ -96,12 +98,18 @@ int KYTY_SYSV_ABI AppContentInitialize(const AppContentInitParam* init_param,
  		LOGF("\t TITLE_ID missing\n");
  	}
  
@@ -58151,6 +59288,30 @@ index 6c36a4e..4c8ad53 100644
  	return OK;
  }
  
+ int KYTY_SYSV_ABI AppContentAppParamGetInt(uint32_t param_id, int32_t* value) {
+ 	PRINT_NAME();
+ 
++	// ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceAppContent/Export.cpp:270-283, sceAppContentAppParamGetInt):
++	// a null output or an unknown param_id is APP_CONTENT_ERROR_PARAMETER, not a host exit.
++	if (value == nullptr && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) {
++		return APP_CONTENT_ERROR_PARAMETER;
++	}
+ 	EXIT_NOT_IMPLEMENTED(value == nullptr);
+ 
+ 	*value     = 0;
+@@ -118,7 +126,11 @@ int KYTY_SYSV_ABI AppContentAppParamGetInt(uint32_t param_id, int32_t* value) {
+ 		case 2: found = Loader::SystemContentParamSfoGetInt("USER_DEFINED_PARAM_2", value); break;
+ 		case 3: found = Loader::SystemContentParamSfoGetInt("USER_DEFINED_PARAM_3", value); break;
+ 		case 4: found = Loader::SystemContentParamSfoGetInt("USER_DEFINED_PARAM_4", value); break;
+-		default: EXIT("unknown param_id: %u\n", param_id);
++		default:
++			if (BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 Export.cpp:281-282)
++				return APP_CONTENT_ERROR_PARAMETER;
++			}
++			EXIT("unknown param_id: %u\n", param_id);
+ 	}
+ 
+ 	LOGF("\t value    = %d [%s]\n", *value, found ? "found" : "not found");
 diff --git a/src/libs/libAudio.cpp b/src/libs/libAudio.cpp
 index abc1b97..d83b0d8 100644
 --- a/src/libs/libAudio.cpp
@@ -73092,10 +74253,10 @@ index 8a4c59a..203feba 100644
  	g_event_arg     = arg;
  
 diff --git a/src/libs/libSaveData.cpp b/src/libs/libSaveData.cpp
-index 08aa121..921cb85 100644
+index 08aa121..7ac2544 100644
 --- a/src/libs/libSaveData.cpp
 +++ b/src/libs/libSaveData.cpp
-@@ -1,949 +1,2117 @@
+@@ -1,949 +1,2132 @@
 -#include "common/abi.h"
 -#include "common/assert.h"
 -#include "common/common.h"
@@ -74046,6 +75207,7 @@ index 08aa121..921cb85 100644
 -
 -} // namespace Libs
 +#include "bc5/env_rule.hpp" // exp 0419 (build W): BC5_DIAG_ENV, BC5_FIXED_ENV, BC5_LEAN_OR
++#include "bc5/ports_pack1.hpp" // ports pack 1: C
 +#include "common/abi.h"
 +#include "common/assert.h"
 +#include "common/common.h"
@@ -75116,6 +76278,11 @@ index 08aa121..921cb85 100644
 +	PRINT_NAME();
 +	sg412::Op sg_op(sg412::kLib, true); // exp 0412 (tag sg412)
 +
++	// ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceSaveData.native/Export.cpp:1336-1339, mount3):
++	// a null request, result or dir_name is SAVE_DATA_ERROR_PARAMETER, not a host exit.
++	if ((mount == nullptr || mount_result == nullptr || mount->dir_name == nullptr) && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) {
++		return SAVE_DATA_ERROR_PARAMETER;
++	}
 +	EXIT_NOT_IMPLEMENTED(mount == nullptr);
 +	EXIT_NOT_IMPLEMENTED(mount_result == nullptr);
 +	EXIT_NOT_IMPLEMENTED(mount->dir_name == nullptr);
@@ -75950,6 +77117,9 @@ index 08aa121..921cb85 100644
 +
 +int KYTY_SYSV_ABI SaveDataSetParam(const SaveDataMountPoint* mount_point, uint32_t param_type,
 +                                   const void* param_buf, size_t param_buf_size) {
++	if (mount_point == nullptr && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceSaveData.native/Export.cpp:1534-1538, setParam)
++		return SAVE_DATA_ERROR_PARAMETER;
++	}
 +	PRINT_NAME();
 +	sg412::Op sg_op(mount_point != nullptr ? sg412::slot_of(mount_point->data) : sg412::kNone, true); // a part of the save on that mount // exp 0412 (tag sg412)
 +
@@ -75993,6 +77163,9 @@ index 08aa121..921cb85 100644
 +                                       SaveDataMountInfo*        info) {
 +	PRINT_NAME();
 +
++	if ((mount_point == nullptr || info == nullptr) && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceSaveData.native/Export.cpp:1138-1142, getMountInfo)
++		return SAVE_DATA_ERROR_PARAMETER;
++	}
 +	EXIT_NOT_IMPLEMENTED(mount_point == nullptr);
 +	EXIT_NOT_IMPLEMENTED(info == nullptr);
 +
@@ -76017,6 +77190,9 @@ index 08aa121..921cb85 100644
 +
 +int KYTY_SYSV_ABI SaveDataSaveIcon(const SaveDataMountPoint* mount_point,
 +                                   const SaveDataIcon*       icon) {
++	if ((mount_point == nullptr || icon == nullptr) && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceSaveData.native/Export.cpp:1458-1462, sceSaveDataSaveIcon)
++		return SAVE_DATA_ERROR_PARAMETER;
++	}
 +	EXIT_NOT_IMPLEMENTED(mount_point == nullptr);
 +	EXIT_NOT_IMPLEMENTED(icon == nullptr);
 +
@@ -76591,6 +77767,31 @@ index 0fc9711..8c301f8 100644
  }
  
  } // namespace LibSharePlay
+diff --git a/src/libs/libSysmodule.cpp b/src/libs/libSysmodule.cpp
+index ac032db..bd5682a 100644
+--- a/src/libs/libSysmodule.cpp
++++ b/src/libs/libSysmodule.cpp
+@@ -1,3 +1,4 @@
++#include "bc5/ports_pack1.hpp" // ports pack 1: C
+ #include "common/abi.h"
+ #include "common/assert.h"
+ #include "common/common.h"
+@@ -44,6 +45,15 @@ static KYTY_SYSV_ABI int SysmoduleLoadModuleInternalWithArg(uint16_t id, int arg
+ 
+ 	LOGF("\t id = %d\n", static_cast<int>(id));
+ 
++	// ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceSysmodule/Export.cpp:272-293; f118d640a4, 4694459914): the
++	// call is (id, argc, argv, unk, ret); the three middle arguments are ignored (argv is a pointer, so "arg2 != 0" ended
++	// the host on any real argv) and a null ret is allowed.
++	if (BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) {
++		if (ret != nullptr) {
++			*ret = 0;
++		}
++		return 0;
++	}
+ 	EXIT_IF(arg1 != 0);
+ 	EXIT_IF(arg2 != 0);
+ 	EXIT_IF(arg3 != 0);
 diff --git a/src/libs/libSystemService.cpp b/src/libs/libSystemService.cpp
 index cd205f6..5e774a6 100644
 --- a/src/libs/libSystemService.cpp
@@ -79993,10 +81194,15 @@ index cb66e3f..b52f7b9 100644
  
  }
 diff --git a/src/libs/libUserService.cpp b/src/libs/libUserService.cpp
-index 4fd67e0..9e54d3c 100644
+index 4fd67e0..fc7dbc9 100644
 --- a/src/libs/libUserService.cpp
 +++ b/src/libs/libUserService.cpp
-@@ -10,6 +10,8 @@
+@@ -1,3 +1,4 @@
++#include "bc5/ports_pack1.hpp" // ports pack 1: C
+ #include "common/abi.h"
+ #include "common/assert.h"
+ #include "common/stringUtils.h"
+@@ -10,6 +11,8 @@
  #include <cstdio>
  #include <cstring>
  
@@ -80005,7 +81211,7 @@ index 4fd67e0..9e54d3c 100644
  namespace Libs {
  
  LIB_VERSION("UserService", 1, "UserService", 1, 1);
-@@ -26,6 +28,99 @@ static bool IsLocalUser(int user_id) {
+@@ -26,6 +29,99 @@ static bool IsLocalUser(int user_id) {
  static constexpr int LOCAL_USERS[Libs::Controller::PAD_MAX_CONTROLLERS] = {
      1000, 1001, 1002, 1003};
  
@@ -80105,8 +81311,33 @@ index 4fd67e0..9e54d3c 100644
  struct UserServiceLoginUserIdList {
  	int user_id[4];
  };
-@@ -94,17 +189,27 @@ static KYTY_SYSV_ABI int UserServiceGetLoginUserIdList(UserServiceLoginUserIdLis
+@@ -66,6 +162,9 @@ static KYTY_SYSV_ABI int UserServiceInitialize2() {
+ static KYTY_SYSV_ABI int UserServiceGetInitialUser(int* user_id) {
+ 	PRINT_NAME();
  
++	if (user_id == nullptr && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceUserService/Export.cpp:417-420, sceUserServiceGetInitialUser)
++		return USER_SERVICE_ERROR_INVALID_ARGUMENT;
++	}
+ 	EXIT_NOT_IMPLEMENTED(user_id == nullptr);
+ 
+ 	*user_id = 1000;
+@@ -76,6 +175,9 @@ static KYTY_SYSV_ABI int UserServiceGetInitialUser(int* user_id) {
+ static KYTY_SYSV_ABI int UserServiceGetEvent(SceUserServiceEvent* event) {
+ 	PRINT_NAME();
+ 
++	if (event == nullptr && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceUserService/Export.cpp:377-384; 992ca46b3e, sceUserServiceGetEvent)
++		return USER_SERVICE_ERROR_INVALID_ARGUMENT;
++	}
+ 	EXIT_NOT_IMPLEMENTED(event == nullptr);
+ 
+ 	static int next_user = 0;
+@@ -92,19 +194,49 @@ static KYTY_SYSV_ABI int UserServiceGetEvent(SceUserServiceEvent* event) {
+ static KYTY_SYSV_ABI int UserServiceGetLoginUserIdList(UserServiceLoginUserIdList* user_id_list) {
+ 	PRINT_NAME();
+ 
++	if (user_id_list == nullptr && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceUserService/Export.cpp:431-438, sceUserServiceGetLoginUserIdList)
++		return USER_SERVICE_ERROR_INVALID_ARGUMENT;
++	}
  	EXIT_NOT_IMPLEMENTED(user_id_list == nullptr);
  
 -	// Report every local player as logged in so a local-multiplayer title can
@@ -80134,10 +81365,38 @@ index 4fd67e0..9e54d3c 100644
 +	if (Bc5UserValue(BC5_USER_NAME)) { // BC5 experiment 0405 (KYTY_BC5_USERSERVICE_VALUES "name"); today's path when off
 +		return Bc5UserServiceGetUserName(user_id, name, size);
 +	}
++	// ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceUserService/Export.cpp:456-472, sceUserServiceGetUserName):
++	// a null name -> INVALID_ARGUMENT, an unknown user -> UNKNOWN_USER (0x80960105, AnyPS5 UserService.hpp:26), a short
++	// buffer -> BUFFER_TOO_SHORT (AnyPS5 also zero-fills the short buffer first; done here too).
++	if (BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) {
++		if (name == nullptr) {
++			return USER_SERVICE_ERROR_INVALID_ARGUMENT;
++		}
++		if (!IsLocalUser(user_id)) {
++			return static_cast<int>(0x80960105u); // USER_SERVICE_ERROR_UNKNOWN_USER
++		}
++		if (size < 5) {
++			if (size > 0) {
++				std::memset(name, 0, size);
++			}
++			return USER_SERVICE_ERROR_BUFFER_TOO_SHORT;
++		}
++	}
  	EXIT_NOT_IMPLEMENTED(!IsLocalUser(user_id));
  	EXIT_NOT_IMPLEMENTED(size < 5);
  
-@@ -156,6 +261,9 @@ static KYTY_SYSV_ABI int UserServiceGetGamePresets(int user_id, UserServiceGameP
+@@ -112,6 +244,10 @@ static KYTY_SYSV_ABI int UserServiceGetUserName(int user_id, char* name, size_t
+ 
+ 	int s = snprintf(name, size, "Kyty-%d", player);
+ 
++	if (static_cast<size_t>(s) >= size && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C: "Kyty-N" cut short
++		std::memset(name, 0, size);
++		return USER_SERVICE_ERROR_BUFFER_TOO_SHORT;
++	}
+ 	EXIT_NOT_IMPLEMENTED(static_cast<size_t>(s) >= size);
+ 
+ 	return OK;
+@@ -156,6 +292,9 @@ static KYTY_SYSV_ABI int UserServiceGetGamePresets(int user_id, UserServiceGameP
  static KYTY_SYSV_ABI int UserServiceGetAccessibilityVibration(int user_id, int32_t* vibration) {
  	PRINT_NAME();
  
@@ -80147,7 +81406,7 @@ index 4fd67e0..9e54d3c 100644
  	if (vibration == nullptr) {
  		return USER_SERVICE_ERROR_INVALID_ARGUMENT;
  	}
-@@ -172,6 +280,9 @@ static KYTY_SYSV_ABI int UserServiceGetAccessibilityTriggerEffect(int      user_
+@@ -172,6 +311,9 @@ static KYTY_SYSV_ABI int UserServiceGetAccessibilityTriggerEffect(int      user_
                                                                    int32_t* trigger_effect) {
  	PRINT_NAME();
  
@@ -80157,7 +81416,7 @@ index 4fd67e0..9e54d3c 100644
  	if (trigger_effect == nullptr) {
  		return USER_SERVICE_ERROR_INVALID_ARGUMENT;
  	}
-@@ -187,6 +298,9 @@ static KYTY_SYSV_ABI int UserServiceGetAccessibilityTriggerEffect(int      user_
+@@ -187,6 +329,9 @@ static KYTY_SYSV_ABI int UserServiceGetAccessibilityTriggerEffect(int      user_
  static KYTY_SYSV_ABI int UserServiceGetAgeLevel(int user_id, uint32_t* age_level) {
  	PRINT_NAME();
  
@@ -80167,7 +81426,7 @@ index 4fd67e0..9e54d3c 100644
  	if (age_level == nullptr) {
  		return USER_SERVICE_ERROR_INVALID_ARGUMENT;
  	}
-@@ -194,7 +308,7 @@ static KYTY_SYSV_ABI int UserServiceGetAgeLevel(int user_id, uint32_t* age_level
+@@ -194,7 +339,7 @@ static KYTY_SYSV_ABI int UserServiceGetAgeLevel(int user_id, uint32_t* age_level
  		return USER_SERVICE_ERROR_NOT_LOGGED_IN;
  	}
  
@@ -80176,7 +81435,7 @@ index 4fd67e0..9e54d3c 100644
  
  	return OK;
  }
-@@ -203,6 +317,9 @@ static KYTY_SYSV_ABI int UserServiceGetAccessibilityChatTranscription(int      u
+@@ -203,6 +348,9 @@ static KYTY_SYSV_ABI int UserServiceGetAccessibilityChatTranscription(int      u
                                                                        int32_t* chat_transcription) {
  	PRINT_NAME();
  
@@ -80186,7 +81445,7 @@ index 4fd67e0..9e54d3c 100644
  	if (chat_transcription == nullptr) {
  		return USER_SERVICE_ERROR_INVALID_ARGUMENT;
  	}
-@@ -219,6 +336,9 @@ static KYTY_SYSV_ABI int
+@@ -219,6 +367,9 @@ static KYTY_SYSV_ABI int
  UserServiceGetAccessibilityPressAndHoldDelay(int user_id, int32_t* press_and_hold_delay) {
  	PRINT_NAME();
  
@@ -80196,7 +81455,7 @@ index 4fd67e0..9e54d3c 100644
  	if (press_and_hold_delay == nullptr) {
  		return USER_SERVICE_ERROR_INVALID_ARGUMENT;
  	}
-@@ -235,6 +355,9 @@ static KYTY_SYSV_ABI int UserServiceGetAccessibilityZoomEnabled(int      user_id
+@@ -235,6 +386,9 @@ static KYTY_SYSV_ABI int UserServiceGetAccessibilityZoomEnabled(int      user_id
                                                                  int32_t* zoom_enabled) {
  	PRINT_NAME();
  
@@ -80206,7 +81465,7 @@ index 4fd67e0..9e54d3c 100644
  	if (zoom_enabled == nullptr) {
  		return USER_SERVICE_ERROR_INVALID_ARGUMENT;
  	}
-@@ -251,6 +374,9 @@ static KYTY_SYSV_ABI int UserServiceGetAccessibilityZoomFollowFocus(int      use
+@@ -251,6 +405,9 @@ static KYTY_SYSV_ABI int UserServiceGetAccessibilityZoomFollowFocus(int      use
                                                                      int32_t* zoom_follow_focus) {
  	PRINT_NAME();
  
@@ -80216,7 +81475,7 @@ index 4fd67e0..9e54d3c 100644
  	if (zoom_follow_focus == nullptr) {
  		return USER_SERVICE_ERROR_INVALID_ARGUMENT;
  	}
-@@ -258,7 +384,7 @@ static KYTY_SYSV_ABI int UserServiceGetAccessibilityZoomFollowFocus(int      use
+@@ -258,7 +415,7 @@ static KYTY_SYSV_ABI int UserServiceGetAccessibilityZoomFollowFocus(int      use
  		return USER_SERVICE_ERROR_NOT_LOGGED_IN;
  	}
  
@@ -80225,7 +81484,7 @@ index 4fd67e0..9e54d3c 100644
  
  	return OK;
  }
-@@ -271,6 +397,7 @@ static KYTY_SYSV_ABI int UserServicePlatformPrivacyWs1Stub(uint64_t, uint64_t, u
+@@ -271,6 +428,7 @@ static KYTY_SYSV_ABI int UserServicePlatformPrivacyWs1Stub(uint64_t, uint64_t, u
  } // namespace UserService
  
  LIB_DEFINE(InitUserService_1) {
@@ -82001,10 +83260,10 @@ index 36e4dc8..8b011c9 100644
  
  namespace LibContentExport {
 diff --git a/src/libs/network.cpp b/src/libs/network.cpp
-index 7f81218..4544b83 100644
+index 7f81218..ae2ac2e 100644
 --- a/src/libs/network.cpp
 +++ b/src/libs/network.cpp
-@@ -1,4610 +1,4890 @@
+@@ -1,4610 +1,4927 @@
 -#if defined(_WIN32)
 -#ifndef WIN32_LEAN_AND_MEAN
 -#define WIN32_LEAN_AND_MEAN
@@ -86617,6 +87876,7 @@ index 7f81218..4544b83 100644
 -} // namespace Libs::Network
 +#include "bc5/env_rule.hpp" // exp 0419 (build W): BC5_DIAG_ENV, BC5_FIXED_ENV, BC5_LEAN_OR
 +#include "bc5/load_stat.hpp" // experiment 0415 (ls415)
++#include "bc5/ports_pack1.hpp" // ports pack 1: C
 +#if defined(_WIN32)
 +#ifndef WIN32_LEAN_AND_MEAN
 +#define WIN32_LEAN_AND_MEAN
@@ -91034,6 +92294,11 @@ index 7f81218..4544b83 100644
 +int KYTY_SYSV_ABI NpSetNpTitleId(const NpTitleId* title_id, const NpTitleSecret* title_secret) {
 +	PRINT_NAME();
 +
++	// ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceNpManager/Export.cpp:1227-1231, sceNpSetNpTitleId
++	// ignores both pointers and returns 0): a null title id or secret is accepted, not a host exit.
++	if ((title_id == nullptr || title_secret == nullptr) && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) {
++		return OK;
++	}
 +	EXIT_NOT_IMPLEMENTED(title_id == nullptr);
 +	EXIT_NOT_IMPLEMENTED(title_secret == nullptr);
 +
@@ -91047,6 +92312,22 @@ index 7f81218..4544b83 100644
 +int KYTY_SYSV_ABI NpSetContentRestriction(const NpContentRestriction* restriction) {
 +	PRINT_NAME();
 +
++	// ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceNpManager/Export.cpp:1211-1224; 1348566b9c, 5f850765f7,
++	// 7dbef20608, c8c5930575): null -> INVALID_ARGUMENT, a wrong size -> INVALID_SIZE, a negative age or a count outside
++	// 0..0x100 or a null array with count > 0 -> INVALID_ARGUMENT (the loop below read through the null array).
++	if (BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) {
++		if (restriction == nullptr) {
++			return np_error_invalid_argument;
++		}
++		if (restriction->size != sizeof(NpContentRestriction)) {
++			return np_error_invalid_size;
++		}
++		if (restriction->default_age_restriction < 0 || restriction->age_restriction_count < 0 ||
++		    restriction->age_restriction_count > 0x100 ||
++		    (restriction->age_restriction_count > 0 && restriction->age_restriction == nullptr)) {
++			return np_error_invalid_argument;
++		}
++	}
 +	EXIT_NOT_IMPLEMENTED(restriction == nullptr);
 +	EXIT_NOT_IMPLEMENTED(restriction->size != sizeof(NpContentRestriction));
 +
@@ -91190,6 +92471,9 @@ index 7f81218..4544b83 100644
 +
 +	LOGF("\t user_id = %d\n", user_id);
 +
++	if (np_id == nullptr && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceNpManager/Export.cpp:1090-1092, sceNpGetNpId)
++		return np_error_invalid_argument;
++	}
 +	EXIT_NOT_IMPLEMENTED(np_id == nullptr);
 +
 +	// int s = snprintf(np_id->handle.data, 16, "Kyty");
@@ -91206,6 +92490,9 @@ index 7f81218..4544b83 100644
 +
 +	LOGF("\t user_id = %d\n", user_id);
 +
++	if (online_id == nullptr && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceNpManager/Export.cpp:1103-1105, sceNpGetOnlineId)
++		return np_error_invalid_argument;
++	}
 +	EXIT_NOT_IMPLEMENTED(online_id == nullptr);
 +
 +	// int s = snprintf(online_id->data, 16, "Kyty");
@@ -91222,6 +92509,9 @@ index 7f81218..4544b83 100644
 +
 +	LOGF("\t user_id = %d\n", user_id);
 +
++	if (account_id == nullptr && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceNpManager/Export.cpp:1085-1087, sceNpGetAccountIdA)
++		return np_error_invalid_argument;
++	}
 +	EXIT_NOT_IMPLEMENTED(account_id == nullptr);
 +
 +	// *account_id = 0x00000000feedfaceull;
@@ -91236,6 +92526,9 @@ index 7f81218..4544b83 100644
 +
 +	LOGF("\t user_id = %d\n", user_id);
 +
++	if (country_code == nullptr && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceNpManager/Export.cpp:1076-1077, sceNpGetAccountCountryA)
++		return np_error_invalid_argument;
++	}
 +	EXIT_NOT_IMPLEMENTED(country_code == nullptr);
 +
 +	auto* code = static_cast<NpCountryCode*>(country_code);
@@ -91464,6 +92757,9 @@ index 7f81218..4544b83 100644
 +int KYTY_SYSV_ABI NpGetState(int user_id, uint32_t* state) {
 +	PRINT_NAME();
 +
++	if (state == nullptr && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceNpManager/Export.cpp:1108-1110, sceNpGetState)
++		return np_error_invalid_argument;
++	}
 +	EXIT_NOT_IMPLEMENTED(state == nullptr);
 +
 +	LOGF("\t user_id = %d\n", user_id);

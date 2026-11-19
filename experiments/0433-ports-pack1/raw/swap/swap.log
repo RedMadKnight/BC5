@@ -1,0 +1,27 @@
+run-swap0433 12:12:24: boot 40a8312e
+chain lock: exp 0417 | chain: exp 0433: shared swap, ports pack 1 built in (14 fixes, no switch; 0x51 counted only), patch d1388db0 -> 59f00d27; archive, normal and lean rebuilt (CPU only, no emulator), until about 13:12 | token 20261119121225621619 | 2026-11-19 12:12:25
+before: PIN_OLD=d1388db0 NORMAL=eb85d32e LEAN=364c6146 ARCH=6eac453e POL=d5ae7298 
+the patch: d1388db0 -> 59f00d27, files 131 -> 134, exp 0372 lines 5, pad_audio_route header in
+== 12:12:29 build the backend archive
+archive: 6eac453e -> 51db2c91
+== 12:12:32 build normal
+normal: efc28a30, warnings 40; steps 21
+== 12:13:03 build lean
+lean: d8b75137, warnings 43; steps 21
+normal words: +[] -[]
+lean words: +[] -[]
+int0433 done 12:13:45: patch 59f00d27, archive 51db2c91, normal efc28a30, lean d8b75137; undo: bash /var/home/kjaniszewski/bc5-work/exp0433/bake/undo0433.sh (to d1388db0; further back: exp 0430's undo0430b.sh)
+chain lock released
+chain lock: exp 0417 | chain: exp 0433: smoke of the ports-pack-1 swap: ASTRO BOT lean 200 s + the second title lean 300 s + ASTRO BOT normal 200 s, until about 12:33 | token 20261119121346623511 | 2026-11-19 12:13:46
+binaries: lean d8b75137, normal efc28a30; kernel 7.3.3-ogc1.1.fc45.x86_64; boot 40a8312e
+s433sc: s433sc (astro) PASS: ran 200 s; RssAnon at the end 232340 kB; kernel lines 0, crash lines 0; real pad keys 0
+s433su (lean) PASS: ran 300 s; RssAnon at the end 87804 kB; kernel lines 0, crash lines 0; real pad keys 0; key lines done 33 of 33
+s433sn: s433sn (astro) PASS: ran 200 s; RssAnon at the end 235488 kB; kernel lines 0, crash lines 0; real pad keys 0
+s433sn: fixes with hit lines: ALTSTACK AMPR_RESULT APR_FILE_ID COND_SIGNAL_ONE EQ_WAKE_ALL FATAL_TO_ERROR FAULT_MASK FILE_UNBUFFERED NO_COND_REGISTRY PROT_RANGES PTHREAD_KEYS SEMA_UAF ; switch lines: 0
+s433sc engines at 150 s: drm-engine-compute:	153825727297 ns drm-engine-compute:	153825778634 ns drm-engine-gfx:	106562797031 ns drm-engine-gfx:	106562866437 ns drm-engine-gfx:	7389706530 ns 
+s433su engines at 150 s: drm-engine-compute:	30203944996 ns drm-engine-gfx:	2447650326 ns drm-engine-gfx:	64152419721 ns drm-engine-gfx:	64152442401 ns 
+s433sn engines at 150 s: drm-engine-compute:	149954107972 ns drm-engine-compute:	149954164429 ns drm-engine-gfx:	105591176556 ns drm-engine-gfx:	105591245515 ns drm-engine-gfx:	7129498803 ns 
+smoke0433: ALL PASS
+smoke0433 ended 12:26:13
+chain lock released
+run-swap0433 12:26:13: smoke exit 0
