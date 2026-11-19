@@ -35,10 +35,24 @@ The change (`apply0435.py` applies it to a copy of the tree; `title_settings.hpp
   remembered). So the second title still starts fullscreen until he switches it, and play-pkg.sh stays as it is.
 - `HostInputStatements()` writes the live mode into `Fullscreen=` for a title with a store, so a later Save or Apply
   of the Pad tab no longer turns an F11 back.
-- No title id (the empty menu window, `UNKNOWN`), no shared file, a bad id, or any file error: the shared file exactly
-  as before, no window file. A missing shared file still ends the emulator as before (exit 65).
+- A title never saves into the shared file (top's condition, 2026-11-19): `HostInputConfigPath()` returns a separate
+  save path, the title's own file. A title whose store cannot be made reads the shared file and its Save is off.
+- No title id (the empty menu window, `UNKNOWN`) or `KYTY_BC5_TITLE_SETTINGS=0`: the shared file exactly as before,
+  read and saved, no window file. A missing shared file still ends the emulator as before (exit 65).
 - Switch: `KYTY_BC5_TITLE_SETTINGS`, a `kSoft` row (default `1`, in both builds); `=0` gives the old behaviour with no
   build. The log line `Title settings (exp 0435): <id>: <seeded …|title file …|…>` says which file a run uses.
+
+Box facts read on 2026-11-19 (top's read-only GO, no emulator running):
+
+- `~/bc5-work/input.cfg` (md5 `8115a7ff`) has no `Fullscreen=` line, so the second title's `--fullscreen` from
+  `play-pkg.sh` (`47426d8e`, line 42) stays its first-run default. It holds `RenderScale.UNKNOWN=1.70`, written by the
+  empty menu window (no title id), which keeps using the shared file.
+- Init order in `~/src/KytyPlus` (`f266548` + patch): `emulator.cpp` loads `param.sfo` at start (line 138);
+  `HostInputInit()` builds the input map inside `WindowCreate` (`window.cpp:990`), before the fullscreen flag is computed.
+  So the title id is known when the store is resolved, and a remembered mode is applied before the window exists (no
+  switch after opening, no write at start).
+- Launchers `play-any.sh` `fc7a1395`, `play-astro.sh` `e943bd8f`, `lean-session.sh` `1f1be812`: unchanged by this
+  experiment. `play-any.sh` exports `KYTY_BC5_MENU_DIR=~/bc5-work/menu`.
 
 Files touched in the tree: `src/graphics/presentation/window/hostInput.cpp`, `…/window/hostInput.h`,
 `src/graphics/presentation/window.h`, `…/window/window.cpp`, `src/bc5/switch_defaults.hpp`, new
@@ -49,8 +63,13 @@ Tests:
 - `test0435.cpp` (laptop, clang++ 20 from VS: `clang++ -std=c++20 -Wall -Wextra -Werror -I. test0435.cpp`): ids,
   root, seeding byte for byte, no overwrite of a title's file, a second title's own copy, fallbacks (no id, no
   shared file, bad id, blocked root), window file read/write/unchanged/hand edit. PASS.
-- `apply0435.py` on stand-ins built from the patch's own hunks: every anchor once, CRLF of `window.cpp` kept,
-  a second run refuses. PASS.
+- `apply0435.py` on copies of the box's real files (pinned in `units.sha256`): every anchor once, CRLF of
+  `window.cpp` kept, a second run refuses. PASS. The result is `0435-title-settings.diff` (byte-exact, `-text`).
+- `experiments/0419-switch-cleanup/test0419defs.cpp` against the patched `switch_defaults.hpp`: the same three FAIL
+  lines as against the unpatched one (stale row counts in that test), no new one.
+- Private build: `box0435.sh claim|build|release` (`build0435.py` is `build0433.py`): copies of the five files and
+  `main.cpp`, the change applied, the three changed units (`hostInput.cpp`, `window.cpp`, `main.cpp`) compiled with the
+  shared builds' own commands and linked with their other objects; output `~/bc5-work/exp0435/{normal,lean}/kyty_emulator`.
 
 ## Result
 
