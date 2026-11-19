@@ -100,7 +100,32 @@ chunks, and exp 0412's arm b1 (F841) ended in a GPU WRITE under the read-only co
 TCP) in CommitIABufferAllocator. ud434 covers its inline-V# case. What it adds to the second title's
 pins (memory wall, F841) is to be counted in the test from ud434's journal line.
 
+### The combined private test build (2026-11-19 14:34, the top session's GO)
+
+One binary pair with ud434 and exp 0435's per-title settings (`KYTY_BC5_TITLE_SETTINGS`, its kit
+`apply0435.py` / `title_settings.hpp` / `units.sha256` from branch `exp/0435-per-game-settings` at
+`33a97b61`), built by `box0434.sh build e8ea29c1…` (log: `raw/build-combined-20261119.txt`):
+
+- [M] copies of the shared tree's files (patch `59f00d27`, checked against 0435's `units.sha256` and
+  `bc5LleAgc.cpp` `8eb42a10`) in `~/bc5-work/exp0434/src`, `apply0435.py` on them (5 files edited,
+  `title_settings.hpp` written), the patched `bc5LleAgc.cpp` (`e8ea29c1`) put in. The two changes
+  share no file; 0435's header edits only add function declarations, so the 4 changed units
+  (`bc5LleAgc.cpp`, `hostInput.cpp`, `window.cpp`, `main.cpp`) are compiled with each shared build's
+  own command and relinked with its objects otherwise.
+- [M] normal `~/bc5-work/exp0434/normal/kyty_emulator` **`94eac89c`**, lean
+  `~/bc5-work/exp0434/lean/kyty_emulator` **`babd46fd`**; 0 errors; 10 and 11 warnings, all in the
+  shared files at lines before ud434's insertion (6895) or in `stringUtils.h`, so none is ud434's.
+  Both binaries hold `BC5_DIRECT_UD_TARGETS` and `KYTY_BC5_TITLE_SETTINGS`; the normal one holds
+  ud434's journal line (the lean one compiles the journal out).
+- [M] shared tree files, normal `efc28a30`, lean `d8b75137`, archive `51db2c91`, `play-any.sh`
+  `fc7a1395`, `play-astro.sh` `e943bd8f`, `play-pkg.sh` `47426d8e`, `lean-session.sh` `1f1be812`,
+  `input.cfg` `8115a7ff`: the same before and after.
+- Test launcher `~/bc5-work/exp0434/play-test.sh` (`5a7a3c2f`): the shared `play-any.sh`, unchanged,
+  with `BC5_EMU` / `BC5_EMU_LEAN` set to the private binaries (`BC5_LEAN=1` picks the lean one, as in
+  the shared shortcut). `BC5_DIRECT_UD_TARGETS=0` or `KYTY_BC5_TITLE_SETTINGS=0` turns either change
+  off with no build.
+
 ## Verdict
 
-Pending: the private build (`box0434.sh build`), the maintainer's reproduction on Bathhouse Battle
-with ud434 on and off, and the second title's import count.
+Pending: the maintainer's reproduction on Bathhouse Battle on the combined build (ud434 on; the
+fault, if any, writes a new record), and the second title's import count from ud434's journal line.
