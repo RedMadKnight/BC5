@@ -235,4 +235,22 @@ Hit counts in P (lower bounds, about 400 s):
 - The only group higher in P is the APR threads, and the APR-path fixes that change behaviour there are K7 and R2b.
 - perf failed: the container's sudo cannot read the host's tracefs.
 
-**Running:** arm A = P minus {FILE_UNBUFFERED, AMPR_FILTER}, against P, 3+3, G+1500, `KYTY_BC5_P1_HITS=0` (tags s433xa*/s433xf*).
+**Suspect arm (K7 + R2b off), 2026-11-19 07:12–09:59, binary cfb54fd3, `KYTY_BC5_P1_HITS=0`, G+1500, alternated A/P.**
+
+- Arm A is P with `KYTY_BC5_P1_FILE_UNBUFFERED=0 KYTY_BC5_P1_AMPR_FILTER=0`.
+- 7 runs, 6 NO_CRASH. s433xf1 (P) was NOT_ROUTED: no load within 40 s of Continue, a menu flake. The chain was resumed with one NOT_ROUTED tolerated, as in chain0430.
+
+| Run (in time order) | Arm | flips/s | s over 50 ms | longest gap |
+|---|---|---|---|---|
+| s433xa1 | A | 39.0 | 237 | 621 ms |
+| s433yf1 | P | 38.6 | 272 | 3624 ms |
+| s433ya1 | A | 44.2 | 67 | 469 ms |
+| s433yf2 | P | 40.8 | 179 | 815 ms |
+| s433ya2 | A | 42.2 | 163 | 275 ms |
+| s433yf3 | P | 42.1 | 136 | 250 ms |
+
+- Mean A 41.8 flips/s and 156 s over 50 ms; mean P 40.5 and 196.
+- The ranges overlap: P 38.6–42.1, A 39.0–44.2.
+- Both arms drift upward through the morning, and the drift (about 3 flips/s from first to last pair) is as large as the A–P gap.
+- **Verdict: not shown.** K7/R2b are not a cost above run-to-run noise at 3+3.
+- Over all 12 fight runs (P 6, C 3, A 3), the pack shows no cost outside the noise: P 37.8–42.1, C 39.3–40.2.
