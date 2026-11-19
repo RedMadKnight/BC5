@@ -158,3 +158,77 @@ What `build` checks and makes:
 - **Any K1 line** names two paths with the same hash, so the old hash ids would have read the wrong file.
 
 **4. Last, the maintainer's step: replug check for R2a** (audio code changed, `bc5-audio-replug-check`). Top asks him; it needs him at the box. Nothing from this pack goes to the shared builds before that check and his word.
+
+## Results on the box (2026-11-19, top's GO after exp 0430's swap; shared state patch d1388db0, normal eb85d32e, lean 364c6146, archive 6eac453e, all checked unchanged after every build)
+
+All raw files are on the box: the second title's under `~/bc5-work/exp0430/n/raw/<tag>-*`, ASTRO BOT's under `~/bc5-work/exp0413/n/raw/<tag>-*`, the probe's under `~/bc5-work/exp0433/probe/`. Every run had RT on (rtkit grants or 14 SCHED_RR threads seen), JobArenaFix off, `ulimit -c 0`, launched under the user manager (`systemd-run --user`).
+
+**Build (step 1).** Private normal `4c48c55b`, lean `d3d4de8e`, archive `51db2c91`. 0 errors; the 34/37 warnings are all on old lines. Three kit fixes were needed on the box: the host has no `patch` (now `git apply`); `eventQueue.cpp` has 8 compdb entries because the test programs compile it too (the entry is now chosen by product); and the quoted include `event_cap0412.hpp` needed `-iquote` of the shared source directory.
+
+**Smoke (step 2), private lean: PASS.**
+- ASTRO BOT s433a: 200 s PASS.
+- The second title s433l: run0430l.sh, G+300, NO_CRASH, 37.0 flips/s (top's shared-lean hs430S1: 39.3).
+- s433u is void (SETUP: the wrong runner, see step 2).
+
+**Fight route (step 3), private normal, G+1500, P/C alternated: 6 of 6 NO_CRASH, 0 kernel or crash lines.**
+
+| Run | flips/s | s over 50 ms | longest gap | G s | anon at G+120 MiB |
+|---|---|---|---|---|---|
+| s433f1 P | 37.8 | 354 | 2560 ms | 107 | 135 |
+| s433c1 C | 40.2 | 295 | 688 ms | 106 | 128 |
+| s433f2 P | 38.7 | 267 | 274 ms | 106 | 131 |
+| s433c2 C | 39.7 | 228 | 269 ms | 106 | 139 |
+| s433f3 P | 39.3 | 204 | 995 ms | 108 | 122 |
+| s433c3 C | 39.3 | 216 | 3527 ms | 107 | 139 |
+
+- P mean 38.6 flips/s, C mean 39.7. P is at or below its paired C every time. That is a hint of about 1 flips/s, the size of the run-to-run noise (R13).
+- Time to G is the same in both arms.
+- K4 shows no change in the emulator's anonymous memory.
+
+**ASTRO BOT normal 480 s.** s433n1 P and s433m1 C both PASS, with the same job counts. AJM lines are equal: one each.
+
+**Hit counters and probe (step 3b).**
+- Build `cfb54fd3`: 0002 with hit counters. Each `BC5_P1()` evaluation that returns ON is counted; normal build only; `KYTY_BC5_P1_HITS=0` turns counting off.
+- One short pair, G+300: s433p1 P 37.6, s433q1 C 37.8 flips/s.
+
+Hit counts in P (lower bounds, about 400 s):
+
+| Word | Hits |
+|---|---|
+| NO_COND_REGISTRY | 16.8M |
+| PTHREAD_KEYS | 1.05M |
+| COND_SIGNAL_ONE | 524k |
+| PROT_RANGES | 131k |
+| EQ_WAKE_ALL | 16k |
+| AJM_GAPLESS | 16k |
+| AMPR_FILTER | 8.3k |
+| APR_FILE_ID | 64 |
+| FILE_UNBUFFERED | 64 |
+| ALTSTACK | 32 |
+| SEMA_UAF | 16 |
+| FAULT_MASK | 1 |
+| AMPR_RESULT | 0 |
+| FATAL_TO_ERROR | 0 |
+
+**Never triggered on these routes, so harmless but untested:**
+- B1 AMPR_RESULT (0 hits);
+- every C site (0 hits);
+- the K1 collision line;
+- the K6 sigaltstack failure;
+- the 0x51 count (neither title sent CONTEXT_REG_RMW on these routes).
+
+**Context switches per thread, G+120 to G+288, P against C.**
+
+| Threads | voluntary P / C | nonvoluntary P / C |
+|---|---|---|
+| Total | 9.65M / 9.97M | 1.80M / 1.88M |
+| Job_Hi | 2.90M / 3.09M | |
+| Job_Lo | 1.42M / 1.52M | |
+| Render_Thread | 418k / 466k | |
+| bc5-apr-q, bc5-apr-r1/r3/r5 | 9–10 % higher in P | |
+
+- There is no wake inflation from A1/K2/A2/K3.
+- The only group higher in P is the APR threads, and the APR-path fixes that change behaviour there are K7 and R2b.
+- perf failed: the container's sudo cannot read the host's tracefs.
+
+**Running:** arm A = P minus {FILE_UNBUFFERED, AMPR_FILTER}, against P, 3+3, G+1500, `KYTY_BC5_P1_HITS=0` (tags s433xa*/s433xf*).

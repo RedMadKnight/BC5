@@ -20,12 +20,15 @@ WAY2="BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_IND
 OFF=""
 for w in EQ_WAKE_ALL NO_COND_REGISTRY FAULT_MASK SEMA_UAF AMPR_RESULT APR_FILE_ID COND_SIGNAL_ONE ALTSTACK PTHREAD_KEYS \
          PROT_RANGES FILE_UNBUFFERED AJM_GAPLESS AMPR_FILTER FATAL_TO_ERROR; do OFF="$OFF KYTY_BC5_P1_$w=0"; done
-say "binary ${WANT:0:8}; kernel $(uname -r); boot $(cut -c1-8 /proc/sys/kernel/random/boot_id); order ${ORDER:-P C P C P C}"
-np=0; nc=0
+say "binary ${WANT:0:8}; kernel $(uname -r); boot $(cut -c1-8 /proc/sys/kernel/random/boot_id); order ${ORDER:-P C P C P C}; A arm ${ARM_W:-none}; every run ${EXTRA_W:-nothing extra}"
+np=0; nc=0; na=0
+EXTRA=${EXTRA_W:-}  # words for every run of every arm (e.g. KYTY_BC5_P1_HITS=0)
 for arm in ${ORDER:-P C P C P C}; do
   case "$arm" in P) np=$((np + 1)); t=${TAGP:-s433}f$np; AW="$WAY2 BC5_DIRECT_TIMEOUT_PROBE=1" ;;
                  C) nc=$((nc + 1)); t=${TAGP:-s433}c$nc; AW="$WAY2 BC5_DIRECT_TIMEOUT_PROBE=1$OFF" ;;
-                 *) say "arm $arm: P or C"; break ;; esac
+                 A) na=$((na + 1)); t=${TAGP:-s433}a$na; AW="$WAY2 BC5_DIRECT_TIMEOUT_PROBE=1 ${ARM_W:?ARM_W: the words of the A arm}" ;;
+                 *) say "arm $arm: P, C or A"; break ;; esac
+  AW="$AW $EXTRA"
   while [ -e "$R/$t-start.txt" ]; do t=${t}b; done
   [ -e "$HERE/STOP" ] && { say "STOP file before $t"; break; }
   pgrep '^kyty_emulator' > /dev/null && { say "an emulator runs before $t (not ours): stop"; break; }
