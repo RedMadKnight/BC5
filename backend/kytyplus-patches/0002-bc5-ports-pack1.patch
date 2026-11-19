@@ -1,9 +1,9 @@
 diff --git a/src/bc5/ports_pack1.hpp b/src/bc5/ports_pack1.hpp
 new file mode 100644
-index 0000000..acac1e8
+index 0000000..890cf44
 --- /dev/null
 +++ b/src/bc5/ports_pack1.hpp
-@@ -0,0 +1,58 @@
+@@ -0,0 +1,112 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +// Ports pack 1 (2026-11-18, notes/ports-20261118.md): fixes ported from KytyPS5 (GPL-2.0) and AnyPS5 (GPL-2.0),
 +// each behind its own switch. A switch is ON unless its environment word is exactly "0" (the pack's rule: fixes
@@ -15,8 +15,11 @@ index 0000000..acac1e8
 +#pragma once
 +
 +#include <atomic>
++#include <chrono>
++#include <cstdint>
 +#include <cstdio>
 +#include <cstdlib>
++#include <cstring>
 +
 +namespace bc5::p1 {
 +
@@ -58,10 +61,61 @@ index 0000000..acac1e8
 +	return Read(name);
 +}
 +
++inline constexpr int kCount = static_cast<int>(sizeof(kWords) / sizeof(kWords[0])) - 1;
++
++inline int Index(const char* name) {
++	for (int i = 0; i < kCount; i++) {
++		if (std::strcmp(kWords[i], name) == 0) return i;
++	}
++	return -1;
++}
++
++// Hit counts (exp 0433, the top session's ask of 2026-11-19: evidence that each fix ran). A hit is one evaluation of
++// BC5_P1(word) that returned ON: one pass of the fix's decision point (a short-circuit form such as
++// `bad_arg && BC5_P1(...)` counts only the cases it changes). Counted per thread and added to the global count in
++// batches of 256 (the first hits of a word go through at once), so the count is a lower bound: up to 255 hits per
++// thread and word are not added when a thread ends. A line is printed when a word's count passes a power of two:
++//   [bc5] ports pack 1 hits: PTHREAD_KEYS 1024 (t 12.3 s)   (t: seconds since the first hit of any word)
++// KYTY_BC5_P1_HITS=0 turns the counting off. Compiled out in the lean build (no diagnostics there).
++#ifdef BC5_LEAN
++inline void Hit(int) {}
++#else
++struct alignas(64) HitSlot {
++	std::atomic<uint64_t> n {0};
++};
++
++inline double Seconds() {
++	static const auto t0 = std::chrono::steady_clock::now();
++	return std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
++}
++
++inline void Hit(int i) {
++	static const bool on = Read("KYTY_BC5_P1_HITS");
++	static HitSlot g[kCount];
++	thread_local uint32_t pend[kCount] {};
++	if (!on || i < 0) return;
++	uint32_t p = ++pend[i];
++	if (p < 256 && g[i].n.load(std::memory_order_relaxed) >= 64) return;
++	pend[i] = 0;
++	uint64_t before = g[i].n.fetch_add(p, std::memory_order_relaxed);
++	uint64_t after  = before + p;
++	if (before == 0 || (63 - __builtin_clzll(before)) != (63 - __builtin_clzll(after))) {
++		std::fprintf(stderr, "[bc5] ports pack 1 hits: %s %llu (t %.1f s)\n", kWords[i] + 12,
++		             static_cast<unsigned long long>(after), Seconds());
++	}
++}
++#endif
++
 +} // namespace bc5::p1
 +
-+// One read per call site. `name` must be one of kWords.
-+#define BC5_P1(name) ([] { static const bool bc5_p1_v = ::bc5::p1::On(name); return bc5_p1_v; }())
++// One read per call site. `name` must be one of kWords. Each evaluation that returns ON is counted (Hit, above).
++#define BC5_P1(name)                                                                                                   \
++	([] {                                                                                                              \
++		static const int  bc5_p1_i = ::bc5::p1::Index(name);                                                         \
++		static const bool bc5_p1_v = ::bc5::p1::On(name);                                                            \
++		if (bc5_p1_v) ::bc5::p1::Hit(bc5_p1_i);                                                                      \
++		return bc5_p1_v;                                                                                             \
++	}())
 diff --git a/src/common/hostException.cpp b/src/common/hostException.cpp
 index 1eeb7b1..122d5fd 100644
 --- a/src/common/hostException.cpp

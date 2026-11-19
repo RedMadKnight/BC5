@@ -134,7 +134,7 @@ What `build` checks and makes:
   XBIN=$HOME/bc5-work/exp0433/lean/kyty_emulator bash ~/bc5-work/exp0431/astro0431.sh 200 s433a:x:D
   ```
 
-- The second title, 300 s, with exp 0430's runner on the private lean binary. Set `P_BIN` to the private lean binary, `P_WANT` to its md5, and `P_WORDS` to `~/bc5-work/exp0413/n/words0413nz.txt`; also `N_SLOT=4 N_ARENA=off N_FUSE=0 N_NOWD=1`. Call it as `run0430f.sh s433u h 300`.
+- The second title, 300 s, with exp 0430's runner on the private lean binary. Set `P_BIN` to the private lean binary, `P_WANT` to its md5, and `P_WORDS` to `~/bc5-work/exp0413/n/words0413nz.txt`; also `N_SLOT=4 N_ARENA=off N_FUSE=0 N_NOWD=1`. Call it as `run0430f.sh s433u h 300`. **Correction from the box (2026-11-19):** `run0430f.sh` gates its route on the journal's frame-profile lines, and lean writes none, so s433u ended as SETUP at 61 s (a void run). The lean runner is `run0430l.sh`, launched as top's `abl0430.sh` S arm: `P_HOST=0 N_TIMED=1 N_T0=90 N_T1=10 N_T2=8 N_T3=25 N_MH=1 N_MHD=373 N_LEANSESS=1`, plus the words above and way 2's five words (run s433l).
 - **PASS:** the `[bc5] ports pack 1:` line is there with all 14 `on`; both runs end with the runner's PASS; no kernel line, no crash text.
 - **On FAIL:** stop and bisect with words before anything else (the halves, then single words, `NAME=0`).
 
