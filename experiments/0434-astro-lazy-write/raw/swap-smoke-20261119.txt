@@ -1,0 +1,25 @@
+run-swap0434 15:25:28: boot 40a8312e
+chain lock: exp 0417 | chain: exp 0434: shared swap, ud434 + exp 0435 built in (no switch), patch 59f00d27 -> 8986853b; normal and lean rebuilt (CPU only, no emulator), until about 16:05 | token 202611191525281325771 | 2026-11-19 15:25:28
+before: PIN_OLD=59f00d27 NORMAL=efc28a30 LEAN=d8b75137 ARCH=51db2c91 
+the patch: 59f00d27 -> 8986853b, files 134 -> 135, exp 0372 lines 5, pad_audio_route header in
+== 15:25:32 build normal
+normal: 99f2a567, warnings 18; steps 14
+== 15:26:23 build lean
+lean: 82720cca, warnings 19; steps 14
+normal words: +[] -[]
+lean words: +[] -[]
+int0434 done 15:27:16: patch 8986853b, archive 51db2c91 (unchanged), normal 99f2a567, lean 82720cca; undo: bash /var/home/kjaniszewski/bc5-work/exp0434/bake/undo0434.sh (to 59f00d27; further back: exp 0433's undo0433.sh)
+chain lock released
+chain lock: exp 0417 | chain: exp 0434: smoke of the ud434 + 0435 swap: ASTRO BOT lean 200 s + the second title lean 300 s + ASTRO BOT normal 200 s, until about 15:47 | token 202611191527171326991 | 2026-11-19 15:27:17
+binaries: lean 82720cca, normal 99f2a567; kernel 7.3.3-ogc1.1.fc45.x86_64; boot 40a8312e
+s434sc: s434sc (astro) PASS: ran 200 s; RssAnon at the end 232700 kB; kernel lines 0, crash lines 0; real pad keys 0
+s434su (lean) PASS: ran 300 s; RssAnon at the end 115608 kB; kernel lines 0, crash lines 0; real pad keys 0; key lines done 33 of 33
+s434sn: s434sn (astro) PASS: ran 200 s; RssAnon at the end 236596 kB; kernel lines 0, crash lines 0; real pad keys 0
+s434sn: ud434 lines 0; last: none
+s434sc engines at 150 s: drm-engine-compute:	149326487715 ns drm-engine-compute:	149326526035 ns drm-engine-gfx:	104825845964 ns drm-engine-gfx:	104825896958 ns drm-engine-gfx:	7387833103 ns gtt-used-MiB 7215 of 13312; MemAvailable-MiB 3993 
+s434su engines at 150 s: drm-engine-compute:	31026554213 ns drm-engine-gfx:	2473949406 ns drm-engine-gfx:	65256188174 ns gtt-used-MiB 12255 of 13312; MemAvailable-MiB 1130 
+s434sn engines at 150 s: drm-engine-compute:	149666500616 ns drm-engine-compute:	149666541778 ns drm-engine-gfx:	105103809381 ns drm-engine-gfx:	105103868471 ns drm-engine-gfx:	7447676175 ns gtt-used-MiB 7201 of 13312; MemAvailable-MiB 4083 
+smoke0434: ALL PASS
+smoke0434 ended 15:39:44
+chain lock released
+run-swap0434 15:39:44: smoke exit 0

@@ -6466,6 +6466,140 @@ index 0000000..d9e1de1
 +};
 +
 +} // namespace bc5::sync_fast
+diff --git a/src/bc5/title_settings.hpp b/src/bc5/title_settings.hpp
+new file mode 100644
+index 0000000..bdf8d13
+--- /dev/null
++++ b/src/bc5/title_settings.hpp
+@@ -0,0 +1,128 @@
++// SPDX-License-Identifier: GPL-2.0-only
++// BC5 experiment 0435: each game keeps its own settings and its last window mode (the maintainer, 2026-11-19: "zrób aby
++// każda gra zapamiętywała swoje Settings oraz czy był fullscreen czy nie").
++//
++//   <titles root>/<TITLE_ID>/input.cfg   the title's input configuration: the file the settings overlay (F2) and the
++//                                        Emulation menu save. Seeded on the title's first start by copying the shared
++//                                        file (KYTY_BC5_INPUT_CONFIG, ~/bc5-work/input.cfg); same grammar, old keys too.
++//   <titles root>/<TITLE_ID>/window      "fullscreen" or "windowed": the mode the window last changed to (F11, the menu,
++//                                        the Video tab). It wins over --fullscreen, which is only the first-run default.
++//
++// The titles root is $KYTY_BC5_MENU_DIR/titles (play-any.sh exports ~/bc5-work/menu), else <directory of the shared
++// file>/menu/titles: both give ~/bc5-work/menu/titles on the box. No title id (the empty menu window, "UNKNOWN"):
++// the shared file as before (read and saved), no window file. A real title whose store cannot
++// be made reads the shared file and saves nothing (top's condition, 2026-11-19: a title's Save never rewrites the shared
++// file).
++// Pure C++ (no host types): tested by experiments/0435-title-settings/test0435.cpp.
++#pragma once
++
++#include <cstdio>
++#include <filesystem>
++#include <fstream>
++#include <string>
++#include <system_error>
++
++namespace bc5::title_settings {
++
++namespace fs = std::filesystem;
++
++// A TITLE_ID as param.sfo spells it (PPSA03671): letters and digits only, so it is a safe directory name.
++inline bool ValidTitleId(const std::string& id) {
++	if (id.empty() || id.size() > 15 || id == "UNKNOWN") return false;
++	for (const char c: id) {
++		if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))) return false;
++	}
++	return true;
++}
++
++inline fs::path TitlesRoot(const char* menu_dir, const std::string& shared_cfg) {
++	if (menu_dir != nullptr && *menu_dir != 0) return fs::path(menu_dir) / "titles";
++	if (shared_cfg.empty()) return {};
++	return fs::path(shared_cfg).parent_path() / "menu" / "titles";
++}
++
++struct Resolved {
++	std::string config;    // the input configuration to read
++	std::string save;      // the file Save writes ("" : Save is off)
++	std::string title_dir; // the title's directory (window file), "" when the title has no store
++	std::string note;      // one line for the log
++};
++
++// The title's files, the store created and its input.cfg seeded from the shared file when missing. Never throws; on
++// any problem the shared file to read, no title directory, and no Save for a real title.
++inline Resolved Resolve(const fs::path& root, const std::string& title_id, const std::string& shared_cfg) {
++	Resolved r {shared_cfg, shared_cfg, "", ""};
++	if (shared_cfg.empty()) {
++		r.note = "no shared input configuration: no title store";
++		return r;
++	}
++	if (!ValidTitleId(title_id) || root.empty()) {
++		r.note = "no title id: the shared file";
++		return r;
++	}
++	r.save = ""; // from here on a failure reads the shared file and saves nothing
++	std::error_code ec;
++	const fs::path  dir = root / title_id;
++	const fs::path  cfg = dir / "input.cfg";
++	fs::create_directories(dir, ec);
++	if (ec || !fs::is_directory(dir, ec)) {
++		r.note = "cannot create " + dir.string() + ": the shared file";
++		return r;
++	}
++	if (!fs::exists(cfg, ec)) {
++		if (!fs::is_regular_file(shared_cfg, ec)) {
++			// Nothing to seed from: keep the old path, so a missing shared file fails as it always did.
++			r.note = "no " + shared_cfg + " to seed " + cfg.string() + " from: the shared file";
++			return r;
++		}
++		const fs::path tmp = dir / "input.cfg.seed.tmp";
++		fs::remove(tmp, ec);
++		ec.clear();
++		fs::copy_file(shared_cfg, tmp, fs::copy_options::overwrite_existing, ec);
++		if (!ec) fs::rename(tmp, cfg, ec);
++		if (ec) {
++			fs::remove(tmp, ec);
++			r.note = "cannot seed " + cfg.string() + ": the shared file";
++			return r;
++		}
++		r.note = "seeded " + cfg.string() + " from " + shared_cfg;
++	} else {
++		r.note = "title file " + cfg.string();
++	}
++	r.config    = cfg.string();
++	r.save      = r.config;
++	r.title_dir = dir.string();
++	return r;
++}
++
++// -1: none (or unreadable or not one of the two words), 0: windowed, 1: fullscreen.
++inline int ReadWindowMode(const std::string& title_dir) {
++	if (title_dir.empty()) return -1;
++	std::ifstream f(fs::path(title_dir) / "window");
++	std::string   word;
++	if (!(f >> word)) return -1;
++	if (word == "fullscreen") return 1;
++	if (word == "windowed") return 0;
++	return -1;
++}
++
++inline bool WriteWindowMode(const std::string& title_dir, bool fullscreen) {
++	if (title_dir.empty()) return false;
++	if (ReadWindowMode(title_dir) == (fullscreen ? 1 : 0)) return true; // unchanged: no write
++	const fs::path tmp = fs::path(title_dir) / "window.tmp";
++	{
++		std::ofstream f(tmp, std::ios::trunc | std::ios::binary);
++		if (!f) return false;
++		f << (fullscreen ? "fullscreen" : "windowed") << '\n';
++		if (!f.flush()) return false;
++	}
++	std::error_code ec;
++	fs::rename(tmp, fs::path(title_dir) / "window", ec);
++	if (ec) {
++		fs::remove(tmp, ec);
++		return false;
++	}
++	return true;
++}
++
++} // namespace bc5::title_settings
 diff --git a/src/common/emulatorConfig.cpp b/src/common/emulatorConfig.cpp
 index 15a98b9..0e3d63d 100644
 --- a/src/common/emulatorConfig.cpp
@@ -13689,10 +13823,10 @@ index 58f16c6..9c3962c 100644
  } // namespace Libs::VideoOut
  
 diff --git a/src/graphics/presentation/window.h b/src/graphics/presentation/window.h
-index f70995a..8bc9175 100644
+index f70995a..68d0907 100644
 --- a/src/graphics/presentation/window.h
 +++ b/src/graphics/presentation/window.h
-@@ -11,6 +11,13 @@ class Presenter;
+@@ -11,6 +11,15 @@ class Presenter;
  [[nodiscard]] Presenter& WindowInit(uint32_t width, uint32_t height);
  void                     WindowRun();
  void                     WindowShutdown();
@@ -13700,6 +13834,8 @@ index f70995a..8bc9175 100644
 +// game runs (the F2 menu, F11, Fullscreen= in the input configuration).
 +void WindowSetFullscreen(bool on);
 +bool WindowIsFullscreen();
++// Experiment 0435: the title's remembered mode; unlike WindowSetFullscreen it also wins over --fullscreen.
++void WindowRestoreFullscreen(bool on);
 +// BC5 (ADR 0011): the window loop's pause (Space) from the menu bar, any thread.
 +void WindowSetPaused(bool on);
 +bool WindowIsPaused();
@@ -13707,19 +13843,20 @@ index f70995a..8bc9175 100644
  } // namespace Libs::Graphics
  
 diff --git a/src/graphics/presentation/window/hostInput.cpp b/src/graphics/presentation/window/hostInput.cpp
-index edcfdaf..7b5e96b 100644
+index edcfdaf..65ee763 100644
 --- a/src/graphics/presentation/window/hostInput.cpp
 +++ b/src/graphics/presentation/window/hostInput.cpp
-@@ -1,4 +1,8 @@
+@@ -1,4 +1,9 @@
 +#include "bc5/env_rule.hpp" // exp 0419 (build W): BC5_DIAG_ENV, BC5_FIXED_ENV, BC5_LEAN_OR
 +#include <pthread.h>
  #include "graphics/presentation/window/hostInput.h"
 +#include "graphics/presentation/hostMenu.h" // experiment 0301: the MangoHud switch is saved per title
 +#include "graphics/presentation/window.h"
++#include "bc5/title_settings.hpp" // exp 0435: each title keeps its own input.cfg and window mode
  
  #include "SDL_gamecontroller.h"
  #include "SDL_keyboard.h"
-@@ -6,17 +10,72 @@
+@@ -6,17 +11,72 @@
  #include "SDL_mouse.h"
  #include "common/assert.h"
  #include "common/emulatorConfig.h"
@@ -13792,7 +13929,7 @@ index edcfdaf..7b5e96b 100644
  namespace {
  
  struct ControlInfo {
-@@ -55,13 +114,68 @@ static constexpr std::array CONTROL_INFO = {
+@@ -55,13 +115,68 @@ static constexpr std::array CONTROL_INFO = {
  
  constexpr std::size_t INVALID_CONTROL = CONTROL_INFO.size();
  
@@ -13865,7 +14002,7 @@ index edcfdaf..7b5e96b 100644
  std::size_t ControlFromName(std::string_view name) {
  	const auto info = std::find_if(CONTROL_INFO.begin(), CONTROL_INFO.end(),
  	                               [name](const auto& item) { return item.name == name; });
-@@ -74,6 +188,11 @@ const ControlInfo& Info(std::size_t control) {
+@@ -74,6 +189,11 @@ const ControlInfo& Info(std::size_t control) {
  }
  
  SDL_Keycode NormalizeKey(SDL_Keycode key) {
@@ -13877,7 +14014,7 @@ index edcfdaf..7b5e96b 100644
  	switch (key) {
  		case SDLK_RSHIFT: return SDLK_LSHIFT;
  		case SDLK_RCTRL: return SDLK_LCTRL;
-@@ -83,110 +202,539 @@ SDL_Keycode NormalizeKey(SDL_Keycode key) {
+@@ -83,110 +203,556 @@ SDL_Keycode NormalizeKey(SDL_Keycode key) {
  	}
  }
  
@@ -13938,10 +14075,7 @@ index edcfdaf..7b5e96b 100644
 +	std::string spec(name.substr(4));
 +	std::transform(spec.begin(), spec.end(), spec.begin(),
 +	               [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
- 
--	const auto button = std::find_if(buttons.begin(), buttons.end(),
--	                                 [name](const auto& item) { return item.first == name; });
--	return button != buttons.end() ? button->second : 0;
++
 +	const auto button = SDL_GameControllerGetButtonFromString(spec.c_str());
 +	if (button != SDL_CONTROLLER_BUTTON_INVALID) {
 +		out->kind       = SourceKind::PadButton;
@@ -13967,12 +14101,11 @@ index edcfdaf..7b5e96b 100644
 +	out->pad_axis  = axis;
 +	out->axis_sign = sign;
 +	return true;
- }
++}
  
--int GamepadButtonFromName(std::string_view name) {
--	if (!name.starts_with("Pad:")) return -1;
--	return static_cast<int>(
--	    SDL_GameControllerGetButtonFromString(std::string(name.substr(4)).c_str()));
+-	const auto button = std::find_if(buttons.begin(), buttons.end(),
+-	                                 [name](const auto& item) { return item.first == name; });
+-	return button != buttons.end() ? button->second : 0;
 +bool SourceFromName(std::string_view name, Source* out) {
 +	*out = Source {};
 +	if (name.starts_with("Mouse:")) {
@@ -13989,13 +14122,8 @@ index edcfdaf..7b5e96b 100644
 +	}
 +	out->kind = SourceKind::Key;
 +	return true;
- }
- 
--bool Conflicts(const Binding& first, const Binding& second) {
--	return first.control == second.control ||
--	       (first.key != SDLK_UNKNOWN && first.key == second.key) ||
--	       (first.mouse_button != 0 && first.mouse_button == second.mouse_button) ||
--	       (first.gamepad_button >= 0 && first.gamepad_button == second.gamepad_button);
++}
++
 +std::string SourceToName(const Source& s) {
 +	switch (s.kind) {
 +		case SourceKind::Key: return SDL_GetKeyName(s.key);
@@ -14022,8 +14150,12 @@ index edcfdaf..7b5e96b 100644
 +		case SourceKind::PadAxis: return a.pad_axis == b.pad_axis && a.axis_sign == b.axis_sign;
 +		default: return false;
 +	}
-+}
-+
+ }
+ 
+-int GamepadButtonFromName(std::string_view name) {
+-	if (!name.starts_with("Pad:")) return -1;
+-	return static_cast<int>(
+-	    SDL_GameControllerGetButtonFromString(std::string(name.substr(4)).c_str()));
 +// Experiment 0337: the system languages in SystemServiceParamGetInt's numbering (PARAM_ID_LANG), as KytyPlus's
 +// launcher lists them (launcher/src/configurationEditDialog.cpp CONSOLE_LANGUAGE_NAMES at f266548;
 +// Config::MAX_CONSOLE_LANGUAGE is 29).
@@ -14042,8 +14174,13 @@ index edcfdaf..7b5e96b 100644
 +		if (std::isalnum(static_cast<unsigned char>(c)) != 0) k.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
 +	}
 +	return k;
-+}
-+
+ }
+ 
+-bool Conflicts(const Binding& first, const Binding& second) {
+-	return first.control == second.control ||
+-	       (first.key != SDLK_UNKNOWN && first.key == second.key) ||
+-	       (first.mouse_button != 0 && first.mouse_button == second.mouse_button) ||
+-	       (first.gamepad_button >= 0 && first.gamepad_button == second.gamepad_button);
 +// A number 0..29, or a name compared on its letters and digits, any case ("Polish", "polish", "english-united-states");
 +// -1 if neither.
 +int LanguageFromName(std::string_view s) {
@@ -14125,13 +14262,14 @@ index edcfdaf..7b5e96b 100644
 +		std::vector<std::string> out;
 +		if (m_fullscreen >= 0) {
 +			out.emplace_back(m_fullscreen == 1 ? "Fullscreen=on" : "Fullscreen=off");
-+		}
+ 		}
+-		Add(binding);
 +		if (m_system_language >= 0) out.emplace_back(std::string("SystemLanguage=") + LANGUAGE_NAMES[m_system_language]); // experiment 0337
 +		if (m_render_scale > 0.0) {
 +			char b[64];
 +			std::snprintf(b, sizeof(b), "RenderScale.%s=%.2f", HostInputTitleId().c_str(), m_render_scale);
 +			out.emplace_back(b);
-+		}
+ 		}
 +		for (const auto& other: m_other_title_scales) out.push_back(other);
 +		if (m_ray_tracing >= 0) out.emplace_back("RayTracing." + HostInputTitleId() + (m_ray_tracing == 1 ? "=on" : "=off")); // experiment 0273
 +		if (m_mangohud >= 0) out.emplace_back("MangoHud." + HostInputTitleId() + (m_mangohud == 1 ? "=on" : "=off")); // experiment 0301
@@ -14151,11 +14289,10 @@ index edcfdaf..7b5e96b 100644
 +				                 SDL_GameControllerGetStringForAxis(static_cast<SDL_GameControllerAxis>(i)) +
 +				                 "=none");
 +			}
- 		}
--		Add(binding);
++		}
 +		for (const auto& b: m_bindings) {
 +			out.emplace_back(std::string(Info(b.control).name) + "=" + SourceToName(b.source));
- 		}
++		}
 +		return out;
  	}
 +
@@ -14206,15 +14343,6 @@ index edcfdaf..7b5e96b 100644
 +			}
 +		}
 +		return INVALID_CONTROL;
-+	}
-+
-+	[[nodiscard]] std::size_t FindPadButton(int button) const {
-+		for (const auto& b: m_bindings) {
-+			if (b.source.kind == SourceKind::PadButton && b.source.pad_button == button) {
-+				return b.control;
-+			}
-+		}
-+		return INVALID_CONTROL;
  	}
  
 -	[[nodiscard]] std::size_t FindGamepadButton(int button) const {
@@ -14222,6 +14350,15 @@ index edcfdaf..7b5e96b 100644
 -		    m_bindings.begin(), m_bindings.begin() + m_size,
 -		    [button](const auto& item) { return item.gamepad_button == button; });
 -		return binding != m_bindings.begin() + m_size ? binding->control : INVALID_CONTROL;
++	[[nodiscard]] std::size_t FindPadButton(int button) const {
++		for (const auto& b: m_bindings) {
++			if (b.source.kind == SourceKind::PadButton && b.source.pad_button == button) {
++				return b.control;
++			}
++		}
++		return INVALID_CONTROL;
++	}
++
 +	// Axis sources: every binding on this axis whose state changed, with its new state.
 +	template <typename F>
 +	void UpdatePadAxis(int axis, int value, F&& on_change) {
@@ -14291,13 +14428,16 @@ index edcfdaf..7b5e96b 100644
 +			const std::string id(left.substr(12));
 +			if (EqualNoCase(id, HostInputTitleId())) {
 +				m_render_scale = k;
-+			} else {
+ 			} else {
+-				index++;
 +				char b[64];
 +				std::snprintf(b, sizeof(b), "RenderScale.%s=%.2f", id.c_str(), k);
 +				m_other_title_scales.emplace_back(b);
-+			}
+ 			}
 +			return true;
-+		}
+ 		}
+-		EXIT_IF(m_size >= m_bindings.size());
+-		m_bindings[m_size++] = binding;
 +
 +		if (left.size() > 11 && EqualNoCase(left.substr(0, 11), "RayTracing.")) { // experiment 0273, per title
 +			int v = -1;
@@ -14368,14 +14508,11 @@ index edcfdaf..7b5e96b 100644
 +			}
 +			if (source.kind == SourceKind::PadButton) {
 +				m_disabled_buttons |= 1u << source.pad_button;
- 			} else {
--				index++;
++			} else {
 +				m_disabled_axes |= 1u << source.pad_axis;
- 			}
++			}
 +			return true;
- 		}
--		EXIT_IF(m_size >= m_bindings.size());
--		m_bindings[m_size++] = binding;
++		}
 +
 +		Binding binding;
 +		binding.control = ControlFromName(left);
@@ -14425,6 +14562,18 @@ index edcfdaf..7b5e96b 100644
 -	return map;
 +std::unique_ptr<InputMap> g_map;
 +std::string               g_config_path;
++std::string               g_title_dir; // exp 0435: the title's store (window mode), "" when none
++std::string               g_save_path; // exp 0435: where Save writes (HostInputConfigPath), "" when nowhere
++
++// Experiment 0435: the input configuration this run reads and saves: the title's own file,
++// <menu dir>/titles/<TITLE_ID>/input.cfg, seeded from KYTY_BC5_INPUT_CONFIG on the title's first start; the
++// shared file without a title id (built in with no switch, exp 0434's bake of 2026-11-19). Empty: no file at all.
++bc5::title_settings::Resolved ResolveConfig() {
++	const char* shared = std::getenv("KYTY_BC5_INPUT_CONFIG");
++	if (shared == nullptr || *shared == 0) return {};
++	namespace ts = bc5::title_settings;
++	return ts::Resolve(ts::TitlesRoot(std::getenv("KYTY_BC5_MENU_DIR"), shared), HostInputTitleId(), shared);
++}
 +
 +std::vector<std::pair<std::string, std::string>> ReadConfigLines(const std::string& path, std::string* error) {
 +	std::vector<std::pair<std::string, std::string>> lines;
@@ -14452,8 +14601,11 @@ index edcfdaf..7b5e96b 100644
 +		for (const auto& value: Config::GetKeymap()) {
 +			lines.emplace_back(value, "--keymap");
 +		}
-+		if (const char* path = std::getenv("KYTY_BC5_INPUT_CONFIG"); path != nullptr && *path != 0) {
-+			g_config_path = path;
++		if (const auto where = ResolveConfig(); !where.config.empty()) { // exp 0435
++			g_config_path = where.config;
++			g_title_dir   = where.title_dir;
++			g_save_path   = where.save;
++			std::fprintf(stderr, "Title settings (exp 0435): %s: %s\n", HostInputTitleId().c_str(), where.note.c_str());
 +			std::string error;
 +			auto        from_file = ReadConfigLines(g_config_path, &error);
 +			if (!error.empty()) {
@@ -14471,6 +14623,8 @@ index edcfdaf..7b5e96b 100644
 +	if (map->RayTracing() >= 0) Libs::Bc5Gc::Direct::SetRayTracing(map->RayTracing() == 1); // experiment 0273
 +		if (map->MangoHud() >= 0) HostMenuMangoHudSet(map->MangoHud() == 1); // experiment 0301
 +		if (map->Fullscreen() >= 0) WindowSetFullscreen(map->Fullscreen() == 1);
++		// exp 0435: the mode the title's window last changed to wins over Fullscreen= and --fullscreen.
++		if (const int mode = bc5::title_settings::ReadWindowMode(g_title_dir); mode >= 0) WindowRestoreFullscreen(mode == 1);
 +		g_map = std::move(map);
 +	}
 +	return *g_map;
@@ -14483,7 +14637,7 @@ index edcfdaf..7b5e96b 100644
  void SetButton(uint32_t button, bool down) {
  	if (button == Controller::PAD_BUTTON_L2) {
  		Controller::ControllerAxis(Controller::HOST_INPUT_CONTROLLER_ID,
-@@ -199,40 +747,17 @@ void SetButton(uint32_t button, bool down) {
+@@ -199,40 +765,17 @@ void SetButton(uint32_t button, bool down) {
  	}
  }
  
@@ -14530,7 +14684,7 @@ index edcfdaf..7b5e96b 100644
  void SetControl(std::size_t control, bool down) {
  	if (control == INVALID_CONTROL) {
  		return;
-@@ -240,93 +765,308 @@ void SetControl(std::size_t control, bool down) {
+@@ -240,93 +783,327 @@ void SetControl(std::size_t control, bool down) {
  
  	const auto& info = Info(control);
  	if (info.button != 0) {
@@ -14596,9 +14750,9 @@ index edcfdaf..7b5e96b 100644
 -			return;
 -		default: SetButton(DefaultKeyboardButton(key_code), down); return;
 +		g_axes[axis].negative = down;
- 	}
++	}
 +	SetStickAxis(info.axis, g_axes[axis].negative, g_axes[axis].positive);
- }
++}
 +
 +void ReleaseAll() {
 +	for (std::size_t c = 0; c < CONTROL_INFO.size(); c++) {
@@ -14688,8 +14842,8 @@ index edcfdaf..7b5e96b 100644
 +	if (!g_release_thread_started) {
 +		g_release_thread_started = true;
 +		std::thread(ReleaseThread).detach();
-+	}
-+}
+ 	}
+ }
 +
 +bool Trace() {
 +	static const bool trace_env = BC5_DIAG_ENV("KYTY_BC5_INPUT_TRACE") != nullptr;
@@ -14741,7 +14895,7 @@ index edcfdaf..7b5e96b 100644
 +		g_down_at[key_code] = now;
 +		SetControl(control, true);
 +		return;
- 	}
++	}
 +	const auto   it   = g_down_at.find(key_code);
 +	const double held = it != g_down_at.end() ? (now - it->second) * 1000.0 : 1e9;
 +	if (held < MinHoldMs()) {
@@ -14754,7 +14908,7 @@ index edcfdaf..7b5e96b 100644
 +			std::fflush(stderr);
 +		}
 +		return;
-+	}
+ 	}
 +	SetControl(control, false);
  }
  
@@ -14774,9 +14928,9 @@ index edcfdaf..7b5e96b 100644
  	if (map.Custom() && gamepad_button >= 0) {
 -		SetControl(map.FindGamepadButton(gamepad_button), down);
 +		SetControl(map.FindPadButton(gamepad_button), down);
-+	}
-+}
-+
+ 	}
+ }
+ 
 +void HostInputGamepadAxis(int gamepad_axis, int value) {
 +	std::lock_guard<std::mutex> lock(g_input_mutex);
 +	auto&                       map = Map();
@@ -14800,19 +14954,38 @@ index edcfdaf..7b5e96b 100644
 +	std::vector<std::string> names;
 +	for (const auto& c: CONTROL_INFO) {
 +		names.emplace_back(c.name);
- 	}
++	}
 +	return names;
 +}
 +
 +std::vector<std::string> HostInputStatements() {
 +	std::lock_guard<std::mutex> lock(g_input_mutex);
-+	return Map().Statements();
++	auto lines = Map().Statements();
++	if (!g_title_dir.empty()) { // exp 0435: the window's mode as it is now, so a Save or Apply never undoes an F11
++		lines.erase(std::remove_if(lines.begin(), lines.end(),
++		                           [](const std::string& l) { return l.rfind("Fullscreen=", 0) == 0; }),
++		            lines.end());
++		lines.insert(lines.begin(), WindowIsFullscreen() ? "Fullscreen=on" : "Fullscreen=off");
++	}
++	return lines;
++}
++
++// Experiment 0435: the window thread, after the mode really changed (F11, the menu, the Video tab, a remembered mode).
++void HostInputRememberFullscreen(bool on) {
++	std::string dir;
++	{
++		std::lock_guard<std::mutex> lock(g_input_mutex);
++		dir = g_title_dir;
++	}
++	if (!dir.empty() && !bc5::title_settings::WriteWindowMode(dir, on)) {
++		std::fprintf(stderr, "Title settings (exp 0435): cannot write %s/window\n", dir.c_str());
++	}
 +}
 +
 +std::string HostInputConfigPath() {
 +	std::lock_guard<std::mutex> lock(g_input_mutex);
 +	Map();
-+	return g_config_path;
++	return g_save_path; // exp 0435: a title's own file; never the shared one for a title (top, 2026-11-19)
 +}
 +
 +bool HostInputApply(const std::vector<std::string>& lines, std::string* error) {
@@ -14876,8 +15049,8 @@ index edcfdaf..7b5e96b 100644
 +	if (g_map != nullptr) {
 +		return g_map->SystemLanguage();
 +	}
-+	const char* path = std::getenv("KYTY_BC5_INPUT_CONFIG");
-+	if (path == nullptr || *path == 0) {
++	const std::string path = ResolveConfig().config; // exp 0435: the title's file when it has one
++	if (path.empty()) {
 +		return -1;
 +	}
 +	std::string error;
@@ -14896,11 +15069,11 @@ index edcfdaf..7b5e96b 100644
 +
 +int HostInputLanguageFromName(const std::string& name) {
 +	return LanguageFromName(name);
- }
- 
++}
++
  } // namespace Libs::Graphics
 diff --git a/src/graphics/presentation/window/hostInput.h b/src/graphics/presentation/window/hostInput.h
-index c0ac585..6990cf3 100644
+index c0ac585..9f1224a 100644
 --- a/src/graphics/presentation/window/hostInput.h
 +++ b/src/graphics/presentation/window/hostInput.h
 @@ -2,6 +2,8 @@
@@ -14912,7 +15085,7 @@ index c0ac585..6990cf3 100644
  
  namespace Libs::Graphics {
  
-@@ -9,6 +11,33 @@ void HostInputInit();
+@@ -9,6 +11,35 @@ void HostInputInit();
  void HostInputKey(int key_code, bool down);
  void HostInputMouseButton(uint8_t mouse_button, bool down);
  void HostInputGamepadButton(int gamepad_button, bool down);
@@ -14936,6 +15109,8 @@ index c0ac585..6990cf3 100644
 +bool HostInputSave(const std::string& path, const std::vector<std::string>& lines, std::string* error);
 +// Every control the keyboard/mouse/pad-source stream holds goes up (the overlay opening).
 +void HostInputReleaseAll();
++// Experiment 0435: the window's mode changed; the title's store (<menu dir>/titles/<TITLE_ID>/window) keeps it.
++void HostInputRememberFullscreen(bool on);
 +
 +// Experiment 0337: the console's system language (PS5: Settings > System > Language), SystemLanguage=<name|number> in the
 +// input configuration, in SystemServiceParamGetInt's numbering (PARAM_ID_LANG). -1: not set.
@@ -15141,7 +15316,7 @@ index 845bfe3..c5d4861 100644
  		{
  			const auto present_end = std::chrono::steady_clock::now();
 diff --git a/src/graphics/presentation/window/window.cpp b/src/graphics/presentation/window/window.cpp
-index c729a98..15d002f 100644
+index c729a98..db22a3d 100644
 --- a/src/graphics/presentation/window/window.cpp
 +++ b/src/graphics/presentation/window/window.cpp
 @@ -1,3 +1,4 @@
@@ -15190,15 +15365,23 @@ index c729a98..15d002f 100644
  		default: return 0;
  	}
  }
-@@ -193,6 +204,7 @@ constexpr uint32_t KYTY_SDL_BUTTON_X2MASK = SDL_BUTTON_X2MASK; // NOLINT(hicpp-s
+@@ -193,6 +204,15 @@ constexpr uint32_t KYTY_SDL_BUTTON_X2MASK = SDL_BUTTON_X2MASK; // NOLINT(hicpp-s
  namespace {
  
  std::unique_ptr<WindowContext> g_window;
 +std::atomic<int>               g_fullscreen_pending {-1}; // BC5: asked for before the window existed
++std::atomic<bool>              g_fullscreen_remembered {false}; // exp 0435: the pending mode is the title's own
++
++// Before the window exists: a remembered mode decides (exp 0435); else --fullscreen or a Fullscreen=on line.
++bool FullscreenBeforeWindow() {
++	const int want = g_fullscreen_pending.load();
++	if (g_fullscreen_remembered.load() && want >= 0) return want == 1;
++	return Config::FullscreenEnabled() || want == 1;
++}
  
  } // namespace
  
-@@ -201,10 +213,23 @@ constexpr uint32_t    KYTY_SDL_WINDOW_FLAGS =
+@@ -201,10 +221,23 @@ constexpr uint32_t    KYTY_SDL_WINDOW_FLAGS =
      (static_cast<uint32_t>(SDL_WINDOW_HIDDEN) | static_cast<uint32_t>(SDL_WINDOW_VULKAN));
  constexpr int KYTY_SDL_WINDOWPOS_CENTERED = SDL_WINDOWPOS_CENTERED; /*NOLINT(hicpp-signed-bitwise)*/
  
@@ -15223,7 +15406,7 @@ index c729a98..15d002f 100644
  }
  
  static void GameEventQuit(WindowLoopState& game) {
-@@ -231,10 +256,28 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
+@@ -231,10 +264,28 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
  	if (key.down) {
  		switch (key.key_code) {
  			case SDLK_ESCAPE: game.need_exit = true; break;
@@ -15255,7 +15438,7 @@ index c729a98..15d002f 100644
  				}
  				break;
  			default: break;
-@@ -245,6 +288,12 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
+@@ -245,6 +296,12 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
  
  	if ((key.down || key.up) && !key.repeat) {
  		HostInputKey(key.key_code, key.down);
@@ -15268,7 +15451,7 @@ index c729a98..15d002f 100644
  	}
  }
  
-@@ -328,12 +377,24 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
+@@ -328,12 +385,24 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
  			if (joy != nullptr) {
  				LOGF("Controller opened as raw joystick: %s\n",
  				     SDL_JoystickName(joy));
@@ -15294,7 +15477,7 @@ index c729a98..15d002f 100644
  	}
  
  	if (f.removed) {
-@@ -343,19 +404,38 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
+@@ -343,19 +412,38 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
  
  	if (f.down || f.up) {
  		const auto button = ControllerButtonToPadButton(f.button);
@@ -15335,7 +15518,7 @@ index c729a98..15d002f 100644
  	}
  }
  
-@@ -366,7 +446,11 @@ static void GameEventLowMemory() {
+@@ -366,7 +454,11 @@ static void GameEventLowMemory() {
  static void GameEventWillEnterBackground(WindowLoopState& game) {
  	LOGF("Event: will_enter_background\n");
  
@@ -15348,7 +15531,7 @@ index c729a98..15d002f 100644
  }
  
  static void GameEventDidEnterBackground() {
-@@ -380,7 +464,11 @@ static void GameEventWillEnterForeground() {
+@@ -380,7 +472,11 @@ static void GameEventWillEnterForeground() {
  static void GameEventDidEnterForeground(WindowLoopState& game) {
  	LOGF("Event: did_enter_foreground\n");
  
@@ -15361,7 +15544,7 @@ index c729a98..15d002f 100644
  }
  
  void WindowContext::Resize(uint32_t new_width, uint32_t new_height) {
-@@ -486,9 +574,20 @@ void WindowContext::ProcessDisplayEvent(const SDL_DisplayEvent& display) {
+@@ -486,9 +582,22 @@ void WindowContext::ProcessDisplayEvent(const SDL_DisplayEvent& display) {
  }
  
  void WindowContext::ProcessEvent(double time_s) {
@@ -15369,6 +15552,8 @@ index c729a98..15d002f 100644
 +	if (const int want = g_fullscreen_pending.exchange(-1); want >= 0 && window != nullptr) {
 +		if (SDL_SetWindowFullscreen(window, want == 1 ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0) != 0) {
 +			LOGF("Fullscreen %s: %s\n", want == 1 ? "on" : "off", SDL_GetError());
++		} else {
++			HostInputRememberFullscreen(want == 1); // exp 0435: the title starts in this mode next time
 +		}
 +		SDL_SetWindowResizable(window, want == 1 ? SDL_FALSE : SDL_TRUE);
 +	}
@@ -15382,7 +15567,7 @@ index c729a98..15d002f 100644
  	if (ProcessImeInput(*event)) {
  		return;
  	}
-@@ -635,6 +734,22 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -635,6 +744,22 @@ void WindowContext::ProcessEvent(double time_s) {
  			break;
  		}
  
@@ -15405,7 +15590,7 @@ index c729a98..15d002f 100644
  		case SDL_CONTROLLERAXISMOTION: {
  			EventController c {};
  
-@@ -717,6 +832,11 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -717,6 +842,11 @@ void WindowContext::ProcessEvent(double time_s) {
  			    SDL_CONTROLLER_AXIS_TRIGGERLEFT,
  			    SDL_CONTROLLER_AXIS_TRIGGERRIGHT,
  			};
@@ -15417,7 +15602,7 @@ index c729a98..15d002f 100644
  			EventController c {};
  			c.id         = event->jaxis.which;
  			c.axis_id    = (event->jaxis.axis < 6) ? axis_map[event->jaxis.axis]
-@@ -730,6 +850,9 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -730,6 +860,9 @@ void WindowContext::ProcessEvent(double time_s) {
  
  		case SDL_JOYBUTTONDOWN:
  		case SDL_JOYBUTTONUP: {
@@ -15427,7 +15612,7 @@ index c729a98..15d002f 100644
  			EventController c {};
  			c.id    = event->jbutton.which;
  			c.button = event->jbutton.button;
-@@ -743,17 +866,30 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -743,17 +876,30 @@ void WindowContext::ProcessEvent(double time_s) {
  		}
  
  		case SDL_JOYDEVICEADDED: {
@@ -15460,11 +15645,11 @@ index c729a98..15d002f 100644
  			auto* joy = SDL_JoystickFromInstanceID(event->jdevice.which);
  			if (joy != nullptr) {
  				SDL_JoystickClose(joy);
-@@ -856,11 +992,13 @@ static void WindowCreate(WindowContext& context) {
+@@ -856,11 +1002,13 @@ static void WindowCreate(WindowContext& context) {
  
  	LOGF("WindowCreate(): width = %d, height = %d\n", width, height);
  
-+	const bool fullscreen = Config::FullscreenEnabled() || g_fullscreen_pending.load() == 1; // BC5: or Fullscreen=on
++	const bool fullscreen = FullscreenBeforeWindow(); // BC5: or Fullscreen=on; exp 0435: the remembered mode first
 +
  	// KytyPlus: keep the game in an ordinary window. A window that all but matches the
  	// panel (1280x720 on a 1280x800 display) reads as borderless fullscreen, because the
@@ -15475,7 +15660,7 @@ index c729a98..15d002f 100644
  		SDL_Rect usable{};
  		if (SDL_GetDisplayUsableBounds(0, &usable) == 0 && usable.w > 0 && usable.h > 0) {
  			constexpr int margin_x = 48;
-@@ -886,7 +1024,7 @@ static void WindowCreate(WindowContext& context) {
+@@ -886,7 +1034,7 @@ static void WindowCreate(WindowContext& context) {
  	}
  
  	uint32_t window_flags = KYTY_SDL_WINDOW_FLAGS;
@@ -15484,7 +15669,7 @@ index c729a98..15d002f 100644
  		window_flags |= static_cast<uint32_t>(SDL_WINDOW_FULLSCREEN_DESKTOP);
  	} else {
  		// Windowed: allow the user to resize; keep the normal frame decorations.
-@@ -909,7 +1047,8 @@ static void WindowCreate(WindowContext& context) {
+@@ -909,7 +1057,8 @@ static void WindowCreate(WindowContext& context) {
  		EXIT("%s\n", SDL_GetError());
  	}
  
@@ -15494,7 +15679,7 @@ index c729a98..15d002f 100644
  }
  
  Presenter& WindowInit(uint32_t width, uint32_t height) {
-@@ -941,6 +1080,41 @@ void WindowShutdown() {
+@@ -941,6 +1090,46 @@ void WindowShutdown() {
  	}
  }
  
@@ -15509,6 +15694,11 @@ index c729a98..15d002f 100644
 +	SDL_Event event {};
 +	event.type = SDL_USEREVENT;
 +	SDL_PushEvent(&event);
++}
++
++void WindowRestoreFullscreen(bool on) { // exp 0435
++	g_fullscreen_remembered.store(true);
++	WindowSetFullscreen(on);
 +}
 +
 +void WindowSetPaused(bool on) {
@@ -15527,7 +15717,7 @@ index c729a98..15d002f 100644
 +
 +bool WindowIsFullscreen() {
 +	if (g_window == nullptr || g_window->window == nullptr) {
-+		return Config::FullscreenEnabled() || g_fullscreen_pending.load() == 1;
++		return FullscreenBeforeWindow(); // exp 0435
 +	}
 +	if (const int want = g_fullscreen_pending.load(); want >= 0) return want == 1; // not applied yet
 +	return (SDL_GetWindowFlags(g_window->window) & SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL_WINDOW_FULLSCREEN_DESKTOP;
@@ -15536,7 +15726,7 @@ index c729a98..15d002f 100644
  static int WindowIconRead(void* user, char* data, int size) {
  	auto*    src        = static_cast<Common::File*>(user);
  	uint32_t bytes_read = 0;
-@@ -1043,6 +1217,12 @@ void WindowContext::UpdateTitle() {
+@@ -1043,6 +1232,12 @@ void WindowContext::UpdateTitle() {
  	const auto frequency = Common::Timer::QueryPerformanceFrequency();
  	frame_num++;
  	fps_frames++;
@@ -15549,7 +15739,7 @@ index c729a98..15d002f 100644
  	if (now - fps_start >= frequency) {
  		current_fps = static_cast<double>(fps_frames) * static_cast<double>(frequency) /
  		              static_cast<double>(now - fps_start);
-@@ -1051,10 +1231,10 @@ void WindowContext::UpdateTitle() {
+@@ -1051,10 +1246,10 @@ void WindowContext::UpdateTitle() {
  	}
  
  	auto fps = fmt::format(
@@ -35483,10 +35673,10 @@ index 6df0a95..eca6d2d 100644
  		    static_cast<uint32_t>(src->crop_right + (pitch - src->width));
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..901e904
+index 0000000..d775403
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,17401 @@
+@@ -0,0 +1,17457 @@
 +#include "bc5/env_rule.hpp" // exp 0419 (build W): BC5_DIAG_ENV, BC5_FIXED_ENV, BC5_LEAN_OR
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
@@ -42375,6 +42565,46 @@ index 0000000..901e904
 +		        timing_now(), total, under_view, seen.size(), ops.c_str());
 +	}
 +}
++// Experiment 0434 (tag ud434), built in with no switch: a buffer descriptor (V#) written into a shader stage's user-data
++// registers by SET_SH_REG names memory the shader reads or WRITES; under a view of direct memory that is not imported it
++// is imported before the submit, as k1f412 does for a packet's own operands. ASTRO BOT, Bathhouse Battle's load
++// (fault records 20261119-140627/-140758/-141432): COMPUTE_USER_DATA_4..7 held a V# of 16 bytes at 0x314cb62dc in a
++// never-written chunk of the lazy heap orbis_user_malloc; the dispatch's store hit K1r's read-only cover (TCP, RW 1).
++// The maintainer, 2026-11-19, after his test on Bathhouse Battle: "Wszystko ok, możesz wdrożyć"; no switch.
++namespace ud434 {
++constexpr uint64_t kMaxSpan = 256ull << 20u; // a descriptor that claims more is cut to this
++// The first user-data register of the stage that register r belongs to, or ~0u: PS, VS, GS, ES, HS, LS (32 each,
++// SH offsets as in dt412::user_reg) and compute (COMPUTE_USER_DATA_0..15 at 0x240).
++inline uint32_t stage_base(uint32_t r) {
++	for (uint32_t b: {0x0cu, 0x4cu, 0x8cu, 0xccu, 0x10cu, 0x14cu}) {
++		if (r >= b && r < b + 32u) return b;
++	}
++	return (r >= 0x240u && r < 0x250u) ? 0x240u : ~0u;
++}
++// One SET_SH_REG (0x76) or SET_SH_REG_INDEX (0x9b) packet of len dwords: every V# in it that starts at a user-data
++// register 4-aligned to its stage's first one (a descriptor sits in an aligned SGPR quad; every stage's user data is a
++// multiple of 4 registers, so such a quad never crosses its end): found(address, bytes). A V#: dword 3 TYPE (bits 31:30) 0, base dword 0 + dword 1 bits 15:0, a
++// non-zero base below 2^40; bytes = stride * num_records, or num_records when the stride is 0; empty ones skipped.
++template <typename F> inline void scan(const uint32_t* p, uint32_t len, F&& found) {
++	if (len < 3 || (p[0] >> 30u) != 3) return;
++	const uint32_t op = (p[0] >> 8u) & 0xffu;
++	if (op != 0x76u && op != 0x9bu) return;
++	const uint32_t reg0 = p[1] & 0xffffu, count = len - 2;
++	for (uint32_t k = 0; k + 4 <= count; k++) {
++		const uint32_t r = reg0 + k, b = stage_base(r);
++		if (b == ~0u || ((r - b) & 3u) != 0) continue;
++		const uint32_t w0 = p[2 + k], w1 = p[3 + k], w2 = p[4 + k], w3 = p[5 + k];
++		if ((w3 >> 30u) != 0) continue;
++		const uint64_t a = static_cast<uint64_t>(w0) | (static_cast<uint64_t>(w1 & 0xffffu) << 32u);
++		if (a == 0 || (a >> 40u) != 0) continue;
++		const uint64_t stride = (w1 >> 16u) & 0x3fffu;
++		uint64_t       bytes  = stride != 0 ? stride * w2 : static_cast<uint64_t>(w2);
++		if (bytes == 0) continue;
++		if (bytes > kMaxSpan) bytes = kMaxSpan;
++		found(a, bytes);
++	}
++}
++} // namespace ud434
 +static void k1f412_pass(const uint32_t* ib, uint32_t num_dwords, const char* kind) {
 +	if (!k1f412::on() || !g_dev) return;
 +	if (k1f412::mode() == 2) {
@@ -42383,6 +42613,7 @@ index 0000000..901e904
 +	}
 +	static uint64_t fired = 0, asked_bytes = 0, lines = 0, no_view = 0;
 +	auto            have_p = g_dev->sorted_mappings();
++	static uint64_t ud_fired = 0, ud_bytes = 0, ud_lines = 0; // exp 0434 (tag ud434)
 +	for (uint32_t q = 0; q < num_dwords;) {
 +		const uint32_t h   = ib[q];
 +		uint32_t       len = 1;
@@ -42409,6 +42640,21 @@ index 0000000..901e904
 +					        timing_now(), kind, num_dwords, (h >> 8u) & 0xffu, q, a, n, static_cast<double>(asked) / 1048576.0, covered_sorted(*have_p, a, n) ? "mapped" : "STILL NOT MAPPED", fired,
 +					        static_cast<double>(asked_bytes) / 1048576.0, no_view);
 +				}
++			}
++			{ // exp 0434 (tag ud434): the buffers a stage's user data names, before the submit
++				ud434::scan(ib + q, len, [&](uint64_t a, uint64_t n) {
++					if (covered_sorted(*have_p, a, n)) return;
++					const uint64_t asked = direct_force(a & ~0xfffull, a + n);
++					if (asked == 0) return; // under no view, or imported already, or its import failed before
++					ud_fired++;
++					ud_bytes += asked;
++					have_p = g_dev->sorted_mappings();
++					if (ud_lines++ < 200 || (ud_lines & 255u) == 0) {
++						journal("user-data target (exp 0434, tag ud434): t %.3f s: %s %u dwords, SET_SH_REG at dword %u, reg 0x%x: V# 0x%" PRIx64 "+%" PRIu64 " was not mapped: its chunk(s) imported (+%.1f MiB), now %s; %" PRIu64 " imports so far, %.1f MiB\n",
++						        timing_now(), kind, num_dwords, q, ib[q + 1] & 0xffffu, a, n, static_cast<double>(asked) / 1048576.0, covered_sorted(*have_p, a, n) ? "mapped" : "STILL NOT MAPPED", ud_fired,
++						        static_cast<double>(ud_bytes) / 1048576.0);
++					}
++				});
 +			}
 +		}
 +		q += len;

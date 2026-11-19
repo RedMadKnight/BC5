@@ -1,0 +1,54 @@
+tree src/graphics/presentation/window/hostInput.cpp 42521a95
+tree src/graphics/presentation/window/hostInput.h 8fc3edb9
+tree src/graphics/presentation/window.h 8d5a1119
+tree src/graphics/presentation/window/window.cpp b874e89d
+tree src/bc5/switch_defaults.hpp 48ae1cd6
+tree src/main.cpp 6b8e4411
+tree src/libs/bc5LleAgc.cpp 8eb42a10
+normal efc28a30
+lean d8b75137
+archive 51db2c91
+play-any.sh fc7a1395
+play-astro.sh e943bd8f
+play-pkg.sh 47426d8e
+lean-session.sh 1f1be812
+input.cfg 8115a7ff
+applied: 5 files edited, /home/kjaniszewski/bc5-work/exp0434/src/src/bc5/title_settings.hpp written
+559deae911ce229191e6a27508a567a9  ./src/bc5/switch_defaults.hpp
+42042a2ff7cf3083785181f2c43eb4d8  ./src/bc5/title_settings.hpp
+5cc15a6009e1b062767418678c491aed  ./src/graphics/presentation/window.h
+243b19db4d08ccf942563af10e409f9e  ./src/graphics/presentation/window/hostInput.cpp
+0da69cdc4426aa9f0688b228937fba0b  ./src/graphics/presentation/window/hostInput.h
+ea5c54e1d4247d2a82f14536ff27936f  ./src/graphics/presentation/window/window.cpp
+e8ea29c14cc7904bc9527bf95adec87f  ./src/libs/bc5LleAgc.cpp
+6b8e44110dff4edb8b044a2fab5e9d7a  ./src/main.cpp
+== normal: shared binary efc28a30 in /home/kjaniszewski/bc5-work/kytyplus-build
+normal build rc 0; errors 0; warnings 10
+4:/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+13:/home/kjaniszewski/bc5-work/exp0434/src/src/libs/bc5LleAgc.cpp:1216:18: warning: format specifies type 'unsigned long' but the argument has type 'unsigned long long' [-Wformat]
+19:/home/kjaniszewski/bc5-work/exp0434/src/src/libs/bc5LleAgc.cpp:5631:122: warning: format specifies type 'unsigned long' but the argument has type 'unsigned long long' [-Wformat]
+22:/home/kjaniszewski/bc5-work/exp0434/src/src/libs/bc5LleAgc.cpp:6836:78: warning: variable 'lines' set but not used [-Wunused-but-set-variable]
+25:/home/kjaniszewski/bc5-work/exp0434/src/src/libs/bc5LleAgc.cpp:315:15: warning: unused variable 'OK' [-Wunused-const-variable]
+28:/home/kjaniszewski/bc5-work/exp0434/src/src/libs/bc5LleAgc.cpp:589:20: warning: unused variable 'IT_DMA_DATA' [-Wunused-const-variable]
+31:/home/kjaniszewski/bc5-work/exp0434/src/src/libs/bc5LleAgc.cpp:5983:15: warning: unused function 'forget_step' [-Wunused-function]
+38:/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+50:/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+63:/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+normal: /home/kjaniszewski/bc5-work/exp0434/normal/kyty_emulator 94eac89c; 'tag ud434' 1; BC5_DIRECT_UD_TARGETS 1; KYTY_BC5_TITLE_SETTINGS 2
+== lean: shared binary d8b75137 in /home/kjaniszewski/bc5-work/kytyplus-build-lean
+lean build rc 0; errors 0; warnings 11
+4:/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+13:/home/kjaniszewski/bc5-work/exp0434/src/src/libs/bc5LleAgc.cpp:734:15: warning: unused variable 'take' [-Wunused-variable]
+16:/home/kjaniszewski/bc5-work/exp0434/src/src/libs/bc5LleAgc.cpp:1216:18: warning: format specifies type 'unsigned long' but the argument has type 'unsigned long long' [-Wformat]
+22:/home/kjaniszewski/bc5-work/exp0434/src/src/libs/bc5LleAgc.cpp:5631:122: warning: format specifies type 'unsigned long' but the argument has type 'unsigned long long' [-Wformat]
+25:/home/kjaniszewski/bc5-work/exp0434/src/src/libs/bc5LleAgc.cpp:6836:78: warning: variable 'lines' set but not used [-Wunused-but-set-variable]
+28:/home/kjaniszewski/bc5-work/exp0434/src/src/libs/bc5LleAgc.cpp:315:15: warning: unused variable 'OK' [-Wunused-const-variable]
+31:/home/kjaniszewski/bc5-work/exp0434/src/src/libs/bc5LleAgc.cpp:589:20: warning: unused variable 'IT_DMA_DATA' [-Wunused-const-variable]
+34:/home/kjaniszewski/bc5-work/exp0434/src/src/libs/bc5LleAgc.cpp:5983:15: warning: unused function 'forget_step' [-Wunused-function]
+41:/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+53:/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+66:/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+lean: /home/kjaniszewski/bc5-work/exp0434/lean/kyty_emulator babd46fd; 'tag ud434' 0; BC5_DIRECT_UD_TARGETS 1; KYTY_BC5_TITLE_SETTINGS 2
+launcher: /home/kjaniszewski/bc5-work/exp0434/play-test.sh 5a7a3c2f
+shared md5s unchanged
+lock released: exp0434 combined private build ud434 + 0435 (CPU only, nice 19) | 2026-11-19 14:34:46 | ~20 min

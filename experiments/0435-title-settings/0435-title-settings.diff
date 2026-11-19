@@ -1,0 +1,326 @@
+diff -ruN a/src/bc5/switch_defaults.hpp b/src/bc5/switch_defaults.hpp
+--- a/src/bc5/switch_defaults.hpp	2026-11-19 14:28:19.377677000 +0100
++++ b/src/bc5/switch_defaults.hpp	2026-11-19 14:28:19.464171200 +0100
+@@ -130,6 +130,9 @@
+     // the two words both titles run with every day, until now only through a launcher or bc5-run.env
+     {"BC5_DIRECT_CHAIN", "2"}, // F224
+     {"BC5_GC_MODE", "direct"},
++    // exp 0435 (the maintainer, 2026-11-19): each title keeps its own input.cfg and window mode under
++    // <menu dir>/titles/<TITLE_ID>/ (hostInput.cpp); KYTY_BC5_TITLE_SETTINGS=0: the one shared file as before.
++    {"KYTY_BC5_TITLE_SETTINGS", "1"},
+     // exp 0429 R (2026-11-18, the maintainer's word): SCHED_RR through rtkit for the guest's job-worker families
+     // (pthread.cpp), in place of exp 0425's wake slice. Soft, so KYTY_BC5_0429_RR=0 turns it off.
+     {"KYTY_BC5_0429_RR", "1"},
+diff -ruN a/src/bc5/title_settings.hpp b/src/bc5/title_settings.hpp
+--- a/src/bc5/title_settings.hpp	1970-01-01 01:00:00.000000000 +0100
++++ b/src/bc5/title_settings.hpp	2026-11-19 14:28:19.464171200 +0100
+@@ -0,0 +1,128 @@
++// SPDX-License-Identifier: GPL-2.0-only
++// BC5 experiment 0435: each game keeps its own settings and its last window mode (the maintainer, 2026-11-19: "zrób aby
++// każda gra zapamiętywała swoje Settings oraz czy był fullscreen czy nie").
++//
++//   <titles root>/<TITLE_ID>/input.cfg   the title's input configuration: the file the settings overlay (F2) and the
++//                                        Emulation menu save. Seeded on the title's first start by copying the shared
++//                                        file (KYTY_BC5_INPUT_CONFIG, ~/bc5-work/input.cfg); same grammar, old keys too.
++//   <titles root>/<TITLE_ID>/window      "fullscreen" or "windowed": the mode the window last changed to (F11, the menu,
++//                                        the Video tab). It wins over --fullscreen, which is only the first-run default.
++//
++// The titles root is $KYTY_BC5_MENU_DIR/titles (play-any.sh exports ~/bc5-work/menu), else <directory of the shared
++// file>/menu/titles: both give ~/bc5-work/menu/titles on the box. No title id (the empty menu window, "UNKNOWN") or
++// KYTY_BC5_TITLE_SETTINGS=0: the shared file as before (read and saved), no window file. A real title whose store cannot
++// be made reads the shared file and saves nothing (top's condition, 2026-11-19: a title's Save never rewrites the shared
++// file).
++// Pure C++ (no host types): tested by experiments/0435-title-settings/test0435.cpp.
++#pragma once
++
++#include <cstdio>
++#include <filesystem>
++#include <fstream>
++#include <string>
++#include <system_error>
++
++namespace bc5::title_settings {
++
++namespace fs = std::filesystem;
++
++// A TITLE_ID as param.sfo spells it (PPSA03671): letters and digits only, so it is a safe directory name.
++inline bool ValidTitleId(const std::string& id) {
++	if (id.empty() || id.size() > 15 || id == "UNKNOWN") return false;
++	for (const char c: id) {
++		if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))) return false;
++	}
++	return true;
++}
++
++inline fs::path TitlesRoot(const char* menu_dir, const std::string& shared_cfg) {
++	if (menu_dir != nullptr && *menu_dir != 0) return fs::path(menu_dir) / "titles";
++	if (shared_cfg.empty()) return {};
++	return fs::path(shared_cfg).parent_path() / "menu" / "titles";
++}
++
++struct Resolved {
++	std::string config;    // the input configuration to read
++	std::string save;      // the file Save writes ("" : Save is off)
++	std::string title_dir; // the title's directory (window file), "" when the title has no store
++	std::string note;      // one line for the log
++};
++
++// The title's files, the store created and its input.cfg seeded from the shared file when missing. Never throws; on
++// any problem the shared file to read, no title directory, and no Save for a real title.
++inline Resolved Resolve(const fs::path& root, const std::string& title_id, const std::string& shared_cfg) {
++	Resolved r {shared_cfg, shared_cfg, "", ""};
++	if (shared_cfg.empty()) {
++		r.note = "no shared input configuration: no title store";
++		return r;
++	}
++	if (!ValidTitleId(title_id) || root.empty()) {
++		r.note = "no title id: the shared file";
++		return r;
++	}
++	r.save = ""; // from here on a failure reads the shared file and saves nothing
++	std::error_code ec;
++	const fs::path  dir = root / title_id;
++	const fs::path  cfg = dir / "input.cfg";
++	fs::create_directories(dir, ec);
++	if (ec || !fs::is_directory(dir, ec)) {
++		r.note = "cannot create " + dir.string() + ": the shared file";
++		return r;
++	}
++	if (!fs::exists(cfg, ec)) {
++		if (!fs::is_regular_file(shared_cfg, ec)) {
++			// Nothing to seed from: keep the old path, so a missing shared file fails as it always did.
++			r.note = "no " + shared_cfg + " to seed " + cfg.string() + " from: the shared file";
++			return r;
++		}
++		const fs::path tmp = dir / "input.cfg.seed.tmp";
++		fs::remove(tmp, ec);
++		ec.clear();
++		fs::copy_file(shared_cfg, tmp, fs::copy_options::overwrite_existing, ec);
++		if (!ec) fs::rename(tmp, cfg, ec);
++		if (ec) {
++			fs::remove(tmp, ec);
++			r.note = "cannot seed " + cfg.string() + ": the shared file";
++			return r;
++		}
++		r.note = "seeded " + cfg.string() + " from " + shared_cfg;
++	} else {
++		r.note = "title file " + cfg.string();
++	}
++	r.config    = cfg.string();
++	r.save      = r.config;
++	r.title_dir = dir.string();
++	return r;
++}
++
++// -1: none (or unreadable or not one of the two words), 0: windowed, 1: fullscreen.
++inline int ReadWindowMode(const std::string& title_dir) {
++	if (title_dir.empty()) return -1;
++	std::ifstream f(fs::path(title_dir) / "window");
++	std::string   word;
++	if (!(f >> word)) return -1;
++	if (word == "fullscreen") return 1;
++	if (word == "windowed") return 0;
++	return -1;
++}
++
++inline bool WriteWindowMode(const std::string& title_dir, bool fullscreen) {
++	if (title_dir.empty()) return false;
++	if (ReadWindowMode(title_dir) == (fullscreen ? 1 : 0)) return true; // unchanged: no write
++	const fs::path tmp = fs::path(title_dir) / "window.tmp";
++	{
++		std::ofstream f(tmp, std::ios::trunc | std::ios::binary);
++		if (!f) return false;
++		f << (fullscreen ? "fullscreen" : "windowed") << '\n';
++		if (!f.flush()) return false;
++	}
++	std::error_code ec;
++	fs::rename(tmp, fs::path(title_dir) / "window", ec);
++	if (ec) {
++		fs::remove(tmp, ec);
++		return false;
++	}
++	return true;
++}
++
++} // namespace bc5::title_settings
+diff -ruN a/src/graphics/presentation/window/hostInput.cpp b/src/graphics/presentation/window/hostInput.cpp
+--- a/src/graphics/presentation/window/hostInput.cpp	2026-11-19 14:28:19.369623400 +0100
++++ b/src/graphics/presentation/window/hostInput.cpp	2026-11-19 14:28:19.487919900 +0100
+@@ -3,6 +3,7 @@
+ #include "graphics/presentation/window/hostInput.h"
+ #include "graphics/presentation/hostMenu.h" // experiment 0301: the MangoHud switch is saved per title
+ #include "graphics/presentation/window.h"
++#include "bc5/title_settings.hpp" // exp 0435: each title keeps its own input.cfg and window mode
+ 
+ #include "SDL_gamecontroller.h"
+ #include "SDL_keyboard.h"
+@@ -680,6 +681,19 @@
+ 
+ std::unique_ptr<InputMap> g_map;
+ std::string               g_config_path;
++std::string               g_title_dir; // exp 0435: the title's store (window mode), "" when none
++std::string               g_save_path; // exp 0435: where Save writes (HostInputConfigPath), "" when nowhere
++
++// Experiment 0435: the input configuration this run reads and saves: the title's own file,
++// <menu dir>/titles/<TITLE_ID>/input.cfg, seeded from KYTY_BC5_INPUT_CONFIG on the title's first start; the
++// shared file without a title id or with KYTY_BC5_TITLE_SETTINGS=0 (kSoft default 1). Empty: no file at all.
++bc5::title_settings::Resolved ResolveConfig() {
++	const char* shared = std::getenv("KYTY_BC5_INPUT_CONFIG");
++	if (shared == nullptr || *shared == 0) return {};
++	if (!bc5::env_rule::on(std::getenv("KYTY_BC5_TITLE_SETTINGS"))) return {shared, shared, "", "KYTY_BC5_TITLE_SETTINGS off: the shared file"};
++	namespace ts = bc5::title_settings;
++	return ts::Resolve(ts::TitlesRoot(std::getenv("KYTY_BC5_MENU_DIR"), shared), HostInputTitleId(), shared);
++}
+ 
+ std::vector<std::pair<std::string, std::string>> ReadConfigLines(const std::string& path, std::string* error) {
+ 	std::vector<std::pair<std::string, std::string>> lines;
+@@ -707,8 +721,11 @@
+ 		for (const auto& value: Config::GetKeymap()) {
+ 			lines.emplace_back(value, "--keymap");
+ 		}
+-		if (const char* path = std::getenv("KYTY_BC5_INPUT_CONFIG"); path != nullptr && *path != 0) {
+-			g_config_path = path;
++		if (const auto where = ResolveConfig(); !where.config.empty()) { // exp 0435
++			g_config_path = where.config;
++			g_title_dir   = where.title_dir;
++			g_save_path   = where.save;
++			std::fprintf(stderr, "Title settings (exp 0435): %s: %s\n", HostInputTitleId().c_str(), where.note.c_str());
+ 			std::string error;
+ 			auto        from_file = ReadConfigLines(g_config_path, &error);
+ 			if (!error.empty()) {
+@@ -726,6 +743,8 @@
+ 	if (map->RayTracing() >= 0) Libs::Bc5Gc::Direct::SetRayTracing(map->RayTracing() == 1); // experiment 0273
+ 		if (map->MangoHud() >= 0) HostMenuMangoHudSet(map->MangoHud() == 1); // experiment 0301
+ 		if (map->Fullscreen() >= 0) WindowSetFullscreen(map->Fullscreen() == 1);
++		// exp 0435: the mode the title's window last changed to wins over Fullscreen= and --fullscreen.
++		if (const int mode = bc5::title_settings::ReadWindowMode(g_title_dir); mode >= 0) WindowRestoreFullscreen(mode == 1);
+ 		g_map = std::move(map);
+ 	}
+ 	return *g_map;
+@@ -977,13 +996,32 @@
+ 
+ std::vector<std::string> HostInputStatements() {
+ 	std::lock_guard<std::mutex> lock(g_input_mutex);
+-	return Map().Statements();
++	auto lines = Map().Statements();
++	if (!g_title_dir.empty()) { // exp 0435: the window's mode as it is now, so a Save or Apply never undoes an F11
++		lines.erase(std::remove_if(lines.begin(), lines.end(),
++		                           [](const std::string& l) { return l.rfind("Fullscreen=", 0) == 0; }),
++		            lines.end());
++		lines.insert(lines.begin(), WindowIsFullscreen() ? "Fullscreen=on" : "Fullscreen=off");
++	}
++	return lines;
++}
++
++// Experiment 0435: the window thread, after the mode really changed (F11, the menu, the Video tab, a remembered mode).
++void HostInputRememberFullscreen(bool on) {
++	std::string dir;
++	{
++		std::lock_guard<std::mutex> lock(g_input_mutex);
++		dir = g_title_dir;
++	}
++	if (!dir.empty() && !bc5::title_settings::WriteWindowMode(dir, on)) {
++		std::fprintf(stderr, "Title settings (exp 0435): cannot write %s/window\n", dir.c_str());
++	}
+ }
+ 
+ std::string HostInputConfigPath() {
+ 	std::lock_guard<std::mutex> lock(g_input_mutex);
+ 	Map();
+-	return g_config_path;
++	return g_save_path; // exp 0435: a title's own file; never the shared one for a title (top, 2026-11-19)
+ }
+ 
+ bool HostInputApply(const std::vector<std::string>& lines, std::string* error) {
+@@ -1047,8 +1085,8 @@
+ 	if (g_map != nullptr) {
+ 		return g_map->SystemLanguage();
+ 	}
+-	const char* path = std::getenv("KYTY_BC5_INPUT_CONFIG");
+-	if (path == nullptr || *path == 0) {
++	const std::string path = ResolveConfig().config; // exp 0435: the title's file when it has one
++	if (path.empty()) {
+ 		return -1;
+ 	}
+ 	std::string error;
+diff -ruN a/src/graphics/presentation/window/hostInput.h b/src/graphics/presentation/window/hostInput.h
+--- a/src/graphics/presentation/window/hostInput.h	2026-11-19 14:28:19.365153900 +0100
++++ b/src/graphics/presentation/window/hostInput.h	2026-11-19 14:28:19.476853900 +0100
+@@ -31,6 +31,8 @@
+ bool HostInputSave(const std::string& path, const std::vector<std::string>& lines, std::string* error);
+ // Every control the keyboard/mouse/pad-source stream holds goes up (the overlay opening).
+ void HostInputReleaseAll();
++// Experiment 0435: the window's mode changed; the title's store (<menu dir>/titles/<TITLE_ID>/window) keeps it.
++void HostInputRememberFullscreen(bool on);
+ 
+ // Experiment 0337: the console's system language (PS5: Settings > System > Language), SystemLanguage=<name|number> in the
+ // input configuration, in SystemServiceParamGetInt's numbering (PARAM_ID_LANG). -1: not set.
+diff -ruN a/src/graphics/presentation/window/window.cpp b/src/graphics/presentation/window/window.cpp
+--- a/src/graphics/presentation/window/window.cpp	2026-11-19 14:28:19.366833200 +0100
++++ b/src/graphics/presentation/window/window.cpp	2026-11-19 14:28:19.478866000 +0100
+@@ -205,6 +205,14 @@
+ 
+ std::unique_ptr<WindowContext> g_window;
+ std::atomic<int>               g_fullscreen_pending {-1}; // BC5: asked for before the window existed
++std::atomic<bool>              g_fullscreen_remembered {false}; // exp 0435: the pending mode is the title's own
++
++// Before the window exists: a remembered mode decides (exp 0435); else --fullscreen or a Fullscreen=on line.
++bool FullscreenBeforeWindow() {
++	const int want = g_fullscreen_pending.load();
++	if (g_fullscreen_remembered.load() && want >= 0) return want == 1;
++	return Config::FullscreenEnabled() || want == 1;
++}
+ 
+ } // namespace
+ 
+@@ -578,6 +586,8 @@
+ 	if (const int want = g_fullscreen_pending.exchange(-1); want >= 0 && window != nullptr) {
+ 		if (SDL_SetWindowFullscreen(window, want == 1 ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0) != 0) {
+ 			LOGF("Fullscreen %s: %s\n", want == 1 ? "on" : "off", SDL_GetError());
++		} else {
++			HostInputRememberFullscreen(want == 1); // exp 0435: the title starts in this mode next time
+ 		}
+ 		SDL_SetWindowResizable(window, want == 1 ? SDL_FALSE : SDL_TRUE);
+ 	}
+@@ -992,7 +1002,7 @@
+ 
+ 	LOGF("WindowCreate(): width = %d, height = %d\n", width, height);
+ 
+-	const bool fullscreen = Config::FullscreenEnabled() || g_fullscreen_pending.load() == 1; // BC5: or Fullscreen=on
++	const bool fullscreen = FullscreenBeforeWindow(); // BC5: or Fullscreen=on; exp 0435: the remembered mode first
+ 
+ 	// KytyPlus: keep the game in an ordinary window. A window that all but matches the
+ 	// panel (1280x720 on a 1280x800 display) reads as borderless fullscreen, because the
+@@ -1093,6 +1103,11 @@
+ 	SDL_PushEvent(&event);
+ }
+ 
++void WindowRestoreFullscreen(bool on) { // exp 0435
++	g_fullscreen_remembered.store(true);
++	WindowSetFullscreen(on);
++}
++
+ void WindowSetPaused(bool on) {
+ 	if (g_window == nullptr) {
+ 		return;
+@@ -1109,7 +1124,7 @@
+ 
+ bool WindowIsFullscreen() {
+ 	if (g_window == nullptr || g_window->window == nullptr) {
+-		return Config::FullscreenEnabled() || g_fullscreen_pending.load() == 1;
++		return FullscreenBeforeWindow(); // exp 0435
+ 	}
+ 	if (const int want = g_fullscreen_pending.load(); want >= 0) return want == 1; // not applied yet
+ 	return (SDL_GetWindowFlags(g_window->window) & SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL_WINDOW_FULLSCREEN_DESKTOP;
+diff -ruN a/src/graphics/presentation/window.h b/src/graphics/presentation/window.h
+--- a/src/graphics/presentation/window.h	2026-11-19 14:28:19.371639900 +0100
++++ b/src/graphics/presentation/window.h	2026-11-19 14:28:19.491939400 +0100
+@@ -15,6 +15,8 @@
+ // game runs (the F2 menu, F11, Fullscreen= in the input configuration).
+ void WindowSetFullscreen(bool on);
+ bool WindowIsFullscreen();
++// Experiment 0435: the title's remembered mode; unlike WindowSetFullscreen it also wins over --fullscreen.
++void WindowRestoreFullscreen(bool on);
+ // BC5 (ADR 0011): the window loop's pause (Space) from the menu bar, any thread.
+ void WindowSetPaused(bool on);
+ bool WindowIsPaused();
