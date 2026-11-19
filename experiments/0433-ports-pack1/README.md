@@ -158,6 +158,10 @@ What `build` checks and makes:
 - **Any K1 line** names two paths with the same hash, so the old hash ids would have read the wrong file.
 
 **4. Last, the maintainer's step: replug check for R2a** (audio code changed, `bc5-audio-replug-check`). Top asks him; it needs him at the box. Nothing from this pack goes to the shared builds before that check and his word.
+**Closed 2026-11-19, no replug check needed.**
+- His words, relayed by top: "dźwięk i pad (trzęsie) w testach działają" (sound and pad rumble work in the tests).
+- Why no check: R2a changes the AJM decoder only. It touches neither the audio device route nor the pad code. The replug rule covers only audio/pad device code or kernel/PipeWire changes.
+- His word on shared deployment is still needed.
 
 ## Results on the box (2026-11-19, top's GO after exp 0430's swap; shared state patch d1388db0, normal eb85d32e, lean 364c6146, archive 6eac453e, all checked unchanged after every build)
 
