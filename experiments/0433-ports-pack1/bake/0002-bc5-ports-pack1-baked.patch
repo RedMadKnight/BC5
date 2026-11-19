@@ -1,0 +1,1681 @@
+diff --git a/src/bc5/ports_pack1.hpp b/src/bc5/ports_pack1.hpp
+new file mode 100644
+index 0000000..c7cce2d
+--- /dev/null
++++ b/src/bc5/ports_pack1.hpp
+@@ -0,0 +1,99 @@
++// SPDX-License-Identifier: GPL-2.0-only
++// Ports pack 1, BUILT IN (exp 0433, 2026-11-19): fixes ported from KytyPS5 (GPL-2.0) and AnyPS5 (GPL-2.0), every one
++// on, with no switch: the KYTY_BC5_P1_* words are gone and nothing reads the environment. A call site's
++// BC5_P1("KYTY_BC5_P1_<NAME>") is a constant `true`, so each site runs the path tested as arm P in exp 0433
++// (experiments/0433-ports-pack1/README.md: 12 fight runs and 2 ASTRO BOT runs, no cost outside run-to-run noise).
++// The site's old path is still in the source but can never be taken; the name is checked at compile time.
++//
++// Hit counts, normal build only (compiled out of the lean build with the rest of the diagnostics, exp 0419): a hit is
++// one pass of a fix's decision point, counted per thread and added to the global count in batches of 256 (the first 64
++// hits of a fix at once), so the count is a lower bound. A line is printed when a fix's count passes a power of two:
++//   [bc5] ports pack 1 hits: PTHREAD_KEYS 1024 (t 12.3 s)   (t: seconds since the first hit of any fix)
++#pragma once
++
++#include <atomic>
++#include <chrono>
++#include <cstdint>
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++
++namespace bc5::p1 {
++
++// The fixes of the pack, in the order of the per-fix table (experiments/0433-ports-pack1/README.md).
++inline constexpr const char* kNames[] = {
++    "EQ_WAKE_ALL",      // A1  AnyPS5 daad982457: equeue add/trigger wakes every waiter
++    "NO_COND_REGISTRY", // A2  KytyPS5 18a1e0fa: no global CondVar waiter registry
++    "FAULT_MASK",       // A3  KytyPS5 3b0a78a9: the fault handler masks the guest signal too
++    "SEMA_UAF",         // A6  AnyPS5 ff9a68aed4: semaphore delete waits for its waiters to leave
++    "AMPR_RESULT",      // B1  AnyPS5 23a0020ab1: submit does not overwrite the worker's result
++    "APR_FILE_ID",      // K1  KytyPS5 e43aadf7: APR file ids from a counter, not a path hash
++    "COND_SIGNAL_ONE",  // K2  KytyPS5 47b26e49: pthread_cond_signal wakes the chosen waiter only
++    "ALTSTACK",         // K6  KytyPS5 21124245/b61360a0: per-thread signal stacks
++    "PTHREAD_KEYS",     // K3  KytyPS5 733842ca: pthread key values per thread
++    "PROT_RANGES",      // K4  KytyPS5 73363f12: no per-page protection map
++    "FILE_UNBUFFERED",  // K7  KytyPS5 cbe5b629: unbuffered host file handles
++    "AJM_GAPLESS",      // R2a KytyPS5 2e315a3c/1cc0ac7e: AJM gapless control before codec init
++    "AMPR_FILTER",      // R2b KytyPS5 deb45a8b: APR completions on the AMPR filter (-25)
++    "FATAL_TO_ERROR",   // C   AnyPS5: error codes in place of host exits
++};
++
++inline constexpr int kCount = static_cast<int>(sizeof(kNames) / sizeof(kNames[0]));
++
++constexpr bool Same(const char* a, const char* b) {
++	while (*a != 0 && *a == *b) {
++		a++;
++		b++;
++	}
++	return *a == *b;
++}
++
++// "KYTY_BC5_P1_<NAME>" -> its index, at compile time (the call site's string is not in the binary); -1 if unknown.
++constexpr int Index(const char* word) {
++	const char* const prefix = "KYTY_BC5_P1_";
++	for (int k = 0; k < 12; k++) {
++		if (word[k] != prefix[k]) return -1;
++	}
++	for (int i = 0; i < kCount; i++) {
++		if (Same(kNames[i], word + 12)) return i;
++	}
++	return -1;
++}
++
++#ifdef BC5_LEAN
++inline void Hit(int) {}
++#else
++struct alignas(64) HitSlot {
++	std::atomic<uint64_t> n {0};
++};
++
++inline double Seconds() {
++	static const auto t0 = std::chrono::steady_clock::now();
++	return std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
++}
++
++inline void Hit(int i) {
++	static HitSlot g[kCount];
++	thread_local uint32_t pend[kCount] {};
++	uint32_t p = ++pend[i];
++	if (p < 256 && g[i].n.load(std::memory_order_relaxed) >= 64) return;
++	pend[i] = 0;
++	uint64_t before = g[i].n.fetch_add(p, std::memory_order_relaxed);
++	uint64_t after  = before + p;
++	if (before == 0 || (63 - __builtin_clzll(before)) != (63 - __builtin_clzll(after))) {
++		std::fprintf(stderr, "[bc5] ports pack 1 hits: %s %llu (t %.1f s)\n", kNames[i], static_cast<unsigned long long>(after),
++		             Seconds());
++	}
++}
++#endif
++
++} // namespace bc5::p1
++
++// Always true: the fix is built in. `name` must be one of the pack's words (checked at compile time).
++#define BC5_P1(name)                                                                                                   \
++	([] {                                                                                                              \
++		constexpr int bc5_p1_i = ::bc5::p1::Index(name);                                                              \
++		static_assert(bc5_p1_i >= 0, "BC5_P1: not a word of ports pack 1");                                           \
++		::bc5::p1::Hit(bc5_p1_i);                                                                                     \
++		return true;                                                                                                   \
++	}())
+diff --git a/src/common/hostException.cpp b/src/common/hostException.cpp
+index 1eeb7b1..5c97232 100644
+--- a/src/common/hostException.cpp
++++ b/src/common/hostException.cpp
+@@ -1,5 +1,6 @@
+ #include "bc5/env_rule.hpp" // exp 0419 (build W): BC5_DIAG_ENV, BC5_FIXED_ENV, BC5_LEAN_OR
+ #include "common/hostException.h"
++#include "bc5/ports_pack1.hpp" // ports pack 1: A3, K6
+ 
+ #include <atomic>
+ #include <cstdio>
+@@ -16,6 +17,7 @@
+ #include <csignal>
+ #include <initializer_list>
+ #include <sys/types.h>
++#include <atomic> // ports pack 1, K6
+ #include <ucontext.h> // IWYU pragma: keep
+ #include <unistd.h>
+ #endif
+@@ -436,6 +438,61 @@ static void Bc5TrapLogInstall() {
+ }
+ #endif
+ 
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++// ports pack 1, K6 (KytyPS5 21124245, GPL-2.0, hostException.cpp:169-207): a per-thread alternate signal stack.
++// BC5 change: 256 KiB, not upstream's 64 KiB, because our fault path also writes exp 0412's fault record; and a
++// failure is reported once and the thread keeps running on its own stack (upstream ends the process).
++namespace {
++class Bc5ThreadSignalStack {
++public:
++	Bc5ThreadSignalStack() {
++		const auto page_size  = static_cast<size_t>(::getpagesize());
++		const auto want       = static_cast<size_t>(256 * 1024) > static_cast<size_t>(MINSIGSTKSZ) ? static_cast<size_t>(256 * 1024)
++		                                                                                       : static_cast<size_t>(MINSIGSTKSZ);
++		const auto stack_size = (want + page_size - 1) & ~(page_size - 1);
++		if (::posix_memalign(&m_memory, page_size, stack_size) != 0) {
++			m_memory = nullptr;
++			return;
++		}
++		stack_t stack {};
++		stack.ss_sp   = m_memory;
++		stack.ss_size = stack_size;
++		if (::sigaltstack(&stack, &m_previous) != 0) {
++			std::free(m_memory);
++			m_memory = nullptr;
++		}
++	}
++	~Bc5ThreadSignalStack() {
++		if (m_memory != nullptr && ::sigaltstack(&m_previous, nullptr) == 0) {
++			std::free(m_memory);
++		}
++	}
++	Bc5ThreadSignalStack(const Bc5ThreadSignalStack&)            = delete;
++	Bc5ThreadSignalStack& operator=(const Bc5ThreadSignalStack&) = delete;
++	[[nodiscard]] bool IsInitialized() const { return m_memory != nullptr; }
++
++private:
++	void*   m_memory = nullptr;
++	stack_t m_previous {};
++};
++} // namespace
++
++bool InitializeThreadSignalStack() {
++	if (!BC5_P1("KYTY_BC5_P1_ALTSTACK")) {
++		return true;
++	}
++	thread_local Bc5ThreadSignalStack signal_stack;
++	if (!signal_stack.IsInitialized()) {
++		static std::atomic<bool> told {false};
++		if (!told.exchange(true)) {
++			std::fprintf(stderr, "[bc5] ports pack 1 K6: sigaltstack failed for a thread; it handles faults on its own stack\n");
++		}
++		return false;
++	}
++	return true;
++}
++#endif
++
+ bool InstallHandler(Handler handler) {
+ 	if (handler == nullptr) {
+ 		return false;
+@@ -481,6 +538,19 @@ bool InstallHandler(Handler handler) {
+ 	sigemptyset(&action.sa_mask);
+ 	// Fault resolution needs the normal thread stack.
+ 	action.sa_flags = SA_SIGINFO | SA_RESTART;
++	// ports pack 1, A3 (KytyPS5 3b0a78a9, GPL-2.0, hostException.cpp:235-237): the guest signal-dispatch signal
++	// (SIGRTMIN+3 on Linux, libKernel.cpp SignalDispatchHostSignal) is blocked while a fault is resolved, so a
++	// KernelRaiseException cannot run the guest's handler between the protection fix and the retry. Only the macOS
++	// branch above had this (with SIGUSR1). Before the pack: an empty mask as before.
++	if (BC5_P1("KYTY_BC5_P1_FAULT_MASK")) {
++		sigaddset(&action.sa_mask, SIGRTMIN + 3);
++	}
++	// ports pack 1, K6 (KytyPS5 21124245, GPL-2.0, hostException.cpp:316-319): the fault handler runs on the thread's
++	// alternate signal stack when it has one (InitializeThreadSignalStack, set up by each guest thread), so a fault
++	// on an exhausted or read-only guest stack is still handled and recorded. Before the pack: no SA_ONSTACK.
++	if (BC5_P1("KYTY_BC5_P1_ALTSTACK")) {
++		action.sa_flags |= SA_ONSTACK;
++	}
+ 
+ 	Bc5TrapLogInstall(); // exp 0412 (tag ff412)
+ 	for (const int signal_number: {SIGSEGV, SIGBUS, SIGILL}) {
+diff --git a/src/common/hostException.h b/src/common/hostException.h
+index 5464768..4f8575f 100644
+--- a/src/common/hostException.h
++++ b/src/common/hostException.h
+@@ -42,6 +42,11 @@ using Handler = bool (*)(const ExceptionInfo&);
+ 
+ bool InstallHandler(Handler handler);
+ 
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++// ports pack 1, K6 (KytyPS5 21124245): sets up this thread's alternate signal stack once; false if that failed.
++bool InitializeThreadSignalStack();
++#endif
++
+ // ---------------------------------------------------------------------------
+ // Async-signal-safe raw formatter.
+ //
+diff --git a/src/common/platform/sysLinuxFileIO.cpp b/src/common/platform/sysLinuxFileIO.cpp
+index 97b2614..9406874 100644
+--- a/src/common/platform/sysLinuxFileIO.cpp
++++ b/src/common/platform/sysLinuxFileIO.cpp
+@@ -8,6 +8,7 @@
+ #include "common/platform/sysFileIO.h"
+ #include "common/platform/sysTimer.h"
+ #include "common/stringUtils.h"
++#include "bc5/ports_pack1.hpp" // ports pack 1: K7
+ 
+ #include <cerrno>
+ #include <cstdlib>
+@@ -155,6 +156,16 @@ void SysFileWrite(uint32_t n, sys_file_t& f) {
+ 	SysFileWrite(&n, 4, f);
+ }
+ 
++// ports pack 1, K7 (KytyPS5 cbe5b629, GPL-2.0, sysLinuxFileIO.cpp:155-166 OpenHostFile): host files are opened
++// unbuffered, so independent handles of one file see each other's writes and truncation at once (a stdio buffer let
++// a second descriptor read stale bytes). Cost: every small fread/fwrite is a system call; APR reads do not come here
++// (exp 0415's pread path). Before the pack: stdio's default buffering as before.
++static void Bc5P1Unbuffered(FILE* f) {
++	if (f != nullptr && BC5_P1("KYTY_BC5_P1_FILE_UNBUFFERED")) {
++		setvbuf(f, nullptr, _IONBF, 0);
++	}
++}
++
+ sys_file_t* SysFileCreate(const std::filesystem::path& file_name) {
+ 	auto* ret = new sys_file_t;
+ 
+@@ -162,6 +173,7 @@ sys_file_t* SysFileCreate(const std::filesystem::path& file_name) {
+ 	auto real_name_str = real_name.string();
+ 
+ 	ret->f = fopen(real_name_str.c_str(), "w+");
++	Bc5P1Unbuffered(ret->f); // ports pack 1, K7
+ 
+ 	if (ret->f == nullptr) {
+ 		printf("can't create file: %s\n", real_name_str.c_str());
+@@ -186,6 +198,7 @@ sys_file_t* SysFileOpenR(const std::filesystem::path& file_name, sys_file_cache_
+ 		ret->type = SYS_FILE_ERROR;
+ 	}
+ 
++	Bc5P1Unbuffered(f); // ports pack 1, K7
+ 	apply_cache_hint(f, cache_type);
+ 
+ 	ret->f = f;
+@@ -231,6 +244,7 @@ sys_file_t* SysFileOpenW(const std::filesystem::path& file_name, sys_file_cache_
+ 		ret->type = SYS_FILE_FILE;
+ 	}
+ 
++	Bc5P1Unbuffered(f); // ports pack 1, K7
+ 	apply_cache_hint(f, cache_type);
+ 
+ 	ret->f = f;
+@@ -253,6 +267,7 @@ sys_file_t* SysFileOpenRw(const std::filesystem::path& file_name,
+ 		ret->type = SYS_FILE_FILE;
+ 	}
+ 
++	Bc5P1Unbuffered(f); // ports pack 1, K7
+ 	apply_cache_hint(f, cache_type);
+ 
+ 	ret->f = f;
+diff --git a/src/common/platform/sysLinuxVirtual.cpp b/src/common/platform/sysLinuxVirtual.cpp
+index 4bd352c..e94787a 100644
+--- a/src/common/platform/sysLinuxVirtual.cpp
++++ b/src/common/platform/sysLinuxVirtual.cpp
+@@ -9,8 +9,10 @@
+ #include "common/platform/sysVirtual.h"
+ #include "common/virtualMemory.h"
+ #include "bc5/anon_sync.hpp" // experiment 0415 (as415c)
++#include "bc5/ports_pack1.hpp" // ports pack 1: K4
+ 
+ #include <atomic>
++#include <cstdio> // ports pack 1, K4: /proc/self/maps
+ #include <map>
+ #include <pthread.h>
+ #include <sys/mman.h>
+@@ -73,6 +75,43 @@ static int get_protection_flag(VirtualMemory::Mode mode) {
+ 	return protect;
+ }
+ 
++// ports pack 1, K4 (KytyPS5 73363f12, GPL-2.0, "memory: remove per-page host protection bookkeeping",
++// src/common/platform/sysLinuxVirtual.cpp hunks @@-161, -251, -337, -516, -582): g_protects held one std::map node per
++// 4 KiB page, written on every alloc, protect and free under g_virtual_mutex (a 1 GiB alloc: 262,144 nodes, ~12 MiB
++// and the global lock held for the loop). Its only reader is SysVirtualProtect's old_mode, and no caller in this tree
++// asks for it (VirtualMemory::Protect is called with three arguments in memoryAddressSpace.inc:924 and :1035; the
++// guest's ProtectGuestMemory takes its old mode from its own range table, memory.cpp). With the switch on the map is
++// not kept. BC5 change: upstream also drops the old_mode parameter; we keep it, and a caller that asks gets the answer
++// from /proc/self/maps (Bc5P1KernelProt below), so the answer stays the real one.
++// Before the pack: the per-page map as before.
++static bool Bc5P1ProtRanges() {
++	return BC5_P1("KYTY_BC5_P1_PROT_RANGES");
++}
++
++// The protection of the page holding `addr` as the kernel has it, PROT_* bits; PROT_NONE when not mapped or unreadable.
++static int Bc5P1KernelProt(uintptr_t addr) {
++	int         prot = PROT_NONE;
++	std::FILE* f    = std::fopen("/proc/self/maps", "r");
++	if (f == nullptr) {
++		return prot;
++	}
++	char line[512];
++	while (std::fgets(line, sizeof(line), f) != nullptr) {
++		unsigned long long lo = 0;
++		unsigned long long hi = 0;
++		char               perms[5] {};
++		if (std::sscanf(line, "%llx-%llx %4s", &lo, &hi, perms) != 3) {
++			continue;
++		}
++		if (addr >= lo && addr < hi) {
++			prot = (perms[0] == 'r' ? PROT_READ : 0) | (perms[1] == 'w' ? PROT_WRITE : 0) | (perms[2] == 'x' ? PROT_EXEC : 0);
++			break;
++		}
++	}
++	std::fclose(f);
++	return prot;
++}
++
+ static VirtualMemory::Mode get_protection_flag(int mode) {
+ 	switch (mode) {
+ 		case PROT_NONE: return VirtualMemory::Mode::NoAccess;
+@@ -174,11 +213,13 @@ uint64_t SysVirtualAlloc(uint64_t address, uint64_t size, VirtualMemory::Mode mo
+ 	if (ptr != MAP_FAILED) {
+ 		pthread_mutex_lock(&g_virtual_mutex);
+ 		record_alloc(ret_addr, size);
++		if (!Bc5P1ProtRanges()) { // ports pack 1, K4
+ 		uintptr_t page_start = ret_addr >> 12u;
+ 		uintptr_t page_end   = (ret_addr + size - 1) >> 12u;
+ 		for (uintptr_t page = page_start; page <= page_end; page++) {
+ 			(*g_protects)[page] = protect;
+ 		}
++		}
+ 		pthread_mutex_unlock(&g_virtual_mutex);
+ 	}
+ 
+@@ -264,11 +305,13 @@ uint64_t SysVirtualAllocAligned(uint64_t address, uint64_t size, VirtualMemory::
+ 
+ 	pthread_mutex_lock(&g_virtual_mutex);
+ 	record_alloc(ret_addr, size);
++	if (!Bc5P1ProtRanges()) { // ports pack 1, K4
+ 	uintptr_t page_start = ret_addr >> 12u;
+ 	uintptr_t page_end   = (ret_addr + size - 1) >> 12u;
+ 	for (uintptr_t page = page_start; page <= page_end; page++) {
+ 		(*g_protects)[page] = protect;
+ 	}
++	}
+ 	pthread_mutex_unlock(&g_virtual_mutex);
+ 
+ 	return ret_addr;
+@@ -350,11 +393,13 @@ bool SysVirtualAllocFixed(uint64_t address, uint64_t size, VirtualMemory::Mode m
+ 	if (ptr != MAP_FAILED) {
+ 		pthread_mutex_lock(&g_virtual_mutex);
+ 		record_alloc(ret_addr, size);
++		if (!Bc5P1ProtRanges()) { // ports pack 1, K4
+ 		uintptr_t page_start = ret_addr >> 12u;
+ 		uintptr_t page_end   = (ret_addr + size - 1) >> 12u;
+ 		for (uintptr_t page = page_start; page <= page_end; page++) {
+ 			(*g_protects)[page] = protect;
+ 		}
++		}
+ 		pthread_mutex_unlock(&g_virtual_mutex);
+ 
+ 		return true;
+@@ -530,6 +575,9 @@ bool SysVirtualFree(uint64_t address) {
+ 	}
+ 
+ 	if (munmap(reinterpret_cast<void*>(addr), size) == 0) {
++		if (Bc5P1ProtRanges()) { // ports pack 1, K4: no per-page map to clean
++			return true;
++		}
+ 		uintptr_t page_start = addr >> 12u;
+ 		uintptr_t page_end   = (addr + size - 1) >> 12u;
+ 		pthread_mutex_lock(&g_virtual_mutex);
+@@ -595,7 +643,7 @@ bool SysVirtualFreeRange(uint64_t address, uint64_t size) {
+ 	if (end < alloc_end) {
+ 		(*g_allocs)[end] = alloc_end - end;
+ 	}
+-	for (uintptr_t page = addr >> 12u; page <= (end - 1u) >> 12u; page++) {
++	for (uintptr_t page = addr >> 12u; !Bc5P1ProtRanges() && page <= (end - 1u) >> 12u; page++) { // ports pack 1, K4
+ 		g_protects->erase(page);
+ 	}
+ 	pthread_mutex_unlock(&g_virtual_mutex);
+@@ -606,8 +654,11 @@ bool SysVirtualProtect(uint64_t address, uint64_t size, VirtualMemory::Mode mode
+                        VirtualMemory::Mode* old_mode) {
+ 	auto addr = static_cast<uintptr_t>(address);
+ 
++	if (old_mode != nullptr && Bc5P1ProtRanges()) { // ports pack 1, K4: ask the kernel, not the map
++		*old_mode = get_protection_flag(Bc5P1KernelProt(addr));
++	}
+ 	pthread_mutex_lock(&g_virtual_mutex);
+-	if (old_mode != nullptr) {
++	if (old_mode != nullptr && !Bc5P1ProtRanges()) {
+ 		if (auto s = g_protects->find(addr >> 12u); s != g_protects->end()) {
+ 			*old_mode = get_protection_flag(s->second);
+ 		} else {
+@@ -621,6 +672,9 @@ bool SysVirtualProtect(uint64_t address, uint64_t size, VirtualMemory::Mode mode
+ 	if (mprotect(reinterpret_cast<void*>(page_start << 12u), (page_end - page_start + 1) << 12u,
+ 	             get_protection_flag(mode)) == 0) {
+ 		bc5::anon_sync::note(static_cast<uint64_t>(page_start) << 12u, static_cast<uint64_t>(page_end - page_start + 1) << 12u, (get_protection_flag(mode) & PROT_READ) != 0); // experiment 0415 (as415c)
++		if (Bc5P1ProtRanges()) { // ports pack 1, K4: no per-page map
++			return true;
++		}
+ 		pthread_mutex_lock(&g_virtual_mutex);
+ 		for (uintptr_t page = page_start; page <= page_end; page++) {
+ 			(*g_protects)[page] = get_protection_flag(mode);
+diff --git a/src/common/threads.cpp b/src/common/threads.cpp
+index 1870594..eb70aa3 100644
+--- a/src/common/threads.cpp
++++ b/src/common/threads.cpp
+@@ -1,5 +1,6 @@
+ #include <pthread.h>
+ #include "common/threads.h"
++#include "bc5/ports_pack1.hpp" // ports pack 1: A2
+ 
+ #include "common/assert.h"
+ #include "common/debug.h"
+@@ -213,12 +214,25 @@ static void WakeCondVar(CondVarPrivate* cond_var) {
+ #endif
+ }
+ 
++// ports pack 1, A2 (KytyPS5 18a1e0fa, GPL-2.0): no global registry of CondVar waiters. Every wait took the registry's
++// global mutex twice, and the registry deadlocked exception delivery upstream; the guest's own wake for a signal is
++// PthreadWakeForSignal, which stays. Before the pack: the registry and SignalThread as before.
++static bool Bc5P1NoRegistry() {
++	return BC5_P1("KYTY_BC5_P1_NO_COND_REGISTRY");
++}
++
+ static void RegisterCondWaiter(CondVarPrivate* cond_var) {
++	if (Bc5P1NoRegistry()) {
++		return;
++	}
+ 	std::lock_guard lock(g_cond_waiters_mutex);
+ 	g_cond_waiters.emplace_back(Thread::GetThreadIdUnique(), cond_var);
+ }
+ 
+ static void UnregisterCondWaiter(CondVarPrivate* cond_var) {
++	if (Bc5P1NoRegistry()) {
++		return;
++	}
+ 	const auto      thread_id = Thread::GetThreadIdUnique();
+ 	std::lock_guard lock(g_cond_waiters_mutex);
+ 
+@@ -459,6 +473,9 @@ void CondVar::SignalAll() {
+ }
+ 
+ void CondVar::SignalThread(int thread_id) {
++	if (Bc5P1NoRegistry()) {
++		return;
++	}
+ 	std::lock_guard lock(g_cond_waiters_mutex);
+ 	for (const auto& waiter: g_cond_waiters) {
+ 		if (waiter.first == thread_id) {
+diff --git a/src/kernel/eventQueue.cpp b/src/kernel/eventQueue.cpp
+index 944a1f8..2d205a3 100644
+--- a/src/kernel/eventQueue.cpp
++++ b/src/kernel/eventQueue.cpp
+@@ -1,4 +1,5 @@
+ #include "bc5/env_rule.hpp" // exp 0419 (build W): BC5_DIAG_ENV, BC5_FIXED_ENV, BC5_LEAN_OR
++#include "bc5/ports_pack1.hpp" // ports pack 1: A1, R2b
+ #include <atomic>
+ #include <chrono>
+ #include <cinttypes>
+@@ -293,6 +294,17 @@ bool KernelEqueuePrivate::GetNextTimerWaitMicros(uint64_t now_ns, uint32_t* wait
+ 	return true;
+ }
+ 
++// ports pack 1, A1 (AnyPS5 daad982457, GPL-2.0): an event added or triggered wakes EVERY thread waiting on this queue.
++// With Signal() one waiter woke and the others slept to their timeout or for ever, though GetTriggeredEvents could hand
++// each of them the event (several guest threads on one equeue). Before the pack: the old wake-one.
++static void Bc5P1Wake(Common::CondVar* cv) {
++	if (BC5_P1("KYTY_BC5_P1_EQ_WAKE_ALL")) {
++		cv->SignalAll();
++	} else {
++		cv->Signal();
++	}
++}
++
+ int KernelEqueuePrivate::WaitForEvents(KernelEvent* ev, int num, uint32_t micros) {
+ 	Common::LockGuard lock(m_mutex);
+ 
+@@ -348,7 +360,7 @@ int KernelEqueuePrivate::AddEvent(const KernelEqueueEvent& event) {
+ 		m_events.push_back(event);
+ 	}
+ 
+-	m_cond_var.Signal();
++	Bc5P1Wake(&m_cond_var);
+ 	return OK;
+ }
+ 
+@@ -377,7 +389,7 @@ int KernelEqueuePrivate::Bc5AddPeriodicTimer(const KernelEqueueEvent& event, uin
+ 	}
+ 	m_bc5_timer_period_ns[event.event.ident] = period_ns;
+ 
+-	m_cond_var.Signal();
++	Bc5P1Wake(&m_cond_var);
+ 	return OK;
+ }
+ 
+@@ -399,7 +411,7 @@ int KernelEqueuePrivate::TriggerEvent(uintptr_t ident, int16_t filter, void* tri
+ 			event.triggered = true;
+ 		}
+ 
+-		m_cond_var.Signal();
++		Bc5P1Wake(&m_cond_var);
+ 
+ 		return OK;
+ 	}
+@@ -418,7 +430,14 @@ static void UserEventTriggerFunc(KernelEqueueEvent* event, void* trigger_data) {
+ // AnyPS5 (github.com/boykopovar/AnyPS5 f145139, core/libs/prx/libkernel/Equeue/Equeue.hpp,
+ // GPL-2.0) uses EVFILT_AMPR = -25.
+ // TODO(verify): the console's value.
++// ports pack 1, exp 0405 R2 KK15 (KytyPS5 deb45a8b, GPL-2.0, eventQueue.h:21 KERNEL_EVFILT_AMPR = -25 and its use in
++// KernelAddAmprEvent/KernelDeleteAmprEvent and libAmpr's completion trigger): AMPR completions carry EVFILT_AMPR (-25),
++// so an AMPR id can no longer meet a user event with the same ident on the same queue (both on EVFILT_USER, the trigger
++// or delete of one hit the other). KytyPS5 and AnyPS5 agree on -25. Before the pack: EVFILT_USER as before.
+ int16_t AmprEventFilter() {
++	if (BC5_P1("KYTY_BC5_P1_AMPR_FILTER")) {
++		return static_cast<int16_t>(-25);
++	}
+ 	return static_cast<int16_t>(KERNEL_EVFILT_USER);
+ }
+ 
+diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
+index afd6c60..093a4a9 100644
+--- a/src/kernel/memory.cpp
++++ b/src/kernel/memory.cpp
+@@ -1,4 +1,5 @@
+ #include "bc5/env_rule.hpp" // exp 0419 (build W): BC5_DIAG_ENV, BC5_FIXED_ENV, BC5_LEAN_OR
++#include "bc5/ports_pack1.hpp" // ports pack 1: C
+ #include <set>
+ #include <cinttypes>
+ #include <cstdio>
+@@ -3016,6 +3017,12 @@ int32_t KYTY_SYSV_ABI KernelMapNamedFlexibleMemory(void** addr_in_out, size_t le
+ 	GpuAccessMode       gpu_mode = GpuAccessMode::NoAccess;
+ 
+ 	if (!DecodeMemoryProtection(prot, &mode, &gpu_mode)) {
++		// ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libkernel/DirectMemory/Export.cpp:63-64, 394-395; dca5752e1b,
++		// measured EINVAL on fw 13.60): a protection this map cannot take is EINVAL, not a host exit.
++		if (BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) {
++			LOGF_COLOR(Log::Color::Red, "\t unknown prot = %d: EINVAL (ports pack 1)\n", prot);
++			return KERNEL_ERROR_EINVAL;
++		}
+ 		EXIT("unknown prot: %d\n", prot);
+ 	}
+ 
+diff --git a/src/kernel/pthread.cpp b/src/kernel/pthread.cpp
+index 9e0aee5..d9b6ab4 100644
+--- a/src/kernel/pthread.cpp
++++ b/src/kernel/pthread.cpp
+@@ -6,6 +6,8 @@
+ #include "common/common.h"
+ #include "common/dateTime.h"
+ #include "common/emulatorConfig.h"
++#include "common/hostException.h" // ports pack 1, K6
++#include "bc5/ports_pack1.hpp"     // ports pack 1: K2, K3
+ #include "common/logging/log.h"
+ #include "common/singleton.h"
+ #include "common/stringUtils.h"
+@@ -25,8 +27,11 @@
+ #include <cstring>
+ #include <cstdlib> // experiment 0401 series e4: std::getenv
+ #include <ctime>
++#include <memory> // ports pack 1, K3
+ #include <mutex>
++#include <new>     // ports pack 1, K3: std::nothrow
+ #include <thread>
++#include <utility> // ports pack 1, K3: std::exchange
+ #include <vector>
+ 
+ #if KYTY_PLATFORM == KYTY_PLATFORM_WINDOWS
+@@ -461,6 +466,7 @@ struct PthreadPrivate {
+ 	std::atomic<uint64_t> pending_signal_mask {0};
+ 	bool                  bc5_rr_sleeper = false; // experiment 0429 R: slept on its worker family's semaphore
+ 	bool                  bc5_rr_main    = false; // experiment 0429 R: the runtime main thread, never promoted
++	std::condition_variable bc5_cond_cv;          // ports pack 1, K2: this thread's own wake for a guest condvar wait
+ #if KYTY_PLATFORM == KYTY_PLATFORM_WINDOWS
+ 	uintptr_t guest_host_gs8;
+ 	uintptr_t guest_host_gs10;
+@@ -644,6 +650,22 @@ static bool CondRemoveWaiter(PthreadCondPrivate* cond, Pthread thread) {
+ 	return true;
+ }
+ 
++// ports pack 1, K2 (KytyPS5 47b26e49, GPL-2.0, "pthread: fix per-thread wakeups"): a guest condvar waiter sleeps on its
++// own thread's condition variable, and signal/signalto wake the ONE chosen waiter there (under cond->m, as upstream).
++// Before, the chosen waiter's sequence was bumped and then every waiter was woken by cond->cv.notify_all(), only to
++// re-check and go back to sleep. Broadcast and the guest-signal wake notify each waiter's own variable. Every wait
++// still polls every SIGNAL_APC_POLL_MICROS, so a missed notify costs at most that, never a hang.
++// BC5 change: the waiter list, waiting_cond, the condvar's own sequence and cv stay (exp 0405's kk06 and signalto rely
++// on them); cond->cv is still notified, with no sleeper on it while the switch is on.
++// Before the pack: every waiter sleeps on cond->cv as before.
++static bool Bc5P1CondOne() {
++	return BC5_P1("KYTY_BC5_P1_COND_SIGNAL_ONE");
++}
++
++static std::condition_variable& Bc5P1CondCv(PthreadCondPrivate* cond, Pthread thread) {
++	return (Bc5P1CondOne() && thread != nullptr) ? thread->bc5_cond_cv : cond->cv;
++}
++
+ static bool CondWakeWaiter(PthreadCondPrivate* cond, Pthread thread) {
+ 	EXIT_IF(cond == nullptr);
+ 
+@@ -664,6 +686,9 @@ static bool CondWakeWaiter(PthreadCondPrivate* cond, Pthread thread) {
+ 		thread->waiting_cond = nullptr;
+ 	}
+ 	thread->cond_sequence++;
++	if (Bc5P1CondOne()) {
++		thread->bc5_cond_cv.notify_one(); // ports pack 1, K2: the chosen waiter only, under cond->m
++	}
+ 	return true;
+ }
+ 
+@@ -671,6 +696,9 @@ static void CondClearWaiters(PthreadCondPrivate* cond) {
+ 	EXIT_IF(cond == nullptr);
+ 
+ 	for (auto* thread: cond->waiters) {
++		if (thread != nullptr && Bc5P1CondOne()) {
++			thread->bc5_cond_cv.notify_one(); // ports pack 1, K2: broadcast wakes each waiter on its own variable
++		}
+ 		if (thread != nullptr && thread->waiting_cond == cond) {
+ 			thread->waiting_cond = nullptr;
+ 		}
+@@ -692,6 +720,9 @@ void PthreadWakeForSignal(Pthread thread) {
+ 	{
+ 		std::lock_guard lock(cond->m);
+ 		notify = (thread->waiting_cond == cond);
++		if (notify && Bc5P1CondOne()) {
++			thread->bc5_cond_cv.notify_all(); // ports pack 1, K2: the thread sleeps on its own variable
++		}
+ 		if (Bc5ThreadSyncFix(BC5_THR_FIX_KK06) && notify) { // experiment 0405 kk06: notify while cond->m is held
+ 			cond->cv.notify_all();
+ 			notify = false;
+@@ -806,6 +837,69 @@ private:
+ 	Key           m_keys[KEYS_MAX];
+ };
+ 
++// ---- ports pack 1, K3 (KytyPS5 733842ca, GPL-2.0, "kernel: index pthread key values per thread") -------------------
++// Upstream src/kernel/pthread.cpp (at 733842ca) lines 619-632 (the tables), 1589-1620 (DestructPthreadSpecific),
++// 4002-4068 (KeyCreate, KeyDelete, Setspecific, Getspecific). Each thread keeps its key values in its own array of
++// KEYS_MAX slots (thread_local), stamped with the key's generation; a key's generation is odd while it is allocated and
++// a delete moves it to the next even one, so a stale value of a deleted and re-created key reads as NULL. getspecific
++// and setspecific take no lock and search nothing; before, every call took PthreadKeys::m_mutex and walked the values
++// of every thread that ever set that key (pthread.cpp PthreadKeys::Get/Set).
++// BC5 changes: the switch; the old PthreadKeys class stays and is the path when the switch is off (both paths never
++// mix: the word is read once per process); the LOGF lines of KeyCreate/KeyDelete are kept.
++// Before the pack: the old table under one mutex.
++static bool Bc5P1Keys() {
++	return BC5_P1("KYTY_BC5_P1_PTHREAD_KEYS");
++}
++
++struct Bc5P1SpecificValue {
++	uint64_t generation = 0;
++	void*    data       = nullptr;
++};
++
++struct Bc5P1KeyState {
++	// Odd generations are allocated; deletion advances to the next even generation.
++	std::atomic<uint64_t>         generation {0};
++	pthread_key_destructor_func_t destructor = nullptr;
++};
++
++static Bc5P1KeyState                                      g_bc5_p1_keys[KEYS_MAX];
++static std::mutex                                         g_bc5_p1_keys_mutex;
++static thread_local std::unique_ptr<Bc5P1SpecificValue[]> g_bc5_p1_specific;
++
++// Runs on the exiting thread (CleanupThread, pushed by RunThread's pthread_cleanup_push).
++static void Bc5P1DestructSpecific() {
++	if (g_bc5_p1_specific == nullptr) {
++		return;
++	}
++
++	std::unique_lock lock(g_bc5_p1_keys_mutex);
++	for (int iter = 0; iter < DESTRUCTOR_ITERATIONS; iter++) {
++		bool called = false;
++		for (int index = 0; index < KEYS_MAX; index++) {
++			const auto value = std::exchange(g_bc5_p1_specific[index], {});
++			if (value.data == nullptr) {
++				continue;
++			}
++
++			const auto& entry      = g_bc5_p1_keys[index];
++			const auto  generation = entry.generation.load(std::memory_order_relaxed);
++			if ((generation & 1u) == 0 || generation != value.generation || entry.destructor == nullptr) {
++				continue;
++			}
++			const auto destructor = entry.destructor;
++			lock.unlock();
++			destructor(value.data);
++			lock.lock();
++			called = true;
++		}
++		if (!called) {
++			break;
++		}
++	}
++	g_bc5_p1_specific.reset();
++}
++// ---- end of ports pack 1, K3 tables ------------------------------------------------------------------------------
++
+ class PthreadPool {
+ public:
+ 	PthreadPool() { EXIT_NOT_IMPLEMENTED(!Common::Thread::IsMainThread()); }
+@@ -1228,6 +1322,10 @@ void PthreadDeleteStaticObjects(Loader::Program* program) {
+ void PthreadInitSelfForMainThread() {
+ 	EXIT_IF(g_pthread_self != nullptr);
+ 
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++	Common::HostException::InitializeThreadSignalStack(); // ports pack 1, K6 (KytyPS5 21124245)
++#endif
++
+ 	g_pthread_self = new PthreadPrivate {};
+ 	PthreadAttrInit(&g_pthread_self->attr);
+ 	UpdateCurrentThreadStackAttr(&g_pthread_self->attr);
+@@ -3378,7 +3476,7 @@ int KYTY_SYSV_ABI PthreadCondTimedwait(PthreadCond* cond, PthreadMutex* mutex,
+ 			                            ? remaining
+ 			                            : std::chrono::steady_clock::duration(
+ 			                                  std::chrono::microseconds(SIGNAL_APC_POLL_MICROS)));
+-			cond_value->cv.wait_for(cond_lock, poll);
++			Bc5P1CondCv(cond_value, thread).wait_for(cond_lock, poll); // ports pack 1, K2
+ 
+ 			if (!ready()) {
+ 				cond_lock.unlock();
+@@ -3466,7 +3564,7 @@ while (!ready()) {
+ 		                            ? remaining
+ 		                            : std::chrono::steady_clock::duration(
+ 		                                  std::chrono::microseconds(SIGNAL_APC_POLL_MICROS)));
+-		cond_value->cv.wait_for(cond_lock, poll);
++		Bc5P1CondCv(cond_value, thread).wait_for(cond_lock, poll); // ports pack 1, K2
+ 
+ 		if (!ready()) {
+ 			cond_lock.unlock();
+@@ -3538,7 +3636,7 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
+ 	};
+ 
+ 	while (!ready()) {
+-		cond_value->cv.wait_for(cond_lock, std::chrono::microseconds(SIGNAL_APC_POLL_MICROS));
++		Bc5P1CondCv(cond_value, thread).wait_for(cond_lock, std::chrono::microseconds(SIGNAL_APC_POLL_MICROS)); // ports pack 1, K2
+ 		if (!ready()) {
+ 			cond_lock.unlock();
+ 			KernelDispatchPendingSignalForCurrentThread();
+@@ -3685,7 +3783,11 @@ static void CleanupThread(void* arg) {
+ 		thread_dtors();
+ 	}
+ 
+-	g_pthread_context->GetPthreadKeys()->Destruct(thread->unique_id);
++	if (Bc5P1Keys()) {
++		Bc5P1DestructSpecific(); // ports pack 1, K3 (KytyPS5 733842ca)
++	} else {
++		g_pthread_context->GetPthreadKeys()->Destruct(thread->unique_id);
++	}
+ 
+ 	auto* rt = Common::Singleton<Loader::RuntimeLinker>::Instance();
+ 	rt->DeleteTlss(thread->unique_id);
+@@ -4459,6 +4561,10 @@ static void* RunThread(void* arg) {
+ 	auto* thread = static_cast<Pthread>(arg);
+ 	void* ret    = nullptr;
+ 
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++	Common::HostException::InitializeThreadSignalStack(); // ports pack 1, K6 (KytyPS5 21124245)
++#endif
++
+ #if defined(__x86_64__) || defined(_M_X64)
+ 	// Experiment 0405 x87 (KYTY_BC5_THREAD_SYNC_FIXES): the FreeBSD thread start state of the x87 control word, 0x037f,
+ 	// before any guest code (AnyPS5 8b626e307, Thread.cpp:891); off, the thread keeps the word its creator had.
+@@ -4691,6 +4797,13 @@ int KYTY_SYSV_ABI PthreadSetcancelstate(int state, int* old_state) {
+ 
+ 	int pstate = PTHREAD_CANCEL_DISABLE;
+ 
++	// ports pack 1, C (AnyPS5 3acca27f27 "feat(libkernel): implement thread cancellation", GPL-2.0,
++	// core/libs/prx/libkernel/Pthread/src/Thread.cpp:1637-1638 at 47bd2c6a1d): a state other than ENABLE (0) or
++	// DISABLE (1) is EINVAL, returned before old_state is written. Before the pack: the host exits.
++	if (state != 0 && state != 1 && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) {
++		return KERNEL_ERROR_EINVAL;
++	}
++
+ 	switch (state) {
+ 		case 0: pstate = PTHREAD_CANCEL_ENABLE; break;
+ 		case 1: pstate = PTHREAD_CANCEL_DISABLE; break;
+@@ -4720,6 +4833,13 @@ int KYTY_SYSV_ABI PthreadSetcanceltype(int type, int* old_type) {
+ 
+ 	int ptype = PTHREAD_CANCEL_DEFERRED;
+ 
++	// ports pack 1, C (AnyPS5 3acca27f27, GPL-2.0, Pthread/src/Thread.cpp:1650-1651 at 47bd2c6a1d): a type other than
++	// DEFERRED (0) or ASYNCHRONOUS (2) is EINVAL, returned before old_type is written.
++	// Before the pack: the host exits.
++	if (type != 0 && type != 2 && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) {
++		return KERNEL_ERROR_EINVAL;
++	}
++
+ 	switch (type) {
+ 		case 0: ptype = PTHREAD_CANCEL_DEFERRED; break;
+ 		case 2: ptype = PTHREAD_CANCEL_ASYNCHRONOUS; break;
+@@ -5203,7 +5323,26 @@ int KYTY_SYSV_ABI PthreadKeyCreate(PthreadKey* key, pthread_key_destructor_func_
+ 		return KERNEL_ERROR_EINVAL;
+ 	}
+ 
+-	if (!g_pthread_context->GetPthreadKeys()->Create(key, destructor)) {
++	if (Bc5P1Keys()) { // ports pack 1, K3 (KytyPS5 733842ca, upstream pthread.cpp:4002-4018)
++		bool created = false;
++		{
++			std::lock_guard lock(g_bc5_p1_keys_mutex);
++			for (int index = 0; index < KEYS_MAX; index++) {
++				auto&      entry      = g_bc5_p1_keys[index];
++				const auto generation = entry.generation.load(std::memory_order_relaxed);
++				if ((generation & 1u) == 0) {
++					entry.destructor = destructor;
++					entry.generation.store(generation + 1, std::memory_order_release);
++					*key    = index;
++					created = true;
++					break;
++				}
++			}
++		}
++		if (!created) {
++			return KERNEL_ERROR_EAGAIN;
++		}
++	} else if (!g_pthread_context->GetPthreadKeys()->Create(key, destructor)) {
+ 		return KERNEL_ERROR_EAGAIN;
+ 	}
+ 
+@@ -5219,6 +5358,21 @@ int KYTY_SYSV_ABI PthreadKeyDelete(PthreadKey key) {
+ 
+ 	LOGF("\t key = %d\n", key);
+ 
++	if (Bc5P1Keys()) { // ports pack 1, K3 (KytyPS5 733842ca, upstream pthread.cpp:4021-4036)
++		if (key < 0 || key >= KEYS_MAX) {
++			return KERNEL_ERROR_EINVAL;
++		}
++		std::lock_guard lock(g_bc5_p1_keys_mutex);
++		auto&           entry      = g_bc5_p1_keys[key];
++		const auto      generation = entry.generation.load(std::memory_order_relaxed);
++		if ((generation & 1u) == 0) {
++			return KERNEL_ERROR_EINVAL;
++		}
++		entry.generation.store(generation + 1, std::memory_order_release);
++		entry.destructor = nullptr;
++		return OK;
++	}
++
+ 	if (!g_pthread_context->GetPthreadKeys()->Delete(key)) {
+ 		return KERNEL_ERROR_EINVAL;
+ 	}
+@@ -5229,6 +5383,27 @@ int KYTY_SYSV_ABI PthreadKeyDelete(PthreadKey key) {
+ int KYTY_SYSV_ABI PthreadSetspecific(PthreadKey key, void* value) {
+ 	// PRINT_NAME();
+ 
++	if (Bc5P1Keys()) { // ports pack 1, K3 (KytyPS5 733842ca, upstream pthread.cpp:4037-4056)
++		if (key < 0 || key >= KEYS_MAX) {
++			return KERNEL_ERROR_EINVAL;
++		}
++		const auto generation = g_bc5_p1_keys[key].generation.load(std::memory_order_acquire);
++		if ((generation & 1u) == 0) {
++			return KERNEL_ERROR_EINVAL;
++		}
++		if (g_bc5_p1_specific == nullptr) {
++			if (value == nullptr) {
++				return OK;
++			}
++			g_bc5_p1_specific.reset(new (std::nothrow) Bc5P1SpecificValue[KEYS_MAX] {});
++			if (g_bc5_p1_specific == nullptr) {
++				return KERNEL_ERROR_ENOMEM;
++			}
++		}
++		g_bc5_p1_specific[key] = {generation, value};
++		return OK;
++	}
++
+ 	int thread_id = Common::Thread::GetThreadIdUnique();
+ 
+ 	LOGF("\t key       = %d\n"
+@@ -5244,6 +5419,18 @@ int KYTY_SYSV_ABI PthreadSetspecific(PthreadKey key, void* value) {
+ }
+ 
+ void* KYTY_SYSV_ABI PthreadGetspecific(PthreadKey key) {
++	if (Bc5P1Keys()) { // ports pack 1, K3 (KytyPS5 733842ca, upstream pthread.cpp:4058-4068)
++		if (key < 0 || key >= KEYS_MAX || g_bc5_p1_specific == nullptr) {
++			return nullptr;
++		}
++		const auto  generation = g_bc5_p1_keys[key].generation.load(std::memory_order_acquire);
++		const auto& value      = g_bc5_p1_specific[key];
++		if ((generation & 1u) != 0 && generation == value.generation) {
++			return value.data;
++		}
++		return nullptr;
++	}
++
+ 	int thread_id = Common::Thread::GetThreadIdUnique();
+ 
+ 	void* value = nullptr;
+diff --git a/src/kernel/semaphore.cpp b/src/kernel/semaphore.cpp
+index 565e55e..a778e3c 100644
+--- a/src/kernel/semaphore.cpp
++++ b/src/kernel/semaphore.cpp
+@@ -1,5 +1,6 @@
+ #include "bc5/env_rule.hpp" // exp 0419 (build W): BC5_DIAG_ENV, BC5_FIXED_ENV, BC5_LEAN_OR
+ #include "kernel/semaphore.h"
++#include "bc5/ports_pack1.hpp" // ports pack 1: A6
+ 
+ #include "common/assert.h"
+ #include "common/logging/log.h"
+@@ -503,7 +504,7 @@ public:
+ 		Common::Timer timer;
+ 		timer.Start();
+ 
+-		while (m_count <= 0) {
++		while (m_count <= 0 && !m_bc5_destroyed) {
+ 			if (timed_wait && elapsed >= *micros) {
+ 				SyncGuest();
+ 				return POSIX_ETIMEDOUT;
+@@ -525,6 +526,9 @@ public:
+ 			m_waiters--;
+ 			elapsed = static_cast<uint32_t>(timer.GetTimeS() * 1000000.0);
+ 		}
++		if (m_bc5_destroyed) { // ports pack 1, A6: destroyed while this thread waited
++			return POSIX_EINVAL;
++		}
+ 
+ 		m_count--;
+ 		SyncGuest();
+@@ -534,6 +538,9 @@ public:
+ 
+ 	int TryWait() {
+ 		Common::LockGuard lock(m_mutex);
++		if (m_bc5_destroyed) { // ports pack 1, A6
++			return POSIX_EINVAL;
++		}
+ 
+ 		if (m_count <= 0) {
+ 			SyncGuest();
+@@ -548,6 +555,9 @@ public:
+ 
+ 	int Post() {
+ 		Common::LockGuard lock(m_mutex);
++		if (m_bc5_destroyed) { // ports pack 1, A6
++			return POSIX_EINVAL;
++		}
+ 
+ 		if (m_count == POSIX_SEM_VALUE_MAX) {
+ 			return POSIX_EOVERFLOW;
+@@ -566,6 +576,15 @@ public:
+ 		return m_count;
+ 	}
+ 
++	// ports pack 1, A6: wakes every waiter with EINVAL; later calls through a reference taken before get EINVAL too.
++	void Bc5MarkDestroyed() {
++		Common::LockGuard lock(m_mutex);
++		m_bc5_destroyed = true;
++		m_cond_var.SignalAll();
++	}
++
++	std::atomic<int> m_bc5_users {0}; // ports pack 1, A6: references handed out by GetSem and not yet dropped
++
+ private:
+ 	void SyncGuest(uint32_t flags = std::numeric_limits<uint32_t>::max()) {
+ 		if (m_guest != nullptr) {
+@@ -584,6 +603,7 @@ private:
+ 	PosixSemGuest*  m_guest   = nullptr;
+ 	int             m_count   = 0;
+ 	uint32_t        m_waiters = 0;
++	bool            m_bc5_destroyed = false; // ports pack 1, A6
+ };
+ 
+ Common::Mutex                                        g_posix_sem_mutex;
+@@ -594,15 +614,66 @@ static int PosixToKernel(int posix_errno) {
+ 	                                               : LibKernel::KERNEL_ERROR_EINVAL);
+ }
+ 
+-static PosixSemPrivate* GetSem(void* sem) {
++// ports pack 1, A6 (AnyPS5 ff9a68aed4, GPL-2.0, core/libs/prx/libkernel/Pthread/src/Sem.cpp: resolveSem returns an
++// owning shared_ptr, destroy marks the object destroyed and wakes its waiters, wait/post/trywait then return EINVAL):
++// a POSIX semaphore is no longer deleted under a thread that is waiting on it, posting to it, or holds it between the
++// lookup and the call. BC5 form, not upstream's code: GetSem hands out a counted reference (taken under the map lock),
++// and destroy (or a re-init of the same guest object) erases the entry, marks the object destroyed, waits until every
++// reference is dropped, and only then deletes it. Before the pack: plain pointers and an immediate delete.
++static bool Bc5P1SemUaf() {
++	return BC5_P1("KYTY_BC5_P1_SEMA_UAF");
++}
++
++class SemRef {
++public:
++	SemRef() = default;
++	SemRef(PosixSemPrivate* p, bool counted): m_p(p), m_counted(counted) {}
++	SemRef(const SemRef&)            = delete;
++	SemRef& operator=(const SemRef&) = delete;
++	SemRef(SemRef&& o) noexcept: m_p(o.m_p), m_counted(o.m_counted) { o.m_p = nullptr; }
++	~SemRef() {
++		if (m_p != nullptr && m_counted) {
++			m_p->m_bc5_users.fetch_sub(1, std::memory_order_acq_rel);
++		}
++	}
++	PosixSemPrivate* operator->() const { return m_p; }
++	bool             operator==(std::nullptr_t) const { return m_p == nullptr; }
++	bool             operator!=(std::nullptr_t) const { return m_p != nullptr; }
++
++private:
++	PosixSemPrivate* m_p       = nullptr;
++	bool             m_counted = false;
++};
++
++static void Bc5RetireSem(PosixSemPrivate* obj) {
++	if (obj == nullptr) {
++		return;
++	}
++	if (Bc5P1SemUaf()) {
++		obj->Bc5MarkDestroyed();
++		while (obj->m_bc5_users.load(std::memory_order_acquire) != 0) {
++			Common::Thread::SleepMicro(10);
++		}
++	}
++	delete obj;
++}
++
++static SemRef GetSem(void* sem) {
+ 	if (sem == nullptr) {
+-		return nullptr;
++		return {};
+ 	}
+ 
+ 	Common::LockGuard lock(g_posix_sem_mutex);
+ 
+ 	const auto it = g_posix_sems.find(static_cast<PosixSemGuest*>(sem));
+-	return (it != g_posix_sems.end() ? it->second : nullptr);
++	if (it == g_posix_sems.end()) {
++		return {};
++	}
++	const bool counted = Bc5P1SemUaf();
++	if (counted) {
++		it->second->m_bc5_users.fetch_add(1, std::memory_order_acq_rel);
++	}
++	return {it->second, counted};
+ }
+ 
+ static int SetErrnoReturn(int posix_errno) {
+@@ -618,16 +689,22 @@ static int SemInitImpl(void* sem, int pshared, unsigned int value, const char* n
+ 	auto* guest = static_cast<PosixSemGuest*>(sem);
+ 	auto* obj   = new PosixSemPrivate(guest, value, static_cast<uint32_t>(pshared));
+ 
++	PosixSemPrivate* bc5_old = nullptr; // ports pack 1, A6: a re-initialised object is retired outside the map lock
+ 	{
+ 		Common::LockGuard lock(g_posix_sem_mutex);
+ 
+ 		if (auto it = g_posix_sems.find(guest); it != g_posix_sems.end()) {
+-			delete it->second;
++			if (Bc5P1SemUaf()) {
++				bc5_old = it->second;
++			} else {
++				delete it->second;
++			}
+ 			it->second = obj;
+ 		} else {
+ 			g_posix_sems.insert({guest, obj});
+ 		}
+ 	}
++	Bc5RetireSem(bc5_old);
+ 
+ 	static std::atomic<uint32_t> log_count {0};
+ 	const auto                   count = log_count.fetch_add(1);
+@@ -659,7 +736,7 @@ static int SemDestroyImpl(void* sem) {
+ 		g_posix_sems.erase(it);
+ 	}
+ 
+-	delete obj;
++	Bc5RetireSem(obj); // ports pack 1, A6: with the switch off, a plain delete as before
+ 	guest->magic       = 0;
+ 	guest->has_waiters = 0;
+ 	guest->count       = 0;
+@@ -669,7 +746,7 @@ static int SemDestroyImpl(void* sem) {
+ }
+ 
+ static int SemTimedwaitImpl(void* sem, uint32_t* micros) {
+-	auto* obj = GetSem(sem);
++	auto obj = GetSem(sem);
+ 	if (obj == nullptr) {
+ 		return POSIX_EINVAL;
+ 	}
+@@ -725,7 +802,7 @@ int KYTY_SYSV_ABI sem_wait(void* sem) {
+ }
+ 
+ int KYTY_SYSV_ABI sem_trywait(void* sem) {
+-	auto* obj = GetSem(sem);
++	auto obj = GetSem(sem);
+ 	if (obj == nullptr) {
+ 		return SetErrnoReturn(POSIX_EINVAL);
+ 	}
+@@ -750,7 +827,7 @@ int KYTY_SYSV_ABI sem_timedwait(void* sem, const LibKernel::KernelTimespec* abst
+ }
+ 
+ int KYTY_SYSV_ABI sem_post(void* sem) {
+-	auto* obj = GetSem(sem);
++	auto obj = GetSem(sem);
+ 	if (obj == nullptr) {
+ 		return SetErrnoReturn(POSIX_EINVAL);
+ 	}
+@@ -760,7 +837,7 @@ int KYTY_SYSV_ABI sem_post(void* sem) {
+ }
+ 
+ int KYTY_SYSV_ABI sem_getvalue(void* sem, int* value) {
+-	auto* obj = GetSem(sem);
++	auto obj = GetSem(sem);
+ 	if (obj == nullptr || value == nullptr) {
+ 		return SetErrnoReturn(POSIX_EINVAL);
+ 	}
+@@ -798,7 +875,7 @@ int KYTY_SYSV_ABI PthreadSemWait(void* sem) {
+ }
+ 
+ int KYTY_SYSV_ABI PthreadSemTrywait(void* sem) {
+-	auto* obj = Posix::GetSem(sem);
++	auto obj = Posix::GetSem(sem);
+ 	if (obj == nullptr) {
+ 		return KERNEL_ERROR_EINVAL;
+ 	}
+@@ -814,7 +891,7 @@ int KYTY_SYSV_ABI PthreadSemTimedwait(void* sem, KernelUseconds usec) {
+ }
+ 
+ int KYTY_SYSV_ABI PthreadSemPost(void* sem) {
+-	auto* obj = Posix::GetSem(sem);
++	auto obj = Posix::GetSem(sem);
+ 	if (obj == nullptr) {
+ 		return KERNEL_ERROR_EINVAL;
+ 	}
+@@ -824,7 +901,7 @@ int KYTY_SYSV_ABI PthreadSemPost(void* sem) {
+ }
+ 
+ int KYTY_SYSV_ABI PthreadSemGetvalue(void* sem, int* value) {
+-	auto* obj = Posix::GetSem(sem);
++	auto obj = Posix::GetSem(sem);
+ 	if (obj == nullptr || value == nullptr) {
+ 		return KERNEL_ERROR_EINVAL;
+ 	}
+diff --git a/src/libs/ajm.cpp b/src/libs/ajm.cpp
+index 8ab204f..0d2f482 100644
+--- a/src/libs/ajm.cpp
++++ b/src/libs/ajm.cpp
+@@ -1,5 +1,6 @@
+ #include <map>
+ #include "common/assert.h"
++#include "bc5/ports_pack1.hpp" // ports pack 1: R2a
+ #include "common/common.h"
+ #include "common/logging/log.h"
+ #include "libs/audio.h"
+@@ -829,6 +830,20 @@ static AjmDecodeResult AjmControlInstance(uint32_t instance, uint64_t flags,
+ 	}
+ 
+ 	AjmDecodeResult result = decoder->MakeResult();
++	// ports pack 1, R2a (exp 0405 R2 KA04; KytyPS5 2e315a3c, GPL-2.0, ajm.cpp:660-669): a control job that carries the
++	// gapless sideband has it FIRST in its input: it is taken as the gapless setting and skipped, so the codec's
++	// initialize parameters start after it. Before, the gapless bytes were handed to Initialize as codec parameters.
++	// Before the pack: the whole input goes to Initialize as before.
++	if ((flags & AJM_FLAG_SIDEBAND_GAPLESS) != 0 && BC5_P1("KYTY_BC5_P1_AJM_GAPLESS")) {
++		if (sideband_input == nullptr || sideband_input_size < AJM_SIDEBAND_GAPLESS_SIZE) {
++			result.result = AJM_RESULT_INVALID_PARAMETER;
++			return result;
++		}
++		state->gapless.Set(*static_cast<const AjmSidebandGaplessDecode*>(sideband_input),
++		                   (flags & AJM_FLAG_CONTROL_RESET) != 0);
++		sideband_input = static_cast<const uint8_t*>(sideband_input) + AJM_SIDEBAND_GAPLESS_SIZE;
++		sideband_input_size -= AJM_SIDEBAND_GAPLESS_SIZE;
++	}
+ 	if ((flags & AJM_FLAG_CONTROL_RESET) != 0) {
+ 		state->gapless.Reset();
+ 		decoder->Reset();
+@@ -844,6 +859,17 @@ static AjmDecodeResult AjmControlInstance(uint32_t instance, uint64_t flags,
+ 
+ static AjmDecodeResult AjmSetGaplessDecode(uint32_t instance, const void* gapless_decode,
+                                            int reset) {
++	// ports pack 1, R2a (KytyPS5 1cc0ac7e, GPL-2.0, ajm.cpp:683-688): set-gapless goes through the control path, so a
++	// reset also resets the decoder, as a control reset does. Before the pack: the gapless state only.
++	if (BC5_P1("KYTY_BC5_P1_AJM_GAPLESS")) {
++		if (gapless_decode == nullptr) {
++			AjmDecodeResult result {};
++			result.result = AJM_RESULT_INVALID_PARAMETER;
++			return result;
++		}
++		const auto flags = AJM_FLAG_SIDEBAND_GAPLESS | (reset != 0 ? AJM_FLAG_CONTROL_RESET : 0);
++		return AjmControlInstance(instance, flags, gapless_decode, sizeof(AjmSidebandGaplessDecode), nullptr, nullptr);
++	}
+ 	std::scoped_lock lock(g_ajm_instances_mutex);
+ 	auto*            state = AjmFindInstanceLocked(instance);
+ 	if (state == nullptr || state->decoder == nullptr || gapless_decode == nullptr) {
+diff --git a/src/libs/controller.cpp b/src/libs/controller.cpp
+index d466218..8caaa73 100644
+--- a/src/libs/controller.cpp
++++ b/src/libs/controller.cpp
+@@ -1,4 +1,5 @@
+ #include "bc5/env_rule.hpp" // exp 0419 (build W): BC5_DIAG_ENV, BC5_FIXED_ENV, BC5_LEAN_OR
++#include "bc5/ports_pack1.hpp" // ports pack 1: C
+ #include "bc5/load_stat.hpp" // experiment 0415 (ls415)
+ #include <pthread.h>
+ #include "libs/controller.h"
+@@ -1303,6 +1304,11 @@ int KYTY_SYSV_ABI PadReadState(int handle, PadData* data) {
+ int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
+ 	PRINT_NAME();
+ 
++	// ports pack 1, C (AnyPS5 6843151af3, core/libs/prx/libScePad/Export.cpp scePadRead, l. 412): the arguments are checked before
++	// the handle, and a null output or a count outside 1..64 is PAD_ERROR_INVALID_ARG, not a host exit.
++	if ((data == nullptr || num < 1 || num > 64) && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) {
++		return PAD_ERROR_INVALID_ARG;
++	}
+ 	EXIT_NOT_IMPLEMENTED(num < 1 || num > 64);
+ 	if (ControllerIndexFromHandle(handle) < 0) {
+ 		return PAD_ERROR_INVALID_HANDLE;
+diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
+index 4163fe4..813eb8c 100644
+--- a/src/libs/libAmpr.cpp
++++ b/src/libs/libAmpr.cpp
+@@ -1,4 +1,5 @@
+ #include "bc5/env_rule.hpp" // exp 0419: the one reading rule
++#include "bc5/ports_pack1.hpp" // ports pack 1: K1, B1
+ #include <atomic>
+ #include <ctime>
+ #include "common/abi.h"
+@@ -163,6 +164,9 @@ static std::condition_variable                           g_submission_cv; // BC5
+ static std::unordered_map<uint32_t, std::string>         g_files;
+ static std::unordered_map<uint32_t, uint64_t>            g_file_sizes;
+ static std::unordered_map<std::string, ResolvedPathInfo> g_resolved_paths;
++// ports pack 1, K1: the next counter file id, and the first guest path seen for each path hash (for the collision log)
++static uint32_t                                          g_bc5_next_file_id = 1;
++static std::unordered_map<uint32_t, std::string>         g_bc5_hash_paths;
+ 
+ static bool IsValidGuestRange(uint64_t addr, uint64_t size, bool write = false) {
+ 	(void)write;
+@@ -447,14 +451,33 @@ static int ResolveOnePath(const char* guest_path, uint32_t* id, uint64_t* size)
+ 			info.result = LibKernel::KERNEL_ERROR_ENOENT;
+ 		}
+ 
+-		bool log_missing = false;
++		bool        log_missing = false;
++		std::string bc5_collides_with; // ports pack 1, K1: the earlier path with the same hash, if any
+ 		{
+ 			std::scoped_lock lock(g_mutex);
+ 			auto [it, inserted] = g_resolved_paths.emplace(path, info);
+ 			if (!inserted) {
+ 				info = it->second;
+ 			} else if (info.result == OK) {
+-				RegisterHostPathLocked(info.file_id, info.host_path, info.file_size, info.is_dir);
++				// ports pack 1, K1 (KytyPS5 e43aadf7, GPL-2.0, libAmpr.cpp:214-221): the file id comes from a counter,
++				// allocated once per resolved path under the cache lock. The 31-bit FNV-1a hash of the guest path let
++				// two paths share an id, and the second overwrote the first's entry in g_files, so APR read the wrong
++				// file. BC5 change: ids stay below 2^31 (as the hash ids were), and a hash collision is logged in both
++				// modes, so a run shows whether the old id would have collided. Before the pack: the hash id.
++				const auto bc5_h = g_bc5_hash_paths.emplace(info.file_id, path);
++				if (!bc5_h.second && bc5_h.first->second != path) {
++					bc5_collides_with = bc5_h.first->second;
++				}
++				if (BC5_P1("KYTY_BC5_P1_APR_FILE_ID")) {
++					if (g_bc5_next_file_id >= static_cast<uint32_t>(std::numeric_limits<int32_t>::max())) {
++						info.result = it->second.result = LibKernel::KERNEL_ERROR_ENFILE;
++					} else {
++						info.file_id = it->second.file_id = g_bc5_next_file_id++;
++					}
++				}
++				if (info.result == OK) {
++					RegisterHostPathLocked(info.file_id, info.host_path, info.file_size, info.is_dir);
++				}
+ 			} else if (info.result == LibKernel::KERNEL_ERROR_ENOENT) {
+ 				log_missing = true;
+ 			}
+@@ -462,6 +485,11 @@ static int ResolveOnePath(const char* guest_path, uint32_t* id, uint64_t* size)
+ 		if (log_missing) {
+ 			LOGF("\tAPR resolve missing path: %s -> %s\n", guest_path, info.host_path.c_str());
+ 		}
++		if (!bc5_collides_with.empty()) {
++			std::fprintf(stderr, "[bc5] ports pack 1 K1: APR path hash 0x%08x shared by %s and %s; %s\n", AprShared::ComputeFileId(guest_path),
++			             bc5_collides_with.c_str(), guest_path,
++			             BC5_P1("KYTY_BC5_P1_APR_FILE_ID") ? "counter ids keep them apart" : "the second OVERWRITES the first (hash ids)");
++		}
+ 	} else if (info.result == OK) {
+ 		AprShared::RegisterHostPath(info.file_id, info.host_path, info.file_size, info.is_dir);
+ 	}
+@@ -614,6 +642,16 @@ static int WriteResult(void* result, int32_t execution_result = 0, uint32_t erro
+ 	return OK;
+ }
+ 
++// ports pack 1, B1 (AnyPS5 23a0020ab1, GPL-2.0, core/libs/prx/libkernel/Apr/src/Apr.cpp:827-834 and _submitGuest): the
++// submission id and the "submitted" result are written to the guest BEFORE the commands are queued. They were written
++// after ExecuteAprCommandBuffer returned, when the worker could already have run the buffer and written the real result
++// (or the buffer itself wrote that memory), which the late write then overwrote. After the submit, the result is
++// written again only when the submit itself failed or reported an error (then the worker did not run it).
++// Before the pack: the old order.
++static bool Bc5P1ResultFirst() {
++	return BC5_P1("KYTY_BC5_P1_AMPR_RESULT");
++}
++
+ } // namespace AprShared
+ 
+ namespace LibAmpr::Ampr {
+@@ -800,11 +838,27 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
+ 
+ 	int32_t  execution_result = OK;
+ 	uint32_t error_offset     = 0;
++	const bool bc5_first      = AprShared::Bc5P1ResultFirst(); // ports pack 1, B1
++	if (bc5_first) {
++		if (out_submission_id != nullptr && !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
++			return KernelSyscallResult(LibKernel::KERNEL_ERROR_EFAULT);
++		}
++		const int pre = AprShared::WriteResult(result, OK, 0);
++		if (pre != OK) {
++			return KernelSyscallResult(pre);
++		}
++	}
+ 	auto submit_result = LibAmpr::Ampr::ExecuteAprCommandBuffer(command_buffer_addr,
+ 	                                                            &execution_result, &error_offset, static_cast<uint32_t>(priority), id, reinterpret_cast<uint64_t>(result));
+ 	if (submit_result != OK) {
+ 		return KernelSyscallResult(submit_result);
+ 	}
++	if (bc5_first) {
++		if (execution_result == OK && error_offset == 0) {
++			return OK;
++		}
++		return KernelSyscallResult(AprShared::WriteResult(result, execution_result, error_offset));
++	}
+ 
+ 	if (out_submission_id != nullptr) {
+ 		if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
+@@ -842,13 +896,17 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetId(void*     command_buffer, u
+ 
+ 	int32_t  execution_result = OK;
+ 	uint32_t error_offset     = 0;
++	const bool bc5_first      = AprShared::Bc5P1ResultFirst(); // ports pack 1, B1
++	if (bc5_first && !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
++		return KernelSyscallResult(LibKernel::KERNEL_ERROR_EFAULT);
++	}
+ 	auto submit_result = LibAmpr::Ampr::ExecuteAprCommandBuffer(command_buffer_addr,
+ 	                                                            &execution_result, &error_offset, static_cast<uint32_t>(priority), id, 0);
+ 	if (submit_result != OK) {
+ 		return KernelSyscallResult(submit_result);
+ 	}
+ 
+-	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
++	if (!bc5_first && !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
+ 		return KernelSyscallResult(LibKernel::KERNEL_ERROR_EFAULT);
+ 	}
+ 
+@@ -4244,13 +4302,17 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
+ 
+ 	int32_t  execution_result = OK;
+ 	uint32_t error_offset     = 0;
++	const bool bc5_first      = AprShared::Bc5P1ResultFirst(); // ports pack 1, B1
++	if (bc5_first && !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
++		return LibKernel::KERNEL_ERROR_EFAULT;
++	}
+ 	auto     submit_result =
+ 	    ExecuteAprCommandBuffer(command_buffer_addr, &execution_result, &error_offset, 0, id, 0);
+ 	if (submit_result != OK) {
+ 		return submit_result;
+ 	}
+ 
+-	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
++	if (!bc5_first && !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
+ 		return LibKernel::KERNEL_ERROR_EFAULT;
+ 	}
+ 
+@@ -4272,11 +4334,27 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
+ 
+ 	int32_t  execution_result = OK;
+ 	uint32_t error_offset     = 0;
++	const bool bc5_first      = AprShared::Bc5P1ResultFirst(); // ports pack 1, B1
++	if (bc5_first) {
++		if (out_submission_id != nullptr && !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
++			return LibKernel::KERNEL_ERROR_EFAULT;
++		}
++		const int pre = AprShared::WriteResult(result, OK, 0);
++		if (pre != OK) {
++			return pre;
++		}
++	}
+ 	auto     submit_result =
+ 	    ExecuteAprCommandBuffer(command_buffer_addr, &execution_result, &error_offset, 0, id, reinterpret_cast<uint64_t>(result));
+ 	if (submit_result != OK) {
+ 		return submit_result;
+ 	}
++	if (bc5_first) {
++		if (execution_result == OK && error_offset == 0) {
++			return OK;
++		}
++		return AprShared::WriteResult(result, execution_result, error_offset);
++	}
+ 
+ 	if (out_submission_id != nullptr &&
+ 	    !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
+diff --git a/src/libs/libAppContent.cpp b/src/libs/libAppContent.cpp
+index 4c8ad53..ad890e2 100644
+--- a/src/libs/libAppContent.cpp
++++ b/src/libs/libAppContent.cpp
+@@ -1,3 +1,4 @@
++#include "bc5/ports_pack1.hpp" // ports pack 1: C
+ #include "common/abi.h"
+ #include "common/assert.h"
+ #include "common/common.h"
+@@ -104,6 +105,11 @@ int KYTY_SYSV_ABI AppContentInitialize(const AppContentInitParam* init_param,
+ int KYTY_SYSV_ABI AppContentAppParamGetInt(uint32_t param_id, int32_t* value) {
+ 	PRINT_NAME();
+ 
++	// ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceAppContent/Export.cpp:270-283, sceAppContentAppParamGetInt):
++	// a null output or an unknown param_id is APP_CONTENT_ERROR_PARAMETER, not a host exit.
++	if (value == nullptr && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) {
++		return APP_CONTENT_ERROR_PARAMETER;
++	}
+ 	EXIT_NOT_IMPLEMENTED(value == nullptr);
+ 
+ 	*value     = 0;
+@@ -120,7 +126,11 @@ int KYTY_SYSV_ABI AppContentAppParamGetInt(uint32_t param_id, int32_t* value) {
+ 		case 2: found = Loader::SystemContentParamSfoGetInt("USER_DEFINED_PARAM_2", value); break;
+ 		case 3: found = Loader::SystemContentParamSfoGetInt("USER_DEFINED_PARAM_3", value); break;
+ 		case 4: found = Loader::SystemContentParamSfoGetInt("USER_DEFINED_PARAM_4", value); break;
+-		default: EXIT("unknown param_id: %u\n", param_id);
++		default:
++			if (BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 Export.cpp:281-282)
++				return APP_CONTENT_ERROR_PARAMETER;
++			}
++			EXIT("unknown param_id: %u\n", param_id);
+ 	}
+ 
+ 	LOGF("\t value    = %d [%s]\n", *value, found ? "found" : "not found");
+diff --git a/src/libs/libSaveData.cpp b/src/libs/libSaveData.cpp
+index 921cb85..7ac2544 100644
+--- a/src/libs/libSaveData.cpp
++++ b/src/libs/libSaveData.cpp
+@@ -1,4 +1,5 @@
+ #include "bc5/env_rule.hpp" // exp 0419 (build W): BC5_DIAG_ENV, BC5_FIXED_ENV, BC5_LEAN_OR
++#include "bc5/ports_pack1.hpp" // ports pack 1: C
+ #include "common/abi.h"
+ #include "common/assert.h"
+ #include "common/common.h"
+@@ -1069,6 +1070,11 @@ int KYTY_SYSV_ABI SaveDataMount3(const SaveDataMount3* mount, SaveDataMountResul
+ 	PRINT_NAME();
+ 	sg412::Op sg_op(sg412::kLib, true); // exp 0412 (tag sg412)
+ 
++	// ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceSaveData.native/Export.cpp:1336-1339, mount3):
++	// a null request, result or dir_name is SAVE_DATA_ERROR_PARAMETER, not a host exit.
++	if ((mount == nullptr || mount_result == nullptr || mount->dir_name == nullptr) && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) {
++		return SAVE_DATA_ERROR_PARAMETER;
++	}
+ 	EXIT_NOT_IMPLEMENTED(mount == nullptr);
+ 	EXIT_NOT_IMPLEMENTED(mount_result == nullptr);
+ 	EXIT_NOT_IMPLEMENTED(mount->dir_name == nullptr);
+@@ -1903,6 +1909,9 @@ int KYTY_SYSV_ABI SaveDataBackup(const SaveDataBackup* backup) {
+ 
+ int KYTY_SYSV_ABI SaveDataSetParam(const SaveDataMountPoint* mount_point, uint32_t param_type,
+                                    const void* param_buf, size_t param_buf_size) {
++	if (mount_point == nullptr && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceSaveData.native/Export.cpp:1534-1538, setParam)
++		return SAVE_DATA_ERROR_PARAMETER;
++	}
+ 	PRINT_NAME();
+ 	sg412::Op sg_op(mount_point != nullptr ? sg412::slot_of(mount_point->data) : sg412::kNone, true); // a part of the save on that mount // exp 0412 (tag sg412)
+ 
+@@ -1946,6 +1955,9 @@ int KYTY_SYSV_ABI SaveDataGetMountInfo(const SaveDataMountPoint* mount_point,
+                                        SaveDataMountInfo*        info) {
+ 	PRINT_NAME();
+ 
++	if ((mount_point == nullptr || info == nullptr) && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceSaveData.native/Export.cpp:1138-1142, getMountInfo)
++		return SAVE_DATA_ERROR_PARAMETER;
++	}
+ 	EXIT_NOT_IMPLEMENTED(mount_point == nullptr);
+ 	EXIT_NOT_IMPLEMENTED(info == nullptr);
+ 
+@@ -1970,6 +1982,9 @@ int KYTY_SYSV_ABI SaveDataGetMountInfo(const SaveDataMountPoint* mount_point,
+ 
+ int KYTY_SYSV_ABI SaveDataSaveIcon(const SaveDataMountPoint* mount_point,
+                                    const SaveDataIcon*       icon) {
++	if ((mount_point == nullptr || icon == nullptr) && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceSaveData.native/Export.cpp:1458-1462, sceSaveDataSaveIcon)
++		return SAVE_DATA_ERROR_PARAMETER;
++	}
+ 	EXIT_NOT_IMPLEMENTED(mount_point == nullptr);
+ 	EXIT_NOT_IMPLEMENTED(icon == nullptr);
+ 
+diff --git a/src/libs/libSysmodule.cpp b/src/libs/libSysmodule.cpp
+index ac032db..bd5682a 100644
+--- a/src/libs/libSysmodule.cpp
++++ b/src/libs/libSysmodule.cpp
+@@ -1,3 +1,4 @@
++#include "bc5/ports_pack1.hpp" // ports pack 1: C
+ #include "common/abi.h"
+ #include "common/assert.h"
+ #include "common/common.h"
+@@ -44,6 +45,15 @@ static KYTY_SYSV_ABI int SysmoduleLoadModuleInternalWithArg(uint16_t id, int arg
+ 
+ 	LOGF("\t id = %d\n", static_cast<int>(id));
+ 
++	// ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceSysmodule/Export.cpp:272-293; f118d640a4, 4694459914): the
++	// call is (id, argc, argv, unk, ret); the three middle arguments are ignored (argv is a pointer, so "arg2 != 0" ended
++	// the host on any real argv) and a null ret is allowed.
++	if (BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) {
++		if (ret != nullptr) {
++			*ret = 0;
++		}
++		return 0;
++	}
+ 	EXIT_IF(arg1 != 0);
+ 	EXIT_IF(arg2 != 0);
+ 	EXIT_IF(arg3 != 0);
+diff --git a/src/libs/libUserService.cpp b/src/libs/libUserService.cpp
+index 9e54d3c..fc7dbc9 100644
+--- a/src/libs/libUserService.cpp
++++ b/src/libs/libUserService.cpp
+@@ -1,3 +1,4 @@
++#include "bc5/ports_pack1.hpp" // ports pack 1: C
+ #include "common/abi.h"
+ #include "common/assert.h"
+ #include "common/stringUtils.h"
+@@ -161,6 +162,9 @@ static KYTY_SYSV_ABI int UserServiceInitialize2() {
+ static KYTY_SYSV_ABI int UserServiceGetInitialUser(int* user_id) {
+ 	PRINT_NAME();
+ 
++	if (user_id == nullptr && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceUserService/Export.cpp:417-420, sceUserServiceGetInitialUser)
++		return USER_SERVICE_ERROR_INVALID_ARGUMENT;
++	}
+ 	EXIT_NOT_IMPLEMENTED(user_id == nullptr);
+ 
+ 	*user_id = 1000;
+@@ -171,6 +175,9 @@ static KYTY_SYSV_ABI int UserServiceGetInitialUser(int* user_id) {
+ static KYTY_SYSV_ABI int UserServiceGetEvent(SceUserServiceEvent* event) {
+ 	PRINT_NAME();
+ 
++	if (event == nullptr && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceUserService/Export.cpp:377-384; 992ca46b3e, sceUserServiceGetEvent)
++		return USER_SERVICE_ERROR_INVALID_ARGUMENT;
++	}
+ 	EXIT_NOT_IMPLEMENTED(event == nullptr);
+ 
+ 	static int next_user = 0;
+@@ -187,6 +194,9 @@ static KYTY_SYSV_ABI int UserServiceGetEvent(SceUserServiceEvent* event) {
+ static KYTY_SYSV_ABI int UserServiceGetLoginUserIdList(UserServiceLoginUserIdList* user_id_list) {
+ 	PRINT_NAME();
+ 
++	if (user_id_list == nullptr && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceUserService/Export.cpp:431-438, sceUserServiceGetLoginUserIdList)
++		return USER_SERVICE_ERROR_INVALID_ARGUMENT;
++	}
+ 	EXIT_NOT_IMPLEMENTED(user_id_list == nullptr);
+ 
+ 	// KytyPlus reported every local player (1000..1003) as logged in so a local-multiplayer
+@@ -210,6 +220,23 @@ static KYTY_SYSV_ABI int UserServiceGetUserName(int user_id, char* name, size_t
+ 	if (Bc5UserValue(BC5_USER_NAME)) { // BC5 experiment 0405 (KYTY_BC5_USERSERVICE_VALUES "name"); today's path when off
+ 		return Bc5UserServiceGetUserName(user_id, name, size);
+ 	}
++	// ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceUserService/Export.cpp:456-472, sceUserServiceGetUserName):
++	// a null name -> INVALID_ARGUMENT, an unknown user -> UNKNOWN_USER (0x80960105, AnyPS5 UserService.hpp:26), a short
++	// buffer -> BUFFER_TOO_SHORT (AnyPS5 also zero-fills the short buffer first; done here too).
++	if (BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) {
++		if (name == nullptr) {
++			return USER_SERVICE_ERROR_INVALID_ARGUMENT;
++		}
++		if (!IsLocalUser(user_id)) {
++			return static_cast<int>(0x80960105u); // USER_SERVICE_ERROR_UNKNOWN_USER
++		}
++		if (size < 5) {
++			if (size > 0) {
++				std::memset(name, 0, size);
++			}
++			return USER_SERVICE_ERROR_BUFFER_TOO_SHORT;
++		}
++	}
+ 	EXIT_NOT_IMPLEMENTED(!IsLocalUser(user_id));
+ 	EXIT_NOT_IMPLEMENTED(size < 5);
+ 
+@@ -217,6 +244,10 @@ static KYTY_SYSV_ABI int UserServiceGetUserName(int user_id, char* name, size_t
+ 
+ 	int s = snprintf(name, size, "Kyty-%d", player);
+ 
++	if (static_cast<size_t>(s) >= size && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C: "Kyty-N" cut short
++		std::memset(name, 0, size);
++		return USER_SERVICE_ERROR_BUFFER_TOO_SHORT;
++	}
+ 	EXIT_NOT_IMPLEMENTED(static_cast<size_t>(s) >= size);
+ 
+ 	return OK;
+diff --git a/src/libs/network.cpp b/src/libs/network.cpp
+index 4544b83..ae2ac2e 100644
+--- a/src/libs/network.cpp
++++ b/src/libs/network.cpp
+@@ -1,5 +1,6 @@
+ #include "bc5/env_rule.hpp" // exp 0419 (build W): BC5_DIAG_ENV, BC5_FIXED_ENV, BC5_LEAN_OR
+ #include "bc5/load_stat.hpp" // experiment 0415 (ls415)
++#include "bc5/ports_pack1.hpp" // ports pack 1: C
+ #if defined(_WIN32)
+ #ifndef WIN32_LEAN_AND_MEAN
+ #define WIN32_LEAN_AND_MEAN
+@@ -4417,6 +4418,11 @@ int KYTY_SYSV_ABI NpCheckCallback() {
+ int KYTY_SYSV_ABI NpSetNpTitleId(const NpTitleId* title_id, const NpTitleSecret* title_secret) {
+ 	PRINT_NAME();
+ 
++	// ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceNpManager/Export.cpp:1227-1231, sceNpSetNpTitleId
++	// ignores both pointers and returns 0): a null title id or secret is accepted, not a host exit.
++	if ((title_id == nullptr || title_secret == nullptr) && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) {
++		return OK;
++	}
+ 	EXIT_NOT_IMPLEMENTED(title_id == nullptr);
+ 	EXIT_NOT_IMPLEMENTED(title_secret == nullptr);
+ 
+@@ -4430,6 +4436,22 @@ int KYTY_SYSV_ABI NpSetNpTitleId(const NpTitleId* title_id, const NpTitleSecret*
+ int KYTY_SYSV_ABI NpSetContentRestriction(const NpContentRestriction* restriction) {
+ 	PRINT_NAME();
+ 
++	// ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceNpManager/Export.cpp:1211-1224; 1348566b9c, 5f850765f7,
++	// 7dbef20608, c8c5930575): null -> INVALID_ARGUMENT, a wrong size -> INVALID_SIZE, a negative age or a count outside
++	// 0..0x100 or a null array with count > 0 -> INVALID_ARGUMENT (the loop below read through the null array).
++	if (BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) {
++		if (restriction == nullptr) {
++			return np_error_invalid_argument;
++		}
++		if (restriction->size != sizeof(NpContentRestriction)) {
++			return np_error_invalid_size;
++		}
++		if (restriction->default_age_restriction < 0 || restriction->age_restriction_count < 0 ||
++		    restriction->age_restriction_count > 0x100 ||
++		    (restriction->age_restriction_count > 0 && restriction->age_restriction == nullptr)) {
++			return np_error_invalid_argument;
++		}
++	}
+ 	EXIT_NOT_IMPLEMENTED(restriction == nullptr);
+ 	EXIT_NOT_IMPLEMENTED(restriction->size != sizeof(NpContentRestriction));
+ 
+@@ -4573,6 +4595,9 @@ int KYTY_SYSV_ABI NpGetNpId(int user_id, NpId* np_id) {
+ 
+ 	LOGF("\t user_id = %d\n", user_id);
+ 
++	if (np_id == nullptr && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceNpManager/Export.cpp:1090-1092, sceNpGetNpId)
++		return np_error_invalid_argument;
++	}
+ 	EXIT_NOT_IMPLEMENTED(np_id == nullptr);
+ 
+ 	// int s = snprintf(np_id->handle.data, 16, "Kyty");
+@@ -4589,6 +4614,9 @@ int KYTY_SYSV_ABI NpGetOnlineId(int user_id, NpOnlineId* online_id) {
+ 
+ 	LOGF("\t user_id = %d\n", user_id);
+ 
++	if (online_id == nullptr && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceNpManager/Export.cpp:1103-1105, sceNpGetOnlineId)
++		return np_error_invalid_argument;
++	}
+ 	EXIT_NOT_IMPLEMENTED(online_id == nullptr);
+ 
+ 	// int s = snprintf(online_id->data, 16, "Kyty");
+@@ -4605,6 +4633,9 @@ int KYTY_SYSV_ABI NpGetAccountIdA(int user_id, uint64_t* account_id) {
+ 
+ 	LOGF("\t user_id = %d\n", user_id);
+ 
++	if (account_id == nullptr && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceNpManager/Export.cpp:1085-1087, sceNpGetAccountIdA)
++		return np_error_invalid_argument;
++	}
+ 	EXIT_NOT_IMPLEMENTED(account_id == nullptr);
+ 
+ 	// *account_id = 0x00000000feedfaceull;
+@@ -4619,6 +4650,9 @@ int KYTY_SYSV_ABI NpGetAccountCountryA(int user_id, void* country_code) {
+ 
+ 	LOGF("\t user_id = %d\n", user_id);
+ 
++	if (country_code == nullptr && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceNpManager/Export.cpp:1076-1077, sceNpGetAccountCountryA)
++		return np_error_invalid_argument;
++	}
+ 	EXIT_NOT_IMPLEMENTED(country_code == nullptr);
+ 
+ 	auto* code = static_cast<NpCountryCode*>(country_code);
+@@ -4847,6 +4881,9 @@ int KYTY_SYSV_ABI NpCheckPremium(int req_id, const NpCheckPremiumParameter* para
+ int KYTY_SYSV_ABI NpGetState(int user_id, uint32_t* state) {
+ 	PRINT_NAME();
+ 
++	if (state == nullptr && BC5_P1("KYTY_BC5_P1_FATAL_TO_ERROR")) { // ports pack 1, C (AnyPS5 c55fb36d57 core/libs/prx/libSceNpManager/Export.cpp:1108-1110, sceNpGetState)
++		return np_error_invalid_argument;
++	}
+ 	EXIT_NOT_IMPLEMENTED(state == nullptr);
+ 
+ 	LOGF("\t user_id = %d\n", user_id);

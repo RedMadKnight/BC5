@@ -1,0 +1,188 @@
+== 2026-11-19 12:13:49 emulator 2026-11-19 12:13:33
+BC5_GC_MODE=direct
+BC5_DIRECT_JOURNAL=min
+BC5_DIRECT_LAZY_NAMES=orbis_user_malloc
+BC5_DIRECT_EAGER_NAMES=GpuGarlicMemory,GpuOnionMemory
+KYTY_GUEST_MEMORY_MB=13824
+SDL_JOYSTICK_DISABLE_UDEV=1
+SDL_VIDEODRIVER=wayland
+SHADPS4_SYSMODULES_PACK_DIR=/home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib
+PLAY_ARGS=
+KYTY_BC5_INPUT_CONFIG=/home/kjaniszewski/bc5-work/input.cfg
+BC5_DIRECT_FLIP_DEFER=1
+KYTY_BC5_INPUT_RECORD=/home/kjaniszewski/bc5-work/route-record.txt
+PLAY_CAPTURE=1
+[bc5] exp 0405: thread sync on (items: kk06,kk03,signalto,x87,kk07)
+[bc5] exp 0401: memory from param.json off: total 13824 MiB, flexible 328 MiB, direct 13496 MiB (param.json: flexible 328, cpu table 0, gpu table 0, amm table 0 MiB)
+[bc5] exp 0405: mem on (items: BC5_R3_MPROTECT_GAPS,BC5_R3_NULL_ARGS,BC5_R3_RELEASE_HOLES,BC5_R3_MUNMAP_HOLES,BC5_R3_FLEX_HINT,BC5_R3_DMQ_END,BC5_R3_EXEC_EINVAL,BC5_R3_QUERY_SIZE)
+[bc5] exp 0405: fs fixes on (items: kk04 sk04 blksize nametoolong kk10 sk05)
+[bc5] exp 0405: audioout checks off
+[bc5] exp 0405: audioin checks off
+[bc5] exp 0405: ngs2 rack fix off
+[bc5] exp 0405: fw audio on (items: pcmloop audio3d audio3dstrict ngs2 avplayer)
+[bc5] exp 0405: tables on (items: nptus,npparty,nppartner,npsnsfacebook,voice,screenshot,discmap,ulobjmgr,companionhttpd,companionutil,invitationdialog,webbrowserdialog,shareplay,gamelivestreaming,camera,usbd,hmd,vrtracker,move)
+[bc5] exp 0405: fw kernel on (items: notify)
+[bc5] exp 0405: jit shm on (items: create,alias,map,close)
+[bc5] exp 0405: posix return fixes on (items: unlink munmap mprotect trywrlock schedparam once)
+[bc5] exp 0405: http2 fixes off
+[bc5] exp 0405: json2 off
+[bc5] NpCppWebApi SessionManager V2 on (10 exports registered)
+[bc5] exp 0405: fw pad off
+[bc5] exp 0405: pad open ext off
+[bc5] exp 0405: fw-net on (items: rtc rudp resolver param400 npwebapi)
+[bc5] exp 0401: savedata fixes on
+[bc5] exp 0401: savedata event callback on
+[bc5] exp 0401: savedata sort on
+[bc5] exp 0405: savedata memory fixes off
+[bc5] exp 0405: savedata delete busy off
+[bc5] exp 0405: savedata aliases off
+[bc5] exp 0405: systemservice off
+[bc5] exp 0405: systemservice-params-7-1000 off
+[bc5] exp 0405: ult off
+[bc5] exp 0405: userservice off
+[bc5] exp 0405: equeue fixes on (items: kk02 sk03 g1 kk01)
+host menu: MangoHud control socket @bc5-mangohud-623843 connected
+host menu: MangoHud shown
+[bc5] exp 0405: tls fixes on (items: kl01 kl02)
+[bc5] exp 0412 ranges fast: on (tag mf412)
+[bc5] stubbed import #0x0: 304ooNZxWDY[Net_v1][Net_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x1: 9wO9XrMsNhc[Net_v1][Net_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x2: gvD1greCu0A[Net_v1][Net_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x3: zJGf8xjFnQE[Net_v1][Net_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x4: beRjXBn-z+o[Net_v1][Net_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x5: OXXX4mUk3uk[Net_v1][Net_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x6: CAbbX6BuQZ0[Rudp_v1][Rudp_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x7: OMYRTU0uc4w[Rudp_v1][Rudp_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x8: KaPL3fbTLCA[Rudp_v1][Rudp_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x9: szEVu+edXV4[Rudp_v1][Rudp_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0xa: l4SLBpKUDK4[Rudp_v1][Rudp_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0xb: 0yzYdZf0IwE[Rudp_v1][Rudp_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0xc: wIJsiqY+BMk[Rudp_v1][Rudp_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0xd: 3hBvwqEwqj8[Rudp_v1][Rudp_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0xe: rZqWV3eXgOA[Rudp_v1][Rudp_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0xf: hOnIlcGrO6g[NpWebApi2_v1][NpWebApi2_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x10: y7MgGX889Mo[VoiceChat_v1][VoiceChat_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x11: po9eImAEhY4[VoiceChat_v1][VoiceChat_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x12: 7bu++dneYUU[VoiceChat_v1][VoiceChat_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x13: eEMpsX1fGHU[VoiceChat_v1][VoiceChat_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x14: zbKF-ejbR0Q[VoiceChat_v1][VoiceChat_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x15: ajXKK3BOVc8[VoiceChat_v1][VoiceChat_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x16: 0rKMjtnMATU[VoiceChat_v1][VoiceChat_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x17: hR8-CKMl2JQ[VoiceChat_v1][VoiceChat_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x18: X3BWlTuErbk[VoiceChat_v1][VoiceChat_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x19: S+mOdmysfhw[VoiceChat_v1][VoiceChat_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x1a: Ptmkf9UnWBg[VoiceChat_v1][VoiceChat_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x1b: q75YGaxUT3s[VoiceChat_v1][VoiceChat_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x1c: sW3km27c12M[VoiceChat_v1][VoiceChat_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x1d: hpG+mR4EbpE[VoiceChat_v1][VoiceChat_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x1e: spdS-hedavE[VoiceChat_v1][VoiceChat_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x1f: j43P62s5SX4[VoiceChat_v1][VoiceChat_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x20: CscDZAFA5+c[VoiceChat_v1][VoiceChat_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x21: Zo52g0A1XDw[PlayerInvitationDialog_v1][PlayerInvitationDialog_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x22: aBuX0PX-T7I[NpSessionSignaling_v1][NpSessionSignaling_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x23: n1fn2KFeLDA[NpSessionSignaling_v1][NpSessionSignaling_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x24: r4XacqHvkn4[NpSessionSignaling_v1][NpSessionSignaling_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x25: yJw2m6UWDYU[NpSessionSignaling_v1][NpSessionSignaling_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x26: OTilStjd9L8[NpSessionSignaling_v1][NpSessionSignaling_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x27: tb3cZTCl8Ps[ContentExport_v1][ContentExport_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x28: FCygF4Ec4so[ContentExport_v1][ContentExport_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x29: AOWqIYsgVHs[ContentExport_v1][ContentExport_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x2a: +KDWny9Y-6k[ContentExport_v1][ContentExport_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x2b: nya-R5gDYhM[AudioIn_v1][AudioIn_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x2c: BohEAQ7DlUE[AudioIn_v1][AudioIn_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x2d: Jh6WbHhnI68[AudioIn_v1][AudioIn_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x2e: XKCN4gpeYsM[AudioPropagation_v1][AudioPropagation_v1.0][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x2f: VlBT16890mA[AudioPropagation_v1][AudioPropagation_v1.0][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x30: ZQXE-xS6MTE[AudioPropagation_v1][AudioPropagation_v1.0][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x31: 5vzOS2pHMFc[AudioPropagation_v1][AudioPropagation_v1.0][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x32: WXMhENV2NcA[AudioPropagation_v1][AudioPropagation_v1.0][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x33: b-dYXrjSNZU[AudioPropagation_v1][AudioPropagation_v1.0][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x34: S0JwP2AFTTE[AudioPropagation_v1][AudioPropagation_v1.0][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x35: x5VPqg5iyAk[AudioPropagation_v1][AudioPropagation_v1.0][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x36: d84otraxt2s[AudioPropagation_v1][AudioPropagation_v1.0][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x37: -wsUTr31yeg[AudioPropagation_v1][AudioPropagation_v1.0][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x38: aKJZx7wCma8[AudioPropagation_v1][AudioPropagation_v1.0][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x39: G+QLTfyLMYk[AudioPropagation_v1][AudioPropagation_v1.0][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x3a: wkseM3LWPuc[AudioPropagation_v1][AudioPropagation_v1.0][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x3b: hhz9pITnC8k[AudioPropagation_v1][AudioPropagation_v1.0][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x3c: eEeKqFeNI3o[AudioPropagation_v1][AudioPropagation_v1.0][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x3d: PBcrVpEqUVY[AudioPropagation_v1][AudioPropagation_v1.0][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x3e: mkgXxsoxWHg[libkernel_v1][libkernel_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x3f: BnMAMrsfVWo[libc_v1][libc_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x40: X+4jdIS75P0[AudioIn_v1][AudioIn_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x41: mUuUOWI-C+0[ConvertKeycode_v1][ConvertKeycode_v1.0][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x42: vIsoJsLvvlM[ConvertKeycode_v1][ConvertKeycode_v1.0][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x43: DOwXL+FQMEY[Ssl_v1][Ssl_v2.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x44: PDxS48xGQLs[Http_v1][Http_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/eboot.bin)
+[bc5] stubbed import #0x45: 5b3ZqlxJ+WE[libkernel_v1][libkernel_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib/libSceAmpr.sprx)
+[bc5] stubbed import #0x46: G-NhAZUNlwc[libkernel_v1][libkernel_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib/libSceAmpr.sprx)
+[bc5] stubbed import #0x47: 3M8jROcYzjs[libkernel_v1][libkernel_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib/libSceAmpr.sprx)
+[bc5] stubbed import #0x48: tNaDjIbVOwc[libkernel_v1][libkernel_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib/libSceAmpr.sprx)
+[bc5] stubbed import #0x49: VZPXaaxp9xc[libkernel_v1][libkernel_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib/libSceAmpr.sprx)
+[bc5] stubbed import #0x4a: G5tFhAqrCTg[libkernel_v1][libkernel_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib/libSceAmpr.sprx)
+[bc5] stubbed import #0x4b: sJrF-d2uL0Y[libkernel_v1][libkernel_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib/libSceAmpr.sprx)
+[bc5] stubbed import #0x4c: HYzkJb41fcE[libkernel_v1][libkernel_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib/libSceAmpr.sprx)
+[bc5] stubbed import #0x4d: B4xIPqeRONI[libkernel_v1][libkernel_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib/libSceAmpr.sprx)
+[bc5] stubbed import #0x4e: 2zLw9GwrtyI[libkernel_v1][libkernel_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib/libSceAmpr.sprx)
+[bc5] stubbed import #0x4f: hrEIwWDKm-w[libkernel_v1][libkernel_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib/libSceAmpr.sprx)
+[bc5] stubbed import #0x50: rm5-jOxSZzQ[libkernel_v1][libkernel_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib/libSceAmpr.sprx)
+[bc5] stubbed import #0x51: TyzsoH-vx8o[libkernel_v1][libkernel_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib/libSceAmpr.sprx)
+[bc5] stubbed import #0x52: MCdZ06CSUOc[libkernel_v1][libkernel_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib/libSceAmpr.sprx)
+[bc5] stubbed import #0x53: ahy8NSXrSbs[libkernel_v1][libkernel_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib/libSceAmpr.sprx)
+[bc5] stubbed import #0x54: H59T7YvKI5M[libkernel_v1][libkernel_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib/libSceAmpr.sprx)
+[bc5] stubbed import #0x55: 3GqBPApWgPY[libkernel_v1][libkernel_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib/libSceAmpr.sprx)
+[bc5] stubbed import #0x56: 9WK-vhNXimw[libkernel_v1][libkernel_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib/libSceAmpr.sprx)
+[bc5] stubbed import #0x57: 2pOuoWoCxdk[libkernel_v1][libkernel_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib/libSceAmpr.sprx)
+[bc5] stubbed import #0x58: 1yXS+iqB3wQ[libkernel_v1][libkernel_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib/libSceAmpr.sprx)
+[bc5] exp 0412 physmap sorted: on (tag ps412)
+bc5-direct: experiment 0349: a job's IB over 983040 dwords is cut at aligned packet boundaries outside COND_EXEC ranges into up to 4 IBs of one submit (the kernel takes at most 0xfffff dwords per IB)
+bc5-direct: GDS BO 64 KiB: ok (0)
+bc5-direct: OA BO 16: ok (0)
+bc5-direct: GDS shadow 64 KiB at 0x100004000000: ok (0)
+bc5-direct: GWS BO 64: ok (0)
+bc5-direct: exp 0432 (tag s432): slot grow ON; 1 resizes, 0.1 ms in all, longest 0.1 ms, 256 KiB allocated in all
+bc5-direct: exp 0432 (tag s432): slot grow ON; 2 resizes, 0.1 ms in all, longest 0.1 ms, 512 KiB allocated in all
+bc5-direct: exp 0432 (tag s432): slot grow ON; 64 resizes, 3.5 ms in all, longest 0.1 ms, 16384 KiB allocated in all
+bc5-direct: exp 0432 (tag s432): slot grow ON; 128 resizes, 7.3 ms in all, longest 0.4 ms, 32768 KiB allocated in all
+bc5-direct: exp 0432 (tag s432): slot prealloc: 128 buffers made (0 failed) in 7.4 ms: 256 KiB for each of the 32 GFX-ring slots, 256 KiB for each of the others, 32 MiB of GTT in all
+[bc5] exp 0405: mmap shim fixes on (items: hint prot)
+bc5 system param 1 -> 1
+[bc5] exp 0405: sema on (items: attr,signal)
+[bc5] exp 0401: videoout status on: resolution 2 at the first sceVideoOutGetOutputStatus (port size 1280x720, 0 buffer sets registered; today's answer 1)
+bc5 clock: journal t 0 = monotonic 74066.026 s
+[bc5] exp 0401: acb state restore (exp 0381) on
+[bc5] exp 0415: APR reads by pread with POSIX_FADV_RANDOM, straight into the guest (tag ls415b)
+bc5 playgo: PlayGoInitialize
+bc5 playgo: PlayGoOpen
+bc5 playgo: no chunk table read, assuming 1 chunk
+bc5 playgo: PlayGoSetInstallSpeed
+bc5 playgo: PlayGoGetChunkId
+bc5 playgo: PlayGoClose
+bc5 playgo: PlayGoTerminate
+[bc5] exp 0401 e7 (flx): fl probe state off, fl vgt flush off, fl serial off, fl meshlet probe off, fl crumbs meshlet off
+[bc5] exp 0405: gpu on (items: )
+[bc5] exp 0401: audio fixes on: set room
+AudioOut: SDL audio driver pipewire
+AudioOut (exp 0372): the controller's ports follow SDL's audio device events
+AudioOut: SDLAudioP0 thread 624007 at nice -15
+AudioOut: SDLAudioP0 thread 624011 at nice -15
+[bc5] exp 0401: pthread fixes on (rwlock: a thread that holds any read lock reads past waiting writers, AnyPS5 45a8b80a5, libthr rdlock_count)
+[bc5] stubbed import called: mUuUOWI-C+0[ConvertKeycode_v1][ConvertKeycode_v1.0][Func] (#0x41)
+bc5-direct: start state (exp 0418): rows on: CP_COHER_START_DELAY SPI_SHADER_REQ_CTRL_PS GE_MIN_VTX_INDX GE_MAX_VTX_INDX VGT_INSTANCE_BASE_ID VGT_TF_RING VGT_HS_OFFCHIP_PARAM VGT_GS_RINGS; skipped: none
+[bc5] exp 0412 events: pending cap 64 (0: none), log off (tag ev412)
+AudioOut (exp 0372): t 2.834 s port 2 type 4: opened on DualSense wireless controller (PS5) Direct DualSense Wireless Controller (48000 Hz, 6 ch); node.dont-reconnect, node.dont-fallback
+AudioOut: SDLAudioP53 thread 624048 at nice -15
+AudioOut (exp 0372): t 2.861 s port 3 type 10: opened on DualSense wireless controller (PS5) Direct DualSense Wireless Controller (48000 Hz, 6 ch); node.dont-reconnect, node.dont-fallback
+AudioOut: SDLAudioP53 thread 624065 at nice -15
+bc5 tiler scratch: 1024 requests, 3 new buffers (96.0 MiB), pool on, 1021 reused, 2 free
+bc5 tiler scratch: 2048 requests, 3 new buffers (96.0 MiB), pool on, 2045 reused, 2 free
+bc5 tiler scratch: 3072 requests, 3 new buffers (96.0 MiB), pool on, 3069 reused, 2 free
+bc5 tiler scratch: 4096 requests, 3 new buffers (96.0 MiB), pool on, 4093 reused, 2 free
+bc5 tiler scratch: 5120 requests, 3 new buffers (96.0 MiB), pool on, 5117 reused, 2 free
+bc5 tiler scratch: 6144 requests, 3 new buffers (96.0 MiB), pool on, 6141 reused, 2 free
+bc5 tiler scratch: 7168 requests, 3 new buffers (96.0 MiB), pool on, 7165 reused, 2 free
+bc5 tiler scratch: 8192 requests, 3 new buffers (96.0 MiB), pool on, 8189 reused, 2 free
+bc5 tiler scratch: 9216 requests, 3 new buffers (96.0 MiB), pool on, 9213 reused, 2 free
+bc5 tiler scratch: 10240 requests, 3 new buffers (96.0 MiB), pool on, 10237 reused, 2 free
+bc5 tiler scratch: 11264 requests, 3 new buffers (96.0 MiB), pool on, 11261 reused, 2 free
+== 2026-11-19 12:17:11 exit 0

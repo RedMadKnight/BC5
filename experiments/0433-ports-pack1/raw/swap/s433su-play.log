@@ -1,0 +1,237 @@
+== 2026-11-19 12:17:24 emulator 2026-11-19 12:13:33
+BC5_GC_MODE=direct
+BC5_DIRECT_JOURNAL=min
+BC5_DIRECT_LAZY_NAMES=orbis_user_malloc
+BC5_DIRECT_EAGER_NAMES=GpuGarlicMemory,GpuOnionMemory
+KYTY_GUEST_MEMORY_MB=13824
+SDL_JOYSTICK_DISABLE_UDEV=1
+SDL_VIDEODRIVER=wayland
+SHADPS4_SYSMODULES_PACK_DIR=/home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib
+PLAY_ARGS=
+KYTY_BC5_INPUT_CONFIG=/home/kjaniszewski/bc5-work/input.cfg
+BC5_DIRECT_FLIP_DEFER=1
+KYTY_BC5_INPUT_RECORD=/home/kjaniszewski/bc5-work/route-record.txt
+PLAY_CAPTURE=1
+[bc5] exp 0419: title PPSA03671: 38 title defaults, 3 taken, 35 already set in the environment
+bc5 playgo: /home/kjaniszewski/bc5-data/games/PPSA03671/sce_sys/playgo-chunk.dat: magic 78676c70, 100 chunks
+[bc5] exp 0405: thread sync on (items: kk06,kk03,signalto,x87,kk07)
+[bc5] exp 0401: memory from param.json off: total 13824 MiB, flexible 276 MiB, direct 13548 MiB (param.json: flexible 276, cpu table 64, gpu table 64, amm table 96 MiB)
+[bc5] exp 0405: mem on (items: BC5_R3_MPROTECT_GAPS,BC5_R3_NULL_ARGS,BC5_R3_RELEASE_HOLES,BC5_R3_MUNMAP_HOLES,BC5_R3_FLEX_HINT,BC5_R3_DMQ_END,BC5_R3_EXEC_EINVAL,BC5_R3_QUERY_SIZE)
+[bc5] exp 0405: fs fixes on (items: kk04 sk04 blksize nametoolong kk10 sk05)
+[bc5] exp 0405: audioout checks on (items: ka01 ka02)
+[bc5] exp 0405: audioin checks on (items: ka06 ka07)
+[bc5] exp 0405: ngs2 rack fix on (items: ka03 ka08)
+[bc5] exp 0405: fw audio on (items: pcmloop audio3d audio3dstrict ngs2 avplayer)
+[bc5] exp 0405: tables on (items: zlib,jpeg,ime,npcommon,npmanager,nptrophy,nptus,npparty,nppartner,npsnsfacebook,voice,screenshot,discmap,ulobjmgr,companionhttpd,companionutil,invitationdialog,webbrowserdialog,shareplay,gamelivestreaming,camera,usbd,hmd,vrtracker,move)
+[bc5] exp 0405: zlib port on (items: Initialize Finalize Inflate WaitForDone GetResult)
+[bc5] exp 0405: jpeg port on (items: Create Delete QueryMemorySize Encode-checks; Encode itself held)
+[bc5] exp 0405: ime port on (items: panel test; the 7 NIDs of the live Ime table not registered)
+[bc5] exp 0405: npcommon port on (items: ids mutex cond thread clock sdkversion callout)
+[bc5] exp 0405: npmanager port on (items: account presence plus request timeout wait callback)
+[bc5] exp 0405: nptrophy port on (items: context handle register unlock info icon setinfo dbg)
+[bc5] exp 0405: fw kernel on (items: notify)
+[bc5] exp 0405: jit shm on (items: create,alias,map,close)
+[bc5] exp 0405: posix return fixes on (items: unlink munmap mprotect trywrlock schedparam once)
+[bc5] exp 0405: http2 fixes on (items: async ssl agent)
+[bc5] exp 0405: json2 on (items: value string array object)
+[bc5] NpCppWebApi SessionManager V2 on (10 exports registered)
+[bc5] exp 0405: fw pad on (items: infotype argchecks queries)
+[bc5] exp 0405: pad open ext on (items: openext)
+[bc5] exp 0405: fw-net on (items: rtc rudp resolver param400 npwebapi)
+[bc5] exp 0401: savedata fixes on
+[bc5] exp 0401: savedata event callback on
+[bc5] exp 0401: savedata sort on
+[bc5] exp 0405: savedata memory fixes on (items: sync lock existed)
+[bc5] exp 0405: savedata delete busy on (items: delete)
+[bc5] exp 0405: savedata aliases on (items: initialize)
+[bc5] exp 0405: systemservice on (items: int table string)
+[bc5] exp 0405: systemservice-params-7-1000 on (items: 7 1000)
+[bc5] exp 0405: ult on (items: join queue)
+[bc5] exp 0405: userservice on (items: age login name zoom)
+[bc5] exp 0405: equeue fixes on (items: kk02 sk03 g1 kk01)
+[bc5] exp 0405: tls fixes on (items: kl01 kl02)
+[bc5] exp 0412 ranges fast: on (tag mf412)
+bc5-direct: experiment 0346 switch: a GFX-form dispatch without a SET_BASE of its type in its IB is resolved by the host (the carried base, or the window 0x1100000000 until one is learned) and rewritten only to a page the host read, else NOP-ed; no CP read at an inferred address
+bc5-direct: experiment 0349: a job's IB over 983040 dwords is cut at aligned packet boundaries outside COND_EXEC ranges into up to 4 IBs of one submit (the kernel takes at most 0xfffff dwords per IB)
+bc5-direct: experiment 0341 switches: product staircase 1 (x > 65536 with y or z > 1), shadow labels 1
+bc5-direct: GDS BO 64 KiB: ok (0)
+bc5-direct: OA BO 16: ok (0)
+bc5-direct: GDS shadow 64 KiB at 0x100004000000: ok (0)
+bc5-direct: GWS BO 64: ok (0)
+bc5-direct: exp 0432 (tag s432): slot grow ON; 1 resizes, 0.1 ms in all, longest 0.1 ms, 256 KiB allocated in all
+bc5-direct: exp 0432 (tag s432): slot grow ON; 2 resizes, 0.1 ms in all, longest 0.1 ms, 512 KiB allocated in all
+bc5-direct: exp 0432 (tag s432): slot grow ON; 64 resizes, 3.5 ms in all, longest 0.1 ms, 16384 KiB allocated in all
+bc5-direct: exp 0432 (tag s432): slot grow ON; 128 resizes, 7.3 ms in all, longest 0.4 ms, 32768 KiB allocated in all
+bc5-direct: exp 0432 (tag s432): slot prealloc: 128 buffers made (0 failed) in 7.4 ms: 256 KiB for each of the 32 GFX-ring slots, 256 KiB for each of the others, 32 MiB of GTT in all
+bc5-direct: PRT window 0x8000000000+0x1000000000: 0
+[bc5] exp 0405: mmap shim fixes on (items: hint prot)
+[bc5] exp 0412 physmap sorted: on (tag ps412)
+bc5 system param 1 -> 1
+[bc5] exp 0405: sema on (items: attr,signal)
+bc5 playgo: PlayGoInitialize
+bc5 playgo: PlayGoOpen
+bc5 playgo: PlayGoGetInstallChunkId
+bc5 playgo: PlayGoGetChunkId
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: GetLocus chunk 0: local fast
+bc5 playgo: GetLocus chunk 1: local fast
+bc5 playgo: GetLocus chunk 2: local fast
+bc5 playgo: GetLocus chunk 3: local fast
+bc5 playgo: GetLocus chunk 4: local fast
+bc5 playgo: GetLocus chunk 5: local fast
+bc5 playgo: GetLocus chunk 6: local fast
+bc5 playgo: GetLocus chunk 7: local fast
+bc5 playgo: GetLocus chunk 8: local fast
+bc5 playgo: GetLocus chunk 9: local fast
+bc5 playgo: GetLocus chunk 10: local fast
+bc5 playgo: GetLocus chunk 11: local fast
+bc5 playgo: GetLocus chunk 12: local fast
+bc5 playgo: GetLocus chunk 13: local fast
+bc5 playgo: GetLocus chunk 14: local fast
+bc5 playgo: GetLocus chunk 15: local fast
+bc5 playgo: GetLocus chunk 16: local fast
+bc5 playgo: GetLocus chunk 17: local fast
+bc5 playgo: GetLocus chunk 18: local fast
+bc5 playgo: GetLocus chunk 19: local fast
+bc5 playgo: GetLocus chunk 20: local fast
+bc5 playgo: GetLocus chunk 21: local fast
+bc5 playgo: GetLocus chunk 22: local fast
+bc5 playgo: GetLocus chunk 23: local fast
+bc5 playgo: GetLocus chunk 24: local fast
+bc5 playgo: GetLocus chunk 25: local fast
+bc5 playgo: GetLocus chunk 26: local fast
+bc5 playgo: GetLocus chunk 27: local fast
+bc5 playgo: GetLocus chunk 28: local fast
+bc5 playgo: GetLocus chunk 29: local fast
+bc5 playgo: GetLocus chunk 30: local fast
+bc5 playgo: GetLocus chunk 31: local fast
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoPrefetch
+bc5-direct: start state (exp 0418): rows on: CP_COHER_START_DELAY SPI_SHADER_REQ_CTRL_PS GE_MIN_VTX_INDX GE_MAX_VTX_INDX VGT_INSTANCE_BASE_ID VGT_TF_RING VGT_HS_OFFCHIP_PARAM VGT_GS_RINGS; skipped: none
+bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, row VGT_TF_RING)
+bc5-direct: /dev/gc HS offchip 0x1ff (programmed, row VGT_HS_OFFCHIP_PARAM)
+bc5 clock: journal t 0 = monotonic 74281.648 s
+[bc5] exp 0401: videoout status on: resolution 2 at the first sceVideoOutGetOutputStatus (port size 1280x720, 0 buffer sets registered; today's answer 1)
+[bc5] exp 0419: FileSystem taken out of BC5_DIRECT_LAZY_NAMES (fault record 20261114-184017); BC5_DIAG_LAZY_FILESYSTEM=1 keeps the old list
+[bc5] exp 0401 e7 (flx): fl probe state off, fl vgt flush off, fl serial off, fl meshlet probe off, fl crumbs meshlet off
+[bc5] exp 0405: gpu on (items: )
+[bc5] exp 0401: acb state restore (exp 0381) on
+[bc5] exp 0415: APR reads by pread with POSIX_FADV_RANDOM, straight into the guest (tag ls415b)
+[bc5] exp 0401: audio fixes on: set room
+AudioOut: SDL audio driver pipewire
+AudioOut (exp 0372): the controller's ports follow SDL's audio device events
+bc5 system param 100 -> 0
+bc5 system param 208 -> 0
+bc5 system param 210 -> 71
+AudioOut: SDLAudioP0 thread 666781 at nice -15
+AudioOut: SDLAudioP0 thread 667249 at nice -15
+[bc5] exp 0401: pthread fixes on (rwlock: a thread that holds any read lock reads past waiting writers, AnyPS5 45a8b80a5, libthr rdlock_count)
+bc5-direct: experiment 0341 periodic: shadow labels in 2000 jobs: 7948 labels, 15896 writes copied, 7948 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 604 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 604 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+AudioOut (exp 0372): t 32.693 s port 1 type 4: opened on DualSense wireless controller (PS5) Direct DualSense Wireless Controller (48000 Hz, 6 ch); node.dont-reconnect, node.dont-fallback
+AudioOut: SDLAudioP53 thread 672535 at nice -15
+AudioOut (exp 0372): t 32.737 s port 2 type 10: opened on DualSense wireless controller (PS5) Direct DualSense Wireless Controller (48000 Hz, 6 ch); node.dont-reconnect, node.dont-fallback
+AudioOut: SDLAudioP53 thread 672553 at nice -15
+bc5-direct: experiment 0341 periodic: shadow labels in 4000 jobs: 16526 labels, 33052 writes copied, 16526 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 1045 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 1045 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+[bc5] exp 0412 events: pending cap 64 (0: none), log off (tag ev412)
+bc5-direct: exp 0432 (tag s432): slot 18 resize 262144 -> 2097152 bytes (asked 1486920) took 2231.6 ms: unmap+free 0.1, alloc 2231.5, gpu map 0.0, cpu map 0.0
+bc5-direct: experiment 0349 split #1: job of 1230712 dwords (1230710 from the title's 230935) into 2 IBs: [0 +982848] [982848 +247864]; 22722 COND_EXEC ranges, 0 fallback cuts; so far 1 jobs cut into 2 IBs, 0 fallback cuts, 0 refused
+bc5 tiler scratch: 1024 requests, 3 new buffers (96.0 MiB), pool on, 1021 reused, 2 free
+bc5-direct: experiment 0341 periodic: shadow labels in 6000 jobs: 31420 labels, 62840 writes copied, 31420 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 67701 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 90592 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 8000 jobs: 47947 labels, 95894 writes copied, 47947 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 83397 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 106263 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 10000 jobs: 64622 labels, 129244 writes copied, 64622 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 99124 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 121990 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 12000 jobs: 81038 labels, 162076 writes copied, 81038 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 114630 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 137496 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5 tiler scratch: 2048 requests, 3 new buffers (96.0 MiB), pool on, 2045 reused, 2 free
+bc5-direct: experiment 0341 periodic: shadow labels in 14000 jobs: 97698 labels, 195396 writes copied, 97698 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 130344 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 153210 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 16000 jobs: 114208 labels, 228416 writes copied, 114208 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 145872 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 168738 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5 ajm: ATRAC9 vibration layout 7 decoded by vgmstream (haptics)
+bc5 system param 2 -> 1
+bc5 system param 3 -> 1
+bc5-direct: experiment 0341 periodic: shadow labels in 18000 jobs: 131186 labels, 262372 writes copied, 131186 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 161263 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 184129 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5 tiler scratch: 3072 requests, 3 new buffers (96.0 MiB), pool on, 3069 reused, 2 free
+bc5-direct: experiment 0341 periodic: shadow labels in 20000 jobs: 148100 labels, 296200 writes copied, 148100 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 220111 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 245598 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 22000 jobs: 162764 labels, 325528 writes copied, 162764 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 225864 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 251351 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0349 split #2: job of 1020712 dwords (1020709 from the title's 177926) into 2 IBs: [0 +982976] [982976 +37736]; 19154 COND_EXEC ranges, 0 fallback cuts; so far 2 jobs cut into 4 IBs, 0 fallback cuts, 0 refused
+bc5-direct: experiment 0349 split #3: job of 1074416 dwords (1074414 from the title's 202034) into 2 IBs: [0 +982336] [982336 +92080]; 19830 COND_EXEC ranges, 0 fallback cuts; so far 3 jobs cut into 6 IBs, 0 fallback cuts, 0 refused
+bc5-direct: experiment 0341 periodic: shadow labels in 24000 jobs: 178652 labels, 357304 writes copied, 178652 waits redirected, 18 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 294158 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 326304 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 26000 jobs: 194828 labels, 389656 writes copied, 194828 waits redirected, 18 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 311153 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 343287 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 28000 jobs: 212270 labels, 424540 writes copied, 212270 waits redirected, 18 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 318817 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 350951 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5 tiler scratch: 4096 requests, 3 new buffers (96.0 MiB), pool on, 4093 reused, 2 free
+bc5-direct: exp 0432 (tag s432): slot grow ON; 192 resizes, 2304.4 ms in all, longest 2231.6 ms, 131584 KiB allocated in all
+bc5-direct: experiment 0341 periodic: shadow labels in 30000 jobs: 230672 labels, 461344 writes copied, 230672 waits redirected, 18 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 326029 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 358163 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 32000 jobs: 249860 labels, 499720 writes copied, 249860 waits redirected, 18 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 339644 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 371778 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 34000 jobs: 268650 labels, 537300 writes copied, 268650 waits redirected, 18 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 348410 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 380544 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 36000 jobs: 285700 labels, 571400 writes copied, 285700 waits redirected, 18 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 356720 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 388854 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5 tiler scratch: 5120 requests, 3 new buffers (96.0 MiB), pool on, 5117 reused, 2 free
+bc5-direct: experiment 0341 periodic: shadow labels in 38000 jobs: 306566 labels, 613132 writes copied, 306566 waits redirected, 18 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 369776 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 401911 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 40000 jobs: 328037 labels, 656074 writes copied, 328037 waits redirected, 18 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 379016 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 411150 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 42000 jobs: 349196 labels, 698392 writes copied, 349196 waits redirected, 18 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 387026 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 419160 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 44000 jobs: 367300 labels, 734600 writes copied, 367300 waits redirected, 18 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 393296 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 425430 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5 tiler scratch: 6144 requests, 3 new buffers (96.0 MiB), pool on, 6141 reused, 2 free
+bc5-direct: experiment 0341 periodic: shadow labels in 46000 jobs: 385174 labels, 770348 writes copied, 385174 waits redirected, 18 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 398754 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 430888 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 48000 jobs: 406526 labels, 813052 writes copied, 406526 waits redirected, 18 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 405885 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 438019 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 50000 jobs: 428573 labels, 857146 writes copied, 428573 waits redirected, 18 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 419267 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 451401 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 52000 jobs: 446352 labels, 892704 writes copied, 446352 waits redirected, 18 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 427104 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 459238 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5 tiler scratch: 7168 requests, 3 new buffers (96.0 MiB), pool on, 7165 reused, 2 free
+bc5-direct: experiment 0341 periodic: shadow labels in 54000 jobs: 467414 labels, 934828 writes copied, 467414 waits redirected, 18 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 435433 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 467567 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 56000 jobs: 488067 labels, 976134 writes copied, 488067 waits redirected, 18 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 443301 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 475435 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 58000 jobs: 509247 labels, 1018494 writes copied, 509247 waits redirected, 18 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 453063 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 487916 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+== 2026-11-19 12:22:30 exit 0
