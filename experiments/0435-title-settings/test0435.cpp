@@ -56,6 +56,7 @@ int main() {
 	// first start: seeded by copying the shared file byte for byte
 	Resolved a = Resolve(root, "PPSA03671", shared.string());
 	CHECK(a.config == (root / "PPSA03671" / "input.cfg").string());
+	CHECK(a.save == a.config); // a title saves only into its own file
 	CHECK(a.title_dir == (root / "PPSA03671").string());
 	CHECK(get(a.config) == shared_text);
 	CHECK(a.note.rfind("seeded", 0) == 0);
@@ -77,21 +78,23 @@ int main() {
 	// no title, no shared file, a bad id: the shared path and no store
 	Resolved u = Resolve(root, "UNKNOWN", shared.string());
 	CHECK(u.config == shared.string() && u.title_dir.empty());
+	CHECK(u.save == shared.string()); // the empty menu window: as before
 	Resolved n = Resolve(root, "PPSA03671", "");
-	CHECK(n.config.empty() && n.title_dir.empty());
+	CHECK(n.config.empty() && n.save.empty() && n.title_dir.empty());
 	Resolved t = Resolve(root, "..", shared.string());
-	CHECK(t.config == shared.string() && t.title_dir.empty());
+	CHECK(t.config == shared.string() && t.save == shared.string() && t.title_dir.empty());
 
 	// a missing shared file and no title file yet: the shared path (fails as before), nothing created
 	const fs::path missing = base / "nowhere" / "input.cfg";
 	Resolved m = Resolve(root, "PPSA99999", missing.string());
-	CHECK(m.config == missing.string() && m.title_dir.empty());
+	CHECK(m.config == missing.string() && m.save.empty() && m.title_dir.empty());
 	CHECK(!fs::exists(root / "PPSA99999" / "input.cfg"));
 
 	// the root cannot be created (a file in its place): the shared path
 	put(base / "blocked", "x");
 	Resolved k = Resolve(base / "blocked" / "titles", "PPSA03671", shared.string());
 	CHECK(k.config == shared.string() && k.title_dir.empty());
+	CHECK(k.save.empty()); // a real title never saves into the shared file (top's condition)
 
 	// window mode
 	CHECK(ReadWindowMode(a.title_dir) == -1);

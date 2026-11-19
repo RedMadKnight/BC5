@@ -9,8 +9,10 @@
 //                                        the Video tab). It wins over --fullscreen, which is only the first-run default.
 //
 // The titles root is $KYTY_BC5_MENU_DIR/titles (play-any.sh exports ~/bc5-work/menu), else <directory of the shared
-// file>/menu/titles: both give ~/bc5-work/menu/titles on the box. No title id (the empty menu window, "UNKNOWN"), no
-// shared file, KYTY_BC5_TITLE_SETTINGS=0, or any file error: the shared file as before, no window file.
+// file>/menu/titles: both give ~/bc5-work/menu/titles on the box. No title id (the empty menu window, "UNKNOWN") or
+// KYTY_BC5_TITLE_SETTINGS=0: the shared file as before (read and saved), no window file. A real title whose store cannot
+// be made reads the shared file and saves nothing (top's condition, 2026-11-19: a title's Save never rewrites the shared
+// file).
 // Pure C++ (no host types): tested by experiments/0435-title-settings/test0435.cpp.
 #pragma once
 
@@ -40,15 +42,16 @@ inline fs::path TitlesRoot(const char* menu_dir, const std::string& shared_cfg) 
 }
 
 struct Resolved {
-	std::string config;    // the input configuration to read and save
+	std::string config;    // the input configuration to read
+	std::string save;      // the file Save writes ("" : Save is off)
 	std::string title_dir; // the title's directory (window file), "" when the title has no store
 	std::string note;      // one line for the log
 };
 
 // The title's files, the store created and its input.cfg seeded from the shared file when missing. Never throws; on
-// any problem the shared file and no title directory.
+// any problem the shared file to read, no title directory, and no Save for a real title.
 inline Resolved Resolve(const fs::path& root, const std::string& title_id, const std::string& shared_cfg) {
-	Resolved r {shared_cfg, "", ""};
+	Resolved r {shared_cfg, shared_cfg, "", ""};
 	if (shared_cfg.empty()) {
 		r.note = "no shared input configuration: no title store";
 		return r;
@@ -57,6 +60,7 @@ inline Resolved Resolve(const fs::path& root, const std::string& title_id, const
 		r.note = "no title id: the shared file";
 		return r;
 	}
+	r.save = ""; // from here on a failure reads the shared file and saves nothing
 	std::error_code ec;
 	const fs::path  dir = root / title_id;
 	const fs::path  cfg = dir / "input.cfg";
@@ -86,6 +90,7 @@ inline Resolved Resolve(const fs::path& root, const std::string& title_id, const
 		r.note = "title file " + cfg.string();
 	}
 	r.config    = cfg.string();
+	r.save      = r.config;
 	r.title_dir = dir.string();
 	return r;
 }

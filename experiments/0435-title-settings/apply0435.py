@@ -20,6 +20,7 @@ EDITS = {
             "std::unique_ptr<InputMap> g_map;\nstd::string               g_config_path;\n",
             "std::unique_ptr<InputMap> g_map;\nstd::string               g_config_path;\n"
             "std::string               g_title_dir; // exp 0435: the title's store (window mode), \"\" when none\n"
+            "std::string               g_save_path; // exp 0435: where Save writes (HostInputConfigPath), \"\" when nowhere\n"
             "\n"
             "// Experiment 0435: the input configuration this run reads and saves: the title's own file,\n"
             "// <menu dir>/titles/<TITLE_ID>/input.cfg, seeded from KYTY_BC5_INPUT_CONFIG on the title's first start; the\n"
@@ -27,7 +28,7 @@ EDITS = {
             "bc5::title_settings::Resolved ResolveConfig() {\n"
             "\tconst char* shared = std::getenv(\"KYTY_BC5_INPUT_CONFIG\");\n"
             "\tif (shared == nullptr || *shared == 0) return {};\n"
-            "\tif (!bc5::env_rule::on(std::getenv(\"KYTY_BC5_TITLE_SETTINGS\"))) return {shared, \"\", \"KYTY_BC5_TITLE_SETTINGS off: the shared file\"};\n"
+            "\tif (!bc5::env_rule::on(std::getenv(\"KYTY_BC5_TITLE_SETTINGS\"))) return {shared, shared, \"\", \"KYTY_BC5_TITLE_SETTINGS off: the shared file\"};\n"
             "\tnamespace ts = bc5::title_settings;\n"
             "\treturn ts::Resolve(ts::TitlesRoot(std::getenv(\"KYTY_BC5_MENU_DIR\"), shared), HostInputTitleId(), shared);\n"
             "}\n",
@@ -38,6 +39,7 @@ EDITS = {
             "\t\tif (const auto where = ResolveConfig(); !where.config.empty()) { // exp 0435\n"
             "\t\t\tg_config_path = where.config;\n"
             "\t\t\tg_title_dir   = where.title_dir;\n"
+            "\t\t\tg_save_path   = where.save;\n"
             '\t\t\tstd::fprintf(stderr, "Title settings (exp 0435): %s: %s\\n", HostInputTitleId().c_str(), where.note.c_str());\n',
         ),
         (
@@ -46,6 +48,10 @@ EDITS = {
             "\t\t// exp 0435: the mode the title's window last changed to wins over Fullscreen= and --fullscreen.\n"
             "\t\tif (const int mode = bc5::title_settings::ReadWindowMode(g_title_dir); mode >= 0) WindowRestoreFullscreen(mode == 1);\n"
             "\t\tg_map = std::move(map);\n",
+        ),
+        (
+            "\tMap();\n\treturn g_config_path;\n}\n",
+            "\tMap();\n\treturn g_save_path; // exp 0435: a title's own file; never the shared one for a title (top, 2026-11-19)\n}\n",
         ),
         (
             "std::vector<std::string> HostInputStatements() {\n"
