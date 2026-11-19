@@ -1,7 +1,7 @@
 # Experiment 0434: ASTRO BOT's GPU fault on entering Bathhouse Battle
 
-Status: cause found offline; fix ud434 written and CPU-tested; private build and the maintainer's
-reproduction pending. Branch `exp/0434-astro-k1-write`.
+Status: done. Cause found, fix ud434 tested by the maintainer and in the shared builds since 2026-11-19 15:27
+(patch 8986853b, with exp 0435). Branch `exp/0434-astro-k1-write` (exp 0435 merged in).
 
 ## Question
 
@@ -132,7 +132,48 @@ One binary pair with ud434 and exp 0435's per-title settings (`KYTY_BC5_TITLE_SE
   `BC5_PKG_SCRIPT`, and `BC5_EMU` set only when not lean; a dry run picks the copy. His shortcut
   "BC5 test 0434+0435 (lean, host)" points at it. LESSONS R66.
 
+### The maintainer's test (2026-11-19 14:41–15:17)
+
+- [M] Three sessions of his shortcut "BC5 test 0434+0435 (lean, host)" (the top's launcher; its copy of
+  `play-astro.sh` execs the private lean `babd46fd`): 14:41:12 (26 s), 14:41:42–14:55:51, 14:55:59–15:17:35.
+  No amdgpu fault, timeout or reset line in `journalctl -k` from 14:40, no fault record after
+  `20261119-141432`, no devcoredump after 14:14:36. The title store `~/bc5-work/menu/titles/` gained
+  PPSA21564 (with a window file) and PPSA03671 (0435's part).
+- His words (through the top session): "Wszystko ok, możesz wdrożyć i wypchnic i merge".
+
+### The shared swap (2026-11-19 15:25, the top session's GO on his word)
+
+Kit `bake/` in 0433's form without its backend step: `0002-bc5-0434-0435-baked.patch` (`eeae31c8`; the
+tested sources with both switches taken out: no `BC5_DIRECT_UD_TARGETS`, no `KYTY_BC5_TITLE_SETTINGS`,
+his standing "usuń przełączniki i wybuduj w kod"; `switch_defaults.hpp` and `main.cpp` come back to the
+shared bytes), `int0434.sh`, `undo0434.sh`, `run-swap0434.sh`, `smoke0434.sh`. Log:
+`raw/swap-smoke-20261119.txt`.
+
+- [M] Dry run on a full copy of the tree (`DRY=1`): patch `59f00d27` → `8986853b`, files 134 → 135
+  (`src/bc5/title_settings.hpp` new), exp 0372 lines 5, pad_audio_route header in, the guard /
+  learned / JOB_ARENA counts kept; the undo brought the copy back to `59f00d27`.
+- [M] The swap: patch **`8986853b`**, normal **`99f2a567`**, lean **`82720cca`** (warnings 18 / 19, 14
+  steps each), archive `51db2c91` unchanged; neither binary gained or lost a `(KYTY_)BC5_` word.
+  Launchers, shortcuts and `input.cfg` untouched (`play-any.sh` `fc7a1395`, `play-astro.sh` `e943bd8f`,
+  `play-pkg.sh` `47426d8e`, `lean-session.sh` `1f1be812`, `input.cfg` `8115a7ff`). Undo:
+  `bash ~/bc5-work/exp0434/bake/undo0434.sh` (to `59f00d27`; further back exp 0433's `undo0433.sh`).
+- [M] Smoke, under the user manager (R65), `ulimit -c 0`, no pad key in any run, kernel stream to
+  the laptop empty: s434sc ASTRO BOT lean 200 s PASS; s434su the second title lean 300 s PASS (33 of 33
+  route keys); s434sn ASTRO BOT normal 200 s PASS. **ALL PASS.**
+- [M] At 150 s: ASTRO BOT GTT in use 7,215 / 7,201 MiB of 13,312, 3,993 / 4,083 MiB available; the
+  second title 12,255 MiB, 1,130 MiB available. Exp 0433's smoke recorded no GTT, so there is no
+  same-route control; the second title's number lies in F841's range (12.2–12.3 GiB on long walks).
+- Not measured: ud434's import count. The lean build has no journal, and on the normal build the
+  shared default `BC5_DIRECT_JOURNAL_QUIET=1` holds journal lines back unless a submission times out,
+  so s434sn's "0 ud434 lines" is not a count.
+
 ## Verdict
 
-Pending: the maintainer's reproduction on Bathhouse Battle on the combined build (ud434 on; the
-fault, if any, writes a new record), and the second title's import count from ud434's journal line.
+**Cause found and removed at its source.** The level's load runs a compute job whose write target, a
+16-byte buffer in the title's CPU heap, is named only by a buffer descriptor in the job's user data. Under
+the lazy rule its never-written chunk had only K1r's read-only zero cover, so the store faulted. The PS5
+maps that memory read-write. ud434 imports any such inline descriptor target before the submit. The
+maintainer's run through Bathhouse Battle on the test build was clean, and he chose to deploy it. It has
+been in the shared builds since 2026-11-19 15:27 with no switch, together with exp 0435. Open: descriptors
+reached through a table in memory, and storage-image (T#) targets, are not covered. A fault of that form
+would write a new record.
