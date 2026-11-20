@@ -465,6 +465,48 @@ NO_CRASH 33.99 (219 / 73); 0 kernel lines.
   - a fix direction to be designed: register a slice's label writes as pending before its preparation. The waiter
     then sees a writer that is already committed to the ring.
 
+## r438: register a taken slice's writes early (the fix the catcher points to)
+
+**Design.** `mkr438.py` on the c438 part-2 unit (`3623fd41…` → `1584911aef05b01c63f7091bf150a546`, `r438-unit.diff`).
+Switch `BC5_0438_EARLYREG`, on in this test build unless "0". It is behaviour, so it is in lean too.
+- **At the take.** When bc5-ring takes a queue slice, before `chain_end` and submit_now's preparation, the label
+  writes of the slice's compute buffers are registered as pending. These are RELEASE_MEM / EVENT_WRITE_EOP with
+  immediate data and WRITE_DATA to memory, top-level packets, from past any head already submitted. The entries are
+  "early": seq | bit 63.
+- **The game thread.** In `ring_will_satisfy`, a wait whose label's last pending write is early waits (polls) until
+  bc5-ring has ended the slice, after the real registration that follows the kernel call. Then it decides again, and
+  is kept in ring order. So the writer job is in the kernel before the waiter's buffer, the order ring-order keeps
+  always had and k438 broke. A wait over 100 ms is journaled as a BUG line (up to 10) and the poll goes on: no
+  give-up, no recovery.
+- **Who ignores early entries:** bc5-ring's own `ring_will_satisfy`, and F2/F4 (they need a real job to fence on).
+- **The invariant** ("a registered write must reach the ring"). At the slice's end every early write must have been
+  registered for real by a job of that slice: `register_label_writes` on bc5-ring while the slice is open. One that
+  was not is a BUG line, counted as "early writes that never reached the ring", and removed.
+- **The paths checked for it:**
+  - a failed or dropped submission, and a write the filter drops: each would show as a BUG line;
+  - flushes for size and ring/class change: `chain_end` and its flushes all submit on bc5-ring inside the slice;
+  - acb heads submitted earlier by `acb_ready`: excluded by their `done` offset;
+  - a GPU reset clears `g_plw` whole;
+  - process exit: no slice survives it.
+- **Records (normal build):**
+  - submit_now's preparation split into prep-pre / anon sync / direct sync / learned / hints / filter;
+  - bc5-ring's device-mutex waits by the holder at their start (game thread, bc5-ring or other, and its part);
+  - an r438 line every 60 s.
+
+**Unit test** `bash test_r438.sh`. It cuts r438's state, `PendingLabelWrite`/`g_plw`, `register_label_writes`,
+`r438_scan`/`begin`/`end` and `ring_will_satisfy` from the generated unit, unchanged, and runs them against stubs.
+Laptop, VS clang++, image base fixed low so the 40-bit IB address fits; 2026-11-20. **PASS both ways:**
+- **`BC5_0438_EARLYREG` unset:**
+  1. A game-thread wait on an early-registered label waits about 30 ms, until the job registers it and the slice
+     ends, then is kept in ring order; 0 lost.
+  2. A slice whose job never registers: 2 lost, 2 BUG lines, the early entries removed.
+  3. A head already submitted is not registered again.
+  4. bc5-ring's own `ring_will_satisfy` ignores early entries.
+- **`BC5_0438_EARLYREG=0`:** nothing is registered early.
+
+**Build:** normal `4b9ffcf8` (r438 + c438), under BOX-LOCK at 10:02, 0 errors, only the old warnings; shared builds
+checked unchanged.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
@@ -511,4 +553,6 @@ bb04219b's tree unit (`a62e8bf6…`, exp 0436's `bake/bc5LleAgc.cpp`):
   `mkvg437.py` on the box copy); the change is `k438-unit.diff`.
 - `python -I mkcat438.py ../0436-submit-unlock/bake/bc5LleAgc.cpp cat/bc5LleAgc.cpp` → `3623fd41142c49514fce913c34c2efab`
   (c438 with part 2, build c731c5fa; part 1 alone, build 8b2ae229, was `b7097917…`); the change is `c438-unit.diff`.
-`box0438.sh` pins both md5s (`K_UNIT`, `K_CAT`) and expects the files at those paths in its kit directory.
+- `python -I mkr438.py cat/bc5LleAgc.cpp r438.cpp` → `1584911aef05b01c63f7091bf150a546` (r438 + c438, build 4b9ffcf8);
+  the change is `r438-unit.diff`.
+`box0438.sh` pins the md5s (`K_UNIT`, `K_CAT`, `K_R438`) and expects the files at those paths in its kit directory.

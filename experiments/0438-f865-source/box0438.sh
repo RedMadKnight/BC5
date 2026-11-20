@@ -5,6 +5,7 @@
 #   box0438.sh pack     with our lock: read-only copies of F865's records into ~/bc5-work/exp0438/fetch (gz), for scp
 #   box0438.sh buildcat with our lock: exp 0438's catcher c438 (mkcat438.py on the tree's unit, records only, normal build
 #                       only), compiled with the shared normal build's own command: ~/bc5-work/exp0438/cat/normal/kyty_emulator
+#   box0438.sh buildr   with our lock: r438 (mkr438.py) + c438, normal build only: ~/bc5-work/exp0438/r438/normal/kyty_emulator
 #   box0438.sh build    with our lock: pins the shared builds (patch bb04219b: normal f345db74, lean 6a735b81, archive
 #                       d6638808), the shared tree's unit and this kit's files; compiles the kit's bc5LleAgc.cpp (mk0438.py
 #                       on the tree's unit) with the shared normal and lean builds' own commands and links each with the
@@ -18,6 +19,7 @@ P_UNIT=a62e8bf6251a44f147a23d9689449e21   # the shared tree's bc5LleAgc.cpp (pat
 P_ARCH=d6638808; P_NORMAL=f345db74; P_LEAN=6a735b81
 K_UNIT=680bda1f3430b676f2dadef8808ae24a  # k438 (off by default, refuted) + k438b (BC5_0438_HOLD); was 59a5df70 for build d4a2f86d
 K_PY=5dfb35d884bee8af31d81e3ad8b92548
+K_R438=1584911aef05b01c63f7091bf150a546  # r438.cpp: mkr438.py on cat/bc5LleAgc.cpp (3623fd41)
 K_CAT=3623fd41142c49514fce913c34c2efab  # cat/bc5LleAgc.cpp: mkcat438.py on a62e8bf6
 K_VG=cad85761590d642235cded7094c9b48c      # exp 0437's mkvg437.py (branch exp/0437-q30-syncs f89c3861), folded in (top, 2026-11-20)
 MEMC=src/kernel/memory.cpp; MEMH=src/kernel/memory.h
@@ -123,11 +125,35 @@ buildcat() {
     [ "$sn" = "$(m "$W/kytyplus-build/src/kyty_emulator")" ] && [ "$sa" = "$(m "$SA")" ] && [ "$(m "$TREE/$UNIT")" = "$P_UNIT" ] || stop "a shared file changed"
     echo "shared normal ${sn:0:8}, archive ${sa:0:8}, tree unit ${P_UNIT:0:8}: unchanged"
 }
+buildr() {
+    own || stop "no lock held by 0438"
+    pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
+    local b bin rc sn sl sa C=$E/r438
+    sn=$(m "$W/kytyplus-build/src/kyty_emulator"); sl=$(m "$W/kytyplus-build-lean/src/kyty_emulator"); sa=$(m "$SA")
+    [ "${sn:0:8}" = "$P_NORMAL" ] && [ "${sl:0:8}" = "$P_LEAN" ] && [ "${sa:0:8}" = "$P_ARCH" ] || stop "the shared builds are not $P_NORMAL/$P_LEAN/$P_ARCH"
+    [ "$(m "$TREE/$UNIT")" = "$P_UNIT" ] || stop "the shared tree's $UNIT is not patch bb04219b's"
+    [ "$(m "$HERE/r438.cpp")" = "$K_R438" ] && [ "$(m "$HERE/build0438.py")" = "$K_PY" ] || stop "the r438 kit is not the pinned one"
+    mkdir -p "$R" "$C/normal" || stop "mkdir"
+    rm -rf "$C/src"; mkdir -p "$C/src/kyty/src/libs" && cp "$HERE/r438.cpp" "$C/src/kyty/$UNIT" || stop "copy"
+    b=$W/kytyplus-build; bin=$C/normal/kyty_emulator; rm -rf "$C/normal/obj" "$C/normal/lib"
+    [ -f "$bin" ] && mv "$bin" "$bin.$(m "$bin" | cut -c1-8)"
+    distrobox enter ubuntu -- sh -c "cd '$b' && ninja -t compdb -x" > "$C/normal/compdb.json" 2> "$R/compdb-r438.err" < /dev/null || stop "compdb failed"
+    distrobox enter ubuntu -- env LC_ALL=C LANGUAGE=C python3 -I "$HERE/build0438.py" emu "$C/normal/compdb.json" "$C/src/kyty" "$C/normal" "$b" "$bin" "$UNIT" > "$R/build-r438.out" 2>&1 < /dev/null
+    rc=$?; echo "r438 normal: build rc $rc; errors $(grep -c 'error:' "$R/build-r438.out"); warnings $(grep -c 'warning:' "$R/build-r438.out")"
+    grep -n "error:\|undefined\|COMPILE FAILED" "$R/build-r438.out" | head -20
+    [ "$rc" = 0 ] && [ -x "$bin" ] || stop "build failed: $R/build-r438.out"
+    m "$bin" > "$C/normal/binary.md5"; strings "$bin" > "$C/normal/strings.txt"
+    echo "r438 normal: $(cut -c1-8 "$C/normal/binary.md5"); c438 lines $(grep -c 'c438 (exp 0438)' "$C/normal/strings.txt"); BC5_0438_EARLYREG $(grep -c BC5_0438_EARLYREG "$C/normal/strings.txt")"
+    grep -q 'BC5_0438_EARLYREG' "$C/normal/strings.txt" || stop "r438 is not in the binary"
+    [ "$sn" = "$(m "$W/kytyplus-build/src/kyty_emulator")" ] && [ "$sa" = "$(m "$SA")" ] && [ "$(m "$TREE/$UNIT")" = "$P_UNIT" ] || stop "a shared file changed"
+    echo "shared normal ${sn:0:8}, archive ${sa:0:8}, tree unit ${P_UNIT:0:8}: unchanged"
+}
 case "${1:-}" in
     claim) claim "${2:-F865 records read}" "${3:-20}" ;;
     release) release ;;
     pack) pack ;;
     build) build ;;
     buildcat) buildcat ;;
-    *) echo "usage: $0 claim|release|pack|build|buildcat"; exit 2 ;;
+    buildr) buildr ;;
+    *) echo "usage: $0 claim|release|pack|build|buildcat|buildr"; exit 2 ;;
 esac
