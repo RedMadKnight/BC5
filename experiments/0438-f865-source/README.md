@@ -1584,6 +1584,14 @@ Two broken copies FAIL:
 - LP = `EARLYREG=1 PLWCV=1 PROLMERGE=1`.
 - Every other arm has `PROLMERGE=0`.
 
+**The maintainer's rule (2026-11-20, through the top session).** Performance tests run on lean builds only. Normal
+builds are for diagnosis, never for fps or frame-time comparisons.
+- N0 is dropped.
+- O O stay as diagnosis runs, and their rows report no fps.
+- ORDER: `L0 L1p L1c LP` ×3, then `O O`.
+- Every normal-build number in this README (results 2–12, the budget) is a **diagnosis** number, not a performance
+  result.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its

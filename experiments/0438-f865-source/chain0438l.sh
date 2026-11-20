@@ -8,15 +8,16 @@
 #   L0  lean b438, EARLYREG=0 (control)
 #   L1p lean b438, EARLYREG=1 PLWCV=0 (r438 with its 20-us poll)   L1c lean b438, EARLYREG=1 PLWCV=1 (r438, condition variable)
 #   LP  lean b438, EARLYREG=1 PLWCV=1 PROLMERGE=1 (L1c + p438's prologue merge); every other arm has PROLMERGE=0
-#   N0  normal b438, EARLYREG=0, the usual journal words (the diagnostics' own cost against L0)
-#   O   normal b438 with BC5_0438_OUTSIDE=1 (the records item, if built; never pooled with the lean comparison)
+#   O   normal b438 with BC5_0438_OUTSIDE=1: DIAGNOSIS ONLY (where the Render Thread waits, who wakes it). The
+#       maintainer's rule (2026-11-20): performance numbers come from lean builds only; no fps or frame time is reported
+#       for a normal-build run (its row and line say "diagnosis").
 # Per run: the binary that ran (R66), pad keys (R51), flips/s and gap seconds from MangoHud's per-second lines from
 # G+10, the MangoHud CSV kept in $RAW/$t-mh/ (mh0438.py computes median / p95 / p99 frame time on the laptop), and for a
 # normal arm the r438 line and BUG count from its journal. Stops: a class other than NO_CRASH (R55), a wrong binary, a
 # BOX-LOCK that is not ours, an emulator that is not ours, GPU lines grown, ~/bc5-work/exp0438/STOP. Gate: the first L0's
 # flips/s >= 33.3. Each run takes and frees its own BOX-LOCK line (the runner).
 # usage (on the box, under the user manager, from ~/bc5-work/exp0438/kit):
-#   ORDER="L0 L1p L1c LP L0 L1p L1c LP L0 L1p L1c LP N0 O O" K0=<last run number> bash chain0438l.sh
+#   ORDER="L0 L1p L1c LP L0 L1p L1c LP L0 L1p L1c LP O O" K0=<last run number> bash chain0438l.sh
 set -u
 ulimit -c 0
 export LC_ALL=C
@@ -52,9 +53,8 @@ for arm in $ORDER; do
     L1p) bin=$LB; want=$LW; AW="BC5_0438_EARLYREG=1 BC5_0438_PLWCV=0 BC5_0438_PROLMERGE=0" ;;
     L1c) bin=$LB; want=$LW; AW="BC5_0438_EARLYREG=1 BC5_0438_PLWCV=1 BC5_0438_PROLMERGE=0" ;;
     LP) bin=$LB; want=$LW; AW="BC5_0438_EARLYREG=1 BC5_0438_PLWCV=1 BC5_0438_PROLMERGE=1" ;;
-    N0) bin=$NB; want=$NW; AW="BC5_0438_EARLYREG=0 BC5_0438_PROLMERGE=0" ;;
     O)  bin=$NB; want=$NW; AW="BC5_0438_EARLYREG=0 BC5_0438_PROLMERGE=0 BC5_0438_OUTSIDE=1" ;;
-    *) say "arm $arm: L0, L1p, L1c, LP, N0 or O"; break ;;
+    *) say "arm $arm: L0, L1p, L1c, LP or O (N0 dropped: no performance numbers from normal builds)"; break ;;
   esac
   t=b438$arm$k; while [ -e "$RAW/$t-start.txt" ] || [ -e "$RAW/$t-end.txt" ]; do t=${t}b; done
   [ -e "$E/STOP" ] && { say "STOP file before $t"; break; }
@@ -77,7 +77,8 @@ for arm in $ORDER; do
   EXE=$(cat "$E/raw/$t-exe.txt" 2> /dev/null); PADN=$(grep -c . "$E/raw/$t-pad.txt" 2> /dev/null)
   MHF=$(ls -t "$RAW/$t-mh"/*.csv 2> /dev/null | grep -v summary | head -1)
   SU="MangoHud ${MHF:-none} ($( [ -n "$MHF" ] && wc -l < "$MHF" || echo 0) lines); lean lost-write lines $(grep -ac 'r438 (exp 0438, b438, lean)' "$RAW/$t-play.log" 2> /dev/null)"
-  if [ "$arm" = N0 ] || [ "$arm" = O ]; then
+  [ "$arm" = O ] && FPS="diagnosis run: no fps or frame time reported (lean-only rule)"
+  if [ "$arm" = O ]; then
     PD=$(ls -dt "$HOME"/bc5-data/captures/play-*/ 2> /dev/null | head -1); DL=${PD}gc/direct.log
     if [ -n "$PD" ] && [ -f "$DL" ] && [ "$DL" -nt "$E/raw/$t-t0" ]; then
       SU="$SU; log $DL; GIVEN UP $(grep -ac 'GIVEN UP' "$DL"); r438 [$(grep -a '^r438 (exp 0438, b438): t ' "$DL" | tail -1 | cut -c1-500)], r438 BUG lines $(grep -ac '^r438 (exp 0438, b438): BUG' "$DL"); p438 [$(grep -a '^p438 (exp 0438): t ' "$DL" | tail -1 | cut -c1-300)]; o438 lines $(grep -ac '^o438 (exp 0438)' "$RAW/$t-play.log" 2> /dev/null)"
