@@ -129,6 +129,10 @@ struct State {
     std::uint64_t dmem_cursor;
     std::uint64_t dmem_end;
     const Shader *fill_shader;
+    // Our own internal shaders are in use (not the module file's): static buffer 0's code table has
+    // only the fill shader (slot 0), the original's other four slots are empty. A read is logged.
+    bool internal_own;
+    bool internal_own_read_logged;
     std::uint32_t uc_special_offset; // descriptor at 0x45C40 of the original (unresolved here)
 };
 State &state();

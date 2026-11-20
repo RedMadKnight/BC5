@@ -575,6 +575,8 @@ void reset();
 // The fixed GPU address the static area must land on (0xFE0040000 on the console). Tests point it
 // at their own buffer.
 void set_expected_static_area(std::uint64_t address);
+// Mark the internal shaders as BC5's own (as the own-data init path does).
+void set_internal_own(bool value);
 void set_soc_id(std::uint32_t soc_id);
 void set_workaround_mask(std::uint32_t mask);
 void set_trace_initiator(std::uint32_t index_1_to_10, std::uint32_t value);

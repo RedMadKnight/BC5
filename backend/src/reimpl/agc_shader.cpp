@@ -811,6 +811,7 @@ std::int32_t create_firmware_shaders(FirmwareData *fw) {
 // purpose is not described, and on BC5 they are never executed (the original only lists their
 // code addresses in static buffer 0), so their slots stay 0.
 std::int32_t create_own_shaders() {
+    state().internal_own = true;
     const std::span<const std::uint32_t> code = fill_shader::code();
     if (code.empty()) {
         log(kModule, "own fill shader not assembled yet; fill shader absent");

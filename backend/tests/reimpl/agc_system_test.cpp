@@ -541,6 +541,28 @@ TEST_CASE("static buffer bounds and round trip", "[agc][system]") {
     CHECK(agc::sceAgcSetStaticBuffer(5, entry) == agc::kErrNotInitialised);
 }
 
+TEST_CASE("a read of static buffer 0 with BC5's own internal shaders is logged once", "[agc][system]") {
+    Env env;
+    static int hits = 0;
+    hits = 0;
+    bc5::reimpl::set_log([](const char *, const char *message) {
+        if (std::string(message).find("STATIC-BUFFER-0 READ") != std::string::npos) {
+            ++hits;
+        }
+    });
+    REQUIRE(agc::module_load() == 0);
+    u64 out[2] = {};
+    CHECK(agc::sceAgcGetStaticBuffer(0, out) == 0);
+    CHECK(hits == 0); // the module file's shaders: nothing to report
+    tst::set_internal_own(true);
+    CHECK(agc::sceAgcGetStaticBuffer(1, out) == 0);
+    CHECK(hits == 0); // other buffers are not the shader table
+    CHECK(agc::sceAgcGetStaticBuffer(0, out) == 0);
+    CHECK(agc::sceAgcGetStaticBuffer(0, out) == 0);
+    CHECK(hits == 1);
+    bc5::reimpl::set_log(nullptr);
+}
+
 TEST_CASE("semaphore memory registration and labels", "[agc][system]") {
     Env env;
     std::vector<std::uint8_t> mem(0x10000, 0xAA);

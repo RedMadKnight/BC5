@@ -503,6 +503,14 @@ std::int32_t sceAgcGetStaticBuffer(std::uint32_t index, std::uint64_t *entry_out
     if (index >= 6) {
         return kErrRange;
     }
+    // Static buffer 0 is the internal shaders' code table. BC5's own table has only the fill
+    // shader; the original's other four shaders are not re-created (never executed on BC5 so far).
+    // A title that reads it shows here at once.
+    if (index == 0 && state().internal_own && !state().internal_own_read_logged) {
+        state().internal_own_read_logged = true;
+        log(kModule, "STATIC-BUFFER-0 READ: the internal shader code table was read; BC5 provides "
+                     "only the fill shader (slot 0), slots 1-4 are empty (PROVENANCE.md)");
+    }
     if (state().static_area != state().expected_static_area || state().static_area == 0) {
         return kErrNotInitialised;
     }
@@ -1141,6 +1149,7 @@ void reset() {
     g_exported_word = 0;
 }
 void set_expected_static_area(std::uint64_t address) { state().expected_static_area = address; }
+void set_internal_own(bool value) { state().internal_own = value; }
 void set_soc_id(std::uint32_t soc_id) { state().soc_id = soc_id; }
 void set_workaround_mask(std::uint32_t mask) { state().workaround_mask = mask; }
 void set_trace_initiator(std::uint32_t index_1_to_10, std::uint32_t value) {
