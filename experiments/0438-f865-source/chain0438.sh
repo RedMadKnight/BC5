@@ -20,8 +20,8 @@ ulimit -c 0
 export LC_ALL=C
 W=$HOME/bc5-work; E=$W/exp0438; HERE=$(cd "$(dirname "$0")" && pwd)
 MODE=${MODE:?route or scene}; k=${K0:?the last run number}
-SB=$W/kytyplus-build/src/kyty_emulator; CB=$E/normal/kyty_emulator
-SW=$(md5sum < "$SB" | cut -d' ' -f1); CW=$(cat "$E/normal/binary.md5")
+SB=$W/kytyplus-build/src/kyty_emulator; CB=${CB_BIN:-$E/normal/kyty_emulator}  # CB_BIN=$E/cat/normal/kyty_emulator: the catcher c438
+SW=$(md5sum < "$SB" | cut -d' ' -f1); CW=$(cat "$(dirname "$CB")/binary.md5")
 WORDS=$W/exp0413/n/words0413nz.txt
 WAY2="BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_INDIRECT=1 BC5_DIRECT_ACB_STATE_NO_WALK=1 BC5_DIRECT_ACB_SPLIT_LATE=3 BC5_DIRECT_TIMEOUT_PROBE=1"
 OUT=$E/chain-rows.txt
@@ -54,8 +54,9 @@ for arm in ${ORDER:-S C S C S C}; do
     K) bin=$CB; want=$CW; AW="BC5_0438_KEEP=1 BC5_DIRECT_VIEWS_GEN=0" ;;
     V) bin=$CB; want=$CW; AW="BC5_0438_KEEP=0 BC5_0438_HOLD=0 BC5_DIRECT_VIEWS_GEN=1" ;;
     H) bin=$CB; want=$CW; AW="BC5_0438_KEEP=0 BC5_0438_HOLD=1 BC5_DIRECT_VIEWS_GEN=0" ;; HV) bin=$CB; want=$CW; AW="BC5_0438_KEEP=0 BC5_0438_HOLD=1 BC5_DIRECT_VIEWS_GEN=1" ;;
+    T) bin=$CB; want=$CW; AW="" ;;
     C2) bin=$CB; want=$CW; AW="BC5_0438_KEEP=0 BC5_0438_HOLD=0 BC5_DIRECT_VIEWS_GEN=0" ;; KV) bin=$CB; want=$CW; AW="BC5_0438_KEEP=1 BC5_DIRECT_VIEWS_GEN=1" ;;
-    *) say "arm $arm: S, C, C2, K, KV, V, H or HV"; break ;; esac
+    *) say "arm $arm: S, T, C, C2, K, KV, V, H or HV"; break ;; esac
   t=u438$mt$arm$k; while [ -e "$RAW/$t-start.txt" ] || [ -e "$RAW/$t-end.txt" ]; do t=${t}b; done
   [ -e "$E/STOP" ] && { say "STOP file before $t"; break; }
   pgrep '^kyty_emulator' > /dev/null && { say "an emulator runs before $t (not ours): stop"; break; }
@@ -78,6 +79,7 @@ for arm in ${ORDER:-S C S C S C}; do
   if [ -n "$PD" ] && [ -f "$DL" ] && [ "$DL" -nt "$E/raw/$t-t0" ]; then
     SU="log $DL; GIVEN UP $(grep -ac 'GIVEN UP' "$DL"); k438 lines $(grep -ac '^k438 (exp 0438)' "$DL"); k438b [$(grep -a '^hold tail (exp 0438, k438b): [0-9]* holds' "$DL" | tail -1 | cut -c1-400)], STILL HELD $(grep -ac 'STILL HELD' "$DL"); last 60-s: $(grep -a '^ho430 (exp 0430): t' "$DL" | tail -1 | grep -o 'F4 fences [0-9]*\|F2 cycles left as they are [0-9]*\|k438 .*' | tr '\n' ' ')"
     SU="$SU; vg437 [$(grep -a '^exp 0437 (tag vg437)' "$DL" | tail -1)]"
+    SU="$SU; c438 [$(grep -a '^c438 (exp 0438): t ' "$DL" | tail -1 | cut -c1-500)], c438 late packets $(grep -ac '^c438 (exp 0438): queue' "$DL")"
     SU="$SU; frames (frame profile, last 290 s of the journal) $(grep -a '^frame profile: t' "$DL" | awk '{t=$4+0; g=$6+0; T[NR]=t; G[NR]=g} END {e=T[NR]; for (i=1;i<=NR;i++) if (T[i] >= e-290) {n++; if (G[i]>50) a++; if (G[i]>100) b++} printf "%d, over 50 ms %d, over 100 ms %d", n, a, b}')"
   else SU="no direct.log of this run found"; fi
   echo "$t $arm [$AW] ${CLASS:-NONE} | $FPS | exe [$EXE] | pad keys $PADN | journal [$SU] | $(printf '%s\n' "$line" | cut -c1-300)" >> "$OUT"

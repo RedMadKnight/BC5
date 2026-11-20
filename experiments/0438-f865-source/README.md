@@ -353,6 +353,31 @@ memory.h `0b3ac45f…`); 0 errors, only the old warnings; shared builds checked 
   - per acb, the time its queue's write pointer first showed it against its submit time;
   - at each give-up and each hold, which guest queues had unready heads, and on which labels.
 
+## The catcher c438 (built offline, not compiled yet: the box waits for a reboot)
+
+The top session's question: is the writer acb late on the title's side or the host's? `mkcat438.py` applies the
+catcher to patch bb04219b's unit (`a62e8bf6…` → `cat/bc5LleAgc.cpp`).
+- **Scope:** records only, normal build only (`#ifndef BC5_LEAN`), no switch, no behaviour change.
+- **Per compute-queue IB packet**, bc5-ring records:
+  - when its look at the queue first found the write pointer past the packet (seen);
+  - the gap since its previous look at that queue: the title wrote the packet somewhere inside that gap;
+  - when the slice holding the packet went to `Direct::submit`.
+- **Every 60 s:** one line with the packet count, the seen→submit histogram (<1, <5, <20, <100 ms, more) and the
+  look-gap histogram, with the longest of each.
+- **Each packet** with seen→submit ≥ 20 ms or a look gap ≥ 20 ms: one line (the first 200, then every 256th).
+- **At every CPU wait** that ends GIVEN UP, TIMEOUT or CYCLE: every guest queue as bc5-ring last left it. That is
+  its pending dwords, how long ago bc5-ring looked, and whether its head is unready. For an unready head: since when,
+  the label, value and position of its wait, and how long ago its packet was first seen.
+- **How it decides:** a late acb with a short look gap and seen→submit near 0 was written late by the title. A long
+  seen→submit, or an unready head in front of it, is host-side. A long look gap means bc5-ring was busy elsewhere,
+  which is host-side too.
+- **Kit:**
+  - `box0438.sh buildcat` compiles it with the shared normal build's own command into
+    `~/bc5-work/exp0438/cat/normal/kyty_emulator`. It pins `K_CAT`, the md5 of `cat/bc5LleAgc.cpp`.
+  - `CB_BIN=$HOME/bc5-work/exp0438/cat/normal/kyty_emulator MODE=scene ORDER="T T T" bash chain0438.sh` runs it as
+    arm T, with no words of its own. The chain line carries the last c438 60-s line and the count of late packets.
+- **Not compiled yet.** The laptop cannot build the unit. The box is off-limits until the maintainer reboots it.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
