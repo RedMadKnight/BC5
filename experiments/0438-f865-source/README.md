@@ -840,6 +840,71 @@ measured on the box.
   - the prepare split;
   - the u438 line.
 
+## Result 9: u438 on a clean boot (2026-11-20 14:07–15:16, boot eb264b8c, 0 GPU reset lines, binary 0ccc5aa8)
+
+- **Build:** normal `0ccc5aa8c2fa9b20e98578c907f3506b` (unit `78f319da…`).
+  - Built under BOX-LOCK 14:06–14:10, after checking that no emulator was running and no lock was held.
+  - Shared builds unchanged.
+- **Chain:** `UC U UR` × 3, his scene, RT on, 300 s each, under the user manager. One R64 waiter, no reads during the
+  runs.
+- **Outcome:** 9 of 9 NO_CRASH, pad keys 0 in all, no GPU line. The chain ran to its end.
+- **Raw:** `raw/u438-chain-out.txt`, `raw/u438-chain-rows.txt`.
+
+| run | arm | flips/s | s with a gap > 50 ms | > 100 ms | give-ups | bc5-ring's dev-mutex waits behind `game/prep-pre-k1f412` (s) | bc5-ring's dev-mutex time in slices (s) | journal line at |
+|---|---|---|---|---|---|---|---|---|
+| u438sUC42 | UC | 34.67 | 215 | 69 | 2 | 16.4 | 38.2 | 360 s |
+| u438sU43 | U | 33.53 | 221 | 68 | 2 | 11.7 | 34.1 | 360 s |
+| u438sUR44 | UR | 33.33 | 216 | 74 | 0 | 11.6 | 33.9 | 360 s |
+| u438sUC45 | UC | 35.05 | 220 | 66 | 2 | 14.6 | 37.8 | 360 s |
+| u438sU46 | U | 35.12 | 204 | 58 | 1 | 12.0 | 33.8 | 360 s |
+| u438sUR47 | UR | 33.43 | 230 | 76 | 0 | 17.3 | 43.9 | 420 s |
+| u438sUC48 | UC | 34.16 | 227 | 67 | 2 | 18.5 | 45.0 | 420 s |
+| u438sU49 | U | 33.72 | 224 | 80 | 2 | 13.3 | 40.3 | 420 s |
+| u438sUR50 | UR | 34.75 | 219 | 74 | 0 | 14.0 | 40.5 | 420 s |
+
+**Rates.** The holder and slice times are cumulative up to the run's last 60-s line, at 360 or 420 s, so they are
+compared per minute.
+- Waits behind k1f412:
+  - UC: 2.73, 2.43, 2.64 s/min;
+  - U: 1.95, 2.00, 1.90 s/min;
+  - UR: 1.93, 2.47, 2.00 s/min.
+- bc5-ring's dev-mutex time in slices:
+  - UC: 6.37, 6.30, 6.43 s/min;
+  - U: 5.68, 5.63, 5.76 s/min;
+  - UR: 5.65, 6.27, 5.79 s/min.
+
+**The u438 line (U and UR).**
+- 345,736–405,410 walks before the lock, 7.2–9.0 s of walk time in all.
+- 99.3 % were used under the lock. 2,325–2,802 were walked again because the mapping list had changed.
+
+**r438 (UR only).**
+- Early writes that never reached the ring: 0 in all three runs.
+- Game-thread waits for an early writer: 30,707–33,874 waits, 16.95 / 18.48 / 18.96 s in all, longest 35.9 / 63.1 /
+  60.7 ms. No bug lines (none over 100 ms).
+
+**Reading** (R13: 3 against 3 shows no significance).
+- **u438 does what it was built for, by a little.**
+  - bc5-ring's waits behind the game thread's k1f412 drop by about a quarter: 1.90–2.00 s/min in U against 2.43–2.73
+    in UC. The ranges do not overlap.
+  - bc5-ring's whole device-mutex time in slices drops by about 10 %: 5.63–5.76 against 6.30–6.43 s/min.
+- **It does not show at the frame level.**
+  - flips/s: UC 34.16–35.05, U 33.53–35.12, UR 33.33–34.75. These overlap.
+  - Seconds with a gap over 50 ms: UC 215–227, U 204–224, UR 216–230. These overlap too.
+- **Most of k1f412's hold is not the walk.**
+  - Even with the walk outside the lock, about 2 s/min of bc5-ring's waits still fall behind `prep-pre-k1f412`.
+  - The walk itself costs about 1.2–1.3 s/min, now outside the lock.
+  - What is left under the lock is the imports (`direct_force`), the `sorted_mappings()` call for the compare, and
+    the redo walks (about 0.7 %). Which of these dominates is not measured.
+- **Give-ups.** UC 2/2/2 and U 2/1/2: the F262 give-up still happens, but no run hung. UR 0/0/0, as in result 6, at
+  the cost of 17–19 s a run of game-thread waits for early writers.
+- **Proposal for the top session** (not done):
+  - keep u438 as harmless but too small to bake on its own;
+  - r438 mode 1 stays the only arm that removes the give-ups;
+  - what is left on the device mutex is bc5-ring's own preparation and the game thread's k1f412 imports:
+    - in c438's by-kind slice table, bc5-ring's own `prep-direct-sync` takes 18.6 s and `prep-filter` 8.8 s
+      (u438sUC42);
+    - among the game-side holders that bc5-ring waits behind, every one other than k1f412 is ≤ 6.4 s a run.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its

@@ -1,0 +1,21 @@
+chain0438 14:07:50: mode scene, play 300 s, order UC U UR UC U UR UC U UR; shared f345db74, candidate 0ccc5aa8; runner 2d11fd6b; kernel 7.3.3-ogc1.1.fc45.x86_64; boot eb264b8c
+chain0438 14:07:51: GPU timeout/reset lines since boot at the chain's start: 0 (the baseline; the route runner refuses on any other count)
+chain0438 14:07:51: run u438sUC42, arm UC, 0ccc5aa8
+chain0438 14:15:05: u438sUC42: NO_CRASH; 34.67 flips/s over 293 s from G+10, 215 s with a gap over 50 ms, 69 over 100 ms; pad keys 0
+chain0438 14:15:25: run u438sU43, arm U, 0ccc5aa8
+chain0438 14:22:37: u438sU43: NO_CRASH; 33.53 flips/s over 289 s from G+10, 221 s with a gap over 50 ms, 68 over 100 ms; pad keys 0
+chain0438 14:22:58: run u438sUR44, arm UR, 0ccc5aa8
+chain0438 14:30:09: u438sUR44: NO_CRASH; 33.33 flips/s over 290 s from G+10, 216 s with a gap over 50 ms, 74 over 100 ms; pad keys 0
+chain0438 14:30:29: run u438sUC45, arm UC, 0ccc5aa8
+chain0438 14:37:44: u438sUC45: NO_CRASH; 35.05 flips/s over 293 s from G+10, 220 s with a gap over 50 ms, 66 over 100 ms; pad keys 0
+chain0438 14:38:05: run u438sU46, arm U, 0ccc5aa8
+chain0438 14:45:20: u438sU46: NO_CRASH; 35.12 flips/s over 294 s from G+10, 204 s with a gap over 50 ms, 58 over 100 ms; pad keys 0
+chain0438 14:45:40: run u438sUR47, arm UR, 0ccc5aa8
+chain0438 14:52:58: u438sUR47: NO_CRASH; 33.43 flips/s over 294 s from G+10, 230 s with a gap over 50 ms, 76 over 100 ms; pad keys 0
+chain0438 14:53:18: run u438sUC48, arm UC, 0ccc5aa8
+chain0438 15:00:33: u438sUC48: NO_CRASH; 34.16 flips/s over 294 s from G+10, 227 s with a gap over 50 ms, 67 over 100 ms; pad keys 0
+chain0438 15:00:53: run u438sU49, arm U, 0ccc5aa8
+chain0438 15:08:09: u438sU49: NO_CRASH; 33.72 flips/s over 293 s from G+10, 224 s with a gap over 50 ms, 80 over 100 ms; pad keys 0
+chain0438 15:08:29: run u438sUR50, arm UR, 0ccc5aa8
+chain0438 15:15:46: u438sUR50: NO_CRASH; 34.75 flips/s over 293 s from G+10, 219 s with a gap over 50 ms, 74 over 100 ms; pad keys 0
+chain0438 15:16:06: chain ended
