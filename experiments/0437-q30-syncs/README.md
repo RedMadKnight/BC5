@@ -150,3 +150,27 @@ Cause found for Q30's number, a lead with a candidate for the dips.
   next test build with exp 0436's result (`BC5_DIRECT_VIEWS_GEN=0` as the control arm), in his scene and in free play.
 - Not done, next on the list if vg437 holds: the anonymous sync's remaining walks on the submit thread (94 s of led
   windows in play-f18) and the probe (117.5 s in all).
+
+## Box test kit (prepared 2026-11-20 08:05, laptop; not run, waits for the top session's GO)
+
+The top session's arms (2026-11-20): his shared scene and the scripted route, the candidate's normal build with the
+switch on (V) against the same binary with `BC5_DIRECT_VIEWS_GEN=0` (Z); RT on, 4 rings, `ulimit -c 0`, under
+`systemd-run --user`; nothing shared touched. `kit/` (byte-exact, `.gitattributes`):
+
+- `box0437.sh claim|build|release`: exp 0436's atomic BOX-LOCK claim; `build` pins the shared builds (normal
+  `f345db74`, lean `6a735b81`, archive `d6638808`) and the tree's three units (bc5LleAgc.cpp `a62e8bf6`, memory.cpp
+  `aa7d7f5b`, memory.h `224b9fa8`, patch `bb04219b`), compiles the kit's `memory.cpp` and `bc5LleAgc.cpp` (`39664b96`,
+  `281b18ef`, memory.h `0b3ac45f`) with the shared normal and lean builds' own commands (`build0437.py` = exp 0436's
+  `build0436.py`), links with the shared archive, checks the switch string in both binaries and that nothing shared
+  changed, then runs `test_vg437.sh` with the container's g++.
+- `chain0437.sh`: exp 0436's chain with the arm as the word (V / Z), the same binary, the vg437 state line checked
+  against the arm, the run's last vg437 line (range table generation, direct generation, view builds) in its row, and
+  the journal's frame profile, timing split, d432 and vg437 lines kept in `raw/<tag>-sync.txt.gz` for
+  `split0437.py` / `frames0437.py`. 07:00-12:00 only with `DAY_OK=1`.
+- `smoke0437.sh`: exp 0436's ASTRO BOT smoke (normal and lean, 200 s each), renamed.
+
+Laptop stand-in dry run of `chain0437.sh` (fake HOME, fake runner and binaries, stub pgrep/sudo/readlink): V Z V ran
+in order, Z got `BC5_DIRECT_VIEWS_GEN=0` as its last word and V none, the exe check matched, rows and sync extracts
+written; a state line that did not match its arm stopped the chain; without `DAY_OK` at 08:02 it stopped. `bash -n`
+passes on all four scripts. Not dry-run: `box0437.sh build` (needs the box's distrobox) and `smoke0437.sh` (exp 0436's,
+renamed only).

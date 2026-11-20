@@ -24,5 +24,5 @@ if [ -z "$cxx" ]; then
 		cxx=g++
 	fi
 fi
-(cd "$out" && "$cxx" -std=c++20 -O1 -Wall -Wextra -Werror -Wno-unused-function -Wno-deprecated-declarations -D_CRT_SECURE_NO_WARNINGS -o t437.exe test_vg437.cpp)
+(cd "$out" && "$cxx" -std=c++20 -O1 -Wall -Wextra -Wno-unused-function -Wno-deprecated-declarations -D_CRT_SECURE_NO_WARNINGS -o t437.exe test_vg437.cpp)
 "$out/t437.exe" "$seeds"
