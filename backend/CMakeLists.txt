@@ -43,6 +43,11 @@ add_library(bc5_backend
 target_include_directories(bc5_backend PUBLIC include PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated)
 target_link_libraries(bc5_backend PRIVATE bc5_warnings)
 
+# Clean-room re-creations of libSceAgc, libSceAgcDriver and libScePsml (src/reimpl/PROVENANCE.md).
+# No GPU access; the host registers them only behind BC5_REIMPL_* switches (default off).
+file(GLOB BC5_REIMPL_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/reimpl/*.cpp)
+target_sources(bc5_backend PRIVATE ${BC5_REIMPL_SOURCES})
+
 # dispatch-min: --dump-ib everywhere; --info and --submit only with BC5_WITH_AMDGPU.
 # --submit is never run by tests or CI (CLAUDE.md hard rule 5).
 add_executable(dispatch-min experiments/dispatch-min/main.cpp)
@@ -111,6 +116,8 @@ if(BC5_BUILD_TESTS)
                    tests/zero_skip_test.cpp tests/draw_args_test.cpp
                    tests/acb_restore_test.cpp tests/env_flag_test.cpp
                    tests/start_state_test.cpp tests/gc_trace_test.cpp)
+    file(GLOB BC5_REIMPL_TESTS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/reimpl/*_test.cpp)
+    target_sources(bc5_backend_tests PRIVATE ${BC5_REIMPL_TESTS})
     target_link_libraries(bc5_backend_tests PRIVATE bc5_backend bc5_warnings Catch2::Catch2WithMain)
     # Experiment 0418: start_state_test.cpp checks the header against the table.
     target_compile_definitions(bc5_backend_tests PRIVATE
