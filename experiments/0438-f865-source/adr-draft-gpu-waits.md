@@ -150,9 +150,18 @@ Reproduce the console's model, in two parts.
 
 ### Test (after the build, on the top session's slot)
 
-- Chain `C W C W C W` on a clean boot, the gate C ≥ 33.3, RT on, his scene, the R64 waiter, a stop on any GPU line.
-  - C = all three switches off;
-  - W = watcher + kick + r438 mode 1.
+- Chain `C W WD C W WD C W WD` (9 runs) on a clean boot, the gate C ≥ 33.3, RT on, his scene, the R64 waiter, a
+  stop on any GPU line. c438d (the gc-ioctl catcher) records in every arm, so the kick counts come from all 9 runs.
+  The arms:
+
+  | arm | `BC5_0438_WATCHER` | `BC5_0438_KICK` | `BC5_0438_EARLYREG` | what it answers |
+  |---|---|---|---|---|
+  | C | 0 | 0 | 0 | today's consumer (the reference) |
+  | W | 1 | 0 | 1 | the watcher and per-queue submitters alone (option A) |
+  | WD | 1 | 1 | 1 | A woken by the kick (A + D) |
+
+  C → W measures A; W → WD measures what the kick adds. The kick counts against write-pointer moves, the calling
+  thread and the offset-to-pointer match come from c438d in all arms.
 - **Per run:**
   - flips/s and frames over 50 / 100 ms;
   - give-ups;
