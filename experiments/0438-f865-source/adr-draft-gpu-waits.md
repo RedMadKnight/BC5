@@ -70,3 +70,96 @@ Reproduce the console's model, in two parts.
 2. The watcher (A) and per-ring submitters, with c438's records. Measure the look gaps against today's.
 3. GFX waits on the GPU with no CPU wait. Test on the scene and the route with RT on. A GPU fault is a bug with a
    record.
+
+## Build design w438 (the next test build; the top session's order of 2026-11-20). Not built.
+
+**Facts it rests on:**
+- **c438 (results 4–6).** bc5-ring's look gaps reach 1.6 s. At every give-up the writer's queue head was ready while
+  bc5-ring was busy elsewhere: preparing another slice, or waiting on the device mutex.
+- **t438 run 2.** A compute job of the same VM releases a GFX job waiting on the GPU, at once. The kernel adds no
+  dependency.
+- **The kick.** `/dev/gc` 0xc010811c carries `me, pipe, queue, offset` (A:16669-16674); "offset" is presumably the
+  new write pointer, TODO(verify). The host logs it and returns 0.
+- **The kick's count is not known.** The C3/A logs have no host LOGF lines, so its count against write-pointer
+  moves is not available. **D is pending a catcher (c438d below).**
+
+**Switches.** Each is behind its own switch, per "fixes first, then test":
+
+| switch | what | default in the test build |
+|---|---|---|
+| `BC5_0438_WATCHER` | w438: watcher + per-queue submitters | on |
+| `BC5_0438_KICK` | D: the kick wakes the watcher | on (records only if the counts show no kicks) |
+| `BC5_0438_EARLYREG` | r438 mode 1, the bridge | 1 |
+| (none) | c438 records + c438d (records only) | normal build only |
+
+### w438: one watcher, one submitter thread per busy guest queue
+
+- **The watcher `bc5-dbw`.**
+  - Its loop: read every registered queue's write pointer; for a queue whose pointer moved, record the time and
+    wake that queue's submitter (a per-queue `std::atomic<uint64_t>` sequence plus a futex/condvar wait).
+  - Then sleep 50 µs (`clock_nanosleep`, relative), or wake at once on a kick (D).
+  - It does no submission work and takes no lock the submitters hold, except a short per-queue mutex for its hand-over
+    record. R62: it never waits on anything a submitter or the game thread holds.
+- **A submitter per guest queue, created at the queue's first write.**
+  - It runs today's consumer body for its queue only: `acb_ready`, the take, r438's early registration,
+    `Direct::submit "ring"`, chain_end, r438_end, and the post that publishes the read pointer.
+  - Guest queues are independent hardware queues on the console. Here each gets its own thread, so one queue's
+    preparation or device-mutex wait no longer delays another queue's take.
+  - The per-ring order to the kernel stays what exp 0436's per-ring lock gives: several guest queues can share a
+    libdrm ring, and their jobs reach the kernel in the order their submitters take the ring lock.
+- **What changes from one ring thread to many** (each checked in the code before building):
+  - `g_acb_heads` (A:7290, "the queue consumer thread only") becomes per submitter (`thread_local`). Each acb belongs
+    to one queue.
+  - `t_unready`, `t_queue_idx`, `t_ring`, the chain slot `g_chain_tl` and c438's `t_ring`/kinds are already
+    thread-local; they become per submitter.
+  - `g_unready_label` and `g_unready_writes` (one blocked queue, read by the game thread's cycle check) become a
+    small set: any submitter's blocked label. The game thread's check looks the label up in it.
+  - The w428 ring choice per queue (`g_w428_qring`, under `g_w428_mu`) stays. Its ring move does `wait_idle` (2 s);
+    with several submitters it must not wait on another submitter's ring work. To check: whether a move can wait
+    on a GFX job that waits for this queue. The move is kept as it is, and counted.
+  - ho430 F10/F16/F18 run "on bc5-ring": they poll the game thread's chains with try-locks (R62). With N submitters
+    they run on each, with no new lock. To check: their counters are atomic or under `Store::m`.
+  - The soft CP's posts: each submitter posts its queue's read-pointer publish behind its own jobs. The completion
+    queue keeps push order, so each queue's publishes stay in order.
+- **Not changed:**
+  - the game thread's waits: r438 mode 1 stays as the bridge;
+  - the chain hold;
+  - F4/F10/F16/F18;
+  - the GPU-decided GFX wait. That is the ADR's step 3, for after w438 is measured.
+
+### D: the kick as the watcher's wake-up (`BC5_0438_KICK`)
+
+- On 0xc010811c, the ioctl (on the title's thread) bumps a global kick sequence and wakes the watcher. That costs one
+  futex wake.
+- The watcher then reads every pointer at once.
+- If the kick's `offset` proves to be the new write pointer (c438d), the watcher could take the queue named by
+  `me/pipe/queue` without a scan. Not before the mapping is known.
+
+### c438d: the catcher that decides D (records only, normal build)
+
+- **Per `/dev/gc` request:** count, and the calling thread's kind: game thread, a submitter, or other.
+- **For 0xc010811c:**
+  - `me, pipe, queue, offset`;
+  - the registered queue whose `a/b/c/d` match (TODO(verify): the mapping);
+  - that queue's write pointer when the kick arrives;
+  - the time since its last move as the watcher saw it;
+  - whether `offset` equals the pointer;
+  - the time until the watcher's next look.
+- **For 0xc0048116 / 0xc0048117:** count and thread.
+- **Output:** a 60-s line, plus the first 64 kicks in full.
+
+### Test (after the build, on the top session's slot)
+
+- Chain `C W C W C W` on a clean boot, the gate C ≥ 33.3, RT on, his scene, the R64 waiter, a stop on any GPU line.
+  - C = all three switches off;
+  - W = watcher + kick + r438 mode 1.
+- **Per run:**
+  - flips/s and frames over 50 / 100 ms;
+  - give-ups;
+  - early writes that never reached the ring (must be 0) and the early-writer wait seconds;
+  - c438's look gaps (the target: under 1 % over 20 ms, and the longest well below today's 1.6 s);
+  - seen→submit;
+  - the device-mutex holders;
+  - c438d's kick counts.
+- **The question W answers:** does seeing the doorbell at once, and submitting each queue on its own thread, take
+  bc5-ring's look gaps (and with them the early-writer waits) down? Read 3 against 3, honestly (R13).
