@@ -1450,6 +1450,58 @@ where there is one. That is a build item, and is asked for first, as the top ses
 - From now on a gain or a cost counts only from lean against lean, read from MangoHud's per-frame log: median, p95 and
   p99 frame time, plus mean flips/s.
 
+## The lean round's kit (b438; prepared offline, not built)
+
+**Unit.** `mkb438.py` on the shared tree's unit (`a62e8bf6`, patch bb04219b) → b438
+**`7218cab6684267d51701159397ce7902`**. It is r438 alone, in the shape a bake would take:
+- No c438, k438, u438, s438 or e438. Mode 1 only, since r438a's mode 2 never fired.
+- `BC5_0438_EARLYREG` is on unless "0". It is behaviour, so lean reads it too.
+- Lean keeps the early registration, the game-thread poll and the removal of a lost write's early entry.
+- Normal only: the counters, both BUG lines and a 60-s line `r438 (exp 0438, b438)`.
+
+**Test.** `bash test_b438.sh` (test_r438's cases, with the mode-2 case made a mode-1 case) PASSES in five
+configurations:
+- normal with the switch unset, =1 and =0;
+- lean (`-DBC5_LEAN`) with it unset and =0.
+
+On the laptop, case 1's wait (the writer registers 30 ms after the game thread starts waiting) took 60–175 ms, and in
+3 of 6 runs it crossed the 100-ms BUG line. So case 1 checks for no lost write, not for "no BUG line".
+- A candidate, not checked on the box: the poll holds `g_plw_mutex` while it scans `g_plw` (up to 8,192 entries) and
+  sleeps only 20 µs between scans, so the writer's `register_label_writes` can be held off.
+- Not changed: it is a behaviour change, for the top session to decide.
+
+**Runner.** `mkrun0438l.py` makes `run0438l.sh` (`7c6da668`). It is exp 0432's scene runner (`2d11fd6b`) with exp
+0430's `mkrun0430l.py` hunks applied unchanged:
+- N_MH: MangoHud's own per-frame log, an invisible overlay, every frame;
+- N_LEANSESS: the Plasma shell stopped for the run, as the lean shortcuts do;
+- P_HOST: off, the distrobox as before;
+- the checks at 30 s and at G+60.
+
+The timed-route hunks are skipped, since the runner already has them.
+
+**Chain.** `chain0438l.sh`. Every arm runs the same way:
+- the route by time: cross at 90 s, slot 4 at +8, Continue at +8, G at +20 = 126 s;
+- MangoHud's log as the one counter, written before the run ends;
+- G+300.
+
+| arm | build | `BC5_0438_EARLYREG` | other |
+|---|---|---|---|
+| L0 | lean b438 | 0 | |
+| L1 | lean b438 | 1 | |
+| N0 | normal b438 | 0 | the usual journal words |
+| O | normal b438 | 0 | `BC5_0438_OUTSIDE=1`, if built |
+
+Gate: the first L0 at ≥ 33.3 flips/s.
+
+**Statistics.** `mh0438.py G FROM TO csv...` gives, per run:
+- frames and mean flips/s;
+- frame time median, p95, p99 and max;
+- frames over 50 and over 100 ms;
+- the share of the time spent in frames over 50 ms.
+
+**Build.** `box0438.sh buildb` builds normal and lean from b438 with each shared build's own command, and stops if the
+lean binary holds r438's journal strings.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
