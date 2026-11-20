@@ -107,8 +107,8 @@ on the top session's GO.
 
 | request | `_IOC` reading, TODO(verify) | count in about 360 s | thread | host | identified? |
 |---|---|---|---|---|---|
-| 0xc0088133 | in/out, 8 bytes, group 0x81, number 0x33 | 14,962 (one per submit header) | Render Thread | default case: zero-filled, returns 0 | **no** |
-| 0xc0108139 | in/out, 16 bytes, group 0x81, number 0x39 | 14,963 (one per submit header) | Render Thread | default case: zero-filled, returns 0 | **no** |
+| 0xc0088133 | in/out, 8 bytes, group 0x81, number 0x33 | 14,962 (one per submit header) | Render Thread | default case: zero-filled, returns 0 | **yes, unverified**: sceAgcSuspendPoint's per-ring "reset prologue state" (below) |
+| 0xc0108139 | in/out, 16 bytes, group 0x81, number 0x39 | 14,963 (one per submit header) | Render Thread | default case: zero-filled, returns 0 | **yes, unverified**: the check for a requested suspend (below) |
 | 0xc010813b | in/out, 16 bytes, number 0x3b | 1 | game-main | zeros | no |
 | 0x80048126, 0x80048134 | in, 4 bytes, numbers 0x26 / 0x34 | 1 each | game-main | zeros | no |
 | 0x80888123 | in, 0x88 bytes, number 0x23 | 1 | game-main | zeros | no |
@@ -123,3 +123,46 @@ on the top session's GO.
   bits 0-7 the number. A public note says the console's device ioctls do not follow it: TODO(verify).
 - No behaviour change until identified (the top session's ruling). The next step is the arguments the title passes:
   a records-only dump of the first calls' in-buffers, if the top session wants it.
+
+## 0xc0088133 and 0xc0108139 identified (2026-11-20; unverified)
+
+**Source.** reimpl-agc-psml's description of libSceAgcDriver, relayed by the top session. It describes behaviour only
+and has not been tested here.
+- **0xc0088133** `{ring id, result}` (the result is pre-set to 1) is sceAgcSuspendPoint's per-ring "reset prologue
+  state".
+  - Our zero-fill makes the result 0, which the driver reads as success. The driver then clears "prologue sent".
+  - So the next DCB submit sends the ring prologue again (0xc0488131), and the pending suspend DCB becomes the head of
+    the next 0xc0188132 list.
+- **0xc0108139** `{status out, in = the suspend argument, u64 out}` asks whether a suspend was requested. Zeros mean
+  "no suspend requested", and the title ignores the status.
+
+The counts fit: the two requests and 0xc0488131 come about 16,400 times per 420 s each, once per frame, all on the
+Render Thread (c438d's rows: 0xc0488131 16,423, 0xc0088133 16,422, 0xc0108139 16,423).
+
+**(1) A prologue sent again every frame: do we handle it correctly and cheaply?**
+- The 0xc0488131 handler (unit `gc_ioctl`, `case 0xc0488131`) keeps no state. Every call, the second and later
+  ones included, does the same: `chain_begin()`, then `submit_raw` of the 3 context-control dwords ("cc") and
+  `submit_ib_packet` of the 3 header IBs ("hib": the state preamble and the 2-dword IB), then `chain_end()` and
+  `soft_posts_end()`, then status 0.
+- So each frame's prologue is one more submission through the whole path: filter, tracker, prepare (with its
+  direct sync under the device mutex) and one kernel submit.
+- Correct: the prologue is plain PM4 state and is handled like any buffer. A repeated preamble only sets the same
+  state again.
+- Cheap: **not measured**. It is about 1 of the Render Thread's ~7.5 jobs a frame in the frame profile, so it could
+  cost a few percent of "inside" (5.7 ms). The per-job records (exp 0415's fs415, kind "cc"/"hib") or a frame
+  profile by kind would give the number.
+- A cheaper path, if it shows: a prologue byte-identical to the last one, submitted with no state change between,
+  could join the next DCB's chain instead of being its own submission. That is not proposed; it is a candidate.
+
+**(2) Is the suspend DCB at the head of the next submit handled like any DCB?** Yes.
+- The 0xc0188132 handler submits every list entry the same way, as a "dcb" `submit_raw` inside one chain. There is no
+  special case for the first entry.
+- What a suspend DCB holds was not read. If it is only a marker (a NOP or a label write), it costs one more buffer
+  in an existing chain.
+
+**(3) A likely PS5 per-frame behaviour we emulate by accident of zero-fill (unverified).**
+- If the real kernel answers 0xc0088133 with "nothing to reset" (the result left at 1), the console would not send
+  the prologue every frame, and we do more work than the console.
+- If it answers 0 as we do, we match it.
+- Not known, so the default case stays as it is: zero-filled, return 0, no behaviour change (the top session's
+  ruling). To check: what the result is on hardware, or in a public trace of the driver.
