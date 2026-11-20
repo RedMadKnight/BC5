@@ -40,6 +40,14 @@ static void wait_on(void* o, int ms) {
 	BC5_O438_WAIT(kWaitSema, o);
 	std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 }
+// a wait that ends because of a post, as a semaphore wait does: blocked until *posted, at least ms. The waker case
+// once slept a fixed 20 ms against a worker's 5-ms sleep and post; on the laptop the worker's thread start and sleep
+// took ~40 ms, the post landed after the wait, and the case failed with waker 0 (a race of the test, not of o438).
+static void wait_until_posted(void* o, const std::atomic<bool>* posted, int ms) {
+	BC5_O438_WAIT(kWaitSema, o);
+	const auto t0 = std::chrono::steady_clock::now();
+	while (!posted->load() || std::chrono::steady_clock::now() - t0 < std::chrono::milliseconds(ms)) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+}
 static void cond_wait(int ms) { // outer cond wait with an inner mutex lock
 	BC5_O438_WAIT(kCondWait, &obj_cond);
 	std::this_thread::sleep_for(std::chrono::milliseconds(ms));
@@ -56,12 +64,14 @@ int main() {
 	BC5_O438_FLIP(); // the first flip: the clock starts
 	std::thread render([&] {
 		stub_set_name("Render Thread", 1001);
-		std::thread worker([] {
-			stub_set_name("Job Hi 0", 2002);
-			std::this_thread::sleep_for(std::chrono::milliseconds(5));
-			BC5_O438_SIGNAL(&obj_sema); // the worker posts before the Render Thread's wait ends
+		std::atomic<bool> posted {false};
+		std::thread       worker([&posted] {
+            stub_set_name("Job Hi 0", 2002);
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+            BC5_O438_SIGNAL(&obj_sema); // the worker posts; the Render Thread's wait ends after it
+            posted = true;
 		});
-		wait_on(&obj_sema, 20);
+		wait_until_posted(&obj_sema, &posted, 20);
 		worker.join();
 		cond_wait(5);
 	});

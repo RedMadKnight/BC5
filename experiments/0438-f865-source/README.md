@@ -1662,6 +1662,116 @@ These are cumulative o438 totals from the start to the end of the run (load incl
 - GIVEN UP lines: 2 in O339 and 1 in O340, in the normal build's direct.log, with EARLYREG off (as in the shared
   builds).
 
+## Frame pacing in the lean round (offline, from the 11 valid lean MangoHud logs; no box)
+
+The top session asked whether the pacing is two-moded: p50 is 16.9 ms while the mean is ~35 flips/s, so are frames
+either one vblank or 3+? Two tools answer it, using the same window as `mh0438.py` (G+10 to G+290, 275 s per run):
+- `vb0438.py` counts each frame as round(t / 16.667 ms) vblanks;
+- `lean-round/sec0438.py` and `cad0438.py` look at rates per second and at how long frames cluster.
+
+Outputs: `lean-round/vb0438-out.txt`, `lean-round/per-second.txt`.
+
+| Vblanks per frame | 1 | 2 | 3 | 4 | 5–6 | 7–12 | > 12 |
+|---|---|---|---|---|---|---|---|
+| Share of frames (all 11 runs, 105,883 frames) | 57.6 % | 27.8 % | 9.0 % | 3.0 % | 2.0 % | 0.5 % | 0.1 % |
+| Share of wall time | 33.6 % | 32.3 % | 15.8 % | 7.0 % | 6.0 % | 2.7 % | 2.5 % |
+
+- **Not two-moded.** One-, two- and 3+-vblank frames each take about a third of the time. Every run shows the same
+  shape: the 1-vblank share runs from 55.9 to 59.4 % of frames.
+- **Long frames come in stretches.**
+  - Of 15,487 frames of 3+ vblanks, 8,059 directly follow another one.
+  - The 6-frame pattern "3+ ×6" occurs 2,528 times.
+  - The common 6-frame patterns are 1-vblank runs with at most one 2-vblank frame in them.
+- **The rate follows the scene, not chance.**
+  - Each run's per-second rate correlates 0.68–0.89 with the mean of the other runs.
+  - The run-averaged rate per 10 s from G+10: 35, 39, 44, 48, 46, 49, 48, 47, 40, 46, 40, 43, 40, 37, **11**, 29, 33,
+    28, 27, 21, 31, 28, 27, 27, 26, 29, 29.
+  - So the first ~140 s run at ~45 flips/s; then a drop to ~11 at G+150–160 (the same in every run); then ~27 flips/s
+    to the end.
+  - Per second, 1.4 % of seconds have 0–4 flips and 15.2 % have 50–54.
+- **For the next diagnosis:** compare the fast phase (G+10 to G+140) with the slow one (G+160 to G+290), and the 3+
+  frames with the 1-vblank frames, within the same runs. Whether the long frames are the same host waits is open until
+  then.
+
+## The bake kit (r438 with PLWCV; prepared offline, not built, not deployed)
+
+The top session's proposal of 2026-11-20 to the maintainer is r438 with PLWCV and without p438, which has no
+performance case (result 13). The switches stay for a per-run opt-out. Nothing is deployed until his word. Kit
+`bake/` (on the box `~/bc5-work/exp0438/bake/`):
+- **`mkbake438.py`** (`154de2af`): runs mkb438.py (`3b00ab29`, the tested one) for its steps 1–6 only, so p438
+  (step 7) is not run. It also removes the lean build's lost-write counter and its two stderr lines: a catcher, and the
+  lean build carries no diagnostics (the maintainer's rule of 2026-11-15).
+  - Kept: BC5_0438_EARLYREG and BC5_0438_PLWCV, both on unless "0", read in normal and lean; normal's r438 count line
+    every 60 s and its BUG lines.
+  - On the tree unit `a62e8bf6` it gives `ff9e8fe2e4139264ebaf74f9e84bd892`. Against b438 (`a31a2091`, regenerated
+    here byte for byte) it removes 130 lines and adds none: the lean counter (2 hunks), p438's block and its 6 hooks.
+- **`0002-bc5-0438-baked.patch`** (`eb431795`): that unit against the tree's unit. It applies to a copy of
+  `a62e8bf6` and gives `ff9e8fe2` (git apply, core.autocrlf off).
+- **`swap0438.sh`** (`9efe522f`): exp 0436's swap0436.sh without its backend step, because r438 is in the host unit
+  only and the archive stays `d6638808`.
+  - Checks: patch bb04219b, the unit a62e8bf6, normal f345db74, lean 6a735b81.
+  - Copies the old state; applies the patch (the unit must become ff9e8fe2); the new 0001 must be PATCH_NEW, with
+    exp 0372 lines 5, the pad_audio_route header in and the same file list.
+  - Rebuilds normal and lean in place. Each binary must gain exactly BC5_0438_EARLYREG and BC5_0438_PLWCV, lose no
+    word, hold no p438 text, and only normal holds r438's count line.
+  - DRY=1 runs on copies.
+- **`undo0438.sh`** (`3b52da05`): back to bb04219b / f345db74 / 6a735b81, checked by md5. Without a rebuild,
+  `BC5_0438_EARLYREG=0` turns r438 off for one run.
+- **`run-swap0438.sh`** (`11712615`) and **`smoke0438s.sh`** (`0a990022`, exp 0436's smoke with its tags s438s*): the
+  normal ASTRO BOT run reports r438's count and BUG lines.
+- **`box0438.sh buildk`** (box0438.sh `24e773eb`): the private baked build, before any swap. Unit only, the shared
+  archive, `~/bc5-work/exp0438/bake/{normal,lean}`. It checks the switches, no p438 / o438 / lean counter, and r438's
+  line in normal only.
+- **Not done:** buildk on the box, the swap's dry run on copies of the tree (both need a box slot), and CI's backend
+  build (unchanged: the backend is not touched). After a swap, `backend/kytyplus-patches/0001-bc5-lle-agc.patch` on
+  main must become the box's new `git diff f266548`.
+
+## h438: the Render Thread's host-side split (prepared offline, not built)
+
+The question, from the O runs: the Render Thread blocks ~9 ms per frame outside the guest syncs. Where, and do the
+long frames block in the same places? h438 is records only, normal build only, off unless `BC5_0438_HOSTWAIT=1`.
+It is built on the bake unit, so it measures what would ship.
+- **`h438.hpp`** (`bdf94bf5`) writes one CSV line per Render Thread frame, flip to flip:
+  - wall; thread CPU, run-queue delay and timeslices (`/proc/self/task/<tid>/schedstat`); minor and major faults
+    (`.../stat`);
+  - gc_ioctl calls by code (0xc0488131, 0xc0188132, 0xc0108102, 0xc020810c, 0xc0048116, 0xc0048117, 0xc0088133,
+    0xc0108139, other): count, wall, and blocked (wall − thread CPU), counting the outermost call only;
+  - the VideoOutSubmitEopFlip span and its Direct::drain;
+  - lock-acquisition waits of 20 µs or more, by site;
+  - o438's guest-sync blocked time by kind (with `BC5_0438_OUTSIDE=1`; o438.hpp `a194989d` gains one hook pointer and
+    is otherwise unchanged).
+  - File: `BC5_0438_HOSTWAIT_FILE`, written every 64 frames.
+- **`mkh438.py`** (`7466020c`) on the bake unit `ff9e8fe2` gives `h438.cpp` `3aa9d745…` (not committed). It adds the
+  include, the gc_ioctl span, the flip span with its drain, and 123 lock sites:
+  - 122 one-line lock_guard / unique_lock sites;
+  - exp 0436's submit-ring lock, timed as one statement.
+  - Two sites are left as they are: a try_to_lock, which never blocks, and the ring lock's declaration.
+- **`box0438.sh buildh`** (box0438.sh `417da0ce`): the normal build of h438.cpp plus o438's six tree units, unit
+  only, with the shared archive: `~/bc5-work/exp0438/h438/normal`.
+- **chain0438l arm H** (chain0438l.sh `a4650a79`): the h438 normal build with `BC5_0438_HOSTWAIT=1
+  BC5_0438_OUTSIDE=1`, its CSV `$RAW/$t-h438.csv`. Diagnosis only, so no fps is reported.
+- **`ah438.py`** (laptop) gives the mean ms per frame:
+  - CPU, run queue and blocked;
+  - of blocked: gc by code, the flip with its drain, guest syncs, and the rest;
+  - lock waits by mutex and site, and faults;
+  - all of it for all frames, by vblank class (1 / 2 / 3+), and by scene phase × class.
+- **Tests:**
+  - `test_h438.sh` (`4989a0a7`, `test_h438.cpp` `97f08d56`): PASS in all four cases. These are HOSTWAIT with and
+    without OUTSIDE (gc codes, the nested call counted once, the flip and drain, a 30-ms lock wait by name, the /proc
+    deltas, guest-sync time), HOSTWAIT unset (no file), and lean (empty macros).
+  - `test_o438.sh` failed its waker case on the laptop, with the committed o438.hpp too. A timestamp probe showed why:
+    the worker's post landed 40 ms after the Render Thread's wait began, while the wait slept a fixed 20 ms (22 ms
+    measured). Thread start plus a 5-ms sleep take ~40 ms on the laptop. That is a race in the test, not in o438.
+    - Fixed: the wait now lasts until the worker has posted (at least 20 ms), as a semaphore wait ends because of its
+      post.
+    - Now PASS 3 of 3 runs, in all three variants (OUTSIDE=1, unset, lean).
+    - A broken copy of o438.hpp that stores no waker tid fails the case (lines 89 and 107), so the case still tests
+      attribution.
+- **Planned runs:** 3 scene runs of arm H on one boot, RT on. Then ah438 over three phases, placed from each CSV's
+  own per-10-s counts: fast (about G+10 to G+140), the dip to ~11 flips/s at about G+150 to G+160 (seen in every run;
+  a target of its own, the top session's addition), and slow (about G+165 to G+290). Usage:
+  `ah438.py FROM TO fast=A-B dip=C-D slow=E-F csv…`.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
