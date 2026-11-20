@@ -1057,6 +1057,116 @@ imported by sync passes, from the journal's `+N BOs` lines, timed by the nearest
 Read as little-endian u32s, the in-buffer is {0, 1}, the same on every call. That fits a query or a toggle with a
 fixed argument rather than a per-submit payload. TODO(verify): no public source names either request yet.
 
+## Build 11: e438, the layout-change path made event-driven and incremental (design)
+
+**The top session's decisions after result 10:**
+- s438 is dropped. It is now off unless `BC5_0438_MERGESCAN=1`; the code stays, for the record.
+- The next build is y438's records plus a lever on the layout-change path. It works the way the console does: a
+  map, unmap or protect call updates only that range.
+- First-write chunks stay on the scan for now. **This is the open part of the maintainer's question:** about
+  500 MiB per 335 s of play are found by the scan, because the memfd's pages appear on the title's first write,
+  not at a map call (result 10).
+
+**Unit chain:**
+1. `mks438y.py` on `s438.cpp` → `y438.cpp` (`7e338e9f…`);
+2. `mke438.py` → `e438.cpp` (**`850918e1eda505b15b768e50b81a5c4d`**, `e438-unit.diff`). Switch `BC5_0438_LAYOUT`: behaviour, so in lean too; on unless "0".
+
+**Today (result 10, MC52, 420 s): 12.8 s of view builds and 16.1 s of mapping rebuilds.** Both run on every change
+of the title's layout:
+1. **The view list.** `direct_views` sees a new `Bc5MappedRangesGeneration`. For the direct-memory DState it rebuilds
+   the list from all ~11,600 guest ranges (`direct_views_build`).
+2. **The mapping rebuild.** `direct_sync_one` sees a new views signature. It drains, then rebuilds every wanted
+   mapping:
+   - every view against every BO it shows;
+   - k1r412's read-only zero cover over every gap, with kl412's lazy-view rule;
+   - then the sort and two walks over all of `S.maps` (about 17,000).
+
+**e438, part 1: the views from the change records.** It reuses exp 0415's mr415 path in mode "views":
+- The kept list is updated from `Bc5RangesDirtyTouching`'s records, the range table's own change log.
+- mr415 S1 found it equal to the full build in 7,991 comparisons. The full build still runs every 2 s as a check,
+  and at once after a record-log gap.
+- Item V (exp 0432) was slower with this path. A likely reason, not measured: `x432_prev` always held a reference to
+  the last list, so every change cloned the whole list (`views_clone`). Under e438 `x432_prev` holds nothing, so
+  the records are applied in place when no one else holds the list. The `clones` counter shows whether that held.
+- **Each change span is classified** by the direct views it overlaps before and after:
+  - map (none before);
+  - unmap (none after);
+  - remap (they differ);
+  - same (identical va, size, offset, lazy and eager: a protect or a rename);
+  - other (no direct view).
+
+  Every span except "same" and "other" is queued, with its record step (`DViews::e438_seq`), for the mapping side.
+
+**e438, part 2: the mapping update for the touched intervals only** (`e438_maps`, under `g_dev_mutex`).
+- **The touched va intervals come from two sources:**
+  - (a) the queued spans up to the list's step;
+  - (b) the BOs that differ from those the mappings were made with (imports, merges, cuts), as file intervals. Every
+    view that shows such an interval adds its whole va range.
+- **The intervals are grown until they stop growing:** to whole old mappings that overlap them, and to whole new
+  views that overlap them. So every mapping lies wholly inside or wholly outside.
+- **Inside, the wanted mappings are computed exactly as the old rebuild computes them** (the views' own, and the k1r412
+  covers):
+  - wanted old mappings stay;
+  - others are unmapped;
+  - missing ones are mapped, with the same zero-piece releases as the old add pass.
+- **Outside, nothing is touched.**
+- **The drain before the update is unchanged:** the same condition and the same drain as today.
+
+| what | today | with e438 |
+|---|---|---|
+| guest range table → view list | full build per generation, under `direct_views`' mutex | records applied in place under the same mutex; full build every 2 s and after a gap |
+| pending spans | – | `e438::mu` (its own mutex); written under `direct_views`' mutex, read under `g_dev_mutex` |
+| `S.bos`, `S.maps`, the GPU VA map/unmap, `g_kl412` | `g_dev_mutex` | `g_dev_mutex`, unchanged |
+| `e438::bos_at/have/seq_at/k1r_at/check_ns` (what the mappings were made from) | – | `g_dev_mutex` |
+
+**Where the full rebuild (today's code) stays** (`m_why` counts each):
+- the private DState;
+- a list not made from records;
+- a record gap, a kept-list mismatch, or a failed map in an earlier pass;
+- an unsorted list;
+- zskip;
+- the g412 guard cap;
+- the kc412 cover log;
+- the first rebuild, and a device reopen (no mappings, or a new zero buffer);
+- a list older than the mappings;
+- no fixpoint in 16 rounds;
+- **every 2 s per DState, as a check.** It runs the full rebuild even when nothing changed. The maps it adds or drops
+  then are counted: anything other than 0 means the incremental path left a stale or missing mapping. It is also
+  where kl412's lazy-view scan runs (see below).
+
+**What e438 changes in behaviour, besides the time.**
+- **Under lazy views** (the second title's four CPU-only heaps: Wwise, SoundAlloc, FileSystem, UIStringAlloc), the
+  incremental covers use kl412's known-written set without a new `SEEK_DATA` scan. The scan runs at the 2-s rebuild;
+  today it can run at any rebuild 100 ms after the last.
+  - So a lazy chunk the title has written keeps its read-only zero cover for up to 2 s instead of about 100 ms.
+  - A GPU read there returns zeros instead of faulting by name.
+  - These heaps are CPU-only by design; a GPU read there is itself a bug that kl412 is meant to name.
+- **A missed record** would leave a view without its mappings (a GPU fault in a mapped range) or keep mappings of an
+  unmapped one (the GPU reads pages the title gave back). The 2-s check and the full-build check bound that to
+  2 s, and both count it.
+
+**Records** (normal build; 60-s lines from `direct_sync`):
+- `e438 layout`, for load and for play: change spans by class (map, unmap, remap, same, other), with MiB and a size
+  histogram;
+- `e438`: incremental updates (time, intervals, views, maps +/−), full rebuilds (time; the 2-s checks and their
+  changes), the reasons for each full rebuild, record gaps, kept-list mismatches, view builds and clones;
+- y438's scan yield by kind and phase, and the layout and mapped-range generation changes.
+
+**The offline test** (`test_e438.sh`; PASS: 7,200 random steps in 60 scenarios, all incremental, every step equal to the full rebuild; a broken copy with the BO tracking left out FAILs at scenario 0, step 7): it cuts e438's pieces from the unit and runs `e438_maps` against the full
+rebuild. It uses random view lists (unmaps, shrinks, remaps, splits, protects, new views, lazy views, aliases) and
+random BO lists (imports, merges, cuts) on a fake device. After every step:
+- `S.maps` must equal the full rebuild's list;
+- the device must hold exactly `S.maps`;
+- no map may land over another mapping, and no unmap may miss.
+
+**Chain** (clean boot, his scene, RT on, the same gates):
+- Order: `LC L LR` × 3.
+- LC = control: `SPLIT=1 EARLYREG=0 LAYOUT=0 MERGESCAN=0`. The gate: the first LC run at ≥ 33.3 flips/s.
+- L = `LAYOUT=1`.
+- LR = `LAYOUT=1 EARLYREG=1`.
+- **Refuted if:** L or LR shows a GPU line, a visual change the control does not show, or a nonzero 2-s check
+  change.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
