@@ -3,6 +3,7 @@
 // synthetic module image (every table here is made up by the test, never real data), register
 // defaults, static area, semaphores, suspend, CU-mask lists and the export/import tables.
 #include "bc5/reimpl/agc.hpp"
+#include "bc5/reimpl/data_source.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -268,12 +269,15 @@ struct Env {
         g_rec = Record{};
         g_rec.dmem.assign(4u << 20, 0);
         bc5::reimpl::set_firmware_data(&image());
+        // These tests check the module-file path with the synthetic image.
+        bc5::reimpl::set_data_switches({true, false});
         install_all();
         // The static area lands at the start of the fake DMEM (already 4-aligned).
         tst::set_expected_static_area(reinterpret_cast<u64>(g_rec.dmem.data()));
     }
     ~Env() {
         bc5::reimpl::set_firmware_data(nullptr);
+        bc5::reimpl::reset_data_switches();
         tst::clear_imports();
         tst::reset();
     }

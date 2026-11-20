@@ -3,6 +3,8 @@
 // installs every import (recording ioctl requests and argument bytes, memory mappings, mutex and
 // VideoOut calls) and a fake FirmwareData; no device is touched.
 #include "bc5/reimpl/agc_driver.hpp"
+#include "bc5/reimpl/agc_driver_tables.hpp"
+#include "bc5/reimpl/data_source.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -415,6 +417,8 @@ struct Fixture {
         reset_for_tests();
         install_all();
         set_firmware_data(&fw);
+        // These tests check the module-file path with a synthetic image.
+        bc5::reimpl::set_data_switches({true, false});
         set_log(&capture_log);
         if (init) {
             REQUIRE(initialize() == kOk);
@@ -425,6 +429,7 @@ struct Fixture {
             *s.slot = nullptr;
         }
         set_firmware_data(nullptr);
+        bc5::reimpl::reset_data_switches();
         set_log(nullptr);
         reset_for_tests();
         g_host = nullptr;
@@ -795,12 +800,17 @@ TEST_CASE("agc_driver: init failure paths", "[agc_driver]") {
         Fixture f3(0, true, 3);
         CHECK(f3.of(kIoctlSetTrapHandler).size() == 1);
     }
-    SECTION("trap handler binary missing in the firmware data") {
+    SECTION("trap handler binary missing in the firmware data: our own handler is sent") {
         Fixture f(0, false);
         f.fw.present = false;
         CHECK(initialize() == kOk);
-        CHECK(f.of(kIoctlSetTrapHandler).empty());
-        CHECK(f.logged("firmware data missing"));
+        CHECK(f.of(kIoctlSetTrapHandler).size() == 1);
+    }
+    SECTION("own data by default: our own trap handler is sent") {
+        Fixture f(0, false);
+        bc5::reimpl::set_data_switches({false, false});
+        CHECK(initialize() == kOk);
+        CHECK(f.of(kIoctlSetTrapHandler).size() == 1);
     }
     SECTION("trap handler ioctl failure only prints") {
         Fixture f(0, false);
@@ -1464,10 +1474,13 @@ TEST_CASE("agc_driver: TmpInitIdhs fills defaults from the module data", "[agc_d
     CHECK(pairs[2 * 0x3BF + 1] == f.fw.u32_at(0x11070 + 4 * 0xCA));
     CHECK(pairs[2 * 0x3C0] == 0xEEEEEEEEu);
     CHECK(sceAgcDriverTmpInitIdhs(nullptr) == kErrInvalid);
+    // Without the file's copy the own defaults (AMD's gfx10 clear state) are used.
     f.fw.present = false;
-    std::vector<u32> untouched(0x800, 1u);
-    CHECK(sceAgcDriverTmpInitIdhs(untouched.data()) == kOk);
-    CHECK(untouched[1] == 1u);
+    std::vector<u32> own(0x800, 1u);
+    CHECK(sceAgcDriverTmpInitIdhs(own.data()) == kOk);
+    CHECK(own[2 * 0x1E] == 0x1E);
+    CHECK(own[2 * 0x1E + 1] == bc5::reimpl::agc_driver::tables::default_context_values()[0x1E]);
+    CHECK(own[2 * 0xD7 + 1] == 1u); // not covered
 }
 
 TEST_CASE("agc_driver: PatchClearState sends the registers that differ", "[agc_driver]") {

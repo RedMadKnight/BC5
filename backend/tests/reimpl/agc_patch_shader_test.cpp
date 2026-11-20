@@ -7,6 +7,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "bc5/reimpl/agc.hpp"
+#include "bc5/reimpl/data_source.hpp"
 #include "bc5/reimpl/module.hpp"
 
 #include <array>
@@ -15,6 +16,7 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace agc = bc5::reimpl::agc;
@@ -91,8 +93,13 @@ struct Env {
         agc::testing::reset();
         agc::testing::clear_imports();
         bc5::reimpl::set_firmware_data(nullptr);
+        // Tests that install the synthetic table check the module-file path.
+        bc5::reimpl::set_data_switches({true, false});
     }
-    ~Env() { bc5::reimpl::set_firmware_data(nullptr); }
+    ~Env() {
+        bc5::reimpl::set_firmware_data(nullptr);
+        bc5::reimpl::reset_data_switches();
+    }
     Env(const Env &) = delete;
     Env &operator=(const Env &) = delete;
 };
@@ -1751,21 +1758,21 @@ TEST_CASE("sceAgcCreatePrimState", "[agc][prim]") {
     }
 }
 
-TEST_CASE("prim type class without firmware data falls back to 2", "[agc][prim]") {
+TEST_CASE("prim type class without firmware data uses the own table", "[agc][prim]") {
     Env env;
     resolve_all();
-    // Documented deviation of the re-creation: no module file -> class 2 for every primType.
+    // No module file: the own-source PRIM-CLASS table (points 0, lines 1, triangles 2).
     InfoBlock main_info = make_info(0x1111, 0x2000, 0x3333, 0x4444);
     Shader main{};
     main.info = addr(&main_info);
     agc::PrimStateCx cx{kJunk, kJunk};
-    for (u32 p : {1u, 4u, 18u}) {
+    for (auto [p, cls] : {std::pair<u32, u32>{1u, 0u}, {4u, 2u}, {18u, 1u}, {19u, 2u}}) {
         CHECK(agc::sceAgcCreatePrimState(&cx, nullptr, nullptr, &main, p) == 0);
-        CHECK(cx.gs_out_prim_type == RegPair{0x29b, 2});
+        CHECK(cx.gs_out_prim_type == RegPair{0x29b, cls});
     }
     cx.gs_out_prim_type = RegPair{0x29b, 0xFFFFFFFFu};
     CHECK(agc::sceAgcUpdatePrimState(&cx, nullptr, 1) == 0);
-    CHECK(cx.gs_out_prim_type.value == 0xFFFFFFFAu);
+    CHECK(cx.gs_out_prim_type.value == 0xFFFFFFF8u);
 }
 
 TEST_CASE("sceAgcUpdatePrimState", "[agc][prim]") {

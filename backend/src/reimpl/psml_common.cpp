@@ -281,6 +281,8 @@ void fetch_embedded_shader(std::uint32_t header_va, std::uint32_t code_va, void 
     const std::uint32_t hoff = header_va - kHeaderAreaVa;
     const std::uint32_t coff = code_va - kCodeAreaVa;
     if (!g_header_copied[hoff / 0x10]) {
+        // libScePsml keeps reading its module file here: this data is only reached past its PS5 Pro
+        // gate, so BC5 never needs it (BC5_REIMPL_FW_DATA does not apply to libScePsml).
         FirmwareData *fd = firmware_data();
         if (fd == nullptr) {
             return;

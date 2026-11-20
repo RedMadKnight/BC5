@@ -10,10 +10,13 @@
 // in the same file. The user-data register is R_030D08_SQ_THREAD_TRACE_USERDATA_2 (Mesa
 // src/amd/vulkan/tools/radv_sqtt.c @ ab2374a; uconfig offset 0x342); the next one, written by
 // absolute dword address 0xC343, we call SQ_THREAD_TRACE_USERDATA_3 (TODO(verify) name).
-// Opcode 0x4A (name unknown: not CLEAR_STATE, which Mesa sid.h @ ab2374a line 41 gives as 0x12) and 0x93 ("WAIT_REG_MEM64") and every control-word value
+// Opcode 0x4A is PREAMBLE_CNTL (AMD PAL, MIT, as recorded in tools/bc5-agc/regdb/extra-opcodes.tsv; not
+// CLEAR_STATE, which Mesa sid.h @ ab2374a line 41 gives as 0x12) and 0x93 ("WAIT_REG_MEM64") and every control-word value
 // below are per the original module's behaviour (clean-room description, see
 // src/reimpl/PROVENANCE.md); TODO(verify) those two names, Mesa does not list the opcodes.
 #include "bc5/reimpl/agc_driver_internal.hpp"
+#include "bc5/reimpl/agc_driver_tables.hpp"
+#include "bc5/reimpl/data_source.hpp"
 
 #include <cstdlib>
 #include <cstring>
@@ -182,7 +185,7 @@ std::uint32_t build_default_state_cb(std::uint32_t *dst, std::uint64_t shadow, s
                                      const RangeLists &rl, bool is_gfx, bool esvm,
                                      std::uint64_t other_label) {
     std::uint32_t *p = dst;
-    *p++ = 0xC0004A00u; // opcode 0x4A, TODO(verify) name
+    *p++ = 0xC0004A00u; // PREAMBLE_CNTL
     *p++ = 0;
     std::uint32_t *cond = p;
     p += 5; // COND_EXEC, filled below
@@ -214,30 +217,29 @@ std::uint32_t build_default_state_cb(std::uint32_t *dst, std::uint64_t shadow, s
     return static_cast<std::uint32_t>(p - dst);
 }
 
-// INTEROP TABLE: the default context-register ranges {first absolute register, count} and where
-// their u32 values sit in the original module's read-only data (fetched at run time).
-struct DefaultRange {
-    std::uint32_t first;
-    std::uint32_t count;
-    std::uint64_t values_at;
-};
-constexpr DefaultRange kDefaultRanges[] = {
-    {0xA000, 0xD7, 0x10520}, {0xA0D8, 0x110, 0x10B20}, {0xA1F5, 4, 0x10880},
-    {0xA1FF, 0x9E, 0x10890}, {0xA2A0, 2, 0x10B08},     {0xA2A3, 1, 0x10B10},
-    {0xA2A5, 0x42, 0x10F60}, {0xA2F5, 0xCB, 0x11070},
-};
+// The default context-register ranges {first absolute register, count} and their values:
+// our own (agc_driver_tables.cpp), or with BC5_REIMPL_FW_DATA the module file's copy.
+using tables::DefaultRange;
 
+// The u32 values of one range as raw little-endian bytes.
 const std::uint8_t *default_values(const DefaultRange &r) {
-    FirmwareData *fw = bc5::reimpl::firmware_data();
-    const std::uint8_t *p =
-        fw != nullptr ? fw->get(kModule, r.values_at, std::uint64_t{r.count} * 4u) : nullptr;
-    if (p == nullptr) {
-        static std::atomic<bool> logged{false};
-        if (!logged.exchange(true)) {
-            drv_log("default register values not available (firmware data missing)");
+    const std::span<const std::uint32_t> own = tables::default_range_values(r);
+    if (bc5::reimpl::data_switches().fw_compare) {
+        static const char *const kNames[tables::kDefaultRangeCount] = {
+            "DRV-CS-1", "DRV-CS-2", "DRV-CS-3", "DRV-CS-4",
+            "DRV-CS-5", "DRV-CS-6", "DRV-CS-7", "DRV-CS-8"};
+        const auto index = static_cast<std::size_t>(&r - tables::default_ranges().data());
+        bc5::reimpl::compare_table_with_firmware(
+            kModule, index < tables::default_ranges().size() ? kNames[index] : "DRV-CS-?",
+            r.image_address, own.data(), own.size(), 1);
+    }
+    if (FirmwareData *fw = bc5::reimpl::firmware_data_for_use(); fw != nullptr) {
+        if (const std::uint8_t *p = fw->get(kModule, r.image_address, std::uint64_t{r.count} * 4u);
+            p != nullptr) {
+            return p;
         }
     }
-    return p;
+    return reinterpret_cast<const std::uint8_t *>(own.data());
 }
 
 std::uint32_t read_u32(const std::uint8_t *p, std::uint32_t i) {
@@ -626,7 +628,7 @@ std::int32_t sceAgcDriverTmpInitIdhs(std::uint32_t *pairs) {
     if (pairs == nullptr) {
         return kErrInvalid; // deviation: UB in the original
     }
-    for (const DefaultRange &r : kDefaultRanges) {
+    for (const DefaultRange &r : tables::default_ranges()) {
         const std::uint8_t *values = default_values(r);
         if (values == nullptr) {
             continue;
@@ -650,9 +652,9 @@ std::int32_t sceAgcDriverPatchClearState(const std::uint32_t *pairs, std::uint32
     if (pairs == nullptr) {
         return kErrInvalid; // deviation: UB in the original
     }
-    // Defaults by register index; registers outside the table (or without firmware data) read 0.
+    // Defaults by register index; registers outside the eight ranges read 0.
     std::uint32_t defaults[0x400] = {};
-    for (const DefaultRange &r : kDefaultRanges) {
+    for (const DefaultRange &r : tables::default_ranges()) {
         const std::uint8_t *values = default_values(r);
         if (values == nullptr) {
             continue;

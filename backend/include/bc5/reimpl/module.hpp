@@ -41,7 +41,8 @@ struct ImportSlot {
 // repository (GPU shader binaries, register-default tables, ...). The host provides it from the
 // maintainer's own copy of the module (BC5_REIMPL_FW_DIR). `vaddr` is the address of the data in
 // the original module's image (base 0). Returns nullptr when the file or range is not available;
-// the caller then fails cleanly (and logs once).
+// the caller then fails cleanly (and logs once). libSceAgc and libSceAgcDriver use it only behind
+// BC5_REIMPL_FW_DATA / BC5_REIMPL_FW_COMPARE (data_source.hpp); by default they use own data.
 class FirmwareData {
   public:
     virtual ~FirmwareData() = default;

@@ -454,6 +454,8 @@ std::int32_t validate_texture(const void *t, int index, const std::uint32_t *rec
     const std::uint32_t fmt = tdesc_format(t);
     // The format translation table (183 entries of {channel layout, channel type}) is module data
     // read from the maintainer's module file.
+    // libScePsml keeps reading its module file here: this data is only reached past its PS5 Pro
+    // gate, so BC5 never needs it (BC5_REIMPL_FW_DATA does not apply to libScePsml).
     FirmwareData *fd = firmware_data();
     const std::uint8_t *table = fd != nullptr ? fd->get(kModuleName, 0x6ac70, 183 * 8) : nullptr;
     if (fmt >= 183 || table == nullptr) {

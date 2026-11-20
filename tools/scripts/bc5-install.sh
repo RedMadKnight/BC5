@@ -197,7 +197,11 @@ shortcuts() {
 # ---- the module pack of the second title ----
 # From a folder: copied on the host. From an image: the mount runs inside the container (its FUSE mount is seen
 # only there), so the copy does too (pack-in).
+# BC5's own libSceAgc, libSceAgcDriver, libScePsml are the default: no pack is needed unless a BC5_REIMPL_<X>=0 opts out.
+reimpl_all() { for v in BC5_REIMPL_AGC BC5_REIMPL_AGCDRIVER BC5_REIMPL_PSML; do
+  [ "${!v:-}" = 0 ] && return 1; done; return 0; }  # default on; only an explicit =0 opts out
 make_pack() {
+  if reimpl_all; then say "the second title needs no module pack (BC5's own modules are the default; BC5_REIMPL_<X>=0 opts out); nothing copied"; return 0; fi
   local src=${1:?usage: bc5-install.sh pack <image or folder>}
   if [ -d "$src" ]; then copy_pack "$src/fakelib"; return; fi
   [ -f "$src" ] || die "no such file: $src"
@@ -247,8 +251,13 @@ case "${1:-all}" in
     say "== 5. shortcuts"
     shortcuts
     say "done. Start 'BC5 emulator (lean)' from the desktop or the application menu, then File > Open game... or"
-    say "File > Install game... with your own game image (.ffpfsc or .pkg). The second title also needs the module"
-    say "pack from ASTRO BOT: it is made by itself once ASTRO BOT is installed, or: bash $0 pack <ASTRO BOT image>."
+    say "File > Install game... with your own game image (.ffpfsc or .pkg)."
+    if reimpl_all; then
+      say "The second title needs no module pack: BC5 has its own libSceAgc, libSceAgcDriver and libScePsml."
+    else
+      say "The second title also needs the module pack from ASTRO BOT: it is made by itself once ASTRO BOT is installed,"
+      say "or: bash $0 pack <ASTRO BOT image>."
+    fi
     ;;
   *) sed -n '2,20p' "$0"; exit 1 ;;
 esac

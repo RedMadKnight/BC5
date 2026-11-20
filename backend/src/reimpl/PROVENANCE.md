@@ -2,9 +2,16 @@
 
 This directory holds our own re-creations of three PS5 system modules: `libSceAgc` (249 exports),
 `libSceAgcDriver` (175 exports) and `libScePsml` (41 exports). They let the KytyPlus host run a
-title without the firmware copies of these modules. Each module is behind its own switch,
-`BC5_REIMPL_AGC`, `BC5_REIMPL_AGCDRIVER` and `BC5_REIMPL_PSML`, all off by default. With a switch
-off, the maintainer's own firmware module stays the default. The host glue is
+title without the firmware copies of these modules. The maintainer's rule (2026-11-20) is: by
+default BC5's own, unless the game has its own (`select.hpp`):
+
+- BC5's re-creation is used by default, so no module from another game is needed.
+- If a title ships its own copy of a module (in its root, `sce_module/` or `sce_modules/`), that copy
+  is used for that module instead.
+- `BC5_REIMPL_AGC=0`, `BC5_REIMPL_AGCDRIVER=0` or `BC5_REIMPL_PSML=0` opts out and brings back the
+  host's previous behaviour (a module pack, else KytyPlus's HLE).
+
+The host logs its choice for each module at start. The host glue is
 `backend/kytyplus-patches/0002-bc5-reimpl-agc-psml.patch`.
 
 ## How the code was made (two-phase clean room)
@@ -35,11 +42,19 @@ off, the maintainer's own firmware module stays the default. The host glue is
 - No decompiled text, no disassembly, no symbol dumps, and no Sony data tables. The only
   exception is a small number of short interoperability constants (packet sizes, a few masks),
   each described in the code as such.
-- Data the original modules embed is read at run time from the maintainer's own module files, in
-  the directory named by `BC5_REIMPL_FW_DIR` (default `SHADPS4_SYSMODULES_PACK_DIR`). This covers
-  `libSceAgc`'s internal shaders and register-default tables and `libScePsml`'s shader binaries.
-  It follows the maintainer's port-then-load decision of 2026-11-04. When the directory or file is
-  missing, the module fails cleanly with a named error.
+- `libSceAgc` and `libSceAgcDriver` need no module files. Their embedded data is replaced by own
+  sources: the register-default tables, CU-ROWS and PRIM-CLASS (`agc_tables.cpp`, written from a
+  description of each table's meaning with names from Mesa's `gfx10.json` through the generated
+  `agc_regdb.hpp`, `gen_agc_regdb.py`); the driver's default context state (AMD's public MIT
+  `amd/clearstate_gfx10.h`, see `amd/README.md`); a one-instruction trap handler
+  (`agc_driver_tables.cpp`); and our own fill shader (`shaders/fill16.s`, header in
+  `agc_fill_shader.cpp`; machine code still to be assembled on the box, until then the fill
+  shader is absent). `BC5_REIMPL_FW_DATA=1` reads the maintainer's own module files instead, where
+  present, from the directory named by `BC5_REIMPL_FW_DIR` (default
+  `SHADPS4_SYSMODULES_PACK_DIR`); `BC5_REIMPL_FW_COMPARE=1` logs every entry where they differ
+  from ours (`data_source.hpp`).
+- `libScePsml`'s shader binaries and format tables are still read from the maintainer's module
+  file (port-then-load decision of 2026-11-04). They are only reached past its PS5 Pro gate.
 - `libScePsml` is the PS5 Pro upscaler. Its network weights live in system-partition package
   files, not in the module, and every entry point refuses unless the kernel reports PS5 Pro mode.
   The re-creation implements the full API and these refusals. The upscale itself cannot run on

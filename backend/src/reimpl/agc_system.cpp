@@ -5,6 +5,8 @@
 //
 // Behaviour is per the original module (clean-room description, see src/reimpl/PROVENANCE.md).
 #include "bc5/reimpl/agc_internal.hpp"
+#include "bc5/reimpl/agc_tables.hpp"
+#include "bc5/reimpl/data_source.hpp"
 
 #include <algorithm>
 #include <map>
@@ -142,13 +144,33 @@ std::uint32_t get_suspend_flags() {
 
 namespace {
 
-// A pair table of the original image's data segment, copied once into private, writable memory
-// (the original patches its tables in place on every selection).
+// A pair table, keyed by the address the original image stores it at, copied once into private,
+// writable memory (the original patches its tables in place on every selection). The source is
+// our own table (agc_tables.cpp) unless BC5_REIMPL_FW_DATA asks for the module file's copy.
 struct Table {
     std::vector<RegPair> pairs;
     bool loaded = false;
 };
 std::map<std::uint64_t, Table> g_tables;
+
+std::vector<std::uint32_t> as_words(std::span<const RegPair> pairs) {
+    std::vector<std::uint32_t> w;
+    w.reserve(2 * pairs.size());
+    for (const RegPair &p : pairs) {
+        w.push_back(p.offset);
+        w.push_back(p.value);
+    }
+    return w;
+}
+
+// Diagnostic only (BC5_REIMPL_FW_COMPARE): our pairs against the module file's.
+void compare_pairs(const char *name, std::uint64_t vaddr, std::span<const RegPair> ours) {
+    if (!data_switches().fw_compare) {
+        return;
+    }
+    const std::vector<std::uint32_t> w = as_words(ours);
+    compare_table_with_firmware(kModule, name, vaddr, w.data(), ours.size(), 2);
+}
 
 RegPair *load_table(std::uint64_t vaddr, std::uint32_t count) {
     if (vaddr == 0 || count == 0) {
@@ -156,16 +178,49 @@ RegPair *load_table(std::uint64_t vaddr, std::uint32_t count) {
     }
     Table &t = g_tables[vaddr];
     if (!t.loaded) {
-        FirmwareData *fw = firmware_data();
+        tables::TableId id{};
+        const bool known = tables::table_at_image_address(vaddr, id);
+        const std::span<const RegPair> own = known ? tables::table(id) : std::span<const RegPair>{};
+        if (known) {
+            compare_pairs(tables::table_name(id), vaddr, own);
+        }
+        FirmwareData *fw = firmware_data_for_use();
         const std::uint8_t *src = fw != nullptr ? fw->get(kModule, vaddr, 8ull * count) : nullptr;
-        if (src == nullptr) {
+        if (src != nullptr) {
+            t.pairs.resize(count);
+            std::memcpy(t.pairs.data(), src, 8ull * count);
+        } else if (own.size() == count) {
+            t.pairs.assign(own.begin(), own.end());
+        } else {
+            log(kModule, "no register-default table for image address 0x%llx (%u pairs)",
+                static_cast<unsigned long long>(vaddr), count);
             return nullptr;
         }
-        t.pairs.resize(count);
-        std::memcpy(t.pairs.data(), src, 8ull * count);
         t.loaded = true;
     }
     return t.pairs.data();
+}
+
+// The uconfig count of a descriptor whose set gives none: the module file's descriptor word with
+// BC5_REIMPL_FW_DATA, else the length of our own table.
+std::uint32_t uc_count(std::uint64_t desc_vaddr, std::uint64_t uc_vaddr) {
+    tables::TableId id{};
+    const std::uint32_t own = tables::table_at_image_address(uc_vaddr, id)
+                                  ? static_cast<std::uint32_t>(tables::table(id).size())
+                                  : 0u;
+    if (data_switches().fw_compare && own != 0) {
+        const std::uint32_t ours[1] = {own};
+        compare_table_with_firmware(kModule, "uc count of descriptor", desc_vaddr + 0x28, ours, 1,
+                                    1);
+    }
+    if (FirmwareData *fw = firmware_data_for_use(); fw != nullptr) {
+        if (const std::uint8_t *d = fw->get(kModule, desc_vaddr + 0x28, 4); d != nullptr) {
+            std::uint32_t n = 0;
+            std::memcpy(&n, d, 4);
+            return n;
+        }
+    }
+    return own;
 }
 
 // Location of one defaults set: descriptor address in the original image (counts at +0x20) and
@@ -220,17 +275,24 @@ std::uint32_t selector_variant() {
     return soc_class() == kSocB ? 1u : 0u;
 }
 
-// CU-enable override rows at 0x1BDB0 of the original image: 6 rows x 10 pairs.
+// CU-enable override rows (6 rows x 10 pairs): our own table (agc_tables.cpp), or the copy at
+// image address 0x1BDB0 of the module file with BC5_REIMPL_FW_DATA. Copied once, read-only.
+std::vector<RegPair> g_cu_rows;
 const RegPair *cu_rows() {
-    static std::vector<RegPair> rows;
+    std::vector<RegPair> &rows = g_cu_rows;
     if (rows.empty()) {
-        FirmwareData *fw = firmware_data();
-        const std::uint8_t *src = fw != nullptr ? fw->get(kModule, 0x1BDB0, 6 * 0x50) : nullptr;
-        if (src == nullptr) {
-            return nullptr;
+        const std::span<const RegPair> own = tables::cu_rows();
+        compare_pairs("CU-ROWS", tables::kCuRowsImageAddress, own);
+        FirmwareData *fw = firmware_data_for_use();
+        const std::uint8_t *src =
+            fw != nullptr ? fw->get(kModule, tables::kCuRowsImageAddress, own.size_bytes())
+                          : nullptr;
+        if (src != nullptr) {
+            rows.resize(own.size());
+            std::memcpy(rows.data(), src, own.size_bytes());
+        } else {
+            rows.assign(own.begin(), own.end());
         }
-        rows.resize(60);
-        std::memcpy(rows.data(), src, 6 * 0x50);
     }
     return rows.data();
 }
@@ -316,12 +378,7 @@ const RegisterDefaults *select_defaults(bool old_api, bool internal, std::uint32
     if (set_for(old_api, internal, g, def)) {
         std::uint32_t uc_n = def.uc_n;
         if (def.uc != 0 && uc_n == 0) {
-            FirmwareData *fw = firmware_data();
-            if (const std::uint8_t *d = fw != nullptr ? fw->get(kModule, def.desc_vaddr + 0x28, 4)
-                                                      : nullptr;
-                d != nullptr) {
-                std::memcpy(&uc_n, d, 4);
-            }
+            uc_n = uc_count(def.desc_vaddr, def.uc);
         }
         h.cells[0] = load_table(def.cx, def.cx_n);
         h.cells[1] = load_table(def.sh, def.sh_n);
@@ -347,6 +404,7 @@ namespace detail {
 void reset_defaults_cache() {
     g_tables.clear();
     g_holders.clear();
+    g_cu_rows.clear();
 }
 } // namespace detail
 
@@ -394,7 +452,7 @@ std::int32_t cu_overrides(const RegPair **pairs_out, const std::uint32_t **masks
     }
     const RegPair *rows = cu_rows();
     if (rows == nullptr) {
-        return kErrInternal; // deviation: the table lives in the module file (no firmware data)
+        return kErrInternal; // not reached: the own-source rows always exist
     }
     *masks_out = kCuMasks;
     *pairs_out = rows + (selector_variant() + row_offset) * 10u;

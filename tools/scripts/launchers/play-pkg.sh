@@ -43,11 +43,20 @@ PLAY_ARGS="$PLAY_ARGS --fullscreen"  # the maintainer: this title fullscreen, at
 unset BC5_GC_DUMP_DIR
 [ "${BC5_LEAN:-0}" = 1 ] && unset KYTY_BC5_INPUT_RECORD PLAY_CAPTURE  # exp 0177: no input recorder
 # This title's settings (experiment 0036); the file below may override them.
+# BC5's own libSceAgc, libSceAgcDriver and libScePsml (backend/src/reimpl) are the default, so the title needs no module
+# from another game: no pack dir is set, required or copied. BC5_REIMPL_AGC=0, BC5_REIMPL_AGCDRIVER=0 or
+# BC5_REIMPL_PSML=0 opts out and brings back the pack below (the maintainer's rule of 2026-11-20).
+reimpl_all() { for v in BC5_REIMPL_AGC BC5_REIMPL_AGCDRIVER BC5_REIMPL_PSML; do
+  [ "${!v:-}" = 0 ] && return 1; done; return 0; }  # default on; only an explicit =0 opts out
+if reimpl_all; then
+  unset SHADPS4_SYSMODULES_PACK_DIR
+else
 export SHADPS4_SYSMODULES_PACK_DIR=$HOME/bc5-data/sysmodules-pack-hle-ampr-noplaygo  # 2026-10-25 (exp 0298, the maintainer's yes): no libScePlayGo.sprx, the host answers PlayGo (100 chunks)
+fi
 # The repository's copy (tools/scripts/launchers, 2026-11-15): the pack is three modules of another game's fakelib/
 # (libSceAgc, libSceAgcDriver, libScePsml; exp 0036, 0298: ASTRO BOT's). bc5-install.sh pack <image or folder> makes it;
 # when it is missing, it is made here from the first installed game whose fakelib/ holds all three.
-if [ ! -f "$SHADPS4_SYSMODULES_PACK_DIR/libSceAgc.sprx" ]; then
+if ! reimpl_all && [ ! -f "$SHADPS4_SYSMODULES_PACK_DIR/libSceAgc.sprx" ]; then
   for f in "$HOME"/bc5-data/games/*/fakelib; do
     [ -f "$f/libSceAgc.sprx" ] && [ -f "$f/libSceAgcDriver.sprx" ] && [ -f "$f/libScePsml.sprx" ] || continue
     mkdir -p "$SHADPS4_SYSMODULES_PACK_DIR" &&

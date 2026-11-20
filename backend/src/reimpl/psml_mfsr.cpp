@@ -1104,6 +1104,8 @@ std::uint32_t remap_keep_format(std::uint32_t src_fmt) {
     // Format remap table (module data at 0x6ac00, 0x28 bytes) read from the maintainer's module
     // file. TODO(verify): we index it by log2(bytes per element), 8 bytes per entry.
     const std::uint32_t bpe = bytes_per_element(src_fmt);
+    // libScePsml keeps reading its module file here: this data is only reached past its PS5 Pro
+    // gate, so BC5 never needs it (BC5_REIMPL_FW_DATA does not apply to libScePsml).
     FirmwareData *fd = firmware_data();
     const std::uint8_t *t = fd != nullptr ? fd->get(kModuleName, 0x6ac00, 0x28) : nullptr;
     if (t == nullptr || bpe == 0) {

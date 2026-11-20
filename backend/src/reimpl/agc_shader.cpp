@@ -11,6 +11,9 @@
 // SPI_PS_INPUT_CNTL_0 (context 0x191), VGT_SHADER_STAGES_EN (context 0x2D5),
 // VGT_GS_OUT_PRIM_TYPE (context 0x29B), VGT_PRIMITIVE_TYPE (uconfig 0x242).
 #include "bc5/reimpl/agc_internal.hpp"
+#include "bc5/reimpl/agc_fill_shader.hpp"
+#include "bc5/reimpl/agc_tables.hpp"
+#include "bc5/reimpl/data_source.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -170,20 +173,21 @@ std::uint32_t prim_class(std::uint32_t prim_type) {
     if (prim_type < 1 || prim_type > 18) {
         return 2;
     }
-    // Table at 0x23f1c of the original image: 18 u32 classes indexed by primType - 1.
-    FirmwareData *fw = firmware_data();
-    const std::uint8_t *table = fw != nullptr ? fw->get(kModule, 0x23f1c, 72) : nullptr;
-    if (table == nullptr) {
-        static bool logged = false;
-        if (!logged) {
-            logged = true;
-            log(kModule, "primitive class table (0x23f1c) unavailable; using class 2");
-        }
-        return 2; // deviation: no firmware data, the out-of-range default is used
+    // 18 u32 classes indexed by primType - 1: our own table (agc_tables.cpp), or the copy at
+    // image address 0x23f1c of the module file with BC5_REIMPL_FW_DATA.
+    const std::span<const std::uint32_t> own = tables::prim_classes();
+    compare_table_with_firmware(kModule, "PRIM-CLASS", tables::kPrimClassImageAddress, own.data(),
+                                own.size(), 1);
+    FirmwareData *fw = firmware_data_for_use();
+    if (const std::uint8_t *table =
+            fw != nullptr ? fw->get(kModule, tables::kPrimClassImageAddress, own.size_bytes())
+                          : nullptr;
+        table != nullptr) {
+        std::uint32_t v = 0;
+        std::memcpy(&v, table + 4u * (prim_type - 1u), 4);
+        return v;
     }
-    std::uint32_t v = 0;
-    std::memcpy(&v, table + 4u * (prim_type - 1u), 4);
-    return v;
+    return own[prim_type - 1u];
 }
 
 } // namespace detail
@@ -745,20 +749,17 @@ std::int32_t agcGetShaderExportFlag(std::uint32_t *out_value, const Shader *shad
 
 namespace detail {
 
-// Embedded shader headers and code of the original image. TODO(verify): the description gives the
-// ten locations and says "which pair is used depends on sceAgcDriverIsPaDebug"; read here as five
-// shaders, each with a normal (even index) and a PA-debug (odd index) build, the first of them
-// being the fill shader used by agcCbFillMemory.
-std::int32_t create_internal_shaders() {
+namespace {
+
+// The original module's five internal shaders, read from the module file (BC5_REIMPL_FW_DATA only).
+// TODO(verify): the description gives the ten locations and says "which pair is used depends on
+// sceAgcDriverIsPaDebug"; read here as five shaders, each with a normal (even index) and a
+// PA-debug (odd index) build, the first of them being the fill shader used by agcCbFillMemory.
+std::int32_t create_firmware_shaders(FirmwareData *fw) {
     static constexpr std::uint64_t kHeaders[10] = {0x2c000, 0x2c130, 0x2c260, 0x2c390, 0x2c4c0,
                                                    0x2c5f0, 0x2c720, 0x2c850, 0x2c980, 0x2cab0};
     static constexpr std::uint64_t kCode[10] = {0x30000, 0x30100, 0x30b00, 0x31400, 0x31600,
                                                 0x31a00, 0x31d00, 0x32300, 0x32900, 0x32b00};
-    FirmwareData *fw = firmware_data();
-    if (fw == nullptr) {
-        log(kModule, "internal shaders unavailable (no firmware data); fill shader disabled");
-        return kOk; // deviation: without the module file the internal shaders are skipped
-    }
     const bool pa = g_imports.is_pa_debug != nullptr && g_imports.is_pa_debug() != 0;
     std::uint64_t code_table[16] = {};
     for (int k = 0; k < 5; ++k) {
@@ -767,7 +768,7 @@ std::int32_t create_internal_shaders() {
         if (h0 == nullptr) {
             log(kModule, "internal shader header 0x%llx unavailable",
                 static_cast<unsigned long long>(kHeaders[idx]));
-            return kOk; // deviation (see above)
+            return kOk; // deviation: without the module file the internal shaders are skipped
         }
         Shader probe{};
         std::memcpy(&probe, h0, sizeof probe);
@@ -803,6 +804,51 @@ std::int32_t create_internal_shaders() {
     const std::uint64_t entry[2] = {table, sizeof code_table}; // TODO(verify) entry layout
     sceAgcSetStaticBuffer(0, entry);
     return kOk;
+}
+
+// Our own internal shaders: only the fill shader (agc_fill_shader.cpp), and only once its code
+// has been assembled. The original's other four internal shaders are not re-created: their
+// purpose is not described, and on BC5 they are never executed (the original only lists their
+// code addresses in static buffer 0), so their slots stay 0.
+std::int32_t create_own_shaders() {
+    const std::span<const std::uint32_t> code = fill_shader::code();
+    if (code.empty()) {
+        log(kModule, "own fill shader not assembled yet; fill shader absent");
+        return kOk; // as without module files before: CbMemsetExclusive has no shader
+    }
+    const auto code_bytes = static_cast<std::uint32_t>(code.size_bytes());
+    const std::uint64_t hdst = dmem_alloc(fill_shader::header_bytes(), 16);
+    const std::uint64_t cdst = dmem_alloc(code_bytes, 256);
+    if (hdst == 0 || cdst == 0) {
+        return kErrInternal;
+    }
+    fill_shader::build_header(ptr<std::uint8_t>(hdst), code_bytes);
+    copy_bytes(ptr<void>(cdst), code.data(), code_bytes);
+    Shader *created = nullptr;
+    const std::int32_t rc = sceAgcCreateShader(&created, ptr<Shader>(hdst), cdst);
+    if (rc != kOk) {
+        return rc;
+    }
+    state().fill_shader = created;
+    std::uint64_t code_table[16] = {};
+    code_table[0] = cdst;
+    const std::uint64_t table = dmem_alloc(sizeof code_table, 8);
+    if (table == 0) {
+        return kErrInternal;
+    }
+    copy_bytes(ptr<void>(table), code_table, sizeof code_table);
+    const std::uint64_t entry[2] = {table, sizeof code_table}; // TODO(verify) entry layout
+    sceAgcSetStaticBuffer(0, entry);
+    return kOk;
+}
+
+} // namespace
+
+std::int32_t create_internal_shaders() {
+    if (FirmwareData *fw = firmware_data_for_use(); fw != nullptr) {
+        return create_firmware_shaders(fw);
+    }
+    return create_own_shaders();
 }
 
 } // namespace detail

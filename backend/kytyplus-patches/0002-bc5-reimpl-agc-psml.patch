@@ -1,41 +1,48 @@
 diff --git a/src/libs/bc5Reimpl.cpp b/src/libs/bc5Reimpl.cpp
 new file mode 100644
-index 0000000..5205ae3
+index 0000000..5077a3f
 --- /dev/null
 +++ b/src/libs/bc5Reimpl.cpp
-@@ -0,0 +1,216 @@
+@@ -0,0 +1,237 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 (github.com/RedMadKnight/BC5): host glue for the clean-room re-creations of libSceAgc,
 +// libSceAgcDriver and libScePsml (BC5 backend/src/reimpl, provenance in its PROVENANCE.md).
 +//
-+// Switches, each read once, default off (the firmware module from the pack dir stays the default):
-+//   BC5_REIMPL_AGC=1        libSceAgc.sprx is kept off the LLE load and our libSceAgc is registered
-+//   BC5_REIMPL_AGCDRIVER=1  the same for libSceAgcDriver.sprx
-+//   BC5_REIMPL_PSML=1       the same for libScePsml.sprx
-+//   BC5_REIMPL_FW_DIR=<dir> where the maintainer's own module files are read for the data the
-+//                           modules embed (shaders, tables); default SHADPS4_SYSMODULES_PACK_DIR
-+// A switch is on when set, non-empty and not "0" (bc5/env_flag.hpp).
++// Which implementation a title gets, per module (bc5/reimpl/select.hpp; the maintainer's rule of
++// 2026-11-20, "by default take BC5's own, unless the game has its own"):
++//   - BC5's own re-creation by default: no module from another game is needed;
++//   - the game's own copy when the title ships one (its root, sce_module/ or sce_modules/): the
++//     loader loads it as before and BC5's is not registered;
++//   - BC5_REIMPL_AGC=0 / BC5_REIMPL_AGCDRIVER=0 / BC5_REIMPL_PSML=0 opts out: the host's previous
++//     behaviour (the module pack from SHADPS4_SYSMODULES_PACK_DIR, else KytyPlus's HLE).
++// One log line per module says which was chosen.
++//   BC5_REIMPL_FW_DIR=<dir>  optional: where the modules' own diagnostics (BC5_REIMPL_FW_DATA=1,
++//                            BC5_REIMPL_FW_COMPARE=1) read a module file; default
++//                            SHADPS4_SYSMODULES_PACK_DIR. Nothing needs it by default.
 +//
-+// Registration: every export under its library, library v1, module v1.1 (the versions every
-+// importer of these modules declares), after all live HLE tables so ours wins the exact key.
-+// Imports: resolved after the LLE modules are loaded and before relocation: an import from a module
-+// whose switch is on binds to our export; otherwise the loaded LLE module's export, otherwise the
-+// HLE symbol with that NID. An unresolved import stays nullptr (the module then fails as described).
++// Order: once the title's programs and the pack's modules are loaded and before relocation (the
++// hook in RuntimeLinker), the choice is made with the title's directory known; BC5's exports are
++// then added to the host's symbol table (library v1, module v1.1, the versions every importer of
++// these modules declares; added last, so they win the exact key), every chosen module's imports
++// are bound (BC5's own exports first, then a loaded module's, then the host's HLE, by NID), and
++// the modules' load-time initialisation runs (driver, then Agc, then Psml). A pack copy of a
++// module BC5 provides is kept off the LLE load (DeniedSysmodules).
 +
 +#if defined(KYTY_BC5_DIRECT)
 +
-+#include "bc5/env_flag.hpp"
 +#include "bc5/reimpl/agc.hpp"
 +#include "bc5/reimpl/agc_driver.hpp"
 +#include "bc5/reimpl/fw_image.hpp"
 +#include "bc5/reimpl/module.hpp"
++#include "bc5/reimpl/select.hpp"
 +#include "common/logging/log.h"
 +#include "libs/libs.h"
 +#include "loader/runtimeLinker.h"
 +#include "loader/symbolDatabase.h"
 +
 +#include <cstdlib>
++#include <filesystem>
 +#include <map>
 +#include <memory>
 +#include <mutex>
@@ -48,8 +55,8 @@ index 0000000..5205ae3
 +namespace {
 +
 +struct ModuleDef {
-+    const char *name;   // module and file stem
-+    const char *env;    // switch
++    const char *name; // module and file stem
++    const char *env;  // switch
 +    std::span<const bc5::reimpl::ExportEntry> (*exports)();
 +    std::span<const bc5::reimpl::ImportSlot> (*imports)();
 +    std::int32_t (*start)(); // load-time initialisation, run once the imports are bound
@@ -64,15 +71,15 @@ index 0000000..5205ae3
 +     nullptr},
 +};
 +
-+bool enabled(const ModuleDef &m) {
-+    static std::map<std::string, bool> cache;
-+    static std::mutex mu;
-+    std::lock_guard<std::mutex> lock(mu);
-+    auto it = cache.find(m.name);
-+    if (it == cache.end()) {
-+        it = cache.emplace(m.name, bc5::env_on(std::getenv(m.env))).first;
-+    }
-+    return it->second;
++std::mutex g_mu;
++std::map<std::string, bc5::reimpl::Choice> g_choice; // filled once by ResolveImports
++
++bool switch_allows(const ModuleDef &m) { return bc5::reimpl::switch_allows(std::getenv(m.env)); }
++
++bool chosen_bc5(const ModuleDef &m) {
++    std::lock_guard<std::mutex> lock(g_mu);
++    const auto it = g_choice.find(m.name);
++    return it != g_choice.end() && it->second == bc5::reimpl::Choice::Bc5Own;
 +}
 +
 +// The module that owns a library name ("libSceAgcDriverPaDebug" -> libSceAgcDriver).
@@ -89,7 +96,7 @@ index 0000000..5205ae3
 +    return best;
 +}
 +
-+// FirmwareData from the maintainer's own module files, loaded on first use.
++// FirmwareData from a module file, only for the diagnostics that ask for it.
 +class PackFirmwareData final : public bc5::reimpl::FirmwareData {
 +  public:
 +    const std::uint8_t *get(const char *module, std::uint64_t vaddr, std::uint64_t size) override {
@@ -99,7 +106,7 @@ index 0000000..5205ae3
 +            slot = std::make_unique<bc5::reimpl::FwImage>();
 +            const std::string path = dir() + "/" + module + ".sprx";
 +            if (!slot->load_file(path)) {
-+                LOGF("[bc5-reimpl] firmware data for %s not available (%s): %s\n", module,
++                LOGF("[bc5-reimpl] module file for %s not available (%s): %s\n", module,
 +                     path.c_str(), slot->error().c_str());
 +            }
 +        }
@@ -124,60 +131,74 @@ index 0000000..5205ae3
 +    LOGF("[bc5-reimpl %s] %s\n", module, message);
 +}
 +
++void register_exports(Loader::SymbolDatabase *s, const ModuleDef &m) {
++    int n = 0;
++    for (const auto &e : m.exports()) {
++        Loader::SymbolResolve sr{};
++        sr.name = e.nid;
++        sr.library = e.library;
++        sr.library_version = 1;
++        sr.module = m.name;
++        sr.module_version_major = 1;
++        sr.module_version_minor = 1;
++        sr.type = e.is_object ? Loader::SymbolType::Object : Loader::SymbolType::Func;
++        s->Add(sr, reinterpret_cast<uint64_t>(e.address),
++               std::string("bc5reimpl:") + (e.name[0] != 0 ? e.name : e.nid));
++        ++n;
++    }
++    LOGF("[bc5-reimpl] %s: %d exports registered\n", m.name, n);
++}
++
 +} // namespace
 +
-+// Called by the LLE loader's denylist: the .sprx names to keep off the LLE load.
++// Called by the LLE loader's denylist: a pack copy of a module BC5 provides stays off the LLE load.
++// (The title's own copies are loaded by a different path that this list does not touch.)
 +std::vector<std::string> DeniedSysmodules() {
 +    std::vector<std::string> out;
 +    for (const auto &m : kModules) {
-+        if (enabled(m)) {
++        if (switch_allows(m)) {
 +            out.push_back(std::string(m.name) + ".sprx");
 +        }
 +    }
 +    return out;
 +}
 +
++// Kept for the host's InitAll: only the shared sinks (no registration here, the title's directory
++// is not known yet).
 +LIB_DEFINE(InitBc5Reimpl_1) {
++    (void)s;
 +    static PackFirmwareData fw;
-+    bool any = false;
-+    for (const auto &m : kModules) {
-+        if (!enabled(m)) {
-+            continue;
-+        }
-+        if (!any) {
-+            bc5::reimpl::set_firmware_data(&fw);
-+            bc5::reimpl::set_log(log_sink);
-+            any = true;
-+        }
-+        int n = 0;
-+        for (const auto &e : m.exports()) {
-+            Loader::SymbolResolve sr{};
-+            sr.name = e.nid;
-+            sr.library = e.library;
-+            sr.library_version = 1;
-+            sr.module = m.name;
-+            sr.module_version_major = 1;
-+            sr.module_version_minor = 1;
-+            sr.type = e.is_object ? Loader::SymbolType::Object : Loader::SymbolType::Func;
-+            s->Add(sr, reinterpret_cast<uint64_t>(e.address),
-+                   std::string("bc5reimpl:") + (e.name[0] != 0 ? e.name : e.nid));
-+            ++n;
-+        }
-+        LOGF("[bc5-reimpl] %s: %d exports registered (%s=1)\n", m.name, n, m.env);
-+    }
++    bc5::reimpl::set_firmware_data(&fw);
++    bc5::reimpl::set_log(log_sink);
 +}
 +
-+// After the LLE modules are loaded: fill every enabled module's import slots.
-+void ResolveImports(Loader::RuntimeLinker *rt) {
++// After the title's programs and the LLE modules are loaded, before relocation.
++void ResolveImports(Loader::RuntimeLinker *rt, const std::filesystem::path &title_root) {
++    {
++        std::lock_guard<std::mutex> lock(g_mu);
++        for (const auto &m : kModules) {
++            const std::filesystem::path own = bc5::reimpl::find_game_copy(title_root, m.name);
++            const bc5::reimpl::Choice c = bc5::reimpl::choose(std::getenv(m.env), !own.empty());
++            g_choice[m.name] = c;
++            LOGF("[bc5-reimpl] %s: %s%s%s\n", m.name, bc5::reimpl::choice_name(c),
++                 own.empty() ? "" : " at ", own.empty() ? "" : own.string().c_str());
++        }
++    }
++    Loader::SymbolDatabase *syms = rt->Symbols();
 +    for (const auto &m : kModules) {
-+        if (!enabled(m)) {
++        if (chosen_bc5(m) && syms != nullptr) {
++            register_exports(syms, m);
++        }
++    }
++    for (const auto &m : kModules) {
++        if (!chosen_bc5(m)) {
 +            continue;
 +        }
 +        int ok = 0, missing = 0;
 +        for (const auto &imp : m.imports()) {
 +            *imp.slot = nullptr;
 +            const ModuleDef *owner = owner_of_library(imp.library);
-+            if (owner != nullptr && enabled(*owner)) {
++            if (owner != nullptr && chosen_bc5(*owner)) {
 +                for (const auto &e : owner->exports()) {
 +                    if (std::string(e.nid) == imp.nid && std::string(e.library) == imp.library) {
 +                        *imp.slot = e.address;
@@ -191,8 +212,8 @@ index 0000000..5205ae3
 +                rec.vaddr != 0) {
 +                *imp.slot = reinterpret_cast<void *>(rec.vaddr);
 +            }
-+            if (*imp.slot == nullptr && rt->Bc5FindHleByNid(imp.nid, Loader::SymbolType::Func, &rec) &&
-+                rec.vaddr != 0) {
++            if (*imp.slot == nullptr &&
++                rt->Bc5FindHleByNid(imp.nid, Loader::SymbolType::Func, &rec) && rec.vaddr != 0) {
 +                *imp.slot = reinterpret_cast<void *>(rec.vaddr);
 +            }
 +            if (*imp.slot != nullptr) {
@@ -209,7 +230,7 @@ index 0000000..5205ae3
 +    // modules' own start code would run.
 +    for (const char *name : {"libSceAgcDriver", "libSceAgc", "libScePsml"}) {
 +        for (const auto &m : kModules) {
-+            if (std::string(m.name) == name && enabled(m) && m.start != nullptr) {
++            if (std::string(m.name) == name && chosen_bc5(m) && m.start != nullptr) {
 +                const std::int32_t r = m.start();
 +                LOGF("[bc5-reimpl] %s: started (%d)\n", m.name, r);
 +            }
@@ -221,7 +242,7 @@ index 0000000..5205ae3
 +
 +#endif // KYTY_BC5_DIRECT
 diff --git a/src/libs/libs.cpp b/src/libs/libs.cpp
-index 8b011c9..fc9b532 100644
+index 8b011c9..084ed67 100644
 --- a/src/libs/libs.cpp
 +++ b/src/libs/libs.cpp
 @@ -315,6 +315,14 @@ static void LoadSwitched(Loader::SymbolDatabase* s) {
@@ -229,8 +250,8 @@ index 8b011c9..fc9b532 100644
  // ---- end of experiment 0405's switched tables ----
  
 +#if defined(KYTY_BC5_DIRECT)
-+// BC5: clean-room re-creations of libSceAgc/libSceAgcDriver/libScePsml (libs/bc5Reimpl.cpp),
-+// registered last so they win their exact keys; nothing when every BC5_REIMPL_* switch is off.
++// BC5: clean-room re-creations of libSceAgc/libSceAgcDriver/libScePsml (libs/bc5Reimpl.cpp): here only
++// their log and data sinks; the choice and registration run once the title is loaded (RuntimeLinker).
 +namespace Bc5Reimpl {
 +LIB_DEFINE(InitBc5Reimpl_1);
 +} // namespace Bc5Reimpl
@@ -250,10 +271,10 @@ index 8b011c9..fc9b532 100644
  
  namespace LibContentExport {
 diff --git a/src/loader/runtimeLinker.cpp b/src/loader/runtimeLinker.cpp
-index 01140c1..2d292f6 100644
+index 01140c1..2746878 100644
 --- a/src/loader/runtimeLinker.cpp
 +++ b/src/loader/runtimeLinker.cpp
-@@ -2,6 +2,15 @@
+@@ -2,6 +2,16 @@
  #include <execinfo.h>
  #include <cinttypes>
  #include "loader/runtimeLinker.h"
@@ -261,25 +282,27 @@ index 01140c1..2d292f6 100644
 +namespace Loader {
 +class RuntimeLinker;
 +} // namespace Loader
++#include <filesystem>
 +namespace Libs::Bc5Reimpl { // BC5: libs/bc5Reimpl.cpp
 +std::vector<std::string> DeniedSysmodules();
-+void ResolveImports(Loader::RuntimeLinker* rt);
++void ResolveImports(Loader::RuntimeLinker* rt, const std::filesystem::path& title_root);
 +} // namespace Libs::Bc5Reimpl
 +#endif
  namespace Libs::Audio::Ajm { // BC5 exp 0419 (ajt): KYTY_BC5_AUDIO_TRAIL, src/libs/ajm.cpp
  bool Bc5AudioTrailOn();
  bool Bc5AjmTrailWhere(uint64_t v, char* buf, size_t cap);
-@@ -2051,6 +2060,9 @@ void RuntimeLinker::Execute(const std::filesystem::path& game_patch) {
+@@ -2051,6 +2061,10 @@ void RuntimeLinker::Execute(const std::filesystem::path& game_patch) {
  #endif
  
  	PreloadAdjacentPrograms();
 +#if defined(KYTY_BC5_DIRECT)
-+	Libs::Bc5Reimpl::ResolveImports(this); // BC5: the re-created modules' imports, before relocation
++	// BC5: choose BC5's own or the title's own modules (the title's directory is known now), register, bind, start
++	Libs::Bc5Reimpl::ResolveImports(this, m_programs.empty() ? std::filesystem::path() : m_programs.at(0)->file_name.parent_path());
 +#endif
  	RelocateAll();
  
  	if (!game_patch.empty()) {
-@@ -2215,6 +2227,19 @@ void RuntimeLinker::Resolve(const std::string& name, SymbolType type, Program* p
+@@ -2215,6 +2229,19 @@ void RuntimeLinker::Resolve(const std::string& name, SymbolType type, Program* p
  	}
  }
  
@@ -299,12 +322,12 @@ index 01140c1..2d292f6 100644
  bool RuntimeLinker::ResolveLoadedSymbolByNid(const std::string& nid, SymbolType type,
                                               SymbolRecord* out_info) {
  	KYTY_PROFILER_FUNCTION();
-@@ -2503,6 +2528,13 @@ static std::vector<std::string> KytyLleSysmoduleDenylist() {
+@@ -2503,6 +2530,13 @@ static std::vector<std::string> KytyLleSysmoduleDenylist() {
  		}
  	}
  
 +#if defined(KYTY_BC5_DIRECT)
-+	// BC5 (libs/bc5Reimpl.cpp): a module whose BC5_REIMPL_* switch is on stays off the LLE load.
++	// BC5 (libs/bc5Reimpl.cpp): a pack copy of a module BC5 provides (its BC5_REIMPL_* switch not =0) stays off the LLE load.
 +	for (const auto& name: Libs::Bc5Reimpl::DeniedSysmodules()) {
 +		list.push_back(Common::ToLower(name));
 +	}

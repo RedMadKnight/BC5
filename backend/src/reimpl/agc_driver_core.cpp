@@ -6,6 +6,8 @@
 // Everything here follows the original module's behaviour (clean-room description, see
 // src/reimpl/PROVENANCE.md); names are ours.
 #include "bc5/reimpl/agc_driver_internal.hpp"
+#include "bc5/reimpl/agc_driver_tables.hpp"
+#include "bc5/reimpl/data_source.hpp"
 
 #include <cstdarg>
 #include <cstdio>
@@ -444,18 +446,27 @@ std::int32_t workload_init() {
     return kOk;
 }
 
-// Fetches the trap handler GPU binary from the maintainer's own module (data, not code we ship).
+// The "present" trap-handler descriptor: our own minimal handler (agc_driver_tables.cpp, one
+// s_endpgm), or with BC5_REIMPL_FW_DATA the original's 0x2400-byte handler from the maintainer's
+// own module file. Either way install_trap_handler() sends the original's ioctl (0x80888123)
+// with it; BC5's host only traces that ioctl and never runs the handler on the GPU.
+// FW_COMPARE does not compare the two: they differ by design.
 void load_trap_descriptor() {
     g_state.trap_present = {};
     g_state.trap_absent = {};
-    FirmwareData *fw = bc5::reimpl::firmware_data();
-    const std::uint8_t *code = fw != nullptr ? fw->get(kModule, 0x1C000, 0x2400) : nullptr;
+    const std::uint8_t *code = nullptr;
+    std::uint64_t size = 0;
+    if (FirmwareData *fw = bc5::reimpl::firmware_data_for_use(); fw != nullptr) {
+        code = fw->get(kModule, tables::kTrapHandlerImageAddress, tables::kTrapHandlerImageSize);
+        size = tables::kTrapHandlerImageSize;
+    }
     if (code == nullptr) {
-        drv_log("trap handler binary not available (firmware data missing)");
-        return;
+        const std::span<const std::uint8_t> own = tables::trap_handler_code();
+        code = own.data();
+        size = own.size();
     }
     g_state.trap_present.code_start = code;
-    g_state.trap_present.code_end = code + 0x2400;
+    g_state.trap_present.code_end = code + size;
 }
 
 } // namespace
