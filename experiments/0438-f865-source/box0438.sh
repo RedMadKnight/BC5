@@ -22,6 +22,7 @@ K_PY=5dfb35d884bee8af31d81e3ad8b92548
 K_R438=94d696fbfe6cca223346ba255338a0f0  # r438.cpp: mkr438.py on cat/bc5LleAgc.cpp (3623fd41)
 K_U438=78f319da0beee7c0bbb7f6b582470a2e  # u438.cpp: mkr438 -> mkc438d -> mku438 on cat/bc5LleAgc.cpp
 K_S438=a56293942679688016778eef88c704c1  # s438.cpp: mks438 on u438.cpp (s438 + i438)
+K_E438=3fe3a79a459cb1ea60a7d27ff92f8c14  # e438.cpp: mks438y -> mke438 on s438.cpp (e438 + y438 + i438)
 K_W438=91557164b555b297f6e1b98ddc3f887d  # w438.cpp: mkr438 -> mkc438d -> mkw438 on cat/bc5LleAgc.cpp
 K_C438D=3a10750dd8e6e996afb59fc604668293  # c438d.cpp: mkc438d.py on cat/bc5LleAgc.cpp (3623fd41)
 K_CAT=3623fd41142c49514fce913c34c2efab  # cat/bc5LleAgc.cpp: mkcat438.py on a62e8bf6
@@ -198,6 +199,29 @@ builds() {
     [ "$sn" = "$(m "$W/kytyplus-build/src/kyty_emulator")" ] && [ "$sa" = "$(m "$SA")" ] && [ "$(m "$TREE/$UNIT")" = "$P_UNIT" ] || stop "a shared file changed"
     echo "shared normal ${sn:0:8}, archive ${sa:0:8}, tree unit ${P_UNIT:0:8}: unchanged"
 }
+builde() {
+    own || stop "no lock held by 0438"
+    pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
+    local b bin rc sn sl sa C=$E/e438
+    sn=$(m "$W/kytyplus-build/src/kyty_emulator"); sl=$(m "$W/kytyplus-build-lean/src/kyty_emulator"); sa=$(m "$SA")
+    [ "${sn:0:8}" = "$P_NORMAL" ] && [ "${sl:0:8}" = "$P_LEAN" ] && [ "${sa:0:8}" = "$P_ARCH" ] || stop "the shared builds are not $P_NORMAL/$P_LEAN/$P_ARCH"
+    [ "$(m "$TREE/$UNIT")" = "$P_UNIT" ] || stop "the shared tree's $UNIT is not patch bb04219b's"
+    [ "$(m "$HERE/e438.cpp")" = "$K_E438" ] && [ "$(m "$HERE/build0438.py")" = "$K_PY" ] || stop "the e438 kit is not the pinned one"
+    mkdir -p "$R" "$C/normal" || stop "mkdir"
+    rm -rf "$C/src"; mkdir -p "$C/src/kyty/src/libs" && cp "$HERE/e438.cpp" "$C/src/kyty/$UNIT" || stop "copy"
+    b=$W/kytyplus-build; bin=$C/normal/kyty_emulator; rm -rf "$C/normal/obj" "$C/normal/lib"
+    [ -f "$bin" ] && mv "$bin" "$bin.$(m "$bin" | cut -c1-8)"
+    distrobox enter ubuntu -- sh -c "cd '$b' && ninja -t compdb -x" > "$C/normal/compdb.json" 2> "$R/compdb-e438.err" < /dev/null || stop "compdb failed"
+    distrobox enter ubuntu -- env LC_ALL=C LANGUAGE=C python3 -I "$HERE/build0438.py" emu "$C/normal/compdb.json" "$C/src/kyty" "$C/normal" "$b" "$bin" "$UNIT" > "$R/build-e438.out" 2>&1 < /dev/null
+    rc=$?; echo "e438 normal: build rc $rc; errors $(grep -c 'error:' "$R/build-e438.out"); warnings $(grep -c 'warning:' "$R/build-e438.out")"
+    grep -n "error:\|undefined\|COMPILE FAILED" "$R/build-e438.out" | head -20
+    [ "$rc" = 0 ] && [ -x "$bin" ] || stop "build failed: $R/build-e438.out"
+    m "$bin" > "$C/normal/binary.md5"; strings "$bin" > "$C/normal/strings.txt"
+    echo "e438 normal: $(cut -c1-8 "$C/normal/binary.md5"); c438 lines $(grep -c 'c438 (exp 0438)' "$C/normal/strings.txt")"
+    grep -q 'BC5_0438_LAYOUT' "$C/normal/strings.txt" || stop "e438 is not in the binary"
+    [ "$sn" = "$(m "$W/kytyplus-build/src/kyty_emulator")" ] && [ "$sa" = "$(m "$SA")" ] && [ "$(m "$TREE/$UNIT")" = "$P_UNIT" ] || stop "a shared file changed"
+    echo "shared normal ${sn:0:8}, archive ${sa:0:8}, tree unit ${P_UNIT:0:8}: unchanged"
+}
 buildw() {
     own || stop "no lock held by 0438"
     pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
@@ -254,6 +278,7 @@ case "${1:-}" in
     buildw) buildw ;;
     buildu) buildu ;;
     builds) builds ;;
+    builde) builde ;;
     buildr) buildr ;;
-    *) echo "usage: $0 claim|release|pack|build|buildcat|buildr|buildd|buildw|buildu|builds"; exit 2 ;;
+    *) echo "usage: $0 claim|release|pack|build|buildcat|buildr|buildd|buildw|buildu|builds|builde"; exit 2 ;;
 esac

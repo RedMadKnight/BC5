@@ -1,0 +1,24 @@
+chain0438 16:19:13: mode scene, play 300 s, order LC L LR LC L LR LC L LR; shared f345db74, candidate 88a67303; runner 2d11fd6b; kernel 7.3.3-ogc1.1.fc45.x86_64; boot eb264b8c
+chain0438 16:19:13: GPU timeout/reset lines since boot at the chain's start: 0 (the baseline; the route runner refuses on any other count)
+chain0438 16:19:13: run u438sLC62, arm LC, 88a67303
+chain0438 16:26:30: u438sLC62: NO_CRASH; 33.61 flips/s over 294 s from G+10, 222 s with a gap over 50 ms, 74 over 100 ms; pad keys 0
+chain0438 16:26:50: run u438sL63, arm L, 88a67303
+chain0438 16:34:06: u438sL63: NO_CRASH; 33.92 flips/s over 294 s from G+10, 212 s with a gap over 50 ms, 98 over 100 ms; pad keys 0
+chain0438 16:34:26: run u438sLR64, arm LR, 88a67303
+chain0438 16:41:41: u438sLR64: NO_CRASH; 34.58 flips/s over 294 s from G+10, 206 s with a gap over 50 ms, 90 over 100 ms; pad keys 0
+chain0438 16:42:01: run u438sLC65, arm LC, 88a67303
+chain0438 16:49:12: u438sLC65: NO_CRASH; 32.76 flips/s over 290 s from G+10, 221 s with a gap over 50 ms, 82 over 100 ms; pad keys 0
+chain0438 16:49:32: run u438sL66, arm L, 88a67303
+chain0438 16:56:49: u438sL66: NO_CRASH; 32.78 flips/s over 294 s from G+10, 214 s with a gap over 50 ms, 113 over 100 ms; pad keys 0
+chain0438 16:57:09: run u438sLR67, arm LR, 88a67303
+chain0438 17:04:25: u438sLR67: NO_CRASH; 31.78 flips/s over 294 s from G+10, 220 s with a gap over 50 ms, 124 over 100 ms; pad keys 0
+chain0438 17:04:45: run u438sLC68, arm LC, 88a67303
+chain0438 17:11:57: u438sLC68: NO_CRASH; 32.92 flips/s over 290 s from G+10, 218 s with a gap over 50 ms, 84 over 100 ms; pad keys 0
+chain0438 17:12:17: run u438sL69, arm L, 88a67303
+chain0438 17:19:35: u438sL69: NO_CRASH; 33.16 flips/s over 293 s from G+10, 213 s with a gap over 50 ms, 109 over 100 ms; pad keys 0
+chain0438 17:19:55: run u438sLR70, arm LR, 88a67303
+chain0438 17:27:11: u438sLR70: NO_CRASH; 33.75 flips/s over 293 s from G+10, 217 s with a gap over 50 ms, 99 over 100 ms; pad keys 0
+chain0438 17:27:31: chain ended
+CHAIN_DONE
+
+[exited with code 0]
