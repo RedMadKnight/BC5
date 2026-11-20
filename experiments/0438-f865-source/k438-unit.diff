@@ -1,5 +1,5 @@
---- ../0436-submit-unlock/bake/bc5LleAgc.cpp	2026-11-20 06:10:05.248056200 +0100
-+++ bc5LleAgc.cpp	2026-11-20 08:32:19.064960700 +0100
+--- ../0436-submit-unlock/bake/bc5LleAgc.cpp	2026-11-20 09:01:36.911358800 +0100
++++ bc5LleAgc.cpp	2026-11-20 09:04:28.098109700 +0100
 @@ -7745,6 +7745,7 @@
  	const uint32_t* p     = nullptr; // the wait in the title's buffer: its kept offset is found by it
  	bool            is64  = false;
