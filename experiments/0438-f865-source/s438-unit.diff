@@ -1,0 +1,84 @@
+4807a4808,4821
+> // BC5 experiment 0438 (tag s438): direct_sync's scan left out on a merge-only pass (BC5_0438_MERGESCAN, on unless "0").
+> // The counters are written under g_dev_mutex only (direct_sync_one and direct_sync run under it).
+> namespace s438 {
+> inline bool on() {
+> 	static const bool v = [] {
+> 		const char* e = std::getenv("BC5_0438_MERGESCAN");
+> 		return !(e != nullptr && e[0] == '0' && e[1] == 0);
+> 	}();
+> 	return v;
+> }
+> inline uint64_t g_fast = 0, g_full = 0, g_mo_skipped = 0, g_mo_scanned = 0;
+> inline uint64_t g_ns[5] = {0, 0, 0, 0, 0}; // full passes: views, scan, merge, drain, maps
+> inline uint64_t g_last_scan_ns[2] = {0, 0}; // per DState kind: the last full scan
+> } // namespace s438
+4838a4853
+> 	bool       s438_merge_only = false; // exp 0438 (tag s438): this full pass is for the merge alone; step 1 left out
+4843c4858,4859
+< 		if (blocks != ~0ull && blocks == S.blocks && sig == S.views_sig && S.forced.size() == S.forced_seen && S.bos.size() == S.bos_mapped && !merge_due) {
+---
+> 		const bool s438_same = blocks != ~0ull && blocks == S.blocks && sig == S.views_sig && S.forced.size() == S.forced_seen && S.bos.size() == S.bos_mapped; // exp 0438 (tag s438)
+> 		if (s438_same && !merge_due) {
+4844a4861
+> 			s438::g_fast++;
+4846a4864,4869
+> 		s438::g_full++;
+> 		s438::g_ns[0] += SoftCp::now_ns() - now;
+> 		const int s438_k = S.kind == 0 ? 0 : 1;
+> 		s438_merge_only  = s438::on() && s438_same && merge_due && !zskip_new && g_zskip.empty() && now - s438::g_last_scan_ns[s438_k] < 1'000'000'000ull;
+> 		if (s438_same && merge_due) (s438_merge_only ? s438::g_mo_skipped : s438::g_mo_scanned)++;
+> 		if (!s438_merge_only) s438::g_last_scan_ns[s438_k] = now;
+4852a4876,4877
+> 	uint32_t imported = 0;
+> 	if (!s438_merge_only) { // exp 0438 (tag s438): step 1 (the scan and the imports)
+4884d4908
+< 	uint32_t imported = 0;
+4901a4926
+> 	} // exp 0438 (tag s438): step 1 ends
+4908a4934
+> 	s438::g_ns[1] += t_merge0 - t_scan0; // exp 0438 (tag s438)
+4980a5007
+> 	s438::g_ns[2] += t_drain0 - t_merge0; // exp 0438 (tag s438)
+4999a5027
+> 	s438::g_ns[3] += t_maps0 - t_drain0; // exp 0438 (tag s438)
+5237a5266
+> 	s438::g_ns[4] += SoftCp::now_ns() - t_maps0; // exp 0438 (tag s438)
+5270a5300,5309
+> #ifndef BC5_LEAN
+> 	static double s438_last = 0; // exp 0438 (tag s438): under g_dev_mutex
+> 	if (timing_now() - s438_last >= 60.0) {
+> 		s438_last = timing_now();
+> 		journal("s438 (exp 0438): t %.1f s: merge scan %s; direct syncs fast %" PRIu64 ", full %" PRIu64 "; merge-only passes with the scan left out %" PRIu64 ", scanned %" PRIu64
+> 		        "; full passes' time (ms): views %.1f, scan %.1f, merge %.1f, drain %.1f, maps %.1f\n",
+> 		        timing_now(), s438::on() ? "ON" : "off", s438::g_fast, s438::g_full, s438::g_mo_skipped, s438::g_mo_scanned, static_cast<double>(s438::g_ns[0]) / 1e6,
+> 		        static_cast<double>(s438::g_ns[1]) / 1e6, static_cast<double>(s438::g_ns[2]) / 1e6, static_cast<double>(s438::g_ns[3]) / 1e6, static_cast<double>(s438::g_ns[4]) / 1e6);
+> 	}
+> #endif
+17457a17497,17510
+> #ifndef BC5_LEAN
+> 			// exp 0438 (tag i438): records only. The in-buffer of 0xc0088133 / 0xc0108139 before the zero-fill, the out-buffer
+> 			// after it; the first 200 calls of each, then 1 in 600; at most the _IOC size (8 / 16 bytes) is read.
+> 			const bool i438_req = request == 0xc0088133u || request == 0xc0108139u;
+> 			static std::atomic<uint64_t> i438_n[2] = {0, 0};
+> 			const uint64_t i438_i = i438_req ? i438_n[request == 0xc0088133u ? 0 : 1]++ : 0;
+> 			const bool i438_log = i438_req && argp != nullptr && size != 0 && (i438_i < 200 || i438_i % 600 == 0);
+> 			char i438_in[3 * 64 + 1] = {0};
+> 			const uint32_t i438_sz = size < 64 ? size : 64;
+> 			if (i438_log) {
+> 				const auto* b = static_cast<const uint8_t*>(argp);
+> 				for (uint32_t k = 0; k < i438_sz; k++) std::snprintf(i438_in + 3 * k, 4, "%02x ", b[k]);
+> 			}
+> #endif
+17460a17514,17524
+> #ifndef BC5_LEAN
+> 			if (i438_log) {
+> 				char i438_out[3 * 64 + 1] = {0};
+> 				const auto* b = static_cast<const uint8_t*>(argp);
+> 				for (uint32_t k = 0; k < i438_sz; k++) std::snprintf(i438_out + 3 * k, 4, "%02x ", b[k]);
+> 				char tn[16] = {0};
+> 				pthread_getname_np(pthread_self(), tn, sizeof(tn));
+> 				Direct::journal("i438 (exp 0438): t %.3f s: gc ioctl 0x%08" PRIx64 " call %" PRIu64 " on %s: size %u; in [%s] out [%s]\n", Direct::timing_now(), request, i438_i, tn, size, i438_in,
+> 				        i438_out);
+> 			}
+> #endif

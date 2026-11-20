@@ -905,6 +905,158 @@ compared per minute.
       (u438sUC42);
     - among the game-side holders that bc5-ring waits behind, every one other than k1f412 is ≤ 6.4 s a run.
 
+## Build 10: s438 (direct_sync's scan on a merge-only pass) and i438 (the unknown ioctls' buffers), design
+
+The top session's order after result 9:
+- u438 and r438 mode 1 stay in the test build behind their switches.
+- One build gets (a) step 3's in-buffer records and (b) the next lever, picked by its share of bc5-ring's
+  device-mutex time.
+
+**Unit chain:** `mks438.py` on `u438.cpp` (`78f319da…`) → **`a56293942679688016778eef88c704c1`** (`s438-unit.diff`, 84
+lines).
+
+**Picking the lever** (result 9's U and UR runs, about 360 s each). bc5-ring's own slices hold the mutex in these
+parts:
+- `prep-direct-sync` 17.9–19.5 s;
+- `prep-filter` 8.9 s;
+- `prep-pre-k1f412` 1.6 s.
+
+Of its device-mutex waits, the share behind each game-thread holder:
+- `prep-pre-k1f412` 11.6–17.3 s;
+- `prep-direct-sync` 5.2–6.4 s;
+- `prep-filter` 1.8–2.1 s.
+
+Together (bc5-ring's own hold plus its waits behind the game thread):
+- direct-sync is about 23–25 s;
+- k1f412 is about 13–19 s;
+- filter is about 11 s.
+
+So the lever is `prep-direct-sync`.
+
+**Where direct_sync's time goes.** `direct_sync_one`, under `g_dev_mutex`, is called from `prepare` with `force`
+only when the filter found unmapped operands; otherwise it is rate-limited to 50 ms.
+- **Its fast path returns** when nothing in the memfd is new (`st_blocks`), no view is new (the views' signature),
+  nothing new is forced and every BO is mapped, **and the merge is not due**.
+- **The merge is due every 250 ms per DState.** So every 250 ms a full pass runs, even when nothing changed. It
+  does:
+  1. step 1, the scan for data chunks to import: a binary search on `S.bos` per view gap and an `lseek(SEEK_DATA)`
+     on the memfd per uncovered gap, over all views;
+  2. the merge;
+  3. the lzr pass;
+  4. the mapping rebuild, only when something changed.
+- The split of these parts is not known for these runs: the "timing split" line needs `BC5_DIRECT_TIMING`. The new
+  s438 line records it.
+
+**s438** (`BC5_0438_MERGESCAN`, behaviour, so in lean too; on unless "0").
+- A full pass whose only reason is the merge (same blocks, views, forced set and mapped BOs) skips step 1. The
+  merge and everything after it run as before.
+- It does this only when the last full scan of that DState is under 1 s old. So a full scan still runs at least
+  once a second.
+- It stays off when `g_zskip` is not empty or a new zero list was placed, so the zero-skip take-back is never left
+  out.
+
+| what step 1 touches | lock |
+|---|---|
+| `S.bos`, `S.forced`, `S.failed`, `S.file_size` (read); `S.bos`, `S.bytes` (import, write) | `g_dev_mutex` |
+| the memfd (`lseek SEEK_DATA`, read only) | none needed |
+| `g_zskip`, `zskip_take_back` | `g_dev_mutex` |
+| `ls415_import` (dma-buf import, ioctls) | `g_dev_mutex` |
+
+s438 moves nothing out of the lock. It runs step 1 less often under it: at most once a second on a merge-only pass,
+instead of four times.
+
+What it gives up: a data chunk that appears with `st_blocks` unchanged (a page freed and another written in the
+same window) is found up to 1 s later instead of up to 250 ms. A packet operand on such a chunk is still imported
+at once by k1f412, since `S.forced` grows and the next sync is then not merge-only.
+
+**What a late chunk would look like** (the top session asked for this, so a future fault can be checked against it).
+A late chunk is not imported, so the GPU has no mapping for it for up to 1 s. The chunk is reached only through
+memory that no packet operand names: a descriptor inside a buffer, a shader's own load, a BVH node.
+- **A read with no mapping and no cover:** a GPU page fault (a VM fault line, `amdgpu … [gfxhub] page fault` with the
+  address), or, with the fault recorder, exit 86 and a record under `~/bc5-data/captures/faults/`. The faulting
+  address is inside a direct-memory view of the memfd, in a chunk that a later sync line (`+N BOs`) imports.
+- **A read through a zero or cover mapping (k1r412, zskip):** zero or stale data with no fault. A texture or
+  geometry that is black, missing or flickers for up to 1 s and then shows. Or a compute result built from zeros:
+  a lighting, BVH or RT artefact for a frame or more.
+- **A write to such a chunk:** lost, or a fault as above.
+- **To check a fault against s438:**
+  - Is the address in a chunk that was data in the memfd but not imported at the fault?
+  - Was the last full scan of that DState up to 1 s before, with merge-only passes since (the s438 line's counts)?
+  - Does the same fault happen with `BC5_0438_MERGESCAN=0`?
+
+**s438 records** (normal build): an `s438` line every 60 s, from `direct_sync` under the mutex, with:
+- passes fast and full;
+- merge-only passes with the scan left out, and with it run;
+- the full passes' time by part: views, scan, merge, drain, maps.
+
+If the scan is not the large part, the line names the part that is, for the next build.
+
+**i438** (step 3's follow-up; records only, normal build, no switch: what the title gets back is unchanged).
+- In `gc_ioctl`'s default case, for `0xc0088133` and `0xc0108139` only, it logs:
+  - the in-buffer before the zero-fill;
+  - the out-buffer after it (what the host returns, zeros);
+  - the thread name and the call number.
+- It reads at most the request's `_IOC` size, 8 or 16 bytes. The 64 bytes asked for are capped at that size,
+  because reading past the argument could fault.
+- Rate: the first 200 calls of each request, then 1 in 600.
+
+**Chain** (clean boot, his scene, RT on, the same gates): `MC M` × 3, both on result 9's UR base
+(`BC5_0438_SPLIT=1 BC5_0438_EARLYREG=1`).
+- MC = `BC5_0438_MERGESCAN=0`; M = `BC5_0438_MERGESCAN=1`.
+- The gate is the first MC run at ≥ 33.3 flips/s.
+- Per run: flips/s, gaps over 50 / 100 ms, give-ups, c438's holder table and slice kinds, the s438 line, and the
+  i438 line count.
+
+## Result 10: build 10, stopped at the gate after one run (2026-11-20 15:26–15:35, boot eb264b8c, binary 3ff1d182)
+
+**Build.** normal `3ff1d182af952e6d2a7402948a5c4f1d` (unit `a5629394…`), 0 errors and the 7 old warnings, built
+under BOX-LOCK 15:26–15:27. Shared builds unchanged.
+
+**The chain stopped by rule.** Its first run, u438sMC52 (MC: s438 off, on the UR base), ended NO_CRASH at
+**32.89 flips/s**, with 218 s with a gap over 50 ms, 71 over 100 ms, pad keys 0 and 0 give-ups. That is under the
+gate of 33.3, so the chain stopped. No M run was made, and there was no GPU line.
+- The gate was set for a both-off control (C/UC).
+- In result 9 the UR base ran 33.33, 33.43 and 34.75: it sits at the gate.
+- Whether the box was slow or the gate does not fit this base is the top session's call.
+
+**The s438 line from MC52 (scan on, t 420 s)** answers where direct_sync's time goes:
+- **Passes:** 464,199 fast and 9,292 full. 2,826 of the full passes (30 %) were merge-only, the ones s438 would
+  skip.
+- **The full passes' time by part:** views 12.75 s, scan 7.78 s, merge 2.57 s, drain 0.11 s, **maps 16.12 s**.
+- **The most s438 can save** is about 30 % of the scan, so about 2.3 s in 420 s, plus nothing of the views or maps
+  time. **s438 is a small lever.**
+- **The large parts are the mapping rebuild (maps) and the views list (views).** Both run when the title's mapping
+  layout changes. That points to the map calls themselves, not to polling.
+
+**The scan yield (a first answer to the maintainer's question, from MC52's journal, before y438).** These are BOs
+imported by sync passes, from the journal's `+N BOs` lines, timed by the nearest earlier timed line:
+
+| phase | sync lines with imports | BOs | pinned at the end of the phase |
+|---|---|---|---|
+| load (t < 60 s) | 323 | 430 | — |
+| play (t ≥ 60 s) | 127 | 139 | 11,240 MiB at t 86 s → 11,742 MiB at t 421 s |
+
+- **During play the syncs still find new data:** about 500 MiB in about 335 s, one or two chunks every 2–3 s. So it
+  is not ~0.
+- **Not yet separated:** scans against forced imports. k1f412 forced none ("k1 at the filter" lines: 0); ud434 logged
+  22 user-data imports in play. y438 (`mks438y.py`, next build) counts by kind.
+- **What this means for an event-driven design (an inference, not measured).**
+  - On the console the GPU sees memory from the map call on. Here the title's direct memory is a memfd whose pages
+    exist only once written, and the scan imports chunks when they first hold data (`SEEK_DATA`).
+  - A first write to a mapped range is not a call the host sees. "Import at the map call" would mean importing
+    (pinning) the whole mapped range at once, which is the eager-names path, at the cost of GTT for memory the title
+    has not touched.
+  - The play-time yield above is what that trade would have to cover.
+
+**i438: the two unknown ioctls (MC52, 456 lines).** Every logged call had the same in-buffer:
+- `0xc0088133` (8 bytes; 228 calls logged, all on Render Thread): in `00 00 00 00 01 00 00 00`;
+- `0xc0108139` (16 bytes; 227 calls logged on Render Thread, 1 on game-main at t 0): in
+  `00 00 00 00 01 00 00 00` followed by 8 zero bytes;
+- out: zeros, as the host returns today.
+
+Read as little-endian u32s, the in-buffer is {0, 1}, the same on every call. That fits a query or a toggle with a
+fixed argument rather than a per-submit payload. TODO(verify): no public source names either request yet.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its

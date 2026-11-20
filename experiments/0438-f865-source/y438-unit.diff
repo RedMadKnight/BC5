@@ -1,0 +1,31 @@
+4820a4821,4824
+> // exp 0438 (tag y438): what the scans find. [phase 0 load (< 60 s) / 1 play][kind 0 forced / 1 change / 2 merge]
+> inline uint64_t y_passes[2][3] = {}, y_chunks[2][3] = {}, y_bytes[2][3] = {};
+> inline uint64_t y_layout[2] = {0, 0}, y_ranges[2] = {0, 0};
+> inline int phase() { return timing_now() < 60.0 ? 0 : 1; }
+4829a4834
+> 	if (ranges_gen != S.ranges_gen) s438::y_ranges[s438::phase()]++; // exp 0438 (tag y438)
+4851c4856,4859
+< 	if (sig != S.views_sig) g_layout_gen++;
+---
+> 	if (sig != S.views_sig) {
+> 		g_layout_gen++;
+> 		s438::y_layout[s438::phase()]++; // exp 0438 (tag y438)
+> 	}
+4853a4862
+> 	int        y438_kind       = 1;     // exp 0438 (tag y438): 0 forced, 1 change, 2 merge
+4864a4874
+> 		y438_kind = S.forced.size() != S.forced_seen ? 0 : (s438_same ? 2 : 1); // exp 0438 (tag y438)
+4876a4887
+> 	if (!s438_merge_only) s438::y_passes[s438::phase()][y438_kind]++; // exp 0438 (tag y438): a pass that scans
+4920a4932,4933
+> 			s438::y_chunks[s438::phase()][y438_kind] += size / kDChunk; // exp 0438 (tag y438)
+> 			s438::y_bytes[s438::phase()][y438_kind] += size;
+5307a5321,5327
+> 		for (int ph = 0; ph < 2; ph++) { // exp 0438 (tag y438)
+> 			const auto mib = [](uint64_t b) { return static_cast<double>(b) / 1048576.0; };
+> 			journal("y438 (exp 0438): t %.1f s: %s: scanning passes / chunks imported / MiB: forced %" PRIu64 " / %" PRIu64 " / %.1f, change %" PRIu64 " / %" PRIu64 " / %.1f, merge %" PRIu64 " / %" PRIu64
+> 			        " / %.1f; layout changes %" PRIu64 ", mapped-ranges generation changes %" PRIu64 "\n",
+> 			        timing_now(), ph == 0 ? "load (t < 60 s)" : "play (t >= 60 s)", s438::y_passes[ph][0], s438::y_chunks[ph][0], mib(s438::y_bytes[ph][0]), s438::y_passes[ph][1],
+> 			        s438::y_chunks[ph][1], mib(s438::y_bytes[ph][1]), s438::y_passes[ph][2], s438::y_chunks[ph][2], mib(s438::y_bytes[ph][2]), s438::y_layout[ph], s438::y_ranges[ph]);
+> 		}
