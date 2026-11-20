@@ -18,7 +18,7 @@ P_UNIT=a62e8bf6251a44f147a23d9689449e21   # the shared tree's bc5LleAgc.cpp (pat
 P_ARCH=d6638808; P_NORMAL=f345db74; P_LEAN=6a735b81
 K_UNIT=680bda1f3430b676f2dadef8808ae24a  # k438 (off by default, refuted) + k438b (BC5_0438_HOLD); was 59a5df70 for build d4a2f86d
 K_PY=5dfb35d884bee8af31d81e3ad8b92548
-K_CAT=b7097917d5a01a69f1f1eca978d318fb  # cat/bc5LleAgc.cpp: mkcat438.py on a62e8bf6
+K_CAT=3623fd41142c49514fce913c34c2efab  # cat/bc5LleAgc.cpp: mkcat438.py on a62e8bf6
 K_VG=cad85761590d642235cded7094c9b48c      # exp 0437's mkvg437.py (branch exp/0437-q30-syncs f89c3861), folded in (top, 2026-11-20)
 MEMC=src/kernel/memory.cpp; MEMH=src/kernel/memory.h
 stop() { echo "0438 STOP: $*"; exit 1; }

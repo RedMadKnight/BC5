@@ -13,6 +13,7 @@ saw it and submitted it late)? Records only, normal build only (#ifndef BC5_LEAN
 Usage: mkcat438.py IN.cpp OUT.cpp   (IN: the tree unit a62e8bf6..., exp 0436's bake/bc5LleAgc.cpp)
 """
 import hashlib
+import os
 import sys
 
 IN, OUT = sys.argv[1], sys.argv[2]
@@ -207,6 +208,8 @@ rep('''					if (!ok) journal("cpu-wait %s at %u on 0x%" PRIx64 ": %s after %.1f 
 						}
 					}
 #endif''')
+
+exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mkcat438b-part.py'), encoding='utf-8').read())
 
 out = s.encode('utf-8')
 open(OUT, 'wb').write(out)

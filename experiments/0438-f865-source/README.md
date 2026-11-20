@@ -421,6 +421,50 @@ last ~60 s of each run are not in them), 3,127,192 packets:
 - **Next catcher field (proposed):** time inside `Direct::submit` per slice, by what it waited on, and the same at
   each give-up.
 
+## Result 5: c438 part 2, what bc5-ring does with its time (2026-11-20 09:35–09:52, boot a1db5eee)
+
+The catcher was extended under the top session's GO (`mkcat438b-part.py`, run by `mkcat438.py`; unit
+`3623fd41142c49514fce913c34c2efab`, `c438-unit.diff`; normal `c731c5fa`, 0 errors, only the old warnings).
+- **What it adds:** bc5-ring's time split into exclusive kinds, recorded per slice, per look gap of 20 ms or more,
+  and at each give-up. The queue views are refreshed at every look.
+- **The kinds:** idle, scan, submit, F10, F16, F18, back-pressure, ring-lock, dev-mutex, backend+ioctl, acb-cpu-wait,
+  wait-idle.
+- **Caveat on "scan":** it is bc5-ring's time outside `Direct::submit` and outside the scoped waits. That includes
+  `chain_end`'s flush of the slice's chain, so it covers submit_now's whole preparation (sync, hints, filter) for the
+  actual submission. "scan" is therefore mostly submit preparation; this build does not split it.
+
+Two scene runs, arm T, RT on: u438sT14 NO_CRASH 35.45 flips/s (220 / 61 s with a gap over 50 / 100 ms), u438sT15
+NO_CRASH 33.99 (219 / 73); 0 kernel lines.
+
+| per run (last 60-s line, t ≈ 420 s) | u438sT14 | u438sT15 |
+|---|---|---|
+| slices | 160,892 | 155,860 |
+| time per slice <1 / <5 / <20 / <100 ms / more | 125,095 / 32,368 / 2,822 / 596 / 11 | 121,248 / 30,997 / 3,018 / 588 / 9 |
+| longest | 1,462 ms | 1,472 ms |
+| in slices by kind (s): backend+ioctl / dev-mutex / scan(prepare) / submit | 68.3 / 44.6 / 37.4 / 12.6 | 65.5 / 45.1 / 35.4 / 12.2 |
+| the rest (s): F10 / F16+F18 / back-pressure / ring-lock / acb-cpu-wait / wait-idle | 0.44 / 0.10 / 0.29 / 0.03 / 0.009 / 0.02 | 0.42 / 0.08 / 0.99 / 0.03 / 0.009 / 0.02 |
+| look gaps ≥ 20 ms (per-queue records, one gap counted once per queue) | 40,505 | 42,495 |
+| in them by kind (s, inflated about 12×): dev-mutex / scan(prepare) / backend+ioctl / submit / idle | 831 / 685 / 86 / 27 / 12.7 | 935 / 581 / 103 / 34 / 13.8 |
+
+- **The longest gaps:**
+  - T14: 1.46 s at the load, of which 1,444 ms was prepare in one slice.
+  - T15: 1.47 s, of which 887 ms was prepare and 585 ms dev-mutex.
+  - Other long slices: backend calls of 131 ms and 213 ms; dev-mutex waits of 98–106 ms inside 150–170 ms slices.
+- **The give-ups** (T14: waits on 0x12004b3c38, 5438 and 7838, given up after 34.5–39.9 ms):
+  - Each time, bc5-ring was "in scan for 11.7–12.1 ms".
+  - The writer queue 1/0/0 had pending work with its head ready.
+  - Since its last look, bc5-ring was "scan 11.9, submit 0.1" (once "scan 12.1, submit 11.6, dev-mutex 10.1").
+- **Reading** (inferred from the kinds, the caveat above applies):
+  - bc5-ring had taken the writer queue's ready slice and was about 12 ms into its chain's preparation, before the
+    kernel call. Label writes are registered only after that call, so the game thread saw no writer on a ring and
+    gave up.
+  - bc5-ring's biggest losses overall are waiting for the device mutex (about 45 s in about 420 s), which the game
+    thread holds for its own preparation, and that preparation itself.
+- **Next (proposed, not built):**
+  - split submit_now's preparation into its parts, to name what fills those 12 ms and the device-mutex waits;
+  - a fix direction to be designed: register a slice's label writes as pending before its preparation. The waiter
+    then sees a writer that is already committed to the ring.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
@@ -465,6 +509,6 @@ bb04219b's tree unit (`a62e8bf6…`, exp 0436's `bake/bc5LleAgc.cpp`):
 - `python -I mk0438.py ../0436-submit-unlock/bake/bc5LleAgc.cpp bc5LleAgc.cpp` → `680bda1f3430b676f2dadef8808ae24a`
   (k438, off unless set + k438b; test builds d4a2f86d used the earlier `59a5df70…`, c4b23cd1 this one plus
   `mkvg437.py` on the box copy); the change is `k438-unit.diff`.
-- `python -I mkcat438.py ../0436-submit-unlock/bake/bc5LleAgc.cpp cat/bc5LleAgc.cpp` → `b7097917d5a01a69f1f1eca978d318fb`
-  (the catcher c438, build 8b2ae229); the change is `c438-unit.diff`.
+- `python -I mkcat438.py ../0436-submit-unlock/bake/bc5LleAgc.cpp cat/bc5LleAgc.cpp` → `3623fd41142c49514fce913c34c2efab`
+  (c438 with part 2, build c731c5fa; part 1 alone, build 8b2ae229, was `b7097917…`); the change is `c438-unit.diff`.
 `box0438.sh` pins both md5s (`K_UNIT`, `K_CAT`) and expects the files at those paths in its kit directory.
