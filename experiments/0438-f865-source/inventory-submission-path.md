@@ -102,3 +102,24 @@ on the top session's GO.
 - **Flip labels are cleared by the host** after a CPU flip, not by an EOP-driven flip.
 - **Opcodes dropped by default:** 0x51, MEM_SEMAPHORE waits and REWIND are dropped or only counted. Any of them in a
   hot path would change the title's ordering.
+
+## The unknown /dev/gc requests (c438d, u438sT28, 2026-11-20)
+
+| request | `_IOC` reading, TODO(verify) | count in about 360 s | thread | host | identified? |
+|---|---|---|---|---|---|
+| 0xc0088133 | in/out, 8 bytes, group 0x81, number 0x33 | 14,962 (one per submit header) | Render Thread | default case: zero-filled, returns 0 | **no** |
+| 0xc0108139 | in/out, 16 bytes, group 0x81, number 0x39 | 14,963 (one per submit header) | Render Thread | default case: zero-filled, returns 0 | **no** |
+| 0xc010813b | in/out, 16 bytes, number 0x3b | 1 | game-main | zeros | no |
+| 0x80048126, 0x80048134 | in, 4 bytes, numbers 0x26 / 0x34 | 1 each | game-main | zeros | no |
+| 0x80888123 | in, 0x88 bytes, number 0x23 | 1 | game-main | zeros | no |
+
+**What was searched, public sources only, all with no match:**
+- the local clones under `refs/` (RPCSX `rpcsx/iodev/gc.cpp` at e8ae148, which handles neither; the Kyty forks;
+  AnyPS5; shadPS4; and the others);
+- one web search restricted to github.com (2026-11-20).
+
+**Status:**
+- The `_IOC` reading assumes the FreeBSD layout: 0xc0000000 in/out, bits 16-28 the length, bits 8-15 the group,
+  bits 0-7 the number. A public note says the console's device ioctls do not follow it: TODO(verify).
+- No behaviour change until identified (the top session's ruling). The next step is the arguments the title passes:
+  a records-only dump of the first calls' in-buffers, if the top session wants it.
