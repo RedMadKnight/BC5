@@ -1175,6 +1175,57 @@ random BO lists (imports, merges, cuts) on a fake device. After every step:
 - **Refuted if:** L or LR shows a GPU line, a visual change the control does not show, or a nonzero 2-s check
   change.
 
+## Build 12 (prepared offline, not built): the mapping index updated in place, no full rebuild after the first
+
+**The ask.** The maintainer, through the top session: "a full rebuild shouldn't be needed; an update of the mapping
+index is enough".
+
+**Unit chain:** `mkf438.py` on `e438.cpp` (`3fe3a79a…`) → **`beb28ae04cada0350b38846d44e366ef`** (`f438-unit.diff`).
+The switch is still `BC5_0438_LAYOUT`.
+
+**What changes against build 11.**
+1. **Touched intervals come from a diff, not the records.** Each DState keeps a copy of the (va, size, offset, lazy,
+   eager) tuples of the view list its mappings were made from. The current list is diffed against that copy (both
+   rise by va); the pending queue and its step numbers are no longer read.
+   - So a record gap, a kept-list mismatch, a list not made from records, the private DState and a list older than
+     the mappings are all ordinary diffs, not reasons for a full rebuild.
+   - The records still feed the view list (the 12.8 s) and the layout statistics.
+2. **A lazy chunk is a local update.** kl412's scan runs in `direct_sync_one` before the drain decision, at today's
+   cadence. A chunk whose written state changed goes into the drain condition, as today's rebuild drained, and
+   becomes a touched interval: the lazy views that show it are recomputed.
+   - Their zero cover on a written chunk goes.
+   - If the chunk is imported, its BO mapping comes through the BO diff.
+   - A written lazy chunk that is not imported stays unmapped and faults by name, as today. Importing it would undo
+     F394's 242 MiB; that needs a decision of its own.
+3. **A failed map is retried** on its own interval at the next update (`e438::retry`); no full rebuild.
+4. **The growth runs until it stops.** It only grows, inside a finite set of endpoints, so it needs no cap.
+5. **What can still take the old rebuild:**
+   - the first build of each DState, and a device reopen (no mappings, or a new zero buffer);
+   - an unsorted list. It cannot occur: the direct views are the guest range table's ranges, which are disjoint by
+     construction (`VirtualRanges`), and the private views are the address space's map. It is counted as a bug.
+   - zskip (`BC5_DIRECT_ZERO_SKIP`), the g412 cap (`BC5_GUARD_CAP_ACT`) and the kc412 cover log
+     (`BC5_GUARD_COVER_LOG`). These are environment switches read once at start and unset in every launcher; exp 0419
+     took zskip and the pin cap out of the defaults. They cannot turn on during play. In a diagnostic run with one
+     set, the old rebuild is used, and counted.
+6. **The 2-s check is a diagnostic** (`#ifndef BC5_LEAN`, so not in lean).
+   - It compares `S.maps` with the full list made the old way (`e438_full_want`: every view's own mappings and
+     covers, from the same known-written set).
+   - A difference is journaled as a BUG with its extra and missing counts. It is not repaired.
+
+**The offline test** (`test_f438.sh`): the same equality checks as test_e438, on 80 scenarios. Every fourth is the
+private DState; every fifth has maps that fail 3 % of the time. It also checks:
+- the unit's own diagnostic list against the test's;
+- **0 full rebuilds after the first**.
+
+PASS:
+- 9,600 steps, all incremental, 0 full rebuilds after the first;
+- 2,194 local lazy updates and 841 retry rounds;
+- 2,946 lazy chunks taken out of a cover, longest wait 100 ms;
+- 9,600 diagnostic lists equal.
+
+Two broken copies FAIL: the local lazy update left out (scenario 0, step 0), and the retry left out (scenario 1,
+step 3).
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
