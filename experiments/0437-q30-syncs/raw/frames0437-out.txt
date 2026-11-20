@@ -1,0 +1,42 @@
+== h430H4-direct.log.gz frames 58673 t end 1427
+  t 3.6 period 265.9 inside 114.8 sync 90.7 hints 0.1 prep 0.5 cs 23.1
+  t 310.8 period 121.7 inside 100.2 sync 51.9 hints 0.3 prep 2.5 cs 38.1
+  t 33.1 period 87.9 inside 57.0 sync 50.4 hints 0.3 prep 0.8 cs 5.1
+  t 265.6 period 109.5 inside 89.8 sync 49.7 hints 0.3 prep 2.7 cs 28.2
+  t 1218.3 period 72.0 inside 54.0 sync 43.2 hints 0.8 prep 2.4 cs 7.4
+  t 99.5 period 79.1 inside 51.6 sync 39.4 hints 9.2 prep 0.8 cs 1.5
+  t 1057.9 period 57.8 inside 42.3 sync 37.1 hints 0.9 prep 2.5 cs 1.7
+  t 1383.5 period 60.5 inside 44.2 sync 37.0 hints 0.8 prep 3.2 cs 2.7
+  t>=130 sync in [20,50): 458 frames, 12.5 s
+  t>=130 sync in [50,100): 1 frames, 0.1 s
+  t>=130 sync in [100,1e+09): 0 frames, 0.0 s
+  t>=130 period in [50,100): 208; of them sync>20: 150
+  t>=130 period in [100,1e+09): 4; of them sync>20: 2
+== h430M1-direct.log.gz frames 62109 t end 1610
+  t 3.5 period 243.8 inside 122.6 sync 99.5 hints 0.1 prep 0.5 cs 22.0
+  t 34.1 period 129.4 inside 99.2 sync 91.0 hints 1.6 prep 0.6 cs 3.8
+  t 326.5 period 163.6 inside 68.7 sync 52.1 hints 7.4 prep 3.9 cs 3.9
+  t 922.2 period 65.3 inside 49.5 sync 43.5 hints 1.0 prep 2.8 cs 2.1
+  t 524.9 period 69.5 inside 52.3 sync 43.3 hints 1.1 prep 4.6 cs 3.0
+  t 100.2 period 67.7 inside 50.4 sync 40.9 hints 6.5 prep 1.0 cs 1.4
+  t 266.0 period 63.9 inside 47.4 sync 40.9 hints 0.9 prep 2.9 cs 2.4
+  t 377.3 period 137.1 inside 58.6 sync 38.4 hints 12.3 prep 3.7 cs 3.3
+  t>=130 sync in [20,50): 546 frames, 15.3 s
+  t>=130 sync in [50,100): 1 frames, 0.1 s
+  t>=130 sync in [100,1e+09): 0 frames, 0.0 s
+  t>=130 period in [50,100): 320; of them sync>20: 259
+  t>=130 period in [100,1e+09): 5; of them sync>20: 3
+== play-f18/direct.log.gz frames 113009 t end 3157
+  t 465.4 period 197.9 inside 180.2 sync 175.7 hints 0.9 prep 1.9 cs 1.6
+  t 255.3 period 140.8 inside 125.1 sync 120.1 hints 1.0 prep 2.4 cs 1.4
+  t 226.4 period 487.3 inside 167.2 sync 119.4 hints 15.8 prep 23.4 cs 7.4
+  t 230.2 period 342.9 inside 233.0 sync 119.1 hints 33.6 prep 2.5 cs 4.0
+  t 2199.8 period 377.7 inside 227.2 sync 112.0 hints 39.2 prep 2.1 cs 4.0
+  t 523.5 period 284.0 inside 236.9 sync 110.0 hints 41.1 prep 2.4 cs 2.8
+  t 228.6 period 303.4 inside 249.9 sync 107.1 hints 40.2 prep 2.4 cs 2.9
+  t 1022.7 period 380.5 inside 294.5 sync 103.8 hints 36.4 prep 2.4 cs 4.5
+  t>=130 sync in [20,50): 563 frames, 17.6 s
+  t>=130 sync in [50,100): 1065 frames, 66.8 s
+  t>=130 sync in [100,1e+09): 10 frames, 1.2 s
+  t>=130 period in [50,100): 4317; of them sync>20: 1343
+  t>=130 period in [100,1e+09): 372; of them sync>20: 209

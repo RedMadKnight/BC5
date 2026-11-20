@@ -1,0 +1,13 @@
+acb cs prefix (exp 0401): t 552.823 s queue 0 acb part 1431 dwords dispatches at -1 before it sets a program; the queue's program 0x11d02d3b00, 58 dwords in front (252929 such parts)
+frame profile: t 552.831 s, 72.2 ms since the last flip; game thread inside the host 4.9 ms (sync 0.4, hints 0.3, prepare 2.1, list 0.1, cs 2.1, fence 0.0, cap 0.0, label waits 0.0, event waits 0.0), at the flip 5.5, outside 61.8; GPU busy 14.0 ms in 10 jobs (+21 from the ring thread); soft-CP passes 0.8 ms in 62, waits polled 0 (0.0 ms, 0 timed out); prepare = filter 0.7 + tracker 0.2 + cu 0.4 + 
+direct: 29173 views; +0 BOs (70, 11942.0 MiB pinned); maps +27 -28 (29534)
+exp 0405 gpu: t 552.905 s: MEM_SEMAPHORE set 0 add 0 wait 0 other 0; REWIND 0 (VALID clear 0); dropped by the policy 0 (by opcode:); custom NOPs 0 (by sub-code:); submit-EOP events 0 (chained 0); COND_WRITE wrote 0 not 0 other 0; wait idle 0 (gave up 0); 100-MHz timestamps 514
+frame profile: t 552.917 s, 85.6 ms since the last flip; game thread inside the host 9.6 ms (sync 0.4, hints 0.3, prepare 2.0, list 5.1, cs 1.8, fence 0.0, cap 0.0, label waits 0.0, event waits 0.0), at the flip 3.8, outside 72.3; GPU busy 14.2 ms in 11 jobs (+23 from the ring thread); soft-CP passes 0.4 ms in 52, waits polled 0 (0.0 ms, 0 timed out); prepare = filter 0.7 + tracker 0.2 + cu 0.4 + 
+direct merge: 0 BOs became 0 (70 BOs now), 0 mappings moved, 5 runs deferred by the mapping budget
+direct: 29172 views; +0 BOs (70, 11942.0 MiB pinned); maps +33 -34 (29533)
+learned apply: 33.6 ms (release 0.0, mappings 33.5 of 29612, windows 0.0, fill 0.0, guards 0.2); views rebuilt 0 times
+learned_apply took 33.6 ms on bc5-ring (layout gen 8950)
+t 552.8 s:
+view builds 23221
+t 562.8 s:
+view builds 23890

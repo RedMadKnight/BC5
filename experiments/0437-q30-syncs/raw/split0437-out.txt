@@ -1,0 +1,24 @@
+== h430H4-direct.log.gz windows of 128 after t 130: 14267
+  sums [s]: probe 27.7, anon 11.3, direct 35.0, views 10.9, scan 4.3, merge 2.6, drain 0.0, maps 5.9, want 3.3, drop 1.0, zero 0.0, add 1.1, learned 3.4, hints 18.3; full view builds 14527, fast 2003463
+  windows with sync+hints > 50 ms: 12, 0.7 s; by largest part: anon 9/0.5s, merge 3/0.2s
+   82 ms at t 265.6 (full 3): probe 1.8, anon 22.1, views 3.9, scan 0.9, merge 26.6, drain 0.0, maps 20.9, learned 0.5, hints 1.5
+   65 ms at t 1171.0 (full 5): probe 2.7, anon 23.1, views 4.9, scan 2.6, merge 14.0, drain 0.0, maps 12.6, learned 1.0, hints 1.2
+   60 ms at t 1067.4 (full 7): probe 11.1, anon 20.7, views 8.7, scan 2.6, merge 0.9, drain 0.1, maps 8.1, learned 5.4, hints 1.8
+   58 ms at t 463.6 (full 6): probe 7.7, anon 21.9, views 10.6, scan 3.3, merge 0.5, drain 0.1, maps 6.8, learned 4.9, hints 1.5
+   56 ms at t 231.8 (full 6): probe 2.3, anon 26.1, views 10.6, scan 7.5, merge 0.3, drain 0.0, maps 4.7, learned 1.4, hints 2.0
+== h430M1-direct.log.gz windows of 128 after t 130: 15538
+  sums [s]: probe 38.3, anon 12.5, direct 60.2, views 25.3, scan 7.0, merge 3.5, drain 0.1, maps 13.5, want 7.4, drop 2.0, zero 0.0, add 2.4, learned 8.2, hints 25.2; full view builds 20897, fast 2219688
+  windows with sync+hints > 50 ms: 79, 4.7 s; by largest part: anon 36/2.1s, views 26/1.7s, probe 14/0.7s, scan 2/0.2s, maps 1/0.1s
+   179 ms at t 377.5 (full 29): probe 4.0, anon 0.1, views 60.6, scan 27.2, merge 2.3, drain 0.4, maps 45.5, learned 34.2, hints 5.2
+   112 ms at t 326.5 (full 29): probe 4.8, anon 18.3, views 25.3, scan 20.5, merge 1.6, drain 0.2, maps 25.3, learned 11.2, hints 3.2
+   98 ms at t 337.1 (full 12): probe 15.0, anon 0.0, views 14.2, scan 42.6, merge 1.2, drain 0.1, maps 13.6, learned 9.2, hints 1.6
+   75 ms at t 389.6 (full 8): probe 11.6, anon 23.4, views 16.3, scan 2.9, merge 0.1, drain 0.1, maps 11.3, learned 6.7, hints 1.9
+   74 ms at t 1297.3 (full 7): probe 14.4, anon 20.9, views 12.4, scan 3.0, merge 1.4, drain 0.1, maps 10.0, learned 8.5, hints 2.6
+== play-f18/direct.log.gz windows of 128 after t 130: 27281
+  sums [s]: probe 117.5, anon 61.8, direct 271.6, views 128.1, scan 29.9, merge 18.9, drain 0.5, maps 74.5, want 36.3, drop 13.9, zero 0.0, add 17.2, learned 44.7, hints 41.1; full view builds 55849, fast 3937566
+  windows with sync+hints > 50 ms: 3548, 285.0 s; by largest part: views 1909/153.9s, anon 1124/94.0s, probe 420/27.1s, maps 38/4.1s, scan 28/3.9s, merge 28/2.0s, learned 1/0.1s
+   676 ms at t 2200.1 (full 63): probe 42.0, anon 0.1, views 240.8, scan 36.0, merge 22.9, drain 0.9, maps 145.5, learned 156.3, hints 29.3
+   543 ms at t 230.2 (full 32): probe 25.2, anon 46.8, views 146.1, scan 15.6, merge 18.2, drain 0.5, maps 198.3, learned 75.5, hints 14.2
+   526 ms at t 1022.9 (full 49): probe 30.7, anon 0.1, views 196.8, scan 23.4, merge 12.5, drain 0.8, maps 123.9, learned 122.6, hints 13.1
+   524 ms at t 2755.7 (full 8): probe 2.1, anon 0.1, views 21.9, scan 481.0, merge 1.4, drain 0.1, maps 12.4, learned 2.4, hints 2.2
+   446 ms at t 772.4 (full 34): probe 22.8, anon 57.4, views 130.3, scan 17.3, merge 40.4, drain 0.5, maps 89.2, learned 78.6, hints 7.9
