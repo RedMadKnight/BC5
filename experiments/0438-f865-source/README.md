@@ -1276,6 +1276,91 @@ PASS:
 Two broken copies FAIL: the local lazy update left out (scenario 0, step 0), and the retry left out (scenario 1,
 step 3).
 
+## Result 12: build 12 on a clean boot (2026-11-20 17:32–18:41, boot eb264b8c, 0 GPU reset lines, binary 577aa2e2)
+
+**Build.** Normal `577aa2e25da266685625c2542c1f49d2` (unit `346ebf6e…`), built under BOX-LOCK 17:32–17:33. Shared
+builds unchanged.
+
+**Chain.** `LC L LR` × 3 ran to its end:
+- 9 of 9 NO_CRASH, pad keys 0;
+- GPU timeout or reset lines: 0 at the start and 0 after the end;
+- the gate passed: the first LC ran at 35.10 flips/s.
+
+Raw: `raw/f438-chain-out.txt`, `raw/f438-chain-rows.txt`.
+
+| arm | flips/s | s with a gap > 50 ms | > 100 ms | give-ups | own `prep-direct-sync` (s) | maps (s) | e438 BUG lines |
+|---|---|---|---|---|---|---|---|
+| LC (control) | 35.10, 33.48, 33.61 | 204, 225, 214 | 63, 76, 71 | 1, 2, 1 | 20.8, 23.5, 22.1 | 15.0, 16.4, 16.5 | – |
+| L | 34.31, 32.93, 35.70 | 217, 222, 199 | 73, 76, 66 | 2, 1, 0 | 18.2*, 22.5, 18.2* | 12.3*, 15.5, 12.3* | 0, 0, 0 |
+| LR | 33.25, 34.79, 32.82 | 221, 207, 221 | 68, 66, 73 | 0, 0, 0 | 17.5*, 20.8, 24.2 | 12.4*, 13.9, 16.2 | 0, 0, 0 |
+
+\* These runs report at 360 s. All other runs report at 420 s.
+
+**The view-list build time per run** (s438's full-pass "views" part, as the top session asked; the next candidate):
+
+| arm | run 1 | run 2 | run 3 |
+|---|---|---|---|
+| LC | 10.8 s | 12.9 s | 12.5 s |
+| L | 9.4 s* | 13.1 s | 9.9 s* |
+| LR | 9.4 s* | 12.2 s | 13.9 s |
+
+The view list is built as today in every arm, so these are today's cost. Over 420 s it is 12–14 s; scaled to 420 s,
+the 360-s runs come to 11.0–11.6 s. The other full-pass parts:
+- scan: 6.5–8.6 s;
+- merge: 1.7–2.5 s;
+- drain: 0.1 s in LC, 0.66–0.85 s in L and LR. Lazy changes now drain too.
+
+**Verdict under the top session's rule: not refuted.**
+- 0 GPU lines.
+- 0 BUG lines from the 2-s check, in 2,272 checks: 348–408 per run, each with 0 extra and 0 missing.
+- New visuals: not checked. The runs were scripted with no one watching.
+
+Build 11's regression is gone:
+- frames over 100 ms are 66–76 in L and LR, against 63–76 in LC (build 11: 90–124);
+- the views take as long as in LC;
+- flips/s overlap.
+
+**But the gain is mostly gone too, and one condition is not met.**
+
+1. **Maps: about 1 s per 420 s saved, not build 11's 7 s.**
+   - At 420 s: L/LR 13.9–16.2 s against LC 15.0–16.5 s. Scaled to 420 s: L and LR 14.3–16.2 s.
+   - The incremental updates run as planned: 4,400–5,800 per run, about 22–25 intervals and views each, maps +23 / −16.
+   - The only full rebuilds are the 2 first builds per run. No reopen, unsorted list, zskip, g412 or kc412 rebuild,
+     and 0 retries.
+   - Each update now costs **2.4–2.5 ms, against about 1.2 ms in build 11**.
+   - A candidate, not checked: build 12 diffs the whole tuple list, about 11,600 entries, and copies it (prev_v) on
+     every update. Build 11 read only the change records.
+   - bc5-ring's own `prep-direct-sync` is 17.5–24.2 s in L and LR, against 20.8–23.5 s in LC: the same range.
+2. **Lazy freshness is not about 100 ms; it stays about 1 s, as in build 11.**
+   - L and LR: chunks taken out of a zero cover 87–90 per run, 918–1,009 ms on average since the scan before, longest
+     1.2–1.3 s. One LR run: 474 ms, longest 611 ms.
+   - LC: 148–184 ms, longest 430–448 ms.
+   - Build 12 runs the scan before the drain decision on every full pass, 2,000–2,500 scans per run against LC's
+     1,600–1,700. Even so, the chunks found sat longer. Local lazy updates: 9–11 per run.
+   - Why is not explained. The row has no time-split of these waits (load against play), and the scan runs only on
+     full passes, as LC's does. The top session's condition (keep about 100 ms) **is not met by build 12.**
+3. **r438 BUG lines in LR (seen now; missed in Result 11).**
+   - LR74: 1. Build 11: LR67 2, LR70 2.
+   - Each one is the r438 watchdog line "a game-thread wait … has waited 100.0 ms for an early-registered writer to
+     reach the ring". The longest of these waits were 100.7, 168.9 and 146.0 ms. Of 31,000–35,000 such waits per run,
+     the total is 17–20 s.
+   - Its invariant still held: early writes that never reached the ring: 0.
+   - This is r438's arm (EARLYREG=1), not e438. It is a slow wait, not a lost write. It is still a BUG line by r438's
+     own rule, and the >100 ms waits sit on the game thread.
+
+**Where it stands.** Updating the mapping index in place is correct by every check:
+- 0 differences in 2,272 full comparisons;
+- 0 full rebuilds after the first;
+- 0 GPU lines.
+
+On this scene it is barely faster than today's merge rebuild, and its lazy freshness is about 1 s. Not proposed for
+the shared builds as it is. Next, if pursued:
+- per-update time without the whole-list diff (the touched va range from the BO diff and the generation);
+- the lazy waits split by load and play, to find why the scan finds chunks late.
+
+The view list (11–14 s per 420 s) is the larger cost and is the next candidate, event-wise, as the top session
+decided.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
