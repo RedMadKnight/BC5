@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0
 """BC5 experiment 0438 (tag h438): the Render Thread's frame, split, from h438's per-frame CSVs. DIAGNOSIS numbers.
-Usage: ah438.py FROM_S TO_S [FAST_END_S SLOW_FROM_S] CSV [CSV ...]
+Usage: ah438.py FROM_S TO_S [NAME=A-B ...] CSV [CSV ...]
   FROM_S / TO_S: the window in the CSV's own clock (t_s: seconds since the Render Thread's first recorded flip).
-  FAST_END_S / SLOW_FROM_S: the scene's fast phase is [FROM_S, FAST_END_S), its slow phase [SLOW_FROM_S, TO_S); without
-  them, the phases are not split. The script also prints the frames per 10 s of each CSV, to place the phases.
+  NAME=A-B: a phase [A, B) of the scene, any number, e.g. fast=10-140 dip=145-165 slow=165-290 (the lean round's
+  scene: ~45 flips/s, the dip to ~11 at G+150-160 in every run, then ~27; placed from each CSV's own frames per 10 s,
+  which the script prints). Without phases, only all frames and the vblank classes.
 Per group (all; by vblank class 1 / 2 / 3+; by phase x class), mean ms per frame:
   frame = cpu + runq + blocked, blocked = frame - cpu - runq (off CPU and not waiting for a CPU: asleep in the kernel);
   of blocked: gc calls by code (wall - CPU inside them), the flip span (its drain apart), o438's guest-sync waits, the
@@ -105,14 +106,14 @@ def show(name, rows):
 def main():
     a = sys.argv[1:]
     lo, hi = float(a[0]), float(a[1])
-    fast_end = slow_from = None
-    rest = a[2:]
-    if len(rest) >= 2:
-        try:
-            fast_end, slow_from = float(rest[0]), float(rest[1])
-            rest = rest[2:]
-        except ValueError:
-            pass
+    phases, rest = [], []
+    for x in a[2:]:
+        if '=' in x and not x.lower().endswith('.csv'):
+            n, _, rng = x.partition('=')
+            p0, _, p1 = rng.partition('-')
+            phases.append((n, float(p0), float(p1)))
+        else:
+            rest.append(x)
     allr = []
     for p in rest:
         rows = load(p)
@@ -127,10 +128,10 @@ def main():
     show('ALL', [x for _, x in allr])
     for c in ('1', '2', '3+'):
         show(f'{c} vblank', [x for _, x in allr if cls(x[0]['frame']) == c])
-    if fast_end is not None:
-        for ph, (p0, p1) in (('fast', (lo, fast_end)), ('slow', (slow_from, hi))):
+    for ph, p0, p1 in phases:
+        if True:
             sub = [x for t, x in allr if p0 <= t < p1]
-            show(f'{ph} phase', sub)
+            show(f'{ph} phase [{p0:g}, {p1:g})', sub)
             for c in ('1', '2', '3+'):
                 show(f'{ph} phase, {c} vblank', [x for x in sub if cls(x[0]['frame']) == c])
 

@@ -1759,11 +1759,18 @@ It is built on the bake unit, so it measures what would ship.
   - `test_h438.sh` (`4989a0a7`, `test_h438.cpp` `97f08d56`): PASS in all four cases. These are HOSTWAIT with and
     without OUTSIDE (gc codes, the nested call counted once, the flip and drain, a 30-ms lock wait by name, the /proc
     deltas, guest-sync time), HOSTWAIT unset (no file), and lean (empty macros).
-  - `test_o438.sh` fails on the laptop now in its waker case (waker tid 0: the worker's post lands after the Render
-    Thread's 28-ms wait). It fails the same way with the committed o438.hpp, so it is a laptop timing case and not
-    this change. The box's O runs did name their wakers.
-- **Planned runs:** 3 scene runs of arm H on one boot, RT on. Then ah438 over the fast phase (G+10 to G+140) and the
-  slow phase (G+160 to G+290), placed from the CSV's own per-10-s counts.
+  - `test_o438.sh` failed its waker case on the laptop, with the committed o438.hpp too. A timestamp probe showed why:
+    the worker's post landed 40 ms after the Render Thread's wait began, while the wait slept a fixed 20 ms (22 ms
+    measured). Thread start plus a 5-ms sleep take ~40 ms on the laptop. That is a race in the test, not in o438.
+    - Fixed: the wait now lasts until the worker has posted (at least 20 ms), as a semaphore wait ends because of its
+      post.
+    - Now PASS 3 of 3 runs, in all three variants (OUTSIDE=1, unset, lean).
+    - A broken copy of o438.hpp that stores no waker tid fails the case (lines 89 and 107), so the case still tests
+      attribution.
+- **Planned runs:** 3 scene runs of arm H on one boot, RT on. Then ah438 over three phases, placed from each CSV's
+  own per-10-s counts: fast (about G+10 to G+140), the dip to ~11 flips/s at about G+150 to G+160 (seen in every run;
+  a target of its own, the top session's addition), and slow (about G+165 to G+290). Usage:
+  `ah438.py FROM TO fast=A-B dip=C-D slow=E-F csv…`.
 
 ## Finding draft (separate, not chased): host text in guest memory
 
