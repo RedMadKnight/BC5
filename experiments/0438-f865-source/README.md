@@ -378,6 +378,49 @@ catcher to patch bb04219b's unit (`a62e8bf6…` → `cat/bc5LleAgc.cpp`).
     arm T, with no words of its own. The chain line carries the last c438 60-s line and the count of late packets.
 - **Not compiled yet.** The laptop cannot build the unit. The box is off-limits until the maintainer reboots it.
 
+## Result 4: the catcher on a clean boot (2026-11-20 09:06–09:29, boot a1db5eee, 0 GPU reset lines)
+
+Catcher normal `8b2ae229` (c438, records only), built under BOX-LOCK at 09:05, 0 errors. Three scene runs, arm T
+(no words: the shared behaviour), RT on, 4 rings, his 09:46 scene, G+300; R64 waiter, no reads during the runs.
+
+| run | class | flips/s from G+10 | s with a gap > 50 / > 100 ms | frames (last 290 s) over 50 / 100 ms | GIVEN UP |
+|---|---|---|---|---|---|
+| u438sT11 | NO_CRASH | 37.71 | 195 / 54 | 10894: 703 / 63 | 0 |
+| u438sT12 | NO_CRASH | 34.32 | 206 / 56 | 9915: 967 / 76 | 2 |
+| u438sT13 | NO_CRASH | 33.31 | 213 / 68 | 9658: 1118 / 94 | 1 |
+
+**Per compute-queue IB packet**, summed over the three runs from each run's last 60-s line (t 360, 420 and 360 s; the
+last ~60 s of each run are not in them), 3,127,192 packets:
+
+| | < 1 ms | 1–5 ms | 5–20 ms | 20–100 ms | ≥ 100 ms | longest (T11 / T12 / T13) |
+|---|---|---|---|---|---|---|
+| seen → into Direct::submit | 57.7 % | 41.7 % | 14,329 (0.46 %) | 1,507 (0.048 %) | 98 | 389 / 846 / 470 ms |
+| bc5-ring's look gap before the seen | 56.7 % | 36.3 % | 185,632 (5.9 %) | 32,820 (1.05 %) | 898 | 1485 / 1636 / 1625 ms |
+
+**At the three give-ups:**
+- T12: the wait on 0x12004b3c38 at dword 11459 after 50.3 ms, and the wait on 0x12004b5438 at dword 311 after
+  35.4 ms.
+- T13: the wait on 0x12004b3c38 at dword 11459 after 59.6 ms.
+- All three: value 0x907616589, "no pending write".
+- In each, queue 1/0/0 had 96, 108 and 96 dwords pending, with its **head ready**. bc5-ring had last looked at it
+  12.1, 11.8 and 12.2 ms before the give-up line. (The snapshot updates a queue only while it has pending work, so
+  idle queues show old looks.)
+
+**Answer to the narrower question:**
+- **The writer acb is late on the host's side.** At every give-up it was already in its queue and ready, and the host
+  had not submitted it.
+- bc5-ring's look gap is the window in which the title wrote a packet. It is over 20 ms for about 1 % of all packets,
+  and up to 1.6 s.
+- A title-side late write would show as a short look gap with a near-zero seen→submit. That is not what the
+  give-ups show.
+- **Not yet measured:** the catcher stamps "submit" when the slice enters `Direct::submit`. Time spent inside it
+  (F10/F16/F18's waits on the game thread's chain, the back-pressure cap, exp 0436's ring lock) is not in these
+  numbers. What bc5-ring was doing in the ~12 ms before each give-up is therefore inferred, not recorded. A
+  host-made mutual wait would fit: the game thread CPU-waits for bc5-ring's acb while bc5-ring waits inside its
+  submit.
+- **Next catcher field (proposed):** time inside `Direct::submit` per slice, by what it waited on, and the same at
+  each give-up.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
