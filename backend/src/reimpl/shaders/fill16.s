@@ -4,9 +4,10 @@
 // Written from the export's interface alone; it is not a copy of the original module's shader.
 //
 // Target: RDNA gfx10 (the BC-250 is gfx1013), wave64, 256 threads per group.
-// Assemble on the box (no AMDGPU assembler on the laptop), e.g.
-//   llvm-mc -triple=amdgcn-amd-amdpal -mcpu=gfx1013 -mattr=+wavefrontsize64 -show-encoding fill16.s
-// and paste the dwords into kFillShaderCode (src/reimpl/agc_fill_shader.cpp, TODO(assemble-on-box)).
+// Assembled on the box (no AMDGPU assembler on the laptop) with
+//   llvm-mc -triple=amdgcn-amd-amdpal -mcpu=gfx1013 -mattr=+wavefrontsize64 -filetype=obj fill16.s
+// and llvm-objcopy -O binary --only-section=.text; the dwords are kFillShaderWords in
+// src/reimpl/agc_fill_shader.cpp (Ubuntu LLVM 21.1.8, 2026-11-20).
 //
 // Interface (set up by agcCbFillMemory and the header of agc_fill_shader.cpp):
 //   s[0:3]  buffer descriptor of the destination: base = dst, stride 16, num_records = size / 16

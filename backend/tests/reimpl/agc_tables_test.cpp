@@ -329,7 +329,13 @@ TEST_CASE("own trap handler and fill shader header", "[reimpl-tables]") {
     CHECK(dw == 0xBF810000u); // s_endpgm
 
     namespace fs = agc::fill_shader;
-    CHECK(fs::code().empty()); // TODO(assemble-on-box)
+    // the assembled fill16.s: 17 dwords, the buffer store inside, s_endpgm last
+    const auto code = fs::code();
+    REQUIRE(code.size() == 17);
+    CHECK(code[9] == 0xe0782000u); // buffer_store_dwordx4 ... idxen
+    CHECK(code[1] == 0xbf85000eu); // s_cbranch_scc1 to the end (+14 dwords)
+    CHECK(code[15] == 0xbf85fff9u); // s_cbranch_scc1 back to the store (-7 dwords)
+    CHECK(code.back() == 0xbf810000u); // s_endpgm
     std::vector<std::uint8_t> blob(fs::header_bytes() + 8, 0xEE);
     fs::build_header(blob.data(), 0x40);
     agc::Shader h{};

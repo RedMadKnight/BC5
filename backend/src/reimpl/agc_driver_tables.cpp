@@ -90,7 +90,7 @@ std::array<u32, 0x400> build_defaults() {
 //
 // Encoding (RDNA SOPP): bits 31..23 = 0x17F, opcode in bits 22..16, simm16 in bits 15..0;
 // s_endpgm is SOPP opcode 1 with simm16 0, so the dword is 0xBF810000.
-// TODO(verify-asm): check this dword with an AMDGPU assembler on the box (gfx1013).
+// Checked 2026-11-20 with Ubuntu LLVM 21.1.8 llvm-mc (gfx1013, wave64): s_endpgm encodes as 0xBF810000.
 //
 // On BC5 the host only traces this ioctl and never runs the handler on the GPU, so the bytes
 // are never executed; they only have to be a well-formed handler of the size the ioctl reports.

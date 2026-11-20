@@ -21,9 +21,17 @@ namespace {
 using namespace bc5::reimpl::regdb;
 using u32 = std::uint32_t;
 
-// TODO(assemble-on-box): the dwords of shaders/fill16.s, assembled for gfx1013 wave64. Until then
-// the array stays empty and create_internal_shaders() leaves the fill shader absent.
-constexpr std::span<const u32> kFillShaderCode{};
+// The dwords of shaders/fill16.s (our own source), assembled on the BC-250 box on 2026-11-20 with
+// Ubuntu LLVM 21.1.8 in the ubuntu distrobox:
+//   llvm-mc -triple=amdgcn-amd-amdpal -mcpu=gfx1013 -mattr=+wavefrontsize64 -filetype=obj fill16.s
+//   llvm-objcopy -O binary --only-section=.text  (17 dwords, sha256 bbd05ba77d70d9e7...)
+// and checked back with llvm-objdump (both branches land on .Lloop and .Ldone).
+constexpr u32 kFillShaderWords[] = {
+    0xbf068008, 0xbf85000e, 0x8f0a8809, 0x4a02000a, 0x7e040204, 0x7e060205,
+    0x7e080206, 0x7e0a0207, 0xbe8b0308, 0xe0782000, 0x80000201, 0x4a0202ff,
+    0x00001000, 0x808b810b, 0xbf07800b, 0xbf85fff9, 0xbf810000,
+};
+constexpr std::span<const u32> kFillShaderCode{kFillShaderWords};
 
 // Blob layout (offsets in bytes from the start of the header).
 constexpr std::size_t kShRegsAt = sizeof(Shader); // 0x60
