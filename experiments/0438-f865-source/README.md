@@ -1175,13 +1175,63 @@ random BO lists (imports, merges, cuts) on a fake device. After every step:
 - **Refuted if:** L or LR shows a GPU line, a visual change the control does not show, or a nonzero 2-s check
   change.
 
+## Result 11: build 11 (e438) on a clean boot (2026-11-20 16:18–17:27, boot eb264b8c, 0 GPU reset lines, binary 88a67303)
+
+**Build.** Normal `88a673030a3fd26ba3bc3d5e1b71ef56` (unit `3fe3a79a…`), 0 errors and the 7 old warnings, built under
+BOX-LOCK 16:18–16:19. Shared builds unchanged.
+
+**Chain.** `LC L LR` × 3 ran to its end: 9 of 9 NO_CRASH, pad keys 0, no GPU line. The gate passed: the first LC was
+at 33.61. Raw: `raw/e438-chain-out.txt`, `raw/e438-chain-rows.txt`.
+
+| arm | flips/s | s with a gap > 50 ms | > 100 ms | give-ups | own `prep-direct-sync` (s) | views (s) | maps (s) | 2-s check changes |
+|---|---|---|---|---|---|---|---|---|
+| LC (control) | 33.61, 32.76, 32.92 | 222, 221, 218 | 74, 82, 84 | 2, 1, 2 | 23.6, 18.5, 19.5 | 12.3, 10.9, 11.2 | 16.7, 13.6, 13.3 | – |
+| L | 33.92, 32.78, 33.16 | 212, 214, 213 | **98, 113, 109** | 0, 1, 0 | 31.4, 35.5, 34.7 | **24.7, 26.6, 26.5** | **7.0, 7.6, 7.4** | +0 −0, **+0 −4**, +0 −0 |
+| LR | 34.58, 31.78, 33.75 | 206, 220, 217 | **90, 124, 99** | 0, 0, 0 | 31.7, 37.3, 32.7 | **24.0, 28.7, 24.7** | 7.2, 7.7, 7.3 | (not read), +0 −0, **+0 −1** |
+
+The views and maps figures are s438's full-pass time by part. LC runs 2 and 3 and LR run 1 report at 360 s; the
+others at 420 s.
+
+**Verdict: refuted under the top session's rule.** Two L/LR runs show nonzero 2-s check changes (u438sL66 −4,
+u438sLR70 −1). Frames over 100 ms rose from 74–84 to 90–124. flips/s overlap.
+
+**What the records show.**
+- **The incremental mapping update works and is cheaper.** Mapping time fell from 13.3–16.7 s to 7.0–7.7 s:
+  - about 5,000 incremental updates a run, about 1.2 ms each;
+  - about 22 views and maps +20 / −14 per update;
+  - about 235 full rebuilds: the private DState, about 23; the lazy fallback, 6–9; the 2-s checks, 205.
+- **The change-record view list made the views slower**, 24–29 s against 11–12 s.
+  - The title's layout changes are many and spread: in play about 4,000–5,000 generation changes per 300 s, but
+    280,000–310,000 change spans, about 60 spans per change, 120,000 of them under 64 KiB.
+  - Applying them one by one cost more than today's full build per change. This is the regression in long frames:
+    bc5-ring's own `prep-direct-sync` rose from 19–24 s to 31–37 s.
+- **Lazy freshness was worse than today in build 11.**
+  - Chunks taken out of a zero cover: 87–90 in every arm. In L and LR, though, the time since the scan before was
+    about 1.0 s on average (longest 1.3 s), against 0.15–0.18 s in LC (longest 0.27–0.43 s).
+  - The cause: e438_lazy_scan ran only inside `e438_maps`, so most changes were found by the 2-s check's old
+    rebuild. That is also the likely source of its −4 and −1: covers dropped over written lazy chunks.
+  - Build 12 runs the scan in every full pass, before the drain decision.
+- **No record gaps or kept-list mismatches; clones 1–2.**
+
+**The scan yield** (y438; the maintainer's question), per run in play (t ≥ 60 s):
+- change-driven scans: 3,900–5,400 passes, importing 461–580 chunks, 0.9–1.2 GiB;
+- merge-only scans: 2,000–2,500 passes, **0 chunks**;
+- forced: 64–78 passes, 0–118 chunks.
+
+Load (t < 60 s): forced 2,134 chunks, change 3,600 chunks, merge 0.
+
+So during play, new data is found by the scans triggered by a change, about 1 GiB per run. The merge-only scans find
+nothing. That confirms s438's skip was safe, though small.
+
 ## Build 12 (prepared offline, not built): the mapping index updated in place, no full rebuild after the first
 
 **The ask.** The maintainer, through the top session: "a full rebuild shouldn't be needed; an update of the mapping
 index is enough".
 
-**Unit chain:** `mkf438.py` on `e438.cpp` (`3fe3a79a…`) → **`beb28ae04cada0350b38846d44e366ef`** (`f438-unit.diff`).
-The switch is still `BC5_0438_LAYOUT`.
+**Unit chain:** `mkf438.py` on `e438.cpp` (`3fe3a79a…`) → **`346ebf6efa736bdbc5bf054901f40253`** (`f438-unit.diff`).
+The switch is still `BC5_0438_LAYOUT`. The first form, `beb28ae0`, still used build 11's change-record view list. Result 11
+showed that list is slower than today's build, so it is dropped: the view list is built as today, and the layout
+statistics now come from the tuple diff.
 
 **What changes against build 11.**
 1. **Touched intervals come from a diff, not the records.** Each DState keeps a copy of the (va, size, offset, lazy,

@@ -53,6 +53,10 @@ def cut(start_marker, end_marker, new):
     s = s[:a] + new + s[b:]
 
 
+# 0. result 11: the view list kept from the change records cost 24.0-28.7 s per 420 s against 12.3 s for today's full
+#    build (about 60 change spans per layout change). Build 12 builds the list as today; the records are not used.
+rep('''		if (e438::on()) return 2;         // exp 0438 (tag e438): the view list kept from the change records''', '''		// exp 0438 (tag e438, build 12): the view list is built as today (result 11: the records were slower)''')
+
 # 1. the mapping side's state: the view tuples the mappings were made from, the failed intervals, the counters
 rep('''inline bool             force_full[2] = {false, false};''', '''inline bool             force_full[2] = {false, false}; // build 11 only
 inline std::vector<Tup> prev_v[2];   // build 12: the view list S.maps was made from, as tuples
@@ -156,18 +160,28 @@ static bool e438_maps(DState& S, const DViews& V, bool zskip_new, const std::vec
 		const auto& nv = V.v;
 		size_t      i = 0, j = 0;
 		while (i < ov.size() || j < nv.size()) {
+			const int ph   = e438::phase();
+			const auto note = [ph](int c, uint64_t b) { // build 12: the layout statistics from the diff (0 view gone, 1 view new, 2 view changed)
+				const int cls = c == 0 ? 1 : c == 1 ? 0 : 2; // as the records' classes: 0 map, 1 unmap, 2 remap
+				e438::r_n[ph][cls]++;
+				e438::r_bytes[ph][cls] += b;
+				e438::r_size[ph][b < (64ull << 10u) ? 0 : b < (2ull << 20u) ? 1 : b < (64ull << 20u) ? 2 : 3]++;
+			};
 			if (i < ov.size() && j < nv.size() && ov[i] == e438::Tup {nv[j].va, nv[j].size, nv[j].off, nv[j].lazy, nv[j].eager}) {
 				i++;
 				j++;
 			} else if (j >= nv.size() || (i < ov.size() && ov[i].va < nv[j].va)) {
 				D.emplace_back(ov[i].va, ov[i].va + ov[i].size);
+				note(0, ov[i].size);
 				i++;
 			} else if (i >= ov.size() || nv[j].va < ov[i].va) {
 				D.emplace_back(nv[j].va, nv[j].va + nv[j].size);
+				note(1, nv[j].size);
 				j++;
 			} else {
 				D.emplace_back(ov[i].va, ov[i].va + ov[i].size);
 				D.emplace_back(nv[j].va, nv[j].va + nv[j].size);
+				note(2, nv[j].size);
 				i++;
 				j++;
 			}

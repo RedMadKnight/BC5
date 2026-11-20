@@ -6,6 +6,10 @@
 > inline uint64_t         prev_sig[2] = {0, 0};
 > inline std::vector<std::pair<uint64_t, uint64_t>> retry[2]; // build 12: va intervals of maps that failed, retried at the next update
 > inline uint64_t         d_mismatch = 0, d_checks = 0, d_extra = 0, d_missing = 0, m_unsorted = 0, m_lazy_local = 0, m_retried = 0;
+3009c3013
+< 		if (e438::on()) return 2;         // exp 0438 (tag e438): the view list kept from the change records
+---
+> 		// exp 0438 (tag e438, build 12): the view list is built as today (result 11: the records were slower)
 4936,4940c4940,4945
 < // the lazy views' covers are asked again (SEEK_DATA). True when the known-written set changed: the caller rebuilds the old
 < // way (whose k1r412_want then finds the scan done and uses the fresh set).
@@ -101,7 +105,7 @@
 > 	} else if (S.kind == 0 && (!g_zskip.empty() || zskip_new)) why = 3;   // diagnostic switches, set at start only
 > 	else if (e438_g412_any() || guard0412_cap_changed(S)) why = 4;
 > 	else if (kc412::on()) why = 5;
-4999a5027,5050
+4999a5027,5060
 > 	std::vector<IV> D;
 > 	// (a) the view list against the one the mappings were made from (both sorted by va)
 > 	if (V.sig != e438::prev_sig[k] || V.v.size() != e438::prev_v[k].size()) {
@@ -109,33 +113,43 @@
 > 		const auto& nv = V.v;
 > 		size_t      i = 0, j = 0;
 > 		while (i < ov.size() || j < nv.size()) {
+> 			const int ph   = e438::phase();
+> 			const auto note = [ph](int c, uint64_t b) { // build 12: the layout statistics from the diff (0 view gone, 1 view new, 2 view changed)
+> 				const int cls = c == 0 ? 1 : c == 1 ? 0 : 2; // as the records' classes: 0 map, 1 unmap, 2 remap
+> 				e438::r_n[ph][cls]++;
+> 				e438::r_bytes[ph][cls] += b;
+> 				e438::r_size[ph][b < (64ull << 10u) ? 0 : b < (2ull << 20u) ? 1 : b < (64ull << 20u) ? 2 : 3]++;
+> 			};
 > 			if (i < ov.size() && j < nv.size() && ov[i] == e438::Tup {nv[j].va, nv[j].size, nv[j].off, nv[j].lazy, nv[j].eager}) {
 > 				i++;
 > 				j++;
 > 			} else if (j >= nv.size() || (i < ov.size() && ov[i].va < nv[j].va)) {
 > 				D.emplace_back(ov[i].va, ov[i].va + ov[i].size);
+> 				note(0, ov[i].size);
 > 				i++;
 > 			} else if (i >= ov.size() || nv[j].va < ov[i].va) {
 > 				D.emplace_back(nv[j].va, nv[j].va + nv[j].size);
+> 				note(1, nv[j].size);
 > 				j++;
 > 			} else {
 > 				D.emplace_back(ov[i].va, ov[i].va + ov[i].size);
 > 				D.emplace_back(nv[j].va, nv[j].va + nv[j].size);
+> 				note(2, nv[j].size);
 > 				i++;
 > 				j++;
 > 			}
 > 		}
 > 	}
-5000a5052
+5000a5062
 > 	std::vector<IV> F;
-5002,5004c5054,5055
+5002,5004c5064,5065
 < 		std::vector<IV> F;
 < 		const auto&     ob = e438::bos_at[k];
 < 		size_t          i = 0, j = 0;
 ---
 > 		const auto& ob = e438::bos_at[k];
 > 		size_t      i = 0, j = 0;
-5021,5028c5072,5095
+5021,5028c5082,5105
 < 		if (!F.empty()) {
 < 			norm(F); // disjoint and rising: the ends rise too
 < 			for (const auto& v: V.v) { // the views are not sorted by file offset: every one is looked at
@@ -169,22 +183,22 @@
 > 		e438::m_retried++;
 > 		D.insert(D.end(), e438::retry[k].begin(), e438::retry[k].end());
 > 		e438::retry[k].clear();
-5031c5098
+5031c5108
 < 	if (D.empty()) { // nothing touched (a change was undone, or only BO ids of no view changed)
 ---
 > 	if (D.empty()) {
-5036,5037c5103,5104
+5036,5037c5113,5114
 < 	// the intervals grown to whole old mappings and whole new views, until they stop growing
 < 	for (int round = 0; round < 16; round++) {
 ---
 > 	// the intervals grown to whole old mappings and whole new views until they stop growing (they only grow)
 > 	for (;;) {
-5052,5055d5118
+5052,5055d5128
 < 		if (round == 15) {
 < 			e438::m_why[10]++;
 < 			return false;
 < 		}
-5057,5061c5120,5123
+5057,5061c5130,5133
 < 	// the wanted mappings inside D, as the old rebuild makes them: the views' own, then k1r412's covers
 < 	std::vector<DMap>                 want;
 < 	static std::vector<k1r412::Bo>    kbos;
@@ -195,7 +209,7 @@
 > 	std::vector<DMap>              want;
 > 	static std::vector<k1r412::Bo> kbos;
 > 	const uint32_t                 kid = e438_kid(S);
-5071,5085c5133
+5071,5085c5143
 < 			const uint64_t vend = v->off + v->size;
 < 			auto           it   = std::upper_bound(S.bos.begin(), S.bos.end(), v->off, [](uint64_t o, const DBo& b) { return o < b.off; });
 < 			if (it != S.bos.begin()) --it;
@@ -213,9 +227,9 @@
 < 			}
 ---
 > 			e438_view_want(S, *v, kid, kbos, want);
-5118a5167
+5118a5177
 > 			e438::retry[k].emplace_back(w.va, w.va + w.size); // retried at the next update, on its own interval
-5351c5400,5404
+5351c5410,5414
 < 	if (!retired.empty() || sig != S.views_sig || guard0412_cap_changed(S) || (k1r412::on() && S.kind == 0 && S.bos.size() != S.bos_mapped)) { // exp 0412 (tag g412b; k1r412: covers are about to be unmapped and replaced)
 ---
 > 	// exp 0438 (tag e438, build 12): kl412's scan at today's cadence (100 ms), before the drain decision: a chunk whose
@@ -223,19 +237,19 @@
 > 	std::vector<uint64_t> e438_lazy;
 > 	if (e438::on() && S.kind == 0 && k1r412::on() && e438::have[0] && !S.maps.empty()) e438_lazy = e438_lazy_scan(S, *views_p, fd);
 > 	if (!retired.empty() || sig != S.views_sig || guard0412_cap_changed(S) || (k1r412::on() && S.kind == 0 && S.bos.size() != S.bos_mapped) || !e438_lazy.empty()) { // exp 0412 (tag g412b; k1r412: covers are about to be unmapped and replaced); exp 0438 (build 12): a lazy change
-5374,5375d5426
+5374,5375d5436
 < 	const bool e438_check = e438::on() && S.kind == 0 && now - e438::check_ns[e438_k] >= 2'000'000'000ull; // the 2-s full rebuild (the check)
 < 	const bool e438_check_only = e438_check && !(sig != S.views_sig || S.bos.size() != S.bos_mapped || !retired.empty() || guard0412_cap_changed(S));
-5377c5428
+5377c5438
 < 	if (sig != S.views_sig || S.bos.size() != S.bos_mapped || !retired.empty() || guard0412_cap_changed(S) || e438_check) { // exp 0412 (tag g412b); exp 0438 (e438): the check
 ---
 > 	if (sig != S.views_sig || S.bos.size() != S.bos_mapped || !retired.empty() || guard0412_cap_changed(S) || (e438::on() && !e438::retry[e438_k].empty()) || !e438_lazy.empty()) { // exp 0412 (tag g412b); exp 0438 (e438, build 12): retries and a lazy change
-5379,5380c5430
+5379,5380c5440
 < 		if (e438_check) e438::check_ns[e438_k] = now;
 < 		if (e438::on() && !e438_check) e438_done = e438_maps(S, *views_p, zskip_new, fd, mapped, unmapped, map_failed); // exp 0438 (tag e438)
 ---
 > 		if (e438::on()) e438_done = e438_maps(S, *views_p, zskip_new, e438_lazy, mapped, unmapped, map_failed); // exp 0438 (tag e438)
-5612,5616c5662,5667
+5612,5616c5672,5677
 < 				if (e438_check) e438::m_check++;
 < 				if (e438_check_only) {
 < 					e438::m_check_plus += mapped;
@@ -248,11 +262,11 @@
 > 				e438::prev_v[e438_k].clear();
 > 				for (const auto& v: views_p->v) e438::prev_v[e438_k].push_back({v.va, v.size, v.off, v.lazy, v.eager});
 > 				e438::prev_sig[e438_k] = views_p->sig;
-5620d5670
+5620d5680
 < 			e438::force_full[e438_k] = map_failed != 0;
-5622a5673
+5622a5683
 > 			if (e438_done && map_failed != 0) S.bos_mapped = S.bos.size(); // build 12: the failure is on e438::retry, not a reason for the old rebuild
-5631a5683,5717
+5631a5693,5727
 > #ifndef BC5_LEAN
 > 	if (e438::on() && e438::have[e438_k] && now - e438::check_ns[e438_k] >= 2'000'000'000ull && g_zskip.empty() && !e438_g412_any() && !kc412::on() && S.views_sig == sig) {
 > 		// exp 0438 (tag e438, build 12): the diagnostic check. S.maps against the full list made the old way, from the same
@@ -288,7 +302,7 @@
 > 		}
 > 	}
 > #endif
-5684,5692c5770,5778
+5684,5692c5780,5788
 < 			journal("e438 (exp 0438): t %.1f s: layout %s; mapping updates incremental %" PRIu64 " (%.1f ms; %" PRIu64 " intervals, %" PRIu64 " views, maps +%" PRIu64 " -%" PRIu64 "), full %" PRIu64 " (%.1f ms), of them 2-s checks %" PRIu64
 < 			        " (changes when nothing else changed: +%" PRIu64 " -%" PRIu64 "); full because: not direct %" PRIu64 ", list not from records %" PRIu64 ", gap/mismatch/failed map %" PRIu64 ", unsorted %" PRIu64 ", zskip %" PRIu64
 < 			        ", g412 %" PRIu64 ", kc412 %" PRIu64 ", first %" PRIu64 ", zero buffer %" PRIu64 ", order %" PRIu64 ", no fixpoint %" PRIu64 ", lazy chunk written %" PRIu64 "; lazy chunks taken out of a zero cover %" PRIu64 " in %" PRIu64 " scans, time since the scan before %.1f ms on average, longest %.1f ms; record gaps %" PRIu64 ", kept-list mismatches %" PRIu64 ", view builds %" PRIu64
