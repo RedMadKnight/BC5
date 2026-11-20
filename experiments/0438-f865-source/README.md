@@ -969,6 +969,21 @@ What it gives up: a data chunk that appears with `st_blocks` unchanged (a page f
 same window) is found up to 1 s later instead of up to 250 ms. A packet operand on such a chunk is still imported
 at once by k1f412, since `S.forced` grows and the next sync is then not merge-only.
 
+**What a late chunk would look like** (the top session asked for this, so a future fault can be checked against it).
+A late chunk is not imported, so the GPU has no mapping for it for up to 1 s. The chunk is reached only through
+memory that no packet operand names: a descriptor inside a buffer, a shader's own load, a BVH node.
+- **A read with no mapping and no cover:** a GPU page fault (a VM fault line, `amdgpu … [gfxhub] page fault` with the
+  address), or, with the fault recorder, exit 86 and a record under `~/bc5-data/captures/faults/`. The faulting
+  address is inside a direct-memory view of the memfd, in a chunk that a later sync line (`+N BOs`) imports.
+- **A read through a zero or cover mapping (k1r412, zskip):** zero or stale data with no fault. A texture or
+  geometry that is black, missing or flickers for up to 1 s and then shows. Or a compute result built from zeros:
+  a lighting, BVH or RT artefact for a frame or more.
+- **A write to such a chunk:** lost, or a fault as above.
+- **To check a fault against s438:**
+  - Is the address in a chunk that was data in the memfd but not imported at the fault?
+  - Was the last full scan of that DState up to 1 s before, with merge-only passes since (the s438 line's counts)?
+  - Does the same fault happen with `BC5_0438_MERGESCAN=0`?
+
 **s438 records** (normal build): an `s438` line every 60 s, from `direct_sync` under the mutex, with:
 - passes fast and full;
 - merge-only passes with the scan left out, and with it run;
