@@ -16,7 +16,11 @@
 // Packet layouts (gfx10): PKT3 header (3 << 30 | count << 16 | op << 8), WAIT_REG_MEM 0x3C (7 dwords), RELEASE_MEM 0x49
 // (8 dwords: event_cntl, data/dst select, addr lo/hi, data lo/hi, ctx id), NOP 0x10: Mesa src/amd/common/sid.h and
 // src/amd/common/ac_cmdbuf.c (si_cp_release_mem / ac_emit_cp_wait_mem), TODO(verify) the exact Mesa commit in the README.
-//   t438 --submit [--node /dev/dri/renderD128] [variant...]   (default: d d2 a a0 b c)
+//   t438 --submit [--node /dev/dri/renderD128] [variant...]   (run 2 default: a u b; u = L in a userptr BO as the emulator's)
+// Run 1 (2026-11-20 11:49) showed that the CPU guard cannot release a GPU WAIT_REG_MEM: variant d ended in a gfx ring timeout
+// (reset succeeded). Run 2 has no guard and only variants whose writer is a compute job of the same VM; a ring timeout is the
+// finding, and the test stops there. The GPU timestamps are read after the jobs end: the kernel's end-of-job fence writes back
+// GL2 (gfx_v10_0_ring_emit_fence: GCR_GL2_WB; torvalds/linux master, TODO(verify) on 7.3.3).
 #include <amdgpu.h>
 #include <amdgpu_drm.h>
 #include <fcntl.h>
@@ -51,6 +55,7 @@ struct Bo {
     volatile std::uint32_t *cpu = nullptr;
     int memfd = -1, dmabuf = -1;
     void *mm = nullptr;
+    void *heap = nullptr; // a userptr's pages
 };
 
 bool map_va(amdgpu_device_handle dev, Bo &b) {
@@ -98,12 +103,25 @@ bool alloc_udmabuf(amdgpu_device_handle dev, std::uint64_t bytes, Bo &b) { // th
     return true;
 }
 
+bool alloc_userptr(amdgpu_device_handle dev, std::uint64_t bytes, Bo &b) { // the emulator's writable userptr (backend/src/direct.cpp)
+    void *p = nullptr;
+    if (posix_memalign(&p, 4096, bytes) != 0) return false;
+    std::memset(p, 0, bytes);
+    b.heap = p;
+    if (amdgpu_create_bo_from_user_mem(dev, p, bytes, &b.bo) != 0) return false;
+    b.size = bytes;
+    if (!map_va(dev, b)) return false;
+    b.cpu = static_cast<volatile std::uint32_t *>(p);
+    return true;
+}
+
 void release(Bo &b) {
     if (b.va != 0) amdgpu_bo_va_op(b.bo, 0, b.size, b.va, 0, AMDGPU_VA_OP_UNMAP);
     if (b.vh != nullptr) amdgpu_va_range_free(b.vh);
     if (b.mm != nullptr && b.mm != MAP_FAILED) munmap(b.mm, b.size);
-    else if (b.cpu != nullptr) amdgpu_bo_cpu_unmap(b.bo);
+    else if (b.cpu != nullptr && b.heap == nullptr) amdgpu_bo_cpu_unmap(b.bo);
     if (b.bo != nullptr) amdgpu_bo_free(b.bo);
+    if (b.heap != nullptr) std::free(b.heap);
     if (b.dmabuf >= 0) close(b.dmabuf);
     if (b.memfd >= 0) close(b.memfd);
     b = Bo{};
@@ -173,10 +191,10 @@ int main(int argc, char **argv) {
         else vars.emplace_back(argv[a]);
     }
     if (!go) {
-        std::fprintf(stderr, "usage: t438 --submit [--node dev] [d d2 a a0 b c]  (nothing is submitted without --submit)\n");
+        std::fprintf(stderr, "usage: t438 --submit [--node dev] [a u b a0 c d d2]  (nothing is submitted without --submit)\n");
         return 2;
     }
-    if (vars.empty()) vars = {"d", "d2", "a", "a0", "b", "c"};
+    if (vars.empty()) vars = {"a", "u", "b"}; // run 2 (the top session's ruling): c, d and d2 dropped; no CPU guard
     const int fd = open(node.c_str(), O_RDWR | O_CLOEXEC);
     if (fd < 0) { std::perror(node.c_str()); return 1; }
     amdgpu_device_handle dev = nullptr;
@@ -190,6 +208,7 @@ int main(int argc, char **argv) {
         Bo lab, ts, ibb;
         bool ok = alloc_gtt(dev, 65536, 0, ibb) && alloc_gtt(dev, 4096, 0, ts);
         if (v == "a") ok = ok && alloc_udmabuf(dev, 4096, lab);
+        else if (v == "u") ok = ok && alloc_userptr(dev, 4096, lab);
         else if (v == "b") ok = ok && alloc_gtt(dev, 4096, AMDGPU_GEM_CREATE_EXPLICIT_SYNC, lab);
         else ok = ok && alloc_gtt(dev, 4096, 0, lab);
         if (!ok) {
@@ -234,13 +253,9 @@ int main(int argc, char **argv) {
             std::printf("%s: cs submit rc %d\n", v.c_str(), rc);
             return 1;
         }
-        bool guard = false;
-        while (!signaled(ctx, W, 0) && now_ms() - W.submitted < 300) std::this_thread::sleep_for(std::chrono::microseconds(200));
+        const bool guard = false; // run 2: no CPU guard (run 1 showed a CPU store does not release the GPU's poll)
+        while (!signaled(ctx, W, 0) && now_ms() - W.submitted < 2000) std::this_thread::sleep_for(std::chrono::microseconds(200));
         if (signaled(ctx, W, 0)) W.done = now_ms();
-        if (lab.cpu[0] == 0) { // the harness's guard: release G from the CPU
-            guard = true;
-            lab.cpu[0] = 1;
-        }
         const bool g_ok = signaled(ctx, G, 2'000'000'000ull);
         if (g_ok) G.done = now_ms();
         const bool w_ok = W.done >= 0 || signaled(ctx, W, 2'000'000'000ull);

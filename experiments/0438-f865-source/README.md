@@ -636,6 +636,68 @@ Chain `C3 A C3 A C3 A`, his scene, RT on, 4 rings, G+300. All NO_CRASH, 0 kernel
 - The boot has a GPU reset now (R60).
 - **Proposed:** drop c, d and d2; add the timestamps' cache write-back; run a, a0 and b after a reboot.
 
+## t438 run 2: a compute job of the same VM releases a GPU-waiting GFX job (2026-11-20 11:55, boot a1db5eee)
+
+**Run 1 was my harness error, and it reset the GFX ring.** Run 1's CPU guard (11:49) could not release the GPU's
+wait. Variant d therefore ended in a gfx ring timeout; the reset succeeded and the box stayed up. The design was
+wrong: the stalling variants (c, d, d2) can only end in a ring timeout. They are dropped. The boot carries that reset.
+
+**Run 2: the top session's ruling.** GPU-behaviour tests are allowed on this boot.
+- Setup: `t438.cpp` md5 `16763936…`, built in the distrobox. Kernel 7.3.3-ogc1.1.fc45, host libdrm 2.4.134, container
+  libdrm-amdgpu1 2.4.131, DRM 3.64. Under BOX-LOCK, no title running.
+- Variants, label L:
+  - a: in a udmabuf of a memfd, imported as the emulator's direct memory;
+  - u: in a userptr BO, as the emulator's writable guest mappings;
+  - b: in a GTT BO with EXPLICIT_SYNC.
+- Every BO is in both jobs' BO lists. There is no CPU guard. Output: `raw/t438-runs.txt`.
+
+| variant | writer (compute ring 0, 5 ms after G) done after its submit | G done after G's submit | G's wait on the GPU clock | ring timeout |
+|---|---|---|---|---|
+| a (udmabuf) | 0.266 ms | 5.363 ms | 507,112 ticks (≈ 5.07 ms at 100 MHz) | none |
+| u (userptr) | 0.262 ms | 5.342 ms | 506,628 ticks | none |
+| b (explicit sync) | 0.262 ms | 5.341 ms | 506,488 ticks | none |
+
+- **Result:** a compute job of the same VM starts at once and releases a GFX job that waits on the GPU for it,
+  with the emulator's BO types and shared BO lists. 0 timeouts; the reset count is unchanged at 4 lines.
+- **This refutes on the box** both implicit sync and a VMID-flush wait as the reason acb #65702 did not run in
+  u438sK2.
+- What is left for K2 is host-made: a kernel dependency the host added to the acb (F4's `t_next_deps` landing on
+  the waiting GFX job, or a piece of it), or the acb never being in the kernel when believed. Not decided by the
+  records.
+
+## A question, not a fact: can a CPU store release a GPU poll on guest label memory?
+
+- **What happened.** In t438 run 1 a CPU store to the label (a plain GTT BO, flags 0) did not release a GFX
+  `WAIT_REG_MEM` within 2 s.
+- **What the code says** (torvalds/linux master through a fetch agent; TODO(verify) on 7.3.3):
+  - a GTT BO with flags 0 gets `ttm_cached` (`amdgpu_ttm_tt_create`), so `AMDGPU_PTE_SNOOPED`
+    (`amdgpu_ttm_tt_pde_flags`), and `MTYPE_NC` from `gmc_v10_0_get_vm_pte` (UC only with
+    COHERENT/EXT_COHERENT/UNCACHED);
+  - a userptr BO and a TT-resident dma-buf import (the emulator's udmabuf) are created the same way. **Guest label
+    memory therefore has the same PTE class as t438's GTT BO:** NC, snooped.
+  - `gfx_v10_0_wait_reg_mem` carries no cache bits;
+  - the job's end fence writes back GL2 but does not invalidate it (`gfx_v10_0_ring_emit_fence`: GL2_WB, GLM_WB/INV);
+  - `gfx_v10_0_emit_mem_sync` (ACQUIRE_MEM) invalidates GL2 among others.
+- **Inference (not verified):** an NC line the GPU has read can stay in GL2. A GPU poll that hits it does not see a
+  later CPU store until GL2 is invalidated. CPU writes made before a job (behind the per-job invalidate) are seen;
+  CPU writes during a job's wait may never be.
+- **Why it matters:** the host releases some GPU-visible labels from the CPU, e.g. the flip labels it clears itself
+  (A:9990-10022). The title's own CPU marks could hit the same case. That is safe only while no GPU wait polls them
+  during the store.
+- **Checks proposed, no stall test:**
+  - the semantics of MTYPE NC in GL2 for this ASIC, from a public AMD source;
+  - whether the console's WAIT_REG_MEM carries a cache-policy field the host strips. The title's waits have
+    dword-1 bit 26 set (0x04000113), and t438's had 0x113. Mesa's `sid.h` defines no such field for
+    WAIT_REG_MEM: TODO(verify).
+
+## Step 2 and step 3 (the top session's order)
+
+- **Step 2:** `adr-draft-gpu-waits.md`, with the four doorbell options. The new one is D, the title's own
+  0xc010811c "ding dong" kick, which the host ignores today. Recommendation: a watcher thread with per-ring
+  submitters, woken by the kick where the title sends one. End state: GFX waits stay on the GPU, as on the console.
+- **Step 3:** `inventory-submission-path.md`, two tables (guest calls, PM4 packets) with code references and the
+  console column as the code states it or TODO(verify).
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its

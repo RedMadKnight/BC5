@@ -1,0 +1,7 @@
+t438: /dev/dri/renderD128, amdgpu DRM 3.64; one fd, one VM, one context
+d: writer on GFX (behind G); writer done NOT ms after its submit; G done -1.000 ms after G's submit; guard USED (the writer did not release G); GPU clock: G wait 0 ticks, writer start - G start -32380585451448 ticks
+d: a fence did not signal within 2 s: stopping (BOs left)
+t438: /dev/dri/renderD128, amdgpu DRM 3.64; one fd, one VM, one context
+a: writer on compute ring 0; writer done 0.266107 ms after its submit; G done 5.363 ms after G's submit; guard not used; GPU clock: G wait 507112 ticks, writer start - G start 507008 ticks
+u: writer on compute ring 0; writer done 0.261716 ms after its submit; G done 5.342 ms after G's submit; guard not used; GPU clock: G wait 506628 ticks, writer start - G start 506540 ticks
+b: writer on compute ring 0; writer done 0.261705 ms after its submit; G done 5.341 ms after G's submit; guard not used; GPU clock: G wait 506488 ticks, writer start - G start 506404 ticks

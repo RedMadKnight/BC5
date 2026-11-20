@@ -48,7 +48,9 @@ Reproduce the console's model, in two parts.
 | B. write-protect trap | the doorbell page is mapped read-only; the title's write faults; the host's SIGSEGV handler records the queue, does the write and returns, and the watcher is woken | the fault's cost on the title's thread, a few µs per write (TODO(verify): measure); the watcher wakes at once | a fault per doorbell write (the title rings a few thousand times a second: about 1 % of one core, an estimate) | the host's fault handler is already in the hot path for guest memory (exp 0412); emulating the store needs decoding or a single-step; the risk is moderate |
 | C. userfaultfd write-protect | `UFFDIO_REGISTER_MODE_WP` on the doorbell page; a handler thread reads the fault, notes the queue, unprotects, wakes the writer | the handler's round trip, tens of µs (TODO(verify)) | per write: a context switch to the handler | needs WP support for this memory type (anon/shmem) on 7.3.3 and unprivileged userfaultfd or `UFFD_USER_MODE_ONLY` (TODO(verify) on Bazzite); the writer blocks during handling |
 
-**Recommendation:** A, with per-ring submitters. It is the smallest change that separates seeing from submitting.
+| D. the title's own kick | the title calls `/dev/gc` 0xc010811c "ding dong for workload" (compute queue kick; A:16669-16674 logs it and returns 0, the inventory of step 3) when it rings a queue (TODO(verify): which queues, and whether every ring is followed by a kick); the ioctl wakes the watcher for that queue at once | the ioctl's own cost, on the title's thread (it calls it anyway) | none beyond today's | needs a measure first: how often the title calls it against its write-pointer moves (the journal logs every call) |
+
+**Recommendation:** A, with per-ring submitters, woken early by D where the title kicks. It is the smallest change that separates seeing from submitting.
 - B and C give exact event times but put a fault on the title's thread, and they need features to check first.
 - A's 50–100 µs is far below today's 20 ms+ tail.
 
