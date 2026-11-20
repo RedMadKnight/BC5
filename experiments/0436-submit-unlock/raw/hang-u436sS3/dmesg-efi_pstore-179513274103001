@@ -1,0 +1,19 @@
+Panic#1 Part3
+<6>[81309.773179] amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+<3>[81309.773183] amdgpu 0000:01:00.0: ring comp_1.1.0 timeout, signaled seq=8960378, emitted seq=8960379
+<3>[81309.773188] amdgpu 0000:01:00.0:  Process kyty_emulator.l pid 862424 thread bc5-ring pid 862452
+<3>[81309.773192] amdgpu 0000:01:00.0: Starting comp_1.1.0 ring reset
+<3>[81309.773226] amdgpu 0000:01:00.0: Ring comp_1.1.0 reset succeeded
+<6>[81309.773231] amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+<12>[81309.777290] bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring comp_1.1.0 timeout, signaled seq=8960378, emitted seq=8960379
+<12>[81309.783466] bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring comp_1.1.0 reset succeeded
+<6>[81311.819023] amdgpu 0000:01:00.0: Dumping IP State
+<6>[81311.821177] amdgpu 0000:01:00.0: Dumping IP State Completed
+<6>[81311.821193] amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+<6>[81311.821196] amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+<3>[81311.821200] amdgpu 0000:01:00.0: ring comp_1.1.1 timeout, signaled seq=230139, emitted seq=230140
+<3>[81311.821205] amdgpu 0000:01:00.0:  Process kyty_emulator.l pid 862424 thread bc5-ring pid 862452
+<3>[81311.821209] amdgpu 0000:01:00.0: Starting comp_1.1.1 ring reset
+<3>[81311.821242] amdgpu 0000:01:00.0: Ring comp_1.1.1 reset succeeded
+<6>[81311.821245] amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+<12>[81311.825863] bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring comp_1.1.1 timeout, signaled seq=230139, emitted seq=230140

@@ -24,6 +24,7 @@
 #include <cstdio>
 #include <cstring>
 #include <mutex>
+#include <shared_mutex>
 #include <cstdlib>
 #include <map>
 #include <set>
@@ -221,6 +222,17 @@ struct Device::Impl {
     state_stack::Tracker tracker; // Device::set_state_stack
     static constexpr std::uint64_t kShadowVa = 0x1000'0400'0000ull; // 64 MiB above the scratch
     std::mutex mutex;
+    // Experiment 0436 (tag su436): held shared by a job of submit(..., before_call) from before its prepare to the end
+    // of its bookkeeping, across the kernel call made without `mutex`; taken exclusively, before `mutex`, by every
+    // removal of a mapping or BO (unmap_userptr, unmap_shared, unmap_aliases, free_shared, the destructor). Order:
+    // flight_mu, then mutex. Nobody waits for the host's locks while holding it.
+    std::shared_mutex flight_mu;
+    // Experiment 0436: the kept BO lists named by a job between its prepare and its kernel call's return; a list
+    // replaced meanwhile (another job's new full list) is destroyed by its last user, not at once.
+    std::map<amdgpu_bo_list_handle, int> list_users;
+    void list_drop(amdgpu_bo_list_handle h) {
+        if (h != nullptr && list_users.count(h) == 0) amdgpu_bo_list_destroy(h);
+    }
     // Device::sorted_mappings: the sorted list and the list_gen it was built at.
     std::shared_ptr<const std::vector<Mapping>> sorted;
     std::uint64_t sorted_gen = ~0ull;
@@ -356,11 +368,13 @@ struct Device::Impl {
         return s.va + off;
     }
     // After the job is on the ring: its copies are kept from being overwritten until it is done.
-    void snap_commit(std::uint64_t seq) {
-        if (snap_job.empty()) return;
+    // exp 0436: the job's spans and slot are passed in (with the kernel call outside the lock, another ring's job may
+    // have been prepared since: `cur` and snap_job are no longer this job's)
+    void snap_commit(std::uint64_t seq, int slot, std::vector<std::pair<std::uint64_t, std::uint64_t>> &job) {
+        if (job.empty()) return;
         std::erase_if(snap_spans, [this](const SnapSpan &x) { return !snap_in_flight(x); });
-        for (const auto &[x0, x1] : snap_job) snap_spans.push_back({x0, x1, cur, seq});
-        snap_job.clear();
+        for (const auto &[x0, x1] : job) snap_spans.push_back({x0, x1, slot, seq});
+        job.clear();
     }
     void snap_free() {
         ScratchBo &s = snap_ring;
@@ -700,8 +714,9 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
 
 Device::~Device() {
     if (!impl_) return;
+    std::unique_lock<std::shared_mutex> flight(impl_->flight_mu); // exp 0436: no job of submit() is in its kernel call
     impl_->summary(); // experiment 0341
-    if (impl_->full_list) amdgpu_bo_list_destroy(impl_->full_list);
+    impl_->list_drop(impl_->full_list);
     for (auto &u : impl_->userptrs) {
         amdgpu_bo_va_op(u.bo, 0, u.size, u.va, 0, AMDGPU_VA_OP_UNMAP);
         amdgpu_bo_free(u.bo);
@@ -805,6 +820,7 @@ bool Device::map_userptr(std::uint64_t cpu_va, std::uint64_t size, bool readonly
 }
 
 bool Device::unmap_userptr(std::uint64_t cpu_va) {
+    std::unique_lock<std::shared_mutex> flight(impl_->flight_mu); // exp 0436 (tag su436): after every prepared job's kernel call
     std::lock_guard lock(impl_->mutex);
     for (auto it = impl_->userptrs.begin(); it != impl_->userptrs.end(); ++it) {
         if (it->va == cpu_va) {
@@ -934,6 +950,7 @@ bool Device::map_prt_window(std::uint64_t va, std::uint64_t size) {
 }
 
 bool Device::unmap_shared(std::uint64_t gpu_va) {
+    std::unique_lock<std::shared_mutex> flight(impl_->flight_mu); // exp 0436 (tag su436): after every prepared job's kernel call
     std::lock_guard lock(impl_->mutex);
     // Experiment 0170: binary search in the sorted list (the first mapping at that address, as
     // the old walk found).
@@ -975,6 +992,7 @@ std::uint64_t Device::map_alias(std::uint64_t src_va, std::uint64_t size, std::u
 }
 
 void Device::unmap_aliases() {
+    std::unique_lock<std::shared_mutex> flight(impl_->flight_mu); // exp 0436 (tag su436): after every prepared job's kernel call
     std::lock_guard lock(impl_->mutex);
     for (const auto &a : impl_->aliases)
         amdgpu_bo_va_op_raw(impl_->dev, a.bo, a.bo_offset, a.size, a.va, 0, AMDGPU_VA_OP_UNMAP);
@@ -982,6 +1000,7 @@ void Device::unmap_aliases() {
 }
 
 bool Device::free_shared(std::uint32_t id) {
+    std::unique_lock<std::shared_mutex> flight(impl_->flight_mu); // exp 0436 (tag su436): after every prepared job's kernel call
     std::lock_guard lock(impl_->mutex);
     for (auto b = impl_->shared.begin(); b != impl_->shared.end(); ++b) {
         if (b->id != id) continue;
@@ -1001,7 +1020,7 @@ bool Device::free_shared(std::uint32_t id) {
         impl_->drop_aliases_of(b->bo);
         // a kept list would hold the BO (and its pages) alive
         if (impl_->full_list) {
-            amdgpu_bo_list_destroy(impl_->full_list);
+            impl_->list_drop(impl_->full_list); // exp 0436: no job can hold it here (flight_mu is ours)
             impl_->full_list = nullptr;
         }
         amdgpu_bo_free(b->bo);
@@ -1098,8 +1117,23 @@ void Device::add_next_submit_dependency(int ring, std::uint64_t seq_no) {
 
 SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::FilterOptions &opt,
                             std::uint64_t timeout_ns, bool with_gds, int ring) {
+    return submit_impl(ib, opt, timeout_ns, with_gds, ring, nullptr);
+}
+
+SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::FilterOptions &opt,
+                            std::uint64_t timeout_ns, bool with_gds, int ring, const std::function<void()> &before_call) {
+    return submit_impl(ib, opt, timeout_ns, with_gds, ring, &before_call);
+}
+
+SubmitResult Device::submit_impl(std::span<const std::uint32_t> ib, const policy::FilterOptions &opt,
+                                 std::uint64_t timeout_ns, bool with_gds, int ring,
+                                 const std::function<void()> *before_call) {
     SubmitResult r;
-    std::lock_guard lock(impl_->mutex);
+    // Experiment 0436 (tag su436): with before_call in async mode the kernel call runs without `mutex` (see direct.hpp).
+    const bool split = before_call != nullptr && async_;
+    std::shared_lock<std::shared_mutex> flight;
+    if (split) flight = std::shared_lock<std::shared_mutex>(impl_->flight_mu);
+    std::unique_lock lock(impl_->mutex);
     const bool comp = ring != kGfxRing;
     if (comp && (ring < 0 || ring >= kComputeRings)) { // ADR 0009
         r.rc = -EINVAL;
@@ -1118,6 +1152,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         impl_->cur = Impl::pool_first(ring);
     }
     impl_->slot_ring[impl_->cur] = ring;
+    const int cur = impl_->cur; // exp 0436: this job's slot (impl_->cur moves on with another ring's job once the lock is let go)
     const double t_enter = now_ms();
     if (wedged_) {
         r.rc = -1;
@@ -1592,7 +1627,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         r.rc = amdgpu_bo_list_create(impl_->dev, static_cast<std::uint32_t>(bos.size()), bos.data(),
                                      nullptr, &list);
         if (r.rc == 0 && full) {
-            if (impl_->full_list) amdgpu_bo_list_destroy(impl_->full_list);
+            impl_->list_drop(impl_->full_list); // exp 0436: one a job still uses in its kernel call is destroyed by it
             impl_->full_list = list;
             impl_->full_list_gen = impl_->list_gen;
             impl_->full_list_gds = with_gds;
@@ -1601,6 +1636,20 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     }
     r.list_ms = now_ms() - t_list;
     if (r.rc != 0) return r;
+    // exp 0436: the kept list this job uses stays alive until its kernel call has returned
+    const bool list_held = split && list != nullptr && list == impl_->full_list;
+    if (list_held) impl_->list_users[list]++;
+    auto list_done = [&]() {
+        if (list_held) {
+            auto it = impl_->list_users.find(list);
+            if (--it->second == 0) {
+                impl_->list_users.erase(it);
+                if (list != impl_->full_list) amdgpu_bo_list_destroy(list); // replaced meanwhile: its last user
+            }
+        } else if (list != impl_->full_list) {
+            amdgpu_bo_list_destroy(list);
+        }
+    };
 
     amdgpu_cs_ib_info ib_info[ib_split::kMaxPieces]{};
     std::uint32_t n_ibs = 0;
@@ -1641,9 +1690,18 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         req.dependencies = deps;
     }
 
+    std::vector<std::pair<std::uint64_t, std::uint64_t>> snap_mine; // exp 0436: this job's DMA snapshot spans
+    snap_mine.swap(impl_->snap_job);
+    if (split) { // exp 0436 (tag su436): the kernel call without the lock; the caller keeps this ring's order
+        lock.unlock();
+        (*before_call)();
+    }
     const double t0 = now_ms();
     r.rc = amdgpu_cs_submit(impl_->ctx, 0, &req, 1);
-    if (r.rc == 0) impl_->hi_reg = hi_next; // experiment 0348: the CP's base-1 register as this job leaves it
+    if (split) lock.lock();
+    // experiment 0348: the CP's base-1 register as this job leaves it; a compute job never changes it (exp 0436: and
+    // must not write back the value it read before a GFX job's kernel call outside the lock)
+    if (r.rc == 0 && !comp) impl_->hi_reg = hi_next;
     if (r.rc != 0) // experiment 0348: amdgpu_cs refuses an IB over 0xfffff dwords (amdgpu_cs.c, amdgpu_cs_p2_ib)
         std::fprintf(stderr, "bc5-direct: cs refused rc %d: the job's IB is %zu dwords (%zu from the title's %zu) in %u IBs, %u BOs; the kernel takes at most 0xfffff dwords per IB\n",
                      r.rc, padded, main_n, ib.size(), n_ibs, r.bo_count);
@@ -1651,16 +1709,16 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     std::uint32_t expired = 0;
     r.seq_no = req.seq_no;
     if (async_) {
-        r.slot = static_cast<std::uint32_t>(impl_->cur);
+        r.slot = static_cast<std::uint32_t>(cur);
         r.pending = r.rc == 0;
         if (r.pending) {
-            if (!da_recs.empty()) impl_->da_pending[impl_->cur] = std::move(da_recs); // experiment 0381, read in finish()
-            impl_->slot_seq[impl_->cur] = req.seq_no;
+            if (!da_recs.empty()) impl_->da_pending[cur] = std::move(da_recs); // experiment 0381, read in finish()
+            impl_->slot_seq[cur] = req.seq_no;
             (comp ? impl_->last_seq_comp[ring] : impl_->last_seq) = req.seq_no;
-            impl_->snap_commit(req.seq_no); // experiment 0122
+            impl_->snap_commit(req.seq_no, cur, snap_mine); // experiment 0122
         }
         r.submit_ms = now_ms() - t0;
-        if (list != impl_->full_list) amdgpu_bo_list_destroy(list);
+        list_done();
         submits_++;
         r.ok = r.rc == 0;
         return r;
@@ -1685,7 +1743,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     }
     r.submit_ms = now_ms() - t0;
     r.fence_ms = r.submit_ms - r.cs_ms;
-    if (list != impl_->full_list) amdgpu_bo_list_destroy(list);
+    list_done();
     submits_++;
     r.ok = r.rc == 0 && expired != 0;
     return r;

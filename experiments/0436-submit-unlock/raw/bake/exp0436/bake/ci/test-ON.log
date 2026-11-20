@@ -1,0 +1,265 @@
+Test project /home/kjaniszewski/bc5-work/exp0436/bake/ci/build-ON
+        Start   1: version string is set
+  1/130 Test   #1: version string is set ..............................................................................................   Passed    0.00 sec
+        Start   2: default build has no amdgpu path
+  2/130 Test   #2: default build has no amdgpu path ...................................................................................   Passed    0.00 sec
+        Start   3: type-3 headers match the PM4 encoding
+  3/130 Test   #3: type-3 headers match the PM4 encoding ..............................................................................   Passed    0.00 sec
+        Start   4: builder packets, SET_SH_REG and padding
+  4/130 Test   #4: builder packets, SET_SH_REG and padding ............................................................................   Passed    0.00 sec
+        Start   5: memset IB reproduces the IGT gfx10 sequence
+  5/130 Test   #5: memset IB reproduces the IGT gfx10 sequence ........................................................................   Passed    0.00 sec
+        Start   6: console dispatch parameters land in RSRC1/RSRC2 and V# word 3
+  6/130 Test   #6: console dispatch parameters land in RSRC1/RSRC2 and V# word 3 ......................................................   Passed    0.00 sec
+        Start   7: memset IB rejects bad parameters
+  7/130 Test   #7: memset IB rejects bad parameters ...................................................................................   Passed    0.00 sec
+        Start   8: the shader is the IGT gfx10 buffer-clear program
+  8/130 Test   #8: the shader is the IGT gfx10 buffer-clear program ...................................................................   Passed    0.00 sec
+        Start   9: the shipped policy table parses and has the known entries
+  9/130 Test   #9: the shipped policy table parses and has the known entries ..........................................................   Passed    0.00 sec
+        Start  10: SET_*_REG packets take the verdict of their registers
+ 10/130 Test  #10: SET_*_REG packets take the verdict of their registers ..............................................................   Passed    0.00 sec
+        Start  11: filter NOPs dropped packets in place and rewrites masks and INT_SEL
+ 11/130 Test  #11: filter NOPs dropped packets in place and rewrites masks and INT_SEL ................................................   Passed    0.00 sec
+        Start  12: gcr_clear clears GCR_CNTL bits of ACQUIRE_MEM only
+ 12/130 Test  #12: gcr_clear clears GCR_CNTL bits of ACQUIRE_MEM only .................................................................   Passed    0.00 sec
+        Start  13: drop_draws NOPs draws and dispatches only
+ 13/130 Test  #13: drop_draws NOPs draws and dispatches only ..........................................................................   Passed    0.00 sec
+        Start  14: CONTEXT_CONTROL is made safe, unmapped operands and extra opcodes are dropped
+ 14/130 Test  #14: CONTEXT_CONTROL is made safe, unmapped operands and extra opcodes are dropped ......................................   Passed    0.00 sec
+        Start  15: filter NOPs a packet that runs past the end
+ 15/130 Test  #15: filter NOPs a packet that runs past the end ........................................................................   Passed    0.00 sec
+        Start  16: WRITE_DATA to a register is dropped, to memory it passes
+ 16/130 Test  #16: WRITE_DATA to a register is dropped, to memory it passes ...........................................................   Passed    0.00 sec
+        Start  17: CLEAR_STATE is rewritten to cmd 0
+ 17/130 Test  #17: CLEAR_STATE is rewritten to cmd 0 ..................................................................................   Passed    0.00 sec
+        Start  18: waits pass only on labels written earlier in the same IB
+ 18/130 Test  #18: waits pass only on labels written earlier in the same IB ...........................................................   Passed    0.00 sec
+        Start  19: RELEASE_MEM without data has no memory operand
+ 19/130 Test  #19: RELEASE_MEM without data has no memory operand .....................................................................   Passed    0.00 sec
+        Start  20: GDS accesses through the CP are dropped unless allowed
+ 20/130 Test  #20: GDS accesses through the CP are dropped unless allowed .............................................................   Passed    0.00 sec
+        Start  21: RELEASE_MEM CS_DONE without data becomes BOTTOM_OF_PIPE_TS
+ 21/130 Test  #21: RELEASE_MEM CS_DONE without data becomes BOTTOM_OF_PIPE_TS .........................................................   Passed    0.00 sec
+        Start  22: GDS accesses are redirected to the shadow buffer when one is set
+ 22/130 Test  #22: GDS accesses are redirected to the shadow buffer when one is set ...................................................   Passed    0.00 sec
+        Start  23: packets named by offset are dropped
+ 23/130 Test  #23: packets named by offset are dropped ................................................................................   Passed    0.00 sec
+        Start  24: ORDERED_APPEND_ENBL can be forced on dispatches
+ 24/130 Test  #24: ORDERED_APPEND_ENBL can be forced on dispatches ....................................................................   Passed    0.00 sec
+        Start  25: compute-queue DISPATCH_INDIRECT becomes the GFX form against the given base
+ 25/130 Test  #25: compute-queue DISPATCH_INDIRECT becomes the GFX form against the given base ........................................   Passed    0.00 sec
+        Start  26: DMA_DATA memory operands follow the selectors, GDS offsets are not addresses
+ 26/130 Test  #26: DMA_DATA memory operands follow the selectors, GDS offsets are not addresses .......................................   Passed    0.00 sec
+        Start  27: filter: dropped markers become pipeline-statistics samples on request
+ 27/130 Test  #27: filter: dropped markers become pipeline-statistics samples on request ..............................................   Passed    0.00 sec
+        Start  28: indirect multi draws: the count address is an operand only when it is used
+ 28/130 Test  #28: indirect multi draws: the count address is an operand only when it is used .........................................   Passed    0.00 sec
+        Start  29: keep_wait_offsets: a wait on a label an earlier job writes passes
+ 29/130 Test  #29: keep_wait_offsets: a wait on a label an earlier job writes passes ..................................................   Passed    0.00 sec
+        Start  30: SET packet verdicts by span equal the register-by-register answer
+ 30/130 Test  #30: SET packet verdicts by span equal the register-by-register answer ..................................................   Passed    0.08 sec
+        Start  31: policy: DMA_DATA sources can be replaced (experiment 0087)
+ 31/130 Test  #31: policy: DMA_DATA sources can be replaced (experiment 0087) .........................................................   Passed    0.00 sec
+        Start  32: compute_ring: graphics-only packets are NOP-ed, compute packets pass
+ 32/130 Test  #32: compute_ring: graphics-only packets are NOP-ed, compute packets pass ...............................................   Passed    0.00 sec
+        Start  33: compute_ring_refusal names what keeps an IB off a compute ring
+ 33/130 Test  #33: compute_ring_refusal names what keeps an IB off a compute ring .....................................................   Passed    0.00 sec
+        Start  34: state stack: a pop restores the context registers of the matching push
+ 34/130 Test  #34: state stack: a pop restores the context registers of the matching push .............................................   Passed    0.00 sec
+        Start  35: state stack: conditional and unmatched pops are left to the filter
+ 35/130 Test  #35: state stack: conditional and unmatched pops are left to the filter .................................................   Passed    0.00 sec
+        Start  36: state stack: state carries over to the next IB, unreadable tables are counted
+ 36/130 Test  #36: state stack: state carries over to the next IB, unreadable tables are counted ......................................   Passed    0.00 sec
+        Start  37: full state: registers accumulate across buffers, later sets win
+ 37/130 Test  #37: full state: registers accumulate across buffers, later sets win ....................................................   Passed    0.00 sec
+        Start  38: full state: LOAD_*_REG tables are read through the reader
+ 38/130 Test  #38: full state: LOAD_*_REG tables are read through the reader ..........................................................   Passed    0.00 sec
+        Start  39: full state: LOAD_*_REG_INDEX in pairs and in consecutive form
+ 39/130 Test  #39: full state: LOAD_*_REG_INDEX in pairs and in consecutive form ......................................................   Passed    0.00 sec
+        Start  40: full state: CLEAR_STATE clears, pushes and pops the context registers
+ 40/130 Test  #40: full state: CLEAR_STATE clears, pushes and pops the context registers ..............................................   Passed    0.00 sec
+        Start  41: full state: the prefix reproduces the tracked state on a fresh tracker
+ 41/130 Test  #41: full state: the prefix reproduces the tracked state on a fresh tracker .............................................   Passed    0.00 sec
+        Start  42: full state: long register runs split into packets
+ 42/130 Test  #42: full state: long register runs split into packets ..................................................................   Passed    0.02 sec
+        Start  43: full state: nested INDIRECT_BUFFERs are followed through the reader
+ 43/130 Test  #43: full state: nested INDIRECT_BUFFERs are followed through the reader ................................................   Passed    0.00 sec
+        Start  44: full state: a split checked against the unsplit buffer
+ 44/130 Test  #44: full state: a split checked against the unsplit buffer .............................................................   Passed    0.01 sec
+        Start  45: full state: for_each_draw sees the state before each draw
+ 45/130 Test  #45: full state: for_each_draw sees the state before each draw ..........................................................   Passed    0.00 sec
+        Start  46: full state: for_each_draw follows nested buffers
+ 46/130 Test  #46: full state: for_each_draw follows nested buffers ...................................................................   Passed    0.00 sec
+        Start  47: mask_cu_register: the CU-mask fields of the SH registers
+ 47/130 Test  #47: mask_cu_register: the CU-mask fields of the SH registers ...........................................................   Passed    0.00 sec
+        Start  48: cu tables: a loaded CU mask is overridden right after the load
+ 48/130 Test  #48: cu tables: a loaded CU mask is overridden right after the load .....................................................   Passed    0.00 sec
+        Start  49: cu tables: the register image, conditional loads, unreadable tables
+ 49/130 Test  #49: cu tables: the register image, conditional loads, unreadable tables ................................................   Passed    0.00 sec
+        Start  50: indirect_check: a dispatch with a known base gets the CP check
+ 50/130 Test  #50: indirect_check: a dispatch with a known base gets the CP check .....................................................   Passed    0.00 sec
+        Start  51: indirect_check: the caller's base, no base, and the IB's own COND_EXEC
+ 51/130 Test  #51: indirect_check: the caller's base, no base, and the IB's own COND_EXEC .............................................   Passed    0.00 sec
+        Start  52: indirect_check: a COND_EXEC range whose grown count overflows drops only its own dispatches (ADR 0010 section A)
+ 52/130 Test  #52: indirect_check: a COND_EXEC range whose grown count overflows drops only its own dispatches (ADR 0010 section A) ...   Passed    0.00 sec
+        Start  53: insert_before: packets inserted, COND_EXEC counts grown around them
+ 53/130 Test  #53: insert_before: packets inserted, COND_EXEC counts grown around them ................................................   Passed    0.00 sec
+        Start  54: indirect_check: indirect draws get the check of their two counts
+ 54/130 Test  #54: indirect_check: indirect draws get the check of their two counts ...................................................   Passed    0.00 sec
+        Start  55: indirect_check: on a compute ring the MEC form is checked, without PFP_SYNC_ME
+ 55/130 Test  #55: indirect_check: on a compute ring the MEC form is checked, without PFP_SYNC_ME .....................................   Passed    0.00 sec
+        Start  56: indirect_check: the product staircase (experiment 0341)
+ 56/130 Test  #56: indirect_check: the product staircase (experiment 0341) ............................................................   Passed    0.00 sec
+        Start  57: insert_before: an insert at the IB's end is appended (experiment 0341)
+ 57/130 Test  #57: insert_before: an insert at the IB's end is appended (experiment 0341) .............................................   Passed    0.00 sec
+        Start  58: indirect_check: the zero-dimension guard (experiment 0380)
+ 58/130 Test  #58: indirect_check: the zero-dimension guard (experiment 0380) .........................................................   Passed    0.00 sec
+        Start  59: indirect_check: FORCE_START_AT_000 on indirect dispatches (experiment 0380)
+ 59/130 Test  #59: indirect_check: FORCE_START_AT_000 on indirect dispatches (experiment 0380) ........................................   Passed    0.00 sec
+        Start  60: indirect_check: tighter y and z limits (experiment 0380, the 12:12 hang)
+ 60/130 Test  #60: indirect_check: tighter y and z limits (experiment 0380, the 12:12 hang) ...........................................   Passed    0.00 sec
+        Start  61: indirect_check: the copy keeps the base and the IB's own COND_EXEC (experiment 0380)
+ 61/130 Test  #61: indirect_check: the copy keeps the base and the IB's own COND_EXEC (experiment 0380) ...............................   Passed    0.00 sec
+        Start  62: indirect_check: the dispatch runs from the CP's copy of its arguments (experiment 0380)
+ 62/130 Test  #62: indirect_check: the dispatch runs from the CP's copy of its arguments (experiment 0380) ............................   Passed    0.00 sec
+        Start  63: indirect_check: a GL2 write-back before the check (experiment 0380)
+ 63/130 Test  #63: indirect_check: a GL2 write-back before the check (experiment 0380) ................................................   Passed    0.00 sec
+        Start  64: indirect_check: a CS_PARTIAL_FLUSH before the check (experiment 0380, F617)
+ 64/130 Test  #64: indirect_check: a CS_PARTIAL_FLUSH before the check (experiment 0380, F617) ........................................   Passed    0.00 sec
+        Start  65: indirect_check: the copy at a low GPU VA (experiment 0380, F574)
+ 65/130 Test  #65: indirect_check: the copy at a low GPU VA (experiment 0380, F574) ...................................................   Passed    0.00 sec
+        Start  66: shadow_labels: a label written and waited on gets a shadow slot
+ 66/130 Test  #66: shadow_labels: a label written and waited on gets a shadow slot ....................................................   Passed    0.00 sec
+        Start  67: shadow_labels: waits on labels nobody writes first, register polls and a second label
+ 67/130 Test  #67: shadow_labels: waits on labels nobody writes first, register polls and a second label ..............................   Passed    0.00 sec
+        Start  68: shadow_labels: the slot limit, an IB without waits, the COND_EXEC growth
+ 68/130 Test  #68: shadow_labels: the slot limit, an IB without waits, the COND_EXEC growth ...........................................   Passed    0.00 sec
+        Start  69: host_indirect: the refit's dispatch after the title's zeroing is verified and rewritten
+ 69/130 Test  #69: host_indirect: the refit's dispatch after the title's zeroing is verified and rewritten ............................   Passed    0.00 sec
+        Start  70: host_indirect: a non-zero register, set here or carried, and a register never set leave the dispatch alone
+ 70/130 Test  #70: host_indirect: a non-zero register, set here or carried, and a register never set leave the dispatch alone .........   Passed    0.00 sec
+        Start  71: host_indirect: after the zeroing, an unverified candidate is NOP-ed, each for its reason
+ 71/130 Test  #71: host_indirect: after the zeroing, an unverified candidate is NOP-ed, each for its reason ...........................   Passed    0.00 sec
+        Start  72: host_indirect: a COND_EXEC count that cannot grow turns the rewrites into NOPs
+ 72/130 Test  #72: host_indirect: a COND_EXEC count that cannot grow turns the rewrites into NOPs .....................................   Passed    0.00 sec
+        Start  73: ib_split: an IB within the limit is one piece
+ 73/130 Test  #73: ib_split: an IB within the limit is one piece ......................................................................   Passed    0.00 sec
+        Start  74: ib_split: a plain stream is cut at aligned packet boundaries
+ 74/130 Test  #74: ib_split: a plain stream is cut at aligned packet boundaries .......................................................   Passed    0.00 sec
+        Start  75: ib_split: the fallback alignment is used when no 64-aligned boundary exists
+ 75/130 Test  #75: ib_split: the fallback alignment is used when no 64-aligned boundary exists ........................................   Passed    0.00 sec
+        Start  76: ib_split: a cut never lands inside a COND_EXEC range
+ 76/130 Test  #76: ib_split: a cut never lands inside a COND_EXEC range ...............................................................   Passed    0.00 sec
+        Start  77: ib_split: a COND_EXEC range longer than the limit cannot be cut
+ 77/130 Test  #77: ib_split: a COND_EXEC range longer than the limit cannot be cut ....................................................   Passed    0.00 sec
+        Start  78: ib_split: more pieces than allowed fails
+ 78/130 Test  #78: ib_split: more pieces than allowed fails ...........................................................................   Passed    0.00 sec
+        Start  79: ib_split: the kernel's limits are the defaults
+ 79/130 Test  #79: ib_split: the kernel's limits are the defaults .....................................................................   Passed    0.00 sec
+        Start  80: a port that does not belong on the controller is never touched
+ 80/130 Test  #80: a port that does not belong on the controller is never touched .....................................................   Passed    0.00 sec
+        Start  81: a stream on the controller plays, and looks only once a second without an event
+ 81/130 Test  #81: a stream on the controller plays, and looks only once a second without an event ....................................   Passed    0.00 sec
+        Start  82: unplug: the stream is closed at the removal, the frames dropped, and it reopens when the pad is back
+ 82/130 Test  #82: unplug: the stream is closed at the removal, the frames dropped, and it reopens when the pad is back ...............   Passed    0.00 sec
+        Start  83: both pad ports leave the controller at a removal, the one SDL stopped and the one it did not
+ 83/130 Test  #83: both pad ports leave the controller at a removal, the one SDL stopped and the one it did not .......................   Passed    0.00 sec
+        Start  84: a replug faster than the port's next write reopens the stream at once
+ 84/130 Test  #84: a replug faster than the port's next write reopens the stream at once ..............................................   Passed    0.00 sec
+        Start  85: another sink removed while the pad stays: the pad stream is reopened (the price of not knowing which)
+ 85/130 Test  #85: another sink removed while the pad stays: the pad stream is reopened (the price of not knowing which) ..............   Passed    0.00 sec
+        Start  86: an added sink does not disturb a stream on the controller
+ 86/130 Test  #86: an added sink does not disturb a stream on the controller ..........................................................   Passed    0.00 sec
+        Start  87: SDL stopping the device without an event (F93's path) closes or reopens it
+ 87/130 Test  #87: SDL stopping the device without an event (F93's path) closes or reopens it .........................................   Passed    0.00 sec
+        Start  88: a missed removal is caught by the once-a-second look
+ 88/130 Test  #88: a missed removal is caught by the once-a-second look ...............................................................   Passed    0.00 sec
+        Start  89: a failed reopen is retried once a second while the pad is listed
+ 89/130 Test  #89: a failed reopen is retried once a second while the pad is listed ...................................................   Passed    0.00 sec
+        Start  90: a DualShock 4: the vibration port without a device only looks at events, and stays without one
+ 90/130 Test  #90: a DualShock 4: the vibration port without a device only looks at events, and stays without one .....................   Passed    0.00 sec
+        Start  91: a DualShock 4: the pad-speaker port keeps playing on the default sink (F329/F330)
+ 91/130 Test  #91: a DualShock 4: the pad-speaker port keeps playing on the default sink (F329/F330) ..................................   Passed    0.00 sec
+        Start  92: a DualSense plugged in after the start takes both pad ports over
+ 92/130 Test  #92: a DualSense plugged in after the start takes both pad ports over ...................................................   Passed    0.00 sec
+        Start  93: the event counters may wrap
+ 93/130 Test  #93: the event counters may wrap ........................................................................................   Passed    0.00 sec
+        Start  94: the pad streams' PIPEWIRE_PROPS add the two keys to the host's default only
+ 94/130 Test  #94: the pad streams' PIPEWIRE_PROPS add the two keys to the host's default only ........................................   Passed    0.00 sec
+        Start  95: direct-selftest routing (experiment 0380, Codex review REVIEW-05)
+ 95/130 Test  #95: direct-selftest routing (experiment 0380, Codex review REVIEW-05) ..................................................   Passed    0.00 sec
+        Start  96: the list round-trips through its text form
+ 96/130 Test  #96: the list round-trips through its text form .........................................................................   Passed    0.00 sec
+        Start  97: the parser drops bad, unaligned, out-of-heap, overlapping and orphan runs
+ 97/130 Test  #97: the parser drops bad, unaligned, out-of-heap, overlapping and orphan runs ..........................................   Passed    0.00 sec
+        Start  98: the mask keeps only chunks zero in every scan, and runs respect the minimum
+ 98/130 Test  #98: the mask keeps only chunks zero in every scan, and runs respect the minimum ........................................   Passed    0.00 sec
+        Start  99: all_zero finds a single set byte anywhere
+ 99/130 Test  #99: all_zero finds a single set byte anywhere ..........................................................................   Passed    0.00 sec
+        Start 100: the skip set places runs, gives chunks and runs back, and keeps run indices
+100/130 Test #100: the skip set places runs, gives chunks and runs back, and keeps run indices ........................................   Passed    0.00 sec
+        Start 101: scan finds based indirect draws and counts unbased ones
+101/130 Test #101: scan finds based indirect draws and counts unbased ones ............................................................   Passed    0.00 sec
+        Start 102: the IB's base at entry is used until a SET_BASE of index 1
+102/130 Test #102: the IB's base at entry is used until a SET_BASE of index 1 .........................................................   Passed    0.00 sec
+        Start 103: classify: the 18:08 slots against sane draws
+103/130 Test #103: classify: the 18:08 slots against sane draws .......................................................................   Passed    0.00 sec
+        Start 104: line and reread report what changed between submit and completion
+104/130 Test #104: line and reread report what changed between submit and completion ..................................................   Passed    0.00 sec
+        Start 105: acb restore: wants only buffers that dispatch or call an IB2
+105/130 Test #105: acb restore: wants only buffers that dispatch or call an IB2 .......................................................   Passed    0.00 sec
+        Start 106: acb restore: the F679 carry, and the restore that undoes it
+106/130 Test #106: acb restore: the F679 carry, and the restore that undoes it ........................................................   Passed    0.00 sec
+        Start 107: acb restore: runs skip untracked offsets, COMPUTE_VMID and the dispatch registers
+107/130 Test #107: acb restore: runs skip untracked offsets, COMPUTE_VMID and the dispatch registers ..................................   Passed    0.00 sec
+        Start 108: acb restore: chain offsets map back to the title's buffer
+108/130 Test #108: acb restore: chain offsets map back to the title's buffer ..........................................................   Passed    0.00 sec
+        Start 109: acb restore: sh_value reads what a prefix emitted
+109/130 Test #109: acb restore: sh_value reads what a prefix emitted ..................................................................   Passed    0.00 sec
+        Start 110: acb restore: final_value is the state after all writes, or unknown
+110/130 Test #110: acb restore: final_value is the state after all writes, or unknown .................................................   Passed    0.00 sec
+        Start 111: final_value: a call returns, a CHAIN replaces the tail (the probe's four cases)
+111/130 Test #111: final_value: a call returns, a CHAIN replaces the tail (the probe's four cases) ....................................   Passed    0.00 sec
+        Start 112: final_value: CHAIN through levels
+112/130 Test #112: final_value: CHAIN through levels ..................................................................................   Passed    0.00 sec
+        Start 113: final_value: conditions join every way through
+113/130 Test #113: final_value: conditions join every way through .....................................................................   Passed    0.01 sec
+        Start 114: final_value: what cannot be followed is Unknown, never certain
+114/130 Test #114: final_value: what cannot be followed is Unknown, never certain .....................................................   Passed    0.86 sec
+        Start 115: acb restore: Touched lists what acbs write and the dcb state lacks
+115/130 Test #115: acb restore: Touched lists what acbs write and the dcb state lacks .................................................   Passed    0.00 sec
+        Start 116: env_on: unset, empty and 0 are off, anything else is on
+116/130 Test #116: env_on: unset, empty and 0 are off, anything else is on ............................................................   Passed    0.00 sec
+        Start 117: start state: every row is written with nothing set
+117/130 Test #117: start state: every row is written with nothing set .................................................................   Passed    0.00 sec
+        Start 118: start state: the deleted switches are read by nothing
+118/130 Test #118: start state: the deleted switches are read by nothing ..............................................................   Passed    0.00 sec
+        Start 119: start state: SKIP drops the named rows
+119/130 Test #119: start state: SKIP drops the named rows .............................................................................   Passed    0.00 sec
+        Start 120: start state: names in SKIP match whole names only
+120/130 Test #120: start state: names in SKIP match whole names only ..................................................................   Passed    0.00 sec
+        Start 121: start state: the packets go after CONTEXT_CONTROL and CLEAR_STATE
+121/130 Test #121: start state: the packets go after CONTEXT_CONTROL and CLEAR_STATE ..................................................   Passed    0.00 sec
+        Start 122: start state: GS ring sizes from 0xc00c8110
+122/130 Test #122: start state: GS ring sizes from 0xc00c8110 .........................................................................   Passed    0.00 sec
+        Start 123: start state: the header and backend/policy/start-state.tsv agree
+123/130 Test #123: start state: the header and backend/policy/start-state.tsv agree ...................................................   Passed    0.00 sec
+        Start 124: gc trace: a frame chain is walked to its end
+124/130 Test #124: gc trace: a frame chain is walked to its end .......................................................................   Passed    0.00 sec
+        Start 125: gc trace: the walk stops on a bad frame and keeps what it had
+125/130 Test #125: gc trace: the walk stops on a bad frame and keeps what it had ......................................................   Passed    0.00 sec
+        Start 126: gc trace: the walk keeps to its maximum
+126/130 Test #126: gc trace: the walk keeps to its maximum ............................................................................   Passed    0.00 sec
+        Start 127: gc trace: the stack scan keeps code addresses in order
+127/130 Test #127: gc trace: the stack scan keeps code addresses in order .............................................................   Passed    0.00 sec
+        Start 128: gc trace: the nearest export at or below an address
+128/130 Test #128: gc trace: the nearest export at or below an address ................................................................   Passed    0.00 sec
+        Start 129: gc trace: the NID of a dynamic symbol name
+129/130 Test #129: gc trace: the NID of a dynamic symbol name .........................................................................   Passed    0.00 sec
+        Start 130: gc trace: the switch reads like bc5::env_on
+130/130 Test #130: gc trace: the switch reads like bc5::env_on ........................................................................   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 130
+
+Total Test time (real) =   1.42 sec

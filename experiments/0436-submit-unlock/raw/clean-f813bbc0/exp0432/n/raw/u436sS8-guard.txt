@@ -1,0 +1,90 @@
+lazy release (exp 0401 e7): on (30 s, eager): an imported chunk of the direct memfd under no view for 30 s, not forced by a hint or learned window, eager-heap chunks too, zero-list chunks never, is cut out of its BO; a view over it again imports it before the mappings are built; passes every 7.5 s
+lazy release (exp 0401 e7): t 1 s: 3950.0 MiB imported: 3928.0 under eager views, 22.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 0.0 under no view (0.0 last seen under an eager or zero-list view, 0.0 never seen under one; 0.0 idle 30 s or more); cut 0.0 MiB in 0 BOs (0 whole, 0 split), back 0.0 MiB, 0 chunks released now, 0 undone, 0 imports failed, 0 BOs deferred, 0 not split (aliases); GTT 259.6 of 13312.0 MiB
+memory (exp 0401): t 10.0 s: available 4742 MiB, swap used 507 MiB, psi some 0.00 full 0.00 (avg10, %), full total 12051 ms, gtt 8791 of 13312 MiB
+memory (exp 0401): t 20.0 s: available 4717 MiB, swap used 507 MiB, psi some 0.00 full 0.00 (avg10, %), full total 12051 ms, gtt 8791 of 13312 MiB
+memory (exp 0401): t 30.0 s: available 4767 MiB, swap used 507 MiB, psi some 0.00 full 0.00 (avg10, %), full total 12051 ms, gtt 8791 of 13312 MiB
+memory (exp 0401): t 40.0 s: available 2862 MiB, swap used 508 MiB, psi some 0.00 full 0.00 (avg10, %), full total 12091 ms, gtt 10577 of 13312 MiB
+memory (exp 0401): t 50.0 s: available 1486 MiB, swap used 516 MiB, psi some 2.20 full 2.20 (avg10, %), full total 12568 ms, gtt 11897 of 13312 MiB
+memory (exp 0401): t 60.0 s: available 1489 MiB, swap used 516 MiB, psi some 0.81 full 0.81 (avg10, %), full total 12570 ms, gtt 11897 of 13312 MiB
+lazy release (exp 0401 e7): t 61 s: 11248.0 MiB imported: 9972.0 under eager views, 1272.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 4.0 under no view (2.0 last seen under an eager or zero-list view, 2.0 never seen under one; 0.0 idle 30 s or more); cut 0.0 MiB in 0 BOs (0 whole, 0 split), back 0.0 MiB, 0 chunks released now, 0 undone, 0 imports failed, 0 BOs deferred, 0 not split (aliases); GTT 11897.8 of 13312.0 MiB
+memory (exp 0401): t 70.0 s: available 1488 MiB, swap used 515 MiB, psi some 0.29 full 0.29 (avg10, %), full total 12572 ms, gtt 11898 of 13312 MiB
+memory (exp 0401): t 80.0 s: available 1474 MiB, swap used 515 MiB, psi some 0.10 full 0.10 (avg10, %), full total 12577 ms, gtt 11898 of 13312 MiB
+lazy release (exp 0401 e7): cut 2.0 MiB out of 1 BOs (135 mappings to move); 2.0 MiB cut in all, 1 chunks released now
+guard split: 1 BOs cut in this sync; aliases mapped again at once (1 such syncs)
+memory (exp 0401): t 90.0 s: available 1582 MiB, swap used 515 MiB, psi some 0.03 full 0.03 (avg10, %), full total 12582 ms, gtt 11898 of 13312 MiB
+memory (exp 0401): t 100.0 s: available 1530 MiB, swap used 514 MiB, psi some 0.01 full 0.01 (avg10, %), full total 12582 ms, gtt 11901 of 13312 MiB
+lazy release (exp 0401 e7): cut 8.0 MiB out of 1 BOs (8 mappings to move); 10.0 MiB cut in all, 5 chunks released now
+guard split: 1 BOs cut in this sync; aliases mapped again at once (2 such syncs)
+memory (exp 0401): t 110.0 s: available 1587 MiB, swap used 599 MiB, psi some 1.52 full 1.52 (avg10, %), full total 12833 ms, gtt 11939 of 13312 MiB
+lazy release (exp 0401 e7): cut 2.0 MiB out of 1 BOs (75 mappings to move); 12.0 MiB cut in all, 6 chunks released now
+guard split: 1 BOs cut in this sync; aliases mapped again at once (3 such syncs)
+memory (exp 0401): t 120.0 s: available 1589 MiB, swap used 634 MiB, psi some 2.21 full 2.21 (avg10, %), full total 13202 ms, gtt 11978 of 13312 MiB
+lazy release (exp 0401 e7): t 121 s: 11312.0 MiB imported: 9842.0 under eager views, 1342.0 under data views, 0.0 under lazy views, 4.0 forced and under no view, 124.0 under no view (118.0 last seen under an eager or zero-list view, 0.0 never seen under one; 4.0 idle 30 s or more); cut 12.0 MiB in 3 BOs (0 whole, 3 split), back 0.0 MiB, 6 chunks released now, 0 undone, 0 imports failed, 0 BOs deferred, 0 not split (aliases); GTT 11978.1 of 13312.0 MiB
+lazy release (exp 0401 e7): cut 4.0 MiB out of 1 BOs (58 mappings to move); 16.0 MiB cut in all, 8 chunks released now
+guard split: 1 BOs cut in this sync; aliases mapped again at once (4 such syncs)
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 4.0 MiB imported by the eager or data path; 6 chunks still released
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 10.0 MiB imported by the eager or data path; 1 chunks still released
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 2.0 MiB imported by the eager or data path; 0 chunks still released
+memory (exp 0401): t 130.0 s: available 1416 MiB, swap used 632 MiB, psi some 0.81 full 0.81 (avg10, %), full total 13216 ms, gtt 12136 of 13312 MiB
+lazy release (exp 0401 e7): cut 16.0 MiB out of 1 BOs (60 mappings to move); 32.0 MiB cut in all, 8 chunks released now
+guard split: 1 BOs cut in this sync; aliases mapped again at once (5 such syncs)
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 10.0 MiB imported by the eager or data path; 3 chunks still released
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 2.0 MiB imported by the eager or data path; 2 chunks still released
+memory (exp 0401): t 140.0 s: available 1360 MiB, swap used 631 MiB, psi some 0.29 full 0.29 (avg10, %), full total 13239 ms, gtt 12168 of 13312 MiB
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 2.0 MiB imported by the eager or data path; 1 chunks still released
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 2.0 MiB imported by the eager or data path; 0 chunks still released
+memory (exp 0401): t 150.0 s: available 1283 MiB, swap used 630 MiB, psi some 0.10 full 0.10 (avg10, %), full total 13272 ms, gtt 12252 of 13312 MiB
+memory (exp 0401): t 160.0 s: available 1297 MiB, swap used 630 MiB, psi some 0.03 full 0.03 (avg10, %), full total 13278 ms, gtt 12252 of 13312 MiB
+memory (exp 0401): t 170.0 s: available 1292 MiB, swap used 630 MiB, psi some 0.01 full 0.01 (avg10, %), full total 13279 ms, gtt 12252 of 13312 MiB
+lazy release (exp 0401 e7): cut 2.0 MiB out of 1 BOs (41 mappings to move); 34.0 MiB cut in all, 1 chunks released now
+guard split: 1 BOs cut in this sync; aliases mapped again at once (6 such syncs)
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 2.0 MiB imported by the eager or data path; 0 chunks still released
+memory (exp 0401): t 180.0 s: available 1213 MiB, swap used 674 MiB, psi some 1.79 full 1.79 (avg10, %), full total 13531 ms, gtt 12348 of 13312 MiB
+lazy release (exp 0401 e7): t 182 s: 11680.0 MiB imported: 10148.0 under eager views, 1340.0 under data views, 0.0 under lazy views, 6.0 forced and under no view, 186.0 under no view (186.0 last seen under an eager or zero-list view, 0.0 never seen under one; 6.0 idle 30 s or more); cut 34.0 MiB in 6 BOs (0 whole, 6 split), back 34.0 MiB, 0 chunks released now, 0 undone, 0 imports failed, 0 BOs deferred, 0 not split (aliases); GTT 12348.1 of 13312.0 MiB
+lazy release (exp 0401 e7): cut 6.0 MiB out of 2 BOs (87 mappings to move); 40.0 MiB cut in all, 3 chunks released now
+guard split: 2 BOs cut in this sync; aliases mapped again at once (7 such syncs)
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 2.0 MiB imported by the eager or data path; 2 chunks still released
+lazy release (exp 0401 e7): cut 12.0 MiB out of 3 BOs (174 mappings to move); 52.0 MiB cut in all, 8 chunks released now
+guard split: 3 BOs cut in this sync; aliases mapped again at once (8 such syncs)
+memory (exp 0401): t 190.0 s: available 1200 MiB, swap used 673 MiB, psi some 0.65 full 0.65 (avg10, %), full total 13539 ms, gtt 12364 of 13312 MiB
+lazy release (exp 0401 e7): cut 8.0 MiB out of 2 BOs (41 mappings to move); 60.0 MiB cut in all, 12 chunks released now
+memory (exp 0401): t 200.0 s: available 1162 MiB, swap used 673 MiB, psi some 0.24 full 0.24 (avg10, %), full total 13539 ms, gtt 12356 of 13312 MiB
+lazy release (exp 0401 e7): cut 20.0 MiB out of 5 BOs (148 mappings to move); 80.0 MiB cut in all, 22 chunks released now
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 2.0 MiB imported by the eager or data path; 21 chunks still released
+memory (exp 0401): t 210.0 s: available 1167 MiB, swap used 673 MiB, psi some 0.08 full 0.08 (avg10, %), full total 13541 ms, gtt 12338 of 13312 MiB
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 2.0 MiB imported by the eager or data path; 20 chunks still released
+lazy release (exp 0401 e7): cut 68.0 MiB out of 6 BOs (65 mappings to move); 148.0 MiB cut in all, 54 chunks released now
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 2.0 MiB imported by the eager or data path; 53 chunks still released
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 8.0 MiB imported by the eager or data path; 49 chunks still released
+lazy release (exp 0401 e7): cut 4.0 MiB out of 2 BOs (24 mappings to move); 152.0 MiB cut in all, 51 chunks released now
+memory (exp 0401): t 220.0 s: available 1168 MiB, swap used 673 MiB, psi some 0.03 full 0.03 (avg10, %), full total 13542 ms, gtt 12252 of 13312 MiB
+lazy release (exp 0401 e7): cut 56.0 MiB out of 5 BOs (37 mappings to move); 208.0 MiB cut in all, 79 chunks released now
+memory (exp 0401): t 230.0 s: available 1197 MiB, swap used 673 MiB, psi some 0.01 full 0.01 (avg10, %), full total 13543 ms, gtt 12204 of 13312 MiB
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 14.0 MiB imported by the eager or data path; 72 chunks still released
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 24.0 MiB imported by the eager or data path; 60 chunks still released
+lazy release (exp 0401 e7): released chunks under a view again: 0.0 MiB imported now, 16.0 MiB imported by the eager or data path; 52 chunks still released
+memory (exp 0401): t 240.0 s: available 1199 MiB, swap used 671 MiB, psi some 0.00 full 0.00 (avg10, %), full total 13550 ms, gtt 12276 of 13312 MiB
+lazy release (exp 0401 e7): t 243 s: 11608.0 MiB imported: 10132.0 under eager views, 1340.0 under data views, 0.0 under lazy views, 6.0 forced and under no view, 130.0 under no view (106.0 last seen under an eager or zero-list view, 24.0 never seen under one; 0.0 idle 30 s or more); cut 208.0 MiB in 31 BOs (0 whole, 31 split), back 104.0 MiB, 52 chunks released now, 0 undone, 0 imports failed, 0 BOs deferred, 0 not split (aliases); GTT 12276.1 of 13312.0 MiB
+memory (exp 0401): t 250.0 s: available 1187 MiB, swap used 671 MiB, psi some 0.00 full 0.00 (avg10, %), full total 13556 ms, gtt 12276 of 13312 MiB
+lazy release (exp 0401 e7): cut 6.0 MiB out of 1 BOs (68 mappings to move); 214.0 MiB cut in all, 55 chunks released now
+memory (exp 0401): t 260.0 s: available 1198 MiB, swap used 671 MiB, psi some 0.00 full 0.00 (avg10, %), full total 13563 ms, gtt 12300 of 13312 MiB
+memory (exp 0401): t 270.0 s: available 1259 MiB, swap used 741 MiB, psi some 0.68 full 0.68 (avg10, %), full total 13684 ms, gtt 12366 of 13312 MiB
+lazy release (exp 0401 e7): cut 14.0 MiB out of 1 BOs (0 mappings to move); 228.0 MiB cut in all, 15 chunks released now
+memory (exp 0401): t 280.0 s: available 1217 MiB, swap used 727 MiB, psi some 0.25 full 0.25 (avg10, %), full total 13703 ms, gtt 12294 of 13312 MiB
+memory (exp 0401): t 290.0 s: available 1073 MiB, swap used 718 MiB, psi some 1.28 full 1.18 (avg10, %), full total 13940 ms, gtt 12513 of 13312 MiB
+lazy release (exp 0401 e7): cut 64.0 MiB out of 2 BOs (17 mappings to move); 292.0 MiB cut in all, 32 chunks released now
+memory (exp 0401): t 300.0 s: available 1097 MiB, swap used 743 MiB, psi some 1.98 full 1.77 (avg10, %), full total 14139 ms, gtt 12389 of 13312 MiB
+lazy release (exp 0401 e7): t 303 s: 11806.0 MiB imported: 10154.0 under eager views, 1414.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 238.0 under no view (144.0 last seen under an eager or zero-list view, 94.0 never seen under one; 0.0 idle 30 s or more); cut 292.0 MiB in 35 BOs (0 whole, 35 split), back 246.0 MiB, 23 chunks released now, 0 undone, 0 imports failed, 0 BOs deferred, 0 not split (aliases); GTT 12469.6 of 13312.0 MiB
+memory (exp 0401): t 310.0 s: available 1071 MiB, swap used 740 MiB, psi some 0.73 full 0.65 (avg10, %), full total 14164 ms, gtt 12523 of 13312 MiB
+memory (exp 0401): t 320.0 s: available 1105 MiB, swap used 739 MiB, psi some 0.26 full 0.23 (avg10, %), full total 14184 ms, gtt 12501 of 13312 MiB
+memory (exp 0401): t 330.0 s: available 1087 MiB, swap used 738 MiB, psi some 0.09 full 0.08 (avg10, %), full total 14214 ms, gtt 12473 of 13312 MiB
+memory (exp 0401): t 340.0 s: available 1109 MiB, swap used 773 MiB, psi some 0.48 full 0.47 (avg10, %), full total 14298 ms, gtt 12493 of 13312 MiB
+memory (exp 0401): t 350.0 s: available 1119 MiB, swap used 771 MiB, psi some 0.17 full 0.17 (avg10, %), full total 14308 ms, gtt 12479 of 13312 MiB
+memory (exp 0401): t 360.0 s: available 1074 MiB, swap used 762 MiB, psi some 0.06 full 0.06 (avg10, %), full total 14316 ms, gtt 12429 of 13312 MiB
+lazy release (exp 0401 e7): t 363 s: 11752.0 MiB imported: 10116.0 under eager views, 1422.0 under data views, 0.0 under lazy views, 0.0 forced and under no view, 214.0 under no view (212.0 last seen under an eager or zero-list view, 2.0 never seen under one; 0.0 idle 30 s or more); cut 418.0 MiB in 41 BOs (0 whole, 41 split), back 312.0 MiB, 53 chunks released now, 0 undone, 0 imports failed, 0 BOs deferred, 0 not split (aliases); GTT 12429.6 of 13312.0 MiB
+memory (exp 0401): t 370.0 s: available 1097 MiB, swap used 762 MiB, psi some 0.02 full 0.02 (avg10, %), full total 14320 ms, gtt 12429 of 13312 MiB
+memory (exp 0401): t 380.0 s: available 1071 MiB, swap used 761 MiB, psi some 0.00 full 0.00 (avg10, %), full total 14322 ms, gtt 12253 of 13312 MiB
+memory (exp 0401): t 390.0 s: available 1090 MiB, swap used 761 MiB, psi some 0.00 full 0.00 (avg10, %), full total 14322 ms, gtt 12253 of 13312 MiB
+memory (exp 0401): t 400.0 s: available 1096 MiB, swap used 761 MiB, psi some 0.00 full 0.00 (avg10, %), full total 14322 ms, gtt 12245 of 13312 MiB
+memory (exp 0401): t 410.0 s: available 1084 MiB, swap used 761 MiB, psi some 0.00 full 0.00 (avg10, %), full total 14323 ms, gtt 12221 of 13312 MiB
+memory (exp 0401): t 420.0 s: available 1100 MiB, swap used 760 MiB, psi some 0.00 full 0.00 (avg10, %), full total 14325 ms, gtt 12241 of 13312 MiB

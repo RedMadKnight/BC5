@@ -1,0 +1,39 @@
+[0/2] Re-checking globbed directories...
+[1/3] Building CXX object src/CMakeFiles/kyty_emulator.dir/libs/bc5LleAgc.cpp.o
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/bc5LleAgc.cpp:28:
+In file included from /home/kjaniszewski/src/KytyPlus/src/kernel/fileSystem.h:6:
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+/home/kjaniszewski/src/KytyPlus/src/libs/bc5LleAgc.cpp:734:15: warning: unused variable 'take' [-Wunused-variable]
+  734 |                 auto        take = [&items](const char* name) {
+      |                             ^~~~
+/home/kjaniszewski/src/KytyPlus/src/libs/bc5LleAgc.cpp:1216:18: warning: format specifies type 'unsigned long' but the argument has type 'unsigned long long' [-Wformat]
+ 1214 |         Direct::journal("soft-cp wait: t %.3f s WAIT_REG_MEM%s on 0x%" PRIx64 " %s after %.1f ms (bound %" PRIu64 " ms): fn %u ref 0x%" PRIx64 " value 0x%" PRIx64 "; %s %u dwords at %p, packet at %p (offset %lld); marks %s\n",
+      |                                                                                                         ~~~~~~~~~
+ 1215 |                         Direct::timing_now(), is64 ? "64" : "", a, timed_out ? "TIMED OUT" : "satisfied", static_cast<double>(held) / 1e6,
+ 1216 |                         (t_wait_bound_ns != 0 ? t_wait_bound_ns : 2'000'000'000ull) / 1'000'000ull, function, ref, value, t_cur_kind, t_cur_n,
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/kjaniszewski/src/KytyPlus/src/libs/bc5LleAgc.cpp:5631:122: warning: format specifies type 'unsigned long' but the argument has type 'unsigned long long' [-Wformat]
+ 5631 |                                         if ((n_low++ & 0xffu) == 0) journal("scratch: zero page at 0x%" PRIx64 " refused, trying from 0x%" PRIx64 "\n", pa, pa + 0x10000ull);
+      |                                                                                                                                         ~~~~~~~~~           ^~~~~~~~~~~~~~~
+/home/kjaniszewski/src/KytyPlus/src/libs/bc5LleAgc.cpp:6836:78: warning: variable 'lines' set but not used [-Wunused-but-set-variable]
+ 6836 |         static uint64_t                     total = 0, under_view = 0, last_ns = 0, lines = 0;
+      |                                                                                     ^
+/home/kjaniszewski/src/KytyPlus/src/libs/bc5LleAgc.cpp:315:15: warning: unused variable 'OK' [-Wunused-const-variable]
+  315 | constexpr int OK = 0;
+      |               ^~
+/home/kjaniszewski/src/KytyPlus/src/libs/bc5LleAgc.cpp:589:20: warning: unused variable 'IT_DMA_DATA' [-Wunused-const-variable]
+  589 | constexpr uint32_t IT_DMA_DATA             = 0x50;
+      |                    ^~~~~~~~~~~
+/home/kjaniszewski/src/KytyPlus/src/libs/bc5LleAgc.cpp:5983:15: warning: unused function 'forget_step' [-Wunused-function]
+ 5983 | static size_t forget_step(std::set<uint64_t>& forced, const Ranges& cov, std::map<uint64_t, uint64_t>& since, uint64_t now, uint64_t idle_ns, uint64_t chunk) {
+      |               ^~~~~~~~~~~
+8 warnings generated.
+[2/3] Linking CXX executable src/kyty_emulator

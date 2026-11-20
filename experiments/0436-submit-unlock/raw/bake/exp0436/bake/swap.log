@@ -1,0 +1,31 @@
+run-swap0436 05:53:00: boot f813bbc0
+chain lock: exp 0417 | chain: exp 0436: shared swap, the submit unlock built in (no switch), patch 8986853b -> bb04219b; archive, normal and lean rebuilt (CPU only, no emulator), until about 06:53 | token 202611200553012756030 | 2026-11-20 05:53:01
+before: PIN_OLD=8986853b CPP=52f74d0e HPP=24988c4e NORMAL=99f2a567 LEAN=82720cca ARCH=51db2c91 
+the patch: 8986853b -> bb04219b, files 135 -> 135, exp 0372 lines 5, pad_audio_route header in
+backend source: direct.cpp 52f74d0e -> eacf8d2a, direct.hpp 24988c4e -> 9256f3b9
+== 05:53:05 build the backend archive
+archive: 51db2c91 -> d6638808, warnings 0; steps 2
+== 05:53:13 build normal
+normal: f345db74, warnings 7; steps 3
+== 05:54:00 build lean
+lean: 6a735b81, warnings 8; steps 3
+normal words: +[] -[]
+lean words: +[] -[]
+swap0436 done 05:54:44: patch bb04219b, archive d6638808, normal f345db74, lean 6a735b81; undo: bash /var/home/kjaniszewski/bc5-work/exp0436/bake/undo0436.sh (to 8986853b; further back: exp 0434's undo0434.sh)
+chain lock released
+chain lock: exp 0417 | chain: exp 0436: smoke of the submit-unlock swap: ASTRO BOT lean 200 s + the second title lean 300 s + ASTRO BOT normal 200 s, until about 06:14 | token 202611200554452759006 | 2026-11-20 05:54:45
+binaries: lean 6a735b81, normal f345db74; kernel 7.3.3-ogc1.1.fc45.x86_64; boot f813bbc0
+s436sc: s436sc (astro) PASS: ran 200 s; RssAnon at the end 227852 kB; kernel lines 0, crash lines 0; real pad keys 0
+s436sc: exe [pid 2759342 exe /home/kjaniszewski/bc5-work/kytyplus-build-lean/src/kyty_emulator md5 6a735b811889e2a5181356f486488e43]
+s436su (lean) PASS: ran 300 s; RssAnon at the end 103316 kB; kernel lines 0, crash lines 0; real pad keys 0; key lines done 33 of 33
+s436su: exe [pid 2800251 exe /home/kjaniszewski/bc5-work/kytyplus-build-lean/src/kyty_emulator md5 6a735b811889e2a5181356f486488e43]
+s436sn: s436sn (astro) PASS: ran 200 s; RssAnon at the end 234892 kB; kernel lines 0, crash lines 0; real pad keys 0
+s436sn: exe [pid 2874651 exe /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator md5 f345db74ba8485c6984e84710553d5e0]
+s436sn: su436 lines 1; last: [bc5] exp 0436 (tag su436): 1 kernel submits made outside the device mutex so far
+s436sc engines at 150 s: drm-engine-compute:	155357849257 ns drm-engine-compute:	155357889960 ns drm-engine-gfx:	107800663461 ns drm-engine-gfx:	107800717439 ns drm-engine-gfx:	7376568616 ns gtt-used-MiB 7203 of 13312; MemAvailable-MiB 4190 
+s436su engines at 150 s: drm-engine-compute:	33010779197 ns drm-engine-compute:	33010806350 ns drm-engine-gfx:	2558105041 ns drm-engine-gfx:	69324985791 ns drm-engine-gfx:	69325020494 ns gtt-used-MiB 12273 of 13312; MemAvailable-MiB 993 
+s436sn engines at 150 s: drm-engine-compute:	149883830053 ns drm-engine-gfx:	105233630461 ns drm-engine-gfx:	7279453569 ns gtt-used-MiB 7204 of 13312; MemAvailable-MiB 3978 
+smoke0436: ALL PASS
+smoke0436 ended 06:07:10
+chain lock released
+run-swap0436 06:07:10: smoke exit 0

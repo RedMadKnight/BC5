@@ -1,0 +1,19 @@
+Panic#1 Part5
+<3>[81305.706663] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+<3>[81305.706664] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x7
+<3>[81305.706666] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+<3>[81305.706667] amdgpu 0000:01:00.0: 	 RW: 0x1
+<3>[81305.706671] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:56 vmid:7 pasid:163)
+<3>[81305.706673] amdgpu 0000:01:00.0:  Process kyty_emulator.l pid 862424 thread DrawThread pid 862475
+<3>[81305.706675] amdgpu 0000:01:00.0:   in page starting at address 0x0000000314cb6000 from client 0x1b (UTCL2)
+<3>[81305.706680] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:56 vmid:7 pasid:163)
+<3>[81305.706682] amdgpu 0000:01:00.0:  Process kyty_emulator.l pid 862424 thread DrawThread pid 862475
+<3>[81305.706683] amdgpu 0000:01:00.0:   in page starting at address 0x0000000314cb6000 from client 0x1b (UTCL2)
+<3>[81305.706687] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:56 vmid:7 pasid:163)
+<3>[81305.706689] amdgpu 0000:01:00.0:  Process kyty_emulator.l pid 862424 thread DrawThread pid 862475
+<3>[81305.706691] amdgpu 0000:01:00.0:   in page starting at address 0x0000000314cb6000 from client 0x1b (UTCL2)
+<3>[81305.706694] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:56 vmid:7 pasid:163)
+<3>[81305.706696] amdgpu 0000:01:00.0:  Process kyty_emulator.l pid 862424 thread DrawThread pid 862475
+<3>[81305.706698] amdgpu 0000:01:00.0:   in page starting at address 0x0000000314cb6000 from client 0x1b (UTCL2)
+<3>[81305.706701] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:56 vmid:7 pasid:163)
+<3>[81305.706703] amdgpu 0000:01:00.0:  Process kyty_emulator.l pid 862424 thread DrawThread pid 862475

@@ -10,6 +10,7 @@
 #include "bc5/state_stack.hpp"
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <span>
 #include <string>
@@ -161,6 +162,16 @@ public:
     // the state-stack emulation. Its scratch slots are its own (Device::set_async).
     SubmitResult submit(std::span<const std::uint32_t> ib, const policy::FilterOptions &opt,
                         std::uint64_t timeout_ns, bool with_gds = true, int ring = kGfxRing);
+    // Experiment 0436 (tag su436): submit() whose kernel call runs without the backend's lock, in async mode only.
+    // The job is prepared under the lock; then the lock is released, before_call() runs (the host releases its own
+    // device lock there), the CS ioctl runs, and the bookkeeping (slot, last job of the ring, the host-indirect
+    // register, the DMA snapshot spans) takes the lock again. The caller keeps the jobs of one ring in order itself
+    // (a lock per ring held across the call). A mapping removal (unmap_userptr, unmap_shared, unmap_aliases,
+    // free_shared) waits until no job is between its prepare and its kernel call's return, so a prepared job's
+    // mappings are still there when the kernel takes it; a kept BO list in use by such a job is destroyed by its last
+    // user. In sync mode before_call is never called and this is submit().
+    SubmitResult submit(std::span<const std::uint32_t> ib, const policy::FilterOptions &opt,
+                        std::uint64_t timeout_ns, bool with_gds, int ring, const std::function<void()> &before_call);
 
     bool wedged() const { return wedged_; }
     // Experiment 0024: submit() returns once the kernel has queued the job, so that the host
@@ -220,6 +231,9 @@ public:
 
 private:
     Device() = default;
+    SubmitResult submit_impl(std::span<const std::uint32_t> ib, const policy::FilterOptions &opt,
+                             std::uint64_t timeout_ns, bool with_gds, int ring,
+                             const std::function<void()> *before_call); // exp 0436 (tag su436)
     struct Impl;
     std::unique_ptr<Impl> impl_;
     bool wedged_ = false;

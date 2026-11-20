@@ -1,0 +1,20 @@
+Panic#1 Part7
+<12>[80913.951255] bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+<6>[80915.978833] amdgpu 0000:01:00.0: Dumping IP State
+<6>[80915.981023] amdgpu 0000:01:00.0: Dumping IP State Completed
+<6>[80915.981055] amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+<6>[80915.981059] amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+<3>[80915.981063] amdgpu 0000:01:00.0: ring comp_1.1.1 timeout, signaled seq=212047, emitted seq=212050
+<3>[80915.981067] amdgpu 0000:01:00.0:  Process kyty_emulator pid 830823 thread bc5-ring pid 830856
+<3>[80915.981071] amdgpu 0000:01:00.0: Starting comp_1.1.1 ring reset
+<3>[80915.981125] amdgpu 0000:01:00.0: Ring comp_1.1.1 reset succeeded
+<6>[80915.981129] amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+<12>[80915.985234] bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring comp_1.1.1 timeout, signaled seq=212047, emitted seq=212050
+<12>[80915.990587] bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring comp_1.1.1 reset succeeded
+<6>[80918.026844] amdgpu 0000:01:00.0: Dumping IP State
+<6>[80918.029027] amdgpu 0000:01:00.0: Dumping IP State Completed
+<6>[80918.029042] amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+<6>[80918.029046] amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+<3>[80918.029050] amdgpu 0000:01:00.0: ring comp_1.1.1 timeout, signaled seq=212051, emitted seq=212054
+<3>[80918.029054] amdgpu 0000:01:00.0:  Process kyty_emulator pid 830823 thread bc5-ring pid 830856
+<3>[80918.029059] amdgpu 0000:01:00.0: Starting comp_1.1.1 ring reset

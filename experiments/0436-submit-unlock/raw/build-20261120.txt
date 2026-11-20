@@ -1,0 +1,15 @@
+claimed: exp 0436 | token 17951314411743891 | build (CPU only, nice 19), until 01:17 | 2026-11-20 00:37:21
+9256f3b96dc979db4a6471c7e4a1e410  ./backend/include/bc5/direct.hpp
+eacf8d2a11de31eb43c3dba1560c798e  ./backend/src/direct.cpp
+9256f3b96dc979db4a6471c7e4a1e410  ./kyty/src/bc5/direct.hpp
+57ce0f37219cdfd81d1b706408275456  ./kyty/src/libs/bc5LleAgc.cpp
+reference: direct.cpp.o of 52f74d0e compiled here == the shared archive's member (1b9304e7)
+backend: errors 0; warnings 0
+normal: build rc 0; errors 0; warnings 7
+normal: d55e4cbd; 'tag su436' 2; BC5_DIRECT_SUBMIT_UNLOCK 2
+lean: build rc 0; errors 0; warnings 8
+lean: bbebc371; 'tag su436' 1; BC5_DIRECT_SUBMIT_UNLOCK 2
+private normal d55e4cbd, lean bbebc371, backend archive d6638808
+shared normal 99f2a567, lean 82720cca, archive 51db2c91, tree unit 6f4bf71a: unchanged
+lock released
+build rc 0

@@ -1,0 +1,18 @@
+Panic#1 Part8
+<3>[80911.924515] amdgpu 0000:01:00.0:   in page starting at address 0x0000000314cb6000 from client 0x1b (UTCL2)
+<3>[80911.924519] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:56 vmid:6 pasid:148)
+<3>[80911.924521] amdgpu 0000:01:00.0:  Process kyty_emulator pid 830823 thread DrawThread pid 830878
+<3>[80911.924522] amdgpu 0000:01:00.0:   in page starting at address 0x0000000314cb6000 from client 0x1b (UTCL2)
+<3>[80911.924526] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:56 vmid:6 pasid:148)
+<3>[80911.924528] amdgpu 0000:01:00.0:  Process kyty_emulator pid 830823 thread DrawThread pid 830878
+<3>[80911.924529] amdgpu 0000:01:00.0:   in page starting at address 0x0000000314cb6000 from client 0x1b (UTCL2)
+<6>[80913.931826] amdgpu 0000:01:00.0: Dumping IP State
+<6>[80913.933947] amdgpu 0000:01:00.0: Dumping IP State Completed
+<6>[80913.933983] amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+<6>[80913.933985] amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+<3>[80913.933989] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=20135146, emitted seq=20135147
+<3>[80913.933991] amdgpu 0000:01:00.0:  Process kyty_emulator pid 830823 thread bc5-ring pid 830856
+<3>[80913.933993] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+<3>[80913.935674] amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+<6>[80913.935682] amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+<12>[80913.941538] bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=20135146, emitted seq=20135147

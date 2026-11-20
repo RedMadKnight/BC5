@@ -1,0 +1,7 @@
+chain0436 00:40:33: mode scene, play 300 s, order S C S C S C; shared 99f2a567, candidate d55e4cbd; runner 2d11fd6b; kernel 7.3.3-ogc1.1.fc45.x86_64; boot 40a8312e
+chain0436 00:40:33: GPU timeout/reset lines since boot at the chain's start: 50 (the baseline; the route runner refuses on any other count)
+chain0436 00:40:33: run u436sS1, arm S, 99f2a567
+chain0436 00:47:50: u436sS1: NO_CRASH; 31.13 flips/s over 294 s from G+10, 229 s with a gap over 50 ms, 75 over 100 ms; pad keys 0
+chain0436 00:48:10: run u436sC2, arm C, d55e4cbd
+chain0436 00:55:26: u436sC2: NO_CRASH; 34.40 flips/s over 293 s from G+10, 214 s with a gap over 50 ms, 67 over 100 ms; pad keys 0
+chain0436 00:55:46: run u436sS3, arm S, 99f2a567

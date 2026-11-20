@@ -1,0 +1,14 @@
+2026-11-20 01:17:42
+arm u436sS6 (h), cap 560 s, play 300 s, binary /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator md5 99f2a56797cb9ddeb57f5d083cd86dc9, launcher e1e1ea4d, fuse 0
+the arm's words: BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 BC5_0412N_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0432/n/input-u436sS6.cfg 
+extra: BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_INDIRECT=1 BC5_DIRECT_ACB_STATE_NO_WALK=1 BC5_DIRECT_ACB_SPLIT_LATE=3 BC5_DIRECT_TIMEOUT_PROBE=1
+boot f813bbc0, up since 2026-11-20 00:59:30
+MemAvailable:   13997332 kB SwapTotal:       7778300 kB SwapFree:        7366280 kB 
+emulator pid 241117 exe /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0432/n/wd
+route: cross (start screen) at 87 s
+route: the save-slot list runs; down x 3, cross (slot 4) at 93 s
+route: cross (Continue) at 99 s
+route: the load seen at 101 s
+route: gameplay G = 118 s (the load at 101 s)
+route: no input after the load (N_NOWALK=1), 300 s from 118 s
+launcher gone: yes; launcher exit 0
