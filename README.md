@@ -120,6 +120,7 @@ Since 2026-11-13 the builds set their own defaults in code (F827), so a launcher
 | Pad rumble off the game's threads, DualShock 4 (since 2026-10-24) | The rumble write runs on its own thread, so the game's audio thread never waits on the pad; with a DualShock 4 (no audio device) the pad-speaker sound plays on the TV without holding that thread, which had held it 1.1 s in two seconds; a replugged pad opened as a raw joystick still rumbles | F326, F328, F329 |
 | DualSense haptics, second title (since 2026-10-23) | Its ATRAC9 streams in channel configurations 6 and 7 are the pad's haptic tracks, decoded with vgmstream's decoder instead of played as silence; confirmed at the pad | F300, F301 |
 | APR read-ahead (since 2026-10-22, fixed 2026-10-23) | Streamed reads come back sooner: the cutscene read queue's 95th percentile from 3.4 s to 0.42 s; its reader threads sleep when idle (7–11 ms of CPU per 10 s instead of 160–208); large buffers and parallel runs stay with the queue's workers | F273, F281, F287, F288 |
+| Kernel submit outside the device mutex (exp 0436, built in since 2026-11-20 05:54) | The GPU submission ioctl runs without holding the host's device lock, so other guest threads keep working meanwhile; the order per ring is kept by a lock per ring. +9 % frame rate on the second title's scripted route, fewer stalls. No switch | F864 |
 | Shader write targets made writable, ASTRO BOT (exp 0434, built in since 2026-11-19 15:27) | A buffer that a shader writes, named in its user data, is mapped writable before the submit even when the game's CPU never touched it, as on the console. Fixes the GPU fault on entering Bathhouse Battle. No switch | F862 |
 | Per-game Settings and window mode (exp 0435, since 2026-11-19 15:27) | Each game keeps its own Settings and remembers whether it last ran fullscreen or windowed, under `~/bc5-work/menu/titles/<TITLE_ID>/`; the first start copies the shared settings | F863 |
 | Port pack 1 from related emulators (exp 0433, built in since 2026-11-19 12:26) | 14 fixes ported from KytyPS5 and AnyPS5: event queues wake every waiter, condvars and semaphores without a global registry or use-after-free, per-thread pthread keys, no per-page protection map, larger alternate signal stacks, APR/AMPR ids and results in the right order, unbuffered host files, the AJM gapless sideband, the AMPR event filter, and about 20 host exits turned into the error codes a console returns. No measurable cost in 12 fight runs. No switch | F861 |
@@ -130,7 +131,7 @@ Since 2026-11-13 the builds set their own defaults in code (F827), so a launcher
 | Audio grain model and display-event coalescing | The second title's sound and timeline at real speed (1.00× for 10 minutes), no 30-fps cap needed | F246, F247 |
 | Tessellation-factor ring, second title | The night scene's tessellated draws are drawn; the geometry engine's reads at address 0 are gone | F248 |
 
-**The research so far:** 753 finding rows (F1–F863; the numbering has gaps) in `docs/HANDOFF.md`, experiment directories 0001–0435 in `experiments/`, 14 architecture decision records in `docs/decisions/`.
+**The research so far:** 755 finding rows (F1–F865; the numbering has gaps) in `docs/HANDOFF.md`, experiment directories 0001–0436 in `experiments/`, 14 architecture decision records in `docs/decisions/`.
 
 ### Known issues
 
