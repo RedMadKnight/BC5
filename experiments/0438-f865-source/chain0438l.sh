@@ -7,6 +7,7 @@
 # (N_LEANSESS), the ubuntu distrobox. Arms (the binary and BC5_0438_EARLYREG, nothing else differs):
 #   L0  lean b438, EARLYREG=0 (control)
 #   L1p lean b438, EARLYREG=1 PLWCV=0 (r438 with its 20-us poll)   L1c lean b438, EARLYREG=1 PLWCV=1 (r438, condition variable)
+#   LP  lean b438, EARLYREG=1 PLWCV=1 PROLMERGE=1 (L1c + p438's prologue merge); every other arm has PROLMERGE=0
 #   N0  normal b438, EARLYREG=0, the usual journal words (the diagnostics' own cost against L0)
 #   O   normal b438 with BC5_0438_OUTSIDE=1 (the records item, if built; never pooled with the lean comparison)
 # Per run: the binary that ran (R66), pad keys (R51), flips/s and gap seconds from MangoHud's per-second lines from
@@ -15,7 +16,7 @@
 # BOX-LOCK that is not ours, an emulator that is not ours, GPU lines grown, ~/bc5-work/exp0438/STOP. Gate: the first L0's
 # flips/s >= 33.3. Each run takes and frees its own BOX-LOCK line (the runner).
 # usage (on the box, under the user manager, from ~/bc5-work/exp0438/kit):
-#   ORDER="L0 L1p L1c L0 L1p L1c L0 L1p L1c N0 O O" K0=<last run number> bash chain0438l.sh
+#   ORDER="L0 L1p L1c LP L0 L1p L1c LP L0 L1p L1c LP N0 O O" K0=<last run number> bash chain0438l.sh
 set -u
 ulimit -c 0
 export LC_ALL=C
@@ -47,12 +48,13 @@ say "GPU timeout/reset lines since boot at the chain's start: $R0438_BASE"
 for arm in $ORDER; do
   k=$((k + 1))
   case "$arm" in
-    L0) bin=$LB; want=$LW; AW="BC5_0438_EARLYREG=0" ;;
-    L1p) bin=$LB; want=$LW; AW="BC5_0438_EARLYREG=1 BC5_0438_PLWCV=0" ;;
-    L1c) bin=$LB; want=$LW; AW="BC5_0438_EARLYREG=1 BC5_0438_PLWCV=1" ;;
-    N0) bin=$NB; want=$NW; AW="BC5_0438_EARLYREG=0" ;;
-    O)  bin=$NB; want=$NW; AW="BC5_0438_EARLYREG=0 BC5_0438_OUTSIDE=1" ;;
-    *) say "arm $arm: L0, L1p, L1c, N0 or O"; break ;;
+    L0) bin=$LB; want=$LW; AW="BC5_0438_EARLYREG=0 BC5_0438_PROLMERGE=0" ;;
+    L1p) bin=$LB; want=$LW; AW="BC5_0438_EARLYREG=1 BC5_0438_PLWCV=0 BC5_0438_PROLMERGE=0" ;;
+    L1c) bin=$LB; want=$LW; AW="BC5_0438_EARLYREG=1 BC5_0438_PLWCV=1 BC5_0438_PROLMERGE=0" ;;
+    LP) bin=$LB; want=$LW; AW="BC5_0438_EARLYREG=1 BC5_0438_PLWCV=1 BC5_0438_PROLMERGE=1" ;;
+    N0) bin=$NB; want=$NW; AW="BC5_0438_EARLYREG=0 BC5_0438_PROLMERGE=0" ;;
+    O)  bin=$NB; want=$NW; AW="BC5_0438_EARLYREG=0 BC5_0438_PROLMERGE=0 BC5_0438_OUTSIDE=1" ;;
+    *) say "arm $arm: L0, L1p, L1c, LP, N0 or O"; break ;;
   esac
   t=b438$arm$k; while [ -e "$RAW/$t-start.txt" ] || [ -e "$RAW/$t-end.txt" ]; do t=${t}b; done
   [ -e "$E/STOP" ] && { say "STOP file before $t"; break; }
@@ -78,7 +80,7 @@ for arm in $ORDER; do
   if [ "$arm" = N0 ] || [ "$arm" = O ]; then
     PD=$(ls -dt "$HOME"/bc5-data/captures/play-*/ 2> /dev/null | head -1); DL=${PD}gc/direct.log
     if [ -n "$PD" ] && [ -f "$DL" ] && [ "$DL" -nt "$E/raw/$t-t0" ]; then
-      SU="$SU; log $DL; GIVEN UP $(grep -ac 'GIVEN UP' "$DL"); r438 [$(grep -a '^r438 (exp 0438, b438): t ' "$DL" | tail -1 | cut -c1-500)], r438 BUG lines $(grep -ac '^r438 (exp 0438, b438): BUG' "$DL"); o438 lines $(grep -ac '^o438 (exp 0438)' "$RAW/$t-play.log" 2> /dev/null)"
+      SU="$SU; log $DL; GIVEN UP $(grep -ac 'GIVEN UP' "$DL"); r438 [$(grep -a '^r438 (exp 0438, b438): t ' "$DL" | tail -1 | cut -c1-500)], r438 BUG lines $(grep -ac '^r438 (exp 0438, b438): BUG' "$DL"); p438 [$(grep -a '^p438 (exp 0438): t ' "$DL" | tail -1 | cut -c1-300)]; o438 lines $(grep -ac '^o438 (exp 0438)' "$RAW/$t-play.log" 2> /dev/null)"
     else SU="$SU; no direct.log of this run found"; fi
   fi
   echo "$t $arm [$AW] ${CLASS:-NONE} | $FPS | exe [$EXE] | pad keys $PADN | [$SU] | $(printf '%s\n' "$line" | cut -c1-300)" >> "$OUT"

@@ -27,7 +27,7 @@ K_R438=94d696fbfe6cca223346ba255338a0f0  # r438.cpp: mkr438.py on cat/bc5LleAgc.
 K_U438=78f319da0beee7c0bbb7f6b582470a2e  # u438.cpp: mkr438 -> mkc438d -> mku438 on cat/bc5LleAgc.cpp
 K_S438=a56293942679688016778eef88c704c1  # s438.cpp: mks438 on u438.cpp (s438 + i438)
 K_E438=3fe3a79a459cb1ea60a7d27ff92f8c14  # e438.cpp: mks438y -> mke438 on s438.cpp (e438 + y438 + i438)
-K_B438=9035b9defc7a923f656527c65821bb87  # b438.cpp: mkb438.py on a62e8bf6 (r438 alone, mode 1, PLWCV, lean counter)
+K_B438=a31a2091ddeed206db7daec79771e932  # b438.cpp: mkb438.py on a62e8bf6 (r438 alone, mode 1, PLWCV, lean counter, p438 prologue merge)
 K_MKO=0f7c54a6ae519149bcee7fa6f761eef2; K_O438H=bace03013bfc35c761bf560b5bca9cf6  # mko438.py, o438.hpp
 O438_UNITS="src/kernel/semaphore.cpp src/kernel/eventFlag.cpp src/kernel/pthread.cpp src/kernel/eventQueue.cpp src/libs/libKernel.cpp src/graphics/presentation/videoOut.cpp"
 K_F438=346ebf6efa736bdbc5bf054901f40253  # f438.cpp: mkf438 on e438.cpp (build 12: the mapping index updated in place)
@@ -278,10 +278,11 @@ buildb() {
         [ "$rc" = 0 ] && [ -x "$bin" ] || stop "build $v failed: $R/build-b438-$v.out"
         m "$bin" > "$C/$v/binary.md5"; strings "$bin" > "$C/$v/strings.txt"
         echo "b438 $v: $(cut -c1-8 "$C/$v/binary.md5"); BC5_0438_EARLYREG $(grep -c BC5_0438_EARLYREG "$C/$v/strings.txt"); BC5_0438_PLWCV $(grep -c BC5_0438_PLWCV "$C/$v/strings.txt"); r438 lines $(grep -c 'r438 (exp 0438, b438)' "$C/$v/strings.txt"); o438 $(grep -c 'BC5_0438_OUTSIDE' "$C/$v/strings.txt")"
-        grep -q 'BC5_0438_EARLYREG' "$C/$v/strings.txt" && grep -q 'BC5_0438_PLWCV' "$C/$v/strings.txt" || stop "r438's switches are not in $v"
+        grep -q 'BC5_0438_EARLYREG' "$C/$v/strings.txt" && grep -q 'BC5_0438_PLWCV' "$C/$v/strings.txt" && grep -q 'BC5_0438_PROLMERGE' "$C/$v/strings.txt" || stop "r438's or p438's switches are not in $v"
     done
     grep -q 'r438 (exp 0438, b438): t ' "$C/lean/strings.txt" && stop "lean holds r438's journal lines (BC5_LEAN not applied)"
     grep -q 'BC5_0438_OUTSIDE' "$C/lean/strings.txt" && stop "lean holds o438"
+    grep -q 'p438 (exp 0438): t ' "$C/lean/strings.txt" && stop "lean holds p438's journal line"
     grep -q 'BC5_0438_OUTSIDE' "$C/normal/strings.txt" || stop "o438 is not in the normal build"
     grep -q 'b438, lean' "$C/lean/strings.txt" || stop "lean's lost-write counter is not in the lean build"
     [ "$sn" = "$(m "$W/kytyplus-build/src/kyty_emulator")" ] && [ "$sl" = "$(m "$W/kytyplus-build-lean/src/kyty_emulator")" ] && [ "$sa" = "$(m "$SA")" ] && [ "$(m "$TREE/$UNIT")" = "$P_UNIT" ] || stop "a shared file changed"

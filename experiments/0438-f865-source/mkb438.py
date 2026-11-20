@@ -16,6 +16,13 @@ job registers its writes and at the slice's end; "0" keeps r438's 20-us poll, wh
 and held the registering thread off (test_b438 case 6).
 Lean: early writes that never reached the ring are counted; the first one prints one stderr line, and the total is
 printed at a normal exit (a SIGTERM ends the process without it: the tree installs no handler).
+p438 (BC5_0438_PROLMERGE, on unless "0", lean reads it; the maintainer's word of 2026-11-20): the submit header's
+prologue (0xc0488131: context control + 3 header IBs) is not submitted alone. Its packets are copied to a stable slot
+and submitted at the head of the next 0xc0188132's chain (one kernel submit fewer; same packets, order and ring).
+Flushed alone first, as today, before any other gc submit (0xc0108102, 0xc020810c), at "submit done" / "wait idle", and
+at the EOP flip. Submitted alone at once, as today, when one of its header IBs writes memory or nests an IB (a CPU waiter
+could need it before the next submit), when 8 are pending, or with the acb rings off (w428_rings() == 0: acbs share the
+GFX ring). Records (normal): merged, alone by reason, every 60 s.
 Normal build only (#ifndef BC5_LEAN): the counters, the BUG lines (a lost early write; a game-thread wait at 100 ms,
 200 ms, ...; the wait goes on) and a 60-s line "r438 (exp 0438, b438)". Lean keeps the registration, the poll and the
 removal of a lost write's early entry, with no counter and no line.
@@ -289,6 +296,146 @@ rep('''			Direct::chain_begin(); // ADR 0010: the slice's buffers as one submiss
 			}
 			Direct::chain_end();
 			Direct::r438_end(); // exp 0438 (b438): every early write must have reached the ring''')
+
+# 7. p438: the prologue merge (definitions before gc_ioctl; the hooks in its cases and at the EOP flip)
+rep('''// Returns 0 on success or a positive errno (the libkernel wrapper turns it into -1/errno).
+static int gc_ioctl(uint64_t request, void* argp) {''', '''// BC5 experiment 0438 (tag p438): the prologue merge (BC5_0438_PROLMERGE, on unless "0").
+namespace p438 {
+struct Prol {
+	uint32_t cc[3];
+	uint32_t cmds[12];
+};
+inline std::mutex      g_m;
+inline Prol            g_slots[64]; // stable storage: the soft CP may still read a submitted prologue's dwords later
+inline uint32_t        g_next = 0;
+inline std::vector<int> g_pending;  // slot indices, in call order
+enum : int { kMerged, kAloneOther, kAloneIdle, kAloneFlip, kAloneWrites, kAloneMany, kAloneNoRings, kN };
+#ifndef BC5_LEAN
+inline std::atomic<uint64_t> g_n[kN] = {};
+#endif
+inline bool on() {
+	static const bool v = [] {
+		const char* e = std::getenv("BC5_0438_PROLMERGE");
+		return !(e != nullptr && e[0] == '0' && e[1] == 0);
+	}();
+	return v;
+}
+inline void count(int k, uint64_t n = 1) {
+#ifndef BC5_LEAN
+	g_n[k] += n;
+	static std::atomic<uint64_t> last {0};
+	const uint64_t               t = SoftCp::now_ns();
+	uint64_t                     l = last.load();
+	if (l == 0) last = t;
+	else if (t - l > 60'000'000'000ull && last.compare_exchange_strong(l, t))
+		Direct::journal("p438 (exp 0438): t %.1f s: prologues merged %" PRIu64 "; alone: before another submit %" PRIu64 ", at done/idle %" PRIu64 ", at the flip %" PRIu64 ", writes memory or nests %" PRIu64 ", 8 pending %" PRIu64 ", acb rings off %" PRIu64 "NL",
+		                Direct::timing_now(), g_n[kMerged].load(), g_n[kAloneOther].load(), g_n[kAloneIdle].load(), g_n[kAloneFlip].load(), g_n[kAloneWrites].load(), g_n[kAloneMany].load(), g_n[kAloneNoRings].load());
+#else
+	(void)k;
+	(void)n;
+#endif
+}
+// a header IB that writes memory (RELEASE_MEM, EVENT_WRITE_EOP, WRITE_DATA, DMA_DATA) or nests an IB
+inline bool writes(const uint32_t* pkt) {
+	if (pkt[0] == 0) return false;
+	const auto*    ib = reinterpret_cast<const uint32_t*>((static_cast<uint64_t>(pkt[2]) << 32u) | pkt[1]);
+	const uint32_t n  = pkt[3] & 0xfffffu;
+	for (uint32_t q = 0; q < n;) {
+		const uint32_t h   = ib[q];
+		uint32_t       len = 1;
+		if ((h >> 30u) == 3 || (h >> 30u) == 0) {
+			const uint32_t c = (h >> 16u) & 0x3fffu;
+			len              = c == 0x3fffu ? 1 : c + 2;
+		}
+		if ((h >> 30u) == 3) {
+			const uint32_t op = (h >> 8u) & 0xffu;
+			if (op == 0x49 || op == 0x47 || op == 0x37 || op == 0x50 || op == 0x3f || op == 0x33) return true;
+		}
+		q += len;
+	}
+	return false;
+}
+} // namespace p438
+static void p438_submit(const p438::Prol& p) { // today's header submission, packet for packet
+	submit_raw(p.cc, 3, "cc");
+	for (int i = 0; i < 3; i++) submit_ib_packet(p.cmds + i * 4, "hib");
+}
+// the pending prologues, each as today's own submission, before whatever comes next
+static void p438_flush_alone(int why) {
+	std::vector<int> take;
+	{
+		std::lock_guard lk(p438::g_m);
+		take.swap(p438::g_pending);
+	}
+	for (const int i: take) {
+		Direct::chain_begin();
+		p438_submit(p438::g_slots[i]);
+		Direct::chain_end();
+		soft_posts_end();
+	}
+	if (!take.empty()) p438::count(why, take.size());
+}
+// 0xc0488131: true when the prologue was kept for the next 0xc0188132
+static bool p438_defer(const uint32_t* cc, const uint32_t* cmds) {
+	if (!p438::on()) return false;
+	int why = -1;
+	if (Direct::w428_rings() == 0) why = p438::kAloneNoRings;
+	for (int i = 0; why < 0 && i < 3; i++)
+		if (p438::writes(cmds + i * 4)) why = p438::kAloneWrites;
+	if (why < 0) {
+		std::lock_guard lk(p438::g_m);
+		if (p438::g_pending.size() < 8) {
+			const int k = static_cast<int>(p438::g_next++ % 64);
+			std::memcpy(p438::g_slots[k].cc, cc, sizeof(p438::g_slots[k].cc));
+			std::memcpy(p438::g_slots[k].cmds, cmds, sizeof(p438::g_slots[k].cmds));
+			p438::g_pending.push_back(k);
+			return true;
+		}
+		why = p438::kAloneMany;
+	}
+	p438_flush_alone(why); // the earlier ones first, as today's order
+	p438::count(why);
+	return false;
+}
+// 0xc0188132, inside its chain, before its DCBs
+static void p438_take_into_chain() {
+	std::vector<int> take;
+	{
+		std::lock_guard lk(p438::g_m);
+		take.swap(p438::g_pending);
+	}
+	for (const int i: take) p438_submit(p438::g_slots[i]);
+	if (!take.empty()) p438::count(p438::kMerged, take.size());
+}
+
+// Returns 0 on success or a positive errno (the libkernel wrapper turns it into -1/errno).
+static int gc_ioctl(uint64_t request, void* argp) {'''.replace('NL', chr(92) + 'n'))
+rep('''			Direct::chain_begin(); // ADR 0010: the header's buffers as one submission
+			submit_raw(a->context_control, 3, "cc");''', '''			if (p438_defer(a->context_control, a->cmds)) { // exp 0438 (p438): kept for the next submit list's chain
+				a->status = 0;
+				return 0;
+			}
+			Direct::chain_begin(); // ADR 0010: the header's buffers as one submission
+			submit_raw(a->context_control, 3, "cc");''')
+rep('''			Direct::chain_begin(); // ADR 0010
+			for (uint32_t i = 0; i < a->count / 2; i++) {''', '''			Direct::chain_begin(); // ADR 0010
+			p438_take_into_chain(); // exp 0438 (p438): the pending prologues at the head of this chain
+			for (uint32_t i = 0; i < a->count / 2; i++) {''')
+rep('''		case 0xc0108102: { // submit: count x IB packet
+''', '''		case 0xc0108102: { // submit: count x IB packet
+			p438_flush_alone(p438::kAloneOther); // exp 0438 (p438)
+''')
+rep('''		case 0xc020810c: { // submit and write eop
+''', '''		case 0xc020810c: { // submit and write eop
+			p438_flush_alone(p438::kAloneOther); // exp 0438 (p438)
+''')
+rep('''		case 0xc0048117: { // wait idle
+''', '''		case 0xc0048117: { // wait idle
+			p438_flush_alone(p438::kAloneIdle); // exp 0438 (p438)
+''')
+rep('''	if (!defer) Bc5Gc::Direct::drain(); // nothing of the frame may still be in flight''',
+    '''	Bc5Gc::p438_flush_alone(Bc5Gc::p438::kAloneFlip); // exp 0438 (p438): a pending prologue goes before the flip, as today
+	if (!defer) Bc5Gc::Direct::drain(); // nothing of the frame may still be in flight''')
 
 out = s.encode('utf-8')
 open(OUT, 'wb', ).write(out)

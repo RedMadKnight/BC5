@@ -1541,6 +1541,49 @@ Units:
 
 Chain order: `L0 L1p L1c` ×3, then `N0`, then `O O` (the records runs, not pooled with the lean comparison).
 
+### p438: the prologue merge (the maintainer's word, 2026-11-20)
+
+**The switch.** `BC5_0438_PROLMERGE` is on unless "0", and lean reads it. It is a behaviour change, in b438 (unit
+`a31a2091ddeed206db7daec79771e932`).
+
+**What it does.**
+- 0xc0488131 no longer submits on its own. Its context-control dwords and 3 header IB packets are copied to one of 64
+  stable slots: the soft CP may still read a submitted prologue's dwords.
+- The next 0xc0188132 submits them at the head of its own chain, ahead of its DCBs: the same buffers, in the same order,
+  on the same ring, in one kernel submit.
+- Two prologues before a submit stay in call order.
+
+**When it is not merged** (each case is today's separate submit):
+- Pending prologues are flushed alone before any other gc submit (0xc0108102, 0xc020810c), at "submit done" and
+  "wait idle", and at the EOP flip.
+- A prologue is submitted alone at once:
+  - when a header IB writes memory or nests an IB (RELEASE_MEM, EVENT_WRITE_EOP, WRITE_DATA, DMA_DATA,
+    INDIRECT_BUFFER): a CPU waiter may need that write before the next submit;
+  - when 8 are pending;
+  - with the acb rings off (`w428_rings() == 0`), since the acbs then share the GFX ring.
+- A device reopen needs nothing: the slots are host copies, submitted later like any buffer.
+- At exit a pending prologue is dropped: the emulator ends anyway.
+
+**Records** (normal only): a 60-s line `p438 (exp 0438)` counting merged prologues, and those sent alone by reason.
+Pending prologues flushed because a writing prologue followed are counted under "writes".
+
+**Test.** `test_p438.sh` cuts p438's block from the unit and models gc_ioctl's cases with the hooks where mkb438.py puts
+them. It runs 400 random scenarios (48,457 steps); every tenth has the acb rings off. It PASSES:
+- the buffers handed over are identical with the merge on and off;
+- with the merge on, submissions are off minus the merged prologues (9,739 merged);
+- no prologue that writes memory is kept (1,204 sent alone);
+- nothing is merged with the rings off.
+
+Two broken copies FAIL:
+- the pending prologues taken in reverse order (354 failures);
+- the check for header IBs that write memory left out (723 failures).
+
+`test_b438.sh` still passes, 7 of 7.
+
+**Chain.** The order is `L0 L1p L1c LP` ×3, then `N0 O O`: 15 runs.
+- LP = `EARLYREG=1 PLWCV=1 PROLMERGE=1`.
+- Every other arm has `PROLMERGE=0`.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
