@@ -1,0 +1,20 @@
+Panic#1 Part9
+<3>[80911.924475] amdgpu 0000:01:00.0:   in page starting at address 0x0000000314cb6000 from client 0x1b (UTCL2)
+<3>[80911.924478] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x006C1071
+<3>[80911.924479] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+<3>[80911.924481] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+<3>[80911.924482] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+<3>[80911.924483] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x7
+<3>[80911.924485] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+<3>[80911.924486] amdgpu 0000:01:00.0: 	 RW: 0x1
+<3>[80911.924490] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:56 vmid:6 pasid:148)
+<3>[80911.924492] amdgpu 0000:01:00.0:  Process kyty_emulator pid 830823 thread DrawThread pid 830878
+<3>[80911.924494] amdgpu 0000:01:00.0:   in page starting at address 0x0000000314cb6000 from client 0x1b (UTCL2)
+<3>[80911.924498] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:56 vmid:6 pasid:148)
+<3>[80911.924500] amdgpu 0000:01:00.0:  Process kyty_emulator pid 830823 thread DrawThread pid 830878
+<3>[80911.924501] amdgpu 0000:01:00.0:   in page starting at address 0x0000000314cb6000 from client 0x1b (UTCL2)
+<3>[80911.924505] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:56 vmid:6 pasid:148)
+<3>[80911.924507] amdgpu 0000:01:00.0:  Process kyty_emulator pid 830823 thread DrawThread pid 830878
+<3>[80911.924509] amdgpu 0000:01:00.0:   in page starting at address 0x0000000314cb6000 from client 0x1b (UTCL2)
+<3>[80911.924512] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:56 vmid:6 pasid:148)
+<3>[80911.924514] amdgpu 0000:01:00.0:  Process kyty_emulator pid 830823 thread DrawThread pid 830878

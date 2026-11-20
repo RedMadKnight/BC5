@@ -26,8 +26,9 @@ WAY2="BC5_DIRECT_ACB_RINGS=4 BC5_DIRECT_ACB_QUEUE_STATE=1 BC5_DIRECT_ACB_MEC_IND
 OUT=$E/chain-rows.txt
 say() { echo "chain0436 $(date +%T): $*"; }
 case "$MODE" in
-  route) RUN=$W/exp0430/run0430f.sh; RAW=$W/exp0430/n/raw; PLAY=${PLAY:-1500}; RENV="N_ARENA=off N_WALK_AFTER=1 N_SLOT=4"; mt=r ;;
-  scene) RUN=$W/exp0432/run0432f.sh; RAW=$W/exp0432/n/raw; PLAY=${PLAY:-300}; SNAP=$HOME/bc5-data/saves/PPSA03671-20261117-0946-play
+  route) RUN=${ROUTE_RUN:-$W/exp0430/run0430f.sh};  # the original on a clean boot; ROUTE_RUN=$HERE/run0430f-0436.sh on a boot with old resets (ruling 2026-11-20)
+  RAW=$W/exp0430/n/raw; PLAY=${PLAY:-1500}; RENV="N_ARENA=off N_WALK_AFTER=1 N_SLOT=4"; mt=r ;;
+  scene) RUN=$W/exp0432/kit/run0432f.sh; RAW=$W/exp0432/n/raw; PLAY=${PLAY:-300}; SNAP=$HOME/bc5-data/saves/PPSA03671-20261117-0946-play
          [ -d "$SNAP/PPSA03671" ] && [ ! -L "$SNAP" ] || { say "NOT STARTED, no $SNAP/PPSA03671"; exit 1; }
          RENV="N_SAVES=$SNAP N_SLOT=4 N_NOWALK=1"; mt=s ;;
   *) say "MODE is route or scene"; exit 1 ;;
@@ -41,12 +42,20 @@ padon() { : > "$E/raw/$1-pad.txt"; local d; for d in /dev/input/by-id/*-event-jo
 padoff() { [ ${#PADS[@]} = 0 ] || kill "${PADS[@]}" 2> /dev/null; PADS=(); }
 trap padoff EXIT
 mkdir -p "$E/raw"
+# exp 0436 (the top session's ruling of 2026-11-20): this boot already has old amdgpu timeout/reset lines (exp 0434's ASTRO
+# faults, 11-19 14:06-14:14) and the box could not be rebooted; their count now is the baseline, the chain stops if it grows.
+gpucount() { sudo -n dmesg 2> /dev/null | grep -E 'amdgpu [0-9a-f]{4}:[0-9a-f]{2}:' | grep -ciE 'ring .* timeout|reset (succeeded|failed)|GPU reset|device wedged'; }
+export R0436_BASE; R0436_BASE=$(gpucount)
+say "GPU timeout/reset lines since boot at the chain's start: $R0436_BASE (the baseline; the route runner refuses on any other count)"
 for arm in ${ORDER:-S C S C S C}; do
   k=$((k + 1))
   case "$arm" in S) bin=$SB; want=$SW ;; C) bin=$CB; want=$CW ;; *) say "arm $arm: S or C"; break ;; esac
   t=u436$mt$arm$k; while [ -e "$RAW/$t-start.txt" ] || [ -e "$RAW/$t-end.txt" ]; do t=${t}b; done
   [ -e "$E/STOP" ] && { say "STOP file before $t"; break; }
   pgrep '^kyty_emulator' > /dev/null && { say "an emulator runs before $t (not ours): stop"; break; }
+  [ -s "$W/BOX-LOCK" ] && { say "a BOX-LOCK line before $t that is not a run of ours: $(cat "$W/BOX-LOCK"): stop"; break; }
+  [ "$(gpucount)" = "$R0436_BASE" ] || { say "GPU timeout/reset lines grew from $R0436_BASE to $(gpucount) before $t: stop"; break; }
+  [ "$(date +%H%M)" -ge 0700 ] && [ "$(date +%H%M)" -lt 1200 ] && { say "after 07:00: no new run without the top session (he may come to play): stop"; break; }
   say "run $t, arm $arm, ${want:0:8}"
   padon "$t"
   ( for _ in $(seq 1 240); do p=$(pgrep -n '^kyty_emulator') && break; sleep 1; done  # the binary that runs (R66)

@@ -1,0 +1,20 @@
+Panic#1 Part6
+<3>[80918.029107] amdgpu 0000:01:00.0: Ring comp_1.1.1 reset succeeded
+<6>[80918.029111] amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+<12>[80918.032989] bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring comp_1.1.1 timeout, signaled seq=212051, emitted seq=212054
+<12>[80918.038410] bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring comp_1.1.1 reset succeeded
+<6>[80920.074835] amdgpu 0000:01:00.0: Dumping IP State
+<6>[80920.077008] amdgpu 0000:01:00.0: Dumping IP State Completed
+<3>[80920.077014] amdgpu 0000:01:00.0: ring comp_1.3.0 timeout, signaled seq=9353492, emitted seq=9353493
+<3>[80920.077021] amdgpu 0000:01:00.0:  Process kyty_emulator pid 830823 thread bc5-ring pid 830856
+<3>[80920.077026] amdgpu 0000:01:00.0: Starting comp_1.3.0 ring reset
+<3>[80920.077088] amdgpu 0000:01:00.0: Ring comp_1.3.0 reset succeeded
+<6>[80920.077091] amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+<12>[80920.080671] bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring comp_1.3.0 timeout, signaled seq=9353492, emitted seq=9353493
+<12>[80920.086775] bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring comp_1.3.0 reset succeeded
+<3>[81305.706639] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:56 vmid:7 pasid:163)
+<3>[81305.706651] amdgpu 0000:01:00.0:  Process kyty_emulator.l pid 862424 thread DrawThread pid 862475
+<3>[81305.706655] amdgpu 0000:01:00.0:   in page starting at address 0x0000000314cb6000 from client 0x1b (UTCL2)
+<3>[81305.706658] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x007C1071
+<3>[81305.706660] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+<3>[81305.706662] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1

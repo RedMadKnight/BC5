@@ -1,0 +1,21 @@
+Panic#1 Part2
+<12>[81311.831355] bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring comp_1.1.1 reset succeeded
+<6>[119976.373431] amdgpu 0000:01:00.0: Dumping IP State
+<6>[119976.375497] amdgpu 0000:01:00.0: Dumping IP State Completed
+<6>[119976.375518] amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+<6>[119976.375520] amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+<3>[119976.375523] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=21479881, emitted seq=21479883
+<3>[119976.375525] amdgpu 0000:01:00.0:  Process kyty_emulator pid 1984363 thread bc5-ring pid 1984614
+<3>[119976.375527] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+<3>[119976.563464] amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed
+<6>[119976.563474] amdgpu 0000:01:00.0: GPU reset begin!. Source:  1
+<12>[119976.566116] bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=21479881, emitted seq=21479883
+<12>[119976.570070] bc5-gpu-watch: a ring reset failed [amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed]: crashing before the full reset: syncing and crashing the kernel for a reboot (SysRq s, c)
+<6>[119976.570344] sysrq: Emergency Sync
+<4>[119976.647313] Emergency Sync complete
+<6>[119977.572138] sysrq: Trigger a crash
+<0>[119977.572152] Kernel panic - not syncing: sysrq triggered crash
+<4>[119977.572159] CPU: 5 UID: 0 PID: 2097 Comm: bash Tainted: G     U  W  OE       7.3.3-ogc1.1.fc45.x86_64 #1 PREEMPT(lazy) 
+<4>[119977.572168] Tainted: [U]=USER, [W]=WARN, [O]=OOT_MODULE, [E]=UNSIGNED_MODULE
+<4>[119977.572170] Hardware name: Default string AMD BC-250/AMD BC-250, BIOS P3.00 12/09/2021
+<4>[119977.572174] Call Trace:

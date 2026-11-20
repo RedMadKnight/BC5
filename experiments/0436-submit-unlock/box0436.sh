@@ -14,7 +14,11 @@
 set -u
 export LC_ALL=C LANGUAGE=C
 W=$HOME/bc5-work; E=$W/exp0436; R=$E/raw; S=$E/src; LOCK=$W/BOX-LOCK; ID=$E/lock.line
-TREE=$HOME/src/KytyPlus; BTREE=$HOME/src/bc5/backend; BBUILD=$W/backend-ubuntu; HERE=$(cd "$(dirname "$0")" && pwd)
+TREE=$HOME/src/KytyPlus; HERE=$(cd "$(dirname "$0")" && pwd)
+# the shared archive (51db2c91) is exp 0433's copy of exp 0432's 6eac453e with policy.cpp.o replaced; its direct.cpp.o was
+# compiled by exp 0432 from $W/exp0432/be-src (d19/export/backend + main's direct.cpp 52f74d0e) in $W/exp0432/be-build.
+# ~/src/bc5 on the box is an old modified checkout (d0c2668) and is not used.
+BTREE=$W/exp0432/be-src; BBUILD=$W/exp0432/be-build; SA=$W/backend-ubuntu/libbc5_backend.a
 UNIT=src/libs/bc5LleAgc.cpp
 # pins: the shared inputs as patch 8986853b's swap left them, and this kit's files
 P_UNIT=6f4bf71a38502fa7d6d40bfb806bce1d    # the shared tree's bc5LleAgc.cpp (patch 8986853b's, as on main)
@@ -60,7 +64,7 @@ build() {
     own || stop "no lock held by 0436"
     pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
     local v b bin rc sn sl sa
-    sn=$(m "$W/kytyplus-build/src/kyty_emulator"); sl=$(m "$W/kytyplus-build-lean/src/kyty_emulator"); sa=$(m "$BBUILD/libbc5_backend.a")
+    sn=$(m "$W/kytyplus-build/src/kyty_emulator"); sl=$(m "$W/kytyplus-build-lean/src/kyty_emulator"); sa=$(m "$SA")
     [ "${sn:0:8}" = "$P_NORMAL" ] && [ "${sl:0:8}" = "$P_LEAN" ] && [ "${sa:0:8}" = "$P_ARCH" ] \
         || stop "the shared builds are not normal $P_NORMAL / lean $P_LEAN / archive $P_ARCH: ${sn:0:8} ${sl:0:8} ${sa:0:8}"
     [ "$(m "$TREE/$UNIT")" = "$P_UNIT" ] || stop "the shared tree's $UNIT is not patch 8986853b's ($(m "$TREE/$UNIT"))"
@@ -74,9 +78,16 @@ build() {
     (cd "$S" && find . -type f | sort | xargs md5sum) > "$R/src-md5.txt"; cat "$R/src-md5.txt"
     # the private archive: the shared archive with direct.cpp.o compiled from the kit's direct.cpp (the -I of the copy first)
     distrobox enter ubuntu -- sh -c "cd '$BBUILD' && ninja -t compdb" > "$E/backend/compdb.json" 2> "$R/compdb-backend.err" < /dev/null || stop "backend compdb failed"
+    # the reference: main's direct.cpp, unchanged, compiled the same way, must give the shared archive's member byte for byte
+    rm -rf "$S/ref" "$E/backend-ref"; mkdir -p "$S/ref/src" "$S/ref/include/bc5" "$E/backend-ref" || stop "mkdir ref"
+    cp "$BTREE/src/direct.cpp" "$S/ref/src/direct.cpp" && cp "$BTREE/include/bc5/direct.hpp" "$S/ref/include/bc5/direct.hpp" || stop "copy ref"
+    distrobox enter ubuntu -- env LC_ALL=C LANGUAGE=C python3 -I "$HERE/build0436.py" archive "$E/backend/compdb.json" "$S/ref" "$E/backend-ref" "$BBUILD"         "$SA" "$E/backend-ref/libbc5_backend.a" src/direct.cpp > "$R/build-backend-ref.out" 2>&1 < /dev/null || { tail -30 "$R/build-backend-ref.out"; stop "the reference compile failed"; }
+    distrobox enter ubuntu -- sh -c "cd '$E/backend-ref' && ar p '$SA' direct.cpp.o > shared-direct.o && ar p libbc5_backend.a direct.cpp.o > ref-direct.o" < /dev/null || stop "ar p"
+    if cmp -s "$E/backend-ref/shared-direct.o" "$E/backend-ref/ref-direct.o"; then echo "reference: direct.cpp.o of 52f74d0e compiled here == the shared archive's member ($(m "$E/backend-ref/ref-direct.o" | cut -c1-8))"
+    else stop "the reference direct.cpp.o ($(m "$E/backend-ref/ref-direct.o" | cut -c1-8)) is not the shared archive's ($(m "$E/backend-ref/shared-direct.o" | cut -c1-8))"; fi
     rm -f "$E/backend/libbc5_backend.a"; rm -rf "$E/backend/obj" "$E/backend/member"
     distrobox enter ubuntu -- env LC_ALL=C LANGUAGE=C python3 -I "$HERE/build0436.py" archive "$E/backend/compdb.json" "$S/backend" "$E/backend" "$BBUILD" \
-        "$BBUILD/libbc5_backend.a" "$E/backend/libbc5_backend.a" src/direct.cpp > "$R/build-backend.out" 2>&1 < /dev/null \
+        "$SA" "$E/backend/libbc5_backend.a" src/direct.cpp > "$R/build-backend.out" 2>&1 < /dev/null \
         || { tail -40 "$R/build-backend.out"; stop "backend archive failed"; }
     echo "backend: errors $(grep -c 'error:' "$R/build-backend.out"); warnings $(grep -c 'warning:' "$R/build-backend.out")"
     m "$E/backend/libbc5_backend.a" > "$E/backend/archive.md5"
@@ -97,7 +108,7 @@ build() {
     done
     echo "private normal $(cut -c1-8 "$E/normal/binary.md5"), lean $(cut -c1-8 "$E/lean/binary.md5"), backend archive $(cut -c1-8 "$E/backend/archive.md5")"
     [ "$sn" = "$(m "$W/kytyplus-build/src/kyty_emulator")" ] && [ "$sl" = "$(m "$W/kytyplus-build-lean/src/kyty_emulator")" ] \
-        && [ "$sa" = "$(m "$BBUILD/libbc5_backend.a")" ] && [ "$(m "$TREE/$UNIT")" = "$P_UNIT" ] || stop "a shared binary, the archive or the tree changed"
+        && [ "$sa" = "$(m "$SA")" ] && [ "$(m "$TREE/$UNIT")" = "$P_UNIT" ] || stop "a shared binary, the archive or the tree changed"
     echo "shared normal ${sn:0:8}, lean ${sl:0:8}, archive ${sa:0:8}, tree unit ${P_UNIT:0:8}: unchanged"
 }
 case "${1:-}" in

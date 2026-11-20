@@ -1,0 +1,15 @@
+chain0436 01:54:48: mode route, play 1500 s, order S C S C S C; shared 99f2a567, candidate d55e4cbd; runner 9d53dccc; kernel 7.3.3-ogc1.1.fc45.x86_64; boot f813bbc0
+chain0436 01:54:48: GPU timeout/reset lines since boot at the chain's start: 0 (the baseline; the route runner refuses on any other count)
+chain0436 01:54:48: run u436rS1, arm S, 99f2a567
+chain0436 02:21:57: u436rS1: NO_CRASH; 40.52 flips/s over 1491 s from G+10, 225 s with a gap over 50 ms, 6 over 100 ms; pad keys 0
+chain0436 02:22:17: run u436rC2, arm C, d55e4cbd
+chain0436 02:49:20: u436rC2: NO_CRASH; 45.08 flips/s over 1491 s from G+10, 136 s with a gap over 50 ms, 0 over 100 ms; pad keys 0
+chain0436 02:49:40: run u436rS3, arm S, 99f2a567
+chain0436 03:16:43: u436rS3: NO_CRASH; 41.14 flips/s over 1490 s from G+10, 201 s with a gap over 50 ms, 0 over 100 ms; pad keys 0
+chain0436 03:17:03: run u436rC4, arm C, d55e4cbd
+chain0436 03:44:05: u436rC4: NO_CRASH; 44.47 flips/s over 1490 s from G+10, 112 s with a gap over 50 ms, 2 over 100 ms; pad keys 0
+chain0436 03:44:26: run u436rS5, arm S, 99f2a567
+chain0436 04:11:28: u436rS5: NO_CRASH; 40.69 flips/s over 1490 s from G+10, 217 s with a gap over 50 ms, 2 over 100 ms; pad keys 0
+chain0436 04:11:48: run u436rC6, arm C, d55e4cbd
+chain0436 04:38:52: u436rC6: NO_CRASH; 43.77 flips/s over 1491 s from G+10, 169 s with a gap over 50 ms, 7 over 100 ms; pad keys 0
+chain0436 04:39:12: chain ended
