@@ -507,6 +507,62 @@ Laptop, VS clang++, image base fixed low so the 40-bit IB address fits; 2026-11-
 **Build:** normal `4b9ffcf8` (r438 + c438), under BOX-LOCK at 10:02, 0 errors, only the old warnings; shared builds
 checked unchanged.
 
+## Result 6: r438 on the box (2026-11-20 10:03–10:48, boot a1db5eee, 0 GPU reset lines, binary 4b9ffcf8)
+
+Chain `C3 R C3 R C3 R`, his 09:46 scene, RT on, 4 rings, G+300. C3 = `BC5_0438_EARLYREG=0`, R = `=1`. The first C3
+passed the gate (≥ 33.3 flips/s). 0 kernel lines in all six runs.
+
+| run | arm | class | flips/s from G+10 | s with a gap > 50 / > 100 ms | frames (last 290 s) over 50 / 100 ms | given up |
+|---|---|---|---|---|---|---|
+| u438sC316 | C3 | NO_CRASH | 36.28 | 210 / 61 | 10516: 733 / 69 | 0 |
+| u438sR17 | R | NO_CRASH | 33.72 | 211 / 79 | 9776: 998 / 90 | 0 |
+| u438sC318 | C3 | NO_CRASH | 35.74 | 217 / 64 | 10318: 800 / 79 | 1 |
+| u438sR19 | R | NO_CRASH | 33.88 | 214 / 68 | 9772: 972 / 86 | 0 |
+| u438sC320 | C3 | NO_CRASH | 36.28 | 203 / 64 | 10495: 698 / 76 | 0 |
+| u438sR21 | R | NO_CRASH | 36.12 | 216 / 58 | 10436: 734 / 73 | 0 |
+
+**r438 in the R runs** (the 60-s line at t 360 / 420 / 420 s):
+
+| | R17 | R19 | R21 |
+|---|---|---|---|
+| early writes | 3,303,661 | 3,775,091 | 3,960,909 |
+| early writes that never reached the ring | **0** | **0** | **0** |
+| BUG lines | 0 | 0 | 0 |
+| game-thread waits for an early writer | 31,344 | 35,472 | 36,413 |
+| their total | 16.6 s | 19.2 s | 19.6 s |
+| the longest | 50.0 ms | 34.7 ms | 27.2 ms |
+| over 100 ms | none | none | none |
+
+**Prepare split, bc5-ring inside slices** (ranges over the six runs, about 360–420 s each):
+- prep-direct-sync 16.8–21.8 s;
+- prep-filter 8.5–10.6 s;
+- prep-pre 3.3–4.3 s (exp 0412's ww412/k1f412/dt412 passes and what precedes the syncs);
+- prep-learned 1.8–2.5 s;
+- prep-hints 0.6–0.8 s;
+- prep-anon-sync about 0.1 s;
+- besides: dev-mutex 37–46 s, backend+ioctl 58–72 s.
+
+**bc5-ring's device-mutex waits, by the holder at their start: always the game thread.**
+
+| holder's part | seconds |
+|---|---|
+| prep-pre | 15.5–19.2 |
+| direct sync | 4.8–6.3 |
+| anon sync | 3.4–4.6 |
+| hints | 1.5–1.8 |
+| filter | 1.3–1.6 |
+| backend | 0.2 |
+
+**Reading:**
+- **r438 holds its invariant:** 11.0 M early writes, 0 lost. No give-up in 3 R runs against 1 in 3 C3 runs. The base
+  rate is too low to call the give-ups removed.
+- **It costs the game thread** 17–20 s of waiting a run, about 35,000 waits of about 0.5 ms for bc5-ring's
+  preparation.
+- **flips/s:** R 33.72 / 33.88 / 36.12 (mean 34.57) against C3 36.28 / 35.74 / 36.28 (mean 36.10). Two R runs are
+  below every C3 run, one is inside the C3 range. That is a likely cost, not a shown one (R13).
+- **The preparation's biggest parts:** bc5-ring's own direct sync, then the filter. The device mutex is held mostly
+  by the game thread's pre-passes and syncs.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
