@@ -563,6 +563,27 @@ passed the gate (≥ 33.3 flips/s). 0 kernel lines in all six runs.
 - **The preparation's biggest parts:** bc5-ring's own direct sync, then the filter. The device mutex is held mostly
   by the game thread's pre-passes and syncs.
 
+## r438a (mode 2) and prep-pre by pass (built 2026-11-20 11:00, normal d59eae9b; chain waiting for the top session)
+
+- **Where the give-up's writer was.** u438sC318's give-up (r438 off) recorded "bc5-ring is in prep-learned for
+  1.1 ms; since queue 1/0/0's look: prep-direct-sync 11.1, prep-learned 1.1 ms". The writer was inside bc5-ring's
+  direct sync, so registering after the direct sync would not close it.
+- **Mode 2 (`BC5_0438_EARLYREG=2`, the test build's default; 1 keeps r438, 0 off)** registers at the take as before,
+  but the game thread waits for an early writer only when no real pending write of the label already satisfies the
+  wait. That case was kept for the GPU at once before r438, and r438 shadowed it. Counted as "real write satisfied,
+  no wait".
+- **prep-pre by pass:** exp 0412's ww412 / k1f412 / dt412 passes, each its own c438 kind and holder part.
+- **Unit:** `mkr438.py` → `94d696fbfe6cca223346ba255338a0f0`.
+- **`test_r438.sh`: PASS** with the mode unset (2), 1 and 0. A new case 5: a real older write satisfying plus a newer
+  early one. Mode 2 uses the real one at once (cheap 1); mode 1 waits for the early one.
+- **u438** (the game thread's prep-pre and syncs outside `g_dev_mutex`) is **not built**:
+  - k1f412 and dt412 import through `direct_force`;
+  - `direct_force` and `direct_sync_one` change `g_d`'s state (forced chunks, BOs, views, device mappings) with no
+    lock but `g_dev_mutex`, and bc5-ring's prepare syncs the same state;
+  - the passes keep static counters;
+  - so a narrower lock must cover `g_d` whole, and the gain is not shown.
+  The by-pass split is the first step.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
@@ -609,6 +630,6 @@ bb04219b's tree unit (`a62e8bf6…`, exp 0436's `bake/bc5LleAgc.cpp`):
   `mkvg437.py` on the box copy); the change is `k438-unit.diff`.
 - `python -I mkcat438.py ../0436-submit-unlock/bake/bc5LleAgc.cpp cat/bc5LleAgc.cpp` → `3623fd41142c49514fce913c34c2efab`
   (c438 with part 2, build c731c5fa; part 1 alone, build 8b2ae229, was `b7097917…`); the change is `c438-unit.diff`.
-- `python -I mkr438.py cat/bc5LleAgc.cpp r438.cpp` → `1584911aef05b01c63f7091bf150a546` (r438 + c438, build 4b9ffcf8);
+- `python -I mkr438.py cat/bc5LleAgc.cpp r438.cpp` → `94d696fbfe6cca223346ba255338a0f0` (r438 modes 1 and 2 + c438 with prep-pre by pass, build d59eae9b; the first r438 build 4b9ffcf8 was `1584911a…`);
   the change is `r438-unit.diff`.
 `box0438.sh` pins the md5s (`K_UNIT`, `K_CAT`, `K_R438`) and expects the files at those paths in its kit directory.

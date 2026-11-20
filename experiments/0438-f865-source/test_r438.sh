@@ -19,4 +19,5 @@ cxx=${CXX:-g++}
 [ -z "${CXX:-}" ] && [ -x "/c/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/Llvm/x64/bin/clang++.exe" ] && cxx="/c/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/Llvm/x64/bin/clang++.exe"
 (cd "$out" && "$cxx" -std=c++20 -O1 -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-variable -D_CRT_SECURE_NO_WARNINGS $LOW -o t438r.exe test_r438.cpp)
 echo "== BC5_0438_EARLYREG unset"; (unset BC5_0438_EARLYREG; "$out/t438r.exe")
+echo "== BC5_0438_EARLYREG=1"; BC5_0438_EARLYREG=1 "$out/t438r.exe"
 echo "== BC5_0438_EARLYREG=0"; BC5_0438_EARLYREG=0 "$out/t438r.exe"

@@ -112,14 +112,16 @@ int main() {
 	r438_begin(g_ring, 4, nullptr, 0);
 	CHECK(early_entries() == 2);
 	CHECK(!ring_will_satisfy(g_wait1, true, 0)); // 4. bc5-ring (not the game thread) ignores the early entry: no writer
-	std::atomic<int> got {-1};
+	std::atomic<int> got {-1}, entered {0};
 	std::atomic<uint64_t> took {0};
 	std::thread game([&] {
 		t_game = true;
 		const uint64_t t0 = SoftCp::now_ns();
+		entered = 1;
 		got  = ring_will_satisfy(g_wait1, true, bc5::direct::kGfxRing) ? 1 : 0;
 		took = SoftCp::now_ns() - t0;
 	});
+	while (entered.load() == 0) std::this_thread::yield(); // the game thread is at its wait
 	std::this_thread::sleep_for(std::chrono::milliseconds(30));
 	CHECK(got.load() == -1); // still waiting while the writer is only early
 	const std::vector<uint32_t> executed {0, 8};
@@ -127,7 +129,8 @@ int main() {
 	r438_end();
 	game.join();
 	CHECK(got.load() == 1);
-	CHECK(took.load() >= 25'000'000ull);
+	CHECK(took.load() >= 25'000'000ull); // it waited for the real registration (30 ms after it entered)
+	std::printf("took %.3f ms, got %d\n", static_cast<double>(took.load()) / 1e6, got.load());
 	CHECK(early_entries() == 0);
 	CHECK(g_r438_lost.load() == 0 && count("BUG") == 0);
 	CHECK(g_r438_waits.load() == 1);
@@ -153,6 +156,33 @@ int main() {
 	register_label_writes(g_ib, 16, exec2, 6, 0);
 	r438_end();
 	CHECK(g_r438_lost.load() == 2);
+	// 5. r438a (mode 2): a real pending write that satisfies the wait is used at once; mode 1 waits for the early one
+	{
+		g_acb_heads.clear(); // case 3's head is gone: both writes are early again
+		const std::vector<uint32_t> ex1 {0};
+		register_label_writes(g_ib, 16, ex1, 7, 0); // a real, older pending write of g_label1 = 0
+		r438_begin(g_ring, 4, nullptr, 0);           // and a newer early one
+		std::atomic<int> got5 {-1}, in5 {0};
+		std::thread g5([&] {
+			t_game = true;
+			in5    = 1;
+			got5   = ring_will_satisfy(g_wait1, true, bc5::direct::kGfxRing) ? 1 : 0;
+		});
+		while (in5.load() == 0) std::this_thread::yield();
+		std::this_thread::sleep_for(std::chrono::milliseconds(30));
+		if (r438_mode() >= 2) {
+			CHECK(got5.load() == 1); // no wait
+			CHECK(g_r438_cheap.load() == 1);
+		} else {
+			CHECK(got5.load() == -1); // mode 1 waits for the early write
+		}
+		const std::vector<uint32_t> ex2 {0, 8};
+		register_label_writes(g_ib, 16, ex2, 8, 0);
+		r438_end();
+		g5.join();
+		CHECK(got5.load() == 1);
+		std::printf("case 5 (mode %d): cheap %" PRIu64 "\n", r438_mode(), g_r438_cheap.load());
+	}
 	for (const auto& l: g_lines) std::printf("  %s", l.c_str());
 	std::printf("%s (%d failures)\n", fails == 0 ? "PASS" : "FAIL", fails);
 	return fails == 0 ? 0 : 1;

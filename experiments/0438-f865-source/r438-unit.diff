@@ -1,6 +1,6 @@
 --- cat/bc5LleAgc.cpp	2026-11-20 09:35:06.449228400 +0100
-+++ r438.cpp	2026-11-20 09:59:15.599053300 +0100
-@@ -524,11 +524,28 @@
++++ r438.cpp	2026-11-20 10:53:20.448190800 +0100
+@@ -524,11 +524,30 @@
  	uint64_t        label = 0, value = 0, reference = 0;
  };
  static thread_local UnreadyWait t_unready;
@@ -13,29 +13,31 @@
 +static uint64_t                            g_plw_order = 0; // under g_plw_mutex
 +static thread_local bool                   t_r438_on_slice = false;
 +static thread_local std::vector<uint64_t>  t_r438_real; // the labels the slice's jobs registered for real
-+static bool r438_on() {
-+	static const bool v = [] {
++static int r438_mode() { // 0 off, 1 r438 (wait on any early last write), 2 r438a (wait only when no real pending write satisfies); unset: 2 in this test build
++	static const int v = [] {
 +		const char* e = std::getenv("BC5_0438_EARLYREG");
-+		return !(e != nullptr && e[0] == '0' && e[1] == 0);
++		if (e == nullptr || e[0] == 0) return 2;
++		return std::atoi(e);
 +	}();
 +	return v;
 +}
-+static std::atomic<uint64_t> g_r438_slices {0}, g_r438_early {0}, g_r438_lost {0}, g_r438_waits {0}, g_r438_wait_ns {0}, g_r438_wait_max {0}, g_r438_long {0};
++static bool r438_on() { return r438_mode() >= 1; }
++static std::atomic<uint64_t> g_r438_slices {0}, g_r438_early {0}, g_r438_lost {0}, g_r438_waits {0}, g_r438_wait_ns {0}, g_r438_wait_max {0}, g_r438_long {0}, g_r438_cheap {0};
  #ifndef BC5_LEAN
  // BC5 experiment 0438 (tag c438): the catcher (records only). bc5-ring's view of each guest queue, for the journal line
  // at a given-up wait on another thread.
  namespace c438 {
 -enum : int { kIdle, kScan, kSubmit, kF10, kF16, kF18, kBackPressure, kRingLock, kDevMutex, kBackend, kAcbCpuWait, kWaitIdle, kN }; // exp 0438 (c438 part 2)
-+enum : int { kIdle, kScan, kSubmit, kF10, kF16, kF18, kBackPressure, kRingLock, kDevMutex, kBackend, kAcbCpuWait, kWaitIdle, kPre, kAnonSync, kDirectSync, kLearned, kHints, kFilter, kN }; // exp 0438 (c438 part 2; r438 build: the prepare parts)
++enum : int { kIdle, kScan, kSubmit, kF10, kF16, kF18, kBackPressure, kRingLock, kDevMutex, kBackend, kAcbCpuWait, kWaitIdle, kPre, kAnonSync, kDirectSync, kLearned, kHints, kFilter, kPreWw, kPreK1, kPreDt, kN }; // exp 0438 (c438 part 2; r438 build: the prepare parts)
  struct QueueView {
  	uint32_t a = 0, b = 0, c = 0, d = 0, pending = 0, pos = 0;
  	uint64_t deferred_since = 0, label = 0, value = 0, head_seen = 0, poll = 0;
-@@ -548,7 +565,14 @@
+@@ -548,7 +567,14 @@
  	return ns < 1'000'000ull ? 0 : ns < 5'000'000ull ? 1 : ns < 20'000'000ull ? 2 : ns < 100'000'000ull ? 3 : 4;
  }
  // part 2: bc5-ring's exclusive time by kind
 -inline const char* const kName[kN] = {"idle", "scan", "submit", "F10", "F16", "F18", "back-pressure", "ring-lock", "dev-mutex", "backend+ioctl", "acb-cpu-wait", "wait-idle"};
-+inline const char* const kName[kN] = {"idle", "scan", "submit", "F10", "F16", "F18", "back-pressure", "ring-lock", "dev-mutex", "backend+ioctl", "acb-cpu-wait", "wait-idle", "prep-pre", "prep-anon-sync", "prep-direct-sync", "prep-learned", "prep-hints", "prep-filter"};
++inline const char* const kName[kN] = {"idle", "scan", "submit", "F10", "F16", "F18", "back-pressure", "ring-lock", "dev-mutex", "backend+ioctl", "acb-cpu-wait", "wait-idle", "prep-pre", "prep-anon-sync", "prep-direct-sync", "prep-learned", "prep-hints", "prep-filter", "prep-pre-ww412", "prep-pre-k1f412", "prep-pre-dt412"};
 +// r438 build: who holds the device mutex (1 game thread, 2 bc5-ring, 3 other) * 32 + the holder's kind; bc5-ring's waits by it
 +inline std::atomic<int>      g_holder {0};
 +inline std::atomic<uint64_t> g_dm_by[128] = {};
@@ -46,7 +48,7 @@
  inline uint64_t now() {
  	return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
  }
-@@ -1865,6 +1889,20 @@
+@@ -1865,6 +1891,20 @@
  						}
  						Direct::c438::fmt(b1, sizeof(b1), zero, sl);
  						Direct::c438::fmt(b2, sizeof(b2), zero, gp);
@@ -59,15 +61,15 @@
 +								if (v >= 50'000'000ull) hw += std::snprintf(hb + hw, sizeof(hb) - static_cast<size_t>(hw), "%s%s/%s %.1f", hw ? ", " : "", (h >> 5) == 1 ? "game" : (h >> 5) == 2 ? "ring" : (h >> 5) == 3 ? "other" : "?",
 +								                       Direct::c438::kName[(h & 31) < Direct::c438::kN ? (h & 31) : 0], static_cast<double>(v) / 1e9);
 +							}
-+							Direct::journal("r438 (exp 0438): t %.1f s: %s; slices %" PRIu64 ", early writes %" PRIu64 ", early writes that never reached the ring %" PRIu64 "; game-thread waits for an early writer %" PRIu64 ", %.1f ms in all, longest %.3f ms, bug lines (over 100 ms) %" PRIu64 "; "
++							Direct::journal("r438 (exp 0438): t %.1f s: mode %d %s; real write satisfied, no wait %" PRIu64 "; slices %" PRIu64 ", early writes %" PRIu64 ", early writes that never reached the ring %" PRIu64 "; game-thread waits for an early writer %" PRIu64 ", %.1f ms in all, longest %.3f ms, bug lines (over 100 ms) %" PRIu64 "; "
 +							                "bc5-ring's device-mutex waits by the holder at their start (s): %s\n",
-+							                Direct::timing_now(), Direct::r438_on() ? "ON" : "off", Direct::g_r438_slices.load(), Direct::g_r438_early.load(), Direct::g_r438_lost.load(), Direct::g_r438_waits.load(),
++							                Direct::timing_now(), Direct::r438_mode(), Direct::r438_on() ? "ON" : "off", Direct::g_r438_cheap.load(), Direct::g_r438_slices.load(), Direct::g_r438_early.load(), Direct::g_r438_lost.load(), Direct::g_r438_waits.load(),
 +							                static_cast<double>(Direct::g_r438_wait_ns.load()) / 1e6, static_cast<double>(Direct::g_r438_wait_max.load()) / 1e6, Direct::g_r438_long.load(), hb);
 +						}
  						Direct::journal("c438 (exp 0438): t %.1f s: %" PRIu64 " slices, time inside submit <1/<5/<20/<100 ms/more %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", longest %.3f ms, by kind (ms): %s; "
  						                "%" PRIu64 " look gaps of 20 ms or more, bc5-ring's time in them by kind (ms): %s\n",
  						                Direct::timing_now(), Direct::c438::g_slices.load(), Direct::c438::g_slice_hist[0].load(), Direct::c438::g_slice_hist[1].load(), Direct::c438::g_slice_hist[2].load(),
-@@ -1882,6 +1920,8 @@
+@@ -1882,6 +1922,8 @@
  			uint64_t c438_a[Direct::c438::kN];
  			Direct::c438::snap(c438_a);
  #endif
@@ -76,7 +78,7 @@
  			Direct::chain_begin(); // ADR 0010: the slice's buffers as one submission
  			if (w_take > r) {
  				Direct::submit(ring + r, w_take - r, "ring");
-@@ -1890,6 +1930,7 @@
+@@ -1890,6 +1932,7 @@
  				if (w_take != 0) Direct::submit(ring, w_take, "ring");
  			}
  			Direct::chain_end();
@@ -84,7 +86,7 @@
  #ifndef BC5_LEAN
  			{ // exp 0438 (c438 part 2): this slice's time inside Direct::submit and chain_end, by kind
  				uint64_t z[Direct::c438::kN], tot = 0;
-@@ -8531,6 +8572,8 @@
+@@ -8531,6 +8574,8 @@
  };
  static std::mutex                          g_plw_mutex;
  static std::vector<PendingLabelWrite>      g_plw;
@@ -93,7 +95,7 @@
  // ADR 0008 step 2, experiment 0074: at every wait of a graphics buffer that is not satisfied when
  // reached, the full-state prefix of the later piece is built (bc5::full_state, from the graphics
  // queue's state before the buffer that piece_check keeps), and splits, prefix sizes and the time
-@@ -9480,8 +9523,9 @@
+@@ -9480,8 +9525,9 @@
  		}
  	}
  	if (found.empty()) return;
@@ -104,7 +106,7 @@
  	for (auto& w: found) {
  		w.ring  = ring;
  		w.order = ++order;
-@@ -9824,7 +9868,7 @@
+@@ -9824,7 +9870,7 @@
  	{
  		std::lock_guard lk(g_plw_mutex);
  		for (const auto& w: g_plw)
@@ -113,7 +115,7 @@
  	}
  	if (others.empty()) return;
  	// The cycle check: a writer job holding a kept GPU wait on a label this buffer writes cannot complete before this buffer runs.
-@@ -9866,6 +9910,99 @@
+@@ -9866,6 +9912,99 @@
  #endif
  }
  } // namespace ho430
@@ -213,7 +215,7 @@
  static void forget_label_writes(uint64_t seq, int ring, bool all) {
  	std::lock_guard lk(g_plw_mutex);
  	ho430::job_done(seq, ring, all); // exp 0430 (tag ho430)
-@@ -10053,10 +10190,37 @@
+@@ -10053,10 +10192,59 @@
  static bool ring_will_satisfy(const uint32_t* p, bool is64, int ring) {
  	const uint32_t function = p[1] & 7u;
  	const uint64_t a        = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
@@ -227,6 +229,28 @@
 +		last = nullptr;
 +		for (const auto& w: g_plw) {
 +			if (w.label == a && (game || (w.seq & kR438Early) == 0) && (last == nullptr || w.order >= last->order)) last = &w;
++		}
++		if (last != nullptr && (last->seq & kR438Early) != 0 && game && r438_mode() >= 2) { // r438a: a real pending write that satisfies needs no wait
++			const PendingLabelWrite* real = nullptr;
++			for (const auto& w: g_plw)
++				if (w.label == a && (w.seq & kR438Early) == 0 && (real == nullptr || w.order >= real->order)) real = &w;
++			if (real != nullptr && (real->ring == ring || w428_rings() != 0)) {
++				bool sat = false;
++				if (is64) {
++					if (real->is64) {
++						const uint64_t ref = p[4] | (static_cast<uint64_t>(p[5]) << 32u), mask = p[6] | (static_cast<uint64_t>(p[7]) << 32u);
++						const uint64_t vm = real->value & mask, rm = ref & mask;
++						sat = function == 1 ? vm < rm : function == 2 ? vm <= rm : function == 3 ? vm == rm : function == 4 ? vm != rm : function == 5 ? vm >= rm : function == 6 ? vm > rm : false;
++					}
++				} else {
++					sat = SoftCp::compare(function, static_cast<uint32_t>(real->value), p[5], p[4]);
++				}
++				if (sat) {
++					g_r438_cheap++;
++					last = real;
++					break;
++				}
++			}
 +		}
 +		if (last == nullptr || (last->seq & kR438Early) == 0) {
 +			if (r438_t0 != 0) {
@@ -254,7 +278,7 @@
  	}
  	if (last == nullptr) return false;
  	// exp 0428 (tag w428): with the acb rings on, a wait whose label's last pending write is on another ring stays for the GPU
-@@ -15376,6 +15540,10 @@
+@@ -15376,6 +15564,10 @@
  #endif
  
  static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind, int ring, const Chain* chain) {
@@ -265,7 +289,7 @@
  	if (g_stage == Stage::Off || !g_dev || ib == nullptr || num_dwords == 0) {
  		return;
  	}
-@@ -15413,10 +15581,15 @@
+@@ -15413,10 +15605,15 @@
  	if (su) su_ring = std::unique_lock<std::mutex>(g_su436_ring_mu[qring == bc5::direct::kGfxRing ? bc5::direct::kComputeRings : qring]);
  #ifndef BC5_LEAN
  	c438::flip(c438::kDevMutex);
@@ -282,9 +306,29 @@
  #endif
  	if (t_f16_slot != nullptr) t_f16_slot->f16_phase.store(3); // exp 0430 F16
  	const uint64_t  fs_got = fs_ask != 0 ? SoftCp::now_ns() : 0;
-@@ -15501,8 +15674,16 @@
+@@ -15497,12 +15694,36 @@
+ 		}
+ 	}
+ 	for (uint64_t& v: t_fs415_ds) v = 0; // experiment 0415 (fs415d)
++#ifndef BC5_LEAN
++	c438::flip(c438::kPreWw); // exp 0438 (r438 build, mode 2 build): prep-pre by pass
++	c438::hold(c438::kPreWw);
++#endif
+ 	ww412_packets(ib, num_dwords); // exp 0412 (tag ww412)
++#ifndef BC5_LEAN
++	c438::flip(c438::kPreK1);
++	c438::hold(c438::kPreK1);
++#endif
  	k1f412_pass(ib, num_dwords, kind); // exp 0412 (tag k1f412)
++#ifndef BC5_LEAN
++	c438::flip(c438::kPreDt);
++	c438::hold(c438::kPreDt);
++#endif
  	dt412_pass(ib, num_dwords, kind); // exp 0412 (tag dt412): before the mappings are synced
++#ifndef BC5_LEAN
++	c438::flip(c438::kPre);
++	c438::hold(c438::kPre);
++#endif
  	const uint64_t ta = SoftCp::now_ns();
 +#ifndef BC5_LEAN
 +	c438::flip(c438::kAnonSync); // exp 0438 (r438 build)
@@ -299,7 +343,7 @@
  	direct_sync(force_sync);
  	if (!lazy_pages.empty()) { // experiment 0103: the pages this forced sync left unmapped
  		const auto   after = g_dev->sorted_mappings();
-@@ -15515,6 +15696,10 @@
+@@ -15515,6 +15736,10 @@
  		}
  	}
  	const uint64_t t1 = SoftCp::now_ns();
@@ -310,7 +354,7 @@
  	uint64_t       fs_ds[8]; // experiment 0415 (fs415d): the parts of the two syncs of this submission
  	for (int k = 0; k < 8; k++) fs_ds[k] = t_fs415_ds[k];
  	{ // exp 0412 (tag nl412): say once what is left of the learned pass
-@@ -15526,6 +15711,10 @@
+@@ -15526,6 +15751,10 @@
  	}
  	if (!guard0412_defer_apply()) learned_apply(); // exp 0412 (tag g412): BC5_GUARD_APPLY_MIN_MS
  	const uint64_t tc = SoftCp::now_ns();
@@ -321,7 +365,7 @@
  	if (tc - t1 > 20'000'000ull) { // experiment 0156: a long learned_apply call, with its thread
  		char tn[32] = {};
  		pthread_getname_np(pthread_self(), tn, sizeof(tn));
-@@ -15534,6 +15723,10 @@
+@@ -15534,6 +15763,10 @@
  	hint_targets(ib, num_dwords);
  	const uint64_t t2 = SoftCp::now_ns();
  #ifndef BC5_LEAN
@@ -332,7 +376,7 @@
  	{ // exp 0432: the sync + hints part of every submission ("prepare" here), and the counters at most every 10 s
  		d432::g_sync_ns += t2 - t0;
  		d432::maxed(d432::g_prep_max_ns, t2 - t0);
-@@ -16217,6 +16410,9 @@
+@@ -16217,6 +16450,9 @@
  		offsets.swap(back);
  	};
  	const uint64_t ls_t3 = SoftCp::now_ns(); // experiment 0415 (ls415c)

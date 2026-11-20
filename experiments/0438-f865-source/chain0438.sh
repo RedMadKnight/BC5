@@ -55,9 +55,9 @@ for arm in ${ORDER:-S C S C S C}; do
     V) bin=$CB; want=$CW; AW="BC5_0438_KEEP=0 BC5_0438_HOLD=0 BC5_DIRECT_VIEWS_GEN=1" ;;
     H) bin=$CB; want=$CW; AW="BC5_0438_KEEP=0 BC5_0438_HOLD=1 BC5_DIRECT_VIEWS_GEN=0" ;; HV) bin=$CB; want=$CW; AW="BC5_0438_KEEP=0 BC5_0438_HOLD=1 BC5_DIRECT_VIEWS_GEN=1" ;;
     T) bin=$CB; want=$CW; AW="" ;;
-    C3) bin=$CB; want=$CW; AW="BC5_0438_EARLYREG=0" ;; R) bin=$CB; want=$CW; AW="BC5_0438_EARLYREG=1" ;;
+    C3) bin=$CB; want=$CW; AW="BC5_0438_EARLYREG=0" ;; R) bin=$CB; want=$CW; AW="BC5_0438_EARLYREG=1" ;; A) bin=$CB; want=$CW; AW="BC5_0438_EARLYREG=2" ;;
     C2) bin=$CB; want=$CW; AW="BC5_0438_KEEP=0 BC5_0438_HOLD=0 BC5_DIRECT_VIEWS_GEN=0" ;; KV) bin=$CB; want=$CW; AW="BC5_0438_KEEP=1 BC5_DIRECT_VIEWS_GEN=1" ;;
-    *) say "arm $arm: S, T, C, C2, C3, R, K, KV, V, H or HV"; break ;; esac
+    *) say "arm $arm: S, T, C, C2, C3, R, A, K, KV, V, H or HV"; break ;; esac
   t=u438$mt$arm$k; while [ -e "$RAW/$t-start.txt" ] || [ -e "$RAW/$t-end.txt" ]; do t=${t}b; done
   [ -e "$E/STOP" ] && { say "STOP file before $t"; break; }
   pgrep '^kyty_emulator' > /dev/null && { say "an emulator runs before $t (not ours): stop"; break; }
