@@ -1,0 +1,463 @@
+--- ../0436-submit-unlock/bake/bc5LleAgc.cpp	2026-11-20 09:01:36.911358800 +0100
++++ cat/bc5LleAgc.cpp	2026-11-20 09:35:06.449228400 +0100
+@@ -524,6 +524,83 @@
+ 	uint64_t        label = 0, value = 0, reference = 0;
+ };
+ static thread_local UnreadyWait t_unready;
++#ifndef BC5_LEAN
++// BC5 experiment 0438 (tag c438): the catcher (records only). bc5-ring's view of each guest queue, for the journal line
++// at a given-up wait on another thread.
++namespace c438 {
++enum : int { kIdle, kScan, kSubmit, kF10, kF16, kF18, kBackPressure, kRingLock, kDevMutex, kBackend, kAcbCpuWait, kWaitIdle, kN }; // exp 0438 (c438 part 2)
++struct QueueView {
++	uint32_t a = 0, b = 0, c = 0, d = 0, pending = 0, pos = 0;
++	uint64_t deferred_since = 0, label = 0, value = 0, head_seen = 0, poll = 0;
++	bool     unready = false;
++	uint64_t at_look[kN] = {}; // part 2: bc5-ring's time totals at this queue's last look
++};
++inline std::mutex& mu() {
++	static std::mutex m;
++	return m;
++}
++inline std::vector<QueueView>& views() {
++	static std::vector<QueueView> v;
++	return v;
++}
++inline std::atomic<uint64_t> g_pk {0}, g_hist_sub[5] = {}, g_hist_gap[5] = {}, g_max_sub {0}, g_max_gap {0}, g_logged {0};
++inline int bucket(uint64_t ns) {
++	return ns < 1'000'000ull ? 0 : ns < 5'000'000ull ? 1 : ns < 20'000'000ull ? 2 : ns < 100'000'000ull ? 3 : 4;
++}
++// part 2: bc5-ring's exclusive time by kind
++inline const char* const kName[kN] = {"idle", "scan", "submit", "F10", "F16", "F18", "back-pressure", "ring-lock", "dev-mutex", "backend+ioctl", "acb-cpu-wait", "wait-idle"};
++inline uint64_t now() {
++	return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
++}
++inline std::atomic<uint64_t>  g_ns[kN] = {};
++inline std::atomic<int>       g_cur {kScan};
++inline std::atomic<uint64_t>  g_cur_since {0};
++inline thread_local bool      t_ring = false;
++inline thread_local int       t_kind = kScan;
++inline thread_local uint64_t  t_mark = 0;
++inline void flip(int k) {
++	if (!t_ring) return;
++	const uint64_t n = now();
++	if (t_mark != 0) g_ns[t_kind] += n - t_mark;
++	t_mark = n;
++	t_kind = k;
++	g_cur.store(k);
++	g_cur_since.store(n);
++}
++struct Scope {
++	int  prev = kScan;
++	bool on   = false;
++	explicit Scope(int k): on(t_ring) {
++		if (!on) return;
++		prev = t_kind;
++		flip(k);
++	}
++	~Scope() {
++		if (on) flip(prev);
++	}
++};
++inline void snap(uint64_t* out) { // the totals now, the running kind included
++	for (int k = 0; k < kN; k++) out[k] = g_ns[k].load();
++	const uint64_t s = g_cur_since.load();
++	const int      c = g_cur.load();
++	if (s != 0) out[c] += now() - s;
++}
++inline void fmt(char* b, size_t cap, const uint64_t* a, const uint64_t* z) { // the kinds of z - a, in ms, the non-zero ones
++	int w = 0;
++	b[0]  = 0;
++	for (int k = 0; k < kN && w < static_cast<int>(cap) - 40; k++) {
++		const uint64_t d = z[k] - a[k];
++		if (d >= 50'000ull) w += std::snprintf(b + w, cap - static_cast<size_t>(w), "%s%s %.1f", w ? ", " : "", kName[k], static_cast<double>(d) / 1e6);
++	}
++}
++inline std::atomic<uint64_t> g_slice_hist[5] = {}, g_slice_ns[kN] = {}, g_slices {0}, g_slice_max {0}, g_slice_logged {0};
++inline std::atomic<uint64_t> g_gap_n {0}, g_gap_ns[kN] = {}, g_gap_logged {0};
++inline void maxed(std::atomic<uint64_t>& m, uint64_t v) {
++	for (uint64_t x = m.load(); v > x && !m.compare_exchange_weak(x, v);) {
++	}
++}
++} // namespace c438
++#endif
+ // Run 123: the label the doorbell consumer's first unready buffer waits on, for the game thread
+ // to see a cycle — a buffer of its own that waits for that queue while writing the very label
+ // the queue waits for. 0 when the consumer is not blocked.
+@@ -1553,12 +1630,27 @@
+ 	pthread_setname_np(pthread_self(), "bc5-ring"); // BC5: host threads named for per-thread CPU views (F81)
+ 	pthread_setname_np(pthread_self(), "bc5-ring"); // BC5: host threads named for per-thread CPU views (F81)
+ 	Direct::set_source(1);
++#ifndef BC5_LEAN
++	Direct::c438::t_ring = true; // exp 0438 (c438 part 2)
++	Direct::c438::flip(Direct::c438::kScan);
++#endif
+ 	struct State {
+ 		QueueReg reg;
+ 		uint64_t rptr           = 0;
+ 		uint64_t count          = 0;
+ 		uint64_t deferred_since = 0; // direct mode: this queue's next IB waits on another queue
+ 		uint64_t deferred_report = 0; // when the deferral was last journaled (run 118)
++#ifndef BC5_LEAN
++		uint64_t c438_w    = ~0ull; // exp 0438 (c438): the write pointer bc5-ring saw last
++		uint64_t c438_poll = 0;     // exp 0438 (c438): bc5-ring's previous look at this queue
++		struct Seen {
++			uint32_t off;
++			uint64_t ib;
++			uint32_t dw;
++			uint64_t seen, gap;
++		};
++		std::vector<Seen> c438_seen; // the IB packets seen and not yet submitted, in ring order
++#endif
+ 	};
+ 	std::vector<State> states;
+ 	uint64_t           idle_ticks = 0;
+@@ -1589,6 +1681,57 @@
+ 			// same way. s.rptr is kept below n.
+ 			const uint32_t w = static_cast<uint32_t>(wraw % n);
+ 			const uint32_t r = static_cast<uint32_t>(s.rptr % n);
++#ifndef BC5_LEAN
++			{ // exp 0438 (c438): the packets the write pointer moved past since the last look, with their seen time
++				const uint64_t cn = now_ns(), gap = s.c438_poll == 0 ? 0 : cn - s.c438_poll;
++				s.c438_poll = cn;
++				{ // part 2: what bc5-ring did since its last look at this queue; the view refreshed
++					uint64_t z[Direct::c438::kN];
++					Direct::c438::snap(z);
++					std::lock_guard cl(Direct::c438::mu());
++					auto&           v  = Direct::c438::views();
++					const size_t    qi = static_cast<size_t>(&s - states.data());
++					if (v.size() <= qi) v.resize(qi + 1);
++					auto& e = v[qi];
++					if (gap >= 20'000'000ull && e.poll != 0) {
++						Direct::c438::g_gap_n++;
++						for (int k = 0; k < Direct::c438::kN; k++) Direct::c438::g_gap_ns[k] += z[k] - e.at_look[k];
++						const uint64_t lg = Direct::c438::g_gap_logged++;
++						if (lg < 200 || (lg & 0xffu) == 0) {
++							char b[600];
++							Direct::c438::fmt(b, sizeof(b), e.at_look, z);
++							Direct::journal("c438 (exp 0438): queue %u/%u/%u/0x%x: look gap %.3f ms, bc5-ring was: %s (ms; %" PRIu64 " such gaps so far)\n", q.a, q.b, q.c, q.d, static_cast<double>(gap) / 1e6, b, lg + 1);
++						}
++					}
++					for (int k = 0; k < Direct::c438::kN; k++) e.at_look[k] = z[k];
++					e.a       = q.a;
++					e.b       = q.b;
++					e.c       = q.c;
++					e.d       = q.d;
++					e.poll    = cn;
++					e.pending = (w + n - r) % n;
++					if (e.pending == 0) e.unready = false;
++				}
++				if (s.c438_w != w) {
++					const auto* rg = reinterpret_cast<const uint32_t*>(q.ring_base);
++					uint32_t    k  = s.c438_w == ~0ull ? r : static_cast<uint32_t>(s.c438_w);
++					for (uint32_t guard = 0; k != w && guard < 4096; guard++) {
++						const uint32_t hh = rg[k];
++						uint32_t       ll = 1;
++						if ((hh >> 30u) == 3) {
++							const uint32_t c = (hh >> 16u) & 0x3fffu;
++							ll               = c == 0x3fffu ? 1 : c + 2;
++						}
++						if ((hh >> 30u) == 3 && (((hh >> 8u) & 0xffu) == IT_INDIRECT_BUFFER || ((hh >> 8u) & 0xffu) == IT_INDIRECT_BUFFER_CNST) && ll >= 4 && k + ll <= n) {
++							const uint64_t ta = (rg[k + 1] & ~3u) | (static_cast<uint64_t>(rg[k + 2] & 0xffu) << 32u);
++							if (s.c438_seen.size() < 4096) s.c438_seen.push_back({k, ta, rg[k + 3] & 0xfffffu, cn, gap});
++						}
++						k = (k + ll) % n;
++					}
++					s.c438_w = w;
++				}
++			}
++#endif
+ 			if (w == r) {
+ 				continue;
+ 			}
+@@ -1625,6 +1768,37 @@
+ 					if (ready) ready_len = k < pending ? k : pending;
+ 				}
+ 				const uint64_t now = now_ns();
++#ifndef BC5_LEAN
++				{ // exp 0438 (c438): this queue's state as bc5-ring leaves it
++					std::lock_guard cl(Direct::c438::mu());
++					auto&           v = Direct::c438::views();
++					const size_t    qi = static_cast<size_t>(&s - states.data());
++					if (v.size() <= qi) v.resize(qi + 1);
++					auto& e   = v[qi];
++					e.a       = q.a;
++					e.b       = q.b;
++					e.c       = q.c;
++					e.d       = q.d;
++					e.pending = pending;
++					e.poll    = now;
++					e.unready = !ready;
++					if (!ready) {
++						const auto& u    = Direct::t_unready;
++						e.label          = u.label;
++						e.value          = u.value;
++						e.pos            = u.pos;
++						e.deferred_since = s.deferred_since == 0 ? now : s.deferred_since;
++						e.head_seen      = 0;
++						for (const auto& x: s.c438_seen)
++							if (x.ib == reinterpret_cast<uint64_t>(u.ib)) {
++								e.head_seen = x.seen;
++								break;
++							}
++					} else {
++						e.deferred_since = 0;
++					}
++				}
++#endif
+ 				if (!ready && ready_len != 0) {
+ 					take             = ready_len;
+ 					s.deferred_since = 0;
+@@ -1653,6 +1827,61 @@
+ 			const uint32_t w_take = (r + take) % n;
+ 			// Direct mode: the ring slice [r, w_take) is itself a valid IB of INDIRECT_BUFFER packets;
+ 			// a slice that wraps is submitted in two parts.
++#ifndef BC5_LEAN
++			{ // exp 0438 (c438): the packets of this slice, seen -> submit (the slice goes to Direct::submit now)
++				const uint64_t cn = now_ns();
++				const uint32_t tk = (w_take + n - r) % n;
++				while (!s.c438_seen.empty()) {
++					const auto&    x  = s.c438_seen.front();
++					const uint32_t dx = (x.off + n - r) % n;
++					if (dx >= pending) { // behind the read pointer or past the write pointer: not a live entry
++						s.c438_seen.erase(s.c438_seen.begin());
++						continue;
++					}
++					if (dx >= tk && !(tk == 0 && take != 0)) break; // not in this slice
++					const uint64_t d = cn - x.seen;
++					Direct::c438::g_pk++;
++					Direct::c438::g_hist_sub[Direct::c438::bucket(d)]++;
++					Direct::c438::g_hist_gap[Direct::c438::bucket(x.gap)]++;
++					Direct::c438::maxed(Direct::c438::g_max_sub, d);
++					Direct::c438::maxed(Direct::c438::g_max_gap, x.gap);
++					if (d >= 20'000'000ull || x.gap >= 20'000'000ull) {
++						const uint64_t k = Direct::c438::g_logged++;
++						if (k < 200 || (k & 0xffu) == 0)
++							Direct::journal("c438 (exp 0438): queue %u/%u/%u/0x%x acb %u dwords at 0x%" PRIx64 ": seen at t %.6f s, %.3f ms after bc5-ring's previous look; submitted %.3f ms after it was seen (%" PRIu64 " such so far)\n",
++							                q.a, q.b, q.c, q.d, x.dw, x.ib, Direct::timing_now() - static_cast<double>(cn - x.seen) / 1e9, static_cast<double>(x.gap) / 1e6, static_cast<double>(d) / 1e6, k + 1);
++					}
++					s.c438_seen.erase(s.c438_seen.begin());
++				}
++				static uint64_t c438_last = 0;
++				if (cn - c438_last > 60'000'000'000ull) {
++					c438_last = cn;
++					{
++						char b1[600], b2[600];
++						uint64_t zero[Direct::c438::kN] = {}, sl[Direct::c438::kN], gp[Direct::c438::kN];
++						for (int k = 0; k < Direct::c438::kN; k++) {
++							sl[k] = Direct::c438::g_slice_ns[k].load();
++							gp[k] = Direct::c438::g_gap_ns[k].load();
++						}
++						Direct::c438::fmt(b1, sizeof(b1), zero, sl);
++						Direct::c438::fmt(b2, sizeof(b2), zero, gp);
++						Direct::journal("c438 (exp 0438): t %.1f s: %" PRIu64 " slices, time inside submit <1/<5/<20/<100 ms/more %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", longest %.3f ms, by kind (ms): %s; "
++						                "%" PRIu64 " look gaps of 20 ms or more, bc5-ring's time in them by kind (ms): %s\n",
++						                Direct::timing_now(), Direct::c438::g_slices.load(), Direct::c438::g_slice_hist[0].load(), Direct::c438::g_slice_hist[1].load(), Direct::c438::g_slice_hist[2].load(),
++						                Direct::c438::g_slice_hist[3].load(), Direct::c438::g_slice_hist[4].load(), static_cast<double>(Direct::c438::g_slice_max.load()) / 1e6, b1, Direct::c438::g_gap_n.load(), b2);
++					}
++					Direct::journal("c438 (exp 0438): t %.1f s: %" PRIu64 " acb packets; seen->submit <1/<5/<20/<100 ms/more %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", longest %.3f ms; "
++					                "bc5-ring's look gap before the seen <1/<5/<20/<100 ms/more %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", longest %.3f ms\n",
++					                Direct::timing_now(), Direct::c438::g_pk.load(), Direct::c438::g_hist_sub[0].load(), Direct::c438::g_hist_sub[1].load(), Direct::c438::g_hist_sub[2].load(), Direct::c438::g_hist_sub[3].load(),
++					                Direct::c438::g_hist_sub[4].load(), static_cast<double>(Direct::c438::g_max_sub.load()) / 1e6, Direct::c438::g_hist_gap[0].load(), Direct::c438::g_hist_gap[1].load(), Direct::c438::g_hist_gap[2].load(),
++					                Direct::c438::g_hist_gap[3].load(), Direct::c438::g_hist_gap[4].load(), static_cast<double>(Direct::c438::g_max_gap.load()) / 1e6);
++				}
++			}
++#endif
++#ifndef BC5_LEAN
++			uint64_t c438_a[Direct::c438::kN];
++			Direct::c438::snap(c438_a);
++#endif
+ 			Direct::chain_begin(); // ADR 0010: the slice's buffers as one submission
+ 			if (w_take > r) {
+ 				Direct::submit(ring + r, w_take - r, "ring");
+@@ -1661,6 +1890,27 @@
+ 				if (w_take != 0) Direct::submit(ring, w_take, "ring");
+ 			}
+ 			Direct::chain_end();
++#ifndef BC5_LEAN
++			{ // exp 0438 (c438 part 2): this slice's time inside Direct::submit and chain_end, by kind
++				uint64_t z[Direct::c438::kN], tot = 0;
++				Direct::c438::snap(z);
++				for (int k = 0; k < Direct::c438::kN; k++) {
++					Direct::c438::g_slice_ns[k] += z[k] - c438_a[k];
++					tot += z[k] - c438_a[k];
++				}
++				Direct::c438::g_slices++;
++				Direct::c438::g_slice_hist[Direct::c438::bucket(tot)]++;
++				Direct::c438::maxed(Direct::c438::g_slice_max, tot);
++				if (tot >= 20'000'000ull) {
++					const uint64_t lg = Direct::c438::g_slice_logged++;
++					if (lg < 200 || (lg & 0xffu) == 0) {
++						char b[600];
++						Direct::c438::fmt(b, sizeof(b), c438_a, z);
++						Direct::journal("c438 (exp 0438): queue %u/%u/%u/0x%x slice of %u dwords: %.3f ms inside submit: %s (ms; %" PRIu64 " such slices so far)\n", q.a, q.b, q.c, q.d, take, static_cast<double>(tot) / 1e6, b, lg + 1);
++					}
++				}
++			}
++#endif
+ 			{
+ 				auto marks = std::move(t_gpu_done);
+ 				t_gpu_done.clear();
+@@ -1729,7 +1979,13 @@
+ 			bc5::load_stat::delay(bc5::load_stat::kRingPass);
+ 		}
+ 		ls_slept = true;
++#ifndef BC5_LEAN
++		Direct::c438::flip(Direct::c438::kIdle); // exp 0438 (c438 part 2)
++#endif
+ 		std::this_thread::sleep_for(std::chrono::microseconds(idle_ticks > 1000 ? bc5::load_stat::kRingPollUs * 5 : bc5::load_stat::kRingPollUs));
++#ifndef BC5_LEAN
++		Direct::c438::flip(Direct::c438::kScan);
++#endif
+ 	}
+ }
+ 
+@@ -7447,6 +7703,9 @@
+ 	}
+ 	if (now != prev) {
+ 		chain_flush(2); // ring/class
++#ifndef BC5_LEAN
++		const c438::Scope c438_wi(c438::kWaitIdle); // exp 0438 (c438 part 2)
++#endif
+ 		const bool idle = !g_dev || g_dev->wait_idle(2'000'000'000ull);
+ 		g_w428_moves++;
+ 		if (!idle) g_w428_move_late++;
+@@ -9359,6 +9618,9 @@
+ }
+ inline void f10_observe(uint64_t label) {
+ 	if (g_chain_mode < 2) return;
++#ifndef BC5_LEAN
++	const c438::Scope c438_sc(c438::kF10); // exp 0438 (c438 part 2); F16 and F18 flip it below
++#endif
+ 	const uint64_t          t0 = SoftCp::now_ns();
+ 	std::vector<ChainSlot*> mine, seen;
+ 	bool                    list_busy = false;
+@@ -9401,6 +9663,9 @@
+ 		}
+ 	}
+ 	// F16: the writers still in flight at the bound: wait for their submit_now to return.
++#ifndef BC5_LEAN
++	c438::flip(c438::kF16); // exp 0438 (c438 part 2)
++#endif
+ 	int      f16_res = 0, f16_ph = 0; // 1 returned, 2 50 ms bound, 3 given up by phase
+ 	uint64_t f16_t   = 0;
+ 	if (bound && g_f10_reg_mu.try_lock()) {
+@@ -9445,6 +9710,9 @@
+ 		}
+ 	}
+ 	// F18: a bound still standing.
++#ifndef BC5_LEAN
++	c438::flip(c438::kF18); // exp 0438 (c438 part 2)
++#endif
+ 	int      f18_res = 0, f18_ph = 0; // 1 the writers went, 2 50 ms bound, 3 given up by phase, 4 no writer of L left
+ 	uint64_t f18_t   = 0;
+ 	uint32_t c18[3] {};
+@@ -10221,6 +10489,9 @@
+ 						}
+ 					}
+ 					if (!broken && (!g_dev || !g_dev->wedged())) {
++#ifndef BC5_LEAN
++						const c438::Scope c438_cw(c438::kAcbCpuWait); // exp 0438 (c438 part 2): bc5-ring only counts
++#endif
+ 						while (!(ok = wait_satisfied(p, op == 0x93))) {
+ 							if (SoftCp::now_ns() - t0 >= limit) break;
+ 							std::this_thread::sleep_for(std::chrono::microseconds(50));
+@@ -10253,6 +10524,28 @@
+ 						        *reinterpret_cast<const volatile uint64_t*>(label & ~7ull), p[4] | (static_cast<uint64_t>(p[5]) << 32u), p[6] | (static_cast<uint64_t>(p[7]) << 32u));
+ 					}
+ 					if (!ok) journal("cpu-wait %s at %u on 0x%" PRIx64 ": %s after %.1f ms\n", op == 0x93 ? "WAIT_REG_MEM64" : "WAIT_REG_MEM", i, label, broken ? "CYCLE" : (limit < 1'000'000'000ull ? "GIVEN UP" : "TIMEOUT"), static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
++#ifndef BC5_LEAN
++					if (!ok) { // exp 0438 (c438): every guest queue as bc5-ring last left it
++						uint64_t z[c438::kN];
++						c438::snap(z);
++						journal("c438 (exp 0438):   bc5-ring is in %s for %.3f ms\n", c438::kName[c438::g_cur.load()], static_cast<double>(c438::now() - c438::g_cur_since.load()) / 1e6);
++						std::lock_guard cl(c438::mu());
++						const uint64_t  cn = SoftCp::now_ns();
++						for (const auto& e: c438::views()) {
++							if (e.unready)
++								journal("c438 (exp 0438):   queue %u/%u/%u/0x%x: %u dwords pending, looked at %.3f ms ago; head UNREADY for %.3f ms at %u on 0x%" PRIx64 " (value 0x%" PRIx64 "), its packet seen %.3f ms ago\n", e.a, e.b, e.c, e.d,
++								        e.pending, static_cast<double>(cn - e.poll) / 1e6, static_cast<double>(cn - e.deferred_since) / 1e6, e.pos, e.label, e.value,
++								        e.head_seen != 0 ? static_cast<double>(cn - e.head_seen) / 1e6 : -1.0);
++							else
++								journal("c438 (exp 0438):   queue %u/%u/%u/0x%x: %u dwords pending, looked at %.3f ms ago; head ready\n", e.a, e.b, e.c, e.d, e.pending, static_cast<double>(cn - e.poll) / 1e6);
++							if (e.pending != 0) {
++								char b[600];
++								c438::fmt(b, sizeof(b), e.at_look, z);
++								journal("c438 (exp 0438):     since that look bc5-ring was: %s (ms)\n", b);
++							}
++						}
++					}
++#endif
+ 					if (!ok) t_wait_given_up = true;
+ 					if (dry_here) (ok ? g_dry_ok : g_dry_failed)++;
+ 					frame_profile_wait(on_game_thread(), false, static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
+@@ -11270,6 +11563,9 @@
+ }
+ 
+ static void submit(const uint32_t* ib, uint32_t num_dwords, const char* kind) {
++#ifndef BC5_LEAN
++	const c438::Scope c438_sc(c438::kSubmit); // exp 0438 (c438 part 2)
++#endif
+ 	mem_line_start(); // experiment 0401 series e3
+ 	if (!chain_on()) SoftCp::clear_gpu_executed(); // the soft CP runs this buffer next, on this thread (ADR 0010: per call, chain_begin)
+ 	if (g_stage == Stage::Off || !g_dev || ib == nullptr || num_dwords == 0) return;
+@@ -14638,6 +14934,9 @@
+ 	chain_flush(5); // ADR 0010
+ 	if (!g_async || !g_dev) return;
+ 	bc5::load_stat::Scope ls_scope(bc5::load_stat::kWaitJobs); // experiment 0415 (ls415)
++#ifndef BC5_LEAN
++	const c438::Scope c438_wi(c438::kWaitIdle); // exp 0438 (c438 part 2)
++#endif
+ 	g_dev->wait_idle(2'000'000'000ull);
+ }
+ 
+@@ -15094,6 +15393,9 @@
+ 		// ahead of a GPU-bound frame instead of letting the queue drain (experiment 0028).
+ 		static constexpr uint32_t max_in_flight = 24;
+ 		const uint64_t t_cap = SoftCp::now_ns();
++#ifndef BC5_LEAN
++		const c438::Scope c438_bp(c438::kBackPressure); // exp 0438 (c438 part 2)
++#endif
+ 		while (g_cq_fences.load() >= max_in_flight || g_recovering.load()) std::this_thread::sleep_for(std::chrono::microseconds(50));
+ 		frame_profile_wait(t_cq == 0, true, static_cast<double>(SoftCp::now_ns() - t_cap) / 1e6);
+ 	}
+@@ -15104,8 +15406,18 @@
+ 	// exp 0436 (tag su436): this ring's order, before the device mutex (lock order: ring, g_dev_mutex, backend)
+ 	const bool su = g_async && (qring == bc5::direct::kGfxRing || (qring >= 0 && qring < bc5::direct::kComputeRings));
+ 	std::unique_lock<std::mutex> su_ring;
++#ifndef BC5_LEAN
++	const int c438_prev = c438::t_kind; // exp 0438 (c438 part 2): the ring lock, then the device mutex, then back
++	c438::flip(c438::kRingLock);
++#endif
+ 	if (su) su_ring = std::unique_lock<std::mutex>(g_su436_ring_mu[qring == bc5::direct::kGfxRing ? bc5::direct::kComputeRings : qring]);
++#ifndef BC5_LEAN
++	c438::flip(c438::kDevMutex);
++#endif
+ 	std::unique_lock<std::mutex> lock(g_dev_mutex);
++#ifndef BC5_LEAN
++	c438::flip(c438_prev);
++#endif
+ 	if (t_f16_slot != nullptr) t_f16_slot->f16_phase.store(3); // exp 0430 F16
+ 	const uint64_t  fs_got = fs_ask != 0 ? SoftCp::now_ns() : 0;
+ 	bc5::load_stat::end(bc5::load_stat::kDevLockWait, ls_w0);
+@@ -15912,8 +16224,18 @@
+ 			lock.unlock();
+ 			let_go = true;
+ 		};
+-		r = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, true, qring, unlock_dev);
+-		if (!lock.owns_lock()) lock.lock();
++		{
++#ifndef BC5_LEAN
++			const c438::Scope c438_be(c438::kBackend); // exp 0438 (c438 part 2)
++#endif
++			r = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, true, qring, unlock_dev);
++		}
++		{
++#ifndef BC5_LEAN
++			const c438::Scope c438_dm(c438::kDevMutex);
++#endif
++			if (!lock.owns_lock()) lock.lock();
++		}
+ #ifndef BC5_LEAN
+ 		if (let_go) {
+ 			const uint64_t k = g_su436_calls.fetch_add(1);
