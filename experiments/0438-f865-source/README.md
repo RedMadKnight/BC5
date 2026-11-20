@@ -739,6 +739,47 @@ wrong: the stalling variants (c, d, d2) can only end in a ring timeout. They are
   - Since the title never kicks, WD equals W in behaviour. Drop WD for 3 more W, or keep it as a no-op control: the
     top session's call.
 
+## Result 8: w438 on a clean boot (2026-11-20 12:34–13:53, boot eb264b8c, 0 GPU reset lines)
+
+- **The first attempt (12:34) stopped at its first W0 run.** u438sW030 ended at 1.6 s on a refused submission: "submit
+  #42 acb 57 dwords on ring 0 was REFUSED by the device (rc -16)". The record is `faults/20261120-124234`, exit 86;
+  0 kernel lines.
+  - Cause, my bug: the 24-job cap was checked before the ring lock, so several submitters on one compute ring
+    overfilled its 24-slot pool.
+  - Fixed: the cap is re-checked under the ring lock (`mkw438.py` step 8). Rebuilt as unit `91557164…`, normal
+    `97ace22e`.
+- **The chain:** `WC W0 W` × 3, his scene, RT on, 4 rings, G+300.
+  - WC = all off; W0 = watcher alone (`EARLYREG=0`); W = watcher + r438 mode 1. The kick never fires (c438d).
+  - All 9 runs NO_CRASH, 0 kernel lines. The laptop's ssh dropped twice (network); the chain ran on under the user
+    manager.
+
+| run | arm | flips/s | s with a gap > 50 / > 100 ms | frames (last 290 s) over 50 / 100 ms | given up | early-writer waits | bc5-ring/submitters' device-mutex wait |
+|---|---|---|---|---|---|---|---|
+| u438sWC32 | WC | 36.20 | 206 / 55 | 10445: 769 / 67 | 0 | – | 44.7 s |
+| u438sW033 | W0 | 33.00 | 216 / 69 | 9514: 1110 / 88 | 5 | – | 237.3 s |
+| u438sW34 | W | 34.42 | 218 / 68 | 9934: 929 / 93 | 0 | 26,196 (14.2 s, longest 39 ms) | 196.8 s |
+| u438sWC35 | WC | 33.47 | 220 / 66 | 9657: 1059 / 84 | 0 | – | 44.6 s |
+| u438sW036 | W0 | 32.73 | 220 / 78 | 9433: 1156 / 101 | 1 | – | 237.5 s |
+| u438sW37 | W | 33.32 | 218 / 70 | 9661: 1105 / 93 | 0 | 24,737 (13.6 s, longest **112 ms**) | 197.0 s |
+| u438sWC38 | WC | 34.34 | 211 / 70 | 9904: 919 / 88 | 0 | – | 39.9 s |
+| u438sW039 | W0 | 35.11 | 211 / 60 | 10142: 773 / 78 | 3 | – | 222.7 s |
+| u438sW40 | W | 32.92 | 216 / 72 | 9549: 1036 / 93 | 0 | 25,644 (14.6 s, longest **144 ms**) | 191.2 s |
+
+**Reading** (3 against 3 per arm, R13):
+- **The watcher alone (W0) does not close the give-ups:** 9 in 3 runs against 0 in 3 for WC on this boot.
+  - It is also no faster: mean 33.61 flips/s against WC 34.67, and frames over 50 ms in the same range or higher.
+  - The control's give-ups vary by boot: 12 in 3 on a1db5eee in result 7, 0 in 3 here.
+- **W (watcher + r438) has 0 give-ups** (r438 again: 0 in 9 runs across results 6–8).
+  - Its early-writer waits are 13.6–14.6 s, below result 7's 17–20 s.
+  - But two waits went over 100 ms (112 and 144 ms; BUG lines journaled).
+  - Mean 33.55 flips/s against WC 34.67, so no gain.
+- **The submitters fight over the device mutex:** 191–237 s of waiting summed over the threads, against 40–45 s for
+  the single bc5-ring. Each submitter's preparation still takes `g_dev_mutex`, so N threads queue on one lock. The
+  look-gap counts are not comparable between the arms: an idle submitter's 50-ms wait counts as a look gap.
+- **Verdict on w438:** refuted as built. Taking the doorbell faster does not help while every submission's
+  preparation serializes on `g_dev_mutex`. The lever is that lock: the game thread's k1f412 and syncs, then
+  bc5-ring's own direct sync (results 5–7), not the doorbell.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its

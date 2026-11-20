@@ -20,7 +20,7 @@ P_ARCH=d6638808; P_NORMAL=f345db74; P_LEAN=6a735b81
 K_UNIT=680bda1f3430b676f2dadef8808ae24a  # k438 (off by default, refuted) + k438b (BC5_0438_HOLD); was 59a5df70 for build d4a2f86d
 K_PY=5dfb35d884bee8af31d81e3ad8b92548
 K_R438=94d696fbfe6cca223346ba255338a0f0  # r438.cpp: mkr438.py on cat/bc5LleAgc.cpp (3623fd41)
-K_W438=d67488c3e1147c7440203e68c9542f5c  # w438.cpp: mkr438 -> mkc438d -> mkw438 on cat/bc5LleAgc.cpp
+K_W438=91557164b555b297f6e1b98ddc3f887d  # w438.cpp: mkr438 -> mkc438d -> mkw438 on cat/bc5LleAgc.cpp
 K_C438D=3a10750dd8e6e996afb59fc604668293  # c438d.cpp: mkc438d.py on cat/bc5LleAgc.cpp (3623fd41)
 K_CAT=3623fd41142c49514fce913c34c2efab  # cat/bc5LleAgc.cpp: mkcat438.py on a62e8bf6
 K_VG=cad85761590d642235cded7094c9b48c      # exp 0437's mkvg437.py (branch exp/0437-q30-syncs f89c3861), folded in (top, 2026-11-20)

@@ -213,6 +213,16 @@ rep('''	c438d_note(request, argp); // exp 0438 (tag c438d): records only
 rep('''"; pointer moves seen %" PRIu64 ", of them after a kick %" PRIu64''', '''"; w438 %s kick %s: hand-overs %" PRIu64 ", kick wakes %" PRIu64 "; pointer moves seen %" PRIu64 ", of them after a kick %" PRIu64''')
 rep('''						                Direct::c438::g_kick_seen_before.load(), Direct::c438::g_moves.load()''', '''						                Direct::c438::g_kick_seen_before.load(), w438::on() ? "ON" : "off", w438::kick_on() ? "ON" : "off", w438::g_handoffs().load(), w438::g_kick_wakes().load(), Direct::c438::g_moves.load()''')
 
+
+# 8. the 24-job cap re-checked under the ring's lock: with several submitters on one compute ring, the check before the
+#    lock raced (u438sW030: submit #42 on ring 0 refused by the backend with -EBUSY, its 24-slot pool full). Under the
+#    ring lock a ring's own jobs are serialized, so its jobs in flight cannot pass the cap (<= 24 = its slot pool).
+rep('''	if (su) su_ring = std::unique_lock<std::mutex>(g_su436_ring_mu[qring == bc5::direct::kGfxRing ? bc5::direct::kComputeRings : qring]);''',
+    '''	if (su) su_ring = std::unique_lock<std::mutex>(g_su436_ring_mu[qring == bc5::direct::kGfxRing ? bc5::direct::kComputeRings : qring]);
+	if (su && w438::on()) { // exp 0438 (tag w438): the cap again, under the ring lock (24: max_in_flight above)
+		while (g_cq_fences.load() >= 24 || g_recovering.load()) std::this_thread::sleep_for(std::chrono::microseconds(50));
+	}''')
+
 out = s.encode('utf-8')
 open(OUT, 'wb').write(out)
 print('w438 unit', hashlib.md5(out).hexdigest(), len(out))
