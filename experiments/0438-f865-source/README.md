@@ -1007,6 +1007,56 @@ If the scan is not the large part, the line names the part that is, for the next
 - Per run: flips/s, gaps over 50 / 100 ms, give-ups, c438's holder table and slice kinds, the s438 line, and the
   i438 line count.
 
+## Result 10: build 10, stopped at the gate after one run (2026-11-20 15:26–15:35, boot eb264b8c, binary 3ff1d182)
+
+**Build.** normal `3ff1d182af952e6d2a7402948a5c4f1d` (unit `a5629394…`), 0 errors and the 7 old warnings, built
+under BOX-LOCK 15:26–15:27. Shared builds unchanged.
+
+**The chain stopped by rule.** Its first run, u438sMC52 (MC: s438 off, on the UR base), ended NO_CRASH at
+**32.89 flips/s**, with 218 s with a gap over 50 ms, 71 over 100 ms, pad keys 0 and 0 give-ups. That is under the
+gate of 33.3, so the chain stopped. No M run was made, and there was no GPU line.
+- The gate was set for a both-off control (C/UC).
+- In result 9 the UR base ran 33.33, 33.43 and 34.75: it sits at the gate.
+- Whether the box was slow or the gate does not fit this base is the top session's call.
+
+**The s438 line from MC52 (scan on, t 420 s)** answers where direct_sync's time goes:
+- **Passes:** 464,199 fast and 9,292 full. 2,826 of the full passes (30 %) were merge-only, the ones s438 would
+  skip.
+- **The full passes' time by part:** views 12.75 s, scan 7.78 s, merge 2.57 s, drain 0.11 s, **maps 16.12 s**.
+- **The most s438 can save** is about 30 % of the scan, so about 2.3 s in 420 s, plus nothing of the views or maps
+  time. **s438 is a small lever.**
+- **The large parts are the mapping rebuild (maps) and the views list (views).** Both run when the title's mapping
+  layout changes. That points to the map calls themselves, not to polling.
+
+**The scan yield (a first answer to the maintainer's question, from MC52's journal, before y438).** These are BOs
+imported by sync passes, from the journal's `+N BOs` lines, timed by the nearest earlier timed line:
+
+| phase | sync lines with imports | BOs | pinned at the end of the phase |
+|---|---|---|---|
+| load (t < 60 s) | 323 | 430 | — |
+| play (t ≥ 60 s) | 127 | 139 | 11,240 MiB at t 86 s → 11,742 MiB at t 421 s |
+
+- **During play the syncs still find new data:** about 500 MiB in about 335 s, one or two chunks every 2–3 s. So it
+  is not ~0.
+- **Not yet separated:** scans against forced imports. k1f412 forced none ("k1 at the filter" lines: 0); ud434 logged
+  22 user-data imports in play. y438 (`mks438y.py`, next build) counts by kind.
+- **What this means for an event-driven design (an inference, not measured).**
+  - On the console the GPU sees memory from the map call on. Here the title's direct memory is a memfd whose pages
+    exist only once written, and the scan imports chunks when they first hold data (`SEEK_DATA`).
+  - A first write to a mapped range is not a call the host sees. "Import at the map call" would mean importing
+    (pinning) the whole mapped range at once, which is the eager-names path, at the cost of GTT for memory the title
+    has not touched.
+  - The play-time yield above is what that trade would have to cover.
+
+**i438: the two unknown ioctls (MC52, 456 lines).** Every logged call had the same in-buffer:
+- `0xc0088133` (8 bytes; 228 calls logged, all on Render Thread): in `00 00 00 00 01 00 00 00`;
+- `0xc0108139` (16 bytes; 227 calls logged on Render Thread, 1 on game-main at t 0): in
+  `00 00 00 00 01 00 00 00` followed by 8 zero bytes;
+- out: zeros, as the host returns today.
+
+Read as little-endian u32s, the in-buffer is {0, 1}, the same on every call. That fits a query or a toggle with a
+fixed argument rather than a per-submit payload. TODO(verify): no public source names either request yet.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
