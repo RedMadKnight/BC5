@@ -6,10 +6,13 @@
 // 2. a slice whose job never registers the write: r438_end counts it lost and journals a BUG line; the early entry goes;
 // 3. the part of an acb already submitted as a head (g_acb_heads done) is not registered again;
 // 4. bc5-ring's own ring_will_satisfy ignores early entries.
+// 6. (PLWCV) the latency from the writer's registration to the game thread's return, 20 rounds: with the condition
+//    variable (BC5_0438_PLWCV unset or 1) the median must be under 2 ms; with the poll (=0) it is printed only.
 // The ring's INDIRECT_BUFFER carries a 40-bit address: the IBs are static arrays (the Windows image base fits).
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <cinttypes>
 #include <cstdarg>
 #include <cstdint>
@@ -104,7 +107,7 @@ int main() {
 #ifdef BC5_LEAN
 	std::printf("lean; ");
 #endif
-	std::printf("BC5_0438_EARLYREG %s\n", r438_on() ? "on" : "off");
+	std::printf("BC5_0438_EARLYREG %s, PLWCV %s\n", r438_on() ? "on" : "off", r438_cv() ? "on" : "off");
 	if (!r438_on()) {
 		r438_begin(g_ring, 4, nullptr, 0);
 		CHECK(early_entries() == 0);
@@ -149,6 +152,7 @@ int main() {
 	CHECK(g_r438_lost.load() == 2 && count("never reached the ring") == 2);
 #else
 	CHECK(g_lines.empty());
+	CHECK(g_r438_lost_lean.load() == 2); // lean's one counter
 #endif
 	CHECK(early_entries() == 0);
 	// 3. the head already submitted: only the second write is early
@@ -191,6 +195,33 @@ int main() {
 		g5.join();
 		CHECK(got5.load() == 1);
 		std::printf("case 5: waited for the early write\n");
+	}
+	// 6. PLWCV: registration -> return latency, 20 rounds
+	{
+		g_acb_heads.clear();
+		std::vector<double> lat;
+		for (int round = 0; round < 20; round++) {
+			r438_begin(g_ring, 4, nullptr, 0);
+			std::atomic<int>      in6 {0};
+			std::atomic<uint64_t> ret {0};
+			std::thread           g6([&] {
+                t_game = true;
+                in6    = 1;
+                (void)ring_will_satisfy(g_wait1, true, bc5::direct::kGfxRing);
+                ret = SoftCp::now_ns();
+            });
+			while (in6.load() == 0) std::this_thread::yield();
+			std::this_thread::sleep_for(std::chrono::milliseconds(30));
+			const std::vector<uint32_t> ex6 {0, 8};
+			const uint64_t              t_reg = SoftCp::now_ns();
+			register_label_writes(g_ib, 16, ex6, 100 + static_cast<uint64_t>(round), 0);
+			r438_end();
+			g6.join();
+			lat.push_back(static_cast<double>(ret.load() - t_reg) / 1e6);
+		}
+		std::sort(lat.begin(), lat.end());
+		std::printf("case 6 (%s): registration -> return, 20 rounds: median %.3f ms, p90 %.3f ms, max %.3f ms\n", r438_cv() ? "condition variable" : "poll", lat[10], lat[18], lat[19]);
+		if (r438_cv()) CHECK(lat[10] < 2.0);
 	}
 	for (const auto& l: g_lines) std::printf("  %s", l.c_str());
 	std::printf("%s (%d failures)\n", fails == 0 ? "PASS" : "FAIL", fails);

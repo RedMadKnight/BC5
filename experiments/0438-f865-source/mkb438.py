@@ -10,6 +10,12 @@ What it carries over from mkr438.py (exp 0438 results 6-12), and nothing else (n
   - ring_will_satisfy on the game thread: a label whose last pending write is early is polled until it is real, then the
     wait is decided again and kept in ring order (no give-up). Other threads, and F2/F4, ignore early entries;
   - mode 1 only (r438a's mode 2 never fired, result 7). Switch BC5_0438_EARLYREG: on unless "0" (behaviour: in lean too).
+PLWCV (BC5_0438_PLWCV, on unless "0", lean reads it; the top session's fix of 2026-11-20): the game thread's wait for
+an early writer sleeps on a condition variable (g_plw_cv, at most 10 ms per sleep, the wait goes on), signalled when a
+job registers its writes and at the slice's end; "0" keeps r438's 20-us poll, which re-took g_plw_mutex between scans
+and held the registering thread off (test_b438 case 6).
+Lean: early writes that never reached the ring are counted; the first one prints one stderr line, and the total is
+printed at a normal exit (a SIGTERM ends the process without it: the tree installs no handler).
 Normal build only (#ifndef BC5_LEAN): the counters, the BUG lines (a lost early write; a game-thread wait at 100 ms,
 200 ms, ...; the wait goes on) and a 60-s line "r438 (exp 0438, b438)". Lean keeps the registration, the poll and the
 removal of a lost write's early entry, with no counter and no line.
@@ -51,6 +57,22 @@ static bool r438_on() {
 	}();
 	return v;
 }
+static bool r438_cv() { // exp 0438 (b438, PLWCV): the early-writer wait on a condition variable, on unless "0"
+	static const bool v = [] {
+		const char* e = std::getenv("BC5_0438_PLWCV");
+		return !(e != nullptr && e[0] == '0' && e[1] == 0);
+	}();
+	return v;
+}
+#ifdef BC5_LEAN
+static std::atomic<uint64_t> g_r438_lost_lean {0}; // exp 0438 (b438): lean's one counter, printed at a normal exit
+struct R438LeanExit {
+	~R438LeanExit() {
+		if (r438_on()) std::fprintf(stderr, "r438 (exp 0438, b438, lean): early writes that never reached the ring %" PRIu64 "\\n", g_r438_lost_lean.load());
+	}
+};
+static R438LeanExit g_r438_lean_exit;
+#endif
 #ifndef BC5_LEAN
 static std::atomic<uint64_t> g_r438_early {0}, g_r438_lost {0}, g_r438_waits {0}, g_r438_wait_ns {0}, g_r438_wait_max {0}, g_r438_long {0};
 #endif
@@ -169,11 +191,24 @@ static void r438_end() {
 		        timing_now(), g_r438_slices.load(), g_r438_early.load(), g_r438_lost.load(), g_r438_waits.load(), static_cast<double>(g_r438_wait_ns.load()) / 1e6, static_cast<double>(g_r438_wait_max.load()) / 1e6, g_r438_long.load());
 	}
 #else
-	(void)lost;
+	if (!lost.empty() && g_r438_lost_lean.fetch_add(lost.size()) == 0)
+		std::fprintf(stderr, "r438 (exp 0438, b438, lean): an early-registered write never reached the ring (the first; the total is printed at a normal exit)NL");
 #endif
+	if (r438_cv()) g_plw_cv.notify_all(); // PLWCV: the slice's early entries are gone
 	t_r438_real.clear();
 }
 static void forget_label_writes(uint64_t seq, int ring, bool all) {'''.replace('NL', NL))
+
+# 3b. PLWCV: the condition variable beside g_plw, signalled when a job registers its writes
+rep('''static std::vector<PendingLabelWrite>      g_plw;''',
+    '''static std::vector<PendingLabelWrite>      g_plw;
+static std::condition_variable             g_plw_cv; // exp 0438 (b438, PLWCV): real writes registered or early ones gone''')
+rep('''	g_plw.insert(g_plw.end(), found.begin(), found.end());
+}
+''', '''	g_plw.insert(g_plw.end(), found.begin(), found.end());
+	if (r438_cv()) g_plw_cv.notify_all(); // exp 0438 (b438, PLWCV)
+}
+''')
 
 # 4. F2/F4 need a real job: early entries are not theirs
 rep('''			if (w.label == label && w.ring != ring && std::find(others.begin(), others.end(), std::make_pair(w.ring, w.seq)) == others.end()) others.emplace_back(w.ring, w.seq);''',
@@ -225,9 +260,13 @@ rep('''static bool ring_will_satisfy(const uint32_t* p, bool is64, int ring) {
 #else
 		(void)r438_rec;
 #endif
-		lk.unlock();
-		std::this_thread::sleep_for(std::chrono::microseconds(20));
-		lk.lock();
+		if (r438_cv()) { // PLWCV: sleep until a job registers its writes or the slice ends (10 ms bound per sleep)
+			g_plw_cv.wait_for(lk, std::chrono::milliseconds(10));
+		} else {
+			lk.unlock();
+			std::this_thread::sleep_for(std::chrono::microseconds(20));
+			lk.lock();
+		}
 	}
 	if (last == nullptr) return false;'''.replace('NL', NL))
 

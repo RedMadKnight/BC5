@@ -8,7 +8,7 @@ piece() { sed -n "${1},${2}p" "$unit" | tr -d '\r' > "$out/$3"; }
 lineof() { grep -n -m1 -F -- "$1" "$unit" | cut -d: -f1; }
 endf() { awk -v s="$1" 'NR > s && /^}/ {print NR; exit}' "$unit"; }
 a=$(lineof 'static constexpr uint64_t                 kR438Early'); b=$(lineof 'static std::atomic<uint64_t> g_r438_slices {0};'); piece "$a" "$b" b438_cut_state.inc
-a=$(lineof 'struct PendingLabelWrite {'); b=$(lineof 'static std::vector<PendingLabelWrite>      g_plw;'); piece "$a" "$b" b438_cut_plw.inc
+a=$(lineof 'struct PendingLabelWrite {'); b=$(lineof 'static std::condition_variable             g_plw_cv;'); piece "$a" "$b" b438_cut_plw.inc
 a=$(lineof 'static void register_label_writes(const uint32_t* ib'); piece "$a" "$(endf "$a")" b438_cut_register.inc
 a=$(lineof 'static thread_local uint64_t t_r438_slice'); b=$(lineof 'static void forget_label_writes(uint64_t seq'); piece "$a" "$((b - 1))" b438_cut_r438.inc
 a=$(lineof 'static bool ring_will_satisfy(const uint32_t* p, bool is64, int ring) {'); piece "$a" "$(endf "$a")" b438_cut_rws.inc
@@ -22,5 +22,7 @@ cxx=${CXX:-g++}
 echo "== BC5_0438_EARLYREG unset"; (unset BC5_0438_EARLYREG; "$out/t438b.exe")
 echo "== BC5_0438_EARLYREG=1"; BC5_0438_EARLYREG=1 "$out/t438b.exe"
 echo "== BC5_0438_EARLYREG=0"; BC5_0438_EARLYREG=0 "$out/t438b.exe"
+echo "== BC5_0438_PLWCV=0 (the poll)"; BC5_0438_PLWCV=0 "$out/t438b.exe"
 echo "== lean, BC5_0438_EARLYREG unset"; (unset BC5_0438_EARLYREG; "$out/t438bl.exe")
 echo "== lean, BC5_0438_EARLYREG=0"; BC5_0438_EARLYREG=0 "$out/t438bl.exe"
+echo "== lean, BC5_0438_PLWCV=0 (the poll)"; BC5_0438_PLWCV=0 "$out/t438bl.exe"
