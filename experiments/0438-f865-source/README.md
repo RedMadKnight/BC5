@@ -1361,6 +1361,85 @@ the shared builds as it is. Next, if pursued:
 The view list (11–14 s per 420 s) is the larger cost and is the next candidate, event-wise, as the top session
 decided.
 
+**Closed (the top session, 2026-11-20, after Result 12).**
+- e438 is closed: there will be no build 13, and it does not go to the shared builds.
+- **Build 12 has a defect: do not reuse it as it is.** In the L and LR arms (`BC5_0438_LAYOUT=1`), a written lazy chunk
+  stayed under a read-only zero cover for about 1 s (up to 1.3 s). The required freshness was about 100 ms.
+- The device-mutex line (u438, s438, e438) gave about 1–2 s per 420 s and no change at the frame level in 4 builds.
+  No more mutex levers are added.
+
+## Frame-time budget of his scene (offline, from a journal already on the laptop; no box)
+
+**Source.** u436sS3's `direct.log`, copied to `data-0438/` for Result 1:
+- the shared normal build `f345db74`, his 09:46 scene, RT on, 4 rings;
+- its frame-profile lines, one per flip, written by `frame_profile_flip` in the unit.
+
+The scene starts at t ≈ 120.6 s, when the rate rises after the second load. From there to the hang at 188.7 s there
+are 2,621 frames, 38.6 flips/s. One 3.4-s frame at the load's end is left out.
+
+This is **one run and 68 s** of the scene. The chain runs' journals on the box have the same lines, about 10,000 frames
+a run, if a check is wanted. Tool: `fp0438.py` (`python fp0438.py <frame-profile lines>`).
+
+**What the fields are** (unit lines 14,655–14,750 and 15,279):
+- **interval:** time from flip to flip.
+- **inside:** the render thread's time in our submit path. Its parts:
+  - sync: probe + anon sync + direct sync, including the device-mutex acquire;
+  - hints;
+  - prepare;
+  - cs: the ioctl;
+  - label waits and event waits.
+- **at the flip:** `Direct::drain()` in SubmitFlip, the wait until the frame's jobs are done. Flip-defer is off.
+- **outside:** interval − inside − at the flip. This is the render thread outside our submit and flip: the title's own
+  CPU work, its waits on its other threads, and HLE calls not profiled here.
+- **GPU busy:** the union of each job's [queued, completion seen) over the frame. It covers the game thread's jobs and
+  bc5-ring's (way 2: the GFX and compute rings together). Queueing in the kernel and the completion thread's
+  latency are included, so this is an **upper bound** on the GPU's execution time.
+
+| frames | n | share of the time | interval (ms) | GPU busy | at the flip | inside (sync / prepare / cs) | outside |
+|---|---|---|---|---|---|---|---|
+| typical, 15–40 ms | 2,361 | 72 % | 21.9 (p50 20.8) | 13.1 (60 %) | 5.3 (24 %) | 5.7 (1.3 / 2.0 / 2.0) (26 %) | **10.9 (50 %)** |
+| 40–100 ms | 239 | 18 % | 55.0 | 14.1 (26 %) | 5.8 (11 %) | 27.4 (**19.1** / 2.3 / 2.2) (50 %) | 21.8 (40 %) |
+| over 100 ms | 21 | 9 %* | 151.2 | 27.5 (18 %) | 5.6 (4 %) | 41.7 (27.6 / 4.8 / 4.5) (28 %) | **103.9 (69 %)** |
+| all | 2,621 | | 25.9 | 13.3 (51 %) | 5.4 (21 %) | 8.0 (3.2 / 2.0 / 2.0) (31 %) | **12.6 (49 %)** |
+
+\* The 9 % includes the 3.4-s frame. Without it, over-100-ms frames are about 5 % of the time.
+
+Typical frames, p10 / p50 / p90:
+- interval 18.6 / 20.8 / 26.3;
+- GPU busy 11.3 / 12.9 / 14.7;
+- at the flip 3.5 / 5.3 / 7.0;
+- inside 3.8 / 4.8 / 6.9;
+- outside 9.0 / 10.7 / 12.9.
+
+Label waits on the render thread are 0.0 in every class. Per frame: jobs 7.5 from the render thread and 23.1 from
+bc5-ring.
+
+**Reading.**
+- **The scene is host-bound, not GPU-bound.**
+  - Even as an upper bound, the GPU is busy 60 % of a typical frame and 18 % of a frame over 100 ms.
+  - 1 frame in 2,621 has GPU busy ≥ 90 % of its interval.
+  - A GPU-bound frame would show the render thread waiting at the flip most of the frame. It waits 5.3 ms of 21.9.
+- **The biggest share is "outside": the render thread outside our submit and flip.**
+  - It is 10.9 ms (50 %) of a typical frame and 104 ms (69 %) of a frame over 100 ms.
+  - This journal cannot say what it is: the title's own CPU work, a wait on its own workers (whose jobs may wait on
+    the host), or an unprofiled HLE call.
+- **Second: the wait at the flip,** 5.3 ms (24 %). This is the GPU finishing the frame's last jobs, which bc5-ring
+  submits about 23 of.
+- **Our submit path on the render thread is 26 % of a typical frame** (prepare 2.0, ioctl 2.0, sync 1.3).
+  - In 40–100 ms frames, sync is the largest host part (19 ms). In 5 of the 21 frames over 100 ms, sync is 66–112 ms.
+  - Sync includes the device-mutex acquire. That is the line the top session stopped.
+- **bc5-ring's prep is not in this profile.** It reaches the frame only through the wait at the flip and through
+  sync's mutex wait.
+- **The r438 and F262 waits:**
+  - In this run (the shared build, r438 off), label waits were 0 on the render thread in every frame.
+  - In r438 runs, the chain rows give 31,000–36,000 game-thread waits for an early writer, 17–20 s per 420 s: about
+    4–5 % of the time.
+  - Those runs' journals are on the box, so these waits are not placed in frames here.
+
+**What the journals cannot answer:** what "outside" is made of. Splitting it needs a records-only item: the render
+thread's time in the title's other HLE calls (semaphores, event flags, equeue waits, sleeps), with the waker thread
+where there is one. That is a build item, and is asked for first, as the top session ruled.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
