@@ -816,6 +816,12 @@ every change of the list (`Device::sorted_mappings`, backend `direct.cpp`).
   - changed (a sync or an import in between): the walk is done again under the lock, exactly as today.
 - So u438 imports what today's pass imports whenever the list did not change in between, and is today's pass
   otherwise.
+- **No ABA on the pointer compare** (the top session's condition (b), checked in `mku438.py`'s code):
+  - the snapshot is held in `u438::t_pre.snap`, a `std::shared_ptr` member of the thread-local `Pre`, from the walk
+    until after the compare under `g_dev_mutex`;
+  - `p.valid` is cleared after the compare and the pointer is kept until the next walk replaces it;
+  - so the list it points to cannot be freed in between, and its address cannot be reused by a newer list;
+  - equal pointers therefore mean the same, still-live list object.
 - **Not moved:** the syncs and `direct_force` (they change `g_d` state, which bc5-ring's own preparation syncs too),
   and dt412 (about 30 ms a run).
 - **Records:** a `u438` line every 60 s (walks before the lock, their time, used under the lock, walked again). c438's
