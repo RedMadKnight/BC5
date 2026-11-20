@@ -1,9 +1,9 @@
 diff --git a/src/libs/bc5Reimpl.cpp b/src/libs/bc5Reimpl.cpp
 new file mode 100644
-index 0000000..5077a3f
+index 0000000..f5bcab1
 --- /dev/null
 +++ b/src/libs/bc5Reimpl.cpp
-@@ -0,0 +1,237 @@
+@@ -0,0 +1,352 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 (github.com/RedMadKnight/BC5): host glue for the clean-room re-creations of libSceAgc,
@@ -41,6 +41,10 @@ index 0000000..5077a3f
 +#include "loader/runtimeLinker.h"
 +#include "loader/symbolDatabase.h"
 +
++#include <cstdio>
++#include <cstring>
++#include <initializer_list>
++#include <sys/mman.h>
 +#include <cstdlib>
 +#include <filesystem>
 +#include <map>
@@ -106,7 +110,7 @@ index 0000000..5077a3f
 +            slot = std::make_unique<bc5::reimpl::FwImage>();
 +            const std::string path = dir() + "/" + module + ".sprx";
 +            if (!slot->load_file(path)) {
-+                LOGF("[bc5-reimpl] module file for %s not available (%s): %s\n", module,
++                std::fprintf(stderr, "[bc5-reimpl] module file for %s not available (%s): %s\n", module,
 +                     path.c_str(), slot->error().c_str());
 +            }
 +        }
@@ -128,12 +132,101 @@ index 0000000..5077a3f
 +};
 +
 +void log_sink(const char *module, const char *message) {
-+    LOGF("[bc5-reimpl %s] %s\n", module, message);
++    std::fprintf(stderr, "[bc5-reimpl %s] %s\n", module, message); // stderr: LOGF is silent here
++}
++
++// ---- BC5_REIMPL_CALLTRACE=1 (diagnostic, default off) ---------------------------------------------
++// Every export of a chosen module is registered through a small x86-64 thunk that saves the argument
++// registers (rdi, rsi, rdx, rcx, r8, r9, rax and xmm0-7), calls call_seen(index) and jumps on to the
++// real function, so the guest's calls are seen in order. The first three calls of each export are
++// logged, and the last 64 calls are printed at exit (also after a guest crash).
++struct TraceEntry {
++    const char *module;
++    const char *name;
++    const char *nid;
++};
++std::vector<TraceEntry> g_trace_entries;
++std::vector<unsigned> g_trace_count;
++unsigned g_trace_ring[64];
++unsigned g_trace_seq = 0;
++std::mutex g_trace_mu;
++
++extern "C" void bc5_reimpl_call_seen(unsigned index) {
++    std::lock_guard<std::mutex> lock(g_trace_mu);
++    g_trace_ring[g_trace_seq % 64] = index;
++    ++g_trace_seq;
++    if (index < g_trace_count.size() && g_trace_count[index]++ < 3) {
++        const TraceEntry &t = g_trace_entries[index];
++        std::fprintf(stderr, "[bc5-reimpl call #%u] %s %s (%s)\n", g_trace_seq, t.module,
++                     t.name[0] != 0 ? t.name : t.nid, t.nid);
++    }
++}
++
++void trace_dump_at_exit() {
++    std::lock_guard<std::mutex> lock(g_trace_mu);
++    const unsigned n = g_trace_seq < 64 ? g_trace_seq : 64;
++    std::fprintf(stderr, "[bc5-reimpl] last %u of %u calls:\n", n, g_trace_seq);
++    for (unsigned k = g_trace_seq - n; k < g_trace_seq; ++k) {
++        const TraceEntry &t = g_trace_entries[g_trace_ring[k % 64]];
++        std::fprintf(stderr, "[bc5-reimpl]   #%u %s %s (%s)\n", k + 1, t.module,
++                     t.name[0] != 0 ? t.name : t.nid, t.nid);
++    }
++}
++
++bool calltrace_on() {
++    const char *v = std::getenv("BC5_REIMPL_CALLTRACE");
++    return v != nullptr && v[0] != 0 && !(v[0] == '0' && v[1] == 0);
++}
++
++// One thunk; returns its size. Encodings: Intel SDM vol. 2 (PUSH/POP r64, SUB/ADD r/m64 imm32,
++// MOVDQU xmm/m128 F3 0F 6F/7F, MOV r32 imm32 B8+r, MOV r64 imm64 REX.W B8+r, CALL r/m64 FF /2,
++// JMP r/m64 FF /4 with RIP-relative disp32 0).
++std::size_t emit_thunk(std::uint8_t *p, unsigned index, std::uint64_t target) {
++    std::uint8_t *s = p;
++    auto b = [&](std::initializer_list<int> v) { for (int x : v) *p++ = static_cast<std::uint8_t>(x); };
++    auto u32 = [&](std::uint32_t v) { std::memcpy(p, &v, 4); p += 4; };
++    auto u64 = [&](std::uint64_t v) { std::memcpy(p, &v, 8); p += 8; };
++    b({0x57, 0x56, 0x52, 0x51, 0x41, 0x50, 0x41, 0x51, 0x50}); // push rdi rsi rdx rcx r8 r9 rax
++    b({0x48, 0x81, 0xEC}); u32(128);                           // sub rsp, 128 (rsp 16-aligned)
++    for (int x = 0; x < 8; ++x) b({0xF3, 0x0F, 0x7F, 0x44 | (x << 3), 0x24, 16 * x}); // movdqu [rsp+16x], xmmx
++    b({0xBF}); u32(index);                                      // mov edi, index
++    b({0x48, 0xB8}); u64(reinterpret_cast<std::uint64_t>(&bc5_reimpl_call_seen)); // mov rax, fn
++    b({0xFF, 0xD0});                                            // call rax
++    for (int x = 0; x < 8; ++x) b({0xF3, 0x0F, 0x6F, 0x44 | (x << 3), 0x24, 16 * x}); // movdqu xmmx, [rsp+16x]
++    b({0x48, 0x81, 0xC4}); u32(128);                            // add rsp, 128
++    b({0x58, 0x41, 0x59, 0x41, 0x58, 0x59, 0x5A, 0x5E, 0x5F}); // pop rax r9 r8 rcx rdx rsi rdi
++    b({0xFF, 0x25}); u32(0); u64(target);                       // jmp [rip+0] -> target
++    return static_cast<std::size_t>(p - s);
 +}
 +
 +void register_exports(Loader::SymbolDatabase *s, const ModuleDef &m) {
 +    int n = 0;
++    std::uint8_t *thunks = nullptr;
++    std::size_t used = 0;
++    if (calltrace_on()) {
++        const std::size_t bytes = (m.exports().size() * 192 + 4095) & ~std::size_t{4095};
++        void *mem = mmap(nullptr, bytes, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
++        thunks = mem == MAP_FAILED ? nullptr : static_cast<std::uint8_t *>(mem);
++        static bool once = false;
++        if (!once) {
++            once = true;
++            std::atexit(trace_dump_at_exit);
++        }
++        std::fprintf(stderr, "[bc5-reimpl] %s: call trace %s\n", m.name, thunks != nullptr ? "on" : "FAILED");
++    }
 +    for (const auto &e : m.exports()) {
++        std::uint64_t addr = reinterpret_cast<uint64_t>(e.address);
++        if (thunks != nullptr && !e.is_object) {
++            {
++                std::lock_guard<std::mutex> lock(g_trace_mu);
++                g_trace_entries.push_back({m.name, e.name, e.nid});
++                g_trace_count.push_back(0);
++            }
++            const auto index = static_cast<unsigned>(g_trace_entries.size() - 1);
++            std::uint8_t *t = thunks + used;
++            used += (emit_thunk(t, index, addr) + 15) & ~std::size_t{15};
++            addr = reinterpret_cast<uint64_t>(t);
++        }
 +        Loader::SymbolResolve sr{};
 +        sr.name = e.nid;
 +        sr.library = e.library;
@@ -142,11 +235,11 @@ index 0000000..5077a3f
 +        sr.module_version_major = 1;
 +        sr.module_version_minor = 1;
 +        sr.type = e.is_object ? Loader::SymbolType::Object : Loader::SymbolType::Func;
-+        s->Add(sr, reinterpret_cast<uint64_t>(e.address),
++        s->Add(sr, addr,
 +               std::string("bc5reimpl:") + (e.name[0] != 0 ? e.name : e.nid));
 +        ++n;
 +    }
-+    LOGF("[bc5-reimpl] %s: %d exports registered\n", m.name, n);
++    std::fprintf(stderr, "[bc5-reimpl] %s: %d exports registered\n", m.name, n);
 +}
 +
 +} // namespace
@@ -180,7 +273,7 @@ index 0000000..5077a3f
 +            const std::filesystem::path own = bc5::reimpl::find_game_copy(title_root, m.name);
 +            const bc5::reimpl::Choice c = bc5::reimpl::choose(std::getenv(m.env), !own.empty());
 +            g_choice[m.name] = c;
-+            LOGF("[bc5-reimpl] %s: %s%s%s\n", m.name, bc5::reimpl::choice_name(c),
++            std::fprintf(stderr, "[bc5-reimpl] %s: %s%s%s\n", m.name, bc5::reimpl::choice_name(c),
 +                 own.empty() ? "" : " at ", own.empty() ? "" : own.string().c_str());
 +        }
 +    }
@@ -188,6 +281,28 @@ index 0000000..5077a3f
 +    for (const auto &m : kModules) {
 +        if (chosen_bc5(m) && syms != nullptr) {
 +            register_exports(syms, m);
++            // Self-check: the key an importer's relocation looks up (library and module v1 / v1.1,
++            // Func) must find BC5's export for the module's first entry.
++            const auto ex = m.exports();
++            if (!ex.empty()) {
++                Loader::SymbolResolve sr{};
++                sr.name = ex[0].nid;
++                sr.library = ex[0].library;
++                sr.library_version = 1;
++                sr.module = m.name;
++                sr.module_version_major = 1;
++                sr.module_version_minor = 1;
++                sr.type = ex[0].is_object ? Loader::SymbolType::Object : Loader::SymbolType::Func;
++                const Loader::SymbolRecord *rec = syms->Find(sr);
++                const Loader::SymbolRecord *any = syms->FindByNid(ex[0].nid, sr.type);
++                std::fprintf(stderr,
++                             "[bc5-reimpl] %s: key check %s -> %s (%s); by NID -> %s\n", m.name,
++                             Loader::SymbolDatabase::GenerateName(sr).c_str(),
++                             rec != nullptr ? rec->dbg_name.c_str() : "none",
++                             rec != nullptr && rec->dbg_name.rfind("bc5reimpl:", 0) == 0 ? "BC5's"
++                                                                                         : "NOT BC5's",
++                             any != nullptr ? any->dbg_name.c_str() : "none");
++            }
 +        }
 +    }
 +    for (const auto &m : kModules) {
@@ -220,11 +335,11 @@ index 0000000..5077a3f
 +                ++ok;
 +            } else {
 +                ++missing;
-+                LOGF("[bc5-reimpl] %s: import %s (%s, %s) unresolved\n", m.name, imp.nid,
++                std::fprintf(stderr, "[bc5-reimpl] %s: import %s (%s, %s) unresolved\n", m.name, imp.nid,
 +                     imp.library, imp.name);
 +            }
 +        }
-+        LOGF("[bc5-reimpl] %s: %d imports resolved, %d unresolved\n", m.name, ok, missing);
++        std::fprintf(stderr, "[bc5-reimpl] %s: %d imports resolved, %d unresolved\n", m.name, ok, missing);
 +    }
 +    // Load-time initialisation in load order (driver, then Agc, then Psml), as the firmware
 +    // modules' own start code would run.
@@ -232,7 +347,7 @@ index 0000000..5077a3f
 +        for (const auto &m : kModules) {
 +            if (std::string(m.name) == name && chosen_bc5(m) && m.start != nullptr) {
 +                const std::int32_t r = m.start();
-+                LOGF("[bc5-reimpl] %s: started (%d)\n", m.name, r);
++                std::fprintf(stderr, "[bc5-reimpl] %s: started (%d)\n", m.name, r);
 +            }
 +        }
 +    }

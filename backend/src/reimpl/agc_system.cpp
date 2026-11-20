@@ -408,11 +408,22 @@ void reset_defaults_cache() {
 }
 } // namespace detail
 
+// Diagnostic (BC5): the first call of a few start-up entry points, with arguments and result.
+#define BC5_AGC_FIRST_CALL(...)                                                                        do {                                                                                                   static bool logged_ = false;                                                                       if (!logged_) {                                                                                        logged_ = true;                                                                                    log(kModule, __VA_ARGS__);                                                                     }                                                                                              } while (false)
+
 const RegisterDefaults *sceAgcGetRegisterDefaults2(std::uint32_t sdk_version) {
-    return select_defaults(false, false, sdk_version);
+    const RegisterDefaults *d = select_defaults(false, false, sdk_version);
+    BC5_AGC_FIRST_CALL("first sceAgcGetRegisterDefaults2(0x%x) -> cx %u sh %u uc %u", sdk_version,
+                       d != nullptr ? d->cx_count : 0u, d != nullptr ? d->sh_count : 0u,
+                       d != nullptr ? d->uc_count : 0u);
+    return d;
 }
 const RegisterDefaults *sceAgcGetRegisterDefaults2Internal(std::uint32_t sdk_version) {
-    return select_defaults(false, true, sdk_version);
+    const RegisterDefaults *d = select_defaults(false, true, sdk_version);
+    BC5_AGC_FIRST_CALL("first sceAgcGetRegisterDefaults2Internal(0x%x) -> cx %u sh %u uc %u",
+                       sdk_version, d != nullptr ? d->cx_count : 0u,
+                       d != nullptr ? d->sh_count : 0u, d != nullptr ? d->uc_count : 0u);
+    return d;
 }
 const RegisterDefaults *agcGetRegisterDefaultsForVersion(std::uint32_t sdk_version) {
     return select_defaults(true, false, sdk_version);
@@ -698,6 +709,11 @@ void *const g_reset_callbacks[8] = {reinterpret_cast<void *>(&reset_cb_a),
 
 std::int32_t sceAgcSuspendPoint() {
     if (state().suspend_not_ready != 0) {
+        static bool logged = false; // diagnostic (BC5): the first refusal only
+        if (!logged) {
+            logged = true;
+            log(kModule, "sceAgcSuspendPoint refused: suspend not ready (no trusted init completed)");
+        }
         return kErrNotInitialised;
     }
     const QueueSlot *slot = active_slot();
@@ -1065,18 +1081,29 @@ std::int32_t init_body(std::uint32_t version, bool trusted) {
     mutex_lock();
     const std::int32_t rc = init_locked(version, trusted);
     mutex_unlock();
+    // Diagnostic (BC5): one line per init, so a title's start-up failure shows in the log.
+    log(kModule, "init(version %u, %s caller) -> 0x%08x; suspend %s", version,
+        trusted ? "trusted" : "untrusted", static_cast<std::uint32_t>(rc),
+        state().suspend_not_ready != 0 ? "NOT ready" : "ready");
     return rc;
 }
 
 } // namespace
 
 std::int32_t sceAgcInit(std::uint32_t sdk_version) {
-    const bool trusted = is_trusted_caller(BC5_AGC_RETURN_ADDRESS());
+    const std::uint64_t ra = BC5_AGC_RETURN_ADDRESS();
+    const bool trusted = is_trusted_caller(ra);
+    BC5_AGC_FIRST_CALL("first sceAgcInit(0x%x) from 0x%llx", sdk_version,
+                       static_cast<unsigned long long>(ra));
     return init_body(sdk_version, trusted);
 }
 
-std::int32_t agcInitWithVersion(std::uint64_t, std::uint32_t sdk_version) {
-    const bool trusted = is_trusted_caller(BC5_AGC_RETURN_ADDRESS());
+std::int32_t agcInitWithVersion(std::uint64_t first, std::uint32_t sdk_version) {
+    const std::uint64_t ra = BC5_AGC_RETURN_ADDRESS();
+    const bool trusted = is_trusted_caller(ra);
+    BC5_AGC_FIRST_CALL("first init(0x%llx, 0x%x) [23LRUSvYu1M] from 0x%llx",
+                       static_cast<unsigned long long>(first), sdk_version,
+                       static_cast<unsigned long long>(ra));
     return init_body(sdk_version, trusted);
 }
 
