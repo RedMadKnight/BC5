@@ -780,6 +780,60 @@ wrong: the stalling variants (c, d, d2) can only end in a ring timeout. They are
   preparation serializes on `g_dev_mutex`. The lever is that lock: the game thread's k1f412 and syncs, then
   bc5-ring's own direct sync (results 5–7), not the doorbell.
 
+## u438: k1f412's walk out of the device mutex (design; built only on the top session's GO)
+
+- **The top session's decisions after result 8:** w438 is closed (refuted) and is not in this build; r438 mode 1
+  stays as the bridge; u438 is the next lever.
+- **The unit chain:**
+  1. `mkcat438.py`: `3623fd41…`;
+  2. `mkr438.py`: `94d696fb…`;
+  3. `mkc438d.py`: `fdfa45be…` (`r438d.cpp`);
+  4. `mku438.py`: **`78f319da0beee7c0bbb7f6b582470a2e`** (`u438-unit.diff`).
+- **Switches:** `BC5_0438_SPLIT` (u438, on unless "0") and `BC5_0438_EARLYREG` (r438). c438/c438d's records are
+  in the normal build.
+
+**What k1f412_pass touches, and which lock covers it.** The game thread's k1f412 pass is the largest single holder
+of `g_dev_mutex`: 15.6–19.8 s a run, results 6–8.
+
+| what | today | with u438 |
+|---|---|---|
+| the IB's packets (read) | `g_dev_mutex` (not needed: the title's buffer, unchanged while it is submitted) | none: read before the lock |
+| `bc5::policy::memory_operands`, `ud434::scan` (pure parses) | `g_dev_mutex` | none |
+| `g_dev->sorted_mappings()` | `g_dev_mutex` + the backend's mutex | the backend's mutex only |
+| `covered_sorted` on the snapshot (pure) | `g_dev_mutex` | none |
+| `direct_force` (imports: `g_d`'s forced chunks, BOs, views; the device mappings) | `g_dev_mutex` | `g_dev_mutex`, unchanged |
+| the pass's static counters and journal lines | `g_dev_mutex` | `g_dev_mutex` (they move with the imports) |
+
+`sorted_mappings()` returns a shared_ptr snapshot that the backend builds under its own mutex, as a new object at
+every change of the list (`Device::sorted_mappings`, backend `direct.cpp`).
+
+**The change:**
+- `submit_now` walks the IB before its back-pressure wait and the locks (`k1f412_collect`), on the snapshot of that
+  moment. It keeps the operands and user-data V#s that are not covered.
+- Under `g_dev_mutex`, at k1f412's place, the snapshot is compared with the current one by pointer identity, which
+  means the same mapping list:
+  - unchanged: only the kept misses are looked at again and imported as today;
+  - changed (a sync or an import in between): the walk is done again under the lock, exactly as today.
+- So u438 imports what today's pass imports whenever the list did not change in between, and is today's pass
+  otherwise.
+- **Not moved:** the syncs and `direct_force` (they change `g_d` state, which bc5-ring's own preparation syncs too),
+  and dt412 (about 30 ms a run).
+- **Records:** a `u438` line every 60 s (walks before the lock, their time, used under the lock, walked again). c438's
+  holder table shows whether `game/prep-pre-k1f412` drops.
+
+**No standalone unit test.** The walk uses the policy parser and the mapping list; the equivalence is argued above and
+measured on the box.
+
+**Chain (clean boot, his scene, RT on, the same gates):** `UC U UR` × 3.
+- UC = `SPLIT=0 EARLYREG=0`; U = `SPLIT=1 EARLYREG=0`; UR = `SPLIT=1 EARLYREG=1`.
+- Per run:
+  - flips/s and frames over 50 / 100 ms;
+  - give-ups;
+  - early writes lost and early-writer wait seconds;
+  - device-mutex waits and their holders;
+  - the prepare split;
+  - the u438 line.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
