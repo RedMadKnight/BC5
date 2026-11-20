@@ -1440,6 +1440,16 @@ bc5-ring.
 thread's time in the title's other HLE calls (semaphores, event flags, equeue waits, sleeps), with the waker thread
 where there is one. That is a build item, and is asked for first, as the top session ruled.
 
+**Measured on normal builds only (the maintainer, through the top session, 2026-11-20).**
+- Every flips/s figure in this experiment comes from normal builds, with their catchers and journal lines on: results
+  2–12, u438, s438, e438, r438. That includes every "no gain" and "no cost" reading. The diagnostics cost frame time
+  themselves, so these comparisons may be biased.
+- u438's and e438's "no frame-level gain" were **not checked on lean**.
+- The frame-time budget above comes from a normal build with the frame profile on. Its shares may be distorted by the
+  profile's own cost: a mutex and counters per submit and per job, a journal line per flip. The catchers add more.
+- From now on a gain or a cost counts only from lean against lean, read from MangoHud's per-frame log: median, p95 and
+  p99 frame time, plus mean flips/s.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
