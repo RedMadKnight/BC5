@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-2.0
 """BC5 experiment 0438 (tag o438): the records item "which wait, who wakes it", normal build only, off unless
 BC5_0438_OUTSIDE=1 (o438.hpp). Applies the spans and the signal marks to patch bb04219b's tree files (LF, md5s pinned)
-and writes them, with o438.hpp as src/kernel/o438.hpp, under OUT_ROOT (the build's source copy):
+and writes them, with o438.hpp as src/kernel/o438.hpp, under OUT_ROOT (the build's source copy; a CRLF tree file is pinned and patched as LF and written back as CRLF):
     mko438.py TREE_ROOT OUT_ROOT
 Each mark is one line inserted after the opening brace of the named function (found by its signature's start, which
 must occur once). Waits (a scoped span): KernelWaitSema, sem_wait / sem_reltimedwait_np / sem_timedwait, PthreadSemWait
@@ -72,7 +72,9 @@ MARKS = {
     ],
 }
 for rel, want in PIN.items():
-    b = open(os.path.join(TREE, rel), 'rb').read()
+    raw = open(os.path.join(TREE, rel), 'rb').read()
+    crlf = b'\r\n' in raw  # three of the tree's files are CRLF: pinned and patched as LF, written back as they were
+    b = raw.replace(b'\r\n', b'\n')
     got = hashlib.md5(b).hexdigest()
     assert got == want, f'{rel}: {got}, not {want}'
     s = b.decode('utf-8')
@@ -97,6 +99,8 @@ for rel, want in PIN.items():
     out = os.path.join(OUT, rel)
     os.makedirs(os.path.dirname(out), exist_ok=True)
     data = s.encode('utf-8')
+    if crlf:
+        data = data.replace(b'\n', b'\r\n')
     open(out, 'wb').write(data)
     print(f'{rel}: {n} marks, {hashlib.md5(data).hexdigest()}')
 h = open(os.path.join(HERE, 'o438.hpp'), 'rb').read()

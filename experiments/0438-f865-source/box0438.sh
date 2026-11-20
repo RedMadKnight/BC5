@@ -28,7 +28,7 @@ K_U438=78f319da0beee7c0bbb7f6b582470a2e  # u438.cpp: mkr438 -> mkc438d -> mku438
 K_S438=a56293942679688016778eef88c704c1  # s438.cpp: mks438 on u438.cpp (s438 + i438)
 K_E438=3fe3a79a459cb1ea60a7d27ff92f8c14  # e438.cpp: mks438y -> mke438 on s438.cpp (e438 + y438 + i438)
 K_B438=a31a2091ddeed206db7daec79771e932  # b438.cpp: mkb438.py on a62e8bf6 (r438 alone, mode 1, PLWCV, lean counter, p438 prologue merge)
-K_MKO=0f7c54a6ae519149bcee7fa6f761eef2; K_O438H=bace03013bfc35c761bf560b5bca9cf6  # mko438.py, o438.hpp
+K_MKO=4513a0ec8b9b53129c59329a09047f84; K_O438H=bace03013bfc35c761bf560b5bca9cf6  # mko438.py, o438.hpp
 O438_UNITS="src/kernel/semaphore.cpp src/kernel/eventFlag.cpp src/kernel/pthread.cpp src/kernel/eventQueue.cpp src/libs/libKernel.cpp src/graphics/presentation/videoOut.cpp"
 K_F438=346ebf6efa736bdbc5bf054901f40253  # f438.cpp: mkf438 on e438.cpp (build 12: the mapping index updated in place)
 K_W438=91557164b555b297f6e1b98ddc3f887d  # w438.cpp: mkr438 -> mkc438d -> mkw438 on cat/bc5LleAgc.cpp
