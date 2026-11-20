@@ -5,7 +5,8 @@
 # the route BY TIME (N_TIMED: cross 90 s, slot 4 at +8, Continue at +8, G at +20), MangoHud's own per-frame log as the
 # one frame counter (N_MH, written at N_MHD s of its own clock, before the runner ends the run), the Plasma shell stopped for the run as the lean shortcuts do
 # (N_LEANSESS), the ubuntu distrobox. Arms (the binary and BC5_0438_EARLYREG, nothing else differs):
-#   L0  lean b438, EARLYREG=0 (control)        L1  lean b438, EARLYREG=1 (r438)
+#   L0  lean b438, EARLYREG=0 (control)
+#   L1p lean b438, EARLYREG=1 PLWCV=0 (r438 with its 20-us poll)   L1c lean b438, EARLYREG=1 PLWCV=1 (r438, condition variable)
 #   N0  normal b438, EARLYREG=0, the usual journal words (the diagnostics' own cost against L0)
 #   O   normal b438 with BC5_0438_OUTSIDE=1 (the records item, if built; never pooled with the lean comparison)
 # Per run: the binary that ran (R66), pad keys (R51), flips/s and gap seconds from MangoHud's per-second lines from
@@ -14,7 +15,7 @@
 # BOX-LOCK that is not ours, an emulator that is not ours, GPU lines grown, ~/bc5-work/exp0438/STOP. Gate: the first L0's
 # flips/s >= 33.3. Each run takes and frees its own BOX-LOCK line (the runner).
 # usage (on the box, under the user manager, from ~/bc5-work/exp0438/kit):
-#   ORDER="L0 L1 L0 L1 L0 L1 N0" K0=<last run number> bash chain0438l.sh
+#   ORDER="L0 L1p L1c L0 L1p L1c L0 L1p L1c N0 O O" K0=<last run number> bash chain0438l.sh
 set -u
 ulimit -c 0
 export LC_ALL=C
@@ -47,10 +48,11 @@ for arm in $ORDER; do
   k=$((k + 1))
   case "$arm" in
     L0) bin=$LB; want=$LW; AW="BC5_0438_EARLYREG=0" ;;
-    L1) bin=$LB; want=$LW; AW="BC5_0438_EARLYREG=1" ;;
+    L1p) bin=$LB; want=$LW; AW="BC5_0438_EARLYREG=1 BC5_0438_PLWCV=0" ;;
+    L1c) bin=$LB; want=$LW; AW="BC5_0438_EARLYREG=1 BC5_0438_PLWCV=1" ;;
     N0) bin=$NB; want=$NW; AW="BC5_0438_EARLYREG=0" ;;
     O)  bin=$NB; want=$NW; AW="BC5_0438_EARLYREG=0 BC5_0438_OUTSIDE=1" ;;
-    *) say "arm $arm: L0, L1, N0 or O"; break ;;
+    *) say "arm $arm: L0, L1p, L1c, N0 or O"; break ;;
   esac
   t=b438$arm$k; while [ -e "$RAW/$t-start.txt" ] || [ -e "$RAW/$t-end.txt" ]; do t=${t}b; done
   [ -e "$E/STOP" ] && { say "STOP file before $t"; break; }
@@ -72,7 +74,7 @@ for arm in $ORDER; do
   FPS=$(awk -v g="${G:-999999}" 'NF == 4 && $1 >= g + 10 {s += $3; f += $2; if ($4 > 50) a++; if ($4 > 100) b++} END {if (s > 0) printf "%.2f flips/s over %d s from G+10, %d s with a frame over 50 ms, %d over 100 ms", f / s, s, a, b; else printf "no fps lines after G+10"}' "$RAW/$t-fps.txt" 2> /dev/null)
   EXE=$(cat "$E/raw/$t-exe.txt" 2> /dev/null); PADN=$(grep -c . "$E/raw/$t-pad.txt" 2> /dev/null)
   MHF=$(ls -t "$RAW/$t-mh"/*.csv 2> /dev/null | grep -v summary | head -1)
-  SU="MangoHud ${MHF:-none} ($( [ -n "$MHF" ] && wc -l < "$MHF" || echo 0) lines)"
+  SU="MangoHud ${MHF:-none} ($( [ -n "$MHF" ] && wc -l < "$MHF" || echo 0) lines); lean lost-write lines $(grep -ac 'r438 (exp 0438, b438, lean)' "$RAW/$t-play.log" 2> /dev/null)"
   if [ "$arm" = N0 ] || [ "$arm" = O ]; then
     PD=$(ls -dt "$HOME"/bc5-data/captures/play-*/ 2> /dev/null | head -1); DL=${PD}gc/direct.log
     if [ -n "$PD" ] && [ -f "$DL" ] && [ "$DL" -nt "$E/raw/$t-t0" ]; then

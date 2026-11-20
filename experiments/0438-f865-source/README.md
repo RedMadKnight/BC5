@@ -1502,6 +1502,45 @@ Gate: the first L0 at ≥ 33.3 flips/s.
 **Build.** `box0438.sh buildb` builds normal and lean from b438 with each shared build's own command, and stops if the
 lean binary holds r438's journal strings.
 
+### The lean round's kit, second form (the top session's additions, fixes first)
+
+1. **PLWCV** (`BC5_0438_PLWCV`, on unless "0", read in lean too).
+   - The game thread's wait for an early writer sleeps on `g_plw_cv`, at most 10 ms per sleep, and the wait goes on.
+   - The condition variable is signalled when a job registers its writes, and at the slice's end.
+   - "0" keeps r438's 20-µs poll.
+   - test_b438 case 6 measures the time from the writer's registration to the game thread's return, 20 rounds on the
+     laptop:
+
+     | wait | median | p90 |
+     |---|---|---|
+     | condition variable | 0.06 ms | 2.5–15 ms |
+     | poll | 4.9–7.0 ms | 18–19 ms |
+
+     The condition variable's long tail is the laptop's scheduler.
+2. **Lean lost-write counter.**
+   - Lean counts the early writes that never reached the ring. The first one prints one stderr line (in play.log),
+     and the total is printed at a normal exit.
+   - A SIGTERM from the runner ends the process without that total, because the tree installs no handler. So in a
+     chain run the first-line count is the record: 0 lines means no lost write.
+3. **o438** (`o438.hpp`, `mko438.py`): normal build only, off unless `BC5_0438_OUTSIDE=1`.
+   - Wait spans sit in the sync HLEs: sema, posix and pthread sem, event flag, mutex lock, cond wait, equeue,
+     usleep, nanosleep, sync-on-address, join, yield.
+   - Signal marks give the waker's tid for the object: unlock, cond signal, broadcast and signalto, sema signal,
+     posts, set event flag, the equeue triggers, sync-on-address wake.
+   - Recorded for the Render Thread and game-main. Only a thread's outermost span counts. A span of 50 µs or more
+     counts as blocked, and its waker is the last signaller of its object.
+   - Output (stderr): each frame over 100 ms with both roles' waits and their wakers, and the totals every 60 s.
+   - `test_o438.sh` (stub POSIX headers on the laptop) PASSES with the switch =1 and unset, and in lean. Its cases:
+     the waker is attributed, a nested lock counts once, a thread of neither role records nothing, one frame line for
+     a long frame and none for a short one.
+   - `box0438.sh buildb` compiles the six tree files with o438 into the normal build only.
+
+Units:
+- b438 `9035b9defc7a923f656527c65821bb87`;
+- mko438's output on the tree files, pinned by their LF md5s.
+
+Chain order: `L0 L1p L1c` ×3, then `N0`, then `O O` (the records runs, not pooled with the lean comparison).
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
