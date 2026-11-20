@@ -143,7 +143,34 @@ inline uint64_t         check_ns[2]   = {0, 0};
 // counters (under g_dev_mutex)
 inline uint64_t m_inc = 0, m_full = 0, m_check = 0, m_check_plus = 0, m_check_minus = 0, m_intervals = 0, m_views = 0, m_plus = 0, m_minus = 0, m_inc_ns = 0, m_full_ns = 0;
 inline uint64_t m_why[12] = {};
+// chunks of lazy views taken out of a zero cover (found written by a kl412 scan), both paths: count, and the time
+// since the scan before (how long each can have sat under the cover), sum and longest (under g_dev_mutex)
+inline uint64_t kl_out = 0, kl_out_ns = 0, kl_out_max_ns = 0, kl_scans = 0;
+inline void kl_note(const std::set<uint64_t>& before, const std::set<uint64_t>& after, uint64_t prev_ns, uint64_t now_ns) {
+	kl_scans++;
+	const uint64_t dt = prev_ns != 0 && now_ns > prev_ns ? now_ns - prev_ns : 0;
+	for (const uint64_t c: after) {
+		if (before.count(c) != 0) continue;
+		kl_out++;
+		kl_out_ns += dt;
+		if (dt > kl_out_max_ns) kl_out_max_ns = dt;
+	}
+}
 } // namespace e438''')
+
+# 1b. the kl412 scan's note on today's path (k1r412_want)
+rep('''	uint64_t            kl_dropped = 0;
+	const uint64_t      kl_t0      = SoftCp::now_ns();
+	const bool          kl_scan    = kl.begin(kl_t0, kl412::kPeriodNs);''', '''	uint64_t            kl_dropped = 0;
+	const uint64_t      kl_t0      = SoftCp::now_ns();
+	const bool          e438_due   = !kl.scanned || kl_t0 - kl.last_ns >= kl412::kPeriodNs; // exp 0438 (tag e438): the note below
+	const uint64_t      e438_prev  = kl.last_ns;
+	std::set<uint64_t>  e438_before;
+	if (e438_due) e438_before = kl.written;
+	const bool          kl_scan    = kl.begin(kl_t0, kl412::kPeriodNs);''')
+rep('''	if (kl_scan) kl.scan_ns += now - kl_t0; // exp 0412 (tag kl412): a rebuild's cover pass with its scan''', '''	if (kl_scan) kl.scan_ns += now - kl_t0; // exp 0412 (tag kl412): a rebuild's cover pass with its scan
+	if (kl_scan) e438::kl_note(e438_before, kl.written, e438_prev, kl_t0); // exp 0438 (tag e438)''')
+#
 
 # 2. mr415 "views" mode under e438; the old builder's second list left out under e438
 rep('''		if (d432::views_kept()) return 2; // exp 0432 (tag v432): BC5_DIRECT_VIEWS_KEPT''', '''		if (d432::views_kept()) return 2; // exp 0432 (tag v432): BC5_DIRECT_VIEWS_KEPT
@@ -212,8 +239,38 @@ static void k1r412_want(const DState& S, const std::vector<DView>& views, std::v
 # 6. the incremental mapping update, before s438's namespace (before direct_sync_one)
 rep('''// BC5 experiment 0438 (tag s438): direct_sync's scan left out on a merge-only pass''', '''// BC5 experiment 0438 (tag e438): the mapping update for the touched intervals only. Under g_dev_mutex. False: the caller
 // rebuilds the old way (m_why says why).
+static bool e438_has_data(int fd, uint64_t choff) { // exp 0438 (tag e438): kl412's question, as k1r412_want asks it
+	const off_t d = lseek(fd, static_cast<off_t>(choff), SEEK_DATA);
+	return d >= 0 && static_cast<uint64_t>(d) < choff + kDChunk;
+}
 static bool e438_g412_any(); // defined after g_g412_off
-static bool e438_maps(DState& S, const DViews& V, bool zskip_new, uint32_t& mapped, uint32_t& unmapped, uint32_t& map_failed) {
+// The lazy views' zero covers at today's freshness: when kl412's scan is due (100 ms, as k1r412_want), the chunks under
+// the lazy views' covers are asked again (SEEK_DATA). True when the known-written set changed: the caller rebuilds the old
+// way (whose k1r412_want then finds the scan done and uses the fresh set).
+static bool e438_lazy_scan(const DState& S, const DViews& V, int fd) {
+	const uint64_t now = SoftCp::now_ns();
+	if (g_kl412.scanned && now - g_kl412.last_ns < kl412::kPeriodNs) return false;
+	bool any_lazy = false;
+	for (const auto& v: V.v) any_lazy = any_lazy || v.lazy;
+	if (!any_lazy) return false;
+	const uint64_t                    prev   = g_kl412.last_ns;
+	const std::set<uint64_t>          before = g_kl412.written;
+	static std::vector<k1r412::Bo>    sbos;
+	static std::vector<k1r412::Piece> spieces;
+	sbos.clear();
+	for (const auto& b: S.bos) sbos.push_back({b.off, b.size});
+	g_kl412.begin(now, kl412::kPeriodNs);
+	for (const auto& v: V.v) {
+		if (!v.lazy) continue;
+		spieces.clear();
+		k1r412::cover(v.va, v.off, v.size, sbos, kDChunk, spieces);
+		kl412::drop_written(spieces, v.va, v.off, kDChunk, g_kl412, true, [fd](uint64_t choff) { return e438_has_data(fd, choff); });
+	}
+	g_kl412.scan_ns += SoftCp::now_ns() - now;
+	e438::kl_note(before, g_kl412.written, prev, now);
+	return g_kl412.written != before;
+}
+static bool e438_maps(DState& S, const DViews& V, bool zskip_new, int fd, uint32_t& mapped, uint32_t& unmapped, uint32_t& map_failed) {
 	using IV       = std::pair<uint64_t, uint64_t>;
 	const int k    = S.kind == 0 ? 0 : 1;
 	int       why  = -1;
@@ -237,6 +294,7 @@ static bool e438_maps(DState& S, const DViews& V, bool zskip_new, uint32_t& mapp
 	else if (!e438::have[k] || S.maps.empty()) why = 7;          // the first rebuild, or after a reopen
 	else if (k1r412::on() && g_k1r_id != e438::k1r_at[k]) why = 8; // a new zero buffer (reopen)
 	else if (e438::seq_at[k] > V.e438_seq) why = 9;
+	if (why < 0 && k1r412::on() && e438_lazy_scan(S, V, fd)) why = 11; // a lazy chunk was written (or freed): the old rebuild
 	if (why >= 0) {
 		e438::m_why[why]++;
 		return false;
@@ -402,7 +460,7 @@ rep('''	uint32_t mapped = 0, unmapped = 0, map_failed = 0;
 	if (sig != S.views_sig || S.bos.size() != S.bos_mapped || !retired.empty() || guard0412_cap_changed(S) || e438_check) { // exp 0412 (tag g412b); exp 0438 (e438): the check
 		const uint64_t e438_t0 = SoftCp::now_ns();
 		if (e438_check) e438::check_ns[e438_k] = now;
-		if (e438::on() && !e438_check) e438_done = e438_maps(S, *views_p, zskip_new, mapped, unmapped, map_failed); // exp 0438 (tag e438)''')
+		if (e438::on() && !e438_check) e438_done = e438_maps(S, *views_p, zskip_new, fd, mapped, unmapped, map_failed); // exp 0438 (tag e438)''')
 rep('''		if (d432::maps_diff() != 0 && retired.empty() && S.bos.size() == S.bos_mapped''', '''		if (!e438_done && d432::maps_diff() != 0 && retired.empty() && S.bos.size() == S.bos_mapped''')
 rep('''		if (!x432_done) {
 		d432::g_x_full++;''', '''		if (!x432_done && !e438_done) {
@@ -440,11 +498,12 @@ rep('''		for (int ph = 0; ph < 2; ph++) { // exp 0438 (tag y438)''', '''		if (e4
 			}
 			journal("e438 (exp 0438): t %.1f s: layout %s; mapping updates incremental %" PRIu64 " (%.1f ms; %" PRIu64 " intervals, %" PRIu64 " views, maps +%" PRIu64 " -%" PRIu64 "), full %" PRIu64 " (%.1f ms), of them 2-s checks %" PRIu64
 			        " (changes when nothing else changed: +%" PRIu64 " -%" PRIu64 "); full because: not direct %" PRIu64 ", list not from records %" PRIu64 ", gap/mismatch/failed map %" PRIu64 ", unsorted %" PRIu64 ", zskip %" PRIu64
-			        ", g412 %" PRIu64 ", kc412 %" PRIu64 ", first %" PRIu64 ", zero buffer %" PRIu64 ", order %" PRIu64 ", no fixpoint %" PRIu64 "; record gaps %" PRIu64 ", kept-list mismatches %" PRIu64 ", view builds %" PRIu64
+			        ", g412 %" PRIu64 ", kc412 %" PRIu64 ", first %" PRIu64 ", zero buffer %" PRIu64 ", order %" PRIu64 ", no fixpoint %" PRIu64 ", lazy chunk written %" PRIu64 "; lazy chunks taken out of a zero cover %" PRIu64 " in %" PRIu64 " scans, time since the scan before %.1f ms on average, longest %.1f ms; record gaps %" PRIu64 ", kept-list mismatches %" PRIu64 ", view builds %" PRIu64
 			        ", clones %" PRIu64 "\\n",
 			        timing_now(), e438::on() ? "ON" : "off", e438::m_inc, static_cast<double>(e438::m_inc_ns) / 1e6, e438::m_intervals, e438::m_views, e438::m_plus, e438::m_minus, e438::m_full,
 			        static_cast<double>(e438::m_full_ns) / 1e6, e438::m_check, e438::m_check_plus, e438::m_check_minus, e438::m_why[0], e438::m_why[1], e438::m_why[2], e438::m_why[3], e438::m_why[4],
-			        e438::m_why[5], e438::m_why[6], e438::m_why[7], e438::m_why[8], e438::m_why[9], e438::m_why[10], e438::r_gaps.load(), e438::r_mismatch.load(),
+			        e438::m_why[5], e438::m_why[6], e438::m_why[7], e438::m_why[8], e438::m_why[9], e438::m_why[10], e438::m_why[11], e438::kl_out, e438::kl_scans,
+			        e438::kl_out != 0 ? static_cast<double>(e438::kl_out_ns) / 1e6 / static_cast<double>(e438::kl_out) : 0.0, static_cast<double>(e438::kl_out_max_ns) / 1e6, e438::r_gaps.load(), e438::r_mismatch.load(),
 			        static_cast<uint64_t>(g_views_builds), static_cast<uint64_t>(d432::g_views_clone.load()));
 		}
 		for (int ph = 0; ph < 2; ph++) { // exp 0438 (tag y438)''')

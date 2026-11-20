@@ -1,6 +1,6 @@
 2853a2854
 > 	uint64_t           e438_seq = 0; // exp 0438 (tag e438): the change-record step this list is at (0: not from records)
-2854a2856,2941
+2854a2856,2954
 > // BC5 experiment 0438 (tag e438): the layout-change path, event-driven and incremental (BC5_0438_LAYOUT, on unless "0").
 > namespace e438 {
 > inline bool on() {
@@ -86,47 +86,97 @@
 > // counters (under g_dev_mutex)
 > inline uint64_t m_inc = 0, m_full = 0, m_check = 0, m_check_plus = 0, m_check_minus = 0, m_intervals = 0, m_views = 0, m_plus = 0, m_minus = 0, m_inc_ns = 0, m_full_ns = 0;
 > inline uint64_t m_why[12] = {};
+> // chunks of lazy views taken out of a zero cover (found written by a kl412 scan), both paths: count, and the time
+> // since the scan before (how long each can have sat under the cover), sum and longest (under g_dev_mutex)
+> inline uint64_t kl_out = 0, kl_out_ns = 0, kl_out_max_ns = 0, kl_scans = 0;
+> inline void kl_note(const std::set<uint64_t>& before, const std::set<uint64_t>& after, uint64_t prev_ns, uint64_t now_ns) {
+> 	kl_scans++;
+> 	const uint64_t dt = prev_ns != 0 && now_ns > prev_ns ? now_ns - prev_ns : 0;
+> 	for (const uint64_t c: after) {
+> 		if (before.count(c) != 0) continue;
+> 		kl_out++;
+> 		kl_out_ns += dt;
+> 		if (dt > kl_out_max_ns) kl_out_max_ns = dt;
+> 	}
+> }
 > } // namespace e438
-2908a2996
+2908a3009
 > 		if (e438::on()) return 2;         // exp 0438 (tag e438): the view list kept from the change records
-3018c3106,3108
+3018c3119,3121
 < 			std::vector<DView>& kept = kept_p->v;
 ---
 > 			std::vector<DView>&     kept = kept_p->v;
 > 			std::vector<e438::Span> e438_sp; // exp 0438 (tag e438)
 > 			if (e438::on()) e438::before(kept, spans, e438_sp);
-3019a3110
+3019a3123
 > 			if (e438::on()) e438::after(*kept_p, e438_sp, false);
-3024a3116
+3024a3129
 > 		if (e438::on()) e438::r_gaps++; // exp 0438 (tag e438): the full build below marks the mappings for a full rebuild
-3050a3143,3144
+3050a3156,3157
 > 	bool       e438_ok = false; // exp 0438 (tag e438): the kept list, with these records, equals the full build
 > 	std::vector<e438::Span> e438_sp;
-3053a3148
+3053a3161
 > 		if (e438::on()) e438::before(kept, spans, e438_sp);
-3055a3151,3152
+3055a3164,3165
 > 		e438_ok = same(kept, full);
 > 		if (e438::on() && !e438_ok) e438::r_mismatch++;
-3063c3160
+3063c3173
 < 	if (const uint64_t g2 = Libs::LibKernel::Memory::Bc5MappedRangesGeneration(); g2 == gen && !d432::views_kept()) { // exp 0432: build 1 showed this second build in single calls of 104-114 ms
 ---
 > 	if (const uint64_t g2 = Libs::LibKernel::Memory::Bc5MappedRangesGeneration(); g2 == gen && !d432::views_kept() && !e438::on()) { // exp 0438 (e438): not under e438; exp 0432: build 1 showed this second build in single calls of 104-114 ms
-3072a3170,3173
+3072a3183,3186
 > 	if (e438::on()) { // exp 0438 (tag e438): the same list as the records made: its spans; otherwise a full rebuild
 > 		if (e438_ok) e438::after(*kept_p, e438_sp, false);
 > 		else e438::mark_full(*kept_p);
 > 	}
-4609a4711
+4609a4724
 > static kl412::Known g_kl412; // exp 0438 (tag e438): k1r412_want's known-written set, read by e438_maps without a scan
-4633c4735
+4633c4748
 < 	static kl412::Known kl; // exp 0412 (tag kl412)
 ---
 > 	kl412::Known&       kl = g_kl412; // exp 0412 (tag kl412); exp 0438 (e438): at file scope
-4807a4910,5086
+4635a4751,4754
+> 	const bool          e438_due   = !kl.scanned || kl_t0 - kl.last_ns >= kl412::kPeriodNs; // exp 0438 (tag e438): the note below
+> 	const uint64_t      e438_prev  = kl.last_ns;
+> 	std::set<uint64_t>  e438_before;
+> 	if (e438_due) e438_before = kl.written;
+4655a4775
+> 	if (kl_scan) e438::kl_note(e438_before, kl.written, e438_prev, kl_t0); // exp 0438 (tag e438)
+4807a4928,5135
 > // BC5 experiment 0438 (tag e438): the mapping update for the touched intervals only. Under g_dev_mutex. False: the caller
 > // rebuilds the old way (m_why says why).
+> static bool e438_has_data(int fd, uint64_t choff) { // exp 0438 (tag e438): kl412's question, as k1r412_want asks it
+> 	const off_t d = lseek(fd, static_cast<off_t>(choff), SEEK_DATA);
+> 	return d >= 0 && static_cast<uint64_t>(d) < choff + kDChunk;
+> }
 > static bool e438_g412_any(); // defined after g_g412_off
-> static bool e438_maps(DState& S, const DViews& V, bool zskip_new, uint32_t& mapped, uint32_t& unmapped, uint32_t& map_failed) {
+> // The lazy views' zero covers at today's freshness: when kl412's scan is due (100 ms, as k1r412_want), the chunks under
+> // the lazy views' covers are asked again (SEEK_DATA). True when the known-written set changed: the caller rebuilds the old
+> // way (whose k1r412_want then finds the scan done and uses the fresh set).
+> static bool e438_lazy_scan(const DState& S, const DViews& V, int fd) {
+> 	const uint64_t now = SoftCp::now_ns();
+> 	if (g_kl412.scanned && now - g_kl412.last_ns < kl412::kPeriodNs) return false;
+> 	bool any_lazy = false;
+> 	for (const auto& v: V.v) any_lazy = any_lazy || v.lazy;
+> 	if (!any_lazy) return false;
+> 	const uint64_t                    prev   = g_kl412.last_ns;
+> 	const std::set<uint64_t>          before = g_kl412.written;
+> 	static std::vector<k1r412::Bo>    sbos;
+> 	static std::vector<k1r412::Piece> spieces;
+> 	sbos.clear();
+> 	for (const auto& b: S.bos) sbos.push_back({b.off, b.size});
+> 	g_kl412.begin(now, kl412::kPeriodNs);
+> 	for (const auto& v: V.v) {
+> 		if (!v.lazy) continue;
+> 		spieces.clear();
+> 		k1r412::cover(v.va, v.off, v.size, sbos, kDChunk, spieces);
+> 		kl412::drop_written(spieces, v.va, v.off, kDChunk, g_kl412, true, [fd](uint64_t choff) { return e438_has_data(fd, choff); });
+> 	}
+> 	g_kl412.scan_ns += SoftCp::now_ns() - now;
+> 	e438::kl_note(before, g_kl412.written, prev, now);
+> 	return g_kl412.written != before;
+> }
+> static bool e438_maps(DState& S, const DViews& V, bool zskip_new, int fd, uint32_t& mapped, uint32_t& unmapped, uint32_t& map_failed) {
 > 	using IV       = std::pair<uint64_t, uint64_t>;
 > 	const int k    = S.kind == 0 ? 0 : 1;
 > 	int       why  = -1;
@@ -150,6 +200,7 @@
 > 	else if (!e438::have[k] || S.maps.empty()) why = 7;          // the first rebuild, or after a reopen
 > 	else if (k1r412::on() && g_k1r_id != e438::k1r_at[k]) why = 8; // a new zero buffer (reopen)
 > 	else if (e438::seq_at[k] > V.e438_seq) why = 9;
+> 	if (why < 0 && k1r412::on() && e438_lazy_scan(S, V, fd)) why = 11; // a lazy chunk was written (or freed): the old rebuild
 > 	if (why >= 0) {
 > 		e438::m_why[why]++;
 > 		return false;
@@ -300,13 +351,13 @@
 > 	e438::m_inc_ns += SoftCp::now_ns() - t0;
 > 	return true;
 > }
-4813,4814c5092,5093
+4813,4814c5141,5142
 < 		const char* e = std::getenv("BC5_0438_MERGESCAN");
 < 		return !(e != nullptr && e[0] == '0' && e[1] == 0);
 ---
 > 		const char* e = std::getenv("BC5_0438_MERGESCAN"); // exp 0438 build 11: s438 dropped (result 10), off unless "1"
 > 		return e != nullptr && e[0] == '1' && e[1] == 0;
-5045c5324,5331
+5045c5373,5380
 < 	if (sig != S.views_sig || S.bos.size() != S.bos_mapped || !retired.empty() || guard0412_cap_changed(S)) { // exp 0412 (tag g412b)
 ---
 > 	const int  e438_k     = S.kind == 0 ? 0 : 1; // exp 0438 (tag e438)
@@ -316,16 +367,16 @@
 > 	if (sig != S.views_sig || S.bos.size() != S.bos_mapped || !retired.empty() || guard0412_cap_changed(S) || e438_check) { // exp 0412 (tag g412b); exp 0438 (e438): the check
 > 		const uint64_t e438_t0 = SoftCp::now_ns();
 > 		if (e438_check) e438::check_ns[e438_k] = now;
-> 		if (e438::on() && !e438_check) e438_done = e438_maps(S, *views_p, zskip_new, mapped, unmapped, map_failed); // exp 0438 (tag e438)
-5052c5338
+> 		if (e438::on() && !e438_check) e438_done = e438_maps(S, *views_p, zskip_new, fd, mapped, unmapped, map_failed); // exp 0438 (tag e438)
+5052c5387
 < 		if (d432::maps_diff() != 0 && retired.empty() && S.bos.size() == S.bos_mapped && !guard0412_cap_changed(S) && !k1r412::on() && g_zskip.empty() && !zskip_new &&
 ---
 > 		if (!e438_done && d432::maps_diff() != 0 && retired.empty() && S.bos.size() == S.bos_mapped && !guard0412_cap_changed(S) && !k1r412::on() && g_zskip.empty() && !zskip_new &&
-5156c5442
+5156c5491
 < 		if (!x432_done) {
 ---
 > 		if (!x432_done && !e438_done) {
-5272c5558,5577
+5272c5607,5626
 < 		x432_prev[x432_k] = views_p; // exp 0432 (tag x432)
 ---
 > 		x432_prev[x432_k] = e438::on() ? nullptr : views_p; // exp 0432 (tag x432); exp 0438 (e438): not held (the kept list is changed in place when nobody holds it)
@@ -348,7 +399,7 @@
 > 			const uint64_t  upto = e438::seq_at[e438_k];
 > 			e438::pending.erase(std::remove_if(e438::pending.begin(), e438::pending.end(), [upto](const e438::Pend& p) { return p.seq <= upto; }), e438::pending.end());
 > 		}
-5320a5626,5643
+5320a5675,5693
 > 		if (e438::on() || true) { // exp 0438 (tag e438): the layout changes and the mapping updates
 > 			const auto mib = [](uint64_t b) { return static_cast<double>(b) / 1048576.0; };
 > 			for (int ph = 0; ph < 2; ph++) {
@@ -360,12 +411,13 @@
 > 			}
 > 			journal("e438 (exp 0438): t %.1f s: layout %s; mapping updates incremental %" PRIu64 " (%.1f ms; %" PRIu64 " intervals, %" PRIu64 " views, maps +%" PRIu64 " -%" PRIu64 "), full %" PRIu64 " (%.1f ms), of them 2-s checks %" PRIu64
 > 			        " (changes when nothing else changed: +%" PRIu64 " -%" PRIu64 "); full because: not direct %" PRIu64 ", list not from records %" PRIu64 ", gap/mismatch/failed map %" PRIu64 ", unsorted %" PRIu64 ", zskip %" PRIu64
-> 			        ", g412 %" PRIu64 ", kc412 %" PRIu64 ", first %" PRIu64 ", zero buffer %" PRIu64 ", order %" PRIu64 ", no fixpoint %" PRIu64 "; record gaps %" PRIu64 ", kept-list mismatches %" PRIu64 ", view builds %" PRIu64
+> 			        ", g412 %" PRIu64 ", kc412 %" PRIu64 ", first %" PRIu64 ", zero buffer %" PRIu64 ", order %" PRIu64 ", no fixpoint %" PRIu64 ", lazy chunk written %" PRIu64 "; lazy chunks taken out of a zero cover %" PRIu64 " in %" PRIu64 " scans, time since the scan before %.1f ms on average, longest %.1f ms; record gaps %" PRIu64 ", kept-list mismatches %" PRIu64 ", view builds %" PRIu64
 > 			        ", clones %" PRIu64 "\n",
 > 			        timing_now(), e438::on() ? "ON" : "off", e438::m_inc, static_cast<double>(e438::m_inc_ns) / 1e6, e438::m_intervals, e438::m_views, e438::m_plus, e438::m_minus, e438::m_full,
 > 			        static_cast<double>(e438::m_full_ns) / 1e6, e438::m_check, e438::m_check_plus, e438::m_check_minus, e438::m_why[0], e438::m_why[1], e438::m_why[2], e438::m_why[3], e438::m_why[4],
-> 			        e438::m_why[5], e438::m_why[6], e438::m_why[7], e438::m_why[8], e438::m_why[9], e438::m_why[10], e438::r_gaps.load(), e438::r_mismatch.load(),
+> 			        e438::m_why[5], e438::m_why[6], e438::m_why[7], e438::m_why[8], e438::m_why[9], e438::m_why[10], e438::m_why[11], e438::kl_out, e438::kl_scans,
+> 			        e438::kl_out != 0 ? static_cast<double>(e438::kl_out_ns) / 1e6 / static_cast<double>(e438::kl_out) : 0.0, static_cast<double>(e438::kl_out_max_ns) / 1e6, e438::r_gaps.load(), e438::r_mismatch.load(),
 > 			        static_cast<uint64_t>(g_views_builds), static_cast<uint64_t>(d432::g_views_clone.load()));
 > 		}
-6685a7009
+6685a7059
 > static bool e438_g412_any() { return !g_g412_off.empty(); } // exp 0438 (tag e438)

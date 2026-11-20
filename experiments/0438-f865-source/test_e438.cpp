@@ -20,8 +20,9 @@
 
 static double g_now_s = 0;
 static double timing_now() { return g_now_s; }
+static uint64_t g_now_ns = 1;
 namespace SoftCp {
-inline uint64_t now_ns() { return 0; }
+inline uint64_t now_ns() { return g_now_ns; }
 }
 static void journal(const char*, ...) {}
 #define BC5_DIAG_ENV(x) std::getenv(x)
@@ -74,10 +75,14 @@ inline bool on() { return false; }
 } // namespace kc412
 #include "e438_k1r.inc"
 #include "e438_kl.inc"
-static uint32_t     g_k1r_id = 999;
+static uint32_t     g_k1r_id = 0xfffffff0u; // above every BO id the test hands out
 static uint32_t     k1r412_bo() { return g_k1r_id; }
 static bool         k1r412_map(const DMap& w) { return g_dev->map_shared(w.id, w.bo_off, w.size, w.va, w.id == g_k1r_id); }
 static kl412::Known g_kl412;
+// the title's writes into lazy views' chunks (the truth SEEK_DATA would see), with the time of the write
+static std::map<uint64_t, uint64_t> g_truth;
+static std::map<std::pair<uint64_t, uint64_t>, uint64_t> cover_since; // a zero cover (va, chunk) -> when it was first seen in S.maps
+static bool                         e438_has_data(int, uint64_t choff) { return g_truth.count(choff) != 0; }
 #include "e438_maps.inc"
 static bool e438_g412_any() { return false; }
 
@@ -215,9 +220,12 @@ static void step_bos(std::vector<DBo>& b) {
 }
 
 int main() {
-	uint64_t incremental = 0, refused = 0, steps = 0, total_plus = 0;
+	uint64_t incremental = 0, refused = 0, steps = 0, total_plus = 0, lazy_checked = 0;
 	for (int scen = 0; scen < 60; scen++) {
 		g_dev           = std::make_unique<FakeDev>();
+		g_truth.clear();
+		cover_since.clear();
+		g_kl412 = kl412::Known {};
 		e438::pending.clear();
 		e438::seq       = 0;
 		e438::seq_at[0] = 0;
@@ -238,6 +246,13 @@ int main() {
 		for (int st = 0; st < 120; st++) {
 			steps++;
 			g_now_s = st < 10 ? 1.0 : 100.0;
+			g_now_ns += 50'000'000ull;
+			for (const auto& v: views_p->v) {
+				if (v.lazy && rnd(8) == 0) {
+					const uint64_t c = (v.off + kPage * rnd(v.size / kPage)) & ~(kDChunk - 1);
+					g_truth.emplace(c, g_now_ns);
+				}
+			}
 			// a change of the views through the records' path (before/after), of the BOs, or both
 			const uint64_t what = rnd(3);
 			if (what != 1) {
@@ -252,7 +267,7 @@ int main() {
 			}
 			if (what != 0) step_bos(S.bos);
 			uint32_t mapped = 0, unmapped = 0, failed = 0;
-			const bool ok = e438_maps(S, *views_p, false, mapped, unmapped, failed);
+			const bool ok = e438_maps(S, *views_p, false, 0, mapped, unmapped, failed);
 			if (!ok) {
 				refused++;
 				for (const auto& m: S.maps) g_dev->unmap_shared(m.va);
@@ -266,6 +281,28 @@ int main() {
 			e438::bos_at[0] = S.bos;
 			e438::seq_at[0] = std::max(e438::seq_at[0], views_p->e438_seq);
 			e438::pending.erase(std::remove_if(e438::pending.begin(), e438::pending.end(), [](const e438::Pend& p) { return p.seq <= e438::seq_at[0]; }), e438::pending.end());
+			// freshness, as today's k1r412_want keeps it: a zero cover may sit on a written lazy chunk only until the next
+			// scan (100 ms period, 50 ms a step), counted from the later of the write and the cover's own first appearance
+			// (a cover is its va and the file chunk under it: a remap at the same va is a new cover)
+			{
+				std::map<std::pair<uint64_t, uint64_t>, uint64_t> next_since;
+				for (const auto& m: S.maps) {
+					if (m.id != g_k1r_id) continue;
+					auto v = std::partition_point(views_p->v.begin(), views_p->v.end(), [&m](const DView& x) { return x.va + x.size <= m.va; });
+					if (v == views_p->v.end() || !v->lazy || v->va > m.va) continue;
+					const std::pair<uint64_t, uint64_t> key {m.va, (v->off + (m.va - v->va)) & ~(kDChunk - 1)};
+					auto                                cs = cover_since.find(key);
+					const uint64_t                      since0 = cs != cover_since.end() ? cs->second : g_now_ns;
+					next_since[key]                       = since0;
+					auto it = g_truth.find(key.second);
+					if (it == g_truth.end()) continue;
+					lazy_checked++;
+					const uint64_t since = std::max(it->second, since0);
+					CHECK(g_now_ns - since < 150'000'000ull, "scenario %d step %d: a zero cover on lazy chunk 0x%" PRIx64 " for %.0f ms since the write or the cover", scen, st, key.second,
+					      static_cast<double>(g_now_ns - since) / 1e6);
+				}
+				cover_since.swap(next_since);
+			}
 			const auto want = full_want(S, views_p->v);
 			CHECK(S.maps == want, "scenario %d step %d: S.maps (%zu) differs from the full rebuild (%zu)", scen, st, S.maps.size(), want.size());
 			CHECK(g_dev->m.size() == S.maps.size(), "scenario %d step %d: the device holds %zu, S.maps %zu", scen, st, g_dev->m.size(), S.maps.size());
@@ -276,8 +313,9 @@ int main() {
 		}
 	}
 	std::printf("e438 test: %" PRIu64 " steps, %" PRIu64 " incremental, %" PRIu64 " refused; maps added incrementally %" PRIu64 "; load/play records: map %" PRIu64 "/%" PRIu64 ", unmap %" PRIu64 "/%" PRIu64
-	            ", remap %" PRIu64 "/%" PRIu64 ", same %" PRIu64 "/%" PRIu64 "; %s\n",
+	            ", remap %" PRIu64 "/%" PRIu64 ", same %" PRIu64 "/%" PRIu64 "; lazy chunks out of a cover %" PRIu64 " in %" PRIu64 " scans (longest wait %.0f ms), recent-write covers seen %" PRIu64 ", fallbacks for a lazy write %" PRIu64 "; %s\n",
 	            steps, incremental, refused, total_plus, e438::r_n[0][0].load(), e438::r_n[1][0].load(), e438::r_n[0][1].load(), e438::r_n[1][1].load(), e438::r_n[0][2].load(),
-	            e438::r_n[1][2].load(), e438::r_n[0][3].load(), e438::r_n[1][3].load(), g_fail == 0 ? "PASS" : "FAIL");
+	            e438::r_n[1][2].load(), e438::r_n[0][3].load(), e438::r_n[1][3].load(), e438::kl_out, e438::kl_scans,
+	            static_cast<double>(e438::kl_out_max_ns) / 1e6, lazy_checked, e438::m_why[11], g_fail == 0 ? "PASS" : "FAIL");
 	return g_fail == 0 ? 0 : 1;
 }

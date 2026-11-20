@@ -1069,7 +1069,7 @@ fixed argument rather than a per-submit payload. TODO(verify): no public source 
 
 **Unit chain:**
 1. `mks438y.py` on `s438.cpp` → `y438.cpp` (`7e338e9f…`);
-2. `mke438.py` → `e438.cpp` (**`850918e1eda505b15b768e50b81a5c4d`**, `e438-unit.diff`). Switch `BC5_0438_LAYOUT`: behaviour, so in lean too; on unless "0".
+2. `mke438.py` → `e438.cpp` (**`3fe3a79a459cb1ea60a7d27ff92f8c14`**, `e438-unit.diff`; the first version `850918e1` had the 2-s lazy-cover gap, rejected). Switch `BC5_0438_LAYOUT`: behaviour, so in lean too; on unless "0".
 
 **Today (result 10, MC52, 420 s): 12.8 s of view builds and 16.1 s of mapping rebuilds.** Both run on every change
 of the title's layout:
@@ -1135,12 +1135,20 @@ of the title's layout:
   where kl412's lazy-view scan runs (see below).
 
 **What e438 changes in behaviour, besides the time.**
-- **Under lazy views** (the second title's four CPU-only heaps: Wwise, SoundAlloc, FileSystem, UIStringAlloc), the
-  incremental covers use kl412's known-written set without a new `SEEK_DATA` scan. The scan runs at the 2-s rebuild;
-  today it can run at any rebuild 100 ms after the last.
-  - So a lazy chunk the title has written keeps its read-only zero cover for up to 2 s instead of about 100 ms.
-  - A GPU read there returns zeros instead of faulting by name.
-  - These heaps are CPU-only by design; a GPU read there is itself a bug that kl412 is meant to name.
+- **Under lazy views** (the second title's four CPU-only heaps: Wwise, SoundAlloc, FileSystem, UIStringAlloc):
+  **no change in freshness.**
+  - The first design used kl412's known-written set with no new scan between the 2-s rebuilds. That would have let
+    a written lazy chunk read as zeros on the GPU for up to 2 s. The top session rejected it: silent wrong data is
+    worse than the named fault.
+  - Now `e438_lazy_scan` runs kl412's scan at today's cadence, on the same 100 ms period and the same
+    `g_kl412.begin()`. It asks `SEEK_DATA` of every chunk under a lazy view's zero cover, as `k1r412_want` does.
+  - When the known-written set changed (a chunk was written, or freed), the pass falls back to the full rebuild.
+    That rebuild's `k1r412_want` then uses the fresh set (`m_why[11]`, "lazy chunk written").
+  - Between scans both paths use the same known set, so a zero cover sits on a written lazy chunk at most until the
+    next scan, as today.
+  - **New counter, on both paths** (also in today's `k1r412_want`): the lazy chunks taken out of a zero cover, the
+    scans, and the time since the scan before (average and longest). That time is how long each chunk can have sat
+    under the cover.
 - **A missed record** would leave a view without its mappings (a GPU fault in a mapped range) or keep mappings of an
   unmapped one (the GPU reads pages the title gave back). The 2-s check and the full-build check bound that to
   2 s, and both count it.
@@ -1152,7 +1160,7 @@ of the title's layout:
   changes), the reasons for each full rebuild, record gaps, kept-list mismatches, view builds and clones;
 - y438's scan yield by kind and phase, and the layout and mapped-range generation changes.
 
-**The offline test** (`test_e438.sh`; PASS: 7,200 random steps in 60 scenarios, all incremental, every step equal to the full rebuild; a broken copy with the BO tracking left out FAILs at scenario 0, step 7): it cuts e438's pieces from the unit and runs `e438_maps` against the full
+**The offline test** (`test_e438.sh`; on `3fe3a79a`: PASS, 7,200 random steps in 60 scenarios, 4,677 incremental and 2,523 full because a lazy chunk was written, every step equal to the full rebuild; the lazy case: a 50 ms clock step, random writes into lazy views' chunks, and no zero cover may sit on a written lazy chunk 150 ms or more after the later of the write and the cover's appearance; 3,734 chunks taken out of a cover in 3,600 scans, longest wait 100 ms. Two broken copies FAIL: BO tracking left out, at scenario 0 step 7; the lazy scan left out, at scenario 0 step 3. A test bug found on the way: the fake zero buffer's id 999 collided with BO ids, now 0xfffffff0): it cuts e438's pieces from the unit and runs `e438_maps` against the full
 rebuild. It uses random view lists (unmaps, shrinks, remaps, splits, protects, new views, lazy views, aliases) and
 random BO lists (imports, merges, cuts) on a fake device. After every step:
 - `S.maps` must equal the full rebuild's list;
