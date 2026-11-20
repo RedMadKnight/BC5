@@ -213,3 +213,43 @@ f813bbc0 and the ASTRO BOT smoke of both test builds were clean: no GPU line, no
   as the house style has it); not swapped here. Before that: the maintainer's play on it, and a longer scene look if the
   >100 ms gap count matters.
 - Hashes: candidate normal `d55e4cbd`, lean `bbebc371`, private archive `d6638808`; shared normal `99f2a567`.
+
+## Bake into the shared builds (2026-11-20 05:53-06:07, boot f813bbc0)
+
+The maintainer's word through the top session: "Wdróż od razu", built in with no switch (his standing "usuń
+przełączniki i wybuduj w kod"). Kit `bake/` (on the box `~/bc5-work/exp0436/bake/`):
+
+- `mkbake436.py`: the candidate's unit with `su436_on()`, its `getenv("BC5_DIRECT_SUBMIT_UNLOCK")` and its ON/off line
+  removed; in async mode the unlocked kernel submit is the only path; sync mode (g_async off: each job waited for at
+  submission) keeps the call under both locks. Normal keeps su436's count line ("tag su436"), lean compiles it out (the
+  top session's yes, as ud434's journal line). `0002-bc5-0436-baked.patch` (3134afd1) is that unit against the shared
+  tree's 6f4bf71a; `be/direct.cpp` eacf8d2a and `be/direct.hpp` 9256f3b9 are the tested candidate's backend unchanged
+  (it never had a switch).
+- `swap0436.sh` (c50a7684, exp 0433's int0433.sh form with exp 0434's dry run), `undo0436.sh` (31708598: back to patch
+  8986853b, normal 99f2a567, lean 82720cca, archive 51db2c91, direct.cpp 52f74d0e, direct.hpp 24988c4e),
+  `run-swap0436.sh` (d6d0ad33), `smoke0436s.sh` (7ef08f76: exp 0434's smoke with `/proc/<pid>/exe` md5 per run);
+  `boxbake436.sh`: the private baked build before the swap.
+- Private baked build (nice 19, own lock, pins before and after; the reference direct.o equal to the shared member):
+  normal 0ce71405, lean 5b6e4ede, archive d6638808; strings: no SUBMIT_UNLOCK in either, "tag su436" in normal only.
+- Dry run on copies of the tree, the backend source and the swap directory: all steps pass, PATCH_NEW bb04219b, the
+  undo restored 8986853b / 52f74d0e / 24988c4e on the copies.
+- The branch's backend (`backend/src/direct.cpp`, `backend/include/bc5/direct.hpp`) built as CI does in the box's
+  ubuntu distrobox: Debug, amdgpu OFF and ON, 0 warnings, ctest 130/130 each (`raw/bake/exp0436/bake/ci/`).
+
+**The swap (the top session's GO): patch 8986853b -> bb04219b (135 files, exp 0372 lines 5, the pad_audio_route header
+in), archive 51db2c91 -> d6638808, normal 99f2a567 -> f345db74, lean 82720cca -> 6a735b81**; no (KYTY_)BC5_ word
+gained or lost in either binary. `backend/kytyplus-patches/0001-bc5-lle-agc.patch` on this branch is the box's new
+`git diff f266548` (bb04219b). Undo: `bash ~/bc5-work/exp0436/bake/undo0436.sh`.
+
+Smokes after the swap (one unit under the user manager, exe md5 read per run, 0 pad keys, 0 kernel lines, 0 crash
+lines): s436sc ASTRO BOT lean 200 s PASS; s436su the second title lean 300 s PASS (33 of 33 key lines); s436sn ASTRO
+BOT normal 200 s PASS, its log with su436's count line. Records: `raw/bake/`.
+
+### HANDOFF row draft (the top session numbers it)
+
+| F? | **The kernel submit (DRM_IOCTL_AMDGPU_CS) runs outside the host's device mutex and the backend's lock (exp 0432
+note 8): +9 % flips/s on the second title's scripted route (44.44 against 40.78, 3 + 3, no overlap; seconds with a gap
+over 50 ms 112-169 against 201-225), no change in the 09:46 scene (34.30 against 34.43).** Order kept by a lock per
+ring taken before the device mutex; a backend flight lock keeps unmaps from running under a job in its kernel call;
+F10/F16/F18 and ud434 unchanged. Built into the shared builds with no switch on 2026-11-20 (patch bb04219b, normal
+f345db74, lean 6a735b81, archive d6638808); smokes 3/3 PASS. | experiments/0436-submit-unlock/README.md |
