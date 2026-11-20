@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# BC5 experiment 0438 (F865): box helper. claim/release as exp 0436's box0436.sh (atomic hard-link claim, R35);
+#   box0438.sh claim [what] [minutes]
+#   box0438.sh release
+#   box0438.sh pack     with our lock: read-only copies of F865's records into ~/bc5-work/exp0438/fetch (gz), for scp
+#   box0438.sh build    with our lock: pins the shared builds (patch bb04219b: normal f345db74, lean 6a735b81, archive
+#                       d6638808), the shared tree's unit and this kit's files; compiles the kit's bc5LleAgc.cpp (mk0438.py
+#                       on the tree's unit) with the shared normal and lean builds' own commands and links each with the
+#                       shared link line (shared archive): ~/bc5-work/exp0438/{normal,lean}/kyty_emulator. Nothing shared written.
+set -u
+export LC_ALL=C LANGUAGE=C
+W=$HOME/bc5-work; E=$W/exp0438; R=$E/raw; S=$E/src; LOCK=$W/BOX-LOCK; ID=$E/lock.line
+TREE=$HOME/src/KytyPlus; HERE=$(cd "$(dirname "$0")" && pwd); UNIT=src/libs/bc5LleAgc.cpp
+SA=$W/backend-ubuntu/libbc5_backend.a
+P_UNIT=a62e8bf6251a44f147a23d9689449e21   # the shared tree's bc5LleAgc.cpp (patch bb04219b's)
+P_ARCH=d6638808; P_NORMAL=f345db74; P_LEAN=6a735b81
+K_UNIT=680bda1f3430b676f2dadef8808ae24a  # k438 (off by default, refuted) + k438b (BC5_0438_HOLD); was 59a5df70 for build d4a2f86d
+K_PY=5dfb35d884bee8af31d81e3ad8b92548
+K_VG=cad85761590d642235cded7094c9b48c      # exp 0437's mkvg437.py (branch exp/0437-q30-syncs f89c3861), folded in (top, 2026-11-20)
+MEMC=src/kernel/memory.cpp; MEMH=src/kernel/memory.h
+stop() { echo "0438 STOP: $*"; exit 1; }
+m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }
+own() { [ -s "$ID" ] && [ "$(cat "$LOCK" 2> /dev/null)" = "$(cat "$ID")" ]; }
+claim() {
+    local c=$LOCK.d19-claim t=$LOCK.0438-$$.new a=$LOCK.0438-$$.aside line
+    pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
+    [ ! -L "$E" ] || stop "$E is a link"
+    mkdir -p "$R" || stop "cannot make $R"
+    line="exp 0438 | token $(date +%s)$$ | $1, until $(date -d +"$2"min +%H:%M) | $(date '+%F %T')"
+    mkdir "$c" 2> /dev/null || stop "another claim runs, or $c was left behind"
+    fail() { rm -f "$t"; rmdir "$c"; stop "$1"; }
+    printf '%s\n' "$line" > "$t" || fail "cannot write $t"
+    if [ -e "$LOCK" ] || [ -L "$LOCK" ]; then
+        { [ -L "$LOCK" ] || [ ! -f "$LOCK" ]; } && fail "$LOCK is not a plain file"
+        [ -s "$LOCK" ] && fail "foreign lock: $(cat "$LOCK")"
+        mv -T "$LOCK" "$a" || fail "the lock moved under us"
+    fi
+    if ! ln "$t" "$LOCK" 2> /dev/null; then
+        [ -s "$a" ] || rm -f "$a"
+        fail "lost the claim to: $(cat "$LOCK" 2> /dev/null)"
+    fi
+    if [ -s "$a" ]; then
+        local w; w=$(cat "$a"); mv -fT "$a" "$LOCK"; fail "a foreign lock arrived during the claim: $w"
+    fi
+    rm -f "$a" "$t"; rmdir "$c" || stop "cannot remove $c"
+    printf '%s\n' "$line" > "$ID" || stop "cannot record the line; the lock is held: $line"
+    own || stop "the lock does not read back as ours"
+    echo "claimed: $line"
+}
+release() {
+    if own; then : > "$LOCK" && [ ! -s "$LOCK" ] && { rm -f "$ID"; echo "lock released"; return 0; }; stop "the lock could not be released"; fi
+    stop "the lock is not ours, left as it is: $(cat "$LOCK" 2> /dev/null)"
+}
+pack() {
+    own || stop "no lock held by 0438"
+    local g=$HOME/bc5-data/captures/play-20261120-0055/gc d=$HOME/bc5-data/captures/devcoredump/20261120-005901-devcd10.txt f=$E/fetch
+    [ -d "$g" ] && [ -f "$d" ] || stop "records missing: $g $d"
+    mkdir -p "$f" || stop "mkdir $f"
+    ls -la "$g" > "$f/gc-ls.txt"
+    for x in "$g"/ib-timeout-* ; do [ -f "$x" ] && gzip -c "$x" > "$f/$(basename "$x").gz"; done
+    gzip -c "$g/direct.log" > "$f/direct.log.gz" || stop "gzip direct.log"
+    gzip -c "$d" > "$f/devcd10.txt.gz" || stop "gzip devcd"
+    ls -la "$f"
+}
+build() {
+    own || stop "no lock held by 0438"
+    pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
+    local v b bin rc sn sl sa
+    sn=$(m "$W/kytyplus-build/src/kyty_emulator"); sl=$(m "$W/kytyplus-build-lean/src/kyty_emulator"); sa=$(m "$SA")
+    [ "${sn:0:8}" = "$P_NORMAL" ] && [ "${sl:0:8}" = "$P_LEAN" ] && [ "${sa:0:8}" = "$P_ARCH" ]         || stop "the shared builds are not normal $P_NORMAL / lean $P_LEAN / archive $P_ARCH: ${sn:0:8} ${sl:0:8} ${sa:0:8}"
+    [ "$(m "$TREE/$UNIT")" = "$P_UNIT" ] || stop "the shared tree's $UNIT is not patch bb04219b's ($(m "$TREE/$UNIT"))"
+    [ "$(m "$HERE/bc5LleAgc.cpp")" = "$K_UNIT" ] && [ "$(m "$HERE/build0438.py")" = "$K_PY" ] && [ "$(m "$HERE/mkvg437.py")" = "$K_VG" ]         || stop "the kit's files are not the pinned ones"
+    mkdir -p "$R" || stop "mkdir $R"
+    rm -rf "$S"; mkdir -p "$S/kyty/src/libs" "$S/kyty/src/kernel" || stop "mkdir $S"
+    # k438 first (its input is pinned), then exp 0437's vg437 on the copy (memory.cpp, memory.h, the unit; its anchors
+    # do not touch k438's). memory.h gains one free-function declaration only, so the other units are unchanged.
+    cp "$HERE/bc5LleAgc.cpp" "$S/kyty/$UNIT" && cp "$TREE/$MEMC" "$S/kyty/$MEMC" && cp "$TREE/$MEMH" "$S/kyty/$MEMH" || stop "copy the kit"
+    echo "tree memory.cpp $(m "$TREE/$MEMC"), memory.h $(m "$TREE/$MEMH")"
+    python3 -I "$HERE/mkvg437.py" "$S/kyty" > "$R/mkvg437.out" 2>&1 || { cat "$R/mkvg437.out"; stop "mkvg437.py failed"; }
+    cat "$R/mkvg437.out"
+    (cd "$S/kyty" && md5sum "$UNIT" "$MEMC" "$MEMH") | tee "$R/src-md5.txt"
+    for v in normal lean; do
+        b=$W/kytyplus-build$([ $v = lean ] && echo -lean); bin=$E/$v/kyty_emulator
+        mkdir -p "$E/$v"; rm -rf "$E/$v/obj" "$E/$v/lib"
+        [ -f "$bin" ] && mv "$bin" "$bin.$(m "$bin" | cut -c1-8)"
+        distrobox enter ubuntu -- sh -c "cd '$b' && ninja -t compdb -x" > "$E/$v/compdb.json" 2> "$R/compdb-$v.err" < /dev/null || stop "compdb $v failed"
+        distrobox enter ubuntu -- env LC_ALL=C LANGUAGE=C python3 -I "$HERE/build0438.py" emu "$E/$v/compdb.json" "$S/kyty" "$E/$v" "$b" "$bin"             "$UNIT" "$MEMC" > "$R/build-$v.out" 2>&1 < /dev/null
+        rc=$?; echo "$v: build rc $rc; errors $(grep -c 'error:' "$R/build-$v.out"); warnings $(grep -c 'warning:' "$R/build-$v.out")"
+        grep -n "error:\|undefined\|COMPILE FAILED\|AssertionError" "$R/build-$v.out" | head -20
+        [ "$rc" = 0 ] && [ -x "$bin" ] || stop "build $v failed: $R/build-$v.out"
+        m "$bin" > "$E/$v/binary.md5"
+        strings "$bin" > "$E/$v/strings.txt"
+        echo "$v: $(cut -c1-8 "$E/$v/binary.md5"); BC5_0438_KEEP $(grep -c 'BC5_0438_KEEP' "$E/$v/strings.txt"); k438 journal $(grep -c 'k438 (exp 0438)' "$E/$v/strings.txt")"
+        grep -q 'BC5_0438_KEEP' "$E/$v/strings.txt" && grep -q 'BC5_0438_HOLD' "$E/$v/strings.txt" && grep -q 'BC5_DIRECT_VIEWS_GEN' "$E/$v/strings.txt" || stop "a switch is not in $v"
+    done
+    echo "private normal $(cut -c1-8 "$E/normal/binary.md5"), lean $(cut -c1-8 "$E/lean/binary.md5")"
+    [ "$sn" = "$(m "$W/kytyplus-build/src/kyty_emulator")" ] && [ "$sl" = "$(m "$W/kytyplus-build-lean/src/kyty_emulator")" ]         && [ "$sa" = "$(m "$SA")" ] && [ "$(m "$TREE/$UNIT")" = "$P_UNIT" ] || stop "a shared binary, the archive or the tree changed"
+    echo "shared normal ${sn:0:8}, lean ${sl:0:8}, archive ${sa:0:8}, tree unit ${P_UNIT:0:8}: unchanged"
+}
+case "${1:-}" in
+    claim) claim "${2:-F865 records read}" "${3:-20}" ;;
+    release) release ;;
+    pack) pack ;;
+    build) build ;;
+    *) echo "usage: $0 claim|release|pack|build"; exit 2 ;;
+esac
