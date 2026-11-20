@@ -698,6 +698,47 @@ wrong: the stalling variants (c, d, d2) can only end in a ring timeout. They are
 - **Step 3:** `inventory-submission-path.md`, two tables (guest calls, PM4 packets) with code references and the
   console column as the code states it or TODO(verify).
 
+## c438d: the title never kicks (2026-11-20 12:02–12:10, boot a1db5eee, one T run)
+
+- **Build:** `mkc438d.py` on the c438 unit, giving `c438d.cpp` `3a10750d…` (`c438d-unit.diff`); normal `8b61c606`,
+  records only, shared behaviour.
+- **Run:** u438sT28, NO_CRASH, 33.16 flips/s (218 / 70 s with a gap over 50 / 100 ms).
+
+**`/dev/gc` requests in about 360 s:**
+
+| request | count | thread | what the host does |
+|---|---|---|---|
+| 0xc0188132 (submit list) | 615,322 | Render Thread, 25 from game-main | implemented |
+| 0xc0488131 (submit header) | 14,963 | Render Thread | implemented |
+| **0xc0088133** | 14,962 | Render Thread | **unhandled, answered with zeros** |
+| **0xc0108139** | 14,963 | Render Thread | **unhandled, answered with zeros** |
+| 0xc0408121 (queue registration) | 56 | game-main | implemented |
+| 0xc010813b, 0x80048126, 0x8004812a, 0x80048134, 0x80108128, 0x80888123, 0xc004812e | 1 each | game-main | 0xc010813b, 0x80048126, 0x80048134 and 0x80888123 unhandled (zeros); the others handled |
+
+- **Kicks (0xc010811c): 0.** The title never calls "ding dong". Pointer moves seen by bc5-ring: 129,637, none after
+  a kick. **Option D is dead** for this title: the doorbell is its only signal.
+- **New for the inventory:** two requests the title makes once per frame (0xc0088133 and 0xc0108139, each about
+  15,000, with the submit header) are not known to the host. They fall into the default case, which zero-fills
+  them. What they are is TODO(verify), from public sources only (RPCSX's gc device is the reference, D18).
+
+## w438 built (the watcher and per-queue submitters)
+
+- **Build:** `mkw438.py` on `mkc438d.py`'s output on r438, giving `w438.cpp` `d67488c3…` (`w438-unit.diff`);
+  normal `36c1733a`, 0 errors, only the old warnings; shared builds checked unchanged.
+- **Switches:** `BC5_0438_WATCHER` (on unless "0") and `BC5_0438_KICK` (no effect, the title never kicks).
+  r438's `BC5_0438_EARLYREG` and c438/c438d's records are in the same binary.
+- **`test_w438.sh` (the hand-over cut from the unit): PASS** with the switches unset, with the kick off, and with the
+  watcher off.
+  - A move wakes the submitter in about 30 ms against a 500 ms timeout (the Windows timer).
+  - A move seen while it was busy is not lost.
+  - The same pointer counts once.
+  - One submitter per queue.
+  - A kick wakes the watcher.
+- **Chain (for a clean boot):** `WC W WD` × 3.
+  - WC = all off; W = watcher + r438 mode 1; WD = W + kick.
+  - Since the title never kicks, WD equals W in behaviour. Drop WD for 3 more W, or keep it as a no-op control: the
+    top session's call.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its

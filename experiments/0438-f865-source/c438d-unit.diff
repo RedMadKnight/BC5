@@ -1,0 +1,138 @@
+--- cat/bc5LleAgc.cpp	2026-11-20 09:35:06.449228400 +0100
++++ c438d.cpp	2026-11-20 12:01:36.057903800 +0100
+@@ -525,6 +525,9 @@
+ };
+ static thread_local UnreadyWait t_unready;
+ #ifndef BC5_LEAN
++static std::string c438d_line_fwd(); // exp 0438 (tag c438d): defined after gc_ioctl's catcher
++#endif
++#ifndef BC5_LEAN
+ // BC5 experiment 0438 (tag c438): the catcher (records only). bc5-ring's view of each guest queue, for the journal line
+ // at a given-up wait on another thread.
+ namespace c438 {
+@@ -534,7 +537,12 @@
+ 	uint64_t deferred_since = 0, label = 0, value = 0, head_seen = 0, poll = 0;
+ 	bool     unready = false;
+ 	uint64_t at_look[kN] = {}; // part 2: bc5-ring's time totals at this queue's last look
++	uint64_t moved = 0, kick = 0; // c438d: when bc5-ring last saw the pointer move; the last kick for this queue not yet followed by a seen move
++	uint32_t wptr = 0, ring_n = 0; // c438d: the pointer bc5-ring last saw, the ring's size in dwords
++	int      idx = -1;             // c438d: the index in g_queues
+ };
++// exp 0438 (tag c438d): the gc-ioctl catcher's counters
++inline std::atomic<uint64_t> g_kicks {0}, g_kick_match {0}, g_kick_nomatch {0}, g_kick_eq {0}, g_kick_seen_before {0}, g_kick_seen[5] = {}, g_moves {0}, g_moves_kick {0}, g_kick_logged {0};
+ inline std::mutex& mu() {
+ 	static std::mutex m;
+ 	return m;
+@@ -1704,6 +1712,18 @@
+ 						}
+ 					}
+ 					for (int k = 0; k < Direct::c438::kN; k++) e.at_look[k] = z[k];
++					if (s.c438_w != w) { // exp 0438 (c438d): a move seen
++						Direct::c438::g_moves++;
++						if (e.kick != 0 && e.kick <= cn) {
++							Direct::c438::g_moves_kick++;
++							Direct::c438::g_kick_seen[Direct::c438::bucket(cn - e.kick)]++;
++							e.kick = 0;
++						}
++						e.moved = cn;
++					}
++					e.wptr   = w;
++					e.ring_n = n;
++					e.idx    = static_cast<int>(qi);
+ 					e.a       = q.a;
+ 					e.b       = q.b;
+ 					e.c       = q.c;
+@@ -1870,6 +1890,14 @@
+ 						                Direct::timing_now(), Direct::c438::g_slices.load(), Direct::c438::g_slice_hist[0].load(), Direct::c438::g_slice_hist[1].load(), Direct::c438::g_slice_hist[2].load(),
+ 						                Direct::c438::g_slice_hist[3].load(), Direct::c438::g_slice_hist[4].load(), static_cast<double>(Direct::c438::g_slice_max.load()) / 1e6, b1, Direct::c438::g_gap_n.load(), b2);
+ 					}
++					{ // exp 0438 (tag c438d)
++						const std::string rq = Direct::c438d_line_fwd();
++						Direct::journal("c438d (exp 0438): t %.1f s: kicks %" PRIu64 ", a queue with a/b/c = me/pipe/queue %" PRIu64 ", none %" PRIu64 ", offset == the queue's pointer %" PRIu64 ", the pointer already seen by bc5-ring %" PRIu64
++						                "; pointer moves seen %" PRIu64 ", of them after a kick %" PRIu64 ", kick->seen <1/<5/<20/<100 ms/more %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "; requests: %s\n",
++						                Direct::timing_now(), Direct::c438::g_kicks.load(), Direct::c438::g_kick_match.load(), Direct::c438::g_kick_nomatch.load(), Direct::c438::g_kick_eq.load(),
++						                Direct::c438::g_kick_seen_before.load(), Direct::c438::g_moves.load(), Direct::c438::g_moves_kick.load(), Direct::c438::g_kick_seen[0].load(), Direct::c438::g_kick_seen[1].load(),
++						                Direct::c438::g_kick_seen[2].load(), Direct::c438::g_kick_seen[3].load(), Direct::c438::g_kick_seen[4].load(), rq.c_str());
++					}
+ 					Direct::journal("c438 (exp 0438): t %.1f s: %" PRIu64 " acb packets; seen->submit <1/<5/<20/<100 ms/more %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", longest %.3f ms; "
+ 					                "bc5-ring's look gap before the seen <1/<5/<20/<100 ms/more %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", longest %.3f ms\n",
+ 					                Direct::timing_now(), Direct::c438::g_pk.load(), Direct::c438::g_hist_sub[0].load(), Direct::c438::g_hist_sub[1].load(), Direct::c438::g_hist_sub[2].load(), Direct::c438::g_hist_sub[3].load(),
+@@ -16731,7 +16759,78 @@
+ #endif // BC5_LEAN
+ 
+ // Returns 0 on success or a positive errno (the libkernel wrapper turns it into -1/errno).
++#ifndef BC5_LEAN
++// exp 0438 (tag c438d): every /dev/gc request counted by request and thread; the kick in detail.
++static std::mutex                               g_c438d_mu;
++static std::map<uint64_t, uint64_t>             g_c438d_req;
++static std::map<std::string, uint64_t>          g_c438d_thr; // "request thread-name" -> count
++static void c438d_note(uint64_t request, void* argp) {
++	char tn[32] = {};
++	pthread_getname_np(pthread_self(), tn, sizeof(tn));
++	{
++		std::lock_guard l(g_c438d_mu);
++		g_c438d_req[request]++;
++		char key[64];
++		std::snprintf(key, sizeof(key), "%" PRIx64 " %s", request, tn);
++		g_c438d_thr[key]++;
++	}
++	if (request != 0xc010811c || argp == nullptr) return;
++	const auto*    a  = static_cast<const uint32_t*>(argp);
++	const uint64_t cn = SoftCp::now_ns();
++	Direct::c438::g_kicks++;
++	char           where[400];
++	int            ww    = 0;
++	bool           match = false;
++	where[0]             = 0;
++	{
++		std::lock_guard cl(Direct::c438::mu());
++		for (auto& e: Direct::c438::views()) {
++			if (e.idx < 0 || e.a != a[0] || e.b != a[1] || e.c != a[2]) continue;
++			match = true;
++			uint32_t now_w = e.wptr;
++			if (static_cast<size_t>(e.idx) < g_queues.size() && e.ring_n != 0) {
++				const auto& q = g_queues[static_cast<size_t>(e.idx)];
++				now_w         = static_cast<uint32_t>(reinterpret_cast<const volatile uint64_t*>(q.doorbell_page)[q.d == 0 ? 0 : q.d - 1] % e.ring_n);
++			}
++			if (now_w == a[3]) Direct::c438::g_kick_eq++;
++			if (now_w == e.wptr) Direct::c438::g_kick_seen_before++;
++			e.kick = cn;
++			if (ww < 340)
++				ww += std::snprintf(where + ww, sizeof(where) - static_cast<size_t>(ww), "%squeue %d (%u/%u/%u/0x%x) pointer now %u, last seen %u, %s, last move seen %.3f ms ago", ww ? "; " : "", e.idx, e.a, e.b,
++				                    e.c, e.d, now_w, e.wptr, now_w == a[3] ? "offset == pointer" : "offset != pointer", e.moved != 0 ? static_cast<double>(cn - e.moved) / 1e6 : -1.0);
++		}
++	}
++	(match ? Direct::c438::g_kick_match : Direct::c438::g_kick_nomatch)++;
++	const uint64_t k = Direct::c438::g_kick_logged++;
++	if (k < 64 || (k & 0xfffu) == 0)
++		Direct::journal("c438d (exp 0438): kick me %u pipe %u queue %u offset %u on thread %s at t %.6f s: %s (%" PRIu64 " so far)\n", a[0], a[1], a[2], a[3], tn, Direct::timing_now(), match ? where : "no registered queue with a/b/c = me/pipe/queue",
++		                Direct::c438::g_kicks.load());
++}
++static std::string c438d_line() {
++	std::lock_guard l(g_c438d_mu);
++	std::string     out;
++	char            b[160];
++	for (const auto& [r, c]: g_c438d_req) {
++		std::snprintf(b, sizeof(b), "%s0x%" PRIx64 " %" PRIu64, out.empty() ? "" : ", ", r, c);
++		out += b;
++	}
++	out += "; by thread:";
++	for (const auto& [kname, c]: g_c438d_thr) {
++		std::snprintf(b, sizeof(b), " [%s %" PRIu64 "]", kname.c_str(), c);
++		out += b;
++	}
++	return out;
++}
++#endif
++#ifndef BC5_LEAN
++namespace Direct {
++static std::string c438d_line_fwd() { return c438d_line(); }
++} // namespace Direct
++#endif
+ static int gc_ioctl(uint64_t request, void* argp) {
++#ifndef BC5_LEAN
++	c438d_note(request, argp); // exp 0438 (tag c438d): records only
++#endif
+ 	switch (request) {
+ 		case 0xc004812e: { // ps5: capability/flag query; RPCSX answers unk=0, flag=0
+ 			auto* a = static_cast<uint16_t*>(argp);

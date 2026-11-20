@@ -55,9 +55,10 @@ for arm in ${ORDER:-S C S C S C}; do
     V) bin=$CB; want=$CW; AW="BC5_0438_KEEP=0 BC5_0438_HOLD=0 BC5_DIRECT_VIEWS_GEN=1" ;;
     H) bin=$CB; want=$CW; AW="BC5_0438_KEEP=0 BC5_0438_HOLD=1 BC5_DIRECT_VIEWS_GEN=0" ;; HV) bin=$CB; want=$CW; AW="BC5_0438_KEEP=0 BC5_0438_HOLD=1 BC5_DIRECT_VIEWS_GEN=1" ;;
     T) bin=$CB; want=$CW; AW="" ;;
+    WC) bin=$CB; want=$CW; AW="BC5_0438_WATCHER=0 BC5_0438_KICK=0 BC5_0438_EARLYREG=0" ;; W) bin=$CB; want=$CW; AW="BC5_0438_WATCHER=1 BC5_0438_KICK=0 BC5_0438_EARLYREG=1" ;; WD) bin=$CB; want=$CW; AW="BC5_0438_WATCHER=1 BC5_0438_KICK=1 BC5_0438_EARLYREG=1" ;;
     C3) bin=$CB; want=$CW; AW="BC5_0438_EARLYREG=0" ;; R) bin=$CB; want=$CW; AW="BC5_0438_EARLYREG=1" ;; A) bin=$CB; want=$CW; AW="BC5_0438_EARLYREG=2" ;;
     C2) bin=$CB; want=$CW; AW="BC5_0438_KEEP=0 BC5_0438_HOLD=0 BC5_DIRECT_VIEWS_GEN=0" ;; KV) bin=$CB; want=$CW; AW="BC5_0438_KEEP=1 BC5_DIRECT_VIEWS_GEN=1" ;;
-    *) say "arm $arm: S, T, C, C2, C3, R, A, K, KV, V, H or HV"; break ;; esac
+    *) say "arm $arm: S, T, WC, W, WD, C, C2, C3, R, A, K, KV, V, H or HV"; break ;; esac
   t=u438$mt$arm$k; while [ -e "$RAW/$t-start.txt" ] || [ -e "$RAW/$t-end.txt" ]; do t=${t}b; done
   [ -e "$E/STOP" ] && { say "STOP file before $t"; break; }
   pgrep '^kyty_emulator' > /dev/null && { say "an emulator runs before $t (not ours): stop"; break; }
@@ -80,6 +81,7 @@ for arm in ${ORDER:-S C S C S C}; do
   if [ -n "$PD" ] && [ -f "$DL" ] && [ "$DL" -nt "$E/raw/$t-t0" ]; then
     SU="log $DL; GIVEN UP $(grep -ac 'GIVEN UP' "$DL"); k438 lines $(grep -ac '^k438 (exp 0438)' "$DL"); k438b [$(grep -a '^hold tail (exp 0438, k438b): [0-9]* holds' "$DL" | tail -1 | cut -c1-400)], STILL HELD $(grep -ac 'STILL HELD' "$DL"); last 60-s: $(grep -a '^ho430 (exp 0430): t' "$DL" | tail -1 | grep -o 'F4 fences [0-9]*\|F2 cycles left as they are [0-9]*\|k438 .*' | tr '\n' ' ')"
     SU="$SU; vg437 [$(grep -a '^exp 0437 (tag vg437)' "$DL" | tail -1)]"
+    SU="$SU; c438d [$(grep -a '^c438d (exp 0438): t ' "$DL" | tail -1 | cut -c1-1500)], c438d kicks logged $(grep -ac '^c438d (exp 0438): kick' "$DL")"
     SU="$SU; c438 slices [$(grep -a '^c438 (exp 0438): t .* slices' "$DL" | tail -1 | cut -c1-900)]; r438 [$(grep -a '^r438 (exp 0438): t ' "$DL" | tail -1 | cut -c1-700)], r438 BUG lines $(grep -ac '^r438 (exp 0438): BUG' "$DL")"
     SU="$SU; frames (frame profile, last 290 s of the journal) $(grep -a '^frame profile: t' "$DL" | awk '{t=$4+0; g=$6+0; T[NR]=t; G[NR]=g} END {e=T[NR]; for (i=1;i<=NR;i++) if (T[i] >= e-290) {n++; if (G[i]>50) a++; if (G[i]>100) b++} printf "%d, over 50 ms %d, over 100 ms %d", n, a, b}')"
   else SU="no direct.log of this run found"; fi
@@ -89,7 +91,7 @@ for arm in ${ORDER:-S C S C S C}; do
   case "$EXE" in *" md5 $want") ;; *) say "$t ran another binary than ${want:0:8} ($EXE): stop"; break ;; esac
   [ "${CLASS:-NONE}" = NO_CRASH ] || { say "class ${CLASS:-NONE}: stop (R55; the records are the result)"; break; }
   # the top session's gate on a boot with a reset (2026-11-20): the chain's first C must match u438sC1 (36.91 flips/s, NO_CRASH)
-  if { [ "$arm" = C ] || [ "$arm" = C2 ] || [ "$arm" = C3 ]; } && [ -z "${C_GATE_DONE:-}" ]; then
+  if { [ "$arm" = C ] || [ "$arm" = C2 ] || [ "$arm" = C3 ] || [ "$arm" = WC ]; } && [ -z "${C_GATE_DONE:-}" ]; then
     C_GATE_DONE=1; f=$(printf '%s\n' "$FPS" | sed -n 's/^\([0-9.]*\) flips.*/\1/p')
     awk -v f="${f:-0}" 'BEGIN {exit !(f >= 33.3)}' || { say "first C at ${f:-?} flips/s is under the gate 33.3 (the low end of 0436's clean-boot scene range; top 2026-11-20): stop"; break; }
   fi
