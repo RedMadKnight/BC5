@@ -366,7 +366,7 @@ const std::map<std::string, void *> &fakes() {
         {"scePthreadMutexLock", fp(&f_mutex_lock)},
         {"scePthreadMutexUnlock", fp(&f_mutex_unlock)},
         {"scePthreadMutexDestroy", fp(&f_mutex_destroy)},
-        {"LzoM-wVLJDE", fp(&f_hook_query)},
+        {"sceKernelIsThreadSanitizerEnabled", fp(&f_hook_query)},
         {"aj7wRdAWFeM", fp(&f_sysinfo)},
         {"sceVideoOutSubmitEopFlip", fp(&f_eop)},
         {"sceVideoOutGetBufferLabelAddress", fp(&f_label)},

@@ -245,7 +245,7 @@ const ImportSlot kImports[] = {
      slot(&g_imports.mutex_unlock)},
     {"2Of0f+3mhhE", "libkernel", "scePthreadMutexDestroy",
      slot(&g_imports.mutex_destroy)},
-    {"LzoM-wVLJDE", "libkernel", "", slot(&g_imports.hook_module_query)},
+    {"LzoM-wVLJDE", "libkernel", "sceKernelIsThreadSanitizerEnabled", slot(&g_imports.hook_module_query)},
     {"aj7wRdAWFeM", "libkernel", "", slot(&g_imports.system_info_query)},
     {"j8xl+92A0q4", "libSceVideoOut", "sceVideoOutSubmitEopFlip",
      slot(&g_imports.video_out_submit_eop_flip)},

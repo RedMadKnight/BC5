@@ -10,7 +10,7 @@
 // in the same file. The user-data register is R_030D08_SQ_THREAD_TRACE_USERDATA_2 (Mesa
 // src/amd/vulkan/tools/radv_sqtt.c @ ab2374a; uconfig offset 0x342); the next one, written by
 // absolute dword address 0xC343, we call SQ_THREAD_TRACE_USERDATA_3 (TODO(verify) name).
-// Opcode 0x4A ("CLEAR_STATE" here) and 0x93 ("WAIT_REG_MEM64") and every control-word value
+// Opcode 0x4A (name unknown: not CLEAR_STATE, which Mesa sid.h @ ab2374a line 41 gives as 0x12) and 0x93 ("WAIT_REG_MEM64") and every control-word value
 // below are per the original module's behaviour (clean-room description, see
 // src/reimpl/PROVENANCE.md); TODO(verify) those two names, Mesa does not list the opcodes.
 #include "bc5/reimpl/agc_driver_internal.hpp"
@@ -182,7 +182,7 @@ std::uint32_t build_default_state_cb(std::uint32_t *dst, std::uint64_t shadow, s
                                      const RangeLists &rl, bool is_gfx, bool esvm,
                                      std::uint64_t other_label) {
     std::uint32_t *p = dst;
-    *p++ = 0xC0004A00u; // CLEAR_STATE
+    *p++ = 0xC0004A00u; // opcode 0x4A, TODO(verify) name
     *p++ = 0;
     std::uint32_t *cond = p;
     p += 5; // COND_EXEC, filled below

@@ -72,7 +72,7 @@ struct Imports {
     int (*getpid)();
     int (*get_app_info)(int pid, void *info);
     int (*title_workaround_is_enabled)(const void *info, std::uint32_t id, int *out);
-    int (*query_app_type)(void *buffer);   // NID GGeRJk1XdWc, TODO(verify) meaning
+    int (*query_app_type)(void *buffer);   // NID GGeRJk1XdWc = sceKernelGetProsperoCompiledSdkVersion (NID hash of the name)
     int (*query_kernel_flag)();            // NID tU5e3f9gSiU, TODO(verify) meaning
     int (*get_app_category_type)(int pid, int *category);
     // libSceRegMgr / libSceSysmodule
