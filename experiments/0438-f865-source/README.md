@@ -1592,6 +1592,76 @@ builds are for diagnosis, never for fps or frame-time comparisons.
 - Every normal-build number in this README (results 2–12, the budget) is a **diagnosis** number, not a performance
   result.
 
+## Result 13: the lean round (2026-11-20 21:27–23:20, boot eb264b8c, lean d4d2ab82, normal 8f622148)
+
+**Pre-checks (top's GO, 21:26).**
+- 0 GPU reset or timeout lines on this boot. The only `dmesg` match was bc5-gpu-watch's boot line.
+- No emulator running, BOX-LOCK empty.
+- No scp, rsync or md5sum running; only the idle `nfsiod` kernel worker.
+
+**Build (BOX-LOCK 21:27–21:31).** `box0438.sh buildb` first stopped in mko438.py. Three of the tree's six files are
+CRLF on the box (semaphore.cpp, eventFlag.cpp, pthread.cpp), and their pins are LF md5s. mko438 now:
+- pins and patches the LF form;
+- writes each file back in its own line endings (mko438.py `4513a0ec`, box0438.sh `4f958591`).
+
+Before the build it was dry-run on the real tree; all marks applied. Build results:
+
+| Build | md5 | Errors | Warnings | Contents |
+|---|---|---|---|---|
+| lean | `d4d2ab82a4245e45f43e31f09ad23e80` | 0 | 8 | EARLYREG, PLWCV and PROLMERGE; no journal lines, no o438 |
+| normal | `8f622148de65df63ebe2d821e85ec383` | 0 | 15 | the same three switches, plus the r438 and p438 lines and o438 |
+
+The shared builds are unchanged (f345db74 / 6a735b81 / d6638808, tree unit a62e8bf6).
+
+**Chain.** chain0438l (`55740c7f`), runner `7c6da668`, his 09:46 scene, RT on, way 2's words, PLAY 300 s. It ran
+under the user manager (`systemd-run --user`, unit chain0438l). One laptop ssh blocked on `systemctl --user
+is-active` and read nothing until the unit ended.
+- Runs 327–340, all 14 NO_CRASH.
+- GPU timeout/reset lines: 0 at the start, 0 at the end.
+- Lean lost-write lines: 0 in every run.
+- Kernel lines: runs 327–329 each have two drm `Unsupported screen format RA24` display messages, not GPU faults.
+- **LP334 is void.** It had 428 pad keys (his input) and is left out of the verdict. Its numbers are listed only in
+  `lean-round/mh0438-out.txt`.
+
+**Lean numbers.** These are the performance result, lean against lean. They come from MangoHud's per-frame log over
+G+10 to G+290, which is clipped by the log's end to 275 s in every run. Tool: `mh0438.py 126 10 290`; output in
+`lean-round/mh0438-out.txt`.
+
+| Arm | Runs | flips/s per run | Mean flips/s | p50 ms | p95 ms | p99 ms | Time in frames > 50 ms |
+|---|---|---|---|---|---|---|---|
+| L0 (control) | 327, 331, 335 | 35.32, 34.98, 35.68 | **35.33** | 17.0 / 16.9 / 17.0 | 66.5 / 66.6 / 50.6 | 99.9 / 100.0 / 99.9 | 26.3 / 28.2 / 24.2 % |
+| L1p (r438, poll) | 328, 332, 336 | 34.31, 34.52, 35.61 | **34.81** | 17.1 / 17.0 / 17.1 | 66.7 / 66.6 / 50.6 | 99.9 / 100.0 / 99.8 | 28.7 / 28.1 / 23.6 % |
+| L1c (r438, CV) | 329, 333, 337 | 35.39, 36.11, 33.60 | **35.03** | 16.9 / 16.9 / 17.1 | 66.5 / 50.5 / 66.7 | 99.9 / 99.8 / 100.1 | 26.8 / 23.9 / 31.3 % |
+| LP (L1c + p438) | 330, 338 (334 void) | 35.24, 34.23 | **34.74** | 17.0 / 17.0 | 66.6 / 66.7 | 99.8 / 100.0 | 27.3 / 29.2 % |
+
+- The arm means are within 0.6 flips/s of each other. Within each arm, runs differ by up to 2.5 flips/s (L1c: 33.60
+  to 36.11).
+- Median, p95 and p99 are the same across arms. p95 is either 50.5 or 66.7 ms in every arm, which fits frame times
+  quantised to whole vblanks of 16.7 ms.
+- **Verdict (perf): no measurable effect.** This holds for r438 in either wait form (poll or condition variable) and
+  for p438's prologue merge, with no gain and no loss beyond run-to-run spread, in 3 + 3 + 3 + 2 lean runs. r438 is a
+  correctness fix (F865's source), and on these numbers its bake costs no frame time. The poll against the
+  condition-variable choice makes no difference to frame time; CV is the one offline test case 6 found faster to
+  wake (0.06 against 4.9–7.0 ms median). p438 gives no gain, so it has no performance case for a bake.
+
+**Diagnosis runs (O339, O340; normal 8f622148, `BC5_0438_OUTSIDE=1`, EARLYREG=0 PROLMERGE=0): diagnosis only.**
+These are cumulative o438 totals from the start to the end of the run (load included, ~14,000 frames). Files:
+`lean-round/b438O33*-o438-last-totals.txt`.
+- **The Render Thread barely waits in the title's own syncs.**
+  - Mutex lock: 2.29 M / 2.10 M calls, 432 / 390 ms in total, longest 1.3–1.5 ms; nearly all uncontended.
+  - Cond wait: 11 calls, 16–21 ms, woken by "Coherent Layout".
+  - No semaphore, event flag, equeue or sync-on-address wait.
+  - In the 126 / 141 frames over 100 ms, its recorded waits add up to 7.5 ms in total.
+  - So its ~9 ms per frame of "other waits" (exp 0432's perf, d432S16) is not in the guest sync HLEs. It is host
+    side: our gc ioctls, the flip, host locks or the kernel (TODO(verify): the next profile should split these).
+- **game-main waits for the Render Thread.**
+  - Cond wait: 137.8 / 136.9 s over the run (about 9.8 ms per frame), with 135.0 / 133.3 s of it woken by the Render
+    Thread. Longest single wait 100.1 ms, which is the title's timed wait.
+  - Its semaphore waits total 5.8 / 5.2 s, woken by Havok Solve and Havok Queries.
+- So the frame is paced by the Render Thread's own work, not by any wait it makes on the title.
+- GIVEN UP lines: 2 in O339 and 1 in O340, in the normal build's direct.log, with EARLYREG off (as in the shared
+  builds).
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
