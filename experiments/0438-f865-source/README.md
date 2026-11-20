@@ -905,6 +905,93 @@ compared per minute.
       (u438sUC42);
     - among the game-side holders that bc5-ring waits behind, every one other than k1f412 is ≤ 6.4 s a run.
 
+## Build 10: s438 (direct_sync's scan on a merge-only pass) and i438 (the unknown ioctls' buffers), design
+
+The top session's order after result 9:
+- u438 and r438 mode 1 stay in the test build behind their switches.
+- One build gets (a) step 3's in-buffer records and (b) the next lever, picked by its share of bc5-ring's
+  device-mutex time.
+
+**Unit chain:** `mks438.py` on `u438.cpp` (`78f319da…`) → **`a56293942679688016778eef88c704c1`** (`s438-unit.diff`, 84
+lines).
+
+**Picking the lever** (result 9's U and UR runs, about 360 s each). bc5-ring's own slices hold the mutex in these
+parts:
+- `prep-direct-sync` 17.9–19.5 s;
+- `prep-filter` 8.9 s;
+- `prep-pre-k1f412` 1.6 s.
+
+Of its device-mutex waits, the share behind each game-thread holder:
+- `prep-pre-k1f412` 11.6–17.3 s;
+- `prep-direct-sync` 5.2–6.4 s;
+- `prep-filter` 1.8–2.1 s.
+
+Together (bc5-ring's own hold plus its waits behind the game thread):
+- direct-sync is about 23–25 s;
+- k1f412 is about 13–19 s;
+- filter is about 11 s.
+
+So the lever is `prep-direct-sync`.
+
+**Where direct_sync's time goes.** `direct_sync_one`, under `g_dev_mutex`, is called from `prepare` with `force`
+only when the filter found unmapped operands; otherwise it is rate-limited to 50 ms.
+- **Its fast path returns** when nothing in the memfd is new (`st_blocks`), no view is new (the views' signature),
+  nothing new is forced and every BO is mapped, **and the merge is not due**.
+- **The merge is due every 250 ms per DState.** So every 250 ms a full pass runs, even when nothing changed. It
+  does:
+  1. step 1, the scan for data chunks to import: a binary search on `S.bos` per view gap and an `lseek(SEEK_DATA)`
+     on the memfd per uncovered gap, over all views;
+  2. the merge;
+  3. the lzr pass;
+  4. the mapping rebuild, only when something changed.
+- The split of these parts is not known for these runs: the "timing split" line needs `BC5_DIRECT_TIMING`. The new
+  s438 line records it.
+
+**s438** (`BC5_0438_MERGESCAN`, behaviour, so in lean too; on unless "0").
+- A full pass whose only reason is the merge (same blocks, views, forced set and mapped BOs) skips step 1. The
+  merge and everything after it run as before.
+- It does this only when the last full scan of that DState is under 1 s old. So a full scan still runs at least
+  once a second.
+- It stays off when `g_zskip` is not empty or a new zero list was placed, so the zero-skip take-back is never left
+  out.
+
+| what step 1 touches | lock |
+|---|---|
+| `S.bos`, `S.forced`, `S.failed`, `S.file_size` (read); `S.bos`, `S.bytes` (import, write) | `g_dev_mutex` |
+| the memfd (`lseek SEEK_DATA`, read only) | none needed |
+| `g_zskip`, `zskip_take_back` | `g_dev_mutex` |
+| `ls415_import` (dma-buf import, ioctls) | `g_dev_mutex` |
+
+s438 moves nothing out of the lock. It runs step 1 less often under it: at most once a second on a merge-only pass,
+instead of four times.
+
+What it gives up: a data chunk that appears with `st_blocks` unchanged (a page freed and another written in the
+same window) is found up to 1 s later instead of up to 250 ms. A packet operand on such a chunk is still imported
+at once by k1f412, since `S.forced` grows and the next sync is then not merge-only.
+
+**s438 records** (normal build): an `s438` line every 60 s, from `direct_sync` under the mutex, with:
+- passes fast and full;
+- merge-only passes with the scan left out, and with it run;
+- the full passes' time by part: views, scan, merge, drain, maps.
+
+If the scan is not the large part, the line names the part that is, for the next build.
+
+**i438** (step 3's follow-up; records only, normal build, no switch: what the title gets back is unchanged).
+- In `gc_ioctl`'s default case, for `0xc0088133` and `0xc0108139` only, it logs:
+  - the in-buffer before the zero-fill;
+  - the out-buffer after it (what the host returns, zeros);
+  - the thread name and the call number.
+- It reads at most the request's `_IOC` size, 8 or 16 bytes. The 64 bytes asked for are capped at that size,
+  because reading past the argument could fault.
+- Rate: the first 200 calls of each request, then 1 in 600.
+
+**Chain** (clean boot, his scene, RT on, the same gates): `MC M` × 3, both on result 9's UR base
+(`BC5_0438_SPLIT=1 BC5_0438_EARLYREG=1`).
+- MC = `BC5_0438_MERGESCAN=0`; M = `BC5_0438_MERGESCAN=1`.
+- The gate is the first MC run at ≥ 33.3 flips/s.
+- Per run: flips/s, gaps over 50 / 100 ms, give-ups, c438's holder table and slice kinds, the s438 line, and the
+  i438 line count.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
