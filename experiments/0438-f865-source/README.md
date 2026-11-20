@@ -584,6 +584,58 @@ passed the gate (≥ 33.3 flips/s). 0 kernel lines in all six runs.
   - so a narrower lock must cover `g_d` whole, and the gain is not shown.
   The by-pass split is the first step.
 
+## Result 7: r438a (mode 2) against off (2026-11-20 11:02–11:48, boot a1db5eee, binary d59eae9b)
+
+Chain `C3 A C3 A C3 A`, his scene, RT on, 4 rings, G+300. All NO_CRASH, 0 kernel lines; the gate passed (C322 35.03).
+
+| run | arm | flips/s | s with a gap > 50 / > 100 ms | frames (last 290 s) over 50 / 100 ms | given up | early-writer waits (s) |
+|---|---|---|---|---|---|---|
+| u438sC322 | off | 35.03 | 221 / 62 | 10101: 901 / 75 | 4 | – |
+| u438sA23 | mode 2 | 34.16 | 210 / 57 | 9843: 897 / 68 | 0 | 31,612 (17.0 s, longest 39 ms) |
+| u438sC324 | off | 34.29 | 225 / 66 | 9900: 970 / 80 | 3 | – |
+| u438sA25 | mode 2 | 34.62 | 220 / 63 | 9997: 884 / 74 | 0 | 35,852 (19.7 s, longest 38 ms) |
+| u438sC326 | off | 34.02 | 222 / 65 | 9820: 958 / 86 | 5 | – |
+| u438sA27 | mode 2 | 34.79 | 221 / 65 | 10051: 879 / 76 | 0 | 35,308 (19.6 s, longest 72 ms) |
+
+- **Mode 2's cheap path never fired** ("real write satisfied, no wait 0" in all three A runs). My explanation for
+  r438's waits (a real pending write shadowed by an early one) is refuted. The waits have no satisfying real write,
+  and mode 2 behaves as mode 1.
+- **The invariant held:** early writes 3.3–3.8 M per run, never reached the ring 0, BUG lines 0.
+- **Give-ups:**
+  - r438 (modes 1 and 2) had 0 in 6 runs; the controls had 13 in 6 (results 6 and 7 together).
+  - flips/s pooled over both chains: r438 mean 34.55 (6 runs), off 35.27 (6). The spreads overlap and the boot's
+    later runs are slower; this chain shows no cost (34.52 against 34.45). No cost is shown and none is excluded.
+- **prep-pre by pass:** k1f412 dominates.
+  - bc5-ring's own time: k1f412 2.8–3.9 s a run, ww412 and dt412 about 30–38 ms each.
+  - bc5-ring's device-mutex waits by the game thread's part:
+
+    | holder's part | seconds |
+    |---|---|
+    | k1f412 | 15.6–19.8 |
+    | direct sync | 5.1–6.3 |
+    | anon sync | 3.4–4.7 |
+    | hints | 1.3–1.7 |
+    | filter | 1.3–1.6 |
+    | the rest of prep-pre | 0.2–0.5 |
+
+  - The number of walks per submission was not counted.
+- **No further work on either.** The maintainer's change of direction: no r438 tuning and no prep-pre speed-up after
+  this chain.
+
+## t438: the --submit test, run 1 (2026-11-20 11:49, boot a1db5eee, no title running)
+
+`t438.cpp` (md5 `622a6db1…`), built in the ubuntu distrobox (g++, libdrm-amdgpu1 2.4.131 there); kernel
+7.3.3-ogc1.1.fc45, host libdrm 2.4.134, DRM 3.64.
+
+- **Variant d:** a GFX wait on a label in a plain GTT BO, with the writer queued behind it on the GFX ring. The
+  CPU guard wrote the label at 300 ms and **the wait never passed**.
+- The kernel logged `ring gfx_0.0.0 timeout`, and the reset succeeded. The run stopped there; no other variant ran.
+- **Reading** (inferred): the GPU's polling reads the label through its cache, so a CPU store does not release it.
+  The harness's guard was wrong in design, my error. The variants that stall by design (c, d, d2) can only end in
+  a ring timeout.
+- The boot has a GPU reset now (R60).
+- **Proposed:** drop c, d and d2; add the timestamps' cache write-back; run a, a0 and b after a reboot.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
