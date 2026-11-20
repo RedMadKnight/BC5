@@ -1,0 +1,222 @@
+diff --git a/src/kernel/memory.h b/src/kernel/memory.h
+--- a/src/kernel/memory.h
++++ b/src/kernel/memory.h
+@@ -116,6 +116,7 @@
+ // BC5 (direct mode): the guest's mapped ranges, see memory.cpp.
+ int  Bc5DirectMemoryFd(); // BC5 (ADR 0006): the direct-memory memfd, -1 when none
+ uint64_t Bc5MappedRangesGeneration(); // BC5 (experiment 0037): changes with every edit of the guest's ranges
++uint64_t Bc5DirectRangesGeneration(); // BC5 (experiment 0437, tag vg437): changes only when a direct range's start, size, offset or name changes
+ // BC5 (experiment 0415, tag mr415): the mapped ranges of one snapshot through cb (as Bc5ForEachMappedRange's second
+ // callback), that snapshot's generation, and the spans changed since the last call; *complete false when the spans
+ // may miss a change (the first call, or a full log).
+diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
+--- a/src/kernel/memory.cpp
++++ b/src/kernel/memory.cpp
+@@ -284,6 +284,11 @@
+ public:
+ 	// BC5 (experiment 0037): changes with every edit of the ranges, so readers can cache a snapshot.
+ 	[[nodiscard]] uint64_t Generation() const { return m_gen.load(std::memory_order_acquire); }
++	// BC5 (experiment 0437, tag vg437): changes only with an edit that changes a direct range's start, size, offset or
++	// name, the four things the direct view list is made of (bc5LleAgc.cpp, direct_views_build: type 0 only; the
++	// protection and the memory type are not in it). An edit of a flexible, pooled, stack, code or reserved range, or a
++	// protection change that leaves a direct range whole, leaves it as it is.
++	[[nodiscard]] uint64_t DirectGeneration() const { return m_gen_direct.load(std::memory_order_acquire); }
+ 	// BC5 (experiment 0037): [start, end) of every range, reserved or mapped, that overlaps [lo, hi).
+ 	void Overlapping(uint64_t lo, uint64_t hi, std::vector<std::pair<uint64_t, uint64_t>>* out) {
+ 		Common::LockGuard lock(m_mutex);
+@@ -306,11 +311,53 @@
+ 		char             name[KERNEL_MAXIMUM_NAME_LENGTH];
+ 	};
+ 
++	// BC5 (experiment 0437, tag vg437): see DirectGeneration. Declared after the lock, so it is destroyed under it.
++	struct DirectEditGuard {
++		struct D {
++			uint64_t start, size, offset;
++			char     name[KERNEL_MAXIMUM_NAME_LENGTH];
++			bool operator==(const D& o) const {
++				return start == o.start && size == o.size && offset == o.offset && std::strncmp(name, o.name, KERNEL_MAXIMUM_NAME_LENGTH) == 0;
++			}
++		};
++		VirtualRanges*  self;
++		uint64_t        lo, hi;
++		std::vector<D>  before;
++		DirectEditGuard(VirtualRanges* s, uint64_t start, uint64_t size): self(s), lo(start), hi(End(start, size)) {
++			if (hi < lo) hi = UINT64_MAX; // the span wraps: the whole table is the window
++			auto [first, last] = self->OverlapWindowUnlocked(lo, hi - lo);
++			if (first != last) {
++				lo = std::min(lo, first->start);
++				hi = std::max(hi, End(std::prev(last)->start, std::prev(last)->size));
++			}
++			self->DirectInUnlocked(lo, hi, &before);
++		}
++		~DirectEditGuard() {
++			std::vector<D> after;
++			self->DirectInUnlocked(lo, hi, &after);
++			if (after != before) self->m_gen_direct.fetch_add(1, std::memory_order_acq_rel);
++		}
++		DirectEditGuard(const DirectEditGuard&)            = delete;
++		DirectEditGuard& operator=(const DirectEditGuard&) = delete;
++	};
++	void DirectInUnlocked(uint64_t lo, uint64_t hi, std::vector<DirectEditGuard::D>* out) {
++		out->clear();
++		if (hi <= lo) return;
++		auto [first, last] = OverlapWindowUnlocked(lo, hi - lo);
++		for (auto it = first; it != last; ++it) {
++			if (it->type != VirtualRangeType::Direct) continue;
++			DirectEditGuard::D d {it->start, it->size, it->offset, {}};
++			std::memcpy(d.name, it->name, KERNEL_MAXIMUM_NAME_LENGTH);
++			out->push_back(d);
++		}
++	}
++
+ 	bool Add(uint64_t start, uint64_t size, uint64_t offset, int protection, int memory_type,
+ 	         VirtualRangeType type, const char* name, bool disallow_merge = false) {
+ 		Common::LockGuard lock(m_mutex);
+ 		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
+ 		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
++		DirectEditGuard vg437(this, start, size);      // BC5 (experiment 0437, tag vg437)
+ 
+ 		if (start == 0 || size == 0) {
+ 			return false;
+@@ -343,6 +390,7 @@
+ 		Common::LockGuard lock(m_mutex);
+ 		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
+ 		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
++		DirectEditGuard vg437(this, start, size);      // BC5 (experiment 0437, tag vg437)
+ 
+ 		auto position = LowerBound(start);
+ 		if (position != m_ranges.end() && position->start == start && position->size == size) {
+@@ -374,6 +422,7 @@
+ 		Common::LockGuard lock(m_mutex);
+ 		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
+ 		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
++		DirectEditGuard vg437(this, start, size);      // BC5 (experiment 0437, tag vg437)
+ 
+ 		for (size_t index = 0; index < m_ranges.size(); index++) {
+ 			auto& r = m_ranges[index];
+@@ -390,6 +439,7 @@
+ 		Common::LockGuard lock(m_mutex);
+ 		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
+ 		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
++		DirectEditGuard vg437(this, start, size);      // BC5 (experiment 0437, tag vg437)
+ 
+ 		auto end = End(start, size);
+ 		if (const Range* r = ContainingUnlocked(start); r != nullptr && r->type == type && end <= End(r->start, r->size)) {
+@@ -405,6 +455,7 @@
+ 		Common::LockGuard lock(m_mutex);
+ 		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
+ 		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
++		DirectEditGuard vg437(this, start, size);      // BC5 (experiment 0437, tag vg437)
+ 
+ 		if (size == 0) {
+ 			return false;
+@@ -431,6 +482,7 @@
+ 		Common::LockGuard lock(m_mutex);
+ 		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
+ 		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
++		DirectEditGuard vg437(this, start, size);      // BC5 (experiment 0437, tag vg437)
+ 
+ 		auto position = LowerBound(start);
+ 		if (position != m_ranges.end() && position->start == start && position->size == size) {
+@@ -445,6 +497,7 @@
+ 		Common::LockGuard lock(m_mutex);
+ 		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
+ 		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
++		DirectEditGuard vg437(this, start, size);      // BC5 (experiment 0437, tag vg437)
+ 
+ 		EditUnlocked(start, size, [protection](Range* r) { r->protection = protection; });
+ 	}
+@@ -453,6 +506,7 @@
+ 		Common::LockGuard lock(m_mutex);
+ 		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
+ 		NoteDirtyUnlocked(start, size);                // BC5 (experiment 0415, mr415)
++		DirectEditGuard vg437(this, start, size);      // BC5 (experiment 0437, tag vg437)
+ 
+ 		EditUnlocked(start, size, [memory_type](Range* r) { r->memory_type = memory_type; });
+ 	}
+@@ -874,6 +928,7 @@
+ 
+ 	std::vector<Range> m_ranges;
+ 	std::atomic<uint64_t> m_gen {1};
++	std::atomic<uint64_t> m_gen_direct {1}; // BC5 (experiment 0437, tag vg437)
+ 	Common::Mutex      m_mutex;
+ };
+ 
+@@ -1270,6 +1325,10 @@
+ uint64_t Bc5MappedRangesGeneration() {
+ 	return g_virtual_ranges != nullptr ? g_virtual_ranges->Generation() : 0;
+ }
++// BC5 (experiment 0437, tag vg437): see VirtualRanges::DirectGeneration.
++uint64_t Bc5DirectRangesGeneration() {
++	return g_virtual_ranges != nullptr ? g_virtual_ranges->DirectGeneration() : 0;
++}
+ // BC5 (experiment 0415, tag mr415c): the spans changed since the last call and, through cb, for span number `index`
+ // the mapped ranges that overlap or touch it now (the types of Bc5ForEachMappedRange). False when there are no ranges.
+ bool Bc5RangesDirtyTouching(void (*cb)(size_t, uint64_t, uint64_t, uint64_t, int, int, const char*, void*), void* ctx, uint64_t* gen,
+diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
+--- a/src/libs/bc5LleAgc.cpp
++++ b/src/libs/bc5LleAgc.cpp
+@@ -2526,6 +2526,26 @@
+ 	bool               sorted = true;
+ };
+ static std::atomic<uint64_t> g_views_builds {0}; // experiment 0156: rebuilds of the views
++// Experiment 0437 (tag vg437), BC5_DIRECT_VIEWS_GEN (on in this test build unless "0"): the direct-memory view list
++// (direct_views, kind 0) and direct_sync_one's 50 ms gate follow Bc5DirectRangesGeneration, which moves only when a
++// direct range's start, size, offset or name changes, instead of Bc5MappedRangesGeneration, which moves with every
++// edit of any guest range. Exp 0430's 57-minute play (play-f18) rebuilt the list 86,004 times in 3,035 s of play
++// (28 a second, 12,500-30,000 ranges each, under the device mutex) for 128 s of "views"; at t 555 s the layout had
++// changed 8,950 times in about 23,400 builds. The private-region list (kind 1) keeps the old generation. Off, nothing
++// changes.
++static bool vg437_on() {
++	static const bool v = [] {
++		const char* e  = std::getenv("BC5_DIRECT_VIEWS_GEN"); // the test build: on unless "0" (the candidate's arm is the binary)
++		const bool  on = e == nullptr || e[0] == 0 || bc5::env_on(e);
++		std::fprintf(stderr, "[bc5] exp 0437 (tag vg437): BC5_DIRECT_VIEWS_GEN %s: the direct view list follows %s\n", on ? "ON" : "off",
++		             on ? "the direct ranges' generation" : "every edit of the guest's ranges");
++		return on;
++	}();
++	return v;
++}
++static uint64_t vg437_gen() {
++	return vg437_on() ? Libs::LibKernel::Memory::Bc5DirectRangesGeneration() : Libs::LibKernel::Memory::Bc5MappedRangesGeneration();
++}
+ // Experiment 0415 (tag mr415), stage S1 of experiments/0415-load-times-fps/DESIGN-lock-side.md, KYTY_BC5_MAP_RECORDS
+ // (default off; any value but 0 is "verify", the only mode yet): a list of the direct-memory views is kept up to date
+ // from the range table's change records and compared, at every rebuild of the views, with the list built from the
+@@ -2758,7 +2778,7 @@
+ 	// but their list comes from the address space's own map: to be safe it is also rebuilt once a
+ 	// second. Listing them walked all 11,600 ranges for each of the 140 regions.
+ 	static uint64_t built_ns[2] = {0, 0};
+-	const uint64_t  g           = Libs::LibKernel::Memory::Bc5MappedRangesGeneration();
++	const uint64_t  g           = k == 0 ? vg437_gen() : Libs::LibKernel::Memory::Bc5MappedRangesGeneration(); // exp 0437 (tag vg437)
+ 	const uint64_t  now         = SoftCp::now_ns();
+ 	std::lock_guard l(m);
+ 	if (g != 0 && g == gen[k] && cache[k] != nullptr && (k == 0 || now - built_ns[k] < 1'000'000'000ull)) return cache[k];
+@@ -2783,7 +2803,7 @@
+ 	}
+ 	d->sig   = sig;
+ 	cache[k] = d;
+-	gen[k]   = g_used; // experiment 0415 (mr415c): the generation of the snapshot the list was made from
++	gen[k]   = k == 0 && vg437_on() ? g : g_used; // experiment 0415 (mr415c): the generation of the snapshot the list was made from; exp 0437 (vg437): kind 0's direct generation
+ 	return d;
+ }
+ 
+@@ -4484,7 +4504,7 @@
+ 	// Experiment 0037: at most every 50 ms, unless the guest's ranges changed since the last sync
+ 	// (an AMM map or unmap, a new heap): then the GPU must not run on the old mappings for up to
+ 	// 50 ms, reading whatever the old pages hold.
+-	const uint64_t    ranges_gen  = S.kind == 0 ? Libs::LibKernel::Memory::Bc5MappedRangesGeneration() : S.ranges_gen;
++	const uint64_t    ranges_gen  = S.kind == 0 ? vg437_gen() : S.ranges_gen; // exp 0437 (tag vg437)
+ 	if (!force && now - S.sync_ns < 50'000'000ull && ranges_gen == S.ranges_gen) return;
+ 	S.ranges_gen = ranges_gen;
+ 	S.sync_ns = now;
+@@ -15247,6 +15267,9 @@
+ 			              d432::g_x_why[5].load(), d432::g_x_why[6].load(), d432::g_x_why[7].load(), d432::g_x_why[8].load(), d432::g_x_why[9].load(), d432::g_x_why[10].load());
+ 			std::fprintf(stderr, "[bc5] %s\n", line);
+ 			journal("%s\n", line);
++			journal("exp 0437 (tag vg437): t %.1f s: views-gen %s; range table generation %" PRIu64 ", direct generation %" PRIu64 ", view builds %" PRIu64 "\n", timing_now(),
++			        vg437_on() ? "ON" : "off", Libs::LibKernel::Memory::Bc5MappedRangesGeneration(), Libs::LibKernel::Memory::Bc5DirectRangesGeneration(),
++			        static_cast<uint64_t>(g_views_builds));
+ 		}
+ 	}
+ #endif
