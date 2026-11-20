@@ -200,10 +200,20 @@ inline std::string line_of(const Agg (&a)[kFnN], const std::map<std::pair<int, u
 	}
 	return out.empty() ? "none" : out;
 }
+// exp 0438 (tag h438): h438.hpp's per-frame hook, called at each flip with the Render Thread's spans of the frame
+// (all zero unless BC5_0438_OUTSIDE=1), before they are reset; nullptr unless h438.hpp is in the program
+inline void (*g_flip_hook)(const Agg (&)[kFnN]) = nullptr;
 inline void flip() {
-	if (!on()) return;
+	if (!on()) {
+		if (g_flip_hook != nullptr) {
+			static const Agg none[kFnN] = {};
+			g_flip_hook(none);
+		}
+		return;
+	}
 	Rec&            R = rec();
 	std::lock_guard lk(R.m);
+	if (g_flip_hook != nullptr) g_flip_hook(R.frame[1]);
 	const uint64_t  t        = now_ns();
 	const uint64_t  interval = R.last_flip != 0 ? t - R.last_flip : 0;
 	R.last_flip              = t;

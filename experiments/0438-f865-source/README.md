@@ -1726,6 +1726,45 @@ performance case (result 13). The switches stay for a per-run opt-out. Nothing i
   build (unchanged: the backend is not touched). After a swap, `backend/kytyplus-patches/0001-bc5-lle-agc.patch` on
   main must become the box's new `git diff f266548`.
 
+## h438: the Render Thread's host-side split (prepared offline, not built)
+
+The question, from the O runs: the Render Thread blocks ~9 ms per frame outside the guest syncs. Where, and do the
+long frames block in the same places? h438 is records only, normal build only, off unless `BC5_0438_HOSTWAIT=1`.
+It is built on the bake unit, so it measures what would ship.
+- **`h438.hpp`** (`bdf94bf5`) writes one CSV line per Render Thread frame, flip to flip:
+  - wall; thread CPU, run-queue delay and timeslices (`/proc/self/task/<tid>/schedstat`); minor and major faults
+    (`.../stat`);
+  - gc_ioctl calls by code (0xc0488131, 0xc0188132, 0xc0108102, 0xc020810c, 0xc0048116, 0xc0048117, 0xc0088133,
+    0xc0108139, other): count, wall, and blocked (wall − thread CPU), counting the outermost call only;
+  - the VideoOutSubmitEopFlip span and its Direct::drain;
+  - lock-acquisition waits of 20 µs or more, by site;
+  - o438's guest-sync blocked time by kind (with `BC5_0438_OUTSIDE=1`; o438.hpp `a194989d` gains one hook pointer and
+    is otherwise unchanged).
+  - File: `BC5_0438_HOSTWAIT_FILE`, written every 64 frames.
+- **`mkh438.py`** (`7466020c`) on the bake unit `ff9e8fe2` gives `h438.cpp` `3aa9d745…` (not committed). It adds the
+  include, the gc_ioctl span, the flip span with its drain, and 123 lock sites:
+  - 122 one-line lock_guard / unique_lock sites;
+  - exp 0436's submit-ring lock, timed as one statement.
+  - Two sites are left as they are: a try_to_lock, which never blocks, and the ring lock's declaration.
+- **`box0438.sh buildh`** (box0438.sh `417da0ce`): the normal build of h438.cpp plus o438's six tree units, unit
+  only, with the shared archive: `~/bc5-work/exp0438/h438/normal`.
+- **chain0438l arm H** (chain0438l.sh `a4650a79`): the h438 normal build with `BC5_0438_HOSTWAIT=1
+  BC5_0438_OUTSIDE=1`, its CSV `$RAW/$t-h438.csv`. Diagnosis only, so no fps is reported.
+- **`ah438.py`** (laptop) gives the mean ms per frame:
+  - CPU, run queue and blocked;
+  - of blocked: gc by code, the flip with its drain, guest syncs, and the rest;
+  - lock waits by mutex and site, and faults;
+  - all of it for all frames, by vblank class (1 / 2 / 3+), and by scene phase × class.
+- **Tests:**
+  - `test_h438.sh` (`4989a0a7`, `test_h438.cpp` `97f08d56`): PASS in all four cases. These are HOSTWAIT with and
+    without OUTSIDE (gc codes, the nested call counted once, the flip and drain, a 30-ms lock wait by name, the /proc
+    deltas, guest-sync time), HOSTWAIT unset (no file), and lean (empty macros).
+  - `test_o438.sh` fails on the laptop now in its waker case (waker tid 0: the worker's post lands after the Render
+    Thread's 28-ms wait). It fails the same way with the committed o438.hpp, so it is a laptop timing case and not
+    this change. The box's O runs did name their wakers.
+- **Planned runs:** 3 scene runs of arm H on one boot, RT on. Then ah438 over the fast phase (G+10 to G+140) and the
+  slow phase (G+160 to G+290), placed from the CSV's own per-10-s counts.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
