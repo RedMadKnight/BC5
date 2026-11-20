@@ -1,0 +1,22 @@
+chain0438 17:33:37: mode scene, play 300 s, order LC L LR LC L LR LC L LR; shared f345db74, candidate 577aa2e2; runner 2d11fd6b; kernel 7.3.3-ogc1.1.fc45.x86_64; boot eb264b8c
+chain0438 17:33:37: GPU timeout/reset lines since boot at the chain's start: 0 (the baseline; the route runner refuses on any other count)
+chain0438 17:33:37: run u438sLC72, arm LC, 577aa2e2
+chain0438 17:40:55: u438sLC72: NO_CRASH; 35.10 flips/s over 294 s from G+10, 204 s with a gap over 50 ms, 63 over 100 ms; pad keys 0
+chain0438 17:41:15: run u438sL73, arm L, 577aa2e2
+chain0438 17:48:26: u438sL73: NO_CRASH; 34.31 flips/s over 290 s from G+10, 217 s with a gap over 50 ms, 73 over 100 ms; pad keys 0
+chain0438 17:48:46: run u438sLR74, arm LR, 577aa2e2
+chain0438 17:56:00: u438sLR74: NO_CRASH; 33.25 flips/s over 293 s from G+10, 221 s with a gap over 50 ms, 68 over 100 ms; pad keys 0
+chain0438 17:56:20: run u438sLC75, arm LC, 577aa2e2
+chain0438 18:03:35: u438sLC75: NO_CRASH; 33.48 flips/s over 294 s from G+10, 225 s with a gap over 50 ms, 76 over 100 ms; pad keys 0
+chain0438 18:03:55: run u438sL76, arm L, 577aa2e2
+chain0438 18:11:11: u438sL76: NO_CRASH; 32.93 flips/s over 294 s from G+10, 222 s with a gap over 50 ms, 76 over 100 ms; pad keys 0
+chain0438 18:11:31: run u438sLR77, arm LR, 577aa2e2
+chain0438 18:18:47: u438sLR77: NO_CRASH; 34.79 flips/s over 290 s from G+10, 207 s with a gap over 50 ms, 66 over 100 ms; pad keys 0
+chain0438 18:19:07: run u438sLC78, arm LC, 577aa2e2
+chain0438 18:26:23: u438sLC78: NO_CRASH; 33.61 flips/s over 294 s from G+10, 214 s with a gap over 50 ms, 71 over 100 ms; pad keys 0
+chain0438 18:26:43: run u438sL79, arm L, 577aa2e2
+chain0438 18:33:54: u438sL79: NO_CRASH; 35.70 flips/s over 290 s from G+10, 199 s with a gap over 50 ms, 66 over 100 ms; pad keys 0
+chain0438 18:34:14: run u438sLR80, arm LR, 577aa2e2
+chain0438 18:41:29: u438sLR80: NO_CRASH; 32.82 flips/s over 294 s from G+10, 221 s with a gap over 50 ms, 73 over 100 ms; pad keys 0
+chain0438 18:41:49: chain ended
+after the chain (18:4x): GPU timeout/reset lines since boot 0; boot eb264b8c
