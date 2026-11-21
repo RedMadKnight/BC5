@@ -1,0 +1,14 @@
+tag t3p mode normal secs 60 start 2026-11-21 19:54:43
+binary /home/kjaniszewski/bc5-work/exp0439/k439/normal/kyty_emulator 3a79a88ef36364c30bcc89c86edf8769
+kernel 7.3.3-ogc1.1.fc45.x86_64; WAYLAND_DISPLAY=wayland-1; extra: BC5_SYSMODULES_PACK_DIR=/home/kjaniszewski/bc5-data/games/PPSA26344/fakelib BC5_DIRECT_DCC_PRESENT=2 BC5_DIRECT_EAGER_GPU_WRITE=1 BC5_DIRECT_IB_CHAIN=1 BC5_DIRECT_TIMEOUT_PROBE=1 BC5_RUN_ENV=/home/kjaniszewski/bc5-work/exp0439/run-fulljournal.env
+boot 7986fd909e434fc085330118fa77aecb; amdgpu timeout/reset lines before: 1
+               total        used        free      shared  buff/cache   available
+Mem:     15930306560  1914720256  9722515456    16887808  4840108032 14015586304
+Swap:     7964979200           0  7964979200
+/dev/nvme0n1p3 509332160512 431751143424 70814556160  86% /var
+capture /home/kjaniszewski/bc5-data/captures/play-20261121-1954
+amdgpu timeout/reset lines after: 1
+end 2026-11-21 19:55:50
+               total        used        free      shared  buff/cache   available
+Mem:     15930306560  2060857344  8977776640    17080320  5450387456 13869449216
+Swap:     7964979200           0  7964979200

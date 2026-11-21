@@ -444,6 +444,25 @@ the control's line has none, `X=1;rm` is refused).
       ar439's branch goes after that call, so a refused acb is still counted.
     - mk439.py's replacements assert that each anchor matches exactly once, so any anchor exp 0438's bake moved
       fails loudly at generation and is fixed then.
+31. *t3p: the run for the hang's record (`k439/t3p.sh`, 19:54:43-19:55:50, boot 7986fd90, the top session's GO).*
+    - Normal `3a79a88e` with the 17:04 settings, plus `BC5_DIRECT_TIMEOUT_PROBE=1` and the full journal (a private env
+      copy without `BC5_DIRECT_JOURNAL=min`). 60-s bound. Display: EDID 128 B, 1920x1080@60.00, scale 1.
+    - No hang: resets 1 -> 1, fault records 29 -> 29, the 60-s bound ended it. Only about 50 frames, though: from
+      t 2 s every frame took 1.13-1.18 s (game thread inside the host 5-6 ms; GPU busy about 7.5 ms).
+    - Each frame, the dcb replay's soft CP wait on `0x20000082e0` (written by B, queue 1/3, at its dword 166) was met
+      after about 1.14 s (refs 2, 3, 4 ...).
+    - The cause is the full journal, not the title. It logged 949 "ho430: THE BOUND STANDS" lines in 58 s, each after
+      F18's 50-ms bound with a writer slot "still busy": about 20 per frame, 1.05 s. F18 sits on the acb submit path,
+      so B's parts went out about 1 s late every frame.
+    - With the journal unset, every submission is written raw and filtered, with a second filter pass and a sync
+      each (the unit's own comment on the mode: "took half of a frame"). At 17:04, with `min`, the same build ran at
+      about 30 fps.
+    - Also 205 "r438 (exp 0438, b438): BUG: the early-registered write of <label> ... never reached the ring" lines,
+      about 4 a frame, on labels B and the others write (`0x20000082e0`, `0x2000008200`, `0x2000008320`, ...). These
+      are reported to the top session.
+    - Raw: `logs/t3p/` (display, meta, the kernel log stream: empty, and an extract of the journal's frame-profile,
+      bound, r438 and soft-CP-wait lines).
+    - Next: the same run with the journal at `min` and the probe on, long enough to reach frame ~230.
 
 (more to come)
 
