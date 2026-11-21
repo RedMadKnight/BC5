@@ -3,7 +3,7 @@
 `python -I mkq438.py ../bake438.cpp q438.cpp`: IN `ff9e8fe2`, OUT `bbd604f0f91d1592e2f1bdf66e8cb643` (gitignored).
 `mkq438.py` `54be779f…`, `test_q438.cpp` `dd9f1c0f…`, `test_q438.sh` `b3986792…`.
 
-**Ring-order fix (Codex's review: 3 of 11 random runs missed).**
+**Ring-order fix (the 0438 session's reproduction: 3 of 11 random runs missed).**
 - An earlier entry's real write got a later `order` than a queued entry's early write, so `ring_will_satisfy` took the older value as last.
 - `register_label_writes` now renumbers queued early writes of its labels after it (switch on).
 - `det order` gates it; `no-order` fails.
