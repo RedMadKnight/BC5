@@ -517,9 +517,29 @@ the control's line has none, `X=1;rm` is refused).
       - New stop: 281 frames, the last at t 11.06 s; then no flip for the remaining 109 s, with no GPU timeout, no
         fault, and no host line (journal=min). A stall, not a hang.
       - The screenshots (private: `C:\Users\kjani\Documents\bc5-private\yotei-screens\t3r-i1-2056\`, never in git)
-        show the window black throughout, its fps counter frozen at 27.1 after the stop.
+        show the window black throughout. The "fps: 27.1" in its title bar is the last value before the stop, not a
+        running rate: after t 11.06 s no flip came.
+      - Before each decompress pass the surface's first 4 MiB held 0 non-zero dwords while its keys read 0x40
+        (compressed). The next run's surface readback shows whether the pass fills it.
     - Next: find what the title waits on after the first frame that follows the batch (wait trace, ACB_REFUSE's
       records), in a run that most likely does not reboot.
+34. *Build for the black picture and the stall (tags sr439, sv439; run script `k439/t3s.sh`).*
+    - `BC5_0439_SURF_DUMP=<private dir>`: after a decompress pass that went OK (decompressed flips 2, 60 and every
+      300th), the display surface is written raw, with min/max/mean per byte lane and the non-zero byte count.
+    - `KYTY_BC5_SYSTEM_SW_VERSION` sets the version string and number of `GetProsperoSystemSwVersion`:
+      - unset: today's 10.60;
+      - "param": the title's own param.json value, via `BC5_PARAM_JSON` exported by `play439.sh`;
+      - "MM.mm": that version.
+      Every answer is logged, and so is `GetCompiledSdkVersion`'s. The third title's param.json sdkVersion is 0, so the
+      host answers from the eboot's process parameter.
+    - Not covered: `sceNpGetSdkVersion` (libNp.cpp, a unit outside this build), which answers from its own constant
+      (0x0A600000; TODO).
+    - `t3s.sh` adds ACB_DEEP and ACB_REFUSE, and a box-side stall watch. When the journal's frame-profile lines stop
+      for 3 s, it takes one snapshot of every thread (CPU ticks over 1 s, state, wchan, eu-stack) and of labels 0-15
+      plus six known labels.
+    - Whether `BC5_DIRECT_IB_CHAIN_FLAT=2` (the dcb's chain flat too) is safe is untested. The soft CP's offsets are
+      kept per segment. The GFX path's own passes (the state stack, the indirect checks, the light-tail split) would
+      then see one long buffer instead of 73 pieces. Try it only after a run with 1 is understood.
 
 (more to come)
 
