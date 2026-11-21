@@ -13,7 +13,7 @@ P=${1:?tag}; shift; ARGS=("$@"); W=$HOME/bc5-work; N=$W/exp0413/n; R=$N/raw; LOC
 BIN=$W/exp0438/stack/normal/kyty_emulator; M=$HOME/bc5-data/mnt/PPSA21567; S=$R/$P-armq438.txt
 case "$P" in *[!A-Za-z0-9]* | "") echo "the tag prefix is letters and digits"; exit 1 ;; esac
 WANT=$(md5sum < "$BIN" | cut -d' ' -f1)
-[ "${WANT:0:8}" = 137ef7af ] && [ "$WANT" = "$(cat "$(dirname "$BIN")/binary.md5")" ] || { echo "the binary is ${WANT:0:8}, not the stack's normal 137ef7af: not started"; exit 1; }
+[ "${WANT:0:8}" = 853e16e9 ] && [ "$WANT" = "$(cat "$(dirname "$BIN")/binary.md5")" ] || { echo "the binary is ${WANT:0:8}, not the stack's normal 853e16e9: not started"; exit 1; }
 [ -e "$R/$P-start.txt" ] && { echo "tag $P already used"; exit 1; }
 mkdir -p "$R"
 say() { echo "$(date +%T) $*" | tee -a "$S"; }
