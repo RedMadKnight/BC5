@@ -410,7 +410,7 @@ static void run_stray() {
 		}
 	}).join();
 	const size_t bugs = never_lines() - n0;
-	std::printf("stray (BC5_0438_R438_LWM %s): early entry of the unmapped label %zu; a game-thread wait on it %s at 30 ms, then %d after r438_end (%.1f ms); BUG lines %zu; "
+	std::printf("stray (BC5_0438_R438_LWM %s): early entry of the unmapped label %zu; a game-thread wait on it %s before the slice ended, then %d after r438_end (%.1f ms); BUG lines %zu; "
 	            "g_r438o_live %" PRIu64 " -> %" PRIu64 "; live count %" PRId64 " -> %" PRId64 "\n",
 	            r438_lwm_on() ? "on" : "off", early3, held == -1 ? "still waiting" : (held == 0 ? "returned (no writer)" : "returned (writer)"), after, wait_ms, bugs, r438o_open, r438o_end, live_open, live_end);
 	CHECK(r438o_end == 0 && live_end == 0, "stray: the counts did not return to 0 (g_r438o_live %" PRIu64 ", live %" PRId64 ")", r438o_end, live_end);
@@ -446,7 +446,10 @@ static void run_sync() {
             got               = wait_on(1) ? 1 : 0;
             wait_ms           = static_cast<double>(SoftCp::now_ns() - t0) / 1e6;
 		});
-		std::this_thread::sleep_for(std::chrono::milliseconds(30)); // the slice's submission: the job runs, waited for at submission
+		// the slice's submission: the job runs, waited for at submission. Up to 2 s (10-ms steps, a fixed bound) for the wait
+		// to return: with no early entry it returns as soon as its thread runs, so a loaded machine cannot make it look held;
+		// with r438's stray early entry it stays held until r438_end below, whatever the bound.
+		for (int k = 0; k < 200 && got.load() == -1; k++) std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		held    = got.load();
 		g_label = 1; // its write, in memory; no pending write is registered in sync mode
 		r438_end();
@@ -454,7 +457,7 @@ static void run_sync() {
 		after = got.load();
 	}).join();
 	const size_t bugs = never_lines_all() - n0;
-	std::printf("sync (g_async %d): early entries %zu; a game-thread wait on the label %s at 30 ms, then %d (%.1f ms); BUG lines %zu\n", g_async ? 1 : 0, early,
+	std::printf("sync (g_async %d): early entries %zu; a game-thread wait on the label %s before the slice ended, then %d (%.1f ms); BUG lines %zu\n", g_async ? 1 : 0, early,
 	            held == -1 ? "still waiting for the early writer" : "returned", after, wait_ms, bugs);
 #ifdef R438H
 	if (!g_async) CHECK(early == 0 && bugs == 0 && held != -1, "sync: r438h left early entries %zu, BUG lines %zu, the wait %d", early, bugs, held);

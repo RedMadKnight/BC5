@@ -2519,6 +2519,8 @@ The bake candidate (bake438b: A1 + A1b + A1P + A2 + the guarded gate, all on unl
 - **Pairs 4–5** run on a different boot (7986fd90): judge them within their own alternating pairs.
   - The first attempt's control run qbkBC1 (19:45, boot c97d43e6) is VOID. It ended at about 57 s when the box was shut down from the desktop (an orderly logout and shutdown at 19:45:13; no amdgpu line, no pstore, no fault record). It is not a failure of 3a20b974.
 
+**A journal artifact (r438h, 2026-11-21).** With any BC5_DIRECT_JOURNAL other than "min" (the full journal used for diagnosis) submission is synchronous (`g_async` false). r438_begin's early entries are then never registered for real, and r438_end prints "r438 (exp 0438, b438): BUG: the early-registered write of … never reached the ring" for each one (1,281 in 58 s on the third title, 0 in 229 frames at "min"). These lines are an artifact of the diagnostic mode, not a finding about the title. The one-line fix (`r438o/mkr438h.py`: r438_begin registers early only with async submission; det case `sync`) waits for the next bake.
+
 ## Verdict
 
 **F865's source is fixed and built into the shared builds (r438 with PLWCV, 2026-11-21 00:52). The long frames are a
