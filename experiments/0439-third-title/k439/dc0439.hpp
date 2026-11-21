@@ -28,6 +28,7 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <vector>
@@ -91,6 +92,117 @@ inline Block find(const Values &ctx_value, const Valid &ctx_valid, std::uint64_t
         return b;
     }
     return b;
+}
+
+// The per-draw catcher (p1 found no MRT on the surface at the END of any GFX job: the title rebinds its targets within
+// an IB). The context registers followed packet by packet, from `seed` (the tracker's context at the IB's start):
+// SET_CONTEXT_REG 0x69, LOAD_CONTEXT_REG_INDEX 0x9f (pairs or consecutive), LOAD_CONTEXT_REG 0x61, CLEAR_STATE 0x12
+// (resets the followed set), INDIRECT_BUFFER 0x3f / 0x33 one level deep (read through `readable`). At every draw
+// (0x24 0x25 0x27 0x2c 0x2d 0x30 0x35 0x38) each surface whose MRT is bound with a non-zero target-mask nibble gets its
+// block and a count. Opcodes: Mesa src/amd/common/sid.h; the packet forms as in backend/src/state_stack.cpp.
+struct Ctx {
+    std::array<std::uint32_t, 0x400> value{};
+    std::array<bool, 0x400> valid{};
+    void set(std::uint32_t r, std::uint32_t v) {
+        if (r < 0x400) {
+            value[r] = v;
+            valid[r] = true;
+        }
+    }
+};
+inline bool is_draw(std::uint32_t op) {
+    return op == 0x24 || op == 0x25 || op == 0x27 || op == 0x2c || op == 0x2d || op == 0x30 || op == 0x35 || op == 0x38;
+}
+struct Hit {
+    Block block;
+    std::uint64_t draws = 0;
+};
+template <typename Readable>
+inline void walk_draws(const std::uint32_t *ib, std::size_t n, Ctx &cx, const std::vector<std::uint64_t> &surfaces, std::vector<Hit> &hits,
+                       const Readable &readable, int depth = 0) {
+    for (std::size_t i = 0; i < n;) {
+        const std::uint32_t h = ib[i];
+        const std::uint32_t type = h >> 30, count = (h >> 16) & 0x3fffu;
+        std::size_t len = 1;
+        if (type == 3 || type == 0) len = count == 0x3fffu ? 1 : count + 2;
+        if (i + len > n) break;
+        if (type == 3 && count != 0x3fffu) {
+            const std::uint32_t op = (h >> 8) & 0xffu;
+            const std::uint32_t *p = ib + i;
+            if (op == 0x69 && len >= 3) {
+                const std::uint32_t reg = p[1] & 0xffffu;
+                for (std::size_t k = 2; k < len; k++) cx.set(reg + static_cast<std::uint32_t>(k - 2), p[k]);
+            } else if (op == 0x12) {
+                cx.valid.fill(false);
+            } else if (op == 0x9f && len >= 5) {
+                const std::uint64_t a = (p[1] & ~3u) | (static_cast<std::uint64_t>(p[2] & 0xffffu) << 32);
+                const std::uint32_t cnt = p[4] & 0x3fffu;
+                const bool pairs = (p[3] >> 31) != 0;
+                if (a != 0 && cnt != 0 && cnt <= 4096 && readable(a, static_cast<std::uint64_t>(cnt) * (pairs ? 8 : 4))) {
+                    const auto *m = reinterpret_cast<const volatile std::uint32_t *>(a);
+                    for (std::uint32_t k = 0; k < cnt; k++) {
+                        if (pairs) cx.set(m[2 * k] & 0xffffu, m[2 * k + 1]);
+                        else cx.set((p[3] & 0xffffu) + k, m[k]);
+                    }
+                }
+            } else if (op == 0x61 && len >= 5) {
+                const std::uint64_t a = (p[1] & ~3u) | (static_cast<std::uint64_t>(p[2] & 0xffffu) << 32);
+                for (std::size_t k = 3; k + 1 < len; k += 2) {
+                    const std::uint32_t reg = p[k] & 0xffffu, cnt = p[k + 1] & 0x3fffu;
+                    const std::uint64_t at = a + static_cast<std::uint64_t>(reg) * 4;
+                    if (a != 0 && cnt != 0 && readable(at, static_cast<std::uint64_t>(cnt) * 4)) {
+                        const auto *m = reinterpret_cast<const volatile std::uint32_t *>(at);
+                        for (std::uint32_t q = 0; q < cnt; q++) cx.set(reg + q, m[q]);
+                    }
+                }
+            } else if ((op == 0x3f || op == 0x33) && len >= 4 && depth == 0) {
+                const std::uint64_t a = (p[1] & ~3u) | (static_cast<std::uint64_t>(p[2] & 0xffffu) << 32);
+                const std::uint32_t sz = p[3] & 0xfffffu;
+                if (a != 0 && sz != 0 && readable(a, static_cast<std::uint64_t>(sz) * 4)) {
+                    std::vector<std::uint32_t> sub(sz);
+                    const auto *m = reinterpret_cast<const volatile std::uint32_t *>(a);
+                    for (std::uint32_t k = 0; k < sz; k++) sub[k] = m[k];
+                    walk_draws(sub.data(), sub.size(), cx, surfaces, hits, readable, depth + 1);
+                }
+            } else if (is_draw(op)) {
+                const std::uint32_t tm = cx.valid[kCbTargetMask] ? cx.value[kCbTargetMask] : 0xffffffffu;
+                for (std::size_t s = 0; s < surfaces.size(); s++) {
+                    const Block b = find(cx.value, cx.valid, surfaces[s]);
+                    if (!b.valid || ((tm >> (4 * b.mrt)) & 0xfu) == 0) continue;
+                    hits[s].block = b;
+                    hits[s].draws++;
+                }
+            }
+        }
+        i += len;
+    }
+}
+
+// How many dwords of an IB (and of the 64-dword tables its SET_SH_REG user-data pairs point at) hold `base256`
+// (an address >> 8): where the surface's address appears at all, per ring (an image descriptor's BASE_ADDRESS is the
+// address >> 8 in its first dword). TODO(verify): a T# match is a hint, not a proof of a write.
+template <typename Readable>
+inline std::uint32_t count_base(const std::uint32_t *ib, std::size_t n, std::uint32_t base256, const Readable &readable) {
+    std::uint32_t c = 0;
+    for (std::size_t i = 0; i < n; i++)
+        if (ib[i] == base256) c++;
+    for (std::size_t i = 0; i < n;) {
+        const std::uint32_t h = ib[i];
+        const std::uint32_t type = h >> 30, count = (h >> 16) & 0x3fffu;
+        std::size_t len = (type == 3 || type == 0) ? (count == 0x3fffu ? 1 : count + 2) : 1;
+        if (i + len > n) break;
+        if (type == 3 && (((h >> 8) & 0xffu) == 0x76 || ((h >> 8) & 0xffu) == 0x9b) && len >= 4) {
+            for (std::size_t k = 2; k + 1 < len; k++) {
+                const std::uint64_t a = ib[i + k] | (static_cast<std::uint64_t>(ib[i + k + 1] & 0xffffu) << 32);
+                if ((a >> 40) != 0 || a < 0x100000000ull || (a & 3u) != 0 || !readable(a, 256)) continue;
+                const auto *m = reinterpret_cast<const volatile std::uint32_t *>(a);
+                for (std::uint32_t q = 0; q < 64; q++)
+                    if (m[q] == base256) c++;
+            }
+        }
+        i += len;
+    }
+    return c;
 }
 
 // The two programs (wave64, gfx1013; llvm-mc 21.1.8 -triple=amdgcn -mcpu=gfx1013 -mattr=+wavefrontsize64

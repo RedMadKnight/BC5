@@ -222,3 +222,15 @@ lis 21 11:43:57.513047 bazzite kernel: amdgpu 0000:01:00.0: Ring comp_1.2.0 rese
 lis 21 11:43:57.513624 bazzite kernel: amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
 lis 21 11:43:57.518405 bazzite bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring comp_1.2.0 timeout, signaled seq=286392, emitted seq=286393
 lis 21 11:43:57.524415 bazzite bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring comp_1.2.0 reset succeeded
+lis 21 12:36:14.408423 bazzite kernel: usb usb4-port1: disabled by hub (EMI?), re-enabling...
+lis 21 12:36:14.450361 bazzite kernel: usb 4-1: USB disconnect, device number 2
+lis 21 12:36:14.769580 bazzite kernel: usb 4-1: new low-speed USB device number 3 using ohci-pci
+lis 21 12:36:15.137408 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* Unsupported screen format RA24 little-endian (0x34324152)
+lis 21 12:36:15.315419 bazzite kernel: [drm] Failed to add display topology, DTM TA is not initialized.
+lis 21 12:36:15.315601 bazzite kernel: usb 4-1: device not accepting address 3, error -62
+lis 21 12:36:15.681528 bazzite kernel: usb 4-1: new low-speed USB device number 4 using ohci-pci
+lis 21 12:36:15.830412 bazzite kernel: usb 4-1: New USB device found, idVendor=1bcf, idProduct=08a0, bcdDevice= 1.03
+lis 21 12:36:15.835410 bazzite kernel: usb 4-1: New USB device strings: Mfr=0, Product=0, SerialNumber=0
+lis 21 12:36:15.846413 bazzite kernel: input: HID 1bcf:08a0 Mouse as /devices/pci0000:00/0000:00:13.0/usb4/4-1/4-1:1.0/0003:1BCF:08A0.0004/input/input14
+lis 21 12:36:15.846523 bazzite kernel: input: HID 1bcf:08a0 Keyboard as /devices/pci0000:00/0000:00:13.0/usb4/4-1/4-1:1.0/0003:1BCF:08A0.0004/input/input15
+lis 21 12:36:15.938472 bazzite kernel: hid-generic 0003:1BCF:08A0.0004: input,hiddev96,hidraw0: USB HID v1.10 Mouse [HID 1bcf:08a0] on usb-0000:00:13.0-1/input0

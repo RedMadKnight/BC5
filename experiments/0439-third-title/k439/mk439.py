@@ -36,7 +36,9 @@ struct Surface {
 	bc5::dc439::Block block;         // as the title last set it, at a GFX job
 	uint64_t          block_job = 0; // the tracked GFX job that set it
 	uint64_t          flips = 0, done = 0, failed = 0, no_block = 0, logged = 0;
+	uint64_t          draws = 0, gfx_hits = 0, other_hits = 0, other_jobs = 0; // draws into it; its address in jobs
 	bool              plain = false; // decompressed for the flip in flight
+	uint64_t          flip_seq = 0;  // the order of its last flip (indices sharing a buffer: the latest decides)
 };
 static std::mutex                g_mu;
 static std::vector<Surface>      g_surf;
@@ -46,17 +48,48 @@ static uint64_t                  g_jobs = 0;
 static std::atomic<bool>         g_any {false};
 static bool                      g_code_ok = false;
 static uint64_t                  g_vs_va = 0, g_ps_va = 0;
+static uint64_t                  g_flip_seq = 0;
 } // namespace dc439
 
-static void dc439_track(const uint32_t* ib, uint32_t n, const bc5::policy::FilterOptions& opt) {
+static void dc439_track(const uint32_t* ib, uint32_t n, const bc5::policy::FilterOptions& opt, int ring) {
 	if (dc439::mode() == 0 || !dc439::g_any.load(std::memory_order_relaxed) || ib == nullptr || n == 0) return;
 	std::lock_guard lk(dc439::g_mu);
+	auto readable = [&opt](uint64_t a, uint64_t b) { return opt.mapped && opt.mapped(a, b); };
+	if (ring != bc5::direct::kGfxRing) { // where the surface's address appears in compute jobs
+		for (auto& s: dc439::g_surf) {
+			const uint32_t c = bc5::dc439::count_base(ib, n, static_cast<uint32_t>(s.data >> 8), readable);
+			s.other_hits += c;
+			if (c != 0) s.other_jobs++;
+		}
+		return;
+	}
+	{ // the per-draw catcher, from the tracker's context at the job's start
+		static bc5::dc439::Ctx cx;
+		const auto&            c0 = dc439::g_tracker.context();
+		for (uint32_t r = 0; r < 0x400; r++) {
+			cx.value[r] = c0.value[r];
+			cx.valid[r] = c0.valid.test(r);
+		}
+		std::vector<uint64_t>        addrs;
+		std::vector<bc5::dc439::Hit> hits(dc439::g_surf.size());
+		for (const auto& s: dc439::g_surf) addrs.push_back(s.data);
+		bc5::dc439::walk_draws(ib, n, cx, addrs, hits, readable);
+		for (size_t k = 0; k < dc439::g_surf.size(); k++) {
+			auto& s = dc439::g_surf[k];
+			s.gfx_hits += bc5::dc439::count_base(ib, n, static_cast<uint32_t>(s.data >> 8), readable);
+			if (hits[k].draws == 0) continue;
+			s.block     = hits[k].block;
+			s.block_job = dc439::g_jobs + 1;
+			s.draws += hits[k].draws;
+		}
+	}
 	dc439::g_io.assign(ib, ib + n);
 	bc5::state_stack::Stats st;
 	dc439::g_tracker.apply_in_place(std::span<const uint32_t>(ib, n), dc439::g_io, opt.mapped, st);
 	dc439::g_jobs++;
 	const auto& c = dc439::g_tracker.context();
 	for (auto& s: dc439::g_surf) {
+		if (s.draws != 0) continue; // a block from a draw wins over the job-end context
 		const auto b = bc5::dc439::find(c.value, c.valid, s.data);
 		if (!b.valid) continue;
 		s.block     = b;
@@ -73,6 +106,23 @@ static void dc439_log(const dc439::Surface& s, const char* what) {
 	             timing_now(), what, s.index, s.data, s.meta, s.w, s.h, s.dcc, s.flips, s.done, s.failed, s.no_block, b.valid ? "found" : "NOT FOUND", s.block_job, dc439::g_jobs, b.mrt, b.base(), b.dcc_base(),
 	             b.dcc_base() == s.meta ? "equals" : "DIFFERS FROM", b.c[3], b.c[4], b.dcc_enable() ? 1 : 0, (b.c[4] >> 2) & 0x1fu, (b.c[4] >> 14) & 1u, (b.c[4] >> 13) & 1u, b.c[5], b.c[6], b.attrib2, b.attrib3, b.sw_mode(),
 	             b.meta_linear() ? 1 : 0, b.dcc_pipe_aligned() ? 1 : 0, b.c[7], b.c[9], b.cb_dcc_control_valid ? "" : "(unset) ", b.cb_dcc_control);
+	// where it was written from, and what its metadata holds now (the view is CPU-visible guest memory)
+	uint64_t    hist[256] = {};
+	const auto* meta      = reinterpret_cast<const volatile uint8_t*>(s.meta);
+	for (uint32_t k = 0; k < 0x20000; k++) hist[meta[k]]++;
+	int top[5] = {-1, -1, -1, -1, -1};
+	for (int v = 0; v < 256; v++)
+		for (int t = 0; t < 5; t++)
+			if (top[t] < 0 || hist[v] > hist[top[t]]) {
+				for (int u = 4; u > t; u--) top[u] = top[u - 1];
+				top[t] = v;
+				break;
+			}
+	const auto* px = reinterpret_cast<const volatile uint32_t*>(s.data);
+	uint64_t    nz = 0;
+	for (uint32_t k = 0; k < (4u << 20) / 4; k++) nz += px[k] != 0;
+	std::fprintf(stderr, "[bc5] exp 0439 (tag dc439):   index %d: draws into it %" PRIu64 "; its address in GFX jobs %" PRIu64 " times, in compute jobs %" PRIu64 " times (%" PRIu64 " jobs); metadata bytes (first 128 KiB) top: 0x%02x x%" PRIu64 ", 0x%02x x%" PRIu64 ", 0x%02x x%" PRIu64 ", 0x%02x x%" PRIu64 ", 0x%02x x%" PRIu64 "; non-zero dwords in the first 4 MiB of the surface %" PRIu64 " of %u\n",
+	             s.index, s.draws, s.gfx_hits, s.other_hits, s.other_jobs, top[0], hist[top[0]], top[1], hist[top[1]], top[2], hist[top[2]], top[3], hist[top[3]], top[4], hist[top[4]], nz, (4u << 20) / 4);
 }
 
 // The title flips buffer `index`: in mode 2, a registered compressed surface is decompressed in place first.
@@ -85,7 +135,8 @@ static void dc439_flip(int index) {
 		auto it = std::find_if(dc439::g_surf.begin(), dc439::g_surf.end(), [index](const dc439::Surface& x) { return x.index == index; });
 		if (it == dc439::g_surf.end()) return;
 		it->flips++;
-		it->plain = false;
+		it->plain    = false;
+		it->flip_seq = ++dc439::g_flip_seq;
 		if (it->logged < 8 || (it->flips & 1023u) == 0) {
 			it->logged++;
 			dc439_log(*it, "flip");
@@ -93,6 +144,40 @@ static void dc439_flip(int index) {
 		s = *it;
 	}
 	if (m < 2) return;
+	{ // the keys first (p1b: the start-up flips show a buffer no job wrote, keys all 0x00, data all zero). Mesa
+	  // 0866ae7085c1 src/amd/common/ac_descriptors.h: 0xFF DCC_UNCOMPRESSED, 0x00 DCC_CLEAR_0000 ("all bits are 0").
+		const uint64_t keys  = static_cast<uint64_t>(s.w) * s.h * 4u / 256u; // one key byte per 256 B (MAX_UNCOMPRESSED 256B)
+		const auto*    meta  = reinterpret_cast<const volatile uint8_t*>(s.meta);
+		uint64_t       n00 = 0, nff = 0;
+		for (uint64_t k = 0; k < keys; k++) {
+			const uint8_t v = meta[k];
+			n00 += v == 0x00;
+			nff += v == 0xFF;
+		}
+		bool        plain = nff == keys;
+		const char* why   = "keys all 0xFF (uncompressed)";
+		if (!plain && n00 == keys) {
+			const auto*    px = reinterpret_cast<const volatile uint64_t*>(s.data);
+			const uint64_t nq = static_cast<uint64_t>(s.w) * s.h * 4u / 8u;
+			uint64_t       nz = 0;
+			for (uint64_t k = 0; k < nq && nz == 0; k++) nz += px[k] != 0;
+			plain = nz == 0;
+			why   = "keys all 0x00 (clear 0000) and the surface all zero";
+		}
+		std::lock_guard lk(dc439::g_mu);
+		for (auto& x: dc439::g_surf) {
+			if (x.index != index) continue;
+			x.plain = plain;
+			if (plain) {
+				x.done++;
+				if (x.done <= 4 || (x.done & 1023u) == 0) std::fprintf(stderr, "[bc5] exp 0439 (tag dc439): t %.3f s index %d presented as plain without a pass: %s\n", timing_now(), index, why);
+			} else if (x.logged < 16) {
+				x.logged++;
+				std::fprintf(stderr, "[bc5] exp 0439 (tag dc439): t %.3f s index %d keys: 0x00 %" PRIu64 ", 0xFF %" PRIu64 ", other %" PRIu64 " of %" PRIu64 ": a pass is needed\n", timing_now(), index, n00, nff, keys - n00 - nff, keys);
+			}
+		}
+		if (plain) return;
+	}
 	if (!s.block.valid || !s.block.dcc_enable() || s.block.dcc_base() != s.meta) {
 		std::lock_guard lk(dc439::g_mu);
 		for (auto& x: dc439::g_surf)
@@ -157,9 +242,11 @@ extern "C" void bc5_dc439_register(int index, uint64_t data, uint64_t meta, uint
 extern "C" int bc5_dc439_plain(uint64_t data) {
 	if (Libs::Bc5Gc::Direct::dc439::mode() < 2) return 0;
 	std::lock_guard lk(Libs::Bc5Gc::Direct::dc439::g_mu);
+	// several indices share one buffer (0, 2, 4 and 1, 3, 5 here): the one flipped last decides
+	const Libs::Bc5Gc::Direct::dc439::Surface* last = nullptr;
 	for (const auto& x: Libs::Bc5Gc::Direct::dc439::g_surf)
-		if (x.data == data) return x.plain ? 1 : 0;
-	return 0;
+		if (x.data == data && x.flip_seq != 0 && (last == nullptr || x.flip_seq > last->flip_seq)) last = &x;
+	return last != nullptr && last->plain ? 1 : 0;
 }
 '''
 
@@ -209,10 +296,10 @@ s = rep(s, '#include "bc5/direct.hpp"\n',
         '#include "bc5/state_stack.hpp" // exp 0439 (tag dc439): the GFX ring\'s context, followed on the host\n'
         '#include "bc5/dc0439.hpp"      // exp 0439 (tag dc439): the DCC display buffers\n')
 a = 'static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind, int ring, const Chain* chain);\n'
-s = rep(s, a, a + 'static void dc439_track(const uint32_t* ib, uint32_t n, const bc5::policy::FilterOptions& opt); // exp 0439 (tag dc439)\n')
+s = rep(s, a, a + 'static void dc439_track(const uint32_t* ib, uint32_t n, const bc5::policy::FilterOptions& opt, int ring); // exp 0439 (tag dc439)\n')
 a = '\tconst uint64_t ls_t3 = SoftCp::now_ns(); // experiment 0415 (ls415c)\n\tbc5::direct::SubmitResult r;\n'
 s = rep(s, a, '\tconst uint64_t ls_t3 = SoftCp::now_ns(); // experiment 0415 (ls415c)\n'
-        '\tif (qring == bc5::direct::kGfxRing) dc439_track(sub_ib, sub_n, opt); // exp 0439 (tag dc439): before the job, under the device lock\n'
+        '\tdc439_track(sub_ib, sub_n, opt, qring); // exp 0439 (tag dc439): before the job, under the device lock\n'
         '\tbc5::direct::SubmitResult r;\n')
 a = '#else\nstatic void init_once() {}\nstatic void submit(const uint32_t*, uint32_t, const char*) {}\n'
 s = rep(s, a, GLUE + '#else\nstatic void dc439_flip(int) {}\nstatic void init_once() {}\nstatic void submit(const uint32_t*, uint32_t, const char*) {}\n')

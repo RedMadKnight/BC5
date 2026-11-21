@@ -59,10 +59,13 @@ run)
   } > "$out/meta.txt"
   # PLAY_CAPTURE=1 (normal only): the direct-path journal under ~/bc5-data/captures/play-<date>/gc for diagnosis.
   cap=0; [ $lean = 0 ] && cap=1
-  systemd-run --user --collect --unit="bc5-0439-$tag" -p RuntimeMaxSec="$secs" \
+  # The bound is timeout(1) inside the container: the emulator lives in the container's cgroup, not the unit's, so
+  # RuntimeMaxSec ended only distrobox and left it running (ASTRO a1, 11-21 12:42). timeout signals its whole process
+  # group (the launcher and the emulator); RuntimeMaxSec stays as a backstop 30 s later.
+  systemd-run --user --collect --unit="bc5-0439-$tag" -p RuntimeMaxSec="$((secs + 30))" \
     --setenv=WAYLAND_DISPLAY="$wl" --setenv=XDG_RUNTIME_DIR="/run/user/$(id -u)" \
-    /usr/bin/bash -c 'ulimit -c 0; l=$1; d=$2; shift 2; exec distrobox enter ubuntu -- env "$@" "$l" "$d"' \
-    _ "$LAUNCH" "$DIR" BC5_GAME_DIR="$DIR" P439_BIN="$BIN" BC5_LEAN="$lean" BC5_LOGS=1 PLAY_CAPTURE="$cap" WAYLAND_DISPLAY="$wl" "${extra[@]}"
+    /usr/bin/bash -c 'ulimit -c 0; t=$1; l=$2; d=$3; shift 3; exec distrobox enter ubuntu -- timeout -k 15 "$t" env "$@" "$l" "$d"' \
+    _ "$secs" "$LAUNCH" "$DIR" BC5_GAME_DIR="$DIR" P439_BIN="$BIN" BC5_LEAN="$lean" BC5_LOGS=1 PLAY_CAPTURE="$cap" WAYLAND_DISPLAY="$wl" "${extra[@]}"
   echo "started unit bc5-0439-$tag (max $secs s); when it ends: run0439.sh collect $mode $tag"
   ;;
 collect)
