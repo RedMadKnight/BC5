@@ -10,7 +10,7 @@
 # One BOX-LOCK line for the whole chain (start0413g.sh inherits it), ulimit -c 0. Before each run: no emulator, no
 # bc5-mount, no dead ASTRO mount inside the container. Stops at the first failed run or kernel line. Per lean run:
 # frames and frame times from 30 s of MangoHud's clock to its end (mean fps, frame time p50 / p99 / max, frames over
-# 50 ms). Step 0, the boot check: 0 amdgpu reset lines, a display connected, nothing running, no dead mount. DRY=1: checks and prints the plan, starts nothing, takes no lock.
+# 50 ms). Step 0, the boot check: 0 amdgpu reset lines, a display connected at 1920x1080@60 with an EDID (LESSONS R72, display438.inc), nothing running, no dead mount. DRY=1: checks and prints the plan, starts nothing, takes no lock.
 #   bash ab438o.sh <tag-prefix>      (on the box, detached under the user manager, e.g.
 #   systemd-run --user --unit=bc5-ab438o --collect sh -c 'bash ~/bc5-work/exp0438/r438okit/ab438o.sh q438oA > ~/bc5-work/exp0438/r438o/ab.log 2>&1')
 set -u
@@ -37,11 +37,14 @@ echo "$(date '+%F %T') $P: boot $(cut -c1-8 /proc/sys/kernel/random/boot_id), up
 # the boot check (the top session's step 1): 0 reset lines, a display connected, nothing running, no dead ASTRO mount
 NDISP=$(display); BOOT="resets $(resets), displays connected $NDISP, busy $(busy && echo yes || echo no), dead mount $(deadmnt && echo yes || echo no)"
 say "boot check: $BOOT"
+. "${AB_DISP_INC:-$HOME/bc5-work/exp0438/display438.inc}" || { say "STOP: no display438.inc"; exit 1; }
+if display_check; then DISPOK=1; else DISPOK=0; fi
+say "$DISP (R72: $([ $DISPOK = 1 ] && echo ok || echo NOT 1920x1080))"
 if [ "$DRY" = 1 ]; then
     say "DRY: plan C1 O1 C2 O2 C3 O3 (lean, MangoHud, $SECS s) then N1 (normal, $SECS s); lock now [$(cat "$LOCK")]; busy $(busy && echo yes || echo no); dead mount $(deadmnt && echo yes || echo no)"
     exit 0
 fi
-[ "$BOOT" = "resets 0, displays connected $NDISP, busy no, dead mount no" ] && [ "$NDISP" -ge 1 ] || { say "STOP: the boot check failed"; exit 1; }
+[ "$BOOT" = "resets 0, displays connected $NDISP, busy no, dead mount no" ] && [ "$NDISP" -ge 1 ] && [ "$DISPOK" = 1 ] || { say "STOP: the boot check failed"; exit 1; }
 LINE="exp 0438 | r438o lean A/B on ASTRO BOT $P (6 lean + 1 normal, $SECS s each), token $(date +%s)$$ | $(date '+%F %T')"
 [ -e "$LOCK" ] || touch "$LOCK"
 [ -f "$LOCK" ] && [ ! -L "$LOCK" ] && [ ! -s "$LOCK" ] || { echo "the box is locked: $(cat "$LOCK")"; exit 1; }

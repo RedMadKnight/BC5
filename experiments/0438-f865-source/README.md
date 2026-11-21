@@ -2487,6 +2487,8 @@ The lean A/B on ASTRO BOT, on the clean boot c05993c0 (`r438o/ab438o.sh`; MangoH
 
 **Unexercised.** ASTRO BOT takes no r438 slices, so this A/B shows only that r438o costs nothing when idle. The fix's own path (the renumbering and the trim-keep) stays unexercised on a real title until the second title is installed again.
 
+**Display mode of these series (LESSONS R72).** Every lean series of 2026-11-21 from 13:51 on ran at 640x480@59.94, not 1920x1080@60. On boots c05993c0, c97d43e6 and 7986fd90 the kernel logged "No EDID read" on DP-1, and the boot check read only `status = connected`. That covers q438oA and q438oB (result 20), qa1A, qngA, qggA and qbkA. They are valid as within-series comparisons only, not as measurements of normal play, and they cannot justify a bake. The r438o bake of 14:54 stays as deployed (its series was a no-regression check). The bake candidate's A/B has to run again at 1920x1080 under the five-pair rule. Since then ab438o.sh and the smokes check the display (`display438.inc`: EDID > 0 bytes, first mode 1920x1080, 0 "No EDID read" lines in the boot, active mode 1920x1080@60 from kscreen-doctor) and write the mode into each series header.
+
 ## Result 21: the acb gate (F878, F879), A1 + A1P + A2, and the bake candidate (2026-11-21, boots c97d43e6 and 7986fd90)
 
 Two holes in bc5-ring's acb gate, both found offline, and their fix:
