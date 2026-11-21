@@ -315,8 +315,8 @@ Group select_group(bool old_api, std::uint32_t version) {
 
 // The descriptor as the original lays it out (description section 3.4, checked against the
 // module's relocations): each present list field points at a cell array with ONE pointer per pair
-// (cell[i] = &pairs[i]; the title indexes it with the pair index of a name-table code); an absent
-// list has a null field. The name table holds 12-byte entries {u32 name hash, u32 code, u32 0}:
+// (cell[i] = &pairs[i]; the title indexes it with the pair index of a name-table code), except the
+// fourth list, whose field points at its pairs directly; an absent list has a null field. The name table holds 12-byte entries {u32 name hash, u32 code, u32 0}:
 // code & 3 = list, (code & 0x3fc) >> 2 = pair index (run rN45T7, 2026-11-21: with a null table
 // ASTRO BOT's own register lookups failed and its screenshot target got a 1016-MiB size).
 struct Holder {
@@ -462,7 +462,9 @@ const RegisterDefaults *select_defaults(bool old_api, bool internal, std::uint32
     h.desc.cx = h.cells[0].empty() ? nullptr : h.cells[0].data();
     h.desc.sh = h.cells[1].empty() ? nullptr : h.cells[1].data();
     h.desc.uc = h.cells[2].empty() ? nullptr : h.cells[2].data();
-    h.desc.fourth = h.cells[3].empty() ? nullptr : static_cast<void *>(h.cells[3].data());
+    // The fourth list is the exception: its field points straight at the pair array, no cells
+    // (the original's Defaults2Internal(13) in run rFV4, 2026-11-21: + 0x18 -> pairs {0x26c, 0}, ...).
+    h.desc.fourth = bases[3];
     if (h.names.empty() && load_names(dv, h.names)) {
         h.desc.name_table = h.names.data();
         h.desc.name_count = static_cast<std::uint32_t>(h.names.size() / 3u);

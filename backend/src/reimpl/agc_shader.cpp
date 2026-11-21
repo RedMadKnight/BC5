@@ -170,8 +170,8 @@ std::int32_t resolve_descriptors(std::uint32_t sdk_version) {
     // descriptors above: 0x26C (one pair), 0x094 (one pair; absent from the 4-entry lists) and
     // 0x26E with the two pairs after it (0x278, 0x262).
     constexpr RegPair kAbsent{0xFFFFFFFFu, 0xFFFFFFFFu};
-    const RegPair *fourth = in->fourth != nullptr ? *static_cast<RegPair *const *>(in->fourth)
-                                                  : nullptr;
+    // The fourth list field points at its pairs directly (no cell), as in the original.
+    const RegPair *fourth = static_cast<const RegPair *>(in->fourth);
     const std::uint32_t fourth_n = fourth != nullptr ? in->fourth_count : 0u;
     const RegPair *fa = find_pair(fourth, fourth_n, 0x26C);
     const RegPair *fb = find_pair(fourth, fourth_n, 0x094);

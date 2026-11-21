@@ -348,6 +348,10 @@ TEST_CASE("register defaults: one cell per pair and the name table, as the origi
     REQUIRE(in->name_table != nullptr);
     CHECK(in->name_count == 24u);
     CHECK(static_cast<const u32 *>(in->name_table)[3 * 4] == 0x5A000004u);
+    // The internal set's fourth list: the field is the pair array itself (no cells).
+    REQUIRE(in->fourth_count > 0u);
+    REQUIRE(in->fourth != nullptr);
+    CHECK(static_cast<const agc::RegPair *>(in->fourth)[0].offset < 0x1000u);
 }
 
 TEST_CASE("register defaults without module file data: cells per pair, no name table",
@@ -933,8 +937,10 @@ const GroupExpect &group_of(u64 descriptor) {
 }
 
 const agc::RegPair *list_of(const agc::RegisterDefaults *d, int l) {
-    agc::RegPair *const *cells[4] = {d->cx, d->sh, d->uc,
-                                     static_cast<agc::RegPair *const *>(d->fourth)};
+    if (l == 3) { // the fourth field is the pair array itself
+        return static_cast<const agc::RegPair *>(d->fourth);
+    }
+    agc::RegPair *const *cells[3] = {d->cx, d->sh, d->uc};
     return cells[l] != nullptr ? *cells[l] : nullptr;
 }
 
@@ -1032,9 +1038,8 @@ TEST_CASE("register default selectors: every SDK version, API, SoC and transcode
     CHECK(*o->cx == *n->cx);
     CHECK(*o->uc == *n->uc);
     CHECK(agc::agcGetRegisterDefaultsInternalForVersion(13)->fourth_count == 6);
-    CHECK(*static_cast<agc::RegPair *const *>(
-              agc::agcGetRegisterDefaultsInternalForVersion(13)->fourth) ==
-          *static_cast<agc::RegPair *const *>(agc::sceAgcGetRegisterDefaults2Internal(13)->fourth));
+    CHECK(agc::agcGetRegisterDefaultsInternalForVersion(13)->fourth ==
+          agc::sceAgcGetRegisterDefaults2Internal(13)->fourth);
 }
 
 TEST_CASE("register default selectors: the second game (version 13, other SoC, no transcoder)",
