@@ -299,8 +299,40 @@ the control's line has none, `X=1;rm` is refused).
         the registered metadata - 0x28000. `3a79a88e` takes the draw's block when its BASE is the surface.
       - A second ASTRO start in one series fails with "invalid file .../PPSA21567/sce_sys/param.json" whatever the
         switch says (3 times): a mount race between runs, not the switch.
-    - 17:05: the box went off the network during the third title's 30-s run with `3a79a88e`: the first run in which the
-      decompress pass could fire. TODO: the journal, pstore and the run's log once the box is back.
+    - The third title's 30-s run with `3a79a88e` (started 17:03:27), the first run in which the decompress pass could
+      fire.
+      - Confirmed (the top session, from the kernel log and the box): comp_1.3.0 timed out at 17:04:56 (process
+        kyty_emulator, thread bc5-ring), the ring reset failed, and bc5-gpu-watch crashed the kernel for a reboot.
+        Records: `~/bc5-data/captures/faults/20261121-170456` and the devcoredump `20261121-170456-devcd3.txt`.
+      - Inferred, not yet read from the record: that the decompress pass fired at the second flip, and that the title
+        ran on past 1.5 s.
+      - Hypothesis only: that the decompress path's drain of every ring blocked the game thread while a compute job
+        waited for a label of the next dcb; or that an acb with an unmet wait in a nested IB went to the GPU.
+      - Not yet known: which job hung, on which wait, and where the game thread was.
+    - The second ASTRO start in a series died on a dead image mount: `k439/play439.sh` was copied before the
+      dead-mount guard. It has the guard since `8c442cfe`.
+27. *Guards after the 17:04 hang (offline, built in the next box slot; all off by default).*
+    - (a) `BC5_0439_DC_NODRAIN=1` (tag dn439): the decompress at the flip no longer drains every ring.
+      - Before the decompress: the title's held chains are flushed, so the job that drew the surface is on the GFX ring
+        first; a ring runs its jobs in order (`direct.hpp`, `wait_idle`'s comment).
+      - After it: the flip waits only for a marker queued behind the decompress job in its own thread's completion queue
+        (`cq_push`: one FIFO per submitting thread), at most 500 ms, with a line when the bound is hit. Compute rings are
+        never waited for from the flip path.
+      - Not used: a kernel dependency on the drawing job. Its seq number is not kept per surface today, and the GFX
+        ring's own order gives the same.
+    - (b) `BC5_0439_ACB_DEEP=1` (tag ab439): acb_ready looks into the IBs an acb calls or chains to, with the chain
+      rule and a walk budget. An unmet wait found there holds the acb at its IB packet through the existing hold path.
+      `BC5_0439_ACB_REFUSE=1` (tag ar439): at the 10-s give-up the acb is not released to the GPU. It stays held, and a
+      record (queue, buffer, wait, value, known writers or "no writer registered") is printed and journalled every 10 s.
+      This is a guard for diagnosis; the fix is the right order of dcb and compute submissions.
+    - (c) `BC5_0439_XQ_COUNT=1` (tag xq439, log only): per GFX job, the memory waits in all its pieces that are unmet at
+      submission with no writer in the job, and how many of those are on a label that the acb held right now writes.
+    - Det test of (b) on the generated code (`test_ab0439.cpp`, the text cut out by `mkab0439.py`, clang on the laptop),
+      PASS: a call's unmet wait is held; a wait at the end of a 6-segment chain is held; the acb's own earlier write
+      hides it; a met wait is not held; a chain cycle ends on the budget; with the switch off an IB is not looked into.
+      The planted bug (a chain treated as a call level) FAILS case 2. Output: `logs/test_ab0439.out`.
+    - (a) and (c) have no det test: they act on the completion queue and the live label state, and are checked on the
+      box from their lines.
 
 (more to come)
 

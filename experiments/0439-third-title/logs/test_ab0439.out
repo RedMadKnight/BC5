@@ -1,0 +1,23 @@
+1. call with an unmet wait: held
+2. wait at the end of a 6-segment chain: held
+3. the acb writes the label first: not held
+4. a met wait: not held
+5. a chain cycle: ended on the budget, not held
+6. switch off: IB not looked into; a wait packet is itself on and off
+PASS (0 failed checks)
+1. call with an unmet wait: held
+2. wait at the end of a 6-segment chain: held
+3. the acb writes the label first: not held
+4. a met wait: not held
+5. a chain cycle: ended on the budget, not held
+6. switch off: IB not looked into; a wait packet is itself on and off
+PASS (0 failed checks)
+== planted (chain as a call level):
+1. call with an unmet wait: held
+FAIL test_ab0439.cpp:106 r == seg[5].p
+2. wait at the end of a 6-segment chain: NOT HELD
+3. the acb writes the label first: not held
+4. a met wait: not held
+5. a chain cycle: ended on the budget, not held
+6. switch off: IB not looked into; a wait packet is itself on and off
+FAIL (1 failed checks)

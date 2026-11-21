@@ -127,7 +127,71 @@ static void wr439_scan(const uint32_t* ib, uint32_t n, int ring, const char* kin
 	}
 }
 
+// exp 0439 (tag xq439, BC5_0439_XQ_COUNT=1, log only): per GFX job, the memory waits in it and in every piece it calls or
+// chains to (bc5/ib_chain.hpp collect with the chain rule) that are unmet at its submission and have no writer in the
+// job's own pieces (cross-queue waits the GPU will sit on), and how many of those are on a label the acb held right now
+// by acb_ready writes (g_unready_label / g_unready_writes): the dcb then waits on the GPU for work the CPU holds.
+static bool xq439_on() {
+	static const bool v = [] {
+		const char* e  = std::getenv("BC5_0439_XQ_COUNT");
+		const bool  on = e != nullptr && e[0] == '1' && e[1] == 0;
+		std::fprintf(stderr, "[bc5] exp 0439 (tag xq439): BC5_0439_XQ_COUNT=%d\n", on ? 1 : 0);
+		return on;
+	}();
+	return v;
+}
+static void xq439_count(const uint32_t* ib, uint32_t n, const bc5::policy::FilterOptions& opt, int ring, const char* kind) {
+	if (!xq439_on() || ring != bc5::direct::kGfxRing || ib == nullptr || n == 0) return;
+	const auto cr = bc5::ib_chain::collect(ib, n, opt.mapped, bc5::ib_chain::enabled());
+	std::vector<uint64_t> writes;
+	struct W { const uint32_t* p; uint64_t label; size_t piece; };
+	std::vector<W> waits;
+	for (size_t k = 0; k < cr.pieces.size(); k++) {
+		const uint32_t* b = cr.pieces[k].src;
+		const uint32_t  m = static_cast<uint32_t>(cr.pieces[k].n);
+		for (uint32_t i = 0; i < m;) {
+			const uint32_t h = b[i], type = h >> 30u;
+			uint32_t       len = 1;
+			if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
+			if (i + len > m) break;
+			const uint32_t op = (h >> 8u) & 0xffu;
+			const uint32_t* p = b + i;
+			if (type == 3) {
+				if (op == 0x37 && len >= 4) writes.push_back((p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u));
+				else if (op == 0x49 && len >= 6) writes.push_back((p[3] & ~3u) | (static_cast<uint64_t>(p[4] & 0xffffu) << 32u));
+				else if ((op == 0x47 || op == 0x1e) && len >= 4) writes.push_back((p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u));
+				else if ((op == 0x3c || op == 0x93) && len >= 4 && ((p[1] >> 4u) & 1u) != 0) waits.push_back({p, (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u), k});
+			}
+			i += len;
+		}
+	}
+	uint32_t cross = 0, held = 0;
+	uint64_t first_label = 0, first_held = 0;
+	size_t   first_piece = 0;
+	std::vector<uint64_t> hw;
+	uint64_t hl = 0;
+	{
+		std::lock_guard lk(g_unready_mutex);
+		hw = g_unready_writes;
+		hl = g_unready_label;
+	}
+	for (const auto& w: waits) {
+		if (std::find(writes.begin(), writes.end(), w.label) != writes.end()) continue; // its writer is in this job
+		if (wait_satisfied(w.p, ((w.p[0] >> 8u) & 0xffu) == 0x93)) continue;
+		if (cross++ == 0) { first_label = w.label; first_piece = w.piece; }
+		if (std::find(hw.begin(), hw.end(), w.label) != hw.end()) {
+			if (held++ == 0) first_held = w.label;
+		}
+	}
+	static std::atomic<uint64_t> n_jobs {0};
+	const uint64_t k = n_jobs++;
+	if (cross != 0 && (k < 64 || (k & 0x3ffu) == 0))
+		std::fprintf(stderr, "[bc5] exp 0439 (tag xq439): t %.3f s %s job of %zu pieces: %zu memory waits, %u unmet at the submission with no writer in the job (first 0x%" PRIx64 " in piece %zu), %u of them on a label the acb held now writes (first 0x%" PRIx64 "; that acb waits on 0x%" PRIx64 ")\n",
+		             timing_now(), kind, cr.pieces.size(), waits.size(), cross, first_label, first_piece, held, first_held, hl);
+}
+
 static void dc439_track(const uint32_t* ib, uint32_t n, const bc5::policy::FilterOptions& opt, int ring, const char* kind) {
+	xq439_count(ib, n, opt, ring, kind); // exp 0439 (tag xq439)
 	if (ib != nullptr && n != 0) wr439_scan(ib, n, ring, kind, opt); // exp 0439 (tag wr439)
 	if (dc439::mode() == 0 || !dc439::g_any.load(std::memory_order_relaxed) || ib == nullptr || n == 0) return;
 	std::lock_guard lk(dc439::g_mu);
@@ -200,6 +264,16 @@ static void dc439_log(const dc439::Surface& s, const char* what) {
 	for (uint32_t k = 0; k < (4u << 20) / 4; k++) nz += px[k] != 0;
 	std::fprintf(stderr, "[bc5] exp 0439 (tag dc439):   index %d: draws into it %" PRIu64 "; its address in GFX jobs %" PRIu64 " times, in compute jobs %" PRIu64 " times (%" PRIu64 " jobs); metadata bytes (first 128 KiB) top: 0x%02x x%" PRIu64 ", 0x%02x x%" PRIu64 ", 0x%02x x%" PRIu64 ", 0x%02x x%" PRIu64 ", 0x%02x x%" PRIu64 "; non-zero dwords in the first 4 MiB of the surface %" PRIu64 " of %u\n",
 	             s.index, s.draws, s.gfx_hits, s.other_hits, s.other_jobs, top[0], hist[top[0]], top[1], hist[top[1]], top[2], hist[top[2]], top[3], hist[top[3]], top[4], hist[top[4]], nz, (4u << 20) / 4);
+}
+
+static bool dn439_on() { // exp 0439 (tag dn439): BC5_0439_DC_NODRAIN=1, the decompress without a drain of every ring
+	static const bool v = [] {
+		const char* e  = std::getenv("BC5_0439_DC_NODRAIN");
+		const bool  on = e != nullptr && e[0] == '1' && e[1] == 0;
+		std::fprintf(stderr, "[bc5] exp 0439 (tag dn439): BC5_0439_DC_NODRAIN=%d\n", on ? 1 : 0);
+		return on;
+	}();
+	return v;
 }
 
 // The title flips buffer `index`: in mode 2, a registered compressed surface is decompressed in place first.
@@ -284,13 +358,40 @@ static void dc439_flip(int index) {
 	static std::vector<uint32_t> ib; // kept until the drain below
 	ib = bc5::dc439::build(s.block, s.w, s.h, dc439::g_vs_va, dc439::g_ps_va);
 	const double t0 = timing_now();
-	drain(); // the frame's jobs on every ring are done: the surface holds the title's last write
+	// exp 0439 (tag dn439, BC5_0439_DC_NODRAIN=1): no drain of every ring. The title's held chains are flushed, so the job
+	// that drew the surface is on the GFX ring before the decompress, and a ring runs its jobs in order (direct.hpp,
+	// wait_idle's comment: "a ring runs its jobs in order"). After the submit the flip waits only for this thread's
+	// completion queue to reach a marker queued behind the decompress job (cq_push: one FIFO per submitting thread, the
+	// completion thread finishes items in order), at most 500 ms, with a line when the bound is hit. Compute rings are never
+	// waited for here. Off: drain() before and after, as before.
+	const bool nodrain = dn439_on();
+	if (nodrain) {
+		chain_flush(5);
+		if (g_chain_mode >= 2) chain_flush_all(5);
+	} else {
+		drain(); // the frame's jobs on every ring are done: the surface holds the title's last write
+	}
 	const double   t1        = timing_now();
 	const uint64_t ok_before = g_ok.load();
 	submit_now(ib.data(), static_cast<uint32_t>(ib.size()), "dc439", bc5::direct::kGfxRing, nullptr);
-	drain();
+	bool marker_ok = true;
+	if (nodrain) {
+		auto done = std::make_shared<std::atomic<int>>(0);
+		post([done](bool failed) { done->store(failed ? 2 : 1); });
+		const double tw = timing_now();
+		while (done->load() == 0 && timing_now() - tw < 0.5) std::this_thread::sleep_for(std::chrono::microseconds(50));
+		if (done->load() != 1) {
+			marker_ok = false;
+			static std::atomic<int> k {0};
+			if (k++ < 16)
+				std::fprintf(stderr, "[bc5] exp 0439 (tag dn439): t %.3f s decompress of index %d: %s after %.1f ms; the flip goes on without it (no ring drained)\n", timing_now(), index,
+				             done->load() == 0 ? "NOT DONE (the 500-ms bound)" : "its job FAILED", (timing_now() - tw) * 1e3);
+		}
+	} else {
+		drain();
+	}
 	const double t2 = timing_now();
-	const bool   ok = g_dev && !g_dev->wedged() && g_ok.load() > ok_before;
+	const bool   ok = marker_ok && g_dev && !g_dev->wedged() && g_ok.load() > ok_before;
 	std::lock_guard lk(dc439::g_mu);
 	for (auto& x: dc439::g_surf) {
 		if (x.index != index) continue;
@@ -727,6 +828,121 @@ static bool indirect_buffer(const uint32_t* p, int depth) {
 s = rep(s, '''				case IT_INDIRECT_BUFFER_CNST: indirect_buffer(p, depth); break;''', '''				case IT_INDIRECT_BUFFER_CNST:
 					if (indirect_buffer(p, depth)) return; // exp 0439 (tag ib439): a chain ends this buffer
 					break;''')
+# exp 0439 (tag ab439, BC5_0439_ACB_DEEP=1, off by default): acb_ready also looks into the IBs an acb calls or chains to
+# (the chain rule of bc5/ib_chain.hpp, calls to 3 levels, a walk budget against cycles). An unmet wait found there holds the
+# acb at the IB packet exactly as an unmet wait of its own does (the head ahead of it is submitted, the rest waits for the
+# next poll). The tests per wait are acb_ready's own: no earlier write of the label in the walk, wait_satisfied() false,
+# ring_will_satisfy() false. Off: acb_ready unchanged (the helper returns the packet itself for a wait, nullptr otherwise).
+s = rep(s, '''static bool acb_ready(const uint32_t* ib, uint32_t num_dwords) {''', '''// exp 0439 (tag ab439)
+static bool ab439_on() {
+	static const bool v = [] {
+		const char* e  = std::getenv("BC5_0439_ACB_DEEP");
+		const bool  on = e != nullptr && e[0] == '1' && e[1] == 0;
+		std::fprintf(stderr, "[bc5] exp 0439 (tag ab439): BC5_0439_ACB_DEEP=%d\\n", on ? 1 : 0);
+		return on;
+	}();
+	return v;
+}
+static std::atomic<uint64_t> g_ab439_found {0}; // unmet waits found inside an acb's IBs
+// The first unmet memory wait in buf (and the IBs it calls or chains to), or nullptr. `written`: the labels written before.
+static const uint32_t* ab439_scan(const uint32_t* buf, uint32_t n, std::vector<uint64_t>& written, int ring, int depth, uint32_t& budget) {
+	for (uint32_t i = 0; i < n;) {
+		const uint32_t h = buf[i], type = h >> 30u;
+		uint32_t       len = 1;
+		if (type == 3 || type == 0) {
+			const uint32_t c = (h >> 16u) & 0x3fffu;
+			len              = c == 0x3fffu ? 1 : c + 2;
+		}
+		if (i + len > n) break;
+		const uint32_t  op = (h >> 8u) & 0xffu;
+		const uint32_t* p  = buf + i;
+		if (type == 3) {
+			const uint32_t dst_sel = len >= 2 ? (p[1] >> 8u) & 0xfu : 0;
+			if (op == 0x37 && len >= 4 && (dst_sel == 1 || dst_sel == 2 || dst_sel == 5)) written.push_back((p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u));
+			else if (op == 0x49 && len >= 6) written.push_back((p[3] & ~3u) | (static_cast<uint64_t>(p[4] & 0xffffu) << 32u));
+			else if ((op == 0x47 || op == 0x1e) && len >= 4) written.push_back((p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u));
+			else if ((op == 0x3c || op == 0x93) && len >= 4 && ((p[1] >> 4u) & 1u) != 0) {
+				const uint64_t label = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
+				if (std::find(written.begin(), written.end(), label) == written.end() && !wait_satisfied(p, op == 0x93) && !ring_will_satisfy(p, op == 0x93, ring)) return p;
+			} else if ((op == 0x3f || op == 0x33) && len >= 4) {
+				const bool     chain = bc5::ib_chain::is_chain(p[3]);
+				const uint64_t a     = (p[1] & ~3u) | (static_cast<uint64_t>(p[2] & 0xffu) << 32u);
+				const uint32_t sz    = p[3] & 0xfffffu;
+				if (a != 0 && a < (1ull << 40u) && sz != 0 && (chain || depth < 3)) {
+					if (budget == 0) {
+						static std::atomic<int> k {0};
+						if (k++ < 16) std::fprintf(stderr, "[bc5] exp 0439 (tag ab439): an acb's IB walk is over its budget at %p (a cycle or over 4096 IBs): its waits there are not seen\\n", static_cast<const void*>(p));
+						return nullptr;
+					}
+					budget--;
+					if (const uint32_t* w = ab439_scan(reinterpret_cast<const uint32_t*>(a), sz, written, ring, chain ? depth : depth + 1, budget)) return w;
+					if (chain) return nullptr; // the chain replaced the rest of this buffer
+				}
+			}
+		}
+		i += len;
+	}
+	return nullptr;
+}
+// acb_ready's wait test point: the packet itself when it is a memory wait (unchanged); with the switch on, for an IB packet
+// at or past `done`, the first unmet wait inside it.
+static const uint32_t* ab439_wait(const uint32_t* p, uint32_t op, uint32_t len, bool active, const std::vector<uint64_t>& written, int ring) {
+	if ((op == 0x3c || op == 0x93) && len >= 4 && ((p[1] >> 4u) & 1u) != 0) return p;
+	if (!ab439_on() || !active || !(op == 0x3f || op == 0x33) || len < 4) return nullptr;
+	std::vector<uint64_t> w = written;
+	uint32_t              budget = static_cast<uint32_t>(bc5::ib_chain::kMaxChainPieces + bc5::ib_chain::kMaxCallPieces);
+	const uint64_t        a      = (p[1] & ~3u) | (static_cast<uint64_t>(p[2] & 0xffu) << 32u);
+	const uint32_t        sz     = p[3] & 0xfffffu;
+	if (a == 0 || a >= (1ull << 40u) || sz == 0) return nullptr;
+	const uint32_t* r = ab439_scan(reinterpret_cast<const uint32_t*>(a), sz, w, ring, 1, budget);
+	if (r != nullptr) {
+		const uint64_t k = g_ab439_found++;
+		if (k < 32 || (k & 0x3ffu) == 0) {
+			const uint64_t label = (r[2] & ~3u) | (static_cast<uint64_t>(r[3] & 0xffffu) << 32u);
+			std::fprintf(stderr, "[bc5] exp 0439 (tag ab439): t %.3f s an acb's IB %p (%u dwords) holds an unmet wait at %p on 0x%" PRIx64 " (function %u, reference 0x%08x, now 0x%08x): the acb is held at its IB packet (%" PRIu64 " so far)\\n",
+			             timing_now(), reinterpret_cast<const void*>(a), sz, static_cast<const void*>(r), label, r[1] & 7u, r[4], *reinterpret_cast<const volatile uint32_t*>(label), k + 1);
+		}
+	}
+	return r;
+}
+
+static bool acb_ready(const uint32_t* ib, uint32_t num_dwords) {''')
+s = rep(s, '''			else if ((op == 0x3c || op == 0x93) && len >= 4 && ((p[1] >> 4u) & 1u) != 0) {
+				const uint64_t label = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
+				// Experiment 0055: a wait the ring's pending writes will satisfy does not hold the buffer back.''', '''			else if (const uint32_t* const pw = ab439_wait(p, op, len, i >= done, written, ring)) {
+				const uint32_t* const p  = pw; // exp 0439 (tag ab439): the wait itself, here or in an IB this packet calls
+				const uint32_t        op = (pw[0] >> 8u) & 0xffu;
+				const uint64_t label = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
+				// Experiment 0055: a wait the ring's pending writes will satisfy does not hold the buffer back.''')
+
+# exp 0439 (tag ar439, BC5_0439_ACB_REFUSE=1, off by default): at the queue consumer's 10-s give-up the acb is NOT released
+# unmet to the GPU (a wait the GPU then never sees met is a ring timeout; a failed ring reset takes the machine down, 17:04).
+# It stays held, and a record is printed and journalled every 10 s: the queue, the buffer, the wait (label, function,
+# reference, value now) and the label's known writers (describe_pending, exp 0133) or none. A stall with a record is
+# diagnosis; this is a guard, not the fix. Off: "proceeding" as before.
+s = rep(s, '''					if (now - s.deferred_since < 10'000'000'000ull) continue; // served later
+					LOGF_COLOR(Log::Color::Yellow, "[bc5-q] queue %u/%u/%u/0x%x: cross-queue wait unsatisfied for 10 s, proceeding\\n", q.a, q.b, q.c, q.d);''', '''					if (now - s.deferred_since < 10'000'000'000ull) continue; // served later
+					{ // exp 0439 (tag ar439)
+						static const bool refuse = [] {
+							const char* e  = std::getenv("BC5_0439_ACB_REFUSE");
+							const bool  on = e != nullptr && e[0] == '1' && e[1] == 0;
+							std::fprintf(stderr, "[bc5] exp 0439 (tag ar439): BC5_0439_ACB_REFUSE=%d\\n", on ? 1 : 0);
+							return on;
+						}();
+						if (refuse) {
+							const auto& u = Direct::t_unready;
+							char        pend[200];
+							Direct::describe_pending(u.label, pend, sizeof(pend));
+							static std::atomic<uint64_t> n_ref {0};
+							const uint64_t k   = ++n_ref;
+							const char*    msg = "[bc5] exp 0439 (tag ar439): queue %u/%u/%u/0x%x: an acb held 10 s is NOT released to the GPU (record %" PRIu64 "): buffer %p (%u dwords), wait at %u on 0x%" PRIx64 " function %u reference 0x%" PRIx64 " value now 0x%" PRIx64 "; writers: %s\\n";
+							std::fprintf(stderr, msg, q.a, q.b, q.c, q.d, k, static_cast<const void*>(u.ib), u.num_dwords, u.pos, u.label, u.function, u.reference, u.value, pend[0] != 0 ? pend : "no writer registered");
+							Direct::journal(msg, q.a, q.b, q.c, q.d, k, static_cast<const void*>(u.ib), u.num_dwords, u.pos, u.label, u.function, u.reference, u.value, pend[0] != 0 ? pend : "no writer registered");
+							s.deferred_since = now; // the next record in 10 s; the acb stays held
+							continue;
+						}
+					}
+					LOGF_COLOR(Log::Color::Yellow, "[bc5-q] queue %u/%u/%u/0x%x: cross-queue wait unsatisfied for 10 s, proceeding\\n", q.a, q.b, q.c, q.d);''')
 open(dst + '/bc5LleAgc.cpp', 'w', encoding='utf-8', newline='').write(s)
 
 v = open(src + '/videoOut.cpp', encoding='utf-8', newline='').read()
