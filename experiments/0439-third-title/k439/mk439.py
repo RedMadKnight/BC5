@@ -410,6 +410,11 @@ EF = r'''	{ // exp 0439 (tag ef439): what the title passes as the fifth argument
 			if (tk_n++ < 16) std::fprintf(stderr, "[bc5] exp 0439 (tag tk439): SubmitEopFlip(%d, %d): token 0x%08x written to %p (was 0x%08x)\n", handle, index, v, unk, old);
 		}
 	}
+	{ // exp 0439 (tag fc439): a running flip count for any title (the smokes' rate)
+		static std::atomic<uint64_t> fc {0};
+		const uint64_t               k = ++fc;
+		if (k == 1 || k % 300 == 0) std::fprintf(stderr, "[bc5] exp 0439 (tag fc439): t %.3f s flip %" PRIu64 "\n", Bc5Gc::Direct::timing_now(), k);
+	}
 	Bc5Gc::Direct::dc439_flip(index); // exp 0439 (tag dc439): a compressed display buffer decompressed in place (mode 2)
 '''
 s = rep(s, a, a + EF)
@@ -620,6 +625,62 @@ static void f52_fire(const char* why) {
 	std::vector<EqRegistration> eqs;''')
 s = rep(s, '''						if (f52_mode() == '3' && !f52_once.exchange(true)) f52_fire("the first compute-queue job completed");''', '''						if (f52_mode() == '3' && f52_registered() && !f52_once.exchange(true)) f52_fire("the first compute-queue job completed after 0x52 was registered");
 						if (f52_mode() == '4') f52_stream_start();''')
+# exp 0439 (tag ae439): BC5_DIRECT_AGC_EOP_IDENT=1 (off by default): the soft CP raises an end-of-pipe interrupt as the
+# AGC-era hosts do (bc5/dc0439.hpp agc_eop_ident / agc_eop_data / release_mem_int_sel, sources there): INT_SEL read as
+# 3 bits; the ident is the queue's (graphics CP 0, a compute queue 0x20 + slot - 1, slot = the queue registration's
+# doorbell slot d, known while the queue consumer replays that queue); data = (INT_CTXID << 16) | ident. Off: today's
+# PS4-style fire_eop (0x40 / 0 / compute A/B) unchanged.
+s = rep(s, '''static void release_mem(const uint32_t* p, uint32_t payload, bool write) {''', '''static thread_local uint32_t t_ae439_slot = 0; // exp 0439 (tag ae439): the replayed compute queue's slot, 0 = graphics
+static bool ae439_on() {
+	static const bool v = [] {
+		const char* e = std::getenv("BC5_DIRECT_AGC_EOP_IDENT");
+		const bool  on = e != nullptr && e[0] == '1' && e[1] == 0;
+		std::fprintf(stderr, "[bc5] exp 0439 (tag ae439): BC5_DIRECT_AGC_EOP_IDENT=%d\\n", on ? 1 : 0);
+		return on;
+	}();
+	return v;
+}
+static void ae439_fire(uint32_t int_sel, uint32_t ctxid, const char* what) {
+	const bool     compute = t_ae439_slot != 0;
+	const uint32_t ident   = bc5::dc439::agc_eop_ident(compute, t_ae439_slot);
+	const uint64_t data    = bc5::dc439::agc_eop_data(ctxid, ident);
+	std::vector<EqRegistration> eqs;
+	{
+		std::lock_guard lock(g_eq_mutex);
+		eqs = g_eqs;
+	}
+	int n = 0;
+	for (const auto& r: eqs) {
+		if (r.ident != static_cast<int>(ident)) continue;
+		Libs::LibKernel::EventQueue::KernelTriggerEvent(r.eq, static_cast<uintptr_t>(r.ident), Libs::LibKernel::EventQueue::KERNEL_EVFILT_GRAPHICS, reinterpret_cast<void*>(data));
+		n++;
+	}
+	static std::atomic<int> k {0};
+	if (k++ < 64) std::fprintf(stderr, "[bc5] exp 0439 (tag ae439): t %.3f s %s INT_SEL %u on %s (slot 0x%x): ident 0x%x data 0x%" PRIx64 " to %d registration(s)\\n", Direct::timing_now(), what, int_sel, compute ? "a compute queue" : "graphics", t_ae439_slot, ident, data, n);
+}
+
+static void release_mem(const uint32_t* p, uint32_t payload, bool write) {''')
+s = rep(s, '''	if (eq439_on() && ((data_cntl >> 24u) & 7u) != 0) { // exp 0439 (tag eq439)''', '''	if (ae439_on()) { // exp 0439 (tag ae439); the data write above has run already
+		const uint32_t is3 = bc5::dc439::release_mem_int_sel(data_cntl);
+		if (is3 != 0) ae439_fire(is3, payload >= 7 ? p[7] : 0u, "RELEASE_MEM");
+		return;
+	}
+	if (eq439_on() && ((data_cntl >> 24u) & 7u) != 0) { // exp 0439 (tag eq439)''')
+s = rep(s, '''	const uint64_t a         = addr64(p[2], data_cntl);
+	if (write) write_timestamp_or_data(data_sel, a, p[4], p[5]);
+	if (int_sel != 0) {''', '''	const uint64_t a         = addr64(p[2], data_cntl);
+	if (write) write_timestamp_or_data(data_sel, a, p[4], p[5]);
+	if (ae439_on()) { // exp 0439 (tag ae439): EVENT_WRITE_EOP carries no context id: 0
+		if (int_sel != 0) ae439_fire(int_sel, 0u, "EVENT_WRITE_EOP");
+		return;
+	}
+	if (int_sel != 0) {''')
+s = rep(s, '''							t_compute_ring = (qq.a == 2); // TODO(bc5): which engine is compute is a guess''', '''							t_compute_ring = (qq.a == 2); // TODO(bc5): which engine is compute is a guess
+							t_ae439_slot   = qq.d;        // exp 0439 (tag ae439): every registered queue is a compute queue here''')
+s = rep(s, '''							t_compute_ring = false;
+						}''', '''							t_compute_ring = false;
+							t_ae439_slot   = 0;
+						}''')
 open(dst + '/bc5LleAgc.cpp', 'w', encoding='utf-8', newline='').write(s)
 
 v = open(src + '/videoOut.cpp', encoding='utf-8', newline='').read()

@@ -211,6 +211,29 @@ the control's line has none, `X=1;rm` is refused).
       label-0 writer were never created.
     - The question is with reimpl-agc-psml: which Agc/Driver export or title pattern produces that work.
 
+22. *Queue audit (q26, 16:07).*
+    - At 3 s and 10 s, every queue's host-consumed pointer equals its doorbell. The exceptions are 1/2/0 and 1/3/0
+      (12 against 16): the two acbs our consumer holds on their labels.
+    - No ring has dwords past its doorbell. Doorbells are polled (page 0xfe0200000, qword d-1, 200 us), slot 0x33
+      the same as all others. There is no unseen or unrung work.
+    - Labels 0-10 = 0 0 0 0 1 0 1 1 1 1 1; 11-15 = index + 1 (untouched). Queue tails write labels 1, 2, 6, 7, 8 and
+      9; no tail writes label 0.
+23. *`BC5_DIRECT_AGC_EOP_IDENT` (tag ae439, off by default).*
+    - The AGC-era end-of-pipe event in the soft CP: INT_SEL read as 3 bits; ident 0 on the graphics side, 0x20 +
+      doorbell slot - 1 for a compute queue; data = (INT_CTXID << 16) | ident. Helpers in `k439/dc0439.hpp`.
+    - Citations checked by a read-only fetch at the commits:
+      - CONFIRMED: KytyPS5 39936ffa `renderContext.cpp` ~205-217, `graphicsRun.h:51`, `graphicsRun.cpp`
+        (graphics 0, compute base + id - 1, RELEASE_MEM interrupt defers TriggerInterrupt); AnyPS5 19a1993e
+        `libSceAgcDriver/Eq/src/Event.cpp` ~80-91.
+      - COULD NOT READ: KytyPS5 `agc.cpp` ~4364 and the INT_SEL bit extraction. The line numbers are the fetcher's
+        count, +-1.
+    - Det tests (`test_dc0439.cpp`): PASS.
+    - Smokes (normal `2befcb17`, 16:15-16:18, resets 11 -> 11, fault records 27 -> 27):
+      - ASTRO BOT off: 3000 flips by 53.44 s. On: 3000 flips by 53.48 s.
+      - With the switch on, ASTRO's interrupts go to ident 0 (graphics, 5 registrations, INT_SEL 1, 2 and 4; the 3
+        INT_SEL 4 ones newly fired) and to 0x40 from compute queue slot 0x21 (= 0x20 + 0x21 - 1).
+      - The third title on: 0 deliveries, the stall unchanged.
+
 (more to come)
 
 **Verdict.** (to come)

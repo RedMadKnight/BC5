@@ -205,6 +205,23 @@ inline std::uint32_t count_base(const std::uint32_t *ib, std::size_t n, std::uin
     return c;
 }
 
+// The AGC-era end-of-pipe event (BC5_DIRECT_AGC_EOP_IDENT). Sources, GPL-2.0, checked 2026-11-21 (exp 0439 README):
+// KytyPS5 39936ffa src/graphics/host_gpu/renderer/renderContext.cpp ~205-217 (TriggerInterrupt matches registrations by
+// event id; data = (context_id << 16) | ident); src/graphics/guest_gpu/graphicsRun.h:51 ComputeQueueBase = 0x20;
+// graphicsRun.cpp: the graphics CP's event id 0, a compute CP's ComputeQueueBase + queue_id - 1, RELEASE_MEM with its
+// interrupt bit defers TriggerInterrupt(event_id, interrupt context id). AnyPS5 19a1993e
+// core/libs/prx/libSceAgcDriver/Eq/src/Event.cpp ~80-91 (AddEqEvent stores id as ident and queue; delivery sets
+// data = queue | context << 16). UNVERIFIED on hardware. queue_id here = the queue registration's doorbell slot d (the
+// third title's 0x52 = 0x20 + 0x33 - 1 for slot 0x33, queue 2/2/2).
+inline constexpr std::uint32_t kAgcComputeQueueBase = 0x20;
+inline std::uint32_t agc_eop_ident(bool compute, std::uint32_t queue_slot) { return compute ? kAgcComputeQueueBase + queue_slot - 1u : 0u; }
+inline std::uint64_t agc_eop_data(std::uint32_t context_id, std::uint32_t ident) {
+    return (static_cast<std::uint64_t>(context_id) << 16u) | ident;
+}
+// RELEASE_MEM dword 2: INT_SEL in bits 26:24, three bits (gfx10 form; TODO(verify) against AMD PAL's PM4 headers; KytyPS5
+// accepts 0..4). The soft CP read two bits, so 4 read as 0 (no interrupt).
+inline std::uint32_t release_mem_int_sel(std::uint32_t dword2) { return (dword2 >> 24u) & 7u; }
+
 // The two programs (wave64, gfx1013; llvm-mc 21.1.8 -triple=amdgcn -mcpu=gfx1013 -mattr=+wavefrontsize64
 // -show-encoding, k439/vs.s and k439/ps.s):
 //   VS: v_and_b32 v1, 1, v0 ; v_and_b32 v2, 2, v0 ; v_mov_b32 v3, s0 ; v_mov_b32 v4, s1 ; v_mov_b32 v5, 0 ;
