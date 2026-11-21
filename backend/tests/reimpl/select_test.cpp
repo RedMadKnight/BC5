@@ -30,6 +30,16 @@ TEST_CASE("choice: default BC5, game's own wins, =0 opts out", "[reimpl][select]
     CHECK(choose("0", false) == Choice::OptedOut);
     CHECK(choose("0", true) == Choice::OptedOut);
     CHECK(std::string(choice_name(Choice::Bc5Own)).find("BC5") != std::string::npos);
+    // Test-only force: BC5's own over the game's copy, and the game's copy kept off the load.
+    CHECK(choose("force", true) == Choice::Bc5Forced);
+    CHECK(choose("force", false) == Choice::Bc5Forced);
+    CHECK(is_bc5(Choice::Bc5Forced));
+    CHECK_FALSE(is_bc5(Choice::GameOwn));
+    CHECK(keeps_off_load("force", true));
+    CHECK_FALSE(keeps_off_load(nullptr, true));
+    CHECK(keeps_off_load(nullptr, false));
+    CHECK_FALSE(keeps_off_load("0", false));
+    CHECK(std::string(choice_name(Choice::Bc5Forced)).rfind("BC5's own re-creation", 0) == 0);
 }
 
 namespace {

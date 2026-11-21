@@ -7,7 +7,10 @@
 //     (as KytyPlus's loader scans them), or fakelib/ (the system modules a dump ships, which the
 //     title's launcher points SHADPS4_SYSMODULES_PACK_DIR at, e.g. ASTRO BOT's);
 //   - opted out with BC5_REIMPL_<X>=0: neither BC5's nor a forced choice, the host's previous
-//     behaviour (a module pack from SHADPS4_SYSMODULES_PACK_DIR, else KytyPlus's HLE).
+//     behaviour (a module pack from SHADPS4_SYSMODULES_PACK_DIR, else KytyPlus's HLE);
+//   - TEST ONLY: BC5_REIMPL_<X>=force takes BC5's own even when the game ships its own copy (the
+//     game's copy is then kept off the load as well), to test the re-creations on a title that
+//     ships the modules. Never set in a shortcut or a shared launcher.
 #pragma once
 
 #include <filesystem>
@@ -16,7 +19,14 @@
 
 namespace bc5::reimpl {
 
-enum class Choice { Bc5Own, GameOwn, OptedOut };
+enum class Choice { Bc5Own, GameOwn, OptedOut, Bc5Forced };
+
+inline bool is_bc5(Choice c) { return c == Choice::Bc5Own || c == Choice::Bc5Forced; }
+
+// The test-only force value.
+inline bool switch_forces(const char *value) {
+    return value != nullptr && value[0] == 'f' && std::string_view(value) == "force";
+}
 
 // The switch's value: unset or empty means the default (on); "0" opts out; anything else is on.
 inline bool switch_allows(const char *value) {
@@ -27,7 +37,15 @@ inline Choice choose(const char *switch_value, bool game_ships_module) {
     if (!switch_allows(switch_value)) {
         return Choice::OptedOut;
     }
+    if (switch_forces(switch_value)) {
+        return Choice::Bc5Forced;
+    }
     return game_ships_module ? Choice::GameOwn : Choice::Bc5Own;
+}
+
+// Whether the host keeps the module off its LLE load (module pack or the game's own copy).
+inline bool keeps_off_load(const char *switch_value, bool game_ships_module) {
+    return is_bc5(choose(switch_value, game_ships_module));
 }
 
 inline const char *choice_name(Choice c) {
@@ -38,6 +56,8 @@ inline const char *choice_name(Choice c) {
         return "the game's own copy";
     case Choice::OptedOut:
         return "opted out (=0): module pack or host HLE";
+    case Choice::Bc5Forced:
+        return "BC5's own re-creation, FORCED over the game's own copy (test only)";
     }
     return "?";
 }

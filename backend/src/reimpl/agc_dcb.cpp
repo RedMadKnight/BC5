@@ -13,7 +13,12 @@
 // The register-load opcodes 0x63 / 0x64 / 0x9F, 0x3A, 0x8E and 0x91 are TODO(verify) names.
 #include "bc5/reimpl/agc_internal.hpp"
 
+#include "bc5/reg_catch.hpp" // BC5: the register catcher for the slot's own lists
+
 #include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <functional>
 
 namespace bc5::reimpl::agc {
 
@@ -31,6 +36,31 @@ std::uint32_t *indirect_load(CommandBuffer *cb, std::uint32_t header, std::uint6
     const std::uint32_t d[5] = {header, lo32(address) & ~3u, hi32(address), 0x80000000u,
                                 count & 0x3FFFu};
     return emit(cb, d, 5);
+}
+
+// BC5 (run rmplN01, 2026-11-21): the slot's default tables are register lists the CP reads from
+// memory, out of the host filter's sight. With the register catcher on (bc5/reg_catch.hpp, switch
+// BC5_REG_CATCH) each list is checked before its load packet is built: every
+// offset inside its space. "fatal" ends the process with exit 87.
+std::uint32_t *slot_load(CommandBuffer *cb, std::uint32_t header, std::uint64_t address,
+                         std::uint32_t count, const char *what) {
+    const bc5::reg_catch::Mode m = bc5::reg_catch::mode();
+    if (m != bc5::reg_catch::Mode::Off && count != 0) {
+        const std::uint32_t pkt[5] = {header, lo32(address) & ~3u, hi32(address), 0x80000000u,
+                                      count & 0x3FFFu};
+        const std::function<bool(std::uint64_t, std::uint64_t)> mapped =
+            [](std::uint64_t, std::uint64_t) { return true; }; // our own DMEM, in this process
+        const bc5::reg_catch::Finding f = bc5::reg_catch::check(pkt, 5, mapped);
+        if (f.reason != nullptr) {
+            log(kModule, "REG-CATCH slot %s list: %s (pair %u, offset 0x%x)", what, f.reason,
+                f.index, f.reg);
+            if (m == bc5::reg_catch::Mode::Fatal) {
+                std::fflush(stderr);
+                std::_Exit(87);
+            }
+        }
+    }
+    return indirect_load(cb, header, address, count);
 }
 
 std::uint32_t uc_load_header() {
@@ -83,7 +113,7 @@ std::uint32_t *emit_load_cx_defaults(CommandBuffer *cb, const QueueSlot *slot) {
     if (slot == nullptr) {
         return nullptr; // deviation: UB in the original (no active slot)
     }
-    return indirect_load(cb, 0xC0039F00u, addr(slot->cx), slot->cx_count);
+    return slot_load(cb, 0xC0039F00u, addr(slot->cx), slot->cx_count, "cx");
 }
 
 std::uint32_t *conditional_roll_notify(CommandBuffer *cb, std::uint32_t op, bool update_label) {
@@ -167,7 +197,7 @@ std::uint32_t *dcb_reset_queue_body(CommandBuffer *cb, std::uint16_t flags, Queu
         }
     }
     if ((flags & 2u) != 0) {
-        if (indirect_load(cb, 0xC0036300u, addr(slot->sh), slot->sh_count) == nullptr) {
+        if (slot_load(cb, 0xC0036300u, addr(slot->sh), slot->sh_count, "sh") == nullptr) {
             return nullptr;
         }
     }
@@ -182,7 +212,7 @@ std::uint32_t *dcb_reset_queue_body(CommandBuffer *cb, std::uint16_t flags, Queu
             a += 8ull * (slot->uc_count - slot->uc_special_count);
             count = slot->uc_special_count;
         }
-        if (indirect_load(cb, uc_load_header(), a, count) == nullptr) {
+        if (slot_load(cb, uc_load_header(), a, count, "uc") == nullptr) {
             return nullptr;
         }
     }

@@ -1,9 +1,9 @@
 diff --git a/src/libs/bc5Reimpl.cpp b/src/libs/bc5Reimpl.cpp
 new file mode 100644
-index 0000000..6b71806
+index 0000000..51d9183
 --- /dev/null
 +++ b/src/libs/bc5Reimpl.cpp
-@@ -0,0 +1,353 @@
+@@ -0,0 +1,355 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 (github.com/RedMadKnight/BC5): host glue for the clean-room re-creations of libSceAgc,
@@ -78,12 +78,11 @@ index 0000000..6b71806
 +std::mutex g_mu;
 +std::map<std::string, bc5::reimpl::Choice> g_choice; // filled once by ResolveImports
 +
-+bool switch_allows(const ModuleDef &m) { return bc5::reimpl::switch_allows(std::getenv(m.env)); }
 +
 +bool chosen_bc5(const ModuleDef &m) {
 +    std::lock_guard<std::mutex> lock(g_mu);
 +    const auto it = g_choice.find(m.name);
-+    return it != g_choice.end() && it->second == bc5::reimpl::Choice::Bc5Own;
++    return it != g_choice.end() && bc5::reimpl::is_bc5(it->second);
 +}
 +
 +// The module that owns a library name ("libSceAgcDriverPaDebug" -> libSceAgcDriver).
@@ -250,7 +249,10 @@ index 0000000..6b71806
 +std::vector<std::string> DeniedSysmodules(const std::filesystem::path &title_root) {
 +    std::vector<std::string> out;
 +    for (const auto &m : kModules) {
-+        if (switch_allows(m) && bc5::reimpl::find_game_copy(title_root, m.name).empty()) {
++        // BC5's own (default, no game copy) or forced over the game's copy (test-only "force"):
++        // the module is kept off the LLE load either way.
++        if (bc5::reimpl::keeps_off_load(std::getenv(m.env),
++                                        !bc5::reimpl::find_game_copy(title_root, m.name).empty())) {
 +            out.push_back(std::string(m.name) + ".sprx");
 +        }
 +    }
