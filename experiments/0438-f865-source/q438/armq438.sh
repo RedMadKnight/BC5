@@ -13,7 +13,7 @@ P=${1:?tag}; shift; ARGS=("$@"); W=$HOME/bc5-work; N=$W/exp0413/n; R=$N/raw; LOC
 BIN=${ARM_BIN:-$W/exp0438/stack/normal/kyty_emulator}; M=$HOME/bc5-data/mnt/PPSA21567; S=$R/$P-armq438.txt
 case "$P" in *[!A-Za-z0-9]* | "") echo "the tag prefix is letters and digits"; exit 1 ;; esac
 WANT=$(md5sum < "$BIN" | cut -d' ' -f1)
-[ "${WANT:0:8}" = "${ARM_PIN:-853e16e9}" ] && [ "$WANT" = "$(cat "$(dirname "$BIN")/binary.md5")" ] || { echo "the binary is ${WANT:0:8}, not the stack's normal 853e16e9: not started"; exit 1; }
+[ "${WANT:0:8}" = "${ARM_PIN:-853e16e9}" ] && [ "${WANT:0:8}" = "$(cut -c1-8 "$(dirname "$BIN")/binary.md5")" ] || { echo "the binary is ${WANT:0:8}, not the stack's normal 853e16e9: not started"; exit 1; }
 [ -e "$R/$P-start.txt" ] && { echo "tag $P already used"; exit 1; }
 mkdir -p "$R"
 say() { echo "$(date +%T) $*" | tee -a "$S"; }
@@ -59,6 +59,7 @@ run() { # $1 tag suffix, then the switch words
     grep -qi 'reset failed' "$R/$t-dmesg-after.txt" 2> /dev/null && say "$t: A RING RESET FAILED (the box may reboot)"
     say "$t: reset lines: $(grep -o 'ring [a-z_0-9.]* timeout\|Ring [a-z_0-9.]* reset [a-z]*' "$R/$t-dmesg-after.txt" 2> /dev/null | sort | uniq -c | tr -s ' ' | tr '
 ' ';')"
+    grep -a "ng438 (exp" "$J" 2> /dev/null | tail -2 | cut -c1-400 | tee -a "$S"
     say "$t: resets $r0 -> $r1; r438 BUG lines $(grep -ac 'r438 (exp 0438, b438): BUG' "$L"), of them waits over 100 ms $(grep -ac 'has waited .* for an early-registered writer' "$L"); GIVEN UP $(grep -aci 'given up' "$L"); A2 MISMATCH $(grep -ac 'tag a2): MISMATCH' "$L"); q438 lines $(grep -ac 'q438' "$L")"
     grep -a 'r438 (exp 0438, b438): t \|tag a1c438): t \|tag a2c438): t ' "$L" | tail -3 | cut -c1-400 | tee -a "$S"
     grep -a 'r438 (exp 0438, b438): BUG\|q438.*BUG' "$L" | head -5 | cut -c1-300 | tee -a "$S"
