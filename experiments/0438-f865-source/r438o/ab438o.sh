@@ -81,10 +81,21 @@ run() { # $1 arm tag, $2 binary, $3 md5, $4 lean 1/0, then switch words
     case "$line" in *"PASS: ran $SECS s"*"kernel lines 0, crash lines 0"*) ;; *) say "STOP: $t did not pass"; finish 1 ;; esac
     sleep 5
 }
+# AB_WARMUP=1 (the top session, 2026-11-21): one discarded control run W0 first (the first run after a boot is high).
+# AB_PAIR4=auto: a 4th pair when the first three pairs' flips/s all sit within 0.3 % of their mean.
+if [ "${AB_WARMUP:-0}" = 1 ]; then run W0 "$CB" "$MC" 1 "${CW[@]}"; say "W0 is a warm-up: not part of the comparison"; fi
 for a in C1:C O1:O C2:C O2:O C3:C O3:O; do
     t=${a%%:*}; k=${a##*:}
     if [ "$k" = C ]; then run "$t" "$CB" "$MC" 1 "${CW[@]}"; else run "$t" "$OB" "$MO" 1 "${OW[@]}"; fi
 done
+if [ "${AB_PAIR4:-}" = auto ]; then
+    spread=$(grep -h "flips/s" "$S" | grep -E "${P}[CO][123]:" | grep -o "flips/s [0-9.]*" | awk "{print \$2}" | awk '{v[n++]=$1; s+=$1} END {if (n < 6) {print "na"; exit}; m=s/n; lo=v[0]; hi=v[0]; for (i=1;i<n;i++) {if (v[i]<lo) lo=v[i]; if (v[i]>hi) hi=v[i]}; printf "%.4f", (hi-lo)/m}')
+    say "the first three pairs' flips/s spread: ${spread} of the mean"
+    if [ "$spread" != na ] && awk -v x="$spread" 'BEGIN {exit !(x < 0.003)}'; then
+        say "within 0.3 %: a 4th pair"
+        run C4 "$CB" "$MC" 1 "${CW[@]}"; run O4 "$OB" "$MO" 1 "${OW[@]}"
+    fi
+fi
 run N1 "$NB" "$MN" 0 "${NW[@]}"
 say "N1 r438 lines: $(grep -ac 'r438 (exp 0438, b438)' "$R/${P}N1-play.log"), BUG $(grep -ac 'r438 (exp 0438, b438): BUG' "$R/${P}N1-play.log"), GIVEN UP $(grep -aci 'given up' "$R/${P}N1-play.log")"
 grep -a 'r438 (exp 0438, b438): t ' "$R/${P}N1-play.log" | tail -3 | tee -a "$S"

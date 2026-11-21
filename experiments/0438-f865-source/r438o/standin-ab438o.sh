@@ -13,6 +13,6 @@ TAG=$1; shift 3; R=$(dirname "$0")/raw; echo "start $TAG lock=[$(cat "$(dirname 
 for a in "$@"; do case "$a" in MANGOHUD_CONFIG=*) of=${a#*output_folder=}; of=${of%%,*}; mkdir -p "$of"; { echo os; echo x; echo "fps,frametime,elapsed"; i=0; while [ $i -lt 3000 ]; do echo "60,16.6,$((i * 16600000))"; i=$((i + 1)); done; } > "$of/k.csv" ;; esac; done
 echo x > "$R/$TAG-play.log"; echo "$TAG (astro) PASS: ran 180 s; RssAnon at the end 1 kB; kernel lines 0, crash lines 0"
 STUB
-AB_STANDIN=1 AB_W="$D/w" AB_M="$D/m" AB_DRM="$D/drm" AB_CB="$D/w/bin/c" AB_OB="$D/w/bin/o" AB_NB="$D/w/bin/n" AB_O_WORDS="O1=1" AB_N_WORDS="N1=1" PATH="$D/bin:$PATH" bash "$HERE/ab438o.sh" sa 2>&1 | grep -v boot_id | tail -3
+AB_STANDIN=1 AB_W="$D/w" AB_M="$D/m" AB_DRM="$D/drm" AB_CB="$D/w/bin/c" AB_OB="$D/w/bin/o" AB_NB="$D/w/bin/n" AB_WARMUP=1 AB_PAIR4=auto AB_O_WORDS="O1=1" AB_N_WORDS="N1=1" PATH="$D/bin:$PATH" bash "$HERE/ab438o.sh" sa 2>&1 | grep -v boot_id | tail -3
 sed 's/MANGOHUD_CONFIG=[^ ]*/MH/; s/lock=\[[^]]*\]/lock=held/' "$D/w/exp0413/n/raw/stub-calls.txt"
 echo "lock after: [$(cat "$D/w/BOX-LOCK")]"
