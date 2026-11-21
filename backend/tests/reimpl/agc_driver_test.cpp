@@ -10,6 +10,8 @@
 
 #include <cstdarg>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <map>
 #include <memory>
@@ -2047,4 +2049,53 @@ TEST_CASE("agc_driver: every export can be called without a host", "[agc_driver]
     CHECK(initialize() == kErrGeneric);
     set_log(nullptr);
     reset_for_tests();
+}
+
+// BC5_TEST_DRV_IN=<dir>: an offline compare with a capture of the title's own driver module. The dir
+// holds the default-state images init hands NotifyDefaultStates (img-cx.bin, img-sh.bin,
+// img-uc.bin: sorted {offset, value} pairs); the test builds BC5's own default-state CBs from them
+// (own data, no module file) and writes the first 0x8000 bytes of the driver memory and its base as
+// ours-drv-area.bin / ours-drv-base.txt. Nothing happens without the switch.
+TEST_CASE("agc_driver: default-state CBs for an offline compare", "[agc_driver][compare]") {
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#endif
+    const char *dir = std::getenv("BC5_TEST_DRV_IN");
+    auto open = [](const std::string &p, const char *m) { return std::fopen(p.c_str(), m); };
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+    if (dir == nullptr || dir[0] == 0) {
+        return;
+    }
+    auto load = [&](const char *name) {
+        std::vector<u32> v;
+        if (std::FILE *fp = open(std::string(dir) + "/" + name, "rb"); fp != nullptr) {
+            u32 w = 0;
+            while (std::fread(&w, 4, 1, fp) == 1) {
+                v.push_back(w);
+            }
+            std::fclose(fp);
+        }
+        return v;
+    };
+    const std::vector<u32> cx = load("img-cx.bin"), sh = load("img-sh.bin"), uc = load("img-uc.bin");
+    Fixture f(0, false);
+    set_firmware_data(nullptr);
+    bc5::reimpl::set_data_switches({false, false}); // BC5's own data, as on the box
+    REQUIRE(initialize() == kOk);
+    REQUIRE(sceAgcDriverNotifyDefaultStates(cx.data(), sh.data(), uc.data(),
+                                            static_cast<u32>(cx.size() / 2),
+                                            static_cast<u32>(sh.size() / 2),
+                                            static_cast<u32>(uc.size() / 2)) == kOk);
+    const u64 dm = f.host.dmem;
+    if (std::FILE *fp = open(std::string(dir) + "/ours-drv-area.bin", "wb"); fp != nullptr) {
+        std::fwrite(reinterpret_cast<const void *>(static_cast<std::uintptr_t>(dm)), 1, 0x8000, fp);
+        std::fclose(fp);
+    }
+    if (std::FILE *fp = open(std::string(dir) + "/ours-drv-base.txt", "w"); fp != nullptr) {
+        std::fprintf(fp, "0x%llx\n", static_cast<unsigned long long>(dm));
+        std::fclose(fp);
+    }
 }
