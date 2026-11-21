@@ -66,17 +66,32 @@ export KYTY_BC5_APR_READAHEAD=${KYTY_BC5_APR_READAHEAD:-4}
 # frame rate alone. The former BC5_MANGOHUD=1 switch and its shortcut are gone.
 export XDG_RUNTIME_DIR=/run/user/$(id -u) WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-wayland-0} DISPLAY=${DISPLAY:-:0}
 
+# exp 0439 (2026-11-21): a dead FUSE endpoint (its bc5-mount killed: exp 0438's ASTRO BOT starts at 12:58 and 13:00
+# failed on one in the ubuntu container, "Transport endpoint is not connected") still passes `mountpoint -q`, while every
+# read through it fails. A mount counts only when the game's sce_sys/param.json reads non-empty; a dead one is unmounted
+# (lazily if it must be) before a new mount, and a failure says so by name. tools/scripts/launchers/test-mount-live.sh.
+# --- mount (exp 0439) ---
+mount_live() { mountpoint -q "$1" && [ -s "$1/sce_sys/param.json" ]; }
+mount_clear_dead() { # $1 mountpoint, $2 log
+  mountpoint -q "$1" || return 0
+  mount_live "$1" && return 0
+  echo "$(date '+%F %T') dead mount at $1 (param.json not readable): unmounted" >> "$2"
+  fusermount3 -u "$1" 2>> "$2" || fusermount3 -u -z "$1" 2>> "$2"
+  ! mountpoint -q "$1"
+}
 MP=""
 if [ -n "${BC5_GAME_DIR:-}" ]; then
   [ -d "$M" ] || { say "No game folder at $M."; exit 1; }  # exp 0420
 else
 mkdir -p "$M"
-if ! mountpoint -q "$M"; then
+mount_clear_dead "$M" "$ALOG" || { say "A dead mount at $M could not be removed (fusermount3 -u -z failed)."; exit 1; }
+if ! mount_live "$M"; then
   "$BM" mount "$C" "$M" > "$ALOG" 2>&1 &
   MP=$!
-  for _ in $(seq 1 100); do mountpoint -q "$M" && break; sleep 0.2; done
+  for _ in $(seq 1 100); do mount_live "$M" && break; sleep 0.2; done
 fi
-mountpoint -q "$M" || { say "Mounting the game failed (see $ALOG; with BC5_LEAN=1 run with BC5_LOGS=1 to keep it)."; exit 1; }
+mount_live "$M" || { say "Mounting the game failed: $M/sce_sys/param.json is not readable (see $ALOG; with BC5_LEAN=1 run with BC5_LOGS=1 to keep it)."; exit 1; }
+# --- end mount ---
 fi
 # The repository's copy (tools/scripts/launchers, 2026-11-15): when the settings file's module pack holds no
 # libSceAgc.sprx (an installed game: the settings file names the image's mountpoint, which is empty without a mount),

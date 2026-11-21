@@ -1,0 +1,68 @@
+2026-11-21 13:14:48 lock taken: exp0439 2026-11-21 13:14:48 third title
+started unit bc5-0439-a3 (max 25 s); when it ends: run0439.sh collect normal a3
+139 672383 R game-main
+21 672425 S ScreamWorker1
+19 672426 S ScreamWorker2
+4 672387 S bc5-ring
+2 672452 S snd_stream_read
+2 672418 S bc5-apr-r1-1
+2 672417 S bc5-apr-r1-0
+1 672461 S bc5-apr-r3-2
+1 672449 S SDLAudioP53
+1 672445 S SDLAudioP53
+1 672441 S NCA::PumpThread
+1 672416 S bc5-apr-q1
+0x2010449750: 0x0000000000000000
+0x20104aa630: 0x0000000000000000
+0x20104cd100: 0x0000000000000000
+0x20104cd140: 0x0000000000000000
+0x20104cd180: 0x0000000000000000
+0x20104cd1c0: 0x0000000000000000
+0x20104cd1e0: 0x0000000000000000
+0x20000081e0: 0x0000000000000000
+== tid 672383 game-main
+TID 672383:
+#0  0x0000000900d62b02
+#1  0x0000000900bd8c4d
+#2  0x0000000900ec77c3
+#3  0x0000000900ec6780
+#4  0x00000009000000af
+#5  0x0000557c3312f1dd Loader::RuntimeLinker::Execute(std::filesystem::__cxx11::path const&)
+== tid 672425 ScreamWorker1
+TID 672425:
+#0  0x00007f1c84330802 __syscall_cancel_arch
+#1  0x00007f1c8432430c __internal_syscall_cancel
+#2  0x00007f1c843246e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f1c84327689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x0000557c32dcb7e9 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x00000009013e44cc
+#6  0x00000009013e1e39
+#7  0x000000090024faa0
+#8  0x000000090024f28d
+#9  0x0000557c32dce22e Libs::LibKernel::RunThread(void*)
+== tid 672426 ScreamWorker2
+TID 672426:
+#0  0x00007f1c84330802 __syscall_cancel_arch
+#1  0x00007f1c8432430c __internal_syscall_cancel
+#2  0x00007f1c843246e7 __GI___futex_abstimed_wait_cancelable64
+#3  0x00007f1c84327689 pthread_cond_clockwait@GLIBC_2.30
+#4  0x0000557c32dcb7e9 Libs::LibKernel::PthreadCondWait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**)
+#5  0x00000009013e44cc
+#6  0x00000009013e1e39
+#7  0x000000090024faa0
+#8  0x000000090024f28d
+#9  0x0000557c32dce22e Libs::LibKernel::RunThread(void*)
+== tid 672387 bc5-ring
+TID 672387:
+#0  0x00007f1c84330802 __syscall_cancel_arch
+#1  0x00007f1c8432430c __internal_syscall_cancel
+#2  0x00007f1c84379af2 clock_nanosleep@GLIBC_2.2.5
+#3  0x00007f1c84387707 __nanosleep
+#4  0x0000557c32e982fb Libs::Bc5Gc::Direct::submit_split(unsigned int const*, unsigned int, char const*)
+#5  0x0000557c32e947a6 Libs::Bc5Gc::Direct::submit(unsigned int const*, unsigned int, char const*)
+#6  0x0000557c32e63bb9 Libs::Bc5Gc::SoftCp::queue_consumer_thread()
+#7  0x00007f1c845c8ef9
+#8  0x00007f1c84327dfa start_thread
+#9  0x00007f1c843bb5cc __clone3
+resets: 21 -> 21
+2026-11-21 13:15:21 lock dropped
