@@ -114,6 +114,13 @@ struct State {
     QueueSlot slots[2];
     RegPair restore_a; // SH 0x216 default (compute static thread-management mask)
     RegPair restore_b; // SH 0x217 default
+    // Cached pairs of the three init-time name lookups that resolve into list 3 (the fourth list)
+    // of the internal descriptor (tables2.md, FOURTH LISTS): A = entry 0x26C, B = entry 0x094 (only
+    // in the 6-entry lists), C = 0x26E and the two pairs after it. All ones when absent; nothing
+    // else reads them, as in the original.
+    RegPair fourth_a;
+    RegPair fourth_b;
+    RegPair fourth_c[3];
     std::uint32_t trace_initiator[11]; // index 1..10
     std::uint64_t trusted_lo;
     std::uint64_t trusted_hi;

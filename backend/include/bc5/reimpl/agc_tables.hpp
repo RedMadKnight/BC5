@@ -14,10 +14,12 @@
 
 namespace bc5::reimpl::agc::tables {
 
-// Every register-default pair table. The names follow the description: CX/SH/UC = context, SH
-// and uconfig register space; SOC = SoC family 0x840F00 (every SDK version but the version-11
-// group); V0_3 = SDK versions 0 to 3 on other SoCs; V11 = SDK version 11 and unknown versions;
-// INT = the lists of the "Internal" descriptors.
+// Every register-default pair table. The names follow the descriptions (desc2/tables.md and
+// tables2.md): CX/SH/UC = context, SH and uconfig register space; Int..Cx/Sh/Uc = the lists of the
+// "Internal" descriptors; Fourth = list 3 of an internal descriptor (space not determined). Groups:
+// SOC = SoC family 0x840F00; V0_3, V4, V5_6, V7, V8, V9, V10_12 = those SDK versions on other SoCs;
+// OTHER = SDK version 11 and 13 and above without a shader transcoder (and the old API for 11 and
+// above); V11 = the same versions with a shader transcoder (new API only).
 enum class TableId {
     CxSoc,
     ShSoc,
@@ -33,6 +35,57 @@ enum class TableId {
     IntV11_1, // internal, context
     IntV11_2, // internal, SH
     IntV11_3, // internal, uconfig
+    // tables2.md
+    CxOther,
+    ShOther,
+    UcOther,
+    IntOtherCx,
+    IntOtherSh,
+    IntOtherUc,
+    FourthOther,
+    IntV0_3Cx,
+    IntV0_3Sh,
+    FourthV0_3,
+    CxV4,
+    ShV4,
+    UcV4,
+    IntV4Cx,
+    IntV4Sh,
+    FourthV4,
+    CxV5_6,
+    ShV5_6,
+    UcV5_6,
+    IntV5_6Cx,
+    IntV5_6Sh,
+    FourthV5_6,
+    CxV7,
+    ShV7,
+    UcV7,
+    IntV7Cx,
+    IntV7Sh,
+    FourthV7,
+    CxV8,
+    ShV8,
+    UcV8,
+    IntV8Cx,
+    IntV8Sh,
+    FourthV8,
+    CxV9,
+    ShV9,
+    UcV9,
+    IntV9Cx,
+    IntV9Sh,
+    IntV9Uc,
+    FourthV9,
+    CxV10_12,
+    ShV10_12,
+    UcV10_12,
+    IntV10_12Cx,
+    IntV10_12Sh,
+    IntV10_12Uc,
+    FourthV10_12,
+    FourthSoc,
+    FourthV11,
     Count
 };
 inline constexpr int kTableCount = static_cast<int>(TableId::Count);

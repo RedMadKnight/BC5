@@ -99,6 +99,89 @@ Values with_overrides(Values base, const Values &overrides) {
     return base;
 }
 
+// ---- pair-level deltas (tables2.md) -------------------------------------------------------------
+// tables2.md writes most tables as edits of a complete base table, under its value rule: an entry
+// kept from the base keeps the value it has at its own position there; an inserted entry takes the
+// value of the first entry with the same register in the base, or zero; listed exceptions then
+// replace complete values. Its lists may hold one register more than once, so entries are
+// addressed by occurrence.
+
+using Pairs = std::vector<RegPair>;
+
+// One entry of a list by register: the k-th entry with that register in table order (k from 1),
+// or, with k = 0, the entry of a register the list holds once (in a value line: every entry).
+struct At {
+    u32 offset;
+    u32 k = 0;
+};
+// The anchor of "insert at start".
+constexpr u32 kStart = 0xFFFFFFFFu;
+
+struct PairInsert {
+    At after;
+    std::vector<u32> offsets;
+};
+struct Exception {
+    At at;
+    u32 value; // the complete value
+};
+
+bool matches(const At &a, u32 offset, u32 occurrence) {
+    return a.offset == offset && (a.k == 0 || a.k == occurrence);
+}
+
+// "The B list with these edits", values by the value rule. Removals and anchors count
+// occurrences in the base and apply at once (as in edited() above).
+Pairs delta(const Pairs &base, const std::vector<At> &remove,
+            const std::vector<PairInsert> &inserts) {
+    auto first_value = [&base](u32 o) {
+        for (const RegPair &p : base) {
+            if (p.offset == o) {
+                return p.value;
+            }
+        }
+        return 0u;
+    };
+    Pairs out;
+    auto insert_after = [&](u32 offset, u32 occurrence) {
+        for (const PairInsert &ins : inserts) {
+            if (matches(ins.after, offset, occurrence)) {
+                for (u32 x : ins.offsets) {
+                    out.push_back({x, first_value(x)});
+                }
+            }
+        }
+    };
+    insert_after(kStart, 1);
+    std::map<u32, u32> seen;
+    for (const RegPair &p : base) {
+        const u32 occurrence = ++seen[p.offset];
+        bool removed = false;
+        for (const At &r : remove) {
+            removed = removed || matches(r, p.offset, occurrence);
+        }
+        if (!removed) {
+            out.push_back(p);
+        }
+        insert_after(p.offset, occurrence);
+    }
+    return out;
+}
+
+// "Except these entries, whose complete values are": occurrences counted in the table itself.
+Pairs with_exceptions(Pairs t, const std::vector<Exception> &exceptions) {
+    std::map<u32, u32> seen;
+    for (RegPair &p : t) {
+        const u32 occurrence = ++seen[p.offset];
+        for (const Exception &e : exceptions) {
+            if (matches(e.at, p.offset, occurrence)) {
+                p.value = e.value;
+            }
+        }
+    }
+    return t;
+}
+
 // ---- CX-SOC: public context defaults, SoC family 0x840F00 --------------------------------------
 
 List cx_soc_list() {
@@ -551,6 +634,218 @@ Values int_v11_2_values() {
 
 List int_v11_3_list() { return List().add({uc::GE_PC_ALLOC}); }
 
+// ---- the complete base tables (tables.md), for the deltas of tables2.md -------------------------
+
+Pairs cx_soc() { return make(cx_soc_list(), cx_soc_values()); }
+Pairs sh_soc() { return make(sh_soc_list(), sh_soc_values()); }
+Pairs uc_soc() { return make(uc_soc_list(), uc_soc_values()); }
+Pairs int_soc_a() { return make(int_soc_a_list(), int_soc_a_values()); }
+Pairs int_soc_b() { return make(int_soc_b_list(), int_soc_b_values()); }
+Pairs cx_v11() { return make(cx_v11_list(), cx_v11_values()); }
+Pairs sh_v11() { return make(sh_v11_list(), sh_v11_values()); }
+Pairs uc_v11() { return make(uc_v11_list(), uc_soc_values()); } // same non-zero entry as UC-SOC
+Pairs int_v11_1() { return make(int_v11_1_list(), int_v11_1_values()); }
+Pairs int_v11_2() { return make(int_v11_2_list(), int_v11_2_values()); }
+Pairs int_v11_3() { return make(int_v11_3_list(), {}); } // every entry zero
+
+static_assert(ctx::DB_HTILE_SURFACE == 0x2AF);
+
+// ---- OTHER: SDK version 11 and 13+ without a transcoder; the old API for 11 and above -----------
+
+Pairs cx_other() {
+    return with_exceptions(delta(cx_v11(), {{unnamed(0x018)}, {unnamed(0x212)}, {unnamed(0x1B7)}},
+                                 {{{ctx::DB_EQAA}, {ctx::DB_HTILE_SURFACE}},
+                                  {{ctx::DB_SHADER_CONTROL}, {unnamed(0x0DB)}},
+                                  {{ctx::DB_STENCIL_CONTROL}, {unnamed(0x0DB)}},
+                                  {{ctx::PA_CL_OBJPRIM_ID_CNTL}, {unnamed(0x0DB)}},
+                                  {{ctx::PA_SU_VTX_CNTL}, {unnamed(0x0DB)}}}),
+                           {{{ctx::DB_EQAA}, 0},
+                            {{ctx::PA_SC_AA_CONFIG}, 0},
+                            {{ctx::VGT_DRAW_PAYLOAD_CNTL}, 0},
+                            {{ctx::DB_RENDER_OVERRIDE2}, 0},
+                            // The third 0x0DB (where CX-V11 has 0x212): no gfx10 name, bit 13.
+                            {{unnamed(0x0DB), 3}, bit(13)}});
+}
+
+Pairs sh_other() {
+    // The checksum registers have no gfx10 fields: bits 0..23 set.
+    return with_exceptions(
+        sh_v11(), {{{sh::COMPUTE_SHADER_CHKSUM}, bits(0, 23)},
+                   {{sh::SPI_SHADER_PGM_CHKSUM_GS}, bits(0, 23)},
+                   {{sh::SPI_SHADER_PGM_CHKSUM_PS}, bits(0, 23)},
+                   {{sh::SPI_SHADER_PGM_RSRC3_HS}, all_ones(f::SPI_SHADER_PGM_RSRC3_HS::CU_EN)},
+                   {{sh::SPI_SHADER_PGM_RSRC3_GS}, all_ones(f::SPI_SHADER_PGM_RSRC3_GS::CU_EN)}});
+}
+
+Pairs uc_other() {
+    return delta(uc_v11(), {{unnamed(0x263)}}, {{{uc::GE_USER_VGPR_EN}, {unnamed(0x0A2)}}});
+}
+
+Pairs int_other_cx() { return delta(int_v11_1(), {{unnamed(0x019)}}, {}); }
+
+Pairs int_other_sh() {
+    return with_exceptions(
+        int_v11_2(), {{{sh::SPI_SHADER_PGM_CHKSUM_HS}, bits(0, 23)}, // no gfx10 fields
+                      {{sh::SPI_SHADER_PGM_RSRC4_GS}, 0},
+                      {{sh::SPI_SHADER_PGM_RSRC4_HS}, 0},
+                      {{sh::SPI_SHADER_PGM_RSRC4_PS},
+                       low_bits(f::SPI_SHADER_PGM_RSRC4_PS::CU_EN, 2)}}); // CUs 0-1
+}
+
+// The two shapes of the fourth list (space not determined, so dword offsets only; all zero).
+Pairs fourth_4() {
+    return make(List().add({unnamed(0x26C), unnamed(0x26E), unnamed(0x278), unnamed(0x262)}), {});
+}
+Pairs fourth_6() {
+    return make(List().add({unnamed(0x26C), unnamed(0x094), unnamed(0x095), unnamed(0x26E),
+                            unnamed(0x278), unnamed(0x262)}),
+                {});
+}
+
+// ---- V4 -------------------------------------------------------------------------------------------
+
+Pairs cx_v4() {
+    List clip;
+    clip.add({ctx::PA_CL_PROG_NEAR_CLIP_Z});
+    clip.range(unnamed(0x188), unnamed(0x18E));
+    return with_exceptions(
+        delta(cx_other(),
+              {{ctx::CB_BLENDn_CONTROL[0], 1},
+               {ctx::DB_HTILE_SURFACE, 1},
+               {unnamed(0x0DB), 1},
+               {unnamed(0x0DB), 2},
+               {unnamed(0x0DB), 3},
+               {unnamed(0x0DB), 4},
+               {unnamed(0x0DB), 5},
+               {ctx::DB_HTILE_SURFACE, 2},
+               {ctx::DB_DEPTH_CLEAR},
+               {ctx::DB_STENCIL_CLEAR},
+               {unnamed(0x0F1)},
+               {unnamed(0x0F2)}},
+              {{{ctx::DB_COUNT_CONTROL}, {ctx::DB_DEPTH_CLEAR}},
+               {{ctx::DB_STENCILREFMASK_BF}, {ctx::DB_STENCIL_CLEAR}},
+               {{unnamed(0x0F0)}, {unnamed(0x0F1), unnamed(0x0F2)}},
+               {{ctx::PA_CL_UCP_n_W[5]}, clip.offsets()}}),
+        {{{ctx::CB_DCC_CONTROL}, fld(f::CB_DCC_CONTROL::OVERWRITE_COMBINER_WATERMARK, 2)},
+         {{ctx::PA_STEREO_CNTL}, 0},
+         {{ctx::VGT_TESS_DISTRIBUTION}, fld(f::VGT_TESS_DISTRIBUTION::ACCUM_ISOLINE, 16) |
+                                            fld(f::VGT_TESS_DISTRIBUTION::ACCUM_TRI, 16) |
+                                            fld(f::VGT_TESS_DISTRIBUTION::ACCUM_QUAD, 16) |
+                                            fld(f::VGT_TESS_DISTRIBUTION::DONUT_SPLIT, 8) |
+                                            fld(f::VGT_TESS_DISTRIBUTION::TRAP_SPLIT, 4)},
+         {{ctx::PA_SC_BINNER_CNTL_0}, fld(f::PA_SC_BINNER_CNTL_0::PERSISTENT_STATES_PER_BIN, 9) |
+                                          fld(f::PA_SC_BINNER_CNTL_0::FPOVS_PER_BATCH, 63)}});
+}
+
+Pairs sh_v4() {
+    return delta(sh_soc(),
+                 {{sh::SPI_SHADER_PGM_RSRC4_HS},
+                  {sh::SPI_SHADER_PGM_RSRC4_GS},
+                  {sh::SPI_SHADER_PGM_RSRC4_PS}},
+                 {});
+}
+
+Pairs int_v4_cx() {
+    return with_exceptions(delta(int_soc_a(), {}, {{{kStart}, {ctx::DB_HTILE_SURFACE}}}),
+                           {{{ctx::DB_HTILE_SURFACE}, fld(f::DB_HTILE_SURFACE::PIPE_ALIGNED, 1)}});
+}
+
+Pairs int_v4_sh() {
+    return with_exceptions(
+        delta(int_soc_b(), {},
+              {{{sh::SPI_SHADER_PGM_CHKSUM_PS},
+                {sh::SPI_SHADER_PGM_RSRC4_GS, sh::SPI_SHADER_PGM_RSRC4_HS,
+                 sh::SPI_SHADER_PGM_RSRC4_PS}}}),
+        {{{sh::SPI_SHADER_PGM_RSRC4_PS}, low_bits(f::SPI_SHADER_PGM_RSRC4_PS::CU_EN, 2)}});
+}
+
+// ---- V5_6 -----------------------------------------------------------------------------------------
+
+Pairs cx_v5_6() {
+    return with_exceptions(
+        delta(cx_v4(), {{ctx::DB_DEPTH_CLEAR}, {ctx::DB_STENCIL_CLEAR}},
+              {{{ctx::PA_SC_CLIPRECT_n_BR[3]}, {unnamed(0x0DB)}},
+               {{ctx::DB_DEPTH_SIZE_XY}, {ctx::DB_DEPTH_CLEAR, ctx::DB_STENCIL_CLEAR}},
+               {{unnamed(0x0EC)}, {unnamed(0x0F1), unnamed(0x0F2)}}}),
+        {{{ctx::PA_STEREO_CNTL}, bit(26)}, // outside every gfx10 field
+         // Binning off with the new scan converter.
+         {{ctx::PA_SC_BINNER_CNTL_0},
+          fld(f::PA_SC_BINNER_CNTL_0::BINNING_MODE, e::DISABLE_BINNING_USE_NEW_SC) |
+              fld(f::PA_SC_BINNER_CNTL_0::PERSISTENT_STATES_PER_BIN, 9) |
+              fld(f::PA_SC_BINNER_CNTL_0::DISABLE_START_OF_PRIM, 1) |
+              fld(f::PA_SC_BINNER_CNTL_0::FPOVS_PER_BATCH, 63)}});
+}
+
+Pairs sh_v5_6() { return delta(sh_v4(), {}, {{{sh::SPI_SHADER_PGM_HI_PS}, {unnamed(0x280)}}}); }
+
+Pairs uc_v5_6() {
+    List block;
+    block.range(unnamed(0x2E4), unnamed(0x2EB));
+    block.range(unnamed(0x2C4), unnamed(0x2D3));
+    block.range(unnamed(0x2BC), unnamed(0x2BF));
+    block.add({unnamed(0x0A2)});
+    block.range(uc::GE_USER_VGPR1, uc::GE_USER_VGPR3);
+    return delta(uc_soc(), {}, {{{uc::TA_CS_BC_BASE_ADDR_HI}, block.offsets()}});
+}
+
+Pairs int_v5_6_cx() {
+    return with_exceptions(
+        delta(int_v4_cx(), {}, {{{kStart}, {ctx::DB_DFSM_CONTROL}}}),
+        {{{ctx::DB_DFSM_CONTROL}, fld(f::DB_DFSM_CONTROL::PUNCHOUT_MODE, e::FORCE_OFF)}});
+}
+
+// ---- V7, V8, V9 -----------------------------------------------------------------------------------
+
+Pairs cx_v7() { return delta(cx_v5_6(), {{unnamed(0x0F1), 1}, {unnamed(0x0F2), 1}}, {}); }
+
+Pairs uc_v7() { return delta(uc_v11(), {{unnamed(0x263)}}, {}); }
+
+Pairs int_v7_cx() {
+    return with_exceptions(
+        delta(int_v5_6_cx(), {}, {{{ctx::DB_HTILE_SURFACE}, {ctx::PA_SC_NGG_MODE_CNTL}}}),
+        {{{ctx::PA_SC_NGG_MODE_CNTL}, fld(f::PA_SC_NGG_MODE_CNTL::MAX_DEALLOCS_IN_WAVE, 514)}});
+}
+
+Pairs cx_v8() {
+    // No isoline accumulation.
+    return with_exceptions(cx_v7(), {{{ctx::VGT_TESS_DISTRIBUTION},
+                                      fld(f::VGT_TESS_DISTRIBUTION::ACCUM_TRI, 16) |
+                                          fld(f::VGT_TESS_DISTRIBUTION::ACCUM_QUAD, 16) |
+                                          fld(f::VGT_TESS_DISTRIBUTION::DONUT_SPLIT, 8) |
+                                          fld(f::VGT_TESS_DISTRIBUTION::TRAP_SPLIT, 4)}});
+}
+
+Pairs cx_v9() {
+    return with_exceptions(
+        cx_v8(),
+        {{{ctx::CB_DCC_CONTROL}, fld(f::CB_DCC_CONTROL::OVERWRITE_COMBINER_WATERMARK, 4)}});
+}
+
+Pairs sh_v9() {
+    return delta(sh_v5_6(), {}, {{{sh::SPI_SHADER_PGM_RSRC3_GS}, {sh::SPI_SHADER_PGM_RSRC4_GS}}});
+}
+
+Pairs int_v9_sh() { return delta(int_v4_sh(), {{sh::SPI_SHADER_PGM_RSRC4_GS}}, {}); }
+
+// ---- V10_12: SDK version 10 (both APIs) and 12 (new API) ------------------------------------------
+
+Pairs cx_v10_12() {
+    return delta(cx_other(),
+                 {{ctx::DB_HTILE_SURFACE, 1},
+                  {unnamed(0x0DB), 1},
+                  {unnamed(0x0DB), 2},
+                  {unnamed(0x0DB), 3},
+                  {unnamed(0x0DB), 4},
+                  {ctx::DB_HTILE_SURFACE, 2}},
+                 {});
+}
+
+Pairs int_v10_12_cx() {
+    return with_exceptions(
+        delta(int_other_cx(), {}, {{{ctx::DB_DFSM_CONTROL}, {ctx::DB_HTILE_SURFACE}}}),
+        {{{ctx::DB_HTILE_SURFACE}, fld(f::DB_HTILE_SURFACE::PIPE_ALIGNED, 1)}});
+}
+
 // ---- the table set
 // --------------------------------------------------------------------------------
 
@@ -558,42 +853,177 @@ struct TableInfo {
     const char *name;
     std::uint64_t image_address; // where the original module stores it
 };
-// Image addresses: interoperability facts of the description (descriptor table pointers).
+// Image addresses: interoperability facts of the descriptions (descriptor table pointers).
 constexpr TableInfo kInfo[kTableCount] = {
-    {"CX-SOC", 0x34120},    {"SH-SOC", 0x35178},    {"UC-SOC", 0x35680},  {"INT-SOC-A", 0x34018},
-    {"INT-SOC-B", 0x34020}, {"CX-V0_3", 0x379A0},   {"SH-V0_3", 0x389F8}, {"UC-V0_3", 0x38F00},
-    {"CX-V11", 0x43DA8},    {"SH-V11", 0x44CD8},    {"UC-V11", 0x451E8},  {"INT-V11-1", 0x43BF0},
-    {"INT-V11-2", 0x43C38}, {"INT-V11-3", 0x43C98},
+    {"CX-SOC", 0x34120},
+    {"SH-SOC", 0x35178},
+    {"UC-SOC", 0x35680},
+    {"INT-SOC-A", 0x34018},
+    {"INT-SOC-B", 0x34020},
+    {"CX-V0_3", 0x379A0},
+    {"SH-V0_3", 0x389F8},
+    {"UC-V0_3", 0x38F00},
+    {"CX-V11", 0x43DA8},
+    {"SH-V11", 0x44CD8},
+    {"UC-V11", 0x451E8},
+    {"INT-V11-1", 0x43BF0},
+    {"INT-V11-2", 0x43C38},
+    {"INT-V11-3", 0x43C98},
+    // tables2.md, table summary
+    {"CX-OTHER", 0x35E38},
+    {"SH-OTHER", 0x36D78},
+    {"UC-OTHER", 0x37288},
+    {"INT-OTHER-CX", 0x35C90},
+    {"INT-OTHER-SH", 0x35CD0},
+    {"INT-OTHER-UC", 0x35D30},
+    {"FOURTH-OTHER", 0x35E08},
+    {"INT-V0_3-CX", 0x37898},
+    {"INT-V0_3-SH", 0x378A0},
+    {"FOURTH-V0_3", 0x37980},
+    {"CX-V4", 0x39660},
+    {"SH-V4", 0x3A5A0},
+    {"UC-V4", 0x3AA90},
+    {"INT-V4-CX", 0x39510},
+    {"INT-V4-SH", 0x39520},
+    {"FOURTH-V4", 0x39640},
+    {"CX-V5_6", 0x3B218},
+    {"SH-V5_6", 0x3C170},
+    {"UC-V5_6", 0x3C668},
+    {"INT-V5_6-CX", 0x3B0A0},
+    {"INT-V5_6-SH", 0x3B0B8},
+    {"FOURTH-V5_6", 0x3B1E8},
+    {"CX-V7", 0x3CF28},
+    {"SH-V7", 0x3DE70},
+    {"UC-V7", 0x3E368},
+    {"INT-V7-CX", 0x3CDA8},
+    {"INT-V7-SH", 0x3CDC8},
+    {"FOURTH-V7", 0x3CEF8},
+    {"CX-V8", 0x3EAA8},
+    {"SH-V8", 0x3F9F0},
+    {"UC-V8", 0x3FEE8},
+    {"INT-V8-CX", 0x3E920},
+    {"INT-V8-SH", 0x3E940},
+    {"FOURTH-V8", 0x3EA78},
+    {"CX-V9", 0x40628},
+    {"SH-V9", 0x41570},
+    {"UC-V9", 0x41A70},
+    {"INT-V9-CX", 0x404A0},
+    {"INT-V9-SH", 0x404C0},
+    {"INT-V9-UC", 0x40530},
+    {"FOURTH-V9", 0x405F8},
+    {"CX-V10_12", 0x42218},
+    {"SH-V10_12", 0x43128},
+    {"UC-V10_12", 0x43620},
+    {"INT-V10_12-CX", 0x42030},
+    {"INT-V10_12-SH", 0x42078},
+    {"INT-V10_12-UC", 0x420F0},
+    {"FOURTH-V10_12", 0x421E8},
+    {"FOURTH-SOC", 0x34100},
+    {"FOURTH-V11", 0x43D78},
 };
 
-std::vector<RegPair> build(TableId id) {
+Pairs build(TableId id) {
     switch (id) {
     case TableId::CxSoc:
-        return make(cx_soc_list(), cx_soc_values());
+        return cx_soc();
     case TableId::ShSoc:
     case TableId::ShV0_3: // identical to SH-SOC
-        return make(sh_soc_list(), sh_soc_values());
+        return sh_soc();
     case TableId::UcSoc:
     case TableId::UcV0_3: // identical to UC-SOC
-        return make(uc_soc_list(), uc_soc_values());
+    case TableId::UcV4:
+        return uc_soc();
     case TableId::IntSocA:
-        return make(int_soc_a_list(), int_soc_a_values());
+    case TableId::IntV0_3Cx: // identical to INT-SOC-A
+        return int_soc_a();
     case TableId::IntSocB:
-        return make(int_soc_b_list(), int_soc_b_values());
+    case TableId::IntV0_3Sh: // identical to INT-SOC-B
+        return int_soc_b();
     case TableId::CxV0_3: // same list as CX-SOC
         return make(cx_soc_list(), cx_v0_3_values());
     case TableId::CxV11:
-        return make(cx_v11_list(), cx_v11_values());
+        return cx_v11();
     case TableId::ShV11:
-        return make(sh_v11_list(), sh_v11_values());
+        return sh_v11();
     case TableId::UcV11:
-        return make(uc_v11_list(), uc_soc_values()); // same single non-zero entry as UC-SOC
+        return uc_v11();
     case TableId::IntV11_1:
-        return make(int_v11_1_list(), int_v11_1_values());
+        return int_v11_1();
     case TableId::IntV11_2:
-        return make(int_v11_2_list(), int_v11_2_values());
+        return int_v11_2();
     case TableId::IntV11_3:
-        return make(int_v11_3_list(), {}); // every entry zero
+    case TableId::IntOtherUc: // identical to INT-V11-3
+    case TableId::IntV9Uc:
+    case TableId::IntV10_12Uc:
+        return int_v11_3();
+    case TableId::CxOther:
+        return cx_other();
+    case TableId::ShOther:
+        return sh_other();
+    case TableId::UcOther:
+        return uc_other();
+    case TableId::IntOtherCx:
+        return int_other_cx();
+    case TableId::IntOtherSh:
+        return int_other_sh();
+    case TableId::FourthSoc: // the 4-entry shape
+    case TableId::FourthV0_3:
+    case TableId::FourthV4:
+        return fourth_4();
+    case TableId::FourthOther: // the 6-entry shape
+    case TableId::FourthV5_6:
+    case TableId::FourthV7:
+    case TableId::FourthV8:
+    case TableId::FourthV9:
+    case TableId::FourthV10_12:
+    case TableId::FourthV11:
+        return fourth_6();
+    case TableId::CxV4:
+        return cx_v4();
+    case TableId::ShV4:
+        return sh_v4();
+    case TableId::IntV4Cx:
+        return int_v4_cx();
+    case TableId::IntV4Sh:
+    case TableId::IntV5_6Sh: // identical to INT-V4-SH
+    case TableId::IntV7Sh:
+    case TableId::IntV8Sh:
+    case TableId::IntV10_12Sh:
+        return int_v4_sh();
+    case TableId::CxV5_6:
+        return cx_v5_6();
+    case TableId::ShV5_6:
+    case TableId::ShV7: // identical to SH-V5_6
+    case TableId::ShV8:
+    case TableId::ShV10_12:
+        return sh_v5_6();
+    case TableId::UcV5_6:
+        return uc_v5_6();
+    case TableId::IntV5_6Cx:
+        return int_v5_6_cx();
+    case TableId::CxV7:
+        return cx_v7();
+    case TableId::UcV7:
+    case TableId::UcV8: // identical to UC-V7
+    case TableId::UcV9:
+    case TableId::UcV10_12:
+        return uc_v7();
+    case TableId::IntV7Cx:
+    case TableId::IntV8Cx: // identical to INT-V7-CX
+    case TableId::IntV9Cx:
+        return int_v7_cx();
+    case TableId::CxV8:
+        return cx_v8();
+    case TableId::CxV9:
+        return cx_v9();
+    case TableId::ShV9:
+        return sh_v9();
+    case TableId::IntV9Sh:
+        return int_v9_sh();
+    case TableId::CxV10_12:
+        return cx_v10_12();
+    case TableId::IntV10_12Cx:
+        return int_v10_12_cx();
     case TableId::Count:
         break;
     }

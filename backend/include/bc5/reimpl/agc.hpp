@@ -615,6 +615,9 @@ void set_restore_pairs(RegPair a, RegPair b);
 // Resolved register descriptor by its address in the original image (e.g. 0x45c90); nullptr if
 // this re-creation does not model that descriptor.
 RegPair *descriptor(std::uint64_t vaddr);
+// The cached fourth-list pairs of init's name lookups: 0 = 0x26C, 1 = 0x094, 2..4 = 0x26E and the
+// two pairs after it (all ones when absent).
+RegPair fourth_cache(std::uint32_t index);
 } // namespace testing
 
 } // namespace bc5::reimpl::agc

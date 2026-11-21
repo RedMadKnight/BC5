@@ -166,6 +166,23 @@ std::int32_t resolve_descriptors(std::uint32_t sdk_version) {
     const RegPair *b = find_pair(sh, in->sh_count, 0x217);
     state().restore_a = a != nullptr ? *a : RegPair{0xFFFFFFFFu, 0xFFFFFFFFu};
     state().restore_b = b != nullptr ? *b : RegPair{0xFFFFFFFFu, 0xFFFFFFFFu};
+    // The three name lookups into the fourth list (tables2.md, FOURTH LISTS), by offset like the
+    // descriptors above: 0x26C (one pair), 0x094 (one pair; absent from the 4-entry lists) and
+    // 0x26E with the two pairs after it (0x278, 0x262).
+    constexpr RegPair kAbsent{0xFFFFFFFFu, 0xFFFFFFFFu};
+    const RegPair *fourth = in->fourth != nullptr ? *static_cast<RegPair *const *>(in->fourth)
+                                                  : nullptr;
+    const std::uint32_t fourth_n = fourth != nullptr ? in->fourth_count : 0u;
+    const RegPair *fa = find_pair(fourth, fourth_n, 0x26C);
+    const RegPair *fb = find_pair(fourth, fourth_n, 0x094);
+    const RegPair *fc = find_pair(fourth, fourth_n, 0x26E);
+    state().fourth_a = fa != nullptr ? *fa : kAbsent;
+    state().fourth_b = fb != nullptr ? *fb : kAbsent;
+    for (std::uint32_t k = 0; k < 3; ++k) {
+        // BC5: bounded by the list's count (the description gives three consecutive pairs)
+        const bool in_list = fc != nullptr && static_cast<std::uint32_t>(fc - fourth) + k < fourth_n;
+        state().fourth_c[k] = in_list ? fc[k] : kAbsent;
+    }
     return kOk;
 }
 

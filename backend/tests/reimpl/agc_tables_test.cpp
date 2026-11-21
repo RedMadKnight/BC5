@@ -123,7 +123,27 @@ TEST_CASE("own AGC tables: entry and non-zero counts", "[reimpl-tables]") {
         {TableId::ShV0_3, 161, 4},  {TableId::UcV0_3, 43, 1},  {TableId::CxV11, 486, 154},
         {TableId::ShV11, 162, 6},   {TableId::UcV11, 56, 1},   {TableId::IntV11_1, 9, 4},
         {TableId::IntV11_2, 12, 9}, {TableId::IntV11_3, 1, 0},
+        // tables2.md, table summary
+        {TableId::CxOther, 488, 151}, {TableId::ShOther, 162, 6}, {TableId::UcOther, 56, 1},
+        {TableId::IntOtherCx, 8, 3}, {TableId::IntOtherSh, 12, 7}, {TableId::IntOtherUc, 1, 0},
+        {TableId::FourthOther, 6, 0}, {TableId::IntV0_3Cx, 1, 1}, {TableId::IntV0_3Sh, 12, 5},
+        {TableId::FourthV0_3, 4, 0}, {TableId::CxV4, 488, 146}, {TableId::ShV4, 158, 3},
+        {TableId::UcV4, 43, 1}, {TableId::IntV4Cx, 2, 2}, {TableId::IntV4Sh, 15, 6},
+        {TableId::FourthV4, 4, 0}, {TableId::CxV5_6, 491, 147}, {TableId::ShV5_6, 159, 3},
+        {TableId::UcV5_6, 75, 1}, {TableId::IntV5_6Cx, 3, 3}, {TableId::IntV5_6Sh, 15, 6},
+        {TableId::FourthV5_6, 6, 0}, {TableId::CxV7, 489, 147}, {TableId::ShV7, 159, 3},
+        {TableId::UcV7, 55, 1}, {TableId::IntV7Cx, 4, 4}, {TableId::IntV7Sh, 15, 6},
+        {TableId::FourthV7, 6, 0}, {TableId::CxV8, 489, 147}, {TableId::ShV8, 159, 3},
+        {TableId::UcV8, 55, 1}, {TableId::IntV8Cx, 4, 4}, {TableId::IntV8Sh, 15, 6},
+        {TableId::FourthV8, 6, 0}, {TableId::CxV9, 489, 147}, {TableId::ShV9, 160, 3},
+        {TableId::UcV9, 55, 1}, {TableId::IntV9Cx, 4, 4}, {TableId::IntV9Sh, 14, 6},
+        {TableId::IntV9Uc, 1, 0}, {TableId::FourthV9, 6, 0}, {TableId::CxV10_12, 482, 148},
+        {TableId::ShV10_12, 159, 3}, {TableId::UcV10_12, 55, 1}, {TableId::IntV10_12Cx, 9, 4},
+        {TableId::IntV10_12Sh, 15, 6}, {TableId::IntV10_12Uc, 1, 0},
+        {TableId::FourthV10_12, 6, 0}, {TableId::FourthSoc, 4, 0}, {TableId::FourthV11, 6, 0},
     };
+    static_assert(tables::kTableCount == 14 + 50);
+    REQUIRE(std::size(expect) == static_cast<std::size_t>(tables::kTableCount));
     for (const Expect &e : expect) {
         INFO(tables::table_name(e.id));
         CHECK(tables::table(e.id).size() == e.entries);
@@ -145,6 +165,262 @@ TEST_CASE("own AGC tables: the counts the selector expects", "[reimpl-tables]") 
     REQUIRE(tables::table_at_image_address(0x38F00, id));
     CHECK(id == TableId::UcV0_3);
     CHECK_FALSE(tables::table_at_image_address(0x12345, id));
+    // tables2.md's addresses: every table has its own, and each maps back to its table.
+    const std::pair<u64, TableId> more[] = {
+        {0x35E38, TableId::CxOther},     {0x36D78, TableId::ShOther},
+        {0x37288, TableId::UcOther},     {0x35C90, TableId::IntOtherCx},
+        {0x35CD0, TableId::IntOtherSh},  {0x35D30, TableId::IntOtherUc},
+        {0x35E08, TableId::FourthOther}, {0x37898, TableId::IntV0_3Cx},
+        {0x37980, TableId::FourthV0_3},  {0x39660, TableId::CxV4},
+        {0x3C668, TableId::UcV5_6},      {0x3CDA8, TableId::IntV7Cx},
+        {0x40530, TableId::IntV9Uc},     {0x42218, TableId::CxV10_12},
+        {0x421E8, TableId::FourthV10_12}, {0x34100, TableId::FourthSoc},
+        {0x43D78, TableId::FourthV11},
+    };
+    for (const auto &[vaddr, want] : more) {
+        REQUIRE(tables::table_at_image_address(vaddr, id));
+        CHECK(id == want);
+    }
+    for (int i = 0; i < tables::kTableCount; ++i) {
+        const auto t = static_cast<TableId>(i);
+        REQUIRE(tables::table_image_address(t) != 0);
+        REQUIRE(tables::table_at_image_address(tables::table_image_address(t), id));
+        CHECK(id == t);
+    }
+}
+
+namespace {
+
+std::vector<u32> offsets_of(TableId id) {
+    std::vector<u32> o;
+    for (const agc::RegPair &p : tables::table(id)) {
+        o.push_back(p.offset);
+    }
+    return o;
+}
+
+std::size_t occurrences(TableId id, u32 offset) {
+    const auto t = tables::table(id);
+    return static_cast<std::size_t>(std::count_if(
+        t.begin(), t.end(), [offset](const agc::RegPair &p) { return p.offset == offset; }));
+}
+
+// The k-th entry (from 1) with this register; table size when absent.
+std::size_t index_of_k(TableId id, u32 offset, std::size_t k) {
+    const auto t = tables::table(id);
+    for (std::size_t i = 0; i < t.size(); ++i) {
+        if (t[i].offset == offset && --k == 0) {
+            return i;
+        }
+    }
+    return t.size();
+}
+
+bool same_pairs(TableId a, TableId b) {
+    const auto x = tables::table(a);
+    const auto y = tables::table(b);
+    return x.size() == y.size() && std::equal(x.begin(), x.end(), y.begin(), [](auto &p, auto &q) {
+               return p.offset == q.offset && p.value == q.value;
+           });
+}
+
+} // namespace
+
+TEST_CASE("own AGC tables (tables2.md): the second game's group OTHER", "[reimpl-tables]") {
+    namespace ctx = rdb::ctx;
+    namespace sh = rdb::sh;
+    // CX-OTHER = CX-V11 minus 0x018, 0x212, 0x1B7, plus a second DB_HTILE_SURFACE right after
+    // DB_EQAA and four extra 0x0DB entries.
+    const auto cx = tables::table(TableId::CxOther);
+    REQUIRE(cx.size() == 488);
+    CHECK(index_of(TableId::CxOther, 0x018) == cx.size());
+    CHECK(index_of(TableId::CxOther, 0x212) == cx.size());
+    CHECK(index_of(TableId::CxOther, 0x1B7) == cx.size());
+    CHECK(occurrences(TableId::CxV11, ctx::DB_HTILE_SURFACE) == 1);
+    CHECK(occurrences(TableId::CxOther, ctx::DB_HTILE_SURFACE) == 2);
+    CHECK(cx[index_of(TableId::CxOther, ctx::DB_EQAA) + 1].offset == ctx::DB_HTILE_SURFACE);
+    CHECK(occurrences(TableId::CxV11, 0x0DB) == 1);
+    CHECK(occurrences(TableId::CxOther, 0x0DB) == 5);
+    CHECK(cx[index_of(TableId::CxOther, ctx::DB_SHADER_CONTROL) + 1].offset == 0x0DBu);
+    CHECK(cx[index_of(TableId::CxOther, ctx::DB_STENCIL_CONTROL) + 1].offset == 0x0DBu);
+    CHECK(cx[index_of(TableId::CxOther, ctx::PA_SU_VTX_CNTL) + 1].offset == 0x0DBu);
+    // The third 0x0DB is the one right after PA_CL_OBJPRIM_ID_CNTL (where CX-V11 has 0x212) and
+    // holds bit 13; the others are zero.
+    const std::size_t third = index_of_k(TableId::CxOther, 0x0DB, 3);
+    REQUIRE(third < cx.size());
+    CHECK(cx[third - 1].offset == ctx::PA_CL_OBJPRIM_ID_CNTL);
+    CHECK(cx[third].value == 0x2000u);
+    for (std::size_t k : {1u, 2u, 4u, 5u}) {
+        CHECK(cx[index_of_k(TableId::CxOther, 0x0DB, k)].value == 0u);
+    }
+    // Both DB_HTILE_SURFACE entries: PIPE_ALIGNED (bit 18), the inserted one by the value rule.
+    CHECK(cx[index_of_k(TableId::CxOther, ctx::DB_HTILE_SURFACE, 1)].value == 0x40000u);
+    CHECK(cx[index_of_k(TableId::CxOther, ctx::DB_HTILE_SURFACE, 2)].value == 0x40000u);
+    // File values zero here (non-zero in CX-V11).
+    for (u32 o : {ctx::DB_EQAA, ctx::PA_SC_AA_CONFIG, ctx::VGT_DRAW_PAYLOAD_CNTL,
+                  ctx::DB_RENDER_OVERRIDE2}) {
+        CHECK(value_of(TableId::CxV11, o) != 0u);
+        CHECK(value_of(TableId::CxOther, o) == 0u);
+    }
+    // Everything else as CX-V11 (PA_STEREO_CNTL bit 26 stays).
+    CHECK(value_of(TableId::CxOther, ctx::PA_STEREO_CNTL) == 0x04000000u);
+    CHECK(value_of(TableId::CxOther, ctx::CB_DCC_CONTROL) ==
+          value_of(TableId::CxV11, ctx::CB_DCC_CONTROL));
+
+    // SH-OTHER: SH-V11's list; checksums the low 24 bits instead of the high 24; CU_EN all ones.
+    CHECK(offsets_of(TableId::ShOther) == offsets_of(TableId::ShV11));
+    for (u32 o : {sh::COMPUTE_SHADER_CHKSUM, sh::SPI_SHADER_PGM_CHKSUM_GS,
+                  sh::SPI_SHADER_PGM_CHKSUM_PS}) {
+        CHECK(value_of(TableId::ShV11, o) == 0xFFFFFF00u);
+        CHECK(value_of(TableId::ShOther, o) == 0x00FFFFFFu);
+    }
+    CHECK(value_of(TableId::ShOther, sh::SPI_SHADER_PGM_RSRC3_HS) == 0xFFFF0000u);
+    CHECK(value_of(TableId::ShOther, sh::SPI_SHADER_PGM_RSRC3_GS) == 0x0000FFFFu);
+    CHECK(value_of(TableId::ShOther, sh::SPI_SHADER_PGM_RSRC3_PS) == 0x0000FFFFu);
+
+    // UC-OTHER = UC-V11 without 0x263, a second 0x0A2 right after GE_USER_VGPR_EN.
+    const auto uc = tables::table(TableId::UcOther);
+    CHECK(index_of(TableId::UcV11, 0x263) < tables::table(TableId::UcV11).size());
+    CHECK(index_of(TableId::UcOther, 0x263) == uc.size());
+    CHECK(uc[index_of(TableId::UcOther, rdb::uc::GE_USER_VGPR_EN) + 1].offset == 0x0A2u);
+    CHECK(occurrences(TableId::UcOther, 0x0A2) == 2);
+    CHECK(value_of(TableId::UcOther, 0x383) == 0x40000040u);
+
+    // INT-OTHER-CX = INT-V11-1 without 0x019.
+    std::vector<u32> i1 = offsets_of(TableId::IntV11_1);
+    i1.erase(std::find(i1.begin(), i1.end(), 0x019u));
+    CHECK(offsets_of(TableId::IntOtherCx) == i1);
+    CHECK(get(value_of(TableId::IntOtherCx, ctx::PA_SC_NGG_MODE_CNTL), 0, 10) == 514u);
+    // INT-OTHER-SH: INT-V11-2's list; checksum low 24 bits, RSRC4_GS/HS zero, RSRC4_PS CUs 0-1.
+    CHECK(offsets_of(TableId::IntOtherSh) == offsets_of(TableId::IntV11_2));
+    CHECK(value_of(TableId::IntV11_2, 0x100) == 0xFFFFFF00u);
+    CHECK(value_of(TableId::IntOtherSh, 0x100) == 0x00FFFFFFu);
+    CHECK(value_of(TableId::IntOtherSh, 0x081) == 0u);
+    CHECK(value_of(TableId::IntOtherSh, 0x101) == 0u);
+    CHECK(value_of(TableId::IntOtherSh, 0x001) == 0x3u);
+    CHECK(value_of(TableId::IntOtherSh, sh::COMPUTE_DESTINATION_EN_SE2) == 0xFFFFFFFFu);
+    CHECK(same_pairs(TableId::IntOtherUc, TableId::IntV11_3));
+    // The 6-entry fourth list.
+    CHECK(offsets_of(TableId::FourthOther) ==
+          std::vector<u32>{0x26C, 0x094, 0x095, 0x26E, 0x278, 0x262});
+    CHECK(nonzero(tables::table(TableId::FourthOther)) == 0);
+}
+
+TEST_CASE("own AGC tables (tables2.md): the version groups of other SoCs", "[reimpl-tables]") {
+    namespace ctx = rdb::ctx;
+    namespace sh = rdb::sh;
+    // Identities the description states.
+    CHECK(same_pairs(TableId::IntV0_3Cx, TableId::IntSocA));
+    CHECK(same_pairs(TableId::IntV0_3Sh, TableId::IntSocB));
+    CHECK(same_pairs(TableId::UcV4, TableId::UcSoc));
+    CHECK(same_pairs(TableId::IntV5_6Sh, TableId::IntV4Sh));
+    CHECK(same_pairs(TableId::IntV7Sh, TableId::IntV4Sh));
+    CHECK(same_pairs(TableId::IntV8Sh, TableId::IntV4Sh));
+    CHECK(same_pairs(TableId::IntV10_12Sh, TableId::IntV4Sh));
+    CHECK(same_pairs(TableId::ShV7, TableId::ShV5_6));
+    CHECK(same_pairs(TableId::ShV8, TableId::ShV5_6));
+    CHECK(same_pairs(TableId::ShV10_12, TableId::ShV5_6));
+    CHECK(same_pairs(TableId::UcV8, TableId::UcV7));
+    CHECK(same_pairs(TableId::UcV9, TableId::UcV7));
+    CHECK(same_pairs(TableId::UcV10_12, TableId::UcV7));
+    CHECK(same_pairs(TableId::IntV8Cx, TableId::IntV7Cx));
+    CHECK(same_pairs(TableId::IntV9Cx, TableId::IntV7Cx));
+    CHECK(same_pairs(TableId::IntV9Uc, TableId::IntV11_3));
+    CHECK(same_pairs(TableId::IntV10_12Uc, TableId::IntV11_3));
+    for (TableId t : {TableId::FourthSoc, TableId::FourthV0_3, TableId::FourthV4}) {
+        CHECK(offsets_of(t) == std::vector<u32>{0x26C, 0x26E, 0x278, 0x262});
+        CHECK(nonzero(tables::table(t)) == 0);
+    }
+    for (TableId t : {TableId::FourthV5_6, TableId::FourthV7, TableId::FourthV8, TableId::FourthV9,
+                      TableId::FourthV10_12, TableId::FourthV11}) {
+        CHECK(same_pairs(t, TableId::FourthOther));
+    }
+
+    // CX-V4: no DB_HTILE_SURFACE and no 0x0DB; the clears and 0x0F1/0x0F2 back in CX-SOC's places.
+    const auto v4 = tables::table(TableId::CxV4);
+    CHECK(index_of(TableId::CxV4, ctx::DB_HTILE_SURFACE) == v4.size());
+    CHECK(index_of(TableId::CxV4, 0x0DB) == v4.size());
+    CHECK(occurrences(TableId::CxV4, ctx::CB_BLENDn_CONTROL[0]) == 1);
+    CHECK(v4[index_of(TableId::CxV4, ctx::DB_COUNT_CONTROL) + 1].offset == ctx::DB_DEPTH_CLEAR);
+    CHECK(v4[index_of(TableId::CxV4, ctx::DB_STENCILREFMASK_BF) + 1].offset ==
+          ctx::DB_STENCIL_CLEAR);
+    CHECK(v4[index_of(TableId::CxV4, 0x0F0) + 1].offset == 0x0F1u);
+    CHECK(v4[index_of(TableId::CxV4, 0x0F0) + 2].offset == 0x0F2u);
+    const std::size_t w5 = index_of(TableId::CxV4, ctx::PA_CL_UCP_n_W[5]);
+    CHECK(v4[w5 + 1].offset == ctx::PA_CL_PROG_NEAR_CLIP_Z);
+    CHECK(v4[w5 + 2].offset == 0x188u);
+    CHECK(v4[w5 + 8].offset == 0x18Eu);
+    CHECK(get(value_of(TableId::CxV4, ctx::CB_DCC_CONTROL), 2, 6) == 2u);
+    CHECK(get(value_of(TableId::CxV4, ctx::CB_DCC_CONTROL), 1, 1) == 0u);
+    CHECK(value_of(TableId::CxV4, ctx::PA_STEREO_CNTL) == 0u);
+    CHECK(get(value_of(TableId::CxV4, ctx::VGT_TESS_DISTRIBUTION), 0, 7) == 16u); // ISOLINE
+    const u32 b0v4 = value_of(TableId::CxV4, ctx::PA_SC_BINNER_CNTL_0);
+    CHECK(get(b0v4, 0, 1) == 0u);
+    CHECK(get(b0v4, 19, 26) == 63u);
+    // SH-V4 = SH-SOC without the three RSRC4; INT-V4-CX/-SH.
+    CHECK(index_of(TableId::ShV4, sh::SPI_SHADER_PGM_RSRC4_PS) == 158u);
+    CHECK(offsets_of(TableId::IntV4Cx) == std::vector<u32>{0x2AF, 0x1B5});
+    CHECK(value_of(TableId::IntV4Cx, 0x2AF) == 0x40000u);
+    const auto i4 = tables::table(TableId::IntV4Sh);
+    CHECK(i4[12].offset == 0x081u);
+    CHECK(i4[13].offset == 0x101u);
+    CHECK(i4[14].offset == 0x001u);
+    CHECK(i4[14].value == 0x3u);
+    CHECK(i4[12].value == 0u);
+
+    // CX-V5_6: 0x0DB after PA_SC_CLIPRECT_3_BR, the clears after DB_DEPTH_SIZE_XY, 0x0F1/0x0F2
+    // twice; PA_STEREO_CNTL bit 26, binning off.
+    const auto v56 = tables::table(TableId::CxV5_6);
+    CHECK(v56[index_of(TableId::CxV5_6, ctx::PA_SC_CLIPRECT_n_BR[3]) + 1].offset == 0x0DBu);
+    const std::size_t xy = index_of(TableId::CxV5_6, ctx::DB_DEPTH_SIZE_XY);
+    CHECK(v56[xy + 1].offset == ctx::DB_DEPTH_CLEAR);
+    CHECK(v56[xy + 2].offset == ctx::DB_STENCIL_CLEAR);
+    CHECK(v56[index_of(TableId::CxV5_6, 0x0EC) + 1].offset == 0x0F1u);
+    CHECK(occurrences(TableId::CxV5_6, 0x0F1) == 2);
+    CHECK(value_of(TableId::CxV5_6, ctx::PA_STEREO_CNTL) == 0x04000000u);
+    CHECK(get(value_of(TableId::CxV5_6, ctx::PA_SC_BINNER_CNTL_0), 0, 1) == 2u);
+    CHECK(tables::table(TableId::ShV5_6)[index_of(TableId::ShV5_6, 0x280) - 1].offset ==
+          sh::SPI_SHADER_PGM_HI_PS);
+    // UC-V5_6: 32 entries after TA_CS_BC_BASE_ADDR_HI, ending in GE_USER_VGPR3.
+    const auto u56 = tables::table(TableId::UcV5_6);
+    const std::size_t bc = index_of(TableId::UcV5_6, rdb::uc::TA_CS_BC_BASE_ADDR_HI);
+    CHECK(u56[bc + 1].offset == 0x2E4u);
+    CHECK(u56[bc + 9].offset == 0x2C4u);
+    CHECK(u56[bc + 25].offset == 0x2BCu);
+    CHECK(u56[bc + 29].offset == 0x0A2u);
+    CHECK(u56[bc + 32].offset == rdb::uc::GE_USER_VGPR3);
+    CHECK(occurrences(TableId::UcV5_6, 0x2E4) == 2);
+    CHECK(offsets_of(TableId::IntV5_6Cx) == std::vector<u32>{0x00E, 0x2AF, 0x1B5});
+    CHECK(get(value_of(TableId::IntV5_6Cx, 0x00E), 0, 1) == 2u); // FORCE_OFF
+
+    // CX-V7 = CX-V5_6 without the first 0x0F1/0x0F2; CX-V8 no isoline; CX-V9 watermark 4.
+    CHECK(occurrences(TableId::CxV7, 0x0F1) == 1);
+    CHECK(tables::table(TableId::CxV7)[index_of(TableId::CxV7, 0x0EC) + 1].offset == 0x0F1u);
+    CHECK(offsets_of(TableId::CxV8) == offsets_of(TableId::CxV7));
+    CHECK(get(value_of(TableId::CxV7, ctx::VGT_TESS_DISTRIBUTION), 0, 7) == 16u);
+    CHECK(get(value_of(TableId::CxV8, ctx::VGT_TESS_DISTRIBUTION), 0, 7) == 0u);
+    CHECK(get(value_of(TableId::CxV8, ctx::VGT_TESS_DISTRIBUTION), 8, 15) == 16u);
+    CHECK(offsets_of(TableId::CxV9) == offsets_of(TableId::CxV8));
+    CHECK(get(value_of(TableId::CxV9, ctx::CB_DCC_CONTROL), 2, 6) == 4u);
+    CHECK(get(value_of(TableId::CxV8, ctx::CB_DCC_CONTROL), 2, 6) == 2u);
+    CHECK(index_of(TableId::UcV7, 0x263) == 55u);
+    CHECK(offsets_of(TableId::IntV7Cx) == std::vector<u32>{0x00E, 0x2AF, 0x314, 0x1B5});
+    CHECK(get(value_of(TableId::IntV7Cx, 0x314), 0, 10) == 514u);
+    // SH-V9: RSRC4_GS (zero) after RSRC3_GS; INT-V9-SH without 0x081.
+    const auto s9 = tables::table(TableId::ShV9);
+    CHECK(s9[index_of(TableId::ShV9, sh::SPI_SHADER_PGM_RSRC3_GS) + 1].offset ==
+          sh::SPI_SHADER_PGM_RSRC4_GS);
+    CHECK(value_of(TableId::ShV9, sh::SPI_SHADER_PGM_RSRC4_GS) == 0u);
+    CHECK(index_of(TableId::IntV9Sh, 0x081) == 14u);
+
+    // CX-V10_12 = CX-OTHER without both DB_HTILE_SURFACE and the first four 0x0DB.
+    CHECK(index_of(TableId::CxV10_12, ctx::DB_HTILE_SURFACE) == 482u);
+    CHECK(occurrences(TableId::CxV10_12, 0x0DB) == 1);
+    CHECK(value_of(TableId::CxV10_12, 0x0DB) == 0u);
+    CHECK(value_of(TableId::CxV10_12, ctx::DB_EQAA) == 0u);
+    CHECK(offsets_of(TableId::IntV10_12Cx)[1] == 0x2AFu);
+    CHECK(offsets_of(TableId::IntV10_12Cx)[0] == 0x00Eu);
+    CHECK(value_of(TableId::IntV10_12Cx, 0x2AF) == 0x40000u);
 }
 
 TEST_CASE("own AGC tables: order", "[reimpl-tables]") {

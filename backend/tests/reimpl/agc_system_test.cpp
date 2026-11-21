@@ -3,6 +3,7 @@
 // synthetic module image (every table here is made up by the test, never real data), register
 // defaults, static area, semaphores, suspend, CU-mask lists and the export/import tables.
 #include "bc5/reimpl/agc.hpp"
+#include "bc5/reimpl/agc_tables.hpp"
 #include "bc5/reimpl/data_source.hpp"
 
 #include <catch2/catch_test_macros.hpp>
@@ -459,7 +460,7 @@ TEST_CASE("sceAgcInit reuses and allocates slots", "[agc][system]") {
     const int notify_before = g_rec.notify_calls;
     CHECK(agc::agcInitWithVersion(0xDEAD, 12) == 0); // existing slot
     CHECK(g_rec.notify_calls == notify_before);
-    CHECK(agc::sceAgcInit(11) == 0); // second slot (an empty defaults set)
+    CHECK(agc::sceAgcInit(11) == 0); // second slot (group OTHER: no transcoder)
     CHECK(tst::slot(1).version == 11);
     CHECK(g_rec.notify_calls == notify_before + 1);
     CHECK(agc::sceAgcInit(5) == agc::kErrNoFreeSlot);
@@ -640,11 +641,12 @@ TEST_CASE("register default selectors", "[agc][system]") {
     CHECK(in->sh_count == 12);
     CHECK(in->uc_count == 0);
     CHECK(agc::agcGetRegisterDefaultsInternalForVersion(3)->sh_count == 12);
-    // Another SoC: version groups this re-creation cannot locate give an empty set.
+    // Another SoC: every version has its group now (tables2.md); before, version 5 gave an
+    // empty set. The name table is not re-created (names resolve by offset).
     tst::set_soc_id(0);
     const agc::RegisterDefaults *e = agc::sceAgcGetRegisterDefaults2(5);
     REQUIRE(e != nullptr);
-    CHECK(e->cx_count == 0);
+    CHECK(e->cx_count == 491);
     CHECK(e->name_table == nullptr);
 }
 
@@ -781,4 +783,302 @@ TEST_CASE("branch patch helpers retarget then/else sides", "[agc][patch]") {
     CHECK(agc::agcBranchPatchSetElseTargetEx(nop.data(), 1, 0x1000, 1) == agc::kErrWrongPacket);
     CHECK(nop[8] == 0u);
     CHECK(nop[13] == 0u);
+}
+
+// ---- register-defaults selection by tables2.md ----------------------------------------------------
+
+namespace {
+
+namespace tables = bc5::reimpl::agc::tables;
+using tables::TableId;
+
+int g_transcoder = 0;
+int transcoder() { return g_transcoder; }
+u32 soc_other() { return 0x840E00u; } // neither 0x840F00 nor 0x840FC0
+
+// tables2.md "Decision table": the public descriptor per SDK version 0..16 (16 standing for every
+// larger value) and column: old API SoC 0x840F00, old API other SoC, new API SoC 0x840F00 T false,
+// new API SoC 0x840F00 T true, new API other SoC T false, new API other SoC T true. The internal
+// descriptor of each cell is the public one - 0x80.
+constexpr u64 kDecision[17][6] = {
+    {0x28080, 0x28280, 0x280C0, 0x280C0, 0x282C0, 0x282C0}, // 0
+    {0x28080, 0x28280, 0x280C0, 0x280C0, 0x282C0, 0x282C0}, // 1
+    {0x28080, 0x28280, 0x280C0, 0x280C0, 0x282C0, 0x282C0}, // 2
+    {0x28080, 0x28280, 0x280C0, 0x280C0, 0x282C0, 0x282C0}, // 3
+    {0x28080, 0x28380, 0x280C0, 0x280C0, 0x283C0, 0x283C0}, // 4
+    {0x28080, 0x28480, 0x280C0, 0x280C0, 0x284C0, 0x284C0}, // 5
+    {0x28080, 0x28480, 0x280C0, 0x280C0, 0x284C0, 0x284C0}, // 6
+    {0x28080, 0x28580, 0x280C0, 0x280C0, 0x285C0, 0x285C0}, // 7
+    {0x28080, 0x28680, 0x280C0, 0x280C0, 0x286C0, 0x286C0}, // 8
+    {0x28080, 0x28780, 0x280C0, 0x280C0, 0x287C0, 0x287C0}, // 9
+    {0x28080, 0x28880, 0x280C0, 0x280C0, 0x288C0, 0x288C0}, // 10
+    {0x28080, 0x28180, 0x281C0, 0x289C0, 0x281C0, 0x289C0}, // 11
+    {0x28080, 0x28180, 0x280C0, 0x280C0, 0x288C0, 0x288C0}, // 12
+    {0x28080, 0x28180, 0x281C0, 0x289C0, 0x281C0, 0x289C0}, // 13
+    {0x28080, 0x28180, 0x281C0, 0x289C0, 0x281C0, 0x289C0}, // 14
+    {0x28080, 0x28180, 0x281C0, 0x289C0, 0x281C0, 0x289C0}, // 15
+    {0x28080, 0x28180, 0x281C0, 0x289C0, 0x281C0, 0x289C0}, // 16 and above
+};
+
+// tables2.md "All 40 descriptors", by group base (descriptor address & ~0xFF): the counts of the
+// public (lists 0..3) and internal (lists 0..3) descriptor, and two tables to tell groups apart.
+struct GroupExpect {
+    u64 base;
+    const char *name;
+    u32 pub[4];
+    u32 internal[4];
+    TableId pub_cx;
+    TableId int_sh;
+};
+constexpr GroupExpect kGroupExpect[] = {
+    {0x28000, "SOC", {523, 161, 43, 0}, {1, 12, 0, 4}, TableId::CxSoc, TableId::IntSocB},
+    {0x28100, "OTHER", {488, 162, 56, 0}, {8, 12, 1, 6}, TableId::CxOther, TableId::IntOtherSh},
+    {0x28200, "V0_3", {523, 161, 43, 0}, {1, 12, 0, 4}, TableId::CxV0_3, TableId::IntV0_3Sh},
+    {0x28300, "V4", {488, 158, 43, 0}, {2, 15, 0, 4}, TableId::CxV4, TableId::IntV4Sh},
+    {0x28400, "V5_6", {491, 159, 75, 0}, {3, 15, 0, 6}, TableId::CxV5_6, TableId::IntV5_6Sh},
+    {0x28500, "V7", {489, 159, 55, 0}, {4, 15, 0, 6}, TableId::CxV7, TableId::IntV7Sh},
+    {0x28600, "V8", {489, 159, 55, 0}, {4, 15, 0, 6}, TableId::CxV8, TableId::IntV8Sh},
+    {0x28700, "V9", {489, 160, 55, 0}, {4, 14, 1, 6}, TableId::CxV9, TableId::IntV9Sh},
+    {0x28800, "V10_12", {482, 159, 55, 0}, {9, 15, 1, 6}, TableId::CxV10_12, TableId::IntV10_12Sh},
+    {0x28900, "V11", {486, 162, 56, 0}, {9, 12, 1, 6}, TableId::CxV11, TableId::IntV11_2},
+};
+
+const GroupExpect &group_of(u64 descriptor) {
+    for (const GroupExpect &g : kGroupExpect) {
+        if (g.base == (descriptor & ~0xFFull)) {
+            return g;
+        }
+    }
+    FAIL("no group for descriptor");
+    return kGroupExpect[0];
+}
+
+const agc::RegPair *list_of(const agc::RegisterDefaults *d, int l) {
+    agc::RegPair *const *cells[4] = {d->cx, d->sh, d->uc,
+                                     static_cast<agc::RegPair *const *>(d->fourth)};
+    return cells[l] != nullptr ? *cells[l] : nullptr;
+}
+
+u32 count_of(const agc::RegisterDefaults *d, int l) {
+    const u32 c[4] = {d->cx_count, d->sh_count, d->uc_count, d->fourth_count};
+    return c[l];
+}
+
+void check_descriptor(const agc::RegisterDefaults *d, const GroupExpect &g, bool internal) {
+    REQUIRE(d != nullptr);
+    INFO("group " << g.name << (internal ? " internal" : " public"));
+    const u32 *want = internal ? g.internal : g.pub;
+    for (int l = 0; l < 4; ++l) {
+        INFO("list " << l);
+        CHECK(count_of(d, l) == want[l]);
+        CHECK((list_of(d, l) != nullptr) == (want[l] != 0));
+    }
+    if (!internal) {
+        // Context values as stored, except DB_EQAA (0x201), which the selector patches.
+        const auto t = tables::table(g.pub_cx);
+        const agc::RegPair *cx = list_of(d, 0);
+        REQUIRE(cx != nullptr);
+        REQUIRE(t.size() == d->cx_count);
+        bool same = true;
+        for (std::size_t i = 0; i < t.size(); ++i) {
+            same = same && cx[i].offset == t[i].offset &&
+                   (t[i].offset == 0x201 || cx[i].value == t[i].value);
+        }
+        CHECK(same);
+    } else {
+        const auto t = tables::table(g.int_sh);
+        const agc::RegPair *sh = list_of(d, 1);
+        REQUIRE(sh != nullptr);
+        REQUIRE(t.size() == d->sh_count);
+        bool same = true;
+        for (std::size_t i = 0; i < t.size(); ++i) {
+            same = same && sh[i].offset == t[i].offset;
+        }
+        CHECK(same);
+    }
+}
+
+// Own tables only (no module file), no imports but the transcoder check.
+struct OwnEnv {
+    OwnEnv() {
+        tst::reset();
+        tst::clear_imports();
+        bc5::reimpl::set_firmware_data(nullptr);
+        bc5::reimpl::set_data_switches({});
+        g_transcoder = 0;
+        REQUIRE(tst::set_import("wDAAPuG6uN4", reinterpret_cast<void *>(&transcoder)));
+    }
+    ~OwnEnv() {
+        bc5::reimpl::reset_data_switches();
+        tst::clear_imports();
+        tst::reset();
+    }
+    OwnEnv(const OwnEnv &) = delete;
+    OwnEnv &operator=(const OwnEnv &) = delete;
+};
+
+} // namespace
+
+TEST_CASE("register default selectors: every SDK version, API, SoC and transcoder flag",
+          "[agc][system]") {
+    OwnEnv env;
+    const u32 socs[3] = {0x840F00u, 0x840E00u, 0x840FC0u}; // 0x840FC0 selects as "other"
+    for (u32 soc : socs) {
+        tst::set_soc_id(soc);
+        const bool soc_a = soc == 0x840F00u;
+        for (int t = 0; t <= 1; ++t) {
+            g_transcoder = t;
+            for (u32 v = 0; v <= 17; ++v) {
+                const u32 row = v > 16 ? 16 : v;
+                INFO("soc 0x" << std::hex << soc << std::dec << " T " << t << " version " << v);
+                const u64 old_pub = kDecision[row][soc_a ? 0 : 1];
+                const u64 new_pub = kDecision[row][(soc_a ? 2 : 4) + t];
+                const GroupExpect &og = group_of(old_pub);
+                const GroupExpect &ng = group_of(new_pub);
+                CHECK(group_of(old_pub - 0x80).base == og.base);
+                const u32 ver = v == 17 ? 0xFFFFFFFFu : v; // "every larger u32"
+                check_descriptor(agc::agcGetRegisterDefaultsForVersion(ver), og, false);
+                check_descriptor(agc::agcGetRegisterDefaultsInternalForVersion(ver), og, true);
+                check_descriptor(agc::sceAgcGetRegisterDefaults2(ver), ng, false);
+                check_descriptor(agc::sceAgcGetRegisterDefaults2Internal(ver), ng, true);
+            }
+        }
+    }
+    // The old- and new-API descriptor of a pair are distinct objects over the same tables.
+    tst::set_soc_id(0x840E00u);
+    g_transcoder = 0;
+    const agc::RegisterDefaults *o = agc::agcGetRegisterDefaultsForVersion(13);
+    const agc::RegisterDefaults *n = agc::sceAgcGetRegisterDefaults2(13);
+    CHECK(o != n);
+    CHECK(*o->cx == *n->cx);
+    CHECK(*o->uc == *n->uc);
+    CHECK(agc::agcGetRegisterDefaultsInternalForVersion(13)->fourth_count == 6);
+    CHECK(*static_cast<agc::RegPair *const *>(
+              agc::agcGetRegisterDefaultsInternalForVersion(13)->fourth) ==
+          *static_cast<agc::RegPair *const *>(agc::sceAgcGetRegisterDefaults2Internal(13)->fourth));
+}
+
+TEST_CASE("register default selectors: the second game (version 13, other SoC, no transcoder)",
+          "[agc][system]") {
+    OwnEnv env;
+    tst::set_soc_id(soc_other());
+    const agc::RegisterDefaults *d = agc::sceAgcGetRegisterDefaults2(13);
+    REQUIRE(d != nullptr);
+    CHECK(d->cx_count == 488);
+    CHECK(d->sh_count == 162);
+    CHECK(d->uc_count == 56);
+    CHECK(d->fourth_count == 0);
+    CHECK(list_of(d, 3) == nullptr);
+    const agc::RegisterDefaults *in = agc::sceAgcGetRegisterDefaults2Internal(13);
+    REQUIRE(in != nullptr);
+    CHECK(in->cx_count == 8);
+    CHECK(in->sh_count == 12);
+    CHECK(in->uc_count == 1);
+    CHECK(in->fourth_count == 6);
+    const agc::RegPair *fourth = list_of(in, 3);
+    REQUIRE(fourth != nullptr);
+    const u32 fourth_offsets[6] = {0x26C, 0x094, 0x095, 0x26E, 0x278, 0x262};
+    for (u32 i = 0; i < 6; ++i) {
+        CHECK(fourth[i].offset == fourth_offsets[i]);
+        CHECK(fourth[i].value == 0u);
+    }
+    // The old API on such a SoC: the same tables.
+    const agc::RegisterDefaults *od = agc::agcGetRegisterDefaultsForVersion(13);
+    CHECK(od->cx_count == 488);
+    CHECK(*od->cx == *d->cx);
+    CHECK(agc::agcGetRegisterDefaultsInternalForVersion(13)->sh_count == 12);
+
+    // PatchDefaults with v = 13: flag 1 sets DB_EQAA HIGH_QUALITY_INTERSECTIONS (file value 0);
+    // variant 0, row 3 into the CU columns of SH-OTHER and INT-OTHER-SH.
+    const agc::RegPair *cx = list_of(d, 0);
+    for (u32 i = 0; i < d->cx_count; ++i) {
+        if (cx[i].offset == 0x201) {
+            CHECK(cx[i].value == 0x10000u);
+        }
+    }
+    const auto rows = tables::cu_rows();
+    auto row3 = [&rows](u32 offset) {
+        for (u32 c = 0; c < 10; ++c) {
+            if (rows[30 + c].offset == offset) {
+                return rows[30 + c].value;
+            }
+        }
+        FAIL("not a CU column");
+        return 0u;
+    };
+    std::size_t patched = 0;
+    for (const agc::RegisterDefaults *db : {d, in}) {
+        const agc::RegPair *sh = list_of(db, 1);
+        for (u32 i = 0; i < db->sh_count; ++i) {
+            for (u32 col : {0x216u, 0x217u, 0x219u, 0x21Au, 0x107u, 0x087u, 0x007u, 0x101u, 0x081u,
+                            0x001u}) {
+                if (sh[i].offset == col) {
+                    CHECK(sh[i].value == row3(col));
+                    ++patched;
+                }
+            }
+        }
+    }
+    CHECK(patched == 3 + 7); // RSRC3_HS/GS/PS; SE0..3 and RSRC4_HS/GS/PS
+}
+
+namespace {
+// The second game's start-up: other SoC, no transcoder, init with version 13.
+void second_game_init(bool via_23lru) {
+    Env env;
+    install("0vTn5IDMU9A", &soc_other);
+    REQUIRE(agc::module_load() == 0);
+    const std::int32_t rc = via_23lru ? agc::agcInitWithVersion(0, 13) : agc::sceAgcInit(13);
+    REQUIRE(rc == 0);
+    const auto s = tst::slot(0);
+    CHECK(s.version == 13);
+    // Context: the unique offsets of CX-OTHER and INT-OTHER-CX.
+    std::set<u32> cx_offsets;
+    for (TableId t : {TableId::CxOther, TableId::IntOtherCx}) {
+        for (const agc::RegPair &p : tables::table(t)) {
+            cx_offsets.insert(p.offset);
+        }
+    }
+    CHECK(s.cx_count == cx_offsets.size());
+    CHECK(s.sh_count == 162 + 12);
+    CHECK(s.uc_count == 56 + 1);
+    // Suspend ready: the resume DCB went out and the no-argument selectors answer.
+    CHECK(g_rec.suspend_calls == 1);
+    CHECK(agc::sceAgcSuspendPoint() != agc::kErrNotInitialised);
+    CHECK(agc::sceAgcGetRegisterDefaults() == agc::agcGetRegisterDefaultsForVersion(13));
+    CHECK(agc::sceAgcGetRegisterDefaults()->cx_count == 488);
+    CHECK(agc::sceAgcGetRegisterDefaultsInternal()->fourth_count == 6);
+    // Register descriptors resolved from the OTHER lists.
+    CHECK(tst::descriptor(0x45c90)->offset == 0x20cu);
+    CHECK(tst::descriptor(0x45f28)->offset == 0x100u);
+    CHECK(tst::descriptor(0x45f28)->value == 0x00FFFFFFu);
+    CHECK(tst::descriptor(0x45f08)->offset == 0x260u); // INT-OTHER-UC: GE_PC_ALLOC
+    // The three name lookups into the fourth list: 0x26C, 0x094, 0x26E + the two after it.
+    const u32 want[5] = {0x26C, 0x094, 0x26E, 0x278, 0x262};
+    for (u32 i = 0; i < 5; ++i) {
+        CHECK(tst::fourth_cache(i).offset == want[i]);
+        CHECK(tst::fourth_cache(i).value == 0u);
+    }
+}
+} // namespace
+
+TEST_CASE("sceAgcInit(13) for the second game succeeds and leaves suspend ready", "[agc][system]") {
+    second_game_init(false);
+}
+
+TEST_CASE("23LRUSvYu1M init with version 13 for the second game succeeds", "[agc][system]") {
+    second_game_init(true);
+}
+
+TEST_CASE("init's fourth-list lookups in a 4-entry group", "[agc][system]") {
+    Env env;
+    install("0vTn5IDMU9A", &soc_other);
+    REQUIRE(agc::module_load() == 0);
+    REQUIRE(agc::sceAgcInit(4) == 0); // group V4: FOURTH-V4 has no 0x094
+    CHECK(tst::fourth_cache(0).offset == 0x26Cu);
+    CHECK(tst::fourth_cache(1).offset == 0xFFFFFFFFu);
+    CHECK(tst::fourth_cache(1).value == 0xFFFFFFFFu);
+    CHECK(tst::fourth_cache(2).offset == 0x26Eu);
+    CHECK(tst::fourth_cache(3).offset == 0x278u);
+    CHECK(tst::fourth_cache(4).offset == 0x262u);
 }

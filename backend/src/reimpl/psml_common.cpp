@@ -943,6 +943,26 @@ namespace {
 template <typename F> void *fn(F f) { return reinterpret_cast<void *>(f); }
 
 // Names are empty (the originals are unnamed); the proposed name is in the comment.
+// Diagnostic (BC5): the first call of each mfsr2 export logs its return code, so a run shows the
+// title's sequence and our answers (off-Pro the module refuses; see psml2's description).
+const char *const kMfsr2Names[9] = {"Initialize", "GetSharedResourcesInitRequirement",
+                                    "CreateSharedResources", "ReleaseSharedResources",
+                                    "GetContextInitRequirement", "CreateContext", "ReleaseContext",
+                                    "GetDispatchCommandSize", "Dispatch"};
+template <int I, auto F> struct Mfsr2Logged;
+template <int I, typename R, typename... A, R (*F)(A...)> struct Mfsr2Logged<I, F> {
+    static R call(A... args) {
+        const R r = F(args...);
+        static bool logged = false;
+        if (!logged) {
+            logged = true;
+            log(detail::kModuleName, "first sceMfsr2%s -> 0x%08x", kMfsr2Names[I],
+                static_cast<unsigned>(static_cast<std::int32_t>(r)));
+        }
+        return r;
+    }
+};
+
 const ExportEntry kExports[] = {
     {"3WVD91e12ZQ", "libScePsml", "", fn(&psmlInitialize), false},
     {"+2KpvixvL6E", "libScePsml", "", fn(&mfsrGetSharedResourcesInitRequirement), false},
@@ -969,15 +989,15 @@ const ExportEntry kExports[] = {
     {"GJY0MvuTcs8", "libScePsml", "", fn(&mfsrRequestCapture), false},
     {"LXq+6mIxpCw", "libScePsml", "", fn(&mfsrContextNoOpA), false},
     {"FSGaTQze0UY", "libScePsml", "", fn(&mfsrContextNoOpB), false},
-    {"o+NM86gEwFE", "libScePsml_mfsr2", "", fn(&sceMfsr2Initialize), false},
-    {"1ic5q-kdOsc", "libScePsml_mfsr2", "", fn(&sceMfsr2GetSharedResourcesInitRequirement), false},
-    {"gMduXCLYrNg", "libScePsml_mfsr2", "", fn(&sceMfsr2CreateSharedResources), false},
-    {"0GAw7SmkwII", "libScePsml_mfsr2", "", fn(&sceMfsr2ReleaseSharedResources), false},
-    {"5z2gBlqxJ+0", "libScePsml_mfsr2", "", fn(&sceMfsr2GetContextInitRequirement), false},
-    {"m9JLPc3wOQw", "libScePsml_mfsr2", "", fn(&sceMfsr2CreateContext), false},
-    {"Kyy1baXgaVU", "libScePsml_mfsr2", "", fn(&sceMfsr2ReleaseContext), false},
-    {"ZLL31lzzxr4", "libScePsml_mfsr2", "", fn(&sceMfsr2GetDispatchCommandSize), false},
-    {"lrJwpLjKXRc", "libScePsml_mfsr2", "", fn(&sceMfsr2Dispatch), false},
+    {"o+NM86gEwFE", "libScePsml_mfsr2", "", fn(&Mfsr2Logged<0, &sceMfsr2Initialize>::call), false},
+    {"1ic5q-kdOsc", "libScePsml_mfsr2", "", fn(&Mfsr2Logged<1, &sceMfsr2GetSharedResourcesInitRequirement>::call), false},
+    {"gMduXCLYrNg", "libScePsml_mfsr2", "", fn(&Mfsr2Logged<2, &sceMfsr2CreateSharedResources>::call), false},
+    {"0GAw7SmkwII", "libScePsml_mfsr2", "", fn(&Mfsr2Logged<3, &sceMfsr2ReleaseSharedResources>::call), false},
+    {"5z2gBlqxJ+0", "libScePsml_mfsr2", "", fn(&Mfsr2Logged<4, &sceMfsr2GetContextInitRequirement>::call), false},
+    {"m9JLPc3wOQw", "libScePsml_mfsr2", "", fn(&Mfsr2Logged<5, &sceMfsr2CreateContext>::call), false},
+    {"Kyy1baXgaVU", "libScePsml_mfsr2", "", fn(&Mfsr2Logged<6, &sceMfsr2ReleaseContext>::call), false},
+    {"ZLL31lzzxr4", "libScePsml_mfsr2", "", fn(&Mfsr2Logged<7, &sceMfsr2GetDispatchCommandSize>::call), false},
+    {"lrJwpLjKXRc", "libScePsml_mfsr2", "", fn(&Mfsr2Logged<8, &sceMfsr2Dispatch>::call), false},
     {"6T4lBsFKo7U", "libScePsml_nosubmission", "", fn(&scePsmlNoSubmissionStub0), false},
     {"tDFGCPGK0Fo", "libScePsml_nosubmission", "", fn(&scePsmlNoSubmissionStub1), false},
     {"fwcwm67Nopg", "libScePsml_nosubmission", "", fn(&scePsmlNoSubmissionStub2), false},

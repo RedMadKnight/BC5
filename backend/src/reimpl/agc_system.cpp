@@ -31,6 +31,11 @@ void reset_state() {
     g_state.expected_static_area = kStaticAreaAddress;
     g_state.restore_a = RegPair{0xFFFFFFFFu, 0xFFFFFFFFu};
     g_state.restore_b = RegPair{0xFFFFFFFFu, 0xFFFFFFFFu};
+    g_state.fourth_a = RegPair{0xFFFFFFFFu, 0xFFFFFFFFu};
+    g_state.fourth_b = RegPair{0xFFFFFFFFu, 0xFFFFFFFFu};
+    for (RegPair &p : g_state.fourth_c) {
+        p = RegPair{0xFFFFFFFFu, 0xFFFFFFFFu};
+    }
     g_state.uc_special_offset = 0x10000000u;
 }
 
@@ -201,57 +206,106 @@ RegPair *load_table(std::uint64_t vaddr, std::uint32_t count) {
     return t.pairs.data();
 }
 
-// The uconfig count of a descriptor whose set gives none: the module file's descriptor word with
-// BC5_REIMPL_FW_DATA, else the length of our own table.
-std::uint32_t uc_count(std::uint64_t desc_vaddr, std::uint64_t uc_vaddr) {
-    tables::TableId id{};
-    const std::uint32_t own = tables::table_at_image_address(uc_vaddr, id)
-                                  ? static_cast<std::uint32_t>(tables::table(id).size())
-                                  : 0u;
-    if (data_switches().fw_compare && own != 0) {
-        const std::uint32_t ours[1] = {own};
-        compare_table_with_firmware(kModule, "uc count of descriptor", desc_vaddr + 0x28, ours, 1,
-                                    1);
+// Diagnostic only (BC5_REIMPL_FW_COMPARE): the four list counts of a descriptor (+0x20 .. +0x2C)
+// against the module file's.
+void compare_counts(std::uint64_t desc_vaddr, const std::uint32_t (&counts)[4]) {
+    if (data_switches().fw_compare) {
+        compare_table_with_firmware(kModule, "descriptor counts", desc_vaddr + 0x20, counts, 4, 1);
     }
-    if (FirmwareData *fw = firmware_data_for_use(); fw != nullptr) {
-        if (const std::uint8_t *d = fw->get(kModule, desc_vaddr + 0x28, 4); d != nullptr) {
-            std::uint32_t n = 0;
-            std::memcpy(&n, d, 4);
-            return n;
-        }
-    }
-    return own;
 }
 
-// Location of one defaults set: descriptor address in the original image (counts at +0x20) and
-// the three pair tables. A zero table address means "not given by the description".
-struct SetDef {
-    std::uint64_t desc_vaddr;
-    std::uint64_t cx, sh, uc;
-    std::uint32_t cx_n, sh_n, uc_n; // counts given by the description (0 = read the descriptor)
+// The 10 descriptor groups of the module, in the order of their descriptors: group i has its base
+// at 0x28000 + 0x100 * i; base + 0x00 = old-API internal, + 0x40 = new-API internal, + 0x80 =
+// old-API public, + 0xC0 = new-API public (tables2.md, "Descriptor layout"). The old- and new-API
+// descriptor of a pair share every list (they differ only in the name table).
+enum class Group { Soc, Other, V0_3, V4, V5_6, V7, V8, V9, V10_12, V11 };
+constexpr std::uint64_t kDescriptorBase = 0x28000;
+
+// The lists of one descriptor kind: table per list (TableId::Count = no list) and the counts at
+// +0x20 .. +0x2C, both from tables2.md "All 40 descriptors".
+struct Lists {
+    tables::TableId id[4];
+    std::uint32_t count[4];
+};
+struct GroupDef {
+    Lists pub; // list 3 is null in every public descriptor
+    Lists internal;
 };
 
-enum class Group { Soc, V0_3, V4, V5_6, V7, V8, V9, V10, V11, Other };
+using Tid = tables::TableId;
+constexpr Tid kNone = Tid::Count;
+constexpr GroupDef kGroups[] = {
+    // SOC
+    {{{Tid::CxSoc, Tid::ShSoc, Tid::UcSoc, kNone}, {523, 161, 43, 0}},
+     {{Tid::IntSocA, Tid::IntSocB, kNone, Tid::FourthSoc}, {1, 12, 0, 4}}},
+    // OTHER
+    {{{Tid::CxOther, Tid::ShOther, Tid::UcOther, kNone}, {488, 162, 56, 0}},
+     {{Tid::IntOtherCx, Tid::IntOtherSh, Tid::IntOtherUc, Tid::FourthOther}, {8, 12, 1, 6}}},
+    // V0_3
+    {{{Tid::CxV0_3, Tid::ShV0_3, Tid::UcV0_3, kNone}, {523, 161, 43, 0}},
+     {{Tid::IntV0_3Cx, Tid::IntV0_3Sh, kNone, Tid::FourthV0_3}, {1, 12, 0, 4}}},
+    // V4
+    {{{Tid::CxV4, Tid::ShV4, Tid::UcV4, kNone}, {488, 158, 43, 0}},
+     {{Tid::IntV4Cx, Tid::IntV4Sh, kNone, Tid::FourthV4}, {2, 15, 0, 4}}},
+    // V5_6
+    {{{Tid::CxV5_6, Tid::ShV5_6, Tid::UcV5_6, kNone}, {491, 159, 75, 0}},
+     {{Tid::IntV5_6Cx, Tid::IntV5_6Sh, kNone, Tid::FourthV5_6}, {3, 15, 0, 6}}},
+    // V7
+    {{{Tid::CxV7, Tid::ShV7, Tid::UcV7, kNone}, {489, 159, 55, 0}},
+     {{Tid::IntV7Cx, Tid::IntV7Sh, kNone, Tid::FourthV7}, {4, 15, 0, 6}}},
+    // V8
+    {{{Tid::CxV8, Tid::ShV8, Tid::UcV8, kNone}, {489, 159, 55, 0}},
+     {{Tid::IntV8Cx, Tid::IntV8Sh, kNone, Tid::FourthV8}, {4, 15, 0, 6}}},
+    // V9
+    {{{Tid::CxV9, Tid::ShV9, Tid::UcV9, kNone}, {489, 160, 55, 0}},
+     {{Tid::IntV9Cx, Tid::IntV9Sh, Tid::IntV9Uc, Tid::FourthV9}, {4, 14, 1, 6}}},
+    // V10_12
+    {{{Tid::CxV10_12, Tid::ShV10_12, Tid::UcV10_12, kNone}, {482, 159, 55, 0}},
+     {{Tid::IntV10_12Cx, Tid::IntV10_12Sh, Tid::IntV10_12Uc, Tid::FourthV10_12}, {9, 15, 1, 6}}},
+    // V11
+    {{{Tid::CxV11, Tid::ShV11, Tid::UcV11, kNone}, {486, 162, 56, 0}},
+     {{Tid::IntV11_1, Tid::IntV11_2, Tid::IntV11_3, Tid::FourthV11}, {9, 12, 1, 6}}},
+};
+static_assert(sizeof(kGroups) / sizeof(kGroups[0]) == static_cast<std::size_t>(Group::V11) + 1);
 
-// Known sets (from the description); every other combination yields an empty descriptor.
-bool set_for(bool old_api, bool internal, Group g, SetDef &out) {
-    if (g == Group::Soc) {
-        out = internal ? SetDef{old_api ? 0x28000ull : 0x28040ull, 0x34018, 0x34020, 0, 1, 12, 0}
-                       : SetDef{old_api ? 0x28080ull : 0x280C0ull, 0x34120, 0x35178, 0x35680, 0x20B,
-                                0xA1, 0x2B};
-        return true;
+// The descriptor address of the original image (interop fact, used for the FW_COMPARE counts).
+std::uint64_t descriptor_vaddr(Group g, bool old_api, bool internal) {
+    return kDescriptorBase + 0x100u * static_cast<std::uint64_t>(g) + (internal ? 0u : 0x80u) +
+           (old_api ? 0u : 0x40u);
+}
+
+// The group a selector picks (tables2.md, "The four selectors" and the decision table).
+Group select_group(bool old_api, std::uint32_t version) {
+    // The new API sends 11 and 13 and above by the transcoder flag alone, for every SoC.
+    if (!old_api && (version == 11 || version >= 13)) {
+        return transcode_query() != 0 ? Group::V11 : Group::Other;
     }
-    if (!old_api && !internal && g == Group::V0_3) {
-        // TODO(verify): counts from the table spacing (0x20B / 0xA1), uconfig from the descriptor.
-        out = SetDef{0x282C0, 0x379A0, 0x389F8, 0x38F00, 0x20B, 0xA1, 0};
-        return true;
+    if (soc_class() == kSocA) {
+        return Group::Soc;
     }
-    if (!old_api && g == Group::V11) {
-        out = internal ? SetDef{0x28940, 0x43BF0, 0x43C38, 0x43C98, 9, 12, 1}
-                       : SetDef{0x289C0, 0x43DA8, 0x44CD8, 0x451E8, 0x1E6, 0xA2, 0x38};
-        return true;
+    if (version <= 3) {
+        return Group::V0_3;
     }
-    return false;
+    switch (version) {
+    case 4:
+        return Group::V4;
+    case 5:
+    case 6:
+        return Group::V5_6;
+    case 7:
+        return Group::V7;
+    case 8:
+        return Group::V8;
+    case 9:
+        return Group::V9;
+    case 10:
+        return Group::V10_12;
+    case 12:
+        // New API: V10_12; the old API sends 12 to OTHER like every version above 10.
+        return old_api ? Group::Other : Group::V10_12;
+    default:
+        return Group::Other; // old API, 11 and above
+    }
 }
 
 struct Holder {
@@ -324,77 +378,32 @@ void patch_defaults(const Selector &sel, RegPair *cx, std::uint32_t cx_n, RegPai
 const RegisterDefaults *select_defaults(bool old_api, bool internal, std::uint32_t version) {
     Selector sel{version, selector_variant(), true};
     const std::uint32_t wa_bit = (state().workaround_mask >> 2) & 1u;
-    if (old_api ? version <= 10 : version < 11) {
+    if (version <= 10) {
         sel.flag = wa_bit != 0;
     }
-    Group g = Group::Other;
-    const bool soc_a = soc_class() == kSocA;
-    if (old_api) {
-        if (soc_a) {
-            g = Group::Soc;
-        } else if (version <= 3) {
-            g = Group::V0_3;
-        } else if (version == 4) {
-            g = Group::V4;
-        } else if (version <= 6) {
-            g = Group::V5_6;
-        } else if (version == 7) {
-            g = Group::V7;
-        } else if (version == 8) {
-            g = Group::V8;
-        } else if (version == 9) {
-            g = Group::V9;
-        } else if (version == 10) {
-            g = Group::V10;
-        }
-    } else if (version <= 10 || version == 12) {
-        if (soc_a) {
-            g = Group::Soc;
-        } else if (version <= 3) {
-            g = Group::V0_3;
-        } else if (version == 4) {
-            g = Group::V4;
-        } else if (version <= 6) {
-            g = Group::V5_6;
-        } else if (version == 7) {
-            g = Group::V7;
-        } else if (version == 8) {
-            g = Group::V8;
-        } else if (version == 9) {
-            g = Group::V9;
-        } else {
-            g = Group::V10;
-        }
-    } else {
-        g = transcode_query() != 0 ? Group::V11 : Group::Other;
-    }
+    const Group g = select_group(old_api, version);
     const int key = (old_api ? 1 : 0) | (internal ? 2 : 0) | (static_cast<int>(g) << 2);
     Holder &h = g_holders[key];
+    // Host layout: every list field points at its cell (the slot-0 pointer of the original's slot
+    // array); an absent list has a null cell where the original has a null list field.
     h.desc.cx = &h.cells[0];
     h.desc.sh = &h.cells[1];
     h.desc.uc = &h.cells[2];
     h.desc.fourth = &h.cells[3];
-    SetDef def{};
-    if (set_for(old_api, internal, g, def)) {
-        std::uint32_t uc_n = def.uc_n;
-        if (def.uc != 0 && uc_n == 0) {
-            uc_n = uc_count(def.desc_vaddr, def.uc);
-        }
-        h.cells[0] = load_table(def.cx, def.cx_n);
-        h.cells[1] = load_table(def.sh, def.sh_n);
-        h.cells[2] = load_table(def.uc, uc_n);
-        h.desc.cx_count = h.cells[0] != nullptr ? def.cx_n : 0;
-        h.desc.sh_count = h.cells[1] != nullptr ? def.sh_n : 0;
-        h.desc.uc_count = h.cells[2] != nullptr ? uc_n : 0;
-        patch_defaults(sel, h.cells[0], h.desc.cx_count, h.cells[1], h.desc.sh_count);
-    } else {
-        static bool logged = false;
-        if (!logged) {
-            logged = true;
-            log(kModule, "register defaults for version %u (group %d) not located; empty set",
-                version, static_cast<int>(g));
-        }
+    const Lists &lists = internal ? kGroups[static_cast<int>(g)].internal
+                                  : kGroups[static_cast<int>(g)].pub;
+    compare_counts(descriptor_vaddr(g, old_api, internal), lists.count);
+    std::uint32_t *const counts[4] = {&h.desc.cx_count, &h.desc.sh_count, &h.desc.uc_count,
+                                      &h.desc.fourth_count};
+    for (int l = 0; l < 4; ++l) {
+        const bool present = lists.id[l] != kNone;
+        h.cells[l] = present ? load_table(tables::table_image_address(lists.id[l]), lists.count[l])
+                             : nullptr;
+        *counts[l] = h.cells[l] != nullptr ? lists.count[l] : 0u;
     }
+    // The name table (hashes) is not part of the description: register names are resolved by
+    // offset (resolve_descriptors), so the field stays null.
+    patch_defaults(sel, h.cells[0], h.desc.cx_count, h.cells[1], h.desc.sh_count);
     return &h.desc;
 }
 
@@ -1230,6 +1239,16 @@ void set_restore_pairs(RegPair a, RegPair b) {
     state().restore_b = b;
 }
 RegPair *descriptor(std::uint64_t vaddr) { return descriptor_by_vaddr(vaddr); }
+RegPair fourth_cache(std::uint32_t index) {
+    const State &st = state();
+    if (index == 0) {
+        return st.fourth_a;
+    }
+    if (index == 1) {
+        return st.fourth_b;
+    }
+    return index <= 4 ? st.fourth_c[index - 2] : RegPair{0xFFFFFFFFu, 0xFFFFFFFFu};
+}
 
 } // namespace testing
 
