@@ -140,7 +140,7 @@ struct State {
     // only the fill shader (slot 0), the original's other four slots are empty. A read is logged.
     bool internal_own;
     bool internal_own_read_logged;
-    std::uint32_t uc_special_offset; // descriptor at 0x45C40 of the original (unresolved here)
+    std::uint32_t uc_special_offset; // descriptor at 0x45C40 of the original (0x35, observed)
 };
 State &state();
 void reset_state();

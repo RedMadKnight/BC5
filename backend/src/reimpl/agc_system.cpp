@@ -36,7 +36,12 @@ void reset_state() {
     for (RegPair &p : g_state.fourth_c) {
         p = RegPair{0xFFFFFFFFu, 0xFFFFFFFFu};
     }
-    g_state.uc_special_offset = 0x10000000u;
+    // The first register of the slot's special UCONFIG block (descriptor 0x45C40 of the original).
+    // The description leaves the value open ("may be updated by part-2 code"); a capture of the
+    // slot the title's own copy of the module builds (run rmplF1bb, 2026-11-21, BC5's private
+    // capture of the LOAD_*_REG_INDEX lists) shows the block starts at UCONFIG 0x35: its first
+    // UCONFIG load carries 49 of the 57 pairs, the eight 0x35..0x3C last. Interop fact, observed.
+    g_state.uc_special_offset = 0x35u;
 }
 
 namespace {

@@ -1057,6 +1057,12 @@ void second_game_init(bool via_23lru) {
     CHECK(s.cx_count == cx_offsets.size());
     CHECK(s.sh_count == 162 + 12);
     CHECK(s.uc_count == 56 + 1);
+    // The special UCONFIG block (0x35..0x3C) moved, reversed, to the end; the main load leaves it
+    // out (as the slot the title's own module builds, run rmplF1bb).
+    CHECK(s.uc_special_count == 8);
+    for (u32 k = 0; k < 8; ++k) {
+        CHECK(s.uc[s.uc_count - 8 + k].offset == (k < 3 ? 0x3Au + k : 0x39u - (k - 3)));
+    }
     // Suspend ready: the resume DCB went out and the no-argument selectors answer.
     CHECK(g_rec.suspend_calls == 1);
     CHECK(agc::sceAgcSuspendPoint() != agc::kErrNotInitialised);
