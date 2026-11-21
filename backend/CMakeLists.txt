@@ -44,7 +44,7 @@ target_include_directories(bc5_backend PUBLIC include PRIVATE ${CMAKE_CURRENT_BI
 target_link_libraries(bc5_backend PRIVATE bc5_warnings)
 
 # Clean-room re-creations of libSceAgc, libSceAgcDriver and libScePsml (src/reimpl/PROVENANCE.md).
-# No GPU access; the host registers them only behind BC5_REIMPL_* switches (default off).
+# No GPU access. The host uses them by default (BC5_REIMPL_<X>=0 opts out; a game's own copy wins).
 file(GLOB BC5_REIMPL_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/reimpl/*.cpp)
 target_sources(bc5_backend PRIVATE ${BC5_REIMPL_SOURCES})
 
