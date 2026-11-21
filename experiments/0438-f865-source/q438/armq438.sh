@@ -65,7 +65,8 @@ run() { # $1 tag suffix, then the switch words
     case "$line" in *"PASS: ran 60 s"*"kernel lines 0, crash lines 0"*) ;; *) say "RESULT $t: NOT CLEAN"; finish 2 ;; esac
     [ "$r0" = "$r1" ] || { say "RESULT $t: the reset count changed"; finish 2; }
     local mm; mm=$(grep -ac 'tag a2): MISMATCH' "$L" 2> /dev/null); [ "${mm:-0}" = 0 ] || { say "RESULT $t: an A2 mismatch"; finish 2; }
-    say "RESULT $t: CLEAN"
+    local qb; qb=$(grep -ac 'q438 (exp 0438): BUG' "$J" 2> /dev/null)
+    if [ "${qb:-0}" = 0 ]; then say "RESULT $t: CLEAN"; else say "RESULT $t: no GPU line, but ${qb} q438 BUG lines (Q438's invariant broken: not clean)"; fi
 }
 run "${ARGS[@]}"
 finish 0
