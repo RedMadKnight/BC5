@@ -978,7 +978,7 @@ s = rep(s, '''	why             = w428_mec_refusal(ib, num_dwords, why); // exp 0
 	if (why == nullptr && xq439_on()) { // exp 0439 (tag xq439): the queue -> ring map
 		static std::atomic<uint64_t> n_map {0};
 		const uint64_t k = n_map++;
-		if (k < 64 || (k & 0x3ffu) == 0) std::fprintf(stderr, "[bc5] exp 0439 (tag xq439): t %.3f s acb part of guest queue %d (%u dwords at %p) on compute ring %d (way 2 rings %d)\n", timing_now(), t_queue_idx, num_dwords, static_cast<const void*>(ib), ring, w428_rings());
+		if (k < 64 || (k & 0x3ffu) == 0) std::fprintf(stderr, "[bc5] exp 0439 (tag xq439): t %.3f s acb part of guest queue %d (%u dwords at %p) on compute ring %d (way 2 rings %d)\\n", timing_now(), t_queue_idx, num_dwords, static_cast<const void*>(ib), ring, w428_rings());
 	}
 	if (why == nullptr) return ring;''')
 s = rep(s, '''				if (!ready && ready_len != 0) {

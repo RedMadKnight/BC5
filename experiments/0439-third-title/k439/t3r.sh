@@ -18,6 +18,15 @@ PIN=${1:?md5}; IMP=${2:?import 0 or 1}; START=${3:-}; case "$IMP" in 0|1) ;; *) 
 L=$HOME/bc5-work/BOX-LOCK; BIN=$HOME/bc5-work/exp0439/k439/normal/kyty_emulator; O=runs/t3r-i$IMP
 [ "$(md5sum < "$BIN" | cut -c1-8)" = "$PIN" ] || { echo "the binary is not $PIN"; exit 1; }
 for w in BC5_0439_PIECE_DUMP BC5_0439_UMR_WAVES BC5_0439_IMPORT_PIECES BC5_0439_XQ_COUNT BC5_DIRECT_IB_CHAIN_FLAT; do grep -aq $w "$BIN" || { echo "no $w in the binary"; exit 1; }; done
+EXTRA="BC5_SYSMODULES_PACK_DIR=$HOME/bc5-data/games/PPSA26344/fakelib BC5_DIRECT_DCC_PRESENT=2 BC5_DIRECT_EAGER_GPU_WRITE=1 BC5_DIRECT_IB_CHAIN=1 BC5_DIRECT_TIMEOUT_PROBE=1 BC5_0439_PIECE_DUMP=1 BC5_DIRECT_UMR_ON_TIMEOUT=1 BC5_0439_UMR_WAVES=1 BC5_0439_XQ_COUNT=1 BC5_0439_IMPORT_PIECES=$IMP BC5_DIRECT_IB_CHAIN_FLAT=1"
+if [ "${DRY:-0}" = 1 ]; then # the launch as it would go, nothing started, no lock (R66)
+  echo "DRY: binary $PIN ok, switches present; start ${START:-now}; run0439.sh run normal t3r-i$IMP 120 with RUN_PRIV=$BIN"
+  echo "DRY: RUN_EXTRA=$EXTRA"
+  grep -q '^BC5_DIRECT_JOURNAL=min$' "$HOME/bc5-work/bc5-run.env" && echo "DRY: bc5-run.env sets BC5_DIRECT_JOURNAL=min"
+  grep -n 'P439_BIN\|exec\|"\$EMU"' "$HOME/bc5-work/exp0439/k439/play439.sh" | head -4
+  bash "$HOME/bc5-work/exp0439/k439/r72check.sh"
+  exit 0
+fi
 free=0
 for i in $(seq 1 120); do
   if [ ! -s "$L" ] && ! pgrep -x kyty_emulator > /dev/null; then free=$((free + 1)); else free=0; fi
@@ -58,7 +67,7 @@ shot() { XDG_RUNTIME_DIR=/run/user/$(id -u) WAYLAND_DISPLAY=$(ls -1 /run/user/$(
   at=26; while pgrep -x kyty_emulator > /dev/null && [ $at -le 135 ]; do sleep $((t0 + at - $(date +%s))) 2> /dev/null; shot "t$(printf %03d $at)s"; at=$((at + 15)); done
   shot "after" ) &
 SHP=$!
-RUN_PRIV=$BIN RUN_EXTRA="BC5_SYSMODULES_PACK_DIR=$HOME/bc5-data/games/PPSA26344/fakelib BC5_DIRECT_DCC_PRESENT=2 BC5_DIRECT_EAGER_GPU_WRITE=1 BC5_DIRECT_IB_CHAIN=1 BC5_DIRECT_TIMEOUT_PROBE=1 BC5_0439_PIECE_DUMP=1 BC5_DIRECT_UMR_ON_TIMEOUT=1 BC5_0439_UMR_WAVES=1 BC5_0439_XQ_COUNT=1 BC5_0439_IMPORT_PIECES=$IMP BC5_DIRECT_IB_CHAIN_FLAT=1" bash run0439.sh run normal t3r-i$IMP 120 2>&1 | tail -1
+RUN_PRIV=$BIN RUN_EXTRA="$EXTRA" bash run0439.sh run normal t3r-i$IMP 120 2>&1 | tail -1
 sleep 5; for k in $(seq 1 40); do pgrep -x kyty_emulator > /dev/null || break; sleep 5; done
 pgrep -x kyty_emulator > /dev/null && { echo "EMULATOR STILL RUNNING: ended"; pkill -TERM -x kyty_emulator; sleep 5; }
 RUN_PRIV=$BIN bash run0439.sh collect normal t3r-i$IMP > /dev/null 2>&1
