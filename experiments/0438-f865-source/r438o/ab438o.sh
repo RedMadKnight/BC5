@@ -84,7 +84,8 @@ run() { # $1 arm tag, $2 binary, $3 md5, $4 lean 1/0, then switch words
 # AB_WARMUP=1 (the top session, 2026-11-21): one discarded control run W0 first (the first run after a boot is high).
 # AB_PAIR4=auto: a 4th pair when the first three pairs' flips/s all sit within 0.3 % of their mean.
 if [ "${AB_WARMUP:-0}" = 1 ]; then run W0 "$CB" "$MC" 1 "${CW[@]}"; say "W0 is a warm-up: not part of the comparison"; fi
-for a in C1:C O1:O C2:C O2:O C3:C O3:O; do
+ARMS=""; for k in $(seq 1 "${AB_NPAIRS:-3}"); do ARMS="$ARMS C$k:C O$k:O"; done # AB_NPAIRS: pairs (default 3)
+for a in $ARMS; do
     t=${a%%:*}; k=${a##*:}
     if [ "$k" = C ]; then run "$t" "$CB" "$MC" 1 "${CW[@]}"; else run "$t" "$OB" "$MO" 1 "${OW[@]}"; fi
 done
@@ -96,8 +97,10 @@ if [ "${AB_PAIR4:-}" = auto ]; then
         run C4 "$CB" "$MC" 1 "${CW[@]}"; run O4 "$OB" "$MO" 1 "${OW[@]}"
     fi
 fi
+if [ "${AB_NO_N:-0}" = 1 ]; then say "N1 skipped (AB_NO_N=1)"; else
 run N1 "$NB" "$MN" 0 "${NW[@]}"
 say "N1 r438 lines: $(grep -ac 'r438 (exp 0438, b438)' "$R/${P}N1-play.log"), BUG $(grep -ac 'r438 (exp 0438, b438): BUG' "$R/${P}N1-play.log"), GIVEN UP $(grep -aci 'given up' "$R/${P}N1-play.log")"
 grep -a 'r438 (exp 0438, b438): t ' "$R/${P}N1-play.log" | tail -3 | tee -a "$S"
 grep -a 'tag a1c438): t \|tag a2c438): t ' "$R/${P}N1-play.log" | tail -2 | cut -c1-400 | tee -a "$S"
+fi
 finish 0
