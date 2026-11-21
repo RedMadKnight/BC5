@@ -220,8 +220,16 @@ pub fn install(
     let files_total = files.len();
     let bytes_total: u64 = files.iter().map(|f| f.2).sum();
 
-    // Check free space: sum of file sizes + 1 GiB.
-    let (required, free) = check_free_space(dest, bytes_total + 1024 * 1024 * 1024)?;
+    // Check free space: the bytes still to write + 1 GiB. With --resume, files already there at their size are
+    // kept and need no space (exp 0439: the old check asked for the whole 185 GiB with 170 GiB already written).
+    let to_write: u64 = files
+        .iter()
+        .filter(|(_, path, size)| {
+            !(resume && fs::metadata(dest.join(path)).is_ok_and(|m| m.len() == *size))
+        })
+        .map(|(_, _, size)| *size)
+        .sum();
+    let (required, free) = check_free_space(dest, to_write + 1024 * 1024 * 1024)?;
     if free < required {
         bail!(
             "insufficient free space: need {} bytes ({} GiB), have {} bytes ({} GiB)",
