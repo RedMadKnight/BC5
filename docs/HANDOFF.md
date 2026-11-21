@@ -2,6 +2,8 @@
 
 This is the working memory of the project: what has been established, from where, and what is still open. Update it whenever a question is answered. `README.md` is the public summary; this file is the detailed one.
 
+**In progress, 2026-11-21: exp 0439** (`experiments/0439-third-title/`): the second title's install removed with every save kept, then the third title (PPSA26344) installed from the NAS and its first runs; no box step yet.
+
 **State on 2026-11-21.** Since 00:52 the shared builds are patch `9889b06a`, normal `b1b57df9`, lean `d3485ed4`, archive `d6638808` unchanged: exp 0438's r438 with PLWCV, the source fix of F865 (F866: the F262 give-up; F867), switches `BC5_0438_EARLYREG` and `BC5_0438_PLWCV` kept for a per-run opt-out; no frame-time effect in lean. Undo `bash ~/bc5-work/exp0438/bake/undo0438.sh` to `bb04219b`. Next in line (F869): the chain watchdog's submission of the owner's chain (a per-slot submit queue, every title), the malloc-arena trim check, the dip's name lookup with call stacks.
 
 **State on 2026-11-20.** Since 05:54 the shared builds are patch `bb04219b`, normal `f345db74`, lean `6a735b81`, archive `d6638808`: exp 0436's kernel submit outside the device mutex, built in with no switch (F864), the maintainer's "Wdróż od razu"; +9 % flips/s on the second title's route, no change in the 09:46 scene. Undo `bash ~/bc5-work/exp0436/bake/undo0436.sh` to `8986853b`. Open and first in line: the F852/F858 hang class came back once on the previous shared build (F865), hypothesis F3's uncovered case.

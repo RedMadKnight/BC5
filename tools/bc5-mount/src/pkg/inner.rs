@@ -59,6 +59,18 @@ pub struct InnerImage<R> {
     disk: Option<DiskCache>,
 }
 
+/// The block size the cache is counted in: the largest block. Blocks end at file boundaries, so the first one
+/// can be a few bytes long; counting the cache in it made 32 MiB into hundreds of thousands of entries of up to
+/// 256 KiB each, and the third title's install (95,383 files) grew to 8 GB and was killed (exp 0439, 2026-11-21).
+fn cache_block_bytes(blocks: &[Block]) -> usize {
+    blocks
+        .iter()
+        .map(|b| b.uncomp as usize)
+        .max()
+        .unwrap_or(crate::pkg::naps::UBLOCK_SIZE as usize)
+        .max(1)
+}
+
 impl<R: ReadAt> InnerImage<R> {
     /// Resolves the layout against the stored image.
     pub fn open(image: R, layout: &Layout) -> Result<Self> {
@@ -87,10 +99,7 @@ impl<R: ReadAt> InnerImage<R> {
                 );
             }
         }
-        let cache = DecodeCache::new(cache_blocks(
-            CACHE_MIB,
-            blocks.first().map_or(256 << 10, |b| b.uncomp as usize),
-        ));
+        let cache = DecodeCache::new(cache_blocks(CACHE_MIB, cache_block_bytes(&blocks)));
         Ok(Self {
             image,
             blocks,
@@ -541,5 +550,42 @@ impl<R: ReadAt> FileTree for InnerTree<R> {
 
     fn block_count(&self) -> u64 {
         self.image.mount() / u64::from(self.block_size)
+    }
+}
+
+#[cfg(test)]
+mod cache_size_tests {
+    use super::*;
+
+    fn block(logical: u64, uncomp: u32) -> Block {
+        Block {
+            logical,
+            on_disk: 0,
+            comp: 0,
+            uncomp,
+            kraken: false,
+            even_comp: 0,
+            flags: 0,
+        }
+    }
+
+    #[test]
+    fn a_small_first_block_does_not_grow_the_cache() {
+        let blocks = [
+            block(0, 0x200),
+            block(0x200, 0x40000),
+            block(0x40200, 0x1000),
+        ];
+        assert_eq!(cache_block_bytes(&blocks), 0x40000);
+        // 32 MiB of 256 KiB blocks: 128 entries, as the cache's comment says (not 65,536 of the first block's size).
+        assert_eq!(cache_blocks(CACHE_MIB, cache_block_bytes(&blocks)), 128);
+    }
+
+    #[test]
+    fn no_blocks_counts_in_the_largest_block_size() {
+        assert_eq!(
+            cache_block_bytes(&[]),
+            crate::pkg::naps::UBLOCK_SIZE as usize
+        );
     }
 }
