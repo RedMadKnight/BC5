@@ -5,10 +5,14 @@
 #include "bc5/reimpl/agc.hpp"
 #include "bc5/reimpl/agc_tables.hpp"
 #include "bc5/reimpl/data_source.hpp"
+#include "bc5/reg_catch.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <functional>
 #include <map>
 #include <set>
 #include <string>
@@ -1059,6 +1063,33 @@ void second_game_init(bool via_23lru) {
         CHECK(tst::fourth_cache(i).offset == want[i]);
         CHECK(tst::fourth_cache(i).value == 0u);
     }
+    // Run rmplN01 (2026-11-21): every register the slot asks the CP for lies in its space, in the
+    // tables (the LOAD_*_REG_INDEX lists), the prebuilt SH stream and the resume DCB.
+    for (u32 k = 0; k < s.cx_count; ++k) CHECK(s.cx[k].offset < 0x400u);
+    for (u32 k = 0; k < s.sh_count; ++k) CHECK(s.sh[k].offset < 0x400u);
+    for (u32 k = 0; k < s.uc_count; ++k) CHECK(s.uc[k].offset < 0x4000u);
+    const std::function<bool(u64, u64)> mapped = [](u64, u64) { return true; };
+    auto walk = [&](const u32 *p, u32 n, const char *what) {
+        for (u32 i = 0; i < n;) {
+            const u32 h = p[i];
+            const u32 cnt = (h >> 16) & 0x3FFFu;
+            const u32 len = (h >> 30) == 3 && cnt != 0x3FFFu ? cnt + 2u : 1u; // 0xFFFF1000: one-dword NOP
+            if (i + len > n) {
+                std::printf("%s: packet at dword %u (header %08x, %u dwords) runs past %u:", what, i, h, len, n);
+                for (u32 q = 0; q < n; ++q) std::printf(" %08x", p[q]);
+                std::printf("\n");
+            }
+            REQUIRE(i + len <= n);
+            const bc5::reg_catch::Finding f = bc5::reg_catch::check(p + i, len, mapped);
+            if (f.reason != nullptr) {
+                std::printf("%s dword %u header %08x: %s (reg 0x%x)\n", what, i, h, f.reason, f.reg);
+            }
+            CHECK(f.reason == nullptr);
+            i += len;
+        }
+    };
+    if (s.sh_stream != nullptr) walk(s.sh_stream, s.sh_stream_bytes / 4u, "sh stream");
+    if (s.resume_dcb != nullptr) walk(s.resume_dcb, s.resume_dwords, "resume dcb");
 }
 } // namespace
 
