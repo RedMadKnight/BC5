@@ -13,7 +13,7 @@ W=$HOME/bc5-work; E=$W/exp0438/a1; R=$E/raw; S=$E/src; HERE=$(cd "$(dirname "$0"
 TREE=$HOME/src/KytyPlus; SA=$W/backend-ubuntu/libbc5_backend.a; PA=$W/exp0438/a2/backend/libbc5_backend.a
 P_UNIT=ff9e8fe2e4139264ebaf74f9e84bd892; P_MEM=aa7d7f5b3fdbbe8d57bd440e7aa80922
 P_ARCH=d6638808; P_NORMAL=b1b57df9; P_LEAN=d3485ed4; P_PA=$(cut -c1-8 "$W/exp0438/a2/backend/archive.md5" 2> /dev/null) # written by boxa2.sh build just before
-K_MEM=286ab94268aa795a14c40ba5eb0aad9e; K_UNIT=0402a183e527bca6d1d27b5d02bc0c38
+K_MEM=286ab94268aa795a14c40ba5eb0aad9e; K_BE_CPP=66f9893767d2b18adf1a6ed3eb8aec80; K_UNIT=0402a183e527bca6d1d27b5d02bc0c38
 K_HPP=18c66de84ae1a6705462cd4953cd6633; K_MI=39952c484209fe5c64a55167f02107b7; K_PY=3fe0aacaa3a2859de7f9903e127a5a63
 NICE="nice -n 19 ionice -c 3"
 stop() { echo "a1 STOP: $*"; exit 1; }
@@ -25,6 +25,7 @@ build() {
     [ "${sn:0:8}" = "$P_NORMAL" ] && [ "${sl:0:8}" = "$P_LEAN" ] && [ "${sa:0:8}" = "$P_ARCH" ] || stop "the shared builds are not $P_NORMAL/$P_LEAN/$P_ARCH"
     [ "$(m "$TREE/src/libs/bc5LleAgc.cpp")" = "$P_UNIT" ] && [ "$(m "$TREE/src/kernel/memory.cpp")" = "$P_MEM" ] || stop "the tree's unit or memory.cpp is not patch 9889b06a's"
     [ -n "$P_PA" ] && [ "$(m "$PA" | cut -c1-8)" = "$P_PA" ] || stop "A2's private archive is not $P_PA"
+    grep -q "^$K_BE_CPP  ./backend/src/direct.cpp$" "$W/exp0438/a2/raw/src-md5.txt" 2> /dev/null && [ "$PA" -nt "$W/exp0438/a2/raw/src-md5.txt" ]         || stop "A2's private archive was not built from direct.cpp $K_BE_CPP (run boxa2.sh build first)"
     [ "$(m "$HERE/memory_a1x.cpp")" = "$K_MEM" ] && [ "$(m "$HERE/a2host.cpp")" = "$K_UNIT" ] && [ "$(m "$HERE/be/direct.hpp")" = "$K_HPP" ] \
         && [ "$(m "$HERE/be/mapping_index.hpp")" = "$K_MI" ] && [ "$(m "$HERE/build0438.py")" = "$K_PY" ] || stop "the kit is not the pinned one"
     rm -rf "$S"; mkdir -p "$S/kyty/src/libs" "$S/kyty/src/kernel" "$S/kyty/src/bc5" || stop "mkdir $S"

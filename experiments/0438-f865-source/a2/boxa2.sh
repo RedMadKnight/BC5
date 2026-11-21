@@ -59,7 +59,7 @@ release() {
 }
 build() {
     mkdir -p "$R" || stop "cannot make $R" # no claim here (no lock line): the directory is made by build itself
-    pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
+    # no emulator check: a CPU-only build beside another experiment's runs (the top session's GO of 2026-11-21)
     local v b bin rc sn sl sa
     sn=$(m "$W/kytyplus-build/src/kyty_emulator"); sl=$(m "$W/kytyplus-build-lean/src/kyty_emulator"); sa=$(m "$SA")
     [ "${sn:0:8}" = "$P_NORMAL" ] && [ "${sl:0:8}" = "$P_LEAN" ] && [ "${sa:0:8}" = "$P_ARCH" ] \
