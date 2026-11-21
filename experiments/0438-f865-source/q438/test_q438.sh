@@ -31,14 +31,18 @@ cutunit() { # cutunit UNIT DIR
 cxx=${CXX:-g++}
 [ -z "${CXX:-}" ] && [ -x "/c/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/Llvm/x64/bin/clang++.exe" ] && cxx="/c/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/Llvm/x64/bin/clang++.exe"
 build() { # build DIR DEFINE EXE
-	(cd "$1" && "$cxx" -std=c++20 -O1 -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-variable -Wno-unused-parameter -D_CRT_SECURE_NO_WARNINGS -D"$2" -o "$3" test_q438.cpp)
+	(cd "$1" && "$cxx" -std=c++20 -O1 -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-variable -Wno-unused-parameter -D_CRT_SECURE_NO_WARNINGS -D"$2" $([ "${STACK438:-0}" = 1 ] && echo -DQ438_STACK) -o "$3" test_q438.cpp)
 }
 echo "== md5: $(md5sum "$unit" | cut -c1-32) q438 unit; $(md5sum "$bake" | cut -c1-32) bake unit"
 cutunit "$unit" "$out/new"; cutunit "$bake" "$out/old"
 echo "== 1. the chain block: lines removed from the bake unit's (must be 0), lines inserted"
 for f in q_state.inc q_chain.inc q_plw.inc q_reg.inc q_rws.inc; do
 	rm_n=$(diff "$out/old/$f" "$out/new/$f" | grep -c '^<' || true); add_n=$(diff "$out/old/$f" "$out/new/$f" | grep -c '^>' || true)
-	echo "   $f: removed $rm_n, inserted $add_n"; [ "$rm_n" = 0 ] || { echo "FAIL: $f lost lines"; exit 1; }
+	echo "   $f: removed $rm_n, inserted $add_n"
+	if [ "$rm_n" != 0 ]; then # STACK438=1 (mkstack438.py): only r438o's three lines may change in place (the trim's and the renumbering's conditions)
+		bad=$(diff "$out/old/$f" "$out/new/$f" | grep '^<' | grep -vF -e 'if (!r438_on()) {' -e 'if (r438_on() && g_r438o_live != 0) {' -e 'w.seq != t_r438_own && std::any_of(' || true)
+		if [ "${STACK438:-0}" = 1 ] && [ -z "$bad" ]; then echo "   $f: the $rm_n changed lines are r438o's conditions (STACK438)"; else echo "FAIL: $f lost lines"; exit 1; fi
+	fi
 done
 build "$out/new" Q438_NEW tq.exe; build "$out/old" Q438_ORIG tq.exe
 export BC5_DIRECT_CHAIN=2
@@ -82,6 +86,11 @@ plant lifo 'e = std::move(s.q.front());
 				s.q.pop_back();'
 plant flight-clear 'q438_flight_locked(s); // exp 0430 F10: its writes are registered now' 's.f10_flight.clear(); s.q_sets.clear();'
 plant no-drain 'if (why == 5 || why == 8) q438_wait_done(s);' '(void)why;'
-plant no-order 'if (q438_on()) { // exp 0438 (q438): queued chains' 'if (false) { // exp 0438 (q438): queued chains' q_reg.inc
-plant trim-drops 'if (gone < 4096 && (w.seq & kR438Early) == 0) {' 'if (gone < 4096) {' q_plw.inc
+if [ "${STACK438:-0}" = 1 ]; then # mkstack438.py: the renumbering and the trim are r438o's
+	plant no-order 'if ((r438_on() && g_r438o_live != 0) || q438_on()) {' 'if (false) {' q_reg.inc
+	plant trim-drops 'if (!r438_on() && !q438_on()) {' 'if (true) {' q_plw.inc
+else
+	plant no-order 'if (q438_on()) { // exp 0438 (q438): queued chains' 'if (false) { // exp 0438 (q438): queued chains' q_reg.inc
+	plant trim-drops 'if (gone < 4096 && (w.seq & kR438Early) == 0) {' 'if (gone < 4096) {' q_plw.inc
+fi
 echo "== all done"

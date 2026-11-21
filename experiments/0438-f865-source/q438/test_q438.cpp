@@ -26,6 +26,11 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#if defined(Q438_STACK) // mkstack438.py: the trim is r438o's, its counter g_r438o_trims
+#define Q438_TRIMS g_r438o_trims
+#else
+#define Q438_TRIMS g_q438_trims
+#endif
 #include <cstring>
 #include <deque>
 #include <functional>
@@ -616,8 +621,8 @@ static void det_trim(int o) {
 		game.join();
 		CHECK(kept == 1, "trim: the queued entry's early write was dropped by the trim (%zu left)", kept);
 		CHECK(held == -1 && got.load() == 1, "trim: the wait on the queued write returned %d before its registration, %d after", held, got.load());
-		CHECK(g_q438_trims.load() >= 1, "trim: no trim ran (g_plw at most %zu)", max_n);
-		std::printf("det trim: g_plw reached %zu entries, %" PRIu64 " trims; the early write kept %zu, the wait %d then %d\n", max_n, g_q438_trims.load(), kept, held, got.load());
+		CHECK(Q438_TRIMS.load() >= 1, "trim: no trim ran (g_plw at most %zu)", max_n);
+		std::printf("det trim: g_plw reached %zu entries, %" PRIu64 " trims; the early write kept %zu, the wait %d then %d\n", max_n, Q438_TRIMS.load(), kept, held, got.load());
 		chain_flush(5);
 	});
 	t.join();
