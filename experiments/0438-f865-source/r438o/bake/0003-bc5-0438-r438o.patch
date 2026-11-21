@@ -1,0 +1,129 @@
+diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
+--- a/src/libs/bc5LleAgc.cpp
++++ b/src/libs/bc5LleAgc.cpp
+@@ -530,8 +530,10 @@
+ static void r438_end();
+ static constexpr uint64_t                 kR438Early = 1ull << 63u; // early entries carry seq | kR438Early
+ static uint64_t                           g_plw_order = 0;          // under g_plw_mutex, shared with register_label_writes
++static uint64_t                           g_r438o_live = 0;         // exp 0438 (r438o): early entries in g_plw, under g_plw_mutex
+ static thread_local bool                  t_r438_on_slice = false;
+ static thread_local std::vector<uint64_t> t_r438_real;              // the labels the slice's jobs registered for real
++static thread_local uint64_t              t_r438_own = 0;           // exp 0438 (r438o): the taken slice's own early seq (0: none)
+ static bool r438_on() {
+ 	static const bool v = [] {
+ 		const char* e = std::getenv("BC5_0438_EARLYREG");
+@@ -548,6 +550,7 @@
+ }
+ #ifndef BC5_LEAN
+ static std::atomic<uint64_t> g_r438_early {0}, g_r438_lost {0}, g_r438_waits {0}, g_r438_wait_ns {0}, g_r438_wait_max {0}, g_r438_long {0};
++static std::atomic<uint64_t> g_r438o_renum {0}, g_r438o_kept {0}, g_r438o_trims {0}; // exp 0438 (r438o)
+ #endif
+ static std::atomic<uint64_t> g_r438_slices {0};
+ // Run 123: the label the doorbell consumer's first unready buffer waits on, for the game thread
+@@ -8301,6 +8304,32 @@
+ };
+ static std::mutex                          g_plw_mutex;
+ static std::vector<PendingLabelWrite>      g_plw;
++// exp 0438 (r438o): the trim of g_plw (over 8192 entries the oldest 4096 go). With r438 on, early entries are kept: they are
++// not in the kernel yet, and a dropped one reads as "no pending write". Bound: an early entry lives only from the r438_begin
++// to the r438_end of its slice, so the table holds at most 8192 real entries, one batch and the slices in flight.
++static void r438o_trim_locked() {
++	if (g_plw.size() <= 8192) return;
++	if (!r438_on()) {
++		g_plw.erase(g_plw.begin(), g_plw.begin() + 4096);
++		return;
++	}
++	size_t dropped = 0, kept = 0;
++	auto   out     = g_plw.begin();
++	for (auto it = g_plw.begin(); it != g_plw.end(); ++it) {
++		const bool early = (it->seq & kR438Early) != 0;
++		if (!early && dropped < 4096) {
++			dropped++;
++			continue;
++		}
++		if (early && dropped < 4096) kept++;
++		*out++ = *it;
++	}
++	g_plw.erase(out, g_plw.end());
++#ifndef BC5_LEAN
++	g_r438o_trims++;
++	g_r438o_kept += kept;
++#endif
++}
+ static std::condition_variable             g_plw_cv; // exp 0438 (b438, PLWCV): real writes registered or early ones gone
+ // ADR 0008 step 2, experiment 0074: at every wait of a graphics buffer that is not satisfied when
+ // reached, the full-state prefix of the later piece is built (bc5::full_state, from the graphics
+@@ -9258,8 +9287,18 @@
+ 		w.ring  = ring;
+ 		w.order = ++order;
+ 	}
+-	if (g_plw.size() > 8192) g_plw.erase(g_plw.begin(), g_plw.begin() + 4096);
++	r438o_trim_locked(); // exp 0438 (r438o): early entries kept with r438 on
+ 	g_plw.insert(g_plw.end(), found.begin(), found.end());
++	if (r438_on() && g_r438o_live != 0) { // exp 0438 (r438o): a taken slice's early writes are not in the kernel yet: they stay after this real write of their label
++		std::vector<PendingLabelWrite*> early;
++		for (auto& w: g_plw)
++			if ((w.seq & kR438Early) != 0 && w.seq != t_r438_own && std::any_of(found.begin(), found.end(), [&w](const PendingLabelWrite& f) { return f.label == w.label; })) early.push_back(&w);
++		std::sort(early.begin(), early.end(), [](const PendingLabelWrite* a, const PendingLabelWrite* b) { return a->order < b->order; });
++		for (PendingLabelWrite* w: early) w->order = ++order;
++#ifndef BC5_LEAN
++		g_r438o_renum += early.size();
++#endif
++	}
+ 	if (r438_cv()) g_plw_cv.notify_all(); // exp 0438 (b438, PLWCV)
+ }
+ 
+@@ -9687,6 +9726,7 @@
+ 	r438_scan(s1, n1, found);
+ 	if (s2 != nullptr) r438_scan(s2, n2, found);
+ 	t_r438_slice    = g_r438_slices.fetch_add(1) + 1;
++	t_r438_own      = kR438Early | t_r438_slice; // exp 0438 (r438o)
+ 	t_r438_on_slice = true;
+ 	t_r438_real.clear();
+ 	if (found.empty()) return;
+@@ -9696,8 +9736,9 @@
+ 		w.ring  = 0; // a compute ring; with the acb rings on, ring_will_satisfy keeps a writer on another ring
+ 		w.order = ++g_plw_order;
+ 	}
+-	if (g_plw.size() > 8192) g_plw.erase(g_plw.begin(), g_plw.begin() + 4096);
++	r438o_trim_locked(); // exp 0438 (r438o): early entries kept with r438 on
+ 	g_plw.insert(g_plw.end(), found.begin(), found.end());
++	g_r438o_live += found.size(); // exp 0438 (r438o)
+ #ifndef BC5_LEAN
+ 	g_r438_early += found.size();
+ #endif
+@@ -9706,6 +9747,7 @@
+ static void r438_end() {
+ 	if (!r438_on() || !t_r438_on_slice) return;
+ 	t_r438_on_slice = false;
++	t_r438_own      = 0; // exp 0438 (r438o)
+ 	std::vector<PendingLabelWrite> lost;
+ 	{
+ 		std::lock_guard lk(g_plw_mutex);
+@@ -9713,6 +9755,7 @@
+ 			if (it->seq == (kR438Early | t_r438_slice)) {
+ 				if (std::find(t_r438_real.begin(), t_r438_real.end(), it->label) == t_r438_real.end()) lost.push_back(*it);
+ 				it = g_plw.erase(it);
++				if (g_r438o_live != 0) g_r438o_live--; // exp 0438 (r438o)
+ 			} else {
+ 				++it;
+ 			}
+@@ -9729,8 +9772,8 @@
+ 	if (last_line == 0) last_line = now;
+ 	if (now - last_line > 60'000'000'000ull) {
+ 		last_line = now;
+-		journal("r438 (exp 0438, b438): t %.1f s: slices %" PRIu64 ", early writes %" PRIu64 ", early writes that never reached the ring %" PRIu64 "; game-thread waits for an early writer %" PRIu64 ", %.1f ms in all, longest %.3f ms, bug lines (over 100 ms) %" PRIu64 "\n",
+-		        timing_now(), g_r438_slices.load(), g_r438_early.load(), g_r438_lost.load(), g_r438_waits.load(), static_cast<double>(g_r438_wait_ns.load()) / 1e6, static_cast<double>(g_r438_wait_max.load()) / 1e6, g_r438_long.load());
++		journal("r438 (exp 0438, b438): t %.1f s: slices %" PRIu64 ", early writes %" PRIu64 ", early writes that never reached the ring %" PRIu64 "; game-thread waits for an early writer %" PRIu64 ", %.1f ms in all, longest %.3f ms, bug lines (over 100 ms) %" PRIu64 "; r438o: early entries renumbered %" PRIu64 ", kept by the trim %" PRIu64 " in %" PRIu64 " trims\n",
++		        timing_now(), g_r438_slices.load(), g_r438_early.load(), g_r438_lost.load(), g_r438_waits.load(), static_cast<double>(g_r438_wait_ns.load()) / 1e6, static_cast<double>(g_r438_wait_max.load()) / 1e6, g_r438_long.load(), g_r438o_renum.load(), g_r438o_kept.load(), g_r438o_trims.load());
+ 	}
+ #endif
+ 	if (r438_cv()) g_plw_cv.notify_all(); // PLWCV: the slice's early entries are gone
+@@ -9741,6 +9784,7 @@
+ 	ho430::job_done(seq, ring, all); // exp 0430 (tag ho430)
+ 	if (all) {
+ 		g_plw.clear();
++		g_r438o_live = 0; // exp 0438 (r438o)
+ 		return;
+ 	}
+ 	g_plw.erase(std::remove_if(g_plw.begin(), g_plw.end(), [seq, ring](const PendingLabelWrite& w) { return w.seq == seq && w.ring == ring; }), g_plw.end());

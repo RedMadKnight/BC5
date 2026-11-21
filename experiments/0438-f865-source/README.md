@@ -2324,6 +2324,104 @@ them.
   on the APR workers, and AMM commands move no bulk bytes. game-main's map / unmap calls go through these memory
   structures.
 
+## A1 / A1m / A2: the mapping bookkeeping edited in place (design, not built; for every title)
+
+**What the code does today** (KytyPlus f266548 with patch 0001, `src/kernel/memory.cpp`, `memory.h`,
+`memoryAddressSpace.inc`). A read-only reading, its key claims checked by hand: `m_ranges` is a vector at
+memory.cpp:875, and `SameMergeKey` rejects Direct at 625–627.
+- **`VirtualRanges::m_ranges`** is a `std::vector<Range>` sorted by start (memory.cpp:875). A Range is about 72 B, so
+  29,000 ranges are about 2.1 MiB, matching the 0.25–3 MiB copies.
+  - Every Add, Remove, Rename, Protect or SetMemoryType, and every merge, inserts or erases in the middle, so the tail
+    moves (`insert` 337, `erase` 349, 705 / 716, 786–787, 810–811, 825).
+  - One AMM fixed map over a live range (ReplaceFixedRangeWithReserved) makes about 6–8 tail moves, roughly 7–9 MiB per
+    remap.
+  - `Snapshot` / `SnapshotWithDirty` (487, 498) copy all 2.1 MiB for the BC5 host's readers (`Bc5ForEachPrivateRegion`
+    on every sync, `Bc5ForEachMappedRange`, `Bc5RangesWithDirty`).
+- **`PhysicalMemory::m_mappings`** is a `vector<AllocatedBlock>` (~104 B each; sorted when `KYTY_BC5_PHYSMAP_SORTED`,
+  the default).
+  - Insert and erase move the tail (918, 959, 968).
+  - `ProtectMapping` rebuilds the whole vector (2253–2287), once per Direct range of an mprotect.
+- **`FlexibleMemory::m_allocated`** (`vector`): a full sort per Map (2462); full rebuilds per Unmap and Protect.
+- **`PooledMemory`:**
+  - `m_mappings` is an unsorted `vector<Mapping>` with linear queries. Release rebuilds a vector with no reserve (the
+    profiled `_M_realloc_append`).
+  - `m_free` is a `vector<PhysicalRange>`, sorted and rebuilt per released piece.
+- **`GuestBackingStore::m_maps` and `GuestAddressSpace`'s maps** are `std::map`, so their edits are O(log n) and move
+  nothing. Their names in result 19's chains are inlining neighbours. `FindFreeAlignedUnlocked` walks `m_free` from
+  `begin()` and ignores its search start (memoryAddressSpace.inc:1281): O(n), but not a copy.
+- **Which splits are ours:**
+  - Flexible and Pooled maps make one view and block per free-backing fragment.
+  - Protect and type edits split ranges.
+  - A non-exact Rename splits through EditUnlocked.
+  - A partial unmap splits a backing view into left and right.
+  - ReplaceFixedRangeWithReserved re-adds a Reserved "anon".
+  - Named direct maps are added as "" and then renamed.
+  - There is no 2-MiB chunking.
+- **Merging:** VirtualRanges merges only non-Direct ranges (`SameMergeKey` rejects Direct, 625–627, and never checks
+  that offsets continue). So the 42 % contiguous direct views of result 19 are never merged; the free lists do merge.
+- **Locking:** the guest entry points take `g_memory_operation_mutex` (recursive). The BC5 host's snapshot readers take
+  only `VirtualRanges::m_mutex`. Callers keep no iterator or pointer across calls; every query returns copies.
+  - Vector-specific uses: `bc5::map_records::touching(m_ranges, …)` returns index pairs, `Bc5ForEachPrivateRegion`
+    runs `upper_bound` on the snapshot, and the pm412 templates take random-access iterators.
+
+**A1: ordered containers with in-place split and merge** (switch `KYTY_BC5_0438_A1`, test build only; the old vectors
+stay selectable).
+- **The containers:**
+  - `VirtualRanges::m_ranges` becomes a `std::map<uint64_t, Range>` keyed by start. A split shortens the left node in
+    place and emplaces the middle and right nodes with hints; a merge erases a neighbour node.
+  - `PhysicalMemory::m_mappings` and `FlexibleMemory::m_allocated` become maps keyed by `map_vaddr`. `ProtectMapping`
+    and Flexible's Unmap / Protect edit only the window.
+  - `PooledMemory::m_mappings` becomes a map keyed by vaddr. `m_free` becomes a map with neighbour merge, as
+    GuestAddressSpace's already is.
+- **The queries:** the public queries keep their signatures and results.
+- **Snapshots:** cached by `Generation`. One vector per change, not one per call: the host's readers stop copying
+  2.1 MiB per sync.
+- **The rewrites:** `touching()` and `DirtyWithTouching` work on map iterators.
+- **Also:** `FindFreeAlignedUnlocked` starts at `m_free.upper_bound(search_start)`.
+- **Test** (`test_a1438`): a differential test drives old and new with the same operation sequences, random ones
+  plus a recorded one if a normal run's journal holds one (TODO: check the journal tags). It compares every query
+  result and the final range lists. A broken copy (a split that loses the right part) must fail.
+
+**A1m: merge contiguous same-attribute direct views** (switch `KYTY_BC5_0438_A1M`, on top of A1).
+- `SameMergeKey` also merges Direct when `right.offset == left.offset + left.size` and the protection, memory type
+  and name match; never for `disallow_merge` (NO_COALESCE).
+- It needs `PhysicalMemory::Unmap` and `ProtectMapping` to accept a span covering several blocks. Today Unmap matches
+  one block, so a merged range's munmap would fail with EACCES (memory.cpp:3306–3309).
+- It is guest-visible: VirtualQuery and QueryMemoryProtection return larger ranges. TODO(verify): whether the
+  console's vm_map coalesces such entries; until then A1m is an experiment arm, not a default.
+- Up to −42 % of the ranges (result 19).
+
+**A2: the backend's mapping list, not copied per change** (switch `BC5_DIRECT_0438_A2`).
+- **Today:** `Device::sorted_mappings()` (backend/src/direct.cpp:851) rebuilds lazily per `list_gen` (exp 0170). But
+  each rebuild copies and merges every entry (~17,000 shared maps plus the userptrs) under the device mutex. In the dip
+  the list changes ~900 times a second, so nearly every submission rebuilds ~0.7 MiB (result 19: 52,935 + 22,049
+  copies).
+- **A dirty flag would not help:** a change lands between nearly every pair of submits.
+- **A2's structure:** a chunked persistent list. Sorted chunks of ≤ 512 entries sit behind a top array of
+  `shared_ptr<const Chunk>` (~34 entries).
+  - An edit copies only the affected chunk (~12 KB) and the top array, under the device mutex.
+  - `sorted_mappings()` returns the top array's `shared_ptr`.
+- **The readers:** `submit_now`'s probe (`covered_sorted`) and the filter's `mapped` callback. They hold the snapshot
+  for one submission's preparation and filter (milliseconds) and need it stable for exactly that long. A lookup is a
+  binary search on the chunks' first VAs, then within the chunk.
+  - `covered_sorted` takes the chunked type; one overload.
+- **Test** (`test_a2438`): the same random edit sequences against today's rebuild, comparing every `covered` answer
+  and the flattened list.
+
+**Non-atomic windows** (the top session's point 6):
+- **What exists:** a partial `UnmapOne` replaces the whole old view with PROT_NONE and then remaps the left and right
+  parts (memoryAddressSpace.inc:413–429). `ReplaceFixedRangeWithReserved` runs `UnmapGpuRange` and the range's
+  Remove before the new view is mapped (memory.cpp:4259–4260, 3945–3948).
+- **What the GPU can see:** the direct and private memory reach the GPU as dma-bufs of their memfds (ADR 0006, exp
+  0023). So the GPU sees backing pages, not the host's VA swaps. Only the `UnmapGpuRange` gap is a GPU-visible window,
+  and only at the range's real, page-aligned addresses.
+- **So these windows do not explain S347's faults** (result 18: valid low halves under junk high parts). No tie to the
+  F852/F858 class from this reading.
+
+**Test-build order** (the top session's point 5): A2 and A1 first, then A1m and Q438, with the T arm env-only. One
+build, each behind its own switch. Lean A/B on the third title and ASTRO BOT; in normal builds a compare-only check of
+new against old, never a repair.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
@@ -2333,6 +2431,61 @@ from its memory. So host-formatted text reached guest memory that the title late
 checked: host code (`journal`'s formatting) running on a guest thread's stack, below the title's frames, in memory the
 title reuses. To be checked on its own: which thread's stack spans that address, and whether host buffers live in
 guest-allocated stacks.
+
+## Result 20: r438o, two holes in the deployed r438 and their fix (F874, F875; 2026-11-21)
+
+Two holes in the deployed r438 (patch 9889b06a), found offline on the bake unit ff9e8fe2:
+
+- **Ring order (F874).** Another thread's real write of the same label can pass a taken slice's early write in `g_plw`.
+  - bc5-ring's `r438_begin` gives the early write order N. Before the slice's own job registers it for real, the Render Thread's or bc5-chainwd's `submit_now` can register a real write of the same label with order N+1.
+  - `ring_will_satisfy` then answers a game-thread wait on the slice's value "not satisfied", while its writer is still to come.
+- **The trim (F875).** `g_plw`'s trim erases the oldest 4,096 entries by position, early ones included.
+
+Both reproduce deterministically: `r438o/test_r438o.sh bake438.cpp order` and `... trim` FAIL.
+
+The fix, `r438o/mkr438o.py`, works inside the EARLYREG path and has no new switch:
+
+- **E2:** `register_label_writes` renumbers the other early entries of its labels after its own real writes.
+- **E3:** with r438 on, the trim drops only real entries. The bound: an early entry lives only until its slice's `r438_end`, so the table holds at most 8,192 real entries, one batch and the slices in flight.
+- **E4:** normal-build counters in r438's 60-s line.
+- **E5:** the renumbering scan runs only while early entries are in the table (`g_r438o_live`).
+
+Tests:
+
+- order and trim PASS.
+- The planted bugs (no renumbering; the old trim) FAIL.
+- Identity with EARLYREG=0 and with it on equals the bake unit.
+
+The lean A/B on ASTRO BOT, on the clean boot c05993c0 (`r438o/ab438o.sh`; MangoHud per frame, from 30 s, 140 s per run):
+
+- **q438oA**, without E5:
+  - Control d3485ed4: 59.67 / 59.48 / 59.32 flips/s, p99 17.0 / 17.4 / 33.3 ms, over 50 ms 1 / 5 / 4.
+  - r438o lean aae9c294: 59.11 / 58.88 / 59.22 flips/s, p99 33.5 / 33.7 / 33.5 ms, over 50 ms 5 / 7 / 3.
+  - The ranges do not overlap: about 0.7 % lower, and the p99 doubled.
+  - The normal run printed no r438 line: ASTRO took no slice.
+  - The cost was r438o's renumbering scan of the whole `g_plw` on every `register_label_writes` under `g_plw_mutex`, with nothing to renumber. E5 removes it.
+- **The deployed r438 itself** adds no per-submit scan of `g_plw` on a title with no slices. Per submit it adds only:
+  - `t_r438_real.push_back` while a slice is on (bake unit line 9254);
+  - the PLWCV `notify_all` (line 9263).
+
+  Its scans run per slice (`r438_begin` / `r438_end`) and at waits (`ring_will_satisfy`).
+- **q438oB**, with E5 (unit 2e6168de; lean ef76f031, normal 94e0e462), the same boot, 14:27–14:50:
+  - Control: 58.61 / 58.56 / 58.54 flips/s, p99 33.89 / 33.90 / 33.86 ms, over 50 ms 4 / 8 / 4.
+  - r438o: 58.69 / 58.51 / 58.05 flips/s, p99 33.84 / 33.87 / 34.36 ms, over 50 ms 6 / 8 / 4.
+  - The ranges overlap for flips/s and p99, and r438o's over-50 counts are within the control's.
+  - Means: control 58.57, r438o 58.42; the lowest run is O3.
+  - The control itself fell from 59.49 (q438oA) to 58.57 flips/s on the same boot, and its p99 from 17 to 34 ms. That drift of the box is larger than the difference between the arms.
+  - The normal run again printed no r438 line (no slice) and no kernel line.
+
+**The bake (2026-11-21 14:52–15:02, the top session's GO; one lock line for the swap and the smoke):**
+
+- Patch 9889b06a → 0fede35d (135 files, exp 0372 lines 5, the pad_audio_route header in).
+- Normal b1b57df9 → 199a0f39, lean d3485ed4 → 3a20b974, archive d6638808 unchanged. No switch word gained or lost.
+- Smokes: o438sc (ASTRO lean 200 s) and o438sn (normal 200 s) PASS, 0 kernel lines. The exe md5s read back.
+- The chain cannot separate a cost under about 0.3 % from the boot's drift, and every r438o run followed a control run.
+- Undo: `bash ~/bc5-work/exp0438/r438okit/bake/undo0438o.sh`.
+
+**Unexercised.** ASTRO BOT takes no r438 slices, so this A/B shows only that r438o costs nothing when idle. The fix's own path (the renumbering and the trim-keep) stays unexercised on a real title until the second title is installed again.
 
 ## Verdict
 
