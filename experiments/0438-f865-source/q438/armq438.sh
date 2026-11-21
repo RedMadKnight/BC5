@@ -44,6 +44,7 @@ run() { # $1 tag suffix, then the switch words
     busy && { say "STOP before $t: an emulator or bc5-mount runs"; finish 1; }
     deadmnt && { say "STOP before $t: a dead ASTRO mount inside the container"; finish 1; }
     r0=$(resets)
+    local MK=$R/$t-marker; : > "$MK"
     ( while sleep 2; do
         if grep -aq 'exp 0438 (tag a2): MISMATCH' "$N/astro-last.log" 2> /dev/null; then echo "$(date +%T) $t: A2 MISMATCH seen: the emulator is ended" >> "$S"; pkill -TERM -o -x kyty_emulator; break; fi
       done ) &
@@ -53,7 +54,7 @@ run() { # $1 tag suffix, then the switch words
     r1=$(resets)
     local L=$R/$t-play.log
     say "$t [$*]: $line"
-    local J; J=$(ls -dt ~/bc5-data/captures/play-* 2> /dev/null | head -1)/direct.log
+    local J; J=$(find ~/bc5-data/captures -maxdepth 1 -name "play-*" -newer "$MK" 2> /dev/null | sort | head -1)/direct.log
     say "$t: journal $J: q438 BUG $(grep -ac 'q438 (exp 0438): BUG' "$J"), r438 BUG $(grep -ac 'r438 (exp 0438, b438): BUG' "$J"); fault record: $(ls -dt ~/bc5-data/captures/faults/* | head -1 | xargs basename) $(grep -ac 'GPU FAULT' "$L") GPU FAULT lines"
     grep -qi 'reset failed' "$R/$t-dmesg-after.txt" 2> /dev/null && say "$t: A RING RESET FAILED (the box may reboot)"
     say "$t: reset lines: $(grep -o 'ring [a-z_0-9.]* timeout\|Ring [a-z_0-9.]* reset [a-z]*' "$R/$t-dmesg-after.txt" 2> /dev/null | sort | uniq -c | tr -s ' ' | tr '
@@ -63,8 +64,8 @@ run() { # $1 tag suffix, then the switch words
     grep -a 'r438 (exp 0438, b438): BUG\|q438.*BUG' "$L" | head -5 | cut -c1-300 | tee -a "$S"
     case "$line" in *"PASS: ran 60 s"*"kernel lines 0, crash lines 0"*) ;; *) say "RESULT $t: NOT CLEAN"; finish 2 ;; esac
     [ "$r0" = "$r1" ] || { say "RESULT $t: the reset count changed"; finish 2; }
-    [ "$(grep -ac 'tag a2): MISMATCH' "$L")" = 0 ] || { say "RESULT $t: an A2 mismatch"; finish 2; }
+    local mm; mm=$(grep -ac 'tag a2): MISMATCH' "$L" 2> /dev/null); [ "${mm:-0}" = 0 ] || { say "RESULT $t: an A2 mismatch"; finish 2; }
     say "RESULT $t: CLEAN"
 }
-run x "${ARGS[@]}"
+run "${ARGS[@]}"
 finish 0
