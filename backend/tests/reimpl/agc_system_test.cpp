@@ -25,6 +25,17 @@ using u64 = std::uint64_t;
 
 namespace {
 
+// An environment value and a file for writing, without MSVC's C4996 (getenv, fopen).
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#endif
+const char *test_env(const char *name) { return std::getenv(name); }
+std::FILE *test_fopen_wb(const char *path) { return std::fopen(path, "wb"); }
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
 // ---- synthetic module image ---------------------------------------------------------------------
 
 class FakeImage : public bc5::reimpl::FirmwareData {
@@ -1090,6 +1101,26 @@ void second_game_init(bool via_23lru) {
     };
     if (s.sh_stream != nullptr) walk(s.sh_stream, s.sh_stream_bytes / 4u, "sh stream");
     if (s.resume_dcb != nullptr) walk(s.resume_dcb, s.resume_dwords, "resume dcb");
+    // BC5_TEST_SLOT_OUT=<dir>: the slot as files, for an offline compare with a capture of the same
+    // slot built by the title's own copy of the module (the cx/sh/uc lists the load packets point at,
+    // the prebuilt SH stream and the resume DCB). Nothing is written without it.
+    if (const char *dir = test_env("BC5_TEST_SLOT_OUT"); dir != nullptr && dir[0] != 0) {
+        auto put = [&](const char *name, const void *data, std::size_t bytes) {
+            const std::string path = std::string(dir) + "/" + name;
+            if (std::FILE *f = test_fopen_wb(path.c_str()); f != nullptr) {
+                std::fwrite(data, 1, bytes, f);
+                std::fclose(f);
+            }
+        };
+        put("ours-cx.bin", s.cx, 8ull * s.cx_count);
+        put("ours-sh.bin", s.sh, 8ull * s.sh_count);
+        put("ours-uc.bin", s.uc, 8ull * s.uc_count);
+        if (s.sh_stream != nullptr) put("ours-sh-stream.bin", s.sh_stream, s.sh_stream_bytes);
+        if (s.resume_dcb != nullptr) put("ours-resume-dcb.bin", s.resume_dcb, 4ull * s.resume_dwords);
+        std::printf("slot written to %s: cx %u sh %u uc %u (special %u), sh stream %u bytes, resume %u dwords\n",
+                    dir, s.cx_count, s.sh_count, s.uc_count, s.uc_special_count, s.sh_stream_bytes,
+                    s.resume_dwords);
+    }
 }
 } // namespace
 
