@@ -14,7 +14,7 @@ TREE=$HOME/src/KytyPlus; SA=$W/backend-ubuntu/libbc5_backend.a; PA=$W/exp0438/a2
 P_UNIT=ff9e8fe2e4139264ebaf74f9e84bd892; P_MEM=aa7d7f5b3fdbbe8d57bd440e7aa80922
 P_ARCH=d6638808; P_NORMAL=b1b57df9; P_LEAN=d3485ed4; P_PA=$(cut -c1-8 "$W/exp0438/a2/backend/archive.md5" 2> /dev/null) # written by boxa2.sh build just before
 K_MEM=286ab94268aa795a14c40ba5eb0aad9e; K_UNIT=0402a183e527bca6d1d27b5d02bc0c38
-K_HPP=18c66de84ae1a6705462cd4953cd6633; K_MI=39952c484209fe5c64a55167f02107b7; K_PY=5dfb35d884bee8af31d81e3ad8b92548
+K_HPP=18c66de84ae1a6705462cd4953cd6633; K_MI=39952c484209fe5c64a55167f02107b7; K_PY=3fe0aacaa3a2859de7f9903e127a5a63
 NICE="nice -n 19 ionice -c 3"
 stop() { echo "a1 STOP: $*"; exit 1; }
 m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }
@@ -32,7 +32,7 @@ build() {
         && cp "$HERE/be/direct.hpp" "$S/kyty/src/bc5/direct.hpp" && cp "$HERE/be/mapping_index.hpp" "$S/kyty/src/bc5/mapping_index.hpp" || stop "copy the kit"
     (cd "$S" && find . -type f | sort | xargs md5sum) > "$R/src-md5.txt"; cat "$R/src-md5.txt"
     echo "MemAvailable before the builds: $(awk '/^MemAvailable/{print int($2/1024)}' /proc/meminfo) MiB"
-    [ "$(awk '/^MemAvailable/{print $2}' /proc/meminfo)" -gt 3000000 ] || stop "under 3 GiB available: not building now"
+    echo "MemAvailable $(awk '/^MemAvailable/{print int($2/1024)}' /proc/meminfo) MiB (build0438.py waits before each link while under 4 GiB)"
     for v in normal lean; do
         b=$W/kytyplus-build$([ $v = lean ] && echo -lean); bin=$E/$v/kyty_emulator
         mkdir -p "$E/$v"; rm -rf "$E/$v/obj" "$E/$v/lib"

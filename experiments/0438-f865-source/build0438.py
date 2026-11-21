@@ -140,4 +140,27 @@ if ARCHIVE is not None:
             n += 1
     assert n >= 1, "no libbc5_backend.a in the link command"
 argv[argv.index("-o") + 1] = out_bin
+
+
+def mem_available_kib():
+    for line in open("/proc/meminfo"):
+        if line.startswith("MemAvailable:"):
+            return int(line.split()[1])
+    return 0
+
+
+# exp 0438 (2026-11-21, the top session's condition beside exp 0439): wait before the link while MemAvailable is under
+# BC5_LINK_MIN_KIB (default 4 GiB), checked every 30 s, for up to 2 h; units compile one at a time (one job)
+import time
+need = int(os.environ.get("BC5_LINK_MIN_KIB", "4194304"))
+for i in range(241):
+    have = mem_available_kib()
+    if have >= need:
+        break
+    if i == 240:
+        print(f"== LINK NOT STARTED: MemAvailable {have // 1024} MiB under {need // 1024} MiB for 2 h", flush=True)
+        sys.exit(3)
+    print(f"link waits: MemAvailable {have // 1024} MiB under {need // 1024} MiB", flush=True)
+    time.sleep(30)
+print(f"link: MemAvailable {mem_available_kib() // 1024} MiB", flush=True)
 sys.exit(run(argv, build))

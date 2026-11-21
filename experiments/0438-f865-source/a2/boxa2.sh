@@ -22,7 +22,7 @@ P_BE_CPP=eacf8d2a
 P_BE_HPP=9256f3b9
 P_ARCH=d6638808; P_NORMAL=b1b57df9; P_LEAN=d3485ed4
 K_UNIT=0402a183e527bca6d1d27b5d02bc0c38; K_BE_CPP=66f9893767d2b18adf1a6ed3eb8aec80; K_BE_HPP=18c66de84ae1a6705462cd4953cd6633; K_MI=39952c484209fe5c64a55167f02107b7
-K_PY=5dfb35d884bee8af31d81e3ad8b92548
+K_PY=3fe0aacaa3a2859de7f9903e127a5a63
 NICE="nice -n 19 ionice -c 3"
 stop() { echo "a2 STOP: $*"; exit 1; }
 m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }
@@ -88,7 +88,7 @@ build() {
         || { tail -40 "$R/build-backend.out"; stop "backend archive failed"; }
     echo "backend: errors $(grep -c 'error:' "$R/build-backend.out"); warnings $(grep -c 'warning:' "$R/build-backend.out")"
     echo "MemAvailable before the links: $(awk '/^MemAvailable/{print int($2/1024)}' /proc/meminfo) MiB"
-    [ "$(awk '/^MemAvailable/{print $2}' /proc/meminfo)" -gt 3000000 ] || stop "under 3 GiB available: not linking now"
+    echo "MemAvailable $(awk '/^MemAvailable/{print int($2/1024)}' /proc/meminfo) MiB (build0438.py waits before each link while under 4 GiB)"
     m "$E/backend/libbc5_backend.a" > "$E/backend/archive.md5"
     for v in normal lean; do
         b=$W/kytyplus-build$([ $v = lean ] && echo -lean); bin=$E/$v/kyty_emulator
