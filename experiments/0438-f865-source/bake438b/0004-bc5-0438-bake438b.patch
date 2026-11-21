@@ -6466,14 +6466,3 @@ diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
  	shader_dump(ib, num_dwords, *maps_p); // experiment 0049
  	bc5::policy::FilterOptions opt;
  	opt.cu_mask       = g_cu_mask;
-diff --git a/src/bc5/switch_defaults.hpp b/src/bc5/switch_defaults.hpp
---- a/src/bc5/switch_defaults.hpp
-+++ b/src/bc5/switch_defaults.hpp
-@@ -346,6 +346,7 @@ inline void Apply() {
- #ifdef BC5_LEAN
- 	// build W: diagnostic words the BACKEND reads (one archive for both builds) are taken out of the environment
- 	unsetenv("BC5_DIRECT_DRAW_ARGS_JOURNAL");
-+	unsetenv("BC5_DIRECT_0438_A2_CHECK"); // exp 0438 (bake438b): A2's compare-only check, a normal-build diagnostic
- #endif
- 	for (const Default* d = kSoft; d->name != nullptr; d++) {
- 		setenv(d->name, d->value, 0);

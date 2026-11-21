@@ -20,9 +20,11 @@ Steps (every generator is run as it is, with python -I; every own replacement mu
               (forced in normal) and BC5_FIXED_ENV(..., "1") in lean, so A1P is on by default in both builds.
   bc5LleAgc.cpp: a2/mka2host.py --any on r438o.cpp, then GATE (below), then BC5_0438_INFLIGHT_NG / BC5_0438_OPEN_NG
               read "on unless 0".
-  switch_defaults.hpp: lean takes BC5_DIRECT_0438_A2_CHECK out of the environment (as build W does for
-              BC5_DIRECT_DRAW_ARGS_JOURNAL, a word the shared backend archive reads), so A2_CHECK never runs in lean.
-  backend: a2/mka2be.py on main's backend; then BC5_DIRECT_0438_A2 reads "on unless 0" (A2_CHECK stays off unless "1").
+  switch_defaults.hpp: unchanged (48ae1cd6; read from patch 0001 only to pin it).
+  backend: a2/mka2be.py on main's backend; then BC5_DIRECT_0438_A2 reads "on unless 0", and A2's compare-only check
+              (BC5_DIRECT_0438_A2_CHECK, its compare block, the tag a2c438 counters and 60-s line) becomes a compile-time
+              option of the backend, #if defined(BC5_0438_A2_CHECK_BUILD): not defined in the bake, so neither its code
+              nor its word nor its line is in the shared archive; a private diagnosis build may define it.
 GATE: q438/mkq438x.py's own replacement list, read with ast (not copied): every top-level rep(old, new) call in order.
   Taken out: its labelmap steps LM2-LM6 (r438_scan / q438_scan / submit_now / opt.mapped) and, from the kept text,
   the Q438 pieces (q438_writer_queued, the q438_on() test). Moved: LM1's anchor is a Q438 line; only its
@@ -31,13 +33,13 @@ GATE: q438/mkq438x.py's own replacement list, read with ast (not copied): every 
   "tag ng438w", at the place the q438 block sits in stack438 (before exp 0401 e11's m11 block). Every other step
   (NG1, NG2, ng438, wd438, open_ng, the busy counts, the fallback, the tick, ho430's records, the fault dump) is
   applied as mkq438x.py writes it. A step this script does not know is applied as it is and printed.
-Prints every md5. Writes OUT_DIR/{old,new}/..., 0004-bc5-0438-bake438b.patch (host: memory.cpp, bc5LleAgc.cpp,
-switch_defaults.hpp) and 0004-backend-0438-bake438b.patch (backend: direct.cpp, direct.hpp, new mapping_index.hpp),
+Prints every md5. Writes OUT_DIR/{old,new}/..., 0004-bc5-0438-bake438b.patch (host: memory.cpp, bc5LleAgc.cpp) and 0004-backend-0438-bake438b.patch (backend: direct.cpp, direct.hpp, new mapping_index.hpp),
 both a/ b/ labelled unified diffs, and pins438b.inc (the md5s the kit's scripts check).
 """
 import ast
 import hashlib
 import os
+import re
 import subprocess
 import sys
 
@@ -234,12 +236,8 @@ for w in ('INFLIGHT_NG', 'OPEN_NG'):
     s = rep1(s, f'BC5_0438_{w}, on only when "1"\n', f'BC5_0438_{w}, on unless "0" (bake438b)\n', f'{w} comment')
 unit = s.encode('utf-8')
 
-# ---- switch_defaults.hpp ---------------------------------------------------------------------------------------------
-w = swd_old.decode('utf-8')
-w = rep1(w, '\tunsetenv("BC5_DIRECT_DRAW_ARGS_JOURNAL");\n',
-         '\tunsetenv("BC5_DIRECT_DRAW_ARGS_JOURNAL");\n'
-         '\tunsetenv("BC5_DIRECT_0438_A2_CHECK"); // exp 0438 (bake438b): A2\'s compare-only check, a normal-build diagnostic\n', 'lean A2_CHECK')
-swd_new = w.encode('utf-8')
+# ---- switch_defaults.hpp: unchanged in this bake (the A2 check is a build option now) ---------------------------
+assert md5b(swd_old).startswith('48ae1cd6'), md5b(swd_old)
 
 # ---- backend ---------------------------------------------------------------------------------------------------------
 bo = os.path.join(T, 'be')
@@ -249,13 +247,57 @@ dc = rep1(dc, 'const bool a2 = [] { const char *e = std::getenv("BC5_DIRECT_0438
           'const bool a2 = [] { const char *e = std::getenv("BC5_DIRECT_0438_A2"); return !(e != nullptr && e[0] == \'0\' && e[1] == 0); }(); // exp 0438 (bake438b): on unless "0"',
           'A2 default')
 assert 'std::getenv("BC5_DIRECT_0438_A2_CHECK"); return e != nullptr && e[0] == \'1\' && e[1] == 0;' in dc
+IFC = '#if defined(BC5_0438_A2_CHECK_BUILD) // exp 0438 (bake438b): A2\'s compare-only check, private diagnosis builds only\n'
+ENDC = '#endif // BC5_0438_A2_CHECK_BUILD\n'
+i = dc.index('    const bool a2_check = [] {')
+j = dc.index('    // Experiment 0170: shared_maps is kept sorted by address', i)
+blk = dc[i:j]
+assert dc.count(blk) == 1 and blk.endswith('    }\n') and 'void a2_line() {' in blk
+plain = ('    void a2_insert(const Mapping &m) { if (a2 && sorted) sorted = index_insert(sorted, m); }\n'
+         '    void a2_erase(const Mapping &m) { if (a2 && sorted) sorted = index_erase(sorted, m); }\n')
+dc = rep1(dc, blk, IFC + blk + '#else\n' + plain + ENDC, 'A2 check: members')
+dc = rep1(dc, '    // BC5_DIRECT_0438_A2_CHECK=1 compares it with a full rebuild every 64th call (records only)\n',
+          '    // with BC5_0438_A2_CHECK_BUILD defined, BC5_DIRECT_0438_A2_CHECK=1 compares it with a full rebuild every 64th call\n', 'A2 check: comment')
+dc = rep1(dc, '    if (impl_->a2_check) impl_->a2_line(); // exp 0438 (tag a2c438)\n',
+          IFC + '    if (impl_->a2_check) impl_->a2_line(); // exp 0438 (tag a2c438)\n' + ENDC, 'A2 check: the line')
+i = dc.index('        if (impl_->a2_check && (impl_->a2_calls++ & 63u) == 0) {\n')
+j = dc.index('        return impl_->sorted;\n    }\n', i)
+blk = dc[i:j]
+assert dc.count(blk) == 1 and blk.endswith('        }\n') and 'MISMATCH' in blk
+dc = rep1(dc, blk, IFC + blk + ENDC, 'A2 check: the compare')
+for c in ('        impl_->a2_rebuilds++; // exp 0438 (tag a2c438)\n', '        impl_->a2_drops++; // exp 0438 (tag a2c438)\n'):
+    dc = rep1(dc, c, IFC + c + ENDC, 'A2 check: ' + c.strip())
+
+
+def without_check(t):  # the text as the preprocessor sees it with BC5_0438_A2_CHECK_BUILD undefined
+    out, skip = [], False
+    for ln in t.split('\n'):
+        if ln.startswith('#if defined(BC5_0438_A2_CHECK_BUILD)'):
+            skip = True
+            continue
+        if skip and ln == '#else':
+            skip = False
+            continue
+        if ln == '#endif // BC5_0438_A2_CHECK_BUILD':
+            skip = False
+            continue
+        if not skip:
+            out.append(ln.split('//')[0])
+    return '\n'.join(out)
+
+
+bake_view = without_check(dc)
+for w in ('BC5_DIRECT_0438_A2_CHECK', 'a2c438', 'a2_check', 'a2_calls', 'a2_mismatches', 'a2_compares', 'a2_rebuilds', 'a2_drops', 'a2_line', 'MISMATCH', 'a2_ins', 'a2_era', 'a2_skipped'):
+    assert re.search(r'\b' + w + r'\b', bake_view) is None, f'A2 check text outside BC5_0438_A2_CHECK_BUILD: {w}'
+assert dc.count(IFC) == 5 and dc.count(ENDC) == 5
+print('A2 check: 5 blocks under BC5_0438_A2_CHECK_BUILD; none of its words, lines or counters outside them')
 be_cpp = dc.encode('utf-8')
 be_hpp = open(os.path.join(bo, 'include', 'bc5', 'direct.hpp'), 'rb').read()
 be_mi = open(os.path.join(bo, 'include', 'bc5', 'mapping_index.hpp'), 'rb').read()
 
 # ---- trees and patches -----------------------------------------------------------------------------------------------
 files_k = {'src/kernel/memory.cpp': (open(MEM, 'rb').read(), mem.encode('utf-8')), 'src/libs/bc5LleAgc.cpp': (open(UNIT, 'rb').read(), unit),
-           'src/bc5/switch_defaults.hpp': (swd_old, swd_new)}
+}
 files_b = {'src/direct.cpp': (open(os.path.join(BE, 'src', 'direct.cpp'), 'rb').read(), be_cpp),
            'include/bc5/direct.hpp': (open(os.path.join(BE, 'include', 'bc5', 'direct.hpp'), 'rb').read(), be_hpp),
            'include/bc5/mapping_index.hpp': (None, be_mi)}
@@ -286,7 +328,7 @@ def mkpatch(tag, files, name):
 pk = mkpatch('kyty', files_k, '0004-bc5-0438-bake438b.patch')
 pb = mkpatch('backend', files_b, '0004-backend-0438-bake438b.patch')
 pins = {'KIT_PATCH': pk[:8], 'KIT_BE_PATCH': pb[:8], 'MEM_OLD': 'aa7d7f5b', 'MEM_NEW': md5b(files_k['src/kernel/memory.cpp'][1])[:8],
-        'UNIT_OLD': '2e6168de', 'UNIT_NEW': md5b(unit)[:8], 'SWD_OLD': md5b(swd_old)[:8], 'SWD_NEW': md5b(swd_new)[:8],
+        'UNIT_OLD': '2e6168de', 'UNIT_NEW': md5b(unit)[:8], 'SWD': md5b(swd_old)[:8],
         'BE_CPP_OLD': 'eacf8d2a', 'BE_CPP_NEW': md5b(be_cpp)[:8], 'BE_HPP_OLD': '9256f3b9', 'BE_HPP_NEW': md5b(be_hpp)[:8], 'BE_MI_NEW': md5b(be_mi)[:8],
         'MKQ438X': q438x_md5[:8]}
 txt = '# BC5 exp 0438 (tag bake438b): written by mkbake438b.py; sourced by swap0438b.sh (step 1)\n' + ''.join(f'{k}={v}\n' for k, v in pins.items())

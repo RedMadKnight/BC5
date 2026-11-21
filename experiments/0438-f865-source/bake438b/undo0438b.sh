@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # BC5 exp 0438 (tag bake438b): puts everything swap0438b.sh changed back as it was before it (patch 0fede35d, normal 199a0f39,
-# lean 3a20b974, archive d6638808): the three host files, the backend source's two files (and removes the new
+# lean 3a20b974, archive d6638808): the two host files (bc5LleAgc.cpp, memory.cpp), the backend source's two files (and removes the new
 # include/bc5/mapping_index.hpp), the archive and both binaries, each checked by md5 against the copies and the pins file
 # (swap0438b.sh's format: PIN_OLD, ARCH_OLD, BENEW, NORMAL, LEAN, ARCH). No emulator may run.
 # Run alone it takes its own BOX-LOCK slot; from swap0438b.sh (UNDO_IN_INT=1) it runs in the swap's slot. UNDO_DRY=1

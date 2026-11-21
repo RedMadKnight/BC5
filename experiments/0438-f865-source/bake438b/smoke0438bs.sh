@@ -6,8 +6,8 @@
 # No switch is set: the bake's defaults (all on) run. At 150 s of each run the drm-engine-* lines, GTT in use and
 # MemAvailable. One BOX-LOCK line; ulimit -c 0. Stops at the first failed run, kernel line or pad key. Before each run: no
 # dead bc5 FUSE mount inside the container (a dead endpoint passes mountpoint -q and the launcher then skips its mount).
-# Reported, not judged: the A1 / A1P on lines, ng438's holds and its 10-s fallback BUG lines, A2 MISMATCH lines (none can
-# appear: A2_CHECK is not set), r438's lines.
+# Reported, not judged: the A1 / A1P on lines, ng438's holds and its 10-s fallback BUG lines, r438's lines; A2's compare-only
+# check is not in the bake (a build option), so its MISMATCH and a2c438 lines must be 0.
 # usage (on the box, detached under the user manager, in ~/bc5-work/exp0413/n):
 #   LEAN_WANT=<md5> NORMAL_WANT=<md5> bash ~/bc5-work/exp0438/bake438b/smoke0438bs.sh
 set -u
@@ -21,7 +21,7 @@ cd "$N" || exit 1
 [ "$MN" = "${NORMAL_WANT:?the swapped normal md5}" ] || { echo "smoke0438b ended $(date +%T): NOT STARTED, normal is ${MN:0:8}"; exit 1; }
 for t in b438sc b438sn; do { [ -e "$R/$t-end.txt" ] || [ -e "$R/$t-start.txt" ]; } && { echo "smoke0438b ended $(date +%T): NOT STARTED, tag $t used"; exit 1; }; done
 pgrep '^kyty_emulator' > /dev/null && { echo "smoke0438b ended $(date +%T): NOT STARTED, an emulator runs"; exit 1; }
-for v in KYTY_BC5_0438_A1 KYTY_BC5_0438_A1P BC5_DIRECT_0438_A2 BC5_DIRECT_0438_A2_CHECK BC5_0438_INFLIGHT_NG BC5_0438_OPEN_NG; do
+for v in KYTY_BC5_0438_A1 KYTY_BC5_0438_A1P BC5_DIRECT_0438_A2 BC5_0438_INFLIGHT_NG BC5_0438_OPEN_NG; do
     [ -z "${!v+x}" ] || { echo "smoke0438b ended $(date +%T): NOT STARTED, $v is set (${!v}): the smoke runs the defaults"; exit 1; }
 done
 if [ -n "${CHAIN_LOCKLINE:-}" ] && [ "$(cat "$W/BOX-LOCK" 2> /dev/null)" = "$CHAIN_LOCKLINE" ]; then  # run-swap0438b.sh holds the one line
