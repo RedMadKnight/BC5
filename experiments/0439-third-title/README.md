@@ -407,6 +407,22 @@ the control's line has none, `X=1;rm` is refused).
       probe (`BC5_DIRECT_TIMEOUT_PROBE=1`) and the full journal.
     - Also on that boot: at 16:58:09 comp_1.1.0 and gfx_0.0.0 timed out with successful resets, pid 928664, not a run
       of this experiment.
+29. *Rebase notes for the bake after exp 0438's swap* (agreed with exp 0438 by message, 11-21 evening).
+    - Base both the backend diff and the unit edits on exp 0438's post-bake files. It will send the md5s of patch
+      0001, the shared bc5LleAgc.cpp, memory.cpp, direct.cpp, and the normal, lean and archive builds.
+    - `backend/src/direct.cpp`: both experiments edit it. Exp 0438 changes the mapping functions (MappingIndex,
+      `sorted_mappings`, `map_userptr` and the rest); exp 0439 changes `submit_impl`'s piece collection and the
+      NOP-ed-IB count. The hunks are apart.
+    - `opt.mapped` stays a `std::function<bool(uint64_t, uint64_t)>`, so `ib_chain::collect` is unchanged.
+      `sorted_mappings()` will return `shared_ptr<const MappingIndex>`. None of exp 0439's hunks names
+      `std::vector<bc5::direct::Mapping>` or calls `sorted_mappings`/`covered_sorted` (checked by grep over mk439.py,
+      ab439.txt, ib439.txt, mkeq439.py, dc0439.hpp).
+    - `acb_ready`: ab439's found waits go through exp 0438's `acb_wait_unready` (its in-flight test included) instead
+      of the three inline tests.
+    - bc5-ring's 10-s give-up: exp 0438 adds `Direct::ng438_fallback(Direct::t_unready.label)` before the release.
+      ar439's branch goes after that call, so a refused acb is still counted.
+    - mk439.py's replacements assert that each anchor matches exactly once, so any anchor exp 0438's bake moved
+      fails loudly at generation and is fixed then.
 
 (more to come)
 
