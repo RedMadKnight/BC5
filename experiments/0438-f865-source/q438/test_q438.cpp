@@ -1481,6 +1481,84 @@ static int run_rings() {
 	return 0;
 }
 
+// ---- shape67: the full set's first broken order (cq438f1's journal before #67) ------------------------------------------------
+//   A1 (compute acb): waits d00 == 1, then writes d40 = 1 at its end. acb_ready holds it ("acb head: 87 of 1336 dwords go
+//      ahead of the wait at 87 on 0x400202d00").
+//   D (gfx dcb, the game thread): its head (split off ahead of its wait) writes d00 = 1; its wait on d40 == 1 follows
+//      ("wait at 115 on 0x400202d40 ... head split off ... GIVEN UP after 23.3 ms").
+// D's head becomes a registered writer Q438_SHAPE_DELAY_MS after the wait's decision starts: about 1 ms when it goes at once;
+// longer when it waits in Q438's queue, behind an entry in submit_now, in an open chain, or in a slow synchronous submit.
+// The GPU writes a registered job's labels 2 ms after its registration. bc5-ring polls A1 every ms: acb_ready's test, and
+// at ready A1 is submitted (registered; held438_release as the consumer's ring branch does).
+// D's wait is decided as submit_split does on a game thread: kept for the GPU if ring_will_satisfy (which on a game thread
+// waits for an early writer), else the label polled for its 8-ms limit, then GIVEN UP (the wait dropped: D runs ahead of A1).
+#ifdef Q438_X
+static uint64_t g_s_d00 = 0, g_s_d40 = 0;
+static int run_shape67() {
+	const char* dl    = std::getenv("Q438_SHAPE_DELAY_MS");
+	const int   delay = dl != nullptr ? std::atoi(dl) : 1;
+	g_s_d00 = 0;
+	g_s_d40 = 0;
+	std::vector<uint32_t> a1(9);
+	wait64(a1.data(), reinterpret_cast<uintptr_t>(&g_s_d00), 1);
+	const std::vector<uint32_t> a1w = rel_buf(&g_s_d40, 1);
+	a1.insert(a1.end(), a1w.begin(), a1w.end());
+	const std::vector<uint32_t> dh = rel_buf(&g_s_d00, 1); // D's head
+	std::atomic<bool>     stop {false};
+	std::atomic<int64_t>  a1_at {-1}; // ms after start: A1 submitted
+	const uint64_t        t0 = SoftCp::now_ns();
+	auto                  ms = [t0] { return static_cast<int64_t>((SoftCp::now_ns() - t0) / 1'000'000ull); };
+	// bc5-ring: the first poll holds A1
+	const bool held0 = ACB_UNREADY(a1.data(), true, reinterpret_cast<uintptr_t>(&g_s_d00), 0);
+	if (held0 && held438_on()) held438_hold(a1.data(), static_cast<uint32_t>(a1.size()), 0); // acb_ready's not-ready branch
+	std::thread ring([&] {
+		for (int k = 0; k < 300 && !stop.load(); k++) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			if (ACB_UNREADY(a1.data(), true, reinterpret_cast<uintptr_t>(&g_s_d00), 0)) continue;
+			register_label_writes(a1.data(), static_cast<uint32_t>(a1.size()), {9}, 9201, 0); // A1 submitted: its d40 write pending
+			if (held438_on()) held438_release(a1.data(), static_cast<uint32_t>(a1.size()));
+			a1_at = ms();
+			std::this_thread::sleep_for(std::chrono::milliseconds(2));
+			g_s_d40 = 1; // the GPU ran A1
+			return;
+		}
+	});
+	std::thread dhead([&] { // D's head: registered after the delay, run by the GPU 1 ms later
+		std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+		register_label_writes(dh.data(), 8, {0}, 9202, bc5::direct::kGfxRing);
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		g_s_d00 = 1;
+	});
+	// D's wait, on a game thread
+	std::string how;
+	double      at_ms = 0;
+	std::thread game([&] {
+		t_game = true;
+		uint32_t w[9];
+		wait64(w, reinterpret_cast<uintptr_t>(&g_s_d40), 1);
+		if (!wait_satisfied(w, true) && ring_will_satisfy(w, true, bc5::direct::kGfxRing)) how = "kept for the GPU (its writer A1 registered)";
+		else {
+			const uint64_t c0 = SoftCp::now_ns();
+			bool           ok = false;
+			while (!(ok = wait_satisfied(w, true)) && SoftCp::now_ns() - c0 < 8'000'000ull) std::this_thread::sleep_for(std::chrono::microseconds(50));
+			how = ok ? "served on the CPU" : "GIVEN UP: the wait dropped, D runs ahead of A1";
+		}
+		at_ms = static_cast<double>(SoftCp::now_ns() - t0) / 1e6;
+	});
+	game.join();
+	dhead.join();
+	stop = a1_at.load() >= 0 || true;
+	ring.join();
+	bool ng = inflight_ng_on(), open = open_ng_on();
+	std::printf("shape67 (D's head registered after %d ms; INFLIGHT_NG %d, OPEN_NG %d, HELD_EARLY %d): A1 held at first %d, submitted at %" PRId64 " ms; D's wait on d40: %s, decided at %.1f ms\n", delay, ng ? 1 : 0, open ? 1 : 0,
+	            held438_on() ? 1 : 0, held0 ? 1 : 0, a1_at.load(), how.c_str(), at_ms);
+	if (held438_on()) CHECK(how.rfind("GIVEN UP", 0) != 0, "shape67: HELD_EARLY=1 and D's wait on d40 was still given up");
+	return 0;
+}
+#else
+static int run_shape67() { std::printf("shape67: needs a mkq438x.py unit\n"); return 0; }
+#endif
+
 #if defined(_WIN32) // Q438_TIMER1=1: Windows' timer at 1 ms, so the stub's sub-ms sleeps are not rounded up to a 15.6-ms tick
 extern "C" __declspec(dllimport) unsigned __stdcall timeBeginPeriod(unsigned);
 #pragma comment(lib, "winmm.lib")
@@ -1518,6 +1596,7 @@ int main(int argc, char** argv) {
 	if (mode == "random") run_random(q_on);
 	else if (mode == "inflight") run_inflight();
 	else if (mode == "rings") run_rings();
+	else if (mode == "shape67") run_shape67();
 #ifdef Q438_NEW
 	else if (mode == "det") {
 		if (!q_on) {

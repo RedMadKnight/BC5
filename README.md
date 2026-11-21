@@ -59,7 +59,7 @@ While a game runs, the lean shortcut stops the Plasma panel and desktop to free 
 - **ASTRO BOT is fully playable**, at about 60 fps in its first level, with the DualSense's motion, haptics and adaptive triggers, and with saves.
 - **Marvel's Wolverine plays** (called "the second title" in the findings and below) from its menus through the opening into gameplay, with sound, saves and pause, with its ray-traced reflections switched on and, since 2026-10-23, with the DualSense's haptics (rumble with a DualShock 4). In October it ran at about 37 fps through an 18-minute session, with the maintainer's verdict "fully playable, minimal stutter" (F277); at his later save the scripted route runs at 25–26 fps with ray tracing on (2026-11-13, F832, F834). Ray tracing can be switched off live in the emulator's menu (since 2026-10-24; about 48 fps in a 10-minute session in October, without reflections, F338).
 - **Loading is quick again:** ASTRO BOT reaches its first logo about 12 s after a cold start (it was 33–50 s while the dev box's drive was nearly full). Since 2026-11-13 the second title's start screen answers about 7 s sooner and its save loads about 4 s sooner: the host had been letting the kernel read ahead of every file read, twice the data the game asked for (F817).
-- **A third title is being brought up (since 2026-11-21) and is not playable.** It installs and starts. On a private test build it renders about 230 frames at about 30 fps and then hangs the GPU, twice at the same place (F877, F881, F883). Nothing of it is in the shared builds yet.
+- **A third title is being brought up (since 2026-11-21) and is not playable.** It installs and starts. On a private test build it runs about 280 frames at about 30 fps, all of them a cleared black picture, and then stops presenting; the GPU stays healthy (F877, F881, F883, F888). Nothing of it is in the shared builds yet.
 - **Any other game is untested.** A game that needs a system library BC5 has not rewritten yet stops there.
 
 ### How you start it
@@ -70,8 +70,10 @@ A desktop shortcut opens the emulator window (see [How to start](#how-to-start))
 
 Only what is confirmed to fail on the shared builds (patch `0fede35d` of 2026-11-21, before the bake at 21:00 that brought patch `589ef163`; nothing below involves what that bake changed), or on the private builds named:
 
-- **The third title hangs the GPU about 11 s after its start** (private builds only). The frame that hangs carries the first compute buffer that continues in a second, chained buffer; the GPU stops at the first shader run of the continuation. The cause is open; two fixes are written and not yet run (F883).
+- **The third title stops at about frame 280** (private builds only). Its earlier GPU hang, in the first compute buffer that continues in a chained buffer, is passed by laying such chains out as one buffer. Now its main thread waits for a compute queue's next frame that never completes, on a black picture that is the title's own cleared frame. The cause is open (F883, F888).
 - **A CPU crash in the second title's job system, mostly in one fight scene.** The game's main thread, helping its job workers, runs a job that needs a worker's data, and the emulator ends with a read at address 0xc. On the night of 11-16/17 it ended a few of the long runs, at 3 to 20 minutes; with more job workers per core it came in most runs. The title-code workaround (JobArenaFix) is removed from the code, menu and switches since 2026-11-17 (experiment 0429): the fix is to come from console-like thread scheduling, derived at run time for any title. A 200 µs wake slice (experiment 0425) and a faster guest mutex did not remove it. Real-time priority for the title's high-priority job workers through rtkit (candidate R) removed it under a stressor (4 of 4 clean against 7 crashes in 9) and, since rtkit's per-user limits were raised on 2026-11-18, passes its checks with all 8 workers promoted and no refused audio thread; since 2026-11-18 12:08 it is on by default in the shared builds, and the 200 µs wake slice is removed (F444–F458, F851, F856, F857). Whether it removes the crash in the maintainer's own fight scene is to be seen in play. On the Bazzite host R works for a game started from his desktop. It does not work for one launched over ssh: rtkit's policy refuses those, and such a run crashed (F860).
+
+- **A game-thread wait can still be given up when its writer sits in a compute buffer the host is holding back.** The give-up of F262 is fixed for writers inside a taken slice (r438), but not for the rest of a compute buffer held at one of its own waits: that wait finds no writer, gives up after 8 ms and runs ahead. Offline only so far (F887); a fix is written, not in the shared builds.
 
 The second title's GPU hangs of 11-17 and 11-18 are fixed in the shared builds since 2026-11-18 23:52. A compute buffer's wait on a graphics release was passed on a stale value (F848, F852); the fix is now built into the code with no switch (F859). It has 0 hangs in 6 scripted runs and in the maintainer's 57-minute play.
 
@@ -87,7 +89,7 @@ BC5 is a hobby research project and is against piracy. You play games you own, d
 
 ## Status in numbers
 
-As of 2026-11-21; the table's figures are from 2026-11-02 or earlier unless a row names a later date. Measured on one BC-250 with the maintainer's own copies of the games. Since 2026-11-20 frame rates are taken from the lean build only (D24). Every number is a finding (F1 … F886) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
+As of 2026-11-21; the table's figures are from 2026-11-02 or earlier unless a row names a later date. Measured on one BC-250 with the maintainer's own copies of the games. Since 2026-11-20 frame rates are taken from the lean build only (D24). Every number is a finding (F1 … F888) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
 
 | | ASTRO BOT | Marvel's Wolverine (second title) |
 | --- | --- | --- |
@@ -140,7 +142,7 @@ Since 2026-11-13 the builds set their own defaults in code (F827), so a launcher
 | Audio grain model and display-event coalescing | The second title's sound and timeline at real speed (1.00× for 10 minutes), no 30-fps cap needed | F246, F247 |
 | Tessellation-factor ring, second title | The night scene's tessellated draws are drawn; the geometry engine's reads at address 0 are gone | F248 |
 
-**The research so far:** 776 finding rows (F1–F886; the numbering has gaps) in `docs/HANDOFF.md`, experiment directories 0001–0440 in `experiments/` (0438 and 0439, the third title, in progress), 14 architecture decision records in `docs/decisions/`.
+**The research so far:** 778 finding rows (F1–F888; the numbering has gaps) in `docs/HANDOFF.md`, experiment directories 0001–0440 in `experiments/` (0438 and 0439, the third title, in progress), 14 architecture decision records in `docs/decisions/`.
 
 ### Known issues
 
@@ -254,7 +256,7 @@ Environment variables. Since the switch cleanup in the shared builds of 2026-11-
 README.md            this file
 CLAUDE.md            standing instructions and the hard rules
 docs/
-  HANDOFF.md         research state: findings F1–F886 with sources, open questions, decisions
+  HANDOFF.md         research state: findings F1–F888 with sources, open questions, decisions
   PHASES.md          the gated roadmap (G0a, G1b, G2, G3 passed; 0b and 4 retired by D18; phase 5, play, current)
   console-vs-host.md what the console does, what the host does instead
   decisions/         ADRs 0001–0014, one decision each

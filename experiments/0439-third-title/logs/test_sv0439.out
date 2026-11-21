@@ -1,0 +1,18 @@
+  10.60  -> 0x0a600000 "10.60.000" (ok)
+  11.60  -> 0x0b600000 "11.60.000" (ok)
+  9.00   -> 0x09000000 "9.00.000" (ok)
+  12.00  -> 0x0c000000 "12.00.000" (ok)
+  11.05  -> 0x0b050000 "11.05.000" (ok)
+  11      refused: "11" is not MAJOR.MINOR (e.g. 11.60), "param", or unset
+  11.6    refused: "11.6" is not MAJOR.MINOR (e.g. 11.60), "param", or unset
+  11.600  refused: "11.600" is not MAJOR.MINOR (e.g. 11.60), "param", or unset
+  x.60    refused: "x.60" is not MAJOR.MINOR (e.g. 11.60), "param", or unset
+  11.6x   refused: "11.6x" is not MAJOR.MINOR (e.g. 11.60), "param", or unset
+  0.50    refused: "0.50" is not MAJOR.MINOR (e.g. 11.60), "param", or unset
+  100.00  refused: "100.00" is not MAJOR.MINOR (e.g. 11.60), "param", or unset
+  .60     refused: ".60" is not MAJOR.MINOR (e.g. 11.60), "param", or unset
+  11..60  refused: "11..60" is not MAJOR.MINOR (e.g. 11.60), "param", or unset
+  eleven  refused: "eleven" is not MAJOR.MINOR (e.g. 11.60), "param", or unset
+  param2  refused: "param2" is not MAJOR.MINOR (e.g. 11.60), "param", or unset
+  param  -> 0x0b600000 "11.60.000" (the title's param.json)
+PASS (0 failed checks)

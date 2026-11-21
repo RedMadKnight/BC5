@@ -25,6 +25,8 @@ submit, ho430's F10/F16/F18 wait for the queued writer only up to their bounds (
   NG3 q438_writer_queued in the q438 block.
 ng438 (normal build only): counts of the gate's two tests, INFLIGHT_NG's and OPEN_NG's apart (holds, longest, releases),
   the shared 10-s fallback releases (each with a BUG line) and busy tries; a 60-s line while either switch is on.
+held438 (BC5_0438_HELD_EARLY, off unless "1"): an acb acb_ready holds registers its remaining writes early, so a
+  game-thread wait on one waits instead of giving up after 8 ms; they go when the acb is submitted.
 ngcount: one live count of writers that can be pending (slots with a flight or open-chain write set, early entries),
   kept while INFLIGHT_NG or OPEN_NG is on; at 0 the gate's full tests are skipped (one atomic load).
 open_ng (BC5_0438_OPEN_NG, off unless "1"): acb_wait_unready also holds the acb while a registered slot's open chain
@@ -465,7 +467,7 @@ rep("\t\t\t\t\t\tt_keep_waits.push_back(p);\n\t\t\t\t\t\tSoftCp::set_gpu_execute
     "\t\t\t\t\t\tt_keep_waits.push_back(p);\n\t\t\t\t\t\tSoftCp::set_gpu_executed(p, len, {0});\n\t\t\t\t\t\tif (dry_here) g_dry_kept++;\n")
 rep("\t\t\t\t\tif (!ok) t_wait_given_up = true;\n\t\t\t\t\tif (dry_here) (ok ? g_dry_ok : g_dry_failed)++;\n",
     "#ifndef BC5_LEAN\n"
-    "\t\t\t\t\tif (wd_acb) wd438_record(ib, num_dwords, i, p, op == 0x93, label, ok ? (wd_sat0 ? 4 : 5) : 6); // exp 0438 (wd438)\n"
+    "\t\t\t\t\tif (wd_acb || !ok) wd438_record(ib, num_dwords, i, p, op == 0x93, label, ok ? (wd_sat0 ? 4 : 5) : 6); // exp 0438 (wd438): every given-up wait too, of any kind\n"
     "#endif\n"
     "\t\t\t\t\tif (!ok) t_wait_given_up = true;\n\t\t\t\t\tif (dry_here) (ok ? g_dry_ok : g_dry_failed)++;\n")
 rep("\tif (!g_dump_dir.empty()) fr412_copy(g_dump_dir + \"/direct.log\", dir + \"/journal-tail.txt\", 4l << 20);\n",
@@ -550,6 +552,82 @@ rep('released %" PRIu64 "; by the 10-s fallback %" PRIu64 "; busy registry or sl
     'released %" PRIu64 "; by the 10-s fallback %" PRIu64 "; busy registry or slot %" PRIu64 "; tests skipped by the live count / run in full: in flight %" PRIu64 "/%" PRIu64 ", open %" PRIu64 "/%" PRIu64 "\\n",\n')
 rep("static_cast<double>(g_ng438_max[1].load()) / 1e6, g_ng438_rel[1].load(), g_ng438_fb.load(), g_ng438_busy.load());\n",
     "static_cast<double>(g_ng438_max[1].load()) / 1e6, g_ng438_rel[1].load(), g_ng438_fb.load(), g_ng438_busy.load(), g_ng438_skip[0].load(), g_ng438_full[0].load(), g_ng438_skip[1].load(), g_ng438_full[1].load());\n")
+
+# ---- held438: an acb that acb_ready holds keeps its remaining label writes early (BC5_0438_HELD_EARLY, off unless "1") --
+# The full set's #67 shape (cq438f1): acb A1 held by acb_ready at its wait on d00 ("acb head: 87 of 1336 dwords go ahead");
+# then the game thread's dcb D waits on d40, which only A1 writes. A held acb's writes are in no table (not early: r438
+# scans taken slices only; not in a flight set, a chain or the queue), so ring_will_satisfy on the game thread finds no
+# writer, the CPU wait polls memory for its 8-ms limit and drops the wait (GIVEN UP), and D runs ahead of its order.
+# With the switch: when acb_ready holds an acb, the writes of its part from the held wait on are registered early once
+# (seq kR438Early | bit 61 | id), so a game-thread wait on one waits under r438's rule until the acb's real registration;
+# they go when the acb is submitted (the consumer's ring branch), or with the table at a reset.
+rep("static std::atomic<int64_t> g_ng_live {0}; // exp 0438 (ngcount): writers that can be pending (see ng_slot_update)\n",
+    "static std::atomic<int64_t> g_ng_live {0}; // exp 0438 (ngcount): writers that can be pending (see ng_slot_update)\n"
+    "static bool held438_on() { // exp 0438 (held438): BC5_0438_HELD_EARLY, on only when \"1\"\n"
+    "\tstatic const bool v = [] {\n"
+    "\t\tconst char* e = std::getenv(\"BC5_0438_HELD_EARLY\");\n"
+    "\t\treturn e != nullptr && e[0] == '1' && e[1] == 0;\n"
+    "\t}();\n"
+    "\treturn v;\n"
+    "}\n"
+    "static void held438_hold(const uint32_t* ib, uint32_t num_dwords, uint32_t from); // exp 0438 (held438), in the q438 block\n"
+    "static void held438_release(const uint32_t* ib, uint32_t num_dwords);\n")
+rep("\t\t\t\t\t\tfor (auto& g: SoftCp::t_gpu_done) e->marks.push_back(std::move(g));\n\t\t\t\t\t\tSoftCp::clear_gpu_executed();\n\t\t\t\t\t}\n\t\t\t\t\treturn false;\n",
+    "\t\t\t\t\t\tfor (auto& g: SoftCp::t_gpu_done) e->marks.push_back(std::move(g));\n\t\t\t\t\t\tSoftCp::clear_gpu_executed();\n\t\t\t\t\t}\n"
+    "\t\t\t\t\tif (held438_on()) held438_hold(ib, num_dwords, i); // exp 0438 (held438): its writes from the held wait on, early\n"
+    "\t\t\t\t\treturn false;\n")
+rep("\t\t\t\t\t\tsubmit_split(t + skip, tn - skip, \"acb\");\n",
+    "\t\t\t\t\t\tsubmit_split(t + skip, tn - skip, \"acb\");\n"
+    "\t\t\t\t\t\tif (held438_on()) held438_release(t, tn); // exp 0438 (held438): submitted: its held early writes go\n")
+HELD = r'''// exp 0438 (tag held438): the held acbs' early writes (BC5_0438_HELD_EARLY=1)
+static std::mutex                                                  g_held438_mu;
+static std::map<std::pair<const uint32_t*, uint32_t>, uint64_t>    g_held438; // (acb, dwords) -> the seq of its early entries
+static std::atomic<uint64_t>                                       g_held438_ids {0}, g_held438_holds {0}, g_held438_released {0};
+static void held438_hold(const uint32_t* ib, uint32_t num_dwords, uint32_t from) {
+	std::lock_guard hk(g_held438_mu);
+	if (g_held438.count({ib, num_dwords}) != 0) return; // once per hold
+	std::vector<uint32_t>          part(ib + from, ib + num_dwords);
+	std::vector<PendingLabelWrite> found;
+	q438_scan(part, found);
+	const uint64_t id = kR438Early | (1ull << 61u) | (g_held438_ids.fetch_add(1) + 1);
+	g_held438[{ib, num_dwords}] = id;
+	g_held438_holds++;
+	if (found.empty()) return;
+	std::lock_guard lk(g_plw_mutex);
+	for (auto& w: found) {
+		w.seq   = id;
+		w.ring  = 0;
+		w.order = ++g_plw_order;
+	}
+	r438o_trim_locked();
+	g_plw.insert(g_plw.end(), found.begin(), found.end());
+	if (ng_counting()) g_ng_live += static_cast<int64_t>(found.size());
+	if (r438_cv()) g_plw_cv.notify_all();
+}
+static void held438_release(const uint32_t* ib, uint32_t num_dwords) {
+	std::lock_guard hk(g_held438_mu);
+	const auto      it = g_held438.find({ib, num_dwords});
+	if (it == g_held438.end()) return;
+	const uint64_t id = it->second;
+	g_held438.erase(it);
+	g_held438_released++;
+	int64_t gone = 0;
+	{
+		std::lock_guard lk(g_plw_mutex);
+		for (auto w = g_plw.begin(); w != g_plw.end();) {
+			if (w->seq == id) {
+				w = g_plw.erase(w);
+				gone++;
+			} else {
+				++w;
+			}
+		}
+	}
+	if (gone != 0 && ng_counting()) g_ng_live -= gone; // only what was still there (a reset may have cleared it)
+	if (r438_cv()) g_plw_cv.notify_all();
+}
+// ---- end of exp 0438 (tag q438) ---'''
+rep("// ---- end of exp 0438 (tag q438) ---", HELD)
 
 out = s.encode('utf-8')
 open(OUT, 'wb').write(out)

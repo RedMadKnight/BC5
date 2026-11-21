@@ -108,3 +108,9 @@
 - At 0 the gate skips the full tests. ng438's line shows the skips against the full tests.
 - Ordering: the count rises inside the writer's `chain_append`, a locked RMW, before the title's ioctl returns and so before the acb exists. It falls only when the sets are empty, after the registration.
 - `rings` and `inflight` check the count at every transition. The planted `early-dec` (the count falls at the take) fails both.
+
+**held438 (`shape67`), the full set's first broken order.**
+- acb_ready held acb A1 at its wait on d00, and A1's writes were in no table. So the game thread's dcb D, waiting on d40 (written only by A1), found no writer. Its CPU wait gave up after the 8-ms limit and the wait was dropped. INFLIGHT_NG and OPEN_NG do not touch this: they gate bc5-ring's acbs only.
+- `BC5_0438_HELD_EARLY=1` registers a held acb's remaining writes early, so D's wait waits under r438's rule and is kept. The planted `held-off` fails.
+- wd438 now also records every given-up wait, of any kind.
+- Not shown offline: the step from the dropped wait to the #67/#76 two-ring hang.

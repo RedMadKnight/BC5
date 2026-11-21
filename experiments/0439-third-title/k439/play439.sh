@@ -93,6 +93,7 @@ if ! mount_live "$M"; then
 fi
 mount_live "$M" || { say "Mounting the game failed: $M/sce_sys/param.json is not readable (see $ALOG; with BC5_LEAN=1 run with BC5_LOGS=1 to keep it)."; exit 1; }
 fi
+export BC5_PARAM_JSON="$M/sce_sys/param.json" # exp 0439 (tag sv439): KYTY_BC5_SYSTEM_SW_VERSION=param reads the title's own
 # 2026-10-25 (the maintainer's yes): a failed unmount no longer hangs the launcher (exp 0301's T1 waited an hour):
 # retry, then a lazy unmount, log the failure, and wait for bc5-mount at most 10 s.
 cleanup() {

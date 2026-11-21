@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # BC5 experiment 0439 (tag dc439): the private build of the DCC present (dcc-present-design.md): bc5LleAgc.cpp and
-# videoOut.cpp from mk439.py over the shared tree's units (patch 0fede35d since 2026-11-21 15:0x; 9889b06a before), with src/bc5/dc0439.hpp, each compiled with
+# videoOut.cpp from mk439.py over the shared tree's units (patch 589ef163 since 2026-11-21 21:08, exp 0438's bake; 0fede35d before), with src/bc5/dc0439.hpp, each compiled with
 # the shared build's own command and linked with the shared backend archive (build0438.py emu). Normal and lean. CPU only,
 # nice 19 + ionice idle. Pins the shared state before and after; writes nothing shared.
 #   box439.sh build
@@ -13,9 +13,9 @@ set -u
 export LC_ALL=C LANGUAGE=C
 W=$HOME/bc5-work; E=$W/exp0439/k439; R=$E/raw; S=$E/src; HERE=$(cd "$(dirname "$0")" && pwd)
 TREE=$HOME/src/KytyPlus; SA=$W/backend-ubuntu/libbc5_backend.a; BBUILD=$W/backend-ubuntu; BTREE=$W/d19/export/backend
-P_BE_DIRECT=eacf8d2a; P_BE_POLICY=107bb1b6; P_BE_FULL=29f7dd6d
-P_UNIT=2e6168de7774de436fe7e916c895180a; P_VO=6785425ea472815fc85713cec6cc5630
-P_ARCH=d6638808; P_NORMAL=199a0f39; P_LEAN=3a20b974
+P_BE_DIRECT=1b8b55ec; P_BE_POLICY=107bb1b6; P_BE_FULL=29f7dd6d
+P_UNIT=ed489aca99adacbdd449cf460417dc4c; P_VO=6785425ea472815fc85713cec6cc5630
+P_ARCH=a548a249; P_NORMAL=30546370; P_LEAN=05fd749d
 NICE="nice -n 19 ionice -c 3"
 stop() { echo "dc439 build STOP: $*"; exit 1; }
 m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }
@@ -24,11 +24,12 @@ build() {
     local b bin rc sn sl sa v
     sn=$(m "$W/kytyplus-build/src/kyty_emulator"); sl=$(m "$W/kytyplus-build-lean/src/kyty_emulator"); sa=$(m "$SA")
     [ "${sn:0:8}" = "$P_NORMAL" ] && [ "${sl:0:8}" = "$P_LEAN" ] && [ "${sa:0:8}" = "$P_ARCH" ] || stop "the shared builds are not $P_NORMAL/$P_LEAN/$P_ARCH"
-    [ "$(m "$TREE/src/libs/bc5LleAgc.cpp")" = "$P_UNIT" ] && [ "$(m "$TREE/src/graphics/presentation/videoOut.cpp")" = "$P_VO" ] || stop "the tree's units are not patch 9889b06a's"
+    [ "$(m "$TREE/src/libs/bc5LleAgc.cpp")" = "$P_UNIT" ] && [ "$(m "$TREE/src/graphics/presentation/videoOut.cpp")" = "$P_VO" ] || stop "the tree's units are not patch 589ef163's"
     [ "$(m "$BTREE/src/direct.cpp" | cut -c1-8)" = $P_BE_DIRECT ] && [ "$(m "$BTREE/src/policy.cpp" | cut -c1-8)" = $P_BE_POLICY ]         && [ "$(m "$BTREE/src/full_state.cpp" | cut -c1-8)" = $P_BE_FULL ] || stop "the shared backend source is not main's"
     rm -rf "$S"; mkdir -p "$S/kyty/src/libs" "$S/kyty/src/graphics/presentation" "$S/kyty/src/bc5" "$S/kyty/src/kernel"         "$S/backend/src" "$S/backend/include/bc5" "$E/backend" || stop "mkdir $S"
     cp "$HERE/new/bc5LleAgc.cpp" "$S/kyty/src/libs/bc5LleAgc.cpp" && cp "$HERE/new/videoOut.cpp" "$S/kyty/src/graphics/presentation/videoOut.cpp" \
-        && cp "$HERE/new/dc0439.hpp" "$S/kyty/src/bc5/dc0439.hpp" && cp "$HERE/new/eventQueue.cpp" "$S/kyty/src/kernel/eventQueue.cpp"         && cp "$HERE/new/ib_chain.hpp" "$S/kyty/src/bc5/ib_chain.hpp" && cp "$HERE/new/ib_chain.hpp" "$S/backend/include/bc5/ib_chain.hpp"         && cp "$HERE/new/be/direct.cpp" "$HERE/new/be/policy.cpp" "$HERE/new/be/full_state.cpp" "$S/backend/src/" || stop "copy the units"
+        && cp "$HERE/new/dc0439.hpp" "$S/kyty/src/bc5/dc0439.hpp" && cp "$HERE/new/eventQueue.cpp" "$S/kyty/src/kernel/eventQueue.cpp"         && cp "$HERE/new/ib_chain.hpp" "$S/kyty/src/bc5/ib_chain.hpp" && cp "$HERE/new/ib_chain.hpp" "$S/backend/include/bc5/ib_chain.hpp"         && cp "$HERE/new/sv0439.hpp" "$S/kyty/src/bc5/sv0439.hpp" && cp "$HERE/new/be/direct.cpp" "$HERE/new/be/policy.cpp" "$HERE/new/be/full_state.cpp" "$S/backend/src/" || stop "copy the units"
+    NP=""; if [ -f "$HERE/new/libNp.cpp" ]; then cp "$HERE/new/libNp.cpp" "$S/kyty/src/libs/libNp.cpp" || stop "copy libNp.cpp"; NP=src/libs/libNp.cpp; fi # exp 0439 (tag sv439)
     (cd "$S" && find . -type f | sort | xargs md5sum) > "$R/src-md5.txt"; cat "$R/src-md5.txt"
     echo "MemAvailable before the builds: $(awk '/^MemAvailable/{print int($2/1024)}' /proc/meminfo) MiB"
     [ "$(awk '/^MemAvailable/{print $2}' /proc/meminfo)" -gt 3000000 ] || stop "under 3 GiB available: not building now"
@@ -43,7 +44,7 @@ build() {
         [ -f "$bin" ] && mv "$bin" "$bin.$(m "$bin" | cut -c1-8)"
         distrobox enter ubuntu -- sh -c "cd '$b' && ninja -t compdb -x" > "$E/$v/compdb.json" 2> "$R/compdb-$v.err" < /dev/null || stop "compdb $v failed"
         distrobox enter ubuntu -- $NICE env LC_ALL=C LANGUAGE=C python3 -I "$HERE/build0438.py" emu "$E/$v/compdb.json" "$S/kyty" "$E/$v" "$b" "$bin" \
-            "ARCHIVE=$E/backend/libbc5_backend.a" src/libs/bc5LleAgc.cpp src/graphics/presentation/videoOut.cpp src/kernel/eventQueue.cpp > "$R/build-$v.out" 2>&1 < /dev/null
+            "ARCHIVE=$E/backend/libbc5_backend.a" src/libs/bc5LleAgc.cpp src/graphics/presentation/videoOut.cpp src/kernel/eventQueue.cpp $NP > "$R/build-$v.out" 2>&1 < /dev/null
         rc=$?; echo "$v: build rc $rc; errors $(grep -c 'error:' "$R/build-$v.out"); warnings $(grep -c 'warning:' "$R/build-$v.out")"
         grep -n "error:\|undefined\|COMPILE FAILED" "$R/build-$v.out" | head -20
         [ "$rc" = 0 ] && [ -x "$bin" ] || stop "build $v failed: $R/build-$v.out"

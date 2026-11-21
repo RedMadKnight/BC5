@@ -1,0 +1,118 @@
+--- /c/Users/kjani/AppData/Local/Temp/claude/7e70d624f1bff3f5/45c928ee-aba0-4614-b63a-8aa973fe82d8/scratchpad/k439/be3/direct.old.cpp	2026-11-21 21:13:56.805911400 +0100
++++ backend/src/direct.cpp	2026-11-21 20:12:08.222481000 +0100
+@@ -3,6 +3,7 @@
+ #include "bc5/draw_args.hpp"
+ #include "bc5/env_flag.hpp"
+ #include "bc5/host_indirect.hpp"
++#include "bc5/ib_chain.hpp" // exp 0439 (tag ib439)
+ #include "bc5/ib_split.hpp"
+ #include "bc5/indirect_check.hpp"
+ #include "bc5/shadow_labels.hpp"
+@@ -1162,6 +1163,27 @@
+         r.rc = -2;
+         return r;
+     }
++    // exp 0439 (tag fl439): BC5_DIRECT_IB_CHAIN_FLAT, a top-level chain laid out flat (bc5/ib_chain.hpp flatten). The flat
++    // buffer replaces `ib` for the rest of this call; the executed offsets are split back per guest segment below.
++    std::vector<std::uint32_t> flat_local;
++    std::vector<ib_chain::FlatSeg> flat_segs;
++    if (const int fm = ib_chain::flat_mode(); fm == 2 || (fm == 1 && comp)) {
++        const char *why = nullptr;
++        const ib_chain::FlatResult fr = ib_chain::flatten(ib, opt.mapped, flat_local, flat_segs, &why);
++        static std::atomic<std::uint64_t> n_flat{0}, n_flat_refused{0};
++        if (fr == ib_chain::FlatResult::Flattened) {
++            const std::uint64_t c = ++n_flat;
++            if (c <= 16 || c % 1000 == 0)
++                std::fprintf(stderr, "bc5-direct: exp 0439 (tag fl439): %s job of %zu dwords at %p laid out flat: %zu segments, %zu dwords (%llu such jobs)\n",
++                             comp ? "compute" : "GFX", ib.size(), static_cast<const void *>(ib.data()), flat_segs.size(), flat_local.size(), static_cast<unsigned long long>(c));
++            ib = std::span<const std::uint32_t>(flat_local.data(), flat_local.size());
++        } else if (fr == ib_chain::FlatResult::Refused) {
++            const std::uint64_t c = ++n_flat_refused;
++            if (c <= 16 || c % 1000 == 0)
++                std::fprintf(stderr, "bc5-direct: exp 0439 (tag fl439): %s job of %zu dwords at %p NOT laid out flat (%s): today's layout (%llu such jobs)\n",
++                             comp ? "compute" : "GFX", ib.size(), static_cast<const void *>(ib.data()), why != nullptr ? why : "?", static_cast<unsigned long long>(c));
++        }
++    }
+     // Layout: the IB first, then every INDIRECT_BUFFER target it (transitively) reaches, each
+     // padded to 8 dwords with NOPs — the CP fetches IBs in 32-byte chunks and must never run
+     // into what lies past a buffer (experiment 0016). The nested copies let the filter see the
+@@ -1209,6 +1231,17 @@
+     double t_phase = now_ms();
+     policy::filter(policy::Policy::builtin(), ib, main_out, fopt, r.filter);
+     executed_offsets_of(ib, main_out.data(), r.executed_offsets);
++    if (!flat_segs.empty()) { // exp 0439 (tag fl439): the executed offsets per guest segment (the first stays the IB's own)
++        const std::vector<std::uint32_t> all = std::move(r.executed_offsets);
++        r.executed_offsets.clear();
++        for (std::size_t s = 0; s < flat_segs.size(); ++s) {
++            std::vector<std::uint32_t> ex;
++            for (const std::uint32_t o : all)
++                if (o >= flat_segs[s].off && o < flat_segs[s].off + flat_segs[s].n) ex.push_back(static_cast<std::uint32_t>(o - flat_segs[s].off));
++            if (s == 0) r.executed_offsets = std::move(ex);
++            else r.nested.push_back({reinterpret_cast<std::uint64_t>(flat_segs[s].src), static_cast<std::uint32_t>(flat_segs[s].n), std::move(ex)});
++        }
++    }
+     // Experiment 0346: the host-side resolution of GFX-form dispatches without a SET_BASE of their type in
+     // this IB (bc5/host_indirect.hpp). The real mappings are the device's userptr and shared mappings (the
+     // sorted table: no PRT window, guard or zero buffer is in it); the reader is the host's `mapped` test
+@@ -1392,7 +1425,29 @@
+     }
+     const std::size_t main_n = main_out.size();
+     pieces.push_back({ib.data(), ib.size(), pro_padded, (main_n + epi + 7) & ~std::size_t{7}, 0});
+-    for (std::size_t k = 0; k < pieces.size() && pieces.size() < 64; ++k) {
++    if (ib_chain::enabled()) { // exp 0439 (tag ib439): a chain adds no level and has its own cap (bc5/ib_chain.hpp)
++        const ib_chain::Result cr = ib_chain::collect(ib.data(), ib.size(), opt.mapped, true);
++        static std::atomic<std::uint64_t> n_chained{0}, n_refused{0};
++        if (cr.cycle || cr.chain_cap) {
++            n_refused++;
++            std::fprintf(stderr, "bc5-direct: exp 0439 (tag ib439): submit of %zu dwords at %p refused: %s (%zu pieces, %zu chains so far in it); %llu refused so far\n",
++                         ib.size(), static_cast<const void *>(ib.data()), cr.cycle ? "an IB cycle (a target is its own ancestor)" : "over 4096 chained segments",
++                         cr.pieces.size(), cr.chains, static_cast<unsigned long long>(n_refused.load()));
++            r.rc = -EINVAL;
++            return r;
++        }
++        for (std::size_t k = 1; k < cr.pieces.size(); ++k) {
++            const Piece &last = pieces.back();
++            pieces.push_back({cr.pieces[k].src, cr.pieces[k].n, last.off + last.padded, (cr.pieces[k].n + 7) & ~std::size_t{7}, cr.pieces[k].depth});
++        }
++        if (cr.chains != 0) {
++            const std::uint64_t c = ++n_chained;
++            if (c <= 8 || c % 1000 == 0)
++                std::fprintf(stderr, "bc5-direct: exp 0439 (tag ib439): submit #%llu with chains: %zu pieces, %zu chained, longest chain %zu, %zu call targets over depth, %zu over the cap\n",
++                             static_cast<unsigned long long>(c), cr.pieces.size(), cr.chains, cr.longest_chain, cr.over_depth, cr.over_cap);
++        }
++    }
++    for (std::size_t k = 0; !ib_chain::enabled() && k < pieces.size() && pieces.size() < 64; ++k) {
+         if (pieces[k].depth >= 3) continue;
+         std::vector<std::pair<const std::uint32_t *, std::size_t>> targets;
+         nested_targets(std::span<const std::uint32_t>(pieces[k].src, pieces[k].n), opt, targets);
+@@ -1473,6 +1528,7 @@
+     }
+     t_phase = now_ms();
+     // Point the surviving INDIRECT_BUFFER packets at the scratch copies.
++    std::size_t ib_cut = 0, ib_cut_chain = 0; // exp 0439 (tag ib439): IBs NOP-ed here, logged below (diagnosis)
+     for (std::size_t k = 0; k < pieces.size(); ++k) {
+         const Piece &pc = pieces[k];
+         std::uint32_t *d = dst + pc.off;
+@@ -1502,12 +1558,22 @@
+                     }
+                 }
+                 if (!found) { // an unmapped or over-deep target: never let the CP follow it
++                    ib_cut++;
++                    if (ib_chain::is_chain(d[i + 3])) ib_cut_chain++;
+                     for (std::size_t q = 0; q < len; ++q) d[i + q] = policy::kNop;
+                 }
+             }
+             i += len;
+         }
+     }
++    if (ib_cut != 0) { // exp 0439 (tag ib439): a dropped IB (a frame's tail when it is a chain) is never silent
++        static std::atomic<std::uint64_t> n_cut_submits{0};
++        const std::uint64_t c = ++n_cut_submits;
++        if (c <= 16 || c % 1000 == 0)
++            std::fprintf(stderr, "bc5-direct: exp 0439 (tag ib439): submit of %zu dwords at %p: %zu INDIRECT_BUFFER packets NOP-ed (target unmapped, too deep or over the cap), %zu of them chains; %zu pieces copied; IB_CHAIN %s; %llu such submits so far\n",
++                         ib.size(), static_cast<const void *>(ib.data()), ib_cut, ib_cut_chain, pieces.size(), ib_chain::enabled() ? "on" : "off",
++                         static_cast<unsigned long long>(c));
++    }
+     const std::size_t padded = pro_padded + pieces[0].padded; // the CP runs prologue then IB
+     // Experiment 0349: the executed IB [0, padded) cut into up to four IBs when it is over the limit; the
+     // cuts are packet boundaries 256 bytes aligned (else 32, the CP's fetch chunk) outside every COND_EXEC

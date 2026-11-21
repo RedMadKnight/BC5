@@ -491,6 +491,108 @@ the control's line has none, `X=1;rm` is refused).
       `BC5_DIRECT_UMR_ON_TIMEOUT` calls reads the gfx ring only.
     - Next, in the guard build: dump every piece of a timed-out job (chained and called); a switch for
       `umr -O halt_waves -wa none` at the first timeout; XQ_COUNT's ring map. Then one run names the dispatch.
+33. *`BC5_DIRECT_IB_CHAIN_FLAT` and the import scans over pieces (tags fl439, ip439), the guard build, run t3r-i1.*
+    - Flat layout (`bc5/ib_chain.hpp` `flatten`, `submit_impl`):
+      - A top-level chain is laid out as one buffer: each segment is copied up to its chain packet, the chain packet
+        becomes NOPs, and the target follows. The CP never switches buffers, so the state set before the cut is still
+        there.
+      - It refuses on a COND_EXEC before the chain, a cycle, an unmapped target, or past 2^20 dwords.
+      - Executed offsets are split back per guest segment (`r.nested`).
+      - Det tests 6-9 in `test_ib0439.cpp`: PASS. The planted bug (the last chunk dropped) FAILS.
+    - `BC5_0439_IMPORT_PIECES=1`: `k1f412_pass` and `dt412_pass` also run on every called or chained piece. Before
+      this, every host import scan read the top buffer only.
+    - Also in the build: the probe dumps every piece and the parameter blocks around the chain
+      (`BC5_0439_PIECE_DUMP`); umr `halt_waves -wa none` at the 0.9-s watchdog (`BC5_0439_UMR_WAVES`); the
+      queue-to-ring map. Private normal `5b69b5d2`, lean `1426b2ab`, archive `39f9b3cb`.
+    - Run t3r-i1 (20:56:00, the top session's GO, the maintainer watching; both candidates on; display 1920x1080@60):
+      - No hang and no reboot: resets 1 -> 1, fault records 30 -> 30.
+      - Queue 40's 16,422-dword acb was laid out flat: 5 segments, 65,607 dwords (the SH-grid batch spans five
+        chunks). It completed.
+      - Imports by the piece scans: 0, and no import line at all in the run. Everything was already mapped, so the
+        zero-cover lead is cleared.
+      - By elimination the frame-229 hang was the compute engine running a chained INDIRECT_BUFFER from our copy.
+        This is an inference from one run.
+      - Ring map: queue 16 (A) moved to libdrm compute ring 2, queue 24 (B) to ring 1, queue 40 to ring 3; every
+        queue starts on ring 0.
+      - New stop: 281 frames, the last at t 11.06 s; then no flip for the remaining 109 s, with no GPU timeout, no
+        fault, and no host line (journal=min). A stall, not a hang.
+      - The screenshots (private: `C:\Users\kjani\Documents\bc5-private\yotei-screens\t3r-i1-2056\`, never in git)
+        show the window black throughout. The "fps: 27.1" in its title bar is the last value before the stop, not a
+        running rate: after t 11.06 s no flip came.
+      - Before each decompress pass the surface's first 4 MiB held 0 non-zero dwords while its keys read 0x40
+        (compressed). The next run's surface readback shows whether the pass fills it.
+    - Next: find what the title waits on after the first frame that follows the batch (wait trace, ACB_REFUSE's
+      records), in a run that most likely does not reboot.
+34. *Build for the black picture and the stall (tags sr439, sv439; run script `k439/t3s.sh`).*
+    - `BC5_0439_SURF_DUMP=<private dir>`: after a decompress pass that went OK (decompressed flips 2, 60 and every
+      300th), the display surface is written raw, with min/max/mean per byte lane and the non-zero byte count.
+    - `KYTY_BC5_SYSTEM_SW_VERSION` sets the version string and number of `GetProsperoSystemSwVersion`:
+      - unset: today's 10.60;
+      - "param": the title's own param.json value, via `BC5_PARAM_JSON` exported by `play439.sh`;
+      - "MM.mm": that version.
+      Every answer is logged, and so is `GetCompiledSdkVersion`'s. The third title's param.json sdkVersion is 0, so the
+      host answers from the eboot's process parameter.
+    - Not covered: `sceNpGetSdkVersion` (libNp.cpp, a unit outside this build), which answers from its own constant
+      (0x0A600000; TODO).
+    - Revised at the maintainer's request ("Zrób z wersji firmware przełącznik abyś mógł dynamicznie zmieniac na
+      potrzeby testu"): the parsing is in `k439/sv0439.hpp`.
+      - Accepted: unset (10.60), "param", or any "MAJOR.MINOR" with a two-digit minor (e.g. 9.00, 10.60, 11.60,
+        12.00).
+      - Encoded as the word `(major << 24) | (BCD minor << 16)`: 10.60 -> 0x0A600000, the host's own constant; 11.60
+        -> 0x0B600000. The string is "MM.mm.000".
+      - Read once at start by a static initializer. One line names the version in effect and its source. A malformed
+        value ends the run at start (exit 2) with its reason.
+      - Det test `k439/test_sv0439.cpp`, PASS (`logs/test_sv0439.out`): five values and their encodings, eleven
+        malformed values refused, "param" from a param.json text.
+      - Not in lean builds. If it is ever baked, it would be a per-title default ("param" for titles whose
+        param.json asks for more than 10.60), not a global switch.
+      - `box439.sh` compiles `libNp.cpp` when a generated copy is present, so that `sceNpGetSdkVersion` takes the
+        same word. That copy needs the shared tree's libNp.cpp read from the box first.
+      - TODO(verify): that a console encodes versions other than 10.60 the same way.
+    - `t3s.sh` adds ACB_DEEP and ACB_REFUSE, and a box-side stall watch. When the journal's frame-profile lines stop
+      for 3 s, it takes one snapshot of every thread (CPU ticks over 1 s, state, wchan, eu-stack) and of labels 0-15
+      plus six known labels.
+    - Whether `BC5_DIRECT_IB_CHAIN_FLAT=2` (the dcb's chain flat too) is safe is untested. The soft CP's offsets are
+      kept per segment. The GFX path's own passes (the state stack, the indirect checks, the light-tail split) would
+      then see one long buffer instead of 73 pieces. Try it only after a run with 1 is understood.
+35. *Runs A and B (`k439/t3s.sh`, 21:17-21:21, boot d4d739c7): the version switch, the picture, the stall.*
+    - Build `e116505c` (lean `bc1e9128`, archive `3fc7f7ea`), rebased onto exp 0438's patch `589ef163`:
+      - ar439 now goes after exp 0438's `ng438_fallback` call;
+      - ab439's found waits go through exp 0438's `acb_wait_unready` (det test still PASS);
+      - `libNp.cpp`'s `sceNpGetSdkVersion` takes the switch's word;
+      - the backend changes are re-applied as a diff (`k439/direct439-on-eacf8d2a.diff`, six hunks, offsets only).
+      - Lean has no `KYTY_BC5_SYSTEM_SW_VERSION`.
+    - Both runs: FLAT=1, IMPORT_PIECES=1, ACB_DEEP, ACB_REFUSE, XQ_COUNT, the surface dump, the stall watch, the Kyty
+      log. 60-s bound. No hang, no fault, resets 1 -> 1.
+
+      | | A: version unset | B: version "param" |
+      |---|---|---|
+      | in effect | 10.60.000 (0x0A600000) | 11.60.000 (0x0B600000), from the title's param.json |
+      | `GetProsperoSystemSwVersion` calls | 0 | 0 |
+      | `GetCompiledSdkVersion` | 0x04000031, twice | 0x04000031, twice |
+      | frames to the stall | 286, last flip 11.62 s | 272, last flip 10.84 s |
+      | stub calls | Http x1, NpSessionSignaling x2, libkernel yu17wG8L5FI x6 | the same |
+      | flat jobs, piece imports | 1 (5 segments), 0 | 1 (5 segments), 0 |
+
+    - The title never asks the system version before the stall, so the version cannot change its path here.
+    - The picture:
+      - Both DCC key arrays hold only clear codes: the registered display keys 00:7168 40:122432, the draw's render
+        keys 00:7424 40:122176. Mesa 0866ae7 `src/amd/common/ac_descriptors.h:29-38`: 0x00 `DCC_CLEAR_0000`, 0x40
+        `GFX8_DCC_CLEAR_0001`; radeonsi `si_clear.c:239-246` uses the GFX8 codes before gfx11.
+      - The surface after the decompress pass is all zero bytes (flips 2 and 60, all four lanes 0).
+      - So the title clears its frame to black and draws nothing visible into it; the present loses nothing.
+    - The stall (the stall watch's snapshot; `logs/t3s/`):
+      - game-main is the only running thread: state R, about 1.4 s of CPU per second, in guest code at
+        eboot+0xe245b2, called from +0xbda165, +0xec76d9, +0xec6780.
+      - Every other thread sleeps: MovieDecoder, Psn and Http on condition variables, ProxySetSync in its equeue.
+      - Labels: `0x20000081c0` = N-1 while `0x2000008220`, `0x20000082e0`, `0x2000008200`, `0x20000081a0` and labels
+        1/2/4/8 = N (A: 0x121 against 0x122; B: 0x112 against 0x113).
+      - Queue 2/1/0 writes `0x20000081c0` = N and `0x2000008220` = N+1 at its buffer's end, so its last finished
+        buffer is frame N-1's.
+      - Inference: game-main busy-waits for queue 2/1/0's next frame. ACB_REFUSE logged no record, so acb_ready did
+        not hold that buffer for 10 s.
+    - Next: what eboot+0xe245b2 polls (yotei-memdump's paused dump at this stall), and queue 2/1/0's ring, doorbell
+      and consumed pointer at the stall.
 
 (more to come)
 

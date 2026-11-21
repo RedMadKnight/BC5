@@ -328,6 +328,35 @@ static void dc439_flip(int index) {
 			n00 += v == 0x00;
 			nff += v == 0xFF;
 		}
+		{ // exp 0439 (tag kh439): the full key histogram of the registered metadata and of the draw's own DCC_BASE (the
+		  // draw's base is the registered one - 0x28000 for this title), and whether every key is a clear code. Mesa 0866ae7
+		  // src/amd/common/ac_descriptors.h:29-38: 0x00 DCC_CLEAR_0000, 0xFF DCC_UNCOMPRESSED, 0x40 GFX8_DCC_CLEAR_0001,
+		  // 0x80 _1110, 0xC0 _1111, 0x20 GFX8_DCC_CLEAR_REG, 0x10 GFX9_DCC_CLEAR_SINGLE (radeonsi si_clear.c:239-246 uses the
+		  // GFX8 codes before gfx11; gfx1013 is gfx10).
+			static std::atomic<uint64_t> n_kh {0};
+			const uint64_t                kk = n_kh++;
+			if (kk < 8 || kk % 300 == 0) {
+				auto hist_line = [&](uint64_t base, const char* what) {
+					if (base == 0) return;
+					uint64_t h[256] = {};
+					const auto* mk = reinterpret_cast<const volatile uint8_t*>(base);
+					for (uint64_t k = 0; k < keys; k++) h[mk[k]]++;
+					char     line[2048];
+					size_t   o = 0;
+					uint64_t clear = 0;
+					for (int v = 0; v < 256; v++) {
+						if (h[v] == 0) continue;
+						const bool code = v == 0x00 || v == 0xFF || v == 0x40 || v == 0x80 || v == 0xC0 || v == 0x20 || v == 0x10;
+						if (code) clear += h[v];
+						if (o + 24 < sizeof(line)) o += static_cast<size_t>(std::snprintf(line + o, sizeof(line) - o, " %02x:%" PRIu64, v, h[v]));
+					}
+					std::fprintf(stderr, "[bc5] exp 0439 (tag kh439): t %.3f s index %d %s keys at 0x%" PRIx64 " (%" PRIu64 "):%s; %s\n", timing_now(), index, what, base, keys, line,
+					             clear == keys ? "EVERY key is a clear code (a cleared surface: 0x00/0x40 black)" : "some keys are compressed data");
+				};
+				hist_line(s.meta, "registered");
+				hist_line(s.block.valid ? s.block.dcc_base() : 0, "the draw's");
+			}
+		}
 		bool        plain = nff == keys;
 		const char* why   = "keys all 0xFF (uncompressed)";
 		if (!plain && n00 == keys) {
@@ -424,6 +453,39 @@ static void dc439_flip(int index) {
 		if (x.done + x.failed <= 4 || !ok || ((x.done + x.failed) & 1023u) == 0) {
 			std::fprintf(stderr, "[bc5] exp 0439 (tag dc439): t %.3f s decompress of index %d (0x%" PRIx64 ", %zu dwords): %s; drain before %.2f ms, the job and its drain %.2f ms\n", t2, index, x.data, ib.size(),
 			             ok ? "OK" : "FAILED", (t1 - t0) * 1e3, (t2 - t1) * 1e3);
+		}
+	}
+	// exp 0439 (tag sr439): BC5_0439_SURF_DUMP=<private dir>: after a decompress pass that went OK, at the 2nd, the 60th and
+	// every 300th such flip, the display surface as the present will read it (guest memory, tiled as the GPU left it) is
+	// written raw to <dir>/surf-<n>-idx<index>-<w>x<h>.raw, with min/max/mean per byte lane and the non-zero byte count.
+	static const char* sr_dir = std::getenv("BC5_0439_SURF_DUMP");
+	if (sr_dir != nullptr && sr_dir[0] != 0 && ok) {
+		static std::atomic<uint64_t> n_sr {0};
+		const uint64_t k = ++n_sr;
+		if (k == 2 || k == 60 || k % 300 == 0) {
+			const size_t bytes = static_cast<size_t>(s.w) * s.h * 4u;
+			const auto*  px    = reinterpret_cast<const volatile uint8_t*>(s.data);
+			uint64_t     sum[4] = {}, nz = 0;
+			uint8_t      mn[4] = {255, 255, 255, 255}, mx[4] = {};
+			std::vector<uint8_t> copy(bytes);
+			for (size_t i = 0; i < bytes; i++) {
+				const uint8_t v = px[i];
+				copy[i]         = v;
+				const size_t c  = i & 3u;
+				sum[c] += v;
+				if (v < mn[c]) mn[c] = v;
+				if (v > mx[c]) mx[c] = v;
+				nz += v != 0;
+			}
+			char fn[512];
+			std::snprintf(fn, sizeof(fn), "%s/surf-%04" PRIu64 "-idx%d-%ux%u.raw", sr_dir, k, index, s.w, s.h);
+			if (FILE* f = std::fopen(fn, "wb"); f != nullptr) {
+				std::fwrite(copy.data(), 1, bytes, f);
+				std::fclose(f);
+			}
+			const double q = static_cast<double>(bytes / 4u);
+			std::fprintf(stderr, "[bc5] exp 0439 (tag sr439): t %.3f s decompressed flip %" PRIu64 " index %d surface 0x%" PRIx64 " %ux%u fmt 0x%" PRIx64 ": non-zero bytes %" PRIu64 " of %zu; lanes min/max/mean %u/%u/%.1f %u/%u/%.1f %u/%u/%.1f %u/%u/%.1f; to %s\n",
+			             timing_now(), k, index, s.data, s.w, s.h, s.fmt, nz, bytes, mn[0], mx[0], sum[0] / q, mn[1], mx[1], sum[1] / q, mn[2], mx[2], sum[2] / q, mn[3], mx[3], sum[3] / q, fn);
 		}
 	}
 }
@@ -886,7 +948,8 @@ static const uint32_t* ab439_scan(const uint32_t* buf, uint32_t n, std::vector<u
 			else if ((op == 0x47 || op == 0x1e) && len >= 4) written.push_back((p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u));
 			else if ((op == 0x3c || op == 0x93) && len >= 4 && ((p[1] >> 4u) & 1u) != 0) {
 				const uint64_t label = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
-				if (std::find(written.begin(), written.end(), label) == written.end() && !wait_satisfied(p, op == 0x93) && !ring_will_satisfy(p, op == 0x93, ring)) return p;
+				// exp 0438's acb_wait_unready (patch 589ef163): acb_ready's per-wait test, with its in-flight and queued-writer holds
+				if (std::find(written.begin(), written.end(), label) == written.end() && acb_wait_unready(p, op == 0x93, label, ring)) return p;
 			} else if ((op == 0x3f || op == 0x33) && len >= 4) {
 				const bool     chain = bc5::ib_chain::is_chain(p[3]);
 				const uint64_t a     = (p[1] & ~3u) | (static_cast<uint64_t>(p[2] & 0xffu) << 32u);
@@ -943,9 +1006,9 @@ s = rep(s, '''			else if ((op == 0x3c || op == 0x93) && len >= 4 && ((p[1] >> 4u
 # It stays held, and a record is printed and journalled every 10 s: the queue, the buffer, the wait (label, function,
 # reference, value now) and the label's known writers (describe_pending, exp 0133) or none. A stall with a record is
 # diagnosis; this is a guard, not the fix. Off: "proceeding" as before.
-s = rep(s, '''					if (now - s.deferred_since < 10'000'000'000ull) continue; // served later
-					LOGF_COLOR(Log::Color::Yellow, "[bc5-q] queue %u/%u/%u/0x%x: cross-queue wait unsatisfied for 10 s, proceeding\\n", q.a, q.b, q.c, q.d);''', '''					if (now - s.deferred_since < 10'000'000'000ull) continue; // served later
-					{ // exp 0439 (tag ar439)
+# (rebased on patch 589ef163: exp 0438's ng438_fallback call now sits between "served later" and the release; ar439 goes
+# after it, as agreed with exp 0438, so a refused acb is still counted)
+s = rep(s, '''					LOGF_COLOR(Log::Color::Yellow, "[bc5-q] queue %u/%u/%u/0x%x: cross-queue wait unsatisfied for 10 s, proceeding\\n", q.a, q.b, q.c, q.d);''', '''					{ // exp 0439 (tag ar439)
 						static const bool refuse = [] {
 							const char* e  = std::getenv("BC5_0439_ACB_REFUSE");
 							const bool  on = e != nullptr && e[0] == '1' && e[1] == 0;
@@ -978,7 +1041,7 @@ s = rep(s, '''	why             = w428_mec_refusal(ib, num_dwords, why); // exp 0
 	if (why == nullptr && xq439_on()) { // exp 0439 (tag xq439): the queue -> ring map
 		static std::atomic<uint64_t> n_map {0};
 		const uint64_t k = n_map++;
-		if (k < 64 || (k & 0x3ffu) == 0) std::fprintf(stderr, "[bc5] exp 0439 (tag xq439): t %.3f s acb part of guest queue %d (%u dwords at %p) on compute ring %d (way 2 rings %d)\n", timing_now(), t_queue_idx, num_dwords, static_cast<const void*>(ib), ring, w428_rings());
+		if (k < 64 || (k & 0x3ffu) == 0) std::fprintf(stderr, "[bc5] exp 0439 (tag xq439): t %.3f s acb part of guest queue %d (%u dwords at %p) on compute ring %d (way 2 rings %d)\\n", timing_now(), t_queue_idx, num_dwords, static_cast<const void*>(ib), ring, w428_rings());
 	}
 	if (why == nullptr) return ring;''')
 s = rep(s, '''				if (!ready && ready_len != 0) {
@@ -1127,6 +1190,64 @@ s = rep(s, '''	dt412_pass(ib, num_dwords, kind); // exp 0412 (tag dt412): before
 				             cr.pieces.size() - 1, cr.chains, n_pieces.load());
 		}
 	}''')
+# exp 0439 (tag sv439): KYTY_BC5_SYSTEM_SW_VERSION, the system software version the host reports (bc5/sv0439.hpp: unset =
+# 10.60, "param" = the title's param.json via BC5_PARAM_JSON from k439/play439.sh, or any "MAJOR.MINOR"). Read once at start
+# (a static initializer); one line names the version in effect and its source; a malformed value ends the run at start with
+# a line (exit 2), never a silent default. Every answer of GetProsperoSystemSwVersion is logged (first 8), and so is
+# GetCompiledSdkVersion's (first 4). sceNpGetSdkVersion (libNp.cpp) takes the same word when its unit is in the build
+# (mknp439 in mk439.py). Not in lean builds: there the host answers its constant (a later bake would be a per-title default).
+s = rep(s, '#include "bc5/direct.hpp"\n', '#include "bc5/direct.hpp"\n#include "bc5/sv0439.hpp" // exp 0439 (tag sv439)\n')
+s = rep(s, '''static KYTY_SYSV_ABI int GetProsperoSystemSwVersion(SystemSwVersion* v) {''', '''#ifndef BC5_LEAN
+static const bc5::sv439::Version& sv439_version() { // exp 0439 (tag sv439)
+	static const bc5::sv439::Version v = [] {
+		const char* e = std::getenv("KYTY_BC5_SYSTEM_SW_VERSION");
+		std::string pj;
+		if (e != nullptr && std::strcmp(e, "param") == 0) {
+			if (const char* p = std::getenv("BC5_PARAM_JSON"); p != nullptr) {
+				if (FILE* f = std::fopen(p, "rb"); f != nullptr) {
+					char   buf[4096];
+					size_t n = 0;
+					while ((n = std::fread(buf, 1, sizeof(buf), f)) > 0) pj.append(buf, n);
+					std::fclose(f);
+				}
+			}
+		}
+		bc5::sv439::Version r;
+		std::string         why;
+		if (!bc5::sv439::from_switch(e, pj, r, why)) {
+			std::fprintf(stderr, "[bc5] exp 0439 (tag sv439): KYTY_BC5_SYSTEM_SW_VERSION refused: %s; the run ends here\\n", why.c_str());
+			std::fflush(stderr);
+			std::_Exit(2);
+		}
+		std::fprintf(stderr, "[bc5] exp 0439 (tag sv439): the system software version in effect is %s (0x%08x), from %s (KYTY_BC5_SYSTEM_SW_VERSION=%s)\\n", r.str, r.word, r.source, e != nullptr ? e : "unset");
+		return r;
+	}();
+	return v;
+}
+[[maybe_unused]] static const bool g_sv439_at_start = (sv439_version(), true); // read at start: a malformed value ends the run now
+extern "C" uint32_t bc5_sv439_word() { return sv439_version().word; } // exp 0439 (tag sv439): for libNp.cpp
+#endif
+static KYTY_SYSV_ABI int GetProsperoSystemSwVersion(SystemSwVersion* v) {''')
+s = rep(s, '''	std::strncpy(v->version_string, "10.60.000", sizeof(v->version_string) - 1);
+	v->version = 0x0A600000;''', '''#ifndef BC5_LEAN
+	{ // exp 0439 (tag sv439)
+		const auto& sv = sv439_version();
+		std::strncpy(v->version_string, sv.str, sizeof(v->version_string) - 1);
+		v->version = sv.word;
+		static std::atomic<int> k {0};
+		if (k++ < 8) std::fprintf(stderr, "[bc5] exp 0439 (tag sv439): GetProsperoSystemSwVersion -> \\"%s\\" 0x%08x\\n", sv.str, sv.word);
+	}
+#else
+	std::strncpy(v->version_string, "10.60.000", sizeof(v->version_string) - 1);
+	v->version = 0x0A600000;
+#endif''')
+s = rep(s, '''	*version = static_cast<int>(v);''', '''	*version = static_cast<int>(v);
+#ifndef BC5_LEAN
+	{ // exp 0439 (tag sv439)
+		static std::atomic<int> k {0};
+		if (k++ < 4) std::fprintf(stderr, "[bc5] exp 0439 (tag sv439): GetCompiledSdkVersion -> 0x%08x\\n", v);
+	}
+#endif''')
 open(dst + '/bc5LleAgc.cpp', 'w', encoding='utf-8', newline='').write(s)
 
 v = open(src + '/videoOut.cpp', encoding='utf-8', newline='').read()
@@ -1147,3 +1268,21 @@ v = rep(v, a, a + '\t\t// exp 0439 (tag dc439): a compressed surface decompresse
         '\t\t\tsource_info.metadata = {};\n\t\t}\n')
 open(dst + '/videoOut.cpp', 'w', encoding='utf-8', newline='').write(v)
 print("ok")
+
+# exp 0439 (tag sv439): sceNpGetSdkVersion (libNp.cpp, the np-common port) answers the same word as GetProsperoSystemSwVersion
+# when the unit is in the build (box439.sh compiles new/libNp.cpp when it is there). Its own decode turns 0x0B600000 into
+# "11.60" as it turns 0x0A600000 into "10.60". Lean: today's constant.
+import os
+if os.path.exists(src + '/libNp.cpp'):
+    n = open(src + '/libNp.cpp', encoding='utf-8', newline='').read()
+    n = rep(n, """	const uint32_t hex = 0x0A600000u; // our kernel's system software version (10.60)""", """#ifndef BC5_LEAN
+	const uint32_t hex = bc5_sv439_word(); // exp 0439 (tag sv439): KYTY_BC5_SYSTEM_SW_VERSION (bc5LleAgc.cpp, sv0439.hpp)
+#else
+	const uint32_t hex = 0x0A600000u; // our kernel's system software version (10.60)
+#endif""")
+    n = rep(n, """static int Bc5NpcGetSdkVersion(char* version) {""", """#ifndef BC5_LEAN
+extern "C" uint32_t bc5_sv439_word(); // exp 0439 (tag sv439), defined in bc5LleAgc.cpp
+#endif
+static int Bc5NpcGetSdkVersion(char* version) {""")
+    open(dst + '/libNp.cpp', 'w', encoding='utf-8', newline='').write(n)
+    print("libNp.cpp: done")
