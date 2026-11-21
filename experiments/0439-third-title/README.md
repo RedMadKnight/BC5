@@ -491,6 +491,35 @@ the control's line has none, `X=1;rm` is refused).
       `BC5_DIRECT_UMR_ON_TIMEOUT` calls reads the gfx ring only.
     - Next, in the guard build: dump every piece of a timed-out job (chained and called); a switch for
       `umr -O halt_waves -wa none` at the first timeout; XQ_COUNT's ring map. Then one run names the dispatch.
+33. *`BC5_DIRECT_IB_CHAIN_FLAT` and the import scans over pieces (tags fl439, ip439), the guard build, run t3r-i1.*
+    - Flat layout (`bc5/ib_chain.hpp` `flatten`, `submit_impl`):
+      - A top-level chain is laid out as one buffer: each segment is copied up to its chain packet, the chain packet
+        becomes NOPs, and the target follows. The CP never switches buffers, so the state set before the cut is still
+        there.
+      - It refuses on a COND_EXEC before the chain, a cycle, an unmapped target, or past 2^20 dwords.
+      - Executed offsets are split back per guest segment (`r.nested`).
+      - Det tests 6-9 in `test_ib0439.cpp`: PASS. The planted bug (the last chunk dropped) FAILS.
+    - `BC5_0439_IMPORT_PIECES=1`: `k1f412_pass` and `dt412_pass` also run on every called or chained piece. Before
+      this, every host import scan read the top buffer only.
+    - Also in the build: the probe dumps every piece and the parameter blocks around the chain
+      (`BC5_0439_PIECE_DUMP`); umr `halt_waves -wa none` at the 0.9-s watchdog (`BC5_0439_UMR_WAVES`); the
+      queue-to-ring map. Private normal `5b69b5d2`, lean `1426b2ab`, archive `39f9b3cb`.
+    - Run t3r-i1 (20:56:00, the top session's GO, the maintainer watching; both candidates on; display 1920x1080@60):
+      - No hang and no reboot: resets 1 -> 1, fault records 30 -> 30.
+      - Queue 40's 16,422-dword acb was laid out flat: 5 segments, 65,607 dwords (the SH-grid batch spans five
+        chunks). It completed.
+      - Imports by the piece scans: 0, and no import line at all in the run. Everything was already mapped, so the
+        zero-cover lead is cleared.
+      - By elimination the frame-229 hang was the compute engine running a chained INDIRECT_BUFFER from our copy.
+        This is an inference from one run.
+      - Ring map: queue 16 (A) moved to libdrm compute ring 2, queue 24 (B) to ring 1, queue 40 to ring 3; every
+        queue starts on ring 0.
+      - New stop: 281 frames, the last at t 11.06 s; then no flip for the remaining 109 s, with no GPU timeout, no
+        fault, and no host line (journal=min). A stall, not a hang.
+      - The screenshots (private: `C:\Users\kjani\Documents\bc5-private\yotei-screens\t3r-i1-2056\`, never in git)
+        show the window black throughout, its fps counter frozen at 27.1 after the stop.
+    - Next: find what the title waits on after the first frame that follows the batch (wait trace, ACB_REFUSE's
+      records), in a run that most likely does not reboot.
 
 (more to come)
 
