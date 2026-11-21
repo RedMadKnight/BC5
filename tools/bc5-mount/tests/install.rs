@@ -123,9 +123,47 @@ fn install_resume_skips_matching() {
     let info1 = install(&container_path, &dest, false, false).unwrap();
     assert_eq!(info1.file_count, spec.files().len());
 
-    // Second install with --resume: all files should be skipped.
+    // Second install with --resume: all files are kept, and still counted and hashed for the record.
     let info2 = install(&container_path, &dest, true, false).unwrap();
-    assert_eq!(info2.file_count, 0);
+    assert_eq!(info2.files_kept, spec.files().len());
+    assert_eq!(info2.file_count, spec.files().len());
+    assert_eq!(info2.hashes.len(), info1.hashes.len());
+
+    fs::remove_dir_all(&dir).unwrap();
+}
+
+/// Exp 0439: a resumed install with --verify after an interrupted run (some files done, some not) passes,
+/// and its hashes cover the kept files as well as the written ones.
+#[test]
+fn install_resume_verify_after_partial() {
+    let spec = install_spec();
+    let dir = tmp("resume-verify");
+    let container_path = dir.join("fixture.ffpfsc");
+    let dest = dir.join("dest");
+
+    build_to_path(&spec, &container_path).unwrap();
+    let full = install(&container_path, &dest, false, false).unwrap();
+    // Take one installed file away, as if the first run had stopped before it.
+    let gone = &full.hashes[0].path;
+    fs::remove_file(dest.join(gone)).unwrap();
+
+    let info = install(&container_path, &dest, true, true).unwrap();
+    assert_eq!(info.file_count, spec.files().len());
+    assert_eq!(info.files_kept, spec.files().len() - 1);
+    let c = bc5_mount::container::Container::open_path(&container_path).unwrap();
+    let volume_hashes = hash_volume(c.exfat(), |_| {}).unwrap();
+    let d = diff(&info.hashes, &volume_hashes);
+    assert!(d.is_empty(), "resume hashes differ from the image: {d:?}");
+
+    // A kept file whose bytes changed (same size) is caught by --verify.
+    let victim = dest.join(&full.hashes[full.hashes.len() - 1].path);
+    let mut bytes = fs::read(&victim).unwrap();
+    if !bytes.is_empty() {
+        bytes[0] ^= 0xff;
+        fs::write(&victim, &bytes).unwrap();
+        let e = install(&container_path, &dest, true, true).unwrap_err();
+        assert!(format!("{e:#}").contains("verification failed"), "{e:#}");
+    }
 
     fs::remove_dir_all(&dir).unwrap();
 }
