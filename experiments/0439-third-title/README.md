@@ -593,6 +593,25 @@ the control's line has none, `X=1;rm` is refused).
         not hold that buffer for 10 s.
     - Next: what eboot+0xe245b2 polls (yotei-memdump's paused dump at this stall), and queue 2/1/0's ring, doorbell
       and consumed pointer at the stall.
+    - SUPERSEDED by yotei-memdump's second dump (exp 0441). game-main sits in the title's job system's "wait for this
+      job group" (eboot+0xe244f0); the group holds 11 jobs of one ProxySet function (eboot+0x11c3b40), none started.
+      All 20 JobWorker threads sleep in a semaphore wait (from eboot+0xe249b9), and game-main's own attempt to take a
+      job returns nothing. Labels, rings and ProxySetSync's check are all consistent and met, and every queue's ring is
+      consumed. So the reading above ("game-main waits for queue 2/1/0's next frame") is wrong. The stall is on the
+      CPU side, between the title's job system and the host's kernel objects.
+    - The host side of it (run A's stacks and Kyty log, read offline):
+      - All 20 workers are in `KernelWaitSema` -> `KernelSemaPrivate::Wait` -> `Common::CondVar::WaitFor` (host
+        `src/kernel/semaphore.cpp` at patch 589ef163).
+      - The title creates exactly two semaphores, both "CJobManager", init 0, max 2,147,483,647 (the create lines).
+        So the maximum-count refusal in `Signal` (`m_count + n > m_max_count`) cannot apply.
+      - `Signal` adds the count, then `WakeWaiters` grants, under the mutex, to every waiting thread whose need fits,
+        in queue order, and the condition variable is signalled. `Wait` takes at once when the count suffices, else
+        queues and loops on a timed `WaitFor` (the APC poll), so a missed notify is caught on the next poll. Nothing
+        in this path loses a wake.
+      - So the workers sleep because the count stayed 0: no signal reached their semaphore for these 11 jobs. Which
+        call should have given it (a signal with what count, or a different primitive) is not visible without a
+        trace.
+      - Candidate R (exp 0429) does not act here: its count line reads "held 0 calls 0".
 
 (more to come)
 
