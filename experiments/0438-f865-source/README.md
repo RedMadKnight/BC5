@@ -2432,6 +2432,61 @@ checked: host code (`journal`'s formatting) running on a guest thread's stack, b
 title reuses. To be checked on its own: which thread's stack spans that address, and whether host buffers live in
 guest-allocated stacks.
 
+## Result 20: r438o, two holes in the deployed r438 and their fix (F874, F875; 2026-11-21)
+
+Two holes in the deployed r438 (patch 9889b06a), found offline on the bake unit ff9e8fe2:
+
+- **Ring order (F874).** Another thread's real write of the same label can pass a taken slice's early write in `g_plw`.
+  - bc5-ring's `r438_begin` gives the early write order N. Before the slice's own job registers it for real, the Render Thread's or bc5-chainwd's `submit_now` can register a real write of the same label with order N+1.
+  - `ring_will_satisfy` then answers a game-thread wait on the slice's value "not satisfied", while its writer is still to come.
+- **The trim (F875).** `g_plw`'s trim erases the oldest 4,096 entries by position, early ones included.
+
+Both reproduce deterministically: `r438o/test_r438o.sh bake438.cpp order` and `... trim` FAIL.
+
+The fix, `r438o/mkr438o.py`, works inside the EARLYREG path and has no new switch:
+
+- **E2:** `register_label_writes` renumbers the other early entries of its labels after its own real writes.
+- **E3:** with r438 on, the trim drops only real entries. The bound: an early entry lives only until its slice's `r438_end`, so the table holds at most 8,192 real entries, one batch and the slices in flight.
+- **E4:** normal-build counters in r438's 60-s line.
+- **E5:** the renumbering scan runs only while early entries are in the table (`g_r438o_live`).
+
+Tests:
+
+- order and trim PASS.
+- The planted bugs (no renumbering; the old trim) FAIL.
+- Identity with EARLYREG=0 and with it on equals the bake unit.
+
+The lean A/B on ASTRO BOT, on the clean boot c05993c0 (`r438o/ab438o.sh`; MangoHud per frame, from 30 s, 140 s per run):
+
+- **q438oA**, without E5:
+  - Control d3485ed4: 59.67 / 59.48 / 59.32 flips/s, p99 17.0 / 17.4 / 33.3 ms, over 50 ms 1 / 5 / 4.
+  - r438o lean aae9c294: 59.11 / 58.88 / 59.22 flips/s, p99 33.5 / 33.7 / 33.5 ms, over 50 ms 5 / 7 / 3.
+  - The ranges do not overlap: about 0.7 % lower, and the p99 doubled.
+  - The normal run printed no r438 line: ASTRO took no slice.
+  - The cost was r438o's renumbering scan of the whole `g_plw` on every `register_label_writes` under `g_plw_mutex`, with nothing to renumber. E5 removes it.
+- **The deployed r438 itself** adds no per-submit scan of `g_plw` on a title with no slices. Per submit it adds only:
+  - `t_r438_real.push_back` while a slice is on (bake unit line 9254);
+  - the PLWCV `notify_all` (line 9263).
+
+  Its scans run per slice (`r438_begin` / `r438_end`) and at waits (`ring_will_satisfy`).
+- **q438oB**, with E5 (unit 2e6168de; lean ef76f031, normal 94e0e462), the same boot, 14:27–14:50:
+  - Control: 58.61 / 58.56 / 58.54 flips/s, p99 33.89 / 33.90 / 33.86 ms, over 50 ms 4 / 8 / 4.
+  - r438o: 58.69 / 58.51 / 58.05 flips/s, p99 33.84 / 33.87 / 34.36 ms, over 50 ms 6 / 8 / 4.
+  - The ranges overlap for flips/s and p99, and r438o's over-50 counts are within the control's.
+  - Means: control 58.57, r438o 58.42; the lowest run is O3.
+  - The control itself fell from 59.49 (q438oA) to 58.57 flips/s on the same boot, and its p99 from 17 to 34 ms. That drift of the box is larger than the difference between the arms.
+  - The normal run again printed no r438 line (no slice) and no kernel line.
+
+**The bake (2026-11-21 14:52–15:02, the top session's GO; one lock line for the swap and the smoke):**
+
+- Patch 9889b06a → 0fede35d (135 files, exp 0372 lines 5, the pad_audio_route header in).
+- Normal b1b57df9 → 199a0f39, lean d3485ed4 → 3a20b974, archive d6638808 unchanged. No switch word gained or lost.
+- Smokes: o438sc (ASTRO lean 200 s) and o438sn (normal 200 s) PASS, 0 kernel lines. The exe md5s read back.
+- The chain cannot separate a cost under about 0.3 % from the boot's drift, and every r438o run followed a control run.
+- Undo: `bash ~/bc5-work/exp0438/r438okit/bake/undo0438o.sh`.
+
+**Unexercised.** ASTRO BOT takes no r438 slices, so this A/B shows only that r438o costs nothing when idle. The fix's own path (the renumbering and the trim-keep) stays unexercised on a real title until the second title is installed again.
+
 ## Verdict
 
 **F865's source is fixed and built into the shared builds (r438 with PLWCV, 2026-11-21 00:52). The long frames are a

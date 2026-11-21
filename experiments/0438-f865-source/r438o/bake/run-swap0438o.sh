@@ -7,6 +7,9 @@ set -u
 ulimit -c 0
 HERE=$(cd "$(dirname "$0")" && pwd); W=$HOME/bc5-work
 echo "run-swap0438o $(date +%T): boot $(cut -c1-8 /proc/sys/kernel/random/boot_id)"
+# one BOX-LOCK line for the swap and the smoke (the top session, 2026-11-21): swap0438o.sh and smoke0438os.sh take it over
+. "$W/exp0413/n/chainlock0417.inc"
+chain_claim "exp 0438: the r438o swap (patch 9889b06a -> ${PATCH_NEW:-?}, normal and lean rebuilt) and its smoke (ASTRO BOT lean 200 s + normal 200 s)" 60 || { echo "run-swap0438o: no lock"; exit 1; }
 bash "$HERE/swap0438o.sh" || { echo "run-swap0438o: swap0438o failed: no smoke"; exit 1; }
 MN=$(md5sum < "$W/kytyplus-build/src/kyty_emulator" | cut -d' ' -f1); ML=$(md5sum < "$W/kytyplus-build-lean/src/kyty_emulator" | cut -d' ' -f1)
 cd "$W/exp0413/n" || exit 1

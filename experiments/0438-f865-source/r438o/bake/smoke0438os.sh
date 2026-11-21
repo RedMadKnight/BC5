@@ -19,8 +19,12 @@ cd "$N" || exit 1
 [ "$MN" = "${NORMAL_WANT:?the swapped normal md5}" ] || { echo "smoke0438o ended $(date +%T): NOT STARTED, normal is ${MN:0:8}"; exit 1; }
 for t in o438sc o438sn; do { [ -e "$R/$t-end.txt" ] || [ -e "$R/$t-start.txt" ]; } && { echo "smoke0438o ended $(date +%T): NOT STARTED, tag $t used"; exit 1; }; done
 pgrep '^kyty_emulator' > /dev/null && { echo "smoke0438o ended $(date +%T): NOT STARTED, an emulator runs"; exit 1; }
+if [ -n "${CHAIN_LOCKLINE:-}" ] && [ "$(cat "$W/BOX-LOCK" 2> /dev/null)" = "$CHAIN_LOCKLINE" ]; then  # run-swap0438o.sh holds the one line
+    . "$N/chainlock0417.inc"; chain_release() { :; }; echo "the lock line of the caller is taken over: $CHAIN_LOCKLINE"
+else
 . "$N/chainlock0417.inc"
 chain_claim "exp 0438: smoke of the r438o swap: ASTRO BOT lean 200 s + ASTRO BOT normal 200 s" 12 || { echo "smoke0438o ended $(date +%T): NOT STARTED"; exit 1; }
+fi
 PADS=(); PADN=0; SAMP=""
 padon() { : > "$R/$1-pad.txt"; local d; for d in /dev/input/by-id/*-event-joystick; do [ -e "$d" ] || continue; stdbuf -oL evtest "$d" 2> /dev/null | grep --line-buffered 'EV_KEY.*value 1' >> "$R/$1-pad.txt" & PADS+=($!); done; }
 padoff() { [ ${#PADS[@]} = 0 ] || kill "${PADS[@]}" 2> /dev/null; PADS=(); pkill -u "$USER" -x evtest 2> /dev/null; PADN=$(wc -l < "$R/$1-pad.txt"); }
