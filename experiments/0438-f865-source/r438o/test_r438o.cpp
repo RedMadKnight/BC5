@@ -19,6 +19,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -56,7 +57,63 @@ struct AcbHead {
 	uint32_t        done;
 };
 static std::vector<AcbHead> g_acb_heads;
+// exp 0438 (labelmap): the device's mappings and the filter's operand layouts, for the cut label_write_mapped and
+// covered_sorted (R438O_X: a unit made by q438/mkq438x.py). g_dev stays empty outside mode lwm: no snapshot, no check.
+namespace bc5::direct {
+struct Mapping {
+	uint64_t va = 0, size = 0;
+	bool     shared = false, readonly = false;
+};
+struct MappingIndex {
+	std::vector<Mapping> v;
+	auto                 begin() const { return v.begin(); }
+	auto                 end() const { return v.end(); }
+};
+} // namespace bc5::direct
+namespace bc5::policy { // backend/src/policy.cpp memory_operands, the three label-write packets
+static std::vector<std::pair<uint64_t, uint64_t>> memory_operands(const uint32_t* p, uint32_t len) {
+	std::vector<std::pair<uint64_t, uint64_t>> out;
+	if ((p[0] >> 30) != 3 || len < 2) return out;
+	const auto op   = static_cast<uint8_t>((p[0] >> 8) & 0xff);
+	auto       addr = [&](uint32_t lo, uint32_t hi) { return (static_cast<uint64_t>(p[lo]) & ~3ull) | (static_cast<uint64_t>(p[hi] & 0xffffu) << 32); };
+	if (op == 0x37 && len >= 4 && (((p[1] >> 8) & 0xf) == 1 || ((p[1] >> 8) & 0xf) == 2 || ((p[1] >> 8) & 0xf) == 5)) out.emplace_back(addr(2, 3), (len - 4) * 4ull);
+	if (op == 0x49 && len >= 6 && ((p[2] >> 29) & 7) != 0) out.emplace_back(addr(3, 4), 8);
+	if (op == 0x47 && len >= 4 && ((p[3] >> 29) & 7) != 0) out.emplace_back(addr(2, 3), 8);
+	return out;
+}
+} // namespace bc5::policy
+namespace cv412 {
+inline bool hole(bool, bool) { return false; }
+} // namespace cv412
+struct TestDev {
+	std::mutex                        m;
+	std::vector<bc5::direct::Mapping> maps;
+	std::shared_ptr<const bc5::direct::MappingIndex> sorted_mappings() {
+		std::lock_guard lk(m);
+		auto            p = std::make_shared<bc5::direct::MappingIndex>();
+		p->v              = maps;
+		std::sort(p->v.begin(), p->v.end(), [](const bc5::direct::Mapping& a, const bc5::direct::Mapping& b) { return a.va < b.va; });
+		return p;
+	}
+	uint64_t gds_shadow_va() const { return 0; }
+	void     map(uint64_t va, uint64_t size) {
+        std::lock_guard lk(m);
+        maps.push_back({va, size, false, false});
+	}
+	void unmap(uint64_t va) {
+		std::lock_guard lk(m);
+		std::erase_if(maps, [va](const bc5::direct::Mapping& x) { return x.va == va; });
+	}
+};
+static std::unique_ptr<TestDev>      g_dev;
+static constexpr uint64_t            kFlAreaBytes = 0x100;
+static uint64_t                      fl_crumbs_area() { return 0; }
+static std::pair<uint32_t, uint32_t> ge_probe_range() { return {0, 0}; }
 #include "r_state.inc"
+#ifdef R438O_X
+#include "r_cov.inc"
+#include "r_lwm.inc"
+#endif
 #include "r_plw.inc"
 #include "r_reg.inc"
 #include "r_r438.inc"
@@ -195,6 +252,77 @@ static void run_trim() {
 	CHECK(got.load() == 1, "the wait found no writer after the slice's real registration");
 }
 
+#ifdef R438O_X
+// lwm: a slice of two acb IBs, g_ib1 (L = 1 to g_label) and g_ib5 (to g_label3).
+//   (i)     g_label mapped, g_label3 not: one early entry (g_label), none for g_label3, no BUG line at the slice's end
+//           (the job registers g_ib1's write; the filter NOPs g_ib5's);
+//   (iii a) g_label3 mapped at the scan, unmapped at the job: its early entry never turns real: a BUG line at r438_end;
+//   (iii b) g_label3 unmapped at the scan, mapped at the job: no early entry, the job's real write is registered.
+static uint64_t g_label3 = 0x3c3c3c3c3ull;
+static uint32_t g_ib5[8];
+static uint32_t g_ring2[8];
+static size_t   early_of(uint64_t a) {
+    std::lock_guard lk(g_plw_mutex);
+    return static_cast<size_t>(std::count_if(g_plw.begin(), g_plw.end(), [a](const PendingLabelWrite& w) { return w.label == a && (w.seq & kR438Early) != 0; }));
+}
+static size_t real_of(uint64_t a) {
+	std::lock_guard lk(g_plw_mutex);
+	return static_cast<size_t>(std::count_if(g_plw.begin(), g_plw.end(), [a](const PendingLabelWrite& w) { return w.label == a && (w.seq & kR438Early) == 0; }));
+}
+static size_t never_lines() {
+	std::lock_guard l(g_jm);
+	return static_cast<size_t>(std::count_if(g_lines.begin(), g_lines.end(), [](const std::string& x) { return x.find("never reached the ring") != std::string::npos; }));
+}
+static void run_lwm() {
+	const uint64_t a1 = reinterpret_cast<uintptr_t>(&g_label), a3 = reinterpret_cast<uintptr_t>(&g_label3);
+	release(g_ib5, a3, 5);
+	const uint64_t i1 = reinterpret_cast<uintptr_t>(&g_ib1[0]), i5 = reinterpret_cast<uintptr_t>(&g_ib5[0]);
+	const uint32_t r[8] = {0xC0023F00u, static_cast<uint32_t>(i1), static_cast<uint32_t>(i1 >> 32u) & 0xffu, 8, 0xC0023F00u, static_cast<uint32_t>(i5), static_cast<uint32_t>(i5 >> 32u) & 0xffu, 8};
+	std::copy(r, r + 8, g_ring2);
+	g_dev = std::make_unique<TestDev>();
+	g_dev->map(a1, 8);
+	auto job = [](bool ib5_passes) { // the slice's job: the filter passes g_ib1's write, g_ib5's only when mapped
+		register_label_writes(g_ib1, 8, kAt0, 801, 0);
+		if (ib5_passes) register_label_writes(g_ib5, 8, kAt0, 802, 0);
+	};
+	size_t       e1 = 0, e3 = 0, ea3 = 0, eb3 = 0, rb3 = 0;
+	const size_t n0 = never_lines();
+	std::thread([&] { // (i), on one "bc5-ring" thread (r438's state is thread-local)
+		r438_begin(g_ring2, 8, nullptr, 0);
+		e1 = early_of(a1);
+		e3 = early_of(a3);
+		job(false);
+		r438_end();
+	}).join();
+	const size_t n_i = never_lines() - n0;
+	std::thread([&] { // (iii a)
+		g_dev->map(a3, 8);
+		r438_begin(g_ring2, 8, nullptr, 0);
+		ea3 = early_of(a3);
+		g_dev->unmap(a3);
+		job(false);
+		r438_end();
+	}).join();
+	const size_t na = never_lines() - n0 - n_i;
+	std::thread([&] { // (iii b)
+		r438_begin(g_ring2, 8, nullptr, 0);
+		eb3 = early_of(a3);
+		g_dev->map(a3, 8);
+		job(true);
+		rb3 = real_of(a3);
+		r438_end();
+	}).join();
+	const size_t nb = never_lines() - n0 - n_i - na;
+	std::printf("lwm (i): early entries mapped %zu, unmapped %zu, BUG lines %zu\n", e1, e3, n_i);
+	std::printf("lwm (iii a, mapped at the scan, unmapped at the job): early %zu, BUG lines %zu, left %zu\n", ea3, na, early_of(a3));
+	std::printf("lwm (iii b, unmapped at the scan, mapped at the job): early %zu, real writes %zu, BUG lines %zu\n", eb3, rb3, nb);
+	CHECK(e1 == 1 && e3 == 0 && n_i == 0, "lwm (i): early %zu / %zu (want 1 / 0), BUG lines %zu", e1, e3, n_i);
+	CHECK(ea3 == 1 && na == 1 && early_of(a3) == 0, "lwm (iii a): early %zu, BUG lines %zu", ea3, na);
+	CHECK(eb3 == 0 && rb3 >= 1 && nb == 0, "lwm (iii b): early %zu, real %zu, BUG lines %zu", eb3, rb3, nb);
+	g_dev.reset();
+}
+#endif
+
 static void run_identity() {
 	auto dump = [](const char* step) {
 		std::lock_guard lk(g_plw_mutex);
@@ -244,6 +372,9 @@ int main(int argc, char** argv) {
 		return 2;
 	}
 	if (mode == "trim") run_trim();
+#ifdef R438O_X
+	else if (mode == "lwm") run_lwm();
+#endif
 	else run_order();
 	std::printf("%s (%d failures)\n", fails == 0 ? "PASS" : "FAIL", fails);
 	return fails == 0 ? 0 : 1;

@@ -97,9 +97,85 @@ static thread_local bool                     t_game = false;
 static bool                                  on_game_thread() { return t_game; }
 static int                                   w428_rings() { return 4; }
 static int                                   job_ring(const char*) { return bc5::direct::kGfxRing; }
-static bool                                  wait_satisfied(const uint32_t*, bool) { return false; } // the labels' memory never satisfies
+// The label's memory, as the unit's wait_satisfied reads it for "==" (the owners' labels stay 0: their waits on k >= 1 never pass)
+static bool wait_satisfied(const uint32_t* p, bool is64) {
+	const uint64_t a = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
+	if ((p[1] & 7u) != 3) return false;
+	if (is64) {
+		const uint64_t ref = p[4] | (static_cast<uint64_t>(p[5]) << 32u), mask = p[6] | (static_cast<uint64_t>(p[7]) << 32u);
+		return (*reinterpret_cast<const volatile uint64_t*>(a & ~7ull) & mask) == (ref & mask);
+	}
+	return SoftCp::compare(3, *reinterpret_cast<const volatile uint32_t*>(a & ~3ull), p[5], p[4]);
+}
 static bool                                  ring_will_satisfy(const uint32_t* p, bool is64, int ring);
+// exp 0438 (labelmap, q438ng): the device's mappings and the filter's operand layouts, for the cut label_write_mapped,
+// covered_sorted and ho430. g_dev stays empty in every case but the labelmap ones (no snapshot: no check, as before).
+namespace bc5::direct {
+struct Mapping {
+	uint64_t va = 0, size = 0;
+	bool     shared = false, readonly = false;
+};
+struct MappingIndex {
+	std::vector<Mapping> v;
+	auto                 begin() const { return v.begin(); }
+	auto                 end() const { return v.end(); }
+	size_t               size() const { return v.size(); }
+};
+static std::mutex                                 g_deps_mu;
+static std::vector<std::pair<int, uint64_t>>      g_deps; // F4's kernel dependencies asked for
+struct Device {
+	static void add_next_submit_dependency(int ring, uint64_t seq) {
+		std::lock_guard lk(g_deps_mu);
+		g_deps.emplace_back(ring, seq);
+	}
+};
+} // namespace bc5::direct
+namespace bc5::policy { // backend/src/policy.cpp memory_operands, the three label-write packets (WRITE_DATA, RELEASE_MEM, EOP)
+static std::vector<std::pair<uint64_t, uint64_t>> memory_operands(const uint32_t* p, uint32_t len) {
+	std::vector<std::pair<uint64_t, uint64_t>> out;
+	if ((p[0] >> 30) != 3 || len < 2) return out;
+	const auto op   = static_cast<uint8_t>((p[0] >> 8) & 0xff);
+	auto       addr = [&](uint32_t lo, uint32_t hi) { return (static_cast<uint64_t>(p[lo]) & ~3ull) | (static_cast<uint64_t>(p[hi] & 0xffffu) << 32); };
+	if (op == 0x37 && len >= 4 && (((p[1] >> 8) & 0xf) == 1 || ((p[1] >> 8) & 0xf) == 2 || ((p[1] >> 8) & 0xf) == 5)) out.emplace_back(addr(2, 3), (len - 4) * 4ull);
+	if (op == 0x49 && len >= 6 && ((p[2] >> 29) & 7) != 0) out.emplace_back(addr(3, 4), 8);
+	if (op == 0x47 && len >= 4 && ((p[3] >> 29) & 7) != 0) out.emplace_back(addr(2, 3), 8);
+	return out;
+}
+} // namespace bc5::policy
+namespace cv412 {
+inline bool hole(bool, bool) { return false; }
+} // namespace cv412
+struct TestDev {
+	std::mutex                         m;
+	std::vector<bc5::direct::Mapping>  maps;
+	std::shared_ptr<const bc5::direct::MappingIndex> sorted_mappings() {
+		std::lock_guard lk(m);
+		auto            p = std::make_shared<bc5::direct::MappingIndex>();
+		p->v              = maps;
+		std::sort(p->v.begin(), p->v.end(), [](const bc5::direct::Mapping& a, const bc5::direct::Mapping& b) { return a.va < b.va; });
+		return p;
+	}
+	uint64_t gds_shadow_va() const { return 0; }
+	void     map(uint64_t va, uint64_t size) {
+        std::lock_guard lk(m);
+        maps.push_back({va, size, false, false});
+	}
+	void unmap(uint64_t va) {
+		std::lock_guard lk(m);
+		std::erase_if(maps, [va](const bc5::direct::Mapping& x) { return x.va == va; });
+	}
+};
+static std::unique_ptr<TestDev>             g_dev;
+static constexpr uint64_t                   kFlAreaBytes = 0x100;
+static uint64_t                             fl_crumbs_area() { return 0; }
+static std::pair<uint32_t, uint32_t>        ge_probe_range() { return {0, 0}; }
+static std::atomic<int>                     g_stub_phase {0}; // >0: the stub submit_now holds this F16 phase (3: holding the device)
 #include "q_state.inc"
+#ifdef Q438_X
+#include "q_cov.inc"
+#include "q_lwm.inc"
+#include "q_ng.inc"
+#endif
 #include "q_chain.inc"
 #include "q_plw.inc"
 #include "q_reg.inc"
@@ -107,9 +183,12 @@ static bool                                  ring_will_satisfy(const uint32_t* p
 #ifdef Q438_NEW
 #include "q_q.inc"
 #endif
+#ifdef Q438_X
+#include "q_ho.inc"
+#endif
 
 // ---- the stub submission ---------------------------------------------------------------------------------------------------
-static constexpr int        kOwners = 16;
+static constexpr int        kOwners = 24;
 static uint64_t             g_labels[kOwners];
 static ChainSlot*           g_slot_of[kOwners];
 static std::thread::id      g_owner_tid[kOwners];
@@ -153,6 +232,13 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char*, int
 	const int o = r.owner;
 	r.tid       = std::this_thread::get_id();
 	const uint64_t t_call = SoftCp::now_ns();
+	if (g_stub_phase.load() > 0 && t_f16_slot != nullptr) t_f16_slot->f16_phase.store(g_stub_phase.load()); // as submit_now's 2, 3
+	bool writes = false;
+	for (uint32_t q = 0; q < num_dwords;) {
+		const uint32_t h = ib[q], c = (h >> 16u) & 0x3fffu, len = c == 0x3fffu ? 1 : c + 2;
+		if ((h >> 30u) == 3 && ((h >> 8u) & 0xffu) == 0x49u) writes = true;
+		q += len;
+	}
 	if (g_active[o].fetch_add(1) != 0 && !g_nest_ok[o].load()) g_viol_active++;
 	uint64_t t_locked = 0, t_gate = 0, t_prep = 0;
 	{
@@ -160,7 +246,7 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char*, int
 		std::lock_guard lk(s.mu);
 		t_locked   = SoftCp::now_ns();
 		r.flight_n = static_cast<uint64_t>(std::count(s.f10_flight.begin(), s.f10_flight.end(), label_of(o)));
-		if (r.flight_n == 0) g_viol_flight++;
+		if (r.flight_n == 0 && writes) g_viol_flight++;
 #ifdef Q438_NEW
 		std::lock_guard ql(s.q_mu);
 		if (s.q.size() > kQ438Cap) g_viol_cap++;
@@ -185,6 +271,15 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char*, int
 		std::erase(executed, 3u);
 		break;
 	}
+#ifdef Q438_X
+	if (g_dev) { // the filter: a packet whose memory operand is not mapped is NOPed (backend policy.cpp), so it is not registered
+		const auto maps = g_dev->sorted_mappings();
+		std::erase_if(executed, [&](uint32_t q) {
+			const uint32_t h = ib[q], c = (h >> 16u) & 0x3fffu, len = c == 0x3fffu ? 1 : c + 2;
+			return !lw_packet_mapped(*maps, 0, ib + q, len);
+		});
+	}
+#endif
 	register_label_writes(ib, num_dwords, executed, g_seq_no.fetch_add(1) + 1, ring);
 	if (!g_gated[o].load() && !g_nest_ok[o].load()) {
 		const uint64_t t_reg = SoftCp::now_ns();
@@ -822,6 +917,179 @@ static void det_destroy(int o) { // the owner's thread ends with a queue: ~Chain
 }
 #endif
 
+#ifdef Q438_X
+// ---- labelmap and q438ng (mkq438x.py) -------------------------------------------------------------------------------------
+static const char* const kNever = "of a queued chain never reached the ring";
+// (i): a label write to an address with no GPU mapping leaves no early entry and no BUG line; its mapped twin gets one.
+static void det_lwm_map(int om, int ou) {
+	g_dev = std::make_unique<TestDev>();
+	g_dev->map(label_of(om), 8);
+	const size_t   bug0  = lines_with(kNever);
+	const uint64_t skip0 = g_lwm_skipped.load();
+	size_t         early[2] {};
+	int            k = 0;
+	for (int o: {om, ou}) {
+		g_gated[o] = true;
+		g_pass[o]  = 0;
+		std::thread t([o, &early, k] {
+			BEGIN_OWNER(o);
+			append(o, 1);
+			chain_flush(1);
+			wait_until([o] { return g_active[o].load() == 1; }, "the entry in submit_now");
+			early[k] = early_entries(label_of(o));
+			g_pass[o]++;
+			chain_flush(5);
+		});
+		t.join();
+		g_gated[o] = false;
+		k++;
+	}
+	std::atomic<int> rm {-1}, ru {-1};
+	std::thread([&] {
+		t_game = true;
+		rm     = wait_ok(om, 1) ? 1 : 0;
+		ru     = wait_ok(ou, 1) ? 1 : 0;
+	}).join();
+	const size_t bugs = lines_with(kNever) - bug0;
+	CHECK(early[0] == 1 && early[1] == 0, "labelmap (i): early entries mapped %zu (want 1), unmapped %zu (want 0)", early[0], early[1]);
+	CHECK(bugs == 0, "labelmap (i): %zu BUG lines", bugs);
+	CHECK(g_lwm_skipped.load() == skip0 + 1, "labelmap (i): the scan left out %" PRIu64 " writes (want 1)", g_lwm_skipped.load() - skip0);
+	CHECK(rm.load() == 1 && ru.load() == 0, "labelmap (i): after the submissions the mapped label has its writer (%d), the unmapped none (%d)", rm.load(), ru.load());
+	std::printf("det labelmap (i): early entries mapped %zu, unmapped %zu; left out %" PRIu64 "; BUG lines %zu; real writer mapped %d, unmapped %d\n", early[0], early[1], g_lwm_skipped.load() - skip0, bugs, rm.load(),
+	            ru.load());
+	g_dev.reset();
+}
+// (iii): the mapping changes between the scan and submit_now.
+//   a. mapped at the scan, unmapped at the submit: the early entry never turns real: a BUG line at the entry's end, the entry
+//      removed; a game-thread wait held on it until then, then sees no writer (the GPU will not write it either).
+//   b. unmapped at the scan, mapped at the submit: no early entry; the real write appears at the submit. In between a
+//      game-thread wait sees no writer (as before r438/q438 for any writer not yet submitted).
+static void det_lwm_change(int oa, int ob) {
+	g_dev          = std::make_unique<TestDev>();
+	const size_t b0 = lines_with(kNever);
+	int          held_a = 0, end_a = -1, before_b = 0, end_b = -1;
+	size_t       early_a = 0, early_b = 0;
+	g_dev->map(label_of(oa), 8);
+	g_gated[oa] = true;
+	g_pass[oa]  = 0;
+	std::thread ta([&] {
+		BEGIN_OWNER(oa);
+		append(oa, 1);
+		chain_flush(1);
+		wait_until([oa] { return g_active[oa].load() == 1; }, "a: the entry in submit_now");
+		early_a = early_entries(label_of(oa));
+		g_dev->unmap(label_of(oa));
+		std::atomic<int> got {-1};
+		std::thread      game([&got, oa] {
+            t_game = true;
+            got    = wait_ok(oa, 1) ? 1 : 0;
+		});
+		std::this_thread::sleep_for(std::chrono::milliseconds(30));
+		held_a = got.load();
+		g_pass[oa]++;
+		game.join();
+		end_a = got.load();
+		chain_flush(5);
+	});
+	ta.join();
+	g_gated[oa]      = false;
+	const size_t bug_a = lines_with(kNever) - b0;
+	g_gated[ob] = true;
+	g_pass[ob]  = 0;
+	std::thread tb([&] {
+		BEGIN_OWNER(ob);
+		append(ob, 1);
+		chain_flush(1);
+		wait_until([ob] { return g_active[ob].load() == 1; }, "b: the entry in submit_now");
+		early_b = early_entries(label_of(ob));
+		g_dev->map(label_of(ob), 8);
+		std::atomic<int> got {-1};
+		std::thread      game([&got, ob] { // no early entry: it must return at once (no writer); -1 after 30 ms is a waiter on one
+            t_game = true;
+            got    = wait_ok(ob, 1) ? 1 : 0;
+		});
+		std::this_thread::sleep_for(std::chrono::milliseconds(30));
+		before_b = got.load();
+		g_pass[ob]++;
+		game.join();
+		chain_flush(5);
+		std::thread([&end_b, ob] {
+			t_game = true;
+			end_b  = wait_ok(ob, 1) ? 1 : 0;
+		}).join();
+	});
+	tb.join();
+	g_gated[ob] = false;
+	const size_t bug_b = lines_with(kNever) - b0 - bug_a;
+	CHECK(early_a == 1 && held_a == -1 && end_a == 0 && bug_a == 1 && early_entries(label_of(oa)) == 0,
+	      "labelmap (iii a): early %zu, the wait %d while queued then %d, BUG lines %zu, left %zu", early_a, held_a, end_a, bug_a, early_entries(label_of(oa)));
+	CHECK(early_b == 0 && before_b == 0 && end_b == 1 && bug_b == 0, "labelmap (iii b): early %zu, the wait %d before the submit, %d after, BUG lines %zu", early_b, before_b, end_b, bug_b);
+	std::printf("det labelmap (iii a, mapped at the scan, unmapped at the submit): early %zu, the wait held %d then %d (no writer), BUG lines %zu\n", early_a, held_a, end_a, bug_a);
+	std::printf("det labelmap (iii b, unmapped at the scan, mapped at the submit): early %zu, the wait %d before the submit, %d after, BUG lines %zu\n", early_b, before_b, end_b, bug_b);
+	g_dev.reset();
+}
+// q438ng: entry 1 held in submit_now, entry 2 (the writer of L, value 2) queued behind it; L's memory holds a stale 1; an acb
+// on bc5-ring (not a game thread) waits on L == 1.
+//   the gate: acb_ready's test (acb_wait_unready, unit line ~7665): must hold the acb while the writer is queued;
+//   the submit stage as today: ho430::at_wait (F10, F16, F18) then submit_split's keep test (unit ~10655): it returns
+//   after its bounds with the writer still queued, and the stale memory passes the wait: the hazard, shown, not asserted.
+static void det_ng(int o) {
+	g_labels[o] = 1; // last frame's value
+	g_stub_phase = 3; // entry 1 holds the device (F16 phase 3: no phase-gate give-up)
+	g_gated[o]   = true;
+	g_pass[o]    = 0;
+	const uint64_t L = label_of(o);
+	uint32_t       w[9];
+	wait64(w, L, 1);
+	int      gate_q = -1, gate_r = -1;
+	bool     queued_at_return = false, passes_today = false, kept = false;
+	double   at_ms = 0;
+	size_t   deps_after = 0;
+	std::thread t([&] {
+		BEGIN_OWNER(o);
+		static const uint32_t nowrite[3] = {0xC0011000u, static_cast<uint32_t>(o), 1};
+		chain_append(nullptr, 0, nowrite, 3, "dcb", false); // entry 1: writes nothing
+		chain_flush(1);
+		wait_until([o] { return g_active[o].load() == 1; }, "entry 1 held in submit_now");
+		append(o, 2); // entry 2: the writer, L = 2
+		chain_flush(1);
+		std::thread ring([&] { // bc5-ring: not a game thread
+			gate_q = acb_wait_unready(w, true, L, 0) ? 1 : 0;
+			const uint64_t t0 = SoftCp::now_ns();
+			ho430::at_wait(w, true, L, "acb", 0, w, 9, 0);
+			at_ms            = static_cast<double>(SoftCp::now_ns() - t0) / 1e6;
+			queued_at_return = early_entries(L) != 0;
+			kept             = !wait_satisfied(w, true) && ring_will_satisfy(w, true, 0);
+			passes_today     = wait_satisfied(w, true);
+		});
+		ring.join();
+		g_pass[o] = 100; // both entries go
+		chain_flush(5);
+		std::thread ring2([&] {
+			gate_r = acb_wait_unready(w, true, L, 0) ? 1 : 0;
+			{
+				std::lock_guard lk(bc5::direct::g_deps_mu);
+				bc5::direct::g_deps.clear();
+			}
+			ho430::at_wait(w, true, L, "acb", 0, w, 9, 0);
+			std::lock_guard lk(bc5::direct::g_deps_mu);
+			deps_after = bc5::direct::g_deps.size();
+		});
+		ring2.join();
+	});
+	t.join();
+	g_gated[o]   = false;
+	g_stub_phase = 0;
+	CHECK(gate_q == 1, "q438ng: acb_ready's test let the acb go (%d) while its label's writer was queued", gate_q);
+	CHECK(gate_r == 0, "q438ng: acb_ready's test still held the acb (%d) after the writer was submitted", gate_r);
+	CHECK(deps_after >= 1, "q438ng: after the writer's submission F4 asked for no kernel dependency");
+	std::printf("det q438ng: the gate held the acb while the writer was queued %d, let it go after the writer's submission %d (F4 dependencies %zu)\n", gate_q, gate_r == 0 ? 1 : 0, deps_after);
+	std::printf("det q438ng, today's submit stage with the writer queued: at_wait returned after %.1f ms, the writer still queued %d, the stale value passes the wait %d (kept for the GPU %d)%s\n", at_ms,
+	            queued_at_return ? 1 : 0, passes_today ? 1 : 0, kept ? 1 : 0, queued_at_return && passes_today ? ": THE HAZARD (an acb decided without its queued writer)" : "");
+	g_labels[o] = 0;
+}
+#endif
+
 #if defined(_WIN32) // Q438_TIMER1=1: Windows' timer at 1 ms, so the stub's sub-ms sleeps are not rounded up to a 15.6-ms tick
 extern "C" __declspec(dllimport) unsigned __stdcall timeBeginPeriod(unsigned);
 #pragma comment(lib, "winmm.lib")
@@ -875,6 +1143,11 @@ int main(int argc, char** argv) {
 		det_flush_all(4, 5, 8);
 		det_sync(15);
 		det_destroy(6);
+#ifdef Q438_X
+		det_lwm_map(16, 17);
+		det_lwm_change(18, 19);
+		det_ng(20);
+#endif
 	}
 #endif
 	{

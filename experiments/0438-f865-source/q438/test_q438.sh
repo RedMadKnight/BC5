@@ -26,12 +26,18 @@ cutunit() { # cutunit UNIT DIR
 	if grep -q -F '// ---- BC5 experiment 0438 (tag q438)' "$u"; then
 		a=$(lineof '// ---- BC5 experiment 0438 (tag q438)'); b=$(lineof '// ---- end of exp 0438 (tag q438)'); piece "$a" "$b" q_q.inc
 	fi
+	if grep -q -F '// ---- BC5 experiment 0438 (tag labelmap)' "$u"; then # mkq438x.py: the filter's check, acb_ready's test, ho430
+		a=$(lineof 'static bool covered_sorted(const bc5::direct::MappingIndex& maps, uint64_t a, uint64_t bytes) {'); piece "$a" "$(endf "$a")" q_cov.inc
+		a=$(lineof '// ---- BC5 experiment 0438 (tag labelmap)'); b=$(lineof '// ---- end of exp 0438 (tag labelmap)'); piece "$a" "$b" q_lwm.inc
+		a=$(lineof '// ---- BC5 experiment 0438 (tag q438ng)'); b=$(lineof '// ---- end of exp 0438 (tag q438ng)'); piece "$a" "$b" q_ng.inc
+		a=$(lineof 'namespace ho430 {'); b=$(lineof '} // namespace ho430'); piece "$a" "$b" q_ho.inc
+	fi
 	cp "$here/test_q438.cpp" "$d/"
 }
 cxx=${CXX:-g++}
 [ -z "${CXX:-}" ] && [ -x "/c/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/Llvm/x64/bin/clang++.exe" ] && cxx="/c/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/Llvm/x64/bin/clang++.exe"
 build() { # build DIR DEFINE EXE
-	(cd "$1" && "$cxx" -std=c++20 -O1 -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-variable -Wno-unused-parameter -D_CRT_SECURE_NO_WARNINGS -D"$2" $([ "${STACK438:-0}" = 1 ] && echo -DQ438_STACK) -o "$3" test_q438.cpp)
+	(cd "$1" && "$cxx" -std=c++20 -O1 -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-variable -Wno-unused-parameter -D_CRT_SECURE_NO_WARNINGS -D"$2" $([ "${STACK438:-0}" = 1 ] && echo -DQ438_STACK) $([ "$2" = Q438_NEW ] && [ -f "$1/q_lwm.inc" ] && echo -DQ438_X) -o "$3" test_q438.cpp)
 }
 echo "== md5: $(md5sum "$unit" | cut -c1-32) q438 unit; $(md5sum "$bake" | cut -c1-32) bake unit"
 cutunit "$unit" "$out/new"; cutunit "$bake" "$out/old"
@@ -92,5 +98,9 @@ if [ "${STACK438:-0}" = 1 ]; then # mkstack438.py: the renumbering and the trim 
 else
 	plant no-order 'if (q438_on()) { // exp 0438 (q438): queued chains' 'if (false) { // exp 0438 (q438): queued chains' q_reg.inc
 	plant trim-drops 'if (gone < 4096 && (w.seq & kR438Early) == 0) {' 'if (gone < 4096) {' q_plw.inc
+fi
+if [ -f "$out/new/q_lwm.inc" ]; then # mkq438x.py
+	plant lwm-noscan 'if (t_lwm != nullptr && (h >> 30u) == 3 && !lw_packet_mapped(' 'if (false && (h >> 30u) == 3 && !lw_packet_mapped('
+	plant ng-off 'return q438_on() && q438_writer_queued(label);' 'return false;' q_ng.inc
 fi
 echo "== all done"
