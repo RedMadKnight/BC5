@@ -463,6 +463,34 @@ the control's line has none, `X=1;rm` is refused).
     - Raw: `logs/t3p/` (display, meta, the kernel log stream: empty, and an extract of the journal's frame-profile,
       bound, r438 and soft-CP-wait lines).
     - Next: the same run with the journal at `min` and the probe on, long enough to reach frame ~230.
+32. *t3q: run 2, the 17:04 condition with the timeout probe (`k439/t3q.sh`, 20:00:10, boot 7986fd90).*
+    - Normal `3a79a88e`, the 17:04 settings with `BC5_DIRECT_JOURNAL=min`, plus `BC5_DIRECT_TIMEOUT_PROBE=1`; bound 120 s.
+      Display before the run: OK (1920x1080@60, scale 1).
+    - It hung like 17:04: 11.48 s after the start (17:04: 11.49 s), 229 frames at about 30 fps, frame counters
+      0xe4-0xe6. The same job: guest queue 40's acb rest "4..16364 of 16364 dwords", submitted as 16,422 dwords
+      (#3640). This time it ran on comp_1.1.0; the ring reset failed and bc5-gpu-watch rebooted the box (20:00:30).
+      Records: `~/bc5-data/captures/faults/20261121-200030`, devcoredump `20261121-200030-devcd1.txt`, the probe's
+      `ib-timeout-00003640-acb-16422.bin` in the capture's `gc/`. All private; not committed.
+    - The dumped job (decoded with `k439/decib0439.py`):
+      - Dwords 0-61 are the host's prefixes: the head's 4-dword state prefix, then exp 0424's queue registers SH
+        0x204-0x280, with COMPUTE_PGM 0x8000343500.
+      - The title's buffer follows: waits and the pass markers "Sky LUT Update", "Clouds Update" and "Sh Grid Update";
+        475 DISPATCH_DIRECTs, each with its own COMPUTE_PGM_LO set right before it. So a stale queue program
+        cannot reach a dispatch here.
+      - The last packet is an INDIRECT_BUFFER with the CHAIN bit to `0x2013600b80`, 16,362 dwords (0x3fea).
+    - The hung HQD's IB size is 0x3fea = 16,362 dwords, in both hangs: the CP was in the chained continuation, not in
+      the dumped job. (Item 28 read 17:04's 0x3fea as the job itself: corrected here.) Its last fetched headers are
+      SET_SH_REG and DISPATCH_DIRECT, so a dispatch of the continuation never finished. The probe dumps the top job only,
+      so the continuation's dispatches are not in the record.
+    - r438 BUG lines: 0 at 30 fps with journal=min (205 shown, 1,281 counted under the full journal in t3p). They are
+      not a suspect for this hang.
+    - LESSONS note (the top session): the full journal is not usable for timing-sensitive diagnosis of this title.
+      With `BC5_DIRECT_JOURNAL` other than `min`, `g_async` is off (`static const bool g_async = g_journal_min;`) and
+      every submission waits for its own job. Use `min` plus targeted dumps.
+    - umr: `/usr/local/bin/bc5-gpu-hang-dump` and `umr -O halt_waves -wa none` are allowed by sudoers. The helper that
+      `BC5_DIRECT_UMR_ON_TIMEOUT` calls reads the gfx ring only.
+    - Next, in the guard build: dump every piece of a timed-out job (chained and called); a switch for
+      `umr -O halt_waves -wa none` at the first timeout; XQ_COUNT's ring map. Then one run names the dispatch.
 
 (more to come)
 
