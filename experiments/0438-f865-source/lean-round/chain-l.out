@@ -1,0 +1,31 @@
+chain0438l 21:31:43: play 300 s, order L0 L1p L1c LP L0 L1p L1c LP L0 L1p L1c LP O O; lean d4d2ab82, normal 8f622148; runner 7c6da668; kernel 7.3.3-ogc1.1.fc45.x86_64; boot eb264b8c
+chain0438l 21:31:43: GPU timeout/reset lines since boot at the chain's start: 0
+chain0438l 21:31:44: run b438L0327, arm L0, d4d2ab82
+chain0438l 21:39:07: b438L0327: NO_CRASH; 35.32 flips/s over 275 s from G+10, 210 s with a frame over 50 ms, 65 over 100 ms; pad keys 0
+chain0438l 21:39:27: run b438L1p328, arm L1p, d4d2ab82
+chain0438l 21:46:51: b438L1p328: NO_CRASH; 34.31 flips/s over 275 s from G+10, 220 s with a frame over 50 ms, 67 over 100 ms; pad keys 0
+chain0438l 21:47:11: run b438L1c329, arm L1c, d4d2ab82
+chain0438l 21:54:34: b438L1c329: NO_CRASH; 35.39 flips/s over 275 s from G+10, 215 s with a frame over 50 ms, 66 over 100 ms; pad keys 0
+chain0438l 21:54:54: run b438LP330, arm LP, d4d2ab82
+chain0438l 22:02:19: b438LP330: NO_CRASH; 35.28 flips/s over 274 s from G+10, 212 s with a frame over 50 ms, 60 over 100 ms; pad keys 0
+chain0438l 22:02:39: run b438L0331, arm L0, d4d2ab82
+chain0438l 22:10:04: b438L0331: NO_CRASH; 34.91 flips/s over 274 s from G+10, 208 s with a frame over 50 ms, 66 over 100 ms; pad keys 0
+chain0438l 22:10:24: run b438L1p332, arm L1p, d4d2ab82
+chain0438l 22:17:48: b438L1p332: NO_CRASH; 34.52 flips/s over 275 s from G+10, 209 s with a frame over 50 ms, 70 over 100 ms; pad keys 0
+chain0438l 22:18:08: run b438L1c333, arm L1c, d4d2ab82
+chain0438l 22:25:32: b438L1c333: NO_CRASH; 36.12 flips/s over 275 s from G+10, 206 s with a frame over 50 ms, 68 over 100 ms; pad keys 0
+chain0438l 22:25:52: run b438LP334, arm LP, d4d2ab82
+chain0438l 22:33:16: b438LP334: NO_CRASH; 34.33 flips/s over 275 s from G+10, 213 s with a frame over 50 ms, 73 over 100 ms; pad keys 428
+chain0438l 22:33:36: run b438L0335, arm L0, d4d2ab82
+chain0438l 22:40:59: b438L0335: NO_CRASH; 35.68 flips/s over 275 s from G+10, 211 s with a frame over 50 ms, 73 over 100 ms; pad keys 0
+chain0438l 22:41:20: run b438L1p336, arm L1p, d4d2ab82
+chain0438l 22:48:42: b438L1p336: NO_CRASH; 35.60 flips/s over 275 s from G+10, 213 s with a frame over 50 ms, 66 over 100 ms; pad keys 0
+chain0438l 22:49:03: run b438L1c337, arm L1c, d4d2ab82
+chain0438l 22:56:25: b438L1c337: NO_CRASH; 33.60 flips/s over 275 s from G+10, 225 s with a frame over 50 ms, 80 over 100 ms; pad keys 0
+chain0438l 22:56:45: run b438LP338, arm LP, d4d2ab82
+chain0438l 23:04:08: b438LP338: NO_CRASH; 34.23 flips/s over 275 s from G+10, 218 s with a frame over 50 ms, 72 over 100 ms; pad keys 0
+chain0438l 23:04:28: run b438O339, arm O, 8f622148
+chain0438l 23:11:53: b438O339: NO_CRASH; diagnosis run: no fps or frame time reported (lean-only rule); pad keys 0
+chain0438l 23:12:13: run b438O340, arm O, 8f622148
+chain0438l 23:19:37: b438O340: NO_CRASH; diagnosis run: no fps or frame time reported (lean-only rule); pad keys 0
+chain0438l 23:19:57: chain ended

@@ -87,7 +87,7 @@ for arm in ${ORDER:-S C S C S C}; do
     SU="$SU; vg437 [$(grep -a '^exp 0437 (tag vg437)' "$DL" | tail -1)]"
     SU="$SU; u438 [$(grep -a '^u438 (exp 0438): t ' "$DL" | tail -1 | cut -c1-300)]"
     SU="$SU; s438 [$(grep -a '^s438 (exp 0438): t ' "$DL" | tail -1 | cut -c1-400)]; i438 lines $(grep -ac '^i438 (exp 0438)' "$DL")"
-    SU="$SU; e438 [$(grep -a '^e438 (exp 0438): t ' "$DL" | tail -1 | cut -c1-1200)]; e438 layout [$(grep -a '^e438 layout (exp 0438): t ' "$DL" | tail -2 | cut -c1-500 | tr '\n' '|')]; y438 [$(grep -a '^y438 (exp 0438): t ' "$DL" | tail -2 | cut -c1-500 | tr '\n' '|')]"
+    SU="$SU; e438 BUG lines $(grep -ac '^e438 (exp 0438): BUG' "$DL"); e438 [$(grep -a '^e438 (exp 0438[^)]*): t ' "$DL" | tail -1 | cut -c1-1400)]; e438 layout [$(grep -a '^e438 layout (exp 0438): t ' "$DL" | tail -2 | cut -c1-500 | tr '\n' '|')]; y438 [$(grep -a '^y438 (exp 0438): t ' "$DL" | tail -2 | cut -c1-500 | tr '\n' '|')]"
     SU="$SU; c438d [$(grep -a '^c438d (exp 0438): t ' "$DL" | tail -1 | cut -c1-1500)], c438d kicks logged $(grep -ac '^c438d (exp 0438): kick' "$DL")"
     SU="$SU; c438 slices [$(grep -a '^c438 (exp 0438): t .* slices' "$DL" | tail -1 | cut -c1-900)]; r438 [$(grep -a '^r438 (exp 0438): t ' "$DL" | tail -1 | cut -c1-700)], r438 BUG lines $(grep -ac '^r438 (exp 0438): BUG' "$DL")"
     SU="$SU; frames (frame profile, last 290 s of the journal) $(grep -a '^frame profile: t' "$DL" | awk '{t=$4+0; g=$6+0; T[NR]=t; G[NR]=g} END {e=T[NR]; for (i=1;i<=NR;i++) if (T[i] >= e-290) {n++; if (G[i]>50) a++; if (G[i]>100) b++} printf "%d, over 50 ms %d, over 100 ms %d", n, a, b}')"

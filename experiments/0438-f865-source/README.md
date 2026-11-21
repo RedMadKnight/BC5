@@ -1276,6 +1276,502 @@ PASS:
 Two broken copies FAIL: the local lazy update left out (scenario 0, step 0), and the retry left out (scenario 1,
 step 3).
 
+## Result 12: build 12 on a clean boot (2026-11-20 17:32–18:41, boot eb264b8c, 0 GPU reset lines, binary 577aa2e2)
+
+**Build.** Normal `577aa2e25da266685625c2542c1f49d2` (unit `346ebf6e…`), built under BOX-LOCK 17:32–17:33. Shared
+builds unchanged.
+
+**Chain.** `LC L LR` × 3 ran to its end:
+- 9 of 9 NO_CRASH, pad keys 0;
+- GPU timeout or reset lines: 0 at the start and 0 after the end;
+- the gate passed: the first LC ran at 35.10 flips/s.
+
+Raw: `raw/f438-chain-out.txt`, `raw/f438-chain-rows.txt`.
+
+| arm | flips/s | s with a gap > 50 ms | > 100 ms | give-ups | own `prep-direct-sync` (s) | maps (s) | e438 BUG lines |
+|---|---|---|---|---|---|---|---|
+| LC (control) | 35.10, 33.48, 33.61 | 204, 225, 214 | 63, 76, 71 | 1, 2, 1 | 20.8, 23.5, 22.1 | 15.0, 16.4, 16.5 | – |
+| L | 34.31, 32.93, 35.70 | 217, 222, 199 | 73, 76, 66 | 2, 1, 0 | 18.2*, 22.5, 18.2* | 12.3*, 15.5, 12.3* | 0, 0, 0 |
+| LR | 33.25, 34.79, 32.82 | 221, 207, 221 | 68, 66, 73 | 0, 0, 0 | 17.5*, 20.8, 24.2 | 12.4*, 13.9, 16.2 | 0, 0, 0 |
+
+\* These runs report at 360 s. All other runs report at 420 s.
+
+**The view-list build time per run** (s438's full-pass "views" part, as the top session asked; the next candidate):
+
+| arm | run 1 | run 2 | run 3 |
+|---|---|---|---|
+| LC | 10.8 s | 12.9 s | 12.5 s |
+| L | 9.4 s* | 13.1 s | 9.9 s* |
+| LR | 9.4 s* | 12.2 s | 13.9 s |
+
+The view list is built as today in every arm, so these are today's cost. Over 420 s it is 12–14 s; scaled to 420 s,
+the 360-s runs come to 11.0–11.6 s. The other full-pass parts:
+- scan: 6.5–8.6 s;
+- merge: 1.7–2.5 s;
+- drain: 0.1 s in LC, 0.66–0.85 s in L and LR. Lazy changes now drain too.
+
+**Verdict under the top session's rule: not refuted.**
+- 0 GPU lines.
+- 0 BUG lines from the 2-s check, in 2,272 checks: 348–408 per run, each with 0 extra and 0 missing.
+- New visuals: not checked. The runs were scripted with no one watching.
+
+Build 11's regression is gone:
+- frames over 100 ms are 66–76 in L and LR, against 63–76 in LC (build 11: 90–124);
+- the views take as long as in LC;
+- flips/s overlap.
+
+**But the gain is mostly gone too, and one condition is not met.**
+
+1. **Maps: about 1 s per 420 s saved, not build 11's 7 s.**
+   - At 420 s: L/LR 13.9–16.2 s against LC 15.0–16.5 s. Scaled to 420 s: L and LR 14.3–16.2 s.
+   - The incremental updates run as planned: 4,400–5,800 per run, about 22–25 intervals and views each, maps +23 / −16.
+   - The only full rebuilds are the 2 first builds per run. No reopen, unsorted list, zskip, g412 or kc412 rebuild,
+     and 0 retries.
+   - Each update now costs **2.4–2.5 ms, against about 1.2 ms in build 11**.
+   - A candidate, not checked: build 12 diffs the whole tuple list, about 11,600 entries, and copies it (prev_v) on
+     every update. Build 11 read only the change records.
+   - bc5-ring's own `prep-direct-sync` is 17.5–24.2 s in L and LR, against 20.8–23.5 s in LC: the same range.
+2. **Lazy freshness is not about 100 ms; it stays about 1 s, as in build 11.**
+   - L and LR: chunks taken out of a zero cover 87–90 per run, 918–1,009 ms on average since the scan before, longest
+     1.2–1.3 s. One LR run: 474 ms, longest 611 ms.
+   - LC: 148–184 ms, longest 430–448 ms.
+   - Build 12 runs the scan before the drain decision on every full pass, 2,000–2,500 scans per run against LC's
+     1,600–1,700. Even so, the chunks found sat longer. Local lazy updates: 9–11 per run.
+   - Why is not explained. The row has no time-split of these waits (load against play), and the scan runs only on
+     full passes, as LC's does. The top session's condition (keep about 100 ms) **is not met by build 12.**
+3. **r438 BUG lines in LR (seen now; missed in Result 11).**
+   - LR74: 1. Build 11: LR67 2, LR70 2.
+   - Each one is the r438 watchdog line "a game-thread wait … has waited 100.0 ms for an early-registered writer to
+     reach the ring". The longest of these waits were 100.7, 168.9 and 146.0 ms. Of 31,000–35,000 such waits per run,
+     the total is 17–20 s.
+   - Its invariant still held: early writes that never reached the ring: 0.
+   - This is r438's arm (EARLYREG=1), not e438. It is a slow wait, not a lost write. It is still a BUG line by r438's
+     own rule, and the >100 ms waits sit on the game thread.
+
+**Where it stands.** Updating the mapping index in place is correct by every check:
+- 0 differences in 2,272 full comparisons;
+- 0 full rebuilds after the first;
+- 0 GPU lines.
+
+On this scene it is barely faster than today's merge rebuild, and its lazy freshness is about 1 s. Not proposed for
+the shared builds as it is. Next, if pursued:
+- per-update time without the whole-list diff (the touched va range from the BO diff and the generation);
+- the lazy waits split by load and play, to find why the scan finds chunks late.
+
+The view list (11–14 s per 420 s) is the larger cost and is the next candidate, event-wise, as the top session
+decided.
+
+**Closed (the top session, 2026-11-20, after Result 12).**
+- e438 is closed: there will be no build 13, and it does not go to the shared builds.
+- **Build 12 has a defect: do not reuse it as it is.** In the L and LR arms (`BC5_0438_LAYOUT=1`), a written lazy chunk
+  stayed under a read-only zero cover for about 1 s (up to 1.3 s). The required freshness was about 100 ms.
+- The device-mutex line (u438, s438, e438) gave about 1–2 s per 420 s and no change at the frame level in 4 builds.
+  No more mutex levers are added.
+
+## Frame-time budget of his scene (offline, from a journal already on the laptop; no box)
+
+**Source.** u436sS3's `direct.log`, copied to `data-0438/` for Result 1:
+- the shared normal build `f345db74`, his 09:46 scene, RT on, 4 rings;
+- its frame-profile lines, one per flip, written by `frame_profile_flip` in the unit.
+
+The scene starts at t ≈ 120.6 s, when the rate rises after the second load. From there to the hang at 188.7 s there
+are 2,621 frames, 38.6 flips/s. One 3.4-s frame at the load's end is left out.
+
+This is **one run and 68 s** of the scene. The chain runs' journals on the box have the same lines, about 10,000 frames
+a run, if a check is wanted. Tool: `fp0438.py` (`python fp0438.py <frame-profile lines>`).
+
+**What the fields are** (unit lines 14,655–14,750 and 15,279):
+- **interval:** time from flip to flip.
+- **inside:** the render thread's time in our submit path. Its parts:
+  - sync: probe + anon sync + direct sync, including the device-mutex acquire;
+  - hints;
+  - prepare;
+  - cs: the ioctl;
+  - label waits and event waits.
+- **at the flip:** `Direct::drain()` in SubmitFlip, the wait until the frame's jobs are done. Flip-defer is off.
+- **outside:** interval − inside − at the flip. This is the render thread outside our submit and flip: the title's own
+  CPU work, its waits on its other threads, and HLE calls not profiled here.
+- **GPU busy:** the union of each job's [queued, completion seen) over the frame. It covers the game thread's jobs and
+  bc5-ring's (way 2: the GFX and compute rings together). Queueing in the kernel and the completion thread's
+  latency are included, so this is an **upper bound** on the GPU's execution time.
+
+| frames | n | share of the time | interval (ms) | GPU busy | at the flip | inside (sync / prepare / cs) | outside |
+|---|---|---|---|---|---|---|---|
+| typical, 15–40 ms | 2,361 | 72 % | 21.9 (p50 20.8) | 13.1 (60 %) | 5.3 (24 %) | 5.7 (1.3 / 2.0 / 2.0) (26 %) | **10.9 (50 %)** |
+| 40–100 ms | 239 | 18 % | 55.0 | 14.1 (26 %) | 5.8 (11 %) | 27.4 (**19.1** / 2.3 / 2.2) (50 %) | 21.8 (40 %) |
+| over 100 ms | 21 | 9 %* | 151.2 | 27.5 (18 %) | 5.6 (4 %) | 41.7 (27.6 / 4.8 / 4.5) (28 %) | **103.9 (69 %)** |
+| all | 2,621 | | 25.9 | 13.3 (51 %) | 5.4 (21 %) | 8.0 (3.2 / 2.0 / 2.0) (31 %) | **12.6 (49 %)** |
+
+\* The 9 % includes the 3.4-s frame. Without it, over-100-ms frames are about 5 % of the time.
+
+Typical frames, p10 / p50 / p90:
+- interval 18.6 / 20.8 / 26.3;
+- GPU busy 11.3 / 12.9 / 14.7;
+- at the flip 3.5 / 5.3 / 7.0;
+- inside 3.8 / 4.8 / 6.9;
+- outside 9.0 / 10.7 / 12.9.
+
+Label waits on the render thread are 0.0 in every class. Per frame: jobs 7.5 from the render thread and 23.1 from
+bc5-ring.
+
+**Reading.**
+- **The scene is host-bound, not GPU-bound.**
+  - Even as an upper bound, the GPU is busy 60 % of a typical frame and 18 % of a frame over 100 ms.
+  - 1 frame in 2,621 has GPU busy ≥ 90 % of its interval.
+  - A GPU-bound frame would show the render thread waiting at the flip most of the frame. It waits 5.3 ms of 21.9.
+- **The biggest share is "outside": the render thread outside our submit and flip.**
+  - It is 10.9 ms (50 %) of a typical frame and 104 ms (69 %) of a frame over 100 ms.
+  - This journal cannot say what it is: the title's own CPU work, a wait on its own workers (whose jobs may wait on
+    the host), or an unprofiled HLE call.
+- **Second: the wait at the flip,** 5.3 ms (24 %). This is the GPU finishing the frame's last jobs, which bc5-ring
+  submits about 23 of.
+- **Our submit path on the render thread is 26 % of a typical frame** (prepare 2.0, ioctl 2.0, sync 1.3).
+  - In 40–100 ms frames, sync is the largest host part (19 ms). In 5 of the 21 frames over 100 ms, sync is 66–112 ms.
+  - Sync includes the device-mutex acquire. That is the line the top session stopped.
+- **bc5-ring's prep is not in this profile.** It reaches the frame only through the wait at the flip and through
+  sync's mutex wait.
+- **The r438 and F262 waits:**
+  - In this run (the shared build, r438 off), label waits were 0 on the render thread in every frame.
+  - In r438 runs, the chain rows give 31,000–36,000 game-thread waits for an early writer, 17–20 s per 420 s: about
+    4–5 % of the time.
+  - Those runs' journals are on the box, so these waits are not placed in frames here.
+
+**What the journals cannot answer:** what "outside" is made of. Splitting it needs a records-only item: the render
+thread's time in the title's other HLE calls (semaphores, event flags, equeue waits, sleeps), with the waker thread
+where there is one. That is a build item, and is asked for first, as the top session ruled.
+
+**Measured on normal builds only (the maintainer, through the top session, 2026-11-20).**
+- Every flips/s figure in this experiment comes from normal builds, with their catchers and journal lines on: results
+  2–12, u438, s438, e438, r438. That includes every "no gain" and "no cost" reading. The diagnostics cost frame time
+  themselves, so these comparisons may be biased.
+- u438's and e438's "no frame-level gain" were **not checked on lean**.
+- The frame-time budget above comes from a normal build with the frame profile on. Its shares may be distorted by the
+  profile's own cost: a mutex and counters per submit and per job, a journal line per flip. The catchers add more.
+- From now on a gain or a cost counts only from lean against lean, read from MangoHud's per-frame log: median, p95 and
+  p99 frame time, plus mean flips/s.
+
+## The lean round's kit (b438; prepared offline, not built)
+
+**Unit.** `mkb438.py` on the shared tree's unit (`a62e8bf6`, patch bb04219b) → b438
+**`7218cab6684267d51701159397ce7902`**. It is r438 alone, in the shape a bake would take:
+- No c438, k438, u438, s438 or e438. Mode 1 only, since r438a's mode 2 never fired.
+- `BC5_0438_EARLYREG` is on unless "0". It is behaviour, so lean reads it too.
+- Lean keeps the early registration, the game-thread poll and the removal of a lost write's early entry.
+- Normal only: the counters, both BUG lines and a 60-s line `r438 (exp 0438, b438)`.
+
+**Test.** `bash test_b438.sh` (test_r438's cases, with the mode-2 case made a mode-1 case) PASSES in five
+configurations:
+- normal with the switch unset, =1 and =0;
+- lean (`-DBC5_LEAN`) with it unset and =0.
+
+On the laptop, case 1's wait (the writer registers 30 ms after the game thread starts waiting) took 60–175 ms, and in
+3 of 6 runs it crossed the 100-ms BUG line. So case 1 checks for no lost write, not for "no BUG line".
+- A candidate, not checked on the box: the poll holds `g_plw_mutex` while it scans `g_plw` (up to 8,192 entries) and
+  sleeps only 20 µs between scans, so the writer's `register_label_writes` can be held off.
+- Not changed: it is a behaviour change, for the top session to decide.
+
+**Runner.** `mkrun0438l.py` makes `run0438l.sh` (`7c6da668`). It is exp 0432's scene runner (`2d11fd6b`) with exp
+0430's `mkrun0430l.py` hunks applied unchanged:
+- N_MH: MangoHud's own per-frame log, an invisible overlay, every frame;
+- N_LEANSESS: the Plasma shell stopped for the run, as the lean shortcuts do;
+- P_HOST: off, the distrobox as before;
+- the checks at 30 s and at G+60.
+
+The timed-route hunks are skipped, since the runner already has them.
+
+**Chain.** `chain0438l.sh`. Every arm runs the same way:
+- the route by time: cross at 90 s, slot 4 at +8, Continue at +8, G at +20 = 126 s;
+- MangoHud's log as the one counter, written before the run ends;
+- G+300.
+
+| arm | build | `BC5_0438_EARLYREG` | other |
+|---|---|---|---|
+| L0 | lean b438 | 0 | |
+| L1 | lean b438 | 1 | |
+| N0 | normal b438 | 0 | the usual journal words |
+| O | normal b438 | 0 | `BC5_0438_OUTSIDE=1`, if built |
+
+Gate: the first L0 at ≥ 33.3 flips/s.
+
+**Statistics.** `mh0438.py G FROM TO csv...` gives, per run:
+- frames and mean flips/s;
+- frame time median, p95, p99 and max;
+- frames over 50 and over 100 ms;
+- the share of the time spent in frames over 50 ms.
+
+**Build.** `box0438.sh buildb` builds normal and lean from b438 with each shared build's own command, and stops if the
+lean binary holds r438's journal strings.
+
+### The lean round's kit, second form (the top session's additions, fixes first)
+
+1. **PLWCV** (`BC5_0438_PLWCV`, on unless "0", read in lean too).
+   - The game thread's wait for an early writer sleeps on `g_plw_cv`, at most 10 ms per sleep, and the wait goes on.
+   - The condition variable is signalled when a job registers its writes, and at the slice's end.
+   - "0" keeps r438's 20-µs poll.
+   - test_b438 case 6 measures the time from the writer's registration to the game thread's return, 20 rounds on the
+     laptop:
+
+     | wait | median | p90 |
+     |---|---|---|
+     | condition variable | 0.06 ms | 2.5–15 ms |
+     | poll | 4.9–7.0 ms | 18–19 ms |
+
+     The condition variable's long tail is the laptop's scheduler.
+2. **Lean lost-write counter.**
+   - Lean counts the early writes that never reached the ring. The first one prints one stderr line (in play.log),
+     and the total is printed at a normal exit.
+   - A SIGTERM from the runner ends the process without that total, because the tree installs no handler. So in a
+     chain run the first-line count is the record: 0 lines means no lost write.
+3. **o438** (`o438.hpp`, `mko438.py`): normal build only, off unless `BC5_0438_OUTSIDE=1`.
+   - Wait spans sit in the sync HLEs: sema, posix and pthread sem, event flag, mutex lock, cond wait, equeue,
+     usleep, nanosleep, sync-on-address, join, yield.
+   - Signal marks give the waker's tid for the object: unlock, cond signal, broadcast and signalto, sema signal,
+     posts, set event flag, the equeue triggers, sync-on-address wake.
+   - Recorded for the Render Thread and game-main. Only a thread's outermost span counts. A span of 50 µs or more
+     counts as blocked, and its waker is the last signaller of its object.
+   - Output (stderr): each frame over 100 ms with both roles' waits and their wakers, and the totals every 60 s.
+   - `test_o438.sh` (stub POSIX headers on the laptop) PASSES with the switch =1 and unset, and in lean. Its cases:
+     the waker is attributed, a nested lock counts once, a thread of neither role records nothing, one frame line for
+     a long frame and none for a short one.
+   - `box0438.sh buildb` compiles the six tree files with o438 into the normal build only.
+
+Units:
+- b438 `9035b9defc7a923f656527c65821bb87`;
+- mko438's output on the tree files, pinned by their LF md5s.
+
+Chain order: `L0 L1p L1c` ×3, then `N0`, then `O O` (the records runs, not pooled with the lean comparison).
+
+### p438: the prologue merge (the maintainer's word, 2026-11-20)
+
+**The switch.** `BC5_0438_PROLMERGE` is on unless "0", and lean reads it. It is a behaviour change, in b438 (unit
+`a31a2091ddeed206db7daec79771e932`).
+
+**What it does.**
+- 0xc0488131 no longer submits on its own. Its context-control dwords and 3 header IB packets are copied to one of 64
+  stable slots: the soft CP may still read a submitted prologue's dwords.
+- The next 0xc0188132 submits them at the head of its own chain, ahead of its DCBs: the same buffers, in the same order,
+  on the same ring, in one kernel submit.
+- Two prologues before a submit stay in call order.
+
+**When it is not merged** (each case is today's separate submit):
+- Pending prologues are flushed alone before any other gc submit (0xc0108102, 0xc020810c), at "submit done" and
+  "wait idle", and at the EOP flip.
+- A prologue is submitted alone at once:
+  - when a header IB writes memory or nests an IB (RELEASE_MEM, EVENT_WRITE_EOP, WRITE_DATA, DMA_DATA,
+    INDIRECT_BUFFER): a CPU waiter may need that write before the next submit;
+  - when 8 are pending;
+  - with the acb rings off (`w428_rings() == 0`), since the acbs then share the GFX ring.
+- A device reopen needs nothing: the slots are host copies, submitted later like any buffer.
+- At exit a pending prologue is dropped: the emulator ends anyway.
+
+**Records** (normal only): a 60-s line `p438 (exp 0438)` counting merged prologues, and those sent alone by reason.
+Pending prologues flushed because a writing prologue followed are counted under "writes".
+
+**Test.** `test_p438.sh` cuts p438's block from the unit and models gc_ioctl's cases with the hooks where mkb438.py puts
+them. It runs 400 random scenarios (48,457 steps); every tenth has the acb rings off. It PASSES:
+- the buffers handed over are identical with the merge on and off;
+- with the merge on, submissions are off minus the merged prologues (9,739 merged);
+- no prologue that writes memory is kept (1,204 sent alone);
+- nothing is merged with the rings off.
+
+Two broken copies FAIL:
+- the pending prologues taken in reverse order (354 failures);
+- the check for header IBs that write memory left out (723 failures).
+
+`test_b438.sh` still passes, 7 of 7.
+
+**Chain.** The order is `L0 L1p L1c LP` ×3, then `N0 O O`: 15 runs.
+- LP = `EARLYREG=1 PLWCV=1 PROLMERGE=1`.
+- Every other arm has `PROLMERGE=0`.
+
+**The maintainer's rule (2026-11-20, through the top session).** Performance tests run on lean builds only. Normal
+builds are for diagnosis, never for fps or frame-time comparisons.
+- N0 is dropped.
+- O O stay as diagnosis runs, and their rows report no fps.
+- ORDER: `L0 L1p L1c LP` ×3, then `O O`.
+- Every normal-build number in this README (results 2–12, the budget) is a **diagnosis** number, not a performance
+  result.
+
+## Result 13: the lean round (2026-11-20 21:27–23:20, boot eb264b8c, lean d4d2ab82, normal 8f622148)
+
+**Pre-checks (top's GO, 21:26).**
+- 0 GPU reset or timeout lines on this boot. The only `dmesg` match was bc5-gpu-watch's boot line.
+- No emulator running, BOX-LOCK empty.
+- No scp, rsync or md5sum running; only the idle `nfsiod` kernel worker.
+
+**Build (BOX-LOCK 21:27–21:31).** `box0438.sh buildb` first stopped in mko438.py. Three of the tree's six files are
+CRLF on the box (semaphore.cpp, eventFlag.cpp, pthread.cpp), and their pins are LF md5s. mko438 now:
+- pins and patches the LF form;
+- writes each file back in its own line endings (mko438.py `4513a0ec`, box0438.sh `4f958591`).
+
+Before the build it was dry-run on the real tree; all marks applied. Build results:
+
+| Build | md5 | Errors | Warnings | Contents |
+|---|---|---|---|---|
+| lean | `d4d2ab82a4245e45f43e31f09ad23e80` | 0 | 8 | EARLYREG, PLWCV and PROLMERGE; no journal lines, no o438 |
+| normal | `8f622148de65df63ebe2d821e85ec383` | 0 | 15 | the same three switches, plus the r438 and p438 lines and o438 |
+
+The shared builds are unchanged (f345db74 / 6a735b81 / d6638808, tree unit a62e8bf6).
+
+**Chain.** chain0438l (`55740c7f`), runner `7c6da668`, his 09:46 scene, RT on, way 2's words, PLAY 300 s. It ran
+under the user manager (`systemd-run --user`, unit chain0438l). One laptop ssh blocked on `systemctl --user
+is-active` and read nothing until the unit ended.
+- Runs 327–340, all 14 NO_CRASH.
+- GPU timeout/reset lines: 0 at the start, 0 at the end.
+- Lean lost-write lines: 0 in every run.
+- Kernel lines: runs 327–329 each have two drm `Unsupported screen format RA24` display messages, not GPU faults.
+- **LP334 is void.** It had 428 pad keys (his input) and is left out of the verdict. Its numbers are listed only in
+  `lean-round/mh0438-out.txt`.
+
+**Lean numbers.** These are the performance result, lean against lean. They come from MangoHud's per-frame log over
+G+10 to G+290, which is clipped by the log's end to 275 s in every run. Tool: `mh0438.py 126 10 290`; output in
+`lean-round/mh0438-out.txt`.
+
+| Arm | Runs | flips/s per run | Mean flips/s | p50 ms | p95 ms | p99 ms | Time in frames > 50 ms |
+|---|---|---|---|---|---|---|---|
+| L0 (control) | 327, 331, 335 | 35.32, 34.98, 35.68 | **35.33** | 17.0 / 16.9 / 17.0 | 66.5 / 66.6 / 50.6 | 99.9 / 100.0 / 99.9 | 26.3 / 28.2 / 24.2 % |
+| L1p (r438, poll) | 328, 332, 336 | 34.31, 34.52, 35.61 | **34.81** | 17.1 / 17.0 / 17.1 | 66.7 / 66.6 / 50.6 | 99.9 / 100.0 / 99.8 | 28.7 / 28.1 / 23.6 % |
+| L1c (r438, CV) | 329, 333, 337 | 35.39, 36.11, 33.60 | **35.03** | 16.9 / 16.9 / 17.1 | 66.5 / 50.5 / 66.7 | 99.9 / 99.8 / 100.1 | 26.8 / 23.9 / 31.3 % |
+| LP (L1c + p438) | 330, 338 (334 void) | 35.24, 34.23 | **34.74** | 17.0 / 17.0 | 66.6 / 66.7 | 99.8 / 100.0 | 27.3 / 29.2 % |
+
+- The arm means are within 0.6 flips/s of each other. Within each arm, runs differ by up to 2.5 flips/s (L1c: 33.60
+  to 36.11).
+- Median, p95 and p99 are the same across arms. p95 is either 50.5 or 66.7 ms in every arm, which fits frame times
+  quantised to whole vblanks of 16.7 ms.
+- **Verdict (perf): no measurable effect.** This holds for r438 in either wait form (poll or condition variable) and
+  for p438's prologue merge, with no gain and no loss beyond run-to-run spread, in 3 + 3 + 3 + 2 lean runs. r438 is a
+  correctness fix (F865's source), and on these numbers its bake costs no frame time. The poll against the
+  condition-variable choice makes no difference to frame time; CV is the one offline test case 6 found faster to
+  wake (0.06 against 4.9–7.0 ms median). p438 gives no gain, so it has no performance case for a bake.
+
+**Diagnosis runs (O339, O340; normal 8f622148, `BC5_0438_OUTSIDE=1`, EARLYREG=0 PROLMERGE=0): diagnosis only.**
+These are cumulative o438 totals from the start to the end of the run (load included, ~14,000 frames). Files:
+`lean-round/b438O33*-o438-last-totals.txt`.
+- **The Render Thread barely waits in the title's own syncs.**
+  - Mutex lock: 2.29 M / 2.10 M calls, 432 / 390 ms in total, longest 1.3–1.5 ms; nearly all uncontended.
+  - Cond wait: 11 calls, 16–21 ms, woken by "Coherent Layout".
+  - No semaphore, event flag, equeue or sync-on-address wait.
+  - In the 126 / 141 frames over 100 ms, its recorded waits add up to 7.5 ms in total.
+  - So its ~9 ms per frame of "other waits" (exp 0432's perf, d432S16) is not in the guest sync HLEs. It is host
+    side: our gc ioctls, the flip, host locks or the kernel (TODO(verify): the next profile should split these).
+- **game-main waits for the Render Thread.**
+  - Cond wait: 137.8 / 136.9 s over the run (about 9.8 ms per frame), with 135.0 / 133.3 s of it woken by the Render
+    Thread. Longest single wait 100.1 ms, which is the title's timed wait.
+  - Its semaphore waits total 5.8 / 5.2 s, woken by Havok Solve and Havok Queries.
+- So the frame is paced by the Render Thread's own work, not by any wait it makes on the title.
+- GIVEN UP lines: 2 in O339 and 1 in O340, in the normal build's direct.log, with EARLYREG off (as in the shared
+  builds).
+
+## Frame pacing in the lean round (offline, from the 11 valid lean MangoHud logs; no box)
+
+The top session asked whether the pacing is two-moded: p50 is 16.9 ms while the mean is ~35 flips/s, so are frames
+either one vblank or 3+? Two tools answer it, using the same window as `mh0438.py` (G+10 to G+290, 275 s per run):
+- `vb0438.py` counts each frame as round(t / 16.667 ms) vblanks;
+- `lean-round/sec0438.py` and `cad0438.py` look at rates per second and at how long frames cluster.
+
+Outputs: `lean-round/vb0438-out.txt`, `lean-round/per-second.txt`.
+
+| Vblanks per frame | 1 | 2 | 3 | 4 | 5–6 | 7–12 | > 12 |
+|---|---|---|---|---|---|---|---|
+| Share of frames (all 11 runs, 105,883 frames) | 57.6 % | 27.8 % | 9.0 % | 3.0 % | 2.0 % | 0.5 % | 0.1 % |
+| Share of wall time | 33.6 % | 32.3 % | 15.8 % | 7.0 % | 6.0 % | 2.7 % | 2.5 % |
+
+- **Not two-moded.** One-, two- and 3+-vblank frames each take about a third of the time. Every run shows the same
+  shape: the 1-vblank share runs from 55.9 to 59.4 % of frames.
+- **Long frames come in stretches.**
+  - Of 15,487 frames of 3+ vblanks, 8,059 directly follow another one.
+  - The 6-frame pattern "3+ ×6" occurs 2,528 times.
+  - The common 6-frame patterns are 1-vblank runs with at most one 2-vblank frame in them.
+- **The rate follows the scene, not chance.**
+  - Each run's per-second rate correlates 0.68–0.89 with the mean of the other runs.
+  - The run-averaged rate per 10 s from G+10: 35, 39, 44, 48, 46, 49, 48, 47, 40, 46, 40, 43, 40, 37, **11**, 29, 33,
+    28, 27, 21, 31, 28, 27, 27, 26, 29, 29.
+  - So the first ~140 s run at ~45 flips/s; then a drop to ~11 at G+150–160 (the same in every run); then ~27 flips/s
+    to the end.
+  - Per second, 1.4 % of seconds have 0–4 flips and 15.2 % have 50–54.
+- **For the next diagnosis:** compare the fast phase (G+10 to G+140) with the slow one (G+160 to G+290), and the 3+
+  frames with the 1-vblank frames, within the same runs. Whether the long frames are the same host waits is open until
+  then.
+
+## The bake kit (r438 with PLWCV; prepared offline, not built, not deployed)
+
+The top session's proposal of 2026-11-20 to the maintainer is r438 with PLWCV and without p438, which has no
+performance case (result 13). The switches stay for a per-run opt-out. Nothing is deployed until his word. Kit
+`bake/` (on the box `~/bc5-work/exp0438/bake/`):
+- **`mkbake438.py`** (`154de2af`): runs mkb438.py (`3b00ab29`, the tested one) for its steps 1–6 only, so p438
+  (step 7) is not run. It also removes the lean build's lost-write counter and its two stderr lines: a catcher, and the
+  lean build carries no diagnostics (the maintainer's rule of 2026-11-15).
+  - Kept: BC5_0438_EARLYREG and BC5_0438_PLWCV, both on unless "0", read in normal and lean; normal's r438 count line
+    every 60 s and its BUG lines.
+  - On the tree unit `a62e8bf6` it gives `ff9e8fe2e4139264ebaf74f9e84bd892`. Against b438 (`a31a2091`, regenerated
+    here byte for byte) it removes 130 lines and adds none: the lean counter (2 hunks), p438's block and its 6 hooks.
+- **`0002-bc5-0438-baked.patch`** (`eb431795`): that unit against the tree's unit. It applies to a copy of
+  `a62e8bf6` and gives `ff9e8fe2` (git apply, core.autocrlf off).
+- **`swap0438.sh`** (`9efe522f`): exp 0436's swap0436.sh without its backend step, because r438 is in the host unit
+  only and the archive stays `d6638808`.
+  - Checks: patch bb04219b, the unit a62e8bf6, normal f345db74, lean 6a735b81.
+  - Copies the old state; applies the patch (the unit must become ff9e8fe2); the new 0001 must be PATCH_NEW, with
+    exp 0372 lines 5, the pad_audio_route header in and the same file list.
+  - Rebuilds normal and lean in place. Each binary must gain exactly BC5_0438_EARLYREG and BC5_0438_PLWCV, lose no
+    word, hold no p438 text, and only normal holds r438's count line.
+  - DRY=1 runs on copies.
+- **`undo0438.sh`** (`3b52da05`): back to bb04219b / f345db74 / 6a735b81, checked by md5. Without a rebuild,
+  `BC5_0438_EARLYREG=0` turns r438 off for one run.
+- **`run-swap0438.sh`** (`11712615`) and **`smoke0438s.sh`** (`0a990022`, exp 0436's smoke with its tags s438s*): the
+  normal ASTRO BOT run reports r438's count and BUG lines.
+- **`box0438.sh buildk`** (box0438.sh `24e773eb`): the private baked build, before any swap. Unit only, the shared
+  archive, `~/bc5-work/exp0438/bake/{normal,lean}`. It checks the switches, no p438 / o438 / lean counter, and r438's
+  line in normal only.
+- **Not done:** buildk on the box, the swap's dry run on copies of the tree (both need a box slot), and CI's backend
+  build (unchanged: the backend is not touched). After a swap, `backend/kytyplus-patches/0001-bc5-lle-agc.patch` on
+  main must become the box's new `git diff f266548`.
+
+## h438: the Render Thread's host-side split (prepared offline, not built)
+
+The question, from the O runs: the Render Thread blocks ~9 ms per frame outside the guest syncs. Where, and do the
+long frames block in the same places? h438 is records only, normal build only, off unless `BC5_0438_HOSTWAIT=1`.
+It is built on the bake unit, so it measures what would ship.
+- **`h438.hpp`** (`bdf94bf5`) writes one CSV line per Render Thread frame, flip to flip:
+  - wall; thread CPU, run-queue delay and timeslices (`/proc/self/task/<tid>/schedstat`); minor and major faults
+    (`.../stat`);
+  - gc_ioctl calls by code (0xc0488131, 0xc0188132, 0xc0108102, 0xc020810c, 0xc0048116, 0xc0048117, 0xc0088133,
+    0xc0108139, other): count, wall, and blocked (wall − thread CPU), counting the outermost call only;
+  - the VideoOutSubmitEopFlip span and its Direct::drain;
+  - lock-acquisition waits of 20 µs or more, by site;
+  - o438's guest-sync blocked time by kind (with `BC5_0438_OUTSIDE=1`; o438.hpp `a194989d` gains one hook pointer and
+    is otherwise unchanged).
+  - File: `BC5_0438_HOSTWAIT_FILE`, written every 64 frames.
+- **`mkh438.py`** (`7466020c`) on the bake unit `ff9e8fe2` gives `h438.cpp` `3aa9d745…` (not committed). It adds the
+  include, the gc_ioctl span, the flip span with its drain, and 123 lock sites:
+  - 122 one-line lock_guard / unique_lock sites;
+  - exp 0436's submit-ring lock, timed as one statement.
+  - Two sites are left as they are: a try_to_lock, which never blocks, and the ring lock's declaration.
+- **`box0438.sh buildh`** (box0438.sh `417da0ce`): the normal build of h438.cpp plus o438's six tree units, unit
+  only, with the shared archive: `~/bc5-work/exp0438/h438/normal`.
+- **chain0438l arm H** (chain0438l.sh `a4650a79`): the h438 normal build with `BC5_0438_HOSTWAIT=1
+  BC5_0438_OUTSIDE=1`, its CSV `$RAW/$t-h438.csv`. Diagnosis only, so no fps is reported.
+- **`ah438.py`** (laptop) gives the mean ms per frame:
+  - CPU, run queue and blocked;
+  - of blocked: gc by code, the flip with its drain, guest syncs, and the rest;
+  - lock waits by mutex and site, and faults;
+  - all of it for all frames, by vblank class (1 / 2 / 3+), and by scene phase × class.
+- **Tests:**
+  - `test_h438.sh` (`4989a0a7`, `test_h438.cpp` `97f08d56`): PASS in all four cases. These are HOSTWAIT with and
+    without OUTSIDE (gc codes, the nested call counted once, the flip and drain, a 30-ms lock wait by name, the /proc
+    deltas, guest-sync time), HOSTWAIT unset (no file), and lean (empty macros).
+  - `test_o438.sh` failed its waker case on the laptop, with the committed o438.hpp too. A timestamp probe showed why:
+    the worker's post landed 40 ms after the Render Thread's wait began, while the wait slept a fixed 20 ms (22 ms
+    measured). Thread start plus a 5-ms sleep take ~40 ms on the laptop. That is a race in the test, not in o438.
+    - Fixed: the wait now lasts until the worker has posted (at least 20 ms), as a semaphore wait ends because of its
+      post.
+    - Now PASS 3 of 3 runs, in all three variants (OUTSIDE=1, unset, lean).
+    - A broken copy of o438.hpp that stores no waker tid fails the case (lines 89 and 107), so the case still tests
+      attribution.
+- **Planned runs:** 3 scene runs of arm H on one boot, RT on. Then ah438 over three phases, placed from each CSV's
+  own per-10-s counts: fast (about G+10 to G+140), the dip to ~11 flips/s at about G+150 to G+160 (seen in every run;
+  a target of its own, the top session's addition), and slow (about G+165 to G+290). Usage:
+  `ah438.py FROM TO fast=A-B dip=C-D slow=E-F csv…`.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
