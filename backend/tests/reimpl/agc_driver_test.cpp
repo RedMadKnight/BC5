@@ -2030,7 +2030,7 @@ TEST_CASE("agc_driver: every export can be called without a host", "[agc_driver]
     set_log([](const char *, const char *) {});
     const CommandBufferDesc d = desc(0x1000, 1);
     CHECK(sceAgcDriverSubmitDcb(&d) == kErrQueueLock);
-    CHECK(sceAgcDriverSubmitAcb(0x20, &d) == kErrQueueLock);
+    CHECK(sceAgcDriverSubmitAcb(0x20, &d) == kOk); // never created: dropped (run rmplF1bb)
     CHECK(sceAgcDriverCwsrResumeAcq() == kErrMapOrClose);
     CHECK(sceAgcDriverGetEqEventType(&d) == 0);
     CHECK(sceAgcDriverGetEqContextId(&d) == 0);
@@ -2098,4 +2098,33 @@ TEST_CASE("agc_driver: default-state CBs for an offline compare", "[agc_driver][
         std::fprintf(fp, "0x%llx\n", static_cast<unsigned long long>(dm));
         std::fclose(fp);
     }
+}
+
+// Run rmplF1bb (a capture of the title's own module, 2026-11-21): at libSceAgc's init the resume DCB
+// is queued by the suspend submit (only the suspend check goes to the kernel) and its SH stream goes
+// to the compute queues; a queue the title has not created takes nothing (no graphics ioctl). The
+// prologue and the queued resume go out with the title's first graphics submit, after its own TF-ring
+// and HS ioctls.
+TEST_CASE("agc_driver: init order: resume queued, SH stream to uncreated queues dropped",
+          "[agc_driver]") {
+    Fixture f;
+    forget_compute_queue_for_tests(0x57); // never created: a zeroed entry, handle queue id 0
+    f.clear();
+    const CommandBufferDesc resume = desc(0x0000000500006000u, 96);
+    const CommandBufferDesc stream = desc(0x0000000500007000u, 55);
+    u32 status = 0;
+    REQUIRE(nid_kAPt2J4U3v8(&resume, &status, 0) == kOk);
+    REQUIRE(sceAgcDriverSubmitAcb(0x57, &stream) == kOk); // never created: dropped
+    CHECK(f.logged("never created"));
+    REQUIRE(f.reqs() == std::vector<u64>{kIoctlSuspendCheck}); // no prologue, no graphics submit
+    // the title's own ioctls come next, then its first DCB: prologue, then the resume at the head
+    (void)sceAgcDriverSetHsOffchipParam(0x1FF, 0);
+    const CommandBufferDesc d = desc(0x0000000600008000u, 0x40);
+    REQUIRE(sceAgcDriverSubmitDcb(&d) == kOk);
+    const std::vector<u64> r = f.reqs();
+    REQUIRE(r.size() == 4);
+    CHECK(r[0] == kIoctlSuspendCheck);
+    CHECK(r[2] == kIoctlGfxPrologue);
+    CHECK(r[3] == kIoctlGfxSubmit);
+    CHECK(f.host.ioctls[3].as<GfxSubmitArgs>().count == 4); // the queued resume pair + the DCB
 }

@@ -94,6 +94,9 @@ std::array<u32, 0x400> build_defaults() {
 //
 // On BC5 the host only traces this ioctl and never runs the handler on the GPU, so the bytes
 // are never executed; they only have to be a well-formed handler of the size the ioctl reports.
+// The ioctl therefore reports 0x100 bytes (this one dword, rounded up to 256) where the original
+// reports 0x2400; a compare with a capture of the title's own module (run rmplF1bb, 2026-11-21)
+// shows that as the only difference in that ioctl, and it is kept: BC5's /dev/gc only traces it.
 constexpr u32 kSoppFixedBits = 0x17Fu << 23;
 constexpr u32 kSoppOpEndpgm = 1;
 constexpr u32 kTrapHandlerDword = kSoppFixedBits | (kSoppOpEndpgm << 16);

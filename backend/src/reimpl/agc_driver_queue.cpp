@@ -16,6 +16,8 @@
 // meaning of that bit (a "valid" flag).
 #include "bc5/reimpl/agc_driver_internal.hpp"
 
+#include <atomic>
+
 #include <array>
 #include <cstdio>
 #include <cstring>
@@ -662,10 +664,39 @@ std::int32_t sceAgcDriverAgrSubmitDcb(const CommandBufferDesc *desc) {
     return submit_front(&g_state.gfx_agr, desc, 0, 0);
 }
 
+// Deviation (BC5, found against a capture of the title's own module, run rmplF1bb, 2026-11-21): a
+// compute queue the title has not created has a zeroed handle, whose queue id 0 would send the
+// command buffer down the graphics path; libSceAgc's init submits its SH stream to every queue id
+// 0x20..0x5E that way, so the stream reached the GFX ring at init, with the prologue, before the
+// title's own TF-ring and HS ioctls (the original sends no graphics ioctl at that point: only the
+// suspend check). A submit to a queue that is not created is now dropped and reports success, as
+// the original's ring write never reaches a GPU queue for it either.
+namespace {
+bool compute_queue_unused(const ComputeQueueEntry *e, std::uint32_t queue_id) {
+    if (e->created != 0) {
+        return false;
+    }
+    static std::atomic<int> logged{0};
+    if (logged.fetch_add(1) < 4) {
+        drv_log("submit to compute queue 0x%x, which was never created: dropped", queue_id);
+    }
+    return true;
+}
+} // namespace
+
+void forget_compute_queue_for_tests(std::uint32_t queue_id) {
+    if (ComputeQueueEntry *e = compute_entry_for_id(queue_id); e != nullptr) {
+        *e = ComputeQueueEntry{};
+    }
+}
+
 std::int32_t sceAgcDriverSubmitAcb(std::uint32_t queue_id, const CommandBufferDesc *desc) {
     ComputeQueueEntry *e = compute_entry_for_id(queue_id);
     if (e == nullptr) {
         return kErrInvalid; // deviation: UB in the original (index before/after the tables)
+    }
+    if (desc != nullptr && compute_queue_unused(e, queue_id)) {
+        return kOk;
     }
     return submit_front(&e->handle, desc, 0, 0);
 }
@@ -680,6 +711,9 @@ std::int32_t nid_F5ZTyyVUHTs(std::uint32_t queue_id, const CommandBufferDesc *de
     if (e == nullptr) {
         return kErrInvalid; // deviation: null dereference in the original
     }
+    if (desc != nullptr && compute_queue_unused(e, queue_id)) {
+        return kOk;
+    }
     return submit_front(&e->handle, desc, 1u, tag);
 }
 
@@ -688,6 +722,9 @@ std::int32_t nid_Hb3p8BJm2PI(std::uint32_t queue_id, const CommandBufferDesc *de
     ComputeQueueEntry *e = compute_entry_for_id(queue_id);
     if (e == nullptr) {
         return kErrInvalid; // deviation: null dereference in the original
+    }
+    if (desc != nullptr && compute_queue_unused(e, queue_id)) {
+        return kOk;
     }
     return submit_front(&e->handle, desc, 2u, tag);
 }

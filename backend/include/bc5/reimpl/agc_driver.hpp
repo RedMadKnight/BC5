@@ -330,6 +330,9 @@ static_assert(offsetof(KernelEvent, data) == 0x10);
 std::int32_t initialize();
 // Tests only: forget every global (no device calls).
 void reset_for_tests();
+// Test seam: return a compute queue entry (0x20..) to its load-time state, as for a queue the
+// title never created (zeroed handle).
+void forget_compute_queue_for_tests(std::uint32_t queue_id);
 
 // ---------------------------------------------------------------------------------------------
 // Exports (C-compatible signatures). Functions whose original name is unknown are named after
