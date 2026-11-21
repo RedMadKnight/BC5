@@ -534,6 +534,21 @@ the control's line has none, `X=1;rm` is refused).
       host answers from the eboot's process parameter.
     - Not covered: `sceNpGetSdkVersion` (libNp.cpp, a unit outside this build), which answers from its own constant
       (0x0A600000; TODO).
+    - Revised at the maintainer's request ("Zrób z wersji firmware przełącznik abyś mógł dynamicznie zmieniac na
+      potrzeby testu"): the parsing is in `k439/sv0439.hpp`.
+      - Accepted: unset (10.60), "param", or any "MAJOR.MINOR" with a two-digit minor (e.g. 9.00, 10.60, 11.60,
+        12.00).
+      - Encoded as the word `(major << 24) | (BCD minor << 16)`: 10.60 -> 0x0A600000, the host's own constant; 11.60
+        -> 0x0B600000. The string is "MM.mm.000".
+      - Read once at start by a static initializer. One line names the version in effect and its source. A malformed
+        value ends the run at start (exit 2) with its reason.
+      - Det test `k439/test_sv0439.cpp`, PASS (`logs/test_sv0439.out`): five values and their encodings, eleven
+        malformed values refused, "param" from a param.json text.
+      - Not in lean builds. If it is ever baked, it would be a per-title default ("param" for titles whose
+        param.json asks for more than 10.60), not a global switch.
+      - `box439.sh` compiles `libNp.cpp` when a generated copy is present, so that `sceNpGetSdkVersion` takes the
+        same word. That copy needs the shared tree's libNp.cpp read from the box first.
+      - TODO(verify): that a console encodes versions other than 10.60 the same way.
     - `t3s.sh` adds ACB_DEEP and ACB_REFUSE, and a box-side stall watch. When the journal's frame-profile lines stop
       for 3 s, it takes one snapshot of every thread (CPU ticks over 1 s, state, wchan, eu-stack) and of labels 0-15
       plus six known labels.
