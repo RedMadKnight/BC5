@@ -328,6 +328,35 @@ static void dc439_flip(int index) {
 			n00 += v == 0x00;
 			nff += v == 0xFF;
 		}
+		{ // exp 0439 (tag kh439): the full key histogram of the registered metadata and of the draw's own DCC_BASE (the
+		  // draw's base is the registered one - 0x28000 for this title), and whether every key is a clear code. Mesa 0866ae7
+		  // src/amd/common/ac_descriptors.h:29-38: 0x00 DCC_CLEAR_0000, 0xFF DCC_UNCOMPRESSED, 0x40 GFX8_DCC_CLEAR_0001,
+		  // 0x80 _1110, 0xC0 _1111, 0x20 GFX8_DCC_CLEAR_REG, 0x10 GFX9_DCC_CLEAR_SINGLE (radeonsi si_clear.c:239-246 uses the
+		  // GFX8 codes before gfx11; gfx1013 is gfx10).
+			static std::atomic<uint64_t> n_kh {0};
+			const uint64_t                kk = n_kh++;
+			if (kk < 8 || kk % 300 == 0) {
+				auto hist_line = [&](uint64_t base, const char* what) {
+					if (base == 0) return;
+					uint64_t h[256] = {};
+					const auto* mk = reinterpret_cast<const volatile uint8_t*>(base);
+					for (uint64_t k = 0; k < keys; k++) h[mk[k]]++;
+					char     line[2048];
+					size_t   o = 0;
+					uint64_t clear = 0;
+					for (int v = 0; v < 256; v++) {
+						if (h[v] == 0) continue;
+						const bool code = v == 0x00 || v == 0xFF || v == 0x40 || v == 0x80 || v == 0xC0 || v == 0x20 || v == 0x10;
+						if (code) clear += h[v];
+						if (o + 24 < sizeof(line)) o += static_cast<size_t>(std::snprintf(line + o, sizeof(line) - o, " %02x:%" PRIu64, v, h[v]));
+					}
+					std::fprintf(stderr, "[bc5] exp 0439 (tag kh439): t %.3f s index %d %s keys at 0x%" PRIx64 " (%" PRIu64 "):%s; %s\n", timing_now(), index, what, base, keys, line,
+					             clear == keys ? "EVERY key is a clear code (a cleared surface: 0x00/0x40 black)" : "some keys are compressed data");
+				};
+				hist_line(s.meta, "registered");
+				hist_line(s.block.valid ? s.block.dcc_base() : 0, "the draw's");
+			}
+		}
 		bool        plain = nff == keys;
 		const char* why   = "keys all 0xFF (uncompressed)";
 		if (!plain && n00 == keys) {
