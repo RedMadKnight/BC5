@@ -1268,45 +1268,81 @@ static void register_job(const SimJob& j) { // its writes, as submit_now registe
 		}
 }
 static int run_rings() {
+	// D's state when X is decided (Q438_RINGS_STATE): flight (its owner's submit_now, no queue), open (appended to its
+	// owner's chain, not taken), queued (Q438: behind another entry held in submit_now), submitnow (Q438: its entry in
+	// submit_now), real (registered before X). Q438_RINGS_SPLIT=1: X has a head (P = 1) ahead of its wait.
+	const char*      st    = std::getenv("Q438_RINGS_STATE");
+	const std::string state = st != nullptr ? st : "flight";
+	const bool        split = std::getenv("Q438_RINGS_SPLIT") != nullptr && std::getenv("Q438_RINGS_SPLIT")[0] == '1';
 	constexpr int o = 23;
 	uint64_t*     N = &g_labels[o];
+	static uint64_t g_rlab_p = 0;
 	g_rlab_m = 0;
 	g_rlab_l = 0;
+	g_rlab_p = 0;
 	*N       = 1; // last frame's value
 	g_stub_phase = 3;
 	g_gated[o]   = true;
-	g_pass[o]    = 0;
+	g_pass[o]    = state == "real" ? 100 : 0;
 	std::vector<SimJob> jobs;
 	auto                wait_pkt = [](uint64_t* label, uint64_t v, uint32_t* w) { wait64(w, reinterpret_cast<uintptr_t>(label), v); };
 	uint32_t            w[9];
-	// E
 	jobs.push_back({"E", 0, 9001, {{false, &g_rlab_m, 1}}, {}});
 	register_job(jobs.back());
-	// D: its wait on M decided (by the game thread, before its submit_now), then taken and held in submit_now
 	wait_pkt(&g_rlab_m, 1, w);
-	const bool d_kept = !wait_satisfied(w, true) && ring_will_satisfy(w, true, bc5::direct::kGfxRing);
-	std::thread owner([] {
+	const bool        d_kept = !wait_satisfied(w, true) && ring_will_satisfy(w, true, bc5::direct::kGfxRing);
+	std::atomic<int>  owner_at {0}, go {0};
+	std::thread owner([&state, &owner_at, &go] {
 		BEGIN_OWNER(o);
-		append(o, 1); // writes N = 1 (the stub registers it at the gate's release)
-		chain_flush(1);
+		if (state == "queued") { // another entry first, held in submit_now
+			static const uint32_t nowrite[3] = {0xC0011000u, static_cast<uint32_t>(o), 0};
+			chain_append(nullptr, 0, nowrite, 3, "dcb", false);
+			chain_flush(1);
+			while (g_active[o].load() != 1) std::this_thread::yield();
+		}
+		if (state == "open") {
+			{
+				ChainInSubmit in(true); // the owner inside Direct::submit: the watchdog leaves the chain open
+				append(o, 1);
+				owner_at = 1;
+				while (go.load() == 0) std::this_thread::yield();
+			}
+			chain_flush(1);
+		} else {
+			append(o, 1); // D: writes N = 1
+			owner_at = 1; // before the flush: without the queue the owner itself stays in submit_now until released
+			chain_flush(1);
+		}
 		chain_flush(5);
+		owner_at = 2;
 	});
-	for (const uint64_t ta = SoftCp::now_ns(); g_active[o].load() != 1 && SoftCp::now_ns() - ta < 5'000'000'000ull;) std::this_thread::sleep_for(std::chrono::microseconds(200));
-	// X on bc5-ring (this thread: not a game thread)
+	while (owner_at.load() == 0) std::this_thread::yield();
+	if (state == "flight" || state == "submitnow" || state == "queued")
+		for (const uint64_t ta = SoftCp::now_ns(); g_active[o].load() != 1 && SoftCp::now_ns() - ta < 5'000'000'000ull;) std::this_thread::sleep_for(std::chrono::microseconds(200));
+	if (state == "real")
+		while (owner_at.load() != 2) std::this_thread::yield();
+	auto d_real = [N]() -> uint64_t {
+		std::lock_guard lk(g_plw_mutex);
+		for (const auto& e: g_plw)
+			if (e.label == reinterpret_cast<uintptr_t>(N) && (e.seq & kR438Early) == 0) return e.seq;
+		return 0;
+	};
+	// X on bc5-ring: its gate, then (when it passes) the submit stage
 	wait_pkt(N, 1, w);
-	const int  x_gate1 = ACB_UNREADY(w, true, reinterpret_cast<uintptr_t>(N), 0) ? 1 : 0;
-	bool       d_released = false;
-	uint64_t   d_seq      = 0;
-	auto       release_d  = [&] {
+	const int x_gate1    = ACB_UNREADY(w, true, reinterpret_cast<uintptr_t>(N), 0) ? 1 : 0;
+	bool      d_released = state == "real";
+	auto      release_d  = [&] {
         g_pass[o] = 100;
+        go        = 1;
         owner.join();
         d_released = true;
-        std::lock_guard lk(g_plw_mutex);
-        for (const auto& e: g_plw)
-            if (e.label == reinterpret_cast<uintptr_t>(N) && (e.seq & kR438Early) == 0) d_seq = e.seq;
 	};
+	if (x_gate1 && split) { // acb_ready's split: the head (before the wait) goes ahead, the rest waits
+		jobs.push_back({"Xhead", 0, 9005, {{false, &g_rlab_p, 1}}, {}});
+		register_job(jobs.back());
+	}
 	int x_gate2 = x_gate1;
-	if (x_gate1) { // held: the next poll after the writer's registration
+	if (x_gate1) {
 		release_d();
 		x_gate2 = ACB_UNREADY(w, true, reinterpret_cast<uintptr_t>(N), 0) ? 1 : 0;
 	}
@@ -1314,23 +1350,26 @@ static int run_rings() {
 		std::lock_guard lk(bc5::direct::g_deps_mu);
 		bc5::direct::g_deps.clear();
 	}
-	ho430::at_wait(w, true, reinterpret_cast<uintptr_t>(N), "acb", 0, w, 9, 0); // F10/F16/F18, then F2/F4
+	ho430::at_wait(w, true, reinterpret_cast<uintptr_t>(N), "acb", 0, w, 9, 0);
 	std::vector<uint64_t> x_deps;
 	{
 		std::lock_guard lk(bc5::direct::g_deps_mu);
-		for (const auto& [r, s]: bc5::direct::g_deps) x_deps.push_back(s);
+		for (const auto& [r, sq]: bc5::direct::g_deps) x_deps.push_back(sq);
 	}
-	const bool x_met = wait_satisfied(w, true); // met at submit: the filter drops the wait
-	jobs.push_back({"X", 0, 9002, {{true, N, 1}, {false, &g_rlab_m, 0}}, x_deps});
-	if (x_met) jobs.back().ops.erase(jobs.back().ops.begin());
+	const bool x_met = wait_satisfied(w, true);
+	SimJob     x {"X", 0, 9002, {{true, N, 1}, {false, &g_rlab_m, 0}}, x_deps};
+	if (split && !x_gate1) x.ops.insert(x.ops.begin(), SimOp {false, &g_rlab_p, 1}); // no split: the head goes with it
+	if (x_met) std::erase_if(x.ops, [N](const SimOp& op) { return op.wait && op.label == N; });
+	jobs.push_back(x);
 	register_job(jobs.back());
 	if (!d_released) release_d();
-	jobs.push_back({"D", bc5::direct::kGfxRing, d_seq, {{true, &g_rlab_m, 1}, {false, N, 1}}, {}});
+	else if (owner.joinable()) owner.join();
+	jobs.push_back({"D", bc5::direct::kGfxRing, d_real(), {{true, &g_rlab_m, 1}, {false, N, 1}}, {}});
 	if (!d_kept) jobs.back().ops.erase(jobs.back().ops.begin());
-	// W
+	if (state == "real") std::erase_if(jobs, [](const SimJob& j) { return j.name[0] == 'D'; }); // already run: its N = 1 is in memory
+	if (state == "real") *N = 1;
 	jobs.push_back({"W", bc5::direct::kGfxRing, 9003, {{false, &g_rlab_l, 1}}, {}});
 	register_job(jobs.back());
-	// A on bc5-ring: the gate, then the submit stage's keep test
 	wait_pkt(&g_rlab_l, 1, w);
 	const int  a_gate = ACB_UNREADY(w, true, reinterpret_cast<uintptr_t>(&g_rlab_l), 0) ? 1 : 0;
 	const bool a_kept = !wait_satisfied(w, true) && ring_will_satisfy(w, true, 0);
@@ -1338,7 +1377,7 @@ static int run_rings() {
 	register_job(jobs.back());
 	g_stub_phase = 0;
 	g_gated[o]   = false;
-	// the two rings, in order; the compute ring first each round
+	if (state == "real") g_rlab_m = 1; // D ran before X: E's M = 1 had reached D
 	auto ended = [&](uint64_t seq) {
 		for (const auto& j: jobs)
 			if (j.seq == seq) return j.done;
@@ -1365,19 +1404,21 @@ static int run_rings() {
 				if (!blocked) {
 					j.done = true;
 					moved  = true;
-					std::lock_guard lk(g_plw_mutex); // forget_label_writes: its pending writes end with it
+					std::lock_guard lk(g_plw_mutex);
 					std::erase_if(g_plw, [&j](const PendingLabelWrite& e) { return e.seq == j.seq && e.ring == j.ring; });
 				}
-				break; // a ring runs its first unfinished job only
+				break;
 			}
 		}
 	}
-	bool fix = false;
+	bool ng = false, open = false;
 #ifdef Q438_X
-	fix = inflight_ng_on();
+	ng   = inflight_ng_on();
+	open = open_ng_on();
 #endif
-	std::printf("rings (BC5_0438_INFLIGHT_NG %s): D's wait on M kept %d; X's gate with D in flight %s, then %d; X's F4 dependencies %zu; X's wait met at submit (dropped) %d; A's gate %s, kept for the GPU %d\n",
-	            fix ? "on" : "off", d_kept ? 1 : 0, x_gate1 ? "HELD" : "passed", x_gate2, x_deps.size(), x_met ? 1 : 0, a_gate ? "held" : "passed", a_kept ? 1 : 0);
+	std::printf("rings, D %s%s (INFLIGHT_NG %d, OPEN_NG %d, SUBMITQ %s): D's wait on M kept %d; X's gate %s, then %d; X's F4 dependencies %zu; X's wait dropped as met %d; A kept for the GPU %d (gate %d)\n", state.c_str(),
+	            split ? ", X split" : "", ng ? 1 : 0, open ? 1 : 0, std::getenv("BC5_0438_SUBMITQ") != nullptr ? std::getenv("BC5_0438_SUBMITQ") : "unset", d_kept ? 1 : 0, x_gate1 ? "HELD" : "passed", x_gate2, x_deps.size(),
+	            x_met ? 1 : 0, a_kept ? 1 : 0, a_gate);
 	bool hung = false;
 	for (const auto& j: jobs) {
 		if (j.done) continue;
@@ -1387,7 +1428,8 @@ static int run_rings() {
 		if (op != nullptr && op->wait) std::printf(" at its wait on %s == %" PRIu64 ", which reads %" PRIu64 "\n", op->label == &g_rlab_m ? "M" : (op->label == &g_rlab_l ? "L" : "N"), op->v, *op->label);
 	}
 	std::printf("rings: %s\n", hung ? "THE TWO-RING HANG (both rings stuck through ring order)" : "every job ran");
-	CHECK(!(fix && hung), "rings: BC5_0438_INFLIGHT_NG=1 did not prevent the two-ring hang");
+	const bool fix = state == "open" ? (ng && open) : ng;
+	CHECK(!(fix && hung), "rings, D %s: the gate did not prevent the two-ring hang", state.c_str());
 	*N = 0;
 	return 0;
 }

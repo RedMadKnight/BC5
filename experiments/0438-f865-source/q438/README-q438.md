@@ -90,3 +90,15 @@
   - X runs early and resets M, the label D waits on, so D waits on M == 1 reading 0;
   - W, the writer of acb A's label L, is behind D, so A waits on L == 1 reading 0.
 - `BC5_0438_INFLIGHT_NG=1` holds X until D registers. F4 then makes X depend on D, and every job runs. The planted `inflight-off` brings the hang back.
+
+**Why cq438f1 still hung with INFLIGHT_NG=1: the open chain** (`rings`, `Q438_RINGS_STATE`).
+- Neither the cross-ring keep nor the head split bypasses the gate:
+  - `acb_wait_unready` (stack438x ~7732) runs the INFLIGHT_NG and queue tests whenever `ring_will_satisfy` is true;
+  - `acb_ready` submits a head only before a wait it found unready, and every wait in the head passed the gate.
+- The state the gate missed is D appended to its owner's still-open chain (mode 2: held across ioctls, or longer while the owner is inside `Direct::submit`). Its writes are only in `f10_writes`: not in flight, not queued, no early entry.
+- With INFLIGHT_NG=1 alone, X's gate:
+  - **holds** with D in flight, queued, or its entry in `submit_now`;
+  - **passes** with D open, and the two-ring hang forms (with and without SUBMITQ, with and without the split);
+  - with D registered for real, F4 orders X.
+- **Fix, `BC5_0438_OPEN_NG=1`** (off unless "1"): the gate also holds while a registered slot's open chain writes the label. Every state then runs; the planted `open-off` brings the hang back.
+- wd438 entries now record the open chains that write the label.
