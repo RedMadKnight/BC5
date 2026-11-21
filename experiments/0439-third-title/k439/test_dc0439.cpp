@@ -154,6 +154,35 @@ int main() {
         }
     writes(tail2, rc, rsh, ruc);
     CHECK(rc[bc5::dc439::kCbColorControl] == 0x00cc0010u && rc[0x082] == 0x04380780u);
+    // 5. walk_draws(): the surface bound to MRT0 for one draw, then MRT0 rebound to another target before the job ends
+    //    (p1: no MRT on the surface at any job's end). The draw's block is caught; the job-end context has none.
+    {
+        using bc5::dc439::pkt3;
+        std::vector<std::uint32_t> j;
+        j.push_back(pkt3(0x69, 2));
+        j.push_back(bc5::dc439::kCbTargetMask);
+        j.push_back(0xfu);
+        j.push_back(pkt3(0x69, 1 + 15));
+        j.push_back(bc5::dc439::kCbColor0Base);
+        for (std::uint32_t k = 0; k < 15; k++) j.push_back(k == 0 ? static_cast<std::uint32_t>(surf >> 8) : k == 13 ? static_cast<std::uint32_t>(meta >> 8) : k == 4 ? (1u << 28) : 0u);
+        j.push_back(pkt3(0x2d, 2)); // the draw into the surface
+        j.push_back(3);
+        j.push_back(2);
+        j.push_back(pkt3(0x69, 2)); // MRT0 rebound
+        j.push_back(bc5::dc439::kCbColor0Base);
+        j.push_back(0x66660000u);
+        j.push_back(pkt3(0x2d, 2));
+        j.push_back(3);
+        j.push_back(2);
+        bc5::dc439::Ctx cx;
+        std::vector<std::uint64_t> addrs = {surf, surf + 0x2030000};
+        std::vector<bc5::dc439::Hit> hits(2);
+        bc5::dc439::walk_draws(j.data(), j.size(), cx, addrs, hits, [](std::uint64_t, std::uint64_t) { return false; });
+        CHECK(hits[0].draws == 1 && hits[0].block.valid && hits[0].block.mrt == 0 && hits[0].block.dcc_base() == meta && hits[0].block.dcc_enable());
+        CHECK(hits[1].draws == 0);
+        CHECK(!bc5::dc439::find(cx.value, cx.valid, surf).valid); // the job-end context no longer has it
+        CHECK(bc5::dc439::count_base(j.data(), j.size(), static_cast<std::uint32_t>(surf >> 8), [](std::uint64_t, std::uint64_t) { return false; }) == 1);
+    }
     std::printf("%s (%d failures); IB %zu dwords\n", g_fail == 0 ? "PASS" : "FAIL", g_fail, ib.size());
     return g_fail == 0 ? 0 : 1;
 }

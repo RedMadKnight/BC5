@@ -1,0 +1,19 @@
+2026-11-21 13:02:26 lock taken: exp0439 2026-11-21 13:02:26 third title
+started unit bc5-0439-p2 (max 30 s); when it ends: run0439.sh collect normal p2
+2026-11-21 13:03:01 lock dropped
+binary /home/kjaniszewski/bc5-work/exp0439/k439/normal/kyty_emulator a213c7f0189c39da0ec4a3a362a406cb
+boot d1ac0537807345ec9704408795557a68; amdgpu timeout/reset lines before: 21
+amdgpu timeout/reset lines after: 21
+end 2026-11-21 13:03:01
+[bc5] exp 0439 (tag dc439): BC5_DIRECT_DCC_PRESENT=2 (0 off, 1 log, 2 decompress at the flip)
+[bc5] exp 0439 (tag dc439): t 1.483 s flip: index 2 surface 0x5005160000 meta 0x5007168000 3840x2160 dcc 0x208; flips 1 done 0 failed 0 no-block 0; block NOT FOUND (job 0 of 9): MRT 0 BASE 0x0 DCC_BASE 0x0 (DIFFERS FROM the registered metadata) VIEW 0x00000000 INFO 0x00000000 (DCC_ENABLE 0, FORMAT 0, COMPRESSION 0, FAST_CLEAR 0) ATTRIB 0x00000000 DCC_CONTROL 0x00000000 ATTRIB2 0x00000000 ATTRIB3 0x00000000 (SW_MODE 0, META_LINEAR 0, DCC_PIPE_ALIGNED 0) CMASK 0x00000000 FMASK 0x00000000 CB_DCC_CO
+[bc5] exp 0439 (tag dc439):   index 2: draws into it 0; its address in GFX jobs 0 times, in compute jobs 0 times (0 jobs); metadata bytes (first 128 KiB) top: 0x00 x131072, 0x01 x0, 0x02 x0, 0x03 x0, 0x04 x0; non-zero dwords in the first 4 MiB of the surface 0 of 1048576
+[bc5] exp 0439 (tag dc439): t 1.488 s index 2 presented as plain without a pass: keys all 0x00 (clear 0000) and the surface all zero
+---
+[bc5] exp 0439 (tag dc439):   index 2: draws into it 0; its address in GFX jobs 0 times, in compute jobs 0 times (0 jobs); metadata bytes (first 128 KiB) top: 0x00 x131072, 0x01 x0, 0x02 x0, 0x03 x0, 0x04 x0; non-zero dwords in the first 4 MiB of the
+[bc5] exp 0439 (tag dc439): t 1.488 s index 2 presented as plain without a pass: keys all 0x00 (clear 0000) and the surface all zero
+[bc5] exp 0432 (tag d432): t 11.5 s: unmap-nowait ON, anon-events off, anon-thread ON, views-kept off; sync+hints of all submissions 1.0 s, longest 901.2 ms, over 20 ms 2; rebuilds that change mappings 15, with a ring busy 0; mappings dropped 143, wh
+[bc5] exp 0428 (tag w428c): t 11.5 s: jobs gfx 10 comp0 69 comp1 1 comp2 0 comp3 0; acbs kept on gfx: none; queue->ring: 16->1(10170) 24->2(10168) moves 2 not-idle-in-2s 0; dcb waits on two rings: kept 0 satisfied 0 NOT served 0 heads split 0 kept-wi
+[bc5] exp 0432 (tag d432): t 23.5 s: unmap-nowait ON, anon-events off, anon-thread ON, views-kept off; sync+hints of all submissions 1.0 s, longest 901.2 ms, over 20 ms 2; rebuilds that change mappings 15, with a ring busy 0; mappings dropped 143, wh
+[bc5] exp 0428 (tag w428c): t 23.5 s: jobs gfx 10 comp0 69 comp1 2 comp2 0 comp3 0; acbs kept on gfx: none; queue->ring: 16->1(10170) 24->2(10168) moves 2 not-idle-in-2s 0; dcb waits on two rings: kept 0 satisfied 0 NOT served 0 heads split 0 kept-wi
+20261121-114357
