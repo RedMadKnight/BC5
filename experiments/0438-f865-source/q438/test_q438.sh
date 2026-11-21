@@ -18,7 +18,9 @@ cutunit() { # cutunit UNIT DIR
 	local a b
 	a=$(lineof 'kR438Early = 1ull << 63u'); b=$(lineof 'static std::atomic<uint64_t> g_r438_slices'); piece "$a" "$b" q_state.inc
 	a=$(lineof 'static thread_local bool t_wait_given_up = false;'); b=$(lineof '// Experiment 0055: the label writes with immediate data'); piece "$a" "$((b - 1))" q_chain.inc
-	a=$(lineof 'struct PendingLabelWrite {'); b=$(lineof 'static std::condition_variable             g_plw_cv;'); piece "$a" "$b" q_plw.inc
+	a=$(lineof 'struct PendingLabelWrite {'); b=$(lineof 'static std::condition_variable             g_plw_cv;')
+	grep -q -F -- '// ---- end of exp 0438 (q438) g_plw trim' "$u" && b=$(lineof '// ---- end of exp 0438 (q438) g_plw trim')
+	piece "$a" "$b" q_plw.inc
 	a=$(lineof 'static void register_label_writes(const uint32_t* ib'); piece "$a" "$(endf "$a")" q_reg.inc
 	a=$(lineof 'static bool ring_will_satisfy(const uint32_t* p, bool is64, int ring) {'); piece "$a" "$(endf "$a")" q_rws.inc
 	if grep -q -F '// ---- BC5 experiment 0438 (tag q438)' "$u"; then
@@ -80,4 +82,5 @@ plant lifo 'e = std::move(s.q.front());
 plant flight-clear 'q438_flight_locked(s); // exp 0430 F10: its writes are registered now' 's.f10_flight.clear(); s.q_sets.clear();'
 plant no-drain 'if (why == 5 || why == 8) q438_wait_done(s);' '(void)why;'
 plant no-order 'if (q438_on()) { // exp 0438 (q438): queued chains' 'if (false) { // exp 0438 (q438): queued chains' q_reg.inc
+plant trim-drops 'if (gone < 4096 && (w.seq & kR438Early) == 0) {' 'if (gone < 4096) {' q_plw.inc
 echo "== all done"

@@ -111,7 +111,7 @@ static std::thread::id      g_owner_tid[kOwners];
 static std::atomic<int>     g_active[kOwners], g_pass[kOwners];
 static std::atomic<bool>    g_gated[kOwners], g_nest_ok[kOwners];
 static std::atomic<int>     g_prep_us {0}, g_prep_rand_us {0}, g_drop_write {0};
-static std::atomic<uint64_t> g_seq_no {0}, g_viol_active {0}, g_viol_flight {0}, g_viol_cap {0}, g_qmax {0};
+static std::atomic<uint64_t> g_seq_no {0}, g_viol_active {0}, g_viol_flight {0}, g_viol_cap {0}, g_qmax {0}, g_call_max_ns {0};
 static std::function<void(int owner, uint32_t first)> g_hook; // set while no submission runs
 struct Rec {
 	int                   owner = -1;
@@ -145,6 +145,7 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char*, int
 	if (chain == nullptr || r.owner < 0) std::abort();
 	const int o = r.owner;
 	r.tid       = std::this_thread::get_id();
+	const uint64_t t_call = SoftCp::now_ns();
 	if (g_active[o].fetch_add(1) != 0 && !g_nest_ok[o].load()) g_viol_active++;
 	{
 		ChainSlot&      s = *g_slot_of[o];
@@ -174,6 +175,9 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char*, int
 		break;
 	}
 	register_label_writes(ib, num_dwords, executed, g_seq_no.fetch_add(1) + 1, ring);
+	if (!g_gated[o].load() && !g_nest_ok[o].load())
+		for (uint64_t d = SoftCp::now_ns() - t_call, m = g_call_max_ns.load(); d > m && !g_call_max_ns.compare_exchange_weak(m, d);) {
+		}
 	SoftCp::t_gpu_done.push_back({ib, std::vector<uint8_t>(1, 1)}); // a mark, as chain_mark_executed leaves one
 	{
 		std::lock_guard lk(g_rec_mu);
@@ -428,6 +432,8 @@ static int run_random(bool q_on) {
 	std::printf("random: game-thread waits on the last flushed label %" PRIu64 ", writer not found %" PRIu64 "; drains %" PRIu64 ", short (submissions still missing) %" PRIu64 "\n", checks, miss, drains, dshort);
 	std::printf("random: violations: two submit_now of one slot at once %" PRIu64 ", writes not in the flight set %" PRIu64 ", queue over 4 %" PRIu64 "; queue max %" PRIu64 "; early entries left %zu; BUG lines %zu\n",
 	            g_viol_active.load(), g_viol_flight.load(), g_viol_cap.load(), g_qmax.load(), early_entries(), lines_with("BUG"));
+	std::printf("random: longest game-thread wait for an early writer %.3f ms (%" PRIu64 " such waits); longest ungated submit_now (stub, entry to registration) %.3f ms\n", static_cast<double>(g_r438_wait_max.load()) / 1e6, g_r438_waits.load(),
+	            static_cast<double>(g_call_max_ns.load()) / 1e6);
 	CHECK(g_viol_active.load() == 0 && g_viol_flight.load() == 0 && g_viol_cap.load() == 0, "violations");
 	CHECK(early_entries() == 0 && lines_with("BUG") == 0, "early entries left or BUG lines");
 	if (q_on) {
@@ -524,6 +530,81 @@ static void det_order(int o) { // an earlier entry's real write (and another thr
 		CHECK(after_other == -1, "order: the wait on 2 returned %d after another thread's real write", after_other);
 		CHECK(got.load() == 1, "order: the wait on 2 found no writer after entry 2's real registration");
 		std::printf("det order: after entry 1's real write %d, after another thread's %d (-1 = still waiting for entry 2), at the end %d\n", after1, after_other, got.load());
+		chain_flush(5);
+	});
+	t.join();
+	g_gated[o] = false;
+}
+// Risk a: the submitter held in submit_now (as by GPU back-pressure, g_cq_fences >= 24, or a recovery's 12 s) while a game
+// thread waits on its queued entry's early write. The wait must neither end early nor be cut by a timeout: it runs until
+// the real registration, and r438's compare-only BUG line ("has waited ... for an early-registered writer") marks every
+// 100 ms of it (at most 10 lines).
+static void det_backpressure(int o) {
+	g_gated[o] = true;
+	g_pass[o]  = 0;
+	const size_t b0 = lines_with("for an early-registered writer to reach the ring");
+	std::thread  t([o] {
+        BEGIN_OWNER(o);
+        append(o, 3);
+        chain_flush(1);
+        wait_until([o] { return g_active[o].load() == 1; }, "the entry held in submit_now");
+        std::atomic<int> got {-1};
+        std::thread      game([&got, o] {
+            t_game = true;
+            got    = wait_ok(o, 3) ? 1 : 0;
+        });
+        std::this_thread::sleep_for(std::chrono::milliseconds(350));
+        const int held = got.load();
+        g_pass[o]++; // back-pressure gone: the entry registers its write
+        game.join();
+        CHECK(held == -1, "backpressure: the wait ended (%d) while its writer was held", held);
+        CHECK(got.load() == 1, "backpressure: no writer after the release");
+        chain_flush(5);
+	});
+	t.join();
+	g_gated[o]     = false;
+	const size_t n = lines_with("for an early-registered writer to reach the ring") - b0;
+	CHECK(n >= 3 && n <= 4, "backpressure: %zu BUG lines for a 350-ms wait (one per 100 ms)", n);
+	std::printf("det backpressure: the wait held 350 ms ended only at the release, %zu BUG lines (\"has waited ... for an early-registered writer\")\n", n);
+}
+// Risk c: g_plw past its 8192-entry trim while a queued entry's early write is among the oldest: it must stay.
+static uint64_t g_fill_label;
+static void det_trim(int o) {
+	g_gated[o] = true;
+	g_pass[o]  = 0;
+	std::thread t([o] {
+		BEGIN_OWNER(o);
+		append(o, 5);
+		chain_flush(1); // early entry of 5, old: g_plw is small now
+		wait_until([o] { return g_active[o].load() == 1; }, "the entry held in submit_now");
+		std::vector<uint32_t> fill;
+		std::vector<uint32_t> at;
+		const uint64_t        a = reinterpret_cast<uintptr_t>(&g_fill_label);
+		for (uint32_t i = 0; i < 1000; i++) {
+			at.push_back(static_cast<uint32_t>(fill.size()));
+			const uint32_t p[8] = {0xC0064900u, 0x00000528u, 0x40010000u, static_cast<uint32_t>(a), static_cast<uint32_t>(a >> 32u), i, 0, 0};
+			fill.insert(fill.end(), p, p + 8);
+		}
+		size_t max_n = 0;
+		for (int k = 0; k < 10; k++) { // 10,000 real writes of another label: the trim runs
+			register_label_writes(fill.data(), static_cast<uint32_t>(fill.size()), at, 700000 + static_cast<uint64_t>(k), bc5::direct::kGfxRing);
+			std::lock_guard lk(g_plw_mutex);
+			max_n = std::max(max_n, g_plw.size());
+		}
+		const size_t kept = early_entries(label_of(o));
+		std::atomic<int> got {-1};
+		std::thread      game([&got, o] {
+            t_game = true;
+            got    = wait_ok(o, 5) ? 1 : 0;
+		});
+		std::this_thread::sleep_for(std::chrono::milliseconds(30));
+		const int held = got.load();
+		g_pass[o]++;
+		game.join();
+		CHECK(kept == 1, "trim: the queued entry's early write was dropped by the trim (%zu left)", kept);
+		CHECK(held == -1 && got.load() == 1, "trim: the wait on the queued write returned %d before its registration, %d after", held, got.load());
+		CHECK(g_q438_trims.load() >= 1, "trim: no trim ran (g_plw at most %zu)", max_n);
+		std::printf("det trim: g_plw reached %zu entries, %" PRIu64 " trims; the early write kept %zu, the wait %d then %d\n", max_n, g_q438_trims.load(), kept, held, got.load());
 		chain_flush(5);
 	});
 	t.join();
@@ -760,6 +841,8 @@ int main(int argc, char** argv) {
 		det_fifo_flight(8);
 		det_early(9);
 		det_order(7);
+		det_backpressure(3);
+		det_trim(2);
 		det_invariant(10);
 		det_cap(11);
 		det_nested(12);
