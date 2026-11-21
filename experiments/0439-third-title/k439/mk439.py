@@ -91,6 +91,14 @@ static void wr439_scan(const uint32_t* ib, uint32_t n, int ring, const char* kin
 			const uint32_t nn = ib[q + 3] & 0xfffffu;
 			if (na != 0 && nn != 0 && opt.mapped && opt.mapped(na, static_cast<uint64_t>(nn) * 4)) wr439_scan(reinterpret_cast<const uint32_t*>(na), nn, ring, depth == 0 ? "nested1" : depth == 1 ? "nested2" : "nested3", opt, depth + 1);
 		}
+		if ((h >> 30u) == 3 && ((h >> 8u) & 0xffu) == 0x49u && len >= 8 && ((ib[q + 2] >> 24u) & 7u) != 0) { // exp 0439 (tag tk439)
+			// RELEASE_MEM with an interrupt (INT_SEL dword 2 bits 26:24): its context id (dword 7) is where a flip token goes
+			// (AnyPS5 VideoOutDriver.cpp, GPL-2.0, 8b403579: the token in INT_CTXID with INT_SEL 2; UNVERIFIED there)
+			static uint64_t ri = 0;
+			if (ri++ < 200)
+				std::fprintf(stderr, "[bc5] exp 0439 (tag tk439): t %.3f s ring %d %s job %" PRIu64 " @%u RELEASE_MEM event 0x%x INT_SEL %u DATA_SEL %u address 0x%" PRIx64 " data 0x%08x%08x INT_CTXID 0x%08x\n", timing_now(), ring, kind, jobs, q,
+				             ib[q + 1] & 0x3fu, (ib[q + 2] >> 24u) & 7u, ib[q + 2] >> 29u, (ib[q + 3] & ~3ull) | (static_cast<uint64_t>(ib[q + 4] & 0xffffu) << 32u), ib[q + 6], ib[q + 5], ib[q + 7]);
+		}
 		if ((h >> 30u) == 3 && ((h >> 8u) & 0xffu) == 0x39u && len >= 3) { // MEM_SEMAPHORE: not in memory_operands
 			static uint64_t ms = 0;
 			const uint64_t  ma  = (ib[q + 1] & ~7u) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u);
@@ -115,8 +123,8 @@ static void wr439_scan(const uint32_t* ib, uint32_t n, int ring, const char* kin
 	}
 }
 
-static void dc439_track(const uint32_t* ib, uint32_t n, const bc5::policy::FilterOptions& opt, int ring) {
-	if (ib != nullptr && n != 0) wr439_scan(ib, n, ring, "job", opt); // exp 0439 (tag wr439)
+static void dc439_track(const uint32_t* ib, uint32_t n, const bc5::policy::FilterOptions& opt, int ring, const char* kind) {
+	if (ib != nullptr && n != 0) wr439_scan(ib, n, ring, kind, opt); // exp 0439 (tag wr439)
 	if (dc439::mode() == 0 || !dc439::g_any.load(std::memory_order_relaxed) || ib == nullptr || n == 0) return;
 	std::lock_guard lk(dc439::g_mu);
 	auto readable = [&opt](uint64_t a, uint64_t b) { return opt.mapped && opt.mapped(a, b); };
@@ -361,10 +369,10 @@ s = rep(s, '#include "bc5/direct.hpp"\n',
         '#include "bc5/state_stack.hpp" // exp 0439 (tag dc439): the GFX ring\'s context, followed on the host\n'
         '#include "bc5/dc0439.hpp"      // exp 0439 (tag dc439): the DCC display buffers\n')
 a = 'static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind, int ring, const Chain* chain);\n'
-s = rep(s, a, a + 'static void dc439_track(const uint32_t* ib, uint32_t n, const bc5::policy::FilterOptions& opt, int ring); // exp 0439 (tag dc439)\n')
+s = rep(s, a, a + 'static void dc439_track(const uint32_t* ib, uint32_t n, const bc5::policy::FilterOptions& opt, int ring, const char* kind); // exp 0439 (tag dc439)\n')
 a = '\tconst uint64_t ls_t3 = SoftCp::now_ns(); // experiment 0415 (ls415c)\n\tbc5::direct::SubmitResult r;\n'
 s = rep(s, a, '\tconst uint64_t ls_t3 = SoftCp::now_ns(); // experiment 0415 (ls415c)\n'
-        '\tdc439_track(sub_ib, sub_n, opt, qring); // exp 0439 (tag dc439): before the job, under the device lock\n'
+        '\tdc439_track(sub_ib, sub_n, opt, qring, kind); // exp 0439 (tag dc439): before the job, under the device lock\n'
         '\tbc5::direct::SubmitResult r;\n')
 a = '#else\nstatic void init_once() {}\nstatic void submit(const uint32_t*, uint32_t, const char*) {}\n'
 s = rep(s, a, GLUE + '#else\nstatic void dc439_flip(int) {}\nstatic void init_once() {}\nstatic void submit(const uint32_t*, uint32_t, const char*) {}\n')
@@ -379,6 +387,25 @@ EF = r'''	{ // exp 0439 (tag ef439): what the title passes as the fifth argument
 			             (unsigned long long)q[5], (unsigned long long)q[6], (unsigned long long)q[7]);
 		}
 	}
+	{ // exp 0439 (tag tk439): BC5_0439_EOP_TOKEN=1: the fifth argument is an OUT pointer to a 32-bit flip token (AnyPS5
+	  // core/libs/prx/libSceVideoOut/src/VideoOutDriver.cpp SubmitEopFlip, GPL-2.0, 8b403579: AgcDriverReserveEopFlip's token,
+	  // 0x04000000..0x07ffffff, never repeated; 0 = FLIP_QUEUE_FULL; the console encoding UNVERIFIED there). We wrote nothing.
+		static const bool tk = [] {
+			const char* e = std::getenv("BC5_0439_EOP_TOKEN");
+			const bool  on = e != nullptr && e[0] == '1' && e[1] == 0;
+			std::fprintf(stderr, "[bc5] exp 0439 (tag tk439): BC5_0439_EOP_TOKEN=%d\n", on ? 1 : 0);
+			return on;
+		}();
+		static std::atomic<uint32_t> next {0x04000000u};
+		if (tk && unk != nullptr) {
+			auto*          t   = static_cast<uint32_t*>(unk);
+			const uint32_t old = *t;
+			const uint32_t v   = next.fetch_add(1);
+			*t                 = v;
+			static int tk_n = 0;
+			if (tk_n++ < 16) std::fprintf(stderr, "[bc5] exp 0439 (tag tk439): SubmitEopFlip(%d, %d): token 0x%08x written to %p (was 0x%08x)\n", handle, index, v, unk, old);
+		}
+	}
 	Bc5Gc::Direct::dc439_flip(index); // exp 0439 (tag dc439): a compressed display buffer decompressed in place (mode 2)
 '''
 s = rep(s, a, a + EF)
@@ -389,6 +416,90 @@ s = rep(s, '''	g_r3gpu_count[set ? kR3MemsemSet : kR3MemsemAdd]++;''', '''	g_r3g
 		static int k = 0;
 		if (k++ < 64) std::fprintf(stderr, "[bc5] exp 0439 (tag wr439): soft CP MEM_SEMAPHORE signal (%s) on 0x%" PRIx64 " -> 0x%" PRIx64 "\\n", set ? "set 1" : "add 1", a, *w);
 	}''')
+# exp 0439 (tag eq439): BC5_0439_EQ_ANY=1: a RELEASE_MEM / EVENT_WRITE_EOP interrupt reaches every registered
+# EVFILT_GRAPHICS ident (the third title registers ident 0x52, which fire_eop never fires), with INT_SEL read as 3 bits
+# (its packets carry INT_SEL 4, which "& 3" turned into no interrupt) and data = INT_CTXID << 16.
+s = rep(s, '''static void release_mem(const uint32_t* p, uint32_t payload, bool write) {''', '''// exp 0439 (tag eq439), BC5_0439_EQ_ANY=1 (default off): the third title registers EVFILT_GRAPHICS ident 0x52 (kevent
+// change, run t1) and raises its interrupts with RELEASE_MEM INT_SEL 4 and an INT_CTXID (0x08100001, run t1). Today
+// INT_SEL is read as 2 bits (4 & 3 = 0: no interrupt) and fire_eop() fires the fixed idents 0x40 / 0 / compute only.
+// With the switch: INT_SEL is 3 bits (dword 2 bits 26:24; TODO(verify) the width and value 4 "send INT_CTXID", AMD PAL's
+// gfx9-plus PM4 packet headers; Mesa 0866ae7085c1 sid.h only defines EOP_INT_SEL(x) << 24 with 0 and 3), and every
+// registered EVFILT_GRAPHICS ident is fired with data = INT_CTXID << 16 (reimpl-agc-psml's description: the title reads
+// the context id from the event data >> 16; TODO(verify)).
+static bool eq439_on() {
+	static const bool v = [] {
+		const char* e = std::getenv("BC5_0439_EQ_ANY");
+		const bool  on = e != nullptr && e[0] == '1' && e[1] == 0;
+		std::fprintf(stderr, "[bc5] exp 0439 (tag eq439): BC5_0439_EQ_ANY=%d\\n", on ? 1 : 0);
+		return on;
+	}();
+	return v;
+}
+static void eq439_fire_all(uint32_t int_sel, uint32_t ctxid) {
+	std::vector<EqRegistration> eqs;
+	{
+		std::lock_guard lock(g_eq_mutex);
+		eqs = g_eqs;
+	}
+	const uint64_t data = static_cast<uint64_t>(ctxid) << 16u;
+	for (const auto& r: eqs) {
+		Libs::LibKernel::EventQueue::KernelTriggerEvent(r.eq, static_cast<uintptr_t>(r.ident), Libs::LibKernel::EventQueue::KERNEL_EVFILT_GRAPHICS, reinterpret_cast<void*>(data));
+	}
+	static std::atomic<int> n {0};
+	if (n++ < 32) std::fprintf(stderr, "[bc5] exp 0439 (tag eq439): interrupt INT_SEL %u INT_CTXID 0x%08x fired to %zu registered EVFILT_GRAPHICS idents (data 0x%" PRIx64 ")\\n", int_sel, ctxid, eqs.size(), data);
+}
+
+static void release_mem(const uint32_t* p, uint32_t payload, bool write) {''')
+s = rep(s, '''	if (write) write_timestamp_or_data(data_sel, a, lo, hi);
+	if (int_sel != 0) {
+		fire_eop(lo | (static_cast<uint64_t>(hi) << 32u));
+	}
+}''', '''	if (write) write_timestamp_or_data(data_sel, a, lo, hi);
+	{ // exp 0439 (tag eq439): the soft CP's RELEASE_MEMs, as it sees them
+		static std::atomic<int> rn {0};
+		if (rn++ < 64) std::fprintf(stderr, "[bc5] exp 0439 (tag eq439): soft CP RELEASE_MEM write %d INT_SEL %u DATA_SEL %u address 0x%" PRIx64 " INT_CTXID 0x%08x\\n", write ? 1 : 0, (data_cntl >> 24u) & 7u, data_sel, a, payload >= 7 ? p[7] : 0u);
+	}
+	if (eq439_on() && ((data_cntl >> 24u) & 7u) != 0) { // exp 0439 (tag eq439)
+		eq439_fire_all((data_cntl >> 24u) & 7u, payload >= 7 ? p[7] : 0u);
+		if (int_sel != 0) fire_eop(lo | (static_cast<uint64_t>(hi) << 32u)); // the fixed idents as before
+		return;
+	}
+	if (int_sel != 0) {
+		fire_eop(lo | (static_cast<uint64_t>(hi) << 32u));
+	}
+}''')
+s = rep(s, '''static void register_eq(Libs::LibKernel::EventQueue::KernelEqueue eq, int ident, bool add) {
+	std::lock_guard lock(g_eq_mutex);''', '''static void register_eq(Libs::LibKernel::EventQueue::KernelEqueue eq, int ident, bool add) {
+	std::fprintf(stderr, "[bc5] exp 0439 (tag eq439): EVFILT_GRAPHICS ident 0x%x %s\\n", ident, add ? "registered" : "removed");
+	std::lock_guard lock(g_eq_mutex);''')
+# exp 0439 (tag rp439): the soft CP's replays of the title's dcbs (submit list, kind "dcb"): start and end of each,
+# and every COND_EXEC it meets in a dcb (guard address, value, guarded dwords, skipped or run).
+s = rep(s, '''	t_cur_buf  = buf; // experiment 0343: for the soft-cp wait lines
+	t_cur_n    = num_dwords;
+	t_cur_kind = kind;
+	execute(buf, num_dwords, 0);''', '''	t_cur_buf  = buf; // experiment 0343: for the soft-cp wait lines
+	t_cur_n    = num_dwords;
+	t_cur_kind = kind;
+	static std::atomic<int> rp_n {0};
+	const bool              rp_dcb = kind != nullptr && std::strcmp(kind, "dcb") == 0;
+	const int               rp_k   = rp_dcb ? rp_n++ : 1 << 30;
+	if (rp_k < 60) std::fprintf(stderr, "[bc5] exp 0439 (tag rp439): t %.3f s soft CP replay %d of dcb %p (%u dwords) starts\\n", Direct::timing_now(), rp_k, static_cast<const void*>(buf), num_dwords);
+	execute(buf, num_dwords, 0);
+	if (rp_k < 60) std::fprintf(stderr, "[bc5] exp 0439 (tag rp439): t %.3f s soft CP replay %d of dcb %p ends\\n", Direct::timing_now(), rp_k, static_cast<const void*>(buf));''')
+s = rep(s, '''					const uint32_t exec_count = p[4] & 0x3fffu;
+					if (a != 0 && *reinterpret_cast<volatile uint32_t*>(a) == 0) {
+						len += exec_count;
+					}''', '''					const uint32_t exec_count = p[4] & 0x3fffu;
+					const uint32_t rp_v       = a != 0 ? *reinterpret_cast<volatile uint32_t*>(a) : 0u;
+					if (a != 0 && *reinterpret_cast<volatile uint32_t*>(a) == 0) {
+						len += exec_count;
+					}
+					{ // exp 0439 (tag rp439)
+						static std::atomic<int> ce_n {0};
+						if (t_cur_kind != nullptr && std::strcmp(t_cur_kind, "dcb") == 0 && ce_n++ < 120)
+							std::fprintf(stderr, "[bc5] exp 0439 (tag rp439): dcb %p @%u COND_EXEC guard 0x%" PRIx64 " = 0x%08x, %u dwords %s (next op 0x%02x)\\n", static_cast<const void*>(t_cur_buf), static_cast<unsigned>(p - t_cur_buf), a, rp_v,
+							             exec_count, a != 0 && rp_v == 0 ? "SKIPPED" : "run", ((p[5] >> 8u) & 0xffu));
+					}''')
 open(dst + '/bc5LleAgc.cpp', 'w', encoding='utf-8', newline='').write(s)
 
 v = open(src + '/videoOut.cpp', encoding='utf-8', newline='').read()

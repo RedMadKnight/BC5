@@ -149,6 +149,44 @@ the control's line has none, `X=1;rm` is refused).
       every 2 s. Job counts barely move from 11.5 s on (gfx 10, comp0 69, comp1 1 → 2).
     - No decompress pass has run yet: no non-blank flip came.
 
+15. *Problem 3, the stall after the first flip (a0-a14, 11-21 13:05-13:49, all resets unchanged).*
+    - Not the rings and not r438: a1 (`BC5_DIRECT_ACB_RINGS=0`) and a2 (`BC5_0438_EARLYREG=0`) stall exactly as a0.
+    - game-main spins in guest code until the qword at 0x2000000000 exceeds 1. reimpl-agc-psml's description: that is
+      label 0 of Agc's semaphore-label table, base + index * 32. The index variable is not assigned after 0.3 s.
+    - Nothing writes label 0. Not the CPU: hardware watchpoints. Not any packet we receive: a writer scan three IB
+      levels deep, MEM_SEMAPHORE included (`policy::memory_operands` has no 0x39 case, which a9 covered).
+    - Not any of the 56 compute queues' rings: their doorbells equal their last IB, and their tails write labels 1, 2,
+      4, 6, 7 and 9.
+    - The unhandled ioctls' payloads (system-area registrations, per-submit suspend checks) register no label.
+16. *SubmitEopFlip's fifth argument (t1, 15:03).*
+    - It is an output: AnyPS5 `core/libs/prx/libSceVideoOut/src/VideoOutDriver.cpp` (GPL-2.0, 8b403579) writes a
+      flip token there, and reimpl's SetFlip description agrees.
+    - We never wrote it. Writing a token (`BC5_0439_EOP_TOKEN=1`, 0x04000000+n) changes nothing: 1 flip, label 0
+      = 0.
+17. *GPU events (e1-e3, r1, 15:09-15:25).*
+    - The title registers one EVFILT_GRAPHICS event, ident 0x52 (kevent filter -14); our `fire_eop` fires only
+      0x40, 0 and the compute idents. The meaning of ident 0x52 is unknown.
+    - Its dcbs carry 26 RELEASE_MEM interrupts (INT_SEL 4, INT_CTXID 0x08100001): Agc's own context-roll
+      notifications (reimpl).
+    - The soft CP replays all 14 dcbs (r1: posted, started, ended). Each of those interrupts sits under a COND_EXEC on
+      Agc's sync label 0xfe0040060, which reads {0, 1}, so the soft CP skips them (`bc5LleAgc.cpp` ~1460), as the
+      console does.
+    - No other interrupt packet comes in 30 s.
+    - Host defect found on the way, for every title: `release_mem` reads INT_SEL as 2 bits (`(data_cntl >> 24) & 3`),
+      so an unguarded INT_SEL 4 interrupt would be lost. TODO(verify) the field's width and value 4 against AMD's
+      PAL PM4 headers; Mesa `0866ae7085c1` `sid.h` defines only `EOP_INT_SEL(x) << 24` with 0 and 3.
+    - The earlier reading "the ring -1 path never delivers interrupts" was wrong: the guard skip is correct
+      behaviour.
+18. *Where problem 3 stands.* After 1.365 s the title submits no more graphics work, and the work item that would
+    own label 0 is never created. Open: what ident 0x52 is (a flip- or vblank-type system event?), and the producer
+    path in the title's own code. Private build `c06dffe7` (normal), generator rebased onto patch `0fede35d`.
+19. *Launchers and cleanup (on this branch).*
+    - `tools/scripts/launchers/play-astro.sh` and `play-pkg.sh`: a mount counts only when its `sce_sys/param.json`
+      reads. A dead FUSE endpoint is unmounted (lazily if needed), and a failure is named. Stand-in
+      `test-mount-live.sh`: PASS.
+    - `run0439.sh collect` unmounts dead mounts in the container and on the host, and bounds runs with timeout(1).
+    - The installed launchers are unchanged.
+
 (more to come)
 
 **Verdict.** (to come)
