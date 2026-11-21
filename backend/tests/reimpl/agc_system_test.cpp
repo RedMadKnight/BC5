@@ -3,6 +3,8 @@
 // synthetic module image (every table here is made up by the test, never real data), register
 // defaults, static area, semaphores, suspend, CU-mask lists and the export/import tables.
 #include "bc5/reimpl/agc.hpp"
+#include "bc5/reimpl/agc_internal.hpp"
+#include "bc5/reimpl/fw_image.hpp"
 #include "bc5/reimpl/agc_tables.hpp"
 #include "bc5/reimpl/data_source.hpp"
 #include "bc5/reg_catch.hpp"
@@ -1218,4 +1220,109 @@ TEST_CASE("init's fourth-list lookups in a 4-entry group", "[agc][system]") {
     CHECK(tst::fourth_cache(2).offset == 0x26Eu);
     CHECK(tst::fourth_cache(3).offset == 0x278u);
     CHECK(tst::fourth_cache(4).offset == 0x262u);
+}
+
+// =================================================================================================
+// Register-defaults name tables ported from AnyPS5 (src/reimpl/agc_name_tables_anyps5.cpp)
+// =================================================================================================
+
+namespace {
+
+// Which selector call returns each ported descriptor: SoC id, version, internal.
+struct PortedCase {
+    u64 descriptor;
+    u32 soc;
+    u32 version;
+    bool internal;
+};
+constexpr PortedCase kPortedCases[] = {
+    {0x280C0, 0x840F00u, 10, false}, {0x28040, 0x840F00u, 10, true}, // SoC set
+    {0x281C0, 0x840E00u, 13, false}, {0x28140, 0x840E00u, 13, true}, // OTHER (13, no transcoder)
+    {0x283C0, 0x840E00u, 4, false},  {0x28340, 0x840E00u, 4, true},  // V4
+    {0x284C0, 0x840E00u, 5, false},  {0x28440, 0x840E00u, 5, true},  // V5-6
+    {0x285C0, 0x840E00u, 7, false},  {0x28540, 0x840E00u, 7, true},  // V7
+    {0x286C0, 0x840E00u, 8, false},  {0x28640, 0x840E00u, 8, true},  // V8
+    {0x287C0, 0x840E00u, 9, false},  {0x28740, 0x840E00u, 9, true},  // V9
+    {0x288C0, 0x840E00u, 10, false}, {0x28840, 0x840E00u, 10, true}, // V10-12
+};
+
+const agc::detail::PortedNameTable *ported(u64 descriptor) {
+    for (std::size_t i = 0; i < agc::detail::kPortedNameTableCount; ++i) {
+        if (agc::detail::kPortedNameTables[i].descriptor == descriptor) {
+            return &agc::detail::kPortedNameTables[i];
+        }
+    }
+    return nullptr;
+}
+
+const agc::RegisterDefaults *select_case(const PortedCase &c) {
+    agc::detail::reset_defaults_cache();
+    tst::set_soc_id(c.soc);
+    return c.internal ? agc::sceAgcGetRegisterDefaults2Internal(c.version)
+                      : agc::sceAgcGetRegisterDefaults2(c.version);
+}
+
+u32 list_count(const agc::RegisterDefaults *d, u32 list) {
+    const u32 c[4] = {d->cx_count, d->sh_count, d->uc_count, d->fourth_count};
+    return c[list & 3u];
+}
+
+struct PortedSeam {
+    explicit PortedSeam(int on) { agc::detail::set_name_tables_ported_for_tests(on); }
+    ~PortedSeam() { agc::detail::set_name_tables_ported_for_tests(-1); }
+};
+
+} // namespace
+
+TEST_CASE("ported name tables: 16 descriptors, each entry names a pair of our own list",
+          "[agc][system]") {
+    OwnEnv env;
+    PortedSeam seam(1);
+    REQUIRE(agc::detail::kPortedNameTableCount == 16);
+    for (const PortedCase &c : kPortedCases) {
+        INFO("descriptor 0x" << std::hex << c.descriptor);
+        const agc::detail::PortedNameTable *t = ported(c.descriptor);
+        REQUIRE(t != nullptr);
+        const agc::RegisterDefaults *d = select_case(c);
+        REQUIRE(d != nullptr);
+        // The descriptor hands out exactly the ported entries.
+        REQUIRE(d->name_table != nullptr);
+        REQUIRE(d->name_count == t->count);
+        CHECK(std::memcmp(d->name_table, t->entries, 12ull * t->count) == 0);
+        for (u32 k = 0; k < t->count; ++k) {
+            const u32 code = t->entries[3 * k + 1];
+            CHECK(t->entries[3 * k + 2] == 0u);
+            // The code's list exists in our own descriptor and its pair index lies inside it.
+            CHECK(list_count(d, code) > ((code & 0x3FCu) >> 2));
+        }
+    }
+}
+
+TEST_CASE("ported name tables equal the module file's (BC5_TEST_AGC_MODULE=<libSceAgc.sprx/.elf>)",
+          "[agc][system]") {
+    const char *path = test_env("BC5_TEST_AGC_MODULE");
+    if (path == nullptr || path[0] == 0) {
+        SKIP("no module file given (BC5_TEST_AGC_MODULE)");
+    }
+    bc5::reimpl::FwImage img;
+    REQUIRE(img.load_file(path));
+    struct ImageData final : bc5::reimpl::FirmwareData {
+        bc5::reimpl::FwImage *img;
+        const std::uint8_t *get(const char *, u64 vaddr, u64 size) override { return img->at(vaddr, size); }
+    } data;
+    data.img = &img;
+    OwnEnv env;
+    bc5::reimpl::set_firmware_data(&data);
+    bc5::reimpl::set_data_switches({true, false});
+    PortedSeam seam(0); // the module file's own tables
+    for (const PortedCase &c : kPortedCases) {
+        INFO("descriptor 0x" << std::hex << c.descriptor);
+        const agc::detail::PortedNameTable *t = ported(c.descriptor);
+        REQUIRE(t != nullptr);
+        const agc::RegisterDefaults *d = select_case(c);
+        REQUIRE(d->name_table != nullptr);
+        REQUIRE(d->name_count == t->count);
+        CHECK(std::memcmp(d->name_table, t->entries, 12ull * t->count) == 0);
+    }
+    bc5::reimpl::set_firmware_data(nullptr);
 }

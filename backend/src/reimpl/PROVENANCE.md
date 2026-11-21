@@ -53,6 +53,15 @@ The host logs its choice for each module at start. The host glue is
   present, from the directory named by `BC5_REIMPL_FW_DIR` (default
   `SHADPS4_SYSMODULES_PACK_DIR`); `BC5_REIMPL_FW_COMPARE=1` logs every entry where they differ
   from ours (`data_source.hpp`).
+- The register-defaults name tables (register-name hashes with their list/pair codes, which
+  titles use to look registers up by name) are not ours to compute: no known hash function
+  reproduces them. By default (`BC5_REIMPL_NAME_TABLES=module`) they are read from the module
+  file at run time, as above. With the build word `BC5_REIMPL_NAME_TABLES=anyps5` the 16 tables
+  of the new-API descriptors come from AnyPS5 (GPL-2.0), file
+  `core/libs/prx/libSceAgc/Command/include/RegisterDefaultsData.hpp` at commit `bdff4874`
+  (only its name-table arrays; `agc_name_tables_anyps5.cpp` has the full citation). They were
+  checked equal to the original module's tables entry for entry; the other 24 descriptors still
+  need the module file.
 - `libScePsml`'s shader binaries and format tables are still read from the maintainer's module
   file (port-then-load decision of 2026-11-04). They are only reached past its PS5 Pro gate.
 - `libScePsml` is the PS5 Pro upscaler. Its network weights live in system-partition package

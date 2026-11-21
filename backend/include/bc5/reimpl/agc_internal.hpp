@@ -275,6 +275,22 @@ std::int32_t create_internal_shaders();
 // Register-default selection (agc_system.cpp).
 void reset_defaults_cache();
 
+// Register-defaults name tables ported from AnyPS5 (agc_name_tables_anyps5.cpp, provenance there):
+// the {hash, code, 0} entries of 16 new-API descriptors, by descriptor image address. Used instead
+// of the module file when the build word BC5_REIMPL_NAME_TABLES=anyps5 is set.
+struct PortedNameTable {
+    std::uint64_t descriptor;
+    const std::uint32_t *entries; // 3 words per entry
+    std::uint32_t count;
+};
+extern const PortedNameTable kPortedNameTables[];
+extern const std::size_t kPortedNameTableCount;
+// The name-table source this build uses: true = the ported tables (then the module file only for
+// the descriptors they do not cover), false = the module file at run time.
+bool name_tables_ported();
+// Test seam: 1 / 0 force the source, -1 returns to the build word.
+void set_name_tables_ported_for_tests(int on);
+
 // Primitive-type class table lookup (firmware data at 0x23f1c).
 std::uint32_t prim_class(std::uint32_t prim_type);
 

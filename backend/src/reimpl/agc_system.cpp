@@ -356,6 +356,15 @@ bool load_names(std::uint64_t desc_vaddr, std::vector<std::uint32_t> &out) {
         return false;
     }
     const NameTableRef &ref = kNameTables[(desc_vaddr - kDescriptorBase) / 0x40u];
+    if (detail::name_tables_ported()) {
+        for (std::size_t i = 0; i < detail::kPortedNameTableCount; ++i) {
+            const detail::PortedNameTable &t = detail::kPortedNameTables[i];
+            if (t.descriptor == desc_vaddr && t.count == ref.count) {
+                out.assign(t.entries, t.entries + 3u * t.count);
+                return true;
+            }
+        }
+    }
     FirmwareData *fw = firmware_data_for_use();
     const std::uint8_t *src = fw != nullptr ? fw->get(kModule, ref.vaddr, 12ull * ref.count) : nullptr;
     if (src == nullptr) {
@@ -476,6 +485,20 @@ const RegisterDefaults *select_defaults(bool old_api, bool internal, std::uint32
 } // namespace
 
 namespace detail {
+namespace {
+int g_ported_override = -1; // test seam: -1 = the build word decides
+} // namespace
+bool name_tables_ported() {
+    if (g_ported_override >= 0) {
+        return g_ported_override != 0;
+    }
+#if defined(BC5_REIMPL_NAME_TABLES_ANYPS5) && BC5_REIMPL_NAME_TABLES_ANYPS5
+    return true;
+#else
+    return false;
+#endif
+}
+void set_name_tables_ported_for_tests(int on) { g_ported_override = on; }
 void reset_defaults_cache() {
     g_tables.clear();
     g_holders.clear();

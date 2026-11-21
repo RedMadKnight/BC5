@@ -48,6 +48,16 @@ target_link_libraries(bc5_backend PRIVATE bc5_warnings)
 # No GPU access. The host uses them by default (BC5_REIMPL_<X>=0 opts out; a game's own copy wins).
 file(GLOB BC5_REIMPL_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/reimpl/*.cpp)
 target_sources(bc5_backend PRIVATE ${BC5_REIMPL_SOURCES})
+# Where the register-defaults name tables (register-name hashes) come from: "module" reads them
+# from the title's / pack's module file at run time (default); "anyps5" uses the tables ported
+# from AnyPS5 (src/reimpl/agc_name_tables_anyps5.cpp) for the 16 descriptors they cover.
+set(BC5_REIMPL_NAME_TABLES "module" CACHE STRING "register-name tables: module or anyps5")
+set_property(CACHE BC5_REIMPL_NAME_TABLES PROPERTY STRINGS module anyps5)
+if(BC5_REIMPL_NAME_TABLES STREQUAL "anyps5")
+    target_compile_definitions(bc5_backend PRIVATE BC5_REIMPL_NAME_TABLES_ANYPS5=1)
+elseif(NOT BC5_REIMPL_NAME_TABLES STREQUAL "module")
+    message(FATAL_ERROR "BC5_REIMPL_NAME_TABLES must be module or anyps5")
+endif()
 
 # dispatch-min: --dump-ib everywhere; --info and --submit only with BC5_WITH_AMDGPU.
 # --submit is never run by tests or CI (CLAUDE.md hard rule 5).
