@@ -75,9 +75,13 @@ class Mem:
                 return out if out else None
             s, e, fn, _ = f
             if fn not in self.fds:
-                self.fds[fn] = os.open(fn, os.O_RDONLY)
+                self.fds[fn] = os.open(fn, os.O_RDONLY | getattr(os, "O_BINARY", 0))
             k = min(n, e - addr)
-            out += os.pread(self.fds[fn], k, addr - s)
+            if hasattr(os, "pread"):
+                out += os.pread(self.fds[fn], k, addr - s)
+            else:  # no pread on Windows: the laptop copy of a dump
+                os.lseek(self.fds[fn], addr - s, 0)
+                out += os.read(self.fds[fn], k)
             addr += k
             n -= k
         return out
