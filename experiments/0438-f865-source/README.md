@@ -1983,6 +1983,110 @@ becomes `flush<-holder/reason/phase`, and test case 5 now checks `hold-wd/backpr
 - **Phase 0 / 4 (the tail, or draining the GPU in `wait_jobs`):** the ticket removes the wait, since the tail needs
   only the slot's own state per chain. The drain is the GPU again.
 
+## Result 15: the last records on the second title (f438, m438, perf; 2026-11-21 07:29–07:55, boot eb264b8c; DIAGNOSIS)
+
+**Slot** (the top session's GO, 07:26):
+- Pre-checks: 0 GPU resets, no emulator, lock empty.
+- The kit's pins were still the pre-bake builds. They were repinned to the baked ones before the build: box0438.sh
+  `6a317124` (P_UNIT `ff9e8fe2`, normal `b1b57df9`, lean `d3485ed4`) and chain0438l.sh `6f2f83f2`.
+- buildfm under BOX-LOCK 07:29–07:31: normal `d5f1a175f95a7b8c5ab7b9903e4c46a2` (fm438.cpp: h438 + f438 + m438) and
+  lean `90cc275adb96ccd6c6ba2eca5316e7aa` (m438.cpp), 0 errors. The shared builds were unchanged.
+- **perf's real line forms** (perf 7.0.14 in the ubuntu container, on a throwaway process):
+  - cpu: `tid time: ip sym (dso)`;
+  - faults: `tid time: addr addrsym (addrdso) ip sym (dso)`, with the data address resolved too.
+  - A DSO may hold a nested pair, `(/memfd:KytyDirectMemory (deleted))`.
+  - pf438's parser and test_pf438 follow these forms (PASS).
+  - The clock is CLOCK_MONOTONIC (68351 s ≈ the uptime), m438's clock.
+- Chain `ORDER="F P P" K0=343` (unit chain0438fp), his 09:46 scene, RT on, no input. Before it, no other session's
+  reader or process was left.
+- **Runs:** b438F344 (F), b438P345 and b438P346 (P), all NO_CRASH, 0 pad keys, 0 kernel lines. F344: GIVEN UP 0, r438
+  0 lost.
+- **Data:** all of it was copied to `data-0438/FP` (laptop) and checked by md5, 147 of 147, before the box was
+  released. This was the last data from this title; exp 0439 uninstalls it.
+- **Phases** from the marks per 10 s, the same shape in all three runs: fast t 140–270, dip 280–290, slow 295–415;
+  window 136–416.
+- Outputs: `lean-round/ah438-F344.txt`, `lean-round/pf438-{F344,P345,P346}.txt`.
+
+**(1) Who holds s.flush_mu when the Render Thread waits** (f438, F344's last 60-s line, the whole run):
+
+| Waiter ← holder / reason / holder's F16 phase | Waits | Total | Longest |
+|---|---|---|---|
+| Render Thread ← bc5-chainwd / hold-wd / devheld | 4,076 | 30.9 s | 262 ms |
+| Render Thread ← bc5-chainwd / hold-wd / asking | 425 | 6.3 s | 221 ms |
+| Render Thread ← bc5-chainwd / hold-wd / tail | 54 | 0.13 s | 12.7 ms |
+| Render Thread ← bc5-chainwd / hold-wd / backpressure | 14 | 0.02 s | 3.2 ms |
+| bc5-chainwd ← Render Thread / hold-end / (all phases) | 224 | 0.62 s | 61.6 ms |
+
+- **Holds:**
+  - the watchdog's foreign `hold-wd` holds of the Render Thread's chain: 17,052, 79.6 s in all, longest 509 ms;
+  - the Render Thread's own `wait` / `hold-end` / `drain` flushes: 72,360 / 10,226 / 13,603;
+  - bc5-ring's `end` holds: 154,454, 128.9 s, its own slot.
+- **Per frame** (ah438 on F344's CSV): the 3+ vblank frames wait 9.6 ms on `hold-wd/devheld` and 3.7 ms on
+  `hold-wd/asking`, plus 4.3 ms on g_dev_mutex. The dip's long frames: 7.8 + 5.6 + 3.9 ms. The 1-vblank frames:
+  0.07 ms.
+- **Reading:** the Render Thread waits for the chain watchdog's submission of its own chain. The watchdog takes it
+  after the 2-ms hold bound, when the Render Thread has been busy between ioctls. Its holder is almost always in the
+  ring and device locks (the preparation and the CS), not in back-pressure.
+- **What that decides:** by the code reading, the per-ring order of those steps is the ring lock's. So the ticket at
+  the ring step would not shorten these waits. The Render Thread would only wait on the ring lock instead. What would
+  remove them is not making the Render Thread wait for a submission of its own chain that another thread is doing:
+  - for example, a per-slot submit queue that the owner only pushes to, with one submitter per slot draining it in
+    order, and the owner waiting only where it must (back-pressure, or a CPU wait that needs its chain submitted);
+  - or a cheaper preparation and CS.
+  - This is a design for a next experiment, not built. It holds for every title, since the watchdog and the lock are
+    common code.
+
+**(2) What the Render Thread's CPU is** (lean P345 / P346, perf cpu-clock 999 Hz on the thread, by frame from the
+marks; samples ≈ ms):
+
+| Frames | CPU per frame | Guest code (`/memfd:KytyPrivateMemory`) | Emulator | libc / libstdc++ |
+|---|---|---|---|---|
+| 1 vblank (6,396 / 6,807) | 8.2 / 8.8 | 42.8 % | 40.8 % | 15.4 % / 0.6 % |
+| 3+ vblanks (1,381 / 1,136) | 35.9 / 34.9 | 75.6 / 77.0 % | 15.7 / 14.9 % | 5.8 / 5.7 % / 2.8 / 2.3 % |
+| dip, 3+ (50 / 65) | 136.8 / 94.5 | 77.6 / 80.8 % | 8.8 / 9.9 % | 5.4 / 4.3 % / 8.2 / 5.0 % |
+
+- **In short frames** the host's share is ~3.4 ms. Its top symbols: `submit_now`, `full_state::Tracker::emit_prefix`
+  / `apply_level`, and `__memmove_avx_unaligned_erms`.
+- **The long frames' extra CPU is the title's own code** on the Render Thread: ~27 ms of a 3+ frame's ~35 ms. The host
+  share rises only to ~5.5 ms.
+- **In the dip** two host symbols appear: `std::_Rb_tree_increment` (5–8 %, a std::map walk) and a `std::__find_if`
+  over a `vector<std::string>` with `strlen`. That is a host lookup over names, about 5–11 ms per long dip frame.
+  Without call stacks its caller is not known. TODO(verify): on the next title, with `--call-graph` (the host is
+  built with frame pointers? to check).
+- **Lean against normal** (diagnosis only): 8.2–8.8 ms of CPU per 1-vblank frame in lean, against h438's 11.0 ms in
+  normal. That is the diagnostics' own CPU.
+
+**(3) The faults** (F344, page-faults:u, every fault of the Render Thread with its address; maps snapshot 15, about
+t 280):
+
+| Frames | Faults per frame | Into the anonymous rw region of 15 MiB at `0x7fcf7c000000` | Into `/memfd:KytyDirectMemory` | Faults per distinct page |
+|---|---|---|---|---|
+| 1 vblank | 0.46 | 19 % | 77 % | 1.04 |
+| 3+ vblanks | 95.8 | 94.6 % | 4.0 % | 13.5 |
+| dip, 3+ | 1,010 | 97.5 % | 1.7 % | 14.5 |
+
+- **The long frames' faults** go almost all into one 15 MiB rw anonymous region, followed by 49 MiB of `---p`. The
+  64-MiB alignment and that layout look like a glibc per-thread malloc arena (TODO(verify)).
+- **About 14 faults per page:** the same pages are dropped and touched again, which fits the arena's top being
+  trimmed after large frees and grown back. TODO(verify): glibc's non-main arena trim (`heap_trim` / `shrink_heap`
+  by `MADV_DONTNEED`).
+- **The faulting instructions:** 62–63 % in libc and 31–37 % in the emulator. The emulator's symbols were not
+  resolved by `perf script` for the fault mode; its cpu mode resolved them.
+- **The cost:** about 1,000 faults of zero-filled pages per long dip frame is a few ms at most, not the 60–95 ms of
+  CPU. The faults mark large host allocations around the long frames; they are not the time itself.
+- **A host-side check for the next title, simplest first:** `M_TRIM_THRESHOLD` / `M_MMAP_THRESHOLD` (mallopt, or
+  `MALLOC_TRIM_THRESHOLD_` in the launcher) or keeping the large buffers, and see whether the faults and the host
+  share go. It cannot touch the guest's 27 ms.
+
+**Summary for the next titles** (diagnosis numbers):
+- The second title's long frames are, first, the title's own CPU work on its Render Thread.
+- Second, ~13 ms per long frame waiting for the chain watchdog's submission of the Render Thread's own chain.
+- Third, a few ms of host work, with a malloc-arena fault churn beside it.
+- The open host items, in order:
+  1. the watchdog / owner submission design (a per-slot submit queue), every title;
+  2. the arena trim check;
+  3. the dip's name lookup, with call stacks.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its

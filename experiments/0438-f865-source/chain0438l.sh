@@ -43,7 +43,7 @@ SNAP=$HOME/bc5-data/saves/PPSA03671-20261117-0946-play
 OUT=$E/chain-l-rows.txt
 say() { echo "chain0438l $(date +%T): $*"; }
 [ -d "$SNAP/PPSA03671" ] && [ ! -L "$SNAP" ] || { say "NOT STARTED, no $SNAP/PPSA03671"; exit 1; }
-[ "$(md5sum < "$SB" | cut -c1-8)" = f345db74 ] && [ "$(md5sum < "$SL" | cut -c1-8)" = 6a735b81 ] || { say "NOT STARTED, the shared builds are not f345db74 / 6a735b81"; exit 1; }
+[ "$(md5sum < "$SB" | cut -c1-8)" = b1b57df9 ] && [ "$(md5sum < "$SL" | cut -c1-8)" = d3485ed4 ] || { say "NOT STARTED, the shared builds are not b1b57df9 / d3485ed4"; exit 1; }
 [ -n "$LW" ] && [ "$(md5sum < "$LB" | cut -d' ' -f1)" = "$LW" ] && [ -n "$NW" ] && [ "$(md5sum < "$NB" | cut -d' ' -f1)" = "$NW" ] || { say "NOT STARTED, b438's binaries do not match their binary.md5"; exit 1; }
 case " $ORDER " in *" F "* | *" P "*) [ -n "$FW" ] && [ "$(md5sum < "$FB" | cut -d' ' -f1)" = "$FW" ] && [ -n "$PW" ] && [ "$(md5sum < "$PB" | cut -d' ' -f1)" = "$PW" ] && [ -s "$PROF" ] || { say "NOT STARTED, fm438's binaries or prof0438.sh do not match"; exit 1; } ;; esac
 case " $ORDER " in *" H "*) [ -n "$HW" ] && [ "$(md5sum < "$HB" | cut -d' ' -f1)" = "$HW" ] || { say "NOT STARTED, h438's binary does not match its binary.md5"; exit 1; } ;; esac

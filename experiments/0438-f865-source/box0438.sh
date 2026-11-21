@@ -29,8 +29,8 @@ export LC_ALL=C LANGUAGE=C
 W=$HOME/bc5-work; E=$W/exp0438; R=$E/raw; S=$E/src; LOCK=$W/BOX-LOCK; ID=$E/lock.line
 TREE=$HOME/src/KytyPlus; HERE=$(cd "$(dirname "$0")" && pwd); UNIT=src/libs/bc5LleAgc.cpp
 SA=$W/backend-ubuntu/libbc5_backend.a
-P_UNIT=a62e8bf6251a44f147a23d9689449e21   # the shared tree's bc5LleAgc.cpp (patch bb04219b's)
-P_ARCH=d6638808; P_NORMAL=f345db74; P_LEAN=6a735b81
+P_UNIT=ff9e8fe2e4139264ebaf74f9e84bd892   # the shared tree's bc5LleAgc.cpp since the bake (patch 9889b06a; bb04219b's was a62e8bf6)
+P_ARCH=d6638808; P_NORMAL=b1b57df9; P_LEAN=d3485ed4  # since the bake of 2026-11-21 00:52 (before: f345db74 / 6a735b81)
 K_UNIT=680bda1f3430b676f2dadef8808ae24a  # k438 (off by default, refuted) + k438b (BC5_0438_HOLD); was 59a5df70 for build d4a2f86d
 K_PY=5dfb35d884bee8af31d81e3ad8b92548
 K_R438=94d696fbfe6cca223346ba255338a0f0  # r438.cpp: mkr438.py on cat/bc5LleAgc.cpp (3623fd41)

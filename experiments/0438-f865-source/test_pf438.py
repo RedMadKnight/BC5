@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0
-"""BC5 experiment 0438: pf438.py against synthetic marks, perf lines (both modes) and a maps file.
+"""BC5 experiment 0438: pf438.py against synthetic marks, perf lines in perf 7.0.14's real forms (both modes, as
+printed on the box on 2026-11-21) and a maps file.
 Frames: 300 of 16.7 ms then every 10th 50 ms; cpu samples: 10 per short frame in libc, 40 per long frame of which 30 in a
 guest anon mapping; faults: 1 per short frame, 20 per long frame into an anon region. Checks pf438's per-class counts.
 Usage: python -I test_pf438.py PF438.py"""
@@ -29,12 +30,12 @@ for (t0, ms) in frames:
     for k in range(n):
         ts = (t0 + int(k * ms * 1e6 / n) + 1000) / 1e9
         if long and k < 30:
-            cpu.append(f'  4242 {ts:.9f}:     20000{k:04x}  [unknown] ([unknown])')
+            cpu.append(f'4242 {ts:.9f}:      20000{k:04x} [unknown] ([unknown])')
         else:
-            cpu.append(f'  4242 {ts:.9f}:     7f0000001234 memcpy+0x14 (/usr/lib64/libc.so.6)')
+            cpu.append(f'4242 {ts:.9f}:      7f0000001234 memcpy (/usr/lib64/libc.so.6)')
     for k in range(20 if long else 1):
         ts = (t0 + int(k * ms * 1e6 / 20) + 2000) / 1e9
-        flt.append(f'  4242 {ts:.9f}:         2{k:02x}001000     7f0000005678 memset+0x8 (/usr/lib64/libc.so.6)')
+        flt.append(f'4242 {ts:.9f}:     2{k:02x}001000 [unknown] ' + ('(/memfd:KytyDirectMemory (deleted))' if k % 2 else '(//anon)') + '     7f0000005678 memset+0x8 (/usr/lib64/libc.so.6)')  # perf 7.0.14's fault forms, a nested dso too
 open(os.path.join(d, 'cpu.txt'), 'w').write('\n'.join(cpu) + '\n')
 open(os.path.join(d, 'flt.txt'), 'w').write('\n'.join(flt) + '\n')
 fails = 0

@@ -3,8 +3,9 @@
 """BC5 experiment 0438: the Render Thread's perf samples (or page faults) by frame, from m438's frame marks. DIAGNOSIS.
 Usage: pf438.py MARKS.txt PERF.txt[.gz] [MAPS.txt] [FROM_S TO_S] [NAME=A-B ...]
   MARKS.txt  m438: one steady-clock (CLOCK_MONOTONIC) ns per flip; t = seconds since the first mark.
-  PERF.txt   prof0438.sh's perf script (--ns): "tid time: [addr] ip sym (dso)"; the fault mode has the data address
-             first (two hex fields before the symbol), the cpu mode one.
+  PERF.txt   prof0438.sh's perf script (--ns), the forms perf 7.0.14 prints (checked on the box 2026-11-21):
+             cpu:    "tid time:  ip sym (dso)"
+             faults: "tid time:  addr addrsym (addrdso)  ip sym (dso)" (perf resolves the data address too)
   MAPS.txt   a /proc/<pid>/maps snapshot (prof0438's -maps-<n>.txt): fault addresses and ips are named by mapping.
   FROM_S / TO_S: the window in t; NAME=A-B: phases (e.g. fast=140-270 dip=280-290 slow=295-415).
 Groups: all; vblank class 1 / 2 / 3+ (the frame's mark-to-mark time / 16.667 ms, rounded); each phase, and phase x class.
@@ -46,34 +47,27 @@ def region(regs, starts, x):
     return '[no mapping]'
 
 
-SAMPLE = re.compile(r'^\s*(\d+)\s+([0-9.]+):\s+(.*)$')
-HEX = re.compile(r'^[0-9a-f]+$')
+# a dso may hold one nested pair: "(/memfd:KytyDirectMemory (deleted))" (seen in F344's faults)
+DSO = r'\(((?:[^()]|\([^()]*\))*)\)'
+FAULT = re.compile(r'^\s*(\d+)\s+([0-9.]+):\s+([0-9a-f]+)\s+(.*?)\s+' + DSO + r'\s+([0-9a-f]+)\s+(.*?)\s+' + DSO + r'\s*$')
+CPU = re.compile(r'^\s*(\d+)\s+([0-9.]+):\s+([0-9a-f]+)\s+(.*?)\s+' + DSO + r'\s*$')
 
 
 def load_perf(p):
     out = []  # (t_ns, addr or None, ip, sym, dso)
+
+    def clean(sym):
+        return re.sub(r'\+0x[0-9a-f]+$', '', sym.strip()) or '[unknown]'
+
     with opener(p) as f:
         for ln in f:
-            m = SAMPLE.match(ln)
-            if not m:
+            m = FAULT.match(ln)
+            if m:
+                out.append((int(round(float(m.group(2)) * 1e9)), int(m.group(3), 16), int(m.group(6), 16), clean(m.group(7)), m.group(8)))
                 continue
-            t = int(round(float(m.group(2)) * 1e9))
-            rest = m.group(3).strip()
-            dso = ''
-            dm = re.search(r'\(([^()]*)\)\s*$', rest)
-            if dm:
-                dso = dm.group(1)
-                rest = rest[:dm.start()].strip()
-            toks = rest.split()
-            hexes = []
-            while toks and HEX.match(toks[0]) and len(hexes) < 2:
-                hexes.append(int(toks.pop(0), 16))
-            sym = ' '.join(toks) or '[unknown]'
-            sym = re.sub(r'\+0x[0-9a-f]+$', '', sym)
-            if len(hexes) == 2:
-                out.append((t, hexes[0], hexes[1], sym, dso))
-            elif len(hexes) == 1:
-                out.append((t, None, hexes[0], sym, dso))
+            m = CPU.match(ln)
+            if m:
+                out.append((int(round(float(m.group(2)) * 1e9)), None, int(m.group(3), 16), clean(m.group(4)), m.group(5)))
     return out
 
 
@@ -138,9 +132,9 @@ def main():
         print('   by dso/mapping of the ip: ' + '; '.join(f'{k} {v * 100 / tot:.1f}%' for k, v in dsos.most_common(8)))
         print('   by symbol: ' + '; '.join(f'{k} {v * 100 / tot:.1f}%' for k, v in syms.most_common(10)))
         if faults:
-            ad = Counter(region(regs, starts, s[1]) for s in ss)
+            ad = Counter(region(regs, starts, s[1]) for s in ss if s[1] is not None)
             print('   by mapping of the faulting address: ' + '; '.join(f'{k} {v * 100 / tot:.1f}% ({v / n:.1f}/frame)' for k, v in ad.most_common(8)))
-            pages = Counter(s[1] >> 12 for s in ss)
+            pages = Counter(s[1] >> 12 for s in ss if s[1] is not None)
             print(f'   distinct pages {len(pages)}, faults per page {tot / max(1, len(pages)):.2f}')
 
     allidx = list(range(len(frames)))

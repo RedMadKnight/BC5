@@ -1,0 +1,67 @@
+data-0438/FP/b438F344-m438.txt: 13696 marks; per 10 s from the first: 276 299 289 123 266 409 385 402 372 361 187 143 339 466 334 369 472 468 465 477 481 424 418 445 341 472 339 335 116 291 290 274 239 242 314 320 306 231 211 234 226 224 21
+data-0438/FP/b438F344-prof-perf.txt.gz: 170147 faults; maps 61390 regions
+ALL: 9442 frames, mean frame 29.7 ms, 17.38 faults per frame
+   by dso/mapping of the ip: /usr/lib/x86_64-linux-gnu/libc.so.6 63.4%; ~/bc5-work/exp0438/fm438/normal/kyty_emulator 30.5%; /memfd:KytyPrivateMemory (deleted) 6.1%
+   by symbol: ? @ /usr/lib/x86_64-linux-gnu/libc.so.6 63.4%; ? @ ~/bc5-work/exp0438/fm438/normal/kyty_emulator 30.5%; ? @ /memfd:KytyPrivateMemory (deleted) 6.1%
+   by mapping of the faulting address: [anon rw-p 15 MiB @7fcf7c000000] 93.3% (16.2/frame); /memfd:KytyDirectMemory (deleted) 5.4% (0.9/frame); [anon ---p 49 MiB @7fcf7cee9000] 0.4% (0.1/frame); [anon ---p 2 MiB @8214094000] 0.2% (0.0/frame); /memfd:KytyPrivateMemory (deleted) 0.2% (0.0/frame); [anon ---p 3 MiB @886e120000] 0.1% (0.0/frame); [anon ---p 1 MiB @81f8720000] 0.1% (0.0/frame); [anon ---p 0 MiB @81b1700000] 0.0% (0.0/frame)
+   distinct pages 13378, faults per page 12.26
+1 vblank: 5749 frames, mean frame 20.0 ms, 0.46 faults per frame
+   by dso/mapping of the ip: /memfd:KytyPrivateMemory (deleted) 79.6%; ~/bc5-work/exp0438/fm438/normal/kyty_emulator 15.8%; /usr/lib/x86_64-linux-gnu/libc.so.6 4.5%
+   by symbol: ? @ /memfd:KytyPrivateMemory (deleted) 79.6%; ? @ ~/bc5-work/exp0438/fm438/normal/kyty_emulator 15.8%; ? @ /usr/lib/x86_64-linux-gnu/libc.so.6 4.5%
+   by mapping of the faulting address: /memfd:KytyDirectMemory (deleted) 76.5% (0.4/frame); [anon rw-p 15 MiB @7fcf7c000000] 19.1% (0.1/frame); /memfd:KytyPrivateMemory (deleted) 4.3% (0.0/frame); [anon rw-p 14 MiB @7fcf18000000] 0.0% (0.0/frame); [anon rw-p 22 MiB @5574b9a79000] 0.0% (0.0/frame); ~/bc5-work/exp0438/fm438/normal/kyty_emulator 0.0% (0.0/frame)
+   distinct pages 2566, faults per page 1.04
+2 vblank: 2291 frames, mean frame 31.7 ms, 11.82 faults per frame
+   by dso/mapping of the ip: /usr/lib/x86_64-linux-gnu/libc.so.6 69.3%; ~/bc5-work/exp0438/fm438/normal/kyty_emulator 25.1%; /memfd:KytyPrivateMemory (deleted) 5.6%
+   by symbol: ? @ /usr/lib/x86_64-linux-gnu/libc.so.6 69.3%; ? @ ~/bc5-work/exp0438/fm438/normal/kyty_emulator 25.1%; ? @ /memfd:KytyPrivateMemory (deleted) 5.6%
+   by mapping of the faulting address: [anon rw-p 15 MiB @7fcf7c000000] 94.1% (11.1/frame); /memfd:KytyDirectMemory (deleted) 5.4% (0.6/frame); /memfd:KytyPrivateMemory (deleted) 0.3% (0.0/frame); [anon ---p 49 MiB @7fcf7cee9000] 0.1% (0.0/frame); [no mapping] 0.0% (0.0/frame); [anon rw-p 26 MiB @7fcf6c000000] 0.0% (0.0/frame); [anon rw-p 26 MiB @7fcfdc000000] 0.0% (0.0/frame); [anon rw-p 22 MiB @5574b9a79000] 0.0% (0.0/frame)
+   distinct pages 4973, faults per page 5.45
+3+ vblank: 1402 frames, mean frame 65.9 ms, 95.80 faults per frame
+   by dso/mapping of the ip: /usr/lib/x86_64-linux-gnu/libc.so.6 63.4%; ~/bc5-work/exp0438/fm438/normal/kyty_emulator 31.8%; /memfd:KytyPrivateMemory (deleted) 4.8%
+   by symbol: ? @ /usr/lib/x86_64-linux-gnu/libc.so.6 63.4%; ? @ ~/bc5-work/exp0438/fm438/normal/kyty_emulator 31.8%; ? @ /memfd:KytyPrivateMemory (deleted) 4.8%
+   by mapping of the faulting address: [anon rw-p 15 MiB @7fcf7c000000] 94.6% (90.6/frame); /memfd:KytyDirectMemory (deleted) 4.0% (3.9/frame); [anon ---p 49 MiB @7fcf7cee9000] 0.5% (0.5/frame); [anon ---p 2 MiB @8214094000] 0.3% (0.2/frame); [anon ---p 3 MiB @886e120000] 0.1% (0.1/frame); [anon ---p 1 MiB @81f8720000] 0.1% (0.1/frame); /memfd:KytyPrivateMemory (deleted) 0.1% (0.1/frame); [anon ---p 0 MiB @81b1700000] 0.0% (0.0/frame)
+   distinct pages 9970, faults per page 13.47
+fast phase [140, 270): 5505 frames, mean frame 23.6 ms, 2.35 faults per frame
+   by dso/mapping of the ip: /usr/lib/x86_64-linux-gnu/libc.so.6 42.9%; ~/bc5-work/exp0438/fm438/normal/kyty_emulator 28.7%; /memfd:KytyPrivateMemory (deleted) 28.5%
+   by symbol: ? @ /usr/lib/x86_64-linux-gnu/libc.so.6 42.9%; ? @ ~/bc5-work/exp0438/fm438/normal/kyty_emulator 28.7%; ? @ /memfd:KytyPrivateMemory (deleted) 28.5%
+   by mapping of the faulting address: [anon rw-p 15 MiB @7fcf7c000000] 71.2% (1.7/frame); /memfd:KytyDirectMemory (deleted) 28.0% (0.7/frame); /memfd:KytyPrivateMemory (deleted) 0.9% (0.0/frame); [anon rw-p 22 MiB @5574b9a79000] 0.0% (0.0/frame); [anon rw-p 14 MiB @7fcf18000000] 0.0% (0.0/frame)
+   distinct pages 7072, faults per page 1.83
+fast phase, 1 vblank: 4709 frames, mean frame 19.9 ms, 0.47 faults per frame
+   by dso/mapping of the ip: /memfd:KytyPrivateMemory (deleted) 78.9%; ~/bc5-work/exp0438/fm438/normal/kyty_emulator 19.0%; /usr/lib/x86_64-linux-gnu/libc.so.6 2.0%
+   by symbol: ? @ /memfd:KytyPrivateMemory (deleted) 78.9%; ? @ ~/bc5-work/exp0438/fm438/normal/kyty_emulator 19.0%; ? @ /usr/lib/x86_64-linux-gnu/libc.so.6 2.0%
+   by mapping of the faulting address: /memfd:KytyDirectMemory (deleted) 75.7% (0.4/frame); [anon rw-p 15 MiB @7fcf7c000000] 19.9% (0.1/frame); /memfd:KytyPrivateMemory (deleted) 4.3% (0.0/frame); [anon rw-p 14 MiB @7fcf18000000] 0.0% (0.0/frame); [anon rw-p 22 MiB @5574b9a79000] 0.0% (0.0/frame)
+   distinct pages 2163, faults per page 1.02
+fast phase, 3+ vblank: 288 frames, mean frame 68.9 ms, 23.56 faults per frame
+   by dso/mapping of the ip: /usr/lib/x86_64-linux-gnu/libc.so.6 63.3%; /memfd:KytyPrivateMemory (deleted) 23.0%; ~/bc5-work/exp0438/fm438/normal/kyty_emulator 13.7%
+   by symbol: ? @ /usr/lib/x86_64-linux-gnu/libc.so.6 63.3%; ? @ /memfd:KytyPrivateMemory (deleted) 23.0%; ? @ ~/bc5-work/exp0438/fm438/normal/kyty_emulator 13.7%
+   by mapping of the faulting address: [anon rw-p 15 MiB @7fcf7c000000] 76.8% (18.1/frame); /memfd:KytyDirectMemory (deleted) 23.1% (5.4/frame); /memfd:KytyPrivateMemory (deleted) 0.1% (0.0/frame)
+   distinct pages 4521, faults per page 1.50
+dip phase [280, 290): 116 frames, mean frame 86.1 ms, 593.15 faults per frame
+   by dso/mapping of the ip: /usr/lib/x86_64-linux-gnu/libc.so.6 61.3%; ~/bc5-work/exp0438/fm438/normal/kyty_emulator 36.7%; /memfd:KytyPrivateMemory (deleted) 2.0%
+   by symbol: ? @ /usr/lib/x86_64-linux-gnu/libc.so.6 61.3%; ? @ ~/bc5-work/exp0438/fm438/normal/kyty_emulator 36.7%; ? @ /memfd:KytyPrivateMemory (deleted) 2.0%
+   by mapping of the faulting address: [anon rw-p 15 MiB @7fcf7c000000] 97.2% (576.4/frame); /memfd:KytyDirectMemory (deleted) 2.0% (11.7/frame); [anon ---p 49 MiB @7fcf7cee9000] 0.8% (4.5/frame); [anon ---p 0 MiB @8750be0000] 0.0% (0.3/frame); /memfd:KytyPrivateMemory (deleted) 0.0% (0.1/frame); [no mapping] 0.0% (0.1/frame); [anon ---p 0 MiB @8750b8c000] 0.0% (0.1/frame)
+   distinct pages 4898, faults per page 14.05
+dip phase, 1 vblank: 26 frames, mean frame 19.5 ms, 1.58 faults per frame
+   by dso/mapping of the ip: /memfd:KytyPrivateMemory (deleted) 100.0%
+   by symbol: ? @ /memfd:KytyPrivateMemory (deleted) 100.0%
+   by mapping of the faulting address: /memfd:KytyDirectMemory (deleted) 90.2% (1.4/frame); /memfd:KytyPrivateMemory (deleted) 9.8% (0.2/frame)
+   distinct pages 41, faults per page 1.00
+dip phase, 3+ vblank: 67 frames, mean frame 129.7 ms, 1010.07 faults per frame
+   by dso/mapping of the ip: /usr/lib/x86_64-linux-gnu/libc.so.6 62.0%; ~/bc5-work/exp0438/fm438/normal/kyty_emulator 36.3%; /memfd:KytyPrivateMemory (deleted) 1.7%
+   by symbol: ? @ /usr/lib/x86_64-linux-gnu/libc.so.6 62.0%; ? @ ~/bc5-work/exp0438/fm438/normal/kyty_emulator 36.3%; ? @ /memfd:KytyPrivateMemory (deleted) 1.7%
+   by mapping of the faulting address: [anon rw-p 15 MiB @7fcf7c000000] 97.5% (984.6/frame); /memfd:KytyDirectMemory (deleted) 1.7% (17.0/frame); [anon ---p 49 MiB @7fcf7cee9000] 0.8% (7.8/frame); [anon ---p 0 MiB @8750be0000] 0.0% (0.5/frame); [anon ---p 0 MiB @8750b8c000] 0.0% (0.1/frame); /memfd:KytyPrivateMemory (deleted) 0.0% (0.1/frame)
+   distinct pages 4667, faults per page 14.50
+slow phase [295, 415): 3177 frames, mean frame 37.8 ms, 24.24 faults per frame
+   by dso/mapping of the ip: /usr/lib/x86_64-linux-gnu/libc.so.6 72.5%; ~/bc5-work/exp0438/fm438/normal/kyty_emulator 25.2%; /memfd:KytyPrivateMemory (deleted) 2.3%
+   by symbol: ? @ /usr/lib/x86_64-linux-gnu/libc.so.6 72.5%; ? @ ~/bc5-work/exp0438/fm438/normal/kyty_emulator 25.2%; ? @ /memfd:KytyPrivateMemory (deleted) 2.3%
+   by mapping of the faulting address: [anon rw-p 15 MiB @7fcf7c000000] 97.3% (23.6/frame); /memfd:KytyDirectMemory (deleted) 1.9% (0.5/frame); [anon ---p 49 MiB @7fcf7cee9000] 0.3% (0.1/frame); /memfd:KytyPrivateMemory (deleted) 0.1% (0.0/frame); [anon ---p 0 MiB @81b1700000] 0.1% (0.0/frame); [anon ---p 2 MiB @82536f0000] 0.1% (0.0/frame); [anon ---p 0 MiB @81b16c0000] 0.1% (0.0/frame); [anon ---p 0 MiB @81b1690000] 0.0% (0.0/frame)
+   distinct pages 5346, faults per page 14.40
+slow phase, 1 vblank: 604 frames, mean frame 21.9 ms, 0.17 faults per frame
+   by dso/mapping of the ip: /usr/lib/x86_64-linux-gnu/libc.so.6 69.5%; /memfd:KytyPrivateMemory (deleted) 28.6%; ~/bc5-work/exp0438/fm438/normal/kyty_emulator 1.9%
+   by symbol: ? @ /usr/lib/x86_64-linux-gnu/libc.so.6 69.5%; ? @ /memfd:KytyPrivateMemory (deleted) 28.6%; ? @ ~/bc5-work/exp0438/fm438/normal/kyty_emulator 1.9%
+   by mapping of the faulting address: [anon rw-p 15 MiB @7fcf7c000000] 64.8% (0.1/frame); /memfd:KytyDirectMemory (deleted) 25.7% (0.0/frame); /memfd:KytyPrivateMemory (deleted) 8.6% (0.0/frame); ~/bc5-work/exp0438/fm438/normal/kyty_emulator 1.0% (0.0/frame)
+   distinct pages 102, faults per page 1.03
+slow phase, 3+ vblank: 941 frames, mean frame 59.5 ms, 58.93 faults per frame
+   by dso/mapping of the ip: /usr/lib/x86_64-linux-gnu/libc.so.6 69.3%; ~/bc5-work/exp0438/fm438/normal/kyty_emulator 28.2%; /memfd:KytyPrivateMemory (deleted) 2.5%
+   by symbol: ? @ /usr/lib/x86_64-linux-gnu/libc.so.6 69.3%; ? @ ~/bc5-work/exp0438/fm438/normal/kyty_emulator 28.2%; ? @ /memfd:KytyPrivateMemory (deleted) 2.5%
+   by mapping of the faulting address: [anon rw-p 15 MiB @7fcf7c000000] 97.1% (57.2/frame); /memfd:KytyDirectMemory (deleted) 2.0% (1.2/frame); [anon ---p 49 MiB @7fcf7cee9000] 0.3% (0.2/frame); [anon ---p 0 MiB @81b1700000] 0.1% (0.1/frame); [anon ---p 2 MiB @82536f0000] 0.1% (0.1/frame); [anon ---p 0 MiB @81b16c0000] 0.1% (0.0/frame); /memfd:KytyPrivateMemory (deleted) 0.1% (0.0/frame); [anon ---p 0 MiB @81b1690000] 0.1% (0.0/frame)
+   distinct pages 4974, faults per page 11.15
