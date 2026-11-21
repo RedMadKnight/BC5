@@ -2521,6 +2521,15 @@ The bake candidate (bake438b: A1 + A1b + A1P + A2 + the guarded gate, all on unl
 
 **A journal artifact (r438h, 2026-11-21).** With any BC5_DIRECT_JOURNAL other than "min" (the full journal used for diagnosis) submission is synchronous (`g_async` false). r438_begin's early entries are then never registered for real, and r438_end prints "r438 (exp 0438, b438): BUG: the early-registered write of … never reached the ring" for each one (1,281 in 58 s on the third title, 0 in 229 frames at "min"). These lines are an artifact of the diagnostic mode, not a finding about the title. The one-line fix (`r438o/mkr438h.py`: r438_begin registers early only with async submission; det case `sync`) waits for the next bake.
 
+## For the next bake (one list; nothing here is in the shared builds of patch 589ef163)
+
+- **r438h** (`r438o/mkr438h.py`, unit b4c3b22e on 2e6168de; to be re-applied on the baked unit ed489aca): r438_begin registers early only with async submission. In sync mode, which means any BC5_DIRECT_JOURNAL other than "min", every early entry was lost and printed r438's "never reached the ring" line (F884). Det case `sync`. No change where the journal is "min", which every play launcher sets.
+- **The lean warning in r438o's trim:** "variable 'kept' set but not used" in lean, because its counter is compiled out. Cosmetic; silence it with `(void)kept` under BC5_LEAN.
+- **Not candidates (listed so they are not mistaken for ones):**
+  - Q438 / BC5_0438_SUBMITQ: the full set's hang is open (Q35); it waits for the det case and run B.
+  - BC5_0438_R438_LWM: r438's labelmap half, left out of bake438b, since nothing in the gate needs it.
+  - A2's compare-only check: a backend build option for diagnosis builds only.
+
 ## Verdict
 
 **F865's source is fixed and built into the shared builds (r438 with PLWCV, 2026-11-21 00:52). The long frames are a
