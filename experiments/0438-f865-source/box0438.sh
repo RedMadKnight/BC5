@@ -40,7 +40,7 @@ K_E438=3fe3a79a459cb1ea60a7d27ff92f8c14  # e438.cpp: mks438y -> mke438 on s438.c
 K_B438=a31a2091ddeed206db7daec79771e932  # b438.cpp: mkb438.py on a62e8bf6 (r438 alone, mode 1, PLWCV, lean counter, p438 prologue merge)
 K_BAKE=ff9e8fe2e4139264ebaf74f9e84bd892  # bake438.cpp: bake/mkbake438.py (mkb438.py 3b00ab29 steps 1-6, lean counter out) on a62e8bf6
 K_H438=3aa9d745fb27f421a595ba1ae736f86f  # h438.cpp: mkh438.py on the bake unit ff9e8fe2
-K_H438H=4075a6dc692deca54f3976f61a4cea7f  # h438.hpp (with f438)
+K_H438H=ca501adf1ce4b066434c79568d8d37ca  # h438.hpp (with f438)
 K_FM438=d014b65210d0b2363c75a1a0fecacfbe; K_M438=e525cc844462d434ce2516c2fa9858bb  # fm438.cpp (mkfm438.py on h438.cpp), m438.cpp (mkfm438.py on the bake unit)
 K_MKO=4513a0ec8b9b53129c59329a09047f84; K_O438H=a194989d1dfbb1d4914e6b4978e072f3  # mko438.py, o438.hpp
 O438_UNITS="src/kernel/semaphore.cpp src/kernel/eventFlag.cpp src/kernel/pthread.cpp src/kernel/eventQueue.cpp src/libs/libKernel.cpp src/graphics/presentation/videoOut.cpp"

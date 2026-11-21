@@ -1926,7 +1926,8 @@ watchdog after the 2-ms hold bound, or an observe point / the flip's flush_all. 
 3. **Re-entry.** `submit_now`'s mapping sync can call `wait_jobs` → `chain_flush` on the same thread. That nested
    chain goes out before the outer one, which the recursive mutex allows.
 
-**The narrowest hold that keeps 1–3: an order ticket per slot, waited for only at the ring step.**
+**The candidate (accepted by the top session, built only after f438's data): an order ticket per slot, waited for at the
+ring step.** See the code reading below for what it can and cannot gain.
 - **At the take** (already under `s.mu`): `mine.ticket = ++s.taken`. The chain's F10 write set moves with it, as one
   entry in a per-slot list keyed by ticket, so several can be in flight, each removed after its own submission.
 - **The order gate** goes where the order matters: just before the ring lock in `submit_now`. The submission waits
@@ -1941,15 +1942,46 @@ watchdog after the 2-ms hold bound, or an observe point / the flip's flush_all. 
   backend), F10's flight set per chain, and the nesting behaviour.
 - **What it removes:** a flush waiting behind another thread's preparation and back-pressure sleep.
 
-**What f438 must show first** (simplest first; the design changes if the answers differ):
-1. **Holder and reason** of the Render Thread's long waits.
-   - If it is the chain watchdog (`hold-wd`) or flush_all (`observe` / `drain`), the ticket gate removes the wait,
-     unless the time is the back-pressure.
-   - If the holder is the Render Thread's own nesting, the wait is not flush_mu's.
-2. **Hold length by reason**, and how much of a long hold is the back-pressure sleep. If the GPU is 24 fences
-   behind, the wait is the GPU's: a narrower lock moves it to the gate, and the fix is elsewhere.
-- **TODO(verify) before building:** that nothing after the ring step but before `s.done` depends on the slot (the
-  mapping-sync state, `t_gpu_done`, `chain_post_soft_locked`'s marks, which today run under the lock).
+**The "not verified" list, settled by reading the code** (the bake unit `ff9e8fe2`, `submit_now` and `chain_submit`).
+This corrects the gain claimed above. The order inside `submit_now` is:
+1. the back-pressure sleep (`g_cq_fences >= 24`; F16 phase 1);
+2. exp 0436's **ring lock** `g_su436_ring_mu[ring]`, then `g_dev_mutex` (phase 2 while asking, 3 once held);
+3. the **preparation**, under both: `sync_mappings`, `direct_sync`, the filter's options and its mapping list;
+4. the backend's submit: it calls back before the CS ioctl to let `g_dev_mutex` go, the kernel submit runs, and
+   `g_dev_mutex` is taken again;
+5. `register_label_writes` (the global `g_plw` and its ring-order counter), then `cq_push`.
+
+The ring lock is held from step 2 to the return.
+
+After `submit_now` returns, `chain_submit` touches the slot: `f10_flight` is cleared, F16's phase is set to 0 and
+`f16_done` is bumped, and for a cross-ioctl chain the marks from the thread-local `t_gpu_done` go into `s.marks` and
+`chain_post_soft_locked` posts the soft replays. Before this reading I had placed the preparation before the ring
+step, and with it the waiter's gain.
+
+**What it means:**
+- For two chains of one slot on the same ring, the ring lock already serializes steps 3–5. The ring lock is not FIFO,
+  which is why `flush_mu` is still needed for take order.
+- So a ticket gate at the ring step would not take a waiter out from behind another thread's preparation. It removes
+  only the holder's back-pressure sleep (step 1) and the tail after step 5 from the waiter's wait.
+- A gate later, at the kernel submit in the backend's callback, would let the next chain's preparation start during
+  the holder's CS. But that preparation needs the ring lock, which the holder keeps until its return. It only helps
+  if the ring lock is narrowed to the CS too.
+  - TODO(verify): whether the preparation needs the ring at all, or only `g_dev_mutex`.
+- **Slot state after the gate**, which the ticket must make per chain:
+  - `f10_flight`, read by exp 0430 F10's waiters until it is cleared;
+  - F16's phase and `f16_done`;
+  - the cross marks and the soft replays.
+  - `t_gpu_done` is thread-local, so it moves with its submitting thread; `register_label_writes` is global, in ring
+    order under the ring lock.
+
+**So f438 records the holder's F16 phase** at the moment the wait starts. `h438.hpp` `ca501adf`; the frame column
+becomes `flush<-holder/reason/phase`, and test case 5 now checks `hold-wd/backpressure`. The design follows the phase:
+- **Mostly phase 1 (back-pressure):** the holder sleeps because 24 jobs are in flight, so the wait is the GPU's. A
+  ticket at the ring step moves the waiter to the same back-pressure; it does not shorten the frame.
+- **Mostly phase 2–3 (the ring and device locks, the preparation and CS):** the ring lock is the real order. The fix
+  is to narrow the preparation's need for the ring (TODO(verify) above), not `flush_mu`.
+- **Phase 0 / 4 (the tail, or draining the GPU in `wait_jobs`):** the ticket removes the wait, since the tail needs
+  only the slot's own state per chain. The drain is the GPU again.
 
 ## Finding draft (separate, not chased): host text in guest memory
 

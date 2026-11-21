@@ -6,8 +6,9 @@
 // 2. a thread that is not the Render Thread records nothing;
 // 3. BC5_0438_HOSTWAIT unset: no file;
 // 4. built a second time with -DBC5_LEAN: the macros are empty (the lock statement still runs);
-// 5. f438: a "bc5-chainwd" thread holds a slot's flush lock 30 ms as a foreign flush (why 9); the Render Thread's wait
-//    goes to its frame as "flush<-bc5-chainwd:2003/hold-wd", and its own recursive re-entry records no wait.
+// 5. f438: a "bc5-chainwd" thread holds a slot's flush lock 30 ms as a foreign flush (why 9), in F16 phase 1; the Render
+//    Thread's wait goes to its frame as "flush<-bc5-chainwd:2003/hold-wd/backpressure", and its own recursive re-entry
+//    records no wait.
 #include <atomic>
 #include <chrono>
 #include <cstdio>
@@ -34,8 +35,9 @@ inline bool     stub_proc(uint32_t, uint64_t& cpu, uint64_t& runq, uint64_t& sli
 #define BC5_H438_PROC_STUB stub_proc
 #include "h438.hpp"
 
-struct FakeSlot { // chain_submit's ChainSlot: the two members f438 uses
+struct FakeSlot { // chain_submit's ChainSlot: the members f438 uses
 	std::recursive_mutex flush_mu;
+	std::atomic<int>     f16_phase {0}; // exp 0430 F16
 #ifndef BC5_LEAN
 	bc5::f438::Slot f438;
 #endif
@@ -117,12 +119,14 @@ int main() {
 				std::thread       wd([&held] {
                     stub_set_name("bc5-chainwd", 2003);
                     BC5_F438_FLUSH_LOCK(g_slot, 9, true);
-                    held = true;
+                    g_slot.f16_phase = 1; // in the back-pressure
+                    held             = true;
                     std::this_thread::sleep_for(std::chrono::milliseconds(30));
 				});
 				while (!held) std::this_thread::yield();
 				submitter(g_slot, 0, false, 0, true);
 				wd.join();
+				g_slot.f16_phase = 0;
 			}
 			{
 				BC5_O438_WAIT(kWaitSema, &g_b); // a guest wait of 1 ms (o438)
@@ -185,7 +189,7 @@ int main() {
 			std::printf("frame 8 locks: %s\n", f8[ix("locks")].c_str());
 			{ // case 5: the wait by holder and reason; no self wait from the recursive re-entry
 				const std::string lk = f8[ix("locks")];
-				const std::string key = "flush<-bc5-chainwd:2003/hold-wd=";
+				const std::string key = "flush<-bc5-chainwd:2003/hold-wd/backpressure=";
 				const auto        at  = lk.find(key);
 				CHECK(at != std::string::npos);
 				if (at != std::string::npos) CHECK(std::stod(lk.substr(at + key.size())) >= 15000);
