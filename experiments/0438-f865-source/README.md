@@ -1862,6 +1862,95 @@ the new binary (`/proc/<pid>/exe` md5).
 **Undo:** `bash ~/bc5-work/exp0438/bake/undo0438.sh`, back to `bb04219b` / `f345db74` / `6a735b81`. Per run with no
 build: `BC5_0438_EARLYREG=0` turns r438 off, and `BC5_0438_PLWCV=0` gives the 20-µs poll.
 
+## The last records on the second title: f438, m438 and two perf modes (prepared offline, not built)
+
+The top session's order of 2026-11-21: one combined slot of at most ~45 min before the second title is uninstalled
+(exp 0439 installs the third). Fixes first: all three records go into one slot. Diagnosis only.
+- **f438** (`h438.hpp` `4075a6dc`; normal; on with `BC5_0438_HOSTWAIT=1`): who holds the chain slot's flush lock
+  `s.flush_mu` when the Render Thread waits on it, and why.
+  - Each `ChainSlot` gets a holder record (thread, flush reason, start), set by a thread's outermost hold. The lock is
+    recursive.
+  - chain_submit's lock line becomes `BC5_F438_FLUSH_LOCK(s, why, foreign)`. It reads the holder before the wait and,
+    after it, records a wait of 20 µs or more by (waiter, holder, reason).
+  - The Render Thread's waits also go into h438's per-frame `locks` column as `flush<-<holder>/<reason>`. Reasons:
+    end, wait, ring/class, cond_exec, size, drain, acb-head, other, observe, hold-wd (the chain watchdog), hold-end.
+  - Every hold is timed by (holder, reason, own or foreign). A stderr line `f438 (exp 0438): 60-s totals` gives both
+    sets of totals.
+  - `test_h438.sh` case 5 PASS: a `bc5-chainwd` thread holds 30 ms as a foreign `hold-wd` flush, and the Render
+    Thread's frame shows `flush<-bc5-chainwd:2003/hold-wd=…`. Its own recursive re-entry records no wait, and the
+    slot's depth and holder are back to 0 and none afterwards.
+- **m438** (in both test units): frame marks. At the top of VideoOutSubmitEopFlip, with `BC5_0438_FRAMEMARK=1`, the
+  steady clock (CLOCK_MONOTONIC, the clock `perf -k CLOCK_MONOTONIC` stamps with) is written in ns per flip, every 64
+  flips, to `BC5_0438_FRAMEMARK_FILE`.
+  - It is also in lean, because these are private test builds. The no-diagnostics rule is for the shared lean build.
+- **prof0438.sh** (`1739ce73`): run from G by the runner (`N_SIDE`), after exp 0432's prof0432.sh. It is read-only
+  towards the emulator: user-space perf_event_open, `perf_event_paranoid` untouched. It finds the Render Thread's tid
+  and profiles that thread only:
+  - `PROF_MODE=cpu`: cpu-clock:u at 999 Hz;
+  - `PROF_MODE=faults`: page-faults:u with `-c 1 -d`, every user-space fault with its data address.
+  - It writes `perf script --ns` text (gz) and `/proc/<pid>/maps` every 10 s.
+- **`mkfm438.py`** (`mkfm438.py` md5 in the commit):
+  - on `h438.cpp` it gives `fm438.cpp` `d014b652…` (f438 + m438; normal);
+  - on the bake unit it gives `m438.cpp` `e525cc84…` (m438 only; lean).
+  - `box0438.sh buildfm` (`4f9232ed`) builds both: the normal one with o438's units, the lean one with the unit only.
+    It checks the switches, f438's line in normal, and no h438 / o438 / f438 / r438 lines in lean.
+- **chain0438l arms** (`0aa9368d`):
+  - **F**: normal fm438, `HOSTWAIT=1 OUTSIDE=1 FRAMEMARK=1`, prof in faults mode. Its CSV and marks go beside the run
+    files, so it answers (1) and (3) in one run.
+  - **P**: lean m438, `FRAMEMARK=1`, prof in cpu mode, which answers (2).
+- **Tools** (laptop):
+  - `ah438.py` reads F's CSV, f438's waits included.
+  - `pf438.py` puts perf samples or faults into frames by the marks. It reports per vblank class and phase: samples
+    or faults per frame, the top DSOs or mappings and symbols, and for faults the mapping of the faulting address.
+  - `test_pf438.py` PASS on synthetic marks, both perf line forms and a maps file. TODO(verify): the real
+    `perf script -F` line form on the box; prof0438 keeps the raw text, so pf438's parser can follow it.
+- **Proposed slot** (~35 min):
+  1. buildfm (CPU, ~5 min);
+  2. chain `ORDER="F P P"` (3 × ~7.5 min) under `systemd-run --user`, with one blocking waiter and no reads during
+     the runs.
+
+## The flush-order lock: the narrowest hold that keeps the order (design, not built; for every title)
+
+**What it does today.** `chain_submit` takes `s.flush_mu` after the chain is swapped out of the slot. It holds it
+through the whole `submit_now`:
+- the preparation (mapping sync, filter, direct sync);
+- the back-pressure sleep (`g_cq_fences >= 24`, 50-µs sleeps);
+- the ring lock (exp 0436) and `g_dev_mutex`;
+- the kernel submit.
+
+So the next flush of the same slot waits for all of it, whichever thread took the earlier chain: the owner, the chain
+watchdog after the 2-ms hold bound, or an observe point / the flip's flush_all. The lock gives three things:
+1. **Take order = submit order per slot.** Without it, a chain taken later could reach the ring mutex first.
+2. **One submission in flight per slot.** exp 0430's F10 keeps a single `f10_flight` write set and F16 a single phase
+   per slot; both assume it.
+3. **Re-entry.** `submit_now`'s mapping sync can call `wait_jobs` → `chain_flush` on the same thread. That nested
+   chain goes out before the outer one, which the recursive mutex allows.
+
+**The narrowest hold that keeps 1–3: an order ticket per slot, waited for only at the ring step.**
+- **At the take** (already under `s.mu`): `mine.ticket = ++s.taken`. The chain's F10 write set moves with it, as one
+  entry in a per-slot list keyed by ticket, so several can be in flight, each removed after its own submission.
+- **The order gate** goes where the order matters: just before the ring lock in `submit_now`. The submission waits
+  until `s.done == ticket - 1` (a condition variable on the slot). Preparation and back-pressure before the gate run
+  without it.
+- **After the kernel submit returns:** `s.done = ticket`, then notify. That is the point where the kernel has the job
+  in its ring order; any later chain of the slot may go.
+- **Re-entry:** a nested flush on the thread that owns the current ticket, before that ticket's gate, goes ahead as
+  today: it takes the current ticket, and the outer one is given the next. Done in one place, under `s.mu`.
+- **F16's phase:** per ticket instead of per slot.
+- **What it keeps:** take-order submits per slot, exp 0436's per-ring lock order (ring, then `g_dev_mutex`, then the
+  backend), F10's flight set per chain, and the nesting behaviour.
+- **What it removes:** a flush waiting behind another thread's preparation and back-pressure sleep.
+
+**What f438 must show first** (simplest first; the design changes if the answers differ):
+1. **Holder and reason** of the Render Thread's long waits.
+   - If it is the chain watchdog (`hold-wd`) or flush_all (`observe` / `drain`), the ticket gate removes the wait,
+     unless the time is the back-pressure.
+   - If the holder is the Render Thread's own nesting, the wait is not flush_mu's.
+2. **Hold length by reason**, and how much of a long hold is the back-pressure sleep. If the GPU is 24 fences
+   behind, the wait is the GPU's: a narrower lock moves it to the gate, and the fix is elsewhere.
+- **TODO(verify) before building:** that nothing after the ring step but before `s.done` depends on the slot (the
+  mapping-sync state, `t_gpu_done`, `chain_post_soft_locked`'s marks, which today run under the lock).
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its

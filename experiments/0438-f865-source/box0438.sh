@@ -16,6 +16,10 @@
 #   box0438.sh buildh   with our lock: h438 (mkh438.py on the bake unit: per-frame host-side records of the Render Thread,
 #                       off unless BC5_0438_HOSTWAIT=1) + o438 (mko438.py, with h438.hpp beside o438.hpp), NORMAL only:
 #                       ~/bc5-work/exp0438/h438/normal/kyty_emulator. Nothing shared written.
+#   box0438.sh buildfm  with our lock: the last records on the second title (mkfm438.py): NORMAL fm438.cpp (h438 + f438,
+#                       the flush lock's holder, + m438 frame marks) with o438's units -> ~/bc5-work/exp0438/fm438/normal;
+#                       LEAN m438.cpp (the bake unit + m438 frame marks), unit only -> ~/bc5-work/exp0438/fm438/lean.
+#                       Test builds only; nothing shared written.
 #   box0438.sh build    with our lock: pins the shared builds (patch bb04219b: normal f345db74, lean 6a735b81, archive
 #                       d6638808), the shared tree's unit and this kit's files; compiles the kit's bc5LleAgc.cpp (mk0438.py
 #                       on the tree's unit) with the shared normal and lean builds' own commands and links each with the
@@ -36,7 +40,8 @@ K_E438=3fe3a79a459cb1ea60a7d27ff92f8c14  # e438.cpp: mks438y -> mke438 on s438.c
 K_B438=a31a2091ddeed206db7daec79771e932  # b438.cpp: mkb438.py on a62e8bf6 (r438 alone, mode 1, PLWCV, lean counter, p438 prologue merge)
 K_BAKE=ff9e8fe2e4139264ebaf74f9e84bd892  # bake438.cpp: bake/mkbake438.py (mkb438.py 3b00ab29 steps 1-6, lean counter out) on a62e8bf6
 K_H438=3aa9d745fb27f421a595ba1ae736f86f  # h438.cpp: mkh438.py on the bake unit ff9e8fe2
-K_H438H=bdf94bf51b0123d95edea7f0bf88cca6  # h438.hpp
+K_H438H=4075a6dc692deca54f3976f61a4cea7f  # h438.hpp (with f438)
+K_FM438=d014b65210d0b2363c75a1a0fecacfbe; K_M438=e525cc844462d434ce2516c2fa9858bb  # fm438.cpp (mkfm438.py on h438.cpp), m438.cpp (mkfm438.py on the bake unit)
 K_MKO=4513a0ec8b9b53129c59329a09047f84; K_O438H=a194989d1dfbb1d4914e6b4978e072f3  # mko438.py, o438.hpp
 O438_UNITS="src/kernel/semaphore.cpp src/kernel/eventFlag.cpp src/kernel/pthread.cpp src/kernel/eventQueue.cpp src/libs/libKernel.cpp src/graphics/presentation/videoOut.cpp"
 K_F438=346ebf6efa736bdbc5bf054901f40253  # f438.cpp: mkf438 on e438.cpp (build 12: the mapping index updated in place)
@@ -326,6 +331,43 @@ buildh() {
     [ "$sn" = "$(m "$W/kytyplus-build/src/kyty_emulator")" ] && [ "$sl" = "$(m "$W/kytyplus-build-lean/src/kyty_emulator")" ] && [ "$sa" = "$(m "$SA")" ] && [ "$(m "$TREE/$UNIT")" = "$P_UNIT" ] || stop "a shared file changed"
     echo "shared normal ${sn:0:8}, lean ${sl:0:8}, archive ${sa:0:8}, tree unit ${P_UNIT:0:8}: unchanged"
 }
+buildfm() {
+    own || stop "no lock held by 0438"
+    pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
+    local b bin rc sn sl sa v C=$E/fm438
+    sn=$(m "$W/kytyplus-build/src/kyty_emulator"); sl=$(m "$W/kytyplus-build-lean/src/kyty_emulator"); sa=$(m "$SA")
+    [ "${sn:0:8}" = "$P_NORMAL" ] && [ "${sl:0:8}" = "$P_LEAN" ] && [ "${sa:0:8}" = "$P_ARCH" ] || stop "the shared builds are not $P_NORMAL/$P_LEAN/$P_ARCH"
+    [ "$(m "$HERE/fm438.cpp")" = "$K_FM438" ] && [ "$(m "$HERE/m438.cpp")" = "$K_M438" ] && [ "$(m "$HERE/h438.hpp")" = "$K_H438H" ] && [ "$(m "$HERE/build0438.py")" = "$K_PY" ] && [ "$(m "$HERE/mko438.py")" = "$K_MKO" ] && [ "$(m "$HERE/o438.hpp")" = "$K_O438H" ] || stop "the fm438 kit is not the pinned one"
+    mkdir -p "$R" || stop "mkdir"
+    for v in normal lean; do
+        rm -rf "$C/src-$v"; mkdir -p "$C/src-$v/kyty/src/libs" || stop "mkdir"
+        if [ $v = normal ]; then
+            cp "$HERE/fm438.cpp" "$C/src-$v/kyty/$UNIT" || stop "copy"
+            python3 -I "$HERE/mko438.py" "$TREE" "$C/src-$v/kyty" > "$R/mko438-fm.out" 2>&1 || { cat "$R/mko438-fm.out"; stop "mko438.py failed"; }
+            cp "$HERE/h438.hpp" "$C/src-$v/kyty/src/kernel/h438.hpp" || stop "copy h438.hpp"
+            units="$UNIT $O438_UNITS"
+        else
+            cp "$HERE/m438.cpp" "$C/src-$v/kyty/$UNIT" || stop "copy"
+            units=$UNIT
+        fi
+        b=$W/kytyplus-build$([ $v = lean ] && echo -lean); bin=$C/$v/kyty_emulator
+        mkdir -p "$C/$v"; rm -rf "$C/$v/obj" "$C/$v/lib"
+        [ -f "$bin" ] && mv "$bin" "$bin.$(m "$bin" | cut -c1-8)"
+        distrobox enter ubuntu -- sh -c "cd '$b' && ninja -t compdb -x" > "$C/$v/compdb.json" 2> "$R/compdb-fm-$v.err" < /dev/null || stop "compdb $v failed"
+        # shellcheck disable=SC2086
+        distrobox enter ubuntu -- env LC_ALL=C LANGUAGE=C python3 -I "$HERE/build0438.py" emu "$C/$v/compdb.json" "$C/src-$v/kyty" "$C/$v" "$b" "$bin" $units > "$R/build-fm-$v.out" 2>&1 < /dev/null
+        rc=$?; echo "fm438 $v: build rc $rc; errors $(grep -c 'error:' "$R/build-fm-$v.out"); warnings $(grep -c 'warning:' "$R/build-fm-$v.out")"
+        grep -n "error:\|undefined\|COMPILE FAILED" "$R/build-fm-$v.out" | head -20
+        [ "$rc" = 0 ] && [ -x "$bin" ] || stop "build $v failed: $R/build-fm-$v.out"
+        m "$bin" > "$C/$v/binary.md5"; strings "$bin" > "$C/$v/strings.txt"
+        echo "fm438 $v: $(cut -c1-8 "$C/$v/binary.md5"); FRAMEMARK $(grep -c BC5_0438_FRAMEMARK "$C/$v/strings.txt"); HOSTWAIT $(grep -c BC5_0438_HOSTWAIT "$C/$v/strings.txt"); f438 line $(grep -c 'f438 (exp 0438): 60-s totals' "$C/$v/strings.txt"); EARLYREG $(grep -c BC5_0438_EARLYREG "$C/$v/strings.txt")"
+        grep -q 'BC5_0438_FRAMEMARK' "$C/$v/strings.txt" && grep -q 'BC5_0438_EARLYREG' "$C/$v/strings.txt" && grep -q 'BC5_0438_PLWCV' "$C/$v/strings.txt" || stop "a switch is not in $v"
+    done
+    grep -q 'f438 (exp 0438): 60-s totals' "$C/normal/strings.txt" && grep -qx 'BC5_0438_HOSTWAIT' "$C/normal/strings.txt" || stop "normal lacks f438 / h438"
+    grep -q 'BC5_0438_HOSTWAIT\|BC5_0438_OUTSIDE\|f438 (exp 0438)\|r438 (exp 0438, b438)' "$C/lean/strings.txt" && stop "lean holds h438, o438, f438 or r438's lines"
+    [ "$sn" = "$(m "$W/kytyplus-build/src/kyty_emulator")" ] && [ "$sl" = "$(m "$W/kytyplus-build-lean/src/kyty_emulator")" ] && [ "$sa" = "$(m "$SA")" ] && [ "$(m "$TREE/$UNIT")" = "$P_UNIT" ] || stop "a shared file changed"
+    echo "shared normal ${sn:0:8}, lean ${sl:0:8}, archive ${sa:0:8}, tree unit ${P_UNIT:0:8}: unchanged"
+}
 buildk() {
     own || stop "no lock held by 0438"
     pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
@@ -416,6 +458,7 @@ case "${1:-}" in
     buildb) buildb ;;
     buildk) buildk ;;
     buildh) buildh ;;
+    buildfm) buildfm ;;
     buildr) buildr ;;
-    *) echo "usage: $0 claim|release|pack|build|buildcat|buildr|buildd|buildw|buildu|builds|builde|buildf|buildb|buildk|buildh"; exit 2 ;;
+    *) echo "usage: $0 claim|release|pack|build|buildcat|buildr|buildd|buildw|buildu|builds|builde|buildf|buildb|buildk|buildh|buildfm"; exit 2 ;;
 esac
