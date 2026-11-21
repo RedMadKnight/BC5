@@ -991,6 +991,95 @@ s = rep(s, '''				} else {
 					static int deferred_logged = 0;''', '''				} else {
 					if (s.deferred_since != 0) Direct::xq439_hold(q.d, now - s.deferred_since); // exp 0439 (tag xq439)
 					static int deferred_logged = 0;''')
+# exp 0439, after the frame-229 hang (t3q, 20:00): it is inside the 16,362-dword CHAINED continuation of queue 40's acb. Three
+# switches, all off by default:
+#  - pd439 (BC5_0439_PIECE_DUMP=1): at a timeout the probe also writes every piece of the timed-out job that its IB calls or
+#    chains to (bc5/ib_chain.hpp collect with the chain rule, over the mapped guest memory as it reads at the timeout), one
+#    file each, fsync'd: <ib-timeout name>.piece-<k>-<address>-<dwords>.bin.
+#  - ip439 (BC5_0439_IMPORT_PIECES=1): the import scans of submit_now (k1f412_pass: memory operands and exp 0434's user-data
+#    V# targets; dt412_pass) run on every piece a buffer calls or chains to, not only the top IB. Today they read the top IB
+#    only, so a dispatch in a chained piece whose resources nobody imported reads the read-only zero cover (exp 0412 k1r).
+#    Importing memory a packet names has no ordering side effect.
+#  - uw439 (BC5_0439_UMR_WAVES=1, with BC5_DIRECT_UMR_ON_TIMEOUT=1 for the 0.9-s watchdog): the waves are dumped with
+#    `sudo -n /usr/bin/umr -O halt_waves -wa none` (allowed by the box's sudoers) instead of bc5-gpu-hang-dump, whose
+#    halt_waves names the gfx ring: a compute-ring hang needs every wave.
+s = rep(s, '''static void umr_on_timeout() {
+	static const bool on = BC5_DIAG_ENV("BC5_DIRECT_UMR_ON_TIMEOUT") != nullptr;''', '''static bool uw439_on() { // exp 0439 (tag uw439)
+	static const bool v = [] {
+		const char* e  = std::getenv("BC5_0439_UMR_WAVES");
+		const bool  on = e != nullptr && e[0] == '1' && e[1] == 0;
+		std::fprintf(stderr, "[bc5] exp 0439 (tag uw439): BC5_0439_UMR_WAVES=%d\\n", on ? 1 : 0);
+		return on;
+	}();
+	return v;
+}
+static void umr_on_timeout() {
+	static const bool on = BC5_DIAG_ENV("BC5_DIRECT_UMR_ON_TIMEOUT") != nullptr;''')
+s = rep(s, '''	std::snprintf(cmd, sizeof(cmd),
+	              "(distrobox-host-exec sudo -n /usr/local/bin/bc5-gpu-hang-dump || distrobox-host-exec sudo -n /usr/bin/umr -O halt_waves -wa gfx_0.0.0) > %s/umr-waves-%d.txt 2>&1; "
+	              "sync",
+	              dir.c_str(), k);''', '''	if (uw439_on()) // exp 0439 (tag uw439): every wave, for a compute-ring hang
+		std::snprintf(cmd, sizeof(cmd), "distrobox-host-exec sudo -n /usr/bin/umr -O halt_waves -wa none > %s/umr-waves-%d.txt 2>&1; sync", dir.c_str(), k);
+	else
+	std::snprintf(cmd, sizeof(cmd),
+	              "(distrobox-host-exec sudo -n /usr/local/bin/bc5-gpu-hang-dump || distrobox-host-exec sudo -n /usr/bin/umr -O halt_waves -wa gfx_0.0.0) > %s/umr-waves-%d.txt 2>&1; "
+	              "sync",
+	              dir.c_str(), k);''')
+s = rep(s, '''		if (FILE* f = std::fopen(name, "wb"); f != nullptr) {
+			std::fwrite(sub_ib, sizeof(uint32_t), sub_n, f);
+			std::fflush(f); // experiment 0260: a machine-down follows a timeout often enough
+			fsync(fileno(f));
+			std::fclose(f);
+		}''', '''		if (FILE* f = std::fopen(name, "wb"); f != nullptr) {
+			std::fwrite(sub_ib, sizeof(uint32_t), sub_n, f);
+			std::fflush(f); // experiment 0260: a machine-down follows a timeout often enough
+			fsync(fileno(f));
+			std::fclose(f);
+		}
+		static const bool pd439 = [] { // exp 0439 (tag pd439): every piece the job calls or chains to
+			const char* e = std::getenv("BC5_0439_PIECE_DUMP");
+			return e != nullptr && e[0] == '1' && e[1] == 0;
+		}();
+		if (pd439) {
+			const auto pmd = g_dev->sorted_mappings();
+			const auto cr  = bc5::ib_chain::collect(sub_ib, sub_n, [&pmd](uint64_t a, uint64_t b) { return covered_sorted(*pmd, a, b); }, true);
+			for (size_t k = 1; k < cr.pieces.size(); k++) {
+				char pn[600];
+				std::snprintf(pn, sizeof(pn), "%s.piece-%zu-%" PRIx64 "-%zu.bin", name, k, reinterpret_cast<uint64_t>(cr.pieces[k].src), cr.pieces[k].n);
+				if (FILE* f = std::fopen(pn, "wb"); f != nullptr) {
+					std::fwrite(cr.pieces[k].src, sizeof(uint32_t), cr.pieces[k].n, f);
+					std::fflush(f);
+					fsync(fileno(f));
+					std::fclose(f);
+				}
+				journal("timeout probe (exp 0439, tag pd439): piece %zu of the job: 0x%" PRIx64 ", %zu dwords, depth %d, %s, to %s\\n", k, reinterpret_cast<uint64_t>(cr.pieces[k].src), cr.pieces[k].n,
+				        cr.pieces[k].depth, cr.pieces[k].chained ? "chained" : "called", pn);
+			}
+			std::fprintf(stderr, "[bc5] exp 0439 (tag pd439): timeout probe: %zu pieces of the job dumped beside %s (%zu chained%s)\\n", cr.pieces.size() - 1, name, cr.chains, cr.cycle ? ", A CYCLE" : "");
+		}''')
+s = rep(s, '''	dt412_pass(ib, num_dwords, kind); // exp 0412 (tag dt412): before the mappings are synced''', '''	dt412_pass(ib, num_dwords, kind); // exp 0412 (tag dt412): before the mappings are synced
+	{ // exp 0439 (tag ip439): the same import scans on every piece the buffer calls or chains to
+		static const bool ip439 = [] {
+			const char* e  = std::getenv("BC5_0439_IMPORT_PIECES");
+			const bool  on = e != nullptr && e[0] == '1' && e[1] == 0;
+			std::fprintf(stderr, "[bc5] exp 0439 (tag ip439): BC5_0439_IMPORT_PIECES=%d\\n", on ? 1 : 0);
+			return on;
+		}();
+		if (ip439 && g_dev) {
+			const auto pmi = g_dev->sorted_mappings();
+			const auto cr  = bc5::ib_chain::collect(ib, num_dwords, [&pmi](uint64_t a, uint64_t b) { return covered_sorted(*pmi, a, b); }, bc5::ib_chain::enabled());
+			for (size_t k = 1; k < cr.pieces.size(); k++) {
+				k1f412_pass(cr.pieces[k].src, static_cast<uint32_t>(cr.pieces[k].n), kind);
+				dt412_pass(cr.pieces[k].src, static_cast<uint32_t>(cr.pieces[k].n), kind);
+			}
+			static std::atomic<uint64_t> n_ip {0}, n_pieces {0};
+			n_pieces += cr.pieces.size() - 1;
+			const uint64_t k = n_ip++;
+			if (cr.pieces.size() > 1 && (k < 32 || (k & 0x3ffu) == 0))
+				std::fprintf(stderr, "[bc5] exp 0439 (tag ip439): t %.3f s %s %u dwords: the import scans also read its %zu pieces (%zu chained); %" PRIu64 " pieces in all\\n", timing_now(), kind, num_dwords,
+				             cr.pieces.size() - 1, cr.chains, n_pieces.load());
+		}
+	}''')
 open(dst + '/bc5LleAgc.cpp', 'w', encoding='utf-8', newline='').write(s)
 
 v = open(src + '/videoOut.cpp', encoding='utf-8', newline='').read()
