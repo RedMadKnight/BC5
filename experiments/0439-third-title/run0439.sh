@@ -15,6 +15,8 @@ DIR=$HOME/bc5-data/games/PPSA26344
 LOCK=$HOME/bc5-work/BOX-LOCK
 mode=${2:-}; [ "$mode" = normal ] || [ "$mode" = lean ] || { sed -n '2,12p' "$0"; exit 2; }
 lean=0; [ "$mode" = lean ] && lean=1
+# GPU timeouts and resets of this boot (written before and after every run, the top session's rule of 11-21)
+resets() { journalctl -k -b 0 --no-pager 2>/dev/null | grep -c -i -E 'amdgpu.*(timeout|reset)' || true; }
 if [ $lean = 1 ]; then BIN=$HOME/bc5-work/kytyplus-build-lean/src/kyty_emulator LOGF=$HOME/bc5-work/play-lean-last.log
 else BIN=$HOME/bc5-work/kytyplus-build/src/kyty_emulator LOGF=$HOME/bc5-work/play-last.log; fi
 grep -q '^KYTY_BC5_RT=0' "$HOME/bc5-work/bc5-run.env" && { echo "bc5-run.env turns RT off: refused"; exit 1; }
@@ -41,6 +43,7 @@ run)
     echo "tag $tag mode $mode secs $secs start $(date '+%F %T')"
     echo "binary $BIN $(md5sum "$BIN" | cut -d' ' -f1)"
     echo "kernel $(uname -r); WAYLAND_DISPLAY=$wl; extra: ${RUN_EXTRA:-none}"
+    echo "boot $(journalctl --list-boots --no-pager 2>/dev/null | tail -n1 | awk '{print $2}'); amdgpu timeout/reset lines before: $(resets)"
     free -b || true; df -B1 /var 2>&1 | tail -n1 || true
   } > "$out/meta.txt"
   # PLAY_CAPTURE=1 (normal only): the direct-path journal under ~/bc5-data/captures/play-<date>/gc for diagnosis.
@@ -58,6 +61,8 @@ collect)
   cap=$(cat "$HOME/bc5-work/last-play-capture" 2>/dev/null || true); [ -n "$cap" ] && echo "capture $cap" >> "$out/meta.txt"
   ls -t "$HOME/bc5-data/captures/faults/" 2>/dev/null | head -n 3 > "$out/faults-latest.txt" || true
   ls -t "$HOME/bc5-data/captures/devcoredump/" 2>/dev/null | head -n 3 > "$out/devcd-latest.txt" || true
+  echo "amdgpu timeout/reset lines after: $(resets)" >> "$out/meta.txt"
+  journalctl -k -b 0 --no-pager -S "$(sed -n 's/.* start \(.*\)$/\1/p' "$out/meta.txt" | head -n1)" > "$out/kernel.txt" 2>&1 || true
   echo "end $(date '+%F %T')" >> "$out/meta.txt"; free -b >> "$out/meta.txt"
   tail -n 3 "$out/$(basename "$LOGF")" 2>/dev/null || true
   ;;

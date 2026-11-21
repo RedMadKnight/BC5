@@ -130,7 +130,7 @@ uninstall2)
   run "$BM" uninstall "$G2" --games "$GAMES" 2>&1 | tee -a "$E/e0439.log"
   run mkdir -p "$TRASH/pulpit"
   second_shortcuts | while IFS= read -r f; do log "shortcut $f -> $TRASH/pulpit/"; run mv -n "$f" "$TRASH/pulpit/"; done
-  c=$(du -sb "$CACHE" 2>/dev/null | cut -f1); c=${c:-0}
+  c=$(du -sb "$CACHE" 2>/dev/null | cut -f1 || true); c=${c:-0}
   log "bc5-mount cache: $c bytes"
   if [ "$c" -gt 1073741824 ]; then run mv -n "$CACHE" "$TRASH/bc5-mount-cache"; log "cache -> $TRASH/bc5-mount-cache"; fi
   "$0" inventory after
