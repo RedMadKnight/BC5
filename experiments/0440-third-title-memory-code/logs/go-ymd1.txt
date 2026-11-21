@@ -1,0 +1,30 @@
+2026-11-21 16:14:01 lock taken: exp0440 2026-11-21 16:14:01 third title memdump ymd1
+2026-11-21 16:14:01 tag ymd1 binary ~/bc5-work/exp0440/bin/kyty_emulator a29080a66641b831262f69af0ccf3c44 kernel 7.3.3-ogc1.1.fc45.x86_64 boot c05993c03cbf4e4c84ba4b1e728c5500
+2026-11-21 16:14:01 amdgpu timeout/reset lines before: 11; words: BC5_SYSMODULES_PACK_DIR=~/bc5-data/games/PPSA26344/fakelib BC5_DIRECT_DCC_PRESENT=2 BC5_DIRECT_EAGER_GPU_WRITE=1 BC5_RUN_ENV=~/bc5-work/exp0440/run-log.env
+dead-mount check done (0)
+Mem:           15192        2539        4703           2        8308       12652
+2026-11-21 16:14:02 emulator pid 803415; Max core file size 0 0 bytes 
+2026-11-21 16:14:14 threads: 78; starting the dumper
+[   0.07] snapshot snapA: 78 threads, 0 without registers, 0.06 s
+[   0.07] snapshot A held the process stopped for 0.06 s; running for 5.0 s
+[   5.13] snapshot snapB: 78 threads, 0 without registers, 0.06 s
+[  20.70] full dump: 863 mappings, {'dumped': 348, 'skipped-big': 12, 'skipped-hostfile': 351, 'skipped-special': 153}, 156.2 MiB real, 15.6 s
+[  20.73] stopped window of the dump: 15.7 s
+[  20.73] SIGCONT sent
+2026-11-21 16:14:35 dumper rc 0; dump size 159M (apparent 9,9G)
+2026-11-21 16:14:37 capture: ~/bc5-data/captures/play-20261121-1614
+2026-11-21 16:14:37 amdgpu timeout/reset lines after: 11
+2026-11-21 16:14:37 kernel lines since the start: 1
+2026-11-21 16:14:37 leftovers: emulators [] bc5-mount [802138 ]
+dead-mount check done (0)
+2026-11-21 16:14:37 last log line: == 2026-11-21 16:14:36 exit 0
+2026-11-21 16:14:37 lock dropped
+---
+-- No entries --
+---
+---
+mesa-vulkan-drivers-26.2.6-2.fc45.x86_64
+mesa-vulkan-drivers-26.2.6-2.fc45.i686
+libdrm-2.4.134-2.fc45.x86_64
+libdrm-2.4.134-2.fc45.i686
+d6638808
