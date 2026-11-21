@@ -20,9 +20,9 @@ build() {
     sn=$(m "$W/kytyplus-build/src/kyty_emulator"); sl=$(m "$W/kytyplus-build-lean/src/kyty_emulator"); sa=$(m "$SA")
     [ "${sn:0:8}" = "$P_NORMAL" ] && [ "${sl:0:8}" = "$P_LEAN" ] && [ "${sa:0:8}" = "$P_ARCH" ] || stop "the shared builds are not $P_NORMAL/$P_LEAN/$P_ARCH"
     [ "$(m "$TREE/src/libs/bc5LleAgc.cpp")" = "$P_UNIT" ] && [ "$(m "$TREE/src/graphics/presentation/videoOut.cpp")" = "$P_VO" ] || stop "the tree's units are not patch 9889b06a's"
-    rm -rf "$S"; mkdir -p "$S/kyty/src/libs" "$S/kyty/src/graphics/presentation" "$S/kyty/src/bc5" || stop "mkdir $S"
+    rm -rf "$S"; mkdir -p "$S/kyty/src/libs" "$S/kyty/src/graphics/presentation" "$S/kyty/src/bc5" "$S/kyty/src/kernel" || stop "mkdir $S"
     cp "$HERE/new/bc5LleAgc.cpp" "$S/kyty/src/libs/bc5LleAgc.cpp" && cp "$HERE/new/videoOut.cpp" "$S/kyty/src/graphics/presentation/videoOut.cpp" \
-        && cp "$HERE/new/dc0439.hpp" "$S/kyty/src/bc5/dc0439.hpp" || stop "copy the units"
+        && cp "$HERE/new/dc0439.hpp" "$S/kyty/src/bc5/dc0439.hpp" && cp "$HERE/new/eventQueue.cpp" "$S/kyty/src/kernel/eventQueue.cpp" || stop "copy the units"
     (cd "$S" && find . -type f | sort | xargs md5sum) > "$R/src-md5.txt"; cat "$R/src-md5.txt"
     echo "MemAvailable before the builds: $(awk '/^MemAvailable/{print int($2/1024)}' /proc/meminfo) MiB"
     [ "$(awk '/^MemAvailable/{print $2}' /proc/meminfo)" -gt 3000000 ] || stop "under 3 GiB available: not building now"
@@ -32,7 +32,7 @@ build() {
         [ -f "$bin" ] && mv "$bin" "$bin.$(m "$bin" | cut -c1-8)"
         distrobox enter ubuntu -- sh -c "cd '$b' && ninja -t compdb -x" > "$E/$v/compdb.json" 2> "$R/compdb-$v.err" < /dev/null || stop "compdb $v failed"
         distrobox enter ubuntu -- $NICE env LC_ALL=C LANGUAGE=C python3 -I "$HERE/build0438.py" emu "$E/$v/compdb.json" "$S/kyty" "$E/$v" "$b" "$bin" \
-            "ARCHIVE=$SA" src/libs/bc5LleAgc.cpp src/graphics/presentation/videoOut.cpp > "$R/build-$v.out" 2>&1 < /dev/null
+            "ARCHIVE=$SA" src/libs/bc5LleAgc.cpp src/graphics/presentation/videoOut.cpp src/kernel/eventQueue.cpp > "$R/build-$v.out" 2>&1 < /dev/null
         rc=$?; echo "$v: build rc $rc; errors $(grep -c 'error:' "$R/build-$v.out"); warnings $(grep -c 'warning:' "$R/build-$v.out")"
         grep -n "error:\|undefined\|COMPILE FAILED" "$R/build-$v.out" | head -20
         [ "$rc" = 0 ] && [ -x "$bin" ] || stop "build $v failed: $R/build-$v.out"

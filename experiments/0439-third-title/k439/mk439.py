@@ -553,6 +553,59 @@ s = rep(s, '''		Bc5Gc::Direct::post([handle, index, flip_mode, flip_arg](bool) {
 				const char               m = Bc5Gc::SoftCp::f52_mode();
 				if (m == '2' || (m == '1' && !f52_first.exchange(true))) Bc5Gc::SoftCp::f52_fire("our flip completed");
 			}''')
+# exp 0439 (tag kv439): the title's kevent waits (the third title's ProxySetSync on "ProxySet Cull"): start and return,
+# with every returned event; and f52's data variants (BC5_0439_FIRE52_DATA=x52: (n << 16) | 0x52, n counting from 1).
+s = rep(s, '''	if (nevents > 0 && events != nullptr) {
+		int out = 0;
+		Bc5Gc::Direct::chain_observe(); // ADR 0010 section B: the EOP events it waits for come after the chain's fence''', '''	auto kv_log = [&](const char* what, int n) { // exp 0439 (tag kv439)
+		static std::atomic<int> kv_n {0};
+		if (kv_n++ >= 80) return;
+		char tn[32] = {};
+		pthread_getname_np(pthread_self(), tn, sizeof(tn));
+		std::fprintf(stderr, "[bc5] exp 0439 (tag kv439): t %.3f s %s: eq %d thread %s nevents %d -> %d\\n", Bc5Gc::Direct::timing_now(), what, kq, tn, nevents, n);
+		for (int k = 0; k < n && k < 4 && events != nullptr; k++) {
+			const auto* e = reinterpret_cast<const EQ::KernelEvent*>(events) + k;
+			std::fprintf(stderr, "[bc5] exp 0439 (tag kv439):   event %d: ident 0x%" PRIx64 " filter %d flags 0x%x fflags 0x%x data 0x%" PRIx64 " udata %p\\n", k, static_cast<uint64_t>(e->ident), static_cast<int>(e->filter),
+			             static_cast<unsigned>(e->flags), static_cast<unsigned>(e->fflags), static_cast<uint64_t>(e->data), e->udata);
+		}
+	};
+	if (nevents > 0 && events != nullptr) {
+		kv_log("wait starts", 0);
+		int out = 0;
+		Bc5Gc::Direct::chain_observe(); // ADR 0010 section B: the EOP events it waits for come after the chain's fence''')
+s = rep(s, '''			const int n = Bc5KeventTimed0405(eq, reinterpret_cast<EQ::KernelEvent*>(events), nevents, timeout);
+			Bc5Gc::Direct::frame_profile_eqwait(static_cast<double>(Bc5Gc::SoftCp::now_ns() - t_eq) / 1e6);
+			return n;''', '''			const int n = Bc5KeventTimed0405(eq, reinterpret_cast<EQ::KernelEvent*>(events), nevents, timeout);
+			Bc5Gc::Direct::frame_profile_eqwait(static_cast<double>(Bc5Gc::SoftCp::now_ns() - t_eq) / 1e6);
+			kv_log("timed wait returns", n);
+			return n;''')
+s = rep(s, '''		(void)timeout; // TODO(bc5): honour the timespec
+		return r == 0 ? out : -1;''', '''		(void)timeout; // TODO(bc5): honour the timespec
+		kv_log("wait returns", r == 0 ? out : -1);
+		return r == 0 ? out : -1;''')
+# f52: data variants and mode 3 after the registration
+s = rep(s, '''		Libs::LibKernel::EventQueue::KernelTriggerEvent(r.eq, static_cast<uintptr_t>(r.ident), Libs::LibKernel::EventQueue::KERNEL_EVFILT_GRAPHICS, reinterpret_cast<void*>(uint64_t {0}));
+		n++;
+	}
+	static std::atomic<int> k {0};
+	if (k++ < 40) std::fprintf(stderr, "[bc5] exp 0439 (tag f52): t %.3f s ident 0x52 fired (%s) to %d registration(s), data 0x0\\n", Direct::timing_now(), why, n);''', '''		Libs::LibKernel::EventQueue::KernelTriggerEvent(r.eq, static_cast<uintptr_t>(r.ident), Libs::LibKernel::EventQueue::KERNEL_EVFILT_GRAPHICS, reinterpret_cast<void*>(f52_data_next));
+		n++;
+	}
+	static std::atomic<int> k {0};
+	if (k++ < 40) std::fprintf(stderr, "[bc5] exp 0439 (tag f52): t %.3f s ident 0x52 fired (%s) to %d registration(s), data 0x%" PRIx64 "\\n", Direct::timing_now(), why, n, f52_data_next);''')
+s = rep(s, '''static void f52_fire(const char* why) {
+	std::vector<EqRegistration> eqs;''', '''static bool f52_registered() {
+	std::lock_guard lock(g_eq_mutex);
+	for (const auto& r: g_eqs)
+		if (r.ident == 0x52) return true;
+	return false;
+}
+static void f52_fire(const char* why) {
+	static const bool        x52 = [] { const char* e = std::getenv("BC5_0439_FIRE52_DATA"); return e != nullptr && std::strcmp(e, "x52") == 0; }();
+	static std::atomic<uint64_t> f52_seq {0};
+	const uint64_t           f52_data_next = x52 ? ((f52_seq.fetch_add(1) + 1) << 16u) | 0x52u : 0u;
+	std::vector<EqRegistration> eqs;''')
+s = rep(s, '''						if (f52_mode() == '3' && !f52_once.exchange(true)) f52_fire("the first compute-queue job completed");''', '''						if (f52_mode() == '3' && f52_registered() && !f52_once.exchange(true)) f52_fire("the first compute-queue job completed after 0x52 was registered");''')
 open(dst + '/bc5LleAgc.cpp', 'w', encoding='utf-8', newline='').write(s)
 
 v = open(src + '/videoOut.cpp', encoding='utf-8', newline='').read()
