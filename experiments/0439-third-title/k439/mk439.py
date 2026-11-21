@@ -91,6 +91,10 @@ static void wr439_scan(const uint32_t* ib, uint32_t n, int ring, const char* kin
 			const uint32_t nn = ib[q + 3] & 0xfffffu;
 			if (na != 0 && nn != 0 && opt.mapped && opt.mapped(na, static_cast<uint64_t>(nn) * 4)) wr439_scan(reinterpret_cast<const uint32_t*>(na), nn, ring, depth == 0 ? "nested1" : depth == 1 ? "nested2" : "nested3", opt, depth + 1);
 		}
+		if ((h >> 30u) == 3 && ((h >> 8u) & 0xffu) == 0x47u && len >= 6 && ((ib[q + 3] >> 24u) & 7u) != 0) { // exp 0439 (tag f52): EVENT_WRITE_EOP with an interrupt
+			static uint64_t ei = 0;
+			if (ei++ < 100) std::fprintf(stderr, "[bc5] exp 0439 (tag f52): t %.3f s ring %d %s job %" PRIu64 " @%u EVENT_WRITE_EOP INT_SEL %u data 0x%08x%08x\n", timing_now(), ring, kind, jobs, q, (ib[q + 3] >> 24u) & 7u, ib[q + 5], ib[q + 4]);
+		}
 		if ((h >> 30u) == 3 && ((h >> 8u) & 0xffu) == 0x49u && len >= 8 && ((ib[q + 2] >> 24u) & 7u) != 0) { // exp 0439 (tag tk439)
 			// RELEASE_MEM with an interrupt (INT_SEL dword 2 bits 26:24): its context id (dword 7) is where a flip token goes
 			// (AnyPS5 VideoOutDriver.cpp, GPL-2.0, 8b403579: the token in INT_CTXID with INT_SEL 2; UNVERIFIED there)
@@ -500,6 +504,55 @@ s = rep(s, '''					const uint32_t exec_count = p[4] & 0x3fffu;
 							std::fprintf(stderr, "[bc5] exp 0439 (tag rp439): dcb %p @%u COND_EXEC guard 0x%" PRIx64 " = 0x%08x, %u dwords %s (next op 0x%02x)\\n", static_cast<const void*>(t_cur_buf), static_cast<unsigned>(p - t_cur_buf), a, rp_v,
 							             exec_count, a != 0 && rp_v == 0 ? "SKIPPED" : "run", ((p[5] >> 8u) & 0xffu));
 					}''')
+# exp 0439 (tag f52): BC5_0439_FIRE52=1|2|3, a test arm (the top session, 11-21): the third title's ProxySetSync waits on
+# its "ProxySet Cull" equeue for EVFILT_GRAPHICS ident 0x52, which nothing raises. 1: once at our first flip, 2: at every flip,
+# 3: once at the first guest compute-queue job's completion. Off by default; a guess, not a fix.
+s = rep(s, '''static void fire_eop(uint64_t data) {''', '''// exp 0439 (tag f52): see the generator's note; mode 'A' or 'B' from BC5_0439_FIRE52, 0 off.
+static char f52_mode() {
+	static const char v = [] {
+		const char* e = std::getenv("BC5_0439_FIRE52");
+		const char  m = (e != nullptr && e[0] >= '1' && e[0] <= '3' && e[1] == 0) ? e[0] : 0; // 1 first flip, 2 every flip, 3 first compute job
+		std::fprintf(stderr, "[bc5] exp 0439 (tag f52): BC5_0439_FIRE52=%c\\n", m != 0 ? m : '0');
+		return m;
+	}();
+	return v;
+}
+static void f52_fire(const char* why) {
+	std::vector<EqRegistration> eqs;
+	{
+		std::lock_guard lock(g_eq_mutex);
+		eqs = g_eqs;
+	}
+	int n = 0;
+	for (const auto& r: eqs) {
+		if (r.ident != 0x52) continue;
+		Libs::LibKernel::EventQueue::KernelTriggerEvent(r.eq, static_cast<uintptr_t>(r.ident), Libs::LibKernel::EventQueue::KERNEL_EVFILT_GRAPHICS, reinterpret_cast<void*>(uint64_t {0}));
+		n++;
+	}
+	static std::atomic<int> k {0};
+	if (k++ < 40) std::fprintf(stderr, "[bc5] exp 0439 (tag f52): t %.3f s ident 0x52 fired (%s) to %d registration(s), data 0x0\\n", Direct::timing_now(), why, n);
+}
+
+static void fire_eop(uint64_t data) {''')
+s = rep(s, '''					t_gpu_done.clear();
+					// The read pointer goes where the queue registration named it and — what the
+					// driver library's free-space check actually reads (its queue table, +0x70;
+					// experiment 0018) — into the dword right behind the ring.''', '''					t_gpu_done.clear();
+					{ // exp 0439 (tag f52): mode 3, once, the first guest compute-queue job's completion
+						static std::atomic<bool> f52_once {false};
+						if (f52_mode() == '3' && !f52_once.exchange(true)) f52_fire("the first compute-queue job completed");
+					}
+					// The read pointer goes where the queue registration named it and — what the
+					// driver library's free-space check actually reads (its queue table, +0x70;
+					// experiment 0018) — into the dword right behind the ring.''')
+s = rep(s, '''		Bc5Gc::Direct::post([handle, index, flip_mode, flip_arg](bool) {
+			VideoOut::VideoOutSubmitFlip(handle, index, flip_mode, flip_arg);''', '''		Bc5Gc::Direct::post([handle, index, flip_mode, flip_arg](bool) {
+			VideoOut::VideoOutSubmitFlip(handle, index, flip_mode, flip_arg);
+			{ // exp 0439 (tag f52): mode 1 once at our first flip, mode 2 at every flip
+				static std::atomic<bool> f52_first {false};
+				const char               m = Bc5Gc::SoftCp::f52_mode();
+				if (m == '2' || (m == '1' && !f52_first.exchange(true))) Bc5Gc::SoftCp::f52_fire("our flip completed");
+			}''')
 open(dst + '/bc5LleAgc.cpp', 'w', encoding='utf-8', newline='').write(s)
 
 v = open(src + '/videoOut.cpp', encoding='utf-8', newline='').read()
