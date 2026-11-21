@@ -6,6 +6,7 @@
 //             L = 2 (the Render Thread's or the chain watchdog's submit_now), then a game-thread wait on L == 1. It must
 //             wait until the slice's own job registers L = 1 for real (r438_end), then find its writer. Returning at once
 //             with "not satisfied" is the give-up path while the writer is still to come.
+//   trim      the early write survives g_plw's trim (9,000 real writes of another label), then as order
 //   identity  one thread, a fixed sequence of slices and registrations; prints g_plw and the non-game answers after each
 //             step (compared between units by the script).
 #include <algorithm>
@@ -149,6 +150,51 @@ static void run_order() {
 	CHECK(got.load() == 1, "the wait found no writer after the slice's real registration");
 }
 
+// trim: the slice's early write of L = 1, then 9,000 real writes of another label (past g_plw's trim at 8,192 entries),
+// then a game-thread wait on L == 1. With r438o the trim keeps the early entry: the wait waits, then finds its writer.
+// Today's trim erases the oldest 4,096 entries by position, the early one with them: the wait returns at once.
+static uint64_t g_label2 = 0x5a5a5a5a5ull;
+static uint32_t g_ib4[8];
+static void run_trim() {
+	release(g_ib4, reinterpret_cast<uintptr_t>(&g_label2), 7);
+	Ring ring;
+	ring.go(1);
+	size_t peak = 0;
+	for (int i = 0; i < 9000; i++) {
+		register_label_writes(g_ib4, 8, kAt0, 600 + static_cast<uint64_t>(i), bc5::direct::kGfxRing);
+		std::lock_guard lk(g_plw_mutex);
+		peak = std::max(peak, g_plw.size());
+	}
+	size_t n = 0, early = 0;
+	{
+		std::lock_guard lk(g_plw_mutex);
+		n = g_plw.size();
+		for (const auto& w: g_plw) early += (w.seq & kR438Early) != 0 ? 1 : 0;
+	}
+	std::atomic<int> got {-1};
+	std::thread      game([&got] {
+        t_game = true;
+        got    = wait_on(1) ? 1 : 0;
+	});
+	std::this_thread::sleep_for(std::chrono::milliseconds(40));
+	const int before = got.load();
+	ring.go(2);
+	game.join();
+	ring.t.join();
+#if defined(R438O_COUNTERS)
+	const uint64_t trims = g_r438o_trims.load(), kept = g_r438o_kept.load();
+#else
+	const uint64_t trims = 0, kept = 0; // the bake unit has no r438o counters
+#endif
+	std::printf("trim: g_plw %zu entries at the end, peak %zu, early entries %zu; trims %" PRIu64 ", early entries kept %" PRIu64 "; the wait on L == 1: %d before the slice's real registration, %d after\n",
+	            n, peak, early, trims, kept, before, got.load());
+	CHECK(early == 1, "the slice's early entry was dropped by the trim");
+	CHECK(peak <= 8193, "the table grew past 8192 + one batch");
+	CHECK(trims >= 1 && kept >= 1, "no trim kept an early entry");
+	CHECK(before == -1, "the wait did not wait for the slice's early writer after the trim");
+	CHECK(got.load() == 1, "the wait found no writer after the slice's real registration");
+}
+
 static void run_identity() {
 	auto dump = [](const char* step) {
 		std::lock_guard lk(g_plw_mutex);
@@ -197,7 +243,8 @@ int main(int argc, char** argv) {
 		std::printf("FAIL: order needs r438 on\n");
 		return 2;
 	}
-	run_order();
+	if (mode == "trim") run_trim();
+	else run_order();
 	std::printf("%s (%d failures)\n", fails == 0 ? "PASS" : "FAIL", fails);
 	return fails == 0 ? 0 : 1;
 }

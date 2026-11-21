@@ -1,7 +1,7 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-2.0
 # BC5 exp 0438 (tag r438o): cut r438's pieces, unchanged, from a unit and run test_r438o.cpp.
-#   bash test_r438o.sh UNIT [MODE]     MODE: order (default) or identity; the caller sets BC5_0438_EARLYREG.
+#   bash test_r438o.sh UNIT [MODE]     MODE: order (default), trim or identity; the caller sets BC5_0438_EARLYREG.
 # Builds into a fresh mktemp directory; one foreground run, no loop. VS clang++ on the laptop (the slice's
 # INDIRECT_BUFFER carries a 40-bit address: a fixed low image base).
 set -euo pipefail
@@ -16,11 +16,12 @@ a=$(lineof 'static thread_local uint64_t t_r438_slice'); b=$(lineof 'static void
 a=$(lineof 'static bool ring_will_satisfy(const uint32_t* p, bool is64, int ring) {'); piece "$a" "$(endf "$a")" r_rws.inc
 cp "$here/test_r438o.cpp" "$out/"
 if [ -n "${R438O_PLANT:-}" ]; then # a planted bug: python -I replaces one exact string in the cut register_label_writes
-	python -I -c 'import sys; p,o,n=sys.argv[1:4]; s=open(p,"rb").read().decode(); assert s.count(o)==1, o; open(p,"wb").write(s.replace(o,n).encode())' "$out/r_reg.inc" "$R438O_PLANT" "if (false) {"
+	python -I -c 'import sys; p,o,n=sys.argv[1:4]; s=open(p,"rb").read().decode(); assert s.count(o)==1, o; open(p,"wb").write(s.replace(o,n).encode())' "$out/${R438O_PLANT_FILE:-r_reg.inc}" "$R438O_PLANT" "${R438O_PLANT_TO:-if (false) {}"
 fi
 LOW="-no-pie"
 case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) LOW="-Wl,/DYNAMICBASE:NO -Wl,/BASE:0x10000000" ;; esac
 cxx=${CXX:-g++}
 [ -z "${CXX:-}" ] && [ -x "/c/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/Llvm/x64/bin/clang++.exe" ] && cxx="/c/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/Llvm/x64/bin/clang++.exe"
-(cd "$out" && "$cxx" -std=c++20 -O1 -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-variable -D_CRT_SECURE_NO_WARNINGS $LOW -o tr.exe test_r438o.cpp)
+CNT=""; grep -q "g_r438o_trims" "$out/r_state.inc" && CNT="-DR438O_COUNTERS"
+(cd "$out" && "$cxx" $CNT -std=c++20 -O1 -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-variable -D_CRT_SECURE_NO_WARNINGS $LOW -o tr.exe test_r438o.cpp)
 "$out/tr.exe" "$mode"

@@ -49,6 +49,54 @@ rep('\tg_plw.insert(g_plw.end(), found.begin(), found.end());\n\tif (r438_cv()) 
     '\t}\n'
     '\tif (r438_cv()) g_plw_cv.notify_all(); // exp 0438 (b438, PLWCV)\n')
 
+# E3 (tag r438o, 2026-11-21): the trim of g_plw keeps early entries with r438 on. Today both trims (register_label_writes
+# and r438_begin) erase the oldest 4096 entries by position once the table passes 8192, early ones included; a dropped
+# early write makes a game-thread wait read "no pending write" (the give-up path) and its slice's end flags nothing.
+# Bound: an early entry lives only from its slice's r438_begin to its r438_end (which erases all of them), so the table
+# holds at most 8192 real entries plus one call's batch plus the early writes of the slices in flight.
+# E4: counters for the normal build only (renumbered early entries, early entries kept by a trim, trims), in r438's
+# 60-s journal line.
+rep('static std::atomic<uint64_t> g_r438_early {0}, g_r438_lost {0}, g_r438_waits {0}, g_r438_wait_ns {0}, g_r438_wait_max {0}, g_r438_long {0};\n#endif\n',
+    'static std::atomic<uint64_t> g_r438_early {0}, g_r438_lost {0}, g_r438_waits {0}, g_r438_wait_ns {0}, g_r438_wait_max {0}, g_r438_long {0};\n'
+    'static std::atomic<uint64_t> g_r438o_renum {0}, g_r438o_kept {0}, g_r438o_trims {0}; // exp 0438 (r438o)\n#endif\n')
+rep('static std::condition_variable             g_plw_cv; // exp 0438 (b438, PLWCV): real writes registered or early ones gone\n',
+    '// exp 0438 (r438o): the trim of g_plw (over 8192 entries the oldest 4096 go). With r438 on, early entries are kept: they are\n'
+    '// not in the kernel yet, and a dropped one reads as "no pending write". Bound: an early entry lives only from the r438_begin\n'
+    '// to the r438_end of its slice, so the table holds at most 8192 real entries, one batch and the slices in flight.\n'
+    'static void r438o_trim_locked() {\n'
+    '\tif (g_plw.size() <= 8192) return;\n'
+    '\tif (!r438_on()) {\n'
+    '\t\tg_plw.erase(g_plw.begin(), g_plw.begin() + 4096);\n'
+    '\t\treturn;\n'
+    '\t}\n'
+    '\tsize_t dropped = 0, kept = 0;\n'
+    '\tauto   out     = g_plw.begin();\n'
+    '\tfor (auto it = g_plw.begin(); it != g_plw.end(); ++it) {\n'
+    '\t\tconst bool early = (it->seq & kR438Early) != 0;\n'
+    '\t\tif (!early && dropped < 4096) {\n'
+    '\t\t\tdropped++;\n'
+    '\t\t\tcontinue;\n'
+    '\t\t}\n'
+    '\t\tif (early && dropped < 4096) kept++;\n'
+    '\t\t*out++ = *it;\n'
+    '\t}\n'
+    '\tg_plw.erase(out, g_plw.end());\n'
+    '#ifndef BC5_LEAN\n'
+    '\tg_r438o_trims++;\n'
+    '\tg_r438o_kept += kept;\n'
+    '#endif\n'
+    '}\n'
+    'static std::condition_variable             g_plw_cv; // exp 0438 (b438, PLWCV): real writes registered or early ones gone\n')
+rep('\t\tw.order = ++order;\n\t}\n\tif (g_plw.size() > 8192) g_plw.erase(g_plw.begin(), g_plw.begin() + 4096);\n',
+    '\t\tw.order = ++order;\n\t}\n\tr438o_trim_locked(); // exp 0438 (r438o): early entries kept with r438 on\n')
+rep('\t\tw.order = ++g_plw_order;\n\t}\n\tif (g_plw.size() > 8192) g_plw.erase(g_plw.begin(), g_plw.begin() + 4096);\n',
+    '\t\tw.order = ++g_plw_order;\n\t}\n\tr438o_trim_locked(); // exp 0438 (r438o): early entries kept with r438 on\n')
+rep('\t\tfor (PendingLabelWrite* w: early) w->order = ++order;\n',
+    '\t\tfor (PendingLabelWrite* w: early) w->order = ++order;\n#ifndef BC5_LEAN\n\t\tg_r438o_renum += early.size();\n#endif\n')
+rep('bug lines (over 100 ms) %" PRIu64 "\\n",',
+    'bug lines (over 100 ms) %" PRIu64 "; r438o: early entries renumbered %" PRIu64 ", kept by the trim %" PRIu64 " in %" PRIu64 " trims\\n",')
+rep('g_r438_long.load());', 'g_r438_long.load(), g_r438o_renum.load(), g_r438o_kept.load(), g_r438o_trims.load());')
+
 out = s.encode('utf-8')
 open(OUT, 'wb').write(out)
 print('IN ', hashlib.md5(src).hexdigest(), IN)
