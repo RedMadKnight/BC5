@@ -1,9 +1,24 @@
 // SPDX-License-Identifier: GPL-2.0-only
 #include "bc5/full_state.hpp"
+#include "bc5/ib_chain.hpp" // exp 0439 (tag ib439)
 
 #include <algorithm>
 
 namespace bc5::full_state {
+
+// exp 0439 (tag ib439): the IB walks' budgets with BC5_DIRECT_IB_CHAIN=1, reset when a walk is entered from outside (a
+// chain keeps depth 0, so the depth cannot say that); a chain cycle ends when the budget does.
+static thread_local std::size_t t_ib439_budget = 0;
+static thread_local std::size_t t_ib439_walk = 0;
+static thread_local int t_ib439_apply_nest = 0;
+static thread_local int t_ib439_walk_nest = 0;
+struct Ib439Enter {
+    int &nest;
+    Ib439Enter(int &n, std::size_t &budget, std::size_t full) : nest(n) {
+        if (nest++ == 0) budget = full;
+    }
+    ~Ib439Enter() { nest--; }
+};
 
 namespace {
 
@@ -144,6 +159,7 @@ void Tracker::apply(std::span<const std::uint32_t> ib, const Reader &read, Stats
 }
 
 void Tracker::apply_level(std::span<const std::uint32_t> ib, const Reader &read, Stats &stats, int depth) {
+    const Ib439Enter ib439_enter(t_ib439_apply_nest, t_ib439_budget, ib_chain::kMaxChainPieces + ib_chain::kMaxCallPieces); // exp 0439 (tag ib439)
     for (std::size_t i = 0; i < ib.size();) {
         const std::uint32_t h = ib[i];
         const std::uint32_t type = h >> 30;
@@ -213,13 +229,19 @@ void Tracker::apply_level(std::span<const std::uint32_t> ib, const Reader &read,
             }
         } else if (op == 0x3f && len >= 4) { // INDIRECT_BUFFER: address lo, hi, IB_SIZE bits 19:0
             const std::uint32_t n = p[3] & 0xfffffu;
+            // exp 0439 (tag ib439): with BC5_DIRECT_IB_CHAIN=1 a chain keeps this depth and ends this buffer
+            // (bc5/ib_chain.hpp); the walk's budget ends a chain cycle.
+            const bool chain = ib_chain::enabled() && ib_chain::is_chain(p[3]);
+            const bool budget_ok = !ib_chain::enabled() || t_ib439_budget > 0;
             const std::uint32_t *t =
-                read && n != 0 && depth < 4 ? read(address(p[1], p[2]), n * 4ull) : nullptr;
+                read && n != 0 && (depth < 4 || chain) && budget_ok ? read(address(p[1], p[2]), n * 4ull) : nullptr;
             if (t == nullptr) {
                 stats.unreadable_nested++;
             } else {
                 stats.nested++;
-                apply_level(std::span<const std::uint32_t>(t, n), read, stats, depth + 1);
+                if (ib_chain::enabled()) t_ib439_budget--;
+                apply_level(std::span<const std::uint32_t>(t, n), read, stats, ib_chain::child_depth(depth, p[3], ib_chain::enabled()));
+                if (chain) return;
             }
         } else if (op == 0x11 && len >= 2) { // SET_BASE: base_index in dword 1 bits 3:0
             packets_.set_base[p[1] & 0xfu] = body();
@@ -338,6 +360,7 @@ namespace {
 // address lo, hi, IB_SIZE bits 19:0) through the reader, four levels deep.
 void walk_draws(Tracker &t, std::span<const std::uint32_t> ib, const Tracker::Reader &read, int depth,
                 const std::function<void(std::size_t, std::span<const std::uint32_t>, const Tracker &)> &f) {
+    const Ib439Enter ib439_enter(t_ib439_walk_nest, t_ib439_walk, ib_chain::kMaxChainPieces); // exp 0439 (tag ib439)
     Stats st;
     std::size_t from = 0;
     for (std::size_t i = 0; i < ib.size();) {
@@ -354,14 +377,20 @@ void walk_draws(Tracker &t, std::span<const std::uint32_t> ib, const Tracker::Re
             t.apply(ib.subspan(from, i - from), read, st);
             from = i;
             f(i, ib.subspan(i, len), t);
-        } else if (type == 3 && op == 0x3f && len >= 4 && depth < 4 && read) {
+        } else if (type == 3 && op == 0x3f && len >= 4 && read &&
+                   (ib_chain::enabled() && ib_chain::is_chain(ib[i + 3]) ? t_ib439_walk > 0 : depth < 4)) {
+            // exp 0439 (tag ib439): with BC5_DIRECT_IB_CHAIN=1 a chain keeps this depth and ends this buffer
+            const bool chain = ib_chain::enabled() && ib_chain::is_chain(ib[i + 3]);
             t.apply(ib.subspan(from, i - from), read, st);
             from = i + len;
             const std::uint32_t n = ib[i + 3] & 0xfffffu;
             const std::uint64_t a = (static_cast<std::uint64_t>(ib[i + 1]) & ~3ull) |
                                     (static_cast<std::uint64_t>(ib[i + 2] & 0xffffu) << 32);
-            if (const std::uint32_t *nested = n != 0 ? read(a, n * 4ull) : nullptr; nested != nullptr)
-                walk_draws(t, std::span<const std::uint32_t>(nested, n), read, depth + 1, f);
+            if (const std::uint32_t *nested = n != 0 ? read(a, n * 4ull) : nullptr; nested != nullptr) {
+                if (chain) t_ib439_walk--;
+                walk_draws(t, std::span<const std::uint32_t>(nested, n), read, ib_chain::child_depth(depth, ib[i + 3], ib_chain::enabled()), f);
+                if (chain) return; // the chain replaced the rest of this buffer
+            }
         }
         i += len;
     }

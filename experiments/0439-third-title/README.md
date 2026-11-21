@@ -233,6 +233,74 @@ the control's line has none, `X=1;rm` is refused).
       - With the switch on, ASTRO's interrupts go to ident 0 (graphics, 5 registrations, INT_SEL 1, 2 and 4; the 3
         INT_SEL 4 ones newly fired) and to 0x40 from compute queue slot 0x21 (= 0x20 + 0x21 - 1).
       - The third title on: 0 deliveries, the stall unchanged.
+    - With the switch on, ASTRO gets 3 interrupts it never got before (INT_SEL 4, ident 0). The 5 registrations for ident
+      0 are the graphics EOP events; ASTRO's frame count and timing did not change visibly (3000 flips by 53.48 s against
+      53.44 s). TODO: name the 5 registrations' equeues from the ae27-on log.
+    - Lean A/B for the clean-boot chain (prepared, not run): `k439/ab439ae.sh`, one private lean binary for both arms, C
+      without the word and O with `BC5_DIRECT_AGC_EOP_IDENT=1`, C O C O C O, 180 s each, MangoHud's frame log.
+24. *Cross-pack runs (x28, 16:32-16:33, normal `2befcb17`, resets 11 -> 11, fault records 27 -> 27).*
+    - The host LLE-loads every module in the one `SHADPS4_SYSMODULES_PACK_DIR` (KytyPlus `runtimeLinker.cpp`
+      `add_lle_dir`) and keeps the rest on HLE, so the packs were mixed with symlinks.
+    - ASTRO BOT's pack has Agc `ca1e6fbe` (326,986 B), AgcDriver `84836a01` (122,613), Psml `817f6df6` (1,536,002), Ampr
+      and PlayGo. The third title's has Agc `0dced71f` (326,617), AgcDriver `b2a41370` (122,383), Psml `c534dc41`
+      (1,524,286); its dump renamed Ampr and PlayGo to `... orig`.
+    - Its `fakelib orig/` holds the same three files at the same sizes; each differs in 3 bytes at one place.
+      `eboot.bin` and `eboot.bin orig` differ in 19 bytes.
+    - X1, the third title with ASTRO's Agc/AgcDriver/Psml: the same stall, 1 flip, labels as with its own pack.
+      DISTURBED: reimpl-agc-psml's gdb watcher attached to this run's emulator by mistake from 16:32:06 to 16:32:35 (the
+      process stopped on attach; nothing written). That covers most of X1's 30 s, so X1 is not a result; a rerun is
+      queued behind the IB_CHAIN work, low priority.
+    - X2, ASTRO with the third title's three: 3000 flips by 53.08 s (53.44 s with its own pack), no fault.
+    - So the module pack is not the stall's cause.
+    - Both titles require system software 11.60 (param.json); the host answers 10.60, and ASTRO plays with that.
+25. *The stall's cause (yotei-memdump, exp 0440, from a memory dump at the stall).*
+    - The title's frame is one dcb of 73 segments chained by INDIRECT_BUFFER with the CHAIN bit (bit 20 of the size
+      dword), 9,346 dwords. Only the head (103 dwords) is submitted.
+    - The label-0 write is a WRITE_DATA in the last segment. The partner labels of the two held acbs are RELEASE_MEMs in
+      segments 29 and 34.
+    - Every IB walker counted a chain as one more nesting level: `submit_impl` (`depth >= 3`, 64 pieces, then the cut IB
+      NOP-ed), the soft CP (`depth >= 4`), `policy::refusal_in` (`depth < 3`), `full_state`'s walks (`depth < 4`). So
+      only segments 0-3 ran, and the rest of the frame was dropped without a line.
+26. *`BC5_DIRECT_IB_CHAIN` (tag ib439, off unless "1").*
+    - The rule (`backend/include/bc5/ib_chain.hpp`): a chain keeps its parent's depth, ends the parent's buffer and has
+      no limit of its own below 4096 segments. Calls keep the 3-level limit and the 64-piece cap. A chain or call to
+      its own ancestor is a cycle: the submit is refused with a line.
+    - Sources: AMD PAL c5e8000 `gfx9_plus_merged_f32_pfp_pm4_packets.h:2580`; shadPS4 1b9d159; our PORT-CHAIN note
+      (F760, `acb_restore.hpp`).
+    - Applied in `direct.cpp` `submit_impl`, `policy.cpp` `refusal_in`, `full_state.cpp` `apply_level` / `walk_draws`
+      (a walk budget ends a cycle), and the soft CP's `indirect_buffer` / `execute` (mk439.py, `ib439.txt`).
+    - The label-writer and readiness scans (`acb_ready`, `hold_note_writes`, plw) read one buffer and follow no IB, so
+      the rule does not touch them.
+    - A cut IB is logged even with the switch off: `submit_impl` prints the count of NOP-ed INDIRECT_BUFFER packets
+      and how many were chains (first 16 submits, then every 1000th). The backend archive is shared by normal and lean,
+      so this line is in lean too.
+    - The flip packet in segment 72 writes the VideoOut buffer label. That label lives on an anonymous host page the
+      direct path maps for the GPU (exp 0071), and `policy::filter` drops any write outside the mapped ranges
+      (`unmapped_drops`). So it either lands on that page or is dropped and counted; it cannot fault.
+    - Det tests (`k439/test_ib0439.cpp`, g++ in the ubuntu container), PASS:
+      - a 73-segment chain is collected whole at depth 0, and its last-segment label write is found (switch off: 4
+        pieces, write missing);
+      - with calls and a chain mixed, a 4th-level call is not followed and a chain from level 3 is;
+      - two chain cycles are refused;
+      - on 2000 random IB trees, off equals the old loop, and on without chain bits equals off.
+    - The planted bug (`-DBC5_IB439_PLANT`, a chain counted as a level) FAILS 2 checks, as it must. Output:
+      `logs/test_ib0439.out`.
+    - Private build: backend archive `81dcf888` (the shared one with `direct.cpp.o`, `policy.cpp.o`, `full_state.cpp.o`
+      from the branch), normal `0befd641`, then `e0ae3ba9` with the chain rule in `dc0439.hpp`'s `walk_draws` as
+      well, then `3a79a88e`.
+    - Runs, 16:48-16:57 (ib29.sh):
+      - ASTRO BOT with `BC5_DIRECT_IB_CHAIN=1`: 3000 flips by 52.93 s, no fault. ASTRO submits no chain at all (0 chain
+        submits, 0 IBs NOP-ed), so the rule does not touch it.
+      - The third title with the switch on, two runs: the frame went whole, twice (73 pieces, 72 chained, longest 72,
+        none cut or refused). It flipped a second frame at 1.4 s, its first non-blank compressed surface (keys
+        0x40). Then it ended at "TextureCache: compressed video-out read requires clean native GPU contents"
+        (exit 65): the decompress pass was not run.
+      - With the chain-aware walker the draw into the flip surface is found (job 33). Its DCC_BASE is `0x5007140000`,
+        the registered metadata - 0x28000. `3a79a88e` takes the draw's block when its BASE is the surface.
+      - A second ASTRO start in one series fails with "invalid file .../PPSA21567/sce_sys/param.json" whatever the
+        switch says (3 times): a mount race between runs, not the switch.
+    - 17:05: the box went off the network during the third title's 30-s run with `3a79a88e`: the first run in which the
+      decompress pass could fire. TODO: the journal, pstore and the run's log once the box is back.
 
 (more to come)
 

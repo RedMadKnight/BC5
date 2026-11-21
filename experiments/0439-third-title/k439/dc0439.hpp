@@ -33,6 +33,8 @@
 #include <cstring>
 #include <vector>
 
+#include "bc5/ib_chain.hpp" // exp 0439 (tag ib439): the chain rule for walk_draws
+
 namespace bc5::dc439 {
 
 // Context register offsets (dwords from 0x28000).
@@ -119,7 +121,7 @@ struct Hit {
 };
 template <typename Readable>
 inline void walk_draws(const std::uint32_t *ib, std::size_t n, Ctx &cx, const std::vector<std::uint64_t> &surfaces, std::vector<Hit> &hits,
-                       const Readable &readable, int depth = 0) {
+                       const Readable &readable, int depth = 0, std::size_t chain_left = ib_chain::kMaxChainPieces) {
     for (std::size_t i = 0; i < n;) {
         const std::uint32_t h = ib[i];
         const std::uint32_t type = h >> 30, count = (h >> 16) & 0x3fffu;
@@ -155,14 +157,19 @@ inline void walk_draws(const std::uint32_t *ib, std::size_t n, Ctx &cx, const st
                         for (std::uint32_t q = 0; q < cnt; q++) cx.set(reg + q, m[q]);
                     }
                 }
-            } else if ((op == 0x3f || op == 0x33) && len >= 4 && depth == 0) {
+            } else if ((op == 0x3f || op == 0x33) && len >= 4 &&
+                       (ib_chain::enabled() && ib_chain::is_chain(p[3]) ? chain_left > 0 : depth == 0)) {
+                // exp 0439 (tag ib439): with BC5_DIRECT_IB_CHAIN=1 a chain (bit 20) keeps this depth and ends this buffer;
+                // at most kMaxChainPieces links, so a chain cycle ends (bc5/ib_chain.hpp)
+                const bool chain = ib_chain::enabled() && ib_chain::is_chain(p[3]);
                 const std::uint64_t a = (p[1] & ~3u) | (static_cast<std::uint64_t>(p[2] & 0xffffu) << 32);
                 const std::uint32_t sz = p[3] & 0xfffffu;
                 if (a != 0 && sz != 0 && readable(a, static_cast<std::uint64_t>(sz) * 4)) {
                     std::vector<std::uint32_t> sub(sz);
                     const auto *m = reinterpret_cast<const volatile std::uint32_t *>(a);
                     for (std::uint32_t k = 0; k < sz; k++) sub[k] = m[k];
-                    walk_draws(sub.data(), sub.size(), cx, surfaces, hits, readable, depth + 1);
+                    walk_draws(sub.data(), sub.size(), cx, surfaces, hits, readable, chain ? depth : depth + 1, chain ? chain_left - 1 : chain_left);
+                    if (chain) return;
                 }
             } else if (is_draw(op)) {
                 const std::uint32_t tm = cx.valid[kCbTargetMask] ? cx.value[kCbTargetMask] : 0xffffffffu;

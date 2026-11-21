@@ -255,7 +255,15 @@ static void dc439_flip(int index) {
 		}
 		if (plain) return;
 	}
-	if (!s.block.valid || !s.block.dcc_enable() || s.block.dcc_base() != s.meta) {
+	// exp 0439 (tag ib439 run, 16:56): the draw's DCC_BASE is the registered metadata - 0x28000 for this title (VideoOut's
+	// metadata address points inside the DCC buffer). The colour target's own registers are what the GPU used, so a block
+	// whose BASE is the surface and whose DCC is on is taken; the offset is logged once per index.
+	if (s.block.valid && s.block.dcc_enable() && s.block.base() == s.data && s.block.dcc_base() != s.meta) {
+		static std::atomic<int> k {0};
+		if (k++ < 8) std::fprintf(stderr, "[bc5] exp 0439 (tag dc439): t %.3f s index %d: the draw's DCC_BASE 0x%" PRIx64 " is the registered metadata %+lld bytes: the draw's is used\n", timing_now(), index, s.block.dcc_base(),
+		                          static_cast<long long>(s.block.dcc_base()) - static_cast<long long>(s.meta));
+	}
+	if (!s.block.valid || !s.block.dcc_enable() || s.block.base() != s.data) {
 		std::lock_guard lk(dc439::g_mu);
 		for (auto& x: dc439::g_surf)
 			if (x.index == index && x.no_block++ < 8) dc439_log(x, "NOT decompressed (no matching DCC block)");
@@ -681,6 +689,44 @@ s = rep(s, '''							t_compute_ring = false;
 						}''', '''							t_compute_ring = false;
 							t_ae439_slot   = 0;
 						}''')
+# exp 0439 (tag ib439): BC5_DIRECT_IB_CHAIN=1 (off by default) in the soft CP: a chained IB (bit 20 of the size dword) runs
+# at the caller's depth and ends the caller's buffer (the rest is never read); calls keep the old limit (depth >= 4 not
+# followed); a budget per outermost walk ends a chain cycle, loudly (bc5/ib_chain.hpp, sources there). Off: as before.
+s = rep(s, '#include "bc5/direct.hpp"\n', '#include "bc5/direct.hpp"\n#include "bc5/ib_chain.hpp" // exp 0439 (tag ib439)\n')
+s = rep(s, '''static void indirect_buffer(const uint32_t* p, int depth) {
+	const uint64_t a    = addr64(p[1], p[2], 0xffu);
+	const uint32_t size = p[3] & 0xfffffu;
+	if (a == 0 || size == 0 || depth >= 4) {
+		return;
+	}
+	dump_cb(depth == 0 ? "ib1" : "ib2", reinterpret_cast<const uint32_t*>(a), size);
+	execute(reinterpret_cast<const uint32_t*>(a), size, depth + 1);
+}''', '''static thread_local uint32_t t_ib439_budget = 0; // exp 0439 (tag ib439)
+static thread_local int      t_ib439_nest   = 0;
+// exp 0439 (tag ib439): true when a chain was followed, so the caller's buffer ends there.
+static bool indirect_buffer(const uint32_t* p, int depth) {
+	const uint64_t a     = addr64(p[1], p[2], 0xffu);
+	const uint32_t size  = p[3] & 0xfffffu;
+	const bool     rule  = bc5::ib_chain::enabled();
+	const bool     chain = rule && bc5::ib_chain::is_chain(p[3]);
+	if (a == 0 || size == 0 || (depth >= 4 && !chain)) {
+		return false;
+	}
+	if (t_ib439_nest++ == 0) t_ib439_budget = static_cast<uint32_t>(bc5::ib_chain::kMaxChainPieces + bc5::ib_chain::kMaxCallPieces);
+	if (rule && t_ib439_budget-- == 0) {
+		static std::atomic<int> k {0};
+		if (k++ < 16) std::fprintf(stderr, "[bc5] exp 0439 (tag ib439): soft CP: the IB walk is over its budget at %p (a chain cycle or over 4096 segments): stopped\\n", static_cast<const void*>(p));
+		t_ib439_nest--;
+		return chain;
+	}
+	dump_cb(depth == 0 ? "ib1" : "ib2", reinterpret_cast<const uint32_t*>(a), size);
+	execute(reinterpret_cast<const uint32_t*>(a), size, bc5::ib_chain::child_depth(depth, p[3], rule));
+	t_ib439_nest--;
+	return chain;
+}''')
+s = rep(s, '''				case IT_INDIRECT_BUFFER_CNST: indirect_buffer(p, depth); break;''', '''				case IT_INDIRECT_BUFFER_CNST:
+					if (indirect_buffer(p, depth)) return; // exp 0439 (tag ib439): a chain ends this buffer
+					break;''')
 open(dst + '/bc5LleAgc.cpp', 'w', encoding='utf-8', newline='').write(s)
 
 v = open(src + '/videoOut.cpp', encoding='utf-8', newline='').read()
