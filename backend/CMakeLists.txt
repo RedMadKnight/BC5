@@ -31,6 +31,7 @@ add_library(bc5_backend
     src/pm4.cpp
     src/dispatch_min.cpp
     src/policy.cpp
+    src/reg_catch.cpp
     src/state_stack.cpp
     src/full_state.cpp
     src/cu_tables.cpp
@@ -115,7 +116,7 @@ if(BC5_BUILD_TESTS)
                    tests/pad_audio_route_test.cpp tests/selftest_route_test.cpp
                    tests/zero_skip_test.cpp tests/draw_args_test.cpp
                    tests/acb_restore_test.cpp tests/env_flag_test.cpp
-                   tests/start_state_test.cpp tests/gc_trace_test.cpp)
+                   tests/start_state_test.cpp tests/gc_trace_test.cpp tests/reg_catch_test.cpp)
     file(GLOB BC5_REIMPL_TESTS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/reimpl/*_test.cpp)
     target_sources(bc5_backend_tests PRIVATE ${BC5_REIMPL_TESTS})
     target_link_libraries(bc5_backend_tests PRIVATE bc5_backend bc5_warnings Catch2::Catch2WithMain)
