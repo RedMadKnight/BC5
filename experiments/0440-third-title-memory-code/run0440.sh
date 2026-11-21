@@ -87,7 +87,7 @@ go-inner)
   tag=$2; waits=$3; out=$E/runs/$tag; dump=$PRIV/$tag
   exec >> "$out/go.log" 2>&1
   [ "$(md5sum < "$BIN" | cut -d' ' -f1)" = "$BIN_MD5" ] || die "the binary is not $BIN_MD5"
-  take_lock "yotei memdump $tag"
+  take_lock "third title memdump $tag"
   pid=""; LP=""; start=$(date '+%F %T')
   finish() {
     set +e
