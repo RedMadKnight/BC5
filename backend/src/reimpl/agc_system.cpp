@@ -313,11 +313,64 @@ Group select_group(bool old_api, std::uint32_t version) {
     }
 }
 
+// The descriptor as the original lays it out (description section 3.4, checked against the
+// module's relocations): each present list field points at a cell array with ONE pointer per pair
+// (cell[i] = &pairs[i]; the title indexes it with the pair index of a name-table code); an absent
+// list has a null field. The name table holds 12-byte entries {u32 name hash, u32 code, u32 0}:
+// code & 3 = list, (code & 0x3fc) >> 2 = pair index (run rN45T7, 2026-11-21: with a null table
+// ASTRO BOT's own register lookups failed and its screenshot target got a 1016-MiB size).
 struct Holder {
     RegisterDefaults desc{};
-    RegPair *cells[4] = {};
+    std::vector<RegPair *> cells[4];
+    std::vector<std::uint32_t> names;
 };
 std::map<int, Holder> g_holders;
+
+// The pair array of a descriptor list field (its first cell), or null for an absent list.
+const RegPair *first_pair(RegPair *const *field) { return field != nullptr ? *field : nullptr; }
+
+// Name table of each of the 40 descriptors (0x28000 + 0x40 * k): image address and entry count,
+// read from the module's relocations of descriptor + 0x30 and its word at + 0x38 (interop facts,
+// like the table addresses above). The entries themselves are name hashes of the original
+// module: they are read from the module file at run time (FirmwareData) and never stored here.
+struct NameTableRef {
+    std::uint64_t vaddr;
+    std::uint32_t count;
+};
+constexpr NameTableRef kNameTables[40] = {
+    {0x1bfe0, 15},  {0x1c060, 15},  {0x1c120, 150}, {0x1c5d0, 150}, {0x1cce0, 24},
+    {0x1cda0, 24},  {0x1cec0, 137}, {0x1d310, 137}, {0x1d980, 15},  {0x1da00, 15},
+    {0x1dac0, 150}, {0x1df70, 150}, {0x1e680, 19},  {0x1e720, 19},  {0x1e810, 150},
+    {0x1ecc0, 150}, {0x1f3d0, 21},  {0x1f480, 21},  {0x1f580, 156}, {0x1fa60, 156},
+    {0x201b0, 22},  {0x20260, 22},  {0x20370, 127}, {0x20770, 127}, {0x20d70, 22},
+    {0x20e20, 22},  {0x20f30, 127}, {0x21330, 127}, {0x21930, 22},  {0x219e0, 22},
+    {0x21af0, 127}, {0x21ef0, 127}, {0x224f0, 28},  {0x225d0, 28},  {0x22720, 128},
+    {0x22b20, 128}, {0x23120, 25},  {0x231f0, 25},  {0x23320, 135}, {0x23760, 135},
+};
+
+// The name table of the descriptor at `desc_vaddr`, from the module file when firmware data is
+// available; empty otherwise (then the field stays null and a title's lookups by name fail).
+bool load_names(std::uint64_t desc_vaddr, std::vector<std::uint32_t> &out) {
+    if (desc_vaddr < kDescriptorBase || (desc_vaddr - kDescriptorBase) % 0x40u != 0 ||
+        (desc_vaddr - kDescriptorBase) / 0x40u >= 40u) {
+        return false;
+    }
+    const NameTableRef &ref = kNameTables[(desc_vaddr - kDescriptorBase) / 0x40u];
+    FirmwareData *fw = firmware_data_for_use();
+    const std::uint8_t *src = fw != nullptr ? fw->get(kModule, ref.vaddr, 12ull * ref.count) : nullptr;
+    if (src == nullptr) {
+        static bool logged = false;
+        if (!logged) {
+            logged = true;
+            log(kModule, "register-defaults name table not available (no module file data): "
+                         "lookups by register name will fail");
+        }
+        return false;
+    }
+    out.resize(3u * ref.count);
+    std::memcpy(out.data(), src, 12ull * ref.count);
+    return true;
+}
 
 struct Selector {
     std::uint32_t version;
@@ -389,26 +442,32 @@ const RegisterDefaults *select_defaults(bool old_api, bool internal, std::uint32
     const Group g = select_group(old_api, version);
     const int key = (old_api ? 1 : 0) | (internal ? 2 : 0) | (static_cast<int>(g) << 2);
     Holder &h = g_holders[key];
-    // Host layout: every list field points at its cell (the slot-0 pointer of the original's slot
-    // array); an absent list has a null cell where the original has a null list field.
-    h.desc.cx = &h.cells[0];
-    h.desc.sh = &h.cells[1];
-    h.desc.uc = &h.cells[2];
-    h.desc.fourth = &h.cells[3];
     const Lists &lists = internal ? kGroups[static_cast<int>(g)].internal
                                   : kGroups[static_cast<int>(g)].pub;
-    compare_counts(descriptor_vaddr(g, old_api, internal), lists.count);
+    const std::uint64_t dv = descriptor_vaddr(g, old_api, internal);
+    compare_counts(dv, lists.count);
     std::uint32_t *const counts[4] = {&h.desc.cx_count, &h.desc.sh_count, &h.desc.uc_count,
                                       &h.desc.fourth_count};
+    RegPair *bases[4] = {};
     for (int l = 0; l < 4; ++l) {
         const bool present = lists.id[l] != kNone;
-        h.cells[l] = present ? load_table(tables::table_image_address(lists.id[l]), lists.count[l])
-                             : nullptr;
-        *counts[l] = h.cells[l] != nullptr ? lists.count[l] : 0u;
+        bases[l] = present ? load_table(tables::table_image_address(lists.id[l]), lists.count[l])
+                           : nullptr;
+        *counts[l] = bases[l] != nullptr ? lists.count[l] : 0u;
+        h.cells[l].resize(*counts[l]);
+        for (std::uint32_t i = 0; i < *counts[l]; ++i) {
+            h.cells[l][i] = bases[l] + i;
+        }
     }
-    // The name table (hashes) is not part of the description: register names are resolved by
-    // offset (resolve_descriptors), so the field stays null.
-    patch_defaults(sel, h.cells[0], h.desc.cx_count, h.cells[1], h.desc.sh_count);
+    h.desc.cx = h.cells[0].empty() ? nullptr : h.cells[0].data();
+    h.desc.sh = h.cells[1].empty() ? nullptr : h.cells[1].data();
+    h.desc.uc = h.cells[2].empty() ? nullptr : h.cells[2].data();
+    h.desc.fourth = h.cells[3].empty() ? nullptr : static_cast<void *>(h.cells[3].data());
+    if (h.names.empty() && load_names(dv, h.names)) {
+        h.desc.name_table = h.names.data();
+        h.desc.name_count = static_cast<std::uint32_t>(h.names.size() / 3u);
+    }
+    patch_defaults(sel, bases[0], h.desc.cx_count, bases[1], h.desc.sh_count);
     return &h.desc;
 }
 
@@ -925,15 +984,15 @@ std::int32_t build_new_slot(QueueSlot &slot, std::uint32_t version, bool trusted
     const RegisterDefaults *const dbs[2] = {sceAgcGetRegisterDefaults2(version),
                                             sceAgcGetRegisterDefaults2Internal(version)};
     if (state().use_clear_state_for_cx != 0 && g_imports.patch_clear_state != nullptr &&
-        *dbs[0]->cx != nullptr) {
+        first_pair(dbs[0]->cx) != nullptr) {
         if (const int rc = g_imports.patch_clear_state(
-                reinterpret_cast<const std::uint32_t *>(*dbs[0]->cx), dbs[0]->cx_count);
+                reinterpret_cast<const std::uint32_t *>(first_pair(dbs[0]->cx)), dbs[0]->cx_count);
             rc != 0) {
             return rc;
         }
     }
     for (const RegisterDefaults *db : dbs) {
-        const RegPair *cx = *db->cx;
+        const RegPair *cx = first_pair(db->cx);
         for (std::uint32_t k = 0; cx != nullptr && k < db->cx_count; ++k) {
             if (cx[k].offset >= 0x400) {
                 log(kModule, "illegal context register 0x%x in the default state", cx[k].offset);
@@ -968,12 +1027,12 @@ std::int32_t build_new_slot(QueueSlot &slot, std::uint32_t version, bool trusted
     slot.sh = ptr<RegPair>(sh_mem);
     slot.uc = ptr<RegPair>(uc_mem);
     for (const RegisterDefaults *db : dbs) {
-        if (*db->sh != nullptr) {
-            copy_bytes(slot.sh + slot.sh_count, *db->sh, 8ull * db->sh_count);
+        if (first_pair(db->sh) != nullptr) {
+            copy_bytes(slot.sh + slot.sh_count, first_pair(db->sh), 8ull * db->sh_count);
             slot.sh_count += db->sh_count;
         }
-        if (*db->uc != nullptr) {
-            copy_bytes(slot.uc + slot.uc_count, *db->uc, 8ull * db->uc_count);
+        if (first_pair(db->uc) != nullptr) {
+            copy_bytes(slot.uc + slot.uc_count, first_pair(db->uc), 8ull * db->uc_count);
             slot.uc_count += db->uc_count;
         }
     }

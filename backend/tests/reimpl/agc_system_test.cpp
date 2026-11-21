@@ -301,6 +301,70 @@ struct Env {
 
 } // namespace
 
+TEST_CASE("register defaults: one cell per pair and the name table, as the original lays them out",
+          "[agc][system]") {
+    Env env;
+    // A synthetic name table for version 13's descriptors (group OTHER: Defaults2 0x281C0, 137
+    // entries at image 0x1D310; Defaults2Internal 0x28140, 24 entries at 0x1CDA0): {hash, code, 0}.
+    std::vector<u32> pub_names, int_names;
+    for (u32 i = 0; i < 137; ++i) {
+        pub_names.insert(pub_names.end(), {0xA5000000u + i, (i << 2) | (i % 3), 0u});
+    }
+    for (u32 i = 0; i < 24; ++i) {
+        int_names.insert(int_names.end(), {0x5A000000u + i, i << 2, 0u});
+    }
+    image().put(0x1D310, pub_names.data(), 4 * pub_names.size());
+    image().put(0x1CDA0, int_names.data(), 4 * int_names.size());
+    REQUIRE(agc::module_load() == 0);
+
+    const agc::RegisterDefaults *d = agc::sceAgcGetRegisterDefaults2(13);
+    REQUIRE(d != nullptr);
+    // Every present list: cell i points at pair i of one array (a title indexes the cells with
+    // the pair index of a name-table code); the public set has no fourth list: null field.
+    for (agc::RegPair *const *cells : {d->cx, d->sh, d->uc}) {
+        REQUIRE(cells != nullptr);
+    }
+    const u32 counts[3] = {d->cx_count, d->sh_count, d->uc_count};
+    agc::RegPair *const *const lists[3] = {d->cx, d->sh, d->uc};
+    for (int l = 0; l < 3; ++l) {
+        REQUIRE(counts[l] > 0);
+        for (u32 i = 0; i < counts[l]; ++i) {
+            CHECK(lists[l][i] == lists[l][0] + i);
+        }
+    }
+    CHECK(d->fourth == nullptr);
+
+    // The name table comes from the module file, entry for entry.
+    REQUIRE(d->name_table != nullptr);
+    REQUIRE(d->name_count == 137u);
+    const auto *names = static_cast<const u32 *>(d->name_table);
+    CHECK(std::memcmp(names, pub_names.data(), 4 * pub_names.size()) == 0);
+    // A lookup the way a title does it: hash -> code -> list and pair -> the pair through the cell.
+    const u32 code = names[3 * 7 + 1];
+    const agc::RegPair *const *list = lists[code & 3u];
+    CHECK(list[(code & 0x3FCu) >> 2] == lists[code & 3u][0] + 7);
+
+    const agc::RegisterDefaults *in = agc::sceAgcGetRegisterDefaults2Internal(13);
+    REQUIRE(in->name_table != nullptr);
+    CHECK(in->name_count == 24u);
+    CHECK(static_cast<const u32 *>(in->name_table)[3 * 4] == 0x5A000004u);
+}
+
+TEST_CASE("register defaults without module file data: cells per pair, no name table",
+          "[agc][system]") {
+    Env env;
+    bc5::reimpl::set_data_switches({false, false});
+    REQUIRE(agc::module_load() == 0);
+    const agc::RegisterDefaults *d = agc::sceAgcGetRegisterDefaults2(13);
+    REQUIRE(d != nullptr);
+    REQUIRE(d->cx != nullptr);
+    for (u32 i = 0; i < d->cx_count; ++i) {
+        CHECK(d->cx[i] == d->cx[0] + i);
+    }
+    CHECK(d->name_table == nullptr);
+    CHECK(d->name_count == 0u);
+}
+
 TEST_CASE("module_load carves the static area and the DMEM allocator", "[agc][system]") {
     Env env;
     REQUIRE(agc::module_load() == 0);
