@@ -94,6 +94,21 @@ inflight() { # the stale-value window without the queue (BC5_0438_SUBMITQ unset)
 		if [ "$rc" != 0 ]; then echo "   planted inflight-off (BC5_0438_INFLIGHT_NG=1): FAIL as it must (rc $rc)"; grep '^FAIL' "$d/inflight.txt" | sed 's/^/      /'; else echo "FAIL: planted inflight-off not caught"; exit 1; fi
 	fi
 }
+shape67() { # the full set's first broken order (cq438f1): D's wait on d40 given up while acb_ready holds A1
+	echo "== 6. shape67 (INFLIGHT_NG=1 OPEN_NG=1 unless shown)"
+	local dly he rc
+	for dly in 1 20; do for he in 0 1; do
+		rc=0; (unset BC5_0438_SUBMITQ BC5_0438_HELD_EARLY; [ "$he" = 1 ] && export BC5_0438_HELD_EARLY=1; BC5_0438_INFLIGHT_NG=1 BC5_0438_OPEN_NG=1 Q438_SHAPE_DELAY_MS=$dly "$out/new/tq.exe" shape67) > "$out/sh-$dly-$he.txt" || rc=$?
+		grep '^shape67\|^FAIL' "$out/sh-$dly-$he.txt" | sed 's/^/   /'; [ "$rc" = 0 ] || { echo "FAIL: shape67 delay $dly HELD_EARLY $he"; exit 1; }
+	done; done
+	(unset BC5_0438_SUBMITQ BC5_0438_HELD_EARLY BC5_0438_INFLIGHT_NG BC5_0438_OPEN_NG; Q438_SHAPE_DELAY_MS=20 "$out/new/tq.exe" shape67) | grep '^shape67' | sed 's/^/   /'
+	local d="$out/p-held-off"; cp -r "$out/new" "$d"; rm -f "$d/tq.exe"
+	python -I -c 'import sys; p,o,n=sys.argv[1:4]; s=open(p,"rb").read().decode(); assert s.count(o)==1, o; open(p,"wb").write(s.replace(o,n).encode())' "$d/q_q.inc" 'if (g_held438.count({ib, num_dwords}) != 0) return; // once per hold' 'return;'
+	build "$d" Q438_NEW tq.exe
+	rc=0; (unset BC5_0438_SUBMITQ; BC5_0438_HELD_EARLY=1 BC5_0438_INFLIGHT_NG=1 BC5_0438_OPEN_NG=1 Q438_SHAPE_DELAY_MS=20 "$d/tq.exe" shape67) > "$d/sh.txt" || rc=$?
+	if [ "$rc" != 0 ]; then echo "   planted held-off (HELD_EARLY=1, delay 20): FAIL as it must (rc $rc)"; grep '^FAIL\|^shape67' "$d/sh.txt" | sed 's/^/      /'; else echo "FAIL: planted held-off not caught"; exit 1; fi
+}
+if [ "${Q438_ONLY:-}" = shape67 ]; then shape67; echo "== all done"; exit 0; fi
 if [ "${Q438_ONLY:-}" = inflight ]; then inflight; echo "== all done"; exit 0; fi
 if [ "${Q438_ONLY:-}" = plants ]; then skip23=1; else skip23=0; fi
 if [ "$skip23" = 0 ]; then
@@ -150,4 +165,5 @@ if [ -f "$out/new/q_lwm.inc" ]; then # mkq438x.py
 	plant ng-off 'if (!unready) unready = q438_on() && q438_writer_queued(label);' '(void)0;' q_ng.inc
 fi
 inflight
+shape67
 echo "== all done"
