@@ -1056,6 +1056,53 @@ s = rep(s, '''		if (FILE* f = std::fopen(name, "wb"); f != nullptr) {
 				        cr.pieces[k].depth, cr.pieces[k].chained ? "chained" : "called", pn);
 			}
 			std::fprintf(stderr, "[bc5] exp 0439 (tag pd439): timeout probe: %zu pieces of the job dumped beside %s (%zu chained%s)\\n", cr.pieces.size() - 1, name, cr.chains, cr.cycle ? ", A CYCLE" : "");
+			// the 544-byte parameter block a dispatch's USER_DATA_0/1 (SH 0x240/0x241) points at: the top's LAST one and each
+			// piece's FIRST one, written beside the dump, and every address-like qword in it classified mapped or not now
+			auto ud_ptr = [](const uint32_t* b, size_t n, bool last) -> uint64_t {
+				uint64_t found = 0;
+				for (size_t i = 0; i < n;) {
+					const uint32_t h = b[i], t = h >> 30u;
+					size_t         len = 1;
+					if (t == 3 || t == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
+					if (i + len > n) break;
+					if (t == 3 && ((h >> 8u) & 0xffu) == 0x76u && len >= 4 && (b[i + 1] & 0xffffu) == 0x240u) {
+						found = b[i + 2] | (static_cast<uint64_t>(b[i + 3] & 0xffffu) << 32u);
+						if (!last) return found;
+					}
+					i += len;
+				}
+				return found;
+			};
+			auto ud_dump = [&](uint64_t ua, const char* tag) {
+				if (ua == 0 || !covered_sorted(*pmd, ua, 0x220)) {
+					journal("timeout probe (exp 0439, tag pd439): %s user data block 0x%" PRIx64 ": %s\\n", tag, ua, ua == 0 ? "none" : "NOT MAPPED");
+					return;
+				}
+				char un[640];
+				std::snprintf(un, sizeof(un), "%s.ud-%s-%" PRIx64 ".bin", name, tag, ua);
+				if (FILE* f = std::fopen(un, "wb"); f != nullptr) {
+					std::fwrite(reinterpret_cast<const void*>(ua), 1, 0x220, f);
+					std::fflush(f);
+					fsync(fileno(f));
+					std::fclose(f);
+				}
+				const auto* q = reinterpret_cast<const volatile uint32_t*>(ua);
+				char        cls[1400];
+				size_t      o = 0;
+				for (uint32_t k = 0; k + 1 < 0x220 / 4 && o + 60 < sizeof(cls); k++) {
+					const uint64_t p = q[k] | (static_cast<uint64_t>(q[k + 1] & 0xffffu) << 32u);
+					if ((p >> 32u) < 0x20u || (p >> 40u) != 0 || (q[k + 1] >> 16u) != 0) continue;
+					o += static_cast<size_t>(std::snprintf(cls + o, sizeof(cls) - o, " +0x%x 0x%" PRIx64 " %s;", k * 4, p, covered_sorted(*pmd, p & ~3ull, 4) ? "mapped" : "NOT MAPPED"));
+					k++;
+				}
+				journal("timeout probe (exp 0439, tag pd439): %s user data block 0x%" PRIx64 " dumped to %s; address-like qwords:%s\\n", tag, ua, un, o == 0 ? " none" : cls);
+			};
+			ud_dump(ud_ptr(sub_ib, sub_n, true), "top-last");
+			for (size_t k = 1; k < cr.pieces.size() && k <= 8; k++) {
+				char tg[32];
+				std::snprintf(tg, sizeof(tg), "piece%zu-first", k);
+				ud_dump(ud_ptr(cr.pieces[k].src, cr.pieces[k].n, false), tg);
+			}
 		}''')
 s = rep(s, '''	dt412_pass(ib, num_dwords, kind); // exp 0412 (tag dt412): before the mappings are synced''', '''	dt412_pass(ib, num_dwords, kind); // exp 0412 (tag dt412): before the mappings are synced
 	{ // exp 0439 (tag ip439): the same import scans on every piece the buffer calls or chains to

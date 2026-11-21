@@ -24,7 +24,14 @@ done
 [ $free -ge 2 ] || { echo "$(date +%T) no free box after 30 min (lock [$(cat "$L")])"; exit 1; }
 grep -q '^BC5_DIRECT_JOURNAL=min$' "$HOME/bc5-work/bc5-run.env" || { echo "bc5-run.env does not set BC5_DIRECT_JOURNAL=min"; exit 1; }
 rm -rf "$O"; mkdir -p "$O"
-bash k439/r72check.sh | tee "$O/display.txt"
+if ! bash k439/r72check.sh | tee "$O/display.txt"; then
+  # LESSONS R72 as extended 11-21 20:14: once, then check again (never during a measured run; this is a diagnosis run)
+  echo "display check failed: sudo -n /usr/local/bin/bc5-display-redetect --if-needed" | tee -a "$O/display.txt"
+  sudo -n /usr/local/bin/bc5-display-redetect --if-needed 2>&1 | tail -3 | tee -a "$O/display.txt"
+  sleep 3
+  bash k439/r72check.sh | tee -a "$O/display.txt" || echo "  (still bad: a diagnosis run goes on, the mode recorded)"
+fi
+journalctl -b -u bc5-display-redetect --no-pager 2> /dev/null | tail -2 | tee -a "$O/display.txt"
 for where in container host; do
   if [ $where = container ]; then run_in() { distrobox enter ubuntu -- bash -c "$1"; }; else run_in() { bash -c "$1"; }; fi
   run_in 'for d in "$HOME"/bc5-data/mnt/*; do [ -d "$d" ] || continue; if mountpoint -q "$d" && ! [ -s "$d/sce_sys/param.json" ]; then echo "dead mount $d: unmounted"; fusermount3 -u "$d" 2>&1 || fusermount3 -u -z "$d" 2>&1; fi; done' 2>&1 | sed "s/^/$where: /"
