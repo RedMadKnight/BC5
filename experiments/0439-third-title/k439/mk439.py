@@ -416,6 +416,58 @@ s = rep(s, '''	g_r3gpu_count[set ? kR3MemsemSet : kR3MemsemAdd]++;''', '''	g_r3g
 		static int k = 0;
 		if (k++ < 64) std::fprintf(stderr, "[bc5] exp 0439 (tag wr439): soft CP MEM_SEMAPHORE signal (%s) on 0x%" PRIx64 " -> 0x%" PRIx64 "\\n", set ? "set 1" : "add 1", a, *w);
 	}''')
+# exp 0439 (tag eq439): BC5_0439_EQ_ANY=1: a RELEASE_MEM / EVENT_WRITE_EOP interrupt reaches every registered
+# EVFILT_GRAPHICS ident (the third title registers ident 0x52, which fire_eop never fires), with INT_SEL read as 3 bits
+# (its packets carry INT_SEL 4, which "& 3" turned into no interrupt) and data = INT_CTXID << 16.
+s = rep(s, '''static void release_mem(const uint32_t* p, uint32_t payload, bool write) {''', '''// exp 0439 (tag eq439), BC5_0439_EQ_ANY=1 (default off): the third title registers EVFILT_GRAPHICS ident 0x52 (kevent
+// change, run t1) and raises its interrupts with RELEASE_MEM INT_SEL 4 and an INT_CTXID (0x08100001, run t1). Today
+// INT_SEL is read as 2 bits (4 & 3 = 0: no interrupt) and fire_eop() fires the fixed idents 0x40 / 0 / compute only.
+// With the switch: INT_SEL is 3 bits (dword 2 bits 26:24; TODO(verify) the width and value 4 "send INT_CTXID", AMD PAL's
+// gfx9-plus PM4 packet headers; Mesa 0866ae7085c1 sid.h only defines EOP_INT_SEL(x) << 24 with 0 and 3), and every
+// registered EVFILT_GRAPHICS ident is fired with data = INT_CTXID << 16 (reimpl-agc-psml's description: the title reads
+// the context id from the event data >> 16; TODO(verify)).
+static bool eq439_on() {
+	static const bool v = [] {
+		const char* e = std::getenv("BC5_0439_EQ_ANY");
+		const bool  on = e != nullptr && e[0] == '1' && e[1] == 0;
+		std::fprintf(stderr, "[bc5] exp 0439 (tag eq439): BC5_0439_EQ_ANY=%d\\n", on ? 1 : 0);
+		return on;
+	}();
+	return v;
+}
+static void eq439_fire_all(uint32_t int_sel, uint32_t ctxid) {
+	std::vector<EqRegistration> eqs;
+	{
+		std::lock_guard lock(g_eq_mutex);
+		eqs = g_eqs;
+	}
+	const uint64_t data = static_cast<uint64_t>(ctxid) << 16u;
+	for (const auto& r: eqs) {
+		Libs::LibKernel::EventQueue::KernelTriggerEvent(r.eq, static_cast<uintptr_t>(r.ident), Libs::LibKernel::EventQueue::KERNEL_EVFILT_GRAPHICS, reinterpret_cast<void*>(data));
+	}
+	static std::atomic<int> n {0};
+	if (n++ < 32) std::fprintf(stderr, "[bc5] exp 0439 (tag eq439): interrupt INT_SEL %u INT_CTXID 0x%08x fired to %zu registered EVFILT_GRAPHICS idents (data 0x%" PRIx64 ")\\n", int_sel, ctxid, eqs.size(), data);
+}
+
+static void release_mem(const uint32_t* p, uint32_t payload, bool write) {''')
+s = rep(s, '''	if (write) write_timestamp_or_data(data_sel, a, lo, hi);
+	if (int_sel != 0) {
+		fire_eop(lo | (static_cast<uint64_t>(hi) << 32u));
+	}
+}''', '''	if (write) write_timestamp_or_data(data_sel, a, lo, hi);
+	if (eq439_on() && ((data_cntl >> 24u) & 7u) != 0) { // exp 0439 (tag eq439)
+		eq439_fire_all((data_cntl >> 24u) & 7u, payload >= 7 ? p[7] : 0u);
+		if (int_sel != 0) fire_eop(lo | (static_cast<uint64_t>(hi) << 32u)); // the fixed idents as before
+		return;
+	}
+	if (int_sel != 0) {
+		fire_eop(lo | (static_cast<uint64_t>(hi) << 32u));
+	}
+}''')
+s = rep(s, '''static void register_eq(Libs::LibKernel::EventQueue::KernelEqueue eq, int ident, bool add) {
+	std::lock_guard lock(g_eq_mutex);''', '''static void register_eq(Libs::LibKernel::EventQueue::KernelEqueue eq, int ident, bool add) {
+	std::fprintf(stderr, "[bc5] exp 0439 (tag eq439): EVFILT_GRAPHICS ident 0x%x %s\\n", ident, add ? "registered" : "removed");
+	std::lock_guard lock(g_eq_mutex);''')
 open(dst + '/bc5LleAgc.cpp', 'w', encoding='utf-8', newline='').write(s)
 
 v = open(src + '/videoOut.cpp', encoding='utf-8', newline='').read()

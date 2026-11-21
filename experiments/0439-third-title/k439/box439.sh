@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # BC5 experiment 0439 (tag dc439): the private build of the DCC present (dcc-present-design.md): bc5LleAgc.cpp and
-# videoOut.cpp from mk439.py over the shared tree's units (patch 9889b06a), with src/bc5/dc0439.hpp, each compiled with
+# videoOut.cpp from mk439.py over the shared tree's units (patch 0fede35d since 2026-11-21 15:0x; 9889b06a before), with src/bc5/dc0439.hpp, each compiled with
 # the shared build's own command and linked with the shared backend archive (build0438.py emu). Normal and lean. CPU only,
 # nice 19 + ionice idle. Pins the shared state before and after; writes nothing shared.
 #   box439.sh build
@@ -9,8 +9,8 @@ set -u
 export LC_ALL=C LANGUAGE=C
 W=$HOME/bc5-work; E=$W/exp0439/k439; R=$E/raw; S=$E/src; HERE=$(cd "$(dirname "$0")" && pwd)
 TREE=$HOME/src/KytyPlus; SA=$W/backend-ubuntu/libbc5_backend.a
-P_UNIT=ff9e8fe2e4139264ebaf74f9e84bd892; P_VO=6785425ea472815fc85713cec6cc5630
-P_ARCH=d6638808; P_NORMAL=b1b57df9; P_LEAN=d3485ed4
+P_UNIT=2e6168de7774de436fe7e916c895180a; P_VO=6785425ea472815fc85713cec6cc5630
+P_ARCH=d6638808; P_NORMAL=199a0f39; P_LEAN=3a20b974
 NICE="nice -n 19 ionice -c 3"
 stop() { echo "dc439 build STOP: $*"; exit 1; }
 m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }
