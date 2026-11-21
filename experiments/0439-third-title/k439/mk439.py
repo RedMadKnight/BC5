@@ -91,6 +91,14 @@ static void wr439_scan(const uint32_t* ib, uint32_t n, int ring, const char* kin
 			const uint32_t nn = ib[q + 3] & 0xfffffu;
 			if (na != 0 && nn != 0 && opt.mapped && opt.mapped(na, static_cast<uint64_t>(nn) * 4)) wr439_scan(reinterpret_cast<const uint32_t*>(na), nn, ring, depth == 0 ? "nested1" : depth == 1 ? "nested2" : "nested3", opt, depth + 1);
 		}
+		if ((h >> 30u) == 3 && ((h >> 8u) & 0xffu) == 0x49u && len >= 8 && ((ib[q + 2] >> 24u) & 7u) != 0) { // exp 0439 (tag tk439)
+			// RELEASE_MEM with an interrupt (INT_SEL dword 2 bits 26:24): its context id (dword 7) is where a flip token goes
+			// (AnyPS5 VideoOutDriver.cpp, GPL-2.0, 8b403579: the token in INT_CTXID with INT_SEL 2; UNVERIFIED there)
+			static uint64_t ri = 0;
+			if (ri++ < 200)
+				std::fprintf(stderr, "[bc5] exp 0439 (tag tk439): t %.3f s ring %d %s job %" PRIu64 " @%u RELEASE_MEM event 0x%x INT_SEL %u DATA_SEL %u address 0x%" PRIx64 " data 0x%08x%08x INT_CTXID 0x%08x\n", timing_now(), ring, kind, jobs, q,
+				             ib[q + 1] & 0x3fu, (ib[q + 2] >> 24u) & 7u, ib[q + 2] >> 29u, (ib[q + 3] & ~3ull) | (static_cast<uint64_t>(ib[q + 4] & 0xffffu) << 32u), ib[q + 6], ib[q + 5], ib[q + 7]);
+		}
 		if ((h >> 30u) == 3 && ((h >> 8u) & 0xffu) == 0x39u && len >= 3) { // MEM_SEMAPHORE: not in memory_operands
 			static uint64_t ms = 0;
 			const uint64_t  ma  = (ib[q + 1] & ~7u) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u);
