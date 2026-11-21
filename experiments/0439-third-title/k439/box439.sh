@@ -30,6 +30,11 @@ build() {
     cp "$HERE/new/bc5LleAgc.cpp" "$S/kyty/src/libs/bc5LleAgc.cpp" && cp "$HERE/new/videoOut.cpp" "$S/kyty/src/graphics/presentation/videoOut.cpp" \
         && cp "$HERE/new/dc0439.hpp" "$S/kyty/src/bc5/dc0439.hpp" && cp "$HERE/new/eventQueue.cpp" "$S/kyty/src/kernel/eventQueue.cpp"         && cp "$HERE/new/ib_chain.hpp" "$S/kyty/src/bc5/ib_chain.hpp" && cp "$HERE/new/ib_chain.hpp" "$S/backend/include/bc5/ib_chain.hpp"         && cp "$HERE/new/sv0439.hpp" "$S/kyty/src/bc5/sv0439.hpp" && cp "$HERE/new/be/direct.cpp" "$HERE/new/be/policy.cpp" "$HERE/new/be/full_state.cpp" "$S/backend/src/" || stop "copy the units"
     NP=""; if [ -f "$HERE/new/libNp.cpp" ]; then cp "$HERE/new/libNp.cpp" "$S/kyty/src/libs/libNp.cpp" || stop "copy libNp.cpp"; NP=src/libs/libNp.cpp; fi # exp 0439 (tag sv439)
+    # exp 0439 (tags st439, th439, rc439, mkk439.py): semaphore.cpp, pthread.cpp and libKernel.cpp when generated copies are there
+    for u in kernel/semaphore.cpp kernel/pthread.cpp libs/libKernel.cpp; do
+        b=$(basename "$u")
+        if [ -f "$HERE/new/$b" ]; then cp "$HERE/new/$b" "$S/kyty/src/$u" || stop "copy $b"; NP="$NP src/$u"; fi
+    done
     (cd "$S" && find . -type f | sort | xargs md5sum) > "$R/src-md5.txt"; cat "$R/src-md5.txt"
     echo "MemAvailable before the builds: $(awk '/^MemAvailable/{print int($2/1024)}' /proc/meminfo) MiB"
     [ "$(awk '/^MemAvailable/{print $2}' /proc/meminfo)" -gt 3000000 ] || stop "under 3 GiB available: not building now"
