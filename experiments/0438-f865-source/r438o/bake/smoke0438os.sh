@@ -40,6 +40,9 @@ exechk() { wait "$XP" 2> /dev/null; echo "$1: exe [$(cat "$R/$1-exe.txt")]"; gre
 fin() { [ ${#PADS[@]} = 0 ] || kill "${PADS[@]}" 2> /dev/null; chain_release; }
 trap fin EXIT
 deadmnt() { distrobox enter ubuntu -- sh -c 'M=$HOME/bc5-data/mnt/PPSA21567; if mountpoint -q "$M" && ! head -c1 "$M/sce_sys/param.json" > /dev/null 2>&1; then echo dead; fi' 2> /dev/null < /dev/null | grep -q dead; }
+. "${SMOKE_DISP_INC:-$HOME/bc5-work/exp0438/display438.inc}" || { echo "smoke: no display438.inc: NOT STARTED"; exit 1; }
+display_check || { echo "smoke: $DISP: not 1920x1080 (LESSONS R72): NOT STARTED"; exit 1; }
+echo "smoke: $DISP"
 deadmnt && { echo "smoke0438o: a dead ASTRO mount inside the container: NOT STARTED"; exit 1; }
 OK=1
 echo "binaries: lean ${ML:0:8}, normal ${MN:0:8}; kernel $(uname -r); boot $(cut -c1-8 /proc/sys/kernel/random/boot_id)"

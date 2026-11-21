@@ -1,0 +1,4 @@
+1. head state replayed in front of the rest: 10 of 10 dwords, identical
+2. a register write inside an IB the head calls: 0 dwords replayed (NOT replayed: the documented gap)
+3. a packet cut by the split point: 0 dwords taken
+PASS (0 failed checks)

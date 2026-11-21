@@ -1,0 +1,14 @@
+# BC5 exp 0438 (tag bake438b): written by mkbake438b.py; sourced by swap0438b.sh (step 1)
+KIT_PATCH=9e080ac5
+KIT_BE_PATCH=7228f0e5
+MEM_OLD=aa7d7f5b
+MEM_NEW=7cc0b399
+UNIT_OLD=2e6168de
+UNIT_NEW=ed489aca
+SWD=48ae1cd6
+BE_CPP_OLD=eacf8d2a
+BE_CPP_NEW=1b8b55ec
+BE_HPP_OLD=9256f3b9
+BE_HPP_NEW=18c66de8
+BE_MI_NEW=39952c48
+MKQ438X=5272fa83

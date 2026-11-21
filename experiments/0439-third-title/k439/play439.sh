@@ -49,6 +49,9 @@ if [ "${PLAY_CAPTURE:-}" = 1 ]; then
   mkdir -p "$CAPD/gc" && export BC5_GC_DUMP_DIR="$CAPD/gc" BC5_DIRECT_FRAME_PROFILE=1 BC5_DIRECT_TIMING=1
   echo "$CAPD" > ~/bc5-work/last-play-capture
 fi
+# LESSONS R72 (2026-11-21): the display as this run sees it, in the log's header (the full check, with the active mode from
+# kscreen-doctor, is k439/r72check.sh on the host; inside the container only sysfs is read)
+echo "== display (R72): DP-1 edid $(wc -c < /sys/class/drm/card1-DP-1/edid 2> /dev/null || echo ?) B, first mode $(head -1 /sys/class/drm/card1-DP-1/modes 2> /dev/null || echo ?)" >> "$LOG"
 ~/bc5-work/pad-volume.sh >> "$LOG" 2>&1 || true; ~/bc5-work/pad-volume.sh --watch $$ >> "$LOG" 2>&1 &  # F94: the pad ALSA volume resets on every replug
 # 2026-10-22 (the maintainer asked): submission chains across the game thread's ioctls (ADR 0010 section B)
 # by default, as for the second title. Measured with tools/scripts/astro-route.sh (AC0/AC1): the title's
@@ -70,13 +73,25 @@ MP=""
 if [ -n "${BC5_GAME_DIR:-}" ]; then
   [ -d "$M" ] || { say "No game folder at $M."; exit 1; }  # exp 0420
 else
+# exp 0439 (11-21 17:10, LESSONS R70): the dead-mount guard of tools/scripts/launchers/play-astro.sh (its "mount (exp
+# 0439)" block): a mount counts only when the game's param.json reads non-empty; a dead one is unmounted first. This
+# copy lacked it, and three second ASTRO starts in a series died on "invalid file .../sce_sys/param.json".
+mount_live() { mountpoint -q "$1" && [ -s "$1/sce_sys/param.json" ]; }
+mount_clear_dead() { # $1 mountpoint, $2 log
+  mountpoint -q "$1" || return 0
+  mount_live "$1" && return 0
+  echo "$(date '+%F %T') dead mount at $1 (param.json not readable): unmounted" >> "$2"
+  fusermount3 -u "$1" 2>> "$2" || fusermount3 -u -z "$1" 2>> "$2"
+  ! mountpoint -q "$1"
+}
 mkdir -p "$M"
-if ! mountpoint -q "$M"; then
+mount_clear_dead "$M" "$ALOG" || { say "A dead mount at $M could not be removed (fusermount3 -u -z failed)."; exit 1; }
+if ! mount_live "$M"; then
   "$BM" mount "$C" "$M" > "$ALOG" 2>&1 &
   MP=$!
-  for _ in $(seq 1 100); do mountpoint -q "$M" && break; sleep 0.2; done
+  for _ in $(seq 1 100); do mount_live "$M" && break; sleep 0.2; done
 fi
-mountpoint -q "$M" || { say "Mounting the game failed (see $ALOG; with BC5_LEAN=1 run with BC5_LOGS=1 to keep it)."; exit 1; }
+mount_live "$M" || { say "Mounting the game failed: $M/sce_sys/param.json is not readable (see $ALOG; with BC5_LEAN=1 run with BC5_LOGS=1 to keep it)."; exit 1; }
 fi
 # 2026-10-25 (the maintainer's yes): a failed unmount no longer hangs the launcher (exp 0301's T1 waited an hour):
 # retry, then a lazy unmount, log the failure, and wait for bc5-mount at most 10 s.

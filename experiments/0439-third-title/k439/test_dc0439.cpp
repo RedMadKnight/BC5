@@ -183,6 +183,16 @@ int main() {
         CHECK(!bc5::dc439::find(cx.value, cx.valid, surf).valid); // the job-end context no longer has it
         CHECK(bc5::dc439::count_base(j.data(), j.size(), static_cast<std::uint32_t>(surf >> 8), [](std::uint64_t, std::uint64_t) { return false; }) == 1);
     }
+    // 6. The AGC end-of-pipe ident and data, and the 3-bit INT_SEL (BC5_DIRECT_AGC_EOP_IDENT).
+    CHECK(bc5::dc439::agc_eop_ident(false, 0x33) == 0u);       // the graphics CP: 0
+    CHECK(bc5::dc439::agc_eop_ident(true, 0x33) == 0x52u);     // the third title's ProxySet Cull ident, slot 0x33
+    CHECK(bc5::dc439::agc_eop_ident(true, 0x1) == 0x20u);      // the first compute queue
+    CHECK(bc5::dc439::agc_eop_data(0x08100001u, 0x52u) == ((0x08100001ull << 16) | 0x52u));
+    CHECK((bc5::dc439::agc_eop_data(0x1234u, 0x52u) >> 16) == 0x1234u); // GetEqContextId = data >> 16
+    CHECK(bc5::dc439::release_mem_int_sel(4u << 24) == 4u);    // the third title's roll interrupts: 4, not 0
+    CHECK(bc5::dc439::release_mem_int_sel(3u << 24) == 3u);
+    CHECK(bc5::dc439::release_mem_int_sel((4u << 24) | (2u << 29)) == 4u); // DATA_SEL above it does not leak in
+    CHECK(((4u << 24) >> 24 & 3u) == 0u);                      // the old 2-bit read loses it
     std::printf("%s (%d failures); IB %zu dwords\n", g_fail == 0 ? "PASS" : "FAIL", g_fail, ib.size());
     return g_fail == 0 ? 0 : 1;
 }

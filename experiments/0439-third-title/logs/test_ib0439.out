@@ -1,0 +1,7 @@
+1. 73-segment chain: on 73 pieces, 72 chains, longest 72, label-0 write found; off 4 pieces, write missing
+2. calls and a chain: 4th-level call not followed, chain from level 3 followed at depth 3, over depth 1
+3. chain cycles: x<->y refused, self refused
+4. 2000 random trees: off differs from the old loop in 0; 5. on without chain bits differs in 0
+6. three chunks cut inside a dispatch block: 3 segments, 38 dwords, equal to the segments without their chain packets; tail past a chain not copied
+7.-9. no chain: not flattened; a COND_EXEC before the chain: refused (a COND_EXEC before the chain (a conditional chain)); a cycle: refused (a chain cycle)
+PASS (0 failed checks)

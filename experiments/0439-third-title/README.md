@@ -187,6 +187,311 @@ the control's line has none, `X=1;rm` is refused).
     - `run0439.sh collect` unmounts dead mounts in the container and on the host, and bounds runs with timeout(1).
     - The installed launchers are unchanged.
 
+20. *The 0x52 wake test (f52 / kv439, 11-21 15:38-16:04; resets unchanged in mine).*
+    - The survey (`survey-0439-fixes.md` Q4) gives an AGC-era rule:
+      - KytyPS5 `graphicsRun.cpp:978-984`, `renderContext.cpp:206-221`, `graphicsRun.h:51` (GPL-2.0, 39936ffa);
+        AnyPS5 `libSceAgcDriver/Eq/src/Event.cpp` (GPL-2.0, 19a1993e); UNVERIFIED on hardware.
+      - The ident is the queue's (compute: 0x20 + queue id - 1). The event is raised by a RELEASE_MEM with an
+        interrupt on that queue, with data = (INT_CTXID << 16) | ident.
+      - So 0x52 belongs to queue 0x33 (2/2/2), which got only its two boot IBs.
+    - Fired by hand (`BC5_0439_FIRE52`): once, at every flip, at a compute completion, and at 60 Hz.
+      - ProxySetSync wakes each time (`KernelWaitEqueue` returns one event ident 0x52, filter -14, fflags 0x1, the
+        data we give).
+      - It then reads a semaphore label (the table at 0x2000000000, index and target from its own object), finds it
+        not past its target and waits again.
+      - At 60 Hz it consumes 118 events, and the title then never makes its first flip.
+    - The event line is closed. 0x52 is a re-check signal; the real condition is a label nobody writes.
+    - Host facts for every AGC title, not fixed here: `fire_eop` uses the PS4 idents (0x40, 0, compute A/B) instead
+      of per-queue idents, and fills the data differently. `release_mem` reads INT_SEL as 2 bits.
+21. *The waits, as one problem.*
+    - game-main waits on label 0 > 1, and ProxySetSync on a label in the same table.
+    - Queue 1/2's acb waits on 0x2010449750 and 0x20104cd1e0/1c0/180/140/100. Queue 1/3's acb waits on 0x20104aa630.
+      Each is a ping-pong with a partner buffer that releases the labels it waits on.
+    - No buffer on any ring or in any job writes them, and no CPU code writes label 0. The partner work and the
+      label-0 writer were never created.
+    - The question is with reimpl-agc-psml: which Agc/Driver export or title pattern produces that work.
+
+22. *Queue audit (q26, 16:07).*
+    - At 3 s and 10 s, every queue's host-consumed pointer equals its doorbell. The exceptions are 1/2/0 and 1/3/0
+      (12 against 16): the two acbs our consumer holds on their labels.
+    - No ring has dwords past its doorbell. Doorbells are polled (page 0xfe0200000, qword d-1, 200 us), slot 0x33
+      the same as all others. There is no unseen or unrung work.
+    - Labels 0-10 = 0 0 0 0 1 0 1 1 1 1 1; 11-15 = index + 1 (untouched). Queue tails write labels 1, 2, 6, 7, 8 and
+      9; no tail writes label 0.
+23. *`BC5_DIRECT_AGC_EOP_IDENT` (tag ae439, off by default).*
+    - The AGC-era end-of-pipe event in the soft CP: INT_SEL read as 3 bits; ident 0 on the graphics side, 0x20 +
+      doorbell slot - 1 for a compute queue; data = (INT_CTXID << 16) | ident. Helpers in `k439/dc0439.hpp`.
+    - Citations checked by a read-only fetch at the commits:
+      - CONFIRMED: KytyPS5 39936ffa `renderContext.cpp` ~205-217, `graphicsRun.h:51`, `graphicsRun.cpp`
+        (graphics 0, compute base + id - 1, RELEASE_MEM interrupt defers TriggerInterrupt); AnyPS5 19a1993e
+        `libSceAgcDriver/Eq/src/Event.cpp` ~80-91.
+      - COULD NOT READ: KytyPS5 `agc.cpp` ~4364 and the INT_SEL bit extraction. The line numbers are the fetcher's
+        count, +-1.
+    - Det tests (`test_dc0439.cpp`): PASS.
+    - Smokes (normal `2befcb17`, 16:15-16:18, resets 11 -> 11, fault records 27 -> 27):
+      - ASTRO BOT off: 3000 flips by 53.44 s. On: 3000 flips by 53.48 s.
+      - With the switch on, ASTRO's interrupts go to ident 0 (graphics, 5 registrations, INT_SEL 1, 2 and 4; the 3
+        INT_SEL 4 ones newly fired) and to 0x40 from compute queue slot 0x21 (= 0x20 + 0x21 - 1).
+      - The third title on: 0 deliveries, the stall unchanged.
+    - With the switch on, ASTRO gets 3 interrupts it never got before (INT_SEL 4, ident 0). The 5 registrations for ident
+      0 are the graphics EOP events; ASTRO's frame count and timing did not change visibly (3000 flips by 53.48 s against
+      53.44 s). TODO: name the 5 registrations' equeues from the ae27-on log.
+    - Lean A/B (`k439/ab439ae.sh`, run 18:00-18:23 on boot c97d43e6). One private lean binary (`25338f8a`) for both
+      arms: C without the word, O with `BC5_DIRECT_AGC_EOP_IDENT=1`. ASTRO BOT, no input, 180 s each, MangoHud's frame
+      log from 30 s. One warm-up control first, discarded, then C O C O C O. Every run PASS, 0 kernel lines.
+      Raw: `logs/ab439ae-q439aeA.txt`.
+
+      | run | flips/s | median | p95 | p99 | max (ms) | over 50 ms |
+      |---|---|---|---|---|---|---|
+      | W0 (discarded) | 58.08 | 16.67 | 17.23 | 34.38 | 67.16 | 6 |
+      | C1 | 58.16 | 16.67 | 17.23 | 34.24 | 66.64 | 6 |
+      | O1 | 58.92 | 16.67 | 16.98 | 33.77 | 51.86 | 6 |
+      | C2 | 58.14 | 16.67 | 17.22 | 34.16 | 50.29 | 3 |
+      | O2 | 58.66 | 16.67 | 17.07 | 33.85 | 66.91 | 4 |
+      | C3 | 58.48 | 16.67 | 17.11 | 33.97 | 50.25 | 7 |
+      | O3 | 58.28 | 16.68 | 17.20 | 34.03 | 66.88 | 4 |
+
+      - Control 58.14-58.48 flips/s, switch on 58.28-58.92. The ranges overlap, so no cost of the switch is visible.
+      - NOT A MEASUREMENT OF NORMAL PLAY (LESSONS R72; the top session, 11-21 evening): every boot since 13:51 logged
+        "No EDID read" on DP-1, and the desktop ran at 640x480@59.94 (scale 0.5) instead of 1920x1080@60. This series
+        ran in that mode. It stands as a comparison within the series only. A repeat at 1920x1080@60 is planned
+        before the bake.
+      - With the switch on, ASTRO gets 3 interrupts it never got before; nothing visible changes.
+24. *Cross-pack runs (x28, 16:32-16:33, normal `2befcb17`, resets 11 -> 11, fault records 27 -> 27).*
+    - The host LLE-loads every module in the one `SHADPS4_SYSMODULES_PACK_DIR` (KytyPlus `runtimeLinker.cpp`
+      `add_lle_dir`) and keeps the rest on HLE, so the packs were mixed with symlinks.
+    - ASTRO BOT's pack has Agc `ca1e6fbe` (326,986 B), AgcDriver `84836a01` (122,613), Psml `817f6df6` (1,536,002), Ampr
+      and PlayGo. The third title's has Agc `0dced71f` (326,617), AgcDriver `b2a41370` (122,383), Psml `c534dc41`
+      (1,524,286); its dump renamed Ampr and PlayGo to `... orig`.
+    - Its `fakelib orig/` holds the same three files at the same sizes; each differs in 3 bytes at one place.
+      `eboot.bin` and `eboot.bin orig` differ in 19 bytes.
+    - X1, the third title with ASTRO's Agc/AgcDriver/Psml: the same stall, 1 flip, labels as with its own pack.
+      DISTURBED: reimpl-agc-psml's gdb watcher attached to this run's emulator by mistake from 16:32:06 to 16:32:35 (the
+      process stopped on attach; nothing written). That covers most of X1's 30 s, so X1 is not a result; a rerun is
+      queued behind the IB_CHAIN work, low priority.
+    - X2, ASTRO with the third title's three: 3000 flips by 53.08 s (53.44 s with its own pack), no fault.
+    - So the module pack is not the stall's cause.
+    - Both titles require system software 11.60 (param.json); the host answers 10.60, and ASTRO plays with that.
+25. *The stall's cause (yotei-memdump, exp 0440, from a memory dump at the stall).*
+    - The title's frame is one dcb of 73 segments chained by INDIRECT_BUFFER with the CHAIN bit (bit 20 of the size
+      dword), 9,346 dwords. Only the head (103 dwords) is submitted.
+    - The label-0 write is a WRITE_DATA in the last segment. The partner labels of the two held acbs are RELEASE_MEMs in
+      segments 29 and 34.
+    - Every IB walker counted a chain as one more nesting level: `submit_impl` (`depth >= 3`, 64 pieces, then the cut IB
+      NOP-ed), the soft CP (`depth >= 4`), `policy::refusal_in` (`depth < 3`), `full_state`'s walks (`depth < 4`). So
+      only segments 0-3 ran, and the rest of the frame was dropped without a line.
+26. *`BC5_DIRECT_IB_CHAIN` (tag ib439, off unless "1").*
+    - The rule (`backend/include/bc5/ib_chain.hpp`): a chain keeps its parent's depth, ends the parent's buffer and has
+      no limit of its own below 4096 segments. Calls keep the 3-level limit and the 64-piece cap. A chain or call to
+      its own ancestor is a cycle: the submit is refused with a line.
+    - Sources: AMD PAL c5e8000 `gfx9_plus_merged_f32_pfp_pm4_packets.h:2580`; shadPS4 1b9d159; our PORT-CHAIN note
+      (F760, `acb_restore.hpp`).
+    - Applied in `direct.cpp` `submit_impl`, `policy.cpp` `refusal_in`, `full_state.cpp` `apply_level` / `walk_draws`
+      (a walk budget ends a cycle), and the soft CP's `indirect_buffer` / `execute` (mk439.py, `ib439.txt`).
+    - The label-writer and readiness scans (`acb_ready`, `hold_note_writes`, plw) read one buffer and follow no IB, so
+      the rule does not touch them.
+    - A cut IB is logged even with the switch off: `submit_impl` prints the count of NOP-ed INDIRECT_BUFFER packets
+      and how many were chains (first 16 submits, then every 1000th). The backend archive is shared by normal and lean,
+      so this line is in lean too.
+    - The flip packet in segment 72 writes the VideoOut buffer label. That label lives on an anonymous host page the
+      direct path maps for the GPU (exp 0071), and `policy::filter` drops any write outside the mapped ranges
+      (`unmapped_drops`). So it either lands on that page or is dropped and counted; it cannot fault.
+    - Det tests (`k439/test_ib0439.cpp`, g++ in the ubuntu container), PASS:
+      - a 73-segment chain is collected whole at depth 0, and its last-segment label write is found (switch off: 4
+        pieces, write missing);
+      - with calls and a chain mixed, a 4th-level call is not followed and a chain from level 3 is;
+      - two chain cycles are refused;
+      - on 2000 random IB trees, off equals the old loop, and on without chain bits equals off.
+    - The planted bug (`-DBC5_IB439_PLANT`, a chain counted as a level) FAILS 2 checks, as it must. Output:
+      `logs/test_ib0439.out`.
+    - Private build: backend archive `81dcf888` (the shared one with `direct.cpp.o`, `policy.cpp.o`, `full_state.cpp.o`
+      from the branch), normal `0befd641`, then `e0ae3ba9` with the chain rule in `dc0439.hpp`'s `walk_draws` as
+      well, then `3a79a88e`.
+    - Runs, 16:48-16:57 (ib29.sh):
+      - ASTRO BOT with `BC5_DIRECT_IB_CHAIN=1`: 3000 flips by 52.93 s, no fault. ASTRO submits no chain at all (0 chain
+        submits, 0 IBs NOP-ed), so the rule does not touch it.
+      - The third title with the switch on, two runs: the frame went whole, twice (73 pieces, 72 chained, longest 72,
+        none cut or refused). It flipped a second frame at 1.4 s, its first non-blank compressed surface (keys
+        0x40). Then it ended at "TextureCache: compressed video-out read requires clean native GPU contents"
+        (exit 65): the decompress pass was not run.
+      - With the chain-aware walker the draw into the flip surface is found (job 33). Its DCC_BASE is `0x5007140000`,
+        the registered metadata - 0x28000. `3a79a88e` takes the draw's block when its BASE is the surface.
+      - A second ASTRO start in one series fails with "invalid file .../PPSA21567/sce_sys/param.json" whatever the
+        switch says (3 times): a mount race between runs, not the switch.
+    - The third title's 30-s run with `3a79a88e` (started 17:03:27), the first run in which the decompress pass could
+      fire.
+      - Confirmed (the top session, from the kernel log and the box): comp_1.3.0 timed out at 17:04:56 (process
+        kyty_emulator, thread bc5-ring), the ring reset failed, and bc5-gpu-watch crashed the kernel for a reboot.
+        Records: `~/bc5-data/captures/faults/20261121-170456` and the devcoredump `20261121-170456-devcd3.txt`.
+      - Inferred, not yet read from the record: that the decompress pass fired at the second flip, and that the title
+        ran on past 1.5 s.
+      - Hypothesis only: that the decompress path's drain of every ring blocked the game thread while a compute job
+        waited for a label of the next dcb; or that an acb with an unmet wait in a nested IB went to the GPU.
+      - Not yet known: which job hung, on which wait, and where the game thread was.
+    - The second ASTRO start in a series died on a dead image mount: `k439/play439.sh` was copied before the
+      dead-mount guard. It has the guard since `8c442cfe`.
+27. *Guards after the 17:04 hang (offline, built in the next box slot; all off by default).*
+    - (a) `BC5_0439_DC_NODRAIN=1` (tag dn439): the decompress at the flip no longer drains every ring.
+      - Before the decompress: the title's held chains are flushed, so the job that drew the surface is on the GFX ring
+        first; a ring runs its jobs in order (`direct.hpp`, `wait_idle`'s comment).
+      - After it: the flip waits only for a marker queued behind the decompress job in its own thread's completion queue
+        (`cq_push`: one FIFO per submitting thread), at most 500 ms, with a line when the bound is hit. Compute rings are
+        never waited for from the flip path.
+      - Not used: a kernel dependency on the drawing job. Its seq number is not kept per surface today, and the GFX
+        ring's own order gives the same.
+    - (b) `BC5_0439_ACB_DEEP=1` (tag ab439): acb_ready looks into the IBs an acb calls or chains to, with the chain
+      rule and a walk budget. An unmet wait found there holds the acb at its IB packet through the existing hold path.
+      `BC5_0439_ACB_REFUSE=1` (tag ar439): at the 10-s give-up the acb is not released to the GPU. It stays held, and a
+      record (queue, buffer, wait, value, known writers or "no writer registered") is printed and journalled every 10 s.
+      This is a guard for diagnosis; the fix is the right order of dcb and compute submissions.
+    - (c) `BC5_0439_XQ_COUNT=1` (tag xq439, log only): per GFX job, the memory waits in all its pieces that are unmet at
+      submission with no writer in the job, and how many of those are on a label that the acb held right now writes.
+    - Det test of (b) on the generated code (`test_ab0439.cpp`, the text cut out by `mkab0439.py`, clang on the laptop),
+      PASS: a call's unmet wait is held; a wait at the end of a 6-segment chain is held; the acb's own earlier write
+      hides it; a met wait is not held; a chain cycle ends on the budget; with the switch off an IB is not looked into.
+      The planted bug (a chain treated as a call level) FAILS case 2. Output: `logs/test_ab0439.out`.
+    - (a) and (c) have no det test: they act on the completion queue and the live label state, and are checked on the
+      box from their lines.
+    - The stated order of the first frame (yotei-memdump's third pass, exp 0440, from the dump; three buffers exchange
+      labels 18 times):
+      - D, the dcb chain; A, queue 1/2 (`0x201044c900`); B, queue 1/3 (`0x201032c280`).
+      - D's segments 29-40 write the labels A waits on; A writes 4 labels D waits on from segment 39. B waits on D's
+        writes up to segment 45 and twice on a label A writes near its end, and writes the other 4.
+      - There is no cycle in the content, but no order of whole jobs runs it: A cannot finish before D passes segment
+        40, B not before 45, D not past 39 before A's write at dword 406.
+      - So the three must run side by side: D whole on the GPU, A and B released piece by piece.
+      - The GPU resolves the exchange if (1) the whole dcb is on the GPU (it is: one job of 73 pieces), (2) bc5-ring
+        keeps polling and submitting while the GFX ring sits in segment 39, and (3) nothing on the game thread blocks on
+        compute. The 17:03 flip path broke (3) by draining every ring.
+      - The layout alone deadlocks only if an acb waits for a dcb write that comes after a dcb wait on that acb; the
+        dump shows none.
+    - What the code does with this (read in the baked unit `2e6168de`):
+      - `register_label_writes` registers only the submitted buffer, which for D is its 103-dword head, not its chain
+        pieces. So D's writes are never pending for anyone. acb waits on D's labels are held on the CPU until the GPU
+        writes them, and F4 (`ho430`, a waiter's submit depending on the writer's job) can never fence A or B on D.
+      - F4 applies only to a wait that is already satisfied while a registered write is pending on another ring, and
+        it skips a writer job holding a GPU wait on a label the waiter writes. Between A and B it can add a fence; to
+        be checked from the run's journal (`ho430 F4` lines).
+      - `ring_will_satisfy` with way 2 leaves a wait to the GPU only when its writer job is already submitted, on any
+        ring; otherwise acb_ready holds the acb on the CPU at that wait.
+      - Way 2 starts every guest queue on libdrm compute ring 0 and moves a queue to its own ring only after 256 jobs
+        (`w428_queue_ring`). So A and B share a ring in the first frames. That is safe only while every native wait's
+        writer is ahead of it on that ring or on another ring. B's waits on A's late write rely on A's part being
+        submitted first.
+      - The same holds for the IB_CHAIN builds (`3a79a88e` included). The chain rule is only in the walkers that
+        follow IBs; the label-writer registration (`register_label_writes`, plw, EARLYREG/r438, q438), acb_ready's
+        writer lookup, `ring_will_satisfy` and F4's cycle check stay flat over the submitted buffer.
+      - If chain writes are ever registered, F4 must not fence on a chained dcb (its own switch): D waits natively
+        for A's and B's writes, so a whole-job dependency of A or B on D is a deadlock.
+    - Logged with `BC5_0439_XQ_COUNT=1` for the next run: every acb part's guest queue and ring (first 64, then every
+      1024th), and at each flip the number of acb holds released and the longest one, against the kernel's job timeout
+      for the buffer waiting natively on the other side.
+28. *The 17:04 hang, from the record* (read on boot c97d43e6: the previous boot's kernel log, fault record
+    `~/bc5-data/captures/faults/20261121-170456`, devcoredump `20261121-170456-devcd3.txt`, the run's `play-last.log`).
+    - The title played: every decompress pass OK in 0.7-1.1 ms, 0.00 ms of drain before it; flips at about 30 fps for 8
+      s (frame profile 20-35 ms a flip; label counters near 0xe5, about frame 230); every frame one job of 73 pieces.
+    - The hang: submit #3623 at t 9.459 s, guest queue 40's acb (16,364 dwords after a split at dword 4, with a 4-dword
+      state prefix; 16,422 dwords submitted), sent after three of its waits passed on the CPU. It timed out after
+      2041 ms on comp_1.3.0, the ring reset failed, and bc5-gpu-watch rebooted the box.
+    - Queue 40 is neither of the two acbs of the first frame (queues 16 = 0x11 and 24 = 0x19).
+    - Not a wait. The devcoredump's HQD of mec 0 pipe 3 queue 0 shows VMID 6, IB base `0x1079_000100a0` and size
+      0x3fea = 16,362 dwords: this job. The last headers the CP fetched (`CP_MEC_ME1_HEADER_DUMP`) are NOP,
+      INDIRECT_BUFFER, SET_SH_REG and DISPATCH_DIRECT (0x15); there is no WAIT_REG_MEM among them. CPC is busy and
+      there is no page fault. So a dispatch's waves never finished.
+    - Inferred, not shown: a shader spinning on memory another queue should write, or a dispatch run with the wrong
+      state. Queue 40's parts dispatch before they set a program and get the tracked compute registers in front (exp
+      0401's line at t 1.657 s: "queue 40 acb part 424 dwords dispatches at -1 before it sets a program", 59 parts).
+    - ho430 wrote only its start line ("F4 fences 0"): no F4 fence in the run.
+    - Just before it, three soft CP waits timed out after 8 ms on labels with frame counters (`0x20000081c0` ref 0xe6
+      value 0xe5, `0x2000008220` ref 0xe7 value 0xe6, `0x201050a8c0` ref 1 value 0): a dcb's replay waiting on compute
+      writes not yet done.
+    - Not known: the dispatch's offset and program, the queue-to-ring map, and the three waits' writers. The journal was
+      `min`, and the timeout probe was off.
+    - So neither the decompress drain nor A and B sharing a ring caused it. The next third-title run needs the timeout
+      probe (`BC5_DIRECT_TIMEOUT_PROBE=1`) and the full journal.
+    - Also on that boot: at 16:58:09 comp_1.1.0 and gfx_0.0.0 timed out with successful resets, pid 928664, not a run
+      of this experiment.
+30. *The display mode of today's runs (LESSONS R72).*
+    - Every third-title and ASTRO BOT run of this experiment since 13:51 (from the cross-pack runs on) ran with the
+      desktop at 640x480@59.94, the monitor's EDID unread.
+    - The diagnosis findings do not depend on it: the chain cut and its fix, the 17:04 record, the queue audit, the
+      cross-pack result.
+    - The decompress pass works on the title's own 3840x2160 surface in guest memory, so its result does not depend on
+      the output mode. But the flip path and its present scaled that surface to a 640x480 output, so the present's
+      cost and look are not those of normal play.
+    - Frame rates and frame times from these runs describe that mode only.
+    - Now in the scripts: `k439/r72check.sh`, as R72 was amended at 19:52 (the current state decides). It requires an
+      EDID size > 0, a first mode of 1920x1080, and an active mode of 1920x1080@60 at scale 1 from `kscreen-doctor -o`.
+      The boot's "No EDID read" lines are counted and recorded, not a failure. One line; exit 1 when a condition fails.
+      Run before every series.
+    - The monitor was replugged on boot 7986fd90 (EDID 128 bytes, 1920x1080@60.00, scale 1; the top session, 19:52).
+      - `ab439ae.sh` refuses to measure when it fails, and writes the line to the series header.
+      - `ib29.sh` and `x28.sh` (diagnosis) write the line and mark the series.
+      - `play439.sh` writes the EDID size and first mode into the log's header.
+29. *Rebase notes for the bake after exp 0438's swap* (agreed with exp 0438 by message, 11-21 evening).
+    - Base both the backend diff and the unit edits on exp 0438's post-bake files. It will send the md5s of patch
+      0001, the shared bc5LleAgc.cpp, memory.cpp, direct.cpp, and the normal, lean and archive builds.
+    - `backend/src/direct.cpp`: both experiments edit it. Exp 0438 changes the mapping functions (MappingIndex,
+      `sorted_mappings`, `map_userptr` and the rest); exp 0439 changes `submit_impl`'s piece collection and the
+      NOP-ed-IB count. The hunks are apart.
+    - `opt.mapped` stays a `std::function<bool(uint64_t, uint64_t)>`, so `ib_chain::collect` is unchanged.
+      `sorted_mappings()` will return `shared_ptr<const MappingIndex>`. None of exp 0439's hunks names
+      `std::vector<bc5::direct::Mapping>` or calls `sorted_mappings`/`covered_sorted` (checked by grep over mk439.py,
+      ab439.txt, ib439.txt, mkeq439.py, dc0439.hpp).
+    - `acb_ready`: ab439's found waits go through exp 0438's `acb_wait_unready` (its in-flight test included) instead
+      of the three inline tests.
+    - bc5-ring's 10-s give-up: exp 0438 adds `Direct::ng438_fallback(Direct::t_unready.label)` before the release.
+      ar439's branch goes after that call, so a refused acb is still counted.
+    - mk439.py's replacements assert that each anchor matches exactly once, so any anchor exp 0438's bake moved
+      fails loudly at generation and is fixed then.
+31. *t3p: the run for the hang's record (`k439/t3p.sh`, 19:54:43-19:55:50, boot 7986fd90, the top session's GO).*
+    - Normal `3a79a88e` with the 17:04 settings, plus `BC5_DIRECT_TIMEOUT_PROBE=1` and the full journal (a private env
+      copy without `BC5_DIRECT_JOURNAL=min`). 60-s bound. Display: EDID 128 B, 1920x1080@60.00, scale 1.
+    - No hang: resets 1 -> 1, fault records 29 -> 29, the 60-s bound ended it. Only about 50 frames, though: from
+      t 2 s every frame took 1.13-1.18 s (game thread inside the host 5-6 ms; GPU busy about 7.5 ms).
+    - Each frame, the dcb replay's soft CP wait on `0x20000082e0` (written by B, queue 1/3, at its dword 166) was met
+      after about 1.14 s (refs 2, 3, 4 ...).
+    - The cause is the full journal, not the title. It logged 949 "ho430: THE BOUND STANDS" lines in 58 s, each after
+      F18's 50-ms bound with a writer slot "still busy": about 20 per frame, 1.05 s. F18 sits on the acb submit path,
+      so B's parts went out about 1 s late every frame.
+    - With the journal unset, every submission is written raw and filtered, with a second filter pass and a sync
+      each (the unit's own comment on the mode: "took half of a frame"). At 17:04, with `min`, the same build ran at
+      about 30 fps.
+    - Also 205 "r438 (exp 0438, b438): BUG: the early-registered write of <label> ... never reached the ring" lines,
+      about 4 a frame, on labels B and the others write (`0x20000082e0`, `0x2000008200`, `0x2000008320`, ...). These
+      are reported to the top session.
+    - Raw: `logs/t3p/` (display, meta, the kernel log stream: empty, and an extract of the journal's frame-profile,
+      bound, r438 and soft-CP-wait lines).
+    - Next: the same run with the journal at `min` and the probe on, long enough to reach frame ~230.
+32. *t3q: run 2, the 17:04 condition with the timeout probe (`k439/t3q.sh`, 20:00:10, boot 7986fd90).*
+    - Normal `3a79a88e`, the 17:04 settings with `BC5_DIRECT_JOURNAL=min`, plus `BC5_DIRECT_TIMEOUT_PROBE=1`; bound 120 s.
+      Display before the run: OK (1920x1080@60, scale 1).
+    - It hung like 17:04: 11.48 s after the start (17:04: 11.49 s), 229 frames at about 30 fps, frame counters
+      0xe4-0xe6. The same job: guest queue 40's acb rest "4..16364 of 16364 dwords", submitted as 16,422 dwords
+      (#3640). This time it ran on comp_1.1.0; the ring reset failed and bc5-gpu-watch rebooted the box (20:00:30).
+      Records: `~/bc5-data/captures/faults/20261121-200030`, devcoredump `20261121-200030-devcd1.txt`, the probe's
+      `ib-timeout-00003640-acb-16422.bin` in the capture's `gc/`. All private; not committed.
+    - The dumped job (decoded with `k439/decib0439.py`):
+      - Dwords 0-61 are the host's prefixes: the head's 4-dword state prefix, then exp 0424's queue registers SH
+        0x204-0x280, with COMPUTE_PGM 0x8000343500.
+      - The title's buffer follows: waits and the pass markers "Sky LUT Update", "Clouds Update" and "Sh Grid Update";
+        475 DISPATCH_DIRECTs, each with its own COMPUTE_PGM_LO set right before it. So a stale queue program
+        cannot reach a dispatch here.
+      - The last packet is an INDIRECT_BUFFER with the CHAIN bit to `0x2013600b80`, 16,362 dwords (0x3fea).
+    - The hung HQD's IB size is 0x3fea = 16,362 dwords, in both hangs: the CP was in the chained continuation, not in
+      the dumped job. (Item 28 read 17:04's 0x3fea as the job itself: corrected here.) Its last fetched headers are
+      SET_SH_REG and DISPATCH_DIRECT, so a dispatch of the continuation never finished. The probe dumps the top job only,
+      so the continuation's dispatches are not in the record.
+    - r438 BUG lines: 0 at 30 fps with journal=min (205 shown, 1,281 counted under the full journal in t3p). They are
+      not a suspect for this hang.
+    - LESSONS note (the top session): the full journal is not usable for timing-sensitive diagnosis of this title.
+      With `BC5_DIRECT_JOURNAL` other than `min`, `g_async` is off (`static const bool g_async = g_journal_min;`) and
+      every submission waits for its own job. Use `min` plus targeted dumps.
+    - umr: `/usr/local/bin/bc5-gpu-hang-dump` and `umr -O halt_waves -wa none` are allowed by sudoers. The helper that
+      `BC5_DIRECT_UMR_ON_TIMEOUT` calls reads the gfx ring only.
+    - Next, in the guard build: dump every piece of a timed-out job (chained and called); a switch for
+      `umr -O halt_waves -wa none` at the first timeout; XQ_COUNT's ring map. Then one run names the dispatch.
+
 (more to come)
 
 **Verdict.** (to come)

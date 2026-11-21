@@ -59,6 +59,7 @@ While a game runs, the lean shortcut stops the Plasma panel and desktop to free 
 - **ASTRO BOT is fully playable**, at about 60 fps in its first level, with the DualSense's motion, haptics and adaptive triggers, and with saves.
 - **Marvel's Wolverine plays** (called "the second title" in the findings and below) from its menus through the opening into gameplay, with sound, saves and pause, with its ray-traced reflections switched on and, since 2026-10-23, with the DualSense's haptics (rumble with a DualShock 4). In October it ran at about 37 fps through an 18-minute session, with the maintainer's verdict "fully playable, minimal stutter" (F277); at his later save the scripted route runs at 25–26 fps with ray tracing on (2026-11-13, F832, F834). Ray tracing can be switched off live in the emulator's menu (since 2026-10-24; about 48 fps in a 10-minute session in October, without reflections, F338).
 - **Loading is quick again:** ASTRO BOT reaches its first logo about 12 s after a cold start (it was 33–50 s while the dev box's drive was nearly full). Since 2026-11-13 the second title's start screen answers about 7 s sooner and its save loads about 4 s sooner: the host had been letting the kernel read ahead of every file read, twice the data the game asked for (F817).
+- **A third title is being brought up (since 2026-11-21) and is not playable.** It installs and starts. On a private test build it renders about 230 frames at about 30 fps and then hangs the GPU, twice at the same place (F877, F881, F883). Nothing of it is in the shared builds yet.
 - **Any other game is untested.** A game that needs a system library BC5 has not rewritten yet stops there.
 
 ### How you start it
@@ -67,16 +68,20 @@ A desktop shortcut opens the emulator window (see [How to start](#how-to-start))
 
 ### What is still broken
 
-Only what is confirmed to fail on the shared builds of 2026-11-18:
+Only what is confirmed to fail on the shared builds of 2026-11-21 (patch `0fede35d`), or on the private builds named:
 
-- **Rare dropped draws after a given-up wait, second title.** When a game-thread wait on a label is not met within about 30–75 ms, the host gives it up and drops the next indirect draw, whose arguments may not be written yet. The cause is a late writer submission (F262 family). In the maintainer's 57-minute play of 2026-11-18 there were 39 give-ups and 1 dropped draw. The PS5 never gives such a wait up, so this is a bug to fix, not a fix.
+- **A compute buffer can be let go on a stale value, every title.** A compute buffer that waits for a label can pass on last frame's value while the buffer that writes the label is still being submitted or is still open. Offline, on the shared code, this ends in two GPU rings waiting on each other. On ASTRO BOT the window opens about 6 times a second, with no harm seen there. It is a candidate for the GPU hangs in play whose cause is not known, and no recorded hang is tied to it yet. The fix is written and costs nothing measurable; it is not in the shared builds (F878, F879).
+- **Long frames from the host's memory bookkeeping, second title.** The game's main thread waits while the host copies its lists of memory ranges and rebuilds its mapping index in full. Replacements for both are written and cost nothing on ASTRO BOT. They are not in the shared builds, and their gain is not measured, because the second title is not installed on the dev box at the moment (F869, F871, F872, F880).
+- **The third title hangs the GPU about 11 s after its start** (private builds only). The frame that hangs carries the first compute buffer that continues in a second, chained buffer; the GPU stops at the first shader run of the continuation. The cause is open; two fixes are written and not yet run (F883).
 - **A CPU crash in the second title's job system, mostly in one fight scene.** The game's main thread, helping its job workers, runs a job that needs a worker's data, and the emulator ends with a read at address 0xc. On the night of 11-16/17 it ended a few of the long runs, at 3 to 20 minutes; with more job workers per core it came in most runs. The title-code workaround (JobArenaFix) is removed from the code, menu and switches since 2026-11-17 (experiment 0429): the fix is to come from console-like thread scheduling, derived at run time for any title. A 200 µs wake slice (experiment 0425) and a faster guest mutex did not remove it. Real-time priority for the title's high-priority job workers through rtkit (candidate R) removed it under a stressor (4 of 4 clean against 7 crashes in 9) and, since rtkit's per-user limits were raised on 2026-11-18, passes its checks with all 8 workers promoted and no refused audio thread; since 2026-11-18 12:08 it is on by default in the shared builds, and the 200 µs wake slice is removed (F444–F458, F851, F856, F857). Whether it removes the crash in the maintainer's own fight scene is to be seen in play. On the Bazzite host R works for a game started from his desktop. It does not work for one launched over ssh: rtkit's policy refuses those, and such a run crashed (F860).
 
 The second title's GPU hangs of 11-17 and 11-18 are fixed in the shared builds since 2026-11-18 23:52. A compute buffer's wait on a graphics release was passed on a stale value (F848, F852); the fix is now built into the code with no switch (F859). It has 0 hangs in 6 scripted runs and in the maintainer's 57-minute play.
 
+The second title's dropped draws after a given-up wait (the F262 family, 39 give-ups and 1 dropped draw in the maintainer's 57-minute play of 2026-11-18) are fixed at their source in the shared builds since 2026-11-21 00:52: a buffer's label writes are registered before the kernel call that submits it, so a wait no longer misses its writer (F865–F868; two holes in that fix closed the same day, F874–F876). One write-fault hang of that family is still open (F870).
+
 ASTRO BOT's first-save failure of 2026-11-15 (F833, F835) is fixed in the shared builds since 2026-11-15 16:26 (experiment 0422).
 
-Any game other than the two above is untested; one that calls a system library BC5 has not written yet stops there. Rare failures whose cause is not known, and which have not been seen again, are listed under [Known issues](#known-issues).
+Any game other than the two above is untested, apart from the third title's bring-up; one that calls a system library BC5 has not written yet stops there. Rare failures whose cause is not known, and which have not been seen again, are listed under [Known issues](#known-issues).
 
 ### Legal, in short
 
@@ -84,7 +89,7 @@ BC5 is a hobby research project and is against piracy. You play games you own, d
 
 ## Status in numbers
 
-As of 2026-11-15; the table's figures are from 2026-11-02 or earlier unless a row names a later date. Measured on one BC-250 with the maintainer's own copies of the games. Every number is a finding (F1 … F844) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
+As of 2026-11-21; the table's figures are from 2026-11-02 or earlier unless a row names a later date. Measured on one BC-250 with the maintainer's own copies of the games. Since 2026-11-20 frame rates are taken from the lean build only (D24). Every number is a finding (F1 … F885) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
 
 | | ASTRO BOT | Marvel's Wolverine (second title) |
 | --- | --- | --- |
@@ -94,7 +99,9 @@ As of 2026-11-15; the table's figures are from 2026-11-02 or earlier unless a ro
 | Loading | Cold start to the first logo ~12 s (F287); startup reads are no longer bound by the disk (F289) | Logo load ends at 13–15 s, Continue into gameplay 37–41 s (F287). At the later save, 2026-11-13: the start screen takes its first key at about 50 s, 7 s sooner than before, and the save load reaches 20 flips/s about 4 s sooner (F817) |
 | Controller | Motion, haptics, adaptive triggers (F52–F60, F78–F80); with a DualShock 4, rumble from the haptics (F214) | Haptics (its ATRAC9 vibration tracks, F300, F301), touchpad press (F252); with a DualShock 4, rumble from the same tracks, also after an unplug and replug (F329) |
 
-Since 2026-11-15 the shared builds are build W of experiment 0419 (patch `e3fd8b55`), which the maintainer played that day. W is candidate B (F834) plus:
+The shared builds of 2026-11-21 are patch `0fede35d`: everything in the table below. The second title is not installed on the dev box since that day (its saves are kept), so its figures are from earlier builds.
+
+Their base, since 2026-11-15, is build W of experiment 0419 (patch `e3fd8b55`), which the maintainer played that day. W is candidate B (F834) plus:
 - the rule that removes the cutscene GPU fault at its source (F836);
 - the fix of F840;
 - the cleanup of the emulator's switches (F843, F844);
@@ -120,6 +127,8 @@ Since 2026-11-13 the builds set their own defaults in code (F827), so a launcher
 | Pad rumble off the game's threads, DualShock 4 (since 2026-10-24) | The rumble write runs on its own thread, so the game's audio thread never waits on the pad; with a DualShock 4 (no audio device) the pad-speaker sound plays on the TV without holding that thread, which had held it 1.1 s in two seconds; a replugged pad opened as a raw joystick still rumbles | F326, F328, F329 |
 | DualSense haptics, second title (since 2026-10-23) | Its ATRAC9 streams in channel configurations 6 and 7 are the pad's haptic tracks, decoded with vgmstream's decoder instead of played as silence; confirmed at the pad | F300, F301 |
 | APR read-ahead (since 2026-10-22, fixed 2026-10-23) | Streamed reads come back sooner: the cutscene read queue's 95th percentile from 3.4 s to 0.42 s; its reader threads sleep when idle (7–11 ms of CPU per 10 s instead of 160–208); large buffers and parallel runs stay with the queue's workers | F273, F281, F287, F288 |
+| Label writes registered before the submit (exp 0438's r438 and r438o, since 2026-11-21) | When a game thread's buffer is taken for submission, the labels it writes are registered before the kernel call, and a game-thread wait on such a label is kept in ring order instead of being given up. Removes the second title's given-up waits at their source (15 scripted runs, 0 lost writes). The two switches stay for a per-run opt-out. On ASTRO BOT no cost showed in a lean comparison, which ran at a wrong display mode (F885) | F865–F868, F874–F876 |
+| Game install fixes in `bc5-mount` (since 2026-11-21) | Installing a large package no longer runs out of memory, and a resumed install verifies the files it kept | F873 |
 | Kernel submit outside the device mutex (exp 0436, built in since 2026-11-20 05:54) | The GPU submission ioctl runs without holding the host's device lock, so other guest threads keep working meanwhile; the order per ring is kept by a lock per ring. +9 % frame rate on the second title's scripted route, fewer stalls. No switch | F864 |
 | Shader write targets made writable, ASTRO BOT (exp 0434, built in since 2026-11-19 15:27) | A buffer that a shader writes, named in its user data, is mapped writable before the submit even when the game's CPU never touched it, as on the console. Fixes the GPU fault on entering Bathhouse Battle. No switch | F862 |
 | Per-game Settings and window mode (exp 0435, since 2026-11-19 15:27) | Each game keeps its own Settings and remembers whether it last ran fullscreen or windowed, under `~/bc5-work/menu/titles/<TITLE_ID>/`; the first start copies the shared settings | F863 |
@@ -131,11 +140,11 @@ Since 2026-11-13 the builds set their own defaults in code (F827), so a launcher
 | Audio grain model and display-event coalescing | The second title's sound and timeline at real speed (1.00× for 10 minutes), no 30-fps cap needed | F246, F247 |
 | Tessellation-factor ring, second title | The night scene's tessellated draws are drawn; the geometry engine's reads at address 0 are gone | F248 |
 
-**The research so far:** 755 finding rows (F1–F865; the numbering has gaps) in `docs/HANDOFF.md`, experiment directories 0001–0439 in `experiments/` (0439, the third title, in progress), 14 architecture decision records in `docs/decisions/`.
+**The research so far:** 775 finding rows (F1–F885; the numbering has gaps) in `docs/HANDOFF.md`, experiment directories 0001–0440 in `experiments/` (0438 and 0439, the third title, in progress), 14 architecture decision records in `docs/decisions/`.
 
 ### Known issues
 
-Open questions and limits, as of 2026-11-18. None of them is a confirmed failure of the shared builds. Fixed issues, among them the night water, the laboratory's white surfaces, the cutscene slow motion and the ray-tracing hangs of October, are in [`docs/HANDOFF.md`](docs/HANDOFF.md) with their findings.
+Open questions and limits, as of 2026-11-21. None of them is a confirmed failure of the shared builds. Fixed issues, among them the night water, the laboratory's white surfaces, the cutscene slow motion and the ray-tracing hangs of October, are in [`docs/HANDOFF.md`](docs/HANDOFF.md) with their findings.
 
 | Issue | What is known | Findings |
 | --- | --- | --- |
@@ -143,6 +152,9 @@ Open questions and limits, as of 2026-11-18. None of them is a confirmed failure
 | A silent box freeze (2026-11-16 16:59) | During a 5-minute smoke of the second title the box stopped answering with no kernel line and was restarted by hand 44 minutes later; the re-run passed. Cause unknown; the game runs close to the memory wall | exp 0428 |
 | Rare failures, cause unknown, not seen again | Two GPU hangs in plays of 2026-11-02, a compute dispatch with a garbage size and a draw that never ends. Each ended in a failed ring reset and the box restarting by itself. The first came only with a memory shortcut that is out of the builds since 2026-11-12. On one private build, twice each on 2026-11-13 and 11-14: a GPU hang with no page fault, and a CPU fault in the game's own code. None has been seen in the long walks since; whether they are gone is not shown either way. At a GPU fault the game ends with a diagnostic record (exit code 86); a failed reset restarts the box in about 40 s | F403, F813, F837, F838, F834, F417, F420 |
 | Memory headroom, second title | About 12 GiB of the box's 15.2 GB is pinned for the GPU, and 300–650 MiB stays available. About 1.9 GiB of the pin read as zeros in every scan of a ten-minute walk; the first test of leaving them out of one heap ended in a GPU write fault. On 2026-11-18 the kernel killed the desktop shell for memory once during a game start (d432T23); the game ran on | F817, F841, F854 |
+| Diagnosis with the full journal changes the timing | With the journal not set to `min`, every submission waits for its own GPU job. The third title then took over a second a frame, and the builds printed lines about writes that "never reached the ring", which are an effect of that mode. Timing questions are studied with the short journal and targeted dumps | F884 |
+| The dev box's monitor at boot (since 2026-11-21) | The box read no display data from its monitor at four boots in a row and came up at 640×480 until the cable was replugged. The lean comparisons of that afternoon and evening ran in that mode and are comparisons within their series only. Cause open; a check before every measured series and a re-detect tool are in place | F885 |
+| A test build with a submit queue hangs the GPU | On a private build, a per-thread submit queue together with the new memory bookkeeping hangs the GPU at the same submission of ASTRO BOT in 2 of 2 runs; each part alone is clean. It is not in the shared builds | F880 |
 | Brief frame-rate dips | Seen in the maintainer's plays on 2026-11-15 and 11-18. In the 57-minute play of 11-18 on a normal build, 446 frames took over 100 ms. They come mostly from loading, the game thread itself (up to 2.4 s), memory pressure (about 700 MiB available, swap up to 1.2 GiB), host sync and given-up waits; none came from the hang fix. The lean builds, with the desktop shell stopped, showed 0–3 seconds with a gap over 100 ms in 15-minute runs. Single submissions still wait up to 0.85 s in the host's sync | F854, F859, exp 0432 |
 
 ## How it works
@@ -164,7 +176,7 @@ flowchart TD
 BC5 has three parts:
 
 - **The host**, [KytyPlus](https://github.com/Coder787-source/KytyPlus) (GPL-2.0) with this repository's patch ([`backend/kytyplus-patches/`](backend/kytyplus-patches/)). It loads the game's own code and provides the loader, the kernel, audio, input and every system library the game calls, each written from public symbol names and the game's own calls (HLE). No firmware or system-software dump is used, ever (ADR 0012, D18). The one exception, to be replaced by a driver written in the host: the game's own copies of a few library modules from its dump's `fakelib/`, chiefly the graphics pair `libSceAgc` / `libSceAgcDriver` that builds the console-format command stream (D11, Q14).
-- **The direct GPU path**, [`backend/`](backend/). The host hands the command stream over at the `/dev/gc` boundary (F12, F18, F19). The backend filters it for `amdgpu`, dropping or rewriting the packets the BC-250's command processor must not run (ADR 0005, F27). It supplies what the console's command processor does and `amdgpu`'s does not: the context-state stack, cross-queue label hand-overs, CP DMA waits (F34–F42). It maps the game's memory 1:1 into the GPU's address space as dma-bufs (ADR 0006, F40, F55). It submits with jobs in flight on the GFX ring; the game's asynchronous compute ran on the compute rings at first (ADR 0009, F178, F181), then on the GFX ring (the second title since 2026-10-27, F416, the default since 2026-11-02, F812), and for the second title again on the compute rings since 2026-11-16, each compute buffer with its own game queue's state in front (experiment 0428, F846). Its jobs are chained into fewer kernel submissions (ADR 0010, F218). Shaders are the game's native RDNA binaries; nothing is translated.
+- **The direct GPU path**, [`backend/`](backend/). The host hands the command stream over at the `/dev/gc` boundary (F12, F18, F19). The backend filters it for `amdgpu`, dropping or rewriting the packets the BC-250's command processor must not run (ADR 0005, F27). It supplies what the console's command processor does and `amdgpu`'s does not: the context-state stack, cross-queue label hand-overs, CP DMA waits (F34–F42). It maps the game's memory 1:1 into the GPU's address space as dma-bufs (ADR 0006, F40, F55). It submits with jobs in flight on the GFX ring; the game's asynchronous compute ran on the compute rings at first (ADR 0009, F178, F181), then on the GFX ring (the second title since 2026-10-27, F416, the default since 2026-11-02, F812), and again on the compute rings, each compute buffer with its own game queue's state in front, for the second title since 2026-11-16 and for every title since 2026-11-17 (experiments 0428 and 0431, F846, F850). Its jobs are chained into fewer kernel submissions (ADR 0010, F218). Shaders are the game's native RDNA binaries; nothing is translated.
 - **The tools**, [`tools/`](tools/) (Rust): `bc5-mount` reads PS5 game dumps (`.ffpfsc`) and packages (`.pkg`) as a read-only directory over FUSE; `bc5-agc` decodes GPU command streams.
 
 What BC5 is not: a firmware boot (the PS5 boot chain cannot run on a BC-250, and BC5 loads no system software either way); a new emulator (it extends KytyPlus); a PC emulator (F63); a piracy tool.
@@ -242,7 +254,7 @@ Environment variables. Since the switch cleanup in the shared builds of 2026-11-
 README.md            this file
 CLAUDE.md            standing instructions and the hard rules
 docs/
-  HANDOFF.md         research state: findings F1–F844 with sources, open questions, decisions
+  HANDOFF.md         research state: findings F1–F885 with sources, open questions, decisions
   PHASES.md          the gated roadmap (G0a, G1b, G2, G3 passed; 0b and 4 retired by D18; phase 5, play, current)
   console-vs-host.md what the console does, what the host does instead
   decisions/         ADRs 0001–0014, one decision each
@@ -255,7 +267,7 @@ tools/
   third_party/       vendored oozextract (MIT)
 backend/             C++20: the direct path (policy filter, state trackers, dma-buf mappings,
                      submission); kytyplus-patches/ the patch against KytyPlus
-experiments/         one directory per experiment, 0001–0419
+experiments/         one directory per experiment, 0001–0440
 ```
 
 ## How the research is run

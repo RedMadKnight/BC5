@@ -26,6 +26,11 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#if defined(Q438_STACK) // mkstack438.py: the trim is r438o's, its counter g_r438o_trims
+#define Q438_TRIMS g_r438o_trims
+#else
+#define Q438_TRIMS g_q438_trims
+#endif
 #include <cstring>
 #include <deque>
 #include <functional>
@@ -92,9 +97,85 @@ static thread_local bool                     t_game = false;
 static bool                                  on_game_thread() { return t_game; }
 static int                                   w428_rings() { return 4; }
 static int                                   job_ring(const char*) { return bc5::direct::kGfxRing; }
-static bool                                  wait_satisfied(const uint32_t*, bool) { return false; } // the labels' memory never satisfies
+// The label's memory, as the unit's wait_satisfied reads it for "==" (the owners' labels stay 0: their waits on k >= 1 never pass)
+static bool wait_satisfied(const uint32_t* p, bool is64) {
+	const uint64_t a = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
+	if ((p[1] & 7u) != 3) return false;
+	if (is64) {
+		const uint64_t ref = p[4] | (static_cast<uint64_t>(p[5]) << 32u), mask = p[6] | (static_cast<uint64_t>(p[7]) << 32u);
+		return (*reinterpret_cast<const volatile uint64_t*>(a & ~7ull) & mask) == (ref & mask);
+	}
+	return SoftCp::compare(3, *reinterpret_cast<const volatile uint32_t*>(a & ~3ull), p[5], p[4]);
+}
 static bool                                  ring_will_satisfy(const uint32_t* p, bool is64, int ring);
+// exp 0438 (labelmap, q438ng): the device's mappings and the filter's operand layouts, for the cut label_write_mapped,
+// covered_sorted and ho430. g_dev stays empty in every case but the labelmap ones (no snapshot: no check, as before).
+namespace bc5::direct {
+struct Mapping {
+	uint64_t va = 0, size = 0;
+	bool     shared = false, readonly = false;
+};
+struct MappingIndex {
+	std::vector<Mapping> v;
+	auto                 begin() const { return v.begin(); }
+	auto                 end() const { return v.end(); }
+	size_t               size() const { return v.size(); }
+};
+static std::mutex                                 g_deps_mu;
+static std::vector<std::pair<int, uint64_t>>      g_deps; // F4's kernel dependencies asked for
+struct Device {
+	static void add_next_submit_dependency(int ring, uint64_t seq) {
+		std::lock_guard lk(g_deps_mu);
+		g_deps.emplace_back(ring, seq);
+	}
+};
+} // namespace bc5::direct
+namespace bc5::policy { // backend/src/policy.cpp memory_operands, the three label-write packets (WRITE_DATA, RELEASE_MEM, EOP)
+static std::vector<std::pair<uint64_t, uint64_t>> memory_operands(const uint32_t* p, uint32_t len) {
+	std::vector<std::pair<uint64_t, uint64_t>> out;
+	if ((p[0] >> 30) != 3 || len < 2) return out;
+	const auto op   = static_cast<uint8_t>((p[0] >> 8) & 0xff);
+	auto       addr = [&](uint32_t lo, uint32_t hi) { return (static_cast<uint64_t>(p[lo]) & ~3ull) | (static_cast<uint64_t>(p[hi] & 0xffffu) << 32); };
+	if (op == 0x37 && len >= 4 && (((p[1] >> 8) & 0xf) == 1 || ((p[1] >> 8) & 0xf) == 2 || ((p[1] >> 8) & 0xf) == 5)) out.emplace_back(addr(2, 3), (len - 4) * 4ull);
+	if (op == 0x49 && len >= 6 && ((p[2] >> 29) & 7) != 0) out.emplace_back(addr(3, 4), 8);
+	if (op == 0x47 && len >= 4 && ((p[3] >> 29) & 7) != 0) out.emplace_back(addr(2, 3), 8);
+	return out;
+}
+} // namespace bc5::policy
+namespace cv412 {
+inline bool hole(bool, bool) { return false; }
+} // namespace cv412
+struct TestDev {
+	std::mutex                         m;
+	std::vector<bc5::direct::Mapping>  maps;
+	std::shared_ptr<const bc5::direct::MappingIndex> sorted_mappings() {
+		std::lock_guard lk(m);
+		auto            p = std::make_shared<bc5::direct::MappingIndex>();
+		p->v              = maps;
+		std::sort(p->v.begin(), p->v.end(), [](const bc5::direct::Mapping& a, const bc5::direct::Mapping& b) { return a.va < b.va; });
+		return p;
+	}
+	uint64_t gds_shadow_va() const { return 0; }
+	void     map(uint64_t va, uint64_t size) {
+        std::lock_guard lk(m);
+        maps.push_back({va, size, false, false});
+	}
+	void unmap(uint64_t va) {
+		std::lock_guard lk(m);
+		std::erase_if(maps, [va](const bc5::direct::Mapping& x) { return x.va == va; });
+	}
+};
+static std::unique_ptr<TestDev>             g_dev;
+static constexpr uint64_t                   kFlAreaBytes = 0x100;
+static uint64_t                             fl_crumbs_area() { return 0; }
+static std::pair<uint32_t, uint32_t>        ge_probe_range() { return {0, 0}; }
+static std::atomic<int>                     g_stub_phase {0}; // >0: the stub submit_now holds this F16 phase (3: holding the device)
 #include "q_state.inc"
+#ifdef Q438_X
+#include "q_cov.inc"
+#include "q_lwm.inc"
+#include "q_ng.inc"
+#endif
 #include "q_chain.inc"
 #include "q_plw.inc"
 #include "q_reg.inc"
@@ -102,9 +183,10 @@ static bool                                  ring_will_satisfy(const uint32_t* p
 #ifdef Q438_NEW
 #include "q_q.inc"
 #endif
+#include "q_ho.inc" // ho430, cut from every unit
 
 // ---- the stub submission ---------------------------------------------------------------------------------------------------
-static constexpr int        kOwners = 16;
+static constexpr int        kOwners = 24;
 static uint64_t             g_labels[kOwners];
 static ChainSlot*           g_slot_of[kOwners];
 static std::thread::id      g_owner_tid[kOwners];
@@ -112,6 +194,8 @@ static std::atomic<int>     g_active[kOwners], g_pass[kOwners];
 static std::atomic<bool>    g_gated[kOwners], g_nest_ok[kOwners];
 static std::atomic<int>     g_prep_us {0}, g_prep_rand_us {0}, g_drop_write {0};
 static std::atomic<uint64_t> g_seq_no {0}, g_viol_active {0}, g_viol_flight {0}, g_viol_cap {0}, g_qmax {0}, g_call_max_ns {0};
+static std::atomic<uint64_t> g_ph_lock {0}, g_ph_gate {0}, g_ph_prep {0}, g_ph_reg {0}, g_ph_prep_us {0}; // the ungated calls: max per phase (ns)
+static void ph_max(std::atomic<uint64_t>& a, uint64_t d) { for (uint64_t m = a.load(); d > m && !a.compare_exchange_weak(m, d);) {} }
 static std::function<void(int owner, uint32_t first)> g_hook; // set while no submission runs
 struct Rec {
 	int                   owner = -1;
@@ -146,12 +230,21 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char*, int
 	const int o = r.owner;
 	r.tid       = std::this_thread::get_id();
 	const uint64_t t_call = SoftCp::now_ns();
+	if (g_stub_phase.load() > 0 && t_f16_slot != nullptr) t_f16_slot->f16_phase.store(g_stub_phase.load()); // as submit_now's 2, 3
+	bool writes = false;
+	for (uint32_t q = 0; q < num_dwords;) {
+		const uint32_t h = ib[q], c = (h >> 16u) & 0x3fffu, len = c == 0x3fffu ? 1 : c + 2;
+		if ((h >> 30u) == 3 && ((h >> 8u) & 0xffu) == 0x49u) writes = true;
+		q += len;
+	}
 	if (g_active[o].fetch_add(1) != 0 && !g_nest_ok[o].load()) g_viol_active++;
+	uint64_t t_locked = 0, t_gate = 0, t_prep = 0;
 	{
 		ChainSlot&      s = *g_slot_of[o];
 		std::lock_guard lk(s.mu);
+		t_locked   = SoftCp::now_ns();
 		r.flight_n = static_cast<uint64_t>(std::count(s.f10_flight.begin(), s.f10_flight.end(), label_of(o)));
-		if (r.flight_n == 0) g_viol_flight++;
+		if (r.flight_n == 0 && writes) g_viol_flight++;
 #ifdef Q438_NEW
 		std::lock_guard ql(s.q_mu);
 		if (s.q.size() > kQ438Cap) g_viol_cap++;
@@ -166,15 +259,31 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char*, int
 			std::this_thread::sleep_for(std::chrono::microseconds(100));
 		}
 	}
+	t_gate = SoftCp::now_ns();
 	if (g_hook) g_hook(o, r.seqs.front());
 	const int pr = g_prep_us.load() + (g_prep_rand_us.load() > 0 ? static_cast<int>(SoftCp::now_ns() % static_cast<uint64_t>(g_prep_rand_us.load())) : 0);
 	if (pr > 0) std::this_thread::sleep_for(std::chrono::microseconds(pr)); // the preparation and the CS
+	t_prep = SoftCp::now_ns();
 	for (int d = g_drop_write.load(); d > 0;) { // the filter dropped a write: its early entry is never registered for real
 		if (!g_drop_write.compare_exchange_weak(d, d - 1)) continue;
 		std::erase(executed, 3u);
 		break;
 	}
+#ifdef Q438_X
+	if (g_dev) { // the filter: a packet whose memory operand is not mapped is NOPed (backend policy.cpp), so it is not registered
+		const auto maps = g_dev->sorted_mappings();
+		std::erase_if(executed, [&](uint32_t q) {
+			const uint32_t h = ib[q], c = (h >> 16u) & 0x3fffu, len = c == 0x3fffu ? 1 : c + 2;
+			return !lw_packet_mapped(*maps, 0, ib + q, len);
+		});
+	}
+#endif
 	register_label_writes(ib, num_dwords, executed, g_seq_no.fetch_add(1) + 1, ring);
+	if (!g_gated[o].load() && !g_nest_ok[o].load()) {
+		const uint64_t t_reg = SoftCp::now_ns();
+		ph_max(g_ph_lock, t_locked - t_call); ph_max(g_ph_gate, t_gate - t_locked); ph_max(g_ph_prep, t_prep - t_gate); ph_max(g_ph_reg, t_reg - t_prep);
+		if (t_prep - t_gate > g_ph_prep.load() - 1) g_ph_prep_us = static_cast<uint64_t>(pr);
+	}
 	if (!g_gated[o].load() && !g_nest_ok[o].load())
 		for (uint64_t d = SoftCp::now_ns() - t_call, m = g_call_max_ns.load(); d > m && !g_call_max_ns.compare_exchange_weak(m, d);) {
 		}
@@ -434,6 +543,8 @@ static int run_random(bool q_on) {
 	            g_viol_active.load(), g_viol_flight.load(), g_viol_cap.load(), g_qmax.load(), early_entries(), lines_with("BUG"));
 	std::printf("random: longest game-thread wait for an early writer %.3f ms (%" PRIu64 " such waits); longest ungated submit_now (stub, entry to registration) %.3f ms\n", static_cast<double>(g_r438_wait_max.load()) / 1e6, g_r438_waits.load(),
 	            static_cast<double>(g_call_max_ns.load()) / 1e6);
+	std::printf("random: ungated submit_now phases, max ms: slot lock %.3f, gate %.3f, preparation sleep %.3f (asked %" PRIu64 " us at that max), register_label_writes %.3f\n",
+	            g_ph_lock.load() / 1e6, g_ph_gate.load() / 1e6, g_ph_prep.load() / 1e6, g_ph_prep_us.load(), g_ph_reg.load() / 1e6);
 	CHECK(g_viol_active.load() == 0 && g_viol_flight.load() == 0 && g_viol_cap.load() == 0, "violations");
 	CHECK(early_entries() == 0 && lines_with("BUG") == 0, "early entries left or BUG lines");
 	if (q_on) {
@@ -603,8 +714,8 @@ static void det_trim(int o) {
 		game.join();
 		CHECK(kept == 1, "trim: the queued entry's early write was dropped by the trim (%zu left)", kept);
 		CHECK(held == -1 && got.load() == 1, "trim: the wait on the queued write returned %d before its registration, %d after", held, got.load());
-		CHECK(g_q438_trims.load() >= 1, "trim: no trim ran (g_plw at most %zu)", max_n);
-		std::printf("det trim: g_plw reached %zu entries, %" PRIu64 " trims; the early write kept %zu, the wait %d then %d\n", max_n, g_q438_trims.load(), kept, held, got.load());
+		CHECK(Q438_TRIMS.load() >= 1, "trim: no trim ran (g_plw at most %zu)", max_n);
+		std::printf("det trim: g_plw reached %zu entries, %" PRIu64 " trims; the early write kept %zu, the wait %d then %d\n", max_n, Q438_TRIMS.load(), kept, held, got.load());
 		chain_flush(5);
 	});
 	t.join();
@@ -804,8 +915,581 @@ static void det_destroy(int o) { // the owner's thread ends with a queue: ~Chain
 }
 #endif
 
+#ifdef Q438_X
+// ---- labelmap and q438ng (mkq438x.py) -------------------------------------------------------------------------------------
+static const char* const kNever = "of a queued chain never reached the ring";
+// (i): a label write to an address with no GPU mapping leaves no early entry and no BUG line; its mapped twin gets one.
+static void det_lwm_map(int om, int ou) {
+	g_dev = std::make_unique<TestDev>();
+	g_dev->map(label_of(om), 8);
+	const size_t   bug0  = lines_with(kNever);
+	const uint64_t skip0 = g_lwm_skipped.load();
+	size_t         early[2] {};
+	int            k = 0;
+	for (int o: {om, ou}) {
+		g_gated[o] = true;
+		g_pass[o]  = 0;
+		std::thread t([o, &early, k] {
+			BEGIN_OWNER(o);
+			append(o, 1);
+			chain_flush(1);
+			wait_until([o] { return g_active[o].load() == 1; }, "the entry in submit_now");
+			early[k] = early_entries(label_of(o));
+			g_pass[o]++;
+			chain_flush(5);
+		});
+		t.join();
+		g_gated[o] = false;
+		k++;
+	}
+	std::atomic<int> rm {-1}, ru {-1};
+	std::thread([&] {
+		t_game = true;
+		rm     = wait_ok(om, 1) ? 1 : 0;
+		ru     = wait_ok(ou, 1) ? 1 : 0;
+	}).join();
+	const size_t bugs = lines_with(kNever) - bug0;
+	CHECK(early[0] == 1 && early[1] == 0, "labelmap (i): early entries mapped %zu (want 1), unmapped %zu (want 0)", early[0], early[1]);
+	CHECK(bugs == 0, "labelmap (i): %zu BUG lines", bugs);
+	CHECK(g_lwm_skipped.load() == skip0 + 1, "labelmap (i): the scan left out %" PRIu64 " writes (want 1)", g_lwm_skipped.load() - skip0);
+	CHECK(rm.load() == 1 && ru.load() == 0, "labelmap (i): after the submissions the mapped label has its writer (%d), the unmapped none (%d)", rm.load(), ru.load());
+	std::printf("det labelmap (i): early entries mapped %zu, unmapped %zu; left out %" PRIu64 "; BUG lines %zu; real writer mapped %d, unmapped %d\n", early[0], early[1], g_lwm_skipped.load() - skip0, bugs, rm.load(),
+	            ru.load());
+	g_dev.reset();
+}
+// (iii): the mapping changes between the scan and submit_now.
+//   a. mapped at the scan, unmapped at the submit: the early entry never turns real: a BUG line at the entry's end, the entry
+//      removed; a game-thread wait held on it until then, then sees no writer (the GPU will not write it either).
+//   b. unmapped at the scan, mapped at the submit: no early entry; the real write appears at the submit. In between a
+//      game-thread wait sees no writer (as before r438/q438 for any writer not yet submitted).
+static void det_lwm_change(int oa, int ob) {
+	g_dev          = std::make_unique<TestDev>();
+	const size_t b0 = lines_with(kNever);
+	int          held_a = 0, end_a = -1, before_b = 0, end_b = -1;
+	size_t       early_a = 0, early_b = 0;
+	g_dev->map(label_of(oa), 8);
+	g_gated[oa] = true;
+	g_pass[oa]  = 0;
+	std::thread ta([&] {
+		BEGIN_OWNER(oa);
+		append(oa, 1);
+		chain_flush(1);
+		wait_until([oa] { return g_active[oa].load() == 1; }, "a: the entry in submit_now");
+		early_a = early_entries(label_of(oa));
+		g_dev->unmap(label_of(oa));
+		std::atomic<int> got {-1};
+		std::thread      game([&got, oa] {
+            t_game = true;
+            got    = wait_ok(oa, 1) ? 1 : 0;
+		});
+		std::this_thread::sleep_for(std::chrono::milliseconds(30));
+		held_a = got.load();
+		g_pass[oa]++;
+		game.join();
+		end_a = got.load();
+		chain_flush(5);
+	});
+	ta.join();
+	g_gated[oa]      = false;
+	const size_t bug_a = lines_with(kNever) - b0;
+	g_gated[ob] = true;
+	g_pass[ob]  = 0;
+	std::thread tb([&] {
+		BEGIN_OWNER(ob);
+		append(ob, 1);
+		chain_flush(1);
+		wait_until([ob] { return g_active[ob].load() == 1; }, "b: the entry in submit_now");
+		early_b = early_entries(label_of(ob));
+		g_dev->map(label_of(ob), 8);
+		std::atomic<int> got {-1};
+		std::thread      game([&got, ob] { // no early entry: it must return at once (no writer); -1 after 30 ms is a waiter on one
+            t_game = true;
+            got    = wait_ok(ob, 1) ? 1 : 0;
+		});
+		std::this_thread::sleep_for(std::chrono::milliseconds(30));
+		before_b = got.load();
+		g_pass[ob]++;
+		game.join();
+		chain_flush(5);
+		std::thread([&end_b, ob] {
+			t_game = true;
+			end_b  = wait_ok(ob, 1) ? 1 : 0;
+		}).join();
+	});
+	tb.join();
+	g_gated[ob] = false;
+	const size_t bug_b = lines_with(kNever) - b0 - bug_a;
+	CHECK(early_a == 1 && held_a == -1 && end_a == 0 && bug_a == 1 && early_entries(label_of(oa)) == 0,
+	      "labelmap (iii a): early %zu, the wait %d while queued then %d, BUG lines %zu, left %zu", early_a, held_a, end_a, bug_a, early_entries(label_of(oa)));
+	CHECK(early_b == 0 && before_b == 0 && end_b == 1 && bug_b == 0, "labelmap (iii b): early %zu, the wait %d before the submit, %d after, BUG lines %zu", early_b, before_b, end_b, bug_b);
+	std::printf("det labelmap (iii a, mapped at the scan, unmapped at the submit): early %zu, the wait held %d then %d (no writer), BUG lines %zu\n", early_a, held_a, end_a, bug_a);
+	std::printf("det labelmap (iii b, unmapped at the scan, mapped at the submit): early %zu, the wait %d before the submit, %d after, BUG lines %zu\n", early_b, before_b, end_b, bug_b);
+	g_dev.reset();
+}
+// q438ng: entry 1 held in submit_now, entry 2 (the writer of L, value 2) queued behind it; L's memory holds a stale 1; an acb
+// on bc5-ring (not a game thread) waits on L == 1.
+//   the gate: acb_ready's test (acb_wait_unready, unit line ~7665): must hold the acb while the writer is queued;
+//   the submit stage as today: ho430::at_wait (F10, F16, F18) then submit_split's keep test (unit ~10655): it returns
+//   after its bounds with the writer still queued, and the stale memory passes the wait: the hazard, shown, not asserted.
+static void det_ng(int o) {
+	g_labels[o] = 1; // last frame's value
+	g_stub_phase = 3; // entry 1 holds the device (F16 phase 3: no phase-gate give-up)
+	g_gated[o]   = true;
+	g_pass[o]    = 0;
+	const uint64_t L = label_of(o);
+	uint32_t       w[9];
+	wait64(w, L, 1);
+	int      gate_q = -1, gate_r = -1;
+	bool     queued_at_return = false, passes_today = false, kept = false;
+	double   at_ms = 0;
+	size_t   deps_after = 0;
+	std::thread t([&] {
+		BEGIN_OWNER(o);
+		static const uint32_t nowrite[3] = {0xC0011000u, static_cast<uint32_t>(o), 1};
+		chain_append(nullptr, 0, nowrite, 3, "dcb", false); // entry 1: writes nothing
+		chain_flush(1);
+		wait_until([o] { return g_active[o].load() == 1; }, "entry 1 held in submit_now");
+		append(o, 2); // entry 2: the writer, L = 2
+		chain_flush(1);
+		std::thread ring([&] { // bc5-ring: not a game thread
+			gate_q = acb_wait_unready(w, true, L, 0) ? 1 : 0;
+			const uint64_t t0 = SoftCp::now_ns();
+			ho430::at_wait(w, true, L, "acb", 0, w, 9, 0);
+			at_ms            = static_cast<double>(SoftCp::now_ns() - t0) / 1e6;
+			queued_at_return = early_entries(L) != 0;
+			kept             = !wait_satisfied(w, true) && ring_will_satisfy(w, true, 0);
+			passes_today     = wait_satisfied(w, true);
+		});
+		ring.join();
+		g_pass[o] = 100; // both entries go
+		chain_flush(5);
+		std::thread ring2([&] {
+			gate_r = acb_wait_unready(w, true, L, 0) ? 1 : 0;
+			{
+				std::lock_guard lk(bc5::direct::g_deps_mu);
+				bc5::direct::g_deps.clear();
+			}
+			ho430::at_wait(w, true, L, "acb", 0, w, 9, 0);
+			std::lock_guard lk(bc5::direct::g_deps_mu);
+			deps_after = bc5::direct::g_deps.size();
+		});
+		ring2.join();
+	});
+	t.join();
+	g_gated[o]   = false;
+	g_stub_phase = 0;
+	CHECK(gate_q == 1, "q438ng: acb_ready's test let the acb go (%d) while its label's writer was queued", gate_q);
+	CHECK(gate_r == 0, "q438ng: acb_ready's test still held the acb (%d) after the writer was submitted", gate_r);
+	CHECK(deps_after >= 1, "q438ng: after the writer's submission F4 asked for no kernel dependency");
+	std::printf("det q438ng: the gate held the acb while the writer was queued %d, let it go after the writer's submission %d (F4 dependencies %zu)\n", gate_q, gate_r == 0 ? 1 : 0, deps_after);
+	std::printf("det q438ng, today's submit stage with the writer queued: at_wait returned after %.1f ms, the writer still queued %d, the stale value passes the wait %d (kept for the GPU %d)%s\n", at_ms,
+	            queued_at_return ? 1 : 0, passes_today ? 1 : 0, kept ? 1 : 0, queued_at_return && passes_today ? ": THE HAZARD (an acb decided without its queued writer)" : "");
+	g_labels[o] = 0;
+}
+#endif
+
+
+// ---- inflight: q438ng's stale-value window without the queue (any unit; BC5_0438_SUBMITQ off) ----------------------------
+// A game thread's chain (the writer of L, value 2) is taken and in its submit_now (held at the stub's gate, F16 phase 3: the
+// kernel call in flight); L's memory holds a stale 1; an acb on bc5-ring (not a game thread) waits on L == 1.
+//   the gate: acb_ready's test (unit ~7665; mkq438x.py's acb_wait_unready when cut);
+//   the submit stage: ho430::at_wait (F10, F16, F18), then the stale value in memory.
+// With BC5_0438_INFLIGHT_NG=1 (a mkq438x.py unit) the gate must hold the acb until the writer's real registration.
+#ifdef Q438_X
+#define ACB_UNREADY(p, is64, label, ring) acb_wait_unready(p, is64, label, ring)
+#else
+#define ACB_UNREADY(p, is64, label, ring) (!wait_satisfied(p, is64) && !ring_will_satisfy(p, is64, ring)) // acb_ready's test, unit ~7665
+#endif
+#ifdef Q438_X
+static const Wd438* wd438_last(uint64_t label, int decision) { // the newest complete wd438 entry for label with this decision
+	const uint64_t n0 = g_wd438_n.load();
+	for (uint64_t k = n0; k-- > (n0 > 256 ? n0 - 256 : 0);) {
+		const Wd438& e = g_wd438[k & 255u];
+		if (e.seq.load() == k + 1 && e.label == label && e.decision == decision) return &e;
+	}
+	return nullptr;
+}
+#endif
+#ifdef Q438_X
+// exp 0438 (ngcount): the live count at a transition. writer: a write of the case's label is open, in flight, queued or early.
+static void live_check(const char* where, bool writer) {
+	if (!ng_counting()) return;
+	const int64_t n = g_ng_live.load();
+	std::printf("   live count %s: %" PRId64 "\n", where, n);
+	if (writer) CHECK(n > 0, "ngcount: the live count reads %" PRId64 " %s, while a writer is pending", n, where);
+	else CHECK(n == 0, "ngcount: the live count reads %" PRId64 " %s, with nothing pending", n, where);
+}
+#else
+static void live_check(const char*, bool) {}
+#endif
+static int run_inflight() {
+	constexpr int o = 21;
+#ifdef Q438_X
+	const uint64_t h0 = g_ng438_holds[0].load(), r0 = g_ng438_rel[0].load(), f0 = g_ng438_fb.load();
+#endif
+	g_labels[o]  = 1;
+	const char* ph = std::getenv("Q438_INFLIGHT_PHASE"); // 3 (default): holding the device; 1: GPU back-pressure
+	g_stub_phase   = ph != nullptr && ph[0] == '1' ? 1 : 3;
+	std::printf("inflight: the writer held at F16 phase %d\n", g_stub_phase.load());
+	g_gated[o]   = true;
+	g_pass[o]    = 0;
+	const uint64_t L = label_of(o);
+	uint32_t       w[9];
+	wait64(w, L, 1);
+#ifdef Q438_X
+	const uint64_t s0 = g_ng438_skip[0].load(), u0 = g_ng438_full[0].load();
+	live_check("before the writer", false);
+	uint32_t w_idle[9]; // its own packet: wd438 skips a repeat of a (wait, decision) pair, the hazard's entry below must be new
+	wait64(w_idle, L, 1);
+	ACB_UNREADY(w_idle, true, L, 0); // the gate with nothing pending: one load, the full test skipped
+	const uint64_t s1 = g_ng438_skip[0].load() - s0, u1 = g_ng438_full[0].load() - u0;
+	if (inflight_ng_on()) CHECK(s1 == 1 && u1 == 0, "ngcount: the idle gate skipped %" PRIu64 " and ran %" PRIu64 " full tests (want 1, 0)", s1, u1);
+#endif
+	std::atomic<int> appended {0};
+	std::thread owner([&appended] {
+		BEGIN_OWNER(o);
+		append(o, 2);
+		appended = 1;
+		live_check("with the writer appended (open)", true);
+		chain_flush(1); // no queue: the owner itself is in submit_now until the gate opens
+		chain_flush(5);
+	});
+	for (const uint64_t ta = SoftCp::now_ns(); g_active[o].load() != 1;) { // the writer in submit_now (5 s bound)
+		if (SoftCp::now_ns() - ta > 5'000'000'000ull) {
+			std::printf("FAIL: the writer never reached submit_now\n");
+			std::_Exit(2);
+		}
+		std::this_thread::sleep_for(std::chrono::microseconds(200));
+	}
+	live_check("with the writer in its submit_now", true);
+#ifdef Q438_X
+	const uint64_t u2 = g_ng438_full[0].load();
+#endif
+	const int      gate1 = ACB_UNREADY(w, true, L, 0) ? 1 : 0; // this thread is not a game thread: bc5-ring's view
+#ifdef Q438_X
+	if (inflight_ng_on()) CHECK(g_ng438_full[0].load() - u2 == 1, "ngcount: the gate with the writer in flight did not run the full test");
+#endif
+	const uint64_t t0    = SoftCp::now_ns();
+	ho430::at_wait(w, true, L, "acb", 0, w, 9, 0);
+	const double at_ms = static_cast<double>(SoftCp::now_ns() - t0) / 1e6;
+	bool         in_flight = false;
+	{
+		ChainSlot&      s = *g_slot_of[o];
+		std::lock_guard lk(s.mu);
+		in_flight = std::find(s.f10_flight.begin(), s.f10_flight.end(), L) != s.f10_flight.end();
+	}
+	const bool passes = wait_satisfied(w, true);
+	const int  gate1b = ACB_UNREADY(w, true, L, 0) ? 1 : 0; // still in flight
+	g_pass[o]         = 100;
+	owner.join();
+	live_check("after the writer's registration and its thread's end", false);
+	{
+		std::lock_guard lk(bc5::direct::g_deps_mu);
+		bc5::direct::g_deps.clear();
+	}
+	const int gate2 = ACB_UNREADY(w, true, L, 0) ? 1 : 0; // the writer registered for real
+	ho430::at_wait(w, true, L, "acb", 0, w, 9, 0);
+	size_t deps = 0;
+	{
+		std::lock_guard lk(bc5::direct::g_deps_mu);
+		deps = bc5::direct::g_deps.size();
+	}
+	const int phase_held = g_stub_phase.load();
+	g_stub_phase         = 0;
+	g_gated[o]           = false;
+	g_labels[o]          = 0;
+	bool fix = false;
+#ifdef Q438_X
+	fix = inflight_ng_on();
+	{ // wd438: bc5-ring's gate decision while the writer was in flight, with the label's writer state at that moment
+		const Wd438* e = wd438_last(L, fix ? 0 : 1);
+		std::printf("inflight, wd438's entry of the gate decision: %s\n", e == nullptr ? "MISSING" : "");
+		std::fflush(stdout);
+		if (e != nullptr) {
+			std::printf("   decision %s, memory 0x%" PRIx64 ", reference 0x%" PRIx64 ", writer in flight %d (early entry %d, slots %d, phase %d)\n", e->decision == 0 ? "deferred at the gate" : "met at the gate", e->value, e->ref,
+			            e->early || e->slots > 0 ? 1 : 0, e->early ? 1 : 0, e->slots, e->phase[0]);
+		}
+		CHECK(e != nullptr && e->slots == 1 && e->phase[0] == phase_held, "inflight: wd438 has no gate entry with the writer's slot in flight at phase %d", phase_held);
+	}
+	if (fix) { // ng438's counts for this hold, then a hold let go by the consumer's 10-s fallback (called as the consumer does)
+		const uint64_t dh = g_ng438_holds[0].load() - h0, dr = g_ng438_rel[0].load() - r0, df = g_ng438_fb.load() - f0;
+		std::printf("inflight, ng438: holds %" PRIu64 ", released after the registration %" PRIu64 ", by the fallback %" PRIu64 "\n", dh, dr, df);
+		CHECK(dh == 1 && dr == 1 && df == 0, "inflight: ng438 counted holds %" PRIu64 ", registration releases %" PRIu64 ", fallbacks %" PRIu64 " (want 1, 1, 0)", dh, dr, df);
+		constexpr int o2 = 22;
+		g_labels[o2]     = 1;
+		g_gated[o2]      = true;
+		g_pass[o2]       = 0;
+		uint32_t w2[9];
+		wait64(w2, label_of(o2), 1);
+		std::thread owner2([] {
+			BEGIN_OWNER(o2);
+			append(o2, 2);
+			chain_flush(1);
+			chain_flush(5);
+		});
+		for (const uint64_t ta = SoftCp::now_ns(); g_active[o2].load() != 1 && SoftCp::now_ns() - ta < 5'000'000'000ull;) std::this_thread::sleep_for(std::chrono::microseconds(200));
+		const int    held2 = ACB_UNREADY(w2, true, label_of(o2), 0) ? 1 : 0;
+		const size_t b0    = lines_with("went by the 10-s fallback");
+		ng438_fallback(label_of(o2)); // the queue consumer's 10-s branch (unit ~1682)
+		const size_t b1 = lines_with("went by the 10-s fallback") - b0;
+		g_pass[o2]      = 100;
+		owner2.join();
+		g_labels[o2] = 0;
+		const uint64_t df2 = g_ng438_fb.load() - f0;
+		ng438_line();
+		std::string line;
+		{
+			std::lock_guard lk(g_jm);
+			for (const auto& x: g_lines)
+				if (x.find("ng438 (exp 0438): t ") != std::string::npos) line = x;
+		}
+		std::printf("inflight, ng438 fallback case: held %d, fallback releases %" PRIu64 ", BUG lines %zu\n   journal: %s", held2, df2, b1, line.c_str());
+		CHECK(held2 == 1 && df2 == 1 && b1 == 1, "inflight: the fallback case held %d, counted %" PRIu64 ", BUG lines %zu (want 1, 1, 1)", held2, df2, b1);
+		std::printf("inflight, wd438 (the last entries):\n");
+		std::fflush(stdout);
+		wd438_dump_to(stdout);
+	}
+#endif
+	std::printf("inflight (BC5_0438_INFLIGHT_NG %s): the gate with the writer in its submit_now: %s (%d, again after at_wait %d); after the writer's real registration: %s (%d), F4 dependencies %zu\n",
+	            fix ? "on" : "off", gate1 ? "HELD" : "passed", gate1, gate1b, gate2 ? "held" : "released", gate2, deps);
+	std::printf("inflight, the submit stage: at_wait returned after %.1f ms, the writer still in flight %d, the stale value passes the wait %d%s\n", at_ms, in_flight ? 1 : 0, passes ? 1 : 0,
+	            !gate1 && in_flight && passes ? ": THE HAZARD (an acb decided while its writer's kernel call is in flight)" : "");
+	CHECK(deps >= 1, "inflight: after the writer's registration F4 asked for no kernel dependency");
+	CHECK(gate2 == 0, "inflight: the gate still held the acb after the writer's registration");
+	if (fix) {
+		CHECK(gate1 == 1 && gate1b == 1, "inflight: BC5_0438_INFLIGHT_NG=1 let the acb go (%d, %d) while its writer was in flight", gate1, gate1b);
+	}
+	return 0;
+}
+
+// ---- rings: a two-ring hang through ring order (any unit; BC5_0438_SUBMITQ off) ---------------------------------------------
+// The box's shape: acb A (compute) waits on L == 1 reading 0; dcb D (gfx) waits on M == 1 reading 0; neither writes the other's
+// label; A's writer W is on the gfx ring behind D. Jobs, in the order the host takes them:
+//   E  compute: M = 1                      (registered: D's wait on M is kept against it)
+//   D  gfx, a game thread's chain: waits M == 1, then N = 1   (taken, in its submit_now: not yet registered)
+//   X  compute acb: waits N == 1 (N holds last frame's 1), then M = 0   (the title orders X after D by N)
+//   W  gfx: L = 1
+//   A  compute acb: waits L == 1           (kept for the GPU against W on the gfx ring, w428)
+// The host's decisions are the real ones: ring_will_satisfy / wait_satisfied on g_plw, acb_ready's test (ACB_UNREADY),
+// ho430::at_wait's F4 kernel dependency. Then two simulated rings run the jobs in order (compute first, as a busy gfx ring
+// lets it): a WAIT blocks its ring while the memory differs, a job's pending writes go at its end (forget_label_writes).
+static uint64_t g_rlab_m = 0, g_rlab_l = 0; // M and L; N is owner 23's label
+struct SimOp {
+	bool      wait;
+	uint64_t* label;
+	uint64_t  v;
+};
+struct SimJob {
+	const char*            name;
+	int                    ring;
+	uint64_t               seq;
+	std::vector<SimOp>     ops;
+	std::vector<uint64_t>  deps; // F4: jobs (by seq) that must have ended first
+	size_t                 pc = 0;
+	bool                   done = false;
+};
+static std::vector<uint32_t> rel_buf(uint64_t* label, uint64_t v) {
+	const uint64_t a = reinterpret_cast<uintptr_t>(label);
+	return {0xC0064900u, 0x00000528u, 0x40010000u, static_cast<uint32_t>(a), static_cast<uint32_t>(a >> 32u), static_cast<uint32_t>(v), static_cast<uint32_t>(v >> 32u), 0};
+}
+static void register_job(const SimJob& j) { // its writes, as submit_now registers them
+	for (const auto& op: j.ops)
+		if (!op.wait) {
+			const std::vector<uint32_t> b = rel_buf(op.label, op.v);
+			register_label_writes(b.data(), 8, {0}, j.seq, j.ring);
+		}
+}
+static int run_rings() {
+	// D's state when X is decided (Q438_RINGS_STATE): flight (its owner's submit_now, no queue), open (appended to its
+	// owner's chain, not taken), queued (Q438: behind another entry held in submit_now), submitnow (Q438: its entry in
+	// submit_now), real (registered before X). Q438_RINGS_SPLIT=1: X has a head (P = 1) ahead of its wait.
+	const char*      st    = std::getenv("Q438_RINGS_STATE");
+	const std::string state = st != nullptr ? st : "flight";
+	const bool        split = std::getenv("Q438_RINGS_SPLIT") != nullptr && std::getenv("Q438_RINGS_SPLIT")[0] == '1';
+	constexpr int o = 23;
+	uint64_t*     N = &g_labels[o];
+	static uint64_t g_rlab_p = 0;
+	g_rlab_m = 0;
+	g_rlab_l = 0;
+	g_rlab_p = 0;
+	*N       = 1; // last frame's value
+	g_stub_phase = 3;
+	g_gated[o]   = true;
+	g_pass[o]    = state == "real" ? 100 : 0;
+	std::vector<SimJob> jobs;
+	auto                wait_pkt = [](uint64_t* label, uint64_t v, uint32_t* w) { wait64(w, reinterpret_cast<uintptr_t>(label), v); };
+	uint32_t            w[9];
+	jobs.push_back({"E", 0, 9001, {{false, &g_rlab_m, 1}}, {}});
+	register_job(jobs.back());
+	live_check("before D", false);
+	wait_pkt(&g_rlab_m, 1, w);
+	const bool        d_kept = !wait_satisfied(w, true) && ring_will_satisfy(w, true, bc5::direct::kGfxRing);
+	std::atomic<int>  owner_at {0}, go {0};
+	std::thread owner([&state, &owner_at, &go] {
+		BEGIN_OWNER(o);
+		if (state == "queued") { // another entry first, held in submit_now
+			static const uint32_t nowrite[3] = {0xC0011000u, static_cast<uint32_t>(o), 0};
+			chain_append(nullptr, 0, nowrite, 3, "dcb", false);
+			chain_flush(1);
+			while (g_active[o].load() != 1) std::this_thread::yield();
+		}
+		if (state == "open") {
+			{
+				ChainInSubmit in(true); // the owner inside Direct::submit: the watchdog leaves the chain open
+				append(o, 1);
+				owner_at = 1;
+				while (go.load() == 0) std::this_thread::yield();
+			}
+			chain_flush(1);
+		} else {
+			append(o, 1); // D: writes N = 1
+			owner_at = 1; // before the flush: without the queue the owner itself stays in submit_now until released
+			chain_flush(1);
+		}
+		chain_flush(5);
+		owner_at = 2;
+	});
+	while (owner_at.load() == 0) std::this_thread::yield();
+	if (state == "flight" || state == "submitnow" || state == "queued")
+		for (const uint64_t ta = SoftCp::now_ns(); g_active[o].load() != 1 && SoftCp::now_ns() - ta < 5'000'000'000ull;) std::this_thread::sleep_for(std::chrono::microseconds(200));
+	if (state == "real")
+		while (owner_at.load() != 2) std::this_thread::yield();
+	live_check(("with D " + state).c_str(), state != "real");
+	auto d_real = [N]() -> uint64_t {
+		std::lock_guard lk(g_plw_mutex);
+		for (const auto& e: g_plw)
+			if (e.label == reinterpret_cast<uintptr_t>(N) && (e.seq & kR438Early) == 0) return e.seq;
+		return 0;
+	};
+	// X on bc5-ring: its gate, then (when it passes) the submit stage
+	wait_pkt(N, 1, w);
+	const int x_gate1    = ACB_UNREADY(w, true, reinterpret_cast<uintptr_t>(N), 0) ? 1 : 0;
+	bool      d_released = state == "real";
+	auto      release_d  = [&] {
+        g_pass[o] = 100;
+        go        = 1;
+        owner.join();
+        d_released = true;
+	};
+	if (x_gate1 && split) { // acb_ready's split: the head (before the wait) goes ahead, the rest waits
+		jobs.push_back({"Xhead", 0, 9005, {{false, &g_rlab_p, 1}}, {}});
+		register_job(jobs.back());
+	}
+	int x_gate2 = x_gate1;
+	if (x_gate1) {
+		release_d();
+		x_gate2 = ACB_UNREADY(w, true, reinterpret_cast<uintptr_t>(N), 0) ? 1 : 0;
+	}
+	{
+		std::lock_guard lk(bc5::direct::g_deps_mu);
+		bc5::direct::g_deps.clear();
+	}
+	ho430::at_wait(w, true, reinterpret_cast<uintptr_t>(N), "acb", 0, w, 9, 0);
+	std::vector<uint64_t> x_deps;
+	{
+		std::lock_guard lk(bc5::direct::g_deps_mu);
+		for (const auto& [r, sq]: bc5::direct::g_deps) x_deps.push_back(sq);
+	}
+	const bool x_met = wait_satisfied(w, true);
+	SimJob     x {"X", 0, 9002, {{true, N, 1}, {false, &g_rlab_m, 0}}, x_deps};
+	if (split && !x_gate1) x.ops.insert(x.ops.begin(), SimOp {false, &g_rlab_p, 1}); // no split: the head goes with it
+	if (x_met) std::erase_if(x.ops, [N](const SimOp& op) { return op.wait && op.label == N; });
+	jobs.push_back(x);
+	register_job(jobs.back());
+	if (!d_released) release_d();
+	else if (owner.joinable()) owner.join();
+	live_check("after D's registration and its thread's end", false);
+	jobs.push_back({"D", bc5::direct::kGfxRing, d_real(), {{true, &g_rlab_m, 1}, {false, N, 1}}, {}});
+	if (!d_kept) jobs.back().ops.erase(jobs.back().ops.begin());
+	if (state == "real") std::erase_if(jobs, [](const SimJob& j) { return j.name[0] == 'D'; }); // already run: its N = 1 is in memory
+	if (state == "real") *N = 1;
+	jobs.push_back({"W", bc5::direct::kGfxRing, 9003, {{false, &g_rlab_l, 1}}, {}});
+	register_job(jobs.back());
+	wait_pkt(&g_rlab_l, 1, w);
+	const int  a_gate = ACB_UNREADY(w, true, reinterpret_cast<uintptr_t>(&g_rlab_l), 0) ? 1 : 0;
+	const bool a_kept = !wait_satisfied(w, true) && ring_will_satisfy(w, true, 0);
+	jobs.push_back({"A", 0, 9004, {{true, &g_rlab_l, 1}}, {}});
+	register_job(jobs.back());
+	g_stub_phase = 0;
+	g_gated[o]   = false;
+	if (state == "real") g_rlab_m = 1; // D ran before X: E's M = 1 had reached D
+	auto ended = [&](uint64_t seq) {
+		for (const auto& j: jobs)
+			if (j.seq == seq) return j.done;
+		return true;
+	};
+	for (bool moved = true; moved;) { // each round: the compute ring until it blocks (a busy gfx ring), then one gfx job
+		moved = false;
+		for (int ring: {0, 0, 0, 0, 0, 0, 0, 0, bc5::direct::kGfxRing}) {
+			for (auto& j: jobs) {
+				if (j.ring != ring || j.done) continue;
+				bool blocked = false;
+				for (uint64_t d: j.deps)
+					if (!ended(d)) blocked = true;
+				while (!blocked && j.pc < j.ops.size()) {
+					const SimOp& op = j.ops[j.pc];
+					if (op.wait && *op.label != op.v) {
+						blocked = true;
+						break;
+					}
+					if (!op.wait) *op.label = op.v;
+					j.pc++;
+					moved = true;
+				}
+				if (!blocked) {
+					j.done = true;
+					moved  = true;
+					std::lock_guard lk(g_plw_mutex);
+					std::erase_if(g_plw, [&j](const PendingLabelWrite& e) { return e.seq == j.seq && e.ring == j.ring; });
+				}
+				break;
+			}
+		}
+	}
+	bool ng = false, open = false;
+#ifdef Q438_X
+	ng   = inflight_ng_on();
+	open = open_ng_on();
+#endif
+	std::printf("rings, D %s%s (INFLIGHT_NG %d, OPEN_NG %d, SUBMITQ %s): D's wait on M kept %d; X's gate %s, then %d; X's F4 dependencies %zu; X's wait dropped as met %d; A kept for the GPU %d (gate %d)\n", state.c_str(),
+	            split ? ", X split" : "", ng ? 1 : 0, open ? 1 : 0, std::getenv("BC5_0438_SUBMITQ") != nullptr ? std::getenv("BC5_0438_SUBMITQ") : "unset", d_kept ? 1 : 0, x_gate1 ? "HELD" : "passed", x_gate2, x_deps.size(),
+	            x_met ? 1 : 0, a_kept ? 1 : 0, a_gate);
+	bool hung = false;
+	for (const auto& j: jobs) {
+		if (j.done) continue;
+		hung = true;
+		const SimOp* op = j.pc < j.ops.size() ? &j.ops[j.pc] : nullptr;
+		std::printf("   %s on the %s ring is stuck%s", j.name, j.ring == bc5::direct::kGfxRing ? "gfx" : "compute", op != nullptr && op->wait ? "" : " behind a dependency or a job ahead\n");
+		if (op != nullptr && op->wait) std::printf(" at its wait on %s == %" PRIu64 ", which reads %" PRIu64 "\n", op->label == &g_rlab_m ? "M" : (op->label == &g_rlab_l ? "L" : "N"), op->v, *op->label);
+	}
+	std::printf("rings: %s\n", hung ? "THE TWO-RING HANG (both rings stuck through ring order)" : "every job ran");
+#ifdef Q438_X
+	std::printf("rings, ng438: in flight held %" PRIu64 " released %" PRIu64 " longest %.3f ms; open chain held %" PRIu64 " released %" PRIu64 " longest %.3f ms; fallback %" PRIu64 "; busy %" PRIu64 "\n", g_ng438_holds[0].load(), g_ng438_rel[0].load(),
+	            static_cast<double>(g_ng438_max[0].load()) / 1e6, g_ng438_holds[1].load(), g_ng438_rel[1].load(), static_cast<double>(g_ng438_max[1].load()) / 1e6, g_ng438_fb.load(), g_ng438_busy.load());
+	if (ng || open) {
+		ng438_line();
+		std::lock_guard lk(g_jm);
+		std::printf("rings, journal: %s", g_lines.empty() ? "\n" : g_lines.back().c_str());
+	}
+	live_check("at the end", false);
+	std::printf("rings, ngcount: tests skipped / run in full: in flight %" PRIu64 "/%" PRIu64 ", open %" PRIu64 "/%" PRIu64 "\n", g_ng438_skip[0].load(), g_ng438_full[0].load(), g_ng438_skip[1].load(), g_ng438_full[1].load());
+	if (state == "open" && ng && open) CHECK(g_ng438_holds[1].load() == 1 && g_ng438_rel[1].load() == 1 && g_ng438_holds[0].load() == 0, "rings open: ng438 counted open holds %" PRIu64 ", releases %" PRIu64 ", in-flight holds %" PRIu64 " (want 1, 1, 0)", g_ng438_holds[1].load(), g_ng438_rel[1].load(), g_ng438_holds[0].load());
+#endif
+	const bool fix = state == "open" ? (ng && open) : ng;
+	CHECK(!(fix && hung), "rings, D %s: the gate did not prevent the two-ring hang", state.c_str());
+	*N = 0;
+	return 0;
+}
+
+#if defined(_WIN32) // Q438_TIMER1=1: Windows' timer at 1 ms, so the stub's sub-ms sleeps are not rounded up to a 15.6-ms tick
+extern "C" __declspec(dllimport) unsigned __stdcall timeBeginPeriod(unsigned);
+#pragma comment(lib, "winmm.lib")
+#endif
 int main(int argc, char** argv) {
 	const std::string mode = argc > 1 ? argv[1] : "random";
+#if defined(_WIN32)
+	if (const char* e = std::getenv("Q438_TIMER1"); e != nullptr && e[0] == '1') std::fprintf(stderr, "timer: timeBeginPeriod(1) rc %u\n", timeBeginPeriod(1));
+#endif
 	std::thread([] { // a hang is a failure
 		std::this_thread::sleep_for(std::chrono::seconds(90));
 		std::printf("FAIL: timeout (a hang)\n");
@@ -832,6 +1516,8 @@ int main(int argc, char** argv) {
 		return 0;
 	}
 	if (mode == "random") run_random(q_on);
+	else if (mode == "inflight") run_inflight();
+	else if (mode == "rings") run_rings();
 #ifdef Q438_NEW
 	else if (mode == "det") {
 		if (!q_on) {
@@ -850,6 +1536,11 @@ int main(int argc, char** argv) {
 		det_flush_all(4, 5, 8);
 		det_sync(15);
 		det_destroy(6);
+#ifdef Q438_X
+		det_lwm_map(16, 17);
+		det_lwm_change(18, 19);
+		det_ng(20);
+#endif
 	}
 #endif
 	{

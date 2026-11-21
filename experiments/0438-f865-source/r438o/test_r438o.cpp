@@ -19,6 +19,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -56,7 +57,65 @@ struct AcbHead {
 	uint32_t        done;
 };
 static std::vector<AcbHead> g_acb_heads;
+static bool g_async = std::getenv("Q438_SYNC") == nullptr; // the unit's: true only with the journal at "min"
+// exp 0438 (labelmap): the device's mappings and the filter's operand layouts, for the cut label_write_mapped and
+// covered_sorted (R438O_X: a unit made by q438/mkq438x.py). g_dev stays empty outside mode lwm: no snapshot, no check.
+namespace bc5::direct {
+struct Mapping {
+	uint64_t va = 0, size = 0;
+	bool     shared = false, readonly = false;
+};
+struct MappingIndex {
+	std::vector<Mapping> v;
+	auto                 begin() const { return v.begin(); }
+	auto                 end() const { return v.end(); }
+};
+} // namespace bc5::direct
+namespace bc5::policy { // backend/src/policy.cpp memory_operands, the three label-write packets
+static std::vector<std::pair<uint64_t, uint64_t>> memory_operands(const uint32_t* p, uint32_t len) {
+	std::vector<std::pair<uint64_t, uint64_t>> out;
+	if ((p[0] >> 30) != 3 || len < 2) return out;
+	const auto op   = static_cast<uint8_t>((p[0] >> 8) & 0xff);
+	auto       addr = [&](uint32_t lo, uint32_t hi) { return (static_cast<uint64_t>(p[lo]) & ~3ull) | (static_cast<uint64_t>(p[hi] & 0xffffu) << 32); };
+	if (op == 0x37 && len >= 4 && (((p[1] >> 8) & 0xf) == 1 || ((p[1] >> 8) & 0xf) == 2 || ((p[1] >> 8) & 0xf) == 5)) out.emplace_back(addr(2, 3), (len - 4) * 4ull);
+	if (op == 0x49 && len >= 6 && ((p[2] >> 29) & 7) != 0) out.emplace_back(addr(3, 4), 8);
+	if (op == 0x47 && len >= 4 && ((p[3] >> 29) & 7) != 0) out.emplace_back(addr(2, 3), 8);
+	return out;
+}
+} // namespace bc5::policy
+namespace cv412 {
+inline bool hole(bool, bool) { return false; }
+} // namespace cv412
+struct TestDev {
+	std::mutex                        m;
+	std::vector<bc5::direct::Mapping> maps;
+	std::shared_ptr<const bc5::direct::MappingIndex> sorted_mappings() {
+		std::lock_guard lk(m);
+		auto            p = std::make_shared<bc5::direct::MappingIndex>();
+		p->v              = maps;
+		std::sort(p->v.begin(), p->v.end(), [](const bc5::direct::Mapping& a, const bc5::direct::Mapping& b) { return a.va < b.va; });
+		return p;
+	}
+	uint64_t gds_shadow_va() const { return 0; }
+	void     map(uint64_t va, uint64_t size) {
+        std::lock_guard lk(m);
+        maps.push_back({va, size, false, false});
+	}
+	void unmap(uint64_t va) {
+		std::lock_guard lk(m);
+		std::erase_if(maps, [va](const bc5::direct::Mapping& x) { return x.va == va; });
+	}
+};
+static std::unique_ptr<TestDev>      g_dev;
+static constexpr uint64_t            kFlAreaBytes = 0x100;
+static uint64_t                      fl_crumbs_area() { return 0; }
+static std::pair<uint32_t, uint32_t> ge_probe_range() { return {0, 0}; }
 #include "r_state.inc"
+#ifdef R438O_X
+#include "r_cov.inc"
+#include "r_lwm.inc"
+static void ng438_tick() {} // the q438ng block (ng438's 60-s line, only with BC5_0438_INFLIGHT_NG=1) is not cut here
+#endif
 #include "r_plw.inc"
 #include "r_reg.inc"
 #include "r_r438.inc"
@@ -195,6 +254,216 @@ static void run_trim() {
 	CHECK(got.load() == 1, "the wait found no writer after the slice's real registration");
 }
 
+#ifdef R438O_X
+// lwm: a slice of two acb IBs, g_ib1 (L = 1 to g_label) and g_ib5 (to g_label3).
+//   (i)     g_label mapped, g_label3 not: one early entry (g_label), none for g_label3, no BUG line at the slice's end
+//           (the job registers g_ib1's write; the filter NOPs g_ib5's);
+//   (iii a) g_label3 mapped at the scan, unmapped at the job: its early entry never turns real: a BUG line at r438_end;
+//   (iii b) g_label3 unmapped at the scan, mapped at the job: no early entry, the job's real write is registered.
+static uint64_t g_label3 = 0x3c3c3c3c3ull;
+static uint32_t g_ib5[8];
+static uint32_t g_ring2[8];
+static size_t   early_of(uint64_t a) {
+    std::lock_guard lk(g_plw_mutex);
+    return static_cast<size_t>(std::count_if(g_plw.begin(), g_plw.end(), [a](const PendingLabelWrite& w) { return w.label == a && (w.seq & kR438Early) != 0; }));
+}
+static size_t real_of(uint64_t a) {
+	std::lock_guard lk(g_plw_mutex);
+	return static_cast<size_t>(std::count_if(g_plw.begin(), g_plw.end(), [a](const PendingLabelWrite& w) { return w.label == a && (w.seq & kR438Early) == 0; }));
+}
+static size_t never_lines() {
+	std::lock_guard l(g_jm);
+	return static_cast<size_t>(std::count_if(g_lines.begin(), g_lines.end(), [](const std::string& x) { return x.find("never reached the ring") != std::string::npos; }));
+}
+static void run_lwm() {
+	const uint64_t a1 = reinterpret_cast<uintptr_t>(&g_label), a3 = reinterpret_cast<uintptr_t>(&g_label3);
+	release(g_ib5, a3, 5);
+	const uint64_t i1 = reinterpret_cast<uintptr_t>(&g_ib1[0]), i5 = reinterpret_cast<uintptr_t>(&g_ib5[0]);
+	const uint32_t r[8] = {0xC0023F00u, static_cast<uint32_t>(i1), static_cast<uint32_t>(i1 >> 32u) & 0xffu, 8, 0xC0023F00u, static_cast<uint32_t>(i5), static_cast<uint32_t>(i5 >> 32u) & 0xffu, 8};
+	std::copy(r, r + 8, g_ring2);
+	g_dev = std::make_unique<TestDev>();
+	g_dev->map(a1, 8);
+	auto job = [](bool ib5_passes) { // the slice's job: the filter passes g_ib1's write, g_ib5's only when mapped
+		register_label_writes(g_ib1, 8, kAt0, 801, 0);
+		if (ib5_passes) register_label_writes(g_ib5, 8, kAt0, 802, 0);
+	};
+	size_t       e1 = 0, e3 = 0, ea3 = 0, eb3 = 0, rb3 = 0;
+	const size_t n0 = never_lines();
+	std::thread([&] { // (i), on one "bc5-ring" thread (r438's state is thread-local)
+		r438_begin(g_ring2, 8, nullptr, 0);
+		e1 = early_of(a1);
+		e3 = early_of(a3);
+		job(false);
+		r438_end();
+	}).join();
+	const size_t n_i = never_lines() - n0;
+	std::thread([&] { // (iii a)
+		g_dev->map(a3, 8);
+		r438_begin(g_ring2, 8, nullptr, 0);
+		ea3 = early_of(a3);
+		g_dev->unmap(a3);
+		job(false);
+		r438_end();
+	}).join();
+	const size_t na = never_lines() - n0 - n_i;
+	std::thread([&] { // (iii b)
+		r438_begin(g_ring2, 8, nullptr, 0);
+		eb3 = early_of(a3);
+		g_dev->map(a3, 8);
+		job(true);
+		rb3 = real_of(a3);
+		r438_end();
+	}).join();
+	const size_t nb = never_lines() - n0 - n_i - na;
+	std::printf("lwm (i): early entries mapped %zu, unmapped %zu, BUG lines %zu\n", e1, e3, n_i);
+	std::printf("lwm (iii a, mapped at the scan, unmapped at the job): early %zu, BUG lines %zu, left %zu\n", ea3, na, early_of(a3));
+	std::printf("lwm (iii b, unmapped at the scan, mapped at the job): early %zu, real writes %zu, BUG lines %zu\n", eb3, rb3, nb);
+	CHECK(e1 == 1 && e3 == 0 && n_i == 0, "lwm (i): early %zu / %zu (want 1 / 0), BUG lines %zu", e1, e3, n_i);
+	CHECK(ea3 == 1 && na == 1 && early_of(a3) == 0, "lwm (iii a): early %zu, BUG lines %zu", ea3, na);
+	CHECK(eb3 == 0 && rb3 >= 1 && nb == 0, "lwm (iii b): early %zu, real %zu, BUG lines %zu", eb3, rb3, nb);
+	g_dev.reset();
+}
+#endif
+
+// lwmid: the lwm sequence with no checks, printing g_plw after each step (identity between units; any unit, any switch)
+static void run_lwmid() {
+	static uint64_t lab3 = 0x3c3c3c3c3ull;
+	static uint32_t ib5[8];
+	static uint32_t ring2[8];
+	const uint64_t  a1 = reinterpret_cast<uintptr_t>(&g_label), a3 = reinterpret_cast<uintptr_t>(&lab3);
+	release(ib5, a3, 5);
+	const uint64_t i1 = reinterpret_cast<uintptr_t>(&g_ib1[0]), i5 = reinterpret_cast<uintptr_t>(&ib5[0]);
+	const uint32_t r[8] = {0xC0023F00u, static_cast<uint32_t>(i1), static_cast<uint32_t>(i1 >> 32u) & 0xffu, 8, 0xC0023F00u, static_cast<uint32_t>(i5), static_cast<uint32_t>(i5 >> 32u) & 0xffu, 8};
+	std::copy(r, r + 8, ring2);
+	g_dev = std::make_unique<TestDev>();
+	g_dev->map(a1, 8); // g_label mapped, lab3 not
+	auto dump = [a1, a3](const char* step) {
+		std::lock_guard lk(g_plw_mutex);
+		std::printf("%s:", step);
+		for (const auto& w: g_plw) std::printf(" [%s v%" PRIu64 " %s o%" PRIu64 "]", w.label == a1 ? "L1" : (w.label == a3 ? "L3" : "?"), w.value, (w.seq & kR438Early) != 0 ? "early" : "real", w.order);
+		std::printf("\n");
+	};
+	std::thread([&] {
+		r438_begin(ring2, 8, nullptr, 0);
+		dump("1 begin (L3 unmapped)");
+		register_label_writes(g_ib1, 8, kAt0, 801, 0);
+		dump("2 the job (the filter NOPs L3's write)");
+		r438_end();
+		dump("3 end");
+	}).join();
+	std::lock_guard l(g_jm);
+	for (const auto& x: g_lines)
+		if (x.find("BUG") != std::string::npos) std::printf("  journal: %s", x.find("never reached") != std::string::npos ? "BUG: an early write never reached the ring\n" : x.c_str());
+	g_dev.reset();
+}
+
+#ifdef R438O_X
+// stray: a slice whose second acb writes a label with no GPU mapping (the filter NOPs that write, so the job never registers
+// it). Shown: the early entry left until r438_end, a game-thread wait on that label (held until r438_end, then no writer),
+// the BUG line, g_r438o_live and the gate's live count (g_ng_live, kept while INFLIGHT_NG or OPEN_NG is on).
+// BC5_0438_R438_LWM=1: the scan reads the filter's check: no stray entry, no BUG line, the wait sees the real state at once.
+static void run_stray() {
+	static uint64_t lab3 = 0x3c3c3c3c3ull;
+	static uint32_t ib5[8];
+	static uint32_t ring2[8];
+	const uint64_t  a1 = reinterpret_cast<uintptr_t>(&g_label), a3 = reinterpret_cast<uintptr_t>(&lab3);
+	release(ib5, a3, 5);
+	const uint64_t i1 = reinterpret_cast<uintptr_t>(&g_ib1[0]), i5 = reinterpret_cast<uintptr_t>(&ib5[0]);
+	const uint32_t r[8] = {0xC0023F00u, static_cast<uint32_t>(i1), static_cast<uint32_t>(i1 >> 32u) & 0xffu, 8, 0xC0023F00u, static_cast<uint32_t>(i5), static_cast<uint32_t>(i5 >> 32u) & 0xffu, 8};
+	std::copy(r, r + 8, ring2);
+	g_dev = std::make_unique<TestDev>();
+	g_dev->map(a1, 8); // g_label mapped, lab3 not
+	const size_t n0 = never_lines();
+	size_t       early3 = 0;
+	int64_t      live_open = 0, live_end = 0;
+	uint64_t     r438o_open = 0, r438o_end = 0;
+	int          held = 0, after = 0;
+	double       wait_ms = 0;
+	std::thread([&] { // bc5-ring: the slice
+		r438_begin(ring2, 8, nullptr, 0);
+		early3     = early_of(a3);
+		live_open  = g_ng_live.load();
+		{
+			std::lock_guard lk(g_plw_mutex);
+			r438o_open = g_r438o_live;
+		}
+		std::atomic<int> got {-1};
+		std::thread      game([&got, &wait_ms] { // a game-thread wait on lab3 == 5
+            t_game            = true;
+            uint32_t       p[9];
+            const uint64_t a  = reinterpret_cast<uintptr_t>(&lab3);
+            p[0] = 0xC0079300u; p[1] = 0x00000113u; p[2] = static_cast<uint32_t>(a); p[3] = static_cast<uint32_t>(a >> 32u); p[4] = 5; p[5] = 0; p[6] = 0xffffffffu; p[7] = 0xffffffffu; p[8] = 0x19;
+            const uint64_t t0 = SoftCp::now_ns();
+            got               = ring_will_satisfy(p, true, bc5::direct::kGfxRing) ? 1 : 0;
+            wait_ms           = static_cast<double>(SoftCp::now_ns() - t0) / 1e6;
+		});
+		std::this_thread::sleep_for(std::chrono::milliseconds(30)); // the slice's submission
+		held = got.load();
+		register_label_writes(g_ib1, 8, kAt0, 801, 0); // the job: the filter NOPed lab3's write
+		r438_end();
+		game.join();
+		after     = got.load();
+		live_end  = g_ng_live.load();
+		{
+			std::lock_guard lk(g_plw_mutex);
+			r438o_end = g_r438o_live;
+		}
+	}).join();
+	const size_t bugs = never_lines() - n0;
+	std::printf("stray (BC5_0438_R438_LWM %s): early entry of the unmapped label %zu; a game-thread wait on it %s before the slice ended, then %d after r438_end (%.1f ms); BUG lines %zu; "
+	            "g_r438o_live %" PRIu64 " -> %" PRIu64 "; live count %" PRId64 " -> %" PRId64 "\n",
+	            r438_lwm_on() ? "on" : "off", early3, held == -1 ? "still waiting" : (held == 0 ? "returned (no writer)" : "returned (writer)"), after, wait_ms, bugs, r438o_open, r438o_end, live_open, live_end);
+	CHECK(r438o_end == 0 && live_end == 0, "stray: the counts did not return to 0 (g_r438o_live %" PRIu64 ", live %" PRId64 ")", r438o_end, live_end);
+	if (r438_lwm_on()) CHECK(early3 == 0 && bugs == 0 && held == 0, "stray: with R438_LWM a stray early entry %zu, BUG lines %zu, the wait %d", early3, bugs, held);
+	g_dev.reset();
+}
+#endif
+
+static size_t never_lines_all() {
+	std::lock_guard l(g_jm);
+	return static_cast<size_t>(std::count_if(g_lines.begin(), g_lines.end(), [](const std::string& x) { return x.find("never reached the ring") != std::string::npos; }));
+}
+// sync: submission in sync mode (Q438_SYNC=1 sets the unit's g_async false, as any journal but "min" does). A slice with
+// one label write: the job writes the label's memory and, as submit_now in sync mode, registers no pending write. Shown:
+// the early entries left until r438_end, a game-thread wait on the label meanwhile, the BUG lines. With r438h (R438H, set by
+// the script for a unit made by mkr438h.py): nothing early, no BUG line, the wait sees the real state at once.
+static void run_sync() {
+	const size_t n0     = never_lines_all();
+	size_t       early  = 0;
+	int          held   = 0, after = 0;
+	double       wait_ms = 0;
+	g_label             = 0x907616589ull; // busy
+	std::thread([&] { // bc5-ring: the slice
+		r438_begin(g_ring, 4, nullptr, 0);
+		{
+			std::lock_guard lk(g_plw_mutex);
+			early = static_cast<size_t>(std::count_if(g_plw.begin(), g_plw.end(), [](const PendingLabelWrite& w) { return (w.seq & kR438Early) != 0; }));
+		}
+		std::atomic<int> got {-1};
+		std::thread      game([&got, &wait_ms] {
+            t_game            = true;
+            const uint64_t t0 = SoftCp::now_ns();
+            got               = wait_on(1) ? 1 : 0;
+            wait_ms           = static_cast<double>(SoftCp::now_ns() - t0) / 1e6;
+		});
+		// the slice's submission: the job runs, waited for at submission. Up to 2 s (10-ms steps, a fixed bound) for the wait
+		// to return: with no early entry it returns as soon as its thread runs, so a loaded machine cannot make it look held;
+		// with r438's stray early entry it stays held until r438_end below, whatever the bound.
+		for (int k = 0; k < 200 && got.load() == -1; k++) std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		held    = got.load();
+		g_label = 1; // its write, in memory; no pending write is registered in sync mode
+		r438_end();
+		game.join();
+		after = got.load();
+	}).join();
+	const size_t bugs = never_lines_all() - n0;
+	std::printf("sync (g_async %d): early entries %zu; a game-thread wait on the label %s before the slice ended, then %d (%.1f ms); BUG lines %zu\n", g_async ? 1 : 0, early,
+	            held == -1 ? "still waiting for the early writer" : "returned", after, wait_ms, bugs);
+#ifdef R438H
+	if (!g_async) CHECK(early == 0 && bugs == 0 && held != -1, "sync: r438h left early entries %zu, BUG lines %zu, the wait %d", early, bugs, held);
+#endif
+}
+
 static void run_identity() {
 	auto dump = [](const char* step) {
 		std::lock_guard lk(g_plw_mutex);
@@ -239,11 +508,20 @@ int main(int argc, char** argv) {
 		run_identity();
 		return 0;
 	}
+	if (mode == "lwmid") {
+		run_lwmid();
+		return 0;
+	}
 	if (!r438_on()) {
 		std::printf("FAIL: order needs r438 on\n");
 		return 2;
 	}
 	if (mode == "trim") run_trim();
+	else if (mode == "sync") run_sync();
+#ifdef R438O_X
+	else if (mode == "lwm") run_lwm();
+	else if (mode == "stray") run_stray();
+#endif
 	else run_order();
 	std::printf("%s (%d failures)\n", fails == 0 ? "PASS" : "FAIL", fails);
 	return fails == 0 ? 0 : 1;
