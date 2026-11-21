@@ -64,14 +64,14 @@ grep -q "param.json readable after [0-9]" "$S" && [ "$(grep -c "$M" /proc/mounts
 # step 2: the control, the shared normal build for 30 s
 SB=$W/kytyplus-build/src/kyty_emulator; SW=$(md5sum < "$SB" | cut -d' ' -f1)
 [ "${SW:0:8}" = b1b57df9 ] || { say "STOP: the shared normal is ${SW:0:8}, not b1b57df9"; finish 1; }
-(cd "$N" && CHAIN_LOCKLINE=$LINE P_BIN=$SB P_WANT=$SW bash ./start0413g.sh "$P-ctl" astro 30 BC5_FAULT_RECORD=1 > "$R/$P-ctl-runner.txt" 2>&1)
-say "step 2 control: $(tail -1 "$R/$P-ctl-runner.txt")"
+(cd "$N" && CHAIN_LOCKLINE=$LINE P_BIN=$SB P_WANT=$SW bash ./start0413g.sh "${P}ctl" astro 30 BC5_FAULT_RECORD=1 > "$R/${P}ctl-runner.txt" 2>&1)
+say "step 2 control: $(tail -1 "$R/${P}ctl-runner.txt")"
 sleep 3
 [ -z "$(leftovers | tr -d ' ')" ] || { say "STOP: left after the control: $(leftovers)"; finish 1; }
-grep -q "PASS: ran 30 s" "$R/$P-ctl-runner.txt" || { say "STOP: the control did not pass"; finish 1; }
+grep -q "PASS: ran 30 s" "$R/${P}ctl-runner.txt" || { say "STOP: the control did not pass"; finish 1; }
 
 # step 3: the recording run
-CHAIN_LOCKLINE=$LINE bash "$HERE/runa1j.sh" "$P-rec" astro 180 > "$R/$P-rec-wrap.txt" 2>&1
+CHAIN_LOCKLINE=$LINE bash "$HERE/runa1j.sh" "${P}rec" astro 180 > "$R/$P-rec-wrap.txt" 2>&1
 say "step 3 recording: $(grep 'runner exit' "$R/$P-rec-wrap.txt")"
 cat "$R/$P-rec-wrap.txt" >> "$S"
 finish 0
