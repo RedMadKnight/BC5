@@ -511,7 +511,7 @@ s = rep(s, '''static void fire_eop(uint64_t data) {''', '''// exp 0439 (tag f52)
 static char f52_mode() {
 	static const char v = [] {
 		const char* e = std::getenv("BC5_0439_FIRE52");
-		const char  m = (e != nullptr && e[0] >= '1' && e[0] <= '3' && e[1] == 0) ? e[0] : 0; // 1 first flip, 2 every flip, 3 first compute job
+		const char  m = (e != nullptr && e[0] >= '1' && e[0] <= '4' && e[1] == 0) ? e[0] : 0; // 1 first flip, 2 every flip, 3 first compute job, 4 at 60 Hz
 		std::fprintf(stderr, "[bc5] exp 0439 (tag f52): BC5_0439_FIRE52=%c\\n", m != 0 ? m : '0');
 		return m;
 	}();
@@ -531,6 +531,19 @@ static void f52_fire(const char* why) {
 	}
 	static std::atomic<int> k {0};
 	if (k++ < 40) std::fprintf(stderr, "[bc5] exp 0439 (tag f52): t %.3f s ident 0x52 fired (%s) to %d registration(s), data 0x0\\n", Direct::timing_now(), why, n);
+}
+
+static void f52_stream_start() { // mode 4: a host thread at 60 Hz, our stand-in for the present clock, once 0x52 is registered
+	static std::once_flag once;
+	std::call_once(once, [] {
+		std::thread([] {
+			pthread_setname_np(pthread_self(), "bc5-f52-60hz");
+			for (;;) {
+				std::this_thread::sleep_for(std::chrono::microseconds(16667));
+				if (f52_registered()) f52_fire("60 Hz");
+			}
+		}).detach();
+	});
 }
 
 static void fire_eop(uint64_t data) {''')
@@ -605,7 +618,8 @@ static void f52_fire(const char* why) {
 	static std::atomic<uint64_t> f52_seq {0};
 	const uint64_t           f52_data_next = x52 ? ((f52_seq.fetch_add(1) + 1) << 16u) | 0x52u : 0u;
 	std::vector<EqRegistration> eqs;''')
-s = rep(s, '''						if (f52_mode() == '3' && !f52_once.exchange(true)) f52_fire("the first compute-queue job completed");''', '''						if (f52_mode() == '3' && f52_registered() && !f52_once.exchange(true)) f52_fire("the first compute-queue job completed after 0x52 was registered");''')
+s = rep(s, '''						if (f52_mode() == '3' && !f52_once.exchange(true)) f52_fire("the first compute-queue job completed");''', '''						if (f52_mode() == '3' && f52_registered() && !f52_once.exchange(true)) f52_fire("the first compute-queue job completed after 0x52 was registered");
+						if (f52_mode() == '4') f52_stream_start();''')
 open(dst + '/bc5LleAgc.cpp', 'w', encoding='utf-8', newline='').write(s)
 
 v = open(src + '/videoOut.cpp', encoding='utf-8', newline='').read()

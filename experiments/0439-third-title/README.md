@@ -187,6 +187,30 @@ the control's line has none, `X=1;rm` is refused).
     - `run0439.sh collect` unmounts dead mounts in the container and on the host, and bounds runs with timeout(1).
     - The installed launchers are unchanged.
 
+20. *The 0x52 wake test (f52 / kv439, 11-21 15:38-16:04; resets unchanged in mine).*
+    - The survey (`survey-0439-fixes.md` Q4) gives an AGC-era rule:
+      - KytyPS5 `graphicsRun.cpp:978-984`, `renderContext.cpp:206-221`, `graphicsRun.h:51` (GPL-2.0, 39936ffa);
+        AnyPS5 `libSceAgcDriver/Eq/src/Event.cpp` (GPL-2.0, 19a1993e); UNVERIFIED on hardware.
+      - The ident is the queue's (compute: 0x20 + queue id - 1). The event is raised by a RELEASE_MEM with an
+        interrupt on that queue, with data = (INT_CTXID << 16) | ident.
+      - So 0x52 belongs to queue 0x33 (2/2/2), which got only its two boot IBs.
+    - Fired by hand (`BC5_0439_FIRE52`): once, at every flip, at a compute completion, and at 60 Hz.
+      - ProxySetSync wakes each time (`KernelWaitEqueue` returns one event ident 0x52, filter -14, fflags 0x1, the
+        data we give).
+      - It then reads a semaphore label (the table at 0x2000000000, index and target from its own object), finds it
+        not past its target and waits again.
+      - At 60 Hz it consumes 118 events, and the title then never makes its first flip.
+    - The event line is closed. 0x52 is a re-check signal; the real condition is a label nobody writes.
+    - Host facts for every AGC title, not fixed here: `fire_eop` uses the PS4 idents (0x40, 0, compute A/B) instead
+      of per-queue idents, and fills the data differently. `release_mem` reads INT_SEL as 2 bits.
+21. *The waits, as one problem.*
+    - game-main waits on label 0 > 1, and ProxySetSync on a label in the same table.
+    - Queue 1/2's acb waits on 0x2010449750 and 0x20104cd1e0/1c0/180/140/100. Queue 1/3's acb waits on 0x20104aa630.
+      Each is a ping-pong with a partner buffer that releases the labels it waits on.
+    - No buffer on any ring or in any job writes them, and no CPU code writes label 0. The partner work and the
+      label-0 writer were never created.
+    - The question is with reimpl-agc-psml: which Agc/Driver export or title pattern produces that work.
+
 (more to come)
 
 **Verdict.** (to come)

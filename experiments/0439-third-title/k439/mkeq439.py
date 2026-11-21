@@ -23,8 +23,8 @@ b = '''	{ // exp 0439 (tag kv439): the wait's return, with its events
 			char tn[32] = {};
 			pthread_getname_np(pthread_self(), tn, sizeof(tn));
 			const int n = *out;
-			std::fprintf(stderr, "[bc5] exp 0439 (tag kv439): KernelWaitEqueue returns on \\"%s\\" (thread %s, num %d, timeout %s): %d event(s)\\n", owner->GetName().c_str(), tn, num,
-			             timo == nullptr ? "none" : (*timo == 0 ? "0" : "set"), n);
+			std::fprintf(stderr, "[bc5] exp 0439 (tag kv439): KernelWaitEqueue returns on \\"%s\\" (thread %s, num %d, timeout %s): %d event(s), return address %p\\n", owner->GetName().c_str(), tn, num,
+			             timo == nullptr ? "none" : (*timo == 0 ? "0" : "set"), n, __builtin_return_address(0));
 			for (int k = 0; k < n && k < 4; k++) {
 				std::fprintf(stderr, "[bc5] exp 0439 (tag kv439):   event %d: ident 0x%llx filter %d flags 0x%x fflags 0x%x data 0x%llx udata %p\\n", k, static_cast<unsigned long long>(ev[k].ident),
 				             static_cast<int>(ev[k].filter), static_cast<unsigned>(ev[k].flags), static_cast<unsigned>(ev[k].fflags), static_cast<unsigned long long>(ev[k].data), ev[k].udata);
