@@ -138,11 +138,11 @@ static void dc439_flip(int index) {
 TAIL = r'''
 // exp 0439 (tag dc439): called by VideoOut (videoOut.cpp) for a registered compressed buffer and at the present.
 extern "C" void bc5_dc439_register(int index, uint64_t data, uint64_t meta, uint32_t w, uint32_t h, uint32_t dcc, uint64_t fmt) {
-	if (Bc5Gc::Direct::dc439::mode() == 0) return;
-	std::lock_guard lk(Bc5Gc::Direct::dc439::g_mu);
-	auto& v = Bc5Gc::Direct::dc439::g_surf;
-	v.erase(std::remove_if(v.begin(), v.end(), [index](const Bc5Gc::Direct::dc439::Surface& x) { return x.index == index; }), v.end());
-	Bc5Gc::Direct::dc439::Surface s;
+	if (Libs::Bc5Gc::Direct::dc439::mode() == 0) return;
+	std::lock_guard lk(Libs::Bc5Gc::Direct::dc439::g_mu);
+	auto& v = Libs::Bc5Gc::Direct::dc439::g_surf;
+	v.erase(std::remove_if(v.begin(), v.end(), [index](const Libs::Bc5Gc::Direct::dc439::Surface& x) { return x.index == index; }), v.end());
+	Libs::Bc5Gc::Direct::dc439::Surface s;
 	s.index = index;
 	s.data  = data;
 	s.meta  = meta;
@@ -151,19 +151,59 @@ extern "C" void bc5_dc439_register(int index, uint64_t data, uint64_t meta, uint
 	s.dcc   = dcc;
 	s.fmt   = fmt;
 	v.push_back(s);
-	Bc5Gc::Direct::dc439::g_any = true;
+	Libs::Bc5Gc::Direct::dc439::g_any = true;
 	std::fprintf(stderr, "[bc5] exp 0439 (tag dc439): registered compressed buffer index %d: data 0x%" PRIx64 " metadata 0x%" PRIx64 " %ux%u dcc_control 0x%x pixel_format 0x%016" PRIx64 "\n", index, data, meta, w, h, dcc, fmt);
 }
 extern "C" int bc5_dc439_plain(uint64_t data) {
-	if (Bc5Gc::Direct::dc439::mode() < 2) return 0;
-	std::lock_guard lk(Bc5Gc::Direct::dc439::g_mu);
-	for (const auto& x: Bc5Gc::Direct::dc439::g_surf)
+	if (Libs::Bc5Gc::Direct::dc439::mode() < 2) return 0;
+	std::lock_guard lk(Libs::Bc5Gc::Direct::dc439::g_mu);
+	for (const auto& x: Libs::Bc5Gc::Direct::dc439::g_surf)
 		if (x.data == data) return x.plain ? 1 : 0;
 	return 0;
 }
 '''
 
+
+# exp 0439 (tag mw439): the map-call rule (the top session's decision 1 of 11-21): a direct view the title mapped with
+# GPU write (KytyPlus memory.cpp PROT_GPU_WRITE 0x20; TODO(verify) the bit's meaning against a public source, the
+# evidence is run n4's map log) is eager, with no name list, when BC5_DIRECT_EAGER_GPU_WRITE=1.
+MW = r"""
+// exp 0439 (tag mw439): BC5_DIRECT_EAGER_GPU_WRITE=1: a view of direct memory whose map call gave GPU write (KytyPlus
+// PROT_GPU_WRITE 0x20, the protection the title passed; TODO(verify) against a public source) is imported whole, as
+// the eager names are: the GPU writes it from the map call on, the CPU may never (the third title's 3.4 GB view at
+// 0x5000000000, fault records 20261121-113617/-114357). A by-data name (bd412) still wins.
+static bool mw439_on() {
+	static const bool v = [] {
+		const char* e = std::getenv("BC5_DIRECT_EAGER_GPU_WRITE");
+		const bool  on = e != nullptr && e[0] == '1' && e[1] == 0;
+		std::fprintf(stderr, "[bc5] exp 0439 (tag mw439): BC5_DIRECT_EAGER_GPU_WRITE=%d (1: GPU-writable direct views eager)\n", on ? 1 : 0);
+		return on;
+	}();
+	return v;
+}
+static bool mw439_eager(uint64_t start, uint64_t size, int prot, const char* name) {
+	if (!mw439_on() || (prot & 0x20) == 0 || bd412_name(name)) return false;
+	static std::mutex                   m;
+	static std::set<uint64_t>           seen;
+	static uint64_t                     total = 0;
+	std::lock_guard                     lk(m);
+	if (seen.insert(start).second) {
+		total += size;
+		if (seen.size() <= 64) std::fprintf(stderr, "[bc5] exp 0439 (tag mw439): view 0x%" PRIx64 "+0x%" PRIx64 " (%s, prot 0x%x) eager by its GPU write; %zu such views, %.1f MiB\n", start, size, name != nullptr && *name != 0 ? name : "unnamed", prot, seen.size(), static_cast<double>(total) / 1048576.0);
+	}
+	return true;
+}
+"""
 s = open(src + '/bc5LleAgc.cpp', encoding='utf-8', newline='').read()
+a = 'static std::vector<DView> direct_views_build(const DState& S) {\n'
+s = rep(s, a, MW + a)
+a = ('\t\tLibs::LibKernel::Memory::Bc5ForEachMappedRange(nullptr, &v, [](uint64_t start, uint64_t size, uint64_t offset, int type, int, const char* name, void* p) {\n'
+     '\t\t\tif (type == 0 && size != 0) static_cast<std::vector<DView>*>(p)->push_back({start, size, offset, name != nullptr ? name : "", ls415_name_class(name, false), ls415_name_class(name, true)});\n')
+s = rep(s, a, '\t\tLibs::LibKernel::Memory::Bc5ForEachMappedRange(nullptr, &v, [](uint64_t start, uint64_t size, uint64_t offset, int type, int prot, const char* name, void* p) {\n'
+     '\t\t\tif (type == 0 && size != 0) {\n'
+     '\t\t\t\tconst bool gw = mw439_eager(start, size, prot, name); // exp 0439 (tag mw439)\n'
+     '\t\t\t\tstatic_cast<std::vector<DView>*>(p)->push_back({start, size, offset, name != nullptr ? name : "", ls415_name_class(name, false) && !gw, ls415_name_class(name, true) || gw});\n'
+     '\t\t\t}\n')
 s = rep(s, '#include "bc5/direct.hpp"\n',
         '#include "bc5/direct.hpp"\n'
         '#include "bc5/state_stack.hpp" // exp 0439 (tag dc439): the GFX ring\'s context, followed on the host\n'

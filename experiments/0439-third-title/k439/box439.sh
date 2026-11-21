@@ -38,7 +38,7 @@ build() {
         [ "$rc" = 0 ] && [ -x "$bin" ] || stop "build $v failed: $R/build-$v.out"
         m "$bin" > "$E/$v/binary.md5"; strings "$bin" > "$E/$v/strings.txt"
         echo "$v: $(cut -c1-8 "$E/$v/binary.md5"); BC5_DIRECT_DCC_PRESENT $(grep -c 'BC5_DIRECT_DCC_PRESENT' "$E/$v/strings.txt"); dc439 lines $(grep -c 'tag dc439' "$E/$v/strings.txt")"
-        grep -q 'BC5_DIRECT_DCC_PRESENT' "$E/$v/strings.txt" || stop "the switch is not in $v"
+        grep -q BC5_DIRECT_DCC_PRESENT "$E/$v/strings.txt" && grep -q BC5_DIRECT_EAGER_GPU_WRITE "$E/$v/strings.txt" || stop "a switch is not in $v"
     done
     [ "$sn" = "$(m "$W/kytyplus-build/src/kyty_emulator")" ] && [ "$sl" = "$(m "$W/kytyplus-build-lean/src/kyty_emulator")" ] && [ "$sa" = "$(m "$SA")" ] \
         && [ "$(m "$TREE/src/libs/bc5LleAgc.cpp")" = "$P_UNIT" ] && [ "$(m "$TREE/src/graphics/presentation/videoOut.cpp")" = "$P_VO" ] || stop "a shared file changed"
