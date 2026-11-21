@@ -333,6 +333,35 @@ the control's line has none, `X=1;rm` is refused).
       The planted bug (a chain treated as a call level) FAILS case 2. Output: `logs/test_ab0439.out`.
     - (a) and (c) have no det test: they act on the completion queue and the live label state, and are checked on the
       box from their lines.
+    - The stated order of the first frame (yotei-memdump's third pass, exp 0440, from the dump; three buffers exchange
+      labels 18 times):
+      - D, the dcb chain; A, queue 1/2 (`0x201044c900`); B, queue 1/3 (`0x201032c280`).
+      - D's segments 29-40 write the labels A waits on; A writes 4 labels D waits on from segment 39. B waits on D's
+        writes up to segment 45 and twice on a label A writes near its end, and writes the other 4.
+      - There is no cycle in the content, but no order of whole jobs runs it: A cannot finish before D passes segment
+        40, B not before 45, D not past 39 before A's write at dword 406.
+      - So the three must run side by side: D whole on the GPU, A and B released piece by piece.
+      - The GPU resolves the exchange if (1) the whole dcb is on the GPU (it is: one job of 73 pieces), (2) bc5-ring
+        keeps polling and submitting while the GFX ring sits in segment 39, and (3) nothing on the game thread blocks on
+        compute. The 17:03 flip path broke (3) by draining every ring.
+      - The layout alone deadlocks only if an acb waits for a dcb write that comes after a dcb wait on that acb; the
+        dump shows none.
+    - What the code does with this (read in the baked unit `2e6168de`):
+      - `register_label_writes` registers only the submitted buffer, which for D is its 103-dword head, not its chain
+        pieces. So D's writes are never pending for anyone. acb waits on D's labels are held on the CPU until the GPU
+        writes them, and F4 (`ho430`, a waiter's submit depending on the writer's job) can never fence A or B on D.
+      - F4 applies only to a wait that is already satisfied while a registered write is pending on another ring, and
+        it skips a writer job holding a GPU wait on a label the waiter writes. Between A and B it can add a fence; to
+        be checked from the run's journal (`ho430 F4` lines).
+      - `ring_will_satisfy` with way 2 leaves a wait to the GPU only when its writer job is already submitted, on any
+        ring; otherwise acb_ready holds the acb on the CPU at that wait.
+      - Way 2 starts every guest queue on libdrm compute ring 0 and moves a queue to its own ring only after 256 jobs
+        (`w428_queue_ring`). So A and B share a ring in the first frames. That is safe only while every native wait's
+        writer is ahead of it on that ring or on another ring. B's waits on A's late write rely on A's part being
+        submitted first.
+    - Logged with `BC5_0439_XQ_COUNT=1` for the next run: every acb part's guest queue and ring (first 64, then every
+      1024th), and at each flip the number of acb holds released and the longest one, against the kernel's job timeout
+      for the buffer waiting natively on the other side.
 
 (more to come)
 

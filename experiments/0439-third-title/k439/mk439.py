@@ -140,6 +140,28 @@ static bool xq439_on() {
 	}();
 	return v;
 }
+// the longest CPU hold of an acb (bc5-ring's deferral to its release) since the last flip, and its queue
+static std::atomic<uint64_t> g_xq439_hold_max {0}, g_xq439_holds {0};
+static std::atomic<uint32_t> g_xq439_hold_q {0};
+static void xq439_hold(uint32_t queue, uint64_t ns) {
+	if (!xq439_on()) return;
+	g_xq439_holds++;
+	for (uint64_t m = g_xq439_hold_max.load(); ns > m;) {
+		if (g_xq439_hold_max.compare_exchange_weak(m, ns)) {
+			g_xq439_hold_q.store(queue);
+			break;
+		}
+	}
+}
+static void xq439_frame() { // at every flip
+	if (!xq439_on()) return;
+	static std::atomic<uint64_t> n_flip {0};
+	const uint64_t k = n_flip++;
+	const uint64_t m = g_xq439_hold_max.exchange(0), c = g_xq439_holds.exchange(0);
+	if (c != 0 && (k < 64 || (k & 0x3ffu) == 0 || m > 1'000'000'000ull))
+		std::fprintf(stderr, "[bc5] exp 0439 (tag xq439): t %.3f s flip %" PRIu64 ": %" PRIu64 " acb holds released since the last flip, the longest %.3f ms (queue 0x%x)\n", timing_now(), k + 1, c, static_cast<double>(m) / 1e6,
+		             g_xq439_hold_q.load());
+}
 static void xq439_count(const uint32_t* ib, uint32_t n, const bc5::policy::FilterOptions& opt, int ring, const char* kind) {
 	if (!xq439_on() || ring != bc5::direct::kGfxRing || ib == nullptr || n == 0) return;
 	const auto cr = bc5::ib_chain::collect(ib, n, opt.mapped, bc5::ib_chain::enabled());
@@ -278,6 +300,7 @@ static bool dn439_on() { // exp 0439 (tag dn439): BC5_0439_DC_NODRAIN=1, the dec
 
 // The title flips buffer `index`: in mode 2, a registered compressed surface is decompressed in place first.
 static void dc439_flip(int index) {
+	xq439_frame(); // exp 0439 (tag xq439)
 	const int m = dc439::mode();
 	if (m == 0 || !dc439::g_any.load()) return;
 	dc439::Surface s;
@@ -943,6 +966,31 @@ s = rep(s, '''					if (now - s.deferred_since < 10'000'000'000ull) continue; // 
 						}
 					}
 					LOGF_COLOR(Log::Color::Yellow, "[bc5-q] queue %u/%u/%u/0x%x: cross-queue wait unsatisfied for 10 s, proceeding\\n", q.a, q.b, q.c, q.d);''')
+# exp 0439 (tag xq439, BC5_0439_XQ_COUNT=1, log only), the top session's checks for the D/A/B exchange:
+# the guest queue -> libdrm ring map of every acb part (way 2 starts every queue on ring 0 and moves a queue only after 256
+# jobs, w428_queue_ring, so A and B share a ring in the first frames), first 64 and every 1024th; and the longest CPU hold
+# of an acb per frame (from bc5-ring's deferral to the release), printed and reset at each flip.
+s = rep(s, '''static void describe_pending(uint64_t a, char* out, size_t cap); // experiment 0133''', '''static void describe_pending(uint64_t a, char* out, size_t cap); // experiment 0133
+static bool xq439_on();                             // exp 0439 (tag xq439), defined with the glue
+static void xq439_hold(uint32_t queue, uint64_t ns); // exp 0439 (tag xq439)''')
+s = rep(s, '''	why             = w428_mec_refusal(ib, num_dwords, why); // exp 0428 step 2 (BC5_DIRECT_ACB_MEC_INDIRECT)
+	if (why == nullptr) return ring;''', '''	why             = w428_mec_refusal(ib, num_dwords, why); // exp 0428 step 2 (BC5_DIRECT_ACB_MEC_INDIRECT)
+	if (why == nullptr && xq439_on()) { // exp 0439 (tag xq439): the queue -> ring map
+		static std::atomic<uint64_t> n_map {0};
+		const uint64_t k = n_map++;
+		if (k < 64 || (k & 0x3ffu) == 0) std::fprintf(stderr, "[bc5] exp 0439 (tag xq439): t %.3f s acb part of guest queue %d (%u dwords at %p) on compute ring %d (way 2 rings %d)\n", timing_now(), t_queue_idx, num_dwords, static_cast<const void*>(ib), ring, w428_rings());
+	}
+	if (why == nullptr) return ring;''')
+s = rep(s, '''				if (!ready && ready_len != 0) {
+					take             = ready_len;
+					s.deferred_since = 0;''', '''				if (!ready && ready_len != 0) {
+					take             = ready_len;
+					if (s.deferred_since != 0) Direct::xq439_hold(q.d, now - s.deferred_since); // exp 0439 (tag xq439)
+					s.deferred_since = 0;''')
+s = rep(s, '''				} else {
+					static int deferred_logged = 0;''', '''				} else {
+					if (s.deferred_since != 0) Direct::xq439_hold(q.d, now - s.deferred_since); // exp 0439 (tag xq439)
+					static int deferred_logged = 0;''')
 open(dst + '/bc5LleAgc.cpp', 'w', encoding='utf-8', newline='').write(s)
 
 v = open(src + '/videoOut.cpp', encoding='utf-8', newline='').read()

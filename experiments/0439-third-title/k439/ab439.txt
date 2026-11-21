@@ -113,3 +113,29 @@ s = rep(s, '''					if (now - s.deferred_since < 10'000'000'000ull) continue; // 
 						}
 					}
 					LOGF_COLOR(Log::Color::Yellow, "[bc5-q] queue %u/%u/%u/0x%x: cross-queue wait unsatisfied for 10 s, proceeding\\n", q.a, q.b, q.c, q.d);''')
+
+# exp 0439 (tag xq439, BC5_0439_XQ_COUNT=1, log only), the top session's checks for the D/A/B exchange:
+# the guest queue -> libdrm ring map of every acb part (way 2 starts every queue on ring 0 and moves a queue only after 256
+# jobs, w428_queue_ring, so A and B share a ring in the first frames), first 64 and every 1024th; and the longest CPU hold
+# of an acb per frame (from bc5-ring's deferral to the release), printed and reset at each flip.
+s = rep(s, '''static void describe_pending(uint64_t a, char* out, size_t cap); // experiment 0133''', '''static void describe_pending(uint64_t a, char* out, size_t cap); // experiment 0133
+static bool xq439_on();                             // exp 0439 (tag xq439), defined with the glue
+static void xq439_hold(uint32_t queue, uint64_t ns); // exp 0439 (tag xq439)''')
+s = rep(s, '''	why             = w428_mec_refusal(ib, num_dwords, why); // exp 0428 step 2 (BC5_DIRECT_ACB_MEC_INDIRECT)
+	if (why == nullptr) return ring;''', '''	why             = w428_mec_refusal(ib, num_dwords, why); // exp 0428 step 2 (BC5_DIRECT_ACB_MEC_INDIRECT)
+	if (why == nullptr && xq439_on()) { // exp 0439 (tag xq439): the queue -> ring map
+		static std::atomic<uint64_t> n_map {0};
+		const uint64_t k = n_map++;
+		if (k < 64 || (k & 0x3ffu) == 0) std::fprintf(stderr, "[bc5] exp 0439 (tag xq439): t %.3f s acb part of guest queue %d (%u dwords at %p) on compute ring %d (way 2 rings %d)\n", timing_now(), t_queue_idx, num_dwords, static_cast<const void*>(ib), ring, w428_rings());
+	}
+	if (why == nullptr) return ring;''')
+s = rep(s, '''				if (!ready && ready_len != 0) {
+					take             = ready_len;
+					s.deferred_since = 0;''', '''				if (!ready && ready_len != 0) {
+					take             = ready_len;
+					if (s.deferred_since != 0) Direct::xq439_hold(q.d, now - s.deferred_since); // exp 0439 (tag xq439)
+					s.deferred_since = 0;''')
+s = rep(s, '''				} else {
+					static int deferred_logged = 0;''', '''				} else {
+					if (s.deferred_since != 0) Direct::xq439_hold(q.d, now - s.deferred_since); // exp 0439 (tag xq439)
+					static int deferred_logged = 0;''')
