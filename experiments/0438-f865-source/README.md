@@ -1772,6 +1772,656 @@ It is built on the bake unit, so it measures what would ship.
   a target of its own, the top session's addition), and slow (about G+165 to G+290). Usage:
   `ah438.py FROM TO fast=A-B dip=C-D slow=E-F csv…`.
 
+## Result 14: where the Render Thread's frame goes (h438; 2026-11-21 00:26–00:49, boot eb264b8c; DIAGNOSIS numbers)
+
+**Setup.**
+- Slot (BOX-LOCK 00:20–00:31, CPU only): buildk, the swap's DRY run, then buildh (h438 normal `0c2a31782cbfea2ac5d7c41d10a99898`,
+  0 errors). The shared builds were unchanged at every step.
+- Before the runs: reimpl's leftover kernel-log reader (`journalctl -k -f`, pid 2123478) was killed on the top
+  session's authorization. No other reader was left; 0 GPU resets, lock empty.
+- Chain: chain0438l `ORDER="H H H" K0=340` (unit chain0438h), with `BC5_0438_HOSTWAIT=1 BC5_0438_OUTSIDE=1` on
+  top of the bake unit's defaults (EARLYREG=1 PLWCV=1). His 09:46 scene, RT on, no input. One blocking waiter, no reads
+  during the runs.
+- Runs b438H341–343: NO_CRASH 3 of 3, 0 pad keys, GIVEN UP 0, CSVs of 14,208 / 13,952 / 14,144 frames.
+- The CSV clock starts at the Render Thread's first flip and runs within a few seconds of the runner's.
+- Phases, from each CSV's frames per 10 s (the dip shows at t 280–290 in all three: 101–125 frames per 10 s):
+  fast t 140–270, dip 280–290, slow 295–415. Window t 136–416 (G+10 to G+290).
+- Tool: `ah438.py 136 416 fast=140-270 dip=280-290 slow=295-415`; output in `lean-round/ah438-out.txt`.
+
+**The split (mean ms per Render Thread frame, the three runs together; normal build with records: diagnosis numbers):**
+
+| Group | Frames | Frame | CPU | Run queue | Blocked | in 0xc0188132 | flip's drain | Lock waits (s.flush_mu / g_dev_mutex) | Minor faults |
+|---|---|---|---|---|---|---|---|---|---|
+| all | 28,804 | 29.2 | 16.3 | 1.2 | 11.7 | 7.2 | 4.9 | 3.2 / 0.7 | 11.7 |
+| 1 vblank | 18,306 | 20.0 | 11.1 | 1.3 | 7.6 | 3.5 | 4.7 | 0.08 / 0.10 | 0.5 |
+| 2 vblanks | 6,203 | 31.7 | 16.9 | 1.1 | 13.6 | 9.0 | 5.1 | 5.4 / 0.3 | 9.3 |
+| 3+ vblanks | 4,295 | 64.7 | 37.5 | 0.8 | 26.4 | 20.6 | 5.6 | 13.2 / 3.9 | 63.3 |
+| fast phase | 16,639 | 23.4 | 12.3 | 1.2 | 9.9 | 5.3 | 5.2 | 1.5 / 0.4 | 1.3 |
+| dip | 337 | 89.5 | 60.1 | 1.2 | 28.2 | 22.1 | 5.8 | 10.2 / 5.6 (+ g_jq_mutex 0.9) | 257 |
+| dip, 3+ vblanks | 190 | 137.6 | 94.6 | 1.3 | 41.7 | 33.6 | 7.2 | 15.1 / 9.6 (+ g_jq_mutex 1.5) | 412 |
+| slow phase | 9,846 | 36.6 | 21.2 | 1.1 | 14.2 | 10.0 | 4.7 | 5.6 / 1.0 | 18.0 |
+
+- **The Render Thread's ~12 ms off CPU per frame is host time in two places:**
+  - gc 0xc0188132 (the submit list, ~51 calls per frame) and the flip's Direct::drain, about 5 ms in every class;
+  - nothing else: the guest syncs are under 0.01 ms, "other" is within ±1.6 ms of zero (the clock and schedstat
+    rounding), and the run queue is ~1 ms.
+- **The long frames are not the same waits, larger.** They differ in two ways:
+  - **More CPU.** 37.5 ms in a 3+ frame against 11.1 in a 1-vblank frame; 94.6 ms in the dip's long frames.
+    Inside 0xc0188132 the CPU is 30.8 − 20.6 = 10.2 ms (3+), so about 27 ms of a 3+ frame's CPU is outside our gc
+    calls: guest code, other HLEs or fault handling. Minor faults rise with it: 0.5 → 63 → 412 per frame.
+    TODO(verify): which; a CPU profile of the long frames is the next step.
+  - **The submit list waits on s.flush_mu.** That is `chain_submit`'s `std::lock_guard order(s.flush_mu)`, the chain
+    slot's flush-order lock (unit line 7985): it is held through a whole submission, the watchdog's or an observe
+    point's foreign flush too (its comment: "the owner's next flush waits for the watchdog's"). It costs 13.2 ms per
+    3+ frame, against 0.08 ms in a 1-vblank frame. g_dev_mutex (`submit_impl`'s lock at line 15283, after exp 0436's
+    ring lock) adds 3.9 ms (9.6 in the dip). The rest of the long frames' 0xc0188132 blocked time (~3.5 ms) is the
+    back-pressure sleep, r438's game-thread wait for an early writer, the backend or the kernel; it is not split
+    here. r438's own line gives its share over a whole run: ~37,000 waits, 19.0–19.6 s per run, about 1.35 ms per
+    frame on average, longest 32–47 ms, 0 BUG lines. Result 13 found no frame-time cost from it in lean.
+- **r438 in these runs:** 3.77–3.83 M early writes per run, 0 that never reached the ring, GIVEN UP 0 in all three.
+- **The dip at G+150–160** is the extreme of the same shape:
+  - 89.5 ms per frame on average, 60 ms of it on CPU;
+  - 257 minor faults per frame (412 in its long frames);
+  - the same s.flush_mu and g_dev_mutex waits, larger;
+  - g_jq_mutex (the job queue) appears only here (0.9 ms per frame).
+  - The fault count points at memory work (a lazy import, a mapping, a new allocation); TODO(verify).
+- **Next (not done here), simplest first:**
+  1. who holds s.flush_mu when the Render Thread waits on it (the holder's thread and the reason code `why`), and
+     for how long;
+  2. a CPU profile of the 3+ frames and of the dip (perf on the Render Thread, the lean build, with frame marks);
+  3. what the dip's faults are (fault addresses against the guest's mappings).
+
+## The bake (2026-11-21 00:50–01:05, boot eb264b8c)
+
+**Decision.** The maintainer's word, through the top session: "tak - wdrażaj wszystko, tym bardziej jeżeli nie obniża
+płynności a poprawia błędy". The top session's proposal was r438 with PLWCV, no p438, and the switches kept.
+
+**Before the swap** (the slot of 00:20–00:31, CPU only):
+- buildk, the private baked build: normal `662cd4b5`, lean `5e49efc3`, 0 errors.
+- swap0438 with DRY=1 on a copy of the tree: PATCH_NEW `9889b06a`. The undo restored `bb04219b` on the copy; the copy
+  was then deleted.
+
+**The swap** (`run-swap0438.sh` under the user manager, unit bc5-0438-swap; checks before it: 0 GPU resets, no
+emulator, lock empty):
+- Patch `bb04219b` → `9889b06a`: 135 files, 5 "exp 0372" lines, the pad_audio_route header kept. Tree unit
+  `a62e8bf6` → `ff9e8fe2`.
+- Normal `f345db74` → `b1b57df91b414743920f1fc500e1c300`; lean `6a735b81` → `d3485ed4f475f01549573763af804ce0`.
+- Archive `d6638808` unchanged; the backend is not touched.
+- Words: each binary gained exactly `BC5_0438_EARLYREG` and `BC5_0438_PLWCV` and lost none.
+- `backend/kytyplus-patches/0001-bc5-lle-agc.patch` on the branch is the installed file: `9889b06a`, commit
+  `dd7406c2`.
+
+**Smokes** (`smoke0438s.sh`): **ALL PASS**. Each run had 0 kernel lines, 0 crash lines and 0 pad keys, and each ran
+the new binary (`/proc/<pid>/exe` md5).
+- s438sc: ASTRO BOT, lean, 200 s.
+- s438su: the second title, lean, 300 s, 33 of 33 key lines.
+- s438sn: ASTRO BOT, normal, 200 s.
+  - The smoke printed "r438 lines 0" because it reads play.log, while r438's lines go to the journal.
+  - The run's direct.log has 3 r438 lines: 94,914 early writes, 0 that never reached the ring, 0 BUG lines, GIVEN UP 0.
+
+**Undo:** `bash ~/bc5-work/exp0438/bake/undo0438.sh`, back to `bb04219b` / `f345db74` / `6a735b81`. Per run with no
+build: `BC5_0438_EARLYREG=0` turns r438 off, and `BC5_0438_PLWCV=0` gives the 20-µs poll.
+
+## The last records on the second title: f438, m438 and two perf modes (prepared offline, not built)
+
+The top session's order of 2026-11-21: one combined slot of at most ~45 min before the second title is uninstalled
+(exp 0439 installs the third). Fixes first: all three records go into one slot. Diagnosis only.
+- **f438** (`h438.hpp` `4075a6dc`; normal; on with `BC5_0438_HOSTWAIT=1`): who holds the chain slot's flush lock
+  `s.flush_mu` when the Render Thread waits on it, and why.
+  - Each `ChainSlot` gets a holder record (thread, flush reason, start), set by a thread's outermost hold. The lock is
+    recursive.
+  - chain_submit's lock line becomes `BC5_F438_FLUSH_LOCK(s, why, foreign)`. It reads the holder before the wait and,
+    after it, records a wait of 20 µs or more by (waiter, holder, reason).
+  - The Render Thread's waits also go into h438's per-frame `locks` column as `flush<-<holder>/<reason>`. Reasons:
+    end, wait, ring/class, cond_exec, size, drain, acb-head, other, observe, hold-wd (the chain watchdog), hold-end.
+  - Every hold is timed by (holder, reason, own or foreign). A stderr line `f438 (exp 0438): 60-s totals` gives both
+    sets of totals.
+  - `test_h438.sh` case 5 PASS: a `bc5-chainwd` thread holds 30 ms as a foreign `hold-wd` flush, and the Render
+    Thread's frame shows `flush<-bc5-chainwd:2003/hold-wd=…`. Its own recursive re-entry records no wait, and the
+    slot's depth and holder are back to 0 and none afterwards.
+- **m438** (in both test units): frame marks. At the top of VideoOutSubmitEopFlip, with `BC5_0438_FRAMEMARK=1`, the
+  steady clock (CLOCK_MONOTONIC, the clock `perf -k CLOCK_MONOTONIC` stamps with) is written in ns per flip, every 64
+  flips, to `BC5_0438_FRAMEMARK_FILE`.
+  - It is also in lean, because these are private test builds. The no-diagnostics rule is for the shared lean build.
+- **prof0438.sh** (`1739ce73`): run from G by the runner (`N_SIDE`), after exp 0432's prof0432.sh. It is read-only
+  towards the emulator: user-space perf_event_open, `perf_event_paranoid` untouched. It finds the Render Thread's tid
+  and profiles that thread only:
+  - `PROF_MODE=cpu`: cpu-clock:u at 999 Hz;
+  - `PROF_MODE=faults`: page-faults:u with `-c 1 -d`, every user-space fault with its data address.
+  - It writes `perf script --ns` text (gz) and `/proc/<pid>/maps` every 10 s.
+- **`mkfm438.py`** (`mkfm438.py` md5 in the commit):
+  - on `h438.cpp` it gives `fm438.cpp` `d014b652…` (f438 + m438; normal);
+  - on the bake unit it gives `m438.cpp` `e525cc84…` (m438 only; lean).
+  - `box0438.sh buildfm` (`4f9232ed`) builds both: the normal one with o438's units, the lean one with the unit only.
+    It checks the switches, f438's line in normal, and no h438 / o438 / f438 / r438 lines in lean.
+- **chain0438l arms** (`0aa9368d`):
+  - **F**: normal fm438, `HOSTWAIT=1 OUTSIDE=1 FRAMEMARK=1`, prof in faults mode. Its CSV and marks go beside the run
+    files, so it answers (1) and (3) in one run.
+  - **P**: lean m438, `FRAMEMARK=1`, prof in cpu mode, which answers (2).
+- **Tools** (laptop):
+  - `ah438.py` reads F's CSV, f438's waits included.
+  - `pf438.py` puts perf samples or faults into frames by the marks. It reports per vblank class and phase: samples
+    or faults per frame, the top DSOs or mappings and symbols, and for faults the mapping of the faulting address.
+  - `test_pf438.py` PASS on synthetic marks, both perf line forms and a maps file. TODO(verify): the real
+    `perf script -F` line form on the box; prof0438 keeps the raw text, so pf438's parser can follow it.
+- **Proposed slot** (~35 min):
+  1. buildfm (CPU, ~5 min);
+  2. chain `ORDER="F P P"` (3 × ~7.5 min) under `systemd-run --user`, with one blocking waiter and no reads during
+     the runs.
+
+## The flush-order lock: the narrowest hold that keeps the order (design, not built; for every title)
+
+**What it does today.** `chain_submit` takes `s.flush_mu` after the chain is swapped out of the slot. It holds it
+through the whole `submit_now`:
+- the preparation (mapping sync, filter, direct sync);
+- the back-pressure sleep (`g_cq_fences >= 24`, 50-µs sleeps);
+- the ring lock (exp 0436) and `g_dev_mutex`;
+- the kernel submit.
+
+So the next flush of the same slot waits for all of it, whichever thread took the earlier chain: the owner, the chain
+watchdog after the 2-ms hold bound, or an observe point / the flip's flush_all. The lock gives three things:
+1. **Take order = submit order per slot.** Without it, a chain taken later could reach the ring mutex first.
+2. **One submission in flight per slot.** exp 0430's F10 keeps a single `f10_flight` write set and F16 a single phase
+   per slot; both assume it.
+3. **Re-entry.** `submit_now`'s mapping sync can call `wait_jobs` → `chain_flush` on the same thread. That nested
+   chain goes out before the outer one, which the recursive mutex allows.
+
+**The candidate (accepted by the top session, built only after f438's data): an order ticket per slot, waited for at the
+ring step.** See the code reading below for what it can and cannot gain.
+- **At the take** (already under `s.mu`): `mine.ticket = ++s.taken`. The chain's F10 write set moves with it, as one
+  entry in a per-slot list keyed by ticket, so several can be in flight, each removed after its own submission.
+- **The order gate** goes where the order matters: just before the ring lock in `submit_now`. The submission waits
+  until `s.done == ticket - 1` (a condition variable on the slot). Preparation and back-pressure before the gate run
+  without it.
+- **After the kernel submit returns:** `s.done = ticket`, then notify. That is the point where the kernel has the job
+  in its ring order; any later chain of the slot may go.
+- **Re-entry:** a nested flush on the thread that owns the current ticket, before that ticket's gate, goes ahead as
+  today: it takes the current ticket, and the outer one is given the next. Done in one place, under `s.mu`.
+- **F16's phase:** per ticket instead of per slot.
+- **What it keeps:** take-order submits per slot, exp 0436's per-ring lock order (ring, then `g_dev_mutex`, then the
+  backend), F10's flight set per chain, and the nesting behaviour.
+- **What it removes:** a flush waiting behind another thread's preparation and back-pressure sleep.
+
+**The "not verified" list, settled by reading the code** (the bake unit `ff9e8fe2`, `submit_now` and `chain_submit`).
+This corrects the gain claimed above. The order inside `submit_now` is:
+1. the back-pressure sleep (`g_cq_fences >= 24`; F16 phase 1);
+2. exp 0436's **ring lock** `g_su436_ring_mu[ring]`, then `g_dev_mutex` (phase 2 while asking, 3 once held);
+3. the **preparation**, under both: `sync_mappings`, `direct_sync`, the filter's options and its mapping list;
+4. the backend's submit: it calls back before the CS ioctl to let `g_dev_mutex` go, the kernel submit runs, and
+   `g_dev_mutex` is taken again;
+5. `register_label_writes` (the global `g_plw` and its ring-order counter), then `cq_push`.
+
+The ring lock is held from step 2 to the return.
+
+After `submit_now` returns, `chain_submit` touches the slot: `f10_flight` is cleared, F16's phase is set to 0 and
+`f16_done` is bumped, and for a cross-ioctl chain the marks from the thread-local `t_gpu_done` go into `s.marks` and
+`chain_post_soft_locked` posts the soft replays. Before this reading I had placed the preparation before the ring
+step, and with it the waiter's gain.
+
+**What it means:**
+- For two chains of one slot on the same ring, the ring lock already serializes steps 3–5. The ring lock is not FIFO,
+  which is why `flush_mu` is still needed for take order.
+- So a ticket gate at the ring step would not take a waiter out from behind another thread's preparation. It removes
+  only the holder's back-pressure sleep (step 1) and the tail after step 5 from the waiter's wait.
+- A gate later, at the kernel submit in the backend's callback, would let the next chain's preparation start during
+  the holder's CS. But that preparation needs the ring lock, which the holder keeps until its return. It only helps
+  if the ring lock is narrowed to the CS too.
+  - TODO(verify): whether the preparation needs the ring at all, or only `g_dev_mutex`.
+- **Slot state after the gate**, which the ticket must make per chain:
+  - `f10_flight`, read by exp 0430 F10's waiters until it is cleared;
+  - F16's phase and `f16_done`;
+  - the cross marks and the soft replays.
+  - `t_gpu_done` is thread-local, so it moves with its submitting thread; `register_label_writes` is global, in ring
+    order under the ring lock.
+
+**So f438 records the holder's F16 phase** at the moment the wait starts. `h438.hpp` `ca501adf`; the frame column
+becomes `flush<-holder/reason/phase`, and test case 5 now checks `hold-wd/backpressure`. The design follows the phase:
+- **Mostly phase 1 (back-pressure):** the holder sleeps because 24 jobs are in flight, so the wait is the GPU's. A
+  ticket at the ring step moves the waiter to the same back-pressure; it does not shorten the frame.
+- **Mostly phase 2–3 (the ring and device locks, the preparation and CS):** the ring lock is the real order. The fix
+  is to narrow the preparation's need for the ring (TODO(verify) above), not `flush_mu`.
+- **Phase 0 / 4 (the tail, or draining the GPU in `wait_jobs`):** the ticket removes the wait, since the tail needs
+  only the slot's own state per chain. The drain is the GPU again.
+
+## Result 15: the last records on the second title (f438, m438, perf; 2026-11-21 07:29–07:55, boot eb264b8c; DIAGNOSIS)
+
+**Slot** (the top session's GO, 07:26):
+- Pre-checks: 0 GPU resets, no emulator, lock empty.
+- The kit's pins were still the pre-bake builds. They were repinned to the baked ones before the build: box0438.sh
+  `6a317124` (P_UNIT `ff9e8fe2`, normal `b1b57df9`, lean `d3485ed4`) and chain0438l.sh `6f2f83f2`.
+- buildfm under BOX-LOCK 07:29–07:31: normal `d5f1a175f95a7b8c5ab7b9903e4c46a2` (fm438.cpp: h438 + f438 + m438) and
+  lean `90cc275adb96ccd6c6ba2eca5316e7aa` (m438.cpp), 0 errors. The shared builds were unchanged.
+- **perf's real line forms** (perf 7.0.14 in the ubuntu container, on a throwaway process):
+  - cpu: `tid time: ip sym (dso)`;
+  - faults: `tid time: addr addrsym (addrdso) ip sym (dso)`, with the data address resolved too.
+  - A DSO may hold a nested pair, `(/memfd:KytyDirectMemory (deleted))`.
+  - pf438's parser and test_pf438 follow these forms (PASS).
+  - The clock is CLOCK_MONOTONIC (68351 s ≈ the uptime), m438's clock.
+- Chain `ORDER="F P P" K0=343` (unit chain0438fp), his 09:46 scene, RT on, no input. Before it, no other session's
+  reader or process was left.
+- **Runs:** b438F344 (F), b438P345 and b438P346 (P), all NO_CRASH, 0 pad keys, 0 kernel lines. F344: GIVEN UP 0, r438
+  0 lost.
+- **Data:** all of it was copied to `data-0438/FP` (laptop) and checked by md5, 147 of 147, before the box was
+  released. This was the last data from this title; exp 0439 uninstalls it.
+- **Phases** from the marks per 10 s, the same shape in all three runs: fast t 140–270, dip 280–290, slow 295–415;
+  window 136–416.
+- Outputs: `lean-round/ah438-F344.txt`, `lean-round/pf438-{F344,P345,P346}.txt`.
+
+**(1) Who holds s.flush_mu when the Render Thread waits** (f438, F344's last 60-s line, the whole run):
+
+| Waiter ← holder / reason / holder's F16 phase | Waits | Total | Longest |
+|---|---|---|---|
+| Render Thread ← bc5-chainwd / hold-wd / devheld | 4,076 | 30.9 s | 262 ms |
+| Render Thread ← bc5-chainwd / hold-wd / asking | 425 | 6.3 s | 221 ms |
+| Render Thread ← bc5-chainwd / hold-wd / tail | 54 | 0.13 s | 12.7 ms |
+| Render Thread ← bc5-chainwd / hold-wd / backpressure | 14 | 0.02 s | 3.2 ms |
+| bc5-chainwd ← Render Thread / hold-end / (all phases) | 224 | 0.62 s | 61.6 ms |
+
+- **Holds:**
+  - the watchdog's foreign `hold-wd` holds of the Render Thread's chain: 17,052, 79.6 s in all, longest 509 ms;
+  - the Render Thread's own `wait` / `hold-end` / `drain` flushes: 72,360 / 10,226 / 13,603;
+  - bc5-ring's `end` holds: 154,454, 128.9 s, its own slot.
+- **Per frame** (ah438 on F344's CSV): the 3+ vblank frames wait 9.6 ms on `hold-wd/devheld` and 3.7 ms on
+  `hold-wd/asking`, plus 4.3 ms on g_dev_mutex. The dip's long frames: 7.8 + 5.6 + 3.9 ms. The 1-vblank frames:
+  0.07 ms.
+- **Reading:** the Render Thread waits for the chain watchdog's submission of its own chain. The watchdog takes it
+  after the 2-ms hold bound, when the Render Thread has been busy between ioctls. Its holder is almost always in the
+  ring and device locks (the preparation and the CS), not in back-pressure.
+- **What that decides:** by the code reading, the per-ring order of those steps is the ring lock's. So the ticket at
+  the ring step would not shorten these waits. The Render Thread would only wait on the ring lock instead. What would
+  remove them is not making the Render Thread wait for a submission of its own chain that another thread is doing:
+  - for example, a per-slot submit queue that the owner only pushes to, with one submitter per slot draining it in
+    order, and the owner waiting only where it must (back-pressure, or a CPU wait that needs its chain submitted);
+  - or a cheaper preparation and CS.
+  - This is a design for a next experiment, not built. It holds for every title, since the watchdog and the lock are
+    common code.
+
+**(2) What the Render Thread's CPU is** (lean P345 / P346, perf cpu-clock 999 Hz on the thread, by frame from the
+marks; samples ≈ ms):
+
+| Frames | CPU per frame | Guest code (`/memfd:KytyPrivateMemory`) | Emulator | libc / libstdc++ |
+|---|---|---|---|---|
+| 1 vblank (6,396 / 6,807) | 8.2 / 8.8 | 42.8 % | 40.8 % | 15.4 % / 0.6 % |
+| 3+ vblanks (1,381 / 1,136) | 35.9 / 34.9 | 75.6 / 77.0 % | 15.7 / 14.9 % | 5.8 / 5.7 % / 2.8 / 2.3 % |
+| dip, 3+ (50 / 65) | 136.8 / 94.5 | 77.6 / 80.8 % | 8.8 / 9.9 % | 5.4 / 4.3 % / 8.2 / 5.0 % |
+
+- **In short frames** the host's share is ~3.4 ms. Its top symbols: `submit_now`, `full_state::Tracker::emit_prefix`
+  / `apply_level`, and `__memmove_avx_unaligned_erms`.
+- **The long frames' extra CPU is the title's own code** on the Render Thread: ~27 ms of a 3+ frame's ~35 ms. The host
+  share rises only to ~5.5 ms.
+- **In the dip** two host symbols appear: `std::_Rb_tree_increment` (5–8 %, a std::map walk) and a `std::__find_if`
+  over a `vector<std::string>` with `strlen`. That is a host lookup over names, about 5–11 ms per long dip frame.
+  Without call stacks its caller is not known. TODO(verify): on the next title, with `--call-graph` (the host is
+  built with frame pointers? to check).
+- **Lean against normal** (diagnosis only): 8.2–8.8 ms of CPU per 1-vblank frame in lean, against h438's 11.0 ms in
+  normal. That is the diagnostics' own CPU.
+
+**(3) The faults** (F344, page-faults:u, every fault of the Render Thread with its address; maps snapshot 15, about
+t 280):
+
+| Frames | Faults per frame | Into the anonymous rw region of 15 MiB at `0x7fcf7c000000` | Into `/memfd:KytyDirectMemory` | Faults per distinct page |
+|---|---|---|---|---|
+| 1 vblank | 0.46 | 19 % | 77 % | 1.04 |
+| 3+ vblanks | 95.8 | 94.6 % | 4.0 % | 13.5 |
+| dip, 3+ | 1,010 | 97.5 % | 1.7 % | 14.5 |
+
+- **The long frames' faults** go almost all into one 15 MiB rw anonymous region, followed by 49 MiB of `---p`. The
+  64-MiB alignment and that layout look like a glibc per-thread malloc arena (TODO(verify)).
+- **About 14 faults per page:** the same pages are dropped and touched again, which fits the arena's top being
+  trimmed after large frees and grown back. TODO(verify): glibc's non-main arena trim (`heap_trim` / `shrink_heap`
+  by `MADV_DONTNEED`).
+- **The faulting instructions:** 62–63 % in libc and 31–37 % in the emulator. The emulator's symbols were not
+  resolved by `perf script` for the fault mode; its cpu mode resolved them.
+- **The cost:** about 1,000 faults of zero-filled pages per long dip frame is a few ms at most, not the 60–95 ms of
+  CPU. The faults mark large host allocations around the long frames; they are not the time itself.
+- **A host-side check for the next title, simplest first:** `M_TRIM_THRESHOLD` / `M_MMAP_THRESHOLD` (mallopt, or
+  `MALLOC_TRIM_THRESHOLD_` in the launcher) or keeping the large buffers, and see whether the faults and the host
+  share go. It cannot touch the guest's 27 ms.
+
+**Summary for the next titles** (diagnosis numbers):
+- The second title's long frames are, first, the title's own CPU work on its Render Thread.
+- Second, ~13 ms per long frame waiting for the chain watchdog's submission of the Render Thread's own chain.
+- Third, a few ms of host work, with a malloc-arena fault churn beside it.
+- The open host items, in order:
+  1. the watchdog / owner submission design (a per-slot submit queue), every title;
+  2. the arena trim check;
+  3. the dip's name lookup, with call stacks.
+
+## Result 16 (offline, from the P runs): the long frames' guest CPU is one tight loop
+
+`gip438.py` (`7babfa96`) reads P345 + P346's Render Thread samples whose ip lies in the guest's executable
+KytyPrivateMemory mappings. Each module is named by its 256-MiB load base (`module@<base>+<offset>`). The groups are
+by vblank class and phase. Its output stays private (`hot-ips.txt` and the full output, outside git) because it
+names offsets in the title's code. The shape:
+
+| Frames | Guest samples per frame (of all) | Distinct ips | 50 % of guest samples in | 90 % in | The top page's share |
+|---|---|---|---|---|---|
+| 1 vblank (13,203) | 3.65 of 8.52 | 8,916 | 234 ips / 92 lines / 15 pages | 4,175 ips / 114 pages | 13.7 % |
+| 2 vblanks (4,060) | 6.72 of 13.17 | 5,545 | 45 ips / 17 lines / 4 pages | 92 pages | 40.6 % |
+| 3+ vblanks (2,517) | 27.02 of 35.46 | 4,489 | **13 ips / 1 line / 1 page** | 296 ips / 18 pages | 81.2 % |
+| dip, 3+ (115) | 89.26 of 112.86 | 484 | **11 ips / 1 line / 1 page** | 20 ips / 2 lines / 1 page | 92.9 % |
+
+- **The long frames' guest CPU is concentrated, not spread.** In a 3+ frame, half of it is in 13 ips of one 64-byte
+  line of the title's main module (module@900000000, 97–99 % of the guest samples there). Those ips are about 36
+  bytes long, hit almost evenly at every second byte (~4 % each).
+- The 1-vblank frames run the same line too, but only for 14 %; their guest time is spread over ~4,000 ips.
+- **Overlap:** 92.5 % of the 3+ frames' guest samples lie in the 1-vblank frames' top-50 pages. The long frames run
+  the same code, mostly that one line, for longer.
+- **Reading** (behaviour, not code): a short loop of two-byte instructions, hit evenly, is the shape of a busy-wait
+  (a spin with a pause-like backoff). In its long frames the Render Thread spins in the title's own code waiting for
+  something, and the more it waits the longer the frame. On the console, the same CPU (Zen 2) would not spin 22–90 ms
+  per frame unless what it waits for comes late: a job worker's result, or a value the GPU or our soft CP writes.
+  - TODO(verify), for the next step: from the hot code's bytes (private), which memory the loop reads, and from a
+    second profile, which thread writes it.
+- **Not in this data:** which threads run while it spins. The P runs profiled the Render Thread only, with no
+  per-thread schedstat. For the next title, prof0438 gets an all-thread mode: perf on every thread at a low rate,
+  plus /proc/<pid>/task/*/schedstat every second (exp 0432's prof0432.sh form).
+- **The hot code's bytes:** `gipbytes438.py` (`fe760d21`), read-only on the box (top's 2-minute GO, before exp 0439's
+  uninstall). It finds the title's eboot.bin under ~/bc5-data, requires its first load segment to match the maps
+  region at module@900000000 (0x5f24000), and writes 256-byte windows around the top 60 ips to
+  `~/bc5-data/private/exp0438-hotcode` (mode 700), copied to a private folder on the laptop outside git.
+  - A stand-in dry run on the laptop (a synthetic ELF) PASS.
+  - The bytes and any disassembly are never committed; this README describes behaviour only.
+
+## The per-slot submit queue (design, not built; for every title)
+
+**Goal (F869).** The Render Thread waits ~13 ms per long frame on its slot's flush lock while the chain watchdog
+submits the Render Thread's own chain (holder phase: device held or asking). The owner should not wait for a
+submission of its own chain that another thread is doing. It should wait only where it has to.
+
+**Shape (switch `BC5_0438_SUBMITQ`, off unless "1" in the test build).**
+- **The queue.** Each ChainSlot gets a FIFO of taken chains, at most 4. Each entry holds the chain, its F10 write
+  set, its why and its take ticket.
+- **Taking a chain.** `chain_submit(s, why, foreign)` keeps its take under `s.mu`, unchanged, and pushes the taken
+  chain instead of calling `submit_now`.
+- **The submitter.** One submitter per slot drains the queue in order and calls `submit_now` exactly as today:
+  back-pressure, the ring lock, g_dev_mutex, the preparation, the CS, the registration. It runs the tail after each
+  entry (below). It is a thread per registered slot, woken by a condition variable on the slot, so a slot's chains
+  reach the kernel in take order, as `flush_mu` guarantees today.
+- **The watchdog** pushes as well, instead of submitting. It no longer holds anything for the time of a submission.
+- **The owner waits only:**
+  1. **When the queue is full** (4 entries): back-pressure on the owner, as today's 24-fence wait is on the
+     submitter. The wait is the GPU's or the submitter's.
+  2. **Where a CPU wait needs its chain.** Today `chain_flush(1)` before a game-thread wait makes the chain's label
+     writes registered (`register_label_writes`) before `ring_will_satisfy` looks. With the queue they are not
+     registered until the submitter's CS. That is exactly F865's give-up path ("no pending write") if nothing
+     covers it.
+     - So at push, the entry's label writes are registered early, as r438 does for bc5-ring's slices: pending
+       entries with `seq = kR438Early | bit 62 | ticket`.
+     - r438's game-thread rule then applies unchanged: a wait whose last pending write is early waits, on PLWCV's
+       condition variable, for the real registration, and is kept in ring order.
+     - At the entry's end the submitter checks that every early write was registered for real; one that was not is
+       a BUG line and is removed. This is r438's invariant.
+  3. **At the flip's drain** (`chain_flush(5)` + `chain_flush_all(5)` before `Direct::drain()`) and at `wait_jobs`:
+     the queue must be empty and its last entry submitted before the GPU drain means anything. The owner pushes,
+     then waits for its slot's `done == taken`. That is today's behaviour, since the flip waits for the drain anyway.
+  4. **Sync mode** (`g_async` off): no queue; the owner submits inline, as today.
+- **State the owner (or another thread) still touches after a push, and how each moves:**
+  - `f10_writes` (the open chain): unchanged, the owner's, under `s.mu`.
+  - `f10_flight` (today: the one chain in submission) becomes the union of the queued and in-flight entries' write
+    sets, under `s.mu`. `f10_pending` and `f10_observe` (exp 0430 F10, other threads) read it as today, a list of
+    per-entry sets. An entry's set is removed after its own submission's registration, as today's clear.
+  - `f16_done` is bumped per entry done (F10's waiter list compares it as today). `f16_phase` is the submitter's phase
+    for the entry it carries. `t_f16_slot` is set by the submitter, which is the thread inside `submit_now` now.
+  - `f10_wanted` / `open_ns = 1` (F10 asks the owner, or the watchdog, to flush): unchanged. They now lead to a push.
+  - `in_submit` (the owner is inside Direct::submit; a buffer may be split at a wait): unchanged. It guards the take
+    under `s.mu`, not the submission.
+  - `marks` and `soft` (cross-ioctl chains: soft replays posted once the chain carrying their buffers is submitted):
+    the submitter posts them after the entry's submission, as `chain_submit`'s tail does today. `t_gpu_done` is
+    thread-local, so the submitter collects its own and moves it into `s.marks` under `s.mu`.
+  - `t_fs415_*`, `t_cq` and the other thread-locals `submit_now` reads: the submitter sets them from the entry
+    (fs415's open time, why and segments go into the entry at the take).
+  - The `Chain` object stays alive in the entry until `submit_now` returns (`keep_wait_offsets`,
+    `chain_mark_executed`).
+  - **Re-entry:** `submit_now`'s mapping sync can call `wait_jobs` → `chain_flush` on the submitter. That is the
+    submitter's own slot, which pushes onto the queue behind the current entry. A wait for it inside the current
+    entry's submission would deadlock, so a re-entrant flush on the submitter submits inline, ahead, as today's
+    recursive `flush_mu` does.
+  - **Slot destruction** (the thread_local slot at thread exit): the submitter drains and stops first; then
+    `~ChainSlot` unregisters it as today.
+- **Ordering kept:**
+  - per slot: take order to the kernel;
+  - per ring: exp 0436's ring lock, then g_dev_mutex, then the backend, unchanged inside `submit_now`;
+  - registration: `register_label_writes` under the ring lock, as today;
+  - r438's early entries for both bc5-ring's slices and the queued chains, one rule.
+- **What it changes for the Render Thread:** a flush becomes a push plus an early registration (a scan of the chain's
+  packets, as r438's `r438_scan`, ~µs). The chain's preparation and CS run on its slot's submitter, overlapping the
+  Render Thread's next CPU work.
+  - The flush-lock waits behind the watchdog (F869: 9.6 + 3.7 ms per 3+ frame) go.
+  - The Render Thread's own `wait` / `hold-end` / `drain` flushes (72,360 / 10,226 / 13,603 per run) stop costing it
+    the preparation and CS.
+  - Where its next CPU wait needs the chain, it waits for the real registration, which is the same time it waits
+    today, minus the overlap.
+- **Risk:** this changes every title's submission path, the path behind F848, F852 and F865. So: a switch, an offline
+  test, then lean A/B on ASTRO BOT and the third title, as the top session ordered. The offline test (`test_q438`)
+  cuts the take, push, submitter, early registration and tail from the generated unit against stubs, after
+  test_r438 and test_p438. It checks:
+  - take order to `submit_now` across owner, watchdog and flush_all pushes;
+  - no wait finds "no pending write" for a queued chain's label;
+  - the F10 flight union and `f16_done` per entry;
+  - the re-entrant flush inline;
+  - drain = empty;
+  - a broken copy (the early registration removed) must fail.
+
+## Result 17: who releases the Render Thread's spin (b438S347, 2026-11-21 08:22, boot d1ac0537; DIAGNOSIS)
+
+**Writers of the spun-on word** (`xref438.py` scan of the main module's code segment, read-only on the
+box, private output; in behaviour terms):
+- 35 RIP-relative references to the word. The known load in the spin loop is among them, which checks the scan.
+- **A frame-phase state machine:** the word takes the values 0–6.
+- **The Render Thread sets 1 itself**, just before its loop. The stores of 3, 4, 5 and 6 follow in the same
+  function, after the loop.
+- **One lone store of 2** sits in a separate function close by. It is the only store that can end the spin, since the
+  loop leaves on any value other than 1.
+- Seven instructions take the word's address, so some updates may go through a pointer.
+
+**The run:** b438S347, the SHARED lean build `d3485ed4` with no extra word, his scene, RT on, PLAY 220. prof0438.sh
+in all mode (`d95b2237`) ran from G for 200 s: perf cpu-clock:u at 199 Hz on every thread (141,922 samples, 87
+threads) and every thread's schedstat each second. Chain0438l arm S (`3c6c6516`). Tool `sp438.py`; the code ranges come
+from a private file.
+
+**Result:**
+- **Spins:** 564 episodes, 14.6 s in all, longest 947 ms.
+- **The releaser is game-main.**
+  - It has a sample in the 10 ms before 545 of the 564 spin ends.
+  - It is the only thread ever sampled near the releasing store.
+  - The job workers barely run during the spins and wait 0.1 ms/s in the run queue, so nothing runnable is starved.
+- **What game-main does:**
+
+  | game-main's samples | Host memmove (libc) | Guest code | Our AMPR/AMM and memory HLE |
+  |---|---|---|---|
+  | during the spins (1,853) | 87.4 % | 1.1 % | `LibAmpr::Ampr::WriteCommandBufferPointers` 1.1 %, `AmmAutoReleaseVa` 0.9 %, `GuestAddressSpace::MapBacking` 0.5 % |
+  | outside them (20,732) | 4.1 % | 88.4 % | – |
+
+- **Reading:** the title's main thread issues AMPR/AMM commands, and our host executes them synchronously as large
+  memory copies on that thread. The Render Thread spins, as the title is written to, until main reaches the next
+  phase.
+  - The console presumably does this work asynchronously or by remapping (TODO(verify): the AMPR path in KytyPlus
+    f266548 plus patch 0001, and the API's documented behaviour).
+  - **This is the main lever for the long frames.** It is host work, with every title's reach.
+- **Also during the spins:**
+  - bc5-chainwd (745 samples): submission preparation (`direct_sync_one`, views build, a std::map walk, memmove,
+    strlen);
+  - "Archive Asset I" (382): memmove.
+- **Not shown:** the window ended at 1514.18 s; the run then hung at 1516.3 s (result 18).
+
+## Result 18: S347's GPU hang, on the shared lean build with r438 baked in (1516.3–1518.3 s)
+
+- **The first event:** at 1516.28 s, gfxhub TCP write-permission faults (`GCVM_L2_PROTECTION_FAULT_STATUS 0x00741051`,
+  PERMISSION_FAULTS 0x5, RW 1, MORE_FAULTS; "167 callbacks suppressed"), from a job of bc5-ring (an acb), vmid 7.
+  - Ten distinct fault pages in 0x14…–0x16…, plus 0x1c… and 0x139e….
+  - The fault record (`~/bc5-data/captures/faults/20261121-082800/`) calls it K3 "no guest range (a hole)": no
+    guest range, view or GPU mapping.
+  - The addresses repeat their low bits under different high parts: a valid low address with a junk high part.
+- **Then:** at 1518.3 s the comp_1.3.0 ring timed out (signaled 83501, emitted 83503), then gfx_0.0.0 (118092 /
+  118094). Both ring resets succeeded; "device wedged, but no recovery needed". The run ended by itself at 335 s.
+- **The devcoredump** `~/bc5-data/captures/devcoredump/20261121-082800-devcd1.txt` (process thread bc5-chainwd) is
+  not yet decoded beyond the IB registers. It and the dmesg are copied privately.
+- **Class: F852/F858** (an acb that ran with bad descriptors or pointers and wrote into holes), not F865's shape (a
+  wait on a label nobody writes). The lean build writes no journal, so the dropped-wait probe line that named
+  F852/F858 does not exist for this run.
+- **r438** changes game-thread dcb waits and early registration from bc5-ring's slices. The acb-side decisions
+  (bc5-ring's own `ring_will_satisfy`, F2/F4) ignore early entries by design. The class predates r438 (F852 11-17,
+  F858 11-18). Recommendation to the top session: keep r438.
+  - Counted: 1 hang in about 20 r438-on runs today.
+- **The profiler:** perf record stopped at 1514.18. Its `perf script` and gzip ran in the container around the
+  fault, a timing nudge at most, not a cause.
+- **Naming the dropped wait** would need normal-build runs with the journal, at about 1 hang per 10–20 runs. F852's
+  open candidate (keep a met cross-queue wait for the GPU) does not need that capture first.
+
+## Result 19: game-main's copies are O(n) guest-memory bookkeeping (b438M349, 2026-11-21 09:02–09:08, boot d1ac0537; DIAGNOSIS)
+
+**Why a shim.** Every perf call-graph form (`--call-graph fp`, `-g`, `--user-callchains`, `dwarf` with `-m 16` / `-m
+32`) is refused with EACCES at `kernel.perf_event_paranoid` = 2, while plain records work. That is why the K348 run got
+no game-main stacks. Changing the setting is the maintainer's to decide. Our host build keeps frame pointers
+(`-fno-omit-frame-pointer` on all 4,278 compile lines of the lean compdb), so fp chains are usable once perf may record
+them.
+
+**The shim** `cpy438.c` (`fe7a094f`), loaded with LD_PRELOAD. It is records only, for test runs.
+- **What it wraps:** `memcpy`, `memmove`, `mempcpy` and their `_chk` forms. Ubuntu's gcc fortifies by default, so the
+  calls go to `__memcpy_chk` / `__memmove_chk`; the shared lean binary imports all four.
+- **What it records:** for every copy of 256 KiB or more, on any thread, the time, size, dst, src and up to 12
+  frame-pointer return addresses. The frames are read with `process_vm_readv` on our own pid, so a bad frame pointer
+  ends the walk instead of faulting.
+- **No locks, no malloc** in the hot path; a writer thread drains every 2 s.
+- **Test:** `test_cpy438.sh` PASS in the ubuntu container. A dummy's 1-MiB copies are recorded on their thread with
+  the calling function in the chain; nothing is written below the bar or without `CPY438_OUT`.
+- **Not seen:** copies inside libc itself and small inlined fixed-size copies.
+
+**The run:** b438M349, the shared lean build `d3485ed4` (the 2-s load check first: rc 0), his scene, RT on, PLAY 220.
+- chain arm M (`88d98198`): `LD_PRELOAD=cpy438.so CPY438_OUT=…`, with prof0438 cpu mode on the Render Thread for the
+  spins (1,613 episodes).
+- NO_CRASH, 0 pad keys. All 115 files copied and md5-checked.
+- 366,421 copies of 256 KiB or more from the emulator, symbolized on the box with `sym438.py` (addr2line; host frames
+  only, guest frames shown as `[guest]`; the full output is private).
+
+| Thread | Copies (≥ 256 KiB) | Bytes | In spins | Top caller families |
+|---|---|---|---|---|
+| game-main | 213,154 | ≈ 350 GB | 136,588 (≈ 240 GB) | `VirtualRanges::MergeAroundUnlocked`; `GuestBackingStore::UnmapOne` under `VirtualRanges::EditUnlocked` / `Rename`; `std::_Rb_tree<…GuestBackingStore::MapEntry>`; `std::vector<PooledMemory::Mapping>::_M_realloc_append`; `GuestAddressSpace::FindFreeAligned` over `vector<PhysicalRange>` |
+| Archive Asset I | 30,994 | ≈ 67 GB | 7,302 | the same (`GuestBackingStore::Unmap`, the MapEntry tree, the Mapping vector) |
+| bc5-ring | 58,549 | ≈ 40 GB | 12 | `bc5::direct::Device::sorted_mappings()` (52,935) |
+| bc5-chainwd | 34,837 | ≈ 44 GB | 8,776 | `bc5::direct::Device::sorted_mappings()` (22,049), `Lzr0401::Range` vectors, `VirtualRanges::Range` copies |
+| kyty-gpu | 12,309 | ≈ 51 GB | 51 | 3–7 MiB from KytyDirectMemory to renderD128 (uploads) |
+
+- **game-main's copies are not guest data.** Sizes are 0.25–3 MiB, and the destination and source are both host heap
+  (`[anon]`). They are KytyPlus's guest-memory bookkeeping: range lists kept as sorted vectors (or rebuilt copies),
+  shifted or reallocated on every guest map / unmap / rename.
+  - The fault record of result 18 shows ~29,000 views and 29,767 GPU mappings, so each edit moves MiB. That is O(n)
+    per operation, at about 1.7 GB/s on game-main over the window.
+  - Some names are approximate where inlined, but the family is clear.
+- **The Render Thread spins on game-main meanwhile** (result 17). On the console a map / unmap edits page tables,
+  O(1) per page, with no copy of a global list.
+- **bc5's own submission path pays a similar O(n) copy:** `Device::sorted_mappings()` copies the sorted mapping list,
+  inside the flush_mu holds of F869.
+- **Fix candidates** (one test build, each behind a switch; offline tests that compare the resulting map state, and
+  the guest's views, before and after):
+  - **A1, KytyPlus memory:** the range structures of `VirtualRanges`, `GuestBackingStore` and `PooledMemory` as
+    ordered maps, or an interval structure keyed by start, with in-place merge and split: no vector shift or full
+    rebuild per edit.
+  - **A2, backend:** `sorted_mappings()` hands out a shared immutable snapshot (rebuilt once per change, shared by
+    every submit) instead of a copy.
+- **This replaces the AMPR hypothesis of result 17.** The AMPR symbols were neighbours, not the caller. APR reads run
+  on the APR workers, and AMM commands move no bulk bytes. game-main's map / unmap calls go through these memory
+  structures.
+
+## A1 / A1m / A2: the mapping bookkeeping edited in place (design, not built; for every title)
+
+**What the code does today** (KytyPlus f266548 with patch 0001, `src/kernel/memory.cpp`, `memory.h`,
+`memoryAddressSpace.inc`). A read-only reading, its key claims checked by hand: `m_ranges` is a vector at
+memory.cpp:875, and `SameMergeKey` rejects Direct at 625–627.
+- **`VirtualRanges::m_ranges`** is a `std::vector<Range>` sorted by start (memory.cpp:875). A Range is about 72 B, so
+  29,000 ranges are about 2.1 MiB, matching the 0.25–3 MiB copies.
+  - Every Add, Remove, Rename, Protect or SetMemoryType, and every merge, inserts or erases in the middle, so the tail
+    moves (`insert` 337, `erase` 349, 705 / 716, 786–787, 810–811, 825).
+  - One AMM fixed map over a live range (ReplaceFixedRangeWithReserved) makes about 6–8 tail moves, roughly 7–9 MiB per
+    remap.
+  - `Snapshot` / `SnapshotWithDirty` (487, 498) copy all 2.1 MiB for the BC5 host's readers (`Bc5ForEachPrivateRegion`
+    on every sync, `Bc5ForEachMappedRange`, `Bc5RangesWithDirty`).
+- **`PhysicalMemory::m_mappings`** is a `vector<AllocatedBlock>` (~104 B each; sorted when `KYTY_BC5_PHYSMAP_SORTED`,
+  the default).
+  - Insert and erase move the tail (918, 959, 968).
+  - `ProtectMapping` rebuilds the whole vector (2253–2287), once per Direct range of an mprotect.
+- **`FlexibleMemory::m_allocated`** (`vector`): a full sort per Map (2462); full rebuilds per Unmap and Protect.
+- **`PooledMemory`:**
+  - `m_mappings` is an unsorted `vector<Mapping>` with linear queries. Release rebuilds a vector with no reserve (the
+    profiled `_M_realloc_append`).
+  - `m_free` is a `vector<PhysicalRange>`, sorted and rebuilt per released piece.
+- **`GuestBackingStore::m_maps` and `GuestAddressSpace`'s maps** are `std::map`, so their edits are O(log n) and move
+  nothing. Their names in result 19's chains are inlining neighbours. `FindFreeAlignedUnlocked` walks `m_free` from
+  `begin()` and ignores its search start (memoryAddressSpace.inc:1281): O(n), but not a copy.
+- **Which splits are ours:**
+  - Flexible and Pooled maps make one view and block per free-backing fragment.
+  - Protect and type edits split ranges.
+  - A non-exact Rename splits through EditUnlocked.
+  - A partial unmap splits a backing view into left and right.
+  - ReplaceFixedRangeWithReserved re-adds a Reserved "anon".
+  - Named direct maps are added as "" and then renamed.
+  - There is no 2-MiB chunking.
+- **Merging:** VirtualRanges merges only non-Direct ranges (`SameMergeKey` rejects Direct, 625–627, and never checks
+  that offsets continue). So the 42 % contiguous direct views of result 19 are never merged; the free lists do merge.
+- **Locking:** the guest entry points take `g_memory_operation_mutex` (recursive). The BC5 host's snapshot readers take
+  only `VirtualRanges::m_mutex`. Callers keep no iterator or pointer across calls; every query returns copies.
+  - Vector-specific uses: `bc5::map_records::touching(m_ranges, …)` returns index pairs, `Bc5ForEachPrivateRegion`
+    runs `upper_bound` on the snapshot, and the pm412 templates take random-access iterators.
+
+**A1: ordered containers with in-place split and merge** (switch `KYTY_BC5_0438_A1`, test build only; the old vectors
+stay selectable).
+- **The containers:**
+  - `VirtualRanges::m_ranges` becomes a `std::map<uint64_t, Range>` keyed by start. A split shortens the left node in
+    place and emplaces the middle and right nodes with hints; a merge erases a neighbour node.
+  - `PhysicalMemory::m_mappings` and `FlexibleMemory::m_allocated` become maps keyed by `map_vaddr`. `ProtectMapping`
+    and Flexible's Unmap / Protect edit only the window.
+  - `PooledMemory::m_mappings` becomes a map keyed by vaddr. `m_free` becomes a map with neighbour merge, as
+    GuestAddressSpace's already is.
+- **The queries:** the public queries keep their signatures and results.
+- **Snapshots:** cached by `Generation`. One vector per change, not one per call: the host's readers stop copying
+  2.1 MiB per sync.
+- **The rewrites:** `touching()` and `DirtyWithTouching` work on map iterators.
+- **Also:** `FindFreeAlignedUnlocked` starts at `m_free.upper_bound(search_start)`.
+- **Test** (`test_a1438`): a differential test drives old and new with the same operation sequences, random ones
+  plus a recorded one if a normal run's journal holds one (TODO: check the journal tags). It compares every query
+  result and the final range lists. A broken copy (a split that loses the right part) must fail.
+
+**A1m: merge contiguous same-attribute direct views** (switch `KYTY_BC5_0438_A1M`, on top of A1).
+- `SameMergeKey` also merges Direct when `right.offset == left.offset + left.size` and the protection, memory type
+  and name match; never for `disallow_merge` (NO_COALESCE).
+- It needs `PhysicalMemory::Unmap` and `ProtectMapping` to accept a span covering several blocks. Today Unmap matches
+  one block, so a merged range's munmap would fail with EACCES (memory.cpp:3306–3309).
+- It is guest-visible: VirtualQuery and QueryMemoryProtection return larger ranges. TODO(verify): whether the
+  console's vm_map coalesces such entries; until then A1m is an experiment arm, not a default.
+- Up to −42 % of the ranges (result 19).
+
+**A2: the backend's mapping list, not copied per change** (switch `BC5_DIRECT_0438_A2`).
+- **Today:** `Device::sorted_mappings()` (backend/src/direct.cpp:851) rebuilds lazily per `list_gen` (exp 0170). But
+  each rebuild copies and merges every entry (~17,000 shared maps plus the userptrs) under the device mutex. In the dip
+  the list changes ~900 times a second, so nearly every submission rebuilds ~0.7 MiB (result 19: 52,935 + 22,049
+  copies).
+- **A dirty flag would not help:** a change lands between nearly every pair of submits.
+- **A2's structure:** a chunked persistent list. Sorted chunks of ≤ 512 entries sit behind a top array of
+  `shared_ptr<const Chunk>` (~34 entries).
+  - An edit copies only the affected chunk (~12 KB) and the top array, under the device mutex.
+  - `sorted_mappings()` returns the top array's `shared_ptr`.
+- **The readers:** `submit_now`'s probe (`covered_sorted`) and the filter's `mapped` callback. They hold the snapshot
+  for one submission's preparation and filter (milliseconds) and need it stable for exactly that long. A lookup is a
+  binary search on the chunks' first VAs, then within the chunk.
+  - `covered_sorted` takes the chunked type; one overload.
+- **Test** (`test_a2438`): the same random edit sequences against today's rebuild, comparing every `covered` answer
+  and the flattened list.
+
+**Non-atomic windows** (the top session's point 6):
+- **What exists:** a partial `UnmapOne` replaces the whole old view with PROT_NONE and then remaps the left and right
+  parts (memoryAddressSpace.inc:413–429). `ReplaceFixedRangeWithReserved` runs `UnmapGpuRange` and the range's
+  Remove before the new view is mapped (memory.cpp:4259–4260, 3945–3948).
+- **What the GPU can see:** the direct and private memory reach the GPU as dma-bufs of their memfds (ADR 0006, exp
+  0023). So the GPU sees backing pages, not the host's VA swaps. Only the `UnmapGpuRange` gap is a GPU-visible window,
+  and only at the range's real, page-aligned addresses.
+- **So these windows do not explain S347's faults** (result 18: valid low halves under junk high parts). No tie to the
+  F852/F858 class from this reading.
+
+**Test-build order** (the top session's point 5): A2 and A1 first, then A1m and Q438, with the T arm env-only. One
+build, each behind its own switch. Lean A/B on the third title and ASTRO BOT; in normal builds a compare-only check of
+new against old, never a repair.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
@@ -1782,32 +2432,99 @@ checked: host code (`journal`'s formatting) running on a guest thread's stack, b
 title reuses. To be checked on its own: which thread's stack spans that address, and whether host buffers live in
 guest-allocated stacks.
 
+## Result 20: r438o, two holes in the deployed r438 and their fix (F874, F875; 2026-11-21)
+
+Two holes in the deployed r438 (patch 9889b06a), found offline on the bake unit ff9e8fe2:
+
+- **Ring order (F874).** Another thread's real write of the same label can pass a taken slice's early write in `g_plw`.
+  - bc5-ring's `r438_begin` gives the early write order N. Before the slice's own job registers it for real, the Render Thread's or bc5-chainwd's `submit_now` can register a real write of the same label with order N+1.
+  - `ring_will_satisfy` then answers a game-thread wait on the slice's value "not satisfied", while its writer is still to come.
+- **The trim (F875).** `g_plw`'s trim erases the oldest 4,096 entries by position, early ones included.
+
+Both reproduce deterministically: `r438o/test_r438o.sh bake438.cpp order` and `... trim` FAIL.
+
+The fix, `r438o/mkr438o.py`, works inside the EARLYREG path and has no new switch:
+
+- **E2:** `register_label_writes` renumbers the other early entries of its labels after its own real writes.
+- **E3:** with r438 on, the trim drops only real entries. The bound: an early entry lives only until its slice's `r438_end`, so the table holds at most 8,192 real entries, one batch and the slices in flight.
+- **E4:** normal-build counters in r438's 60-s line.
+- **E5:** the renumbering scan runs only while early entries are in the table (`g_r438o_live`).
+
+Tests:
+
+- order and trim PASS.
+- The planted bugs (no renumbering; the old trim) FAIL.
+- Identity with EARLYREG=0 and with it on equals the bake unit.
+
+The lean A/B on ASTRO BOT, on the clean boot c05993c0 (`r438o/ab438o.sh`; MangoHud per frame, from 30 s, 140 s per run):
+
+- **q438oA**, without E5:
+  - Control d3485ed4: 59.67 / 59.48 / 59.32 flips/s, p99 17.0 / 17.4 / 33.3 ms, over 50 ms 1 / 5 / 4.
+  - r438o lean aae9c294: 59.11 / 58.88 / 59.22 flips/s, p99 33.5 / 33.7 / 33.5 ms, over 50 ms 5 / 7 / 3.
+  - The ranges do not overlap: about 0.7 % lower, and the p99 doubled.
+  - The normal run printed no r438 line: ASTRO took no slice.
+  - The cost was r438o's renumbering scan of the whole `g_plw` on every `register_label_writes` under `g_plw_mutex`, with nothing to renumber. E5 removes it.
+- **The deployed r438 itself** adds no per-submit scan of `g_plw` on a title with no slices. Per submit it adds only:
+  - `t_r438_real.push_back` while a slice is on (bake unit line 9254);
+  - the PLWCV `notify_all` (line 9263).
+
+  Its scans run per slice (`r438_begin` / `r438_end`) and at waits (`ring_will_satisfy`).
+- **q438oB**, with E5 (unit 2e6168de; lean ef76f031, normal 94e0e462), the same boot, 14:27–14:50:
+  - Control: 58.61 / 58.56 / 58.54 flips/s, p99 33.89 / 33.90 / 33.86 ms, over 50 ms 4 / 8 / 4.
+  - r438o: 58.69 / 58.51 / 58.05 flips/s, p99 33.84 / 33.87 / 34.36 ms, over 50 ms 6 / 8 / 4.
+  - The ranges overlap for flips/s and p99, and r438o's over-50 counts are within the control's.
+  - Means: control 58.57, r438o 58.42; the lowest run is O3.
+  - The control itself fell from 59.49 (q438oA) to 58.57 flips/s on the same boot, and its p99 from 17 to 34 ms. That drift of the box is larger than the difference between the arms.
+  - The normal run again printed no r438 line (no slice) and no kernel line.
+
+**The bake (2026-11-21 14:52–15:02, the top session's GO; one lock line for the swap and the smoke):**
+
+- Patch 9889b06a → 0fede35d (135 files, exp 0372 lines 5, the pad_audio_route header in).
+- Normal b1b57df9 → 199a0f39, lean d3485ed4 → 3a20b974, archive d6638808 unchanged. No switch word gained or lost.
+- Smokes: o438sc (ASTRO lean 200 s) and o438sn (normal 200 s) PASS, 0 kernel lines. The exe md5s read back.
+- The chain cannot separate a cost under about 0.3 % from the boot's drift, and every r438o run followed a control run.
+- Undo: `bash ~/bc5-work/exp0438/r438okit/bake/undo0438o.sh`.
+
+**Unexercised.** ASTRO BOT takes no r438 slices, so this A/B shows only that r438o costs nothing when idle. The fix's own path (the renumbering and the trim-keep) stays unexercised on a real title until the second title is installed again.
+
 ## Verdict
 
-**Inconclusive as a fix. The cause stands, two fixes are refuted, and the open question is narrowed.**
+**F865's source is fixed and built into the shared builds (r438 with PLWCV, 2026-11-21 00:52). The long frames are a
+separate, host-side question (result 14).**
 - **F865's cause** (from the records, high confidence): a game-thread dcb wait on an acb's release, with no writer on
-  any ring, was given up after ~21 ms (the F262 give-up). The dcb ran ahead of the acb's work and the GFX ring hung.
-  It is not F3's case: F2 cycles were 0 all run.
-- **k438** (keep the wait for the GPU): refuted. 1 GPU hang in 1 run, at its own kept wait (u438sK2). The writer
-  acb was in the kernel and did not complete before the GFX job was reset. Why is not known; the VMID-flush candidate
-  was weakened by `amdgpu_ids.c`.
-- **k438b** (ADR 0013's held tail, no give-up): refuted as built. 1 GPU hang in 1 run (u438sH7), after five
-  12-s host-made cycles: the join took a dcb's release into the held chain, and its acb waits for that release.
-- **vg437** (exp 0437, folded in): no measurable gain in one V run against one C run; closed by the top session
-  unless more data shows one.
-- **C arm** (both off, test builds d4a2f86d and c4b23cd1): NO_CRASH in 3 of 3 runs, 36.91 (polled reads), 34.10 and
-  34.52 flips/s.
-- **Next, not done here:**
-  1. decide title-side or host-side lateness with the catcher above;
-  2. if the title rings the acb late, make the GFX wait safe (the GPU waits as the console's CP does) with its writer
-     guaranteed a path to the GPU;
-  3. if the host delays it, remove that delay at its source;
-  4. a hold, if one is still wanted, needs ADR 0013 point 4 (submit up to the first unmet wait) built properly.
-- The box has had two GPU resets since boot (u438sK2, u438sH7); no runs until it is rebooted.
+  any ring yet, was given up after ~21 ms (the F262 give-up). The dcb ran ahead of the acb's work and the GFX ring
+  hung. It is not F3's case: F2 cycles were 0 all run.
+- **The fix at the source: r438.** bc5-ring registers a taken slice's label writes "early", before the kernel call.
+  The game thread's wait on such a label waits for the real registration and is kept in ring order. So the writer
+  is in the kernel before its waiter and the give-up path is never reached; there is no give-up and no recovery.
+  PLWCV makes that wait a condition variable (0.06 ms median wake against 4.9–7.0 ms for the poll, test case 6).
+  - **Invariant** ("an early write must reach the ring"): 0 lost in every r438 run, about 3.8 M early writes per run.
+  - **Give-ups:** 0 in every r438-on run counted here (R ×3 in result 6, H ×3 in result 14). Off: 1 in 3 C3 runs
+    (result 6) and 2 + 1 in the two O runs (result 13). The base rate is too low to call it a shown removal by count;
+    the mechanism removes the path.
+  - **Frame time:** no measurable effect in 3 + 3 + 3 lean runs (result 13): L0 35.33, L1p 34.81, L1c 35.03 flips/s,
+    with the same median, p95 and p99.
+- **Refuted on the way:**
+  - k438 (keep the wait for the GPU): 1 GPU hang in 1 run, at its own kept wait;
+  - k438b (ADR 0013's held tail, no give-up): 1 GPU hang in 1 run;
+  - e438 (build 12's lazy freshness): closed;
+  - p438 (the prologue merge): correct offline, no frame-time gain (result 13), not baked.
+- **The bake** (the maintainer's "tak - wdrażaj wszystko, tym bardziej jeżeli nie obniża płynności a poprawia
+  błędy", through the top session):
+  - patch `bb04219b` → `9889b06a`, normal `b1b57df9`, lean `d3485ed4`, archive `d6638808` unchanged;
+  - `BC5_0438_EARLYREG=0` turns r438 off for one run with no build, `BC5_0438_PLWCV=0` gives the 20-µs poll;
+  - undo `bash ~/bc5-work/exp0438/bake/undo0438.sh`.
+- **Open, for a next experiment (result 14):**
+  - The Render Thread's long frames spend more CPU outside our gc calls (~27 ms in a 3+ frame), and with it far more
+    minor faults.
+  - They also wait on the chain slot's flush-order lock s.flush_mu inside the submit list (13 ms per 3+ frame).
+  - The dip at G+150–160 is the extreme of both.
+- **Pacing (lean, 105,883 frames):** not two-moded. It follows the scene: ~45 flips/s, the dip to ~11, then ~27.
 
-## HANDOFF row draft
+## HANDOFF rows
 
-| F866 | **F865 was not F3's case: it was the F262 give-up.** Dcb chain #165177's pfp wait at dword 1285 on 0x12004b4c38 == 0 (busy 0x907616589 at submit) was given up by the game thread after 20.9 ms, with "no pending write", and dropped. It was the fourth give-up in a row (3c38, 4438, 4c38, 5438; ~83 ms). Its writer, acb #165180 (release at dword 2332), reached the host 20 ms after the dcb. At the stall the release had not run: the label still held the busy value. The acb's five dropped `== 0` waits were consequences: three of their labels are that dcb's own releases at dwords 8637, 11145 and 11340, which the GFX CP had passed. F2 cycles 0 all run. The first fix, k438 (exp 0438, `BC5_0438_KEEP`, keep the wait for the GPU instead of giving it up, with guards G1/G2), is refuted. u438sK2 (scene, RT on, test build d4a2f86d with k438 on) hung the GFX ring at ~90 s at k438's own kept wait: CP header history at dcb #65701's dword 369, a WAIT_REG_MEM64 pfp on 0x12004b5438. Its writer, acb #65702 (release at dword 874), was already in the kernel and did not run until the GFX job was reset (comp_1.1.0 timeout 2.05 s later). That fits a kernel-level dependency of the acb on the waiting GFX job; amdgpu's VMID flush is the candidate, TODO(verify). The C arm (k438 off): 1 run NO_CRASH, 36.91 flips/s, polled reads. The second fix, k438b (exp 0438, `BC5_0438_HOLD`: ADR 0013's held tail put back on the way-2 path, with no give-up), is refuted as built. u438sH7 hung the GPU at 113 s after five 12-s host-made cycles. Each time, the chain was held, and the join took a dcb whose release of 0x12004b77c8 precedes its wait on 0x12004b7838 into the held chain, while queue 1/0/0's acb waits for that release at its dword 28 and releases 0x12004b7838 after it. It broke only through the old 2-s acb timeout. The correct hold (ADR 0013 point 4: submit up to the first unmet wait) is not built. vg437 (exp 0437, folded in) showed no measurable gain in 1 V run against 1 C run (view builds 14076 against 15158). The C arm was NO_CRASH 3 of 3 (36.91, 34.10, 34.52 flips/s). Open: is the writer acb late on the title's side or the host's? u436sS3's records cannot tell (a catcher is proposed). Separate draft: host journal text found in guest memory (a NOP marker and the label 0x11e0450aa8 in u438sK2). | experiments/0438-f865-source/README.md; records `data-0438` (laptop), devcd 20261120-005901-devcd10, 20261120-081529-devcd1/2, 20261120-085542-devcd3/4 | high (the give-up cause, from the records); k438 and k438b each refuted on 1 hang in 1 run, with the mechanism read from the records |
+In `docs/HANDOFF.md` since 2026-11-21: F866 (F865 was the F262 give-up), F867 (r438 with PLWCV, the source fix, built
+into the shared builds), F868 (frame pacing and the Render Thread's long frames, diagnosis).
 
 ## The generated units (not committed)
 

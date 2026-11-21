@@ -13,7 +13,16 @@
 // /proc/self/task/<tid>/schedstat; minor / major faults from /proc/self/task/<tid>/stat; gc calls by code (n, wall us,
 // blocked us = wall - CPU); the flip span and its drain; lock waits by name; o438's blocked guest-sync time by kind.
 // File: $BC5_0438_HOSTWAIT_FILE, else ~/bc5-work/exp0438/h438-<pid>.csv; written every 64 frames (a SIGTERM loses at
-// most the last 63). One stderr line names the file.
+// most the last 63). One stderr line names the file and the steady clock (CLOCK_MONOTONIC) of t_s = 0.
+// f438 (also BC5_0438_HOSTWAIT=1): the chain slot's flush-order lock s.flush_mu, who holds it and why.
+//   BC5_F438_FLUSH_LOCK(s, why, foreign)  replaces chain_submit's "std::lock_guard order(s.flush_mu)": before the wait it
+//                           reads the slot's holder (thread, flush reason) and the holder's F16 phase (exp 0430:
+//                           0 tail/idle, 1 back-pressure, 2 asking for the ring and device locks, 3 device held:
+//                           preparation, kernel submit, registration, 4 draining the GPU) and after it records the wait
+//                           by (waiter, holder, reason, phase) when 20 us or more; the Render Thread's waits also go
+//                           to the frame's "locks" column as "flush<-holder/reason/phase"; the outermost hold is timed
+//                           by (holder, reason, own or foreign). Every 60 s a stderr line "f438 (exp 0438): ..." with
+//                           the totals.
 #pragma once
 #include "o438.hpp"
 #ifdef BC5_LEAN
@@ -22,11 +31,14 @@
 #define BC5_H438_DRAIN_BEGIN()
 #define BC5_H438_DRAIN_END()
 #define BC5_H438_LOCK_ID(id, name, stmt) stmt
+#define BC5_F438_FLUSH_LOCK(s, why, foreign) std::lock_guard order((s).flush_mu)
 #else
 #include <time.h>
 
 #include <cstdio>
+#include <deque>
 #include <string>
+#include <tuple>
 
 #ifdef BC5_H438_CPU_STUB
 #define BC5_H438_THREAD_CPU_NS() BC5_H438_CPU_STUB()
@@ -195,7 +207,7 @@ inline void flush(State& S) {
 	if (S.out == nullptr) {
 		const std::string n = file_name();
 		S.out               = std::fopen(n.c_str(), "w");
-		BC5_O438_PRINTF("h438 (exp 0438): per-frame records of the Render Thread in %s%s\n", n.c_str(), S.out == nullptr ? " (CANNOT OPEN)" : "");
+		BC5_O438_PRINTF("h438 (exp 0438): per-frame records of the Render Thread in %s%s; t_s 0 = steady clock %" PRIu64 " ns\n", n.c_str(), S.out == nullptr ? " (CANNOT OPEN)" : "", S.first);
 		if (S.out == nullptr) {
 			S.buf.clear();
 			return;
@@ -270,6 +282,161 @@ inline const bool g_registered = [] {
 	return true;
 }();
 } // namespace bc5::h438
+namespace bc5::f438 {
+inline const char* const kWhy[12] = {"end", "wait", "ring/class", "cond_exec", "size", "drain", "acb-head", "other", "observe", "hold-wd", "hold-end", "why11"};
+inline const char* why_name(int w) { return w >= 0 && w < 12 ? kWhy[w] : "?"; }
+inline const char* const kPhase[5] = {"tail", "backpressure", "asking", "devheld", "draining"};
+inline const char* phase_name(int p) { return p >= 0 && p < 5 ? kPhase[p] : "?"; }
+// the slot's holder, set by the outermost hold of a thread (flush_mu is recursive)
+struct Slot {
+	std::atomic<int>      holder {-1}, why {-1}, depth {0};
+	std::atomic<uint64_t> t0 {0};
+};
+struct Names {
+	std::mutex              m;
+	std::deque<std::string> names;  // thread names, interned
+	std::deque<std::string> combos; // "flush<-holder/why", interned (stable c_str for h438's frame column)
+	std::map<std::tuple<int, int, int>, int> combo_ix; // (holder, why, phase)
+};
+inline Names& names() {
+	static Names n;
+	return n;
+}
+inline int intern_locked(std::deque<std::string>& d, const std::string& v) {
+	for (size_t i = 0; i < d.size(); i++)
+		if (d[i] == v) return static_cast<int>(i);
+	d.push_back(v);
+	return static_cast<int>(d.size() - 1);
+}
+inline int self_id() {
+	thread_local int id = -1;
+	if (id < 0) {
+		char n[32] = {};
+		pthread_getname_np(pthread_self(), n, sizeof(n));
+		Names&          N = names();
+		std::lock_guard lk(N.m);
+		id = intern_locked(N.names, std::string(n) + ":" + std::to_string(::bc5::o438::my_tid()));
+	}
+	return id;
+}
+struct Agg {
+	uint64_t n = 0, ns = 0, max = 0;
+	void     add(uint64_t d) {
+        n++;
+        ns += d;
+        if (d > max) max = d;
+	}
+};
+struct Tot {
+	std::mutex                              m;
+	std::map<std::tuple<int, int, int, int>, Agg> waits; // (waiter, holder, why, phase)
+	std::map<std::tuple<int, int, int>, Agg> holds; // (holder, why, foreign)
+	uint64_t                                last = 0;
+};
+inline Tot& tot() {
+	static Tot t;
+	return t;
+}
+inline std::string name_of(int id) {
+	if (id < 0) return "none";
+	Names&          N = names();
+	std::lock_guard lk(N.m);
+	return id < static_cast<int>(N.names.size()) ? N.names[static_cast<size_t>(id)] : "?";
+}
+inline void maybe_print(uint64_t now) {
+	Tot&             T = tot();
+	std::vector<std::pair<std::tuple<int, int, int, int>, Agg>> w;
+	std::vector<std::pair<std::tuple<int, int, int>, Agg>>      h;
+	{
+		std::lock_guard lk(T.m);
+		if (T.last == 0) T.last = now;
+		if (now - T.last < 60'000'000'000ull) return;
+		T.last = now;
+		w.assign(T.waits.begin(), T.waits.end());
+		h.assign(T.holds.begin(), T.holds.end());
+	}
+	std::sort(w.begin(), w.end(), [](const auto& a, const auto& b) { return a.second.ns > b.second.ns; });
+	std::sort(h.begin(), h.end(), [](const auto& a, const auto& b) { return a.second.ns > b.second.ns; });
+	std::string out = "waits (waiter <- holder/why/holder's phase: n, ms, max ms):";
+	char        b[256];
+	for (size_t i = 0; i < w.size() && i < 12; i++) {
+		const auto& [k, a] = w[i];
+		std::snprintf(b, sizeof(b), "%s %s <- %s/%s/%s: %" PRIu64 ", %.1f, %.2f", i ? ";" : "", name_of(std::get<0>(k)).c_str(), name_of(std::get<1>(k)).c_str(), why_name(std::get<2>(k)), phase_name(std::get<3>(k)), a.n,
+		              static_cast<double>(a.ns) / 1e6, static_cast<double>(a.max) / 1e6);
+		out += b;
+	}
+	out += " | holds (holder/why own|foreign: n, ms, max ms):";
+	for (size_t i = 0; i < h.size() && i < 12; i++) {
+		const auto& [k, a] = h[i];
+		std::snprintf(b, sizeof(b), "%s %s/%s %s: %" PRIu64 ", %.1f, %.2f", i ? ";" : "", name_of(std::get<0>(k)).c_str(), why_name(std::get<1>(k)), std::get<2>(k) ? "foreign" : "own", a.n,
+		              static_cast<double>(a.ns) / 1e6, static_cast<double>(a.max) / 1e6);
+		out += b;
+	}
+	BC5_O438_PRINTF("f438 (exp 0438): 60-s totals: %s\n", out.c_str());
+}
+struct Hold {
+	Slot* s   = nullptr;
+	int   why = -1;
+	bool  top = false, foreign = false;
+	Hold(Slot& sl, int w, bool f, uint64_t wait_t0, int peek_holder, int peek_why, int peek_phase) {
+		if (!::bc5::h438::on()) return;
+		s                  = &sl;
+		why                = w;
+		foreign            = f;
+		const uint64_t now = ::bc5::o438::now_ns();
+		const int      me  = self_id();
+		if (wait_t0 != 0 && now - wait_t0 >= 20'000 && peek_holder != me) {
+			const uint64_t d = now - wait_t0;
+			{
+				Tot&            T = tot();
+				std::lock_guard lk(T.m);
+				T.waits[{me, peek_holder, peek_why, peek_phase}].add(d);
+			}
+			if (::bc5::h438::mine()) { // the Render Thread: into the frame's locks column, by holder and reason
+				int         id   = -1;
+				const char* name = nullptr;
+				{
+					Names&          N  = names();
+					std::lock_guard lk(N.m);
+					auto            it = N.combo_ix.find({peek_holder, peek_why, peek_phase});
+					if (it == N.combo_ix.end() && N.combos.size() < 100) {
+						const std::string hn = peek_holder >= 0 && peek_holder < static_cast<int>(N.names.size()) ? N.names[static_cast<size_t>(peek_holder)] : "none";
+						N.combos.push_back("flush<-" + hn + "/" + why_name(peek_why) + "/" + phase_name(peek_phase));
+						it = N.combo_ix.emplace(std::make_tuple(peek_holder, peek_why, peek_phase), static_cast<int>(N.combos.size() - 1)).first;
+					}
+					if (it != N.combo_ix.end()) {
+						id   = 400 + it->second;
+						name = N.combos[static_cast<size_t>(it->second)].c_str();
+					}
+				}
+				if (id >= 0) ::bc5::h438::lock_done(id, name, wait_t0);
+			}
+		}
+		top = s->depth.fetch_add(1) == 0;
+		if (top) {
+			s->holder.store(me, std::memory_order_relaxed);
+			s->why.store(w, std::memory_order_relaxed);
+			s->t0.store(now, std::memory_order_relaxed);
+		}
+	}
+	~Hold() {
+		if (s == nullptr) return;
+		if (s->depth.fetch_sub(1) != 1) return;
+		const uint64_t now = ::bc5::o438::now_ns(), d = now - s->t0.load(std::memory_order_relaxed);
+		const int      me  = s->holder.load(std::memory_order_relaxed);
+		s->holder.store(-1, std::memory_order_relaxed);
+		s->why.store(-1, std::memory_order_relaxed);
+		{
+			Tot&            T = tot();
+			std::lock_guard lk(T.m);
+			T.holds[{me, why, foreign ? 1 : 0}].add(d);
+		}
+		maybe_print(now);
+	}
+	Hold(const Hold&)            = delete;
+	Hold& operator=(const Hold&) = delete;
+};
+} // namespace bc5::f438
 #define BC5_H438_CAT2(a, b) a##b
 #define BC5_H438_CAT(a, b)  BC5_H438_CAT2(a, b)
 #define BC5_H438_GC(request) const ::bc5::h438::GcSpan bc5_h438_gc_(static_cast<uint64_t>(request))
@@ -283,4 +450,10 @@ inline const bool g_registered = [] {
 	const uint64_t BC5_H438_CAT(bc5_h438_lt_, __LINE__) = ::bc5::h438::lock_t0(); \
 	stmt;                                                                   \
 	::bc5::h438::lock_done(id, name, BC5_H438_CAT(bc5_h438_lt_, __LINE__))
+// chain_submit's flush-order lock (exp 0438, tag f438); declares the guard "order" as the line it replaces did
+#define BC5_F438_FLUSH_LOCK(s_, why_, foreign_)                                                                                   \
+	const uint64_t bc5_f438_t0_ = ::bc5::h438::on() ? ::bc5::o438::now_ns() : 0;                                                \
+	const int      bc5_f438_ph_ = (s_).f438.holder.load(std::memory_order_relaxed), bc5_f438_pw_ = (s_).f438.why.load(std::memory_order_relaxed), bc5_f438_pp_ = (s_).f16_phase.load(std::memory_order_relaxed); \
+	std::lock_guard order((s_).flush_mu);                                                                                          \
+	const ::bc5::f438::Hold bc5_f438_hold_((s_).f438, (why_), (foreign_), bc5_f438_t0_, bc5_f438_ph_, bc5_f438_pw_, bc5_f438_pp_)
 #endif

@@ -122,7 +122,8 @@ fn main() {
             eprintln!("bc5-mount: {e}");
             std::process::exit(2);
         }
-        eprintln!("bc5-mount: {e}");
+        // The whole cause chain ({:#}): exp 0439's failed verify printed only "installing <image>".
+        eprintln!("bc5-mount: {e:#}");
         std::process::exit(1);
     }
 }
@@ -417,10 +418,11 @@ fn install(path: &Path, dest: &Path, resume: bool, verify: bool) -> anyhow::Resu
     let info = bc5_mount::install::install(path, dest, resume, verify)
         .with_context(|| format!("installing {}", path.display()))?;
     println!(
-        "installed {} files, {} bytes to {}",
+        "installed {} files, {} bytes to {} ({} kept from an earlier run)",
         info.file_count,
         info.total_bytes,
-        dest.display()
+        dest.display(),
+        info.files_kept
     );
     if verify {
         println!("verification passed");
@@ -530,6 +532,7 @@ fn adopt(path: &Path, dest: &Path, verify: bool) -> anyhow::Result<()> {
     let info = bc5_mount::install::InstallInfo {
         file_count,
         total_bytes,
+        files_kept: file_count,
         hashes,
     };
 

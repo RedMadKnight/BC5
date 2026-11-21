@@ -1,0 +1,6 @@
+r438 (exp 0438, b438): t 362.5 s: slices 142844, early writes 3406219, early writes that never reached the ring 0; game-thread waits for an early writer 33637, 17063.5 ms in all, longest 32.129 ms, bug lines (over 100 ms) 0
+r438 (exp 0438, b438): t 422.5 s: slices 160250, early writes 3828524, early writes that never reached the ring 0; game-thread waits for an early writer 36911, 18994.5 ms in all, longest 32.129 ms, bug lines (over 100 ms) 0
+r438 (exp 0438, b438): t 361.5 s: slices 136379, early writes 3274129, early writes that never reached the ring 0; game-thread waits for an early writer 32961, 16950.1 ms in all, longest 37.679 ms, bug lines (over 100 ms) 0
+r438 (exp 0438, b438): t 421.5 s: slices 157460, early writes 3772700, early writes that never reached the ring 0; game-thread waits for an early writer 37204, 19558.8 ms in all, longest 37.679 ms, bug lines (over 100 ms) 0
+r438 (exp 0438, b438): t 361.5 s: slices 141972, early writes 3401721, early writes that never reached the ring 0; game-thread waits for an early writer 34600, 17023.0 ms in all, longest 46.600 ms, bug lines (over 100 ms) 0
+r438 (exp 0438, b438): t 421.6 s: slices 159575, early writes 3831796, early writes that never reached the ring 0; game-thread waits for an early writer 37839, 18986.5 ms in all, longest 46.600 ms, bug lines (over 100 ms) 0

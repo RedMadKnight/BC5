@@ -1,0 +1,9 @@
+chain0438l 07:32:14: play 300 s, order F P P; lean d4d2ab82, normal 8f622148; runner 7c6da668; kernel 7.3.3-ogc1.1.fc45.x86_64; boot eb264b8c
+chain0438l 07:32:14: GPU timeout/reset lines since boot at the chain's start: 0
+chain0438l 07:32:14: run b438F344, arm F, d5f1a175
+chain0438l 07:39:35: b438F344: NO_CRASH; diagnosis run: no fps or frame time reported (lean-only rule); pad keys 0
+chain0438l 07:39:55: run b438P345, arm P, 90cc275a
+chain0438l 07:47:19: b438P345: NO_CRASH; diagnosis run: no fps or frame time reported (lean-only rule); pad keys 0
+chain0438l 07:47:39: run b438P346, arm P, 90cc275a
+chain0438l 07:55:04: b438P346: NO_CRASH; diagnosis run: no fps or frame time reported (lean-only rule); pad keys 0
+chain0438l 07:55:24: chain ended
