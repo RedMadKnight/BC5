@@ -44,6 +44,24 @@ environment (no build) against a control without them. Read: MangoHud median/p95
 `RUN_EXTRA` (each word checked as `NAME=value` with no shell characters; stand-in: the arm's words reach the env line,
 the control's line has none, `X=1;rm` is refused).
 
-**Result.** (to come)
+**Result.**
+
+1. *The second title removed (2026-11-21 09:11:56).* The NAS `game.pkg` md5 MATCH (PPSA03671, 101,814,213,551 bytes);
+   the tar's 142 files equal the inventory's; `bc5-mount uninstall` freed 196,702,616,991 bytes in 321 entries; the save
+   inventory (536 md5 lines) equal before and after; no second-title shortcut and no mount cache existed. Free on `/var`:
+   272,036,065,280 bytes. `check2`'s and `uninstall2`'s `pipefail` stops after `head`/`du` were fixed in the script.
+2. *The third title installed and verified (11:32:01).* PPSA26344, image `debug`, 95,402 files (95,383 in the tree and
+   19 `sce_sys` files of the package), 197,764,242,507 bytes. Three `bc5-mount` bugs on the way, each fixed with a test
+   (F873): the first install was OOM-killed at 10,286 files (anon-rss 8.0 GB, peak 12.9 G + 6.9 G swap: the decode
+   cache was sized in blocks of the first block's size, `19f84a41`); the resumed install under `MemoryMax=4G` wrote all
+   files but its `--verify` failed with no cause shown (kept files had no expected hash; main printed only the top
+   context, `1332dbbf`); the next resume was refused for free space (every file counted, `91cbf0c3`). The last run
+   (`install3d`, binary `1aa3866a`) hashed every file from the package and from disk: verification passed, record
+   written, 47 min, memory peak 4 G. fakelib has libSceAgc, libSceAgcDriver, libScePsml. Free on `/var`: 84,171,689,984.
+3. *The shared `bc5-mount` swapped to `1aa3866a` (11:32:50),* the top session's decision; `fa03feda` kept as
+   `bc5-mount.pre0439`; `--version` 0.1.0, `inspect` of the package and a dry uninstall of the installed title read
+   correctly.
+
+(first runs to come)
 
 **Verdict.** (to come)
