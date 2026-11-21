@@ -77,6 +77,15 @@ collect)
   ls -t "$HOME/bc5-data/captures/devcoredump/" 2>/dev/null | head -n 3 > "$out/devcd-latest.txt" || true
   echo "amdgpu timeout/reset lines after: $(resets)" >> "$out/meta.txt"
   journalctl -k -b 0 --no-pager -S "$(sed -n 's/.* start \(.*\)$/\1/p' "$out/meta.txt" | head -n1)" > "$out/kernel.txt" 2>&1 || true
+  # A killed or timed-out run can leave a dead FUSE endpoint in the ubuntu container's mount namespace, invisible on the
+  # host (exp 0438's ASTRO BOT starts at 12:58 and 13:00 failed on one, left by this experiment's a1 at 12:43). A mount
+  # that is a mountpoint but whose sce_sys/param.json cannot be read is unmounted, in the container and on the host;
+  # a live mount is never touched.
+  for where in container host; do
+    if [ $where = container ]; then run_in() { distrobox enter ubuntu -- bash -c "$1"; }; else run_in() { bash -c "$1"; }; fi
+    run_in 'for d in "$HOME"/bc5-data/mnt/*; do [ -d "$d" ] || continue; if mountpoint -q "$d" && ! [ -s "$d/sce_sys/param.json" ]; then echo "dead mount $d: unmounted"; fusermount3 -u "$d" 2>&1 || fusermount3 -u -z "$d" 2>&1; fi; done' 2>&1 \
+      | sed "s/^/$where: /" >> "$out/meta.txt" || true
+  done
   echo "end $(date '+%F %T')" >> "$out/meta.txt"; free -b >> "$out/meta.txt"
   tail -n 3 "$out/$(basename "$LOGF")" 2>/dev/null || true
   ;;

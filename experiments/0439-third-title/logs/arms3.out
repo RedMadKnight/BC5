@@ -1,0 +1,26 @@
+2026-11-21 13:05:36 lock taken: exp0439 2026-11-21 13:05:36 third title
+started unit bc5-0439-a0 (max 30 s); when it ends: run0439.sh collect normal a0
+== a0: 21 -> 21 reset lines; extra: 
+   flips: 1
+[bc5] exp 0439 (tag dc439): t 1.532 s index 2 presented as plain without a pass: keys all 0x00 (clear 0000) and the surface all zero
+cpu-wait WAIT_REG_MEM at 852 on 0x20104cd100: TIMEOUT after 2000.0 ms
+[bc5-q] queue 1/3/0/0x19: deferred 22.0 s, 4 dwords pending, 0 ready in front; the first unready buffer (1026 dwords at 0x201032c280) waits at 181 on 0x20104aa630: function 3, value 0x0, reference 0x1
+cpu-wait WAIT_REG_MEM at 0 on 0x20104aa630: TIMEOUT after 2000.1 ms
+	mutex init: SceLibc_Atexit, 0
+started unit bc5-0439-a1 (max 30 s); when it ends: run0439.sh collect normal a1
+== a1: 21 -> 21 reset lines; extra:  BC5_DIRECT_ACB_RINGS=0
+   flips: 1
+[bc5] exp 0439 (tag dc439): t 1.419 s index 2 presented as plain without a pass: keys all 0x00 (clear 0000) and the surface all zero
+[bc5-q] queue 1/3/0/0x19: deferred 22.0 s, 4 dwords pending, 0 ready in front; the first unready buffer (1026 dwords at 0x201032c280) waits at 181 on 0x20104aa630: function 3, value 0x0, reference 0x1
+cpu-wait WAIT_REG_MEM at 0 on 0x20104aa630: TIMEOUT after 2000.0 ms
+cpu-wait WAIT_REG_MEM at 70 on 0x20000081e0: TIMEOUT after 2000.1 ms
+	mutex init: SceLibc_Atexit, 0
+started unit bc5-0439-a2 (max 30 s); when it ends: run0439.sh collect normal a2
+== a2: 21 -> 21 reset lines; extra:  BC5_0438_EARLYREG=0
+   flips: 1
+[bc5] exp 0439 (tag dc439): t 1.412 s index 2 presented as plain without a pass: keys all 0x00 (clear 0000) and the surface all zero
+[bc5-q] queue 1/3/0/0x19: deferred 22.0 s, 4 dwords pending, 0 ready in front; the first unready buffer (1026 dwords at 0x201032c280) waits at 181 on 0x20104aa630: function 3, value 0x0, reference 0x1
+cpu-wait WAIT_REG_MEM at 0 on 0x20104aa630: TIMEOUT after 2000.1 ms
+cpu-wait WAIT_REG_MEM at 70 on 0x20000081e0: TIMEOUT after 2000.1 ms
+	mutex init: SceLibc_Atexit, 0
+2026-11-21 13:07:24 lock dropped

@@ -189,14 +189,31 @@ export XDG_RUNTIME_DIR=/run/user/$(id -u) WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-way
 
 mkdir -p "$M" "$KYTY_BC5_SAVEDATA_DIR"
 MP=""
+# exp 0439 (2026-11-21): a dead FUSE endpoint (its bc5-mount killed: exp 0438's ASTRO BOT starts at 12:58 and 13:00
+# failed on one in the ubuntu container, "Transport endpoint is not connected") still passes `mountpoint -q`, while every
+# read through it fails. A mount counts only when the game's sce_sys/param.json reads non-empty; a dead one is unmounted
+# (lazily if it must be) before a new mount, and a failure says so by name. tools/scripts/launchers/test-mount-live.sh.
+# --- mount (exp 0439) ---
+mount_live() { mountpoint -q "$1" && [ -s "$1/sce_sys/param.json" ]; }
+mount_clear_dead() { # $1 mountpoint, $2 log
+  mountpoint -q "$1" || return 0
+  mount_live "$1" && return 0
+  echo "$(date '+%F %T') dead mount at $1 (param.json not readable): unmounted" >> "$2"
+  fusermount3 -u "$1" 2>> "$2" || fusermount3 -u -z "$1" 2>> "$2"
+  ! mountpoint -q "$1"
+}
 if [ -n "${BC5_GAME_DIR:-}" ]; then M=$BC5_GAME_DIR  # exp 0409/0413: an unpacked game dir, no bc5-mount
-elif ! mountpoint -q "$M"; then
-  # 2026-10-25 (the maintainer's yes; exp 0288, F353): glibc's malloc arenas capped at 2 for the mount, ~100 MiB less, loads not slower.
-  MALLOC_ARENA_MAX=2 "$BM" mount "$PKG" "$M" > "$MLOG" 2>&1 &
-  MP=$!
-  for _ in $(seq 1 300); do mountpoint -q "$M" && break; sleep 0.2; done
+else
+  mount_clear_dead "$M" "$MLOG" || { say "A dead mount at $M could not be removed (fusermount3 -u -z failed)."; exit 1; }
+  if ! mount_live "$M"; then
+    # 2026-10-25 (the maintainer's yes; exp 0288, F353): glibc's malloc arenas capped at 2 for the mount, ~100 MiB less, loads not slower.
+    MALLOC_ARENA_MAX=2 "$BM" mount "$PKG" "$M" > "$MLOG" 2>&1 &
+    MP=$!
+    for _ in $(seq 1 300); do mount_live "$M" && break; sleep 0.2; done
+  fi
 fi
-[ -n "${BC5_GAME_DIR:-}" ] || mountpoint -q "$M" || { say "Mounting the package failed (see $MLOG; with BC5_LEAN=1 run with BC5_LOGS=1 to keep it)."; exit 1; }
+[ -n "${BC5_GAME_DIR:-}" ] || mount_live "$M" || { say "Mounting the package failed: $M/sce_sys/param.json is not readable (see $MLOG; with BC5_LEAN=1 run with BC5_LOGS=1 to keep it)."; exit 1; }
+# --- end mount ---
 # 2026-10-25 (the maintainer's yes): a failed unmount no longer hangs the launcher (exp 0301's T1 waited an hour):
 # retry, then a lazy unmount, log the failure, and wait for bc5-mount at most 10 s.
 cleanup() {
