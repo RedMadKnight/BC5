@@ -23,6 +23,10 @@ submit, ho430's F10/F16/F18 wait for the queued writer only up to their bounds (
       chain writes the label (q438_writer_queued), so the acb is deferred as for any unready wait;
   NG2 acb_ready calls it;
   NG3 q438_writer_queued in the q438 block.
+ng438 (normal build only): counts of BC5_0438_INFLIGHT_NG's gate (holds, longest, releases after the writer's registration,
+  releases by the 10-s fallback with a BUG line, busy tries) and a 60-s line while the switch is on.
+wd438 (normal build only, any switch): the last 256 acb wait decisions with the label's writer state, appended to the
+  fault record's journal-tail.txt as "wd438:" lines.
 inflight_ng (BC5_0438_INFLIGHT_NG, off unless "1"): the same window without the queue. A game thread's chain taken and in
 its submit_now (kernel call in flight) has its writes only in f10_flight until it returns; bc5-ring's acb_ready then
 passes a stale value. acb_wait_unready also holds the acb while any registered slot has the label in flight, or an early
@@ -192,6 +196,226 @@ rep("// ---- end of exp 0438 (tag q438) ---",
     "\treturn in;\n"
     "}\n"
     "// ---- end of exp 0438 (tag q438) ---")
+
+# ---- ng438 + wd438 (follow-up steps on the generated text; normal build only, #ifndef BC5_LEAN) ---------------------------
+# ng438: what BC5_0438_INFLIGHT_NG's gate does, counted, with a 60-s line while the switch is on (zeros when nothing was held).
+# wd438: the last 256 acb wait decisions (bc5-ring's gate, after ho430::at_wait, kept for the GPU, met at submit / served /
+# given up), each with the writer state of its label at that moment; appended to the fault record's journal-tail.txt.
+OLD_UNREADY = (
+    "static bool acb_wait_unready(const uint32_t* p, bool is64, uint64_t label, int ring) {\n"
+    "\tif (!wait_satisfied(p, is64) && !ring_will_satisfy(p, is64, ring)) return true;\n"
+    "\tif (inflight_ng_on() && inflight_ng_writer(label)) return true; // exp 0438 (inflight_ng): a writer taken, not yet registered for real\n"
+    "\treturn q438_on() && q438_writer_queued(label);\n"
+    "}\n")
+NEW_UNREADY = r'''#ifndef BC5_LEAN
+// exp 0438 (tag ng438): what BC5_0438_INFLIGHT_NG's gate does (normal build only). A hold is per label, from its first
+// held test to the first test that finds no writer in flight (a release after the writer's registration) or to the queue
+// consumer's 10-s fallback (a release with a BUG line, compare-only). Busy: a try of the registry or a slot that failed.
+static std::mutex                   g_ng438_mu;
+static std::map<uint64_t, uint64_t> g_ng438_held; // label -> its first hold (ns)
+static std::atomic<uint64_t>        g_ng438_holds {0}, g_ng438_rel {0}, g_ng438_fb {0}, g_ng438_busy {0}, g_ng438_max {0};
+static void ng438_note(uint64_t label, bool in) {
+	const uint64_t  now = SoftCp::now_ns();
+	std::lock_guard lk(g_ng438_mu);
+	const auto      it = g_ng438_held.find(label);
+	if (in) {
+		if (it == g_ng438_held.end()) {
+			g_ng438_held.emplace(label, now);
+			g_ng438_holds++;
+		}
+		return;
+	}
+	if (it == g_ng438_held.end()) return;
+	const uint64_t d = now - it->second;
+	for (uint64_t m = g_ng438_max.load(); d > m && !g_ng438_max.compare_exchange_weak(m, d);) {
+	}
+	g_ng438_rel++;
+	g_ng438_held.erase(it);
+}
+static void ng438_fallback(uint64_t label) { // the queue consumer let an unready acb go after 10 s
+	uint64_t held = 0;
+	{
+		std::lock_guard lk(g_ng438_mu);
+		const auto      it = g_ng438_held.find(label);
+		if (it == g_ng438_held.end()) return;
+		held = SoftCp::now_ns() - it->second;
+		g_ng438_held.erase(it);
+	}
+	const uint64_t k = g_ng438_fb++;
+	journal("ng438 (exp 0438, inflight_ng): BUG: the acb waiting on 0x%" PRIx64 " went by the 10-s fallback after %.1f ms held for a writer in flight (%" PRIu64 " so far)\n", label, static_cast<double>(held) / 1e6, k + 1);
+}
+static void ng438_line() {
+	journal("ng438 (exp 0438, inflight_ng): t %.1f s: acbs held for a writer in flight %" PRIu64 ", longest %.3f ms, released after the writer's registration %" PRIu64 ", by the 10-s fallback %" PRIu64 "; busy registry or slot %" PRIu64 "\n",
+	        timing_now(), g_ng438_holds.load(), static_cast<double>(g_ng438_max.load()) / 1e6, g_ng438_rel.load(), g_ng438_fb.load(), g_ng438_busy.load());
+}
+static void ng438_tick() { // from register_label_writes: every 60 s while BC5_0438_INFLIGHT_NG=1
+	if (!inflight_ng_on()) return;
+	static std::atomic<uint64_t> last {0};
+	const uint64_t               now = SoftCp::now_ns();
+	uint64_t                     l   = last.load();
+	if (l == 0) {
+		last.compare_exchange_strong(l, now);
+		return;
+	}
+	if (now - l < 60'000'000'000ull || !last.compare_exchange_strong(l, now)) return;
+	ng438_line();
+}
+#endif
+// exp 0438 (q438ng, inflight_ng, wd438): ib / n / off: the acb and the wait's offset, for wd438's record (acb_ready's call).
+static bool acb_wait_unready(const uint32_t* p, bool is64, uint64_t label, int ring, const uint32_t* ib = nullptr, uint32_t n = 0, uint32_t off = 0) {
+	bool unready = !wait_satisfied(p, is64) && !ring_will_satisfy(p, is64, ring);
+	if (!unready && inflight_ng_on()) { // exp 0438 (inflight_ng): a writer taken, not yet registered for real
+		const bool in = inflight_ng_writer(label);
+#ifndef BC5_LEAN
+		ng438_note(label, in);
+#endif
+		unready = in;
+	}
+	if (!unready) unready = q438_on() && q438_writer_queued(label);
+#ifndef BC5_LEAN
+	wd438_record(ib, n, off, p, is64, label, unready ? 0 : 1); // exp 0438 (wd438): bc5-ring's gate
+#else
+	(void)ib;
+	(void)n;
+	(void)off;
+#endif
+	return unready;
+}
+'''
+rep(OLD_UNREADY, NEW_UNREADY)
+rep("acb_wait_unready(p, op == 0x93, label, ring)) { // exp 0438 (q438ng)\n",
+    "acb_wait_unready(p, op == 0x93, label, ring, ib, num_dwords, i)) { // exp 0438 (q438ng)\n")
+rep("static std::atomic<uint64_t> g_inflight_ng {0}; // exp 0438 (inflight_ng): acb waits held for a writer in flight\n",
+    "static std::atomic<uint64_t> g_inflight_ng {0}; // exp 0438 (inflight_ng): acb waits held for a writer in flight\n"
+    "#ifndef BC5_LEAN\n"
+    "static void ng438_fallback(uint64_t label); // exp 0438 (ng438), defined before acb_ready\n"
+    "static void wd438_record(const uint32_t* ib, uint32_t n, uint32_t off, const uint32_t* p, bool is64, uint64_t label, int decision); // exp 0438 (wd438)\n"
+    "static void wd438_dump(const std::string& path);\n"
+    "#endif\n")
+rep("\tif (!g_f10_reg_mu.try_lock()) return true;\n\tbool in = false;\n",
+    "\tif (!g_f10_reg_mu.try_lock()) {\n#ifndef BC5_LEAN\n\t\tg_ng438_busy++; // exp 0438 (ng438)\n#endif\n\t\treturn true;\n\t}\n\tbool in = false;\n")
+rep("\t\tif (!cs->mu.try_lock()) {\n\t\t\tin = true;\n",
+    "\t\tif (!cs->mu.try_lock()) {\n#ifndef BC5_LEAN\n\t\t\tg_ng438_busy++; // exp 0438 (ng438)\n#endif\n\t\t\tin = true;\n")
+WD = r'''#ifndef BC5_LEAN
+// exp 0438 (tag wd438): the last 256 acb wait decisions with the writer state of the label at that moment (normal build,
+// whatever BC5_0438_INFLIGHT_NG is). Decisions: 0 deferred at bc5-ring's gate, 1 met at the gate, 2 after ho430::at_wait,
+// 3 kept for the GPU, 4 met at submit (the filter drops it), 5 served on the CPU, 6 given up. The ring is written without a
+// lock (an atomic index; a reader may see a torn entry, its seq tells); a thread skips a repeat of one of its last 16
+// (wait, decision) pairs, so bc5-ring's 1-kHz polls of a deferred acb do not flood it.
+struct Wd438 {
+	std::atomic<uint64_t> seq {0}; // 0: being written
+	uint64_t              t = 0, label = 0, ref = 0, value = 0;
+	const uint32_t*       ib = nullptr;
+	uint32_t              n = 0, off = 0, func = 0;
+	int                   decision = 0, slots = 0, phase[2] = {-1, -1};
+	bool                  early = false, busy = false;
+};
+static Wd438                 g_wd438[256];
+static std::atomic<uint64_t> g_wd438_n {0};
+static void wd438_record(const uint32_t* ib, uint32_t n, uint32_t off, const uint32_t* p, bool is64, uint64_t label, int decision) {
+	static thread_local const uint32_t* last_p[16] = {};
+	static thread_local int             last_d[16] = {};
+	static thread_local unsigned        last_k     = 0;
+	for (unsigned k = 0; k < 16; k++)
+		if (last_p[k] == p && last_d[k] == decision) return;
+	last_p[last_k & 15u] = p;
+	last_d[last_k & 15u] = decision;
+	last_k++;
+	bool early = false, busy = false;
+	int  slots = 0, phase[2] = {-1, -1};
+	{
+		std::lock_guard lk(g_plw_mutex);
+		for (const auto& w: g_plw)
+			if (w.label == label && (w.seq & kR438Early) != 0) early = true;
+	}
+	if (g_f10_reg_mu.try_lock()) {
+		for (ChainSlot* cs: g_f10_reg) {
+			if (!cs->mu.try_lock()) {
+				busy = true;
+				continue;
+			}
+			if (std::find(cs->f10_flight.begin(), cs->f10_flight.end(), label) != cs->f10_flight.end()) {
+				if (slots < 2) phase[slots] = cs->f16_phase.load();
+				slots++;
+			}
+			cs->mu.unlock();
+		}
+		g_f10_reg_mu.unlock();
+	} else {
+		busy = true;
+	}
+	const uint64_t k = g_wd438_n.fetch_add(1);
+	Wd438&         e = g_wd438[k & 255u];
+	e.seq.store(0);
+	e.t        = SoftCp::now_ns();
+	e.ib       = ib;
+	e.n        = n;
+	e.off      = off;
+	e.label    = label;
+	e.func     = p[1] & 7u;
+	e.ref      = is64 ? (p[4] | (static_cast<uint64_t>(p[5]) << 32u)) : p[4];
+	e.value    = is64 ? *reinterpret_cast<const volatile uint64_t*>(label & ~7ull) : *reinterpret_cast<const volatile uint32_t*>(label & ~3ull);
+	e.decision = decision;
+	e.early    = early;
+	e.busy     = busy;
+	e.slots    = slots;
+	e.phase[0] = phase[0];
+	e.phase[1] = phase[1];
+	e.seq.store(k + 1);
+}
+static void wd438_dump_to(FILE* f) { // oldest first, newest last
+	static const char* const kDec[7] = {"deferred at the gate", "met at the gate", "after at_wait", "kept for the GPU", "met at submit (dropped)", "served on the CPU", "given up"};
+	const uint64_t           n0      = g_wd438_n.load();
+	for (uint64_t k = n0 > 256 ? n0 - 256 : 0; k < n0; k++) {
+		const Wd438&   e = g_wd438[k & 255u];
+		const uint64_t s = e.seq.load();
+		if (s != k + 1) {
+			std::fprintf(f, "wd438: #%" PRIu64 " (being written or overwritten)\n", k + 1);
+			continue;
+		}
+		std::fprintf(f, "wd438: #%" PRIu64 " t %.6f s acb %p +%u of %u dwords: wait on 0x%" PRIx64 " function %u reference 0x%" PRIx64 ", memory 0x%" PRIx64 ": %s; writer in flight %d (early entry %d, slots %d, phase %d/%d%s)\n",
+		             s, static_cast<double>(e.t) / 1e9, static_cast<const void*>(e.ib), e.off, e.n, e.label, e.func, e.ref, e.value, e.decision >= 0 && e.decision < 7 ? kDec[e.decision] : "?",
+		             e.early || e.slots > 0 ? 1 : 0, e.early ? 1 : 0, e.slots, e.phase[0], e.phase[1], e.busy ? ", a slot or the registry was busy" : "");
+	}
+}
+static void wd438_dump(const std::string& path) { // appended to the fault record's journal-tail.txt
+	FILE* f = std::fopen(path.c_str(), "a");
+	if (f == nullptr) return;
+	std::fprintf(f, "\nwd438 (exp 0438): the last %" PRIu64 " acb wait decisions, newest last\n", std::min<uint64_t>(g_wd438_n.load(), 256));
+	wd438_dump_to(f);
+	std::fclose(f);
+}
+#endif
+// ---- end of exp 0438 (tag q438) ---'''
+rep("// ---- end of exp 0438 (tag q438) ---", WD)
+rep("\t\t\t\t\tLOGF_COLOR(Log::Color::Yellow, \"[bc5-q] queue %u/%u/%u/0x%x: cross-queue wait unsatisfied for 10 s, proceeding\\n\", q.a, q.b, q.c, q.d);\n",
+    "#ifndef BC5_LEAN\n"
+    "\t\t\t\t\tDirect::ng438_fallback(Direct::t_unready.label); // exp 0438 (ng438): a hold of BC5_0438_INFLIGHT_NG let go here gets a BUG line\n"
+    "#endif\n"
+    "\t\t\t\t\tLOGF_COLOR(Log::Color::Yellow, \"[bc5-q] queue %u/%u/%u/0x%x: cross-queue wait unsatisfied for 10 s, proceeding\\n\", q.a, q.b, q.c, q.d);\n")
+rep("static void register_label_writes(const uint32_t* ib, uint32_t num_dwords, const std::vector<uint32_t>& executed, uint64_t seq, int ring) {\n",
+    "static void register_label_writes(const uint32_t* ib, uint32_t num_dwords, const std::vector<uint32_t>& executed, uint64_t seq, int ring) {\n"
+    "#ifndef BC5_LEAN\n\tng438_tick(); // exp 0438 (ng438): its 60-s line while BC5_0438_INFLIGHT_NG=1\n#endif\n")
+rep("\t\t\t\t\tho430::at_wait(p, op == 0x93, label, kind, job_ring(kind), ib, num_dwords, i); // exp 0430 (tag ho430): F10, F2 + F4\n",
+    "\t\t\t\t\tho430::at_wait(p, op == 0x93, label, kind, job_ring(kind), ib, num_dwords, i); // exp 0430 (tag ho430): F10, F2 + F4\n"
+    "#ifndef BC5_LEAN\n"
+    "\t\t\t\t\tconst bool wd_acb  = kind != nullptr && std::strncmp(kind, \"acb\", 3) == 0; // exp 0438 (wd438)\n"
+    "\t\t\t\t\tconst bool wd_sat0 = wait_satisfied(p, op == 0x93);\n"
+    "\t\t\t\t\tif (wd_acb) wd438_record(ib, num_dwords, i, p, op == 0x93, label, 2);\n"
+    "#endif\n")
+rep("\t\t\t\t\t\tt_keep_waits.push_back(p);\n\t\t\t\t\t\tSoftCp::set_gpu_executed(p, len, {0});\n\t\t\t\t\t\tif (dry_here) g_dry_kept++;\n",
+    "#ifndef BC5_LEAN\n"
+    "\t\t\t\t\t\tif (wd_acb) wd438_record(ib, num_dwords, i, p, op == 0x93, label, 3); // exp 0438 (wd438)\n"
+    "#endif\n"
+    "\t\t\t\t\t\tt_keep_waits.push_back(p);\n\t\t\t\t\t\tSoftCp::set_gpu_executed(p, len, {0});\n\t\t\t\t\t\tif (dry_here) g_dry_kept++;\n")
+rep("\t\t\t\t\tif (!ok) t_wait_given_up = true;\n\t\t\t\t\tif (dry_here) (ok ? g_dry_ok : g_dry_failed)++;\n",
+    "#ifndef BC5_LEAN\n"
+    "\t\t\t\t\tif (wd_acb) wd438_record(ib, num_dwords, i, p, op == 0x93, label, ok ? (wd_sat0 ? 4 : 5) : 6); // exp 0438 (wd438)\n"
+    "#endif\n"
+    "\t\t\t\t\tif (!ok) t_wait_given_up = true;\n\t\t\t\t\tif (dry_here) (ok ? g_dry_ok : g_dry_failed)++;\n")
+rep("\tif (!g_dump_dir.empty()) fr412_copy(g_dump_dir + \"/direct.log\", dir + \"/journal-tail.txt\", 4l << 20);\n",
+    "\tif (!g_dump_dir.empty()) fr412_copy(g_dump_dir + \"/direct.log\", dir + \"/journal-tail.txt\", 4l << 20);\n"
+    "#ifndef BC5_LEAN\n\twd438_dump(dir + \"/journal-tail.txt\"); // exp 0438 (wd438): the last acb wait decisions\n#endif\n")
 
 out = s.encode('utf-8')
 open(OUT, 'wb').write(out)

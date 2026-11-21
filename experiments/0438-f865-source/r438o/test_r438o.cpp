@@ -113,6 +113,7 @@ static std::pair<uint32_t, uint32_t> ge_probe_range() { return {0, 0}; }
 #ifdef R438O_X
 #include "r_cov.inc"
 #include "r_lwm.inc"
+static void ng438_tick() {} // the q438ng block (ng438's 60-s line, only with BC5_0438_INFLIGHT_NG=1) is not cut here
 #endif
 #include "r_plw.inc"
 #include "r_reg.inc"

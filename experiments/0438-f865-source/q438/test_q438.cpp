@@ -1100,8 +1100,21 @@ static void det_ng(int o) {
 #else
 #define ACB_UNREADY(p, is64, label, ring) (!wait_satisfied(p, is64) && !ring_will_satisfy(p, is64, ring)) // acb_ready's test, unit ~7665
 #endif
+#ifdef Q438_X
+static const Wd438* wd438_last(uint64_t label, int decision) { // the newest complete wd438 entry for label with this decision
+	const uint64_t n0 = g_wd438_n.load();
+	for (uint64_t k = n0; k-- > (n0 > 256 ? n0 - 256 : 0);) {
+		const Wd438& e = g_wd438[k & 255u];
+		if (e.seq.load() == k + 1 && e.label == label && e.decision == decision) return &e;
+	}
+	return nullptr;
+}
+#endif
 static int run_inflight() {
 	constexpr int o = 21;
+#ifdef Q438_X
+	const uint64_t h0 = g_ng438_holds.load(), r0 = g_ng438_rel.load(), f0 = g_ng438_fb.load();
+#endif
 	g_labels[o]  = 1;
 	const char* ph = std::getenv("Q438_INFLIGHT_PHASE"); // 3 (default): holding the device; 1: GPU back-pressure
 	g_stub_phase   = ph != nullptr && ph[0] == '1' ? 1 : 3;
@@ -1149,12 +1162,61 @@ static int run_inflight() {
 		std::lock_guard lk(bc5::direct::g_deps_mu);
 		deps = bc5::direct::g_deps.size();
 	}
-	g_stub_phase = 0;
-	g_gated[o]   = false;
-	g_labels[o]  = 0;
+	const int phase_held = g_stub_phase.load();
+	g_stub_phase         = 0;
+	g_gated[o]           = false;
+	g_labels[o]          = 0;
 	bool fix = false;
 #ifdef Q438_X
 	fix = inflight_ng_on();
+	{ // wd438: bc5-ring's gate decision while the writer was in flight, with the label's writer state at that moment
+		const Wd438* e = wd438_last(L, fix ? 0 : 1);
+		std::printf("inflight, wd438's entry of the gate decision: %s\n", e == nullptr ? "MISSING" : "");
+		std::fflush(stdout);
+		if (e != nullptr) {
+			std::printf("   decision %s, memory 0x%" PRIx64 ", reference 0x%" PRIx64 ", writer in flight %d (early entry %d, slots %d, phase %d)\n", e->decision == 0 ? "deferred at the gate" : "met at the gate", e->value, e->ref,
+			            e->early || e->slots > 0 ? 1 : 0, e->early ? 1 : 0, e->slots, e->phase[0]);
+		}
+		CHECK(e != nullptr && e->slots == 1 && e->phase[0] == phase_held, "inflight: wd438 has no gate entry with the writer's slot in flight at phase %d", phase_held);
+	}
+	if (fix) { // ng438's counts for this hold, then a hold let go by the consumer's 10-s fallback (called as the consumer does)
+		const uint64_t dh = g_ng438_holds.load() - h0, dr = g_ng438_rel.load() - r0, df = g_ng438_fb.load() - f0;
+		std::printf("inflight, ng438: holds %" PRIu64 ", released after the registration %" PRIu64 ", by the fallback %" PRIu64 "\n", dh, dr, df);
+		CHECK(dh == 1 && dr == 1 && df == 0, "inflight: ng438 counted holds %" PRIu64 ", registration releases %" PRIu64 ", fallbacks %" PRIu64 " (want 1, 1, 0)", dh, dr, df);
+		constexpr int o2 = 22;
+		g_labels[o2]     = 1;
+		g_gated[o2]      = true;
+		g_pass[o2]       = 0;
+		uint32_t w2[9];
+		wait64(w2, label_of(o2), 1);
+		std::thread owner2([] {
+			BEGIN_OWNER(o2);
+			append(o2, 2);
+			chain_flush(1);
+			chain_flush(5);
+		});
+		for (const uint64_t ta = SoftCp::now_ns(); g_active[o2].load() != 1 && SoftCp::now_ns() - ta < 5'000'000'000ull;) std::this_thread::sleep_for(std::chrono::microseconds(200));
+		const int    held2 = ACB_UNREADY(w2, true, label_of(o2), 0) ? 1 : 0;
+		const size_t b0    = lines_with("went by the 10-s fallback");
+		ng438_fallback(label_of(o2)); // the queue consumer's 10-s branch (unit ~1682)
+		const size_t b1 = lines_with("went by the 10-s fallback") - b0;
+		g_pass[o2]      = 100;
+		owner2.join();
+		g_labels[o2] = 0;
+		const uint64_t df2 = g_ng438_fb.load() - f0;
+		ng438_line();
+		std::string line;
+		{
+			std::lock_guard lk(g_jm);
+			for (const auto& x: g_lines)
+				if (x.find("ng438 (exp 0438, inflight_ng): t ") != std::string::npos) line = x;
+		}
+		std::printf("inflight, ng438 fallback case: held %d, fallback releases %" PRIu64 ", BUG lines %zu\n   journal: %s", held2, df2, b1, line.c_str());
+		CHECK(held2 == 1 && df2 == 1 && b1 == 1, "inflight: the fallback case held %d, counted %" PRIu64 ", BUG lines %zu (want 1, 1, 1)", held2, df2, b1);
+		std::printf("inflight, wd438 (the last entries):\n");
+		std::fflush(stdout);
+		wd438_dump_to(stdout);
+	}
 #endif
 	std::printf("inflight (BC5_0438_INFLIGHT_NG %s): the gate with the writer in its submit_now: %s (%d, again after at_wait %d); after the writer's real registration: %s (%d), F4 dependencies %zu\n",
 	            fix ? "on" : "off", gate1 ? "HELD" : "passed", gate1, gate1b, gate2 ? "held" : "released", gate2, deps);
@@ -1165,6 +1227,168 @@ static int run_inflight() {
 	if (fix) {
 		CHECK(gate1 == 1 && gate1b == 1, "inflight: BC5_0438_INFLIGHT_NG=1 let the acb go (%d, %d) while its writer was in flight", gate1, gate1b);
 	}
+	return 0;
+}
+
+// ---- rings: a two-ring hang through ring order (any unit; BC5_0438_SUBMITQ off) ---------------------------------------------
+// The box's shape: acb A (compute) waits on L == 1 reading 0; dcb D (gfx) waits on M == 1 reading 0; neither writes the other's
+// label; A's writer W is on the gfx ring behind D. Jobs, in the order the host takes them:
+//   E  compute: M = 1                      (registered: D's wait on M is kept against it)
+//   D  gfx, a game thread's chain: waits M == 1, then N = 1   (taken, in its submit_now: not yet registered)
+//   X  compute acb: waits N == 1 (N holds last frame's 1), then M = 0   (the title orders X after D by N)
+//   W  gfx: L = 1
+//   A  compute acb: waits L == 1           (kept for the GPU against W on the gfx ring, w428)
+// The host's decisions are the real ones: ring_will_satisfy / wait_satisfied on g_plw, acb_ready's test (ACB_UNREADY),
+// ho430::at_wait's F4 kernel dependency. Then two simulated rings run the jobs in order (compute first, as a busy gfx ring
+// lets it): a WAIT blocks its ring while the memory differs, a job's pending writes go at its end (forget_label_writes).
+static uint64_t g_rlab_m = 0, g_rlab_l = 0; // M and L; N is owner 23's label
+struct SimOp {
+	bool      wait;
+	uint64_t* label;
+	uint64_t  v;
+};
+struct SimJob {
+	const char*            name;
+	int                    ring;
+	uint64_t               seq;
+	std::vector<SimOp>     ops;
+	std::vector<uint64_t>  deps; // F4: jobs (by seq) that must have ended first
+	size_t                 pc = 0;
+	bool                   done = false;
+};
+static std::vector<uint32_t> rel_buf(uint64_t* label, uint64_t v) {
+	const uint64_t a = reinterpret_cast<uintptr_t>(label);
+	return {0xC0064900u, 0x00000528u, 0x40010000u, static_cast<uint32_t>(a), static_cast<uint32_t>(a >> 32u), static_cast<uint32_t>(v), static_cast<uint32_t>(v >> 32u), 0};
+}
+static void register_job(const SimJob& j) { // its writes, as submit_now registers them
+	for (const auto& op: j.ops)
+		if (!op.wait) {
+			const std::vector<uint32_t> b = rel_buf(op.label, op.v);
+			register_label_writes(b.data(), 8, {0}, j.seq, j.ring);
+		}
+}
+static int run_rings() {
+	constexpr int o = 23;
+	uint64_t*     N = &g_labels[o];
+	g_rlab_m = 0;
+	g_rlab_l = 0;
+	*N       = 1; // last frame's value
+	g_stub_phase = 3;
+	g_gated[o]   = true;
+	g_pass[o]    = 0;
+	std::vector<SimJob> jobs;
+	auto                wait_pkt = [](uint64_t* label, uint64_t v, uint32_t* w) { wait64(w, reinterpret_cast<uintptr_t>(label), v); };
+	uint32_t            w[9];
+	// E
+	jobs.push_back({"E", 0, 9001, {{false, &g_rlab_m, 1}}, {}});
+	register_job(jobs.back());
+	// D: its wait on M decided (by the game thread, before its submit_now), then taken and held in submit_now
+	wait_pkt(&g_rlab_m, 1, w);
+	const bool d_kept = !wait_satisfied(w, true) && ring_will_satisfy(w, true, bc5::direct::kGfxRing);
+	std::thread owner([] {
+		BEGIN_OWNER(o);
+		append(o, 1); // writes N = 1 (the stub registers it at the gate's release)
+		chain_flush(1);
+		chain_flush(5);
+	});
+	for (const uint64_t ta = SoftCp::now_ns(); g_active[o].load() != 1 && SoftCp::now_ns() - ta < 5'000'000'000ull;) std::this_thread::sleep_for(std::chrono::microseconds(200));
+	// X on bc5-ring (this thread: not a game thread)
+	wait_pkt(N, 1, w);
+	const int  x_gate1 = ACB_UNREADY(w, true, reinterpret_cast<uintptr_t>(N), 0) ? 1 : 0;
+	bool       d_released = false;
+	uint64_t   d_seq      = 0;
+	auto       release_d  = [&] {
+        g_pass[o] = 100;
+        owner.join();
+        d_released = true;
+        std::lock_guard lk(g_plw_mutex);
+        for (const auto& e: g_plw)
+            if (e.label == reinterpret_cast<uintptr_t>(N) && (e.seq & kR438Early) == 0) d_seq = e.seq;
+	};
+	int x_gate2 = x_gate1;
+	if (x_gate1) { // held: the next poll after the writer's registration
+		release_d();
+		x_gate2 = ACB_UNREADY(w, true, reinterpret_cast<uintptr_t>(N), 0) ? 1 : 0;
+	}
+	{
+		std::lock_guard lk(bc5::direct::g_deps_mu);
+		bc5::direct::g_deps.clear();
+	}
+	ho430::at_wait(w, true, reinterpret_cast<uintptr_t>(N), "acb", 0, w, 9, 0); // F10/F16/F18, then F2/F4
+	std::vector<uint64_t> x_deps;
+	{
+		std::lock_guard lk(bc5::direct::g_deps_mu);
+		for (const auto& [r, s]: bc5::direct::g_deps) x_deps.push_back(s);
+	}
+	const bool x_met = wait_satisfied(w, true); // met at submit: the filter drops the wait
+	jobs.push_back({"X", 0, 9002, {{true, N, 1}, {false, &g_rlab_m, 0}}, x_deps});
+	if (x_met) jobs.back().ops.erase(jobs.back().ops.begin());
+	register_job(jobs.back());
+	if (!d_released) release_d();
+	jobs.push_back({"D", bc5::direct::kGfxRing, d_seq, {{true, &g_rlab_m, 1}, {false, N, 1}}, {}});
+	if (!d_kept) jobs.back().ops.erase(jobs.back().ops.begin());
+	// W
+	jobs.push_back({"W", bc5::direct::kGfxRing, 9003, {{false, &g_rlab_l, 1}}, {}});
+	register_job(jobs.back());
+	// A on bc5-ring: the gate, then the submit stage's keep test
+	wait_pkt(&g_rlab_l, 1, w);
+	const int  a_gate = ACB_UNREADY(w, true, reinterpret_cast<uintptr_t>(&g_rlab_l), 0) ? 1 : 0;
+	const bool a_kept = !wait_satisfied(w, true) && ring_will_satisfy(w, true, 0);
+	jobs.push_back({"A", 0, 9004, {{true, &g_rlab_l, 1}}, {}});
+	register_job(jobs.back());
+	g_stub_phase = 0;
+	g_gated[o]   = false;
+	// the two rings, in order; the compute ring first each round
+	auto ended = [&](uint64_t seq) {
+		for (const auto& j: jobs)
+			if (j.seq == seq) return j.done;
+		return true;
+	};
+	for (bool moved = true; moved;) { // each round: the compute ring until it blocks (a busy gfx ring), then one gfx job
+		moved = false;
+		for (int ring: {0, 0, 0, 0, 0, 0, 0, 0, bc5::direct::kGfxRing}) {
+			for (auto& j: jobs) {
+				if (j.ring != ring || j.done) continue;
+				bool blocked = false;
+				for (uint64_t d: j.deps)
+					if (!ended(d)) blocked = true;
+				while (!blocked && j.pc < j.ops.size()) {
+					const SimOp& op = j.ops[j.pc];
+					if (op.wait && *op.label != op.v) {
+						blocked = true;
+						break;
+					}
+					if (!op.wait) *op.label = op.v;
+					j.pc++;
+					moved = true;
+				}
+				if (!blocked) {
+					j.done = true;
+					moved  = true;
+					std::lock_guard lk(g_plw_mutex); // forget_label_writes: its pending writes end with it
+					std::erase_if(g_plw, [&j](const PendingLabelWrite& e) { return e.seq == j.seq && e.ring == j.ring; });
+				}
+				break; // a ring runs its first unfinished job only
+			}
+		}
+	}
+	bool fix = false;
+#ifdef Q438_X
+	fix = inflight_ng_on();
+#endif
+	std::printf("rings (BC5_0438_INFLIGHT_NG %s): D's wait on M kept %d; X's gate with D in flight %s, then %d; X's F4 dependencies %zu; X's wait met at submit (dropped) %d; A's gate %s, kept for the GPU %d\n",
+	            fix ? "on" : "off", d_kept ? 1 : 0, x_gate1 ? "HELD" : "passed", x_gate2, x_deps.size(), x_met ? 1 : 0, a_gate ? "held" : "passed", a_kept ? 1 : 0);
+	bool hung = false;
+	for (const auto& j: jobs) {
+		if (j.done) continue;
+		hung = true;
+		const SimOp* op = j.pc < j.ops.size() ? &j.ops[j.pc] : nullptr;
+		std::printf("   %s on the %s ring is stuck%s", j.name, j.ring == bc5::direct::kGfxRing ? "gfx" : "compute", op != nullptr && op->wait ? "" : " behind a dependency or a job ahead\n");
+		if (op != nullptr && op->wait) std::printf(" at its wait on %s == %" PRIu64 ", which reads %" PRIu64 "\n", op->label == &g_rlab_m ? "M" : (op->label == &g_rlab_l ? "L" : "N"), op->v, *op->label);
+	}
+	std::printf("rings: %s\n", hung ? "THE TWO-RING HANG (both rings stuck through ring order)" : "every job ran");
+	CHECK(!(fix && hung), "rings: BC5_0438_INFLIGHT_NG=1 did not prevent the two-ring hang");
+	*N = 0;
 	return 0;
 }
 
@@ -1204,6 +1428,7 @@ int main(int argc, char** argv) {
 	}
 	if (mode == "random") run_random(q_on);
 	else if (mode == "inflight") run_inflight();
+	else if (mode == "rings") run_rings();
 #ifdef Q438_NEW
 	else if (mode == "det") {
 		if (!q_on) {

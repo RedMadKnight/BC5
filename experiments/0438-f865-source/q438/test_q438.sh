@@ -55,13 +55,18 @@ export BC5_DIRECT_CHAIN=2
 inflight() { # the stale-value window without the queue (BC5_0438_SUBMITQ unset), on the input unit and the new one
 	echo "== 5. inflight, BC5_0438_SUBMITQ unset"
 	echo "   input unit:"; (unset BC5_0438_SUBMITQ BC5_0438_INFLIGHT_NG; "$out/old/tq.exe" inflight) | sed 's/^/   /'
+	echo "   input unit, rings:"; (unset BC5_0438_SUBMITQ BC5_0438_INFLIGHT_NG; "$out/old/tq.exe" rings) | sed 's/^/   /'
+	echo "   new unit, rings, BC5_0438_INFLIGHT_NG unset:"; (unset BC5_0438_SUBMITQ BC5_0438_INFLIGHT_NG; "$out/new/tq.exe" rings) | sed 's/^/   /'
+	if [ -f "$out/new/q_ng.inc" ]; then echo "   new unit, rings, BC5_0438_INFLIGHT_NG=1:"; (unset BC5_0438_SUBMITQ; BC5_0438_INFLIGHT_NG=1 "$out/new/tq.exe" rings) | sed 's/^/   /'; fi
 	echo "   new unit, BC5_0438_INFLIGHT_NG unset:"; (unset BC5_0438_SUBMITQ BC5_0438_INFLIGHT_NG; "$out/new/tq.exe" inflight) | sed 's/^/   /'
 	if [ -f "$out/new/q_ng.inc" ]; then
 		echo "   new unit, BC5_0438_INFLIGHT_NG=1:"; (unset BC5_0438_SUBMITQ; BC5_0438_INFLIGHT_NG=1 "$out/new/tq.exe" inflight) | sed 's/^/   /'
 		local d="$out/p-inflight-off"; cp -r "$out/new" "$d"; rm -f "$d/tq.exe"
-		python -I -c 'import sys; p,o,n=sys.argv[1:4]; s=open(p,"rb").read().decode(); assert s.count(o)==1, o; open(p,"wb").write(s.replace(o,n).encode())' "$d/q_ng.inc" 'if (inflight_ng_on() && inflight_ng_writer(label)) return true;' '(void)0;'
+		python -I -c 'import sys; p,o,n=sys.argv[1:4]; s=open(p,"rb").read().decode(); assert s.count(o)==1, o; open(p,"wb").write(s.replace(o,n).encode())' "$d/q_ng.inc" $'\t\tunready = in;' $'\t\tunready = false;'
 		build "$d" Q438_NEW tq.exe
 		local rc=0; (unset BC5_0438_SUBMITQ; BC5_0438_INFLIGHT_NG=1 "$d/tq.exe" inflight) > "$d/inflight.txt" || rc=$?
+		local rc3=0; (unset BC5_0438_SUBMITQ; BC5_0438_INFLIGHT_NG=1 "$d/tq.exe" rings) > "$d/rings.txt" || rc3=$?
+		if [ "$rc3" != 0 ]; then echo "   planted inflight-off, rings (BC5_0438_INFLIGHT_NG=1): FAIL as it must (rc $rc3)"; grep '^FAIL\|^rings' "$d/rings.txt" | sed 's/^/      /'; else echo "FAIL: planted inflight-off not caught by rings"; exit 1; fi
 		if [ "$rc" != 0 ]; then echo "   planted inflight-off (BC5_0438_INFLIGHT_NG=1): FAIL as it must (rc $rc)"; grep '^FAIL' "$d/inflight.txt" | sed 's/^/      /'; else echo "FAIL: planted inflight-off not caught"; exit 1; fi
 	fi
 }
@@ -118,7 +123,7 @@ else
 fi
 if [ -f "$out/new/q_lwm.inc" ]; then # mkq438x.py
 	plant lwm-noscan 'if (t_lwm != nullptr && (h >> 30u) == 3 && !lw_packet_mapped(' 'if (false && (h >> 30u) == 3 && !lw_packet_mapped('
-	plant ng-off 'return q438_on() && q438_writer_queued(label);' 'return false;' q_ng.inc
+	plant ng-off 'if (!unready) unready = q438_on() && q438_writer_queued(label);' '(void)0;' q_ng.inc
 fi
 inflight
 echo "== all done"

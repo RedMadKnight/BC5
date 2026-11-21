@@ -72,3 +72,21 @@
   - the stale value passes. This reproduces on `2e6168de` and on stack438x with every switch off.
 - bc5-ring's own slice cannot open this window. There is one consumer thread, started once (r438o.cpp 16825–16827). It runs `acb_ready` (1651), then `r438_begin` (1685), then `chain_end` (1694, an inline `submit_now` that registers the writes), then `r438_end` (1695).
 - **Fix, `BC5_0438_INFLIGHT_NG=1`:** `acb_wait_unready` holds the acb while any registered slot has the label in flight, or an early entry of the label is in `g_plw`. A busy registry or slot counts as in flight, as in `f10_pending`. The acb is released after the writer's registration, and F4 then orders it. The planted `inflight-off` fails.
+
+**ng438 and wd438** (normal build only):
+- **ng438** counts `BC5_0438_INFLIGHT_NG`'s gate: holds, the longest hold, releases after the writer's registration, and releases by the consumer's 10-s fallback (each with a compare-only BUG line).
+  - It also counts busy registry or slot tries.
+  - It prints a 60-s line while the switch is on, zeros included.
+  - The `inflight` case: holds 1, released by registration 1, fallback 0; the fallback scenario gives 1 release and 1 BUG line.
+- **wd438** keeps the last 256 acb wait decisions with the label's writer state. The decision points: the gate, after `at_wait`, kept, and met / served / given up.
+  - The ring is appended to the fault record's `journal-tail.txt` as `wd438:` lines.
+  - The `inflight` case records the hazard as "met at the gate, writer in flight 1 (slots 1, phase 3)".
+
+**The two-ring hang (`rings`, reproduced on `2e6168de` and with every switch off).**
+- A pure ring-order cycle cannot be built by keep decisions. `ring_will_satisfy` keeps only against registered writes, and registration runs after the CS under the ring's su436 lock (2e6168de 15326, 16316). So each kept wait points to an earlier-registered job, and the waits-for graph follows registration order.
+- The box's shape comes from an ordering wait passed on a stale value while its writer is in flight:
+  - acb X (compute) waits N == 1, written by gfx chain D, which is in `submit_now`;
+  - F4 (`at_wait`, ~9798–9837) has no registered writer to order X behind D;
+  - X runs early and resets M, the label D waits on, so D waits on M == 1 reading 0;
+  - W, the writer of acb A's label L, is behind D, so A waits on L == 1 reading 0.
+- `BC5_0438_INFLIGHT_NG=1` holds X until D registers. F4 then makes X depend on D, and every job runs. The planted `inflight-off` brings the hang back.
