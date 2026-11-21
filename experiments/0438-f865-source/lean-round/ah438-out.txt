@@ -1,0 +1,76 @@
+ALL: 28804 frames | frame 29.16 | cpu 16.31 | runq 1.15 | blocked 11.70 | gc blocked 7.22 | flip blocked 4.96 | drain blocked 4.94 | guest blocked 0.00 | other blocked -0.48 | lock wait 3.90 | minflt 11.71 | majflt 0.03
+   gc by code (blocked / wall ms per frame, calls): c0188132 7.22 / 14.71, 50.7; c0488131 0.00 / 0.02, 1.0; c0088133 0.00 / 0.00, 1.0; c0108139 0.00 / 0.00, 1.0
+   lock waits by mutex (ms per frame): s.flush_mu 3.166; g_dev_mutex 0.711; g_jq_mutex 0.010; g_plw_mutex 0.002; cq.mutex 0.002; g_chainwd_mu 0.002; s.mu 0.001; s->mu 0.001
+   lock waits by site (ms per frame): s.flush_mu@7985 3.166; g_dev_mutex@15283 0.711; g_jq_mutex@1953 0.010; cq.mutex@14775 0.002; g_chainwd_mu@8051 0.002; g_plw_mutex@9927 0.001; s->mu@8242 0.001; g_plw_mutex@9255 0.001
+   guest syncs (ms per frame): PthreadMutexLock/Timedlock 0.002
+1 vblank: 18306 frames | frame 19.97 | cpu 11.14 | runq 1.25 | blocked 7.58 | gc blocked 3.49 | flip blocked 4.94 | drain blocked 4.71 | guest blocked 0.00 | other blocked -0.85 | lock wait 0.19 | minflt 0.45 | majflt 0.00
+   gc by code (blocked / wall ms per frame, calls): c0188132 3.49 / 9.93, 47.9; c0488131 0.00 / 0.02, 1.0; c0088133 0.00 / 0.00, 1.0; c0108139 0.00 / 0.00, 1.0
+   lock waits by mutex (ms per frame): g_dev_mutex 0.101; s.flush_mu 0.078; g_plw_mutex 0.003; g_chainwd_mu 0.002; cq.mutex 0.001; s.mu 0.001; s->mu 0.001; m 0.001
+   lock waits by site (ms per frame): g_dev_mutex@15283 0.101; s.flush_mu@7985 0.078; g_plw_mutex@9927 0.002; g_chainwd_mu@8051 0.002; cq.mutex@14775 0.001; g_plw_mutex@9255 0.001; s->mu@8242 0.001; s.mu@8177 0.001
+   guest syncs (ms per frame): PthreadMutexLock/Timedlock 0.002
+2 vblank: 6203 frames | frame 31.67 | cpu 16.93 | runq 1.13 | blocked 13.62 | gc blocked 8.95 | flip blocked 4.73 | drain blocked 5.14 | guest blocked 0.00 | other blocked -0.06 | lock wait 5.69 | minflt 9.27 | majflt 0.02
+   gc by code (blocked / wall ms per frame, calls): c0188132 8.95 / 17.64, 54.8; c0488131 0.00 / 0.02, 1.0; c0088133 0.00 / 0.00, 1.0; c0108139 0.00 / 0.00, 1.0
+   lock waits by mutex (ms per frame): s.flush_mu 5.360; g_dev_mutex 0.324; cq.mutex 0.004; g_plw_mutex 0.001; g_chainwd_mu 0.001; s->mu 0.001; s.mu 0.001; m 0.001
+   lock waits by site (ms per frame): s.flush_mu@7985 5.360; g_dev_mutex@15283 0.324; cq.mutex@14775 0.004; g_chainwd_mu@8051 0.001; s->mu@8242 0.001; g_plw_mutex@9927 0.001; g_plw_mutex@9255 0.000; s.mu@8177 0.000
+   guest syncs (ms per frame): PthreadMutexLock/Timedlock 0.003
+3+ vblank: 4295 frames | frame 64.72 | cpu 37.49 | runq 0.79 | blocked 26.44 | gc blocked 20.58 | flip blocked 5.36 | drain blocked 5.63 | guest blocked 0.00 | other blocked 0.50 | lock wait 17.10 | minflt 63.26 | majflt 0.20
+   gc by code (blocked / wall ms per frame, calls): c0188132 20.58 / 30.83, 57.0; c0488131 0.00 / 0.02, 1.0; c0088133 0.00 / 0.00, 1.0; c0108139 0.00 / 0.00, 1.0
+   lock waits by mutex (ms per frame): s.flush_mu 13.157; g_dev_mutex 3.872; g_jq_mutex 0.067; g_plw_mutex 0.001; cq.mutex 0.001; g_chainwd_mu 0.001; s.mu 0.001; s->mu 0.000
+   lock waits by site (ms per frame): s.flush_mu@7985 13.157; g_dev_mutex@15283 3.872; g_jq_mutex@1953 0.067; cq.mutex@14775 0.001; g_chainwd_mu@8051 0.001; g_plw_mutex@9927 0.001; s.mu@8125 0.000; s->mu@8242 0.000
+   guest syncs (ms per frame): PthreadMutexLock/Timedlock 0.004
+fast phase [140, 270): 16639 frames | frame 23.44 | cpu 12.32 | runq 1.17 | blocked 9.94 | gc blocked 5.25 | flip blocked 5.21 | drain blocked 5.19 | guest blocked 0.00 | other blocked -0.52 | lock wait 1.93 | minflt 1.33 | majflt 0.01
+   gc by code (blocked / wall ms per frame, calls): c0188132 5.25 / 11.45, 46.8; c0488131 0.00 / 0.02, 1.0; c0088133 0.00 / 0.00, 1.0; c0108139 0.00 / 0.00, 1.0
+   lock waits by mutex (ms per frame): s.flush_mu 1.511; g_dev_mutex 0.412; g_plw_mutex 0.003; g_chainwd_mu 0.001; s.mu 0.001; s->mu 0.001; cq.mutex 0.001; m 0.001
+   lock waits by site (ms per frame): s.flush_mu@7985 1.511; g_dev_mutex@15283 0.412; g_plw_mutex@9927 0.001; g_chainwd_mu@8051 0.001; cq.mutex@14775 0.001; g_plw_mutex@9255 0.001; s.mu@8177 0.001; s->mu@8242 0.001
+   guest syncs (ms per frame): PthreadMutexLock/Timedlock 0.002
+fast phase, 1 vblank: 14197 frames | frame 19.62 | cpu 10.45 | runq 1.25 | blocked 7.92 | gc blocked 3.52 | flip blocked 5.18 | drain blocked 5.01 | guest blocked 0.00 | other blocked -0.79 | lock wait 0.16 | minflt 0.36 | majflt 0.00
+   gc by code (blocked / wall ms per frame, calls): c0188132 3.52 / 9.54, 46.5; c0488131 0.00 / 0.02, 1.0; c0088133 0.00 / 0.00, 1.0; c0108139 0.00 / 0.00, 1.0
+   lock waits by mutex (ms per frame): g_dev_mutex 0.096; s.flush_mu 0.053; g_plw_mutex 0.003; g_chainwd_mu 0.002; s.mu 0.001; s->mu 0.001; cq.mutex 0.001; m 0.000
+   lock waits by site (ms per frame): g_dev_mutex@15283 0.096; s.flush_mu@7985 0.053; g_plw_mutex@9927 0.002; g_chainwd_mu@8051 0.002; cq.mutex@14775 0.001; g_plw_mutex@9255 0.001; s.mu@8177 0.001; s->mu@8242 0.001
+   guest syncs (ms per frame): PthreadMutexLock/Timedlock 0.002
+fast phase, 2 vblank: 1523 frames | frame 33.26 | cpu 15.01 | runq 0.64 | blocked 17.61 | gc blocked 10.99 | flip blocked 5.35 | drain blocked 6.68 | guest blocked 0.00 | other blocked 1.27 | lock wait 8.33 | minflt 4.78 | majflt 0.05
+   gc by code (blocked / wall ms per frame, calls): c0188132 10.99 / 17.56, 46.7; c0488131 0.00 / 0.02, 1.0; c0088133 0.00 / 0.00, 1.0; c0108139 0.00 / 0.00, 1.0
+   lock waits by mutex (ms per frame): s.flush_mu 8.023; g_dev_mutex 0.305; m 0.001; g_plw_mutex 0.001; s.mu 0.001; s->mu 0.000; g_chainwd_mu 0.000; cq.mutex 0.000
+   lock waits by site (ms per frame): s.flush_mu@7985 8.023; g_dev_mutex@15283 0.305; m@15192 0.001; g_plw_mutex@9927 0.001; s.mu@8177 0.000; g_plw_mutex@9255 0.000; g_chainwd_mu@8051 0.000; s->mu@8242 0.000
+   guest syncs (ms per frame): PthreadMutexLock/Timedlock 0.002
+fast phase, 3+ vblank: 919 frames | frame 66.15 | cpu 36.81 | runq 0.76 | blocked 28.58 | gc blocked 22.46 | flip blocked 5.43 | drain blocked 5.56 | guest blocked 0.00 | other blocked 0.70 | lock wait 18.71 | minflt 10.52 | majflt 0.03
+   gc by code (blocked / wall ms per frame, calls): c0188132 22.46 / 30.86, 50.7; c0488131 0.00 / 0.02, 1.1; c0088133 0.00 / 0.00, 1.1; c0108139 0.00 / 0.00, 1.1
+   lock waits by mutex (ms per frame): s.flush_mu 13.233; g_dev_mutex 5.468; s.mu 0.002; cq.mutex 0.002; g_chainwd_mu 0.001; g_plw_mutex 0.001; s->mu 0.000; g_chains_mu 0.000
+   lock waits by site (ms per frame): s.flush_mu@7985 13.233; g_dev_mutex@15283 5.468; s.mu@8125 0.002; cq.mutex@14775 0.002; g_chainwd_mu@8051 0.001; g_plw_mutex@9927 0.000; g_chains_mu@8117 0.000; s->mu@8242 0.000
+   guest syncs (ms per frame): PthreadMutexLock/Timedlock 0.001
+dip phase [280, 290): 337 frames | frame 89.46 | cpu 60.06 | runq 1.18 | blocked 28.21 | gc blocked 22.12 | flip blocked 5.81 | drain blocked 5.75 | guest blocked 0.00 | other blocked 0.29 | lock wait 16.67 | minflt 257.03 | majflt 0.25
+   gc by code (blocked / wall ms per frame, calls): c0188132 22.11 / 33.09, 52.0; c0488131 0.01 / 0.02, 1.0; c0088133 0.00 / 0.00, 1.0; c0108139 0.00 / 0.00, 1.0
+   lock waits by mutex (ms per frame): s.flush_mu 10.168; g_dev_mutex 5.634; g_jq_mutex 0.858; g_chainwd_mu 0.002; s.mu 0.001; s->mu 0.001; g_plw_mutex 0.001; g_fp_mutex 0.000
+   lock waits by site (ms per frame): s.flush_mu@7985 10.168; g_dev_mutex@15283 5.634; g_jq_mutex@1953 0.858; g_chainwd_mu@8051 0.002; s->mu@8242 0.001; s.mu@8177 0.001; s.mu@8125 0.001; g_plw_mutex@9927 0.000
+dip phase, 1 vblank: 70 frames | frame 20.77 | cpu 13.20 | runq 1.33 | blocked 6.24 | gc blocked 3.89 | flip blocked 3.92 | drain blocked 3.10 | guest blocked 0.00 | other blocked -1.57 | lock wait 0.51 | minflt 13.16 | majflt 0.00
+   gc by code (blocked / wall ms per frame, calls): c0188132 3.89 / 11.52, 51.1; c0488131 0.00 / 0.02, 1.0; c0088133 0.00 / 0.00, 1.0; c0108139 0.00 / 0.00, 1.0
+   lock waits by mutex (ms per frame): s.flush_mu 0.287; g_dev_mutex 0.218; s->mu 0.003; g_plw_mutex 0.001; s.mu 0.001; g_su436_ring_mu 0.001; g_fp_mutex 0.001
+   lock waits by site (ms per frame): s.flush_mu@7985 0.287; g_dev_mutex@15283 0.218; s->mu@8242 0.003; s.mu@7858 0.001; g_su436_ring_mu@15282 0.001; g_fp_mutex@14842 0.001; g_plw_mutex@9927 0.001; g_plw_mutex@9589 0.001
+dip phase, 2 vblank: 77 frames | frame 33.19 | cpu 17.45 | runq 0.89 | blocked 14.85 | gc blocked 10.46 | flip blocked 4.90 | drain blocked 4.56 | guest blocked 0.00 | other blocked -0.51 | lock wait 7.83 | minflt 96.14 | majflt 0.01
+   gc by code (blocked / wall ms per frame, calls): c0188132 10.46 / 18.75, 51.3; c0488131 0.00 / 0.02, 1.0; c0088133 0.00 / 0.00, 1.0; c0108139 0.00 / 0.00, 1.0
+   lock waits by mutex (ms per frame): s.flush_mu 7.052; g_dev_mutex 0.776; s.mu 0.004; cq.mutex 0.001; g_fp_mutex 0.000
+   lock waits by site (ms per frame): s.flush_mu@7985 7.052; g_dev_mutex@15283 0.776; s.mu@8125 0.002; s.mu@8177 0.002; cq.mutex@14775 0.001; g_fp_mutex@14879 0.000
+dip phase, 3+ vblank: 190 frames | frame 137.57 | cpu 94.59 | runq 1.25 | blocked 41.73 | gc blocked 33.56 | flip blocked 6.88 | drain blocked 7.21 | guest blocked 0.00 | other blocked 1.29 | lock wait 26.20 | minflt 412.08 | majflt 0.44
+   gc by code (blocked / wall ms per frame, calls): c0188132 33.55 / 46.85, 52.6; c0488131 0.01 / 0.03, 1.0; c0088133 0.00 / 0.00, 1.0; c0108139 0.00 / 0.00, 1.0
+   lock waits by mutex (ms per frame): s.flush_mu 15.072; g_dev_mutex 9.598; g_jq_mutex 1.522; g_chainwd_mu 0.003; s->mu 0.001; g_plw_mutex 0.001; s.mu 0.000; g_fp_mutex 0.000
+   lock waits by site (ms per frame): s.flush_mu@7985 15.072; g_dev_mutex@15283 9.598; g_jq_mutex@1953 1.522; g_chainwd_mu@8051 0.003; s->mu@8242 0.001; g_plw_mutex@9927 0.000; s.mu@8177 0.000; g_plw_mutex@9589 0.000
+slow phase [295, 415): 9846 frames | frame 36.56 | cpu 21.18 | runq 1.14 | blocked 14.23 | gc blocked 9.98 | flip blocked 4.71 | drain blocked 4.71 | guest blocked 0.00 | other blocked -0.46 | lock wait 6.66 | minflt 18.02 | majflt 0.07
+   gc by code (blocked / wall ms per frame, calls): c0188132 9.98 / 19.51, 57.6; c0488131 0.00 / 0.02, 1.0; c0088133 0.00 / 0.00, 1.0; c0108139 0.00 / 0.00, 1.0
+   lock waits by mutex (ms per frame): s.flush_mu 5.611; g_dev_mutex 1.039; cq.mutex 0.004; g_plw_mutex 0.002; g_chainwd_mu 0.002; s->mu 0.001; s.mu 0.001; m 0.001
+   lock waits by site (ms per frame): s.flush_mu@7985 5.611; g_dev_mutex@15283 1.039; cq.mutex@14775 0.004; g_chainwd_mu@8051 0.002; g_plw_mutex@9927 0.001; s->mu@8242 0.001; g_plw_mutex@9255 0.001; s.mu@8177 0.000
+   guest syncs (ms per frame): PthreadMutexLock/Timedlock 0.003
+slow phase, 1 vblank: 2746 frames | frame 22.16 | cpu 14.18 | runq 1.23 | blocked 6.75 | gc blocked 3.47 | flip blocked 4.39 | drain blocked 3.99 | guest blocked 0.00 | other blocked -1.11 | lock wait 0.31 | minflt 0.36 | majflt 0.00
+   gc by code (blocked / wall ms per frame, calls): c0188132 3.47 / 11.78, 54.6; c0488131 0.00 / 0.02, 1.0; c0088133 0.00 / 0.00, 1.0; c0108139 0.00 / 0.00, 1.0
+   lock waits by mutex (ms per frame): s.flush_mu 0.180; g_dev_mutex 0.118; cq.mutex 0.005; g_plw_mutex 0.004; g_chainwd_mu 0.002; m 0.001; s->mu 0.001; s.m 0.001
+   lock waits by site (ms per frame): s.flush_mu@7985 0.180; g_dev_mutex@15283 0.118; cq.mutex@14775 0.005; g_plw_mutex@9927 0.002; g_chainwd_mu@8051 0.002; g_plw_mutex@9255 0.001; s->mu@8242 0.001; m@15192 0.001
+   guest syncs (ms per frame): PthreadMutexLock/Timedlock 0.002
+slow phase, 2 vblank: 4215 frames | frame 30.92 | cpu 17.64 | runq 1.34 | blocked 11.94 | gc blocked 8.00 | flip blocked 4.53 | drain blocked 4.58 | guest blocked 0.00 | other blocked -0.60 | lock wait 4.44 | minflt 8.86 | majflt 0.01
+   gc by code (blocked / wall ms per frame, calls): c0188132 8.00 / 17.57, 58.2; c0488131 0.00 / 0.02, 1.0; c0088133 0.00 / 0.00, 1.0; c0108139 0.00 / 0.00, 1.0
+   lock waits by mutex (ms per frame): s.flush_mu 4.096; g_dev_mutex 0.331; cq.mutex 0.006; g_chainwd_mu 0.002; g_plw_mutex 0.002; s->mu 0.002; s.mu 0.001; m 0.000
+   lock waits by site (ms per frame): s.flush_mu@7985 4.096; g_dev_mutex@15283 0.331; cq.mutex@14775 0.006; g_chainwd_mu@8051 0.002; s->mu@8242 0.001; g_plw_mutex@9927 0.001; g_plw_mutex@9255 0.001; s.mu@8177 0.000
+   guest syncs (ms per frame): PthreadMutexLock/Timedlock 0.003
+slow phase, 3+ vblank: 2885 frames | frame 58.50 | cpu 33.04 | runq 0.77 | blocked 24.70 | gc blocked 19.05 | flip blocked 5.28 | drain blocked 5.59 | guest blocked 0.00 | other blocked 0.36 | lock wait 15.95 | minflt 48.22 | majflt 0.22
+   gc by code (blocked / wall ms per frame, calls): c0188132 19.05 / 29.71, 59.6; c0488131 0.00 / 0.02, 1.0; c0088133 0.00 / 0.00, 1.0; c0108139 0.00 / 0.00, 1.0
+   lock waits by mutex (ms per frame): s.flush_mu 12.993; g_dev_mutex 2.950; cq.mutex 0.001; g_plw_mutex 0.001; g_chainwd_mu 0.001; s.mu 0.001; s->mu 0.000; g_fp_mutex 0.000
+   lock waits by site (ms per frame): s.flush_mu@7985 12.993; g_dev_mutex@15283 2.950; cq.mutex@14775 0.001; g_chainwd_mu@8051 0.001; g_plw_mutex@9927 0.001; g_plw_mutex@9255 0.001; s.mu@8027 0.000; s->mu@8242 0.000
+   guest syncs (ms per frame): PthreadMutexLock/Timedlock 0.005

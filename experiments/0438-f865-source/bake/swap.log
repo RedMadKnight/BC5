@@ -1,0 +1,28 @@
+run-swap0438 00:50:51: boot eb264b8c
+chain lock: exp 0417 | chain: exp 0438: shared swap, r438 with PLWCV (switches kept), patch bb04219b -> 9889b06a; normal and lean rebuilt (CPU only, no emulator), until about 01:35 | token 202611210050522678774 | 2026-11-21 00:50:52
+before: PIN_OLD=bb04219b ARCH_OLD=d6638808 NORMAL=f345db74 LEAN=6a735b81 
+the patch: bb04219b -> 9889b06a, files 135 -> 135, exp 0372 lines 5, pad_audio_route header in; unit a62e8bf6 -> ff9e8fe2
+== 00:50:56 build normal
+normal: b1b57df9, warnings 7; steps 3
+== 00:51:42 build lean
+lean: d3485ed4, warnings 8; steps 3
+normal words: +[BC5_0438_EARLYREG BC5_0438_PLWCV] -[]
+lean words: +[BC5_0438_EARLYREG BC5_0438_PLWCV] -[]
+swap0438 done 00:52:28: patch 9889b06a, archive d6638808 (unchanged), normal b1b57df9, lean d3485ed4; undo: bash ~/bc5-work/exp0438/bake/undo0438.sh (to bb04219b; further back: exp 0436's undo0436.sh)
+chain lock released
+chain lock: exp 0417 | chain: exp 0438: smoke of the r438 swap: ASTRO BOT lean 200 s + the second title lean 300 s + ASTRO BOT normal 200 s, until about 01:12 | token 202611210052302679882 | 2026-11-21 00:52:30
+binaries: lean d3485ed4, normal b1b57df9; kernel 7.3.3-ogc1.1.fc45.x86_64; boot eb264b8c
+s438sc: s438sc (astro) PASS: ran 200 s; RssAnon at the end 224612 kB; kernel lines 0, crash lines 0; real pad keys 0
+s438sc: exe [pid 2680226 exe ~/bc5-work/kytyplus-build-lean/src/kyty_emulator md5 d3485ed4f475f01549573763af804ce0]
+s438su (lean) PASS: ran 300 s; RssAnon at the end 88032 kB; kernel lines 0, crash lines 0; real pad keys 0; key lines done 33 of 33
+s438su: exe [pid 2720870 exe ~/bc5-work/kytyplus-build-lean/src/kyty_emulator md5 d3485ed4f475f01549573763af804ce0]
+s438sn: s438sn (astro) PASS: ran 200 s; RssAnon at the end 233880 kB; kernel lines 0, crash lines 0; real pad keys 0
+s438sn: exe [pid 2796120 exe ~/bc5-work/kytyplus-build/src/kyty_emulator md5 b1b57df91b414743920f1fc500e1c300]
+s438sn: r438 lines 0, BUG lines 0; last: 
+s438sc engines at 150 s: drm-engine-compute:	151836612558 ns drm-engine-compute:	151836652563 ns drm-engine-gfx:	105517141279 ns drm-engine-gfx:	105517192016 ns drm-engine-gfx:	7227750378 ns gtt-used-MiB 7227 of 13312; MemAvailable-MiB 4017 
+s438su engines at 150 s: drm-engine-compute:	32500739176 ns drm-engine-gfx:	2513927934 ns drm-engine-gfx:	68243516179 ns drm-engine-gfx:	68243574711 ns gtt-used-MiB 12287 of 13312; MemAvailable-MiB 1092 
+s438sn engines at 150 s: drm-engine-compute:	148173460716 ns drm-engine-compute:	148173499880 ns drm-engine-gfx:	104139351583 ns drm-engine-gfx:	104139403089 ns drm-engine-gfx:	7345299722 ns gtt-used-MiB 7238 of 13312; MemAvailable-MiB 4100 
+smoke0438: ALL PASS
+smoke0438 ended 01:04:55
+chain lock released
+run-swap0438 01:04:55: smoke exit 0
