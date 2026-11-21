@@ -472,6 +472,34 @@ s = rep(s, '''static void register_eq(Libs::LibKernel::EventQueue::KernelEqueue 
 	std::lock_guard lock(g_eq_mutex);''', '''static void register_eq(Libs::LibKernel::EventQueue::KernelEqueue eq, int ident, bool add) {
 	std::fprintf(stderr, "[bc5] exp 0439 (tag eq439): EVFILT_GRAPHICS ident 0x%x %s\\n", ident, add ? "registered" : "removed");
 	std::lock_guard lock(g_eq_mutex);''')
+# exp 0439 (tag rp439): the soft CP's replays of the title's dcbs (submit list, kind "dcb"): start and end of each,
+# and every COND_EXEC it meets in a dcb (guard address, value, guarded dwords, skipped or run).
+s = rep(s, '''	t_cur_buf  = buf; // experiment 0343: for the soft-cp wait lines
+	t_cur_n    = num_dwords;
+	t_cur_kind = kind;
+	execute(buf, num_dwords, 0);''', '''	t_cur_buf  = buf; // experiment 0343: for the soft-cp wait lines
+	t_cur_n    = num_dwords;
+	t_cur_kind = kind;
+	static std::atomic<int> rp_n {0};
+	const bool              rp_dcb = kind != nullptr && std::strcmp(kind, "dcb") == 0;
+	const int               rp_k   = rp_dcb ? rp_n++ : 1 << 30;
+	if (rp_k < 60) std::fprintf(stderr, "[bc5] exp 0439 (tag rp439): t %.3f s soft CP replay %d of dcb %p (%u dwords) starts\\n", Direct::timing_now(), rp_k, static_cast<const void*>(buf), num_dwords);
+	execute(buf, num_dwords, 0);
+	if (rp_k < 60) std::fprintf(stderr, "[bc5] exp 0439 (tag rp439): t %.3f s soft CP replay %d of dcb %p ends\\n", Direct::timing_now(), rp_k, static_cast<const void*>(buf));''')
+s = rep(s, '''					const uint32_t exec_count = p[4] & 0x3fffu;
+					if (a != 0 && *reinterpret_cast<volatile uint32_t*>(a) == 0) {
+						len += exec_count;
+					}''', '''					const uint32_t exec_count = p[4] & 0x3fffu;
+					const uint32_t rp_v       = a != 0 ? *reinterpret_cast<volatile uint32_t*>(a) : 0u;
+					if (a != 0 && *reinterpret_cast<volatile uint32_t*>(a) == 0) {
+						len += exec_count;
+					}
+					{ // exp 0439 (tag rp439)
+						static std::atomic<int> ce_n {0};
+						if (t_cur_kind != nullptr && std::strcmp(t_cur_kind, "dcb") == 0 && ce_n++ < 120)
+							std::fprintf(stderr, "[bc5] exp 0439 (tag rp439): dcb %p @%u COND_EXEC guard 0x%" PRIx64 " = 0x%08x, %u dwords %s (next op 0x%02x)\\n", static_cast<const void*>(t_cur_buf), static_cast<unsigned>(p - t_cur_buf), a, rp_v,
+							             exec_count, a != 0 && rp_v == 0 ? "SKIPPED" : "run", ((p[5] >> 8u) & 0xffu));
+					}''')
 open(dst + '/bc5LleAgc.cpp', 'w', encoding='utf-8', newline='').write(s)
 
 v = open(src + '/videoOut.cpp', encoding='utf-8', newline='').read()
