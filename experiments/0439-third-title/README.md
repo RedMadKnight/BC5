@@ -252,6 +252,10 @@ the control's line has none, `X=1;rm` is refused).
       | O3 | 58.28 | 16.68 | 17.20 | 34.03 | 66.88 | 4 |
 
       - Control 58.14-58.48 flips/s, switch on 58.28-58.92. The ranges overlap, so no cost of the switch is visible.
+      - NOT A MEASUREMENT OF NORMAL PLAY (LESSONS R72; the top session, 11-21 evening): every boot since 13:51 logged
+        "No EDID read" on DP-1, and the desktop ran at 640x480@59.94 (scale 0.5) instead of 1920x1080@60. This series
+        ran in that mode. It stands as a comparison within the series only. A repeat at 1920x1080@60 is planned
+        before the bake.
       - With the switch on, ASTRO gets 3 interrupts it never got before; nothing visible changes.
 24. *Cross-pack runs (x28, 16:32-16:33, normal `2befcb17`, resets 11 -> 11, fault records 27 -> 27).*
     - The host LLE-loads every module in the one `SHADPS4_SYSMODULES_PACK_DIR` (KytyPlus `runtimeLinker.cpp`
@@ -407,6 +411,20 @@ the control's line has none, `X=1;rm` is refused).
       probe (`BC5_DIRECT_TIMEOUT_PROBE=1`) and the full journal.
     - Also on that boot: at 16:58:09 comp_1.1.0 and gfx_0.0.0 timed out with successful resets, pid 928664, not a run
       of this experiment.
+30. *The display mode of today's runs (LESSONS R72).*
+    - Every third-title and ASTRO BOT run of this experiment since 13:51 (from the cross-pack runs on) ran with the
+      desktop at 640x480@59.94, the monitor's EDID unread.
+    - The diagnosis findings do not depend on it: the chain cut and its fix, the 17:04 record, the queue audit, the
+      cross-pack result.
+    - The decompress pass works on the title's own 3840x2160 surface in guest memory, so its result does not depend on
+      the output mode. But the flip path and its present scaled that surface to a 640x480 output, so the present's
+      cost and look are not those of normal play.
+    - Frame rates and frame times from these runs describe that mode only.
+    - Now in the scripts: `k439/r72check.sh` (EDID size > 0, first mode 1920x1080, 0 "No EDID read" lines in this
+      boot's kernel log, active mode 1920x1080@60 from `kscreen-doctor -o`; one line, exit 1 when any fails).
+      - `ab439ae.sh` refuses to measure when it fails, and writes the line to the series header.
+      - `ib29.sh` and `x28.sh` (diagnosis) write the line and mark the series.
+      - `play439.sh` writes the EDID size and first mode into the log's header.
 29. *Rebase notes for the bake after exp 0438's swap* (agreed with exp 0438 by message, 11-21 evening).
     - Base both the backend diff and the unit edits on exp 0438's post-bake files. It will send the md5s of patch
       0001, the shared bc5LleAgc.cpp, memory.cpp, direct.cpp, and the normal, lean and archive builds.

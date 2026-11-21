@@ -34,12 +34,15 @@ mkdir -p "$R"
 echo "$(date '+%F %T') $P: boot $(cut -c1-8 /proc/sys/kernel/random/boot_id), up $(cut -d' ' -f1 /proc/uptime) s, kernel $(uname -r); private lean ${MC:0:8} (both arms)" > "$S"
 # the boot check (the top session's step 1): 0 reset lines, a display connected, nothing running, no dead ASTRO mount
 NDISP=$(display); BOOT="resets $(resets), displays connected $NDISP, busy $(busy && echo yes || echo no), dead mount $(deadmnt && echo yes || echo no)"
+R72L=$(bash "$(dirname "$0")/r72check.sh"); R72RC=$? # LESSONS R72: EDID, first mode, No EDID read lines, active mode
+say "$R72L"
 say "boot check: $BOOT"
 if [ "$DRY" = 1 ]; then
     say "DRY: plan W0 (warm-up, discarded) C1 O1 C2 O2 C3 O3 (lean, MangoHud, $SECS s; O with BC5_DIRECT_AGC_EOP_IDENT=1); lock now [$(cat "$LOCK")]; busy $(busy && echo yes || echo no); dead mount $(deadmnt && echo yes || echo no)"
     exit 0
 fi
 [ "$BOOT" = "resets 0, displays connected $NDISP, busy no, dead mount no" ] && [ "$NDISP" -ge 1 ] || { say "STOP: the boot check failed"; exit 1; }
+[ "$R72RC" = 0 ] || { say "STOP: the display is not 1920x1080@60 with an EDID (LESSONS R72): no measurement; report to the top session"; exit 1; }
 LINE="exp0439 | ae439 lean A/B on ASTRO BOT $P (1 warm-up + 6 lean, $SECS s each), token $(date +%s)$$ | $(date '+%F %T')"
 [ -e "$LOCK" ] || touch "$LOCK"
 [ -f "$LOCK" ] && [ ! -L "$LOCK" ] && [ ! -s "$LOCK" ] || { echo "the box is locked: $(cat "$LOCK")"; exit 1; }

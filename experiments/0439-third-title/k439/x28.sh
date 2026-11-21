@@ -28,6 +28,7 @@ done
 bash e0439.sh lock 2>&1 | tail -1
 grep -q '^exp0439 ' "$L" || { echo "lock not taken: [$(cat "$L")]"; exit 1; }
 unlock() { bash e0439.sh unlock 2>&1 | tail -1; }
+bash "$HOME/bc5-work/exp0439/k439/r72check.sh" || echo "  (LESSONS R72: a diagnosis series, recorded; its frame numbers do not describe normal play)"
 resets() { journalctl -k -b 0 --no-pager 2> /dev/null | grep -c -i -E 'amdgpu.*(timeout|reset)' || true; }
 faults() { ls "$HOME/bc5-data/captures/faults" 2> /dev/null | wc -l; }
 dead_mounts() {

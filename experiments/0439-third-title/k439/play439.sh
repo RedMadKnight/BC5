@@ -49,6 +49,9 @@ if [ "${PLAY_CAPTURE:-}" = 1 ]; then
   mkdir -p "$CAPD/gc" && export BC5_GC_DUMP_DIR="$CAPD/gc" BC5_DIRECT_FRAME_PROFILE=1 BC5_DIRECT_TIMING=1
   echo "$CAPD" > ~/bc5-work/last-play-capture
 fi
+# LESSONS R72 (2026-11-21): the display as this run sees it, in the log's header (the full check, with the active mode from
+# kscreen-doctor, is k439/r72check.sh on the host; inside the container only sysfs is read)
+echo "== display (R72): DP-1 edid $(wc -c < /sys/class/drm/card1-DP-1/edid 2> /dev/null || echo ?) B, first mode $(head -1 /sys/class/drm/card1-DP-1/modes 2> /dev/null || echo ?)" >> "$LOG"
 ~/bc5-work/pad-volume.sh >> "$LOG" 2>&1 || true; ~/bc5-work/pad-volume.sh --watch $$ >> "$LOG" 2>&1 &  # F94: the pad ALSA volume resets on every replug
 # 2026-10-22 (the maintainer asked): submission chains across the game thread's ioctls (ADR 0010 section B)
 # by default, as for the second title. Measured with tools/scripts/astro-route.sh (AC0/AC1): the title's
