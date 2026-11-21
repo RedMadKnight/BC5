@@ -70,13 +70,13 @@ check2)
     for f in "$NAS"/*.md5; do [ -f "$f" ] && { echo "$f:"; head -c 400 "$f"; echo; }; done
     echo "-- install record (head):"; head -c 600 "$G2/.bc5-install.json"; echo
     echo "-- installed: $(find "$G2" -type f ! -name .bc5-install.json | wc -l) files, $(find "$G2" -type f ! -name .bc5-install.json -printf '%s\n' | awk '{s+=$1} END {print s}') bytes"
-    echo "-- files newer than the record (not from the package?):"; find "$G2" -newer "$G2/.bc5-install.json" ! -type d | head -50
+    echo "-- files newer than the record (not from the package?):"; find "$G2" -newer "$G2/.bc5-install.json" ! -type d | head -50 || true
     echo "-- dry uninstall:"; "$BM" uninstall "$G2" --games "$GAMES" --dry-run || echo "dry-run refused: $?"
     echo "-- df:"; df -B1 /var "$GAMES"
     echo "-- saves and settings:"
     for p in "${SAVE_PATHS[@]}"; do [ -e "$p" ] && du -sh "$p" && find "$p" -type f | wc -l || echo "missing: $p"; done
     ls -la "$HOME/bc5-data/saves/" 2>/dev/null
-    echo "-- other save dirs that name the title:"; find "$HOME/bc5-work" "$HOME/bc5-data" -maxdepth 3 \( -iname '*SaveData*' -o -iname '*PPSA03671*' \) 2>/dev/null | grep -v "^$G2" | head -40
+    echo "-- other save dirs that name the title:"; find "$HOME/bc5-work" "$HOME/bc5-data" -maxdepth 3 \( -iname '*SaveData*' -o -iname '*PPSA03671*' \) 2>/dev/null | grep -v "^$G2" | head -40 || true
     echo "-- shortcuts:"; second_shortcuts | while IFS= read -r f; do echo "$f"; grep -E '^(Name|Exec)=' "$f"; done
     echo "-- bc5-mount cache:"; du -sb "$CACHE" 2>/dev/null || echo "(none)"
     echo "-- emulator running: $(emu_running && echo yes || echo no)"
