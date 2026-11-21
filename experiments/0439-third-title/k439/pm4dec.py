@@ -33,7 +33,7 @@ def a64(lo, hi):
 for base, n in bufs:
     w = rd(base, n)
     print(f"== buffer 0x{base:x}, {n} dwords")
-    i, cnt = 0, {}
+    i, cnt, guard_end = 0, {}, 0
     while i < len(w):
         h = w[i]
         t = h >> 30
@@ -49,7 +49,7 @@ for base, n in bufs:
             if op in (0x3c, 0x93) and ln >= 7:
                 addr = a64(p[2], p[3]); note = f"func {p[1] & 7} mem {(p[1] >> 4) & 1} ref 0x{p[4]:x} mask 0x{p[5]:x}"
             elif op == 0x49 and ln >= 7:
-                addr = a64(p[3], p[4]); note = f"event 0x{p[1] & 0x3f:x} data_sel {(p[2] >> 29) & 7} data 0x{p[6]:x}{p[5]:08x}"
+                addr = a64(p[3], p[4]); note = f"event 0x{p[1] & 0x3f:x} data_sel {(p[2] >> 29) & 7} INT_SEL {(p[2] >> 24) & 7} data 0x{p[6]:x}{p[5]:08x}" + (f" INT_CTXID 0x{p[7]:08x}" if ln >= 8 else "")
             elif op == 0x47 and ln >= 6:
                 addr = a64(p[2], p[3]); note = f"event 0x{p[1] & 0x3f:x} data_sel {(p[3] >> 29) & 7} data 0x{p[5]:x}{p[4]:08x}"
             elif op == 0x37 and ln >= 4:
@@ -60,6 +60,18 @@ for base, n in bufs:
                 addr = a64(p[2], p[3]); note = f"atomic 0x{p[1] & 0x7f:x} src 0x{p[5] if ln > 5 else 0:x}"
             elif op == 0x50 and ln >= 7:
                 addr = a64(p[4], p[5]); note = f"dst; src 0x{a64(p[2], p[3]):x} bytes {p[6] & 0x1fffff}"
+            if op == 0x22 and ln >= 5:
+                g = a64(p[1], p[2]); cntv = p[4] & 0x3fff
+                try:
+                    gv = rd(g, 1)[0]
+                except OSError:
+                    gv = None
+                note = f"guard 0x{g:x} = {('0x%08x' % gv) if gv is not None else 'unreadable'}, guards {cntv} dwords ({'SKIPPED' if gv == 0 else 'run'})"
+                addr = None
+            if guard_end > i:
+                note += f"  [under COND_EXEC until @{guard_end}]"
+            if op == 0x22 and ln >= 5:
+                guard_end = i + ln + (p[4] & 0x3fff)
             show = op in (0x3c, 0x93, 0x49, 0x47, 0x37, 0x3f, 0x1e, 0x50, 0x40, 0x22) or (watch and addr and watch[0] <= addr < watch[1])
             if show:
                 hit = "  <== WATCH" if watch and addr is not None and watch[0] <= addr < watch[1] else ""
