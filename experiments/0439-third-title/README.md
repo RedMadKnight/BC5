@@ -118,6 +118,37 @@ the control's line has none, `X=1;rm` is refused).
     - Private launcher `k439/play439.sh`: `play-astro.sh` with its two `EMU=` lines on `P439_BIN`. `run0439.sh`
       takes `RUN_PRIV=<binary>`.
 
+11. *p1 (private normal `f3c18e68`, `BC5_DIRECT_EAGER_GPU_WRITE=1` + `BC5_DIRECT_DCC_PRESENT=1`, no anon env, 12:36).*
+    - The map rule alone removes problem 1's fault: no GPU fault, no fault record, reset lines 21 before and after.
+    - Six views went eager by prot 0x20, 4,110 MiB in all: 0x5000000000 4,032 MiB, 0x2000000000 620 MiB, three
+      SceAgcDriver/SceAgcRegShadow views of about 2.2 MiB, and 0x200c00000 78 MiB.
+    - MemAvailable minimum 9.13 GB, against 8.36 GB with the anon stopgap.
+    - The same DCC stop (exit 65). At the first flip (1.5 s, index 2) no GFX job ended with an MRT on the surface.
+    - Two earlier p1 starts did not reach the emulator: `play439.sh` had no exec bit, and then the box's display was
+      disconnected (DP-1 and DP-2), so SDL had no display (exit 65, no GPU work).
+12. *ASTRO BOT a1 (shared normal `b1b57df9`, map log, 12:41, reset lines 21 before and after).*
+    - Seven direct views are GPU ReadWrite, 10,390 MiB in all: 0x10ca000000 4,608 MiB, 0x1000000000
+      "BackgroundTaskWorker" 3,232 MiB, 0x500000000 2,172 MiB, 0x400000000 184 MiB, "Sample" 128 MiB, 64 MiB and
+      SceGnmDumpArea 2 MiB. Today none of them is eager.
+    - The map rule as a global default would pin about 10 GB on ASTRO BOT, so it stays per title or needs a bound.
+      The second title is not checked.
+    - The run showed that `RuntimeMaxSec` does not bound a run: the emulator lives in the container's cgroup. It was
+      stopped by TERM, with its bc5-mount. `run0439.sh` now bounds runs with timeout(1) inside the container.
+13. *p1b (per-draw catcher, `875c2fac`, 12:44): the first flip is a buffer nothing wrote.*
+    - No draw targets it, and its address is in no GFX or compute job.
+    - The surface's first 4 MiB are zero, and all 131,072 DCC keys are 0x00. Mesa `0866ae7085c1`
+      `src/amd/common/ac_descriptors.h:29-30`: 0x00 is DCC_CLEAR_0000 ("all bits are 0"), 0xFF is DCC_UNCOMPRESSED.
+    - The presenter refused it only for its compressed tag.
+14. *Mode 2 with the key classification (`a213c7f0`, p2, 30 s, 13:02, reset lines 21 before and after, no fault).*
+    - At each flip the keys are read: all 0xFF, or all 0x00 with an all-zero surface, means plain without a pass.
+      The present takes the flag of the buffer's last-flipped index; indices 0/2/4 and 1/3/5 share a buffer.
+    - The first flip (1.48 s) was presented as plain, black, with no GPU pass. The title then ran to the bound of
+      30 s with no stop.
+    - No second flip came. Problem 3, a stall: two compute queues (1/2, 1/3) keep buffers deferred on labels never
+      written (0x2010449750, 0x20104aa630; WAIT_REG_MEM function 3, reference 1). CPU waits on 0x20104cd1xx time out
+      every 2 s. Job counts barely move from 11.5 s on (gfx 10, comp0 69, comp1 1 → 2).
+    - No decompress pass has run yet: no non-blank flip came.
+
 (more to come)
 
 **Verdict.** (to come)
