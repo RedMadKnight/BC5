@@ -70,6 +70,12 @@ inflight() { # the stale-value window without the queue (BC5_0438_SUBMITQ unset)
 				[ "$rc" = 0 ] || { echo "FAIL: rings $st SUBMITQ=$sq split=$sp with INFLIGHT_NG=1 OPEN_NG=1"; grep '^FAIL' "$out/rings-$st-$sq-$sp.txt"; exit 1; }
 			done
 		done
+		local e="$out/p-early-dec"; cp -r "$out/new" "$e"; rm -f "$e/tq.exe" # ngcount: the slot's count falls at the take, not after the registration
+		python -I -c 'import sys; p,o,n=sys.argv[1:4]; s=open(p,"rb").read().decode(); assert s.count(o)==1, o; open(p,"wb").write(s.replace(o,n).encode())' "$e/q_chain.inc" 'const bool now = !s.f10_flight.empty() || !s.f10_writes.empty();' 'const bool now = !s.f10_writes.empty();'
+		build "$e" Q438_NEW tq.exe
+		local r1=0 r2=0; (unset BC5_0438_SUBMITQ; BC5_0438_INFLIGHT_NG=1 BC5_0438_OPEN_NG=1 Q438_RINGS_STATE=flight "$e/tq.exe" rings) > "$e/rings.txt" || r1=$?
+		(unset BC5_0438_SUBMITQ; BC5_0438_INFLIGHT_NG=1 BC5_0438_OPEN_NG=1 "$e/tq.exe" inflight) > "$e/inflight.txt" || r2=$?
+		if [ "$r1" != 0 ] && [ "$r2" != 0 ]; then echo "   planted early-dec (rings flight and inflight, INFLIGHT_NG=1 OPEN_NG=1): FAIL as it must (rc $r1, $r2)"; grep -h '^FAIL\|^rings:' "$e/rings.txt" "$e/inflight.txt" | sed 's/^/      /'; else echo "FAIL: planted early-dec not caught (rc $r1, $r2)"; exit 1; fi
 		local d="$out/p-open-off"; cp -r "$out/new" "$d"; rm -f "$d/tq.exe"
 		python -I -c 'import sys; p,o,n=sys.argv[1:4]; s=open(p,"rb").read().decode(); assert s.count(o)==1, o; open(p,"wb").write(s.replace(o,n).encode())' "$d/q_ng.inc" $'\t\tunready = in2;' $'\t\tunready = false;'
 		build "$d" Q438_NEW tq.exe

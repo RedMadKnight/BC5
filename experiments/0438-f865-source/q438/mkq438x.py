@@ -25,6 +25,8 @@ submit, ho430's F10/F16/F18 wait for the queued writer only up to their bounds (
   NG3 q438_writer_queued in the q438 block.
 ng438 (normal build only): counts of the gate's two tests, INFLIGHT_NG's and OPEN_NG's apart (holds, longest, releases),
   the shared 10-s fallback releases (each with a BUG line) and busy tries; a 60-s line while either switch is on.
+ngcount: one live count of writers that can be pending (slots with a flight or open-chain write set, early entries),
+  kept while INFLIGHT_NG or OPEN_NG is on; at 0 the gate's full tests are skipped (one atomic load).
 open_ng (BC5_0438_OPEN_NG, off unless "1"): acb_wait_unready also holds the acb while a registered slot's open chain
   (appended, not taken) writes the label: the state inflight_ng_writer and q438_writer_queued do not see.
 wd438 (normal build only, any switch): the last 256 acb wait decisions with the label's writer state, appended to the
@@ -469,6 +471,85 @@ rep("\t\t\t\t\tif (!ok) t_wait_given_up = true;\n\t\t\t\t\tif (dry_here) (ok ? g
 rep("\tif (!g_dump_dir.empty()) fr412_copy(g_dump_dir + \"/direct.log\", dir + \"/journal-tail.txt\", 4l << 20);\n",
     "\tif (!g_dump_dir.empty()) fr412_copy(g_dump_dir + \"/direct.log\", dir + \"/journal-tail.txt\", 4l << 20);\n"
     "#ifndef BC5_LEAN\n\twd438_dump(dir + \"/journal-tail.txt\"); // exp 0438 (wd438): the last acb wait decisions\n#endif\n")
+
+# ---- ngcount: one live count, so the gate's tests cost one atomic load when nothing can be pending ----------------------
+# g_ng_live = registered slots whose F10 flight set (taken, not yet registered) or open-chain write set is non-empty
+#           + early entries in g_plw (r438's slices, Q438's queued chains).
+# Kept only while BC5_0438_INFLIGHT_NG or BC5_0438_OPEN_NG is on (read once). A slot's part changes under its mu, at the end
+# of every change of those sets (ng_slot_update); the early part under g_plw_mutex where early entries go in or out. So it
+# reads 0 only when no registered slot has such a write and no early entry is in the table. Ordering: the count rises inside
+# the writer's chain_append (a locked RMW), before the title's ioctl returns, so before the title can submit the acb whose
+# wait bc5-ring then reads; on x86 (TSO, multi-copy atomic) bc5-ring's later load of the count sees it. It falls only when
+# the set is empty, after the registration; a stale non-zero read only runs the full test.
+rep("static bool open_ng_writer(uint64_t label); // exp 0438 (open_ng), defined in the q438 block\n",
+    "static bool open_ng_writer(uint64_t label); // exp 0438 (open_ng), defined in the q438 block\n"
+    "static std::atomic<int64_t> g_ng_live {0}; // exp 0438 (ngcount): writers that can be pending (see ng_slot_update)\n"
+    "static bool ng_counting() { return inflight_ng_on() || open_ng_on(); }\n")
+rep("\tuint64_t                     q_nested = 0; // the submitter thread's own: nested inline takes\n",
+    "\tuint64_t                     q_nested = 0; // the submitter thread's own: nested inline takes\n"
+    "\tbool                         ng_marked = false; // exp 0438 (ngcount): counted in g_ng_live (under mu)\n")
+rep("static thread_local ChainSlot g_chain_tl;\n",
+    "static thread_local ChainSlot g_chain_tl;\n"
+    "// exp 0438 (ngcount): caller holds s.mu, after a change of s.f10_flight or s.f10_writes (registered slots only, as the\n"
+    "// gate's full tests look at g_f10_reg only)\n"
+    "static void ng_slot_update(ChainSlot& s) {\n"
+    "\tif (!ng_counting() || !s.registered) return;\n"
+    "\tconst bool now = !s.f10_flight.empty() || !s.f10_writes.empty();\n"
+    "\tif (now == s.ng_marked) return;\n"
+    "\ts.ng_marked = now;\n"
+    "\tg_ng_live += now ? 1 : -1;\n"
+    "}\n")
+rep("\t\ts.f10_flight.swap(s.f10_writes); // exp 0430 F10: in flight until submit_now has registered its writes\n\t\ts.f10_writes.clear();\n\t\ts.f10_wanted = false;\n",
+    "\t\ts.f10_flight.swap(s.f10_writes); // exp 0430 F10: in flight until submit_now has registered its writes\n\t\ts.f10_writes.clear();\n\t\ts.f10_wanted = false;\n"
+    "\t\tng_slot_update(s); // exp 0438 (ngcount)\n")
+rep("\t{ // exp 0430 F10: its writes are registered now\n\t\tstd::lock_guard lk(s.mu);\n\t\ts.f10_flight.clear();\n\t}\n",
+    "\t{ // exp 0430 F10: its writes are registered now\n\t\tstd::lock_guard lk(s.mu);\n\t\ts.f10_flight.clear();\n\t\tng_slot_update(s); // exp 0438 (ngcount)\n\t}\n")
+rep("\t\t\t\tf10_note(s.f10_writes, ib, n); // exp 0430 F10 (graphics and compute chains)\n",
+    "\t\t\t\tf10_note(s.f10_writes, ib, n); // exp 0430 F10 (graphics and compute chains)\n"
+    "\t\t\t\tng_slot_update(s); // exp 0438 (ngcount)\n")
+rep("\tfor (const auto& e: s.q_sets) s.f10_flight.insert(s.f10_flight.end(), e.second.begin(), e.second.end());\n}\n",
+    "\tfor (const auto& e: s.q_sets) s.f10_flight.insert(s.f10_flight.end(), e.second.begin(), e.second.end());\n"
+    "\tng_slot_update(s); // exp 0438 (ngcount): q438_take_locked's clear of f10_writes is always followed by this\n}\n")
+rep("\tif (q438_on()) q438_stop(*this); // exp 0438 (q438): out of g_chains, then the submitter drains its queue and stops\n",
+    "\tif (q438_on()) q438_stop(*this); // exp 0438 (q438): out of g_chains, then the submitter drains its queue and stops\n"
+    "\t{ // exp 0438 (ngcount): an open chain dropped at the thread's end\n"
+    "\t\tstd::lock_guard nk(mu);\n"
+    "\t\tif (ng_marked) g_ng_live--;\n"
+    "\t\tng_marked = false;\n"
+    "\t}\n")
+# the early entries
+rep("\tg_plw.insert(g_plw.end(), found.begin(), found.end());\n\tg_r438o_live += found.size(); // exp 0438 (r438o)\n",
+    "\tg_plw.insert(g_plw.end(), found.begin(), found.end());\n\tg_r438o_live += found.size(); // exp 0438 (r438o)\n"
+    "\tif (ng_counting()) g_ng_live += static_cast<int64_t>(found.size()); // exp 0438 (ngcount)\n")
+rep("\t\t\t\tit = g_plw.erase(it);\n\t\t\t\tif (g_r438o_live != 0) g_r438o_live--; // exp 0438 (r438o)\n",
+    "\t\t\t\tit = g_plw.erase(it);\n\t\t\t\tif (g_r438o_live != 0) g_r438o_live--; // exp 0438 (r438o)\n"
+    "\t\t\t\tif (ng_counting()) g_ng_live--; // exp 0438 (ngcount)\n")
+rep("\tif (all) {\n\t\tg_plw.clear();\n\t\tg_r438o_live = 0; // exp 0438 (r438o)\n",
+    "\tif (all) {\n"
+    "\t\tif (ng_counting()) // exp 0438 (ngcount): the early entries cleared with the table\n"
+    "\t\t\tfor (const auto& w: g_plw)\n"
+    "\t\t\t\tif ((w.seq & kR438Early) != 0) g_ng_live--;\n"
+    "\t\tg_plw.clear();\n\t\tg_r438o_live = 0; // exp 0438 (r438o)\n")
+rep("\tr438o_trim_locked(); // exp 0438 (stack438): the queued chain's early registration, r438o's trim\n\tg_plw.insert(g_plw.end(), found.begin(), found.end());\n\treturn id;\n",
+    "\tr438o_trim_locked(); // exp 0438 (stack438): the queued chain's early registration, r438o's trim\n\tg_plw.insert(g_plw.end(), found.begin(), found.end());\n"
+    "\tif (ng_counting()) g_ng_live += static_cast<int64_t>(found.size()); // exp 0438 (ngcount)\n\treturn id;\n")
+rep("\t\t\tif (it->seq == id) {\n\t\t\t\tif (std::find(t_q438_real.begin(), t_q438_real.end(), it->label) == t_q438_real.end()) lost.push_back(*it);\n\t\t\t\tit = g_plw.erase(it);\n",
+    "\t\t\tif (it->seq == id) {\n\t\t\t\tif (std::find(t_q438_real.begin(), t_q438_real.end(), it->label) == t_q438_real.end()) lost.push_back(*it);\n\t\t\t\tit = g_plw.erase(it);\n"
+    "\t\t\t\tif (ng_counting()) g_ng_live--; // exp 0438 (ngcount)\n")
+# the gate: one load when nothing can be pending; skip / full counts in ng438's line
+rep("\t\tconst bool in = inflight_ng_writer(label);\n#ifndef BC5_LEAN\n\t\tng438_note(0, label, in);\n#endif\n",
+    "\t\tconst bool live = g_ng_live.load() != 0; // exp 0438 (ngcount): 0: no writer can be pending, the full test is skipped\n"
+    "\t\tconst bool in   = live && inflight_ng_writer(label);\n#ifndef BC5_LEAN\n\t\t(live ? g_ng438_full : g_ng438_skip)[0]++;\n\t\tng438_note(0, label, in);\n#endif\n")
+rep("\t\tconst bool in2 = open_ng_writer(label);\n#ifndef BC5_LEAN\n\t\tng438_note(1, label, in2);\n#endif\n",
+    "\t\tconst bool live2 = g_ng_live.load() != 0; // exp 0438 (ngcount)\n"
+    "\t\tconst bool in2   = live2 && open_ng_writer(label);\n#ifndef BC5_LEAN\n\t\t(live2 ? g_ng438_full : g_ng438_skip)[1]++;\n\t\tng438_note(1, label, in2);\n#endif\n")
+rep("static std::atomic<uint64_t>        g_ng438_holds[2], g_ng438_rel[2], g_ng438_max[2], g_ng438_fb {0}, g_ng438_busy {0};\n",
+    "static std::atomic<uint64_t>        g_ng438_holds[2], g_ng438_rel[2], g_ng438_max[2], g_ng438_fb {0}, g_ng438_busy {0};\n"
+    "static std::atomic<uint64_t>        g_ng438_skip[2], g_ng438_full[2]; // exp 0438 (ngcount): tests skipped by the live count / run in full\n")
+rep('released %" PRIu64 "; by the 10-s fallback %" PRIu64 "; busy registry or slot %" PRIu64 "\\n",\n',
+    'released %" PRIu64 "; by the 10-s fallback %" PRIu64 "; busy registry or slot %" PRIu64 "; tests skipped by the live count / run in full: in flight %" PRIu64 "/%" PRIu64 ", open %" PRIu64 "/%" PRIu64 "\\n",\n')
+rep("static_cast<double>(g_ng438_max[1].load()) / 1e6, g_ng438_rel[1].load(), g_ng438_fb.load(), g_ng438_busy.load());\n",
+    "static_cast<double>(g_ng438_max[1].load()) / 1e6, g_ng438_rel[1].load(), g_ng438_fb.load(), g_ng438_busy.load(), g_ng438_skip[0].load(), g_ng438_full[0].load(), g_ng438_skip[1].load(), g_ng438_full[1].load());\n")
 
 out = s.encode('utf-8')
 open(OUT, 'wb').write(out)

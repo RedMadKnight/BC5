@@ -1110,6 +1110,18 @@ static const Wd438* wd438_last(uint64_t label, int decision) { // the newest com
 	return nullptr;
 }
 #endif
+#ifdef Q438_X
+// exp 0438 (ngcount): the live count at a transition. writer: a write of the case's label is open, in flight, queued or early.
+static void live_check(const char* where, bool writer) {
+	if (!ng_counting()) return;
+	const int64_t n = g_ng_live.load();
+	std::printf("   live count %s: %" PRId64 "\n", where, n);
+	if (writer) CHECK(n > 0, "ngcount: the live count reads %" PRId64 " %s, while a writer is pending", n, where);
+	else CHECK(n == 0, "ngcount: the live count reads %" PRId64 " %s, with nothing pending", n, where);
+}
+#else
+static void live_check(const char*, bool) {}
+#endif
 static int run_inflight() {
 	constexpr int o = 21;
 #ifdef Q438_X
@@ -1124,9 +1136,21 @@ static int run_inflight() {
 	const uint64_t L = label_of(o);
 	uint32_t       w[9];
 	wait64(w, L, 1);
-	std::thread owner([] {
+#ifdef Q438_X
+	const uint64_t s0 = g_ng438_skip[0].load(), u0 = g_ng438_full[0].load();
+	live_check("before the writer", false);
+	uint32_t w_idle[9]; // its own packet: wd438 skips a repeat of a (wait, decision) pair, the hazard's entry below must be new
+	wait64(w_idle, L, 1);
+	ACB_UNREADY(w_idle, true, L, 0); // the gate with nothing pending: one load, the full test skipped
+	const uint64_t s1 = g_ng438_skip[0].load() - s0, u1 = g_ng438_full[0].load() - u0;
+	if (inflight_ng_on()) CHECK(s1 == 1 && u1 == 0, "ngcount: the idle gate skipped %" PRIu64 " and ran %" PRIu64 " full tests (want 1, 0)", s1, u1);
+#endif
+	std::atomic<int> appended {0};
+	std::thread owner([&appended] {
 		BEGIN_OWNER(o);
 		append(o, 2);
+		appended = 1;
+		live_check("with the writer appended (open)", true);
 		chain_flush(1); // no queue: the owner itself is in submit_now until the gate opens
 		chain_flush(5);
 	});
@@ -1137,7 +1161,14 @@ static int run_inflight() {
 		}
 		std::this_thread::sleep_for(std::chrono::microseconds(200));
 	}
+	live_check("with the writer in its submit_now", true);
+#ifdef Q438_X
+	const uint64_t u2 = g_ng438_full[0].load();
+#endif
 	const int      gate1 = ACB_UNREADY(w, true, L, 0) ? 1 : 0; // this thread is not a game thread: bc5-ring's view
+#ifdef Q438_X
+	if (inflight_ng_on()) CHECK(g_ng438_full[0].load() - u2 == 1, "ngcount: the gate with the writer in flight did not run the full test");
+#endif
 	const uint64_t t0    = SoftCp::now_ns();
 	ho430::at_wait(w, true, L, "acb", 0, w, 9, 0);
 	const double at_ms = static_cast<double>(SoftCp::now_ns() - t0) / 1e6;
@@ -1151,6 +1182,7 @@ static int run_inflight() {
 	const int  gate1b = ACB_UNREADY(w, true, L, 0) ? 1 : 0; // still in flight
 	g_pass[o]         = 100;
 	owner.join();
+	live_check("after the writer's registration and its thread's end", false);
 	{
 		std::lock_guard lk(bc5::direct::g_deps_mu);
 		bc5::direct::g_deps.clear();
@@ -1289,6 +1321,7 @@ static int run_rings() {
 	uint32_t            w[9];
 	jobs.push_back({"E", 0, 9001, {{false, &g_rlab_m, 1}}, {}});
 	register_job(jobs.back());
+	live_check("before D", false);
 	wait_pkt(&g_rlab_m, 1, w);
 	const bool        d_kept = !wait_satisfied(w, true) && ring_will_satisfy(w, true, bc5::direct::kGfxRing);
 	std::atomic<int>  owner_at {0}, go {0};
@@ -1321,6 +1354,7 @@ static int run_rings() {
 		for (const uint64_t ta = SoftCp::now_ns(); g_active[o].load() != 1 && SoftCp::now_ns() - ta < 5'000'000'000ull;) std::this_thread::sleep_for(std::chrono::microseconds(200));
 	if (state == "real")
 		while (owner_at.load() != 2) std::this_thread::yield();
+	live_check(("with D " + state).c_str(), state != "real");
 	auto d_real = [N]() -> uint64_t {
 		std::lock_guard lk(g_plw_mutex);
 		for (const auto& e: g_plw)
@@ -1364,6 +1398,7 @@ static int run_rings() {
 	register_job(jobs.back());
 	if (!d_released) release_d();
 	else if (owner.joinable()) owner.join();
+	live_check("after D's registration and its thread's end", false);
 	jobs.push_back({"D", bc5::direct::kGfxRing, d_real(), {{true, &g_rlab_m, 1}, {false, N, 1}}, {}});
 	if (!d_kept) jobs.back().ops.erase(jobs.back().ops.begin());
 	if (state == "real") std::erase_if(jobs, [](const SimJob& j) { return j.name[0] == 'D'; }); // already run: its N = 1 is in memory
@@ -1436,6 +1471,8 @@ static int run_rings() {
 		std::lock_guard lk(g_jm);
 		std::printf("rings, journal: %s", g_lines.empty() ? "\n" : g_lines.back().c_str());
 	}
+	live_check("at the end", false);
+	std::printf("rings, ngcount: tests skipped / run in full: in flight %" PRIu64 "/%" PRIu64 ", open %" PRIu64 "/%" PRIu64 "\n", g_ng438_skip[0].load(), g_ng438_full[0].load(), g_ng438_skip[1].load(), g_ng438_full[1].load());
 	if (state == "open" && ng && open) CHECK(g_ng438_holds[1].load() == 1 && g_ng438_rel[1].load() == 1 && g_ng438_holds[0].load() == 0, "rings open: ng438 counted open holds %" PRIu64 ", releases %" PRIu64 ", in-flight holds %" PRIu64 " (want 1, 1, 0)", g_ng438_holds[1].load(), g_ng438_rel[1].load(), g_ng438_holds[0].load());
 #endif
 	const bool fix = state == "open" ? (ng && open) : ng;

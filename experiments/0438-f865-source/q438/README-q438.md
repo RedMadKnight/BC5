@@ -102,3 +102,9 @@
   - with D registered for real, F4 orders X.
 - **Fix, `BC5_0438_OPEN_NG=1`** (off unless "1"): the gate also holds while a registered slot's open chain writes the label. Every state then runs; the planted `open-off` brings the hang back.
 - wd438 entries now record the open chains that write the label.
+
+**ngcount: the gate costs one load when nothing can be pending** (after the box's 0.8 % cost of INFLIGHT_NG on ASTRO BOT).
+- `g_ng_live` counts: registered slots with a non-empty flight set or open-chain write set (`ng_slot_update`, under the slot's `mu`, after every change of those sets), plus early entries in `g_plw` (under `g_plw_mutex` where they go in or out). It is kept only while INFLIGHT_NG or OPEN_NG is on.
+- At 0 the gate skips the full tests. ng438's line shows the skips against the full tests.
+- Ordering: the count rises inside the writer's `chain_append`, a locked RMW, before the title's ioctl returns and so before the acb exists. It falls only when the sets are empty, after the registration.
+- `rings` and `inflight` check the count at every transition. The planted `early-dec` (the count falls at the take) fails both.

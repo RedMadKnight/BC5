@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # BC5 experiment 0438 (tag stack438): the one test build of A1 + A1b + A1p + A1c (memory.cpp 286ab942, mka1 -> mka1b ->
-# mka1p -> mka1c) with Q438 + A2's host change on the shared r438o unit (stack438x.cpp 0f5d84a0: mka2host.py --any on
+# mka1p -> mka1c) with Q438 + A2's host change on the shared r438o unit (stack438x.cpp 323499b9: mka2host.py --any on
 # r438o 2e6168de, then mkstack438.py, then mkq438x.py: labelmap, q438ng, BC5_0438_R438_LWM, BC5_0438_INFLIGHT_NG, BC5_0438_OPEN_NG, ng438, wd438), linked with A2's private archive (~/bc5-work/exp0438/a2/backend/libbc5_backend.a,
 # the md5 boxa2.sh wrote; backend direct.cpp 66f98937). Every arm behind its own switch: KYTY_BC5_0438_A1, _A1P, _A1J,
 # BC5_DIRECT_0438_A2, _A2_CHECK, BC5_0438_SUBMITQ (and the shared EARLYREG / PLWCV). CPU only, nice 19 + ionice idle, one
@@ -15,7 +15,7 @@ W=$HOME/bc5-work; E=$W/exp0438/stack; R=$E/raw; S=$E/src; HERE=$(cd "$(dirname "
 TREE=$HOME/src/KytyPlus; SA=$W/backend-ubuntu/libbc5_backend.a; PA=$W/exp0438/a2/backend/libbc5_backend.a
 P_UNIT=2e6168de7774de436fe7e916c895180a; P_MEM=aa7d7f5b3fdbbe8d57bd440e7aa80922
 P_ARCH=d6638808; P_NORMAL=199a0f39; P_LEAN=3a20b974; P_PA=$(cut -c1-8 "$W/exp0438/a2/backend/archive.md5" 2> /dev/null) # written by boxa2.sh build just before
-K_MEM=286ab94268aa795a14c40ba5eb0aad9e; K_BE_CPP=66f9893767d2b18adf1a6ed3eb8aec80; K_UNIT=0f5d84a0f35239ace235df33e9ca9caa
+K_MEM=286ab94268aa795a14c40ba5eb0aad9e; K_BE_CPP=66f9893767d2b18adf1a6ed3eb8aec80; K_UNIT=323499b935e96efc2c307bd1cedcf005
 K_HPP=18c66de84ae1a6705462cd4953cd6633; K_MI=39952c484209fe5c64a55167f02107b7; K_PY=3fe0aacaa3a2859de7f9903e127a5a63
 NICE="nice -n 19 ionice -c 3"
 stop() { echo "stack438 STOP: $*"; exit 1; }
