@@ -32,3 +32,36 @@
 - The lean wiring.
 
 The snapshot cache adds ~2 MiB.
+
+## Counters and the journal flush (tags a1c438, a2c438; 2026-11-21)
+
+The first ASTRO run (a1j438A) left an empty journal. The cause was in the writer, not the hooks. The journal is hooked
+on the VirtualRanges dispatcher only (the A1 map), not on A1P's Physical/Flexible/Pooled tables. It buffered 1,024
+records, and the SIGTERM at the end of the run dropped the buffer. Whether any edit happened after start was not
+recorded. The fix (`mka1b.py`): each record is written and flushed at once (`kBuffered = 1`), and so is the header.
+A SIGTERM now loses no record.
+
+The counters, normal build only:
+
+- **`mka1c.py`**, after `mka1p`. A 60-s stderr line,
+  `[bc5] exp 0438 (tag a1c438): t <s> s: range edits add ... memtype N; A1P map ops physical/flexible/pooled N; journal records N`.
+  The counts are cumulative. The thread starts with VirtualRanges, so a quiet run prints zeros.
+  - The range-edit kinds are counted in the dispatcher, in both modes.
+  - A1P is counted at its 21 map-path points.
+  - The whole block is inside `#if !defined(BC5_LEAN)`.
+- **`mka2be.py`**. A 60-s line from `sorted_mappings()` while `BC5_DIRECT_0438_A2_CHECK=1`. It gives:
+  - index inserts and erases;
+  - edits made while no index exists;
+  - drops (`free_shared`) and rebuilds;
+  - the calls, compares and mismatches of the check;
+  - the entry count.
+
+`test_a1c438.sh` builds the chain mka1 → mka1b → mka1p → mka1c (memory.cpp `286ab942`). It runs `test_a1b438` and
+`test_a1p438` against the counter output: normal with a 1-s period and an exit line, and lean. Result: ALL PASS.
+
+- Range edits: 212,348 adds and 88,054 removes.
+- Journal: 300,000 records.
+- A1P map ops: physical 116,937, flexible 146,194, pooled 295,232.
+- Lean printed no line.
+
+The backend line is compiled only on the box. The new `direct.cpp` is `66f98937`.

@@ -57,14 +57,29 @@ cpp = rep(cpp, '''    std::shared_ptr<const std::vector<Mapping>> sorted;
     const bool a2 = [] { const char *e = std::getenv("BC5_DIRECT_0438_A2"); return e != nullptr && e[0] == '1' && e[1] == 0; }();
     const bool a2_check = [] { const char *e = std::getenv("BC5_DIRECT_0438_A2_CHECK"); return e != nullptr && e[0] == '1' && e[1] == 0; }();
     std::uint64_t a2_calls = 0, a2_mismatches = 0;
-    void a2_insert(const Mapping &m) { if (a2 && sorted) sorted = index_insert(sorted, m); }
-    void a2_erase(const Mapping &m) { if (a2 && sorted) sorted = index_erase(sorted, m); }''')
+    // exp 0438 (tag a2c438): counters, one stderr line per 60 s from sorted_mappings() while A2_CHECK=1 (cumulative)
+    std::uint64_t a2_ins = 0, a2_era = 0, a2_skipped = 0, a2_drops = 0, a2_rebuilds = 0, a2_compares = 0;
+    std::chrono::steady_clock::time_point a2_t0 = std::chrono::steady_clock::now(), a2_next = a2_t0 + std::chrono::seconds(60);
+    void a2_insert(const Mapping &m) { if (a2 && sorted) { sorted = index_insert(sorted, m); a2_ins++; } else if (a2) a2_skipped++; }
+    void a2_erase(const Mapping &m) { if (a2 && sorted) { sorted = index_erase(sorted, m); a2_era++; } else if (a2) a2_skipped++; }
+    void a2_line() {
+        const auto now = std::chrono::steady_clock::now();
+        if (now < a2_next) return;
+        a2_next = now + std::chrono::seconds(60);
+        std::fprintf(stderr, "bc5-direct: exp 0438 (tag a2c438): t %.0f s: index edits insert %llu erase %llu (with no index %llu), drops %llu, rebuilds %llu; "
+                     "A2_CHECK sorted_mappings calls %llu, compares %llu, mismatches %llu; entries %zu\\n",
+                     std::chrono::duration<double>(now - a2_t0).count(), (unsigned long long)a2_ins, (unsigned long long)a2_era,
+                     (unsigned long long)a2_skipped, (unsigned long long)a2_drops, (unsigned long long)a2_rebuilds, (unsigned long long)a2_calls,
+                     (unsigned long long)a2_compares, (unsigned long long)a2_mismatches, sorted ? sorted->size() : std::size_t{0});
+    }''')
 cpp = rep(cpp, '''std::shared_ptr<const std::vector<Mapping>> Device::sorted_mappings() const {
     std::lock_guard lock(impl_->mutex);
     if (impl_->sorted == nullptr || impl_->sorted_gen != impl_->list_gen) {''', '''std::shared_ptr<const MappingIndex> Device::sorted_mappings() const {
     std::lock_guard lock(impl_->mutex);
+    if (impl_->a2_check) impl_->a2_line(); // exp 0438 (tag a2c438)
     if (impl_->a2 && impl_->sorted != nullptr) { // exp 0438 (tag a2): kept up to date at each edit
         if (impl_->a2_check && (impl_->a2_calls++ & 63u) == 0) {
+            impl_->a2_compares++; // exp 0438 (tag a2c438)
             std::vector<Mapping> users;
             for (const auto &u : impl_->userptrs) users.push_back({u.va, u.size, u.readonly, false});
             std::sort(users.begin(), users.end(), [](const Mapping &x, const Mapping &y) { return x.va < y.va; });
@@ -94,6 +109,7 @@ cpp = rep(cpp, '''        out->insert(out->end(), u, users.end());
         impl_->sorted = std::move(out);
         impl_->sorted_gen = impl_->list_gen;''', '''        out->insert(out->end(), u, users.end());
         impl_->sorted = std::make_shared<const MappingIndex>(std::move(*out)); // exp 0438 (tag a2): one chunk
+        impl_->a2_rebuilds++; // exp 0438 (tag a2c438)
         impl_->sorted_gen = impl_->list_gen;''')
 cpp = rep(cpp, '''    impl_->userptrs.push_back(u);
     impl_->list_gen++;
@@ -115,8 +131,10 @@ cpp = rep(cpp, '''    if (SharedBo *b = impl_->shared_bo_locked(it->id); b != nu
 cpp = rep(cpp, '''        impl_->shared_maps.resize(w);
         b->maps = 0;''', '''        impl_->shared_maps.resize(w);
         impl_->sorted = nullptr; // exp 0438 (tag a2): many maps went at once; the next call rebuilds
+        impl_->a2_drops++; // exp 0438 (tag a2c438)
         b->maps = 0;''')
 assert 'cstdlib' in cpp or 'std::getenv' in cpp
+assert '#include <chrono>' in cpp  # exp 0438 (tag a2c438): the 60-s line
 os.makedirs(os.path.join(OUT, 'src'), exist_ok=True)
 os.makedirs(os.path.join(OUT, 'include', 'bc5'), exist_ok=True)
 for p, s in ((os.path.join(OUT, 'src', 'direct.cpp'), cpp), (os.path.join(OUT, 'include', 'bc5', 'direct.hpp'), hpp)):

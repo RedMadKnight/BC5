@@ -294,7 +294,7 @@ public:
     };
     static_assert(sizeof(Rec) == 72, "journal record layout");
     static_assert(KERNEL_MAXIMUM_NAME_LENGTH <= 32, "a journal name holds every character a range keeps");
-    static constexpr uint32_t kBuffered = 1024;
+    static constexpr uint32_t kBuffered = 1; // each record written and flushed at once: the run ends by SIGTERM (a1j438A lost all of fewer than 1,024)
 
     static std::unique_ptr<VirtualRangesJournal> Open(const char* path) {
         FILE* f = std::fopen(path, "wb");
@@ -303,6 +303,7 @@ public:
         const uint32_t h[2] = {static_cast<uint32_t>(sizeof(Rec)), 0};
         std::fwrite("BC5A1J01", 1, 8, f);
         std::fwrite(h, sizeof(h), 1, f);
+        std::fflush(f);
         return std::unique_ptr<VirtualRangesJournal>(new VirtualRangesJournal(f));
     }
     VirtualRangesJournal(const VirtualRangesJournal&)            = delete;

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# BC5 experiment 0438 (tags a1, a1b, a1p, a2): the full-tree compile of A1 + A1b + A1p (memory.cpp 09d560f1 by
-# mka1 -> mka1b -> mka1p) with A2 (the host unit a2host.cpp 0402a183 and the A2 headers), linked with A2's private
-# archive (~/bc5-work/exp0438/a2/backend/libbc5_backend.a, b419da49). CPU only, nice 19 + ionice idle, NO lock line
+# BC5 experiment 0438 (tags a1, a1b, a1p, a2): the full-tree compile of A1 + A1b + A1p (memory.cpp 286ab942 by
+# mka1 -> mka1b -> mka1p -> mka1c: the a1c438 counters and the A1J journal flushed per record) with A2 (the host unit a2host.cpp 0402a183 and the A2 headers), linked with A2's private
+# archive (~/bc5-work/exp0438/a2/backend/libbc5_backend.a, the md5 boxa2.sh wrote). CPU only, nice 19 + ionice idle, NO lock line
 # (the top session's GO of 2026-11-21; exp 0439 holds BOX-LOCK). Normal and lean, each with the shared build's own
 # commands (build0438.py emu). Pins the shared state before and after.
 #   boxa1.sh build
@@ -12,8 +12,8 @@ export LC_ALL=C LANGUAGE=C
 W=$HOME/bc5-work; E=$W/exp0438/a1; R=$E/raw; S=$E/src; HERE=$(cd "$(dirname "$0")" && pwd)
 TREE=$HOME/src/KytyPlus; SA=$W/backend-ubuntu/libbc5_backend.a; PA=$W/exp0438/a2/backend/libbc5_backend.a
 P_UNIT=ff9e8fe2e4139264ebaf74f9e84bd892; P_MEM=aa7d7f5b3fdbbe8d57bd440e7aa80922
-P_ARCH=d6638808; P_NORMAL=b1b57df9; P_LEAN=d3485ed4; P_PA=b419da49
-K_MEM=09d560f1f5625d022bab5da20fcd9099; K_UNIT=0402a183e527bca6d1d27b5d02bc0c38
+P_ARCH=d6638808; P_NORMAL=b1b57df9; P_LEAN=d3485ed4; P_PA=$(cut -c1-8 "$W/exp0438/a2/backend/archive.md5" 2> /dev/null) # written by boxa2.sh build just before
+K_MEM=286ab94268aa795a14c40ba5eb0aad9e; K_UNIT=0402a183e527bca6d1d27b5d02bc0c38
 K_HPP=18c66de84ae1a6705462cd4953cd6633; K_MI=39952c484209fe5c64a55167f02107b7; K_PY=5dfb35d884bee8af31d81e3ad8b92548
 NICE="nice -n 19 ionice -c 3"
 stop() { echo "a1 STOP: $*"; exit 1; }
@@ -24,7 +24,7 @@ build() {
     sn=$(m "$W/kytyplus-build/src/kyty_emulator"); sl=$(m "$W/kytyplus-build-lean/src/kyty_emulator"); sa=$(m "$SA")
     [ "${sn:0:8}" = "$P_NORMAL" ] && [ "${sl:0:8}" = "$P_LEAN" ] && [ "${sa:0:8}" = "$P_ARCH" ] || stop "the shared builds are not $P_NORMAL/$P_LEAN/$P_ARCH"
     [ "$(m "$TREE/src/libs/bc5LleAgc.cpp")" = "$P_UNIT" ] && [ "$(m "$TREE/src/kernel/memory.cpp")" = "$P_MEM" ] || stop "the tree's unit or memory.cpp is not patch 9889b06a's"
-    [ "$(m "$PA" | cut -c1-8)" = "$P_PA" ] || stop "A2's private archive is not $P_PA"
+    [ -n "$P_PA" ] && [ "$(m "$PA" | cut -c1-8)" = "$P_PA" ] || stop "A2's private archive is not $P_PA"
     [ "$(m "$HERE/memory_a1x.cpp")" = "$K_MEM" ] && [ "$(m "$HERE/a2host.cpp")" = "$K_UNIT" ] && [ "$(m "$HERE/be/direct.hpp")" = "$K_HPP" ] \
         && [ "$(m "$HERE/be/mapping_index.hpp")" = "$K_MI" ] && [ "$(m "$HERE/build0438.py")" = "$K_PY" ] || stop "the kit is not the pinned one"
     rm -rf "$S"; mkdir -p "$S/kyty/src/libs" "$S/kyty/src/kernel" "$S/kyty/src/bc5" || stop "mkdir $S"
@@ -49,6 +49,10 @@ build() {
     done
     grep -q 'KYTY_BC5_0438_A1J' "$E/normal/strings.txt" || stop "normal lacks the A1J journal"
     grep -q 'KYTY_BC5_0438_A1J' "$E/lean/strings.txt" && stop "lean holds the A1J journal (BC5_LEAN not applied)"
+    grep -q 'tag a1c438' "$E/normal/strings.txt" || stop "normal lacks the a1c438 counter line"
+    grep -q 'tag a1c438' "$E/lean/strings.txt" && stop "lean holds the a1c438 counter line"
+    grep -q 'tag a2c438' "$E/normal/strings.txt" || stop "normal lacks the a2c438 counter line"
+    echo "counter lines: normal a1c438 and a2c438 present; lean a1c438 absent (a2c438 prints only with A2_CHECK=1)"
     [ "$sn" = "$(m "$W/kytyplus-build/src/kyty_emulator")" ] && [ "$sl" = "$(m "$W/kytyplus-build-lean/src/kyty_emulator")" ] && [ "$sa" = "$(m "$SA")" ] \
         && [ "$(m "$TREE/src/libs/bc5LleAgc.cpp")" = "$P_UNIT" ] && [ "$(m "$TREE/src/kernel/memory.cpp")" = "$P_MEM" ] || stop "a shared file changed"
     echo "shared normal ${sn:0:8}, lean ${sl:0:8}, archive ${sa:0:8}, tree unit and memory.cpp: unchanged"
