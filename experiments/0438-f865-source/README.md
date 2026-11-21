@@ -2487,6 +2487,36 @@ The lean A/B on ASTRO BOT, on the clean boot c05993c0 (`r438o/ab438o.sh`; MangoH
 
 **Unexercised.** ASTRO BOT takes no r438 slices, so this A/B shows only that r438o costs nothing when idle. The fix's own path (the renumbering and the trim-keep) stays unexercised on a real title until the second title is installed again.
 
+## Result 21: the acb gate (F878, F879), A1 + A1P + A2, and the bake candidate (2026-11-21, boots c97d43e6 and 7986fd90)
+
+Two holes in bc5-ring's acb gate, both found offline, and their fix:
+
+- **F878, in flight.** The gate passed an acb on a stale label value while the label's writer was inside its submit_now (det `inflight` on 2e6168de: at_wait gave up after 77.2 / 31.4 ms).
+  - Together with an ordering wait this forms a two-ring hang through ring order: det `rings`, on the shared unit with every switch off.
+- **F879, open chain.** The same window exists while the writer sits in its owner's open chain. INFLIGHT_NG alone cannot see it; the full set hung at #67 with INFLIGHT_NG on.
+- **The fix:** `BC5_0438_INFLIGHT_NG` + `BC5_0438_OPEN_NG`. A live count of pending writers makes the test one atomic load when idle (ngcount).
+
+Lean A/Bs on ASTRO BOT. MangoHud from 30 s, 140 s per run; alternating; judged only within each series.
+
+| Series | Arms | flips/s | Verdict |
+|---|---|---|---|
+| A1 + A1P + A2, boot c97d43e6 | control 59.65 / 58.39 / 58.60, A1+A1P+A2 58.55 / 58.64 / 58.66 | — | overlapping |
+| INFLIGHT_NG alone, unguarded | control 58.65–59.08, INFLIGHT_NG 58.39–58.45 | about −0.8 % | not overlapping (the per-poll scan) |
+| INFLIGHT_NG + OPEN_NG, guarded (W0 discarded) | control 58.05–58.61, both on 57.96–58.22 | means −0.24 % | overlapping |
+
+- In the A1 + A1P + A2 series, C1 (59.65) is a first-run-after-boot outlier.
+- The guarded gate on ASTRO: 371 in-flight holds per minute, longest 2.7 ms, all released by the writer's registration, none by the 10-s fallback.
+- The gate costs one full test in about 65 polls.
+
+The bake candidate (bake438b: A1 + A1b + A1P + A2 + the guarded gate, all on unless "0"; without SUBMITQ, R438_LWM and A2_CHECK):
+
+- **Private build:** normal 87f2e1cf, lean 2761e911, archive a548a249.
+- **Lean's switch words:** 500 → 505, none of its diagnostics.
+- **Pairs 1–3** (boot c97d43e6; W0 discarded): shared lean 3a20b974 58.68 / 58.68 / 58.95 against bake lean 58.90 / 58.21 / 58.26 flips/s. They overlap only through O1, with means −0.5 %, so the swap was held.
+  - In its N1 run the gate's longest hold was 23.9 ms. The mapping work was the same as the gate-only run (about 1,500 rebuilds by 60 s); "BOs retired while busy" was 233 against 38. Not explained.
+- **Pairs 4–5** run on a different boot (7986fd90): judge them within their own alternating pairs.
+  - The first attempt's control run qbkBC1 (19:45, boot c97d43e6) is VOID. It ended at about 57 s when the box was shut down from the desktop (an orderly logout and shutdown at 19:45:13; no amdgpu line, no pstore, no fault record). It is not a failure of 3a20b974.
+
 ## Verdict
 
 **F865's source is fixed and built into the shared builds (r438 with PLWCV, 2026-11-21 00:52). The long frames are a
