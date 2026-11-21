@@ -1113,7 +1113,7 @@ static const Wd438* wd438_last(uint64_t label, int decision) { // the newest com
 static int run_inflight() {
 	constexpr int o = 21;
 #ifdef Q438_X
-	const uint64_t h0 = g_ng438_holds.load(), r0 = g_ng438_rel.load(), f0 = g_ng438_fb.load();
+	const uint64_t h0 = g_ng438_holds[0].load(), r0 = g_ng438_rel[0].load(), f0 = g_ng438_fb.load();
 #endif
 	g_labels[o]  = 1;
 	const char* ph = std::getenv("Q438_INFLIGHT_PHASE"); // 3 (default): holding the device; 1: GPU back-pressure
@@ -1180,7 +1180,7 @@ static int run_inflight() {
 		CHECK(e != nullptr && e->slots == 1 && e->phase[0] == phase_held, "inflight: wd438 has no gate entry with the writer's slot in flight at phase %d", phase_held);
 	}
 	if (fix) { // ng438's counts for this hold, then a hold let go by the consumer's 10-s fallback (called as the consumer does)
-		const uint64_t dh = g_ng438_holds.load() - h0, dr = g_ng438_rel.load() - r0, df = g_ng438_fb.load() - f0;
+		const uint64_t dh = g_ng438_holds[0].load() - h0, dr = g_ng438_rel[0].load() - r0, df = g_ng438_fb.load() - f0;
 		std::printf("inflight, ng438: holds %" PRIu64 ", released after the registration %" PRIu64 ", by the fallback %" PRIu64 "\n", dh, dr, df);
 		CHECK(dh == 1 && dr == 1 && df == 0, "inflight: ng438 counted holds %" PRIu64 ", registration releases %" PRIu64 ", fallbacks %" PRIu64 " (want 1, 1, 0)", dh, dr, df);
 		constexpr int o2 = 22;
@@ -1209,7 +1209,7 @@ static int run_inflight() {
 		{
 			std::lock_guard lk(g_jm);
 			for (const auto& x: g_lines)
-				if (x.find("ng438 (exp 0438, inflight_ng): t ") != std::string::npos) line = x;
+				if (x.find("ng438 (exp 0438): t ") != std::string::npos) line = x;
 		}
 		std::printf("inflight, ng438 fallback case: held %d, fallback releases %" PRIu64 ", BUG lines %zu\n   journal: %s", held2, df2, b1, line.c_str());
 		CHECK(held2 == 1 && df2 == 1 && b1 == 1, "inflight: the fallback case held %d, counted %" PRIu64 ", BUG lines %zu (want 1, 1, 1)", held2, df2, b1);
@@ -1428,6 +1428,16 @@ static int run_rings() {
 		if (op != nullptr && op->wait) std::printf(" at its wait on %s == %" PRIu64 ", which reads %" PRIu64 "\n", op->label == &g_rlab_m ? "M" : (op->label == &g_rlab_l ? "L" : "N"), op->v, *op->label);
 	}
 	std::printf("rings: %s\n", hung ? "THE TWO-RING HANG (both rings stuck through ring order)" : "every job ran");
+#ifdef Q438_X
+	std::printf("rings, ng438: in flight held %" PRIu64 " released %" PRIu64 " longest %.3f ms; open chain held %" PRIu64 " released %" PRIu64 " longest %.3f ms; fallback %" PRIu64 "; busy %" PRIu64 "\n", g_ng438_holds[0].load(), g_ng438_rel[0].load(),
+	            static_cast<double>(g_ng438_max[0].load()) / 1e6, g_ng438_holds[1].load(), g_ng438_rel[1].load(), static_cast<double>(g_ng438_max[1].load()) / 1e6, g_ng438_fb.load(), g_ng438_busy.load());
+	if (ng || open) {
+		ng438_line();
+		std::lock_guard lk(g_jm);
+		std::printf("rings, journal: %s", g_lines.empty() ? "\n" : g_lines.back().c_str());
+	}
+	if (state == "open" && ng && open) CHECK(g_ng438_holds[1].load() == 1 && g_ng438_rel[1].load() == 1 && g_ng438_holds[0].load() == 0, "rings open: ng438 counted open holds %" PRIu64 ", releases %" PRIu64 ", in-flight holds %" PRIu64 " (want 1, 1, 0)", g_ng438_holds[1].load(), g_ng438_rel[1].load(), g_ng438_holds[0].load());
+#endif
 	const bool fix = state == "open" ? (ng && open) : ng;
 	CHECK(!(fix && hung), "rings, D %s: the gate did not prevent the two-ring hang", state.c_str());
 	*N = 0;

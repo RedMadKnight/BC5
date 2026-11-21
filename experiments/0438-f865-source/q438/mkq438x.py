@@ -23,8 +23,8 @@ submit, ho430's F10/F16/F18 wait for the queued writer only up to their bounds (
       chain writes the label (q438_writer_queued), so the acb is deferred as for any unready wait;
   NG2 acb_ready calls it;
   NG3 q438_writer_queued in the q438 block.
-ng438 (normal build only): counts of BC5_0438_INFLIGHT_NG's gate (holds, longest, releases after the writer's registration,
-  releases by the 10-s fallback with a BUG line, busy tries) and a 60-s line while the switch is on.
+ng438 (normal build only): counts of the gate's two tests, INFLIGHT_NG's and OPEN_NG's apart (holds, longest, releases),
+  the shared 10-s fallback releases (each with a BUG line) and busy tries; a 60-s line while either switch is on.
 open_ng (BC5_0438_OPEN_NG, off unless "1"): acb_wait_unready also holds the acb while a registered slot's open chain
   (appended, not taken) writes the label: the state inflight_ng_writer and q438_writer_queued do not see.
 wd438 (normal build only, any switch): the last 256 acb wait decisions with the label's writer state, appended to the
@@ -210,48 +210,56 @@ OLD_UNREADY = (
     "\treturn q438_on() && q438_writer_queued(label);\n"
     "}\n")
 NEW_UNREADY = r'''#ifndef BC5_LEAN
-// exp 0438 (tag ng438): what BC5_0438_INFLIGHT_NG's gate does (normal build only). A hold is per label, from its first
-// held test to the first test that finds no writer in flight (a release after the writer's registration) or to the queue
-// consumer's 10-s fallback (a release with a BUG line, compare-only). Busy: a try of the registry or a slot that failed.
+// exp 0438 (tag ng438): what the gate's two tests do (normal build only), per kind: 0 BC5_0438_INFLIGHT_NG (a writer in
+// flight), 1 BC5_0438_OPEN_NG (a writer in an open chain). A hold is per label and kind, from its first held test to the
+// first test of that kind that finds no writer (a release), or to the queue consumer's 10-s fallback (a release with a BUG
+// line, compare-only; shared). Busy (shared): a try of the registry or a slot that failed.
 static std::mutex                   g_ng438_mu;
-static std::map<uint64_t, uint64_t> g_ng438_held; // label -> its first hold (ns)
-static std::atomic<uint64_t>        g_ng438_holds {0}, g_ng438_rel {0}, g_ng438_fb {0}, g_ng438_busy {0}, g_ng438_max {0};
-static void ng438_note(uint64_t label, bool in) {
+static std::map<uint64_t, uint64_t> g_ng438_held[2]; // label -> its first hold (ns), per kind
+static std::atomic<uint64_t>        g_ng438_holds[2], g_ng438_rel[2], g_ng438_max[2], g_ng438_fb {0}, g_ng438_busy {0};
+static void ng438_note(int kind, uint64_t label, bool in) {
 	const uint64_t  now = SoftCp::now_ns();
 	std::lock_guard lk(g_ng438_mu);
-	const auto      it = g_ng438_held.find(label);
+	auto&           held = g_ng438_held[kind & 1];
+	const auto      it   = held.find(label);
 	if (in) {
-		if (it == g_ng438_held.end()) {
-			g_ng438_held.emplace(label, now);
-			g_ng438_holds++;
+		if (it == held.end()) {
+			held.emplace(label, now);
+			g_ng438_holds[kind & 1]++;
 		}
 		return;
 	}
-	if (it == g_ng438_held.end()) return;
+	if (it == held.end()) return;
 	const uint64_t d = now - it->second;
-	for (uint64_t m = g_ng438_max.load(); d > m && !g_ng438_max.compare_exchange_weak(m, d);) {
+	for (uint64_t m = g_ng438_max[kind & 1].load(); d > m && !g_ng438_max[kind & 1].compare_exchange_weak(m, d);) {
 	}
-	g_ng438_rel++;
-	g_ng438_held.erase(it);
+	g_ng438_rel[kind & 1]++;
+	held.erase(it);
 }
 static void ng438_fallback(uint64_t label) { // the queue consumer let an unready acb go after 10 s
 	uint64_t held = 0;
+	bool     any  = false;
 	{
 		std::lock_guard lk(g_ng438_mu);
-		const auto      it = g_ng438_held.find(label);
-		if (it == g_ng438_held.end()) return;
-		held = SoftCp::now_ns() - it->second;
-		g_ng438_held.erase(it);
+		for (auto& m: g_ng438_held) {
+			const auto it = m.find(label);
+			if (it == m.end()) continue;
+			held = std::max<uint64_t>(held, SoftCp::now_ns() - it->second);
+			m.erase(it);
+			any = true;
+		}
 	}
+	if (!any) return;
 	const uint64_t k = g_ng438_fb++;
-	journal("ng438 (exp 0438, inflight_ng): BUG: the acb waiting on 0x%" PRIx64 " went by the 10-s fallback after %.1f ms held for a writer in flight (%" PRIu64 " so far)\n", label, static_cast<double>(held) / 1e6, k + 1);
+	journal("ng438 (exp 0438): BUG: the acb waiting on 0x%" PRIx64 " went by the 10-s fallback after %.1f ms held for a writer in flight or in an open chain (%" PRIu64 " so far)\n", label, static_cast<double>(held) / 1e6, k + 1);
 }
 static void ng438_line() {
-	journal("ng438 (exp 0438, inflight_ng): t %.1f s: acbs held for a writer in flight %" PRIu64 ", longest %.3f ms, released after the writer's registration %" PRIu64 ", by the 10-s fallback %" PRIu64 "; busy registry or slot %" PRIu64 "\n",
-	        timing_now(), g_ng438_holds.load(), static_cast<double>(g_ng438_max.load()) / 1e6, g_ng438_rel.load(), g_ng438_fb.load(), g_ng438_busy.load());
+	journal("ng438 (exp 0438): t %.1f s: in flight (INFLIGHT_NG %d): held %" PRIu64 ", longest %.3f ms, released %" PRIu64 "; open chain (OPEN_NG %d): held %" PRIu64 ", longest %.3f ms, released %" PRIu64 "; by the 10-s fallback %" PRIu64 "; busy registry or slot %" PRIu64 "\n",
+	        timing_now(), inflight_ng_on() ? 1 : 0, g_ng438_holds[0].load(), static_cast<double>(g_ng438_max[0].load()) / 1e6, g_ng438_rel[0].load(), open_ng_on() ? 1 : 0, g_ng438_holds[1].load(),
+	        static_cast<double>(g_ng438_max[1].load()) / 1e6, g_ng438_rel[1].load(), g_ng438_fb.load(), g_ng438_busy.load());
 }
-static void ng438_tick() { // from register_label_writes: every 60 s while BC5_0438_INFLIGHT_NG=1
-	if (!inflight_ng_on()) return;
+static void ng438_tick() { // from register_label_writes: every 60 s while BC5_0438_INFLIGHT_NG=1 or BC5_0438_OPEN_NG=1
+	if (!inflight_ng_on() && !open_ng_on()) return;
 	static std::atomic<uint64_t> last {0};
 	const uint64_t               now = SoftCp::now_ns();
 	uint64_t                     l   = last.load();
@@ -269,11 +277,17 @@ static bool acb_wait_unready(const uint32_t* p, bool is64, uint64_t label, int r
 	if (!unready && inflight_ng_on()) { // exp 0438 (inflight_ng): a writer taken, not yet registered for real
 		const bool in = inflight_ng_writer(label);
 #ifndef BC5_LEAN
-		ng438_note(label, in);
+		ng438_note(0, label, in);
 #endif
 		unready = in;
 	}
-	if (!unready && open_ng_on()) unready = open_ng_writer(label); // exp 0438 (open_ng): a writer appended to a chain not yet taken
+	if (!unready && open_ng_on()) { // exp 0438 (open_ng): a writer appended to a chain not yet taken
+		const bool in2 = open_ng_writer(label);
+#ifndef BC5_LEAN
+		ng438_note(1, label, in2);
+#endif
+		unready = in2;
+	}
 	if (!unready) unready = q438_on() && q438_writer_queued(label);
 #ifndef BC5_LEAN
 	wd438_record(ib, n, off, p, is64, label, unready ? 0 : 1); // exp 0438 (wd438): bc5-ring's gate
@@ -311,10 +325,18 @@ WD = r'''// exp 0438 (tag open_ng): a writer of the label appended to a register
 // taken, so neither in flight nor queued nor early). The chain goes at its owner's next flush or the watchdog's 2-ms
 // bound; the acb is decided at the next poll after that. A busy registry or slot counts, as in f10_pending.
 static bool open_ng_writer(uint64_t label) {
-	if (!g_f10_reg_mu.try_lock()) return true;
+	if (!g_f10_reg_mu.try_lock()) {
+#ifndef BC5_LEAN
+		g_ng438_busy++; // exp 0438 (ng438)
+#endif
+		return true;
+	}
 	bool in = false;
 	for (ChainSlot* cs: g_f10_reg) {
 		if (!cs->mu.try_lock()) {
+#ifndef BC5_LEAN
+			g_ng438_busy++; // exp 0438 (ng438)
+#endif
 			in = true;
 			break;
 		}

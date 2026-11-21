@@ -71,7 +71,7 @@ inflight() { # the stale-value window without the queue (BC5_0438_SUBMITQ unset)
 			done
 		done
 		local d="$out/p-open-off"; cp -r "$out/new" "$d"; rm -f "$d/tq.exe"
-		python -I -c 'import sys; p,o,n=sys.argv[1:4]; s=open(p,"rb").read().decode(); assert s.count(o)==1, o; open(p,"wb").write(s.replace(o,n).encode())' "$d/q_ng.inc" 'if (!unready && open_ng_on()) unready = open_ng_writer(label);' '(void)0;'
+		python -I -c 'import sys; p,o,n=sys.argv[1:4]; s=open(p,"rb").read().decode(); assert s.count(o)==1, o; open(p,"wb").write(s.replace(o,n).encode())' "$d/q_ng.inc" $'\t\tunready = in2;' $'\t\tunready = false;'
 		build "$d" Q438_NEW tq.exe
 		rc=0; (unset BC5_0438_SUBMITQ; BC5_0438_INFLIGHT_NG=1 BC5_0438_OPEN_NG=1 Q438_RINGS_STATE=open "$d/tq.exe" rings) > "$d/rings.txt" || rc=$?
 		if [ "$rc" != 0 ]; then echo "   planted open-off, rings open (INFLIGHT_NG=1 OPEN_NG=1): FAIL as it must (rc $rc)"; grep '^FAIL' "$d/rings.txt" | sed 's/^/      /'; else echo "FAIL: planted open-off not caught"; exit 1; fi
