@@ -1,30 +1,31 @@
 # q438: per-slot submit queue (BC5_0438_SUBMITQ=1; offline only)
 
-`python -I mkq438.py ../bake438.cpp q438.cpp`: IN `ff9e8fe2`, OUT `bbd604f0f91d1592e2f1bdf66e8cb643` (gitignored).
-`mkq438.py` `54be779f…`, `test_q438.cpp` `dd9f1c0f…`, `test_q438.sh` `b3986792…`.
+`mkq438.py` takes the bake unit `ff9e8fe2` → `q438.cpp` `20112972`, or A2's `0402a183` → `q438a2.cpp` `b8de84c5` (both gitignored).
 
-**Ring-order fix (the 0438 session's reproduction: 3 of 11 random runs missed).**
-- An earlier entry's real write got a later `order` than a queued entry's early write, so `ring_will_satisfy` took the older value as last.
-- `register_label_writes` now renumbers queued early writes of its labels after it (switch on).
-- `det order` gates it; `no-order` fails.
+**Test** (`bash test_q438.sh UNIT INPUT`; both units PASS):
+- Cut blocks only gain lines. Identity with the switch unset, `=0` or `=2` equals the input's.
+- 30 random runs, 0 misses (off: 27–35 of 431).
+- det: 13 cases. Planted bugs: 6, all caught.
 
-**Test** (`bash test_q438.sh`, VS clang++, all PASS):
-- The cut blocks only gain lines. With the switch unset, `=0` or `=2`, the identity trace equals the bake unit's.
-- random, 30 runs: 0 misses each, take order kept.
-- Off path: 27–32 of 431 waits miss a writer; 0–2 of 20 drains are short.
-- det: FIFO, union/f16_done per entry, early wait, order, BUG line, full queue, nested, flush_all(5)/(8), sync, destroy.
-- 5 planted bugs caught.
+**Fixes:** queued early writes stay after later real writes in g_plw (`det order`). The trim keeps early entries (`det trim`).
 
-**Deviations from today:**
-1. Observe (why 8) waits for the drain too.
-2. The tail takes `s.mu` by try_lock (hold_release may hold it while waiting for an early writer). Flight sets, f16_done and replays can lag.
-3. f16_phase goes to 0 at return. F16's waiter (`ho430`, not tested) also needs the label gone from the union.
-4. Nested flush: only if `s.mu` is free and there is no hold, otherwise skipped. It joins the union.
-5. Early scan: every top-level packet, ring = chain ring, independent of EARLYREG.
-6. `t_ui_*` stay on the owner.
+**Checked:**
+- a. A held submitter only delays the wait. The wait ends at the real write or the BUG-lined removal, at r438's existing compare-only 100-ms BUG lines (`det backpressure`: 350 ms, 3 lines).
+- b. `~ChainSlot` joins only the exiting thread's submitter (`det destroy`).
+  - `_exit(86)` skips it.
+  - glibc `exit()` runs TLS destructors before the static ones, with completion threads alive.
+  - A reopen (11839–11845) is serialized by `g_dev_mutex`, as for bc5-chainwd today.
+- c. Fixed (above).
+- d. Cannot happen: `g_stage` is set only in `init_once_locked` (2267, 2276) before any chain; `chain_on` (7911) needs `All`.
 
-**Open risks (reasoned):**
-- Windows test stops the submitter at scope end (TLS-destructor join under the loader lock); glibc, TODO(verify).
-- A cycle: early-writer wait behind back-pressure.
-- r438's own early entries can still be passed.
-- g_plw trim / m11 reset; join at exit; g_stage change.
+**Deviations:**
+1. Observe (why 8) waits for the drain.
+2. The tail takes `s.mu` by try_lock, so union, f16_done and replays may lag.
+3. f16_phase goes to 0 at return. F16's waiter (`ho430`, untested) needs the label out of the union.
+4. A nested flush is skipped when `s.mu` is busy or a hold exists.
+5. The early scan covers every top-level packet.
+
+**Open:**
+- One unexplained 200-ms early-writer wait in 90 runs; the writer was found. Scheduling is suspected.
+- The Windows test stops the submitter at scope end, because of a loader-lock join.
+- r438's own reorder hole: fixed separately in `../r438o`.

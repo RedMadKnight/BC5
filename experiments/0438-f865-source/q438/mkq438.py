@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0
 """BC5 experiment 0438 (tag q438): the per-slot submit queue, switch BC5_0438_SUBMITQ (on only when "1").
-Usage: python -I mkq438.py IN.cpp OUT.cpp   (IN: the bake unit, md5 ff9e8fe2e4139264ebaf74f9e84bd892)
+Usage: python -I mkq438.py IN.cpp OUT.cpp   (IN: the bake unit, md5 ff9e8fe2e4139264ebaf74f9e84bd892, or A2's host
+       unit ../a2host.cpp, md5 0402a183e527bca6d1d27b5d02bc0c38; the same exact-once replacements on either)
 Design: README.md "The per-slot submit queue (design, not built; for every title)" and q438/README-q438.md.
 Edits, each an exact-once replacement in IN:
   E1 the switch q438_on(), t_q438_on / t_q438_real and kQ438Early, beside r438's state;
@@ -13,6 +14,7 @@ Edits, each an exact-once replacement in IN:
   E5 chain_submit: with the switch on, async mode and a registered slot, q438_submit instead of today's body;
   E6 ~ChainSlot: the submitter drains and stops first (switch on);
   E7 the q438 block after forget_label_writes: early registration, the submitter thread, push, nested, drain wait;
+  E9 g_plw's two trims keep early entries (switch on; inserted before today's trim line, which then has nothing to do);
   E8 F16's waiter (ho430::f10_observe): with the switch on, a bump counts only once the label left the flight union.
 With the switch off every inserted branch is skipped; E8's predicate reduces to today's.
 Writes OUT (LF) and prints both md5s.
@@ -22,7 +24,9 @@ import sys
 
 IN, OUT = sys.argv[1], sys.argv[2]
 src = open(IN, 'rb').read()
-assert hashlib.md5(src).hexdigest() == 'ff9e8fe2e4139264ebaf74f9e84bd892', 'not the bake unit (ff9e8fe2)'
+INPUTS = {'ff9e8fe2e4139264ebaf74f9e84bd892': 'the bake unit', '0402a183e527bca6d1d27b5d02bc0c38': "A2's host unit (a2/mka2host.py on the bake unit)"}
+assert hashlib.md5(src).hexdigest() in INPUTS, 'not the bake unit (ff9e8fe2) or A2\'s host unit (0402a183)'
+print('input:', INPUTS[hashlib.md5(src).hexdigest()])
 s = src.decode('utf-8')
 assert '\r' not in s
 
@@ -67,6 +71,32 @@ rep('\tg_plw.insert(g_plw.end(), found.begin(), found.end());\n\tif (r438_cv()) 
     '\t\tfor (PendingLabelWrite* w: early) w->order = ++order;\n'
     '\t}\n'
     '\tif (r438_cv()) g_plw_cv.notify_all(); // exp 0438 (b438, PLWCV)\n')
+# E9: g_plw's trim (8192 entries, the oldest 4096 go by position) dropped early entries too: a queued chain's writer, not
+# in the kernel yet, then read as "no pending write". With the switch on the oldest 4096 real entries go and early
+# entries stay; today's trim line after it then finds nothing to do (insertion only). Off: skipped.
+rep('static std::condition_variable             g_plw_cv; // exp 0438 (b438, PLWCV): real writes registered or early ones gone\n',
+    'static std::condition_variable             g_plw_cv; // exp 0438 (b438, PLWCV): real writes registered or early ones gone\n'
+    'static std::atomic<uint64_t>               g_q438_trims {0}; // exp 0438 (q438): trims that kept early entries\n'
+    'static void q438_plw_trim_locked() { // exp 0438 (q438), caller holds g_plw_mutex: the trim keeps early entries (not in the kernel yet)\n'
+    '\tif (!q438_on() || g_plw.size() <= 8192) return;\n'
+    '\tstd::vector<PendingLabelWrite> kept;\n'
+    '\tkept.reserve(g_plw.size());\n'
+    '\tsize_t gone = 0;\n'
+    '\tfor (const auto& w: g_plw) {\n'
+    '\t\tif (gone < 4096 && (w.seq & kR438Early) == 0) {\n'
+    '\t\t\tgone++;\n'
+    '\t\t\tcontinue;\n'
+    '\t\t}\n'
+    '\t\tkept.push_back(w);\n'
+    '\t}\n'
+    '\tg_plw.swap(kept);\n'
+    '\tg_q438_trims++;\n'
+    '}\n'
+    '// ---- end of exp 0438 (q438) g_plw trim\n')
+rep('\t\tw.order = ++order;\n\t}\n\tif (g_plw.size() > 8192) g_plw.erase(g_plw.begin(), g_plw.begin() + 4096);\n',
+    '\t\tw.order = ++order;\n\t}\n\tq438_plw_trim_locked(); // exp 0438 (q438)\n\tif (g_plw.size() > 8192) g_plw.erase(g_plw.begin(), g_plw.begin() + 4096);\n')
+rep('\t\tw.order = ++g_plw_order;\n\t}\n\tif (g_plw.size() > 8192) g_plw.erase(g_plw.begin(), g_plw.begin() + 4096);\n',
+    '\t\tw.order = ++g_plw_order;\n\t}\n\tq438_plw_trim_locked(); // exp 0438 (q438)\n\tif (g_plw.size() > 8192) g_plw.erase(g_plw.begin(), g_plw.begin() + 4096);\n')
 
 # E3
 rep('struct ChainSlot {\n\tChain                        c;\n',
@@ -198,6 +228,7 @@ static uint64_t q438_early_begin(const Chain& c) {
 		w.ring  = c.ring;
 		w.order = ++g_plw_order;
 	}
+	q438_plw_trim_locked();
 	if (g_plw.size() > 8192) g_plw.erase(g_plw.begin(), g_plw.begin() + 4096);
 	g_plw.insert(g_plw.end(), found.begin(), found.end());
 	return id;
