@@ -234,8 +234,33 @@ struct Device::Impl {
         if (h != nullptr && list_users.count(h) == 0) amdgpu_bo_list_destroy(h);
     }
     // Device::sorted_mappings: the sorted list and the list_gen it was built at.
-    std::shared_ptr<const std::vector<Mapping>> sorted;
+    std::shared_ptr<const MappingIndex> sorted;
     std::uint64_t sorted_gen = ~0ull;
+    // exp 0438 (tag a2): BC5_DIRECT_0438_A2=1 keeps `sorted` up to date at each edit of the lists (no rebuild);
+    // with BC5_0438_A2_CHECK_BUILD defined, BC5_DIRECT_0438_A2_CHECK=1 compares it with a full rebuild every 64th call
+    const bool a2 = [] { const char *e = std::getenv("BC5_DIRECT_0438_A2"); return !(e != nullptr && e[0] == '0' && e[1] == 0); }(); // exp 0438 (bake438b): on unless "0"
+#if defined(BC5_0438_A2_CHECK_BUILD) // exp 0438 (bake438b): A2's compare-only check, private diagnosis builds only
+    const bool a2_check = [] { const char *e = std::getenv("BC5_DIRECT_0438_A2_CHECK"); return e != nullptr && e[0] == '1' && e[1] == 0; }();
+    std::uint64_t a2_calls = 0, a2_mismatches = 0;
+    // exp 0438 (tag a2c438): counters, one stderr line per 60 s from sorted_mappings() while A2_CHECK=1 (cumulative)
+    std::uint64_t a2_ins = 0, a2_era = 0, a2_skipped = 0, a2_drops = 0, a2_rebuilds = 0, a2_compares = 0;
+    std::chrono::steady_clock::time_point a2_t0 = std::chrono::steady_clock::now(), a2_next = a2_t0 + std::chrono::seconds(60);
+    void a2_insert(const Mapping &m) { if (a2 && sorted) { sorted = index_insert(sorted, m); a2_ins++; } else if (a2) a2_skipped++; }
+    void a2_erase(const Mapping &m) { if (a2 && sorted) { sorted = index_erase(sorted, m); a2_era++; } else if (a2) a2_skipped++; }
+    void a2_line() {
+        const auto now = std::chrono::steady_clock::now();
+        if (now < a2_next) return;
+        a2_next = now + std::chrono::seconds(60);
+        std::fprintf(stderr, "bc5-direct: exp 0438 (tag a2c438): t %.0f s: index edits insert %llu erase %llu (with no index %llu), drops %llu, rebuilds %llu; "
+                     "A2_CHECK sorted_mappings calls %llu, compares %llu, mismatches %llu; entries %zu\n",
+                     std::chrono::duration<double>(now - a2_t0).count(), (unsigned long long)a2_ins, (unsigned long long)a2_era,
+                     (unsigned long long)a2_skipped, (unsigned long long)a2_drops, (unsigned long long)a2_rebuilds, (unsigned long long)a2_calls,
+                     (unsigned long long)a2_compares, (unsigned long long)a2_mismatches, sorted ? sorted->size() : std::size_t{0});
+    }
+#else
+    void a2_insert(const Mapping &m) { if (a2 && sorted) sorted = index_insert(sorted, m); }
+    void a2_erase(const Mapping &m) { if (a2 && sorted) sorted = index_erase(sorted, m); }
+#endif // BC5_0438_A2_CHECK_BUILD
     // Experiment 0170: shared_maps is kept sorted by address (map_shared inserts in place,
     // unmap_shared finds by binary search), and the direct mapper never maps two pieces over the
     // same addresses, so the short BO list finds the mappings around an operand by binary search
@@ -815,6 +840,7 @@ bool Device::map_userptr(std::uint64_t cpu_va, std::uint64_t size, bool readonly
         return false;
     }
     impl_->userptrs.push_back(u);
+    impl_->a2_insert({u.va, u.size, u.readonly, false}); // exp 0438 (tag a2)
     impl_->list_gen++;
     return true;
 }
@@ -827,6 +853,7 @@ bool Device::unmap_userptr(std::uint64_t cpu_va) {
             impl_->drop_aliases_of(it->bo);
             impl_->va_unmap(it->bo, 0, it->size, it->va);
             amdgpu_bo_free(it->bo);
+            impl_->a2_erase({it->va, it->size, it->readonly, false}); // exp 0438 (tag a2)
             impl_->userptrs.erase(it);
             impl_->list_gen++;
             return true;
@@ -848,8 +875,40 @@ std::vector<Mapping> Device::mappings() const {
     return out;
 }
 
-std::shared_ptr<const std::vector<Mapping>> Device::sorted_mappings() const {
+std::shared_ptr<const MappingIndex> Device::sorted_mappings() const {
     std::lock_guard lock(impl_->mutex);
+#if defined(BC5_0438_A2_CHECK_BUILD) // exp 0438 (bake438b): A2's compare-only check, private diagnosis builds only
+    if (impl_->a2_check) impl_->a2_line(); // exp 0438 (tag a2c438)
+#endif // BC5_0438_A2_CHECK_BUILD
+    if (impl_->a2 && impl_->sorted != nullptr) { // exp 0438 (tag a2): kept up to date at each edit
+#if defined(BC5_0438_A2_CHECK_BUILD) // exp 0438 (bake438b): A2's compare-only check, private diagnosis builds only
+        if (impl_->a2_check && (impl_->a2_calls++ & 63u) == 0) {
+            impl_->a2_compares++; // exp 0438 (tag a2c438)
+            std::vector<Mapping> users;
+            for (const auto &u : impl_->userptrs) users.push_back({u.va, u.size, u.readonly, false});
+            std::sort(users.begin(), users.end(), [](const Mapping &x, const Mapping &y) { return x.va < y.va; });
+            std::vector<Mapping> ref;
+            auto u = users.begin();
+            for (const auto &m : impl_->shared_maps) {
+                while (u != users.end() && u->va < m.va) ref.push_back(*u++);
+                ref.push_back({m.va, m.size, m.readonly, true});
+            }
+            ref.insert(ref.end(), u, users.end());
+            bool same = ref.size() == impl_->sorted->size();
+            std::size_t at = 0;
+            for (const auto &m : *impl_->sorted) {
+                if (!same) break;
+                const Mapping &r = ref[at];
+                if (r.va != m.va || r.size != m.size || r.readonly != m.readonly || r.shared != m.shared) same = false;
+                else at++;
+            }
+            if (!same && impl_->a2_mismatches++ < 20)
+                std::fprintf(stderr, "bc5-direct: exp 0438 (tag a2): MISMATCH of the index against a rebuild at element %zu (index %zu, rebuild %zu entries; %llu so far)\n", at,
+                             impl_->sorted->size(), ref.size(), static_cast<unsigned long long>(impl_->a2_mismatches));
+        }
+#endif // BC5_0438_A2_CHECK_BUILD
+        return impl_->sorted;
+    }
     if (impl_->sorted == nullptr || impl_->sorted_gen != impl_->list_gen) {
         // Experiment 0170: shared_maps is already sorted; only the few userptrs are sorted here
         // and merged in (a full sort of ~17,000 entries at every change of the list cost the
@@ -867,7 +926,10 @@ std::shared_ptr<const std::vector<Mapping>> Device::sorted_mappings() const {
             out->push_back({m.va, m.size, m.readonly, true});
         }
         out->insert(out->end(), u, users.end());
-        impl_->sorted = std::move(out);
+        impl_->sorted = std::make_shared<const MappingIndex>(std::move(*out)); // exp 0438 (tag a2): one chunk
+#if defined(BC5_0438_A2_CHECK_BUILD) // exp 0438 (bake438b): A2's compare-only check, private diagnosis builds only
+        impl_->a2_rebuilds++; // exp 0438 (tag a2c438)
+#endif // BC5_0438_A2_CHECK_BUILD
         impl_->sorted_gen = impl_->list_gen;
     }
     return impl_->sorted;
@@ -933,6 +995,7 @@ bool Device::map_shared(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t
     const auto at = std::upper_bound(impl_->shared_maps.begin(), impl_->shared_maps.end(), gpu_va,
                                      [](std::uint64_t va, const SharedMap &m) { return va < m.va; });
     impl_->shared_maps.insert(at, SharedMap{gpu_va, size, bo_offset, id, b->bo, readonly});
+    impl_->a2_insert({gpu_va, size, readonly, true}); // exp 0438 (tag a2)
     b->maps++;
     impl_->list_gen++;
     return true;
@@ -959,6 +1022,7 @@ bool Device::unmap_shared(std::uint64_t gpu_va) {
     if (it == impl_->shared_maps.end() || it->va != gpu_va) return false;
     impl_->va_unmap(it->bo, it->bo_offset, it->size, it->va);
     if (SharedBo *b = impl_->shared_bo_locked(it->id); b != nullptr && b->maps != 0) b->maps--;
+    impl_->a2_erase({it->va, it->size, it->readonly, true}); // exp 0438 (tag a2)
     impl_->shared_maps.erase(it);
     impl_->list_gen++;
     return true;
@@ -1016,6 +1080,10 @@ bool Device::free_shared(std::uint32_t id) {
             ++w;
         }
         impl_->shared_maps.resize(w);
+        impl_->sorted = nullptr; // exp 0438 (tag a2): many maps went at once; the next call rebuilds
+#if defined(BC5_0438_A2_CHECK_BUILD) // exp 0438 (bake438b): A2's compare-only check, private diagnosis builds only
+        impl_->a2_drops++; // exp 0438 (tag a2c438)
+#endif // BC5_0438_A2_CHECK_BUILD
         b->maps = 0;
         impl_->drop_aliases_of(b->bo);
         // a kept list would hold the BO (and its pages) alive
