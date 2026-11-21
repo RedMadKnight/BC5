@@ -43,7 +43,7 @@ mkdir -p "$E"
 log() { printf '%s %s\n' "$(date '+%F %T')" "$*" | tee -a "$E/e0439.log"; }
 die() { log "STOP: $*"; exit 1; }
 run() { if [ "${BC5_DRY:-0}" = 1 ]; then echo "[dry] $*"; else "$@"; fi; }
-emu_running() { pgrep -f '[k]yty_emulator' >/dev/null; }
+emu_running() { pgrep -x kyty_emulator >/dev/null; }  # -x: a build's arguments name the binary too
 our_lock() { [ -e "$LOCK" ] && grep -q '^exp0439 ' "$LOCK" 2>/dev/null && ! grep -q '^MAINTAINER PLAYING' "$LOCK"; }
 # The lock: one line, taken only when BOX-LOCK is empty or absent; check and write under one flock.
 take_lock() {
