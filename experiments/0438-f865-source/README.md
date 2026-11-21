@@ -2477,6 +2477,14 @@ The lean A/B on ASTRO BOT, on the clean boot c05993c0 (`r438o/ab438o.sh`; MangoH
   - The control itself fell from 59.49 (q438oA) to 58.57 flips/s on the same boot, and its p99 from 17 to 34 ms. That drift of the box is larger than the difference between the arms.
   - The normal run again printed no r438 line (no slice) and no kernel line.
 
+**The bake (2026-11-21 14:52–15:02, the top session's GO; one lock line for the swap and the smoke):**
+
+- Patch 9889b06a → 0fede35d (135 files, exp 0372 lines 5, the pad_audio_route header in).
+- Normal b1b57df9 → 199a0f39, lean d3485ed4 → 3a20b974, archive d6638808 unchanged. No switch word gained or lost.
+- Smokes: o438sc (ASTRO lean 200 s) and o438sn (normal 200 s) PASS, 0 kernel lines. The exe md5s read back.
+- The chain cannot separate a cost under about 0.3 % from the boot's drift, and every r438o run followed a control run.
+- Undo: `bash ~/bc5-work/exp0438/r438okit/bake/undo0438o.sh`.
+
 **Unexercised.** ASTRO BOT takes no r438 slices, so this A/B shows only that r438o costs nothing when idle. The fix's own path (the renumbering and the trim-keep) stays unexercised on a real title until the second title is installed again.
 
 ## Verdict
