@@ -10,30 +10,36 @@
 # One BOX-LOCK line for the whole chain (start0413g.sh inherits it), ulimit -c 0. Before each run: no emulator, no
 # bc5-mount, no dead ASTRO mount inside the container. Stops at the first failed run or kernel line. Per lean run:
 # frames and frame times from 30 s of MangoHud's clock to its end (mean fps, frame time p50 / p99 / max, frames over
-# 50 ms). DRY=1: checks and prints the plan, starts nothing, takes no lock.
+# 50 ms). Step 0, the boot check: 0 amdgpu reset lines, a display connected, nothing running, no dead mount. DRY=1: checks and prints the plan, starts nothing, takes no lock.
 #   bash ab438o.sh <tag-prefix>      (on the box, detached under the user manager, e.g.
 #   systemd-run --user --unit=bc5-ab438o --collect sh -c 'bash ~/bc5-work/exp0438/r438okit/ab438o.sh q438oA > ~/bc5-work/exp0438/r438o/ab.log 2>&1')
 set -u
 ulimit -c 0
 export LC_ALL=C
-P=${1:?tag prefix}; W=$HOME/bc5-work; N=$W/exp0413/n; R=$N/raw; LOCK=$W/BOX-LOCK; DRY=${DRY:-0}
+P=${1:?tag prefix}; W=${AB_W:-$HOME/bc5-work}; N=$W/exp0413/n; R=$N/raw; LOCK=$W/BOX-LOCK; DRY=${DRY:-0}
 CB=$W/kytyplus-build-lean/src/kyty_emulator; OB=$W/exp0438/r438o/lean/kyty_emulator; NB=$W/exp0438/r438o/normal/kyty_emulator
-M=$HOME/bc5-data/mnt/PPSA21567; SECS=180; MHD=170
+M=${AB_M:-$HOME/bc5-data/mnt/PPSA21567}; SECS=180; MHD=170
 S=$R/$P-ab438o.txt
 m() { md5sum < "$1" | cut -d' ' -f1; }
 say() { echo "$(date +%T) $*" | tee -a "$S"; }
 case "$P" in *[!A-Za-z0-9]* | "") echo "the tag prefix is letters and digits"; exit 1 ;; esac
 MC=$(m "$CB"); MO=$(m "$OB"); MN=$(m "$NB")
-[ "${MC:0:8}" = d3485ed4 ] && [ "${MO:0:8}" = aae9c294 ] && [ "${MN:0:8}" = 0c3a60fb ] || { echo "binaries: control ${MC:0:8}, r438o lean ${MO:0:8}, normal ${MN:0:8}: not the pinned ones"; exit 1; }
+{ [ "${AB_STANDIN:-0}" = 1 ] || { [ "${MC:0:8}" = d3485ed4 ] && [ "${MO:0:8}" = aae9c294 ] && [ "${MN:0:8}" = 0c3a60fb ]; }; } || { echo "binaries: control ${MC:0:8}, r438o lean ${MO:0:8}, normal ${MN:0:8}: not the pinned ones"; exit 1; }
 for a in C1 O1 C2 O2 C3 O3 N1; do [ -e "$R/$P$a-start.txt" ] && { echo "tag $P$a already used"; exit 1; }; done
 deadmnt() { distrobox enter ubuntu -- sh -c 'M=$1; if mountpoint -q "$M" && ! head -c1 "$M/sce_sys/param.json" > /dev/null 2>&1; then echo dead; fi' _ "$M" 2> /dev/null < /dev/null | grep -q dead; }
 busy() { pgrep -x kyty_emulator > /dev/null || pgrep -x bc5-mount > /dev/null; }
+resets() { sudo -n dmesg 2> /dev/null | grep -E 'amdgpu [0-9a-f]{4}:' | grep -ciE 'ring .* timeout|reset (succeeded|failed)|GPU reset|device wedged'; }
+display() { cat ${AB_DRM:-/sys/class/drm}/card*-DP-*/status ${AB_DRM:-/sys/class/drm}/card*-HDMI-*/status 2> /dev/null | grep -c '^connected$'; }
 mkdir -p "$R"
 echo "$(date '+%F %T') $P: boot $(cut -c1-8 /proc/sys/kernel/random/boot_id), up $(cut -d' ' -f1 /proc/uptime) s, kernel $(uname -r); control ${MC:0:8}, r438o lean ${MO:0:8}, normal ${MN:0:8}" > "$S"
+# the boot check (the top session's step 1): 0 reset lines, a display connected, nothing running, no dead ASTRO mount
+NDISP=$(display); BOOT="resets $(resets), displays connected $NDISP, busy $(busy && echo yes || echo no), dead mount $(deadmnt && echo yes || echo no)"
+say "boot check: $BOOT"
 if [ "$DRY" = 1 ]; then
     say "DRY: plan C1 O1 C2 O2 C3 O3 (lean, MangoHud, $SECS s) then N1 (normal, $SECS s); lock now [$(cat "$LOCK")]; busy $(busy && echo yes || echo no); dead mount $(deadmnt && echo yes || echo no)"
     exit 0
 fi
+[ "$BOOT" = "resets 0, displays connected $NDISP, busy no, dead mount no" ] && [ "$NDISP" -ge 1 ] || { say "STOP: the boot check failed"; exit 1; }
 LINE="exp 0438 | r438o lean A/B on ASTRO BOT $P (6 lean + 1 normal, $SECS s each), token $(date +%s)$$ | $(date '+%F %T')"
 [ -e "$LOCK" ] || touch "$LOCK"
 [ -f "$LOCK" ] && [ ! -L "$LOCK" ] && [ ! -s "$LOCK" ] || { echo "the box is locked: $(cat "$LOCK")"; exit 1; }
@@ -53,7 +59,7 @@ stats() { # $1 tag: MangoHud's csv, from 30 s of its own clock
     [ -n "$f" ] || { echo "no MangoHud log"; return; }
     awk -F, 'h == 0 && /^fps,/ {for (i = 1; i <= NF; i++) {if ($i == "frametime") ft = i; if ($i == "elapsed") el = i}; h = 1; next}
       h == 1 && ft > 0 && el > 0 {t = $el / 1e9; if (t < 30) next; if (t0 == "") t0 = t; t1 = t; v[n++] = $ft; if ($ft > 50) o++}
-      END {if (n < 2) {print "too few frames"; exit}; asort(v); printf "frames %d in %.1f s, mean %.2f fps, frame time p50 %.2f p99 %.2f max %.2f ms, over 50 ms %d\n", n, t1 - t0, (n - 1) / (t1 - t0), v[int(n * 0.5)], v[int(n * 0.99)], v[n], o + 0}' "$f"
+      END {if (n < 2) {print "too few frames"; exit}; asort(v); printf "frames %d in %.1f s, flips/s %.2f, frame time median %.2f p95 %.2f p99 %.2f max %.2f ms, over 50 ms %d\n", n, t1 - t0, (n - 1) / (t1 - t0), v[int(n * 0.5)], v[int(n * 0.95)], v[int(n * 0.99)], v[n], o + 0}' "$f"
 }
 run() { # $1 arm tag, $2 binary, $3 md5, $4 lean 1/0
     local t=$P$1 line lss
