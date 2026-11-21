@@ -236,8 +236,23 @@ the control's line has none, `X=1;rm` is refused).
     - With the switch on, ASTRO gets 3 interrupts it never got before (INT_SEL 4, ident 0). The 5 registrations for ident
       0 are the graphics EOP events; ASTRO's frame count and timing did not change visibly (3000 flips by 53.48 s against
       53.44 s). TODO: name the 5 registrations' equeues from the ae27-on log.
-    - Lean A/B for the clean-boot chain (prepared, not run): `k439/ab439ae.sh`, one private lean binary for both arms, C
-      without the word and O with `BC5_DIRECT_AGC_EOP_IDENT=1`, C O C O C O, 180 s each, MangoHud's frame log.
+    - Lean A/B (`k439/ab439ae.sh`, run 18:00-18:23 on boot c97d43e6). One private lean binary (`25338f8a`) for both
+      arms: C without the word, O with `BC5_DIRECT_AGC_EOP_IDENT=1`. ASTRO BOT, no input, 180 s each, MangoHud's frame
+      log from 30 s. One warm-up control first, discarded, then C O C O C O. Every run PASS, 0 kernel lines.
+      Raw: `logs/ab439ae-q439aeA.txt`.
+
+      | run | flips/s | median | p95 | p99 | max (ms) | over 50 ms |
+      |---|---|---|---|---|---|---|
+      | W0 (discarded) | 58.08 | 16.67 | 17.23 | 34.38 | 67.16 | 6 |
+      | C1 | 58.16 | 16.67 | 17.23 | 34.24 | 66.64 | 6 |
+      | O1 | 58.92 | 16.67 | 16.98 | 33.77 | 51.86 | 6 |
+      | C2 | 58.14 | 16.67 | 17.22 | 34.16 | 50.29 | 3 |
+      | O2 | 58.66 | 16.67 | 17.07 | 33.85 | 66.91 | 4 |
+      | C3 | 58.48 | 16.67 | 17.11 | 33.97 | 50.25 | 7 |
+      | O3 | 58.28 | 16.68 | 17.20 | 34.03 | 66.88 | 4 |
+
+      - Control 58.14-58.48 flips/s, switch on 58.28-58.92. The ranges overlap, so no cost of the switch is visible.
+      - With the switch on, ASTRO gets 3 interrupts it never got before; nothing visible changes.
 24. *Cross-pack runs (x28, 16:32-16:33, normal `2befcb17`, resets 11 -> 11, fault records 27 -> 27).*
     - The host LLE-loads every module in the one `SHADPS4_SYSMODULES_PACK_DIR` (KytyPlus `runtimeLinker.cpp`
       `add_lle_dir`) and keeps the rest on HLE, so the packs were mixed with symlinks.
