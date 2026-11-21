@@ -17,14 +17,16 @@ set -u
 ulimit -c 0
 export LC_ALL=C
 P=${1:?tag prefix}; W=${AB_W:-$HOME/bc5-work}; N=$W/exp0413/n; R=$N/raw; LOCK=$W/BOX-LOCK; DRY=${DRY:-0}
-CB=$W/kytyplus-build-lean/src/kyty_emulator; OB=$W/exp0438/r438o/lean/kyty_emulator; NB=$W/exp0438/r438o/normal/kyty_emulator
+# AB_CB / AB_OB / AB_NB: other binaries (with AB_PIN_C / _O / _N), AB_C_WORDS / AB_O_WORDS / AB_N_WORDS: switch words per arm
+CB=${AB_CB:-$W/kytyplus-build-lean/src/kyty_emulator}; OB=${AB_OB:-$W/exp0438/r438o/lean/kyty_emulator}; NB=${AB_NB:-$W/exp0438/r438o/normal/kyty_emulator}
+read -r -a CW <<< "${AB_C_WORDS:-}"; read -r -a OW <<< "${AB_O_WORDS:-}"; read -r -a NW <<< "${AB_N_WORDS:-}"
 M=${AB_M:-$HOME/bc5-data/mnt/PPSA21567}; SECS=180; MHD=170
 S=$R/$P-ab438o.txt
 m() { md5sum < "$1" | cut -d' ' -f1; }
 say() { echo "$(date +%T) $*" | tee -a "$S"; }
 case "$P" in *[!A-Za-z0-9]* | "") echo "the tag prefix is letters and digits"; exit 1 ;; esac
 MC=$(m "$CB"); MO=$(m "$OB"); MN=$(m "$NB")
-{ [ "${AB_STANDIN:-0}" = 1 ] || { [ "${MC:0:8}" = d3485ed4 ] && [ "${MO:0:8}" = "${AB_PIN_O:-aae9c294}" ] && [ "${MN:0:8}" = "${AB_PIN_N:-0c3a60fb}" ]; }; } || { echo "binaries: control ${MC:0:8}, r438o lean ${MO:0:8}, normal ${MN:0:8}: not the pinned ones"; exit 1; }
+{ [ "${AB_STANDIN:-0}" = 1 ] || { [ "${MC:0:8}" = "${AB_PIN_C:-d3485ed4}" ] && [ "${MO:0:8}" = "${AB_PIN_O:-aae9c294}" ] && [ "${MN:0:8}" = "${AB_PIN_N:-0c3a60fb}" ]; }; } || { echo "binaries: control ${MC:0:8}, r438o lean ${MO:0:8}, normal ${MN:0:8}: not the pinned ones"; exit 1; }
 for a in C1 O1 C2 O2 C3 O3 N1; do [ -e "$R/$P$a-start.txt" ] && { echo "tag $P$a already used"; exit 1; }; done
 deadmnt() { distrobox enter ubuntu -- sh -c 'M=$1; if mountpoint -q "$M" && ! head -c1 "$M/sce_sys/param.json" > /dev/null 2>&1; then echo dead; fi' _ "$M" 2> /dev/null < /dev/null | grep -q dead; }
 busy() { pgrep -x kyty_emulator > /dev/null || pgrep -x bc5-mount > /dev/null; }
@@ -61,29 +63,30 @@ stats() { # $1 tag: MangoHud's csv, from 30 s of its own clock
       h == 1 && ft > 0 && el > 0 {t = $el / 1e9; if (t < 30) next; if (t0 == "") t0 = t; t1 = t; v[n++] = $ft; if ($ft > 50) o++}
       END {if (n < 2) {print "too few frames"; exit}; asort(v); printf "frames %d in %.1f s, flips/s %.2f, frame time median %.2f p95 %.2f p99 %.2f max %.2f ms, over 50 ms %d\n", n, t1 - t0, (n - 1) / (t1 - t0), v[int(n * 0.5)], v[int(n * 0.95)], v[int(n * 0.99)], v[n], o + 0}' "$f"
 }
-run() { # $1 arm tag, $2 binary, $3 md5, $4 lean 1/0
-    local t=$P$1 line lss
+run() { # $1 arm tag, $2 binary, $3 md5, $4 lean 1/0, then switch words
+    local t=$P$1 line lss b=$2 md=$3 lean=$4; shift 4; local words=("$@")
     busy && { say "STOP before $t: an emulator or bc5-mount runs"; finish 1; }
     deadmnt && { say "STOP before $t: a dead ASTRO mount inside the container"; finish 1; }
     local mh=()
-    if [ "$4" = 1 ]; then
+    if [ "$lean" = 1 ]; then
         mkdir -p "$R/$t-mh"
         mh=(MANGOHUD=1 "MANGOHUD_CONFIG=fps_only=1,alpha=0,background_alpha=0,autostart_log=1,log_interval=0,output_folder=$R/$t-mh,log_duration=$MHD")
         /usr/bin/bash "$W/lean-session.sh" stop $$ > /dev/null 2>&1; lss=$?
         [ "$lss" = 0 ] || { say "STOP: lean-session.sh stop exit $lss before $t"; finish 1; }
     fi
-    line=$(cd "$N" && CHAIN_LOCKLINE=$LINE P_BIN=$2 P_WANT=$3 bash ./start0413g.sh "$t" astro "$SECS" BC5_FAULT_RECORD=1 "${mh[@]}" 2>&1 | tail -1)
-    [ "$4" = 1 ] && /usr/bin/bash "$W/lean-session.sh" restore $$ > /dev/null 2>&1
+    line=$(cd "$N" && CHAIN_LOCKLINE=$LINE P_BIN=$b P_WANT=$md bash ./start0413g.sh "$t" astro "$SECS" BC5_FAULT_RECORD=1 "${words[@]}" "${mh[@]}" 2>&1 | tail -1)
+    [ "$lean" = 1 ] && /usr/bin/bash "$W/lean-session.sh" restore $$ > /dev/null 2>&1
     say "$t: $line"
-    [ "$4" = 1 ] && say "$t: $(stats "$t")"
+    [ "$lean" = 1 ] && say "$t: $(stats "$t")"
     case "$line" in *"PASS: ran $SECS s"*"kernel lines 0, crash lines 0"*) ;; *) say "STOP: $t did not pass"; finish 1 ;; esac
     sleep 5
 }
 for a in C1:C O1:O C2:C O2:O C3:C O3:O; do
     t=${a%%:*}; k=${a##*:}
-    if [ "$k" = C ]; then run "$t" "$CB" "$MC" 1; else run "$t" "$OB" "$MO" 1; fi
+    if [ "$k" = C ]; then run "$t" "$CB" "$MC" 1 "${CW[@]}"; else run "$t" "$OB" "$MO" 1 "${OW[@]}"; fi
 done
-run N1 "$NB" "$MN" 0
+run N1 "$NB" "$MN" 0 "${NW[@]}"
 say "N1 r438 lines: $(grep -ac 'r438 (exp 0438, b438)' "$R/${P}N1-play.log"), BUG $(grep -ac 'r438 (exp 0438, b438): BUG' "$R/${P}N1-play.log"), GIVEN UP $(grep -aci 'given up' "$R/${P}N1-play.log")"
 grep -a 'r438 (exp 0438, b438): t ' "$R/${P}N1-play.log" | tail -3 | tee -a "$S"
+grep -a 'tag a1c438): t \|tag a2c438): t ' "$R/${P}N1-play.log" | tail -2 | cut -c1-400 | tee -a "$S"
 finish 0
