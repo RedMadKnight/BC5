@@ -44,7 +44,7 @@ PL=$O/play-last.log
 grep -a "frame profile" "$(ls -d ~/bc5-data/captures/play-* | tail -1)/gc/direct.log" 2> /dev/null | tail -2 | cut -c1-200
 echo "r438 BUG lines: $(grep -a -c 'r438 (exp 0438, b438): BUG' "$(ls -d ~/bc5-data/captures/play-* | tail -1)/gc/direct.log" 2> /dev/null)"
 grep -a -c "tag ip439" $O/play-last.log 2> /dev/null | sed 's/^/ip439 lines: /'
-echo "fl439: flattened $(grep -a -c 'tag fl439): .* laid out flat' $O/play-last.log), refused $(grep -a -c 'tag fl439): .* NOT laid out flat' $O/play-last.log); k1f412 imports $(grep -a -c 'k1 at the filter' "$(ls -d ~/bc5-data/captures/play-* | tail -1)/gc/direct.log" 2> /dev/null), ud434 imports $(grep -a -c 'user-data target (exp 0434' "$(ls -d ~/bc5-data/captures/play-* | tail -1)/gc/direct.log" 2> /dev/null)"
+echo "fl439: flattened $(grep -a -c 'tag fl439): .* laid out flat:' $O/play-last.log), refused $(grep -a -c 'tag fl439): .* NOT laid out flat' $O/play-last.log); k1f412 imports $(grep -a -c 'k1 at the filter' "$(ls -d ~/bc5-data/captures/play-* | tail -1)/gc/direct.log" 2> /dev/null), ud434 imports $(grep -a -c 'user-data target (exp 0434' "$(ls -d ~/bc5-data/captures/play-* | tail -1)/gc/direct.log" 2> /dev/null)"
 grep -a 'tag fl439\|tag ip439\|tag pd439' $O/play-last.log | head -6 | cut -c1-220
 echo "== t3r-i$IMP: $(grep before $O/meta.txt | sed 's/.*before: /resets /') -> $(grep after $O/meta.txt | sed 's/.*after: //'); fault records $(ls ~/bc5-data/captures/faults | wc -l); flips $(grep -a -c 'tag dc439): t .* flip:' $PL); decompress OK $(grep -a -c 'decompress of index .*: OK' $PL); exit $(grep -a '== .* exit' $PL | tail -1 | sed 's/.* exit //')"
 grep -a 'GPU FAULT\|Error ---' -A2 $PL | head -6 | cut -c1-220
