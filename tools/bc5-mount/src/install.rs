@@ -28,10 +28,13 @@ use crate::verify::FileHash;
 /// What the install command produces.
 #[derive(Debug)]
 pub struct InstallInfo {
-    /// Number of files written.
+    /// Number of files in the installed tree (written now plus, with `--resume`, kept from an earlier run).
     pub file_count: usize,
-    /// Total bytes written.
+    /// Total bytes of those files.
     pub total_bytes: u64,
+    /// Files kept from an earlier run by `--resume` (their size matched); their expected hash is read from the
+    /// image, so `--verify` checks them too (exp 0439: the old code left them out and verify failed on them).
+    pub files_kept: usize,
     /// SHA-256 hashes of every file (sorted by path).
     pub hashes: Vec<FileHash>,
 }
@@ -247,6 +250,7 @@ pub fn install(
     let mut hashes = Vec::with_capacity(files_total);
     let mut file_count = 0;
     let mut total_bytes = 0u64;
+    let mut files_kept = 0usize;
 
     for (idx, path, size) in &files {
         let file_path = dest.join(path);
@@ -256,7 +260,29 @@ pub fn install(
         if resume {
             if let Ok(meta) = fs::metadata(&file_path) {
                 if meta.len() == *size {
-                    // File size matches; skip.
+                    // File size matches: keep it, but read its expected hash from the image so that the
+                    // record lists every file and `--verify` re-reads this one from disk like the rest.
+                    let tree_file = TreeFile::new(tree, *idx)
+                        .with_context(|| format!("reading file {path} from image"))?;
+                    let mut buf = vec![0u8; 1 << 20];
+                    let mut off = 0u64;
+                    let mut file_hash = Sha256::new();
+                    while off < *size {
+                        let n = tree_file.read_at(off, &mut buf)?;
+                        if n == 0 {
+                            break;
+                        }
+                        file_hash.update(&buf[..n]);
+                        off += n as u64;
+                    }
+                    hashes.push(FileHash {
+                        path: path.clone(),
+                        size: *size,
+                        sha256: file_hash.finalize().into(),
+                    });
+                    file_count += 1;
+                    total_bytes += *size;
+                    files_kept += 1;
                     progress.maybe_print();
                     continue;
                 }
@@ -343,13 +369,24 @@ pub fn install(
             .with_context(|| "re-reading installed files from disk")?;
         let diffs = crate::verify::diff(&hashes, &disk_hashes);
         if !diffs.is_empty() {
-            bail!("verification failed (disk re-read): {}", diffs.join(", "));
+            let shown: Vec<&str> = diffs.iter().take(20).map(String::as_str).collect();
+            bail!(
+                "verification failed (disk re-read): {} difference(s): {}{}",
+                diffs.len(),
+                shown.join(", "),
+                if diffs.len() > shown.len() {
+                    ", ..."
+                } else {
+                    ""
+                }
+            );
         }
     }
 
     Ok(InstallInfo {
         file_count,
         total_bytes,
+        files_kept,
         hashes,
     })
 }
