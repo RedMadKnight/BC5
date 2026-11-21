@@ -165,4 +165,90 @@ inline Result collect(const std::uint32_t *root, std::size_t root_n,
     return r;
 }
 
+// exp 0439 (tag fl439): BC5_DIRECT_IB_CHAIN_FLAT ("1": compute jobs, "2": every job, else off). A chain at the top level
+// of a job is laid out flat: each segment is copied up to and including its chain packet, the chain packet becomes
+// one-dword NOPs of its length (0xffff1000, as the filter drops a packet), nothing after it is copied (the CP never runs a
+// segment's tail past its chain), and the chain's target follows directly. So the CP never switches buffers inside the job,
+// and the state a segment sets before its chain is simply still there for the next segment (the frame-229 hang: the first
+// dispatch after a chain on a compute ring, its program set before the chain, never finished; the first chain the host
+// ever ran on a compute ring). Refused (the job keeps today's layout) when a segment holds a COND_EXEC before its chain (a
+// conditional chain), on a cycle, an unmapped target, or past kMaxFlatDwords. Calls (bit 20 clear) are left as they are.
+inline int flat_mode() {
+    static const int v = [] {
+        const char *e = std::getenv("BC5_DIRECT_IB_CHAIN_FLAT");
+        if (e == nullptr || e[1] != 0) return 0;
+        return e[0] == '1' ? 1 : e[0] == '2' ? 2 : 0;
+    }();
+    return v;
+}
+inline constexpr std::size_t kMaxFlatDwords = 1u << 20;
+inline constexpr std::uint32_t kFlatNop = 0xffff1000u;
+
+struct FlatSeg {
+    const std::uint32_t *src = nullptr; // the guest segment
+    std::size_t n = 0;                  // its dwords copied (up to and including its chain packet, or all of the last)
+    std::size_t off = 0;                // its first dword in the flat buffer
+};
+enum class FlatResult { NoChain, Flattened, Refused };
+
+inline FlatResult flatten(std::span<const std::uint32_t> top, const std::function<bool(std::uint64_t, std::uint64_t)> &mapped,
+                          std::vector<std::uint32_t> &out, std::vector<FlatSeg> &segs, const char **why = nullptr) {
+    out.clear();
+    segs.clear();
+    const std::uint32_t *src = top.data();
+    std::size_t n = top.size();
+    auto refuse = [&](const char *w) {
+        if (why != nullptr) *why = w;
+        out.clear();
+        segs.clear();
+        return FlatResult::Refused;
+    };
+    for (std::size_t seg = 0;; ++seg) {
+        if (seg >= kMaxChainPieces) return refuse("over 4096 segments");
+        for (const auto &s : segs)
+            if (s.src == src) return refuse("a chain cycle");
+        // the first chain packet at this segment's top level, and whether a COND_EXEC comes before it
+        std::size_t chain_at = n, chain_len = 0;
+        bool cond = false;
+        for (std::size_t i = 0; i < n;) {
+            const std::uint32_t h = src[i], type = h >> 30;
+            std::size_t len = 1;
+            if (type == 3 || type == 0) {
+                const std::uint32_t c = (h >> 16) & 0x3fff;
+                len = c == 0x3fff ? 1 : c + 2;
+            }
+            if (i + len > n) break;
+            const std::uint32_t op = (h >> 8) & 0xff;
+            if (type == 3 && op == 0x22) cond = true;
+            if (type == 3 && (op == 0x3f || op == 0x33) && len >= 4 && is_chain(src[i + 3])) {
+                chain_at = i;
+                chain_len = len;
+                break;
+            }
+            i += len;
+        }
+        if (chain_at == n) { // the last segment: all of it
+            if (seg == 0) return FlatResult::NoChain;
+            if (out.size() + n > kMaxFlatDwords) return refuse("over the flat size bound");
+#if !defined(BC5_FL439_PLANT) // the det test's planted bug: the last chunk dropped (must FAIL)
+            segs.push_back({src, n, out.size()});
+            out.insert(out.end(), src, src + n);
+#endif
+            return FlatResult::Flattened;
+        }
+        if (cond) return refuse("a COND_EXEC before the chain (a conditional chain)");
+        const std::uint64_t a = (static_cast<std::uint64_t>(src[chain_at + 1]) & ~3ull) |
+                                (static_cast<std::uint64_t>(src[chain_at + 2] & 0xffu) << 32);
+        const std::size_t tn = src[chain_at + 3] & 0xfffffu;
+        if (a == 0 || tn == 0 || (mapped && !mapped(a, tn * 4))) return refuse("a chain target not mapped");
+        const std::size_t copy_n = chain_at + chain_len;
+        if (out.size() + copy_n > kMaxFlatDwords) return refuse("over the flat size bound");
+        segs.push_back({src, copy_n, out.size()});
+        out.insert(out.end(), src, src + chain_at);
+        out.insert(out.end(), chain_len, kFlatNop);
+        src = reinterpret_cast<const std::uint32_t *>(a);
+        n = tn;
+    }
+}
+
 } // namespace bc5::ib_chain

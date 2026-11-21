@@ -1163,6 +1163,27 @@ SubmitResult Device::submit_impl(std::span<const std::uint32_t> ib, const policy
         r.rc = -2;
         return r;
     }
+    // exp 0439 (tag fl439): BC5_DIRECT_IB_CHAIN_FLAT, a top-level chain laid out flat (bc5/ib_chain.hpp flatten). The flat
+    // buffer replaces `ib` for the rest of this call; the executed offsets are split back per guest segment below.
+    std::vector<std::uint32_t> flat_local;
+    std::vector<ib_chain::FlatSeg> flat_segs;
+    if (const int fm = ib_chain::flat_mode(); fm == 2 || (fm == 1 && comp)) {
+        const char *why = nullptr;
+        const ib_chain::FlatResult fr = ib_chain::flatten(ib, opt.mapped, flat_local, flat_segs, &why);
+        static std::atomic<std::uint64_t> n_flat{0}, n_flat_refused{0};
+        if (fr == ib_chain::FlatResult::Flattened) {
+            const std::uint64_t c = ++n_flat;
+            if (c <= 16 || c % 1000 == 0)
+                std::fprintf(stderr, "bc5-direct: exp 0439 (tag fl439): %s job of %zu dwords at %p laid out flat: %zu segments, %zu dwords (%llu such jobs)\n",
+                             comp ? "compute" : "GFX", ib.size(), static_cast<const void *>(ib.data()), flat_segs.size(), flat_local.size(), static_cast<unsigned long long>(c));
+            ib = std::span<const std::uint32_t>(flat_local.data(), flat_local.size());
+        } else if (fr == ib_chain::FlatResult::Refused) {
+            const std::uint64_t c = ++n_flat_refused;
+            if (c <= 16 || c % 1000 == 0)
+                std::fprintf(stderr, "bc5-direct: exp 0439 (tag fl439): %s job of %zu dwords at %p NOT laid out flat (%s): today's layout (%llu such jobs)\n",
+                             comp ? "compute" : "GFX", ib.size(), static_cast<const void *>(ib.data()), why != nullptr ? why : "?", static_cast<unsigned long long>(c));
+        }
+    }
     // Layout: the IB first, then every INDIRECT_BUFFER target it (transitively) reaches, each
     // padded to 8 dwords with NOPs — the CP fetches IBs in 32-byte chunks and must never run
     // into what lies past a buffer (experiment 0016). The nested copies let the filter see the
@@ -1210,6 +1231,17 @@ SubmitResult Device::submit_impl(std::span<const std::uint32_t> ib, const policy
     double t_phase = now_ms();
     policy::filter(policy::Policy::builtin(), ib, main_out, fopt, r.filter);
     executed_offsets_of(ib, main_out.data(), r.executed_offsets);
+    if (!flat_segs.empty()) { // exp 0439 (tag fl439): the executed offsets per guest segment (the first stays the IB's own)
+        const std::vector<std::uint32_t> all = std::move(r.executed_offsets);
+        r.executed_offsets.clear();
+        for (std::size_t s = 0; s < flat_segs.size(); ++s) {
+            std::vector<std::uint32_t> ex;
+            for (const std::uint32_t o : all)
+                if (o >= flat_segs[s].off && o < flat_segs[s].off + flat_segs[s].n) ex.push_back(static_cast<std::uint32_t>(o - flat_segs[s].off));
+            if (s == 0) r.executed_offsets = std::move(ex);
+            else r.nested.push_back({reinterpret_cast<std::uint64_t>(flat_segs[s].src), static_cast<std::uint32_t>(flat_segs[s].n), std::move(ex)});
+        }
+    }
     // Experiment 0346: the host-side resolution of GFX-form dispatches without a SET_BASE of their type in
     // this IB (bc5/host_indirect.hpp). The real mappings are the device's userptr and shared mappings (the
     // sorted table: no PRT window, guard or zero buffer is in it); the reader is the host's `mapped` test

@@ -16,7 +16,11 @@
 #include <random>
 #include <vector>
 #include <cstdlib>
+#if defined(_WIN32)
+#include <windows.h>
+#else
 #include <sys/mman.h>
+#endif
 
 using bc5::ib_chain::collect;
 namespace ic = bc5::ib_chain;
@@ -47,12 +51,21 @@ struct Arena {
     std::vector<std::unique_ptr<Buf>> bufs;
     Arena() {
         static std::uintptr_t next = 0x1000000000ull;
+#if defined(_WIN32)
+        void *m = VirtualAlloc(reinterpret_cast<void *>(next), 512 * kSlot * 4, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+        if (m == nullptr) { std::printf("FAIL: no mapping below 2^40\n"); std::exit(2); }
+#else
         void *m = mmap(reinterpret_cast<void *>(next), 512 * kSlot * 4, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
         if (m == MAP_FAILED || reinterpret_cast<std::uintptr_t>(m) >= (1ull << 40)) { std::printf("FAIL: no mapping below 2^40\n"); std::exit(2); }
+#endif
         base = static_cast<std::uint32_t *>(m);
         next += 512 * kSlot * 4;
     }
+#if defined(_WIN32)
+    ~Arena() { VirtualFree(base, 0, MEM_RELEASE); }
+#else
     ~Arena() { munmap(base, 512 * kSlot * 4); }
+#endif
     Buf &make(std::size_t n_nops) {
         bufs.push_back(std::make_unique<Buf>());
         Buf &b = *bufs.back();
@@ -222,6 +235,59 @@ int main() {
         CHECK(diff_off == 0);
         CHECK(diff_on_nochain == 0);
         std::printf("4. 2000 random trees: off differs from the old loop in %d; 5. on without chain bits differs in %d\n", diff_off, diff_on_nochain);
+    }
+    { // 6.-9. BC5_DIRECT_IB_CHAIN_FLAT's layout (tag fl439)
+        Arena ar;
+        auto sh = [](Buf &b, std::uint32_t reg, std::uint32_t v) { b.push_back(0xC0017600u); b.push_back(reg); b.push_back(v); };
+        auto disp = [](Buf &b) { for (std::uint32_t v : {0xC0031500u, 1u, 1u, 768u, 0x41u}) b.push_back(v); };
+        // three chunks, the chain cut inside a dispatch block: program before the chain, the rest and the DISPATCH after it
+        Buf &s2 = ar.make(0);
+        sh(s2, 0x212, 2); disp(s2); write_data(s2, 0x2000000040ull, 7);
+        Buf &s1 = ar.make(0);
+        sh(s1, 0x212, 1); disp(s1); sh(s1, 0x20c, 0x2c42);
+        ib(s1, s2, true);
+        for (int k = 0; k < 6; ++k) s1.push_back(0xdeadbeefu); // a tail past the chain: never run, must not be copied
+        Buf &s0 = ar.make(0);
+        sh(s0, 0x20c, 0x2c42); sh(s0, 0x22a, 9);
+        ib(s0, s1, true);
+        std::vector<std::uint32_t> want;
+        auto add = [&want](const Buf &b, std::size_t upto, bool chain) {
+            want.insert(want.end(), b.data(), b.data() + upto);
+            if (chain) want.insert(want.end(), 4, ic::kFlatNop);
+        };
+        add(s0, s0.size() - 4, true);
+        add(s1, s1.size() - 10, true);
+        add(s2, s2.size(), false);
+        std::vector<std::uint32_t> out;
+        std::vector<ic::FlatSeg> segs;
+        const auto fr = ic::flatten(std::span<const std::uint32_t>(s0.data(), s0.size()), {}, out, segs);
+        CHECK(fr == ic::FlatResult::Flattened);
+        CHECK(segs.size() == 3);
+        CHECK(out == want);
+        bool no_tail = true;
+        for (const auto v : out) no_tail = no_tail && v != 0xdeadbeefu;
+        CHECK(no_tail);
+        std::printf("6. three chunks cut inside a dispatch block: %zu segments, %zu dwords, %s the segments without their chain packets; tail past a chain %s\n", segs.size(), out.size(),
+                    out == want ? "equal to" : "DIFFERENT FROM", no_tail ? "not copied" : "COPIED");
+        // 7. no chain
+        Buf &p = ar.make(3);
+        disp(p);
+        CHECK(ic::flatten(std::span<const std::uint32_t>(p.data(), p.size()), {}, out, segs) == ic::FlatResult::NoChain);
+        // 8. a COND_EXEC before the chain: refused
+        Buf &c = ar.make(0);
+        for (std::uint32_t v : {0xC0032200u, 0u, 0u, 0u, 4u}) c.push_back(v);
+        ib(c, s2, true);
+        const char *why = nullptr;
+        CHECK(ic::flatten(std::span<const std::uint32_t>(c.data(), c.size()), {}, out, segs, &why) == ic::FlatResult::Refused);
+        // 9. a cycle: refused
+        Buf &x = ar.make(2), &y = ar.make(2);
+        ib(x, y, true);
+        ib(y, x, true);
+        x[5] = static_cast<std::uint32_t>(y.size()) | ic::kChainBit;
+        y[5] = static_cast<std::uint32_t>(x.size()) | ic::kChainBit;
+        const char *why2 = nullptr;
+        CHECK(ic::flatten(std::span<const std::uint32_t>(x.data(), x.size()), {}, out, segs, &why2) == ic::FlatResult::Refused);
+        std::printf("7.-9. no chain: not flattened; a COND_EXEC before the chain: refused (%s); a cycle: refused (%s)\n", why ? why : "?", why2 ? why2 : "?");
     }
     std::printf("%s (%d failed checks)\n", g_fail == 0 ? "PASS" : "FAIL", g_fail);
     return g_fail == 0 ? 0 : 1;
