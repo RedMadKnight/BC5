@@ -379,6 +379,25 @@ EF = r'''	{ // exp 0439 (tag ef439): what the title passes as the fifth argument
 			             (unsigned long long)q[5], (unsigned long long)q[6], (unsigned long long)q[7]);
 		}
 	}
+	{ // exp 0439 (tag tk439): BC5_0439_EOP_TOKEN=1: the fifth argument is an OUT pointer to a 32-bit flip token (AnyPS5
+	  // core/libs/prx/libSceVideoOut/src/VideoOutDriver.cpp SubmitEopFlip, GPL-2.0, 8b403579: AgcDriverReserveEopFlip's token,
+	  // 0x04000000..0x07ffffff, never repeated; 0 = FLIP_QUEUE_FULL; the console encoding UNVERIFIED there). We wrote nothing.
+		static const bool tk = [] {
+			const char* e = std::getenv("BC5_0439_EOP_TOKEN");
+			const bool  on = e != nullptr && e[0] == '1' && e[1] == 0;
+			std::fprintf(stderr, "[bc5] exp 0439 (tag tk439): BC5_0439_EOP_TOKEN=%d\n", on ? 1 : 0);
+			return on;
+		}();
+		static std::atomic<uint32_t> next {0x04000000u};
+		if (tk && unk != nullptr) {
+			auto*          t   = static_cast<uint32_t*>(unk);
+			const uint32_t old = *t;
+			const uint32_t v   = next.fetch_add(1);
+			*t                 = v;
+			static int tk_n = 0;
+			if (tk_n++ < 16) std::fprintf(stderr, "[bc5] exp 0439 (tag tk439): SubmitEopFlip(%d, %d): token 0x%08x written to %p (was 0x%08x)\n", handle, index, v, unk, old);
+		}
+	}
 	Bc5Gc::Direct::dc439_flip(index); // exp 0439 (tag dc439): a compressed display buffer decompressed in place (mode 2)
 '''
 s = rep(s, a, a + EF)
