@@ -19,13 +19,17 @@ J=$R/$TAG-a1j.bin; S=$R/$TAG-a1j-run.txt
 resets() { sudo -n dmesg 2> /dev/null | grep -E 'amdgpu [0-9a-f]{4}:' | grep -ciE 'ring .* timeout|reset (succeeded|failed)|GPU reset|device wedged'; }
 mkdir -p "$R"
 LOCK=$HOME/bc5-work/BOX-LOCK; LINE="exp 0438 | recording run $TAG ($TITLE, $SECS s) on ${WANT:0:8}, token $(date +%s)$$ | $(date '+%F %T')"
+INHERIT=0 # a wrapper that holds one lock line for several steps passes it in CHAIN_LOCKLINE (as start0413g.sh)
+if [ -n "${CHAIN_LOCKLINE:-}" ] && [ -f "$LOCK" ] && [ ! -L "$LOCK" ] && [ "$(cat "$LOCK")" = "$CHAIN_LOCKLINE" ]; then INHERIT=1; LINE=$CHAIN_LOCKLINE; fi
+if [ "$INHERIT" = 0 ]; then
 [ -e "$LOCK" ] || touch "$LOCK"
 [ -f "$LOCK" ] && [ ! -L "$LOCK" ] && [ ! -s "$LOCK" ] || { echo "the box is locked: $(cat "$LOCK")"; exit 1; }
 tl=$LOCK.0438r-$$.new; al=$LOCK.0438r-$$.aside
 printf '%s\n' "$LINE" > "$tl" && mv -T "$LOCK" "$al" && ln "$tl" "$LOCK" || { [ -e "$LOCK" ] || mv -T "$al" "$LOCK"; rm -f "$tl"; echo "the claim failed"; exit 1; }
 if [ -s "$al" ]; then mv -fT "$al" "$LOCK"; rm -f "$tl"; echo "a foreign line arrived during the claim: not started"; exit 1; fi
 rm -f "$al" "$tl"
-release() { if [ -f "$LOCK" ] && grep -qxF -- "$LINE" "$LOCK"; then local t=$LOCK.0438r-$$.rel; grep -vxF -- "$LINE" "$LOCK" > "$t"; mv -fT "$t" "$LOCK"; fi; }
+fi
+release() { [ "$INHERIT" = 1 ] && return 0; if [ -f "$LOCK" ] && grep -qxF -- "$LINE" "$LOCK"; then local t=$LOCK.0438r-$$.rel; grep -vxF -- "$LINE" "$LOCK" > "$t"; mv -fT "$t" "$LOCK"; fi; }
 pgrep -x kyty_emulator > /dev/null || pgrep -x bc5-mount > /dev/null && { release; echo "an emulator or bc5-mount runs: not started"; exit 1; }
 echo "$(date '+%F %T') $TAG: resets before $(resets), boot $(cut -c1-8 /proc/sys/kernel/random/boot_id), binary $WANT" > "$S"
 ( while sleep 2; do
