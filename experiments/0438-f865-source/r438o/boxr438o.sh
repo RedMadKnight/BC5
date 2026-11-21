@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # BC5 experiment 0438 (tag r438o): the private build of r438o (F874, F875: r438's early writes keep their ring order in
 # g_plw and survive its trim) for the lean A/B on ASTRO BOT and the normal counter run. The host unit only: r438o.cpp
-# (98340f26, mkr438o.py on the bake unit ff9e8fe2) as src/libs/bc5LleAgc.cpp, each build with the shared build's own
+# (2e6168de, mkr438o.py on the bake unit ff9e8fe2) as src/libs/bc5LleAgc.cpp, each build with the shared build's own
 # commands (build0438.py emu) and the shared archive d6638808. CPU only, nice 19 + ionice idle, one job, NO lock line
 # (the top session's approval of 2026-11-21). Pins the shared state before and after.
 #   boxr438o.sh build
@@ -12,7 +12,7 @@ W=$HOME/bc5-work; E=$W/exp0438/r438o; R=$E/raw; S=$E/src; HERE=$(cd "$(dirname "
 TREE=$HOME/src/KytyPlus; SA=$W/backend-ubuntu/libbc5_backend.a
 P_UNIT=ff9e8fe2e4139264ebaf74f9e84bd892; P_MEM=aa7d7f5b3fdbbe8d57bd440e7aa80922
 P_ARCH=d6638808; P_NORMAL=b1b57df9; P_LEAN=d3485ed4
-K_UNIT=98340f26aa86dd28811a34742e3be34f; K_PY=3fe0aacaa3a2859de7f9903e127a5a63
+K_UNIT=2e6168de7774de436fe7e916c895180a; K_PY=3fe0aacaa3a2859de7f9903e127a5a63
 NICE="nice -n 19 ionice -c 3"
 stop() { echo "r438o STOP: $*"; exit 1; }
 m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }

@@ -2,11 +2,11 @@
 # BC5 exp 0438 (tag r438o), the shared swap of r438o (F874, F875): r438's early writes keep their ring order in g_plw
 # (register_label_writes renumbers other slices' early entries after its real writes) and survive g_plw's trim, both
 # inside the existing BC5_0438_EARLYREG path; no new switch. swap0438.sh with its pins moved to patch 9889b06a and its
-# patch to 0003-bc5-0438-r438o.patch (the host unit only, ff9e8fe2 -> 98340f26; the archive stays d6638808).
+# patch to 0003-bc5-0438-r438o.patch (the host unit only, ff9e8fe2 -> 2e6168de; the archive stays d6638808).
 #   1. checks: no emulator; the kit; the tree's diff is 9889b06a and its unit ff9e8fe2; normal b1b57df9, lean d3485ed4,
 #      archive d6638808; the patch applies (git apply --check)
 #   2. the lock (chain_claim, one line); copies under $X (*.before-0438o: both binaries, the unit, the old patch); pins
-#   3. the patch applied; the unit must be 98340f26; the new patch = git diff f266548 must be PATCH_NEW; exp 0372 = 5,
+#   3. the patch applied; the unit must be 2e6168de; the new patch = git diff f266548 must be PATCH_NEW; exp 0372 = 5,
 #      the pad_audio_route header in, the same file list, the guard / learned / JOB_ARENA line counts as before, r438's
 #      count line and r438o's counters in. DRY=1 (on COPIES: INT_K=<copy of ~/src/KytyPlus>, X=<scratch>): stops here,
 #      prints the new patch's md5, undoes
@@ -21,8 +21,8 @@ ulimit -c 0
 export LC_ALL=C LANGUAGE=C
 W=${INT_W:-$HOME/bc5-work}; N=$W/exp0413/n; K=${INT_K:-$HOME/src/KytyPlus}; HERE=$(cd "$(dirname "$0")" && pwd); X=${X:-$W/exp0438/swapo}
 NB=$W/kytyplus-build/src/kyty_emulator; LB=$W/kytyplus-build-lean/src/kyty_emulator; ARCH=$W/backend-ubuntu/libbc5_backend.a
-PIN_OLD=9889b06a; NORMAL_OLD=b1b57df9; LEAN_OLD=d3485ed4; ARCH_OLD=d6638808; UNIT_OLD=ff9e8fe2; UNIT_NEW=98340f26
-KIT_PATCH=bb4c43f9; DRY=${DRY:-0}
+PIN_OLD=9889b06a; NORMAL_OLD=b1b57df9; LEAN_OLD=d3485ed4; ARCH_OLD=d6638808; UNIT_OLD=ff9e8fe2; UNIT_NEW=2e6168de
+KIT_PATCH=8ec838aa; DRY=${DRY:-0}
 PATCH_NEW=${PATCH_NEW:-}
 UNITS="src/libs/bc5LleAgc.cpp"
 m8() { md5sum < "$1" | cut -c1-8; }

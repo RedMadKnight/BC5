@@ -96,6 +96,22 @@ rep('\t\tfor (PendingLabelWrite* w: early) w->order = ++order;\n',
 rep('bug lines (over 100 ms) %" PRIu64 "\\n",',
     'bug lines (over 100 ms) %" PRIu64 "; r438o: early entries renumbered %" PRIu64 ", kept by the trim %" PRIu64 " in %" PRIu64 " trims\\n",')
 rep('g_r438_long.load());', 'g_r438_long.load(), g_r438o_renum.load(), g_r438o_kept.load(), g_r438o_trims.load());')
+# E5 (2026-11-21, after the lean A/B q438oA: r438o lean 58.9-59.2 flips/s against the control's 59.3-59.7, p99 33 ms in
+# all three runs; ASTRO BOT took no r438 slice): the renumbering scanned the whole g_plw on every register_label_writes
+# under g_plw_mutex, with no early entry to renumber. g_r438o_live counts the early entries in g_plw (under
+# g_plw_mutex): r438_begin adds its batch, r438_end subtracts what it erases, forget_label_writes(all) clears the table and
+# the count; r438o's trim keeps early entries. The scan runs only while the count is not 0.
+rep('static uint64_t                           g_plw_order = 0;          // under g_plw_mutex, shared with register_label_writes\n',
+    'static uint64_t                           g_plw_order = 0;          // under g_plw_mutex, shared with register_label_writes\n'
+    'static uint64_t                           g_r438o_live = 0;         // exp 0438 (r438o): early entries in g_plw, under g_plw_mutex\n')
+rep("\tif (r438_on()) { // exp 0438 (r438o): a taken slice's early writes are not in the kernel yet: they stay after this real write of their label\n",
+    "\tif (r438_on() && g_r438o_live != 0) { // exp 0438 (r438o): a taken slice's early writes are not in the kernel yet: they stay after this real write of their label\n")
+rep('\t\tw.order = ++g_plw_order;\n\t}\n\tr438o_trim_locked(); // exp 0438 (r438o): early entries kept with r438 on\n\tg_plw.insert(g_plw.end(), found.begin(), found.end());\n',
+    '\t\tw.order = ++g_plw_order;\n\t}\n\tr438o_trim_locked(); // exp 0438 (r438o): early entries kept with r438 on\n\tg_plw.insert(g_plw.end(), found.begin(), found.end());\n\tg_r438o_live += found.size(); // exp 0438 (r438o)\n')
+rep('\t\t\t\tit = g_plw.erase(it);\n\t\t\t} else {\n\t\t\t\t++it;\n\t\t\t}\n\t\t}\n\t}\n',
+    '\t\t\t\tit = g_plw.erase(it);\n\t\t\t\tif (g_r438o_live != 0) g_r438o_live--; // exp 0438 (r438o)\n\t\t\t} else {\n\t\t\t\t++it;\n\t\t\t}\n\t\t}\n\t}\n')
+rep('\tif (all) {\n\t\tg_plw.clear();\n\t\treturn;\n\t}\n',
+    '\tif (all) {\n\t\tg_plw.clear();\n\t\tg_r438o_live = 0; // exp 0438 (r438o)\n\t\treturn;\n\t}\n')
 
 out = s.encode('utf-8')
 open(OUT, 'wb').write(out)

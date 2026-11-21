@@ -24,7 +24,7 @@ m() { md5sum < "$1" | cut -d' ' -f1; }
 say() { echo "$(date +%T) $*" | tee -a "$S"; }
 case "$P" in *[!A-Za-z0-9]* | "") echo "the tag prefix is letters and digits"; exit 1 ;; esac
 MC=$(m "$CB"); MO=$(m "$OB"); MN=$(m "$NB")
-{ [ "${AB_STANDIN:-0}" = 1 ] || { [ "${MC:0:8}" = d3485ed4 ] && [ "${MO:0:8}" = aae9c294 ] && [ "${MN:0:8}" = 0c3a60fb ]; }; } || { echo "binaries: control ${MC:0:8}, r438o lean ${MO:0:8}, normal ${MN:0:8}: not the pinned ones"; exit 1; }
+{ [ "${AB_STANDIN:-0}" = 1 ] || { [ "${MC:0:8}" = d3485ed4 ] && [ "${MO:0:8}" = "${AB_PIN_O:-aae9c294}" ] && [ "${MN:0:8}" = "${AB_PIN_N:-0c3a60fb}" ]; }; } || { echo "binaries: control ${MC:0:8}, r438o lean ${MO:0:8}, normal ${MN:0:8}: not the pinned ones"; exit 1; }
 for a in C1 O1 C2 O2 C3 O3 N1; do [ -e "$R/$P$a-start.txt" ] && { echo "tag $P$a already used"; exit 1; }; done
 deadmnt() { distrobox enter ubuntu -- sh -c 'M=$1; if mountpoint -q "$M" && ! head -c1 "$M/sce_sys/param.json" > /dev/null 2>&1; then echo dead; fi' _ "$M" 2> /dev/null < /dev/null | grep -q dead; }
 busy() { pgrep -x kyty_emulator > /dev/null || pgrep -x bc5-mount > /dev/null; }
