@@ -2324,6 +2324,104 @@ them.
   on the APR workers, and AMM commands move no bulk bytes. game-main's map / unmap calls go through these memory
   structures.
 
+## A1 / A1m / A2: the mapping bookkeeping edited in place (design, not built; for every title)
+
+**What the code does today** (KytyPlus f266548 with patch 0001, `src/kernel/memory.cpp`, `memory.h`,
+`memoryAddressSpace.inc`). A read-only reading, its key claims checked by hand: `m_ranges` is a vector at
+memory.cpp:875, and `SameMergeKey` rejects Direct at 625–627.
+- **`VirtualRanges::m_ranges`** is a `std::vector<Range>` sorted by start (memory.cpp:875). A Range is about 72 B, so
+  29,000 ranges are about 2.1 MiB, matching the 0.25–3 MiB copies.
+  - Every Add, Remove, Rename, Protect or SetMemoryType, and every merge, inserts or erases in the middle, so the tail
+    moves (`insert` 337, `erase` 349, 705 / 716, 786–787, 810–811, 825).
+  - One AMM fixed map over a live range (ReplaceFixedRangeWithReserved) makes about 6–8 tail moves, roughly 7–9 MiB per
+    remap.
+  - `Snapshot` / `SnapshotWithDirty` (487, 498) copy all 2.1 MiB for the BC5 host's readers (`Bc5ForEachPrivateRegion`
+    on every sync, `Bc5ForEachMappedRange`, `Bc5RangesWithDirty`).
+- **`PhysicalMemory::m_mappings`** is a `vector<AllocatedBlock>` (~104 B each; sorted when `KYTY_BC5_PHYSMAP_SORTED`,
+  the default).
+  - Insert and erase move the tail (918, 959, 968).
+  - `ProtectMapping` rebuilds the whole vector (2253–2287), once per Direct range of an mprotect.
+- **`FlexibleMemory::m_allocated`** (`vector`): a full sort per Map (2462); full rebuilds per Unmap and Protect.
+- **`PooledMemory`:**
+  - `m_mappings` is an unsorted `vector<Mapping>` with linear queries. Release rebuilds a vector with no reserve (the
+    profiled `_M_realloc_append`).
+  - `m_free` is a `vector<PhysicalRange>`, sorted and rebuilt per released piece.
+- **`GuestBackingStore::m_maps` and `GuestAddressSpace`'s maps** are `std::map`, so their edits are O(log n) and move
+  nothing. Their names in result 19's chains are inlining neighbours. `FindFreeAlignedUnlocked` walks `m_free` from
+  `begin()` and ignores its search start (memoryAddressSpace.inc:1281): O(n), but not a copy.
+- **Which splits are ours:**
+  - Flexible and Pooled maps make one view and block per free-backing fragment.
+  - Protect and type edits split ranges.
+  - A non-exact Rename splits through EditUnlocked.
+  - A partial unmap splits a backing view into left and right.
+  - ReplaceFixedRangeWithReserved re-adds a Reserved "anon".
+  - Named direct maps are added as "" and then renamed.
+  - There is no 2-MiB chunking.
+- **Merging:** VirtualRanges merges only non-Direct ranges (`SameMergeKey` rejects Direct, 625–627, and never checks
+  that offsets continue). So the 42 % contiguous direct views of result 19 are never merged; the free lists do merge.
+- **Locking:** the guest entry points take `g_memory_operation_mutex` (recursive). The BC5 host's snapshot readers take
+  only `VirtualRanges::m_mutex`. Callers keep no iterator or pointer across calls; every query returns copies.
+  - Vector-specific uses: `bc5::map_records::touching(m_ranges, …)` returns index pairs, `Bc5ForEachPrivateRegion`
+    runs `upper_bound` on the snapshot, and the pm412 templates take random-access iterators.
+
+**A1: ordered containers with in-place split and merge** (switch `KYTY_BC5_0438_A1`, test build only; the old vectors
+stay selectable).
+- **The containers:**
+  - `VirtualRanges::m_ranges` becomes a `std::map<uint64_t, Range>` keyed by start. A split shortens the left node in
+    place and emplaces the middle and right nodes with hints; a merge erases a neighbour node.
+  - `PhysicalMemory::m_mappings` and `FlexibleMemory::m_allocated` become maps keyed by `map_vaddr`. `ProtectMapping`
+    and Flexible's Unmap / Protect edit only the window.
+  - `PooledMemory::m_mappings` becomes a map keyed by vaddr. `m_free` becomes a map with neighbour merge, as
+    GuestAddressSpace's already is.
+- **The queries:** the public queries keep their signatures and results.
+- **Snapshots:** cached by `Generation`. One vector per change, not one per call: the host's readers stop copying
+  2.1 MiB per sync.
+- **The rewrites:** `touching()` and `DirtyWithTouching` work on map iterators.
+- **Also:** `FindFreeAlignedUnlocked` starts at `m_free.upper_bound(search_start)`.
+- **Test** (`test_a1438`): a differential test drives old and new with the same operation sequences, random ones
+  plus a recorded one if a normal run's journal holds one (TODO: check the journal tags). It compares every query
+  result and the final range lists. A broken copy (a split that loses the right part) must fail.
+
+**A1m: merge contiguous same-attribute direct views** (switch `KYTY_BC5_0438_A1M`, on top of A1).
+- `SameMergeKey` also merges Direct when `right.offset == left.offset + left.size` and the protection, memory type
+  and name match; never for `disallow_merge` (NO_COALESCE).
+- It needs `PhysicalMemory::Unmap` and `ProtectMapping` to accept a span covering several blocks. Today Unmap matches
+  one block, so a merged range's munmap would fail with EACCES (memory.cpp:3306–3309).
+- It is guest-visible: VirtualQuery and QueryMemoryProtection return larger ranges. TODO(verify): whether the
+  console's vm_map coalesces such entries; until then A1m is an experiment arm, not a default.
+- Up to −42 % of the ranges (result 19).
+
+**A2: the backend's mapping list, not copied per change** (switch `BC5_DIRECT_0438_A2`).
+- **Today:** `Device::sorted_mappings()` (backend/src/direct.cpp:851) rebuilds lazily per `list_gen` (exp 0170). But
+  each rebuild copies and merges every entry (~17,000 shared maps plus the userptrs) under the device mutex. In the dip
+  the list changes ~900 times a second, so nearly every submission rebuilds ~0.7 MiB (result 19: 52,935 + 22,049
+  copies).
+- **A dirty flag would not help:** a change lands between nearly every pair of submits.
+- **A2's structure:** a chunked persistent list. Sorted chunks of ≤ 512 entries sit behind a top array of
+  `shared_ptr<const Chunk>` (~34 entries).
+  - An edit copies only the affected chunk (~12 KB) and the top array, under the device mutex.
+  - `sorted_mappings()` returns the top array's `shared_ptr`.
+- **The readers:** `submit_now`'s probe (`covered_sorted`) and the filter's `mapped` callback. They hold the snapshot
+  for one submission's preparation and filter (milliseconds) and need it stable for exactly that long. A lookup is a
+  binary search on the chunks' first VAs, then within the chunk.
+  - `covered_sorted` takes the chunked type; one overload.
+- **Test** (`test_a2438`): the same random edit sequences against today's rebuild, comparing every `covered` answer
+  and the flattened list.
+
+**Non-atomic windows** (the top session's point 6):
+- **What exists:** a partial `UnmapOne` replaces the whole old view with PROT_NONE and then remaps the left and right
+  parts (memoryAddressSpace.inc:413–429). `ReplaceFixedRangeWithReserved` runs `UnmapGpuRange` and the range's
+  Remove before the new view is mapped (memory.cpp:4259–4260, 3945–3948).
+- **What the GPU can see:** the direct and private memory reach the GPU as dma-bufs of their memfds (ADR 0006, exp
+  0023). So the GPU sees backing pages, not the host's VA swaps. Only the `UnmapGpuRange` gap is a GPU-visible window,
+  and only at the range's real, page-aligned addresses.
+- **So these windows do not explain S347's faults** (result 18: valid low halves under junk high parts). No tie to the
+  F852/F858 class from this reading.
+
+**Test-build order** (the top session's point 5): A2 and A1 first, then A1m and Q438, with the T arm env-only. One
+build, each behind its own switch. Lean A/B on the third title and ASTRO BOT; in normal builds a compare-only check of
+new against old, never a repair.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
