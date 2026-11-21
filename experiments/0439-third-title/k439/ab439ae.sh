@@ -3,7 +3,7 @@
 # maintainer's reboot, behind exp 0438's A/B (the top session's order of 2026-11-21 ~16:20; prepared, not run on the boot
 # it was written). Adapted from exp 0438's r438o/ab438o.sh (main): ASTRO BOT, no input, through exp 0413's start0413g.sh,
 # each run 180 s, one binary for both arms so only the switch differs:
-#   C  the private exp 0439 lean (k439/lean, pinned 25338f8a) with BC5_DIRECT_AGC_EOP_IDENT unset (control)
+#   C  the private exp 0439 lean (k439/lean/kyty_emulator.25338f8a, pinned) with BC5_DIRECT_AGC_EOP_IDENT unset (control)
 #   O  the same binary with BC5_DIRECT_AGC_EOP_IDENT=1
 #   in the order C O C O C O; MangoHud's own per-frame log is the frame counter, the Plasma shell stopped per lean run
 #   (lean-session.sh), as in ab438o.sh. The binary must carry the switch's string (else it was compiled out of lean).
@@ -14,7 +14,9 @@ set -u
 ulimit -c 0
 export LC_ALL=C
 P=${1:?tag prefix}; W=${AB_W:-$HOME/bc5-work}; N=$W/exp0413/n; R=$N/raw; LOCK=$W/BOX-LOCK; DRY=${DRY:-0}
-CB=$W/exp0439/k439/lean/kyty_emulator; OB=$CB
+# the private lean of 16:10 (25338f8a): the shared archive, the ident switch, nothing of exp 0439's IB_CHAIN build (box439.sh
+# keeps a replaced binary as kyty_emulator.<md5-8>)
+CB=${AB_BIN:-$W/exp0439/k439/lean/kyty_emulator.25338f8a}; OB=$CB
 M=${AB_M:-$HOME/bc5-data/mnt/PPSA21567}; SECS=180; MHD=170
 S=$R/$P-ab439ae.txt
 m() { md5sum < "$1" | cut -d' ' -f1; }
