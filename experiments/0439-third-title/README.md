@@ -1,7 +1,8 @@
 # 0439 — the third title: install, first runs, fixes
 
-**Status:** claimed 2026-11-21; scripts written and tested on a laptop stand-in; no box step yet (it waits for the
-top session's GO, after the reimpl-agc-psml rerun and bake).
+**Status:** claimed 2026-11-21; scripts written and tested on a laptop stand-in; no box step yet. The GO comes after two
+box slots on the second title (the reimpl-agc-psml rerun and bake, then exp 0438's diagnosis); no md5 of a NAS file
+during their runs (page cache against RT-on memory).
 
 **Question.** What stops the third title (PPSA26344, v01.512, the maintainer's own package on his NAS) on BC5 today,
 and which fixes, simplest first, make it playable? Before that, the second title's install (PPSA03671) is removed to
@@ -32,7 +33,7 @@ free its 196.7 GB, with every save and per-title setting kept.
 
 **Stand-in test (laptop, 2026-11-21).** A fake home with saves, a game folder, two shortcuts, a NAS package and its
 `.md5`, and stubs for `bc5-mount`, `systemd-run`, `pgrep` and `flock`: `check2`, `md5` (MATCH), `inventory before`,
-`backup` (a missing save path is skipped and logged), `lock`, `uninstall2` (the folder removed, only the shortcut that
+`backup` (a missing save path is skipped and logged), `lock`, the tar check (the tar's file count against the inventory's files under the tarred paths: 3 = 3 goes on; with a save added after the tar, 3 against 4 stops and the folder stays), `uninstall2` (the folder removed, only the shortcut that
 names `play-pkg.sh` moved to trash, the generic one kept, the saves equal before and after), `unlock`. `klog0439.sh`
 with a stand-in `journalctl`: it ends when its stdin closes. `bash -n` on all three.
 

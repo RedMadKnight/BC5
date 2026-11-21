@@ -113,6 +113,17 @@ uninstall2)
   "$BM" inspect "$PKG2" | grep -q 'title id: *PPSA03671' || die "the NAS package is not PPSA03671"
   [ -s "$E/saves-before.md5" ] || die "no inventory 'before'"
   [ -s "$BACKUP" ] || [ "${BC5_DRY:-0}" = 1 ] || die "no backup $BACKUP"
+  # Top, 2026-11-21: the tar's file count must equal the inventory's files under the tarred paths.
+  if [ "${BC5_DRY:-0}" != 1 ]; then
+    in_tar=$(tar -tzf "$BACKUP" | grep -vc '/$' || true)
+    in_inv=0
+    for p in "${TAR_PATHS[@]}"; do
+      n=$(awk -v q="$HOME/$p" '{f = substr($0, 35)} f == q || index(f, q "/") == 1 {c++} END {print c + 0}' "$E/saves-before.md5")
+      in_inv=$((in_inv + n))
+    done
+    log "backup check: $in_tar files in the tar, $in_inv in the inventory under the tarred paths"
+    [ "$in_tar" = "$in_inv" ] || die "the tar's file count ($in_tar) differs from the inventory ($in_inv)"
+  fi
   emu_running && die "an emulator is running"
   our_lock || die "BOX-LOCK is not ours"
   log "uninstall $G2"
