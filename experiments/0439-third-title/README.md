@@ -420,8 +420,11 @@ the control's line has none, `X=1;rm` is refused).
       the output mode. But the flip path and its present scaled that surface to a 640x480 output, so the present's
       cost and look are not those of normal play.
     - Frame rates and frame times from these runs describe that mode only.
-    - Now in the scripts: `k439/r72check.sh` (EDID size > 0, first mode 1920x1080, 0 "No EDID read" lines in this
-      boot's kernel log, active mode 1920x1080@60 from `kscreen-doctor -o`; one line, exit 1 when any fails).
+    - Now in the scripts: `k439/r72check.sh`, as R72 was amended at 19:52 (the current state decides). It requires an
+      EDID size > 0, a first mode of 1920x1080, and an active mode of 1920x1080@60 at scale 1 from `kscreen-doctor -o`.
+      The boot's "No EDID read" lines are counted and recorded, not a failure. One line; exit 1 when a condition fails.
+      Run before every series.
+    - The monitor was replugged on boot 7986fd90 (EDID 128 bytes, 1920x1080@60.00, scale 1; the top session, 19:52).
       - `ab439ae.sh` refuses to measure when it fails, and writes the line to the series header.
       - `ib29.sh` and `x28.sh` (diagnosis) write the line and mark the series.
       - `play439.sh` writes the EDID size and first mode into the log's header.
