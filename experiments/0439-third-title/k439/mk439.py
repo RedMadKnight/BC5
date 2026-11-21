@@ -123,8 +123,8 @@ static void wr439_scan(const uint32_t* ib, uint32_t n, int ring, const char* kin
 	}
 }
 
-static void dc439_track(const uint32_t* ib, uint32_t n, const bc5::policy::FilterOptions& opt, int ring) {
-	if (ib != nullptr && n != 0) wr439_scan(ib, n, ring, "job", opt); // exp 0439 (tag wr439)
+static void dc439_track(const uint32_t* ib, uint32_t n, const bc5::policy::FilterOptions& opt, int ring, const char* kind) {
+	if (ib != nullptr && n != 0) wr439_scan(ib, n, ring, kind, opt); // exp 0439 (tag wr439)
 	if (dc439::mode() == 0 || !dc439::g_any.load(std::memory_order_relaxed) || ib == nullptr || n == 0) return;
 	std::lock_guard lk(dc439::g_mu);
 	auto readable = [&opt](uint64_t a, uint64_t b) { return opt.mapped && opt.mapped(a, b); };
@@ -369,10 +369,10 @@ s = rep(s, '#include "bc5/direct.hpp"\n',
         '#include "bc5/state_stack.hpp" // exp 0439 (tag dc439): the GFX ring\'s context, followed on the host\n'
         '#include "bc5/dc0439.hpp"      // exp 0439 (tag dc439): the DCC display buffers\n')
 a = 'static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind, int ring, const Chain* chain);\n'
-s = rep(s, a, a + 'static void dc439_track(const uint32_t* ib, uint32_t n, const bc5::policy::FilterOptions& opt, int ring); // exp 0439 (tag dc439)\n')
+s = rep(s, a, a + 'static void dc439_track(const uint32_t* ib, uint32_t n, const bc5::policy::FilterOptions& opt, int ring, const char* kind); // exp 0439 (tag dc439)\n')
 a = '\tconst uint64_t ls_t3 = SoftCp::now_ns(); // experiment 0415 (ls415c)\n\tbc5::direct::SubmitResult r;\n'
 s = rep(s, a, '\tconst uint64_t ls_t3 = SoftCp::now_ns(); // experiment 0415 (ls415c)\n'
-        '\tdc439_track(sub_ib, sub_n, opt, qring); // exp 0439 (tag dc439): before the job, under the device lock\n'
+        '\tdc439_track(sub_ib, sub_n, opt, qring, kind); // exp 0439 (tag dc439): before the job, under the device lock\n'
         '\tbc5::direct::SubmitResult r;\n')
 a = '#else\nstatic void init_once() {}\nstatic void submit(const uint32_t*, uint32_t, const char*) {}\n'
 s = rep(s, a, GLUE + '#else\nstatic void dc439_flip(int) {}\nstatic void init_once() {}\nstatic void submit(const uint32_t*, uint32_t, const char*) {}\n')
@@ -455,6 +455,10 @@ s = rep(s, '''	if (write) write_timestamp_or_data(data_sel, a, lo, hi);
 		fire_eop(lo | (static_cast<uint64_t>(hi) << 32u));
 	}
 }''', '''	if (write) write_timestamp_or_data(data_sel, a, lo, hi);
+	{ // exp 0439 (tag eq439): the soft CP's RELEASE_MEMs, as it sees them
+		static std::atomic<int> rn {0};
+		if (rn++ < 64) std::fprintf(stderr, "[bc5] exp 0439 (tag eq439): soft CP RELEASE_MEM write %d INT_SEL %u DATA_SEL %u address 0x%" PRIx64 " INT_CTXID 0x%08x\\n", write ? 1 : 0, (data_cntl >> 24u) & 7u, data_sel, a, payload >= 7 ? p[7] : 0u);
+	}
 	if (eq439_on() && ((data_cntl >> 24u) & 7u) != 0) { // exp 0439 (tag eq439)
 		eq439_fire_all((data_cntl >> 24u) & 7u, payload >= 7 ? p[7] : 0u);
 		if (int_sel != 0) fire_eop(lo | (static_cast<uint64_t>(hi) << 32u)); // the fixed idents as before
