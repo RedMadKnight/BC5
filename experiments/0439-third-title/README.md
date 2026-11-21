@@ -555,6 +555,44 @@ the control's line has none, `X=1;rm` is refused).
     - Whether `BC5_DIRECT_IB_CHAIN_FLAT=2` (the dcb's chain flat too) is safe is untested. The soft CP's offsets are
       kept per segment. The GFX path's own passes (the state stack, the indirect checks, the light-tail split) would
       then see one long buffer instead of 73 pieces. Try it only after a run with 1 is understood.
+35. *Runs A and B (`k439/t3s.sh`, 21:17-21:21, boot d4d739c7): the version switch, the picture, the stall.*
+    - Build `e116505c` (lean `bc1e9128`, archive `3fc7f7ea`), rebased onto exp 0438's patch `589ef163`:
+      - ar439 now goes after exp 0438's `ng438_fallback` call;
+      - ab439's found waits go through exp 0438's `acb_wait_unready` (det test still PASS);
+      - `libNp.cpp`'s `sceNpGetSdkVersion` takes the switch's word;
+      - the backend changes are re-applied as a diff (`k439/direct439-on-eacf8d2a.diff`, six hunks, offsets only).
+      - Lean has no `KYTY_BC5_SYSTEM_SW_VERSION`.
+    - Both runs: FLAT=1, IMPORT_PIECES=1, ACB_DEEP, ACB_REFUSE, XQ_COUNT, the surface dump, the stall watch, the Kyty
+      log. 60-s bound. No hang, no fault, resets 1 -> 1.
+
+      | | A: version unset | B: version "param" |
+      |---|---|---|
+      | in effect | 10.60.000 (0x0A600000) | 11.60.000 (0x0B600000), from the title's param.json |
+      | `GetProsperoSystemSwVersion` calls | 0 | 0 |
+      | `GetCompiledSdkVersion` | 0x04000031, twice | 0x04000031, twice |
+      | frames to the stall | 286, last flip 11.62 s | 272, last flip 10.84 s |
+      | stub calls | Http x1, NpSessionSignaling x2, libkernel yu17wG8L5FI x6 | the same |
+      | flat jobs, piece imports | 1 (5 segments), 0 | 1 (5 segments), 0 |
+
+    - The title never asks the system version before the stall, so the version cannot change its path here.
+    - The picture:
+      - Both DCC key arrays hold only clear codes: the registered display keys 00:7168 40:122432, the draw's render
+        keys 00:7424 40:122176. Mesa 0866ae7 `src/amd/common/ac_descriptors.h:29-38`: 0x00 `DCC_CLEAR_0000`, 0x40
+        `GFX8_DCC_CLEAR_0001`; radeonsi `si_clear.c:239-246` uses the GFX8 codes before gfx11.
+      - The surface after the decompress pass is all zero bytes (flips 2 and 60, all four lanes 0).
+      - So the title clears its frame to black and draws nothing visible into it; the present loses nothing.
+    - The stall (the stall watch's snapshot; `logs/t3s/`):
+      - game-main is the only running thread: state R, about 1.4 s of CPU per second, in guest code at
+        eboot+0xe245b2, called from +0xbda165, +0xec76d9, +0xec6780.
+      - Every other thread sleeps: MovieDecoder, Psn and Http on condition variables, ProxySetSync in its equeue.
+      - Labels: `0x20000081c0` = N-1 while `0x2000008220`, `0x20000082e0`, `0x2000008200`, `0x20000081a0` and labels
+        1/2/4/8 = N (A: 0x121 against 0x122; B: 0x112 against 0x113).
+      - Queue 2/1/0 writes `0x20000081c0` = N and `0x2000008220` = N+1 at its buffer's end, so its last finished
+        buffer is frame N-1's.
+      - Inference: game-main busy-waits for queue 2/1/0's next frame. ACB_REFUSE logged no record, so acb_ready did
+        not hold that buffer for 10 s.
+    - Next: what eboot+0xe245b2 polls (yotei-memdump's paused dump at this stall), and queue 2/1/0's ring, doorbell
+      and consumed pointer at the stall.
 
 (more to come)
 
