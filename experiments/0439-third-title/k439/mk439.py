@@ -51,7 +51,60 @@ static uint64_t                  g_vs_va = 0, g_ps_va = 0;
 static uint64_t                  g_flip_seq = 0;
 } // namespace dc439
 
+// exp 0439 (tag wr439), problem 3: every submitted packet (any ring) whose memory operand (bc5::policy::memory_operands:
+// the waits' addresses as well as the writes') meets a watched address is logged, with the ring, the job and the packet.
+// BC5_0439_WATCH=hex,hex,... (each watched as 8 bytes); unset: the third title's stall labels of a6 (2026-11-21).
+static void wr439_scan(const uint32_t* ib, uint32_t n, int ring, const char* kind, const bc5::policy::FilterOptions& opt, int depth = 0) {
+	static const std::vector<uint64_t> w = [] {
+		std::vector<uint64_t> v;
+		const char*           e = std::getenv("BC5_0439_WATCH");
+		std::string           s = e != nullptr ? e : "2000000000,2010449750,20104aa630,20104cd100,20104cd120,20104cd140,20104cd160,20104cd180,20104cd1a0,20104cd1c0,20104cd1e0,20000081e0,2000008000";
+		for (size_t a = 0; a < s.size();) {
+			size_t b = s.find(',', a);
+			if (b == std::string::npos) b = s.size();
+			if (b > a) v.push_back(std::strtoull(s.substr(a, b - a).c_str(), nullptr, 16));
+			a = b + 1;
+		}
+		std::fprintf(stderr, "[bc5] exp 0439 (tag wr439): watching %zu addresses\n", v.size());
+		return v;
+	}();
+	static std::recursive_mutex m;
+	static uint64_t             jobs = 0, lines = 0;
+	std::lock_guard             lk(m);
+	if (depth == 0) jobs++;
+	for (uint32_t q = 0; q < n;) {
+		const uint32_t h = ib[q];
+		uint32_t       len = 1;
+		if ((h >> 30u) == 3 || (h >> 30u) == 0) {
+			const uint32_t c = (h >> 16u) & 0x3fffu;
+			len              = c == 0x3fffu ? 1 : c + 2;
+		}
+		if (q + len > n) break;
+		if ((h >> 30u) == 3 && depth == 0 && len >= 4 && (((h >> 8u) & 0xffu) == 0x3f || ((h >> 8u) & 0xffu) == 0x33)) { // one level of nested IBs
+			const uint64_t na = (ib[q + 1] & ~3u) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u);
+			const uint32_t nn = ib[q + 3] & 0xfffffu;
+			if (na != 0 && nn != 0 && opt.mapped && opt.mapped(na, static_cast<uint64_t>(nn) * 4)) wr439_scan(reinterpret_cast<const uint32_t*>(na), nn, ring, "nested", opt, 1);
+		}
+		if ((h >> 30u) == 3) {
+			for (const auto& [a, bytes]: bc5::policy::memory_operands(ib + q, len)) {
+				const uint64_t nb = bytes == 0 ? 8 : bytes;
+				for (const uint64_t x: w) {
+					if (a < x + 8 && x < a + nb && lines++ < 400) {
+						char words[160];
+						int  o = 0;
+						for (uint32_t k = 0; k < len && k < 8 && o < 150; k++) o += std::snprintf(words + o, sizeof(words) - o, " %08x", ib[q + k]);
+						std::fprintf(stderr, "[bc5] exp 0439 (tag wr439): t %.3f s ring %d %s job %" PRIu64 " (%u dwords at %p) @%u op 0x%02x operand 0x%" PRIx64 "+%" PRIu64 " meets 0x%" PRIx64 ":%s\n", timing_now(), ring,
+						             kind, jobs, n, static_cast<const void*>(ib), q, (h >> 8u) & 0xffu, a, nb, x, words);
+					}
+				}
+			}
+		}
+		q += len;
+	}
+}
+
 static void dc439_track(const uint32_t* ib, uint32_t n, const bc5::policy::FilterOptions& opt, int ring) {
+	if (ib != nullptr && n != 0) wr439_scan(ib, n, ring, "job", opt); // exp 0439 (tag wr439)
 	if (dc439::mode() == 0 || !dc439::g_any.load(std::memory_order_relaxed) || ib == nullptr || n == 0) return;
 	std::lock_guard lk(dc439::g_mu);
 	auto readable = [&opt](uint64_t a, uint64_t b) { return opt.mapped && opt.mapped(a, b); };
