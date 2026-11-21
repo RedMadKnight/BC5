@@ -2203,6 +2203,72 @@ submission of its own chain that another thread is doing. It should wait only wh
   - drain = empty;
   - a broken copy (the early registration removed) must fail.
 
+## Result 17: who releases the Render Thread's spin (b438S347, 2026-11-21 08:22, boot d1ac0537; DIAGNOSIS)
+
+**Writers of the spun-on word** (`xref438.py` scan of the main module's code segment, read-only on the
+box, private output; in behaviour terms):
+- 35 RIP-relative references to the word. The known load in the spin loop is among them, which checks the scan.
+- **A frame-phase state machine:** the word takes the values 0–6.
+- **The Render Thread sets 1 itself**, just before its loop. The stores of 3, 4, 5 and 6 follow in the same
+  function, after the loop.
+- **One lone store of 2** sits in a separate function close by. It is the only store that can end the spin, since the
+  loop leaves on any value other than 1.
+- Seven instructions take the word's address, so some updates may go through a pointer.
+
+**The run:** b438S347, the SHARED lean build `d3485ed4` with no extra word, his scene, RT on, PLAY 220. prof0438.sh
+in all mode (`d95b2237`) ran from G for 200 s: perf cpu-clock:u at 199 Hz on every thread (141,922 samples, 87
+threads) and every thread's schedstat each second. Chain0438l arm S (`3c6c6516`). Tool `sp438.py`; the code ranges come
+from a private file.
+
+**Result:**
+- **Spins:** 564 episodes, 14.6 s in all, longest 947 ms.
+- **The releaser is game-main.**
+  - It has a sample in the 10 ms before 545 of the 564 spin ends.
+  - It is the only thread ever sampled near the releasing store.
+  - The job workers barely run during the spins and wait 0.1 ms/s in the run queue, so nothing runnable is starved.
+- **What game-main does:**
+
+  | game-main's samples | Host memmove (libc) | Guest code | Our AMPR/AMM and memory HLE |
+  |---|---|---|---|
+  | during the spins (1,853) | 87.4 % | 1.1 % | `LibAmpr::Ampr::WriteCommandBufferPointers` 1.1 %, `AmmAutoReleaseVa` 0.9 %, `GuestAddressSpace::MapBacking` 0.5 % |
+  | outside them (20,732) | 4.1 % | 88.4 % | – |
+
+- **Reading:** the title's main thread issues AMPR/AMM commands, and our host executes them synchronously as large
+  memory copies on that thread. The Render Thread spins, as the title is written to, until main reaches the next
+  phase.
+  - The console presumably does this work asynchronously or by remapping (TODO(verify): the AMPR path in KytyPlus
+    f266548 plus patch 0001, and the API's documented behaviour).
+  - **This is the main lever for the long frames.** It is host work, with every title's reach.
+- **Also during the spins:**
+  - bc5-chainwd (745 samples): submission preparation (`direct_sync_one`, views build, a std::map walk, memmove,
+    strlen);
+  - "Archive Asset I" (382): memmove.
+- **Not shown:** the window ended at 1514.18 s; the run then hung at 1516.3 s (result 18).
+
+## Result 18: S347's GPU hang, on the shared lean build with r438 baked in (1516.3–1518.3 s)
+
+- **The first event:** at 1516.28 s, gfxhub TCP write-permission faults (`GCVM_L2_PROTECTION_FAULT_STATUS 0x00741051`,
+  PERMISSION_FAULTS 0x5, RW 1, MORE_FAULTS; "167 callbacks suppressed"), from a job of bc5-ring (an acb), vmid 7.
+  - Ten distinct fault pages in 0x14…–0x16…, plus 0x1c… and 0x139e….
+  - The fault record (`~/bc5-data/captures/faults/20261121-082800/`) calls it K3 "no guest range (a hole)": no
+    guest range, view or GPU mapping.
+  - The addresses repeat their low bits under different high parts: a valid low address with a junk high part.
+- **Then:** at 1518.3 s the comp_1.3.0 ring timed out (signaled 83501, emitted 83503), then gfx_0.0.0 (118092 /
+  118094). Both ring resets succeeded; "device wedged, but no recovery needed". The run ended by itself at 335 s.
+- **The devcoredump** `~/bc5-data/captures/devcoredump/20261121-082800-devcd1.txt` (process thread bc5-chainwd) is
+  not yet decoded beyond the IB registers. It and the dmesg are copied privately.
+- **Class: F852/F858** (an acb that ran with bad descriptors or pointers and wrote into holes), not F865's shape (a
+  wait on a label nobody writes). The lean build writes no journal, so the dropped-wait probe line that named
+  F852/F858 does not exist for this run.
+- **r438** changes game-thread dcb waits and early registration from bc5-ring's slices. The acb-side decisions
+  (bc5-ring's own `ring_will_satisfy`, F2/F4) ignore early entries by design. The class predates r438 (F852 11-17,
+  F858 11-18). Recommendation to the top session: keep r438.
+  - Counted: 1 hang in about 20 r438-on runs today.
+- **The profiler:** perf record stopped at 1514.18. Its `perf script` and gzip ran in the container around the
+  fault, a timing nudge at most, not a cause.
+- **Naming the dropped wait** would need normal-build runs with the journal, at about 1 hang per 10–20 runs. F852's
+  open candidate (keep a met cross-queue wait for the GPU) does not need that capture first.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
