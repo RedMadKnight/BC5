@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Experiment 0440: does a dumped display surface hold a picture? Statistics only (private input, no image written).
 
-  surf0440.py surface <file> [bytes]      zero share, share of the most common 32-bit value, number of distinct
+  surf0440.py surface <file> [bytes] [offset]   zero share, share of the most common 32-bit value, number of distinct
                                           32-bit values in a sample, and a 16-step profile along the buffer (share
                                           of non-zero bytes per sixteenth), over the first <bytes> (default all)
   surf0440.py dcc <file> [offset] [bytes] histogram of the DCC key bytes: 0x00 = clear to zero, 0xff = uncompressed
@@ -13,8 +13,10 @@ it shows. Works on any host (plain reads), also on a sparse dump file.
 import sys
 
 
-def surface(path, limit):
-    data = open(path, "rb").read() if limit is None else open(path, "rb").read(limit)
+def surface(path, limit, off=0):
+    with open(path, "rb") as f:
+        f.seek(off)
+        data = f.read() if limit is None else f.read(limit)
     n = len(data)
     zero = data.count(0)
     print("%d bytes; zero bytes %.2f %%" % (n, 100.0 * zero / max(n, 1)))
@@ -49,7 +51,7 @@ def dcc(path, off, limit):
 def main():
     cmd, path = sys.argv[1], sys.argv[2]
     if cmd == "surface":
-        surface(path, int(sys.argv[3], 0) if len(sys.argv) > 3 else None)
+        surface(path, int(sys.argv[3], 0) if len(sys.argv) > 3 else None, int(sys.argv[4], 0) if len(sys.argv) > 4 else 0)
     else:
         dcc(path, int(sys.argv[3], 0) if len(sys.argv) > 3 else 0, int(sys.argv[4], 0) if len(sys.argv) > 4 else None)
 
