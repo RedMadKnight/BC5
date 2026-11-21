@@ -70,7 +70,7 @@ A desktop shortcut opens the emulator window (see [How to start](#how-to-start))
 
 Only what is confirmed to fail on the shared builds (patch `0fede35d` of 2026-11-21, before the bake at 21:00 that brought patch `589ef163`; nothing below involves what that bake changed), or on the private builds named:
 
-- **The third title stops at about frame 280** (private builds only). Its earlier GPU hang, in the first compute buffer that continues in a chained buffer, is passed by laying such chains out as one buffer. Now its main thread waits for a compute queue's next frame that never completes, on a black picture that is the title's own cleared frame. The cause is open (F883, F888).
+- **The third title stops at about frame 280** (private builds only). Its earlier GPU hang, in the first compute buffer that continues in a chained buffer, is passed by laying such chains out as one buffer. Now its main thread waits for jobs held behind a gate that a GPU event should open: a compute queue's first interrupt, which the host does not yet turn into the event the title registered. The black picture is the title's own cleared start-up frame. The fix exists as a switch and has not been run for this yet (F883, F888, F889).
 - **A CPU crash in the second title's job system, mostly in one fight scene.** The game's main thread, helping its job workers, runs a job that needs a worker's data, and the emulator ends with a read at address 0xc. On the night of 11-16/17 it ended a few of the long runs, at 3 to 20 minutes; with more job workers per core it came in most runs. The title-code workaround (JobArenaFix) is removed from the code, menu and switches since 2026-11-17 (experiment 0429): the fix is to come from console-like thread scheduling, derived at run time for any title. A 200 µs wake slice (experiment 0425) and a faster guest mutex did not remove it. Real-time priority for the title's high-priority job workers through rtkit (candidate R) removed it under a stressor (4 of 4 clean against 7 crashes in 9) and, since rtkit's per-user limits were raised on 2026-11-18, passes its checks with all 8 workers promoted and no refused audio thread; since 2026-11-18 12:08 it is on by default in the shared builds, and the 200 µs wake slice is removed (F444–F458, F851, F856, F857). Whether it removes the crash in the maintainer's own fight scene is to be seen in play. On the Bazzite host R works for a game started from his desktop. It does not work for one launched over ssh: rtkit's policy refuses those, and such a run crashed (F860).
 
 - **A game-thread wait can still be given up when its writer sits in a compute buffer the host is holding back.** The give-up of F262 is fixed for writers inside a taken slice (r438), but not for the rest of a compute buffer held at one of its own waits: that wait finds no writer, gives up after 8 ms and runs ahead. Offline only so far (F887); a fix is written, not in the shared builds.
@@ -89,7 +89,7 @@ BC5 is a hobby research project and is against piracy. You play games you own, d
 
 ## Status in numbers
 
-As of 2026-11-21; the table's figures are from 2026-11-02 or earlier unless a row names a later date. Measured on one BC-250 with the maintainer's own copies of the games. Since 2026-11-20 frame rates are taken from the lean build only (D24). Every number is a finding (F1 … F888) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
+As of 2026-11-21; the table's figures are from 2026-11-02 or earlier unless a row names a later date. Measured on one BC-250 with the maintainer's own copies of the games. Since 2026-11-20 frame rates are taken from the lean build only (D24). Every number is a finding (F1 … F889) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
 
 | | ASTRO BOT | Marvel's Wolverine (second title) |
 | --- | --- | --- |
@@ -142,7 +142,7 @@ Since 2026-11-13 the builds set their own defaults in code (F827), so a launcher
 | Audio grain model and display-event coalescing | The second title's sound and timeline at real speed (1.00× for 10 minutes), no 30-fps cap needed | F246, F247 |
 | Tessellation-factor ring, second title | The night scene's tessellated draws are drawn; the geometry engine's reads at address 0 are gone | F248 |
 
-**The research so far:** 778 finding rows (F1–F888; the numbering has gaps) in `docs/HANDOFF.md`, experiment directories 0001–0440 in `experiments/` (0438 and 0439, the third title, in progress), 14 architecture decision records in `docs/decisions/`.
+**The research so far:** 779 finding rows (F1–F889; the numbering has gaps) in `docs/HANDOFF.md`, experiment directories 0001–0441 in `experiments/` (0438 and 0439, the third title, in progress), 14 architecture decision records in `docs/decisions/`.
 
 ### Known issues
 
@@ -256,7 +256,7 @@ Environment variables. Since the switch cleanup in the shared builds of 2026-11-
 README.md            this file
 CLAUDE.md            standing instructions and the hard rules
 docs/
-  HANDOFF.md         research state: findings F1–F888 with sources, open questions, decisions
+  HANDOFF.md         research state: findings F1–F889 with sources, open questions, decisions
   PHASES.md          the gated roadmap (G0a, G1b, G2, G3 passed; 0b and 4 retired by D18; phase 5, play, current)
   console-vs-host.md what the console does, what the host does instead
   decisions/         ADRs 0001–0014, one decision each
@@ -269,7 +269,7 @@ tools/
   third_party/       vendored oozextract (MIT)
 backend/             C++20: the direct path (policy filter, state trackers, dma-buf mappings,
                      submission); kytyplus-patches/ the patch against KytyPlus
-experiments/         one directory per experiment, 0001–0440
+experiments/         one directory per experiment, 0001–0441
 ```
 
 ## How the research is run

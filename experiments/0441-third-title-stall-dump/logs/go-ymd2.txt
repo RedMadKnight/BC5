@@ -1,0 +1,25 @@
+2026-11-21 21:22:42 free under the private folder: 64 GiB
+2026-11-21 21:22:42 lock taken: exp0441 2026-11-21 21:22:42 third title memdump ymd2
+2026-11-21 21:22:43 tag ymd2 binary ~/bc5-work/exp0441/kit-b/kyty_emulator e116505c780310f2b5fc0f9034819d32 kernel 7.3.3-ogc1.1.fc45.x86_64 boot d4d739c74073471aa0e2fea66dced72b
+2026-11-21 21:22:43 amdgpu timeout/reset lines before: 1; words: BC5_SYSMODULES_PACK_DIR=~/bc5-data/games/PPSA26344/fakelib BC5_DIRECT_DCC_PRESENT=2 BC5_DIRECT_EAGER_GPU_WRITE=1 BC5_DIRECT_IB_CHAIN=1 BC5_DIRECT_IB_CHAIN_FLAT=1 BC5_0439_IMPORT_PIECES=1 BC5_0439_ACB_DEEP=1 BC5_0439_ACB_REFUSE=1 BC5_0439_XQ_COUNT=1
+2026-11-21 21:22:43 display: edid bytes 128, first mode 1920x1080
+dead-mount check done (0)
+Mem:           15192        1586        7962           4        5993       13606
+2026-11-21 21:22:44 emulator pid 572205 (exe ~/bc5-work/exp0441/kit-b/kyty_emulator); Max core file size 0 0 bytes 
+2026-11-21 21:23:14 threads: 80; flips in the log: 10; extra ranges: --extra 0x5005160000:0x2800000 --extra 0x5007128000:0x140000 --extra 0x5007190000:0x2800000 --extra 0x5009158000:0x140000
+[   0.05] snapshot snapA: 80 threads, 0 without registers, 0.03 s
+[   0.05] snapshot A held the process stopped for 0.04 s; running for 5.0 s
+[   5.12] snapshot snapB: 80 threads, 0 without registers, 0.06 s
+[  43.48] full dump: 2146 mappings, {'dumped': 1622, 'skipped-big': 18, 'skipped-hostfile': 351, 'skipped-special': 156}, 3793.0 MiB real, 38.4 s
+[  43.50] stopped window of the dump: 38.5 s
+[  43.51] SIGCONT sent
+2026-11-21 21:23:57 dumper rc 0; dump size 3,8G (apparent 68G)
+2026-11-21 21:23:59 capture: ~/bc5-data/captures/play-20261121-2122
+2026-11-21 21:23:59 amdgpu timeout/reset lines after: 1
+2026-11-21 21:24:00 kernel lines since the start: 1
+2026-11-21 21:24:00 leftovers: own emulator [] any emulator [] bc5-mount []
+dead-mount check done (0)
+2026-11-21 21:24:00 last log line: == 2026-11-21 21:23:59 exit 0
+2026-11-21 21:24:00 lock dropped
+
+[exited with code 0]
