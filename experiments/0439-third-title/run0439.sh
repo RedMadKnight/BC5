@@ -32,7 +32,7 @@ dry)
 run)
   tag=${3:?tag}; secs=${4:-600}; out=$E/runs/$tag
   grep -q '^exp0439 ' "$LOCK" 2>/dev/null || { echo "BOX-LOCK is not ours"; exit 1; }
-  pgrep -f '[k]yty_emulator' >/dev/null && { echo "an emulator is running"; exit 1; }
+  pgrep -x kyty_emulator >/dev/null && { echo "an emulator is running"; exit 1; }  # -x: a build's arguments name the binary too
   mkdir -p "$out"
   # RUN_EXTRA="NAME=value ..." : extra words in the emulator's environment for an env-only arm (no build), e.g. exp
   # 0438's malloc arm MALLOC_TRIM_THRESHOLD_=268435456 MALLOC_MMAP_THRESHOLD_=33554432 against a control without them.
