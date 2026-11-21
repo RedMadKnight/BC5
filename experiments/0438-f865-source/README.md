@@ -2269,6 +2269,61 @@ from a private file.
 - **Naming the dropped wait** would need normal-build runs with the journal, at about 1 hang per 10–20 runs. F852's
   open candidate (keep a met cross-queue wait for the GPU) does not need that capture first.
 
+## Result 19: game-main's copies are O(n) guest-memory bookkeeping (b438M349, 2026-11-21 09:02–09:08, boot d1ac0537; DIAGNOSIS)
+
+**Why a shim.** Every perf call-graph form (`--call-graph fp`, `-g`, `--user-callchains`, `dwarf` with `-m 16` / `-m
+32`) is refused with EACCES at `kernel.perf_event_paranoid` = 2, while plain records work. That is why the K348 run got
+no game-main stacks. Changing the setting is the maintainer's to decide. Our host build keeps frame pointers
+(`-fno-omit-frame-pointer` on all 4,278 compile lines of the lean compdb), so fp chains are usable once perf may record
+them.
+
+**The shim** `cpy438.c` (`fe7a094f`), loaded with LD_PRELOAD. It is records only, for test runs.
+- **What it wraps:** `memcpy`, `memmove`, `mempcpy` and their `_chk` forms. Ubuntu's gcc fortifies by default, so the
+  calls go to `__memcpy_chk` / `__memmove_chk`; the shared lean binary imports all four.
+- **What it records:** for every copy of 256 KiB or more, on any thread, the time, size, dst, src and up to 12
+  frame-pointer return addresses. The frames are read with `process_vm_readv` on our own pid, so a bad frame pointer
+  ends the walk instead of faulting.
+- **No locks, no malloc** in the hot path; a writer thread drains every 2 s.
+- **Test:** `test_cpy438.sh` PASS in the ubuntu container. A dummy's 1-MiB copies are recorded on their thread with
+  the calling function in the chain; nothing is written below the bar or without `CPY438_OUT`.
+- **Not seen:** copies inside libc itself and small inlined fixed-size copies.
+
+**The run:** b438M349, the shared lean build `d3485ed4` (the 2-s load check first: rc 0), his scene, RT on, PLAY 220.
+- chain arm M (`88d98198`): `LD_PRELOAD=cpy438.so CPY438_OUT=…`, with prof0438 cpu mode on the Render Thread for the
+  spins (1,613 episodes).
+- NO_CRASH, 0 pad keys. All 115 files copied and md5-checked.
+- 366,421 copies of 256 KiB or more from the emulator, symbolized on the box with `sym438.py` (addr2line; host frames
+  only, guest frames shown as `[guest]`; the full output is private).
+
+| Thread | Copies (≥ 256 KiB) | Bytes | In spins | Top caller families |
+|---|---|---|---|---|
+| game-main | 213,154 | ≈ 350 GB | 136,588 (≈ 240 GB) | `VirtualRanges::MergeAroundUnlocked`; `GuestBackingStore::UnmapOne` under `VirtualRanges::EditUnlocked` / `Rename`; `std::_Rb_tree<…GuestBackingStore::MapEntry>`; `std::vector<PooledMemory::Mapping>::_M_realloc_append`; `GuestAddressSpace::FindFreeAligned` over `vector<PhysicalRange>` |
+| Archive Asset I | 30,994 | ≈ 67 GB | 7,302 | the same (`GuestBackingStore::Unmap`, the MapEntry tree, the Mapping vector) |
+| bc5-ring | 58,549 | ≈ 40 GB | 12 | `bc5::direct::Device::sorted_mappings()` (52,935) |
+| bc5-chainwd | 34,837 | ≈ 44 GB | 8,776 | `bc5::direct::Device::sorted_mappings()` (22,049), `Lzr0401::Range` vectors, `VirtualRanges::Range` copies |
+| kyty-gpu | 12,309 | ≈ 51 GB | 51 | 3–7 MiB from KytyDirectMemory to renderD128 (uploads) |
+
+- **game-main's copies are not guest data.** Sizes are 0.25–3 MiB, and the destination and source are both host heap
+  (`[anon]`). They are KytyPlus's guest-memory bookkeeping: range lists kept as sorted vectors (or rebuilt copies),
+  shifted or reallocated on every guest map / unmap / rename.
+  - The fault record of result 18 shows ~29,000 views and 29,767 GPU mappings, so each edit moves MiB. That is O(n)
+    per operation, at about 1.7 GB/s on game-main over the window.
+  - Some names are approximate where inlined, but the family is clear.
+- **The Render Thread spins on game-main meanwhile** (result 17). On the console a map / unmap edits page tables,
+  O(1) per page, with no copy of a global list.
+- **bc5's own submission path pays a similar O(n) copy:** `Device::sorted_mappings()` copies the sorted mapping list,
+  inside the flush_mu holds of F869.
+- **Fix candidates** (one test build, each behind a switch; offline tests that compare the resulting map state, and
+  the guest's views, before and after):
+  - **A1, KytyPlus memory:** the range structures of `VirtualRanges`, `GuestBackingStore` and `PooledMemory` as
+    ordered maps, or an interval structure keyed by start, with in-place merge and split: no vector shift or full
+    rebuild per edit.
+  - **A2, backend:** `sorted_mappings()` hands out a shared immutable snapshot (rebuilt once per change, shared by
+    every submit) instead of a copy.
+- **This replaces the AMPR hypothesis of result 17.** The AMPR symbols were neighbours, not the caller. APR reads run
+  on the APR workers, and AMM commands move no bulk bytes. game-main's map / unmap calls go through these memory
+  structures.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
