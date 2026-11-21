@@ -367,6 +367,31 @@ the control's line has none, `X=1;rm` is refused).
     - Logged with `BC5_0439_XQ_COUNT=1` for the next run: every acb part's guest queue and ring (first 64, then every
       1024th), and at each flip the number of acb holds released and the longest one, against the kernel's job timeout
       for the buffer waiting natively on the other side.
+28. *The 17:04 hang, from the record* (read on boot c97d43e6: the previous boot's kernel log, fault record
+    `~/bc5-data/captures/faults/20261121-170456`, devcoredump `20261121-170456-devcd3.txt`, the run's `play-last.log`).
+    - The title played: every decompress pass OK in 0.7-1.1 ms, 0.00 ms of drain before it; flips at about 30 fps for 8
+      s (frame profile 20-35 ms a flip; label counters near 0xe5, about frame 230); every frame one job of 73 pieces.
+    - The hang: submit #3623 at t 9.459 s, guest queue 40's acb (16,364 dwords after a split at dword 4, with a 4-dword
+      state prefix; 16,422 dwords submitted), sent after three of its waits passed on the CPU. It timed out after
+      2041 ms on comp_1.3.0, the ring reset failed, and bc5-gpu-watch rebooted the box.
+    - Queue 40 is neither of the two acbs of the first frame (queues 16 = 0x11 and 24 = 0x19).
+    - Not a wait. The devcoredump's HQD of mec 0 pipe 3 queue 0 shows VMID 6, IB base `0x1079_000100a0` and size
+      0x3fea = 16,362 dwords: this job. The last headers the CP fetched (`CP_MEC_ME1_HEADER_DUMP`) are NOP,
+      INDIRECT_BUFFER, SET_SH_REG and DISPATCH_DIRECT (0x15); there is no WAIT_REG_MEM among them. CPC is busy and
+      there is no page fault. So a dispatch's waves never finished.
+    - Inferred, not shown: a shader spinning on memory another queue should write, or a dispatch run with the wrong
+      state. Queue 40's parts dispatch before they set a program and get the tracked compute registers in front (exp
+      0401's line at t 1.657 s: "queue 40 acb part 424 dwords dispatches at -1 before it sets a program", 59 parts).
+    - ho430 wrote only its start line ("F4 fences 0"): no F4 fence in the run.
+    - Just before it, three soft CP waits timed out after 8 ms on labels with frame counters (`0x20000081c0` ref 0xe6
+      value 0xe5, `0x2000008220` ref 0xe7 value 0xe6, `0x201050a8c0` ref 1 value 0): a dcb's replay waiting on compute
+      writes not yet done.
+    - Not known: the dispatch's offset and program, the queue-to-ring map, and the three waits' writers. The journal was
+      `min`, and the timeout probe was off.
+    - So neither the decompress drain nor A and B sharing a ring caused it. The next third-title run needs the timeout
+      probe (`BC5_DIRECT_TIMEOUT_PROBE=1`) and the full journal.
+    - Also on that boot: at 16:58:09 comp_1.1.0 and gfx_0.0.0 timed out with successful resets, pid 928664, not a run
+      of this experiment.
 
 (more to come)
 

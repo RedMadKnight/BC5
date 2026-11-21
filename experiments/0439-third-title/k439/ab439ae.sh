@@ -25,7 +25,7 @@ case "$P" in *[!A-Za-z0-9]* | "") echo "the tag prefix is letters and digits"; e
 MC=$(m "$CB"); MO=$MC
 { [ "${AB_STANDIN:-0}" = 1 ] || [ "${MC:0:8}" = "${AB_PIN:-25338f8a}" ]; } || { echo "binary: private lean ${MC:0:8}: not the pinned one"; exit 1; }
 [ "${AB_STANDIN:-0}" = 1 ] || grep -aq BC5_DIRECT_AGC_EOP_IDENT "$CB" || { echo "the lean binary has no BC5_DIRECT_AGC_EOP_IDENT: compiled out"; exit 1; }
-for a in C1 O1 C2 O2 C3 O3; do [ -e "$R/$P$a-start.txt" ] && { echo "tag $P$a already used"; exit 1; }; done
+for a in W0 C1 O1 C2 O2 C3 O3; do [ -e "$R/$P$a-start.txt" ] && { echo "tag $P$a already used"; exit 1; }; done
 deadmnt() { distrobox enter ubuntu -- sh -c 'M=$1; if mountpoint -q "$M" && ! head -c1 "$M/sce_sys/param.json" > /dev/null 2>&1; then echo dead; fi' _ "$M" 2> /dev/null < /dev/null | grep -q dead; }
 busy() { pgrep -x kyty_emulator > /dev/null || pgrep -x bc5-mount > /dev/null; }
 resets() { sudo -n dmesg 2> /dev/null | grep -E 'amdgpu [0-9a-f]{4}:' | grep -ciE 'ring .* timeout|reset (succeeded|failed)|GPU reset|device wedged'; }
@@ -36,11 +36,11 @@ echo "$(date '+%F %T') $P: boot $(cut -c1-8 /proc/sys/kernel/random/boot_id), up
 NDISP=$(display); BOOT="resets $(resets), displays connected $NDISP, busy $(busy && echo yes || echo no), dead mount $(deadmnt && echo yes || echo no)"
 say "boot check: $BOOT"
 if [ "$DRY" = 1 ]; then
-    say "DRY: plan C1 O1 C2 O2 C3 O3 (lean, MangoHud, $SECS s; O with BC5_DIRECT_AGC_EOP_IDENT=1); lock now [$(cat "$LOCK")]; busy $(busy && echo yes || echo no); dead mount $(deadmnt && echo yes || echo no)"
+    say "DRY: plan W0 (warm-up, discarded) C1 O1 C2 O2 C3 O3 (lean, MangoHud, $SECS s; O with BC5_DIRECT_AGC_EOP_IDENT=1); lock now [$(cat "$LOCK")]; busy $(busy && echo yes || echo no); dead mount $(deadmnt && echo yes || echo no)"
     exit 0
 fi
 [ "$BOOT" = "resets 0, displays connected $NDISP, busy no, dead mount no" ] && [ "$NDISP" -ge 1 ] || { say "STOP: the boot check failed"; exit 1; }
-LINE="exp0439 | ae439 lean A/B on ASTRO BOT $P (6 lean, $SECS s each), token $(date +%s)$$ | $(date '+%F %T')"
+LINE="exp0439 | ae439 lean A/B on ASTRO BOT $P (1 warm-up + 6 lean, $SECS s each), token $(date +%s)$$ | $(date '+%F %T')"
 [ -e "$LOCK" ] || touch "$LOCK"
 [ -f "$LOCK" ] && [ ! -L "$LOCK" ] && [ ! -s "$LOCK" ] || { echo "the box is locked: $(cat "$LOCK")"; exit 1; }
 tl=$LOCK.0439ae-$$.new; al=$LOCK.0439ae-$$.aside
@@ -79,7 +79,8 @@ run() { # $1 arm tag, $2 binary, $3 md5, $4 lean 1/0, $5 extra KEY=VALUE or empt
     case "$line" in *"PASS: ran $SECS s"*"kernel lines 0, crash lines 0"*) ;; *) say "STOP: $t did not pass"; finish 1 ;; esac
     sleep 5
 }
-for a in C1:C O1:O C2:C O2:O C3:C O3:O; do
+# W0: one warm-up run (control), discarded (the top session, 11-21: exp 0438's first run after the boot was a high outlier)
+for a in W0:C C1:C O1:O C2:C O2:O C3:C O3:O; do
     t=${a%%:*}; k=${a##*:}
     if [ "$k" = C ]; then run "$t" "$CB" "$MC" 1 ""; else run "$t" "$OB" "$MO" 1 BC5_DIRECT_AGC_EOP_IDENT=1; fi
 done
