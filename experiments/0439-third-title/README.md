@@ -359,6 +359,11 @@ the control's line has none, `X=1;rm` is refused).
         (`w428_queue_ring`). So A and B share a ring in the first frames. That is safe only while every native wait's
         writer is ahead of it on that ring or on another ring. B's waits on A's late write rely on A's part being
         submitted first.
+      - The same holds for the IB_CHAIN builds (`3a79a88e` included). The chain rule is only in the walkers that
+        follow IBs; the label-writer registration (`register_label_writes`, plw, EARLYREG/r438, q438), acb_ready's
+        writer lookup, `ring_will_satisfy` and F4's cycle check stay flat over the submitted buffer.
+      - If chain writes are ever registered, F4 must not fence on a chained dcb (its own switch): D waits natively
+        for A's and B's writes, so a whole-job dependency of A or B on D is a deadlock.
     - Logged with `BC5_0439_XQ_COUNT=1` for the next run: every acb part's guest queue and ring (first 64, then every
       1024th), and at each flip the number of acb holds released and the longest one, against the kernel's job timeout
       for the buffer waiting natively on the other side.
