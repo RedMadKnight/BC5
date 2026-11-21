@@ -323,6 +323,38 @@ static void run_lwm() {
 }
 #endif
 
+// lwmid: the lwm sequence with no checks, printing g_plw after each step (identity between units; any unit, any switch)
+static void run_lwmid() {
+	static uint64_t lab3 = 0x3c3c3c3c3ull;
+	static uint32_t ib5[8];
+	static uint32_t ring2[8];
+	const uint64_t  a1 = reinterpret_cast<uintptr_t>(&g_label), a3 = reinterpret_cast<uintptr_t>(&lab3);
+	release(ib5, a3, 5);
+	const uint64_t i1 = reinterpret_cast<uintptr_t>(&g_ib1[0]), i5 = reinterpret_cast<uintptr_t>(&ib5[0]);
+	const uint32_t r[8] = {0xC0023F00u, static_cast<uint32_t>(i1), static_cast<uint32_t>(i1 >> 32u) & 0xffu, 8, 0xC0023F00u, static_cast<uint32_t>(i5), static_cast<uint32_t>(i5 >> 32u) & 0xffu, 8};
+	std::copy(r, r + 8, ring2);
+	g_dev = std::make_unique<TestDev>();
+	g_dev->map(a1, 8); // g_label mapped, lab3 not
+	auto dump = [a1, a3](const char* step) {
+		std::lock_guard lk(g_plw_mutex);
+		std::printf("%s:", step);
+		for (const auto& w: g_plw) std::printf(" [%s v%" PRIu64 " %s o%" PRIu64 "]", w.label == a1 ? "L1" : (w.label == a3 ? "L3" : "?"), w.value, (w.seq & kR438Early) != 0 ? "early" : "real", w.order);
+		std::printf("\n");
+	};
+	std::thread([&] {
+		r438_begin(ring2, 8, nullptr, 0);
+		dump("1 begin (L3 unmapped)");
+		register_label_writes(g_ib1, 8, kAt0, 801, 0);
+		dump("2 the job (the filter NOPs L3's write)");
+		r438_end();
+		dump("3 end");
+	}).join();
+	std::lock_guard l(g_jm);
+	for (const auto& x: g_lines)
+		if (x.find("BUG") != std::string::npos) std::printf("  journal: %s", x.find("never reached") != std::string::npos ? "BUG: an early write never reached the ring\n" : x.c_str());
+	g_dev.reset();
+}
+
 static void run_identity() {
 	auto dump = [](const char* step) {
 		std::lock_guard lk(g_plw_mutex);
@@ -365,6 +397,10 @@ int main(int argc, char** argv) {
 	std::printf("BC5_0438_EARLYREG %s, mode %s\n", r438_on() ? "on" : "off", mode.c_str());
 	if (mode == "identity") {
 		run_identity();
+		return 0;
+	}
+	if (mode == "lwmid") {
+		run_lwmid();
 		return 0;
 	}
 	if (!r438_on()) {

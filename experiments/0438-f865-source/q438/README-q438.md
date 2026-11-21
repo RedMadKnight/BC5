@@ -58,3 +58,17 @@
 - On bc5-ring, `ring_will_satisfy` skips early entries, and `acb_ready` (unit ~7665) passed the wait at once.
 - At the submit, `ho430::at_wait` returned after its bounds (~55 ms) with the writer still queued, and the stale value passed the wait.
 - **Fix:** `acb_wait_unready` (acb_ready's test, factored out) also holds the acb while a queued chain writes the label (`q438_writer_queued`). The acb is deferred as for any unready wait. After the writer's submission F4 orders it (`det q438ng`). Planted `ng-off` fails.
+
+**r438's half of labelmap has its own switch, `BC5_0438_R438_LWM`** (off unless "1").
+- The `r438_begin` snapshot is taken only when the switch is on.
+- With every 0438 switch off, test_r438o's `identity` (EARLYREG unset and `=0`) and `lwmid` equal the baked unit `2e6168de`.
+
+**inflight_ng: the stale-value window without the queue is live in the baked path** (`test_q438.sh`, section 5, `Q438_ONLY=inflight`).
+- The shape:
+  - a game thread's chain is taken and in its `submit_now`, so its writes are only in `f10_flight`;
+  - L's memory holds a stale value that passes a bc5-ring acb wait;
+  - `acb_ready`'s test (~7665) passes the acb;
+  - `ho430::at_wait` gives up with the writer still in flight: ~78 ms at F16 phase 3, ~31 ms in back-pressure (phase 1, the 2-ms phase gate);
+  - the stale value passes. This reproduces on `2e6168de` and on stack438x with every switch off.
+- bc5-ring's own slice cannot open this window. There is one consumer thread, started once (r438o.cpp 16825–16827). It runs `acb_ready` (1651), then `r438_begin` (1685), then `chain_end` (1694, an inline `submit_now` that registers the writes), then `r438_end` (1695).
+- **Fix, `BC5_0438_INFLIGHT_NG=1`:** `acb_wait_unready` holds the acb while any registered slot has the label in flight, or an early entry of the label is in `g_plw`. A busy registry or slot counts as in flight, as in `f10_pending`. The acb is released after the writer's registration, and F4 then orders it. The planted `inflight-off` fails.

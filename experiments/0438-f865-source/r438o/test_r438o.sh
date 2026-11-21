@@ -1,7 +1,7 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-2.0
 # BC5 exp 0438 (tag r438o): cut r438's pieces, unchanged, from a unit and run test_r438o.cpp.
-#   bash test_r438o.sh UNIT [MODE]     MODE: order (default), trim, lwm (a mkq438x.py unit) or identity; the caller sets BC5_0438_EARLYREG.
+#   bash test_r438o.sh UNIT [MODE]     MODE: order (default), trim, lwm (a mkq438x.py unit, BC5_0438_R438_LWM=1), lwmid or identity; the caller sets BC5_0438_EARLYREG.
 # Builds into a fresh mktemp directory; one foreground run, no loop. VS clang++ on the laptop (the slice's
 # INDIRECT_BUFFER carries a 40-bit address: a fixed low image base).
 set -euo pipefail

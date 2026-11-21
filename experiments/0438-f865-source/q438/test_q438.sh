@@ -30,8 +30,8 @@ cutunit() { # cutunit UNIT DIR
 		a=$(lineof 'static bool covered_sorted(const bc5::direct::MappingIndex& maps, uint64_t a, uint64_t bytes) {'); piece "$a" "$(endf "$a")" q_cov.inc
 		a=$(lineof '// ---- BC5 experiment 0438 (tag labelmap)'); b=$(lineof '// ---- end of exp 0438 (tag labelmap)'); piece "$a" "$b" q_lwm.inc
 		a=$(lineof '// ---- BC5 experiment 0438 (tag q438ng)'); b=$(lineof '// ---- end of exp 0438 (tag q438ng)'); piece "$a" "$b" q_ng.inc
-		a=$(lineof 'namespace ho430 {'); b=$(lineof '} // namespace ho430'); piece "$a" "$b" q_ho.inc
 	fi
+	a=$(lineof 'namespace ho430 {'); b=$(lineof '} // namespace ho430'); piece "$a" "$b" q_ho.inc # every unit: the inflight case
 	cp "$here/test_q438.cpp" "$d/"
 }
 cxx=${CXX:-g++}
@@ -52,6 +52,22 @@ for f in q_state.inc q_chain.inc q_plw.inc q_reg.inc q_rws.inc; do
 done
 build "$out/new" Q438_NEW tq.exe; build "$out/old" Q438_ORIG tq.exe
 export BC5_DIRECT_CHAIN=2
+inflight() { # the stale-value window without the queue (BC5_0438_SUBMITQ unset), on the input unit and the new one
+	echo "== 5. inflight, BC5_0438_SUBMITQ unset"
+	echo "   input unit:"; (unset BC5_0438_SUBMITQ BC5_0438_INFLIGHT_NG; "$out/old/tq.exe" inflight) | sed 's/^/   /'
+	echo "   new unit, BC5_0438_INFLIGHT_NG unset:"; (unset BC5_0438_SUBMITQ BC5_0438_INFLIGHT_NG; "$out/new/tq.exe" inflight) | sed 's/^/   /'
+	if [ -f "$out/new/q_ng.inc" ]; then
+		echo "   new unit, BC5_0438_INFLIGHT_NG=1:"; (unset BC5_0438_SUBMITQ; BC5_0438_INFLIGHT_NG=1 "$out/new/tq.exe" inflight) | sed 's/^/   /'
+		local d="$out/p-inflight-off"; cp -r "$out/new" "$d"; rm -f "$d/tq.exe"
+		python -I -c 'import sys; p,o,n=sys.argv[1:4]; s=open(p,"rb").read().decode(); assert s.count(o)==1, o; open(p,"wb").write(s.replace(o,n).encode())' "$d/q_ng.inc" 'if (inflight_ng_on() && inflight_ng_writer(label)) return true;' '(void)0;'
+		build "$d" Q438_NEW tq.exe
+		local rc=0; (unset BC5_0438_SUBMITQ; BC5_0438_INFLIGHT_NG=1 "$d/tq.exe" inflight) > "$d/inflight.txt" || rc=$?
+		if [ "$rc" != 0 ]; then echo "   planted inflight-off (BC5_0438_INFLIGHT_NG=1): FAIL as it must (rc $rc)"; grep '^FAIL' "$d/inflight.txt" | sed 's/^/      /'; else echo "FAIL: planted inflight-off not caught"; exit 1; fi
+	fi
+}
+if [ "${Q438_ONLY:-}" = inflight ]; then inflight; echo "== all done"; exit 0; fi
+if [ "${Q438_ONLY:-}" = plants ]; then skip23=1; else skip23=0; fi
+if [ "$skip23" = 0 ]; then
 echo "== 2. identity"
 (unset BC5_0438_SUBMITQ; "$out/old/tq.exe" identity) > "$out/id-bake.txt"
 (unset BC5_0438_SUBMITQ; "$out/new/tq.exe" identity) > "$out/id-unset.txt"
@@ -74,6 +90,7 @@ for i in $(seq 2 "$runs"); do
 done
 echo "   runs 2..$runs misses:$per; failed runs $bad"; [ "$bad" = 0 ] || { echo "FAIL: random not clean in every run"; exit 1; }
 echo "== 3d. det, BC5_0438_SUBMITQ=1"; BC5_0438_SUBMITQ=1 "$out/new/tq.exe" det
+fi # Q438_ONLY=plants: sections 2 and 3 skipped
 echo "== 4. planted bugs (each must FAIL)"
 plant() { # plant NAME OLD NEW [FILE]
 	local d="$out/p-$1"; cp -r "$out/new" "$d"; rm -f "$d/tq.exe"
@@ -103,4 +120,5 @@ if [ -f "$out/new/q_lwm.inc" ]; then # mkq438x.py
 	plant lwm-noscan 'if (t_lwm != nullptr && (h >> 30u) == 3 && !lw_packet_mapped(' 'if (false && (h >> 30u) == 3 && !lw_packet_mapped('
 	plant ng-off 'return q438_on() && q438_writer_queued(label);' 'return false;' q_ng.inc
 fi
+inflight
 echo "== all done"

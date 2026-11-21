@@ -183,9 +183,7 @@ static std::atomic<int>                     g_stub_phase {0}; // >0: the stub su
 #ifdef Q438_NEW
 #include "q_q.inc"
 #endif
-#ifdef Q438_X
-#include "q_ho.inc"
-#endif
+#include "q_ho.inc" // ho430, cut from every unit
 
 // ---- the stub submission ---------------------------------------------------------------------------------------------------
 static constexpr int        kOwners = 24;
@@ -1090,6 +1088,86 @@ static void det_ng(int o) {
 }
 #endif
 
+
+// ---- inflight: q438ng's stale-value window without the queue (any unit; BC5_0438_SUBMITQ off) ----------------------------
+// A game thread's chain (the writer of L, value 2) is taken and in its submit_now (held at the stub's gate, F16 phase 3: the
+// kernel call in flight); L's memory holds a stale 1; an acb on bc5-ring (not a game thread) waits on L == 1.
+//   the gate: acb_ready's test (unit ~7665; mkq438x.py's acb_wait_unready when cut);
+//   the submit stage: ho430::at_wait (F10, F16, F18), then the stale value in memory.
+// With BC5_0438_INFLIGHT_NG=1 (a mkq438x.py unit) the gate must hold the acb until the writer's real registration.
+#ifdef Q438_X
+#define ACB_UNREADY(p, is64, label, ring) acb_wait_unready(p, is64, label, ring)
+#else
+#define ACB_UNREADY(p, is64, label, ring) (!wait_satisfied(p, is64) && !ring_will_satisfy(p, is64, ring)) // acb_ready's test, unit ~7665
+#endif
+static int run_inflight() {
+	constexpr int o = 21;
+	g_labels[o]  = 1;
+	const char* ph = std::getenv("Q438_INFLIGHT_PHASE"); // 3 (default): holding the device; 1: GPU back-pressure
+	g_stub_phase   = ph != nullptr && ph[0] == '1' ? 1 : 3;
+	std::printf("inflight: the writer held at F16 phase %d\n", g_stub_phase.load());
+	g_gated[o]   = true;
+	g_pass[o]    = 0;
+	const uint64_t L = label_of(o);
+	uint32_t       w[9];
+	wait64(w, L, 1);
+	std::thread owner([] {
+		BEGIN_OWNER(o);
+		append(o, 2);
+		chain_flush(1); // no queue: the owner itself is in submit_now until the gate opens
+		chain_flush(5);
+	});
+	for (const uint64_t ta = SoftCp::now_ns(); g_active[o].load() != 1;) { // the writer in submit_now (5 s bound)
+		if (SoftCp::now_ns() - ta > 5'000'000'000ull) {
+			std::printf("FAIL: the writer never reached submit_now\n");
+			std::_Exit(2);
+		}
+		std::this_thread::sleep_for(std::chrono::microseconds(200));
+	}
+	const int      gate1 = ACB_UNREADY(w, true, L, 0) ? 1 : 0; // this thread is not a game thread: bc5-ring's view
+	const uint64_t t0    = SoftCp::now_ns();
+	ho430::at_wait(w, true, L, "acb", 0, w, 9, 0);
+	const double at_ms = static_cast<double>(SoftCp::now_ns() - t0) / 1e6;
+	bool         in_flight = false;
+	{
+		ChainSlot&      s = *g_slot_of[o];
+		std::lock_guard lk(s.mu);
+		in_flight = std::find(s.f10_flight.begin(), s.f10_flight.end(), L) != s.f10_flight.end();
+	}
+	const bool passes = wait_satisfied(w, true);
+	const int  gate1b = ACB_UNREADY(w, true, L, 0) ? 1 : 0; // still in flight
+	g_pass[o]         = 100;
+	owner.join();
+	{
+		std::lock_guard lk(bc5::direct::g_deps_mu);
+		bc5::direct::g_deps.clear();
+	}
+	const int gate2 = ACB_UNREADY(w, true, L, 0) ? 1 : 0; // the writer registered for real
+	ho430::at_wait(w, true, L, "acb", 0, w, 9, 0);
+	size_t deps = 0;
+	{
+		std::lock_guard lk(bc5::direct::g_deps_mu);
+		deps = bc5::direct::g_deps.size();
+	}
+	g_stub_phase = 0;
+	g_gated[o]   = false;
+	g_labels[o]  = 0;
+	bool fix = false;
+#ifdef Q438_X
+	fix = inflight_ng_on();
+#endif
+	std::printf("inflight (BC5_0438_INFLIGHT_NG %s): the gate with the writer in its submit_now: %s (%d, again after at_wait %d); after the writer's real registration: %s (%d), F4 dependencies %zu\n",
+	            fix ? "on" : "off", gate1 ? "HELD" : "passed", gate1, gate1b, gate2 ? "held" : "released", gate2, deps);
+	std::printf("inflight, the submit stage: at_wait returned after %.1f ms, the writer still in flight %d, the stale value passes the wait %d%s\n", at_ms, in_flight ? 1 : 0, passes ? 1 : 0,
+	            !gate1 && in_flight && passes ? ": THE HAZARD (an acb decided while its writer's kernel call is in flight)" : "");
+	CHECK(deps >= 1, "inflight: after the writer's registration F4 asked for no kernel dependency");
+	CHECK(gate2 == 0, "inflight: the gate still held the acb after the writer's registration");
+	if (fix) {
+		CHECK(gate1 == 1 && gate1b == 1, "inflight: BC5_0438_INFLIGHT_NG=1 let the acb go (%d, %d) while its writer was in flight", gate1, gate1b);
+	}
+	return 0;
+}
+
 #if defined(_WIN32) // Q438_TIMER1=1: Windows' timer at 1 ms, so the stub's sub-ms sleeps are not rounded up to a 15.6-ms tick
 extern "C" __declspec(dllimport) unsigned __stdcall timeBeginPeriod(unsigned);
 #pragma comment(lib, "winmm.lib")
@@ -1125,6 +1203,7 @@ int main(int argc, char** argv) {
 		return 0;
 	}
 	if (mode == "random") run_random(q_on);
+	else if (mode == "inflight") run_inflight();
 #ifdef Q438_NEW
 	else if (mode == "det") {
 		if (!q_on) {

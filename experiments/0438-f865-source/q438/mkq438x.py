@@ -10,7 +10,8 @@ registers only the packets that passed. So an early write to an address with no 
   LM1 the scans' mapping snapshot (thread-local, nullptr: no check) and counters, beside r438's state;
   LM2 r438_scan leaves out a packet lw_packet_mapped rejects (with a snapshot only: inside r438_begin, which runs only
       with BC5_0438_EARLYREG on);
-  LM3 r438_begin takes one sorted_mappings() snapshot for its scans;
+  LM3 r438_begin takes one sorted_mappings() snapshot for its scans, only with BC5_0438_R438_LWM=1 (off unless "1",
+      read once): with it off r438 behaves as the baked unit (2e6168de);
   LM4 q438_scan the same; LM5 q438_early_begin takes the snapshot;
   LM6 label_write_mapped (the filter's opt.mapped predicate, moved, unchanged) and lw_packet_mapped (the filter's loop
       over memory_operands, bytes 0 as 4) before submit_now; opt.mapped calls label_write_mapped.
@@ -22,7 +23,12 @@ submit, ho430's F10/F16/F18 wait for the queued writer only up to their bounds (
       chain writes the label (q438_writer_queued), so the acb is deferred as for any unready wait;
   NG2 acb_ready calls it;
   NG3 q438_writer_queued in the q438 block.
-With BC5_0438_SUBMITQ off: q438_writer_queued is never called, the scans' snapshot is taken only on the r438 path.
+inflight_ng (BC5_0438_INFLIGHT_NG, off unless "1"): the same window without the queue. A game thread's chain taken and in
+its submit_now (kernel call in flight) has its writes only in f10_flight until it returns; bc5-ring's acb_ready then
+passes a stale value. acb_wait_unready also holds the acb while any registered slot has the label in flight, or an early
+entry (r438's or Q438's) of the label is in g_plw.
+With BC5_0438_SUBMITQ, BC5_0438_R438_LWM and BC5_0438_INFLIGHT_NG off: q438_writer_queued and inflight_ng_writer are never
+called and no snapshot is taken (the baked unit's behaviour).
 Every replacement must match exactly once, or nothing is written. Writes OUT (LF) and prints both md5s.
 """
 import hashlib
@@ -51,6 +57,21 @@ rep("static thread_local uint64_t              t_q438_early = 0;  // that entry'
     "static std::atomic<uint64_t>              g_lwm_skipped {0}; // label-write packets the scans left out: the filter NOPs them\n"
     "static std::atomic<uint64_t>              g_q438_ng {0};     // exp 0438 (q438ng): acb waits held back for a queued writer\n"
     "static bool     lw_packet_mapped(const bc5::direct::MappingIndex& maps, uint64_t fl_area, const uint32_t* p, uint32_t len);\n"
+    "static bool r438_lwm_on() { // exp 0438 (labelmap): r438_scan reads the filter's check, BC5_0438_R438_LWM, on only when \"1\"\n"
+    "\tstatic const bool v = [] {\n"
+    "\t\tconst char* e = std::getenv(\"BC5_0438_R438_LWM\");\n"
+    "\t\treturn e != nullptr && e[0] == '1' && e[1] == 0;\n"
+    "\t}();\n"
+    "\treturn v;\n"
+    "}\n"
+    "static bool inflight_ng_on() { // exp 0438 (inflight_ng): BC5_0438_INFLIGHT_NG, on only when \"1\"\n"
+    "\tstatic const bool v = [] {\n"
+    "\t\tconst char* e = std::getenv(\"BC5_0438_INFLIGHT_NG\");\n"
+    "\t\treturn e != nullptr && e[0] == '1' && e[1] == 0;\n"
+    "\t}();\n"
+    "\treturn v;\n"
+    "}\n"
+    "static std::atomic<uint64_t> g_inflight_ng {0}; // exp 0438 (inflight_ng): acb waits held for a writer in flight\n"
     "static uint64_t fl_crumbs_area();\n")
 
 # LM2
@@ -65,7 +86,7 @@ rep("\t\t\t\tif ((h >> 30u) == 3) { // as register_label_writes reads them\n",
 # LM3
 rep("\tstd::vector<PendingLabelWrite> found;\n\tr438_scan(s1, n1, found);\n\tif (s2 != nullptr) r438_scan(s2, n2, found);\n",
     "\tstd::vector<PendingLabelWrite> found;\n"
-    "\tconst auto lwm = g_dev ? g_dev->sorted_mappings() : nullptr; // exp 0438 (labelmap): one snapshot per scan\n"
+    "\tconst auto lwm = g_dev && r438_lwm_on() ? g_dev->sorted_mappings() : nullptr; // exp 0438 (labelmap): one snapshot per scan, BC5_0438_R438_LWM=1\n"
     "\tt_lwm    = lwm.get();\n"
     "\tt_lwm_fl = lwm ? fl_crumbs_area() : 0;\n"
     "\tr438_scan(s1, n1, found);\n\tif (s2 != nullptr) r438_scan(s2, n2, found);\n"
@@ -119,8 +140,10 @@ rep("static bool acb_ready(const uint32_t* ib, uint32_t num_dwords) {\n\tconst i
     "// satisfy it. With Q438 on, also while a queued chain writes the label: that write is not in g_plw for this thread\n"
     "// (ring_will_satisfy skips early entries off the game threads) and a stale value in memory would pass the wait.\n"
     "static bool q438_writer_queued(uint64_t label);\n"
+    "static bool inflight_ng_writer(uint64_t label);\n"
     "static bool acb_wait_unready(const uint32_t* p, bool is64, uint64_t label, int ring) {\n"
     "\tif (!wait_satisfied(p, is64) && !ring_will_satisfy(p, is64, ring)) return true;\n"
+    "\tif (inflight_ng_on() && inflight_ng_writer(label)) return true; // exp 0438 (inflight_ng): a writer taken, not yet registered for real\n"
     "\treturn q438_on() && q438_writer_queued(label);\n"
     "}\n"
     "// ---- end of exp 0438 (tag q438ng)\n"
@@ -140,6 +163,33 @@ rep("// ---- end of exp 0438 (tag q438) ---",
     "\t\t\treturn true;\n"
     "\t\t}\n"
     "\treturn false;\n"
+    "}\n"
+    "// exp 0438 (tag inflight_ng): a writer of the label is taken but not yet registered for real: an early entry (r438's\n"
+    "// slice, Q438's queued chain) in g_plw, or a registered slot's chain in its submit_now (its F10 flight set). A busy\n"
+    "// registry or slot counts as in flight, as in F10's f10_pending: the acb is decided at the next poll.\n"
+    "static bool inflight_ng_writer(uint64_t label) {\n"
+    "\t{\n"
+    "\t\tstd::lock_guard lk(g_plw_mutex);\n"
+    "\t\tfor (const auto& w: g_plw)\n"
+    "\t\t\tif (w.label == label && (w.seq & kR438Early) != 0) {\n"
+    "\t\t\t\tg_inflight_ng++;\n"
+    "\t\t\t\treturn true;\n"
+    "\t\t\t}\n"
+    "\t}\n"
+    "\tif (!g_f10_reg_mu.try_lock()) return true;\n"
+    "\tbool in = false;\n"
+    "\tfor (ChainSlot* cs: g_f10_reg) {\n"
+    "\t\tif (!cs->mu.try_lock()) {\n"
+    "\t\t\tin = true;\n"
+    "\t\t\tbreak;\n"
+    "\t\t}\n"
+    "\t\tin = std::find(cs->f10_flight.begin(), cs->f10_flight.end(), label) != cs->f10_flight.end();\n"
+    "\t\tcs->mu.unlock();\n"
+    "\t\tif (in) break;\n"
+    "\t}\n"
+    "\tg_f10_reg_mu.unlock();\n"
+    "\tif (in) g_inflight_ng++;\n"
+    "\treturn in;\n"
     "}\n"
     "// ---- end of exp 0438 (tag q438) ---")
 
