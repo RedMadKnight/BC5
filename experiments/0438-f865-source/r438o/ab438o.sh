@@ -69,6 +69,8 @@ stats() { # $1 tag: MangoHud's csv, from 30 s of its own clock
 run() { # $1 arm tag, $2 binary, $3 md5, $4 lean 1/0, then switch words
     local t=$P$1 line lss b=$2 md=$3 lean=$4; shift 4; local words=("$@")
     busy && { say "STOP before $t: an emulator or bc5-mount runs"; finish 1; }
+    display_check || { say "STOP before $t: $DISP (LESSONS R72)"; finish 1; }
+    say "$t: $DISP"
     deadmnt && { say "STOP before $t: a dead ASTRO mount inside the container"; finish 1; }
     local mh=()
     if [ "$lean" = 1 ]; then
@@ -80,6 +82,7 @@ run() { # $1 arm tag, $2 binary, $3 md5, $4 lean 1/0, then switch words
     line=$(cd "$N" && CHAIN_LOCKLINE=$LINE P_BIN=$b P_WANT=$md bash ./start0413g.sh "$t" astro "$SECS" BC5_FAULT_RECORD=1 "${words[@]}" "${mh[@]}" 2>&1 | tail -1)
     [ "$lean" = 1 ] && /usr/bin/bash "$W/lean-session.sh" restore $$ > /dev/null 2>&1
     say "$t: $line"
+    say "$t: game port size $(game_port_size "$R/$t-play.log")"
     [ "$lean" = 1 ] && say "$t: $(stats "$t")"
     case "$line" in *"PASS: ran $SECS s"*"kernel lines 0, crash lines 0"*) ;; *) say "STOP: $t did not pass"; finish 1 ;; esac
     sleep 5

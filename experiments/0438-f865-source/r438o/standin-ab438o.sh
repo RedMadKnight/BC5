@@ -10,7 +10,7 @@ mkdir -p "$D/w/exp0413/n/raw" "$D/w/bin" "$D/bin" "$D/drm/card1-DP-1" "$D/m"; ec
 head -c 256 /dev/urandom > "$D/drm/card1-DP-1/edid"; printf '1920x1080\n1280x720\n' > "$D/drm/card1-DP-1/modes"
 for b in c o n; do echo "$b" > "$D/w/bin/$b"; done
 printf '#!/bin/sh\nexit 1\n' > "$D/bin/pgrep"; printf '#!/bin/sh\nexit 0\n' > "$D/bin/sudo"; printf '#!/bin/sh\nexit 0\n' > "$D/bin/distrobox"
-printf '#!/bin/sh\necho "Output: 1 DP-1 enabled connected priority 1 DisplayPort Modes: 0:1920x1080@60*! 1:1280x720@60"\n' > "$D/bin/kscreen-doctor"
+printf '#!/bin/sh\necho "Output: 1 DP-1 enabled connected priority 1 DisplayPort Modes: 0:1920x1080@60*! 1:1280x720@60"\necho "	Scale: 1"\n' > "$D/bin/kscreen-doctor"
 chmod +x "$D/bin/"*
 printf 'exit 0\n' > "$D/w/lean-session.sh"
 cat > "$D/w/exp0413/n/start0413g.sh" << 'STUB'
@@ -25,6 +25,6 @@ sed 's/MANGOHUD_CONFIG=[^ ]*/MH/; s/lock=\[[^]]*\]/lock=held/' "$D/w/exp0413/n/r
 echo "lock after: [$(cat "$D/w/BOX-LOCK")]"
 echo "== R72 negative: an empty EDID at 640x480 must stop before the lock"
 : > "$D/drm/card1-DP-1/edid"; printf '640x480\n' > "$D/drm/card1-DP-1/modes"
-printf '#!/bin/sh\necho "Output: 1 DP-1 enabled connected Modes: 0:640x480@59.94*!"\n' > "$D/bin/kscreen-doctor"
+printf '#!/bin/sh\necho "Output: 1 DP-1 enabled connected Modes: 0:640x480@59.94*!"\necho "	Scale: 0.5"\n' > "$D/bin/kscreen-doctor"
 env "${COMMON[@]}" bash "$HERE/ab438o.sh" sb 2>&1 | grep -v boot_id | grep "display:\|STOP\|lock claimed"
 echo "lock after: [$(cat "$D/w/BOX-LOCK")]"
