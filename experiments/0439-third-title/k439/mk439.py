@@ -426,6 +426,39 @@ static void dc439_flip(int index) {
 			             ok ? "OK" : "FAILED", (t1 - t0) * 1e3, (t2 - t1) * 1e3);
 		}
 	}
+	// exp 0439 (tag sr439): BC5_0439_SURF_DUMP=<private dir>: after a decompress pass that went OK, at the 2nd, the 60th and
+	// every 300th such flip, the display surface as the present will read it (guest memory, tiled as the GPU left it) is
+	// written raw to <dir>/surf-<n>-idx<index>-<w>x<h>.raw, with min/max/mean per byte lane and the non-zero byte count.
+	static const char* sr_dir = std::getenv("BC5_0439_SURF_DUMP");
+	if (sr_dir != nullptr && sr_dir[0] != 0 && ok) {
+		static std::atomic<uint64_t> n_sr {0};
+		const uint64_t k = ++n_sr;
+		if (k == 2 || k == 60 || k % 300 == 0) {
+			const size_t bytes = static_cast<size_t>(s.w) * s.h * 4u;
+			const auto*  px    = reinterpret_cast<const volatile uint8_t*>(s.data);
+			uint64_t     sum[4] = {}, nz = 0;
+			uint8_t      mn[4] = {255, 255, 255, 255}, mx[4] = {};
+			std::vector<uint8_t> copy(bytes);
+			for (size_t i = 0; i < bytes; i++) {
+				const uint8_t v = px[i];
+				copy[i]         = v;
+				const size_t c  = i & 3u;
+				sum[c] += v;
+				if (v < mn[c]) mn[c] = v;
+				if (v > mx[c]) mx[c] = v;
+				nz += v != 0;
+			}
+			char fn[512];
+			std::snprintf(fn, sizeof(fn), "%s/surf-%04" PRIu64 "-idx%d-%ux%u.raw", sr_dir, k, index, s.w, s.h);
+			if (FILE* f = std::fopen(fn, "wb"); f != nullptr) {
+				std::fwrite(copy.data(), 1, bytes, f);
+				std::fclose(f);
+			}
+			const double q = static_cast<double>(bytes / 4u);
+			std::fprintf(stderr, "[bc5] exp 0439 (tag sr439): t %.3f s decompressed flip %" PRIu64 " index %d surface 0x%" PRIx64 " %ux%u fmt 0x%" PRIx64 ": non-zero bytes %" PRIu64 " of %zu; lanes min/max/mean %u/%u/%.1f %u/%u/%.1f %u/%u/%.1f %u/%u/%.1f; to %s\n",
+			             timing_now(), k, index, s.data, s.w, s.h, s.fmt, nz, bytes, mn[0], mx[0], sum[0] / q, mn[1], mx[1], sum[1] / q, mn[2], mx[2], sum[2] / q, mn[3], mx[3], sum[3] / q, fn);
+		}
+	}
 }
 '''
 
@@ -1126,6 +1159,79 @@ s = rep(s, '''	dt412_pass(ib, num_dwords, kind); // exp 0412 (tag dt412): before
 				std::fprintf(stderr, "[bc5] exp 0439 (tag ip439): t %.3f s %s %u dwords: the import scans also read its %zu pieces (%zu chained); %" PRIu64 " pieces in all\\n", timing_now(), kind, num_dwords,
 				             cr.pieces.size() - 1, cr.chains, n_pieces.load());
 		}
+	}''')
+# exp 0439 (tag sv439): KYTY_BC5_SYSTEM_SW_VERSION, the system software version the host reports (the top session, 11-21
+# evening: the maintainer asked whether it was raised). Unset: today's 10.60 ("10.60.000", 0x0A600000). "param": the title's
+# own requiredSystemSoftwareVersion from param.json (path in BC5_PARAM_JSON, which k439/play439.sh exports; a value like
+# "0x1160000000000000": the high byte is the major version in BCD, the next the minor as written, so 11.60 -> "11.60.000",
+# 0x0B600000, as 10.60 is 0x0A600000). "MM.mm": that version. Every answer of GetProsperoSystemSwVersion is logged (first 8),
+# and so is GetCompiledSdkVersion's (first 4). Not covered here: sceNpGetSdkVersion in libNp.cpp (a unit outside this build;
+# it answers from its own constant, TODO).
+s = rep(s, '''static KYTY_SYSV_ABI int GetProsperoSystemSwVersion(SystemSwVersion* v) {''', '''struct Sv439 {
+	char     str[16];
+	uint32_t ver;
+};
+static Sv439 sv439_version() { // exp 0439 (tag sv439)
+	static const Sv439 v = [] {
+		Sv439       r {"10.60.000", 0x0A600000u};
+		const char* e   = std::getenv("KYTY_BC5_SYSTEM_SW_VERSION");
+		const char* src = "unset: today's constant";
+		uint32_t    major = 0, minor_bcd = 0;
+		bool        set = false;
+		if (e != nullptr && std::strcmp(e, "param") == 0) {
+			src = "param.json (BC5_PARAM_JSON) not readable";
+			if (const char* pj = std::getenv("BC5_PARAM_JSON"); pj != nullptr) {
+				if (FILE* f = std::fopen(pj, "rb"); f != nullptr) {
+					std::string txt;
+					char        buf[4096];
+					size_t      n = 0;
+					while ((n = std::fread(buf, 1, sizeof(buf), f)) > 0) txt.append(buf, n);
+					std::fclose(f);
+					const size_t at = txt.find("\\"requiredSystemSoftwareVersion\\"");
+					const size_t hx = at == std::string::npos ? std::string::npos : txt.find("0x", at);
+					if (hx != std::string::npos) {
+						const uint64_t raw = std::strtoull(txt.c_str() + hx, nullptr, 16);
+						const uint32_t hi  = static_cast<uint32_t>(raw >> 56u);
+						major              = (hi >> 4u) * 10u + (hi & 15u);
+						minor_bcd          = static_cast<uint32_t>(raw >> 48u) & 0xffu;
+						set                = major != 0;
+						src                = "the title's param.json";
+					}
+				}
+			}
+		} else if (e != nullptr && e[0] != 0) {
+			unsigned a = 0, b = 0;
+			if (std::sscanf(e, "%u.%u", &a, &b) == 2 && a < 100 && b < 100) {
+				major     = a;
+				minor_bcd = ((b / 10u) << 4u) | (b % 10u);
+				set       = true;
+				src       = "the switch's value";
+			} else {
+				src = "an unreadable switch value: today's constant";
+			}
+		}
+		if (set) {
+			std::snprintf(r.str, sizeof(r.str), "%u.%02x.000", major, minor_bcd);
+			r.ver = (major << 24u) | (minor_bcd << 16u);
+		}
+		std::fprintf(stderr, "[bc5] exp 0439 (tag sv439): the system software version answered is %s (0x%08x), from %s (KYTY_BC5_SYSTEM_SW_VERSION=%s)\\n", r.str, r.ver, src, e != nullptr ? e : "unset");
+		return r;
+	}();
+	return v;
+}
+static KYTY_SYSV_ABI int GetProsperoSystemSwVersion(SystemSwVersion* v) {''')
+s = rep(s, '''	std::strncpy(v->version_string, "10.60.000", sizeof(v->version_string) - 1);
+	v->version = 0x0A600000;''', '''	{ // exp 0439 (tag sv439)
+		const Sv439 sv = sv439_version();
+		std::strncpy(v->version_string, sv.str, sizeof(v->version_string) - 1);
+		v->version = sv.ver;
+		static std::atomic<int> k {0};
+		if (k++ < 8) std::fprintf(stderr, "[bc5] exp 0439 (tag sv439): GetProsperoSystemSwVersion -> \\"%s\\" 0x%08x\\n", sv.str, sv.ver);
+	}''')
+s = rep(s, '''	*version = static_cast<int>(v);''', '''	*version = static_cast<int>(v);
+	{ // exp 0439 (tag sv439)
+		static std::atomic<int> k {0};
+		if (k++ < 4) std::fprintf(stderr, "[bc5] exp 0439 (tag sv439): GetCompiledSdkVersion -> 0x%08x\\n", v);
 	}''')
 open(dst + '/bc5LleAgc.cpp', 'w', encoding='utf-8', newline='').write(s)
 
