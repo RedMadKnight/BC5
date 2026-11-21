@@ -54,7 +54,7 @@ run() { # $1 tag suffix, then the switch words
     r1=$(resets)
     local L=$R/$t-play.log
     say "$t [$*]: $line"
-    local J; J=$(find ~/bc5-data/captures -maxdepth 1 -name "play-*" -newer "$MK" 2> /dev/null | sort | head -1)/direct.log
+    local J; J=$(find ~/bc5-data/captures -maxdepth 1 -name "play-*" -newer "$MK" 2> /dev/null | sort | head -1)/gc/direct.log
     say "$t: journal $J: q438 BUG $(grep -ac 'q438 (exp 0438): BUG' "$J"), r438 BUG $(grep -ac 'r438 (exp 0438, b438): BUG' "$J"); fault record: $(ls -dt ~/bc5-data/captures/faults/* | head -1 | xargs basename) $(grep -ac 'GPU FAULT' "$L") GPU FAULT lines"
     grep -qi 'reset failed' "$R/$t-dmesg-after.txt" 2> /dev/null && say "$t: A RING RESET FAILED (the box may reboot)"
     say "$t: reset lines: $(grep -o 'ring [a-z_0-9.]* timeout\|Ring [a-z_0-9.]* reset [a-z]*' "$R/$t-dmesg-after.txt" 2> /dev/null | sort | uniq -c | tr -s ' ' | tr '
