@@ -47,9 +47,13 @@ fi
 (cd "$K" && git apply --check "$HERE/0003-bc5-0438-r438o.patch") || stop "the patch does not apply to the tree"
 # 2
 if [ "$DRY" != 1 ]; then
-    . "$N/chainlock0417.inc"
-    chain_claim "exp 0438: shared swap, r438o (F874, F875), patch $PIN_OLD -> $PATCH_NEW; normal and lean rebuilt (CPU only, no emulator)" 45 || stop "no lock"
-    trap chain_release EXIT
+    if [ -n "${CHAIN_LOCKLINE:-}" ] && [ "$(cat "$W/BOX-LOCK" 2> /dev/null)" = "$CHAIN_LOCKLINE" ]; then  # run-swap0438o.sh holds the one line
+        . "$N/chainlock0417.inc"; chain_release() { :; }; echo "the lock line of the caller is taken over: $CHAIN_LOCKLINE"
+    else
+        . "$N/chainlock0417.inc"
+        chain_claim "exp 0438: shared swap, r438o (F874, F875), patch $PIN_OLD -> $PATCH_NEW; normal and lean rebuilt (CPU only, no emulator)" 45 || stop "no lock"
+        trap chain_release EXIT
+    fi
 fi
 [ -e "$X/pins.before-0438o" ] && stop "$X already holds a swap's copies: undo or move them first"
 mkdir -p "$X/units" || stop "cannot make $X"
