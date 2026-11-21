@@ -1,9 +1,9 @@
 diff --git a/src/libs/bc5Reimpl.cpp b/src/libs/bc5Reimpl.cpp
 new file mode 100644
-index 0000000..f5bcab1
+index 0000000..6b71806
 --- /dev/null
 +++ b/src/libs/bc5Reimpl.cpp
-@@ -0,0 +1,352 @@
+@@ -0,0 +1,353 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 (github.com/RedMadKnight/BC5): host glue for the clean-room re-creations of libSceAgc,
@@ -244,12 +244,13 @@ index 0000000..f5bcab1
 +
 +} // namespace
 +
-+// Called by the LLE loader's denylist: a pack copy of a module BC5 provides stays off the LLE load.
-+// (The title's own copies are loaded by a different path that this list does not touch.)
-+std::vector<std::string> DeniedSysmodules() {
++// Called by the LLE loader's denylist: a pack copy of a module BC5 provides stays off the LLE load,
++// unless the title ships its own copy (then that copy is the title's and must load; e.g. ASTRO BOT,
++// whose launcher points the pack dir at the dump's own fakelib/).
++std::vector<std::string> DeniedSysmodules(const std::filesystem::path &title_root) {
 +    std::vector<std::string> out;
 +    for (const auto &m : kModules) {
-+        if (switch_allows(m)) {
++        if (switch_allows(m) && bc5::reimpl::find_game_copy(title_root, m.name).empty()) {
 +            out.push_back(std::string(m.name) + ".sprx");
 +        }
 +    }
@@ -386,7 +387,7 @@ index 8b011c9..084ed67 100644
  
  namespace LibContentExport {
 diff --git a/src/loader/runtimeLinker.cpp b/src/loader/runtimeLinker.cpp
-index 01140c1..2746878 100644
+index 01140c1..c278088 100644
 --- a/src/loader/runtimeLinker.cpp
 +++ b/src/loader/runtimeLinker.cpp
 @@ -2,6 +2,16 @@
@@ -399,7 +400,7 @@ index 01140c1..2746878 100644
 +} // namespace Loader
 +#include <filesystem>
 +namespace Libs::Bc5Reimpl { // BC5: libs/bc5Reimpl.cpp
-+std::vector<std::string> DeniedSysmodules();
++std::vector<std::string> DeniedSysmodules(const std::filesystem::path& title_root);
 +void ResolveImports(Loader::RuntimeLinker* rt, const std::filesystem::path& title_root);
 +} // namespace Libs::Bc5Reimpl
 +#endif
@@ -437,13 +438,23 @@ index 01140c1..2746878 100644
  bool RuntimeLinker::ResolveLoadedSymbolByNid(const std::string& nid, SymbolType type,
                                               SymbolRecord* out_info) {
  	KYTY_PROFILER_FUNCTION();
-@@ -2503,6 +2530,13 @@ static std::vector<std::string> KytyLleSysmoduleDenylist() {
+@@ -2471,7 +2498,7 @@ static std::filesystem::path KytySysModulesPackDir() {
+ 	return std::filesystem::path(env);
+ }
+ 
+-static std::vector<std::string> KytyLleSysmoduleDenylist() {
++static std::vector<std::string> KytyLleSysmoduleDenylist(const std::filesystem::path& title_root) {
+ 	static const char* k_default[] = {
+ 		"libscesystemservice.sprx",
+ 	};
+@@ -2503,6 +2530,14 @@ static std::vector<std::string> KytyLleSysmoduleDenylist() {
  		}
  	}
  
 +#if defined(KYTY_BC5_DIRECT)
-+	// BC5 (libs/bc5Reimpl.cpp): a pack copy of a module BC5 provides (its BC5_REIMPL_* switch not =0) stays off the LLE load.
-+	for (const auto& name: Libs::Bc5Reimpl::DeniedSysmodules()) {
++	// BC5 (libs/bc5Reimpl.cpp): a pack copy of a module BC5 provides (its BC5_REIMPL_* switch not =0 and the title
++	// ships no copy of its own) stays off the LLE load.
++	for (const auto& name: Libs::Bc5Reimpl::DeniedSysmodules(title_root)) {
 +		list.push_back(Common::ToLower(name));
 +	}
 +#endif
@@ -451,6 +462,15 @@ index 01140c1..2746878 100644
  	return list;
  }
  
+@@ -2654,7 +2689,7 @@ void RuntimeLinker::PreloadAdjacentPrograms() {
+ 	// Optional LLE sysmodules: pack dir preferred, staged "sys_modules/" tree
+ 	// beside the executable as a best-effort fallback.
+ 	if (KytyLoadAllSysModules()) {
+-		const auto deny = KytyLleSysmoduleDenylist();
++		const auto deny = KytyLleSysmoduleDenylist(root);
+ 
+ 		const auto pack_dir = KytySysModulesPackDir();
+ 		if (!pack_dir.empty()) {
 diff --git a/src/loader/runtimeLinker.h b/src/loader/runtimeLinker.h
 index a09f7d0..9cf2cd9 100644
 --- a/src/loader/runtimeLinker.h

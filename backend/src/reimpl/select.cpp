@@ -30,7 +30,7 @@ std::filesystem::path find_game_copy(const std::filesystem::path &root, std::str
     }
     const std::string sprx = std::string(module) + ".sprx";
     const std::string prx = std::string(module) + ".prx";
-    for (const auto &dir : {root, root / "sce_module", root / "sce_modules"}) {
+    for (const auto &dir : {root, root / "sce_module", root / "sce_modules", root / "fakelib"}) {
         std::error_code ec;
         if (!std::filesystem::is_directory(dir, ec)) {
             continue;

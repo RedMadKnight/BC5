@@ -789,6 +789,14 @@ std::int32_t create_firmware_shaders(FirmwareData *fw) {
         }
         Shader probe{};
         std::memcpy(&probe, h0, sizeof probe);
+        // Deviation (found on the box, 2026-11-21): the module file's headers do not pair as
+        // "even = normal, odd = PA-debug" (two of the ten are debug-only, at indices 1 and 2). A
+        // debug-only header on a system that is not PA-debug is skipped (its slot stays 0) instead
+        // of failing init with 0x8A6C0042. This path only runs with BC5_REIMPL_FW_DATA=1.
+        if ((probe.target & 0x80000000u) != 0 && !pa) {
+            log(kModule, "internal shader %d is debug-only on a non-PA-debug system: skipped", idx);
+            continue;
+        }
         const std::uint32_t header_bytes = std::max<std::uint32_t>(probe.header_bytes, sizeof(Shader));
         const std::uint8_t *hb = fw->get(kModule, kHeaders[idx], header_bytes);
         const std::uint8_t *cb = fw->get(kModule, kCode[idx], probe.code_bytes);

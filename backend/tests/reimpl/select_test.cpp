@@ -72,6 +72,9 @@ TEST_CASE("find_game_copy looks in the root, sce_module and sce_modules", "[reim
     touch(t.path / "libSceAgcDriver.sprx");
     CHECK(find_game_copy(t.path, "libSceAgcDriver").filename() == "libSceAgcDriver.sprx");
 
+    touch(t.path / "fakelib" / "libSceBar.sprx"); // a dump's fakelib/ counts as the game's own
+    CHECK(find_game_copy(t.path, "libSceBar").filename() == "libSceBar.sprx");
+
     fs::create_directories(t.path / "sce_module" / "libSceFoo.sprx"); // a directory is not a file
     CHECK(find_game_copy(t.path, "libSceFoo").empty());
 }

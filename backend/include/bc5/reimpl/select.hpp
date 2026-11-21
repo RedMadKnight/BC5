@@ -3,8 +3,9 @@
 // "domyślnie ma brać z BC5, chyba że gra ma własne implementacje", by default take BC5's own,
 // unless the game has its own):
 //   - BC5's own re-creation by default;
-//   - the game's own copy when the game ships one (its root directory, sce_module/ or
-//     sce_modules/, as KytyPlus's loader scans them);
+//   - the game's own copy when the game ships one: its root directory, sce_module/ or sce_modules/
+//     (as KytyPlus's loader scans them), or fakelib/ (the system modules a dump ships, which the
+//     title's launcher points SHADPS4_SYSMODULES_PACK_DIR at, e.g. ASTRO BOT's);
 //   - opted out with BC5_REIMPL_<X>=0: neither BC5's nor a forced choice, the host's previous
 //     behaviour (a module pack from SHADPS4_SYSMODULES_PACK_DIR, else KytyPlus's HLE).
 #pragma once
@@ -42,7 +43,7 @@ inline const char *choice_name(Choice c) {
 }
 
 // The path of the game's own copy of `module` (e.g. "libSceAgc") under the title's directory:
-// <root>, <root>/sce_module or <root>/sce_modules, file <module>.sprx or <module>.prx, names
+// <root>, <root>/sce_module, <root>/sce_modules or <root>/fakelib, file <module>.sprx or <module>.prx, names
 // compared case-insensitively. Empty when the game ships none.
 std::filesystem::path find_game_copy(const std::filesystem::path &root, std::string_view module);
 
