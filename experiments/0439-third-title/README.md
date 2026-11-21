@@ -88,6 +88,36 @@ the control's line has none, `X=1;rm` is refused).
    `dcc-present-design.md`). Reset lines 21 before and after. `run0439.sh`'s emulator check became `pgrep -x`: another
    session's build named the binary in its arguments.
 
+8. *Decisions of the top session (11-21, about 12:15).*
+   - Problem 1: the candidate fix is the map-call rule, not a name list. A direct view the title mapped with GPU write
+     (KytyPlus `memory.cpp` `PROT_GPU_WRITE` 0x20; TODO(verify) the bit's meaning against a public source, the
+     evidence is n4's map log) is imported whole (`BC5_DIRECT_EAGER_GPU_WRITE=1`, tag mw439). The private anon-eager
+     env stays as the fallback arm.
+   - Its cost for this title: about 4.1 GB. On the console, direct memory is physical and committed at allocation.
+     Backing a never-written chunk lazily for GPU writes would need recoverable GPU page faults for a GFX job. That
+     gfx10 has none for GFX jobs (only KFD/SVM compute) is TODO(verify) against an amdgpu source; no kernel tree is on
+     the box.
+   - Check against other titles before it could become a default: ASTRO BOT, one logged run, comes after exp 0438's
+     run. The second title is not checked (it is uninstalled).
+   - DCC: design (a) accepted (`dcc-present-design.md`), behind `BC5_DIRECT_DCC_PRESENT` (1 log, 2 decompress). A
+     step-1 run first shows whether the surface is still compressed at the flip. Then step 2 for 30 s with the fault
+     record on.
+9. *A separate lever, no change now: the reported resolution.* The title registers 3840×2160 display buffers, because
+   that is what the emulator's video-out reports: KytyPlus's VideoOut answers the resolution query from its own
+   configured output size (TODO(verify) the exact call and setting in `videoOut.cpp`). A 1920×1080 report would
+   probably give a quarter of the render-target pixels and memory, and less GPU time per frame. Whether the title
+   accepts 1080p, and what it does then, needs a run.
+10. *Private build dc439 (kit `k439/`, CPU only, no lock line).*
+    - Contents: the CB_COLOR catcher, the decompress IB (`dc0439.hpp`, registers and values from Mesa
+      `0866ae7085c1`), the flip hook in `SubmitEopFlip`, the present-as-plain hook in `FlipQueue::Prepare`, the map
+      rule.
+    - Offline test (`test_dc0439.cpp` against the shared archive): PASS. The IB is 149 dwords. The backend's filter
+      drops nothing and rewrites the two CLEAR_STATEs to cmd 0. The state stack pushes once, pops once and puts the
+      title's registers back.
+    - First build, without the map rule: normal `42f9b583`, lean `0af1259a`.
+    - Private launcher `k439/play439.sh`: `play-astro.sh` with its two `EMU=` lines on `P439_BIN`. `run0439.sh`
+      takes `RUN_PRIV=<binary>`.
+
 (more to come)
 
 **Verdict.** (to come)

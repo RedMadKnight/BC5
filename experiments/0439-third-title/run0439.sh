@@ -20,9 +20,20 @@ resets() { journalctl -k -b 0 --no-pager 2>/dev/null | grep -c -i -E 'amdgpu.*(t
 if [ $lean = 1 ]; then BIN=$HOME/bc5-work/kytyplus-build-lean/src/kyty_emulator LOGF=$HOME/bc5-work/play-lean-last.log
 else BIN=$HOME/bc5-work/kytyplus-build/src/kyty_emulator LOGF=$HOME/bc5-work/play-last.log; fi
 grep -q '^KYTY_BC5_RT=0' "$HOME/bc5-work/bc5-run.env" && { echo "bc5-run.env turns RT off: refused"; exit 1; }
+# RUN_PRIV=<private kyty_emulator> (exp 0439 dc439): the run goes through k439/play439.sh, a copy of play-astro.sh whose
+# two EMU lines take P439_BIN (play-astro.sh ignores BC5_EMU, LESSONS R66), with BC5_GAME_DIR=<folder>; play-any.sh is
+# left out (the lean session stop with it). Without RUN_PRIV, P439_BIN reaches play-any.sh's chain unused.
+LAUNCH=$HOME/bc5-work/play-any.sh
+if [ -n "${RUN_PRIV:-}" ]; then BIN=$RUN_PRIV LAUNCH=$E/k439/play439.sh; [ -x "$BIN" ] || { echo "no private binary $BIN"; exit 1; }; fi
 
 case "$1" in
 dry)
+  if [ -n "${RUN_PRIV:-}" ]; then
+    echo "chain: distrobox enter ubuntu -- env BC5_LEAN=$lean BC5_GAME_DIR=$DIR P439_BIN=$BIN $LAUNCH"
+    echo "launcher EMU lines:"; grep -n -E '^ *EMU=' "$LAUNCH"; diff "$HOME/bc5-work/play-astro.sh" "$LAUNCH" | head -n 8 || true
+    echo "binary: $BIN $(md5sum "$BIN" | cut -c1-8) $(stat -c '%y' "$BIN" | cut -c1-19)"
+    exit 0
+  fi
   echo "chain: distrobox enter ubuntu -- env BC5_LEAN=$lean ~/bc5-work/play-any.sh $DIR"
   distrobox enter ubuntu -- env BC5_DRY=1 BC5_LEAN=$lean "$HOME/bc5-work/play-any.sh" "$DIR" 2>&1 | grep -v 'lean-session' || true
   echo "play-astro.sh EMU lines:"; grep -n -E '^ *EMU=|BC5_EMU' "$HOME/bc5-work/play-astro.sh"
@@ -50,8 +61,8 @@ run)
   cap=0; [ $lean = 0 ] && cap=1
   systemd-run --user --collect --unit="bc5-0439-$tag" -p RuntimeMaxSec="$secs" \
     --setenv=WAYLAND_DISPLAY="$wl" --setenv=XDG_RUNTIME_DIR="/run/user/$(id -u)" \
-    /usr/bin/bash -c 'ulimit -c 0; d=$1; shift; exec distrobox enter ubuntu -- env "$@" "$HOME/bc5-work/play-any.sh" "$d"' \
-    _ "$DIR" BC5_LEAN="$lean" BC5_LOGS=1 PLAY_CAPTURE="$cap" WAYLAND_DISPLAY="$wl" "${extra[@]}"
+    /usr/bin/bash -c 'ulimit -c 0; l=$1; d=$2; shift 2; exec distrobox enter ubuntu -- env "$@" "$l" "$d"' \
+    _ "$LAUNCH" "$DIR" BC5_GAME_DIR="$DIR" P439_BIN="$BIN" BC5_LEAN="$lean" BC5_LOGS=1 PLAY_CAPTURE="$cap" WAYLAND_DISPLAY="$wl" "${extra[@]}"
   echo "started unit bc5-0439-$tag (max $secs s); when it ends: run0439.sh collect $mode $tag"
   ;;
 collect)

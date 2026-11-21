@@ -1,6 +1,6 @@
 # 0439 design: presenting the third title's DCC display buffers on the direct path
 
-Status: design, 2026-11-21. Nothing built yet. The top session asked for (b) first, (a) as the fallback, a switch,
+Status: accepted by the top session 2026-11-21 (option (a)); built privately (README result 10). The top session asked for (b) first, (a) as the fallback, a switch,
 an offline test, and what a wrong result looks like.
 
 ## 1. What the title registers (box run n4, KytyPlus's own LOGF, normal `b1b57df9`)
