@@ -1772,6 +1772,96 @@ It is built on the bake unit, so it measures what would ship.
   a target of its own, the top session's addition), and slow (about G+165 to G+290). Usage:
   `ah438.py FROM TO fast=A-B dip=C-D slow=E-F csv…`.
 
+## Result 14: where the Render Thread's frame goes (h438; 2026-11-21 00:26–00:49, boot eb264b8c; DIAGNOSIS numbers)
+
+**Setup.**
+- Slot (BOX-LOCK 00:20–00:31, CPU only): buildk, the swap's DRY run, then buildh (h438 normal `0c2a31782cbfea2ac5d7c41d10a99898`,
+  0 errors). The shared builds were unchanged at every step.
+- Before the runs: reimpl's leftover kernel-log reader (`journalctl -k -f`, pid 2123478) was killed on the top
+  session's authorization. No other reader was left; 0 GPU resets, lock empty.
+- Chain: chain0438l `ORDER="H H H" K0=340` (unit chain0438h), with `BC5_0438_HOSTWAIT=1 BC5_0438_OUTSIDE=1` on
+  top of the bake unit's defaults (EARLYREG=1 PLWCV=1). His 09:46 scene, RT on, no input. One blocking waiter, no reads
+  during the runs.
+- Runs b438H341–343: NO_CRASH 3 of 3, 0 pad keys, GIVEN UP 0, CSVs of 14,208 / 13,952 / 14,144 frames.
+- The CSV clock starts at the Render Thread's first flip and runs within a few seconds of the runner's.
+- Phases, from each CSV's frames per 10 s (the dip shows at t 280–290 in all three: 101–125 frames per 10 s):
+  fast t 140–270, dip 280–290, slow 295–415. Window t 136–416 (G+10 to G+290).
+- Tool: `ah438.py 136 416 fast=140-270 dip=280-290 slow=295-415`; output in `lean-round/ah438-out.txt`.
+
+**The split (mean ms per Render Thread frame, the three runs together; normal build with records: diagnosis numbers):**
+
+| Group | Frames | Frame | CPU | Run queue | Blocked | in 0xc0188132 | flip's drain | Lock waits (s.flush_mu / g_dev_mutex) | Minor faults |
+|---|---|---|---|---|---|---|---|---|---|
+| all | 28,804 | 29.2 | 16.3 | 1.2 | 11.7 | 7.2 | 4.9 | 3.2 / 0.7 | 11.7 |
+| 1 vblank | 18,306 | 20.0 | 11.1 | 1.3 | 7.6 | 3.5 | 4.7 | 0.08 / 0.10 | 0.5 |
+| 2 vblanks | 6,203 | 31.7 | 16.9 | 1.1 | 13.6 | 9.0 | 5.1 | 5.4 / 0.3 | 9.3 |
+| 3+ vblanks | 4,295 | 64.7 | 37.5 | 0.8 | 26.4 | 20.6 | 5.6 | 13.2 / 3.9 | 63.3 |
+| fast phase | 16,639 | 23.4 | 12.3 | 1.2 | 9.9 | 5.3 | 5.2 | 1.5 / 0.4 | 1.3 |
+| dip | 337 | 89.5 | 60.1 | 1.2 | 28.2 | 22.1 | 5.8 | 10.2 / 5.6 (+ g_jq_mutex 0.9) | 257 |
+| dip, 3+ vblanks | 190 | 137.6 | 94.6 | 1.3 | 41.7 | 33.6 | 7.2 | 15.1 / 9.6 (+ g_jq_mutex 1.5) | 412 |
+| slow phase | 9,846 | 36.6 | 21.2 | 1.1 | 14.2 | 10.0 | 4.7 | 5.6 / 1.0 | 18.0 |
+
+- **The Render Thread's ~12 ms off CPU per frame is host time in two places:**
+  - gc 0xc0188132 (the submit list, ~51 calls per frame) and the flip's Direct::drain, about 5 ms in every class;
+  - nothing else: the guest syncs are under 0.01 ms, "other" is within ±1.6 ms of zero (the clock and schedstat
+    rounding), and the run queue is ~1 ms.
+- **The long frames are not the same waits, larger.** They differ in two ways:
+  - **More CPU.** 37.5 ms in a 3+ frame against 11.1 in a 1-vblank frame; 94.6 ms in the dip's long frames.
+    Inside 0xc0188132 the CPU is 30.8 − 20.6 = 10.2 ms (3+), so about 27 ms of a 3+ frame's CPU is outside our gc
+    calls: guest code, other HLEs or fault handling. Minor faults rise with it: 0.5 → 63 → 412 per frame.
+    TODO(verify): which; a CPU profile of the long frames is the next step.
+  - **The submit list waits on s.flush_mu.** That is `chain_submit`'s `std::lock_guard order(s.flush_mu)`, the chain
+    slot's flush-order lock (unit line 7985): it is held through a whole submission, the watchdog's or an observe
+    point's foreign flush too (its comment: "the owner's next flush waits for the watchdog's"). It costs 13.2 ms per
+    3+ frame, against 0.08 ms in a 1-vblank frame. g_dev_mutex (`submit_impl`'s lock at line 15283, after exp 0436's
+    ring lock) adds 3.9 ms (9.6 in the dip). The rest of the long frames' 0xc0188132 blocked time (~3.5 ms) is the
+    back-pressure sleep, r438's game-thread wait for an early writer, the backend or the kernel; it is not split
+    here. r438's own line gives its share over a whole run: ~37,000 waits, 19.0–19.6 s per run, about 1.35 ms per
+    frame on average, longest 32–47 ms, 0 BUG lines. Result 13 found no frame-time cost from it in lean.
+- **r438 in these runs:** 3.77–3.83 M early writes per run, 0 that never reached the ring, GIVEN UP 0 in all three.
+- **The dip at G+150–160** is the extreme of the same shape:
+  - 89.5 ms per frame on average, 60 ms of it on CPU;
+  - 257 minor faults per frame (412 in its long frames);
+  - the same s.flush_mu and g_dev_mutex waits, larger;
+  - g_jq_mutex (the job queue) appears only here (0.9 ms per frame).
+  - The fault count points at memory work (a lazy import, a mapping, a new allocation); TODO(verify).
+- **Next (not done here), simplest first:**
+  1. who holds s.flush_mu when the Render Thread waits on it (the holder's thread and the reason code `why`), and
+     for how long;
+  2. a CPU profile of the 3+ frames and of the dip (perf on the Render Thread, the lean build, with frame marks);
+  3. what the dip's faults are (fault addresses against the guest's mappings).
+
+## The bake (2026-11-21 00:50–01:05, boot eb264b8c)
+
+**Decision.** The maintainer's word, through the top session: "tak - wdrażaj wszystko, tym bardziej jeżeli nie obniża
+płynności a poprawia błędy". The top session's proposal was r438 with PLWCV, no p438, and the switches kept.
+
+**Before the swap** (the slot of 00:20–00:31, CPU only):
+- buildk, the private baked build: normal `662cd4b5`, lean `5e49efc3`, 0 errors.
+- swap0438 with DRY=1 on a copy of the tree: PATCH_NEW `9889b06a`. The undo restored `bb04219b` on the copy; the copy
+  was then deleted.
+
+**The swap** (`run-swap0438.sh` under the user manager, unit bc5-0438-swap; checks before it: 0 GPU resets, no
+emulator, lock empty):
+- Patch `bb04219b` → `9889b06a`: 135 files, 5 "exp 0372" lines, the pad_audio_route header kept. Tree unit
+  `a62e8bf6` → `ff9e8fe2`.
+- Normal `f345db74` → `b1b57df91b414743920f1fc500e1c300`; lean `6a735b81` → `d3485ed4f475f01549573763af804ce0`.
+- Archive `d6638808` unchanged; the backend is not touched.
+- Words: each binary gained exactly `BC5_0438_EARLYREG` and `BC5_0438_PLWCV` and lost none.
+- `backend/kytyplus-patches/0001-bc5-lle-agc.patch` on the branch is the installed file: `9889b06a`, commit
+  `dd7406c2`.
+
+**Smokes** (`smoke0438s.sh`): **ALL PASS**. Each run had 0 kernel lines, 0 crash lines and 0 pad keys, and each ran
+the new binary (`/proc/<pid>/exe` md5).
+- s438sc: ASTRO BOT, lean, 200 s.
+- s438su: the second title, lean, 300 s, 33 of 33 key lines.
+- s438sn: ASTRO BOT, normal, 200 s.
+  - The smoke printed "r438 lines 0" because it reads play.log, while r438's lines go to the journal.
+  - The run's direct.log has 3 r438 lines: 94,914 early writes, 0 that never reached the ring, 0 BUG lines, GIVEN UP 0.
+
+**Undo:** `bash ~/bc5-work/exp0438/bake/undo0438.sh`, back to `bb04219b` / `f345db74` / `6a735b81`. Per run with no
+build: `BC5_0438_EARLYREG=0` turns r438 off, and `BC5_0438_PLWCV=0` gives the 20-µs poll.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
@@ -1784,30 +1874,42 @@ guest-allocated stacks.
 
 ## Verdict
 
-**Inconclusive as a fix. The cause stands, two fixes are refuted, and the open question is narrowed.**
+**F865's source is fixed and built into the shared builds (r438 with PLWCV, 2026-11-21 00:52). The long frames are a
+separate, host-side question (result 14).**
 - **F865's cause** (from the records, high confidence): a game-thread dcb wait on an acb's release, with no writer on
-  any ring, was given up after ~21 ms (the F262 give-up). The dcb ran ahead of the acb's work and the GFX ring hung.
-  It is not F3's case: F2 cycles were 0 all run.
-- **k438** (keep the wait for the GPU): refuted. 1 GPU hang in 1 run, at its own kept wait (u438sK2). The writer
-  acb was in the kernel and did not complete before the GFX job was reset. Why is not known; the VMID-flush candidate
-  was weakened by `amdgpu_ids.c`.
-- **k438b** (ADR 0013's held tail, no give-up): refuted as built. 1 GPU hang in 1 run (u438sH7), after five
-  12-s host-made cycles: the join took a dcb's release into the held chain, and its acb waits for that release.
-- **vg437** (exp 0437, folded in): no measurable gain in one V run against one C run; closed by the top session
-  unless more data shows one.
-- **C arm** (both off, test builds d4a2f86d and c4b23cd1): NO_CRASH in 3 of 3 runs, 36.91 (polled reads), 34.10 and
-  34.52 flips/s.
-- **Next, not done here:**
-  1. decide title-side or host-side lateness with the catcher above;
-  2. if the title rings the acb late, make the GFX wait safe (the GPU waits as the console's CP does) with its writer
-     guaranteed a path to the GPU;
-  3. if the host delays it, remove that delay at its source;
-  4. a hold, if one is still wanted, needs ADR 0013 point 4 (submit up to the first unmet wait) built properly.
-- The box has had two GPU resets since boot (u438sK2, u438sH7); no runs until it is rebooted.
+  any ring yet, was given up after ~21 ms (the F262 give-up). The dcb ran ahead of the acb's work and the GFX ring
+  hung. It is not F3's case: F2 cycles were 0 all run.
+- **The fix at the source: r438.** bc5-ring registers a taken slice's label writes "early", before the kernel call.
+  The game thread's wait on such a label waits for the real registration and is kept in ring order. So the writer
+  is in the kernel before its waiter and the give-up path is never reached; there is no give-up and no recovery.
+  PLWCV makes that wait a condition variable (0.06 ms median wake against 4.9–7.0 ms for the poll, test case 6).
+  - **Invariant** ("an early write must reach the ring"): 0 lost in every r438 run, about 3.8 M early writes per run.
+  - **Give-ups:** 0 in every r438-on run counted here (R ×3 in result 6, H ×3 in result 14). Off: 1 in 3 C3 runs
+    (result 6) and 2 + 1 in the two O runs (result 13). The base rate is too low to call it a shown removal by count;
+    the mechanism removes the path.
+  - **Frame time:** no measurable effect in 3 + 3 + 3 lean runs (result 13): L0 35.33, L1p 34.81, L1c 35.03 flips/s,
+    with the same median, p95 and p99.
+- **Refuted on the way:**
+  - k438 (keep the wait for the GPU): 1 GPU hang in 1 run, at its own kept wait;
+  - k438b (ADR 0013's held tail, no give-up): 1 GPU hang in 1 run;
+  - e438 (build 12's lazy freshness): closed;
+  - p438 (the prologue merge): correct offline, no frame-time gain (result 13), not baked.
+- **The bake** (the maintainer's "tak - wdrażaj wszystko, tym bardziej jeżeli nie obniża płynności a poprawia
+  błędy", through the top session):
+  - patch `bb04219b` → `9889b06a`, normal `b1b57df9`, lean `d3485ed4`, archive `d6638808` unchanged;
+  - `BC5_0438_EARLYREG=0` turns r438 off for one run with no build, `BC5_0438_PLWCV=0` gives the 20-µs poll;
+  - undo `bash ~/bc5-work/exp0438/bake/undo0438.sh`.
+- **Open, for a next experiment (result 14):**
+  - The Render Thread's long frames spend more CPU outside our gc calls (~27 ms in a 3+ frame), and with it far more
+    minor faults.
+  - They also wait on the chain slot's flush-order lock s.flush_mu inside the submit list (13 ms per 3+ frame).
+  - The dip at G+150–160 is the extreme of both.
+- **Pacing (lean, 105,883 frames):** not two-moded. It follows the scene: ~45 flips/s, the dip to ~11, then ~27.
 
-## HANDOFF row draft
+## HANDOFF rows
 
-| F866 | **F865 was not F3's case: it was the F262 give-up.** Dcb chain #165177's pfp wait at dword 1285 on 0x12004b4c38 == 0 (busy 0x907616589 at submit) was given up by the game thread after 20.9 ms, with "no pending write", and dropped. It was the fourth give-up in a row (3c38, 4438, 4c38, 5438; ~83 ms). Its writer, acb #165180 (release at dword 2332), reached the host 20 ms after the dcb. At the stall the release had not run: the label still held the busy value. The acb's five dropped `== 0` waits were consequences: three of their labels are that dcb's own releases at dwords 8637, 11145 and 11340, which the GFX CP had passed. F2 cycles 0 all run. The first fix, k438 (exp 0438, `BC5_0438_KEEP`, keep the wait for the GPU instead of giving it up, with guards G1/G2), is refuted. u438sK2 (scene, RT on, test build d4a2f86d with k438 on) hung the GFX ring at ~90 s at k438's own kept wait: CP header history at dcb #65701's dword 369, a WAIT_REG_MEM64 pfp on 0x12004b5438. Its writer, acb #65702 (release at dword 874), was already in the kernel and did not run until the GFX job was reset (comp_1.1.0 timeout 2.05 s later). That fits a kernel-level dependency of the acb on the waiting GFX job; amdgpu's VMID flush is the candidate, TODO(verify). The C arm (k438 off): 1 run NO_CRASH, 36.91 flips/s, polled reads. The second fix, k438b (exp 0438, `BC5_0438_HOLD`: ADR 0013's held tail put back on the way-2 path, with no give-up), is refuted as built. u438sH7 hung the GPU at 113 s after five 12-s host-made cycles. Each time, the chain was held, and the join took a dcb whose release of 0x12004b77c8 precedes its wait on 0x12004b7838 into the held chain, while queue 1/0/0's acb waits for that release at its dword 28 and releases 0x12004b7838 after it. It broke only through the old 2-s acb timeout. The correct hold (ADR 0013 point 4: submit up to the first unmet wait) is not built. vg437 (exp 0437, folded in) showed no measurable gain in 1 V run against 1 C run (view builds 14076 against 15158). The C arm was NO_CRASH 3 of 3 (36.91, 34.10, 34.52 flips/s). Open: is the writer acb late on the title's side or the host's? u436sS3's records cannot tell (a catcher is proposed). Separate draft: host journal text found in guest memory (a NOP marker and the label 0x11e0450aa8 in u438sK2). | experiments/0438-f865-source/README.md; records `data-0438` (laptop), devcd 20261120-005901-devcd10, 20261120-081529-devcd1/2, 20261120-085542-devcd3/4 | high (the give-up cause, from the records); k438 and k438b each refuted on 1 hang in 1 run, with the mechanism read from the records |
+In `docs/HANDOFF.md` since 2026-11-21: F866 (F865 was the F262 give-up), F867 (r438 with PLWCV, the source fix, built
+into the shared builds), F868 (frame pacing and the Render Thread's long frames, diagnosis).
 
 ## The generated units (not committed)
 
