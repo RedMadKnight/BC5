@@ -30,6 +30,8 @@ static bool wait_satisfied(const uint32_t* p, bool) {
     return *reinterpret_cast<const volatile uint32_t*>(a) == p[4];
 }
 static bool ring_will_satisfy(const uint32_t*, bool, int) { return false; }
+// exp 0438's acb_wait_unready (patch 589ef163) as the stub sees it: unmet and no pending writer
+static bool acb_wait_unready(const uint32_t* p, bool is64, uint64_t, int ring) { return !wait_satisfied(p, is64) && !ring_will_satisfy(p, is64, ring); }
 
 #include "ab439_extract.inc"
 

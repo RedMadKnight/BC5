@@ -25,7 +25,7 @@ for w in BC5_0439_PIECE_DUMP BC5_0439_UMR_WAVES BC5_0439_IMPORT_PIECES BC5_0439_
 EXTRA="BC5_SYSMODULES_PACK_DIR=$HOME/bc5-data/games/PPSA26344/fakelib BC5_DIRECT_DCC_PRESENT=2 BC5_DIRECT_EAGER_GPU_WRITE=1 BC5_DIRECT_IB_CHAIN=1 BC5_DIRECT_TIMEOUT_PROBE=1 BC5_0439_PIECE_DUMP=1 BC5_DIRECT_UMR_ON_TIMEOUT=1 BC5_0439_UMR_WAVES=1 BC5_0439_XQ_COUNT=1 BC5_0439_IMPORT_PIECES=$IMP BC5_DIRECT_IB_CHAIN_FLAT=1 BC5_0439_ACB_DEEP=1 BC5_0439_ACB_REFUSE=1 BC5_0439_SURF_DUMP=$HOME/bc5-data/priv/yotei-screens/t3s-v$VER-surf BC5_RUN_ENV=$HOME/bc5-work/exp0439/run-log.env"
 [ "$VER" = param ] && EXTRA="$EXTRA KYTY_BC5_SYSTEM_SW_VERSION=param"
 if [ "${DRY:-0}" = 1 ]; then # the launch as it would go, nothing started, no lock (R66)
-  echo "DRY: binary $PIN ok, switches present; start ${START:-now}; run0439.sh run normal t3s-v$VER 120 with RUN_PRIV=$BIN"
+  echo "DRY: binary $PIN ok, switches present; start ${START:-now}; run0439.sh run normal t3s-v$VER 60 with RUN_PRIV=$BIN"
   echo "DRY: RUN_EXTRA=$EXTRA"
   grep -q '^BC5_DIRECT_JOURNAL=min$' "$HOME/bc5-work/bc5-run.env" && echo "DRY: bc5-run.env sets BC5_DIRECT_JOURNAL=min"
   grep -n 'P439_BIN\|exec\|"\$EMU"' "$HOME/bc5-work/exp0439/k439/play439.sh" | head -4
@@ -103,7 +103,7 @@ EOF
     sleep 0.5
   done ) &
 SWP=$!
-RUN_PRIV=$BIN RUN_EXTRA="$EXTRA" bash run0439.sh run normal t3s-v$VER 120 2>&1 | tail -1
+RUN_PRIV=$BIN RUN_EXTRA="$EXTRA" bash run0439.sh run normal t3s-v$VER 60 2>&1 | tail -1
 sleep 5; for k in $(seq 1 40); do pgrep -x kyty_emulator > /dev/null || break; sleep 5; done
 pgrep -x kyty_emulator > /dev/null && { echo "EMULATOR STILL RUNNING: ended"; pkill -TERM -x kyty_emulator; sleep 5; }
 RUN_PRIV=$BIN bash run0439.sh collect normal t3s-v$VER > /dev/null 2>&1

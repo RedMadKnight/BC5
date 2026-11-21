@@ -948,7 +948,8 @@ static const uint32_t* ab439_scan(const uint32_t* buf, uint32_t n, std::vector<u
 			else if ((op == 0x47 || op == 0x1e) && len >= 4) written.push_back((p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u));
 			else if ((op == 0x3c || op == 0x93) && len >= 4 && ((p[1] >> 4u) & 1u) != 0) {
 				const uint64_t label = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
-				if (std::find(written.begin(), written.end(), label) == written.end() && !wait_satisfied(p, op == 0x93) && !ring_will_satisfy(p, op == 0x93, ring)) return p;
+				// exp 0438's acb_wait_unready (patch 589ef163): acb_ready's per-wait test, with its in-flight and queued-writer holds
+				if (std::find(written.begin(), written.end(), label) == written.end() && acb_wait_unready(p, op == 0x93, label, ring)) return p;
 			} else if ((op == 0x3f || op == 0x33) && len >= 4) {
 				const bool     chain = bc5::ib_chain::is_chain(p[3]);
 				const uint64_t a     = (p[1] & ~3u) | (static_cast<uint64_t>(p[2] & 0xffu) << 32u);
@@ -1005,9 +1006,9 @@ s = rep(s, '''			else if ((op == 0x3c || op == 0x93) && len >= 4 && ((p[1] >> 4u
 # It stays held, and a record is printed and journalled every 10 s: the queue, the buffer, the wait (label, function,
 # reference, value now) and the label's known writers (describe_pending, exp 0133) or none. A stall with a record is
 # diagnosis; this is a guard, not the fix. Off: "proceeding" as before.
-s = rep(s, '''					if (now - s.deferred_since < 10'000'000'000ull) continue; // served later
-					LOGF_COLOR(Log::Color::Yellow, "[bc5-q] queue %u/%u/%u/0x%x: cross-queue wait unsatisfied for 10 s, proceeding\\n", q.a, q.b, q.c, q.d);''', '''					if (now - s.deferred_since < 10'000'000'000ull) continue; // served later
-					{ // exp 0439 (tag ar439)
+# (rebased on patch 589ef163: exp 0438's ng438_fallback call now sits between "served later" and the release; ar439 goes
+# after it, as agreed with exp 0438, so a refused acb is still counted)
+s = rep(s, '''					LOGF_COLOR(Log::Color::Yellow, "[bc5-q] queue %u/%u/%u/0x%x: cross-queue wait unsatisfied for 10 s, proceeding\\n", q.a, q.b, q.c, q.d);''', '''					{ // exp 0439 (tag ar439)
 						static const bool refuse = [] {
 							const char* e  = std::getenv("BC5_0439_ACB_REFUSE");
 							const bool  on = e != nullptr && e[0] == '1' && e[1] == 0;
@@ -1267,3 +1268,21 @@ v = rep(v, a, a + '\t\t// exp 0439 (tag dc439): a compressed surface decompresse
         '\t\t\tsource_info.metadata = {};\n\t\t}\n')
 open(dst + '/videoOut.cpp', 'w', encoding='utf-8', newline='').write(v)
 print("ok")
+
+# exp 0439 (tag sv439): sceNpGetSdkVersion (libNp.cpp, the np-common port) answers the same word as GetProsperoSystemSwVersion
+# when the unit is in the build (box439.sh compiles new/libNp.cpp when it is there). Its own decode turns 0x0B600000 into
+# "11.60" as it turns 0x0A600000 into "10.60". Lean: today's constant.
+import os
+if os.path.exists(src + '/libNp.cpp'):
+    n = open(src + '/libNp.cpp', encoding='utf-8', newline='').read()
+    n = rep(n, """	const uint32_t hex = 0x0A600000u; // our kernel's system software version (10.60)""", """#ifndef BC5_LEAN
+	const uint32_t hex = bc5_sv439_word(); // exp 0439 (tag sv439): KYTY_BC5_SYSTEM_SW_VERSION (bc5LleAgc.cpp, sv0439.hpp)
+#else
+	const uint32_t hex = 0x0A600000u; // our kernel's system software version (10.60)
+#endif""")
+    n = rep(n, """static int Bc5NpcGetSdkVersion(char* version) {""", """#ifndef BC5_LEAN
+extern "C" uint32_t bc5_sv439_word(); // exp 0439 (tag sv439), defined in bc5LleAgc.cpp
+#endif
+static int Bc5NpcGetSdkVersion(char* version) {""")
+    open(dst + '/libNp.cpp', 'w', encoding='utf-8', newline='').write(n)
+    print("libNp.cpp: done")
