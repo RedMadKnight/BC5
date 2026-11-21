@@ -14,6 +14,6 @@ echo "args: $*" >> "$(dirname "$0")/raw/calls.txt"
 mkdir -p "$HOME/bc5-data/captures/play-x/gc"; echo "q438 (exp 0438): BUG: y" > "$HOME/bc5-data/captures/play-x/gc/direct.log"
 echo x > "$(dirname "$0")/raw/$1-play.log"; echo "$1 (astro) PASS: ran 60 s; RssAnon 1 kB; kernel lines 0, crash lines 0"
 STUB
-sed 's/\[ "\${WANT:0:8}" = 137ef7af \] \&\& //' "$HERE/armq438.sh" > "$D/arm.sh"
+sed 's/\[ "\${WANT:0:8}" = 853e16e9 \] \&\& //' "$HERE/armq438.sh" > "$D/arm.sh"
 HOME="$D/home" PATH="$D/bin:$PATH" bash "$D/arm.sh" sa KYTY_BC5_0438_A1=1 BC5_DIRECT_0438_A2=1 2>&1 | grep -v boot_id | grep "journal\|RESULT\|lock"
 echo "the runner got: $(cat "$D/home/bc5-work/exp0413/n/raw/calls.txt")"
