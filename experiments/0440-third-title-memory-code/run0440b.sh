@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Experiment 0440, second paused dump: one run of the third title (PPSA26344) into its stall, paused and dumped
-# (memdump0440.py). Runs on the BC-250 host from ~/bc5-work/exp0440/ (a copy of this file). As run0440.sh, with:
+# (memdump0440.py). Runs on the BC-250 host from ~/bc5-work/exp<number>/ (a copy of this file and of the 0440 tools;
+# EXP_NO, default 0441, is the experiment the run is claimed under). As run0440.sh, with:
 #   - the build, launcher and settings file named at `prep` and pinned by md5 in $E/kit-b.env;
 #   - the emulator's pid taken only from this run: a process whose /proc/<pid>/exe is this kit's own private
 #     binary, looked for only after this script holds BOX-LOCK (LESSONS R71), never the first kyty_emulator seen;
-#   - everything that starts something in ONE named unit, bc5-0440-<tag>, with its own time limit (R73); the ssh
-#     that calls `go` only waits for that unit and prints its log; stop = systemctl --user stop bc5-0440-<tag>;
+#   - everything that starts something in ONE named unit, bc5-<number>-<tag>, with its own time limit (R73); the ssh
+#     that calls `go` only waits for that unit and prints its log; stop = systemctl --user stop bc5-<number>-<tag>;
 #   - the registered display buffers and their DCC metadata added to the dump as extra ranges, taken from the
 #     run's own log ("flip: index N surface 0x.. meta 0x.. WxH") and from EXTRA="addr:len ...".
 #
@@ -17,7 +18,8 @@
 # Private output: ~/bc5-data/priv/yotei-memdump/<tag>/ (mode 700). Logs: $E/runs/<tag>/.
 set -euo pipefail
 umask 077
-E=$HOME/bc5-work/exp0440
+X=${EXP_NO:-0441}   # the experiment this run is claimed under: lock line, unit name, work directory
+E=$HOME/bc5-work/exp$X
 K=$E/kit-b
 DIR=$HOME/bc5-data/games/PPSA26344
 LOCK=$HOME/bc5-work/BOX-LOCK
@@ -30,12 +32,12 @@ CAP=900  # timeout(1) inside the container: far beyond the dump, so it never fir
 log() { printf '%s %s\n' "$(date '+%F %T')" "$*"; }
 die() { log "STOP: $*"; exit 1; }
 resets() { journalctl -k -b 0 --no-pager 2>/dev/null | grep -c -i -E 'amdgpu.*(timeout|reset)' || true; }
-our_lock() { [ -e "$LOCK" ] && grep -q '^exp0440 ' "$LOCK" 2>/dev/null; }
+our_lock() { [ -e "$LOCK" ] && grep -q "^exp$X " "$LOCK" 2>/dev/null; }
 take_lock() {
   exec 9>> "$LOCK.flock"; flock -n 9 || die "lock busy"
   if [ -s "$LOCK" ]; then die "BOX-LOCK is held: $(cat "$LOCK")"; fi
   pgrep -x kyty_emulator >/dev/null && die "an emulator runs without a lock: he plays"
-  printf 'exp0440 %s %s\n' "$(date '+%F %T')" "$1" > "$LOCK"; flock -u 9; log "lock taken: $(cat "$LOCK")"
+  printf 'exp%s %s %s\n' "$X" "$(date '+%F %T')" "$1" > "$LOCK"; flock -u 9; log "lock taken: $(cat "$LOCK")"
 }
 drop_lock() { exec 9>> "$LOCK.flock"; flock 9; if our_lock; then : > "$LOCK"; log "lock dropped"; fi; flock -u 9; }
 dead_mounts() {
@@ -83,7 +85,7 @@ go)
   words
   [ -e "$PRIV/$tag" ] && die "dump directory $PRIV/$tag exists: pick a new tag"
   mkdir -p "$E/runs/$tag"
-  systemd-run --user --collect --wait --quiet --unit="bc5-0440-$tag" -p RuntimeMaxSec=1500 \
+  systemd-run --user --collect --wait --quiet --unit="bc5-$X-$tag" -p RuntimeMaxSec=1500 --setenv=EXP_NO="$X" \
     --setenv=WAYLAND_DISPLAY="$(wl)" --setenv=XDG_RUNTIME_DIR="/run/user/$(id -u)" \
     --setenv=RUN_WORDS="$RUN_WORDS" --setenv=EXTRA="${EXTRA:-}" --setenv=BIG_MB="${BIG_MB:-1024}" \
     /usr/bin/bash "$E/run0440b.sh" go-inner "$tag" "$waits" || echo "unit ended with rc $?"
@@ -96,6 +98,10 @@ go-inner)
   # shellcheck disable=SC1091
   . "$E/kit-b.env"
   [ "$(md5sum < "$BIN" | cut -d' ' -f1)" = "$BIN_MD5" ] || die "the binary is not $BIN_MD5"
+  # room for the dump: its cap (8 GiB of real bytes) plus 20 GiB left free afterwards
+  avail=$(df --output=avail -B1 "$PRIV" | tail -n1 | tr -d ' ')
+  [ "$avail" -ge $((28 * 1024 * 1024 * 1024)) ] || die "only $((avail >> 30)) GiB free under $PRIV: the dump needs 28"
+  log "free under the private folder: $((avail >> 30)) GiB"
   take_lock "third title memdump $tag"
   pid=""; LP=""; start=$(date '+%F %T')
   finish() {
