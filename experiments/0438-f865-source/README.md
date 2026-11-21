@@ -2087,6 +2087,122 @@ t 280):
   2. the arena trim check;
   3. the dip's name lookup, with call stacks.
 
+## Result 16 (offline, from the P runs): the long frames' guest CPU is one tight loop
+
+`gip438.py` (`7babfa96`) reads P345 + P346's Render Thread samples whose ip lies in the guest's executable
+KytyPrivateMemory mappings. Each module is named by its 256-MiB load base (`module@<base>+<offset>`). The groups are
+by vblank class and phase. Its output stays private (`hot-ips.txt` and the full output, outside git) because it
+names offsets in the title's code. The shape:
+
+| Frames | Guest samples per frame (of all) | Distinct ips | 50 % of guest samples in | 90 % in | The top page's share |
+|---|---|---|---|---|---|
+| 1 vblank (13,203) | 3.65 of 8.52 | 8,916 | 234 ips / 92 lines / 15 pages | 4,175 ips / 114 pages | 13.7 % |
+| 2 vblanks (4,060) | 6.72 of 13.17 | 5,545 | 45 ips / 17 lines / 4 pages | 92 pages | 40.6 % |
+| 3+ vblanks (2,517) | 27.02 of 35.46 | 4,489 | **13 ips / 1 line / 1 page** | 296 ips / 18 pages | 81.2 % |
+| dip, 3+ (115) | 89.26 of 112.86 | 484 | **11 ips / 1 line / 1 page** | 20 ips / 2 lines / 1 page | 92.9 % |
+
+- **The long frames' guest CPU is concentrated, not spread.** In a 3+ frame, half of it is in 13 ips of one 64-byte
+  line of the title's main module (module@900000000, 97–99 % of the guest samples there). Those ips are about 36
+  bytes long, hit almost evenly at every second byte (~4 % each).
+- The 1-vblank frames run the same line too, but only for 14 %; their guest time is spread over ~4,000 ips.
+- **Overlap:** 92.5 % of the 3+ frames' guest samples lie in the 1-vblank frames' top-50 pages. The long frames run
+  the same code, mostly that one line, for longer.
+- **Reading** (behaviour, not code): a short loop of two-byte instructions, hit evenly, is the shape of a busy-wait
+  (a spin with a pause-like backoff). In its long frames the Render Thread spins in the title's own code waiting for
+  something, and the more it waits the longer the frame. On the console, the same CPU (Zen 2) would not spin 22–90 ms
+  per frame unless what it waits for comes late: a job worker's result, or a value the GPU or our soft CP writes.
+  - TODO(verify), for the next step: from the hot code's bytes (private), which memory the loop reads, and from a
+    second profile, which thread writes it.
+- **Not in this data:** which threads run while it spins. The P runs profiled the Render Thread only, with no
+  per-thread schedstat. For the next title, prof0438 gets an all-thread mode: perf on every thread at a low rate,
+  plus /proc/<pid>/task/*/schedstat every second (exp 0432's prof0432.sh form).
+- **The hot code's bytes:** `gipbytes438.py` (`fe760d21`), read-only on the box (top's 2-minute GO, before exp 0439's
+  uninstall). It finds the title's eboot.bin under ~/bc5-data, requires its first load segment to match the maps
+  region at module@900000000 (0x5f24000), and writes 256-byte windows around the top 60 ips to
+  `~/bc5-data/private/exp0438-hotcode` (mode 700), copied to a private folder on the laptop outside git.
+  - A stand-in dry run on the laptop (a synthetic ELF) PASS.
+  - The bytes and any disassembly are never committed; this README describes behaviour only.
+
+## The per-slot submit queue (design, not built; for every title)
+
+**Goal (F869).** The Render Thread waits ~13 ms per long frame on its slot's flush lock while the chain watchdog
+submits the Render Thread's own chain (holder phase: device held or asking). The owner should not wait for a
+submission of its own chain that another thread is doing. It should wait only where it has to.
+
+**Shape (switch `BC5_0438_SUBMITQ`, off unless "1" in the test build).**
+- **The queue.** Each ChainSlot gets a FIFO of taken chains, at most 4. Each entry holds the chain, its F10 write
+  set, its why and its take ticket.
+- **Taking a chain.** `chain_submit(s, why, foreign)` keeps its take under `s.mu`, unchanged, and pushes the taken
+  chain instead of calling `submit_now`.
+- **The submitter.** One submitter per slot drains the queue in order and calls `submit_now` exactly as today:
+  back-pressure, the ring lock, g_dev_mutex, the preparation, the CS, the registration. It runs the tail after each
+  entry (below). It is a thread per registered slot, woken by a condition variable on the slot, so a slot's chains
+  reach the kernel in take order, as `flush_mu` guarantees today.
+- **The watchdog** pushes as well, instead of submitting. It no longer holds anything for the time of a submission.
+- **The owner waits only:**
+  1. **When the queue is full** (4 entries): back-pressure on the owner, as today's 24-fence wait is on the
+     submitter. The wait is the GPU's or the submitter's.
+  2. **Where a CPU wait needs its chain.** Today `chain_flush(1)` before a game-thread wait makes the chain's label
+     writes registered (`register_label_writes`) before `ring_will_satisfy` looks. With the queue they are not
+     registered until the submitter's CS. That is exactly F865's give-up path ("no pending write") if nothing
+     covers it.
+     - So at push, the entry's label writes are registered early, as r438 does for bc5-ring's slices: pending
+       entries with `seq = kR438Early | bit 62 | ticket`.
+     - r438's game-thread rule then applies unchanged: a wait whose last pending write is early waits, on PLWCV's
+       condition variable, for the real registration, and is kept in ring order.
+     - At the entry's end the submitter checks that every early write was registered for real; one that was not is
+       a BUG line and is removed. This is r438's invariant.
+  3. **At the flip's drain** (`chain_flush(5)` + `chain_flush_all(5)` before `Direct::drain()`) and at `wait_jobs`:
+     the queue must be empty and its last entry submitted before the GPU drain means anything. The owner pushes,
+     then waits for its slot's `done == taken`. That is today's behaviour, since the flip waits for the drain anyway.
+  4. **Sync mode** (`g_async` off): no queue; the owner submits inline, as today.
+- **State the owner (or another thread) still touches after a push, and how each moves:**
+  - `f10_writes` (the open chain): unchanged, the owner's, under `s.mu`.
+  - `f10_flight` (today: the one chain in submission) becomes the union of the queued and in-flight entries' write
+    sets, under `s.mu`. `f10_pending` and `f10_observe` (exp 0430 F10, other threads) read it as today, a list of
+    per-entry sets. An entry's set is removed after its own submission's registration, as today's clear.
+  - `f16_done` is bumped per entry done (F10's waiter list compares it as today). `f16_phase` is the submitter's phase
+    for the entry it carries. `t_f16_slot` is set by the submitter, which is the thread inside `submit_now` now.
+  - `f10_wanted` / `open_ns = 1` (F10 asks the owner, or the watchdog, to flush): unchanged. They now lead to a push.
+  - `in_submit` (the owner is inside Direct::submit; a buffer may be split at a wait): unchanged. It guards the take
+    under `s.mu`, not the submission.
+  - `marks` and `soft` (cross-ioctl chains: soft replays posted once the chain carrying their buffers is submitted):
+    the submitter posts them after the entry's submission, as `chain_submit`'s tail does today. `t_gpu_done` is
+    thread-local, so the submitter collects its own and moves it into `s.marks` under `s.mu`.
+  - `t_fs415_*`, `t_cq` and the other thread-locals `submit_now` reads: the submitter sets them from the entry
+    (fs415's open time, why and segments go into the entry at the take).
+  - The `Chain` object stays alive in the entry until `submit_now` returns (`keep_wait_offsets`,
+    `chain_mark_executed`).
+  - **Re-entry:** `submit_now`'s mapping sync can call `wait_jobs` → `chain_flush` on the submitter. That is the
+    submitter's own slot, which pushes onto the queue behind the current entry. A wait for it inside the current
+    entry's submission would deadlock, so a re-entrant flush on the submitter submits inline, ahead, as today's
+    recursive `flush_mu` does.
+  - **Slot destruction** (the thread_local slot at thread exit): the submitter drains and stops first; then
+    `~ChainSlot` unregisters it as today.
+- **Ordering kept:**
+  - per slot: take order to the kernel;
+  - per ring: exp 0436's ring lock, then g_dev_mutex, then the backend, unchanged inside `submit_now`;
+  - registration: `register_label_writes` under the ring lock, as today;
+  - r438's early entries for both bc5-ring's slices and the queued chains, one rule.
+- **What it changes for the Render Thread:** a flush becomes a push plus an early registration (a scan of the chain's
+  packets, as r438's `r438_scan`, ~µs). The chain's preparation and CS run on its slot's submitter, overlapping the
+  Render Thread's next CPU work.
+  - The flush-lock waits behind the watchdog (F869: 9.6 + 3.7 ms per 3+ frame) go.
+  - The Render Thread's own `wait` / `hold-end` / `drain` flushes (72,360 / 10,226 / 13,603 per run) stop costing it
+    the preparation and CS.
+  - Where its next CPU wait needs the chain, it waits for the real registration, which is the same time it waits
+    today, minus the overlap.
+- **Risk:** this changes every title's submission path, the path behind F848, F852 and F865. So: a switch, an offline
+  test, then lean A/B on ASTRO BOT and the third title, as the top session ordered. The offline test (`test_q438`)
+  cuts the take, push, submitter, early registration and tail from the generated unit against stubs, after
+  test_r438 and test_p438. It checks:
+  - take order to `submit_now` across owner, watchdog and flush_all pushes;
+  - no wait finds "no pending write" for a queued chain's label;
+  - the F10 flight union and `f16_done` per entry;
+  - the re-entrant flush inline;
+  - drain = empty;
+  - a broken copy (the early registration removed) must fail.
+
 ## Finding draft (separate, not chased): host text in guest memory
 
 u438sK2's dumped dcb #65701 has a title NOP marker (dword 718, 10 dwords). Its payload is host journal text, "eps its
