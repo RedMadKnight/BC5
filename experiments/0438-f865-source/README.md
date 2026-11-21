@@ -2521,9 +2521,24 @@ The bake candidate (bake438b: A1 + A1b + A1P + A2 + the guarded gate, all on unl
 
 **A journal artifact (r438h, 2026-11-21).** With any BC5_DIRECT_JOURNAL other than "min" (the full journal used for diagnosis) submission is synchronous (`g_async` false). r438_begin's early entries are then never registered for real, and r438_end prints "r438 (exp 0438, b438): BUG: the early-registered write of … never reached the ring" for each one (1,281 in 58 s on the third title, 0 in 229 frames at "min"). These lines are an artifact of the diagnostic mode, not a finding about the title. The one-line fix (`r438o/mkr438h.py`: r438_begin registers early only with async submission; det case `sync`) waits for the next bake.
 
+## Result 22: the full set's first broken order, offline (F887; 2026-11-21)
+
+- **What happens.** acb_ready holds an acb at an unmet wait and sends only its head; the held part's label writes are in no table. A game-thread dcb that waits on one of them finds no writer, is given up after its 8-ms limit and runs ahead of the held acb.
+- **Det case `shape67`** (q438/test_q438.sh, Q438_ONLY=shape67; SUBMITQ unset):
+  - INFLIGHT_NG and OPEN_NG on: GIVEN UP, with D's head registered after 1 ms and after 20 ms.
+  - Both off: GIVEN UP.
+  - `BC5_0438_HELD_EARLY=1`: kept for the GPU.
+  - The planted held-off: FAIL.
+- **The journal match.** It matches cq438f1's journal lines before #67: the 87-of-1336 acb head on 0x400202d00, then the 9891 dcb's wait on 0x400202d40 given up after 23.3 ms.
+- **Not shown:** the step from that dropped wait to the #67 / #76 stall.
+- **Run B, when the maintainer agrees:**
+  - first the full set with INFLIGHT_NG=1 OPEN_NG=1 HELD_EARLY=1, journal=min, the probe and the wd438 ring (predicted clean);
+  - only then, if a confirmation is still wanted, the same without HELD_EARLY (predicted hang).
+
 ## For the next bake (one list; nothing here is in the shared builds of patch 589ef163)
 
 - **r438h** (`r438o/mkr438h.py`, unit b4c3b22e on 2e6168de; to be re-applied on the baked unit ed489aca): r438_begin registers early only with async submission. In sync mode, which means any BC5_DIRECT_JOURNAL other than "min", every early entry was lost and printed r438's "never reached the ring" line (F884). Det case `sync`. No change where the journal is "min", which every play launcher sets.
+- **BC5_0438_HELD_EARLY** (F887; q438/mkq438x.py, stack unit 0751ec42): a candidate, after run B confirms it; it would need a gate-only form for the bake, like bake438b's.
 - **The lean warning in r438o's trim:** "variable 'kept' set but not used" in lean, because its counter is compiled out. Cosmetic; silence it with `(void)kept` under BC5_LEAN.
 - **Not candidates (listed so they are not mistaken for ones):**
   - Q438 / BC5_0438_SUBMITQ: the full set's hang is open (Q35); it waits for the det case and run B.
