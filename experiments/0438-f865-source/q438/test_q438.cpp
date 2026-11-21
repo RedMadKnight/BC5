@@ -112,6 +112,8 @@ static std::atomic<int>     g_active[kOwners], g_pass[kOwners];
 static std::atomic<bool>    g_gated[kOwners], g_nest_ok[kOwners];
 static std::atomic<int>     g_prep_us {0}, g_prep_rand_us {0}, g_drop_write {0};
 static std::atomic<uint64_t> g_seq_no {0}, g_viol_active {0}, g_viol_flight {0}, g_viol_cap {0}, g_qmax {0}, g_call_max_ns {0};
+static std::atomic<uint64_t> g_ph_lock {0}, g_ph_gate {0}, g_ph_prep {0}, g_ph_reg {0}, g_ph_prep_us {0}; // the ungated calls: max per phase (ns)
+static void ph_max(std::atomic<uint64_t>& a, uint64_t d) { for (uint64_t m = a.load(); d > m && !a.compare_exchange_weak(m, d);) {} }
 static std::function<void(int owner, uint32_t first)> g_hook; // set while no submission runs
 struct Rec {
 	int                   owner = -1;
@@ -147,9 +149,11 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char*, int
 	r.tid       = std::this_thread::get_id();
 	const uint64_t t_call = SoftCp::now_ns();
 	if (g_active[o].fetch_add(1) != 0 && !g_nest_ok[o].load()) g_viol_active++;
+	uint64_t t_locked = 0, t_gate = 0, t_prep = 0;
 	{
 		ChainSlot&      s = *g_slot_of[o];
 		std::lock_guard lk(s.mu);
+		t_locked   = SoftCp::now_ns();
 		r.flight_n = static_cast<uint64_t>(std::count(s.f10_flight.begin(), s.f10_flight.end(), label_of(o)));
 		if (r.flight_n == 0) g_viol_flight++;
 #ifdef Q438_NEW
@@ -166,15 +170,22 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char*, int
 			std::this_thread::sleep_for(std::chrono::microseconds(100));
 		}
 	}
+	t_gate = SoftCp::now_ns();
 	if (g_hook) g_hook(o, r.seqs.front());
 	const int pr = g_prep_us.load() + (g_prep_rand_us.load() > 0 ? static_cast<int>(SoftCp::now_ns() % static_cast<uint64_t>(g_prep_rand_us.load())) : 0);
 	if (pr > 0) std::this_thread::sleep_for(std::chrono::microseconds(pr)); // the preparation and the CS
+	t_prep = SoftCp::now_ns();
 	for (int d = g_drop_write.load(); d > 0;) { // the filter dropped a write: its early entry is never registered for real
 		if (!g_drop_write.compare_exchange_weak(d, d - 1)) continue;
 		std::erase(executed, 3u);
 		break;
 	}
 	register_label_writes(ib, num_dwords, executed, g_seq_no.fetch_add(1) + 1, ring);
+	if (!g_gated[o].load() && !g_nest_ok[o].load()) {
+		const uint64_t t_reg = SoftCp::now_ns();
+		ph_max(g_ph_lock, t_locked - t_call); ph_max(g_ph_gate, t_gate - t_locked); ph_max(g_ph_prep, t_prep - t_gate); ph_max(g_ph_reg, t_reg - t_prep);
+		if (t_prep - t_gate > g_ph_prep.load() - 1) g_ph_prep_us = static_cast<uint64_t>(pr);
+	}
 	if (!g_gated[o].load() && !g_nest_ok[o].load())
 		for (uint64_t d = SoftCp::now_ns() - t_call, m = g_call_max_ns.load(); d > m && !g_call_max_ns.compare_exchange_weak(m, d);) {
 		}
@@ -434,6 +445,8 @@ static int run_random(bool q_on) {
 	            g_viol_active.load(), g_viol_flight.load(), g_viol_cap.load(), g_qmax.load(), early_entries(), lines_with("BUG"));
 	std::printf("random: longest game-thread wait for an early writer %.3f ms (%" PRIu64 " such waits); longest ungated submit_now (stub, entry to registration) %.3f ms\n", static_cast<double>(g_r438_wait_max.load()) / 1e6, g_r438_waits.load(),
 	            static_cast<double>(g_call_max_ns.load()) / 1e6);
+	std::printf("random: ungated submit_now phases, max ms: slot lock %.3f, gate %.3f, preparation sleep %.3f (asked %" PRIu64 " us at that max), register_label_writes %.3f\n",
+	            g_ph_lock.load() / 1e6, g_ph_gate.load() / 1e6, g_ph_prep.load() / 1e6, g_ph_prep_us.load(), g_ph_reg.load() / 1e6);
 	CHECK(g_viol_active.load() == 0 && g_viol_flight.load() == 0 && g_viol_cap.load() == 0, "violations");
 	CHECK(early_entries() == 0 && lines_with("BUG") == 0, "early entries left or BUG lines");
 	if (q_on) {
@@ -804,8 +817,15 @@ static void det_destroy(int o) { // the owner's thread ends with a queue: ~Chain
 }
 #endif
 
+#if defined(_WIN32) // Q438_TIMER1=1: Windows' timer at 1 ms, so the stub's sub-ms sleeps are not rounded up to a 15.6-ms tick
+extern "C" __declspec(dllimport) unsigned __stdcall timeBeginPeriod(unsigned);
+#pragma comment(lib, "winmm.lib")
+#endif
 int main(int argc, char** argv) {
 	const std::string mode = argc > 1 ? argv[1] : "random";
+#if defined(_WIN32)
+	if (const char* e = std::getenv("Q438_TIMER1"); e != nullptr && e[0] == '1') std::fprintf(stderr, "timer: timeBeginPeriod(1) rc %u\n", timeBeginPeriod(1));
+#endif
 	std::thread([] { // a hang is a failure
 		std::this_thread::sleep_for(std::chrono::seconds(90));
 		std::printf("FAIL: timeout (a hang)\n");

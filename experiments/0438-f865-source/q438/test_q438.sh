@@ -54,6 +54,7 @@ sed 's/^/   | /' "$out/id-bake.txt"
 echo "== 3a. random, bake unit";            (unset BC5_0438_SUBMITQ; "$out/old/tq.exe" random)
 echo "== 3b. random, q438 unit, switch unset"; (unset BC5_0438_SUBMITQ; "$out/new/tq.exe" random)
 runs=${Q438_RUNS:-30}
+export Q438_TIMER1=${Q438_TIMER1:-1} # Windows: the timer at 1 ms (test_q438.cpp), so the stub's 100-300-us sleeps are not 15.6-ms ticks
 echo "== 3c. random, q438 unit, BC5_0438_SUBMITQ=1, $runs runs (misses per run)"; BC5_0438_SUBMITQ=1 "$out/new/tq.exe" random
 bad=0; per=""
 for i in $(seq 2 "$runs"); do

@@ -29,3 +29,17 @@
 - One unexplained 200-ms early-writer wait in 90 runs; the writer was found. Scheduling is suspected.
 - The Windows test stops the submitter at scope end, because of a loader-lock join.
 - r438's own reorder hole: fixed separately in `../r438o`.
+
+**The slow stub submit_now (the >100-ms waits in 5 of 60 random runs; explained 2026-11-21, a stub artifact):**
+
+- Per-phase maxima in the stub (slot lock, gate, preparation sleep, `register_label_writes`) put the whole time in the preparation sleep.
+  - It asked for 100–300 µs and took 16–64 ms: Windows rounds `sleep_for` up to its 15.6-ms timer tick.
+  - The slot lock stayed at or under 0.06 ms, the gate under 0.03 ms, and `register_label_writes` under 1 ms (once 27 ms, scheduling).
+- A game-thread wait on a queued entry waits for every entry ahead of it, one tick each, plus scheduling. That gave 100–470 ms, past r438's 100-ms BUG line.
+  - One failing run had a 128-ms wait while its longest single submit_now was 17 ms: the queue, not one call.
+- With Windows' timer at 1 ms (`Q438_TIMER1=1`, now the script's default), two passes of 30 runs each (q438.cpp and q438a2.cpp) gave 0 BUG lines in 58 of 58 runs and rc 0.
+  - The longest early-writer wait was 4–6 ms, with one 21.7 ms and one 47 ms outlier under laptop load.
+  - The longest submit_now was about 2.5 ms.
+- On Linux the stub's sleeps are sub-millisecond, so this is not a property of Q438.
+- On the box a long wait comes only from a real submit_now held by GPU back-pressure or a recovery. That is what r438's BUG line is there to show (risk a).
+
