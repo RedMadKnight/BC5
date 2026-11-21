@@ -37,6 +37,13 @@ free its 196.7 GB, with every save and per-title setting kept.
 names `play-pkg.sh` moved to trash, the generic one kept, the saves equal before and after), `unlock`. `klog0439.sh`
 with a stand-in `journalctl`: it ends when its stdin closes. `bash -n` on all three.
 
+**Planned side check (exp 0438, through the top session, 2026-11-21).** Only once the title starts and reaches a scene:
+lean runs with `RUN_EXTRA="MALLOC_TRIM_THRESHOLD_=268435456 MALLOC_MMAP_THRESHOLD_=33554432"` in the emulator's own
+environment (no build) against a control without them. Read: MangoHud median/p95/p99 and flips/s, MemAvailable at about
+150 s (the arm keeps up to 256 MiB per arena resident), `rpm -q glibc` once. `run0439.sh` takes the words through
+`RUN_EXTRA` (each word checked as `NAME=value` with no shell characters; stand-in: the arm's words reach the env line,
+the control's line has none, `X=1;rm` is refused).
+
 **Result.** (to come)
 
 **Verdict.** (to come)

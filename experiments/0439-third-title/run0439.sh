@@ -32,19 +32,23 @@ run)
   grep -q '^exp0439 ' "$LOCK" 2>/dev/null || { echo "BOX-LOCK is not ours"; exit 1; }
   pgrep -f '[k]yty_emulator' >/dev/null && { echo "an emulator is running"; exit 1; }
   mkdir -p "$out"
-  wl=$(cd "/run/user/$(id -u)" && ls -1 wayland-[0-9] 2>/dev/null | head -n1); wl=${wl:-wayland-0}
+  # RUN_EXTRA="NAME=value ..." : extra words in the emulator's environment for an env-only arm (no build), e.g. exp
+  # 0438's malloc arm MALLOC_TRIM_THRESHOLD_=268435456 MALLOC_MMAP_THRESHOLD_=33554432 against a control without them.
+  read -r -a extra <<< "${RUN_EXTRA:-}"
+  for w in "${extra[@]}"; do [[ $w =~ ^[A-Za-z_][A-Za-z0-9_]*=[A-Za-z0-9_.,:/+-]*$ ]] || { echo "bad RUN_EXTRA word: $w"; exit 1; }; done
+  wl=$(ls -1 "/run/user/$(id -u)/" 2>/dev/null | grep -m1 -E '^wayland-[0-9]+$' || true); wl=${wl:-wayland-0}
   {
     echo "tag $tag mode $mode secs $secs start $(date '+%F %T')"
     echo "binary $BIN $(md5sum "$BIN" | cut -d' ' -f1)"
-    echo "kernel $(uname -r); WAYLAND_DISPLAY=$wl"
-    free -b; df -B1 /var | tail -n1
+    echo "kernel $(uname -r); WAYLAND_DISPLAY=$wl; extra: ${RUN_EXTRA:-none}"
+    free -b || true; df -B1 /var 2>&1 | tail -n1 || true
   } > "$out/meta.txt"
   # PLAY_CAPTURE=1 (normal only): the direct-path journal under ~/bc5-data/captures/play-<date>/gc for diagnosis.
   cap=0; [ $lean = 0 ] && cap=1
   systemd-run --user --collect --unit="bc5-0439-$tag" -p RuntimeMaxSec="$secs" \
     --setenv=WAYLAND_DISPLAY="$wl" --setenv=XDG_RUNTIME_DIR="/run/user/$(id -u)" \
-    /usr/bin/bash -c 'ulimit -c 0; exec distrobox enter ubuntu -- env BC5_LEAN="$1" BC5_LOGS=1 PLAY_CAPTURE="$2" WAYLAND_DISPLAY="$3" "$HOME/bc5-work/play-any.sh" "$4"' \
-    _ "$lean" "$cap" "$wl" "$DIR"
+    /usr/bin/bash -c 'ulimit -c 0; d=$1; shift; exec distrobox enter ubuntu -- env "$@" "$HOME/bc5-work/play-any.sh" "$d"' \
+    _ "$DIR" BC5_LEAN="$lean" BC5_LOGS=1 PLAY_CAPTURE="$cap" WAYLAND_DISPLAY="$wl" "${extra[@]}"
   echo "started unit bc5-0439-$tag (max $secs s); when it ends: run0439.sh collect $mode $tag"
   ;;
 collect)
