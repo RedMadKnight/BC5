@@ -57,6 +57,7 @@ struct AcbHead {
 	uint32_t        done;
 };
 static std::vector<AcbHead> g_acb_heads;
+static bool g_async = std::getenv("Q438_SYNC") == nullptr; // the unit's: true only with the journal at "min"
 // exp 0438 (labelmap): the device's mappings and the filter's operand layouts, for the cut label_write_mapped and
 // covered_sorted (R438O_X: a unit made by q438/mkq438x.py). g_dev stays empty outside mode lwm: no snapshot, no check.
 namespace bc5::direct {
@@ -356,6 +357,110 @@ static void run_lwmid() {
 	g_dev.reset();
 }
 
+#ifdef R438O_X
+// stray: a slice whose second acb writes a label with no GPU mapping (the filter NOPs that write, so the job never registers
+// it). Shown: the early entry left until r438_end, a game-thread wait on that label (held until r438_end, then no writer),
+// the BUG line, g_r438o_live and the gate's live count (g_ng_live, kept while INFLIGHT_NG or OPEN_NG is on).
+// BC5_0438_R438_LWM=1: the scan reads the filter's check: no stray entry, no BUG line, the wait sees the real state at once.
+static void run_stray() {
+	static uint64_t lab3 = 0x3c3c3c3c3ull;
+	static uint32_t ib5[8];
+	static uint32_t ring2[8];
+	const uint64_t  a1 = reinterpret_cast<uintptr_t>(&g_label), a3 = reinterpret_cast<uintptr_t>(&lab3);
+	release(ib5, a3, 5);
+	const uint64_t i1 = reinterpret_cast<uintptr_t>(&g_ib1[0]), i5 = reinterpret_cast<uintptr_t>(&ib5[0]);
+	const uint32_t r[8] = {0xC0023F00u, static_cast<uint32_t>(i1), static_cast<uint32_t>(i1 >> 32u) & 0xffu, 8, 0xC0023F00u, static_cast<uint32_t>(i5), static_cast<uint32_t>(i5 >> 32u) & 0xffu, 8};
+	std::copy(r, r + 8, ring2);
+	g_dev = std::make_unique<TestDev>();
+	g_dev->map(a1, 8); // g_label mapped, lab3 not
+	const size_t n0 = never_lines();
+	size_t       early3 = 0;
+	int64_t      live_open = 0, live_end = 0;
+	uint64_t     r438o_open = 0, r438o_end = 0;
+	int          held = 0, after = 0;
+	double       wait_ms = 0;
+	std::thread([&] { // bc5-ring: the slice
+		r438_begin(ring2, 8, nullptr, 0);
+		early3     = early_of(a3);
+		live_open  = g_ng_live.load();
+		{
+			std::lock_guard lk(g_plw_mutex);
+			r438o_open = g_r438o_live;
+		}
+		std::atomic<int> got {-1};
+		std::thread      game([&got, &wait_ms] { // a game-thread wait on lab3 == 5
+            t_game            = true;
+            uint32_t       p[9];
+            const uint64_t a  = reinterpret_cast<uintptr_t>(&lab3);
+            p[0] = 0xC0079300u; p[1] = 0x00000113u; p[2] = static_cast<uint32_t>(a); p[3] = static_cast<uint32_t>(a >> 32u); p[4] = 5; p[5] = 0; p[6] = 0xffffffffu; p[7] = 0xffffffffu; p[8] = 0x19;
+            const uint64_t t0 = SoftCp::now_ns();
+            got               = ring_will_satisfy(p, true, bc5::direct::kGfxRing) ? 1 : 0;
+            wait_ms           = static_cast<double>(SoftCp::now_ns() - t0) / 1e6;
+		});
+		std::this_thread::sleep_for(std::chrono::milliseconds(30)); // the slice's submission
+		held = got.load();
+		register_label_writes(g_ib1, 8, kAt0, 801, 0); // the job: the filter NOPed lab3's write
+		r438_end();
+		game.join();
+		after     = got.load();
+		live_end  = g_ng_live.load();
+		{
+			std::lock_guard lk(g_plw_mutex);
+			r438o_end = g_r438o_live;
+		}
+	}).join();
+	const size_t bugs = never_lines() - n0;
+	std::printf("stray (BC5_0438_R438_LWM %s): early entry of the unmapped label %zu; a game-thread wait on it %s at 30 ms, then %d after r438_end (%.1f ms); BUG lines %zu; "
+	            "g_r438o_live %" PRIu64 " -> %" PRIu64 "; live count %" PRId64 " -> %" PRId64 "\n",
+	            r438_lwm_on() ? "on" : "off", early3, held == -1 ? "still waiting" : (held == 0 ? "returned (no writer)" : "returned (writer)"), after, wait_ms, bugs, r438o_open, r438o_end, live_open, live_end);
+	CHECK(r438o_end == 0 && live_end == 0, "stray: the counts did not return to 0 (g_r438o_live %" PRIu64 ", live %" PRId64 ")", r438o_end, live_end);
+	if (r438_lwm_on()) CHECK(early3 == 0 && bugs == 0 && held == 0, "stray: with R438_LWM a stray early entry %zu, BUG lines %zu, the wait %d", early3, bugs, held);
+	g_dev.reset();
+}
+#endif
+
+static size_t never_lines_all() {
+	std::lock_guard l(g_jm);
+	return static_cast<size_t>(std::count_if(g_lines.begin(), g_lines.end(), [](const std::string& x) { return x.find("never reached the ring") != std::string::npos; }));
+}
+// sync: submission in sync mode (Q438_SYNC=1 sets the unit's g_async false, as any journal but "min" does). A slice with
+// one label write: the job writes the label's memory and, as submit_now in sync mode, registers no pending write. Shown:
+// the early entries left until r438_end, a game-thread wait on the label meanwhile, the BUG lines. With r438h (R438H, set by
+// the script for a unit made by mkr438h.py): nothing early, no BUG line, the wait sees the real state at once.
+static void run_sync() {
+	const size_t n0     = never_lines_all();
+	size_t       early  = 0;
+	int          held   = 0, after = 0;
+	double       wait_ms = 0;
+	g_label             = 0x907616589ull; // busy
+	std::thread([&] { // bc5-ring: the slice
+		r438_begin(g_ring, 4, nullptr, 0);
+		{
+			std::lock_guard lk(g_plw_mutex);
+			early = static_cast<size_t>(std::count_if(g_plw.begin(), g_plw.end(), [](const PendingLabelWrite& w) { return (w.seq & kR438Early) != 0; }));
+		}
+		std::atomic<int> got {-1};
+		std::thread      game([&got, &wait_ms] {
+            t_game            = true;
+            const uint64_t t0 = SoftCp::now_ns();
+            got               = wait_on(1) ? 1 : 0;
+            wait_ms           = static_cast<double>(SoftCp::now_ns() - t0) / 1e6;
+		});
+		std::this_thread::sleep_for(std::chrono::milliseconds(30)); // the slice's submission: the job runs, waited for at submission
+		held    = got.load();
+		g_label = 1; // its write, in memory; no pending write is registered in sync mode
+		r438_end();
+		game.join();
+		after = got.load();
+	}).join();
+	const size_t bugs = never_lines_all() - n0;
+	std::printf("sync (g_async %d): early entries %zu; a game-thread wait on the label %s at 30 ms, then %d (%.1f ms); BUG lines %zu\n", g_async ? 1 : 0, early,
+	            held == -1 ? "still waiting for the early writer" : "returned", after, wait_ms, bugs);
+#ifdef R438H
+	if (!g_async) CHECK(early == 0 && bugs == 0 && held != -1, "sync: r438h left early entries %zu, BUG lines %zu, the wait %d", early, bugs, held);
+#endif
+}
+
 static void run_identity() {
 	auto dump = [](const char* step) {
 		std::lock_guard lk(g_plw_mutex);
@@ -409,8 +514,10 @@ int main(int argc, char** argv) {
 		return 2;
 	}
 	if (mode == "trim") run_trim();
+	else if (mode == "sync") run_sync();
 #ifdef R438O_X
 	else if (mode == "lwm") run_lwm();
+	else if (mode == "stray") run_stray();
 #endif
 	else run_order();
 	std::printf("%s (%d failures)\n", fails == 0 ? "PASS" : "FAIL", fails);

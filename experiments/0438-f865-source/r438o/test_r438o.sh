@@ -1,7 +1,7 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-2.0
 # BC5 exp 0438 (tag r438o): cut r438's pieces, unchanged, from a unit and run test_r438o.cpp.
-#   bash test_r438o.sh UNIT [MODE]     MODE: order (default), trim, lwm (a mkq438x.py unit, BC5_0438_R438_LWM=1), lwmid or identity; the caller sets BC5_0438_EARLYREG.
+#   bash test_r438o.sh UNIT [MODE]     MODE: order (default), trim, sync (Q438_SYNC=1), lwm (a mkq438x.py unit, BC5_0438_R438_LWM=1), stray (a mkq438x.py unit), lwmid or identity; the caller sets BC5_0438_EARLYREG.
 # Builds into a fresh mktemp directory; one foreground run, no loop. VS clang++ on the laptop (the slice's
 # INDIRECT_BUFFER carries a 40-bit address: a fixed low image base).
 set -euo pipefail
@@ -15,10 +15,11 @@ a=$(lineof 'static void register_label_writes(const uint32_t* ib'); piece "$a" "
 a=$(lineof 'static thread_local uint64_t t_r438_slice'); b=$(lineof 'static void forget_label_writes(uint64_t seq'); piece "$a" "$((b - 1))" r_r438.inc
 a=$(lineof 'static bool ring_will_satisfy(const uint32_t* p, bool is64, int ring) {'); piece "$a" "$(endf "$a")" r_rws.inc
 X=""
+grep -q -F 'exp 0438 (r438h)' "$unit" && X="-DR438H" # mkr438h.py: r438 off in sync mode
 if grep -q -F '// ---- BC5 experiment 0438 (tag labelmap)' "$unit"; then # q438/mkq438x.py: the filter's check, cut for the scan
 	a=$(lineof 'static bool covered_sorted(const bc5::direct::MappingIndex& maps, uint64_t a, uint64_t bytes) {'); piece "$a" "$(endf "$a")" r_cov.inc
 	a=$(lineof '// ---- BC5 experiment 0438 (tag labelmap)'); b=$(lineof '// ---- end of exp 0438 (tag labelmap)'); piece "$a" "$b" r_lwm.inc
-	X="-DR438O_X"
+	X="$X -DR438O_X"
 fi
 cp "$here/test_r438o.cpp" "$out/"
 if [ -n "${R438O_PLANT:-}" ]; then # a planted bug: python -I replaces one exact string in the cut register_label_writes
