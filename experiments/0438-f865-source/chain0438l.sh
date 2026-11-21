@@ -14,6 +14,8 @@
 #       beside it from G in PROF_MODE=faults (every page fault of the Render Thread, with its address): DIAGNOSIS ONLY
 #   P   lean m438 (the bake unit + m438) with BC5_0438_FRAMEMARK=1, prof0438.sh in PROF_MODE=cpu (cpu-clock 999 Hz on the
 #       Render Thread): DIAGNOSIS ONLY (a profiled run is not a speed measurement)
+#   S   the SHARED lean build itself (no extra word), prof0438.sh in PROF_MODE=all (every thread at 199 Hz, per-thread
+#       schedstat every second): which threads run and wait while the Render Thread spins. DIAGNOSIS ONLY
 #   O   normal b438 with BC5_0438_OUTSIDE=1: DIAGNOSIS ONLY (where the Render Thread waits, who wakes it). The
 #       maintainer's rule (2026-11-20): performance numbers come from lean builds only; no fps or frame time is reported
 #       for a normal-build run (its row and line say "diagnosis").
@@ -69,13 +71,14 @@ for arm in $ORDER; do
     H)  bin=$HB; want=$HW; AW="BC5_0438_HOSTWAIT=1 BC5_0438_OUTSIDE=1" ;;
     F)  bin=$FB; want=$FW; AW="BC5_0438_HOSTWAIT=1 BC5_0438_OUTSIDE=1 BC5_0438_FRAMEMARK=1" ;;
     P)  bin=$PB; want=$PW; AW="BC5_0438_FRAMEMARK=1" ;;
-    *) say "arm $arm: L0, L1p, L1c, LP, H, F, P or O (N0 dropped: no performance numbers from normal builds)"; break ;;
+    S)  bin=$SL; want=$(md5sum < "$SL" | cut -d' ' -f1); AW="" ;;
+    *) say "arm $arm: L0, L1p, L1c, LP, H, F, P, S or O (N0 dropped: no performance numbers from normal builds)"; break ;;
   esac
   t=b438$arm$k; while [ -e "$RAW/$t-start.txt" ] || [ -e "$RAW/$t-end.txt" ]; do t=${t}b; done
   [ "$arm" = H ] && AW="$AW BC5_0438_HOSTWAIT_FILE=$RAW/$t-h438.csv"
   [ "$arm" = F ] && AW="$AW BC5_0438_HOSTWAIT_FILE=$RAW/$t-h438.csv BC5_0438_FRAMEMARK_FILE=$RAW/$t-m438.txt"
   [ "$arm" = P ] && AW="$AW BC5_0438_FRAMEMARK_FILE=$RAW/$t-m438.txt"
-  SIDE=""; PMODE=""; case "$arm" in F) SIDE=$PROF; PMODE=faults ;; P) SIDE=$PROF; PMODE=cpu ;; esac
+  SIDE=""; PMODE=""; case "$arm" in F) SIDE=$PROF; PMODE=faults ;; P) SIDE=$PROF; PMODE=cpu ;; S) SIDE=$PROF; PMODE=all ;; esac
   [ -e "$E/STOP" ] && { say "STOP file before $t"; break; }
   pgrep '^kyty_emulator' > /dev/null && { say "an emulator runs before $t (not ours): stop"; break; }
   [ -s "$W/BOX-LOCK" ] && { say "a BOX-LOCK line before $t that is not a run of ours: $(cat "$W/BOX-LOCK"): stop"; break; }
@@ -96,7 +99,8 @@ for arm in $ORDER; do
   EXE=$(cat "$E/raw/$t-exe.txt" 2> /dev/null); PADN=$(grep -c . "$E/raw/$t-pad.txt" 2> /dev/null)
   MHF=$(ls -t "$RAW/$t-mh"/*.csv 2> /dev/null | grep -v summary | head -1)
   SU="MangoHud ${MHF:-none} ($( [ -n "$MHF" ] && wc -l < "$MHF" || echo 0) lines); lean lost-write lines $(grep -ac 'r438 (exp 0438, b438, lean)' "$RAW/$t-play.log" 2> /dev/null)"
-  case "$arm" in O | H | F | P) FPS="diagnosis run: no fps or frame time reported (lean-only rule)" ;; esac
+  case "$arm" in O | H | F | P | S) FPS="diagnosis run: no fps or frame time reported (lean-only rule)" ;; esac
+  [ "$arm" = S ] && SU="$SU; prof [$(tail -1 "$RAW/$t-prof-perf.log" 2> /dev/null)]; threads lines $(wc -l < "$RAW/$t-prof-threads.txt" 2> /dev/null || echo 0)"
   case "$arm" in F | P) SU="$SU; m438 $(wc -l < "$RAW/$t-m438.txt" 2> /dev/null || echo 0) marks; prof [$(tail -1 "$RAW/$t-prof-perf.log" 2> /dev/null)]" ;; esac
   [ "$arm" = F ] && SU="$SU; h438 csv $(wc -l < "$RAW/$t-h438.csv" 2> /dev/null || echo 0) lines; f438 lines $(grep -ac '^f438 (exp 0438)' "$RAW/$t-play.log" 2> /dev/null)"
   [ "$arm" = H ] && SU="$SU; h438 csv $(wc -l < "$RAW/$t-h438.csv" 2> /dev/null || echo 0) lines"
