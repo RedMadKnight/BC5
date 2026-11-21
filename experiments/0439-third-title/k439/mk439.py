@@ -72,6 +72,12 @@ static void wr439_scan(const uint32_t* ib, uint32_t n, int ring, const char* kin
 	static uint64_t             jobs = 0, lines = 0;
 	std::lock_guard             lk(m);
 	if (depth == 0) jobs++;
+	{ // the Agc MemSemaphore builders' marker in front of a signal / wait on label 0 (0x2000000000): 0xC9010020 / 0xC9020020
+		static uint64_t mk = 0;
+		for (uint32_t k = 0; k < n; k++)
+			if ((ib[k] == 0xC9010020u || ib[k] == 0xC9020020u) && mk++ < 100)
+				std::fprintf(stderr, "[bc5] exp 0439 (tag wr439): t %.3f s ring %d %s job %" PRIu64 " dword %u = 0x%08x (next 0x%08x 0x%08x 0x%08x)\n", timing_now(), ring, kind, jobs, k, ib[k], k + 1 < n ? ib[k + 1] : 0u, k + 2 < n ? ib[k + 2] : 0u, k + 3 < n ? ib[k + 3] : 0u);
+	}
 	for (uint32_t q = 0; q < n;) {
 		const uint32_t h = ib[q];
 		uint32_t       len = 1;
@@ -80,10 +86,16 @@ static void wr439_scan(const uint32_t* ib, uint32_t n, int ring, const char* kin
 			len              = c == 0x3fffu ? 1 : c + 2;
 		}
 		if (q + len > n) break;
-		if ((h >> 30u) == 3 && depth == 0 && len >= 4 && (((h >> 8u) & 0xffu) == 0x3f || ((h >> 8u) & 0xffu) == 0x33)) { // one level of nested IBs
+		if ((h >> 30u) == 3 && depth < 3 && len >= 4 && (((h >> 8u) & 0xffu) == 0x3f || ((h >> 8u) & 0xffu) == 0x33)) { // one level of nested IBs
 			const uint64_t na = (ib[q + 1] & ~3u) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u);
 			const uint32_t nn = ib[q + 3] & 0xfffffu;
-			if (na != 0 && nn != 0 && opt.mapped && opt.mapped(na, static_cast<uint64_t>(nn) * 4)) wr439_scan(reinterpret_cast<const uint32_t*>(na), nn, ring, "nested", opt, 1);
+			if (na != 0 && nn != 0 && opt.mapped && opt.mapped(na, static_cast<uint64_t>(nn) * 4)) wr439_scan(reinterpret_cast<const uint32_t*>(na), nn, ring, depth == 0 ? "nested1" : depth == 1 ? "nested2" : "nested3", opt, depth + 1);
+		}
+		if ((h >> 30u) == 3 && ((h >> 8u) & 0xffu) == 0x39u && len >= 3) { // MEM_SEMAPHORE: not in memory_operands
+			static uint64_t ms = 0;
+			const uint64_t  ma  = (ib[q + 1] & ~7u) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u);
+			const uint32_t  ctl = len >= 4 ? ib[q + 3] : 0u;
+			if (ms++ < 300) std::fprintf(stderr, "[bc5] exp 0439 (tag wr439): t %.3f s ring %d %s job %" PRIu64 " @%u MEM_SEMAPHORE %u dwords address 0x%" PRIx64 " control 0x%08x (SEM_SEL %u, SIGNAL_TYPE %u)\n", timing_now(), ring, kind, jobs, q, len, ma, ctl, ctl >> 29u, (ctl >> 20u) & 1u);
 		}
 		if ((h >> 30u) == 3) {
 			for (const auto& [a, bytes]: bc5::policy::memory_operands(ib + q, len)) {
@@ -358,8 +370,25 @@ a = '#else\nstatic void init_once() {}\nstatic void submit(const uint32_t*, uint
 s = rep(s, a, GLUE + '#else\nstatic void dc439_flip(int) {}\nstatic void init_once() {}\nstatic void submit(const uint32_t*, uint32_t, const char*) {}\n')
 a = ('\t\tLOGF("[bc5-gc] VideoOutSubmitEopFlip(%d, %d, %d, 0x%" PRIx64 ", %p)\\n", handle, index,\n'
      '\t\t     flip_mode, flip_arg, unk);\n\t}\n')
-s = rep(s, a, a + '\tBc5Gc::Direct::dc439_flip(index); // exp 0439 (tag dc439): a compressed display buffer decompressed in place (mode 2)\n')
+EF = r'''	{ // exp 0439 (tag ef439): what the title passes as the fifth argument (a pointer into its stack)
+		static int ef_n = 0;
+		if (unk != nullptr && ef_n++ < 6) {
+			const auto* q = static_cast<const uint64_t*>(unk);
+			std::fprintf(stderr, "[bc5] exp 0439 (tag ef439): SubmitEopFlip(%d, %d, %d, 0x%llx, %p): %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx\n", handle, index, flip_mode,
+			             static_cast<unsigned long long>(flip_arg), unk, (unsigned long long)q[0], (unsigned long long)q[1], (unsigned long long)q[2], (unsigned long long)q[3], (unsigned long long)q[4],
+			             (unsigned long long)q[5], (unsigned long long)q[6], (unsigned long long)q[7]);
+		}
+	}
+	Bc5Gc::Direct::dc439_flip(index); // exp 0439 (tag dc439): a compressed display buffer decompressed in place (mode 2)
+'''
+s = rep(s, a, a + EF)
 s += TAIL
+# 2) the soft CP's executions and refusals of MEM_SEMAPHORE, to stderr
+s = rep(s, '''	g_r3gpu_count[set ? kR3MemsemSet : kR3MemsemAdd]++;''', '''	g_r3gpu_count[set ? kR3MemsemSet : kR3MemsemAdd]++;
+	{ // exp 0439 (tag wr439)
+		static int k = 0;
+		if (k++ < 64) std::fprintf(stderr, "[bc5] exp 0439 (tag wr439): soft CP MEM_SEMAPHORE signal (%s) on 0x%" PRIx64 " -> 0x%" PRIx64 "\\n", set ? "set 1" : "add 1", a, *w);
+	}''')
 open(dst + '/bc5LleAgc.cpp', 'w', encoding='utf-8', newline='').write(s)
 
 v = open(src + '/videoOut.cpp', encoding='utf-8', newline='').read()
