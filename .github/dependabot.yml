@@ -8,6 +8,19 @@ updates:
     groups:
       rust-deps:
         patterns: ["*"]
+    # Compatible updates only (2026-11-26). An update that changes a crate's API (a new major version, or a
+    # new minor version of a 0.x crate such as fuser, nix or sha2) is not taken from a grouped PR: bc5-mount
+    # is a measured, deployed tool, so such a change comes with a planned rebuild of the tools and its own
+    # check runs. The first grouped PR mixed three of them with five patch updates and could not build.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "fuser"
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "nix"
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "sha2"
+        update-types: ["version-update:semver-minor"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
