@@ -755,6 +755,7 @@ mod tests {
         c
     }
 
+    #[cfg(unix)]
     fn have(c: &DiskCache) -> Vec<usize> {
         (0..8).filter(|i| c.get(*i).is_some()).collect()
     }
@@ -935,7 +936,7 @@ mod tests {
         assert_eq!(have(&a), vec![0, 1, 2, 3], "and it is served again");
         drop(a);
         let b = at(&dir, "b", total, 40);
-        assert!(have(&b).is_empty());
+        assert_eq!(have(&b), Vec::<usize>::new());
         assert!(others_bytes(&dir, "none") <= total);
         let _ = std::fs::remove_dir_all(&dir);
     }
@@ -957,7 +958,7 @@ mod tests {
         assert_eq!(have(&a), vec![0, 1, 4]);
         drop(a);
         let b = at(&dir, "b", total, 40);
-        assert!(have(&b).is_empty());
+        assert_eq!(have(&b), Vec::<usize>::new());
         let _ = std::fs::remove_dir_all(&dir);
     }
 
