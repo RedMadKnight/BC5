@@ -1,0 +1,72 @@
+diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
+--- a/src/libs/libAmpr.cpp
++++ b/src/libs/libAmpr.cpp
+@@ -1811,7 +1811,7 @@
+ 	uint64_t                    result_ptr    = 0;
+ 	// BC5 (experiment 0203): KYTY_BC5_APR_READAHEAD, under g_apr_queue_mutex. 0 untouched, 1 a reader reads its
+ 	// file ranges into host memory, 2 done (ra_data and ra_rc per read command, in read_file_commands order),
+-	// 4 the worker runs it the usual way.
++	// 4 the worker runs it the usual way (also set by a reader for a buffer it leaves to the worker, experiment 0227).
+ 	int                               ra_state = 0;
+ 	std::vector<std::vector<uint8_t>> ra_data;
+ 	std::vector<int32_t>              ra_rc;
+@@ -2189,6 +2189,24 @@
+ 	return cap;
+ }
+ 
++// BC5 (experiment 0227): with the read-ahead on, level loads took much longer in both titles (the maintainer,
++// 2026-10-22). The readers took the large loading buffers and read them at the same time as each other and the worker,
++// often from one archive. bc5-mount decodes ahead only for a file read in order (its per-file stream: a read starting
++// within 1 MiB of where the file's last read ended; tools/bc5-mount/src/fuse.rs), so it likely decoded every block on
++// demand (TODO(verify): exp 0227's load-time A/B). And a buffer the worker reads on KYTY_BC5_APR_PARALLEL threads
++// (exp 0112) was read serially by one reader. Now a reader leaves to the worker
++// a buffer whose reads total more than KYTY_BC5_APR_READAHEAD_MAX_KIB (default 1024; 0 = no limit), and any buffer the
++// worker would read in parallel. Large loads run as before exp 0203; small streaming reads, such as the cutscene clock
++// voice's (about 90 KiB), keep the read-ahead.
++static uint64_t AprReadaheadMaxBuffer() {
++	static const uint64_t max = [] {
++		const char* e = std::getenv("KYTY_BC5_APR_READAHEAD_MAX_KIB");
++		const long  v = e != nullptr ? std::strtol(e, nullptr, 10) : 1024;
++		return v > 0 ? static_cast<uint64_t>(v) << 10u : uint64_t {0};
++	}();
++	return max;
++}
++
+ static uint64_t g_apr_ra_bytes = 0; // read-ahead data held, under g_apr_queue_mutex
+ 
+ static uint64_t AprReadBytes(const ParkedAprBuffer& b) {
+@@ -2199,6 +2217,19 @@
+ 	return n;
+ }
+ 
++// BC5 (experiment 0227): true when the worker would read part of b on KYTY_BC5_APR_PARALLEL threads.
++static bool AprWorkerReadsInParallel(const ParkedAprBuffer& b) {
++	if (AprParallelReads() == 0) {
++		return false;
++	}
++	for (size_t pos = 0; pos < b.ordered.size(); pos++) {
++		if (b.ordered[pos].kind == CommandKind::ReadFile && AprParallelReadRun(b.state, b.ordered, pos) > pos + 1) {
++			return true;
++		}
++	}
++	return false;
++}
++
+ // Reads [file_offset, file_offset + size) of the host file into *out, as ReadHostFileToGuest would read it
+ // (nothing past the end of the file; OK with no data at or past the end), without touching guest memory.
+ static int ReadHostFileToHost(const std::string& host_path, uint64_t file_offset, uint64_t size, std::vector<uint8_t>* out) {
+@@ -2251,6 +2282,14 @@
+ 				continue;
+ 			}
+ 			const auto bytes = AprReadBytes(b);
++			if ((AprReadaheadMaxBuffer() != 0 && bytes > AprReadaheadMaxBuffer()) || AprWorkerReadsInParallel(b)) {
++				b.ra_state = 4; // experiment 0227: left to the worker, which runs it the usual way
++				if (b.state.bc5_journal) {
++					AprJournal("readahead cb 0x%016" PRIx64 " left to the worker: 0x%" PRIx64 " bytes in %zu reads", b.command_buffer,
++					           bytes, b.state.read_file_commands.size());
++				}
++				continue;
++			}
+ 			if (g_apr_ra_bytes + bytes > AprReadaheadCap()) {
+ 				continue;
+ 			}

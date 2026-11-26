@@ -1,0 +1,21 @@
+# BC5 experiment 0344: compute programs of the second title named in docs/HANDOFF.md (main d0c2668), for ibmap0344.pl.
+# <program address> <what the findings say>
+0x909939400 BVH build family (F332: the first 200 dispatches of the hung acb)
+0x909936c00 BVH build family (F332)
+0x909939900 tree refit, skipped since F91, runs since F107
+0x909974400 BVH compaction (F404: skipping it did not stop the freeze)
+0x90992af00 the hung chain's second half (F404)
+0x9098ea000 the hung chain's second half (F404)
+0x9098eb200 the hung chain's second half (F404)
+0x909973900 named in HANDOFF (BVH work)
+0x909973b00 named in HANDOFF (BVH work)
+0x909973d00 named in HANDOFF (BVH work)
+0x909973f00 named in HANDOFF (BVH work)
+0x909974200 named in HANDOFF (BVH work)
+0x909977100 named in HANDOFF (BVH work)
+0x909977e00 named in HANDOFF (BVH work)
+0x90997a500 named in HANDOFF (BVH work)
+0x909939700 named in HANDOFF (BVH work)
+0x909971300 named in HANDOFF
+0x90985f200 named in HANDOFF
+0x11d049aa00 the reflection BVH traversal that loops on a bad tree (F113, run 272)

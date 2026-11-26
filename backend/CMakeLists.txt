@@ -1,0 +1,138 @@
+# SPDX-License-Identifier: GPL-2.0-only
+cmake_minimum_required(VERSION 3.25)
+project(bc5_backend VERSION 0.0.0 LANGUAGES CXX)
+
+option(BC5_WITH_AMDGPU "Build the libdrm_amdgpu submission path" OFF)
+option(BC5_BUILD_TESTS "Build unit tests (Catch2)" ON)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+add_library(bc5_warnings INTERFACE)
+if(MSVC)
+    target_compile_options(bc5_warnings INTERFACE /W4 /WX)
+else()
+    target_compile_options(bc5_warnings INTERFACE
+        -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -Werror)
+endif()
+
+# The submission policy table (ADR 0005) is embedded from backend/policy/pm4-policy.tsv; the same
+# file is read by tools/bc5-agc.
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/policy/pm4-policy.tsv BC5_POLICY_TSV)
+configure_file(src/policy_tsv.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/generated/policy_tsv.hpp @ONLY)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS policy/pm4-policy.tsv)
+
+# PM4 builder, the phase-2 memset IB (ADR 0004) and the policy filter (ADR 0005): no GPU access,
+# builds everywhere.
+add_library(bc5_backend
+    src/version.cpp
+    src/pm4.cpp
+    src/dispatch_min.cpp
+    src/policy.cpp
+    src/reg_catch.cpp
+    src/state_stack.cpp
+    src/full_state.cpp
+    src/cu_tables.cpp
+    src/indirect_check.cpp
+    src/shadow_labels.cpp
+    src/ib_split.cpp
+    src/draw_args.cpp
+)
+target_include_directories(bc5_backend PUBLIC include PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated)
+target_link_libraries(bc5_backend PRIVATE bc5_warnings)
+
+# Clean-room re-creations of libSceAgc, libSceAgcDriver and libScePsml (src/reimpl/PROVENANCE.md).
+# No GPU access. The host uses them by default (BC5_REIMPL_<X>=0 opts out; a game's own copy wins).
+file(GLOB BC5_REIMPL_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/reimpl/*.cpp)
+target_sources(bc5_backend PRIVATE ${BC5_REIMPL_SOURCES})
+# Where the register-defaults name tables (register-name hashes) come from: "anyps5" (default)
+# uses the tables ported from AnyPS5 (src/reimpl/agc_name_tables_anyps5.cpp) for the 16
+# descriptors they cover, so no module file is needed; "module" reads them from the title's /
+# pack's module file at run time (BC5_REIMPL_FW_DATA=1, a diagnostic).
+set(BC5_REIMPL_NAME_TABLES "anyps5" CACHE STRING "register-name tables: anyps5 or module")
+set_property(CACHE BC5_REIMPL_NAME_TABLES PROPERTY STRINGS module anyps5)
+if(BC5_REIMPL_NAME_TABLES STREQUAL "anyps5")
+    target_compile_definitions(bc5_backend PRIVATE BC5_REIMPL_NAME_TABLES_ANYPS5=1)
+elseif(NOT BC5_REIMPL_NAME_TABLES STREQUAL "module")
+    message(FATAL_ERROR "BC5_REIMPL_NAME_TABLES must be module or anyps5")
+endif()
+
+# dispatch-min: --dump-ib everywhere; --info and --submit only with BC5_WITH_AMDGPU.
+# --submit is never run by tests or CI (CLAUDE.md hard rule 5).
+add_executable(dispatch-min experiments/dispatch-min/main.cpp)
+target_link_libraries(dispatch-min PRIVATE bc5_backend bc5_warnings)
+
+# userptr-min: phase-2 task 4 (Q1), CPU memory mapped 1:1 into the GPU VA space and written by
+# the memset dispatch. Only --info (no GPU) without BC5_WITH_AMDGPU; --submit as above.
+add_executable(userptr-min experiments/userptr-min/main.cpp)
+target_link_libraries(userptr-min PRIVATE bc5_backend bc5_warnings)
+
+# piece-check: ADR 0008 step 1 (experiment 0072), what a graphics piece would lose. No GPU.
+add_executable(piece-check experiments/piece-check/main.cpp)
+target_link_libraries(piece-check PRIVATE bc5_warnings)
+
+# prepare-bench: experiment 0027, the host's prepare pass over dumped command buffers, offline. No GPU.
+add_executable(prepare-bench experiments/prepare-bench/main.cpp)
+target_link_libraries(prepare-bench PRIVATE bc5_backend bc5_warnings)
+
+# userdata-rings: experiment 0427, COMPUTE_USER_DATA kept per compute ring or per hardware queue.
+# Dry run (no device) everywhere; --info and --submit only with BC5_WITH_AMDGPU, as dispatch-min.
+add_executable(userdata-rings experiments/userdata-rings/main.cpp)
+target_link_libraries(userdata-rings PRIVATE bc5_backend bc5_warnings)
+
+if(BC5_WITH_AMDGPU)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(LIBDRM_AMDGPU REQUIRED IMPORTED_TARGET libdrm_amdgpu)
+    pkg_check_modules(LIBDRM REQUIRED IMPORTED_TARGET libdrm)
+    # Direct submission (ADR 0005): userptr mappings + filtered scratch IB + fence.
+    target_sources(bc5_backend PRIVATE src/direct.cpp)
+    target_link_libraries(bc5_backend PUBLIC PkgConfig::LIBDRM_AMDGPU PkgConfig::LIBDRM)
+    target_compile_definitions(bc5_backend PUBLIC BC5_WITH_AMDGPU=1)
+    target_link_libraries(dispatch-min PRIVATE PkgConfig::LIBDRM_AMDGPU)
+    target_link_libraries(userdata-rings PRIVATE PkgConfig::LIBDRM_AMDGPU)
+    target_link_libraries(userptr-min PRIVATE PkgConfig::LIBDRM_AMDGPU PkgConfig::LIBDRM)
+    # direct-selftest: the bc5::direct submission path with synthetic and recorded IBs, no host.
+    add_executable(direct-selftest experiments/direct-selftest/main.cpp)
+    target_link_libraries(direct-selftest PRIVATE bc5_backend bc5_warnings)
+    # draw-min: libdrm's gfx10 memset-draw (one DRAW_INDEX_AUTO) through bc5::direct (phase-3 task 2).
+    add_executable(draw-min experiments/draw-min/main.cpp)
+    target_link_libraries(draw-min PRIVATE bc5_backend bc5_warnings)
+    # dmabuf-min: a memfd range as GPU memory through udmabuf + dma-buf import (ADR 0006,
+    # experiment 0017). --import touches no ring; --submit as above.
+    add_executable(dmabuf-min experiments/dmabuf-min/main.cpp)
+    target_link_libraries(dmabuf-min PRIVATE bc5_backend bc5_warnings)
+endif()
+
+if(BC5_BUILD_TESTS)
+    enable_testing()
+    # Prefer a system Catch2 so offline builds work; fetch only as a fallback.
+    find_package(Catch2 3 QUIET)
+    if(NOT Catch2_FOUND)
+        include(FetchContent)
+        FetchContent_Declare(Catch2
+            GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+            GIT_TAG v3.7.1
+            GIT_SHALLOW TRUE)
+        FetchContent_MakeAvailable(Catch2)
+        list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+    endif()
+    include(Catch)
+
+    add_executable(bc5_backend_tests tests/placeholder_test.cpp tests/pm4_test.cpp tests/policy_test.cpp
+                   tests/state_stack_test.cpp tests/full_state_test.cpp tests/cu_tables_test.cpp
+                   tests/indirect_check_test.cpp tests/shadow_labels_test.cpp tests/ib_split_test.cpp
+                   tests/pad_audio_route_test.cpp tests/selftest_route_test.cpp
+                   tests/draw_args_test.cpp
+                   tests/acb_restore_test.cpp tests/env_flag_test.cpp
+                   tests/start_state_test.cpp tests/gc_trace_test.cpp tests/count0442_test.cpp
+                   tests/reg_catch_test.cpp)
+    file(GLOB BC5_REIMPL_TESTS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/reimpl/*_test.cpp)
+    target_sources(bc5_backend_tests PRIVATE ${BC5_REIMPL_TESTS})
+    target_link_libraries(bc5_backend_tests PRIVATE bc5_backend bc5_warnings Catch2::Catch2WithMain)
+    # Experiment 0418: start_state_test.cpp checks the header against the table.
+    target_compile_definitions(bc5_backend_tests PRIVATE
+        BC5_START_STATE_TSV="${CMAKE_CURRENT_SOURCE_DIR}/policy/start-state.tsv")
+    catch_discover_tests(bc5_backend_tests)
+endif()

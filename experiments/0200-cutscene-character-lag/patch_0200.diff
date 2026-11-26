@@ -1,0 +1,165 @@
+--- a/src/libs/ajm.cpp
++++ b/src/libs/ajm.cpp
+@@ -15,6 +15,7 @@
+ #include <cstdio>
+ #include <cstdlib>
+ #include <cstring>
++#include <ctime> // BC5 (experiment 0200): clock_gettime for KYTY_BC5_AJM_UNIQUE_IDS's journal
+ #include <limits>
+ #include <memory>
+ #include <mutex>
+@@ -155,6 +156,8 @@
+ constexpr int32_t AJM_ERROR_INVALID_PARAMETER   = static_cast<int32_t>(0x80930005u);
+ constexpr int32_t AJM_ERROR_CODEC_NOT_SUPPORTED = static_cast<int32_t>(0x80930008u);
+ constexpr int32_t AJM_ERROR_JOB_CREATION        = static_cast<int32_t>(0x80930012u);
++// BC5 (experiment 0200): AnyPS5 core/libs/prx/libSceAjm.native/src/Ajm.cpp:37 @ 27c88a8 (GPL-2.0).
++constexpr int32_t AJM_ERROR_OUT_OF_RESOURCES    = static_cast<int32_t>(0x80930007u);
+ constexpr int32_t AJM_RESULT_NOT_INITIALIZED    = 0x00000001;
+ constexpr int32_t AJM_RESULT_INVALID_DATA       = 0x00000002;
+ constexpr int32_t AJM_RESULT_INVALID_PARAMETER  = 0x00000004;
+@@ -367,11 +370,55 @@
+ 	uint64_t                    flags   = 0;
+ 	AjmGaplessState             gapless;
+ 	std::unique_ptr<AjmDecoder> decoder;
++	// BC5 (experiment 0200): for KYTY_BC5_AJM_UNIQUE_IDS's journal: when it was created (CLOCK_MONOTONIC s),
++	// its decode jobs, the bytes they wrote and the decoder's last total of decoded samples.
++	double   bc5_created = 0.0;
++	uint64_t bc5_jobs    = 0;
++	uint64_t bc5_bytes   = 0;
++	uint64_t bc5_samples = 0;
+ };
+ 
+ static std::mutex                                     g_ajm_instances_mutex;
+ static std::unordered_map<uint32_t, AjmInstanceState> g_ajm_instances;
+ 
++// BC5 (experiment 0200): KYTY_BC5_AJM_UNIQUE_IDS. An instance id is codec << 14 | a 14-bit slot from a counter
++// that comes round every 16,384 creations, and AjmInstanceCreate assigned g_ajm_instances[id] over an instance
++// still live on that id; the destroy of either then erased the other, whose decodes from then on return
++// AJM_RESULT_INVALID_PARAMETER and no samples. The second title creates ~3,000 instances a minute in fights,
++// and its long-lived clock voice, which its cutscenes follow, stood still (exp 0200).
++//   =log  journal on stderr each id assigned over a live instance, each destroy of an id not present and the
++//         first decode on a missing instance (then every 1024th); the behaviour stays as it was
++//   =1    skip ids that are live, as AnyPS5 does (core/libs/prx/libSceAjm.native/src/Ajm.cpp:1723-1740 @
++//         27c88a8, GPL-2.0), with AJM_ERROR_OUT_OF_RESOURCES when all 16,384 are; and journal each skip
++// Off (0) by default. Lines start with "ajm ids (exp 0200): mono <CLOCK_MONOTONIC s>".
++static int AjmUniqueIdsMode() {
++	static const int mode = [] {
++		const char* e = std::getenv("KYTY_BC5_AJM_UNIQUE_IDS");
++		if (e == nullptr || *e == '\0' || std::strcmp(e, "0") == 0) {
++			return 0;
++		}
++		return std::strcmp(e, "log") == 0 ? 1 : 2;
++	}();
++	return mode;
++}
++
++static double AjmMonoNow() {
++	timespec ts {};
++	clock_gettime(CLOCK_MONOTONIC, &ts);
++	return static_cast<double>(ts.tv_sec) + static_cast<double>(ts.tv_nsec) / 1e9;
++}
++
++// g_ajm_instances_mutex held.
++static void AjmJournalLiveId(const char* what, uint32_t id, const AjmInstanceState& old, uint32_t codec,
++                             uint32_t counter) {
++	const double now = AjmMonoNow();
++	std::fprintf(stderr,
++	             "ajm ids (exp 0200): mono %.3f %s 0x%05x: live instance codec %u, age %.1f s, %" PRIu64
++	             " jobs, %" PRIu64 " bytes, %" PRIu64 " samples; new codec %u; counter %u (wrap %u)\n",
++	             now, what, id, old.codec, now - old.bc5_created, old.bc5_jobs, old.bc5_bytes, old.bc5_samples,
++	             codec, counter, counter >> 14u);
++}
++
+ static bool AjmCodecIsSupported(uint32_t codec) {
+ 	return codec == static_cast<uint32_t>(AjmCodec::DecMp3) ||
+ 	       codec == static_cast<uint32_t>(AjmCodec::DecAt9) ||
+@@ -610,13 +657,25 @@
+ 	std::scoped_lock lock(g_ajm_instances_mutex);
+ 	auto*            state = AjmFindInstanceLocked(instance);
+ 	if (state == nullptr || state->decoder == nullptr) {
++		if (state == nullptr && AjmUniqueIdsMode() != 0) { // BC5 (experiment 0200)
++			static std::unordered_map<uint32_t, uint64_t> missing;
++			const uint64_t n = ++missing[instance];
++			if (n == 1 || n % 1024 == 0) {
++				std::fprintf(stderr, "ajm ids (exp 0200): mono %.3f decode on missing instance 0x%05x (%" PRIu64 ")\n",
++				             AjmMonoNow(), instance, n);
++			}
++		}
+ 		AjmDecodeResult result {};
+ 		result.result = AJM_RESULT_INVALID_PARAMETER;
+ 		return result;
+ 	}
+ 
+-	return state->decoder->Decode(input, input_size, output, output_size, multiple_frames,
+-	                              &state->gapless);
++	auto decoded = state->decoder->Decode(input, input_size, output, output_size, multiple_frames,
++	                                      &state->gapless);
++	state->bc5_jobs++; // BC5 (experiment 0200)
++	state->bc5_bytes += decoded.output_written;
++	state->bc5_samples = decoded.total_decoded_samples;
++	return decoded;
+ }
+ 
+ static AjmDecodeResult AjmDecodeSplitInstance(uint32_t instance, const AjmBuffer* input_buffers,
+@@ -823,18 +882,41 @@
+ 	EXIT_NOT_IMPLEMENTED(instance == nullptr);
+ 	const auto supported = AjmLogCodecSupport(codec);
+ 
+-	const auto slot = (g_ajm_next_instance.fetch_add(1, std::memory_order_relaxed) & 0x3fffu);
+-	*instance       = (codec << 14u) | slot;
++	auto counter = g_ajm_next_instance.fetch_add(1, std::memory_order_relaxed);
++	auto id      = (codec << 14u) | (counter & 0x3fffu);
+ 
+-	auto state    = AjmInstanceState {};
+-	state.context = context;
+-	state.codec   = codec;
+-	state.flags   = flags;
+-	state.decoder = AjmCreateDecoder(codec, flags);
++	auto state        = AjmInstanceState {};
++	state.context     = context;
++	state.codec       = codec;
++	state.flags       = flags;
++	state.decoder     = AjmCreateDecoder(codec, flags);
++	state.bc5_created = AjmMonoNow(); // BC5 (experiment 0200)
+ 
+ 	{
+ 		std::scoped_lock lock(g_ajm_instances_mutex);
+-		g_ajm_instances[*instance] = std::move(state);
++		// BC5 (experiment 0200): KYTY_BC5_AJM_UNIQUE_IDS (see AjmUniqueIdsMode).
++		const int mode = AjmUniqueIdsMode();
++		if (mode == 2) {
++			uint32_t attempt = 0;
++			for (auto it = g_ajm_instances.find(id); it != g_ajm_instances.end() && attempt < 0x4000u;
++			     it = g_ajm_instances.find(id), attempt++) {
++				AjmJournalLiveId("skipped", id, it->second, codec, counter);
++				counter = g_ajm_next_instance.fetch_add(1, std::memory_order_relaxed);
++				id      = (codec << 14u) | (counter & 0x3fffu);
++			}
++			if (g_ajm_instances.count(id) != 0) {
++				std::fprintf(stderr, "ajm ids (exp 0200): mono %.3f all 16384 ids of codec %u are live\n",
++				             AjmMonoNow(), codec);
++				return AJM_ERROR_OUT_OF_RESOURCES;
++			}
++		} else if (mode == 1) {
++			const auto it = g_ajm_instances.find(id);
++			if (it != g_ajm_instances.end()) {
++				AjmJournalLiveId("reused", id, it->second, codec, counter);
++			}
++		}
++		*instance            = id;
++		g_ajm_instances[id] = std::move(state);
+ 	}
+ 
+ 	LOGF("\t context  = %" PRIu32 "\n"
+@@ -854,7 +936,10 @@
+ 	LOGF("\t context = %" PRIu32 ", instance = 0x%08" PRIx32 "\n", context, instance);
+ 
+ 	std::scoped_lock lock(g_ajm_instances_mutex);
+-	g_ajm_instances.erase(instance);
++	if (g_ajm_instances.erase(instance) == 0 && AjmUniqueIdsMode() != 0) { // BC5 (experiment 0200)
++		std::fprintf(stderr, "ajm ids (exp 0200): mono %.3f destroy of instance 0x%05x, not present\n", AjmMonoNow(),
++		             instance);
++	}
+ 
+ 	return OK;
+ }

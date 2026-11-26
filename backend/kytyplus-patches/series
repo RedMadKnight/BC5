@@ -1,0 +1,4 @@
+# The patches the shared KytyPlus tree carries, applied in this order on KytyPlus f266548
+# (tools/scripts/kytyplus-tree.sh; the resulting tree diff is recorded in TREE-DIFF).
+0001-bc5-lle-agc.patch
+0002-bc5-reimpl-agc-psml.patch

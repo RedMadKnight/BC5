@@ -1,0 +1,62 @@
+--- play-pkg.sh
++++ play-pkg-new.sh
+@@ -6,6 +6,7 @@
+ # desktop shortcut does: distrobox enter ubuntu -- ~/bc5-work/play-pkg.sh). No time limit, no
+ # buffer captures (the journal: see experiment 0129 below); the emulator's output goes to ~/bc5-work/play-pkg-last.log.
+ set -u
++ulimit -c 0  # exp 0409/0413: no core dump of the emulator (systemd-coredump froze the desktop for minutes, 11-09)
+ PKG=${BC5_PKG:-$HOME/bc5-data/pkg/game.pkg}
+ M=~/bc5-data/mnt/pkg-play
+ EMU=~/bc5-work/kytyplus-build/src/kyty_emulator
+@@ -29,7 +30,7 @@
+ if pgrep -x kyty_emulator >/dev/null; then say "The emulator is already running."; exit 1; fi
+ [ -x "$EMU" ] || { say "No emulator build at $EMU"; exit 1; }
+ [ -r "$ENVF" ] || { say "No settings file at $ENVF"; exit 1; }
+-[ -r "$PKG" ] || { say "No package at $PKG"; exit 1; }
++[ -n "${BC5_GAME_DIR:-}" ] || [ -r "$PKG" ] || { say "No package at $PKG"; exit 1; }  # exp 0409/0413: BC5_GAME_DIR = an unpacked game, no package
+ 
+ PLAY_ARGS=""
+ while IFS= read -r line; do
+@@ -47,6 +48,25 @@
+ export BC5_DIRECT_EAGER_NAMES="RenderGpuWcLarge,RenderGpuWcSmall,RenderGpuRwLarge,RenderGpuRwSmall,CommitIABufferAllocator,AMM,RenderAlloc,Physics,Decal Job Scheduler,VisualEffectInstanceHeap,DynamicHeap,DynamicHeap Small,ComponentHeap,ComponentHeap Small,MaterialHeap,DDLHeap,Physics query allocator"
+ export BC5_DIRECT_LEARNED=$HOME/bc5-work/direct-learned-pkg.txt
+ export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/_SaveData-pkg-play
++# exp 0413: the second title's own words, as the tested daily line fast7/lean7 (exp 0412) ran them; each can be
++# overridden from the environment.
++export BC5_DIRECT_CP_COHER_START_DELAY=${BC5_DIRECT_CP_COHER_START_DELAY:-1}  # on in every play since 11-03; never A/B'd
++export BC5_DIRECT_LAZY_RELEASE=${BC5_DIRECT_LAZY_RELEASE:-30,eager}  # orphan release
++export BC5_GUARD_SPLIT=${BC5_GUARD_SPLIT:-1} BC5_GUARD_FORGET=${BC5_GUARD_FORGET:-10}
++# exp 0413: this title's switches that are not defaults in the emulator (audit rows A15, A16, A17, A21, A22 of patch
++# 0001), as the daily line fast7/lean7 ran them. A value already in the environment wins; NAME=0 there turns one off.
++for w in \
++    KYTY_BC5_SAVEDATA_MEMORY_FIXES=1 KYTY_BC5_SAVEDATA_DELETE_BUSY=1 KYTY_BC5_SAVEDATA_ALIASES=1 KYTY_BC5_HTTP2_FIXES=1 \
++    KYTY_BC5_PAD_OPEN_EXT=1 KYTY_BC5_JSON2_FIXES=1 KYTY_BC5_ULT_FIXES=1 KYTY_BC5_USERSERVICE_VALUES=1 \
++    KYTY_BC5_SYSTEMSERVICE_VALUES=1 KYTY_BC5_SYSTEMSERVICE_PARAMS_7_1000=1 KYTY_BC5_AUDIOOUT_CHECKS=1 KYTY_BC5_AUDIOIN_CHECKS=1 \
++    KYTY_BC5_NGS2_RACK_FIX=1 KYTY_BC5_FW_PAD=1 KYTY_BC5_LOAD_ZLIB=1 KYTY_BC5_LOAD_JPEG=1 \
++    KYTY_BC5_LOAD_IME=1 KYTY_BC5_LOAD_NPCOMMON=1 KYTY_BC5_LOAD_NPMANAGER=1 KYTY_BC5_LOAD_NPTROPHY=1 \
++    ; do
++  n=${w%%=*}; [ -n "${!n+x}" ] || export "$w"
++done
++# Optional, off here: export BC5_R3_SUBMIT_EOP_EVENT=1  (on in the daily line until 11-12; its global packet ring can be
++# read after a wrap by a deferred callback, Codex's review of exp 0413; back on once the owned-packet fix is in)
++# No zero skip (BC5_DIRECT_ZERO_SKIP): it hung the GPU in 5 of 8 runs without the ledger (exp 0412 section 47).
+ # Experiment 0039: the compute IBs indirect dispatches run (rewritten for the GFX ring).
+ # Experiment 0053: their arguments checked by the CP when it runs them, a CP DMA wait before a
+ # dispatch after an unsynced copy; with both the tree refit runs too (before: skipped,
+@@ -154,13 +174,14 @@
+ 
+ mkdir -p "$M" "$KYTY_BC5_SAVEDATA_DIR"
+ MP=""
+-if ! mountpoint -q "$M"; then
++if [ -n "${BC5_GAME_DIR:-}" ]; then M=$BC5_GAME_DIR  # exp 0409/0413: an unpacked game dir, no bc5-mount
++elif ! mountpoint -q "$M"; then
+   # 2026-10-25 (the maintainer's yes; exp 0288, F353): glibc's malloc arenas capped at 2 for the mount, ~100 MiB less, loads not slower.
+   MALLOC_ARENA_MAX=2 "$BM" mount "$PKG" "$M" > "$MLOG" 2>&1 &
+   MP=$!
+   for _ in $(seq 1 300); do mountpoint -q "$M" && break; sleep 0.2; done
+ fi
+-mountpoint -q "$M" || { say "Mounting the package failed (see $MLOG; with BC5_LEAN=1 run with BC5_LOGS=1 to keep it)."; exit 1; }
++[ -n "${BC5_GAME_DIR:-}" ] || mountpoint -q "$M" || { say "Mounting the package failed (see $MLOG; with BC5_LEAN=1 run with BC5_LOGS=1 to keep it)."; exit 1; }
+ # 2026-10-25 (the maintainer's yes): a failed unmount no longer hangs the launcher (exp 0301's T1 waited an hour):
+ # retry, then a lazy unmount, log the failure, and wait for bc5-mount at most 10 s.
+ cleanup() {

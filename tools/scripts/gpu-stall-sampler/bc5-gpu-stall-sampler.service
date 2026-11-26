@@ -1,0 +1,20 @@
+# BC5 (exp 0373; exp 0370 D1-D7): the resident, non-halting GPU stall sampler for the F403 hang class.
+# A template: install.sh beside this file fills in OWNER and OUT (the maintainer's user and
+# ~/bc5-data/captures/gpu-stall) and writes it to /etc/systemd/system. Undo: undo.sh beside this file.
+[Unit]
+Description=BC5: non-halting GPU stall sampler (exp 0370/0373)
+After=systemd-modules-load.service sys-kernel-debug.mount
+Wants=sys-kernel-debug.mount
+
+[Service]
+ExecStart=/usr/bin/python3 -I -B /usr/local/sbin/bc5-gpu-stall-sampler --owner @OWNER@ --out @OUT@
+Restart=always
+RestartSec=5
+# exp 0370 D5: keep the sampler itself from stalling under memory pressure (exp 0203 O2)
+Nice=-10
+MemoryMin=32M
+OOMScoreAdjust=-900
+LimitMEMLOCK=infinity
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,5 @@
+- HANDOFF.md — research state, findings with sources, open questions, decisions
+- PHASES.md — roadmap with gates
+- formats/ — derived format notes (ffpfsc, pfs, pfsc, exfat, agc)
+- decisions/ — ADRs, one per decision
+- closed-branches/ — close-out records of experiment branches deleted after their work reached main (what was kept, what was left out)

@@ -1,0 +1,15 @@
+# BC5 experiment 0398, run Y1: VGT_HS_OFFCHIP_PARAM by turns, with no catcher at all. <first shot>|<switches>
+# offchip writes before each job's first draw, with two flushes, so each write is one shot long and the register holds from then on.
+0|
+12|offchip=0
+13|
+24|offchip=1ff
+25|
+36|offchip=0
+37|
+48|offchip=1ff
+49|
+60|offchip=0
+61|
+72|offchip=1ff
+73|

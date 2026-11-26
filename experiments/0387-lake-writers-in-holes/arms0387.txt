@@ -1,0 +1,25 @@
+# BC5 experiment 0387: what the lake control file holds from each shot on, one run of 81 shots 5 s apart.
+# <first shot>|<switches, lake_probe.hpp's tokens; empty: all off>
+# The catcher runs first, while exp 0385's K4 still had its holes. Every arm then sits between all-off shots of its own, because
+# K4 showed the holes can end by themselves (F722). All the fixes together come first this time: no arm hung in K4, and if the
+# whole set does nothing the single arms need no reading. trackercf is left out: K4 saw no CHAIN stop.
+0|census=1 zpass=1
+24|
+27|cache=all cache_at=each cull=1 pfp=1 dbmeta=1 idle=1 nohiz=1
+30|
+33|cache=all cache_at=each cull=1 pfp=1 dbmeta=1 idle=1 nohiz=1
+36|
+39|cache=wbinv cache_at=each
+42|
+45|cull=1
+48|
+51|pfp=1
+54|
+57|dbmeta=1
+60|
+63|idle=1
+66|
+69|nohiz=1
+72|
+75|cache=all cache_at=each
+78|

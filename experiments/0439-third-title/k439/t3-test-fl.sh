@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# BC5 exp 0439: the launcher of the maintainer's desktop shortcut for the third title (top's order of 11-22 17:40), on
+# the private test build with the candidate fixes. He plays:
+# - the private normal build (pinned below, fp439 + ap439 and exp 0439's diagnosis tags), with run fp's environment
+#   (as in run ap2211) minus everything scripted or intrusive: no KYTY_BC5_INPUT_CMD (no scripted pad input), no wave
+#   halting (BC5_0439_UMR_WAVES, UMR_SCANS, DUMP_AT_MS out: the watchdog runs bc5-gpu-hang-dump, a register read), no
+#   surface dumps; no time bound, no kill at a wall or a stall: the emulator's own exit ends it;
+# - started through the user manager (systemd-run --user, rtkit), ulimit -c 0, in the ubuntu distrobox as run0439.sh;
+# - BOX-LOCK taken through e0439.sh ("maintainer plays the third title"), dropped at the end; refuses with a message
+#   if an emulator runs, the lock is held, or the kernel log of this boot has a GPU fault line (R55, gate439.sh);
+# - the title's own save folder untouched; the capture under ~/bc5-data/captures/play-<time> (PLAY_CAPTURE=1), the
+#   logs collected to runs/play-<time> at the end (run0439.sh collect).
+# 11-24 ~13:50 (the top session's order, ADR 0015 / feat/host-run 9490cd82): candidate t3-test.sh.host: the
+# emulator runs on the host under the user manager (systemd-run --user, rtkit), no distrobox hop; before the start the
+# binary's libraries are checked against the host (hostdeps: every library resolved from /lib64 or /usr/lib64, no GLIBC or
+# GLIBCXX version newer than the host's), as tools/scripts/host-deps-check.sh. BC5_DIRECT_UMR_ON_TIMEOUT's hang dump
+# still calls distrobox-host-exec, which fails on the host (ADR 0015): only that diagnostic is lost.
+#   t3test.sh          (DRY=1: print the command and environment, start nothing, take no lock)
+set -u
+# 11-24 ~23:20 (tag vlon439, NOT LIVE, the top session asks the maintainer in the morning): t3-test-cc.sh (7133ee80) moved to
+# priv35 138e6779 (priv34 = priv33's kit + vz439, host-built; plus vlon439: the flip-label wait inside a chained piece served
+# on the CPU like the top-level one, on by default) with BC5_0439_FLIP_LABEL_PIECES=1 written out; no MLOCK_IMPORTS, no
+# COND_POP_NOP. The film noise is gone in all three graphics modes and the empty start (exp 0439 vz439h-j).
+# 11-24 ~16:00 (tag cs439, NOT LIVE, the top session asks the maintainer): candidate of the live 0ceaeb1c on priv32 551618d3 (priv30 kit + cs439) with BC5_0439_PASS_CONTEXT_CONTROL=1, the arm N2 in which he saw the border blocks gone
+E=$HOME/bc5-work/exp0439; K=$E/k439; BIN=$K/normal/kyty_emulator.138e6779; PIN=138e6779 # 11-23 ~22:55 candidate t3-test.sh.ms (= the live arm-c launcher 76db0204 + the 1-s memory sampler memsample439.sh); before: 11-23 ~19:40 candidate t3-test.sh.arm-c (not live until the maintainer says yes): the x439dir build (the x439ph base plus the pass census, compiled in and off, and exp 0439 dir439's BC5_0439_SERIAL modes); arm c on: an acb that waits on a label an in-flight GFX job writes is submitted after that GFX work completes (50 ms bound), the defect gone in 4 of 4 slot runs. The live launcher before it ran 11-23 13:35: the x439ph build (bakeR base, bake-2 rows incl. EAGER_GPU_WRITE and DCC_PRESENT, mode-1 piece waits now real, hold/DCC arm compiled in but off); before: a pinned copy: later builds cannot replace it (11-22 20:40; 23:05 the diagnosis build with sr439b, vf439, tc439/tp439; 23:40 its program cap 0x20000; 23:45 the L3+R3 arm from a connected pad only)
+DIR=$HOME/bc5-data/games/TITLE3; LOCK=$HOME/bc5-work/BOX-LOCK; NAME="BC5: the third title (test)"
+say() { echo "$*"; command -v notify-send > /dev/null 2>&1 && notify-send -u critical "$NAME" "$*" 2> /dev/null; command -v kdialog > /dev/null 2>&1 && [ "${DRY:-0}" != 1 ] && kdialog --title "$NAME" --sorry "$*" 2> /dev/null; true; }
+[ "$(md5sum < "$BIN" 2> /dev/null | cut -c1-8)" = "$PIN" ] || { say "The test build is not $PIN: not started."; exit 1; }
+pgrep "^kyty_emulator" > /dev/null && { say "An emulator is already running: not started."; exit 1; }
+[ -s "$LOCK" ] && { say "The box is busy (BOX-LOCK: $(cat "$LOCK")): not started."; exit 1; }
+cd "$E" || exit 1
+g=$(bash "$K/gate439.sh" 2>&1) || { say "This boot already has a GPU fault line in the kernel log (or it could not be read): reboot first. ($g)"; exit 1; }
+EXTRA="BC5_SYSMODULES_PACK_DIR=$DIR/fakelib BC5_DIRECT_DCC_PRESENT=2 BC5_DIRECT_IB_CHAIN=1 BC5_DIRECT_IB_CHAIN_FLAT=1
+BC5_DIRECT_AGC_EOP_IDENT=1 BC5_DIRECT_FLAT_APERTURE=1 BC5_DIRECT_FLAT_APERTURE_PIECES=1 BC5_DIRECT_TIMEOUT_PROBE=1 BC5_DIRECT_UMR_ON_TIMEOUT=1
+BC5_0439_PIECE_WAITS=1 BC5_0439_SERIAL=c BC5_0439_PASS_CONTEXT_CONTROL=1 BC5_0439_FLIP_LABEL_PIECES=1
+BC5_RUN_ENV=$E/run-log.env BC5_0439_FRAME_DUMP=$HOME/bc5-data/priv/frames"
+wl=$(ls -1 "/run/user/$(id -u)/" 2> /dev/null | grep -m1 -E '^wayland-[0-9]+$'); wl=${wl:-wayland-0}
+tag=play-$(date +%m%d-%H%M)
+SF=$K/.binary-words.txt; strings -n 6 "$BIN" > "$SF" # 11-23: words the binary does not carry (a report, as st439.sh; words play439.sh reads are not reported). 13 old diagnosis words that no build since 7277b404 carries were removed (no-ops)
+missing=$(for w in $(echo $EXTRA | tr " " "
+" | grep -o "^\(KYTY_\)\?BC5_[A-Z0-9_]*"); do grep -qxF "$w" "$SF" || grep -q "\${$w" "$K/play439.sh" || echo -n "$w "; done)
+hostdeps() { # 11-24 (ADR 0015): the container-built binary must run on the host's libraries
+    local l bad hv
+    l=$(ldd "$BIN" 2>&1) || { echo "ldd failed"; return 1; }
+    bad=$(echo "$l" | grep -E "not found|=> /(home|opt|var|usr/local)" | head -3); [ -z "$bad" ] || { echo "libraries: $bad"; return 1; }
+    hv=$(strings /lib64/libc.so.6 | grep -oE "^GLIBC_2\.[0-9]+$" | sort -V | tail -1)
+    [ "$({ objdump -T "$BIN" | grep -oE "GLIBC_2\.[0-9]+" | sort -Vu | tail -1; echo "$hv"; } | sort -V | tail -1)" = "$hv" ] || { echo "needs a newer glibc than $hv"; return 1; }
+    hv=$(strings /lib64/libstdc++.so.6 | grep -oE "^GLIBCXX_3\.4\.[0-9]+$" | sort -V | tail -1)
+    [ "$({ objdump -T "$BIN" | grep -oE "GLIBCXX_3\.4\.[0-9]+" | sort -Vu | tail -1; echo "$hv"; } | sort -V | tail -1)" = "$hv" ] || { echo "needs a newer libstdc++ than $hv"; return 1; }
+    echo "host libraries ok"
+}
+hd_=$(hostdeps) || { say "The test build does not fit the host's libraries ($hd_): not started."; exit 1; }
+if [ "${DRY:-0}" = 1 ]; then
+    echo "DRY: words the binary does not carry: ${missing:-none}"
+    echo "DRY: binary $PIN ok, $hd_, no emulator, lock free, $g"
+    echo "DRY: systemd-run --user --wait --collect --unit=bc5-0439-$tag: ulimit -c 0; on the host (no distrobox): env BC5_GAME_DIR=$DIR P439_BIN=$BIN BC5_LEAN=0 BC5_LOGS=1 PLAY_CAPTURE=1 WAYLAND_DISPLAY=$wl <EXTRA> $K/play439.sh $DIR"
+    echo "DRY: EXTRA = $(echo $EXTRA)"
+    echo "DRY: lock text would be: maintainer plays the third title; logs to runs/$tag"
+    exit 0
+fi
+bash e0439.sh lock "maintainer plays the third title" > /dev/null 2>&1
+grep -q '^exp0439 ' "$LOCK" || { say "Could not take BOX-LOCK ($(cat "$LOCK" 2> /dev/null)): not started."; exit 1; }
+MS_KLOG=1 bash "$K/memsample439.sh" "$tag" > /dev/null 2>&1 & MS=$! # exp 0439 (tag ms439, 11-23): the 1-s memory sampler (~/bc5-data/captures/memsample/<tag>.txt, synced every line)
+trap 'kill "$MS" 2> /dev/null; bash "$E/run0439.sh" collect normal "$tag" > /dev/null 2>&1; bash "$E/e0439.sh" unlock > /dev/null 2>&1' EXIT
+mkdir -p "$E/runs/$tag"
+{ echo "tag $tag mode normal secs none start $(date '+%F %T')"; echo "binary $BIN $(md5sum < "$BIN" | cut -d' ' -f1)"; echo "kernel $(uname -r); WAYLAND_DISPLAY=$wl; extra: $(echo $EXTRA)"; echo "the maintainer plays (t3test.sh)"; } > "$E/runs/$tag/meta.txt"
+# shellcheck disable=SC2086
+systemd-run --user --wait --collect --unit="bc5-0439-$tag" --setenv=WAYLAND_DISPLAY="$wl" --setenv=XDG_RUNTIME_DIR="/run/user/$(id -u)" \
+    /usr/bin/bash -c 'ulimit -c 0; l=$1; d=$2; shift 2; exec env "$@" "$l" "$d"' \
+    _ "$K/play439.sh" "$DIR" BC5_GAME_DIR="$DIR" P439_BIN="$BIN" BC5_LEAN=0 BC5_LOGS=1 PLAY_CAPTURE=1 WAYLAND_DISPLAY="$wl" $EXTRA > /dev/null 2>&1

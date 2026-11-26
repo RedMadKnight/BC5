@@ -1,0 +1,137 @@
+diff --git a/src/bc5/load_stat.hpp b/src/bc5/load_stat.hpp
+index 7fbcc29..be7ba6d 100644
+--- a/src/bc5/load_stat.hpp
++++ b/src/bc5/load_stat.hpp
+@@ -97,6 +97,7 @@ enum Cause : unsigned {
+ 	kAnonMiss,       // ... of those, walks that "thread" mode would have left out (the thread's last pass matched the walk before): n
+ 	kAnonSkip,       // KYTY_BC5_ANON_SYNC=thread: walks left out: n
+ 	kAnonThread,     // the checking thread's passes: n, time, items = anonymous guest VMAs found
++	kViewsClone,     // tag mr415d: KYTY_BC5_MAP_RECORDS=views: record applications that had to copy the kept list first (someone still held it): n, items = views
+ 	kCount
+ };
+ 
+@@ -108,7 +109,8 @@ inline constexpr const char* kNames[kCount] = {
+     "apr_fallback", "hold_probe", "hold_hints",   "hold_pre",  "dev_call",    "dev_prepare", "dev_list",        "dev_cs",
+     "ds_views", "ds_scan",    "ds_merge",         "ds_drain",  "ds_maps",     "fast_diff",   "learned_apply",   "learned_changed",
+     "map_record", "rec_mismatch", "rec_overflow",    "maps_check", "maps_uncovered",
+-    "anon_read", "anon_urgent", "anon_needed",     "anon_miss", "anon_skip",   "anon_thread"};
++    "anon_read", "anon_urgent", "anon_needed",     "anon_miss", "anon_skip",   "anon_thread",
++    "views_clone"};
+ 
+ static_assert(kNames[kCount - 1] != nullptr, "a name per cause");
+ 
+diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
+index 7aaef29..ba20fb9 100644
+--- a/src/libs/bc5LleAgc.cpp
++++ b/src/libs/bc5LleAgc.cpp
+@@ -2551,16 +2551,20 @@ static void mr415_verify() {
+ // records, both titles); the list is rebuilt from every range only every KYTY_BC5_MAP_RECORDS_CHECK_MS (2,000 when
+ // unset), and at that moment the kept list is compared with it and with the old builder's list (rec_mismatch) and
+ // replaced by it. If the record log reports a gap the list is rebuilt at once. Called under direct_views' mutex.
++// Tag mr415d (build L5d): build L5b copied the kept list (12,500-28,000 views, a string each) into every new snapshot
++// and so saved nothing (README section 15). The kept list is now the object handed out: records are applied to it in
++// place when nobody else holds it (direct_views lets go of its own reference first), and only otherwise to a copy
++// (views_clone). A holder never sees its list change: it holds a reference, so the count is above one.
+ // If a record were missing, a view would be absent (its memory not on the GPU) or would stay after the guest unmapped
+ // it (the GPU reads pages the guest gave back) until the next check, at most the check period.
+-static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_out) {
++static std::shared_ptr<DViews> mr415_views(const DState& S, uint64_t* gen_out) {
+ 	struct R {
+ 		uint64_t    start, size, offset;
+ 		int         type;
+ 		std::string name;
+ 	};
+-	static std::vector<DView> kept;
+-	static bool               have       = false;
++	static std::shared_ptr<DViews> kept_p = std::make_shared<DViews>();
++	static bool                    have   = false;
+ 	static uint64_t           checked_ns = 0;
+ 	static const uint64_t     period_ns  = bc5::load_stat::env_num("KYTY_BC5_MAP_RECORDS_CHECK_MS", 2000, 600'000) * 1'000'000ull;
+ 	auto make = [](const R& r, DView* v) {
+@@ -2583,11 +2587,15 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
+ 		        &lists, &gen, &spans, &complete) &&
+ 		    complete) {
+ 			lists.resize(spans.size());
++			if (kept_p.use_count() > 1) { // someone still reads the list: leave theirs alone
++				bc5::load_stat::count(bc5::load_stat::kViewsClone, kept_p->v.size());
++				kept_p = std::make_shared<DViews>(*kept_p);
++			}
++			std::vector<DView>& kept = kept_p->v;
+ 			for (size_t i = 0; i < spans.size(); i++) bc5::map_records::apply(kept, lists[i], spans[i].first, bc5::map_records::end_of(spans[i].first, spans[i].second), make);
+ 			bc5::load_stat::count(bc5::load_stat::kMapRecord, spans.size());
+-			*out     = kept;
+ 			*gen_out = gen;
+-			return;
++			return kept_p;
+ 		}
+ 		bc5::load_stat::count(bc5::load_stat::kRecOverflow);
+ 		have = false; // the log had a gap: the kept list is not to be compared, only replaced
+@@ -2599,8 +2607,9 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
+ 		        static_cast<std::vector<R>*>(p)->push_back({start, size, offset, type, name != nullptr ? name : ""});
+ 	        },
+ 	        &ranges, &gen, &spans, &complete)) {
+-		*out = direct_views_build(S);
+-		return;
++		auto d = std::make_shared<DViews>();
++		d->v   = direct_views_build(S);
++		return d;
+ 	}
+ 	std::vector<DView> full;
+ 	for (const R& r: ranges) {
+@@ -2616,6 +2625,8 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
+ 	};
+ 	static int logged = 0;
+ 	if (have && complete) {
++		if (kept_p.use_count() > 1) kept_p = std::make_shared<DViews>(*kept_p);
++		std::vector<DView>& kept = kept_p->v;
+ 		for (const auto& [start, size]: spans) bc5::map_records::apply(kept, ranges, start, bc5::map_records::end_of(start, size), make);
+ 		bc5::load_stat::count(bc5::load_stat::kMapRecord, spans.size());
+ 		if (!same(kept, full)) {
+@@ -2631,11 +2642,12 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
+ 			if (logged++ < 8) journal("map records (exp 0415, mr415c): the snapshot's list differs from the old builder's at generation %" PRIu64 ": %zu against %zu views\n", gen, full.size(), old.size());
+ 		}
+ 	}
+-	kept       = std::move(full);
++	kept_p     = std::make_shared<DViews>();
++	kept_p->v  = std::move(full);
+ 	have       = true;
+ 	checked_ns = now;
+-	*out       = kept;
+ 	*gen_out   = gen;
++	return kept_p;
+ }
+ 
+ static std::shared_ptr<const DViews> direct_views(const DState& S) {
+@@ -2653,14 +2665,17 @@ static std::shared_ptr<const DViews> direct_views(const DState& S) {
+ 	if (g != 0 && g == gen[k] && cache[k] != nullptr && (k == 0 || now - built_ns[k] < 1'000'000'000ull)) return cache[k];
+ 	built_ns[k] = now;
+ 	g_views_builds++;
+-	auto d = std::make_shared<DViews>();
+-	uint64_t g_used = g;
++	std::shared_ptr<DViews> d;
++	uint64_t                g_used = g;
+ 	if (k == 0 && mr415_mode() == 2) { // experiment 0415 (mr415c), stage S2: the list kept from the change records
+-		mr415_views(S, &d->v, &g_used);
++		cache[k].reset();              // mr415d: so that the kept list can change in place when no caller holds it
++		d = mr415_views(S, &g_used);
+ 	} else {
++		d    = std::make_shared<DViews>();
+ 		d->v = direct_views_build(S);
+ 		if (k == 0) mr415_verify(); // experiment 0415 (mr415)
+ 	}
++	d->sorted = true;
+ 	uint64_t sig = 1469598103934665603ull;
+ 	for (size_t i = 0; i < d->v.size(); i++) {
+ 		const auto& v = d->v[i];
+@@ -4267,7 +4282,10 @@ static void sync_mappings(bool force = false, bool urgent = false, bool must = f
+ 		std::call_once(once, [] { std::thread(as415_thread).detach(); });
+ 		std::lock_guard lk(g_as415_mu);
+ 		as_skip_ok = bc5::anon_sync::can_skip(g_as415_passes, g_as415_sig, g_as415_walk_valid, g_as415_walk_sig);
+-		if (urgent && !g_as415_kick) {
++		// KYTY_BC5_ANON_SYNC_KICK=0 (as415b, a measuring knob): urgent calls do not wake the thread, so that with a long
++		// KYTY_BC5_ANON_SYNC_MS the cost of the thread's own reads can be told from the rest.
++		static const bool kick = bc5::load_stat::env_num("KYTY_BC5_ANON_SYNC_KICK", 1, 1) != 0;
++		if (urgent && kick && !g_as415_kick) {
+ 			g_as415_kick = true;
+ 			g_as415_cv.notify_one();
+ 		}

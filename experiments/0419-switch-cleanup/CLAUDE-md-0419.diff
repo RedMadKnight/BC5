@@ -1,0 +1,5 @@
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ How to work @@
+ - **Fixes and catchers first, then test** (the maintainer, 2026-10-31). When there are candidate fixes or a catcher for a problem, put all of them into one private test build at once, each behind its own on/off switch, and only then test. Do not diagnose first or build them one at a time. Shared builds still change only by decision.
++- **Every switch gets a disposition** (the maintainer, 2026-11-13; exp 0419). An experiment that adds an environment switch ends its README with one line per switch: promote (a code default: `kFixes`/`kDefaults`, or the title's table in `src/bc5/switch_defaults.hpp` while only one title has a run), remove the option (it is the default and has been played on), diagnostic (kept, off), delete (refuted or answered: the read and its code go in the next patch change), or no verdict, with the one run that is missing. A fix must not live only in a launcher or a desktop shortcut. Every switch reads unset, empty and "0" as off.

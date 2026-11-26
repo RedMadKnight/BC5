@@ -1,0 +1,8 @@
+echo === heap state at 0x1040000000\n
+x/48gx 0x1040000000
+echo === heap object tail\n
+x/40gx 0x90b09a6a8
+echo === allocator core 0x903a05e10\n
+x/160i 0x903a05e10
+echo === heap ctor candidates (vtable[0..2])\n
+x/80i 0x903a030c0

@@ -1,0 +1,776 @@
+# 0425 — The job-arena race at its source in the host's scheduling model
+
+**Date.** 2026-11-15 to 11-16. **Branch.** `exp/0425-arena-host-sched`, base main `8846a2a0` (patch 0001 `4945ef1b`, the shared
+builds' patch). **Status.** The playgo set ran on 2026-11-16 (no conclusion by the rule: see Result). The sched set waits for
+the top session's word.
+
+## Question
+
+The maintainer asked for this on 2026-11-15: once this fault is fixed, a new approach to the arena fix.
+
+Can a change in the host's model of the console's scheduling end the second title's job-arena crash with `JobArenaFix`
+off? The crash is the access violation reading 0xc at eboot+0x3d7eca0 (F444–F454). The goal is a host fix that lets
+exp 0359's eboot patch go.
+
+## What is known (read before this experiment)
+
+- **The crash.** The owner (main) thread pushes a pair of jobs into the Hi entry at frame end, signals that entry's
+  `JobLoaderSema`, then helps. Its help loop scans from index 0 and takes the first "any thread" job with a block left.
+  On a thread with no worker slot that job's arena lookup gives null (F447–F450, exp 0388's root section). On the box
+  the owner takes the job within microseconds of the push. The woken workers arrive 0.7–1.4 ms later and find nothing
+  left (F453, F454).
+- **Ruled out or limited.**
+  - The worker count is not the cause: 8 workers crash like 5 (F790, F791).
+  - A targeted wake alone did not stop the crash (F452, F453).
+  - Host throughput is not the lever (F461, F470, F471).
+- **What moved the outcome.** Each of these is a bounded wait after the owner's push (exp 0388):
+  - a 200 µs spin (F793);
+  - a spin until any wait returns, which costs about 15 % frame rate (F795, F797);
+  - J, which knows the title's job table and buys time (F801–F805). The maintainer's fight passed once with J (F806).
+    J was removed from the code on 2026-11-02 (F811).
+  - H waited only for the sleepers that signal had marked, and still crashed 1 time in 5 (F800). That fits workers
+    that were busy at the push, not asleep (F454).
+- **The host's code as it is** (patch `4945ef1b` on KytyPlus `f266548`):
+  - `KernelSemaPrivate::Signal` (`src/kernel/semaphore.cpp`) hands the count to the waiters it serves. It then calls
+    `notify_all` on the semaphore's single `std::condition_variable_any` while it still holds the semaphore's
+    recursive mutex. Every waiter wakes and blocks on that mutex. After the signaller unlocks, each waiter takes the
+    mutex, drops it for the pending-signal dispatch, and takes it again (`common/threads.cpp`; F451).
+  - Every wait also registers in, and unregisters from, one global waiter list under its own mutex.
+  - Guest priorities map to nice levels (`Bc5GuestNice`, pthread.cpp): 256–299 → −15, 733 and up → +5, the rest 0.
+    So main (300) and the Hi workers (500) run at nice 0, beside the host's own threads.
+  - Guest affinity masks are only stored.
+
+## The regression hunt (the maintainer's widening, relayed by the top session)
+
+His words: not only this one's history: the session is to check other experiments too, since
+the answer may already be somewhere or the fault may be ours from an
+earlier stage; it showed up only later, when the water patches were being fixed. Done on the laptop from HANDOFF and every experiment README;
+the full table is in the session notes (`exp0425-regression-hunt.md`).
+
+**Timeline.**
+
+| when | build | what |
+|---|---|---|
+| up to 2026-10-25 09:27 | 893f8ab4 and older | no crash at the site in any README, over many hours (exp 0281's 63 min, exp 0296's 19 min) |
+| 10-25 ~09:25 | 893f8ab4 | the title stops: "more data must be installed" (F361). The later story was unreachable, the fight included |
+| **10-25 10:03** | → **e62a97c6** | **exp 0298's PlayGo answers integrated:** all 100 chunks "local fast", plus one Prefetch; the first title's PlayGo module dropped from the pack. This is the only change between the two builds |
+| **10-25 10:27:41** | e62a97c6 | **the first crash at the site** (exp 0299 L1), at the save-slot list: 23 min later, in a menu the old builds had passed many times |
+| 10-25 21:00, 10-26, 10-28 | | exp 0326, F397, then the fight's 6 of 6 |
+| 10-31 to 11-02 | | the water patches (exps 0392–0399): after the crash had already appeared |
+
+- **The site lines before 10-25.** The handler's site lines were silenced until exp 0318 (F380). Even so, no
+  unexplained `exit 65` of the second title appears before 10-25: the others have named causes (0034, 0203, 0310,
+  0320).
+- **The other host changes.** Every change from 10-20 to 10-25 except PlayGo was already in 893f8ab4, which ran
+  without the crash, though only up to the PlayGo stop. These were:
+  - exp 0180's nice mapping;
+  - chains and 30 fps by default;
+  - APR's condition-variable wait and read-ahead;
+  - the 100-ms wait limit;
+  - the held tail;
+  - exp 0243's ATRAC9 haptics decode, the only one adding CPU time on the title's own threads (not measured);
+  - the tiler pool;
+  - the DS4 fixes.
+- **Not changed in that window:** the CPU mask, the semaphore, ULT and the time code.
+- **No earlier answer.** No experiment outside 0358/0359/0360/0361/0386/0388 addresses the race.
+
+**Reading.** The chronology rules out the later work (the water patches included) as the cause of the first
+occurrence. It does not show what PlayGo did. Two readings stay open:
+
+- PlayGo's answers created the race, for example by an answer the console gives differently;
+- the answers only exposed a path or changed the title's load, and the race was the host's all along.
+
+No other host change falls in the window. A bisect is not possible: without PlayGo the save cannot reach the fight.
+That leaves the PlayGo answers themselves as the first group to test.
+
+## Candidates, simplest first
+
+Each candidate has its own switch, off by default. With every switch unset the private build behaves as the shared
+build. The rule for every word: unset, empty or `0` is off, and a value that is not a positive number is off as well.
+
+### P1–P3 — the PlayGo answers (first group; `src/libs/libPlayGo.cpp`)
+
+- **What the PS5 answers is not public.** TODO(verify) on a console for each answer.
+- **What the open emulators do.** They all answer as exp 0298 does: "local fast" for every installed chunk, an
+  immediate OK for Prefetch, ETA 0. All of it runs synchronously on the calling thread. Sources:
+  - AnyPS5 `27c88a8`, `core/libs/prx/libScePlayGo/Export.cpp:180` (GetLocus), `:230` (Prefetch);
+  - shadPS4 `60c42b9`, `src/core/libraries/playgo/playgo.cpp:162`, `:290–315`;
+  - KytyPS5 `4644c52`, `src/libs/libPlayGo.cpp`.
+- **One known difference.** For GetProgress, KytyPlus counts entries and shadPS4 sums the chunk sizes in bytes.
+  Exp 0298's trace shows the title never calls it, so it is not an arm.
+- **On the console** libScePlayGo is a user library over the system's PlayGo service, so a call may take IPC time.
+  The host answers instantly (TODO(verify)).
+- **The switches.**
+  - **P1** `KYTY_BC5_0425_PLAYGO_LOCUS=slow`: GetLocus answers "local slow" (2) for every valid chunk.
+  - **P2** `KYTY_BC5_0425_PLAYGO_PREFETCH_MS=<1..5000>`: Prefetch blocks its caller this long before its OK. The arm
+    uses 500.
+  - **P3** `KYTY_BC5_0425_PLAYGO_CALL_US=<1..20000>`: every PlayGo call blocks its caller this long. The arm uses 200.
+  - The catcher (`KYTY_BC5_0425_CATCH=1`) also logs each PlayGo call kind's first call and every 1000th, with the
+    calling thread's name. That shows whether the title calls PlayGo during play, and from which thread.
+- **Risk.** P1 may make the title think its data is on slow storage: a "please wait" or a changed streaming pace is
+  possible, and a stop shows as NOT_ROUTED. P2 and P3 only delay.
+- **Measured by.** The crash outcome. Exposure: the arm's ON line plus a call of the function it changes.
+
+### C1 — a short wake slice for the guest's threads: `KYTY_BC5_0425_WAKE_SLICE_US=<100..3000>`
+
+- **What the PS5 does.** It schedules a title's threads by fixed priority on cores the title has to itself, so a
+  woken game thread on a free core runs at once. TODO(verify): there is no console measurement of the wake-to-run
+  time. The PS5's kernel is FreeBSD-derived, and the host's own guest priority bands (256 highest, 767 lowest,
+  pthread.cpp) are the console's.
+- **The host today.**
+  - A woken worker is a nice-0 task among the host's nice-0 threads.
+  - Under EEVDF a woken task preempts the running one only when its deadline is earlier.
+  - The default slice is several milliseconds on 16 CPUs (TODO(verify): the box's `sched_base_slice`).
+  - The 0.7–1.4 ms arrivals (F453) are of that order. Exp 0358's helpers at nice +5 cut the median to 342 µs.
+- **The change.** At thread start and on Setprio, every guest thread with priority below 733 asks for a 200 µs slice
+  through `sched_setattr`. The call keeps the policy and nice it reads first; `sched_runtime` on `SCHED_OTHER` is
+  Linux 6.12's custom slice, clamped by the kernel to 0.1–100 ms. With a shorter slice a woken worker can preempt
+  the task on its CPU (PREEMPT_SHORT). That includes the owner, if the wake placed the worker on the owner's CPU.
+  This is a scheduling attribute of the guest's threads only; nothing title-specific.
+- **Risk.**
+  - More context switches for the guest's threads.
+  - The host's render and GPU threads lose wakeup preemption against the guest's.
+  - Unknown: whether an unprivileged `sched_setattr` of `sched_runtime` is accepted on this kernel (7.3).
+    The exposure line reads the value back.
+  - It does nothing for workers that are busy inside a 603-block chunk at the push (F454).
+- **Measured by.**
+  - The crash outcome on F464's route with `JobArenaFix` off.
+  - Exposure: a `slice:` line per thread with `set rc 0` and the runtime read back, for a `Job Hi` thread.
+
+### C2 — the signaller hands its CPU to the woken waiter: `KYTY_BC5_0425_HANDOFF_US=<1..2000>`
+
+- **What the PS5 does.** TODO(verify): unknown. A FreeBSD wakeup of a thread on another core does not make the waker
+  yield. This candidate is not a copy of the console. It is the "wake that hands the CPU to the woken worker" of the
+  task.
+- **The change.** After a guest `Signal` that readied a waiter, the signaller calls `sched_yield` in a loop until
+  every waiter the semaphore has readied so far has resumed, at most 300 µs.
+  - It differs from exp 0388's H in three ways:
+    - it yields instead of spinning, so a wakee queued on the signaller's own CPU runs at once;
+    - it applies to every guest semaphore;
+    - it is not keyed by name or by the title's job table.
+  - It counts readied and resumed waiters per semaphore. The resumed counter is shared, so the loop never touches a
+    semaphore deleted meanwhile.
+- **Risk.**
+  - A cost on every signal that wakes someone, at most 300 µs. Exp 0388's F waited on every push and cost about 15 %.
+  - Like H, it does not cover workers that are busy at the push.
+- **Measured by.**
+  - The crash outcome.
+  - Exposure: `handoff:` lines, with the number ended by the resume and at the bound, and the mean wait.
+
+### C3 — the console's order of a signal: `KYTY_BC5_0425_DIRECT_WAKE=1`
+
+- **What the PS5 does.** A kernel semaphore hands the count to the waiter it wakes, inside the kernel. That waiter
+  wakes once, and no other waiter wakes. TODO(verify): the PS5's semaphore internals are not public. AnyPS5
+  58295ef07's `Semaphore.cpp`, which exp 0405 cites for its argument checks, is a host model too.
+- **The change.**
+  - Each waiter sleeps on its own futex word, without the semaphore's lock.
+  - `Signal`, `Cancel` and the destructor mark the waiters they serve. After the lock is released, they wake exactly
+    those waiters' words: no broadcast, and no wake into a lock the waker still holds.
+  - A waiter leaves `Wait` only once its waker has finished with its word, so no wake touches a dead stack frame.
+  - The global waiter list is not used on this path.
+- **Risk.**
+  - A new wait path in a hot primitive.
+  - Exp 0358's targeted wake (F452) did not stop the crash. This one also removes the wake into a held lock and the
+    second mutex pass.
+  - Linux only: off elsewhere.
+- **Measured by.**
+  - The crash outcome.
+  - Exposure: the `C3 direct wake ON` line.
+
+### The catcher: `KYTY_BC5_0425_CATCH=1` (normal build only, compiled out of lean)
+
+- **In the semaphore.** It counts the `Job Hi` waiters a signal has readied (result Ok) that have not yet run again.
+  A `Job Hi` waiter is a host thread whose name starts with `Job Hi`, from the guest name.
+- **In the job-arena hook.** At each owner help call through exp 0359's hook (thread index −1), the hook reads that
+  count. It sums the owner calls, and the crash-type calls whose block function is +0x4661e50, each with and without
+  a pending Hi waiter. TODO(verify): that the job's +0x80 holds F449's function. A crashing run with no crash-type
+  line would show it does not.
+- **With `JobArenaFix` off,** the same hook is installed as a pass-through: no window, and the title's call is
+  unchanged. Every arm, the control included, runs the same pass-through.
+- **Limits (R11).**
+  - The count is global. It is not paired with this job's push or with one semaphore.
+  - A pending Hi waiter says that a woken worker had not yet run. It does not say that the worker would have taken
+    this job.
+
+## Setup
+
+**Code.** `patch0425.py` applies the candidates and the catcher to private copies of four units of the shared tree:
+
+- `src/kernel/semaphore.cpp`;
+- `src/kernel/pthread.cpp`;
+- `src/loader/gamePatch.cpp`;
+- `src/libs/libPlayGo.cpp`.
+
+Each unit is pinned by sha256 (`units.sha256`, taken from `f266548` + patch `4945ef1b` on the laptop), and every anchor
+must occur once. Line endings are kept: two of the units are CRLF.
+
+**Build** (box, under the top's slot). `box0425.sh claim` / `build` / `release`:
+
+- The claim and release are `box0388.sh`'s (R35).
+- `build0425.py` is `build0388.py` with this unit list. It takes the shared normal build's compile commands, puts the
+  four objects in `~/bc5-work/exp0425/obj`, and relinks into `~/bc5-work/exp0425/kyty_emulator`.
+- The build writes `binary.md5` and checks that the seven switch names and the pass-through text are in the binary.
+- It checks that the shared binary is unchanged after the build.
+- Nothing shared is written, and there is no lean build: the test is on normal, and lean only has to compile the same
+  code without the catcher.
+
+**Runs.** One run is `run0425f.sh`. `mk0425.py` derives it from exp 0413's `run0413p.sh` (md5 `fc4fe47c`), the runner
+exp 0423 used on the box on 2026-11-15; the base is kept here as `run0413p.orig.sh`. The changes:
+
+- every file lands in `~/bc5-work/exp0425/n`;
+- one named snapshot of F464's route save (R45). `MODE=name` makes it once from exp 0358's copy
+  `saves-live-47aefd45`, which must read 9347496fbaf30f25 by exp 0388's recipe. Each run resets its private copy from
+  it, and the live saves are not read;
+- RT on and `JobArenaFix.TITLE2=off` in the run's private input.cfg, plus `KYTY_BC5_JOB_ARENA_FIX=0` in the
+  environment;
+- slot 4 (`N_SLOT=4`). At G, exp 0360's 14:50 record's gameplay is queued (`fight1450-play.cmd`, md5 `b0f9ad5c`, exp
+  0388's pin). Play time G+120 s;
+- the class and exposure in the summary line;
+- the Wayland socket looked up in `$XDG_RUNTIME_DIR`.
+
+Unchanged from `run0413p.sh`:
+
+- the atomic claim, or the chain's one lock line;
+- the route gate on the journal;
+- the kernel-line stop;
+- exp 0412's sampler, fuse and watchdog;
+- `ulimit -c 0` through the launcher.
+
+**The chain.** `chain0425.sh`, on the box, detached, started by the top session:
+
+- one set per start, 15 runs under one BOX-LOCK line, through exp 0413's `chainlock0417.inc`;
+- each run about 4–5 min, about 75 min a set;
+- `CHAIN_SET=playgo` first (simplest first), then `CHAIN_SET=sched` in another slot:
+
+  | set | order | arm | runs | words beyond `KYTY_BC5_JOB_ARENA_FIX=0 KYTY_BC5_0425_CATCH=1` |
+  |---|---|---|---|---|
+  | playgo | C1 L1 F1 K1 L2 F2 K2 C2 L3 F3 K3 C3 L4 F4 K4 | C, control | 3 | none |
+  | | | L, P1 | 4 | `KYTY_BC5_0425_PLAYGO_LOCUS=slow` |
+  | | | F, P2 | 4 | `KYTY_BC5_0425_PLAYGO_PREFETCH_MS=500` |
+  | | | K, P3 | 4 | `KYTY_BC5_0425_PLAYGO_CALL_US=200` |
+  | sched | C4 S1 Y1 D1 S2 Y2 D2 C5 S3 Y3 D3 C6 S4 Y4 D4 | C, control | 3 | none |
+  | | | S, C1 | 4 | `KYTY_BC5_0425_WAKE_SLICE_US=200` |
+  | | | Y, C2 | 4 | `KYTY_BC5_0425_HANDOFF_US=300` |
+  | | | D, C3 | 4 | `KYTY_BC5_0425_DIRECT_WAKE=1` |
+
+- **Stops (R55).**
+  - a kernel GPU line (R54's pattern, stack frames excluded);
+  - a real pad key (R51; evtest on the joystick devices);
+  - any class other than TARGET, NO_CRASH or NOT_ROUTED;
+  - a second NOT_ROUTED (one replacement in the series);
+  - a `STOP` file beside the chain, read before each run.
+- **The known crash.** The crash at the site is what the arms measure. It continues the chain only with
+  `CHAIN_TARGET_OK=1`, which the top session sets by name when it starts the chain. That is R55's named exception.
+  Without it, the first TARGET stops the chain.
+
+## Rule, fixed before the runs (`check0425.py rule`)
+
+- **Classes.**
+  - **TARGET:** the play log has `Access violation: Read [000000000000000c]` and either
+    `off=0000000003d7eca0, module=eboot.bin` or `kyty_exception_handler: 0000000903d7eca0`.
+  - **NO_CRASH:** G+120 s was reached with no crash text.
+  - **CRASH_OTHER, KERNEL, WALL** (the watchdog or the fuse), **SETUP, NOT_ROUTED** as named.
+- **Counted runs.** A run counts only if its log shows the fix off, the pass-through hook and the catcher on.
+- **Control.** At least 2 of 3 at the site, or **no conclusion** on any arm.
+- **Per arm.**
+  - **HOLDS:** 4 of 4 NO_CRASH, with the arm's exposure in every run.
+  - **REFUTED:** any TARGET.
+  - **NO TEST:** a run without its exposure.
+  - **OPEN:** anything else. A missing or unreadable count is unknown, not 0 (R19).
+  - The exposure per arm:
+    - L needs `P1 locus SLOW ON` and a GetLocus call line;
+    - F needs `P2 prefetch delay ON` and a Prefetch call line;
+    - K needs `P3 call cost ON` and any PlayGo call line;
+    - S needs a `Job Hi` slice line with `set rc 0`;
+    - Y needs `handoff:` lines;
+    - D needs `C3 direct wake ON`.
+  - Each set is judged on its own rows, against its own three controls.
+- **What a HOLD means.**
+  - (2/9)^4 ≈ 0.002 is only an illustration. It holds if p were exactly the past 7 of 9 (F799) and the runs were
+    independent; it is not an estimate of the chance from that small history (R13).
+  - Fisher's exact test of 4 clean of 4 against the history's 2 clean of 9 gives 15/715 ≈ 0.021 (one-sided). That
+    assumes the runs are exchangeable, which they are not quite: other builds, other days.
+  - Either way, a HOLD is a pointer, not the mechanism.
+  - It is 120 s on one scripted route, not the maintainer's fight.
+  - `JobArenaFix` stays until his own fight passes with the candidate on and the fix off, and he decides.
+- **Cost.** Flips/s over G..G+120 are reported per run, against the control's clean runs if there are any. This is
+  descriptive only: no cost claim from these few runs (R13).
+
+## Commands (for the top session, in its slot)
+
+```bash
+# copy to the box, after the GO and with the box free
+scp patch0425.py build0425.py units.sha256 box0425.sh run0425f.sh chain0425.sh check0425.py bc250:bc5-work/exp0425/
+ssh bc250 'cd ~/bc5-work/exp0425 && bash box0425.sh claim "exp 0425 private build" 20 && bash box0425.sh build; MODE=name bash run0425f.sh; bash box0425.sh release'
+# a set, detached; CHAIN_TARGET_OK=1 is the top's named exception for the known crash; playgo first, sched in another slot
+ssh -n bc250 'cd ~/bc5-work/exp0425 && (CHAIN_SET=playgo CHAIN_TARGET_OK=1 setsid nohup bash chain0425.sh > chain0425-playgo.out 2>&1 < /dev/null &)'
+# stop between runs
+ssh bc250 'touch ~/bc5-work/exp0425/STOP'
+```
+
+The laptop streams the kernel log for the whole chain:
+
+```bash
+ssh bc250 journalctl -k -f -n 0 -o short-precise | tee raw/kern-0425.txt
+```
+
+## Local tests (laptop, 2026-11-15)
+
+- **Syntax** with Visual Studio 18's clang++ 22 (msvc target, `-fsyntax-only -std=c++20 -Wall -Wextra`), in the
+  tree's Windows configuration with fmt and magic_enum from `refs/`:
+  - `semaphore.cpp` patched, normal and `-DBC5_LEAN=1`: the same single warning as the unpatched unit (an unused
+    `opt` parameter in `KernelCreateSema`).
+  - `libPlayGo.cpp` patched, normal and lean: no warning, as unpatched.
+  - Not covered: `gamePatch.cpp` needs `nlohmann/json`, which is not on this laptop. `pthread.cpp`'s C1 block sits
+    under the Linux platform branch, which this configuration does not compile.
+  - Both of those are covered by the block builds in `test0425.py`. The real Linux compile is the box's build.
+- **`test0425.py`: 85 of 85 passed**, with 5 repetitions per semaphore case:
+  - the PlayGo block: all 18 entries counted, P1 in GetLocus, P2 in Prefetch after its checks. The block itself was
+    built and run in normal and lean under each word: the clamps, `fast` not taken as `slow`, P3's waits measured,
+    the catcher's first-call line, lean silent;
+  - text checks with mutants: every "ready" goes through `Bc5Ready`, C3's wake comes after the lock, a waiter waits
+    for its waker, the catcher is out of lean;
+  - the patched `KernelSemaPrivate`, with its Linux paths on and a futex stand-in, built `-Wall -Wextra -Werror` in
+    normal and lean. It ran ping-pong with 4 `Job Hi` waiters (20,000 paced signals), timeouts racing signals with
+    the count conserved, Cancel, and delete with blocked waiters. Every case ran with the switches off, C2, C3 and
+    C2+C3, each under a 60 s cap;
+  - C1's block, with a stand-in `sched_getattr`/`sched_setattr`: unset, `0` and `abc` are off; the clamp; the band;
+    FIFO left alone; BATCH and nice kept; the lean build silent;
+  - the catcher's block, called with stand-ins: the counts and lines.
+- **Limits of these tests.**
+  - The first run found 9 failures, all in the test itself: it asked the lean build for exposure lines, which it
+    has none of by design. A second run found 1 failure, again a test flaw: an unpaced signaller never let the
+    waiters sleep, so C2 had nothing to hand off.
+  - No ThreadSanitizer on this laptop. Futex and sched_setattr are stand-ins, so the kernel's behaviour is not
+    tested here.
+- **`test_box0425.sh`: 11 of 11** on stand-ins (a temporary HOME, a fake compile; the real `patch0425.py` on the four
+  units):
+  - the claim and release refusals: no lock, a foreign line, an emulator running, a second claim;
+  - the build's pins, patch, string gate and `binary.md5`;
+  - the earlier binary kept aside;
+  - a unit off its pin stops the build.
+- **`test_chain0425.sh`: the chain dry run on stand-ins** (the real chain, runner and rule; the stand-ins are a virtual
+  clock, a fake emulator that is a copy of bash.exe, the launcher's anchors, and a stand-in chain lock). Three
+  suites ran. Every scenario but the two full sets passed in every suite:
+  - the 6 rule cases;
+  - a TARGET without `CHAIN_TARGET_OK` stops the chain;
+  - each run's class and exposure;
+  - the fix is off in the private input.cfg;
+  - G comes from the journal gate;
+  - slot 4 and the record are queued at G;
+  - the lock is released;
+  - the named snapshot is made;
+  - a kernel line stops the chain after that run (R55);
+  - a STOP file stops the chain before the next run;
+  - NOT_ROUTED gets one replacement, then the chain stops.
+- **The two full sets.** Each has completed once on stand-ins: `sched` 15 of 15, with three HOLDS and the exposure
+  right; `playgo` got through 14 runs, with each arm's exposure right and none of the candidates' in the control. In
+  the other attempts a run ended as SETUP at 0 s: "the emulator's environment lacks …". The cause is in the harness:
+  Git Bash's `/proc/<pid>/environ` of a just-started stand-in child sometimes comes back incomplete. The chain then
+  stopped as it should, and the rule printed OPEN for the partial set. On the box this is `run0413p.sh`'s own
+  environment check, which exps 0413 and 0423 have used there.
+
+## Result: the private build and CHAIN_SET=playgo (2026-11-16 00:00–00:53, the top session's GO)
+
+**Inputs.**
+- `exp0358/saves-live-47aefd45` and `exp0360/fight1450-play.cmd` were no longer in `~/bc5-work`: they went into the
+  NAS archives of 2026-11-08 and 2026-11-12. They were copied from there into the private `exp0425/inputs/`, and both
+  pins held: route sum 9347496fbaf30f25, record md5 b0f9ad5c. The named snapshot holds 102 files, sum
+  `adaec9c23a463195` (`raw/saves-named.sum`).
+
+**The build** (`raw/build-box.txt`).
+- Private normal `13b7b4a4f3189eb2d5d6c125e45c55ff`, from the shared tree's four units at their pins. Shared normal
+  9da2a9d5 unchanged before and after.
+- 0 errors and 5 warnings, none in exp 0425's code:
+  - four are the shared header `stringUtils.h`'s `wstring_convert` deprecation;
+  - one is `sec_to_timeval`, unused, at the same line in the unpatched `pthread.cpp`.
+- No lean build was made.
+
+**The runs.** The box ran kernel 7.3.3-ogc1.1.fc45, boot b348813a.
+- 15 of 15 routed: slot 4, G at 107–109 s, the record's 100 lines queued at G.
+- No kernel GPU line in any run (the runner's dmesg gate). The laptop's kernel stream is empty.
+- No real pad key. The chain lock was released at 00:53.
+
+| arm | runs | TARGET (site) | NO_CRASH | crash-type jobs the owner took, per run (catcher) |
+|---|---|---|---|---|
+| C, control | C1 C2 C3 | 1 (C2) | 2 | 0, 1, 1 |
+| L, P1 locus slow | L1–L4 | 2 (L1, L4) | 2 | 2, 0, 2, 3 |
+| F, P2 prefetch 500 ms | F1–F4 | 3 (F1, F3, F4) | 1 | 2, 0, 2, 3 |
+| K, P3 call cost 200 µs | K1–K4 | 0 | 4 | 0, 0, 1, 1 |
+
+- Every TARGET ended 8–10 s after G (after = 117–118 s), as in F792.
+- **Flips/s over each run: 35.5–37.1 in every arm.** No difference is seen between the arms. That is not a
+  measured zero cost (R13).
+
+**The rule's output: "control 1 of 3 at the site: NO CONCLUSION".** By the rule fixed before the runs, no arm can be
+judged from this set.
+
+**What the runs still show, apart from the rule.**
+- **P1 and P2 do not remove the crash.** They crashed at the site with the candidate on, 2 of 4 and 3 of 4. That
+  needs no control.
+- **P3 had 0 of 4 at the site.** Against the other 11 runs of the set pooled (6 of 11), the one-sided Fisher exact
+  test gives 126/1365 ≈ 0.09, assuming exchangeable runs. That is a hint, not a result (R13).
+- The controls crashed less often than in the history (1 of 3 against 7 of 9, F799). Either the route's rate on this
+  build is lower, or this is chance: three runs cannot tell (F798 already saw a clean control).
+- **The catcher (descriptive, R11).**
+  - Its crash-type identity holds: every run that crashed shows owner-taken crash-type jobs (2–3), and the crash
+    followed the last of them.
+  - Taking such a job does not always crash: in 5 clean runs the owner took 1 or 2 and the game went on.
+  - At 13 of the 19 crash-type takes, at least one woken `Job Hi` waiter had not yet run again.
+  - Over all owner help calls, about 74 % found such a waiter (C1: 11,915 of 16,000).
+  - These counts are global and unpaired (README limits): they say the owner often runs while woken Hi workers
+    wait for a CPU, not that one of them would have taken that job.
+- Raw files: `raw/chain0425-playgo.out`, `raw/n/chain-rows-playgo.txt`, `raw/n/raw/*` (summaries, start, route, end,
+  dmesg; crash excerpts with the code-byte lines removed), `raw/catcher-lines-playgo.txt`. The play logs stay on the
+  box in `~/bc5-work/exp0425/n/raw/`.
+
+## Verdict (CHAIN_SET=playgo)
+
+**No conclusion by the rule: the control crashed 1 time of 3.**
+
+- P1 (locus slow) and P2 (prefetch delay) do not remove the crash: both crashed at the site with the candidate on.
+- P3 (a 200 µs cost on every PlayGo call) was clean 4 of 4. That is a hint only: p ≈ 0.09 against the set's other
+  runs, with an uninformative control.
+- `JobArenaFix` stays.
+
+What this suggests next, the top session's decision:
+- a repeat of C against K with more runs (for example 6 + 6), to separate P3 from chance;
+- then the sched set (C1–C3).
+
+## Who calls PlayGo, from the playgo set's catcher (asked by the top session)
+
+- **All 90 PlayGo lines** of the 15 runs are on the thread named `game-main`.
+  - They come from six kinds: Initialize, Open, GetChunkId, GetInstallChunkId, GetLocus and Prefetch, each once per
+    run in the log.
+  - No kind reached its 1000th call in any run, so each kind was called fewer than 1000 times per run.
+- **That catcher cannot say more.** It logged only the first and every 1000th call, so it cannot tell how often
+  PlayGo is called near G+9 s, or whether `game-main` is the job system's owner.
+- **If the owner is the caller, P3 is the same lever as exp 0388's spin:** a delay on the owner thread, not a PlayGo
+  answer. The second build's catcher is there to settle both points.
+
+## Second build and CHAIN_SET=p3rep, then CHAIN_SET=sched (the top session's GO, 2026-11-16; fixed before the runs)
+
+**The catcher, sharpened** (fixes first, then test; nothing else changes):
+- Every PlayGo call is logged, up to 3000 lines in all, then each kind's every 1000th. Its place among the log's
+  `fps counter t … s` lines dates it.
+- The owner hook's first call also names its thread: `the owner's first help call is on '<name>'`.
+- Laptop checks: `test0425.py` 85 of 85; `libPlayGo.cpp` passes the syntax check in normal and lean.
+
+**CHAIN_SET=p3rep.**
+- 12 runs: C7 K5 C8 K6 C9 K7 C10 K8 C11 K9 C12 K10, the same route, pins and stops as the playgo set.
+- C is the control; K is P3 at 200 µs.
+- **Rule** (`check0425.py rule <rows> p3rep`):
+  - the control needs at least 3 of 6 at the site, or no conclusion;
+  - P3 HOLDS at 6 of 6 NO_CRASH with its exposure;
+  - P3 is REFUTED by any TARGET;
+  - OPEN otherwise.
+- The one-sided Fisher exact p against the control is printed as information only: exchangeable runs assumed, not
+  a probability of the cause (R13).
+
+**CHAIN_SET=sched.** As fixed above:
+- C4 S1 Y1 D1 S2 Y2 D2 C5 S3 Y3 D3 C6 S4 Y4 D4;
+- the control needs at least 2 of 3 at the site;
+- each arm HOLDS at 4 of 4 clean and exposed and is REFUTED by any TARGET;
+- the Fisher line is printed as information only.
+
+**Order.** `both0425.sh` runs p3rep, then sched, each under its own chain lock line. Sched starts only if p3rep
+ended without a STOP, no STOP file exists, the lock is free and no emulator runs.
+
+## Result: CHAIN_SET=p3rep and CHAIN_SET=sched (2026-11-16 01:01–02:40, the top session's GO)
+
+**The build.**
+- Private normal `81e8d0f7b6c97e97ec0739a9bd0241ef`: the first build plus the sharpened catcher, nothing else.
+- Shared normal 9da2a9d5 unchanged; the build lock was released before the chains.
+
+**The runs.** Same as the playgo set: kernel 7.3.3-ogc1.1.fc45, boot b348813a, slot 4, RT on, the named snapshot.
+- 27 of 27 routed: G at 106–118 s.
+- No kernel GPU line in any run: the runner's dmesg gate, and the laptop's stream `raw/kern-0425-p3rep-sched.txt` is
+  empty.
+- No real pad key; no STOP. Each chain released its lock (01:44:47 and 02:40:47).
+
+| set | arm | runs | TARGET (site) | NO_CRASH | crash-type jobs the owner took, per run (catcher) |
+|---|---|---|---|---|---|
+| p3rep | C, control | C7–C12 | 1 (C11) | 5 | 0, 4, 0, 3, 1, 1 |
+| p3rep | K, P3 call cost 200 µs | K5–K10 | 3 (K5, K6, K7) | 3 | 2, 2, 2, 1, 1, 0 |
+| sched | C, control | C4 C5 C6 | 3 (all) | 0 | 1, 2, 1 |
+| sched | S, C1 wake slice 200 µs | S1–S4 | 0 | 4 | 0, 0, 0, 0 |
+| sched | Y, C2 handoff 300 µs | Y1–Y4 | 0 | 4 | 0, 0, 0, 0 |
+| sched | D, C3 direct wake | D1–D4 | 1 (D2) | 3 | 1, 3, 1, 1 |
+
+- Every TARGET ended 8–10 s after G, as in F792, except C5 (158 s, G 108: about G+50 s).
+- Exposure held in every run:
+  - S: 66 threads took the slice, 5 of them Hi;
+  - Y: 607–619 handoff lines;
+  - D: the direct-wake line.
+- Flips/s 31.6–36.7; no arm stands apart from its control (not a measured zero cost, R13).
+
+**The rule's output.**
+- p3rep: "control 1 of 6 at the site (want at least 3): **NO CONCLUSION**."
+- sched: control 3 of 3.
+  - C1 (S) **HOLDS**: 4 of 4 clean and exposed. One-sided Fisher 0.029.
+  - C2 (Y) **HOLDS**: 4 of 4. Fisher 0.029.
+  - C3 (D) **REFUTED**: D2 crashed at the site. Fisher 0.114.
+  - The Fisher lines are information only: exchangeable runs assumed (R13).
+
+**What the runs show apart from the rule.**
+- **P3 does not remove the crash.** It crashed 3 of 6 with the candidate on; that needs no control. Its 0 of 4 in the
+  playgo set was chance; across both sets P3 is 3 of 10.
+- **The control's rate moves between sets on the same build:** 1 of 6 in p3rep, 3 of 3 in sched. Pooled on
+  81e8d0f7 it is 4 of 9.
+  - Against that pooled control, C1 and C2 together (0 of 8) give a one-sided Fisher 1287/24310 ≈ 0.053.
+  - That is again an illustration under exchangeable runs, not an estimate (R13).
+  - C1 and C2 hold by the rule fixed for their set; the evidence is still 4 runs each.
+- **The catcher (descriptive, R11).**
+  - In the 8 S and Y runs, the owner took no crash-type job at all.
+  - In the 9 controls on this build it took one or more in 7; in P3's runs in 5 of 6; in C3's in 4 of 4.
+  - As a count, 0 of 8 against 7 of 9 gives a one-sided Fisher 45/24310 ≈ 0.002. That is the same illustration, not
+    a probability (R13).
+  - C2 also halves the owner's help: its last sums are at 8000 owner calls, against 14000–16000 in the other arms'
+    full runs. Its share of calls with a Hi waiter pending is about 48 %, against 70–78 % elsewhere.
+  - C1 does not change that share (70–72 %) and still shows no crash-type take. **The catcher does not show how C1
+    acts.** This is one global, unpaired counter (README limits).
+- Raw files:
+  - `raw/chain0425-p3rep.out`, `raw/chain0425-sched.out`, `raw/both0425.out`;
+  - `raw/n/chain-rows-p3rep.txt`, `raw/n/chain-rows-sched.txt`;
+  - `raw/n/raw/*`: summary, start, route, end, pad, dmesg, and crash excerpts with the code-byte lines removed;
+  - `raw/catcher-lines-p3rep-sched.txt`, `raw/pgrate-p3rep-sched.txt` (from `pgrate0425.py`).
+  - The play logs stay on the box in `~/bc5-work/exp0425/n/`.
+
+## Who calls PlayGo, and how often near G+9 s (the second build's catcher, all 27 runs)
+
+- **The owner is `game-main`.** In every run, the owner hook's first help call names it.
+- **`game-main` is also the main PlayGo caller.** Each run makes the same 451 calls:
+  - 446 are GetLocus; the other five kinds are called once each;
+  - by thread: `game-main` 376, `Archive Asset I` 72, `AK::IOThread` 3.
+- **Almost all of them come at the load.**
+  - `game-main` makes 375 calls before the log's first fps line (t ≈ 4 s), then exactly one more, at fps t 100–112 s.
+  - `Archive Asset I` makes 55 near t 31 s and about 14 near t 100 s.
+- **Near G+9 s PlayGo is almost silent.** In the window G..G+14 s, every run has one call, on `AK::IOThread`: about
+  0.07 calls per second. No run has a `game-main` call in that window.
+  - This is placed with the fps clock, 1 s resolution, taken as the launch clock within a few seconds
+    (`pgrate0425.py`).
+- **Said plainly: the owner is the caller, so P3 is the same lever as exp 0388's spin**: a delay on the owner thread,
+  not a PlayGo answer.
+  - Its 200 µs per call costs the owner about 75 ms during the load and nothing near the crash.
+  - That fits P3's 3 crashes of 6.
+
+## Verdict (CHAIN_SET=p3rep and CHAIN_SET=sched)
+
+- **P3: no conclusion by the p3rep rule** (control 1 of 6).
+  - It crashed 3 of 6, so it is not a fix.
+  - It is an owner delay at the load, not a PlayGo answer.
+  - All three PlayGo arms (P1, P2, P3) are now seen to crash with the candidate on.
+- **C1 (a 200 µs EEVDF wake slice for guest threads below priority 733) HOLDS by the sched rule:** 4 of 4 clean
+  against a 3 of 3 control.
+- **C2 (the signaller yields up to 300 µs until the woken waiter runs) HOLDS by the sched rule:** 4 of 4 clean.
+- **C3 (the futex direct wake) is REFUTED:** D2 crashed at the site.
+- In all 8 C1 and C2 runs the owner never took a crash-type job (descriptive).
+- **Not shown:**
+  - that C1 or C2 removes the crash in general: 4 runs each, the control's rate varies between sets, R13;
+  - their cost: flips/s are not lower in these runs, but that is no measured zero;
+  - C1's mechanism;
+  - any lean-build behaviour.
+- `JobArenaFix` stays; nothing shared changed.
+
+What this suggests next, the top session's decision:
+- a confirmation of C1 and C2 against interleaved controls with more runs each;
+- the maintainer's own play with one of them and `JobArenaFix` off;
+- the costs measured on lean;
+- only then a shared-build decision.
+
+## CHAIN_SET=confirm: C1 and C2 against interleaved controls (the top session's GO, 2026-11-16; fixed before the runs)
+
+**Setup.** As in the sched set; only the tags and the counts change.
+- The private normal 81e8d0f7, the named snapshot, slot 4, the 14:50 record, RT on, `ulimit -c 0`.
+- One BOX-LOCK line for the chain.
+- `JobArenaFix` off in every arm (`KYTY_BC5_JOB_ARENA_FIX=0`, as in all of this experiment's runs), with the catcher
+  on. Otherwise there is no crash to prevent.
+- 18 runs, the order rotated per round:
+  - C13 S5 Y5 / S6 Y6 C14 / Y7 C15 S7 / C16 S8 Y8 / S9 Y9 C17 / Y10 C18 S10;
+  - C is the control, S is C1 (wake slice 200 µs), Y is C2 (handoff 300 µs).
+- Before the start: no `kyty_emulator` runs, and the maintainer is not playing.
+- The chain stops after the current run on:
+  - a real pad key, i.e. the maintainer plays;
+  - a kernel GPU line;
+  - a class other than NO_CRASH or TARGET;
+  - a second NOT_ROUTED;
+  - a STOP file.
+
+**Rule** (`check0425.py rule <rows> confirm`):
+- The control needs at least 3 of 6 at the site, or the set has **no conclusion**.
+- Each of C1 and C2:
+  - **HOLDS** at 6 of 6 NO_CRASH, each run exposed (C1: `C1-hi-ok` > 0; C2: `C2-lines` > 0);
+  - is **REFUTED** by any TARGET;
+  - is **NO TEST** if a run lacks its exposure;
+  - is **OPEN** otherwise.
+- A run without fix-off, pass-through and catcher lines counts as no test.
+- The one-sided Fisher exact p against the control is printed as information only: exchangeable runs assumed, not a
+  probability of the cause (R13).
+- The catcher's crash-type takes are reported as description only (R11).
+
+## Result: CHAIN_SET=confirm (2026-11-16 02:59–04:13, the top session's GO)
+
+**The runs.**
+- Build and conditions as in the sched set:
+  - private normal 81e8d0f7, kernel 7.3.3-ogc1.1.fc45, boot b348813a, slot 4;
+  - RT on, the named snapshot, `JobArenaFix` off (top confirmed it), the catcher on.
+- Before the start no emulator ran and the lock was free.
+- 18 counted runs:
+  - C13 did not route (no load within 40 s of Continue);
+  - the chain's one replacement, C13R, did.
+- **Kernel.** No kernel GPU line in any run.
+  - The laptop's stream `raw/kern-0425-confirm.txt` holds only two SELinux "context is not valid" lines, at 04:13 and
+    04:15.
+- No real pad key and no STOP; the chain lock was released at 04:13:27.
+- The lock line says "15 runs": that is the chain's fixed text, and the set ran 18.
+- Stand-in dry run before the start (`test_chain0425.sh rule target-stop kernel stopfile noroute`): 15 passed, 2
+  failed.
+  - Both failures are in the kernel scenario: its first run is SETUP, because of the known Git Bash `/proc` environ
+    race.
+  - The set's rule was also checked on synthetic rows: HOLDS, REFUTED, NO CONCLUSION and NO TEST.
+
+| arm | runs | TARGET (site) | NO_CRASH | crash-type takes per run (catcher) |
+|---|---|---|---|---|
+| C, control | C13R C14 C15 C16 C17 C18 | 2 (C16, C18) | 4 | 2, 2, 2, 4, 0, 2 |
+| S, C1 wake slice 200 µs | S5–S10 | 0 | 6 | 0, 0, 1, 0, 0, 1 |
+| Y, C2 handoff 300 µs | Y5–Y10 | 0 | 6 | 0, 0, 0, 1, 0, 0 |
+
+- Both TARGETs ended 9–10 s after G (after 117–118 s), as in F792.
+- Exposure held in every run:
+  - S: 66 threads took the slice, 5 of them Hi;
+  - Y: 594–626 handoff lines.
+- Flips/s 35.0–37.7 in every arm (not a measured zero cost, R13).
+
+**The rule's output: "control 2 of 6 at the site (want at least 3): NO CONCLUSION".** By the rule fixed before the
+runs, the confirmation does not judge C1 or C2.
+
+**What the runs show apart from the rule.**
+- C1 and C2 were clean 6 of 6 each. Against this set's control (2 of 6), the one-sided Fisher p is 0.23.
+- **On build 81e8d0f7, all sets together:**
+  - controls 6 of 15 at the site (p3rep 1/6, sched 3/3, confirm 2/6);
+  - C1 0 of 10; C2 0 of 10.
+  - One-sided Fisher: C1 alone 0.028; C1 and C2 together (0 of 20) about 0.003.
+  - These are illustrations under exchangeable runs, not estimates of a rate or a cause (R13). The control's rate
+    moved between sets.
+- **The catcher (R11).** The sched set's "no crash-type take under C1 or C2" does not hold as an absolute:
+  - S7, S10 and Y8 each took one and went on without a crash.
+  - Runs with a take: 5 of the 6 controls against 3 of the 12 C1 and C2 runs (Fisher about 0.03, the same
+    illustration).
+  - C2 again halves the owner's help calls (last sums at 8000 against 14000–16000), and its Hi-pending share is
+    about 49 %.
+  - C1 again leaves that share at about 73 %.
+- Raw files:
+  - `raw/chain0425-confirm.out`, `raw/n/chain-rows-confirm.txt`;
+  - `raw/n/raw/*` for C13–C18, S5–S10, Y5–Y10, crash excerpts with the code-byte lines removed;
+  - `raw/catcher-lines-confirm.txt`.
+
+## Verdict (CHAIN_SET=confirm)
+
+- **No conclusion by the rule: the control crashed 2 of 6.**
+- C1 and C2 were clean in all 12 of their runs here, and in 20 of 20 on this build. That is consistent with both
+  removing or strongly lowering the crash, but it is not shown by a rule that passed (R13).
+- `JobArenaFix` stays; nothing shared changed.
+- The control's low and moving rate (6 of 15 on this build, 7 of 9 in the history) is what limits every set. A rule
+  that waits for 3 of 6 control crashes will often say nothing at this rate.
+- Next is the top session's decision. Options:
+  - a longer set;
+  - a rule fixed on the pooled control;
+  - the maintainer's own play with C1 or C2 and `JobArenaFix` off.
+
+## The maintainer's C1 test shortcut (2026-11-16 07:43–07:45; his yes to making him a shortcut, through the top session)
+
+This is a play, not a measured run. Under BOX-LOCK, files only: no emulator was started.
+
+**The shortcut.** `~/Pulpit/BC5 test 0425 C1 (wake slice).desktop`, md5 `f9dd1821`.
+- `desktop-file-validate` reports it valid.
+- `Exec=/usr/bin/distrobox enter ubuntu -- ~/bc5-work/exp0425/play-0425-c1.sh`.
+- No other second-title test shortcut was on `~/Pulpit`, so nothing was moved.
+
+**The launcher.** `~/bc5-work/exp0425/play-0425-c1.sh`, md5 `f6e93a4c`.
+- It is a copy of the shared `play-pkg.sh` 47426d8e, made by `mkplay0425.py` (here).
+- Its changes:
+  - the private normal build `exp0425/kyty_emulator`; the launcher refuses to start unless its md5 begins
+    81e8d0f7;
+  - its own logs; no lean; no `BC5_EMU` override;
+  - the unpacked game `~/bc5-data/games/TITLE2`, as in the S runs;
+  - after the title's 20 words: `KYTY_BC5_JOB_ARENA_FIX=0 KYTY_BC5_0425_CATCH=1 KYTY_BC5_0425_WAKE_SLICE_US=200`;
+  - `BC5_GUARD_MAP_RULE` and `BC5_GUARD_PRT_BG` unset.
+- Everything else is as in his play:
+  - his saves `~/bc5-work/_SaveData-pkg-play`;
+  - no learned windows (the empty `direct-learned-none.txt`);
+  - RT on: nothing turns it off, and the BVH build is not skipped;
+  - `ulimit -c 0`;
+  - the play journal `~/bc5-data/captures/play-<date>/gc/`.
+- `play-pkg.sh`, `play-any.sh` and the shared builds are unchanged (47426d8e, fc7a1395, 9da2a9d5).
+
+**Checks.**
+- `bash -n` passes.
+- A dry copy cut before the pad watcher, with no capture directory made, exported:
+  - the 20 title words;
+  - `BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 BC5_GUARD_LEARN_LOG=2`, as `play-pkg.sh` sets them; the S runs had the
+    first two;
+  - the three arm words above;
+  - his saves directory and the empty learned file.
+
+**What a play leaves.**
+- The emulator's log: `~/bc5-work/exp0425/play-c1/play-last.log`. The previous play's log is kept as
+  `play-last-<date>.log`.
+- The catcher's lines in that log: `exp 0425 catch: owner takes crash-type job …` and the sums.
+- The play journal: `~/bc5-data/captures/play-<date>-<time>/gc/direct.log`.
+- A GPU fault record, if any: `~/bc5-data/captures/faults/`.
+- The arena crash shows as an access violation at address `0xc` near the end of `play-last.log`.
+
+## The shared swap: C1 on by default (2026-11-16 11:04–11:12)
+
+The maintainer told the top session: for now this solution goes into all versions,
+to be withdrawn later if need be. Top gave the GO.
+
+**What changed.** `mkc1.py` on the shared tree at patch 4945ef1b, applied by `int0425.sh` under one BOX-LOCK line.
+- `src/kernel/pthread.cpp` gets the private build's C1 block, unchanged in code: a 200 µs EEVDF slice request for
+  guest threads below priority 733.
+  - Its two stderr lines are under `#ifndef BC5_LEAN`.
+  - The switch itself is read in both builds.
+- `src/bc5/switch_defaults.hpp` gets the row `{"KYTY_BC5_0425_WAKE_SLICE_US", "200"}`.
+  - It is in **kSoft**, not kFixes, a deviation from the request. Since exp 0419, kFixes rows are set with
+    overwrite, so `=0` could not turn them off. kSoft is set without overwrite, so
+    `KYTY_BC5_0425_WAKE_SLICE_US=0` in the environment turns C1 off with no build, as asked.
+  - It applies to every title, normal and lean.
+- Not in it: the catcher, C2, C3, P1–P3. JobArenaFix stays as shared had it.
+- Launchers and shortcuts are unchanged. The C1 test shortcut was moved from `~/Pulpit` to
+  `~/bc5-work/trash-20261111/pulpit`.
+
+**Result** (`raw/swap/int0425.out`).
+- Patch: 4945ef1b → **700fd4c2**. 115 lines differ, all of them in the two files.
+  - `exp 0372` lines: 5; the pad_audio_route header is in.
+  - The file list is the same.
+  - The guard, learned-window and JobArenaFix lines are as before; no catcher, C2, C3 or PlayGo word.
+- Builds: normal 9da2a9d5 → **1be1cc1d**; lean f942676c → **b7fb337f**. The backend archive 9aab722c is unchanged.
+  - 3 warnings each, all already there before: two `wstring_convert` deprecations and the unused `sec_to_timeval`.
+- Switch words: both builds gained exactly `KYTY_BC5_0425_WAKE_SLICE_US` and lost none.
+  - Normal holds the "C1 wake slice" line.
+  - Lean holds no "exp 0425" text.
+
+**Smoke on lean** (`smoke0425.sh`; RT on, `ulimit -c 0`; `raw/swap/smoke0425.out`, `raw/swap/smoke/`).
+
+| tag | what | result |
+|---|---|---|
+| s425a | The first title 45 s | PASS. No kernel line, no crash text, no pad key. |
+| s425t | the second title 300 s on lean, by time | PASS. Details below. |
+
+- s425t setup: exp 0412's named snapshot; crosses at 90, 100 and 108 s, then a walk from 170 s.
+- s425t result: ran 300 s, all 33 key lines done; no kernel line, no crash text, no pad key.
+- **Exposure on lean.** At 150 s, `/proc/<tid>/sched` `se.slice` showed 83 of the emulator's threads at
+  200000 ns and 14 at the default 2800000 ns. C1 is active in the lean build, which prints nothing.
+- The box's `dmesg` has amdgpu lines only from 2026-11-15 20:08, before this work.
+
+**Undo.**
+- Rollback without a build: `KYTY_BC5_0425_WAKE_SLICE_US=0` in the environment.
+- Full rollback: `bash ~/bc5-work/exp0425/undo0425.sh`, back to patch 4945ef1b (normal 9da2a9d5, lean f942676c).
+  Further back is exp 0422's undo, run after this one.
+- **The undo was fixed after the swap** (Codex, 10:07 UTC, confirmed).
+  - The bug: the first undo named the source paths `U1`/`U2`, and the pins file it sources sets `U1=`/`U2=` to md5s.
+    Its copies would have gone to files named by those sums.
+  - `test_undo0425.sh` reproduces it: the first version fails 7 of 9 checks and leaves two such files. The fixed
+    one (0d5ab7f2) passes 9 of 9, covering run alone, run from int and an incomplete pins file.
+  - The fixed undo also takes its own BOX-LOCK slot when run alone.
+  - It is installed on the box and has not been run there; nothing failed in the swap.

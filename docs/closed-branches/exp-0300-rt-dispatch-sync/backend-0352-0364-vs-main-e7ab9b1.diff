@@ -1,0 +1,551 @@
+diff --git a/backend/CMakeLists.txt b/backend/CMakeLists.txt
+index 9d93528..dbd6759 100644
+--- a/backend/CMakeLists.txt
++++ b/backend/CMakeLists.txt
+@@ -99,8 +99,7 @@ if(BC5_BUILD_TESTS)
+ 
+     add_executable(bc5_backend_tests tests/placeholder_test.cpp tests/pm4_test.cpp tests/policy_test.cpp
+                    tests/state_stack_test.cpp tests/full_state_test.cpp tests/cu_tables_test.cpp
+-                   tests/indirect_check_test.cpp tests/shadow_labels_test.cpp tests/host_indirect_test.cpp tests/ib_split_test.cpp tests/job_arena_fix_test.cpp
+-                   tests/pad_audio_route_test.cpp)
++                   tests/indirect_check_test.cpp tests/shadow_labels_test.cpp tests/host_indirect_test.cpp tests/ib_split_test.cpp tests/job_arena_fix_test.cpp tests/user_data_hint_test.cpp tests/indirect_check_batch_test.cpp)
+     target_link_libraries(bc5_backend_tests PRIVATE bc5_backend bc5_warnings Catch2::Catch2WithMain)
+     catch_discover_tests(bc5_backend_tests)
+ endif()
+diff --git a/backend/include/bc5/indirect_check.hpp b/backend/include/bc5/indirect_check.hpp
+index fcdca4d..6cc4152 100644
+--- a/backend/include/bc5/indirect_check.hpp
++++ b/backend/include/bc5/indirect_check.hpp
+@@ -35,6 +35,9 @@ namespace bc5::indirect_check {
+ 
+ struct Stats {
+     std::uint32_t checked = 0;         // dispatches given the check
++    std::uint32_t batched = 0;         // ... in the batched form (experiment 0352), counted in `checked` too
++    std::uint32_t batches = 0;         // chains given one ME phase
++    std::uint32_t flag_dwords = 8;     // the flag area the IB needs (4 dwords per batched dispatch, else 8)
+     std::uint32_t product_checked = 0; // ... with the product staircase as well (experiment 0341)
+     std::uint32_t unbased = 0;         // dispatches without a known base: PFP_SYNC_ME only
+     std::uint32_t conditional = 0;     // dispatches NOP-ed: a COND_EXEC range grew too long
+@@ -62,6 +65,21 @@ inline constexpr std::size_t kCheckDwords = 5 + 3 * 9 + 5 + 2 + 5;
+ struct ProductLimit {
+     std::uint32_t x_limit = 1u << 16;
+     std::uint32_t yz_min = 1;
++    // Experiment 0352: > 1 = up to that many consecutive checked dispatches of one chain (only SET_SH_REG
++    // and NOP packets between them, one base) share one ME phase: one WRITE_DATA sets every pair of flags
++    // (flag = 1, flagB = 1; 16 bytes per dispatch), then per dispatch the three per-dimension COND_WRITEs
++    // (flag = 0) and the staircase as three COND_WRITEs on flagB (y > yz_min ? 0, z > yz_min ? 0,
++    // x <= x_limit ? 1: flagB = !((y or z > yz_min) and x > x_limit)), one WRITE_DATA WR_CONFIRM, one
++    // PFP_SYNC_ME; at each dispatch COND_EXEC flag over (COND_EXEC flagB over the dispatch). 68 dwords a
++    // dispatch instead of 88 and two PFP_SYNC_MEs fewer; the same acceptance set (the harness gate).
++    // Reads of the arguments happen earlier than in the per-dispatch form, before the chain's first
++    // dispatch instead of before each; the title puts no barrier between the chain's dispatches, so
++    // their arguments are final at the chain's start already (exp 0349's dumps). Function codes:
++    // Mesa src/amd/common/sid.h WAIT_REG_MEM_* (0866ae7), shared by COND_WRITE (RPCSX Pipe.cpp).
++    std::uint32_t batch = 0;
++    // Experiment 0352 arm C: the per-dispatch check emitted twice (the first copy's COND_EXEC skips the
++    // second copy and the dispatch): the same acceptance set with twice the work, a measurement arm.
++    bool twice = false;
+ };
+ inline constexpr std::size_t kProductDwords = 5 + 9 + 9 + 5 + 2 + 5 + 9;
+ inline constexpr std::size_t kDrawCheckDwords = 5 + 2 * 9 + 5 + 2 + 5;
+diff --git a/backend/include/bc5/user_data_hint.hpp b/backend/include/bc5/user_data_hint.hpp
+new file mode 100644
+index 0000000..5bbd07b
+--- /dev/null
++++ b/backend/include/bc5/user_data_hint.hpp
+@@ -0,0 +1,55 @@
++// SPDX-License-Identifier: GPL-2.0-only
++// Experiment 0364: compute user-data hints — the pure rule.
++//
++// The second title places its shaders' buffers in a 4-GiB window (exp 0346 learns its high dword from the title's
++// own SET_BASEs: 0x1100000000) and passes 32-bit offsets in COMPUTE_USER_DATA_n with the high dword in another
++// user-data register. A dispatch's first write into a region the host has not imported for the GPU (a lazy view
++// no earlier fault has learned) faults, hangs the ring for the kernel's timeout and is recovered by a ring reset
++// (F443, F467–F469). The hint turns such offsets into addresses before the dispatch runs, so the host imports the
++// region as its render-target hints do for CB/DB bases. This header holds what a unit test can check: which
++// dwords are candidates, the window they ask for, and the key that keeps one import per region.
++#pragma once
++
++#include <cstdint>
++
++namespace bc5::user_data_hint {
++
++// Dwords below this are counts, indices and flags, never offsets worth an import (1 MiB; R1 of exp 0364 saw a
++// false candidate at 0x40011, the title's real offsets are 256 MiB and more).
++inline constexpr std::uint32_t kMinOffset = 0x100000;
++// One hint per 64 MiB region: the key an address falls into.
++inline constexpr std::uint64_t kRegion = 64ull << 20u;
++
++// The window's high part is the learned window's bits above 32; a user-data dword is its low part.
++inline bool candidate(std::uint64_t window, std::uint32_t dword, std::uint64_t* out) {
++    if (window == 0 || dword < kMinOffset || (dword & 0xfu) != 0) { // R2 of exp 0364: 0x100011 passed the size test; pointers are 16-byte aligned
++        return false;
++    }
++    *out = (window & ~0xffffffffull) | static_cast<std::uint64_t>(dword);
++    return true;
++}
++
++inline std::uint64_t region_key(std::uint64_t addr) {
++    return addr & ~(kRegion - 1);
++}
++
++// The span to ask the direct mapper for: like the render-target hints, `below` before the address's 64 KiB page
++// and `size` from it.
++inline std::uint64_t window_lo(std::uint64_t addr, std::uint64_t below) {
++    const std::uint64_t page = addr & ~0xffffull;
++    return page > below ? page - below : 0;
++}
++
++inline std::uint64_t window_hi(std::uint64_t addr, std::uint64_t size) {
++    return (addr & ~0xffffull) + size;
++}
++
++// SET_SH_REG offsets (relative to 0x2c00) of COMPUTE_USER_DATA_0..15 (Mesa's gfx10 register table).
++inline constexpr std::uint32_t kUserData0 = 0x240;
++inline constexpr std::uint32_t kUserDataCount = 16;
++
++inline bool is_user_data(std::uint32_t sh_offset) {
++    return sh_offset >= kUserData0 && sh_offset < kUserData0 + kUserDataCount;
++}
++
++} // namespace bc5::user_data_hint
+diff --git a/backend/src/direct.cpp b/backend/src/direct.cpp
+index 1ac76d8..c57e5a4 100644
+--- a/backend/src/direct.cpp
++++ b/backend/src/direct.cpp
+@@ -132,6 +132,7 @@ struct Device::Impl {
+     std::uint64_t split_jobs = 0, split_pieces = 0, split_fallback = 0, split_failed = 0;
+     std::set<std::uint64_t> hi_programs;
+     indirect_check::ProductLimit product;
++    std::uint64_t batched_sum = 0, batches_sum = 0; // experiment 0352
+     std::map<std::uint32_t, std::uint64_t> hist; // key: the log2 classes of x, y, z, 8 bits each
+     std::uint64_t hist_n = 0, hist_printed = 0, hist_stair = 0, hist_dim = 0;
+     std::uint64_t shadow_jobs = 0, shadow_labels_sum = 0, shadow_writes_sum = 0, shadow_waits_sum = 0,
+@@ -215,6 +216,9 @@ struct Device::Impl {
+                          static_cast<unsigned long long>(shadow_writes_sum), static_cast<unsigned long long>(shadow_waits_sum),
+                          static_cast<unsigned long long>(shadow_overflow_sum), static_cast<unsigned long long>(shadow_failed_sum),
+                          static_cast<unsigned long long>(product_sum));
++        if (batched_sum != 0) // experiment 0352
++            std::fprintf(stderr, "bc5-direct: experiment 0352 %s: %llu checked dispatches in the batched form, %llu chains\n", when,
++                         static_cast<unsigned long long>(batched_sum), static_cast<unsigned long long>(batches_sum));
+         if (env_host_indirect) // experiment 0346
+             std::fprintf(stderr,
+                          "bc5-direct: experiment 0346 %s: dispatches seen by the host: %u left (the register non-zero) + %u left (never set), after the title's zeroing %u rewritten to a verified page, dropped %u (no candidate) + %u (not a real mapping) + %u (unreadable) + %u (counts), %u NOP-ed on a COND_EXEC overflow; window 0x%llx; %zu programs\n",
+@@ -500,6 +504,15 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions
+     }
+     std::fprintf(stderr, "bc5-direct: experiment 0349: a job's IB over %zu dwords is cut at aligned packet boundaries outside COND_EXEC ranges into up to %zu IBs of one submit (the kernel takes at most 0xfffff dwords per IB)\n",
+                  d->impl_->ib_max_dw, ib_split::kMaxPieces);
++    if (const char *e = std::getenv("BC5_DIRECT_GPU_CHECK_TWICE"); e != nullptr && *e != 0 && *e != '0' && d->impl_->env_product) { // experiment 0352 arm C
++        d->impl_->product.twice = true;
++        std::fprintf(stderr, "bc5-direct: experiment 0352 switch: every per-dispatch CP check emitted twice (the measurement arm)\n");
++    }
++    if (const char *e = std::getenv("BC5_DIRECT_GPU_CHECK_BATCH"); e != nullptr && *e != 0 && d->impl_->env_product) { // experiment 0352
++        const unsigned long v = std::strtoul(e, nullptr, 0);
++        d->impl_->product.batch = v > 1 ? static_cast<std::uint32_t>(std::min<unsigned long>(v, 1024)) : 0;
++        std::fprintf(stderr, "bc5-direct: experiment 0352 switch: the CP check in its batched form, up to %u consecutive dispatches of a chain share one ME phase (68 dwords a dispatch, two PFP_SYNC_MEs fewer)\n", d->impl_->product.batch);
++    }
+     if (d->impl_->bo_journal || d->impl_->env_histogram || d->impl_->env_shadow || d->impl_->env_product)
+         std::fprintf(stderr, "bc5-direct: experiment 0341 switches: product staircase %d (x > %u with y or z > %u), args histogram %d, shadow labels %d, bo journal %d\n",
+                      d->impl_->env_product ? 1 : 0, d->impl_->product.x_limit, d->impl_->product.yz_min,
+@@ -1186,6 +1199,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
+     // DMA waits above: a COND_EXEC must skip exactly the dispatch). The flag lives in this job's
+     // scratch, after the last piece; its address is filled in once the slot is known.
+     std::vector<std::size_t> flag_refs;
++    std::size_t flag_dwords = 8; // experiment 0352: the batched check needs 4 per chain member
+     if (impl_->env_histogram && !comp) impl_->histogram(main_out, opt.mec_indirect_base, opt.mapped, fopt); // experiment 0341
+     if (opt.gpu_check_indirect) {
+         indirect_check::Stats st;
+@@ -1193,6 +1207,9 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
+                                          opt.gpu_check_draw_max, flag_refs, st, comp,
+                                          impl_->env_product && !comp ? &impl_->product : nullptr); // experiment 0341
+         impl_->product_sum += st.product_checked;
++        impl_->batched_sum += st.batched;
++        impl_->batches_sum += st.batches;
++        flag_dwords = std::max<std::size_t>(8, st.flag_dwords);
+         r.filter.gpu_checks += st.checked;
+         r.filter.gpu_check_unbased += st.unbased;
+         r.filter.gpu_check_skipped += st.conditional;
+@@ -1218,7 +1235,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
+     }
+     const Piece &last = pieces.back();
+     const std::size_t flag_off = last.off + last.padded; // experiment 0052: 8 dwords
+-    std::size_t end_off = flag_off + (flag_refs.empty() ? 0 : 8);
++    std::size_t end_off = flag_off + (flag_refs.empty() ? 0 : flag_dwords);
+     const std::size_t shadow_off = end_off; // experiment 0341: two dwords per shadow slot
+     end_off += static_cast<std::size_t>(shadow_slots) * 2;
+     std::size_t ts_dw = 0;
+@@ -1237,7 +1254,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
+     auto *dst = impl_->image.data();
+     if (!flag_refs.empty()) {
+         indirect_check::patch(main_out, flag_refs, impl_->slots[impl_->cur].va + flag_off * 4);
+-        for (std::size_t i = 0; i < 8; ++i) dst[flag_off + i] = 0;
++        for (std::size_t i = 0; i < flag_dwords; ++i) dst[flag_off + i] = 0;
+     }
+     if (shadow_slots != 0) { // experiment 0341: the slots start as 0, as the title's labels do
+         shadow_labels::patch(main_out, impl_->slots[impl_->cur].va + shadow_off * 4);
+diff --git a/backend/src/indirect_check.cpp b/backend/src/indirect_check.cpp
+index c9f6504..cf82f08 100644
+--- a/backend/src/indirect_check.cpp
++++ b/backend/src/indirect_check.cpp
+@@ -18,6 +18,9 @@ constexpr std::uint32_t kWriteDataMem = 5u << 8;  // DST_SEL memory
+ constexpr std::uint32_t kWrConfirm = 1u << 20;
+ constexpr std::uint32_t kCondWrite = 0xC0074500u; // PKT3(COND_WRITE, 7, 0)
+ constexpr std::uint32_t kGreater = 6;
++constexpr std::uint32_t kLessEqual = 2; // WAIT_REG_MEM_LESS_OR_EQUAL (Mesa sid.h), experiment 0352
++constexpr std::uint32_t kOpSetShReg = 0x76;
++constexpr std::uint32_t kOpNop = 0x10;
+ constexpr std::uint32_t kPollMem = 1u << 4;
+ constexpr std::uint32_t kWriteMem = 1u << 8;
+ constexpr std::uint32_t kPfpSyncMe = 0xC0004200u; // PKT3(PFP_SYNC_ME, 0, 0)
+@@ -89,6 +92,46 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
+     std::vector<Cond> conds;
+     if (has_cond_exec)
+         new_at.assign(ib.size() + 1, ~std::size_t{0});
++    // Experiment 0352: the chains. A chain is a run of GFX-form dispatches with a known base and only
++    // SET_SH_REG / NOP packets between them; runs of two or more, cut at product->batch, share one
++    // ME phase. batch_of[i] = the chain's member offsets, stored at its first member; member[i] marks
++    // every member.
++    std::vector<std::uint8_t> member;
++    std::vector<std::pair<std::size_t, std::vector<std::size_t>>> chains;
++    const bool batching = product != nullptr && product->batch > 1 && !compute_ring;
++    if (batching) {
++        member.assign(ib.size(), 0);
++        std::uint64_t b = base_in;
++        std::vector<std::size_t> run;
++        const auto flush = [&run, &chains, &member, &stats] {
++            if (run.size() >= 2) {
++                for (const std::size_t m : run) member[m] = 1;
++                stats.flag_dwords = std::max<std::uint32_t>(stats.flag_dwords, static_cast<std::uint32_t>(4 * run.size()));
++                chains.emplace_back(run.front(), run);
++            }
++            run.clear();
++        };
++        for (std::size_t i = 0; i < ib.size();) {
++            const std::uint32_t h = ib[i];
++            std::size_t len = packet_len(h);
++            if (i + len > ib.size())
++                len = ib.size() - i;
++            const std::uint32_t op = (h >> 8) & 0xff;
++            if (h >> 30 == 3 && op == kOpSetBase && len >= 4 && (ib[i + 1] & 0xfu) == 1) {
++                flush();
++                b = (static_cast<std::uint64_t>(ib[i + 2]) & ~3ull) | (static_cast<std::uint64_t>(ib[i + 3] & 0xffffu) << 32);
++            } else if (checked_dims(h, len, false) == 3 && b != 0) {
++                run.push_back(i);
++                if (run.size() >= product->batch)
++                    flush();
++            } else if (!(h >> 30 == 3 && (op == kOpSetShReg || op == kOpNop) && len >= 1)) {
++                flush();
++            }
++            i += len;
++        }
++        flush();
++    }
++    std::size_t next_chain = 0;
+     for (std::size_t i = 0; i < ib.size();) {
+         const std::uint32_t h = ib[i];
+         std::size_t len = packet_len(h);
+@@ -118,7 +161,63 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
+                     out.push_back(0);   // hi
+                 };
+                 const auto flag = [&flag_at] { flag_at(0); };
++                if (batching && member[i] != 0) { // experiment 0352: a chain member
++                    std::size_t j = 0;
++                    if (next_chain < chains.size() && chains[next_chain].first == i) { // the chain's first: the ME phase
++                        const std::vector<std::size_t> &ms = chains[next_chain].second;
++                        const std::uint32_t n = static_cast<std::uint32_t>(ms.size());
++                        out.push_back((3u << 30) | ((4 * n + 2) << 16) | (0x37u << 8)); // WRITE_DATA of 4n dwords
++                        out.push_back(kWriteDataMem);
++                        flag_at(0);
++                        for (std::uint32_t q = 0; q < n; ++q) out.insert(out.end(), {1u, 0u, 1u, 0u}); // flag, -, flagB, -
++                        for (std::uint32_t q = 0; q < n; ++q) {
++                            const std::uint64_t a = base + ib[ms[q] + 1];
++                            for (std::uint32_t k = 0; k < 3; ++k) {
++                                const std::uint64_t ak = a + 4 * k;
++                                out.insert(out.end(), {kCondWrite, kGreater | kPollMem | kWriteMem, static_cast<std::uint32_t>(ak) & ~3u,
++                                                       static_cast<std::uint32_t>(ak >> 32) & 0xffffu, limit[k], 0xffffffffu});
++                                flag_at(q * 16);
++                                out.push_back(0);
++                            }
++                            for (std::uint32_t k = 1; k < 3; ++k) { // y, z > yz_min ? flagB = 0
++                                const std::uint64_t ak = a + 4 * k;
++                                out.insert(out.end(), {kCondWrite, kGreater | kPollMem | kWriteMem, static_cast<std::uint32_t>(ak) & ~3u,
++                                                       static_cast<std::uint32_t>(ak >> 32) & 0xffffu, product->yz_min, 0xffffffffu});
++                                flag_at(q * 16 + 8);
++                                out.push_back(0);
++                            }
++                            out.insert(out.end(), {kCondWrite, kLessEqual | kPollMem | kWriteMem, static_cast<std::uint32_t>(a) & ~3u, // x <= x_limit ? flagB = 1
++                                                   static_cast<std::uint32_t>(a >> 32) & 0xffffu, product->x_limit, 0xffffffffu});
++                            flag_at(q * 16 + 8);
++                            out.push_back(1);
++                        }
++                        out.insert(out.end(), {kWriteData, kWriteDataMem | kWrConfirm});
++                        flag_at(4);
++                        out.push_back(0);
++                        out.insert(out.end(), {kPfpSyncMe, 0u});
++                        stats.batches++;
++                    } else {
++                        const std::vector<std::size_t> &ms = chains[next_chain].second;
++                        j = static_cast<std::size_t>(std::find(ms.begin(), ms.end(), i) - ms.begin());
++                    }
++                    out.push_back(kCondExec); // flag != 0: the inner COND_EXEC and the dispatch
++                    flag_at(static_cast<std::uint32_t>(j * 16));
++                    out.insert(out.end(), {0u, static_cast<std::uint32_t>(5 + len)});
++                    out.push_back(kCondExec); // flagB != 0: the dispatch
++                    flag_at(static_cast<std::uint32_t>(j * 16 + 8));
++                    out.insert(out.end(), {0u, static_cast<std::uint32_t>(len)});
++                    stats.checked++;
++                    stats.product_checked++;
++                    stats.batched++;
++                    if (j + 1 == chains[next_chain].second.size())
++                        next_chain++;
++                    stats.inserted_dwords += static_cast<std::uint32_t>(out.size() - before);
++                    out.insert(out.end(), ib.begin() + static_cast<std::ptrdiff_t>(i), ib.begin() + static_cast<std::ptrdiff_t>(i + len));
++                    i += len;
++                    continue;
++                }
+                 const bool stair = product != nullptr && dims == 3 && !compute_ring;
++                const std::size_t blk_start = out.size(), refs_start = flag_refs.size(); // experiment 0352 arm C
+                 out.insert(out.end(), {kWriteData, kWriteDataMem});
+                 flag();
+                 out.push_back(1);
+@@ -169,6 +268,13 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
+                 out.push_back(kCondExec);
+                 flag();
+                 out.insert(out.end(), {0u, static_cast<std::uint32_t>(len)});
++                if (product != nullptr && product->twice && !compute_ring) { // experiment 0352 arm C: the block again
++                    const std::size_t n = out.size() - blk_start, nrefs = flag_refs.size() - refs_start;
++                    const std::vector<std::uint32_t> copy(out.begin() + static_cast<std::ptrdiff_t>(blk_start), out.end());
++                    out.back() = static_cast<std::uint32_t>(n + len); // the first copy's COND_EXEC skips the second copy too
++                    out.insert(out.end(), copy.begin(), copy.end());
++                    for (std::size_t k = 0; k < nrefs; ++k) flag_refs.push_back(flag_refs[refs_start + k] + n);
++                }
+                 stats.checked++;
+             } else {
+                 out.insert(out.end(), {kPfpSyncMe, 0u});
+diff --git a/backend/tests/indirect_check_batch_test.cpp b/backend/tests/indirect_check_batch_test.cpp
+new file mode 100644
+index 0000000..cc4697e
+--- /dev/null
++++ b/backend/tests/indirect_check_batch_test.cpp
+@@ -0,0 +1,165 @@
++// SPDX-License-Identifier: GPL-2.0-only
++// Experiment 0352: the batched CP check (bc5/indirect_check.hpp, ProductLimit::batch).
++#include "bc5/indirect_check.hpp"
++
++#include <catch2/catch_test_macros.hpp>
++
++#include <cstdint>
++#include <vector>
++
++namespace {
++
++constexpr std::uint32_t kCondWrite = 0xC0074500u;
++constexpr std::uint32_t kCondExec = 0xC0032200u;
++constexpr std::uint32_t kPfpSyncMe = 0xC0004200u;
++constexpr std::uint32_t kDispatch = 0xC0011600u; // PKT3(DISPATCH_INDIRECT, 1, 0), GFX form
++constexpr std::uint32_t kSetSh = 0xC0047600u;    // PKT3(SET_SH_REG, 4, 0): 6 dwords
++
++std::vector<std::uint32_t> chain(std::size_t n) {
++    std::vector<std::uint32_t> ib;
++    for (std::size_t k = 0; k < n; ++k) {
++        ib.insert(ib.end(), {kSetSh, 0x243u, 1u, 2u, 3u, 4u});
++        ib.insert(ib.end(), {kDispatch, static_cast<std::uint32_t>(0x1000 * (k + 1)), 0x61u});
++    }
++    return ib;
++}
++
++std::size_t count(const std::vector<std::uint32_t> &ib, std::uint32_t header) {
++    std::size_t n = 0;
++    for (std::size_t i = 0; i < ib.size();) {
++        const std::uint32_t h = ib[i];
++        std::size_t len = 1;
++        if (h >> 30 == 3 || h >> 30 == 0) {
++            const std::uint32_t c = (h >> 16) & 0x3fff;
++            len = c == 0x3fff ? 1 : c + 2;
++        }
++        if (h == header) n++;
++        i += len;
++    }
++    return n;
++}
++
++} // namespace
++
++TEST_CASE("indirect_check: a chain shares one ME phase in the batched form (experiment 0352)", "[indirect_check][batch]") {
++    const std::uint32_t max[3] = {1u << 20, 1024, 1024};
++    const std::uint32_t draw_max[2] = {1u << 22, 1024};
++    bc5::indirect_check::ProductLimit product;
++    product.batch = 256;
++    const auto ib = chain(3);
++    std::vector<std::size_t> refs;
++    bc5::indirect_check::Stats st;
++    const auto out = bc5::indirect_check::apply(ib, 0x1100000000ull, max, draw_max, refs, st, false, &product);
++    REQUIRE(st.checked == 3);
++    REQUIRE(st.batched == 3);
++    REQUIRE(st.batches == 1);
++    REQUIRE(st.product_checked == 3);
++    REQUIRE(st.flag_dwords == 12);
++    REQUIRE(count(out, kCondWrite) == 18);         // 6 per dispatch
++    REQUIRE(count(out, kCondExec) == 6);           // 2 per dispatch
++    REQUIRE(count(out, kPfpSyncMe) == 1);          // one for the chain
++    REQUIRE(count(out, kDispatch) == 3);
++    REQUIRE(out[6] == ((3u << 30) | (14u << 16) | (0x37u << 8))); // after the first SET_SH_REG: WRITE_DATA of 12 dwords, the flags
++    REQUIRE(out.size() == ib.size() + 4 + 12 + 18 * 9 + 5 + 2 + 6 * 5); // WRITE_DATA 4 + 12 data, 18 COND_WRITEs, confirm, sync, 6 COND_EXECs
++    REQUIRE(st.inserted_dwords == out.size() - ib.size());
++    // the per-dispatch growth: (4 + 12 + 162 + 7 + 30) / 3 = 71.7 here, 68 + the shared 10 / n in general
++    // flag refs: the WRITE_DATA's address, then per dispatch 3 at q*16 and 3 at q*16+8, the confirm, then 2 per dispatch
++    REQUIRE(refs.size() == 1 + 3 * 6 + 1 + 3 * 2);
++    std::vector<std::uint32_t> patched(out);
++    bc5::indirect_check::patch(patched, refs, 0x2000'0000'1000ull);
++    REQUIRE(patched[8] == 0x1000u);   // the WRITE_DATA's lo
++    REQUIRE(patched[9] == 0x2000u);   // hi
++    // the last COND_EXEC pair (dispatch 2): flag at +32, flagB at +40
++    const std::size_t last = out.size() - 3 - 5 - 5;
++    REQUIRE(patched[last] == kCondExec);
++    REQUIRE(patched[last + 1] == 0x1000u + 32);
++    REQUIRE(patched[last + 5] == kCondExec);
++    REQUIRE(patched[last + 6] == 0x1000u + 40);
++    // the staircase's restoring COND_WRITE: function 2 (<=), data 1
++    bool restore = false;
++    for (std::size_t i = 0; i + 8 < out.size(); ++i)
++        if (out[i] == kCondWrite && (out[i + 1] & 7) == 2 && out[i + 8] == 1) restore = true;
++    REQUIRE(restore);
++}
++
++TEST_CASE("indirect_check: a single dispatch keeps the per-dispatch form; a SET_BASE cuts a chain", "[indirect_check][batch]") {
++    const std::uint32_t max[3] = {1u << 20, 1024, 1024};
++    const std::uint32_t draw_max[2] = {1u << 22, 1024};
++    bc5::indirect_check::ProductLimit product;
++    product.batch = 256;
++    {
++        const auto ib = chain(1);
++        std::vector<std::size_t> refs;
++        bc5::indirect_check::Stats st;
++        const auto out = bc5::indirect_check::apply(ib, 0x1100000000ull, max, draw_max, refs, st, false, &product);
++        REQUIRE(st.checked == 1);
++        REQUIRE(st.batched == 0);
++        REQUIRE(st.batches == 0);
++        REQUIRE(st.flag_dwords == 8);
++        REQUIRE(out.size() == ib.size() + bc5::indirect_check::kCheckDwords + bc5::indirect_check::kProductDwords);
++    }
++    {
++        auto ib = chain(2);
++        ib.insert(ib.end(), {0xC0021100u, 1u, 0x40000000u, 0x11u}); // SET_BASE index 1 = 0x1140000000
++        const auto more = chain(3);
++        ib.insert(ib.end(), more.begin(), more.end());
++        std::vector<std::size_t> refs;
++        bc5::indirect_check::Stats st;
++        const auto out = bc5::indirect_check::apply(ib, 0x1100000000ull, max, draw_max, refs, st, false, &product);
++        REQUIRE(st.checked == 5);
++        REQUIRE(st.batched == 5);
++        REQUIRE(st.batches == 2);
++        REQUIRE(st.flag_dwords == 12);
++        REQUIRE(count(out, kPfpSyncMe) == 2);
++        REQUIRE(count(out, kCondExec) == 10);
++    }
++    {
++        auto ib = chain(5);
++        product.batch = 2; // chains of at most 2: 2 + 2 + a single
++        std::vector<std::size_t> refs;
++        bc5::indirect_check::Stats st;
++        const auto out = bc5::indirect_check::apply(ib, 0x1100000000ull, max, draw_max, refs, st, false, &product);
++        REQUIRE(st.checked == 5);
++        REQUIRE(st.batched == 4);
++        REQUIRE(st.batches == 2);
++        REQUIRE(count(out, kPfpSyncMe) == 2 + 2); // one per batch, two in the single's staircase form
++    }
++}
++
++TEST_CASE("indirect_check: batching off leaves the per-dispatch form unchanged", "[indirect_check][batch]") {
++    const std::uint32_t max[3] = {1u << 20, 1024, 1024};
++    const std::uint32_t draw_max[2] = {1u << 22, 1024};
++    bc5::indirect_check::ProductLimit product; // batch = 0
++    const auto ib = chain(3);
++    std::vector<std::size_t> refs;
++    bc5::indirect_check::Stats st;
++    const auto out = bc5::indirect_check::apply(ib, 0x1100000000ull, max, draw_max, refs, st, false, &product);
++    REQUIRE(st.checked == 3);
++    REQUIRE(st.batched == 0);
++    REQUIRE(st.flag_dwords == 8);
++    REQUIRE(out.size() == ib.size() + 3 * (bc5::indirect_check::kCheckDwords + bc5::indirect_check::kProductDwords));
++}
++
++TEST_CASE("indirect_check: the check emitted twice keeps its refs and skips (experiment 0352 arm C)", "[indirect_check][batch]") {
++    const std::uint32_t max[3] = {1u << 20, 1024, 1024};
++    const std::uint32_t draw_max[2] = {1u << 22, 1024};
++    bc5::indirect_check::ProductLimit product;
++    product.twice = true;
++    const auto ib = chain(2);
++    std::vector<std::size_t> refs;
++    bc5::indirect_check::Stats st;
++    const auto out = bc5::indirect_check::apply(ib, 0x1100000000ull, max, draw_max, refs, st, false, &product);
++    const std::size_t one = bc5::indirect_check::kCheckDwords + bc5::indirect_check::kProductDwords;
++    REQUIRE(st.checked == 2);
++    REQUIRE(out.size() == ib.size() + 2 * 2 * one);
++    REQUIRE(count(out, kCondWrite) == 2 * 2 * 6);
++    REQUIRE(count(out, kPfpSyncMe) == 2 * 2 * 2);
++    // the first copy's outer COND_EXEC (the last packet of the first copy) skips the second copy and the dispatch
++    const std::size_t first_end = 6 + one; // after the first SET_SH_REG
++    REQUIRE(out[first_end - 5] == kCondExec);
++    REQUIRE(out[first_end - 1] == one + 3);
++    REQUIRE(out[first_end + one - 5] == kCondExec);
++    REQUIRE(out[first_end + one - 1] == 3);
++    REQUIRE(refs.size() == 2 * 2 * 12);
++    for (std::size_t r : refs) REQUIRE(r + 1 < out.size());
++}
+diff --git a/backend/tests/user_data_hint_test.cpp b/backend/tests/user_data_hint_test.cpp
+new file mode 100644
+index 0000000..88b2053
+--- /dev/null
++++ b/backend/tests/user_data_hint_test.cpp
+@@ -0,0 +1,50 @@
++// SPDX-License-Identifier: GPL-2.0-only
++// Experiment 0364: the compute user-data hint's rule (bc5/user_data_hint.hpp).
++#include "bc5/user_data_hint.hpp"
++
++#include <catch2/catch_test_macros.hpp>
++
++#include <cstdint>
++
++namespace {
++
++using namespace bc5::user_data_hint;
++
++TEST_CASE("a user-data offset under the title's window is the pointer the GPU will use", "[user_data_hint]") {
++    std::uint64_t out = 0;
++    REQUIRE(candidate(0x1100000000ull, 0x10e1d700u, &out));
++    CHECK(out == 0x1110e1d700ull); // F467: USER_DATA_6 of the faulting dispatch
++    REQUIRE(candidate(0x1100000000ull, 0x8c632100u, &out));
++    CHECK(out == 0x118c632100ull);
++    // the window's low dword, if any, does not leak into the address
++    REQUIRE(candidate(0x1100abcdefull, 0x722cf000u, &out));
++    CHECK(out == 0x11722cf000ull);
++}
++
++TEST_CASE("small dwords and a missing window are not candidates", "[user_data_hint]") {
++    std::uint64_t out = 7;
++    CHECK_FALSE(candidate(0x1100000000ull, 0x11u, &out)); // USER_DATA_5: the high dword itself
++    CHECK_FALSE(candidate(0x1100000000ull, 0x40011u, &out));  // R1: USER_DATA_1 = 0x40011, a small value
++    CHECK_FALSE(candidate(0x1100000000ull, 0x100011u, &out)); // R2: USER_DATA_9 = 0x100011, above the size test, not aligned
++    CHECK(candidate(0x1100000000ull, 0x100000u, &out));
++    CHECK_FALSE(candidate(0, 0x10e1d700u, &out));
++}
++
++TEST_CASE("the window asked for and the region key", "[user_data_hint]") {
++    const std::uint64_t addr = 0x1110e1d700ull;
++    CHECK(window_lo(addr, 32ull << 20u) == 0x1110e10000ull - (32ull << 20u));
++    CHECK(window_hi(addr, 32ull << 20u) == 0x1110e10000ull + (32ull << 20u));
++    CHECK(window_lo(0x100000ull, 32ull << 20u) == 0); // never below zero
++    CHECK(region_key(addr) == 0x1110000000ull);
++    CHECK(region_key(0x1113ffffffull) == 0x1110000000ull);
++    CHECK(region_key(0x1114000000ull) == 0x1114000000ull);
++}
++
++TEST_CASE("the user-data registers are the sixteen at SH 0x240", "[user_data_hint]") {
++    CHECK(is_user_data(0x240));
++    CHECK(is_user_data(0x24f));
++    CHECK_FALSE(is_user_data(0x23f));
++    CHECK_FALSE(is_user_data(0x250));
++}
++
++} // namespace

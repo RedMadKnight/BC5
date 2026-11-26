@@ -1,0 +1,103 @@
+[package]
+edition = "2021"
+name = "oozextract"
+version = "0.5.5"
+exclude = [
+    "testdata",
+    "verify",
+]
+autolib = false
+autobins = false
+autoexamples = false
+autotests = false
+description = "Open source Kraken / Mermaid / Selkie / Leviathan / LZNA / Bitknit decompressor"
+readme = "README.md"
+license = "MIT"
+repository = "https://github.com/lvlvllvlvllvlvl/oozextract"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = [
+    "--cfg",
+    "nightly",
+]
+
+[package.metadata.wasm-pack.profile.dev]
+wasm-opt = false
+
+[package.metadata.wasm-pack.profile.profiling]
+wasm-opt = [
+    "-O4",
+    "-g",
+]
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-O4"]
+
+[features]
+async = []
+cli = ["dep:clap"]
+tokio = [
+    "async",
+    "dep:tokio",
+]
+verbose_errors = []
+wasm = ["dep:wasm-bindgen"]
+x86_sse = []
+
+[lib]
+name = "oozextract"
+crate-type = [
+    "cdylib",
+    "rlib",
+]
+path = "src/lib.rs"
+
+
+
+[dependencies.bytemuck]
+version = "1.19.0"
+
+[dependencies.bytes]
+version = "1.8.0"
+
+[dependencies.clap]
+version = "4.5.20"
+features = ["derive"]
+optional = true
+
+[dependencies.futures]
+version = "0.3.31"
+
+[dependencies.log]
+version = "0.4.22"
+
+
+[dependencies.tokio]
+version = "1.41.0"
+features = ["io-util"]
+optional = true
+
+[dependencies.wasm-bindgen]
+version = "0.2.95"
+optional = true
+
+[dependencies.wide]
+version = "0.7.28"
+
+[dev-dependencies.criterion]
+version = "0.5.1"
+
+[dev-dependencies.tokio]
+version = "1.41.0"
+features = ["full"]
+
+[dev-dependencies.tokio-util]
+version = "0.7.12"
+features = ["io"]
+
+[dev-dependencies]
+test-log = "0.2.16"
+
+[lints.rust]
+unexpected_cfgs = { level = "allow" }

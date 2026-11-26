@@ -1,0 +1,531 @@
+diff --git a/backend/include/bc5/ib_chain.hpp b/backend/include/bc5/ib_chain.hpp
+new file mode 100644
+index 00000000..5b04736b
+--- /dev/null
++++ b/backend/include/bc5/ib_chain.hpp
+@@ -0,0 +1,254 @@
++// SPDX-License-Identifier: GPL-2.0-only
++//
++// BC5 exp 0439 (tag ib439): INDIRECT_BUFFER chains, BC5_DIRECT_IB_CHAIN (off unless "1").
++//
++// INDIRECT_BUFFER (0x3f) with bit 20 of its size dword clear is a call that returns; with the bit set it is a CHAIN: the
++// target replaces the rest of the current buffer, so it adds no nesting level and the tail after the packet is never
++// read (AMD PAL c5e8000 src/core/hw/gfxip/gfx9/chip/gfx9_plus_merged_f32_pfp_pm4_packets.h:2580; shadPS4 1b9d159 made
++// the same correction; our own note, bc5/acb_restore.hpp PORT-CHAIN, F760). The third title's frame is one dcb of 73
++// segments chained this way (exp 0440, the dump session); every IB walker that counted a chain as one more level cut it
++// after segment 3 and the frame's tail (its label-0 write among them) was dropped silently.
++//
++// The rule: a chain keeps its parent's depth and has no count limit of its own beyond kMaxChainPieces; a call keeps the
++// old depth limit (3) and the old cap (64 pieces). A chain or call to one of its own ancestors is a cycle: refused
++// loudly, never followed. With the switch off collect() returns exactly what direct.cpp's loop built before.
++#pragma once
++
++#include <cstddef>
++#include <cstdint>
++#include <cstdlib>
++#include <functional>
++#include <span>
++#include <vector>
++
++namespace bc5::ib_chain {
++
++inline constexpr std::uint32_t kChainBit = 1u << 20u;
++inline constexpr int kMaxCallDepth = 3;             // direct.cpp before exp 0439: `if (pieces[k].depth >= 3) continue`
++inline constexpr std::size_t kMaxCallPieces = 64;   // direct.cpp before exp 0439: `pieces.size() < 64`
++inline constexpr std::size_t kMaxChainPieces = 4096; // a sane bound; exceeding it is refused loudly
++
++inline bool is_chain(std::uint32_t size_dw) { return (size_dw & kChainBit) != 0; }
++
++// The switch, read once.
++inline bool enabled() {
++    static const bool v = [] {
++        const char *e = std::getenv("BC5_DIRECT_IB_CHAIN");
++        return e != nullptr && e[0] == '1' && e[1] == 0;
++    }();
++    return v;
++}
++
++// The depth a target runs at.
++inline int child_depth(int depth, std::uint32_t size_dw, bool rule) {
++#if defined(BC5_IB439_PLANT) // the det test's planted bug: a chain counted as one more level (must FAIL)
++    (void)size_dw;
++    (void)rule;
++    return depth + 1;
++#else
++    return rule && is_chain(size_dw) ? depth : depth + 1;
++#endif
++}
++
++struct Piece {
++    const std::uint32_t *src = nullptr;
++    std::size_t n = 0;
++    int depth = 0;
++    int parent = -1;     // index of the piece whose packet first led here
++    bool chained = false; // reached by a chain packet
++};
++
++struct Result {
++    std::vector<Piece> pieces;
++    std::size_t chains = 0;          // chain packets whose target became a piece
++    std::size_t longest_chain = 0;   // the longest run of chain links from one piece
++    std::size_t over_depth = 0;      // call targets not followed: the call depth limit
++    std::size_t over_cap = 0;        // targets not followed: a piece cap
++    bool cycle = false;              // a target is one of its own ancestors (rule on only)
++    bool chain_cap = false;          // kMaxChainPieces reached (rule on only)
++};
++
++// One IB target in a buffer: the packet's offset, the target and its size dword.
++struct Target {
++    std::size_t at = 0;
++    const std::uint32_t *src = nullptr;
++    std::size_t n = 0;
++    std::uint32_t size_dw = 0;
++};
++
++// INDIRECT_BUFFER / INDIRECT_BUFFER_CNST targets of a buffer that `mapped` accepts (direct.cpp nested_targets'
++// reading: address lo & ~3, hi & 0xff, size bits 19:0; a header-only 0x3fff count is one dword).
++inline void targets_of(std::span<const std::uint32_t> ib, const std::function<bool(std::uint64_t, std::uint64_t)> &mapped,
++                       std::vector<Target> &out) {
++    for (std::size_t i = 0; i < ib.size();) {
++        const std::uint32_t h = ib[i];
++        const std::uint32_t type = h >> 30;
++        std::size_t len = 1;
++        if (type == 3 || type == 0) {
++            const std::uint32_t count = (h >> 16) & 0x3fff;
++            len = count == 0x3fff ? 1 : count + 2;
++        }
++        if (i + len > ib.size()) break;
++        const std::uint32_t op = (h >> 8) & 0xff;
++        if (type == 3 && (op == 0x3f || op == 0x33) && len >= 4) {
++            const std::uint64_t a = (static_cast<std::uint64_t>(ib[i + 1]) & ~3ull) |
++                                    (static_cast<std::uint64_t>(ib[i + 2] & 0xffu) << 32);
++            const std::size_t n = ib[i + 3] & 0xfffffu;
++            if (a != 0 && n != 0 && (!mapped || mapped(a, n * 4)))
++                out.push_back({i, reinterpret_cast<const std::uint32_t *>(a), n, ib[i + 3]});
++        }
++        i += len;
++    }
++}
++
++// The pieces a submit copies: the root, then every IB it reaches, breadth first, each (src, n) once.
++inline Result collect(const std::uint32_t *root, std::size_t root_n,
++                      const std::function<bool(std::uint64_t, std::uint64_t)> &mapped, bool rule) {
++    Result r;
++    r.pieces.push_back({root, root_n, 0, -1, false});
++    std::size_t calls = 1, chain_pieces = 0;
++    for (std::size_t k = 0; k < r.pieces.size(); ++k) {
++        if (!rule && r.pieces.size() >= kMaxCallPieces) break; // the old loop's condition, exactly
++        std::vector<Target> ts;
++        targets_of(std::span<const std::uint32_t>(r.pieces[k].src, r.pieces[k].n), mapped, ts);
++        if (!rule) {
++            if (r.pieces[k].depth >= kMaxCallDepth) {
++                r.over_depth += ts.size();
++                continue;
++            }
++            for (const auto &t : ts) {
++                bool seen = false;
++                for (const auto &q : r.pieces) seen = seen || (q.src == t.src && q.n == t.n);
++                if (seen) continue;
++                r.pieces.push_back({t.src, t.n, r.pieces[k].depth + 1, static_cast<int>(k), false});
++            }
++            continue;
++        }
++        for (const auto &t : ts) {
++            const bool chain = is_chain(t.size_dw);
++            const int d = child_depth(r.pieces[k].depth, t.size_dw, true);
++            if (!chain && r.pieces[k].depth >= kMaxCallDepth) {
++                r.over_depth++;
++                continue;
++            }
++            // a cycle: the target is this piece or one of its ancestors
++            for (int a = static_cast<int>(k); a >= 0; a = r.pieces[static_cast<std::size_t>(a)].parent) {
++                const Piece &anc = r.pieces[static_cast<std::size_t>(a)];
++                if (anc.src == t.src && anc.n == t.n) {
++                    r.cycle = true;
++                    return r;
++                }
++            }
++            bool seen = false;
++            for (const auto &q : r.pieces) seen = seen || (q.src == t.src && q.n == t.n);
++            if (seen) continue;
++            if (chain ? chain_pieces >= kMaxChainPieces : calls >= kMaxCallPieces) {
++                r.over_cap++;
++                if (chain) {
++                    r.chain_cap = true;
++                    return r;
++                }
++                continue;
++            }
++            (chain ? chain_pieces : calls)++;
++            if (chain) r.chains++;
++            r.pieces.push_back({t.src, t.n, d, static_cast<int>(k), chain});
++            if (chain) {
++                std::size_t len = 0;
++                for (int a = static_cast<int>(r.pieces.size()) - 1; a >= 0 && r.pieces[static_cast<std::size_t>(a)].chained;
++                     a = r.pieces[static_cast<std::size_t>(a)].parent)
++                    len++;
++                if (len > r.longest_chain) r.longest_chain = len;
++            }
++        }
++    }
++    return r;
++}
++
++// exp 0439 (tag fl439): BC5_DIRECT_IB_CHAIN_FLAT ("1": compute jobs, "2": every job, else off). A chain at the top level
++// of a job is laid out flat: each segment is copied up to and including its chain packet, the chain packet becomes
++// one-dword NOPs of its length (0xffff1000, as the filter drops a packet), nothing after it is copied (the CP never runs a
++// segment's tail past its chain), and the chain's target follows directly. So the CP never switches buffers inside the job,
++// and the state a segment sets before its chain is simply still there for the next segment (the frame-229 hang: the first
++// dispatch after a chain on a compute ring, its program set before the chain, never finished; the first chain the host
++// ever ran on a compute ring). Refused (the job keeps today's layout) when a segment holds a COND_EXEC before its chain (a
++// conditional chain), on a cycle, an unmapped target, or past kMaxFlatDwords. Calls (bit 20 clear) are left as they are.
++inline int flat_mode() {
++    static const int v = [] {
++        const char *e = std::getenv("BC5_DIRECT_IB_CHAIN_FLAT");
++        if (e == nullptr || e[1] != 0) return 0;
++        return e[0] == '1' ? 1 : e[0] == '2' ? 2 : 0;
++    }();
++    return v;
++}
++inline constexpr std::size_t kMaxFlatDwords = 1u << 20;
++inline constexpr std::uint32_t kFlatNop = 0xffff1000u;
++
++struct FlatSeg {
++    const std::uint32_t *src = nullptr; // the guest segment
++    std::size_t n = 0;                  // its dwords copied (up to and including its chain packet, or all of the last)
++    std::size_t off = 0;                // its first dword in the flat buffer
++};
++enum class FlatResult { NoChain, Flattened, Refused };
++
++inline FlatResult flatten(std::span<const std::uint32_t> top, const std::function<bool(std::uint64_t, std::uint64_t)> &mapped,
++                          std::vector<std::uint32_t> &out, std::vector<FlatSeg> &segs, const char **why = nullptr) {
++    out.clear();
++    segs.clear();
++    const std::uint32_t *src = top.data();
++    std::size_t n = top.size();
++    auto refuse = [&](const char *w) {
++        if (why != nullptr) *why = w;
++        out.clear();
++        segs.clear();
++        return FlatResult::Refused;
++    };
++    for (std::size_t seg = 0;; ++seg) {
++        if (seg >= kMaxChainPieces) return refuse("over 4096 segments");
++        for (const auto &s : segs)
++            if (s.src == src) return refuse("a chain cycle");
++        // the first chain packet at this segment's top level, and whether a COND_EXEC comes before it
++        std::size_t chain_at = n, chain_len = 0;
++        bool cond = false;
++        for (std::size_t i = 0; i < n;) {
++            const std::uint32_t h = src[i], type = h >> 30;
++            std::size_t len = 1;
++            if (type == 3 || type == 0) {
++                const std::uint32_t c = (h >> 16) & 0x3fff;
++                len = c == 0x3fff ? 1 : c + 2;
++            }
++            if (i + len > n) break;
++            const std::uint32_t op = (h >> 8) & 0xff;
++            if (type == 3 && op == 0x22) cond = true;
++            if (type == 3 && (op == 0x3f || op == 0x33) && len >= 4 && is_chain(src[i + 3])) {
++                chain_at = i;
++                chain_len = len;
++                break;
++            }
++            i += len;
++        }
++        if (chain_at == n) { // the last segment: all of it
++            if (seg == 0) return FlatResult::NoChain;
++            if (out.size() + n > kMaxFlatDwords) return refuse("over the flat size bound");
++#if !defined(BC5_FL439_PLANT) // the det test's planted bug: the last chunk dropped (must FAIL)
++            segs.push_back({src, n, out.size()});
++            out.insert(out.end(), src, src + n);
++#endif
++            return FlatResult::Flattened;
++        }
++        if (cond) return refuse("a COND_EXEC before the chain (a conditional chain)");
++        const std::uint64_t a = (static_cast<std::uint64_t>(src[chain_at + 1]) & ~3ull) |
++                                (static_cast<std::uint64_t>(src[chain_at + 2] & 0xffu) << 32);
++        const std::size_t tn = src[chain_at + 3] & 0xfffffu;
++        if (a == 0 || tn == 0 || (mapped && !mapped(a, tn * 4))) return refuse("a chain target not mapped");
++        const std::size_t copy_n = chain_at + chain_len;
++        if (out.size() + copy_n > kMaxFlatDwords) return refuse("over the flat size bound");
++        segs.push_back({src, copy_n, out.size()});
++        out.insert(out.end(), src, src + chain_at);
++        out.insert(out.end(), chain_len, kFlatNop);
++        src = reinterpret_cast<const std::uint32_t *>(a);
++        n = tn;
++    }
++}
++
++} // namespace bc5::ib_chain
+diff --git a/backend/src/direct.cpp b/backend/src/direct.cpp
+index f73f378e..56b0834f 100644
+--- a/backend/src/direct.cpp
++++ b/backend/src/direct.cpp
+@@ -3,6 +3,7 @@
+ #include "bc5/draw_args.hpp"
+ #include "bc5/env_flag.hpp"
+ #include "bc5/host_indirect.hpp"
++#include "bc5/ib_chain.hpp" // exp 0439 (tag ib439)
+ #include "bc5/ib_split.hpp"
+ #include "bc5/indirect_check.hpp"
+ #include "bc5/shadow_labels.hpp"
+@@ -1162,6 +1163,27 @@ SubmitResult Device::submit_impl(std::span<const std::uint32_t> ib, const policy
+         r.rc = -2;
+         return r;
+     }
++    // exp 0439 (tag fl439): BC5_DIRECT_IB_CHAIN_FLAT, a top-level chain laid out flat (bc5/ib_chain.hpp flatten). The flat
++    // buffer replaces `ib` for the rest of this call; the executed offsets are split back per guest segment below.
++    std::vector<std::uint32_t> flat_local;
++    std::vector<ib_chain::FlatSeg> flat_segs;
++    if (const int fm = ib_chain::flat_mode(); fm == 2 || (fm == 1 && comp)) {
++        const char *why = nullptr;
++        const ib_chain::FlatResult fr = ib_chain::flatten(ib, opt.mapped, flat_local, flat_segs, &why);
++        static std::atomic<std::uint64_t> n_flat{0}, n_flat_refused{0};
++        if (fr == ib_chain::FlatResult::Flattened) {
++            const std::uint64_t c = ++n_flat;
++            if (c <= 16 || c % 1000 == 0)
++                std::fprintf(stderr, "bc5-direct: exp 0439 (tag fl439): %s job of %zu dwords at %p laid out flat: %zu segments, %zu dwords (%llu such jobs)\n",
++                             comp ? "compute" : "GFX", ib.size(), static_cast<const void *>(ib.data()), flat_segs.size(), flat_local.size(), static_cast<unsigned long long>(c));
++            ib = std::span<const std::uint32_t>(flat_local.data(), flat_local.size());
++        } else if (fr == ib_chain::FlatResult::Refused) {
++            const std::uint64_t c = ++n_flat_refused;
++            if (c <= 16 || c % 1000 == 0)
++                std::fprintf(stderr, "bc5-direct: exp 0439 (tag fl439): %s job of %zu dwords at %p NOT laid out flat (%s): today's layout (%llu such jobs)\n",
++                             comp ? "compute" : "GFX", ib.size(), static_cast<const void *>(ib.data()), why != nullptr ? why : "?", static_cast<unsigned long long>(c));
++        }
++    }
+     // Layout: the IB first, then every INDIRECT_BUFFER target it (transitively) reaches, each
+     // padded to 8 dwords with NOPs — the CP fetches IBs in 32-byte chunks and must never run
+     // into what lies past a buffer (experiment 0016). The nested copies let the filter see the
+@@ -1209,6 +1231,17 @@ SubmitResult Device::submit_impl(std::span<const std::uint32_t> ib, const policy
+     double t_phase = now_ms();
+     policy::filter(policy::Policy::builtin(), ib, main_out, fopt, r.filter);
+     executed_offsets_of(ib, main_out.data(), r.executed_offsets);
++    if (!flat_segs.empty()) { // exp 0439 (tag fl439): the executed offsets per guest segment (the first stays the IB's own)
++        const std::vector<std::uint32_t> all = std::move(r.executed_offsets);
++        r.executed_offsets.clear();
++        for (std::size_t s = 0; s < flat_segs.size(); ++s) {
++            std::vector<std::uint32_t> ex;
++            for (const std::uint32_t o : all)
++                if (o >= flat_segs[s].off && o < flat_segs[s].off + flat_segs[s].n) ex.push_back(static_cast<std::uint32_t>(o - flat_segs[s].off));
++            if (s == 0) r.executed_offsets = std::move(ex);
++            else r.nested.push_back({reinterpret_cast<std::uint64_t>(flat_segs[s].src), static_cast<std::uint32_t>(flat_segs[s].n), std::move(ex)});
++        }
++    }
+     // Experiment 0346: the host-side resolution of GFX-form dispatches without a SET_BASE of their type in
+     // this IB (bc5/host_indirect.hpp). The real mappings are the device's userptr and shared mappings (the
+     // sorted table: no PRT window, guard or zero buffer is in it); the reader is the host's `mapped` test
+@@ -1392,7 +1425,29 @@ SubmitResult Device::submit_impl(std::span<const std::uint32_t> ib, const policy
+     }
+     const std::size_t main_n = main_out.size();
+     pieces.push_back({ib.data(), ib.size(), pro_padded, (main_n + epi + 7) & ~std::size_t{7}, 0});
+-    for (std::size_t k = 0; k < pieces.size() && pieces.size() < 64; ++k) {
++    if (ib_chain::enabled()) { // exp 0439 (tag ib439): a chain adds no level and has its own cap (bc5/ib_chain.hpp)
++        const ib_chain::Result cr = ib_chain::collect(ib.data(), ib.size(), opt.mapped, true);
++        static std::atomic<std::uint64_t> n_chained{0}, n_refused{0};
++        if (cr.cycle || cr.chain_cap) {
++            n_refused++;
++            std::fprintf(stderr, "bc5-direct: exp 0439 (tag ib439): submit of %zu dwords at %p refused: %s (%zu pieces, %zu chains so far in it); %llu refused so far\n",
++                         ib.size(), static_cast<const void *>(ib.data()), cr.cycle ? "an IB cycle (a target is its own ancestor)" : "over 4096 chained segments",
++                         cr.pieces.size(), cr.chains, static_cast<unsigned long long>(n_refused.load()));
++            r.rc = -EINVAL;
++            return r;
++        }
++        for (std::size_t k = 1; k < cr.pieces.size(); ++k) {
++            const Piece &last = pieces.back();
++            pieces.push_back({cr.pieces[k].src, cr.pieces[k].n, last.off + last.padded, (cr.pieces[k].n + 7) & ~std::size_t{7}, cr.pieces[k].depth});
++        }
++        if (cr.chains != 0) {
++            const std::uint64_t c = ++n_chained;
++            if (c <= 8 || c % 1000 == 0)
++                std::fprintf(stderr, "bc5-direct: exp 0439 (tag ib439): submit #%llu with chains: %zu pieces, %zu chained, longest chain %zu, %zu call targets over depth, %zu over the cap\n",
++                             static_cast<unsigned long long>(c), cr.pieces.size(), cr.chains, cr.longest_chain, cr.over_depth, cr.over_cap);
++        }
++    }
++    for (std::size_t k = 0; !ib_chain::enabled() && k < pieces.size() && pieces.size() < 64; ++k) {
+         if (pieces[k].depth >= 3) continue;
+         std::vector<std::pair<const std::uint32_t *, std::size_t>> targets;
+         nested_targets(std::span<const std::uint32_t>(pieces[k].src, pieces[k].n), opt, targets);
+@@ -1473,6 +1528,7 @@ SubmitResult Device::submit_impl(std::span<const std::uint32_t> ib, const policy
+     }
+     t_phase = now_ms();
+     // Point the surviving INDIRECT_BUFFER packets at the scratch copies.
++    std::size_t ib_cut = 0, ib_cut_chain = 0; // exp 0439 (tag ib439): IBs NOP-ed here, logged below (diagnosis)
+     for (std::size_t k = 0; k < pieces.size(); ++k) {
+         const Piece &pc = pieces[k];
+         std::uint32_t *d = dst + pc.off;
+@@ -1502,12 +1558,22 @@ SubmitResult Device::submit_impl(std::span<const std::uint32_t> ib, const policy
+                     }
+                 }
+                 if (!found) { // an unmapped or over-deep target: never let the CP follow it
++                    ib_cut++;
++                    if (ib_chain::is_chain(d[i + 3])) ib_cut_chain++;
+                     for (std::size_t q = 0; q < len; ++q) d[i + q] = policy::kNop;
+                 }
+             }
+             i += len;
+         }
+     }
++    if (ib_cut != 0) { // exp 0439 (tag ib439): a dropped IB (a frame's tail when it is a chain) is never silent
++        static std::atomic<std::uint64_t> n_cut_submits{0};
++        const std::uint64_t c = ++n_cut_submits;
++        if (c <= 16 || c % 1000 == 0)
++            std::fprintf(stderr, "bc5-direct: exp 0439 (tag ib439): submit of %zu dwords at %p: %zu INDIRECT_BUFFER packets NOP-ed (target unmapped, too deep or over the cap), %zu of them chains; %zu pieces copied; IB_CHAIN %s; %llu such submits so far\n",
++                         ib.size(), static_cast<const void *>(ib.data()), ib_cut, ib_cut_chain, pieces.size(), ib_chain::enabled() ? "on" : "off",
++                         static_cast<unsigned long long>(c));
++    }
+     const std::size_t padded = pro_padded + pieces[0].padded; // the CP runs prologue then IB
+     // Experiment 0349: the executed IB [0, padded) cut into up to four IBs when it is over the limit; the
+     // cuts are packet boundaries 256 bytes aligned (else 32, the CP's fetch chunk) outside every COND_EXEC
+diff --git a/backend/src/full_state.cpp b/backend/src/full_state.cpp
+index 3dfe3661..69505c6e 100644
+--- a/backend/src/full_state.cpp
++++ b/backend/src/full_state.cpp
+@@ -1,10 +1,25 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ #include "bc5/full_state.hpp"
++#include "bc5/ib_chain.hpp" // exp 0439 (tag ib439)
+ 
+ #include <algorithm>
+ 
+ namespace bc5::full_state {
+ 
++// exp 0439 (tag ib439): the IB walks' budgets with BC5_DIRECT_IB_CHAIN=1, reset when a walk is entered from outside (a
++// chain keeps depth 0, so the depth cannot say that); a chain cycle ends when the budget does.
++static thread_local std::size_t t_ib439_budget = 0;
++static thread_local std::size_t t_ib439_walk = 0;
++static thread_local int t_ib439_apply_nest = 0;
++static thread_local int t_ib439_walk_nest = 0;
++struct Ib439Enter {
++    int &nest;
++    Ib439Enter(int &n, std::size_t &budget, std::size_t full) : nest(n) {
++        if (nest++ == 0) budget = full;
++    }
++    ~Ib439Enter() { nest--; }
++};
++
+ namespace {
+ 
+ constexpr std::uint32_t kMaxTable = 0x1000;
+@@ -144,6 +159,7 @@ void Tracker::apply(std::span<const std::uint32_t> ib, const Reader &read, Stats
+ }
+ 
+ void Tracker::apply_level(std::span<const std::uint32_t> ib, const Reader &read, Stats &stats, int depth) {
++    const Ib439Enter ib439_enter(t_ib439_apply_nest, t_ib439_budget, ib_chain::kMaxChainPieces + ib_chain::kMaxCallPieces); // exp 0439 (tag ib439)
+     for (std::size_t i = 0; i < ib.size();) {
+         const std::uint32_t h = ib[i];
+         const std::uint32_t type = h >> 30;
+@@ -213,13 +229,19 @@ void Tracker::apply_level(std::span<const std::uint32_t> ib, const Reader &read,
+             }
+         } else if (op == 0x3f && len >= 4) { // INDIRECT_BUFFER: address lo, hi, IB_SIZE bits 19:0
+             const std::uint32_t n = p[3] & 0xfffffu;
++            // exp 0439 (tag ib439): with BC5_DIRECT_IB_CHAIN=1 a chain keeps this depth and ends this buffer
++            // (bc5/ib_chain.hpp); the walk's budget ends a chain cycle.
++            const bool chain = ib_chain::enabled() && ib_chain::is_chain(p[3]);
++            const bool budget_ok = !ib_chain::enabled() || t_ib439_budget > 0;
+             const std::uint32_t *t =
+-                read && n != 0 && depth < 4 ? read(address(p[1], p[2]), n * 4ull) : nullptr;
++                read && n != 0 && (depth < 4 || chain) && budget_ok ? read(address(p[1], p[2]), n * 4ull) : nullptr;
+             if (t == nullptr) {
+                 stats.unreadable_nested++;
+             } else {
+                 stats.nested++;
+-                apply_level(std::span<const std::uint32_t>(t, n), read, stats, depth + 1);
++                if (ib_chain::enabled()) t_ib439_budget--;
++                apply_level(std::span<const std::uint32_t>(t, n), read, stats, ib_chain::child_depth(depth, p[3], ib_chain::enabled()));
++                if (chain) return;
+             }
+         } else if (op == 0x11 && len >= 2) { // SET_BASE: base_index in dword 1 bits 3:0
+             packets_.set_base[p[1] & 0xfu] = body();
+@@ -338,6 +360,7 @@ namespace {
+ // address lo, hi, IB_SIZE bits 19:0) through the reader, four levels deep.
+ void walk_draws(Tracker &t, std::span<const std::uint32_t> ib, const Tracker::Reader &read, int depth,
+                 const std::function<void(std::size_t, std::span<const std::uint32_t>, const Tracker &)> &f) {
++    const Ib439Enter ib439_enter(t_ib439_walk_nest, t_ib439_walk, ib_chain::kMaxChainPieces); // exp 0439 (tag ib439)
+     Stats st;
+     std::size_t from = 0;
+     for (std::size_t i = 0; i < ib.size();) {
+@@ -354,14 +377,20 @@ void walk_draws(Tracker &t, std::span<const std::uint32_t> ib, const Tracker::Re
+             t.apply(ib.subspan(from, i - from), read, st);
+             from = i;
+             f(i, ib.subspan(i, len), t);
+-        } else if (type == 3 && op == 0x3f && len >= 4 && depth < 4 && read) {
++        } else if (type == 3 && op == 0x3f && len >= 4 && read &&
++                   (ib_chain::enabled() && ib_chain::is_chain(ib[i + 3]) ? t_ib439_walk > 0 : depth < 4)) {
++            // exp 0439 (tag ib439): with BC5_DIRECT_IB_CHAIN=1 a chain keeps this depth and ends this buffer
++            const bool chain = ib_chain::enabled() && ib_chain::is_chain(ib[i + 3]);
+             t.apply(ib.subspan(from, i - from), read, st);
+             from = i + len;
+             const std::uint32_t n = ib[i + 3] & 0xfffffu;
+             const std::uint64_t a = (static_cast<std::uint64_t>(ib[i + 1]) & ~3ull) |
+                                     (static_cast<std::uint64_t>(ib[i + 2] & 0xffffu) << 32);
+-            if (const std::uint32_t *nested = n != 0 ? read(a, n * 4ull) : nullptr; nested != nullptr)
+-                walk_draws(t, std::span<const std::uint32_t>(nested, n), read, depth + 1, f);
++            if (const std::uint32_t *nested = n != 0 ? read(a, n * 4ull) : nullptr; nested != nullptr) {
++                if (chain) t_ib439_walk--;
++                walk_draws(t, std::span<const std::uint32_t>(nested, n), read, ib_chain::child_depth(depth, ib[i + 3], ib_chain::enabled()), f);
++                if (chain) return; // the chain replaced the rest of this buffer
++            }
+         }
+         i += len;
+     }
+diff --git a/backend/src/policy.cpp b/backend/src/policy.cpp
+index 67a2a2e6..b0096a02 100644
+--- a/backend/src/policy.cpp
++++ b/backend/src/policy.cpp
+@@ -1,5 +1,6 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ #include "bc5/policy.hpp"
++#include "bc5/ib_chain.hpp" // exp 0439 (tag ib439)
+ 
+ #include "policy_tsv.hpp" // generated by CMake from backend/policy/pm4-policy.tsv
+ 
+@@ -215,8 +216,12 @@ namespace {
+ // on a compute ring. While false, compute_ring_refusal() keeps every DISPATCH_INDIRECT off the MEC.
+ constexpr bool kMecIndirectCheckVerified = false;
+ 
++// exp 0439 (tag ib439): with BC5_DIRECT_IB_CHAIN=1 a chained IB (bit 20 of the size dword) keeps this depth and ends
++// this buffer's scan (the rest is never read, bc5/ib_chain.hpp); calls keep the 3-level limit; `budget` bounds the walk
++// so a chain cycle ends in a refusal, not a loop.
+ const char *refusal_in(std::span<const std::uint32_t> ib,
+-                       const std::function<bool(std::uint64_t, std::uint64_t)> &mapped, int depth) {
++                       const std::function<bool(std::uint64_t, std::uint64_t)> &mapped, int depth, std::size_t *budget) {
++    const bool rule = ib_chain::enabled();
+     for (std::size_t i = 0; i < ib.size();) {
+         const std::uint32_t h = ib[i];
+         const std::uint32_t type = h >> 30;
+@@ -241,15 +246,21 @@ const char *refusal_in(std::span<const std::uint32_t> ib,
+             // queue's reset failed (MODE1, the machine down; F332). Until the MEC check is verified
+             // such buffers stay on the GFX ring, where the check skips the absurd triples.
+             if (op == 0x16 && !kMecIndirectCheckVerified) return "indirect dispatch (MEC check unverified)";
+-            if ((op == 0x3f || op == 0x33) && len >= 4 && depth < 3 && mapped) {
++            const bool chain = rule && (op == 0x3f || op == 0x33) && len >= 4 && ib_chain::is_chain(ib[i + 3]);
++            if ((op == 0x3f || op == 0x33) && len >= 4 && (depth < 3 || chain) && mapped) {
+                 const std::uint64_t a = (static_cast<std::uint64_t>(ib[i + 1]) & ~3ull) |
+                                         (static_cast<std::uint64_t>(ib[i + 2] & 0xffu) << 32);
+                 const std::size_t n = ib[i + 3] & 0xfffffu;
+                 if (a != 0 && n != 0 && mapped(a, n * 4)) {
++                    if (rule) {
++                        if (*budget == 0) return "IB walk over its budget (a chain cycle or over 4096 segments)";
++                        --*budget;
++                    }
+                     const char *why = refusal_in(
+                         std::span<const std::uint32_t>(reinterpret_cast<const std::uint32_t *>(a), n),
+-                        mapped, depth + 1);
++                        mapped, ib_chain::child_depth(depth, ib[i + 3], rule), budget);
+                     if (why != nullptr) return why;
++                    if (chain) return nullptr; // the chain replaced the rest of this buffer
+                 }
+             }
+         }
+@@ -262,7 +273,8 @@ const char *refusal_in(std::span<const std::uint32_t> ib,
+ 
+ const char *compute_ring_refusal(std::span<const std::uint32_t> ib,
+                                  const std::function<bool(std::uint64_t, std::uint64_t)> &mapped) {
+-    return refusal_in(ib, mapped, 0);
++    std::size_t budget = ib_chain::kMaxChainPieces + ib_chain::kMaxCallPieces;
++    return refusal_in(ib, mapped, 0, &budget);
+ }
+ 
+ bool is_draw_or_dispatch(std::uint8_t opcode) {

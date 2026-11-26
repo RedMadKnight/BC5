@@ -1,0 +1,68 @@
+diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
+index 8fe2d40..886f7d2 100644
+--- a/src/libs/libAmpr.cpp
++++ b/src/libs/libAmpr.cpp
+@@ -2166,6 +2166,19 @@ static bool AprAsync() {
+ 	static const bool sync = std::getenv("KYTY_BC5_APR_SYNC") != nullptr;
+ 	return !sync;
+ }
++
++// BC5 (experiment 0390): with KYTY_BC5_APR_PARK_TO_WORKER=1 (default off; 0 is off) an AMM-only submission that stopped
++// at a wait goes to its priority's worker. Without it, in async mode it starts the wait thread, whose pump runs the
++// front of a queue a worker owns while the worker runs it unlocked, and pops buffers the worker or a reader still
++// holds (experiment 0236, F295). The second title never takes this path: its AMM-only waits are met by the buffer's
++// own earlier write.
++static bool AprParkToWorker() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_APR_PARK_TO_WORKER");
++		return e != nullptr && std::strtol(e, nullptr, 10) != 0;
++	}();
++	return on;
++}
+ static std::condition_variable_any                g_apr_queue_cv;
+ static std::array<std::once_flag, APR_PRIORITIES> g_apr_worker_once;
+ 
+@@ -2386,6 +2399,16 @@ static void AprWorkerThread(size_t qi) {
+ 	}
+ }
+ 
++// BC5 (experiment 0156): the priority's worker and, with KYTY_BC5_APR_READAHEAD (experiment 0203), its readers.
++static void StartAprWorker(size_t qi) {
++	std::call_once(g_apr_worker_once[qi], [qi] {
++		std::thread(AprWorkerThread, qi).detach();
++		for (size_t k = 0; k < AprReadahead(); k++) {
++			std::thread(AprReaderThread, qi, k).detach();
++		}
++	});
++}
++
+ static void StartAprWaitThread() {
+ 	static std::once_flag once;
+ 	std::call_once(once, [] {
+@@ -2476,12 +2499,7 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+ 	if (AprAsync() && !amm_only) {
+ 		// Experiment 0156: queued for the priority's worker; the submit returns at once.
+ 		queue.push_back({command_buffer, state, ordered, 0, submission_id, result_ptr});
+-		std::call_once(g_apr_worker_once[qi], [qi] {
+-			std::thread(AprWorkerThread, qi).detach();
+-			for (size_t k = 0; k < AprReadahead(); k++) { // BC5 (experiment 0203): KYTY_BC5_APR_READAHEAD
+-				std::thread(AprReaderThread, qi, k).detach();
+-			}
+-		});
++		StartAprWorker(qi);
+ 		g_apr_queue_cv.notify_all();
+ 		return OK;
+ 	}
+@@ -2496,7 +2514,11 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+ 	size_t next = 0;
+ 	if (!RunOrderedAprCommands(command_buffer, state, ordered, &next, execution_result, error_offset)) {
+ 		queue.push_back({command_buffer, state, ordered, next, submission_id, result_ptr});
+-		StartAprWaitThread();
++		if (AprAsync() && AprParkToWorker()) {
++			StartAprWorker(qi); // experiment 0390: the amm_only notify below wakes the worker
++		} else {
++			StartAprWaitThread();
++		}
+ 		if (AmmTrace()) {
+ 			AmmTraceStamp(), std::fprintf(stderr, "amm trace: submission 0x%016" PRIx64 " waits at command %zu of %zu\n", command_buffer, next,
+ 			             ordered.size());

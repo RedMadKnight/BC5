@@ -1,0 +1,72 @@
+diff --git a/backend/include/bc5/policy.hpp b/backend/include/bc5/policy.hpp
+index b9ac120..3a7bb20 100644
+--- a/backend/include/bc5/policy.hpp
++++ b/backend/include/bc5/policy.hpp
+@@ -211,7 +211,9 @@ bool is_graphics_only(std::uint8_t opcode, std::uint32_t len);
+ // the gfx1013 MEC runs with workgroups missing (mesa#16054; COMPUTE_DISPATCH_INITIATOR bits 1 and
+ // 5, Mesa src/amd/registers/gfx10.json, 0866ae7). INDIRECT_BUFFER targets are followed (up to
+ // three levels) when `mapped` accepts their range; an unmapped target is not refused (the filter
+-// NOPs the packet).
++// NOPs the packet). Experiment 0290: a DISPATCH_INDIRECT of either form is refused as well until
++// the CP's argument check (indirect_check) is verified on the MEC — on the GFX ring the check skips
++// a garbage triple, on a compute ring it ran unchecked and never ended (F332).
+ const char *compute_ring_refusal(std::span<const std::uint32_t> ib,
+                                  const std::function<bool(std::uint64_t, std::uint64_t)> &mapped = {});
+ 
+diff --git a/backend/src/policy.cpp b/backend/src/policy.cpp
+index 34e83fc..3ca55ce 100644
+--- a/backend/src/policy.cpp
++++ b/backend/src/policy.cpp
+@@ -208,6 +208,11 @@ bool is_graphics_only(std::uint8_t opcode, std::uint32_t len) {
+ 
+ namespace {
+ 
++// Experiment 0290: the indirect-argument check (bc5/indirect_check.hpp) is verified on the GFX ring
++// only (experiment 0052, direct-selftest --cp-check); flip once ADR 0009's ladder step 5 has run it
++// on a compute ring. While false, compute_ring_refusal() keeps every DISPATCH_INDIRECT off the MEC.
++constexpr bool kMecIndirectCheckVerified = false;
++
+ const char *refusal_in(std::span<const std::uint32_t> ib,
+                        const std::function<bool(std::uint64_t, std::uint64_t)> &mapped, int depth) {
+     for (std::size_t i = 0; i < ib.size();) {
+@@ -227,6 +232,13 @@ const char *refusal_in(std::span<const std::uint32_t> ib,
+             if (op == 0x15 && len >= 5) init = ib[i + 4];
+             if (op == 0x16 && len >= 4) init = ib[i + 3];
+             if ((init & 0x2u) != 0 && (init & 0x20u) == 0) return "PARTIAL_TG_EN dispatch";
++            // Experiment 0290 (F332, F339): a DISPATCH_INDIRECT's group counts are checked by the CP
++            // only where that check is verified, the GFX ring (bc5/indirect_check.hpp, experiment
++            // 0052); on the MEC its COND_WRITE / COND_EXEC are unverified (ADR 0009, ladder step 5)
++            // and PFP_SYNC_ME is left out. A garbage triple there never ends, and the compute
++            // queue's reset failed (MODE1, the machine down; F332). Until the MEC check is verified
++            // such buffers stay on the GFX ring, where the check skips the absurd triples.
++            if (op == 0x16 && !kMecIndirectCheckVerified) return "indirect dispatch (MEC check unverified)";
+             if ((op == 0x3f || op == 0x33) && len >= 4 && depth < 3 && mapped) {
+                 const std::uint64_t a = (static_cast<std::uint64_t>(ib[i + 1]) & ~3ull) |
+                                         (static_cast<std::uint64_t>(ib[i + 2] & 0xffu) << 32);
+diff --git a/backend/tests/policy_test.cpp b/backend/tests/policy_test.cpp
+index 2485b80..ed20818 100644
+--- a/backend/tests/policy_test.cpp
++++ b/backend/tests/policy_test.cpp
+@@ -3,6 +3,8 @@
+ 
+ #include <catch2/catch_test_macros.hpp>
+ 
++#include <string_view>
++
+ #include <vector>
+ 
+ using namespace bc5;
+@@ -504,8 +506,12 @@ TEST_CASE("compute_ring_refusal names what keeps an IB off a compute ring", "[po
+     const std::vector<std::uint32_t> ok = {0xC0017602u, 0x204u, 0u,
+                                            0xC0031502u, 4u, 1u, 1u, 0x41u}; // DISPATCH_DIRECT
+     CHECK(policy::compute_ring_refusal(ok) == nullptr);
++    // Experiment 0290: the MEC form is refused too while the CP's argument check is unverified on
++    // a compute ring (F332); the message names the reason.
+     const std::vector<std::uint32_t> mec_indirect = {0xC0021602u, 0x1000u, 0x12u, 0x8041u};
+-    CHECK(policy::compute_ring_refusal(mec_indirect) == nullptr);
++    const char *why = policy::compute_ring_refusal(mec_indirect);
++    REQUIRE(why != nullptr);
++    CHECK(std::string_view(why).find("MEC check") != std::string_view::npos);
+     const std::vector<std::uint32_t> gfx_indirect = {0xC0011602u, 0x40u, 0x41u};
+     CHECK(policy::compute_ring_refusal(gfx_indirect) != nullptr);
+     const std::vector<std::uint32_t> cc = {0xC0012800u, 0x80000000u, 0x80000000u};

@@ -1,0 +1,242 @@
+# 0369 — The night lake's last depth burst: which pass writes it, and whether the holes' 0 is a missed clear
+
+**Question** (the top session's GO of 2026-10-28 ~19:30, after exp 0365's F478). In each frame the lake's depth holds
+the previous frame's final until about +18 ms. Then one burst rewrites it, leaving one complementary half (X or Y) at
+0. This experiment asks, offline first:
+1. Which draws or dispatches in that last burst bind the lake's depth as a target or UAV?
+2. What are their programs, sizes and viewports, and do their parameters show a checkerboard or half-res pattern?
+3. Is the 0 a clear that the draws miss, or a value that something writes?
+
+**Sources** (offline; no emulator, nothing written on the box):
+- Draw journals copied read-only from the box at 19:33 and 19:48, stored in the laptop's private folder, never
+  committed:
+  - exp 0251's private binary, which logs the depth/stencil state of every journalled draw (exp 0245's "bake db" line):
+    - Z2 (exp 0245, a clean window at 3328): `play-20261023-2023`;
+    - W251b (patched, 2560, filtered): `play-20261023-2207`;
+    - W257a (exp 0257, patched, 3072, unfiltered `_EVERY` windows): `play-20261024-1413`;
+  - the shared build:
+    - H1 (exp 0362, clean, 2560): `play-20261028-1647`, with `_FIND=1129ec00` and per-job timing lines;
+    - J1 (exp 0354): `play-20261028-0934`;
+    - K1 (exp 0365): `play-20261028-1916` (no draw journal; not used in the end).
+- The committed poll logs: exp 0362's `raw/H1.events.txt.gz`; exp 0354's `raw/J1.rdj2.json` and `raw/J1.ph.txt`;
+  exp 0365's `raw/K1.ana.txt`.
+- Register fields: the repo's `tools/bc5-agc/regdb/gfx10.json` (Mesa's gfx10 register JSON), checked against the
+  box's Mesa clone at 0866ae7, `src/amd/registers/gfx10.json`:
+  - DB_RENDER_CONTROL (0x28000): STENCIL_COMPRESS_DISABLE is bit 5 and DEPTH_COMPRESS_DISABLE bit 6;
+  - DB_Z_INFO (0x28040): FORMAT [1:0], NUM_SAMPLES [3:2], SW_MODE [8:4], TILE_SURFACE_ENABLE [29];
+  - the bake line's "clear z" is DB_DEPTH_CLEAR (ctx 0x00b, `patch0245.py`).
+  - radeonsi sets the same two bits for its in-place depth flush (`src/gallium/drivers/radeonsi/si_state.c:1728`,
+    `db_flush_depth_inplace`).
+
+**Scripts** (each prints a summary only; the journals stay private):
+- `seq0369.py <direct.log>`: every pass with the lake's depth as its target, the HTILE fill, CS 0x11d0288800, the
+  water draw and any draw with a non-zero DB_RENDER_CONTROL, as a letter string in journal order. Also the passes
+  around each decompress (`raw/W257a.seq.txt`, `raw/Z2.seq.txt`).
+- `al0369.py`: H1's depth bursts and pyramid changes against the water draw's submit (`raw/H1.align.txt`).
+- `jb0369.py`: H1's jobs paired with their GPU completions, from the journal's per-job "timing" lines (`raw/H1.jobs.txt`):
+  - a pass's prepare time (the ring thread's "find"/"bake" line) is a lower bound for its GPU time;
+  - the completion of the job of the last submit line before it is an upper bound.
+- `fl0369.py`: J1's per-frame A/B side (F436) against the flip count and the display buffer index (`raw/J1.flip.txt`).
+
+**Setup as run** (offline; the number was given by the top session, and `~/bc5-work/exp0369` was not created because
+nothing was to be written on the box).
+- **19:33:** four journals were copied read-only (`cat` of the `.zst` files, and `zstd -c` of H1's log at
+  `nice -n19 ionice -c3`). BOX-LOCK was empty and no emulator ran.
+- **19:48:** J1's and K1's logs were copied the same way, during the bvh session's soak (exp 0368's lock line, its
+  emulator up, 810 MB available), under the GO's read-only, idle-priority rule.
+- **19:51:** Mesa's `gfx10.json` and `si_state.c` were read on the box (a few KB).
+- All analysis ran on the laptop (Python 3.14 + numpy). The decompressed journals sit in the laptop's private folder
+  outside the repo.
+- **Changes after seeing the data:**
+  - `seq0369.py`'s first version cut frames at every HTILE fill. There are several per frame, so it now prints a
+    letter string.
+  - `jb0369.py`'s job attribution was checked against the ring thread's prepare times, which give the bounds in the
+    table below.
+  - `fl0369.py` was added once K1's 45 % switching suggested a coin.
+
+**Result.**
+- **The lake's depth is compressed.**
+  - All 7,127 DB lines that bind the lake's depth (0x1129ec0000; Z2 794, W251b 2,394, W257a 3,939) have
+    DB_Z_INFO 0xa0000183: Z_32_FLOAT, one sample, SW_MODE 24, TILE_SURFACE_ENABLE 1 (HTILE), ZRANGE_PRECISION 1.
+  - All 12,406 DB lines have DB_DEPTH_CLEAR 0.0 (`clear z 0`).
+- **The order per frame is the same in the clean Z2 and the patched W257a** (`raw/*.seq.txt`, letter strings):
+  1. the HTILE fill, CS 0x11d0288a00 (F310);
+  2. about 128 depth writers: Z on + write, GEQUAL, viewport and target at the render size, mostly DRAW_INDIRECT;
+  3. the water draw, PS 0x11d01d7100;
+  4. post-water draws, then a full-screen stencil pass (PS 0x11d01e2300, Z off);
+  5. nine indexed writers (PS 0x11d01ff900, 0x11d0203f00, 0x11d0208400), Z on + write, GREATER, with stencil;
+  6. **decompress #1:** DRAW_INDEX_AUTO, 3 vertices, PS 0x11d0208400, colour mask 0, Z off,
+     DB_RENDER_CONTROL 0x60 (DEPTH_COMPRESS_DISABLE + STENCIL_COMPRESS_DISABLE);
+  7. 43–86 depth-tested draws into 0x113d770000 and the depth readers (exp 0362's PS 0x11d4d01800, CS 0x11d02d0a00,
+     …, CS 0x11d0404200, CS 0x11d039cd00);
+  8. the 3840 HTILE fill (640 groups, HTILE 0x112bea0000; F310);
+  9. CS 0x11d0288800: 7,168 groups at 3328, 6,144 at 3072. At 3328 that equals the HTILE fill's group count (one per
+     KiB of HTILE + stencil, F310); at 3072 the fill has 5,760;
+  10. **decompress #2:** DRAW_INDEX_AUTO, 3 vertices, no PS (W257a) or a stale PS 0x11d01e1700 (Z2), CB0 left at
+      0x114c6c0000 3840×2160 with mask 0, Z off, DB_RENDER_CONTROL 0x60, viewport at the render size, on the lake's
+      depth and that size's HTILE;
+  11. the 3840×2160 compute passes (CS 0x11d03f7900, 0x11d03f8800).
+- **The timing places the last burst at decompress #2** (H1, medians after the pyramid change, `raw/H1.jobs.txt`):
+
+| Event | When |
+|---|---|
+| Bursts 1 and 2 | +6.4, +8.3 ms |
+| Water draw prepared, its job done by | +2.5, +6.7 ms |
+| First reader (CS 0x11d02d0a00) prepared, its job done by | +14.0, +16.4 ms |
+| CS 0x11d0288800 prepared, its job done by | +16.0, +23.4 ms |
+| Burst 3 | +19.2 ms |
+
+  - Burst 3 comes after the readers' job is done, and inside the next job. That job holds CS 0x11d0288800 and, by
+    Z2's and W257a's order, decompress #2. Example, frame 101: the readers' jobs were done at +15.0 and +17.0; bursts
+    came at +17.6 and +18.6; that job was done at +23.0.
+  - That job's CS 0x11d0288800 dispatches are not depth writers: the `_FIND` match is a register block next to their
+    user data (CB_COLOR0_BASE 0x114c6c00, CB_COLOR0_INFO 0x8028, which is decompress #2's colour state).
+  - **Decompress #1 changes nothing in the polled sample:** no burst between +8.3 and +17.6 ms. Why is open (a
+    scissor would do it; scissors are not journalled in these windows).
+- **This fits exp 0365's K1 exactly.**
+  - The HTILE fill clears without touching the depth memory, so mid-frame (+9 ms) the memory still holds the previous
+    final.
+  - The compressed writes touch part of it (K1: 8 % changed, 5 % zeroed).
+  - The per-pixel image appears only when the decompress expands every tile. A tile or pixel still in the clear state
+    gets DB_DEPTH_CLEAR, 0.0. So K1's "late zeros" (previous values at +9 ms, 0 at the end) are the clear made
+    visible.
+- **No checkerboard or half-res in the depth state:** one sample, the full render-size viewport for the writers and
+  both decompresses, and one full-screen triangle.
+- **The X/Y choice behaves like a fair coin per frame** (`raw/J1.flip.txt`):
+  - In J1, the side does not follow the display buffer index or the flip count's parity (A 28 / 31, B 29 / 23).
+  - Over 88 consecutive frame pairs there was always one flip between them; the side changed in 41 and held in 47.
+  - K1 switched in 55 of 122 transitions (exp 0365).
+  - So it is not a frame-parity checkerboard. There is no tendency to switch either, which a self-occlusion feedback
+    through the previous frame's pyramid (F350's TODO) would give.
+
+**Verdict** (F484, F485).
+- **1, the writer:** the last burst is the in-place decompress of the lake's depth, decompress #2 (step 10 above), by
+  its position in two journals and H1's job timing. Its program is a PS-less full-screen triangle. In that job, H1's
+  `_FIND` matched no dispatch's user data except CS 0x11d0288800's neighbouring register block. A dispatch writing the
+  depth through a deeper table would not show, so "no UAV writer" is not proven.
+- **2, the parameters:** no checkerboard or half-res. The pattern is not in the decompress.
+- **3, the 0:** it is the frame's fast clear (the HTILE fill, DB_DEPTH_CLEAR 0.0) made visible by the decompress, not a
+  value a draw writes. A hole is a pixel that the HTILE still marks as cleared when decompress #2 runs. Two readings
+  remain:
+  - **(a) coverage:** no writer drew there. F333's G-buffer coincidence and F309's perspective-cell shape fit this.
+  - **(b) metadata:** a writer drew there, but the HTILE that decompress #2 reads says "cleared". CS 0x11d0288800 runs
+    right before it, over the HTILE + stencil size at 3328, which could restore an HTILE. This is not excluded.
+- **Next: run K2** (designed below; ~6 min of box time, fits 22:45–23:00).
+  - Under (b) the holes are whole 8×8 depth tiles. Under (a) their edges cross tiles.
+  - Under (a) the hole tiles' memory is untouched until decompress #2, and the drawn tiles' compressed writes sit at
+    fixed offsets within each 256-byte tile.
+
+**Run K2 (prepared offline at 20:00, run at 22:39–22:44 in the top session's slot):** exp 0365's lake bench and poller
+unchanged (`setup0369.sh`, `ab0369.sh`, `bench0369.sh`, `pl0369.py`: 0365 → 0369), RT ON, one run.
+- **`tz0369.py`**, on frames with an untorn final at a clear size, at full render resolution in the lake window:
+  - the share of 8×8 tiles that are all hole, no hole and mixed, on the true tile grid and on a grid shifted by
+    (4, 4). Tile-aligned holes give few mixed tiles on the true grid and many on the shifted one; cell-shaped holes
+    give similar shares on both;
+  - for consecutive pairs, the mid snapshot against the previous final: the changed dwords' offsets within their
+    256-byte tile, and the changed share in tiles that are holes in this frame's final against drawn tiles.
+- **Stop rules:** the standing ones.
+- **Snapshots and shots** deleted after the analysis, unviewed.
+
+**Setup as run, K2** (2026-10-28, the top session's GO at 22:38, after the bvh soak released the box at 22:37):
+- **22:38:41:** guard (no emulator, empty BOX-LOCK), our lock line, `CLAIM.txt`, a BOX-QUEUE claim. Live saves
+  41a5a36fffb4f8d4.
+- **22:38:52:** the kit was copied and `setup0369.sh` was run (launcher `play-pkg-0369.sh`, `raw/play-pkg-0369.diff`,
+  identical to exp 0365's but for the number). The input configuration `raw/input-0369.cfg` is identical to K1's (RT
+  on). The build was the shared normal build 1000ad2a. The `tz0369.py --selftest` run on the box passed.
+- **22:39:07–22:44:23:** the kernel log was streamed to the laptop (`raw/kernel-stream.txt`: three IPv6 lines, nothing
+  else). `ab0369.sh K2 41a5a36fffb4f8d4 "" 330` ran with `pl0369.py K2 85 … 212 2.0 6` beside it. Save copy
+  `saves-lake-1153`, as K1. 0 fault, ring, fence or ray-tracing-off lines. Live saves unchanged after.
+- **22:44:29:** `ana0369.sh K2` (`raw/K2.bursts.txt`, `raw/K2.reads.txt`, `raw/K2.reads.json`, `raw/K2.tz.txt`).
+- **22:46:24:** the 408 snapshots (2.8 GB) and 22 shots were deleted unviewed. Our journalctl was killed, the lock line
+  removed and a BOX-QUEUE released line added. The journal (`~/bc5-data/captures/play-20261028-2239`) stays private.
+- **Change after seeing the data:** the K1 comparison below (zero shares and best widths from both reads files, and
+  the mean shot patch of the earlier `raw/*.ab.txt` lake runs) was added on the laptop.
+
+**Result, K2.**
+- **The lake had almost no holes in this run.**
+  - The bench's shot patch was 9.0–9.2 % in all 20 shots; K1 had 30–32 %. Over the earlier lake-bench runs the mean
+    patch ranged from 0.8 % to 32 % (exp 0362's H1: 9.7 %).
+  - Zero dwords in the final snapshots (after the last burst, 7 MiB at +0x300000): median 0.000, 197 of 204 at
+    ≤ 0.01. The other seven:
+    - four at 2048 with 0.031, all outside the lake window (`tz0369`: no hole pixel in it);
+    - three taken at the poller's cap before the last burst, with 0.070, the mid-frame level.
+  - K1: median 0.247, all 196 untorn finals above 0.17.
+  - Only 37 finals gave a clear size (2816: 33, 2048: 4), against K1's 193. sn0365's size test probably needs the
+    holes' edges, which were missing. `tz0369` found a hole share of 0.000 in the lake window of all 37.
+  - **So K2 cannot tell (a) from (b).** The mixed-tile test has no holes to test.
+- **What K2 did measure:**
+  - **The swizzle check:** in all 37, every aligned 8×8 tile of the lake window lies in one 256-byte block (1.000), as
+    the self-test expects for 64KB_Z_X at 32 bpp.
+  - **The bursts:** 1,903 of 2,228 frames had two bursts, starting at +6.4 and +18.1 ms (medians). The second ended at
+    +19.2 ms. H1 also had one at +8.3 ms.
+  - **The mid-frame writes**, in 28 consecutive pairs (previous final → this frame's mid snapshot, the lake window):
+    - 13.1 % of the dwords changed at 2816, and 17.0 % at 2048. The value was the same in every frame to 0.001.
+    - 34.5 % of the changed dwords sit at offsets 0–7 of their 256-byte block, 4.3 % at each, against about 1.2 % at
+      each other offset (uniform 1.6 %). If each changed tile changed either all 64 dwords or only the first 8, about
+      a quarter of the changed tiles were rewritten whole and three quarters only in their first 32 bytes.
+    - The mid snapshots held 7.0 % zero dwords (all 203 untorn, 0.069–0.197), where the previous finals had none, and
+      the finals had none again.
+  - So mid-frame the depth memory holds words that are not the final per-pixel depth, concentrated at the start of
+    each tile's block. The decompress replaces them. This fits F484's compressed depth. Whether these are the
+    compressed tiles' data is a TODO(verify): no public source on the gfx10 compressed depth layout was checked.
+
+**Verdict, K2** (written at 22:49; superseded by the K2 + K3 verdict below).
+- **(a) coverage against (b) metadata stays open.** K2 ran fault-free, RT on, on the same build, save copy, route and
+  input configuration as K1. Even so, the lake's depth had no holes: the final zero share was 0.000, against K1's
+  0.247.
+- The run-to-run variation of the holes, already visible in the shot patch of earlier runs (0.8–32 %), is real in the
+  depth too. Nothing in the setup explains it.
+- **Next:**
+  - Repeat K2 until a run shows holes (shot patch ≥ 20 %). Check the patch in `K2.out` before trusting `tz0369`'s
+    numbers.
+  - Separately: what makes a run hole-free. H1 (9.7 %) and K2 (9.2 %) were both low; K1 (31 %) and exp 0355's W1
+    (32 %) were high.
+
+**Run K3** (the top session's GO at ~22:50, after K2: "K3 approved… the lock must be released by 22:58"). This was K2
+again, unchanged: the same kit, launcher, input configuration, save copy and build 1000ad2a, RT on.
+- **Setup as run:**
+  - 22:50:12: guard, lock line, claim. Live saves 41a5a36fffb4f8d4.
+  - 22:50:28–22:55:33: `ab0369.sh K3 41a5a36fffb4f8d4 "" 330` with the poller beside it. The kernel stream showed three
+    IPv6 lines and nothing else (`raw/kernel-stream-K3.txt`). There were 0 fault, ring, fence or ray-tracing-off lines.
+  - 22:55:34: one laptop script (`post0369K3.sh`) did the rest. It ran `ana0369.sh K3` (allowed only before
+    22:57) and copied the summaries. It deleted the 372 snapshots (2.6 GB) and 22 shots unviewed, killed our
+    journalctl and released the lock at 22:56:08. Live saves were unchanged.
+  - **Change after seeing the data:** the hole-frame summary below was computed on the laptop from `raw/K3.tz.txt`.
+- **Result, K3** (`raw/K3.out`, `raw/K3.reads.txt`, `raw/K3.tz.txt`):
+  - **One short hole episode.**
+    - The shot patch was 9.1–9.7 % in 19 shots and 16.7 % in one (ts13).
+    - 183 of 186 finals had a clear size, all 2560, and 182 were used.
+    - 14 of them, in captures c14–c16, had holes in the lake window: 1.0–16.3 % (median 7.4 %). The other 168 had
+      none.
+  - **The holes are not whole 8×8 tiles.** Among the tiles with a hole, the mixed ones (some hole, some not) were
+    0.328–0.491 of them on the true tile grid (median 0.368). On the grid shifted by (4, 4) they were 0.331–0.480
+    (median 0.367). True minus shifted: median 0.002, at most 0.029.
+    - Tile-aligned holes give about 0 on the true grid and nearly 1 on the shifted one (the self-test: 0.000 / 0.991).
+    - Holes whose edges ignore the grid give equal shares (self-test cells: 0.821 / 0.823).
+  - **The hole tiles get no mid-frame writes.** There were 7 consecutive pairs with holes (previous final → this
+    frame's mid snapshot). In the tiles that are all hole in this final, 0.000 of the dwords changed. In the tiles
+    with no hole, 0.153–0.182 changed.
+    - The window as a whole changed by 0.152, the same as in the 123 hole-free pairs (0.152).
+    - 30.9 % of the changed dwords sit at offsets 0–7 of their 256-byte block, as in K2.
+  - **The bursts:** K3 had three bursts in 1,758 of 2,068 frames. Their median starts were +6.5, +8.4 and +18.7 ms;
+    the last ended at +19.8. That is H1's pattern; K2 mostly lacked the +8.4 ms one.
+
+**Verdict, K2 + K3** (F486).
+- **(a) coverage:** where a hole forms, no writer drew. Two measures agree, in K3's one hole episode (14 frames,
+  three captures, one run):
+  1. **Shape:** the holes' edges cross the 8×8 tile grid exactly as often as a grid shifted by half a tile. They are
+     not unions of whole tiles. A wrong HTILE state that decompress #2 reads, reading (b), works per tile and would
+     give whole-tile holes. The HTILE's 8×8 granularity is TODO(verify) against the gfx10 HTILE layout, e.g. Mesa's
+     `ac_surface.c`; F309 already treats the patches as distinct from 8×8 screen tiles.
+  2. **Writes:** before +9 ms the frame's compressed writes change 15–18 % of the dwords in drawn tiles and none in
+     the tiles that end as holes.
+- This joins F333 (no G-buffer write where the depth has a hole) and F309 (perspective water-plane cells).
+- **Limits:**
+  - **(b) is excluded only as whole tiles.** Metadata finer than a tile, or a writer that skips the hole tiles for a
+    metadata reason (say a culling input), is still open.
+  - **One episode.** K3's holes (median 7.4 %) were smaller than K1's (X 0.307, Y 0.319 of the window, exp 0365), and K2 had none.
+- **The run-to-run variation is real:** K1 31 % patch, K2 none, K3 one episode of 14 frames, all on the same setup.
+- **Next:**
+  - Q21 turns to why the writers skip the hole cells: the culling or occlusion input that decides coverage (F350's
+    pyramid).
+  - Separately: why some runs have far fewer holes than others.

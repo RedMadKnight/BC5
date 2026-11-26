@@ -1,0 +1,54 @@
+# BC5 experiment 0430 (a copy of exp 0428's build0428.py; exp 0425's build0425.py, exp 0388, exp 0359's pattern): the shared normal build's compile commands for the private
+# patched copies of three units into private objects, then the shared link command with those objects swapped in. Nothing shared is written.
+import json, os, shlex, subprocess, sys
+db_path, src_root, out_dir, build, out_bin = sys.argv[1:6]
+EXTRA = sys.argv[6:]  # none in exp 0430
+UNITS = {
+    "src/CMakeFiles/kyty_emulator.dir/libs/bc5LleAgc.cpp.o": "src/libs/bc5LleAgc.cpp",
+}
+for rel in EXTRA:
+    UNITS["src/CMakeFiles/kyty_emulator.dir/" + rel[len("src/"):] + ".o"] = rel
+def clean_compile(cmd):
+    argv, clean, skip = shlex.split(cmd), [], 0
+    for a in argv:
+        if skip: skip -= 1; continue
+        if a in ("-MT", "-MF"): skip = 1; continue
+        if a == "-MD": continue
+        clean.append(a)
+    return clean
+def run(argv):
+    print("+", " ".join(argv)[:240], "...", flush=True)
+    return subprocess.run(["nice", "-n", "19"] + argv, cwd=build).returncode
+db = json.load(open(db_path))
+link = next(e["command"] for e in db if e.get("output") == "src/kyty_emulator")
+objs = {}
+for unit, rel in UNITS.items():
+    comp = next((clean_compile(e["command"]) for e in db if e.get("output") == unit), None)
+    assert comp is not None, f"{unit} is not in the compdb"
+    obj = os.path.join(out_dir, "obj", os.path.basename(unit))
+    os.makedirs(os.path.dirname(obj), exist_ok=True)
+    comp[comp.index("-o") + 1] = obj
+    comp[comp.index("-c") + 1] = os.path.join(src_root, rel)
+    comp.insert(1, "-I" + os.path.join(src_root, "src"))
+    if os.environ.get("BC5_0430_INCLUDE"):  # exp 0430 F4: the private backend's headers before the shared ones
+        comp.insert(1, "-I" + os.environ["BC5_0430_INCLUDE"])
+    if run(comp) != 0:
+        print("== COMPILE FAILED:", rel, flush=True); sys.exit(2)
+    objs[unit] = obj
+argv = [a for a in shlex.split(link) if a not in (":", "&&")]
+seen = {u: 0 for u in UNITS}
+for k, a in enumerate(argv):
+    if a in objs: argv[k] = objs[a]; seen[a] += 1
+    elif a.startswith("-Wl,-Map="): argv[k] = "-Wl,-Map=" + out_bin + ".map"
+    elif a.startswith("--dependency-file="): argv[k] = "--dependency-file=" + out_bin + ".d"
+for u, n in seen.items():
+    assert n == 1, f"{u} appears {n} times in the link command"
+argv[argv.index("-o") + 1] = out_bin
+# exp 0430 F4: BC5_0430_ARCHIVE=<a private libbc5_backend.a> replaces the shared backend archive in the link (exactly once)
+arch = os.environ.get("BC5_0430_ARCHIVE")
+if arch:
+    hits = [k for k, a in enumerate(argv) if a.endswith("/libbc5_backend.a")]
+    assert len(hits) == 1, f"the backend archive appears {len(hits)} times in the link command"
+    print("archive:", argv[hits[0]], "->", arch, flush=True)
+    argv[hits[0]] = arch
+sys.exit(run(argv))

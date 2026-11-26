@@ -1,0 +1,26 @@
+diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
+--- a/src/libs/libAmpr.cpp
++++ b/src/libs/libAmpr.cpp
+@@ -2258,7 +2258,11 @@
+ 			g_apr_ra_bytes += bytes;
+ 		}
+ 		if (pick == nullptr) {
+-			g_apr_queue_cv.wait_for(lock, std::chrono::milliseconds(5));
++			// BC5 (experiment 0216): sleep until notified. Every change that can make a buffer pickable notifies
++			// under g_apr_queue_mutex: a submit, and the worker's pop_front, which frees read-ahead budget and
++			// moves the window. The 5-ms poll it replaces cost the idle readers about 1.6 % of one core (exp 0214).
++			// The 1-s limit is a safety net: the wait thread's pump (StartAprWaitThread) pops without a notify.
++			g_apr_queue_cv.wait_for(lock, std::chrono::seconds(1));
+ 			continue;
+ 		}
+ 		pick->ra_state = 1; // the worker leaves it in the queue until it is 2, so the reference stays valid
+@@ -2302,7 +2306,8 @@
+ 		uint32_t         offset = 0;
+ 		if (AprReadahead() > 0) { // BC5 (experiment 0203): KYTY_BC5_APR_READAHEAD
+ 			while (front.ra_state == 1) {
+-				g_apr_queue_cv.wait_for(lock, std::chrono::microseconds(200));
++				// exp 0216: the reader sets 2 and notifies under the lock; the 50-ms limit is only a safety net
++				g_apr_queue_cv.wait_for(lock, std::chrono::milliseconds(50));
+ 			}
+ 			if (front.ra_state == 0) {
+ 				front.ra_state = 4;

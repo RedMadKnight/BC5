@@ -1,0 +1,25 @@
+# Rust / C++
+target/
+build/
+cmake-build-*/
+compile_commands.json
+# containers and images — never committed
+*.ffpfsc
+*.ffpkg
+*.exfat
+*.img
+*.pkg
+*.self
+*.prx
+*.sprx
+*.bin
+# mountpoints
+mnt/
+# experiment logs are committed when small; anything over 1 MB is regenerated,
+# not committed (experiments/README.md) — enforce in review, git cannot filter by size
+# editors
+.vscode/
+.idea/
+.DS_Store
+build-win/
+build-win-configure.log

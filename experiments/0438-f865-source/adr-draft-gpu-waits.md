@@ -1,0 +1,174 @@
+# ADR draft (exp 0438) — Cross-queue waits decided by the GPU, the doorbell as an event
+
+**Status:** draft for the top session and the maintainer. Not accepted, not built. Number to be given on acceptance.
+
+## Context
+
+**What the console does** (the top session's statement of 2026-11-20, from how the title behaves; the hardware facts
+are TODO(verify) against public AMD documentation):
+- the title writes a queue's write pointer (the doorbell) and the CP/MEC sees the new packets at once;
+- `WAIT_REG_MEM` is decided by the command processor when it reaches the packet;
+- the title's submit call returns without waiting.
+
+**What the host does today** (patch bb04219b; exp 0438's records):
+- **Compute queues are polled.** `bc5-ring`, one thread, polls the doorbell pages every 200 µs and also does all the
+  compute submission work: readiness walks, preparation, the device mutex, the kernel call. Its look at a queue can
+  come 20 ms or more after the title's write for about 1 % of packets, and up to 1.6 s (c438 result 4). The time goes to
+  device-mutex waits held by the game thread's preparation, and to its own direct sync (results 5 and 6).
+- **Graphics waits are decided on the CPU.** A game-thread `dcb` wait whose label is not met and has no registered
+  writer is polled on the title's thread (8 ms, then the limit). Then it is given up: dropped, the F262 family, and
+  F865's cause.
+- **Each patch has a cost or a flaw.** The host-side patches for this (holds, early registration: k438, k438b, r438)
+  each add machinery, and each failed or cost frame time in exp 0438.
+  - k438: a GFX wait kept before its writer was submitted did not see the writer run. The cause is not found:
+    implicit sync is refuted by `amdgpu_sync_test_fence` (same-VM fences skipped); VMID and an F4 dependency are open.
+
+## Decision (proposed)
+
+Reproduce the console's model, in two parts.
+
+1. **The doorbell is an event, seen by a thread that does nothing else.**
+   - A watcher sees write-pointer moves and hands each queue's new slice to a submitter for that queue's ring.
+   - Submission work (readiness, preparation, the kernel call) no longer delays seeing the next doorbell.
+   - Per-ring submitters keep each ring's order. One ring's slow preparation does not hold the others.
+2. **GFX waits stay on the GPU.**
+   - A game-thread `WAIT_REG_MEM` on a label with no registered writer stays in the buffer and goes to the GPU.
+   - The title's submit call returns at once. No CPU wait, no give-up, no hold, no early registration.
+   - The writer arrives as the title rings it, and the watcher makes that prompt.
+   - Precondition: no host-made kernel dependency may make a compute job wait for a GFX job that is waiting for it.
+     F4's whole-job fences and anything found by test t438 must go or be bounded to true data hazards. That is why
+     t438 comes first.
+
+## Doorbell options
+
+| option | how | latency to see a write | CPU cost | risk / work |
+|---|---|---|---|---|
+| A. watcher thread, short sleep | one thread reads every registered queue's write pointer in a loop with a 20–50 µs `nanosleep` (or `clock_nanosleep` at the timer slack) and does nothing else; slices go to per-ring submitter threads through a single-producer queue each | ≤ the sleep + wake latency, about 50–100 µs (TODO(verify) on the box: timer slack, rtkit priority) | about 1–3 % of one core at 50 µs (the walk over ~20 queues is a few hundred ns) | simple; no kernel features; the submitters need the per-ring order bc5-ring has now, and acb_ready's state (g_acb_heads) becomes per ring |
+| A'. watcher thread, spin | as A with `_mm_pause` spinning | below 1 µs | one core | no; the box has 16 threads, but the title's own threads and R's RT budget need them |
+| B. write-protect trap | the doorbell page is mapped read-only; the title's write faults; the host's SIGSEGV handler records the queue, does the write and returns, and the watcher is woken | the fault's cost on the title's thread, a few µs per write (TODO(verify): measure); the watcher wakes at once | a fault per doorbell write (the title rings a few thousand times a second: about 1 % of one core, an estimate) | the host's fault handler is already in the hot path for guest memory (exp 0412); emulating the store needs decoding or a single-step; the risk is moderate |
+| C. userfaultfd write-protect | `UFFDIO_REGISTER_MODE_WP` on the doorbell page; a handler thread reads the fault, notes the queue, unprotects, wakes the writer | the handler's round trip, tens of µs (TODO(verify)) | per write: a context switch to the handler | needs WP support for this memory type (anon/shmem) on 7.3.3 and unprivileged userfaultfd or `UFFD_USER_MODE_ONLY` (TODO(verify) on Bazzite); the writer blocks during handling |
+
+| D. the title's own kick | the title calls `/dev/gc` 0xc010811c "ding dong for workload" (compute queue kick; A:16669-16674 logs it and returns 0, the inventory of step 3) when it rings a queue (TODO(verify): which queues, and whether every ring is followed by a kick); the ioctl wakes the watcher for that queue at once | the ioctl's own cost, on the title's thread (it calls it anyway) | none beyond today's | needs a measure first: how often the title calls it against its write-pointer moves (the journal logs every call) |
+
+**Recommendation:** A, with per-ring submitters, woken early by D where the title kicks. It is the smallest change that separates seeing from submitting.
+- B and C give exact event times but put a fault on the title's thread, and they need features to check first.
+- A's 50–100 µs is far below today's 20 ms+ tail.
+
+## What it removes
+
+**When both parts land:**
+- the F262 CPU wait and give-up on the game thread;
+- k438, k438b and r438 (none shipped);
+- the 8 ms poll of exp 0428's split-late path;
+- the chain hold's need for F10/F16/F18 (they exist because the host decides waits at submit), once graphics waits
+  are on the GPU and compute waits are kept in ring order. That last part needs its own check.
+
+## Order of work (proposed)
+
+1. t438 (a --submit test, about 1 s of GPU): does a compute job run while a GFX job of the same VM waits on the GPU
+   for it, with the emulator's BO types? With an explicit dependency as a control.
+2. The watcher (A) and per-ring submitters, with c438's records. Measure the look gaps against today's.
+3. GFX waits on the GPU with no CPU wait. Test on the scene and the route with RT on. A GPU fault is a bug with a
+   record.
+
+## Build design w438 (the next test build; the top session's order of 2026-11-20). Not built.
+
+**Facts it rests on:**
+- **c438 (results 4–6).** bc5-ring's look gaps reach 1.6 s. At every give-up the writer's queue head was ready while
+  bc5-ring was busy elsewhere: preparing another slice, or waiting on the device mutex.
+- **t438 run 2.** A compute job of the same VM releases a GFX job waiting on the GPU, at once. The kernel adds no
+  dependency.
+- **The kick.** `/dev/gc` 0xc010811c carries `me, pipe, queue, offset` (A:16669-16674); "offset" is presumably the
+  new write pointer, TODO(verify). The host logs it and returns 0.
+- **The kick's count is not known.** The C3/A logs have no host LOGF lines, so its count against write-pointer
+  moves is not available. **D is pending a catcher (c438d below).**
+
+**Switches.** Each is behind its own switch, per "fixes first, then test":
+
+| switch | what | default in the test build |
+|---|---|---|
+| `BC5_0438_WATCHER` | w438: watcher + per-queue submitters | on |
+| `BC5_0438_KICK` | D: the kick wakes the watcher | on (records only if the counts show no kicks) |
+| `BC5_0438_EARLYREG` | r438 mode 1, the bridge | 1 |
+| (none) | c438 records + c438d (records only) | normal build only |
+
+### w438: one watcher, one submitter thread per busy guest queue
+
+- **The watcher `bc5-dbw`.**
+  - Its loop: read every registered queue's write pointer; for a queue whose pointer moved, record the time and
+    wake that queue's submitter (a per-queue `std::atomic<uint64_t>` sequence plus a futex/condvar wait).
+  - Then sleep 50 µs (`clock_nanosleep`, relative), or wake at once on a kick (D).
+  - It does no submission work and takes no lock the submitters hold, except a short per-queue mutex for its hand-over
+    record. R62: it never waits on anything a submitter or the game thread holds.
+- **A submitter per guest queue, created at the queue's first write.**
+  - It runs today's consumer body for its queue only: `acb_ready`, the take, r438's early registration,
+    `Direct::submit "ring"`, chain_end, r438_end, and the post that publishes the read pointer.
+  - Guest queues are independent hardware queues on the console. Here each gets its own thread, so one queue's
+    preparation or device-mutex wait no longer delays another queue's take.
+  - The per-ring order to the kernel stays what exp 0436's per-ring lock gives: several guest queues can share a
+    libdrm ring, and their jobs reach the kernel in the order their submitters take the ring lock.
+- **What changes from one ring thread to many** (each checked in the code before building):
+  - `g_acb_heads` (A:7290, "the queue consumer thread only") becomes per submitter (`thread_local`). Each acb belongs
+    to one queue.
+  - `t_unready`, `t_queue_idx`, `t_ring`, the chain slot `g_chain_tl` and c438's `t_ring`/kinds are already
+    thread-local; they become per submitter.
+  - `g_unready_label` and `g_unready_writes` (one blocked queue, read by the game thread's cycle check) become a
+    small set: any submitter's blocked label. The game thread's check looks the label up in it.
+  - The w428 ring choice per queue (`g_w428_qring`, under `g_w428_mu`) stays. Its ring move does `wait_idle` (2 s);
+    with several submitters it must not wait on another submitter's ring work. To check: whether a move can wait
+    on a GFX job that waits for this queue. The move is kept as it is, and counted.
+  - ho430 F10/F16/F18 run "on bc5-ring": they poll the game thread's chains with try-locks (R62). With N submitters
+    they run on each, with no new lock. To check: their counters are atomic or under `Store::m`.
+  - The soft CP's posts: each submitter posts its queue's read-pointer publish behind its own jobs. The completion
+    queue keeps push order, so each queue's publishes stay in order.
+- **Not changed:**
+  - the game thread's waits: r438 mode 1 stays as the bridge;
+  - the chain hold;
+  - F4/F10/F16/F18;
+  - the GPU-decided GFX wait. That is the ADR's step 3, for after w438 is measured.
+
+### D: the kick as the watcher's wake-up (`BC5_0438_KICK`)
+
+- On 0xc010811c, the ioctl (on the title's thread) bumps a global kick sequence and wakes the watcher. That costs one
+  futex wake.
+- The watcher then reads every pointer at once.
+- If the kick's `offset` proves to be the new write pointer (c438d), the watcher could take the queue named by
+  `me/pipe/queue` without a scan. Not before the mapping is known.
+
+### c438d: the catcher that decides D (records only, normal build)
+
+- **Per `/dev/gc` request:** count, and the calling thread's kind: game thread, a submitter, or other.
+- **For 0xc010811c:**
+  - `me, pipe, queue, offset`;
+  - the registered queue whose `a/b/c/d` match (TODO(verify): the mapping);
+  - that queue's write pointer when the kick arrives;
+  - the time since its last move as the watcher saw it;
+  - whether `offset` equals the pointer;
+  - the time until the watcher's next look.
+- **For 0xc0048116 / 0xc0048117:** count and thread.
+- **Output:** a 60-s line, plus the first 64 kicks in full.
+
+### Test (after the build, on the top session's slot)
+
+- Chain `C W WD C W WD C W WD` (9 runs) on a clean boot, the gate C ≥ 33.3, RT on, his scene, the R64 waiter, a
+  stop on any GPU line. c438d (the gc-ioctl catcher) records in every arm, so the kick counts come from all 9 runs.
+  The arms:
+
+  | arm | `BC5_0438_WATCHER` | `BC5_0438_KICK` | `BC5_0438_EARLYREG` | what it answers |
+  |---|---|---|---|---|
+  | C | 0 | 0 | 0 | today's consumer (the reference) |
+  | W | 1 | 0 | 1 | the watcher and per-queue submitters alone (option A) |
+  | WD | 1 | 1 | 1 | A woken by the kick (A + D) |
+
+  C → W measures A; W → WD measures what the kick adds. The kick counts against write-pointer moves, the calling
+  thread and the offset-to-pointer match come from c438d in all arms.
+- **Per run:**
+  - flips/s and frames over 50 / 100 ms;
+  - give-ups;
+  - early writes that never reached the ring (must be 0) and the early-writer wait seconds;
+  - c438's look gaps (the target: under 1 % over 20 ms, and the longest well below today's 1.6 s);
+  - seen→submit;
+  - the device-mutex holders;
+  - c438d's kick counts.
+- **The question W answers:** does seeing the doorbell at once, and submitting each queue on its own thread, take
+  bc5-ring's look gaps (and with them the early-writer waits) down? Read 3 against 3, honestly (R13).

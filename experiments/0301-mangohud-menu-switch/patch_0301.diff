@@ -1,0 +1,334 @@
+diff --git a/src/graphics/presentation/hostMenu.cpp b/src/graphics/presentation/hostMenu.cpp
+index 8e49327..6aaca92 100644
+--- a/src/graphics/presentation/hostMenu.cpp
++++ b/src/graphics/presentation/hostMenu.cpp
+@@ -10,11 +10,16 @@
+ #include <algorithm>
+ #include <atomic>
+ #include <cctype>
++#include <cerrno>
++#include <cstddef>
+ #include <cstdio>
+ #include <cstdlib>
++#include <cstring>
+ #include <filesystem>
+ #include <fstream>
+ #include <string>
++#include <sys/socket.h>
++#include <sys/un.h>
+ #include <system_error>
+ #include <unistd.h>
+ #include <vector>
+@@ -38,6 +43,57 @@ constexpr size_t RECENT_MAX     = 8;
+ std::atomic<bool> g_visible {false};
+ std::atomic<bool> g_launcher {false};
+ 
++// Experiment 0301: MangoHud in every build. Its Vulkan layer is an implicit layer that the loader
++// enables for MANGOHUD=1 (MangoHud's mangohud.json.in, enable_environment), and the layer reads its
++// whole configuration from MANGOHUD_CONFIG when that is set (no file is read without read_cfg;
++// overlay_params.cpp parse_overlay_config, v0.8.2). The layout is the one of the former
++// tools/scripts/mangohud-bc5.conf: no fps or frame time, since the window presents at every vblank
++// whatever the title's rate (its own counter, KYTY_BC5_OSD_FPS, shows that), and no GPU clock,
++// which amdgpu's gpu_metrics does not report reliably on the BC-250. no_display starts it hidden;
++// control=<name> makes it listen on an abstract unix socket and toggle no_display for each ":hud;"
++// it reads (control.cpp parse_command), between two presents (vulkan.cpp snapshot_swapchain_frame).
++// While hidden it draws nothing and records nothing (render_swapchain_display, update_hud_info).
++constexpr const char* MANGOHUD_LAYOUT =
++    "legacy_layout=false,position=top-left,font_size=20,background_alpha=0.45,round_corners=6,"
++    "fps_sampling_period=500,cpu_stats,cpu_temp,cpu_mhz,cpu_power,gpu_name,gpu_stats,gpu_temp,gpu_power,vram,"
++    "ram,resolution,time,"
++    // MangoHud's keys (X11 only, they do not reach it from the container), away from F1, F2 and F11
++    "toggle_hud=Shift_R+F12,toggle_logging=Shift_L+F10,toggle_fps_limit=Shift_L+F9,reload_cfg=Shift_L+F4";
++
++std::atomic<bool> g_hud_on {false};    // what the switch says
++std::atomic<bool> g_hud_shown {false}; // what MangoHud was told (it starts hidden)
++std::atomic<bool> g_hud_lost {false};  // no MangoHud to talk to: the switch keeps the counter only
++int               g_hud_fd = -1;       // presenter thread
++char              g_hud_socket[64] = {}; // empty: the environment was the caller's, MangoHud is not ours to drive
++
++// Before main and before any Vulkan call: the loader and the layer read the environment at
++// vkCreateInstance.
++__attribute__((constructor)) void MangoHudEnvironment() {
++	const char* sw = std::getenv("KYTY_BC5_MANGOHUD");
++	if (sw != nullptr && std::strcmp(sw, "0") == 0) {
++		return;
++	}
++	if (sw != nullptr && std::strcmp(sw, "1") == 0) {
++		g_hud_on.store(true, std::memory_order_release);
++	}
++	if (std::getenv("MANGOHUD_CONFIG") != nullptr || std::getenv("MANGOHUD_CONFIGFILE") != nullptr) {
++		return; // a layout of the caller's own: MangoHud loads with it (MANGOHUD=1 is the caller's too), unswitched
++	}
++	std::snprintf(g_hud_socket, sizeof(g_hud_socket), "bc5-mangohud-%d", static_cast<int>(::getpid()));
++	const std::string config = std::string("no_display,control=") + g_hud_socket + "," + MANGOHUD_LAYOUT;
++	::setenv("MANGOHUD_CONFIG", config.c_str(), 1);
++	::setenv("MANGOHUD", "1", 0); // MANGOHUD=0 from the caller keeps the layer out
++}
++
++void MangoHudLost(const char* what, int error) {
++	g_hud_lost.store(true, std::memory_order_release);
++	if (g_hud_fd >= 0) {
++		::close(g_hud_fd);
++		g_hud_fd = -1;
++	}
++	std::fprintf(stderr, "host menu: MangoHud %s (%s): the switch shows the game's frame rate only\n", what, std::strerror(error));
++}
++
+ const char* MenuDir() {
+ 	static const char* dir = std::getenv("KYTY_BC5_MENU_DIR");
+ 	return (dir != nullptr && dir[0] != 0) ? dir : nullptr;
+@@ -219,6 +275,24 @@ void OpenPath(State& s, const std::string& path) {
+ 	ExitWith(EXIT_CODE_OPEN);
+ }
+ 
++// A per-title switch of the Emulation menu, <name>.<TITLE_ID>=on|off, saved into the input
++// configuration as the Video tab saves RenderScale.<TITLE_ID> (experiment 0273).
++void SaveTitleSwitch(const char* name, const char* label, bool on) {
++	const std::string        key   = std::string(name) + "." + HostInputTitleId();
++	std::vector<std::string> lines = HostInputStatements();
++	lines.erase(std::remove_if(lines.begin(), lines.end(),
++	                           [&](const std::string& l) { return l.size() > key.size() && l.compare(0, key.size(), key) == 0 && l[key.size()] == '='; }),
++	            lines.end());
++	lines.insert(lines.begin(), key + (on ? "=on" : "=off"));
++	const std::string path = HostInputConfigPath();
++	std::string       error;
++	if (path.empty() || !HostInputSave(path, lines, &error)) {
++		std::fprintf(stderr, "host menu: %s %s (not saved: %s)\n", label, on ? "on" : "off", path.empty() ? "no input configuration file" : error.c_str());
++	} else {
++		std::fprintf(stderr, "host menu: %s %s (saved to %s)\n", label, on ? "on" : "off", path.c_str());
++	}
++}
++
+ void CloseSession() {
+ 	std::fprintf(stderr, "host menu: close session (exit %d)\n", EXIT_CODE_CLOSE);
+ 	ExitWith(EXIT_CODE_CLOSE);
+@@ -429,6 +503,57 @@ bool HostMenuVisible() noexcept {
+ 	return g_visible.load(std::memory_order_acquire);
+ }
+ 
++void HostMenuMangoHudSet(bool on) {
++	g_hud_on.store(on, std::memory_order_release);
++}
++
++bool HostMenuMangoHudOn() noexcept {
++	return g_hud_on.load(std::memory_order_acquire);
++}
++
++bool HostMenuMangoHudPending() noexcept {
++	return g_hud_socket[0] != 0 && !g_hud_lost.load(std::memory_order_acquire) &&
++	       g_hud_on.load(std::memory_order_acquire) != g_hud_shown.load(std::memory_order_acquire);
++}
++
++void HostMenuMangoHudSync() {
++	if (!HostMenuMangoHudPending()) {
++		return;
++	}
++	if (g_hud_fd < 0) {
++		// The layer opened its socket at vkCreateInstance, long before the first present; a refused
++		// connection means the layer is not there (not installed, or MANGOHUD=0).
++		const int fd = ::socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
++		if (fd < 0) {
++			MangoHudLost("socket", errno);
++			return;
++		}
++		sockaddr_un addr {};
++		addr.sun_family  = AF_UNIX;
++		const size_t len = std::strlen(g_hud_socket);
++		std::memcpy(addr.sun_path + 1, g_hud_socket, len); // abstract name: a leading NUL, no file (mesa os_socket.c)
++		if (::connect(fd, reinterpret_cast<sockaddr*>(&addr), static_cast<socklen_t>(offsetof(sockaddr_un, sun_path) + 1 + len)) != 0) {
++			const int e = errno;
++			::close(fd);
++			MangoHudLost("is not loaded", e);
++			return;
++		}
++		g_hud_fd = fd;
++		std::fprintf(stderr, "host menu: MangoHud control socket @%s connected\n", g_hud_socket);
++	}
++	// MangoHud greets each client with its version lines and answers nothing else: drop them.
++	char buf[256];
++	while (::recv(g_hud_fd, buf, sizeof(buf), MSG_DONTWAIT) > 0) {
++	}
++	if (::send(g_hud_fd, ":hud;", 5, MSG_DONTWAIT | MSG_NOSIGNAL) != 5) {
++		MangoHudLost("control socket", errno);
++		return;
++	}
++	const bool shown = !g_hud_shown.load(std::memory_order_acquire);
++	g_hud_shown.store(shown, std::memory_order_release);
++	std::fprintf(stderr, "host menu: MangoHud %s\n", shown ? "shown" : "hidden");
++}
++
+ void HostMenuDraw(float width, float height, float scale) {
+ 	if (!g_visible.load(std::memory_order_acquire)) {
+ 		return;
+@@ -502,19 +627,21 @@ void HostMenuDraw(float width, float height, float scale) {
+ 				if (ImGui::MenuItem("Ray tracing", nullptr, rt, !launcher)) {
+ 					rt = !rt;
+ 					Libs::Bc5Gc::Direct::SetRayTracing(rt);
+-					const std::string        key   = "RayTracing." + HostInputTitleId();
+-					std::vector<std::string> lines = HostInputStatements();
+-					lines.erase(std::remove_if(lines.begin(), lines.end(),
+-					                           [&](const std::string& l) { return l.size() > key.size() && l.compare(0, key.size(), key) == 0 && l[key.size()] == '='; }),
+-					            lines.end());
+-					lines.insert(lines.begin(), key + (rt ? "=on" : "=off"));
+-					const std::string path = HostInputConfigPath();
+-					std::string       error;
+-					if (path.empty() || !HostInputSave(path, lines, &error)) {
+-						std::fprintf(stderr, "host menu: ray tracing %s (not saved: %s)\n", rt ? "on" : "off", path.empty() ? "no input configuration file" : error.c_str());
+-					} else {
+-						std::fprintf(stderr, "host menu: ray tracing %s (saved to %s)\n", rt ? "on" : "off", path.c_str());
+-					}
++					SaveTitleSwitch("RayTracing", "ray tracing", rt);
++				}
++			}
++			// Experiment 0301: MangoHud's hardware figures and the title's frame rate (default off;
++			// KYTY_BC5_MANGOHUD=1 or the title's MangoHud.<TITLE_ID>=on starts it on). It shows or hides
++			// at the next present and is saved per title like the switch above.
++			{
++				bool hud = HostMenuMangoHudOn();
++				if (ImGui::MenuItem("MangoHud", nullptr, hud, !launcher)) {
++					hud = !hud;
++					HostMenuMangoHudSet(hud);
++					SaveTitleSwitch("MangoHud", "MangoHud", hud);
++				}
++				if (g_hud_lost.load(std::memory_order_acquire) && ImGui::IsItemHovered()) {
++					ImGui::SetTooltip("MangoHud is not loaded: only the game's frame rate is shown.");
+ 				}
+ 			}
+ 			ImGui::EndMenu();
+diff --git a/src/graphics/presentation/hostMenu.h b/src/graphics/presentation/hostMenu.h
+index 7b6926c..5a3fd52 100644
+--- a/src/graphics/presentation/hostMenu.h
++++ b/src/graphics/presentation/hostMenu.h
+@@ -22,6 +22,17 @@ bool HostMenuVisible() noexcept;
+ // Presenter thread, inside the settings overlay's ImGui frame. scale: the overlay's font scale.
+ void HostMenuDraw(float width, float height, float scale);
+ 
++// Experiment 0301: every build loads MangoHud's Vulkan layer, hidden (no_display), with the BC5
++// layout and a control socket of its own; the Emulation menu's MangoHud switch shows and hides it
++// together with the title's own frame-rate counter. KYTY_BC5_MANGOHUD=0 keeps the layer out, =1
++// shows it from the start; the title's MangoHud.<TITLE_ID>=on|off in the input configuration wins.
++void HostMenuMangoHudSet(bool on);
++bool HostMenuMangoHudOn() noexcept;
++// Presenter thread, once a frame while the overlay pass runs: hands a change to MangoHud.
++void HostMenuMangoHudSync();
++// A change MangoHud has not been told yet: the overlay pass must run once more.
++bool HostMenuMangoHudPending() noexcept;
++
+ } // namespace Libs::Graphics
+ 
+ #endif // KYTY_GRAPHICS_PRESENTATION_HOST_MENU_H_
+diff --git a/src/graphics/presentation/settingsOverlay.cpp b/src/graphics/presentation/settingsOverlay.cpp
+index e8775fd..2284906 100644
+--- a/src/graphics/presentation/settingsOverlay.cpp
++++ b/src/graphics/presentation/settingsOverlay.cpp
+@@ -260,14 +260,15 @@ struct Draft {
+ 
+ // BC5 (2026-10-21, the maintainer's recordings): KYTY_BC5_OSD_FPS=1 draws the title's own frame rate
+ // (presented flips a second, videoOut.cpp Bc5OsdTitleFps) in the window's top-right corner, for
+-// recordings next to MangoHud's hardware figures (BC5_MANGOHUD=1 in the launchers sets it).
++// recordings next to MangoHud's hardware figures; since experiment 0301 the Emulation menu's
++// MangoHud switch shows it too.
+ extern "C" double Bc5OsdTitleFps(double* frame_ms);
+ static bool       Bc5OsdFps() {
+     static const bool on = [] {
+         const char* e = std::getenv("KYTY_BC5_OSD_FPS");
+         return e != nullptr && std::atoi(e) != 0;
+     }();
+-    return on;
++    return on || HostMenuMangoHudOn();
+ }
+ 
+ void SettingsOverlayHostUiChanged() {
+@@ -300,7 +301,7 @@ bool SettingsOverlayActive() noexcept {
+ }
+ 
+ bool SettingsOverlayOsd() noexcept { // BC5: the on-screen fps counter keeps the overlay pass running
+-	return Bc5OsdFps();
++	return Bc5OsdFps() || HostMenuMangoHudPending(); // experiment 0301: and a MangoHud change not handed over yet
+ }
+ 
+ uint64_t SettingsOverlayRevision() noexcept {
+@@ -843,6 +844,7 @@ struct SettingsOverlay::Impl {
+ 	}
+ 
+ 	bool PrepareFrame(vk::Extent2D frame_extent, vk::Format format, uint32_t image_count) {
++		HostMenuMangoHudSync(); // experiment 0301: ahead of this present, in which MangoHud reads its socket
+ 		if (!SettingsOverlayActive() && !WindowIsPaused() && !Bc5OsdFps()) { // experiment 0175: the pause banner draws too; BC5: the fps counter
+ 			was_active = false;
+ 			return false;
+diff --git a/src/graphics/presentation/window/hostInput.cpp b/src/graphics/presentation/window/hostInput.cpp
+index e6cf215..f5fe2a3 100644
+--- a/src/graphics/presentation/window/hostInput.cpp
++++ b/src/graphics/presentation/window/hostInput.cpp
+@@ -1,5 +1,6 @@
+ #include <pthread.h>
+ #include "graphics/presentation/window/hostInput.h"
++#include "graphics/presentation/hostMenu.h" // experiment 0301: the MangoHud switch is saved per title
+ #include "graphics/presentation/window.h"
+ 
+ #include "SDL_gamecontroller.h"
+@@ -377,6 +378,7 @@ public:
+ 		}
+ 		for (const auto& other: m_other_title_scales) out.push_back(other);
+ 		if (m_ray_tracing >= 0) out.emplace_back("RayTracing." + HostInputTitleId() + (m_ray_tracing == 1 ? "=on" : "=off")); // experiment 0273
++		if (m_mangohud >= 0) out.emplace_back("MangoHud." + HostInputTitleId() + (m_mangohud == 1 ? "=on" : "=off")); // experiment 0301
+ 		if (!m_default_keys) {
+ 			out.emplace_back("DefaultKeys=off");
+ 		}
+@@ -404,6 +406,7 @@ public:
+ 	[[nodiscard]] bool DefaultKeys() const { return m_default_keys; }
+ 	[[nodiscard]] double RenderScale() const { return m_render_scale; }
+ 	[[nodiscard]] int    RayTracing() const { return m_ray_tracing; } // experiment 0273: -1 not set, 0 off, 1 on
++	[[nodiscard]] int    MangoHud() const { return m_mangohud; } // experiment 0301: -1 not set, 0 off, 1 on
+ 	[[nodiscard]] int    Fullscreen() const { return m_fullscreen; }
+ 
+ 	[[nodiscard]] bool PadButtonDisabled(int button) const {
+@@ -538,6 +541,24 @@ private:
+ 			return true;
+ 		}
+ 
++		if (left.size() > 9 && EqualNoCase(left.substr(0, 9), "MangoHud.")) { // experiment 0301, per title
++			int v = -1;
++			if (EqualNoCase(right, "on") || EqualNoCase(right, "true") || right == "1") {
++				v = 1;
++			} else if (EqualNoCase(right, "off") || EqualNoCase(right, "false") || right == "0") {
++				v = 0;
++			} else {
++				return Fail(error, where + ": MangoHud takes on or off, got: " + std::string(right));
++			}
++			const std::string id(left.substr(9));
++			if (EqualNoCase(id, HostInputTitleId())) {
++				m_mangohud = v;
++			} else {
++				m_other_title_scales.emplace_back("MangoHud." + id + (v == 1 ? "=on" : "=off")); // another title's line, kept
++			}
++			return true;
++		}
++
+ 		if (EqualNoCase(left, "DefaultKeys")) {
+ 			if (EqualNoCase(right, "on") || EqualNoCase(right, "true") || right == "1") {
+ 				m_default_keys = true;
+@@ -595,6 +616,7 @@ private:
+ 	bool                 m_default_keys     = true;
+ 	double               m_render_scale     = 0.0; // 0: not set (timestamps untouched)
+ 	int                  m_ray_tracing      = -1;  // experiment 0273: -1 not set (the environment decides), 0 off, 1 on
++	int                  m_mangohud         = -1;  // experiment 0301: -1 not set (off, or KYTY_BC5_MANGOHUD=1), 0 off, 1 on
+ 	std::vector<std::string> m_other_title_scales;   // RenderScale.<id> lines of other titles, kept
+ 	int                  m_fullscreen       = -1;  // -1: not set (--fullscreen or windowed)
+ 	bool                 m_custom           = false;
+@@ -646,6 +668,7 @@ InputMap& Map() {
+ 		map->Log();
+ 		if (map->RenderScale() > 0.0) Libs::Bc5Gc::Direct::SetTimestampScale(map->RenderScale());
+ 	if (map->RayTracing() >= 0) Libs::Bc5Gc::Direct::SetRayTracing(map->RayTracing() == 1); // experiment 0273
++		if (map->MangoHud() >= 0) HostMenuMangoHudSet(map->MangoHud() == 1); // experiment 0301
+ 		if (map->Fullscreen() >= 0) WindowSetFullscreen(map->Fullscreen() == 1);
+ 		g_map = std::move(map);
+ 	}
+@@ -922,6 +945,7 @@ bool HostInputApply(const std::vector<std::string>& lines, std::string* error) {
+ 	map->Log();
+ 	if (map->RenderScale() > 0.0) Libs::Bc5Gc::Direct::SetTimestampScale(map->RenderScale());
+ 	if (map->RayTracing() >= 0) Libs::Bc5Gc::Direct::SetRayTracing(map->RayTracing() == 1); // experiment 0273
++	if (map->MangoHud() >= 0) HostMenuMangoHudSet(map->MangoHud() == 1); // experiment 0301
+ 	if (map->Fullscreen() >= 0) WindowSetFullscreen(map->Fullscreen() == 1);
+ 	g_map = std::move(map);
+ 	return true;

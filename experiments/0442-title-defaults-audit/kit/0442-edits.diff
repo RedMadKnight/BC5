@@ -1,0 +1,210 @@
+--- a/switch_defaults.hpp
++++ b/switch_defaults.hpp
+@@ -146,6 +146,44 @@
+     {"BC5_DIRECT_ACB_SPLIT_LATE", "3"},
+     {nullptr, nullptr}};
+ 
++// exp 0442 (tag tg442; D26, F896): the generic rows of TITLE2's kTitleDefaults, for EVERY title, with their values
++// unchanged. Applied after kSoft with setenv(name, value, 0): a value in the environment wins, NAME=0 turns one off.
++// A table of its own so exp 0439's bake (kSoft's end, kTitleDefaults' head) and this one apply in either order.
++inline constexpr Default kGeneric0442[] = {
++    // G1-G3: the twenty system-library ports and fixes (every title by the port rule; the 0413 claim was F816)
++    {"KYTY_BC5_SAVEDATA_MEMORY_FIXES", "1"}, // exp 0405 port (audit 0413 rows A15-A17, A21, A22)
++    {"KYTY_BC5_SAVEDATA_DELETE_BUSY", "1"}, // exp 0405 port (audit 0413 rows A15-A17, A21, A22)
++    {"KYTY_BC5_SAVEDATA_ALIASES", "1"}, // exp 0405 port (audit 0413 rows A15-A17, A21, A22)
++    {"KYTY_BC5_HTTP2_FIXES", "1"}, // exp 0405 port (audit 0413 rows A15-A17, A21, A22)
++    {"KYTY_BC5_PAD_OPEN_EXT", "1"}, // exp 0405 port (audit 0413 rows A15-A17, A21, A22)
++    {"KYTY_BC5_JSON2_FIXES", "1"}, // exp 0405 port (audit 0413 rows A15-A17, A21, A22)
++    {"KYTY_BC5_ULT_FIXES", "1"}, // exp 0405 port (audit 0413 rows A15-A17, A21, A22)
++    {"KYTY_BC5_USERSERVICE_VALUES", "1"}, // exp 0405 port (audit 0413 rows A15-A17, A21, A22)
++    {"KYTY_BC5_SYSTEMSERVICE_VALUES", "1"}, // exp 0405 port (audit 0413 rows A15-A17, A21, A22)
++    {"KYTY_BC5_SYSTEMSERVICE_PARAMS_7_1000", "1"}, // exp 0405 port (audit 0413 rows A15-A17, A21, A22)
++    {"KYTY_BC5_AUDIOOUT_CHECKS", "1"}, // exp 0405 port (audit 0413 rows A15-A17, A21, A22)
++    {"KYTY_BC5_AUDIOIN_CHECKS", "1"}, // exp 0405 port (audit 0413 rows A15-A17, A21, A22)
++    {"KYTY_BC5_NGS2_RACK_FIX", "1"}, // exp 0405 port (audit 0413 rows A15-A17, A21, A22)
++    {"KYTY_BC5_FW_PAD", "1"}, // exp 0405 port (audit 0413 rows A15-A17, A21, A22)
++    {"KYTY_BC5_LOAD_ZLIB", "1"}, // exp 0405 port (audit 0413 rows A15-A17, A21, A22)
++    {"KYTY_BC5_LOAD_JPEG", "1"}, // exp 0405 port (audit 0413 rows A15-A17, A21, A22)
++    {"KYTY_BC5_LOAD_IME", "1"}, // exp 0405 port (audit 0413 rows A15-A17, A21, A22)
++    {"KYTY_BC5_LOAD_NPCOMMON", "1"}, // exp 0405 port (audit 0413 rows A15-A17, A21, A22)
++    {"KYTY_BC5_LOAD_NPMANAGER", "1"}, // exp 0405 port (audit 0413 rows A15-A17, A21, A22)
++    {"KYTY_BC5_LOAD_NPTROPHY", "1"}, // exp 0405 port (audit 0413 rows A15-A17, A21, A22)
++    // G4: host speed, timing only
++    {"BC5_DIRECT_MEC_INDIRECT", "1"}, // F91
++    {"BC5_DIRECT_REMEMBER_UNMAPPED", "1"}, // F163
++    {"KYTY_BC5_APR_PARALLEL", "8"}, // F166
++    // G6: submission changes (the run script can turn this group off by its off-words)
++    {"BC5_DIRECT_GPU_CHECK", "1"}, // F106
++    {"BC5_DIRECT_DMA_SNAPSHOT", "4096"}, // F172
++    {"BC5_DIRECT_CS_PREFIX", "1"}, // F321
++    {"BC5_DIRECT_INDIRECT_DRAWS", "multi"}, // F108, F112
++    // G7: memory mapping (the run script can turn this group off by its off-word)
++    {"BC5_DIRECT_LAZY_RELEASE", "30,eager"}, // orphan release of unused direct-memory chunks (exps 0401, 0412; F843)
++    {nullptr, nullptr}};
++
+ // exp 0419: words whose option is removed and whose code default (the value when unset) is the tested behaviour.
+ // They are taken out of the environment at process start, before any static initializer reads one.
+ inline constexpr const char* kIgnored[] = {
+@@ -173,11 +211,14 @@
+ // Until 2026-11-13 these words lived in the second title's launcher (play-pkg.sh 47426d8e): a new launcher or a desktop
+ // shortcut that forgot one silently lost a fix. They are applied like the tables above (setenv(name, value, 0): a value
+ // in the environment wins, NAME=0 turns one off), after the title id is read from the game directory on the command
+-// line, which is all this needs before any static initializer runs. KYTY_BC5_TITLE_DEFAULTS=0 skips the table, and so
+-// does KYTY_BC5_SWITCH_DEFAULTS=0.
+-// Why per title and not general: for 14 of the direct-path words no first-title run is on record, and four or more of the
+-// twenty library words together end the first title at 5-6 s (exp 0413). A word moves up to kDefaults when it has a run on
+-// both titles. The heap-name lists, the RT program list and every path stay in the launcher (title data and paths).
++// line, which is all this needs before any static initializer runs. KYTY_BC5_TITLE_DEFAULTS=0 skips the table
++// (KYTY_BC5_SWITCH_DEFAULTS is in kIgnored since exp 0419 and skips nothing).
++// exp 0442 (D26, F896: no per-title fixes): the generic rows moved to kGeneric0442 (every title). Exp 0413's
++// "the library words end the first title at 5-6 s" was the host's own F816 (CommandBufferSetBuffer), fixed since 2026-11-12.
++// What is left here: the G5 rows exp 0439 moves (DMA_SYNC, FLAT_APERTURE) and the G8 rows that need a general
++// replacement first (GUARD_SPLIT with ALIASES, AMM_PRT, ALIASES, GPU_CHECK_PRODUCT, SHADOW_LABELS, HOST_INDIRECT;
++// experiments/0442-title-defaults-audit). The heap-name lists, the RT program list and every path stay in the
++// launcher (title data and paths).
+ struct TitleDefault {
+ 	const char* title;
+ 	const char* name;
+@@ -187,45 +228,14 @@
+ #define BC5_T2 "TITLE2"
+ inline constexpr TitleDefault kTitleDefaults[] = {
+     // the direct path (launcher lines 54-56, 75-148)
+-    {BC5_T2, "BC5_DIRECT_LAZY_RELEASE", "30,eager"},  // orphan release (exp 0412)
+     {BC5_T2, "BC5_GUARD_SPLIT", "1"},
+-    {BC5_T2, "BC5_GUARD_LEARN_LOG", "2"},
+-    {BC5_T2, "BC5_DIRECT_MEC_INDIRECT", "1"},      // F91
+-    {BC5_T2, "BC5_DIRECT_GPU_CHECK", "1"},         // F106
+     {BC5_T2, "BC5_DIRECT_DMA_SYNC", "1"},          // F107
+-    {BC5_T2, "BC5_DIRECT_REMEMBER_UNMAPPED", "1"}, // F163
+-    {BC5_T2, "KYTY_BC5_APR_PARALLEL", "8"},        // F166
+-    {BC5_T2, "BC5_DIRECT_DMA_SNAPSHOT", "4096"},   // F172
+     {BC5_T2, "BC5_DIRECT_FLAT_APERTURE", "1"},     // F249
+     {BC5_T2, "BC5_DIRECT_AMM_PRT", "1"},           // F260
+-    {BC5_T2, "BC5_DIRECT_SKIP_PGM", "0"},          // as the launcher had it
+-    {BC5_T2, "BC5_DIRECT_CS_PREFIX", "1"},         // F321
+-    {BC5_T2, "BC5_DIRECT_INDIRECT_DRAWS", "multi"},
+     {BC5_T2, "BC5_DIRECT_ALIASES", "1"},
+     {BC5_T2, "BC5_DIRECT_GPU_CHECK_PRODUCT", "1"},   // F414, F415
+     {BC5_T2, "BC5_DIRECT_SHADOW_LABELS", "1"},       // F414, F415
+     {BC5_T2, "BC5_DIRECT_HOST_INDIRECT", "learn:1100000000"}, // F432
+-    // the twenty library words of audit rows A15, A16, A17, A21, A22 (launcher lines 59-67)
+-    {BC5_T2, "KYTY_BC5_SAVEDATA_MEMORY_FIXES", "1"},
+-    {BC5_T2, "KYTY_BC5_SAVEDATA_DELETE_BUSY", "1"},
+-    {BC5_T2, "KYTY_BC5_SAVEDATA_ALIASES", "1"},
+-    {BC5_T2, "KYTY_BC5_HTTP2_FIXES", "1"},
+-    {BC5_T2, "KYTY_BC5_PAD_OPEN_EXT", "1"},
+-    {BC5_T2, "KYTY_BC5_JSON2_FIXES", "1"},
+-    {BC5_T2, "KYTY_BC5_ULT_FIXES", "1"},
+-    {BC5_T2, "KYTY_BC5_USERSERVICE_VALUES", "1"},
+-    {BC5_T2, "KYTY_BC5_SYSTEMSERVICE_VALUES", "1"},
+-    {BC5_T2, "KYTY_BC5_SYSTEMSERVICE_PARAMS_7_1000", "1"},
+-    {BC5_T2, "KYTY_BC5_AUDIOOUT_CHECKS", "1"},
+-    {BC5_T2, "KYTY_BC5_AUDIOIN_CHECKS", "1"},
+-    {BC5_T2, "KYTY_BC5_NGS2_RACK_FIX", "1"},
+-    {BC5_T2, "KYTY_BC5_FW_PAD", "1"},
+-    {BC5_T2, "KYTY_BC5_LOAD_ZLIB", "1"},
+-    {BC5_T2, "KYTY_BC5_LOAD_JPEG", "1"},
+-    {BC5_T2, "KYTY_BC5_LOAD_IME", "1"},
+-    {BC5_T2, "KYTY_BC5_LOAD_NPCOMMON", "1"},
+-    {BC5_T2, "KYTY_BC5_LOAD_NPMANAGER", "1"},
+-    {BC5_T2, "KYTY_BC5_LOAD_NPTROPHY", "1"},
+     {nullptr, nullptr, nullptr}};
+ #undef BC5_T2
+ 
+@@ -285,7 +295,8 @@
+ 
+ // exp 0419 step i (exp 0412 section 95): title rows that are forced. The word is unset at process start, so the
+ // environment never decides it, and the title's row sets it with overwrite.
+-inline constexpr const char* kTitleForced[] = {"BC5_DIRECT_LAZY_RELEASE", "BC5_GUARD_SPLIT", nullptr};
++// exp 0442: empty. LAZY_RELEASE is every title's (kGeneric0442) with its off-word; GUARD_SPLIT is a plain row.
++inline constexpr const char* kTitleForced[] = {nullptr};
+ inline bool TitleForced(const char* name) {
+ 	for (const char* const* n = kTitleForced; *n != nullptr; n++) {
+ 		if (std::strcmp(*n, name) == 0) return true;
+@@ -350,6 +361,9 @@
+ 	for (const Default* d = kSoft; d->name != nullptr; d++) {
+ 		setenv(d->name, d->value, 0);
+ 	}
++	for (const Default* d = kGeneric0442; d->name != nullptr; d++) { // exp 0442: the generic rows, every title
++		setenv(d->name, d->value, 0);
++	}
+ 	// the title's own rows
+ 	const char* per = std::getenv("KYTY_BC5_TITLE_DEFAULTS");
+ 	if (per != nullptr && std::strcmp(per, "0") == 0) return;
+--- a/bc5LleAgc.cpp
++++ b/bc5LleAgc.cpp
+@@ -44,6 +44,7 @@
+ 
+ #if defined(KYTY_BC5_DIRECT)
+ #include "bc5/direct.hpp"
++#include "bc5/idraws0442.hpp" // exp 0442: BC5_DIRECT_INDIRECT_DRAWS, "0" is off
+ #include "bc5/full_state.hpp"
+ #include "bc5/load_stat.hpp" // experiment 0415 (ls415)
+ #include "bc5/sync_fast.hpp" // experiment 0415 (ls415d)
+@@ -15912,9 +15913,9 @@
+ 		// unless BC5_DIRECT_INDIRECT_DRAWS=1 (the second title draws its scene with them).
+ 		// Experiment 0057: "=1" lets DRAW_INDIRECT through only; the multi-draw packets, whose per-draw
+ 		// arguments nobody checks, need "=multi".
+-		const char* idraws = std::getenv("BC5_DIRECT_INDIRECT_DRAWS");
+-		if (idraws == nullptr) v.insert(v.end(), {0x24, 0x2c, 0x38});
+-		else if (std::strcmp(idraws, "multi") != 0) v.insert(v.end(), {0x2c, 0x38});
++		const bc5::IndirectDraws idraws = bc5::indirect_draws_mode(std::getenv("BC5_DIRECT_INDIRECT_DRAWS")); // exp 0442: "0" is off
++		if (idraws == bc5::IndirectDraws::off) v.insert(v.end(), {0x24, 0x2c, 0x38});
++		else if (idraws == bc5::IndirectDraws::draw) v.insert(v.end(), {0x2c, 0x38});
+ 		return v;
+ 	}();
+ 	opt.extra_drop = extra;
+@@ -16076,7 +16077,7 @@
+ 			// queues the single ring cannot serve), the indirect draws read arguments and data the other
+ 			// queue has not produced yet; with them the GPU hung at the second title's 150 s scene
+ 			// change (runs 240-242, the last one taking the machine down). They are dropped there.
+-			if (type == 3 && (op == 0x24 || op == 0x25 || op == 0x2c || op == 0x38) && chain_given_up_at(chain, q) && std::getenv("BC5_DIRECT_INDIRECT_DRAWS") != nullptr) {
++			if (type == 3 && (op == 0x24 || op == 0x25 || op == 0x2c || op == 0x38) && chain_given_up_at(chain, q) && bc5::indirect_draws_mode(std::getenv("BC5_DIRECT_INDIRECT_DRAWS")) != bc5::IndirectDraws::off) { // exp 0442
+ 				static std::atomic<uint64_t> n_unwaited {0};
+ 				if ((n_unwaited++ & 0xfffu) == 0) journal("  indirect draw op %02x at %u after a given-up wait: DROPPED (%" PRIu64 " so far)\n", op, q, n_unwaited.load());
+ 				opt.drop_offsets.push_back(q);
+--- a/settingsOverlay.cpp
++++ b/settingsOverlay.cpp
+@@ -851,7 +851,8 @@
+ 		// BC5 (experiment 0179, F237): the steps below were measured on the first title. The second title
+ 		// (TITLE2) paces its frames by the scaled GPU time instead: at 1.7 its intro ran at 18-20
+ 		// flips/s instead of 28-30 and its start screen at 25 instead of 46, from one save of this tab.
+-		if (HostInputTitleId() != "TITLE1") {
++		// exp 0442: the first title's run-time TITLE_ID is TITLE1B (F863); TITLE1 is its image name.
++		if (HostInputTitleId() != "TITLE1B") {
+ 			const std::string warn = "These steps were measured on the first title, not on this title (" + HostInputTitleId() +
+ 			                         "). A title that paces its frames by the GPU time runs slower above 1.0: the second "
+ 			                         "title runs at half rate at 1.7. Keep 1.0 (the first step) unless you have measured it.";
+--- a/direct.cpp
++++ b/direct.cpp
+@@ -585,7 +585,7 @@
+     d->impl_->opts = opts;
+     // Experiment 0341: the experimental switches, read here until the host's option parsing
+     // carries them (each default off; the host's fields, when set, are kept).
+-    d->impl_->env_shadow = std::getenv("BC5_DIRECT_SHADOW_LABELS") != nullptr;
++    d->impl_->env_shadow = env_on(std::getenv("BC5_DIRECT_SHADOW_LABELS")); // exp 0442: "=0" is off (was presence only)
+     if (const char *e = std::getenv("BC5_DIRECT_DRAW_ARGS_JOURNAL"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
+         d->impl_->env_draw_args = true; // experiment 0381; the limits follow the CP check's (FilterOptions::gpu_check_draw_max)
+         std::fprintf(stderr, "bc5-direct: experiment 0381 switch: indirect draw arguments read at submit and at completion or timeout (journal only)\n");
+--- a/idraws0442.hpp
++++ b/idraws0442.hpp
+@@ -0,0 +1,19 @@
++// SPDX-License-Identifier: GPL-2.0-only
++// BC5 experiment 0442 (tag tg442): BC5_DIRECT_INDIRECT_DRAWS read as one mode in both of its places. Unset, empty and
++// "0" are off (the code default: DRAW_INDIRECT 0x24 and the multi-draws 0x2c/0x38 dropped, no drop after a given-up
++// wait); "multi" lets all of them through; any other value lets DRAW_INDIRECT through only (exps 0054, 0057). Before
++// exp 0442 "0" counted as set.
++#pragma once
++
++#include <cstring>
++
++namespace bc5 {
++
++enum class IndirectDraws { off, draw, multi };
++
++inline IndirectDraws indirect_draws_mode(const char* e) {
++	if (e == nullptr || e[0] == 0 || std::strcmp(e, "0") == 0) return IndirectDraws::off;
++	return std::strcmp(e, "multi") == 0 ? IndirectDraws::multi : IndirectDraws::draw;
++}
++
++} // namespace bc5

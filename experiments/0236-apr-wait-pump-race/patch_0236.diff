@@ -1,0 +1,62 @@
+diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
+index 8873cc8..309f35e 100644
+--- a/src/libs/libAmpr.cpp
++++ b/src/libs/libAmpr.cpp
+@@ -2300,7 +2300,8 @@ static void AprReaderThread(size_t qi, size_t k) {
+ 			// BC5 (experiment 0216): sleep until notified. Every change that can make a buffer pickable notifies
+ 			// under g_apr_queue_mutex: a submit, and the worker's pop_front, which frees read-ahead budget and
+ 			// moves the window. The 5-ms poll it replaces cost the idle readers about 1.6 % of one core (exp 0214).
+-			// The 1-s limit is a safety net: the wait thread's pump (StartAprWaitThread) pops without a notify.
++			// The 1-s limit is a safety net (exp 0236: in async mode the wait thread's pump, which popped without a
++			// notify, no longer runs).
+ 			g_apr_queue_cv.wait_for(lock, std::chrono::seconds(1));
+ 			continue;
+ 		}
+@@ -2376,6 +2377,17 @@ static void AprWorkerThread(size_t qi) {
+ 	}
+ }
+ 
++// BC5 (experiment 0156): the priority's worker and, with KYTY_BC5_APR_READAHEAD (experiment 0203), its readers.
++static void StartAprWorker(size_t qi) {
++	std::call_once(g_apr_worker_once[qi], [qi] {
++		std::thread(AprWorkerThread, qi).detach();
++		for (size_t k = 0; k < AprReadahead(); k++) {
++			std::thread(AprReaderThread, qi, k).detach();
++		}
++	});
++}
++
++// Synchronous mode (KYTY_BC5_APR_SYNC=1) only: there are no workers, and this thread runs the parked buffers.
+ static void StartAprWaitThread() {
+ 	static std::once_flag once;
+ 	std::call_once(once, [] {
+@@ -2466,12 +2478,7 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+ 	if (AprAsync() && !amm_only) {
+ 		// Experiment 0156: queued for the priority's worker; the submit returns at once.
+ 		queue.push_back({command_buffer, state, ordered, 0, submission_id, result_ptr});
+-		std::call_once(g_apr_worker_once[qi], [qi] {
+-			std::thread(AprWorkerThread, qi).detach();
+-			for (size_t k = 0; k < AprReadahead(); k++) { // BC5 (experiment 0203): KYTY_BC5_APR_READAHEAD
+-				std::thread(AprReaderThread, qi, k).detach();
+-			}
+-		});
++		StartAprWorker(qi);
+ 		g_apr_queue_cv.notify_all();
+ 		return OK;
+ 	}
+@@ -2486,7 +2493,14 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+ 	size_t next = 0;
+ 	if (!RunOrderedAprCommands(command_buffer, state, ordered, &next, execution_result, error_offset)) {
+ 		queue.push_back({command_buffer, state, ordered, next, submission_id, result_ptr});
+-		StartAprWaitThread();
++		if (AprAsync()) {
++			// BC5 (experiment 0236): an AMM-only submission stopped at a wait; the priority's worker runs the rest
++			// at its turn. The wait thread's pump would run the front of a queue a worker owns while the worker runs
++			// it unlocked, and pop buffers the worker or a reader still holds.
++			StartAprWorker(qi);
++		} else {
++			StartAprWaitThread();
++		}
+ 		if (AmmTrace()) {
+ 			AmmTraceStamp(), std::fprintf(stderr, "amm trace: submission 0x%016" PRIx64 " waits at command %zu of %zu\n", command_buffer, next,
+ 			             ordered.size());

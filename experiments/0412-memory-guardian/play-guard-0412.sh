@@ -1,0 +1,213 @@
+#!/usr/bin/env bash
+# BC5 exp 0412: one play of the second title on the guardian's build, by arm. On the host, as ~/bc5-work/exp0412/play-guard-0412.sh.
+# play-e11-0411.sh's pattern: exp 0412's launcher play-pkg-0412.sh in the ubuntu distrobox, with the "e11 unpacked" shortcut's
+# 70 words (RT on, the saves, the settings and the learned file are the launcher's) plus the arm's words.
+# Arms (the second build, g412b, 2026-11-10 night; the first four are the first build's):
+#   base     no guardian word: the binary must behave as e11's (the control)
+#   ledger   BC5_GUARD_LEDGER=1: log only
+#   low      ledger + MLOCK=pinned + FILE=random,dontneed (PSI 10) + APPLY_MIN_MS=50 + PIN_CAP=11600 (log only)
+#   guest    low with MLOCK=guest: the title's CPU heaps are locked too. Can end in an OOM kill instead of a slow game.
+#   orphans  ledger + BC5_DIRECT_LAZY_RELEASE=10,eager (exp 0401 e7's release, live for the first time: a pinned chunk under
+#            no view for 10 s is unpinned) + the fuse
+#   cap      orphans + BC5_GUARD_PIN_CAP=11600 + BC5_GUARD_CAP_ACT=1: over 11,600 MiB pinned, new AMM and by-data chunks are
+#            put off and read as zeros on the GPU (missing textures or geometry) until room comes back
+#   amm      cap + BC5_GUARD_AMM_BY_USE=1 (the launcher drops AMM from the eager heaps: its chunks are pinned when they hold
+#            data, not when mapped). F403's class of risk: a GPU access to an AMM page no CPU wrote faults (14 s). No shortcut.
+# The fuse (every arm but base, low and guest; fuse0412.sh): memory.max 12,400 MiB (the night of 11-10/11: 12,000 is too tight, 1 flip/s) and memory.swap.max 2,048 MiB on the container's cgroup
+# while the emulator runs; past them the kernel kills the emulator instead of the box dying. BC5_0412_FUSE=0 leaves it out,
+# BC5_0412_FUSE="<RAM MiB> <swap MiB>" sets other limits (any arm).
+# MLOCK needs an unlimited memlock limit inside the container; the wrapper asks for it and the guardian journals what it
+# got ("memlock limit unlimited" or "limited": then nothing is locked and the arm is the same without MLOCK).
+# Beside it, on the host: the read-only sampler sampler0412b.sh, one line every 5 s into
+# ~/bc5-work/exp0412/sampler/play-<time>-<arm>.txt. It waits up to 300 s for the emulator and ends when the emulator's
+# process ends (or after 4 h). If the sampler or the fuse script is not the installed one the play goes on without it.
+# A second word "dry" checks the pins and prints what would run; it starts nothing (the stand-in check).
+# The launcher (play-pkg-0412.sh, exp 0411's) sets ulimit -c 0.
+# usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm [dry]
+set -u
+E=$HOME/bc5-work/exp0412
+BIN=$E/bin/kyty_emulator; L=$E/play-pkg-0412.sh; GAME=$HOME/bc5-data/games/TITLE2
+SHARED=$HOME/bc5-work/kytyplus-build/src/kyty_emulator; NOLEARN=0   # arm fast9
+m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }
+say() { echo "$*"; command -v notify-send > /dev/null 2>&1 && notify-send "BC5" "$*" 2> /dev/null; }
+# The pins: mk0412b.sh writes built.md5 (the binary and the launcher), install0412b.sh writes tools.md5 (sampler, fuse).
+pinned() { [ -s "$2" ] && grep -qxF "$(m "$E/$1")  $1" "$2"; }
+pinned bin/kyty_emulator "$E/built.md5" || { say "0412: $BIN is not the build in built.md5; not started"; exit 1; }
+pinned play-pkg-0412.sh "$E/built.md5" || { say "0412: $L is not the launcher in built.md5; not started"; exit 1; }
+grep -aqF BC5_GUARD_CAP_ACT "$BIN" || { say "0412: $BIN is not the second build (g412b); not started"; exit 1; }
+grep -q '^ulimit -c 0' "$L" || { say "0412: $L does not set ulimit -c 0; not started"; exit 1; }
+WORDS=(BC5_GAME_DIR=$GAME BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_ACB_CS_PREFIX=0
+  BC5_DIRECT_ACB_INHERIT=journal BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0
+  BC5_DIRECT_TABLE_CATCHER=1 KYTY_BC5_NP_SESSION_V2=1 KYTY_BC5_MEMORY_FROM_PARAM=0 KYTY_BC5_PTHREAD_FIXES=1
+  KYTY_BC5_SAVEDATA_FIXES=1 KYTY_BC5_SAVEDATA_EVENT_CB=1 KYTY_BC5_SAVEDATA_SORT=1 KYTY_BC5_AUDIO_FIXES=set,room
+  KYTY_BC5_VIDEOOUT_STATUS=1 KYTY_BC5_AMM_PRT_CMDS=1 KYTY_BC5_AMM_EXTRA_CMDS=1 KYTY_BC5_AMPR_WAITS=1 KYTY_BC5_EQUEUE_FIXES=1
+  KYTY_BC5_MMAP_SHIM_FIXES=1 BC5_R3_MEMSEM_SIGNAL=1 BC5_R3_REWIND_CATCH=1 BC5_R3_DROP_CATCH=1 BC5_R3_SUBMIT_EOP_EVENT=1
+  BC5_R3_COND_WRITE=1 BC5_R3_WAIT_IDLE=1 BC5_R3_TS_100MHZ=1 KYTY_BC5_TLS_FIXES=1 KYTY_BC5_THREAD_SYNC_FIXES=1
+  KYTY_BC5_SEMA_FIXES=1 BC5_R3_MPROTECT_GAPS=1 BC5_R3_NULL_ARGS=1 BC5_R3_RELEASE_HOLES=1 BC5_R3_MUNMAP_HOLES=1
+  BC5_R3_FLEX_HINT=1 BC5_R3_DMQ_END=1 BC5_R3_EXEC_EINVAL=1 BC5_R3_QUERY_SIZE=1 KYTY_BC5_FS_FIXES=1 KYTY_BC5_POSIX_RET_FIXES=1
+  KYTY_BC5_SAVEDATA_MEMORY_FIXES=1 KYTY_BC5_SAVEDATA_DELETE_BUSY=1 KYTY_BC5_SAVEDATA_ALIASES=1 KYTY_BC5_HTTP2_FIXES=1
+  KYTY_BC5_PAD_OPEN_EXT=1 KYTY_BC5_JSON2_FIXES=1 KYTY_BC5_ULT_FIXES=1 KYTY_BC5_USERSERVICE_VALUES=1
+  KYTY_BC5_SYSTEMSERVICE_VALUES=1 KYTY_BC5_SYSTEMSERVICE_PARAMS_7_1000=1 KYTY_BC5_AUDIOOUT_CHECKS=1 KYTY_BC5_AUDIOIN_CHECKS=1
+  KYTY_BC5_NGS2_RACK_FIX=1 KYTY_BC5_FW_NET=1 KYTY_BC5_FW_PAD=1 KYTY_BC5_FW_AUDIO=1 KYTY_BC5_JIT_SHM=1 KYTY_BC5_FW_KERNEL=1
+  KYTY_BC5_LOAD_ZLIB=1 KYTY_BC5_LOAD_JPEG=1 KYTY_BC5_LOAD_IME=1 KYTY_BC5_LOAD_NPCOMMON=1 KYTY_BC5_LOAD_NPMANAGER=1
+  KYTY_BC5_LOAD_NPTROPHY=1 BC5_DIRECT_JOURNAL_QUIET=1
+  BC5_DIRECT_RESET_REPLAY_ACB=1 BC5_DIRECT_RESET_LABELS=1 BC5_DIRECT_LEARN_GUEST_ONLY=1 BC5_DIRECT_RESET_LABEL_JOURNAL=1)
+[ "${#WORDS[@]}" = 70 ] || { say "0412: the shortcut's words are not 70; not started"; exit 1; }
+LOW=(BC5_GUARD_LEDGER=1 BC5_GUARD_FILE=random,dontneed "BC5_GUARD_FILE_ROOT=$GAME" BC5_GUARD_PSI=10 BC5_GUARD_APPLY_MIN_MS=50 BC5_GUARD_PIN_CAP=11600)
+ORPH=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=10,eager BC5_GUARD_SPLIT=1)   # SPLIT since the third build (g412c): without it nothing is cut while BC5_DIRECT_ALIASES is set
+CAP=("${ORPH[@]}" BC5_GUARD_PIN_CAP=11600 BC5_GUARD_CAP_ACT=1)
+LW=; FUSE=""; ZL=$E/zero-list-0412.txt   # the zero list of the z arms (a copy of the night's scan, put in place by hand)
+case "${1:-}" in zsk | zo | zoc | zof | zoe | fast5 | fast6 | fast7 | lw7) [ -s "$ZL" ] || { say "0412: no zero list at $ZL; not started"; exit 1; } ;; esac
+case "${1:-}" in
+  base)    ;;
+  ledger)  WORDS+=(BC5_GUARD_LEDGER=1); FUSE="12400 2048" ;;   # the fuse since the night of 11-10/11: without a limit this arm took the box down (21:47)
+  low)     WORDS+=("${LOW[@]}" BC5_GUARD_MLOCK=pinned) ;;
+  guest)   WORDS+=("${LOW[@]}" BC5_GUARD_MLOCK=guest) ;;
+  orphans) WORDS+=("${ORPH[@]}"); FUSE="12400 2048" ;;
+  cap)     WORDS+=("${CAP[@]}"); FUSE="12400 2048" ;;
+  amm)     WORDS+=("${CAP[@]}" BC5_GUARD_AMM_BY_USE=1); FUSE="12400 2048" ;;
+  # The night's arms (2026-11-11): exp 0379's zero skip with a list scanned at the maintainer's current save.
+  zscan)   WORDS+=("${ORPH[@]}" BC5_DIRECT_ZEROSCAN_AT=140,170,200,230,260 "BC5_DIRECT_ZEROSCAN_OUT=$E/night/zero-list-scan.txt"); FUSE="12400 2048" ;;
+  zsk)     WORDS+=(BC5_GUARD_LEDGER=1 "BC5_DIRECT_ZERO_SKIP=$ZL"); FUSE="12400 2048" ;;
+  zo)      WORDS+=("${ORPH[@]}" "BC5_DIRECT_ZERO_SKIP=$ZL"); FUSE="12400 2048" ;;
+  zoc)     WORDS+=("${CAP[@]}" "BC5_DIRECT_ZERO_SKIP=$ZL"); FUSE="12400 2048" ;;
+  zof)     WORDS+=("${ORPH[@]}" BC5_GUARD_FORGET=20 "BC5_DIRECT_ZERO_SKIP=$ZL"); FUSE="12400 2048" ;;   # the fourth build (g412d)
+  of)      WORDS+=("${ORPH[@]}" BC5_GUARD_FORGET=20); FUSE="12400 2048" ;;
+  # The fifth build (g412e, 2026-11-11): zo with the events cap of README section 11 (a bound of 64 on an event's pending queue).
+  # The sixth build (g412f, 2026-11-11): the first fix of the host's memory bookkeeping (README section 15), without the zero
+  # skip (2 GPU ring timeouts in 8 runs with it) and with the orphan release and the events cap.
+  fast)    WORDS+=("${ORPH[@]}" KYTY_BC5_RANGES_FAST=1 KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="12400 2048" ;;
+  # The eighth build (g412h, 2026-11-11): fast + the sorted mapping table (README section 18) and a harder orphan release
+  # (idle 4 s instead of 10, and forced chunks under no view for 10 s leave the forced set). No zero skip.
+  # 2026-11-11 19:10, the maintainer (yes, 30 s): the idle time before a cut is 30 s here, was 4 s (README section 28).
+  fast2)   WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
+             KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="12400 2048" ;;
+  # The fifteenth build (g412o, 2026-11-11): fast2 with the return-aware orphan release (README section 28): a chunk that was
+  # cut and came back under a view is not cut again for 300 s (doubling with every return); dead memory still goes after 4 s.
+  fast3)   WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=4,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 BC5_GUARD_RETURN_EXEMPT=300 KYTY_BC5_RANGES_FAST=1
+             KYTY_BC5_PHYSMAP_SORTED=1 KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="12400 2048" ;;
+  # The nineteenth build (g412s, 2026-11-11): fast2 with the four heaps the title mapped without a GPU bit left unpinned (README section 37).
+  fast4)   WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
+             BC5_GUARD_NOGPU_UNPIN=Physics,ComponentHeap,DynamicHeap,InitAllocator KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="12400 2048" ;;
+  # The twenty-first build (g412u, 2026-11-11): fast2 with the zero skip and its poll before every submission (README section 40).
+  fast5)   WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
+             "BC5_DIRECT_ZERO_SKIP=$ZL" BC5_GUARD_ZSKIP_POLL_SUBMIT=1 KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="12400 2048" ;;
+  # 2026-11-12 (README section 46, the maintainer's yes, change both parameters): fast5 with the orphan release at 10 s idle
+  # (his play kept 0.4-0.55 GiB of orphans at 30 s) and the fuse at 13,000 MiB (his play sat at the 12,400 limit with memory free beside it).
+  fast6)   WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=10,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
+             "BC5_DIRECT_ZERO_SKIP=$ZL" BC5_GUARD_ZSKIP_POLL_SUBMIT=1 KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="13000 2048" ;;
+  # 2026-11-12 01:35 (README section 46): fast6's check run z1f6 HUNG the GPU at 138 s (release at 10 s with the zero skip, as the
+  # old arms zo/zof that hung 3 of 9). fast7 = fast5 (release 30 s) with only the fuse at 13,000 MiB. fast6 is not for play.
+  fast7)   WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
+             "BC5_DIRECT_ZERO_SKIP=$ZL" BC5_GUARD_ZSKIP_POLL_SUBMIT=1 KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="13000 2048" ;;
+  # 2026-11-12 (README section 47): his lean7 play hung the GPU at 107 s. lw7 = fast7 with lean's word set (the six words
+  # play-lean-0412.sh drops are dropped here too) on the normal binary, for the scripted comparison. Not for play.
+  lw7)     WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
+             "BC5_DIRECT_ZERO_SKIP=$ZL" BC5_GUARD_ZSKIP_POLL_SUBMIT=1 KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="13000 2048"; LW=1 ;;
+  # 2026-11-12 19:30 (README section 48, the maintainer's word): the zero skip is unsound by design (GPU writes into
+  # "skipped" memory in every run). fast8 = fast7 without BC5_DIRECT_ZERO_SKIP and its poll; nothing else differs.
+  fast8)   WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
+             KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="13000 2048" ;;
+  # 2026-11-13 (README sections 52, 53, 56, 60; installed on the maintainer's order to get rid of the learned windows): fast9 = fast8's words
+  # on the SHARED normal build (which holds exp 0412's switches since the integration of 2026-11-13) with NO learned
+  # file and the catcher on: BC5_GUARD_LEARN_LOG=2 journals every GPU fault that would have been learned ("would
+  # learn ..." in gc/direct.log) and adds NOTHING, not even for the run; nothing is written to the learned or alias
+  # file. A fault is a bug report with an address and a kind (one 14 s stall each time that place is met), never a window.
+  fast9)   WORDS+=(BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
+             KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1 BC5_GUARD_LEARN_LOG=2 "BC5_EMU=$SHARED"); FUSE="13000 2048"; NOLEARN=1 ;;
+  zoe)     WORDS+=("${ORPH[@]}" "BC5_DIRECT_ZERO_SKIP=$ZL" KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1); FUSE="12400 2048" ;;
+  # 2026-11-13 (README sections 71-73; PREPARED on the top's order, NOT installed: the maintainer's word comes first):
+  # k1rcut = fast9's words on the private build g412zd (bin-d, the shared tree B + the K1r family), with
+  #   BC5_GUARD_K1R=1          never-written memory the title mapped reads as zeros on the GPU (his cutscene fault's cure)
+  #   BC5_GUARD_K1_FILTER=1    a packet's operand in title memory that is not imported is imported, not dropped
+  #   BC5_FAULT_RECORD=1       a GPU fault ends the game with a record under ~/bc5-data/captures/faults/ (no recovery)
+  #   BC5_DIRECT_TIMEOUT_PROBE=1  the record then holds the buffer the GPU was in
+  # and WITHOUT e11's reset-replay words (BC5_DIRECT_RESET_REPLAY_ACB, _RESET_LABELS, _RESET_LABEL_JOURNAL) and the dead
+  # BC5_DIRECT_LEARN_GUEST_ONLY: with the fault record the game does not go on after a fault, so nothing is replayed.
+  # Installed on the maintainer's word of 2026-11-13 (yes, swap it, relayed by the top) in place of fast9; by the top's
+  # scope also without BC5_R3_DROP_CATCH, BC5_R3_REWIND_CATCH and BC5_DIRECT_ACB_INHERIT=journal. Variant (b) off.
+  k1rcut)  T=(); for x in "${WORDS[@]}"; do case "$x" in BC5_DIRECT_RESET_REPLAY_ACB=* | BC5_DIRECT_RESET_LABELS=* | BC5_DIRECT_RESET_LABEL_JOURNAL=* | BC5_DIRECT_LEARN_GUEST_ONLY=* | BC5_R3_DROP_CATCH=* | BC5_R3_REWIND_CATCH=* | BC5_DIRECT_ACB_INHERIT=journal) ;; *) T+=("$x") ;; esac; done
+           [ "${#T[@]}" = 63 ] || { say "0412: k1rcut: the words without e11's replay and catchers are not 63; not started"; exit 1; }
+           pinned bin-d/kyty_emulator "$E/built-d.md5" || { say "0412: bin-d/kyty_emulator is not the build in built-d.md5; not started"; exit 1; }
+           for w in BC5_GUARD_K1R BC5_GUARD_K1_FILTER BC5_FAULT_RECORD "tag kl412"; do grep -aqF -- "$w" "$E/bin-d/kyty_emulator" || { say "0412: bin-d lacks $w; not started"; exit 1; }; done
+           WORDS=("${T[@]}" BC5_GUARD_LEDGER=1 BC5_DIRECT_LAZY_RELEASE=30,eager BC5_GUARD_SPLIT=1 BC5_GUARD_FORGET=10 KYTY_BC5_RANGES_FAST=1 KYTY_BC5_PHYSMAP_SORTED=1
+             KYTY_BC5_EVENT_PENDING_CAP=64 KYTY_BC5_EVENT_PENDING_LOG=1 BC5_GUARD_LEARN_LOG=2 BC5_GUARD_K1R=1 BC5_GUARD_K1_FILTER=1 BC5_FAULT_RECORD=1
+             BC5_DIRECT_TIMEOUT_PROBE=1 "BC5_EMU=$E/bin-d/kyty_emulator"); FUSE="13000 2048"; NOLEARN=1 ;;   # NOLEARN: the launcher with the empty learned file, as fast9
+  *) say "0412: usage: play-guard-0412.sh base|ledger|low|guest|orphans|cap|amm|zscan|zsk|zo|zoc|zof|of|zoe|fast|fast2|fast3|fast4|fast5|fast6|fast7|fast8|fast9|k1rcut|lw7 [dry]; not started"; exit 1 ;;
+esac
+if [ "${LW:-}" = 1 ]; then
+  T=(); for x in "${WORDS[@]}"; do case "$x" in BC5_GUARD_LEDGER=* | BC5_DIRECT_TABLE_CATCHER=* | KYTY_BC5_EVENT_PENDING_LOG=* | BC5_DIRECT_RESET_LABEL_JOURNAL=* | BC5_DIRECT_JOURNAL_QUIET=* | BC5_DIRECT_ACB_INHERIT=journal) ;; *) T+=("$x") ;; esac; done
+  WORDS=("${T[@]}")
+fi
+# Arm fast9: the shared build must know the catcher, and the launcher is derived with one line changed, the learned
+# file's path, to an empty file of this experiment (the pinned launcher exports the shared learned file itself).
+if [ "$NOLEARN" = 1 ]; then
+  grep -aqF BC5_GUARD_LEARN_LOG "$SHARED" || { say "0412: the shared build has no BC5_GUARD_LEARN_LOG; not started"; exit 1; }
+  : > "$E/learned-none.txt" || { say "0412: cannot make the empty learned file; not started"; exit 1; }
+  L2=$E/play-pkg-0412-nolearn.sh
+  sed 's#^export BC5_DIRECT_LEARNED=.*$#export BC5_DIRECT_LEARNED=$HOME/bc5-work/exp0412/learned-none.txt  \# exp 0412 fast9: no learned file#' "$L" > "$L2" && chmod 755 "$L2" || { say "0412: cannot derive the launcher; not started"; exit 1; }
+  [ "$(diff "$L" "$L2" | grep -c '^[<>]')" = 2 ] && [ "$(grep -c '^export BC5_DIRECT_LEARNED=\$HOME/bc5-work/exp0412/learned-none.txt' "$L2")" = 1 ] || { say "0412: the derived launcher differs by more than the learned file's line; not started"; exit 1; }
+  L=$L2
+fi
+ARM=$1; DRY=${2:-}
+# The catchers' env file (README section 23, the top session's order of 2026-11-11): $E/catchers.env with lines
+# BC5_GUARD_GAP_STAT=<n> and/or BC5_GUARD_LOCK_STAT=<n>. Absent (the default): no catcher. They change no behaviour;
+# with BC5_GUARD_GAP_STAT a play also gets the outside 20 ms sampler (gapsamp0412.py, read-only).
+CATCH=""
+if [ -f "$E/catchers.env" ]; then
+  while IFS= read -r ln; do
+    if [[ "$ln" =~ ^BC5_GUARD_(GAP|LOCK|USE|ZSKIP)_STAT=[0-9]+$ ]]; then WORDS+=("$ln"); CATCH="$CATCH $ln"; fi
+  done < "$E/catchers.env"
+fi
+# "words": the arm's environment words, one per line, for the night runner (run0412n.sh); nothing is started.
+if [ "$DRY" = words ]; then printf '%s\n' "${WORDS[@]}"; exit 0; fi
+[ -z "$DRY" ] || [ "$DRY" = dry ] || { say "0412: unknown second word $DRY; not started"; exit 1; }
+case "${BC5_0412_FUSE-unset}" in unset) ;; 0 | "") FUSE="" ;; *) FUSE=$BC5_0412_FUSE ;; esac
+S=$E/sampler0412b.sh; F=$E/fuse0412.sh; STAMP=$(date +%Y%m%d-%H%M%S); SOUT=$E/sampler/play-$STAMP-$ARM.txt; FLOG=$E/fuse.log
+SOK=0; pinned sampler0412b.sh "$E/tools.md5" && SOK=1
+FOK=0; pinned fuse0412.sh "$E/tools.md5" && FOK=1
+if [ -n "$DRY" ]; then
+  echo "dry: arm $ARM, ${#WORDS[@]} words; the arm's words: $(printf '%s\n' "${WORDS[@]}" | grep -E '^(BC5_GUARD_|BC5_DIRECT_LAZY_RELEASE|BC5_DIRECT_ZERO|KYTY_BC5_EVENT_PENDING|KYTY_BC5_RANGES|KYTY_BC5_PHYSMAP)' | tr '\n' ' ')"
+  echo "dry: RT word in the words: $(printf '%s\n' "${WORDS[@]}" | grep -ci 'KYTY_BC5_RT\|RAYTRAC') (0 = the launcher's settings decide, as in e11 unpacked)"
+  echo "dry: sampler $([ "$SOK" = 1 ] && echo "pinned, would write $SOUT" || echo "NOT the installed copy: the play would run without it")"
+  echo "dry: fuse $([ -z "$FUSE" ] && echo "none for this arm" || { [ "$FOK" = 1 ] && echo "pinned, would set memory.max and memory.swap.max to $FUSE MiB" || echo "NOT the installed copy: the play would run without it"; })"
+  echo "dry: would run: /usr/bin/distrobox enter ubuntu -- /usr/bin/bash -c 'ulimit -l unlimited 2> /dev/null; exec /usr/bin/env \"\$@\"' guard0412 <${#WORDS[@]} words> $L"
+  if [ "${BC5_0412_LEAN:-0}" = 1 ] && [ -x "$E/lean0412.sh" ]; then /usr/bin/bash "$E/lean0412.sh" dry; else echo "dry: lean session off"; fi
+  echo "dry: hard stop $([ "${BC5_0412_STOP:-0}" = 1 ] && [ -x "$E/stop0412.sh" ] && echo "on (stop0412.sh, log $E/stop.log)" || echo off)"
+  echo "dry: catchers from $E/catchers.env:${CATCH:- none}"
+  echo "dry: nothing started"
+  exit 0
+fi
+pgrep '^kyty_emulator' > /dev/null && { say "0412: an emulator runs already; not started"; exit 1; }
+[ "$FOK" = 1 ] && /usr/bin/bash "$F" restore "$FLOG"
+if [ "$SOK" = 1 ]; then
+  mkdir -p "$E/sampler"
+  nohup /usr/bin/bash "$S" "$SOUT" 300 14400 > /dev/null 2>&1 < /dev/null &
+else
+  say "0412: the sampler $S is not the installed one; playing without it"
+fi
+if [ -n "$FUSE" ]; then
+  if [ "$FOK" = 1 ]; then
+    # shellcheck disable=SC2086
+    nohup /usr/bin/bash "$F" set $FUSE "$FLOG" > /dev/null 2>&1 < /dev/null &
+  else
+    say "0412: the fuse $F is not the installed one; playing without it"
+  fi
+fi
+case "$CATCH" in *BC5_GUARD_GAP_STAT=*)
+  mkdir -p "$E/sampler"
+  nohup /usr/bin/python3 -I "$E/gapsamp0412.py" "$E/sampler/gapsamp-$STAMP-$ARM.txt" 14400 "Render Thread" game-main bc5-ring bc5-cq0 > /dev/null 2>&1 < /dev/null & ;;
+esac
+# The lean session (README section 30): BC5_0412_LEAN=1 in the environment (the shortcut "0412 fast2 lean" sets it) stops
+# the desktop shell for the time of the play; lean0412.sh starts it again when this launcher's process is gone.
+if [ "${BC5_0412_LEAN:-0}" = 1 ] && [ -x "$E/lean0412.sh" ]; then
+  /usr/bin/bash "$E/lean0412.sh" stop $$
+fi
+# The hard stop (README section 30; the top session's decision of 2026-11-11): stop0412.sh ends the emulator when the box
+# is at the memory wall for 10 s, and says so in a window. OFF unless BC5_0412_STOP=1 is in the environment: the maintainer,
+# 2026-11-11 19:58, a hard stop is not a solution.
+if [ "${BC5_0412_STOP:-0}" = 1 ] && [ -x "$E/stop0412.sh" ]; then
+  nohup /usr/bin/bash "$E/stop0412.sh" "$E/stop.log" > /dev/null 2>&1 < /dev/null &
+fi
+# The memlock limit is raised inside the container, where the emulator starts; a refusal is not an error here.
+/usr/bin/distrobox enter ubuntu -- /usr/bin/bash -c 'ulimit -l unlimited 2> /dev/null; exec /usr/bin/env "$@"' guard0412 "${WORDS[@]}" "$L"

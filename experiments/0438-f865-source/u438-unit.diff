@@ -1,0 +1,128 @@
+--- r438d.cpp	2026-11-20 12:04:32.459855800 +0100
++++ u438.cpp	2026-11-20 14:02:16.432439700 +0100
+@@ -7253,12 +7253,117 @@
+ 	}
+ }
+ } // namespace ud434
++// BC5 experiment 0438 (tag u438): k1f412's walk before g_dev_mutex (BC5_0438_SPLIT, on unless "0"). The walk reads only
++// the IB and a mapping snapshot; what it found not covered is kept per thread for the pass under the lock.
++namespace u438 {
++inline bool on() {
++	static const bool v = [] {
++		const char* e = std::getenv("BC5_0438_SPLIT");
++		return !(e != nullptr && e[0] == '0' && e[1] == 0);
++	}();
++	return v;
++}
++struct Miss {
++	uint32_t q, op, reg;
++	uint64_t a, n;
++	bool     ud; // a user-data V# (ud434), else a packet operand
++};
++struct Pre {
++	const uint32_t*                                          ib = nullptr;
++	uint32_t                                                 n  = 0;
++	std::shared_ptr<const std::vector<bc5::direct::Mapping>> snap;
++	std::vector<Miss>                                        miss;
++	bool                                                     valid = false;
++};
++inline thread_local Pre t_pre;
++inline std::atomic<uint64_t> g_pre {0}, g_used {0}, g_redo {0}, g_pre_ns {0};
++} // namespace u438
++// The walk, outside any host lock (submit_now, before the back-pressure wait).
++static void k1f412_collect(const uint32_t* ib, uint32_t num_dwords) {
++	u438::Pre& p = u438::t_pre;
++	p.valid      = false;
++	if (!u438::on() || !k1f412::on() || k1f412::mode() == 2 || !g_dev || ib == nullptr) return;
++	const uint64_t t0 = SoftCp::now_ns();
++	p.ib              = ib;
++	p.n               = num_dwords;
++	p.snap            = g_dev->sorted_mappings();
++	p.miss.clear();
++	for (uint32_t q = 0; q < num_dwords;) {
++		const uint32_t h   = ib[q];
++		uint32_t       len = 1;
++		if ((h >> 30u) == 3 || (h >> 30u) == 0) {
++			const uint32_t c = (h >> 16u) & 0x3fffu;
++			len              = c == 0x3fffu ? 1 : c + 2;
++		}
++		if (q + len > num_dwords) break;
++		if ((h >> 30u) == 3) {
++			for (const auto& [a, bytes]: bc5::policy::memory_operands(ib + q, len)) {
++				const uint64_t n = bytes == 0 ? 4 : bytes;
++				if (a == 0 || covered_sorted(*p.snap, a, n)) continue;
++				p.miss.push_back({q, (h >> 8u) & 0xffu, 0, a, n, false});
++			}
++			ud434::scan(ib + q, len, [&](uint64_t a, uint64_t n) {
++				if (covered_sorted(*p.snap, a, n)) return;
++				p.miss.push_back({q, (h >> 8u) & 0xffu, ib[q + 1] & 0xffffu, a, n, true});
++			});
++		}
++		q += len;
++	}
++	p.valid = true;
++	u438::g_pre++;
++	u438::g_pre_ns += SoftCp::now_ns() - t0;
++}
+ static void k1f412_pass(const uint32_t* ib, uint32_t num_dwords, const char* kind) {
+ 	if (!k1f412::on() || !g_dev) return;
+ 	if (k1f412::mode() == 2) {
+ 		k1f412_log(ib, num_dwords, kind);
+ 		return;
+ 	}
++	if (u438::on()) { // exp 0438 (tag u438): the walk was done before the lock; only its misses are looked at again
++		u438::Pre& p  = u438::t_pre;
++		const bool ok = p.valid && p.ib == ib && p.n == num_dwords && g_dev->sorted_mappings() == p.snap;
++		p.valid       = false;
++		if (ok) {
++			u438::g_used++;
++			static uint64_t fired = 0, asked_bytes = 0, lines = 0, no_view = 0, ud_fired = 0, ud_bytes = 0, ud_lines = 0;
++			auto            have_p = p.snap;
++			for (const auto& m: p.miss) {
++				if (covered_sorted(*have_p, m.a, m.n)) continue; // an import for an earlier miss covered it
++				const uint64_t asked = direct_force(m.a & ~0xfffull, m.a + m.n);
++				if (asked == 0) {
++					if (!m.ud) no_view++;
++					continue;
++				}
++				have_p = g_dev->sorted_mappings();
++				if (!m.ud) {
++					fired++;
++					asked_bytes += asked;
++					if (lines++ < 200 || (lines & 255u) == 0)
++						journal("k1 at the filter (exp 0412, tag k1f412; u438): t %.3f s: %s %u dwords, packet op 0x%02x at dword %u: operand 0x%" PRIx64 "+%" PRIu64 " was not mapped: its chunk(s) imported (+%.1f MiB), now %s; "
++						        "%" PRIu64 " imports so far, %.1f MiB; %" PRIu64 " operands left unmapped (no view or no import)\n",
++						        timing_now(), kind, num_dwords, m.op, m.q, m.a, m.n, static_cast<double>(asked) / 1048576.0, covered_sorted(*have_p, m.a, m.n) ? "mapped" : "STILL NOT MAPPED", fired,
++						        static_cast<double>(asked_bytes) / 1048576.0, no_view);
++				} else {
++					ud_fired++;
++					ud_bytes += asked;
++					if (ud_lines++ < 200 || (ud_lines & 255u) == 0)
++						journal("user-data target (exp 0434, tag ud434; u438): t %.3f s: %s %u dwords, SET_SH_REG at dword %u, reg 0x%x: V# 0x%" PRIx64 "+%" PRIu64 " was not mapped: its chunk(s) imported (+%.1f MiB), now %s; %" PRIu64 " imports so far, %.1f MiB\n",
++						        timing_now(), kind, num_dwords, m.q, m.reg, m.a, m.n, static_cast<double>(asked) / 1048576.0, covered_sorted(*have_p, m.a, m.n) ? "mapped" : "STILL NOT MAPPED", ud_fired,
++						        static_cast<double>(ud_bytes) / 1048576.0);
++				}
++			}
++#ifndef BC5_LEAN
++			static double u438_last = 0;
++			if (timing_now() - u438_last >= 60.0) {
++				u438_last = timing_now();
++				journal("u438 (exp 0438): t %.1f s: k1f412 walks before the lock %" PRIu64 " (%.1f ms in all), used under the lock %" PRIu64 ", walked again (the mappings changed) %" PRIu64 "\n", timing_now(), u438::g_pre.load(),
++				        static_cast<double>(u438::g_pre_ns.load()) / 1e6, u438::g_used.load(), u438::g_redo.load());
++			}
++#endif
++			return;
++		}
++		u438::g_redo++;
++	}
+ 	static uint64_t fired = 0, asked_bytes = 0, lines = 0, no_view = 0;
+ 	auto            have_p = g_dev->sorted_mappings();
+ 	static uint64_t ud_fired = 0, ud_bytes = 0, ud_lines = 0; // exp 0434 (tag ud434)
+@@ -15607,6 +15712,7 @@
+ 	t_fs415_open_ns = 0;
+ 	t_fs415_why     = -1;
+ 	t_fs415_segs    = 0;
++	k1f412_collect(ib, num_dwords); // exp 0438 (tag u438): k1f412's walk before the back-pressure wait and the locks
+ 	if (g_async) {
+ 		// Experiment 0045: 24 jobs in flight before the game's
+ 		// thread waits; with the flip deferred (BC5_DIRECT_FLIP_DEFER=1) the thread can then run

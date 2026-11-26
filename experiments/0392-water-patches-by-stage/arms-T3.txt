@@ -1,0 +1,25 @@
+# BC5 experiment 0392, run T3: what the lake control file holds from each shot on, one run of 81 shots
+# <first shot>|<switches, lake_probe.hpp's tokens>
+# The catchers run all through, so the water's own samples read every arm frame by frame, and they end at shot 78, which writes
+# the records. Each run has its own order, so a time in the run can't pass as an arm (F778). offchip comes last: the register
+# can't be put back to an unknown value, so from its first arm on the off shots hold the title's 0x1ff.
+0|zpass=1 zwater=1 stats=1 ureg=1 inputs=1 census=1
+24|zpass=1 zwater=1 stats=1 ureg=1 inputs=1
+27|zpass=1 zwater=1 stats=1 ureg=1 inputs=1 tfdist=0
+30|zpass=1 zwater=1 stats=1 ureg=1 inputs=1
+33|zpass=1 zwater=1 stats=1 ureg=1 inputs=1 tailflush=1
+36|zpass=1 zwater=1 stats=1 ureg=1 inputs=1
+39|zpass=1 zwater=1 stats=1 ureg=1 inputs=1 gepc=1
+42|zpass=1 zwater=1 stats=1 ureg=1 inputs=1
+45|zpass=1 zwater=1 stats=1 ureg=1 inputs=1 tailflush=1 tfonce=1
+48|zpass=1 zwater=1 stats=1 ureg=1 inputs=1
+51|zpass=1 zwater=1 stats=1 ureg=1 inputs=1 tailflush=1 tfonce=1 tfdist=0 gepc=1
+54|zpass=1 zwater=1 stats=1 ureg=1 inputs=1
+57|zpass=1 zwater=1 stats=1 ureg=1 inputs=1 tfonce=1
+60|zpass=1 zwater=1 stats=1 ureg=1 inputs=1
+63|zpass=1 zwater=1 stats=1 ureg=1 inputs=1 tfdist=3
+66|zpass=1 zwater=1 stats=1 ureg=1 inputs=1
+69|zpass=1 zwater=1 stats=1 ureg=1 inputs=1 offchip=1ff
+72|zpass=1 zwater=1 stats=1 ureg=1 inputs=1 offchip=5f
+75|zpass=1 zwater=1 stats=1 ureg=1 inputs=1 offchip=1ff
+78|

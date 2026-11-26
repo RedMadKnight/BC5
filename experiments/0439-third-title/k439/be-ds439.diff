@@ -1,0 +1,166 @@
+# BC5 exp 0439 (tag ds439): candidates D, D2, C (direct.cpp) and B, E, F (policy.cpp) over the private backend copies k439/new/be/
+# (direct.cpp md5 29857ded, policy.cpp ea26c088: main's backend with exp 0439's ib439 changes). Applied by copying; built by box439.sh.
+--- a/direct.cpp
++++ b/direct.cpp
+@@ -27,6 +27,7 @@
+ #include <mutex>
+ #include <shared_mutex>
+ #include <cstdlib>
++#include "bc5/ds0439.hpp" // exp 0439 (tag ds439)
+ #include <map>
+ #include <set>
+ 
+@@ -1431,27 +1432,39 @@
+     // f00d4abd 0000baad, after the timeout the copied "PSR_BVHL"). Before the first dispatch after
+     // an unsynced DMA_DATA goes the zero-byte DMA_DATA with CP_SYNC of the IB's end (dma_idle_).
+     // Experiment 0052: an IB with its own COND_EXEC gets them too, the counts grown around them.
+-    if (opt.dma_sync_before_dispatch && !comp) { // the MEC waits for its DMA itself
++    // exp 0439 (tag ds439): candidates D (BC5_0439_DMA_SYNC_MEC=1, the same wait on the compute rings: the claim that
++    // the MEC waits for its DMA itself has no source) and C (BC5_0439_ARGS_GL2WB=1, an ACQUIRE_MEM with GL2_WB after
++    // it on the compute rings). The third title copies GDS counters to indirect-dispatch arguments with DMA_DATA
++    // (CP_SYNC clear, destination through L2) a few packets before the DISPATCH_INDIRECT that reads them (README
++    // item 49). Both default off; the GFX ring keeps experiment 0050's behaviour. bc5/ds0439.hpp, det-tested.
++    static const bool d439 = [] {
++        const char *e = std::getenv("BC5_0439_DMA_SYNC_MEC");
++        const bool v = e != nullptr && e[0] == '1' && e[1] == 0;
++        std::fprintf(stderr, "bc5-direct: exp 0439 (tag ds439): BC5_0439_DMA_SYNC_MEC=%d\n", v ? 1 : 0);
++        return v;
++    }();
++    static const bool c439 = [] {
++        const char *e = std::getenv("BC5_0439_ARGS_GL2WB");
++        const bool v = e != nullptr && e[0] == '1' && e[1] == 0;
++        std::fprintf(stderr, "bc5-direct: exp 0439 (tag ds439): BC5_0439_ARGS_GL2WB=%d\n", v ? 1 : 0);
++        return v;
++    }();
++    // exp 0439 (tag ds439, candidate D-label): BC5_0439_DMA_SYNC_LABEL=1, the same wait also before the first label
++    // write after an unsynced DMA_DATA and at the end of a buffer ending with one pending (bc5/ds0439.hpp). The title's
++    // library orders its GFX-queue GDS DMA_DATA itself (CP_SYNC on 7 of 7, a PFP_SYNC_ME before every indirect dispatch)
++    // and its compute queues not at all (0 of 27): the console's compute engine keeps DMA_DATA in order, this part's
++    // does not, so the host supplies the order. Default off.
++    static const bool l439 = [] {
++        const char *e = std::getenv("BC5_0439_DMA_SYNC_LABEL");
++        const bool v = e != nullptr && e[0] == '1' && e[1] == 0;
++        std::fprintf(stderr, "bc5-direct: exp 0439 (tag ds439): BC5_0439_DMA_SYNC_LABEL=%d\n", v ? 1 : 0);
++        return v;
++    }();
++    {
+         std::vector<indirect_check::Insert> waits;
+-        bool pending = false;
+-        for (std::size_t i = 0; i < main_out.size();) {
+-            const std::uint32_t h = main_out[i];
+-            const std::uint32_t type = h >> 30;
+-            std::size_t len = 1;
+-            if (type == 3 || type == 0) {
+-                const std::uint32_t count = (h >> 16) & 0x3fff;
+-                len = count == 0x3fff ? 1 : count + 2;
+-            }
+-            if (i + len > main_out.size()) len = main_out.size() - i;
+-            const std::uint32_t op = (h >> 8) & 0xff;
+-            if (type == 3 && op == 0x50 && len >= 2) pending = (main_out[i + 1] & 0x80000000u) == 0;
+-            if (type == 3 && (op == 0x15 || op == 0x16) && pending) {
+-                waits.push_back({i, {0xC0055000u, 0xE0300000u, 0u, 0u, 0u, 0u, 0u}});
+-                pending = false;
+-            }
+-            i += len;
+-        }
+-        if (indirect_check::insert_before(main_out, waits)) r.filter.dma_syncs += waits.size();
++        for (auto &p : ds439::points(main_out, comp, opt.dma_sync_before_dispatch, d439, c439, l439))
++            waits.push_back({p.first, std::move(p.second)});
++        if (!waits.empty() && indirect_check::insert_before(main_out, waits)) r.filter.dma_syncs += waits.size();
+     }
+     // Experiment 0052: the group counts checked by the CP when it runs the dispatch (after the
+     // DMA waits above: a COND_EXEC must skip exactly the dispatch). The flag lives in this job's
+--- a/policy.cpp
++++ b/policy.cpp
+@@ -7,6 +7,7 @@
+ #include <algorithm>
+ #include <atomic>  // ports pack 1: the CONTEXT_REG_RMW count
+ #include <cstdio>  // ports pack 1: the CONTEXT_REG_RMW count
++#include <cstdlib> // exp 0439 (tag ds439): getenv
+ #include <charconv>
+ #include <stdexcept>
+ #include <string>
+@@ -158,6 +159,39 @@
+     return out;
+ }
+ 
++// exp 0439 (tag ds439): BC5_0439_DMA_DST_BYPASS=1 (candidate B), read once.
++static bool ds439_bypass() {
++    static const bool v = [] {
++        const char *e = std::getenv("BC5_0439_DMA_DST_BYPASS");
++        const bool r = e != nullptr && e[0] == '1' && e[1] == 0;
++        std::fprintf(stderr, "bc5-direct: exp 0439 (tag ds439): BC5_0439_DMA_DST_BYPASS=%d\n", r ? 1 : 0);
++        return r;
++    }();
++    return v;
++}
++
++// exp 0439 (tag ds439): BC5_0439_WAVES_UNLIMITED=1 (switch E, diagnosis only), read once.
++static bool ds439_limits() {
++    static const bool v = [] {
++        const char *e = std::getenv("BC5_0439_WAVES_UNLIMITED");
++        const bool r = e != nullptr && e[0] == '1' && e[1] == 0;
++        std::fprintf(stderr, "bc5-direct: exp 0439 (tag ds439): BC5_0439_WAVES_UNLIMITED=%d\n", r ? 1 : 0);
++        return r;
++    }();
++    return v;
++}
++
++// exp 0439 (tag ds439): BC5_0439_KEEP_GDS_SYNC=1 (candidate F), read once.
++static bool ds439_keep_sync() {
++    static const bool v = [] {
++        const char *e = std::getenv("BC5_0439_KEEP_GDS_SYNC");
++        const bool r = e != nullptr && e[0] == '1' && e[1] == 0;
++        std::fprintf(stderr, "bc5-direct: exp 0439 (tag ds439): BC5_0439_KEEP_GDS_SYNC=%d\n", r ? 1 : 0);
++        return r;
++    }();
++    return v;
++}
++
+ bool is_gds_access(const std::uint32_t *p, std::uint32_t len) {
+     const auto op = static_cast<std::uint8_t>((p[0] >> 8) & 0xff);
+     if (op == 0x50 && len >= 7) { // DMA_DATA: SRC_SEL bits 30:29, DST_SEL bits 21:20; 1 = GDS
+@@ -497,7 +531,9 @@
+         if (fast_set && type == 3 && len >= 3) {
+             const auto op = static_cast<std::uint8_t>((header >> 8) & 0xff);
+             std::uint32_t base = 0;
+-            if (fast_op[op] && is_plain_set(op, base)) {
++            const std::uint32_t rel439 = src[i + 1] & 0xffffu; // exp 0439 (tag ds439, switch E): 0x215 takes the full path
++            const bool e439 = op == 0x76 && rel439 <= 0x215u && rel439 + (len - 2) > 0x215u && ds439_limits();
++            if (fast_op[op] && !e439 && is_plain_set(op, base)) {
+                 const std::uint32_t first = base + (src[i + 1] & 0xffff);
+                 if (!policy.span_listed(first, len - 2) && policy.reg(first) == Verdict::Pass) {
+                     std::copy(src.begin() + static_cast<std::ptrdiff_t>(i),
+@@ -636,8 +672,31 @@
+                     }
+                 }
+             }
++            if (opcode == 0x76 && len >= 3 && ds439_limits()) {
++                // exp 0439 (tag ds439, switch E, diagnosis only): BC5_0439_WAVES_UNLIMITED=1 clears WAVES_PER_SH (bits 9:0)
++                // of COMPUTE_RESOURCE_LIMITS (SH offset 0x215; Mesa src/amd/registers/gfx10.json at 0866ae7) in every
++                // SET_SH_REG that writes it. The clouds part runs under 0x7d (the dump session). Default off.
++                const std::uint32_t off = out[i + 1] & 0xffffu;
++                for (std::uint32_t k = 0; k + 2 < len; ++k)
++                    if (off + k == 0x215u && (out[i + 2 + k] & 0x3ffu) != 0) {
++                        out[i + 2 + k] &= ~0x3ffu;
++                        stats.rewritten++;
++                    }
++            }
++            if (opcode == 0x50 && len >= 7 && ((out[i + 1] >> 20) & 3u) == 3u && ds439_bypass()) {
++                // exp 0439 (tag ds439, candidate B): BC5_0439_DMA_DST_BYPASS=1, a DMA_DATA whose destination is an
++                // address through L2 (DST_SEL 3) gets DST_CACHE_POLICY 3, bypass (bits 26:25, Mesa
++                // src/amd/registers/pkt3.json DMA_DATA_WORD0_cik at 0866ae7), as the title's own GDS fills have for
++                // theirs, so the copy is not left in L2 under lru. Default off.
++                out[i + 1] = (out[i + 1] & ~(3u << 25)) | (3u << 25);
++                stats.rewritten++;
++            }
++            // exp 0439 (tag ds439, candidate F): BC5_0439_KEEP_GDS_SYNC=1 leaves the title's CP_SYNC on its GDS DMA_DATA.
++            // The rule below rests on exp 0016's run 49; runs 50-54 there traced that stall to indirect draws fed by
++            // GDS counters that were not the console's, not to CP_SYNC. The title's library writes CP_SYNC on every GDS
++            // DMA_DATA of its GFX queue (7 of 7, the dump session of exp 0440/0441). Default off.
+             if (!opt.drop_gds && opt.gds_shadow_va == 0 && opcode == 0x50 && is_gds_access(&src[i], len) &&
+-                (out[i + 1] & 0x80000000u) != 0) {
++                (out[i + 1] & 0x80000000u) != 0 && !ds439_keep_sync()) {
+                 // A GDS DMA with CP_SYNC (bit 31) on the GFX ring stalled the CP (run 49, #143);
+                 // the same DMA without it is the shape the compute queues use all the time. The
+                 // gfx queue's GDS fills are the counter resets (run 56: never reset, the counters

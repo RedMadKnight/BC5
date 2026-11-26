@@ -1,0 +1,175 @@
+diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
+index 4dc1055..219685f 100644
+--- a/src/libs/bc5LleAgc.cpp
++++ b/src/libs/bc5LleAgc.cpp
+@@ -2032,7 +2032,7 @@ static void journal(const char* fmt, ...) {
+ }
+ 
+ // Seconds since the first call: the time base of the BC5_DIRECT_TIMING journal lines.
+-static void fs415_flip(); // experiment 0415 (fs415): defined after the completion code
++static void fs415_flip(uint64_t called_ns); // experiment 0415 (fs415): defined after the completion code
+ static double timing_now() {
+ 	static const uint64_t t_first = [] {
+ 		const uint64_t t = SoftCp::now_ns();
+@@ -11494,6 +11494,7 @@ struct PendingJob {
+ 	uint32_t                 bo_count   = 0;
+ 	bool                     short_list = false, retried = false;
+ 	uint64_t                 seq = 0, t2_ns = 0, queued_ns = 0, dev_gen = 0;
++	uint64_t                 fs_sub_ns = 0, fs_ask_ns = 0, fs_got_ns = 0; // experiment 0415 (fs415b): submit_now entered, the device mutex asked, got
+ 	uint32_t                 slot = 0;
+ 	std::vector<uint64_t>    ts_addrs; // experiment 0046: GPU timestamps to rescale once the job is done
+ 	std::vector<uint32_t>    ib_copy;  // experiment 0160: the executed buffer, kept for the timeout probe
+@@ -11809,13 +11810,19 @@ static void ts_collect(const uint32_t* ib, uint32_t num_dwords, std::vector<uint
+ 		q += len;
+ 	}
+ }
+-// Experiment 0415 (tag fs415), KYTY_BC5_FRAME_STAT=<file> (default off; unset, empty and "0" are off), part 2's
+-// counter: one "f" line per flip (frame number, CLOCK_MONOTONIC ns when the flip returned) and, for two frames in every
+-// sixteen, one "j" line per completed job: the frame it completed in, its number, kind, ring, the title's dwords, the
+-// dwords and packets the filter saw, packets dropped, BOs listed, the device's prepare / list / CS milliseconds, when
+-// it was queued and when its fence was seen (ns, the host's clock), and the GPU's own start and end stamps (0 unless
+-// BC5_DIRECT_JOB_TS=1; 10 ns units). No change of behaviour: lines are written by the completion threads and at the
+-// flip, outside the device mutex.
++// Experiment 0415 (tags fs415, fs415b), KYTY_BC5_FRAME_STAT=<file> (default off; unset, empty and "0" are off), part
++// 2's counter. No change of behaviour: lines are written by the completion threads, by a submitter for a job it
++// completed itself, and at the flip, outside the device mutex.
++//   f <frame> <flip called ns> <flip returned ns>                                   every flip (CLOCK_MONOTONIC)
++//   J <frame> <n> <kind> <ring> <title dwords> <filter dwords> <packets> <dropped> <BOs> <prepare ms> <list ms> <cs ms>
++//     <submit_now entered ns> <device mutex asked ns> <got ns> <queued ns> <fence seen ns> <gpu start> <gpu end> <how>
++//       every job (fs415b: ALL of them, on every ring, whether the completion thread or the submitter completed it)
++//       while the frame number is inside a window: KYTY_BC5_FRAME_STAT_WIN=<frames>/<period>, 64/512 when unset
++//       (64 frames in a row out of every 512). ring -1 is the GFX ring (bc5::direct::kGfxRing), 0-3 the compute
++//       rings. <how>: a = by the completion thread, s = by the submitter (not queued: its stamps are the call's).
++//       GPU stamps are 0 unless BC5_DIRECT_JOB_TS=1 (the GPU's own clock, 10 ns units).
++// The frame number on a J line is the one current when the line is written; frame0415.py assigns jobs to frames by
++// their stamps and drops a window's first and last frames, whose jobs may lie outside it.
+ static FILE* fs415_file() {
+ 	static FILE* const f = [] {
+ 		const char* e = std::getenv("KYTY_BC5_FRAME_STAT");
+@@ -11825,6 +11832,30 @@ static FILE* fs415_file() {
+ }
+ static std::mutex            g_fs415_mutex;
+ static std::atomic<uint64_t> g_fs415_frame {0};
++static bool fs415_in_window(uint64_t frame) { // fs415b
++	static const std::pair<uint64_t, uint64_t> w = [] {
++		std::pair<uint64_t, uint64_t> v {64, 512};
++		if (const char* e = std::getenv("KYTY_BC5_FRAME_STAT_WIN"); bc5::load_stat::env_set(e)) {
++			char*                    end = nullptr;
++			const unsigned long long a   = std::strtoull(e, &end, 10);
++			const unsigned long long b   = end != nullptr && *end == '/' ? std::strtoull(end + 1, nullptr, 10) : 0;
++			if (a >= 1 && b >= a && b <= 1'000'000ull) v = {a, b};
++		}
++		return v;
++	}();
++	return frame % w.second < w.first;
++}
++static void fs415_job(uint64_t n, const char* kind, int ring, uint32_t num_dwords, const bc5::policy::FilterStats& fs, uint32_t bo_count, double prepare_ms, double list_ms,
++                      double cs_ms, uint64_t sub_ns, uint64_t ask_ns, uint64_t got_ns, uint64_t queued_ns, uint64_t gpu_start, uint64_t gpu_end, char how) {
++	FILE* f = fs415_file();
++	if (f == nullptr) return;
++	const uint64_t frame = g_fs415_frame.load(std::memory_order_relaxed);
++	if (!fs415_in_window(frame)) return;
++	std::lock_guard fl(g_fs415_mutex);
++	std::fprintf(f, "J %" PRIu64 " %" PRIu64 " %s %d %u %" PRIu64 " %" PRIu64 " %" PRIu64 " %u %.3f %.3f %.3f %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %c\n",
++	             frame, n, kind, ring, num_dwords, fs.dwords, fs.packets, fs.dropped, bo_count, prepare_ms, list_ms, cs_ms, sub_ns, ask_ns, got_ns, queued_ns,
++	             static_cast<uint64_t>(SoftCp::now_ns()), gpu_start, gpu_end, how);
++}
+ 
+ struct CqItem {
+ 	bool                      fence = false;
+@@ -11940,15 +11971,9 @@ static void completion_thread(int index) {
+ 			}
+ 			if (r.timed_out) m11_keep_lost(); // exp 0401 e11 (tag m11): the lost jobs' label writes, before they are forgotten
+ 			forget_label_writes(j.seq, r.ring, r.timed_out || r.rc == -125); // experiment 0055
+-			if (FILE* fs = fs415_file(); fs != nullptr && r.ok) { // experiment 0415 (fs415)
+-				const uint64_t frame = g_fs415_frame.load(std::memory_order_relaxed);
+-				if ((frame & 15u) < 2) {
+-					std::lock_guard fl(g_fs415_mutex);
+-					std::fprintf(fs, "j %" PRIu64 " %" PRIu64 " %s %d %u %" PRIu64 " %" PRIu64 " %" PRIu64 " %u %.3f %.3f %.3f %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 "\n", frame, j.n, j.kind,
+-					             r.ring, j.num_dwords, j.filter.dwords, j.filter.packets, j.filter.dropped, j.bo_count, j.prepare_ms, j.list_ms, j.cs_ms, j.queued_ns,
+-					             static_cast<uint64_t>(SoftCp::now_ns()), r.gpu_start, r.gpu_end);
+-				}
+-			}
++			// experiment 0415 (fs415b): every job, also one that failed or timed out (its stamps are 0 then)
++			fs415_job(j.n, j.kind, r.ring, j.num_dwords, j.filter, j.bo_count, j.prepare_ms, j.list_ms, j.cs_ms, j.fs_sub_ns, j.fs_ask_ns, j.fs_got_ns, j.queued_ns,
++			          r.ok ? r.gpu_start : 0, r.ok ? r.gpu_end : 0, 'a');
+ 			const double total_ms = static_cast<double>(SoftCp::now_ns() - j.queued_ns) / 1e6 + j.cs_ms;
+ 			frame_profile_done(index == 0, j.queued_ns, SoftCp::now_ns(), 0.0);
+ 			if (!r.ok || (j.n & 0x3fu) == 0) journal("submit #%" PRIu64 " %s %u dwords at %p: pass %" PRIu64 " rewrite %" PRIu64 " drop %" PRIu64 " unmapped %" PRIu64 " cc %" PRIu64 " mappings %zu ... %s rc %d%s%s %.2f ms\n",
+@@ -12036,12 +12061,12 @@ static void drain() {
+ }
+ 
+ // Experiment 0415 (fs415): the flip's line and the frame number the job lines carry.
+-static void fs415_flip() {
++static void fs415_flip(uint64_t called_ns) {
+ 	FILE* fs = fs415_file();
+ 	if (fs == nullptr) return;
+ 	const uint64_t frame = g_fs415_frame.fetch_add(1, std::memory_order_relaxed) + 1;
+ 	std::lock_guard fl(g_fs415_mutex);
+-	std::fprintf(fs, "f %" PRIu64 " %" PRIu64 "\n", frame, bc5::load_stat::now_ns());
++	std::fprintf(fs, "f %" PRIu64 " %" PRIu64 " %" PRIu64 "\n", frame, called_ns, static_cast<uint64_t>(SoftCp::now_ns()));
+ 	if ((frame & 63u) == 0) std::fflush(fs);
+ }
+ 
+@@ -12477,6 +12502,7 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+ 		return;
+ 	}
+ 	const int qring = ring; // ADR 0009: the compute ring takes the MEC form as it is
++	const uint64_t fs_sub = fs415_file() != nullptr ? SoftCp::now_ns() : 0; // experiment 0415 (fs415b): submit_now entered
+ 	if (g_async) {
+ 		// Experiment 0045: 24 jobs in flight before the game's
+ 		// thread waits; with the flip deferred (BC5_DIRECT_FLIP_DEFER=1) the thread can then run
+@@ -12488,7 +12514,9 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+ 	}
+ 	bc5::load_stat::delay(bc5::load_stat::kDevLockWait); // experiment 0415 (ls415): a delay outside the lock, measurement only
+ 	const uint64_t  ls_w0 = bc5::load_stat::begin();
++	const uint64_t  fs_ask = fs415_file() != nullptr ? SoftCp::now_ns() : 0; // experiment 0415 (fs415b)
+ 	std::lock_guard lock(g_dev_mutex);
++	const uint64_t  fs_got = fs_ask != 0 ? SoftCp::now_ns() : 0;
+ 	bc5::load_stat::end(bc5::load_stat::kDevLockWait, ls_w0);
+ 	bc5::load_stat::Scope ls_hold(bc5::load_stat::kDevLockHold);
+ 	if (g_dev->wedged()) {
+@@ -13365,6 +13393,9 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+ 		it.job.slot       = r.slot;
+ 		it.job.t2_ns      = t2;
+ 		it.job.queued_ns  = SoftCp::now_ns();
++		it.job.fs_sub_ns  = fs_sub; // experiment 0415 (fs415b)
++		it.job.fs_ask_ns  = fs_ask;
++		it.job.fs_got_ns  = fs_got;
+ 		it.job.dev_gen    = g_dev_gen.load();
+ 		if (ts_scale() != 1.0) ts_collect(ib, num_dwords, &it.job.ts_addrs);
+ 		frame_profile_job(t_cq == 0, r.prepare_ms, r.list_ms, r.cs_ms);
+@@ -13394,6 +13425,9 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+ 	frame_profile_prep(t_cq == 0, r.prep_filter_ms, r.prep_tracker_ms, r.prep_cu_ms, r.prep_nested_ms, r.prep_copy_ms);
+ 	// A job the ring thread finished inline (jobs in flight) overlaps the game thread's jobs: it counts by its interval, not by its wait.
+ 	frame_profile_done(t_cq == 0, g_async ? t2 : 0, g_async ? SoftCp::now_ns() : 0, r.fence_ms);
++	// experiment 0415 (fs415b): a job this thread waited for itself; "queued" is taken as now less the fence wait
++	fs415_job(n, kind, r.ring, num_dwords, r.filter, r.bo_count, r.prepare_ms, r.list_ms, r.cs_ms, fs_sub, fs_ask, fs_got,
++	          SoftCp::now_ns() - (r.fence_ms > 0 ? static_cast<uint64_t>(r.fence_ms * 1e6) : 0), r.ok ? r.gpu_start : 0, r.ok ? r.gpu_end : 0, 's');
+ 	if (timing) {
+ 		journal("timing: #%" PRIu64 " done at t %.3f s, %.1f ms after the sync and hints; device: prepare %.2f list %.2f cs %.2f fence %.2f ms, %u BOs%s\n", n, timing_now(),
+ 		        static_cast<double>(SoftCp::now_ns() - t2) / 1e6, r.prepare_ms, r.list_ms, r.cs_ms, r.fence_ms, r.bo_count, r.short_list ? " (short list)" : "");
+@@ -13465,7 +13499,7 @@ static void frame_profile_submit(bool, double, double) {}
+ static void frame_profile_job(bool, double, double, double) {}
+ static void frame_profile_done(bool, uint64_t, uint64_t, double) {}
+ static void frame_profile_flip(double) {}
+-static void fs415_flip() {} // experiment 0415 (fs415)
++static void fs415_flip(uint64_t) {} // experiment 0415 (fs415)
+ #endif
+ 
+ } // namespace Direct
+@@ -14425,11 +14459,12 @@ static KYTY_SYSV_ABI int SubmitEopFlip(int handle, int index, int flip_mode, int
+ 	// next frame instead of idling at the flip, and the GPU does not idle while it does (run 117:
+ 	// the wait at the flip is where the two wait for each other).
+ 	static const bool defer = std::getenv("BC5_DIRECT_FLIP_DEFER") != nullptr && Bc5Gc::Direct::async_on();
+-	const double t_drain = Bc5Gc::Direct::timing_now();
++	const double   t_drain   = Bc5Gc::Direct::timing_now();
++	const uint64_t fs_called = bc5::load_stat::now_ns(); // experiment 0415 (fs415b): the title called the flip
+ 	if (!defer) Bc5Gc::Direct::drain(); // nothing of the frame may still be in flight
+ 	Bc5Gc::Direct::frame_profile_flip((Bc5Gc::Direct::timing_now() - t_drain) * 1e3);
+ 	bc5::load_stat::flip(Bc5Gc::Direct::timing_now()); // experiment 0415 (ls415)
+-	Bc5Gc::Direct::fs415_flip();                       // experiment 0415 (fs415)
++	Bc5Gc::Direct::fs415_flip(fs_called);              // experiment 0415 (fs415, fs415b)
+ 	if (defer) {
+ 		if (index >= 0 && index < 64) {
+ 			Bc5Gc::g_flip_pending[index]++; // experiment 0069

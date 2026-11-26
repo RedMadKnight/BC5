@@ -1,0 +1,65 @@
+--- a/src/libs/bc5LleAgc.cpp
++++ b/src/libs/bc5LleAgc.cpp
+@@ -5895,6 +5895,8 @@
+ // (RELEASE_MEM, EVENT_WRITE_EOP, WRITE_DATA to memory: address, data select, value, the address's value now) and each
+ // dispatch's program are journaled, 200 lines of each at most, with a count; then the journal is synced. A stuck
+ // compute buffer then shows what it waits on even when the machine goes down (exp 0259: S6N's was not recorded).
++// Experiment 0272 (exp 0265, F332: a compute chain hung inside its dispatches): each dispatch's group counts, from the packet
++// or, for DISPATCH_INDIRECT, from memory as the GPU left it; every indirect one is journaled, with the largest grid.
+ static void timeout_probe(const uint32_t* sub_ib, uint32_t sub_n, const char* kind, uint64_t n, const std::vector<uint32_t>* ran, const std::vector<GeProbeSlot>* gep = nullptr) {
+ 	if (sub_ib == nullptr || sub_n == 0 || BC5_DIAG_ENV("BC5_DIRECT_TIMEOUT_PROBE") == nullptr || g_dump_dir.empty() || !g_dev) return;
+ 	{
+@@ -6012,6 +6014,8 @@
+ 			}
+ 		}
+ 		uint32_t n_waits = 0, n_kept = 0, n_writes = 0, n_disp = 0; // experiment 0260
++		uint32_t n_ind = 0, max_at = 0;                              // experiment 0272: indirect dispatches, the largest grid's offset
++		uint64_t max_groups = 0;
+ 		for (uint32_t q = 0; q < sub_n;) {
+ 			const uint32_t h = sub_ib[q], type = h >> 30u;
+ 			uint32_t       len = 1;
+@@ -6086,11 +6090,30 @@
+ 						if (n_writes++ < 200)
+ 							journal("timeout probe: write op %02x at %u: 0x%" PRIx64 " select %u value 0x%" PRIx64 " (packet %u dwords); now %s%s\n", op, q, a, sel, v, len, now, ex);
+ 					}
+-				} else if (op == 0x15 || op == 0x16) { // experiment 0260: the dispatches' programs
++				} else if (op == 0x15 || op == 0x16) { // experiment 0260: the dispatches' programs; experiment 0272: and their group counts
+ 					const uint32_t pl = g(st_sh, 0x20cu), ph = g(st_sh, 0x20du);
+-					if (n_disp++ < 200)
+-						journal("timeout probe: dispatch op %02x at %u: program %s0x%" PRIx64 "%s\n", op, q, pl == 0xffffffffu ? "not set in this buffer, " : "",
+-						        (static_cast<uint64_t>(pl) | (static_cast<uint64_t>(ph & 0xffu) << 32u)) << 8u, ex);
++					uint32_t       gx = 0, gy = 0, gz = 0;
++					bool           have = false;
++					char           where[64] = "";
++					if (op == 0x15 && len >= 4) {
++						gx = sub_ib[q + 1], gy = sub_ib[q + 2], gz = sub_ib[q + 3], have = true;
++					} else if (op == 0x16 && len >= 3) { // the compute-queue form (4 dwords: the address) or the SET_BASE form (3: an offset), as mec_expand_ib has them
++						const uint64_t a = len >= 4 ? (sub_ib[q + 1] & ~3u) | (static_cast<uint64_t>(sub_ib[q + 2] & 0xffffu) << 32u) : b1 + sub_ib[q + 1];
++						if ((len >= 4 || b1 != 0) && covered_sorted(*pm, a, 12)) {
++							const auto* t = reinterpret_cast<const volatile uint32_t*>(a);
++							gx = t[0], gy = t[1], gz = t[2], have = true;
++						}
++						std::snprintf(where, sizeof(where), " (arguments at 0x%" PRIx64 "%s)", a, have ? "" : ", not mapped");
++					}
++					const uint64_t groups = static_cast<uint64_t>(gx) * gy * gz;
++					if (have && groups > max_groups) max_groups = groups, max_at = q;
++					if (op == 0x16 ? n_ind++ < 2000 : n_disp - n_ind < 200) {
++						char grid[64] = "?";
++						if (have) std::snprintf(grid, sizeof(grid), "%u x %u x %u", gx, gy, gz);
++						journal("timeout probe: dispatch op %02x at %u: program %s0x%" PRIx64 ", groups %s%s%s\n", op, q, pl == 0xffffffffu ? "not set in this buffer, " : "",
++						        (static_cast<uint64_t>(pl) | (static_cast<uint64_t>(ph & 0xffu) << 32u)) << 8u, grid, where, ex);
++					}
++					n_disp++;
+ 				}
+ 				if (op == 0x11 || op == 0x26 || op == 0x13 || op == 0x2a || (op == 0x2e && len >= 3 && (sub_ib[q + 1] & 0xffffu) == 0x243u))
+ 					journal("timeout probe: op %02x at %u: %08x %08x %08x%s (mapped %d)\n", op, q, len > 1 ? sub_ib[q + 1] : 0u, len > 2 ? sub_ib[q + 2] : 0u, len > 3 ? sub_ib[q + 3] : 0u, ex, op == 0x26 && len >= 3 ? static_cast<int>(covered_sorted(*pm, sub_ib[q + 1] | (static_cast<uint64_t>(sub_ib[q + 2] & 0xffffu) << 32u), 4)) : -1);
+@@ -6136,7 +6159,8 @@
+ 			}
+ 			q += len;
+ 		}
+-		journal("timeout probe: %s #%" PRIu64 " %u dwords: %u waits (%u kept for the GPU), %u label writes, %u dispatches\n", kind, n, sub_n, n_waits, n_kept, n_writes, n_disp);
++		journal("timeout probe: %s #%" PRIu64 " %u dwords: %u waits (%u kept for the GPU), %u label writes, %u dispatches (%u indirect; the largest grid %" PRIu64 " groups, at %u)\n", kind, n, sub_n,
++		        n_waits, n_kept, n_writes, n_disp, n_ind, max_groups, max_at);
+ 		if (g_journal_min) { // experiment 0260: the probe's lines on the disk (and in a stream of the journal) before a machine-down
+ 			if (FILE* jf = journal_min_file(true); jf != nullptr) fsync(fileno(jf));
+ 		}

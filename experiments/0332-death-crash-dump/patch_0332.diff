@@ -1,0 +1,39 @@
+--- a/src/loader/runtimeLinker.cpp
++++ b/src/loader/runtimeLinker.cpp
+@@ -1116,6 +1116,36 @@
+ 		dump_guest_qwords("guest r13", info->r13);
+ 		dump_guest_qwords("guest r14", info->r14);
+ 		dump_guest_qwords("guest r15", info->r15);
++		// Experiment 0332: the crash's stack frame and what its slots point to, two levels deep, so that a crash in the
++		// title's own code shows the data it walked. The death crash at eboot.bin+0x3ba1bdf takes its handle list
++		// through [rbp-0x38] and [[rbp-0x38]] (F401). Read only: every read is checked with IsReadableRange.
++		if (info->rbp >= 0x100000000ull && IsReadableRange(info->rbp - 0x80u, 20u * sizeof(uint64_t))) {
++			const auto* frame = reinterpret_cast<const uint64_t*>(info->rbp - 0x80u);
++			for (int k = 0; k < 20; k++) {
++				Bc5CrashLog("frame rbp%+d = %016" PRIx64 "\n", -0x80 + 8 * k, frame[k]);
++			}
++			for (int k = 0; k < 20; k++) {
++				const int      off = -0x80 + 8 * k;
++				const uint64_t p   = frame[k];
++				if (p < 0x100000000ull || !IsReadableRange(p, 8u * sizeof(uint64_t))) {
++					continue;
++				}
++				char name[40] {};
++				std::snprintf(name, sizeof(name), "frame [rbp%+d]", off);
++				dump_guest_qwords(name, p);
++				const uint64_t q = *reinterpret_cast<const uint64_t*>(p);
++				if (q < 0x100000000ull || !IsReadableRange(q, 32u * sizeof(uint64_t))) {
++					continue;
++				}
++				const auto* w = reinterpret_cast<const uint64_t*>(q);
++				for (int r = 0; r < 4; r++) {
++					Bc5CrashLog("frame [[rbp%+d]] = %016" PRIx64 " +0x%02x: %016" PRIx64 " %016" PRIx64 " %016" PRIx64
++					            " %016" PRIx64 " %016" PRIx64 " %016" PRIx64 " %016" PRIx64 " %016" PRIx64 "\n",
++					            off, q, r * 64, w[r * 8 + 0], w[r * 8 + 1], w[r * 8 + 2], w[r * 8 + 3], w[r * 8 + 4],
++					            w[r * 8 + 5], w[r * 8 + 6], w[r * 8 + 7]);
++				}
++			}
++		}
+ 	// KytyPlus: detect host-pointer leaks at the HLE boundary. A guest register holding a
+ 	// pointer above the guest VA range (guest mappings live below ~4 GB + a small runtime
+ 	// window) but in the host user range means an HLE implementation passed a host pointer

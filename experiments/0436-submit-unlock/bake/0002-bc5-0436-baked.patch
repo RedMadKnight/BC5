@@ -1,0 +1,67 @@
+diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
+index d775403..8d16371 100644
+--- a/src/libs/bc5LleAgc.cpp
++++ b/src/libs/bc5LleAgc.cpp
+@@ -15061,6 +15061,21 @@ static void submit_one(const uint32_t* ib, uint32_t num_dwords, const char* kind
+ 	submit_now(ib, num_dwords, kind, job_ring(kind), nullptr);
+ }
+ 
++// Experiment 0436 (tag su436): the kernel submit (DRM_IOCTL_AMDGPU_CS) outside the device mutex (exp 0432 note 8;
++// built in with no switch, 2026-11-20). A job is prepared under g_dev_mutex as before (probe, syncs, ud434's imports, hints, the
++// backend's prepare); for the CS ioctl alone the backend lets its own lock go and calls back here to let g_dev_mutex go,
++// then the device mutex is taken again for everything after the call (EFAULT retry, label writes, ho430's job record,
++// the completion queue), so all of that keeps its order relative to the call. The jobs of one ring keep their order
++// through a lock per ring (GFX, compute 0-3), taken before g_dev_mutex and held to the end of submit_now: the same ring's
++// next job cannot be prepared before this one is in the kernel and recorded. A chain's F10 flight set is cleared after
++// submit_now returns, as before, so F10/F16/F18 see the writer in flight for the whole time. Mapping removals wait in
++// the backend until no prepared job is in its kernel call (flight lock), so the mappings a job was prepared against are
++// still there when the kernel takes it. Async mode only (g_async); in sync mode the call stays under both locks.
++static std::mutex            g_su436_ring_mu[bc5::direct::kComputeRings + 1]; // [kComputeRings] is the GFX ring
++#ifndef BC5_LEAN
++static std::atomic<uint64_t> g_su436_calls {0}; // kernel calls made outside the device mutex (normal build only)
++#endif
++
+ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind, int ring, const Chain* chain) {
+ 	if (g_stage == Stage::Off || !g_dev || ib == nullptr || num_dwords == 0) {
+ 		return;
+@@ -15086,7 +15101,11 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+ 	const uint64_t  ls_w0 = bc5::load_stat::begin();
+ 	if (t_f16_slot != nullptr) t_f16_slot->f16_phase.store(2); // exp 0430 F16: past the back-pressure, asking for the device
+ 	const uint64_t  fs_ask = fs415_file() != nullptr ? SoftCp::now_ns() : 0; // experiment 0415 (fs415b)
+-	std::lock_guard lock(g_dev_mutex);
++	// exp 0436 (tag su436): this ring's order, before the device mutex (lock order: ring, g_dev_mutex, backend)
++	const bool su = g_async && (qring == bc5::direct::kGfxRing || (qring >= 0 && qring < bc5::direct::kComputeRings));
++	std::unique_lock<std::mutex> su_ring;
++	if (su) su_ring = std::unique_lock<std::mutex>(g_su436_ring_mu[qring == bc5::direct::kGfxRing ? bc5::direct::kComputeRings : qring]);
++	std::unique_lock<std::mutex> lock(g_dev_mutex);
+ 	if (t_f16_slot != nullptr) t_f16_slot->f16_phase.store(3); // exp 0430 F16
+ 	const uint64_t  fs_got = fs_ask != 0 ? SoftCp::now_ns() : 0;
+ 	bc5::load_stat::end(bc5::load_stat::kDevLockWait, ls_w0);
+@@ -15886,7 +15905,26 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+ 		offsets.swap(back);
+ 	};
+ 	const uint64_t ls_t3 = SoftCp::now_ns(); // experiment 0415 (ls415c)
+-	auto r = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, true, qring);
++	bc5::direct::SubmitResult r;
++	if (su) { // exp 0436 (tag su436): the backend calls back before the CS ioctl; the device mutex is taken again after it
++		bool                        let_go = false;
++		const std::function<void()> unlock_dev = [&lock, &let_go] {
++			lock.unlock();
++			let_go = true;
++		};
++		r = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, true, qring, unlock_dev);
++		if (!lock.owns_lock()) lock.lock();
++#ifndef BC5_LEAN
++		if (let_go) {
++			const uint64_t k = g_su436_calls.fetch_add(1);
++			if (k == 0 || (k & 0x3ffffu) == 0) std::fprintf(stderr, "[bc5] exp 0436 (tag su436): %" PRIu64 " kernel submits made outside the device mutex so far\n", k + 1);
++		}
++#else
++		(void)let_go;
++#endif
++	} else {
++		r = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, true, qring);
++	}
+ 	if (bc5::load_stat::on()) { // experiment 0415 (ls415c): the hold by part
+ 		bc5::load_stat::add(bc5::load_stat::kHoldPre, ls_t3 - t2);
+ 		bc5::load_stat::add(bc5::load_stat::kDevCall, SoftCp::now_ns() - ls_t3);

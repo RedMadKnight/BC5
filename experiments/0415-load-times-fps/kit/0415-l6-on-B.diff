@@ -1,0 +1,511 @@
+diff --git a/src/bc5/anon_sync.hpp b/src/bc5/anon_sync.hpp
+index f74cbb1..7a2ae6f 100644
+--- a/src/bc5/anon_sync.hpp
++++ b/src/bc5/anon_sync.hpp
+@@ -3,6 +3,7 @@
+ // tested on any CPU (experiments/0415-load-times-fps/kit/test0415anon.cpp).
+ #pragma once
+ 
++#include <atomic>
+ #include <cinttypes>
+ #include <cstdint>
+ #include <cstdio>
+@@ -28,13 +29,46 @@ inline bool parse_line(const char* line, uint64_t* start, uint64_t* end, bool* r
+ }
+ 
+ // KYTY_BC5_ANON_SYNC: 0 off (unset, empty, "0"); 2 "thread" (the submission path leaves the walk out while the checking
+-// thread's last pass saw what the last walk saw); 1 anything else ("verify": the walk runs as before and
+-// is compared with what "thread" would have done).
++// thread's last pass saw what the last walk saw); 3 "events" (tag as415c: no thread; the walk runs at the first call
++// after a host call that made anonymous memory readable in the guest's span, and otherwise only while the last walk's
++// list was not empty); 1 anything else ("verify": the walk runs as before and is compared with what "thread" and
++// "events" would have done).
+ inline int mode_of(const char* e) {
+ 	if (e == nullptr || e[0] == '\0' || std::strcmp(e, "0") == 0) return 0;
++	if (std::strcmp(e, "events") == 0) return 3;
+ 	return std::strcmp(e, "thread") == 0 ? 2 : 1;
+ }
+ 
++// Tag as415c (DESIGN-lock-side.md section 8). One process-wide counter of the host calls that can make anonymous
++// memory readable inside the guest's span: an anonymous map with a readable protection, or a protect call that turns
++// reading on. The sites call note() AFTER the kernel call has succeeded, so a walk that read the counter before its
++// read of /proc/self/maps either sees the mapping or sees the counter move at the next call. A protect site cannot
++// tell a file view from an anonymous range, so it notes every readable protect in the span: too often is safe (one
++// walk more), too rarely is not. The console needs none of this: there a mapping is visible to the GPU when the call
++// that made it returns [inferred: one address space for CPU and GPU]; the rule kept here is "walked by the first
++// submission after the call".
++inline std::atomic<uint64_t>& events() {
++	static std::atomic<uint64_t> v {0};
++	return v;
++}
++inline bool in_span(uint64_t addr, uint64_t len) {
++	return len != 0 && addr <= kGuestMax && addr + len > kGuestMin;
++}
++inline void note(uint64_t addr, uint64_t len, bool readable) {
++	if (readable && in_span(addr, len)) events().fetch_add(1, std::memory_order_release);
++}
++// "events": must this call walk at once (whatever the time limits say)? Yes when no walk stands (start, device
++// reopen) or the counter has moved since the last walk read it.
++inline bool events_moved(uint64_t ev_now, uint64_t ev_at_walk, bool walk_valid) {
++	return !walk_valid || ev_now != ev_at_walk;
++}
++// "events": may this call leave the walk out altogether? Only when the counter has not moved and the last walk found
++// no anonymous guest VMA at all (inside such a VMA pages become resident without any call, so while one exists the
++// walk keeps its old timing).
++inline bool events_skip(bool moved, bool last_list_empty) {
++	return !moved && last_list_empty;
++}
++
+ // The signature of what a walk acts on: the list of VMAs and, inside each, the resident runs at the walk's 64 KiB grain.
+ // Two walks with the same signature (and the same mappings on the device) add and drop nothing.
+ inline constexpr uint64_t kSigEmpty = 0x9e3779b97f4a7c15ull;
+diff --git a/src/bc5/load_stat.hpp b/src/bc5/load_stat.hpp
+index 7fbcc29..9bd3443 100644
+--- a/src/bc5/load_stat.hpp
++++ b/src/bc5/load_stat.hpp
+@@ -97,6 +97,13 @@ enum Cause : unsigned {
+ 	kAnonMiss,       // ... of those, walks that "thread" mode would have left out (the thread's last pass matched the walk before): n
+ 	kAnonSkip,       // KYTY_BC5_ANON_SYNC=thread: walks left out: n
+ 	kAnonThread,     // the checking thread's passes: n, time, items = anonymous guest VMAs found
++	kViewsClone,     // tag mr415d: KYTY_BC5_MAP_RECORDS=views: record applications that had to copy the kept list first (someone still held it): n, items = views
++	kAnonEvents,     // tag as415c: walks (or, in "events", calls) at which the map/protect counter had moved since the last walk: n, items = how far
++	kAnonEvMiss,     // ... KYTY_BC5_ANON_SYNC=verify: walks that found something although the counter had not moved and the last list was empty ("events" would have left them out): n
++	kAnonEvCalls,    // ... KYTY_BC5_ANON_SYNC=verify: calls of the anonymous sync that found the counter moved since the call before: the walks "events" would make for events: n
++	kWaitGaveUp,     // tag wg415: CPU-side label waits that ended unserved (given up at the limit, a timeout, or a broken cycle): n, time waited, items = broken cycles
++	kSemaWake,       // tag sw415 (F451): from a signal making a semaphore waiter ready to that waiter holding the mutex again: n, time
++	kSemaWokeIdle,   // ... a blocked semaphore waiter woke and was not ready (a broadcast meant for another, or its poll period): n
+ 	kCount
+ };
+ 
+@@ -108,7 +115,9 @@ inline constexpr const char* kNames[kCount] = {
+     "apr_fallback", "hold_probe", "hold_hints",   "hold_pre",  "dev_call",    "dev_prepare", "dev_list",        "dev_cs",
+     "ds_views", "ds_scan",    "ds_merge",         "ds_drain",  "ds_maps",     "fast_diff",   "learned_apply",   "learned_changed",
+     "map_record", "rec_mismatch", "rec_overflow",    "maps_check", "maps_uncovered",
+-    "anon_read", "anon_urgent", "anon_needed",     "anon_miss", "anon_skip",   "anon_thread"};
++    "anon_read", "anon_urgent", "anon_needed",     "anon_miss", "anon_skip",   "anon_thread",
++    "views_clone", "anon_events", "anon_ev_miss",  "anon_ev_calls", "wait_gave_up",
++    "sema_wake", "sema_woke_idle"};
+ 
+ static_assert(kNames[kCount - 1] != nullptr, "a name per cause");
+ 
+diff --git a/src/common/platform/sysLinuxVirtual.cpp b/src/common/platform/sysLinuxVirtual.cpp
+index 5403083..4bd352c 100644
+--- a/src/common/platform/sysLinuxVirtual.cpp
++++ b/src/common/platform/sysLinuxVirtual.cpp
+@@ -8,6 +8,7 @@
+ #include "common/assert.h"
+ #include "common/platform/sysVirtual.h"
+ #include "common/virtualMemory.h"
++#include "bc5/anon_sync.hpp" // experiment 0415 (as415c)
+ 
+ #include <atomic>
+ #include <map>
+@@ -126,10 +127,18 @@ static uintptr_t align_up_to(uintptr_t addr, uint64_t alignment) {
+ }
+ #endif
+ 
++// Experiment 0415 (tag as415c): every map this file makes goes through here, so that an anonymous readable map inside
++// the guest's span is counted for the anonymous sync (bc5/anon_sync.hpp). The call itself is unchanged.
++static void* as415_mmap(void* addr, size_t size, int protect, int flags, int fd, off_t offset) {
++	void* ptr = mmap(addr, size, protect, flags, fd, offset); // NOLINT
++	if (ptr != MAP_FAILED && fd < 0) bc5::anon_sync::note(reinterpret_cast<uint64_t>(ptr), size, (protect & PROT_READ) != 0);
++	return ptr;
++}
++
+ // Freed arena addresses are not reused while GPU caches remain keyed by address.
+ static void* map_anonymous(uintptr_t addr, size_t size, int protect, int flags) {
+ 	if (addr != 0) {
+-		return mmap(reinterpret_cast<void*>(addr), size, protect, flags, -1, 0); // NOLINT
++		return as415_mmap(reinterpret_cast<void*>(addr), size, protect, flags, -1, 0); // NOLINT
+ 	}
+ 
+ #ifdef KYTY_FIXED_NOREPLACE
+@@ -140,7 +149,7 @@ static void* map_anonymous(uintptr_t addr, size_t size, int protect, int flags)
+ 			break;
+ 		}
+ 		const auto hint = (top - step) & ~(LOW_ARENA_GRAIN - 1);
+-		void* ptr = mmap(reinterpret_cast<void*>(hint), size, protect, flags | MAP_FIXED_NOREPLACE,
++		void* ptr = as415_mmap(reinterpret_cast<void*>(hint), size, protect, flags | MAP_FIXED_NOREPLACE,
+ 		                 -1, 0); // NOLINT
+ 		if (ptr != MAP_FAILED) {
+ 			return ptr;
+@@ -148,7 +157,7 @@ static void* map_anonymous(uintptr_t addr, size_t size, int protect, int flags)
+ 	}
+ #endif
+ 
+-	return mmap(nullptr, size, protect, flags, -1, 0); // NOLINT
++	return as415_mmap(nullptr, size, protect, flags, -1, 0); // NOLINT
+ }
+ 
+ uint64_t SysVirtualAlloc(uint64_t address, uint64_t size, VirtualMemory::Mode mode) {
+@@ -209,7 +218,7 @@ uint64_t SysVirtualAllocAligned(uint64_t address, uint64_t size, VirtualMemory::
+ 			// destroyed by the MAP_FIXED. Other platforms keep the original path below.
+ 			auto aligned_addr = align_up(ret_addr, alignment);
+ 			// NOLINTNEXTLINE
+-			void* fixed = mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
++			void* fixed = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
+ 			                   MAP_FIXED | MAP_PRIVATE | MAP_ANON, -1, 0);
+ 			if (fixed == MAP_FAILED) {
+ 				munmap(ptr, size + alignment);
+@@ -232,11 +241,11 @@ uint64_t SysVirtualAllocAligned(uint64_t address, uint64_t size, VirtualMemory::
+ 			auto aligned_addr = align_up(ret_addr, alignment);
+ #ifdef KYTY_FIXED_NOREPLACE
+ 			// NOLINTNEXTLINE
+-			ptr = mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
++			ptr = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
+ 			           MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANON, -1, 0);
+ #else
+ 			// NOLINTNEXTLINE
+-			ptr = mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
++			ptr = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, protect,
+ 			           MAP_FIXED | MAP_PRIVATE | MAP_ANON, -1, 0);
+ #endif
+ 			ret_addr = reinterpret_cast<uintptr_t>(ptr);
+@@ -320,13 +329,13 @@ bool SysVirtualAllocFixed(uint64_t address, uint64_t size, VirtualMemory::Mode m
+ 
+ #ifdef KYTY_FIXED_NOREPLACE
+ 	// NOLINTNEXTLINE
+-	void* ptr = mmap(reinterpret_cast<void*>(addr), size, protect,
++	void* ptr = as415_mmap(reinterpret_cast<void*>(addr), size, protect,
+ 	                 MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANON, -1, 0);
+ #else
+ 	// NOLINTNEXTLINE
+ 	void* ptr = (is_mapped(reinterpret_cast<void*>(addr), size)
+ 	                 ? MAP_FAILED
+-	                 : mmap(reinterpret_cast<void*>(addr), size, protect,
++	                 : as415_mmap(reinterpret_cast<void*>(addr), size, protect,
+ 	                        MAP_FIXED | MAP_PRIVATE | MAP_ANON, -1, 0));
+ #endif
+ 
+@@ -390,7 +399,7 @@ uint64_t SysVirtualReserveAligned(uint64_t address, uint64_t size, uint64_t alig
+ 			// destroy its mapping. Other platforms keep the original path below.
+ 			auto aligned_addr = align_up(ret_addr, alignment);
+ 			// NOLINTNEXTLINE
+-			void* fixed = mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
++			void* fixed = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
+ 			                   MAP_FIXED | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0);
+ 			if (fixed == MAP_FAILED) {
+ 				munmap(ptr, size + alignment);
+@@ -413,11 +422,11 @@ uint64_t SysVirtualReserveAligned(uint64_t address, uint64_t size, uint64_t alig
+ 			auto aligned_addr = align_up(ret_addr, alignment);
+ #ifdef KYTY_FIXED_NOREPLACE
+ 			// NOLINTNEXTLINE
+-			ptr = mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
++			ptr = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
+ 			           MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0);
+ #else
+ 			// NOLINTNEXTLINE
+-			ptr = mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
++			ptr = as415_mmap(reinterpret_cast<void*>(aligned_addr), size, PROT_NONE,
+ 			           MAP_FIXED | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0);
+ #endif
+ 			ret_addr = reinterpret_cast<uintptr_t>(ptr);
+@@ -448,13 +457,13 @@ bool SysVirtualReserveFixed(uint64_t address, uint64_t size) {
+ 
+ #ifdef KYTY_FIXED_NOREPLACE
+ 	// NOLINTNEXTLINE
+-	void* ptr = mmap(reinterpret_cast<void*>(addr), size, PROT_NONE,
++	void* ptr = as415_mmap(reinterpret_cast<void*>(addr), size, PROT_NONE,
+ 	                 MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0);
+ #else
+ 	// NOLINTNEXTLINE
+ 	void* ptr = (is_mapped(reinterpret_cast<void*>(addr), size)
+ 	                 ? MAP_FAILED
+-	                 : mmap(reinterpret_cast<void*>(addr), size, PROT_NONE,
++	                 : as415_mmap(reinterpret_cast<void*>(addr), size, PROT_NONE,
+ 	                        MAP_FIXED | MAP_PRIVATE | MAP_ANON | MAP_NORESERVE, -1, 0));
+ #endif
+ 
+@@ -611,6 +620,7 @@ bool SysVirtualProtect(uint64_t address, uint64_t size, VirtualMemory::Mode mode
+ 	uintptr_t page_end   = (addr + size - 1) >> 12u;
+ 	if (mprotect(reinterpret_cast<void*>(page_start << 12u), (page_end - page_start + 1) << 12u,
+ 	             get_protection_flag(mode)) == 0) {
++		bc5::anon_sync::note(static_cast<uint64_t>(page_start) << 12u, static_cast<uint64_t>(page_end - page_start + 1) << 12u, (get_protection_flag(mode) & PROT_READ) != 0); // experiment 0415 (as415c)
+ 		pthread_mutex_lock(&g_virtual_mutex);
+ 		for (uintptr_t page = page_start; page <= page_end; page++) {
+ 			(*g_protects)[page] = get_protection_flag(mode);
+diff --git a/src/kernel/semaphore.cpp b/src/kernel/semaphore.cpp
+index bd43388..3540226 100644
+--- a/src/kernel/semaphore.cpp
++++ b/src/kernel/semaphore.cpp
+@@ -61,6 +61,7 @@ private:
+ 		Result result     = Result::TimedOut;
+ 		bool   ready      = false;
+ 		Common::CondVar* own_cond = nullptr; // BC5 KYTY_BC5_SEMA_TARGETED_WAKE: this waiter's own condition variable
++		uint64_t ready_ns = 0;               // BC5 exp 0415 (sw415): when a signal made it ready (0: counters off)
+ 	};
+ 
+ 	void AddWaiter(WaitingThread* waiter);
+@@ -271,8 +272,9 @@ void KernelSemaPrivate::WakeWaiters() {
+ 	for (auto* waiter: m_waiting_threads) {
+ 		if (!waiter->ready && waiter->need_count <= m_count) {
+ 			m_count -= waiter->need_count;
+-			waiter->result = Result::Ok;
+-			waiter->ready  = true;
++			waiter->result   = Result::Ok;
++			waiter->ready    = true;
++			waiter->ready_ns = bc5::load_stat::begin(); // experiment 0415 (sw415)
+ 			if (waiter->own_cond != nullptr) {
+ 				waiter->own_cond->Signal();
+ 			}
+@@ -347,7 +349,9 @@ KernelSemaPrivate::Result KernelSemaPrivate::Wait(int need_count, uint32_t* ptr_
+ 		m_mutex.Lock();
+ 
+ 		elapsed = static_cast<uint32_t>(t.GetTimeS() * 1000000.0);
++		if (!waiter.ready) bc5::load_stat::count(bc5::load_stat::kSemaWokeIdle); // experiment 0415 (sw415)
+ 	}
++	if (waiter.ready_ns != 0) bc5::load_stat::add(bc5::load_stat::kSemaWake, bc5::load_stat::now_ns() - waiter.ready_ns); // experiment 0415 (sw415)
+ 
+ 	RemoveWaiter(&waiter);
+ 
+diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
+index fbfe65f..cc24a4e 100644
+--- a/src/libs/bc5LleAgc.cpp
++++ b/src/libs/bc5LleAgc.cpp
+@@ -2557,16 +2557,20 @@ static void mr415_verify() {
+ // records, both titles); the list is rebuilt from every range only every KYTY_BC5_MAP_RECORDS_CHECK_MS (2,000 when
+ // unset), and at that moment the kept list is compared with it and with the old builder's list (rec_mismatch) and
+ // replaced by it. If the record log reports a gap the list is rebuilt at once. Called under direct_views' mutex.
++// Tag mr415d (build L5d): build L5b copied the kept list (12,500-28,000 views, a string each) into every new snapshot
++// and so saved nothing (README section 15). The kept list is now the object handed out: records are applied to it in
++// place when nobody else holds it (direct_views lets go of its own reference first), and only otherwise to a copy
++// (views_clone). A holder never sees its list change: it holds a reference, so the count is above one.
+ // If a record were missing, a view would be absent (its memory not on the GPU) or would stay after the guest unmapped
+ // it (the GPU reads pages the guest gave back) until the next check, at most the check period.
+-static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_out) {
++static std::shared_ptr<DViews> mr415_views(const DState& S, uint64_t* gen_out) {
+ 	struct R {
+ 		uint64_t    start, size, offset;
+ 		int         type;
+ 		std::string name;
+ 	};
+-	static std::vector<DView> kept;
+-	static bool               have       = false;
++	static std::shared_ptr<DViews> kept_p = std::make_shared<DViews>();
++	static bool                    have   = false;
+ 	static uint64_t           checked_ns = 0;
+ 	static const uint64_t     period_ns  = bc5::load_stat::env_num("KYTY_BC5_MAP_RECORDS_CHECK_MS", 2000, 600'000) * 1'000'000ull;
+ 	auto make = [](const R& r, DView* v) {
+@@ -2589,11 +2593,15 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
+ 		        &lists, &gen, &spans, &complete) &&
+ 		    complete) {
+ 			lists.resize(spans.size());
++			if (kept_p.use_count() > 1) { // someone still reads the list: leave theirs alone
++				bc5::load_stat::count(bc5::load_stat::kViewsClone, kept_p->v.size());
++				kept_p = std::make_shared<DViews>(*kept_p);
++			}
++			std::vector<DView>& kept = kept_p->v;
+ 			for (size_t i = 0; i < spans.size(); i++) bc5::map_records::apply(kept, lists[i], spans[i].first, bc5::map_records::end_of(spans[i].first, spans[i].second), make);
+ 			bc5::load_stat::count(bc5::load_stat::kMapRecord, spans.size());
+-			*out     = kept;
+ 			*gen_out = gen;
+-			return;
++			return kept_p;
+ 		}
+ 		bc5::load_stat::count(bc5::load_stat::kRecOverflow);
+ 		have = false; // the log had a gap: the kept list is not to be compared, only replaced
+@@ -2605,8 +2613,9 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
+ 		        static_cast<std::vector<R>*>(p)->push_back({start, size, offset, type, name != nullptr ? name : ""});
+ 	        },
+ 	        &ranges, &gen, &spans, &complete)) {
+-		*out = direct_views_build(S);
+-		return;
++		auto d = std::make_shared<DViews>();
++		d->v   = direct_views_build(S);
++		return d;
+ 	}
+ 	std::vector<DView> full;
+ 	for (const R& r: ranges) {
+@@ -2622,6 +2631,8 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
+ 	};
+ 	static int logged = 0;
+ 	if (have && complete) {
++		if (kept_p.use_count() > 1) kept_p = std::make_shared<DViews>(*kept_p);
++		std::vector<DView>& kept = kept_p->v;
+ 		for (const auto& [start, size]: spans) bc5::map_records::apply(kept, ranges, start, bc5::map_records::end_of(start, size), make);
+ 		bc5::load_stat::count(bc5::load_stat::kMapRecord, spans.size());
+ 		if (!same(kept, full)) {
+@@ -2637,11 +2648,12 @@ static void mr415_views(const DState& S, std::vector<DView>* out, uint64_t* gen_
+ 			if (logged++ < 8) journal("map records (exp 0415, mr415c): the snapshot's list differs from the old builder's at generation %" PRIu64 ": %zu against %zu views\n", gen, full.size(), old.size());
+ 		}
+ 	}
+-	kept       = std::move(full);
++	kept_p     = std::make_shared<DViews>();
++	kept_p->v  = std::move(full);
+ 	have       = true;
+ 	checked_ns = now;
+-	*out       = kept;
+ 	*gen_out   = gen;
++	return kept_p;
+ }
+ 
+ static std::shared_ptr<const DViews> direct_views(const DState& S) {
+@@ -2659,14 +2671,17 @@ static std::shared_ptr<const DViews> direct_views(const DState& S) {
+ 	if (g != 0 && g == gen[k] && cache[k] != nullptr && (k == 0 || now - built_ns[k] < 1'000'000'000ull)) return cache[k];
+ 	built_ns[k] = now;
+ 	g_views_builds++;
+-	auto d = std::make_shared<DViews>();
+-	uint64_t g_used = g;
++	std::shared_ptr<DViews> d;
++	uint64_t                g_used = g;
+ 	if (k == 0 && mr415_mode() == 2) { // experiment 0415 (mr415c), stage S2: the list kept from the change records
+-		mr415_views(S, &d->v, &g_used);
++		cache[k].reset();              // mr415d: so that the kept list can change in place when no caller holds it
++		d = mr415_views(S, &g_used);
+ 	} else {
++		d    = std::make_shared<DViews>();
+ 		d->v = direct_views_build(S);
+ 		if (k == 0) mr415_verify(); // experiment 0415 (mr415)
+ 	}
++	d->sorted = true;
+ 	uint64_t sig = 1469598103934665603ull;
+ 	for (size_t i = 0; i < d->v.size(); i++) {
+ 		const auto& v = d->v[i];
+@@ -4186,11 +4201,19 @@ static uint64_t direct_force(uint64_t lo, uint64_t hi) {
+ // What "thread" gives up: an anonymous guest VMA that appears is walked at the first call after the thread's next pass
+ // instead of at once for an urgent call (operands on it are dropped by the filter until then, as they are today for a
+ // non-urgent call for up to a second). So it stays off until "verify" shows no miss.
++//   "events" (tag as415c, DESIGN-lock-side.md section 8): no thread and no read on a schedule. The host's map and
++//             protect sites count the calls that can make anonymous memory readable in the guest's span
++//             (bc5::anon_sync::note). A call here walks at once, whatever the time limits say, when that counter has
++//             moved since the last walk read it, after -EFAULT and after a device reopen; it leaves the walk out when
++//             the counter has not moved and the last walk found no anonymous guest VMA; while such a VMA exists the
++//             walk keeps its old timing (its pages become resident without any call). "verify" counts what this rule
++//             would have missed (anon_ev_miss) and how often the counter moves (anon_events).
+ static std::mutex              g_as415_mu;
+ static std::condition_variable g_as415_cv;
+ static uint64_t                g_as415_sig    = 0;     // the thread's last pass: its signature
+ static uint64_t                g_as415_walk_sig   = 0; // the last walk's signature (the submission path, under the device mutex)
+ static bool                    g_as415_walk_valid = false;
++static uint64_t                g_as415_walk_ev    = 0; // as415c: the map/protect counter as the last walk read it (before its read of the maps)
+ static uint64_t                g_as415_passes = 0;     // passes finished
+ static bool                    g_as415_kick   = false; // an urgent call asks for a pass now
+ 
+@@ -4248,32 +4271,56 @@ static void as415_thread() {
+ // operand of the IB is unmapped, -EFAULT from a submission) always walk.
+ static void sync_mappings(bool force = false, bool urgent = false, bool must = false) { // must (exp 0415, as415): after -EFAULT, never left out
+ 	const uint64_t now = SoftCp::now_ns();
+-	if (!force && now - g_last_sync_ns < 50'000'000ull) { // at most every 50 ms
++	// Experiment 0415 (as415, as415c), KYTY_BC5_ANON_SYNC: see as415_thread.
++	const int      as_mode       = as415_mode();
++	const uint64_t as_ev         = bc5::anon_sync::events().load(std::memory_order_acquire); // read BEFORE the maps are read
++	const bool     as_ev_moved   = bc5::anon_sync::events_moved(as_ev, g_as415_walk_ev, g_as415_walk_valid);
++	const bool     as_prev_empty = g_vmas.empty();
++	bool           as_ev_now     = false; // "events": this call walks whatever the time limits say
++	if (as_mode == 1) { // "verify": how many calls "events" would turn into walks
++		static uint64_t seen_ev = 0;
++		if (as_ev != seen_ev) {
++			seen_ev = as_ev;
++			bc5::load_stat::count(bc5::load_stat::kAnonEvCalls);
++		}
++	}
++	if (as_mode == 3) {
++		if (!must && bc5::anon_sync::events_skip(as_ev_moved, as_prev_empty)) {
++			if (urgent) bc5::load_stat::count(bc5::load_stat::kAnonUrgent);
++			bc5::load_stat::count(bc5::load_stat::kAnonSkip);
++			t_fs415_ds[7] |= urgent ? 6 : 4;
++			return;
++		}
++		as_ev_now = must || as_ev_moved;
++	}
++	if (!as_ev_now && !force && now - g_last_sync_ns < 50'000'000ull) { // at most every 50 ms
+ 		return;
+ 	}
+ 	static constexpr uint64_t anon_min_ns = 100ull * 1'000'000ull;
+-	if (force && !urgent && g_last_sync_ns != 0 && now - g_last_sync_ns < anon_min_ns) {
++	if (!as_ev_now && force && !urgent && g_last_sync_ns != 0 && now - g_last_sync_ns < anon_min_ns) {
+ 		return;
+ 	}
+ 	// With private guest memory in a file as well (experiment 0023) the walk should find nothing
+ 	// anonymous in the guest's range; it stays as a check, once a second.
+-	if (!urgent && g_last_sync_ns != 0 && Libs::LibKernel::Memory::Bc5PrivateMemoryFd() >= 0 && now - g_last_sync_ns < 1'000'000'000ull) {
++	if (!as_ev_now && !urgent && g_last_sync_ns != 0 && Libs::LibKernel::Memory::Bc5PrivateMemoryFd() >= 0 && now - g_last_sync_ns < 1'000'000'000ull) {
+ 		return;
+ 	}
+ 	g_last_sync_ns = now;
+-	// Experiment 0415 (as415), KYTY_BC5_ANON_SYNC: see as415_thread.
+-	const int as_mode    = as415_mode();
+-	bool      as_skip_ok = false;
++	bool as_skip_ok = false;
++	if (as_mode != 0 && as_ev_moved) bc5::load_stat::count(bc5::load_stat::kAnonEvents, g_as415_walk_valid ? as_ev - g_as415_walk_ev : 0);
+ 	if (urgent) {
+ 		bc5::load_stat::count(bc5::load_stat::kAnonUrgent);
+ 		t_fs415_ds[7] |= 2;
+ 	}
+-	if (as_mode != 0) {
++	if (as_mode == 1 || as_mode == 2) { // "events" has no thread
+ 		static std::once_flag once;
+ 		std::call_once(once, [] { std::thread(as415_thread).detach(); });
+ 		std::lock_guard lk(g_as415_mu);
+ 		as_skip_ok = bc5::anon_sync::can_skip(g_as415_passes, g_as415_sig, g_as415_walk_valid, g_as415_walk_sig);
+-		if (urgent && !g_as415_kick) {
++		// KYTY_BC5_ANON_SYNC_KICK=0 (as415b, a measuring knob): urgent calls do not wake the thread, so that with a long
++		// KYTY_BC5_ANON_SYNC_MS the cost of the thread's own reads can be told from the rest.
++		static const bool kick = bc5::load_stat::env_num("KYTY_BC5_ANON_SYNC_KICK", 1, 1) != 0;
++		if (urgent && kick && !g_as415_kick) {
+ 			g_as415_kick = true;
+ 			g_as415_cv.notify_one();
+ 		}
+@@ -4284,6 +4331,13 @@ static void sync_mappings(bool force = false, bool urgent = false, bool must = f
+ 		return;
+ 	}
+ 	t_fs415_ds[7] |= 1;
++	if (as_mode != 0) {
++		static std::once_flag said;
++		std::call_once(said, [as_mode] {
++			journal("anon sync (exp 0415, as415c): KYTY_BC5_ANON_SYNC is %s\n", as_mode == 3 ? "\"events\": the walk runs after a counted map or protect call, after -EFAULT and a reopen, and on its old timing while an anonymous guest VMA exists"
++			                                                                          : (as_mode == 2 ? "\"thread\"" : "\"verify\": the walk runs as before; anon_miss and anon_ev_miss count what the other forms would have left out"));
++		});
++	}
+ 	bc5::load_stat::Scope ls_scope(bc5::load_stat::kAnonSync); // experiment 0415 (ls415)
+ 	constexpr uint64_t kPage = 4096, kGrain = 65536;
+ 
+@@ -4452,8 +4506,17 @@ static void sync_mappings(bool force = false, bool urgent = false, bool must = f
+ 	const bool as_same = g_as415_walk_valid && g_as415_walk_sig == as_sig; // experiment 0415 (as415)
+ 	g_as415_walk_sig   = as_sig;
+ 	g_as415_walk_valid = true;
++	g_as415_walk_ev    = as_ev;
+ 	if (as_mode != 0 && (as_changed || added != 0 || removed != 0 || !as_same)) {
+ 		bc5::load_stat::count(bc5::load_stat::kAnonNeeded, vmas.size());
++		if (as_mode == 1 && !must && bc5::anon_sync::events_skip(as_ev_moved, as_prev_empty)) { // as415c: "events" would have left this walk out
++			bc5::load_stat::count(bc5::load_stat::kAnonEvMiss);
++			static int ev_logged = 0;
++			if (ev_logged++ < 8) {
++				journal("anon sync (exp 0415, as415c): EVENT MISS: %zu VMAs, list %s, signature %s, +%d -%d mappings, %s, while the map/protect counter stood at %" PRIu64 " and the list before was empty: a site is not counted\n",
++				        vmas.size(), as_changed ? "changed" : "same", as_same ? "same" : "changed", added, removed, urgent ? "urgent" : "not urgent", as_ev);
++			}
++		}
+ 		if (as_skip_ok) {
+ 			bc5::load_stat::count(bc5::load_stat::kAnonMiss);
+ 			static int logged = 0;
+@@ -8480,6 +8543,7 @@ static void submit_split(const uint32_t* ib, uint32_t num_dwords, const char* ki
+ 					}
+ 					if (!ok) journal("cpu-wait %s at %u on 0x%" PRIx64 ": %s after %.1f ms\n", op == 0x93 ? "WAIT_REG_MEM64" : "WAIT_REG_MEM", i, label, broken ? "CYCLE" : (limit < 1'000'000'000ull ? "GIVEN UP" : "TIMEOUT"), static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
+ 					if (!ok) t_wait_given_up = true;
++					if (!ok && bc5::load_stat::on()) bc5::load_stat::add(bc5::load_stat::kWaitGaveUp, SoftCp::now_ns() - t0, broken ? 1 : 0); // experiment 0415 (wg415)
+ 					if (dry_here) (ok ? g_dry_ok : g_dry_failed)++;
+ 					frame_profile_wait(on_game_thread(), false, static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
+ 					static const bool timing_waits_env = BC5_DIAG_ENV("BC5_DIRECT_TIMING") != nullptr;
+diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
+index 67c7fcb..bf8ed98 100644
+--- a/src/libs/libAmpr.cpp
++++ b/src/libs/libAmpr.cpp
+@@ -33,6 +33,7 @@
+ #include <vector>
+ #include <sys/mman.h> // experiment 0401 series e4: mprotect of the AMM PRT zero pages
+ #include "bc5/load_stat.hpp" // experiment 0415 (ls415)
++#include "bc5/anon_sync.hpp" // experiment 0415 (as415c)
+ #include "bc5/apr_posix.hpp" // experiment 0415 (ls415b/c): KYTY_BC5_APR_POSIX
+ #include "bc5/setbuffer_test.hpp" // experiment 0417: the gate of the set-buffer test hook (0 in shared builds)
+ 
+@@ -4422,7 +4423,9 @@ static void Bc5PrtParts(uint64_t start, uint64_t end, std::vector<std::pair<uint
+ // or unreadable again. MapBacking's MAP_FIXED view replaces either; nothing else in the host reads the placeholder's mode.
+ static bool Bc5HostReadable(uint64_t va, uint64_t size, bool readable) {
+ #if defined(__linux__)
+-	return mprotect(reinterpret_cast<void*>(va), static_cast<size_t>(size), readable ? PROT_READ : PROT_NONE) == 0;
++	const bool done = mprotect(reinterpret_cast<void*>(va), static_cast<size_t>(size), readable ? PROT_READ : PROT_NONE) == 0;
++	if (done) bc5::anon_sync::note(va, size, readable); // experiment 0415 (as415c): an anonymous placeholder made readable
++	return done;
+ #else
+ 	(void)va;
+ 	(void)size;

@@ -1,0 +1,4 @@
+# <KytyPlus base commit> <first 8 hex of md5 of `git diff --no-color <base>` in the patched tree>
+# The shared builds' tree since 2026-11-23 12:31 (bakeR): 0001 d45618c6 + 0002 b54b7928. A bake that changes a patch
+# updates this line in the same commit; tools/scripts/kytyplus-tree.sh check fails on any other tree.
+f266548 4bb9cabf

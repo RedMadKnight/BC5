@@ -1,0 +1,253 @@
+diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
+index 8d16371..fb3d505 100644
+--- a/src/libs/bc5LleAgc.cpp
++++ b/src/libs/bc5LleAgc.cpp
+@@ -524,6 +524,32 @@ struct UnreadyWait {
+ 	uint64_t        label = 0, value = 0, reference = 0;
+ };
+ static thread_local UnreadyWait t_unready;
++// BC5 experiment 0438 (tag b438): r438, early registration of a taken queue slice's label writes (defined after
++// register_label_writes). Switch BC5_0438_EARLYREG: on unless "0".
++static void r438_begin(const uint32_t* s1, uint32_t n1, const uint32_t* s2, uint32_t n2);
++static void r438_end();
++static constexpr uint64_t                 kR438Early = 1ull << 63u; // early entries carry seq | kR438Early
++static uint64_t                           g_plw_order = 0;          // under g_plw_mutex, shared with register_label_writes
++static thread_local bool                  t_r438_on_slice = false;
++static thread_local std::vector<uint64_t> t_r438_real;              // the labels the slice's jobs registered for real
++static bool r438_on() {
++	static const bool v = [] {
++		const char* e = std::getenv("BC5_0438_EARLYREG");
++		return !(e != nullptr && e[0] == '0' && e[1] == 0);
++	}();
++	return v;
++}
++static bool r438_cv() { // exp 0438 (b438, PLWCV): the early-writer wait on a condition variable, on unless "0"
++	static const bool v = [] {
++		const char* e = std::getenv("BC5_0438_PLWCV");
++		return !(e != nullptr && e[0] == '0' && e[1] == 0);
++	}();
++	return v;
++}
++#ifndef BC5_LEAN
++static std::atomic<uint64_t> g_r438_early {0}, g_r438_lost {0}, g_r438_waits {0}, g_r438_wait_ns {0}, g_r438_wait_max {0}, g_r438_long {0};
++#endif
++static std::atomic<uint64_t> g_r438_slices {0};
+ // Run 123: the label the doorbell consumer's first unready buffer waits on, for the game thread
+ // to see a cycle — a buffer of its own that waits for that queue while writing the very label
+ // the queue waits for. 0 when the consumer is not blocked.
+@@ -1653,6 +1679,8 @@ static void queue_consumer_thread() {
+ 			const uint32_t w_take = (r + take) % n;
+ 			// Direct mode: the ring slice [r, w_take) is itself a valid IB of INDIRECT_BUFFER packets;
+ 			// a slice that wraps is submitted in two parts.
++			if (w_take > r) Direct::r438_begin(ring + r, w_take - r, nullptr, 0); // exp 0438 (b438): the slice's writes, early
++			else Direct::r438_begin(ring + r, n - r, ring, w_take);
+ 			Direct::chain_begin(); // ADR 0010: the slice's buffers as one submission
+ 			if (w_take > r) {
+ 				Direct::submit(ring + r, w_take - r, "ring");
+@@ -1661,6 +1689,7 @@ static void queue_consumer_thread() {
+ 				if (w_take != 0) Direct::submit(ring, w_take, "ring");
+ 			}
+ 			Direct::chain_end();
++			Direct::r438_end(); // exp 0438 (b438): every early write must have reached the ring
+ 			{
+ 				auto marks = std::move(t_gpu_done);
+ 				t_gpu_done.clear();
+@@ -8272,6 +8301,7 @@ struct PendingLabelWrite {
+ };
+ static std::mutex                          g_plw_mutex;
+ static std::vector<PendingLabelWrite>      g_plw;
++static std::condition_variable             g_plw_cv; // exp 0438 (b438, PLWCV): real writes registered or early ones gone
+ // ADR 0008 step 2, experiment 0074: at every wait of a graphics buffer that is not satisfied when
+ // reached, the full-state prefix of the later piece is built (bc5::full_state, from the graphics
+ // queue's state before the buffer that piece_check keeps), and splits, prefix sizes and the time
+@@ -9221,14 +9251,16 @@ static void register_label_writes(const uint32_t* ib, uint32_t num_dwords, const
+ 		}
+ 	}
+ 	if (found.empty()) return;
++	if (t_r438_on_slice) for (const auto& w: found) t_r438_real.push_back(w.label); // exp 0438 (b438): what this slice's jobs registered
+ 	std::lock_guard lk(g_plw_mutex);
+-	static uint64_t order = 0;
++	static uint64_t& order = g_plw_order; // exp 0438 (b438): shared with the early registration
+ 	for (auto& w: found) {
+ 		w.ring  = ring;
+ 		w.order = ++order;
+ 	}
+ 	if (g_plw.size() > 8192) g_plw.erase(g_plw.begin(), g_plw.begin() + 4096);
+ 	g_plw.insert(g_plw.end(), found.begin(), found.end());
++	if (r438_cv()) g_plw_cv.notify_all(); // exp 0438 (b438, PLWCV)
+ }
+ 
+ // BC5 experiment 0430 (tag ho430): the fix of the second title's cross-queue GPU hangs (F848, F852, F858), built in on
+@@ -9556,7 +9588,7 @@ inline void at_wait(const uint32_t* p, bool is64, uint64_t label, const char* ki
+ 	{
+ 		std::lock_guard lk(g_plw_mutex);
+ 		for (const auto& w: g_plw)
+-			if (w.label == label && w.ring != ring && std::find(others.begin(), others.end(), std::make_pair(w.ring, w.seq)) == others.end()) others.emplace_back(w.ring, w.seq);
++			if (w.label == label && w.ring != ring && (w.seq & kR438Early) == 0 && std::find(others.begin(), others.end(), std::make_pair(w.ring, w.seq)) == others.end()) others.emplace_back(w.ring, w.seq); // exp 0438 (b438): no early entry
+ 	}
+ 	if (others.empty()) return;
+ 	// The cycle check: a writer job holding a kept GPU wait on a label this buffer writes cannot complete before this buffer runs.
+@@ -9598,6 +9630,112 @@ inline void at_wait(const uint32_t* p, bool is64, uint64_t label, const char* ki
+ #endif
+ }
+ } // namespace ho430
++// exp 0438 (tag b438): the slice bc5-ring has taken: its compute buffers' label writes, early.
++static thread_local uint64_t t_r438_slice = 0;
++static void r438_scan(const uint32_t* ring_part, uint32_t n, std::vector<PendingLabelWrite>& out) {
++	for (uint32_t k = 0; k < n;) {
++		const uint32_t hh = ring_part[k];
++		uint32_t       ll = 1;
++		if ((hh >> 30u) == 3) {
++			const uint32_t c = (hh >> 16u) & 0x3fffu;
++			ll               = c == 0x3fffu ? 1 : c + 2;
++		}
++		if ((hh >> 30u) == 3 && (((hh >> 8u) & 0xffu) == 0x3f || ((hh >> 8u) & 0xffu) == 0x33) && ll >= 4 && k + ll <= n) {
++			const uint64_t ta = (ring_part[k + 1] & ~3u) | (static_cast<uint64_t>(ring_part[k + 2] & 0xffu) << 32u);
++			const uint32_t tn = ring_part[k + 3] & 0xfffffu;
++			const auto*    ib = reinterpret_cast<const uint32_t*>(ta);
++			uint32_t       done = 0;
++			for (const auto& e: g_acb_heads)
++				if (e.ib == ib && e.num_dwords == tn) done = e.done;
++			for (uint32_t q = done; ta != 0 && q < tn;) {
++				const uint32_t* w   = ib + q;
++				const uint32_t  h   = w[0];
++				uint32_t        len = 1;
++				if ((h >> 30u) == 3 || (h >> 30u) == 0) {
++					const uint32_t c = (h >> 16u) & 0x3fffu;
++					len              = c == 0x3fffu ? 1 : c + 2;
++				}
++				if (q + len > tn) break;
++				const uint32_t op = (h >> 8u) & 0xffu;
++				auto addr = [w](int lo, int hi) { return (static_cast<uint64_t>(w[lo]) & ~3ull) | (static_cast<uint64_t>(w[hi] & 0xffffu) << 32u); };
++				if ((h >> 30u) == 3) { // as register_label_writes reads them
++					if (op == 0x49 && len >= 8) {
++						const uint32_t ds = w[2] >> 29u;
++						if (ds == 1) out.push_back({addr(3, 4), w[5], 0, false});
++						if (ds == 2) out.push_back({addr(3, 4), w[5] | (static_cast<uint64_t>(w[6]) << 32u), 0, true});
++					} else if (op == 0x47 && len >= 6) {
++						const uint32_t ds = w[3] >> 29u;
++						if (ds == 1) out.push_back({addr(2, 3), w[4], 0, false});
++						if (ds == 2) out.push_back({addr(2, 3), w[4] | (static_cast<uint64_t>(w[5]) << 32u), 0, true});
++					} else if (op == 0x37 && len >= 5) {
++						const uint32_t dst = (w[1] >> 8u) & 0xfu;
++						if (dst == 1 || dst == 2 || dst == 5) {
++							if (len >= 6) out.push_back({addr(2, 3), w[4] | (static_cast<uint64_t>(w[5]) << 32u), 0, true});
++							else out.push_back({addr(2, 3), w[4], 0, false});
++						}
++					}
++				}
++				q += len;
++			}
++		}
++		k += ll;
++	}
++}
++static void r438_begin(const uint32_t* s1, uint32_t n1, const uint32_t* s2, uint32_t n2) {
++	if (!r438_on()) return;
++	std::vector<PendingLabelWrite> found;
++	r438_scan(s1, n1, found);
++	if (s2 != nullptr) r438_scan(s2, n2, found);
++	t_r438_slice    = g_r438_slices.fetch_add(1) + 1;
++	t_r438_on_slice = true;
++	t_r438_real.clear();
++	if (found.empty()) return;
++	std::lock_guard lk(g_plw_mutex);
++	for (auto& w: found) {
++		w.seq   = kR438Early | t_r438_slice;
++		w.ring  = 0; // a compute ring; with the acb rings on, ring_will_satisfy keeps a writer on another ring
++		w.order = ++g_plw_order;
++	}
++	if (g_plw.size() > 8192) g_plw.erase(g_plw.begin(), g_plw.begin() + 4096);
++	g_plw.insert(g_plw.end(), found.begin(), found.end());
++#ifndef BC5_LEAN
++	g_r438_early += found.size();
++#endif
++}
++// The slice's end: every early write must have been registered for real by the slice's jobs; the early entries go.
++static void r438_end() {
++	if (!r438_on() || !t_r438_on_slice) return;
++	t_r438_on_slice = false;
++	std::vector<PendingLabelWrite> lost;
++	{
++		std::lock_guard lk(g_plw_mutex);
++		for (auto it = g_plw.begin(); it != g_plw.end();) {
++			if (it->seq == (kR438Early | t_r438_slice)) {
++				if (std::find(t_r438_real.begin(), t_r438_real.end(), it->label) == t_r438_real.end()) lost.push_back(*it);
++				it = g_plw.erase(it);
++			} else {
++				++it;
++			}
++		}
++	}
++#ifndef BC5_LEAN
++	for (const auto& w: lost) {
++		const uint64_t k = g_r438_lost++;
++		if (k < 200 || (k & 0xffu) == 0)
++			journal("r438 (exp 0438, b438): BUG: the early-registered write of 0x%" PRIx64 " (value 0x%" PRIx64 ") of slice %" PRIu64 " never reached the ring (%" PRIu64 " so far)\n", w.label, w.value, t_r438_slice, k + 1);
++	}
++	static uint64_t last_line = 0;
++	const uint64_t  now       = SoftCp::now_ns();
++	if (last_line == 0) last_line = now;
++	if (now - last_line > 60'000'000'000ull) {
++		last_line = now;
++		journal("r438 (exp 0438, b438): t %.1f s: slices %" PRIu64 ", early writes %" PRIu64 ", early writes that never reached the ring %" PRIu64 "; game-thread waits for an early writer %" PRIu64 ", %.1f ms in all, longest %.3f ms, bug lines (over 100 ms) %" PRIu64 "\n",
++		        timing_now(), g_r438_slices.load(), g_r438_early.load(), g_r438_lost.load(), g_r438_waits.load(), static_cast<double>(g_r438_wait_ns.load()) / 1e6, static_cast<double>(g_r438_wait_max.load()) / 1e6, g_r438_long.load());
++	}
++#endif
++	if (r438_cv()) g_plw_cv.notify_all(); // PLWCV: the slice's early entries are gone
++	t_r438_real.clear();
++}
+ static void forget_label_writes(uint64_t seq, int ring, bool all) {
+ 	std::lock_guard lk(g_plw_mutex);
+ 	ho430::job_done(seq, ring, all); // exp 0430 (tag ho430)
+@@ -9785,10 +9923,47 @@ static void describe_pending(uint64_t a, char* out, size_t cap) {
+ static bool ring_will_satisfy(const uint32_t* p, bool is64, int ring) {
+ 	const uint32_t function = p[1] & 7u;
+ 	const uint64_t a        = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
+-	std::lock_guard lk(g_plw_mutex);
++	const bool     game     = on_game_thread();
++	std::unique_lock lk(g_plw_mutex);
+ 	const PendingLabelWrite* last = nullptr;
+-	for (const auto& w: g_plw) {
+-		if (w.label == a && (last == nullptr || w.order >= last->order)) last = &w;
++	for (uint64_t r438_t0 = 0, r438_rec = 0;;) { // exp 0438 (b438): an early last write is waited for on the game thread
++		last = nullptr;
++		for (const auto& w: g_plw) {
++			if (w.label == a && (game || (w.seq & kR438Early) == 0) && (last == nullptr || w.order >= last->order)) last = &w;
++		}
++		if (last == nullptr || (last->seq & kR438Early) == 0) {
++#ifndef BC5_LEAN
++			if (r438_t0 != 0) {
++				const uint64_t d = SoftCp::now_ns() - r438_t0;
++				g_r438_waits++;
++				g_r438_wait_ns += d;
++				for (uint64_t m = g_r438_wait_max.load(); d > m && !g_r438_wait_max.compare_exchange_weak(m, d);) {
++				}
++			}
++#endif
++			break;
++		}
++		if (r438_t0 == 0) r438_t0 = SoftCp::now_ns();
++#ifndef BC5_LEAN
++		const uint64_t held = SoftCp::now_ns() - r438_t0;
++		if (held >= 100'000'000ull * (r438_rec + 1) && r438_rec < 10) { // a bug line at 100 ms, 200 ms, ...; the wait goes on
++			r438_rec++;
++			g_r438_long++;
++			lk.unlock();
++			journal("r438 (exp 0438, b438): BUG: a game-thread wait on 0x%" PRIx64 " has waited %.1f ms for an early-registered writer to reach the ring\n", a, static_cast<double>(held) / 1e6);
++			lk.lock();
++			continue;
++		}
++#else
++		(void)r438_rec;
++#endif
++		if (r438_cv()) { // PLWCV: sleep until a job registers its writes or the slice ends (10 ms bound per sleep)
++			g_plw_cv.wait_for(lk, std::chrono::milliseconds(10));
++		} else {
++			lk.unlock();
++			std::this_thread::sleep_for(std::chrono::microseconds(20));
++			lk.lock();
++		}
+ 	}
+ 	if (last == nullptr) return false;
+ 	// exp 0428 (tag w428): with the acb rings on, a wait whose label's last pending write is on another ring stays for the GPU

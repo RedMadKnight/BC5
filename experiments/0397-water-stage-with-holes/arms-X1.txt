@@ -1,0 +1,23 @@
+# BC5 experiment 0397, run X1: exp 0392's arms on a boot with holes. <first shot>|<switches>
+# The catchers run all through and end at shot 78, which writes the records. Each run has its own order. Only X3 writes
+# VGT_HS_OFFCHIP_PARAM, in its last arms, so X1 and X2 read what the boot left there; it latches until a reboot or GPU reset.
+0|zpass=1 zwater=1 stats=1 ureg=1 inputs=1 census=1
+24|zpass=1 zwater=1 stats=1 ureg=1 inputs=1
+27|zpass=1 zwater=1 stats=1 ureg=1 inputs=1 tailflush=1
+30|zpass=1 zwater=1 stats=1 ureg=1 inputs=1
+33|zpass=1 zwater=1 stats=1 ureg=1 inputs=1 tfonce=1
+36|zpass=1 zwater=1 stats=1 ureg=1 inputs=1
+39|zpass=1 zwater=1 stats=1 ureg=1 inputs=1 tailflush=1 tfonce=1
+42|zpass=1 zwater=1 stats=1 ureg=1 inputs=1
+45|zpass=1 zwater=1 stats=1 ureg=1 inputs=1 tfdist=0
+48|zpass=1 zwater=1 stats=1 ureg=1 inputs=1
+51|zpass=1 zwater=1 stats=1 ureg=1 inputs=1 tfdist=3
+54|zpass=1 zwater=1 stats=1 ureg=1 inputs=1
+57|zpass=1 zwater=1 stats=1 ureg=1 inputs=1 gepc=1
+60|zpass=1 zwater=1 stats=1 ureg=1 inputs=1
+63|zpass=1 zwater=1 stats=1 ureg=1 inputs=1 tailflush=1 tfonce=1 tfdist=0 gepc=1
+66|zpass=1 zwater=1 stats=1 ureg=1 inputs=1
+69|zpass=1 zwater=1 stats=1 ureg=1 inputs=1
+72|zpass=1 zwater=1 stats=1 ureg=1 inputs=1
+75|zpass=1 zwater=1 stats=1 ureg=1 inputs=1
+78|

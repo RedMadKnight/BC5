@@ -1,0 +1,33 @@
+--- direct.cpp.pre-pw439	2026-11-22 10:48:05.681418894 +0100
++++ direct.cpp	2026-11-22 10:48:05.694697256 +0100
+@@ -1594,8 +1594,30 @@
+         policy::FilterStats st;
+         policy::FilterOptions nested_opt = fopt;
+         nested_opt.stat_sample_va = 0;
++        static const int pw439 = [] { // exp 0439 (tag pw439)
++            const char *e = std::getenv("BC5_0439_PIECE_WAITS");
++            const int v = e != nullptr && (e[0] == '1' || e[0] == '2') && e[1] == 0 ? e[0] - '0' : 0;
++            std::fprintf(stderr, "[bc5] exp 0439 (tag pw439): piece filter options %s\n",
++                         v == 0 ? "the root's (off)" : v == 1 ? "without the root's offset lists" : "without the root's offset lists, memory waits kept");
++            return v;
++        }();
++        if (pw439 >= 1) {
++            nested_opt.drop_offsets.clear();
++            nested_opt.keep_wait_offsets.clear();
++        }
++        if (pw439 >= 2) nested_opt.self_waits_only = false;
+         policy::filter(policy::Policy::builtin(), std::span<const std::uint32_t>(pc.src, pc.n),
+                        std::span<std::uint32_t>(dst + pc.off, pc.n), nested_opt, st);
++        { // exp 0439 (tag pw439): piece waits dropped as unsatisfiable, root-list hits in pieces
++            static std::atomic<std::uint64_t> pw_n{0}, pw_drop{0}, pw_kept{0}, pw_off{0};
++            pw_drop += st.unsatisfiable_wait_drops;
++            pw_kept += st.ring_ordered_waits;
++            pw_off += st.offset_drops;
++            if ((pw_n++ & 0xfffu) == 0)
++                std::fprintf(stderr, "[bc5] exp 0439 (tag pw439): %llu pieces filtered: waits dropped %llu, kept by a root offset %llu, packets dropped by a root offset %llu (mode %d)\n",
++                             static_cast<unsigned long long>(pw_n.load()), static_cast<unsigned long long>(pw_drop.load()),
++                             static_cast<unsigned long long>(pw_kept.load()), static_cast<unsigned long long>(pw_off.load()), pw439);
++        }
+         for (std::size_t i = pc.n; i < pc.padded; ++i) dst[pc.off + i] = policy::kNop;
+         std::vector<std::uint32_t> ex;
+         executed_offsets_of(std::span<const std::uint32_t>(pc.src, pc.n), dst + pc.off, ex);

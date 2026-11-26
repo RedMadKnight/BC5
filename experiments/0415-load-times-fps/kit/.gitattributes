@@ -1,0 +1,2 @@
+# the host has files with CRLF line ends (kernel/semaphore.cpp): a diff must keep its bytes
+*.diff -text

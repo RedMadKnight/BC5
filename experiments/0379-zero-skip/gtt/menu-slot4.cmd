@@ -1,0 +1,12 @@
+wait 85000
+press cross
+wait 1500
+press down
+wait 300
+press down
+wait 300
+press down
+wait 600
+press cross
+wait 1300
+press cross

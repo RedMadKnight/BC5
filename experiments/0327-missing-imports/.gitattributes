@@ -1,0 +1,2 @@
+# exp 0327: the integration diff keeps its bytes (the KytyPlus host sources carry CRLF in places; text=auto would normalise)
+*.diff -text

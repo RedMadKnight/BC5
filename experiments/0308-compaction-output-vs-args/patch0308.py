@@ -1,0 +1,342 @@
+#!/usr/bin/env python3
+# BC5 experiment 0308: what the compaction 0x909974400 writes and where, against the build chain's DISPATCH_INDIRECT
+# arguments (exp 0306: with the compaction on, the leaf builder 0x909936c00's arguments read as floats and the route hangs at
+# ~2 min; with it skipped, 2 x 600 s clean). In src/libs/bc5LleAgc.cpp of the shared tree as integrated on the box (md5
+# 5bccbb80). No packet is added; journal only. Exp 0277's probe fix carried as exp 0300/0302 did.
+#   1. At filter time, for each dispatch of 0x909974400 (BC5_DIRECT_COMPACTION_PGM overrides): its user data 0..7, the header
+#      dwords it reads (the block at ud[4:5]: +0x40, +0x50, +0x80, +0x84, +0x8c, +0x98, +0x9c — exp 0160's llvm-mc disassembly
+#      of the program, read offline: the node table at header[0x8c] from ud[4:5] with header[0x84]+4 records, the counter it
+#      increments by buffer_atomic_add at ud[6:7] + 0x80, the flag words at header[0x40] + ud[6:7] when ud2 == 0, the index
+#      list at header[0x50] + ud[6:7] with header[0x98]/4 records when ud2 == 0; the ud2 != 0 bases are derived from ud3:ud0
+#      and left as "derived" here) -> four output extents, kept (the last 64) for the lookups below. The first 16 and every
+#      4096th are journaled ("compaction (exp 0308)").
+#   2. At filter time, for each DISPATCH_INDIRECT of the chain's consumers 0x909936c00 (leaf builder) and 0x909939900 (refit)
+#      (BC5_DIRECT_CHAIN_PGM overrides): the argument address (the compute form carries it; the GFX form is SET_BASE 1 + offset,
+#      as the filter tracks base1), the three dwords there now, a float test (each dword in 0x3f000000..0x47ffffff or
+#      0xbf000000..0xc7ffffff = looks like a float), and the lookup against the kept compaction extents: "ARGS INSIDE <kind> of
+#      the compaction dispatch before #n, <age> s ago" and "ARGS LOOK LIKE FLOATS AT SUBMIT TIME" are journaled at once (up to
+#      256 loud lines), otherwise one line per 4096 ("chain args (exp 0308)"). Each reading is kept (the last 4096) by address.
+#   3. At the timeout (exp 0272's dispatch block in the probe), for those programs' indirect dispatches: the argument address,
+#      the values now vs at filter time (the kept reading for that address), the float test now, and the extent lookup again
+#      ("timeout probe: chain args (exp 0308)").
+#   Outcomes: floats already at submit time -> the title's own order as we replay it; sane at submit, floats at the GPU's read,
+#   address inside a compaction extent -> the compaction's writes land in the argument block in flight (a missing barrier between
+#   the two on our rings / buffers); sane both times -> the CP read stale arguments (prefetch) or something else writes there.
+# usage: patch0308.py <src root of the shared tree> <out dir>   (writes <out dir>/bc5LleAgc.cpp and <out dir>/patch_0308.diff)
+import difflib, hashlib, os, sys
+
+EDITS = {
+    'src/libs/bc5LleAgc.cpp': [
+        # 1. File scope, before the probe: the kept readings and the helpers.
+        ('''static void timeout_probe(const uint32_t* sub_ib, uint32_t sub_n, const char* kind, uint64_t n, const std::vector<uint32_t>* ran, const std::vector<GeProbeSlot>* gep = nullptr) {
+''', 1, '''// Experiment 0308: the compaction's output extents (from its user data and the title's header it reads, exp 0160's
+// disassembly) and the build chain's indirect-argument readings, kept at filter time for the lookups and for the probe.
+struct CompExt {
+	uint64_t submit = 0, q = 0;
+	int      ring = -1; // the ring the buffer went to (kGfxRing or a compute ring), ADR 0009
+	double   t = 0;
+	uint64_t ud[8] = {};
+	uint32_t hdr[7] = {}; // header[0x40], [0x50], [0x80], [0x84], [0x8c], [0x98], [0x9c]
+	bool     hdr_ok = false;
+	uint64_t node_lo = 0, node_hi = 0, cnt = 0, flag_lo = 0, flag_hi = 0, idx_lo = 0, idx_hi = 0; // 0 = unknown
+};
+struct ArgSnap {
+	uint64_t addr = 0, pgm = 0, submit = 0;
+	int      ring = -1;
+	double   t = 0;
+	uint32_t v[3] = {};
+	bool     covered = false;
+};
+static std::mutex            g_x0308_m;
+static std::deque<CompExt>   g_x0308_comp; // the last 64 compaction dispatches
+static std::deque<ArgSnap>   g_x0308_args; // the last 4096 argument readings
+static double x0308_now() {
+	timespec ts {};
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return static_cast<double>(ts.tv_sec) + static_cast<double>(ts.tv_nsec) * 1e-9;
+}
+static uint64_t x0308_env_pgm(const char* name, uint64_t dflt) {
+	const char* e = std::getenv(name);
+	return e != nullptr && *e != 0 ? std::strtoull(e, nullptr, 16) : dflt;
+}
+static bool x0308_floaty(uint32_t d) { // a plausible float of magnitude 2^-1 .. 2^16 (a group count never is)
+	const uint32_t e = (d >> 23u) & 0xffu;
+	return e >= 0x7eu && e <= 0x8fu;
+}
+// Run 2: a kept compaction dispatch whose header was not yet written at filter time gets its extents from the header as
+// it reads now (the probe calls this at the timeout; the same derivation as at filter time).
+static void x0308_refresh(const std::vector<bc5::direct::Mapping>& maps) {
+	std::lock_guard<std::mutex> lk(g_x0308_m);
+	for (auto& e: g_x0308_comp) {
+		if (e.hdr_ok) continue;
+		const uint64_t hdr = e.ud[4] | ((e.ud[5] & 0xffffu) << 32u);
+		const uint64_t u61 = e.ud[6] | ((e.ud[1] & 0xffffu) << 32u);
+		const uint64_t u30 = e.ud[3] | ((e.ud[0] & 0xffffu) << 32u);
+		if (hdr == 0 || !covered_sorted(maps, hdr, 0xa0)) continue;
+		const auto* h = reinterpret_cast<const volatile uint32_t*>(hdr);
+		e.hdr[0] = h[0x10]; e.hdr[1] = h[0x14]; e.hdr[2] = h[0x20]; e.hdr[3] = h[0x21]; e.hdr[4] = h[0x23]; e.hdr[5] = h[0x26]; e.hdr[6] = h[0x27];
+		if (!(e.hdr[3] != 0 && e.hdr[3] < 0x1000000u && e.hdr[4] < 0x10000000u)) continue;
+		e.hdr_ok  = true;
+		e.node_lo = hdr + e.hdr[4];
+		e.node_hi = e.node_lo + (static_cast<uint64_t>(e.hdr[3]) + 4) * 8 + 128;
+		if (e.ud[2] == 0) {
+			e.flag_lo = e.hdr[0] + u61; e.flag_hi = e.flag_lo + 0x1000;
+			e.idx_lo  = e.hdr[1] + u61; e.idx_hi = e.idx_lo + (e.hdr[5] < 0x1000000u ? e.hdr[5] : 0u);
+		} else {
+			const uint64_t b = u30 + static_cast<uint64_t>(e.hdr[2]) * 16 + static_cast<uint64_t>(e.hdr[6]) * 32;
+			e.flag_lo = b + 0x80; e.flag_hi = e.flag_lo + 0x1000;
+			e.idx_lo  = b + 0x90; e.idx_hi = e.idx_lo + (e.hdr[5] < 0x1000000u ? e.hdr[5] : 0u) + static_cast<uint64_t>(e.hdr[3]) * 4;
+		}
+		journal("timeout probe: compaction (exp 0308): the header of the compaction dispatch before #%" PRIu64 " read now: [0x40] %08x [0x50] %08x [0x80] %08x [0x84] %08x [0x8c] %08x [0x98] %08x [0x9c] %08x -> node table [0x%" PRIx64 ", 0x%" PRIx64 ") counter 0x%" PRIx64 " flags [0x%" PRIx64 ", +0x1000) index list [0x%" PRIx64 ", 0x%" PRIx64 ")\\n",
+		        e.submit, e.hdr[0], e.hdr[1], e.hdr[2], e.hdr[3], e.hdr[4], e.hdr[5], e.hdr[6], e.node_lo, e.node_hi, e.cnt, e.flag_lo, e.idx_lo, e.idx_hi);
+	}
+}
+// "node", "counter", "flags" or "index list" when a lies in one of the kept extents of the compaction dispatch *out, else nullptr.
+static const char* x0308_inside(uint64_t a, CompExt* out) {
+	std::lock_guard<std::mutex> lk(g_x0308_m);
+	for (auto it = g_x0308_comp.rbegin(); it != g_x0308_comp.rend(); ++it) {
+		const char* k = nullptr;
+		if (it->node_lo != 0 && a >= it->node_lo && a < it->node_hi) k = "node table";
+		else if (it->cnt != 0 && a + 12 > it->cnt && a < it->cnt + 4) k = "counter";
+		else if (it->flag_lo != 0 && a >= it->flag_lo && a < it->flag_hi) k = "flags";
+		else if (it->idx_lo != 0 && a >= it->idx_lo && a < it->idx_hi) k = "index list";
+		if (k != nullptr) { *out = *it; return k; }
+	}
+	return nullptr;
+}
+static void timeout_probe(const uint32_t* sub_ib, uint32_t sub_n, const char* kind, uint64_t n, const std::vector<uint32_t>* ran, const std::vector<GeProbeSlot>* gep = nullptr) {
+'''),
+        # 2. Exp 0277's probe fix: the declaration beside the rebuild's state.
+        ('''	std::vector<uint32_t> mec_positions;         // offsets of its compute-form DISPATCH_INDIRECT
+''', 1, '''	std::vector<uint32_t> mec_positions;         // offsets of its compute-form DISPATCH_INDIRECT
+	std::vector<uint32_t> probe_old_to_new;       // experiment 0277's probe fix, carried by 0308: the timeout probe reads the rebuilt IB, so its executed offsets go forward again
+'''),
+        # 3. Filter time: the compaction's extents and the chain's argument readings.
+        ('''			if (type == 3 && (op == 0x2c || op == 0x38) && len >= 10 && ib[q + 5] > 65536u) { // experiment 0054
+''', 1, '''			// Experiment 0308: the compaction's output extents and the build chain's indirect arguments, at filter time.
+			{
+				static const uint64_t comp_pgm = x0308_env_pgm("BC5_DIRECT_COMPACTION_PGM", 0x909974400ull);
+				static const uint64_t leaf_pgm = x0308_env_pgm("BC5_DIRECT_CHAIN_PGM", 0x909936c00ull);
+				static const uint64_t refit_pgm = x0308_env_pgm("BC5_DIRECT_CHAIN_PGM2", 0x909939900ull);
+				if (type == 3 && (op == 0x15 || op == 0x16) && pgm == comp_pgm) {
+					CompExt e;
+					e.submit = g_submits.load();
+					e.q      = q;
+					e.ring   = qring;
+					e.t      = x0308_now();
+					for (int k = 0; k < 8; k++) e.ud[k] = ud[k];
+					// Run 2 (the register pairs as the program uses them): s[4:5] = ud4 | ud5<<32 the header; the program moves s1
+					// into s7 before s[6:7] is used, so that base is ud6 | ud1<<32; s[3]:s[0] (s_add_u32 s12, s3, …; s_addc_u32 s13, s0, 0)
+					// is ud3 | ud0<<32. The header's dwords may not be written yet when the host sees the dispatch (run 1: zeros):
+					// then the extents that need them stay 0 (unknown) and the probe re-reads the header at the timeout.
+					const uint64_t hdr = ud[4] | (static_cast<uint64_t>(ud[5] & 0xffffu) << 32u);
+					const uint64_t u61 = ud[6] | (static_cast<uint64_t>(ud[1] & 0xffffu) << 32u);
+					const uint64_t u30 = ud[3] | (static_cast<uint64_t>(ud[0] & 0xffffu) << 32u);
+					if (hdr != 0 && covered_sorted(*maps_p, hdr, 0xa0)) {
+						const auto* h = reinterpret_cast<const volatile uint32_t*>(hdr);
+						e.hdr[0] = h[0x10]; e.hdr[1] = h[0x14]; e.hdr[2] = h[0x20]; e.hdr[3] = h[0x21]; e.hdr[4] = h[0x23]; e.hdr[5] = h[0x26]; e.hdr[6] = h[0x27];
+						e.hdr_ok = e.hdr[3] != 0 && e.hdr[3] < 0x1000000u && e.hdr[4] < 0x10000000u; // written and plausible (run 1 saw 0 and 0xffc00000)
+						if (e.hdr_ok) {
+							e.node_lo = hdr + e.hdr[4];                                      // s[24:27]: base s[4:5] + header[0x8c], stride 8 (dword 1 bit 19), header[0x84] + 4 records, stores up to +112
+							e.node_hi = e.node_lo + (static_cast<uint64_t>(e.hdr[3]) + 4) * 8 + 128;
+							if (ud[2] == 0) {
+								e.flag_lo = e.hdr[0] + u61;                                  // s[12:15]: header[0x40] + s[6:7] (ud2 == 0): buffer_atomic_or, extent unknown — 4 KiB taken
+								e.flag_hi = e.flag_lo + 0x1000;
+								e.idx_lo  = e.hdr[1] + u61;                                  // s[8:11]: header[0x50] + s[6:7] (ud2 == 0), header[0x98] / 4 records of 4 bytes
+								e.idx_hi  = e.idx_lo + (e.hdr[5] < 0x1000000u ? e.hdr[5] : 0u);
+							} else {
+								const uint64_t b = u30 + static_cast<uint64_t>(e.hdr[2]) * 16 + static_cast<uint64_t>(e.hdr[6]) * 32; // s3:s0 + header[0x80]*16 + header[0x9c]*32
+								e.flag_lo = b + 0x80;
+								e.flag_hi = e.flag_lo + 0x1000;
+								e.idx_lo  = b + 0x90;                                        // + s20*4, s20 = header[0x84]: taken as the block from +0x90
+								e.idx_hi  = e.idx_lo + (e.hdr[5] < 0x1000000u ? e.hdr[5] : 0u) + static_cast<uint64_t>(e.hdr[3]) * 4;
+							}
+						}
+					}
+					if (u61 != 0) e.cnt = u61 + 0x80;                                           // buffer_atomic_add at s[6:7] + 0x80 (s7 = s1): the compacted index counter
+					static std::atomic<uint64_t> n_comp {0};
+					const uint64_t nc = n_comp++;
+					if (nc < 16 || (nc & 0xfffu) == 0) {
+						journal("compaction (exp 0308): %s dispatch op %02x at %u before #%" PRIu64 " (%s buffer): ud0-7 %08x %08x %08x %08x %08x %08x %08x %08x; header 0x%" PRIx64 " %s [0x40] %08x [0x50] %08x [0x80] %08x [0x84] %08x [0x8c] %08x [0x98] %08x [0x9c] %08x; "
+						        "node table [0x%" PRIx64 ", 0x%" PRIx64 ") counter 0x%" PRIx64 " flags [0x%" PRIx64 ", +0x1000) index list [0x%" PRIx64 ", 0x%" PRIx64 ") (%" PRIu64 " so far)\\n",
+						        kind, op, q, e.submit, compute_ib ? "compute" : "graphics", ud[0], ud[1], ud[2], ud[3], ud[4], ud[5], ud[6], ud[7], hdr, e.hdr_ok ? "read" : (hdr != 0 && covered_sorted(*maps_p, hdr, 0xa0) ? "NOT YET WRITTEN" : "NOT MAPPED"), e.hdr[0], e.hdr[1], e.hdr[2], e.hdr[3], e.hdr[4], e.hdr[5], e.hdr[6],
+						        e.node_lo, e.node_hi, e.cnt, e.flag_lo, e.idx_lo, e.idx_hi, nc + 1);
+					}
+					std::lock_guard<std::mutex> lk(g_x0308_m);
+					g_x0308_comp.push_back(e);
+					if (g_x0308_comp.size() > 64) g_x0308_comp.pop_front();
+				}
+				// Run 2, the CPU-readback lead (the supervisor): if the title reads the compaction's counter back on the CPU and lays
+				// the next chain out from it, it waits on a label the compaction's buffer writes after the dispatch. The first
+				// label writes (RELEASE_MEM 0x49 to memory, WRITE_DATA 0x37 to memory) after a compaction dispatch in the same
+				// buffer: their address, value, and whether the address is mapped (an unmapped one the backend drops, policy.cpp
+				// memory_operands) — journaled for the first 16 compaction dispatches and every 4096th.
+				{
+					static thread_local uint64_t after_comp = 0; // the submit number of the last compaction dispatch seen in this buffer
+					static thread_local uint32_t after_n = 0;
+					static std::atomic<uint64_t> n_lab {0};
+					if (type == 3 && (op == 0x15 || op == 0x16) && pgm == comp_pgm) { after_comp = g_submits.load() + 1; after_n = 0; }
+					else if (after_comp != 0 && after_comp == g_submits.load() + 1 && type == 3 && (op == 0x49 || op == 0x37) && len >= 5 && after_n < 4) {
+						uint64_t la = 0; uint32_t lv = 0; bool mem = false;
+						if (op == 0x49 && len >= 6) { la = ib[q + 3] | (static_cast<uint64_t>(ib[q + 4] & 0xffffu) << 32u); lv = ib[q + 5]; mem = ((ib[q + 2] >> 29u) & 7u) != 0; }
+						if (op == 0x37) { const uint32_t ds = (ib[q + 1] >> 8u) & 0xfu; mem = ds == 1 || ds == 2 || ds == 5; la = ib[q + 2] | (static_cast<uint64_t>(ib[q + 3] & 0xffffu) << 32u); lv = ib[q + 4]; }
+						if (mem) {
+							after_n++;
+							const uint64_t nl = n_lab++;
+							if (nl < 64 || (nl & 0xfffu) == 0)
+								journal("compaction label (exp 0308): %s op %02x at %u before #%" PRIu64 ": label 0x%" PRIx64 " value 0x%08x after the compaction dispatch in this buffer (%s) (%" PRIu64 " so far)\\n", kind, op, q, g_submits.load(), la, lv,
+								        covered_sorted(*maps_p, la, 8) ? "mapped" : "NOT MAPPED: the backend drops it", nl + 1);
+						}
+					}
+				}
+				// Run 2: the count pass 0x909939400 (direct) writes the leaf builder's arguments on the GPU — its user data name
+				// the block it writes (exp 0306's acb dump: ud6 = 2 x grid, so the block base is in another pair); journaled
+				// (the first 16 and every 4096th) to match against the leaf builder's argument addresses offline.
+				static const uint64_t count_pgm = x0308_env_pgm("BC5_DIRECT_COUNT_PGM", 0x909939400ull);
+				if (type == 3 && (op == 0x15 || op == 0x16) && pgm == count_pgm) {
+					static std::atomic<uint64_t> n_cnt {0};
+					const uint64_t ncnt = n_cnt++;
+					if (ncnt < 16 || (ncnt & 0xfffu) == 0) {
+						journal("count pass (exp 0308): %s dispatch op %02x at %u before #%" PRIu64 " (%s buffer): grid %u x %u x %u, ud0-15 %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x (%" PRIu64 " so far)\\n", kind, op, q, g_submits.load(),
+						        compute_ib ? "compute" : "graphics", op == 0x15 && len >= 4 ? ib[q + 1] : 0u, op == 0x15 && len >= 4 ? ib[q + 2] : 0u, op == 0x15 && len >= 4 ? ib[q + 3] : 0u,
+						        ud[0], ud[1], ud[2], ud[3], ud[4], ud[5], ud[6], ud[7], ud[8], ud[9], ud[10], ud[11], ud[12], ud[13], ud[14], ud[15], ncnt + 1);
+					}
+				}
+				if (type == 3 && op == 0x16 && len >= 2 && (pgm == leaf_pgm || pgm == refit_pgm)) {
+					const bool     mecf = compute_ib && len == 4;
+					ArgSnap        s;
+					s.addr   = mecf ? ((ib[q + 1] & ~3ull) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u)) : base1 + ib[q + 1];
+					s.pgm    = pgm;
+					s.submit = g_submits.load();
+					s.ring   = qring;
+					s.t      = x0308_now();
+					s.covered = (mecf || base1 != 0) && covered_sorted(*maps_p, s.addr, 12);
+					if (s.covered) {
+						const auto* t = reinterpret_cast<const volatile uint32_t*>(s.addr);
+						s.v[0] = t[0], s.v[1] = t[1], s.v[2] = t[2];
+					}
+					const bool  floats = s.covered && (x0308_floaty(s.v[0]) || x0308_floaty(s.v[1]) || x0308_floaty(s.v[2]));
+					CompExt     hit;
+					const char* inside = x0308_inside(s.addr, &hit);
+					static std::atomic<uint64_t> n_args {0}, n_loud {0};
+					const uint64_t na   = n_args++;
+					const bool     loud = floats || inside != nullptr || !s.covered;
+					if ((loud && n_loud++ < 256) || (na & 0xfffu) == 0) {
+						char where[200] = "";
+						if (inside != nullptr) std::snprintf(where, sizeof(where), " ARGS INSIDE the %s of the compaction dispatch before #%" PRIu64 " (at %" PRIu64 "), %.3f s ago", inside, hit.submit, hit.q, s.t - hit.t);
+						journal("chain args (exp 0308): %s dispatch op 16 at %u of 0x%" PRIx64 " before #%" PRIu64 " (%s buffer): arguments at 0x%" PRIx64 " (%s form) = %08x %08x %08x%s%s%s (%" PRIu64 " so far)\\n", kind, q, pgm, s.submit, compute_ib ? "compute" : "graphics", s.addr, mecf ? "compute" : "GFX",
+						        s.v[0], s.v[1], s.v[2], s.covered ? "" : " NOT MAPPED", floats ? " ARGS LOOK LIKE FLOATS AT SUBMIT TIME" : "", where, na + 1);
+					}
+					std::lock_guard<std::mutex> lk(g_x0308_m);
+					g_x0308_args.push_back(s);
+					if (g_x0308_args.size() > 4096) g_x0308_args.pop_front();
+				}
+			}
+			if (type == 3 && (op == 0x2c || op == 0x38) && len >= 10 && ib[q + 5] > 65536u) { // experiment 0054
+'''),
+        # 4-7. Exp 0277's probe fix.
+        ('''			sub_ib = mec_ib.data();
+			sub_n  = static_cast<uint32_t>(mec_ib.size());
+''', 1, '''			sub_ib = mec_ib.data();
+			sub_n  = static_cast<uint32_t>(mec_ib.size());
+			probe_old_to_new.swap(old_to_new); // experiment 0277's probe fix (exp 0308)
+'''),
+        ('''	auto r = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, with_gds, qring);
+	mec_back(r.executed_offsets);
+''', 1, '''	auto probe_ran = [&probe_old_to_new](const std::vector<uint32_t>& offsets) { // experiment 0277's probe fix (exp 0308)
+		if (probe_old_to_new.empty()) return offsets;
+		std::vector<uint32_t> fwd;
+		fwd.reserve(offsets.size());
+		for (const uint32_t o: offsets) {
+			if (o < probe_old_to_new.size() && probe_old_to_new[o] != ~0u) fwd.push_back(probe_old_to_new[o]);
+		}
+		return fwd;
+	};
+	auto r = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, with_gds, qring);
+	mec_back(r.executed_offsets);
+'''),
+        ('''	if (r.timed_out) timeout_probe(sub_ib, sub_n, kind, g_submits.load(), &r.executed_offsets); // experiment 0160
+''', 1, '''	if (r.timed_out) { // experiment 0160; experiment 0277's probe fix (exp 0308): the executed offsets in the rebuilt IB
+		const std::vector<uint32_t> ran_new = probe_ran(r.executed_offsets);
+		timeout_probe(sub_ib, sub_n, kind, g_submits.load(), &ran_new);
+	}
+'''),
+        ('''it.job.ran_copy = r.executed_offsets; } // experiment 0160
+''', 1, '''it.job.ran_copy = probe_ran(r.executed_offsets); } // experiment 0160 (0277's probe fix, exp 0308: in the rebuilt IB)
+'''),
+        # 8. The probe: the chain's indirect arguments then vs now, and the extent lookup again.
+        ('''					n_disp++;
+				}
+				if (op == 0x11 || op == 0x26 || op == 0x13 || op == 0x2a''', 1, '''					// Experiment 0308: for the chain's indirect dispatches, the arguments now against the filter-time reading of the
+					// same address, and the compaction-extent lookup again.
+					if (op == 0x16 && len >= 3) {
+						static const uint64_t leaf_pgm = x0308_env_pgm("BC5_DIRECT_CHAIN_PGM", 0x909936c00ull);
+						static const uint64_t refit_pgm = x0308_env_pgm("BC5_DIRECT_CHAIN_PGM2", 0x909939900ull);
+						static std::atomic<uint32_t> n_x {0};
+						const uint64_t pg = (static_cast<uint64_t>(pl) | (static_cast<uint64_t>(ph & 0xffu) << 32u)) << 8u;
+						if (pl != 0xffffffffu && (pg == leaf_pgm || pg == refit_pgm) && n_x++ < 512) {
+							if (n_x == 1) x0308_refresh(*pm); // run 2: the headers not yet written at filter time, as they read now
+							const uint64_t a  = len >= 4 ? (sub_ib[q + 1] & ~3u) | (static_cast<uint64_t>(sub_ib[q + 2] & 0xffffu) << 32u) : b1 + sub_ib[q + 1];
+							uint32_t       now[3] = {0, 0, 0};
+							const bool     cov    = (len >= 4 || b1 != 0) && covered_sorted(*pm, a, 12);
+							if (cov) { const auto* t = reinterpret_cast<const volatile uint32_t*>(a); now[0] = t[0], now[1] = t[1], now[2] = t[2]; }
+							ArgSnap snap;
+							bool    have = false;
+							{
+								std::lock_guard<std::mutex> lk(g_x0308_m);
+								for (auto it = g_x0308_args.rbegin(); it != g_x0308_args.rend(); ++it) {
+									if (it->addr == a && it->pgm == pg) { snap = *it; have = true; break; }
+								}
+							}
+							CompExt     hit;
+							const char* inside = x0308_inside(a, &hit);
+							const bool  floats_now  = cov && (x0308_floaty(now[0]) || x0308_floaty(now[1]) || x0308_floaty(now[2]));
+							const bool  floats_then = have && snap.covered && (x0308_floaty(snap.v[0]) || x0308_floaty(snap.v[1]) || x0308_floaty(snap.v[2]));
+							char        where[200] = "";
+							if (inside != nullptr) std::snprintf(where, sizeof(where), "; INSIDE the %s of the compaction dispatch before #%" PRIu64 " (%.3f s before now)", inside, hit.submit, x0308_now() - hit.t);
+							if (have) {
+								const bool same = snap.covered && cov && snap.v[0] == now[0] && snap.v[1] == now[1] && snap.v[2] == now[2];
+								journal("timeout probe: chain args (exp 0308): dispatch at %u of 0x%" PRIx64 ": arguments at 0x%" PRIx64 " now %08x %08x %08x%s; at filter time (before #%" PRIu64 ", %.3f s ago) %08x %08x %08x%s -> %s%s\\n", q, pg, a,
+								        now[0], now[1], now[2], floats_now ? " (FLOATS)" : "", snap.submit, x0308_now() - snap.t, snap.v[0], snap.v[1], snap.v[2], floats_then ? " (FLOATS)" : "",
+								        same ? "UNCHANGED since filter time" : "CHANGED since filter time", where);
+							} else {
+								journal("timeout probe: chain args (exp 0308): dispatch at %u of 0x%" PRIx64 ": arguments at 0x%" PRIx64 " now %08x %08x %08x%s; NO FILTER-TIME READING of this address%s\\n", q, pg, a, now[0], now[1], now[2],
+								        floats_now ? " (FLOATS)" : "", where);
+							}
+						}
+					}
+					n_disp++;
+				}
+				if (op == 0x11 || op == 0x26 || op == 0x13 || op == 0x2a'''),
+    ],
+}
+
+
+def main():
+    if len(sys.argv) != 3:
+        print('usage: patch0308.py <src root> <out dir>')
+        sys.exit(2)
+    root, out = sys.argv[1], sys.argv[2]
+    os.makedirs(out, exist_ok=True)
+    diff = []
+    for rel, edits in EDITS.items():
+        path = os.path.join(root, rel)
+        src = open(path, encoding='utf-8').read()
+        print(f'{rel}: md5 {hashlib.md5(src.encode("utf-8")).hexdigest()[:8]} in')
+        dst = src
+        for k, (old, n, new) in enumerate(edits, 1):
+            c = dst.count(old)
+            if c != n:
+                print(f'{rel}: edit {k}: anchor found {c} times, expected {n}:\n{old}')
+                sys.exit(1)
+            dst = dst.replace(old, new)
+        target = os.path.join(out, os.path.basename(rel))
+        open(target, 'w', encoding='utf-8', newline='\n').write(dst)
+        diff += difflib.unified_diff(src.splitlines(True), dst.splitlines(True), 'a/' + rel, 'b/' + rel)
+        print(f'{rel}: {len(edits)} edits -> {target}, md5 {hashlib.md5(dst.encode("utf-8")).hexdigest()[:8]} out')
+    open(os.path.join(out, 'patch_0308.diff'), 'w', encoding='utf-8', newline='\n').write(''.join(diff))
+    print(f'patch_0308.diff: {sum(1 for l in diff if l.startswith("+") and not l.startswith("+++"))} added lines')
+
+
+if __name__ == '__main__':
+    main()

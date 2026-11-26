@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# BC5 exp 0422: puts the shared tree's libSaveData.cpp and both shared binaries back as they were before int0422.sh
+# (patch e3fd8b55, exp 0421's state), and checks them by md5. No emulator may run. One step further back is exp 0421's
+# own undo (bash ~/bc5-work/exp0421/undo0421.sh, to ba617454), run after this one, never before.
+# usage (on the box): bash ~/bc5-work/exp0422/undo0422.sh
+set -u
+export LC_ALL=C
+W=$HOME/bc5-work; K=$HOME/src/KytyPlus; X=$W/exp0422/swap
+NB=$W/kytyplus-build/src/kyty_emulator; LB=$W/kytyplus-build-lean/src/kyty_emulator; UNIT=$K/src/libs/libSaveData.cpp
+m8() { md5sum < "$1" | cut -c1-8; }
+pgrep '^kyty_emulator' > /dev/null && { echo "undo0422: an emulator runs: NOT DONE"; exit 1; }
+[ -s "$X/pins.before-0422" ] || { echo "undo0422: no copies in $X"; exit 1; }
+. "$X/pins.before-0422"
+cp "$X/libSaveData.cpp.before-0422" "$UNIT" && touch "$UNIT" && cp -p "$X/kyty_emulator.normal.before-0422" "$NB" && cp -p "$X/kyty_emulator.lean.before-0422" "$LB" || { echo "undo0422: a copy failed"; exit 1; }
+d=$(git -C "$K" diff --no-color f266548 | md5sum | cut -c1-8)
+ok=1
+[ "$d" = "$PIN_OLD" ] || { echo "undo0422: the tree's diff is $d, not $PIN_OLD"; ok=0; }
+[ "$(m8 "$NB")" = "$NORMAL" ] || { echo "undo0422: normal is $(m8 "$NB"), not $NORMAL"; ok=0; }
+[ "$(m8 "$LB")" = "$LEAN" ] || { echo "undo0422: lean is $(m8 "$LB"), not $LEAN"; ok=0; }
+[ $ok = 1 ] && echo "undo0422: back: patch $PIN_OLD, normal $NORMAL, lean $LEAN (the unit is touched, so the next ninja recompiles it from the old text); further back: bash $W/exp0421/undo0421.sh"
+[ $ok = 1 ]

@@ -1,0 +1,290 @@
+diff --git a/src/bc5/load_stat.hpp b/src/bc5/load_stat.hpp
+index f98cde9..c2c0c13 100644
+--- a/src/bc5/load_stat.hpp
++++ b/src/bc5/load_stat.hpp
+@@ -81,6 +81,10 @@ enum Cause : unsigned {
+ 	kDsMerge,        // direct_sync_one: merges and the lazy release
+ 	kDsDrain,        // direct_sync_one: the GPU drained before mappings change
+ 	kDsMaps,         // direct_sync_one: the mappings (want, drop, add)
++	// tag ls415d
++	kFastDiff,       // a "verify" mode of bc5/sync_fast.hpp found the fast form differing from the old one (the old one's result is used)
++	kLearnedApply,   // learned_apply past its "same layout" return: n, time
++	kLearnedChanged, // ... windows that mapped something: n, items = bytes
+ 	kCount
+ };
+ 
+@@ -90,7 +94,7 @@ inline constexpr const char* kNames[kCount] = {
+     "apr_busy", "amm_cmd",    "mem_lock_wait",    "commit_zero", "mutex_lock", "mutex_contended", "mutex_spin_won", "cond_signal",
+     "cond_wait", "sema_signal", "sema_wait",      "file_open", "file_stat",   "file_read",   "http_send",
+     "apr_fallback", "hold_probe", "hold_hints",   "hold_pre",  "dev_call",    "dev_prepare", "dev_list",        "dev_cs",
+-    "ds_views", "ds_scan",    "ds_merge",         "ds_drain",  "ds_maps"};
++    "ds_views", "ds_scan",    "ds_merge",         "ds_drain",  "ds_maps",     "fast_diff",   "learned_apply",   "learned_changed"};
+ 
+ static_assert(kNames[kCount - 1] != nullptr, "a name per cause");
+ 
+diff --git a/src/bc5/sync_fast.hpp b/src/bc5/sync_fast.hpp
+new file mode 100644
+index 0000000..d9e1de1
+--- /dev/null
++++ b/src/bc5/sync_fast.hpp
+@@ -0,0 +1,130 @@
++// SPDX-License-Identifier: GPL-2.0-only
++// Experiment 0415 (tag ls415d): three pieces of the mapping maintenance that runs under the device mutex, each with
++// its old form and a faster form that gives the same result, as pure functions (CPU test:
++// experiments/0415-load-times-fps/kit/test0415sync.cpp, old against new on random and adversarial inputs).
++// Each has a switch, default off; "verify" runs both forms and counts differences.
++//   KYTY_BC5_WINDOW_FAST   a window's uncovered pieces: mappings that do not touch the window are passed over without
++//                          rebuilding the piece list (the old loop rebuilt it once per mapping: 21,300 mappings x 81
++//                          windows per application, 4.8 s a run).
++//                          A STOPGAP: the learned windows themselves are being replaced by a rule (exp 0412).
++//   KYTY_BC5_VMA_FAST      "is [a, b) inside one VMA of this kind": a binary search in the VMA list when that list is
++//                          sorted and its entries do not overlap (checked each time; else the old walk).
++//   KYTY_BC5_NAMES_FAST    the lazy / eager classification of a range's name, remembered per name.
++// None changes what is mapped: same pieces, same answer, same class. What each could leave stale if it were wrong is
++// stated at its use in bc5LleAgc.cpp.
++#pragma once
++
++#include <algorithm>
++#include <cstdint>
++#include <cstdlib>
++#include <cstring>
++#include <string>
++#include <unordered_map>
++#include <utility>
++#include <vector>
++
++namespace bc5::sync_fast {
++
++using Piece = std::pair<uint64_t, uint64_t>; // [first, second)
++
++// 0 off, 1 on, 2 verify (both forms, differences counted). Unset, empty and "0" are off.
++inline int mode_of(const char* e) {
++	if (e == nullptr || e[0] == 0 || (e[0] == '0' && e[1] == 0)) return 0;
++	return std::strcmp(e, "verify") == 0 ? 2 : 1;
++}
++
++// ---- a window's pieces minus the mappings -----------------------------------------------------------------------
++// M needs .va and .size. The old form, as map_window had it: every mapping rebuilds the list.
++template <class M>
++inline void subtract_old(std::vector<Piece>& pieces, const std::vector<M>& have) {
++	for (const auto& m: have) {
++		std::vector<Piece> next;
++		for (const auto& [pa, pb]: pieces) {
++			if (m.va + m.size <= pa || m.va >= pb) {
++				next.emplace_back(pa, pb);
++				continue;
++			}
++			if (m.va > pa) next.emplace_back(pa, m.va);
++			if (m.va + m.size < pb) next.emplace_back(m.va + m.size, pb);
++		}
++		pieces.swap(next);
++	}
++}
++
++// The new form. Every piece lies inside [lo, hi) (the caller clips the window to the VMAs first), so a mapping that
++// does not touch [lo, hi) touches no piece and the old loop copied the list unchanged for it: it is passed over.
++// No order of `have` is assumed.
++template <class M>
++inline void subtract_fast(std::vector<Piece>& pieces, const std::vector<M>& have, uint64_t lo, uint64_t hi) {
++	std::vector<Piece> next;
++	for (const auto& m: have) {
++		if (m.va + m.size <= lo || m.va >= hi) continue;
++		next.clear();
++		for (const auto& [pa, pb]: pieces) {
++			if (m.va + m.size <= pa || m.va >= pb) {
++				next.emplace_back(pa, pb);
++				continue;
++			}
++			if (m.va > pa) next.emplace_back(pa, m.va);
++			if (m.va + m.size < pb) next.emplace_back(m.va + m.size, pb);
++		}
++		pieces.swap(next);
++	}
++}
++
++// ---- [a, b) inside one VMA of the kind ---------------------------------------------------------------------------
++// V needs .start, .end, .readonly. The old form, as sync_mappings had it.
++template <class V>
++inline bool inside_old(const std::vector<V>& vmas, uint64_t a, uint64_t b, bool readonly) {
++	for (const auto& v: vmas) {
++		if (a >= v.start && b <= v.end && v.readonly == readonly) return true;
++	}
++	return false;
++}
++
++// True when the list is sorted by start and no entry reaches into the next one (what /proc/self/maps gives).
++template <class V>
++inline bool vmas_ordered(const std::vector<V>& vmas) {
++	for (size_t i = 0; i < vmas.size(); i++) {
++		if (vmas[i].end < vmas[i].start) return false;
++		if (i > 0 && vmas[i].start < vmas[i - 1].end) return false;
++	}
++	return true;
++}
++
++// The new form, for a list vmas_ordered() accepted. The entries that can hold `a` are the ones with start <= a; in an
++// ordered list their ends do not pass the next start, so only the last of them (and, for an empty [a, a) on a
++// boundary, the ones that end exactly at a before it) can satisfy a >= start && b <= end. The walk goes back from the
++// last entry with start <= a while an entry still ends at or after a.
++template <class V>
++inline bool inside_fast(const std::vector<V>& vmas, uint64_t a, uint64_t b, bool readonly) {
++	if (b < a) return inside_old(vmas, a, b, readonly); // not a range: the argument below needs a <= b
++	auto it = std::upper_bound(vmas.begin(), vmas.end(), a, [](uint64_t x, const V& v) { return x < v.start; });
++	while (it != vmas.begin()) {
++		--it;
++		if (it->end < a) break; // every earlier entry ends at or before this one's start, so before a as well
++		if (b <= it->end && it->readonly == readonly) return true;
++	}
++	return false;
++}
++
++// ---- the class of a range's name ---------------------------------------------------------------------------------
++// Remembers what `classify` (the old function) said for a name. One instance per classification, used under the
++// caller's lock (direct_views builds under its own mutex). A null name is not remembered: the old function is asked.
++class NameMemo {
++public:
++	template <class F>
++	bool get(const char* name, F&& classify) {
++		if (name == nullptr) return classify(name);
++		auto it = m_seen.find(name);
++		if (it != m_seen.end()) return it->second;
++		const bool v = classify(name);
++		if (m_seen.size() < 4096) m_seen.emplace(name, v);
++		return v;
++	}
++
++private:
++	std::unordered_map<std::string, bool> m_seen;
++};
++
++} // namespace bc5::sync_fast
+diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
+index 253e208..302d6aa 100644
+--- a/src/libs/bc5LleAgc.cpp
++++ b/src/libs/bc5LleAgc.cpp
+@@ -35,6 +35,7 @@
+ #include "bc5/direct.hpp"
+ #include "bc5/full_state.hpp"
+ #include "bc5/load_stat.hpp" // experiment 0415 (ls415)
++#include "bc5/sync_fast.hpp" // experiment 0415 (ls415d)
+ #include <sys/resource.h> // experiment 0379 (exp 0401 e7, mkzsk0401.py): setpriority, for the zero scan and the canary
+ #include <sys/syscall.h>  // experiment 0379: SYS_gettid
+ // ---- experiment 0379's backend/include/bc5/zero_skip.hpp (782ca0e9) lines 13-228, inlined by exp 0401's mkzsk0401.py ----
+@@ -2297,11 +2298,31 @@ static bool direct_eager_name(const char* name) {
+ 	return std::find(names.begin(), names.end(), name) != names.end();
+ }
+ 
++// Experiment 0415 (ls415d), KYTY_BC5_NAMES_FAST (default off; "verify" asks the old function too): the lazy and eager
++// class of a range's name remembered per name. Both lists are read once from the environment, so a name's class never
++// changes. Used only from direct_views_build, which runs under direct_views' mutex. If this were wrong, a heap would
++// be imported eagerly or lazily against its list: memory pinned that should not be, or a GPU fault on a heap that
++// should have been imported whole.
++static bool ls415_name_class(const char* name, bool eager) {
++	static const int               mode = bc5::sync_fast::mode_of(std::getenv("KYTY_BC5_NAMES_FAST"));
++	static bc5::sync_fast::NameMemo memo[2];
++	if (mode == 0) return eager ? direct_eager_name(name) : direct_lazy_name(name);
++	const bool f = memo[eager ? 1 : 0].get(name, eager ? direct_eager_name : direct_lazy_name);
++	if (mode == 2) {
++		const bool o = eager ? direct_eager_name(name) : direct_lazy_name(name);
++		if (o != f) {
++			bc5::load_stat::count(bc5::load_stat::kFastDiff);
++			return o;
++		}
++	}
++	return f;
++}
++
+ static std::vector<DView> direct_views_build(const DState& S) {
+ 	std::vector<DView> v;
+ 	if (S.kind == 0) {
+ 		Libs::LibKernel::Memory::Bc5ForEachMappedRange(nullptr, &v, [](uint64_t start, uint64_t size, uint64_t offset, int type, int, const char* name, void* p) {
+-			if (type == 0 && size != 0) static_cast<std::vector<DView>*>(p)->push_back({start, size, offset, name != nullptr ? name : "", direct_lazy_name(name), direct_eager_name(name)});
++			if (type == 0 && size != 0) static_cast<std::vector<DView>*>(p)->push_back({start, size, offset, name != nullptr ? name : "", ls415_name_class(name, false), ls415_name_class(name, true)});
+ 		});
+ 	} else {
+ 		// Private regions: the file offset is the address. Thread stacks (type 3) are lazy:
+@@ -2311,7 +2332,7 @@ static std::vector<DView> direct_views_build(const DState& S) {
+ 			if (size == 0) return;
+ 			std::string n = name != nullptr && *name != 0 ? name : "(unnamed)";
+ 			if (type == 3) n = "(thread stacks)";
+-			static_cast<std::vector<DView>*>(p)->push_back({start, size, start, n, direct_lazy_name(name) || type == 3, direct_eager_name(name)});
++			static_cast<std::vector<DView>*>(p)->push_back({start, size, start, n, ls415_name_class(name, false) || type == 3, ls415_name_class(name, true)});
+ 		});
+ 	}
+ 	return v;
+@@ -3896,11 +3917,23 @@ static void sync_mappings(bool force = false, bool urgent = false) {
+ 		g_layout_gen++;
+ 	}
+ 	g_vmas = vmas;
++	// Experiment 0415 (ls415d), KYTY_BC5_VMA_FAST (default off; "verify" runs both): the walk over every VMA for each
++	// mapping becomes a binary search when the list is sorted and its entries do not overlap (checked here each time;
++	// else the old walk). If this were wrong, a mapping whose VMA is gone would stay on the GPU (stale pages read) or a
++	// valid one would be unmapped (a GPU fault).
++	static const int vma_fast = bc5::sync_fast::mode_of(std::getenv("KYTY_BC5_VMA_FAST"));
++	const bool       vma_ok   = vma_fast != 0 && bc5::sync_fast::vmas_ordered(vmas);
+ 	auto inside_vma = [&](uint64_t a, uint64_t b, bool readonly) {
+-		for (const auto& v: vmas) {
+-			if (a >= v.start && b <= v.end && v.readonly == readonly) return true;
++		if (!vma_ok) return bc5::sync_fast::inside_old(vmas, a, b, readonly);
++		const bool f = bc5::sync_fast::inside_fast(vmas, a, b, readonly);
++		if (vma_fast == 2) {
++			const bool o = bc5::sync_fast::inside_old(vmas, a, b, readonly);
++			if (o != f) {
++				bc5::load_stat::count(bc5::load_stat::kFastDiff);
++				return o;
++			}
+ 		}
+-		return false;
++		return f;
+ 	};
+ 
+ 	// Pass 1: revalidation.
+@@ -4227,14 +4260,25 @@ static void map_window(uint64_t lo, uint64_t hi, std::vector<bc5::direct::Mappin
+ 		if (v.readonly || v.end <= lo || v.start >= hi) continue;
+ 		pieces.emplace_back(v.start > lo ? v.start : lo, v.end < hi ? v.end : hi);
+ 	}
+-	for (const auto& m: have) {
+-		std::vector<std::pair<uint64_t, uint64_t>> next;
+-		for (const auto& [pa, pb]: pieces) {
+-			if (m.va + m.size <= pa || m.va >= pb) { next.emplace_back(pa, pb); continue; }
+-			if (m.va > pa) next.emplace_back(pa, m.va);
+-			if (m.va + m.size < pb) next.emplace_back(m.va + m.size, pb);
++	// Experiment 0415 (ls415d), KYTY_BC5_WINDOW_FAST (default off; "verify" runs both). A STOPGAP for the device
++	// mutex's hold: the learned windows themselves are to be replaced by a rule (the maintainer, 2026-11-12; exp 0412).
++	// The pieces lie inside [lo, hi), so a mapping that does not touch [lo, hi) leaves them as they are; the old loop
++	// rebuilt the piece list once per mapping (21,300 mappings x 81 windows on every layout change: 4.8 s a run).
++	// If this were wrong, a piece already mapped would be mapped again, or a window's piece would stay unmapped (the
++	// GPU fault the window was learned from).
++	static const int window_fast = bc5::sync_fast::mode_of(std::getenv("KYTY_BC5_WINDOW_FAST"));
++	if (window_fast == 0) {
++		bc5::sync_fast::subtract_old(pieces, have);
++	} else if (window_fast == 2) {
++		auto old_pieces = pieces;
++		bc5::sync_fast::subtract_old(old_pieces, have);
++		bc5::sync_fast::subtract_fast(pieces, have, lo, hi);
++		if (pieces != old_pieces) {
++			bc5::load_stat::count(bc5::load_stat::kFastDiff);
++			pieces = old_pieces;
+ 		}
+-		pieces.swap(next);
++	} else {
++		bc5::sync_fast::subtract_fast(pieces, have, lo, hi);
+ 	}
+ 	uint64_t added = 0;
+ 	for (const auto& [pa, pb]: pieces) {
+@@ -4246,6 +4290,7 @@ static void map_window(uint64_t lo, uint64_t hi, std::vector<bc5::direct::Mappin
+ 		}
+ 	}
+ 	if (added != 0) journal("%s 0x%" PRIx64 ": window 0x%" PRIx64 "+0x%" PRIx64 ", mapped +%.1f MiB\n", what, addr, lo, hi - lo, static_cast<double>(added) / 1048576.0);
++	if (added != 0) bc5::load_stat::count(bc5::load_stat::kLearnedChanged, added); // experiment 0415 (ls415d): a window that mapped something
+ }
+ // Experiment 0037: a learned fault window may cover addresses the guest has no range at all in:
+ // one title's GPU reads up to 24 KiB past the end of a 2.7 GiB heap, and a fault is a 14 s freeze
+@@ -5117,6 +5162,7 @@ static void learned_apply() {
+ 	static uint64_t applied_gen = 0;
+ 	if (applied_gen == g_layout_gen) return; // same views, VMAs and learned list as last time
+ 	applied_gen = g_layout_gen;
++	bc5::load_stat::Scope ls_apply(bc5::load_stat::kLearnedApply); // experiment 0415 (ls415d): a full application
+ 	const uint64_t la_t0 = SoftCp::now_ns(), la_b0 = g_views_builds.load(); // experiment 0156
+ 	// Holes the guest has put a range in since: give them back first.
+ 	for (size_t i = 0; i < g_scratch.size();) {

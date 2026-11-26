@@ -1,0 +1,11 @@
+wait 60000
+press cross
+wait 5000
+press down
+wait 1000
+press down
+wait 1000
+press triangle
+wait 4000
+press cross
+wait 1000
