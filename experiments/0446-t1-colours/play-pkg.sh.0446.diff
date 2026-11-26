@@ -1,0 +1,32 @@
+--- a/play-pkg.sh	2026-11-26 02:07:20.122823800 +0100
++++ b/play-pkg.sh	2026-11-26 02:08:14.353631300 +0100
+@@ -49,11 +49,7 @@
+ # only the 2 MiB chunks the CPU has written, plus what a submission names; heaps only the GPU writes need the build to
+ # import them for every title (no list). Until then they stay here, and nowhere else.
+ # Experiment 0042 (F88, F96): the heaps the GPU reads or writes before the CPU touches them, imported whole.
+-export BC5_DIRECT_EAGER_NAMES="${BC5_DIRECT_EAGER_NAMES:+$BC5_DIRECT_EAGER_NAMES,}RenderGpuWcLarge,RenderGpuWcSmall,RenderGpuRwLarge,RenderGpuRwSmall,CommitIABufferAllocator,AMM,RenderAlloc,Physics,Decal Job Scheduler,VisualEffectInstanceHeap,DynamicHeap,DynamicHeap Small,ComponentHeap,ComponentHeap Small,MaterialHeap,DDLHeap,Physics query allocator"
+-# Experiment 0330 (F394): four CPU-only heaps lazy, 242 MiB less pinned (FileSystem is eager anyway since exp 0421).
+-export BC5_DIRECT_LAZY_NAMES="${BC5_DIRECT_LAZY_NAMES:+$BC5_DIRECT_LAZY_NAMES,}Wwise,SoundAlloc,FileSystem,UIStringAlloc"
+-# Experiments 0080-0081, 0171: deferred flips lose this title's menu glyphs; bc5-run.env defers for every title.
+-unset BC5_DIRECT_FLIP_DEFER
++# (exp 0446 proposal) the three words below are applied after the mount, for the second title only.
+ # BC5's own libSceAgc, libSceAgcDriver and libScePsml are the default: no module pack (bc5-run.env's is the first title's).
+ unset SHADPS4_SYSMODULES_PACK_DIR
+ export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/_SaveData-pkg-play
+@@ -107,6 +103,16 @@
+ fi
+ [ -n "${BC5_GAME_DIR:-}" ] || mount_live "$M" || { say "Mounting the package failed: $M/sce_sys/param.json is not readable (see $MLOG; with BC5_LEAN=1 run with BC5_LOGS=1 to keep it)."; exit 1; }
+ # --- end mount ---
++# exp 0446 proposal (2026-11-26): until the build has the universal rule (ADR 0015), the three kept words apply to
++# the second title only; any other package starts with the generic words of bc5-run.env.
++TID=$(sed -n 's/.*"titleId" *: *"\([A-Za-z0-9]*\)".*/\1/p' "$M/sce_sys/param.json" 2>/dev/null | head -n1)
++if [ "$TID" = TITLE2 ]; then
++  export BC5_DIRECT_EAGER_NAMES="${BC5_DIRECT_EAGER_NAMES:+$BC5_DIRECT_EAGER_NAMES,}RenderGpuWcLarge,RenderGpuWcSmall,RenderGpuRwLarge,RenderGpuRwSmall,CommitIABufferAllocator,AMM,RenderAlloc,Physics,Decal Job Scheduler,VisualEffectInstanceHeap,DynamicHeap,DynamicHeap Small,ComponentHeap,ComponentHeap Small,MaterialHeap,DDLHeap,Physics query allocator"
++  # Experiment 0330 (F394): four CPU-only heaps lazy, 242 MiB less pinned (FileSystem is eager anyway since exp 0421).
++  export BC5_DIRECT_LAZY_NAMES="${BC5_DIRECT_LAZY_NAMES:+$BC5_DIRECT_LAZY_NAMES,}Wwise,SoundAlloc,FileSystem,UIStringAlloc"
++  # Experiments 0080-0081, 0171: deferred flips lose this title's menu glyphs; bc5-run.env defers for every title.
++  unset BC5_DIRECT_FLIP_DEFER
++fi
+ # 2026-10-25 (the maintainer's yes): a failed unmount no longer hangs the launcher (exp 0301's T1 waited an hour):
+ # retry, then a lazy unmount, log the failure, and wait for bc5-mount at most 10 s.
+ cleanup() {

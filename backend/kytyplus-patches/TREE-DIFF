@@ -1,4 +1,6 @@
 # <KytyPlus base commit> <first 8 hex of md5 of `git diff --no-color <base>` in the patched tree>
-# The shared builds' tree since 2026-11-23 12:31 (bakeR): 0001 d45618c6 + 0002 b54b7928. A bake that changes a patch
+# The shared builds' tree since 2026-11-26 17:11 (stage 1 of bake 2, F934): 0001 d45618c6 + 0002 b54b7928 + 0003
+# (experiment 0446's kit: the rows for every title, the film-noise fix, fakelib/ as the game's own); before it 8a9ed0cf
+# (bakeR, 2026-11-23 12:31 to 2026-11-26 17:11). A bake that changes a patch
 # updates this line in the same commit; tools/scripts/kytyplus-tree.sh check fails on any other tree.
-f266548 4bb9cabf
+f266548 db5eea88

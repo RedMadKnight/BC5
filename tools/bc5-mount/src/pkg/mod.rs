@@ -437,15 +437,66 @@ impl PkgImage<FileSource> {
         let path = path.as_ref();
         let f = FileSource::open(path)
             .map_err(|e| Error::format(LAYER, format!("cannot open {}: {e}", path.display())))?;
-        Self::open(f)
+        let disk = disk_cache_from_env();
+        let keep_stored = stored_word().unwrap_or_else(|| source_is_remote(path));
+        Self::open_cached(
+            f,
+            disk.as_ref().map(|(d, l)| (d.as_path(), *l)),
+            keep_stored,
+        )
     }
 }
 
-/// The on-disk block cache from `BC5_MOUNT_DISK_CACHE=<dir>`, with its limit
-/// [`diskcache::DEFAULT_LIMIT_MIB`] (experiment 0112).
-fn disk_cache_from_env() -> Option<(std::path::PathBuf, u64)> {
+/// `BC5_MOUNT_DISK_CACHE_STORED`: `1` keeps blocks the package stores without compression in the on-disk cache,
+/// `0` never does; anything else leaves it to where the package lies ([`source_is_remote`]).
+fn stored_word() -> Option<bool> {
+    match std::env::var("BC5_MOUNT_DISK_CACHE_STORED").ok()?.trim() {
+        "1" => Some(true),
+        "0" => Some(false),
+        _ => None,
+    }
+}
+
+/// Whether `path` lies on a file system that is not a local block device: NFS, SMB/CIFS, a FUSE mount, NCP, Ceph,
+/// 9p, AFS or Coda (the `statfs` type, experiment 0447). There a block the package stores without compression is
+/// worth keeping in the on-disk cache; on a local drive it would only be a second copy of what the drive has.
+#[cfg(target_os = "linux")]
+#[allow(
+    clippy::cast_sign_loss,
+    clippy::cast_lossless,
+    clippy::unnecessary_cast
+)]
+pub fn source_is_remote(path: &Path) -> bool {
+    let Ok(st) = nix::sys::statfs::statfs(path) else {
+        return false;
+    };
+    matches!(
+        st.filesystem_type().0 as u64 & 0xffff_ffff,
+        0x6969 // NFS
+            | 0x517b // SMB
+            | 0xff53_4d42 // CIFS
+            | 0xfe53_4d42 // SMB2
+            | 0x6573_5546 // FUSE
+            | 0x564c // NCP
+            | 0x00c3_6400 // Ceph
+            | 0x0102_1997 // 9p
+            | 0x5346_414f // AFS
+            | 0x7375_7245 // Coda
+    )
+}
+
+/// Whether `path` lies on a network file system: not read on this platform.
+#[cfg(not(target_os = "linux"))]
+pub fn source_is_remote(_path: &Path) -> bool {
+    false
+}
+
+/// The on-disk block cache from `BC5_MOUNT_DISK_CACHE=<dir>` (experiment 0112), with its limit from
+/// `BC5_MOUNT_DISK_CACHE_MIB=<n>` or, without that word, from the drive ([`diskcache::Limit`], experiment 0447).
+fn disk_cache_from_env() -> Option<(std::path::PathBuf, diskcache::Limit)> {
     let dir = std::env::var_os("BC5_MOUNT_DISK_CACHE").filter(|d| !d.is_empty())?;
-    Some((dir.into(), diskcache::DEFAULT_LIMIT_MIB << 20))
+    let word = std::env::var("BC5_MOUNT_DISK_CACHE_MIB").ok();
+    Some((dir.into(), diskcache::Limit::from_word(word.as_deref())))
 }
 
 impl<R: ReadAt> PkgImage<R> {
@@ -453,13 +504,27 @@ impl<R: ReadAt> PkgImage<R> {
     /// With `BC5_MOUNT_DISK_CACHE` set, decoded blocks are kept on disk too.
     pub fn open(source: R) -> Result<Self> {
         let disk = disk_cache_from_env();
-        Self::open_with(source, disk.as_ref().map(|(d, l)| (d.as_path(), *l)))
+        Self::open_cached(
+            source,
+            disk.as_ref().map(|(d, l)| (d.as_path(), *l)),
+            stored_word().unwrap_or(false),
+        )
     }
 
-    /// As [`PkgImage::open`], with decoded blocks kept in `disk.0`, at most
-    /// `disk.1` bytes (`None`: no on-disk cache). A cache that cannot be opened
+    /// As [`PkgImage::open`], with decoded blocks kept in `disk.0`, up to the
+    /// limit `disk.1` (`None`: no on-disk cache). A cache that cannot be opened
     /// is reported on stderr and skipped.
-    pub fn open_with(source: R, disk: Option<(&Path, u64)>) -> Result<Self> {
+    pub fn open_with(source: R, disk: Option<(&Path, diskcache::Limit)>) -> Result<Self> {
+        Self::open_cached(source, disk, false)
+    }
+
+    /// As [`PkgImage::open_with`]; with `keep_stored`, blocks the package stores without compression go to the
+    /// on-disk cache as well (for a package on a slow source, experiment 0447).
+    pub fn open_cached(
+        source: R,
+        disk: Option<(&Path, diskcache::Limit)>,
+        keep_stored: bool,
+    ) -> Result<Self> {
         let source = Arc::new(source);
         let mut head = [0u8; 0x100];
         source
@@ -513,6 +578,25 @@ impl<R: ReadAt> PkgImage<R> {
                     "bc5-mount: no on-disk block cache in {}: {e}",
                     dir.display()
                 );
+            } else if let Some(c) = image.disk_cache() {
+                // experiment 0447: the limit in force, so a run's record says what the cache could take
+                eprintln!(
+                    "bc5-mount: on-disk block cache in {}: {} MiB stored, total for all images {} MiB ({}){}",
+                    dir.display(),
+                    c.stored_bytes() >> 20,
+                    c.limit_bytes() >> 20,
+                    if c.limit_is_from_drive() {
+                        "from the drive's free space"
+                    } else {
+                        "BC5_MOUNT_DISK_CACHE_MIB"
+                    },
+                    if keep_stored {
+                        "; uncompressed blocks kept too"
+                    } else {
+                        ""
+                    }
+                );
+                image.keep_stored_blocks(keep_stored);
             }
         }
         let tree = InnerTree::open(image, &layout)?;

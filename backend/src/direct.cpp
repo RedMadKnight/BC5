@@ -2,6 +2,8 @@
 #include "bc5/direct.hpp"
 #include "bc5/draw_args.hpp"
 #include "bc5/env_flag.hpp"
+#include "bc5/ib_chain.hpp" // exp 0439 (tag ib439)
+#include "bc5/ds0439.hpp" // exp 0439 (tag ds439)
 #include "bc5/ib_split.hpp"
 #include "bc5/indirect_check.hpp"
 #include "bc5/shadow_labels.hpp"
@@ -1255,6 +1257,21 @@ SubmitResult Device::submit_impl(std::span<const std::uint32_t> ib, const policy
         r.rc = -2;
         return r;
     }
+    // exp 0439 (tag fl439): BC5_DIRECT_IB_CHAIN_FLAT, a top-level chain laid out flat (bc5/ib_chain.hpp flatten). The flat
+    // buffer replaces `ib` for the rest of this call; the executed offsets are split back per guest segment below.
+    std::vector<std::uint32_t> flat_local;
+    std::vector<ib_chain::FlatSeg> flat_segs;
+    if (const int fm = ib_chain::flat_mode(); fm == 2 || (fm == 1 && comp)) {
+        const char *why = nullptr;
+        const ib_chain::FlatResult fr = ib_chain::flatten(ib, opt.mapped, flat_local, flat_segs, &why);
+        static std::atomic<std::uint64_t> n_flat{0}, n_flat_refused{0};
+        if (fr == ib_chain::FlatResult::Flattened) {
+            ++n_flat;
+            ib = std::span<const std::uint32_t>(flat_local.data(), flat_local.size());
+        } else if (fr == ib_chain::FlatResult::Refused) {
+            ++n_flat_refused; // a refused chain keeps today's layout
+        }
+    }
     // Layout: the IB first, then every INDIRECT_BUFFER target it (transitively) reaches, each
     // padded to 8 dwords with NOPs — the CP fetches IBs in 32-byte chunks and must never run
     // into what lies past a buffer (experiment 0016). The nested copies let the filter see the
@@ -1282,6 +1299,13 @@ SubmitResult Device::submit_impl(std::span<const std::uint32_t> ib, const policy
     const bool short_possible = short_lists_ && include_mappings_ && static_cast<bool>(opt.mapped);
     std::vector<std::pair<std::uint64_t, std::uint64_t>> touched;
     policy::FilterOptions fopt = opt;
+    { // exp 0439 (tag pcc439): BC5_0439_PASS_CONTEXT_CONTROL, the guest's CONTEXT_CONTROL passes unchanged
+        static const bool pass_cc = [] {
+            const char *e = std::getenv("BC5_0439_PASS_CONTEXT_CONTROL");
+            return e != nullptr && e[0] != 0 && !(e[0] == '0' && e[1] == 0);
+        }();
+        if (pass_cc) fopt.safe_context_control = false;
+    }
     fopt.compute_ring = comp;
     if (short_possible) {
         fopt.mapped = [&opt, &touched](std::uint64_t a, std::uint64_t bytes) {
@@ -1302,6 +1326,17 @@ SubmitResult Device::submit_impl(std::span<const std::uint32_t> ib, const policy
     double t_phase = now_ms();
     policy::filter(policy::Policy::builtin(), ib, main_out, fopt, r.filter);
     executed_offsets_of(ib, main_out.data(), r.executed_offsets);
+    if (!flat_segs.empty()) { // exp 0439 (tag fl439): the executed offsets per guest segment (the first stays the IB's own)
+        const std::vector<std::uint32_t> all = std::move(r.executed_offsets);
+        r.executed_offsets.clear();
+        for (std::size_t s = 0; s < flat_segs.size(); ++s) {
+            std::vector<std::uint32_t> ex;
+            for (const std::uint32_t o : all)
+                if (o >= flat_segs[s].off && o < flat_segs[s].off + flat_segs[s].n) ex.push_back(static_cast<std::uint32_t>(o - flat_segs[s].off));
+            if (s == 0) r.executed_offsets = std::move(ex);
+            else r.nested.push_back({reinterpret_cast<std::uint64_t>(flat_segs[s].src), static_cast<std::uint32_t>(flat_segs[s].n), std::move(ex)});
+        }
+    }
     r.prep_filter_ms = now_ms() - t_phase;
     t_phase = now_ms();
     if (state_stack_ && opt.mapped && !comp) { // the context registers are the GFX ring's
@@ -1365,27 +1400,25 @@ SubmitResult Device::submit_impl(std::span<const std::uint32_t> ib, const policy
     // f00d4abd 0000baad, after the timeout the copied "PSR_BVHL"). Before the first dispatch after
     // an unsynced DMA_DATA goes the zero-byte DMA_DATA with CP_SYNC of the IB's end (dma_idle_).
     // Experiment 0052: an IB with its own COND_EXEC gets them too, the counts grown around them.
-    if (opt.dma_sync_before_dispatch && !comp) { // the MEC waits for its DMA itself
+    // exp 0439 (tag ds439, bake 2): BC5_DIRECT_DMA_SYNC_MEC=1 (D) puts the same wait before the first dispatch after an
+    // unsynced DMA_DATA on the compute rings too (the claim that the MEC waits for its DMA itself has no source; the
+    // third title copies GDS counters to indirect arguments with DMA_DATA a few packets before the dispatch that reads
+    // them); BC5_DIRECT_DMA_SYNC_LABEL=1 (D2) also before the first label write after one and at the end of a buffer
+    // ending with one pending. Both set for every title by switch_defaults.hpp kSoft; "0" turns each off. The GFX ring
+    // keeps experiment 0050's wait (opt.dma_sync_before_dispatch). bc5/ds0439.hpp, det-tested (k439/test_ds0439.cpp).
+    static const bool d439 = [] {
+        const char *e = std::getenv("BC5_DIRECT_DMA_SYNC_MEC");
+        return e != nullptr && e[0] == '1' && e[1] == 0;
+    }();
+    static const bool l439 = [] {
+        const char *e = std::getenv("BC5_DIRECT_DMA_SYNC_LABEL");
+        return e != nullptr && e[0] == '1' && e[1] == 0;
+    }();
+    {
         std::vector<indirect_check::Insert> waits;
-        bool pending = false;
-        for (std::size_t i = 0; i < main_out.size();) {
-            const std::uint32_t h = main_out[i];
-            const std::uint32_t type = h >> 30;
-            std::size_t len = 1;
-            if (type == 3 || type == 0) {
-                const std::uint32_t count = (h >> 16) & 0x3fff;
-                len = count == 0x3fff ? 1 : count + 2;
-            }
-            if (i + len > main_out.size()) len = main_out.size() - i;
-            const std::uint32_t op = (h >> 8) & 0xff;
-            if (type == 3 && op == 0x50 && len >= 2) pending = (main_out[i + 1] & 0x80000000u) == 0;
-            if (type == 3 && (op == 0x15 || op == 0x16) && pending) {
-                waits.push_back({i, {0xC0055000u, 0xE0300000u, 0u, 0u, 0u, 0u, 0u}});
-                pending = false;
-            }
-            i += len;
-        }
-        if (indirect_check::insert_before(main_out, waits)) r.filter.dma_syncs += waits.size();
+        for (auto &p : ds439::points(main_out, comp, opt.dma_sync_before_dispatch, d439, false, l439))
+            waits.push_back({p.first, std::move(p.second)});
+        if (!waits.empty() && indirect_check::insert_before(main_out, waits)) r.filter.dma_syncs += waits.size();
     }
     // Experiment 0052: the group counts checked by the CP when it runs the dispatch (after the
     // DMA waits above: a COND_EXEC must skip exactly the dispatch). The flag lives in this job's
@@ -1427,7 +1460,24 @@ SubmitResult Device::submit_impl(std::span<const std::uint32_t> ib, const policy
     }
     const std::size_t main_n = main_out.size();
     pieces.push_back({ib.data(), ib.size(), pro_padded, (main_n + epi + 7) & ~std::size_t{7}, 0});
-    for (std::size_t k = 0; k < pieces.size() && pieces.size() < 64; ++k) {
+    if (ib_chain::enabled()) { // exp 0439 (tag ib439): a chain adds no level and has its own cap (bc5/ib_chain.hpp)
+        const ib_chain::Result cr = ib_chain::collect(ib.data(), ib.size(), opt.mapped, true);
+        static std::atomic<std::uint64_t> n_chained{0}, n_refused{0};
+        if (cr.cycle || cr.chain_cap) {
+            n_refused++;
+            std::fprintf(stderr, "bc5-direct: exp 0439 (tag ib439): submit of %zu dwords at %p refused: %s (%zu pieces, %zu chains so far in it); %llu refused so far\n",
+                         ib.size(), static_cast<const void *>(ib.data()), cr.cycle ? "an IB cycle (a target is its own ancestor)" : "over 4096 chained segments",
+                         cr.pieces.size(), cr.chains, static_cast<unsigned long long>(n_refused.load()));
+            r.rc = -EINVAL;
+            return r;
+        }
+        for (std::size_t k = 1; k < cr.pieces.size(); ++k) {
+            const Piece &last = pieces.back();
+            pieces.push_back({cr.pieces[k].src, cr.pieces[k].n, last.off + last.padded, (cr.pieces[k].n + 7) & ~std::size_t{7}, cr.pieces[k].depth});
+        }
+        if (cr.chains != 0) ++n_chained;
+    }
+    for (std::size_t k = 0; !ib_chain::enabled() && k < pieces.size() && pieces.size() < 64; ++k) {
         if (pieces[k].depth >= 3) continue;
         std::vector<std::pair<const std::uint32_t *, std::size_t>> targets;
         nested_targets(std::span<const std::uint32_t>(pieces[k].src, pieces[k].n), opt, targets);
@@ -1513,6 +1563,7 @@ SubmitResult Device::submit_impl(std::span<const std::uint32_t> ib, const policy
     }
     t_phase = now_ms();
     // Point the surviving INDIRECT_BUFFER packets at the scratch copies.
+    std::size_t ib_cut = 0, ib_cut_chain = 0; // exp 0439 (tag ib439): IBs NOP-ed here, logged below (diagnosis)
     for (std::size_t k = 0; k < pieces.size(); ++k) {
         const Piece &pc = pieces[k];
         std::uint32_t *d = dst + pc.off;
@@ -1542,11 +1593,21 @@ SubmitResult Device::submit_impl(std::span<const std::uint32_t> ib, const policy
                     }
                 }
                 if (!found) { // an unmapped or over-deep target: never let the CP follow it
+                    ib_cut++;
+                    if (ib_chain::is_chain(d[i + 3])) ib_cut_chain++;
                     for (std::size_t q = 0; q < len; ++q) d[i + q] = policy::kNop;
                 }
             }
             i += len;
         }
+    }
+    if (ib_cut != 0) { // exp 0439 (tag ib439): a dropped IB (a frame's tail when it is a chain) is never silent
+        static std::atomic<std::uint64_t> n_cut_submits{0};
+        const std::uint64_t c = ++n_cut_submits;
+        if (c <= 16 || c % 1000 == 0)
+            std::fprintf(stderr, "bc5-direct: exp 0439 (tag ib439): submit of %zu dwords at %p: %zu INDIRECT_BUFFER packets NOP-ed (target unmapped, too deep or over the cap), %zu of them chains; %zu pieces copied; IB_CHAIN %s; %llu such submits so far\n",
+                         ib.size(), static_cast<const void *>(ib.data()), ib_cut, ib_cut_chain, pieces.size(), ib_chain::enabled() ? "on" : "off",
+                         static_cast<unsigned long long>(c));
     }
     const std::size_t padded = pro_padded + pieces[0].padded; // the CP runs prologue then IB
     // Experiment 0349: the executed IB [0, padded) cut into up to four IBs when it is over the limit; the

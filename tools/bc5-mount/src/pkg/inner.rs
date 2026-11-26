@@ -57,6 +57,8 @@ pub struct InnerImage<R> {
     cache: DecodeCache,
     /// Decoded Kraken blocks kept on disk between mounts (experiment 0112).
     disk: Option<DiskCache>,
+    /// Blocks stored without compression are kept there too (experiment 0447: for an image on a slow source).
+    disk_stored: bool,
 }
 
 /// The block size the cache is counted in: the largest block. Blocks end at file boundaries, so the first one
@@ -107,12 +109,13 @@ impl<R: ReadAt> InnerImage<R> {
             stats,
             cache,
             disk: None,
+            disk_stored: false,
         })
     }
 
     /// Keeps decoded Kraken blocks in `dir` (files named after the stored
-    /// image), at most `limit` bytes of them, and reads them back from there.
-    pub fn attach_disk_cache(&mut self, dir: &Path, limit: u64) -> io::Result<()> {
+    /// image), up to `limit`, and reads them back from there.
+    pub fn attach_disk_cache(&mut self, dir: &Path, limit: diskcache::Limit) -> io::Result<()> {
         let key = diskcache::image_key(&self.image)?;
         let block_bytes = self
             .blocks
@@ -128,6 +131,13 @@ impl<R: ReadAt> InnerImage<R> {
             limit,
         )?);
         Ok(())
+    }
+
+    /// Whether blocks the image stores without compression go to the on-disk cache as well. Off, only decoded
+    /// Kraken blocks are kept (decoding is what they save); on, a stored block is read from its source once and
+    /// from the cache afterwards, which pays when the source is slower than the cache's drive (a network share).
+    pub fn keep_stored_blocks(&mut self, on: bool) {
+        self.disk_stored = on;
     }
 
     /// The on-disk cache, if attached.
@@ -173,7 +183,8 @@ impl<R: ReadAt> InnerImage<R> {
     /// Decodes block `index` (or reads it back from the on-disk cache).
     fn decode_block(&self, index: usize) -> Result<Vec<u8>> {
         let b = self.blocks[index];
-        if b.kraken {
+        let kept = b.kraken || (self.disk_stored && b.comp != 0);
+        if kept {
             if let Some(v) = self.disk.as_ref().and_then(|d| d.get(index)) {
                 if v.len() == b.uncomp as usize {
                     crate::stats::from_disk(v.len() as u64);
@@ -201,7 +212,7 @@ impl<R: ReadAt> InnerImage<R> {
             }
         }
         crate::stats::decoded(index as u64, out.len() as u64);
-        if b.kraken {
+        if kept {
             if let Some(d) = &self.disk {
                 d.put(index, &out);
             }

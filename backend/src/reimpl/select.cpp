@@ -30,9 +30,10 @@ std::filesystem::path find_game_copy(const std::filesystem::path &root, std::str
     }
     const std::string sprx = std::string(module) + ".sprx";
     const std::string prx = std::string(module) + ".prx";
-    // fakelib/ is not the game's: it is the dump tooling's folder of firmware system modules (the
-    // maintainer's decision of 2026-11-23); it counts as a module pack.
-    for (const auto &dir : {root, root / "sce_module", root / "sce_modules"}) {
+    // fakelib/ is the game's too: it holds system modules modified for that game, which the game
+    // must use (the maintainer's decision of 2026-11-25, reversing the one of 2026-11-23). Searched
+    // last; the host's loader loads it itself, with no launcher word.
+    for (const auto &dir : {root, root / "sce_module", root / "sce_modules", root / "fakelib"}) {
         std::error_code ec;
         if (!std::filesystem::is_directory(dir, ec)) {
             continue;

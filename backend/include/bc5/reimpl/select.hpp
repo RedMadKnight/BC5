@@ -3,11 +3,15 @@
 // by default take BC5's own,
 // unless the game has its own):
 //   - BC5's own re-creation by default;
-//   - the game's own copy when the game ships one: its root directory, sce_module/ or sce_modules/
-//     (as KytyPlus's loader scans them). libSceAgc, libSceAgcDriver and libScePsml are firmware
-//     system modules, which retail titles do not ship; a fakelib/ folder beside a game is the dump
-//     tooling's (a firmware's system modules placed there) and counts as a module pack, not as the
-//     game's own (the maintainer's decision of 2026-11-23): its copies stay off the load;
+//   - the game's own copy when the game ships one: its root directory, sce_module/, sce_modules/
+//     or fakelib/, in that order. A game's fakelib/ holds system modules modified for that game, and
+//     a game that brings them must use them (the maintainer's decision of 2026-11-25, reversing the
+//     one of 2026-11-23 that counted fakelib/ as a module pack). The host's loader loads the game's
+//     fakelib/ itself, before any module pack, so no launcher word is needed;
+//   - libSceAgc and libSceAgcDriver only as a pair from one source (choose_agc_pair): BC5's
+//     re-created libSceAgc does not start with the game's driver (exp 0439 fl439x: an access
+//     violation at load), and the game's libSceAgc with BC5's driver hung once after the opening
+//     film. The game's pair is chosen only when the game ships both;
 //   - opted out with BC5_REIMPL_<X>=0: neither BC5's nor a forced choice, the host's previous
 //     behaviour (a module pack from SHADPS4_SYSMODULES_PACK_DIR, else KytyPlus's HLE);
 //   - TEST ONLY: BC5_REIMPL_<X>=force takes BC5's own even when the game ships its own copy (the
@@ -50,6 +54,20 @@ inline bool keeps_off_load(const char *switch_value, bool game_ships_module) {
     return is_bc5(choose(switch_value, game_ships_module));
 }
 
+// libSceAgc and libSceAgcDriver come from one source (exp 0439 fl439x): one choice for both. A "0"
+// on either switch opts both out; "force" on either forces both; the game's pair only when the game
+// ships both modules; else BC5's pair.
+inline Choice choose_agc_pair(const char *agc_switch, bool game_ships_agc, const char *driver_switch,
+                              bool game_ships_driver) {
+    if (!switch_allows(agc_switch) || !switch_allows(driver_switch)) {
+        return Choice::OptedOut;
+    }
+    if (switch_forces(agc_switch) || switch_forces(driver_switch)) {
+        return Choice::Bc5Forced;
+    }
+    return game_ships_agc && game_ships_driver ? Choice::GameOwn : Choice::Bc5Own;
+}
+
 inline const char *choice_name(Choice c) {
     switch (c) {
     case Choice::Bc5Own:
@@ -65,7 +83,7 @@ inline const char *choice_name(Choice c) {
 }
 
 // The path of the game's own copy of `module` (e.g. "libSceAgc") under the title's directory:
-// <root>, <root>/sce_module or <root>/sce_modules (not fakelib/: the dump tooling's folder), file
+// <root>, <root>/sce_module, <root>/sce_modules or <root>/fakelib (the game's modified system modules), file
 // <module>.sprx or <module>.prx, names
 // compared case-insensitively. Empty when the game ships none.
 std::filesystem::path find_game_copy(const std::filesystem::path &root, std::string_view module);

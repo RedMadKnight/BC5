@@ -8,6 +8,7 @@ use std::io::Cursor;
 use bc5_mount::fixture::pkg_writer::write_pkg;
 use bc5_mount::fixture::{Content, Spec};
 use bc5_mount::io::ReadAt;
+use bc5_mount::pkg::diskcache::Limit;
 use bc5_mount::pkg::PkgImage;
 use bc5_mount::tree::{FileTree, TreeFile};
 use bc5_mount::verify::{diff, hash_volume, FileHash};
@@ -152,7 +153,8 @@ fn disk_cache_serves_a_second_open() {
     let _ = std::fs::remove_dir_all(&dir);
     let want = expected(&spec);
 
-    let first = PkgImage::open_with(bytes.clone(), Some((dir.as_path(), 1 << 30))).unwrap();
+    let cache = Some((dir.as_path(), Limit::Bytes(1 << 30)));
+    let first = PkgImage::open_with(bytes.clone(), cache).unwrap();
     assert!(
         first.info().stats.kraken > 0,
         "the preset must have Kraken blocks"
@@ -162,7 +164,7 @@ fn disk_cache_serves_a_second_open() {
     drop(first);
 
     let before = bc5_mount::stats::snapshot();
-    let second = PkgImage::open_with(bytes, Some((dir.as_path(), 1 << 30))).unwrap();
+    let second = PkgImage::open_with(bytes, cache).unwrap();
     let d = diff(&want, &hash_volume(&second, |_| {}).unwrap());
     assert!(d.is_empty(), "second open differs from spec: {d:?}");
     let after = bc5_mount::stats::snapshot();
@@ -171,6 +173,58 @@ fn disk_cache_serves_a_second_open() {
         "no block came from disk"
     );
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// Experiment 0447: blocks the package stores without compression go to the on-disk cache only when asked (a
+/// package on a network share), and the files read the same either way, also on the second open.
+#[test]
+fn stored_blocks_are_cached_only_when_asked() {
+    fn cached_blocks(dir: &std::path::Path) -> usize {
+        let map = std::fs::read_dir(dir)
+            .unwrap()
+            .map(|e| e.unwrap().path())
+            .find(|p| p.extension().is_some_and(|x| x == "map"))
+            .expect("a map file");
+        std::fs::read(map)
+            .unwrap()
+            .chunks_exact(8)
+            .filter(|c| c.iter().any(|b| *b != 0))
+            .count()
+    }
+    let spec = Spec::preset("mixed-compress").unwrap();
+    let bytes = build(&spec);
+    let want = expected(&spec);
+    let mut counts = Vec::new();
+    for keep in [false, true] {
+        let dir = std::env::temp_dir().join(format!(
+            "bc5-pkg-diskcache-stored-{keep}-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        let cache = Some((dir.as_path(), Limit::Bytes(1 << 30)));
+        for _ in 0..2 {
+            let p = PkgImage::open_cached(bytes.clone(), cache, keep).unwrap();
+            assert!(
+                p.info().stats.stored > 0,
+                "the preset must have stored blocks"
+            );
+            let d = diff(&want, &hash_volume(&p, |_| {}).unwrap());
+            assert!(d.is_empty(), "keep {keep}: differs from spec: {d:?}");
+        }
+        counts.push((
+            cached_blocks(&dir),
+            PkgImage::open(bytes.clone()).unwrap().info().stats,
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+    let (off, stats) = &counts[0];
+    let (on, _) = &counts[1];
+    assert_eq!(*off, stats.kraken, "off: the Kraken blocks alone");
+    assert_eq!(
+        *on,
+        stats.kraken + stats.stored,
+        "on: the stored blocks too"
+    );
 }
 
 #[test]

@@ -82,18 +82,30 @@ TEST_CASE("find_game_copy looks in the root, sce_module and sce_modules", "[reim
     touch(t.path / "libSceAgcDriver.sprx");
     CHECK(find_game_copy(t.path, "libSceAgcDriver").filename() == "libSceAgcDriver.sprx");
 
-    // fakelib/ is the dump tooling's folder of firmware system modules, not the game's: it never
-    // counts as the game's own copy, so BC5's own is chosen (the maintainer's decision, 2026-11-23).
+    // fakelib/ holds the game's modified system modules and counts as the game's own copy (the
+    // maintainer's decision, 2026-11-25), searched after the root and sce_module(s)/.
     touch(t.path / "fakelib" / "libSceBar.sprx");
-    CHECK(find_game_copy(t.path, "libSceBar").empty());
-    CHECK(choose(nullptr, !find_game_copy(t.path, "libSceBar").empty()) == Choice::Bc5Own);
-    CHECK(keeps_off_load(nullptr, !find_game_copy(t.path, "libSceBar").empty()));
-    CHECK_FALSE(keeps_off_load("0", !find_game_copy(t.path, "libSceBar").empty())); // =0: the pack again
-    touch(t.path / "sce_module" / "libSceBar.sprx"); // a title-shipped copy in sce_module/ overrides
+    CHECK(find_game_copy(t.path, "libSceBar").parent_path().filename() == "fakelib");
+    CHECK(choose(nullptr, !find_game_copy(t.path, "libSceBar").empty()) == Choice::GameOwn);
+    CHECK_FALSE(keeps_off_load(nullptr, !find_game_copy(t.path, "libSceBar").empty()));
+    CHECK(choose("force", !find_game_copy(t.path, "libSceBar").empty()) == Choice::Bc5Forced);
+    touch(t.path / "sce_module" / "libSceBar.sprx"); // a copy in sce_module/ comes first
     CHECK(find_game_copy(t.path, "libSceBar").parent_path().filename() == "sce_module");
     CHECK(choose(nullptr, true) == Choice::GameOwn);
     CHECK(choose("force", true) == Choice::Bc5Forced);
 
     fs::create_directories(t.path / "sce_module" / "libSceFoo.sprx"); // a directory is not a file
     CHECK(find_game_copy(t.path, "libSceFoo").empty());
+}
+
+TEST_CASE("libSceAgc and libSceAgcDriver are chosen as one pair", "[reimpl][select]") {
+    CHECK(choose_agc_pair(nullptr, false, nullptr, false) == Choice::Bc5Own);
+    CHECK(choose_agc_pair(nullptr, true, nullptr, true) == Choice::GameOwn);
+    CHECK(choose_agc_pair(nullptr, true, nullptr, false) == Choice::Bc5Own);  // the game's driver missing: BC5's pair
+    CHECK(choose_agc_pair(nullptr, false, nullptr, true) == Choice::Bc5Own);  // the game's libSceAgc missing: BC5's pair
+    CHECK(choose_agc_pair("0", true, nullptr, true) == Choice::OptedOut);     // one opt-out takes both
+    CHECK(choose_agc_pair(nullptr, false, "0", false) == Choice::OptedOut);
+    CHECK(choose_agc_pair("force", true, nullptr, true) == Choice::Bc5Forced); // one force takes both
+    CHECK(choose_agc_pair(nullptr, true, "force", true) == Choice::Bc5Forced);
+    CHECK(choose_agc_pair("0", true, "force", true) == Choice::OptedOut);     // opt-out wins
 }
